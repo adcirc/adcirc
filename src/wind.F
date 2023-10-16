@@ -5,6 +5,8 @@ C                                                                      *
 C***********************************************************************
 C
        MODULE WIND
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
        USE SIZES, ONLY : SZ, LOCALDIR
        USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage,
      &    screenMessage, logMessage, unsetMessageSource,
@@ -22,14 +24,15 @@ C
       use datetime_module, only: datetime, timedelta
 #endif
 #if defined(DATETIME) && (defined(GRIB2API) || defined(ADCNETCDF))
-      integer, parameter :: allowable_nws(20)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,19,20,29,30/)
+      integer, parameter :: allowable_nws(21)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,19,20,29,30/)
 #elif defined(ADCNETCDF)
-      integer, parameter :: allowable_nws(19)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,15,16,19,20,29,30/)
+      integer, parameter :: allowable_nws(20)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,15,16,17,19,20,29,30/)
 #else
-      integer, parameter :: allowable_nws(18)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29,30/)
+C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data
+      integer, parameter :: allowable_nws(19)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,17,19,20,29,30/)
 #endif
       logical nwsOK     ! true if NWS value in fort.15 is allowed
 
@@ -318,6 +321,12 @@ C.... convert background pressure from millibars to meters of water
       prn1 = PRBCKGRND_MH2O
       prn2 = PRBCKGRND_MH2O
 
+      ! dw
+      wvnx1 = 0.0
+      wvny1 = 0.0
+      wvnx2 = 0.0
+      wvny2 = 0.0
+
       CALL checkWindDragType()
       CALL mapWindDragFunctionPointer()
 
@@ -328,27 +337,27 @@ C.... convert background pressure from millibars to meters of water
       SELECT CASE(TRIM(DragLawString))
          CASE("Garratt","GARRATT","garratt","default")
              garatt = .true.
-             write(16,*) 'Garratt drag law used' 
+             write(AMPI_LUN(16),*) 'Garratt drag law used' 
 #ifdef CSWAN
          CASE("Swell","SWELL","swell")
              swell   = .true.
-             write(16,*) 'Swell drag law used' 
+             write(AMPI_LUN(16),*) 'Swell drag law used' 
 #endif
          CASE("Powell","POWELL","powell")
              if (NWS.eq.12.or.NWS.eq.29.or.NWS.eq.30) then
                 powell  = .true.
                 allocate(Pweight(3,np)); Pweight = 0d0
                 allocate(foundSector(np)); foundSector = .false.
-                write(16,*) 'Powell drag law used'
+                write(AMPI_LUN(16),*) 'Powell drag law used'
              else
                 garatt = .true.
-                write(16,*) 'Garratt drag law used because NWS ', 
-     &                      'incompatible with Powell'
+                write(AMPI_LUN(16),*) 'Garratt drag law used because NWS ', 
+     &                     'incompatible with Powell'
              endif
          CASE DEFAULT
-            WRITE(16,*) 'ERROR: Wind drag law not recognized:'
-            WRITE(16,'(A10)') DragLawString
-            WRITE(16,*) 'Execution will now be terminated.'
+            WRITE(AMPI_LUN(16),*) 'ERROR: Wind drag law not recognized:'
+            WRITE(AMPI_LUN(16),'(A10)') DragLawString
+            WRITE(AMPI_LUN(16),*) 'Execution will now be terminated.'
 #ifdef CMPI
             call msg_fini()
 #endif
@@ -407,7 +416,8 @@ C----------------------------------------------------------------------
               f_computeWindDrag => PowellWindDrag
           CASE(DRAGLAW_SWELL)
 #ifndef CSWAN
-              call allMessage(WARNING,"SWAN Model not enabled. Drag formulation will be Garratt.")
+              call allMessage(WARNING,"SWAN Model not enabled."//
+     &              "Drag formulation will be Garratt.")
               f_computeWindDrag => CappedGarrattWindDrag
 #else
               f_computeWindDrag => SwanWindDrag
@@ -742,9 +752,9 @@ C....... Joyce et al. (2019), OM: doi:10.1016/j.ocemod.2019.101421
          ENDIF
 
       CASE DEFAULT
-         WRITE(16,*) 'ERROR: Ice drag law not recognized:'
-         WRITE(16,'(A10)') DragLawString
-         WRITE(16,*) 'Execution will now be terminated.'
+         WRITE(AMPI_LUN(16),*) 'ERROR: Ice drag law not recognized:'
+         WRITE(AMPI_LUN(16),'(A10)') DragLawString
+         WRITE(AMPI_LUN(16),*) 'Execution will now be terminated.'
 #ifdef CMPI
          call msg_fini()
 #endif
@@ -916,7 +926,7 @@ C
 C     No wind, radiation stress or atmospheric pressure forcings are used.
       IF(NWS.EQ.1) THEN
          DO I=1,NP
-            READ(22,*) NHG,WSX2(I),WSY2(I),PR2(I) !read in
+            READ(AMPI_LUN(22),*) NHG,WSX2(I),WSY2(I),PR2(I) !read in
             WSX2(I)=RampMete*WSX2(I) ! apply ramp function
             WSY2(I)=RampMete*WSY2(I)
 C  tcm v49.16 20100617
@@ -940,7 +950,7 @@ C     pressure information with the model time step.
                WVNX1(I)=WVNX2(I) ! move current data to old
                WVNY1(I)=WVNY2(I)
                PRN1(I)=PRN2(I)
-               READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I) ! read in
+               READ(AMPI_LUN(22),*) NHG,WVNX2(I),WVNY2(I),PRN2(I) ! read in
             END DO
          ENDIF
          WTRatio=(TimeLoc-WTIME1)/WTIMINC ! interpolate
@@ -1058,7 +1068,7 @@ C     is used to compute wind stress from wind velocity.
                WVNX1(I)=WVNX2(I)
                WVNY1(I)=WVNY2(I)
                PRN1(I)=PRN2(I)
-               READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
+               READ(AMPI_LUN(22),*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
             END DO
          ENDIF
          WTRatio=(TimeLoc-WTIME1)/WTIMINC
@@ -1404,6 +1414,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                Cicenow = 100d0*(CICE1(I) + 
      &                          CTRATIO*(CICE2(I)-CICE1(I)))
                WDragCo = WindIceDrag(WDragCo,Cicenow)
+               ciceout(i) = Cicenow ! GML added 20210727
             elseif (NCICE.ne.0.and.NCICE.ne.13) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             endif
@@ -1684,12 +1695,77 @@ C    kmd48.33bc - added in information for the sponge layer
          END DO
        END IF
          
+!PV BEG:: NWS=17
+!... v50.xx sm, v55.xx PV, -- NWS=17 for NUOPC coupling
+      IF(ABS(NWS).EQ.17) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+              WVNX1(I)=WVNX2(I)
+              WVNY1(I)=WVNY2(I)
+              PRN1(I)=PRN2(I)
+            END DO
+         ENDIF
+C++ GML added 20210727 ncice=17
+         if ((NCICE.ne. 0).and.
+     &       TimeLoc.GT.CICE_TIME2) THEN
+             CICE_TIME1 = CICE_TIME2
+             CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
+             CICE1 = CICE2
+         endif
+C++
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+C++ GML added 20210727
+         IF(NCICE.NE.0)THEN
+             CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+         ENDIF
+C++
+         if (WTRatio .GT. 1.0) then
+             WTRatio = 1.0
+             print *, '[Warning:] WTRatio is .GE. 1.0 and Set to 1.0'
+         endif
+
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+           IF(NCICE.NE.0) THEN
+               Cicenow = 100d0*(CICE1(I) + CTRATIO*(CICE2(I)-CICE1(I)))   ! GML added 20210727
+               WDragCo = WindIceDrag(WDragCo,Cicenow)                     ! GML added 20210727
+               ciceout(i) = Cicenow                                       ! GML added 20210727
+C               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag   !P.V units: m^2/s^2 aka
+            WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag   !    per water unit mass (1/RhoWat0)
+C  tcm v49.16 20100617
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            !PV Do we need to output the real wind velocities or the ramped ones?
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF
+!PV END:: NWS=17
+
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
-          UVECTMP(1:NP) = WSX2(1:NP); 
-          VVECTMP(1:NP) = WSY2(1:NP);
+          UVECTMP(1:NP) = WSX2(1:NP)
+          VVECTMP(1:NP) = WSY2(1:NP)
           CALL DRVMAP2DSPVEC( WSX2, WSY2,
-     &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
+     &              UVECTMP, VVECTMP, NP, FWD = .TRUE. )
        ENDIF
 
 C--------------------END MET FORCING---------------------------------------
@@ -1713,7 +1789,7 @@ C----------------------------------------------------------------------
       subroutine coldstartMeteorologicalForcing(nws)
       use sizes, only : gblinputdir, inputdir
       use global, only : ciceout, h0, g, eta2, ncice, rampmete, mb2pa, 
-     &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2,
+     &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2, pr1,
      &   cice1, cice2
       use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006          
       use nodalAttributes, only : applyDirectionalWindReduction,
@@ -1722,6 +1798,9 @@ C----------------------------------------------------------------------
 #ifdef ADCNETCDF
 Casey 180318: Added for NWS=13
       USE OWIWIND_NETCDF, ONLY: NWS13INIT,NWS13GET
+#endif
+#ifdef DATETIME
+      use datetime_module, only: datetime
 #endif
       implicit none
       integer, intent(in) :: nws
@@ -1742,14 +1821,26 @@ Casey 180318: Added for NWS=13
       WSY2(:) = 0.D0
       PR2(:) = PRBCKGRND_MH2O
 
+      WSX1(:) = 0.d0
+      WSY1(:) = 0.d0
+!      PR1(:) = PRBCKGRND_MH2O ! -- DW for 517
+!++ GML
+      if (NCICE.ne. 0) then
+      cice1(:) = 0.d0
+      cice2(:) = 0.D0
+      endif
+!++
+
       IF(NWS.EQ.1) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
       ENDIF
 
       IF(ABS(NWS).EQ.2) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         READ(AMPI_LUN(22),*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(AMPI_LUN(22),*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
       ENDIF
@@ -1758,7 +1849,8 @@ Casey 180318: Added for NWS=13
 C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
 C....                           to correspond with having only a global wind file.
 !         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
 
          DO WHILE(.TRUE.)
             CALL NWS3GET()
@@ -1789,7 +1881,8 @@ C....                           to correspond with having only a global wind fil
       ENDIF
 
       IF(ABS(NWS).EQ.4) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          WTIME2=WTIME1+WTIMINC
          CALL NWS4GET()
@@ -1799,9 +1892,10 @@ C....                           to correspond with having only a global wind fil
       ENDIF
 
       IF(ABS(NWS).EQ.5) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         READ(AMPI_LUN(22),*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(AMPI_LUN(22),*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
       ENDIF
@@ -1810,7 +1904,8 @@ C....                           to correspond with having only a global wind fil
 C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
 C....                           to correspond with having only a global wind file.
 !         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
          CALL NWS6GET()
          wvnx1 = wvnx2
          wvny1 = wvny2
@@ -1827,7 +1922,8 @@ C     rectangular grid, same as NWS=6)
 C         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
 C         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
 C         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
          CALL NWS7GET()
          wvnx1 = wvnx2
          wvny1 = wvny2
@@ -1845,13 +1941,15 @@ C     generate hurricane winds from the Holland Wind Model.
 C     RJW Merged:
 !    rjw added nws = 19: asymmetric hurricane winds v2.0
       IF(NWS.EQ.19) THEN
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
         CALL NWS19GET(WVNX2,WVNY2,PRN2,STATIM*86400.D0)
       ENDIF
 
 !    jie added nws = 20: generalized asymmetric vortex model
       IF(NWS.EQ.20) THEN
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
         CALL NWS20GET(WVNX2,WVNY2,PRN2,STATIM*86400.D0)
       ENDIF
 
@@ -1879,13 +1977,17 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          ! now blend in the vortex met field
          ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
          if (abs(nws).eq.29) then
-            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
-     &           STATUS='OLD')
+            OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &          STATUS='OLD')
+            call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &          STATUS='OLD')
             CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)
          endif
          if (abs(nws).eq.30) then
-            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
-     &           STATUS='OLD')
+            OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
+     &          STATUS='OLD')
+            call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
+     &          STATUS='OLD')
             CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,STATIM*86400.D0)
          endif
       ENDIF
@@ -2063,12 +2165,27 @@ C----------------------------------------------------------------------
 C
 C......RESTART WIND AND PRESSURE INFORMATION
 
+      !c DW, for nonwind and NEM
+      SELECT CASE(NWS)
+      CASE (0,17)
+         WVNX1(:) = 0.d0
+         WVNY1(:) = 0.d0
+         WVNX2(:) = 0.d0
+         WVNY2(:) = 0.d0
+         PRN1(:)=PRBCKGRND_MH2O
+         PRN2(:)=PRBCKGRND_MH2O
+         WSX2(:) = 0.d0
+         WSY2(:) = 0.D0
+         PR2(:) = PRBCKGRND_MH2O
+      END SELECT
+
 C     No wind, radiation stress or atmospheric pressure forcings are used.
       IF(NWS.EQ.1) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          DO J=1,ITHS
             DO I=1,NP
-               READ(22,*) NHG,WSX2(I),WSY2(I),PR2(I)
+               READ(AMPI_LUN(22),*) NHG,WSX2(I),WSY2(I),PR2(I)
             END DO
          END DO
          DO I=1,NP
@@ -2086,11 +2203,12 @@ C     at a time interval that does not equal the model time
 C     step. Interpolation in time is used to synchronize the wind and
 C     pressure information with the model time step.
       IF(NWS.EQ.2) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         READ(AMPI_LUN(22),*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
+         READ(AMPI_LUN(22),*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          DO IT=1,ITHS
             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.WTIME2) THEN
@@ -2100,7 +2218,7 @@ C     pressure information with the model time step.
                   WVNX1(I)=WVNX2(I)
                   WVNY1(I)=WVNY2(I)
                   PRN1(I)=PRN2(I)
-                  READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
+                  READ(AMPI_LUN(22),*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
                END DO
             ENDIF
          END DO
@@ -2119,11 +2237,12 @@ C  tcm v49.16 20100617
       ENDIF
 
       IF(NWS.EQ.-2) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = TimeLoc
          WTIME2 = WTIME1 + WTIMINC
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         READ(AMPI_LUN(22),*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(AMPI_LUN(22),*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          DO I=1,NP
             WSX2(I) = RampMete2*WVNX1(I)
             WSY2(I) = RampMete2*WVNY1(I)
@@ -2142,7 +2261,9 @@ C     is used to compute wind stress from the wind velocity.
 C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
 C....                           to correspond with having only a global wind file.
 !         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+
          DO WHILE(.TRUE.)
             CALL NWS3GET()
             IF(IWYR.NE.IREFYR) THEN
@@ -2214,7 +2335,8 @@ C     used to synchronize the wind and pressure information with the
 C     model time step. Garratt's formula is used to compute wind stress
 C     from wind velocity.
       IF(NWS.EQ.4) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
          CALL NWS4GET()  !TCM v49.02 Added read for rec. 1
@@ -2264,7 +2386,8 @@ C  tcm v49.16 20100617
       ENDIF
 
       IF(NWS.EQ.-4) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = TimeLoc
          WTIME2 = WTIME1 + WTIMINC
          CALL NWS4GET()
@@ -2303,11 +2426,12 @@ C     nodes. Interpolation in time is used to synchronize the wind and
 C     pressure information with the model time step. Garratt's formula
 C     is used to compute wind stress from wind velocity.
       IF(NWS.EQ.5) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         READ(AMPI_LUN(22),*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
+         READ(AMPI_LUN(22),*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          DO IT=1,ITHS
             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.WTIME2) THEN
@@ -2317,7 +2441,7 @@ C     is used to compute wind stress from wind velocity.
                   WVNX1(I)=WVNX2(I)
                   WVNY1(I)=WVNY2(I)
                   PRN1(I)=PRN2(I)
-                  READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
+                  READ(AMPI_LUN(22),*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
                END DO
             ENDIF
          END DO
@@ -2354,11 +2478,12 @@ C     jjw-42.06j wrote, jgf46.00 added following two lines:
       ENDIF
 
       IF(NWS.EQ.-5) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = TimeLoc
          WTIME2 = WTIME1 + WTIMINC
-         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
-         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         READ(AMPI_LUN(22),*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(AMPI_LUN(22),*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          WTRATIO=(TimeLoc-WTIME1)/WTIMINC !jgf46.00 added
          DO I=1,NP
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
@@ -2400,7 +2525,8 @@ C     wind velocity.
 C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
 C....                           to correspond with having only a global wind file.
 !         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
 C     The following 3 lines are a hardwire to allow a non standard met
 C     file to be read in at time zero in a hot start.  They should be
 C     eliminated or commented out for normal operation
@@ -2451,7 +2577,8 @@ C     is used to synchronize the wind and pressure information with the
 C     model time step.
 C
       IF(NWS.EQ.7) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          CALL NWS7GET()  !TCMv49.02 Changed (WVNX2,WVNY2,PRN2) to (WVNX1,WVNY1,PRN1)
          wvnx1 = wvnx2
@@ -2476,7 +2603,8 @@ C  tcm v49.16 20100617
       ENDIF
 
       IF(NWS.EQ.-7) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          CALL NWS7GET()
          wvnx1 = wvnx2
@@ -2537,7 +2665,8 @@ C  tcm v49.16 20100617
 !     rjw added nws = 19: asymmetric hurricane winds v2.0
 
       IF(ABS(NWS).EQ.19) THEN
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
          CALL NWS19GET(WVNX2,WVNY2,PRN2,TimeLoc)
          DO I=1,NP
             WindX = WVNX2(I)
@@ -2570,7 +2699,8 @@ C  tcm v49.16 20100617
 !     jie added nws = 20: generalized asymmetric vortex model
 
       IF(ABS(NWS).EQ.20) THEN
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
          CALL NWS20GET(WVNX2,WVNY2,PRN2,TimeLoc)
          DO I=1,NP
             WindX = WVNX2(I)
@@ -2812,13 +2942,17 @@ C     from NAM data
          ! Now blend in the vortex winds into the background OWI wind field.
          ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
          if (abs(nws).eq.29) then
-            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
-     &           STATUS='OLD')
+            OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &          STATUS='OLD')
+            call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &          STATUS='OLD')
             CALL NWS19GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
          endif
          if (abs(nws).eq.30) then
-            OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
-     &           STATUS='OLD')
+            OPEN(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
+     &          STATUS='OLD')
+            call AMPI_LUN_REGISTER(AMPI_LUN(22),FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_20_fort.22',
+     &          STATUS='OLD')
             CALL NWS20GET(vortexWVNX2,vortexWVNY2,vortexPRN2,TimeLoc)
          endif
          DO I=1,NP
@@ -3087,6 +3221,63 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
              WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
           END DO
        ENDIF
+
+!PV BEG:: NWS=17, there is no NWS=-17 option
+!... v55.xx PV -- NWS=17 for NUOPC coupling
+      IF(ABS(NWS).EQ.17) THEN ! using ABS(NWS) to make sure that this block is always executed for NWS=17/-17
+         WTIME1 = TimeLoc
+         WTIME2 = WTIME1 + WTIMINC
+         DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0
+            IF(TIMEIT.GT.WTIME2) THEN
+               WTIME1=WTIME2
+               WTIME2=WTIME2+WTIMINC
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+                  PRN1(I)=PRN2(I)
+                END DO
+             ENDIF
+         END DO
+
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
+
+         if (WTRatio .GT. 1.0) then
+             WTRatio = 1.0
+             print *, '[Warning:] WTRatio is .GE. 1.0 and Set to 1.0'
+         endif
+
+         DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+
+C     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+           IF(NCICE.NE.0) THEN
+               WDragCo = WindIceDrag(WDragCo,ciceout(i))
+            ENDIF
+            WSX2(I) = RampMete2*airwaterdensityrat*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*airwaterdensityrat*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+         END DO
+      ENDIF
+!PV END:: NWS=17
+
        !
        ! jgf52.14: Implementing Casey's fix for uninitialized
        ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
@@ -3164,7 +3355,7 @@ C
          ALLOCATE ( WVXFN(NWLAT,NWLON),WVYFN(NWLAT,NWLON) )
       ENDIF
 C
-      READ(22,*) IWTIME
+      READ(AMPI_LUN(22),*) IWTIME
       IWYR = IWTIME/1000000
       IWMO = IWTIME/10000 - IWYR*100
       IWDAY = IWTIME/100 - IWYR*10000 - IWMO*100
@@ -3172,10 +3363,10 @@ C
       CALL TIMECONV(IWYR,IWMO,IWDAY,IWHR,0,0.0D0,WTIMED)
 
       DO I=1,NWLAT
-         READ(22,*) (WVXFN(I,J),J=1,NWLON)
+         READ(AMPI_LUN(22),*) (WVXFN(I,J),J=1,NWLON)
       END DO
       DO I=1,NWLAT
-         READ(22,*) (WVYFN(I,J),J=1,NWLON)
+         READ(AMPI_LUN(22),*) (WVYFN(I,J),J=1,NWLON)
       END DO
 C
       DO I=1,NWLAT              !CONVERT TO X AND Y COMPONENTS
@@ -3265,7 +3456,7 @@ C
         PRN2(I)=101300.d0/RHOWATG
       END DO
       DO WHILE(.TRUE.)
-         READ(22,'(A80)') PBLJAGF
+         READ(AMPI_LUN(22),'(A80)') PBLJAGF
          IF(PBLJAGF(2:2).NE.'#') EXIT
       ENDDO
       DO WHILE(.TRUE.)
@@ -3282,7 +3473,7 @@ C        jgf46.02 Added the following two lines.
          WVNY2(NHG)=WVNY2(NHG)*0.5144d0
          PRN2(NHG)=100.d0*PRN2(NHG)/RHOWATG !CONVERT MILLIBARS TO M OF WATER
          IF(PRN2(NHG).EQ.0.) PRN2(NHG)=101300.d0/RHOWATG                       !RAL0315+ OK
-         READ(22,'(A80)') PBLJAGF
+         READ(AMPI_LUN(22),'(A80)') PBLJAGF
          IF(PBLJAGF(2:2).EQ.'#') EXIT
       ENDDO
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -3398,7 +3589,7 @@ C
       RHOWATG=RHOWAT0*G
       DO I=1,NWLAT
          DO J=1,NWLON
-            READ(22,*) WVXFN(I,J),WVYFN(I,J),PRN(I,J)
+            READ(AMPI_LUN(22),*) WVXFN(I,J),WVYFN(I,J),PRN(I,J)
          END DO
       END DO
 
@@ -3535,7 +3726,7 @@ C
       RHOWATG=RHOWAT0*G
       DO K=1,NWLAT
          DO J=1,NWLON
-            READ(22,*) WVXFN(K,J),WVYFN(K,J),PRN(K,J)
+            READ(AMPI_LUN(22),*) WVXFN(K,J),WVYFN(K,J),PRN(K,J)
          END DO
       END DO
 C
@@ -3848,15 +4039,15 @@ C...  Read the ASCII data file
 !     WJP: With ice
       if (present(ill)) then
          do i=1,lonb*latb
-            read(iext,*) pg(i),ug(i),vg(i),ig(i)
+            read(AMPI_LUN(iext),*) pg(i),ug(i),vg(i),ig(i)
          enddo
       else
 !     WJP: Without ice
          do i=1,lonb*latb
-            read(iext,*) pg(i),ug(i),vg(i)
+            read(AMPI_LUN(iext),*) pg(i),ug(i),vg(i)
          enddo
       endif
-      close(iext)
+      close(AMPI_LUN(iext))
 C
 C.....Go from the Gaussian grid to the ADCIRC grid
 C.....Convert pressure from N/M^2 to M of H20
@@ -4119,17 +4310,17 @@ C...  If appropriate, enter, locate and open the met data file
 
 C...  Read the met data file
 
-      READ(IEXT,END=1100) IYEAR,IMONTH,IDAY,IHOUR
-      READ(IEXT,END=1100) UE,VE,PE
+      READ(AMPI_LUN(IEXT),END=1100) IYEAR,IMONTH,IDAY,IHOUR
+      READ(AMPI_LUN(IEXT),END=1100) UE,VE,PE
 
       IF(NWSEGWI.EQ.0) THEN     !If the first file, read until the end
          DO I=2,IDSETFLG
-            READ(IEXT,END=1100) IYEAR,IMONTH,IDAY,IHOUR
-            READ(IEXT,END=1100) UE,VE,PE
+            READ(AMPI_LUN(IEXT),END=1100) IYEAR,IMONTH,IDAY,IHOUR
+            READ(AMPI_LUN(IEXT),END=1100) UE,VE,PE
          ENDDO
       ENDIF
 
- 1100 IF(IDSETFLG.EQ.8) CLOSE(IEXT)
+ 1100 IF(IDSETFLG.EQ.8) CLOSE(AMPI_LUN(IEXT))
 
 C.....Interpolate onto ADCIRC grid
 C.....Convert velocity from the E grid reference to a lat/lon reference
@@ -4915,7 +5106,7 @@ C     Calculate Holland A parameter. (jgf46.32jgf4 commented out)
 C      A = (RMW*1000.d0)**B
 C
 #ifdef DEBUG_HOLLAND
-      WRITE(16,4321) B
+      WRITE(AMPI_LUN(16),4321) B
  4321 FORMAT(/,2x,'Holland B parameter is ',e16.8)
 #endif
 C     jgf46.28 If we are running storm 2 in the Lake Pontchartrain
@@ -5057,10 +5248,10 @@ C     Determine the number of lines in the file.
          endif
 
          DO
-            READ(UNIT=22,FMT='(A170)',END=8888)
+            READ(UNIT=AMPI_LUN(22),FMT='(A170)',END=8888)
             nl=nl+1
          ENDDO
- 8888    REWIND(22)
+ 8888    REWIND(AMPI_LUN(22))
 C
 C     Dimension the arrays according to the number of lines in the file,
 C     this will be greater than or equal to the size of the array we need
@@ -5086,10 +5277,10 @@ C     quadrant-by-quadrant wind data. Repeated time data occur in the
 C     forecast because the time data is just the time that the forecast
 C     was made. The important parameter in the forecast file is the
 C     forecast increment.
-            READ(UNIT=22,FMT=228,END=9999)
-     &           iYear(i),iMth(i),iDay(i),iHr(i),
-     &           CastType(i),iFcstInc(i),iLat(i),ns(i),iLon(i),ew(i),
-     &           iSpd(i),iCPress(i),iRRP(i),iRMW(i)
+            READ(UNIT=AMPI_LUN(22),FMT=228,END=9999)
+     &          iYear(i),iMth(i),iDay(i),iHr(i),
+     &          CastType(i),iFcstInc(i),iLat(i),ns(i),iLon(i),ew(i),
+     &          iSpd(i),iCPress(i),iRRP(i),iRMW(i)
 
 C                yr,mo,dy,hr, ,type, inc,  lat,NS,  lon,EW,  spd,   pc,
  228        format(8x,i4,i2,i2,i2,6x,a4,2x,i3,1x,i4,a1,2x,i4,a1,2x,i3,2x,i4,
@@ -5225,8 +5416,8 @@ C     Convert units.
             Spd(i) = Spd(i) * 0.51444444d0 ! convert kts to m/s
 C
 #ifdef DEBUG_HOLLAND
-            WRITE(16,1244) CastTime(i),Lat(i),Lon(i),
-     &           Spd(i),CPress(i),RRP(i),RMW(i),WindRefTime
+            WRITE(AMPI_LUN(16),1244) CastTime(i),Lat(i),Lon(i),
+     &          Spd(i),CPress(i),RRP(i),RMW(i),WindRefTime
             if ( i.gt.1 ) then
                write(scratchMessage,2355) FcstInc(i-1)
                call logMessage(DEBUG, scratchMessage)
@@ -5246,7 +5437,7 @@ C     Increment array counter
             i=i+1
 C
          ENDDO
- 9999    CLOSE(22)
+ 9999    CLOSE(AMPI_LUN(22))
 C
 C     Calculate storm translation velocities based on change in position, then
 C     convert degrees/time to m/s
@@ -5432,9 +5623,10 @@ C23456
 !                  YCOOR(i)=Y(i)
 !            END DO
 !         ENDIF
-         READ(22,*) TT,XC1,YC1,DP1,TVX1,TVY1,RMW1,B1
-         READ(22,*) TT,XC2,YC2,DP2,TVX2,TVY2,RMW2,B2
-         OPEN(667,file='fort.22.adc')
+         READ(AMPI_LUN(22),*) TT,XC1,YC1,DP1,TVX1,TVY1,RMW1,B1
+         READ(AMPI_LUN(22),*) TT,XC2,YC2,DP2,TVX2,TVY2,RMW2,B2
+         OPEN(AMPI_LUN(667),file='fort.22.adc')
+         call AMPI_LUN_REGISTER(AMPI_LUN(667),file='fort.22.adc')
       ENDIF
       IF(TIMELOC.GT.WTIME2) THEN
          WTIME1=WTIME2
@@ -5446,7 +5638,7 @@ C23456
          TVY1=TVY2
          RMW1=RMW2
          B1=B2
-         READ(22,*) TT,XC2,YC2,DP2,TVX2,TVY2,RMW2,B2
+         READ(AMPI_LUN(22),*) TT,XC2,YC2,DP2,TVX2,TVY2,RMW2,B2
       END IF
       WTRATIO=(TIMELOC-WTIME1)/WTIMINC
       DP  = DP1  + WTRATIO*(DP2-DP1)
@@ -5697,12 +5889,12 @@ C
          rndaySeconds = RNDAY * 86400.d0
          i=0
          DO      ! determine the number of entries in the file
-            READ(22,*,END=991)
+            READ(AMPI_LUN(22),*,END=991)
             i=i+1
          ENDDO
 991      continue
          num_entry=i
-         rewind(22)
+         rewind(AMPI_LUN(22))
          i=num_entry
 
          allocate(advr1(i),iyear1(i),imth1(i),iday1(i),ihr1(i),type1(i))
@@ -5731,13 +5923,13 @@ C
 
          ient=1
 
-         READ(22,26) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
-     &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
-     &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
-     &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
-     &    dir1(ient),speed1(ient), name1(ient),
-     &    cycle_num1(ient),isotachs_per_cycle1(ient),
-     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
+         READ(AMPI_LUN(22),26) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
+     &   ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+     &   ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+     &   (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+     &   dir1(ient),speed1(ient), name1(ient),
+     &   cycle_num1(ient),isotachs_per_cycle1(ient),
+     &   (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
 
          icyc=1
 
@@ -5789,15 +5981,15 @@ C
 ! ---------------------------------------------------------------------------
          DO ient=2,num_entry  ! LOOP through entris (lines) in input file
 
-            READ(22,26) advr1(ient), iyear1(ient),imth1(ient),
-     &        iday1(ient),
-     &        ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
-     &        ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
-     &        (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
-     &        dir1(ient),speed1(ient), name1(ient),
-     &        cycle_num1(ient),isotachs_per_cycle1(ient),
-     &        (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),
-     &        HollB1(ient)
+            READ(AMPI_LUN(22),26) advr1(ient), iyear1(ient),imth1(ient),
+     &       iday1(ient),
+     &       ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+     &       ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+     &       (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+     &       dir1(ient),speed1(ient), name1(ient),
+     &       cycle_num1(ient),isotachs_per_cycle1(ient),
+     &       (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),
+     &       HollB1(ient)
 
             if ( cycle_num1(ient) == cycle_num1(ient-1)) then
                ! do nothing
@@ -6009,7 +6201,7 @@ C     we are running off the end of the data.
          press(i) = press(i) / RhoWatG
 
          if (writeFullCircleRmaxes.eqv..true.) then
-            write(444,*) getLatestRmax(), getLatestAngle()
+            write(AMPI_LUN(444),*) getLatestRmax(), getLatestAngle()
          endif
 
       END DO
@@ -6277,12 +6469,12 @@ C***********************************************************************
       IF (firstCall .EQ. 0) THEN  ! first time the routine is called
          i=0
          DO      ! determine the number of entries in the file
-            READ(22,*,END=992)
+            READ(AMPI_LUN(22),*,END=992)
             i=i+1
          ENDDO
 992      continue
          num_entry=i
-         rewind(22)
+         rewind(AMPI_LUN(22))
          i=num_entry
 
          allocate(advr1(i),iyear1(i),imth1(i),iday1(i),ihr1(i),type1(i))
@@ -6321,14 +6513,14 @@ C***********************************************************************
 
          ient = 1
 
-         READ(22,27) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
-     &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
-     &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
-     &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
-     &    dir1(ient),speed1(ient), name1(ient),
-     &    cycle_num1(ient),isotachs_per_cycle1(ient),
-     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
-     &    (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
+         READ(AMPI_LUN(22),27) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
+     &   ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+     &   ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+     &   (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+     &   dir1(ient),speed1(ient), name1(ient),
+     &   cycle_num1(ient),isotachs_per_cycle1(ient),
+     &   (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
+     &   (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
 
          icyc=1
          isot=1
@@ -6384,14 +6576,14 @@ C***********************************************************************
 ! ---------------------------------------------------------------------------
          DO ient=2,num_entry  ! LOOP through entris (lines) in input file
 
-         READ(22,27) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
-     &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
-     &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
-     &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
-     &    dir1(ient),speed1(ient), name1(ient),
-     &    cycle_num1(ient),isotachs_per_cycle1(ient),
-     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
-     &    (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
+         READ(AMPI_LUN(22),27) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
+     &   ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+     &   ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+     &   (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+     &   dir1(ient),speed1(ient), name1(ient),
+     &   cycle_num1(ient),isotachs_per_cycle1(ient),
+     &   (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
+     &   (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
 
             if ( cycle_num1(ient) == cycle_num1(ient-1)) then
                isot=isot+1 ! same icyc, next isotach
@@ -6652,7 +6844,7 @@ C     we are running off the end of the data.
 
       if (writeFullCircleRmaxes.eqv..true.) then
          do i=1,np
-            write(444,*)  crmaxw(i), aziangle(i),dist(i)
+            write(AMPI_LUN(444),*)  crmaxw(i), aziangle(i),dist(i)
          end do
       endif
       ! jgf49.0803 Make the current Rmax and center location
@@ -6779,12 +6971,12 @@ C
       currentLine = 1
       do i=1,3
          ! throw header away this time
-         read(22,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+         read(AMPI_LUN(22),'(A)',end=246,err=248,iostat=errorio) scratchMessage
          currentLine = currentLine + 1
       end do
       numFiles = 0
       do   ! loop until we run out of data, just counting the files this time
-         read(22,'(A)',end=123,err=248,iostat=errorio) scratchMessage
+         read(AMPI_LUN(22),'(A)',end=123,err=248,iostat=errorio) scratchMessage
          currentLine = currentLine + 1
          numFiles = numFiles + 1
       end do
@@ -6792,27 +6984,27 @@ C
       allocate(hWindFiles(numFiles))
       !
       ! now go back to the beginning of the file and read in the data
-      rewind(22)
+      rewind(AMPI_LUN(22))
       currentLine = 1
-      read(22,'(A)',end=246,err=248,iostat=errorio) metComment
+      read(AMPI_LUN(22),'(A)',end=246,err=248,iostat=errorio) metComment
       call logMessage(ECHO,"metComment: "//trim(metComment))
       currentLine = currentLine + 1
-      read(22,*,end=246,err=248,iostat=errorio) hWindMultiplier
+      read(AMPI_LUN(22),*,end=246,err=248,iostat=errorio) hWindMultiplier
       currentLine = currentLine + 1
       write(scratchMessage,'("hWindMultiplier=",E15.8)') hWindMultiplier
       call logMessage(ECHO,scratchMessage)
-      read(22,'(A)',end=248,err=248,iostat=errorio) scratchMessage
+      read(AMPI_LUN(22),'(A)',end=248,err=248,iostat=errorio) scratchMessage
       currentLine = currentLine + 1
       pressureWindRelationship
      &      = scratchMessage(1:index(adjustl(scratchMessage)," "))
       call logMessage(ECHO,"pressureWindRelationship: "
      &     //trim(pressureWindRelationship))
       do i=1,numFiles
-         read(22,*,end=246,err=248,iostat=errorio)
-     &     hWindFiles(i)%cycleTime,
-     &     hWindFiles(i)%Pc,
-     &     hWindFiles(i)%rampVal,
-     &     hwindFiles(i)%file_name
+         read(AMPI_LUN(22),*,end=246,err=248,iostat=errorio)
+     &    hWindFiles(i)%cycleTime,
+     &    hWindFiles(i)%Pc,
+     &    hWindFiles(i)%rampVal,
+     &    hwindFiles(i)%file_name
          write(scratchMessage,
      &   '("time=",E15.8," Pc=",E15.8," ramp=",E15.8," file_name=",A)')
      &       hWindFiles(i)%cycleTime, hWindFiles(i)%Pc,
@@ -6820,7 +7012,7 @@ C
          call logMessage(ECHO,scratchMessage)
          currentLine = currentLine + 1
       end do
-      close(22)
+      close(AMPI_LUN(22))
       !
       ! log the number of HWind files that were specified
       write(scratchMessage,
@@ -7130,7 +7322,7 @@ C
      &       * ATAN2((slam(maxNode)-deg2rad*cLonNow),
      &                (sfea(maxNode)-deg2rad*cLatNow))
          if ( angle > 360.d0) angle = angle - 360.d0
-         write(444,*) dist, angle
+         write(AMPI_LUN(444),*) dist, angle
       endif
       !
       ! use max wind speed to estimate minimum central pressure
@@ -7241,50 +7433,50 @@ C
       dataset = 0
       !
       ! SURFACE WIND COMPONENTS FOR HURRICANE  name_0825_22_30
-      read(220,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+      read(AMPI_LUN(220),'(A)',end=246,err=248,iostat=errorio) scratchMessage
       call logMessage(ECHO,"HWind comment line: "//trim(scratchMessage))
       !
       ! DX=DY= 6.02280 KILOMETERS.
       currentLine = currentLine + 1
-      read(220,'(7X,F8.5,A)',end=246,err=248,iostat=errorio)
-     &   hWindFiles(cn)%dh
+      read(AMPI_LUN(220),'(7X,F8.5,A)',end=246,err=248,iostat=errorio)
+     &  hWindFiles(cn)%dh
       write(scratchMessage,'("Mercator grid spacing is ",F8.5," km.")')
      &    hWindFiles(cn)%dh
       call logMessage(ECHO,scratchMessage)
       !
       ! STORM CENTER LOCALE IS -77.2730 EAST LONGITUDE and  27.2950 NORTH LATITUDE ... STORM CENTER IS AT (X,Y)=(0,0)
       currentLine = currentLine + 1
-      read(220,'(23X,F9.4,18X,F9.4,A)',end=246,err=248,iostat=errorio)
-     &   hWindFiles(cn)%cLon, hWindFiles(cn)%cLat ! degrees
+      read(AMPI_LUN(220),'(23X,F9.4,18X,F9.4,A)',end=246,err=248,iostat=errorio)
+     &  hWindFiles(cn)%cLon, hWindFiles(cn)%cLat ! degrees
       write(scratchMessage,'("center lon=",E15.8," center lat=",E15.8)')
      &   hWindFiles(cn)%cLon, hWindFiles(cn)%cLat
       call logMessage(ECHO,scratchMessage)
       ! dimensions
       do i=1,4
          currentLine = currentLine + 1
-         read(220,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+         read(AMPI_LUN(220),'(A)',end=246,err=248,iostat=errorio) scratchMessage
          call logMessage(ECHO,"Coordinate: "//trim(scratchMessage))
          currentLine = currentLine + 1
-         read(220,*,end=246,err=248,iostat=errorio) hWindFiles(cn)%nh
+         read(AMPI_LUN(220),*,end=246,err=248,iostat=errorio) hWindFiles(cn)%nh
          write(scratchMessage,'("HWind dimension read: ",i3,".")')
      &      hWindFiles(cn)%nh
          call logMessage(ECHO,scratchMessage)
          ! we won't need the actual coordinates
          currentLine = currentLine + 1
-         read(220,'(6F13.4)',end=246,err=248,iostat=errorio)
-     &      (throwAwayCoordinate,j=1,hWindFiles(cn)%nh)
+         read(AMPI_LUN(220),'(6F13.4)',end=246,err=248,iostat=errorio)
+     &     (throwAwayCoordinate,j=1,hWindFiles(cn)%nh)
       end do
       !
       ! read the actual vector data
       !
       ! SURFACE WIND COMPONENTS ... M/S ... COMPLEX ARRAY W=(U,V)
       currentLine = currentLine + 1
-      read(220,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+      read(AMPI_LUN(220),'(A)',end=246,err=248,iostat=errorio) scratchMessage
       currentLine = currentLine + 1
       call logMessage(ECHO,"HWind sfc wind line: "
      &      //trim(scratchMessage))
       currentLine = currentLine + 1
-      read(220,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+      read(AMPI_LUN(220),'(A)',end=246,err=248,iostat=errorio) scratchMessage
       currentLine = currentLine + 1
       call logMessage(ECHO,"HWind sfc wind dimensions line: "
      &       //trim(scratchMessage))
@@ -7299,13 +7491,13 @@ C
       dataset = 1
       do j=-indexLimit,indexLimit
             ! ref bottom of http://www.aoml.noaa.gov/hrd/Storm_pages/grid.html
-         read(220,'(2(A1,F13.5,A1,F13.5,A1))',end=246,err=248,iostat=errorio)
-     &       (paren, hWindFiles(cn)%u(i,j), comma,
-     &        hWindFiles(cn)%v(i,j), paren,
-     &        i=-indexLimit, indexLimit)
+         read(AMPI_LUN(220),'(2(A1,F13.5,A1,F13.5,A1))',end=246,err=248,iostat=errorio)
+     &      (paren, hWindFiles(cn)%u(i,j), comma,
+     &       hWindFiles(cn)%v(i,j), paren,
+     &       i=-indexLimit, indexLimit)
          dataset = dataset + 1
       end do
-      close(220)
+      close(AMPI_LUN(220))
       call logMessage(INFO,"Finished loading the HWind file '"
      &                     //trim(hWindFiles(cn)%file_name)//"'.")
       !
@@ -7511,12 +7703,12 @@ C
       currentLine = 1
       do i=1,3
          ! throw header away this time
-         read(22,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+         read(AMPI_LUN(22),'(A)',end=246,err=248,iostat=errorio) scratchMessage
          currentLine = currentLine + 1
       end do
       numFiles = 0
       do   ! loop until we run out of data, just counting the files this time
-         read(22,'(A)',end=123,err=248,iostat=errorio) scratchMessage
+         read(AMPI_LUN(22),'(A)',end=123,err=248,iostat=errorio) scratchMessage
          currentLine = currentLine + 1
          numFiles = numFiles + 1
       end do
@@ -7525,26 +7717,26 @@ C
 
       !
       ! now go back to the beginning of the file and read in the data
-      rewind(22)
+      rewind(AMPI_LUN(22))
       currentLine = 1
-      read(22,'(A)',end=246,err=248,iostat=errorio) metComment
+      read(AMPI_LUN(22),'(A)',end=246,err=248,iostat=errorio) metComment
       call logMessage(ECHO,"metComment: "//trim(metComment))
       currentLine = currentLine + 1
-      read(22,*,end=246,err=248,iostat=errorio) GFDL_WindMultiplier
+      read(AMPI_LUN(22),*,end=246,err=248,iostat=errorio) GFDL_WindMultiplier
       currentLine = currentLine + 1
       write(scratchMessage,'("WindMultiplier=",E15.8)') GFDL_WindMultiplier
       call logMessage(ECHO,scratchMessage)
-      read(22,*,end=246,err=248,iostat=errorio) GFDL_max_extrap_dist
+      read(AMPI_LUN(22),*,end=246,err=248,iostat=errorio) GFDL_max_extrap_dist
       currentLine = currentLine + 1
       write(scratchMessage,
      &  '("GFDL Maximum Extrapolation Distance=",E15.8)') GFDL_max_extrap_dist
       call logMessage(ECHO,scratchMessage)
 
       do i=1,numFiles
-         read(22,*,end=246,err=248,iostat=errorio)
-     &     GFDL_Files(i)%cycleTime,
-     &     GFDL_Files(i)%rampVal,
-     &     GFDL_Files(i)%file_name
+         read(AMPI_LUN(22),*,end=246,err=248,iostat=errorio)
+     &    GFDL_Files(i)%cycleTime,
+     &    GFDL_Files(i)%rampVal,
+     &    GFDL_Files(i)%file_name
 
          GFDL_Files(i)%max_extrap_dist = GFDL_max_extrap_dist
          GFDL_Files(i)%numFiles = numFiles
@@ -7555,7 +7747,7 @@ C
          call logMessage(ECHO,scratchMessage)
          currentLine = currentLine + 1
       end do
-      close(22)
+      close(AMPI_LUN(22))
 
       ! log the number of GFDL Met files that were specified
       write(scratchMessage,
@@ -7795,7 +7987,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
        ! READ THE FIRST LINE OF THE GFDL OUTPUT WHICH IS THE NUMBER OF POINTS IN THIS RECORD
 !       READ(LUN,'(F10.4)') RPTS_GFDL
 !       NPTS_GFDL = INT(RPTS_GFDL)
-        read(LUN,'(I10)') NPTS_GFDL
+        read(AMPI_LUN(LUN),'(I10)') NPTS_GFDL
         rpts_gfdl = real(npts_gfdl,sz)
 
 !       tcm 20130507 -- changed the read above due to changes in GFDL ASCII files
@@ -7808,8 +8000,8 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
        DO I=1,NPTS_GFDL
 !          READ(LUN,'(10F10.4)') UTMP,VTMP,TTMP,MTMP,SPTMP,PTMP,
 !     &                      LONGTMP,LATTMP,HTMP,NTMP
-          READ(LUN,'(9F10.4)') UTMP,VTMP,TTMP,MTMP,SPTMP,PTMP,
-     &                      LONGTMP,LATTMP,HTMP
+          READ(AMPI_LUN(LUN),'(9F10.4)') UTMP,VTMP,TTMP,MTMP,SPTMP,PTMP,
+     &                     LONGTMP,LATTMP,HTMP
           LON_GFDL = LONGTMP*DEG2RAD !CONVERT TO RADIANS
           LAT_GFDL = LATTMP*DEG2RAD  !CONVERT TO RADIANS
           U_WIND_GFDL(I) = UTMP
@@ -7824,7 +8016,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
      &           lonr, latr, SLAM0, SFEA0, ICS) ; 
        ENDDO !I
 
-       CLOSE(LUN)  !CLOSE THIS GFDL DATA FILE
+       CLOSE(AMPI_LUN(LUN))  !CLOSE THIS GFDL DATA FILE
 
        write(scratchMessage,'("Read ",i0," GFDL Met Points.")')
      &    NPTS_GFDL
@@ -8097,7 +8289,7 @@ C
 C
       lineNum = lineNum + 1
       do while(.true.)
-         read(23,'(a80)',end=500,err=600,iostat=errorio) pbljagf
+         read(AMPI_LUN(23),'(a80)',end=500,err=600,iostat=errorio) pbljagf
          if (pbljagf(1:1).eq.'#') then
             call allMessage(ERROR,'Found "#" in column 1 of fort.23.')
             call windTerminate()
@@ -8111,7 +8303,7 @@ C
          rsnx(nhg) = rsnxRaw
          rsny(nhg) = rsnyRaw
          lineNum = lineNum + 1
-         read(23,'(a80)') pbljagf
+         read(AMPI_LUN(23),'(a80)') pbljagf
          if (pbljagf(1:1).eq.'#') then
             call allMessage(ERROR,'Found "#" in column 1 of fort.23; '//
      &         ' this character should only appear in column 2.')
@@ -8218,11 +8410,11 @@ C----------------------------------------------------------------------
       ! read header
       dynamicWaterLevelCorrectionCurrentLine = 1
       ! first line is a comment line
-      read(dynamicWaterLevelCorrectionUn,'(A)',end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionComment
+      read(AMPI_LUN(dynamicWaterLevelCorrectionUn),'(A)',end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionComment
       call logMessage(ECHO,"dynamicWaterLevelCorrectionComment: "//trim(dynamicWaterLevelCorrectionComment))
       dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
       ! 2nd line is time increment between datasets
-      read(dynamicWaterLevelCorrectionUn,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionTimeIncrement
+      read(AMPI_LUN(dynamicWaterLevelCorrectionUn),fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionTimeIncrement
       write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionTimeIncrement: ",
      &    dynamicWaterLevelCorrectionTimeIncrement
       call logMessage(ECHO,scratchMessage)
@@ -8235,7 +8427,7 @@ C----------------------------------------------------------------------
          call windTerminate()
       endif
       ! 3nd line is default correction value
-      read(dynamicWaterLevelCorrectionUn,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionDefaultValue
+      read(AMPI_LUN(dynamicWaterLevelCorrectionUn),fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionDefaultValue
       write(scratchMessage,'(a,f15.7)') "dynamicWaterLevelCorrectionDefaultValue: ",
      &    dynamicWaterLevelCorrectionDefaultValue
       call logMessage(ECHO,scratchMessage)
@@ -8450,8 +8642,8 @@ C----------------------------------------------------------------------
       dynamicWaterLevelCorrectionsNew_m(:) = dynamicWaterLevelCorrectionDefaultValue
       nextCorrectionDataSetFound = .false.
       do ! loop until we run out of data or hit a "#" in column 2
-         read(dynamicWaterLevelCorrectionUn,fmt='(a)',end=133,err=258,iostat=errorio)
-     &      scratchMessage
+         read(AMPI_LUN(dynamicWaterLevelCorrectionUn),fmt='(a)',end=133,err=258,iostat=errorio)
+     &     scratchMessage
          dynamicWaterLevelCorrectionCurrentLine = dynamicWaterLevelCorrectionCurrentLine + 1
          ! check to see if the next dataset is about to start
          if (scratchMessage(2:2).eq."#") then
@@ -8642,26 +8834,27 @@ C.... or netcdf (depending on what is present)
             call windTerminate()
          else
             ! Read netcdf dim/var names and datestr format from fort.22
-            open(22,file='fort.22')
-               read(22,*) Tdim    ! Time dimension name
-               read(22,*) Tvar    ! Time variable name
-               read(22,*) Tformat ! Format of time datestr
-               read(22,*) Londim  ! Lon dimension name
-               read(22,*) Lonvar  ! Lon var name
-               read(22,*) Latdim  ! Lat dimension name
-               read(22,*) Latvar  ! Lat var name
-               read(22,*) Pvar    ! Pressure var name
-               read(22,*) Uvar    ! U10 var name
-               read(22,*) Vvar    ! V10 Var name
+            open(AMPI_LUN(22),file='fort.22')
+            call AMPI_LUN_REGISTER(AMPI_LUN(22),file='fort.22')
+               read(AMPI_LUN(22),*) Tdim    ! Time dimension name
+               read(AMPI_LUN(22),*) Tvar    ! Time variable name
+               read(AMPI_LUN(22),*) Tformat ! Format of time datestr
+               read(AMPI_LUN(22),*) Londim  ! Lon dimension name
+               read(AMPI_LUN(22),*) Lonvar  ! Lon var name
+               read(AMPI_LUN(22),*) Latdim  ! Lat dimension name
+               read(AMPI_LUN(22),*) Latvar  ! Lat var name
+               read(AMPI_LUN(22),*) Pvar    ! Pressure var name
+               read(AMPI_LUN(22),*) Uvar    ! U10 var name
+               read(AMPI_LUN(22),*) Vvar    ! V10 Var name
                if (NCICE.eq.14) then
-                  read(22,*) Cvar ! Ice var name
+                  read(AMPI_LUN(22),*) Cvar ! Ice var name
                endif
-            close(22)
+            close(AMPI_LUN(22))
             PvarInd = index(Pvar,'HPa')
             if (PvarInd > 0) then
               rhoWat0g = rhoWat0g/100d0
               Pvar = Pvar(1:PvarInd-1)
-              write(16,*) 'Pressure is in Hpa, New Pvar = ',trim(Pvar)
+              write(AMPI_LUN(16),*) 'Pressure is in Hpa, New Pvar = ',trim(Pvar)
             endif 
         endif 
 #ifdef GRIB2API
@@ -8828,17 +9021,17 @@ C----------------------------------------------------------------------
                weightsp(ii,:,i) = wt
 #ifdef DEBUG_NWS14
                if (i.gt.1) cycle 
-               write(16,*) 'NWS=14 Interpolating check: xx',xx,'yy',yy
-               write(16,*) 'Lon',lon(indt(1),indt(2)),
-     &                           lon(indt(3),indt(2)),
-     &                           lon(indt(1),indt(4)),
-     &                           lon(indt(3),indt(4))
-               write(16,*) 'Lat',lat(indt(1),indt(2)),
-     &                           lat(indt(3),indt(2)),
-     &                           lat(indt(1),indt(4)),
-     &                           lat(indt(3),indt(4))
-               write(16,*) 'Weights',wt
-               write(16,*) 'Indices',indt
+               write(AMPI_LUN(16),*) 'NWS=14 Interpolating check: xx',xx,'yy',yy
+               write(AMPI_LUN(16),*) 'Lon',lon(indt(1),indt(2)),
+     &                          lon(indt(3),indt(2)),
+     &                          lon(indt(1),indt(4)),
+     &                          lon(indt(3),indt(4))
+               write(AMPI_LUN(16),*) 'Lat',lat(indt(1),indt(2)),
+     &                          lat(indt(3),indt(2)),
+     &                          lat(indt(1),indt(4)),
+     &                          lat(indt(3),indt(4))
+               write(AMPI_LUN(16),*) 'Weights',wt
+               write(AMPI_LUN(16),*) 'Indices',indt
 #endif
             enddo
             if (regular_grid) then
@@ -8863,7 +9056,24 @@ C----------------------------------------------------------------------
       if (present(CICE2)) then
          NTkeep = NT; NT = NTC
          call READNWS14(Cfile,Cinv,Cvar,Cice)
-         NT = NTkeep;
+         NT = NTkeep
+      endif
+
+      ! Get the Pressure
+      !':PRMSL:mean sea level:'
+      call READNWS14(Pfile,Pinv,Pvar,Pmsl)
+
+      ! Get the U-winds
+      call READNWS14(Wfile,Winv,Uvar,U10)
+
+      ! Get the V-winds
+      call READNWS14(Wfile1,Winv,Vvar,V10)
+
+      ! Get the ice concentration if required
+      if (present(CICE2)) then
+         NTkeep = NT; NT = NTC
+         call READNWS14(Cfile,Cinv,Cvar,Cice)
+         NT = NTkeep
       endif      
 
       ! Doing the interpolation from their grid to ours
@@ -8891,9 +9101,9 @@ C----------------------------------------------------------------------
          endif
 #ifdef DEBUG_NWS14
          if (i.gt.1) cycle 
-         write(16,*) 'NWS=14 Values check for i = 1'
-         write(16,*) 'Pressure: ',PRN2(i)
-         write(16,*) 'Winds, U10: ',WVNX2(i),'V10: ',WVNY2(i)
+         write(AMPI_LUN(16),*) 'NWS=14 Values check for i = 1'
+         write(AMPI_LUN(16),*) 'Pressure: ',PRN2(i)
+         write(AMPI_LUN(16),*) 'Winds, U10: ',WVNX2(i),'V10: ',WVNY2(i)
 #endif
       enddo 
       deallocate(Pmsl,U10,V10)
@@ -8983,7 +9193,7 @@ C----------------------------------------------------------------------
                   call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
                   ! Determine the first timestep index
                   str_date = CurDT%strftime(trim(Tformat)) 
-                  write(16,*) 'Str_date: ',trim(str_date)
+                  write(AMPI_LUN(16),*) 'Str_date: ',trim(str_date)
                   do NT = 1,TL
                      if (trim(str_date).eq.TimeStr(NT)) exit
                   enddo
@@ -8992,14 +9202,14 @@ C----------------------------------------------------------------------
                   call logMessage(ECHO,'Assume to start from beginning')
                   NT = 1 
                endif
-               write(16,*) ' Starting time indice = ',NT
+               write(AMPI_LUN(16),*) ' Starting time indice = ',NT
                NTC = NT
             endif
             call Check_err(NF90_INQ_VARID(NC_ID,Latvar,Lat_ID))
             call Check_err(nf90_inquire_variable(NC_ID,Lat_ID,
      &                     ndims=ndims))
             call Check_err(NF90_INQ_VARID(NC_ID,Lonvar,Lon_ID))
-            write(16,*) 'Lon/Lat dimensions = ',ndims
+            write(AMPI_LUN(16),*) 'Lon/Lat dimensions = ',ndims
             if (ndims.eq.3) then
                call Check_err(NF90_GET_VAR(NC_ID,Lat_ID,data22,
      &                        start=[1, 1, NT],count=[NX, NY, 1]))
@@ -9082,7 +9292,7 @@ C
          call allMessage(ERROR,'Found multiple messages when reading '
      &                         //trim(var)//' in '//trim(fileN)//'.')
       endif
-      write(16,*) 'iret =',iret
+      write(AMPI_LUN(16),*) 'iret =',iret
       call windTerminate()
 C----------------------------------------------------------------------
       END SUBROUTINE ArnoldSchwarzenegger
@@ -9117,9 +9327,45 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       end subroutine check_err
 C-----------------------------------------------------------------------
+
+
 #endif
 C.....END WJP (NWS = 14) ..............................................
 #endif
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   W I N D L I M I T E R 
+C-----------------------------------------------------------------------
+
+C.... DMW 202207 tail off wind forcing in very shallow water using a tanh,
+C.... as a function of water column height.
+
+      subroutine windLimiter(H,fwind)
+      use global, only : h0
+      
+      IMPLICIT NONE
+      
+      REAL(SZ), intent(in) :: H
+      REAL(SZ), intent(out) :: fwind
+      
+      call setMessageSource("windLimiter")
+#ifdef ALL_TRACE
+      call allMessage(DEBUG,"Enter.")
+#endif
+      fwind = 1.d0
+      IF ((H .LE. 4.d0*H0) .AND. (H .GT. H0)) THEN
+         fwind = .5d0*tanh(8.d0*(H-(2.5d0*H0))/(4.d0*H0))+.5d0
+      ELSEIF (H .LE. H0) THEN
+         fwind = 0.d0
+      ENDIF
+
+#ifdef ALL_TRACE
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      end subroutine WindLimiter
+C-----------------------------------------------------------------------
 C----------------------------------------------------------------------
       END MODULE
 C----------------------------------------------------------------------

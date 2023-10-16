@@ -78,6 +78,7 @@ CWET...
       
       integer,allocatable ::    nibcnt(:)
       integer,allocatable ::    noffold(:)
+      integer,allocatable ::    noff_sg(:)
 
       ! jgf52.08.08: Enable analyst to remove NOFF from wetting and
       ! drying algorithm; .true. by default to conform with prior
@@ -95,10 +96,12 @@ CWET...
       subroutine initializeWettingAndDrying()
       use sizes, only : mne, mnp
       use global, only : h0, nodecode, nnodecode
+      use nodalattributes,only: loadSubgridBarrier
       implicit none
 
       allocate ( nibcnt(mnp) )
       allocate ( noffold(mne))
+      if(loadSubgridBarrier)allocate(noff_sg(mne))
       nnodecode = 1
       nodecode = 1
       noffold(:) = 1
@@ -118,17 +121,18 @@ CWET...
 !----------------------------------------------------------------------
       subroutine computeWettingAndDrying(it)
       use sizes, only : sz, mne, mnp
+      use nodalattributes,only: loadSubgridBarrier
       use global, only : noff, nodecode, nnodecode, eta2, tk, nolifa,
-     &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt,
-     &    nibnodecode, ilump, ncchange, tkm
+     &    bsx1, bsy1, btime_end, C2DDI, C3D, g, h0, ifnlfa, nddt, dtdp,
+     &    nibnodecode, ilump, ncchange, tkm, directvelWD, useHF
 #ifdef CMPI
-     &    ,idumy
+     &    ,idumy,dumy1,dumy2
       use messenger
 #endif
-      use mesh, only : ne, np, dp, mju, totalArea, nm, x, y, areas
+      use mesh, only : ne, np, nm, dp, mju, totalArea, nm, x, y, areas
       use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
      &   manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,
-     &   loadZ0B_var, z0b_var
+     &   loadZ0B_var, z0b_var, loadSubgridBarrier
       use global_3dvs, only : a, b, islip, kp, z0b, sigma, evtot, q
       use subdomain, only : subdomainOn, enforceBN, enforceWDcb, enforceWDob
       implicit none
@@ -149,10 +153,12 @@ CWET...
       real(sz) :: deldist,deleta
       real(sz) :: htot
       real(sz) :: h1
+      real(sz) :: tk_tmp(np),tmp1(np),tmp2(np),tmp3(np)
+      integer :: tk_cnt(np)
       integer :: nbnctot
-      integer :: i
-      integer :: ie
-
+      integer :: i,j,k,kk
+      integer :: ie          
+      real(sz) :: tknf !dmw 202207, added for "new" formula for vel 
       if (nolifa.ne.2) then
          return ! wetting and drying is not active 
       endif
@@ -160,6 +166,14 @@ CWET...
 CWET...
 CWET...WET/DRY - INITIALIZATIONS FOR WET/DRY LOOP
 CWET...
+         TK_TMP(:) = 0.D0
+         TK_CNT(:) = 0
+         IF (directvelWD.AND.useHF) THEN
+            TKNF = 100.D0
+         ELSE
+            TKNF = 1.D0
+         ENDIF
+          
          DO I=1,NP
             NIBCNT(I) = 0
          ENDDO
@@ -167,6 +181,9 @@ CWET...
             NOFFOLD(I)=NOFF(I)
             NOFF(I)=1
          ENDDO
+
+         IF(loadSubgridBarrier)call applySubgridBarrier()
+
 CWET...
 CWET...WET/DRY - PART 1 - NODAL DRYING CRITERIA D1
 CWET....Drying Criteria D1: this depends on NODECODE and updates NODECODE
@@ -235,13 +252,18 @@ C<<                     Convert Manning's N to Cd, if necessary.
                           ENDIF
                         ENDIF
 C>>
-                        TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                    (IFNLBF+IFHYBF*
-     &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
-
-                        IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
-                        VEL=G*(DELETA/DELDIST)/TKWET
-
+C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
+                        IF (directvelWD.AND.useHF) THEN
+                           VEL=sqrt(g*H1*DELETA/DELDIST)
+                        ELSEIF (directvelWD) THEN
+                           VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
+                        ELSE
+                           TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
+     &                                  (IFNLBF+IFHYBF*
+     &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
+     &                          0.0001d0)
+                           VEL=G*(DELETA/DELDIST)/TKWET
+                        ENDIF   
                      ELSEIF(C3D)THEN
 C solve for the depth averaged velocity,U, from the relation :
 C        tau=rho*g*(h+eta)*(deta/dx)=rho*Cd*|U|*U
@@ -265,13 +287,28 @@ C    ....         third node met criteria and is also wet
                         NNODECODE(NM3)=1
 c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
-c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+
+                           TK(NM123) = MIN(
+     &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
-     &                        (FGAMMA/FTHETA)))
+     &                        (FGAMMA/FTHETA))), 
+     &                     2.0D0/DTDP)
+                           TK_CNT(NM123) = TK_CNT(NM123) + 1
+                           TK_TMP(NM123) = TK_TMP(NM123) + TK(NM123)
                            !WJP needed for internal_tide stuff
                            TKM(1:2,NM123) = TK(NM123) 
+                           IF (NM123 .EQ. NM2) THEN
+                              TK(NM1) = TK(NM123)
+                              TK_CNT(NM1) = TK_CNT(NM1) + 1
+                              TK_TMP(NM1) = TK_TMP(NM1) + TK(NM1)
+                              TKM(1:2,NM1) = TK(NM1)
+                           ELSE
+                              TK(NM2) = TK(NM123)
+                              TK_CNT(NM2) = TK_CNT(NM2) + 1
+                              TK_TMP(NM2) = TK_TMP(NM2) + TK(NM2)
+                              TKM(1:2,NM2) = TK(NM2)
+                           ENDIF
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -331,11 +368,18 @@ C<<                     Convert Manning's N to Cd, if necessary.
                           ENDIF
                         ENDIF
 C>>
-                        TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                    (IFNLBF+IFHYBF*
-     &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
-                        IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
-                        VEL=G*(DELETA/DELDIST)/TKWET
+C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207                  
+                        IF (directvelWD.AND.useHF) THEN
+                           VEL=sqrt(g*H1*DELETA/DELDIST)
+                        ELSEIF (directvelWD) THEN
+                           VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
+                        ELSE
+                           TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
+     &                                  (IFNLBF+IFHYBF*
+     &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
+     &                          0.0001d0)
+                           VEL=G*(DELETA/DELDIST)/TKWET
+                        ENDIF
 
                      ELSEIF(C3D)THEN
 C solve for the depth averaged velocity,U, from the relation :
@@ -359,12 +403,27 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         NNODECODE(NM1)=1
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                           TK(NM123) = MIN(
+     &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
-     &                        (FGAMMA/FTHETA)))
+     &                        (FGAMMA/FTHETA))), 
+     &                     2.0D0/DTDP)
+                           TK_CNT(NM123) = TK_CNT(NM123) + 1
+                           TK_TMP(NM123) = TK_TMP(NM123) + TK(NM123)
                            !WJP needed for internal_tide stuff
                            TKM(1:2,NM123) = TK(NM123) 
+                           IF (NM123 .EQ. NM2) THEN
+                              TK(NM3) = TK(NM123)
+                              TK_CNT(NM3) = TK_CNT(NM3) + 1
+                              TK_TMP(NM3) = TK_TMP(NM3) + TK(NM3)
+                              TKM(1:2,NM3) = TK(NM3)
+                           ELSE
+                              TK(NM2) = TK(NM123)
+                              TK_CNT(NM2) = TK_CNT(NM2) + 1
+                              TK_TMP(NM2) = TK_TMP(NM2) + TK(NM2)
+                              TKM(1:2,NM2) = TK(NM2)
+                           ENDIF
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -425,11 +484,18 @@ C<<                     Convert Manning's N to Cd, if necessary.
                           ENDIF
                         ENDIF
 C>>
-                        TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                    (IFNLBF+IFHYBF*
-     &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
-                       IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
-                       VEL=G*(DELETA/DELDIST)/TKWET
+C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207                  
+                        IF (directvelWD.AND.useHF) THEN
+                           VEL=sqrt(g*H1*DELETA/DELDIST)
+                        ELSEIF (directvelWD) THEN
+                           VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
+                        ELSE
+                           TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
+     &                                  (IFNLBF+IFHYBF*
+     &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
+     &                          0.0001d0)
+                           VEL=G*(DELETA/DELDIST)/TKWET
+                        ENDIF
                      ELSEIF(C3D)THEN
 C solve for the depth averaged velocity,U, from the relation :
 C        tau=rho*g*(h+eta)*(deta/dx)=rho*Cd*|U|*U
@@ -452,12 +518,27 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         NNODECODE(NM2)=1
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
-                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+                           TK(NM123) = MIN(
+     &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
-     &                        (FGAMMA/FTHETA)))
+     &                        (FGAMMA/FTHETA))), 
+     &                     2.0D0/DTDP)
+                           TK_CNT(NM123) = TK_CNT(NM123) + 1
+                           TK_TMP(NM123) = TK_TMP(NM123) + TK(NM123)
                            !WJP needed for internal_tide stuff
                            TKM(1:2,NM123) = TK(NM123) 
+                           IF (NM123 .EQ. NM1) THEN
+                              TK(NM3) = TK(NM123)
+                              TK_CNT(NM3) = TK_CNT(NM3) + 1
+                              TK_TMP(NM3) = TK_TMP(NM3) + TK(NM3)
+                              TKM(1:2,NM3) = TK(NM3)
+                           ELSE
+                              TK(NM1) = TK(NM123)
+                              TK_CNT(NM1) = TK_CNT(NM1) + 1
+                              TK_TMP(NM1) = TK_TMP(NM1) + TK(NM1)
+                              TKM(1:2,NM1) = TK(NM1)
+                           ENDIF
                        ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -504,13 +585,31 @@ CWET...
             NIBCNT(NM3) = NIBCNT(NM3) + NBNCTOT
 
          ENDDO
-
+C-- DMW 202204 For any node where TK is computed more than once in the above loop,
+C    compute the mean TK and save this value in both the TK and TKM arrays. 
+C    This prevents the value of TK from depending on the ordering of elems. 
+         DO I=1,NP
+            IF (TK_CNT(I) .GT. 1) THEN
+               TK(I) = TK_TMP(I)/DBLE(TK_CNT(I))
+               TKM(1:2,I) = TK(I)            
+            ENDIF
+         ENDDO   
          if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
          if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
 
 C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,NIBCNT,2)
+C-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well 
+         CALL UPDATER(FRIC,TK,ETA2,3)
+         tmp1 = TKM(1,:)
+         tmp2 = TKM(2,:)
+         tmp3 = TKM(3,:)
+         CALL UPDATER(tmp1,tmp2,tmp3,3)
+         TKM(1,:) = tmp1
+         TKM(2,:) = tmp2
+         TKM(3,:) = tmp3 
+C-- DMW
 #endif
 
 
@@ -999,6 +1098,7 @@ cjjwnote - may have to pass TotalArea and mju as well
 C     Use Message-Passing to update nnodecode at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,IDUMY,1)
+         CALL UPDATER(TotalArea,DUMY1,DUMY2,1)
 #endif
 CWET...
 CWET...WET/DRY SECTION - PART 5 - RESET NODECODE USING NNODECODE
@@ -1029,6 +1129,21 @@ CWET... of the subdomains, the NCCHANGE flag will be activated on all
 CWET... of the subdomains, to prevent them from getting out of sync
 CWET... with their MPI calls as some reset the GWCE and others do not.
 CWET...
+
+         IF(LoadSubgridBarrier)THEN
+             DO I=1,NE
+                 IF(NOFF_SG(I).EQ.0)THEN
+                     IF(NOFF(I).NE.0)THEN
+                         NOFF(I) = 0
+                         NCCHANGE=NCCHANGE+1
+                     ENDIF
+                 ENDIF
+             ENDDO
+         ENDIF
+         
+C.....   DMW 202207 Compute a slope limiting factor if needed
+         call computeAlpha()
+         
 #ifdef CMPI
          !jgf48.4619 implementing Seizo's changes for Lumped, fully
          ! explicit operation. In that case, the GWCE LHS matrix is
@@ -1050,6 +1165,172 @@ c.....
       end subroutine computeWettingAndDrying
 !-----------------------------------------------------------------------
 
+
+!-----------------------------------------------------------------------
+!   Apply a subgrid barrier.
+!
+!   Assumptions: When the subgrid barrier is not being overtopped,
+!                the cross-barrier flow is disabled and the nodes 
+!                are placed at the elevation found in the mesh 
+!                geometry. When the barrier becomes overtopped, 
+!                the nodes are elevated temporarily during the 
+!                overtopping process. When the overtopping
+!                concludes, the nodes are returned to their mesh
+!                specified elevations and the cross-barrier flow 
+!                is turned off again
+!-----------------------------------------------------------------------
+      subroutine applySubgridBarrier()
+!-----------------------------------------------------------------------
+          USE SIZES,ONLY: SZ
+          USE MESH,ONLY: DP,DP_ORIG,NM,NE
+          USE GLOBAL,ONLY: ETA2,NOFF,H0,NODECODE,NCCHANGE,ILUMP
+          USE NODALATTRIBUTES,ONLY: SubgridBarrier,
+     &                              SubgridBarrierOvertopping
+#ifdef CMPI
+          USE MESSENGER,ONLY:wetDrySum
+#endif          
+          IMPLICIT NONE
+          INTEGER  :: I,NM1,NM2,NM3,NCELE
+          REAL(SZ) :: SB1,SB2,SB3
+          REAL(SZ) :: ETABAR,BARHEIGHT
+          REAL(SZ) :: DOT,DOT1,DOT2,DOT3
+          REAL(SZ) :: E1,E2,E3,ETA
+          REAL(SZ),PARAMETER :: SBDT = 50D0
+
+          NOFF_SG(:) = 1
+
+          DO I = 1,NE
+             NM1=NM(I,1)
+             NM2=NM(I,2)
+             NM3=NM(I,3)
+             SB1=subgridBarrier(NM1,1)
+             SB2=subgridBarrier(NM2,1)
+             SB3=subgridBarrier(NM3,1)
+
+             NCELE = NODECODE(NM1)*NODECODE(NM2)*NODECODE(NM3)*NOFF(I)
+             IF(NCELE.EQ.0)CYCLE
+
+             IF(SB1.LT.DP_ORIG(NM1).AND.
+     &          SB2.LT.DP_ORIG(NM2).AND.
+     &          SB3.LT.DP_ORIG(NM3))THEN
+
+                E1 = ETA2(NM1)
+                E2 = ETA2(NM2)
+                E3 = ETA2(NM3)
+                ETA = MAX(E1,E2,E3)
+                DOT1 = E1*NODECODE(NM1)+SB1
+                DOT2 = E2*NODECODE(NM2)+SB2
+                DOT3 = E3*NODECODE(NM3)+SB3
+                DOT  = MAX(DOT1,DOT2,DOT3)
+
+                IF(DOT.GT.-1.2D0*H0)THEN
+                    DP(NM1) = MAX(SB1,DP(NM1)+SB1/SBDT)
+                    DP(NM2) = MAX(SB2,DP(NM2)+SB2/SBDT)
+                    DP(NM3) = MAX(SB3,DP(NM3)+SB3/SBDT)
+                    SubgridBarrierOvertopping(NM1) = .TRUE.
+                    SubgridBarrierOvertopping(NM2) = .TRUE.
+                    SubgridBarrierOvertopping(NM3) = .TRUE.
+                ELSE
+                    DP(NM1) = MIN(DP_ORIG(NM1),DP(NM1)-SB1/SBDT)
+                    DP(NM2) = MIN(DP_ORIG(NM2),DP(NM2)-SB2/SBDT)
+                    DP(NM3) = MIN(DP_ORIG(NM3),DP(NM3)-SB3/SBDT)
+                    NOFF_SG(I) = 0
+                    SubgridBarrierOvertopping(NM1) = .FALSE.
+                    SubgridBarrierOvertopping(NM2) = .FALSE.
+                    SubgridBarrierOvertopping(NM3) = .FALSE.
+                ENDIF
+             ELSE
+                SubgridBarrierOvertopping(NM1) = .FALSE.
+                SubgridBarrierOvertopping(NM2) = .FALSE.
+                SubgridBarrierOvertopping(NM3) = .FALSE.
+             ENDIF
+          ENDDO
+
+!-----------------------------------------------------------------------
+      end subroutine applySubgridBarrier
+!-----------------------------------------------------------------------
+
+C..... DMW 202207 Compute a slope limiting factor for scaling down the 
+C..... elevation gradient if the slope of the water surface aligned with the 
+C..... bathy slope becomes too large, i.e., when it exceeds slim.
+!-----------------------------------------------------------------------
+      subroutine computeAlpha()
+!-----------------------------------------------------------------------
+         USE MESH,ONLY: DP,NM,NE,sfac,SFacEle,SFMYEle,SFMXEle,FDXE,FDYE,
+     &    areas         
+         use global, only : eta2, noff, nodecode, alphal, IFSFM, slim
+         IMPLICIT NONE
+         INTEGER  :: I,NM1,NM2,NM3,NC1,NC2,NC3,NCELE
+         real(sz) :: sfacavg, SFmxAvg, SFmyAvg, DPN1, DPN2, DPN3
+         real(sz) :: DETAM, DPM, sfdxfac, sfdyfac, hn1, hn2, hn3
+         real(sz) :: detadxa, detadya, dpdxa, dpdya
+         real(sz) :: fdx1, fdx2, fdx3, fdy1, fdy2, fdy3
+         real(sz) :: etaN1, etaN2, etaN3
+         
+         
+         ALPHAL(:) = 1.D0
+         
+         DO I=1,NE
+            NM1=NM(I,1)
+            NM2=NM(I,2)
+            NM3=NM(I,3)
+            NC1=NODECODE(NM1)
+            NC2=NODECODE(NM2)
+            NC3=NODECODE(NM3)
+            NCEle=NC1*NC2*NC3*NOFF(I)
+            IF (NCEle.EQ.1) THEN               
+
+               HN1 = ETA2(NM1) + DP(NM1)
+               HN2 = ETA2(NM2) + DP(NM2)
+               HN3 = ETA2(NM3) + DP(NM3)
+               IF((HN1.LE.5.D-1).OR.(HN2.LE.5.D-1).OR.(HN3.LE.5.D-1) ) THEN
+               
+                  SFacAvg = SFacEle(I)
+                  SFmxAvg = SFMXEle(I)  
+                  SFmyAvg = SFMYEle(I)  
+                  sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
+                  sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+               
+                  FDX1 = FDXE(1,I)*sfdxfac  !b1
+                  FDX2 = FDXE(2,I)*sfdxfac  !b2
+                  FDX3 = FDXE(3,I)*sfdxfac  !b3
+                  FDY1 = FDYE(1,I)*sfdyfac  !a1
+                  FDY2 = FDYE(2,I)*sfdyfac  !a2
+                  FDY3 = FDYE(3,I)*sfdyfac  !a3
+               
+                  ETAN1 = ETA2(NM1)
+                  ETAN2 = ETA2(NM2)
+                  ETAN3 = ETA2(NM3)
+                  
+                  DPN1 = DP(NM1)
+                  DPN2 = DP(NM2)
+                  DPN3 = DP(NM3)
+
+                  DPDXA = DPN1*FDX1 + DPN2*FDX2 + DPN3*FDX3
+                  DPDYA = DPN1*FDY1 + DPN2*FDY2 + DPN3*FDY3
+               
+                  DETADXA = ETAN1*FDX1 + ETAN2*FDX2 + ETAN3*FDX3
+                  DETADYA = ETAN1*FDY1 + ETAN2*FDY2 + ETAN3*FDY3
+                  DPM = SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/AREAS(I)
+                  IF (DPM .GT. 1D-5) THEN
+                     ALPHAL(I) = SLIM*(SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/
+     &                   ((1.D0/AREAS(I))*(DETADXA*(-DPDXA) + DETADYA*(-DPDYA))))
+                  ELSE
+                     DETAM = SQRT(DETADXA*DETADXA + DETADYA*DETADYA)/AREAS(I)
+                     ALPHAL(I) = SLIM/DETAM
+                  ENDIF
+                  
+                  IF (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
+                  IF (ALPHAL(I) .GE. 1.D0) ALPHAL(I) = 1.D0
+               ENDIF
+                  
+            ENDIF 
+         ENDDO
+C- DMW
+
+!-----------------------------------------------------------------------
+      end subroutine computeAlpha
+!-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------

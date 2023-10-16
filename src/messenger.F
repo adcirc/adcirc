@@ -3,6 +3,10 @@ C PADCIRC VERSION 47.xx 10/13/2006                                             *
 C******************************************************************************
 C
       MODULE MESSENGER
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN, AMPI_LUN_CREATE
+      use AMPI_LUN_migratable
+      USE AMPI_MIGRATE_IMPL, ONLY: ABOUT_TO_MIGRATE, JUST_MIGRATED,
+     &  migratablelun_setup 
       USE SIZES
       USE GLOBAL, ONLY: C3D, COMM,
      &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
@@ -75,6 +79,7 @@ C   (5)  initialize adcirc COMM communicator MPI_COMM_WORLD
 C  vjp  10/3/2006
 C----------------------------------------------------------------------
       SUBROUTINE MSG_INIT (MPI_COMM)
+
       IMPLICIT NONE
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
@@ -112,7 +117,10 @@ C.......Duplicate communicator
 
       CALL MPI_COMM_SIZE (MPI_COMM_ADCIRC,MNALLPROC,IERR)   ! Get number of procs
       CALL MPI_COMM_RANK (MPI_COMM_ADCIRC,MYPROC,IERR)   ! Get MPI rank
-
+#ifdef AMPI_COMP
+      CALL MIGRATABLELUN_SETUP()
+      CALL AMPI_LUN_CREATE(MYPROC)
+#endif      
       MNPROC = MNALLPROC - MNWPROC             ! MNALLPROC = MNPROC + MNWPROC
      &                   - MNWPROH             !             + MNWPROH  !st3 100711 for hsfile
 
@@ -219,8 +227,8 @@ C
       IF(MNWPROC > 0) THEN
         IF(MYPROC.eq.0) THEN
           DO I=1,MNWPROC
-            WRITE(16,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO WRITER ',
-     &           I
+            WRITE(AMPI_LUN(16),*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO WRITER ',
+     &          I
             CALL MPI_SEND(SIG_TERM,1,MPI_INTEGER,MNPROC,
      &           TAG,COMM_WRITER(I),IERR)
           ENDDO
@@ -230,8 +238,8 @@ C
       IF(MNWPROH > 0) THEN             !st3 100711 for hsfile
         IF(MYPROC.eq.0) THEN
           DO I=1,MNWPROH
-            WRITE(16,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO HSWRITER',
-     &           I
+            WRITE(AMPI_LUN(16),*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO HSWRITER',
+     &          I
             CALL MPI_BARRIER(COMM_HSLEEP(I),IERR)
             CALL MPI_SEND(SIG_TERM,1,MPI_INTEGER,MNPROC,
      &           TAG,COMM_WRITEH(I),IERR)
@@ -322,40 +330,41 @@ C
          CALL EXIT(1)
       ENDIF
 C
-      OPEN(18,FILE=TRIM(INPUTDIR)//'/'//'fort.18',STATUS='OLD')
+      OPEN(AMPI_LUN(18),FILE=TRIM(INPUTDIR)//'/'//'fort.18',STATUS='OLD')
+      call AMPI_LUN_REGISTER(AMPI_LUN(18),FILE=TRIM(INPUTDIR)//'/'//'fort.18',STATUS='OLD')
 C
-      READ(18,3020) BlkName, inputFileFmtVn
+      READ(AMPI_LUN(18),3020) BlkName, inputFileFmtVn
       if (Trim(BlkName) /= 'FileFmt' .and.
      $  .not. CMP_VERSION_NUMBERS(FileFmtVersion, inputFileFmtVn)) then
-        write(16,*) 'File Format of Fort.18 does not match aborting'
+        write(AMPI_LUN(16),*) 'File Format of Fort.18 does not match aborting'
         call exit(1)
       end if
 
 C Read Global number of elements and Local-to_Global element map ( used by module global_io )
 Casey 100209: Changed from FMT=3015.
-      READ(18,'(8X,3I12)') NE_G
+      READ(AMPI_LUN(18),'(8X,3I12)') NE_G
       ALLOCATE ( IMAP_EL_LG(MNE) )
       DO I=1,MNE
-         READ(18,*) IMAP_EL_LG(I)
+         READ(AMPI_LUN(18),*) IMAP_EL_LG(I)
       ENDDO
 
 C Read Global number of nodes and Local-to_Global node map ( used by module global_io )
-      READ(18,3015) NP_G
+      READ(AMPI_LUN(18),3015) NP_G
       ALLOCATE ( NODES_LG(MNP) )
       DO I=1,MNP
-         READ(18,*) NODES_LG(I)
+         READ(AMPI_LUN(18),*) NODES_LG(I)
       ENDDO
 
 C  This information is provided for relocalizing fort.15
 C  Just read past it.
-      READ(18,'(8X,I12)') jdumy                          ! nfluxf for subdomain
-      READ(18,'(8X,3I12)') jdumy_g, jdumy_max, jdumy_loc ! neta for subdomain
+      READ(AMPI_LUN(18),'(8X,I12)') jdumy                          ! nfluxf for subdomain
+      READ(AMPI_LUN(18),'(8X,3I12)') jdumy_g, jdumy_max, jdumy_loc ! neta for subdomain
       DO I=1, jdumy_loc
-         READ(18,'(I12)') jdumy                          ! obnode_lg table
+         READ(AMPI_LUN(18),'(I12)') jdumy                          ! obnode_lg table
       ENDDO
 
 C Read Global indexes of Elevation Station nodes ( used by module global_io )
-      READ(18,3015) NSTAE_G,jdumy_max,jdumy_loc    !tcm v51.20.05
+      READ(AMPI_LUN(18),3015) NSTAE_G,jdumy_max,jdumy_loc    !tcm v51.20.05
       IF (NSTAE .ne. jdumy_loc ) then
          call allMessage(ERROR,"Elevation Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
@@ -364,12 +373,12 @@ C Read Global indexes of Elevation Station nodes ( used by module global_io )
       IF (NSTAE > 0) THEN
         ALLOCATE ( IMAP_STAE_LG(NSTAE) )
         DO I=1,NSTAE
-           READ(18,'(I12)') IMAP_STAE_LG(I)
+           READ(AMPI_LUN(18),'(I12)') IMAP_STAE_LG(I)
         ENDDO
       ENDIF
 
 C Read Global indexes of Velocity  Station nodes ( used by module global_io )
-      READ(18,3015) NSTAV_G,jdumy_max,jdumy_loc    !tcm v51.20.05
+      READ(AMPI_LUN(18),3015) NSTAV_G,jdumy_max,jdumy_loc    !tcm v51.20.05
       IF (NSTAV .ne. jdumy_loc ) then
          call allMessage(ERROR,"Velocity Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
@@ -378,12 +387,12 @@ C Read Global indexes of Velocity  Station nodes ( used by module global_io )
       IF (NSTAV > 0) THEN
         ALLOCATE ( IMAP_STAV_LG(NSTAV) )
         DO I=1,NSTAV
-           READ(18,'(I12)') IMAP_STAV_LG(I)
+           READ(AMPI_LUN(18),'(I12)') IMAP_STAV_LG(I)
         ENDDO
       ENDIF
 
 C Read Global indexes of Meteorlogical Station nodes ( used by module global_io )
-      READ(18,3015) NSTAM_G,jdumy_max,jdumy_loc    !tcm v51.20.05
+      READ(AMPI_LUN(18),3015) NSTAM_G,jdumy_max,jdumy_loc    !tcm v51.20.05
       IF (NSTAM .ne. jdumy_loc ) then
          call allMessage(ERROR,"Met. Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
@@ -392,12 +401,12 @@ C Read Global indexes of Meteorlogical Station nodes ( used by module global_io 
       IF (NSTAM > 0) THEN
         ALLOCATE ( IMAP_STAM_LG(NSTAM) )
         DO I=1,NSTAM
-           READ(18,'(I12)') IMAP_STAM_LG(I)
+           READ(AMPI_LUN(18),'(I12)') IMAP_STAM_LG(I)
         ENDDO
       ENDIF
 
 C Read Global indexes of Concentration Station nodes ( used by module global_io )
-      READ(18,3015) NSTAC_G,jdumy_max,jdumy_loc    !tcm v51.20.05
+      READ(AMPI_LUN(18),3015) NSTAC_G,jdumy_max,jdumy_loc    !tcm v51.20.05
       IF (NSTAC .ne. jdumy_loc ) then
          call allMessage(ERROR,"Conc. Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
@@ -406,7 +415,7 @@ C Read Global indexes of Concentration Station nodes ( used by module global_io 
       IF (NSTAC > 0) THEN
         ALLOCATE ( IMAP_STAC_LG(NSTAC) )
         DO I=1,NSTAC
-           READ(18,'(I12)') IMAP_STAC_LG(I)
+           READ(AMPI_LUN(18),'(I12)') IMAP_STAC_LG(I)
         ENDDO
       ENDIF
 
@@ -414,9 +423,9 @@ C-------------------------------------------------------------------------------
 C--Message-Passing tables start here
 C---------------------------------------------------------------------------------
 
-      READ(18,3010) IDPROC,NLOCAL
+      READ(AMPI_LUN(18),3010) IDPROC,NLOCAL
       ALLOCATE ( NNODELOC(NLOCAL) )
-      READ(18,1130) (NNODELOC(I), I=1,NLOCAL)
+      READ(AMPI_LUN(18),1130) (NNODELOC(I), I=1,NLOCAL)
       ALLOCATE ( IBELONGTO(MNP),RESNODE(MNP) )
 
       DO I=1,MNP
@@ -433,7 +442,7 @@ C-------------------------------------------------------------------------------
          ENDIF
       ENDDO
 
-      READ(18,3015) NEIGHPROC
+      READ(AMPI_LUN(18),3015) NEIGHPROC
 
       RDIM = 2*NEIGHPROC
       ALLOCATE( INDX(RDIM) )
@@ -441,47 +450,47 @@ C-------------------------------------------------------------------------------
       ALLOCATE( IRECVLOC(MNP,NEIGHPROC) )
 
       DO J=1,NEIGHPROC
-         READ(18,3010) IPROC(J),NNODRECV(J)
-         READ(18,1130) (IRECVLOC(I,J), I=1,NNODRECV(J))
+         READ(AMPI_LUN(18),3010) IPROC(J),NNODRECV(J)
+         READ(AMPI_LUN(18),1130) (IRECVLOC(I,J), I=1,NNODRECV(J))
       ENDDO
 
       ALLOCATE( NNODSEND(NEIGHPROC) )
       ALLOCATE( ISENDLOC(MNP,NEIGHPROC) )
 
       DO J=1,NEIGHPROC
-         READ(18,3010) IPROC(J),NNODSEND(J)
-         READ(18,1130) (ISENDLOC(I,J), I=1,NNODSEND(J))
+         READ(AMPI_LUN(18),3010) IPROC(J),NNODSEND(J)
+         READ(AMPI_LUN(18),1130) (ISENDLOC(I,J), I=1,NNODSEND(J))
       ENDDO
 C
 C     jgf49.43.18: Add 3D station mappings if appropriate. Used by globalio.
       IF (C3D) THEN
-         READ(18,3015) NSTA3DD_G
+         READ(AMPI_LUN(18),3015) NSTA3DD_G
          IF (NSTA3DD > 0) THEN
             ALLOCATE ( IMAP_STA3DD_LG(NSTA3DD) )
             DO I=1,NSTA3DD
-               READ(18,'(I12)') IMAP_STA3DD_LG(I)
+               READ(AMPI_LUN(18),'(I12)') IMAP_STA3DD_LG(I)
             ENDDO
          ENDIF
 
-         READ(18,3015) NSTA3DV_G
+         READ(AMPI_LUN(18),3015) NSTA3DV_G
          IF (NSTA3DV > 0) THEN
             ALLOCATE ( IMAP_STA3DV_LG(NSTA3DV) )
             DO I=1,NSTA3DV
-               READ(18,'(I12)') IMAP_STA3DV_LG(I)
+               READ(AMPI_LUN(18),'(I12)') IMAP_STA3DV_LG(I)
             ENDDO
          ENDIF
 
-         READ(18,3015) NSTA3DT_G
+         READ(AMPI_LUN(18),3015) NSTA3DT_G
          IF (NSTA3DT > 0) THEN
             ALLOCATE ( IMAP_STA3DT_LG(NSTA3DT) )
             DO I=1,NSTA3DT
-               READ(18,'(I12)') IMAP_STA3DT_LG(I)
+               READ(AMPI_LUN(18),'(I12)') IMAP_STA3DT_LG(I)
             ENDDO
          ENDIF
       ENDIF
 C
 C
-      CLOSE(18)
+      CLOSE(AMPI_LUN(18))
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -1230,6 +1239,90 @@ C
 C---------------------------------------------------------------------
       END SUBROUTINE ALLNODES
 C---------------------------------------------------------------------
+
+!---------------------------------------------------------------------
+      subroutine mapToSubdomainRealMPI(np_global, np_local, local_array, mapping, global_array)
+!---------------------------------------------------------------------
+! Mapping to a subdomain for parallel code to avoid all processors
+! reading the same file at the same time
+!---------------------------------------------------------------------
+        use sizes,only:sz
+        implicit none
+        real(sz),intent(in)  :: global_array(:)
+        integer,intent(in)   :: mapping(:) 
+        integer,intent(in)   :: np_global
+        integer,intent(in)   :: np_local
+        real(sz)             :: global_array_local(np_global)
+        real(sz),intent(out) :: local_array(:)
+        integer              :: sd_node_number
+        integer              :: ierr
+
+        call setMessageSource("mapToSubdomainRealMPI")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG, "Enter.")
+#endif        
+
+        if(myproc.eq.0)then
+            global_array_local(1:np_global) = global_array(1:np_global)
+        endif
+
+        call mpi_bcast(global_array_local,np_global,realtype,0,COMM_COMP,ierr)
+
+        do sd_node_number=1,np_local
+           local_array(sd_node_number) = global_array(abs(mapping(sd_node_number)))
+        end do
+
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG, "Return.")
+#endif        
+        call unsetMessageSource()
+
+!---------------------------------------------------------------------
+      end subroutine mapToSubdomainRealMPI
+!---------------------------------------------------------------------
+
+!---------------------------------------------------------------------
+      subroutine mapToSubdomainIntMPI(np_global, np_local, local_array, global_array, mapping)
+!---------------------------------------------------------------------
+! Mapping to a subdomain for parallel code to avoid all processors
+! reading the same file at the same time
+!---------------------------------------------------------------------
+        implicit none
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+        integer,intent(in)  :: global_array(*)
+        integer,intent(in)  :: mapping(*) 
+        integer,intent(in)  :: np_global
+        integer,intent(in)  :: np_local
+        integer             :: global_array_local(np_global)
+        integer,intent(out) :: local_array(*)
+        integer             :: sd_node_number
+        integer             :: ierr
+
+        call setMessageSource("mapToSubdomainIntMPI")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG, "Enter.")
+#endif        
+
+        if(myproc.eq.0)then
+            global_array_local(1:np_global) = global_array(1:np_global)
+        endif
+
+        call mpi_bcast(global_array_local,np_global,mpi_integer,0,COMM_COMP,ierr)
+
+        do sd_node_number=1,np_local
+           local_array(sd_node_number) = global_array(abs(mapping(sd_node_number)))
+        end do
+
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG, "Return.")
+#endif        
+        call unsetMessageSource()
+
+!---------------------------------------------------------------------
+      end subroutine mapToSubdomainIntMPI
+!---------------------------------------------------------------------
 
 C------------------------------------------------------------------------------
 C               S U B R O U T I N E   W E T D R Y S U M

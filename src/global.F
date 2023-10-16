@@ -10,6 +10,8 @@ C                                                                             *
 C******************************************************************************
 C
       MODULE GLOBAL
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES, ONLY : SZ 
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
 #ifdef DATETIME
@@ -57,6 +59,8 @@ C..   Ali's full dispersion coefficient for M2
       REAL(SZ) :: Ad = 0.0050189_SZ ! coefficient of depth (default)
       REAL(SZ) :: Cs = 1500.0_SZ ! Speed of sound in water
       REAL(SZ) :: Cs2 ! Speed of sound in water^2
+      REAL(SZ), PARAMETER :: TWOB = 2d0*0.4779d0
+      REAL(SZ), PARAMETER :: GM2  = 3.486d0**2
 C     jgf46.21 Added support for IBTYPE=52.
       REAL(SZ),ALLOCATABLE, TARGET ::   ElevDisc(:)
       REAL(SZ) FluxSettlingTime
@@ -66,6 +70,14 @@ C... v49.48 tcm -- added for coupling with STWAVE (NRS=4)
       REAL(8)  :: ENDWAVE     ! End of Wave Service
       LOGICAL  :: CPL2STWAVE = .FALSE.  !Coupled to STWAVE (NRS=4)
       LOGICAL  :: Flag_ElevError = .FALSE.  
+
+C
+C... v50.xx sm -- added for coupling with NOUPC Cap
+      LOGICAL   ::  NUOPC4MET = .FALSE.  ! assign in CAP
+      LOGICAL   ::  NUOPC4WAV = .FALSE.  ! assign in CAP
+C
+C
+
 C      real(sz) rampriver,drampriver,rampriver1,rampriver2
 C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(SZ) RampExtFlux,DRampExtFlux ! Ramp for external flux b.c.s
@@ -319,6 +331,9 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   FFF(:),FFACE(:)
       REAL(SZ),ALLOCATABLE ::   ESBIN1(:),ESBIN2(:)
       REAL(SZ),ALLOCATABLE ::   TEMP_LV_A(:,:),TEMP_LV_B(:,:)
+C- DMW 2022/6 Factor for slope limiting on elevation gradient
+      REAL(SZ),ALLOCATABLE ::   ALPHAL(:)
+C- DMW      
       REAL(SZ),ALLOCATABLE ::   QN0(:),QN1(:)
       REAL(SZ),ALLOCATABLE, TARGET :: QN2(:)
       REAL(SZ),ALLOCATABLE ::   EN0(:),EN1(:),EN2(:)
@@ -788,6 +803,13 @@ C     elements to the structure
       !
       ! inundationOutput can be set to .true. in read_input()
       logical :: inundationOutput = .false. 
+C.... DMW 202207 Added controls for slope/wind limiting and for using "new" vel formula in wet/dry routine.
+C....  Set these controls to off by default. (Large value on slim effectively assures limiter is not applied anywhere.)
+      real(sz) :: slim = 1.d9
+      logical :: windlim = .false.
+      
+      logical :: directvelWD = .false.,  useHF = .false.
+C.... DMW
 C
 C     jgf49.44: Log levels, in order from largest amount of log messages
 C     written (DEBUG) to fewest log messages written (ERROR). Compared
@@ -859,13 +881,19 @@ C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
 C...
 C     cms51.06: moved fort.33 file from read_input.F to here
 #ifdef CMPI
-      OPEN(16,FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
-     &    STATUS='REPLACE')
-      OPEN(33,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
-     &    STATUS='REPLACE')
+      OPEN(AMPI_LUN(16),FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
+     &   STATUS='REPLACE')
+      call AMPI_LUN_REGISTER(AMPI_LUN(16),FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
+     &   STATUS='REPLACE')
+      OPEN(AMPI_LUN(33),FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
+     &   STATUS='REPLACE')
+      call AMPI_LUN_REGISTER(AMPI_LUN(33),FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
+     &   STATUS='REPLACE')
 #else
-      OPEN(16,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
-      OPEN(33,FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
+      OPEN(AMPI_LUN(16),FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
+      call AMPI_LUN_REGISTER(AMPI_LUN(16),FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
+      OPEN(AMPI_LUN(33),FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
+      call AMPI_LUN_REGISTER(AMPI_LUN(33),FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
 #endif
 C--------------------------------------------------------------------
       END SUBROUTINE openLogFile
@@ -901,16 +929,16 @@ C
          IF (NSCREEN.ne.0) THEN
             IF (level.ge.NABOUT) THEN
 #ifdef FULL_STACK
-               write(screenUnit,331,advance="no")
-     &             trim(logLevelNames(level+2)),
-     &             (trim(messageSources(j)),j=1,sourceNumber)
-               write(screenUnit,332) trim(message)
+               write(AMPI_LUN(screenUnit),331,advance="no")
+     &            trim(logLevelNames(level+2)),
+     &            (trim(messageSources(j)),j=1,sourceNumber)
+               write(AMPI_LUN(screenUnit),332) trim(message)
 #else
-               write(screenUnit,333) trim(logLevelNames(level+2)),
-     &             trim(messageSources(sourceNumber)), trim(message)
+               write(AMPI_LUN(screenUnit),333) trim(logLevelNames(level+2)),
+     &            trim(messageSources(sourceNumber)), trim(message)
 #endif
 !#ifdef FLUSH_MESSAGES
-               flush(screenUnit)
+               flush(AMPI_LUN(screenUnit))
 !#endif
             ENDIF
          ENDIF
@@ -944,15 +972,15 @@ C--------------------------------------------------------------------
 C
       IF (level.ge.NABOUT) THEN
 #ifdef FULL_STACK
-         write(16,331,advance="no") trim(logLevelNames(level+2)),
-     &       (trim(messageSources(j)),j=1,sourceNumber)
-         write(16,332) trim(message)
+         write(AMPI_LUN(16),331,advance="no") trim(logLevelNames(level+2)),
+     &      (trim(messageSources(j)),j=1,sourceNumber)
+         write(AMPI_LUN(16),332) trim(message)
 #else
-         write(16,333) trim(logLevelNames(level+2)),
-     &       trim(messageSources(sourceNumber)), trim(message)
+         write(AMPI_LUN(16),333) trim(logLevelNames(level+2)),
+     &      trim(messageSources(sourceNumber)), trim(message)
 #endif
 !#ifdef FLUSH_MESSAGES
-               flush(16)
+               flush(AMPI_LUN(16))
 !#endif
       ENDIF
 331   FORMAT(A,": ",A,50(:,"->",A))
@@ -1054,8 +1082,10 @@ C     Check to see if file exists
       endif
 C
 C     Open existing file
-      OPEN(lun,FILE=trim(filename),STATUS='OLD',
-     & ACTION='READ',IOSTAT=errorIO)
+      OPEN(AMPI_LUN(lun),FILE=trim(filename),STATUS='OLD',
+     &ACTION='READ',IOSTAT=errorIO)
+      call AMPI_LUN_REGISTER(AMPI_LUN(lun),FILE=trim(filename),STATUS='OLD',
+     &ACTION='READ',IOSTAT=errorIO)
       if (errorIO.ne.0) then
           write(scratchMessage,25) trim(filename)
   25      format("Could not open the file '",A,"'.")
@@ -1130,6 +1160,10 @@ C
       qy1(:) = -99999.d0
       ALLOCATE ( NNODECODE(MNP))
       nnodecode(:) = -99999
+C- DMW 2022/6 Factor for slope limiting on elevation gradient
+      ALLOCATE ( ALPHAL(MNE) )
+      ALPHAL(:) = 1.D0
+C- DMW
       ALLOCATE ( NOFF(MNE) )
       noff(:) = -99999
       ALLOCATE ( NIBNODECODE(MNP))
@@ -1455,7 +1489,8 @@ C
       windDragOut(:) = 0.d0
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4)) then
+!   nrs = 5 -- Saeed's nuopc implementation
+      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4).or.(ABS(NRS).EQ.5)) then
 !#ifdef CSWAN
 Casey 090302: Added the next line for output of radiation stress gradients.
          ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )
@@ -1522,7 +1557,7 @@ C...
       case('XDMF')
          typeHolder = 7
       case default
-         write(6,'("WARNING: Unrecognized format ",i0,".")') trim(typeString)
+         write(AMPI_LUN(6),'("WARNING: Unrecognized format ",i0,".")') trim(typeString)
       end select
       !----------------------------------------------------------------------
       end subroutine getFormatInteger

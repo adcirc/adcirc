@@ -76,9 +76,12 @@ C      Tao0MinMax            "min_and_max_primitive_weighting_in_continuity_equa
 C      River_et_WSE          "initial_river_elevation"
 C      IT_Fric               "internal_tide_friction"
 C      OverlandReductionFactor  "overland_reduction_factor"
+C      subgridBarrier        "subgrid_barrier"
 C
 C-----------------------------------------------------------------------
       MODULE NodalAttributes
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES
       USE GLOBAL, ONLY : scratchMessage, allMessage, logMessage,
      &                    DEBUG, ECHO, INFO, WARNING, ERROR
@@ -122,7 +125,8 @@ C     required for the run, according to the unit 15 control file
       LOGICAL LoadEleSlopeLim ! zc: elemental slope limiter
       LOGICAL LoadRiver_et_WSE  ! tcm 20140502 v51.27
       LOGICAL LoadIT_Fric       ! wjp: Internal tides
-      LOGICAL LoadOverlandReductionFactor
+      LOGICAL LoadOverlandReductionFactor 
+      LOGICAL LoadSubgridBarrier
 C
 C     The following flags are .true. if there are data with the
 C     corresponding label in the unit 13 file.
@@ -143,6 +147,7 @@ C     corresponding label in the unit 13 file.
       LOGICAL FoundRiver_et_WSE ! tcm 20140502 v51.27      
       LOGICAL FoundIT_Fric  ! wjp internal tides
       LOGICAL FoundOverlandReductionFactor
+      LOGICAL FoundSubgridBarrier
 C
 C     These variables hold the strings which describe the attribute's
 C     units. These data are loaded from the file, but not used as of
@@ -164,6 +169,7 @@ C     v46.00.
       CHARACTER(len=80) River_et_WSEUnits ! tcm 20140502 v51.27
       CHARACTER(len=80) IT_FricUnits  ! wjp internal tides
       CHARACTER(len=80) OverlandReductionFactorUnits
+      CHARACTER(len=80) subgridBarrierUnits
 C
 C     These variables hold the number of values per node for each
 C     attribute.
@@ -184,6 +190,7 @@ C     attribute.
       INTEGER River_et_WSENoOfVals  ! tcm 20140502 v51.27      
       INTEGER IT_FricNoOfVals ! wjp internal tides
       INTEGER OverlandReductionFactorNoOfVals
+      INTEGER subgridBarrierNoOfVals
 C
 C     These variables hold the default values for each attribute.
       REAL(SZ) Tau0DefVal
@@ -203,6 +210,7 @@ C     These variables hold the default values for each attribute.
       REAL(SZ) River_et_WSEDefVal ! tcm 20140502 v51.27
       REAL(SZ) IT_FricDefVal(3)  ! wjp internal tides
       REAL(SZ) OverlandReductionFactorDefaultValue
+      REAL(SZ) SubgridBarrierDefaultValue(2)
 C
       INTEGER NumOfNodes    ! number of nodes listed in unit 13 file, cf. NP
       INTEGER NAttr         ! number of nodal attributes in the unit 13 file
@@ -230,6 +238,7 @@ C
 C     Nodal attributes.
       REAL(SZ), ALLOCATABLE :: STARTDRY(:) ! 1=nodes below geoid initially dry
       REAL(SZ), ALLOCATABLE :: FRIC(:)     ! bottom friction coefficient
+      REAL(SZ), ALLOCATABLE :: FRIC_ORIG(:)
       REAL(SZ), ALLOCATABLE, TARGET :: TAU0VAR(:)! primitive equation weighting
       REAL(SZ), ALLOCATABLE :: Tau0Temp(:) ! used in time varying tau0
 C     jjw&sb46.39.sb01: Base (original) primitive equation weighting.
@@ -267,6 +276,9 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(SZ), ALLOCATABLE :: River_et_WSE(:)  ! tcm 20140502 v51.27
       REAL(SZ), ALLOCATABLE :: IT_Fric(:,:)  ! WJP: Linear friction coefficient for internal tides
       REAL(SZ), ALLOCATABLE :: OverlandReductionFactor(:)
+      REAL(SZ), ALLOCATABLE :: subgridBarrier(:,:)
+      REAL(SZ), ALLOCATABLE :: subgridBarrierFriction(:)
+      LOGICAL,ALLOCATABLE   :: subgridBarrierOvertopping(:)
 C
 C------------------ For absorbing layer, DW
       REAL(SZ), pointer:: absorblayer_sigma(:,:), absorblayer_zero(:,:)
@@ -379,6 +391,7 @@ C
       LoadRiver_et_WSE   = .False.
       LoadIT_Fric        = .False.  ! WJP
       LoadOverlandReductionFactor = .False.
+      LoadSubgridBarrier = .False.
 C
       FoundTau0           = .False.
       FoundStartDry       = .False.
@@ -397,6 +410,7 @@ C
       FoundRiver_et_WSE   = .False.      
       FoundIT_Fric        = .False. ! WJP
       FoundOverlandReductionFactor = .False.
+      FoundSubgridBarrier = .False.
 C
 C
       Tau0NoOfVals          = 1
@@ -416,6 +430,7 @@ C
       River_et_WSENoOfVals  = 1
       IT_FricNoOfVals       = 1  ! WJP, could be 3 also, so may change
       OverlandReductionFactorNoOfVals = 1
+      SubgridBarrierNoOfVals = 1 ! 1 or 2 
 C
       Tau0DefVal             = 0.0
       StartDryDefVal         = 0.0
@@ -439,6 +454,7 @@ C
       EleSlopeLimDefVal      = 0D0
       River_et_WSEDefVal     = 0.d0      
       IT_FricDefVal          = 0.0 ! WP
+      SubgridBarrierDefaultValue = 999999D0
 C
       HighResTimeVaryingTau0     = .False.
       FullDomainTimeVaryingTau0  = .False.
@@ -549,8 +565,8 @@ C
          call na_terminate()
       ENDIF
 
-      write(6,'(a)') 'INFO: Reading data from the "' 
-     &    // trim(adjustl(naFileName)) // '" XDMF file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Reading data from the "' 
+     &   // trim(adjustl(naFileName)) // '" XDMF file.'
       call xdmfinit(xdmfFortranObj)
       call xdmfRead(xdmfFortranObj, trim(adjustl(naFileName))//char(0))
       call xdmfOpenDomainGrid(xdmfFortranObj, XDMF_GRID_TYPE_UNSTRUCTURED, 
@@ -560,7 +576,7 @@ C
       nAttr = numAttributes - 1 ! the depth is included so don't count it
       
       allocate(na(nAttr))
-      write(6,'("INFO: Grid ",i0," contains ",i0," nodal attributes.")') gridIndex, nAttr
+      write(AMPI_LUN(6),'("INFO: Grid ",i0," contains ",i0," nodal attributes.")') gridIndex, nAttr
       !
       ! populate the names of the nodal attributes
       nattrCount = 1
@@ -571,7 +587,7 @@ C
          if (trim(itemName).eq.'depth') then
             cycle
          endif
-         write(6,'("INFO: Grid ",i0," Attribute ",i0," is named ",a)') gridIndex, attributeIndex, trim(itemName)
+         write(AMPI_LUN(6),'("INFO: Grid ",i0," Attribute ",i0," is named ",a)') gridIndex, attributeIndex, trim(itemName)
          na(nattrCount)%attrName = trim(itemName)
          SELECT CASE (trim(na(nattrCount)%AttrName))
          case("depth")
@@ -631,7 +647,7 @@ C     that are not in the nodal attributes file.
       !
       ! use the names to populate the number of values for each attribute
       call xdmfRetrieveNumInformation(xdmfFortranObj, numInformation)
-      write(6,'(a,i0)') 'numInformation=',numInformation
+      write(AMPI_LUN(6),'(a,i0)') 'numInformation=',numInformation
       do informationIndex=0,numInformation-1
          call xdmfRetrieveInformation(xdmfFortranObj, informationIndex, itemKey, keyLength, itemValue, valueLength)
          call replaceNullsWithSpaces(itemKey)
@@ -667,7 +683,7 @@ C     numOfNodes value
                na(i) % units = trim(itemValue)
             endif  
             if (trim(itemKey).eq. trim(na(i)%attrName) // ' default_values') then
-               write(6,*) 'default_values'//trim(itemValue)
+               write(AMPI_LUN(6),*) 'default_values'//trim(itemValue)
                read(itemValue,*) (na(i)%defaultVals(j),j=1,na(i)%numVals)
             endif
          end do
@@ -683,7 +699,7 @@ C     numOfNodes value
          endif
          do i=1,nAttr
             if (trim(itemName).eq.trim(na(i)%attrName)) then
-               write(6,'(a)') 'loading nodal attribute data for '//trim(itemName)
+               write(AMPI_LUN(6),'(a)') 'loading nodal attribute data for '//trim(itemName)
                if (na(i)%numVals.eq.1) then
                   allocate(na(i)%xdmfArray(numOfNodes))
                   attributeType = XDMF_ATTRIBUTE_TYPE_SCALAR
@@ -786,6 +802,10 @@ C 02.24.2018 WJP: Add spatially varying linear internal tide friction coefficien
             IF(LoadOverlandReductionFactor)THEN
                 OverlandReductionFactor = na(i)%xdmfArray
             ENDIF
+         CASE("subgrid_barrier")
+             IF(LoadSubgridBarrier)THEN
+                SubgridBarrier = na(i)%xdmfMatrix
+             ENDIF
 ! DW---- for sponge layers ---
          CASE ("sponge_generator_layer") 
             IF (LoadAbsLayerSigma) THEN
@@ -864,6 +884,7 @@ C          A L L O C A T E   N O D A L   A T T R I B U T E S
 C     ----------------------------------------------------------------
 C     Allocate memory to hold our data.
       subroutine allocateNodalAttributes()
+      use mesh,only:ne
       implicit none
       ALLOCATE(TAU0VAR(NumOfNodes),TAU0BASE(NumOfNodes)) ! jjw&sb46.39sb01
       ALLOCATE(STARTDRY(NumOfNodes))
@@ -897,7 +918,11 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
       OverlandReductionFactor(:) = 1D0/30D0
       IF ( LoadAbsLayerSigma ) THEN
          ALLOCATE( absorblayer_sigma(NumOfNodes,AbsLayerSigmaNoOfVals) )
-      END IF
+      ENDIF
+      IF( LoadSubgridBarrier )THEN 
+          ALLOCATE(subgridBarrier(NumOfNodes,SubgridBarrierNoOfVals))
+          ALLOCATE(subgridBarrierOvertopping(NumOfNodes))
+      ENDIF
 C     ----------------------------------------------------------------
       end subroutine allocateNodalAttributes
 C     ----------------------------------------------------------------
@@ -936,15 +961,15 @@ C
 C     Check to make sure that NWP is a valid number.
       IF (NWP.LT.0) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-            WRITE(ScreenUnit,9972)
-            WRITE(ScreenUnit,*) 'NWP =',NWP
-            WRITE(ScreenUnit,9728)
-            WRITE(ScreenUnit,9973)
+            WRITE(AMPI_LUN(ScreenUnit),9972)
+            WRITE(AMPI_LUN(ScreenUnit),*) 'NWP =',NWP
+            WRITE(AMPI_LUN(ScreenUnit),9728)
+            WRITE(AMPI_LUN(ScreenUnit),9973)
          ENDIF
-         WRITE(16,9972)
-         WRITE(16,*) 'NWP =',NWP
-         WRITE(16,9728)
-         WRITE(16,9973)
+         WRITE(AMPI_LUN(16),9972)
+         WRITE(AMPI_LUN(16),*) 'NWP =',NWP
+         WRITE(AMPI_LUN(16),9728)
+         WRITE(AMPI_LUN(16),9973)
  9728    FORMAT(/,1X,'Your selection of NWP (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
          CALL EXIT(1)          ! We're toast.
@@ -953,7 +978,7 @@ C
 C     Check to see if there are nodal attributes to be read in. If not,
 C     simply return.
       IF (NWP.EQ.0) THEN
-         WRITE(16,231) NWP
+         WRITE(AMPI_LUN(16),231) NWP
  231     FORMAT(/,5X,'NWP = ',I2,
      &        /,9X,'A Nodal Attributes File (unit 13)',
      &        /,9X,'will not be used.')
@@ -962,11 +987,11 @@ C     simply return.
 C
 C     Read the unit 15 control file to determine what data must be
 C     loaded from nodal attributes file.
-      WRITE(16,235) NWP
+      WRITE(AMPI_LUN(16),235) NWP
  235  FORMAT(/,9X,'Need to load ',I2,' nodal attribute(s):')
       DO k=1,NWP
-         READ(15,*) AttrName
-         WRITE(16,'(14X,A80)') AttrName
+         READ(AMPI_LUN(15),*) AttrName
+         WRITE(AMPI_LUN(16),'(14X,A80)') AttrName
          SELECT CASE (AttrName)
          CASE("primitive_weighting_in_continuity_equation")
             LoadTau0 = .True.
@@ -1010,22 +1035,24 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
 C 09232016 WP: Add spatially varying linear internal tide friction coefficient
          CASE("internal_tide_friction")
             LoadIT_Fric = .True.
+         CASE("subgrid_barrier")
+            LoadSubgridBarrier = .True.
          CASE("overland_reduction_factor")
             LoadOverlandReductionFactor = .True.
 ! DW---- for sponge layers ---
          CASE ("sponge_generator_layer") 
             LoadAbsLayerSigma = .TRUE.
          CASE DEFAULT
-            WRITE(16,1000)          ! unit 15 Model Parameter file
-            WRITE(16,1021) AttrName ! contains invalid name
+            WRITE(AMPI_LUN(16),1000)          ! unit 15 Model Parameter file
+            WRITE(AMPI_LUN(16),1021) AttrName ! contains invalid name
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1000)
-               WRITE(ScreenUnit,1021) AttrName
+               WRITE(AMPI_LUN(ScreenUnit),1000)
+               WRITE(AMPI_LUN(ScreenUnit),1021) AttrName
             ENDIF
          END SELECT
       ENDDO
 C
-      WRITE(16,232) NWP
+      WRITE(AMPI_LUN(16),232) NWP
  232  FORMAT(/,5X,'NWP = ',I2,
      &     /,9X,'Must read Nodal Attributes File (unit 13).')
       !
@@ -1042,41 +1069,43 @@ C     Determine if the Nodal Attributes File exists.
       INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.13',EXIST=NAFound)
 C
       IF (.not.NAFound) THEN
-         WRITE(16,1001)         ! Nodal Attributes file
-         WRITE(16,1011)         ! was not found.
-         WRITE(16,9973)         ! execution terminated
+         WRITE(AMPI_LUN(16),1001)         ! Nodal Attributes file
+         WRITE(AMPI_LUN(16),1011)         ! was not found.
+         WRITE(AMPI_LUN(16),9973)         ! execution terminated
          IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,1001)
-            WRITE(ScreenUnit,1011)
-            WRITE(ScreenUnit,9973)      ! execution terminated
+            WRITE(AMPI_LUN(ScreenUnit),1001)
+            WRITE(AMPI_LUN(ScreenUnit),1011)
+            WRITE(AMPI_LUN(ScreenUnit),9973)      ! execution terminated
          ENDIF
          CALL EXIT(1)
       ENDIF
 C
 C     Now open the nodal attributes (unit 13) file.
-      WRITE(16,240)
+      WRITE(AMPI_LUN(16),240)
  240  FORMAT(/,9X,'Nodal Attributes File (unit 13) was found.',
      &     ' Opening file.')
-      OPEN(UNIT=13, FILE=TRIM(INPUTDIR)//'/'//'fort.13',
-     &     IOSTAT=ErrorIO)
+      OPEN(UNIT=AMPI_LUN(13), FILE=TRIM(INPUTDIR)//'/'//'fort.13',
+     &    IOSTAT=ErrorIO)
+      call AMPI_LUN_REGISTER(UNIT=AMPI_LUN(13), FILE=TRIM(INPUTDIR)//'/'//'fort.13',
+     &    IOSTAT=ErrorIO)
       IF ( ErrorIO .GT. 0 ) THEN
-         WRITE(16,1001)         ! Nodal attribute file
-         WRITE(16,1005)         ! exists but can't be opened
-         WRITE(16,9973)         ! execution terminated
+         WRITE(AMPI_LUN(16),1001)         ! Nodal attribute file
+         WRITE(AMPI_LUN(16),1005)         ! exists but can't be opened
+         WRITE(AMPI_LUN(16),9973)         ! execution terminated
          IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,1001)
-            WRITE(ScreenUnit,1005)
-            WRITE(ScreenUnit,9973)
+            WRITE(AMPI_LUN(ScreenUnit),1001)
+            WRITE(AMPI_LUN(ScreenUnit),1005)
+            WRITE(AMPI_LUN(ScreenUnit),9973)
          ENDIF
          CALL EXIT(1)                 ! We're toast.
       ENDIF
 C
 C     Read each attribute name, units, number of values, and default value
-      READ(13,'(A80)') header
-      WRITE(16,250)
+      READ(AMPI_LUN(13),'(A80)') header
+      WRITE(AMPI_LUN(16),250)
  250  FORMAT(/,9X,'User comment line from unit 13:')
-      WRITE(16,'(14X,A80,/)') header
-      READ(13,*) NumOfNodes     ! number of nodes according to unit 13     
+      WRITE(AMPI_LUN(16),'(14X,A80,/)') header
+      READ(AMPI_LUN(13),*) NumOfNodes     ! number of nodes according to unit 13     
 C      
 C     ERROR CHECK: If a nodal attributes file is being used, check to
 C     see that the number of nodes in the nodal attribute file is the
@@ -1095,132 +1124,137 @@ C     file for this mesh.
      &  'Is this the right nodal attributes file for this mesh file?')
       endif
 C      
-      READ(13,*) NAttr          ! number of attributes in the unit 13 file
+      READ(AMPI_LUN(13),*) NAttr          ! number of attributes in the unit 13 file
       DO k=1, NAttr
-         READ(13,*) AttrName
-         WRITE(16,'(9X,A80)') AttrName
-         WRITE(16,260)
+         READ(AMPI_LUN(13),*) AttrName
+         WRITE(AMPI_LUN(16),'(9X,A80)') AttrName
+         WRITE(AMPI_LUN(16),260)
  260     FORMAT(14X,'was found!',/)
          SELECT CASE (AttrName)
          CASE("primitive_weighting_in_continuity_equation")
             FoundTau0 = .True.
-            READ(13,'(A80)') Tau0Units
-            READ(13,*) Tau0NoOfVals
-            READ(13,*) Tau0DefVal
+            READ(AMPI_LUN(13),'(A80)') Tau0Units
+            READ(AMPI_LUN(13),*) Tau0NoOfVals
+            READ(AMPI_LUN(13),*) Tau0DefVal
          CASE("surface_submergence_state")
             FoundStartDry = .True.
-            READ(13,'(A80)') StartDryUnits
-            READ(13,*) StartDryNoOfVals
-            READ(13,*) StartDryDefVal
+            READ(AMPI_LUN(13),'(A80)') StartDryUnits
+            READ(AMPI_LUN(13),*) StartDryNoOfVals
+            READ(AMPI_LUN(13),*) StartDryDefVal
          CASE("quadratic_friction_coefficient_at_sea_floor")
             FoundQuadraticFric = .True.
-            READ(13,'(A80)') QuadraticFricUnits
-            READ(13,*) QuadraticFricNoOfVals
-            READ(13,*) QuadraticFricDefVal
+            READ(AMPI_LUN(13),'(A80)') QuadraticFricUnits
+            READ(AMPI_LUN(13),*) QuadraticFricNoOfVals
+            READ(AMPI_LUN(13),*) QuadraticFricDefVal
          CASE("surface_directional_effective_roughness_length")
             FoundDirEffRLen = .True.
-            READ(13,'(A80)') DirEffRLenUnits
-            READ(13,*) DirEffRLenNoOfVals
-            READ(13,*)
-     &      (DirEffRLenDefVal(j),j=1,DirEffRLenNoOfVals)
+            READ(AMPI_LUN(13),'(A80)') DirEffRLenUnits
+            READ(AMPI_LUN(13),*) DirEffRLenNoOfVals
+            READ(AMPI_LUN(13),*)
+     &     (DirEffRLenDefVal(j),j=1,DirEffRLenNoOfVals)
          CASE("surface_canopy_coefficient")
             FoundCanopyCoef = .True.
-            READ(13,'(A80)') CanopyCoefUnits
-            READ(13,*) CanopyCoefNoOfVals
-            READ(13,*) CanopyCoefDefVal
+            READ(AMPI_LUN(13),'(A80)') CanopyCoefUnits
+            READ(AMPI_LUN(13),*) CanopyCoefNoOfVals
+            READ(AMPI_LUN(13),*) CanopyCoefDefVal
          CASE("bridge_pilings_friction_parameters")
             FoundBridgePilings = .True.
-            READ(13,'(A80)') BridgePilingsUnits
-            READ(13,*) BridgePilingsNoOfVals
-            READ(13,*)
-     &       (BridgePilingsDefVal(j),j=1,BridgePilingsNoOfVals)
+            READ(AMPI_LUN(13),'(A80)') BridgePilingsUnits
+            READ(AMPI_LUN(13),*) BridgePilingsNoOfVals
+            READ(AMPI_LUN(13),*)
+     &      (BridgePilingsDefVal(j),j=1,BridgePilingsNoOfVals)
          CASE("mannings_n_at_sea_floor")
             FoundManningsN = .True.
-            READ(13,'(A80)') ManningsNUnits
-            READ(13,*) ManningsNNoOfVals
-            READ(13,*) ManningsNDefVal
+            READ(AMPI_LUN(13),'(A80)') ManningsNUnits
+            READ(AMPI_LUN(13),*) ManningsNNoOfVals
+            READ(AMPI_LUN(13),*) ManningsNDefVal
          CASE("bottom_roughness_length")
             FoundZ0b_var = .True.
-            READ(13,'(A80)') Z0b_varUnits
-            READ(13,*) Z0b_varNoOfVals
-            READ(13,*) Z0b_varDefVal
+            READ(AMPI_LUN(13),'(A80)') Z0b_varUnits
+            READ(AMPI_LUN(13),*) Z0b_varNoOfVals
+            READ(AMPI_LUN(13),*) Z0b_varDefVal
          CASE("chezy_friction_coefficient_at_sea_floor")
             FoundChezy = .True.
-            READ(13,'(A80)') ChezyUnits
-            READ(13,*) ChezyNoOfVals
-            READ(13,*) ChezyDefVal
+            READ(AMPI_LUN(13),'(A80)') ChezyUnits
+            READ(AMPI_LUN(13),*) ChezyNoOfVals
+            READ(AMPI_LUN(13),*) ChezyDefVal
          CASE("sea_surface_height_above_geoid")
             FoundGeoidOffset = .True.
-            READ(13,'(A80)') GeoidOffsetUnits
-            READ(13,*) GeoidOffsetNoOfVals
-            READ(13,*) GeoidOffsetDefVal
+            READ(AMPI_LUN(13),'(A80)') GeoidOffsetUnits
+            READ(AMPI_LUN(13),*) GeoidOffsetNoOfVals
+            READ(AMPI_LUN(13),*) GeoidOffsetDefVal
          CASE
      &    ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth")
             FoundEVM = .True.
-            READ(13,'(A80)') EVMUnits
-            READ(13,*) EVMNoOfVals
-            READ(13,*) EVMDefVal
+            READ(AMPI_LUN(13),'(A80)') EVMUnits
+            READ(AMPI_LUN(13),*) EVMNoOfVals
+            READ(AMPI_LUN(13),*) EVMDefVal
          CASE
      &   ("average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth")
-            READ(13,'(A80)') EVCUnits
-            READ(13,*) EVCNoOfVals
-            READ(13,*) EVCDefVal
+            READ(AMPI_LUN(13),'(A80)') EVCUnits
+            READ(AMPI_LUN(13),*) EVCNoOfVals
+            READ(AMPI_LUN(13),*) EVCDefVal
          CASE
      &   ("min_and_max_primitive_weighting_in_continuity_equation")
             FoundTau0MinMax = .True.
-            READ(13,'(A80)') Tau0MinMaxUnits
-            READ(13,*) Tau0MinMaxNoOfVals
-            READ(13,*) (Tau0MinMaxDefVal(j),j=1,Tau0MinMaxNoOfVals)
+            READ(AMPI_LUN(13),'(A80)') Tau0MinMaxUnits
+            READ(AMPI_LUN(13),*) Tau0MinMaxNoOfVals
+            READ(AMPI_LUN(13),*) (Tau0MinMaxDefVal(j),j=1,Tau0MinMaxNoOfVals)
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
          CASE("wave_refraction_in_swan")
             FoundSwanWaveRefrac = .TRUE.
-            READ(13,'(A80)') SwanWaveRefracUnits
-            READ(13,*) SwanWaveRefracNoOfVals
-            READ(13,*) SwanWaveRefracDefVal
+            READ(AMPI_LUN(13),'(A80)') SwanWaveRefracUnits
+            READ(AMPI_LUN(13),*) SwanWaveRefracNoOfVals
+            READ(AMPI_LUN(13),*) SwanWaveRefracDefVal
 Corbitt 120321: Allow advection to be turned on locally instead of globally
          CASE("advection_state")
             FoundAdvectionState = .TRUE.
-            READ(13,'(A80)') AdvectionStateUnits
-            READ(13,*) AdvectionStateNoOfVals
-            READ(13,*) AdvectionStateDefVal
+            READ(AMPI_LUN(13),'(A80)') AdvectionStateUnits
+            READ(AMPI_LUN(13),*) AdvectionStateNoOfVals
+            READ(AMPI_LUN(13),*) AdvectionStateDefVal
          CASE("elemental_slope_limiter")
             FoundEleSlopeLim = .TRUE.
-            READ(13,'(A80)') EleSlopeLimUnits
-            READ(13,*) EleSlopeLimNoOfVals
-            READ(13,*) EleSlopeLimDefVal
+            READ(AMPI_LUN(13),'(A80)') EleSlopeLimUnits
+            READ(AMPI_LUN(13),*) EleSlopeLimNoOfVals
+            READ(AMPI_LUN(13),*) EleSlopeLimDefVal
          CASE("initial_river_elevation")  ! tcm 20140502 v51.27
             FoundRiver_et_WSE = .TRUE.
-            READ(13,'(A80)') River_et_WSEUnits
-            READ(13,*) River_et_WSENoOfVals
-            READ(13,*) River_et_WSEDefVal            
+            READ(AMPI_LUN(13),'(A80)') River_et_WSEUnits
+            READ(AMPI_LUN(13),*) River_et_WSENoOfVals
+            READ(AMPI_LUN(13),*) River_et_WSEDefVal            
 C 09232016 WP: Add spatially varying linear internal tide friction
          CASE("internal_tide_friction")
             FoundIT_Fric = .True.              
-            READ(13,'(A80)') IT_FricUnits
-            READ(13,*) IT_FricNoOfVals
-            READ(13,*) (IT_FricDefVal(j),j=1,IT_FricNoOfVals)
+            READ(AMPI_LUN(13),'(A80)') IT_FricUnits
+            READ(AMPI_LUN(13),*) IT_FricNoOfVals
+            READ(AMPI_LUN(13),*) (IT_FricDefVal(j),j=1,IT_FricNoOfVals)
          CASE("overland_reduction_factor")
             FoundOverlandReductionFactor = .TRUE.
-            READ(13,'(A80)') OverlandReductionFactorUnits
-            READ(13,*) OverlandReductionFactorNoOfVals
-            READ(13,*) OverlandReductionFactorDefaultValue
+            READ(AMPI_LUN(13),'(A80)') OverlandReductionFactorUnits
+            READ(AMPI_LUN(13),*) OverlandReductionFactorNoOfVals
+            READ(AMPI_LUN(13),*) OverlandReductionFactorDefaultValue
+         CASE("subgrid_barrier")
+            FoundSubgridBarrier = .TRUE.
+            READ(AMPI_LUN(13),'(A80)') SubgridBarrierUnits
+            READ(AMPI_LUN(13),*) SubgridBarrierNoOfVals
+            READ(AMPI_LUN(13),*) (SubgridBarrierDefaultValue(j),j=1,SubgridBarrierNoOfVals)
 C---- DW ----- for sponge layer ----------
          CASE ("sponge_generator_layer")  
             FoundAbsLayerSigma = .TRUE.
-            READ(13,'(A80)') AbsLayerSigmaUnits 
-            READ(13,*) AbsLayerSigmaNoOfVals
-            READ(13,*) 
-     &           (AbsLayerSigmaDefVal(j),j=1,AbsLayerSigmaNoOfVals)
+            READ(AMPI_LUN(13),'(A80)') AbsLayerSigmaUnits 
+            READ(AMPI_LUN(13),*) AbsLayerSigmaNoOfVals
+            READ(AMPI_LUN(13),*) 
+     &          (AbsLayerSigmaDefVal(j),j=1,AbsLayerSigmaNoOfVals)
          CASE DEFAULT
-            WRITE(16,1001)          ! Nodal Attributes file
-            WRITE(16,1021) AttrName ! contains invalid name
+            WRITE(AMPI_LUN(16),1001)          ! Nodal Attributes file
+            WRITE(AMPI_LUN(16),1021) AttrName ! contains invalid name
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1001)
-               WRITE(ScreenUnit,1021) AttrName
+               WRITE(AMPI_LUN(ScreenUnit),1001)
+               WRITE(AMPI_LUN(ScreenUnit),1021) AttrName
             ENDIF
-            READ(13,'(A80)') Skipped  ! skip the Units for the invalid name
-            READ(13,'(A80)') Skipped  ! skip the NoOfVals for invalid name
-            READ(13,'(A80)') Skipped  !jgf51.40: skip the default value
+            READ(AMPI_LUN(13),'(A80)') Skipped  ! skip the Units for the invalid name
+            READ(AMPI_LUN(13),'(A80)') Skipped  ! skip the NoOfVals for invalid name
+            READ(AMPI_LUN(13),'(A80)') Skipped  !jgf51.40: skip the default value
          END SELECT
       END DO
 C
@@ -1233,14 +1267,14 @@ C     Allocate memory for nodal attributes
 C
 C     Now read each of the attributes required by the model parameter
 C     (unit 15) file and skip past the others.
-      WRITE(16,270) NWP
+      WRITE(AMPI_LUN(16),270) NWP
  270  FORMAT(/,9X,'Now reading ',I2,' nodal attribute(s).')
       DO k=1, NAttr
-         WRITE(16,280) k
+         WRITE(AMPI_LUN(16),280) k
  280     FORMAT(/,9X,'Attribute ',I2,':')
-         READ(13,*) AttrName
-         READ(13,*) NumNodesNotDefault
-         WRITE(16,'(14X,A80)') AttrName
+         READ(AMPI_LUN(13),*) AttrName
+         READ(AMPI_LUN(13),*) NumNodesNotDefault
+         WRITE(AMPI_LUN(16),'(14X,A80)') AttrName
          SELECT CASE (AttrName)
          CASE("primitive_weighting_in_continuity_equation")
             IF (LoadTau0) THEN
@@ -1260,6 +1294,7 @@ C     (unit 15) file and skip past the others.
             IF (LoadQuadraticFric) THEN
                CALL LoadAttrVec(FRIC, QuadraticFricDefVal,
      &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
+               FRIC_ORIG = FRIC
             ELSE
                SkipDataSet = .True.
             ENDIF
@@ -1387,6 +1422,12 @@ C 09232016 WP : Spatially varying linear internal tide friction
      &              NumNodesNotDefault,nScreen,MyProc,
      &              NAbOut)
             ENDIF
+         CASE("subgrid_barrier")
+             IF(LoadSubgridBarrier)THEN
+                 CALL LoadAttrMat(SubgridBarrier,SubgridBarrierNoOfVals,
+     &              subgridBarrierDefaultValue,NumNodesNotDefault,
+     &              nScreen,MyProc,NAbOut)
+             ENDIF
 C          WP
 !------- DW ---- Absorbing layer -----------
          CASE ("sponge_generator_layer") 
@@ -1427,21 +1468,21 @@ C          WP
 !--------DW -----------------------------------
          CASE DEFAULT
             SkipDataSet = .True.
-            WRITE(16,1001)      ! Nodal Attributes file
-            WRITE(16,1021) AttrName ! contains invalid name
+            WRITE(AMPI_LUN(16),1001)      ! Nodal Attributes file
+            WRITE(AMPI_LUN(16),1021) AttrName ! contains invalid name
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1001)
-               WRITE(ScreenUnit,1021) AttrName
+               WRITE(AMPI_LUN(ScreenUnit),1001)
+               WRITE(AMPI_LUN(ScreenUnit),1021) AttrName
             ENDIF
          END SELECT
          IF (SkipDataSet) THEN
             DO L=1, NumNodesNotDefault
-               READ(13,*) Skipped
+               READ(AMPI_LUN(13),*) Skipped
             END DO
-            WRITE(16,'(9X,A8)') 'Skipped.'
+            WRITE(AMPI_LUN(16),'(9X,A8)') 'Skipped.'
             SkipDataSet = .False.
          ELSE
-            WRITE(16,'(/,9X,A18,A80)') 'Finished loading ', AttrName
+            WRITE(AMPI_LUN(16),'(/,9X,A18,A80)') 'Finished loading ', AttrName
          ENDIF
       END DO
 C
@@ -1488,18 +1529,18 @@ C     ----------------------------------------------------------------
       INTEGER             :: DictNode ! node position in array
 C
 C     Set all values to user-specified default values.
-      IF (NABOUT.EQ.0) WRITE(16,1001) Default
+      IF (NABOUT.EQ.0) WRITE(AMPI_LUN(16),1001) Default
       DO i=1, NumOfNodes
          AttributeData(i) = Default
       END DO
 C
-      IF (NABOUT.EQ.0) WRITE(16,1005)
+      IF (NABOUT.EQ.0) WRITE(AMPI_LUN(16),1005)
       DO i=1, NumNodesNotDef
-         READ(13,*) NodeNum, TempData
+         READ(AMPI_LUN(13),*) NodeNum, TempData
          DictNode = find(node_dict,NodeNum)
          AttributeData(DictNode) = TempData
          IF (NABOUT.EQ.0)
-     &       WRITE(16,1010) NodeNum, TempData
+     &      WRITE(AMPI_LUN(16),1010) NodeNum, TempData
       END DO
 C
  1001 FORMAT(/,10X,'Set all nodes to the default value of ',E16.8,/)
@@ -1542,24 +1583,24 @@ C------ DW
 C------
 C
 C     Set all nodes to user-specified default values.
-      IF (NABOUT.EQ.0) WRITE(16,1001)
+      IF (NABOUT.EQ.0) WRITE(AMPI_LUN(16),1001)
       DO i=1, NumOfNodes
          DO j=1, NumCol
             AttributeData(i,j)=Default(j)
          END DO
       END DO
 C
-      IF (NABOUT.EQ.0) WRITE(16,1005)
-      IF (NABOUT.EQ.0) WRITE(16,*) NumCol,ubound(AttributeData),NumNodesNotDef
+      IF (NABOUT.EQ.0) WRITE(AMPI_LUN(16),1005)
+      IF (NABOUT.EQ.0) WRITE(AMPI_LUN(16),*) NumCol,ubound(AttributeData),NumNodesNotDef
       DO i=1, NumNodesNotDef
-         READ(13,*) NodeNum, (TempAttData(j),j=1,NumCol)
+         READ(AMPI_LUN(13),*) NodeNum, (TempAttData(j),j=1,NumCol)
          DictNode = find(node_dict,NodeNum)
          IF ( present(NodesNotDef) ) THEN
             NodesNotDef(i) = DictNode 
          END IF
          AttributeData(DictNode,:) = TempAttData(:)
-         IF (NABOUT.EQ.0) WRITE(16,1010) NodeNum,
-     &        (AttributeData(DictNode,j),j=1,NumCol)
+         IF (NABOUT.EQ.0) WRITE(AMPI_LUN(16),1010) NodeNum,
+     &       (AttributeData(DictNode,j),j=1,NumCol)
       END DO
 C
  1001 FORMAT(/,10X,'Set all nodes to the default values of ',/,
@@ -1612,8 +1653,8 @@ C     ERROR CHECK: If a nodal attributes file is being used, check to
 C     see that the number of nodes in the nodal attribute file is the
 C     same as the number of nodes in the grid file.
       IF (NWP.NE.0.AND.NumOfNodes.NE.NP) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9900)
-         WRITE(16,9900)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),9900)
+         WRITE(AMPI_LUN(16),9900)
  9900    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
      &        //,1X,'The number of nodes in the grid file (unit 14) and'
      &        /,1X,'the nodal attributes file (unit 13) must match.',
@@ -1625,8 +1666,8 @@ C     ERROR CHECK: If Chezy, Manning's or Quadratic friction was loaded
 C     from the nodal attributes file, NOLIBF must be 1.
       IF ((LoadChezy.or.LoadManningsN.or.LoadQuadraticFric).and.
      &     NoLiBF.ne.1) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9800)
-         WRITE(16,9800)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),9800)
+         WRITE(AMPI_LUN(16),9800)
  9800    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
      &        //,1X,'Nonlinear bottom friction coefficients were loaded'
      &        /,1X,'from the nodal attributes file (unit 13), so ',
@@ -1640,8 +1681,8 @@ C     ERROR CHECK: If Tau0=-3.x or -6.x in fort.15, then tau0 MUST be loaded
 C     from nodal attributes file.
       IF ( ((Tau0Dig1.eq.-3).or.(Tau0Dig1.eq.-6))
      &          .and.(.not.LoadTau0) ) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9700) Tau0
-         WRITE(16,9700)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),9700) Tau0
+         WRITE(AMPI_LUN(16),9700)
  9700    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
      &        //,1X,'Spatially and temporally varying tau0 was '
      &        /,1X,'specified in the fort.15 file with Tau0=',E9.2,
@@ -1692,7 +1733,7 @@ C     jgf46.25 If input tau0 is positive, set all nodes to that value.
             DO I=1,NP
               Tau0Var(I)=Tau0
             END DO
-            WRITE(16,7) Tau0
+            WRITE(AMPI_LUN(16),7) Tau0
  7          FORMAT(/,5X,
      &           'A SPATIALLY CONSTANT WEIGHTING COEFFICIENT (Tau0)'
      &           ,/,5X,' WILL BE USED IN THE GENERALIZED WAVE',
@@ -1706,15 +1747,15 @@ C           based on depth
             ENDDO
             ! jgf47.30.TODO: This logging needs to be cleaned up.
             IF(Tau0.eq.-2) THEN
-               WRITE(16,6) ! spatially vary tau0 according to hard coded scheme
-               WRITE(16,62) ! description of scheme
+               WRITE(AMPI_LUN(16),6) ! spatially vary tau0 according to hard coded scheme
+               WRITE(AMPI_LUN(16),62) ! description of scheme
  62            FORMAT(/,5X,'IF DEPTH > 200           Tau0 = 0.005',
      &              /,5X,'IF 200   > DEPTH > 1     Tau0 = 1/DEPTH  ',
      &              /,5X,'IF 1     > DEPTH         Tau0 = 1.0 ')
             ENDIF
             IF (.not.( (Tau0Dig1.eq.-3) .or. (Tau0Dig1.eq.-5) ) ) THEN
-               WRITE(16,6) ! spatially vary tau0 according to hard coded scheme
-               WRITE(16,61) ! description of scheme
+               WRITE(AMPI_LUN(16),6) ! spatially vary tau0 according to hard coded scheme
+               WRITE(AMPI_LUN(16),61) ! description of scheme
  61            FORMAT(/,5X,' IF DEPTH GE 10           -> TAU0 = 0.005',
      &              /,5X,' IF DEPTH LT 10           -> TAU0 = 0.020',/)
             ENDIF
@@ -1775,7 +1816,7 @@ C     jjw&sb46.38.sb01 If tau0 is loaded from nodal attributes file and
 C     Tau0 is -3, time-varing tau0 optimizer will be applied in timestep.F
       IF (HighResTimeVaryingTau0 .or. FullDomainTimeVaryingTau0) THEN
          ALLOCATE(Tau0Temp(NP))
-         WRITE(16,8) ! jgf47.30.TODO: This logging should be consolidated.
+         WRITE(AMPI_LUN(16),8) ! jgf47.30.TODO: This logging should be consolidated.
       ENDIF
  8    FORMAT(/,5X,'A SPATIALLY TEMPORALLY VARIABLE OPTIMIZED '
      &     ,/,5X,' WEIGHTING COEFFICIENT (Tau0) WILL BE USED '
@@ -1825,10 +1866,12 @@ C     Initialize bottom friction if it was not loaded from unit 13.
 C     If a nodal attributes file was read, FRIC was allocated there.
             IF (NWP.eq.0) THEN
                ALLOCATE(FRIC(NP))
+               ALLOCATE(FRIC_ORIG(NP))
             ENDIF
             DO I=1,NP
                FRIC(I)=CF
             END DO
+            FRIC_ORIG = FRIC
          ENDIF
 C
 C        jgf47.04 If a depth-dependent friction parameterization is used,
@@ -1846,11 +1889,13 @@ C     If a nodal attributes file was read, Z0b_var was allocated there.
           IF (NWP.eq.0) THEN
              ALLOCATE(Z0b_var(NP))
              ALLOCATE(FRIC(NP))
+             ALLOCATE(FRIC_ORIG(NP))
           ENDIF
           DO I=1,NP
              Z0b_var(I)=Z0B
              FRIC(I)=CF
           END DO
+          FRIC_ORIG = FRIC
         ENDIF
 C     jgf47.04 If a depth-dependent friction parameterization is used,
 C     the value from the fort.15 file is used as a floor for the
@@ -2021,7 +2066,7 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE Apply2DBottomFriction(UU1, VV1, DP, ETA2, G,
      &     IFNLFA, NP, TK)
-      USE GLOBAL, ONLY: MLD
+      USE GLOBAL, ONLY: MLD, DTDP
 C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
@@ -2041,26 +2086,58 @@ C
       REAL(SZ) BALPHA! BALPHA(2) is constriction fraction
       REAL(SZ) BDELX ! BDELX(3) is effective delx
       REAL(SZ) MLDrat ! MLD ratio to depth
+
+
+      !...Reset the friction to original values
+      !   when subgrid barriers might be used
+      IF(LoadSubgridBarrier)THEN
+        DO I=1,NP
+            IF(subgridBarrierNoOfVals.EQ.1)CYCLE
+            IF(LoadManningsN.AND.ManningsN(I).GT.0D0)CYCLE
+            IF(subgridbarrierOvertopping(I))THEN
+                FRIC(I) = subgridBarrier(I,2)
+            ELSE
+                FRIC(I) = FRIC_orig(I)
+            ENDIF
+        ENDDO
+      ENDIF
+
 C
 C     Step 0. Convert Manning's N to Cd, if necessary.
       IF (LoadManningsN) THEN
          DO I=1, NP
-            IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
-            FRIC(I)=g*ManningsN(I)**2.d0
-     &           /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) ! sb46.28sb02
-            !sb46.28sb02  Lower limit is applied here.
-            IF(FRIC(I).LT.BFCdLLimit) THEN
-               FRIC(I) = BFCdLLimit
+            IF(LoadSubgridBarrier)THEN
+                IF(subgridBarrierOvertopping(I).AND.
+     &             SubgridBarrierNoOfVals.EQ.2)THEN
+                    FRIC(I)=g*subgridBarrier(I,2)**2.d0
+     &                   /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) 
+                    IF(FRIC(I).LT.BFCdLLimit) THEN
+                       FRIC(I) = BFCdLLimit
+                    ENDIF
+                ELSE
+                    IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
+                    FRIC(I)=g*ManningsN(I)**2.d0
+     &                   /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) ! sb46.28sb02
+                    IF(FRIC(I).LT.BFCdLLimit) THEN
+                       FRIC(I) = BFCdLLimit
+                    ENDIF
+                ENDIF
+            ELSE
+                IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
+                FRIC(I)=g*ManningsN(I)**2.d0
+     &               /( ( DP(I)+IFNLFA*ETA2(I) )**(1.d0/3.d0) ) ! sb46.28sb02
+                !sb46.28sb02  Lower limit is applied here.
+                IF(FRIC(I).LT.BFCdLLimit) THEN
+                   FRIC(I) = BFCdLLimit
+                ENDIF
             ENDIF
          ENDDO
-      ENDIF
-C
-C     ... Convert Chezy to Cd, if necessary.
-      IF (LoadChezy) THEN
+      ELSEIF (LoadChezy) THEN
          DO I=1,NP
             FRIC(I) = G/(Chezy(I)**2)
          END DO
       ENDIF
+
 C
       NOLIBFRIC: IF (NOLIBF.eq.3) THEN
 C     ... Combined Cd for bottom friction and momentum dispersion
@@ -2074,7 +2151,7 @@ C              ... Cd as a power function [a(x^b-1)] of x = MLD
 C              ... Cd directly from the 3D model (MLD here)
                FRIC(I) = CF + MLD(I)
             ENDIF
-            TK(I)   = FRIC(I) * UV1 / H1 !nonlinear
+            TK(I) = MIN(FRIC(I) * UV1 / H1, 2.0/DTDP)
          ENDDO
 C
       ELSE
@@ -2084,10 +2161,11 @@ C        with the sea floor.
          DO I=1, NP
             UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             H1  = DP(I) + IFNLFA*ETA2(I)
-            TK(I)= FRIC(I)*
-     &            (IFLINBF +                                         ! linear
-     &            (UV1/H1) * (IFNLBF +                               ! nonlinear
-     &            IFHYBF*(1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)) ) ! hybrid
+            TK(I) = MIN(FRIC(I)*
+     &                     (IFLINBF +                                          ! linear
+     &                     (UV1/H1) * (IFNLBF +                               ! nonlinear
+     &                     IFHYBF*(1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)) ), ! hybrid 
+     &                  2.0/DTDP)
          END DO
 C
       ENDIF NOLIBFRIC
@@ -2104,7 +2182,7 @@ C     pilings, if required.
             BDELX = BridgePilings(I,3)
             FricBP=(H1/BDELX)*BK*(BK+5.d0*Fr*Fr-0.6d0)
      &           *(BALPHA+15.d0*BALPHA**4)
-            TK(I)=TK(I)+FricBP*UV1/H1
+            TK(I) = MIN(TK(I)+FricBP*UV1/H1, 2.0/DTDP)
          END DO
       ENDIF
 C
@@ -2588,19 +2666,20 @@ C     ----------------------------------------------------------------
       CHARACTER(len=80) AGRID2 ! users comment/description line
       REAL(SZ) DUM1, DUM2  ! data that we want to skip
 
-      OPEN(12,FILE=TRIM(INPUTDIR)//'/'//'fort.12')
+      OPEN(AMPI_LUN(12),FILE=TRIM(INPUTDIR)//'/'//'fort.12')
+      call AMPI_LUN_REGISTER(AMPI_LUN(12),FILE=TRIM(INPUTDIR)//'/'//'fort.12')
 C
 C...  READ STARTDRY INFORMATION FROM UNIT 12
-      READ(12,'(A80)') AGRID2
-      WRITE(16,2038) AGRID2
+      READ(AMPI_LUN(12),'(A80)') AGRID2
+      WRITE(AMPI_LUN(16),2038) AGRID2
 2038  FORMAT(5X,'STARTDRY FILE IDENTIFICATION : ',A80,/)
-      READ(12,*) NE2,NP2
+      READ(AMPI_LUN(12),*) NE2,NP2
 C
 C...  CHECK THAT NE2 AND NP2 MATCH WITH GRID FILE
 C      IF((NE2.NE.NE).OR.(NP2.NE.NP)) THEN
        IF(NP2.NE.NP) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9900)
-         WRITE(16,9900)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),9900)
+         WRITE(AMPI_LUN(16),9900)
  9900    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
      &        //,1X,'THE PARAMETER NE2 AND NP2 MUST MATCH NE AND NP ',
      &        /,1X,'USER MUST CHECK FORT.12 INPUT FILE ',
@@ -2610,10 +2689,10 @@ C      IF((NE2.NE.NE).OR.(NP2.NE.NP)) THEN
 C
 C...  READ IN STARTDRY CODE VALUES
       DO I=1,NP
-         READ(12,*) JKI,DUM1,DUM2,STARTDRY(JKI)
+         READ(AMPI_LUN(12),*) JKI,DUM1,DUM2,STARTDRY(JKI)
          IF(JKI.NE.I) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99805)
-            WRITE(16,99805)
+            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),99805)
+            WRITE(AMPI_LUN(16),99805)
 99805       FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
      &           'INPUT ERROR  !!!!!!!!!',
      &           //,1X,'YOUR NODE NUMBERING IS NOT SEQUENTIAL ',
@@ -2622,7 +2701,7 @@ C...  READ IN STARTDRY CODE VALUES
       END DO
 C
 C...  CLOSE UNIT 12 FILE
-      CLOSE(12)
+      CLOSE(AMPI_LUN(12))
 C
       RETURN
 C     ----------------------------------------------------------------
@@ -2654,13 +2733,14 @@ C     ----------------------------------------------------------------
       CHARACTER(len=80) AFRIC  ! user's comment/description line
       INTEGER NHG    ! node number from file
 
-      OPEN(21,FILE=TRIM(INPUTDIR)//'/'//'fort.21')
-      READ(21,'(A80)') AFRIC
+      OPEN(AMPI_LUN(21),FILE=TRIM(INPUTDIR)//'/'//'fort.21')
+      call AMPI_LUN_REGISTER(AMPI_LUN(21),FILE=TRIM(INPUTDIR)//'/'//'fort.21')
+      READ(AMPI_LUN(21),'(A80)') AFRIC
       DO I=1,NP
-         READ(21,*) NHG,FRIC(NHG)
+         READ(AMPI_LUN(21),*) NHG,FRIC(NHG)
          IF(NHG.NE.I) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99803)
-            WRITE(16,99803)
+            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),99803)
+            WRITE(AMPI_LUN(16),99803)
 99803       FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ',
      &           'INPUT ERROR  !!!!!!!!!',//,1X,
      &           'YOUR NODAL FRICTION NUMBERING IS NOT SEQUENTIAL ',
@@ -2669,17 +2749,17 @@ C     ----------------------------------------------------------------
             CALL EXIT(1)
          ENDIF
       END DO
-      WRITE(16,3601) AFRIC
+      WRITE(AMPI_LUN(16),3601) AFRIC
  3601 FORMAT(/,5X,'FRICTION FILE IDENTIFICATN : ',A80,/)
       IF(NABOUT.NE.1) THEN
-         WRITE(16,2080)
+         WRITE(AMPI_LUN(16),2080)
  2080    FORMAT(/,10X,'NODE',5X,'BOTTOM FRICTION FRIC',5X,/)
          DO I=1,NP
-            WRITE(16,2087) I,FRIC(I)
+            WRITE(AMPI_LUN(16),2087) I,FRIC(I)
  2087       FORMAT(7X,I6,6X,E17.10)
          END DO
       ELSE
-         WRITE(16,3504)
+         WRITE(AMPI_LUN(16),3504)
  3504    FORMAT(/,5X,'NODAL BOTTOM FRICTION VALUES ARE AVAILABLE',
      &        /,6X,' IN UNIT 21 INPUT FILE')
       ENDIF

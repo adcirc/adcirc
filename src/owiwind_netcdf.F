@@ -154,6 +154,8 @@
 #ifdef ADCNETCDF
 !-----------------------------------------------------------------------
       MODULE OWIWIND_NETCDF
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 !-----------------------------------------------------------------------
       USE SIZES, ONLY: SZ
       USE GLOBAL,ONLY : DEBUG, allMessage, setMessageSource, unsetMessageSource

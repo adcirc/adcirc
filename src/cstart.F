@@ -12,6 +12,8 @@ C******************************************************************************
 C
       SUBROUTINE COLDSTART()
 C
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES
       USE GLOBAL, only: DP1, DP2, eta1, qx2, qy2, tk, etas, eta2, ch1,
      &    en2, nddt, btime1, statim, btime2, btiminc, btime_end, qn1,
@@ -112,16 +114,16 @@ C...    read in the second depth dp2 for btime2
             CALL ADCIRC_Terminate()
          ENDIF
 
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1976)
-         WRITE(16,1976)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),1112)
+         WRITE(AMPI_LUN(16),1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),1976)
+         WRITE(AMPI_LUN(16),1976)
  1976    FORMAT(/,1X,'TIME VARYING BATHYMETRY INFORMATION ',
      &        'READ FROM UNIT 141',/)
 
          IF (ABS(NDDT).EQ.1) THEN
             DO I=1,NP
-               READ(141,*) IJK,DP2(IJK)
+               READ(AMPI_LUN(141),*) IJK,DP2(IJK)
             ENDDO
          ENDIF
          IF (ABS(NDDT).EQ.2) THEN
@@ -170,21 +172,22 @@ C...  INITIALIZE THE ELEVATION SPECIFIED BOUNDARY CONDITION IF IT
 C...  REQUIRES THE USE OF THE UNIT 19 FILE.
 C...
       IF (NPEBC) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1977)
-         WRITE(16,1977)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),1112)
+         WRITE(AMPI_LUN(16),1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),1977)
+         WRITE(AMPI_LUN(16),1977)
  1977    FORMAT(/,1X,'ELEVATION SPECIFIED INFORMATION READ FROM UNIT ',
      &        '19',/)
          ! NCSU Subdomain Modeling
          if (subdomainOn.eqv..false.) then
-            OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
-            READ(19,*) ETIMINC
+            OPEN(AMPI_LUN(19),FILE=TRIM(INPUTDIR)//'/'//'fort.19')
+            call AMPI_LUN_REGISTER(AMPI_LUN(19),FILE=TRIM(INPUTDIR)//'/'//'fort.19')
+            READ(AMPI_LUN(19),*) ETIMINC
             DO J=1,NETA
-               READ(19,*) ESBIN1(J)
+               READ(AMPI_LUN(19),*) ESBIN1(J)
             END DO
             DO J=1,NETA
-               READ(19,*) ESBIN2(J)
+               READ(AMPI_LUN(19),*) ESBIN2(J)
             END DO
             ETIME1 = STATIM*86400.D0
             ETIME2 = ETIME1 + ETIMINC
@@ -200,30 +203,31 @@ C
       END DO
 
       IF((NFLUXF.EQ.1).AND.(NFFR.EQ.0)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1979)
-         WRITE(16,1979)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),1112)
+         WRITE(AMPI_LUN(16),1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),1979)
+         WRITE(AMPI_LUN(16),1979)
  1979    FORMAT(/,1X,'NORMAL FLOW INFORMATION READ FROM UNIT 20',/)
-         OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
-         READ(20,*) FTIMINC
+         OPEN(AMPI_LUN(20),FILE=TRIM(INPUTDIR)//'/'//'fort.20')
+         call AMPI_LUN_REGISTER(AMPI_LUN(20),FILE=TRIM(INPUTDIR)//'/'//'fort.20')
+         READ(AMPI_LUN(20),*) FTIMINC
 
          DO J=1,NVEL
             QNIN1(J)=0.D0
             IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &          .OR.(LBCODEI(J).EQ.22)) THEN
-               READ(20,*) QNIN1(J)
+               READ(AMPI_LUN(20),*) QNIN1(J)
             ELSEIF (LBCODEI(J).EQ.32) THEN
-               READ(20,*) QNIN1(J),ENIN1(J)
+               READ(AMPI_LUN(20),*) QNIN1(J),ENIN1(J)
             ENDIF
          END DO
          DO J=1,NVEL
             QNIN2(J)=0.D0
             IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &           .OR.(LBCODEI(J).EQ.22)) THEN
-               READ(20,*) QNIN2(J)
+               READ(AMPI_LUN(20),*) QNIN2(J)
             ELSEIF (LBCODEI(J).EQ.32) THEN
-               READ(20,*) QNIN2(J),ENIN2(J)
+               READ(AMPI_LUN(20),*) QNIN2(J),ENIN2(J)
             ENDIF
          END DO
          QTIME1 = STATIM*86400.D0
@@ -254,22 +258,22 @@ C        momentum equations
          ENDIF
          IF ( metOutputOn .AND. nonMetOutputOff ) THEN
             IF ((NSCREEN.NE.0).AND.MYPROC.EQ.0) THEN
-               WRITE(ScreenUnit,*)
-     &      'INFO: Only meteorological output was requested. ADCIRC'
-               WRITE(ScreenUnit,*)
-     &      'will not solve the GWCE or momentum equations.'
+               WRITE(AMPI_LUN(ScreenUnit),*)
+     &     'INFO: Only meteorological output was requested. ADCIRC'
+               WRITE(AMPI_LUN(ScreenUnit),*)
+     &     'will not solve the GWCE or momentum equations.'
              ENDIF
-             WRITE(16,*)
-     &      'INFO: Only meteorological output was requested. ADCIRC'
-             WRITE(16,*)
-     &      'will not solve the GWCE or momentum equations.'
+             WRITE(AMPI_LUN(16),*)
+     &     'INFO: Only meteorological output was requested. ADCIRC'
+             WRITE(AMPI_LUN(16),*)
+     &     'will not solve the GWCE or momentum equations.'
             METONLY = .TRUE. ! set flag
          ENDIF
 
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1980)
-         WRITE(16,1980)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),1112)
+         WRITE(AMPI_LUN(16),1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),1980)
+         WRITE(AMPI_LUN(16),1980)
  1980    FORMAT(/,1X,'WIND (AND PRESSURE) INFORMATION READ.',/)
 
          call coldstartMeteorologicalForcing(nws)
@@ -284,7 +288,8 @@ C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
          RSTIME1 = STATIM*86400.D0
          RSTIME2 = RSTIME1+RSTIMINC
          IF(NRS.EQ.1) THEN
-           OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
+           OPEN(AMPI_LUN(23),FILE=TRIM(INPUTDIR)//'/'//'fort.23')
+           call AMPI_LUN_REGISTER(AMPI_LUN(23),FILE=TRIM(INPUTDIR)//'/'//'fort.23')
            CALL RSGET(RSNX1,RSNY1)
            CALL RSGET(RSNX2,RSNY2)
          ENDIF
@@ -293,10 +298,10 @@ C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
            CALL RS2GET(RSNX1,RSNY1,NP)
            CALL RS2GET(RSNX2,RSNY2,NP)
          ENDIF
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1981)
-         WRITE(16,1981)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),1112)
+         WRITE(AMPI_LUN(16),1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),1981)
+         WRITE(AMPI_LUN(16),1981)
  1981    FORMAT(/,1X,'RADIATION STRESS INFORMATION READ.',/)
       ENDIF
 
@@ -304,10 +309,10 @@ C... v49.64.01 - tcm added
 C...INPUT ICE CONCENTRATION INFORMATION FROM UNIT 25
 C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
       IF (NCICE.GE.1) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,2980)
-         WRITE(16,2980)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),1112)
+         WRITE(AMPI_LUN(16),1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(AMPI_LUN(ScreenUnit),2980)
+         WRITE(AMPI_LUN(16),2980)
  2980    FORMAT(/,1X,'ICE CONCENTRATION INFORMATION READ.',/)
 
          IF(NCICE.EQ.12) THEN
@@ -358,43 +363,45 @@ C...
       ENDIF
 
       IF(ABS(NOUTE).EQ.2) THEN
-         OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
-     &           ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(AMPI_LUN(61),FILE=TRIM(LOCALDIR)//'/'//'fort.61',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+         call AMPI_LUN_REGISTER(AMPI_LUN(61),FILE=TRIM(LOCALDIR)//'/'//'fort.61',
+     &          ACCESS='DIRECT',RECL=NBYTE)
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
-               WRITE(61,REC=IESTP+I) RDES4(I)
+               WRITE(AMPI_LUN(61),REC=IESTP+I) RDES4(I)
             ENDDO
             IESTP=IESTP+8
             DO I=1,6
-               WRITE(61,REC=IESTP+I) RID4(I)
+               WRITE(AMPI_LUN(61),REC=IESTP+I) RID4(I)
             ENDDO
             IESTP=IESTP+6
             DO I=1,6
-               WRITE(61,REC=IESTP+I) AID4(I)
+               WRITE(AMPI_LUN(61),REC=IESTP+I) AID4(I)
             ENDDO
             IESTP=IESTP+6
             ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
-               WRITE(61,REC=IESTP+I) RDES8(I)
+               WRITE(AMPI_LUN(61),REC=IESTP+I) RDES8(I)
             ENDDO
             IESTP=IESTP+4
             DO I=1,3
-               WRITE(61,REC=IESTP+I) RID8(I)
+               WRITE(AMPI_LUN(61),REC=IESTP+I) RID8(I)
             ENDDO
             IESTP=IESTP+3
             DO I=1,3
-               WRITE(61,REC=IESTP+I) AID8(I)
+               WRITE(AMPI_LUN(61),REC=IESTP+I) AID8(I)
             ENDDO
             IESTP=IESTP+3
             ENDIF
-         WRITE(61,REC=IESTP+1) NTRSPE
-         WRITE(61,REC=IESTP+2) NSTAE
-         WRITE(61,REC=IESTP+3) DT*NSPOOLE
-         WRITE(61,REC=IESTP+4) NSPOOLE
-         WRITE(61,REC=IESTP+5) 1
+         WRITE(AMPI_LUN(61),REC=IESTP+1) NTRSPE
+         WRITE(AMPI_LUN(61),REC=IESTP+2) NSTAE
+         WRITE(AMPI_LUN(61),REC=IESTP+3) DT*NSPOOLE
+         WRITE(AMPI_LUN(61),REC=IESTP+4) NSPOOLE
+         WRITE(AMPI_LUN(61),REC=IESTP+5) 1
          IESTP=IESTP+5
-         CLOSE(61)
+         CLOSE(AMPI_LUN(61))
          ENDIF
 
 C...
@@ -418,43 +425,45 @@ C...
       ENDIF
 
       IF(ABS(NOUTV).EQ.2) THEN
-         OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
-     &           ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(AMPI_LUN(62),FILE=TRIM(LOCALDIR)//'/'//'fort.62',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+         call AMPI_LUN_REGISTER(AMPI_LUN(62),FILE=TRIM(LOCALDIR)//'/'//'fort.62',
+     &          ACCESS='DIRECT',RECL=NBYTE)
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
-               WRITE(62,REC=IVSTP+I) RDES4(I)
+               WRITE(AMPI_LUN(62),REC=IVSTP+I) RDES4(I)
             ENDDO
             IVSTP=IVSTP+8
             DO I=1,6
-               WRITE(62,REC=IVSTP+I) RID4(I)
+               WRITE(AMPI_LUN(62),REC=IVSTP+I) RID4(I)
             ENDDO
             IVSTP=IVSTP+6
             DO I=1,6
-               WRITE(62,REC=IVSTP+I) AID4(I)
+               WRITE(AMPI_LUN(62),REC=IVSTP+I) AID4(I)
             ENDDO
             IVSTP=IVSTP+6
             ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
-               WRITE(62,REC=IVSTP+I) RDES8(I)
+               WRITE(AMPI_LUN(62),REC=IVSTP+I) RDES8(I)
             ENDDO
             IVSTP=IVSTP+4
             DO I=1,3
-               WRITE(62,REC=IVSTP+I) RID8(I)
+               WRITE(AMPI_LUN(62),REC=IVSTP+I) RID8(I)
             ENDDO
             IVSTP=IVSTP+3
             DO I=1,3
-               WRITE(62,REC=IVSTP+I) AID8(I)
+               WRITE(AMPI_LUN(62),REC=IVSTP+I) AID8(I)
             ENDDO
             IVSTP=IVSTP+3
             ENDIF
-         WRITE(62,REC=IVSTP+1) NTRSPV
-         WRITE(62,REC=IVSTP+2) NSTAV
-         WRITE(62,REC=IVSTP+3) DT*NSPOOLV
-         WRITE(62,REC=IVSTP+4) NSPOOLV
-         WRITE(62,REC=IVSTP+5) 2
+         WRITE(AMPI_LUN(62),REC=IVSTP+1) NTRSPV
+         WRITE(AMPI_LUN(62),REC=IVSTP+2) NSTAV
+         WRITE(AMPI_LUN(62),REC=IVSTP+3) DT*NSPOOLV
+         WRITE(AMPI_LUN(62),REC=IVSTP+4) NSPOOLV
+         WRITE(AMPI_LUN(62),REC=IVSTP+5) 2
          IVSTP=IVSTP+5
-         CLOSE(62)
+         CLOSE(AMPI_LUN(62))
          ENDIF
 
 C...
@@ -478,43 +487,45 @@ C...
       ENDIF
 
       IF(ABS(NOUTC).EQ.2) THEN
-         OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
-     &           ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(AMPI_LUN(81),FILE=TRIM(LOCALDIR)//'/'//'fort.81',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+         call AMPI_LUN_REGISTER(AMPI_LUN(81),FILE=TRIM(LOCALDIR)//'/'//'fort.81',
+     &          ACCESS='DIRECT',RECL=NBYTE)
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
-               WRITE(81,REC=ICSTP+I) RDES4(I)
+               WRITE(AMPI_LUN(81),REC=ICSTP+I) RDES4(I)
             ENDDO
             ICSTP=ICSTP+8
             DO I=1,6
-               WRITE(81,REC=ICSTP+I) RID4(I)
+               WRITE(AMPI_LUN(81),REC=ICSTP+I) RID4(I)
             ENDDO
             ICSTP=ICSTP+6
             DO I=1,6
-               WRITE(81,REC=ICSTP+I) AID4(I)
+               WRITE(AMPI_LUN(81),REC=ICSTP+I) AID4(I)
             ENDDO
             ICSTP=ICSTP+6
             ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
-               WRITE(81,REC=ICSTP+I) RDES8(I)
+               WRITE(AMPI_LUN(81),REC=ICSTP+I) RDES8(I)
             ENDDO
             ICSTP=ICSTP+4
             DO I=1,3
-               WRITE(81,REC=ICSTP+I) RID8(I)
+               WRITE(AMPI_LUN(81),REC=ICSTP+I) RID8(I)
             ENDDO
             ICSTP=ICSTP+3
             DO I=1,3
-               WRITE(81,REC=ICSTP+I) AID8(I)
+               WRITE(AMPI_LUN(81),REC=ICSTP+I) AID8(I)
             ENDDO
             ICSTP=ICSTP+3
             ENDIF
-         WRITE(81,REC=ICSTP+1) NTRSPC
-         WRITE(81,REC=ICSTP+2) NSTAC
-         WRITE(81,REC=ICSTP+3) DT*NSPOOLC
-         WRITE(81,REC=ICSTP+4) NSPOOLC
-         WRITE(81,REC=ICSTP+5) 1
+         WRITE(AMPI_LUN(81),REC=ICSTP+1) NTRSPC
+         WRITE(AMPI_LUN(81),REC=ICSTP+2) NSTAC
+         WRITE(AMPI_LUN(81),REC=ICSTP+3) DT*NSPOOLC
+         WRITE(AMPI_LUN(81),REC=ICSTP+4) NSPOOLC
+         WRITE(AMPI_LUN(81),REC=ICSTP+5) 1
          ICSTP=ICSTP+5
-         CLOSE(81)
+         CLOSE(AMPI_LUN(81))
          ENDIF
 
 C...
@@ -559,36 +570,42 @@ C...
       ENDIF
 
       IF(ABS(NOUTM).EQ.2) THEN
-         OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
-     &           ACCESS='DIRECT',RECL=NBYTE)
-         OPEN(72,FILE=TRIM(LOCALDIR)//'/'//'fort.72',
-     &           ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(AMPI_LUN(71),FILE=TRIM(LOCALDIR)//'/'//'fort.71',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+         call AMPI_LUN_REGISTER(AMPI_LUN(71),FILE=TRIM(LOCALDIR)//'/'//'fort.71',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(AMPI_LUN(72),FILE=TRIM(LOCALDIR)//'/'//'fort.72',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+         call AMPI_LUN_REGISTER(AMPI_LUN(72),FILE=TRIM(LOCALDIR)//'/'//'fort.72',
+     &          ACCESS='DIRECT',RECL=NBYTE)
 ! V49.64.01 TCM -ADDED ICE STATIONS
          IF(NCICE.NE.0) THEN
-            OPEN(91,FILE=TRIM(LOCALDIR)//'/'//'fort.91',
-     &           ACCESS='DIRECT',RECL=NBYTE)
+            OPEN(AMPI_LUN(91),FILE=TRIM(LOCALDIR)//'/'//'fort.91',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+            call AMPI_LUN_REGISTER(AMPI_LUN(91),FILE=TRIM(LOCALDIR)//'/'//'fort.91',
+     &          ACCESS='DIRECT',RECL=NBYTE)
          ENDIF
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
-               WRITE(71,REC=IPSTP+I) RDES4(I)
-               WRITE(72,REC=IWSTP+I) RDES4(I)
-               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RDES4(I)
+               WRITE(AMPI_LUN(71),REC=IPSTP+I) RDES4(I)
+               WRITE(AMPI_LUN(72),REC=IWSTP+I) RDES4(I)
+               IF (NCICE.NE.0) WRITE(AMPI_LUN(91),REC=IICESTP+I) RDES4(I)
             ENDDO
             IPSTP=IPSTP+8
             IWSTP=IWSTP+8
             IF (NCICE.NE.0) IICESTP = IICESTP+8
             DO I=1,6
-               WRITE(71,REC=IPSTP+I) RID4(I)
-               WRITE(72,REC=IWSTP+I) RID4(I)
-               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RID4(I)
+               WRITE(AMPI_LUN(71),REC=IPSTP+I) RID4(I)
+               WRITE(AMPI_LUN(72),REC=IWSTP+I) RID4(I)
+               IF (NCICE.NE.0) WRITE(AMPI_LUN(91),REC=IICESTP+I) RID4(I)
             ENDDO
             IPSTP=IPSTP+6
             IWSTP=IWSTP+6
             IF (NCICE.NE.0) IICESTP = IICESTP+6
             DO I=1,6
-               WRITE(71,REC=IPSTP+I) AID4(I)
-               WRITE(72,REC=IWSTP+I) AID4(I)
-               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) AID4(I)
+               WRITE(AMPI_LUN(71),REC=IPSTP+I) AID4(I)
+               WRITE(AMPI_LUN(72),REC=IWSTP+I) AID4(I)
+               IF (NCICE.NE.0) WRITE(AMPI_LUN(91),REC=IICESTP+I) AID4(I)
             ENDDO
             IPSTP=IPSTP+6
             IWSTP=IWSTP+6
@@ -596,53 +613,53 @@ C...
          ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
-               WRITE(71,REC=IPSTP+I) RDES8(I)
-               WRITE(72,REC=IWSTP+I) RDES8(I)
-               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RDES8(I)
+               WRITE(AMPI_LUN(71),REC=IPSTP+I) RDES8(I)
+               WRITE(AMPI_LUN(72),REC=IWSTP+I) RDES8(I)
+               IF (NCICE.NE.0) WRITE(AMPI_LUN(91),REC=IICESTP+I) RDES8(I)
             ENDDO
             IPSTP=IPSTP+4
             IWSTP=IWSTP+4
             IF (NCICE.NE.0) IICESTP = IICESTP+4
             DO I=1,3
-               WRITE(71,REC=IPSTP+I) RID8(I)
-               WRITE(72,REC=IWSTP+I) RID8(I)
-               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RID8(I)
+               WRITE(AMPI_LUN(71),REC=IPSTP+I) RID8(I)
+               WRITE(AMPI_LUN(72),REC=IWSTP+I) RID8(I)
+               IF (NCICE.NE.0) WRITE(AMPI_LUN(91),REC=IICESTP+I) RID8(I)
             ENDDO
             IPSTP=IPSTP+3
             IWSTP=IWSTP+3
             IF (NCICE.NE.0) IICESTP = IICESTP+3
             DO I=1,3
-               WRITE(71,REC=IPSTP+I) AID8(I)
-               WRITE(72,REC=IWSTP+I) AID8(I)
-               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) AID8(I)
+               WRITE(AMPI_LUN(71),REC=IPSTP+I) AID8(I)
+               WRITE(AMPI_LUN(72),REC=IWSTP+I) AID8(I)
+               IF (NCICE.NE.0) WRITE(AMPI_LUN(91),REC=IICESTP+I) AID8(I)
             ENDDO
             IPSTP=IPSTP+3
             IWSTP=IWSTP+3
             IF (NCICE.NE.0) IICESTP = IICESTP+3
          ENDIF
-         WRITE(71,REC=IPSTP+1) NTRSPM
-         WRITE(71,REC=IPSTP+2) NSTAM
-         WRITE(71,REC=IPSTP+3) DT*NSPOOLM
-         WRITE(71,REC=IPSTP+4) NSPOOLM
-         WRITE(71,REC=IPSTP+5) 1
-         WRITE(72,REC=IWSTP+1) NTRSPM
-         WRITE(72,REC=IWSTP+2) NSTAM
-         WRITE(72,REC=IWSTP+3) DT*NSPOOLM
-         WRITE(72,REC=IWSTP+4) NSPOOLM
-         WRITE(72,REC=IWSTP+5) 2
+         WRITE(AMPI_LUN(71),REC=IPSTP+1) NTRSPM
+         WRITE(AMPI_LUN(71),REC=IPSTP+2) NSTAM
+         WRITE(AMPI_LUN(71),REC=IPSTP+3) DT*NSPOOLM
+         WRITE(AMPI_LUN(71),REC=IPSTP+4) NSPOOLM
+         WRITE(AMPI_LUN(71),REC=IPSTP+5) 1
+         WRITE(AMPI_LUN(72),REC=IWSTP+1) NTRSPM
+         WRITE(AMPI_LUN(72),REC=IWSTP+2) NSTAM
+         WRITE(AMPI_LUN(72),REC=IWSTP+3) DT*NSPOOLM
+         WRITE(AMPI_LUN(72),REC=IWSTP+4) NSPOOLM
+         WRITE(AMPI_LUN(72),REC=IWSTP+5) 2
          IPSTP=IPSTP+5
          IWSTP=IWSTP+5
-         CLOSE(71)
-         CLOSE(72)
+         CLOSE(AMPI_LUN(71))
+         CLOSE(AMPI_LUN(72))
 !  v49.64.01 tcm - added ice station support
          IF(NCICE.NE.0) THEN
-            WRITE(91,REC=IICESTP+1) NTRSPM
-            WRITE(91,REC=IICESTP+2) NSTAM
-            WRITE(91,REC=IICESTP+3) DT*NSPOOLM
-            WRITE(91,REC=IICESTP+4) NSPOOLM
-            WRITE(91,REC=IICESTP+5) 1
+            WRITE(AMPI_LUN(91),REC=IICESTP+1) NTRSPM
+            WRITE(AMPI_LUN(91),REC=IICESTP+2) NSTAM
+            WRITE(AMPI_LUN(91),REC=IICESTP+3) DT*NSPOOLM
+            WRITE(AMPI_LUN(91),REC=IICESTP+4) NSPOOLM
+            WRITE(AMPI_LUN(91),REC=IICESTP+5) 1
             IICESTP = IICESTP + 5
-            CLOSE(91)
+            CLOSE(AMPI_LUN(91))
          ENDIF
       ENDIF
 
@@ -670,43 +687,45 @@ C...
       ENDIF
 
       IF ((NDDT.NE.0).AND.(ABS(NOUTE).EQ.2)) THEN
-         OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
-     &           ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(AMPI_LUN(75),FILE=TRIM(LOCALDIR)//'/'//'fort.75',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+         call AMPI_LUN_REGISTER(AMPI_LUN(75),FILE=TRIM(LOCALDIR)//'/'//'fort.75',
+     &          ACCESS='DIRECT',RECL=NBYTE)
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
-               WRITE(75,REC=IBSTP+I) RDES4(I)
+               WRITE(AMPI_LUN(75),REC=IBSTP+I) RDES4(I)
             ENDDO
             IBSTP=IBSTP+8
             DO I=1,6
-               WRITE(75,REC=IBSTP+I) RID4(I)
+               WRITE(AMPI_LUN(75),REC=IBSTP+I) RID4(I)
             ENDDO
             IBSTP=IBSTP+6
             DO I=1,6
-               WRITE(75,REC=IBSTP+I) AID4(I)
+               WRITE(AMPI_LUN(75),REC=IBSTP+I) AID4(I)
             ENDDO
             IBSTP=IBSTP+6
          ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
-               WRITE(75,REC=IBSTP+I) RDES8(I)
+               WRITE(AMPI_LUN(75),REC=IBSTP+I) RDES8(I)
             ENDDO
             IBSTP=IBSTP+4
             DO I=1,3
-               WRITE(75,REC=IBSTP+I) RID8(I)
+               WRITE(AMPI_LUN(75),REC=IBSTP+I) RID8(I)
             ENDDO
             IBSTP=IBSTP+3
             DO I=1,3
-               WRITE(75,REC=IBSTP+I) AID8(I)
+               WRITE(AMPI_LUN(75),REC=IBSTP+I) AID8(I)
             ENDDO
             IBSTP=IBSTP+3
          ENDIF
-         WRITE(75,REC=IBSTP+1) NTRSPE
-         WRITE(75,REC=IBSTP+2) NSTAE
-         WRITE(75,REC=IBSTP+3) DT*NSPOOLE
-         WRITE(75,REC=IBSTP+4) NSPOOLE
-         WRITE(75,REC=IBSTP+5) 1
+         WRITE(AMPI_LUN(75),REC=IBSTP+1) NTRSPE
+         WRITE(AMPI_LUN(75),REC=IBSTP+2) NSTAE
+         WRITE(AMPI_LUN(75),REC=IBSTP+3) DT*NSPOOLE
+         WRITE(AMPI_LUN(75),REC=IBSTP+4) NSPOOLE
+         WRITE(AMPI_LUN(75),REC=IBSTP+5) 1
          IBSTP=IBSTP+5
-         CLOSE(75)
+         CLOSE(AMPI_LUN(75))
       ENDIF
 
 C...
@@ -809,43 +828,45 @@ Casey 090302: Corrected the unit number from 10 to 90.
 
 
       IF(ABS(NOUTGE).EQ.2) THEN
-         OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
-     &           ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(AMPI_LUN(63),FILE=TRIM(LOCALDIR)//'/'//'fort.63',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+         call AMPI_LUN_REGISTER(AMPI_LUN(63),FILE=TRIM(LOCALDIR)//'/'//'fort.63',
+     &          ACCESS='DIRECT',RECL=NBYTE)
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
-               WRITE(63,REC=IGEP+I) RDES4(I)
+               WRITE(AMPI_LUN(63),REC=IGEP+I) RDES4(I)
                ENDDO
             IGEP=IGEP+8
             DO I=1,6
-               WRITE(63,REC=IGEP+I) RID4(I)
+               WRITE(AMPI_LUN(63),REC=IGEP+I) RID4(I)
                ENDDO
             IGEP=IGEP+6
             DO I=1,6
-               WRITE(63,REC=IGEP+I) AID4(I)
+               WRITE(AMPI_LUN(63),REC=IGEP+I) AID4(I)
                ENDDO
             IGEP=IGEP+6
             ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
-               WRITE(63,REC=IGEP+I) RDES8(I)
+               WRITE(AMPI_LUN(63),REC=IGEP+I) RDES8(I)
                ENDDO
             IGEP=IGEP+4
             DO I=1,3
-               WRITE(63,REC=IGEP+I) RID8(I)
+               WRITE(AMPI_LUN(63),REC=IGEP+I) RID8(I)
                ENDDO
             IGEP=IGEP+3
             DO I=1,3
-               WRITE(63,REC=IGEP+I) AID8(I)
+               WRITE(AMPI_LUN(63),REC=IGEP+I) AID8(I)
                ENDDO
             IGEP=IGEP+3
             ENDIF
-         WRITE(63,REC=IGEP+1) NDSETSE
-         WRITE(63,REC=IGEP+2) NP
-         WRITE(63,REC=IGEP+3) DT*NSPOOLGE
-         WRITE(63,REC=IGEP+4) NSPOOLGE
-         WRITE(63,REC=IGEP+5) 1
+         WRITE(AMPI_LUN(63),REC=IGEP+1) NDSETSE
+         WRITE(AMPI_LUN(63),REC=IGEP+2) NP
+         WRITE(AMPI_LUN(63),REC=IGEP+3) DT*NSPOOLGE
+         WRITE(AMPI_LUN(63),REC=IGEP+4) NSPOOLGE
+         WRITE(AMPI_LUN(63),REC=IGEP+5) 1
          IGEP=IGEP+5
-         CLOSE(63)
+         CLOSE(AMPI_LUN(63))
          ENDIF
 C...
 C....INITIALIZE GLOBAL VELOCITY SPOOL COUNTER
@@ -871,43 +892,45 @@ C...
       ENDIF
 
       IF(ABS(NOUTGV).EQ.2) THEN
-         OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
-     &        ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(AMPI_LUN(64),FILE=TRIM(LOCALDIR)//'/'//'fort.64',
+     &       ACCESS='DIRECT',RECL=NBYTE)
+         call AMPI_LUN_REGISTER(AMPI_LUN(64),FILE=TRIM(LOCALDIR)//'/'//'fort.64',
+     &       ACCESS='DIRECT',RECL=NBYTE)
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
-               WRITE(64,REC=IGVP+I) RDES4(I)
+               WRITE(AMPI_LUN(64),REC=IGVP+I) RDES4(I)
                ENDDO
             IGVP=IGVP+8
             DO I=1,6
-               WRITE(64,REC=IGVP+I) RID4(I)
+               WRITE(AMPI_LUN(64),REC=IGVP+I) RID4(I)
                ENDDO
             IGVP=IGVP+6
             DO I=1,6
-               WRITE(64,REC=IGVP+I) AID4(I)
+               WRITE(AMPI_LUN(64),REC=IGVP+I) AID4(I)
                ENDDO
             IGVP=IGVP+6
             ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
-               WRITE(64,REC=IGVP+I) RDES8(I)
+               WRITE(AMPI_LUN(64),REC=IGVP+I) RDES8(I)
                ENDDO
             IGVP=IGVP+4
             DO I=1,3
-               WRITE(64,REC=IGVP+I) RID8(I)
+               WRITE(AMPI_LUN(64),REC=IGVP+I) RID8(I)
                ENDDO
             IGVP=IGVP+3
             DO I=1,3
-               WRITE(64,REC=IGVP+I) AID8(I)
+               WRITE(AMPI_LUN(64),REC=IGVP+I) AID8(I)
                ENDDO
             IGVP=IGVP+3
             ENDIF
-         WRITE(64,REC=IGVP+1) NDSETSV
-         WRITE(64,REC=IGVP+2) NP
-         WRITE(64,REC=IGVP+3) DT*NSPOOLGV
-         WRITE(64,REC=IGVP+4) NSPOOLGV
-         WRITE(64,REC=IGVP+5) 2
+         WRITE(AMPI_LUN(64),REC=IGVP+1) NDSETSV
+         WRITE(AMPI_LUN(64),REC=IGVP+2) NP
+         WRITE(AMPI_LUN(64),REC=IGVP+3) DT*NSPOOLGV
+         WRITE(AMPI_LUN(64),REC=IGVP+4) NSPOOLGV
+         WRITE(AMPI_LUN(64),REC=IGVP+5) 2
          IGVP=IGVP+5
-         CLOSE(64)
+         CLOSE(AMPI_LUN(64))
          ENDIF
 
 
@@ -921,43 +944,45 @@ Cobell - Open the fort.77 (weir elevation change) file
                 IG_TVW = 2
             ENDIF   
             IF(ABS(NOUT_TVW).EQ.2)THEN
-                OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
-     &              ACCESS='DIRECT',RECL=NBYTE)
+                OPEN(AMPI_LUN(77),FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+     &             ACCESS='DIRECT',RECL=NBYTE)
+                call AMPI_LUN_REGISTER(AMPI_LUN(77),FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+     &             ACCESS='DIRECT',RECL=NBYTE)
                 IF(NBYTE.EQ.4) THEN
                     DO I=1,8
-                        WRITE(77,REC=IG_TVW+I) RDES4(I)
+                        WRITE(AMPI_LUN(77),REC=IG_TVW+I) RDES4(I)
                     ENDDO
                     IG_TVW=IG_TVW+8
                     DO I=1,6
-                        WRITE(77,REC=IG_TVW+I) RID4(I)
+                        WRITE(AMPI_LUN(77),REC=IG_TVW+I) RID4(I)
                     ENDDO
                     IG_TVW=IG_TVW+6
                     DO I=1,6
-                        WRITE(77,REC=IG_TVW+I) AID4(I)
+                        WRITE(AMPI_LUN(77),REC=IG_TVW+I) AID4(I)
                     ENDDO
                     IG_TVW=IG_TVW+6
                 ENDIF
                 IF(NBYTE.EQ.8) THEN
                     DO I=1,4
-                        WRITE(77,REC=IG_TVW+I) RDES8(I)
+                        WRITE(AMPI_LUN(77),REC=IG_TVW+I) RDES8(I)
                     ENDDO
                     IG_TVW=IG_TVW+4
                     DO I=1,3
-                        WRITE(77,REC=IG_TVW+I) RID8(I)
+                        WRITE(AMPI_LUN(77),REC=IG_TVW+I) RID8(I)
                     ENDDO
                     IG_TVW=IG_TVW+3
                     DO I=1,3
-                        WRITE(77,REC=IG_TVW+I) AID8(I)
+                        WRITE(AMPI_LUN(77),REC=IG_TVW+I) AID8(I)
                     ENDDO
                     IG_TVW=IG_TVW+3
                 ENDIF
-                WRITE(77,REC=IG_TVW+1) NDSETS_TVW
-                WRITE(77,REC=IG_TVW+2) NP
-                WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
-                WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
-                WRITE(77,REC=IG_TVW+5) 2
+                WRITE(AMPI_LUN(77),REC=IG_TVW+1) NDSETS_TVW
+                WRITE(AMPI_LUN(77),REC=IG_TVW+2) NP
+                WRITE(AMPI_LUN(77),REC=IG_TVW+3) DT*NSPOOL_TVW
+                WRITE(AMPI_LUN(77),REC=IG_TVW+4) NSPOOL_TVW
+                WRITE(AMPI_LUN(77),REC=IG_TVW+5) 2
                 IG_TVW=IG_TVW+5
-                CLOSE(77)
+                CLOSE(AMPI_LUN(77))
             ENDIF    
          ENDIF    
             
@@ -1008,36 +1033,42 @@ C...
       ENDIF
 
       IF(ABS(NOUTGW).EQ.2) THEN
-         OPEN(73,file=trim(LOCALDIR)//'/'//'fort.73',
-     &           ACCESS='DIRECT',RECL=NByte)
-         OPEN(74,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
-     &           ACCESS='DIRECT',RECL=NByte)
+         OPEN(AMPI_LUN(73),file=trim(LOCALDIR)//'/'//'fort.73',
+     &          ACCESS='DIRECT',RECL=NByte)
+         call AMPI_LUN_REGISTER(AMPI_LUN(73),file=trim(LOCALDIR)//'/'//'fort.73',
+     &          ACCESS='DIRECT',RECL=NByte)
+         OPEN(AMPI_LUN(74),FILE=TRIM(LOCALDIR)//'/'//'fort.74',
+     &          ACCESS='DIRECT',RECL=NByte)
+         call AMPI_LUN_REGISTER(AMPI_LUN(74),FILE=TRIM(LOCALDIR)//'/'//'fort.74',
+     &          ACCESS='DIRECT',RECL=NByte)
 ! tcm v49.64.01 added for ice
          IF(NCICE.NE.0) THEN
-            OPEN(93,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
-     &           ACCESS='DIRECT',RECL=NByte)
+            OPEN(AMPI_LUN(93),FILE=TRIM(LOCALDIR)//'/'//'fort.93',
+     &          ACCESS='DIRECT',RECL=NByte)
+            call AMPI_LUN_REGISTER(AMPI_LUN(93),FILE=TRIM(LOCALDIR)//'/'//'fort.93',
+     &          ACCESS='DIRECT',RECL=NByte)
          ENDIF
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
-               write(73,rec=igpp+i) rdes4(i)
-               WRITE(74,REC=IGWP+I) RDES4(I)
-               if(ncice.ne.0) write(93,rec=igip+i) rdes4(i)
+               write(AMPI_LUN(73),rec=igpp+i) rdes4(i)
+               WRITE(AMPI_LUN(74),REC=IGWP+I) RDES4(I)
+               if(ncice.ne.0) write(AMPI_LUN(93),rec=igip+i) rdes4(i)
             ENDDO
             igpp=igpp+8
             IGWP=IGWP+8
             if(ncice.ne.0) igip = igip+8
             DO I=1,6
-               write(73,rec=igpp+i) rid4(i)
-               WRITE(74,REC=IGWP+I) RID4(I)
-               if(ncice.ne.0) write(93,rec=igip+i) rid4(i)
+               write(AMPI_LUN(73),rec=igpp+i) rid4(i)
+               WRITE(AMPI_LUN(74),REC=IGWP+I) RID4(I)
+               if(ncice.ne.0) write(AMPI_LUN(93),rec=igip+i) rid4(i)
             ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
             if(ncice.ne.0) igip = igip+6
             DO I=1,6
-               write(73,rec=igpp+i) aid4(i)
-               WRITE(74,REC=IGWP+I) AID4(I)
-               if(ncice.ne.0) write(93,rec=igip+i) aid4(i)
+               write(AMPI_LUN(73),rec=igpp+i) aid4(i)
+               WRITE(AMPI_LUN(74),REC=IGWP+I) AID4(I)
+               if(ncice.ne.0) write(AMPI_LUN(93),rec=igip+i) aid4(i)
             ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
@@ -1045,52 +1076,52 @@ C...
          ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
-               write(73,rec=igpp+i) rdes8(i)
-               WRITE(74,REC=IGWP+I) RDES8(I)
-               if(ncice.ne.0) write(93,rec=igip+i) rdes8(i)
+               write(AMPI_LUN(73),rec=igpp+i) rdes8(i)
+               WRITE(AMPI_LUN(74),REC=IGWP+I) RDES8(I)
+               if(ncice.ne.0) write(AMPI_LUN(93),rec=igip+i) rdes8(i)
             ENDDO
             igpp=igpp+4
             IGWP=IGWP+4
             if(ncice.ne.0) igip = igip+4
             DO I=1,3
-               write(73,rec=igpp+i) rid8(i)
-               WRITE(74,REC=IGWP+I) RID8(I)
-               if(ncice.ne.0) write(93,rec=igip+i) rid8(i)
+               write(AMPI_LUN(73),rec=igpp+i) rid8(i)
+               WRITE(AMPI_LUN(74),REC=IGWP+I) RID8(I)
+               if(ncice.ne.0) write(AMPI_LUN(93),rec=igip+i) rid8(i)
             ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
             if(ncice.ne.0) igip = igip+3
             DO I=1,3
-               write(73,rec=igpp+i) aid8(i)
-               WRITE(74,REC=IGWP+I) AID8(I)
-               if(ncice.ne.0) write(93,rec=igip+i) aid8(i)
+               write(AMPI_LUN(73),rec=igpp+i) aid8(i)
+               WRITE(AMPI_LUN(74),REC=IGWP+I) AID8(I)
+               if(ncice.ne.0) write(AMPI_LUN(93),rec=igip+i) aid8(i)
             ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
             if(ncice.ne.0) igip = igip+3
          ENDIF
-         write(73,rec=igpp+1) ndsetsw
-         write(73,rec=igpp+2) np
-         write(73,rec=igpp+3) dt*nspoolgw
-         write(73,rec=igpp+4) nspoolgw
-         write(73,rec=igpp+5) 2
+         write(AMPI_LUN(73),rec=igpp+1) ndsetsw
+         write(AMPI_LUN(73),rec=igpp+2) np
+         write(AMPI_LUN(73),rec=igpp+3) dt*nspoolgw
+         write(AMPI_LUN(73),rec=igpp+4) nspoolgw
+         write(AMPI_LUN(73),rec=igpp+5) 2
          igpp=igpp+5
-         close(73)
-         WRITE(74,REC=IGWP+1) NDSETSW
-         WRITE(74,REC=IGWP+2) NP
-         WRITE(74,REC=IGWP+3) DT*NSPOOLGW
-         WRITE(74,REC=IGWP+4) NSPOOLGW
-         WRITE(74,REC=IGWP+5) 2
+         close(AMPI_LUN(73))
+         WRITE(AMPI_LUN(74),REC=IGWP+1) NDSETSW
+         WRITE(AMPI_LUN(74),REC=IGWP+2) NP
+         WRITE(AMPI_LUN(74),REC=IGWP+3) DT*NSPOOLGW
+         WRITE(AMPI_LUN(74),REC=IGWP+4) NSPOOLGW
+         WRITE(AMPI_LUN(74),REC=IGWP+5) 2
          IGWP=IGWP+5
-         CLOSE(74)
+         CLOSE(AMPI_LUN(74))
          IF(NCICE.NE.0) THEN
-            WRITE(93,REC=IGIP+1) NDSETSW
-            WRITE(93,REC=IGIP+2) NP
-            WRITE(93,REC=IGIP+3) DT*NSPOOLGW
-            WRITE(93,REC=IGIP+4) NSPOOLGW
-            WRITE(93,REC=IGIP+5) 2
+            WRITE(AMPI_LUN(93),REC=IGIP+1) NDSETSW
+            WRITE(AMPI_LUN(93),REC=IGIP+2) NP
+            WRITE(AMPI_LUN(93),REC=IGIP+3) DT*NSPOOLGW
+            WRITE(AMPI_LUN(93),REC=IGIP+4) NSPOOLGW
+            WRITE(AMPI_LUN(93),REC=IGIP+5) 2
             IGIP=IGIP+5
-            CLOSE(93)
+            CLOSE(AMPI_LUN(93))
          ENDIF
       ENDIF
 
@@ -1110,43 +1141,45 @@ Casey 090302: Added the output of radiation stress gradients.
             IGRadS=2
          ENDIF
          IF(ABS(NOUTGW).EQ.2) THEN
-            OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
-     &              ACCESS='DIRECT',RECL=NByte)
+            OPEN(AMPI_LUN(164),FILE=TRIM(LOCALDIR)//'/'//'rads.64',
+     &             ACCESS='DIRECT',RECL=NByte)
+            call AMPI_LUN_REGISTER(AMPI_LUN(164),FILE=TRIM(LOCALDIR)//'/'//'rads.64',
+     &             ACCESS='DIRECT',RECL=NByte)
             IF(NBYTE.EQ.4) THEN
                DO I=1,8
-                  WRITE(164,REC=IGRadS+I) RDES4(I)
+                  WRITE(AMPI_LUN(164),REC=IGRadS+I) RDES4(I)
                   ENDDO
                IGRadS=IGRadS+8
                DO I=1,6
-                  WRITE(164,REC=IGRadS+I) RID4(I)
+                  WRITE(AMPI_LUN(164),REC=IGRadS+I) RID4(I)
                   ENDDO
                IGRadS=IGRadS+6
                DO I=1,6
-                  WRITE(164,REC=IGRadS+I) AID4(I)
+                  WRITE(AMPI_LUN(164),REC=IGRadS+I) AID4(I)
                ENDDO
                IGRadS=IGRadS+6
             ENDIF
             IF(NBYTE.EQ.8) THEN
                DO I=1,4
-                  WRITE(164,REC=IGRadS+I) RDES8(I)
+                  WRITE(AMPI_LUN(164),REC=IGRadS+I) RDES8(I)
                ENDDO
                IGRadS=IGRadS+4
                DO I=1,3
-                  WRITE(164,REC=IGRadS+I) RID8(I)
+                  WRITE(AMPI_LUN(164),REC=IGRadS+I) RID8(I)
                ENDDO
                IGRadS=IGRadS+3
                DO I=1,3
-                  WRITE(164,REC=IGRadS+I) AID8(I)
+                  WRITE(AMPI_LUN(164),REC=IGRadS+I) AID8(I)
                ENDDO
                IGRadS=IGRadS+3
             ENDIF
-            WRITE(164,REC=IGRadS+1) NDSETSW
-            WRITE(164,REC=IGRadS+2) NP
-            WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
-            WRITE(164,REC=IGRadS+4) NSPOOLGW
-            WRITE(164,REC=IGRadS+5) 2
+            WRITE(AMPI_LUN(164),REC=IGRadS+1) NDSETSW
+            WRITE(AMPI_LUN(164),REC=IGRadS+2) NP
+            WRITE(AMPI_LUN(164),REC=IGRadS+3) DT*NSPOOLGW
+            WRITE(AMPI_LUN(164),REC=IGRadS+4) NSPOOLGW
+            WRITE(AMPI_LUN(164),REC=IGRadS+5) 2
             IGRadS=IGRadS+5
-            CLOSE(164)
+            CLOSE(AMPI_LUN(164))
          ENDIF
       endif
 !#endif
@@ -1162,51 +1195,54 @@ C...
       IGCP=0
 
       IF(ABS(NOUTGC).EQ.1) THEN
-         OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83')
-         WRITE(83,3220) RUNDES,RUNID,AGRID
-         WRITE(83,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
-         CLOSE(83)
+         OPEN(AMPI_LUN(83),FILE=TRIM(INPUTDIR)//'/'//'fort.83')
+         call AMPI_LUN_REGISTER(AMPI_LUN(83),FILE=TRIM(INPUTDIR)//'/'//'fort.83')
+         WRITE(AMPI_LUN(83),3220) RUNDES,RUNID,AGRID
+         WRITE(AMPI_LUN(83),3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
+         CLOSE(AMPI_LUN(83))
          IGCP=2
          ENDIF
 
       IF(ABS(NOUTGC).EQ.2) THEN
-         OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83',
-     &           ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(AMPI_LUN(83),FILE=TRIM(INPUTDIR)//'/'//'fort.83',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+         call AMPI_LUN_REGISTER(AMPI_LUN(83),FILE=TRIM(INPUTDIR)//'/'//'fort.83',
+     &          ACCESS='DIRECT',RECL=NBYTE)
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
-               WRITE(83,REC=IGCP+I) RDES4(I)
+               WRITE(AMPI_LUN(83),REC=IGCP+I) RDES4(I)
                ENDDO
             IGCP=IGCP+8
             DO I=1,6
-               WRITE(83,REC=IGCP+I) RID4(I)
+               WRITE(AMPI_LUN(83),REC=IGCP+I) RID4(I)
                ENDDO
             IGCP=IGCP+6
             DO I=1,6
-               WRITE(83,REC=IGCP+I) AID4(I)
+               WRITE(AMPI_LUN(83),REC=IGCP+I) AID4(I)
                ENDDO
             IGCP=IGCP+6
             ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
-               WRITE(83,REC=IGCP+I) RDES8(I)
+               WRITE(AMPI_LUN(83),REC=IGCP+I) RDES8(I)
                ENDDO
             IGCP=IGCP+4
             DO I=1,3
-               WRITE(83,REC=IGCP+I) RID8(I)
+               WRITE(AMPI_LUN(83),REC=IGCP+I) RID8(I)
                ENDDO
             IGCP=IGCP+3
             DO I=1,3
-               WRITE(83,REC=IGCP+I) AID8(I)
+               WRITE(AMPI_LUN(83),REC=IGCP+I) AID8(I)
                ENDDO
             IGCP=IGCP+3
             ENDIF
-         WRITE(83,REC=IGCP+1) NDSETSC
-         WRITE(83,REC=IGCP+2) NP
-         WRITE(83,REC=IGCP+3) DT*NSPOOLGC
-         WRITE(83,REC=IGCP+4) NSPOOLGC
-         WRITE(83,REC=IGCP+5) 1
+         WRITE(AMPI_LUN(83),REC=IGCP+1) NDSETSC
+         WRITE(AMPI_LUN(83),REC=IGCP+2) NP
+         WRITE(AMPI_LUN(83),REC=IGCP+3) DT*NSPOOLGC
+         WRITE(AMPI_LUN(83),REC=IGCP+4) NSPOOLGC
+         WRITE(AMPI_LUN(83),REC=IGCP+5) 1
          IGCP=IGCP+5
-         CLOSE(83)
+         CLOSE(AMPI_LUN(83))
       ENDIF
 C
  1112 FORMAT(/,1X,79('_'))
@@ -1238,43 +1274,45 @@ C...
       ENDIF
 
       IF ((NDDT.NE.0).AND.(ABS(NOUTGE).EQ.2)) THEN
-         OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
-     &           ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(AMPI_LUN(76),FILE=TRIM(LOCALDIR)//'/'//'fort.76',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+         call AMPI_LUN_REGISTER(AMPI_LUN(76),FILE=TRIM(LOCALDIR)//'/'//'fort.76',
+     &          ACCESS='DIRECT',RECL=NBYTE)
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
-               WRITE(76,REC=IGBP+I) RDES4(I)
+               WRITE(AMPI_LUN(76),REC=IGBP+I) RDES4(I)
                ENDDO
             IGBP=IGBP+8
             DO I=1,6
-               WRITE(76,REC=IGBP+I) RID4(I)
+               WRITE(AMPI_LUN(76),REC=IGBP+I) RID4(I)
                ENDDO
             IGBP=IGBP+6
             DO I=1,6
-               WRITE(76,REC=IGBP+I) AID4(I)
+               WRITE(AMPI_LUN(76),REC=IGBP+I) AID4(I)
                ENDDO
             IGBP=IGBP+6
          ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
-               WRITE(76,REC=IGBP+I) RDES8(I)
+               WRITE(AMPI_LUN(76),REC=IGBP+I) RDES8(I)
                ENDDO
             IGBP=IGBP+4
             DO I=1,3
-               WRITE(76,REC=IGBP+I) RID8(I)
+               WRITE(AMPI_LUN(76),REC=IGBP+I) RID8(I)
                ENDDO
             IGBP=IGBP+3
             DO I=1,3
-               WRITE(76,REC=IGBP+I) AID8(I)
+               WRITE(AMPI_LUN(76),REC=IGBP+I) AID8(I)
                ENDDO
             IGBP=IGBP+3
          ENDIF
-         WRITE(76,REC=IGBP+1) NDSETSE
-         WRITE(76,REC=IGBP+2) NP
-         WRITE(76,REC=IGBP+3) DT*NSPOOLGE
-         WRITE(76,REC=IGBP+4) NSPOOLGE
-         WRITE(76,REC=IGBP+5) 1
+         WRITE(AMPI_LUN(76),REC=IGBP+1) NDSETSE
+         WRITE(AMPI_LUN(76),REC=IGBP+2) NP
+         WRITE(AMPI_LUN(76),REC=IGBP+3) DT*NSPOOLGE
+         WRITE(AMPI_LUN(76),REC=IGBP+4) NSPOOLGE
+         WRITE(AMPI_LUN(76),REC=IGBP+5) 1
          IGBP=IGBP+5
-         CLOSE(76)
+         CLOSE(AMPI_LUN(76))
       ENDIF
 
 
@@ -1312,6 +1350,8 @@ C                                                                             *
 c******************************************************************************
 
       SUBROUTINE COLDSTART_3D()
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
       USE WRITE_OUTPUT, ONLY : initOutput3D
       USE GLOBAL_3DVS
@@ -1359,27 +1399,28 @@ C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
 
       IF (CBaroclinic.and..not.C3DVS) THEN
          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-            WRITE(16,*) "CBaroclinic is ",CBaroclinic
-            WRITE(16,*) "CB3DVS is ",C3DVS
-            WRITE(16,*)
-     &           "ERROR: 2DDI baroclinic runs not ", 
-     &           "currently supported."
+            WRITE(AMPI_LUN(16),*) "CBaroclinic is ",CBaroclinic
+            WRITE(AMPI_LUN(16),*) "CB3DVS is ",C3DVS
+            WRITE(AMPI_LUN(16),*)
+     &          "ERROR: 2DDI baroclinic runs not ", 
+     &          "currently supported."
          ENDIF
          CALL ADCIRC_Terminate()
       ENDIF
 C
       IF(CBaroclinic .and. C3DVS) THEN
-         WRITE(16,424)
+         WRITE(AMPI_LUN(16),424)
  424     FORMAT(/,5X,'INITIAL DENSITY FIELD READ IN FROM UNIT 11',/)
-         OPEN(11,FILE=TRIM(INPUTDIR)//'/'//'fort.11')
-         READ(11,*)             !skip over header line
-         READ(11,*)             !skip over header line
-         READ(11,*) NVN, NVP
+         OPEN(AMPI_LUN(11),FILE=TRIM(INPUTDIR)//'/'//'fort.11')
+         call AMPI_LUN_REGISTER(AMPI_LUN(11),FILE=TRIM(INPUTDIR)//'/'//'fort.11')
+         READ(AMPI_LUN(11),*)             !skip over header line
+         READ(AMPI_LUN(11),*)             !skip over header line
+         READ(AMPI_LUN(11),*) NVN, NVP
          IF(NVN.NE.NFEN) THEN
             IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-               WRITE(ScreenUnit,351) NVN,NFEN
+               WRITE(AMPI_LUN(ScreenUnit),351) NVN,NFEN
             ENDIF
-            WRITE(16,351) NVN,NFEN
+            WRITE(AMPI_LUN(16),351) NVN,NFEN
  351        FORMAT(/,2X,'***** INVALID INPUT IN THE DENSITY INITIAL ',
      &           'CONDITION FILE (UNIT 11) *****',
      &           /,2X,'***** NVN = ',I4,' MUST MATCH NFEN = ',I4,
@@ -1390,16 +1431,16 @@ C
          DO IHN=1,NP
             DO IVN=1,NFEN
                IF(ABS(IDen).EQ.1)
-     &              READ(11,*) NHNN,NVNN,SigT(NHNN,NVNN)
+     &             READ(AMPI_LUN(11),*) NHNN,NVNN,SigT(NHNN,NVNN)
                IF(ABS(IDen).EQ.2)
-     &              READ(11,*) NHNN,NVNN,Sal(NHNN,NVNN)
+     &             READ(AMPI_LUN(11),*) NHNN,NVNN,Sal(NHNN,NVNN)
                IF(ABS(IDen).EQ.3)
-     &              READ(11,*) NHNN,NVNN,Temp(NHNN,NVNN)
+     &             READ(AMPI_LUN(11),*) NHNN,NVNN,Temp(NHNN,NVNN)
                IF(ABS(IDen).EQ.4)
-     &              READ(11,*) NHNN,NVNN,Temp(NHNN,NVNN),Sal(NHNN,NVNN)
+     &             READ(AMPI_LUN(11),*) NHNN,NVNN,Temp(NHNN,NVNN),Sal(NHNN,NVNN)
             ENDDO
          ENDDO
-         CLOSE(11)
+         CLOSE(AMPI_LUN(11))
       ENDIF
 
       IF (CBaroclinic) THEN
@@ -1416,11 +1457,12 @@ C
                   qsurf(IHN)=0.d0
                END DO
             ELSE IF (NTF.EQ.1) THEN
-               OPEN(111,FILE=TRIM(INPUTDIR)//'/'//'fort.111')
+               OPEN(AMPI_LUN(111),FILE=TRIM(INPUTDIR)//'/'//'fort.111')
+               call AMPI_LUN_REGISTER(AMPI_LUN(111),FILE=TRIM(INPUTDIR)//'/'//'fort.111')
                DO IHN=1,NP
-                  READ(111,*) NHNN,qsurfkp1(IHN),qsurf(IHN)
+                  READ(AMPI_LUN(111),*) NHNN,qsurfkp1(IHN),qsurf(IHN)
                END DO
-               CLOSE(111)
+               CLOSE(AMPI_LUN(111))
             END IF
          END IF
       END IF
@@ -1432,16 +1474,17 @@ C...  and baroclinic.
       IF ((CBAROCLINIC).AND.(IDEN.GE.1)) THEN
          IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
            IF (BCFLAG_LNM.EQ.1) THEN
-             OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+             OPEN(AMPI_LUN(35),FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+             call AMPI_LUN_REGISTER(AMPI_LUN(35),FILE=TRIM(INPUTDIR)//'/'//'fort.35')
              RBCTIME1=BCSTATIM*86400.d0
              RBCTIME2=RBCTIME1+RBCTIMEINC
-             READ(35,'(A)') CDUM80
+             READ(AMPI_LUN(35),'(A)') CDUM80
              DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC1(NumofBCNodes)
+                READ(AMPI_LUN(35),*) NOD,LNM_BC1(NumofBCNodes)
              END DO
-             READ(35,'(A)') CDUM80
+             READ(AMPI_LUN(35),'(A)') CDUM80
              DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC2(NumofBCNodes)
+                READ(AMPI_LUN(35),*) NOD,LNM_BC2(NumofBCNodes)
              END DO
            ELSE IF (BCFLAG_LNM.EQ.2) THEN
              ! to be added later but currently information
@@ -1456,57 +1499,61 @@ C...  and baroclinic.
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
            IF (NOPE.GT.0) THEN
-             OPEN(36,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
+             OPEN(AMPI_LUN(36),FILE=TRIM(INPUTDIR)//'/'//'fort.36')
+             call AMPI_LUN_REGISTER(AMPI_LUN(36),FILE=TRIM(INPUTDIR)//'/'//'fort.36')
              SBCTIME1=SBCSTATIM*86400.D0
              SBCTIME2=SBCTIME1+SBCTIMEINC
-             READ(36,'(A)') CDUM80
+             READ(AMPI_LUN(36),'(A)') CDUM80
              DO NumofBCNodes=1,NETA
-                READ(36,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
+                READ(AMPI_LUN(36),*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
              END DO
-             READ(36,'(A)') CDUM80
+             READ(AMPI_LUN(36),'(A)') CDUM80
              DO NumofBCNodes=1,NETA
-                READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+                READ(AMPI_LUN(36),*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
              END DO
            END IF
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.3).OR.
      &            (ABS(RES_BC_FLAG).EQ.4)) THEN
            IF (NOPE.GT.0) THEN
-             OPEN(37,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
+             OPEN(AMPI_LUN(37),FILE=TRIM(INPUTDIR)//'/'//'fort.37')
+             call AMPI_LUN_REGISTER(AMPI_LUN(37),FILE=TRIM(INPUTDIR)//'/'//'fort.37')
              TBCTIME1=TBCSTATIM*86400.D0
              TBCTIME2=TBCTIME1+TBCTIMEINC
-             READ(37,'(A)') CDUM80
+             READ(AMPI_LUN(37),'(A)') CDUM80
              DO NumofBCNodes=1,NETA
-                READ(37,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
+                READ(AMPI_LUN(37),*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
              END DO
-             READ(37,'(A)') CDUM80
+             READ(AMPI_LUN(37),'(A)') CDUM80
              DO NumofBCNodes=1,NETA
-                READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+                READ(AMPI_LUN(37),*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
              END DO
            END IF
            IF (BCFLAG_TEMP.EQ.1) THEN ! read in file with multiple values but no calcs
-              OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+              OPEN(AMPI_LUN(38),FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+              call AMPI_LUN_REGISTER(AMPI_LUN(38),FILE=TRIM(INPUTDIR)//'/'//'fort.38')
               TTBCTIME1=TTBCSTATIM*86400.D0
               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
               DO NumofNodes=1,NP
-                 READ(38,*) NOD, q_heat1(Numofnodes)
+                 READ(AMPI_LUN(38),*) NOD, q_heat1(Numofnodes)
               END DO
               DO NumofNodes=1,NP
-                 READ(38,*) NOD, q_heat2(NumofNodes)
+                 READ(AMPI_LUN(38),*) NOD, q_heat2(NumofNodes)
               END DO
            ELSE IF (BCFLAG_TEMP.EQ.2) THEN ! read in from file with 6 components
               ALLOCATE (TMP(NP,6))
-              OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+              OPEN(AMPI_LUN(38),FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+              call AMPI_LUN_REGISTER(AMPI_LUN(38),FILE=TRIM(INPUTDIR)//'/'//'fort.38')
               TTBCTIME1=TTBCSTATIM*86400.D0
               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
-              READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+              READ(AMPI_LUN(38),*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
               DO NumofNodes=1,NP
                  q_heat1(NumofNodes)=-TMP(NumofNodes,1)-
      &              TMP(NumofNodes,2)+TMP(NumofNodes,3)-
      &              TMP(NumofNodes,5)+TMP(NumofNodes,4)-
      &              TMP(NumofNodes,6)
               END DO
-              READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+              READ(AMPI_LUN(38),*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
               DO NumofNodes=1,NP
                  q_heat2(NumofNodes)=-TMP(NumofNodes,1)-
      &              TMP(NumofNodes,2)+TMP(NumofNodes,3)-
@@ -1516,16 +1563,17 @@ C...  and baroclinic.
               DEALLOCATE(TMP)
            ELSE IF (BCFLAG_TEMP.EQ.3) THEN ! read in from file with 4 components
               ALLOCATE (TMP(NP,4))
-              OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+              OPEN(AMPI_LUN(38),FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+              call AMPI_LUN_REGISTER(AMPI_LUN(38),FILE=TRIM(INPUTDIR)//'/'//'fort.38')
               TTBCTIME1=TTBCSTATIM*86400.D0
               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
-              READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+              READ(AMPI_LUN(38),*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
               DO NumofNodes=1,NP
                  q_heat1(NumofNodes)=TMP(NumofNodes,4)+
      &              TMP(NumofNodes,3)-TMP(NumofNodes,1)+
      &              TMP(NumofNodes,2)
               END DO
-              READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+              READ(AMPI_LUN(38),*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
               DO NumofNodes=1,NP
                  q_heat2(NumofNodes)=TMP(NumofNodes,4)+
      &              TMP(NumofNodes,3)-TMP(NumofNodes,1)+
@@ -1537,10 +1585,11 @@ C...  and baroclinic.
       ELSE IF ((CBAROCLINIC).AND.(IDEN.LE.-1)) THEN
          IF ((RES_BC_FLAG.LT.0).AND.(NOPE.GT.0)) THEN
           IF (BCFLAG_LNM.EQ.1) THEN
-            OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
-            READ(35,'(A)') CDUM80
+            OPEN(AMPI_LUN(35),FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+            call AMPI_LUN_REGISTER(AMPI_LUN(35),FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+            READ(AMPI_LUN(35),'(A)') CDUM80
             DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC(NumofBCNodes)
+                READ(AMPI_LUN(35),*) NOD,LNM_BC(NumofBCNodes)
             END DO
           ELSE IF (BCFLAG_LNM.EQ.2) THEN
             ! add later
@@ -1555,11 +1604,12 @@ C...  and baroclinic.
 
 C kmd - River information for boundary conditions in baroclinic simulation
       IF (BndBCRiver) THEN
-        OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+        OPEN(AMPI_LUN(39),FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+        call AMPI_LUN_REGISTER(AMPI_LUN(39),FILE=TRIM(INPUTDIR)//'/'//'fort.39')
 
 !        write(*,*) 'file fort.39 opened.'
 
-        READ(39,*) RIVBCTIMINC, RIVBCSTATIM
+        READ(AMPI_LUN(39),*) RIVBCTIMINC, RIVBCSTATIM
         RIVBCTIME1=RIVBCSTATIM*86400.d0
         RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
         DO J=1,totalbcrivernodes
@@ -1567,11 +1617,11 @@ C kmd - River information for boundary conditions in baroclinic simulation
 !         write(*,*) 'inside the DO J=1,totalbcrivernodes loop.'
 
          IF (IDEN.EQ.2) THEN
-           READ(39,*) (BCRivSalN1(J,K),K=1,NFEN)
+           READ(AMPI_LUN(39),*) (BCRivSalN1(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.3) THEN
-           READ(39,*) (BCRivTempN1(J,K),K=1,NFEN)
+           READ(AMPI_LUN(39),*) (BCRivTempN1(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.4) THEN
-           READ(39,*) (BCRivSalN1(J,K), BCRivTempN1(J,K),K=1,NFEN)
+           READ(AMPI_LUN(39),*) (BCRivSalN1(J,K), BCRivTempN1(J,K),K=1,NFEN)
 
 
 
@@ -1585,11 +1635,11 @@ C kmd - River information for boundary conditions in baroclinic simulation
         END DO
         DO J=1,totalbcrivernodes
          IF (IDEN.EQ.2) THEN
-           READ(39,*) (BCRivSalN2(J,K),K=1,NFEN)
+           READ(AMPI_LUN(39),*) (BCRivSalN2(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.3) THEN
-           READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
+           READ(AMPI_LUN(39),*) (BCRivTempN2(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.4) THEN
-           READ(39,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
+           READ(AMPI_LUN(39),*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
 
 
            ! arash debug
@@ -1670,10 +1720,11 @@ C     jgf46.27 Replaced IRType with IDen in header.
          IF ((MNPROC.EQ.1.).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
             IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
                IF (BCFLAG_TEMP.NE.0) THEN
-                  OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
-                  WRITE(47,499) RUNDES,RUNID,AGRID
-                  WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
-                  CLOSE(47)
+                  OPEN(AMPI_LUN(47),FILE=TRIM(LOCALDIR)//'/'//'fort.47')
+                  call AMPI_LUN_REGISTER(AMPI_LUN(47),FILE=TRIM(LOCALDIR)//'/'//'fort.47')
+                  WRITE(AMPI_LUN(47),499) RUNDES,RUNID,AGRID
+                  WRITE(AMPI_LUN(47),498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+                  CLOSE(AMPI_LUN(47))
                END IF
             END IF
          ENDIF
@@ -1681,10 +1732,11 @@ C     jgf46.27 Replaced IRType with IDen in header.
      &       (myProc.eq.0)) THEN
             IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
                IF (BCFLAG_TEMP.NE.0) THEN
-                  OPEN(47,FILE=TRIM(GLOBALDIR)//'/'//'fort.47')
-                  WRITE(47,499) RUNDES,RUNID,AGRID
-                  WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
-                  CLOSE(47)
+                  OPEN(AMPI_LUN(47),FILE=TRIM(GLOBALDIR)//'/'//'fort.47')
+                  call AMPI_LUN_REGISTER(AMPI_LUN(47),FILE=TRIM(GLOBALDIR)//'/'//'fort.47')
+                  WRITE(AMPI_LUN(47),499) RUNDES,RUNID,AGRID
+                  WRITE(AMPI_LUN(47),498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+                  CLOSE(AMPI_LUN(47))
                END IF
             END IF
          ENDIF
@@ -1727,6 +1779,8 @@ C     the hotstart wet/dry state and water surface elevation ends up
 C     overwriting the values computed here. 
 C----------------------------------------------------------------------
       subroutine setColdWetDryStateAndWaterSurfaceElevation()
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use sizes, only : inputdir
       use mesh, only : dp, np, mju, ne, nm
       use boundaries, only : nvel, lbcodei, nbv

@@ -56,6 +56,8 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
       module momentum
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use sizes, only : sz
       use global, only : DEBUG, INFO, WARNING, ERROR, setMessageSource,
      &   allMessage, logMessage, unsetMessageSource
@@ -143,7 +145,7 @@ C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
       SUBROUTINE Mom_Eqs_New_NC()
-      USE GLOBAL, ONLY : UU2, VV2, QX2, QY2, CBaroclinic, C3D, IDEN,
+      USE GLOBAL, ONLY : UU2, VV2, QX2, QY2, ALPHAL, CBaroclinic, C3D, IDEN,
      &  CME_AreaInt_Corr, CME_AreaInt_Orig, CME_LS_IBPQ, CME_LS_IBPSQ,
      &  CME_LS_IBPSV, CSmag_Eh, Smag_Comp_Flag, CTIP, DT, CME_LS_IBPV,
      &  IFNLCT, IFNLFA, IFWIND, NRS, NWS, SMAG_LOWER_LIM,SMAG_UPPER_LIM,
@@ -151,8 +153,8 @@ C*******************************************************************************
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
      &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, TKM, NPERSEG, NNPERBC, 
      &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, adcirc_norm2, CAliDisp,
-     &  usingDynamicWaterLevelCorrection, Cs2, Ad, Bd, G,
-     &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2
+     &  usingDynamicWaterLevelCorrection, Cs2, Ad, Bd, G, windlim,
+     &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0
       USE MESH, ONLY : NE, NP, NM, DP, Areas, TotalArea,
      &     NNeigh, NeiTab, NeiTabEle, MJU, FDXE, FDYE,
      &     SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, TANPHI 
@@ -167,7 +169,7 @@ C----- END DW
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB, 
      &                       enforceUVCB
       USE SPONGELAYER
-      USE WIND, ONLY: PRBCKGRND_MH2O 
+      USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter 
 
       IMPLICIT NONE
 
@@ -202,7 +204,7 @@ C----- END DW
       REAL(SZ) V1AvgDU1DYA, V1AvgDV1DYA
       REAL(SZ) VelNorm, VelTan
       REAL(SZ) VIDBCPDX, VIDBCPDY
-      REAL(SZ) WSX, WSY
+      REAL(SZ) WSX, WSY, fwind
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
       REAL(SZ) DispX, DispY, CorifA
 
@@ -247,8 +249,10 @@ C     WJP: initialize baroclinic pressure gradients to zero
 C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
+#ifndef SKIP_DRY
 Corbitt 120322: Localized Advection
-         IF (LoadAdvectionState) CALL ADVECTLOCAL(IE)
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
+#endif
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -257,6 +261,11 @@ Corbitt 120322: Localized Advection
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCELE=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY
+         IF(NCELE.EQ.0) CYCLE
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
+#endif
+
          U1N1=UU1(NM1)
          U1N2=UU1(NM2)
          U1N3=UU1(NM3)
@@ -319,14 +328,14 @@ C...  Compute element averaged quantities
          ENDIF         
 
 C...  Compute terms associated with the barotropic pressure
-         
-         BTP1N1=ETA1(NM1)
-         BTP2N1=ETA2(NM1)
-         BTP1N2=ETA1(NM2)
-         BTP2N2=ETA2(NM2)
-         BTP1N3=ETA1(NM3)
-         BTP2N3=ETA2(NM3)
-
+C- DMW 2022/06 Apply slope limiting for elevation gradient, if needed. The slope limiting factor ALPHAL is determined in the wetting/drying routine.         
+         BTP1N1=ALPHAL(IE)*ETA1(NM1)
+         BTP2N1=ALPHAL(IE)*ETA2(NM1)
+         BTP1N2=ALPHAL(IE)*ETA1(NM2)
+         BTP2N2=ALPHAL(IE)*ETA2(NM2)
+         BTP1N3=ALPHAL(IE)*ETA1(NM3)
+         BTP2N3=ALPHAL(IE)*ETA2(NM3)
+C- DMW
 C.....If using atm pressure add it into the barotropic pressure
 C....... DW
          IF (NWS.NE.0) THEN
@@ -644,10 +653,14 @@ C           AND AUV
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
+#ifdef SKIP_DRY              
          NC1=NODECODE(NM1)
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCEle=NC1*NC2*NC3*NOFF(IE)
+
+         IF(NCEle.EQ.0) CYCLE
+#endif
          MOM_LV_X(NM1)=MOM_LV_X(NM1)+TEMP_LV_A(IE,1)
          MOM_LV_X(NM2)=MOM_LV_X(NM2)+TEMP_LV_A(IE,2)
          MOM_LV_X(NM3)=MOM_LV_X(NM3)+TEMP_LV_A(IE,3)
@@ -671,6 +684,9 @@ C      DispY=0.D0
       SPNGCOEF_Y = 0.D0
       DO I=1,NP
          NCI=NODECODE(I)
+#ifdef SKIP_DRY
+         IF(NCI.EQ.0) CYCLE
+#endif
          IF (TotalArea(I).ne.0.d0) THEN
             IF (CME_AreaInt_Corr) THEN       !Correct area integration
                MOM_LV_X(I)=MOM_LV_X(I)/TotalArea(I)
@@ -686,6 +702,15 @@ C      DispY=0.D0
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
             WSX=DTO2*IFWIND*(WSX1(I)/H1+WSX2(I)/H2)
             WSY=DTO2*IFWIND*(WSY1(I)/H1+WSY2(I)/H2)
+            
+C.....      DMW 202207 tail off wind forcing in very shallow water
+            IF (WINDLIM.eqv..true.) THEN
+               CALL windLimiter(H2,fwind)
+               WSX = fwind*WSX
+               WSY = fwind*WSY
+            ENDIF
+C.....      DMW
+
          ENDIF
 
 C......  DW : BEGIN !c absorbing layer
@@ -753,12 +778,16 @@ C...  AUV12=-AUV21)
          NBDI=NBV(I)
          H2=DP(NBDI)+IFNLFA*ETA2(NBDI)
          NCI=NODECODE(NBDI)
+#ifdef SKIP_DRY
+         IF(NCI.EQ.0) CYCLE
+#endif
 
 C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
             VelNorm=-QN2(I)/H2
-            IF (abs(adcirc_norm2(TKM(:,I))-sqrt(2d0)*TK(I)).lt.epsilon(H2)) THEN
+            IF (abs(adcirc_norm2(TKM(:,NBDI))-sqrt(2d0)*TK(NBDI))
+     &          .lt.epsilon(H2)) THEN
             ! WJP 03.6.2018 In the case of the symmetric matrix..
             ! Should be equivalent to the non-symmetric formula below
             ! but for consistency when testing using this formula helps
@@ -884,6 +913,9 @@ C.....velocity can be zeroed out to obtain an essential zero velocity at
 C.....interface nodes.
 
       DO I = 1,NP
+#ifdef SKIP_DRY
+         IF(NODECODE(I).EQ.0) CYCLE
+#endif
          ! WJP 02.24.2018 Performing the final solve
          DDU    = AUV(1,I)*AUV(2,I)-AUV(3,I)*AUV(4,I)
          UU2(I) = (MOM_LV_X(I)*AUV(2,I)-MOM_LV_Y(I)*AUV(3,I))/DDU
@@ -924,6 +956,9 @@ C...
                NC2=NODECODE(NM2)
                NC3=NODECODE(NM3)
                NCEle=NC1*NC2*NC3*NOFF(NEleZNG(I))
+#ifdef SKIP_DRY
+               IF(NCEle.EQ.0) CYCLE
+#endif
                UU2(NBDI)=NCEle*(UU2(NM1)*ZNGIF1(I)+UU2(NM2)*ZNGIF2(I)
      &                                            +UU2(NM3)*ZNGIF3(I))
                VV2(NBDI)=NCEle*(VV2(NM1)*ZNGIF1(I)+VV2(NM2)*ZNGIF2(I)
@@ -935,6 +970,9 @@ C...
 C...  Compute fluxes
 
       DO I=1,NP
+#ifdef SKIP_DRY
+         IF(NODECODE(I).EQ.0) CYCLE
+#endif
          H2 = DP(I)+IFNLFA*ETA2(I)
          QX2(I) = UU2(I)*H2
          QY2(I) = VV2(I)*H2
@@ -1000,13 +1038,14 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, VIDISPDXOH, VIDISPDYOH, IFSFM, 
-     & CBaroclinic, CAliDisp, Cs2, Ad, Bd, G
+     & CBaroclinic, CAliDisp, Cs2, Ad, Bd, G, windlim
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
      &   SFacEle, SFMYEle, SFMXEle, TANPHI   
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI, 
      &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
+      USE WIND, ONLY: windLimiter 
        
       IMPLICIT NONE
 
@@ -1041,7 +1080,7 @@ C
       REAL(SZ) V1N1, V1N2, V1N3, V1Avg, V1DQX1DYA, V1DQY1DYA
       REAL(SZ) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
       REAL(SZ) VIDBCPDX, VIDBCPDY
-      REAL(SZ) WSX, WSY
+      REAL(SZ) WSX, WSY, fwind
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
       REAL(SZ) DispX, DispY, CorifA
 
@@ -1489,6 +1528,15 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
          IF (NWS.NE.0.OR.NRS.NE.0) THEN
             WSX=DTO2*IFWIND*(WSX1(I)+WSX2(I))
             WSY=DTO2*IFWIND*(WSY1(I)+WSY2(I))
+            
+C.....      DMW 202207 tail off wind forcing in very shallow water
+            IF (WINDLIM.eqv..true.) THEN
+               CALL windLimiter(H2,fwind)
+               WSX = fwind*WSX
+               WSY = fwind*WSY
+            ENDIF
+C.....      DMW
+            
          ENDIF
          VCOEFXX = DTO2*TKM(1,I) 
          VCOEFYY = DTO2*TKM(2,I)
@@ -1689,16 +1737,16 @@ C...  Compute velocities
             UU2(I)=QX2(I)/H2
             VV2(I)=QY2(I)/H2
             ELSE
-            WRITE(16,*) ''
-            WRITE(16,*) ''
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
-            WRITE(16,*) '         Velocities set = -999.'
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) '*******************************************'
-            WRITE(16,*) ''
-            WRITE(16,*) ''
+            WRITE(AMPI_LUN(16),*) ''
+            WRITE(AMPI_LUN(16),*) ''
+            WRITE(AMPI_LUN(16),*) '*******************************************'
+            WRITE(AMPI_LUN(16),*) '*******************************************'
+            WRITE(AMPI_LUN(16),*) 'WARNING: Total water depth = 0 at node  ',I
+            WRITE(AMPI_LUN(16),*) '         Velocities set = -999.'
+            WRITE(AMPI_LUN(16),*) '*******************************************'
+            WRITE(AMPI_LUN(16),*) '*******************************************'
+            WRITE(AMPI_LUN(16),*) ''
+            WRITE(AMPI_LUN(16),*) ''
             UU2(I)=-999.
             VV2(I)=-999.
          ENDIF
@@ -1747,12 +1795,14 @@ C
      & NRS, IFWIND, WSX1, WSY1, WSX2, WSY2, QX2, QY2, QN2, UU2, VV2,
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
-     & SMAG_LOWER_LIM, NODECODE, UU0, VV0, QX0, QY0, TK2, CBaroclinic
+     & SMAG_LOWER_LIM, NODECODE, UU0, VV0, QX0, QY0, TK2, CBaroclinic,
+     & windlim
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &                  NEITAB, NEITABELE, NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
      &   CSII, SIII, ME2GW, NBV, LBCODEI, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
+      USE WIND, ONLY: windLimiter 
 
       IMPLICIT NONE
 
@@ -1787,7 +1837,7 @@ C
       REAL(SZ) VCoef1, VCoef2
       REAL(SZ) VelNorm, VelTan
       REAL(SZ) VIDBCPDX, VIDBCPDY
-      REAL(SZ) WSX, WSY
+      REAL(SZ) WSX, WSY, fwind
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
 
 ckmd   Added in parameters for the pc algorithm
@@ -2260,6 +2310,15 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
             WSX=DTO2*IFWIND*(WSX1(I)/H1+WSX2(I)/H2)
             WSY=DTO2*IFWIND*(WSY1(I)/H1+WSY2(I)/H2)
+            
+C.....      DMW 202207 tail off wind forcing in very shallow water
+            IF (WINDLIM.eqv..true.) THEN
+               CALL windLimiter(H2,fwind)
+               WSX = fwind*WSX
+               WSY = fwind*WSY
+            ENDIF
+C.....      DMW         
+   
          ENDIF
 ckmd
 ckmd  Added time weights to tau terms in the momentum equation here.

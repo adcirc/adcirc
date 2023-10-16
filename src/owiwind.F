@@ -65,6 +65,8 @@
 !
 !-----------------------------------------------------------------------
       MODULE OWIWIND
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 !-----------------------------------------------------------------------
 
         USE SIZES,ONLY : SZ,MYPROC
@@ -172,7 +174,7 @@
         call check_owi_err(errorIO,errorVar,fname,iounit)
         
         errorVar = "reading number of wind sets" ! used in error msgs
-        read(iounit,*,err=99999,end=99998,iostat=errorIO) numSets
+        read(AMPI_LUN(iounit),*,err=99999,end=99998,iostat=errorIO) numSets
         call check_owi_err(errorIO,errorVar,fname,iounit)
 
         if(numSets.EQ.0)then
@@ -181,7 +183,7 @@
 
         ! Read the number of blank snaps to be inserted before OWI winds start
         errorVar = "reading number of blank snaps" ! used in error messages
-        read(iounit,*,err=99999,end=99998,iostat=errorIO) numBlankSnaps
+        read(AMPI_LUN(iounit),*,err=99999,end=99998,iostat=errorIO) numBlankSnaps
         call check_owi_err(errorIO, "read number of blank snaps",fname,iounit)
         ! If numBlankSnaps < 0, ABS(numBlankSnaps) snaps
         ! in OWI wind files (UNIT 221,222,223, 224 and 217 & 218) will be skipped.
@@ -194,7 +196,7 @@
 
         ! Read a wind velocity multiplier
         errorVar = "reading wind multiplier" ! used in error messages
-        read(iounit,*,err=99999, end=99998, iostat=errorIO) windMultiplier
+        read(AMPI_LUN(iounit),*,err=99999, end=99998, iostat=errorIO) windMultiplier
         call check_owi_err(errorIO,errorVar,fname,iounit)
 
         errorIO=0
@@ -202,7 +204,7 @@
         ! Allocate the owi arrays
         allocate(owi(1:abs(numSets)))
         call owi_setFilenames(owi,iounit,numSets)
-        close(iounit)
+        close(AMPI_LUN(iounit))
 
         ! set the files to contain data
         do i = 1,abs(numSets)
@@ -492,8 +494,8 @@
         filename = owi(idx)%pressure_file
         iounit = owi(idx)%iounit_pressure
         write(errorVar,'(A,I0)') "read grid specifications/date in Oceanweather pressure file, domain ",idx
-        read (owi(idx)%iounit_pressure,11,end=10000,err=9999,iostat=errorIO)
-     &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
+        read (AMPI_LUN(owi(idx)%iounit_pressure),11,end=10000,err=9999,iostat=errorIO)
+     &       iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
         if(idx.eq.1)then
@@ -511,8 +513,8 @@
         filename = owi(idx)%wind_file
         iounit = owi(idx)%iounit_wind
         WRITE(errorVar,'(A,I0)') "read grid specifications/date in Oceanweather wind file, domain ",idx
-        read (owi(idx)%iounit_wind,11,end=10000,err=9999,iostat=errorIO)
-     &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
+        read (AMPI_LUN(owi(idx)%iounit_wind),11,end=10000,err=9999,iostat=errorIO)
+     &       iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
         ! Check consistency
@@ -557,22 +559,22 @@
         filename = owi(idx)%pressure_file
         iounit =  owi(idx)%iounit_pressure
         WRITE(errorVar,'(A,I0)') "reading atmospheric pressure snapshot, domain ",idx
-        read(owi(idx)%iounit_pressure,22,end=10000,err=9999,iostat=errorIO)
-     &     ((owi(idx)%p(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
+        read(AMPI_LUN(owi(idx)%iounit_pressure),22,end=10000,err=9999,iostat=errorIO)
+     &    ((owi(idx)%p(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
         ! Read basin scale snapshot of u/v components of the wind
         filename = owi(idx)%wind_file
         iounit = owi(idx)%iounit_wind
         WRITE(errorVar,'(A,I0)') "reading wind u-velocity snapshot, domain ",idx
-        read(owi(idx)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
-     &     ((owi(idx)%u(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
+        read(AMPI_LUN(owi(idx)%iounit_wind),22,end=10000,err=9999,iostat=errorIO)
+     &    ((owi(idx)%u(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
         call check_owi_err(errorIO,errorVar,filename,iounit)
         filename = owi(idx)%wind_file
         iounit = owi(idx)%iounit_wind
         WRITE(errorVar,'(A,I0)') "reading wind v-velocity snapshot, domain ",idx
-        read(owi(idx)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
-     &     ((owi(idx)%v(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
+        read(AMPI_LUN(owi(idx)%iounit_wind),22,end=10000,err=9999,iostat=errorIO)
+     &    ((owi(idx)%v(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
         call check_owi_err(errorIO,errorVar,filename,iounit)
 
         ! Set this flag so interpolation routine knows
@@ -876,7 +878,7 @@
             call allMessage(DEBUG,"Enter.")
 #endif
             do i = 1,nWindFields
-              read(iounit,*) f1, f2
+              read(AMPI_LUN(iounit),*) f1, f2
               owi(i)%pressure_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f1)
               owi(i)%wind_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f2)
               owi(i)%iounit_pressure = 500+i
@@ -1074,9 +1076,9 @@
       call allMessage(DEBUG,"Enter.")
 #endif
 
-      WRITE(16,'(A)') ''
-      WRITE(16,'(A,I0)') 'WIND MAPPING UPDATED FOR REGION ',IDX
-      WRITE(16,'(A)') ''
+      WRITE(AMPI_LUN(16),'(A)') ''
+      WRITE(AMPI_LUN(16),'(A,I0)') 'WIND MAPPING UPDATED FOR REGION ',IDX
+      WRITE(AMPI_LUN(16),'(A)') ''
 
       CALL owi_allocate(owi(idx))
       CALL owi_generateCoordinates(owi(idx),lat,lon)
@@ -1163,8 +1165,8 @@
       ! Read begining/ending dates of pre file
       owiheader(:) = ' '  !set owiheader to blanks before read
       errorVar = "reading Oceanweather header line"
-      read(lun, fmt='(a80)',
-     &   end=99998,err=99999,iostat=errorIO) owiheader
+      read(AMPI_LUN(lun), fmt='(a80)',
+     &  end=99998,err=99999,iostat=errorIO) owiheader
       call check_owi_err(errorIO,errorVar,filename,lun)
 
       errorVar = "reading Oceanweather start date"
@@ -1227,7 +1229,7 @@
  888        format("Failed to '",A,"' from '",A,
      &         "' (unit number ",I3,").")
             call allMessage(ERROR,trim(scratchMessage))
-            write(6,*) 'iostat =',iret
+            write(AMPI_LUN(6),*) 'iostat =',iret
          endif
          call allMessage(ERROR,"ADCIRC execution terminated.")
 #ifdef CMPI

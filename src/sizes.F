@@ -5,6 +5,8 @@ C                                                                             *
 C******************************************************************************
 C
       MODULE SIZES
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       IMPLICIT NONE
 C
 C...SET NUMBER OF BYTES "SZ" IN REAL(SZ) DECLARATIONS

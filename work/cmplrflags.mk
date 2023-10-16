@@ -1,5 +1,5 @@
 # SRCDIR is set in makefile or on the compile line
-INCDIRS := -I . -I $(SRCDIR)/prep
+INCDIRS := -I. -I$(SRCDIR)/prep
 
 ########################################################################
 # Compiler flags for Linux operating system on 64bit x86 CPU
@@ -37,6 +37,44 @@ ifeq ($(compiler),gnu)
      MULTIPLE := TRUE
   endif
 endif
+ifeq ($(compiler),ampi)
+  PPFC		:=  ampif90 -pieglobals -DAMPI_COMP -module CommonLBs
+  FC		:=  ampif90 -pieglobals -DAMPI_COMP -module CommonLBs
+  PFC		:=  ampif90 -pieglobals -DAMPI_COMP -module CommonLBs
+#  for easier debugging, without migration, in p=vp mode with charm
+#  built non-smp
+#  PPFC		:=  ampif90 -DAMPI_COMP
+#  FC		:=  ampif90 -DAMPI_COMP
+#  PFC		:=  ampif90 -DAMPI_COMP
+  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -march=corei7-avx -m64
+
+  ifeq ($(DEBUG),full)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND -DDEBUG_WARN_ELEV
+  endif	
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA		:=  -DREAL8 -DLINUX -DCSCA -DSKIP_DRY
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD -DSKIP_DRY
+  DPRE		:=  -DREAL8 -DLINUX
+  IMODS 	:=  -I
+  CC		:= gcc
+  CCBE		:= $(CC)
+  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX -march=corei7-avx -m64
+  CLIBS	:=
+  LIBS		:= 
+  MSGLIBS	:=
+  ifeq ($(NETCDF),enable)
+        FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
+  endif
+  $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+endif
+
+
 endif
 #$(MACHINE)
 
@@ -50,10 +88,10 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 # ***NOTE*** User must select between various Linux setups
 #            by commenting/uncommenting the appropriate compiler
 #
-#compiler=gnu
+compiler=gnu
 #compiler=g95
 #compiler=gfortran
-compiler=intel
+#compiler=intel
 #compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=intel-sgi
@@ -77,8 +115,8 @@ ifeq ($(compiler),gnu)
   FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -march=k8 -m64
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
+  DA		:=  -DREAL8 -DLINUX -DCSCA -DSKIP_DRY
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD -DSKIP_DRY
   DPRE		:=  -DREAL8 -DLINUX
   IMODS 	:=  -I
   CC		:= gcc
@@ -114,6 +152,7 @@ ifeq ($(compiler),gfortran)
      XDMFPATH    := /home/jason/projects/XDMF/Code/latestCode
      XDMFLIBPATH := /home/jason/projects/XDMF/Code/testLatest
   endif
+
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
@@ -141,8 +180,8 @@ ifeq ($(compiler),gfortran)
 #  endif
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DA		:=  -DREAL8 -DLINUX -DCSCA -DSKIP_DRY
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DSKIP_DRY
   DPRE		:=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
      DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
@@ -226,10 +265,10 @@ endif
 # feupdateenv until run time, thus avoiding the error message:
 # "feupdateenv is not implemented and will always fail"
 ifeq ($(compiler),intel)
-  PPFC            :=  ifort
+  PPFC          :=  ifort
   FC            :=  ifort
-  PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O2 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+  PFC           ?=  mpif90
+  FFLAGS1       := $(INCDIRS) -O2 -g -traceback -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
   CFLAGS        := $(INCDIRS) -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
   FLIBS         :=
   ifeq ($(DEBUG),full)
@@ -280,6 +319,7 @@ ifeq ($(compiler),intel)
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xSSE4.2
         FLIBS   := $(INCDIRS) -xSSE4.2
      endif
+  endif
   ifeq ($(MACHINENAME),supermic) 
      FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xAVX -assume buffered_io
      CFLAGS  := $(INCDIRS) -O3 -DLINUX -xAVX
@@ -289,7 +329,6 @@ ifeq ($(compiler),intel)
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX  -xAVX 
         FLIBS   := $(INCDIRS) -xAVX
      endif
-  endif
   endif
   #
   #@jasonfleming Added to fix bus error on hatteras@renci
@@ -311,7 +350,7 @@ ifeq ($(compiler),intel)
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),hatteras)
-        NETCDFHOME  :=$(shell nc-config --prefix)
+        NETCDFHOME  :=$(shell nf-config --prefix)
         FLIBS       :=$(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
         FFLAGS1     :=$(FFLAGS1) -I$(NETCDFHOME)/include
         FFLAGS2     :=$(FFLAGS1)
@@ -324,7 +363,7 @@ ifeq ($(compiler),intel)
         NETCDFHOME    :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
      endif
      ifeq ($(MACHINENAME),supermic)
-        FLIBS      := $(FLIBS) -L /usr/local/packages/netcdf_fortran/4.2/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdf -lnetcdf -liomp5 -lpthread
+        FLIBS      := $(FLIBS) -L/usr/local/packages/netcdf_fortran/4.2/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdf -lnetcdf -liomp5 -lpthread
         NETCDFHOME :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/include
         FFLAGS1    :=$(FFLAGS1) -I/usr/local/packages/hdf5/1.8.12/INTEL-140-MVAPICH2-2.0/include
      endif
@@ -372,6 +411,15 @@ ifeq ($(compiler),intel)
         FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
      endif
   endif
+
+# ------------
+  ifeq ($(NETCDF),enable)
+    ifeq ($(WDALTVAL),enable)
+       DP  := $(DP) -DWDVAL_NETCDF 
+    endif
+  endif
+# -----------
+
   #jgf20110519: For netcdf on topsail at UNC, use
   #NETCDFHOME=/ifs1/apps/netcdf/
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -381,20 +429,29 @@ ifeq ($(compiler),intel)
      MULTIPLE := TRUE
   endif
 endif
+
 #
 # Corbitt 120322:  These flags work on the Notre Dame Athos & Zas
 ifeq ($(compiler),intel-ND)
   PPFC          :=  ifort
   FC            :=  ifort
-  PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -w -O3 -assume byterecl -132 -assume buffered_io #-i-dynamic
+  PFC           ?=  mpif90
+#  FFLAGS1       :=  $(INCDIRS) -w -O3 -assume byterecl -132 -assume buffered_io #-i-dynamic
+
+  ifeq ($(AMD),yes)
+     FFLAGS1     :=  $(INCDIRS) -g -traceback -O2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
+  else
+     FFLAGS1     :=  $(INCDIRS) -O3 -g -traceback -xSSE4.2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
+#      FFLAGS1     :=  $(INCDIRS) -O2 -g -traceback -xSSE4.2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
+#      FFLAGS1     :=  $(INCDIRS) -O0 -g -traceback -check bounds -xSSE4.2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
+  endif
   ifeq ($(DEBUG),full)
      FFLAGS1    :=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI #-DNOFSBPG #-DNOIVB -DPOWELL
+  DA            :=  -DREAL8 -DLINUX -DCSCA -DSKIP_DRY
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DSKIP_DRY #-DNOFSBPG #-DNOIVB -DPOWELL
   DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
   ifeq ($(SWAN),enable)
      DPRE       := $(DPRE) -DADCSWAN
@@ -405,21 +462,29 @@ ifeq ($(compiler),intel-ND)
   CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
   FLIBS         := 
   ifeq ($(DATETIME),enable)
-     DATETIMEHOME  := $(SRCDIR)/lib/datetime-fortran-master/build/
+     DATETIMEHOME  := /pontus/gling/ADCIRC_Codes/adcirc-cg-GLOBAL_WP_20200513/lib/datetime-fortran/
      FLIBS         := -ldatetime -L$(DATETIMEHOME)lib/
   endif
   ifeq ($(GRIB2),enable)
-     WGRIB2HOME    := $(SRCDIR)/lib/grib2/lib/
+     WGRIB2HOME    := /pontus/gling/ADCIRC_Codes/adcirc-cg-GLOBAL_WP_20200513/lib/grib2/lib/
      FLIBS         := $(FLIBS) -lwgrib2_api -lwgrib2 -ljasper -L$(WGRIB2HOME)
   endif
   ifeq ($(DEBUG),full)
      CFLAGS     := $(INCDIRS) -g -O0 -m64 -march=k8 -mcmodel=medium -DLINUX
   endif
   ifeq ($(NETCDF),enable)
-     HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
-     #HDF5HOME=/opt/crc/h/hdf5/intel/18.0/build/lib/      
+     #HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
+     HDF5HOME=/opt/crc/n/netcdf/4.7.0/intel/18.0      
      FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) 
-  endif   
+  endif
+# ------------
+  ifeq ($(NETCDF),enable)
+    ifeq ($(WDALTVAL),enable)
+       DP  := $(DP) -DWDVAL_NETCDF 
+    endif
+  endif
+# -----------
+
   CLIBS         :=
   MSGLIBS       :=
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -430,12 +495,13 @@ ifeq ($(compiler),intel-ND)
   endif
   NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/n/netcdf/4.7.0/intel/18.0/
 endif
+
 # SGI ICE X (e.g. topaz@ERDC) using Intel compilers, added by TCM
 # jgf: Added flags for Thunder@AFRL.
 ifeq ($(compiler),intel-sgi)
   PPFC          :=  ifort
   FC            :=  ifort
-  PFC           :=  mpif90
+  PFC           ?=  mpif90
   CC            :=  icc -O2 -no-ipo
   CCBE          :=  icc -O2 -no-ipo
   FFLAGS1       :=  $(INCDIRS) -fixed -extend-source 132 -O2 -finline-limit=1000 -real-size 64 -no-ipo -assume buffered_io
@@ -843,24 +909,24 @@ endif
 #
 # Compiler Flags for CircleCI Build Server
 ifeq ($(compiler),circleci)
-  PPFC		:=  gfortran
-  FC		:=  gfortran
+  PPFC		:=  ifort
+  FC		:=  ifort
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O0 -g -mcmodel=medium -ffixed-line-length-none -m64
+  FFLAGS1	:=  $(INCDIRS) -O0 -132
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
   DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
   DPRE		:=  -DREAL8 -DLINUX -DADCSWAN
   IMODS 	:=  -I
-  CC		:= gcc
+  CC		:= icx
   CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O0 -g -mcmodel=medium -DLINUX -m64
+  CFLAGS	:= $(INCDIRS) -O0 -mcmodel=medium -DLINUX -m64
   CLIBS	:=
   LIBS		:=
   MSGLIBS	:=
   ifeq ($(NETCDF),enable)
-     FLIBS          := $(FLIBS) -lnetcdff
+     FLIBS          := $(FLIBS) -L${NETCDF_C_HOME}/lib -lnetcdff
   endif
   $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -917,7 +983,7 @@ endif
 ifeq ($(compiler),intel)
   PPFC	        :=  ifort -w
   FC	        :=  ifort -w
-  PFC	        :=  mpif90
+  PFC	        ?=  mpif90
   OPTLVL        := -O2
   ifeq ($(ADC_DEBUG),yes)
     OPTLVL        := -g
@@ -1498,9 +1564,9 @@ ifneq (,$(findstring powerpc-darwin,$(MACHINE)-$(OS)))
   PPFC	        := f90
   FC	        := f90
   PFC	        := mpif77
-  FFLAGS1	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -f fixed -W132 -I . -DLINUX
-  FFLAGS2	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I .
-  FFLAGS3	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I .
+  FFLAGS1	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -f fixed -W132 -I. -DLINUX
+  FFLAGS2	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I.
+  FFLAGS3	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I.
   DA  	   	:=  -DREAL8 -DCSCA -DLINUX
   DP  	   	:=  -DREAL8 -DCSCA -DCMPI -DLINUX
   DPRE	   	:=  -DREAL8 -DLINUX
@@ -1528,10 +1594,10 @@ ifneq (,$(findstring i386-darwin,$(MACHINE)-$(OS)))
   PPFC	        := ifort
   FC	        := ifort
   PFC	        := mpif77
-  FFLAGS1       :=  $(INCDIRS) -nowarn -O3    -fixed -132 -check all -traceback -DLINUX -DNETCDF_DEBUG -I .
-# FFLAGS1	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -DIBM -I .
-  FFLAGS2	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I .
-  FFLAGS3	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I .
+  FFLAGS1       :=  $(INCDIRS) -nowarn -O3    -fixed -132 -check all -traceback -DLINUX -DNETCDF_DEBUG -I.
+# FFLAGS1	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -DIBM -I.
+  FFLAGS2	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I.
+  FFLAGS3	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I.
   DA  	   	:=  -DREAL8 -DCSCA -DLINUX
   DP  	   	:=  -DREAL8 -DCSCA -DLINUX -DCMPI -DNETCDF_DEBUG
   DPRE	   	:=  -DREAL8 -DLINUX

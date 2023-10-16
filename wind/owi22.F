@@ -67,16 +67,17 @@ c
 1010  FORMAT(' File ',A60,/,' WAS NOT FOUND!  Try again',/)
 1011  FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
 
-      open(1,file=fname)
-      read(1,*) title
-      read(1,*) ne, nnAtl
+      open(AMPI_LUN(1),file=fname)
+      call AMPI_LUN_REGISTER(AMPI_LUN(1),file=fname)
+      read(AMPI_LUN(1),*) title
+      read(AMPI_LUN(1),*) ne, nnAtl
       allocate(Atlonglat(nnAtl,2))
       allocate(nAtl(nnAtl))
       allocate(umax(nnAtl),pmin(nnAtl))
       allocate(swpointsB(nnAtl,2),wB(nnAtl,4))
       allocate(swpointsR(nnAtl,2),wR(nnAtl,4))
       do i=1,nnAtl
-         read(1,*) numAtl, Along, Alat
+         read(AMPI_LUN(1),*) numAtl, Along, Alat
          Atlonglat(i,1)=Along
          Atlonglat(i,2)=Alat
          nAtl(i)=numAtl
@@ -91,7 +92,8 @@ c
   41  WRITE(*,*) 'Enter the name of the output unit 22 file:'
       READ(*,'(A60)') FNAME
 
-      open(2,file=fname)
+      open(AMPI_LUN(2),file=fname)
+      call AMPI_LUN_REGISTER(AMPI_LUN(2),file=fname)
 1000  format(i8,3e13.5)
 
 ! Ask if there is region-scale files  ----------------------------------
@@ -121,10 +123,11 @@ c
       ENDDO
       WRITE(*,1011) FNAME
 
-      open(31,file=fname)
+      open(AMPI_LUN(31),file=fname)
+      call AMPI_LUN_REGISTER(AMPI_LUN(31),file=fname)
 
       ! Read in begining/ending dates of win file
-      read(31,10) title,date1w,title,date2w
+      read(AMPI_LUN(31),10) title,date1w,title,date2w
 
 10    format(a55,i10,a5,i10)
 
@@ -140,10 +143,11 @@ c
       ENDDO
       WRITE(*,1011) FNAME
 
-      open(41,file=fname)
+      open(AMPI_LUN(41),file=fname)
+      call AMPI_LUN_REGISTER(AMPI_LUN(41),file=fname)
 
       ! Read in begining/ending dates of win file
-      read(41,10) title,date1p,title,date2p
+      read(AMPI_LUN(41),10) title,date1p,title,date2p
 
       if(date1w.ne.date1p.or.date2w.ne.date2p) then
          print *, 'HEADER INFO IN WIN AND PRE FILES DO NOT MATCH'
@@ -168,10 +172,11 @@ c
          ENDDO
          WRITE(*,1011) FNAME
 
-         open(32,file=fname)
+         open(AMPI_LUN(32),file=fname)
+         call AMPI_LUN_REGISTER(AMPI_LUN(32),file=fname)
 
          ! Read in begining/ending dates of .win file
-         read(32,10) title,date1w,title,date2w
+         read(AMPI_LUN(32),10) title,date1w,title,date2w
 
 
 ! Oceanweather region pre file -----------------------------------------------
@@ -185,10 +190,11 @@ c
          ENDDO
          WRITE(*,1011) FNAME
 
-         open(42,file=fname)
+         open(AMPI_LUN(42),file=fname)
+         call AMPI_LUN_REGISTER(AMPI_LUN(42),file=fname)
 
          ! Read in begining/ending dates of .pre file
-         read(42,10) title,date1p,title,date2p
+         read(AMPI_LUN(42),10) title,date1p,title,date2p
 
          if(date1w.ne.date1p.or.date2w.ne.date2p) then
             print *, 'HEADER INFO IN WIN AND PRE FILES DO NOT MATCH'
@@ -218,12 +224,12 @@ c
      &        t44,f8.0,t58,f8.0,t69,i10,i2)
 
          ! Read Grid Specifications/Date
-         read (31,11,end=9999) 
-     &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
+         read (AMPI_LUN(31),11,end=9999) 
+     &       iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
 
          ! Read Grid Specifications/Date
-         read (41,11,end=9999) 
-     &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
+         read (AMPI_LUN(41),11,end=9999) 
+     &       iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
 
          if(iLatw.ne.iLatp.or.iLongw.ne.iLongp.or.dxw.ne.dxp.or. 
      &         dyw.ne.dyp.or.swlatw.ne.swlatp.or.swlongw.ne.swlongp.or. 
@@ -328,14 +334,14 @@ c
       
          ! Read u/v components of the wind
 12       format(8f10.0)
-         read(31,12) ((uB(i,j),i=1,iLongB),j=1,iLatB)
-         read(31,12) ((vB(i,j),i=1,iLongB),j=1,iLatB)
+         read(AMPI_LUN(31),12) ((uB(i,j),i=1,iLongB),j=1,iLatB)
+         read(AMPI_LUN(31),12) ((vB(i,j),i=1,iLongB),j=1,iLatB)
 
          uB(:,:) = 1.943844492d0*uB(:,:)
          vB(:,:) = 1.943844492d0*vB(:,:)
 
          ! Read pressure
-         read(41,12) ((pB(i,j),i=1,iLongB),j=1,iLatB)
+         read(AMPI_LUN(41),12) ((pB(i,j),i=1,iLongB),j=1,iLatB)
 
 
 
@@ -355,12 +361,12 @@ c
             isnapR = isnapR+1
 
             ! Read Grid Specifications/Date
-            read (32,11,end=9999) 
-     &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
+            read (AMPI_LUN(32),11,end=9999) 
+     &       iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
 
             ! Read Grid Specifications/Date
-            read (42,11,end=9999) 
-     &        iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
+            read (AMPI_LUN(42),11,end=9999) 
+     &       iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
 
             if(iLatw.ne.iLatp.or.iLongw.ne.iLongp.or.dxw.ne.dxp.or.
      &         dyw.ne.dyp.or.swlatw.ne.swlatp.or.swlongw.ne.swlongp.or.
@@ -476,14 +482,14 @@ c
 
       
             ! Read u/v components of the wind
-            read(32,12) ((uR(i,j),i=1,iLongR),j=1,iLatR) 
-            read(32,12) ((vR(i,j),i=1,iLongR),j=1,iLatR)
+            read(AMPI_LUN(32),12) ((uR(i,j),i=1,iLongR),j=1,iLatR) 
+            read(AMPI_LUN(32),12) ((vR(i,j),i=1,iLongR),j=1,iLatR)
 
             uR(:,:) = 1.943844492d0*uR(:,:)
             vR(:,:) = 1.943844492d0*vR(:,:)
 
             ! Read pressure
-            read(42,12) ((pR(i,j),i=1,iLongR),j=1,iLatR)
+            read(AMPI_LUN(42),12) ((pR(i,j),i=1,iLongR),j=1,iLatR)
 
          endif ! regionExists .eq. 1
          
@@ -497,7 +503,7 @@ c
          end if
          ramp = 1.0
 
-         write(2,*) '# ', iCYMDHB, iMinB
+         write(AMPI_LUN(2),*) '# ', iCYMDHB, iMinB
 
          if(regionExists.eq.0) then
 30          format('PROCESSING BASIN DATA',i12,' ',i2,' RAMPING=',F5.2)
@@ -568,7 +574,7 @@ c
                uu = uu * 1.1076
                vv = vv * 1.1076
 
-               write(2,1000) nAtl(i),uu,vv,PP
+               write(AMPI_LUN(2),1000) nAtl(i),uu,vv,PP
             
                if(umax(i).lt.sqrt(uu*uu+vv*vv)) then
                   umax(i)=sqrt(uu*uu+vv*vv)
@@ -591,36 +597,38 @@ c
       print *, 'DONE'
 
       ! Close files
-      close(1)
-      close(2)
-      close(31)
-      close(41)
+      close(AMPI_LUN(1))
+      close(AMPI_LUN(2))
+      close(AMPI_LUN(31))
+      close(AMPI_LUN(41))
       IF(.not.SkipRegion) THEN
-        close(32)
-        close(42)
+        close(AMPI_LUN(32))
+        close(AMPI_LUN(42))
       ENDIF
 
       ! Write peak pressure velocity
       print *, 'Writing peak pressure velocity in peak73.63 ....'
-      open(10,file="peak73.63")
-      write(10,1110) title
-      WRITE(10,3645) 1,nnAtl,1000,1000,1
-      WRITE(10,2120) 1000,1000
+      open(AMPI_LUN(10),file="peak73.63")
+      call AMPI_LUN_REGISTER(AMPI_LUN(10),file="peak73.63")
+      write(AMPI_LUN(10),1110) title
+      WRITE(AMPI_LUN(10),3645) 1,nnAtl,1000,1000,1
+      WRITE(AMPI_LUN(10),2120) 1000,1000
       do i=1,nnAtl
-         write(10,3330) nAtl(i),pmin(i)
+         write(AMPI_LUN(10),3330) nAtl(i),pmin(i)
       end do
-      close(10)
+      close(AMPI_LUN(10))
 
       ! Write peak wind velocity
       print *, 'Writing peak wind velocity in peak74.63 ....'
-      open(10,file="peak74.63")
-      write(10,1110) title
-      WRITE(10,3645) 1,nnAtl,1000,1000,1
-      WRITE(10,2120) 1000,1000
+      open(AMPI_LUN(10),file="peak74.63")
+      call AMPI_LUN_REGISTER(AMPI_LUN(10),file="peak74.63")
+      write(AMPI_LUN(10),1110) title
+      WRITE(AMPI_LUN(10),3645) 1,nnAtl,1000,1000,1
+      WRITE(AMPI_LUN(10),2120) 1000,1000
       do i=1,nnAtl
-         write(10,3330) nAtl(i),umax(i)
+         write(AMPI_LUN(10),3330) nAtl(i),umax(i)
       end do
-      close(10)
+      close(AMPI_LUN(10))
 1110  format(a80) 
 3645  FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
 2120  FORMAT(2X,E20.10,5X,I10)

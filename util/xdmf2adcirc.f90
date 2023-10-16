@@ -116,18 +116,18 @@ do while (i.lt.argcount)
    call getarg(i, cmdlineopt)
    select case(trim(cmdlineopt))
    case("--verbose")
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // "."
+      write(AMPI_LUN(6),'(a)') "INFO: Processing " // trim(cmdlineopt) // "."
       verbose = .true.
    case("--meshonly")
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // "."
+      write(AMPI_LUN(6),'(a)') "INFO: Processing " // trim(cmdlineopt) // "."
       meshonly = .true.
    case("--datafile")
       i = i + 1
       call getarg(i, datafilename)     
-      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // &
+      write(AMPI_LUN(6),'(a)') "INFO: Processing " // trim(cmdlineopt) // &
          " " // trim(datafilename) // "."
    case default
-      write(6,'(a)') "WARNING: Command line option '",TRIM(cmdlineopt),"' was not recognized."
+      write(AMPI_LUN(6),'(a)') "WARNING: Command line option '",TRIM(cmdlineopt),"' was not recognized."
    end select
 end do
 !
@@ -151,7 +151,7 @@ endif
 call xdmfRetrieveNumDomainGridCollections(xdmfFortranObj, numGridCollections)
 write(6,'("INFO: Number of GridCollections in this file : ",i0,".")') numGridCollections
 if (numGridCollections.gt.0) then
-   write(6,'(a)') 'INFO: Opening GridCollection.'
+   write(AMPI_LUN(6),'(a)') 'INFO: Opening GridCollection.'
    gridCollectionIndex = 0 ! the first grid collection (they're numbered from zero)
    openMaps = 1
    openAttributes = 1
@@ -168,12 +168,12 @@ if (numGridCollections.gt.0) then
    case(401)
        gridCollectionTypeString = 'XDMF_GRID_COLLECTION_TYPE_TEMPORAL'
    case default
-       write(6,'("WARNING: The grid collection type code ",i0," is not supported by xdmf2adcirc.")') gridCollectionType
+       write(AMPI_LUN(6),'("WARNING: The grid collection type code ",i0," is not supported by xdmf2adcirc.")') gridCollectionType
    end select
-   write(6,'(a)') 'INFO: The grid collection type is ' // &
+   write(AMPI_LUN(6),'(a)') 'INFO: The grid collection type is ' // &
       trim(gridCollectionTypeString) // '.' 
    call xdmfRetrieveGridCollectionNumGrids(xdmfFortranObj, XDMF_GRID_TYPE_UNSTRUCTURED,  numGrids)
-   write(6,'("INFO: Number of Grids contained in the GridCollection: ",i0)'), numGrids
+   write(AMPI_LUN(6),'("INFO: Number of Grids contained in the GridCollection: ",i0)'), numGrids
 endif
 !
 !    C O N T R O L   ( F O R T . 1 5 )   D A T A
@@ -231,77 +231,77 @@ do attributeIndex=0, numAttributes - 1
    call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  & 
       myAttributeName, nameLength)
    call replaceNullsWithSpaces(myAttributeName)
-   write(6,'("INFO: Grid ",i0," Attribute ",i0," is named ",a)') gridIndex, attributeIndex, trim(myAttributeName)
+   write(AMPI_LUN(6),'("INFO: Grid ",i0," Attribute ",i0," is named ",a)') gridIndex, attributeIndex, trim(myAttributeName)
    select case(trim(myAttributeName))
    case("zeta")
-      write(6,'(a)') 'INFO: Preparing to write an ADCIRC water surface elevation file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write an ADCIRC water surface elevation file.'
       ascii_datafile_name = "fort.63"
       num_components = 1
       exit
    case("zeta_max")
-      write(6,'(a)') 'INFO: Preparing to write an ADCIRC maximum water surface elevation file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write an ADCIRC maximum water surface elevation file.'
       ascii_datafile_name = "maxele.63"
       num_components = 1
       exit
    case("vel")
-      write(6,'(a)') 'INFO: Preparing to write an ADCIRC water velocity file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write an ADCIRC water velocity file.'
       ascii_datafile_name = "fort.64"
       num_components = 2
       exit
    case("pressure")
-      write(6,'(a)') 'INFO: Preparing to write an ADCIRC barometric pressure file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write an ADCIRC barometric pressure file.'
       ascii_datafile_name = "fort.73"
       num_components = 1
       exit
    case("wvel")
-      write(6,'(a)') 'INFO: Preparing to write an ADCIRC wind velocity file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write an ADCIRC wind velocity file.'
       ascii_datafile_name = "fort.74"
       num_components = 2
       exit
    case("ice")
-      write(6,'(a)') 'INFO: Preparing to write an ADCIRC ice coverage file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write an ADCIRC ice coverage file.'
       ascii_datafile_name = "fort.93"
       num_components = 1
       exit
    case("wind_max")
-      write(6,'(a)') 'INFO: Preparing to write an ADCIRC maximum wind speed file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write an ADCIRC maximum wind speed file.'
       ascii_datafile_name = "maxwvel.63"
       num_components =  1     
       exit
    case("dir")
-      write(6,'(a)') 'INFO: Preparing to write a mean wave direction file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write a mean wave direction file.'
       ascii_datafile_name = "swan_DIR.63"
       num_components = 1
       exit
    case("hs")
-      write(6,'(a)') 'INFO: Preparing to write a significant wave height file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write a significant wave height file.'
       ascii_datafile_name = "swan_HS.63"
       num_components = 1
       exit
    case("tmm10")
-      write(6,'(a)') 'INFO: Preparing to write a mean absolute wave period file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write a mean absolute wave period file.'
       ascii_datafile_name = "swan_TMM10.63"
       num_components = 1
       exit
    case("tps")
-      write(6,'(a)') 'INFO: Preparing to write a relative peak period file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write a relative peak period file.'
       ascii_datafile_name = "swan_TPS.63"
       num_components = 1
       exit
    case("swan_HS_max")
-      write(6,'(a)') 'INFO: Preparing to write a maximum significant wave height file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write a maximum significant wave height file.'
       ascii_datafile_name = "swan_HS_max.63"
       num_components = 1
       exit
    case("swan_TPS_max")
-      write(6,'(a)') 'INFO: Preparing to write an maximum relative peak wave period file.'
+      write(AMPI_LUN(6),'(a)') 'INFO: Preparing to write an maximum relative peak wave period file.'
       ascii_datafile_name = "swan_TPS_max.63"
       num_components = 1                              
       exit
    case("depth")
       ! do nothing, this will be written with the mesh
    case default
-      write(6,'("ERROR: Unrecognized variable name: ",a,".")') trim(itemName)
+      write(AMPI_LUN(6),'("ERROR: Unrecognized variable name: ",a,".")') trim(itemName)
       stop
    end select
 end do
@@ -338,7 +338,7 @@ do gridIndex=0,numGrids-1
       call replaceNullsWithSpaces(itemKey)
       if (trim(itemKey).eq.'IT') then
          call replaceNullsWithSpaces(itemValue)
-         read(itemValue,*) timeStep
+         read(AMPI_LUN(itemValue),*) timeStep
       endif
    end do
    ! the actual adcirc data
@@ -355,20 +355,20 @@ do gridIndex=0,numGrids-1
             adcirc_data, XDMF_ARRAY_TYPE_FLOAT64, numValues, &
             startIndex, arrayStride, valueStride) 
          ! write the dataset to ascii adcirc format
-         write(11,2120) timeSec, timeStep
+         write(AMPI_LUN(11),2120) timeSec, timeStep
          if (num_components.eq.1) then ! scalar
             do k=1,numValues
-               write(11,2453) k, adcirc_data(k)
+               write(AMPI_LUN(11),2453) k, adcirc_data(k)
             end do
          endif
          if (num_components.eq.2) then ! faux 3-component vector
             do k=1,numValues,3
-               write(11,2453) k, adcirc_data(k), adcirc_data(k+1) 
+               write(AMPI_LUN(11),2453) k, adcirc_data(k), adcirc_data(k+1) 
             end do
          endif
       endif
    end do
-   write(6,advance='no',fmt='(I4)') gridIndex+1
+   write(AMPI_LUN(6),advance='no',fmt='(I4)') gridIndex+1
 enddo
 write(6,'(/,A)') "INFO: ... finished writing file."
 write(6,'("INFO: Wrote ",i0," data sets.")') numGrids
@@ -393,6 +393,8 @@ end program xdmf2adcirc
 ! jgf: Reads all nodal attributes from an XDMF file.
 !-----------------------------------------------------------------------
 subroutine readNodalAttributesXDMF(xdmfFortranObj)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
 use adcmesh, only : np
 use nodalattr
 implicit none
@@ -452,7 +454,7 @@ do attributeIndex=0, numAttributes - 1
    if (trim(itemName).eq.'depth') then
       cycle
    endif
-   write(6,'("INFO: Grid ",i0," Attribute ",i0," is named ",a)') gridIndex, attributeIndex, trim(itemName)
+   write(AMPI_LUN(6),'("INFO: Grid ",i0," Attribute ",i0," is named ",a)') gridIndex, attributeIndex, trim(itemName)
    na(nattrCount)%attrName = trim(itemName)
    nattrCount = nattrCount + 1
 end do
@@ -468,11 +470,11 @@ do informationIndex=0,numInformation-1
    case('nodalAttributesComment')
       nodalAttributesComment = trim(itemValue)
    case('numMeshNodes')
-      read(itemValue,*) numMeshNodes
+      read(AMPI_LUN(itemValue),*) numMeshNodes
    case default
       do i=1,numNodalAttributes
          if (trim(itemKey).eq. trim(na(i)%attrName) // ' number_of_values') then
-            read(itemValue,*) na(i)%numVals
+            read(AMPI_LUN(itemValue),*) na(i)%numVals
             allocate(na(i)%defaultVals(na(i)%numVals))
             exit
          endif
@@ -493,8 +495,8 @@ do informationIndex=0,numInformation-1
          na(i) % units = trim(itemValue)
       endif  
       if (trim(itemKey).eq. trim(na(i)%attrName) // ' default_values') then
-         write(6,*) 'default_values'//trim(itemValue)
-         read(itemValue,*) (na(i)%defaultVals(j),j=1,na(i)%numVals)
+         write(AMPI_LUN(6),*) 'default_values'//trim(itemValue)
+         read(AMPI_LUN(itemValue),*) (na(i)%defaultVals(j),j=1,na(i)%numVals)
       endif
    end do
 end do
@@ -509,7 +511,7 @@ do attributeIndex=0, numAttributes - 1
    endif
    do i=1,numNodalAttributes
       if (trim(itemName).eq.trim(na(i)%attrName)) then
-         write(6,'(a)') 'loading nodal attribute data for '//trim(itemName)
+         write(AMPI_LUN(6),'(a)') 'loading nodal attribute data for '//trim(itemName)
          if (na(i)%numVals.eq.1) then
             allocate(na(i)%xdmfArray(numMeshNodes))
             attributeType = XDMF_ATTRIBUTE_TYPE_SCALAR
@@ -584,6 +586,8 @@ end subroutine readNodalAttributesXDMF
 ! data structures.
 !----------------------------------------------------------------------
 subroutine readMeshXDMF(xdmfFortranObj)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
 use adcmesh
 implicit none
 include 'Xdmf.f'
@@ -663,10 +667,10 @@ openSets = 1
 !
 call xdmfRetrieveNumDomainGridCollections(xdmfFortranObj, numGridCollections)
 if (numGridCollections.gt.0) then
-   write(6,'(a)') 'INFO: Opening the first Grid in the GridCollection.' 
+   write(AMPI_LUN(6),'(a)') 'INFO: Opening the first Grid in the GridCollection.' 
    call xdmfOpenGridCollectionGrid(xdmfFortranObj, XDMF_GRID_TYPE_UNSTRUCTURED,  &
       gridIndex, openMaps, openAttributes, openInformations, openSets)
-   write(6,'(a)') 'INFO: Reading the Grid name.'
+   write(AMPI_LUN(6),'(a)') 'INFO: Reading the Grid name.'
    call xdmfRetrieveGridCollectionGridName(xdmfFortranObj, XDMF_GRID_TYPE_UNSTRUCTURED, &
       gridIndex, gridName, nameLength)
 else
@@ -698,7 +702,7 @@ case(301)
 case(302)
    geometryTypeString = 'XDMF_GEOMETRY_TYPE_XY'   
 case default
-   write(6,'("WARNING: Unrecognized geometry type ",i0,".")') geometryType
+   write(AMPI_LUN(6),'("WARNING: Unrecognized geometry type ",i0,".")') geometryType
 end select
 !write(6,'("INFO: The geometry type is ",a,".")') trim(geometryTypeString)
 !
@@ -724,7 +728,7 @@ do attributeIndex=0, numAttributes - 1
    call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  & 
       itemName, nameLength)
    call replaceNullsWithSpaces(itemName)
-   write(6,'("INFO: Grid ",i0," Attribute ",i0," is named ",a)') gridIndex, attributeIndex, trim(itemName)
+   write(AMPI_LUN(6),'("INFO: Grid ",i0," Attribute ",i0," is named ",a)') gridIndex, attributeIndex, trim(itemName)
    select case(trim(itemName))
    case("depth")
       call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, & 
@@ -736,7 +740,7 @@ end do
 !
 if (verbose.eqv..true.) then
    do i=1,np
-      write(6,'("ECHO: node=",i0," x=",f15.7," y=",f15.7," depth=",f8.3)') &
+      write(AMPI_LUN(6),'("ECHO: node=",i0," x=",f15.7," y=",f15.7," depth=",f8.3)') &
          i, (xyd(j,i), j=1,3)
    end do
 end if
@@ -779,7 +783,7 @@ deallocate(xdmf_nm)
 !
 if (verbose.eqv..true.) then
    do i=1,ne
-      write(6,'("ECHO: element ",i0," nodes ",i0," ",i0," ",i0)') i, (nm(i,j), j=1,3)
+      write(AMPI_LUN(6),'("ECHO: element ",i0," nodes ",i0," ",i0," ",i0)') i, (nm(i,j), j=1,3)
    end do
 endif
 !
@@ -819,7 +823,7 @@ do setIndex=0, numSets-1
    call xdmfRetrieveInformation(xdmfFortranObj, numInformations-1, itemKey, & 
       keyLength, itemValue, valueLength)
    call replaceNullsWithSpaces(itemValue)
-   read(itemValue,*) boundaryTypes(setIndex) ! value of either ibtype_orig or ibtypee
+   read(AMPI_LUN(itemValue),*) boundaryTypes(setIndex) ! value of either ibtype_orig or ibtypee
    !
    ! determine the number of nodes on this boundary
    call xdmfRetrieveSetSize(xdmfFortranObj, setSize(setIndex), setIndex)
@@ -851,13 +855,13 @@ do setIndex=0, numSets-1
          case(5,25)
             numInternalFluxBoundariesWithPipes = numInternalFluxBoundariesWithPipes + 1
          case default
-            write(6,'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")'), boundaryTypes(setIndex)
+            write(AMPI_LUN(6),'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")'), boundaryTypes(setIndex)
          end select         
       case("Node")
          ! do nothing, this property simply indicates that the boundaries
          ! are defined by lists of nodes
       case default
-         write(6,'("WARNING: Unrecognized set property ",a,".")') trim(itemValue)
+         write(AMPI_LUN(6),'("WARNING: Unrecognized set property ",a,".")') trim(itemValue)
       end select
    end do
 end do     
@@ -971,7 +975,7 @@ do setIndex=0,numSets-1
                   externalFluxBoundaries(efCount)%barlancfsp, XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case default
-               write(6,'("ERROR: Unrecognized boundary attribute : ",a,".")') trim(itemName)
+               write(AMPI_LUN(6),'("ERROR: Unrecognized boundary attribute : ",a,".")') trim(itemName)
             end select
          end do
          ! populate adcirc-native arrays
@@ -1010,7 +1014,7 @@ do setIndex=0,numSets-1
                   internalFluxBoundaries(ifCount)%barincfsp, XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case default
-               write(6,'("ERROR: Unrecognized boundary attribute : ",a,".")') trim(itemName)
+               write(AMPI_LUN(6),'("ERROR: Unrecognized boundary attribute : ",a,".")') trim(itemName)
             end select
          end do
          internalFluxBoundaries(ifCount)%ibconn = internalFluxBoundaries(ifCount)%ibconn + 1
@@ -1068,7 +1072,7 @@ do setIndex=0,numSets-1
                   XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case default
-               write(6,'("ERROR: Unrecognized boundary attribute : ",a,".")') trim(itemName)
+               write(AMPI_LUN(6),'("ERROR: Unrecognized boundary attribute : ",a,".")') trim(itemName)
             end select
          end do
          internalFluxBoundariesWithPipes(ifwpCount)%ibconn = internalFluxBoundariesWithPipes(ifwpCount)%ibconn + 1
@@ -1091,7 +1095,7 @@ do setIndex=0,numSets-1
             = internalFluxBoundariesWithPipes(ifwpCount)%pipediam
          ifwpCount = ifwpCount + 1            
       case default
-          write(6,'("ERROR: The boundary type ",I3," was found in the files but is not valid.")')
+          write(AMPI_LUN(6),'("ERROR: The boundary type ",I3," was found in the files but is not valid.")')
           stop
       end select
       fluxCount = fluxCount + 1
@@ -1194,7 +1198,7 @@ case(205)
 case(206)
    typeString = 'XDMF_ATTRIBUTE_TYPE_NOTYPE'
 case default
-   write(6,'("WARNING: Unrecognized attribute type ",i0,".")') trim(typeString)
+   write(AMPI_LUN(6),'("WARNING: Unrecognized attribute type ",i0,".")') trim(typeString)
 end select
 !----------------------------------------------------------------------
 end subroutine createAttributeTypeString
@@ -1222,7 +1226,7 @@ case(603)
 case(604)
    typeString = 'XDMF_SET_TYPE_EDGE'      
 case default
-   write(6,'("WARNING: Unrecognized set type ",i0,".")') typeHolder
+   write(AMPI_LUN(6),'("WARNING: Unrecognized set type ",i0,".")') typeHolder
 end select
 !----------------------------------------------------------------------
 end subroutine createSetTypeString
@@ -1252,7 +1256,7 @@ case(103)
 case(104)
    typeString = 'XDMF_ATTRIBUTE_CENTER_NODE'
 case default
-   write(6,'("WARNING: Unrecognized attribute center ",i0,".")') trim(typeString)
+   write(AMPI_LUN(6),'("WARNING: Unrecognized attribute center ",i0,".")') trim(typeString)
 end select
 !----------------------------------------------------------------------
 end subroutine createAttributeCenterString
@@ -1288,7 +1292,7 @@ case(7)
 case(8)
    typeString = 'XDMF_ARRAY_TYPE_FLOAT64'
 case default
-   write(6,'("WARNING: Unrecognized data type ",i0,".")') trim(typeString)
+   write(AMPI_LUN(6),'("WARNING: Unrecognized data type ",i0,".")') trim(typeString)
 end select
 !----------------------------------------------------------------------
 end subroutine createDataTypeString
@@ -1332,7 +1336,7 @@ case(515)
 case(516)
    typeString = 'XDMF_TOPOLOGY_TYPE_WEDGE_18'
 case default
-   write(6,'("WARNING: Unrecognized topology type ",i0,".")') typeHolder
+   write(AMPI_LUN(6),'("WARNING: Unrecognized topology type ",i0,".")') typeHolder
 end select
 !----------------------------------------------------------------------
 end subroutine createTopologyTypeString

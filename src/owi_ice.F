@@ -11,6 +11,8 @@ C
 C****************************************************************************** 
 C 
       MODULE OWI_ICE
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 C
       USE SIZES,ONLY : SZ,MYPROC
       USE GLOBAL,ONLY : NSCREEN, ScreenUnit
@@ -79,19 +81,21 @@ C***********************************************************************
       
 ! Read meta info -------------------------------------------------
 
-      OPEN(25,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.25',STATUS='OLD',
-     & ACTION='READ')
+      OPEN(AMPI_LUN(25),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.25',STATUS='OLD',
+     &ACTION='READ')
+      call AMPI_LUN_REGISTER(AMPI_LUN(25),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.25',STATUS='OLD',
+     &ACTION='READ')
 
       ! Read the number of sets of .ice files.
       ! If numSets = 1 then ADCIRC requires UNIT 225
       ! If numSets = 2 then ADCIRC requires UNIT 225 and 227.
       !   UNIT 225 and 227 are ice concentration fields
 
-      read(25,*,err=99999) numSets
+      read(AMPI_LUN(25),*,err=99999) numSets
 
       if(numSets.NE.1.AND.numSets.NE.2) then
-        if (myproc == 0) write(screenunit,1004)
-        write(16,1004)
+        if (myproc == 0) write(AMPI_LUN(screenunit),1004)
+        write(AMPI_LUN(16),1004)
 #ifdef CMPI
         call msg_fini()
 #endif
@@ -99,7 +103,7 @@ C***********************************************************************
       endif
 
       ! Read the number of blank snaps to be inserted before OWI ice fields start
-      read(25,*,err=99999) numBlankSnaps
+      read(AMPI_LUN(25),*,err=99999) numBlankSnaps
 
       ! If numBlankSnaps < 0, ABS(numBlankSnaps) snaps in OWI ice files (UNIT225 and 227) will be skipped.
       if(numBlankSnaps.LT.0) then
@@ -111,11 +115,12 @@ C***********************************************************************
         numSkipSnaps = 0 
       endif
 
-      close(25)
+      close(AMPI_LUN(25))
 
 ! Read basin ice file header ------------------------------------------------
 
-      OPEN(225,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.225', STATUS='OLD')
+      OPEN(AMPI_LUN(225),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.225', STATUS='OLD')
+      call AMPI_LUN_REGISTER(AMPI_LUN(225),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.225', STATUS='OLD')
 
       ! Read begining/ending dates of ice file
 !      tcm v48.4645 changed the way the header is read
@@ -123,13 +128,13 @@ C***********************************************************************
 ! 11   FORMAT(a,1x,a,1x,a)
 !      read(225,*)date1ice,date2ice
       owiheader(:) = ' '  !set owiheader to blanks before read
-      read(225,fmt='(a80)',err=99999) owiheader
+      read(AMPI_LUN(225),fmt='(a80)',err=99999) owiheader
       read(owiheader(56:65),'(I10)') date1ice
       read(owiheader(71:80),'(I10)') date2ice
 
       if (myproc == 0)then
-         write(screenunit,*)'date1 in basin ice file = ',date1ice
-         write(screenunit,*)'date2 in basin ice file = ',date2ice
+         write(AMPI_LUN(screenunit),*)'date1 in basin ice file = ',date1ice
+         write(AMPI_LUN(screenunit),*)'date2 in basin ice file = ',date2ice
       endif
 
       date1B = date1ice
@@ -141,20 +146,21 @@ C***********************************************************************
 
 ! Read region ice file header -----------------------------------------------
 
-        OPEN(227,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.227',STATUS='OLD')
+        OPEN(AMPI_LUN(227),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.227',STATUS='OLD')
+        call AMPI_LUN_REGISTER(AMPI_LUN(227),FILE=TRIM(GBLINPUTDIR)//'/'//'fort.227',STATUS='OLD')
 
         ! Read begining/ending dates of ice file
 !       tcm v48.4645 changed the way the header is read
 !       read(227,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
 !       read(227,*)date1ice,date2ice
         owiheader(:) = ' '  !set owiheader to blanks before read
-        read(227,fmt='(a80)',err=99999) owiheader
+        read(AMPI_LUN(227),fmt='(a80)',err=99999) owiheader
         read(owiheader(56:65),'(I10)') date1ice
         read(owiheader(71:80),'(I10)') date2ice
 
         if (myproc == 0) then
-          write(screenunit,*)'date1 in region ice file = ',date1ice
-          write(screenunit,*)'date2 in region ice file = ',date2ice
+          write(AMPI_LUN(screenunit),*)'date1 in region ice file = ',date1ice
+          write(AMPI_LUN(screenunit),*)'date2 in region ice file = ',date2ice
         endif
 
         date1R = date1ice
@@ -221,9 +227,9 @@ C***********************************************************************
         enddo
         IF(NSCREEN.GE.1) THEN
           if(MYPROC.EQ.0) then
-            WRITE(screenunit,16) cntSnaps
+            WRITE(AMPI_LUN(screenunit),16) cntSnaps
           endif
-          WRITE(16,16) cntSnaps    !TCMv48.4629 (Changed format number from 15 to 16)
+          WRITE(AMPI_LUN(16),16) cntSnaps    !TCMv48.4629 (Changed format number from 15 to 16)
         ENDIF
         return
       endif
@@ -233,8 +239,8 @@ C***********************************************************************
       isnapB = isnapB+1
 
       ! Read grid specifications/date in ice file
-      read (225,11,end=10000,err=99999) 
-     &      iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
+      read (AMPI_LUN(225),11,end=10000,err=99999) 
+     &     iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
 
 
       ! Check if header info has changed from the previous snapshot
@@ -257,7 +263,7 @@ C***********************************************************************
       endif
       
       ! Read ice concentrations
-      read(225,22,end=9999,err=99999) ((CiceB(i,j),i=1,iLongB),j=1,iLatB)
+      read(AMPI_LUN(225),22,end=9999,err=99999) ((CiceB(i,j),i=1,iLongB),j=1,iLatB)
 
 ! Read region data  --------------------------------------------------------
 
@@ -274,8 +280,8 @@ C***********************************************************************
         isnapR = isnapR+1
 
         ! Read grid specifications/date in ice file
-        read (227,11,end=10000,err=99999) 
-     &       iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
+        read (AMPI_LUN(227),11,end=10000,err=99999) 
+     &      iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
 
         ! Check if header info has changed from the previous snapshot
         if(isnapR.gt.1) then
@@ -295,15 +301,15 @@ C***********************************************************************
 
         if(iCYMDHB.ne.iCYMDHR.or.iMinB.ne.iMinR) then
           if (myproc == 0) then
-            WRITE(screenunit,*) 'SNAPSHOTS NOT SYNCRONIZED'
-            WRITE(screenunit,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-            WRITE(screenunit,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-            WRITE(screenunit,*) 'EXECUTION WILL BE TERMINATED'
+            WRITE(AMPI_LUN(screenunit),*) 'SNAPSHOTS NOT SYNCRONIZED'
+            WRITE(AMPI_LUN(screenunit),*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
+            WRITE(AMPI_LUN(screenunit),*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
+            WRITE(AMPI_LUN(screenunit),*) 'EXECUTION WILL BE TERMINATED'
           endif
-          WRITE(16,*) 'SNAPSHOTS NOT SYNCRONIZED'
-          WRITE(16,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-          WRITE(16,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-          WRITE(16,*) 'EXECUTION WILL BE TERMINATED'
+          WRITE(AMPI_LUN(16),*) 'SNAPSHOTS NOT SYNCRONIZED'
+          WRITE(AMPI_LUN(16),*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
+          WRITE(AMPI_LUN(16),*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
+          WRITE(AMPI_LUN(16),*) 'EXECUTION WILL BE TERMINATED'
 #ifdef CMPI
           call msg_fini()
 #endif
@@ -316,8 +322,8 @@ C***********************************************************************
         endif
 
         ! Read ice concentrations
-        read(227,22,end=9999,err=99999) 
-     &    ((CiceR(i,j),i=1,iLongR),j=1,iLatR)
+        read(AMPI_LUN(227),22,end=9999,err=99999) 
+     &   ((CiceR(i,j),i=1,iLongR),j=1,iLatR)
 
       endif
 
@@ -332,14 +338,14 @@ c      end if
       IF(NSCREEN.GE.1) THEN
         if(regionExists.EQV..TRUE.) then
           if(MYPROC.EQ.0) then
-            WRITE(screenunit,15) iCYMDHB,iMinB
+            WRITE(AMPI_LUN(screenunit),15) iCYMDHB,iMinB
           endif
-          WRITE(16,15) iCYMDHB,iMinB
+          WRITE(AMPI_LUN(16),15) iCYMDHB,iMinB
         else
           if(MYPROC.EQ.0) then
-            WRITE(screenunit,14) iCYMDHB,iMinB
+            WRITE(AMPI_LUN(screenunit),14) iCYMDHB,iMinB
           endif
-          WRITE(16,14) iCYMDHB,iMinB
+          WRITE(AMPI_LUN(16),14) iCYMDHB,iMinB
         endif
       ENDIF
 
@@ -436,19 +442,19 @@ c      end if
 9999  continue
 
       if (myproc == 0) then
-      WRITE(screenunit,*)''
-      WRITE(screenunit,*)' !!!!!FATAL ERROR!!!!!'
-      WRITE(screenunit,*)'EITHER UNIT 225 or 227',
-     & ' COULD NOT BE READ'
-      WRITE(screenunit,*)' EXECUTION WILL BE TERMINATED'
-      WRITE(screenunit,*)''
+      WRITE(AMPI_LUN(screenunit),*)''
+      WRITE(AMPI_LUN(screenunit),*)' !!!!!FATAL ERROR!!!!!'
+      WRITE(AMPI_LUN(screenunit),*)'EITHER UNIT 225 or 227',
+     &' COULD NOT BE READ'
+      WRITE(AMPI_LUN(screenunit),*)' EXECUTION WILL BE TERMINATED'
+      WRITE(AMPI_LUN(screenunit),*)''
       endif
 
-      WRITE(16,*) ''
-      WRITE(16,*) ' !!!!!FATAL ERROR!!!!!'
-      WRITE(16,*) ' EITHER UNIT 225 or 227 COULD NOT BE READ'
-      WRITE(16,*) ' EXECUTION WILL BE TERMINATED'
-      WRITE(16,*) ''
+      WRITE(AMPI_LUN(16),*) ''
+      WRITE(AMPI_LUN(16),*) ' !!!!!FATAL ERROR!!!!!'
+      WRITE(AMPI_LUN(16),*) ' EITHER UNIT 225 or 227 COULD NOT BE READ'
+      WRITE(AMPI_LUN(16),*) ' EXECUTION WILL BE TERMINATED'
+      WRITE(AMPI_LUN(16),*) ''
 #ifdef CMPI
       call msg_fini()
 #endif
@@ -457,18 +463,18 @@ c      end if
 10000 continue
 
       IF(MYPROC.EQ.0) THEN
-        WRITE(screenunit,*) ''
-        WRITE(screenunit,*) ' !!! WARNING !!!'
-        WRITE(screenunit,*) ' EITHER UNIT 225 or 227 RAN OUT'
-        WRITE(screenunit,*) ' EXECUTION WILL CONTINUE'
-        WRITE(screenunit,*) ''
+        WRITE(AMPI_LUN(screenunit),*) ''
+        WRITE(AMPI_LUN(screenunit),*) ' !!! WARNING !!!'
+        WRITE(AMPI_LUN(screenunit),*) ' EITHER UNIT 225 or 227 RAN OUT'
+        WRITE(AMPI_LUN(screenunit),*) ' EXECUTION WILL CONTINUE'
+        WRITE(AMPI_LUN(screenunit),*) ''
       ENDIF
 
-      WRITE(16,*) ''
-      WRITE(16,*) ' !!! WARNING !!!'
-      WRITE(16,*) ' EITHER UNIT 225 or 227 RAN OUT'
-      WRITE(16,*) ' EXECUTION WILL CONTINUE'
-      WRITE(16,*) ''
+      WRITE(AMPI_LUN(16),*) ''
+      WRITE(AMPI_LUN(16),*) ' !!! WARNING !!!'
+      WRITE(AMPI_LUN(16),*) ' EITHER UNIT 225 or 227 RAN OUT'
+      WRITE(AMPI_LUN(16),*) ' EXECUTION WILL CONTINUE'
+      WRITE(AMPI_LUN(16),*) ''
 
       do i=1,NP
         Ciceval(I)=0.d0
@@ -513,9 +519,9 @@ C***********************************************************************
       INTEGER   NP,I,J,K,XI,YI
       REAL(SZ)  adcLat,adcLong
 
-      WRITE(16,*) ''
-      WRITE(16,*) 'BASIN-SCALE ICE MAPPING UPDATED'
-      WRITE(16,*) ''
+      WRITE(AMPI_LUN(16),*) ''
+      WRITE(AMPI_LUN(16),*) 'BASIN-SCALE ICE MAPPING UPDATED'
+      WRITE(AMPI_LUN(16),*) ''
         
       iLatB = iLatc
       iLongB = iLongc
@@ -602,9 +608,9 @@ C***********************************************************************
       INTEGER   NP,I,J,K,XI,YI
       REAL(SZ)  adcLat,adcLong
 
-      WRITE(16,*) ''
-      WRITE(16,*) 'REGION-SCALE ICE MAPPING UPDATED'
-      WRITE(16,*) ''
+      WRITE(AMPI_LUN(16),*) ''
+      WRITE(AMPI_LUN(16),*) 'REGION-SCALE ICE MAPPING UPDATED'
+      WRITE(AMPI_LUN(16),*) ''
         
       iLatR = iLatc
       iLongR = iLongc

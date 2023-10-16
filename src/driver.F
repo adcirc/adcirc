@@ -3,9 +3,15 @@ C******************************************************************************
 C*    Non-ESMF ADCIRC DRIVER
 C******************************************************************************
 C******************************************************************************
+#ifndef AMPI_COMP
       PROGRAM ADCIRC
+#else
+      SUBROUTINE MPI_MAIN
+#endif      
 C
       USE ADCIRC_Mod, ONLY : ADCIRC_Init, ADCIRC_Run, ADCIRC_Final
+      USE AMPI_MIGRATE_IMPL, ONLY: ABOUT_TO_MIGRATE, JUST_MIGRATED,
+     &  migratablelun_setup 
 C
 #ifdef CSWAN
 Casey 090302: Include the following routines for coupling to unstructured SWAN.
@@ -40,4 +46,8 @@ C
       CALL ADCIRC_Final
 C
       CALL EXIT(0)
+#ifndef AMPI_COMP      
       END PROGRAM ADCIRC
+#else
+      END SUBROUTINE MPI_MAIN
+#endif      

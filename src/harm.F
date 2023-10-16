@@ -90,6 +90,8 @@ c                                                                      *
 c***********************************************************************
 C
       MODULE HARM
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 C
       USE SIZES, ONLY : SZ, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
      &                   WRITE_LOCAL_HARM_FILES
@@ -367,16 +369,19 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
       IF (myproc.eq.0) THEN
-         OPEN(56,FILE=TRIM(GLOBALDIR)//'/'//'fort.56',
-     &      STATUS='UNKNOWN',ACCESS='SEQUENTIAL',ACTION='WRITE',
-     &      POSITION='APPEND')
-         WRITE(56,2120) timesec, it 
+         OPEN(AMPI_LUN(56),FILE=TRIM(GLOBALDIR)//'/'//'fort.56',
+     &     STATUS='UNKNOWN',ACCESS='SEQUENTIAL',ACTION='WRITE',
+     &     POSITION='APPEND')
+         call AMPI_LUN_REGISTER(AMPI_LUN(56),FILE=TRIM(GLOBALDIR)//'/'//'fort.56',
+     &     STATUS='UNKNOWN',ACCESS='SEQUENTIAL',ACTION='WRITE',
+     &     POSITION='APPEND')
+         WRITE(AMPI_LUN(56),2120) timesec, it 
          DO i=1,2*MNHARF
             DO j=1,2*MNHARF
-               write(56,2130) i, j, ha(i,j)
+               write(AMPI_LUN(56),2130) i, j, ha(i,j)
             END DO
          END DO
-         CLOSE(56)
+         CLOSE(AMPI_LUN(56))
       ENDIF
 
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
@@ -1483,16 +1488,16 @@ C
 C
       if (charmv) then
 c
-      WRITE(16,7740)
+      WRITE(AMPI_LUN(16),7740)
  7740 FORMAT(///,5X,'THE LARGEST VALUES OF THE RATIO ',
      &              'RESYNTHESIZED ELEV TIME SERIES/RAW TIME SERIES:',/)
-      WRITE(16,7741) EAVMAX,NEAVMAX
-      WRITE(16,7742) EVAMAX,NEVAMAX
-      WRITE(16,7747)
+      WRITE(AMPI_LUN(16),7741) EAVMAX,NEAVMAX
+      WRITE(AMPI_LUN(16),7742) EVAMAX,NEVAMAX
+      WRITE(AMPI_LUN(16),7747)
  7747 FORMAT(/,5X,'THE LOWEST VALUES OF THE RATIO ',
      &            'RESYNTHESIZED ELEV TIME SERIES/RAW TIME SERIES:',/)
-      WRITE(16,7741) EAVMIN,NEAVMIN
-      WRITE(16,7742) EVAMIN,NEVAMIN
+      WRITE(AMPI_LUN(16),7741) EAVMIN,NEAVMIN
+      WRITE(AMPI_LUN(16),7742) EVAMIN,NEVAMIN
  7741 FORMAT(9X,'  AVERAGE ELEVATION RATIO = ',E15.7,' AT NODE ',I8)
  7742 FORMAT(9X,' VARIANCE ELEVATION RATIO = ',E15.7,' AT NODE ',I8)
 c
@@ -1696,20 +1701,20 @@ CHARMV...Compare resynthesized values with those computed during time stepping.
 
       if ( charmv ) then
 c
-         WRITE(16,7740)
+         WRITE(AMPI_LUN(16),7740)
  7740    FORMAT(///,5X,'THE LARGEST VALUES OF THE RATIO ',
      &              'RESYNTHESIZED VEL TIME SERIES/RAW TIME SERIES:',/)
-         WRITE(16,7743) UAVMAX,NUAVMAX
-         WRITE(16,7744) UVAMAX,NUVAMAX
-         WRITE(16,7745) VAVMAX,NVAVMAX
-         WRITE(16,7746) VVAMAX,NVVAMAX
-         WRITE(16,7747)
+         WRITE(AMPI_LUN(16),7743) UAVMAX,NUAVMAX
+         WRITE(AMPI_LUN(16),7744) UVAMAX,NUVAMAX
+         WRITE(AMPI_LUN(16),7745) VAVMAX,NVAVMAX
+         WRITE(AMPI_LUN(16),7746) VVAMAX,NVVAMAX
+         WRITE(AMPI_LUN(16),7747)
  7747    FORMAT(//,5X,'THE LOWEST VALUES OF THE RATIO ',
      &             'RESYNTHESIZED VEL TIME SERIES/RAW TIME SERIES:',/)
-         WRITE(16,7743) UAVMIN,NUAVMIN
-         WRITE(16,7744) UVAMIN,NUVAMIN
-         WRITE(16,7745) VAVMIN,NVAVMIN
-         WRITE(16,7746) VVAMIN,NVVAMIN
+         WRITE(AMPI_LUN(16),7743) UAVMIN,NUAVMIN
+         WRITE(AMPI_LUN(16),7744) UVAMIN,NUVAMIN
+         WRITE(AMPI_LUN(16),7745) VAVMIN,NVAVMIN
+         WRITE(AMPI_LUN(16),7746) VVAMIN,NVVAMIN
  7743    FORMAT(9X,' AVERAGE U VELOCITY RATIO = ',E15.7,' AT NODE ',I8)
  7744    FORMAT(9X,'VARIANCE U VELOCITY RATIO = ',E15.7,' AT NODE ',I8)
  7745    FORMAT(9X,' AVERAGE V VELOCITY RATIO = ',E15.7,' AT NODE ',I8)
@@ -1797,35 +1802,35 @@ C        ! read full domain hotstart file in parallel
 c
 c***** Read in parameter values
 c
-      READ(lun,REC=counter+1) inz
-      READ(lun,REC=counter+2) inf
-      READ(lun,REC=counter+3) imm
-      READ(lun,REC=counter+4) inp
-      READ(lun,REC=counter+5) instae
-      READ(lun,REC=counter+6) instav
-      READ(lun,REC=counter+7) inhase
-      READ(lun,REC=counter+8) inhasv
-      READ(lun,REC=counter+9) inhage
-      READ(lun,REC=counter+10) inhagv
-      READ(lun,REC=counter+11) iicall
-      READ(lun,REC=counter+12) infreq
+      READ(AMPI_LUN(lun),REC=counter+1) inz
+      READ(AMPI_LUN(lun),REC=counter+2) inf
+      READ(AMPI_LUN(lun),REC=counter+3) imm
+      READ(AMPI_LUN(lun),REC=counter+4) inp
+      READ(AMPI_LUN(lun),REC=counter+5) instae
+      READ(AMPI_LUN(lun),REC=counter+6) instav
+      READ(AMPI_LUN(lun),REC=counter+7) inhase
+      READ(AMPI_LUN(lun),REC=counter+8) inhasv
+      READ(AMPI_LUN(lun),REC=counter+9) inhage
+      READ(AMPI_LUN(lun),REC=counter+10) inhagv
+      READ(AMPI_LUN(lun),REC=counter+11) iicall
+      READ(AMPI_LUN(lun),REC=counter+12) infreq
       counter = counter+12
 c
       do i=1,nfreq+nf
-         READ(lun,REC=counter+1) FNAM8(1)
-         READ(lun,REC=counter+2) FNAM8(2)
+         READ(AMPI_LUN(lun),REC=counter+1) FNAM8(1)
+         READ(AMPI_LUN(lun),REC=counter+2) FNAM8(2)
          counter = counter + 2
          INAMEFR(I) = FNAME
-         read(lun,REC=counter+1) ifreq(i)
-         read(lun,REC=counter+2) iff(i)
-         read(lun,REC=counter+3) iface(i)
+         read(AMPI_LUN(lun),REC=counter+1) ifreq(i)
+         read(AMPI_LUN(lun),REC=counter+2) iff(i)
+         read(AMPI_LUN(lun),REC=counter+3) iface(i)
          counter = counter + 3
       end do
 c
 c***** Read in time of most recent H.A. update
 c
-      READ(lun,REC=counter+1) TIMEUD
-      READ(lun,REC=counter+2) ITUD
+      READ(AMPI_LUN(lun),REC=counter+1) TIMEUD
+      READ(AMPI_LUN(lun),REC=counter+2) ITUD
       counter = counter + 2
 c
 c     Read in LHS Matrix
@@ -1836,7 +1841,7 @@ c     Read in LHS Matrix
       ! written with an inner i loop
       do i=1,mm
          do j=1,mm
-            READ(lun,REC=counter) HA(I,J)
+            READ(AMPI_LUN(lun),REC=counter) HA(I,J)
             counter = counter + 1
          end do
       end do
@@ -1850,8 +1855,8 @@ c     Read in Station Velocity LHS load vector
       IF (NHASV.ne.0) THEN
          do n=1,num_vel_sta
             do i=1,mm
-               READ(lun,REC=counter) STAULV_pt(I,N)
-               READ(lun,REC=counter+1) STAVLV_pt(I,N)
+               READ(AMPI_LUN(lun),REC=counter) STAULV_pt(I,N)
+               READ(AMPI_LUN(lun),REC=counter+1) STAVLV_pt(I,N)
                counter = counter + 2
             enddo
          enddo
@@ -1864,8 +1869,8 @@ c     Read in Global Velocity LHS load vector
       IF (NHAGV.ne.0) THEN
          do n=1,num_nodes
             do i=1,mm
-               READ(lun,REC=counter) GLOULV_pt(I,N)
-               READ(lun,REC=counter+1) GLOVLV_pt(I,N)
+               READ(AMPI_LUN(lun),REC=counter) GLOULV_pt(I,N)
+               READ(AMPI_LUN(lun),REC=counter+1) GLOVLV_pt(I,N)
                counter = counter + 2
             end do
          end do
@@ -1873,24 +1878,24 @@ c     Read in Global Velocity LHS load vector
 C..   Read in Means and Squares
       IF (CHARMV.eqv..true.) THEN
          IF ((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
-            READ(lun,REC=counter) NTSTEPS ; counter = counter + 1
+            READ(AMPI_LUN(lun),REC=counter) NTSTEPS ; counter = counter + 1
             IF(NHAGE.ne.0) THEN
                DO I=1,num_nodes
-                  READ(lun,REC=counter) ELAV_pt(I)
+                  READ(AMPI_LUN(lun),REC=counter) ELAV_pt(I)
                   counter = counter + 1
-                  READ(lun,REC=counter) ELVA_pt(I)
+                  READ(AMPI_LUN(lun),REC=counter) ELVA_pt(I)
                   counter = counter + 1
                ENDDO
             ENDIF
             IF (NHAGV.ne.0) THEN
                DO I=1,num_nodes
-                  READ(lun,REC=counter) XVELAV_pt(I)
+                  READ(AMPI_LUN(lun),REC=counter) XVELAV_pt(I)
                   counter = counter + 1
-                  READ(lun,REC=counter) YVELAV_pt(I)
+                  READ(AMPI_LUN(lun),REC=counter) YVELAV_pt(I)
                   counter = counter + 1
-                  READ(lun,REC=counter) XVELVA_pt(I)
+                  READ(AMPI_LUN(lun),REC=counter) XVELVA_pt(I)
                   counter = counter + 1
-                  READ(lun,REC=counter) YVELVA_pt(I)
+                  READ(AMPI_LUN(lun),REC=counter) YVELVA_pt(I)
                   counter = counter + 1
                ENDDO
             ENDIF
@@ -2212,7 +2217,7 @@ C
 #endif
        DO j=1, jLength
           DO i=1, iLength
-            READ(lun,REC=counter) array(i,j)
+            READ(AMPI_LUN(lun),REC=counter) array(i,j)
             counter = counter + 1
           END DO
        END DO

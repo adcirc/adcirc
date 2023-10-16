@@ -9,6 +9,8 @@ C                                                                             *
 C******************************************************************************
 C
       MODULE GLOBAL_3DVS
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 C...
 C...BRING IN NECESSARY VARIABLES FROM GLOBAL
 C...
@@ -491,9 +493,9 @@ c
 c     igc = 2 - logarithmically grid  (after Davies 1991)
 c
       case(2)
-         write(screenunit,*) '   '
-         write(screenunit,*) '********** Depth = ',H,' ***********'
-         write(screenunit,*) '********** So = ',Z0B,' *********'
+         write(AMPI_LUN(screenunit),*) '   '
+         write(AMPI_LUN(screenunit),*) '********** Depth = ',H,' ***********'
+         write(AMPI_LUN(screenunit),*) '********** So = ',Z0B,' *********'
          Sb = Z0B
 c     write(screenunit,*) '********** Enter So from the keyboard ***********'
 c     write(screenunit,*) '   '
@@ -509,19 +511,19 @@ c
 c     igc = 3 - log-linear grid  (after Davies 1991)
 c
       case(3)
-         write(screenunit,*) '   '
-         write(screenunit,*) '********** Depth = ',H,' ***********'
-         write(screenunit,*) '********** So = ',Z0B,' ****'
-         write(screenunit,*) '********** S* = ',-H-Sb,' **********'
+         write(AMPI_LUN(screenunit),*) '   '
+         write(AMPI_LUN(screenunit),*) '********** Depth = ',H,' ***********'
+         write(AMPI_LUN(screenunit),*) '********** So = ',Z0B,' ****'
+         write(AMPI_LUN(screenunit),*) '********** S* = ',-H-Sb,' **********'
          Sb = Z0B
          Sstar = -H-Sb
-         write(screenunit,*)
-     &      '******** Enter So from the keyboard *******'
-         write(screenunit,*) '   '
+         write(AMPI_LUN(screenunit),*)
+     &     '******** Enter So from the keyboard *******'
+         write(AMPI_LUN(screenunit),*) '   '
          read(*,*) Sb
-         write(screenunit,*)
-     &      '******** Enter S* from the keyboard *******'
-         write(screenunit,*) '   '
+         write(AMPI_LUN(screenunit),*)
+     &     '******** Enter S* from the keyboard *******'
+         write(AMPI_LUN(screenunit),*) '   '
          read(*,*) Sstar
          if(nfen.le.1) nfen = 2
          deta = 1.d0/(nfen-1)
@@ -544,13 +546,13 @@ c
 c     igc = 4 - Double logarithmic grid
 c
       case(4)
-         write(screenunit,*) '   '
-         write(screenunit,*) '********** Depth = ',H,' ***********'
-         write(screenunit,*)
-     &       '********** So bottom = ',Z0B,' ***********'
+         write(AMPI_LUN(screenunit),*) '   '
+         write(AMPI_LUN(screenunit),*) '********** Depth = ',H,' ***********'
+         write(AMPI_LUN(screenunit),*)
+     &      '********** So bottom = ',Z0B,' ***********'
          Sb = Z0B
-         write(screenunit,*)
-     &       '********** So surface = ',Z0S,' ***********'
+         write(AMPI_LUN(screenunit),*)
+     &      '********** So surface = ',Z0S,' ***********'
          Ss = Z0S
 c
 c     write(screenunit,*) '******* Enter So bottom from the keyboard ********'
@@ -560,21 +562,21 @@ c     write(screenunit,*) '******* Enter So surface from the keyboard *******'
 c     write(screenunit,*) '   '
 c     read(*,*) Ss
 c
-         write(screenunit,*) '   '
+         write(AMPI_LUN(screenunit),*) '   '
          if(mod(nfen,2).eq.0) then
-            write(screenunit,*)
-     &         '**********************************WARNING*****',
-     &         '******************************'
-            write(screenunit,*)
-     &         '**** You have specified a double log grid with',
-     &           ' an even number of nodes. ****'
-            write(screenunit,*)
-     &           '**** Much better results are obtained using an',
-     &           ' an odd number of nodes.  ****'
-            write(screenunit,*)
-     &           '**** Do you want to terminate now or continue?',
-     &           '  0=Terminate/1=continue. ****'
-            write(screenunit,*) '  '
+            write(AMPI_LUN(screenunit),*)
+     &        '**********************************WARNING*****',
+     &        '******************************'
+            write(AMPI_LUN(screenunit),*)
+     &        '**** You have specified a double log grid with',
+     &          ' an even number of nodes. ****'
+            write(AMPI_LUN(screenunit),*)
+     &          '**** Much better results are obtained using an',
+     &          ' an odd number of nodes.  ****'
+            write(AMPI_LUN(screenunit),*)
+     &          '**** Do you want to terminate now or continue?',
+     &          '  0=Terminate/1=continue. ****'
+            write(AMPI_LUN(screenunit),*) '  '
             read(*,*) ians
             if(ians.ne.1) CALL EXIT(1)
             num = nfen/2
@@ -600,9 +602,9 @@ c     sigma converted to range from -1 to 1 in ADCIRC
 c
       case(5)
          if(nfen.le.1) nfen = 2
-         write(screenunit,*)
-         write(screenunit,*)' Enter P value for P - grid'
-         write(screenunit,*)
+         write(AMPI_LUN(screenunit),*)
+         write(AMPI_LUN(screenunit),*)' Enter P value for P - grid'
+         write(AMPI_LUN(screenunit),*)
          read(*,*)rp
          do i = 1,nfen
             sigma(i) = -1.d0 + 2.d0
@@ -615,9 +617,9 @@ c     sigma converted to range from -1 to 1 in ADCIRC
 c
       case(6)
          if(nfen.le.1) nfen = 2
-         write(screenunit,*)
-         write(screenunit,*)' Enter A value for sine grid'
-         write(screenunit,*)
+         write(AMPI_LUN(screenunit),*)
+         write(AMPI_LUN(screenunit),*)' Enter A value for sine grid'
+         write(AMPI_LUN(screenunit),*)
          read(*,*)aval
          do i = 1,nfen
             eps = float(i-1)/float(nfen-1)
@@ -625,7 +627,7 @@ c
      &         + (2.d0/H)*(eps*H-aval*sin(2.d0*3.14159d0*eps))
          end do
       case default
-         write(screenunit,4321) igc
+         write(AMPI_LUN(screenunit),4321) igc
 4321     format('The value of igc=',I2,' is not valid. There are seven',
      &   /,'choices for specifying the vertical grid spacing in 3D.',
      &   /,'Please specify a value for igc from 0 to 6.',

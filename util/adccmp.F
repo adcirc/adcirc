@@ -1,4 +1,6 @@
       module soln
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
          implicit none
          integer, parameter :: PATH = 2048, VS=30
          type Soln_t
@@ -231,8 +233,8 @@
 
 
         enddo  ! timesteps
-        close(lunGold)
-        close(lunTrial)
+        close(AMPI_LUN(lunGold))
+        close(AMPI_LUN(lunTrial))
 
       end do   ! files
 
@@ -256,6 +258,8 @@
 !-------------------------------------------------------------------------------
 
       subroutine readheader(lun, fname, x)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use soln
       implicit none
 
@@ -268,11 +272,12 @@
 
       call check_format(lun, fname, x % itype)
 
-      open (lun, file=fname)
+      open (AMPI_LUN(lun), file=fname)
+      call AMPI_LUN_REGISTER (AMPI_LUN(lun), file=fname)
 
 
-      read(lun, '(a)') title
-      read(lun, *) nsteps, nsize, dt, idummy, rectype
+      read(AMPI_LUN(lun), '(a)') title
+      read(AMPI_LUN(lun), *) nsteps, nsize, dt, idummy, rectype
 
       if (nsize < 1) then
         call report("failed", "Array size is zero in: "//fname,
@@ -288,6 +293,8 @@
 !-------------------------------------------------------------------------------
 
       function readarray1(lun, etaType, x) result(eof)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use soln
       implicit none
 
@@ -300,22 +307,22 @@
       eof = .FALSE.
 
       if (x % itype == 1) then
-        read(lun, 1100, end = 200) x % time, x % it, nitems
+        read(AMPI_LUN(lun), 1100, end = 200) x % time, x % it, nitems
         x % a(1: x % nsize) = 0.0
         if (etatype) x % nc(1:x % nsize) = 0       ! vjp
         do i = 1, nitems
-          read(lun, *, err = 100, end = 150) iglobal, x1
+          read(AMPI_LUN(lun), *, err = 100, end = 150) iglobal, x1
           x % a(iglobal)  = x1
           if (etatype) x % nc(iglobal) = 1         ! vjp
         end do
         return
 
       else if ( x % itype == 2) then
-        read(lun, 1100, end = 200) x % time, x % it
+        read(AMPI_LUN(lun), 1100, end = 200) x % time, x % it
 
         x % nc(1:x % nsize) = 1
         do i = 1, x % nsize
-          read(lun, *, end = 200) iglobal, x1
+          read(AMPI_LUN(lun), *, end = 200) iglobal, x1
           if (etaType .and. x1 == -99999.0) then
              x1 = 0.0
              x % nc(iglobal) = 0
@@ -345,6 +352,8 @@
 !-------------------------------------------------------------------------------
 
       function readarray2(lun, x) result(eof)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use soln
       implicit none
 
@@ -357,19 +366,19 @@
       eof = .FALSE.
 
       if (x % itype == 1) then
-        read(lun, 1100, end = 200) x % time, x % it, nitems
+        read(AMPI_LUN(lun), 1100, end = 200) x % time, x % it, nitems
         x % a(1: x % nsize) = 0.0
         x % b(1: x % nsize) = 0.0
         do i = 1, nitems    
-          read(lun, *, end = 150, err = 100) iglobal, x1, x2
+          read(AMPI_LUN(lun), *, end = 150, err = 100) iglobal, x1, x2
           x % a(iglobal)  = x1
           x % b(iglobal)  = x2
         end do
 
       else if ( x % itype == 2) then
-        read(lun, 1100, end = 200) x % time, x % it
+        read(AMPI_LUN(lun), 1100, end = 200) x % time, x % it
         do i = 1, x % nsize
-          read(lun, *, end = 200) iglobal, x1, x2
+          read(AMPI_LUN(lun), *, end = 200) iglobal, x1, x2
           x % a(iglobal) = x1
           x % b(iglobal) = x2
         end do
@@ -395,6 +404,8 @@
 ! Resize solution array to be big enough
 !-----------------------------------------------------------------------
       subroutine resize(nsize, rectype, x)
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use soln
       implicit none
       type(Soln_t) :: x
@@ -428,6 +439,8 @@
 
       subroutine build_fileA(nfiles, fileA)
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use soln
       implicit none
 
@@ -471,6 +484,8 @@
 !-------------------------------------------------------------------------------
       function compare(file, gold, trial) result(r)
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use soln
       implicit none
 
@@ -645,8 +660,9 @@
 
         call date_and_time(day,tm)
 
-        open(27,file="results.lua")
-        write(27,1000) trim(day), trim(tm), trim(flag), trim(msg)
+        open(AMPI_LUN(27),file="results.lua")
+        call AMPI_LUN_REGISTER(AMPI_LUN(27),file="results.lua")
+        write(AMPI_LUN(27),1000) trim(day), trim(tm), trim(flag), trim(msg)
 
       endif
       if (abort) stop
@@ -668,12 +684,13 @@
       integer       :: lun, itype, i(2), isum, icount
       real(8)       :: time
 
-      open (lun, file=fname)
+      open (AMPI_LUN(lun), file=fname)
+      call AMPI_LUN_REGISTER (AMPI_LUN(lun), file=fname)
 
       itype = 0
-      read(lun,'(A)',end=100) line
-      read(lun,'(A)',end=100) line
-      read(lun,'(A)',end=100) line
+      read(AMPI_LUN(lun),'(A)',end=100) line
+      read(AMPI_LUN(lun),'(A)',end=100) line
+      read(AMPI_LUN(lun),'(A)',end=100) line
 
       i(:) = 0
       read(line,*,end=10) time,i
@@ -686,11 +703,11 @@
          itype = 2
       endif
 
-      close(lun)
+      close(AMPI_LUN(lun))
       print *, "file format = ", itype
       return
   100 continue
-      close(lun)
+      close(AMPI_LUN(lun))
       end subroutine check_format
 
       function icount(i) result (isum)

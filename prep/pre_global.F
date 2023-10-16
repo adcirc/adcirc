@@ -302,7 +302,7 @@ Casey 180318: Added NWS=13
       real(sz) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
       real(sz) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start     
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime = 'hotstart'
-C
+
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
       REAL(SZ) CONVCR

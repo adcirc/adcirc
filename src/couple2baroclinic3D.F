@@ -1,6 +1,8 @@
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       MODULE Couple2BC3D
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
@@ -182,7 +184,7 @@ C-----------------------------------------------------------------------
          DT = TNDT1 - TNDT 
          if (abs(DT%total_seconds() - BC3D_DT) > 1d-6) then
             BC3D_DT = DT%total_seconds()
-            write(16,*) 'BC3D_DT is changed to ',BC3D_DT
+            write(AMPI_LUN(16),*) 'BC3D_DT is changed to ',BC3D_DT
          endif
 #endif
          return
@@ -282,10 +284,10 @@ C-----------------------------------------------------------------------
           call allMessage(Error,'Part of 3DBC domain is not '
      &                   //'contained within this subdomain. '
      &                   //'Try download again')
-          write(16,*) BC3D_Lon(1), Lon_s
-          write(16,*) BC3D_Lon(NX), Lon_e
-          write(16,*) BC3D_Lat(1), Lat_s
-          write(16,*) BC3D_Lat(NY), Lat_e
+          write(AMPI_LUN(16),*) BC3D_Lon(1), Lon_s
+          write(AMPI_LUN(16),*) BC3D_Lon(NX), Lon_e
+          write(AMPI_LUN(16),*) BC3D_Lat(1), Lat_s
+          write(AMPI_LUN(16),*) BC3D_Lat(NY), Lat_e
           call BC3DTerminate()
       else
           ! Now find only the portions of lat lon required for this
@@ -301,11 +303,11 @@ C-----------------------------------------------------------------------
           j   = min(NY,binarysearch(NY, BC3D_Lat, Lat_e) + 2)
           NY  = j - YI + 1
 
-          write(16,*) 'BC3D_IT = ',BC3D_IT, 'BC3D_DT = ',BC3D_DT
-          write(16,*) 'Lon: ',BC3D_Lon(XI), BC3D_Lon(i)
-          write(16,*) 'Lat: ',BC3D_Lat(YI), BC3D_Lat(j)
-          write(16,*) 'XI = ',XI, 'i = ', i, 'NX = ',NX
-          write(16,*) 'YI = ',YI, 'j = ', j, 'NY = ',NY
+          write(AMPI_LUN(16),*) 'BC3D_IT = ',BC3D_IT, 'BC3D_DT = ',BC3D_DT
+          write(AMPI_LUN(16),*) 'Lon: ',BC3D_Lon(XI), BC3D_Lon(i)
+          write(AMPI_LUN(16),*) 'Lat: ',BC3D_Lat(YI), BC3D_Lat(j)
+          write(AMPI_LUN(16),*) 'XI = ',XI, 'i = ', i, 'NX = ',NX
+          write(AMPI_LUN(16),*) 'YI = ',YI, 'j = ', j, 'NY = ',NY
           allocate(Lon(NX),Lat(NY))
           Lat  = BC3D_Lat(YI:j)
           if (i > XI) then
@@ -322,10 +324,10 @@ C-----------------------------------------------------------------------
              YIc = max(1,binarysearch(NYY, BC3D_Latc, Lat_s) - 1)
              jc  = min(NYY,binarysearch(NYY, BC3D_Latc, Lat_e) + 2)
              NYc = jc - YIc + 1
-             write(16,*) 'Lonc: ',BC3D_Lonc(XIc), BC3D_Lonc(ic)
-             write(16,*) 'Latc: ',BC3D_Latc(YIc), BC3D_Latc(jc)
-             write(16,*) 'XIc = ',XIc, 'ic = ', ic, 'NXc = ',NXc
-             write(16,*) 'YIc = ',YIc, 'jc = ', jc, 'NYc = ',NYc
+             write(AMPI_LUN(16),*) 'Lonc: ',BC3D_Lonc(XIc), BC3D_Lonc(ic)
+             write(AMPI_LUN(16),*) 'Latc: ',BC3D_Latc(YIc), BC3D_Latc(jc)
+             write(AMPI_LUN(16),*) 'XIc = ',XIc, 'ic = ', ic, 'NXc = ',NXc
+             write(AMPI_LUN(16),*) 'YIc = ',YIc, 'jc = ', jc, 'NYc = ',NYc
              allocate(Lonc(NXc),Latc(NYc))
              allocate(BC3D_BX(NXc,NY),BC3D_BY(NX,NYc),BC3D_SigTS(NX,NY))
              Latc = BC3D_Latc(YIc:jc)
@@ -387,13 +389,15 @@ C-----------------------------------------------------------------------
                    endif
                 enddo  
                 ! For x-gradient variable (BC3D_BX)
-                call conserve_interp(NXc,Lonc,NY,Lat,
-     &                               xx,yy,xl,yl,xu,yu,indt,wt) 
+                ! CPB 12/08/2021 switch from conserve_interp to bl_interp for proper 
+                ! wrapping around the prime meridian
+                call bl_interp(NXc,Lonc,NY,Lat,xx,yy,indt,wt)
                 indx(:,i) = indt
                 weightsx(:,i) = wt
                 ! For y-gradient variable (BC3D_BY)
-                call conserve_interp(NX,Lon,NYc,Latc,
-     &                               xx,yy,xl,yl,xu,yu,indt,wt) 
+                ! CPB 12/08/2021 switch from conserve_interp to bl_interp for proper 
+                ! wrapping around the prime meridian
+                call bl_interp(NX,Lon,NYc,Latc,xx,yy,indt,wt) 
                 indy(:,i) = indt
                 weightsy(:,i) = wt
                 if (abs(iden).eq.6) then
@@ -620,8 +624,8 @@ C
             ELSEIF (flag < 0) THEN
                ! Read next values from fort.11
                DO J = 1,NP11
-                  READ(11,*) JKI,VIDBCPDXOH_F(2,JKI),
-     &                       VIDBCPDYOH_F(2,JKI),SigTS_F(2,JKI)
+                  READ(AMPI_LUN(11),*) JKI,VIDBCPDXOH_F(2,JKI),
+     &                      VIDBCPDYOH_F(2,JKI),SigTS_F(2,JKI)
                END DO
                DTIME2 = DTIME1 + BC3D_DT
             ENDIF
@@ -860,12 +864,13 @@ C-----------------------------------------------------------------------
       SUBROUTINE FBPG_Disp_from_BC3D
 
       USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, RAMP, NODECODE, NOFF, 
-     &                  ETA2, RhoWat0 
+     &                  ETA2, RhoWat0, IFSFM 
       USE SPONGELAYER, ONLY: NO_BPG_IN_SPONGE 
       USE NodalAttributes, ONLY: absorblayer_sigma_mnx, 
      &                           absorblayer_sigma_mny
       USE MESH, ONLY: NE, NM, NP, DP, AREAS, NODELE, FDXE, FDYE,
-     &      NEITABELE, NEITAB, NNEIGH, SFAC, TOTALAREA, SFacEle
+     &      NEITABELE, NEITAB, NNEIGH, SFAC, TOTALAREA, SFacEle,
+     &      SFMXEle, SFMYEle
       USE BOUNDARIES, ONLY: NVELME, ME2GW, NBV
  
       IMPLICIT NONE
@@ -877,7 +882,7 @@ C-----------------------------------------------------------------------
       INTEGER :: NM1,NM2,NM3    !local node numbers used to compute gradients
       INTEGER :: NC1,NC2,NC3    !local node codes
 
-      REAL(SZ) :: SFacAvg
+      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac
       REAL(SZ) :: AreaIE2, AreaEle
       REAL(SZ) :: FDX1, FDX2, FDX3
       REAL(SZ) :: FDY1, FDY2, FDY3
@@ -915,23 +920,28 @@ C
          EtaN2 = IFNLFA*Eta2(NM2)
          EtaN3 = IFNLFA*Eta2(NM3)
          SFacAvg = SFacEle(IE)
+         ! CPB 5/25/2022: correct rotated coordinates
+         SFmxAvg = SFMXEle(IE) ;
+         SFmyAvg = SFMYEle(IE) ;
+         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ; 
+         sfdyfac = (1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ; 
+
+         FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
+         FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
+         FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
+         FDY1 = FDYE(1,IE)*sfdyfac ; !c  FDY1=X(NM3)-X(NM2) !a1
+         FDY2 = FDYE(2,IE)*sfdyfac ; !c  FDY2=X(NM1)-X(NM3) !a2
+         FDY3 = FDYE(3,IE)*sfdyfac ; !c  FDY3=X(NM2)-X(NM1) !a3
 
          AreaIE2 = Areas(IE)
          AreaEle = 0.5d0*NCEle*AreaIE2
         
-         FDX1 = FDXE(1,IE)*SFacAvg ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-         FDX2 = FDXE(2,IE)*SFacAvg ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-         FDX3 = FDXE(3,IE)*SFacAvg ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-         FDY1 = FDYE(1,IE) ;    !c  FDY1=X(NM3)-X(NM2) !a1
-         FDY2 = FDYE(2,IE) ;    !c  FDY2=X(NM1)-X(NM3) !a2
-         FDY3 = FDYE(3,IE) ;    !c  FDY3=X(NM2)-X(NM1) !a3
          FDX1O2A = FDX1/AreaIE2 !dphi1/dx
          FDY1O2A = FDY1/AreaIE2 !dphi1/dy
          FDX2O2A = FDX2/AreaIE2 !dphi2/dx
          FDY2O2A = FDY2/AreaIE2 !dphi2/dy
          FDX3O2A = FDX3/AreaIE2 !dphi3/dx
-         FDY3O2A = FDY3/AreaIE2 !dphi3/dy
-           
+         FDY3O2A = FDY3/AreaIE2 !dphi3/dy 
          !Use free surface density only if all non-zero
          IF (SigTS(NM1) < -1d2.or.SigTS(NM2) < -1d2.or.
      &       SigTS(NM3) < -1d2) THEN
@@ -1029,7 +1039,7 @@ C
          ! a stack trace to determine the line number of the netcdf call
          ! that went bad ... this assumes that the code was compiled with
          ! debugging symbols, bounds checking, and stack trace turned on.
-      write(6,*) 'myproc = ',myProc      
+      write(AMPI_LUN(6),*) 'myproc = ',myProc      
       dummy(1) = 99.9d0
 #endif
 

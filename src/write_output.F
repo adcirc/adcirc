@@ -11,6 +11,8 @@ C tcm48.4618 Fixed Bug in writing out global elevation values that are
 C dry.
 C----------------------------------------------------------------------
       MODULE WRITE_OUTPUT
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 C----------------------------------------------------------------------
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : OutputDataDescript_t, setMessageSource,
@@ -471,8 +473,10 @@ C
       end do
 
       ! fort.61
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(ET00_g(NSTAE_G))
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         CALL REAL_FIELD_ALLOCATE( NOUTE, ET00_g, NSTAE_G ) ; 
+         ! ALLOCATE(ET00_g(NSTAE_G))
       ENDIF
       ElevStaDescript % lun                  = 61
       ElevStaDescript % specifier            = NOUTE
@@ -503,9 +507,13 @@ C
       ENDIF
       !
       ! fort.62
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(UU00_g(NSTAV_G))
-         ALLOCATE(VV00_g(NSTAV_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         CALL REAL_FIELD_ALLOCATE( NOUTV, UU00_g, NSTAV_G ) ; 
+         CALL REAL_FIELD_ALLOCATE( NOUTV, VV00_g, NSTAV_G ) ; 
+         ! ALLOCATE(UU00_g(NSTAV_G))
+         ! ALLOCATE(VV00_g(NSTAV_G))
       ENDIF
       VelStaDescript % lun                  = 62
       VelStaDescript % specifier            = NOUTV
@@ -556,6 +564,10 @@ C
       ENDIF
 
       ! fort.63
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         CALL REAL_FIELD_ALLOCATE( NOUTGE, ETA2_g, NP_G ) ; 
+      ENDIF
       ElevDescript % lun                  = 63
       ElevDescript % specifier            = NOUTGE
       ElevDescript % startTimeStep           = NTCYSGE
@@ -570,8 +582,13 @@ C
       ElevDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
 
       ! tau0 fort.90
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(TAU0VAR_g(NP_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if ( OutputTau0 ) then
+            CALL REAL_FIELD_ALLOCATE( NOUTGE, TAU0VAR_g, NP_G ) ;
+         endif 
+        ! ALLOCATE(TAU0VAR_g(NP_G)) ;
       ENDIF
       Tau0Descript % lun                  = 90
       Tau0Descript % specifier            = NOUTGE
@@ -588,8 +605,13 @@ C
       Tau0Descript % writeFlag            = OutputTau0
 
       ! sponge layer fort.92
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(sponge_g(NP_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if ( outputsponge ) then
+            CALL REAL_FIELD_ALLOCATE( ASCII, sponge_g, NP_G ) ;
+         endif
+         ! ALLOCATE(sponge_g(NP_G))
       ENDIF
       SpongeDescript % lun                  = 92
       SpongeDescript % specifier            = ASCII
@@ -603,8 +625,13 @@ C
       SpongeDescript % writeFlag            = outputsponge
 
       ! NodeCode output
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(NodeCode_out_g(NP_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if ( outputNodeCode ) then
+            CALL INT_FIELD_ALLOCATE( ASCII, nodecode_out_g, NP_G ) ;
+         endif
+         ! ALLOCATE(NodeCode_out_g(NP_G))
       ENDIF
       nodeCodeOutDescript % lun                     = 101
       if ( NOUTGE.ne.0 ) then
@@ -624,8 +651,13 @@ C
       nodeCodeOutDescript % isInteger            = .true.
 
       ! NOFF output
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(NOFF_out_g(NE_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if ( outputNOFF ) then
+            CALL INT_FIELD_ALLOCATE( ASCII, NOFF_out_g, NP_G ) ;
+         endif
+         ! ALLOCATE(NOFF_out_g(NE_G))
       ENDIF
       noffOutDescript % lun                  = 102
       if ( NOUTGE.ne.0 ) then
@@ -647,7 +679,12 @@ C
       noffOutDescript % writeFlag            = outputNOFF
       noffOutDescript % isInteger            = .true.
 
-      ! fort.64
+      ! fort.6
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         CALL REAL_FIELD_ALLOCATE( NOUTGV, UU2_g, NP_G ) ; 
+         CALL REAL_FIELD_ALLOCATE( NOUTGV, VV2_g, NP_G ) ; 
+      ENDIF
       VelDescript % lun                  = 64
       VelDescript % specifier            = NOUTGV
       VelDescript % startTimeStep           = NTCYSGV
@@ -665,8 +702,13 @@ C
       VelDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
 
       ! fort.71
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(RMP00_g(NSTAM_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &        .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if ( nws .ne. 0 ) then
+           CALL REAL_FIELD_ALLOCATE( NOUTM, RMP00_g, NSTAM_G ) ;
+         endif 
+         ! ALLOCATE(RMP00_g(NSTAM_G))
       ENDIF
       NSCOUP = NSCOUM ! jgf51.51: So we don't share a spool counter.
       PrStaDescript % lun                  = 71
@@ -700,9 +742,15 @@ C
       endif
 
       ! fort.72
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(RMU00_g(NSTAM_G))
-         ALLOCATE(RMV00_g(NSTAM_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if ( nws .ne. 0 ) then
+           CALL REAL_FIELD_ALLOCATE( NOUTM, RMU00_g, NSTAM_G ) ;
+           CALL REAL_FIELD_ALLOCATE( NOUTM, RMV00_g, NSTAM_G ) ;
+         endif
+         ! ALLOCATE(RMU00_g(NSTAM_G))
+         ! ALLOCATE(RMV00_g(NSTAM_G))
       ENDIF
       WindVelStaDescript % lun                  = 72
       WindVelStaDescript % specifier            = NOUTM
@@ -739,8 +787,13 @@ C
       endif
 
       ! fort.73
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(Pr2_g(NP_G))
+      !  DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if ( nws .ne. 0 ) then
+            CALL REAL_FIELD_ALLOCATE( NOUTGW, Pr2_g, NP_G ) ;
+         endif
+         ! ALLOCATE(Pr2_g(NP_G))
       ENDIF
       PrDescript % lun                  = 73
       PrDescript % specifier            = NOUTGW
@@ -759,8 +812,15 @@ C
       endif
 
       ! jgf: water level dynamicWaterlevelCorrection.63
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(dynamicWaterLevelCorrection2_g(NP_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &        .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+
+         if ( usingDynamicWaterLevelCorrection ) then
+           CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+     &            dynamicWaterLevelCorrection2_g, NP_G ) ;
+         endif 
+        ! ALLOCATE(dynamicWaterLevelCorrection2_g(NP_G))
       ENDIF
       dynamicWaterLevelCorrectionDescript % lun                  = 108
       dynamicWaterLevelCorrectionDescript % specifier            = NOUTGE
@@ -776,8 +836,15 @@ C
       dynamicWaterLevelCorrectionDescript % file_extension       = 63
       dynamicWaterLevelCorrectionDescript % writeFlag            = usingDynamicWaterLevelCorrection
       ! dynamicWaterlevelCorrection.61
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(dynamicWaterLevelCorrectionSta_g(NSTAE_G))
+      ! DW
+!      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &        .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if (  usingDynamicWaterLevelCorrection ) then
+            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+     &           dynamicWaterLevelCorrectionSta_g, NSTAE_G ) ;
+         endif
+         ! ALLOCATE(dynamicWaterLevelCorrectionSta_g(NSTAE_G))
       ENDIF
       dynamicWaterLevelCorrectionStaDescript % lun                  = 109
       dynamicWaterLevelCorrectionStaDescript % specifier            = NOUTE
@@ -810,9 +877,15 @@ C
       dynamicWaterLevelCorrectionStaDescript % writeFlag            = usingDynamicWaterLevelCorrection
       !
       ! fort.74
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(WVNXOut_g(NP_G))
-         ALLOCATE(WVNYOut_g(NP_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+          if ( nws .ne. 0 ) then
+            CALL REAL_FIELD_ALLOCATE( NOUTGW, WVNXOut_g, NP_G ) ;
+            CALL REAL_FIELD_ALLOCATE( NOUTGW, WVNYOut_g, NP_G ) ;
+          endif      
+!         ALLOCATE(WVNXOut_g(NP_G))
+!         ALLOCATE(WVNYOut_g(NP_G))
       ENDIF
       WindVelDescript % lun                  = 74
       WindVelDescript % specifier            = NOUTGW
@@ -834,8 +907,13 @@ C
       endif
       !
       ! wind Drag
-      if ( (mnproc.gt.1) .and. (myproc.eq.0) ) then
-         allocate(windDragOut_g(np_g))
+      ! DW
+      if ( (mnproc.gt.1) .and. (myproc.eq.0) 
+     &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+          if ( nws .ne. 0 ) then 
+             CALL REAL_FIELD_ALLOCATE( NOUTGW, windDragOut_g, NP_G ) ;
+          endif      
+      !  allocate(windDragOut_g(np_g))
       endif
       windDragDescript % lun                  = 173
       windDragDescript % specifier            = NOUTGW
@@ -852,8 +930,13 @@ C
       windDragDescript % writeFlag            = outputWindDrag
       !
       ! fort.75  !tcm v50.66.01 Added for Time Varying Bathymetry
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(DP00_g(NSTAE_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if ( nddt .ne. 0 ) then
+            CALL REAL_FIELD_ALLOCATE( NOUTE, DP00_g, NSTAE_G ) ;
+         endif
+        ! ALLOCATE(DP00_g(NSTAE_G))
       ENDIF
       NSCOUB = NSCOUE ! jgf51.51: So we don't share a spool counter.
       BathyStaDescript % lun                  = 75
@@ -886,9 +969,15 @@ C
          BathyStaDescript % writeFlag         = .false.
       endif
 
-      ! fort.76  !tcm v50.66.01  Added for Time Varying Bathymetry
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(DPOUT_g(NP_G))
+      ! fort.76  
+      ! tcm v50.66.01  Added for Time Varying Bathymetry
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if ( nddt .ne. 0 ) then
+           CALL REAL_FIELD_ALLOCATE( NOUTGE, DPOUT_g, NSTAE_G ) ;
+         endif
+         ! ALLOCATE(DPOUT_g(NP_G))
       ENDIF
       NSCOUGB = NSCOUGE !jgf51.51: So we don't share a spool counter.
       BathyDescript % lun                  = 76
@@ -912,8 +1001,11 @@ C
       endif
 
       IF(USE_TVW)THEN
-         IF((MNPROC.GT.1).AND.(MYPROC.EQ.0))THEN
-             ALLOCATE(TVW_G(NP_G))
+         ! DW
+         IF((MNPROC.GT.1).AND.(MYPROC.EQ.0)
+     &        .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+            CALL REAL_FIELD_ALLOCATE( NOUT_TVW, TVW_g, NP_G ) ;
+            ! ALLOCATE(TVW_G(NP_G))
          ENDIF
          weirElevDescript % lun                    = 77
          weirElevDescript % Specifier              = NOUT_TVW
@@ -935,8 +1027,13 @@ C
 
       ! fort.93
 C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(CICEOUT_g(NP_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN 
+         if (ncice .ne. 0)  then 
+           CALL REAL_FIELD_ALLOCATE( NOUTGW, CICEOUT_g, NP_G ) ;
+         endif
+         ! ALLOCATE(CICEOUT_g(NP_G))
       ENDIF
       IceDescript % lun                  = 93
       IceDescript % specifier            = NOUTGW
@@ -955,8 +1052,13 @@ C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
 
 C... v49.64.01 tcm -- added for ice stations
       ! fort.91
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(RMICE00_g(NSTAM_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
+     &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if (ncice .ne. 0) then 
+            CALL REAL_FIELD_ALLOCATE( NOUTM, RMICE00_g, NSTAM_G ) ;
+         endif 
+        ! ALLOCATE(RMICE00_g(NSTAM_G))
       ENDIF
       NSCOUI = NSCOUM !jgf51.51: So we don't share a spool counter.
       IceStaDescript % lun                  = 91
@@ -993,9 +1095,14 @@ C... v49.64.01 tcm -- added for ice stations
       ! tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       ! rads.64
       ! Radiation Stress
-      IF ( (MNPROC.gt.1).and.(MyProc.eq.0).and.(nrs.ne.0) ) THEN
-         ALLOCATE(RSNXOUT_g(NP_G))
-         ALLOCATE(RSNYOUT_g(NP_G))
+      ! DW
+      IF ( (MNPROC.gt.1).and.(MyProc.eq.0).and.(nrs.ne.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         ! ALLOCATE(RSNXOUT_g(NP_G))
+         ! ALLOCATE(RSNYOUT_g(NP_G))
+          
+         CALL REAL_FIELD_ALLOCATE( NOUTGW, RSNXOUT_g, NP_G ) ;
+         CALL REAL_FIELD_ALLOCATE( NOUTGW, RSNYOUT_g, NP_G ) ;
       ENDIF
       RSDescript % lun                  = 164
       if (nrs.eq.0) then
@@ -1031,8 +1138,13 @@ C... v49.64.01 tcm -- added for ice stations
 #endif
 
       ! fort.81
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(CC00_g(NP_G))
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+          if ( im .eq. 10 ) then
+             CALL REAL_FIELD_ALLOCATE( NOUTC, CC00_g, NP_G ) ;
+          endif
+         ! ALLOCATE(CC00_g(NP_G))
       ENDIF
       ConcStaDescript % lun                  = 81
       ConcStaDescript % specifier            = NOUTC
@@ -1057,9 +1169,14 @@ C... v49.64.01 tcm -- added for ice stations
       endif
 
       ! fort.83
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(CH1_g(NP_G))
-      ENDIF
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if ( im .eq. 10 ) then 
+            CALL REAL_FIELD_ALLOCATE( NOUTGC, CH1_g, NP_G ) ;
+         endif
+        ! ALLOCATE(CH1_g(NP_G)) ;
+      ENDIF  
       ConcDescript % lun                  = 83
       ConcDescript % specifier            = NOUTGC
       ConcDescript % startTimeStep           = NTCYSGC
@@ -1076,11 +1193,19 @@ C... v49.64.01 tcm -- added for ice stations
       endif
 
 C     maxele.63
-      IF ( mnproc.gt.1 ) THEN
-         ALLOCATE(ETAMAX_g(NP_G))
-         ALLOCATE (ETAMAX_Time_G(NP_G))
-         ETAMAX_g(:) = -99999.d0
-         ETAMAX_Time_G(:) = -99999.d0
+      ! DW
+C      IF ( mnproc.gt.1 ) THEN
+       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+     &             ETAMAX_g, NP_G, -99999.d0 ) ;
+         CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+     &             ETAMAX_Time_G, NP_G, -99999.d0 ) ;
+
+         ! ALLOCATE(ETAMAX_g(NP_G))
+         ! ALLOCATE (ETAMAX_Time_G(NP_G))
+         ! ETAMAX_g(:) = -99999.d0
+         ! ETAMAX_Time_G(:) = -99999.d0
       ENDIF
       EtaMaxDescript % lun                 = 311
       EtaMaxDescript % specifier            = NOUTGE
@@ -1102,11 +1227,16 @@ C     maxele.63
       ETAMAX_Time(:) = -99999.d0
 
 C     maxvel.63
-      IF (mnproc.gt.1)  THEN
-         ALLOCATE(UMAX_g(NP_G))
-         ALLOCATE (UMAX_Time_G(NP_G))
-         UMAX_g(:) = -99999.d0
-         UMAX_Time_G(:) = -99999.d0
+      ! DW
+!      IF (mnproc.gt.1)  THEN
+       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN 
+         CALL REAL_FIELD_ALLOCATE( NOUTGV, UMAX_g, NP_G, 0.d0 ) ;
+         CALL REAL_FIELD_ALLOCATE( NOUTGV, UMAX_Time_G, NP_G, -99999.d0) ;
+         ! ALLOCATE(UMAX_g(NP_G))
+         ! ALLOCATE (UMAX_Time_G(NP_G))
+         ! UMAX_g(:) = 0.d0
+         ! UMAX_Time_G(:) = -99999.d0
       ENDIF
       UMaxDescript % lun                    = 312
       UMaxDescript % num_items_per_record   = 2
@@ -1128,11 +1258,20 @@ C     maxvel.63
       UMAX_Time(:) = -99999.d0
 
 C     prmin.63
-      IF (mnproc.gt.1) THEN
-         ALLOCATE(PRMIN_g(NP_G))
-         ALLOCATE (PRMIN_Time_G(NP_G))
-         PRMIN_g(:) = 99999.d0
-         PRMIN_Time_G(:) = -99999.d0
+      ! DW
+!      IF (mnproc.gt.1) THEN
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if ( nws .ne. 0 ) then
+            CALL REAL_FIELD_ALLOCATE( NOUTGW, 
+     &         PRMIN_g, NP_G, 99999.d0 ) ;
+            CALL REAL_FIELD_ALLOCATE( NOUTGW, 
+     &         PRMIN_Time_g, NP_G, -99999.d0 )  
+         endif
+         ! ALLOCATE(PRMIN_g(NP_G))
+         ! ALLOCATE (PRMIN_Time_G(NP_G))
+         ! PRMIN_g(:) = 99999.d0
+         ! PRMIN_Time_G(:) = -99999.d0
       ENDIF
       PrMinDescript % lun                   = 313
       PrMinDescript % num_items_per_record  = 2
@@ -1156,11 +1295,20 @@ C     prmin.63
       PRMIN_Time(:) = -99999.d0
 
 C     maxwvel.63
-      IF (mnproc.gt.1) THEN
-         ALLOCATE(WVNOUTMAX_g(NP_G))
-         ALLOCATE (WVNOUTMAX_Time_G(NP_G))
-         WVNOUTMAX_g(:) = 0.d0
-         WVNOUTMAX_Time_G(:) = -99999.d0
+      ! DW
+C      IF (mnproc.gt.1) THEN
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if ( nws .ne. 0 ) then
+            CALL REAL_FIELD_ALLOCATE( NOUTGW, 
+     &         WVNOUTMAX_g, NP_G, 0.d0 ) ;
+            CALL REAL_FIELD_ALLOCATE( NOUTGW, 
+     &         WVNOUTMAX_Time_G, NP_G, -99999.d0 )  
+         endif
+         ! ALLOCATE(WVNOUTMAX_g(NP_G))
+         ! ALLOCATE (WVNOUTMAX_Time_G(NP_G))
+         ! WVNOUTMAX_g(:) = 0.d0
+         ! WVNOUTMAX_Time_G(:) = -99999.d0
       ENDIF
       WVMaxDescript % lun                   = 314
       WVMaxDescript % specifier             = NOUTGW
@@ -1184,11 +1332,21 @@ C     maxwvel.63
       WVNOUTMAX_Time(:) = -99999.d0
 C
 C     maxrs.63
-      IF (mnproc.gt.1) THEN
-         ALLOCATE(RSNMAX_g(NP_G))
-         ALLOCATE (RSNMAX_Time_G(NP_G))
-         RSNMAX_g(:) = -99999.d0
-         RSNMAX_Time_G(:) = -99999.d0
+      ! DW
+C      IF (mnproc.gt.1) THEN
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN 
+         if ( nrs .ne. 0 ) then
+            CALL REAL_FIELD_ALLOCATE( NOUTGW, 
+     &         RSNMAX_g, NP_G, 0.d0 ) ;
+            CALL REAL_FIELD_ALLOCATE( NOUTGW, 
+     &         RSNMAX_Time_G, NP_G, -99999.d0 )  
+         endif
+
+         ! ALLOCATE(RSNMAX_g(NP_G))
+         ! ALLOCATE (RSNMAX_Time_G(NP_G))
+         ! RSNMAX_g(:) = 0.d0
+         ! RSNMAX_Time_G(:) = -99999.d0
       ENDIF
       RSMaxDescript % lun                   = 315
       RSMaxDescript % specifier             = NOUTGW
@@ -1212,9 +1370,16 @@ C     maxrs.63
       RSNMAX_Time(:) = -99999.d0
 
 !     ESLNodes.63
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(ESLCOUNT_g(NP_G))
-         ESLCOUNT_g(:) = 0.d0
+      ! DW
+!      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+          if ( LoadEleSlopeLim ) then
+             CALL REAL_FIELD_ALLOCATE( 1, 
+     &            ESLCOUNT_G, NP_G, 0.d0 ) ;
+          endif    
+         ! ALLOCATE(ESLONOFF_g(NP_G))
+         ! ESLONOFF_g(:) = 0.d0
       ENDIF
       ESLDescript % lun                  = 323
       ESLDescript % specifier            = ASCII
@@ -1229,11 +1394,22 @@ C     maxrs.63
       !  D E T A I L E D    I N U N D A T I O N    O U T P U T
       !
       ! inundationtime.63 (works like a min/max file)
-      if (mnproc.gt.1) then
-         allocate(inundationTime_g(NP_G))
-         allocate(inundationTime_onset_g(NP_G))
-         inundationTime_g(:) = 0.d0
-         inundationTime_onset_g(:) = -99999.d0
+!      if (mnproc.gt.1) then
+      ! DW
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+
+          IF ( inundationOutput ) then
+            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+     &         inundationTime_g, NP_G, 0.d0 ) ;
+            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+     &         inundationTime_onset_g, NP_G, -99999.d0 ) ;
+          ENDIF
+
+!         allocate(inundationTime_g(NP_G))
+!         allocate(inundationTime_onset_g(NP_G))
+!         inundationTime_g(:) = 0.d0
+!         inundationTime_onset_g(:) = -99999.d0
       endif
       InundationTimeDescript % lun                  = 400
       InundationTimeDescript % specifier            = NOUTGE
@@ -1253,11 +1429,22 @@ C     maxrs.63
       endif
       !
       ! maxinundepth.63 (works like a min/max file)
-      if (mnproc.gt.1) then
-         allocate(MaxInunDepth_g(NP_G))
-         allocate(MaxInunDepth_time_g(NP_G))
-         MaxInunDepth_g(:) = -99999.d0
-         MaxInunDepth_time_g(:) = -99999.d0
+      ! DW
+!      if (mnproc.gt.1) then
+       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+ 
+           IF ( inundationOutput ) then
+            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+     &         MaxInunDepth_g, NP_G, -99999.d0 ) ;
+            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+     &         MaxInunDepth_time_g, NP_G, -99999.d0 ) ;
+          ENDIF
+    
+         ! allocate(MaxInunDepth_g(NP_G))
+         ! allocate(MaxInunDepth_time_g(NP_G))
+         ! MaxInunDepth_g(:) = -99999.d0
+         ! MaxInunDepth_time_g(:) = -99999.d0
       endif
       MaxInunDepthDescript % lun                  = 401
       MaxInunDepthDescript % specifier            = NOUTGE
@@ -1277,9 +1464,17 @@ C     maxrs.63
       endif
       !
       ! endrisinginun.63 (1 if water is rising at end of simulation)
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-         ALLOCATE(endRisingInun_g(NP_G))
-         endRisingInun_g(:) = 0
+      ! DW
+!     IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+          IF ( inundationOutput ) then
+            CALL INT_FIELD_ALLOCATE( NOUTGE, 
+     &         endRisingInun_g, NP_G, 0 ) ;
+         ENDIF
+           
+!         ALLOCATE(endRisingInun_g(NP_G))
+!         endRisingInun_g(:) = 0
       ENDIF
       EndRisingInunDescript % lun                  = 403
       EndRisingInunDescript % specifier            = NOUTGE
@@ -1303,11 +1498,21 @@ C     maxrs.63
       endif
       !
       ! everdried.63 (works like a min/max file)
-      if (mnproc.gt.1) then
-         allocate(EverDried_g(NP_G))
-         allocate(EverDried_time_g(NP_G))
-         EverDried_g(:) = 1.d0
-         EverDried_time_g(:) = -99999.d0
+      ! DW
+!      if (mnproc.gt.1) then
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+          IF ( inundationOutput ) then
+            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+     &        EverDried_g, NP_G, 1.d0 ) ;
+            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+     &        EverDried_time_g, NP_G, -99999.d0 ) ;
+          ENDIF
+            
+!         allocate(EverDried_g(NP_G))
+!         allocate(EverDried_time_g(NP_G))
+!         EverDried_g(:) = 1.d0
+!         EverDried_time_g(:) = -99999.d0
       endif
       EverDriedDescript % lun                  = 404
       EverDriedDescript % specifier            = NOUTGE
@@ -1510,6 +1715,45 @@ C                      ! initialize it if it wasn't initialized above
 #endif
       call unsetMessageSource()
 C----------------------------------------------------------------------
+      contains
+
+         ! 
+         SUBROUTINE REAL_FIELD_ALLOCATE( OUTFLAG, VECVAR, NDIM, VALINIT )
+            INTEGER:: OUTFLAG, NDIM
+            REAL (SZ), allocatable:: VECVAR(:)
+            REAL (SZ), optional:: VALINIT 
+
+            IF ( OUTFLAG .NE. OFF ) THEN
+               IF ( .NOT. ALLOCATED(VECVAR) ) THEN
+                   ALLOCATE( VECVAR(NDIM) ) ;
+                   IF ( PRESENT(VALINIT) ) THEN
+                      VECVAR = VALINIT ; 
+                   ENDIF  
+               END IF 
+            ENDIF
+
+            RETURN ; 
+         END SUBROUTINE REAL_FIELD_ALLOCATE   
+
+         ! 
+         SUBROUTINE INT_FIELD_ALLOCATE( OUTFLAG, IVECVAR, NDIM, VALINIT )
+            INTEGER:: OUTFLAG, NDIM
+            INTEGER, allocatable:: IVECVAR(:)
+            INTEGER, optional:: VALINIT 
+
+            IF ( OUTFLAG .NE. OFF ) THEN
+               IF ( .NOT. ALLOCATED(IVECVAR) ) THEN
+                   ALLOCATE( IVECVAR(NDIM) ) ;
+                   IF ( PRESENT(VALINIT) ) THEN
+                      IVECVAR = VALINIT ; 
+                   ENDIF  
+               END IF 
+            ENDIF
+
+            RETURN ; 
+         END SUBROUTINE INT_FIELD_ALLOCATE   
+ 
+ 
       end subroutine initOutput2D
 C----------------------------------------------------------------------
 
@@ -2400,40 +2644,44 @@ C     Means and variance calculations, if specified (fort.55).
       if ((CHARMV.eqv..true.).and.(FMV.gt.1.0d-3)) then
          IF ((MNPROC.gt.1).and.(MyProc.eq.0)
      &        .and.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
-            OPEN(55,FILE=TRIM(GLOBALDIR)//'/'//'fort.55',
-     &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
-            WRITE(55,*) NP_G
+            OPEN(AMPI_LUN(55),FILE=TRIM(GLOBALDIR)//'/'//'fort.55',
+     &        STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
+            call AMPI_LUN_REGISTER(AMPI_LUN(55),FILE=TRIM(GLOBALDIR)//'/'//'fort.55',
+     &        STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
+            WRITE(AMPI_LUN(55),*) NP_G
             DO n=1,NP_G
-               write(55,*) n
-               write(55,7637) elav_g(n),eav_g(n),eavdif_g(n),
-     &                        elva_g(n),esq_g(n),evadif_g(n)
+               write(AMPI_LUN(55),*) n
+               write(AMPI_LUN(55),7637) elav_g(n),eav_g(n),eavdif_g(n),
+     &                       elva_g(n),esq_g(n),evadif_g(n)
             END DO
             DO n=1,NP_G
-               write(55,*) n
-               write(55,7637) xvelav_g(n),uav_g(n),uavdif_g(n),
-     &                        xvelva_g(n),usq_g(n),uvadif_g(n)
-               write(55,7637) yvelav_g(n),vav_g(n),vavdif_g(n),
-     &                        yvelva_g(n),vsq_g(n),vvadif_g(n)
+               write(AMPI_LUN(55),*) n
+               write(AMPI_LUN(55),7637) xvelav_g(n),uav_g(n),uavdif_g(n),
+     &                       xvelva_g(n),usq_g(n),uvadif_g(n)
+               write(AMPI_LUN(55),7637) yvelav_g(n),vav_g(n),vavdif_g(n),
+     &                       yvelva_g(n),vsq_g(n),vvadif_g(n)
             END DO
-            CLOSE(55)
+            CLOSE(AMPI_LUN(55))
          ENDIF
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_HARM_FILES.eqv..true.)) THEN
-            OPEN(55,FILE=TRIM(LOCALDIR)//'/'//'fort.55',
-     &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
-            WRITE(55,*) NP
+            OPEN(AMPI_LUN(55),FILE=TRIM(LOCALDIR)//'/'//'fort.55',
+     &        STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
+            call AMPI_LUN_REGISTER(AMPI_LUN(55),FILE=TRIM(LOCALDIR)//'/'//'fort.55',
+     &        STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
+            WRITE(AMPI_LUN(55),*) NP
             DO n=1,NP
-               write(55,*) n
-               write(55,7637) elav(n),eav(n),eavdif(n),
-     &                        elva(n),esq(n),evadif(n)
+               write(AMPI_LUN(55),*) n
+               write(AMPI_LUN(55),7637) elav(n),eav(n),eavdif(n),
+     &                       elva(n),esq(n),evadif(n)
             END DO
             DO n=1,NP
-               write(55,*) n
-               write(55,7637) xvelav(n),uav(n),uavdif(n),
-     &                        xvelva(n),usq(n),uvadif(n)
-               write(55,7637) yvelav(n),vav(n),vavdif(n),
-     &                        yvelva(n),vsq(n),vvadif(n)
+               write(AMPI_LUN(55),*) n
+               write(AMPI_LUN(55),7637) xvelav(n),uav(n),uavdif(n),
+     &                       xvelva(n),usq(n),uvadif(n)
+               write(AMPI_LUN(55),7637) yvelav(n),vav(n),vavdif(n),
+     &                       yvelva(n),vsq(n),vvadif(n)
             END DO
-            CLOSE(55)
+            CLOSE(AMPI_LUN(55))
          ENDIF
       ENDIF
 
@@ -2489,53 +2737,57 @@ C     write data according to format specifier from fort.15 (e.g., NHASE)
       CASE(1) ! ascii text
          IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
      &        .and.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
-            OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//trim(mag1%file_name),
-     &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
-            write(lun,*) nfreq+nf
+            OPEN(AMPI_LUN(lun),FILE=TRIM(GLOBALDIR)//'/'//trim(mag1%file_name),
+     &        STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
+            call AMPI_LUN_REGISTER(AMPI_LUN(lun),FILE=TRIM(GLOBALDIR)//'/'//trim(mag1%file_name),
+     &        STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
+            write(AMPI_LUN(lun),*) nfreq+nf
             do j=1,nfreq+nf
-               write(lun,3679) hafreq(j),HAFF(j),HAFACE(j),namefr(j)
+               write(AMPI_LUN(lun),3679) hafreq(j),HAFF(j),HAFACE(j),namefr(j)
             end do
-            write(lun,*) mag1%num_fd_records
+            write(AMPI_LUN(lun),*) mag1%num_fd_records
             DO N=1,mag1%num_fd_records
-               write(lun,*) labels_g(N)
+               write(AMPI_LUN(lun),*) labels_g(N)
                do i=1,nfreq+nf
                   if (sets.eq.2) then
-                     write(lun,6636) mag1%array2D_g(i,n),
-     &                               ph1%array2D_g(i,n),
-     &                               mag2%array2D_g(i,n),
-     &                               ph2%array2D_g(i,n)
+                     write(AMPI_LUN(lun),6636) mag1%array2D_g(i,n),
+     &                              ph1%array2D_g(i,n),
+     &                              mag2%array2D_g(i,n),
+     &                              ph2%array2D_g(i,n)
                   else
-                     write(lun,6635) mag1%array2D_g(i,n),
-     &                               ph1%array2D_g(i,n)
+                     write(AMPI_LUN(lun),6635) mag1%array2D_g(i,n),
+     &                              ph1%array2D_g(i,n)
                   endif
                enddo
             ENDDO
-            CLOSE(lun)
+            CLOSE(AMPI_LUN(lun))
          ENDIF
 C
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_HARM_FILES.eqv..true.)) THEN
-            OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//trim(mag1%file_name),
-     &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
-            write(lun,*) nfreq+nf
+            OPEN(AMPI_LUN(lun),FILE=TRIM(LOCALDIR)//'/'//trim(mag1%file_name),
+     &        STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
+            call AMPI_LUN_REGISTER(AMPI_LUN(lun),FILE=TRIM(LOCALDIR)//'/'//trim(mag1%file_name),
+     &        STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
+            write(AMPI_LUN(lun),*) nfreq+nf
             do j=1,nfreq+nf
-               write(lun,3679) hafreq(j),HAFF(j),HAFACE(j),namefr(j)
+               write(AMPI_LUN(lun),3679) hafreq(j),HAFF(j),HAFACE(j),namefr(j)
             end do
-            write(lun,*) mag1%num_records_this
+            write(AMPI_LUN(lun),*) mag1%num_records_this
             DO N=1,mag1%num_records_this
-               write(lun,*) labels(N)
+               write(AMPI_LUN(lun),*) labels(N)
                do i=1,nfreq+nf
                   if (sets.eq.2) then
-                     write(lun,6636) mag1%array2D(i,n),
-     &                               ph1%array2D(i,n),
-     &                               mag2%array2D(i,n),
-     &                               ph2%array2D(i,n)
+                     write(AMPI_LUN(lun),6636) mag1%array2D(i,n),
+     &                              ph1%array2D(i,n),
+     &                              mag2%array2D(i,n),
+     &                              ph2%array2D(i,n)
                   else
-                     write(lun,6635) mag1%array2D(i,n),
-     &                               ph1%array2D(i,n)
+                     write(AMPI_LUN(lun),6635) mag1%array2D(i,n),
+     &                              ph1%array2D(i,n)
                   endif
                enddo
             ENDDO
-            CLOSE(lun)
+            CLOSE(AMPI_LUN(lun))
          ENDIF
       CASE(3,5) ! netcdf 
 #ifdef ADCNETCDF
@@ -2622,23 +2874,25 @@ C
       IF ((specifier.EQ.-1).OR.((specifier.eq.1).AND.(IHOT.EQ.0))) THEN
          !start a new ASCII file
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-            WRITE(16,497) lun
-            OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn,STATUS="REPLACE")
-            WRITE(lun,499) RUNDes,RunID,AGrid
-            WRITE(lun,498)
-     &         nset,nPerSet,(tsPeriod*DTDP),tsPeriod,NFEN,outputShape
+            WRITE(AMPI_LUN(16),497) lun
+            OPEN(AMPI_LUN(lun),FILE=TRIM(LOCALDIR)//'/'//fn,STATUS="REPLACE")
+            call AMPI_LUN_REGISTER(AMPI_LUN(lun),FILE=TRIM(LOCALDIR)//'/'//fn,STATUS="REPLACE")
+            WRITE(AMPI_LUN(lun),499) RUNDes,RunID,AGrid
+            WRITE(AMPI_LUN(lun),498)
+     &        nset,nPerSet,(tsPeriod*DTDP),tsPeriod,NFEN,outputShape
 
-            CLOSE(lun)
+            CLOSE(AMPI_LUN(lun))
             recNum=2
          ENDIF
          IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
      &        (myProc.eq.0)) THEN
-            WRITE(16,497) lun
-            OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn,STATUS="REPLACE")
-            WRITE(lun,499) RUNDes,RunID,AGrid
-            WRITE(lun,498) nset,nPerSet_g,tsPeriod*DTDP,tsPeriod,
-     &                     NFEN,outputShape
-            CLOSE(lun)
+            WRITE(AMPI_LUN(16),497) lun
+            OPEN(AMPI_LUN(lun),FILE=TRIM(GLOBALDIR)//'/'//fn,STATUS="REPLACE")
+            call AMPI_LUN_REGISTER(AMPI_LUN(lun),FILE=TRIM(GLOBALDIR)//'/'//fn,STATUS="REPLACE")
+            WRITE(AMPI_LUN(lun),499) RUNDes,RunID,AGrid
+            WRITE(AMPI_LUN(lun),498) nset,nPerSet_g,tsPeriod*DTDP,tsPeriod,
+     &                    NFEN,outputShape
+            CLOSE(AMPI_LUN(lun))
             recNum=2
          ENDIF
       ENDIF
@@ -2648,10 +2902,11 @@ C
          WRITE(scratchMessage,123) recNum
          CALL logMessage(DEBUG,scratchMessage)
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-            WRITE(16,497) lun
-            OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn)
+            WRITE(AMPI_LUN(16),497) lun
+            OPEN(AMPI_LUN(lun),FILE=TRIM(LOCALDIR)//'/'//fn)
+            call AMPI_LUN_REGISTER(AMPI_LUN(lun),FILE=TRIM(LOCALDIR)//'/'//fn)
             DO N=1,recNum
-               READ(lun,*,END=456,ERR=456)
+               READ(AMPI_LUN(lun),*,END=456,ERR=456)
             ENDDO
             ! jgf49.59 Tell user there were not enough records.
 456         IF (N.lt.recNum) THEN
@@ -2668,14 +2923,15 @@ C
             ELSE IF (ios.gt.0) THEN
                CALL allMessage(ERROR,"I/O error ending output file.")
             ENDIF
-            CLOSE(lun)
+            CLOSE(AMPI_LUN(lun))
          ENDIF
          IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
      &        (myProc.eq.0)) THEN
-            WRITE(16,497) lun
-            OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn)
+            WRITE(AMPI_LUN(16),497) lun
+            OPEN(AMPI_LUN(lun),FILE=TRIM(GLOBALDIR)//'/'//fn)
+            call AMPI_LUN_REGISTER(AMPI_LUN(lun),FILE=TRIM(GLOBALDIR)//'/'//fn)
             DO N=1,recNum
-               READ(lun,*,END=654,ERR=654)
+               READ(AMPI_LUN(lun),*,END=654,ERR=654)
             ENDDO
             ! jgf49.59 Tell user there were not enough records.
 654         IF (N.lt.recNum) THEN
@@ -2692,58 +2948,62 @@ C
             ELSE IF (ios.gt.0) THEN
                CALL allMessage(ERROR,"I/O error ending output file.")
             ENDIF
-            CLOSE(lun)
+            CLOSE(AMPI_LUN(lun))
          ENDIF
       ENDIF
       IF ((specifier.EQ.-2).OR.((specifier.eq.2).AND.(IHOT.EQ.0))) THEN
         !start a new BINARY file
-        WRITE(16,496) lun
-        OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn,ACCESS='DIRECT',
-     &       RECL=NByte,STATUS="REPLACE")
+        WRITE(AMPI_LUN(16),496) lun
+        OPEN(AMPI_LUN(lun),FILE=TRIM(LOCALDIR)//'/'//fn,ACCESS='DIRECT',
+     &      RECL=NByte,STATUS="REPLACE")
+        call AMPI_LUN_REGISTER(AMPI_LUN(lun),FILE=TRIM(LOCALDIR)//'/'//fn,ACCESS='DIRECT',
+     &      RECL=NByte,STATUS="REPLACE")
         recNum=0
         IF(NByte.EQ.4) THEN
           DO N=1,8
             recNum=recNum+1
-            WRITE(lun,REC=recNum) RDES4(N)
+            WRITE(AMPI_LUN(lun),REC=recNum) RDES4(N)
           ENDDO
           DO N=1,6
             recNum=recNum+1
-            WRITE(lun,REC=recNum) RID4(N)
+            WRITE(AMPI_LUN(lun),REC=recNum) RID4(N)
           ENDDO
           DO N=1,6
             recNum=recNum+1
-            WRITE(lun,REC=recNum) AID4(N)
+            WRITE(AMPI_LUN(lun),REC=recNum) AID4(N)
           ENDDO
         ENDIF
         IF(NByte.EQ.8) THEN
           DO N=1,4
             recNum=recNum+1
-            WRITE(lun,REC=recNum) RDES8(N)
+            WRITE(AMPI_LUN(lun),REC=recNum) RDES8(N)
           ENDDO
           DO N=1,3
             recNum=recNum+1
-            WRITE(lun,REC=recNum) RID8(N)
+            WRITE(AMPI_LUN(lun),REC=recNum) RID8(N)
           ENDDO
           DO N=1,3
             recNum=recNum+1
-            WRITE(lun,REC=recNum) AID8(N)
+            WRITE(AMPI_LUN(lun),REC=recNum) AID8(N)
           ENDDO
         ENDIF
-        WRITE(lun,REC=recNum+1) nset
-        WRITE(lun,REC=recNum+2) nPerSet
-        WRITE(lun,REC=recNum+3) tsPeriod*DTDP
-        WRITE(lun,REC=recNum+4) tsPeriod
-        WRITE(lun,REC=recNum+5) NFEN
-        WRITE(lun,REC=recNum+6) outputShape
+        WRITE(AMPI_LUN(lun),REC=recNum+1) nset
+        WRITE(AMPI_LUN(lun),REC=recNum+2) nPerSet
+        WRITE(AMPI_LUN(lun),REC=recNum+3) tsPeriod*DTDP
+        WRITE(AMPI_LUN(lun),REC=recNum+4) tsPeriod
+        WRITE(AMPI_LUN(lun),REC=recNum+5) NFEN
+        WRITE(AMPI_LUN(lun),REC=recNum+6) outputShape
         recNum=recNum+6
-        CLOSE(lun)
+        CLOSE(AMPI_LUN(lun))
       ENDIF
       IF ((specifier.eq.2).and.(IHOT.NE.0)) THEN
          !find spot in existing BINARY file
-         WRITE(16,496) lun
-         OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn,ACCESS='DIRECT',
-     &       RECL=NByte)
-         CLOSE(lun)
+         WRITE(AMPI_LUN(16),496) lun
+         OPEN(AMPI_LUN(lun),FILE=TRIM(LOCALDIR)//'/'//fn,ACCESS='DIRECT',
+     &      RECL=NByte)
+         call AMPI_LUN_REGISTER(AMPI_LUN(lun),FILE=TRIM(LOCALDIR)//'/'//fn,ACCESS='DIRECT',
+     &      RECL=NByte)
+         CLOSE(AMPI_LUN(lun))
       ENDIF
 C
 
@@ -3234,42 +3494,44 @@ C              Interpolate to station locations
             CASE(1) ! ascii
                ! serial ascii
                IF ((MNPROC.EQ.1).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-                  OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41',
-     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  OPEN(AMPI_LUN(41),FILE=TRIM(LOCALDIR)//'/'//'fort.41',
+     &                           ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  call AMPI_LUN_REGISTER(AMPI_LUN(41),FILE=TRIM(LOCALDIR)//'/'//'fort.41',
+     &                           ACCESS='SEQUENTIAL',POSITION='APPEND')
 C                 Write time header into file
                   SELECT CASE(ABS(IDEN))
                   CASE(0,1)
-                     WRITE(41,1100) TimeLoc,IT,(Sigma(k),k=1,NFEN-1)
+                     WRITE(AMPI_LUN(41),1100) TimeLoc,IT,(Sigma(k),k=1,NFEN-1)
                      I3DSDRec=I3DSDRec+1
                      DO NN=1,NSta3DD
-                        WRITE(41,1104) NN,(SigTSta(NN,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(41),1104) NN,(SigTSta(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
                   CASE(2)
-                     WRITE(41,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                               k=1,NFEN-1),Sigma(NFEN)
+                     WRITE(AMPI_LUN(41),1100) TimeLoc,IT,(Sigma(k),Sigma(k),
+     &                              k=1,NFEN-1),Sigma(NFEN)
                      I3DSDRec=I3DSDRec+1
                      DO NN=1,NSta3DD
-                        WRITE(41,1104) NN,
-     &                     (SigTSta(NN,k),SalSta(NN,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(41),1104) NN,
+     &                    (SigTSta(NN,k),SalSta(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
                   CASE(3)
-                     WRITE(41,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                               k=1,NFEN-1),Sigma(NFEN)
+                     WRITE(AMPI_LUN(41),1100) TimeLoc,IT,(Sigma(k),Sigma(k),
+     &                              k=1,NFEN-1),Sigma(NFEN)
                      I3DSDRec=I3DSDRec+1
                      DO NN=1,NSta3DD
-                        WRITE(41,1104) NN,
-     &                     (SigTSta(NN,k),TempSta(NN,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(41),1104) NN,
+     &                    (SigTSta(NN,k),TempSta(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
                   CASE(4)
-                     WRITE(41,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                     WRITE(AMPI_LUN(41),1100) TimeLoc,IT,(Sigma(k),Sigma(k),
+     &                     Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                      I3DSDRec=I3DSDRec+1
                      DO NN=1,NSta3DD
-                        WRITE(41,1104) NN,(SigTSta(NN,k),
-     &                      SalSta(NN,k),TempSta(NN,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(41),1104) NN,(SigTSta(NN,k),
+     &                     SalSta(NN,k),TempSta(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
                   CASE DEFAULT
@@ -3280,42 +3542,44 @@ C                 Write time header into file
                ! globalio ascii
                IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
      &             (myProc.eq.0)) THEN
-                  OPEN(41,FILE=TRIM(GLOBALDIR)//'/'//'fort.41',
-     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  OPEN(AMPI_LUN(41),FILE=TRIM(GLOBALDIR)//'/'//'fort.41',
+     &                           ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  call AMPI_LUN_REGISTER(AMPI_LUN(41),FILE=TRIM(GLOBALDIR)//'/'//'fort.41',
+     &                           ACCESS='SEQUENTIAL',POSITION='APPEND')
 C                 Write time header into file
                   SELECT CASE(ABS(IDEN))
                   CASE(0,1)
-                     WRITE(41,1100) TimeLoc,IT,(Sigma(k),k=1,NFEN-1)
+                     WRITE(AMPI_LUN(41),1100) TimeLoc,IT,(Sigma(k),k=1,NFEN-1)
                      I3DSDRec=I3DSDRec+1
                      DO NN=1,NSta3DD_G
-                        WRITE(41,1104) NN,(SigTSta_g(NN,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(41),1104) NN,(SigTSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
                   CASE(2)
-                     WRITE(41,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                               k=1,NFEN-1),Sigma(NFEN)
+                     WRITE(AMPI_LUN(41),1100) TimeLoc,IT,(Sigma(k),Sigma(k),
+     &                              k=1,NFEN-1),Sigma(NFEN)
                      I3DSDRec=I3DSDRec+1
                      DO NN=1,NSta3DD_G
-                        WRITE(41,1104) NN,
-     &                     (SigTSta_g(NN,k),SalSta_g(NN,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(41),1104) NN,
+     &                    (SigTSta_g(NN,k),SalSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
                   CASE(3)
-                     WRITE(41,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                               k=1,NFEN-1),Sigma(NFEN)
+                     WRITE(AMPI_LUN(41),1100) TimeLoc,IT,(Sigma(k),Sigma(k),
+     &                              k=1,NFEN-1),Sigma(NFEN)
                      I3DSDRec=I3DSDRec+1
                      DO NN=1,NSta3DD_G
-                        WRITE(41,1104) NN,
-     &                     (SigTSta_g(NN,k),TempSta_g(NN,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(41),1104) NN,
+     &                    (SigTSta_g(NN,k),TempSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
                   CASE(4)
-                     WRITE(41,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                     WRITE(AMPI_LUN(41),1100) TimeLoc,IT,(Sigma(k),Sigma(k),
+     &                     Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                      I3DSDRec=I3DSDRec+1
                      DO NN=1,NSta3DD_G
-                        WRITE(41,1104) NN,(SigTSta_g(NN,k),
-     &                      SalSta_g(NN,k),TempSta_g(NN,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(41),1104) NN,(SigTSta_g(NN,k),
+     &                     SalSta_g(NN,k),TempSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
                   CASE DEFAULT
@@ -3324,32 +3588,34 @@ C                 Write time header into file
                   END SELECT
                ENDIF
             CASE(2) ! binary
-               OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41',
-     &            ACCESS='DIRECT', RECL=NByte)
-               WRITE(41,REC=I3DSDRec+1) TimeLoc
-               WRITE(41,REC=I3DSDRec+2) IT
+               OPEN(AMPI_LUN(41),FILE=TRIM(LOCALDIR)//'/'//'fort.41',
+     &           ACCESS='DIRECT', RECL=NByte)
+               call AMPI_LUN_REGISTER(AMPI_LUN(41),FILE=TRIM(LOCALDIR)//'/'//'fort.41',
+     &           ACCESS='DIRECT', RECL=NByte)
+               WRITE(AMPI_LUN(41),REC=I3DSDRec+1) TimeLoc
+               WRITE(AMPI_LUN(41),REC=I3DSDRec+2) IT
                I3DSDRec=I3DSDRec+2
 C              Write station output
                DO NN=1,NSTA3DD
-                  WRITE(41,REC=I3DSDRec+1) NN
+                  WRITE(AMPI_LUN(41),REC=I3DSDRec+1) NN
                   I3DSDRec=I3DSDRec+1
                   DO k=1,NFEN
                      SELECT CASE(ABS(IDEN))
                      CASE(1)
-                        WRITE(41,REC=I3DSDRec+1) SigTSta(NN,k)
+                        WRITE(AMPI_LUN(41),REC=I3DSDRec+1) SigTSta(NN,k)
                         I3DSDRec=I3DSDRec+1
                      CASE(2)
-                        WRITE(41,REC=I3DSDRec+1) SigTSta(NN,k)
-                        WRITE(41,REC=I3DSDRec+2) SalSta(NN,k)
+                        WRITE(AMPI_LUN(41),REC=I3DSDRec+1) SigTSta(NN,k)
+                        WRITE(AMPI_LUN(41),REC=I3DSDRec+2) SalSta(NN,k)
                         I3DSDRec=I3DSDRec+2
                      CASE(3)
-                        WRITE(41,REC=I3DSDRec+1) SigTSta(NN,k)
-                        WRITE(41,REC=I3DSDRec+2) TempSta(NN,k)
+                        WRITE(AMPI_LUN(41),REC=I3DSDRec+1) SigTSta(NN,k)
+                        WRITE(AMPI_LUN(41),REC=I3DSDRec+2) TempSta(NN,k)
                         I3DSDRec=I3DSDRec+2
                      CASE(4)
-                        WRITE(41,REC=I3DSDRec+1) SigTSta(NN,k)
-                        WRITE(41,REC=I3DSDRec+2) SalSta(NN,k)
-                        WRITE(41,REC=I3DSDRec+3) TempSta(NN,k)
+                        WRITE(AMPI_LUN(41),REC=I3DSDRec+1) SigTSta(NN,k)
+                        WRITE(AMPI_LUN(41),REC=I3DSDRec+2) SalSta(NN,k)
+                        WRITE(AMPI_LUN(41),REC=I3DSDRec+3) TempSta(NN,k)
                         I3DSDRec=I3DSDRec+3
                      CASE DEFAULT
                         CALL allMessage(WARNING,
@@ -3357,7 +3623,7 @@ C              Write station output
                      END SELECT
                   ENDDO
                ENDDO
-               CLOSE(41)
+               CLOSE(AMPI_LUN(41))
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
@@ -3437,52 +3703,58 @@ C              Interpolate to station locations
             SELECT CASE(ABS(I3DSV))
             CASE(1)  !ASCII FORMAT
                IF ((MNPROC.EQ.1).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-                  OPEN(42,FILE=TRIM(LOCALDIR)//'/'//'fort.42',
-     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  OPEN(AMPI_LUN(42),FILE=TRIM(LOCALDIR)//'/'//'fort.42',
+     &                           ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  call AMPI_LUN_REGISTER(AMPI_LUN(42),FILE=TRIM(LOCALDIR)//'/'//'fort.42',
+     &                           ACCESS='SEQUENTIAL',POSITION='APPEND')
 C                 Write time header into file
-                  WRITE(42,1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
-     &                       k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                  WRITE(AMPI_LUN(42),1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &                      k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                   I3DSVRec=I3DSVRec+1
                   DO NN=1,NSTA3DV
-                     WRITE(42,1104) NN,
-     &                  (REAL(qSta(NN,k)),AIMAG(qSta(NN,k)),
-     &                  WZSta(NN,k),k=1,NFEN)
+                     WRITE(AMPI_LUN(42),1104) NN,
+     &                 (REAL(qSta(NN,k)),AIMAG(qSta(NN,k)),
+     &                 WZSta(NN,k),k=1,NFEN)
                      I3DSVRec=I3DSVRec+1
                   ENDDO
-                  CLOSE(42)
+                  CLOSE(AMPI_LUN(42))
                ENDIF
                IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
      &             (myProc.eq.0)) THEN
-                  OPEN(42,FILE=TRIM(GLOBALDIR)//'/'//'fort.42',
-     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  OPEN(AMPI_LUN(42),FILE=TRIM(GLOBALDIR)//'/'//'fort.42',
+     &                           ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  call AMPI_LUN_REGISTER(AMPI_LUN(42),FILE=TRIM(GLOBALDIR)//'/'//'fort.42',
+     &                           ACCESS='SEQUENTIAL',POSITION='APPEND')
 C                 Write time header into file
-                  WRITE(42,1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
-     &                       k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                  WRITE(AMPI_LUN(42),1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &                      k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                   I3DSVRec=I3DSVRec+1
                   DO NN=1,NSTA3DV_G
-                     WRITE(42,1104) NN,(rpSta_g(NN,k),ipSta_g(NN,k),
-     &                  WZSta_g(NN,k),k=1,NFEN)
+                     WRITE(AMPI_LUN(42),1104) NN,(rpSta_g(NN,k),ipSta_g(NN,k),
+     &                 WZSta_g(NN,k),k=1,NFEN)
                      I3DSVRec=I3DSVRec+1
                   ENDDO
-                  CLOSE(42)
+                  CLOSE(AMPI_LUN(42))
                ENDIF
             CASE(2) !BINARY FORMAT
-               OPEN(42,FILE=TRIM(LOCALDIR)//'/'//'fort.42',
-     &            ACCESS='DIRECT', RECL=NByte)
-               WRITE(42,REC=I3DSVRec+1) TimeLoc
-               WRITE(42,REC=I3DSVRec+2) IT
+               OPEN(AMPI_LUN(42),FILE=TRIM(LOCALDIR)//'/'//'fort.42',
+     &           ACCESS='DIRECT', RECL=NByte)
+               call AMPI_LUN_REGISTER(AMPI_LUN(42),FILE=TRIM(LOCALDIR)//'/'//'fort.42',
+     &           ACCESS='DIRECT', RECL=NByte)
+               WRITE(AMPI_LUN(42),REC=I3DSVRec+1) TimeLoc
+               WRITE(AMPI_LUN(42),REC=I3DSVRec+2) IT
                I3DSVRec=I3DSVRec+2
-               WRITE(42,REC=I3DSVRec+1) NN
+               WRITE(AMPI_LUN(42),REC=I3DSVRec+1) NN
                I3DSVRec=I3DSVRec+1
                DO NN=1,NSTA3DV
                   DO k=1,NFEN
-                     WRITE(42,REC=I3DSVRec+1) REAL(qSta(NN,k))
-                     WRITE(42,REC=I3DSVRec+2) AIMAG(qSta(NN,k))
-                     WRITE(42,REC=I3DSVRec+3) WZSta(NN,k)
+                     WRITE(AMPI_LUN(42),REC=I3DSVRec+1) REAL(qSta(NN,k))
+                     WRITE(AMPI_LUN(42),REC=I3DSVRec+2) AIMAG(qSta(NN,k))
+                     WRITE(AMPI_LUN(42),REC=I3DSVRec+3) WZSta(NN,k)
                      I3DSVRec=I3DSVRec+3
                   END DO
                END DO
-               CLOSE(42)
+               CLOSE(AMPI_LUN(42))
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
@@ -3548,51 +3820,57 @@ C              Interpolate to station locations
             SELECT CASE(ABS(I3DST))
             CASE(1)  !ASCII FORMAT
                IF ((MNPROC.EQ.1).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-                  OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43',
-     &                ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  OPEN(AMPI_LUN(43),FILE=TRIM(LOCALDIR)//'/'//'fort.43',
+     &               ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  call AMPI_LUN_REGISTER(AMPI_LUN(43),FILE=TRIM(LOCALDIR)//'/'//'fort.43',
+     &               ACCESS='SEQUENTIAL',POSITION='APPEND')
 C                 Write time header into file
-                  WRITE(43,1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
-     &                k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                  WRITE(AMPI_LUN(43),1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &               k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                   I3DSTRec=I3DSTRec+1
                   DO NN=1,NSta3DT
-                     WRITE(43,1104)
-     &                 NN,(q20Sta(NN,k),lSta(NN,k),EVSta(NN,k),k=1,NFEN)
+                     WRITE(AMPI_LUN(43),1104)
+     &                NN,(q20Sta(NN,k),lSta(NN,k),EVSta(NN,k),k=1,NFEN)
                      I3DSTRec=I3DSTRec+1
                   END DO
-                  CLOSE(43)
+                  CLOSE(AMPI_LUN(43))
                ENDIF
                IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
      &              (myProc.eq.0)) THEN
-                  OPEN(43,FILE=TRIM(GLOBALDIR)//'/'//'fort.43',
-     &                ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  OPEN(AMPI_LUN(43),FILE=TRIM(GLOBALDIR)//'/'//'fort.43',
+     &               ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  call AMPI_LUN_REGISTER(AMPI_LUN(43),FILE=TRIM(GLOBALDIR)//'/'//'fort.43',
+     &               ACCESS='SEQUENTIAL',POSITION='APPEND')
 C                 Write time header into file
-                  WRITE(43,1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
-     &                k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                  WRITE(AMPI_LUN(43),1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &               k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                   I3DSTRec=I3DSTRec+1
                   DO NN=1,NSta3DT_G
-                     WRITE(43,1104) NN,(q20Sta_g(NN,k),lSta_g(NN,k),
-     &                  EVSta_g(NN,k),k=1,NFEN)
+                     WRITE(AMPI_LUN(43),1104) NN,(q20Sta_g(NN,k),lSta_g(NN,k),
+     &                 EVSta_g(NN,k),k=1,NFEN)
                      I3DSTRec=I3DSTRec+1
                   END DO
-                  CLOSE(43)
+                  CLOSE(AMPI_LUN(43))
                ENDIF
             CASE(2)  ! binary
-               OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43',
-     &            ACCESS='DIRECT', RECL=NByte)
-               WRITE(43,REC=I3DSTRec+1) TimeLoc
-               WRITE(43,REC=I3DSTRec+2) IT
+               OPEN(AMPI_LUN(43),FILE=TRIM(LOCALDIR)//'/'//'fort.43',
+     &           ACCESS='DIRECT', RECL=NByte)
+               call AMPI_LUN_REGISTER(AMPI_LUN(43),FILE=TRIM(LOCALDIR)//'/'//'fort.43',
+     &           ACCESS='DIRECT', RECL=NByte)
+               WRITE(AMPI_LUN(43),REC=I3DSTRec+1) TimeLoc
+               WRITE(AMPI_LUN(43),REC=I3DSTRec+2) IT
                I3DSTRec=I3DSTRec+2
                DO NN=1,NSta3DT
-                  WRITE(43,REC=I3DSTRec+1) NN
+                  WRITE(AMPI_LUN(43),REC=I3DSTRec+1) NN
                   I3DSTRec=I3DSTRec+1
                   DO k=1,NFEN
-                     WRITE(43,REC=I3DSTRec+1) q20Sta(NN,k)
-                     WRITE(43,REC=I3DSTRec+2) lSta(NN,k)
-                     WRITE(43,REC=I3DSTRec+3) EVSta(NN,k)
+                     WRITE(AMPI_LUN(43),REC=I3DSTRec+1) q20Sta(NN,k)
+                     WRITE(AMPI_LUN(43),REC=I3DSTRec+2) lSta(NN,k)
+                     WRITE(AMPI_LUN(43),REC=I3DSTRec+3) EVSta(NN,k)
                      I3DSTRec=I3DSTRec+3
                   END DO
                END DO
-               CLOSE(43)
+               CLOSE(AMPI_LUN(43))
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
@@ -3669,17 +3947,21 @@ C        Check to see if it is time to generate 3D fulldomain density output.
             SELECT CASE(ABS(I3DGD))
             CASE(1)  ! ASCII
                IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-                  OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',
-     &                ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  OPEN(AMPI_LUN(44),FILE=TRIM(LOCALDIR)//'/'//'fort.44',
+     &               ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  call AMPI_LUN_REGISTER(AMPI_LUN(44),FILE=TRIM(LOCALDIR)//'/'//'fort.44',
+     &               ACCESS='SEQUENTIAL',POSITION='APPEND')
                   IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
                      IF(BCFLAG_TEMP.NE.0) THEN
-                        OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47',
-     &                         ACCESS='SEQUENTIAL',POSITION='APPEND')
-                        WRITE(47,1099) TimeLoc,IT
+                        OPEN(AMPI_LUN(47),FILE=TRIM(LOCALDIR)//'/'//'fort.47',
+     &                        ACCESS='SEQUENTIAL',POSITION='APPEND')
+                        call AMPI_LUN_REGISTER(AMPI_LUN(47),FILE=TRIM(LOCALDIR)//'/'//'fort.47',
+     &                        ACCESS='SEQUENTIAL',POSITION='APPEND')
+                        WRITE(AMPI_LUN(47),1099) TimeLoc,IT
                         DO NH=1,NP
-                           WRITE(47,1105) NH, qsurfkp1(NH)
+                           WRITE(AMPI_LUN(47),1105) NH, qsurfkp1(NH)
                         END DO
-                        CLOSE(47)
+                        CLOSE(AMPI_LUN(47))
                      END IF
                   END IF
                   SELECT CASE(ABS(IDEN))
@@ -3687,33 +3969,33 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                      CALL allMessage(WARNING,
      &            "IDEN was set to 0 but density output was requested.")
                   CASE(1) ! SigmaT density
-                     WRITE(44,1100) TimeLoc,IT,(Sigma(k),k=1,NFEN-1)
+                     WRITE(AMPI_LUN(44),1100) TimeLoc,IT,(Sigma(k),k=1,NFEN-1)
                      DO NH=1,NP
-                        WRITE(44,1104) NH,(SigT(NH,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(44),1104) NH,(SigT(NH,k),k=1,NFEN)
                         I3DGDRec=I3DGDRec+1
                      ENDDO
                   CASE(2) ! Salinity density
-                     WRITE(44,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                                k=1,NFEN-1),Sigma(NFEN)
+                     WRITE(AMPI_LUN(44),1100) TimeLoc,IT,(Sigma(k),Sigma(k),
+     &                               k=1,NFEN-1),Sigma(NFEN)
                      DO NH=1,NP
-                        WRITE(44,1104)
-     &                     NH,(SigT(NH,k),Sal(NH,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(44),1104)
+     &                    NH,(SigT(NH,k),Sal(NH,k),k=1,NFEN)
                            I3DGDRec=I3DGDRec+1
                      ENDDO
                   CASE(3) ! Temperature density
-                     WRITE(44,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                                k=1,NFEN-1),Sigma(NFEN)
+                     WRITE(AMPI_LUN(44),1100) TimeLoc,IT,(Sigma(k),Sigma(k),
+     &                               k=1,NFEN-1),Sigma(NFEN)
                      DO NH=1,NP
-                        WRITE(44,1104)
-     &                     NH,(SigT(NH,k),Temp(NH,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(44),1104)
+     &                    NH,(SigT(NH,k),Temp(NH,k),k=1,NFEN)
                         I3DGDRec=I3DGDRec+1
                      ENDDO
                   CASE(4) ! Salinity+Temperature density
-                     WRITE(44,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                    Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                     WRITE(AMPI_LUN(44),1100) TimeLoc,IT,(Sigma(k),Sigma(k),
+     &                   Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                      DO NH=1,NP
-                        WRITE(44,1104)
-     &                     NH,(SigT(NH,k),Temp(NH,k),Sal(NH,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(44),1104)
+     &                    NH,(SigT(NH,k),Temp(NH,k),Sal(NH,k),k=1,NFEN)
                         I3DGDRec=I3DGDRec+1
                      ENDDO
                   CASE DEFAULT
@@ -3721,7 +4003,7 @@ C        Check to see if it is time to generate 3D fulldomain density output.
      &               "IDEN is not +/- 0 to 4 and is invalid.")
                   END SELECT
                   I3DGDRec=I3DGDRec+1 ! for the header line
-                  CLOSE(44)
+                  CLOSE(AMPI_LUN(44))
                ENDIF
                IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.)) THEN
                   IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
@@ -3731,57 +4013,61 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                         ENDIF
                         CALL collectFullDomainArray(QSurfKp1Descript,
      &                     packOne, unpackOne)
-                        OPEN(47,FILE=TRIM(GLOBALDIR)//'/'//'fort.47',
-     &                     ACCESS='SEQUENTIAL',POSITION='APPEND')
-                        WRITE(47,1099) TimeLoc,IT
+                        OPEN(AMPI_LUN(47),FILE=TRIM(GLOBALDIR)//'/'//'fort.47',
+     &                    ACCESS='SEQUENTIAL',POSITION='APPEND')
+                        call AMPI_LUN_REGISTER(AMPI_LUN(47),FILE=TRIM(GLOBALDIR)//'/'//'fort.47',
+     &                    ACCESS='SEQUENTIAL',POSITION='APPEND')
+                        WRITE(AMPI_LUN(47),1099) TimeLoc,IT
                         DO NH=1,NP_G
-                           WRITE(47,1105) NH, qsurfkp1_g(NH)
+                           WRITE(AMPI_LUN(47),1105) NH, qsurfkp1_g(NH)
                         END DO
                         DEALLOCATE(qsurfkp1_g)
-                        CLOSE(47)
+                        CLOSE(AMPI_LUN(47))
                      END IF
                   END IF
-                  OPEN(44,FILE=TRIM(GLOBALDIR)//'/'//'fort.44',
-     &                ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  OPEN(AMPI_LUN(44),FILE=TRIM(GLOBALDIR)//'/'//'fort.44',
+     &               ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  call AMPI_LUN_REGISTER(AMPI_LUN(44),FILE=TRIM(GLOBALDIR)//'/'//'fort.44',
+     &               ACCESS='SEQUENTIAL',POSITION='APPEND')
                   SELECT CASE(ABS(IDEN))
                   CASE(0) ! barotropic
                      CALL allMessage(WARNING,
      &            "IDEN was set to 0 but density output was requested.")
                   CASE(1) ! SigmaT density
                      IF (myProc.eq.0) THEN
-                        WRITE(44,1100) TimeLoc,IT,(Sigma(k),k=1,NFEN-1)
+                        WRITE(AMPI_LUN(44),1100) TimeLoc,IT,(Sigma(k),k=1,NFEN-1)
                         DO NH=1,NP_G
-                           WRITE(44,1104) NH,(SigT_g(NH,k),k=1,NFEN)
+                           WRITE(AMPI_LUN(44),1104) NH,(SigT_g(NH,k),k=1,NFEN)
                            I3DGDRec=I3DGDRec+1
                         ENDDO
                      ENDIF
                   CASE(2) ! Salinity density
                      IF (myProc.eq.0) THEN
-                        WRITE(44,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                                   k=1,NFEN-1),Sigma(NFEN)
+                        WRITE(AMPI_LUN(44),1100) TimeLoc,IT,(Sigma(k),Sigma(k),
+     &                                  k=1,NFEN-1),Sigma(NFEN)
                         DO NH=1,NP_G
-                           WRITE(44,1104)
-     &                        NH,(SigT_g(NH,k),Sal_g(NH,k),k=1,NFEN)
+                           WRITE(AMPI_LUN(44),1104)
+     &                       NH,(SigT_g(NH,k),Sal_g(NH,k),k=1,NFEN)
                               I3DGDRec=I3DGDRec+1
                         ENDDO
                      ENDIF
                   CASE(3) ! Temperature density
                      IF (myProc.eq.0) THEN
-                        WRITE(44,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                                   k=1,NFEN-1),Sigma(NFEN)
+                        WRITE(AMPI_LUN(44),1100) TimeLoc,IT,(Sigma(k),Sigma(k),
+     &                                  k=1,NFEN-1),Sigma(NFEN)
                         DO NH=1,NP_G
-                           WRITE(44,1104)
-     &                        NH,(SigT_g(NH,k),Temp_g(NH,k),k=1,NFEN)
+                           WRITE(AMPI_LUN(44),1104)
+     &                       NH,(SigT_g(NH,k),Temp_g(NH,k),k=1,NFEN)
                            I3DGDRec=I3DGDRec+1
                         ENDDO
                      ENDIF
                   CASE(4) ! Salinity+Temperature density
                      IF (myProc.eq.0) THEN
-                        WRITE(44,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                        WRITE(AMPI_LUN(44),1100) TimeLoc,IT,(Sigma(k),Sigma(k),
+     &                     Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                         DO NH=1,NP_G
-                           WRITE(44,1104) NH,(SigT_g(NH,k),Temp_g(NH,k),
-     &                          Sal_g(NH,k),k=1,NFEN)
+                           WRITE(AMPI_LUN(44),1104) NH,(SigT_g(NH,k),Temp_g(NH,k),
+     &                         Sal_g(NH,k),k=1,NFEN)
                            I3DGDRec=I3DGDRec+1
                         ENDDO
                      ENDIF
@@ -3790,13 +4076,15 @@ C        Check to see if it is time to generate 3D fulldomain density output.
      &               "IDEN is not +/- 0 to 4 and is invalid.")
                   END SELECT
                   I3DGDRec=I3DGDRec+1 ! for the header line
-                  CLOSE(44)
+                  CLOSE(AMPI_LUN(44))
                ENDIF
             CASE(2)  !BINARY FORMAT
-               OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',
-     &            ACCESS='DIRECT', RECL=NByte)
-               WRITE(44,REC=I3DGDRec+1) TimeLoc
-               WRITE(44,REC=I3DGDRec+2) IT
+               OPEN(AMPI_LUN(44),FILE=TRIM(LOCALDIR)//'/'//'fort.44',
+     &           ACCESS='DIRECT', RECL=NByte)
+               call AMPI_LUN_REGISTER(AMPI_LUN(44),FILE=TRIM(LOCALDIR)//'/'//'fort.44',
+     &           ACCESS='DIRECT', RECL=NByte)
+               WRITE(AMPI_LUN(44),REC=I3DGDRec+1) TimeLoc
+               WRITE(AMPI_LUN(44),REC=I3DGDRec+2) IT
                I3DGDRec=I3DGDRec+2
                SELECT CASE(ABS(IDEN))
                CASE(0) ! barotropic
@@ -3804,41 +4092,41 @@ C        Check to see if it is time to generate 3D fulldomain density output.
      &            "IDEN was set to 0 but density output was requested.")
                CASE(1) ! sigmaT density
                   DO NH=1,NP
-                     WRITE(44,REC=I3DGDRec+1) NH
+                     WRITE(AMPI_LUN(44),REC=I3DGDRec+1) NH
                      I3DGDRec=I3DGDRec+1
                      DO k=1,NFEN
-                        WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
+                        WRITE(AMPI_LUN(44),REC=I3DGDRec+1) SigT(NH,k)
                         I3DGDRec=I3DGDRec+1
                      ENDDO
                   END DO
                CASE(2) ! salinity density
                   DO NH=1,NP
-                     WRITE(44,REC=I3DGDRec+1) NH
+                     WRITE(AMPI_LUN(44),REC=I3DGDRec+1) NH
                      I3DGDRec=I3DGDRec+1
                      DO k=1,NFEN
-                        WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
-                        WRITE(44,REC=I3DGDRec+2) Sal(NH,k)
+                        WRITE(AMPI_LUN(44),REC=I3DGDRec+1) SigT(NH,k)
+                        WRITE(AMPI_LUN(44),REC=I3DGDRec+2) Sal(NH,k)
                         I3DGDRec=I3DGDRec+2
                      END DO
                   END DO
                CASE(3) ! temperature density
                   DO NH=1,NP
-                     WRITE(44,REC=I3DGDRec+1) NH
+                     WRITE(AMPI_LUN(44),REC=I3DGDRec+1) NH
                      I3DGDRec=I3DGDRec+1
                      DO k=1,NFEN
-                        WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
-                        WRITE(44,REC=I3DGDRec+2) Temp(NH,k)
+                        WRITE(AMPI_LUN(44),REC=I3DGDRec+1) SigT(NH,k)
+                        WRITE(AMPI_LUN(44),REC=I3DGDRec+2) Temp(NH,k)
                         I3DGDRec=I3DGDRec+2
                      ENDDO
                   END DO
                CASE(4) ! salinity+temperature density
                   DO NH=1,NP
-                     WRITE(44,REC=I3DGDRec+1) NH
+                     WRITE(AMPI_LUN(44),REC=I3DGDRec+1) NH
                      I3DGDRec=I3DGDRec+1
                      DO k=1,NFEN
-                        WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
-                        WRITE(44,REC=I3DGDRec+2) Temp(NH,k)
-                        WRITE(44,REC=I3DGDRec+3) Sal(NH,k)
+                        WRITE(AMPI_LUN(44),REC=I3DGDRec+1) SigT(NH,k)
+                        WRITE(AMPI_LUN(44),REC=I3DGDRec+2) Temp(NH,k)
+                        WRITE(AMPI_LUN(44),REC=I3DGDRec+3) Sal(NH,k)
                         I3DGDRec=I3DGDRec+3
                      ENDDO
                   END DO
@@ -3846,7 +4134,7 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                   CALL allMessage(WARNING,
      &              "IDEN is not +/- 0 to 4 and is invalid.")
                END SELECT
-               CLOSE(44)
+               CLOSE(AMPI_LUN(44))
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
@@ -3912,50 +4200,56 @@ C        Check to see if it is time to generate 3D fulldomain velocity output.
             CASE(1) ! ascii
                IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
 C                 Write time header into file
-                  OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45',
-     &                 ACCESS='SEQUENTIAL',POSITION='APPEND')
-                  WRITE(45,1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
-     &                 k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                  OPEN(AMPI_LUN(45),FILE=TRIM(LOCALDIR)//'/'//'fort.45',
+     &                ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  call AMPI_LUN_REGISTER(AMPI_LUN(45),FILE=TRIM(LOCALDIR)//'/'//'fort.45',
+     &                ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  WRITE(AMPI_LUN(45),1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &                k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                   I3DGVRec=I3DGVRec+1
                   DO NH=1,NP
-                     WRITE(45,1104) NH,(REAL(q(NH,k)),AIMAG(q(NH,k)),
-     &                  WZ(NH,k),k=1,NFEN) !ASCII
+                     WRITE(AMPI_LUN(45),1104) NH,(REAL(q(NH,k)),AIMAG(q(NH,k)),
+     &                 WZ(NH,k),k=1,NFEN) !ASCII
                      I3DGVRec=I3DGVRec+1
                   END DO
-                  CLOSE(45)
+                  CLOSE(AMPI_LUN(45))
                ENDIF
                IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
                   IF (myProc.eq.0) THEN
-                     OPEN(45,FILE=TRIM(GLOBALDIR)//'/'//'fort.45',
-     &                  ACCESS='SEQUENTIAL',POSITION='APPEND')
-                     WRITE(45,1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
-     &                  k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                     OPEN(AMPI_LUN(45),FILE=TRIM(GLOBALDIR)//'/'//'fort.45',
+     &                 ACCESS='SEQUENTIAL',POSITION='APPEND')
+                     call AMPI_LUN_REGISTER(AMPI_LUN(45),FILE=TRIM(GLOBALDIR)//'/'//'fort.45',
+     &                 ACCESS='SEQUENTIAL',POSITION='APPEND')
+                     WRITE(AMPI_LUN(45),1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &                 k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                      I3DGVRec=I3DGVRec+1
                      DO NH=1,NP_G
-                        WRITE(45,1104) NH,
-     &                     (rp_g(NH,k),ip_g(NH,k),WZ_g(NH,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(45),1104) NH,
+     &                    (rp_g(NH,k),ip_g(NH,k),WZ_g(NH,k),k=1,NFEN)
                         I3DGVRec=I3DGVRec+1
                      ENDDO
-                     CLOSE(45)
+                     CLOSE(AMPI_LUN(45))
                   ENDIF
                ENDIF
             CASE(2) !BINARY FORMAT
-               OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45',
-     &              ACCESS='DIRECT',RECL=NByte)
-               WRITE(45,REC=I3DGVRec+1) TimeLoc
-               WRITE(45,REC=I3DGVRec+2) IT
+               OPEN(AMPI_LUN(45),FILE=TRIM(LOCALDIR)//'/'//'fort.45',
+     &             ACCESS='DIRECT',RECL=NByte)
+               call AMPI_LUN_REGISTER(AMPI_LUN(45),FILE=TRIM(LOCALDIR)//'/'//'fort.45',
+     &             ACCESS='DIRECT',RECL=NByte)
+               WRITE(AMPI_LUN(45),REC=I3DGVRec+1) TimeLoc
+               WRITE(AMPI_LUN(45),REC=I3DGVRec+2) IT
                I3DGVRec=I3DGVRec+2
                DO NH=1,NP
-                  WRITE(45,REC=I3DGVRec+1) NH
+                  WRITE(AMPI_LUN(45),REC=I3DGVRec+1) NH
                   I3DGVRec=I3DGVRec+1
                   DO k=1,NFEN
-                     WRITE(45,REC=I3DGVRec+1) REAL(q(NH,k))
-                     WRITE(45,REC=I3DGVRec+2) AIMAG(q(NH,k))
-                     WRITE(45,REC=I3DGVRec+3) WZ(NH,k)
+                     WRITE(AMPI_LUN(45),REC=I3DGVRec+1) REAL(q(NH,k))
+                     WRITE(AMPI_LUN(45),REC=I3DGVRec+2) AIMAG(q(NH,k))
+                     WRITE(AMPI_LUN(45),REC=I3DGVRec+3) WZ(NH,k)
                      I3DGVRec=I3DGVRec+3
                   END DO
                END DO
-               CLOSE(45)
+               CLOSE(AMPI_LUN(45))
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
@@ -4001,50 +4295,56 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
             SELECT CASE(ABS(I3DGT))
             CASE(1) ! ascii
                IF((MNPROC.EQ.1).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-                  OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46',
-     &              ACCESS='SEQUENTIAL',POSITION='APPEND')
-                  WRITE(46,1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
-     &                       k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                  OPEN(AMPI_LUN(46),FILE=TRIM(LOCALDIR)//'/'//'fort.46',
+     &             ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  call AMPI_LUN_REGISTER(AMPI_LUN(46),FILE=TRIM(LOCALDIR)//'/'//'fort.46',
+     &             ACCESS='SEQUENTIAL',POSITION='APPEND')
+                  WRITE(AMPI_LUN(46),1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &                      k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                   I3DGTRec=I3DGTRec+1
                   DO NH=1,NP
-                     WRITE(46,1104) NH,
-     &               (q20(NH,k),l(NH,k),EV(NH,k),k=1,NFEN)
+                     WRITE(AMPI_LUN(46),1104) NH,
+     &              (q20(NH,k),l(NH,k),EV(NH,k),k=1,NFEN)
                      I3DGTRec=I3DGTRec+1
                   ENDDO
-                  CLOSE(46)
+                  CLOSE(AMPI_LUN(46))
                ENDIF
                IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
                   IF (myProc.eq.0) THEN
-                     OPEN(46,FILE=TRIM(GLOBALDIR)//'/'//'fort.46',
-     &                  ACCESS='SEQUENTIAL',POSITION='APPEND')
-                     WRITE(46,1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
-     &                  k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                     OPEN(AMPI_LUN(46),FILE=TRIM(GLOBALDIR)//'/'//'fort.46',
+     &                 ACCESS='SEQUENTIAL',POSITION='APPEND')
+                     call AMPI_LUN_REGISTER(AMPI_LUN(46),FILE=TRIM(GLOBALDIR)//'/'//'fort.46',
+     &                 ACCESS='SEQUENTIAL',POSITION='APPEND')
+                     WRITE(AMPI_LUN(46),1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &                 k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                      I3DGTRec=I3DGTRec+1
                      DO NH=1,NP_G
-                        WRITE(46,1104) NH,
-     &                     (q20_g(NH,k),l_g(NH,k),EV_g(NH,k),k=1,NFEN)
+                        WRITE(AMPI_LUN(46),1104) NH,
+     &                    (q20_g(NH,k),l_g(NH,k),EV_g(NH,k),k=1,NFEN)
                         I3DGTRec=I3DGTRec+1
                      ENDDO
-                     CLOSE(46)
+                     CLOSE(AMPI_LUN(46))
                   ENDIF
                ENDIF
             CASE(2)
-               OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46',
-     &            ACCESS='DIRECT',RECL=NByte)
-               WRITE(46,REC=I3DGTRec+1) TimeLoc
-               WRITE(46,REC=I3DGTRec+2) IT
+               OPEN(AMPI_LUN(46),FILE=TRIM(LOCALDIR)//'/'//'fort.46',
+     &           ACCESS='DIRECT',RECL=NByte)
+               call AMPI_LUN_REGISTER(AMPI_LUN(46),FILE=TRIM(LOCALDIR)//'/'//'fort.46',
+     &           ACCESS='DIRECT',RECL=NByte)
+               WRITE(AMPI_LUN(46),REC=I3DGTRec+1) TimeLoc
+               WRITE(AMPI_LUN(46),REC=I3DGTRec+2) IT
                I3DGTRec=I3DGTRec+2
                DO NH=1,NP
-                  WRITE(46,REC=I3DGTRec+1) NH
+                  WRITE(AMPI_LUN(46),REC=I3DGTRec+1) NH
                   I3DGTRec=I3DGTRec+1
                   DO k=1,NFEN
-                     WRITE(46,REC=I3DGTRec+1) q20(NH,k)
-                     WRITE(46,REC=I3DGTRec+2) l(NH,k)
-                     WRITE(46,REC=I3DGTRec+3) EV(NH,k)
+                     WRITE(AMPI_LUN(46),REC=I3DGTRec+1) q20(NH,k)
+                     WRITE(AMPI_LUN(46),REC=I3DGTRec+2) l(NH,k)
+                     WRITE(AMPI_LUN(46),REC=I3DGTRec+3) EV(NH,k)
                      I3DGTREC=I3DGTREC+3
                   ENDDO
                ENDDO
-               CLOSE(46)
+               CLOSE(AMPI_LUN(46))
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
@@ -4242,50 +4542,54 @@ C     write data in ascii text only (other output formats are not supported)
      &        (.not.WRITE_LOCAL_FILES)) THEN
             CALL OPEN_MINMAX_FILE(lun, descript%file_name,
      &                             NP_G, NP, nrecs_this,HEADER_MAX)
-            OPEN(lun,FILE=TRIM(descript%file_name),
-     &           ACCESS='SEQUENTIAL',POSITION='APPEND')
-            WRITE(lun,2120) TimeLoc,IT
+            OPEN(AMPI_LUN(lun),FILE=TRIM(descript%file_name),
+     &          ACCESS='SEQUENTIAL',POSITION='APPEND')
+            call AMPI_LUN_REGISTER(AMPI_LUN(lun),FILE=TRIM(descript%file_name),
+     &          ACCESS='SEQUENTIAL',POSITION='APPEND')
+            WRITE(AMPI_LUN(lun),2120) TimeLoc,IT
             DO I=1, descript % num_fd_records
                if ( descript % isInteger .eqv. .true. ) then
-                  write(descript % lun,2452) labels_g(I), descript % iarray_g(I)
+                  write(AMPI_LUN(descript % lun),2452) labels_g(I), descript % iarray_g(I)
                else
-                  write(lun,2453) labels_g(I), descript % array_g(I)
+                  write(AMPI_LUN(lun),2453) labels_g(I), descript % array_g(I)
                endif
             ENDDO
 
             !tcm v51.20.01 additions for time stamp output
             if (descript%minmax_timestamp) then
-               WRITE(lun,2120) TimeLoc,IT
+               WRITE(AMPI_LUN(lun),2120) TimeLoc,IT
                DO I=1, descript % num_fd_records
-                  WRITE(lun,2453) labels_g(I), descript % array2_g(I)
+                  WRITE(AMPI_LUN(lun),2453) labels_g(I), descript % array2_g(I)
                ENDDO
             endif
 
-            CLOSE(lun)
+            CLOSE(AMPI_LUN(lun))
          ENDIF
 
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
             CALL OPEN_MINMAX_FILE(lun, descript%file_name, NP_G, NP,
      &           nrecs_this, HEADER_MAX)
-            OPEN(lun,FILE=TRIM(descript%file_name),
-     &           ACCESS='SEQUENTIAL',POSITION='APPEND')
-            WRITE(lun,2120) TimeLoc,IT
+            OPEN(AMPI_LUN(lun),FILE=TRIM(descript%file_name),
+     &          ACCESS='SEQUENTIAL',POSITION='APPEND')
+            call AMPI_LUN_REGISTER(AMPI_LUN(lun),FILE=TRIM(descript%file_name),
+     &          ACCESS='SEQUENTIAL',POSITION='APPEND')
+            WRITE(AMPI_LUN(lun),2120) TimeLoc,IT
             DO I=1, descript % num_records_this
                if ( descript % isInteger .eqv. .true. ) then
-                  write(descript % lun,2452) labels(I), descript % iarray(I)
+                  write(AMPI_LUN(descript % lun),2452) labels(I), descript % iarray(I)
                else
-                  write(lun,2453) labels(I), descript % array(I)
+                  write(AMPI_LUN(lun),2453) labels(I), descript % array(I)
                endif
             ENDDO
             !tcm v51.20.01 additions for time stamp output
             if (descript%minmax_timestamp) then
-               WRITE(lun,2120) TimeLoc,IT
+               WRITE(AMPI_LUN(lun),2120) TimeLoc,IT
                DO I=1, descript % num_records_this
-                  WRITE(lun,2453) labels(I), descript % array2(I)
+                  WRITE(AMPI_LUN(lun),2453) labels(I), descript % array2(I)
                ENDDO
             endif
 
-            close(lun)  !tcm v51.20.01 added close
+            close(AMPI_LUN(lun))  !tcm v51.20.01 added close
          ENDIF
 Casey 120830: Reversed the next two lines.
       CASE(NETCDF3,NETCDF4) !netcdf (portable)
@@ -4717,124 +5021,126 @@ C        program to exit immediately after writing the hotstart file.
                WRITE(itstr,'(I9.9)') IT
                hss % filename(9:17) = itstr
             ENDIF
-            OPEN(hss % lun ,FILE=TRIM(LOCALDIR)//'/'//trim(hss % filename),
-     $      ACCESS='DIRECT',STATUS='REPLACE',RECL=8)
+            OPEN(AMPI_LUN(hss % lun ),FILE=TRIM(LOCALDIR)//'/'//trim(hss % filename),
+     $     ACCESS='DIRECT',STATUS='REPLACE',RECL=8)
+            call AMPI_LUN_REGISTER(AMPI_LUN(hss % lun ),FILE=TRIM(LOCALDIR)//'/'//trim(hss % filename),
+     $     ACCESS='DIRECT',STATUS='REPLACE',RECL=8)
             IHOTSTP=1
-            WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) FileFmtVersion
             IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) TimeLoc ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IT   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) TimeLoc ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) IT   ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
          ENDIF
          IF ((MNPROC.gt.1).and.(MYPROC.eq.0).and.
      &         (WRITE_LOCAL_HOT_START_FILES.eqv..FALSE.)) THEN
             DO I=1, Elev1Descript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) Elev1Descript % array_g(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) Elev1Descript % array_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, Elev2Descript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) Elev2Descript % array_g(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) Elev2Descript % array_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, EtaDiscDescript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) EtaDiscDescript % array_g(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) EtaDiscDescript % array_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, HotstartVelDescript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) HotstartVelDescript % array_g(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) HotstartVelDescript % array_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, HotstartVelDescript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) HotstartVelDescript % array2_g(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) HotstartVelDescript % array2_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             IF (IM.eq.10) THEN
                DO I=1, CH1Descript % num_fd_records
-                  WRITE(hss % lun,REC=IHOTSTP) CH1Descript % array_g(I)
+                  WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) CH1Descript % array_g(I)
                   IHOTSTP=IHOTSTP+1
                ENDDO
             ENDIF
             DO I=1, NodeCodeDescript % num_fd_records
-              WRITE(hss % lun,REC=IHOTSTP)NodeCodeDescript % iarray_g(I)
+              WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)NodeCodeDescript % iarray_g(I)
               IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, NOFFDescript % num_fd_records
-               WRITE(hss % lun,REC=IHOTSTP) NOFFDescript % iarray_g(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NOFFDescript % iarray_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
          ENDIF
          IF ((MNPROC.eq.1).or.
      &      (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN
             DO I=1, Elev1Descript % num_records_this
-               WRITE(hss % lun,REC=IHOTSTP) Elev1Descript % array(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) Elev1Descript % array(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, Elev2Descript % num_records_this
-               WRITE(hss % lun,REC=IHOTSTP) Elev2Descript % array(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) Elev2Descript % array(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, EtaDiscDescript % num_records_this
-               WRITE(hss % lun,REC=IHOTSTP) EtaDiscDescript % array(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) EtaDiscDescript % array(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, HotstartVelDescript % num_records_this
-               WRITE(hss % lun,REC=IHOTSTP) HotstartVelDescript % array(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) HotstartVelDescript % array(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
            DO I=1, HotstartVelDescript % num_records_this
-               WRITE(hss % lun,REC=IHOTSTP) HotstartVelDescript % array2(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) HotstartVelDescript % array2(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             IF (IM.eq.10) THEN
                DO I=1, CH1Descript % num_records_this
-                  WRITE(hss % lun,REC=IHOTSTP) CH1Descript % array(I)
+                  WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) CH1Descript % array(I)
                   IHOTSTP=IHOTSTP+1
                ENDDO
             ENDIF
             DO I=1, NodeCodeDescript % num_records_this
-               WRITE(hss % lun,REC=IHOTSTP) NodeCodeDescript % iarray(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NodeCodeDescript % iarray(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1, NOFFDescript % num_records_this
-               WRITE(hss % lun,REC=IHOTSTP) NOFFDescript % iarray(I)
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NOFFDescript % iarray(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
          ENDIF
 C
          IF ((MYPROC.eq.0).or.
      &            (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN
-            WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) ICSTP   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) ICSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IPSTP   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IWSTP   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) IPSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) IWSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGEP    ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) IGEP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGVP    ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) IGVP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGCP    ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) IGCP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
 !         if(ncice.ne.0) then
 !           WRITE(hss % lun,REC=IHOTSTP) IGIP    ; IHOTSTP = IHOTSTP + 1
 !         endif
 !         igip is in sync. with igpp so no need to store it
-            WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
+            WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
          ENDIF
 C...
 C...  ADD IN 3D STUFF IF APPROPRIATE
@@ -4860,35 +5166,35 @@ C...
             ! In parallel, with subdomain hotstart files, all processors
             ! will write these data to subdomain hotstart files.
             IF ((MyPROC.eq.0).or.(WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-               WRITE(hss % lun,REC=IHOTSTP) ICHA
-               WRITE(hss % lun,REC=IHOTSTP+1) NZ
-               WRITE(hss % lun,REC=IHOTSTP+2) NF
-               WRITE(hss % lun,REC=IHOTSTP+3) MM
-               WRITE(hss % lun,REC=IHOTSTP+4) NPX
-               WRITE(hss % lun,REC=IHOTSTP+5) NSTAEX
-               WRITE(hss % lun,REC=IHOTSTP+6) NSTAVX
-               WRITE(hss % lun,REC=IHOTSTP+7) NHASE
-               WRITE(hss % lun,REC=IHOTSTP+8) NHASV
-               WRITE(hss % lun,REC=IHOTSTP+9) NHAGE
-               WRITE(hss % lun,REC=IHOTSTP+10) NHAGV
-               WRITE(hss % lun,REC=IHOTSTP+11) ICALL
-               WRITE(hss % lun,REC=IHOTSTP+12) NFREQ
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) ICHA
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+1) NZ
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+2) NF
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+3) MM
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+4) NPX
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+5) NSTAEX
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+6) NSTAVX
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+7) NHASE
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+8) NHASV
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+9) NHAGE
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+10) NHAGV
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+11) ICALL
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+12) NFREQ
                IHOTSTP = IHOTSTP+12
 C
                do i=1,nfreq+nf
                   FNAME=NAMEFR(I)
-                  WRITE(hss % lun,REC=IHOTSTP+1) FNAM8(1)
-                  WRITE(hss % lun,REC=IHOTSTP+2) FNAM8(2)
+                  WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+1) FNAM8(1)
+                  WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+2) FNAM8(2)
                   IHOTSTP = IHOTSTP + 2
-                  WRITE(hss % lun,REC=IHOTSTP+1) HAFREQ(i)
-                  WRITE(hss % lun,REC=IHOTSTP+2) HAFF(i)
-                  WRITE(hss % lun,REC=IHOTSTP+3) HAFACE(i)
+                  WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+1) HAFREQ(i)
+                  WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+2) HAFF(i)
+                  WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+3) HAFACE(i)
                   IHOTSTP=IHOTSTP+3
                end do
 C
 C              Write Out time of most recent H.A. update
-               WRITE(hss % lun,REC=IHOTSTP+1) TIMEUD
-               WRITE(hss % lun,REC=IHOTSTP+2) ITUD
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+1) TIMEUD
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP+2) ITUD
                IHOTSTP=IHOTSTP+2
 c
 c              Write Out LHS Matrix
@@ -4896,7 +5202,7 @@ c
                IHOTSTP=IHOTSTP+1
                do i=1,mm
                   do j=1,mm
-                     WRITE(hss % lun,REC=IHOTSTP) HA(I,J)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) HA(I,J)
                      IHOTSTP = IHOTSTP + 1
                   END DO
                END DO
@@ -4910,7 +5216,7 @@ c
                IF(NHASE.ne.0) THEN
                   do n=1,NSTAE
                      do i=1,mm
-                        WRITE(hss % lun,REC=IHOTSTP) STAELV(I,N)
+                        WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) STAELV(I,N)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
@@ -4918,9 +5224,9 @@ c
                IF(NHASV.ne.0) THEN
                   do N=1,NSTAV
                      do i=1,mm
-                        WRITE(hss % lun,REC=IHOTSTP) STAULV(I,N)
+                        WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) STAULV(I,N)
                         IHOTSTP=IHOTSTP+1
-                        WRITE(hss % lun,REC=IHOTSTP) STAVLV(I,N)
+                        WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) STAVLV(I,N)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
@@ -4928,7 +5234,7 @@ c
                IF(NHAGE.ne.0) THEN
                   do n=1,np
                      do i=1,mm
-                        WRITE(hss % lun,REC=IHOTSTP) GLOELV(I,N)
+                        WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) GLOELV(I,N)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
@@ -4936,9 +5242,9 @@ c
                IF(NHAGV.ne.0) THEN
                   do n=1,np
                      do i=1,mm
-                        WRITE(hss % lun,REC=IHOTSTP) GLOULV(I,N)
+                        WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) GLOULV(I,N)
                         IHOTSTP=IHOTSTP+1
-                        WRITE(hss % lun,REC=IHOTSTP) GLOVLV(I,N)
+                        WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) GLOVLV(I,N)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
@@ -4954,8 +5260,8 @@ c
                IF(NHASE.ne.0) THEN
                   do n=1,NSTAE_G
                      do i=1,mm
-                        WRITE(hss % lun,REC=IHOTSTP)
-     &                        HarmElevSLVDescript % array2D_g(i,n)
+                        WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)
+     &                       HarmElevSLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
@@ -4963,11 +5269,11 @@ c
                IF(NHASV.ne.0) THEN
                   do N=1,NSTAV_G
                      do i=1,mm
-                        WRITE(hss % lun,REC=IHOTSTP)
-     &                           HarmUVelSLVDescript % array2D_g(i,n)
+                        WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)
+     &                          HarmUVelSLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
-                        WRITE(hss % lun,REC=IHOTSTP)
-     &                           HarmVVelSLVDescript % array2D_g(i,n)
+                        WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)
+     &                          HarmVVelSLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
@@ -4975,8 +5281,8 @@ c
                IF(NHAGE.ne.0) THEN
                   do n=1,np_g
                      do i=1,mm
-                        WRITE(hss % lun,REC=IHOTSTP)
-     &                        HarmElevFDLVDescript % array2D_g(i,n)
+                        WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)
+     &                       HarmElevFDLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
@@ -4984,11 +5290,11 @@ c
                IF(NHAGV.ne.0) THEN
                   do n=1,np_g
                      do i=1,mm
-                        WRITE(hss % lun,REC=IHOTSTP)
-     &                       HarmUVelFDLVDescript % array2D_g(i,n)
+                        WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)
+     &                      HarmUVelFDLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
-                        WRITE(hss % lun,REC=IHOTSTP)
-     &                       HarmVVelFDLVDescript % array2D_g(i,n)
+                        WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)
+     &                      HarmVVelFDLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
@@ -4999,25 +5305,25 @@ C
          if ((CHARMV.eqv..true.).and.(IHARIND.eq.1).and.(IT.gt.ITMV)) then
             if ( (MNPROC.eq.1).or.
      &           (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) then
-               WRITE(hss % lun,REC=IHOTSTP) NTSTEPS
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NTSTEPS
                IHOTSTP=IHOTSTP+1
                IF(NHAGE.ne.0) THEN
                   DO I=1,NP
-                     WRITE(hss % lun,REC=IHOTSTP) ELAV(I)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) ELAV(I)
                      IHOTSTP = IHOTSTP + 1
-                     WRITE(hss % lun,REC=IHOTSTP) ELVA(I)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) ELVA(I)
                      IHOTSTP = IHOTSTP + 1
                   END DO
                ENDIF
                IF(NHAGV.ne.0) THEN
                   DO I=1,NP
-                     WRITE(hss % lun,REC=IHOTSTP) XVELAV(I)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) XVELAV(I)
                      IHOTSTP=IHOTSTP+1
-                     WRITE(hss % lun,REC=IHOTSTP) YVELAV(I)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) YVELAV(I)
                      IHOTSTP=IHOTSTP+1
-                     WRITE(hss % lun,REC=IHOTSTP) XVELVA(I)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) XVELVA(I)
                      IHOTSTP=IHOTSTP+1
-                     WRITE(hss % lun,REC=IHOTSTP) YVELVA(I)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) YVELVA(I)
                      IHOTSTP=IHOTSTP+1
                   END DO
                ENDIF
@@ -5026,31 +5332,31 @@ C
             IF ((MNPROC.gt.1).and.
      &           (write_local_hot_start_files.eqv..false.).and.
      &           (MYPROC.eq.0)) then
-               WRITE(hss % lun,REC=IHOTSTP) NTSTEPS
+               WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP) NTSTEPS
                IHOTSTP=IHOTSTP+1
                IF(NHAGE.ne.0) THEN
                   DO I=1,NP_G
-                     WRITE(hss % lun,REC=IHOTSTP)
-     &                  ELAVDescript % array_g(i)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)
+     &                 ELAVDescript % array_g(i)
                      IHOTSTP = IHOTSTP + 1
-                     WRITE(hss % lun,REC=IHOTSTP)
-     &                  ELVADescript % array_g(i)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)
+     &                 ELVADescript % array_g(i)
                      IHOTSTP = IHOTSTP + 1
                   END DO
                ENDIF
                IF(NHAGV.ne.0) THEN
                   DO I=1,NP_G
-                     WRITE(hss % lun,REC=IHOTSTP)
-     &                  XVELAVDescript % array_g(i)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)
+     &                 XVELAVDescript % array_g(i)
                      IHOTSTP=IHOTSTP+1
-                     WRITE(hss % lun,REC=IHOTSTP)
-     &                  YVELAVDescript % array_g(i)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)
+     &                 YVELAVDescript % array_g(i)
                      IHOTSTP=IHOTSTP+1
-                     WRITE(hss % lun,REC=IHOTSTP)
-     &                  XVELVADescript % array_g(i)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)
+     &                 XVELVADescript % array_g(i)
                      IHOTSTP=IHOTSTP+1
-                     WRITE(hss % lun,REC=IHOTSTP)
-     &                  YVELVADescript % array_g(i)
+                     WRITE(AMPI_LUN(hss % lun),REC=IHOTSTP)
+     &                 YVELVADescript % array_g(i)
                      IHOTSTP=IHOTSTP+1
                   END DO
                ENDIF
@@ -5059,7 +5365,7 @@ C
 C
          IF ((MYPROC.eq.0).or.
      &         (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN
-            CLOSE(hss%lun)
+            CLOSE(AMPI_LUN(hss%lun))
          ENDIF
 
       CASE(2,267,268) ! ascii hotstart file, only used for debugging
@@ -5068,131 +5374,135 @@ C        jgf49.35 write both subdomain and fulldomain hotstart files,
 C        just to have them, since this is just for debugging purposes
 C        (i.e., to check the values written to hotstart files in other
 C        formats) anyway.
-         OPEN(hss%lun,FILE=TRIM(INPUTDIR)//'/'//trim(hss % filename),
-     &      STATUS='REPLACE')
-         WRITE(hss%lun,*) "FileFmtVersion = ",FileFmtVersion
-         WRITE(hss%lun,*) "IM = ",IM
-         WRITE(hss%lun,*) "TIME = ",TimeLoc
-         WRITE(hss%lun,*) "IT = ",IT
-         WRITE(hss%lun,*) "NP = ",NP
-         WRITE(hss%lun,*) "NE = ",NE
-         WRITE(hss%lun,*) "Elev1:"
+         OPEN(AMPI_LUN(hss%lun),FILE=TRIM(INPUTDIR)//'/'//trim(hss % filename),
+     &     STATUS='REPLACE')
+         call AMPI_LUN_REGISTER(AMPI_LUN(hss%lun),FILE=TRIM(INPUTDIR)//'/'//trim(hss % filename),
+     &     STATUS='REPLACE')
+         WRITE(AMPI_LUN(hss%lun),*) "FileFmtVersion = ",FileFmtVersion
+         WRITE(AMPI_LUN(hss%lun),*) "IM = ",IM
+         WRITE(AMPI_LUN(hss%lun),*) "TIME = ",TimeLoc
+         WRITE(AMPI_LUN(hss%lun),*) "IT = ",IT
+         WRITE(AMPI_LUN(hss%lun),*) "NP = ",NP
+         WRITE(AMPI_LUN(hss%lun),*) "NE = ",NE
+         WRITE(AMPI_LUN(hss%lun),*) "Elev1:"
          DO I=1, Elev1Descript % num_records_this
-            WRITE(hss%lun,*) i," ",Elev1Descript % array(I)
+            WRITE(AMPI_LUN(hss%lun),*) i," ",Elev1Descript % array(I)
          ENDDO
-         WRITE(hss%lun,*) "Elev2:"
+         WRITE(AMPI_LUN(hss%lun),*) "Elev2:"
          DO I=1, Elev2Descript % num_records_this
-            WRITE(hss%lun,*) i," ",Elev2Descript % array(I)
+            WRITE(AMPI_LUN(hss%lun),*) i," ",Elev2Descript % array(I)
          ENDDO
-         WRITE(hss%lun,*) "EtaDisc:"
+         WRITE(AMPI_LUN(hss%lun),*) "EtaDisc:"
          DO I=1, EtaDiscDescript % num_records_this
-            WRITE(hss%lun,*) i," ",EtaDiscDescript % array(I)
+            WRITE(AMPI_LUN(hss%lun),*) i," ",EtaDiscDescript % array(I)
          ENDDO
-         WRITE(hss%lun,*) "VelU:"
+         WRITE(AMPI_LUN(hss%lun),*) "VelU:"
          DO I=1, HotstartVelDescript % num_records_this
-            WRITE(hss%lun,*) i," ",HotstartVelDescript % array(I)
+            WRITE(AMPI_LUN(hss%lun),*) i," ",HotstartVelDescript % array(I)
          ENDDO
-         WRITE(hss%lun,*) "VelV:"
+         WRITE(AMPI_LUN(hss%lun),*) "VelV:"
          DO I=1, HotstartVelDescript % num_records_this
-            WRITE(hss%lun,*) i," ",HotstartVelDescript % array2(I)
+            WRITE(AMPI_LUN(hss%lun),*) i," ",HotstartVelDescript % array2(I)
          ENDDO
          IF (IM.eq.10) THEN
-            WRITE(hss%lun,*) "CH1:"
+            WRITE(AMPI_LUN(hss%lun),*) "CH1:"
             DO I=1, CH1Descript % num_records_this
-               WRITE(hss%lun,*) i," ",CH1Descript % array(I)
+               WRITE(AMPI_LUN(hss%lun),*) i," ",CH1Descript % array(I)
             ENDDO
          ENDIF
-         WRITE(hss%lun,*) "NodeCode:"
+         WRITE(AMPI_LUN(hss%lun),*) "NodeCode:"
          DO I=1, NodeCodeDescript % num_records_this
-            WRITE(hss%lun,*) i," ",NodeCodeDescript % iarray(I)
+            WRITE(AMPI_LUN(hss%lun),*) i," ",NodeCodeDescript % iarray(I)
          ENDDO
-         WRITE(hss%lun,*) "NOFF:"
+         WRITE(AMPI_LUN(hss%lun),*) "NOFF:"
          DO I=1, NOFFDescript % num_records_this
-            WRITE(hss%lun,*) i," ",NOFFDescript % iarray(I)
+            WRITE(AMPI_LUN(hss%lun),*) i," ",NOFFDescript % iarray(I)
          ENDDO
-         WRITE(hss%lun,*) "IESTP = ",IESTP
-         WRITE(hss%lun,*) "NSCOUE = ",NSCOUE
-         WRITE(hss%lun,*) "IVSTP = ",IVSTP
-         WRITE(hss%lun,*) "NSCOUV = ",NSCOUV
-         WRITE(hss%lun,*) "ICSTP = ",ICSTP
-         WRITE(hss%lun,*) "NSCOUC = ",NSCOUC
-         WRITE(hss%lun,*) "IPSTP = ",IPSTP
-         WRITE(hss%lun,*) "IWSTP = ",IWSTP
-         WRITE(hss%lun,*) "NSCOUM = ",NSCOUM
-         WRITE(hss%lun,*) "IGEP = ",IGEP
-         WRITE(hss%lun,*) "NSCOUGE = ",NSCOUGE
-         WRITE(hss%lun,*) "IGVP = ",IGVP
-         WRITE(hss%lun,*) "NSCOUGV = ",NSCOUGV
-         WRITE(hss%lun,*) "IGCP = ",IGCP
-         WRITE(hss%lun,*) "NSCOUGC = ",NSCOUGC
-         WRITE(hss%lun,*) "IGPP = ",IGPP
-         WRITE(hss%lun,*) "IGWP = ",IGWP
-         WRITE(hss%lun,*) "NSCOUGW = ",NSCOUGW
-         CLOSE(hss%lun)
+         WRITE(AMPI_LUN(hss%lun),*) "IESTP = ",IESTP
+         WRITE(AMPI_LUN(hss%lun),*) "NSCOUE = ",NSCOUE
+         WRITE(AMPI_LUN(hss%lun),*) "IVSTP = ",IVSTP
+         WRITE(AMPI_LUN(hss%lun),*) "NSCOUV = ",NSCOUV
+         WRITE(AMPI_LUN(hss%lun),*) "ICSTP = ",ICSTP
+         WRITE(AMPI_LUN(hss%lun),*) "NSCOUC = ",NSCOUC
+         WRITE(AMPI_LUN(hss%lun),*) "IPSTP = ",IPSTP
+         WRITE(AMPI_LUN(hss%lun),*) "IWSTP = ",IWSTP
+         WRITE(AMPI_LUN(hss%lun),*) "NSCOUM = ",NSCOUM
+         WRITE(AMPI_LUN(hss%lun),*) "IGEP = ",IGEP
+         WRITE(AMPI_LUN(hss%lun),*) "NSCOUGE = ",NSCOUGE
+         WRITE(AMPI_LUN(hss%lun),*) "IGVP = ",IGVP
+         WRITE(AMPI_LUN(hss%lun),*) "NSCOUGV = ",NSCOUGV
+         WRITE(AMPI_LUN(hss%lun),*) "IGCP = ",IGCP
+         WRITE(AMPI_LUN(hss%lun),*) "NSCOUGC = ",NSCOUGC
+         WRITE(AMPI_LUN(hss%lun),*) "IGPP = ",IGPP
+         WRITE(AMPI_LUN(hss%lun),*) "IGWP = ",IGWP
+         WRITE(AMPI_LUN(hss%lun),*) "NSCOUGW = ",NSCOUGW
+         CLOSE(AMPI_LUN(hss%lun))
 C
 C
          IF ((MNPROC.gt.1).and.(MYPROC.eq.0)) THEN
-            OPEN(hss%lun,FILE=TRIM(GBLINPUTDIR)//'/'//trim(hss % filename),
-     &         STATUS='REPLACE')
-            WRITE(hss%lun,*) "FileFmtVersion = ",FileFmtVersion
-            WRITE(hss%lun,*) "IM = ",IM
-            WRITE(hss%lun,*) "TIME = ",TimeLoc
-            WRITE(hss%lun,*) "IT = ",IT
-            WRITE(hss%lun,*) "NP = ",NP_G
-            WRITE(hss%lun,*) "NE = ",NE_G
-            WRITE(hss%lun,*) "Elev1:"
+            OPEN(AMPI_LUN(hss%lun),FILE=TRIM(GBLINPUTDIR)//'/'//trim(hss % filename),
+     &        STATUS='REPLACE')
+            call AMPI_LUN_REGISTER(AMPI_LUN(hss%lun),FILE=TRIM(GBLINPUTDIR)//'/'//trim(hss % filename),
+     &        STATUS='REPLACE')
+            WRITE(AMPI_LUN(hss%lun),*) "FileFmtVersion = ",FileFmtVersion
+            WRITE(AMPI_LUN(hss%lun),*) "IM = ",IM
+            WRITE(AMPI_LUN(hss%lun),*) "TIME = ",TimeLoc
+            WRITE(AMPI_LUN(hss%lun),*) "IT = ",IT
+            WRITE(AMPI_LUN(hss%lun),*) "NP = ",NP_G
+            WRITE(AMPI_LUN(hss%lun),*) "NE = ",NE_G
+            WRITE(AMPI_LUN(hss%lun),*) "Elev1:"
             DO I=1, Elev1Descript % num_fd_records
-               WRITE(hss%lun,*) i," ",Elev1Descript % array_g(I)
+               WRITE(AMPI_LUN(hss%lun),*) i," ",Elev1Descript % array_g(I)
             ENDDO
-            WRITE(hss%lun,*) "Elev2:"
+            WRITE(AMPI_LUN(hss%lun),*) "Elev2:"
             DO I=1, Elev2Descript % num_fd_records
-               WRITE(hss%lun,*) i," ",Elev2Descript % array_g(I)
+               WRITE(AMPI_LUN(hss%lun),*) i," ",Elev2Descript % array_g(I)
             ENDDO
-            WRITE(hss%lun,*) "EtaDisc:"
+            WRITE(AMPI_LUN(hss%lun),*) "EtaDisc:"
             DO I=1, EtaDiscDescript % num_fd_records
-               WRITE(hss%lun,*) i," ",EtaDiscDescript % array_g(I)
+               WRITE(AMPI_LUN(hss%lun),*) i," ",EtaDiscDescript % array_g(I)
             ENDDO
-            WRITE(hss%lun,*) "VelU:"
+            WRITE(AMPI_LUN(hss%lun),*) "VelU:"
             DO I=1, HotstartVelDescript % num_fd_records
-               WRITE(hss%lun,*) i," ",HotstartVelDescript % array_g(I)
+               WRITE(AMPI_LUN(hss%lun),*) i," ",HotstartVelDescript % array_g(I)
             ENDDO
-            WRITE(hss%lun,*) "VelV:"
+            WRITE(AMPI_LUN(hss%lun),*) "VelV:"
             DO I=1, HotstartVelDescript % num_fd_records
-               WRITE(hss%lun,*) i," ",HotstartVelDescript % array2_g(I)
+               WRITE(AMPI_LUN(hss%lun),*) i," ",HotstartVelDescript % array2_g(I)
             ENDDO
             IF (IM.eq.10) THEN
-               WRITE(hss%lun,*) "CH1:"
+               WRITE(AMPI_LUN(hss%lun),*) "CH1:"
                DO I=1, CH1Descript % num_fd_records
-                  WRITE(hss%lun,*) i," ",CH1Descript % array_g(I)
+                  WRITE(AMPI_LUN(hss%lun),*) i," ",CH1Descript % array_g(I)
                ENDDO
             ENDIF
-            WRITE(hss%lun,*) "NodeCode:"
+            WRITE(AMPI_LUN(hss%lun),*) "NodeCode:"
             DO I=1, NodeCodeDescript % num_fd_records
-               WRITE(hss%lun,*) i," ",NodeCodeDescript % iarray_g(I)
+               WRITE(AMPI_LUN(hss%lun),*) i," ",NodeCodeDescript % iarray_g(I)
             ENDDO
-            WRITE(hss%lun,*) "NOFF:"
+            WRITE(AMPI_LUN(hss%lun),*) "NOFF:"
             DO I=1, NOFFDescript % num_fd_records
-               WRITE(hss%lun,*) i," ",NOFFDescript % iarray_g(I)
+               WRITE(AMPI_LUN(hss%lun),*) i," ",NOFFDescript % iarray_g(I)
             ENDDO
-            WRITE(hss%lun,*) "IESTP = ",IESTP
-            WRITE(hss%lun,*) "NSCOUE = ",NSCOUE
-            WRITE(hss%lun,*) "IVSTP = ",IVSTP
-            WRITE(hss%lun,*) "NSCOUV = ",NSCOUV
-            WRITE(hss%lun,*) "ICSTP = ",ICSTP
-            WRITE(hss%lun,*) "NSCOUC = ",NSCOUC
-            WRITE(hss%lun,*) "IPSTP = ",IPSTP
-            WRITE(hss%lun,*) "IWSTP = ",IWSTP
-            WRITE(hss%lun,*) "NSCOUM = ",NSCOUM
-            WRITE(hss%lun,*) "IGEP = ",IGEP
-            WRITE(hss%lun,*) "NSCOUGE = ",NSCOUGE
-            WRITE(hss%lun,*) "IGVP = ",IGVP
-            WRITE(hss%lun,*) "NSCOUGV = ",NSCOUGV
-            WRITE(hss%lun,*) "IGCP = ",IGCP
-            WRITE(hss%lun,*) "NSCOUGC = ",NSCOUGC
-            WRITE(hss%lun,*) "IGPP = ",IGPP
-            WRITE(hss%lun,*) "IGWP = ",IGWP
-            WRITE(hss%lun,*) "NSCOUGW = ",NSCOUGW
-            CLOSE(hss%lun)
+            WRITE(AMPI_LUN(hss%lun),*) "IESTP = ",IESTP
+            WRITE(AMPI_LUN(hss%lun),*) "NSCOUE = ",NSCOUE
+            WRITE(AMPI_LUN(hss%lun),*) "IVSTP = ",IVSTP
+            WRITE(AMPI_LUN(hss%lun),*) "NSCOUV = ",NSCOUV
+            WRITE(AMPI_LUN(hss%lun),*) "ICSTP = ",ICSTP
+            WRITE(AMPI_LUN(hss%lun),*) "NSCOUC = ",NSCOUC
+            WRITE(AMPI_LUN(hss%lun),*) "IPSTP = ",IPSTP
+            WRITE(AMPI_LUN(hss%lun),*) "IWSTP = ",IWSTP
+            WRITE(AMPI_LUN(hss%lun),*) "NSCOUM = ",NSCOUM
+            WRITE(AMPI_LUN(hss%lun),*) "IGEP = ",IGEP
+            WRITE(AMPI_LUN(hss%lun),*) "NSCOUGE = ",NSCOUGE
+            WRITE(AMPI_LUN(hss%lun),*) "IGVP = ",IGVP
+            WRITE(AMPI_LUN(hss%lun),*) "NSCOUGV = ",NSCOUGV
+            WRITE(AMPI_LUN(hss%lun),*) "IGCP = ",IGCP
+            WRITE(AMPI_LUN(hss%lun),*) "NSCOUGC = ",NSCOUGC
+            WRITE(AMPI_LUN(hss%lun),*) "IGPP = ",IGPP
+            WRITE(AMPI_LUN(hss%lun),*) "IGWP = ",IGWP
+            WRITE(AMPI_LUN(hss%lun),*) "NSCOUGW = ",NSCOUGW
+            CLOSE(AMPI_LUN(hss%lun))
          ENDIF
 C
 C        TODO: 3D data in ascii
@@ -5223,9 +5533,9 @@ C
 #endif
 
       CASE DEFAULT
-         write(ScreenUnit,*) 'The value of NHSTAR=',NHSTAR
-         write(ScreenUnit,*) 'is not supported.'
-         write(ScreenUnit,*) 'Hotstart file not written.'
+         write(AMPI_LUN(ScreenUnit),*) 'The value of NHSTAR=',NHSTAR
+         write(AMPI_LUN(ScreenUnit),*) 'is not supported.'
+         write(AMPI_LUN(ScreenUnit),*) 'Hotstart file not written.'
 
       END SELECT
 
@@ -5326,10 +5636,11 @@ C     Open the file and write the header on the first warning. Format
 C     the actual header data to make it look more or less like a fort.63
 C     file.
       IF (WarnElevDumpCounter.eq.0) THEN
-         OPEN(69,FILE=TRIM(LOCALDIR)//'/'//'fort.69')
-         WRITE(69,'(A80)') TRIM(RUNDES)
-         WRITE(69,6000) WarnElevDumpLimit,NP,DTDP*1.d0,1,1
-         CLOSE(69)
+         OPEN(AMPI_LUN(69),FILE=TRIM(LOCALDIR)//'/'//'fort.69')
+         call AMPI_LUN_REGISTER(AMPI_LUN(69),FILE=TRIM(LOCALDIR)//'/'//'fort.69')
+         WRITE(AMPI_LUN(69),'(A80)') TRIM(RUNDES)
+         WRITE(AMPI_LUN(69),6000) WarnElevDumpLimit,NP,DTDP*1.d0,1,1
+         CLOSE(AMPI_LUN(69))
 #ifdef CMPI
          !jgf49.0601: if running in parallel, also initialize a fulldomain file
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
@@ -5358,28 +5669,31 @@ C     file.
          DebugElevDescript % file_basename        = 'fort'
          DebugElevDescript % file_name            = 'fort.69'
 
-         OPEN(69,FILE=TRIM(GLOBALDIR)//'/'//'fort.69')
-         WRITE(69,'(A80)') TRIM(RUNDES)
-         WRITE(69,6000) WarnElevDumpLimit,NP_G,DTDP*1.d0,1,1
-         CLOSE(69)
+         OPEN(AMPI_LUN(69),FILE=TRIM(GLOBALDIR)//'/'//'fort.69')
+         call AMPI_LUN_REGISTER(AMPI_LUN(69),FILE=TRIM(GLOBALDIR)//'/'//'fort.69')
+         WRITE(AMPI_LUN(69),'(A80)') TRIM(RUNDES)
+         WRITE(AMPI_LUN(69),6000) WarnElevDumpLimit,NP_G,DTDP*1.d0,1,1
+         CLOSE(AMPI_LUN(69))
 #endif
       ENDIF
  6000 FORMAT(1x,I10,1x,I10,1x,1pE15.7E3,1x,I5,1x,I5)
 C
 C     Open the file and append the new elevation data.
-      OPEN(69,FILE=TRIM(LOCALDIR)//'/'//'fort.69',
-     &     ACCESS='SEQUENTIAL',POSITION='APPEND')
-      WRITE(69,2120) TimeLoc,IT
+      OPEN(AMPI_LUN(69),FILE=TRIM(LOCALDIR)//'/'//'fort.69',
+     &    ACCESS='SEQUENTIAL',POSITION='APPEND')
+      call AMPI_LUN_REGISTER(AMPI_LUN(69),FILE=TRIM(LOCALDIR)//'/'//'fort.69',
+     &    ACCESS='SEQUENTIAL',POSITION='APPEND')
+      WRITE(AMPI_LUN(69),2120) TimeLoc,IT
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
       DO I=1,NP
          IF(NODECODE(I).EQ.1)THEN
-            WRITE(69,2453) I,ETA2(I)
+            WRITE(AMPI_LUN(69),2453) I,ETA2(I)
          ELSE
-            WRITE(69,2453) I,-99999D0
+            WRITE(AMPI_LUN(69),2453) I,-99999D0
          ENDIF
  2453    FORMAT(2X,I8,2X,1pE20.10E3)
       ENDDO
-      CLOSE(69)
+      CLOSE(AMPI_LUN(69))
 
 #ifdef CMPI
       !jgf49.0601: if running in parallel, also append to fulldomain file
@@ -5390,8 +5704,8 @@ C
 C
 C     If we have exceeded the user's limit, terminate the run.
       IF (WarnElevDumpCounter.gt.WarnElevDumpLimit) THEN
-         WRITE(16,*) 'ERROR: WarnElevDumpLimit Exceeded.'
-         WRITE(ScreenUnit,5000) MyProc
+         WRITE(AMPI_LUN(16),*) 'ERROR: WarnElevDumpLimit Exceeded.'
+         WRITE(AMPI_LUN(ScreenUnit),5000) MyProc
  5000    FORMAT('ERROR: WarnElevDumpLimit Exceeded on MyPROC=',i4)
 #ifdef CMPI
          CALL MSG_FINI()

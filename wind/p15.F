@@ -56,28 +56,38 @@ C
 c***********************************************************************************
 
       MODULE P15EXTENTS
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       INTEGER NBIG
       INTEGER NE, NBR
       END MODULE P15EXTENTS
 
       MODULE P1
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE P15EXTENTS
       INTEGER ITOT
       REAL,ALLOCATABLE :: XXLAT(:),XXLON(:),XTIME(:),XXVEL(:),XXPRES(:)
       END MODULE P1
 
       MODULE C0
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       INTEGER  IMO,IDY,IYR,ISTART,NPTS
       REAL IHR1,TIMEINC
       END MODULE C0
 
       MODULE C1
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       INTEGER  NSNAP,NZ,NM,IB
       REAL AN1(600)
       REAL DX,DT,F,SGW,UC,VC,UG,VG,CS,ST12
       END MODULE C1
 
       MODULE C2
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       REAL,TARGET  :: AB(21,21,15),AC(21,7,21)                       
       REAL,TARGET  ::  JA(15)
       REAL,POINTER ::  ITRACK    ! Map of JA
@@ -91,16 +101,22 @@ c*******************************************************************************
       END MODULE C2
 
       MODULE C3
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       REAL  U(21,21,5),V(21,21,5),UN(21,21,5),VN(21,21,5)
       REAL  PX(21,21,5),PY(21,21,5),VTN(21,21,5),ANG(21,21,5)
       REAL  LW(21,21,5)
       END MODULE C3
 
       MODULE C4
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       REAL  CDR(100,2,2),UXV(100,2),TURN(100,2)    
       END MODULE C4
 
       MODULE C5
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       INTEGER K123,LS
       REAL HH,HL,K2,K35
       REAL FLAT,PTH,DTH(2),Z0LAND,VV(100),UX(3),UV(3)   
@@ -108,6 +124,8 @@ c*******************************************************************************
       END MODULE C5
 
       MODULE C6
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE P15EXTENTS
       REAL PFAR1
       REAL RADIUS1(600)
@@ -115,6 +133,8 @@ c*******************************************************************************
       END MODULE C6
 
       MODULE C8
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE P15EXTENTS
       INTEGER,ALLOCATABLE :: ILAD(:),ILAM(:),ILOD(:),ILOM(:)
       INTEGER,ALLOCATABLE :: ISNAP1(:),ISNAP2(:),IROT(:)
@@ -123,6 +143,8 @@ c*******************************************************************************
 
 
       MODULE D13
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       INTEGER LANSEA
       REAL LA0,LO0,LA1,LO1
       REAL ROT,DX,STHT,W1,TH1,D,AL
@@ -133,6 +155,8 @@ c*******************************************************************************
       END MODULE D13
 
       MODULE DJM
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       INTEGER NTIMES
       CHARACTER*4 SMF_NAM(100)
       REAL SMF_UN(21,21,5,100), SMF_VN(21,21,5,100)
@@ -143,6 +167,8 @@ c*******************************************************************************
       END MODULE DJM
 
       MODULE C57
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       INTEGER K123
       REAL PTH,DTH,HH,ZCOEFF(3,5),LAKE,VV(100),UX(3),UV(3)     
       REAL DUV(3),K35,K2,G,GA,DEN,VV2,HL,Z0,ZLOG,AM,BM,CM
@@ -150,6 +176,8 @@ c*******************************************************************************
       END MODULE C57
 
       MODULE P15GLOBAL
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE P15EXTENTS
       ! WAS BLANK COMMON
       REAL U99,V99,PRESS
@@ -159,6 +187,8 @@ c*******************************************************************************
       END MODULE P15GLOBAL
 
       MODULE IHOUR
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE P15EXTENTS
       INTEGER,ALLOCATABLE :: IHR(:)
       END MODULE IHOUR
@@ -189,9 +219,10 @@ c*******************************************************************************
       write(*,*) 'Enter the day of the month storm starts:  '
       read(*,*) idy
 
-      open(10,file=gridfile,STATUS='unknown')
-      READ(10,'(A)') TITLE
-      READ(10,*)  NE, NBR
+      open(AMPI_LUN(10),file=gridfile,STATUS='unknown')
+      call AMPI_LUN_REGISTER(AMPI_LUN(10),file=gridfile,STATUS='unknown')
+      READ(AMPI_LUN(10),'(A)') TITLE
+      READ(AMPI_LUN(10),*)  NE, NBR
       NBIG = INT(1.25*REAL(NBR))
 
       CALL ALLOC1()
@@ -205,14 +236,15 @@ c*******************************************************************************
       NN=0
 
 c   READ INFO FROM TRACK FILE AND GET TIMEINC FROM FIRST TWO RECORDS
-      OPEN(11,FILE=INPUTFILE,STATUS='UNKNOWN')
-      READ(11,*) 
-      READ(11,'(A)') title
-      READ(11,*)
+      OPEN(AMPI_LUN(11),FILE=INPUTFILE,STATUS='UNKNOWN')
+      call AMPI_LUN_REGISTER(AMPI_LUN(11),FILE=INPUTFILE,STATUS='UNKNOWN')
+      READ(AMPI_LUN(11),*) 
+      READ(AMPI_LUN(11),'(A)') title
+      READ(AMPI_LUN(11),*)
       NPTS = 0
       DO I=1,100
-         READ(11,1000,END=1010) INUM,XLAT(I),XLON(I),TSTAMP(I),
-     &                          ISPD(I),IPRES(I)
+         READ(AMPI_LUN(11),1000,END=1010) INUM,XLAT(I),XLON(I),TSTAMP(I),
+     &                         ISPD(I),IPRES(I)
          print *, INUM,XLAT(I),XLON(I),TSTAMP(I),ISPD(I),IPRES(I)
          NPTS=NPTS+1
       ENDDO
@@ -537,7 +569,7 @@ C      CHARACTER*20 TITLE
 C--------------------------------------------------------------------------
 
       DO 10 N=1,NBR
-      READ(10,*) NODE,YLO(N),YLA(N),DEPP
+      READ(AMPI_LUN(10),*) NODE,YLO(N),YLA(N),DEPP
       KSTA(N)=N
       YLO(N)=ABS(YLO(N))
    10 CONTINUE
@@ -654,7 +686,7 @@ C-------------------------------------------------------------------------------
         write(*,*) DTH,HH,GARR,PTH,K35   
         write(*,*) JA   
  20   CONTINUE                                                          
-      WRITE (6,25)                                                     
+      WRITE (AMPI_LUN(6),25)                                                     
    25 FORMAT('1 END OF SNAP/MAIN') 
       RETURN                                                            
       END 
@@ -712,8 +744,10 @@ C-------------------------------------------------------------------------------
       KSNAP1 = 0    
       KSNAP2 = 0    
       LTEMP = 43                                                    
-      OPEN(UNIT=LTEMP, FILE='LTEMP.OUT',STATUS='UNKNOWN')
-      OPEN(UNIT=69, FILE='fort.22',STATUS='UNKNOWN')
+      OPEN(UNIT=AMPI_LUN(LTEMP), FILE='LTEMP.OUT',STATUS='UNKNOWN')
+      call AMPI_LUN_REGISTER(UNIT=AMPI_LUN(LTEMP), FILE='LTEMP.OUT',STATUS='UNKNOWN')
+      OPEN(UNIT=AMPI_LUN(69), FILE='fort.22',STATUS='UNKNOWN')
+      call AMPI_LUN_REGISTER(UNIT=AMPI_LUN(69), FILE='fort.22',STATUS='UNKNOWN')
 C-----------------------------------------------------------------------------------
       IZONE='GMT'
       GRIDHT=FLOAT(IGRDHT)/10.                                          
@@ -867,8 +901,8 @@ C-------------------------------------------------------------------------------
 C                                                                               
       IF (KHR.EQ.1) GO TO 75                                           
       IF (JSEQ(KHR).EQ.JSEQ(KHR-1)) GO TO 80
-   75 WRITE(LTEMP,*) XX
-      WRITE(LTEMP,*) JSEQ(KHR)
+   75 WRITE(AMPI_LUN(LTEMP),*) XX
+      WRITE(AMPI_LUN(LTEMP),*) JSEQ(KHR)
    80 CONTINUE
       IF (NBR.EQ.0) GO TO 106                                       
 C                                                              
@@ -881,17 +915,17 @@ C--------------------------------------------------------------------------
 C--------------------------------------------------------------------------
       DO 100 KHR = 1, NTIM
          ramp=tanh((khr-1)/18.d0)
-      WRITE(69,2222) KHR,NAD(KHR),NAM(KHR),NOD(KHR),NOM(KHR),
-     1               PFRSNP(NSNAP1(KHR)),SGW
-      WRITE(6,2222) KHR,NAD(KHR),NAM(KHR),NOD(KHR),NOM(KHR),
+      WRITE(AMPI_LUN(69),2222) KHR,NAD(KHR),NAM(KHR),NOD(KHR),NOM(KHR),
      1              PFRSNP(NSNAP1(KHR)),SGW
+      WRITE(AMPI_LUN(6),2222) KHR,NAD(KHR),NAM(KHR),NOD(KHR),NOM(KHR),
+     1             PFRSNP(NSNAP1(KHR)),SGW
  2222 FORMAT(' #',I10,' EYE AT (LAT,LON)',2I3,2X,2I3,
      $       ' PFAR =',F8.2,' SGW =',F8.2)
 C-------------------------------------------------------------------------- 
       IF (KHR.EQ.1) GO TO 85                                           
       IF ( JSEQ(KHR) .EQ. JSEQ(KHR-1) ) GO TO 90
-   85 READ (LTEMP,*) XX
-      READ(LTEMP,*) KSEQ
+   85 READ (AMPI_LUN(LTEMP),*) XX
+      READ(AMPI_LUN(LTEMP),*) KSEQ
  90   CONTINUE
 C--------------------------------------------------------------------------
       iout=0
@@ -947,13 +981,13 @@ C-- Convert 30-min winds to 10-min winds
       V99 = V99 * 1.04d0
 C--
       ramppress=1013.-ramp*(1013.-press)
-      WRITE(69,2223) KSTA(K), ramp*fr*U99, ramp*fr*V99, ramppress
+      WRITE(AMPI_LUN(69),2223) KSTA(K), ramp*fr*U99, ramp*fr*V99, ramppress
  2223 FORMAT( I8, 5E13.5)
   105 CONTINUE
-      if(iout.eq.0) WRITE(69,2223) 1, 0., 0., 1013.
+      if(iout.eq.0) WRITE(AMPI_LUN(69),2223) 1, 0., 0., 1013.
   100 CONTINUE                                             
   106 CONTINUE
-  135 WRITE (LP,205)                                                   
+  135 WRITE (AMPI_LUN(LP),205)                                                   
 cvjp  CALL SYSTEM('rm LTEMP.OUT')
       STOP 999                   
   160 FORMAT (4X,I6,4X,I8,I3)                                       
@@ -2041,21 +2075,21 @@ C     NEST LV IS PRINTED AS INNER NEST, LV+1 AS OUTER NEST.
       DIMENSION KREDUC(2)                                         
       DATA KREDUC/'NOT ', '    '/ 
       DATA LU/6/                                         
-      WRITE (LU,100)                                               
+      WRITE (AMPI_LUN(LU),100)                                               
   100 FORMAT(1H1)                                                  
       LVP=LV+1                                                       
       I20P=I20+1                                                    
-      WRITE (LU,200) IDENT,KSEQ,LVP,KREDUC(I20P)                     
+      WRITE (AMPI_LUN(LU),200) IDENT,KSEQ,LVP,KREDUC(I20P)                     
   200 FORMAT(1H+,20X,A6,5X,A4,1X,I4,'   LEVEL',I3,5X,A4,'REDUCED')  
       DXI=2.0**(LV-1)*DS
       DXO=2.0*DXI
-      WRITE(LU,210) DXI,DXO
+      WRITE(AMPI_LUN(LU),210) DXI,DXO
   210 FORMAT(21X,'( INNER-GRID STEP =',F6.1,' KM',6X,'OUTER-GRID STEP =
      1       ',F6.1,' KM',' )')
- 1190 WRITE (LU,1200) (J, J=1,12)                                      
+ 1190 WRITE (AMPI_LUN(LU),1200) (J, J=1,12)                                      
  1200 FORMAT(1H0,11X,12(I2,8X))                                        
       DO 1210 I=1,5                                                     
-      WRITE(LU,1220) I,(VTN(I,J,LVP),J=1,12),(ANG(I,J,LVP),J=1,12)     
+      WRITE(AMPI_LUN(LU),1220) I,(VTN(I,J,LVP),J=1,12),(ANG(I,J,LVP),J=1,12)     
  1210 continue
  1220 FORMAT(1H0,6X,I2,12(1PF5.0,5X)/9X,12(0PF5.0,5X),/1H0,/)     
  1240 DO 1248 I=1,11                                              
@@ -2063,25 +2097,25 @@ C     NEST LV IS PRINTED AS INNER NEST, LV+1 AS OUTER NEST.
       IO=2*I-1                                                          
       IE=2*I                                                           
       IF(I-11) 1242,1246,1246                                           
- 1242 WRITE (LU,1244) IL,(VTN(IL,J,LVP),J=1,5),(VTN(IO,N,LV),N=1,13)  
-     1 ,(ANG(IL,J,LVP),J=1,5),(ANG(IO,N,LV),N=1,13)                     
-     2 ,(VTN(IE,N,LV),N=1,13),(ANG(IE,N,LV),N=1,13)                  
+ 1242 WRITE (AMPI_LUN(LU),1244) IL,(VTN(IL,J,LVP),J=1,5),(VTN(IO,N,LV),N=1,13)  
+     1,(ANG(IL,J,LVP),J=1,5),(ANG(IO,N,LV),N=1,13)                     
+     2,(VTN(IE,N,LV),N=1,13),(ANG(IE,N,LV),N=1,13)                  
  1244 FORMAT(1H0,6X,I2,5(1PF5.0,5X),13(1PF5.0)/9X,5(0PF5.0,5X),       
      1  13(0PF5.0)/1H0,58X,13(1PF5.0)/59X,13(0PF5.0))           
       GO TO 1248                                             
- 1246 WRITE (LU,1247) IL,(VTN(IL,J,LVP),J=1,5),(VTN(IO,N,LV),N=1,13)    
-     1  ,(ANG(IL,J,LVP),J=1,5),(ANG(IO,N,LV),N=1,13)       
+ 1246 WRITE (AMPI_LUN(LU),1247) IL,(VTN(IL,J,LVP),J=1,5),(VTN(IO,N,LV),N=1,13)    
+     1 ,(ANG(IL,J,LVP),J=1,5),(ANG(IO,N,LV),N=1,13)       
  1247 FORMAT(1H0,6X,I2,5(1PF5.0,5X),13(1PF5.0)/9X,5(0PF5.0,5X),   
      1  13(0PF5.0)/1H0,//)                            
  1248 CONTINUE                                          
       DO 1300 I=17,21                                          
-      WRITE (LU,1220) I,(VTN(I,J,LVP),J=1,12),(ANG(I,J,LVP),J=1,12)   
+      WRITE (AMPI_LUN(LU),1220) I,(VTN(I,J,LVP),J=1,12),(ANG(I,J,LVP),J=1,12)   
  1300 continue
-      WRITE(LU,100)                                                    
-      WRITE (LU,1340) (J,J=13,21)                                  
+      WRITE(AMPI_LUN(LU),100)                                                    
+      WRITE (AMPI_LUN(LU),1340) (J,J=13,21)                                  
  1340 FORMAT(1H0,16X,9(I2,8X))                                        
       DO 1345 I=1,5                                                    
-      WRITE (LU,1350) (VTN(I,J,LVP),J=13,21),I,(ANG(I,J,LVP),J=13,21)  
+      WRITE (AMPI_LUN(LU),1350) (VTN(I,J,LVP),J=13,21),I,(ANG(I,J,LVP),J=13,21)  
  1345   continue
  1350 FORMAT(1H0,13X,9(1PF5.0,5X),I2/14X,9(0PF5.0,5X),/1H0,/)      
  1370 DO 1378 I=1,11                                              
@@ -2089,19 +2123,19 @@ C     NEST LV IS PRINTED AS INNER NEST, LV+1 AS OUTER NEST.
       IO=2*I-1                                                      
       IE=2*I                                                          
       IF(I-11) 1372,1376,1376                                          
- 1372 WRITE (LU,1374) (VTN(IO,N,LV),N=14,21),(VTN(IL,J,LVP),J=17,21),IL 
-     1  ,(ANG(IO,N,LV),N=14,21), (ANG(IL,J,LVP),J=17,21),               
-     2  (VTN(IE,N,LV),N=14,21),(ANG(IE,N,LV),N=14,21)                  
+ 1372 WRITE (AMPI_LUN(LU),1374) (VTN(IO,N,LV),N=14,21),(VTN(IL,J,LVP),J=17,21),IL 
+     1 ,(ANG(IO,N,LV),N=14,21), (ANG(IL,J,LVP),J=17,21),               
+     2 (VTN(IE,N,LV),N=14,21),(ANG(IE,N,LV),N=14,21)                  
  1374 FORMAT(1H0,8X,8(1PF5.0),5X,5(1PF5.0,5X),I2/9X,8(0PF5.0),5X,   
      1  5(0PF5.0,5X)/1H0,8X, 8(1PF5.0)/9X, 8(0PF5.0))                
       GO TO 1378                                                   
- 1376 WRITE(LU,1377) (VTN(IO,N,LV),N=14,21),(VTN(IL,J,LVP),J=17,21),IL, 
-     1  (ANG(IO,N,LV),N=14,21), (ANG(IL,J,LVP),J=17,21)                
+ 1376 WRITE(AMPI_LUN(LU),1377) (VTN(IO,N,LV),N=14,21),(VTN(IL,J,LVP),J=17,21),IL, 
+     1 (ANG(IO,N,LV),N=14,21), (ANG(IL,J,LVP),J=17,21)                
  1377 FORMAT(1H0,8X,8(1PF5.0),5X,5(1PF5.0,5X),I2/9X,8(0PF5.0),5X,     
      1  5(0PF5.0,5X)/1H0,//)                                       
  1378 CONTINUE                                                        
       DO 1400 I=17,21                                                  
-      WRITE(LU,1350)  (VTN(I,J,LVP),J=13,21),I,(ANG(I,J,LVP),J=13,21)   
+      WRITE(AMPI_LUN(LU),1350)  (VTN(I,J,LVP),J=13,21),I,(ANG(I,J,LVP),J=13,21)   
  1400   continue
       RETURN                                                          
       END 
@@ -2122,8 +2156,8 @@ C
       NW=0
       IG21=MAXI/21
       IR21=MOD(MAXI,21)
-   10 READ(7,'(I10)',END=140) NTOD
-      READ(8,'(I10)') NTOD
+   10 READ(AMPI_LUN(7),'(I10)',END=140) NTOD
+      READ(AMPI_LUN(8),'(I10)') NTOD
       NW=NW+1
       DO 60 NN=1,2
         IF (IG21.EQ.0) GOTO 40
@@ -2131,16 +2165,16 @@ C
           IB=(IK-1)*21+1
           IE=IK*21
           DO 20 J=MAXJ,1,-1
-            READ(7,'(21F6.1)') (WIND7(NN,I,J),I=IB,IE)
-            READ(8,'(21F6.1)') (WIND8(NN,I,J),I=IB,IE)
+            READ(AMPI_LUN(7),'(21F6.1)') (WIND7(NN,I,J),I=IB,IE)
+            READ(AMPI_LUN(8),'(21F6.1)') (WIND8(NN,I,J),I=IB,IE)
    20     CONTINUE
    30   CONTINUE
    40   IF (IR21.EQ.0) GOTO 60
         IB=IG21*21+1
         IE=MAXI
         DO 50 J=MAXJ,1,-1
-          READ(7,'(21F6.1)') (WIND7(NN,I,J),I=IB,IE)
-          READ(8,'(21F6.1)') (WIND8(NN,I,J),I=IB,IE)
+          READ(AMPI_LUN(7),'(21F6.1)') (WIND7(NN,I,J),I=IB,IE)
+          READ(AMPI_LUN(8),'(21F6.1)') (WIND8(NN,I,J),I=IB,IE)
    50   CONTINUE
    60 CONTINUE
       NB=0
@@ -2156,25 +2190,25 @@ C
           ENDIF
    70   CONTINUE
    80 CONTINUE
-      WRITE(11,'(I10)') NTOD
+      WRITE(AMPI_LUN(11),'(I10)') NTOD
       DO 130 NN=1,2
         IF (IG21.EQ.0) GOTO 110
         DO 100 IK=1,IG21
           IB=(IK-1)*21+1
           IE=IK*21
           DO 90 J=MAXJ,1,-1
-            WRITE(11,'(21F6.1)') (WIND(NN,I,J),I=IB,IE)
+            WRITE(AMPI_LUN(11),'(21F6.1)') (WIND(NN,I,J),I=IB,IE)
    90     CONTINUE
   100   CONTINUE
   110   IF (IR21.EQ.0) GOTO 130
         IB=IG21*21+1
         IE=MAXI
         DO 120 J=MAXJ,1,-1
-          WRITE(11,'(21F6.1)') (WIND(NN,I,J),I=IB,IE)
+          WRITE(AMPI_LUN(11),'(21F6.1)') (WIND(NN,I,J),I=IB,IE)
   120   CONTINUE
   130 CONTINUE
       IF (NB.GT.0) THEN
-        WRITE(6,'(7H REC # ,I3,3X,I4,15H VALUES BLENDED)') NW,NB
+        WRITE(AMPI_LUN(6),'(7H REC # ,I3,3X,I4,15H VALUES BLENDED)') NW,NB
       ENDIF
       GOTO 10
   140 STOP

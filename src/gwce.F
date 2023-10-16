@@ -57,6 +57,8 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C******************************************************************************
 
       module gwce
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
       use sizes, only : sz
       use global, only : DEBUG, INFO, WARNING, ERROR, logMessage, 
      &   setMessageSource, unsetMessageSource, allMessage
@@ -231,7 +233,7 @@ C
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH, Bd, Ad, Cs2,
-     &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, 
+     &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, ALPHAL, windlim,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
@@ -258,7 +260,7 @@ C... DW
 #endif
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
      &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
-      USE WIND, ONLY: PRBCKGRND_MH2O 
+      USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
 
       IMPLICIT NONE
 
@@ -413,6 +415,9 @@ C              WJP 02.24.2018 Get the infinity norm of the matrix
                NC2=NodeCode(NMI2)
                NC3=NodeCode(NMI3)
                NCEle=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY
+               IF(NCEle.EQ.0) CYCLE
+#endif
 
                SFacAvg = SFacEle(IE)
 C.... Beg DW/WJP:
@@ -447,8 +452,8 @@ C              Ali et al. formula
                   Ma2   = G*DPavg/Cs2
                   Cfac = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavg**Bd)**2
                endif
-               
-               GA00DPAvgOAreaIE4 = A00*G*DPAvg*Cfac/AreaIE4
+               ! DMW 2022/06 Apply slope limiting to gravity
+               GA00DPAvgOAreaIE4 = ALPHAL(IE)*A00*G*DPAvg*Cfac/AreaIE4
                Tau0Avg = (Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
 
 C........... DW, Absorbing layer
@@ -531,6 +536,9 @@ C              Assemble the LHS matrix
                NC2=NodeCode(NMI2)
                NC3=NodeCode(NMI3)
                NCEle=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY
+               IF(NCEle.EQ.0) CYCLE
+#endif
 
                Tau0Avg=(Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
 C
@@ -608,26 +616,27 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                IF(COEF(I,1).EQ.0.d0) COEF(I,1)=EP
                IF(COEF(I,1).LT.0.d0) THEN                  
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &              WRITE(ScreenUnit,1019) I,COEF(I,1)
-                  WRITE(16,1019) I,COEF(I,1)
+     &             WRITE(AMPI_LUN(ScreenUnit),1019) I,COEF(I,1)
+                  WRITE(AMPI_LUN(16),1019) I,COEF(I,1)
                   DIE = .TRUE.
                ENDIF
             ENDDO
             IF (DIE) THEN
                ! jgfdebug
-               open(899,file='debug.txt',status='replace',action='write')
+               open(AMPI_LUN(899),file='debug.txt',status='replace',action='write')
+               call AMPI_LUN_REGISTER(AMPI_LUN(899),file='debug.txt',status='replace',action='write')
                   do i=1,np
                      if (coef(i,1).lt.0.d0) then
                         do j=2,nneighele(i)
                            if (neitabele(i,j).ne.0) then
-                              write(6,
-     & '("Node ",i0," element ",i0," area=",f15.7)') i, j, 
-     &  areas(neitabele(i,j))
+                              write(AMPI_LUN(6),
+     &'("Node ",i0," element ",i0," area=",f15.7)') i, j, 
+     & areas(neitabele(i,j))
                            endif
                         enddo
                      endif
                   enddo
-               close(899)
+               close(AMPI_LUN(899))
                ! end jgfdebug
                CALL gwceTerminate()
             ENDIF
@@ -637,6 +646,9 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
             ! Seizo: Explicit scheme can solve localy. (the efect is small?)
             EP=0.0D0
             DO I=1,NP
+#ifdef SKIP_DRY
+               IF(NODECODE(I).EQ.0) CYCLE
+#endif
                EP=EP+Coefd(I)*Coefd(I)
             ENDDO
             EP=SQRT(EP/NP)
@@ -651,11 +663,14 @@ C......  DW
 C.....      Check that all the diagonal elements in "COEFD" are > 0.
             DIE = .FALSE.
             DO I=1,NP
+#ifdef SKIP_DRY
+               IF(NODECODE(I).EQ.0) CYCLE
+#endif
                IF(COEFD(I).EQ.0.d0) COEFD(I)=EP
                IF(COEFD(I).LT.0.d0) THEN
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
-     &              WRITE(ScreenUnit,1019) I,COEFD(I)
-                  WRITE(16,1019) I,COEFD(I)
+     &             WRITE(AMPI_LUN(ScreenUnit),1019) I,COEFD(I)
+                  WRITE(AMPI_LUN(16),1019) I,COEFD(I)
  1019             FORMAT(/,1X,'!!!!!!!!  ERROR  !!!!!!!',
      &              /,1X,'THE DIAGONAL TERM IN THE EQUATION FOR NODE ',I10,
      &                '= ',E15.6,' AND IS <= 0',/)
@@ -732,6 +747,9 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
             NC2=NODECODE(NM2)
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY
+            IF(NCEle.EQ.0) CYCLE
+#endif
             SFacAvg = SFacEle(IE)
             SFmxAvg=SFMXEle(IE) ;
             SFmyAvg=SFMYEle(IE) ;
@@ -782,6 +800,9 @@ C........ END DW:
          ENDDO
 
          DO I=1,NP
+#ifdef SKIP_DRY
+            IF(NODECODE(I).EQ.0) CYCLE
+#endif
             IF(TotalArea(I).NE.0.) THEN
                H2=DP(I)+IFNLFA*ETA2(I)
                H2OTotalArea=H2/TotalArea(I)
@@ -826,6 +847,9 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
             NC2=NODECODE(NM2)
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY
+            IF(NCEle.EQ.0) CYCLE
+#endif
             SFacAvg = SFacEle(IE)
 C..... Beg DW:
             SFmxAvg=SFMXEle(IE) ;
@@ -879,6 +903,9 @@ C..... End DW
          ENDDO
 
          DO I=1,NP
+#ifdef SKIP_DRY
+            IF(NODECODE(I).EQ.0) CYCLE
+#endif
             IF(TotalArea(I).NE.0.) THEN
                IF (CGWCE_LS_2PartQ) THEN          !nonsymmetric
                   LSXX(I)=LSXX(I)/TotalArea(I)
@@ -901,6 +928,13 @@ C..... End DW
          ENDDO
 
       ENDIF
+      
+#ifdef CMPI
+      IF ((CGWCE_LS_2PartQ).OR.(CGWCE_LS_2PartSQ).OR.(CGWCE_LS_2PartV).OR.(CGWCE_LS_2PartSV)) THEN
+         CALL UPDATER(LSXX,LSXY,DUMY1,2)
+         CALL UPDATER(LSYX,LSYY,DUMY1,2)
+      ENDIF
+#endif
 
 C...  Assemble the GWCE RHS except for the boundary integral terms
 
@@ -908,8 +942,10 @@ C...  Assemble the GWCE RHS except for the boundary integral terms
 
 C...     Set nodal values for each element
 
+#ifndef SKIP_DRY
 Corbitt 120322: Localized Advection
-         IF (LoadAdvectionState) CALL ADVECTLOCAL(IE)
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
+#endif
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -918,6 +954,10 @@ Corbitt 120322: Localized Advection
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCELE=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY
+         IF(NCEle.EQ.0) CYCLE
+         IF(LoadAdvectionState) CALL ADVECTLOCAL(IE)
+#endif
          E0N1=ETA1(NM1)
          E0N2=ETA1(NM2)
          E0N3=ETA1(NM3)
@@ -1184,12 +1224,14 @@ C        Ali et al. formula
             Ma2    = G*DPavg/Cs2
             CfacS0 = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavgS0**Bd)**2
          endif
-
-         GDPAvgOAreaIE4 = G*DPAvg*Cfac/AreaIE4
-         GDPAvgOAreaIE4_S0 = G*DPAvgS0*CfacS0/AreaIE4
+         ! DMW 2022/06 Apply slope limiting to gravity
+         GDPAvgOAreaIE4 = ALPHAL(IE)*G*DPAvg*Cfac/AreaIE4
+         ! DMW 2022/06 Apply slope limiting to gravity
+         GDPAvgOAreaIE4_S0 = ALPHAL(IE)*G*DPAvgS0*CfacS0/AreaIE4
 C....  END DW & WJP
          HAvg=(H1N1+H1N2+H1N3)/3.d0
-         GHAvg=G*HAvg
+         ! DMW 2022/06 Apply slope limiting to gravity
+         GHAvg=ALPHAL(IE)*G*HAvg
          GHAvgOAreaIE2=GHAvg/AreaIE2
          BSXAvg=(BSXN1+BSXN2+BSXN3)/3.d0
          BSYAvg=(BSYN1+BSYN2+BSYN3)/3.d0
@@ -1221,6 +1263,18 @@ C
          IF ((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
             fwsx1 = 1.D0 ; fwsx2 = 1.D0 ; fwsx3 = 1.D0 ;
             fwsy1 = 1.D0 ; fwsy2 = 1.D0 ; fwsy3 = 1.D0 ;
+            
+C.....      DMW 202207 tail off wind forcing in very shallow water
+            IF (WINDLIM.eqv..true.) THEN
+               CALL windLimiter(H1N1,fwsx1)
+               fwsy1 = fwsx1
+               CALL windLimiter(H1N2,fwsx2)
+               fwsy2 = fwsx2
+               CALL windLimiter(H1N3,fwsx3)
+               fwsy3 = fwsx3
+            ENDIF
+C.....      DMW            
+            
             IF ( NO_MET_IN_SPONGE ) THEN
                IF ( absorblayer_sigma_mnx(NM1,1) > 1e-9 ) fwsx1 = 0.D0
                IF ( absorblayer_sigma_mnx(NM2,1) > 1e-9 ) fwsx2 = 0.D0
@@ -1263,7 +1317,8 @@ C........DW: begin add absorbing layer term
          MsFacRS_T = ((SigmaAvg/(2.D0*DT))*AreaIE/12.D0)*sponge_dis_mthd
 C......... end DW
 C
-         GOAreaIE4=G/AreaIE4
+         ! DMW 2022/06 Apply slope limiting to gravity
+         GOAreaIE4=ALPHAL(IE)*G/AreaIE4
          Tau0SpaVar=(QX1Avg*Tau0XGrad2A+QY1Avg*Tau0YGrad2A)/6.d0
          A00pB00=A00+B00
 
@@ -1447,6 +1502,9 @@ C...  Save the elevation at the past time step into Eta1 and zero out Eta2
 ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
 
       DO I=1,NP
+#ifdef SKIP_DRY 
+        IF(NODECODE(I).EQ.0) CYCLE 
+#endif
          IF(CPRECOR) THEN
             ETAS0(I)=ETAS(I)
             Eta0(I)=Eta1(I)
@@ -1491,7 +1549,7 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
                ETIME2=ETIME1+ETIMINC
                DO J=1,NETA
                   ESBIN1(J)=ESBIN2(J)
-                  READ(19,*) ESBIN2(J)
+                  READ(AMPI_LUN(19),*) ESBIN2(J)
                END DO
             ENDIF
             ETRATIO=(TimeLoc-ETIME1)/ETIMINC
@@ -1712,6 +1770,9 @@ C...  JCG ITERATIVE MATRIX SOLVER
      &        IWKSP,NW,WKSP,IPARM,RPARM,IER)
          NUMITR=IPARM(1)
          DO I=1,NP
+#ifdef SKIP_DRY 
+            IF(NODECODE(I).EQ.0) CYCLE 
+#endif
             ETA2(I) = NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
          END DO
       ELSE ! lumped LHS
@@ -1725,6 +1786,9 @@ C...  JCG ITERATIVE MATRIX SOLVER
          ENDDO
          NUMITR=0
          DO I=1,NP
+#ifdef SKIP_DRY 
+            IF(NODECODE(I).EQ.0) CYCLE 
+#endif
             ETA2(I)=NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
          END DO
       ENDIF
@@ -1851,7 +1915,7 @@ C
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2, 
-     &   QX2, QY2, UU2, VV2
+     &   QX2, QY2, UU2, VV2, windlim
 #ifdef CMPI
      &   , dumy1, dumy2
 #endif
@@ -1865,6 +1929,7 @@ C
 #ifdef CMPI
       USE MESSENGER
 #endif
+      USE WIND, ONLY: windLimiter
 
       IMPLICIT NONE
 
@@ -1939,6 +2004,8 @@ ckmd   Added in parameters for the pc algorithm
       INTEGER :: nbdj
       REAL(SZ) :: rff
       REAL(SZ) :: qforcei, qforcej
+      REAL(SZ):: fwsx1, fwsx2, fwsx3
+      REAL(SZ):: fwsy1, fwsy2, fwsy3
 
       call setMessageSource("gwce_new_pc")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -2424,8 +2491,22 @@ C...     Compute elemental averages
          MXAvg=MX           !lateral stresses are constant over an element
          MYAvg=MY           !lateral stresses are constant over an element
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
-            WSXAvg=(WSX1(NM1)+WSX1(NM2)+WSX1(NM3))/3.d0
-            WSYAvg=(WSY1(NM1)+WSY1(NM2)+WSY1(NM3))/3.d0
+            fwsx1 = 1.D0 ; fwsx2 = 1.D0 ; fwsx3 = 1.D0 ;
+            fwsy1 = 1.D0 ; fwsy2 = 1.D0 ; fwsy3 = 1.D0 ;
+            
+C.....      DMW 202207 tail off wind forcing in very shallow water
+            IF (WINDLIM.eqv..true.) THEN
+               CALL windLimiter(H1N1,fwsx1)
+               fwsy1 = fwsx1
+               CALL windLimiter(H1N2,fwsx2)
+               fwsy2 = fwsx2
+               CALL windLimiter(H1N3,fwsx3)
+               fwsy3 = fwsx3
+            ENDIF
+C.....      DMW            
+         
+            WSXAvg=(fwsx1*WSX1(NM1)+fwsx2*WSX1(NM2)+fwsx3*WSX1(NM3))/3.d0
+            WSYAvg=(fwsy1*WSY1(NM1)+fwsy2*WSY1(NM2)+fwsy3*WSY1(NM3))/3.d0
          ENDIF
          IF (C3D.or.(CBaroclinic.and.abs(IDEN).eq.5)) THEN !3D velocity dispersion
             DispXAvg=IFNLCT*DispX
@@ -2677,7 +2758,7 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
             ETIME2=ETIME1+ETIMINC
             DO J=1,NETA
                ESBIN1(J)=ESBIN2(J)
-               READ(19,*) ESBIN2(J)
+               READ(AMPI_LUN(19),*) ESBIN2(J)
             END DO
          ENDIF
          ETRATIO=(TimeLoc-ETIME1)/ETIMINC
@@ -2918,12 +2999,12 @@ C.... end WP
                   ! If it is the first time that the slope limiter
                   ! has been activated at this node, write a log 
                   ! message. 
-                  eslcount(nm(ie,i)) = eslcount(nm(ie,i))+1 ! for output file
-                  if (eslcount(nm(ie,i)).eq.1) then
+                  if (eslcount(nm(ie,i)).eq.0) then
                      write(scratchMessage,1983) nodeNumber,dEta2Mag, 
      &                     elemental_slope_limiter_grad_max(NM(IE,I)),
      &                     it, timeLoc
                      call allMessage(INFO,scratchMessage)
+                     eslcount(nm(ie,i)) = 1 ! for output file
                   endif
                   elemental_slope_limiter_active(NM(IE,I)) = .true.
                else

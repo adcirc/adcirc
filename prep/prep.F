@@ -1810,15 +1810,16 @@ C     sb46.28sb01 added NWS=12: OWI format
 C     jgf50.38.05: added NWS=15: HWind format
 C     tcm v51.06.02 added NWS=16: GFDL Met Data
 C     xyc v52.30 added NWS=7 to be consistent with NWS=6
-c     arc added nws13 190110
-      ! jgf: Added NWS=30 (GAHM+OWI)
+C     arc added nws13 190110
+C     jgf: Added NWS=30 (GAHM+OWI)
          IF ((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.45).OR.
      &        (ABS(NWS).EQ.5).OR.(ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.7)
      &       .OR.(ABS(NWS).EQ.8).OR.(ABS(NWS).EQ.10).OR.(ABS(NWS).EQ.12)
      &       .OR.(ABS(NWS).EQ.15).OR.(ABS(NWS).EQ.14)
      &       .OR.(ABS(NWS).EQ.16).OR.(ABS(NWS).EQ.30)
      &       .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29)
-     &       .OR.(ABS(NWS).EQ.20).OR.(ABS(NWS).EQ.13))THEN
+     &       .OR.(ABS(NWS).EQ.20).OR.(ABS(NWS).EQ.13) 
+     &       .OR.(ABS(NWS).EQ.17)) THEN ! for NUOPC: added by PV, SM
             WRITE(15,80) WSMSG1
          ENDIF
          IF (NWS.EQ.3) THEN
@@ -2278,13 +2279,18 @@ Casey 180318: Added NWS=13
 
          ! wet dry control
          if (foundWetDryControlNameList) then
-            WRITE(15,'(a,l,a,l,a,l,a,l,a,i1,a)')
+            WRITE(15,'(a,l,a,l,a,l,a,l,a,i1,a,f15.4,a,l,a,l,a,l,a)')
      &         "&wetDryControl outputNodeCode=",outputNodeCode,
      &         " outputNOFF=",outputNOFF," noffActive=",noffActive,
      &         " StatPartWetFix=",StatPartWetFix,
-     &         " How2FixStatPartWet=",How2FixStatPartWet, " /"
+     &         " How2FixStatPartWet=",How2FixStatPartWet,
+C....    DMW 202207 Add in options for controlling slope/wind limiting and "new" formula for computing vel in wetting/drying routine
+     &         " slim=",slim,
+     &         " windlim=",windlim,
+     &         " directvelWD=",directvelWD,
+     &         " useHF=",useHF," /"
+C....    DMW
          endif
-
          ! jgf52.08.02: inundation output control
          if (foundInundationOutputControlNamelist) then
             write(15,'(a,l,a,f15.8,a)')
@@ -7605,7 +7611,7 @@ C---------------------------------------------------------------------------
      &    theta2, ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd,
      &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
-     &    foundCorrectionControlNamelist
+     &    foundCorrectionControlNamelist, NCICE !GML added NCICE 20210727
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
      &    initNetCDFHotstart3D, initNetCDFHotstart,
@@ -7644,6 +7650,10 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: PrDescript         ! fort.73
       type(OutputDataDescript_t), SAVE :: windDragDescript   ! winddrag.173
       type(OutputDataDescript_t), SAVE :: WindVelDescript    ! fort.74
+C++ GML 20200605
+      type(OutputDataDescript_t), SAVE :: IceStaDescript     ! fort.91
+      type(OutputDataDescript_t), SAVE :: IceAFDescript      ! fort.93
+C++
       type(OutputDataDescript_t), SAVE :: weirElevDescript   ! fort.77
       type(OutputDataDescript_t), SAVE :: EtaMaxDescript     ! maxele.63
       type(OutputDataDescript_t), SAVE :: UMaxDescript       ! maxvel.63
@@ -7660,7 +7670,7 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: dynamicWaterlevelCorrectionStaDescript ! dynamicWaterlevelCorrection.61
 
 !      tcm v50.75 moved RSDescript outside of the ifdef adcswan for use with
-!      nrs = 3 or nrs= 4
+!      nrs = 3 or nrs= 4 or nrs = 5
       type(OutputDataDescript_t), SAVE :: RSDescript
 
 #ifdef ADCSWAN
@@ -8032,6 +8042,43 @@ C     fort.77
       WeirElevDescript % file_basename        = 'fort'
       call makeFileName(weirElevDescript)
 
+C++ GML 20200605
+C     fort.91
+      IceStaDescript % specifier            = MERGE(NOUTM,0,NCICE > 0) 
+      IceStaDescript % lun                  = 91
+      IceStaDescript % initial_value        = 0.0
+      IceStaDescript % num_items_per_record = 1
+      IceStaDescript % num_fd_records       = abs(NSTAM)
+      IceStaDescript % num_records_this     = abs(NSTAM)
+      IceStaDescript % ConsiderWetDry       = .FALSE.
+      IceStaDescript % alternate_value      = 0.0
+      IceStaDescript % field_name           = 'IceSta'
+      IF (ICS.eq.2) THEN
+         IceStaDescript % x_coord           => SLEM
+         IceStaDescript % y_coord           => SFEM
+      ELSE
+         IceStaDescript % x_coord           => XEM
+         IceStaDescript % y_coord           => YEM
+      ENDIF
+      IceStaDescript % file_extension       = 91
+      IceStaDescript % file_basename        = 'fort'
+      IceStaDescript % readMaxMin           = .false.
+      call makeFileName(IceStaDescript)
+C     fort.93
+      IceAFDescript % specifier            = MERGE(NOUTGW,0,NCICE > 0) 
+      IceAFDescript % lun                  = 93
+      IceAFDescript % initial_value        = 0.0
+      IceAFDescript % num_items_per_record = 1
+      IceAFDescript % num_fd_records       = MNP
+      IceAFDescript % num_records_this     = MNP
+      IceAFDescript % ConsiderWetDry       = .FALSE.
+      IceAFDescript % alternate_value      = 0.0
+      IceAFDescript % field_name           = 'seaice_af'
+      IceAFDescript % file_extension       = 93
+      IceAFDescript % file_basename        = 'fort'
+      WeirElevDescript % readMaxMin           = .false.
+      call makeFileName(IceAFDescript)
+C++
 C
 C     minpr.63
       PrMinDescript % specifier            = abs(NOUTGW)
@@ -8078,7 +8125,7 @@ C     maxwvel.63
       RSMaxDescript % readMaxMin           = .true.
       call makeFileName(RSMaxDescript)
 
-!  tcm v50.75 removed ifdef adcswan to allow for use whenever nrs=3 or nrs=4
+!  tcm v50.75 removed ifdef adcswan to allow for use whenever nrs=3 or nrs=4 or nrs=5
 !#ifdef ADCSWAN
 Cobell 20120510: SWAN Output Data
 C........Radiation Stress
@@ -8819,6 +8866,10 @@ C     was specified.
       CALL initNetCDFOutputFile(WindVelStaDescript, reterr)
       CALL initNetCDFOutputFile(PrDescript, reterr)
       CALL initNetCDFOutputFile(WindVelDescript, reterr)
+C ++ GML 20200605
+      CALL initNetCDFOutputFile(IceStaDescript, reterr)
+      CALL initNetCDFOutputFile(IceAFDescript, reterr)
+C++
       CALL initNetCDFOutputFile(WeirElevDescript, reterr)
       CALL initNetCDFOutputFile(EtaMaxDescript, reterr)
       CALL initNetCDFOutputFile(UMaxDescript, reterr)
@@ -8845,9 +8896,10 @@ C     was specified.
       endif
       !
       ! tcm v50.75 moved ifdef adcswan below RSDescript only to allow
-      ! for use whenever nrs=3 or nrs=4
+      ! for use whenever nrs=3 or nrs=4 or nrs=5
       ! Cobell 20120510: Added for SWAN NetCDF
-      IF ((NRS.EQ.3).OR.(NRS.EQ.4)) THEN
+      ! dw: added NRS == 5 for NEMS support
+      IF ((NRS.EQ.3).OR.(NRS.EQ.4).OR.(NRS.EQ.5)) THEN 
         CALL initNetCDFOutputFile(RSDescript,reterr)
       ENDIF
       ! tcm v50.75 moved ifdef adcswan to here

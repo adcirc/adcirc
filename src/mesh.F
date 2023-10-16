@@ -14,6 +14,8 @@
 !     module.
 !     ------------------------------------------------------------------
       module mesh
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
 !     ------------------------------------------------------------------
       use hashtable
       use sizes, only: sz, meshFileName, mne, mnp, mnope, mneta, myproc,
@@ -38,6 +40,7 @@
                       ! 23 = Miller cylindrical,
                       ! 24 = Gall-Stereographic cylindrical)
       real(sz),allocatable, target ::  dp(:)  ! bathymetric depth
+      real(sz),allocatable         :: dp_orig(:) ! original bathymetric depth
       integer,allocatable :: nm(:,:)          ! element table size(ne,3)
       real(8),allocatable :: x(:)   ! x cartesian node locations x(np)
       real(8),allocatable :: y(:)   ! y cartesian node locations y(np)
@@ -168,25 +171,25 @@
       numInternalFluxBoundariesWithPipes = 0
       !
       ! reading the file
-      read(iunit,'(A80)',err=10,end=20,iostat=ios) agrid
+      read(AMPI_LUN(iunit),'(A80)',err=10,end=20,iostat=ios) agrid
       lineNum = lineNum + 1
       call logMessage(INFO,"Mesh file comment line: "//trim(agrid))
       call logMessage(INFO,"Reading mesh file dimensions.")
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) ne, np
+      read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) ne, np
       mne = ne
       mnp = np
       do k = 1, np
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+         read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios)
          lineNum = lineNum + 1
       enddo
       do k = 1, ne
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+         read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios)
          lineNum = lineNum + 1
       enddo
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nope  ! total number of elevation boundaries
+      read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) nope  ! total number of elevation boundaries
       mnope = nope
       lineNum = lineNum + 1
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) neta  ! total number of nodes on elevation boundaries
+      read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) neta  ! total number of nodes on elevation boundaries
       mneta = neta
       lineNum = lineNum + 1
       call allocateElevationBoundaryLengths()
@@ -194,11 +197,11 @@
       neta_count = 0
       nvdll_max = 0
       do k = 1, nope
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvdll(k) ! number of nodes on the kth elevation boundary segment
+         read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) nvdll(k) ! number of nodes on the kth elevation boundary segment
          lineNum = lineNum + 1
          nvdll_max = max(nvdll_max,nvdll(k))
          do j = 1, nvdll(k)
-            read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+            read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios)
             lineNum = lineNum + 1
             neta_count = neta_count + 1
          enddo
@@ -209,9 +212,9 @@
      &           i0,' but ',i0,' were found.')
          call allMessage(WARNING,scratchMessage)
       endif
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nbou ! total number of flux boundaries
+      read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) nbou ! total number of flux boundaries
       lineNum = lineNum + 1
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvel ! total number of nodes on flux boundaries
+      read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) nvel ! total number of nodes on flux boundaries
       lineNum = lineNum + 1
       mnbou = nbou
       mnvel = nvel*2
@@ -220,12 +223,12 @@
       nvel_count = 0
       nvell_max = 0
       do k = 1, nbou
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
-     &       nvell(k), ibtype_orig(k)  ! number of nodes and type of kth flux boundary
+         read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios)
+     &      nvell(k), ibtype_orig(k)  ! number of nodes and type of kth flux boundary
          lineNum = lineNum + 1
          nvell_max = max(nvell_max,nvell(k))
          do j = 1, nvell(k)
-            read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
+            read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios)
             lineNum = lineNum + 1
             nvel_count = nvel_count + 1
          enddo
@@ -274,7 +277,7 @@
             end do
          endif
       endif
-      rewind(iunit)
+      rewind(AMPI_LUN(iunit))
       call logMessage(INFO,'Finished reading mesh file dimensions.')
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -288,12 +291,12 @@
 1070  format('Reading line ',i0,' gave the following error code: ',
      &   i0,'.')
       call allMessage(ERROR, scratchMessage)
-      close(iunit)
+      close(AMPI_LUN(iunit))
       call terminate()
  20   write(scratchMessage,1080) lineNum
 1080  format('Reached premature end of file on line ',i0,'.')
       call allMessage(ERROR,scratchMessage)
-      close(iunit)
+      close(AMPI_LUN(iunit))
       call terminate()
       !-----+---------+---------+---------+---------+---------+---------+
       end subroutine read14_findDims
@@ -370,13 +373,13 @@
       call logMessage(INFO,'Reading mesh file coordinates, '
      &   // ' connectivity, and boundary data.')
       lineNum = 1
-      read(unit=iunit,fmt='(a80)',err=10,end=20,iostat=ios) agrid
+      read(unit=AMPI_LUN(iunit),fmt='(a80)',err=10,end=20,iostat=ios) agrid
       lineNum = lineNum + 1
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) ne, np
+      read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) ne, np
       lineNum = lineNum + 1
       do k = 1, np
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) labels(k), slam(k),
-     &     sfea(k), dp(k)
+         read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) labels(k), slam(k),
+     &    sfea(k), dp(k)
          lineNum = lineNum + 1
          call add_ipair(node_dict, labels(k), k)
       enddo
@@ -384,8 +387,8 @@
       !  E L E M E N T   T A B L E
       !
       do k = 1, ne
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
-     &      je, nhy, n1, n2, n3
+         read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios)
+     &     je, nhy, n1, n2, n3
          nm(k, 1) = find(node_dict, n1)
          nm(k, 2) = find(node_dict, n2)
          nm(k, 3) = find(node_dict, n3)
@@ -395,24 +398,24 @@
       !
       !  B O U N D A R I E S
       !
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nope
+      read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) nope
       lineNum = lineNum + 1
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) neta
+      read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) neta
       lineNum = lineNum + 1
       do k = 1, nope
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvdll(k)
+         read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) nvdll(k)
          lineNum = lineNum + 1
          elevationBoundaries(k)%indexNum = k
          do j = 1, nvdll(k)
-            read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) n1
+            read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) n1
             elevationBoundaries(k)%nodes(j) = find(node_dict, n1)
             elevationBoundaries(k)%xdmf_nodes(j) = elevationBoundaries(k)%nodes(j) - 1
             lineNum = lineNum + 1
          enddo
       enddo
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nbou
+      read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) nbou
       lineNum = lineNum + 1
-      read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvel
+      read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) nvel
       lineNum = lineNum + 1
       sfCount = 1
       efCount = 1
@@ -422,7 +425,7 @@
       NNPERBC = 0  ;
 
       do k = 1, nbou
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvell(k), ibtype_orig(k)
+         read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) nvell(k), ibtype_orig(k)
          lineNum = lineNum + 1
          select case(ibtype_orig(k))
          ! flux boundaries (mainland, island, river)
@@ -431,7 +434,7 @@
          case(0,1,2,10,11,12,20,21,22,30,32,52,102,112,122,152)
             simpleFluxBoundaries(sfCount)%indexNum = k
             do j = 1, nvell(k)
-               read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) n1
+               read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) n1
                simpleFluxBoundaries(sfCount)%nodes(j) = find(node_dict, n1)
                simpleFluxBoundaries(sfCount)%xdmf_nodes(j) =
      &                  simpleFluxBoundaries(sfCount)%nodes(j) - 1
@@ -445,10 +448,10 @@
           case(3,13,23)
             externalFluxBoundaries(efCount)%indexNum = k
             do j = 1, nvell(k)
-               read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
-     &              n1,
-     &              externalFluxBoundaries(efCount)%barlanht(j),
-     &              externalFluxBoundaries(efCount)%barlancfsp(j)
+               read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios)
+     &             n1,
+     &             externalFluxBoundaries(efCount)%barlanht(j),
+     &             externalFluxBoundaries(efCount)%barlancfsp(j)
                externalFluxBoundaries(efCount)%nodes(j) =
      &              find(node_dict, n1)
                  externalFluxBoundaries(efCount)%xdmf_nodes(j) =
@@ -464,12 +467,12 @@
          case(4,24)
             internalFluxBoundaries(ifCount)%indexNum = k
             do j = 1, nvell(k)
-               read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
-     &                      n1,
-     &                      n2,
-     &                      internalFluxBoundaries(ifCount)%barinht(j),
-     &                      internalFluxBoundaries(ifCount)%barincfsb(j),
-     &                      internalFluxBoundaries(ifCount)%barincfsp(j)
+               read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios)
+     &                     n1,
+     &                     n2,
+     &                     internalFluxBoundaries(ifCount)%barinht(j),
+     &                     internalFluxBoundaries(ifCount)%barincfsb(j),
+     &                     internalFluxBoundaries(ifCount)%barincfsp(j)
                internalFluxBoundaries(ifCount)%nodes(j) =
      &             find(node_dict, n1)
                internalFluxBoundaries(ifCount)%ibconn(j) = 
@@ -491,15 +494,15 @@
          case(5,25)
             internalFluxBoundariesWithPipes(ifwpCount)%indexNum = k
             do j = 1, nvell(k)
-               read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
-     &                        n1,
-     &                        n2,
-     &                        internalFluxBoundariesWithPipes(ifwpCount)%barinht(j),
-     &                        internalFluxBoundariesWithPipes(ifwpCount)%barincfsb(j),
-     &                        internalFluxBoundariesWithPipes(ifwpCount)%barincfsp(j),
-     &                        internalFluxBoundariesWithPipes(ifwpCount)%pipeht(j),
-     &                        internalFluxBoundariesWithPipes(ifwpCount)%pipecoef(j),
-     &                        internalFluxBoundariesWithPipes(ifwpCount)%pipediam(j)
+               read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios)
+     &                       n1,
+     &                       n2,
+     &                       internalFluxBoundariesWithPipes(ifwpCount)%barinht(j),
+     &                       internalFluxBoundariesWithPipes(ifwpCount)%barincfsb(j),
+     &                       internalFluxBoundariesWithPipes(ifwpCount)%barincfsp(j),
+     &                       internalFluxBoundariesWithPipes(ifwpCount)%pipeht(j),
+     &                       internalFluxBoundariesWithPipes(ifwpCount)%pipecoef(j),
+     &                       internalFluxBoundariesWithPipes(ifwpCount)%pipediam(j)
                internalFluxBoundariesWithPipes(ifwpCount)%nodes(j) =
      &                        find(node_dict, n1)
                internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j) = 
@@ -523,7 +526,7 @@
             simpleFluxBoundaries(sfCount)%indexNum = k
             do j = 1, nvell(k)
                NNPERBC =  NNPERBC + 1 ;
-               read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) n1, n2
+               read(unit=AMPI_LUN(iunit),fmt=*,err=10,end=20,iostat=ios) n1, n2
                IPERCONN(NNPERBC,1) = find(node_dict, n1) 
                IPERCONN(NNPERBC,2) = find(node_dict, n2) 
                simpleFluxBoundaries(sfCount)%nodes(j) = 
@@ -540,7 +543,7 @@
             call terminate()
          end select
       end do
-      close(14)
+      close(AMPI_LUN(14))
       !
       ! populate the adcirc arrays that are used during execution
       call populateADCIRCNativeArrays()
@@ -558,19 +561,173 @@
 10    write(scratchMessage,140) lineNum, ios
 140   format('Reading line ',i0,' gave the following error code: ',i0,'.')
       call allMessage(ERROR,scratchMessage)
-      close(iunit)
+      close(AMPI_LUN(iunit))
       call terminate()
       !
       ! jump to here on end condition during read
 20    write(scratchMessage,150) lineNum
 150   format('Reached premature end of file on line ',i0,'.')
       call allMessage(ERROR,scratchMessage)
-      close(iunit)
+      close(AMPI_LUN(iunit))
       call close_dict( node_dict )
       call terminate()
 
       !----------------------------------------------------------------
       end subroutine read14
+      !----------------------------------------------------------------
+
+
+
+      !-----+---------+---------+---------+---------+---------+---------+
+      ! READ14MESH() : Read just mesh
+      !  input:
+      !      meshfileName = file name
+      !  output:
+      !      nn = (/ np, ne /)
+      !      vx(2,np)   - coordinates of FE nodes
+      !      bxy(np)    - bathymetry
+      !      etov(3,ne) - Element conectivity table
+      !      (optional) nodeLael - node label
+      !-----+---------+---------+---------+---------+---------+---------+
+      subroutine read14femesh( meshfileName, nn, vx, etov, bxy, nodeLabel )
+      use global, only : openFileForRead, nabout
+
+      implicit none
+
+      ! dummy
+      CHARACTER (LEN=*):: meshfileName
+      INTEGER:: nn(:)
+
+      REAL (SZ), allocatable:: vx(:,:), bxy(:) ! node, bathymetry
+      INTEGER, allocatable:: etov(:,:) ! element connectity table
+      INTEGER, allocatable, optional:: nodeLabel(:)
+
+      ! local
+      integer :: i, j, k, jn, je, nhy
+      integer, parameter :: iunit = 714
+      integer :: ios     ! i/o status
+      integer :: lineNum ! line number currently being read
+      CHARACTER (LEN=80):: agridtmp
+
+      INTEGER:: ne, np, nfluxftmp
+      INTEGER, allocatable:: labelstmp(:)
+
+      ! hash table
+      type(ipair), allocatable, target :: node_dict_tmp(:) ! map node labels to numbers
+
+      call setMessageSource( trim(meshfileName) )
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      !
+      ! initialization
+      nfluxftmp = 0
+      !
+      call openFileForRead(iunit,trim(meshFileName),ios)
+
+      ! Get dimension
+      !  - reading the file
+      read(iunit,'(A80)',err=110,end=120,iostat=ios) agridtmp ! header
+      lineNum = lineNum + 1
+
+      read(unit=iunit,fmt=*,err=110,end=120,iostat=ios) ne, np ! no. elements, nodes
+      lineNum = lineNum + 1
+
+      nn(1) = np
+      nn(2) = ne
+
+      ! Allocate memory for the
+      IF ( allocated( vx ) ) THEN
+         DEALLOCATE( vx )
+      END IF
+      IF ( allocated( etov ) ) THEN
+         DEALLOCATE( etov )
+      END IF
+      IF ( allocated( bxy ) ) THEN
+         DEALLOCATE( bxy )
+      END IF
+      ALLOCATE( vx( 2, np ), bxy(np), etov(3, ne) )
+
+      IF ( present( nodeLabel ) ) THEN
+         IF ( allocated( nodeLabel ) ) THEN
+            DEALLOCATE( nodeLabel )
+         END IF
+         ALLOCATE( nodeLabel( np ) )
+      END IF
+      ! Intialize a hash table
+      call dict( node_dict_tmp, np )
+
+      !  N O D E   T A B L E
+      !
+      !
+      ALLOCATE( labelstmp(np) )
+      do k = 1, np
+         read(unit=iunit,fmt=*,err=110,end=120,iostat=ios) labelstmp(k), vx(1,k),
+     &     vx(2,k), bxy(k)
+         lineNum = lineNum + 1
+         call add_ipair( node_dict_tmp, labelstmp(k), k)
+      enddo
+      IF ( present( nodeLabel ) ) THEN
+         DO k = 1, np
+            nodeLabel(k) = labelstmp(k)
+         END DO
+      END IF
+
+      !
+      !  E L E M E N T   T A B L E
+      !
+      do k = 1, ne
+         read(unit=iunit,fmt=*,err=110,end=120,iostat=ios)
+     &      je, nhy, n1, n2, n3
+         etov(1,k) = find(node_dict_tmp, n1)
+         etov(2,k) = find(node_dict_tmp, n2)
+         etov(3,k) = find(node_dict_tmp, n3)
+         lineNum = lineNum + 1
+      enddo
+
+      ! close file
+      close(iunit)
+      call close_dict( node_dict_tmp ) !
+
+      ! free memory
+      deallocate( labelstmp )
+
+!      !
+!      ! populate the adcirc arrays that are used during execution
+!     call populateADCIRCNativeArrays()
+!      !
+!      call logMessage(INFO,'Finished reading mesh file coordinates, '
+!     & // 'connectivity, and boundary data.')
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage( DEBUG, "Return.")
+#endif
+      call unsetMessageSource()
+
+      return
+      !
+      ! jump to here on error condition during read
+110    write(scratchMessage,140) lineNum, ios
+140   format('Reading line ',i0,' gave the following error code: ', i0, '.')
+      call allMessage(ERROR,scratchMessage)
+      close(iunit)
+      call terminate()
+      !
+      ! jump to here on end condition during read
+120    write(scratchMessage,150) lineNum
+150   format('Reached premature end of file on line ',i0,'.')
+      call allMessage(ERROR,scratchMessage)
+      close(iunit)
+
+      ! free memory
+      deallocate( labelstmp )
+
+      call close_dict( node_dict_tmp )
+      call terminate()
+
+      !----------------------------------------------------------------
+      end subroutine read14femesh
       !----------------------------------------------------------------
 
 
@@ -657,6 +814,7 @@
       logical :: fileFound
       integer i, j, k
       real(8), allocatable :: tempCoord(:,:)
+      real(8),allocatable :: dmyrealarray(:)
       !
 
       call setMessageSource("readMeshXDMF")
@@ -1055,9 +1213,12 @@
                   call replaceNullsWithSpaces(itemName)
                   select case(trim(itemName))
                   case("IBCONN")      ! paired (back face) nodes
+                     allocate(dmyrealarray(1:size(internalFluxBoundaries(ifCount)%xdmf_ibconn)))
                      call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
-     &                   internalFluxBoundaries(ifCount)%xdmf_ibconn, XDMF_ARRAY_TYPE_INT32,
+     &                   dmyrealarray, XDMF_ARRAY_TYPE_INT32,
      &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
+                     internalFluxBoundaries(ifCount)%xdmf_ibconn = int(dmyrealarray)
+                     deallocate(dmyrealarray)
                   case("BARINHT")     ! barrier height at each node and its paired node
                      call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
      &                  internalFluxBoundaries(ifCount)%barinht, XDMF_ARRAY_TYPE_FLOAT64,
@@ -1096,10 +1257,13 @@
                   call replaceNullsWithSpaces(itemName)
                   select case(trim(itemName))
                   case("IBCONN")  ! paired (i.e., back face) nodes
+                     allocate(dmyrealarray(1:size(internalFluxBoundaries(ifwpCount)%xdmf_ibconn)))
                      call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
-     &                  internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn,
+     &                  dmyrealarray,
      &                  XDMF_ARRAY_TYPE_INT32,
      &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
+                     internalFluxBoundaries(ifwpCount)%xdmf_ibconn = int(dmyrealarray)
+                     deallocate(dmyrealarray)
                   case("BARINHT") ! barrier height at each node and its paired node
                      call xdmfRetrieveAttributeValues(xdmfFortranObj, i,
      &                   internalFluxBoundariesWithPipes(ifwpCount)%barinht,
@@ -1237,7 +1401,7 @@
      &             = internalFluxBoundariesWithPipes(ifwpCount)%pipediam
             ifwpCount = ifwpCount + 1
          case default
-            write(6,*) "Unrecognized boundary type ",ibtype_orig(fluxCount)
+            write(AMPI_LUN(6),*) "Unrecognized boundary type ",ibtype_orig(fluxCount)
          end select
       end do
       !
@@ -1321,6 +1485,8 @@
       real(sz) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
       real(sz) Lon21,Lon32,Lon13
       real(sz) lened1,lened2,lened3
+      !real(sz) :: slamr, sfear
+      real(8) :: slamr1, sfear1, slamr2, sfear2, slamr3, sfear3
       integer :: i, j
       integer :: SFLAG, NMM(3)
       REAL (SZ), dimension(3):: LONVE, LATVE
@@ -1404,6 +1570,7 @@
 !     estimate the number of neighbor nodes around any node = number of
 !     elements containing that node.  This is correct for non-boundary
 !     nodes and one too small for boundary nodes
+      dp_orig = dp
       NNeigh(:) = 0
       DO I=1,NE
         NNeigh(NM(I,1))=NNeigh(NM(I,1))+1
@@ -1528,7 +1695,7 @@
            IF((DIF1R.GT.NPREC).OR.(DIF2R.GT.NPREC).OR.(DIF3R.GT.NPREC)) THEN
               write(scratchMessage,9898) I
               call allMessage(WARNING, scratchMessage)
-              WRITE(16,9898) I
+              WRITE(AMPI_LUN(16),9898) I
  9898         FORMAT('!!!!!!!!!!  WARNING  !!!!!!!!!' ,
      &                'IF THE GRID COORDINATES HAVE 32 BITS ',
      &                '(APPROX 7 DIGITS) OF PRECISION ',
@@ -1664,7 +1831,7 @@
      &              ' boundary segment ',2x,i0,2x,'=',1x,i0)
          call logMessage(ECHO,scratchMessage)
          DO I=1,NVDLL(K)
-            WRITE(16,1855) NBDV(K,I)
+            WRITE(AMPI_LUN(16),1855) NBDV(K,I)
  1855      FORMAT(7X,I7)
             NBD(JNMM+I)=NBDV(K,I)
          END DO
@@ -1692,14 +1859,14 @@
 !...  FREE TANGENTIAL SLIP IS ALLOWED.
 
 !...  TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS
-      WRITE(16,1112)
-      WRITE(16,1878)
+      WRITE(AMPI_LUN(16),1112)
+      WRITE(AMPI_LUN(16),1878)
 1878  FORMAT(//,1X,'FLOW BOUNDARY INFORMATION ',/)
-      WRITE(16,1879) NBOU
+      WRITE(AMPI_LUN(16),1879) NBOU
  1879 FORMAT(//,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS = ',i0)
 
 !.....INPUT THE TOTAL NUMBER OF FLOW BOUNDARY NODES
-      WRITE(16,1881) NVEL
+      WRITE(AMPI_LUN(16),1881) NVEL
 1881  FORMAT(/,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY NODES = ',i0)
 
       JGW=0
@@ -1717,37 +1884,37 @@
       NBOULOOP: DO K=1,NBOU
 !        write out flow boundary information to unit 16
          IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
-            WRITE(16,28) K,NVELL(K),K,2*NVELL(K)
+            WRITE(AMPI_LUN(16),28) K,NVELL(K),K,2*NVELL(K)
  28         FORMAT(///,5X,'TOTAL NUMBER OF PAIRS FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,i0,2X,'=',2X,i0,
      &           /,5X,'TOTAL NUMBER OF NODES FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,i0,2X,'=',2X,i0)
          ELSE
-            WRITE(16,128) K,NVELL(K)
+            WRITE(AMPI_LUN(16),128) K,NVELL(K)
  128        FORMAT(///,5X,'TOTAL NUMBER OF NODES FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,i0,2X,'=',2X,i0)
          ENDIF
 !        continue processing flow boundary information
          SELECT CASE(IBTYPE(K))
          CASE(0)
-            WRITE(16,2340)
+            WRITE(AMPI_LUN(16),2340)
  2340       FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &           7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(1)
-            WRITE(16,2341)
+            WRITE(AMPI_LUN(16),2341)
  2341       FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
      &           7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(2)
             NFLUXF=1
-            WRITE(16,2342)
+            WRITE(AMPI_LUN(16),2342)
  2342       FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &           7X,'SPECIFIED NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(3)
            NFLUXB=1
-           WRITE(16,2344)
+           WRITE(AMPI_LUN(16),2344)
  2344      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'A BARRIER WHICH ALLOWS FREE SURFACE',
      &               ' SUPERCRITICAL OUTFLOW',/,
@@ -1756,7 +1923,7 @@
      &            7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(4)
            NFLUXIB=1
-           WRITE(16,2345)
+           WRITE(AMPI_LUN(16),2345)
  2345      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
      &            7X,'WITH CROSS BARRIER FLOW TREATED AS AN ESSENTIAL ',
      &               ' NORMAL FLOW BOUNDARY CONDITION',/,
@@ -1771,7 +1938,7 @@
          CASE(5)
            NFLUXIB=1
            NFLUXIBP=1
-           WRITE(16,2347)
+           WRITE(AMPI_LUN(16),2347)
  2347      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
      &            7X,'WITH ADDITIONAL CROSS BARRIER PIPES ',
      &               'LOCATED UNDER THE CROWN ',/,
@@ -1791,24 +1958,24 @@
      &          /,7X,' AND THE APPROPRIATE PIPE FLOW FORMULA',/,
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
          CASE(10)
-           WRITE(16,2350)
+           WRITE(AMPI_LUN(16),2350)
  2350      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
          CASE(11)
-           WRITE(16,2351)
+           WRITE(AMPI_LUN(16),2351)
  2351      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
          CASE(12)
            NFLUXF=1
-           WRITE(16,2352)
+           WRITE(AMPI_LUN(16),2352)
  2352      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'SPECIFIED NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
          CASE(13)
            NFLUXB=1
-           WRITE(16,2353)
+           WRITE(AMPI_LUN(16),2353)
  2353      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'A BARRIER WHICH ALLOWS FREE SURFACE',
      &               ' SUPERCRITICAL OUTFLOW',/,
@@ -1816,24 +1983,24 @@
      &               ' OVERTOPPED',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
          CASE(20)
-           WRITE(16,2354)
+           WRITE(AMPI_LUN(16),2354)
  2354      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS A NATURAL B.C.',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(21)
-           WRITE(16,2355)
+           WRITE(AMPI_LUN(16),2355)
  2355      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS A NATURAL B.C.',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(22)
            NFLUXF=1
-           WRITE(16,2356)
+           WRITE(AMPI_LUN(16),2356)
  2356      FORMAT(5X,'THIS SEGMENT IS A EXTERNAL BOUNDARY WITH:',/,
      &            7X,'SPECIFIED NORMAL FLOW AS A NATURAL B.C.',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
          CASE(23)
            NFLUXB=1
-           WRITE(16,2357)
+           WRITE(AMPI_LUN(16),2357)
  2357      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'A BARRIER WHICH ALLOWS FREE SURFACE',
      &               ' SUPERCRITICAL OUTFLOW',/,
@@ -1843,7 +2010,7 @@
      &            7X,'FREE TANGENTIAL SLIP IS ALSO ALLOWED',/)
          CASE(24)
            NFLUXIB=1
-           WRITE(16,2358)
+           WRITE(AMPI_LUN(16),2358)
  2358      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
      &            7X,'WITH CROSS BARRIER FLOW TREATED AS A NATURAL ',
      &               ' NORMAL FLOW BOUNDARY CONDITION',/,
@@ -1858,7 +2025,7 @@
          CASE(25)
            NFLUXIB=1
            NFLUXIBP=1
-           WRITE(16,2359)
+           WRITE(AMPI_LUN(16),2359)
  2359      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
      &            7X,'WITH ADDITIONAL CROSS BARRIER PIPES ',
      &               'LOCATED UNDER THE CROWN ',/,
@@ -1879,7 +2046,7 @@
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
          CASE(30)
            NFluxRBC=1
-           WRITE(16,2360)
+           WRITE(AMPI_LUN(16),2360)
  2360      FORMAT(5X,'This segment is an outward radiating boundary:',/,
      &            7X,'the GWCE is forced with normal flux.  A wave ',
      &               'radiation condition',
@@ -1892,7 +2059,7 @@
          CASE(32)
            NFluxRBC=1
            NFluxF=1
-           WRITE(16,2356)
+           WRITE(AMPI_LUN(16),2356)
  2362      FORMAT(5X,'This segment is a combined specified normal ',
      &               'flux and outward radiating boundary.',/,
      &            7X,'The GWCE is forced with the total normal flux ',
@@ -1906,7 +2073,7 @@
      &               'node',/)
          CASE(40)
            NFluxGBC=1
-           WRITE(16,2370)
+           WRITE(AMPI_LUN(16),2370)
  2370      FORMAT(5X,'This segment is a zero normal velocity gradient ',
      &               'boundary:',/,
      &            7X,'the GWCE is forced with normal flux',/,
@@ -1926,7 +2093,7 @@
      &               'determined by interpolation.',/)
          CASE(41)
            NFluxGBC=1
-           WRITE(16,2371)
+           WRITE(AMPI_LUN(16),2371)
  2371      FORMAT(5X,'This segment is a zero normal velocity gradient ',
      &               'boundary:',/,
      &            7X,'the GWCE is forced with normal flux',/,
@@ -1937,7 +2104,7 @@
          CASE(52)
             NFLUXF=1
             IBTYPE52=.TRUE.
-            WRITE(16,6532)
+            WRITE(AMPI_LUN(16),6532)
  6532       FORMAT(5X,'This segment uses a specified periodic normal ',
      &          'flux as a natural b.c. combined with outward ',
      &          7X,'radiating boundary. The GWCE is forced with the ,'
@@ -2010,10 +2177,10 @@
 !...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES
             IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
                IF(IPRBI.EQ.1) THEN
-                  WRITE(16,1842)
+                  WRITE(AMPI_LUN(16),1842)
  1842            FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',/)
                ELSE
-                  WRITE(16,1843)
+                  WRITE(AMPI_LUN(16),1843)
  1843            FORMAT(/,5X,'BACK FACE OF INTERNAL BARRIER BOUNDARY',/)
                ENDIF
             ENDIF
@@ -2022,18 +2189,18 @@
 !...        CROSS BARRIER PIPES
             IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
                IF(IPRBI.EQ.1) THEN
-                  WRITE(16,1844)
+                  WRITE(AMPI_LUN(16),1844)
  1844             FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',
      &                 ' WITH CROSS BARRIER PIPES',/)
                ELSE
-                  WRITE(16,1845)
+                  WRITE(AMPI_LUN(16),1845)
  1845             FORMAT(/,5X,'BACK FACE OF INTERNAL BARRIER BOUNDARY',
      &                 ' WITH CROSS BARRIER PIPES',/)
                ENDIF
             ENDIF
 
 !...        WRITE OUT GENERAL HEADER FOR BOUNDARY INFORMATION
-            WRITE(16,1841)
+            WRITE(AMPI_LUN(16),1841)
  1841      FORMAT('    JGW    JME    ME2GW   NODE #  BNDRY CODE   INNER',
      &      ' ANGLE',7X,'COS',13X,'SIN',9X,'0.667*BNDRY LEN',/)
 
@@ -2094,10 +2261,10 @@
                NBVK = NBVV(K,I-1)
                NBV(JGW) = NBVI
                IF (NBVJ.gt.ubound(X,1)) THEN
-                  write(16,*) 'NBVJ', NBVJ, '> bounds of X',I
+                  write(AMPI_LUN(16),*) 'NBVJ', NBVJ, '> bounds of X',I
                ENDIF
                IF (NBVI.gt.ubound(X,1)) THEN
-                  write(16,*) 'NBVI', NBVI, '> bounds of X',I
+                  write(AMPI_LUN(16),*) 'NBVI', NBVI, '> bounds of X',I
                ENDIF
                XGJ = X(NBVJ)
                XGI = X(NBVI)
@@ -2211,7 +2378,7 @@
                      IF(IBTYPE(K).EQ.2) LBCODEI(JGW)=12
                      IF(IBTYPE(K).EQ.3) LBCODEI(JGW)=13
                      IF((IBTYPE(K).GE.0).AND.(IBTYPE(K).LE.3)) THEN
-                        WRITE(16,1856) NBVI,THETA
+                        WRITE(AMPI_LUN(16),1856) NBVI,THETA
  1856                   FORMAT(2X,i0,4X,'THE INNER ANGLE = ',F8.2,1X,
      &                    'TANGENTIAL SLIP WILL BE ZEROED')
                      ENDIF
@@ -2392,8 +2559,8 @@
 
 !...........   WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
 
-               WRITE(16,1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
-     &              THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
+               WRITE(AMPI_LUN(16),1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
+     &             THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
  1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I8,3X,I4,8X,E12.4,2X,E16.8,
      &              1X,E16.8,2X,E16.8)
 
@@ -2510,7 +2677,7 @@
                         IF(((IBTYPE(K).EQ.4).AND.(LBCODEI(ICK).EQ.0))
      &                       .OR.((IBTYPE(K).EQ.5)
      &                       .AND.(LBCODEI(ICK).EQ.0))) THEN
-                           WRITE(16,8568) JGW,ICK,ICK
+                           WRITE(AMPI_LUN(16),8568) JGW,ICK,ICK
  8568                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
      &               'BOUNDARY NODE',i0,' (WHICH IS AN ESSENTIAL INTER'
      &               ,'NAL BARRIER BOUNDARY NODE)', /,2X,
@@ -2525,7 +2692,7 @@
                         IF(((IBTYPE(K).EQ.4).AND.(LBCODEI(ICK).EQ.10))
      &                       .OR.((IBTYPE(K).EQ.5)
      &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
-                           WRITE(16,8569) JGW,ICK,ICK
+                           WRITE(AMPI_LUN(16),8569) JGW,ICK,ICK
  8569                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
      &               'BOUNDARY NODE ',i0,' (WHICH IS AN ESSENTIAL INTER'
      &               ,'NAL BARRIER BOUNDARY NODE)', /,2X,
@@ -2540,7 +2707,7 @@
                         IF(((IBTYPE(K).EQ.24).AND.(LBCODEI(ICK).EQ.10))
      &                       .OR.((IBTYPE(K).EQ.25)
      &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
-                           WRITE(16,8570) JGW,ICK,ICK
+                           WRITE(AMPI_LUN(16),8570) JGW,ICK,ICK
  8570                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
      &               'BOUNDARY NODE',i0,' (WHICH IS A NATURAL INTERNAL'
      &               ,' BARRIER BOUNDARY NODE)', /,2X,
@@ -2614,20 +2781,20 @@
 !.....NOTE THAT THIS INFORMATION WAS READ IN FROM THE UNIT 14 FILE
       IF(NFLUXB.EQ.1) THEN
 !.....  WRITE OUT INFO ON SPECIFIED EXTERNAL BARRIER BOUNDARIES
-        WRITE(16,1112)
-        WRITE(16,2220)
+        WRITE(AMPI_LUN(16),1112)
+        WRITE(AMPI_LUN(16),2220)
  2220   FORMAT(//,1X,'EXTERNAL BARRIER BOUNDARY INFORMATION ',/)
 
 !.......OUTPUT ELEVATION OF EXTERNAL BARRIER NODES ABOVE THE GEOID AND
 !........THE COEFFICIENT OF FREE SURFACE SUPERCRITICAL FLOW AT
 !........DESIGNATED EXTERNAL BARRIER BOUNDARY NODES TO UNIT 16
-         WRITE(16,2224)
+         WRITE(AMPI_LUN(16),2224)
  2224   FORMAT(//,9X,'NODE',10X,'BARRIER HEIGHT',
      &                     6X,'SUPER-CRIT. EXTERNAL BAR. COEF.',/)
          DO J=1,NVEL
             IF((LBCODEI(J).EQ.3).OR.(LBCODEI(J).EQ.13)
      &         .OR.(LBCODEI(J).EQ.23)) THEN
-               WRITE(16,2225) NBV(J),BARLANHT(J),BARLANCFSP(J)
+               WRITE(AMPI_LUN(16),2225) NBV(J),BARLANHT(J),BARLANCFSP(J)
  2225         FORMAT(5X,i0,6X,F14.5,15X,F12.3)
             ENDIF
          END DO
@@ -2638,8 +2805,8 @@
       IF(NFLUXIB.EQ.1) THEN
 
 !.....   WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
-         WRITE(16,1112)
-         WRITE(16,2320)
+         WRITE(AMPI_LUN(16),1112)
+         WRITE(AMPI_LUN(16),2320)
  2320   FORMAT(//,1X,'INTERNAL BARRIER BOUNDARY INFORMATION ',/)
 
 !....... WRITE CONNECTION NODE NUMBER AND ELEVATION OF THE INTERNAL BARRIER
@@ -2647,14 +2814,14 @@
 !........AND SUBCRITICAL FLOW AT DESIGNATED INTERNAL BARRIER BOUNDARY NODES
 !........TO UNIT 16 (NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14
 !........FILE WITH BOUNDARY NODE INFORMATION)
-         WRITE(16,2324)
+         WRITE(AMPI_LUN(16),2324)
  2324   FORMAT(//,9X,'NODE',6X,'CONNECTED NODE',6X,'BARRIER HEIGHT',
      &                4X,'SUB-CRIT. INT. BAR. COEF.',
      &                4X,'SUPER-CRIT. INT. BAR. COEF.',/)
          DO J=1,NVEL
             IF((LBCODEI(J).EQ.4).OR.(LBCODEI(J).EQ.24)) THEN
-               WRITE(16,2325) NBV(J),IBCONN(J),BARINHT(J),
-     &                       BARINCFSB(J),BARINCFSP(J)
+               WRITE(AMPI_LUN(16),2325) NBV(J),IBCONN(J),BARINHT(J),
+     &                      BARINCFSB(J),BARINCFSP(J)
  2325         FORMAT(5X,i0,7X,i0,6X,F14.5,12X,F12.3,17X,F12.3)
             ENDIF
          END DO
@@ -2667,8 +2834,8 @@
 !.....BARRIER PIPE INFORMATION TO UNIT 16 FILE
       IF(NFLUXIBP.EQ.1) THEN
 !.....   WRITE OUT INFO ON SPECIFIED INTERNAL BARRIER BOUNDARIES
-         WRITE(16,1112)
-         WRITE(16,2326)
+         WRITE(AMPI_LUN(16),1112)
+         WRITE(AMPI_LUN(16),2326)
  2326   FORMAT(//,1X,'INTERNAL BARRIER BOUNDARY WITH CROSS BARRIER',
      &   ' PIPE INFORMATION ',/)
 
@@ -2679,7 +2846,7 @@
 !........COEFFICIENT AND CROSS BARRIER PIPE DIAMETER TO UNIT 16
 !........(NOTE THAT THIS INFORMATION WAS INPUT FROM THE UNIT 14 FILE WITH
 !........BOUNDARY NODE INFORMATION)
-         WRITE(16,2327)
+         WRITE(AMPI_LUN(16),2327)
  2327    FORMAT(//,7X,'NODE',4X,'CONNECTED NODE',4X,'BARRIER HEIGHT',
      &                4X,'SUB-CRIT INT BAR COEF',
      &                4X,'SUPER-CRIT INT BAR COEF',
@@ -2688,9 +2855,9 @@
      &                4X,'PIPEDIAM',/)
          DO J=1,NVEL
             IF((LBCODEI(J).EQ.5).OR.(LBCODEI(J).EQ.25)) THEN
-               WRITE(16,2328) NBV(J),IBCONN(J),BARINHT(J),
-     &                     BARINCFSB(J),BARINCFSP(J),
-     &                     PIPEHT(J),PIPECOEF(J),PIPEDIAM(J)
+               WRITE(AMPI_LUN(16),2328) NBV(J),IBCONN(J),BARINHT(J),
+     &                    BARINCFSB(J),BARINCFSP(J),
+     &                    PIPEHT(J),PIPECOEF(J),PIPEDIAM(J)
  2328         FORMAT(3X,i0,5X,i0,4X,F14.5,8X,F12.3,12X,F12.3,
      &              2X,F10.5,2X,F10.5,2X,F10.5)
             ENDIF
@@ -2733,6 +2900,7 @@
       allocate ( slam(mnp),sfea(mnp),x(mnp),y(mnp),labels(mnp))
       call dict(node_dict, mnp)
       allocate ( dp(mnp) )
+      allocate ( dp_orig(mnp) )
       allocate ( nm(mne,3))
       allocate ( areas(mne), totalarea(mnp))
       allocate ( nneigh(mnp),mju(mnp),nodele(mnp))
@@ -2787,6 +2955,7 @@
       x = -99999.d0
       y = -99999.d0
       dp = -99999.d0
+      dp_orig = -99999.d0
       nm = -99999
       areas = -99999.d0
       totalarea = -99999.d0
@@ -3735,8 +3904,8 @@
                IF ( COUNT(mneitab(1:ia1) - stab(J) == 0) == 0 ) THEN
                   ia1 = ia1 + 1 ;
                   IF (ia1 > ubound(mneitab,1)) then
-                      write(16,*) 'ia1 large ',ia1,mnei,
-     &                ubound(mneitab,1),ubound(ptab,1) 
+                      write(AMPI_LUN(16),*) 'ia1 large ',ia1,mnei,
+     &               ubound(mneitab,1),ubound(ptab,1) 
                   endif
                   mneitab(ia1) = stab(J) ;
                END IF  
@@ -3746,21 +3915,21 @@
                NNeigh(ID1) = ia1 ; 
                NeiTab(ID1,1:ia1) = mneitab(1:ia1) ;                
                IF ( ia1 > NeiMax ) THEN                 
-                  WRITE(16,*) "Warning in PREBCSETUP(): No. neighbors =",
-     &                 IA1, " > ", " NeiMax = ", NeiMax ;    
+                  WRITE(AMPI_LUN(16),*) "Warning in PREBCSETUP(): No. neighbors =",
+     &                IA1, " > ", " NeiMax = ", NeiMax ;    
                   NeiMax = ia1 ; 
                END IF
 
                IF ( ia1 == N1 ) THEN
-                  WRITE(16,*) "Fatal error in PREBCSETUP(): the primary 
-     &            and slave node label are identical for the node ", ID1
+                  WRITE(AMPI_LUN(16),*) "Fatal error in PREBCSETUP(): the primary 
+     &           and slave node label are identical for the node ", ID1
                   CALL EXIT(1)
                END IF
             ELSE                              
-               WRITE(16,*) "Error in PREBCSETUP(): No. neighbors = ", 
-     &              IA1, " > ", " Mnei = ", Mnei ;                   
-               WRITE(16,*) " -- Fix: expand the size of NeiTab(:,:), 
-     &                                 and NeiTabEle(:,:) tables"   ;  
+               WRITE(AMPI_LUN(16),*) "Error in PREBCSETUP(): No. neighbors = ", 
+     &             IA1, " > ", " Mnei = ", Mnei ;                   
+               WRITE(AMPI_LUN(16),*) " -- Fix: expand the size of NeiTab(:,:), 
+     &                                and NeiTabEle(:,:) tables"   ;  
                
                CALL EXPAND_NeiTAB( ia1 ) ;
 
@@ -3989,8 +4158,8 @@
           denom = x2x1*y2y1
          
           if (denom < 1e-12) then
-             write(16,*) 'Denominator is small',denom
-             write(16,*) x,y,x1,y1,x2,y2,i,j,ir,jr
+             write(AMPI_LUN(16),*) 'Denominator is small',denom
+             write(AMPI_LUN(16),*) x,y,x1,y1,x2,y2,i,j,ir,jr
           endif
             
           ! Output the indices
@@ -4250,9 +4419,8 @@ C
         call openFileForRead( FUNIT, FNAME, errorIO) ;
 
         inputtype = "" ; 
-        read( FUNIT, *) inputtype ;
+        read(AMPI_LUN( FUNIT), *) inputtype ;
 
-        WRITE(*,'(a)') ""
         scratchMessage = 
      &       "**** Solve SWE in the rotated coordinate frame ****" ; 
         call allMessage(INFO,scratchMessage)
@@ -4260,7 +4428,7 @@ C
         errorVar = "inputype" ;
         SELECT CASE(adjustl(trim(inputtype)))
         CASE ("znorth_in_spherical_coors")
-           READ(FUNIT, *) PHIN, THETAN, IGNOREMSG ; 
+           READ(AMPI_LUN(FUNIT), *) PHIN, THETAN, IGNOREMSG ; 
 
            WRITE(scratchMessage,'(A)') "A vector describing the"//
      &            " north-south axis in spherical coordinates "//
@@ -4272,7 +4440,7 @@ C
 
            CALL DRV_ROTMAT_ZNVEC( PHIN, THETAN ) ;           
         CASE ("z-x-z")
-           READ(FUNIT, *) AL, BE, GAM, IGNOREMSG ; 
+           READ(AMPI_LUN(FUNIT), *) AL, BE, GAM, IGNOREMSG ; 
            scratchMessage = "Intrinsic rotation z-x-z (alpha,beta,"//
      &             "gamma) is given." ;
            CALL allMessage(INFO,scratchMessage)
@@ -4283,7 +4451,7 @@ C
            CALL DRV_ROTMAT_ZXZROT( AL, BE, GAM ) ;          
         CASE ("rotation_matrix")           
            DO II = 1, 3
-              READ(FUNIT,*) ROTMAT(II,3) ;
+              READ(AMPI_LUN(FUNIT),*) ROTMAT(II,3) ;
            END DO
            
            scratchMessage = "ROTATION MATRIX: "
@@ -4322,7 +4490,7 @@ C
 #endif
       call unsetMessageSource()
 
-        CLOSE(FUNIT) 
+        CLOSE(AMPI_LUN(FUNIT)) 
 
         RETURN       
       END SUBROUTINE READFORTROTS
@@ -4436,8 +4604,8 @@ C
         IF ( SOFFD > 1.0e-10_SZ ) THEN
            IERR = 1 ; 
            
-           WRITE(6,*) "Error: a given rotation matrix is not"// 
-     &          " orthgonal and thus invalid" ;
+           WRITE(AMPI_LUN(6),*) "Error: a given rotation matrix is not"// 
+     &         " orthgonal and thus invalid" ;
         END IF
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4457,7 +4625,7 @@ C
         REAL (SZ):: VARPHI, THETA ! in deg
 
         !c local c!
-        REAL(SZ) :: RADPHI, RADTHETA
+        REAL(SZ) :: RADPHI, RADTHETA, ROTMATOUT(3)
 
         call setMessageSource("DRV_ROTMAT_ZNVEC")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -4475,11 +4643,14 @@ C
         scratchMessage =  
      &       "****************************************" ;  
         call allMessage(INFO,scratchMessage)
-        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(1,:), ' |' 
+        ROTMATOUT = ROTMAT(1,:)
+        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMATOUT, ' |' 
         CALL allMessage(INFO,scratchMessage)
-        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(2,:), ' |' 
+        ROTMATOUT = ROTMAT(2,:)
+        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMATOUT, ' |' 
         CALL allMessage(INFO,scratchMessage)
-        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMAT(3,:), ' |' 
+        ROTMATOUT = ROTMAT(3,:)
+        WRITE(scratchMessage,'(A,3F12.4,A)') '| ', ROTMATOUT, ' |' 
         CALL allMessage(INFO,scratchMessage)
         scratchMessage =  
      &       "****************************************" ;  
@@ -5014,10 +5185,10 @@ C
          X = 0.5D0*SQRT(2.D0)*RLAMBDA ;
          Y = Rearth*(1.0 + 0.5D0*SQRT(2.D0))*tan( 0.5D0*PHI )
       CASE DEFAULT
-         WRITE(6,'(A)') "Error in cylindermap(): "
-         WRITE(6,'(A,I1,A)') "   Mapping type =  ", MTYPE, 
-     &                      " has not been implemented" ;
-         WRITE(6,'(A)') "  Valid MTYPE = 2, 20-24" ;
+         WRITE(AMPI_LUN(6),'(A)') "Error in cylindermap(): "
+         WRITE(AMPI_LUN(6),'(A,I1,A)') "   Mapping type =  ", MTYPE, 
+     &                     " has not been implemented" ;
+         WRITE(AMPI_LUN(6),'(A)') "  Valid MTYPE = 2, 20-24" ;
       END SELECT
       
 #if defined(MESH_TRACE) || defined(ALL_TRACE)

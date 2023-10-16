@@ -37,6 +37,8 @@ C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES, ONLY : SZ, MNP, MNWPROH
       USE GLOBAL, ONLY : UU1, VV1, QX1, QY1, QX2, QY2, UU2, VV2, MOM_LV_X,
      &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0, 
@@ -72,7 +74,7 @@ C
       USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart, 
      &    writeWarnElev, collectInundationData, collectMinMaxData
       USE MESH, ONLY : NE, NP, DP, SLAM, SFEA, ICS, TotalArea,
-     &                  MJU, Areas, SFAC
+     &                  MJU, Areas, SFAC 
       USE BOUNDARIES, ONLY : NOPE, NETA, NBOU, NVEL, LBCODEI, NBV, SIII,
      &    NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, NFLUXIBP, NFLUXRBC, CSII,
      &    BARLANHT, BARLANCFSP, NVELL, IBCONN, BARINHT, BARINCFSP,
@@ -158,6 +160,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) FDX1O2A, FDX2O2A, FDX3O2A, FDY1O2A, FDY2O2A, FDY3O2A
       REAL(8),intent(out) :: TimeLoc
+      REAL(8) TimeLocFluxSettling
       REAL(8) TimeH
       REAL(8) runperccomplete
 C   kmd48.33bc - added in the heat flux variables
@@ -206,14 +209,21 @@ C     jgf46.21 Combined flux/radiation b.c. for rivers
 C...  COMPUTE MASTER TIME WHICH IS REFERENCED TO THE BEGINNING TIME OF
 C...  THE MODEL RUN
 C...
+C...  TIMEH: HARMONIC CALCULATIONS ARE MADE FOR TIME WHICH INCLUDES THE REFTIM
+C...  TO ALLOW FOR THE POSSIBILITY THAT THE EQUILIBRIUM ARGUMENTS MAY
+C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
+C...  
+C...  Computation of TimeLoc and TimeH are consolidated. SB,ZC,RL 2022-06-22
+C...
       TimeLoc=IT*DTDP + StaTim*86400.D0
-C    kmd48.33bc - added for the changes in the timestep in the hot start files
+      TimeH=IT*DTDP + (StaTim - RefTim)*86400.D0
       IF (CHOTHS.eqv..true.) THEN
          IF ((ITHS+1).EQ.IT) THEN
            StaTimHS=((IT-1)*DTDPHS)/86400.D0
            RefTimHS=((IT-1)*DTDP)/86400.D0
          END IF
          TimeLoc=IT*DTDP + (StaTimHS - RefTimHS)*86400.D0
+         TimeH=IT*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
       END IF
 
 C...  HARMONIC CALCULATIONS ARE MADE FOR TIME WHICH INCLUDES THE REFTIM
@@ -231,6 +241,8 @@ C...
       END IF
 
 C-------------------TEMPORAL RAMP-------------------------------------
+C...  THIS SECTION IS REWRITTEN BY SB, ZC, and RL 2022-06-22
+C...
 C...  NOTE: MOVED HERE BY DW/WJP : May 3rd 2018
 C...  DEFINE Ramp FUNCTION FOR BOUNDARY ELEVATION FORCING, WIND AND PRESSURE
 C.... FORCING AND TIDAL POTENTIAL FORCING
@@ -238,8 +250,7 @@ C...
 C
 C     jgf46.08 Calculate ramp functions.
 C     jgf46.21 Modify to match behavior of 46.02
-      SELECT CASE(NRamp)
-      CASE(0)
+      IF(NRamp.EQ.0) THEN
          Ramp=1.0D0
          RampExtFlux=1.0D0
          RampIntFlux=1.0D0
@@ -247,43 +258,21 @@ C     jgf46.21 Modify to match behavior of 46.02
          RampTip=1.0D0
          RampMete=1.0D0
          RampWRad=1.0D0
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
-C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
-      CASE(1)
-         !jgf51.51.21: Fixed the case where nramp=1 but dramp=0.0d0.
-         if (dramp.lt.1.0e-6) then
-            Ramp=1.0d0
-            RampExtFlux=1.0D0
-            RampIntFlux=1.0D0
-            RampElev=1.0D0
-            RampTip=1.0D0
-            RampMete=1.0D0
-            RampWRad=1.0D0
-         else
-            ramp=tanh((2.d0*timeloc/86400.d0)/dramp)
-            RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampElev=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampTip=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampMete=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-            RampWRad=TANH((2.D0*TimeLoc/86400.D0)/dramp)
-         endif
-      CASE(2,3,4,5,6,7,8)
+      ELSE
          Ramp=TANH((2.D0*TimeLoc/86400.D0)/DRamp)
          RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampExtFlux)
          RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampIntFlux)
          RampElev=TANH((2.D0*TimeLoc/86400.D0)/DRampElev)
          RampTip=TANH((2.D0*TimeLoc/86400.D0)/DRampTip)
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
          RampMete=TANH((2.D0*(TimeLoc/86400.D0-DUnRampMete))/DRampMete)
          RampWRad=TANH((2.D0*TimeLoc/86400.D0)/DRampWRad)
-      END SELECT
+      ENDIF
 C
 C     jgf46.21 If there is an external flux (i.e. river) boundary, turn
 C     off all forcings except the river flux forcing for the duration of
 C     the FluxSettlingTime. When the FluxSettlingTime has ended, turn
 C     all forcings back on.
-      IF (NRamp.gt.1) THEN
+      IF (NRamp.gt.1.AND.FluxSettlingIT.GT.0) THEN
          IF(IT.LT.(FluxSettlingIT+10)) THEN
             Ramp=0.0
             RampIntFlux=0.0
@@ -292,34 +281,37 @@ C     all forcings back on.
             RampMete=0.0
             RampWRad=0.0
          ELSE
-            Ramp=TANH((2.D0*(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRamp)
+            TimeLocFluxSettling=(IT-FluxSettlingIT-10)*DTDP
+     &           + StaTim*86400.D0
+            IF (CHOTHS.eqv..true.) THEN
+               TimeLocFluxSettling=(IT-FluxSettlingIT-10)*DTDP
+     &           + (StaTimHS - RefTimHS)*86400.D0
+            END IF
+
+            Ramp=TANH((2.D0*TimeLocFluxSettling/86400.D0)/DRamp)
             RampIntFlux=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampIntFlux)
+     &           *TimeLocFluxSettling/86400.D0)/DRampIntFlux)
             RampElev=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampElev)
+     &           *TimeLocFluxSettling/86400.D0)/DRampElev)
             RampTip=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampTip)
-            RampMete=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampMete)
+     &           *TimeLocFluxSettling/86400.D0)/DRampTip)
+            IF(NRamp.ne.8) then
+               RampMete=TANH((2.D0
+     &           *TimeLocFluxSettling/86400.D0)/DRampMete)
+            ENDIF
             RampWRad=TANH((2.D0
-     &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampWRad)
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
-            IF(NRamp.eq.8) then
-               RampMete=TANH((2.D0*((((IT)*DTDP)/86400.D0)-DUnRampMete))/DRampMete)
-            endif
+     &           *TimeLocFluxSettling/86400.D0)/DRampWRad)
          ENDIF
-         !jgf49.44: Cover the case where the ramp length is zero.
-         IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
-         IF (DRampExtFlux.lt.1.0e-6) RampExtFlux = 1.0d0
-         IF (DRampIntFlux.lt.1.0e-6) RampIntFlux = 1.0d0
-         IF (DRampElev.lt.1.0e-6) RampElev = 1.0d0
-         IF (DRampTip.lt.1.0e-6) RampTip = 1.0d0
-         IF (DRampMete.lt.1.0e-6) RampMete = 1.0d0
-         IF (DRampWRad.lt.1.0e-6) RampWRad = 1.0d0
-      ELSE
-         !jgf49.44: Cover the case where the ramp length is zero.
-         IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
       ENDIF
+
+      !jgf49.44: Cover the case where the ramp length is zero.
+      IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
+      IF (DRampExtFlux.lt.1.0e-6) RampExtFlux = 1.0d0
+      IF (DRampIntFlux.lt.1.0e-6) RampIntFlux = 1.0d0
+      IF (DRampElev.lt.1.0e-6) RampElev = 1.0d0
+      IF (DRampTip.lt.1.0e-6) RampTip = 1.0d0
+      IF (DRampMete.lt.1.0e-6) RampMete = 1.0d0
+      IF (DRampWRad.lt.1.0e-6) RampWRad = 1.0d0
 C     
 C------DW
       IF ( LoadAbsLayerSigma ) THEN
@@ -450,7 +442,7 @@ C
             END DO
 !!!        go get new record for all nodes
             DO I=1,NP
-               READ(141,*) IJK,DP2(IJK)
+               READ(AMPI_LUN(141),*) IJK,DP2(IJK)
             ENDDO
 C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
 C...     DEPTHS ARE > OR = TO H0.
@@ -540,6 +532,9 @@ C
          ENDIF
 
       ENDIF  !NDDT = 2
+
+
+
 C
 C
 C-------------------BOTTOM FRICTION-------------------------------------
@@ -593,7 +588,8 @@ C
       ENDIF
 
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-      if (ncice.ne.0.and.ncice.ne.14) then
+C++ GML added ncice .ne. 17
+      if (ncice.ne.0.and.(ncice.ne.14) .and. (ncice.ne.17)) then
          CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          do i=1,np
             CICEOUT(I) = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
@@ -644,7 +640,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #endif
       IF(NRS.NE.0) THEN
 
-         if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
+        if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3) .or. (nrs.eq.5)) then  !saeed added 5
+!          if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
             IF(TimeLoc.GT.RSTIME2) THEN
                RSTIME1=RSTIME2
                RSTIME2=RSTIME2+RSTIMINC
@@ -675,8 +672,21 @@ C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2
                  ENDDO
                ENDIF
 #endif
+C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
+               NRS5: IF (NRS == 5) THEN    ! saeed
+
+                  DO I=1,NP
+                   RSX = RSNX1(I)
+                   RSY = RSNY1(I)
+                   RSNX1(I) = RSNX2(I)
+                   RSNY1(I) = RSNY2(I)
+                   RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX) ! extrapolate: 2*Rc - Rp
+                   RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
+                 ENDDO
+               ENDIF NRS5 !(NRS = 5)
 
             ENDIF
+
             RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
             DO I=1,NP
                RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
@@ -734,10 +744,10 @@ Casey 140701: Added the following IF statement.
             IF(TimeLoc.GT.RBCTIME2) THEN
                RBCTIME1=RBCTIME2
                RBCTIME2=RBCTIME2+RBCTIMEINC
-               READ(35,'(A)') CDUM80
+               READ(AMPI_LUN(35),'(A)') CDUM80
                DO I=1,NETA
                  LNM_BC1(I)=LNM_BC2(I)
-                 READ(35,*) NOD,LNM_BC2(I)
+                 READ(AMPI_LUN(35),*) NOD,LNM_BC2(I)
                END DO
             END IF
             RBCRATIO=(TimeLoc-RBCTIME1)/RBCTIMEINC
@@ -844,7 +854,7 @@ C...
                   IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &                 .OR.(LBCODEI(J).EQ.22)) THEN
                      QNIN1(J)=QNIN2(J)
-                     READ(20,*) QNIN2(J)
+                     READ(AMPI_LUN(20),*) QNIN2(J)
 
 !                     write(*,*) 'inside timestep: IT = ', IT
 !                     write(*,*) 'inside timestep: J, QNIN2 = ', J, QNIN2(J)
@@ -854,7 +864,7 @@ C...
                   IF(LBCODEI(J).EQ.32) THEN
                      QNIN1(J)=QNIN2(J)
                      ENIN1(J)=ENIN2(J)
-                     READ(20,*) QNIN2(J),ENIN2(J)
+                     READ(AMPI_LUN(20),*) QNIN2(J),ENIN2(J)
 
 !                     write(*,*) 'inside timestep: IT = ', IT
 !                     write(*,*) 'inside timestep: we should not be here!'
@@ -1005,6 +1015,7 @@ C...
       if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
+      
 
 
 
@@ -1125,7 +1136,7 @@ C...
                CALL writeHotstart_through_hswriter(TimeLoc,IT)  !st3 hsfile
 #endif
             else
-               write(6,*) 'HS writer does not support C3D'
+               write(AMPI_LUN(6),*) 'HS writer does not support C3D'
             endif
          else
             if (NHOUTONCE) then
@@ -1194,13 +1205,13 @@ C     the screen.
 #ifdef CMPI
          IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
-               WRITE(ScreenUnit,1991)
-     &            IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
-     &            VELMAX,KVMAX,MYPROC
+               WRITE(AMPI_LUN(ScreenUnit),1991)
+     &           IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
+     &           VELMAX,KVMAX,MYPROC
             ELSE
-               WRITE(ScreenUnit,1991)
-     &            IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
-     &            KVMAX,MYPROC
+               WRITE(AMPI_LUN(ScreenUnit),1991)
+     &           IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
+     &           KVMAX,MYPROC
 
             ENDIF
  1991       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
@@ -1214,11 +1225,11 @@ C     the screen.
          IF(ELMAX.GT.WarnElev) THEN
 C     WJP 03.27.2018 with the addition of the hash table we now need to
 C     output the global node number to debug the local PE fort.14s
-            WRITE(ScreenUnit,1993)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(AMPI_LUN(ScreenUnit),1993)
+     &          IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &          VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(AMPI_LUN(16),1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &          NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1993       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1236,11 +1247,11 @@ C     output the global node number to debug the local PE fort.14s
          ErrorElevExceeded = 0                ! Clint's Zombie Slyaer
          IF(ELMAX.GT.ErrorElev) THEN
 
-            WRITE(ScreenUnit,1995)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(AMPI_LUN(ScreenUnit),1995)
+     &          IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &          VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(AMPI_LUN(16),1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &          NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1259,11 +1270,11 @@ C     output the global node number to debug the local PE fort.14s
 #else
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
-               WRITE(ScreenUnit,1992)
-     &              IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+               WRITE(AMPI_LUN(ScreenUnit),1992)
+     &             IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             ELSE
-               WRITE(ScreenUnit,1992)
-     &              IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
+               WRITE(AMPI_LUN(ScreenUnit),1992)
+     &             IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
             ENDIF
  1992       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
      &           5X,'ITERATIONS =',I5,
@@ -1272,9 +1283,9 @@ C     output the global node number to debug the local PE fort.14s
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8)
          ENDIF
          IF(ELMAX.GT.WarnElev) THEN
-            WRITE(ScreenUnit,1994)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(AMPI_LUN(ScreenUnit),1994)
+     &          IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(AMPI_LUN(16),1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1285,11 +1296,11 @@ C     output the global node number to debug the local PE fort.14s
 #endif
          ENDIF
          IF(ELMAX.GT.ErrorElev) THEN
-            write(6,*) 'elmax, errorelev',elmax, errorelev !jgf
+            write(AMPI_LUN(6),*) 'elmax, errorelev',elmax, errorelev !jgf
             Flag_ElevError = .true.
-            WRITE(ScreenUnit,1996)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(AMPI_LUN(ScreenUnit),1996)
+     &          IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(AMPI_LUN(16),1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
@@ -1329,6 +1340,8 @@ C*******************************************************************************
 C
       SUBROUTINE SCALAR_TRANS_2D (IT,TimeLoc)
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL, only: ch1, trans_lv_b, nodecode, noff, lumpt, dtdp,
      &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
      &    rhowat0, setmessagesource, unsetmessagesource, DEBUG,
@@ -1640,6 +1653,8 @@ C
 
       SUBROUTINE CALC_SIGMAT_2D ()
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL
 
       INTEGER NH
@@ -1680,6 +1695,8 @@ c******************************************************************************
       
       SUBROUTINE BPG2D(IT,TimeLoc)
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES, ONLY : SZ, myproc
       USE GLOBAL, ONLY: G, IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF, 
      &    VIDBCPDXOH, VIDBCPDYOH, ETA2, SigT0, DTDP, DASigT, RhoWat0,
@@ -1841,6 +1858,8 @@ c******************************************************************************
 
 Casey: Added the following variable declarations from GLOBAL.
 C
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY: IFNLFA, IFNLCT,
      &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
@@ -2319,6 +2338,8 @@ C*************************************************************************
 C
       SUBROUTINE ZSURFBUOY(SigmaNN,BCPressNN,NN,J)
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL_3DVS
       IMPLICIT NONE
       REAL(SZ) :: BCPressNN
@@ -2400,10 +2421,10 @@ C     jgf46.00 Explicitly declared the following variables
  100  CONTINUE
 
       IF(IDiag.EQ.2) THEN
-         WRITE(2,*) '******** ZSURFBUOY **********'
-         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
-     &        '      BCPressNN'
-         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
+         WRITE(AMPI_LUN(2),*) '******** ZSURFBUOY **********'
+         WRITE(AMPI_LUN(2),*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+     &       '      BCPressNN'
+         WRITE(AMPI_LUN(2),777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
@@ -2431,6 +2452,8 @@ C*************************************************************************
 C
       SUBROUTINE ZSURFBUOY_p3 (SigmaNN,BCPressNN,NN,J)
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
       USE GLOBAL_3DVS
       IMPLICIT NONE
       REAL(SZ) :: BCPressNN
@@ -2660,10 +2683,10 @@ C     jgf46.00 Explicitly declared the following variables
  100  CONTINUE
 
       IF(IDiag.EQ.2) THEN
-         WRITE(2,*) '******** ZSURFBUOY_p3 **********'
-         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
-     &        '      BCPressNN'
-         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
+         WRITE(AMPI_LUN(2),*) '******** ZSURFBUOY_p3 **********'
+         WRITE(AMPI_LUN(2),*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+     &       '      BCPressNN'
+         WRITE(AMPI_LUN(2),777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
@@ -2680,6 +2703,8 @@ C**********************************************************************
 
        Subroutine Gaussian_filter_complex_BPG ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
 
+      use AMPI_LUN_Virtualized, only : AMPI_LUN
+      use AMPI_LUN_migratable
        Use Global,      Only : IFNLFA, ETA2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B

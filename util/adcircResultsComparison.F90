@@ -18,12 +18,16 @@
 !-----------------------------------------------------------------------
 
         MODULE adcircCompare_module
+      use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
+      use AMPI_LUN_migratable
+#ifdef ADCNETCDF            
             USE NETCDF
-
+#endif           
             INTEGER,PARAMETER   :: nNetCDFVariables = 40
             CHARACTER(200),SAVE :: netcdf_types(nNetCDFVariables)
             CHARACTER(200),SAVE :: nc_longname(nNetCDFVariables)
             CHARACTER(200),SAVE :: nc_stdname(nNetCDFVariables)
+            
             REAL(8),PARAMETER   :: eps = EPSILON(1D0)
 
             PRIVATE nNetCDFVariables,netcdf_types,nc_longname,initializeNetcdf
@@ -63,7 +67,7 @@
                 I = 0
                 DO
                     I = I + 1
-                    INQUIRE(UNIT=I,OPENED=ISOPEN)
+                    INQUIRE(UNIT=AMPI_LUN(I),OPENED=ISOPEN)
                     IF(ISOPEN)CYCLE
                     GETFREEUNIT = I
                     EXIT
@@ -72,13 +76,15 @@
             END FUNCTION getFreeUnit
            
             SUBROUTINE CHECK(stat,error,fatal)
-                USE NETCDF
                 IMPLICIT NONE
                 INTEGER,INTENT(IN)             :: stat
                 LOGICAL,INTENT(OUT),OPTIONAL   :: error
                 LOGICAL,INTENT(IN),OPTIONAL    :: fatal
                 LOGICAL                        :: fatal_local
                 INTEGER,ALLOCATABLE            :: Dmy(:)
+#ifndef ADCNETCDF                
+                STOP 1
+#else                
 
                 IF(.NOT.PRESENT(FATAL))THEN
                     FATAL_LOCAL = .TRUE.
@@ -104,9 +110,10 @@
                         IF(PRESENT(error))error = .FALSE.
                     ENDIF
                 ENDIF
+#endif                
             END SUBROUTINE CHECK
            
-
+           
             SUBROUTINE initializeNetcdf()
                 IMPLICIT NONE
 
@@ -248,7 +255,7 @@
                 INTEGER :: J
                 INTEGER :: NVAR
                 CHARACTER(200) :: NC_NAME
-
+#ifdef ADCNETCDF
                 CALL CHECK(NF90_INQUIRE(NCID,NVARIABLES=NVAR))
 
                 CALL initializeNetcdf()
@@ -267,12 +274,11 @@
                         CALL EXIT(1)
                     ENDIF
                 ENDDO
-
+#endif
             END SUBROUTINE findMyNetCDFVariable
 
 
             SUBROUTINE getNetCDFVarId(NCID,VARID1,VARID2,NCOLS,VarName1,VarName2)
-                USE netcdf
                 IMPLICIT NONE
                 INTEGER,INTENT(IN)  :: NCID
                 INTEGER,INTENT(OUT) :: VARID1
@@ -283,6 +289,7 @@
                 INTEGER             :: J
                 INTEGER             :: NVAR
                 CHARACTER(200)      :: NC_NAME
+#ifdef ADCNETCDF                
 
                 CALL CHECK(NF90_INQUIRE(NCID,NVARIABLES=NVAR))
 
@@ -312,6 +319,7 @@
                     ENDDO
                 ENDDO
                 CALL EXIT(1)
+#endif                
             END SUBROUTINE getNetCDFVarId
 
             SUBROUTINE showHelp()
@@ -421,7 +429,7 @@
 
                 !...Check the various output formats to determine 
                 !   the type of file that is specified
-
+#ifdef ADCNETCDF
                 !...Check 1: netcdf
                 IF(checkFormat_netcdf(filename))THEN
                     determineFileType = 3
@@ -433,7 +441,7 @@
                     determineFileType = 7
                     RETURN
                 ENDIF
-                
+#endif                
                 !...Check 3: full format ascii
                 IF(checkFormat_fullFormatAscii(filename))THEN
                     determineFileType = 1
@@ -451,6 +459,7 @@
 
             END FUNCTION determineFiletype
 
+#ifdef ADCNETCDF
             LOGICAL FUNCTION checkFormat_netcdf(filename)
                 IMPLICIT NONE
                 CHARACTER(*),INTENT(IN) :: filename
@@ -475,6 +484,7 @@
                 checkFormat_xdmf = .FALSE.
 
             END FUNCTION checkFormat_xdmf
+#endif            
 
             LOGICAL FUNCTION checkFormat_fullFormatAscii(filename)
                 IMPLICIT NONE
@@ -486,10 +496,10 @@
 
                 io = getFreeUnit()
                 OPEN(FILE=TRIM(filename),UNIT=io,ACTION="READ")
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                CLOSE(io)
+                READ(AMPI_LUN(io),'(A)') header
+                READ(AMPI_LUN(io),'(A)') header
+                READ(AMPI_LUN(io),'(A)') header
+                CLOSE(AMPI_LUN(io))
 
                 READ(header,*,ERR=100,END=100) JunkR,JunkI,JunkI,JunkR
                 checkFormat_fullFormatAscii = .FALSE.
@@ -509,10 +519,10 @@
 
                 io = getFreeUnit()
                 OPEN(FILE=TRIM(filename),UNIT=io,ACTION="READ")
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                CLOSE(io)
+                READ(AMPI_LUN(io),'(A)') header
+                READ(AMPI_LUN(io),'(A)') header
+                READ(AMPI_LUN(io),'(A)') header
+                CLOSE(AMPI_LUN(io))
 
                 READ(header,*,ERR=100,END=100) JunkR,JunkI,JunkI,JunkR
                 checkFormat_sparseFormatAscii = .TRUE.
@@ -553,9 +563,9 @@
                 CHARACTER(200)          :: header
                 io = getFreeUnit()
                 OPEN(FILE=TRIM(filename),UNIT=io,ACTION="READ")
-                READ(io,'(A)') header
-                READ(io,'(A)') header
-                CLOSE(io)
+                READ(AMPI_LUN(io),'(A)') header
+                READ(AMPI_LUN(io),'(A)') header
+                CLOSE(AMPI_LUN(io))
                 ! FIXME: the numsnaps in the ascii output file header
                 ! will be wrong if the file has been appended after 
                 ! hotstart (numsnaps is computed and written at cold
@@ -574,7 +584,7 @@
                 INTEGER                 :: dimid_time
                 INTEGER                 :: dimid_node
                 INTEGER                 :: ierr
-
+#ifdef ADCNETCDF
                 CALL CHECK(NF90_OPEN(TRIM(filename),NF90_NOWRITE,ncid))
                 CALL CHECK(NF90_INQ_DIMID(ncid,"time",dimid_time))
 
@@ -586,7 +596,7 @@
                 CALL CHECK(NF90_INQUIRE_DIMENSION(ncid,dimid_node,LEN=numnodes))
                 CALL FindMyNetCDFVariable(ncid)
                 CALL CHECK(NF90_CLOSE(ncid))
-
+#endif
                 RETURN
             END SUBROUTINE getMetadataNetCDF
 
@@ -600,10 +610,12 @@
                 IF(filetype.EQ.1.OR.filetype.EQ.4)THEN
                     fileunit = getFreeUnit()
                     OPEN(FILE=TRIM(filename),UNIT=fileunit,ACTION="READ")
-                    READ(fileunit,*) header
-                    READ(fileunit,*) header
+                    READ(AMPI_LUN(fileunit),*) header
+                    READ(AMPI_LUN(fileunit),*) header
                 ELSEIF(filetype.EQ.3)THEN
+#ifdef ADCNETCDF                    
                     CALL CHECK(NF90_OPEN(TRIM(filename),NF90_NOWRITE,fileunit))
+#endif                    
                 ELSE
                     fileunit = -9999
                 ENDIF
@@ -617,7 +629,7 @@
                 INTEGER,INTENT(IN) :: filetype
 
                 IF(filetype.EQ.1.OR.filetype.EQ.4)THEN
-                    CLOSE(fileunit)
+                    CLOSE(AMPI_LUN(fileunit))
                 ELSEIF(filetype.EQ.3)THEN
                     !CALL CHECK(NF90_CLOSE(fileunit))
                 ELSE
@@ -638,9 +650,9 @@
                 INTEGER               :: I,J
                 INTEGER               :: junki
 
-                READ(io_unit,*) time,timestep
+                READ(AMPI_LUN(io_unit),*) time,timestep
                 DO I = 1,nnodes
-                   READ(io_unit,*) junkI,(nodalData(I,J),J=1,nvalues)
+                   READ(AMPI_LUN(io_unit),*) junkI,(nodalData(I,J),J=1,nvalues)
                 ENDDO
 
                 RETURN
@@ -659,10 +671,10 @@
                 INTEGER               :: I,J
                 REAL(8)               :: defaultvalue
 
-                READ(io_unit,*) time,timestep,nnondefault,defaultvalue
+                READ(AMPI_LUN(io_unit),*) time,timestep,nnondefault,defaultvalue
                 nodaldata(:,:) = defaultvalue
                 DO I = 1,nnondefault
-                    READ(io_unit,*) node,(nodalData(node,J),J=1,nvalues)
+                    READ(AMPI_LUN(io_unit),*) node,(nodalData(node,J),J=1,nvalues)
                 ENDDO
 
                 RETURN
@@ -676,11 +688,12 @@
                 INTEGER,INTENT(IN)    :: varid1,varid2
                 INTEGER,INTENT(IN)    :: snap
                 REAL(8),INTENT(INOUT) :: nodaldata(:,:)
-
+#ifdef ADCNETCDF
                 CALL CHECK(NF90_GET_VAR(io_unit,varid1,nodaldata(:,1),START=(/1,snap/),COUNT=(/nnodes,1/)))
                 IF(nvalues.EQ.2)THEN
                     CALL CHECK(NF90_GET_VAR(io_unit,varid2,nodaldata(:,2),START=(/1,snap/),COUNT=(/nnodes,1/)))
                 ENDIF
+#endif                
                 
                 RETURN
             END SUBROUTINE readNextSnapNetCDF
