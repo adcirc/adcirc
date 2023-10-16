@@ -1182,7 +1182,7 @@ C
                select case(abs(nws))
                   case(1,2)
                     iret = nf90_put_att(sta%ncid, sta%u_station_data_id,
-     &                      'long_name', 'station e/w wind stress')
+     &                      'long_name', 'station wind stress u-component')
                     CALL check_err(iret)
                     iret = nf90_put_att(sta%ncid, sta%u_station_data_id,
      &                     'standard_name',
@@ -1191,7 +1191,7 @@ C
                     iret = nf90_put_att(sta%ncid, sta%u_station_data_id,
      &                     'positive', 'east')
                     iret = nf90_put_att(sta%ncid, sta%v_station_data_id,
-     &                     'long_name', 'station n/s wind stress')
+     &                     'long_name', 'station wind stress v-component')
                     CALL check_err(iret)
                     iret = nf90_put_att(sta%ncid, sta%v_station_data_id,
      &                    'standard_name',
@@ -1202,7 +1202,7 @@ C
                     CALL check_err(iret)
                   case default
                     iret = nf90_put_att(sta%ncid, sta%u_station_data_id,
-     &                     'long_name', 'station e/w wind velocity')
+     &                     'long_name', 'station wind speed at 10m u-component')
                     CALL check_err(iret)
                     iret = nf90_put_att(sta%ncid, sta%u_station_data_id,
      &                     'standard_name',
@@ -1212,7 +1212,7 @@ C
      &                     'positive', 'east')
                     iret = nf90_put_att(sta%ncid, sta%v_station_data_id,
      &                     'long_name',
-     &                     'station n/s wind velocity')
+     &                     'station wind speed at 10m v-component')
                     CALL check_err(iret)
                     iret = nf90_put_att(sta%ncid, sta%v_station_data_id,
      &                     'standard_name', 'station_northward_wind')
@@ -2365,7 +2365,7 @@ C
                   case(1,2)
                      iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &                      'long_name',
-     &                       'e/w wind stress')
+     &                       'wind stress u-component')
                      CALL check_err(iret)
                      iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &                      'standard_name',
@@ -2376,7 +2376,7 @@ C
                      CALL check_err(iret)
                      iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
      &                       'long_name',
-     &                       'n/s wind stress')
+     &                       'wind stress v-component')
                      CALL check_err(iret)
                      iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
      &                      'standard_name',
@@ -2387,7 +2387,7 @@ C
                      CALL check_err(iret)
                   case default
                      iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
-     &               'long_name', 'e/w wind velocity')
+     &               'long_name', 'wind speed at 10m u-component')
                      CALL check_err(iret)
                      iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &                      'standard_name', 'eastward_wind')
@@ -2396,7 +2396,7 @@ C
      &                     'positive', 'east')
                      CALL check_err(iret)
                      iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
-     &                     'long_name', 'n/s wind velocity')
+     &                     'long_name', 'wind speed at 10m v-component')
                      CALL check_err(iret)
                      iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
      &                       'standard_name', 'northward_wind')
@@ -2994,7 +2994,7 @@ C
                   case(1,2)
                      iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &                      'long_name',
-     &                       'e/w wind stress')
+     &                       'wind stress u-component')
                      CALL check_err(iret)
                      iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &                      'standard_name',
@@ -3005,7 +3005,7 @@ C
                      CALL check_err(iret)
                      iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
      &                       'long_name',
-     &                       'n/s wind stress')
+     &                       'wind stress v-component')
                      CALL check_err(iret)
                      iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
      &                      'standard_name',
@@ -3016,7 +3016,7 @@ C
                      CALL check_err(iret)
                   case default
                      iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
-     &               'long_name', 'e/w wind velocity')
+     &               'long_name', 'wind speed at 10m u-component')
                      CALL check_err(iret)
                      iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &                      'standard_name', 'eastward_wind')
@@ -3025,7 +3025,7 @@ C
      &                     'positive', 'east')
                      CALL check_err(iret)
                      iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
-     &                     'long_name', 'n/s wind velocity')
+     &                     'long_name', 'wind speed at 10m v-component')
                      CALL check_err(iret)
                      iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
      &                       'standard_name', 'northward_wind')
@@ -5345,7 +5345,7 @@ C     U V E L
       CALL check_err(iret)
       if (ics.ne.1) then
          iret = nf90_put_att(hs%ncid, hs%vel%u_nodal_data_id,
-     &          'long_name', 'vertically averaged e/w velocity')
+     &          'long_name', 'vertically averaged water velocity u-component')
          CALL check_err(iret)
          iret = nf90_put_att(hs%ncid, hs%vel%u_nodal_data_id,
      &          'positive', 'east')
@@ -5376,13 +5376,13 @@ C     V V E L
       CALL check_err(iret)
       if (ics.ne.1) then
          iret = nf90_put_att(hs%ncid, hs%vel%v_nodal_data_id,
-     &           'long_name', 'vertically averaged n/s velocity')
+     &           'long_name', 'vertically averaged water velocity v-component')
          CALL check_err(iret)
          iret = nf90_put_att(hs%ncid, hs%vel%v_nodal_data_id,
      &           'positive', 'north')
       else
          iret = nf90_put_att(hs%ncid, hs%vel%v_nodal_data_id,
-     &       'long_name','vertically averaged velocity in y-direction')
+     &       'long_name','vertically averaged water velocity in y-direction')
          CALL check_err(iret)
          iret = nf90_put_att(hs%ncid, hs%vel%v_nodal_data_id,
      &  'positive', '90 degrees counterclockwise from x water velocity')
