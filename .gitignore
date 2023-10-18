@@ -44,3 +44,4 @@ work/util/*
 .idea/
 .vscode/
 .project
+*~

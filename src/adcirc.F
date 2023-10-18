@@ -309,14 +309,17 @@ C...  attached to each node
       END IF
 
       !jgf: Initialize water level offset if needed
+      allocate(deltaOffset(np)) !time difference in offset tgaContOffset
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          allocate(dynamicWaterLevelCorrection1(np))
          allocate(dynamicWaterLevelCorrection2(np)) ! used in timestepping
-         allocate(deltaOffset(np)) !time difference in offset tgaContOffset
          allocate(dynamicWaterLevelCorrectionSta(mnstae))
          call initDynamicWaterLevelCorrection(timeloc) ! initializes the i/o 
          call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc) ! populate 
+      else
+         deltaOffset=0.
       endif
+
 C
 C     jgf51.21.24: Initialize output.
       call initOutput2D(timeloc)

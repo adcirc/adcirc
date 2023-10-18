@@ -560,6 +560,9 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       endif
       rewind(15)
 
+!      print*,'dynamicWaterLevelCorrectionFileName=',dynamicWaterLevelCorrectionFileName  ! BOB
+!      stop  ! BOB
+
 C     jgf46.10 Add user-controllable warning, output, and stop criteria
 C     for elevations. Initialize default values.
       WarnElev = 20.0         ! default

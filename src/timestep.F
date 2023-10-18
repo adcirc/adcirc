@@ -607,7 +607,6 @@ C     jgf: update water level correction fields
          call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc)
          deltaOffset=dynamicWaterLevelCorrection2-dynamicWaterLevelCorrection1
       endif
-
 C
 C---------------------BEGIN MET FORCING----------------------------------------
 
