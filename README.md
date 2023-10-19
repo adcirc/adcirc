@@ -26,10 +26,10 @@ Engineers (USACE), Federal Emergency Management Agency (FEMA), National Oceanogr
 * Randall Kolar - University of Oklahoma at Norman
 * Chris Massey - US Army Corps of Engineers Research and Development Center, Coastal and Hydraulics Laboratory
 
-## Development Branch Status
-The current development branch is tested on CircleCI
+## CI Status
+The current main branch is tested on CircleCI
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/adcirc/adcirc/tree/development.svg?style=svg&circle-token=6f58abcf1e3cffe166b038b5b481090faa308ac0)](https://dl.circleci.com/status-badge/redirect/gh/adcirc/adcirc/tree/development)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/adcirc/adcirc/tree/main.svg?style=svg&circle-token=468312e3a9341f3a519bbdfb4df0cda07c98bd91)](https://dl.circleci.com/status-badge/redirect/gh/adcirc/adcirc/tree/main)
 
 # Gallery
 
