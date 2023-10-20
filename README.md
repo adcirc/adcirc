@@ -41,15 +41,6 @@ ADCIRC mesh in the Chesapeake Bay area used for the FEMA Coastal Storm Surge Stu
 
 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/FEMA_Region_III_Coastal_Storm_Surge_Study_%28page_7_crop%29.jpg/1280px-FEMA_Region_III_Coastal_Storm_Surge_Study_%28page_7_crop%29.jpg" alt="ADCIRC mesh in the Chesapeake Bay area used for the FEMA Coastal Storm Surge Study" width="400"/>
 
-## Usage
-
-Conditions for obtaining the code are the following
-
-1. That it is used for research or education purposes,
-2. That ADCIRC is identified by name in publications, and
-3. That individuals do not redistribute ADCIRC but rather have interested parties email Crystal Fulcher to obtain the
-   code
-
 # Versions
 
 Code versions are published based approximately on semantic versioning. Using the major version number (i.e. XX in the
