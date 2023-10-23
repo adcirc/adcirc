@@ -2412,7 +2412,7 @@ C     ----------------------------------------------------------------
       logical, save ::  first_entry = .TRUE.
       ! CPB: for tidal velocities
       REAL(8) :: cosAMIGT, sinAMIGT, DissTidal, DissTotal, jjwgamma,
-     &            Cxx, Cyy, Cxy
+     &            Cxx, Cyy, Cxy, Dtidal, Dtotal
       INTEGER :: NCYC
       REAL(8),DIMENSION(:),ALLOCATABLE :: Udmy, Vdmy
       !
@@ -2500,20 +2500,6 @@ C           For the scalar Zaron & Egbert (2006) type
 C           1st column is coefficient, 2nd column is the squared hypotenuse slope
                ADRAGU = 0d0
                ADRAGV = 0d0
-               writetime = .false.
-               IF (COUNTER1.GT.5880) THEN
-                  writetime = .true.
-                  ALLOCATE(TEMPDATA(NP,9))
-                  IF (MYPROC.EQ.0) THEN
-                     ALLOCATE(TEMPDATAGLOBAL(NP_G,9))
-                  ELSE
-                     ALLOCATE(TEMPDATAGLOBAL(1,9))
-                  ENDIF
-                  TEMPDATA = 0d0
-                  TEMPDATAGLOBAL = 0d0
-               ELSE
-                  !COUNTER1 = COUNTER1 + 1
-               ENDIF
                DO I = 1,NP
                   adju = 1d0; adjv = 1d0;adjuv = 1d0;
                   NBdiff = (NB(I)**2d0 - omega**2d0)
@@ -2524,19 +2510,6 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      ! No freely propagating internal tides
                      TKM(1:2,I) = TK(I)
                      TKM(3,I)   = 0.0d0
-                     ADRAGU(I) = 0d0
-                     ADRAGV(I) = 0d0
-                     IF (writetime.eqv..true.) THEN
-                        TEMPDATA(I,1) = -999d0
-                        TEMPDATA(I,2) = IT_FRIC(I,2)
-                        TEMPDATA(I,3) = IT_FRIC(I,3)
-                        TEMPDATA(I,4) = U(I)
-                        TEMPDATA(I,5) = V(I)
-                        TEMPDATA(I,6) = UBar(I)
-                        TEMPDATA(I,7) = VBar(I)
-                        TEMPDATA(I,8) = 0d0
-                        TEMPDATA(I,9) = 0d0
-                     ENDIF
                   ELSE 
                      ! Have freely propagating internal tides
                      ! Get the full coefficient
@@ -2561,102 +2534,31 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      ! Calculate adjustment based on tidal residual
                      if (abs(IDEN).ne.7) then
                         ! Calculate the adjustment factors based on the delayed moving mean
-                        IF (ABS(U(I)).GT.1d-3.AND.
-     &                      ABS(V(I)).GT.1d-3) THEN
-                           !adju = UBar(I)/U(I)
-                           !adjv = VBar(I)/V(I)
-                        ENDIF
-                        adju = 1d0
-                        adjv = 1d0
-                        adjuv = 0.5d0*(adju + adjv)
-                     endif
-                     ! Implement the friction with possible adjustment
-                     IF (IT_FricNoOfVals == 3) then
                         Cxx = Fit*IT_Fric(I,2)**2d0
                         Cyy = Fit*IT_Fric(I,3)**2d0
                         Cxy = Fit*IT_Fric(I,2)*IT_Fric(I,3)
-                        TKM(1,I) = TK(I)! + Fit*IT_Fric(I,2)**2d0
-                        TKM(2,I) = TK(I)! + Fit*IT_Fric(I,3)**2d0
-                        TKM(3,I) = 0d0!Fit*IT_Fric(I,2)*IT_Fric(I,3)
-                        ADRAGU(I) = -(Cxx*(U(I)-UBar(I)) +
-     &                                Cxy*(V(I)-VBar(I)))
-                        ADRAGV(I) = -(Cxy*(U(I)-UBar(I)) +
-     &                                Cyy*(V(I)-VBar(I)))
+                        Dtotal = Cxx*U(I)**2d0 + 
+     &                           2*Cxy*U(I)*V(I) +
+     &                           Cyy*V(I)**2d0
+                        Dtidal = Cxx*(U(I)-UBar(I))**2d0 + 
+     &                           2*Cxy*(U(I)-UBar(I))*(V(I)-VBar(I)) +
+     &                           Cyy*(V(I)-VBar(I))**2d0
+                        IF (Dtotal.lt.1d-10) THEN
+                           Dtotal = 1d-10
+                        ENDIF
+                        adju = Dtidal/Dtotal
+                     endif
+                     ! Implement the friction with possible adjustment
+                     IF (IT_FricNoOfVals == 3) then
+                        TKM(1,I) = TK(I) + adju*Fit*IT_Fric(I,2)**2d0
+                        TKM(2,I) = TK(I) + adju*Fit*IT_Fric(I,3)**2d0
+                        TKM(3,I) = adju*Fit*IT_Fric(I,2)*IT_Fric(I,3)
                      else
                         TKM(1:2,I) = TK(I) + adjuv*Fit*IT_Fric(I,2)
                         TKM(3,I)   = 0.0d0
                      endif
-                     IF (writetime.eqv..true.) THEN
-                        TEMPDATA(I,1) = Fit
-                        TEMPDATA(I,2) = IT_FRIC(I,2)
-                        TEMPDATA(I,3) = IT_FRIC(I,3)
-                        TEMPDATA(I,4) = U(I)
-                        TEMPDATA(I,5) = V(I)
-                        TEMPDATA(I,6) = UBar(I)
-                        TEMPDATA(I,7) = VBar(I)
-                        TEMPDATA(I,8) = ADRAGU(I)
-                        TEMPDATA(I,9) = ADRAGV(I)
-                     ENDIF
                   ENDIF
                ENDDO
-               ! CPB: WRITE
-               IF (writetime.eqv..true.) THEN
-                  ! F_it
-                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,1),
-     &                                   TEMPDATA(:,1))
-                  ! Hx
-                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,2),
-     &                                   TEMPDATA(:,2))
-                  ! Hy
-                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,3),
-     &                                   TEMPDATA(:,3))
-                  ! U
-                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,4),
-     &                                   TEMPDATA(:,4))
-                  ! V
-                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,5),
-     &                                   TEMPDATA(:,5))
-                  ! UBar
-                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,6),
-     &                                   TEMPDATA(:,6))
-                  ! VBar
-                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,7),
-     &                                   TEMPDATA(:,7))
-                  ! ADRAGU
-                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,8),
-     &                                   TEMPDATA(:,8))
-                  ! ADRAGV
-                  CALL GATHERGLOBAL_REAL(TEMPDATAGLOBAL(:,9),
-     &                                   TEMPDATA(:,9))
-                  IF (MYPROC.EQ.0) THEN
-                     IF (FIRSTWRITE.EQV..TRUE.) THEN
-                        OPEN(111,ACCESS='SEQUENTIAL',ACTION='WRITE',
-     &                       FILE='ALLVARS.txt',STATUS='REPLACE')
-                        firstwrite = .false.
-                     ELSE
-                        OPEN(111,ACCESS='APPEND',ACTION='WRITE',
-     &                       FILE='ALLVARS.txt',STATUS='OLD')
-                     ENDIF
-                     WRITE(111,*) NP_G
-                     DO I=1,NP_G
-                        WRITE(111,7638) I,
-     &                                  TEMPDATAGLOBAL(I,1),
-     &                                  TEMPDATAGLOBAL(I,2),
-     &                                  TEMPDATAGLOBAL(I,3),
-     &                                  TEMPDATAGLOBAL(I,4),
-     &                                  TEMPDATAGLOBAL(I,5),
-     &                                  TEMPDATAGLOBAL(I,6),
-     &                                  TEMPDATAGLOBAL(I,7),
-     &                                  TEMPDATAGLOBAL(I,8),
-     &                                  TEMPDATAGLOBAL(I,9)
-                     ENDDO
-                     CLOSE(111)
- 7638 FORMAT(2x,i8,2x,9E20.5E4)
-                  ENDIF
-                  DEALLOCATE( TEMPDATA, TEMPDATAGLOBAL )
-                  COUNTER1 = 5760
-               ENDIF
-               ! ENDCPB
             ENDIF
          ELSE
 C           Normal 2DDI ADCIRC without baroclinic coupling
@@ -2669,10 +2571,6 @@ C              Using three columns of data for the different segments of the mat
                   TKM(1,I) = TK(I) + IT_Fric(I,1)
                   TKM(2,I) = TK(I) + IT_Fric(I,2)
                   TKM(3,I) = IT_Fric(I,3) 
-C                  ADRAGU(I) = -(IT_Fric(I,1)*UTide(I) +
-C     &                          IT_Fric(I,3)*VTide(I))
-C                  ADRAGV(I) = -(IT_Fric(I,3)*UTide(I) + 
-C     &                          IT_Fric(I,2)*VTide(I))
                END DO
             ELSEIF (IT_FricNoOfVals == 1) THEN
 C              For the scalar type Zaron & Egbert (2006) type
