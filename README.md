@@ -26,10 +26,10 @@ Engineers (USACE), Federal Emergency Management Agency (FEMA), National Oceanogr
 * Randall Kolar - University of Oklahoma at Norman
 * Chris Massey - US Army Corps of Engineers Research and Development Center, Coastal and Hydraulics Laboratory
 
-## Development Branch Status
-The current development branch is tested on CircleCI
+## CI Status
+The current main branch is tested on CircleCI
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/adcirc/adcirc/tree/development.svg?style=svg&circle-token=6f58abcf1e3cffe166b038b5b481090faa308ac0)](https://dl.circleci.com/status-badge/redirect/gh/adcirc/adcirc/tree/development)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/adcirc/adcirc/tree/main.svg?style=svg&circle-token=468312e3a9341f3a519bbdfb4df0cda07c98bd91)](https://dl.circleci.com/status-badge/redirect/gh/adcirc/adcirc/tree/main)
 
 # Gallery
 
@@ -40,15 +40,6 @@ Louisiana ADCIRC model simulating Hurricane Katrina storm surge and waves develo
 ADCIRC mesh in the Chesapeake Bay area used for the FEMA Coastal Storm Surge Study
 
 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/FEMA_Region_III_Coastal_Storm_Surge_Study_%28page_7_crop%29.jpg/1280px-FEMA_Region_III_Coastal_Storm_Surge_Study_%28page_7_crop%29.jpg" alt="ADCIRC mesh in the Chesapeake Bay area used for the FEMA Coastal Storm Surge Study" width="400"/>
-
-## Usage
-
-Conditions for obtaining the code are the following
-
-1. That it is used for research or education purposes,
-2. That ADCIRC is identified by name in publications, and
-3. That individuals do not redistribute ADCIRC but rather have interested parties email Crystal Fulcher to obtain the
-   code
 
 # Versions
 

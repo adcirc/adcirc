@@ -262,6 +262,8 @@ workflows:
                         - adcirc_nws30_wlcorrection
                         - adcirc_nws30_wlcorrection-parallel
                         - adcirc_slopingbeach_vew1d-parallel
+                        - adcirc_subgrid-serial
+                        - adcirc_subgrid-parallel
       - test_grib2:
             requires: 
                 - build_cmake_with_netcdf_and_xdmf_grib

@@ -1,3 +1,22 @@
+!-------------------------------------------------------------------------------!
+!
+! ADCIRC - The ADvanced CIRCulation model
+! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+! 
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+! 
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+! 
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!-------------------------------------------------------------------------------!
 C#define SB_WETDRY
 C******************************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                            *
@@ -89,7 +108,9 @@ C.....sb46.28sb03 added 09/xx/2006
      &     Apply2DInternalWaveDrag,
      &     Apply3DBottomFriction,
      &     Apply2DMomentumDisp,
-     &     GeoidOffset
+     &     GeoidOffset,
+     &     BFCdLLimit, fric, fgamma, ftheta, manningsn, 
+     &     hbreak, loadManningsN, iflinbf, ifnlbf, ifhybf
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
      &    writeFort066, writeFort067, writeFort065, 
      &    readFort020, readFort021, readFort019 
@@ -120,6 +141,11 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
       USE WEIR_FLUX
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
      &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
+
+!JLW: add subgrid module
+      USE subgrid, ONLY: level0, getEleLookup, getVertLookup
+     &   , subgridwetdry
+
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
 C
@@ -1022,12 +1048,29 @@ C...  Compute new water surface elevation
 
 !---------------------END SOLVE GWCE------------------------------------
 
-
+!JLW: adding subgrid
+      IF(level0)THEN
+#ifdef ADCNETCDF          
+         !JLW: update element arrays
+         call getEleLookup()
+         !JLW: update vertex arrays
+         call getVertLookup()
+         !JLW: update nodecode, ncele, etc
+         call subgridwetdry(BFCdLLimit, fric, fgamma, ftheta,
+     &                      manningsn, hbreak, loadManningsN,
+     &                      iflinbf, ifnlbf, ifhybf)
+#else
+         call allMessage(ERROR, "Subgrid calculation requires building"
+     &                          //"with netcdf enabled")
+         call ADCIRC_Terminate()
+#endif         
+      ELSE
 !--------------------WETTING AND DRYING--------------------------------
 
-      call computeWettingAndDrying(it)
+         call computeWettingAndDrying(it)
 
 !--------------------WETTING AND DRYING--------------------------------
+      ENDIF
 
 C...
 C---------------2DDI Momentum Equation Solution-------------------------

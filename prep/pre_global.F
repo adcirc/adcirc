@@ -1,3 +1,22 @@
+!-------------------------------------------------------------------------------!
+!
+! ADCIRC - The ADvanced CIRCulation model
+! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+! 
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+! 
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+! 
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!-------------------------------------------------------------------------------!
 C----------------------------------------------------------------------------
 C
 C                           MODULE PRE_GLOBAL
@@ -286,6 +305,12 @@ Casey 180318: Added NWS=13
       logical :: noffActive = .true.
       logical :: StatPartWetFix = .false.  ! tcm v53.01.02
       integer :: How2FixStatPartWet = 0    ! tcm v52.01.02 (Can also be 1 in v54.)
+
+!JLW: add subgrid namelist control
+      logical :: foundSubgridControlNamelist = .false.
+      character(200) :: subgridFilename
+      logical :: level0 = .true. 
+      logical :: level1 = .false.
 
       ! jgf52.08.02: For inundation output control. Wanted to just
       ! use the variables of the same name from the write_output module,

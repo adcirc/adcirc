@@ -1,3 +1,22 @@
+!-------------------------------------------------------------------------------!
+!
+! ADCIRC - The ADvanced CIRCulation model
+! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+! 
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+! 
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+! 
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!-------------------------------------------------------------------------------!
 C******************************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                            *
 C  last changes in this file VERSION 45.08                                    *
@@ -293,6 +312,7 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(8),ALLOCATABLE ::   FFF(:),FFACE(:)
       REAL(8),ALLOCATABLE ::   ESBIN1(:),ESBIN2(:)
       REAL(8),ALLOCATABLE ::   TEMP_LV_A(:,:),TEMP_LV_B(:,:)
+ 
 C- DMW 2022/6 Factor for slope limiting on elevation gradient
       REAL(8),ALLOCATABLE ::   ALPHAL(:)
 C- DMW      

@@ -90,7 +90,7 @@ Git is a version control system. That is, it provides a means for many software 
 
 Github is a website built to enable collaboration between developers and provides many utilities for creating easy to use code repositories.
 
-A Git repository is a storehouse of code for a particular project. Git repositories consist of a number of branches. The ```master``` branch is the mainline code that everyone shares and is considered the development version of the code. Another separate branch is maintained to house the current release version of the code.
+A Git repository is a storehouse of code for a particular project. Git repositories consist of a number of branches. The ```main``` branch is the mainline code that everyone shares and is considered the development version of the code. Another separate branch is maintained to house the current release version of the code.
 
 Unlike other version control tools, Git creates commit numbers based upon a SHA1 hash. The SHA1 hash is a unique identifier that is completely unique to a specific commit as well as its history.
 
@@ -146,7 +146,7 @@ This command would use the VIM editor, however, you can set it to any editor ins
 
 ### Branches
 
-Branches are core to the way Git functions and should be used whenever possible. For the purposes of this repository, no work should be done in the ```master``` branch. A small number of branches will be officially supported in the main repository, however most work should be conducted within Forks, which are explained later in this document.
+Branches are core to the way Git functions and should be used whenever possible. For the purposes of this repository, no work should be done in the ```main``` branch. A small number of branches will be officially supported in the main repository, however most work should be conducted within Forks, which are explained later in this document.
 
 You can retrieve a list of branches currently configured in your repository:
 ```
@@ -160,7 +160,7 @@ which will display something like:
 ```
 remotes/origin/GAHM_jie
 remotes/origin/GPGPU-CUDA
-remotes/origin/HEAD -> origin/master
+remotes/origin/HEAD -> origin/main
 remotes/origin/SSD_jie
 ```
 To checkout the GPGPU-CUDA branch, simply type:
@@ -188,7 +188,7 @@ Note that the ```-u origin``` command only needs to be done the first time a new
 
 ### Forks
 
-Forks are fully fledged repositories that are available for development work. Forks allow developers to create as many branches as they would like without the approval of repository administrators to conduct experiments and develop ideas. A forked repository is registered to a particular user but maintains an association with the master ADCIRC repository without cluttering it.
+Forks are fully fledged repositories that are available for development work. Forks allow developers to create as many branches as they would like without the approval of repository administrators to conduct experiments and develop ideas. A forked repository is registered to a particular user but maintains an association with the main ADCIRC repository without cluttering it.
 
 To create your own Fork, use the Fork button from the ```adcirc-cg``` repository page on Github. When you do this, a new repository will be created under your account. This repository is your personal playground.
 
@@ -200,7 +200,7 @@ You can obtain a copy of your repository using the following command:
 git clone https://github.com/YOUR_USERNAME/adcirc-cg.git
 ```
 
-Next, you can configure your personal repository to maintain an association with the master ADCIRC repository (known as the "Upstream") using:
+Next, you can configure your personal repository to maintain an association with the main ADCIRC repository (known as the "Upstream") using:
 
 ```
 git remote add upstream https://github.com/adcirc/adcirc-cg.git
@@ -214,16 +214,16 @@ git fetch upstream
 To incorporate these changes into your repository, you can use:
 
 ```
-git merge upstream/master
+git merge upstream/main
 ```
 It is critically important that you make sure you are on the correct branch that you want to merge changes into when running the above command.
 [More Information about Syncing Forks](https://help.github.com/articles/syncing-a-fork/)
 
 ### Submitting Changes to the Upstream
 
-Changes are accepted into the ADCIRC repository via a Pull Request. From the Github web page from your Forked repository, click the "Compare and Pull Request" button. You will be asked to select a ```base``` and a ```compare```. The base is the target for your changes, i.e. the master branch in the upstream repository. The compare is your local branch.
+Changes are accepted into the ADCIRC repository via a Pull Request. From the Github web page from your Forked repository, click the "Compare and Pull Request" button. You will be asked to select a ```base``` and a ```compare```. The base is the target for your changes, i.e. the main branch in the upstream repository. The compare is your local branch.
 
-Warning: Your local branch must contain all changes from the upstream master to be accepted!
+Warning: Your local branch must contain all changes from the upstream main to be accepted!
 
 After clicking the pull request button, you will be given a section to describe your changes. Please describe what has been done throughly. The repository administrators will be given the option to merge your pull request into the upstream repository.
 
@@ -236,14 +236,14 @@ There are many specific development tasks that one may only need to perform occa
 It is sometimes advantageous to make a branch of a branch, for 
 example when adding a new feature to a stable version of the code 
 (which is on its own branch) rather than starting with the 
-experimental master branch. 
+experimental branch. 
 
-When committing the changes from the branch-of-a-branch back to the master branch, the following steps are required:
+When committing the changes from the branch-of-a-branch back to the main branch, the following steps are required:
 
-1. Create a branch from the current master with ```git checkout master; git checkout -b newbranch```
+1. Create a branch from the current main with ```git checkout main; git checkout -b newbranch```
 2. Go to the branch-of-a-branch and look at the sha1 ID of each commit starting where the branch-of-a-branch diverged. Use the command git cherry-pick sha1hash for each commit, one by one, continuing along the branch. This will take the work done for each commit and perform it on the new branch. You may need to resolve conflicts here just as you would in a traditional merge. 
 3. Push the new branch to your fork on GitHub with ```git push -u origin newbranch```
-4. On GitHub, create a pull request to master since the history is contiguous. Once the test cases pass, the request can be merged. 
+4. On GitHub, create a pull request to main since the history is contiguous. Once the test cases pass, the request can be merged. 
 
 #### Version History
 
@@ -262,10 +262,10 @@ repository to bring yours up to date. This is done by pulling the
 latest upstream repository change to your local clone of your fork.
 
 1. Go to the subdirectory of your local clone and tell git what repository is considered upstream: ```git remote add upstream https://github.com/adcirc/adcirc-cg.git``` (this only needs to be done once for that local clone). 
-2. Fetch the branches and their respective commits from the upstream repository with ```git fetch upstream```. Commits to master will be stored in a local branch, upstream/master.
-3. Check out your local clone's master branch: ```git checkout master```.
-4. Merge the changes from upstream/master into your local master branch with ```git merge upstream/master```. This brings your local clone of your fork's master branch into sync with the upstream repository, without losing your local changes. If you had no local changes, git will just do a fast forward to the latest version available from the upstream repository. 
-5. Push the changes back to your own fork on GitHub with ```git push origin master```.
+2. Fetch the branches and their respective commits from the upstream repository with ```git fetch upstream```. Commits to main will be stored in a local branch, upstream/main.
+3. Check out your local clone's main branch: ```git checkout main```.
+4. Merge the changes from upstream/main into your local main branch with ```git merge upstream/main```. This brings your local clone of your fork's main branch into sync with the upstream repository, without losing your local changes. If you had no local changes, git will just do a fast forward to the latest version available from the upstream repository. 
+5. Push the changes back to your own fork on GitHub with ```git push origin main```.
 
 ### Continuous Integration (CI)
 

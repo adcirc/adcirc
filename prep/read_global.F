@@ -1,3 +1,22 @@
+!-------------------------------------------------------------------------------!
+!
+! ADCIRC - The ADvanced CIRCulation model
+! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+! 
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+! 
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+! 
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!-------------------------------------------------------------------------------!
 C----------------------------------------------------------------------------
 C
 C                           MODULE READ_GLOBAL
@@ -514,6 +533,9 @@ C.... DMW 202207 Add options for controlling slope/wind limiting and
 C.... "new" formula for computing vel in wetting/drying routine 
      &          slim, windlim, directvelWD, useHF
 C.... DMW
+!JLW: adding subgrid control namelist
+      integer :: ios_subgrid
+      namelist /subgridControl/ subgridFilename, level0, level1
       ! jgf52.08.02 : For inundation output files.
       namelist /inundationOutputControl/ inundationOutput, inunThresh
 
@@ -647,6 +669,18 @@ Casey 180318: Added NWS=13
       else
          call logMessage(INFO,
      &         'The wetDryControl namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+
+!JLW: adding subgrid control namelist
+      READ(UNIT = 15, NML = subgridControl,IOSTAT = ios_subgrid)
+      if ( ios_subgrid.ge.0) then
+         foundSubgridControlNamelist = .true.
+         call logMessage(INFO,
+     &         'The subgridControl namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The subgridControl namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
 

@@ -1,3 +1,22 @@
+!-------------------------------------------------------------------------------!
+!
+! ADCIRC - The ADvanced CIRCulation model
+! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+! 
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+! 
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+! 
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!-------------------------------------------------------------------------------!
 C******************************************************************************
 C PADCIRC VERSION 46.00 xx/xx/2006                                            *
 C  last changes in this file VERSION 46.00                                    *
@@ -144,6 +163,9 @@ Casey 180318: Added NWS=13
      &                          NWS13GroupForPowell,
      &                          NWS13WindMultiplier
 #endif
+!JLW: add subgrid 
+      USE subgrid, only: subgridFilename, level0, level1
+
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
       INTEGER NTimeVaryingWeir
@@ -197,6 +219,9 @@ C.... DMW
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
      &    NWS13WindMultiplier,NWS13GroupForPowell
 #endif
+!JLW: adding subgrid namelist
+      NAMELIST /subgridControl/ subgridFilename, level0, level1
+
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       CHARACTER(len=2000) :: origLineTVW
@@ -493,6 +518,20 @@ C.... DMW
       write(scratchMessage,'(a,l)') "inundationOutput=",inundationOutput
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,e15.8)') "inunThresh=",inunThresh
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
+!JLW: adding subgrid namelist variable
+      !JLW: adding subgrid name list variable
+      namelistSpecifier = 'subgridControl'
+      read(unit=15,nml=subgridControl,iostat=IOS)
+      call logNameListReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,*)
+     &   "subgridFilename=",TRIM(ADJUSTL(subgridFilename))
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "level0=",level0
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "level1=",level1
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
