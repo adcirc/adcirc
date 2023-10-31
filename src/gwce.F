@@ -354,6 +354,7 @@ C..... DW
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
+
 C
 C....... DW
 C     Switch to the element table to the primary node
@@ -369,6 +370,7 @@ C     are also used in the calculation of the GWCE load vector gwce_lv.
 C...  Consistent mass matrix: ILump=0, lumped mass matrix: ILump=1
       OnDiag=(1+ILump)*2        !diagonal coefficient
       OffDiag=(1-ILump)         !off diagonal coefficient
+      
 C...
 C...  Recompute the GWCE system matrix at the first time step or if any
 C...  wetting or drying occurred in the previous time step.
@@ -680,6 +682,7 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
             IF (DIE) CALL gwceTerminate()
          ENDIF
       ENDIF NCIFBLCK                    !End of GWCE matrix setup
+           
 C...
 C...  Compute the GWCE load vector GWCE_LV
 C...  This is done primarily element by element by forming
@@ -1744,6 +1747,7 @@ C...  SOLVE GWCE FOR ELEVATION AT NEW TIME LEVEL
 C...
 
 C...  UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
+
 
 #ifdef CMPI
 C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE

@@ -47,7 +47,7 @@ C  Message-Passing Array space
 
       INTEGER, ALLOCATABLE :: IPROC(:), NNODELOC(:), NNODSEND(:),
      &    NNODRECV(:), IBELONGTO(:),ISENDLOC(:,:), IRECVLOC(:,:),
-     &    ISENDBUF(:,:), IRECVBUF(:,:)
+     &    ISENDBUF(:,:), IRECVBUF(:,:), ISENDBUF1(:), IRECVBUF1(:)
 
       INTEGER, ALLOCATABLE :: REQ_I1(:), REQ_I2(:)
       INTEGER, ALLOCATABLE :: STAT_I1(:,:), STAT_I2(:,:)
@@ -59,6 +59,10 @@ C  Message-Passing Array space
       REAL(SZ),ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
       !jgf50.82: Create a flag for unrecoverable issue on a subdomain
       LOGICAL :: subdomainFatalError ! true if mpi_abort should be called
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+      INTEGER, ALLOCATABLE :: WDSTATE(:)
+      INTEGER, ALLOCATABLE :: sendneigh(:) ! index to track which neighbor is sending for each recieve request
+#endif
 
 C
 C
@@ -126,6 +130,11 @@ C.......Duplicate communicator
 
 
       ALLOCATE(RANKS(MNPROC+1))
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+      ALLOCATE(WDSTATE(MNPROC))
+      WDSTATE(:) = 0
+      ALLOCATE(sendneigh(NEIGHPROC))
+#endif
 
 C...  Create a communicator for computation
       DO I=1,MNPROC
@@ -310,7 +319,7 @@ C---------------------------------------------------------------------
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-      INTEGER :: IDPROC, NLOCAL, I, J, jdumy_loc
+      INTEGER :: IDPROC, NLOCAL, I, J, K, jdumy_loc
       INTEGER :: jdumy,jdumy_G,jdumy_max, inputFileFmtVn
       CHARACTER(10) :: BlkName
       LOGICAL FileFound
@@ -434,11 +443,13 @@ C-------------------------------------------------------------------------------
       DO I=1,NLOCAL
          IBELONGTO(NNODELOC(I)) = IDPROC + 1
       ENDDO
+      K = 0
       DO I=1, MNP
          IF (IBELONGTO(I)-1.EQ.MYPROC) THEN
            RESNODE(I) = .TRUE.
          ELSE
            RESNODE(I) = .FALSE.
+           K = K + 1
          ENDIF
       ENDDO
 
@@ -524,6 +535,7 @@ C
 C      
       
       ALLOCATE ( ISENDBUF(MNP,NEIGHPROC), IRECVBUF(MNP,NEIGHPROC) )
+      ALLOCATE ( ISENDBUF1(NEIGHPROC), IRECVBUF1(NEIGHPROC) )
       ALLOCATE ( REQ_I1(RDIM),REQ_I2(RDIM) )
       ALLOCATE ( REQ_R1(RDIM),REQ_R2(RDIM),REQ_R3(RDIM) )
       ALLOCATE ( STAT_I1(MPI_STATUS_SIZE,RDIM),
@@ -567,14 +579,20 @@ C---------------------------------------------------------------------
 #endif
       INTEGER,   INTENT(IN) :: NMSG
       INTEGER,   INTENT(INOUT) :: IVEC1(*),IVEC2(*)
-      INTEGER :: N,I,J,NCOUNT,NFINI,TOT
+      INTEGER :: N,I,J,K,NCOUNT,NFINI,TOT
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+      integer :: wetnei
+#endif
 C
       call setMessageSource("updatei")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.") 
 #endif
-C 
-                             !..Pack 1 or 2 Messages
+C
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+      IF (WDSTATE(MYPROC+1) .GE. 1) THEN
+#endif
+                            !..Pack 1 or 2 Messages
       DO J=1,NEIGHPROC
          NCOUNT = 0
          DO I=1,NNODSEND(J)
@@ -588,56 +606,130 @@ C
            ENDDO
          ENDIF
       ENDDO
+
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+      K = 0
+      wetnei = 0
+      sendneigh(:) = 0
+      DO J=1,NEIGHPROC
+         IF (WDSTATE(IPROC(J)+1) .GE. 1) wetnei = wetnei + 1
+      ENDDO
+#endif      
                           ! Send/receive messages to/from all neighbors
       IF (NMSG.EQ.1) THEN
         DO J=1,NEIGHPROC
+#if  defined (CMPI)  && defined (SKIP_DRY)
+           IF (WDSTATE(IPROC(J)+1) .GE. 1)  THEN
+              K = K+1
+              CALL MPI_IRECV( IRECVBUF(1,J), NNODRECV(J),
+     &                MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I1(K),IERR)
+              sendneigh(K) = J
+              
+              CALL MPI_ISEND( ISENDBUF(1,J), NNODSEND(J),
+     &          MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I1(K+wetnei),IERR )
+           ENDIF
+#else
            CALL MPI_IRECV( IRECVBUF(1,J), NNODRECV(J),
      &             MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I1(J),IERR)
            CALL MPI_ISEND( ISENDBUF(1,J), NNODSEND(J),
      &       MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I1(J+NEIGHPROC),IERR )
+#endif
         ENDDO
       ELSE
         DO J=1,NEIGHPROC
+#if  defined (CMPI)  && defined (SKIP_DRY)
+           IF (WDSTATE(IPROC(J)+1) .GE. 1)  THEN
+              K = K+1
+              CALL MPI_IRECV( IRECVBUF(1,J), 2*NNODRECV(J),
+     &                MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I2(K),IERR)
+              sendneigh(K) = J
+              
+              CALL MPI_ISEND( ISENDBUF(1,J), 2*NNODSEND(J),
+     &          MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I2(K+wetnei),IERR )
+           ENDIF
+#else
            CALL MPI_IRECV( IRECVBUF(1,J), 2*NNODRECV(J),
      &             MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I2(J),IERR)
            CALL MPI_ISEND( ISENDBUF(1,J), 2*NNODSEND(J),
      &       MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I2(J+NEIGHPROC),IERR )
+#endif
         ENDDO
       ENDIF
                           !..Unpack Received messages as they arrive
       IF (NMSG.EQ.1) THEN
-        TOT = 0
-        DO WHILE (TOT.LT.RDIM)
-           DO N=1, RDIM
-              INDX(N) = 0
-           ENDDO
-           CALL MPI_WAITSOME( RDIM,REQ_I1,NFINI,INDX,STAT_I1,IERR )
-           TOT = TOT + NFINI
-           DO N=1, NFINI
-              IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
-                IF (INDX(N).LE.NEIGHPROC) THEN
-                  J = INDX(N)
-                  NCOUNT = 0
-                  DO I=1,NNODRECV(J)
-                     NCOUNT = NCOUNT+1
-                     IVEC1(IRECVLOC(I,J)) = IRECVBUF(NCOUNT,J)
-                  ENDDO
-                ENDIF
-              ENDIF
-           ENDDO
-        ENDDO
+         TOT = 0
+#if  defined (CMPI)  && defined (SKIP_DRY)    
+         DO WHILE (TOT.LT.2*K)
+            DO N=1, 2*K
+               INDX(N) = 0 ! zero out the array of just-completed requests
+            ENDDO
+            CALL MPI_WAITSOME( 2*K,REQ_I1,NFINI,INDX,STAT_I1,IERR )
+#else
+         DO WHILE (TOT.LT.RDIM)
+            DO N=1, RDIM
+               INDX(N) = 0
+            ENDDO
+            CALL MPI_WAITSOME( RDIM,REQ_I1,NFINI,INDX,STAT_I1,IERR )
+#endif
+            TOT = TOT + NFINI
+            DO N=1, NFINI
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+               IF (INDX(N).GT.0.AND.INDX(N).LE.2*K)  THEN
+                  ! if the request that just completed is a receive
+                  IF (INDX(N).LE.wetnei) THEN
+                     ! j = subdomain neighbor number that sent this data
+                     J = sendneigh(INDX(N))
+#else
+               IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
+                  IF (INDX(N).LE.NEIGHPROC) THEN
+                     J = INDX(N)
+#endif
+C#if  defined (CMPI)  && defined (SKIP_DRY)  
+C                     IF (WDSTATE(IPROC(J)+1) .GE. 1) THEN
+C#endif
+                     NCOUNT = 0
+                     DO I=1,NNODRECV(J)
+                        NCOUNT = NCOUNT+1
+                        IVEC1(IRECVLOC(I,J)) = IRECVBUF(NCOUNT,J)
+                     ENDDO
+C#if  defined (CMPI)  && defined (SKIP_DRY)  
+C                     ENDIF
+C#endif
+                  ENDIF
+               ENDIF
+            ENDDO
+         ENDDO
       ELSE
-        TOT = 0
+         TOT = 0
+#if  defined (CMPI)  && defined (SKIP_DRY)    
+         DO WHILE (TOT.LT.2*K)
+            DO N=1, 2*K
+               INDX(N) = 0 ! zero out the array of just-completed requests
+            ENDDO
+            CALL MPI_WAITSOME( 2*K,REQ_I2,NFINI,INDX,STAT_I2,IERR )
+#else
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
               INDX(N) = 0
            ENDDO
            CALL MPI_WAITSOME( RDIM,REQ_I2,NFINI,INDX,STAT_I2,IERR )
+#endif
            TOT = TOT + NFINI
            DO N=1, NFINI
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+               IF (INDX(N).GT.0.AND.INDX(N).LE.2*K)  THEN
+                  ! if the request that just completed is a receive
+                  IF (INDX(N).LE.wetnei) THEN
+                     ! j = subdomain neighbor number that sent this data
+                     J = sendneigh(INDX(N))
+#else
               IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
                 IF (INDX(N).LE.NEIGHPROC) THEN
                   J = INDX(N)
+#endif
+C#if  defined (CMPI)  && defined (SKIP_DRY)  
+C                  IF (WDSTATE(IPROC(J)+1) .GE. 1) THEN
+C#endif
                   NCOUNT = 0
                   DO I=1,NNODRECV(J)
                      NCOUNT = NCOUNT+1
@@ -647,11 +739,18 @@ C
                      NCOUNT = NCOUNT+1
                      IVEC2(IRECVLOC(I,J)) = IRECVBUF(NCOUNT,J)
                   ENDDO
+C#if  defined (CMPI)  && defined (SKIP_DRY)  
+C                  ENDIF
+C#endif
                 ENDIF
               ENDIF
            ENDDO
         ENDDO
       ENDIF
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+      ENDIF
+#endif      
+ 
  999  CONTINUE
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -678,6 +777,10 @@ C---------------------------------------------------------------------
       REAL(SZ), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
       integer :: j  ! loop counter for neighboring subdomains
       integer :: i  ! loop counter for nodes shared with a neighboring subdomain
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+      integer :: k  ! index for send/recieve requests
+      integer :: wetnei
+#endif
       integer :: nfini ! number of just-completed requests
       integer :: n     ! loop counter for just-completed requests
       integer :: tot   ! total number of completed requests
@@ -688,6 +791,9 @@ C
       call allMessage(DEBUG,"Enter.") 
 #endif
 C 
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+      IF (WDSTATE(MYPROC+1) .EQ. 1) THEN
+#endif
       ! 
       ! loop over neighboring subdomains
       DO J=1,NEIGHPROC
@@ -710,23 +816,56 @@ C
               SENDBUF(NCOUNT,J)=VEC3(ISENDLOC(I,J))
            ENDDO
          ENDIF
-      ENDDO
+      ENDDO    
+
       !
       ! receive and send data to each neighboring subdomain, populating
       ! the request handler array
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+      K = 0
+      wetnei = 0
+      sendneigh(:) = 0
+         DO J=1,NEIGHPROC
+            IF (WDSTATE(IPROC(J)+1) .EQ. 1) wetnei = wetnei + 1
+         ENDDO
+#endif
       IF (NMSG.EQ.1) THEN
         DO J=1,NEIGHPROC
+#if  defined (CMPI)  && defined (SKIP_DRY)
+           IF (WDSTATE(IPROC(J)+1) .EQ. 1)  THEN
+              K = K+1
+              CALL MPI_IRECV( RECVBUF(1,J), NNODRECV(J),
+     &                REALTYPE,IPROC(J), TAG, COMM, REQ_R1(K),IERR)
+              sendneigh(K) = J
+              
+              CALL MPI_ISEND( SENDBUF(1,J), NNODSEND(J),
+     &            REALTYPE,IPROC(J), TAG, COMM, REQ_R1(K+wetnei),IERR)
+           ENDIF
+#else
            CALL MPI_IRECV( RECVBUF(1,J), NNODRECV(J),
      &             REALTYPE,IPROC(J), TAG, COMM, REQ_R1(J),IERR)
-            CALL MPI_ISEND( SENDBUF(1,J), NNODSEND(J),
+           CALL MPI_ISEND( SENDBUF(1,J), NNODSEND(J),
      &         REALTYPE,IPROC(J), TAG, COMM, REQ_R1(J+NEIGHPROC),IERR)
-        ENDDO
+#endif
+        ENDDO      
       ELSEIF (NMSG.EQ.2) THEN
         DO J=1,NEIGHPROC
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+           IF (WDSTATE(IPROC(J)+1) .EQ. 1)  THEN
+              K = K+1
+              CALL MPI_IRECV( RECVBUF(1,J), 2*NNODRECV(J),
+     &           REALTYPE,IPROC(J), TAG, COMM, REQ_R2(K),IERR)
+              sendneigh(K) = J
+
+              CALL MPI_ISEND( SENDBUF(1,J), 2*NNODSEND(J),
+     &           REALTYPE,IPROC(J), TAG, COMM, REQ_R2(K+wetnei),IERR)
+           ENDIF
+#else
            CALL MPI_IRECV( RECVBUF(1,J), 2*NNODRECV(J),
      &        REALTYPE,IPROC(J), TAG, COMM, REQ_R2(J),IERR)
            CALL MPI_ISEND( SENDBUF(1,J), 2*NNODSEND(J),
      &        REALTYPE,IPROC(J), TAG, COMM, REQ_R2(J+NEIGHPROC),IERR)
+#endif
         ENDDO
       ELSE
         DO J=1,NEIGHPROC
@@ -742,22 +881,39 @@ C
          TOT = 0
          ! keep looping until the total number of completed communications 
          ! equals the total number that were requested
+#if  defined (CMPI)  && defined (SKIP_DRY)    
+         DO WHILE (TOT.LT.2*K)
+            DO N=1, 2*K
+               INDX(N) = 0 ! zero out the array of just-completed requests
+            ENDDO
+            CALL MPI_WAITSOME( 2*K,REQ_R1,NFINI,INDX,STAT_R1,IERR )
+#else
+
          DO WHILE (TOT.LT.RDIM)
             DO N=1, RDIM
                INDX(N) = 0 ! zero out the array of just-completed requests
             ENDDO
             CALL MPI_WAITSOME( RDIM,REQ_R1,NFINI,INDX,STAT_R1,IERR )
+#endif
             ! add the number of just-completed requests to the total
             TOT = TOT + NFINI
             ! loop over the just-completed requests
             DO N=1, NFINI
                ! if the request has just completed (TODO: I don't see how
                ! indx(n) can be greater than rdim
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+               IF (INDX(N).GT.0.AND.INDX(N).LE.2*K)  THEN
+                  ! if the request that just completed is a receive
+                  IF (INDX(N).LE.wetnei) THEN
+                     ! j = subdomain neighbor number that sent this data
+                     J = sendneigh(INDX(N))
+#else
                IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
                   ! if the request that just completed is a receive
                   IF (INDX(N).LE.NEIGHPROC) THEN
                      ! j = subdomain neighbor number that sent this data
                      J = INDX(N)
+#endif
                      NCOUNT = 0
                      DO I=1,NNODRECV(J)
                         NCOUNT = NCOUNT+1
@@ -771,16 +927,32 @@ C
          ENDDO
       CASE(2)
         TOT = 0
+#if  defined (CMPI)  && defined (SKIP_DRY)    
+        DO WHILE (TOT.LT.2*K)
+           DO N=1, 2*K
+             INDX(N) = 0 ! zero out the array of just-completed requests
+           ENDDO
+           CALL MPI_WAITSOME( 2*K,REQ_R2,NFINI,INDX,STAT_R2,IERR )
+#else
+
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
-              INDX(N) = 0
+             INDX(N) = 0 ! zero out the array of just-completed requests
            ENDDO
            CALL MPI_WAITSOME( RDIM,REQ_R2,NFINI,INDX,STAT_R2,IERR )
+#endif
+  
            TOT = TOT + NFINI
            DO N=1, NFINI
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+              IF (INDX(N).GT.0.AND.INDX(N).LE.2*K)  THEN
+                IF (INDX(N).LE.wetnei) THEN
+                  J = sendneigh(INDX(N))
+#else
               IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
                 IF (INDX(N).LE.NEIGHPROC) THEN
                   J = INDX(N)
+#endif
                   NCOUNT = 0
                   DO I=1,NNODRECV(J)
                      NCOUNT = NCOUNT+1
@@ -825,6 +997,9 @@ cdebug     print *, myproc, tot,nfini,INDX(1),INDX(2)
            ENDDO
         ENDDO
       END SELECT
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+      ENDIF
+#endif    
  
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

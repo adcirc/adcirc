@@ -161,7 +161,7 @@ CWET...
       real(sz) :: tknf !dmw 202207, added for "new" formula for vel 
       if (nolifa.ne.2) then
          return ! wetting and drying is not active 
-      endif
+      endif    
 
 CWET...
 CWET...WET/DRY - INITIALIZATIONS FOR WET/DRY LOOP
@@ -601,14 +601,14 @@ C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,NIBCNT,2)
 C-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well 
-         CALL UPDATER(FRIC,TK,ETA2,3)
-         tmp1 = TKM(1,:)
-         tmp2 = TKM(2,:)
-         tmp3 = TKM(3,:)
-         CALL UPDATER(tmp1,tmp2,tmp3,3)
-         TKM(1,:) = tmp1
-         TKM(2,:) = tmp2
-         TKM(3,:) = tmp3 
+C         CALL UPDATER(FRIC,TK,ETA2,3)
+C         tmp1 = TKM(1,:)
+C         tmp2 = TKM(2,:)
+C         tmp3 = TKM(3,:)
+C         CALL UPDATER(tmp1,tmp2,tmp3,3)
+C         TKM(1,:) = tmp1
+C         TKM(2,:) = tmp2
+C         TKM(3,:) = tmp3 
 C-- DMW
 #endif
 
@@ -620,7 +620,7 @@ C tcm v50.66.01 -- This is an additional test for wetting only when time varying
 C                  bathymetry is used and is only performed during the period of 
 C                  bathymetry evolution.
 C
-         IF ((NDDT.NE.0).AND.(IT.LE.BTIME_END+1) ) THEN
+         IF ((NDDT.NE.0).AND.(IT.LE.BTIME_END+1) ) THEN  
             DO I=1,NE
                NM1=NM(I,1)
                NM2=NM(I,2)
@@ -822,7 +822,7 @@ C<<                         Convert Manning's N to Cd, if necessary.
 
             if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
             if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
-
+              
 C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #ifdef CMPI
             CALL UPDATEI(NNODECODE,NIBCNT,2)
@@ -833,7 +833,7 @@ C
 C.... END OF ADDITIONAL WETTING FOR TIME VARYING BATHYMETRY
 CWET..
 CWET... ELEMENTAL WETTING CRITERIA WETBATHYCHANGE
-C*******************************************************************************************
+C******************************************************************************************* 
 
 CWET...
 CWET...Nodal Wetting Criteria W2b
@@ -1094,12 +1094,12 @@ cjjwnote - may have to pass TotalArea and mju as well
          if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
          if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
 
-
 C     Use Message-Passing to update nnodecode at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,IDUMY,1)
          CALL UPDATER(TotalArea,DUMY1,DUMY2,1)
 #endif
+  
 CWET...
 CWET...WET/DRY SECTION - PART 5 - RESET NODECODE USING NNODECODE
 CWET...Check to see if any wetting occurred & update NODECODE
@@ -1142,7 +1142,7 @@ CWET...
          ENDIF
          
 C.....   DMW 202207 Compute a slope limiting factor if needed
-         call computeAlpha()
+         call computeAlpha()        
          
 #ifdef CMPI
          !jgf48.4619 implementing Seizo's changes for Lumped, fully

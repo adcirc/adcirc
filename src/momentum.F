@@ -103,6 +103,7 @@ C******************************************************************************
      & , DUMY1
       use messenger
 #endif
+
       IF (C2DDI) THEN
          IF (CME_New_NC) THEN
             CALL Mom_Eqs_New_NC()

@@ -39,7 +39,10 @@ C
 #endif
       use AMPI_LUN_Virtualized, only : AMPI_LUN
       use AMPI_LUN_migratable
-      USE SIZES, ONLY : SZ, MNP, MNWPROH
+      USE SIZES, ONLY : SZ, MNP, MNWPROH 
+#ifdef CMPI
+     &    , mnproc, myproc
+#endif
       USE GLOBAL, ONLY : UU1, VV1, QX1, QY1, QX2, QY2, UU2, VV2, MOM_LV_X,
      &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0, 
      &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0, 
@@ -66,15 +69,26 @@ C
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE
 #ifdef CSWAN
-     &  , waveWindMultiplier
+     &    ,waveWindMultiplier
+#endif
+#if  defined (CMPI)  && defined (SKIP_DRY) 
+     &    , idumy, dumy1, dumy2, COMM, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
+     &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, ilump, COEF, COEFD, NNODECODE,
+     &   NPERSEG, NCCHANGE
 #endif
       USE GWCE, ONLY : solveGWCE, numitr
+#if  defined (CMPI)  && defined (SKIP_DRY)
+     &    , lsxx, lsxy, lsyx, lsyy
+#endif
       USE MOMENTUM, ONLY : solveMomentumEq
       USE WETDRY, ONLY : computeWettingAndDrying
+#if  defined (CMPI)  && defined (SKIP_DRY)
+     &    , nibcnt
+#endif
       USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart, 
      &    writeWarnElev, collectInundationData, collectMinMaxData
       USE MESH, ONLY : NE, NP, DP, SLAM, SFEA, ICS, TotalArea,
-     &                  MJU, Areas, SFAC 
+     &                  MJU, Areas, SFAC
       USE BOUNDARIES, ONLY : NOPE, NETA, NBOU, NVEL, LBCODEI, NBV, SIII,
      &    NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, NFLUXIBP, NFLUXRBC, CSII,
      &    BARLANHT, BARLANCFSP, NVELL, IBCONN, BARINHT, BARINCFSP,
@@ -83,7 +97,7 @@ C
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
      &    getdynamicWaterLevelCorrections
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate, ITIME_BGN
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
 C.....sb46.28sb03 added 09/xx/2006
@@ -93,6 +107,9 @@ C.....sb46.28sb03 added 09/xx/2006
      &     Apply2DInternalWaveDrag,
      &     Apply3DBottomFriction
      &    ,GeoidOffset
+#if  defined (CMPI)  && defined (SKIP_DRY)
+     &    , LoadEleSlopeLim
+#endif
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
      &    writeFort066, writeFort067, writeFort065, 
      &    readFort020, readFort021, readFort019 
@@ -128,7 +145,7 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
       INTEGER, intent(in) :: IT
 C
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
-      INTEGER IE, I, J, K                  !local loop counters
+      INTEGER IE, I, J, K, N, JJ                  !local loop counters
       INTEGER NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle
       INTEGER NCyc, NA
@@ -183,6 +200,9 @@ C....... DW
       LOGICAL, SAVE:: FIRST_ENTER = .TRUE. 
       INTEGER:: NBDI, istep
 C.......
+#if  defined (CMPI)  && defined (SKIP_DRY)  
+      INTEGER :: TOT, NFINI, NCOUNT
+#endif
 
       call setMessageSource("timestep")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -239,6 +259,226 @@ C...
          END IF
          TimeH=IT*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
       END IF
+      
+#if  defined (CMPI)  && defined (SKIP_DRY)     
+C...  IF ON FIRST TIMESTEP, FIND how many wet nodes in the current subdomain
+      IF (IT .EQ. ITIME_BGN) THEN
+#ifdef REPART
+         ! If the grid was repartitioned from an original partition based on wet/dry states, we can assume that half of the subdomains are completely dry at t=0.
+         ! CLASSIFY SUBDOMAIN AS WET (WDSTATE = 1) IF ON RHS
+         IF (MYPROC .GT. MNPROC/2 - 1) THEN
+            NCOUNT = 1
+         ELSE
+            NCOUNT = 0
+         ENDIF
+#else
+        ! If we did no repartitioning, then we cannot make any assumptions on wet/dry states, so we have to check for any wet nodes.
+         NCOUNT = 0
+         I = 0
+         DO WHILE (NCOUNT.EQ.0 .AND. I.LT.NP)
+            I = I+1
+            ! CLASSIFY SUBDOMAIN AS WET (WDSTATE = 1) IF WE SEE AT LEAST 1 WET NODE
+            IF(NODECODE(I).EQ.1) NCOUNT = NCOUNT + 1
+         ENDDO
+#endif
+            
+         WDSTATE(:) = 0
+         IF (NCOUNT .GT. 0) WDSTATE(MYPROC+1) = 1   
+      
+C...     UPDATE SUBDOMAIN NEIGHBORS TO THE WET/DRY STATE OF THE CURRENT SUBDOMAIN 
+C...     AND UPDATE THE CURRENT SUBDOMAIN AS TO THE NEIGHBOR'S STATES
+         DO J=1,NEIGHPROC
+            ISENDBUF1(J)=WDSTATE(MYPROC+1)
+         ENDDO
+         
+         DO J=1,NEIGHPROC
+            CALL MPI_IRECV( IRECVBUF1(J), 1,
+     &        MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I1(J),IERR)
+            CALL MPI_ISEND( ISENDBUF1(J), 1,
+     &        MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I1(J+NEIGHPROC),IERR )
+         ENDDO
+         
+         !..Unpack Received messages as they arrive
+         TOT = 0
+         DO WHILE (TOT.LT.RDIM)
+            DO N=1, RDIM
+               INDX(N) = 0
+            ENDDO
+            CALL MPI_WAITSOME( RDIM,REQ_I1,NFINI,INDX,STAT_I1,IERR )
+            TOT = TOT + NFINI
+            DO N=1, NFINI
+               IF ((INDX(N) .GT. 0).AND.(INDX(N) .LE. RDIM)) THEN
+                  IF (INDX(N) .LE. NEIGHPROC) THEN
+                     J = INDX(N)
+                     WDSTATE(IPROC(J)+1) = IRECVBUF1(J)
+                  ENDIF
+               ENDIF
+            ENDDO
+         ENDDO
+         
+C        IF (WDSTATE(MYPROC+1) .EQ. 0) THEN
+C        ! FOR ALL DRY SUBDOMAINS -- CHECK FOR WET NEIGHBORS
+C        ! IF ANY WET NEIGHBORS EXIST -- CLASSIFY SUBDOMAIN AS IN THE "BUFFER" ZONE (WDSTATE = 2)
+C        ! OTHERWISE -- CLASSIFY THE SUBDOMAIN AS "DRY" (WDSTATE = 0)
+C        
+C            NCOUNT = 0
+C            DO J=1,NEIGHPROC
+C               IF (WDSTATE(IPROC(J)+1) .EQ. 1) THEN
+C                  NCOUNT = NCOUNT+1
+C               ENDIF
+C            ENDDO
+C            IF (NCOUNT.GT.0) THEN
+C               WDSTATE(MYPROC+1) = 2
+C           ELSE        
+C              WDSTATE(MYPROC+1) = 0
+C            ENDIF  
+C         ENDIF
+C
+C         DO J=1,NEIGHPROC
+C            ISENDBUF1(J)=WDSTATE(MYPROC+1)
+C         ENDDO
+C         
+C         DO J=1,NEIGHPROC
+C            CALL MPI_IRECV( IRECVBUF1(J), 1,
+C     &        MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I1(J),IERR)
+C            CALL MPI_ISEND( ISENDBUF1(J), 1,
+C     &        MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I1(J+NEIGHPROC),IERR )
+C         ENDDO
+C         
+C         !..Unpack Received messages as they arrive
+C         TOT = 0
+C         DO WHILE (TOT.LT.RDIM)
+C            DO N=1, RDIM
+C               INDX(N) = 0
+C            ENDDO
+C            CALL MPI_WAITSOME( RDIM,REQ_I1,NFINI,INDX,STAT_I1,IERR )
+C            TOT = TOT + NFINI
+C            DO N=1, NFINI
+C               IF ((INDX(N) .GT. 0).AND.(INDX(N) .LE. RDIM)) THEN
+C                  IF (INDX(N) .LE. NEIGHPROC) THEN
+C                     J = INDX(N)
+C                     WDSTATE(IPROC(J)+1) = IRECVBUF1(J)
+C                  ENDIF
+C               ENDIF
+C            ENDDO
+C         ENDDO
+         
+      ELSE      
+C...  IF WE ARE ON TIMESTEP T>0, THEN CHECK TO SEE IF THE WET/DRY STATE OF THE CURRENT SUBDOMAIN MUST BE CHANGED BASED ON THE RESULTS OF THE PREVIOUS TIMESTEP
+
+C...  CHECK SENDER NODES FOR A WET SUBDOMAIN -- 
+C...  IF ALL SENDERS AND RECIEVERS ARE DRY, THEN CLASSIFY THE SUBDOMAIN AS "DRY" SO NO COMMUNICATION OR COMPUTATION IS PERFORMED
+      IF (WDSTATE(MYPROC+1) .EQ. 1) THEN
+         NCOUNT = 0
+         DO J=1,NEIGHPROC
+            DO I=1,NNODSEND(J)
+               IF (NODECODE(ISENDLOC(I,J)).EQ.1) THEN
+                  NCOUNT = NCOUNT+1
+               ENDIF
+            ENDDO
+         ENDDO
+C...     WHEN SENDERS ARE ALL DRY ALSO CHECK THE RECIEVER NODES
+         IF (NCOUNT.EQ.0) THEN
+            DO J=1,NEIGHPROC
+               DO I=1,NNODRECV(J)
+                  IF (NODECODE(IRECVLOC(I,J)).EQ.1) THEN
+                     NCOUNT = NCOUNT+1
+                  ENDIF
+               ENDDO
+            ENDDO
+C...        WHEN BOTH ALL SENDERS AND ALL RECIEVERS ARE DRY, CLASSIFY THE SUBDOMAIN AS "DRY"
+            IF (NCOUNT.EQ.0) THEN
+               ! CHECK TO SEE IF WE NEED TO PLACE THIS NEWLY DRIED SUBDOMAIN IN THE "BUFFER" ZONE
+               ! IF ANY WET NEIGHBORS EXIST -- CLASSIFY SUBDOMAIN AS IN THE "BUFFER" ZONE (WDSTATE = 2)
+               ! OTHERWISE -- CLASSIFY SUBDOMAIN AS DRY (WDSTATE = 0)
+               DO J=1,NEIGHPROC
+                  IF (WDSTATE(IPROC(J)+1) .EQ. 1) THEN
+                     NCOUNT = NCOUNT+1
+                  ENDIF
+               ENDDO
+               IF (NCOUNT.GT.0) THEN
+                  WDSTATE(MYPROC+1) = 2
+               ELSE
+                  WDSTATE(MYPROC+1) = 0
+               ENDIF
+            ENDIF
+         ENDIF
+
+      ELSE
+         ! FOR ALL DRY SUBDOMAINS (BUFFER ZONE OR NOT) -- CHECK FOR WET NEIGHBORS
+         ! IF ANY WET NEIGHBORS EXIST -- CLASSIFY SUBDOMAIN AS IN THE "BUFFER" ZONE (WDSTATE = 2)
+         ! OTHERWISE -- CLASSIFY SUBDOMAIN AS "DRY" (WDSTATE = 0)
+         NCOUNT = 0
+         DO J=1,NEIGHPROC
+            IF (WDSTATE(IPROC(J)+1) .EQ. 1) THEN
+                NCOUNT = NCOUNT+1
+            ENDIF
+         ENDDO
+         IF (NCOUNT.GT.0) THEN
+            WDSTATE(MYPROC+1) = 2
+         ELSE       
+            WDSTATE(MYPROC+1) = 0
+         ENDIF
+              
+      ENDIF
+      
+      ! MIGHT NEED AN UPDATE ON NODECODE HERE FOR ANY BUFFER ZONE SUBDOMAINS
+      
+C...  CHECK RECIEVER NODES FOR A "BUFFER" ZONE SUBDOMAIN (WDSTATE = 2) --
+C...  IF ANY RECIEVER NODE IS NOT DRY THEN CLASSIFY THE SUBDOMAIN AS "WET" (WDSTATE = 1) SO COMMUNICATION AND COMPUTATION IS PERFORMED         
+
+      IF (WDSTATE(MYPROC+1) .EQ. 2) THEN
+      
+         NCOUNT = 0
+         DO J=1,NEIGHPROC
+            DO I=1,NNODRECV(J)
+               IF (NODECODE(IRECVLOC(I,J)).EQ.1) THEN
+                  NCOUNT = NCOUNT+1
+               ENDIF
+            ENDDO
+         ENDDO
+
+         IF (NCOUNT.GT.0) THEN
+            WDSTATE(MYPROC+1) = 1
+         ENDIF
+              
+      ENDIF   
+      
+C     FOR EACH SUBDOMAIN -- UPDATE THE NEIGHBORS TO THE WDSTATE IN CASE THERE WERE ANY CHANGES
+      DO J=1,NEIGHPROC
+         ISENDBUF1(J)=WDSTATE(MYPROC+1)
+      ENDDO
+      
+      DO J=1,NEIGHPROC
+         CALL MPI_IRECV( IRECVBUF1(J), 1,
+     &     MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I1(J),IERR)
+         CALL MPI_ISEND( ISENDBUF1(J), 1,
+     &     MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I1(J+NEIGHPROC),IERR )
+      ENDDO
+      
+      !..Unpack Received messages as they arrive
+      TOT = 0
+      DO WHILE (TOT.LT.RDIM)
+         DO N=1, RDIM
+            INDX(N) = 0
+         ENDDO
+         CALL MPI_WAITSOME( RDIM,REQ_I1,NFINI,INDX,STAT_I1,IERR )
+         TOT = TOT + NFINI
+         DO N=1, NFINI
+            IF ((INDX(N) .GT. 0).AND.(INDX(N) .LE. RDIM)) THEN
+               IF (INDX(N) .LE. NEIGHPROC) THEN
+                  J = INDX(N)
+                  WDSTATE(IPROC(J)+1) = IRECVBUF1(J)
+               ENDIF
+            ENDIF
+         ENDDO
+      ENDDO
+
+      ENDIF
+      
+      IF (WDSTATE(MYPROC+1) .EQ. 1) THEN
+
+#endif
 
 C-------------------TEMPORAL RAMP-------------------------------------
 C...  THIS SECTION IS REWRITTEN BY SB, ZC, and RL 2022-06-22
@@ -728,7 +968,6 @@ Casey 090302: Added these lines for output to the rads.64 file.
 
       ENDIF  !(End test for updating wave radiation stress)
 
-
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.
       IF (.NOT.METONLY) THEN
@@ -1016,12 +1255,11 @@ C...
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
       
-
-
-
+  
 !----------------------SOLVE GWCE---------------------------------------
 C...
 C...  Compute new water surface elevation 
+
       call solveGWCE(it, timeloc, timeh)
 
 !---------------------END SOLVE GWCE------------------------------------
@@ -1030,13 +1268,16 @@ C...  Compute new water surface elevation
 !--------------------WETTING AND DRYING--------------------------------
 
       call computeWettingAndDrying(it)
+      
 
 !--------------------WETTING AND DRYING--------------------------------
 
 C...
 C---------------2DDI Momentum Equation Solution-------------------------
 C...
+
       call solveMomentumEq()
+
 C...
 C-------------END OF 2DDI MOMENTUM EQUATION SOLUTION--------------------
 C...
@@ -1090,9 +1331,30 @@ C...
 C...
 C...  End of 2D Scalar Transport Solution
 C...
+
 C     jgf48.4627 Jump to here if METONLY is .TRUE., i.e., if only
 C     meteorological output is requested.
       ENDIF
+#if  defined (CMPI)  && defined (SKIP_DRY)   
+      ELSEIF (WDSTATE(MYPROC+1) .EQ. 2) THEN
+
+C         DO UPDATES FROM WETTING/DRYING
+         CALL UPDATEI(NNODECODE,NIBCNT,2)
+         IF ((NDDT.NE.0).AND.(IT.LE.BTIME_END+1) ) THEN
+            CALL UPDATEI(NNODECODE,NIBCNT,2)
+         ENDIF
+         CALL UPDATEI(NNODECODE,IDUMY,1)
+CWET...Check to see if any wetting occurred & update NODECODE
+CWET...
+         DO I=1,NP
+            IF(NNODECODE(I).NE.NODECODE(I)) THEN
+               NODECODE(I)=NNODECODE(I)
+               NCCHANGE=NCCHANGE+1
+            ENDIF
+         ENDDO
+ 
+      ENDIF
+#endif
 C...
 C...  Collect maximum values of variables   v46.50 sb 11/11/2006
       call collectMinMaxData(timeloc)

@@ -12,7 +12,7 @@ C
       MODULE GLOBAL
       use AMPI_LUN_VIRTUALIZED, only : AMPI_LUN
       use AMPI_LUN_migratable
-      USE SIZES, ONLY : SZ 
+      USE SIZES, ONLY : SZ
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
 #ifdef DATETIME
       use datetime_module, only: datetime
@@ -396,6 +396,7 @@ C    kmd48.33bc - added variables for the levels of no motion and top temperatur
       REAL(SZ),ALLOCATABLE, TARGET :: Sponge(:)  ! sponge information for boundary conditions
 
       INTEGER,ALLOCATABLE, TARGET ::    NOFF(:), NODECODE(:)
+
       INTEGER,ALLOCATABLE ::    NNODECODE(:)
       INTEGER,ALLOCATABLE ::    NIBNODECODE(:)
       !
