@@ -202,6 +202,7 @@ C
 
 C Logicals added for adcprep paths
       LOGICAL PARTITION   ! .true. if only mesh partition is to be performed
+      LOGICAL REPARTITION   ! .true. if only mesh repartitioning is to be performed
       LOGICAL USE_DEFAULT ! .true. iff fort.x to be used as input
       LOGICAL PREP_ALL    ! .true. if all input files should be written
       LOGICAL PREP_15     ! .true. if only RunInfo file is to be localized
@@ -418,7 +419,7 @@ C     jgf46.21 Added support for IBTYPE=52.
          case(3,13,23)
             NFLUXB=1
             NBBN=NBBN+NBN
-         case(4,24)
+         case(4,24,64)
             NFLUXI=1
             NIBP=NIBP+NBN
          case(5,25)

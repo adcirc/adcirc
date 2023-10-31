@@ -56,7 +56,9 @@ C    (5) prep13    =  Localizes ONLY a nodal attributes file ( fort.13)
 C                     after a prepall has been run
 C    (6) hotlocal  =  Localize  ONLY a hotstart file  (fort.67 or fort.68)
 C    (7) hotglobal =  Globalize ONLY a hotstart files (fort.67 or fort.68)
-C
+C    (8)repartmesh =  partition the mesh with metis based on a predetermined
+C                     boundary used to partition the mesh into 2 subdomains
+C                     before running adcprep (usually a wet/dry boundary)
 C  Pre-processor
 C  -------------
 C  The Pre-processor "prep" performs data decomposition of the ADCIRC grid
@@ -168,6 +170,8 @@ C     having to do a prep all and without having to add menu items).
             SELECT CASE(TRIM(CMDLINEARG))
             CASE("--partmesh")
                PARTITION = .TRUE.
+            CASE("--repartmesh")
+               REPARTITION = .TRUE.
             CASE("--prepall")
                PREP_ALL = .TRUE.
             CASE("--prep13")
@@ -286,6 +290,12 @@ C
       print *, ''
       print *, ' 7. hotGlobalize'
       print *, ' - Globalizes local hotstart files ONLY'
+      print *, ''
+      print *, ' 8. repartmesh'  
+      print *, ' - partition the mesh with metis based on a predetermined'
+      print *, '   boundary used to partition the mesh into 2 subdomains'
+      print *, '   before running adcprep (usually a wet/dry boundary)'
+      print *, '   Perform first if you have a partmesh.txt for this'
       print *, '-------------------------------------------------------'
 
  9999 READ(*,*)  JOB
@@ -316,6 +326,9 @@ C
 
         CASE("7","hotglobal","HOTGLOBAL")
            HOT_GLOBAL  = .TRUE.
+           
+        CASE("8","repartmesh","REPARTMESH")
+           REPARTITION   = .TRUE.
 
         CASE DEFAULT  ! fall-through -> user can re-enter menu selection
            PRINT *, 'Input was misunderstood.'
@@ -332,6 +345,7 @@ C
       print *, "prep_13   = ", prep_13
       print *, "hot_local  = ", hot_local
       print *, "hot_global  = ", hot_global
+      print *, "repartition = ", repartition
       CALL PREPINPUT()
       print *, " "
       call memory_status()
@@ -552,20 +566,68 @@ C
          print *, 'INFO: METIS has partitioned nodes successfully.'
          return
       ELSE
-        print *, 'INFO: Opening file partmesh.txt'
-        OPEN(990,FILE='partmesh.txt')
-        DO I=1, MNP
-           READ(990,*) PROC(I)
-C           print *," PROC for ",I," = ", PROC(I)
-        ENDDO
-        CLOSE(990)
-        print *, 'INFO: Closed partmesh.txt file.'
-        IF (minval(PROC).eq.0) then
-           write(6,*) 'Adding 1 to the PEs'
-           DO I = 1, MNP
-              PROC(I) = PROC(I) + 1
-           ENDDO
-        ENDIF
+         print *, 'INFO: Opening file partmesh.txt'
+         OPEN(990,FILE='partmesh.txt')
+         DO I=1, MNP
+            READ(990,*) PROC(I)
+C            print *," PROC for ",I," = ", PROC(I)
+         ENDDO
+         CLOSE(990)
+         print *, 'INFO: Closed partmesh.txt file.'
+         IF (minval(PROC).eq.0) then
+            write(6,*) 'Adding 1 to the PEs'
+            DO I = 1, MNP
+               PROC(I) = PROC(I) + 1
+            ENDDO
+         ENDIF
+         IF (repartition) THEN
+            numPartitionAttempts = 0
+            allocate(boundaryWeights(mnp))
+            boundaryWeights(:) = 0
+            call metis_repart()
+            if (strictBoundaries.eqv..true.) then
+               ! check for issues with subdomain boundaries
+               partitionOK = .false.
+               ! loop ends when the partitioning is successful or
+               ! the limit on the number of attempts has been reached
+               do
+                  write(*,'(a,a)') 'INFO: Determining max number of nodes ',
+     &                'and elements on any subdomain.'
+                  call domsize()
+                  write(*,'(a)')
+     &               'INFO: Allocating subdomain mesh mapping arrays.'
+                  call alloc_main2()
+                  write(*,'(a)')
+     &               'INFO: Constructing subdomain mesh mapping arrays.'
+                  call decomp()
+                  write(*,'(a)')
+     &               'INFO: Checking subdomain mesh mapping arrays.'
+                  call checkMappings(partitionOK,numPartitionAttempts)
+                  if (partitionOK.eqv..true.) then
+                     exit
+                  else
+                     numPartitionAttempts = numPartitionAttempts + 1
+                     write(*,'(a,i0,a)') 'INFO: Partitioning attempt ',
+     &               numPartitionAttempts,' contains mapping array issues.'
+                     write(*,'(a,i0,a)')
+     &               'INFO: The limit on partitioning attempts is ',
+     &               repartitionLimit,'.'
+                     write(*,'(a)')
+     &               'INFO: Modifying partition weights and trying again.'
+                     call dealloc_main2()
+                  endif
+                  if ( numPartitionAttempts.gt.repartitionLimit ) then
+                     write(*,'(a,i0,a)')
+     &                 'ERROR: Mesh partitioning has failed after ',
+     &                  repartitionLimit,' attempts.'
+                     CALL EXIT(1)
+                  endif
+                  call metis_repart()
+               end do
+            endif
+            print *, 'INFO: METIS has partitioned nodes successfully.'
+            return
+         ENDIF
       ENDIF
 C
 C-- Read the Global Input File ( Unit 15 )

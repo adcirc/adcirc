@@ -555,7 +555,7 @@ C----------------------------------------------------------------------
          do k = 1,nbou
             select case(ibtype(k))
             ! weir boundaries
-            case(4,24,5,25)
+            case(4,24,64,5,25)
                do i = 1,nvell(k)
                   indx = nbvv(k,i)
                   index2 = ibconnr(k,i)
