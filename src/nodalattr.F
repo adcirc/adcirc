@@ -2589,9 +2589,10 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
      &                           2*Cxy*(U(I)-UBar(I))*(V(I)-VBar(I)) +
      &                           Cyy*(V(I)-VBar(I))**2d0
                         IF (Dtotal.lt.1d-10) THEN
-                           Dtotal = 1d-10
+                           adju = 0d0
+                        ELSE
+                           adju = Dtidal/Dtotal
                         ENDIF
-                        adju = Dtidal/Dtotal
                      endif
                      ! Implement the friction with possible adjustment
                      IF (IT_FricNoOfVals == 3) then
