@@ -1,8 +1,10 @@
       module AMPI_MIGRATE_IMPL
          use AMPI_LUN_Migratable
-         implicit none
-         include 'mpif.h'
 
+         implicit none
+#ifdef AMPI_COMP         
+         include 'mpif.h'
+#endif
       
        contains
        

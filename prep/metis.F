@@ -264,7 +264,7 @@ C  COMPUTE WEIGHTS OF THE GRAPH VERTICES
 C
       DO INODE = 1,MNP   
          VWGTS(INODE) = NEDGES(INODE)
-         if ( strictBoundaries.EQ..true. ) then
+         if ( strictBoundaries.EQV..true. ) then
             vwgts(inode) = vwgts(inode) + boundaryWeights(inode)
          endif
       ENDDO
@@ -782,7 +782,7 @@ C
          DO INODE = 1,MNPS   
             VWGTS(INODE) = NEDGES(INODE)
             INODEG = NODE_L2G(INODE,S)
-            if ( strictBoundaries.EQ..true. ) then
+            if ( strictBoundaries.EQV..true. ) then
                vwgts(inode) = vwgts(inode) + boundaryWeights(inodeg)
             endif
          ENDDO
