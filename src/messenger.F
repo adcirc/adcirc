@@ -130,10 +130,9 @@ C.......Duplicate communicator
 
 
       ALLOCATE(RANKS(MNPROC+1))
-#if  defined (CMPI)  && defined (SKIP_DRY)  
-      ALLOCATE(WDSTATE(MNPROC))
+#if  defined (CMPI) && defined (SKIP_DRY)  
+      ALLOCATE(WDSTATE(MNPROC+1))
       WDSTATE(:) = 0
-      ALLOCATE(sendneigh(NEIGHPROC))
 #endif
 
 C...  Create a communicator for computation
@@ -459,6 +458,9 @@ C-------------------------------------------------------------------------------
       ALLOCATE( INDX(RDIM) )
       ALLOCATE( IPROC(NEIGHPROC),NNODRECV(NEIGHPROC) )
       ALLOCATE( IRECVLOC(MNP,NEIGHPROC) )
+#if  defined (CMPI) && defined (SKIP_DRY)  
+      ALLOCATE(sendneigh(NEIGHPROC))
+#endif
 
       DO J=1,NEIGHPROC
          READ(AMPI_LUN(18),3010) IPROC(J),NNODRECV(J)
