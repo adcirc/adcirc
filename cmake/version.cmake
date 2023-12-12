@@ -30,7 +30,7 @@ if(WIN32)
 else(WIN32)
   add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
-    COMMAND ./adcircVersion.sh ${CMAKE_CURRENT_SOURCE_DIR} >/dev/null
+    COMMAND ./adcirc_version.py --create-version-file --directory ${CMAKE_CURRENT_SOURCE_DIR} >/dev/null
     COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/version.F ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts
     COMMENT "Generating ADCIRC version...")
