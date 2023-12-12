@@ -1,4 +1,6 @@
 # ADCIRC
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/adcirc/adcirc/tree/main.svg?style=shield&circle-token=468312e3a9341f3a519bbdfb4df0cda07c98bd91)](https://dl.circleci.com/status-badge/redirect/gh/adcirc/adcirc/tree/main)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 
 ADCIRC is a system of computer programs for solving time dependent, free surface circulation and transport problems in
 two and three dimensions. These programs utilize the finite element method in space allowing the use of highly flexible,
@@ -26,11 +28,6 @@ Engineers (USACE), Federal Emergency Management Agency (FEMA), National Oceanogr
 * Randall Kolar - University of Oklahoma at Norman
 * Chris Massey - US Army Corps of Engineers Research and Development Center, Coastal and Hydraulics Laboratory
 
-## CI Status
-The current main branch is tested on CircleCI
-
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/adcirc/adcirc/tree/main.svg?style=svg&circle-token=468312e3a9341f3a519bbdfb4df0cda07c98bd91)](https://dl.circleci.com/status-badge/redirect/gh/adcirc/adcirc/tree/main)
-
 # Gallery
 
 Louisiana ADCIRC model simulating Hurricane Katrina storm surge and waves developed by The Water Institute of the Gulf.
@@ -54,11 +51,11 @@ compiler versions and optimization may also impact solution consistency and the 
 
 Documentation is presently undergoing upgrades, however, the main documentation locations for users are:
 
-1. ADCIRC website - https://adcirc.org
-2. ADCIRC Wiki - https://wiki.adcirc.org/Main_Page
+1. [ADCIRC website](https://adcirc.org)
+2. [ADCIRC Wiki](https://wiki.adcirc.org/Main_Page)
 
 ## Examples
 
-The ADCIRC testing repository (http://github.com/adcirc/adcirc-testsuite) doubles as a set of examples which can be used
+The ADCIRC [testing repository](http://github.com/adcirc/adcirc-testsuite) doubles as a set of examples which can be used
 for new users to become acquainted with the model. Since version 55, the branches are annotated with the expected
 version numbers that would allow the tests to run successfully.
