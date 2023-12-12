@@ -9,36 +9,85 @@
 
 ## Development Strategy
 
-The ADCIRC development strategy consists of the maintenance of two separate versions at any given time: the stable version and the development version. The stable version only receives bug fixes, while the development version receives bug fixes as well as new features.
+The ADCIRC development strategy consists of the maintenance of two separate versions at any given time: 
+the stable version and the development version. The stable version only receives bug fixes, while the 
+development version receives bug fixes as well as new features.
 
-At some point, the development version becomes stable. At that time, a stable branch is created from it, and then new features are added to the previously stable code, creating a new development version. A tag will be applied to the development version of the code in the form ```v49-dev```. Stable versions of the code will have a tag applied in the form ```v49.xx``` where ```xx``` represents the minor update revisions applied to fix bugs in the release versions.
+At some point, the development version becomes stable. At that time, a stable branch is created from it, 
+and then new features are added to the previously stable code, creating a new development version. 
+A tag will be applied to the development version of the code in the form `v49-dev` in order to act
+as a marker for the start of development of a new version. Stable versions of the code will have a tag 
+applied using semantic versioning.
 
-In prior development of the code, ```version.F``` was used to track versioning. However, this is no longer necessary. ```version.F``` will reflect the current development state of the code in the development branch and the current stable version number of the code in the stable branch. There should be no editing necessary.
 
-Similarly, ```header.F``` is no longer needed as these Git will automatically track the version number and log message. The ```git log``` command will provide you with this information in a more understandable way. *Please see the section on providing descriptive commit messages.* Release packages of the code will contain this information generated from Git internally so that users can view the commit log.
+### Branching Strategy
+
+Apart from work branches, the branching strategy is as follows:
+
+* `main` - the main branch of the repository. This branch should always be in a working state. 
+It considered the bleeding edge of development
+* `vXXRelease` - the stable branch for version XX of the code. This branch should only receive bug fixes.
+
+### Considerations
+
+Please consider the following when conducting development on the ADCIRC code base:
+
+1. You should regularly keep your code up to date with the main branch. To do this, you should rebase from the 
+main branch. This will also ensure a linear history. Use the following command to rebase from the main branch:
+
+```bash
+git fetch origin  # Assuming origin is the remote name for https://github.com/adcirc/adcirc
+git rebase origin/main
+```
+Code must have a linear history in order to be merged into the main branch. If your branch becomes extremely out 
+of date with the main branch, you will likely encounter merge conflicts here, and these conflicts are best resolved
+by the developer submitting the pull request than the maintainer of the main branch.
+ 
+2. When you are ready to merge your branch into the main branch, you should use a pull request. This will allow
+the code to be reviewed by other developers before it is merged into the main branch. This will also allow the
+code to be tested by the continuous integration system.
+3. If you are submitting a bug fix, you should also submit a pull request to the stable branch (i.e. `vXXRelease`) 
+once it is accepted into the main branch. This will allow the bug fix to be incorporated into the next minor release.
+4. Pull requests for new features will not be accepted without an acceptance test. This test can be included in the pull
+request and should be briefly described in the pull request description, including what the expected result should be. The
+acceptance test should run in a few minutes on a single core of a modern desktop computer. If the test takes longer than
+this, it will not be viable to run within the continuous integration system.
+
 
 ### Coding Standards
 
-ADCIRC has had many individual contributors and has received code accretions over many years. A set of uniform coding standards has not been defined, and as a result, ADCIRC contains many different styles of Fortran. This section provides a set of style guidelines for contributing code to ADCIRC.
+ADCIRC has had many individual contributors and has received code accretions over many years. A set of 
+uniform coding standards has not been defined, and as a result, ADCIRC contains many different styles 
+of Fortran. This section provides a set of style guidelines for contributing code to ADCIRC.
 
 #### The Basics
 
-* ```IMPLICIT NONE``` at the beginning of each subroutine.
-* Fixed form, never exceeding the 72 column limit, even for comment
-lines.
+* `IMPLICIT NONE` at the beginning of each subroutine.
 * When adding code to an existing subroutine, make the new code
 match the style of the surrounding code, even if you'd prefer
 another style.
+* New source files should use F90-style free-form source so that 
+the code can slowly be upgraded to modern F90 style.
 
 #### Maintainability
 
-When adding code that will be used in slightly different ways in different contexts, make it a subroutine, rather than cutting and pasting several times and making small changes to each cut-and-pasted section. Although it is faster to write code with cut-and-paste, the resulting code is harder to maintain, since each cut-and-pasted section will have to be modified individually later. Also, it is easier to make mistakes when working with cut-and-pasted code.
+When adding code that will be used in slightly different ways in different contexts, make it a subroutine, 
+rather than cutting and pasting several times and making small changes to each cut-and-pasted section. 
+Although it is faster to write code with cut-and-paste, the resulting code is harder to maintain, 
+since each cut-and-pasted section will have to be modified individually later. Also, it is easier 
+to make mistakes when working with cut-and-pasted code.
 
-Rick has expressed a desire for greater modularity ... particularly with the number of variables in the global module. When adding a major new feature, please consider the modularity of the data it requires. In other words, if new variables can be made private to a particular module rather than global, please do so.
+Rick has expressed a desire for greater modularity ... particularly with the number of variables 
+in the global module. When adding a major new feature, please consider the modularity of the 
+data it requires. In other words, if new variables can be made private to a particular module 
+rather than global, please do so. Avoid adding variables to the global module and if possible
+remove them from it. 
+
+Please follow the good scouts rule and leave the code cleaner than you found it.
 
 ### Release Process
 
-The release process informal, but generally includes the following steps:
+The release process is informal, but generally includes the following steps:
 
 * Set and stick to a list of new features as the goal for the new release.
 * Have a consensus among ADCIRC developers that the goal has been achieved.
@@ -47,291 +96,14 @@ The release process informal, but generally includes the following steps:
 * Distribute the release candidate code to collaborative users to make sure their runs perform as expected on the new code.
 * Fix issues revealed by user dismay.
 * Update the docs to reflect the changes. If input files or file formats have changed, produce release notes to highlight the changes.
-* Publicly announce, release, and brag about a shiny new version of ADCIRC.
-
-These tests are often referred to as "regression tests," i.e., a means to detect a regression in correctness or functionality due to changes in the code. A regression test suite can be built up pretty easily.  There are a number of small test cases on adcirc.org, so the initial set of tests should consist of those. We may also want to differentiate between tests for correctness and tests for functionality. The former is making sure you're getting the expected model results and the latter is making sure that nothing is broken (i.e., adcprep, i/o, message passing, etc).
-
-The test suite gets built up based on different purposes.  One may want to exercise more options and more cases, but it is also important to test for known bugs that might have been reintroduced. In otherwords, once a bug is discovered and fixed, a test should be created specifically for that bug to make sure it doesn't appear again.
-
-And lastly, a small test suite should be included with each distribution and a more comprehensive should be created that runs during development and before a release. A step in this direction has been made using ant in the autotest directory.
-
-## Git/Github
-
-### TL;DR
-
-One time configuration steps:
-```
-[create your own Fork of the repository]
-git clone https://github.com/YOUR_USERNAME/adcirc-cg.git
-git remote add upstream https://github.com/adcirc/adcirc-cg.git
-git config --global core.editor "vim"
-git config commit.template .commit-template
-```
-
-General Work Flow:
-```
-git checkout myBranch
-
----Make Edits to Code---
-
-git add [edited files]
-git commit
-git push
-```
-
-Note: In some cases you may need to be more specific with your checkout:
-```
-git checkout --track origin/myBranch
-```
-
-### Introduction
-
-Git is a version control system. That is, it provides a means for many software developers to work on a  project while maintaining a historical record of changes to source code.
-
-Github is a website built to enable collaboration between developers and provides many utilities for creating easy to use code repositories.
-
-A Git repository is a storehouse of code for a particular project. Git repositories consist of a number of branches. The ```main``` branch is the mainline code that everyone shares and is considered the development version of the code. Another separate branch is maintained to house the current release version of the code.
-
-Unlike other version control tools, Git creates commit numbers based upon a SHA1 hash. The SHA1 hash is a unique identifier that is completely unique to a specific commit as well as its history.
-
-Git is also a fully distributed verrsion control system. When a repository is cloned, not only is the latest checked out commit downloaded, but also the entire history of the repository. This allows users to use the repository fully without an internet connection.
-
-A commit ID looks like the following:
-
-```
-04b3c1f526b352f98203d7cf8ffe73b41657a4fe
-```
-
-These IDs are so unique that generally you only need the first 7 characters to fully describe a commit:
-```
-04b3c1f
-```
-Git calls these references "commitish".
-
-### Commits
-
-Each change set that is made to the code is called a "commit". Commits should be made regularly and should help tell a story of your changes. This is useful for other developers to understand what was done to the code and to track down the changes which may have caused a potential problem later. The greater the change in each commit, the more difficult it becomes to fix issues later.
-
-#### Commit Messages
-Your commit messages should be descriptive and use the template provided by this repository. Commit messages consist of two parts. A short description and a long description. The template for commits that is strongly suggested is as follows:
-
-```
-# ==[ Subject: One line only short meaningful description for logs ]===|
-
-
-# ==[ Details: Describe what changed and explain why it changed ]======|
-
-
-# ==[ Please wrap at 72 characters ]===================================|
-```
-This template is included in the repository and can be automatically used each time after running the following command:
-
-```
-git config commit.template .commit-template
-```
-
-Commits happen in two stages. First, the files that should be committed are added to the commit using ```git add```. For example:
-```
-git add timestep.F adcirc.F
-```
-This places the files in a staging area. Note that any further changes made to the files will mean they need to be added to the staging area again. You can check the current status of the repository using ```git status```.
-
-To create the commit and add it to your current branch, use the ```git commit``` command. Note that git provides the ```-m``` option to include your message on the command line, however, this does not allow you to include the detail section of the commit message.
-
-You can choose which text editor is used by git to craft your commit message using:
-```
-git config --global core.editor "vim"
-```
-This command would use the VIM editor, however, you can set it to any editor installed on your system.
-
-### Branches
-
-Branches are core to the way Git functions and should be used whenever possible. For the purposes of this repository, no work should be done in the ```main``` branch. A small number of branches will be officially supported in the main repository, however most work should be conducted within Forks, which are explained later in this document.
-
-You can retrieve a list of branches currently configured in your repository:
-```
-git branch --list
-```
-If you'd like to retrieve a branch not currently set up in your system, you can list them using:
-```
-git branch --list -a
-```
-which will display something like:
-```
-remotes/origin/GAHM_jie
-remotes/origin/GPGPU-CUDA
-remotes/origin/HEAD -> origin/main
-remotes/origin/SSD_jie
-```
-To checkout the GPGPU-CUDA branch, simply type:
-
-```
-git checkout GPGPU-CUDA
-```
-
-Note: In some cases you may need to be more specific with your checkout:
-```
-git checkout --track origin/myBranch
-```
-
-Branches can be created using the command:
-```
-git checkout -b myNewFeature
-```
-
-Finally, new branches can be pushed to the server using:
-```
-git push -u origin myNewFeature
-```
-Note that the ```-u origin``` command only needs to be done the first time a new branch is pushed.
-
-
-### Forks
-
-Forks are fully fledged repositories that are available for development work. Forks allow developers to create as many branches as they would like without the approval of repository administrators to conduct experiments and develop ideas. A forked repository is registered to a particular user but maintains an association with the main ADCIRC repository without cluttering it.
-
-To create your own Fork, use the Fork button from the ```adcirc-cg``` repository page on Github. When you do this, a new repository will be created under your account. This repository is your personal playground.
-
-Note that the ADCIRC repository is private. Your local repository will be private as well.
-
-You can obtain a copy of your repository using the following command:
-
-```
-git clone https://github.com/YOUR_USERNAME/adcirc-cg.git
-```
-
-Next, you can configure your personal repository to maintain an association with the main ADCIRC repository (known as the "Upstream") using:
-
-```
-git remote add upstream https://github.com/adcirc/adcirc-cg.git
-```
-[More Information about Forks](https://help.github.com/articles/configuring-a-remote-for-a-fork/)
-
-You can retrieve changes from the upstream repository using:
-```
-git fetch upstream
-```
-To incorporate these changes into your repository, you can use:
-
-```
-git merge upstream/main
-```
-It is critically important that you make sure you are on the correct branch that you want to merge changes into when running the above command.
-[More Information about Syncing Forks](https://help.github.com/articles/syncing-a-fork/)
-
-### Submitting Changes to the Upstream
-
-Changes are accepted into the ADCIRC repository via a Pull Request. From the Github web page from your Forked repository, click the "Compare and Pull Request" button. You will be asked to select a ```base``` and a ```compare```. The base is the target for your changes, i.e. the main branch in the upstream repository. The compare is your local branch.
-
-Warning: Your local branch must contain all changes from the upstream main to be accepted!
-
-After clicking the pull request button, you will be given a section to describe your changes. Please describe what has been done throughly. The repository administrators will be given the option to merge your pull request into the upstream repository.
-
-### Recipes 
-
-There are many specific development tasks that one may only need to perform occasionally, and this section is dedicated to providing step by step instructions for reference.
-
-#### Cherry Picking
-
-It is sometimes advantageous to make a branch of a branch, for 
-example when adding a new feature to a stable version of the code 
-(which is on its own branch) rather than starting with the 
-experimental branch. 
-
-When committing the changes from the branch-of-a-branch back to the main branch, the following steps are required:
-
-1. Create a branch from the current main with ```git checkout main; git checkout -b newbranch```
-2. Go to the branch-of-a-branch and look at the sha1 ID of each commit starting where the branch-of-a-branch diverged. Use the command git cherry-pick sha1hash for each commit, one by one, continuing along the branch. This will take the work done for each commit and perform it on the new branch. You may need to resolve conflicts here just as you would in a traditional merge. 
-3. Push the new branch to your fork on GitHub with ```git push -u origin newbranch```
-4. On GitHub, create a pull request to main since the history is contiguous. Once the test cases pass, the request can be merged. 
-
-#### Version History
-
-The changelog file is generated automatically with the script ```generateChangelog.sh``` (in the scripts folder). ```Header.F``` is currently still part of the code package for posterity, but git can handle detailed changelogs in a more natural way.
-
-There is also a script now that packages the code in a standardized way: ```exportAdcirc.sh```. This export script generates a version number to include with the exported package because version numbering is now handled by git internally to ensure references are unique and correct. What was ```version.F``` is now no longer part of the code package and it is generated by ```exportAdcirc.sh``` or during compile time. 
-
-The new version number the code has will be a completely unique identifier that will allow developers performing debugging to have an absolute reference to start from when someone says “it doesn’t work” or, maybe more importantly, the correct copy of the code to start from when merging in code that has been contributed from outside of the repository. An automatically generated changelog file is also included when the ```exportAdcirc.sh``` script is run. The full description of this script is available here: https://github.com/adcirc/adcirc-cg/pull/33
-
-#### Keeping Your Fork Up to Date
-
-Other developers will continue to make changes to the upstream 
-repository after you've made your fork. So before your changes can be 
-merged back, you will have to synchonize your fork with the upstream 
-repository to bring yours up to date. This is done by pulling the 
-latest upstream repository change to your local clone of your fork.
-
-1. Go to the subdirectory of your local clone and tell git what repository is considered upstream: ```git remote add upstream https://github.com/adcirc/adcirc-cg.git``` (this only needs to be done once for that local clone). 
-2. Fetch the branches and their respective commits from the upstream repository with ```git fetch upstream```. Commits to main will be stored in a local branch, upstream/main.
-3. Check out your local clone's main branch: ```git checkout main```.
-4. Merge the changes from upstream/main into your local main branch with ```git merge upstream/main```. This brings your local clone of your fork's main branch into sync with the upstream repository, without losing your local changes. If you had no local changes, git will just do a fast forward to the latest version available from the upstream repository. 
-5. Push the changes back to your own fork on GitHub with ```git push origin main```.
-
-### Continuous Integration (CI)
-
-Continuous Integration, or CI, involves testing each change made to the model against a known result. The ensures that as soon as a change (accidental or intentional) to the solution occurs, the developers are aware of it.
-
-The ADCIRC repository uses the CircleCI.com service to conduct these tests. When a pull request is submitted on Github, the CI server will do the following:
-
-1. Build the code without netCDF enabled
-2. Build the code with netCDF enabled
-3. Run the test suite found [here](https://github.com/adcirc/adcirc-cg-testsuite). The test suite consists of the following derived from examples found on ADCIRC.org:
-    1. Quarter Annular 2D example (serial and parallel)
-    2. Shinnecock Inlet example (serial and parallel)
-    3. Idealized Inlet example (serial and parallel)
-    4. APES Pamlico Sound example (serial and parallel)
-
-The CI server is controlled via the ```circle.yml``` file found in the root directory. It contains the instructions to prepare the build server. The actual test criteria is maintained directly in the test suite repository. Keeping the repositories separate is important so that the code repository does not become bloated.
-
-### General Policies
-
-* Communicate. Jason Fleming is responsible for making sure ADCIRC
-development is smooth, pain-free and productive---when in doubt,
-email him (jason.fleming@seahorsecoastal.com).
-* Also use the adcirc-dev mailing list to keep everyone informed of
-what you are doing.
-* If you are not on the adcirc-dev mailing list and would like to be,
-email Jason Fleming.
-* Make a fork to develop new features. No commits are allowed to the repository without a pull request.
-
-### Important Git Tools
-The following are some tools available in the Git suite that are extremely useful.
-
-#### Git Bisect
-Git Bisect allows users to determine when a particular issue occurred. In its most basic form, it can track the origin of a bug very quickly using a binary search. To use it, do the following:
-
-1. Start the tool:
-
-    ```
-    git bisect start
-    ```
-2. Inform the tool of the last time the code worked:
-
-    ```
-    git bisect good [commit-id]
-    ```
-3. Inform the code of a version of the code that does not work:
-
-    ```
-    git bisect bad [commit-id]
-    ```
-4. Git will then check out revisions of the code and ask you to let it know if it works or does not work. When you've determined if a particular version works or does not work, type ```git bisect good``` or ```git bisect bad```. When Git has determined when the issue started, it will give you the details of that commit.
-
-[More Git Bisect Documentation](https://git-scm.com/docs/git-bisect)
-
-#### Git Diff
-Git diff is used to difference commits or files within the repository. You can either difference individual files or entire commits.
-
-```
-git diff 4f5c3a HEAD
-```
-
-This will difference the specified revision with the current ```HEAD``` revision. ```HEAD``` is a reference to the currently checked out commit. You can also use short hand such as ```HEAD~3``` which means "3 commits before HEAD"
-
-#### Git Describe
-Git describe is used to reference a commit. It allows a more user friendly representation of the commit id using tags. For example, a branch with two commits since the ```v53-dev``` tag was applied would look something like:
-```
-% git describe --tags --always
-v53-dev-2-g7fae56e
-```
-This is a unique reference to this commit.
+* Publicly announce and release a shiny new version of ADCIRC.
+
+### Testing
+
+ADCIRC has a long history of development and was developed long before modern coding practices of unit testing. 
+As a result, the code was not necessarily developed to be unit-testable. Therefore, ADCIRC uses a test method
+approximately called "approval testing." ADCIRC runs a suite of tests located in the testing 
+[repository](https://github.com/adcirc/adcirc-testsuite). These tests are run for any pull request to the code
+and verify that the solution has not changed outside of minor differences due to compiler differences. The test
+suite uses a docker container available on Docker Hub (`zcobell/adcirc-ci-container:latest`) and can be build using
+the Dockerfile in the CI docker repository [here](https://github.com/adcirc/adcirc-ci-docker).
