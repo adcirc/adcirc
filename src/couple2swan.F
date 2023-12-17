@@ -659,6 +659,7 @@ C-----------------------------------------------------------------------
       CHARACTER(LEN=20)             :: FileNameMax
       CHARACTER(LEN=10),ALLOCATABLE :: Names(:)
       CHARACTER(LEN=30)             :: TempC
+      CHARACTER(LEN=4)              :: SWAN_RTYPE
 
       INTEGER                       :: I
       INTEGER                       :: IO
@@ -869,7 +870,7 @@ C.....Arrange on/off for output into array
       ENDDO
 
 !... Call the Swan subroutine to interpolate internal Swan quantities.
-      CALL SWOEXD(SWAN_OQPROC, nverts, XC, YC, SWAN_VOQR,
+      CALL SWOEXD(SWAN_RTYPE, SWAN_OQPROC, nverts, XC, YC, SWAN_VOQR,
      &            SWAN_VOQ, COMPDA, KGRPNT, FORCE, CROSS, IONOD, -999)
 
 !... Call the Swan subroutine to compute the output quantities.
