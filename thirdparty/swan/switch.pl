@@ -15,6 +15,8 @@ $adc = "FALSE";
 $coh = "FALSE";
 $ncf = "FALSE";
 $mv4 = "FALSE";
+#Casey 231217: Carrying forward changes to be compatible with ADCIRC/cmake
+$outdir=".";
 while ( $ARGV[0]=~/-.*/ )
    {
    if ($ARGV[0]=~/-esmf/) {$esmf="TRUE";shift;}
@@ -33,6 +35,12 @@ while ( $ARGV[0]=~/-.*/ )
    if ($ARGV[0]=~/-coh/) {$coh="TRUE";shift;}
    if ($ARGV[0]=~/-netcdf/) {$ncf="TRUE";shift;}
    if ($ARGV[0]=~/-matl4/) {$mv4="TRUE";shift;}
+#Casey 231217: Carrying forward changes to be compatible with ADCIRC/cmake
+   if ($ARGV[0]=~/-outdir/){
+       shift;
+       $outdir=$ARGV[0];
+       shift;
+       }
    }
 
 # --- trap unsupported switch combinations
@@ -59,13 +67,17 @@ foreach $file (@files)
   {
     ($tempf)=split(/.ftn/, $file);
     $ext = ($file =~ m/ftn90/) ? "f90" : "f";
-    $outfile = join(".",$tempf,$ext);
+#Casey 231217: Carrying forward changes to be compatible with ADCIRC/cmake
+#    $outfile = join(".",$tempf,$ext);
+    $outfile = join("",$outdir,"/",$tempf,".",$ext);
   }
   else
   {
     ($tempf)=split(/.ftn/, $file);
     $ext = ($file =~ m/ftn90/) ? "f90" : "for";
-    $outfile = join(".",$tempf,$ext);
+#Casey 231217: Carrying forward changes to be compatible with ADCIRC/cmake
+#    $outfile = join(".",$tempf,$ext);
+    $outfile = join("",$outdir,"/",$tempf,".",$ext);
   }
 # --- process file
   if (   (! -e $outfile)            #outfile doesn't exist
