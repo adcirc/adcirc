@@ -210,8 +210,9 @@ subroutine SwanGradDepthorK ( dep2, mudl2, spcsig, dhdx, dhdy, dkdx, dkdy, ivert
        ! if area is non-positive, give error and go to next vertex
        !
        if ( .not. area > 0d0 ) then
-          write (msgstr, '(a,i5)') ' Area of centroid dual is negative or zero in vertex ', ivert
-          call msgerr( 2, trim(msgstr) )
+!Casey 231217: Ease the requirements for ADCIRC.
+!NADC          write (msgstr, '(a,i5)') ' Area of centroid dual is negative or zero in vertex ', ivert
+!NADC          call msgerr( 2, trim(msgstr) )
           return
        endif
        !
@@ -362,8 +363,9 @@ subroutine SwanGradDepthorK ( dep2, mudl2, spcsig, dhdx, dhdy, dkdx, dkdy, ivert
        ! if area is non-positive, give error and go to next vertex
        !
        if ( .not. area > 0d0 ) then
-          write (msgstr, '(a,i5)') ' Area of centroid dual is negative or zero in vertex ', ivert
-          call msgerr( 2, trim(msgstr) )
+!Casey 231217: Ease the requirements for ADCIRC.
+!NADC          write (msgstr, '(a,i5)') ' Area of centroid dual is negative or zero in vertex ', ivert
+!NADC          call msgerr( 2, trim(msgstr) )
           return
        endif
        !

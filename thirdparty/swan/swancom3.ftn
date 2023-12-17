@@ -569,6 +569,8 @@
       USE SWCOMM4                                                         40.41
       USE SDSBABANIN
 !ADC      USE WIND, ONLY: WindDrag                                            41.20
+!Casey 231217: Carrying forward the previous changes.
+!ADC      USE Couple2Swan, ONLY: ComputeSwanWindDrag
 !
       IMPLICIT NONE
 !
@@ -1113,6 +1115,9 @@
         END IF
 
       END IF
+!
+!Casey 231217: Carrying forward the previous changes.
+!ADC        CALL ComputeSwanWindDrag(CDRAG,NodeNumber)
 !
 !     *** test output ***
 !
