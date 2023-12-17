@@ -1,0 +1,25 @@
+Instructions for complete installation of SWAN
+----------------------------------------------
+
+Installation of SWAN can be done by means of the make and perl
+utilities. Please carry out the following tasks:
+
+   1) Ensure that the Perl package is available on your computer.
+      Check it by typing 'perl -v'. The Perl version should be at
+      least 5.0.0 or higher.
+
+   2) Type 'make config' or 'nmake config' (in case of MS Windows)
+      to create configuration file. This file (macros.inc) contains
+      machine-dependent macros to be needed by the Makefile.
+
+   3) Compilation of the SWAN source code for sequential runs can
+      be done by typing 'make ser' or 'nmake ser' (in case of
+      MS Windows). For parallel runs, however, the user may
+      choose between linking the MPI libraries for distributed
+      memory machines and using OpenMP directives for shared memory
+      systems for appropriate compilation by typing, respectively,
+      'make mpi' and 'make omp'. However, for parallel, unstructured
+      mesh simulation on a distributed memory system, type 'make punswan'.
+      NOTE: One of these commands must be preceded once by 'make config'.
+
+   4) For more information, please consult the Implementation Manual.
