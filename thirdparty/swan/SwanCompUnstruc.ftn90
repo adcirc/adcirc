@@ -94,7 +94,9 @@ subroutine SwanCompUnstruc ( ac2, ac1, compda, spcsig, spcdir, xytst, cross, it 
     use SwanCompdata
     use SwanQCM
     use m_parall
-!PUN    use SIZES, only: SZ, MNPROC
+!Casey 231217: SZ has been deprecated in ADCIRC.
+!!PUN    use SIZES, only: SZ, MNPROC
+!PUN    use SIZES, only: MNPROC
 !PUN    use MESSENGER
 !ADC    use couple2adcirc, only: MakeBoundariesReflective
 !ADC    use NodalAttributes, only: FoundSwanWaveRefrac, LoadSwanWaveRefrac, SwanWaveRefrac
@@ -124,6 +126,9 @@ subroutine SwanCompUnstruc ( ac2, ac1, compda, spcsig, spcdir, xytst, cross, it 
     integer, parameter                    :: itswp = 4 ! the number of iterations needed prior to switch to a lower number of sweeps
 !
 !   Local variables
+!
+!Casey 231217: SZ has been deprecated in ADCIRC.
+!PUN    integer, parameter                    :: SZ = 8
 !
     integer                               :: icell     ! cell index / loop counter
     integer                               :: id        ! loop counter over direction bins
