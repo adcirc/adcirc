@@ -89,6 +89,9 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanSumOverNodes.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanMinOverNodes.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanMaxOverNodes.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanVTKWriteHeader.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanVTKWriteData.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanVTKPDataSets.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpids.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpcre.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpmix.f
