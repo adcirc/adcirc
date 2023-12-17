@@ -293,8 +293,9 @@
        ! if area is non-positive, give error and go to next vertex
        !
        if ( area <= 0d0 ) then
-          write (msgstr, '(a,i5)') ' Area of centroid dual is negative or zero in vertex ', ivert
-          call msgerr( 2, trim(msgstr) )
+!Casey 231217: Ease the requirements for ADCIRC.
+!NADC          write (msgstr, '(a,i5)') ' Area of centroid dual is negative or zero in vertex ', ivert
+!NADC          call msgerr( 2, trim(msgstr) )
           cycle vertexloop
        endif
        !
