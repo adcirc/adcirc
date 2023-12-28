@@ -137,6 +137,8 @@ C-----------------------------------------------------------------------
      &     InitNAModule, ReadNodalAttr, InitNodalAttr, ESLM, ESLC,
      &     Tau0FullDomainMin, Tau0FullDomainMax, Z0b_var,
      &     PrepCondensedNodes,   ! SB
+C.....SB
+     &     activateVEW1DChannelWetPerimeter,
 C ....DW
      &     LoadAbsLayerSigma, FoundAbsLayerSigma 
       USE SPONGELAYER, ONLY: SpongeLayerRelatedPrep, FLAGSPONGEELEM
@@ -199,7 +201,8 @@ C.... DMW 202207 Add options for controlling slope/wind limiting and
 C.... "new" formula for computing vel in wetting/drying routine
      &  slim, windlim, directvelWD, useHF
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
-
+C.... SB
+      NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
@@ -613,6 +616,16 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       if (ios.gt.0) then
          call adcirc_terminate()
       endif
+      rewind(15)
+
+C     Channel wet perimeter for bottom friction 11/06/2023 sb
+      namelistSpecifier = 'VEW1DChannelControl'
+      activateVEW1DChannelWetPerimeter = .false.
+      READ(UNIT=15,NML=VEW1DChannelControl,IOSTAT=ios)
+      call logNamelistReadStatus(namelistSpecifier, ios)
+      write(scratchMessage,'(a,l1)') "activateVEW1DChannelWetPerimeter=",
+     &   activateVEW1DChannelWetPerimeter
+      call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
 C     jgf46.10 Add user-controllable warning, output, and stop criteria

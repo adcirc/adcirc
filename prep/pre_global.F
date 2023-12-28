@@ -328,6 +328,10 @@ Casey 180318: Added NWS=13
       real(8) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start     
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime = 'hotstart'
 
+C     VEW1D channel namelist 11/06/2023 sb
+      logical :: foundVEW1DChannelControlNamelist = .false. 
+      logical :: activateVEW1DChannelWetPerimeter
+      
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
       REAL(8) CONVCR

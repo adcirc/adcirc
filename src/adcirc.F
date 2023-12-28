@@ -123,6 +123,8 @@ C******************************************************************************
      &   version_number, initLogging, setMessageSource, screenMessage,
      &   openLogFile, unsetMessageSource, np_global, rnp_global,
      &   scratchMessage, CTIP, L_N, writer_id
+      USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
+     &   initVEW1DChannelWetPerimeter
       USE CONSTANTS, ONLY: g, rhowat0
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
@@ -237,6 +239,11 @@ C
       IF ( (MNPROC.gt.1).and.(myProc.eq.0).and.
      &     (WRITE_LOCAL_HARM_FILES.eqv..false.) ) THEN
           CALL allocateFullDomainHAIOArrays()
+      ENDIF
+
+      ! Initialize variables for bottom friction evaluation considering wet perimeter 11/06/2023
+      if ( activateVEW1DChannelWetPerimeter.eqv..true. ) THEN
+            CALL initVEW1DChannelWetPerimeter()
       ENDIF
 
       !jgf49.44: Initialize harmonic analysis parameters.
