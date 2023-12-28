@@ -1,0 +1,41 @@
+#####################
+# Global code owners
+#####################
+@zcobell
+
+##############################
+# ADCIRC Feature Code Owners
+##############################
+
+# Subgrid
+src/subgridLookup.F @jlwoodr
+
+# SWAN Coupling
+src/couple2swan.F @caseydietrich
+
+# Vertical Element Walls
+src/vew1d.F @shinbunya
+
+# 2D/3D Coupling
+src/couple2baroclinic3D.F @cblakely97 @wpringle
+src/gl2loc_mapping.F @cblakely97
+
+# Sponge Layers
+src/sponge_layer.F @dwirasae
+src/quadrature.F @dwirasae
+
+# Internal Tides
+src/internaltide.F @wpringle
+
+# NetCDF OWI Winds
+src/owiwind_netcdf.F @caseydietrich @acrosby
+
+#########################
+# Third party Code Owners
+#########################
+
+# SWAN code owners
+thirdparty/swan/ @caseydietrich
+
+# NUOPC code owners
+thirdparty/nuopc/ @pvelissariou1
