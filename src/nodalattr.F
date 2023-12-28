@@ -296,6 +296,12 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(8), ALLOCATABLE :: BridgePilings(:,:)
       REAL(8), ALLOCATABLE :: Chezy(:)
       REAL(8), ALLOCATABLE :: ManningsN(:)
+
+C     Variables for bottom friction evaluation along VEW1D channels considering wet perimeter of rectangular cross-section 11/06/2023 sb
+      LOGICAL :: ActivateVEW1DChannelWetPerimeter
+      REAL(8), ALLOCATABLE :: WetPerimWidth(:)    ! Widths of the channels
+      REAL(8), ALLOCATABLE :: WetPerimBankElev(:) ! Elevations of the channel banks
+
       REAL(8), ALLOCATABLE :: GeoidOffset(:)
       REAL(8), ALLOCATABLE :: EVM(:)
       REAL(8), ALLOCATABLE :: EVC(:)
@@ -935,6 +941,9 @@ C     Allocate memory to hold our data.
       ALLOCATE(GeoidOffset(NumOfNodes))
       ALLOCATE(Chezy(NumOfNodes))
       ALLOCATE(ManningsN(NumOfNodes))
+      IF ( ActivateVEW1DChannelWetPerimeter ) THEN
+         ALLOCATE(WetPerimWidth(NumOfNodes),WetPerimBankElev(NumOfNodes)) ! sb 11/06/2023
+      ENDIF
       ALLOCATE(Z0b_var(NumOfNodes))
       ALLOCATE(EVM(NumOfNodes))
       ALLOCATE(EVC(NumOfNodes))
@@ -2173,6 +2182,76 @@ C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
 
 
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E
+C     I N I T  V E W 1 D  C H A N N E L  W E T  P E R I M E T E R
+C     ----------------------------------------------------------------
+C
+C     Subroutine to initialize variable values for bottom friction
+C     evaluation along VEW1D channels considering wet perimeter  
+C     11/06/2023 sb
+C
+C     ----------------------------------------------------------------
+      SUBROUTINE initVEW1DChannelWetPerimeter()
+      USE SIZES          
+      USE MESH, ONLY: NP, X, Y, DP, LBArray_Pointer
+      USE BOUNDARIES,ONLY : LBCODEI,NBV,IBCONN
+      IMPLICIT NONE
+      INTEGER :: ICN, I1, I2, IBND, NNBB1, NNBB2
+      REAL(8) :: X1, Y1, X2, Y2, WIDTH, BE1, BE2
+
+      WetPerimWidth = 0.D0
+      WetPerimBankElev = 0.D0
+
+      write(scratchMessage,'(a)') 'Initializing channel wet perimeter variables:'
+      call logMessage(ECHO,trim(scratchMessage))
+
+      DO ICN=1,NListCondensedNodes
+         IF (NNodesListCondensedNodes(ICN).NE.2) CYCLE
+         I1 = ListCondensedNodes(ICN,1)
+         I2 = ListCondensedNodes(ICN,2)
+         
+         ! Width
+         X1 = X(I1)
+         Y1 = Y(I1)
+         X2 = X(I2)
+         Y2 = Y(I2)
+         WIDTH = SQRT((X1-X2)*(X1-X2) + (Y1-Y2)*(Y1-Y2))
+         
+         ! Bank elevation
+         !- I1
+         IBND = LBArray_Pointer(I1)
+         IF(LBCODEI(IBND).EQ.64) THEN
+            NNBB1=NBV(IBND)
+            NNBB2=IBCONN(IBND)
+            BE1 = -MIN(DP(NNBB1),DP(NNBB2))
+         ELSE
+            BE1 = 99999.D0
+         ENDIF
+         !- I2
+         IBND = LBArray_Pointer(I2)
+         IF(LBCODEI(IBND).EQ.64) THEN
+            NNBB1=NBV(IBND)
+            NNBB2=IBCONN(IBND)
+            BE2 = -MIN(DP(NNBB1),DP(NNBB2))
+         ELSE
+            BE2 = 99999.D0
+         ENDIF
+
+         ! Store the values
+         WetPerimWidth(I1) = WIDTH
+         WetPerimWidth(I2) = WIDTH
+         WetPerimBankElev(I1) = BE2
+         WetPerimBankElev(I2) = BE2
+
+         write(scratchMessage,'(a,I10,a,I10,a,F10.3,a,F10.3,a,F10.3)')
+     &      'I1=',I1,', I2=',I2,', WIDTH=',WIDTH,', BankElev1=',BE1,', BankElev2=',BE2
+         call logMessage(ECHO,trim(scratchMessage))
+            
+      ENDDO
+
+      END SUBROUTINE InitVEW1DChannelWetPerimeter
+
 
 C     ----------------------------------------------------------------
 C     S U B R O U T I N E
@@ -2216,7 +2295,7 @@ C
       REAL(8) BALPHA! BALPHA(2) is constriction fraction
       REAL(8) BDELX ! BDELX(3) is effective delx
       REAL(8) MLDrat ! MLD ratio to depth
-      REAL(8) HT, WCH, ManN
+      REAL(8) HT, WCH, HCH, WPFac
 
 
       !...Reset the friction to original values
@@ -2251,40 +2330,38 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
                ENDIF
             ELSE
                HT = DP(I)+IFNLFA*ETA2(I)
-               IF(LoadSubgridBarrier)THEN
-                   IF(subgridBarrierOvertopping(I).AND.
-     &                SubgridBarrierNoOfVals.EQ.2)THEN
-                       FRIC(I)=g*subgridBarrier(I,2)**2.d0
-     &                      /( ( HT )**(1.d0/3.d0) ) 
-                       IF(FRIC(I).LT.BFCdLLimit) THEN
-                          FRIC(I) = BFCdLLimit
-                       ENDIF
-                   ELSE
-                       IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
-                       FRIC(I)=g*ManningsN(I)**2.d0
-     &                      /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
-                       IF(FRIC(I).LT.BFCdLLimit) THEN
-                          FRIC(I) = BFCdLLimit
-                       ENDIF
-                   ENDIF
+               IF (activateVEW1DChannelWetPerimeter .AND.
+     &             WetPerimWidth(I).GT.0.D0) THEN    ! Evaluating wet perimeter factor along VEW1D channels
+                  HCH = DP(I)+IFNLFA*MIN( ETA2(I), WetPerimBankElev(I) ) ! Height from bottom to which ever lower among the water elevation and the bank elevation
+                  WCH = WetPerimWidth(I)
+                  WPFac = (1.D0+2.D0*HCH/WCH)**(2.D0/3.D0) ! Wet perimeter factor
                ELSE
-                   IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
-                   IF (ManningsN(I).gt.1.d0) THEN
-                      WCH = floor(ManningsN(I))
-                      ManN = ManningsN(I) - WCH
-                      FRIC(I)=g*((1.D0+2.D0*HT/WCH)**(2.D0/3.D0)*ManN)**2.d0
-     &                  /( HT**(1.d0/3.d0) )
+                  WPFac = 1.D0
+               ENDIF
+               IF(LoadSubgridBarrier)THEN
+                  IF(subgridBarrierOvertopping(I).AND.
+     &               SubgridBarrierNoOfVals.EQ.2)THEN
+                      FRIC(I)=g*subgridBarrier(I,2)**2.d0
+     &                     /( ( HT )**(1.d0/3.d0) ) 
                       IF(FRIC(I).LT.BFCdLLimit) THEN
                          FRIC(I) = BFCdLLimit
                       ENDIF
-                   ELSE
-                      FRIC(I)=g*ManningsN(I)**2.d0
-     &                  /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
-                      !sb46.28sb02  Lower limit is applied here.
+                  ELSE
+                      IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
+                      FRIC(I)=g*(WPFac*ManningsN(I))**2.d0
+     &                     /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
                       IF(FRIC(I).LT.BFCdLLimit) THEN
                          FRIC(I) = BFCdLLimit
                       ENDIF
-                   ENDIF
+                  ENDIF
+               ELSE
+                  IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
+                  FRIC(I)=g*(WPFac*ManningsN(I))**2.d0
+     &                    /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
+                  !sb46.28sb02  Lower limit is applied here.
+                  IF(FRIC(I).LT.BFCdLLimit) THEN
+                     FRIC(I) = BFCdLLimit
+                  ENDIF
                ENDIF
             ENDIF
          ENDDO

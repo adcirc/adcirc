@@ -2367,6 +2367,13 @@ c...     tcm v52.30.01 additions for Smag_Control Namelist
      &       ', dynamicWaterLevelCorrectionRampEnd=',dynamicWaterLevelCorrectionRampEnd,'  /'
          endif
 
+C....    SB VEW1D channel control namelist
+         if (foundVEW1DChannelControlNamelist) then
+            write(15,'(a,l,a)')
+     &       '&VEW1DChannelControl activateVEW1DChannelWetPerimeter=',
+     &       activateVEW1DChannelWetPerimeter," /"
+         endif
+
 C...     wjp additions for WarnElev Namelist
          IF (FOUND_WARNELEV_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
             write(15,*) '! -- Begin WarnElev Control NameList --'
@@ -7670,7 +7677,8 @@ C---------------------------------------------------------------------------
      &    theta2, ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd,
      &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
-     &    foundCorrectionControlNamelist, NCICE !GML added NCICE 20210727
+     &    foundCorrectionControlNamelist, NCICE, !GML added NCICE 20210727
+     &    foundVEW1DChannelControlNamelist
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
      &    initNetCDFHotstart3D, initNetCDFHotstart,

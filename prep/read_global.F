@@ -548,6 +548,9 @@ C.....tcm v52.30.01 added for Smag_Control
      &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
 
+C.....Control for VEW1D channels 11/06/2023 sb
+      NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter
+
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15
 C..... file.
@@ -562,6 +565,7 @@ C
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       FOUND_WC_NML = .FALSE.
       foundCorrectionControlNamelist = .false.
+      foundVEW1DChannelControlNamelist = .false.
 #ifdef ADCNETCDF
       FOUND_OWINC_NML = .FALSE.
 #endif
@@ -712,6 +716,18 @@ Casey 180318: Added NWS=13
          call logMessage(INFO,
      &      'End-of-file when searching for dynamicWaterLevelCorrectionControl namelist.')
       end select
+      rewind(15)  !Return to the top of the fort.15 file
+
+c..
+      read(unit=15,nml=VEW1DChannelControl,iostat=ios)
+      if ( ios.ge.0) then
+         foundVEW1DChannelControlNamelist = .true.
+         call logMessage(INFO,
+     &         'The VEW1DChannelControl namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The VEW1DChannelControl namelist was not found.')
+      endif
       rewind(15)  !Return to the top of the fort.15 file
 
 c...  tcm v52.30.01 Addtions for Smagorinski Limits
