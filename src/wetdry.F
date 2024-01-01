@@ -114,12 +114,12 @@ CWET...
       subroutine initializeWettingAndDrying()
       use sizes, only : mne, mnp
       use global, only : h0, nodecode, nnodecode
-      use nodalattributes,only: loadSubgridBarrier
+      use nodalattributes,only: subgrid_barrier
       implicit none
 
       allocate ( nibcnt(mnp) )
       allocate ( noffold(mne))
-      if(loadSubgridBarrier)allocate(noff_sg(mne))
+      if(subgrid_barrier%active)allocate(noff_sg(mne))
       nnodecode = 1
       nodecode = 1
       noffold(:) = 1
@@ -139,7 +139,7 @@ CWET...
 !----------------------------------------------------------------------
       subroutine computeWettingAndDrying(it)
       use sizes, only : mne, mnp
-      use nodalattributes,only: loadSubgridBarrier
+      use nodalattributes,only: subgrid_barrier
       use constants, only: g
       use global, only : noff, nodecode, nnodecode, eta1, eta2, tk,
      &    nolifa,
@@ -152,11 +152,9 @@ CWET...
       use mesh, only : ne, np, nm, dp, mju, totalArea, nm, x, y, areas,
      &   LBArray_Pointer, nneighele, neitabele
       use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
-     &   manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,
-     &   loadZ0B_var, z0b_var, loadSubgridBarrier,
-     &   loadCondensedNodes,
-     &   ListCondensedNodes, NListCondensedNodes,
-     &   NNodesListCondensedNodes
+     &    mannings_n_at_sea_floor, bottom_roughness_length,
+     &    subgrid_barrier, condensed_nodes,
+     &   hbreak, ifhybf, ifnlbf, iflinbf
       USE BOUNDARIES, ONLY : IBCONN, ISSUBMERGED64, NFLUXIB64_GBL
       use global_3dvs, only : a, b, islip, kp, z0b, sigma, evtot, q
       use subdomain, only : subdomainOn, enforceBN, enforceWDcb, enforceWDob
@@ -211,7 +209,7 @@ CWET...
             NOFF(I)=1
          ENDDO
 
-         IF(loadSubgridBarrier)call applySubgridBarrier()
+         IF(subgrid_barrier%active)call applySubgridBarrier()
 
 CWET...
 CWET...WET/DRY - PART 1 - NODAL DRYING CRITERIA D1
@@ -294,11 +292,11 @@ c. RJW modified the following for 3D friction
                      IF(C2DDI)THEN
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
-                        IF (LoadManningsN) THEN
-                          FRIC(NM123)=g*ManningsN(NM123)**2.d0
+                        IF (mannings_n_at_sea_floor%active) THEN
+                          FRIC(NM123)=g*mannings_n_at_sea_floor%values(NM123)**2.d0
      &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
-                          IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                          IF(FRIC(NM123)<BFCdLLimit) THEN
                             FRIC(NM123) = BFCdLLimit
                           ENDIF
                         ENDIF
@@ -320,12 +318,12 @@ C solve for the depth averaged velocity,U, from the relation :
 C        tau=rho*g*(h+eta)*(deta/dx)=rho*Cd*|U|*U
 C          U=sqrt(g*(h+eta)*(deta/dx)/Cd )
 C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
-                       IF(LoadZ0B_var) THEN
-                           Z0B1 = Z0B_var(NM123)
-                        ELSEIF (LoadManningsN) THEN
+                       IF(bottom_roughness_length%active) THEN
+                           Z0B1 = bottom_roughness_length%values(NM123)
+                        ELSEIF (mannings_n_at_sea_floor%active) THEN
                      Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )* exp(-(1.0D0+
      &               ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**(1.0D0/6.0D0) )/
-     &                                 (ManningsN(NM123)*sqrt(g)) ) ))
+     &                                 (mannings_n_at_sea_floor%values(NM123)*sqrt(g)) ) ))
                         ELSE
                            Z0B1 = Z0B
                        ENDIF
@@ -410,8 +408,8 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction
                      IF(C2DDI)THEN
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
-                        IF (LoadManningsN) THEN
-                          FRIC(NM123)=g*ManningsN(NM123)**2.d0
+                        IF (mannings_n_at_sea_floor%active) THEN
+                          FRIC(NM123)=g*mannings_n_at_sea_floor%values(NM123)**2.d0
      &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
                           IF(FRIC(NM123).LT.BFCdLLimit) THEN
@@ -437,12 +435,12 @@ C solve for the depth averaged velocity,U, from the relation :
 C        tau=rho*g*(h+eta)*(deta/dx)=rho*Cd*|U|*U
 C          U=sqrt(g*(h+eta)*(deta/dx)/Cd )
 C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
-                        IF(LoadZ0B_var) THEN
-                           Z0B1=Z0B_var(NM123)
-                        ELSEIF (LoadManningsN) THEN
+                        IF(bottom_roughness_length%active) THEN
+                           Z0B1=bottom_roughness_length%values(NM123)
+                        ELSEIF (mannings_n_at_sea_floor%active) THEN
                      Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )* exp(-(1.0D0+
      &               ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**(1.0D0/6.0D0) )/
-     &                                 (ManningsN(NM123)*sqrt(g)) ) ))
+     &                                 (mannings_n_at_sea_floor%values(NM123)*sqrt(g)) ) ))
                         ELSE
                            Z0B1=Z0B
                         ENDIF
@@ -526,8 +524,8 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction
                      IF(C2DDI)THEN
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
-                        IF (LoadManningsN) THEN
-                          FRIC(NM123)=g*ManningsN(NM123)**2.d0
+                        IF (mannings_n_at_sea_floor%active) THEN
+                          FRIC(NM123)=g*mannings_n_at_sea_floor%values(NM123)**2.d0
      &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
                           IF(FRIC(NM123).LT.BFCdLLimit) THEN
@@ -552,12 +550,12 @@ C solve for the depth averaged velocity,U, from the relation :
 C        tau=rho*g*(h+eta)*(deta/dx)=rho*Cd*|U|*U
 C          U=sqrt(g*(h+eta)*(deta/dx)/Cd )
 C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
-                        IF(LoadZ0B_var) THEN
-                           Z0B1 = Z0B_var(NM123)
-                        ELSEIF (LoadManningsN) THEN
+                        IF(bottom_roughness_length%active) THEN
+                           Z0B1 = bottom_roughness_length%values(NM123)
+                        ELSEIF (mannings_n_at_sea_floor%active) THEN
                      Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )* exp(-(1.0D0+
      &               ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**(1.0D0/6.0D0) )/
-     &                                 (ManningsN(NM123)*sqrt(g)) ) ))
+     &                                 (mannings_n_at_sea_floor%values(NM123)*sqrt(g)) ) ))
                         ELSE
                            Z0B1 = Z0B
                         ENDIF
@@ -698,8 +696,8 @@ C
                            NM123 = NM1
                            IF(C2DDI)THEN
 C<<                           Convert Manning's N to Cd, if necessary.
-                              IF (LoadManningsN) THEN
-                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
+                              IF (mannings_n_at_sea_floor%active) THEN
+                                 FRIC(NM123)=g*mannings_n_at_sea_floor%values(NM123)**2.d0
      &                              /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
                                  IF(FRIC(NM123).LT.BFCdLLimit) THEN
@@ -756,8 +754,8 @@ C<<                           Convert Manning's N to Cd, if necessary.
                            NM123=NM2
                            IF(C2DDI)THEN
 C<<                        Convert Manning's N to Cd, if necessary.
-                              IF (LoadManningsN) THEN
-                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
+                              IF (mannings_n_at_sea_floor%active) THEN
+                                 FRIC(NM123)=g*mannings_n_at_sea_floor%values(NM123)**2.d0
      &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
                                  IF(FRIC(NM123).LT.BFCdLLimit) THEN
@@ -814,8 +812,8 @@ C<<                        Convert Manning's N to Cd, if necessary.
                            NM123 = NM3
                            IF(C2DDI)THEN
 C<<                         Convert Manning's N to Cd, if necessary.
-                              IF (LoadManningsN) THEN
-                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
+                              IF (mannings_n_at_sea_floor%active) THEN
+                                 FRIC(NM123)=g*mannings_n_at_sea_floor%values(NM123)**2.d0
      &                           /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
                                  IF(FRIC(NM123).LT.BFCdLLimit) THEN
@@ -1131,23 +1129,23 @@ C.....
 C..... Section for condensed nodes
 C..... Setting the same nodecode value at grouped condensed nodes   SB
 C.....
-      IF(LoadCondensedNodes) THEN
-         DO K=1,NListCondensedNodes
-            I = ListCondensedNodes(K,1)
+      IF(condensed_nodes%active) THEN
+         DO K=1,condensed_nodes%NListCondensedNodes
+            I = condensed_nodes%list_condensed_nodes(K,1)
             ! 0) DEFAULT VALUE
             NNC = NNODECODE(I)
             ! 1) FIND UPDATED VALUE 
-            DO L=2,NNodesListCondensedNodes(K)
-               J = ListCondensedNodes(K,L)
-               IF(NNODECODE(J).NE.NODECODE(J)) THEN
+            DO L=2,condensed_nodes%nnodes_list_condensed_nodes(K)
+               J = condensed_nodes%list_condensed_nodes(K,L)
+               IF(NNODECODE(J)/=NODECODE(J)) THEN
                   NNC = NNODECODE(J)
                   EXIT ! EXiT THE LOOP IF AN UPDATED NODECODE IS FOUND
                ENDIF
             ENDDO
             ! 2) DISTRIBUTE IT
             NNODECODE(I) = NNC
-            DO L=2,NNodesListCondensedNodes(K)
-               J = ListCondensedNodes(K,L)
+            DO L=2,condensed_nodes%nnodes_list_condensed_nodes(K)
+               J = condensed_nodes%list_condensed_nodes(K,L)
                NNODECODE(J) = NNC
             ENDDO
          ENDDO
@@ -1236,7 +1234,7 @@ CWET... of the subdomains, to prevent them from getting out of sync
 CWET... with their MPI calls as some reset the GWCE and others do not.
 CWET...
 
-         IF(LoadSubgridBarrier)THEN
+         IF(subgrid_barrier%active)THEN
              DO I=1,NE
                  IF(NOFF_SG(I).EQ.0)THEN
                      IF(NOFF(I).NE.0)THEN
@@ -1289,8 +1287,7 @@ c.....
 !-----------------------------------------------------------------------
           USE MESH,ONLY: DP,DP_ORIG,NM,NE
           USE GLOBAL,ONLY: ETA2,NOFF,H0,NODECODE,NCCHANGE,ILUMP
-          USE NODALATTRIBUTES,ONLY: SubgridBarrier,
-     &                              SubgridBarrierOvertopping
+          USE NODALATTRIBUTES,ONLY: subgrid_barrier
 #ifdef CMPI
           USE MESSENGER,ONLY:wetDrySum
 #endif          
@@ -1308,16 +1305,16 @@ c.....
              NM1=NM(I,1)
              NM2=NM(I,2)
              NM3=NM(I,3)
-             SB1=subgridBarrier(NM1,1)
-             SB2=subgridBarrier(NM2,1)
-             SB3=subgridBarrier(NM3,1)
+             SB1=subgrid_barrier%values(NM1,1)
+             SB2=subgrid_barrier%values(NM2,1)
+             SB3=subgrid_barrier%values(NM3,1)
 
              NCELE = NODECODE(NM1)*NODECODE(NM2)*NODECODE(NM3)*NOFF(I)
-             IF(NCELE.EQ.0)CYCLE
+             IF(NCELE==0)CYCLE
 
-             IF(SB1.LT.DP_ORIG(NM1).AND.
-     &          SB2.LT.DP_ORIG(NM2).AND.
-     &          SB3.LT.DP_ORIG(NM3))THEN
+             IF(SB1<DP_ORIG(NM1).AND.
+     &          SB2<DP_ORIG(NM2).AND.
+     &          SB3<DP_ORIG(NM3))THEN
 
                 E1 = ETA2(NM1)
                 E2 = ETA2(NM2)
@@ -1328,26 +1325,26 @@ c.....
                 DOT3 = E3*NODECODE(NM3)+SB3
                 DOT  = MAX(DOT1,DOT2,DOT3)
 
-                IF(DOT.GT.-1.2D0*H0)THEN
+                IF(DOT>-1.2D0*H0)THEN
                     DP(NM1) = MAX(SB1,DP(NM1)+SB1/SBDT)
                     DP(NM2) = MAX(SB2,DP(NM2)+SB2/SBDT)
                     DP(NM3) = MAX(SB3,DP(NM3)+SB3/SBDT)
-                    SubgridBarrierOvertopping(NM1) = .TRUE.
-                    SubgridBarrierOvertopping(NM2) = .TRUE.
-                    SubgridBarrierOvertopping(NM3) = .TRUE.
+                    subgrid_barrier%overtopping(NM1) = .TRUE.
+                    subgrid_barrier%overtopping(NM2) = .TRUE.
+                    subgrid_barrier%overtopping(NM3) = .TRUE.
                 ELSE
                     DP(NM1) = MIN(DP_ORIG(NM1),DP(NM1)-SB1/SBDT)
                     DP(NM2) = MIN(DP_ORIG(NM2),DP(NM2)-SB2/SBDT)
                     DP(NM3) = MIN(DP_ORIG(NM3),DP(NM3)-SB3/SBDT)
                     NOFF_SG(I) = 0
-                    SubgridBarrierOvertopping(NM1) = .FALSE.
-                    SubgridBarrierOvertopping(NM2) = .FALSE.
-                    SubgridBarrierOvertopping(NM3) = .FALSE.
+                    subgrid_barrier%overtopping(NM1) = .FALSE.
+                    subgrid_barrier%overtopping(NM2) = .FALSE.
+                    subgrid_barrier%overtopping(NM3) = .FALSE.
                 ENDIF
              ELSE
-                SubgridBarrierOvertopping(NM1) = .FALSE.
-                SubgridBarrierOvertopping(NM2) = .FALSE.
-                SubgridBarrierOvertopping(NM3) = .FALSE.
+                subgrid_barrier%overtopping(NM1) = .FALSE.
+                subgrid_barrier%overtopping(NM2) = .FALSE.
+                subgrid_barrier%overtopping(NM3) = .FALSE.
              ENDIF
           ENDDO
 

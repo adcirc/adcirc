@@ -169,7 +169,7 @@ C     the conventional GWCE or (2) the predictor-corrector GWCE.
       use messenger
 #endif
       use momentum, only : mom_eqs_new_nc
-      use nodalattributes, only : loadEleSlopeLim
+      use nodalattributes, only : elemental_slope_limiter
       implicit none
       integer, intent(in) :: it ! time step 
       real(8), intent(in) :: timeloc ! simulation time in seconds
@@ -180,7 +180,7 @@ ckmd    Changed to include the predictor-corrector algorithm
       IF(CPRECOR) THEN
          CALL GWCE_New(IT,TimeLoc,TimeH)
 c...tcm added call for slope limiting         
-         IF (LoadEleSlopeLim) THEN
+         IF (elemental_slope_limiter%active) THEN
             call check_slopes(it,TimeLoc)
             call apply_slope_limits(ETA2,MNP)
 #ifdef CMPI
@@ -195,7 +195,7 @@ C...  If running in parallel, update velocities & fluxes on all processors
 #endif
          CALL GWCE_New_pc(IT,TimeLoc,TimeH)
 c...tcm added call to slope limiter         
-         IF (LoadEleSlopeLim) THEN
+         IF (elemental_slope_limiter%active) THEN
             call check_slopes(it,TimeLoc)
             call apply_slope_limits(ETA2,MNP)
 #ifdef CMPI
@@ -211,7 +211,7 @@ C      -------------------GWCE------------------------------------------
       IF(CGWCE_New) THEN
          CALL GWCE_New(IT,TimeLoc,TimeH)
 c.... tcm added call to slope limiter         
-         IF (LoadEleSlopeLim) THEN
+         IF (elemental_slope_limiter%active) THEN
             call check_slopes(it,TimeLoc)
             call apply_slope_limits(ETA2,MNP)
 #ifdef CMPI
@@ -267,11 +267,8 @@ C
      &   NBOU, NVELL, IBCONN, ISSUBMERGED64, NFLUXIB64_GBL  ! Added for VEW1D  08-11-2022 SB
       USE ITPACKV
       USE NodalAttributes, ONLY :
-     &     LoadGeoidOffset, GeoidOffset, EVM, NOLIBF,
-     &     TAU0VAR, HighResTimeVaryingTau0, FullDomainTimeVaryingTau0,
-     &     CalculateTimeVaryingTau0, LoadAdvectionState, advectlocal,
-     &     LoadCondensedNodes, ListCondensedNodes, NListCondensedNodes, ! Added for VEW1D  08-11-2022 SB
-     &     NNodesListCondensedNodes, NCondensedNodes,                    !
+     &     sea_surface_height_above_geoid, EVM=>average_horizontal_eddy_viscosity_in_sea_water_wrt_depth,
+     &     tau0=>primitive_weighting_in_continuity_equation, advection_state, condensed_nodes,
 C... DW
      &     LoadAbsLayerSigma, absorblayer_sigma_eta,
      &     absorblayer_sigma_mnx, absorblayer_sigma_mny
@@ -425,24 +422,24 @@ C.....Set up the LHS matrix (for the iterative matrix solver)
 C
 C        jgf47.08 Moved time-varying tau0 subroutine to nodalattr.F
          IF(C2DDI.AND.
-     &       ((FullDomainTimeVaryingTau0.or.HighResTimeVaryingTau0)))
+     &       ((tau0%FullDomainTimeVaryingTau0.or.tau0%HighResTimeVaryingTau0)))
      &   THEN
             DO I=1,NP
 C              WJP 02.24.2018 Get the infinity norm of the matrix
                TK(I) = max(abs(TKM(1,I))+abs(TKM(3,I)),
      &                     abs(TKM(2,I))+abs(TKM(3,I)))
             ENDDO
-            CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
+            call tau0%compute_time_varying_tau0(tk, nneigh, neitab, np)
          ENDIF
 
          IF(C3D.AND.
-     &       ((FullDomainTimeVaryingTau0.or.HighResTimeVaryingTau0)))
+     &       ((tau0%FullDomainTimeVaryingTau0.or.tau0%HighResTimeVaryingTau0)))
      &   THEN
-            CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
+            call tau0%compute_time_varying_tau0(tk, nneigh, neitab, np)
          ENDIF
 
          !jgf48.4619: Added Seizo's handling of Lumping vs non-Lumping
-         COEFASSYM : IF ( ILump.eq.0 ) THEN ! default case: fully consistent LHS
+         COEFASSYM : IF ( ILump==0 ) THEN ! default case: fully consistent LHS
             FULLMASS: DO IE=1,NE
                NMI1=NM(IE,1)
                NMI2=NM(IE,2)
@@ -511,7 +508,7 @@ C              Ali et al. formula
                endif
                ! DMW 2022/06 Apply slope limiting to gravity
                GA00DPAvgOAreaIE4 = ALPHAL(IE)*A00*G*DPAvg*Cfac/AreaIE4
-               Tau0Avg = (Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
+               Tau0Avg = (tau0%values(NMI1)+tau0%values(NMI2)+tau0%values(NMI3))/3.d0
 
 C........... DW, Absorbing layer
 C    
@@ -524,9 +521,9 @@ C
      &                     +  absorblayer_sigma_eta(NMI3,1))/3.D0
 
                   ! \overline(\tau_{0} \sigma)
-                  Tau0SigmaAvg = (absorblayer_sigma_eta(NMI1,1)*Tau0Var(NMI1)
-     &              +  absorblayer_sigma_eta(NMI2,1)*Tau0Var(NMI2)
-     &              +  absorblayer_sigma_eta(NMI3,1)*Tau0Var(NMI3))/3.D0
+                  Tau0SigmaAvg = (absorblayer_sigma_eta(NMI1,1)*tau0%values(NMI1)
+     &              +  absorblayer_sigma_eta(NMI2,1)*tau0%values(NMI2)
+     &              +  absorblayer_sigma_eta(NMI3,1)*tau0%values(NMI3))/3.D0
 
                   Tau0Avg_S = Tau0Avg + 
      &             (A00*2.D0*Tau0SigmaAvg*DT + SigmaAvg)*sponge_dis_mthd
@@ -601,7 +598,7 @@ C              Assemble the LHS matrix
                NC3=NodeCode(NMI3)
                NCEle=NC1*NC2*NC3*NOFF(IE)
 
-               Tau0Avg=(Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
+               Tau0Avg=(tau0%values(NMI1)+tau0%values(NMI2)+tau0%values(NMI3))/3.d0
 C
 C.... DW, absorbing layer
                SigmaAvg = 0.D0 ; Tau0sigmaAvg = 0.D0
@@ -610,9 +607,9 @@ C.... DW, absorbing layer
                  SigmaAvg = (absorblayer_sigma_eta(NMI1,1) 
      &             +  absorblayer_sigma_eta(NMI2,1) 
      &             +  absorblayer_sigma_eta(NMI3,1))/3.D0
-                 Tau0SigmaAvg = (absorblayer_sigma_eta(NMI1,1)*Tau0Var(NMI1)
-     &             +  absorblayer_sigma_eta(NMI2,1)*Tau0Var(NMI2)
-     &             +  absorblayer_sigma_eta(NMI3,1)*Tau0Var(NMI3))/3.D0
+                 Tau0SigmaAvg = (absorblayer_sigma_eta(NMI1,1)*tau0%values(NMI1)
+     &             +  absorblayer_sigma_eta(NMI2,1)*tau0%values(NMI2)
+     &             +  absorblayer_sigma_eta(NMI3,1)*tau0%values(NMI3))/3.D0
 
                  Tau0Avg_S = Tau0Avg + 
      &             (A00*2.D0*Tau0SigmaAvg*DT + SigmaAvg)*sponge_dis_mthd
@@ -823,7 +820,7 @@ C........ END DW:
             LSXYGradA=(UU1(NM1)*FDY1+UU1(NM2)*FDY2+UU1(NM3)*FDY3)/2.d0   !A*DUDY
             LSYXGradA=(VV1(NM1)*FDX1+VV1(NM2)*FDX2+VV1(NM3)*FDX3)/2.d0   !A*DVDX
             LSYYGradA=(VV1(NM1)*FDY1+VV1(NM2)*FDY2+VV1(NM3)*FDY3)/2.d0   !A*DVDY
-            EVMEle=NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
+            EVMEle=NCEle*(EVM%values(NM1)+EVM%values(NM2)+EVM%values(NM3))/3.d0
             !
             ! If using Smagorinski vertically-integrated lateral stress coefficient
             IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  
@@ -919,7 +916,7 @@ C..... Beg DW:
             FDY2 = FDYE(2,IE)*sfdyfac ; 
             FDY3 = FDYE(3,IE)*sfdyfac ; 
 C..... End DW
-            EVMEle = NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
+            EVMEle = NCEle*(EVM%values(NM1)+EVM%values(NM2)+EVM%values(NM3))/3.d0
             IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  !If using Smagorinski vertically-integrated lateral stress coefficient
                LSXXGradA=(UU1(NM1)*FDX1+UU1(NM2)*FDX2+UU1(NM3)*FDX3)/2.d0
                LSXYGradA=(UU1(NM1)*FDY1+UU1(NM2)*FDY2+UU1(NM3)*FDY3)/2.d0
@@ -990,12 +987,12 @@ C..... End DW
 
 C...  Assemble the GWCE RHS except for the boundary integral terms
 
-      DO 1037 IE=1,NE
+      DO IE=1,NE
 
 C...     Set nodal values for each element
 
 Corbitt 120322: Localized Advection
-         IF (LoadAdvectionState) CALL ADVECTLOCAL(IE)
+         call advection_state%advect_local(ie)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -1052,16 +1049,16 @@ Corbitt 120322: Localized Advection
             H1N3=DP(NM3)+IFNLFA*E1N3
             NCELE=NC1*NC2*NC3*NOFF(IE)
          ENDIF
-         EVMN1=EVM(NM1)
-         EVMN2=EVM(NM2)
-         EVMN3=EVM(NM3)
-         T0N1=Tau0Var(NM1)
-         T0N2=Tau0Var(NM2)
-         T0N3=Tau0Var(NM3)
+         EVMN1=EVM%values(NM1)
+         EVMN2=EVM%values(NM2)
+         EVMN3=EVM%values(NM3)
+         T0N1=tau0%values(NM1)
+         T0N2=tau0%values(NM2)
+         T0N3=tau0%values(NM3)
 C..... SB 2022-09-14
 C        Rorate the velocity and flux vectors at the condensed nodes
 C        so that they align with the stream direction
-         IF (LoadCondensedNodes) THEN
+         IF (condensed_nodes%active) THEN
             CALL ROTATE_AT_CONDENSEDNODES_ALL
      &        (NM1,NM2,NM3,
      &         U1N1,V1N1,U1N2,V1N2,U1N3,V1N3,
@@ -1334,7 +1331,7 @@ C        from the momentum equation
          CorifAvg = CorifAvg + IFNLCT*TANPHIAvg*U1Avg
 C
 C...... Eliminate Coriols at condensed nodes  10/17/2022 sb
-         IF (LoadCondensedNodes.AND.ROT_STATUS.EQ.0) CorifAvg = 0.D0
+         IF (condensed_nodes%active.AND.ROT_STATUS.EQ.0) CorifAvg = 0.D0
 C
 C...... DW absorbing layer
 C
@@ -1627,7 +1624,7 @@ C...     Put these partial products directly into nodal storage for a scalar (no
          GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A3*NCEle
 #endif
 
- 1037 CONTINUE                  !End of elemental loop
+      end do                  !End of elemental loop
 
 C...  Put load vector elemental values into nodal storage for a vector computer
 #ifdef CVEC
@@ -1708,9 +1705,9 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
       if (subdomainOn.and.enforceBN.eq.1) then  ! NCSU Subdomain
          continue                                ! NCSU Subdomain
       else 
-         IF (LoadGeoidOffset) THEN
+         IF (sea_surface_height_above_geoid%active) THEN
             DO I=1,NETA
-               ETA2(NBD(I))=ETA2(NBD(I))+GeoidOffset(NBD(I))
+               ETA2(NBD(I))=ETA2(NBD(I))+sea_surface_height_above_geoid%values(NBD(I))
             END DO
          ENDIF
       endif                                      ! NCSU Subdomain
@@ -1765,12 +1762,12 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
      &     .OR.(NFLUXGBC.EQ.1).OR.(NFLUXRBC.EQ.1)) THEN
          NBDJ=NBV(1)
          IF ((LBCODEI(1).LE.29).OR.(LBCODEI(1).EQ.64))    ! 64 is added for VEW  08-11-2022 SB
-     &        QFORCEJ=(QN2(1)-QN0(1))/DT2 + Tau0VAR(NBDJ)*QN1(1)
+     &        QFORCEJ=(QN2(1)-QN0(1))/DT2 + tau0%values(NBDJ)*QN1(1)
 
          IF (LBCODEI(1).EQ.30) THEN
             H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
             CELERITY=SQRT(G*H1)
-            QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
+            QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - tau0%values(NBDJ)*QN1(1)
          ENDIF
 
          IF (LBCODEI(1).EQ.32) THEN
@@ -1779,25 +1776,25 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
 !C DW, Below is an original scheme and is correct 
 !C            QFORCEJ=(QN1(1)-QN0(1))/DT
 !C     &           -CELERITY*(ETAS(NBDJ)-(EN1(1)-EN0(1)))/DT
-!C     &           +TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
+!C     &           +tau0%values(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
 !C DW, a 2nd order extrapolation formula: \eta^{n+1} = 2*\eta^{n} - \eta^{n-1} is used
 !C     and second order in time derivative is used
             QFORCEJ=(QN2(1)-QN0(1))/DT2
      &           - CELERITY*(2.0*ETAS(NBDJ) - (EN2(1)-EN0(1)))/DT2
-     &           + TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1))) 
+     &           + tau0%values(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1))) 
          ENDIF
 
          IF((LBCODEI(1).EQ.40).OR.(LBCODEI(1).EQ.41)) QFORCEJ=
-     &        -(QN1(1)-QN0(1))/DT - TAU0VAR(NBDJ)*(QN1(1)+QN0(1))/2.d0
+     &        -(QN1(1)-QN0(1))/DT - tau0%values(NBDJ)*(QN1(1)+QN0(1))/2.d0
 
 C     jgf46.21 Added IBTYPE=52.
          IF(LBCODEI(1).EQ.52) THEN
-            QFORCEJ=(QN2(1)-QN0(1))/DT2 + Tau0VAR(NBDJ)*QN1(1)
+            QFORCEJ=(QN2(1)-QN0(1))/DT2 + tau0%values(NBDJ)*QN1(1)
             IF (IT.GT.FluxSettlingIT) THEN
                HH1=DP(NBDJ)+IFNLFA*Eta1(NBDJ)
                Celerity=SQRT(G*HH1)
                QforceJ=QforceJ - Celerity*(EtaS(NBDJ)/DT
-     &              + Tau0Var(NBDJ)*(Eta1(NBDJ)-ElevDisc(1)))
+     &              + tau0%values(NBDJ)*(Eta1(NBDJ)-ElevDisc(1)))
             ENDIF
          ENDIF
 C
@@ -1807,11 +1804,11 @@ C
             QFORCEI=QFORCEJ
 
             IF((LBCODEI(J).LE.29).OR.(LBCODEI(J).EQ.64))     ! 64 is added for VEW  08-11-2022 SB
-     &           QFORCEJ=(QN2(J)-QN0(J))/DT2 + Tau0VAR(NBDJ)*QN1(J)
+     &           QFORCEJ=(QN2(J)-QN0(J))/DT2 + tau0%values(NBDJ)*QN1(J)
             IF(LBCODEI(J).EQ.30) THEN
                H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
                CELERITY=SQRT(G*H1)
-               QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(J)
+               QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - tau0%values(NBDJ)*QN1(J)
             ENDIF
 
             IF(LBCODEI(J).EQ.32) THEN
@@ -1820,25 +1817,25 @@ C
 !C DW, This is an original formula and is definitely correct (1st order in time)
 !C                QFORCEJ=(QN1(J)-QN0(J))/DT
 !C     &              -CELERITY*(ETAS(NBDJ)-(EN1(J)-EN0(J)))/DT
-!C     &              +TAU0VAR(NBDJ)*(QN1(J)-CELERITY*(ETA1(NBDJ)-EN1(J)))
+!C     &              +tau0%values(NBDJ)*(QN1(J)-CELERITY*(ETA1(NBDJ)-EN1(J)))
 !C DW, below a 2nd-order extrapolation formula: \eta^{n+1} = 2*\eta^{n} - \eta^{n-1}
 !C     and second order in time derivative is used
                 QFORCEJ=(QN2(J)-QN0(J))/DT2
      &              -CELERITY*(2.0*ETAS(NBDJ)-(EN2(J)-EN0(J)))/DT2
-     &              +TAU0VAR(NBDJ)*(QN1(J)-CELERITY*(ETA1(NBDJ)-EN1(J)))
+     &              +tau0%values(NBDJ)*(QN1(J)-CELERITY*(ETA1(NBDJ)-EN1(J)))
             ENDIF
 
             IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) QFORCEJ=
-     &        -(QN1(J)-QN0(J))/DT - TAU0VAR(NBDJ)*(QN1(J)+QN0(J))/2.d0
+     &        -(QN1(J)-QN0(J))/DT - tau0%values(NBDJ)*(QN1(J)+QN0(J))/2.d0
 C
 C     jgf46.21 Added IBTYPE=52
             IF(LBCODEI(J).EQ.52) THEN
-               QFORCEJ=(QN2(J)-QN0(J))/DT2 + Tau0VAR(NBDJ)*QN1(J)
+               QFORCEJ=(QN2(J)-QN0(J))/DT2 + tau0%values(NBDJ)*QN1(J)
                IF (IT.GT.FluxSettlingIT) THEN
                   HH1=DP(NBDJ)+IFNLFA*Eta1(NBDJ)
                   Celerity=SQRT(G*HH1)
                   QforceJ=QforceJ - Celerity*(EtaS(NBDJ)/DT
-     &                 + Tau0Var(NBDJ)*(Eta1(NBDJ)-ElevDisc(J)))
+     &                 + tau0%values(NBDJ)*(Eta1(NBDJ)-ElevDisc(J)))
                ENDIF
             ENDIF
 
@@ -1917,7 +1914,7 @@ C.... have the same values on both sides of the equations.
 C
 C.... Prep for the temporary LHS lumped array
       IF(((NFLUXIB64_GBL.GT.0).AND.(ILump.NE.0)).OR.
-     &   (LoadCondensedNodes)) THEN
+     &   (condensed_nodes%active)) THEN
          COEFDTemp => COEFDTempMem
          COEFDTemp(:) = COEFD(:)
       ELSE
@@ -1957,21 +1954,21 @@ C     VEW: Sum front side values to back side
       ENDIF
 
 C.... CONDENSED NODES: Summing up the values at condensed nodes
-      IF((LoadCondensedNodes).AND.(ILump.NE.0)) THEN
-         DO K=1,NListCondensedNodes
-            I = ListCondensedNodes(K,1)
-            IF((NODECODE(I).NE.0)) THEN
+      IF((condensed_nodes%active).AND.(ILump/=0)) THEN
+         DO K=1,condensed_nodes%NListCondensedNodes
+            I = condensed_nodes%list_condensed_nodes(K,1)
+            IF((NODECODE(I)/=0)) THEN
                ! 1) Sum them up
-               DO L=2,NNodesListCondensedNodes(K)
-                  J = ListCondensedNodes(K,L)
+               DO L=2,condensed_nodes%nnodes_list_condensed_nodes(K)
+                  J = condensed_nodes%list_condensed_nodes(K,L)
                   COEFDTemp(I) = COEFDTemp(I) + COEFDTemp(J)
                   GWCE_LV(I)   = GWCE_LV(I) + GWCE_LV(J)
                   ETA1(I)      = ETA1(I) + ETA1(J)
                ENDDO
                ! 2) Distribute them
-               ETA1(I) = ETA1(I) / NNodesListCondensedNodes(K)
-               DO L=2,NNodesListCondensedNodes(K)
-                  J = ListCondensedNodes(K,L)
+               ETA1(I) = ETA1(I) / condensed_nodes%nnodes_list_condensed_nodes(K)
+               DO L=2,condensed_nodes%nnodes_list_condensed_nodes(K)
+                  J = condensed_nodes%list_condensed_nodes(K,L)
                   COEFDTemp(J) = COEFDTemp(I)
                   GWCE_LV(J)   = GWCE_LV(I)
                   ETA1(J)      = ETA1(I)
@@ -1981,8 +1978,8 @@ C.... CONDENSED NODES: Summing up the values at condensed nodes
       ENDIF
 
 #ifdef CMPI
-      IF ((NFLUXIB64_GBL.GT.0.OR.LoadCondensedNodes)
-     &    .AND.(ILump.NE.0)) THEN
+      IF ((NFLUXIB64_GBL>0.OR.condensed_nodes%active)
+     &    .AND.(ILump/=0)) THEN
          CALL UPDATER(COEFDTemp,GWCE_LV,DUMY1,2)
       ENDIF
 #endif      
@@ -2180,8 +2177,11 @@ C
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXGBC, NFLUXRBC,
      &   NFLUXIB, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3, NPEBC
       USE ITPACKV
-      USE NodalAttributes, ONLY : FRIC, Tau0Var, HBREAK, FTHETA, FGAMMA,
-     &     IFLINBF, IFNLBF, IFHYBF, EVM, LoadAdvectionState, advectlocal
+      USE NodalAttributes, ONLY : FRIC,
+     & tau0=>primitive_weighting_in_continuity_equation, advection_state,
+     & EVM=>average_horizontal_eddy_viscosity_in_sea_water_wrt_depth,
+     & HBREAK, FTHETA, FGAMMA,
+     & IFLINBF, IFNLBF, IFHYBF
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -2351,7 +2351,7 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
             LSXYGradA=(UU1(NM1)*FDY1+UU1(NM2)*FDY2+UU1(NM3)*FDY3)/2.d0   !A*DUDY
             LSYXGradA=(VV1(NM1)*FDX1+VV1(NM2)*FDX2+VV1(NM3)*FDX3)/2.d0   !A*DVDX
             LSYYGradA=(VV1(NM1)*FDY1+VV1(NM2)*FDY2+VV1(NM3)*FDY3)/2.d0   !A*DVDY
-            EVMEle=NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
+            EVMEle=NCEle*(EVM%values(NM1)+EVM%values(NM2)+EVM%values(NM3))/3.d0
             ! If using Smagorinski vertically-integrated lateral stress coefficient
             IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  
                EVMSmag=EVMEle*
@@ -2434,7 +2434,7 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
             FDY1 = X(NM3)-X(NM2)                         !a1
             FDY2 = X(NM1)-X(NM3)                         !a2
             FDY3 = X(NM2)-X(NM1)                         !a3
-            EVMEle=NCEle*(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
+            EVMEle=NCEle*(EVM%values(NM1)+EVM%values(NM2)+EVM%values(NM3))/3.d0
             ! If using Smagorinski vertically-integrated lateral stress coefficient
             IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN
                LSXXGradA=(UU1(NM1)*FDX1+UU1(NM2)*FDX2+UU1(NM3)*FDX3)/2.d0
@@ -2527,7 +2527,7 @@ C...       the corrector step
 C...  Assemble the GWCE RHS except for the boundary integral terms
 ckmd  Renumber the GWCE loop for the corrector step
 
-      DO 1038 IE=1,NE
+      DO IE=1,NE
 
 C...     Set nodal values for each element
 ckmd
@@ -2536,7 +2536,7 @@ ckmd
 
 
 Corbitt 120322: Localized Advection
-         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
+         call advection_state%advect_local(ie)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -2611,12 +2611,12 @@ Corbitt 120322: Localized Advection
          H2N1=DP(NM1)+IFNLFA*E2N1
          H2N2=DP(NM2)+IFNLFA*E2N2
          H2N3=DP(NM3)+IFNLFA*E2N3
-         EVMN1=EVM(NM1)
-         EVMN2=EVM(NM2)
-         EVMN3=EVM(NM3)
-         T0N1=Tau0Var(NM1)
-         T0N2=Tau0Var(NM2)
-         T0N3=Tau0Var(NM3)
+         EVMN1=EVM%values(NM1)
+         EVMN2=EVM%values(NM2)
+         EVMN3=EVM%values(NM3)
+         T0N1=tau0%values(NM1)
+         T0N2=tau0%values(NM2)
+         T0N3=tau0%values(NM3)
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
             Pr1N1=PR1(NM1)
             Pr1N2=PR1(NM2)
@@ -2955,7 +2955,7 @@ c        WRITE(101,*) IE, ESN1, ESN2, ESN3
 c        WRITE(101,*) IE, TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
 
 ckmd  Change the number of the loop
- 1038 CONTINUE      !End of elemental loop
+      end do      !End of elemental loop
 
 
 C...  Put load vector elemental values into nodal storage for a vector computer
@@ -3043,12 +3043,12 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
          NBDJ=NBV(1)
          IF((LBCODEI(1).LE.29).OR.(LBCODEI(1).EQ.64))     ! 64 is added for VEW  08-22-2022 SB
      &        QFORCEJ=(QN2(1)-QN0(1))/DT2 +
-     &          Tau0VAR(NBDJ)*QN1(1)
+     &          tau0%values(NBDJ)*QN1(1)
 
          IF(LBCODEI(1).EQ.30) THEN
             H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
             CELERITY=SQRT(G*H1)
-            QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
+            QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - tau0%values(NBDJ)*QN1(1)
             ENDIF
 
          IF(LBCODEI(1).EQ.32) THEN
@@ -3056,11 +3056,11 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
             CELERITY=SQRT(G*H1)
             QFORCEJ=(QN1(1)-QN0(1))/DT
      &           -CELERITY*(ETAS(NBDJ)-(EN1(1)-EN0(1)))/DT
-     &           +TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
+     &           +tau0%values(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
             ENDIF
 
          IF((LBCODEI(1).EQ.40).OR.(LBCODEI(1).EQ.41)) QFORCEJ=
-     &        -(QN1(1)-QN0(1))/DT - TAU0VAR(NBDJ)*(QN1(1)+QN0(1))/2.d0
+     &        -(QN1(1)-QN0(1))/DT - tau0%values(NBDJ)*(QN1(1)+QN0(1))/2.d0
 
          DO J=2,NVEL
             NBDI=NBDJ
@@ -3068,12 +3068,12 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
             QFORCEI=QFORCEJ
 
             IF((LBCODEI(J).LE.29).OR.(LBCODEI(J).EQ.64))     ! 64 is added for VEW  08-22-2022 SB
-     &         QFORCEJ=(QN2(J)-QN0(J))/DT2+Tau0VAR(NBDJ)*QN1(J)
+     &         QFORCEJ=(QN2(J)-QN0(J))/DT2+tau0%values(NBDJ)*QN1(J)
 
             IF(LBCODEI(J).EQ.30) THEN
                H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
                CELERITY=SQRT(G*H1)
-               QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(J)
+               QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - tau0%values(NBDJ)*QN1(J)
                ENDIF
 
             IF(LBCODEI(J).EQ.32) THEN
@@ -3081,11 +3081,11 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
                CELERITY=SQRT(G*H1)
                QFORCEJ=(QN1(J)-QN0(J))/DT
      &              -CELERITY*(ETAS(NBDJ)-(EN1(J)-EN0(J)))/DT
-     &              +TAU0VAR(NBDJ)*(QN1(J)-CELERITY*(ETA1(NBDJ)-EN1(J)))
+     &              +tau0%values(NBDJ)*(QN1(J)-CELERITY*(ETA1(NBDJ)-EN1(J)))
                ENDIF
 
             IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) QFORCEJ=
-     &        -(QN1(J)-QN0(J))/DT - TAU0VAR(NBDJ)*(QN1(J)+QN0(J))/2.d0
+     &        -(QN1(J)-QN0(J))/DT - tau0%values(NBDJ)*(QN1(J)+QN0(J))/2.d0
 
             NCI=NodeCode(NBDI)
             NCJ=NodeCode(NBDJ)
@@ -3169,10 +3169,7 @@ C*************************************************************************
      &      nodes_lg, IFSFM
       use mesh, only : nm, ne, areas, FDXE, FDYE, 
      &      SFacEle, SFMYEle, SFMXEle
-      use NodalAttributes, ONLY : LoadEleSlopeLim,
-     &     elemental_slope_limiter_active,
-     &     elemental_slope_limiter_grad_max,
-     &     elemental_slope_limiter_max_exceeded
+      use NodalAttributes, ONLY : esl => elemental_slope_limiter
       implicit none
       INTEGER, intent(in) :: IT
       Real(8), intent(in) :: TimeLoc
@@ -3196,7 +3193,7 @@ C*************************************************************************
       ! to activate slope limiting at each node. 
       ! jgf51.50: Added this back to the subroutine version of the
       ! slope limiter. 
-      elemental_slope_limiter_active(:) = .false.
+      esl%elemental_slope_limiter_active(:) = .false.
 
 Cobell  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
 C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
@@ -3209,7 +3206,7 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCEle=NC1*NC2*NC3*NOFF(IE)
-         IF(NCEle.EQ.0)THEN
+         IF(NCEle==0)THEN
             CYCLE  ! this element is dry, go to the next one
          ENDIF
          AreaIE2 = Areas(IE)
@@ -3240,40 +3237,40 @@ C.... end WP
          ! limiter is activated at a node during a particular run.
          DO I=1,3
             ! If the limiter is on already, go to the next node. 
-            IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
+            IF (esl%elemental_slope_limiter_active(NM(IE,I))) CYCLE
             ! Compare the elemental slope to the maximum elemental gradient.
-            grad_check: IF (dEta2Mag.GE.
-     &           ABS(elemental_slope_limiter_grad_max(NM(IE,I)))) THEN
+            grad_check: IF (dEta2Mag>=
+     &           ABS(esl%elemental_slope_limiter_grad_max(NM(IE,I)))) THEN
                ! jgf51.51: Log the fulldomain node number.
                nodeNumber = nm(ie,i)
-               if (mnproc.gt.1) then
+               if (mnproc>1) then
                   nodeNumber = nodes_lg(nm(ie,i))
                endif
                ! zc - If gradmax is positive or zero, activate slope
                ! limiting. 
-               grad_case: if (elemental_slope_limiter_grad_max(nm(ie,i))
-     &               .ge.0.0d0) then
+               grad_case: if (esl%elemental_slope_limiter_grad_max(nm(ie,i))
+     &               >=0.0d0) then
                   ! If it is the first time that the slope limiter
                   ! has been activated at this node, write a log 
                   ! message. 
-                  if (eslcount(nm(ie,i)).eq.0) then
+                  if (esl%count(nm(ie,i)).eq.0) then
                      write(scratchMessage,1983) nodeNumber,dEta2Mag, 
-     &                     elemental_slope_limiter_grad_max(NM(IE,I)),
+     &                     esl%elemental_slope_limiter_grad_max(NM(IE,I)),
      &                     it, timeLoc
                      call allMessage(INFO,scratchMessage)
-                     eslcount(nm(ie,i)) = 1 ! for output file
+                     esl%count(nm(ie,i)) = 1 ! for output file
                   endif
-                  elemental_slope_limiter_active(NM(IE,I)) = .true.
+                  esl%elemental_slope_limiter_active(NM(IE,I)) = .true.
                else
                   ! Just print log message the first time the 
                   ! gradient is exceeded. 
-                  IF (elemental_slope_limiter_max_exceeded(NM(IE,I))
+                  IF (esl%elemental_slope_limiter_max_exceeded(NM(IE,I))
      &                  .eqv..false.) THEN
                      write(scratchMessage,1984) nodeNumber,dEta2Mag, 
-     &                     elemental_slope_limiter_grad_max(NM(IE,I)),
+     &                     esl%elemental_slope_limiter_grad_max(NM(IE,I)),
      &                     it, timeLoc
                      call allMessage(INFO,scratchMessage)
-                     elemental_slope_limiter_max_exceeded(NM(IE,I)) =
+                     esl%elemental_slope_limiter_max_exceeded(NM(IE,I)) =
      &                      .true.
                   endif
                endif grad_case
@@ -3316,8 +3313,7 @@ C
      &      setMessageSource, unsetMessageSource, allMessage,
      &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       use mesh, only : ne, nm, areas, totalArea
-      use NodalAttributes, ONLY : LoadEleSlopeLim,
-     &     elemental_slope_limiter_active
+      use NodalAttributes, ONLY : esl => elemental_slope_limiter
       implicit none
       integer :: IE,NM1,NM2,NM3,NC1,NC2,NC3,NCEle
       integer, intent(in) :: LocNP
@@ -3333,7 +3329,7 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 
-      IF (LoadEleSlopeLim.eqv..true.) THEN
+      IF (esl%active.eqv..true.) THEN
          IF (firstCall.eqv..true.) THEN
             allocate(elevSum(LocNP))
             firstCall = .false.
@@ -3347,7 +3343,7 @@ C
 C        CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
 C        TIME STEP AND APPLY SMOOTHING IF DESIRED. -ZC
 
-      IF (LoadEleSlopeLim.eqv..true.) THEN
+      IF (esl%active.eqv..true.) THEN
 C
          elevSum(:) = 0.d0
          DO IE=1,NE
@@ -3371,7 +3367,7 @@ C
 Cobell   CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
 C        TIME STEP AND APPLY SMOOTHING IF DESIRED. THIS ROUTINE PARALLELS THE
 C        ABOVE ROUTINE.
-         WHERE ((elemental_slope_limiter_active.eqv..true.).and.
+         WHERE ((esl%elemental_slope_limiter_active.eqv..true.).and.
      &         (TotalArea.ne.0.d0))
                Eta2Lim = elevSum / TotalArea
          END WHERE
@@ -3387,9 +3383,6 @@ C... Will apply the updating outside the subroutine
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-
-
-      RETURN
 
       END SUBROUTINE APPLY_SLOPE_LIMITS
 

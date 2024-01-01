@@ -108,9 +108,10 @@ C.....sb46.28sb03 added 09/xx/2006
      &     Apply2DInternalWaveDrag,
      &     Apply3DBottomFriction,
      &     Apply2DMomentumDisp,
-     &     GeoidOffset,
-     &     BFCdLLimit, fric, fgamma, ftheta, manningsn, 
-     &     hbreak, loadManningsN, iflinbf, ifnlbf, ifhybf
+     &     sea_surface_height_above_geoid,
+     &     mannings_n_at_sea_floor,
+     &     BFCdLLimit, fric, fgamma, ftheta,
+     &     hbreak, iflinbf, ifnlbf, ifhybf
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
      &    writeFort066, writeFort067, writeFort065, 
      &    readFort020, readFort021, readFort019 
@@ -413,7 +414,7 @@ C.............................DW, sponge layer ..................
          IF ( .NOT. FIRST_ENTER ) THEN
             !c u_{ext}^{n + 1} -- > eta2, 
             CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
-     &           GeoidOffset ) 
+     &           sea_surface_height_above_geoid%values )
          ELSE
 
             RampTMP = RampElev ;
@@ -426,14 +427,14 @@ C.............................DW, sponge layer ..................
                !  u_{ext}^{n + 1 - istep} --> uu2
                CALL GETABSLAYEREXT( IT - istep, TimeLoc - istep*DTDP,
      &              TimeH - istep*DTDP, RampTMP,
-     &              GeoidOffset ) 
+     &              sea_surface_height_above_geoid%values )
 
                CALL SPONGE_SHIFT_SOLN( ) ; 
                ! eta1 --> eta0, eta2 --> eta1, u2 --> u1          
             END DO
             !c u_{ext}^{n + 1} -- > eta2, 
             CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
-     &           GeoidOffset ) 
+     &           sea_surface_height_above_geoid%values )
             FIRST_ENTER = .FALSE. ;
          END IF
          !
@@ -1056,7 +1057,7 @@ C...  Compute new water surface elevation
          call getVertLookup()
          !JLW: update nodecode, ncele, etc
          call subgridwetdry(BFCdLLimit, fric, fgamma, ftheta,
-     &                      manningsn, hbreak, loadManningsN,
+     &                      mannings_n_at_sea_floor, hbreak,
      &                      iflinbf, ifnlbf, ifhybf)
 #else
          call allMessage(ERROR, "Subgrid calculation requires building"
@@ -1384,7 +1385,7 @@ C
      &    allMessage
       USE CONSTANTS, ONLY: rhowat0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
-      USE NodalAttributes, ONLY: EVC
+      USE NodalAttributes, ONLY: EVC=>average_horiztonal_eddy_diffusivity_in_sea_water_wrt_depth
 
       IMPLICIT NONE
 
@@ -1499,9 +1500,9 @@ C.....SET NODAL VALUES FOR EACH ELEMENT
          CH1N1=CH1(NM1)
          CH1N2=CH1(NM2)
          CH1N3=CH1(NM3)
-         EVC1=EVC(NM1)
-         EVC2=EVC(NM2)
-         EVC3=EVC(NM3)
+         EVC1=EVC%values(NM1)
+         EVC2=EVC%values(NM2)
+         EVC3=EVC%values(NM3)
          SS1N1=SOURSIN(NM1)
          SS1N2=SOURSIN(NM2)
          SS1N3=SOURSIN(NM3)

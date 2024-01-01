@@ -32,7 +32,7 @@ C-----------------------------------------------------------------------
 #ifdef DATETIME
       use datetime_module, only: datetime, timedelta, strptime
 #endif
-      use nodalattributes, only: LoadIT_Fric, NOLIBF, HBREAK 
+      use nodalattributes, only: internal_tide_friction, NOLIBF, HBREAK
       implicit none
 
 !     WJP notes on variables and interpolation.
@@ -146,7 +146,7 @@ C-----------------------------------------------------------------------
          BC3D_SigTS = read_nc_var(NC_ID,'SigTS',BC3D_IT,XI,NX,YI,NY)
       endif
       !
-      if (LoadIT_Fric) then
+      if (internal_tide_friction%active) then
          ! Buoyancy frequency at the seabed
          BC3D_NB = read_nc_var(NC_ID,'NB',BC3D_IT,XI,NX,YI,NY)
          ! Depth-averaged nuoyancy frequency
@@ -412,7 +412,7 @@ C-----------------------------------------------------------------------
              Lats = BC3D_Lats(YIs:js)
           endif
   
-          if (LoadIT_Fric) then
+          if (internal_tide_friction%active) then
              allocate(BC3D_NB(NX,NY),BC3D_NM(NX,NY))
           endif
           if (NOLIBF.eq.3) then
@@ -508,7 +508,7 @@ C-----------------------------------------------------------------------
          bpgx_g  = read_nc_var_adc(NC_ID,'BPGX',BC3D_IT,np_g)
          bpgy_g  = read_nc_var_adc(NC_ID,'BPGY',BC3D_IT,np_g)
          sigts_g = read_nc_var_adc(NC_ID,'SigTS',BC3D_IT,np_g)
-         IF (LoadIT_Fric) THEN
+         IF (internal_tide_friction%active) THEN
             ALLOCATE( nb_g(np_g), nm_g(np_g) )
             nb_g = read_nc_var_adc(NC_ID,'NB',BC3D_IT,np_g)
             nm_g = read_nc_var_adc(NC_ID,'NM',BC3D_IT,np_g)
@@ -534,7 +534,7 @@ C-----------------------------------------------------------------------
          CALL MAPTOLOCAL_REAL(sigts_g,tmp)
          SigTS_F(2,:)      = tmp
       ENDIF
-      IF (LoadIT_Fric) THEN
+      IF (internal_tide_friction%active) THEN
          ! NB
          CALL MAPTOLOCAL_REAL(nb_g,tmp)
          NB_F(2,:) = tmp
@@ -557,7 +557,7 @@ C-----------------------------------------------------------------------
          ! SigTS
          SigTS_F(2,:)      = sigts_g
       ENDIF
-      IF (LoadIT_Fric) THEN
+      IF (internal_tide_friction%active) THEN
          ! NB
          NB_F(2,:) = nb_g
          ! NM
@@ -570,7 +570,7 @@ C-----------------------------------------------------------------------
 #endif
       IF (MYPROC.EQ.0) THEN
          DEALLOCATE( bpgx_g, bpgy_g, sigts_g )
-         IF (LoadIT_Fric) THEN
+         IF (internal_tide_friction%active) THEN
             DEALLOCATE( nb_g, nm_g )
          ENDIF
          IF (NOLIBF.EQ.3) THEN
@@ -707,7 +707,7 @@ C
          VIDBCPDYOH_F(1,:) = VIDBCPDYOH_F(2,:) 
          SigTS_F(1,:)      = SigTS_F(2,:)
       endif
-      if (LoadIT_Fric) then
+      if (internal_tide_friction%active) then
          NB_F(1,:)      = NB_F(2,:)
          NM_F(1,:)      = NM_F(2,:)
       endif
@@ -784,7 +784,7 @@ C
                VIDBCPDXOH_F(1,:) = VIDBCPDXOH_F(2,:) 
                VIDBCPDYOH_F(1,:) = VIDBCPDYOH_F(2,:) 
             endif
-            if (LoadIT_Fric) then
+            if (internal_tide_friction%active) then
                NB_F(1,:)      = NB_F(2,:)
                NM_F(1,:)      = NM_F(2,:)
             endif
@@ -850,7 +850,7 @@ C        DW/WJP: rotate BCP if coordinate transform
      &             UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
          ENDIF
       endif
-      IF (LoadIT_Fric) then
+      IF (internal_tide_friction%active) then
          DO J = 1,NP
             ! This is used for the internal tide energy conversion
             NB(J) = NB_F(1,J) + DTRATIO*(NB_F(2,J)-NB_F(1,J))
@@ -965,7 +965,7 @@ C
          endif
       enddo
       endif IDEN7
-      if (LoadIT_Fric) then
+      if (internal_tide_friction%active) then
          do i = 1,NP  
             NB_F(2,i) = BC3D_NB(indm(1,i),indm(2,i))*weightsm(1,i) + 
      &                  BC3D_NB(indm(3,i),indm(2,i))*weightsm(2,i) +

@@ -184,15 +184,13 @@ C*******************************************************************************
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
      &    NBOU, NVELL, IBCONN, ISSUBMERGED64, NFLUXIB, NFLUXIB64_GBL,
      &    CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3                 
-      USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal,
+      USE NodalAttributes, ONLY: advection_state, condensed_nodes,
+     &     EVM => average_horizontal_eddy_viscosity_in_sea_water_wrt_depth,
      &     NOLIBF,
 C----- DW: begin !c absorbing layer
      &     LoadAbsLayerSigma, absorblayer_sigma_eta,
-     &     absorblayer_sigma_mnx, absorblayer_sigma_mny,
+     &     absorblayer_sigma_mnx, absorblayer_sigma_mny
 C----- END DW
-     &     LoadCondensedNodes, CondensedNodes, NCondensedNodes,
-     &     ListCondensedNodes, NListCondensedNodes,
-     &     NNodesListCondensedNodes
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB, 
      &                       enforceUVCB
       USE SPONGELAYER
@@ -296,7 +294,7 @@ C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
 Corbitt 120322: Localized Advection
-         IF (LoadAdvectionState) CALL ADVECTLOCAL(IE)
+         call advection_state%advect_local(ie)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -326,7 +324,7 @@ Corbitt 120322: Localized Advection
 C..... SB
 C        For condensed nodes 2022-09-14
 C        Remove the normal component of the load vector at the condensed nodes
-         IF (LoadCondensedNodes) THEN
+         IF (condensed_nodes%active) THEN
             CALL ROTATE_AT_CONDENSEDNODES_ALL
      &        (NM1,NM2,NM3,
      &         U1N1,V1N1,U1N2,V1N2,U1N3,V1N3,
@@ -363,7 +361,7 @@ C...  Compute element averaged quantities
          DV1DXA=(V1N1*FDX1+V1N2*FDX2+V1N3*FDX3)*0.5d0
          DV1DYA=(V1N1*FDY1+V1N2*FDY2+V1N3*FDY3)*0.5d0
 
-         EVMEle= THIRD*(EVM(NM1)+EVM(NM2)+EVM(NM3))
+         EVMEle= THIRD*(EVM%values(NM1)+EVM%values(NM2)+EVM%values(NM3))
          !If using Smagorinski vertically-integrated lateral stress coefficient
          IF (CSmag_Eh.or.Smag_Comp_Flag) THEN  
             EVMSmag=EVMEle*
@@ -663,7 +661,7 @@ C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
 C... SB 2022-09-14
 C        For condensed nodes
 C        Remove the normal component of the load vector at the condensed nodes
-         IF (LoadCondensedNodes.AND.ROT_STATUS.EQ.0) THEN
+         IF (condensed_nodes%active.AND.ROT_STATUS.EQ.0) THEN
             CALL ROTATEBACK_AT_CONDENSEDNODES_ALL
      &        (NM1,NM2,NM3,
      &         TEMP_LV_A1,TEMP_LV_B1,
@@ -791,7 +789,7 @@ C        Equation (41) [refer also Eq. (37)]
 
 Csb...   For condensed nodes 2022-08-22
 C        Remove the normal component of the load vector at the condensed nodes
-         IF (LoadCondensedNodes) THEN
+         IF (condensed_nodes%active) THEN
             CALL REMOVE_NORMAL_AT_CONDENSEDNODES
      &           (MOM_LV_X(I),MOM_LV_Y(I),I,ROT_STATUS)
             IF (ROT_STATUS.EQ.0) THEN
@@ -1053,13 +1051,13 @@ C     VEW: Sum front side values to back side
       ENDIF
 
 C.... CONDENSED NODES: Summing up the values at condensed nodes
-      IF((LoadCondensedNodes).AND.(ILump.NE.0)) THEN
-         DO K=1,NListCondensedNodes
-            I = ListCondensedNodes(K,1)
-            IF((NODECODE(I).NE.0)) THEN
+      IF((condensed_nodes%active).AND.(ILump/=0)) THEN
+         DO K=1,condensed_nodes%NListCondensedNodes
+            I = condensed_nodes%list_condensed_nodes(K,1)
+            IF((NODECODE(I)/=0)) THEN
                ! 1) Mutiply LHS & RHS by total area at Node I
-               IF ((flgNodesMultipliedByTotalArea(I).eq.0).and.
-     &             (TotalArea(I).ne.0.d0)) THEN
+               IF ((flgNodesMultipliedByTotalArea(I)==0).and.
+     &             (TotalArea(I)/=0.d0)) THEN
                   IF (CME_AreaInt_Corr) THEN       !Correct area integration
                      TotalArea1 = TotalArea(I)
                   ENDIF
@@ -1077,8 +1075,8 @@ C.... CONDENSED NODES: Summing up the values at condensed nodes
                MOM_LV_Y(I) = TotalArea1*MOM_LV_Y(I)
 
                ! 2) Sum them up
-               DO L=2,NNodesListCondensedNodes(K)
-                  J = ListCondensedNodes(K,L)
+               DO L=2,condensed_nodes%nnodes_list_condensed_nodes(K)
+                  J = condensed_nodes%list_condensed_nodes(K,L)
                   IF ((flgNodesMultipliedByTotalArea(J).eq.0).and.
      &               (TotalArea(J).ne.0.d0)) THEN
                      IF (CME_AreaInt_Corr) THEN       !Correct area integration
@@ -1099,8 +1097,8 @@ C.... CONDENSED NODES: Summing up the values at condensed nodes
                ENDDO
 
                ! 3) Distribute them
-               DO L=2,NNodesListCondensedNodes(K)
-                  J = ListCondensedNodes(K,L)
+               DO L=2,condensed_nodes%nnodes_list_condensed_nodes(K)
+                  J = condensed_nodes%list_condensed_nodes(K,L)
                   AUV(1,J) = AUV(1,I)
                   AUV(2,J) = AUV(2,I)
                   AUV(3,J) = AUV(3,I)
@@ -1113,7 +1111,7 @@ C.... CONDENSED NODES: Summing up the values at condensed nodes
       ENDIF
 
 #ifdef CMPI
-      IF ((NFLUXIB64_GBL.GT.0.OR.LoadCondensedNodes)
+      IF ((NFLUXIB64_GBL.GT.0.OR.condensed_nodes%active)
      &    .AND.(ILump.NE.0)) THEN
          CALL UPDATEM4R(AUV)
          CALL UPDATER(MOM_LV_X,MOM_LV_Y,DUMY1,2)
@@ -1283,7 +1281,8 @@ C
      &   SFacEle, SFMYEle, SFMXEle, TANPHI   
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI, 
      &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
-      USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
+      USE NodalAttributes, ONLY: EVM => average_horizontal_eddy_viscosity_in_sea_water_wrt_depth,
+     & advection_state
       USE WIND, ONLY: windLimiter 
       USE CONSTANTS, ONLY: Cs2, Ad, Bd, G
       USE subgrid, ONLY: level0, level1
@@ -1354,7 +1353,7 @@ C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
 Corbitt 120322: Localized Advection
-         IF (LoadAdvectionState) CALL ADVECTLOCAL(IE)
+         call advection_state%advect_local(ie)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -1433,7 +1432,7 @@ C...  Compute element averaged quantities
          DV1DX2A=V1N1*FDX1+V1N2*FDX2+V1N3*FDX3
          DV1DY2A=V1N1*FDY1+V1N2*FDY2+V1N3*FDY3
 
-         EVMEle=(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0 
+         EVMEle=(EVM%values(NM1)+EVM%values(NM2)+EVM%values(NM3))/3.d0
          !If using Smagorinski vertically-integrated lateral stress coefficient         
          IF (CSmag_Eh.or.Smag_Comp_Flag) THEN  
             EVMSmag=0.5d0*EVMEle*
@@ -2112,7 +2111,8 @@ C
      &                  NEITAB, NEITABELE, NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
      &   CSII, SIII, ME2GW, NBV, LBCODEI, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
-      USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
+      USE NodalAttributes, ONLY: advection_state,
+     & EVM => average_horizontal_eddy_viscosity_in_sea_water_wrt_depth
       USE WIND, ONLY: windLimiter 
 
       IMPLICIT NONE
@@ -2203,7 +2203,7 @@ C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
 Corbitt 120322: Localized Advection
-         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
+         call advection_state%advect_local(ie)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -2288,7 +2288,7 @@ C...  Compute element averaged quantities
          DV2DXA=(VV2(NM1)*FDX1+VV2(NM2)*FDX2+VV2(NM3)*FDX3)/2.d0
          DV2DYA=(VV2(NM1)*FDY1+VV2(NM2)*FDY2+VV2(NM3)*FDY3)/2.d0
 
-         EVMEle=(EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0
+         EVMEle=(EVM%values(NM1)+EVM%values(NM2)+EVM%values(NM3))/3.d0
          !If using Smagorinski vertically-integrated lateral stress coefficient
          IF ((CSmag_Eh).or.(Smag_Comp_Flag)) THEN  
             EVMSmag=EVMEle*

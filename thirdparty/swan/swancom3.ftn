@@ -570,7 +570,7 @@
       USE SWCOMM3                                                         40.41
       USE SWCOMM4                                                         40.41
       USE SDSBABANIN
-!ADC      USE WIND, ONLY: WindDrag                                            41.20
+!ADC      USE WIND_DRAG_MODULE, ONLY: WindDrag                                            41.20
 !Casey 190605: Carrying forward the previous changes.
 !ADC      USE Couple2Swan, ONLY: ComputeSwanWindDrag
 !

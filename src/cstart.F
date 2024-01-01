@@ -65,7 +65,7 @@ C
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
-      USE NODALATTRIBUTES, ONLY : outputTau0
+      USE NODALATTRIBUTES, ONLY : primitive_weighting_in_continuity_equation
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
      &    initInundationOutput
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
@@ -750,7 +750,7 @@ C            kmd48.33 add the ability to output the sponge layer
 C
 C           jgf47.06 Tau0 output is produced on the same schedule as
 C           global elevation
-            IF (OutputTau0) THEN
+            IF (primitive_weighting_in_continuity_equation%outputTau0) THEN
 Casey 090302: Corrected the unit number from 10 to 90.
                CALL writeDomainHeader(90,
      &              TRIM(GLOBALDIR)//'/'//'fort.90',
@@ -769,7 +769,7 @@ C              kmd48.33 add the ability to output the sponge layer
 C
 C           jgf47.06 Tau0 output is produced on the same schedule as
 C           global elevation
-            IF (OutputTau0.eqv..true.) THEN
+            IF (primitive_weighting_in_continuity_equation%OutputTau0.eqv..true.) THEN
 Casey 090302: Corrected the unit number from 10 to 90.
                CALL writeDomainHeader(90,
      &           TRIM(GLOBALDIR)//'/'//'fort.90',
@@ -1753,10 +1753,10 @@ C----------------------------------------------------------------------
      &   scratchMessage, INFO, h0, setMessageSource, unsetMessageSource,
      &   DEBUG, WARNING, INFO, ERROR, scratchMessage, eta1, nolifa,
      &   EtaDisc, River_above_MSL
-      use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
-     &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE,
-     &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,
-     &   loadManningsN, iflinbf, ifnlbf, ifhybf
+      use nodalattributes, only : surface_submergence_state, sea_surface_height_above_geoid,
+     &   initial_river_elevation, mannings_n_at_sea_floor,
+     &   BFCdlLimit, fric, fgamma, ftheta, hbreak,
+     &   iflinbf, ifnlbf, ifhybf
 !JLW: adding subgrid
       use subgrid, only: level0, readsubgridlookup,
      &                   getvertlookup, getelelookup, 
@@ -1781,7 +1781,7 @@ C----------------------------------------------------------------------
       !
       ! tcm v51.27 20140502 Changed from using a fort.88 file
       ! to a nodal attribute
-      IF (LoadRiver_et_WSE.eqv..true.) then
+      IF (initial_river_elevation%active.eqv..true.) then
          River_above_MSL=.true.
          call allMessage(INFO,
      &      'Initial river elevations were specified as a nodal '
@@ -1798,8 +1798,8 @@ C----------------------------------------------------------------------
       endif
       !
       ! jgf46.01 Added the ability to include steric effects.
-      if (LoadGeoidOffset.eqv..true.) then
-         ETA2(:)=GeoidOffset(:)
+      if (sea_surface_height_above_geoid%active.eqv..true.) then
+         ETA2(:)=sea_surface_height_above_geoid%values(:)
       endif
       !
       ! tcm v51.27 20140502 Made the GeoidOffset and Initial River Elevation
@@ -1807,13 +1807,13 @@ C----------------------------------------------------------------------
       !
       ! jgf52.08.01: Simplified to just adding the initial river elevation to 
       ! eta2 wherever the initial river elevation is greater than zero.
-      if (LoadRiver_et_WSE.eqv..true.) then
-         where (River_et_WSE.GT.0.d0) 
-            eta2 = eta2 + River_et_WSE 
+      if (initial_river_elevation%active.eqv..true.) then
+         where (initial_river_elevation%values>0.d0)
+            eta2 = eta2 + initial_river_elevation%values
          end where
          ! tcmv51.27 20140502 Added to remove this nodal attribute
          ! as it is only used at Cold Start
-         deallocate (River_et_WSE)
+         call initial_river_elevation%unload()
       endif
       !...Set the radiation bc information 
       DO I=1,NVEL
@@ -1836,7 +1836,7 @@ C----------------------------------------------------------------------
             call getEleLookup()
 !JLW: now do wetting and drying check
             call subgridwetdry(BFCdLLimit, fric, fgamma, ftheta,
-     &                         manningsn, hbreak, loadManningsN,
+     &                         mannings_n_at_sea_floor, hbreak,
      &                         iflinbf, ifnlbf, ifhybf)
          endif    
 #else
@@ -1870,7 +1870,8 @@ C----------------------------------------------------------------------
                dryReason(i) = trim(dryReason(i)) // trim(scratchMessage)
                dryReasonInitialized(i) = .true.
             endif
-            if ((loadStartDry.eqv..true.).and.(startDry(i).eq.1)) then
+            if ((surface_submergence_state%active.eqv..true.).and.
+     &           (surface_submergence_state%values(i).eqv..true.)) then
                nnodecode(i) = 0
                if (dryReasonInitialized(i).eqv..false.) then
                   write(dryReason(i),'("node=",i0)') i

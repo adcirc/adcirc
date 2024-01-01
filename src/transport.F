@@ -61,7 +61,7 @@ Casey 140701: Avoid zero depths.
       USE BOUNDARIES, ONLY : NOPE, NETA, NVDLL, NBDV, NBD, LBCODEI,
      &               BndBCRiver, bcriversec, BCRNVELL, BCRNBVV
 Corbitt 120328: Apply Advection Locally
-      USE NodalAttributes, ONLY : LoadAdvectionState, AdvectionState
+      USE NodalAttributes, ONLY : advection_state
 C  kmd48.33bc add implicit none if not in parallel
 #ifdef CMPI
       USE MESSENGER
@@ -651,8 +651,8 @@ C
       DO NH=1,NP                !loop over horizontal nodes
 
 Corbitt 120328: Applies Advection Locally
-         IF (LoadAdvectionState) Then
-            IF (DP(NH).GE.AdvectionState(NH)) THEN
+         IF (advection_state%active) Then
+            IF (DP(NH)>=advection_state%values(NH)) THEN
                IFNLCT = IFNLCTE
             ELSE
                IFNLCT = 0

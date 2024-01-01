@@ -18,6 +18,11 @@ if(BUILD_PADCIRC)
   set(PADCIRC_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_drag.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/nodal_attributes_base_type.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/nodal_attributes_tau0.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/nodal_attributes_wind.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/nodal_attributes_type.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F

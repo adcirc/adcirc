@@ -88,11 +88,11 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &                     readNetCDFHotstartHarmonicMeansVariances
 #endif
       USE NodalAttributes, ONLY :
-     &     nolibf, nwp, tau0, cf, eslm, GeoidOffset, 
-     &     LoadDirEffRLen, LoadCanopyCoef, LoadGeoidOffset,
-     &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
-     &     OutputTau0, 
-     &     LoadRiver_et_WSE, River_et_WSE
+     &     nolibf, nwp, cf, sea_surface_height_above_geoid,
+     &     surface_directional_effective_roughness_length,
+     &     surface_canopy_coefficient, primitive_weighting_in_continuity_equation,
+     &     initial_river_elevation,
+     &     average_horizontal_eddy_viscosity_in_sea_water_wrt_depth
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
       USE WRITE_OUTPUT, ONLY : initInundationOutput,
      &   inundationTime, inundationTime_onset, maxInunDepth, 
@@ -2151,7 +2151,7 @@ Casey 090310: Added the possibility for NOUTGE = -4.
 C
 C        jgf47.06 Tau0 output is produced on the same schedule as
 C        global elevation
-            IF (outputTau0.eqv..true.) THEN
+            IF (primitive_weighting_in_continuity_equation%outputtau0.eqv..true.) THEN
 Casey 090310: Corrected the unit number from 10 to 90.
                 CALL writeDomainHeader(90,
      &              TRIM(GLOBALDIR)//'/'//'fort.90',
@@ -2171,7 +2171,7 @@ C kmd48.33bc - information for writing out the sponge layer
      $            NP_G, NP, HEADER63)
 C             jgf47.06 Tau0 output is produced on the same schedule as
 C              global elevation
-            IF (OUTPUTTAU0) THEN
+            IF (primitive_weighting_in_continuity_equation%outputtau0) THEN
 Casey 090310: Corrected the unit number from 10 to 90.
                CALL writeDomainHeader(90,
      &                 TRIM(LOCALDIR)//'/'//'fort.90',
@@ -2826,11 +2826,7 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
 
       ! tcmv51.27 20140502 Added to remove this nodal attribute
       ! as it is only used at Cold Start but read at hot start as well
-      IF (LoadRiver_et_WSE) THEN
-         IF (ALLOCATED (River_et_WSE) ) THEN
-            DEALLOCATE (River_et_WSE)
-         ENDIF
-      ENDIF
+      IF (initial_river_elevation%active) call initial_river_elevation%unload()
 
  1112 FORMAT(/,1X,79('_'))
  3220 FORMAT(1X,A32,2X,A24,2X,A24)

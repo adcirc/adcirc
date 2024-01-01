@@ -504,7 +504,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE Manning2Madsen
       USE CONSTANTS, ONLY: G
       USE MESH, ONLY : NP, DP
-      USE NodalAttributes,ONLY: ManningsN
+      USE NodalAttributes,ONLY: mannings_n_at_sea_floor
 
       IMPLICIT NONE
 
@@ -523,7 +523,7 @@ C-----------------------------------------------------------------------
       DO IN=1,NP
 
          H  = SWAN_ETA2(IN,2) + DP(IN)
-         N  = ManningsN(IN)
+         N  = mannings_n_at_sea_floor%values(IN)
 
 Casey 110518: Enforce a lower limit on the Manning's n seen by SWAN.
          IF(N.LT.0.02D0) N = 0.02D0

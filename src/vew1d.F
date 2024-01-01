@@ -38,7 +38,7 @@ C*******************************************************************
      &            CAX,CAY,CBX,CBY,SX,SY,STATUS)
       !-------------------------------------------------------------
       USE MESH,ONLY : X,Y,findIBTYPEAtNode
-      USE NodalAttributes,ONLY : NCondensedNodes,CondensedNodes
+      USE NodalAttributes,ONLY : condensed_nodes
 
       IMPLICIT NONE
 
@@ -52,9 +52,9 @@ C*******************************************************************
 
       STATUS = 0
 
-      if (NCondensedNodes(nm1) < 2.or.
-     &    NCondensedNodes(nm2) < 2.or.
-     &    NCondensedNodes(nm3) < 2) then
+      if (condensed_nodes%n_condensed_nodes(nm1) < 2.or.
+     &    condensed_nodes%n_condensed_nodes(nm2) < 2.or.
+     &    condensed_nodes%n_condensed_nodes(nm3) < 2) then
          status = -1
          return
       end if
@@ -92,7 +92,7 @@ C*******************************************************************
          status = -1
          return !when condensed node pair not found
       ENDIF
-      IF(CondensedNodes(IB2,1).EQ.0) THEN
+      IF(condensed_nodes%values(IB2,1)==0) THEN
          status = -1
          return !when condensed node pair not found
       ENDIF
@@ -102,10 +102,10 @@ C*******************************************************************
       ibtype_b1 = findIBTYPEAtNode(ib1)
 
       on_boundary = .false.
-      if ((ibtype_a1.eq.20.and.ibtype_b1.eq.20).or.
-     &    (ibtype_a2.eq.20.and.ibtype_b1.eq.20).or.
-     &    (ibtype_a1.eq.64.and.ibtype_b1.eq.64).or.
-     &    (ibtype_a2.eq.64.and.ibtype_b1.eq.64)) then
+      if ((ibtype_a1==20.and.ibtype_b1==20).or.
+     &    (ibtype_a2==20.and.ibtype_b1==20).or.
+     &    (ibtype_a1==64.and.ibtype_b1==64).or.
+     &    (ibtype_a2==64.and.ibtype_b1==64)) then
          on_boundary = .true.
       end if
 
@@ -131,7 +131,7 @@ C*******************************************************************
       SUBROUTINE ROTATE_AT_CONDENSEDNODES(VECX,VECY,IND,SX,SY)
       !-------------------------------------------------------------
       USE GLOBAL,ONLY : NODECODE
-      USE NodalAttributes,ONLY : LoadCondensedNodes,NCondensedNodes
+      USE NodalAttributes,ONLY : condensed_nodes
       USE Mesh,ONLY : LBArray_Pointer
       USE BOUNDARIES,ONLY : LBCODEI,NBV,IBCONN,ISSUBMERGED64
       IMPLICIT NONE
@@ -143,23 +143,23 @@ C*******************************************************************
       INTEGER :: IBND,NNBB1,NNBB2
       LOGICAL :: DO_ROTATE
       
-      IF(.NOT.LoadCondensedNodes) RETURN
-      IF(.NOT.NCondensedNodes(IND).GE.2) RETURN
+      IF(.NOT.condensed_nodes%active) RETURN
+      IF(.NOT.condensed_nodes%n_condensed_nodes(IND)>=2) RETURN
 
       IBND = LBArray_Pointer(IND)
-      IF (IBND.LE.0) RETURN
+      IF (IBND<=0) RETURN
 
       ! Rotate the vector if there is no bank top
       ! side, i.e., along land boundaries, or along not-submerged
       ! vertical element walls 
       DO_ROTATE = .false.
-      IF(LBCODEI(IBND).EQ.20) THEN
+      IF(LBCODEI(IBND)==20) THEN
          DO_ROTATE = .true.
-      ELSE IF(LBCODEI(IBND).EQ.64) THEN
+      ELSE IF(LBCODEI(IBND)==64) THEN
          NNBB1=NBV(IBND)
          NNBB2=IBCONN(IBND)
-         IF ((ISSUBMERGED64(IBND).EQ.0).OR.
-     &       (NODECODE(NNBB1).EQ.0.OR.NODECODE(NNBB2).EQ.0)) THEN
+         IF ((ISSUBMERGED64(IBND)==0).OR.
+     &       (NODECODE(NNBB1)==0.OR.NODECODE(NNBB2)==0)) THEN
             DO_ROTATE = .true.
          ENDIF
       END IF
@@ -182,7 +182,7 @@ C*******************************************************************
       SUBROUTINE ROTATEBACK_AT_CONDENSEDNODES(VECX,VECY,IND)
       !-------------------------------------------------------------
       USE GLOBAL,ONLY : NODECODE
-      USE NodalAttributes,ONLY : LoadCondensedNodes,NCondensedNodes
+      USE NodalAttributes,ONLY : condensed_nodes
       USE Mesh,ONLY : LBArray_Pointer
       USE BOUNDARIES,ONLY : CSIICN,SIIICN,LBCODEI,NBV,IBCONN,
      &                      ISSUBMERGED64
@@ -194,23 +194,23 @@ C*******************************************************************
       INTEGER :: IBND,NNBB1,NNBB2
       LOGICAL :: DO_ROTATE
       
-      IF(.NOT.LoadCondensedNodes) RETURN
-      IF(NCondensedNodes(IND).NE.2) RETURN
+      IF(.NOT.condensed_nodes%active) RETURN
+      IF(condensed_nodes%n_condensed_nodes(IND)/=2) RETURN
 
       IBND = LBArray_Pointer(IND)
-      IF (IBND.LE.0) RETURN
+      IF (IBND<=0) RETURN
 
       ! Rotate back the vector if there is no bank top
       ! side, i.e., along land boundaries, or along not-submerged
       ! vertical element walls 
       DO_ROTATE = .false.
-      IF(LBCODEI(IBND).EQ.20) THEN
+      IF(LBCODEI(IBND)==20) THEN
          DO_ROTATE = .true.
-      ELSE IF(LBCODEI(IBND).EQ.64) THEN
+      ELSE IF(LBCODEI(IBND)==64) THEN
          NNBB1=NBV(IBND)
          NNBB2=IBCONN(IBND)
-         IF ((ISSUBMERGED64(IBND).EQ.0).OR.
-     &       (NODECODE(NNBB1).EQ.0.OR.NODECODE(NNBB2).EQ.0)) THEN
+         IF ((ISSUBMERGED64(IBND)==0).OR.
+     &       (NODECODE(NNBB1)==0.OR.NODECODE(NNBB2)==0)) THEN
             DO_ROTATE = .true.
          ENDIF
       END IF
@@ -247,7 +247,7 @@ C
      &     (NM1,NM2,NM3,IA1,IA2,IB1,IB2,
      &      CAX,CAY,CBX,CBY,SX,SY,STATUS)
 
-      IF (STATUS.NE.0) RETURN
+      IF (STATUS/=0) RETURN
 
       CALL ROTATE_AT_CONDENSEDNODES(U1N1,V1N1,NM1,SX,SY)
       CALL ROTATE_AT_CONDENSEDNODES(QX1N1,QY1N1,NM1,SX,SY)
@@ -281,7 +281,7 @@ C
      &     (NM1,NM2,NM3,IA1,IA2,IB1,IB2,
      &      CAX,CAY,CBX,CBY,SX,SY,STATUS)
 
-      IF (STATUS.NE.0) RETURN
+      IF (STATUS/=0) RETURN
 
       CALL ROTATEBACK_AT_CONDENSEDNODES(TEMP_LV_A1,TEMP_LV_B1,NM1)
       CALL ROTATEBACK_AT_CONDENSEDNODES(TEMP_LV_A2,TEMP_LV_B2,NM2)
@@ -295,7 +295,7 @@ C
      &           (VECX,VECY,IND,STATUS)
       !-------------------------------------------------------------
       USE GLOBAL,ONLY : NODECODE
-      USE NodalAttributes,ONLY : LoadCondensedNodes,NCondensedNodes
+      USE NodalAttributes,ONLY : condensed_nodes
       USE Mesh,ONLY : LBArray_Pointer
       USE BOUNDARIES,ONLY : CSIICN,SIIICN,LBCODEI,NBV,IBCONN,
      &                      ISSUBMERGED64
@@ -311,23 +311,23 @@ C
       
       STATUS = -1
 
-      IF(.NOT.LoadCondensedNodes) RETURN
-      IF(NCondensedNodes(IND).NE.2) RETURN
+      IF(.NOT.condensed_nodes%active) RETURN
+      IF(condensed_nodes%n_condensed_nodes(IND)/=2) RETURN
 
       IBND = LBArray_Pointer(IND)
-      IF (IBND.LE.0) RETURN
+      IF (IBND<=0) RETURN
 
       ! Remove the normal component if there is no bank top
       ! side, i.e., along land boundaries, or along not-submerged
       ! vertical element walls 
       DO_ROTATE = .false.
-      IF(LBCODEI(IBND).EQ.20) THEN
+      IF(LBCODEI(IBND)==20) THEN
          DO_ROTATE = .true.
-      ELSE IF(LBCODEI(IBND).EQ.64) THEN
+      ELSE IF(LBCODEI(IBND)==64) THEN
          NNBB1=NBV(IBND)
          NNBB2=IBCONN(IBND)
-         IF ((ISSUBMERGED64(IBND).EQ.0).OR.
-     &       (NODECODE(NNBB1).EQ.0.OR.NODECODE(NNBB2).EQ.0)) THEN
+         IF ((ISSUBMERGED64(IBND)==0).OR.
+     &       (NODECODE(NNBB1)==0.OR.NODECODE(NNBB2)==0)) THEN
             DO_ROTATE = .true.
          ENDIF
       END IF
@@ -352,21 +352,20 @@ C
       END SUBROUTINE REMOVE_NORMAL_AT_CONDENSEDNODES
       
       FUNCTION CondensedNodePairFound(N1,N2)
-      USE NodalAttributes, ONLY : NCondensedNodes,CondensedNodes,
-     &                            CondensedNodesNoOfVals
+      USE NodalAttributes, ONLY : condensed_nodes
       IMPLICIT NONE
       INTEGER :: N1,N2
       LOGICAL :: CondensedNodePairFound
       INTEGER :: I,N
 
       CondensedNodePairFound = .false.
-      IF (CondensedNodes(N1,1) < 0) THEN
-         N = ABS(CondensedNodes(N1,1))
+      IF (condensed_nodes%values(N1,1) < 0) THEN
+         N = ABS(condensed_nodes%values(N1,1))
       ELSE
          N = N1
       END IF
-      DO I=1,CondensedNodesNoOfVals
-         IF (CondensedNodes(N,I).EQ.N2) THEN
+      DO I=1,condensed_nodes%n_values
+         IF (condensed_nodes%values(N,I)==N2) THEN
             CondensedNodePairFound = .true.
             EXIT
          END IF
@@ -390,14 +389,14 @@ C
          nnm1 = nm(ie,1)
          nnm2 = nm(ie,2)
          nnm3 = nm(ie,3)
-         if (nnm1.eq.n1) then
+         if (nnm1==n1) then
             continue ! do nothing
-         else if (nnm2.eq.n1) then
+         else if (nnm2==n1) then
             tmp = nnm1
             nnm1 = nnm2
             nnm2 = nnm3
             nnm3 = tmp
-         else if (nnm3.eq.n1) then
+         else if (nnm3==n1) then
             tmp = nnm1
             nnm1 = nnm3
             nnm3 = nnm2
@@ -405,12 +404,12 @@ C
          else
             STOP('Error')
          end if
-         if ((nnm2.eq.n2.and.nnm3.eq.n3).or.
-     &       (nnm2.eq.n3.and.nnm3.eq.n2)) cycle
-         if (nnm2.eq.n2.or.nnm2.eq.n3) then
+         if ((nnm2==n2.and.nnm3==n3).or.
+     &       (nnm2==n3.and.nnm3==n2)) cycle
+         if (nnm2==n2.or.nnm2==n3) then
             find_ib2 = nnm3
             found = .true.
-         else if (nnm3.eq.n2.or.nnm3.eq.n3) then
+         else if (nnm3==n2.or.nnm3==n3) then
             find_ib2 = nnm2
             found = .true.
          end if

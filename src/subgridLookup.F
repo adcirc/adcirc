@@ -777,7 +777,7 @@
 ! UPDATED COEFFICIENTS OF FRICTION AND AREAS ARE ALSO UPDATED.
 
       subroutine subgridwetdry(BFCdLLimit, fric, fgamma, ftheta, 
-     &                         manningsn, hbreak, loadManningsN,
+     &                         manningsn, hbreak,
      &                         iflinbf, ifnlbf, ifhybf)
 
 !      use NodalAttributes, only: BFCdLLimit, fric
@@ -785,18 +785,18 @@
 !     &   , iflinbf, ifnlbf, ifhybf 
 
       use constants, only: g
+      use NODAL_ATTRIBUTE_TYPE_MODULE, ONLY: NODAL_ATTRIBUTE_VECTOR_REAL_T
       IMPLICIT NONE
 
       REAL(8), INTENT(IN)    :: BFCdLLimit
       REAL(8), INTENT(IN)    :: fgamma
       REAL(8), INTENT(IN)    :: ftheta
       REAL(8), INTENT(IN)    :: hbreak
-      LOGICAL, INTENT(IN)    :: loadManningsN
       INTEGER, INTENT(IN)    :: iflinbf
       INTEGER, INTENT(IN)    :: ifnlbf
       INTEGER, INTENT(IN)    :: ifhybf
       REAL(8), INTENT(INOUT) :: fric(*)
-      REAL(8), INTENT(INOUT) :: manningsn(*)
+      TYPE(NODAL_ATTRIBUTE_VECTOR_REAL_T) :: ManningsN
 
       integer :: ie, i, j
       real(8) :: areaEle
@@ -838,7 +838,7 @@
 !timestep code.
          !JLW: now recaluate tk for the newly wet nodes
          IF((nodecode(i).EQ.0).AND.(nnodecode(i).EQ.1))THEN
-            IF(LoadManningsN)THEN
+            IF(ManningsN%active)THEN
                IF(subgridVertList(i).EQ.1)THEN
                   IF(level1)THEN
                      fric(i) = cmfVertETA2(i)
@@ -846,7 +846,7 @@
                      fric(i) = cfVertETA2(i)
                   ENDIF
                ELSE
-                  fric(i) = g*manningsn(i)**2.d0
+                  fric(i) = g*manningsn%values(i)**2.d0
      &               /((dp(i)+ifnlfa*eta2(i))**(1.d0/3.d0))
                ENDIF
                IF(fric(i).LT.BFCdLLimit)THEN

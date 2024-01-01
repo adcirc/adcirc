@@ -110,7 +110,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       real(8), allocatable, target :: wvnoutmax_g(:)
       real(8), allocatable, target :: rsnmax_g(:)
       real(8), allocatable, target :: sponge_g(:)
-      real(8), allocatable, target :: eslcount_g(:) !zc added for esl on/off output
+      integer, allocatable, target :: eslcount_g(:) !zc added for esl on/off output
       real(8), allocatable, target :: dpout_g(:)    !tcm v50.66.01 added time varying bathy
       real(8), allocatable, target :: dp00_g(:)  !tcm v50.66.01 added time varying bathy
       ! Casey 090302: Added these arrays for output of radiation stress gradients.
@@ -376,8 +376,8 @@ C----------------------------------------------------------------------
       USE CONSTANTS, ONLY: PRBCKGRND
 
       USE MESH, ONLY : NP, NE, DP, NM, ICS, labels
-      USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
-     &  elemental_slope_limiter_grad_max,elemental_slope_limiter_active
+      USE NodalAttributes, ONLY : tau0=>primitive_weighting_in_continuity_equation,
+     &  elemental_slope_limiter
       USE GLOBAL_IO, ONLY : readAndMapToSubdomainMaxMin,packOne,
      &                      collectFullDomainArray,unpackOne
 #ifdef ADCNETCDF
@@ -602,7 +602,7 @@ C
       ! DW
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
      &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
-         if ( OutputTau0 ) then
+         if ( tau0%outputtau0 ) then
             CALL REAL_FIELD_ALLOCATE( NOUTGE, TAU0VAR_g, NP_G ) ;
          endif 
         ! ALLOCATE(TAU0VAR_g(NP_G)) ;
@@ -614,12 +614,12 @@ C
       Tau0Descript % outputTimeStepIncrement = NSPOOLGE
       Tau0Descript % spoolCounter            => NSCOUGT
       Tau0Descript % filepos                 => ITAU0P
-      Tau0Descript % array                => TAU0VAR
+      Tau0Descript % array                => tau0%values
       Tau0Descript % array_g              => TAU0VAR_g
       Tau0Descript % field_name           = 'Tau0'
       ! jgf51.52.30: Fixing the writing of tau0 so it only occurs
       ! when tau0=-x.1
-      Tau0Descript % writeFlag            = OutputTau0
+      Tau0Descript % writeFlag            = tau0%outputtau0
 
       ! sponge layer fort.92
       ! DW
@@ -1391,21 +1391,20 @@ C      IF (mnproc.gt.1) THEN
 !      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
-          if ( LoadEleSlopeLim ) then
-             CALL REAL_FIELD_ALLOCATE( 1, 
-     &            ESLCOUNT_G, NP_G, 0.d0 ) ;
-          endif    
-         ! ALLOCATE(ESLONOFF_g(NP_G))
-         ! ESLONOFF_g(:) = 0.d0
+          if ( elemental_slope_limiter%active ) then
+             CALL INT_FIELD_ALLOCATE( 1,
+     &            ESLCOUNT_G, NP_G, 0 ) ;
+          endif
       ENDIF
       ESLDescript % lun                  = 323
       ESLDescript % specifier            = ASCII
-      ESLDescript % array                => ESLCOUNT
-      ESLDescript % array_g              => ESLCOUNT_G
+      ESLDescript % iarray                => elemental_slope_limiter%count
+      ESLDescript % iarray_g              => ESLCOUNT_G
       ESLDescript % field_name           = 'ESLActive'
       ESLDescript % file_basename        = 'ESLNodes'
       ESLDescript % file_extension       = 63
       ESLDescript % writeFlag            = .false.
+      ESLDescript % isInteger            = .true.
       ESLCOUNT(:) = 0.d0
       !
       !  D E T A I L E D    I N U N D A T I O N    O U T P U T
@@ -1794,7 +1793,7 @@ C----------------------------------------------------------------------
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE GLOBAL_IO, ONLY: storeOne, storeTwo,
      &    packOne, unpackOne, packTwo, unpackTwo
-      USE NodalAttributes, ONLY : LoadEleSlopeLim
+      USE NodalAttributes, ONLY : elemental_slope_limiter
 #ifdef CMPI
       USE WRITER, ONLY : sendDataToWriter, flush_writers, writer_init
 #endif
@@ -1924,7 +1923,7 @@ C       for all processors, not just myproc=0.
          !
          ! OUTPUT THE NODES WHERE THE ELEMENTAL SLOPE LIMITER HAS BEEN
          ! TURNED ON DURING THE RUN
-         IF (LoadEleSlopeLim) THEN
+         IF (elemental_slope_limiter%active) THEN
             CALL writeOutArrayMinMax(323, TimeLoc, IT, 1, ESLDescript,
      &               packOne, unpackOne)  !no time stamps so only one pack/unpack
          ENDIF

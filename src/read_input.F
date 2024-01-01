@@ -114,11 +114,12 @@ C-----------------------------------------------------------------------
       USE WEIR
       USE TIME_VARYING_WEIR_BOUNDARY
       USE OWIWIND,ONLY: nPowellSearchDomains
+      USE WIND_DRAG_MODULE, ONLY: WindDragLimit, DragLawString
       USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
-     &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
+     &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN,
      &   BLADJ, STORMNUMBER, WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
      &   NWSok, WINDREFTIME, Allowable_NWS, PUREBACKGROUND, TimeConv, 
-     &   DragLawString, dynamicWaterLevelCorrectionFileName, WTIMINC_12,
+     &   dynamicWaterLevelCorrectionFileName, WTIMINC_12,
      &   dynamicWaterLevelCorrectionRampStart,
      &   dynamicWaterLevelCorrectionRampEnd,
      &   dynamicWaterLevelCorrectionSkipSnaps,
@@ -134,9 +135,11 @@ C-----------------------------------------------------------------------
 !     jgf46.00
       USE NodalAttributes, ONLY :
      &     NoLiBF, NWP, Tau0, HBreak, FTheta, FGamma, Tau, CF,
-     &     InitNAModule, ReadNodalAttr, InitNodalAttr, ESLM, ESLC,
-     &     Tau0FullDomainMin, Tau0FullDomainMax, Z0b_var,
-     &     PrepCondensedNodes,   ! SB
+     &     initialize_nodal_attributes_module, ReadNodalAttr,
+     &     primitive_weighting_in_continuity_equation,
+     &     average_horizontal_eddy_viscosity_in_sea_water_wrt_depth,
+     &     average_horiztonal_eddy_diffusivity_in_sea_water_wrt_depth,
+     &     bottom_roughness_length, condensed_nodes,
 C ....DW
      &     LoadAbsLayerSigma, FoundAbsLayerSigma 
       USE SPONGELAYER, ONLY: SpongeLayerRelatedPrep, FLAGSPONGEELEM
@@ -171,7 +174,7 @@ Casey 180318: Added NWS=13
       INTEGER NTimeVaryingWeir
       INTEGER IDUM80
       INTEGER IMDig1,IMDig2,IMDig3,IMDig4,IMDig5,IMDig6
-      REAL(8) RampVal
+      REAL(8) RampVal, ESLM, ESLC, Tau0FullDomainMin, Tau0FullDomainMax
       CHARACTER(len=80) :: CDUM80
       LOGICAL fileFound
       INTEGER :: I, J, JKI, JJ, NP2, IDENsign
@@ -302,7 +305,7 @@ C...
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
 C     Module.
-      CALL initNAModule()
+      CALL initialize_nodal_attributes_module()
 
 c     tcm v50.66.01 addition for time varying bathymetry
       NDDT = 0  !set the default value for time varying bathymetry e.g. no changes
@@ -2435,6 +2438,8 @@ C     and max tau0 values, if the user has chosen to use the time
 C     varying tau0.
       IF ( (Tau0.le.-5.d0).and.(Tau0.gt.-6.d0) ) THEN
         READ(15,*) Tau0FullDomainMin, Tau0FullDomainMax
+        primitive_weighting_in_continuity_equation%tau0_full_domain_min = Tau0FullDomainMin
+        primitive_weighting_in_continuity_equation%tau0_full_domain_max = Tau0FullDomainMax
       ENDIF
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 TIME INTEGRATION
@@ -3246,6 +3251,12 @@ C     initialized in the call to InitNodalAttr.
         WRITE(16,111) ESLM,ESLC
  111    FORMAT(5X,'EVM, EDDY VISCOSITY COEFFICIENT =',E15.8,/,
      &         5X,'EVC, EDDY DIFFUSIVITY COEFFICIENT =',E15.8,//)
+        call average_horizontal_eddy_viscosity_in_sea_water_wrt_depth%init(
+     &    np, "average_horizontal_eddy_viscosity_in_sea_water_wrt_depth",
+     &    "m^2/s", 1, ESLM)
+        call average_horiztonal_eddy_diffusivity_in_sea_water_wrt_depth%init(
+     &    np, "average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth",
+     &    "m^2/s", 1, ESLC)
       ELSE
         READ(15,*) ESLM
         IF(ESLM.LT.0.) THEN
@@ -3277,6 +3288,9 @@ C     initialized in the call to InitNodalAttr.
           ENDIF
         ELSE
           WRITE(16,11) ESLM
+         call average_horizontal_eddy_viscosity_in_sea_water_wrt_depth%init(
+     &    np, "average_horizontal_eddy_viscosity_in_sea_water_wrt_depth",
+     &    "m^2/s", 1, ESLM)
  11       FORMAT(5X,'Constant lateral stress coefficient =',E15.8,//)
         ENDIF
       ENDIF
@@ -4770,15 +4784,10 @@ C...
 c     ELSEIF(C3DDSS) THEN
 c     CALL READ_INPUT_3DDSS(STATIM,NT)
       ENDIF
-C     RJWW jgf46.00 Initialize nodal attributes, now that grid has been read
-C     in from unit 14 file.
-C     RJW IOOS move until after ZOB definition
-      CALL InitNodalAttr
-     &  (DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut, Z0B)
-CS
+
 C...  SB
 C     Preparation of condensed nodes  SB
-      call PrepCondensedNodes()
+      call condensed_nodes%prep()
       
 C     Recompute a & b coefficients            
       CALL RecomputeFDXEFDYEAtCondensedNodes()
@@ -5021,7 +5030,7 @@ c******************************************************************************
 c******************************************************************************
       USE SIZES
       USE Mesh,ONLY : NE,NM,X,Y,FDXE,FDYE,AREAS
-      USE NodalAttributes, ONLY : LoadCondensedNodes
+      USE NodalAttributes, ONLY : condensed_nodes
       IMPLICIT NONE
       INTEGER :: NM1,NM2,NM3
       INTEGER :: IE
@@ -5029,7 +5038,7 @@ c******************************************************************************
       REAL(8) :: x1,y1,x2,y2,x3,y3
       REAL(8) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
 
-      if (.not.LoadCondensedNodes) RETURN
+      if (.not.condensed_nodes%active) RETURN
       
       do ie=1,NE
          nm1 = nm(ie,1)
@@ -5067,7 +5076,7 @@ c******************************************************************************
          SUBROUTINE GET_New_XY
      &              (NM1,NM2,NM3,X1,Y1,X2,Y2,X3,Y3,STATUS)
          USE MESH, ONLY : X,Y,findIBTYPEAtNode
-         USE NodalAttributes, ONLY : NCondensedNodes,CondensedNodes
+         USE NodalAttributes, ONLY : condensed_nodes
          USE VEW1D, ONLY : GET_STREAMDIRECTION_AT_ELEMENT
 
          IMPLICIT NONE
@@ -5174,7 +5183,7 @@ C    kmd48.33bc - added the variables from Global
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE GLOBAL_3DVS
-      USE NodalAttributes, ONLY : Z0b_var
+      USE NodalAttributes, ONLY : bottom_roughness_length
 
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini

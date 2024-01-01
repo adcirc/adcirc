@@ -136,11 +136,8 @@ Casey 140701: Prevent depths from becoming negative in bottom roughness calculat
      &                  NEITABELE, NEITAB, NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NOPE, NETA, NBD, LBCODEI, 
      &   BndBCRiver, totalbcrivernodes, SIII, CSII
-      USE NodalAttributes, ONLY: EVM,
-     &     ManningsN, LoadManningsN,
-Corbitt 120328: Local Advection
-     &     AdvectionState, LoadAdvectionState,
-     &     Z0b_var, LoadZ0B_var
+      USE NodalAttributes, ONLY: EVM=>average_horizontal_eddy_viscosity_in_sea_water_wrt_depth,
+     &  mannings_n_at_sea_floor, advection_state, bottom_roughness_length
 #ifdef CMPI
       USE MESSENGER
 #endif      
@@ -487,8 +484,8 @@ C
       DO NH=1,NP                !loop over horizontal nodes
 
 Corbitt 120328: Applies Advection Locally
-         IF (LoadAdvectionState) Then
-            IF (DP(NH).GE.AdvectionState(NH)) THEN
+         IF (advection_state%active) Then
+            IF (DP(NH)>=advection_state%values(NH)) THEN
                IFNLCT = IFNLCTE
             ELSE
                IFNLCT = 0
@@ -588,9 +585,9 @@ C                  EVTot(k)=0.D0 !f77diff??
 
 C Determine the bottom roughness length either from fort.15, from Manning's n
 C or as read in from nodal attributes
-         IF(LoadZ0B_var) THEN
-            Z0B1 = Z0B_var(NH)
-         ELSEIF (LoadManningsN) THEN
+         IF(bottom_roughness_length%active) THEN
+            Z0B1 = bottom_roughness_length%values(NH)
+         ELSEIF (mannings_n_at_sea_floor%active) THEN
 Casey 140701: Prevent depths from becoming negative.  Cannot raise a negative number
 C             to the 1/6 power.
             H1 = DP(NH)+IFNLFA*ETA2(NH)
@@ -601,7 +598,7 @@ C             to the 1/6 power.
 ! arash Sep 7 2015:
             Z0B1 = ( H1 )* exp(-(1.0D0+
      &             ( (0.41D0*( H1 )**(1.0D0/6.0D0) )/
-     &                              (ManningsN(NH)*sqrt(g)) ) ))
+     &                              (mannings_n_at_sea_floor%values(NH)*sqrt(g)) ) ))
          ELSE
             Z0B1 = Z0B
          ENDIF
@@ -1059,7 +1056,7 @@ C    kmd48.33bc added in spherical factors for 3D
                Biharmonic_LStress(k)=(0.d0,0.d0)
             ELSE
                LAdvec(k)=sponge(NH)*IFNLCT*(UnDqDX2A+VnDqDY2A)/TotalArea2
-               LStress(k)=3.d0*EVM(NH)*(DqDXDPhiDX2A+DqDYDPhiDY2A)
+               LStress(k)=3.d0*EVM%values(NH)*(DqDXDPhiDX2A+DqDYDPhiDY2A)
      &              /TotalArea2
 ! arash 12/21/2015: modified Leith viscosity
                ! 0. preliminaries
@@ -1359,8 +1356,8 @@ C     velocity dispersion
          DVV(NH) = 0.d0
 
 Corbitt 120328: Applies Advection Locally
-         IF (LoadAdvectionState) Then
-            IF (DP(NH).GE.AdvectionState(NH)) THEN
+         IF (advection_state%active) Then
+            IF (DP(NH).GE.advection_state%values(NH)) THEN
                IFNLCT = IFNLCTE
             ELSE
                IFNLCT = 0
