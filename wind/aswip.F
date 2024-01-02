@@ -14,9 +14,10 @@ C-----------------------------------------------------------------------
          ! Import asymmetric hurricane vortex class
          use mesh, only : np, ne, nm, slam, sfea, ics, slam0, sfea0
          USE vortex
+         USE wind_drag_module, only: windDrag
          USE wind, only : writeFullCircleRmaxes, vortexLon,
      &                 vortexLat, writeRadialVandP,
-     &                 writeSpatialVandP, nws19get, windDrag, nws20get,
+     &                 writeSpatialVandP, nws19get, nws20get,
      &                 writeSpatialuvp, writeNodaluvp,
      &                 geostrophic_switch, geofactor,wvnx2, wvny2, prn2
          integer :: num_entry, num_cycles
@@ -1085,10 +1086,11 @@ C-----------------------------------------------------------------------
       use mesh, only : slam, sfea, np, ics
       use wind, only : hWindData_t, hWindFiles, nws15init, nws19get,
      &   writeFullCircleRmaxes, writeRadialVandP, writeSpatialVandP,
-     &   nws15get, eyeLat, eyeLon, nws20get,writeSpatialuvp,
+     &   nws15get, nws20get,writeSpatialuvp,
      &   writeNodaluvp, geostrophic_switch, geofactor, wvnx2, wvny2, prn2,
      &   wtime1, wtime2, wtiminc
       use vortex, only : xy2latlon, latlon2xy, fang
+      use wind_drag_module, only: eyelat, eyelon
       use asymmetricVortexProcessing, only :
      &  cycleTime, rlat, rlon, quadrantAngles, cycle_num, h_dir,
      &  cycleSecs, cycleLats, cycleLons, cycleDirs, num_cycles,
@@ -1163,7 +1165,8 @@ C     Variables for recording domain extents
       !    G E N E R A T E   D I A G N O S T I C   O U T P U T
       !-------------------------------------------------------------
       subroutine initializeDiagnosticOutput()
-      use wind, only : numFiles, eyeLat, eyeLon, foundEye
+      use wind_drag_module, only: eyeLat, eyeLon, foundEye
+      use wind, only : numFiles
       use owiwind, only : findStormCenter
       implicit none
       integer :: i
@@ -1362,7 +1365,7 @@ C
       !-------------------------------------------------------------
       subroutine fullCircleRmaxes()
       use sizes, only : gblinputdir
-      use wind, only : draglawstring, eyeLat, eyeLon, foundEye
+      use wind_drag_module, only : draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       implicit none
       integer :: i, j, npp
@@ -1565,7 +1568,8 @@ C
       !-------------------------------------------------------------
       subroutine radialVandP()
       use sizes, only : gblinputdir
-      use wind, only : angleNow, draglawstring, eyeLat, eyeLon, foundEye
+      use wind_drag_module, only: eyeLat, eyeLon, foundEye, dragLawString
+      use wind, only : angleNow
       use owiwind, only : findStormCenter
       use mesh, only: np
       implicit none
@@ -2058,7 +2062,7 @@ C
       subroutine spatialuvp()
       use sizes, only : gblinputdir
       use mesh, only : nm, ne, slam0, sfea0
-      use wind, only : draglawstring, eyeLat, eyeLon, foundEye
+      use wind_drag_module, only : draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       implicit none
       integer :: i,j
@@ -2428,7 +2432,7 @@ C
       subroutine nodaluvp()
       use sizes, only : gblinputdir
       use mesh, only : nm, ne, slam0, sfea0
-      use wind, only : draglawstring, eyeLat, eyeLon, foundEye
+      use wind_drag_module, only : draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       implicit none
       integer :: i,j

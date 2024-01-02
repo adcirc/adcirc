@@ -484,7 +484,7 @@ C---------------------------------------------------------------------
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
       USE PREP_WEIR
-      USE NODALATTRIBUTES, ONLY : outputTau0
+      USE NODALATTRIBUTES, ONLY : primitive_weighting_in_continuity_equation
       use memory_usage
       IMPLICIT NONE
 
@@ -1027,9 +1027,9 @@ C     the fort.15 file
       READ(15,80) TAU0MSG
       READ(TAU0MSG,*) TAU0
       if ( abs((int(tau0)-tau0-0.1d0)).lt.1d-6 ) then
-         outputTau0 = .true.
+         primitive_weighting_in_continuity_equation%outputtau0 = .true.
       else
-         outputTau0 = .false.
+         primitive_weighting_in_continuity_equation%outputtau0 = .false.
       endif
       IF ( (TAU0.LE.-5.d0).AND.(TAU0.GT.-6.d0) ) THEN
          READ(15,80) TAU0LIMMSG

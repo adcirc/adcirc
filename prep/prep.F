@@ -899,7 +899,7 @@ C     ----------------------------------------------------------------
      &   startProc, endProc, naType,AttrName)!tgaf13mod
       use pre_global
       use sizes, only : ASCII, XDMF
-      use nodalattributes, only : na
+      !use nodalattributes, only : na
       implicit none
 C
       INTEGER,intent(in) :: NAttr  ! number of attributes in the file
@@ -931,13 +931,13 @@ C
          case(ASCII)
             read(13,*) curAttrName!tgaf13mod
          case(XDMF)
-            curattrName = trim(adjustl(na(k)%attrName))!tgaf13mod
+            !curattrName = trim(adjustl(na(k)%attrName))!tgaf13mod
          case default
             write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
      &         ' is not supported by adcprep.'
            CALL EXIT(1)
          end select
-         IF (Mode.eq.1) THEN
+         IF (Mode==1) THEN
             DO iproc=startProc,endProc
                WRITE(sdu(iproc),'(A80)') curAttrName!tgaf13mod
             END DO
@@ -945,7 +945,7 @@ C
 CTGA 20180524: Adjusted code to better handle out-of-order attributes in the body
          curAttrInd=-1
          DO i=1,NAttr
-            IF (TRIM(ADJUSTL(curAttrName)).eq.TRIM(ADJUSTL(AttrName(i)))) THEN
+            IF (TRIM(ADJUSTL(curAttrName))==TRIM(ADJUSTL(AttrName(i)))) THEN
                curAttrInd=i
                EXIT
             ENDIF
@@ -961,7 +961,7 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
          case(ASCII)
             read(13,*) numNotDefault
          case(XDMF)
-            numNotDefault = na(k) % numNodesNotDefault
+            !numNotDefault = na(k) % numNodesNotDefault
          case default
             write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
      &         ' is not supported by adcprep.'
@@ -990,8 +990,8 @@ CTGA 20180524: Adjusted code to better handle out-of-order attributes in the bod
                   ENDIF
                ENDIF
             case(XDMF)
-               nodeNum = na(k) % nonDefaultNodes(i)
-               attrData(:) = na(k) % nonDefaultVals(:,nodeNum)
+               !nodeNum = na(k) % nonDefaultNodes(i)
+               !attrData(:) = na(k) % nonDefaultVals(:,nodeNum)
             case default
                write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
      &         ' is not supported by adcprep.'
@@ -1056,160 +1056,159 @@ C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
 
 
-C---------------------------------------------------------------------------
-      subroutine prep13XDMF()
-C---------------------------------------------------------------------------
-      use pre_global, only : useNodalAttrNames, nnodg, nnodp, nproc
-      use memory_usage
-      use nodalattributes
-      use sizes, only : naFileName
-      implicit none
-
-      integer(8) :: nbytes = 0
-      integer :: iproc          ! subdomain loop counter
-      integer :: sdu(nproc)     ! subdomain unit number for unit 13 files
-      integer :: Mode           !=0 to count, =1 to write
-      logical :: success        ! .true. if all files opened successfully
-      character(len=15) sdFileName     ! subdomain file name   !increased from 14 to 15 tcm v50.66.03
-      integer, allocatable :: SDNumND(:,:)  ! subdomain # of nodes not default
-C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
-C     time ... some platforms/compilers limit the number of files that
-C     can be open at any one time.
-      integer, parameter :: maxOpenFiles = 256
-      integer :: startProc
-      integer :: endProc
-      integer :: deltaProc
-      integer :: errorIO
-      real(8), allocatable :: diff(:) ! difference between nodal value and default value
-      logical, allocatable :: areDefaultValues(:)
-      integer :: nonDefaultCount
-      integer :: i,j,k
-C
-      call readNodalAttrXDMF()
-      !
-      ! we need to compute the number of nondefault values and
-      ! create a list of nodes with nondefault values
-      do i=1,nAttr
-         if (na(i)%numVals.eq.1) then
-            ! machine precision prevents us from simply checking whether the
-            ! value .ne. the default value
-            diff = abs(na(i)%xdmfArray - na(i)%defaultVals(1))
-            na(i)%numNodesNotDefault = count(diff.gt.1.e-6)
-            ! now allocate space for the non default values and populate them
-            allocate(na(i)%nonDefaultVals(1,na(i)%numNodesNotDefault))
-            allocate(na(i)%nonDefaultNodes(na(i)%numNodesNotDefault))
-            ! now record the node number and value where the values are not
-            ! the default
-            nonDefaultCount = 1
-            do j=1,nnodg
-               if (diff(j).gt.1.e-6) then
-                  na(i)%nonDefaultNodes(nonDefaultCount) = j
-                  na(i)%nonDefaultVals(1,nonDefaultCount) = na(i)%xdmfArray(j)
-                  nonDefaultCount = nonDefaultCount + 1
-               endif
-            end do
-         else
-            ! determine the number of nondefault values
-            areDefaultValues = .true.
-            do j=1,nnodg
-               do k=1,na(i)%numVals
-                  if (abs(na(i)%xdmfMatrix(k,j)-na(i)%defaultVals(k)).gt.1.e-6) then
-                     areDefaultValues(j) = .false.
-                  endif
-               enddo
-            enddo
-            ! now allocate space for the non default values and populate them
-            na(i)%numNodesNotDefault = count(areDefaultValues.eqv..false.)
-            allocate(na(i)%nonDefaultVals(na(i)%numVals,na(i)%numNodesNotDefault))
-            allocate(na(i)%nonDefaultNodes(na(i)%numNodesNotDefault))
-            nonDefaultCount = 1
-            do j=1,nnodg
-               if (areDefaultValues(j).eqv..false.) then
-                  na(i)%nonDefaultNodes(nonDefaultCount) = j
-                  do k=1,na(i)%numVals
-                     na(i)%nonDefaultVals(k,nonDefaultCount) =
-     &                   na(i)%xdmfMatrix(k,j)
-                  end do
-                  nonDefaultCount = nonDefaultCount + 1
-               endif
-            end do
-         endif
-      end do
-C
-C     Perform decomposition over range of subdomains.
-      startProc = 1
-      do while ( startProc .lt. nproc )
-         deltaProc = nproc - startProc
-         if ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
-         endProc = startProc + deltaProc
-         ! Open each of the subdomain files
-         do iproc = startProc, endProc
-            sdu(iproc) = 105 + (iproc-1)
-            sdFileName = 'PE0000/fort.13'
-            call iwrite(sdFileName, 3, 6, iproc-1)
-            open(unit=sdu(iproc), file=sdFileName, iostat=ErrorIO)
-            Success = .true.
-            IF ( ErrorIO .GT. 0 ) THEN
-               write(6,'(a,a,a)') "ERROR: Subdomain file "
-     &             // trim(sdFileName) // " cannot be opened."
-               Success = .false.
-               CALL EXIT(1)
-            endif
-         enddo
-C
-C        Transcribe header information into subdomain unit 13 files
-         do iproc = startProc, endProc
-            write(sdu(iproc),'(a)') trim(adjustl(nodalAttributesComment))
-            write(sdu(iproc),*) NNODP(iproc)
-            write(sdu(iproc),*) NAttr
-            do i=1,nAttr
-               write(sdu(iproc),'(a)') trim(adjustl(na(i)%attrName))
-               write(sdu(iproc),'(a)') trim(adjustl(na(i)%units))
-               write(sdu(iproc),'(99(i0))') na(i)%numVals
-               if (trim(adjustl(na(i)%attrName)).eq."condensed_nodes") then !sb20221013
-                  write(sdu(iproc),'(99(I10))') (nint(na(i)%defaultVals(j)), j=1,na(i)%numVals)
-               else
-                  write(sdu(iproc),'(99(F15.7))') (na(i)%defaultVals(j), j=1,na(i)%numVals)
-               end if
-         end do
-         end do
-C
-C        Allocate and initialize the matrix for the number of Non Default
-C        nodes in each SubDomain for each nodal attribute
-         ALLOCATE(SDNumND(nproc,nAttr))
-         nbytes = 8*nproc*nattr
-         call memory_alloc(nbytes)
-         SDNumND(:,:)=0
-C        We need to figure out how many nodes go into each subdomain
-C        for each attribute.
-         CALL processNodalAttr(NAttr, na%numVals, 0, sdu, SDNumND,
-     &      startProc, endProc, naType,na%attrName)!tgaf13mod
-C
-C        Now read each of the nodal attributes and transcribe them to the
-C        appropriate subdomain.
-         CALL processNodalAttr(NAttr, na%numVals, 1, sdu, SDNumND,
-     &      startProc, endProc, naType,na%attrName)!tgaf13mod
-         DEALLOCATE(SDNumND)
-         nbytes = 8*nproc*nattr
-         call memory_dealloc(nbytes)
-C
-C        Close subdomain files
-         DO iproc=startProc, endProc
-            CLOSE(sdu(iproc))
-         ENDDO
-         startProc = endProc + 1
-      END DO
-C
-      if (allocated(useNodalAttrNames)) then
-         DEALLOCATE(useNodalAttrNames)
-         nbytes = 4*nwp
-         call memory_dealloc(nbytes)
-      endif
-C
-      call memory_status()
-C---------------------------------------------------------------------------
-      end subroutine prep13XDMF
-C---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+!     subroutine prep13XDMF()
+!---------------------------------------------------------------------------
+!     use pre_global, only : useNodalAttrNames, nnodg, nnodp, nproc
+!     use memory_usage
+!     use nodalattributes
+!     use sizes, only : naFileName
+!     implicit none
+!!     integer(8) :: nbytes = 0
+!     integer :: iproc          ! subdomain loop counter
+!     integer :: sdu(nproc)     ! subdomain unit number for unit 13 files
+!     integer :: Mode           !=0 to count, =1 to write
+!     logical :: success        ! .true. if all files opened successfully
+!     character(len=15) sdFileName     ! subdomain file name   !increased from 14 to 15 tcm v50.66.03
+!     integer, allocatable :: SDNumND(:,:)  ! subdomain # of nodes not default
+!     jgf48.47 Do the decomposition for a max of 256 subdomains at a
+!     time ... some platforms/compilers limit the number of files that
+!     can be open at any one time.
+!     integer, parameter :: maxOpenFiles = 256
+!     integer :: startProc
+!     integer :: endProc
+!     integer :: deltaProc
+!     integer :: errorIO
+!     real(8), allocatable :: diff(:) ! difference between nodal value and default value
+!     logical, allocatable :: areDefaultValues(:)
+!     integer :: nonDefaultCount
+!     integer :: i,j,k
+!
+!     call readNodalAttrXDMF()
+!     !
+!     ! we need to compute the number of nondefault values and
+!     ! create a list of nodes with nondefault values
+!     do i=1,nAttr
+!        if (na(i)%numVals.eq.1) then
+!           ! machine precision prevents us from simply checking whether the
+!           ! value .ne. the default value
+!           diff = abs(na(i)%xdmfArray - na(i)%defaultVals(1))
+!           na(i)%numNodesNotDefault = count(diff.gt.1.e-6)
+!           ! now allocate space for the non default values and populate them
+!           allocate(na(i)%nonDefaultVals(1,na(i)%numNodesNotDefault))
+!           allocate(na(i)%nonDefaultNodes(na(i)%numNodesNotDefault))
+!           ! now record the node number and value where the values are not
+!           ! the default
+!           nonDefaultCount = 1
+!           do j=1,nnodg
+!              if (diff(j).gt.1.e-6) then
+!                 na(i)%nonDefaultNodes(nonDefaultCount) = j
+!                 na(i)%nonDefaultVals(1,nonDefaultCount) = na(i)%xdmfArray(j)
+!                 nonDefaultCount = nonDefaultCount + 1
+!              endif
+!           end do
+!        else
+!           ! determine the number of nondefault values
+!           areDefaultValues = .true.
+!           do j=1,nnodg
+!              do k=1,na(i)%numVals
+!                 if (abs(na(i)%xdmfMatrix(k,j)-na(i)%defaultVals(k)).gt.1.e-6) then
+!                    areDefaultValues(j) = .false.
+!                 endif
+!              enddo
+!           enddo
+!           ! now allocate space for the non default values and populate them
+!           na(i)%numNodesNotDefault = count(areDefaultValues.eqv..false.)
+!           allocate(na(i)%nonDefaultVals(na(i)%numVals,na(i)%numNodesNotDefault))
+!           allocate(na(i)%nonDefaultNodes(na(i)%numNodesNotDefault))
+!           nonDefaultCount = 1
+!           do j=1,nnodg
+!              if (areDefaultValues(j).eqv..false.) then
+!                 na(i)%nonDefaultNodes(nonDefaultCount) = j
+!                 do k=1,na(i)%numVals
+!                    na(i)%nonDefaultVals(k,nonDefaultCount) =
+!    &                   na(i)%xdmfMatrix(k,j)
+!                 end do
+!                 nonDefaultCount = nonDefaultCount + 1
+!              endif
+!           end do
+!        endif
+!     end do
+!
+!     Perform decomposition over range of subdomains.
+!     startProc = 1
+!     do while ( startProc .lt. nproc )
+!        deltaProc = nproc - startProc
+!        if ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
+!        endProc = startProc + deltaProc
+!        ! Open each of the subdomain files
+!        do iproc = startProc, endProc
+!           sdu(iproc) = 105 + (iproc-1)
+!           sdFileName = 'PE0000/fort.13'
+!           call iwrite(sdFileName, 3, 6, iproc-1)
+!           open(unit=sdu(iproc), file=sdFileName, iostat=ErrorIO)
+!           Success = .true.
+!           IF ( ErrorIO .GT. 0 ) THEN
+!              write(6,'(a,a,a)') "ERROR: Subdomain file "
+!    &             // trim(sdFileName) // " cannot be opened."
+!              Success = .false.
+!              CALL EXIT(1)
+!           endif
+!        enddo
+!
+!        Transcribe header information into subdomain unit 13 files
+!        do iproc = startProc, endProc
+!           write(sdu(iproc),'(a)') trim(adjustl(nodalAttributesComment))
+!           write(sdu(iproc),*) NNODP(iproc)
+!           write(sdu(iproc),*) NAttr
+!           do i=1,nAttr
+!              write(sdu(iproc),'(a)') trim(adjustl(na(i)%attrName))
+!              write(sdu(iproc),'(a)') trim(adjustl(na(i)%units))
+!              write(sdu(iproc),'(99(i0))') na(i)%numVals
+!              if (trim(adjustl(na(i)%attrName)).eq."condensed_nodes") then !sb20221013
+!                 write(sdu(iproc),'(99(I10))') (nint(na(i)%defaultVals(j)), j=1,na(i)%numVals)
+!              else
+!                 write(sdu(iproc),'(99(F15.7))') (na(i)%defaultVals(j), j=1,na(i)%numVals)
+!              end if
+!        end do
+!        end do
+!
+!        Allocate and initialize the matrix for the number of Non Default
+!        nodes in each SubDomain for each nodal attribute
+!        ALLOCATE(SDNumND(nproc,nAttr))
+!        nbytes = 8*nproc*nattr
+!        call memory_alloc(nbytes)
+!        SDNumND(:,:)=0
+!        We need to figure out how many nodes go into each subdomain
+!        for each attribute.
+!        CALL processNodalAttr(NAttr, na%numVals, 0, sdu, SDNumND,
+!    &      startProc, endProc, naType,na%attrName)!tgaf13mod
+!
+!        Now read each of the nodal attributes and transcribe them to the
+!        appropriate subdomain.
+!        CALL processNodalAttr(NAttr, na%numVals, 1, sdu, SDNumND,
+!    &      startProc, endProc, naType,na%attrName)!tgaf13mod
+!        DEALLOCATE(SDNumND)
+!        nbytes = 8*nproc*nattr
+!        call memory_dealloc(nbytes)
+!
+!        Close subdomain files
+!        DO iproc=startProc, endProc
+!           CLOSE(sdu(iproc))
+!        ENDDO
+!        startProc = endProc + 1
+!     END DO
+!
+!     if (allocated(useNodalAttrNames)) then
+!        DEALLOCATE(useNodalAttrNames)
+!        nbytes = 4*nwp
+!        call memory_dealloc(nbytes)
+!     endif
+!
+!     call memory_status()
+!---------------------------------------------------------------------------
+!     end subroutine prep13XDMF
+!---------------------------------------------------------------------------
 
 
 
@@ -1769,7 +1768,7 @@ C---------------------------------------------------------------------------C
       USE PREP_WEIR
       USE HARM, ONLY : NAMEFR
       use subprep, only : subdomainOn, found_sm_nml ! NCSU Subdomain Modeling
-      use nodalattributes, only : outputTau0
+      use nodalattributes, only : primitive_weighting_in_continuity_equation
       IMPLICIT NONE
       integer(8) :: nbytes = 0
       INTEGER I,J,K,M,JG,JP,KK, ios_stations
@@ -7671,7 +7670,7 @@ C---------------------------------------------------------------------------
      &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
      &    foundCorrectionControlNamelist, NCICE !GML added NCICE 20210727
-      USE NODALATTRIBUTES, ONLY : outputTau0
+      USE NODALATTRIBUTES, ONLY : primitive_weighting_in_continuity_equation
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
      &    initNetCDFHotstart3D, initNetCDFHotstart,
      &    initNetCDFHotstartHarmonic,
@@ -8917,7 +8916,7 @@ C     was specified.
       CALL initNetCDFOutputFile(ElevStaDescript, reterr)
       CALL initNetCDFOutputFile(VelStaDescript, reterr)
       CALL initNetCDFOutputFile(ElevDescript, reterr)
-      if (outputTau0.eqv..true.) then
+      if (primitive_weighting_in_continuity_equation%outputtau0.eqv..true.) then
          CALL initNetCDFOutputFile(Tau0Descript, reterr)
       endif
       CALL initNetCDFOutputFile(VelDescript, reterr)

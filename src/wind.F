@@ -2380,16 +2380,8 @@ C     from NAM data
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             !Casey 110518: Enable Mark Powell's sector-based wind drag.
             WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               !Casey 110518: Enable Mark Powell's sector-based wind drag.
-               WDragCo = WindDrag(WindMag,I)
-            ENDIF
-            IF (LoadCanopyCoef) then
-               CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            ENDIF
+            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
+            call surface_canopy_coefficient%apply(i, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                if (NCICE.eq.14) then
