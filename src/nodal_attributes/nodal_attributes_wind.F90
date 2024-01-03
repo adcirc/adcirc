@@ -68,19 +68,21 @@ MODULE NODAL_ATTRIBUTE_WIND_MODULE
     !>    @param[in,out] WindY wind velocity, y-component
     !--------------------------------------------------------------------
     subroutine surface_roughness_application(self, node_number, wind_drag_coefficient,&
-            wind_magnitude, bathymetric_depth, water_surface_elevation, &
+            wind_magnitude, h0, bathymetric_depth, water_surface_elevation, &
             overland_reduction_factor, wind_x, wind_y)
-      use GLOBAL,only:h0
       use CONSTANTS,only:RAD2DEG,G
       use wind_drag_module, only: WindDrag
+
       implicit none
+
       class(NODAL_ATTRIBUTE_SURFACE_ROUGHNESS_T), intent(inout) :: self
+      class(NODAL_ATTRIBUTE_VECTOR_REAL_T), intent(in) :: overland_reduction_factor
       integer, intent(in)    :: node_number
       real(8), intent(inout) :: wind_drag_coefficient
       real(8), intent(inout) :: wind_magnitude
       real(8), intent(in)    :: bathymetric_depth
       real(8), intent(in)    :: water_surface_elevation
-      type(nodal_attribute_vector_real_t), intent(in) :: overland_reduction_factor
+      real(8), intent(in)    :: h0
       real(8), intent(inout) :: wind_x, wind_y
 
       integer :: i

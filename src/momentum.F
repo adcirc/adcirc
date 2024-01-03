@@ -76,7 +76,8 @@ C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
       module momentum
       use global, only : DEBUG, INFO, WARNING, ERROR, setMessageSource,
-     &   allMessage, logMessage, unsetMessageSource
+     &   allMessage, logMessage, unsetMessageSource, ifnlct, ifnlcate,
+     &   ifnlcat, ifnlcte
       implicit none
 
       real(8),allocatable :: auv(:,:) ! WJP allowing for the case auv11 ~= auv22
@@ -294,7 +295,7 @@ C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
 Corbitt 120322: Localized Advection
-         call advection_state%advect_local(ie)
+         call advection_state%advect_local(nm(ie, :), dp, IFNLCTE, IFNLCATE, IFNLCT, IFNLCAT)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -1353,7 +1354,7 @@ C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
 Corbitt 120322: Localized Advection
-         call advection_state%advect_local(ie)
+         call advection_state%advect_local(nm(ie, :), dp, IFNLCTE, IFNLCATE, IFNLCT, IFNLCAT)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -2203,7 +2204,7 @@ C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
 Corbitt 120322: Localized Advection
-         call advection_state%advect_local(ie)
+         call advection_state%advect_local(nm(ie, :), dp, IFNLCTE, IFNLCATE, IFNLCT, IFNLCAT)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)

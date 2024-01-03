@@ -121,11 +121,12 @@ contains
   ! Subroutine: condensed_nodes_prep
   ! Description: Prepare condensed nodes in NODAL_ATTRIBUTE_CONDENSED_NODES_T
   !--------------------------------------------------------------------
-  subroutine condensed_nodes_prep(self)
-    USE SIZES, ONLY : MNVEL
-    USE MESH, ONLY : NP, LBArray_Pointer, X, Y
+  subroutine condensed_nodes_prep(self, MNVEL, NP, LBArray_Pointer, X, Y)
     IMPLICIT NONE
     CLASS(NODAL_ATTRIBUTE_CONDENSED_NODES_T), INTENT(INOUT) :: self
+    INTEGER, INTENT(IN) :: MNVEL, NP
+    INTEGER, INTENT(IN) :: LBArray_Pointer(MNVEL)
+    REAL(8), INTENT(IN) :: X(NP), Y(NP)
     INTEGER :: I, J, K, II, I1, I2, J1, J2
     INTEGER :: JMAX
     REAL(8) :: X1, Y1, X2, Y2, DX, DY, LEN
@@ -213,23 +214,19 @@ contains
   ! Subroutine: advect_local
   ! Description: Apply the localized advection scheme
   !--------------------------------------------------------------------
-  subroutine advect_local(self, ie)
-    use GLOBAL, only : IFNLCAT, IFNLCATE, IFNLCT, IFNLCTE
-    use MESH, only : NM, DP
+  subroutine advect_local(self, NM, DP, IFNLCTE, IFNLCATE, IFNLCT, IFNLCAT)
     implicit none
     class(NODAL_ATTRIBUTE_ADVECT_LOCAL_T), intent(inout) :: self
-    integer, intent(in) :: ie
-
-    integer  :: NM1, NM2, NM3
+    integer, intent(in) :: IFNLCTE, IFNLCATE
+    integer, intent(in) :: NM(:)
+    real(8), intent(in) :: DP(:)
+    integer, intent(inout) :: IFNLCAT, IFNLCT
 
     if(self%active.eqv..false.) return
 
-    NM1=NM(IE,1)
-    NM2=NM(IE,2)
-    NM3=NM(IE,3)
-    if ((DP(NM1)>=self%values(NM1)).and.&
-        (DP(NM2)>=self%values(NM2)).and.&
-        (DP(NM3)>=self%values(NM3))) then
+    if ((DP(NM(1))>=self%values(NM(1))).and.&
+        (DP(NM(2))>=self%values(NM(2))).and.&
+        (DP(NM(3))>=self%values(NM(3)))) then
       IFNLCT = IFNLCTE
       IFNLCAT = IFNLCATE
     else

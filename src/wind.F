@@ -542,9 +542,7 @@ C     is used to compute wind stress from the wind velocity.
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -578,9 +576,7 @@ C     from wind velocity.
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE/=0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -618,9 +614,7 @@ C     is used to compute wind stress from wind velocity.
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE/=0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -662,9 +656,7 @@ C     wind velocity.
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE/=0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -723,8 +715,7 @@ C     generate hurricane winds from the Holland Wind Model.
             WindY = WVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE/=0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -768,9 +759,7 @@ C     formula is used to compute wind stress from the wind velocity.
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF (NCICE==10) then
                Cicenow = 100d0*( CICE1(I) + 
@@ -819,9 +808,7 @@ C     from the wind velocity.
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -910,8 +897,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             !Casey 110518: Enable Mark Powell's sector-based wind drag.
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF (NCICE.eq.14) then
                Cicenow = 100d0*(CICE1(I) + 
@@ -966,8 +952,7 @@ Casey 180318: Added for NWS=13, ARC modified 190108
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
@@ -991,8 +976,7 @@ C     RJW ffpl Merged:
             WindY = WVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
             WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
@@ -1015,8 +999,7 @@ C     jie added nws = 20: generalized asymmetric vortex model
             WindY = WVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
             WSX2(I) = RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*airwaterdensityrat*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
@@ -1079,8 +1062,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             WindY = vortexWVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
             CALL getBlendFactor(I, bf)
             ! blend the wind stresses and barometric pressures
             WSX2(I) = bf*RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
@@ -1104,8 +1086,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
              windy = wvny2(i)
              windMag = sqrt(windx**2 + windy**2)
              WDragCo = WindDrag(windMag, i)
-             call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-             call surface_canopy_coefficient%apply(i, WindX, WindY)
+             call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
@@ -1135,8 +1116,7 @@ C.... tcm v51.06.02 added for GFDL Met Data
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             !Casey 110518: Enable Mark Powell's sector-based wind drag.
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -1196,8 +1176,7 @@ C++
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
 C     jgf46.00 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
            IF(NCICE.NE.0) THEN
                Cicenow = 100d0*(CICE1(I) + CTRATIO*(CICE2(I)-CICE1(I)))   ! GML added 20210727
@@ -1756,8 +1735,7 @@ C....                           to correspond with having only a global wind fil
             WINDMAG=SQRT(WINDX*WINDX+WINDY*WINDY)
             WDragCo = WindDrag(WindMag, I)
 C     jgf46.01 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -1800,8 +1778,7 @@ C     from wind velocity.
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             WDragCo = WindDrag(WindMag, I)
 C     jgf46.01 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -1830,8 +1807,7 @@ C  tcm v49.16 20100617
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             WDragCo = WindDrag(WindMag, I)
 C     jgf46.01 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -1875,8 +1851,7 @@ C     is used to compute wind stress from wind velocity.
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             WDragCo = WindDrag(WindMag, I)
 C     jgf46.01 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -1906,9 +1881,7 @@ C     jjw-42.06j wrote, jgf46.00 added following two lines:
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             WDragCo = WindDrag(WindMag, I)
-C     jgf46.01 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -1955,9 +1928,7 @@ C     The following CALL statement should be uncommented for normal operation
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             WDragCo = WindDrag(WindMag, I)
-C     jgf46.00 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -2040,8 +2011,7 @@ C     generate hurricane winds from the Holland Wind Model.
             WindY = WVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -2067,8 +2037,7 @@ C  tcm v49.16 20100617
             WindY = WVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -2094,8 +2063,7 @@ C  tcm v49.16 20100617
             WindY = WVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -2144,8 +2112,7 @@ C     formula is used to compute wind stress from the wind velocity.
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             WDragCo = WindDrag(WindMag, I)
 C     jgf46.00 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF (NCICE.eq.10) then
                Cicenow = 100d0*( CICE1(I) + 
@@ -2195,8 +2162,7 @@ C     from the wind velocity.
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             WDragCo = WindDrag(WindMag, I)
 C     jgf46.00 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -2244,8 +2210,7 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             WSX2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*airwaterdensityrat*WDRAGCO*WINDY*WINDMAG
@@ -2275,8 +2240,7 @@ Casey 180318: Added for NWS=13, ARC modified 190108
           WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
           WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
           WDragCo = WindDrag(WindMag, I)
-          call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-          call surface_canopy_coefficient%apply(i, WindX, WindY)
+          call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
           WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
           WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
@@ -2312,8 +2276,7 @@ C     from NAM data
             WindY = vortexWVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
             CALL getBlendFactor(I, bf)
             WSX2(I) = bf*RampMete2*airwaterdensityrat*WDragCo*WindX*WindMag
      &               +(1.0d0-bf)*WSX2(I)
@@ -2380,8 +2343,7 @@ C     from NAM data
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             !Casey 110518: Enable Mark Powell's sector-based wind drag.
             WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                if (NCICE.eq.14) then
@@ -2435,8 +2397,7 @@ Casey 180318: Added for NWS=13
           WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
           WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
           WDragCo = WindDrag(WindMag, I)
-          call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-          call surface_canopy_coefficient%apply(i, WindX, WindY)
+          call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
           WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
           WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
@@ -2457,8 +2418,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
              WDragCo = WindDrag(windSpeeds(i), i)
              windx = wvnx2(i)
              windy = wvny2(i)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
             ENDIF
@@ -2494,8 +2454,7 @@ C.....tcm v51.06.02 NWS=16,-16 were added to deal with GFDL Met files.
              WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
              WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
              WDragCo = WindDrag(WindMag, I)
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -2519,8 +2478,7 @@ C
              WINDY = WVNY1(I)
              WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
              WDragCo = WindDrag(WindMag, I)
-             call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-             call surface_canopy_coefficient%apply(i, WindX, WindY)
+             call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -2566,8 +2524,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             WDragCo = WindDrag(WindMag, I)
 
 C     jgf46.00 Add directional wind reduction.
-            call surface_directional_effective_roughness_length%apply(i, WDragCo, WindMag, DP(I), ETA2(I), orf, WindX, WindY)
-            call surface_canopy_coefficient%apply(i, WindX, WindY)
+            call applySurfaceWindCorrections(i, dp(i), eta2(i), WDragCo, WindMag, WindX, WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
            IF(NCICE.NE.0) THEN
                WDragCo = WindIceDrag(WDragCo,ciceout(i))
@@ -9053,7 +9010,40 @@ C.... as a function of water column height.
       call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine WindLimiter
-C-----------------------------------------------------------------------
+C----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!    S U B R O U T I N E  A P P L Y S U R F A C E W I N D C O R R E C T I O N S
+!-----------------------------------------------------------------------
+! Applies the surface wind corrections (canopy and directional roughness)
+! to the wind forcing.  This is done in the subroutine so that it can be
+! called from each of the wind forcing routines.
+!-----------------------------------------------------------------------
+      subroutine applySurfaceWindCorrections(node_number, bathymetric_depth,
+     &                                       water_surface_elevation, wind_drag_coef,
+     &                                       wind_speed, wind_x, wind_y)
+        use nodal_attributes_module, only: surface_canopy_coefficient,
+     &                                     surface_directional_effective_roughness_length,
+     &                                     overland_reduction_factor
+        use global, only: h0
+        implicit none
+        integer, intent(in)    :: node_number
+        real(8), intent(in)    :: bathymetric_depth, water_surface_elevation
+        real(8), intent(inout) :: wind_x, wind_y, wind_drag_coef, wind_speed
+
+        !...Apply the surface canopy coefficient
+        call surface_canopy_coefficient%apply(node_number, wind_x, wind_y)
+        call surface_directional_effective_roughness_length%apply(node_number, wind_drag_coef,
+     &                          wind_speed, h0, bathymetric_depth, water_surface_elevation,
+     &                          overland_reduction_factor, wind_x, wind_y)
+
+!-----------------------------------------------------------------------
+      end subroutine applySurfaceWindCorrections
+!-----------------------------------------------------------------------
+
+
+
+
 C----------------------------------------------------------------------
       END MODULE
 C----------------------------------------------------------------------

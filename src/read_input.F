@@ -99,7 +99,8 @@ C-----------------------------------------------------------------------
 
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
-     &   freeMesh, node_dict, find, agrid, GET_ROTSPCOORD_CORIFVAL
+     &   freeMesh, node_dict, find, agrid, GET_ROTSPCOORD_CORIFVAL,
+     &   LBArray_Pointer
       USE BOUNDARIES, ONLY : ANGINN, COSTSET, NETA, NVEL, NVELME, NPEBC,
      &   NFLUXF, NBD, ME2GW, LBCODEI, NBV, simpleFluxBoundaries, ibtype,
      &   numSimpleFluxBoundaries
@@ -4787,17 +4788,15 @@ c     CALL READ_INPUT_3DDSS(STATIM,NT)
 
 C...  SB
 C     Preparation of condensed nodes  SB
-      call condensed_nodes%prep()
+      call condensed_nodes%prep(MNVEL, NP, LBArray_Pointer, X, Y)
       
 C     Recompute a & b coefficients            
       CALL RecomputeFDXEFDYEAtCondensedNodes()
       
 C...  SB END
 
-C...  INITIALIZE NIBNODECODE(I)
-      DO I=1,NP
-         NIBNODECODE(I)=0
-      END DO
+C...  INITIALIZE NIBNODECODE
+      NIBNODECODE=0
 
 C - tcm v50.66.02 -- additions for time varying bathymetry
 C - allocate global arrays for time varying bathymetry

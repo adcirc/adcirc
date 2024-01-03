@@ -252,7 +252,7 @@ C
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH,
      &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, ALPHAL, windlim,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1,
-     &   COEFDTemp, COEFDTempMem  ! Added for VED1D  08-11-2022 SB
+     &   COEFDTemp, COEFDTempMem, IFNLCTE, IFNLCATE, IFNLCT, IFNLCAT
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -992,7 +992,7 @@ C...  Assemble the GWCE RHS except for the boundary integral terms
 C...     Set nodal values for each element
 
 Corbitt 120322: Localized Advection
-         call advection_state%advect_local(ie)
+         call advection_state%advect_local(nm(ie, :), dp, IFNLCTE, IFNLCATE, IFNLCT, IFNLCAT)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -2167,7 +2167,7 @@ C
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2, 
-     &   QX2, QY2, UU2, VV2, windlim
+     &   QX2, QY2, UU2, VV2, windlim, IFNLCTE, IFNLCATE, IFNLCT, IFNLCAT
 #ifdef CMPI
      &   , dumy1, dumy2
 #endif
@@ -2536,7 +2536,7 @@ ckmd
 
 
 Corbitt 120322: Localized Advection
-         call advection_state%advect_local(ie)
+         call advection_state%advect_local(nm(ie, :), dp, IFNLCTE, IFNLCATE, IFNLCT, IFNLCAT)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
