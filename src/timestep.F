@@ -82,7 +82,7 @@ C
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE
-      USE CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier
+      USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier
       USE GWCE, ONLY : solveGWCE, numitr
       USE MOMENTUM, ONLY : solveMomentumEq
       USE WETDRY, ONLY : computeWettingAndDrying
@@ -1382,7 +1382,7 @@ C
      &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
      &    setmessagesource, unsetmessagesource, DEBUG,
      &    allMessage
-      USE CONSTANTS, ONLY: rhowat0
+      USE ADC_CONSTANTS, ONLY: rhowat0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
       USE NodalAttributes, ONLY: EVC
 
@@ -1730,7 +1730,7 @@ c******************************************************************************
       SUBROUTINE BPG2D(IT,TimeLoc)
 
       USE SIZES, ONLY : myproc
-      USE CONSTANTS, ONLY: G, RhoWat0, SigT0
+      USE ADC_CONSTANTS, ONLY: G, RhoWat0, SigT0
       USE GLOBAL, ONLY: IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF, 
      &    VIDBCPDXOH, VIDBCPDYOH, ETA2, DTDP, DASigT, 
      &    IFSFM
@@ -1896,7 +1896,7 @@ C
      &      setMessageSource, unsetMessageSource, allMessage,
      &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &      ETA2, H0, DTDP
-      USE CONSTANTS, ONLY: SigT0
+      USE ADC_CONSTANTS, ONLY: SigT0
       USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, SFAC
       USE GLOBAL_3DVS, ONLY : BCP, BPG, NFEN, SIGT, SIGMA, IDEN,

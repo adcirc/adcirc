@@ -122,7 +122,7 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
       subroutine initGWCE()
       use sizes, only : mnp
       use global, only : dt, ilump, alloc_main11, alloc_main11_lumped
-      use constants, only: g
+      USE ADC_CONSTANTS, only: g
       use mesh, only : np
       use itpackv, only : dfault
       implicit none
@@ -256,7 +256,7 @@ C
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
-      USE CONSTANTS, ONLY: G, RHOWAT0, Bd, Ad, Cs2
+      USE ADC_CONSTANTS, ONLY: G, RHOWAT0, Bd, Ad, Cs2
       USE MESH, ONLY : NE, NP, NM, DP, NNeigh, NeiTab, TotalArea, FDXE,
      &   Areas, NEIMAX, SFAC, nneighele, neitabele, FDYE,
      &   SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, SFCXEle,
@@ -2174,7 +2174,7 @@ C
 #ifdef CMPI
      &   , dumy1, dumy2
 #endif
-      USE CONSTANTS, ONLY: G, RHOWAT0
+      USE ADC_CONSTANTS, ONLY: G, RHOWAT0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, TotalArea, Areas, NeiTab,
      &                  NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXGBC, NFLUXRBC,

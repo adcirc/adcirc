@@ -41,7 +41,7 @@
      &   scratchMessage, logMessage, screenMessage, allMessage,
      &   setMessageSource, openFileForRead, unsetMessageSource,
      &   scratchFormat
-      use constants, only: deg2rad, rad2deg, pi, omega, rearth
+      USE ADC_CONSTANTS, only: deg2rad, rad2deg, pi, omega, rearth
 
       implicit none
        
@@ -1795,7 +1795,7 @@
 !     ------------------------------------------------------------------
       subroutine initializeBoundaries()
       use global, only : nbfr, c2ddi, ifsprots
-      use constants, only: pi
+      USE ADC_CONSTANTS, only: pi
       use boundaries
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_imax  !sb msg_imax added 10/13/2022
@@ -3433,7 +3433,7 @@ Csb...
 !     Lon,Lat is in radians.
 !     ------------------------------------------------------------------
       SUBROUTINE INVCP(XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0)
-      USE CONSTANTS, ONLY : Rearth
+      USE ADC_CONSTANTS, ONLY : Rearth
       IMPLICIT NONE
       REAL*8 XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0
 
@@ -5297,7 +5297,7 @@ C
     
       SUBROUTINE CAL_ELXV_SPCOOR( XVE, YVE, LONVE, LATVE, ICS, SFLAG )
 
-      USE CONSTANTS, ONLY: RAD2DEG
+      USE ADC_CONSTANTS, ONLY: RAD2DEG
 
       IMPLICIT NONE
 

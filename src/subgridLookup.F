@@ -784,7 +784,7 @@
 !     &   , fgamma, ftheta, manningsn, hbreak, loadManningsN
 !     &   , iflinbf, ifnlbf, ifhybf 
 
-      use constants, only: g
+      USE ADC_CONSTANTS, only: g
       IMPLICIT NONE
 
       REAL(8), INTENT(IN)    :: BFCdLLimit

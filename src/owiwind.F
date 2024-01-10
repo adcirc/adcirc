@@ -276,7 +276,7 @@
 !-----------------------------------------------------------------------
         USE SIZES,ONLY: MYPROC,MNPROC,GBLINPUTDIR
         USE GLOBAL,ONLY: NWS
-        USE CONSTANTS, ONLY: RHOWAT0, G
+        USE ADC_CONSTANTS, ONLY: RHOWAT0, G
         IMPLICIT NONE
         INTEGER,intent(in)     :: NP
         REAL(8),intent(out)   :: WVNX(:),WVNY(:),PRN(:)
@@ -396,7 +396,7 @@
 !-----------------------------------------------------------------------
       subroutine findStormCenter(eyeLat, eyeLon, foundEye)
 !-----------------------------------------------------------------------
-        use CONSTANTS,only:PRBCKGRND
+        USE ADC_CONSTANTS,only:PRBCKGRND
         implicit none
         intrinsic               :: minloc
         real(8), intent(inout) :: eyeLat(3)
@@ -1089,7 +1089,7 @@
 !-----------------------------------------------------------------------
       SUBROUTINE NWS12INTERP(idx, NP)
 !-----------------------------------------------------------------------
-      USE CONSTANTS, ONLY : RAD2DEG
+      USE ADC_CONSTANTS, ONLY : RAD2DEG
       USE MESH, ONLY : SLAM, SFEA
 
       IMPLICIT NONE

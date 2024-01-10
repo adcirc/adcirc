@@ -125,7 +125,7 @@ C******************************************************************************
      &   scratchMessage, CTIP, L_N, writer_id
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
      &   initVEW1DChannelWetPerimeter
-      USE CONSTANTS, ONLY: g, rhowat0
+      USE ADC_CONSTANTS, ONLY: g, rhowat0
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
       USE GWCE, ONLY : initGWCE

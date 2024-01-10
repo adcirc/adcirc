@@ -37,7 +37,7 @@ C
 #endif
 
       MODULE GLOBAL
-      USE CONSTANTS, ONLY: DEG2RAD
+      USE ADC_CONSTANTS, ONLY: DEG2RAD
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
 #ifdef DATETIME
       use datetime_module, only: datetime
@@ -1097,7 +1097,7 @@ C     jgf49.1001 Function to get the distance along the surface of
 C     a sphere (the earth's surface in this case).
 C     ----------------------------------------------------------------
       REAL(8) FUNCTION sphericalDistance(dx, dy, y1, y2)
-      use constants,only: deg2rad, rearth
+      USE ADC_CONSTANTS,only: deg2rad, rearth
       IMPLICIT NONE
       REAL(8), intent(in) :: DX    ! longitude distance in radians
       REAL(8), intent(in) :: DY    ! latitude distance in radians

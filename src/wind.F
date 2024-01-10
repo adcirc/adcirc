@@ -33,7 +33,7 @@ C
 #ifdef DATETIME
      &   ,basedatetime
 #endif
-       USE CONSTANTS, ONLY: pi, deg2rad, rad2deg, e, PRBCKGRND, g, 
+       USE ADC_CONSTANTS, ONLY: pi, deg2rad, rad2deg, e, PRBCKGRND, g, 
      &                      rhoWat0, Rearth, rhoAir, one2ten,
      &                      windReduction
 #ifdef CMPI
@@ -902,7 +902,7 @@ C----------------------------------------------------------------------
       use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006     
       use global, only : ciceout, h0, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, IDEN, SigTS, cice1, cice2, IFSPROTS
-      use constants, only: g
+      USE ADC_CONSTANTS, only: g
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
@@ -1811,7 +1811,7 @@ C     Sets up meteorological i/o for a coldstart.
 C----------------------------------------------------------------------
       subroutine coldstartMeteorologicalForcing(nws)
       use sizes, only : gblinputdir, inputdir
-      use constants, only: g, mb2pa
+      USE ADC_CONSTANTS, only: g, mb2pa
       use global, only : ciceout, h0, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2, pr1,
      &   cice1, cice2
@@ -2132,7 +2132,7 @@ C----------------------------------------------------------------------
       subroutine hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2,
      &   wvnxout, wvnyout, timeloc, rampmete2)
       use sizes, only : gblinputdir, inputdir
-      use constants, only: g
+      USE ADC_CONSTANTS, only: g
       use global, only : ciceout, h0, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, statim, dtdp, dtdphs, iths,
      &   IDEN, SigTS, cice1, cice2, IFSPROTS
@@ -3430,7 +3430,7 @@ C***********************************************************************
 
       SUBROUTINE NWS4GET()
       USE SIZES
-      USE CONSTANTS, ONLY : RHOWAT0, G
+      USE ADC_CONSTANTS, ONLY : RHOWAT0, G
       USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER   I,NHG
@@ -3556,7 +3556,7 @@ C                other NWS input formats.                              *
 C***********************************************************************
       SUBROUTINE NWS6GET()
       USE SIZES
-      USE CONSTANTS, ONLY : RHOWAT0, G
+      USE ADC_CONSTANTS, ONLY : RHOWAT0, G
       USE MESH, ONLY : X,Y,SLAM,SFEA,NP,ICS
       IMPLICIT NONE
       INTEGER, SAVE :: FIRSTCALL = 0
@@ -3692,7 +3692,7 @@ C          XCOORD < WLONMIN
 C
 C     ----------------------------------------------------------------
       SUBROUTINE NWS7GET()
-      USE CONSTANTS, ONLY : RHOWAT0, G
+      USE ADC_CONSTANTS, ONLY : RHOWAT0, G
       USE MESH, ONLY : X, Y, SLAM, SFEA, NP, ICS
       IMPLICIT NONE
 
@@ -3986,7 +3986,7 @@ C   WJP 6/29/2020 added ability to read ice concentrations             *
 C***********************************************************************
 
       subroutine nws10get(ull,vll,pll,ill)
-      use constants, only : mb2pa
+      USE ADC_CONSTANTS, only : mb2pa
       use sizes, only : gblinputdir
       use mesh, only : np, slam, sfea
       implicit none
@@ -4234,7 +4234,7 @@ C***********************************************************************
 
       SUBROUTINE NWS11GET()
       USE SIZES
-      USE CONSTANTS, ONLY : RHOWAT0, G
+      USE ADC_CONSTANTS, ONLY : RHOWAT0, G
       USE MESH, ONLY : NP, SLAM, SFEA
       IMPLICIT NONE
       INTEGER,SAVE  ::  ICALL = 0
@@ -4989,7 +4989,7 @@ C     ----------------------------------------------------------------
       SUBROUTINE HollandGet(WVNX,WVNY,PRESS,TIMELOC)
       USE SIZES, ONLY : MyProc, LOCALDIR
       USE MESH, ONLY : X, Y, SLAM, SFEA, NP, ICS
-      USE CONSTANTS, ONLY : RHOWAT0, G, mb2pa
+      USE ADC_CONSTANTS, ONLY : RHOWAT0, G, mb2pa
       IMPLICIT NONE
       REAL(8), intent(in) :: TIMELOC
       REAL(8), intent(out), dimension(NP) :: WVNX,WVNY
@@ -5792,7 +5792,7 @@ C     ----------------------------------------------------------------
       !     http://www.unc.edu/~cmattock/ncfs/NCFSreport.pdf
       !=================================================================
       SUBROUTINE NWS19GET(wvnx,wvny,press,timeloc)
-      USE CONSTANTS, ONLY: rhowat0, g, mb2pa
+      USE ADC_CONSTANTS, ONLY: rhowat0, g, mb2pa
       USE GLOBAL,ONLY: rnday
       USE MESH, ONLY : np, ics, slam, sfea
       USE VORTEX, ONLY : newVortex, setRmaxes, fitRmaxes, uvp,
@@ -6340,7 +6340,7 @@ C***********************************************************************
       SUBROUTINE NWS20GET(wvnx, wvny, press, timeloc)
       USE VORTEX, ONLY : setVortex, fitRmaxes4,  uvpr, spInterp,
      &                   Rmaxes4, QuadFlag4, QuadIr4, Bs4, VmBL4  ! jgfdebug
-      USE CONSTANTS, ONLY: kt2ms, nm2m, deg2rad, omega, Rearth, m2nm, mb2pa
+      USE ADC_CONSTANTS, ONLY: kt2ms, nm2m, deg2rad, omega, Rearth, m2nm, mb2pa
       USE GLOBAL, ONLY: rnday
       USE MESH, ONLY : slam, sfea, np, ics
       IMPLICIT NONE
@@ -7209,7 +7209,7 @@ C         g. hwind data do not contain barometric pressure information
 C***********************************************************************
       subroutine NWS15GET(wvnx, wvny, press, timeloc)
       use sizes, only : mnp
-      use constants, only : mb2pa, m2nm, nm2m
+      USE ADC_CONSTANTS, only : mb2pa, m2nm, nm2m
       use mesh, only : slam, sfea, np, dp
       implicit none
       real(8), intent(out) :: wvnx(:)  ! wind u-velocity (m/s)
@@ -7429,7 +7429,7 @@ C
 C     ----------------------------------------------------------------
       subroutine loadHWindFile(cn)
       use global, only : openFileForRead, nabout
-      use constants, only: m2nm
+      USE ADC_CONSTANTS, only: m2nm
       implicit none
       integer, intent(in) :: cn ! cycle number of file to load
 C
@@ -7707,7 +7707,7 @@ C
      &                setMessageSource,unsetMessageSource,allMessage,
      &                logMessage,scratchMessage,DEBUG,ECHO,INFO,
      &                ERROR,WARNING
-      use constants, only: PRBCKGRND,RHOWAT0
+      USE ADC_CONSTANTS, only: PRBCKGRND,RHOWAT0
       use mesh, only : np, x, y, slam0, sfea0
       implicit none
 
@@ -7953,7 +7953,7 @@ C
      &                     MAX_INTERP_DIST)
        USE SIZES
        USE MESH, ONLY: ICS, DRVSPCOORSROTS, CYLINDERMAP
-       USE CONSTANTS, ONLY: DEG2RAD,PRBCKGRND,G,RHOWAT0
+       USE ADC_CONSTANTS, ONLY: DEG2RAD,PRBCKGRND,G,RHOWAT0
        USE GLOBAL, ONLY: IFSPROTS,
      &        setMessageSource,unsetMessageSource,allMessage,
      &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR
@@ -8198,7 +8198,7 @@ C
       use global, only : setMessageSource,unsetMessageSource,allMessage,
      &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR,
      &        WARNING
-      use constants, only: PRBCKGRND,RHOWAT0,G
+      USE ADC_CONSTANTS, only: PRBCKGRND,RHOWAT0,G
 
       implicit none
       integer :: i,numFiles,currentCycle

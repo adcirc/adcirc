@@ -93,7 +93,7 @@ C-----------------------------------------------------------------------
      &   ,basedatetime
 #endif
      &   ,NUOPC4WAV, NUOPC4MET
-      USE CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
+      USE ADC_CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
      &                     waveWindMultiplier,deg2rad,rhoAir,
      &                     rad2deg,omega
 
@@ -5182,7 +5182,7 @@ C    kmd48.33bc - added the variables from Global
      &                  scratchMessage, INFO, DEBUG, ERROR, allMessage,
      &                  setMessageSource, logMessage, unsetMessageSource,
      &                  OUTPUTSPONGE, screenMessage, ECHO
-      USE CONSTANTS, ONLY: sec2day
+      USE ADC_CONSTANTS, ONLY: sec2day
       USE MESH, ONLY : NP, DP, X, Y
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
@@ -5937,7 +5937,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : scratchMessage, ECHO, INFO, WARNING, ERROR,
      &   DTDP, NT, setMessageSource, logMessage, allMessage,
      &   unsetMessageSource, DEBUG, screenMessage, useNetCDF
-      USE CONSTANTS, ONLY: day2sec
+      USE ADC_CONSTANTS, ONLY: day2sec
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -6087,7 +6087,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE readStations(names, num_stations, nnv, xcoord, ycoord,
      &                        lat, lon, sta1, sta2, sta3, stat_lun,
      &                        Description)
-      USE CONSTANTS, ONLY: DEG2RAD, RAD2DEG
+      USE ADC_CONSTANTS, ONLY: DEG2RAD, RAD2DEG
       USE GLOBAL, ONLY : parse, IFSPROTS,
      &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
       USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP

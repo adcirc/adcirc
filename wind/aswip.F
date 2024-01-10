@@ -4,7 +4,7 @@ C     M O D U L E    A S Y M M E T R I C  V O R T E X  P R O C E S S I N G
 C
 C-----------------------------------------------------------------------
       module asymmetricVortexProcessing
-         use constants, only: g, rhowat0, prbckgrnd, deg2rad,
+         USE ADC_CONSTANTS, only: g, rhowat0, prbckgrnd, deg2rad,
      &                        rad2deg, ms2kt, ten2one, windReduction
          use global, only : 
      &                   nws, sphericalDistance,
@@ -1078,7 +1078,7 @@ C-----------------------------------------------------------------------
       module diagnosticOutput
 
       use sizes, only : globaldir, mnp
-      use constants, only: deg2rad, rad2deg, ten2one, g, rhowat0, 
+      USE ADC_CONSTANTS, only: deg2rad, rad2deg, ten2one, g, rhowat0, 
      &  prbckgrnd, m2nm
       use global, only : nws, openFileForRead,
      &   ihot,  sphericaldistance  ! Jie 09/2013

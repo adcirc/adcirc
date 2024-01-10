@@ -112,7 +112,7 @@ C----------------------------------------------------------------------------
 
       MODULE PRESIZES
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      USE CONSTANTS, ONLY: waveWindMultiplier, Ad, Bd, Cs
+      USE ADC_CONSTANTS, ONLY: waveWindMultiplier, Ad, Bd, Cs
       USE GLOBAL, ONLY :
      &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
      &    outputWindDrag,slim,windlim,directvelWD,useHF

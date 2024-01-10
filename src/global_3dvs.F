@@ -42,7 +42,7 @@ C...
      &     INPUTDIR,
      &     LOCALDIR
      
-      USE CONSTANTS, ONLY: RhoWat0, G, SigT0
+      USE ADC_CONSTANTS, ONLY: RhoWat0, G, SigT0
       USE GLOBAL,
      &     ONLY :
      &       WSX1, WSY1,     !WSX1(MNP),WSY1(MNP) = Wind stress components at time level s
