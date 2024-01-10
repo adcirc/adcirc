@@ -28,7 +28,7 @@ C-----------------------------------------------------------------------
      &          setMessageSource, unsetMessageSource, allMessage,
      &          scratchMessage, logMessage, NB, NM, MLD, SigTS,
      &          VIDBCPDXOH, VIDBCPDYOH, VIDISPDXOH, VIDISPDYOH, IDEN
-      USE CONSTANTS, ONLY: SigT0
+      USE ADC_CONSTANTS, ONLY: SigT0
 #ifdef DATETIME
       use datetime_module, only: datetime, timedelta, strptime
 #endif
@@ -185,7 +185,7 @@ C-----------------------------------------------------------------------
       use netcdf
       use mesh, ONLY: slam, sfea, binarysearch, bl_interp, np, ne, nm,
      &                conserve_interp, neitabele, nodele !indmax
-      use constants, ONLY: rad2deg
+      USE ADC_CONSTANTS, ONLY: rad2deg
       use global, ONLY: np_g, ne_g
       implicit none
       integer,intent(in) :: NC_ID
@@ -1060,7 +1060,7 @@ C-----------------------------------------------------------------------
 
       USE GLOBAL, ONLY: IFNLFA, IFNLCT, RAMP, NODECODE, NOFF, 
      &                  ETA2, IFSFM 
-      USE CONSTANTS, ONLY: G, RhoWat0
+      USE ADC_CONSTANTS, ONLY: G, RhoWat0
       USE SPONGELAYER, ONLY: NO_BPG_IN_SPONGE 
       USE NodalAttributes, ONLY: absorblayer_sigma_mnx, 
      &                           absorblayer_sigma_mny

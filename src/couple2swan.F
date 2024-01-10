@@ -502,7 +502,7 @@ C             into roughness lengths that can be used with the Madsen
 C             friction formulation inside SWAN.
 C-----------------------------------------------------------------------
       SUBROUTINE Manning2Madsen
-      USE CONSTANTS, ONLY: G
+      USE ADC_CONSTANTS, ONLY: G
       USE MESH, ONLY : NP, DP
       USE NodalAttributes,ONLY: ManningsN
 

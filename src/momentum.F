@@ -95,7 +95,7 @@ C******************************************************************************
       subroutine initMomentumEq()
       use sizes, only : mnp
       use global, only : dt
-      use constants, only: g
+      USE ADC_CONSTANTS, only: g
       implicit none
 
       !WJP 02.24.2018 I only put this in Mom_Eqs_New_NC so far..
@@ -176,7 +176,7 @@ C*******************************************************************************
 #ifdef CMPI
      &  , dumy1
 #endif
-      USE CONSTANTS, ONLY: Cs2, Ad, Bd, G
+      USE ADC_CONSTANTS, ONLY: Cs2, Ad, Bd, G
       USE MESH, ONLY : NE, NP, NM, DP, Areas, TotalArea,
      &     NNeigh, NeiTab, NeiTabEle, MJU, FDXE, FDYE,
      &     SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, TANPHI,
@@ -1285,7 +1285,7 @@ C
      &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
       USE WIND, ONLY: windLimiter 
-      USE CONSTANTS, ONLY: Cs2, Ad, Bd, G
+      USE ADC_CONSTANTS, ONLY: Cs2, Ad, Bd, G
       USE subgrid, ONLY: level0, level1
      &   , wetFracVertETA2, subgridVertList
      &   , gridDepthEleETA1, gridDepthEleETA2

@@ -29,7 +29,7 @@ C                     current for ADCIRC v46.34   09/20/2006
 C----------------------------------------------------------------------------
 
       MODULE PRE_GLOBAL
-      USE CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG
+      USE ADC_CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
       USE VERSION

@@ -2792,7 +2792,7 @@ C     ----------------------------------------------------------------
       SUBROUTINE ApplyDirectionalWindReduction(NodeNumber, WindDragCo,
      &     WindMag, BathymetricDepth, Elevation, WindX, WindY)
         USE GLOBAL,ONLY:h0
-        USE CONSTANTS,ONLY:RAD2DEG,G
+        USE ADC_CONSTANTS,ONLY:RAD2DEG,G
         implicit none
         intrinsic               :: atan2
         integer,  intent(in)    :: NodeNumber 
