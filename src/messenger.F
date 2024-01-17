@@ -29,7 +29,7 @@ C
      &    SIG_TERM, FLOAT_TYPE, REALTYPE, DBLETYPE,
      &    DEBUG, ECHO, INFO, WARNING, ERROR, CPL2STWAVE,Flag_ElevError,
      &    screenMessage, logMessage, allMessage, setMessageSource,
-     &    unsetMessageSource, scratchMessage     
+     &    unsetMessageSource, scratchMessage,Flag_VelError
      
       USE MPI
       IMPLICIT NONE
@@ -258,6 +258,10 @@ C
       ! Note: mpi_comm_world is defined in mpich.f
       IF (CPL2STWAVE.eqv..true.) then
          IF (Flag_ElevError.eqv..true.) then
+            call mpi_abort(mpi_comm_world,myproc,ierr)
+         endif
+C        DMW 202401 Check for velocity exceeding error level
+         IF (Flag_VelError.eqv..true.) then
             call mpi_abort(mpi_comm_world,myproc,ierr)
          endif
       endif
@@ -1466,6 +1470,37 @@ C
       call unsetMessageSource()
 C------------------------------------------------------------------------------
       END SUBROUTINE WarnElevSum
+C------------------------------------------------------------------------------
+
+C------------------------------------------------------------------------------
+C               S U B R O U T I N E   E A R L Y T E R M S U M
+C------------------------------------------------------------------------------
+C     DMW 202401 If a NaN was detected in the velocity soln in one subdomain,
+C     that information is propagated to the other subdomains so that the
+C     solns can be output for debugging before exiting the model.
+C------------------------------------------------------------------------------
+      SUBROUTINE EarlyTermSum( earlyterminate )
+      INTEGER earlyterminate !=1 if this subdomain has detected a NaN in the velocity soln and 20 timesteps have passed since then
+      INTEGER SumEarlyterminate !sum total of all flags from all subdomains
+      INTEGER kount       ! to avoid compiler bug on certain platforms
+C
+      call setMessageSource("earlytermsum")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C 
+      SumEarlyterminate = 0
+      kount=1
+      call MPI_ALLREDUCE( earlyterminate, SumEarlyterminate, kount,
+     &     MPI_INTEGER, MPI_SUM, COMM, ierr)
+      earlyterminate = SumEarlyterminate
+C
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C------------------------------------------------------------------------------
+      END SUBROUTINE EarlyTermSum
 C------------------------------------------------------------------------------
 
 
