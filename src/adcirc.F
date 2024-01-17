@@ -407,7 +407,7 @@ C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
       USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
-     &   unsetMessageSource, statim, dtdp, screenunit, logMessage
+     &   unsetMessageSource, statim, dtdp, screenunit, logMessage, earlyterminate
 #ifdef CMPI
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
@@ -462,10 +462,15 @@ C             to then call the SWAN time-stepping subroutine.
           CALL PADCSWAN_RUN(ITIME)
         ENDIF
 #endif
+        if ( earlyterminate.ne.0 ) then 
+           call writeOutput2D(ITIME_END,TimeLoc) 
+           exit
+        else
         !...WRITE OUTPUT
         !   zc - moved this here so that output occurs after
         !        the SWAN time step has been completed.
-        CALL writeOutput2D(ITIME,TimeLoc) ! =>see write_output.F
+            CALL writeOutput2D(ITIME,TimeLoc) ! =>see write_output.F
+        endif
 100   CONTINUE
 C
       IF (PRESENT(NTIME_STP)) THEN
