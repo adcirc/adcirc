@@ -1043,66 +1043,6 @@ C...
 C...
 C-------------END OF 2DDI MOMENTUM EQUATION SOLUTION--------------------
 C...
-C....DMW 20240109 - WARNING FOR NaNs IN VELOCITY SOLN
-      foundNaN = .false.
-      DO I = 1,NP 
-         IF(ISNAN(UU2(I)).OR.ISNAN(VV2(I))) THEN
-            foundNaN = .true.
-C     WJP 03.27.2018 with the addition of the hash table we now need to
-C     output the global node number to debug the local PE fort.14s
-            IF(NSCREEN.NE.0) THEN
-               WRITE(ScreenUnit,2993)
-     &              IT,NUMITR,TimeLoc,NODES_LG(I),
-     &              ETA2(I),DP(I),MYPROC
-               WRITE(16,2993) IT,NUMITR,TimeLoc,
-     &              NODES_LG(I),ETA2(I),DP(I),MYPROC
- 2993          FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &              5X,'TIME = ',E15.8,
-     &              2X,'SPEED IS NaN AT NODE I =',I9,
-     &              /,2X,'ETA2(I) = ', 1pE12.4E3,
-     &              2X,'DP(I) = ', 1pE12.4E3,
-     &              2X,'ON MYPROC = ',I4)
-               DO J = 2,NNeigh(I)
-                  JJ = NeiTab(I,J)
-                  WRITE(ScreenUnit,2995) NODES_LG(JJ),ETA2(JJ),DP(JJ),               
-     &                 UU2(JJ),VV2(JJ),MYPROC
-              
-                  WRITE(16,2995) NODES_LG(JJ),ETA2(JJ),DP(JJ),
-     &                 UU2(JJ),VV2(JJ),MYPROC
- 2995             FORMAT(1X,'AT NEIGHBOR NODE I =',I9,
-     &                 /,2X,'ETA2(I) = ', 1pE12.4E3,
-     &                 2X,'DP(I) = ', 1pE12.4E3,
-     &                 2X,'UU2(I) = ', 1pE12.4E3,
-     &                 2X,'VV2(I) = ', 1pE12.4E3,
-     &                 2X,'ON MYPROC = ',I4)
-               ENDDO
-            ENDIF
-         ENDIF
-      ENDDO
-      IF (foundNaN) THEN
-         IF(NSCREEN.NE.0) THEN
-            WRITE(ScreenUnit,2994)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,2994) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
- 2994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
-     &           2X,'ON MYPROC = ',I4,
-     &           3X,'** WARNING: Velocity is NaN **')
-         ENDIF
-      ENDIF
-      IF ((foundNaN).AND.(IT_foundNaN.EQ.0)) THEN
-         IT_foundNaN = IT
-      ELSEIF ((IT.EQ.IT_foundNaN + 20).AND.(IT_foundNaN.NE.0)) THEN
-         earlyterminate = 1
-      ENDIF
-#ifdef CMPI
-      call EarlyTermSum( earlyterminate )
-#endif
-
 
 C.....DW - ABS SPONGE LAYER     
       IF ( C2DDI .AND. LoadAbsLayerSigma .AND. (sponge_dis_mthd == 0) ) THEN
@@ -1413,6 +1353,63 @@ C     output the global node number to debug the local PE fort.14s
 #endif
 
       ENDIF
+C....DMW 20240109 - WARNING FOR NaNs IN VELOCITY SOLN
+      foundNaN = .false.
+      DO I = 1,NP 
+         IF(ISNAN(UU2(I)).OR.ISNAN(VV2(I))) THEN
+            foundNaN = .true.
+            IF(NSCREEN.NE.0) THEN
+               WRITE(ScreenUnit,2993)
+     &              IT,NUMITR,TimeLoc,NODES_LG(I),
+     &              ETA2(I),DP(I),MYPROC
+               WRITE(16,2993) IT,NUMITR,TimeLoc,
+     &              NODES_LG(I),ETA2(I),DP(I),MYPROC
+ 2993          FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &              5X,'TIME = ',E15.8,
+     &              2X,'SPEED IS NaN AT NODE I =',I9,
+     &              /,2X,'ETA2(I) = ', 1pE12.4E3,
+     &              2X,'DP(I) = ', 1pE12.4E3,
+     &              2X,'ON MYPROC = ',I4)
+               DO J = 2,NNeigh(I)
+                  JJ = NeiTab(I,J)
+                  WRITE(ScreenUnit,2995) NODES_LG(JJ),ETA2(JJ),DP(JJ),               
+     &                 UU2(JJ),VV2(JJ),MYPROC
+              
+                  WRITE(16,2995) NODES_LG(JJ),ETA2(JJ),DP(JJ),
+     &                 UU2(JJ),VV2(JJ),MYPROC
+ 2995             FORMAT(1X,'AT NEIGHBOR NODE I =',I9,
+     &                 /,2X,'ETA2(I) = ', 1pE12.4E3,
+     &                 2X,'DP(I) = ', 1pE12.4E3,
+     &                 2X,'UU2(I) = ', 1pE12.4E3,
+     &                 2X,'VV2(I) = ', 1pE12.4E3,
+     &                 2X,'ON MYPROC = ',I4)
+               ENDDO
+            ENDIF
+         ENDIF
+      ENDDO
+      IF (foundNaN) THEN
+         IF(NSCREEN.NE.0) THEN
+            WRITE(ScreenUnit,2994)
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &           VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(16,2994) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+ 2994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
+     &           2X,'ON MYPROC = ',I4,
+     &           3X,'** WARNING: Velocity is NaN **')
+         ENDIF
+      ENDIF
+      IF ((foundNaN).AND.(IT_foundNaN.EQ.0)) THEN
+         IT_foundNaN = IT
+      ELSEIF ((IT.EQ.IT_foundNaN + 20).AND.(IT_foundNaN.NE.0)) THEN
+         earlyterminate = 1
+      ENDIF
+#ifdef CMPI
+      call EarlyTermSum( earlyterminate )
+#endif
 
 C...
 C...  ****************** TIME STEPPING LOOP ENDS HERE ********************
