@@ -1376,6 +1376,7 @@ Corbitt 120322: Localized Advection
          V1N1=VV1(NM1)
          V1N2=VV1(NM2)
          V1N3=VV1(NM3)
+
 !JLW: add subgrid lookup
          IF(level0)THEN
             H1N1 = gridDepthVertETA1(NM1)
