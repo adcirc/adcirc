@@ -153,7 +153,7 @@ C*******************************************************************************
      &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, adcirc_norm2, CAliDisp,
      &  usingDynamicWaterLevelCorrection, windlim,
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0,
-     &  flgNodesMultipliedByTotalArea, ilump
+     &  flgNodesMultipliedByTotalArea, ilump, H1, H2
 #ifdef CMPI
      &  , dumy1
 #endif
@@ -201,8 +201,8 @@ C... SB
       REAL(8) DU1DX, DU1DY, DV1DX, DV1DY
       REAL(8) DU1DXA, DU1DYA, DV1DXA, DV1DYA
       REAL(8) EVMH1N1, EVMH1N2, EVMH1N3, EVMEle, EVMSmag
-      REAL(8) H1, H1N1, H1N2, H1N3, H1Avg
-      REAL(8) H2, H2N1, H2N2, H2N3, H2Avg
+      REAL(8) H1N1, H1N2, H1N3, H1Avg
+      REAL(8) H2N1, H2N2, H2N3, H2Avg
       REAL(8) LSXXN1, LSXXN2, LSXXN3
       REAL(8) LSXYN1, LSXYN2, LSXYN3
       REAL(8) LSYXN1, LSYXN2, LSYXN3
@@ -292,12 +292,13 @@ Corbitt 120322: Localized Advection
          V1N1=VV1(NM1)
          V1N2=VV1(NM2)
          V1N3=VV1(NM3)
-         H1N1=DP(NM1)+IFNLFA*ETA1(NM1)
-         H1N2=DP(NM2)+IFNLFA*ETA1(NM2)
-         H1N3=DP(NM3)+IFNLFA*ETA1(NM3)
-         H2N1=DP(NM1)+IFNLFA*ETA2(NM1)
-         H2N2=DP(NM2)+IFNLFA*ETA2(NM2)
-         H2N3=DP(NM3)+IFNLFA*ETA2(NM3)
+C........DMW202401 Use saved H1 and H2
+         H1N1=H1(NM1)
+         H1N2=H1(NM2)
+         H1N3=H1(NM3)
+         H2N1=H2(NM1)
+         H2N2=H2(NM2)
+         H2N3=H2(NM3)
          QX1N1=QX1(NM1)
          QX1N2=QX1(NM2)
          QX1N3=QX1(NM3)
@@ -734,15 +735,14 @@ C      DispY=0.D0
                MOM_LV_Y(I)=MOM_LV_Y(I)/MJU(I)
             ENDIF
          ENDIF
-         H1=DP(I)+IFNLFA*ETA1(I)
-         H2=DP(I)+IFNLFA*ETA2(I)
+C........DMW202401 Use saved H1 and H2
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
-            WSX=DTO2*IFWIND*(WSX1(I)/H1+WSX2(I)/H2)
-            WSY=DTO2*IFWIND*(WSY1(I)/H1+WSY2(I)/H2)
+            WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
+            WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
             
 C.....      DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
-               CALL windLimiter(H2,fwind)
+               CALL windLimiter(H2(I),fwind)
                WSX = fwind*WSX
                WSY = fwind*WSY
             ENDIF
@@ -825,15 +825,15 @@ C...  AUV12=-AUV21)
       DO J=1,NVELME
          I=ME2GW(J)
          NBDI=NBV(I)
-         H2=DP(NBDI)+IFNLFA*ETA2(NBDI)
          NCI=NODECODE(NBDI)
 
 C      Specified essential normal flow and free tangential slip
+C........DMW202401 Use saved H2
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
-            VelNorm=-QN2(I)/H2
+            VelNorm=-QN2(I)/H2(I)
             IF (abs(adcirc_norm2(TKM(:,NBDI))-sqrt(2d0)*TK(NBDI))
-     &          .lt.epsilon(H2)) THEN
+     &          .lt.epsilon(H2(I))) THEN
             ! WJP 03.6.2018 In the case of the symmetric matrix..
             ! Should be equivalent to the non-symmetric formula below
             ! but for consistency when testing using this formula helps
@@ -862,7 +862,8 @@ C      Specified essential normal flow and free tangential slip
 C     Specified essential normal flow and no tangential slip
 
          IF (LBCODEI(I).GE.10.AND.LBCODEI(I).LE.19) THEN
-            VelNorm=-QN2(I)/H2
+C...........DMW202401 Use saved H2
+            VelNorm=-QN2(I)/H2(I)
             VelTan=0.D0
             MOM_LV_X(NBDI)=VelTan*NCI !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
@@ -1193,9 +1194,9 @@ C...
 C...  Compute fluxes
 
       DO I=1,NP
-         H2 = DP(I)+IFNLFA*ETA2(I)
-         QX2(I) = UU2(I)*H2
-         QY2(I) = VV2(I)*H2
+C........DMW202401 Use saved H2
+         QX2(I) = UU2(I)*H2(I)
+         QY2(I) = VV2(I)*H2(I)
       ENDDO
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -1258,7 +1259,7 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, VIDISPDXOH, VIDISPDYOH, IFSFM, 
-     & CBaroclinic, CAliDisp, windlim
+     & CBaroclinic, CAliDisp, windlim, H1, H2
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
      &   SFacEle, SFMYEle, SFMXEle, TANPHI   
@@ -1285,8 +1286,8 @@ C
       REAL(8) DQX1DX2A, DQX1DY2A, DQY1DX2A, DQY1DY2A
       REAL(8) DU1QX1DXA, DV1QX1DYA, DU1QY1DXA, DV1QY1DYA
       REAL(8) EVMH1N1, EVMH1N2, EVMH1N3, EVMEle, EVMSmag
-      REAL(8) H1, H1N1, H1N2, H1N3, H1Avg, GH1Avg
-      REAL(8) H2, H2N1, H2N2, H2N3, H2Avg, GH2Avg
+      REAL(8) H1N1, H1N2, H1N3, H1Avg, GH1Avg
+      REAL(8) H2N1, H2N2, H2N3, H2Avg, GH2Avg
       REAL(8) LSXXN1, LSXXN2, LSXXN3
       REAL(8) LSXYN1, LSXYN2, LSXYN3
       REAL(8) LSYXN1, LSYXN2, LSYXN3
@@ -1343,12 +1344,13 @@ Corbitt 120322: Localized Advection
          V1N1=VV1(NM1)
          V1N2=VV1(NM2)
          V1N3=VV1(NM3)
-         H1N1=DP(NM1)+IFNLFA*ETA1(NM1)
-         H1N2=DP(NM2)+IFNLFA*ETA1(NM2)
-         H1N3=DP(NM3)+IFNLFA*ETA1(NM3)
-         H2N1=DP(NM1)+IFNLFA*ETA2(NM1)
-         H2N2=DP(NM2)+IFNLFA*ETA2(NM2)
-         H2N3=DP(NM3)+IFNLFA*ETA2(NM3)
+C........DMW202401 Use saved H1 and H2
+         H1N1=H1(NM1)
+         H1N2=H1(NM2)
+         H1N3=H1(NM3)
+         H2N1=H2(NM1)
+         H2N2=H2(NM2)
+         H2N3=H2(NM3)
          QX1N1=QX1(NM1)
          QX1N2=QX1(NM2)
          QX1N3=QX1(NM3)
@@ -1744,19 +1746,18 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
                MOM_LV_Y(I)=MOM_LV_Y(I)/MJU(I)
             ENDIF
          ENDIF
-         H1=DP(I)+IFNLFA*ETA1(I)
-         H2=DP(I)+IFNLFA*ETA2(I)
+
          IF (NWS.NE.0.OR.NRS.NE.0) THEN
             WSX=DTO2*IFWIND*(WSX1(I)+WSX2(I))
             WSY=DTO2*IFWIND*(WSY1(I)+WSY2(I))
             
-C.....      DMW 202207 tail off wind forcing in very shallow water
+C...........DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
-               CALL windLimiter(H2,fwind)
+C..............DMW202401 Use saved H2
+               CALL windLimiter(H2(I),fwind)
                WSX = fwind*WSX
                WSY = fwind*WSY
             ENDIF
-C.....      DMW
             
          ENDIF
          VCOEFXX = DTO2*TKM(1,I) 
@@ -1953,10 +1954,10 @@ C...
 C...  Compute velocities
 
       DO I=1,NP
-         H2=DP(I)+IFNLFA*ETA2(I)
-         IF(H2.NE.0.) THEN
-            UU2(I)=QX2(I)/H2
-            VV2(I)=QY2(I)/H2
+C........DMW202401 Use saved H2
+         IF(H2(I).NE.0.) THEN
+            UU2(I)=QX2(I)/H2(I)
+            VV2(I)=QY2(I)/H2(I)
             ELSE
             WRITE(16,*) ''
             WRITE(16,*) ''
@@ -2017,7 +2018,7 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, UU0, VV0, QX0, QY0, TK2, CBaroclinic,
-     & windlim
+     & windlim, H1, H2
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &                  NEITAB, NEITABELE, NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
@@ -2040,8 +2041,8 @@ C
       REAL(8) DU1DX, DU1DY, DV1DX, DV1DY
       REAL(8) DU1DXA, DU1DYA, DV1DXA, DV1DYA
       REAL(8) EVMH1N1, EVMH1N2, EVMH1N3, EVMEle, EVMSmag
-      REAL(8) H1, H1N1, H1N2, H1N3
-      REAL(8) H2, H2N1, H2N2, H2N3
+      REAL(8) H1N1, H1N2, H1N3
+      REAL(8) H2N1, H2N2, H2N3
       REAL(8) LSXXN1, LSXXN2, LSXXN3
       REAL(8) LSXYN1, LSXYN2, LSXYN3
       REAL(8) LSYXN1, LSYXN2, LSYXN3
@@ -2140,12 +2141,13 @@ Corbitt 120322: Localized Advection
          V2N1=VV2(NM1)
          V2N2=VV2(NM2)
          V2N3=VV2(NM3)
-         H1N1=DP(NM1)+IFNLFA*ETA1(NM1)
-         H1N2=DP(NM2)+IFNLFA*ETA1(NM2)
-         H1N3=DP(NM3)+IFNLFA*ETA1(NM3)
-         H2N1=DP(NM1)+IFNLFA*ETA2(NM1)
-         H2N2=DP(NM2)+IFNLFA*ETA2(NM2)
-         H2N3=DP(NM3)+IFNLFA*ETA2(NM3)
+C........DMW202401 Use saved H1 and H2
+         H1N1=H1(NM1)
+         H1N2=H1(NM2)
+         H1N3=H1(NM3)
+         H2N1=H2(NM1)
+         H2N2=H2(NM2)
+         H2N3=H2(NM3)
          QX0N1=QX0(NM1)
          QX0N2=QX0(NM2)
          QX0N3=QX0(NM3)
@@ -2526,15 +2528,14 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
                MOM_LV_Y(I)=MOM_LV_Y(I)/MJU(I)
             ENDIF
          ENDIF
-         H1=DP(I)+IFNLFA*ETA1(I)
-         H2=DP(I)+IFNLFA*ETA2(I)
+C........DMW202401 Use saved H1 and H2
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
-            WSX=DTO2*IFWIND*(WSX1(I)/H1+WSX2(I)/H2)
-            WSY=DTO2*IFWIND*(WSY1(I)/H1+WSY2(I)/H2)
+            WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
+            WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
             
 C.....      DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
-               CALL windLimiter(H2,fwind)
+               CALL windLimiter(H2(I),fwind)
                WSX = fwind*WSX
                WSY = fwind*WSY
             ENDIF
@@ -2571,13 +2572,13 @@ C...  AUV12=-AUV21)
       DO J=1,NVELME
          I=ME2GW(J)
          NBDI=NBV(I)
-         H2=DP(NBDI)+IFNLFA*ETA2(NBDI)
+C........DMW202401 Use saved H2
          NCI=NODECODE(NBDI)
 
 C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
-            VelNorm=-QN2(I)/H2
+            VelNorm=-QN2(I)/H2(NBDI)
             MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
      &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
@@ -2589,7 +2590,7 @@ C      Specified essential normal flow and free tangential slip
 C     Specified essential normal flow and no tangential slip
 
          IF((LBCODEI(I).GE.10).AND.(LBCODEI(I).LE.19)) THEN
-            VelNorm=-QN2(I)/H2
+            VelNorm=-QN2(I)/H2(NBDI)
             VelTan=0.D0
             MOM_LV_X(NBDI)=VelTan*NCI !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
@@ -2716,9 +2717,9 @@ C...
 C...  Compute fluxes
 
       DO I=1,NP
-         H2=DP(I)+IFNLFA*ETA2(I)
-         QX2(I)=UU2(I)*H2
-         QY2(I)=VV2(I)*H2
+C........DMW202401 Use saved H2
+         QX2(I)=UU2(I)*H2(I)
+         QY2(I)=VV2(I)*H2(I)
          ENDDO
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)

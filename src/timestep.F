@@ -42,7 +42,7 @@ C
      &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0, 
      &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0, 
      &    EN0, EN1, EN2, CICE1, CICE2, CICEOUT, RSNX1, RSNX2, RSNY1, RSNY2,
-     &    QX0, QN1, QN2, RSNXOUT, RSNYOUT, LNM_BC1, LNM_BC2, 
+     &    QX0, QN1, QN2, RSNXOUT, RSNYOUT, LNM_BC1, LNM_BC2, H1, H2,
      &    QNIN1, QNIN2, ENIN1, ENIN2, EtaDisc, NIBNODECODE,
      &    BCHGTIMINC, ETA2,ElevDisc, BTIME1, BTIME2, BTIME_END, C2D_PTrans,
      &    C2DDI, C3D, C3DVS, CBAROCLINIC, CGWCE_New, CHOTHS, CICE_TIME1,
@@ -151,7 +151,6 @@ C     DMW 202401 Check for Velocity exceeding error level
       REAL(8) QTRatio
       REAL(8) RStRatio, RSX, RSY
       REAL(8) SAltMul, S2SFEA
-      REAL(8) H1
       REAL(8) TPMul
       REAL(8) UN1
 
@@ -186,7 +185,11 @@ C.......
       LOGICAL foundNaN
       
       IF (IT .EQ. 1) THEN
-        IT_foundNaN = 0
+C.......DMW202401 On first timestep, find H2 at start of timestepper since ETA2 = ETA1
+        DO I = 1,NP
+           H2(I) = DP(I)+IFNLFA*ETA2(I)
+           H1(I) = H2(I)
+        ENDDO
       ENDIF
 
       call setMessageSource("timestep")
@@ -908,9 +911,9 @@ C...
          DO J=1,NVEL
             IF(LBCODEI(J).EQ.30) THEN
                NNBB=NBV(J)
-               H1=DP(NNBB)+IFNLFA*ETA2(NNBB)
+C..............DMW202401 Use saved H2
                UN1=UU1(NNBB)*CSII(J)+VV1(NNBB)*SIII(J)
-               QN1(J)=H1*UN1
+               QN1(J)=H2(NNBB)*UN1
             ENDIF
          END DO
       ENDIF
@@ -922,9 +925,9 @@ C...
           DO J=1,NVEL
             IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) THEN
               NNBB=NBV(J)
-              H1=DP(NNBB)+IFNLFA*ETA2(NNBB)
+C.............DMW202401 Use saved H2
               UN1=UU1(NNBB)*CSII(J)+VV1(NNBB)*SIII(J)
-              QN1(J)=H1*UN1
+              QN1(J)=H2(NNBB)*UN1
               ENDIF
             END DO
           ENDIF
@@ -1018,9 +1021,6 @@ C...
       if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
-      
-
-
 
 !----------------------SOLVE GWCE---------------------------------------
 C...
@@ -1029,12 +1029,16 @@ C...  Compute new water surface elevation
 
 !---------------------END SOLVE GWCE------------------------------------
 
-
 !--------------------WETTING AND DRYING--------------------------------
 
       call computeWettingAndDrying(it)
 
 !--------------------WETTING AND DRYING--------------------------------
+C.....DMW202401 Add update for flow depth at current timestep
+C......We do this after wetting/drying since bathy could change with subgrid barriers.
+      DO I = 1,NP
+         H2(I) = DP(I)+IFNLFA*ETA2(I)
+      ENDDO
 
 C...
 C---------------2DDI Momentum Equation Solution-------------------------
@@ -1270,7 +1274,7 @@ C     output the global node number to debug the local PE fort.14s
            CALL MSG_FINI()                    !  if there are Error Elvation nodes.
            CALL EXIT(1)                             !
          ENDIF                                !st3
-         
+#ifdef VELCHECK         
          ErrorVelExceeded = 0                ! Clint's Zombie Slyaer
          IF(VELMAX.GT.ErrorVel) THEN
          
@@ -1294,6 +1298,8 @@ C     output the global node number to debug the local PE fort.14s
            CALL MSG_FINI()                    !  if there are Error Velocity nodes.
            CALL EXIT(1)                             !
          ENDIF                                !st3
+#endif
+
 #else
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
@@ -1336,6 +1342,7 @@ C     output the global node number to debug the local PE fort.14s
      &           'ADCIRC stopping. **')
             CALL ADCIRC_Terminate()
          ENDIF
+#ifdef VELCHECK
          IF(VELMAX.GT.ErrorVel) THEN
             write(6,*) 'velmax, errorvel',velmax, errorvel 
             Flag_VelError = .true.
@@ -1351,8 +1358,10 @@ C     output the global node number to debug the local PE fort.14s
             CALL ADCIRC_Terminate()
          ENDIF
 #endif
+#endif
 
       ENDIF
+#ifdef VELCHECK
 C....DMW 20240109 - WARNING FOR NaNs IN VELOCITY SOLN
       foundNaN = .false.
       DO I = 1,NP 
@@ -1411,6 +1420,8 @@ C....DMW 20240109 - WARNING FOR NaNs IN VELOCITY SOLN
       call EarlyTermSum( earlyterminate )
 #endif
 
+#endif
+
 C...
 C...  ****************** TIME STEPPING LOOP ENDS HERE ********************
 C...
@@ -1442,7 +1453,7 @@ C
       USE GLOBAL, only: ch1, trans_lv_b, nodecode, noff, lumpt, dtdp,
      &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
      &    setmessagesource, unsetmessagesource, DEBUG,
-     &    allMessage
+     &    allMessage, H1
       USE CONSTANTS, ONLY: rhowat0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
       USE NodalAttributes, ONLY: EVC
@@ -1464,7 +1475,7 @@ C
       REAL(8) EVC1, EVC2, EVC3, EVCEA
       REAL(8) FDDDODT, FDDODODT
       REAL(8) HEA
-      REAL(8) H1, H1N1, H1N2, H1N3
+      REAL(8) H1N1, H1N2, H1N3
       REAL(8) HSD, HSE
       REAL(8) SFacAvg
       REAL(8) SS1N1, SS1N2, SS1N3
@@ -1501,9 +1512,9 @@ C.... SEDIMENT TRANSPORT RELATIONS
 
       DO I=1,NP
         UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
-        H1=DP(I)+IFNLFA*ETA1(I)
-        BEDSTR=H1*UV1*TK(I)*RhoWat0                           ![N/m^2]
-        C1=CH1(I)/H1
+C.......DMW202401 Use saved H1
+        BEDSTR=H1(I)*UV1*TK(I)*RhoWat0                           ![N/m^2]
+        C1=CH1(I)/H1(I)
 
 C.....Calculate the deposition rate using Krone's (1962) formulation:
 C.....dC/dt = -P*WSMOD*C/D     where
@@ -1566,9 +1577,10 @@ C.....SET NODAL VALUES FOR EACH ELEMENT
          SS1N1=SOURSIN(NM1)
          SS1N2=SOURSIN(NM2)
          SS1N3=SOURSIN(NM3)
-         H1N1=DP(NM1)+IFNLFA*ETA1(NM1)
-         H1N2=DP(NM2)+IFNLFA*ETA1(NM2)
-         H1N3=DP(NM3)+IFNLFA*ETA1(NM3)
+C........DMW202401 Use saved H1
+         H1N1=H1(NM1)
+         H1N2=H1(NM2)
+         H1N3=H1(NM3)
          SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.
 
 C.....COMPUTE ELEMENTAL MATRICIES
@@ -1794,7 +1806,7 @@ c******************************************************************************
       USE CONSTANTS, ONLY: G, RhoWat0, SigT0
       USE GLOBAL, ONLY: IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF, 
      &    VIDBCPDXOH, VIDBCPDYOH, ETA2, DTDP, DASigT, 
-     &    IFSFM
+     &    IFSFM, H2
       USE MESH, ONLY : NE, NM, FDXE, FDYE, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, TOTALAREA,
      &      SFacEle, SFMYEle, SFMXEle
@@ -1849,9 +1861,10 @@ c******************************************************************************
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCEle=NC1*NC2*NC3*NOFF(IE)
-         H2N1=DP(NM1)+IFNLFA*ETA2(NM1) !jgf45.11 add IFNLFA (kd bug fix)
-         H2N2=DP(NM2)+IFNLFA*ETA2(NM2) ! "
-         H2N3=DP(NM3)+IFNLFA*ETA2(NM3) ! "
+C........DMW202401 Use saved H2
+         H2N1=H2(NM1)
+         H2N2=H2(NM2)
+         H2N3=H2(NM3)
          EtaN1=IFNLFA*Eta2(NM1)
          EtaN2=IFNLFA*Eta2(NM2)
          EtaN3=IFNLFA*Eta2(NM3)
@@ -1956,7 +1969,7 @@ C
      &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
      &      setMessageSource, unsetMessageSource, allMessage,
      &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &      ETA2, H0, DTDP
+     &      ETA2, H0, DTDP, H2
       USE CONSTANTS, ONLY: SigT0
       USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, SFAC
@@ -2060,8 +2073,8 @@ C
 
 Casey: Changed "NolIFA" to "IFNLFA."
 C
-            Hs=DP(NH)+IFNLFA*Eta2(NH) !total depth at previous (s) timestep
-            HGORhoOAMB=GORhoOAMB*Hs !(gravity/rho ref)*(H/(a-b))
+C...........DMW202401 Use saved H2
+            HGORhoOAMB=GORhoOAMB*H2(NH) !(gravity/rho ref)*(H/(a-b))
             BCP(NH,NFEN)=0.d0
 ! arash: this integration can be improved
             DO k=NFEN-1,1,-1    !loop over vertical nodes, starting at top and working down
@@ -2133,8 +2146,8 @@ C     Loop over each horizontal node to compute the horizontal velocity
 C
       DO NH=1,NP                !loop over horizontal nodes
 
-         Hs  = DP(NH)+IFNLFA*Eta2(NH) !Total depth at previous (s) timestep
-         HsOAMB=Hs/AMB
+C........DMW202401 Use saved H2
+         HsOAMB=H2(NH)/AMB
 
 c     Zero out baroclinic pressure gradient and vertically integrated
 c     baroclinic pressure gradient for a barotropic run
@@ -2167,8 +2180,8 @@ c     coordinates) at each node in the vertical
 
 Casey: Changed "NolIFA" to "IFNLFA."
 C
-               HsN2=DP(N2)+IFNLFA*Eta2(N2)
-               SigmaNN=B+AMB*(Zk+DP(N2))/HsN2 !equivalent sigma value at neighbor
+C..............DMW202401 Use saved H2
+               SigmaNN=B+AMB*(Zk+DP(N2))/H2(N2) !equivalent sigma value at neighbor
                CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
 !!!!!!!!!         CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
                NNFirst=N2       !save these values until end
@@ -2181,8 +2194,8 @@ C
 
 Casey: Changed "NolIFA" to "IFNLFA."
 C
-                  HsN2=DP(N2)+IFNLFA*Eta2(N2)
-                  SigmaNN=B+AMB*(Zk+DP(N2))/HsN2 !equivalent sigma value at neighbor
+C.................DMW202401 Use saved H2
+                  SigmaNN=B+AMB*(Zk+DP(N2))/H2(N2) !equivalent sigma value at neighbor
 !!!!!!!!!            CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
                   CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
                   NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
@@ -2791,7 +2804,7 @@ C**********************************************************************
 
        Subroutine Gaussian_filter_complex_BPG ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
 
-       Use Global,      Only : IFNLFA, ETA2
+       Use Global,      Only : H2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B
 
@@ -2863,10 +2876,10 @@ C**********************************************************************
          !Write(*,'(I5,11f6.3)') NNeigh ( I ), weights(1:NNeigh ( I ))
          !Pause
          ! 2.4. compute elevation corresponding to this node
-         Hs = DP(I) + IFNLFA * Eta2(I)  !Total depth at current timestep - 'center' node
+C........DMW202401 Use saved H2  !Total depth at current timestep - 'center' node
          ! arash: not sure if the next line is necessary, but probably not. we aren't using it in the bpg routine either.
          ! IF( Hs .LT. H0 ) Hs = H0
-         HsOAMB = Hs / AMB
+         HsOAMB = H2(I) / AMB
 
          ! 3. apply the Gaussian filter
           Do J = 1, NNeigh ( I )
@@ -2875,8 +2888,8 @@ C**********************************************************************
              Do K = 1, NFEN
                 ! 3.0. obtain the z and sigma value corresponding to the 'center' node
                 Zk = HsOAMB * ( Sigma(K) - B ) - DP(I)
-                Hs_Neighbor_Node = DP(Neighbor_Node) + IFNLFA * Eta2(Neighbor_Node)
-                SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / Hs_Neighbor_Node
+C...............DMW202401 Use saved H2
+                SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / H2(Neighbor_Node)
                 ! 3.1. linearly interpolate surrounding BPG on the same horizontal plane
                 Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, interpolated_value, K )
                 quantity_smooth (I,K) = quantity_smooth (I,K) + Weights (J) * interpolated_value
