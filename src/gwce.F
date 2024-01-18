@@ -997,37 +997,39 @@ C...     Set nodal values for each element
 Corbitt 120322: Localized Advection
         IF (LoadAdvectionState) CALL ADVECTLOCAL(IE)
 
-        NM1=NM(IE,1)
-        NM2=NM(IE,2)
-        NM3=NM(IE,3)
-        NC1=NODECODE(NM1)
-        NC2=NODECODE(NM2)
-        NC3=NODECODE(NM3)
-        NCELE=NC1*NC2*NC3*NOFF(IE)
-        E0N1=ETA1(NM1)
-        E0N2=ETA1(NM2)
-        E0N3=ETA1(NM3)
-        E1N1=ETA2(NM1)
-        E1N2=ETA2(NM2)
-        E1N3=ETA2(NM3)
-        E1N1SQ=E1N1*E1N1
-        E1N2SQ=E1N2*E1N2
-        E1N3SQ=E1N3*E1N3
-        ESN1=ETAS(NM1)
-        ESN2=ETAS(NM2)
-        ESN3=ETAS(NM3)
-        U1N1=UU1(NM1)
-        U1N2=UU1(NM2)
-        U1N3=UU1(NM3)
-        V1N1=VV1(NM1)
-        V1N2=VV1(NM2)
-        V1N3=VV1(NM3)
-        QX1N1=QX1(NM1)
-        QX1N2=QX1(NM2)
-        QX1N3=QX1(NM3)
-        QY1N1=QY1(NM1)
-        QY1N2=QY1(NM2)
-        QY1N3=QY1(NM3)
+         NM1=NM(IE,1)
+         NM2=NM(IE,2)
+         NM3=NM(IE,3)
+         NC1=NODECODE(NM1)
+         NC2=NODECODE(NM2)
+         NC3=NODECODE(NM3)
+!JLW: moving NCEle calulation further down
+!         NCELE=NC1*NC2*NC3*NOFF(IE)
+         E0N1=ETA1(NM1)
+         E0N2=ETA1(NM2)
+         E0N3=ETA1(NM3)
+         E1N1=ETA2(NM1)
+         E1N2=ETA2(NM2)
+         E1N3=ETA2(NM3)
+         E1N1SQ=E1N1*E1N1
+         E1N2SQ=E1N2*E1N2
+         E1N3SQ=E1N3*E1N3
+         ESN1=ETAS(NM1)
+         ESN2=ETAS(NM2)
+         ESN3=ETAS(NM3)
+         U1N1=UU1(NM1)
+         U1N2=UU1(NM2)
+         U1N3=UU1(NM3)
+         V1N1=VV1(NM1)
+         V1N2=VV1(NM2)
+         V1N3=VV1(NM3)
+         QX1N1=QX1(NM1)
+         QX1N2=QX1(NM2)
+         QX1N3=QX1(NM3)
+         QY1N1=QY1(NM1)
+         QY1N2=QY1(NM2)
+         QY1N3=QY1(NM3)
+
 !JLW: similar to the LHS, look up wet area fraction, grid averaged water
 !depth, and advection
         IF(level0)THEN
@@ -1051,13 +1053,6 @@ Corbitt 120322: Localized Advection
             PHIAVG1 = (PHI1N1+PHI1N2+PHI1N3)/3.d0
             PHIAVG2 = (PHI2N1+PHI2N2+PHI2N3)/3.d0
          ELSE
-
-!            H0N1=DP(NM1)+IFNLFA*E0N1
-!            H0N2=DP(NM2)+IFNLFA*E0N2
-!            H0N3=DP(NM3)+IFNLFA*E0N3
-!            H1N1=DP(NM1)+IFNLFA*E1N1
-!            H1N2=DP(NM2)+IFNLFA*E1N2
-!            H1N3=DP(NM3)+IFNLFA*E1N3
 
 C...........DMW202401 Use saved H2, H1
             H0N1=H1(NM1)
@@ -2492,6 +2487,7 @@ ckmd
             UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             UV2=SQRT(UU2(I)*UU2(I)+VV2(I)*VV2(I))
             H00=DP(I)+IFNLFA*ETA0(I)
+
 C...........DMW202401 Use saved H1 and H2  
             TK0(I)=FRIC(I)*(IFLINBF + (UV0/H00)*(IFNLBF + IFHYBF*
      &           (1+(HBREAK/H00)**FTHETA)**(FGAMMA/FTHETA)))
