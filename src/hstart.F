@@ -101,7 +101,6 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 C   kmd48.33bc - add variable for timestep change
       INTEGER NTHS
       REAL(8) ArgT, ArgTP, ArgSAlt
-      REAL(8) H2
       REAL(8) CCSFEA
       REAL(8) QTRatio
       REAL(8) SAltMul, S2SFEA
@@ -752,9 +751,10 @@ C     kmd48.33bc - added time and time step to be passed to the hotstart file
 C
       DO I=1, NP
          ETAS(I)=ETA2(I)-ETA1(I)
-         H2=DP(I)+IFNLFA*ETA2(I)
-         QX2(I)=UU2(I)*H2
-         QY2(I)=VV2(I)*H2
+C........DMW202401 Added global variable H2
+         H2(I)=DP(I)+IFNLFA*ETA2(I)
+         QX2(I)=UU2(I)*H2(I)
+         QY2(I)=VV2(I)*H2(I)
       END DO
 C     jgf46.08 Fine grained ramp functions
 C     jgf46.21 Split flux into internal and external, added support
