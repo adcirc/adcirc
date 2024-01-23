@@ -239,7 +239,7 @@ C
 #endif
       USE SIZES, ONLY : myproc
       USE GLOBAL, ONLY : GWCE_LV, COEF, COEFD, OBCCOEF, ETAS, ETA1, ETA2,
-     &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1,
+     &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1, H1, H2,
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
      &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, IFNLCAT,
@@ -320,7 +320,7 @@ C... SB
       REAL(8) EVMEle, EVMSmag
       REAL(8) GA00DPAvgOAreaIE4
       REAL(8) GHAvg, GHAvgOAreaIE2, GOAreaIE4
-      REAL(8) H1N1, H1N2, H1N3, HAvg, H1, H2
+      REAL(8) H1N1, H1N2, H1N3, HAvg, H2N
       REAL(8) H2OTotalArea
       REAL(8) LSXXGradA, LSXYGradA, LSYXGradA, LSYYGradA
       REAL(8) LSXXEle, LSXYEle, LSYXEle, LSYYEle
@@ -852,13 +852,17 @@ C........ END DW:
 
          DO I=1,NP
             IF(TotalArea(I).NE.0.) THEN
+
+
 !JLW: adding subgrid to velocity based lateral stress
                IF(level0)THEN
-                  H2 = gridDepthVertETA2(I)
+                  H2N = gridDepthVertETA2(I)
                ELSE
-                  H2=DP(I)+IFNLFA*ETA2(I)
+C..............DMW202401 Use saved H2
+                  H2N= H2(I)
                ENDIF
-               H2OTotalArea=H2/TotalArea(I)
+               H2OTotalArea=H2N/TotalArea(I)
+
                IF (CGWCE_LS_2PartV) THEN          !nonsymmetric
                   LSXX(I)=H2OTotalArea*LSXX(I)
                   LSXY(I)=H2OTotalArea*LSXY(I)
@@ -1047,12 +1051,24 @@ Corbitt 120322: Localized Advection
             PHIAVG1 = (PHI1N1+PHI1N2+PHI1N3)/3.d0
             PHIAVG2 = (PHI2N1+PHI2N2+PHI2N3)/3.d0
          ELSE
-            H0N1=DP(NM1)+IFNLFA*E0N1
-            H0N2=DP(NM2)+IFNLFA*E0N2
-            H0N3=DP(NM3)+IFNLFA*E0N3
-            H1N1=DP(NM1)+IFNLFA*E1N1
-            H1N2=DP(NM2)+IFNLFA*E1N2
-            H1N3=DP(NM3)+IFNLFA*E1N3
+
+!            H0N1=DP(NM1)+IFNLFA*E0N1
+!            H0N2=DP(NM2)+IFNLFA*E0N2
+!            H0N3=DP(NM3)+IFNLFA*E0N3
+!            H1N1=DP(NM1)+IFNLFA*E1N1
+!            H1N2=DP(NM2)+IFNLFA*E1N2
+!            H1N3=DP(NM3)+IFNLFA*E1N3
+
+C...........DMW202401 Use saved H2, H1
+            H0N1=H1(NM1)
+            H0N2=H2(NM1)
+            H0N3=H1(NM3) 
+
+C...........DMW202401 Use saved H2
+            H1N1=H2(NM1)
+            H1N2=H2(NM2)
+            H1N3=H2(NM3)
+            NCELE=NC1*NC2*NC3*NOFF(IE)
          ENDIF
          EVMN1=EVM(NM1)
          EVMN2=EVM(NM2)
@@ -1309,13 +1325,13 @@ C        Ali et al. formula
             Ma2    = G*DPavg/Cs2
             CfacS0 = (1.0D0 - 0.25D0*Ma2 - Ad*DPavgS0**Bd)**2D0
          endif
-         ! DMW 2022/06 Apply slope limiting to gravity
+         ! DMW 202206 Apply slope limiting to gravity
          GDPAvgOAreaIE4 = ALPHAL(IE)*G*DPAvg*Cfac/AreaIE4
-         ! DMW 2022/06 Apply slope limiting to gravity
+         ! DMW 202206 Apply slope limiting to gravity
          GDPAvgOAreaIE4_S0 = ALPHAL(IE)*G*DPAvgS0*CfacS0/AreaIE4
 C....  END DW & WJP
          HAvg=(H1N1+H1N2+H1N3)/3.d0
-         ! DMW 2022/06 Apply slope limiting to gravity
+         ! DMW 202206 Apply slope limiting to gravity
          GHAvg=ALPHAL(IE)*G*HAvg
          GHAvgOAreaIE2=GHAvg/AreaIE2
          BSXAvg=(BSXN1+BSXN2+BSXN3)/3.d0
@@ -1627,6 +1643,8 @@ ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
             Eta0(I)=Eta1(I)
          END IF
          Eta1(I)=Eta2(I)
+C........DMW202401 Add update for flow depth at previous timestep, H1
+         H1(I) = H2(I)
          Eta2(I)=0.0d0
       END DO
 
@@ -1745,14 +1763,14 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
      &        QFORCEJ=(QN2(1)-QN0(1))/DT2 + Tau0VAR(NBDJ)*QN1(1)
 
          IF (LBCODEI(1).EQ.30) THEN
-            H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-            CELERITY=SQRT(G*H1)
+C...........DMW202401 Use saved H1
+            CELERITY=SQRT(G*H1(NBDJ))
             QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
          ENDIF
 
          IF (LBCODEI(1).EQ.32) THEN
-            H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-            CELERITY=SQRT(G*H1)
+C...........DMW202401 Use saved H1
+            CELERITY=SQRT(G*H1(NBDJ))
 !C DW, Below is an original scheme and is correct 
 !C            QFORCEJ=(QN1(1)-QN0(1))/DT
 !C     &           -CELERITY*(ETAS(NBDJ)-(EN1(1)-EN0(1)))/DT
@@ -1771,8 +1789,8 @@ C     jgf46.21 Added IBTYPE=52.
          IF(LBCODEI(1).EQ.52) THEN
             QFORCEJ=(QN2(1)-QN0(1))/DT2 + Tau0VAR(NBDJ)*QN1(1)
             IF (IT.GT.FluxSettlingIT) THEN
-               HH1=DP(NBDJ)+IFNLFA*Eta1(NBDJ)
-               Celerity=SQRT(G*HH1)
+C..............DMW202401 Use saved H1
+               Celerity=SQRT(G*H1(NBDJ))
                QforceJ=QforceJ - Celerity*(EtaS(NBDJ)/DT
      &              + Tau0Var(NBDJ)*(Eta1(NBDJ)-ElevDisc(1)))
             ENDIF
@@ -1786,14 +1804,14 @@ C
             IF((LBCODEI(J).LE.29).OR.(LBCODEI(J).EQ.64))     ! 64 is added for VEW  08-11-2022 SB
      &           QFORCEJ=(QN2(J)-QN0(J))/DT2 + Tau0VAR(NBDJ)*QN1(J)
             IF(LBCODEI(J).EQ.30) THEN
-               H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-               CELERITY=SQRT(G*H1)
+C..............DMW202401 Use saved H1
+               CELERITY=SQRT(G*H1(NBDJ))
                QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(J)
             ENDIF
 
             IF(LBCODEI(J).EQ.32) THEN
-               H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-               CELERITY=SQRT(G*H1)
+C..............DMW202401 Use saved H1
+               CELERITY=SQRT(G*H1(NBDJ))
 !C DW, This is an original formula and is definitely correct (1st order in time)
 !C                QFORCEJ=(QN1(J)-QN0(J))/DT
 !C     &              -CELERITY*(ETAS(NBDJ)-(EN1(J)-EN0(J)))/DT
@@ -1812,8 +1830,8 @@ C     jgf46.21 Added IBTYPE=52
             IF(LBCODEI(J).EQ.52) THEN
                QFORCEJ=(QN2(J)-QN0(J))/DT2 + Tau0VAR(NBDJ)*QN1(J)
                IF (IT.GT.FluxSettlingIT) THEN
-                  HH1=DP(NBDJ)+IFNLFA*Eta1(NBDJ)
-                  Celerity=SQRT(G*HH1)
+C.................DMW202401 Use saved H1
+                  Celerity=SQRT(G*H1(NBDJ))
                   QforceJ=QforceJ - Celerity*(EtaS(NBDJ)/DT
      &                 + Tau0Var(NBDJ)*(Eta1(NBDJ)-ElevDisc(J)))
                ENDIF
@@ -2127,7 +2145,7 @@ C*******************************************************************************
 C
       USE SIZES
       USE GLOBAL, ONLY : GWCE_LV, COEF, COEFD, OBCCOEF, ETAS, ETA1, ETA2,
-     &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1,
+     &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1, H1, H2,
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
      &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, IFNLCAT,
@@ -2179,7 +2197,7 @@ C
       REAL(8) EVMN1, EVMN2, EVMN3, EVMXGrad, EVMYGrad, EVMAvgODT
       REAL(8) EVMEle, EVMSmag
       REAL(8) GHAvg, GHAvgOAreaIE2, GOAreaIE4
-      REAL(8) H1N1, H1N2, H1N3, H2N1, H2N2, H2N3, HAvg, H1, H2
+      REAL(8) H1N1, H1N2, H1N3, H2N1, H2N2, H2N3, HAvg
       REAL(8) H2OTotalArea
       REAL(8) LSXXGradA, LSXYGradA, LSYXGradA, LSYYGradA
       REAL(8) LSXXEle, LSXYEle, LSYXEle, LSYYEle
@@ -2352,8 +2370,8 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
 
          DO I=1,NP
             IF(TotalArea(I).NE.0.) THEN
-               H2=DP(I)+IFNLFA*ETA2(I)
-               H2OTotalArea=H2/TotalArea(I)
+C..............DMW202401 Use saved H2
+               H2OTotalArea=H2(I)/TotalArea(I)
                IF (CGWCE_LS_2PartV) THEN          !nonsymmetric
                   LSXX(I)=H2OTotalArea*LSXX(I)
                   LSXY(I)=H2OTotalArea*LSXY(I)
@@ -2474,14 +2492,13 @@ ckmd
             UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             UV2=SQRT(UU2(I)*UU2(I)+VV2(I)*VV2(I))
             H00=DP(I)+IFNLFA*ETA0(I)
-            H1=DP(I)+IFNLFA*ETA1(I)
-            H2=DP(I)+IFNLFA*ETA2(I)
+C...........DMW202401 Use saved H1 and H2  
             TK0(I)=FRIC(I)*(IFLINBF + (UV0/H00)*(IFNLBF + IFHYBF*
      &           (1+(HBREAK/H00)**FTHETA)**(FGAMMA/FTHETA)))
-            TK(I)=FRIC(I)*(IFLINBF + (UV1/H1)*(IFNLBF + IFHYBF*
-     &           (1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
-            TK2(I)=FRIC(I)*(IFLINBF + (UV2/H2)*(IFNLBF + IFHYBF*
-     &           (1+(HBREAK/H2)**FTHETA)**(FGAMMA/FTHETA)))
+            TK(I)=FRIC(I)*(IFLINBF + (UV1/H1(I))*(IFNLBF + IFHYBF*
+     &           (1+(HBREAK/H1(I))**FTHETA)**(FGAMMA/FTHETA)))
+            TK2(I)=FRIC(I)*(IFLINBF + (UV2/H2(I))*(IFNLBF + IFHYBF*
+     &           (1+(HBREAK/H2(I))**FTHETA)**(FGAMMA/FTHETA)))
        END DO
 
 ckmd      Added in the time weights
@@ -2573,12 +2590,13 @@ Corbitt 120322: Localized Advection
          H0N1=DP(NM1)+IFNLFA*E0N1
          H0N2=DP(NM2)+IFNLFA*E0N2
          H0N3=DP(NM3)+IFNLFA*E0N3
-         H1N1=DP(NM1)+IFNLFA*E1N1
-         H1N2=DP(NM2)+IFNLFA*E1N2
-         H1N3=DP(NM3)+IFNLFA*E1N3
-         H2N1=DP(NM1)+IFNLFA*E2N1
-         H2N2=DP(NM2)+IFNLFA*E2N2
-         H2N3=DP(NM3)+IFNLFA*E2N3
+C........DMW202401 Use saved H1 and H2
+         H1N1=H1(NM1)
+         H1N2=H1(NM2)
+         H1N3=H1(NM3)
+         H2N1=H2(NM1)
+         H2N2=H2(NM2)
+         H2N3=H2(NM3)
          EVMN1=EVM(NM1)
          EVMN2=EVM(NM2)
          EVMN3=EVM(NM3)
@@ -3014,14 +3032,14 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
      &          Tau0VAR(NBDJ)*QN1(1)
 
          IF(LBCODEI(1).EQ.30) THEN
-            H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-            CELERITY=SQRT(G*H1)
+C...........DMW202401 Use saved H1
+            CELERITY=SQRT(G*H1(NBDJ))
             QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
             ENDIF
 
          IF(LBCODEI(1).EQ.32) THEN
-            H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-            CELERITY=SQRT(G*H1)
+C...........DMW202401 Use saved H1
+            CELERITY=SQRT(G*H1(NBDJ))
             QFORCEJ=(QN1(1)-QN0(1))/DT
      &           -CELERITY*(ETAS(NBDJ)-(EN1(1)-EN0(1)))/DT
      &           +TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
@@ -3039,14 +3057,14 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
      &         QFORCEJ=(QN2(J)-QN0(J))/DT2+Tau0VAR(NBDJ)*QN1(J)
 
             IF(LBCODEI(J).EQ.30) THEN
-               H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-               CELERITY=SQRT(G*H1)
+C..............DMW202401 Use saved H1
+               CELERITY=SQRT(G*H1(NBDJ))
                QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(J)
                ENDIF
 
             IF(LBCODEI(J).EQ.32) THEN
-               H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-               CELERITY=SQRT(G*H1)
+C..............DMW202401 Use saved H1
+               CELERITY=SQRT(G*H1(NBDJ))
                QFORCEJ=(QN1(J)-QN0(J))/DT
      &              -CELERITY*(ETAS(NBDJ)-(EN1(J)-EN0(J)))/DT
      &              +TAU0VAR(NBDJ)*(QN1(J)-CELERITY*(ETA1(NBDJ)-EN1(J)))

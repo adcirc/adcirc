@@ -128,7 +128,7 @@ c.RJW merged 08282008 Casey 071219: Added the following variable declarations fr
      &                   BCFLAG_TEMP, BCRivRATIO,
      &                   RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2,TK,
 Casey 140701: Prevent depths from becoming negative in bottom roughness calculations.
-     &                   H0
+     &                   H0, H1, H2
       USE GLOBAL_3DVS
       USE ADC_CONSTANTS, ONLY: G
       USE WRITE_OUTPUT, ONLY : writeOutput3D
@@ -230,8 +230,7 @@ Cjgfdebug      REAL(8) :: HsN2           !Total water depth at time level s at l
       REAL(8) :: Hsp1           !Total water depth at time level s+1
       REAL(8) :: Hsp1OAMB       !Hsp1/(a-b)
       REAL(8) :: Hsp1Hsp1OAMBAMB !(Hsp1/(a-b))^2
-Casey 140701: Prevent depths from becoming negative in bottom roughness calculations.
-      REAL(8) :: H1
+
 ! arash 12/14/2015
       Real(8) :: Biharmonic_viscosity
 
@@ -340,8 +339,8 @@ C!      ENDIF
       Biharmonic_viscosity_modified_Leith (:,:) = 0.0d0
 
       DO NH = 1, NP                      !loop over horizontal nodes
-         Hs = DP(NH) + IFNLFA * Eta1(NH) !Total depth at current timestep - 'center' node
-         HsOAMB = Hs / AMB
+C........DMW202401 Use saved H1 !Total depth at current timestep - 'center' node
+         HsOAMB = H1(NH) / AMB
          ! begin the vertical loop
          DO k = 1, NFEN
             DqDXDPhiDX2A = 0.d0    ! variables for computing the biharmonic operator
@@ -357,8 +356,8 @@ C!      ENDIF
             N2  = NEITAB(NH,2)     !operate on 1st neighbor
             qN2 = q(N2,k)
 ! af 01/04/2016: interpolate it at the same z level as N1
-            HsN2 = DP(N2) + IFNLFA * Eta1(N2)
-            SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2 !equivalent sigma value at neighbor
+C...........DMW202401 Use saved H1
+            SigmaNN = B + AMB * ( Zk + DP(N2) ) / H1(N2) !equivalent sigma value at neighbor
             inarray_vertical (:) = q(N2,:)
             Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, qN2_z, k )
 
@@ -376,8 +375,8 @@ C!      ENDIF
                N2  = NEITAB(NH,N)  !select new neighbor to work on
                qN2 = q(N2,k)
 ! af 01/04/2016: interpolate it at the same z level as N1
-               HsN2 = DP(N2) + IFNLFA * Eta1(N2)
-               SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2 !equivalent sigma value at neighbor
+C..............DMW202401 Use saved H1
+               SigmaNN = B + AMB * ( Zk + DP(N2) ) / H1(N2) !equivalent sigma value at neighbor
                inarray_vertical (:) = q(N2,:)
                Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, qN2_z, k )
 
@@ -496,13 +495,14 @@ Corbitt 120328: Applies Advection Locally
          ENDIF
 
 c     Set up some values at the node being worked on
-
-         Hs  = DP(NH)+IFNLFA*Eta1(NH) !Total depth at previous (s) timestep
+C........DMW202401 Use saved H1
+         Hs  = H1(NH) !Total depth at previous (s) timestep
 Casey 140701: Check the total water depth.
          IF(Hs.LT.H0) Hs = H0
          HsOAMB=Hs/AMB
          HsHsOAMBAMB=HsOAMB*HsOAMB
-         Hsp1= DP(NH)+IFNLFA*Eta2(NH) !Total depth at present (s+1) timestep
+C........DMW202401 Use saved H2
+         Hsp1= H2(NH) !Total depth at present (s+1) timestep
 Casey 140701: Check the total water depth.
          IF(Hsp1.LT.H0) Hsp1 = H0
          Hsp1OAMB=Hsp1/AMB
@@ -593,14 +593,15 @@ C or as read in from nodal attributes
          ELSEIF (LoadManningsN) THEN
 Casey 140701: Prevent depths from becoming negative.  Cannot raise a negative number
 C             to the 1/6 power.
-            H1 = DP(NH)+IFNLFA*ETA2(NH)
-            IF(H1.LT.H0) H1=H0
+C...........DMW202401 Use saved H2
+            Hs = H2(NH)
+            IF(Hs.LT.H0) Hs=H0
 !            Z0B1 = ( DP(NH)+IFNLFA*ETA2(NH) )* exp(-(1.0D0+
 !     &             ( (0.41D0*( DP(NH)+IFNLFA*ETA2(NH))**(1.0D0/6.0D0) )/
 !     &                              (ManningsN(NH)*sqrt(g)) ) ))
 ! arash Sep 7 2015:
-            Z0B1 = ( H1 )* exp(-(1.0D0+
-     &             ( (0.41D0*( H1 )**(1.0D0/6.0D0) )/
+            Z0B1 = ( Hs )* exp(-(1.0D0+
+     &             ( (0.41D0*( Hs )**(1.0D0/6.0D0) )/
      &                              (ManningsN(NH)*sqrt(g)) ) ))
          ELSE
             Z0B1 = Z0B
@@ -844,8 +845,8 @@ c     Compute lateral advection and lateral stress terms
             N2=NEITAB(NH,2)     !operate on 1st neighbor
             qN2=q(N2,k)
 ! af 01/04/2016: interpolate it at the same z level as N1
-            HsN2 = DP(N2) + IFNLFA * Eta1(N2)
-            SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2 !equivalent sigma value at neighbor
+C...........DMW202401 Use saved H1
+            SigmaNN = B + AMB * ( Zk + DP(N2) ) / H1(N2) !equivalent sigma value at neighbor
             inarray_vertical (:) = q(N2,:)
             Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, qN2_z, k )
 
@@ -893,8 +894,8 @@ c     Compute lateral advection and lateral stress terms
                N2  = NEITAB(NH,N)  !select new neighbor to work on
                qN2 = q(N2,k)
 ! af 01/04/2016: interpolate it at the same z level as N1
-               HsN2 = DP(N2) + IFNLFA * Eta1(N2)
-               SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2 !equivalent sigma value at neighbor
+C..............DMW202401 Use saved H1
+               SigmaNN = B + AMB * ( Zk + DP(N2) ) / H1(N2) !equivalent sigma value at neighbor
                inarray_vertical (:) = q(N2,:)
                Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, qN2_z, k )
 
@@ -1328,8 +1329,8 @@ C     Compute the depth averaged velocity, depth averaged flux, bottom stress an
 C     velocity dispersion
 
       DO NH=1,NP                                !loop over horizontal nodes
-
-         Hsp1= DP(NH)+IFNLFA*Eta2(NH)           !Total depth at present (s+1) timestep
+C........DMW202401 Use saved H2
+         Hsp1= H2(NH)           !Total depth at present (s+1) timestep
          VIVel = (0.d0,0.d0)
          DO k=1,NFEN
             VIVel = VIVel + Qkp1(NH,k)*LVn(k)
@@ -1414,8 +1415,8 @@ C    &         NOFF(NEITABELE(NH,K+TEMPSTOP))
          ENDIF
 
 c     Set up some values at the node being worked on
-
-         Hsp1=DP(NH)+IFNLFA*Eta2(NH)
+C........DMW202401 Use saved H2
+         Hsp1=H2(NH)
 Casey 140701: Adjust for small depths.
          IF(Hsp1.LT.H0) Hsp1=H0
          Hsp1OAMB=Hsp1/AMB
@@ -1565,7 +1566,8 @@ c.
 c     Correct this using Adjoint method
 
          Wf=0.d0                !This value should match surface B.C. exactly
-         Hsp1= DP(NH)+IFNLFA*Eta2(NH) !Total depth at present (s+1) timestep
+C........DMW202401 Use saved H2
+         Hsp1= H2(NH) !Total depth at present (s+1) timestep
          WfOHH=Wf/(Hsp1*Hsp1)
          WZSurfBC=DEtaDT+REAL(qkp1(NH,NFEN))*DEtaDX
      &                  +AIMAG(qkp1(NH,NFEN))*DEtaDY
