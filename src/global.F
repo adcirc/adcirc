@@ -65,7 +65,7 @@ C     jgf46.10 user-controlled warning, dump and error levels on elevations
 C     DMW 202401 Check for velocity exceeding error level as well as NaNs
       REAL(8) ErrorVel      ! ADCIRC terminates if this vel is exceeded
       INTEGER :: earlyterminate = 0
-      INTEGER :: IT_foundNaN
+      INTEGER :: IT_foundNaN = 0
 C
 C     Variables related to hotstarting.
       type HOTSTART_t

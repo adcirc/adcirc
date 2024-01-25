@@ -184,10 +184,6 @@ C....... DW
 C.......
       LOGICAL ISFRONT
       LOGICAL foundNaN
-      
-      IF (IT .EQ. 1) THEN
-        IT_foundNaN = 0
-      ENDIF
 
       call setMessageSource("timestep")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
