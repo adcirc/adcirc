@@ -585,7 +585,7 @@ C     for elevations. Initialize default values.
       WarnElevDumpCounter = 0 ! init
       ErrorElev = 1000.0      ! default
 C     DMW 202401 Add check for velocity error
-      ErrorVel = 1000.d0
+      ErrorVel = 100.d0
 C     WJP add namelist
       namelistSpecifier = 'WarnElevControl'
       read(unit=15,nml=WarnElevControl,iostat=IOS)
