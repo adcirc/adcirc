@@ -87,7 +87,7 @@ C     jgf46.10 user-controlled warning, dump and error levels on elevations
       INTEGER :: screenUnit = 6 ! jgf46.19 I/O unit where screen output is sent
       INTEGER :: Terminate_LocalProc = 0 ! zc - allow a single processor to initiate code shutdown
 C     DMW 202401 Check for velocity exceeding error level as well as NaNs
-      REAL(8) ErrorVel      ! ADCIRC terminates if this vel is exceeded
+      REAL(8) WarnVel      ! ADCIRC issues a warning if this vel is exceeded
       INTEGER :: earlyterminate = 0
       INTEGER :: IT_foundNaN = 0
 C

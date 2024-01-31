@@ -161,7 +161,7 @@ C        initialize parameter arrays needed by iterative solver
 C     Two mutually exclusive possibilities are (1)
 C     the conventional GWCE or (2) the predictor-corrector GWCE.
 !----------------------------------------------------------------------
-      subroutine solveGWCE(it, timeloc, timeh)
+      subroutine solveGWCE(it, ITIME_BGN, timeloc, timeh)
       use sizes, only : mnp
       use global, only : CGWCE_New, CPRECOR, ETA2, QX2, QY2, UU2, VV2
 #ifdef CMPI
@@ -171,14 +171,14 @@ C     the conventional GWCE or (2) the predictor-corrector GWCE.
       use momentum, only : mom_eqs_new_nc
       use nodalattributes, only : loadEleSlopeLim
       implicit none
-      integer, intent(in) :: it ! time step 
+      integer, intent(in) :: it, ITIME_BGN ! time step 
       real(8), intent(in) :: timeloc ! simulation time in seconds
       real(8), intent(in) :: timeh
 
 C       -------------PREDICTOR-CORRECTOR-GWCE---------------------------
 ckmd    Changed to include the predictor-corrector algorithm
       IF(CPRECOR) THEN
-         CALL GWCE_New(IT,TimeLoc,TimeH)
+         CALL GWCE_New(IT,ITIME_BGN,TimeLoc,TimeH)
 c...tcm added call for slope limiting         
          IF (LoadEleSlopeLim) THEN
             call check_slopes(it,TimeLoc)
@@ -209,7 +209,7 @@ C                         -OR-
 
 C      -------------------GWCE------------------------------------------
       IF(CGWCE_New) THEN
-         CALL GWCE_New(IT,TimeLoc,TimeH)
+         CALL GWCE_New(IT,ITIME_BGN,TimeLoc,TimeH)
 c.... tcm added call to slope limiter         
          IF (LoadEleSlopeLim) THEN
             call check_slopes(it,TimeLoc)
@@ -232,7 +232,7 @@ C    Re-written to conform to the ADCIRC Theory Report                        *
 C                                                                             *
 C                            r.l.  06/22/2005                                 *
 C******************************************************************************
-      SUBROUTINE GWCE_New(IT,TimeLoc,TimeH)
+      SUBROUTINE GWCE_New(IT,ITIME_BGN,TimeLoc,TimeH)
 C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
@@ -296,7 +296,7 @@ C... SB
       IMPLICIT NONE
 
       INTEGER IE, JN, IJ, I, J, K, L                     !local loop counters
-      INTEGER IT
+      INTEGER IT, ITIME_BGN
       INTEGER NM1, NM2, NM3, NMI1, NMI2, NMI3, NMJ1, NMJ2, NMJ3
       INTEGER NC1, NC2, NC3, NCEle, NCI, NCJ
       INTEGER NCyc
@@ -1639,6 +1639,9 @@ ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
          END IF
          Eta1(I)=Eta2(I)
 C........DMW202401 Add update for flow depth at previous timestep, H1
+         IF ((I.EQ.1).AND.(IT.EQ.ITIME_BGN)) THEN
+            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST SAVE ON H1'
+         ENDIF
          H1(I) = H2(I)
          Eta2(I)=0.0d0
       END DO

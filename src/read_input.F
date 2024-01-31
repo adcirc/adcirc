@@ -305,6 +305,9 @@ C...
 #ifdef CSCA
       WRITE(16,*) '      - CODE OPTIMIZED FOR A SCALAR COMPUTER'
 #endif
+      WRITE(16,*) '      - dmw202401 THIS CODE USES A VELCHECKER'
+      WRITE(16,*) '      - dmw202401 THIS CODE USES THE FIX FOR SUBGRID BARRIERS'
+	  WRITE(16,*) '      - dmw202401 adcirc-noaa e8aef69945a44c50fbc51350eddf26d8f559348c'
       write(16,1112)
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
@@ -648,8 +651,8 @@ C     for elevations. Initialize default values.
       WarnElevDumpLimit = 50  ! default
       WarnElevDumpCounter = 0 ! init
       ErrorElev = 1000.0      ! default
-C     DMW 202401 Add check for velocity error
-      ErrorVel = 1000.d0
+C     DMW 202401 Add check for velocity warning level
+      WarnVel = 100.d0
 C     WJP add namelist
       namelistSpecifier = 'WarnElevControl'
       read(unit=15,nml=WarnElevControl,iostat=IOS)
