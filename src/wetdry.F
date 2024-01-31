@@ -1427,7 +1427,7 @@ c.....
           REAL(8) :: ETABAR,BARHEIGHT
           REAL(8) :: DOT,DOT1,DOT2,DOT3
           REAL(8) :: E1,E2,E3,ETA
-          REAL(8),PARAMETER :: SBDT = 50D0
+          REAL(8),PARAMETER :: SBDT = 200D0
 
           NOFF_SG(:) = 1
 
