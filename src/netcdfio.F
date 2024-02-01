@@ -10202,6 +10202,8 @@ C     back to degrees to write them back out
       CALL check_err(iret)
       iret = nf90_put_att(ncid, NF_GLOBAL, 'version', ADC_VERSION)
       CALL check_err(iret)
+      iret = nf90_put_att(ncid, NF_GLOBAL, 'git_hash', ADC_HASH)
+      CALL check_err(iret)
       iret = nf90_put_att(ncid, NF_GLOBAL, 'grid_type', 'Triangular')
       CALL check_err(iret)
       iret = nf90_put_att(ncid, NF_GLOBAL, 'description',

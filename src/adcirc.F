@@ -90,7 +90,7 @@ C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
-      USE VERSION, ONLY : adc_version, fileFmtMajor, fileFmtMinor, 
+      USE VERSION, ONLY : adc_version, adc_hash, fileFmtMajor, fileFmtMinor, 
      &   FileFmtRev
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
@@ -143,12 +143,15 @@ C
          do while (i.lt.argcount)
             i = i + 1
             call getarg(i, cmdlinearg)
-            select case(cmdlinearg(1:2))
-            case("-V","-v") 
+            select case(trim(cmdlinearg))
+            case("-V","-v","--version") 
                ! write the version number string ... actually it is
                ! a series of two or three numbers with two digits 
                ! separated by dots, e.g., 51.02 or 51.52.07
                write(6,'(a)') trim(adc_version)                 
+               CALL EXIT(0) 
+            case("--hash")
+               write(6,'(a)') trim(adc_hash) 
                CALL EXIT(0) 
             case default
                ! do nothing, this is some other command line argument
@@ -207,6 +210,7 @@ C
      &   VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
       IF ((NSCREEN.NE.0).AND.(MYPROC.EQ.0)) THEN
          WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
+         WRITE(ScreenUnit,'(a)')"ADCIRC Commit hash is "//ADC_HASH
       ENDIF
 
       !jgf49.44: Allocate memory for reading and writing full domain arrays
