@@ -64,7 +64,7 @@ C-----------------------------------------------------------------------
      &   alloc_main6, openfileforread, nhoutonce, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
-     &   directvelWD,useHF, errorvel
+     &   directvelWD,useHF, warnvel
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
@@ -587,8 +587,8 @@ C     for elevations. Initialize default values.
       WarnElevDumpLimit = 50  ! default
       WarnElevDumpCounter = 0 ! init
       ErrorElev = 1000.0      ! default
-C     DMW 202401 Add check for velocity error
-      ErrorVel = 1000.d0
+C     DMW 202401 Add check for velocity warning level
+      WarnVel = 100.d0
 C     WJP add namelist
       namelistSpecifier = 'WarnElevControl'
       read(unit=15,nml=WarnElevControl,iostat=IOS)
