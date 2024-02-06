@@ -831,9 +831,9 @@ C      Specified essential normal flow and free tangential slip
 C........DMW202401 Use saved H2
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
-            VelNorm=-QN2(I)/H2(I)
+            VelNorm=-QN2(I)/H2(NBDI)
             IF (abs(adcirc_norm2(TKM(:,NBDI))-sqrt(2d0)*TK(NBDI))
-     &          .lt.epsilon(H2(I))) THEN
+     &          .lt.epsilon(H2(NBDI))) THEN
             ! WJP 03.6.2018 In the case of the symmetric matrix..
             ! Should be equivalent to the non-symmetric formula below
             ! but for consistency when testing using this formula helps
@@ -863,7 +863,7 @@ C     Specified essential normal flow and no tangential slip
 
          IF (LBCODEI(I).GE.10.AND.LBCODEI(I).LE.19) THEN
 C...........DMW202401 Use saved H2
-            VelNorm=-QN2(I)/H2(I)
+            VelNorm=-QN2(I)/H2(NBDI)
             VelTan=0.D0
             MOM_LV_X(NBDI)=VelTan*NCI !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
