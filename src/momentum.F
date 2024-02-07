@@ -1145,8 +1145,13 @@ C.....interface nodes.
       DO I = 1,NP
          ! WJP 02.24.2018 Performing the final solve
          DDU    = AUV(1,I)*AUV(2,I)-AUV(3,I)*AUV(4,I)
-         UU2(I) = (MOM_LV_X(I)*AUV(2,I)-MOM_LV_Y(I)*AUV(3,I))/DDU
-         VV2(I) = (MOM_LV_Y(I)*AUV(1,I)-MOM_LV_X(I)*AUV(4,I))/DDU
+         IF (NODECODE(I).EQ.1.AND.DDU.NE.0.D0) THEN
+            UU2(I) = (MOM_LV_X(I)*AUV(2,I)-MOM_LV_Y(I)*AUV(3,I))/DDU
+            VV2(I) = (MOM_LV_Y(I)*AUV(1,I)-MOM_LV_X(I)*AUV(4,I))/DDU
+         ELSE
+            UU2(I) = 0.D0
+            VV2(I) = 0.D0
+         ENDIF
 
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           UBAR2(I)=0.D0    !no slip and normal flux
@@ -1913,9 +1918,14 @@ C.....interface nodes.
       DO I=1,NP
          ! WJP 02.24.2018 Performing the final solve
          DDU    = AUV(1,I)*AUV(2,I)-AUV(3,I)*AUV(4,I)
-         QX2(I) = (MOM_LV_X(I)*AUV(2,I)-MOM_LV_Y(I)*AUV(3,I))/DDU
-         QY2(I) = (MOM_LV_Y(I)*AUV(1,I)-MOM_LV_X(I)*AUV(4,I))/DDU
-         
+         IF (NODECODE(I).EQ.1.AND.DDU.NE.0.D0) THEN
+            QX2(I) = (MOM_LV_X(I)*AUV(2,I)-MOM_LV_Y(I)*AUV(3,I))/DDU
+            QY2(I) = (MOM_LV_Y(I)*AUV(1,I)-MOM_LV_X(I)*AUV(4,I))/DDU
+         ELSE
+            QX2(I) = 0.D0
+            QY2(I) = 0.D0
+         ENDIF
+
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           QX2(I)=0.D0    !no slip and normal flux
 c           QY2(I)=0.D0    !on wet/dry interface nodes
@@ -2676,8 +2686,13 @@ C.....interface nodes.
          AUV22=AUV11(I)
          AUV21=-AUV12(I)
          DDU=AUV11(I)*AUV22-AUV12(I)*AUV21
-         UU2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
-         VV2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
+         IF (NODECODE(I).EQ.1.AND.DDU.NE.0.D0) THEN
+            UU2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
+            VV2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
+         ELSE
+            UU2(I) = 0.D0
+            VV2(I) = 0.D0
+         ENDIF
 
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           UBAR2(I)=0.D0    !no slip and normal flux
