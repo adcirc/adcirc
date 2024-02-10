@@ -1539,10 +1539,10 @@ C...     Spatially varying Tau0 terms
      &        +Tau0SpaVar
 C
 C..... DW: begin
-     &        +(OnDiag*E0N1 + OffDiag*(E0N2+E0N3))*MsFacR_S
-     &        +(onDiag*ESAN1 + OffDiag*(ESAN2+ESAN3))*MsFacRS_T
-     &        +(onDiag*ABC00_EAN1 + 
-     &                OffDiag*(ABC00_EAN2 + ABC00_EAN3))*MsFacRS_ABC00
+     &        +(OnDiag*E0N1*SPM1 + OffDiag*(E0N2*SPM2+E0N3*SPM3))*MsFacR_S
+     &        +(onDiag*ESAN1*SPM1 + OffDiag*(ESAN2*SPM2+ESAN3*SPM3))*MsFacRS_T
+     &        +(onDiag*ABC00_EAN1*SPM1 + 
+     &                OffDiag*(ABC00_EAN2*SPM2 + ABC00_EAN3*SPM3))*MsFacRS_ABC00
 C..... END DW
 C
 
@@ -1565,10 +1565,10 @@ C...     Spatially varying Tau0 terms
      &        +Tau0SpaVar 
 C
 C..... DW: begin
-     &        +(OnDiag*E0N2 + OffDiag*(E0N1+E0N3))*MsFacR_S
-     &        +(onDiag*ESAN2 + OffDiag*(ESAN1+ESAN3))*MsFacRS_T
-     &        +(onDiag*ABC00_EAN2 + 
-     &                 OffDiag*(ABC00_EAN1 + ABC00_EAN3))*MsFacRS_ABC00
+     &        +(OnDiag*E0N2*SPM2 + OffDiag*(E0N1*SPM1+E0N3*SPM3))*MsFacR_S
+     &        +(onDiag*ESAN2*SPM2 + OffDiag*(ESAN1*SPM1+ESAN3*SPM3))*MsFacRS_T
+     &        +(onDiag*ABC00_EAN2*SPM2 + 
+     &                 OffDiag*(ABC00_EAN1*SPM1 + ABC00_EAN3*SPM3))*MsFacRS_ABC00
 C..... END DW
 C
 
@@ -1593,10 +1593,10 @@ C...     Spatially varying Tau0 terms
      &        +Tau0SpaVar
 C
 C..... DW: begin, absorbing layer
-     &        +(OnDiag*E0N3 + OffDiag*(E0N1+E0N2))*MsFacR_S
-     &        +(OnDiag*ESAN3 + OffDiag*(ESAN1+ESAN2))*MsFacRS_T
-     &        +(OnDiag*ABC00_EAN3 + 
-     &               OffDiag*(ABC00_EAN1 + ABC00_EAN2))*MsFacRS_ABC00
+     &        +(OnDiag*E0N3*SPM3 + OffDiag*(E0N1*SPM1+E0N2*SPM1))*MsFacR_S
+     &        +(OnDiag*ESAN3*SPM3 + OffDiag*(ESAN1*SPM1+ESAN2*SPM2))*MsFacRS_T
+     &        +(OnDiag*ABC00_EAN3*SPM3 + 
+     &               OffDiag*(ABC00_EAN1*SPM1 + ABC00_EAN2*SPM2))*MsFacRS_ABC00
 C..... END DW
 C
 
