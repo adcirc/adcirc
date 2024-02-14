@@ -35,7 +35,7 @@ C
 #endif
        USE ADC_CONSTANTS, ONLY: pi, deg2rad, rad2deg, e, PRBCKGRND, g, 
      &                      rhoWat0, Rearth, rhoAir, one2ten,
-     &                      windReduction, omega
+     &                      windReduction
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
@@ -5122,12 +5122,13 @@ C     ----------------------------------------------------------------
       REAL(8) :: WindMultiplier         ! for storm 2 in LPFS ensemble
       REAL(8) :: centralPressureDeficit ! difference btw ambient and cpress
 C
-      REAL(8) :: coriolis
+      REAL(8) :: coriolis, omega
 
-      call setMessageSource("hollandget")
+      call setMessageSource("HollandGet")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
+      omega = 2.0d0*pi / 86164.2d0
 
 C
 C     Get data for this time step.
