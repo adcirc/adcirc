@@ -266,7 +266,26 @@ c                 print *, K, PE1,PE2,PE3,INDX,INDX2
                   ENDIF
                   ! in any case, record the fact that a subdomain has already
                   ! claimed this element as a resident 
-                  EL_SHARE(K) = I
+!C                   EL_SHARE(K) = I
+
+!c                   
+!c DW: 2023, for NOAA-CMEP
+!c           If all three nodes are a ghost node, the element is
+!c           taken to be a ghost element.                     
+                  IF ( (PE1 .NE. I) .AND. (PE2 .NE. I) 
+     &                                .AND. (PE3 .NE. I)  ) THEN
+                      IF ( EL_SHARE(K) < 0 ) THEN
+                         ! set the element as a ghost element  
+                         IMAP_EL_LG(NELP(I),I) = -K ;
+
+                         ! set the element as an unclaimed element 
+                         EL_SHARE(K) = -I ;
+                      END IF      
+                  ELSE
+                      EL_SHARE(K) =  I ; 
+                  ENDIF        
+!c END DW
+!c 
                ENDIF
             ENDDO
          IF (NELP(I).GT.MNEP) THEN
