@@ -35,7 +35,7 @@ C
 #endif
        USE ADC_CONSTANTS, ONLY: pi, deg2rad, rad2deg, e, PRBCKGRND, g, 
      &                      rhoWat0, Rearth, rhoAir, one2ten,
-     &                      windReduction
+     &                      windReduction,omega
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
@@ -5110,6 +5110,7 @@ C     ----------------------------------------------------------------
       USE SIZES, ONLY : MyProc, LOCALDIR
       USE MESH, ONLY : X, Y, SLAM, SFEA, NP, ICS
       USE ADC_CONSTANTS, ONLY : RHOWAT0, G, mb2pa
+      USE GLOBAL, ONLY : CORIF
       IMPLICIT NONE
       REAL(8), intent(in) :: TIMELOC
       REAL(8), intent(out), dimension(NP) :: WVNX,WVNY
@@ -5122,13 +5123,13 @@ C     ----------------------------------------------------------------
       REAL(8) :: WindMultiplier         ! for storm 2 in LPFS ensemble
       REAL(8) :: centralPressureDeficit ! difference btw ambient and cpress
 C
-      REAL(8) :: coriolis, omega
+      REAL(8) :: coriolis
 
       call setMessageSource("HollandGet")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      omega = 2.0d0*pi / 86164.2d0
+!      omega = 2.0d0*pi / 86164.2d0
 
 C
 C     Get data for this time step.
@@ -5221,6 +5222,7 @@ C     Compute the distances based on haversine formula for distance along a sphe
          rad(i) = sphericalDistance(DX(I),DY(I),lat, ycoor(i))
 C     Compute coriolis
          coriolis = 2.0d0 * omega * sin(YCOOR(I)*DEG2RAD)
+         coriolis = corif(I)
 C     Compute pressure field
 !P.V 11/04/2022 to account for Southern Hemisphere
 !         PRESS(I)=(cpress+(centralPressureDeficit)*
