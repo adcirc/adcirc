@@ -4989,7 +4989,7 @@ C     ----------------------------------------------------------------
       SUBROUTINE HollandGet(WVNX,WVNY,PRESS,TIMELOC)
       USE SIZES, ONLY : MyProc, LOCALDIR
       USE MESH, ONLY : X, Y, SLAM, SFEA, NP, ICS
-      USE ADC_CONSTANTS, ONLY : RHOWAT0, G, mb2pa
+      USE ADC_CONSTANTS, ONLY : RHOWAT0, G, mb2pa, omega
       IMPLICIT NONE
       REAL(8), intent(in) :: TIMELOC
       REAL(8), intent(out), dimension(NP) :: WVNX,WVNY
@@ -5006,7 +5006,7 @@ C     ----------------------------------------------------------------
       REAL(8) :: WindMultiplier         ! for storm 2 in LPFS ensemble
       REAL(8) :: centralPressureDeficit ! difference btw ambient and cpress
 C
-      REAL(8) :: omega, coriolis
+      REAL(8) :: coriolis
       REAL(8) :: mperdeg
 
       LOGICAL, SAVE :: FIRSTCALL = .True.
@@ -5018,7 +5018,6 @@ C
 
 C
       mperdeg  = Rearth * pi / 180.0d0
-      omega = 2.0d0*pi / 86164.2d0
 C
       IF (FIRSTCALL) THEN
          FIRSTCALL = .False.
