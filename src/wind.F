@@ -1258,21 +1258,8 @@ C  tcm v49.16 20100617
 C     jgf46.02 New option to read in hurricane locations and generate
 C     generate hurricane winds from the Holland Wind Model.
 
-      ! cpb temporary: hardcote in vortexModel = Holland while I move
-      ! stuff to the init module
-      vortexModel='Holland'
       IF(ABS(NWS).EQ.8) THEN
-         SELECT CASE (TRIM(vortexModel))
-         CASE ('Holland')
-            call HollandGet(wvnx2,wvny2,prn2,timeloc)
-         CASE ('CLE15')
-            CALL CLE15GET(WVNX2,WVNY2,PRN2,timeloc)
-         CASE DEFAULT
-            call allMessage(ERROR,'Unrecognized vortexModel: '
-     &                         //trim(vortexModel))
-            call windTerminate()
-         END SELECT
-
+         CALL NWS8GET(WVNX2,WVNY2,PRN2,TIMELOC)
          DO I=1,NP
             WindX = WVNX2(I)
             WindY = WVNY2(I)
@@ -2013,9 +2000,8 @@ C         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
 C     jgf46.02 New option to read in hurricane locations and generate
 C     generate hurricane winds from the Holland Wind Model.
       IF(ABS(NWS).EQ.8) THEN
-         ! added nws8init routine to read in best track data
          CALL NWS8INIT(statim*86400.d0)
-         CALL HollandGet(WVNX2,WVNY2,PRN2,statim*86400.d0)
+         CALL NWS8GET(WVNX2,WVNY2,PRN2,STATIM*86400.D0)
       ENDIF
 
 C     RJW Merged:
@@ -2697,7 +2683,7 @@ C     jgf46.02 New option to read in hurricane locations and generate
 C     generate hurricane winds from the Holland Wind Model.
       IF(ABS(NWS).EQ.8) THEN
          CALL NWS8INIT(timeloc)
-         CALL HollandGet(WVNX2,WVNY2,PRN2,timeloc)
+         CALL NWS8GET(WVNX2,WVNY2,PRN2,TIMELOC)
          DO I=1,NP
             WindX = WVNX2(I)
             WindY = WVNY2(I)
@@ -5087,6 +5073,57 @@ C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
 
 C     ----------------------------------------------------------------
+C      S U B R O U T I N E   N W S 8 G E T
+C     ----------------------------------------------------------------
+C
+C     Calls the appropriate subroutines to calculate winds using
+C     vortex models that take as input track data in ATCF Best
+C     Track/Objective Aid/Wind Radii format. Also applies the
+C     appropriate background wind field. Options are controlled by the
+C     nws8Control namelist. Current options are:
+C
+C     Vortex models:
+C        - Holland Model
+C        - CLE15 Model (Chavas et. al., 2015)
+C
+C     Background wind models:
+C        - None (standard Holland)
+C        - LC12 (Lin and Chavas, 2012)
+C
+C     CPB Feb. 2024
+C
+C     ----------------------------------------------------------------
+      SUBROUTINE NWS8GET(WVNX,WVNY,PRESS,TIMELOC)
+      USE MESH, ONLY : NP
+      IMPLICIT NONE
+      REAL(8), INTENT(IN) :: TIMELOC
+      REAL(8), INTENT(INOUT),DIMENSION(NP) :: WVNX, WVNY 
+      REAL(8), INTENT(INOUT),DIMENSION(NP) :: PRESS
+
+      call setMessageSource("NWS8GET")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      SELECT CASE (TRIM(vortexModel))
+         CASE ('Holland')
+            call HollandGet(WVNX,WVNY,PRESS,TIMELOC)
+         CASE ('CLE15')
+            CALL CLE15GET(WVNX,WVNY,PRESS,TIMELOC)
+         CASE DEFAULT
+            call allMessage(ERROR,'Unrecognized vortexModel: '
+     &                         //trim(vortexModel))
+            call windTerminate()
+      END SELECT
+
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C     ----------------------------------------------------------------
+      END SUBROUTINE NWS8GET
+C     ----------------------------------------------------------------
+
+C     ----------------------------------------------------------------
 C      S U B R O U T I N E   H O L L A N D  G E T
 C     ----------------------------------------------------------------
 C
@@ -5122,8 +5159,8 @@ C     ----------------------------------------------------------------
       REAL(8) :: ts        ! storm translation speed, m/s
       REAL(8) :: WindMultiplier         ! for storm 2 in LPFS ensemble
       REAL(8) :: centralPressureDeficit ! difference btw ambient and cpress
+      REAL(8) :: inflowAngle
 C
-      REAL(8) :: coriolis
 
       call setMessageSource("HollandGet")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -5192,12 +5229,12 @@ C     boundary layer (which is what the Holland curve fit requires).
 C
 C     Calculate Holland parameters and limit the result to its appropriate
 C     range.
-      B = rhoAir*e*(spd**2.d0)/(centralPressureDeficit)
-      IF (B.lt.1.0d0) B=1.0d0
-      IF (B.gt.2.5d0) B=2.5d0
+      IF (BCalc.EQ.'limited') THEN
+         B = rhoAir*e*(spd**2.d0)/(centralPressureDeficit)
+         IF (B.lt.1.0d0) B=1.0d0
+         IF (B.gt.2.5d0) B=2.5d0
+      ENDIF
 C
-C     Calculate Holland A parameter. (jgf46.32jgf4 commented out)
-C      A = (RMW*1000.d0)**B
 C
 #ifdef DEBUG_HOLLAND
       WRITE(16,4321) B
@@ -5216,17 +5253,22 @@ C     Calculate wind velocity and pressure at each node.
       DO I=1,NP
          DX(I)=(XCOOR(I)-lon)*DEG2RAD
          DY(I)=(YCOOR(I)-lat)*DEG2RAD
-         THETA(I)=ATAN2(DY(I),DX(I))
+         IF (thetaLatDep.EQV..true.) THEN
+            THETA(I)=ATAN2(DY(I),(cos(lat*DEG2RAD)*DX(I)))
+         ELSE
+            THETA(I)=ATAN2(DY(I),DX(I))
+         ENDIF
 C     RJW v48.45
 C     Compute the distances based on haversine formula for distance along a sphere
          rad(i) = sphericalDistance(DX(I),DY(I),lat, ycoor(i))
-C     Compute coriolis
-         coriolis = 2.0d0 * omega * sin(YCOOR(I)*DEG2RAD)
-         coriolis = corif(I)
+C     Add option to calculate exact B parameter
+         IF (BCalc.EQ.'exact') THEN
+            B=rhoAir*e*(spd**2.d0+spd*RMW*1000.d0*CORIF(I))
+     &      /(centralPressureDeficit)
+         ENDIF
+C     
 C     Compute pressure field
 !P.V 11/04/2022 to account for Southern Hemisphere
-!         PRESS(I)=(cpress+(centralPressureDeficit)*
-!     &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
          PRESS(I)=cpress+(centralPressureDeficit)*
      &        EXP(-(RMW*1000.d0/RAD(I))**B)
 C     Compute velocity field with absolute around 
@@ -5234,66 +5276,51 @@ C     CORIOLIS for the Southern Hempisphere
          V_r(I) = sqrt(
      &        (RMW*1000.d0/RAD(I))**B *
      &        EXP(1.d0-(RMW*1000.d0/RAD(I))**B)*spd**2.d0
-     &        + (RAD(I)**2.d0)*(CORIOLIS**2.d0)/4.d0
+     &        + (RAD(I)**2.d0)*(CORIF(I)**2.d0)/4.d0
      &        )
-     &        - RAD(I)*ABS(CORIOLIS)/2.d0
+     &        - RAD(I)*ABS(CORIF(I))/2.d0
+C     Apply mutliplier for Storm2 in LPFS ensemble.
+         V_r(I) = V_r(I) * WindMultiplier
+C     Convert wind velocity from top of atmospheric boundary layer to
+C     10m wind velocity.
+         V_r(I) = V_r(I) * BLADj
+C
+C     Find the velocity components.
+         CALL calcInflowAngle(RAD(I),RMW,inflowAngle)
+!P.V 11/04/2022 to account for Southern Hemisphere
+         WVNX(I)=SIGN(1.0d0,-lat)*V_r(I)*
+     &           SIN(THETA(I)+SIGN(1.0d0,lat)*inflowangle)
+         WVNY(I)=SIGN(1.0d0,lat)*V_r(I)*
+     &           COS(THETA(I)+SIGN(1.0d0,lat)*inflowangle)
 C
 C     jgf46.31 Determine translation speed that should be added to final
 C     storm wind speed. This is tapered to zero as the storm wind tapers
 C     to zero toward the eye of the storm and at long distances from the
 C     storm.
-         TransSpdX = (abs(V_r(I))/spd)*TVX
-         TransSpdY = (abs(V_r(I))/spd)*TVY
-C     Apply mutliplier for Storm2 in LPFS ensemble.
-         V_r(I) = V_r(I) * WindMultiplier
+         CALL calcTranslationSpeed(V_r(I),spd,TVX,TVY,lat,
+     &           TransSpdX,TransSpdY)
 C
-C     Find the velocity components.
-!P.V 11/04/2022 to account for Southern Hemisphere
-        !WVNX(I)=-V_r(I)*SIN(THETA(I))
-        !WVNY(I)= V_r(I)*COS(THETA(I))
-        ! Find the wind velocity components (caution to SH/NH)
-        if(lat.lt.0.d0) then ! SH
-         WVNX(I)= V_r(I)*SIN(THETA(I))
-         WVNY(I)=-V_r(I)*COS(THETA(I))
-        else ! NH
-         WVNX(I)=-V_r(I)*SIN(THETA(I))
-         WVNY(I)= V_r(I)*COS(THETA(I))
-        endif
- 
 C
-C     jgf46.19 Convert wind velocity from top of atmospheric boundary
-C     layer (which is what the Holland curve fit produces) to wind
-C     velocity at 10m above the earth's surface (factor of
-C     0.7).
-         WVNX(I)=WVNX(I)*BLAdj
-         WVNY(I)=WVNY(I)*BLAdj
 C
+C     jgf46.31 Add the storm translation speed.
+         WVNX(I)=WVNX(I)+TransSpdX
+         WVNY(I)=WVNY(I)+TransSpdY
 C     jgf46.21 Also convert from 1 minute averaged winds to 10
 C     minute averaged winds (0.88 factor).
          WVNX(I)=WVNX(I)*one2ten
          WVNY(I)=WVNY(I)*one2ten
 C
-C     jgf46.31 Add the storm translation speed.
-         WVNX(I)=WVNX(I)+TransSpdX
-         WVNY(I)=WVNY(I)+TransSpdY
-C
-C     jgf46.31 Set the wind velocities to zero outside the last closed
-C     isobar.
-C         IF (RAD(I).gt.rrp) THEN
-C            WVNX(I)=0.0d0
-C            WVNY(I)=0.0d0
-C         ENDIF
 C
 !P.V 11/04/2022
-        PRESS(I) = max(0.85d5,min(1.1e5,PRESS(I))) !Typhoon Tip 870 hPa ... 12-oct-1979
-        WVNX(I)  = max(-200.d0,min(200.d0,WVNX(I)))
-        WVNY(I)  = max(-200.d0,min(200.d0,WVNY(I)))
-        !-------------------------------------------
-        ! Convert atmospheric pressure (Pascals) to
-        ! atmospheric pressure-induced water surface
-        ! elevation (meters).
-        !-------------------------------------------
-        PRESS(I) = PRESS(I) / (RHOWAT0*G)
+         PRESS(I) = max(0.85d5,min(1.1e5,PRESS(I))) !Typhoon Tip 870 hPa ... 12-oct-1979
+         WVNX(I)  = max(-200.d0,min(200.d0,WVNX(I)))
+         WVNY(I)  = max(-200.d0,min(200.d0,WVNY(I)))
+         !-------------------------------------------
+         ! Convert atmospheric pressure (Pascals) to
+         ! atmospheric pressure-induced water surface
+         ! elevation (meters).
+         !-------------------------------------------
+         PRESS(I) = PRESS(I) / (RHOWAT0*G)
 
       END DO
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -5303,6 +5330,79 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE HollandGet
 C     ----------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   C A L C T R A N S L A T I O N S P E E D
+C-----------------------------------------------------------------------
+      SUBROUTINE calcTranslationSpeed(V_r,spd,TVX,TVY,lat,
+     &   TransSpdX,TransSpdY)
+      IMPLICIT NONE
+      REAL(8),INTENT(IN) :: V_r, spd, TVX, TVY, lat
+      REAL(8),INTENT(OUT) :: TransSpdX, TransSpdY
+      REAL(8) :: beta
+      call setMessageSource("calcTranslationSpeed")
+#ifdef ALL_TRACE
+      call allMessage(DEBUG,"Enter.")
+#endif
+      SELECT CASE(TRIM(backgroundWindModel))
+         CASE ("None")
+            TransSpdX = (abs(V_r)/spd)*TVX
+            TransSpdY = (abs(V_r)/spd)*TVY
+         CASE ("LC12")
+C      Add 0.55vt to the left of the direction of forward motion
+C      or use constant direction change of 20deg; note the hemisphere
+            beta=0.3491d0
+            TransSpdX = 0.55d0*( TVX*cos(beta)
+     &                          -SIGN(1.0d0,lat)*TVY*sin(beta) )
+            TransSpdY = 0.55d0*( TVY*cos(beta)
+     &                          +SIGN(1.0d0,lat)*TVX*sin(beta) )
+         CASE DEFAULT
+            call allMessage(ERROR,'Unrecognized backgroundWindModel: '
+     &                         //trim(backgroundWindModel))
+            call windTerminate()
+         
+      END SELECT
+#ifdef ALL_TRACE
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE calcTranslationSpeed
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   C A L C I N F L O W A N G L E
+C-----------------------------------------------------------------------
+      subroutine calcInflowAngle(RAD, RMW, inflowAngle)
+      IMPLICIT NONE
+      REAL(8),INTENT(IN) :: RAD
+      REAL(8),INTENT(IN) :: RMW
+      REAL(8),INTENT(OUT) :: inflowAngle
+      call setMessageSource("calcInflowAngle")
+#ifdef ALL_TRACE
+      call allMessage(DEBUG,"Enter.")
+#endif
+      IF (useInflow.EQV..true.) THEN
+C     Adjustment to account for the inflow toward the center
+C     Bretschneider, 1972. New by Ning 
+         IF (RAD .lt. (RMW*1000.d0)) THEN
+           inflowangle=0.1745d0*(1.d0+RAD/RMW/1000.d0)
+         ELSEIF (RAD .lt. (1.2d0*RMW*1000.d0)) THEN
+            inflowangle=0.3491d0+0.4363d0*(RAD/RMW/1000.d0-1.0d0)
+         ELSE
+            inflowangle=0.4363d0
+         END IF
+C     original ADCIRC uses inflowangle=0
+      ELSE
+         inflowAngle=0d0
+      ENDIF
+#ifdef ALL_TRACE
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE calcInflowAngle
+C-----------------------------------------------------------------------
 
 C     ----------------------------------------------------------------
 C      S U B R O U T I N E   G E T  H O L L A N D  S T O R M  D A T A
