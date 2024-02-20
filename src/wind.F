@@ -5820,45 +5820,28 @@ C     ----------------------------------------------------------------
       USE SIZES, ONLY : MyProc, LOCALDIR
       USE MESH, ONLY : X, Y, SLAM, SFEA, NP, ICS
       USE ADC_CONSTANTS, ONLY : RHOWAT0, G, mb2pa
+      USE GLOBAL, ONLY : CORIF
       IMPLICIT NONE
       REAL(8), intent(in) :: TIMELOC
       REAL(8), intent(out), dimension(NP) :: WVNX,WVNY
       REAL(8), intent(out), dimension(NP) :: PRESS
       INTEGER I, J
-      REAL(8),SAVE,ALLOCATABLE :: RAD(:),DX(:),DY(:)
-      REAL(8),SAVE,ALLOCATABLE :: XCOOR(:),YCOOR(:) !lat and lon of nodes
-      REAL(8),SAVE,ALLOCATABLE :: V_r(:)            !wind sp. as fn. of dist
-      REAL(8),SAVE,ALLOCATABLE :: THETA(:)
       REAL(8) :: TVX,TVY,RRP,RMW,A,B,WTRATIO
       REAL(8) :: TransSpdX, TransSpdY
       REAL(8) :: TM, cpress, lon, lat, spd
       REAL(8) :: ts        ! storm translation speed, m/s
       REAL(8) :: WindMultiplier         ! for storm 2 in LPFS ensemble
       REAL(8) :: centralPressureDeficit ! difference btw ambient and cpress
+      REAL(8) :: inflowAngle
+      REAL(8),ALLOCATABLE,DIMENSION(:) :: V_cle15
+      REAL(8) :: r0
 C
-      REAL(8) :: omega, coriolis
 
-      LOGICAL, SAVE :: FIRSTCALL = .True.
-
-      call setMessageSource("CLE15GET")
+      call setMessageSource("CLE15Get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 
-C
-      omega = 2.0d0*pi / 86164.2d0
-C
-      IF (FIRSTCALL) THEN
-         FIRSTCALL = .False.
-         ALLOCATE (RAD(NP),DX(NP),DY(NP),XCOOR(NP),YCOOR(NP))
-         ALLOCATE (V_r(NP),THETA(NP))
-C
-C     The subroutine only works for ICS=2 (spherical coordinates)
-         DO I=1,NP
-            XCOOR(I)=SLAM(I)*RAD2DEG
-            YCOOR(I)=SFEA(I)*RAD2DEG
-         END DO
-      ENDIF
 C
 C     Get data for this time step.
       CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,
@@ -5920,107 +5903,77 @@ C     boundary layer (which is what the Holland curve fit requires).
 C
 C     Calculate Holland parameters and limit the result to its appropriate
 C     range.
-      B = rhoAir*e*(spd**2.d0)/(centralPressureDeficit)
-      IF (B.lt.1.0d0) B=1.0d0
-      IF (B.gt.2.5d0) B=2.5d0
-C
-C     Calculate Holland A parameter. (jgf46.32jgf4 commented out)
-C      A = (RMW*1000.d0)**B
-C
-#ifdef DEBUG_HOLLAND
-      WRITE(16,4321) B
- 4321 FORMAT(/,2x,'Holland B parameter is ',e16.8)
-#endif
-C     jgf46.28 If we are running storm 2 in the Lake Pontchartrain
-C     Forecast System ensemble, the final wind speeds should be
-C     multiplied by 1.2.
-      IF (StormNumber.eq.2) THEN
-         WindMultiplier=1.2d0
-      ELSE
-         WindMultiplier=1.0d0
+      IF (BCalc.EQ.'limited') THEN
+         B = rhoAir*e*(spd**2.d0)/(centralPressureDeficit)
+         IF (B.lt.1.0d0) B=1.0d0
+         IF (B.gt.2.5d0) B=2.5d0
       ENDIF
+C
+C     Get CLE15 profile for this time steop
+      CALL get_CLE15_profile(spd,RMW*1000d0,lat,V_cle15,r0)
 C
 C     Calculate wind velocity and pressure at each node.
       DO I=1,NP
          DX(I)=(XCOOR(I)-lon)*DEG2RAD
          DY(I)=(YCOOR(I)-lat)*DEG2RAD
-         THETA(I)=ATAN2(DY(I),DX(I))
+         IF (thetaLatDep.EQV..true.) THEN
+            THETA(I)=ATAN2(DY(I),(cos(lat*DEG2RAD)*DX(I)))
+         ELSE
+            THETA(I)=ATAN2(DY(I),DX(I))
+         ENDIF
 C     RJW v48.45
 C     Compute the distances based on haversine formula for distance along a sphere
          rad(i) = sphericalDistance(DX(I),DY(I),lat, ycoor(i))
-C     Compute coriolis
-         coriolis = 2.0d0 * omega * sin(YCOOR(I)*DEG2RAD)
+C     Add option to calculate exact B parameter
+         IF (BCalc.EQ.'exact') THEN
+            B=rhoAir*e*(spd**2.d0+spd*RMW*1000.d0*CORIF(I))
+     &      /(centralPressureDeficit)
+         ENDIF
+C     
 C     Compute pressure field
 !P.V 11/04/2022 to account for Southern Hemisphere
-!         PRESS(I)=(cpress+(centralPressureDeficit)*
-!     &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
          PRESS(I)=cpress+(centralPressureDeficit)*
      &        EXP(-(RMW*1000.d0/RAD(I))**B)
-C     Compute velocity field with absolute around 
-C     CORIOLIS for the Southern Hempisphere
-         V_r(I) = sqrt(
-     &        (RMW*1000.d0/RAD(I))**B *
-     &        EXP(1.d0-(RMW*1000.d0/RAD(I))**B)*spd**2.d0
-     &        + (RAD(I)**2.d0)*(CORIOLIS**2.d0)/4.d0
-     &        )
-     &        - RAD(I)*ABS(CORIOLIS)/2.d0
+!P.V 11/04/2022
+         PRESS(I) = PRESS(I) / (RHOWAT0*G)
+C     CLE15 model: complete TC wind profile
+         IF (RAD(I) > r0) THEN
+            WVNX(I) = 0.0d0
+            WVNY(I) = 0.0d0
+            CYCLE
+         ELSE
+            V_r(I) = V_cle15(int(RAD(I)/1000.d0)+1)
+         ENDIF
+C     Convert wind velocity from top of atmospheric boundary layer to
+C     10m wind velocity.
+         V_r(I) = V_r(I) * BLADj
+C
+C     Find the velocity components.
+         CALL calcInflowAngle(RAD(I),RMW,inflowAngle)
+!P.V 11/04/2022 to account for Southern Hemisphere
+         WVNX(I)=SIGN(1.0d0,-lat)*V_r(I)*
+     &           SIN(THETA(I)+SIGN(1.0d0,lat)*inflowangle)
+         WVNY(I)=SIGN(1.0d0,lat)*V_r(I)*
+     &           COS(THETA(I)+SIGN(1.0d0,lat)*inflowangle)
 C
 C     jgf46.31 Determine translation speed that should be added to final
 C     storm wind speed. This is tapered to zero as the storm wind tapers
 C     to zero toward the eye of the storm and at long distances from the
 C     storm.
-         TransSpdX = (abs(V_r(I))/spd)*TVX
-         TransSpdY = (abs(V_r(I))/spd)*TVY
-C     Apply mutliplier for Storm2 in LPFS ensemble.
-         V_r(I) = V_r(I) * WindMultiplier
+         CALL calcTranslationSpeed(V_r(I),spd,TVX,TVY,lat,
+     &           TransSpdX,TransSpdY)
 C
-C     Find the velocity components.
-!P.V 11/04/2022 to account for Southern Hemisphere
-        !WVNX(I)=-V_r(I)*SIN(THETA(I))
-        !WVNY(I)= V_r(I)*COS(THETA(I))
-        ! Find the wind velocity components (caution to SH/NH)
-        if(lat.lt.0.d0) then ! SH
-         WVNX(I)= V_r(I)*SIN(THETA(I))
-         WVNY(I)=-V_r(I)*COS(THETA(I))
-        else ! NH
-         WVNX(I)=-V_r(I)*SIN(THETA(I))
-         WVNY(I)= V_r(I)*COS(THETA(I))
-        endif
- 
 C
-C     jgf46.19 Convert wind velocity from top of atmospheric boundary
-C     layer (which is what the Holland curve fit produces) to wind
-C     velocity at 10m above the earth's surface (factor of
-C     0.7).
-         WVNX(I)=WVNX(I)*BLAdj
-         WVNY(I)=WVNY(I)*BLAdj
 C
+C     jgf46.31 Add the storm translation speed.
+         WVNX(I)=WVNX(I)+TransSpdX
+         WVNY(I)=WVNY(I)+TransSpdY
 C     jgf46.21 Also convert from 1 minute averaged winds to 10
 C     minute averaged winds (0.88 factor).
          WVNX(I)=WVNX(I)*one2ten
          WVNY(I)=WVNY(I)*one2ten
 C
-C     jgf46.31 Add the storm translation speed.
-         WVNX(I)=WVNX(I)+TransSpdX
-         WVNY(I)=WVNY(I)+TransSpdY
 C
-C     jgf46.31 Set the wind velocities to zero outside the last closed
-C     isobar.
-C         IF (RAD(I).gt.rrp) THEN
-C            WVNX(I)=0.0d0
-C            WVNY(I)=0.0d0
-C         ENDIF
-C
-!P.V 11/04/2022
-        PRESS(I) = max(0.85d5,min(1.1e5,PRESS(I))) !Typhoon Tip 870 hPa ... 12-oct-1979
-        WVNX(I)  = max(-200.d0,min(200.d0,WVNX(I)))
-        WVNY(I)  = max(-200.d0,min(200.d0,WVNY(I)))
-        !-------------------------------------------
-        ! Convert atmospheric pressure (Pascals) to
-        ! atmospheric pressure-induced water surface
-        ! elevation (meters).
-        !-------------------------------------------
-        PRESS(I) = PRESS(I) / (RHOWAT0*G)
 
       END DO
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -6030,6 +5983,243 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE CLE15GET
 C     ----------------------------------------------------------------
+C BY SHUAI START $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+      SUBROUTINE get_CLE15_profile(Vm,rm,lat0,Vout,r0out)
+      
+         IMPLICIT NONE
+         REAL(8),INTENT(IN) :: Vm,  ! max wind (m/s)
+     &                         rm,  ! radius of max wind (m)
+     &                         lat0 ! center of storm (deg)
+         REAL(8),ALLOCATABLE,INTENT(OUT) :: Vout(:) ! cle15 wind profile
+                                                    ! (m/s)
+         REAL(8),INTENT(OUT) :: r0out               ! radius of
+                                                    ! diminishing winds
+                                                    ! (m)
+         ! local variables
+         INTEGER        :: I,J,K,L,r_N,num_its,
+     &                     rmerge1,rmerge2,rmerge,rclose
+         REAL(8)       :: r0,r0_out_bound,r0_in_bound,r0_mid_bound
+     &                    ,tmp, Vdiff
+         LOGICAL        :: NEED_INTERATION
+         REAL(8),DIMENSION(:),ALLOCATABLE :: r, Vinner, Vouter
+         REAL(8) :: f
+      
+         r0 = 1000d3
+         r0_out_bound    = max(2000d3,30d0*rm)
+         r0_in_bound     = 2d0*rm
+         r0_mid_bound    = 0.5d0*(r0_out_bound+r0_in_bound)
+         NEED_INTERATION = .TRUE.
+         ! calculate latitude dependent coriolis w.r.t center of storm
+         f = 2.0d0*omega*sin(abs(lat0)*DEG2RAD)
+      
+         num_its = 0
+         DO WHILE (NEED_INTERATION)
+      
+            num_its = num_its + 1
+      
+            Vinner = get_inner_wind(Vm,rm,f,r0_mid_bound)
+            Vouter = get_outer_wind(Vm,rm,f,r0_mid_bound)
+      
+            r_N = int(r0_mid_bound/1000d0)+1
+            rmerge1 = -1
+            rmerge2 = -1
+      
+            DO I = 1, r_N, 1
+      
+               IF ( Vinner(I)>=Vouter(I) ) THEN
+                  IF (rmerge1==-1) THEN
+                     rmerge1 = I
+                  ELSE
+                     rmerge2 = I
+                  END IF
+               END IF
+      
+            END DO
+      
+      
+            IF ( rmerge1==-1 .AND. rmerge2==-1 ) THEN
+               ! No cross point
+C               ALLOCATE (Vdiff (r_N))
+      
+C               Vdiff = abs(Vinner-Vouter)
+               tmp = 9999999999d0
+      
+               DO I = 1, r_N, 1
+                  Vdiff = abs(Vinner(I)-Vouter(I))
+                  IF ( Vdiff <= tmp ) THEN
+                     tmp = Vdiff
+                     rclose = I
+                  END IF
+               END DO
+      
+               IF ( abs(Vinner(rclose)-Vouter(rclose)) < .1 ) THEN
+                  ! condition to quit while:
+                  ! 1. wind speed at the closest point < .5
+                  NEED_INTERATION = .FALSE.
+                  rmerge = rclose
+                  r0     = r0_mid_bound
+               ELSE
+                  r0_out_bound = r0_mid_bound
+                  r0_mid_bound = 0.5d0*(r0_out_bound+r0_in_bound)
+                  IF ( r0_out_bound - r0_in_bound <=1 .AND. 
+     &                 num_its>= 50 ) THEN
+                     ! condition to quit while:
+                     ! 1. r0_out_bound - r0_in_bound <= 3 r grid point
+                     ! 2. loop more than 50 times
+                     NEED_INTERATION = .FALSE.
+                     rmerge = rclose
+                     r0     = r0_mid_bound
+                  END IF
+               END IF
+      
+C               DEALLOCATE(Vdiff)
+      
+            ELSE
+               ! At least one cross point
+      
+               IF ( rmerge1/=-1 .AND. rmerge2==-1 ) THEN
+                  ! condition to quit while:
+                  ! 1. perfect merge
+                  NEED_INTERATION = .FALSE.
+                  rmerge = rmerge1
+                  r0     = r0_mid_bound
+      
+               ELSE
+      
+                  IF (rmerge2-rmerge1<=0) THEN
+                     ! condition to quit while:
+                     ! 1. left (rmerge1) and right (rmerge2) cross points
+                     ! happen within 3 r grids
+                     NEED_INTERATION = .FALSE.
+                     rmerge = rmerge1
+                     r0     = r0_mid_bound
+                  ELSE
+                     r0_in_bound = r0_mid_bound
+                     r0_mid_bound = 0.5d0*(r0_out_bound+r0_in_bound)
+                     !condition to quit while:
+                     !1. r0_out_bound - r0_in_bound <= 3 r grid point
+                     IF (r0_out_bound - r0_in_bound <=1 .AND.
+     &                   num_its>= 50) THEN
+                        NEED_INTERATION = .FALSE.
+                        rmerge = rmerge1
+                        r0     = r0_mid_bound
+                     END IF
+                  END IF
+      
+               END IF
+      
+            END IF
+      
+         END DO
+      
+         r_N = int(r0/1000d0)+1
+         ALLOCATE (r             (r_N))
+         ALLOCATE (Vout          (r_N))
+      
+         r = (/ (I, I = 0,int(r0),1000) /)
+      
+         Vout(:rmerge  ) = Vinner(:rmerge  )
+         Vout(rmerge+1:) = Vouter(rmerge+1:)
+         r0out           = r0
+
+         DO I = 1, r_N, 1
+            IF ( r(I)<rm ) THEN
+               Vout(I) = Vout(I) * (r(I)/rm)**0.25d0
+            END IF
+         END DO
+
+#ifdef DEBUG_HOLLAND
+         IF (Vout(2) > 50.d0) then
+            write (16, *) 'Rmerge',rmerge, rmerge1, rmerge2
+            write (16, '(A)') 'R,Vout,Vinner,Vouter'
+            DO I = 1,r_N,1
+               WRITE (16, '(F10.0,A,F10.5,A,F10.5,A,F10.5)') 
+     &               ,r(I),',',Vout(I),',',Vinner(I),',',Vouter(I)
+            END DO
+            call windterminate()
+         endif
+#endif
+      
+      CONTAINS
+      
+      !--------------------------
+      FUNCTION get_inner_wind(Vm,rm,f,r0) RESULT (res)
+      
+         INTEGER                :: I,J,K,L,r_N
+         REAL(8), intent(in)   :: Vm, rm, f, r0
+         REAL(8), DIMENSION(:),ALLOCATABLE :: r, res
+      
+         r_N = int(r0/1000d0)+1
+      
+         ALLOCATE (r   (r_N))
+         ALLOCATE (res (r_N))
+      
+         r   = (/ (I, I = 0,int(r0),1000) /)
+         res = (2d0*(r/rm)**2 / 
+     &         (2d0 - CkCd + CkCd*(r/rm)**2) ) ** (1d0/(2d0-CkCd)) * 
+     &         (rm*Vm + 0.5d0*f*rm**2)
+         res = (res-0.5d0*f*r**2)/r
+         res(1) = 0d0
+      
+      END FUNCTION
+      
+      !--------------------------
+      FUNCTION get_outer_wind(Vm,rm,f,r0) RESULT (res)
+      
+         INTEGER                :: I,J,K,L,r_N
+         REAL(8)               :: dr
+         REAL(8), intent(in)   :: Vm, rm, f, r0
+         REAL(8), DIMENSION(:),ALLOCATABLE :: r, res
+         ! local
+         REAL(8) :: Cd
+      
+         r_N = int(r0/1d3)+1
+      
+         ALLOCATE (r   (r_N))
+         ALLOCATE (res (r_N))
+      
+         r   = (/ (I, I = 0,int(r0),1000) /)
+         dr  = r(2)-r(1)
+         res(:) = 0d0
+      
+         J = 1
+         DO I = r_N-1,2,-1
+            
+            IF ( res(I) <= 6d0 ) THEN
+               Cd = 6.16d-4
+            ELSE IF ( res(I) >= 35.4d0 ) THEN
+               Cd = 2.4d-3
+            ELSE
+               Cd = 5.19d-5*res(I) + 2.614d-4
+            END IF
+
+            res(I-1) = res(I) - 
+     &                 (2*Cd/w_cool*r(I)*res(I)**2/(r0**2-r(I)**2) 
+     &                 - res(I)/r(I) - f) * dr
+      
+            IF ( res(I-1) > 300d0 ) THEN
+      
+                  res(I-1) = 300d0
+                  J = I-1
+      
+                  EXIT
+      
+            END IF
+      
+         END DO
+      
+         IF ( J > 1 ) THEN
+      
+            res(:J) = 300d0
+      
+         END IF
+      
+      END FUNCTION
+      
+      END SUBROUTINE get_CLE15_profile
+
+C BY SHUAI END $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
 C     ----------------------------------------------------------------

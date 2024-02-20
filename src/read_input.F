@@ -774,7 +774,7 @@ C...
       ! only print these next lines if we are using the CLE15 vortex
       ! model since they are not used in regular Holland
       IF (vortexModel.EQ."CLE15") THEN
-         write(scratchMessage,'(a,i0)') "w_cool  =",
+         write(scratchMessage,'(a,f,a)') "w_cool  =",
      &      w_cool," mm s^-1"
          call logMessage(ECHO,trim(scratchMessage))
          IF (CkCd_calc.EQV..true.) THEN
