@@ -229,7 +229,7 @@ C.... DMW
 !CLB: adding nws8Control namelist
       NAMELIST /nws8Control/ 
      &   vortexModel,           ! Holland or CLE15
-     &   backgroundWindModel,   ! None or LC12
+     &   backgroundWindModel,   ! radialVelocityWeighted or LC12
      &   BCalc,                 ! exact or limited
      &   thetaLatDep,           ! true or false
      &   useInflow,             ! true or false
@@ -745,7 +745,7 @@ C...
 !     CPB: add nws8Control namelist
 !     defaults
       vortexModel = 'Holland'
-      backgroundWindModel = 'None'
+      backgroundWindModel = 'radialVelocityWeighted'
       BCalc = 'limited'
       thetaLatDep = .false.
       useInflow = .false.

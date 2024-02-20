@@ -276,7 +276,7 @@ c.... !wjp added for warnElev namelist
       ! CPB Feb. 2024: nws8 Control namelist
       LOGICAL :: FOUND_NWS8_NML = .FALSE.
       CHARACTER(LEN=100) :: vortexModel = 'Holland'
-      CHARACTER(LEN=100) :: backgroundWindModel = 'None'
+      CHARACTER(LEN=100) :: backgroundWindModel = 'radialVelocityWeighted'
       CHARACTER(LEN=100) :: BCalc = 'limited'
       LOGICAL :: thetaLatDep = .FALSE.
       LOGICAL :: useInflow = .FALSE.

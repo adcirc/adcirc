@@ -118,7 +118,7 @@ C                    logic.
 C.....Adding nws8Control namelist with additional options for 
 C     Holland-type wind models, i.e., vortex models that use track data
       CHARACTER(LEN=10) :: vortexModel  ! current: Holland or CLE15
-      CHARACTER(LEN=10) :: backgroundWindModel ! current: None, LC12
+      CHARACTER(LEN=30) :: backgroundWindModel ! current: None, LC12
       CHARACTER(LEN=10) :: BCalc        ! use "exact" or "limited" shape
                                         ! parameter "B"
       LOGICAL :: thetaLatDep            ! theta used in  calculation of
@@ -5345,7 +5345,7 @@ C-----------------------------------------------------------------------
       call allMessage(DEBUG,"Enter.")
 #endif
       SELECT CASE(TRIM(backgroundWindModel))
-         CASE ("None")
+         CASE ("radialVelocityWeighted")
             TransSpdX = (abs(V_r)/spd)*TVX
             TransSpdY = (abs(V_r)/spd)*TVY
          CASE ("LC12")
@@ -6154,6 +6154,13 @@ C               DEALLOCATE(Vdiff)
       
          ALLOCATE (r   (r_N))
          ALLOCATE (res (r_N))
+         ! if desired calculated CkCd from the best fit relationship
+         ! found in 
+         IF (CkCd_calc.EQV..TRUE.) THEN
+            CkCd = 0.00055*Vm**2 - 
+     &             0.0259*Vm + 
+     &             0.763
+         ENDIF
       
          r   = (/ (I, I = 0,int(r0),1000) /)
          res = (2d0*(r/rm)**2 / 
