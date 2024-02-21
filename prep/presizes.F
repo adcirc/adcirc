@@ -285,7 +285,7 @@ c.... !wjp added for warnElev namelist
       REAL(8) :: CkCd = 1d0
       NAMELIST /nws8Control/ 
      &   vortexModel,           ! Holland or CLE15
-     &   backgroundWindModel,   ! None or LC12
+     &   backgroundWindModel,   ! radialVelocityWeighted or LC12
      &   BCalc,                 ! exact or limited
      &   thetaLatDep,           ! true or false
      &   useInflow,             ! true or false

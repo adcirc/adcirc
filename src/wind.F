@@ -118,7 +118,8 @@ C                    logic.
 C.....Adding nws8Control namelist with additional options for 
 C     Holland-type wind models, i.e., vortex models that use track data
       CHARACTER(LEN=10) :: vortexModel  ! current: Holland or CLE15
-      CHARACTER(LEN=30) :: backgroundWindModel ! current: None, LC12
+      CHARACTER(LEN=30) :: backgroundWindModel ! current: 
+                                          ! radialvelocityWeighted, LC12
       CHARACTER(LEN=10) :: BCalc        ! use "exact" or "limited" shape
                                         ! parameter "B"
       LOGICAL :: thetaLatDep            ! theta used in  calculation of
