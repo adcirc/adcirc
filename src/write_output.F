@@ -236,6 +236,11 @@ C
       type(OutputDataDescript_t) :: YVELAVDescript
       type(OutputDataDescript_t) :: XVELVADescript
       type(OutputDataDescript_t) :: YVELVADescript
+
+      ! H1, H2
+      type(OutputDataDescript_t) :: H1_HS_Descript
+      type(OutputDataDescript_t) :: H2_HS_Descript
+
       !
       !  S W A N  O U T P U T  D A T A
       !
@@ -4676,6 +4681,25 @@ C
          HotstartVelDescript % array_g              => UU2_g
          HotstartVelDescript % array2_g             => VV2_g
 
+         H1_HS_Descript % specifier            = NHSTAR
+         H1_HS_Descript % initial_value        = 0.0
+         H1_HS_Descript % num_items_per_record = 1
+         H1_HS_Descript % num_fd_records       = NP_G
+         H1_HS_Descript % num_records_this     = NP
+         H1_HS_Descript % imap                 => NODES_LG
+         H1_HS_Descript % array                => H1
+         H1_HS_Descript % array_g              => HTOT1_g
+
+         H2_HS_Descript % specifier            = NHSTAR
+         H2_HS_Descript % initial_value        = 0.0
+         H2_HS_Descript % num_items_per_record = 1
+         H2_HS_Descript % num_fd_records       = NP_G
+         H2_HS_Descript % num_records_this     = NP
+         H2_HS_Descript % imap                 => NODES_LG
+         H2_HS_Descript % array                => H2
+         H2_HS_Descript % array_g              => HTOT2_g
+
+
          IF (IM.eq.10) THEN
             CH1Descript % specifier            = NHSTAR
             CH1Descript % initial_value        = 0.0
@@ -4895,6 +4919,12 @@ C     collect up the data from subdomains if running in parallel
       IF (WRITE_LOCAL_HOT_START_FILES.eqv..FALSE.) THEN
          CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
          CALL collectFullDomainArray(Elev2Descript, packOne, unpackOne)
+
+         ! H1, H2
+         CALL collectFullDomainArray(H1_HS_Descript, packOne, unpackOne)
+         CALL collectFullDomainArray(H2_HS_Descript, packOne, unpackOne)
+  
+
          CALL collectFullDomainArray(HotstartVelDescript, packTwo, unpackTwo)
          IF (IM.eq.10) THEN
             CALL collectFullDomainArray(CH1Descript, packOne, unpackOne)
@@ -5469,7 +5499,8 @@ C
          IF (myProc.eq.0) THEN
             CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
      &         Elev2Descript, HotstartVelDescript, CH1Descript, EtaDiscDescript,
-     &         NodeCodeDescript, NOFFDescript, TimeLoc, it)
+     &         NodeCodeDescript, NOFFDescript, H1_HS_Descript,
+     &         H2_HS_Descript, TimeLoc, it)
             IF ((IHARIND.eq.1).and.(IT.gt.ITHAS)) THEN
                CALL writeNetCDFHotstartHarmonic(hss%lun,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,

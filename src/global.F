@@ -140,6 +140,10 @@ C     for writing fulldomain hotstart files.
       REAL(8), ALLOCATABLE, TARGET :: UU2_g(:)
       REAL(8), ALLOCATABLE, TARGET :: VV2_g(:)
       REAL(8), ALLOCATABLE, TARGET :: CH1_g(:)
+
+      REAL(8), ALLOCATABLE, TARGET :: HTOT1_g(:) 
+      REAL(8), ALLOCATABLE, TARGET :: HTOT2_g(:) 
+
       INTEGER, ALLOCATABLE, TARGET :: labels_g(:)
       INTEGER, ALLOCATABLE, TARGET :: NodeCode_g(:)
       INTEGER, ALLOCATABLE :: NNodeCode_g(:)

@@ -1729,7 +1729,13 @@
          CALL COMPUTE_CYLINPROJ_SFAC( SLAM, SFEA ) ; 
       END IF
 
-! move to this location by DW
+! DW: It is necessary to move the block of code finalizing element table
+!     to this location beacse EXV, EYV are used to calculate the neigbor
+!     table instead of X, Y. This would resolve very seldom-but-serius
+!     mistake in the neighbor table of nodes whose
+!     their associated elements having repeated latitude coordinates and 
+!     longitude coordinates crossing the (imaginary) meridian line.  
+!   
 !
 !      F I N A L I Z E   E L E M E N T   T A B L E
 !
