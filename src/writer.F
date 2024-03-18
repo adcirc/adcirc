@@ -1140,6 +1140,10 @@ C-----------------------------------------------------------------------
       type(OutputDataDescript_t), SAVE :: EtaDiscDescript
       type(OutputDataDescript_t), SAVE :: NodeCodeDescript
       type(OutputDataDescript_t), SAVE :: NOFFDescript
+
+      type(OutputDataDescript_t), SAVE :: H1_HS_Descript
+      type(OutputDataDescript_t), SAVE :: H2_HS_Descript
+     
       LOGICAL,  SAVE :: FirstCall = .true.
 !
 
@@ -1275,6 +1279,37 @@ C-----------------------------------------------------------------------
          Elev2Descript % array                => ETA2
          Elev2Descript % array_g              => ETA2_g
 
+         IF ( WRITER_ID /= 0  ) THEN
+            IF (.not.ALLOCATED(HTOT1_g)) THEN
+              write(16,*) 'Allocating Elev1Descript'
+              ALLOCATE(HTOT1_g(NP_G))
+            ENDIF
+         ENDIF
+         H1_HS_Descript % specifier            = NHSTAR
+         H1_HS_Descript % initial_value        = 0.0
+         H1_HS_Descript % num_items_per_record = 1
+         H1_HS_Descript % num_fd_records       = NP_G
+         H1_HS_Descript % num_records_this     = NP
+         H1_HS_Descript % imap                 => NODES_LG
+         H1_HS_Descript % array                => H1
+         H1_HS_Descript % array_g              => HTOT1_g
+
+         IF ( WRITER_ID /= 0 ) THEN
+            IF (.not.ALLOCATED(HTOT2_g)) THEN
+               write(16,*) 'Allocating Elev2Descript'
+               ALLOCATE(ETA2_g(NP_G))
+            ENDIF
+         ENDIF
+         H2_HS_Descript % specifier            = NHSTAR
+         H2_HS_Descript % initial_value        = 0.0
+         H2_HS_Descript % num_items_per_record = 1
+         H2_HS_Descript % num_fd_records       = NP_G
+         H2_HS_Descript % num_records_this     = NP
+         H2_HS_Descript % imap                 => NODES_LG
+         H2_HS_Descript % array                => H2
+         H2_HS_Descript % array_g              => HTOT2_g
+
+
          IF ( WRITER_ID /= 0 ) THEN
             IF (.not.ALLOCATED(UU2_g)) THEN
                write(16,*) 'Allocating VelDescript'
@@ -1353,6 +1388,11 @@ C-----------------------------------------------------------------------
 C     collect up the data from subdomains if running in parallel
          CALL collectFullDomainArrayw(Elev1Descript, packOne, unpackOne)
          CALL collectFullDomainArrayw(Elev2Descript, packOne, unpackOne)
+
+         ! H1, H2
+         CALL collectFullDomainArrayw(H1_HS_Descript, packOne, unpackOne)
+         CALL collectFullDomainArrayw(H2_HS_Descript, packOne, unpackOne)
+
          CALL collectFullDomainArrayw(VelDescript, packTwo, unpackTwo)
          IF (IM.eq.10) THEN
             CALL collectFullDomainArrayw(CH1Descript, packOne, unpackOne)
