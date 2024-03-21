@@ -18,7 +18,7 @@ module adc_mod
   use GLOBAL , only: IMAP_EL_LG,NODES_LG
   use GLOBAL , only: ETA2, UU2, VV2  ! Export water level and velocity fileds to wave model
   USE GLOBAL,  ONLY: RSNX2, RSNY2    ! Import wave 2D forces from wave model
-  use SIZES  , only: ROOTDIR, SZ
+  use SIZES  , only: ROOTDIR
 
   ! DW
   USE GLOBAL, only: CMP_VERSION_NUMBERS, FileFmtVersion
@@ -268,11 +268,7 @@ module adc_mod
         ! for reading localized fort.14
         INTEGER:: nn(2)
         INTEGER, ALLOCATABLE:: etov(:,:)  ! element table
-<<<<<<< Updated upstream
-        REAL (SZ), ALLOCATABLE:: vx(:,:), bxy(:) ! node coordinates, bathymetry
-=======
         REAL(8), ALLOCATABLE:: vx(:,:), bxy(:) ! node coordinates, bathymetry
->>>>>>> Stashed changes
 
 
         write(PE_ID, "(A,I4.4)") "PE", localPet
@@ -659,11 +655,7 @@ module adc_mod
         INTEGER :: nn(:)
         integer :: n1, n2, n3
 
-<<<<<<< Updated upstream
-        REAL (SZ), allocatable :: vx(:, :), bxy(:) ! node, bathymetry
-=======
         REAL(8), allocatable :: vx(:, :), bxy(:) ! node, bathymetry
->>>>>>> Stashed changes
         INTEGER, allocatable :: etov(:, :) ! element connectity table
         INTEGER, allocatable, optional :: nodeLabel(:)
 

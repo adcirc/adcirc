@@ -224,8 +224,6 @@ C Logicals added for adcprep paths
       LOGICAL :: useXDMF = .false.    !jgf51.27 trigger metadata read from fort.15
       INTEGER, ALLOCATABLE :: NM(:,:) !jgf48.08
 
-! DW
-      INTEGER:: PARTITION_APPROACH = 1 ;
 
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off

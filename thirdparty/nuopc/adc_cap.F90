@@ -194,8 +194,8 @@ module adc_cap
  ! USE GLOBAL,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE WIND,  ONLY: WTIMINC             ! wind time interval  may be set in ATM.cap or ........  <<:TODO:
   USE GLOBAL,  ONLY: RSTIMINC            ! wave time interval
-  use ADC_CONSTANTS,  ONLY: RhoWat0, g
-  use GLOBAL,  only: NWS, ITHS, NT, DTDP, ITIME
+  use GLOBAL,  ONLY: RhoWat0, NWS, g
+  use GLOBAL,  only: ITHS, NT, DTDP, ITIME
   use GLOBAL,  only: allMessage
 
   use SIZES  , only: ROOTDIR
@@ -204,9 +204,7 @@ module adc_cap
 
   use adc_mod, only: meshdata
   use adc_mod, only: create_parallel_esmf_mesh_from_meshdata
-  use adc_mod, only: extract_parallel_data_from_mesh
   use adc_mod, only: extract_parallel_data_from_mesh_orig
-  use adc_mod, only: eliminate_ghosts
   !use adc_mod, only: adc_cpl_int,adc_cpl_num,adc_cpl_den  !time info is getting from driver
   !use adc_mod, only: read_config
   
@@ -254,9 +252,6 @@ module adc_cap
 
   real,parameter :: wave_force_limmit = 0.05
 
-  ! config options
-  type(ESMF_MeshLoc) :: meshloc
-  logical :: dbug
 
   !-----------------------------------------------------------------------------
   contains
@@ -375,8 +370,6 @@ module adc_cap
     ! Local Variables
     type(ESMF_VM)                :: vm
     integer                      :: esmf_comm,adc_comm,ierr
-    logical                      :: isPresent, isSet
-    character(len=ESMF_MAXSTR)   :: message, cvalue
     character(len=*),parameter   :: subname='(adc_cap:AdvertiseFields)'
 
     rc = ESMF_SUCCESS
@@ -401,39 +394,6 @@ module adc_cap
     ! code. Here the MPI_Barrier() routine is called.
     call MPI_Barrier(adc_comm, ierr)
     !Initialize adcirc before setting up fields
-
-    ! query attributes
-    ! mesh location for fields
-    call NUOPC_CompAttributeGet(model, name='meshloc', value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (isPresent .and. isSet) then
-       if (trim(cvalue) == 'node') then
-          meshloc = ESMF_MESHLOC_NODE
-       else
-          meshloc = ESMF_MESHLOC_ELEMENT
-       end if
-    else
-       cvalue = 'node'
-       meshloc = ESMF_MESHLOC_NODE
-    end if
-    write(message, '(A)') trim(subname)//' meshloc is set to '//trim(cvalue)
-    call ESMF_LogWrite(trim(message), ESMF_LOGMSG_INFO)
-
-    ! debug option
-    call NUOPC_CompAttributeGet(model, name='dbug', value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    dbug = .false.
-    if (isPresent .and. isSet) then
-       if (trim(cvalue) .eq. '.true.' .or. trim(cvalue) .eq. 'true') dbug = .true.
-    end if
-    write(message, '(A,L)') trim(subname)//' debug flag is set to ', dbug
-    call ESMF_LogWrite(trim(message), ESMF_LOGMSG_INFO)
     
     !NUOPC4MET = .true.
     !NUOPC4WAV = .true.
@@ -540,7 +500,6 @@ module adc_cap
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_merid_wind_height10m", shortname= "imwh10m" )
     call fld_list_add(num=fldsToAdc_num, fldlist=fldsToAdc, stdname="inst_zonal_wind_height10m" , shortname= "izwh10m" )
     !--------- export fields from Sea Adc -------------
-    call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="ocean_mask", shortname= "omask" )
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="sea_surface_height_above_sea_level",  shortname= "zeta" )
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="surface_eastward_sea_water_velocity", shortname= "velx" )
     call fld_list_add(num=fldsFrAdc_num, fldlist=fldsFrAdc, stdname="surface_northward_sea_water_velocity",shortname= "vely" )
@@ -653,7 +612,6 @@ module adc_cap
     ! DW
     !
     ! exports
-    real(ESMF_KIND_R8), pointer:: dataPtr_mask(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_zeta(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_velx(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_vely(:)
@@ -681,22 +639,18 @@ module adc_cap
     !print *,localPet,"< LOCAL pet, ADC ..1.............................................. >> "
     ! create a Mesh object for Fields
     !call extract_parallel_data_from_mesh(ROOTDIR, mdata, localPet)
-    call extract_parallel_data_from_mesh_orig(ROOTDIR, mdata, localPet, meshloc)
-    ! keep only non-ghost elements, required for CMEPS coupling
-    if (meshloc == ESMF_MESHLOC_ELEMENT) then
-       call eliminate_ghosts(mdata, localPet, dbug)
-    end if
+    call extract_parallel_data_from_mesh_orig(ROOTDIR, mdata, localPet)
     !    print *,"ADC ..2.............................................. >> "
-    call create_parallel_esmf_mesh_from_meshdata(mdata, meshloc, ModelMesh)
+    call create_parallel_esmf_mesh_from_meshdata(mdata,ModelMesh )
     !    print *,"ADC ..3.............................................. >> "
     !
     
-    if (dbug) then
-       call ESMF_MeshWrite(ModelMesh, filename="adc_mesh", rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-         line=__LINE__, &
-         file=__FILE__)) &
-         return  ! bail out
+    if (.false.) then
+        call ESMF_MeshWrite(ModelMesh, filename="adc_mesh.nc", rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
     end if
 
     !print *,"ADC >> "
@@ -724,24 +678,6 @@ module adc_cap
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-
-! Jul 2023
-! UT ! Initialized an export field omask
-    do num = 1, fldsFrAdc_num
-       if (fldsFrAdc(num)%shortname == 'omask' .and. fldsFrAdc(num)%connected) then 
-          call State_getFldPtr_(ST=exportState, fldname='omask', fldptr=dataPtr_mask, &
-            rc=rc,dump=.false.,timeStr=timeStr)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-            line=__LINE__, &
-            file=__FILE__)) &
-            return  ! bail out
-
-          !do i1 = 1, mdataOut%NumOwnedNd, 1
-          !   dataPtr_mask(i1) = ???(mdataOut%owned_to_present_nodes(i1)) ;
-          !end do
-          dataPtr_mask = 0.0
-       end if
-    end do
 
 ! Sep 2021
 ! DW ! Initialized an export fileds, zeta, velx, vely
@@ -772,7 +708,7 @@ module adc_cap
       do i1 = 1, mdataOut%NumOwnedNd, 1  
         dataPtr_zeta(i1) = ETA2(mdataOut%owned_to_present_nodes(i1)) ;
       end do
-
+     
       ! >>>>> PACK and send VELX
       call State_getFldPtr(ST=exportState,fldname='velx',fldptr=dataPtr_velx,rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -801,15 +737,6 @@ module adc_cap
       write(info,*) subname,' --- no surge forcing for wave. 1way coupled WW3 -> ADC  ---'
       call ESMF_LogWrite(info, ESMF_LOGMSG_INFO, rc=dbrc)
     endif
-
-    ! dump export state
-    if (dbug) then
-       call StateWriteVTK(exportState, 'export_ini', rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, &
-           file=__FILE__)) &
-           return  ! bail out
-    end if
 !
 ! DW
 !
@@ -850,7 +777,7 @@ module adc_cap
 
     do i = 1, nfields
         field = ESMF_FieldCreate(name=field_defs(i)%shortname, mesh=mesh, &
-          typekind=ESMF_TYPEKIND_R8, meshloc=meshloc, rc=rc)
+          typekind=ESMF_TYPEKIND_R8, rc=rc)
         if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
           line=__LINE__, &
           file=__FILE__)) &
@@ -1021,7 +948,6 @@ module adc_cap
     real(ESMF_KIND_R8), pointer:: dumy2(:)
 
     ! exports
-    real(ESMF_KIND_R8), pointer:: dataPtr_mask(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_zeta(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_velx(:)
     real(ESMF_KIND_R8), pointer:: dataPtr_vely(:)
@@ -1530,21 +1456,12 @@ module adc_cap
         !print *, info
         !stop
     endif
-    surge_forcing= .true.
-    do num = 1,fldsFrAdc_num
-       if (fldsFrAdc(num)%shortname == 'zeta') surge_forcing = surge_forcing .and. fldsFrAdc(num)%connected
-       if (fldsFrAdc(num)%shortname == 'velx') surge_forcing = surge_forcing .and. fldsFrAdc(num)%connected
-       if (fldsFrAdc(num)%shortname == 'vely') surge_forcing = surge_forcing .and. fldsFrAdc(num)%connected
-    end do
-
-    ! dump import state
-    if (dbug) then
-       call StateWriteVTK(importState, 'state_imp_'//trim(timeStr), rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-         line=__LINE__, &
-         file=__FILE__)) &
-         return  ! bail out
-    end if
+   surge_forcing= .true.
+   do num = 1,fldsFrAdc_num
+      if (fldsFrAdc(num)%shortname == 'zeta') surge_forcing = surge_forcing .and. fldsFrAdc(num)%connected
+      if (fldsFrAdc(num)%shortname == 'velx') surge_forcing = surge_forcing .and. fldsFrAdc(num)%connected
+      if (fldsFrAdc(num)%shortname == 'vely') surge_forcing = surge_forcing .and. fldsFrAdc(num)%connected
+   end do
 
     !------------------------------------------
     !---------------  RUN  --------------------
@@ -1622,15 +1539,6 @@ module adc_cap
     endif
 
     !----------------------------------------
-
-    ! dump export state
-    if (dbug) then
-       call StateWriteVTK(exportState, 'state_exp_'//trim(timeStr), rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-         line=__LINE__, &
-         file=__FILE__)) &
-         return  ! bail out
-    end if
 !
 !
   end subroutine
@@ -1750,69 +1658,8 @@ module adc_cap
   end subroutine
 
   !-----------------------------------------------------------------------------
+  
 
-  !-----------------------------------------------------------------------------
-  !> Called if debug option is enabled. The call loop trough the ESMF state and
-  !! write all the fields in VTK format.
-  !!
-  !! @param state the ESMF_State object
-  !! @param prefix the prefix that will be used to construct file name
-  !! @param rc return code
-  subroutine StateWriteVTK(state, prefix, rc)
-
-    ! input arguments
-    type(ESMF_State), intent(in) :: state
-    character(len=*), intent(in) :: prefix
-    integer, intent(out), optional :: rc
-
-    ! local variables
-    integer :: i, itemCount
-    type(ESMF_Field) :: field
-    character(ESMF_MAXSTR), allocatable :: itemNameList(:)
-    character(len=*),parameter  :: subname='(adc_cap:StateWriteVTK)'
-
-    rc = ESMF_SUCCESS
-    call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
-
-    ! get number of fields in the state
-    call ESMF_StateGet(state, itemCount=itemCount, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-
-    ! get item names
-    if (.not. allocated(itemNameList)) allocate(itemNameList(itemCount))
-
-    call ESMF_StateGet(state, itemNameList=itemNameList, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-
-    ! loop over fields and write them
-    do i = 1, itemCount
-       ! get field
-       call ESMF_StateGet(state, itemName=trim(itemNameList(i)), field=field, rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, &
-           file=__FILE__)) &
-           return  ! bail out
-
-       ! write it
-       call ESMF_FieldWriteVTK(field, trim(prefix)//'_'//trim(itemNameList(i)), rc=rc)
-       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-           line=__LINE__, &
-           file=__FILE__)) &
-           return  ! bail out
-    end do
-
-    ! clean temporary variables
-    if (allocated(itemNameList)) deallocate(itemNameList)
-
-    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
-
-  end subroutine StateWriteVTK
 
   !-----------------------------------------------------------------------------
   !> Called by NUOPC at the end of the run to clean up.  The cap does
