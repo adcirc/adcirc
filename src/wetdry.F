@@ -1,22 +1,3 @@
-!-------------------------------------------------------------------------------!
-!
-! ADCIRC - The ADvanced CIRCulation model
-! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
-! 
-! This program is free software: you can redistribute it and/or modify
-! it under the terms of the GNU Lesser General Public License as published by
-! the Free Software Foundation, either version 3 of the License, or
-! (at your option) any later version.
-! 
-! This program is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-! GNU General Public License for more details.
-! 
-! You should have received a copy of the GNU Lesser General Public License
-! along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!
-!-------------------------------------------------------------------------------!
 C***********************************************************************
 C                     M O D U L E   W E T   D R Y      
 C***********************************************************************
@@ -89,10 +70,11 @@ CWET...If MJU < NODELE for any node, it must lie along the wet/dry interface.  S
 CWET...further comments at the end of the momentum equation solution section.
 CWET...
       module wetdry
+      use sizes, only : sz
       
-      real(8) :: habsmin
-      real(8) :: hoff
-      real(8) :: velmin
+      real(sz) :: habsmin
+      real(sz) :: hoff
+      real(sz) :: velmin
       
       integer,allocatable ::    nibcnt(:)
       integer,allocatable ::    noffold(:)
@@ -138,9 +120,9 @@ CWET...
 !     Determines which nodes should be wet and which should be dry.
 !----------------------------------------------------------------------
       subroutine computeWettingAndDrying(it)
-      use sizes, only : mne, mnp
+      use sizes, only : sz, mne, mnp
       use nodalattributes,only: loadSubgridBarrier
-      USE ADC_CONSTANTS, only: g
+      use constants, only: g
       use global, only : noff, nodecode, nnodecode, eta1, eta2, tk,
      &    nolifa,
      &    bsx1, bsy1, btime_end, C2DDI, C3D, h0, ifnlfa, nddt, dtdp,
@@ -150,44 +132,53 @@ CWET...
       use messenger
 #endif
       use mesh, only : ne, np, nm, dp, mju, totalArea, nm, x, y, areas,
-     &   LBArray_Pointer, nneighele, neitabele, onIBTYP64Floodplain
+     &   LBArray_Pointer, nneighele, neitabele
       use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
      &   manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,
      &   loadZ0B_var, z0b_var, loadSubgridBarrier,
-     &   loadCondensedNodes, NCondensedNodes,
+     &   loadCondensedNodes,
      &   ListCondensedNodes, NListCondensedNodes,
      &   NNodesListCondensedNodes
       USE BOUNDARIES, ONLY : IBCONN, ISSUBMERGED64, NFLUXIB64_GBL
       use global_3dvs, only : a, b, islip, kp, z0b, sigma, evtot, q
       use subdomain, only : subdomainOn, enforceBN, enforceWDcb, enforceWDob
+!JLW: add subgrid 
+      use subgrid, only: level0, subgridVertList, gridDepthVertETA2,
+     &   level1, cmfVertETA2, cfVertETA2, wetDepthVertETA2,
+     &   wetFracVertTab,gridDepthVertTab, numPhi 
       implicit none
       integer, intent(in) :: it ! time step number
-      complex(8) :: duds 
+      complex(sz) :: duds !jgf48.50 declare size SZ instead of plain COMPLEX
       integer :: nc1, nc2, nc3
       integer :: nm1, nm2, nm3
       integer :: nm123
       integer :: ncele
       integer :: nctot
-      real(8) :: kslip
-      real(8) :: vel
-      real(8) :: z0b1
-      real(8) :: areaEle
-      real(8) :: tkWet
-      real(8) :: etaN1,etaN2,etaN3
-      real(8) :: hTotN1,hTotN2,hTotN3      
-      real(8) :: deldist,deleta
-      real(8) :: htot
-      real(8) :: h1
-      real(8) :: tk_tmp(np),tmp1(np),tmp2(np),tmp3(np)
+      real(sz) :: kslip
+      real(sz) :: vel
+      real(sz) :: z0b1
+      real(sz) :: areaEle
+      real(sz) :: tkWet
+      real(sz) :: etaN1,etaN2,etaN3
+      real(sz) :: hTotN1,hTotN2,hTotN3      
+      real(sz) :: deldist,deleta
+      real(sz) :: htot
+      real(sz) :: h1
+      real(sz) :: tk_tmp(np),tmp1(np),tmp2(np),tmp3(np)
       integer :: tk_cnt(np)
       integer :: nbnctot
       integer :: i,j,k,kk,l
       integer :: ie          
-      real(8) :: tknf !dmw 202207, added for "new" formula for vel 
+      real(sz) :: tknf !dmw 202207, added for "new" formula for vel 
       integer :: nnc
       integer :: nnbb2
       integer :: nwetele
+<<<<<<< Updated upstream
+=======
       integer :: ibtype64floodplaincnt = 0
+!JLW: for subgrid
+      integer :: numGreater
+>>>>>>> Stashed changes
   
       if (nolifa.ne.2) then
          return ! wetting and drying is not active 
@@ -220,12 +211,53 @@ CWET....Drying Criteria D1: this depends on NODECODE and updates NODECODE
 CWET...
          DO I=1,NP
             IF(NODECODE(I).EQ.1) THEN
-               HTOT=DP(I)+ETA2(I)
+               IF(level0)THEN
+                  HTOT = gridDepthVertETA2(i)
+               ELSE
+                  HTOT=DP(I)+ETA2(I)
+               ENDIF
                IF(HTOT.LE.H0) THEN
-                  IF(HTOT.LT.HABSMIN) ETA2(I)=HABSMIN-DP(I)
-                  NNODECODE(I)=0
-                  NODECODE(I)=0
-                  NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
+                  IF(level0)THEN
+                     !JLW: need to interpolate here to set eta2
+                     IF(HTOT.LT.HABSMIN)THEN
+                        gridDepthVertETA2(i) = HABSMIN
+                        wetDepthVertETA2(i) = HABSMIN
+                        IF(subgridVertList(i).EQ.1)THEN
+                           numGreater = 0
+                           DO j=1,numPhi
+                              IF(gridDepthVertETA2(i).LT.
+     &                           gridDepthVertTab(i,j))THEN
+                                 numGreater = numGreater + 1
+                              ENDIF
+                           ENDDO
+                           IF(numGreater.EQ.numPhi)THEN
+                              eta2(i) = wetFracVertTab(i,1)
+                           ELSEIF(numGreater.EQ.0)THEN
+                              eta2(i) = wetFracVertTab(i,numPhi)
+     &                           + (HABSMIN-gridDepthVertTab(i,numPhi)) 
+                           ELSE
+               !JLW: now back calculate eta2 based on this change
+                              eta2(i) = ((gridDepthVertETA2(i)
+     &                        - gridDepthVertTab(i,numPhi-numGreater))
+     &                        / (gridDepthVertTab(i,numPhi-numGreater+1)
+     &                        - gridDepthVertTab(i,numPhi-numGreater))
+     &                        * (wetFracVertTab(i,numPhi-numGreater+1)
+     &                        - wetFracVertTab(i,numPhi-numGreater))
+     &                        + wetFracVertTab(i,numPhi-numGreater))
+                           ENDIF
+                        ELSE
+                           eta2(i) = HABSMIN - DP(I)
+                        ENDIF
+                     ENDIF
+                     NNODECODE(I) = 0
+                     NODECODE(I) = 0   
+                     NCCHANGE = NCCHANGE + 1
+                  ELSE
+                     IF(HTOT.LT.HABSMIN) ETA2(I)=HABSMIN-DP(I)
+                        NNODECODE(I)=0
+                        NODECODE(I)=0
+                        NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
+                  ENDIF
                ENDIF
             ENDIF
          ENDDO
@@ -272,28 +304,20 @@ CWET...
 CWET...
 CWET...Nodal Wetting Criteria W1: This depends on changes that occurred in D1
 CWET...
-            ! Count number of nodes along ibtype=64 boundary 10/16/2023 sb
-            IF(NFLUXIB64_GBL.gt.0) THEN
-               IBTYPE64FLOODPLAINCNT = 0
-               IF(onIBTYP64Floodplain(NM1)) THEN
-                  IBTYPE64FLOODPLAINCNT = IBTYPE64FLOODPLAINCNT + 1
-               ENDIF
-               IF(onIBTYP64Floodplain(NM2)) THEN
-                  IBTYPE64FLOODPLAINCNT = IBTYPE64FLOODPLAINCNT + 1
-               ENDIF
-               IF(onIBTYP64Floodplain(NM3)) THEN
-                  IBTYPE64FLOODPLAINCNT = IBTYPE64FLOODPLAINCNT + 1
-               ENDIF
-            ENDIF
-
             NCTOT=NODECODE(NM1)+NODECODE(NM2)+NODECODE(NM3)
-            IF((NCTOT.EQ.2) .AND. (IBTYPE64FLOODPLAINCNT.NE.3)) THEN  ! (IBTYPE64FLOODPLAINCNT.NE.3) is added to avoid excessie wetting when all three nodes of an element on a floodplain are on a IBTYPE=64 boundary. 10/16/2023 sb
+            IF(NCTOT.EQ.2) THEN
                ETAN1=ETA2(NM1)
                ETAN2=ETA2(NM2)
                ETAN3=ETA2(NM3)
-               HTOTN1=DP(NM1)+ETA2(NM1)
-               HTOTN2=DP(NM2)+ETA2(NM2)
-               HTOTN3=DP(NM3)+ETA2(NM3)
+               IF(level0)THEN
+                  HTOTN1 = gridDepthVertETA2(NM1)
+                  HTOTN2 = gridDepthVertETA2(NM2)
+                  HTOTN3 = gridDepthVertETA2(NM3)
+               ELSE
+                  HTOTN1=DP(NM1)+ETA2(NM1)
+                  HTOTN2=DP(NM2)+ETA2(NM2)
+                  HTOTN3=DP(NM3)+ETA2(NM3)
+               ENDIF
                IF((NODECODE(NM1).EQ.1).AND.(NODECODE(NM2).EQ.1)) THEN
                   IF((HTOTN1.GE.HOFF).AND.(HTOTN2.GE.HOFF)) THEN
                      NM123=NM1
@@ -303,16 +327,34 @@ CWET...
                      DELETA=ETA2(NM123)-ETA2(NM3)
                      ! jgf50.60.18: Prevent numerical problems if DELETA is negative
                      IF (DELETA.lt.0.d0) DELETA = 0.d0
-                     H1=ETA2(NM123)+DP(NM123)
+                     IF(level0)THEN
+                        H1 = wetDepthVertETA2(NM123)
+                     ELSE
+                        H1=ETA2(NM123)+DP(NM123)
+                     ENDIF
 c. RJW merged from Casey 071219: Added the following logic for 3D friction.
 c. RJW modified the following for 3D friction
                      IF(C2DDI)THEN
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
                         IF (LoadManningsN) THEN
-                          FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
-     &                                               **(1.d0/3.d0) )
+                          IF(level0)THEN
+                             IF(subgridVertList(NM123).EQ.1)THEN
+                                IF(level1)THEN
+                                   FRIC(NM123) = cmfVertETA2(NM123)
+                                ELSE
+                                   FRIC(NM123) = cfVertETA2(NM123)
+                                ENDIF
+                             ELSE
+                                FRIC(NM123)=g*ManningsN(NM123)**2.d0
+     &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                                                   **(1.d0/3.d0) )
+                             ENDIF
+                          ELSE
+                             FRIC(NM123)=g*ManningsN(NM123)**2.d0
+     &                         /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                                                  **(1.d0/3.d0) )
+                          ENDIF
                           IF(FRIC(NM123).LT.BFCdLLimit) THEN
                             FRIC(NM123) = BFCdLLimit
                           ENDIF
@@ -420,15 +462,33 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                      DELETA=ETA2(NM123)-ETA2(NM1)
                      ! jgf50.60.18: Prevent numerical problems if DELETA is negative
                      IF (DELETA.lt.0.d0) DELETA = 0.d0
-                     H1=ETA2(NM123)+DP(NM123)
+                     IF(level0)THEN
+                        H1 = wetDepthVertETA2(NM123)
+                     ELSE
+                        H1=ETA2(NM123)+DP(NM123)
+                     ENDIF
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction.
                      IF(C2DDI)THEN
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
                         IF (LoadManningsN) THEN
-                          FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
-     &                                               **(1.d0/3.d0) )
+                          IF(level0)THEN
+                             IF(subgridVertList(NM123).EQ.1)THEN
+                                IF(level1)THEN
+                                   FRIC(NM123) = cmfVertETA2(NM123)
+                                ELSE
+                                   FRIC(NM123) = cfVertETA2(NM123)
+                                ENDIF
+                             ELSE
+                                FRIC(NM123)=g*ManningsN(NM123)**2.d0
+     &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                                                   **(1.d0/3.d0) )
+                             ENDIF
+                          ELSE
+                             FRIC(NM123)=g*ManningsN(NM123)**2.d0
+     &                         /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                                                  **(1.d0/3.d0) )
+                          ENDIF
                           IF(FRIC(NM123).LT.BFCdLLimit) THEN
                             FRIC(NM123) = BFCdLLimit
                           ENDIF
@@ -536,15 +596,33 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                      DELETA=ETA2(NM123)-ETA2(NM2)
                      ! jgf50.60.18: Prevent numerical problems if DELETA is negative
                      IF (DELETA.lt.0.d0) DELETA = 0.d0
-                     H1=ETA2(NM123)+DP(NM123)
+                     IF(level0)THEN
+                        H1 = wetDepthVertETA2(NM123)
+                     ELSE
+                        H1=ETA2(NM123)+DP(NM123)
+                     ENDIF
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction.
                      IF(C2DDI)THEN
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
                         IF (LoadManningsN) THEN
-                          FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
-     &                                               **(1.d0/3.d0) )
+                          IF(level0)THEN
+                             IF(subgridVertList(NM123).EQ.1)THEN
+                                IF(level1)THEN
+                                   FRIC(NM123) = cmfVertETA2(NM123)
+                                ELSE
+                                   FRIC(NM123) = cfVertETA2(NM123)
+                                ENDIF
+                             ELSE
+                                FRIC(NM123)=g*ManningsN(NM123)**2.d0
+     &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                                                   **(1.d0/3.d0) )
+                             ENDIF
+                          ELSE
+                             FRIC(NM123)=g*ManningsN(NM123)**2.d0
+     &                         /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                                                  **(1.d0/3.d0) )
+                          ENDIF
                           IF(FRIC(NM123).LT.BFCdLLimit) THEN
                             FRIC(NM123) = BFCdLLimit
                           ENDIF
@@ -939,9 +1017,15 @@ CWET...
                ETAN1=ETA2(NM1)
                ETAN2=ETA2(NM2)
                ETAN3=ETA2(NM3)
-               HTOTN1=DP(NM1)+ETA2(NM1)
-               HTOTN2=DP(NM2)+ETA2(NM2)
-               HTOTN3=DP(NM3)+ETA2(NM3)
+               IF(level0)THEN
+                  HTOTN1 = gridDepthVertETA2(NM1)
+                  HTOTN2 = gridDepthVertETA2(NM2)
+                  HTOTN3 = gridDepthVertETA2(NM3)
+               ELSE
+                  HTOTN1=DP(NM1)+ETA2(NM1)
+                  HTOTN2=DP(NM2)+ETA2(NM2)
+                  HTOTN3=DP(NM3)+ETA2(NM3)
+               ENDIF
 #ifdef SB_WETDRY
 C...Find the heighest point on the bed in the element.  sb v46.28.sb05.06 11/01/2006
                IF(DP(NM1).LE.DP(NM2).AND.DP(NM1).LE.DP(NM3)) THEN
@@ -1302,6 +1386,7 @@ c.....
 !-----------------------------------------------------------------------
       subroutine applySubgridBarrier()
 !-----------------------------------------------------------------------
+          USE SIZES,ONLY: SZ
           USE MESH,ONLY: DP,DP_ORIG,NM,NE
           USE GLOBAL,ONLY: ETA2,NOFF,H0,NODECODE,NCCHANGE,ILUMP
           USE NODALATTRIBUTES,ONLY: SubgridBarrier,
@@ -1311,11 +1396,11 @@ c.....
 #endif          
           IMPLICIT NONE
           INTEGER  :: I,NM1,NM2,NM3,NCELE
-          REAL(8) :: SB1,SB2,SB3
-          REAL(8) :: ETABAR,BARHEIGHT
-          REAL(8) :: DOT,DOT1,DOT2,DOT3
-          REAL(8) :: E1,E2,E3,ETA
-          REAL(8),PARAMETER :: SBDT = 50D0
+          REAL(SZ) :: SB1,SB2,SB3
+          REAL(SZ) :: ETABAR,BARHEIGHT
+          REAL(SZ) :: DOT,DOT1,DOT2,DOT3
+          REAL(SZ) :: E1,E2,E3,ETA
+          REAL(SZ),PARAMETER :: SBDT = 50D0
 
           NOFF_SG(:) = 1
 
@@ -1379,13 +1464,14 @@ C..... bathy slope becomes too large, i.e., when it exceeds slim.
          USE MESH,ONLY: DP,NM,NE,sfac,SFacEle,SFMYEle,SFMXEle,FDXE,FDYE,
      &    areas         
          use global, only : eta2, noff, nodecode, alphal, IFSFM, slim
+         use subgrid, only : level0, gridDepthVertETA2
          IMPLICIT NONE
          INTEGER  :: I,NM1,NM2,NM3,NC1,NC2,NC3,NCELE
-         real(8) :: sfacavg, SFmxAvg, SFmyAvg, DPN1, DPN2, DPN3
-         real(8) :: DETAM, DPM, sfdxfac, sfdyfac, hn1, hn2, hn3
-         real(8) :: detadxa, detadya, dpdxa, dpdya
-         real(8) :: fdx1, fdx2, fdx3, fdy1, fdy2, fdy3
-         real(8) :: etaN1, etaN2, etaN3
+         real(sz) :: sfacavg, SFmxAvg, SFmyAvg, DPN1, DPN2, DPN3
+         real(sz) :: DETAM, DPM, sfdxfac, sfdyfac, hn1, hn2, hn3
+         real(sz) :: detadxa, detadya, dpdxa, dpdya
+         real(sz) :: fdx1, fdx2, fdx3, fdy1, fdy2, fdy3
+         real(sz) :: etaN1, etaN2, etaN3
          
          
          ALPHAL(:) = 1.D0
@@ -1399,17 +1485,22 @@ C..... bathy slope becomes too large, i.e., when it exceeds slim.
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(I)
             IF (NCEle.EQ.1) THEN               
-
-               HN1 = ETA2(NM1) + DP(NM1)
-               HN2 = ETA2(NM2) + DP(NM2)
-               HN3 = ETA2(NM3) + DP(NM3)
+               IF(level0)THEN
+                  HN1 = gridDepthVertETA2(NM1)
+                  HN2 = gridDepthVertETA2(NM2)
+                  HN3 = gridDepthVertETA2(NM3)
+               ELSE
+                  HN1 = ETA2(NM1) + DP(NM1)
+                  HN2 = ETA2(NM2) + DP(NM2)
+                  HN3 = ETA2(NM3) + DP(NM3)
+               ENDIF
                IF((HN1.LE.5.D-1).OR.(HN2.LE.5.D-1).OR.(HN3.LE.5.D-1) ) THEN
                
                   SFacAvg = SFacEle(I)
                   SFmxAvg = SFMXEle(I)  
                   SFmyAvg = SFMYEle(I)  
                   sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-                  sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
+                  sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
                
                   FDX1 = FDXE(1,I)*sfdxfac  !b1
                   FDX2 = FDXE(2,I)*sfdxfac  !b2
