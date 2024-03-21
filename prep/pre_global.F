@@ -1,3 +1,22 @@
+!-------------------------------------------------------------------------------!
+!
+! ADCIRC - The ADvanced CIRCulation model
+! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+! 
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+! 
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+! 
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!-------------------------------------------------------------------------------!
 C----------------------------------------------------------------------------
 C
 C                           MODULE PRE_GLOBAL
@@ -10,7 +29,7 @@ C                     current for ADCIRC v46.34   09/20/2006
 C----------------------------------------------------------------------------
 
       MODULE PRE_GLOBAL
-      USE CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG
+      USE ADC_CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
       USE VERSION
@@ -54,13 +73,13 @@ C     METIS interface section
 C
 C     GRID14 section
       REAL(8)  ,ALLOCATABLE ::    X(:),Y(:),SLAM(:),SFEA(:)
-      REAL(SZ) ,ALLOCATABLE ::   DP(:)
+      REAL(8) ,ALLOCATABLE ::   DP(:)
       REAL(8) SL0,SF0            ! center of cpp projection, in radians
       REAL(8), ALLOCATABLE :: SL1(:),SF1(:) ! nodal coordinates, in radians
 C
 C     BARRIER14 section
-      REAL(SZ) ,ALLOCATABLE ::  BAR1(:,:),BAR2(:,:),BAR3(:,:)
-      REAL(SZ) ,ALLOCATABLE ::  BAR4(:,:),BAR5(:,:),BAR6(:,:)
+      REAL(8) ,ALLOCATABLE ::  BAR1(:,:),BAR2(:,:),BAR3(:,:)
+      REAL(8) ,ALLOCATABLE ::  BAR4(:,:),BAR5(:,:),BAR6(:,:)
 
 C     FLOWBC section
       INTEGER NFLBN    ! NFLBN Number of Global Flow Boundary Nodes
@@ -70,7 +89,7 @@ C                                   ! Ith Flow Boundary Node
       INTEGER,ALLOCATABLE::FLBNX(:) ! FLBNX(I) Index of Ith Flow Boundary Node
       INTEGER,ALLOCATABLE::FLBNXP(:)! FLBNXP(I) Index of Ith Flow Boundary Node
       INTEGER,ALLOCATABLE::FLUX14_ARY(:)
-      REAL(SZ),ALLOCATABLE::FLUX20_ARY(:,:)
+      REAL(8),ALLOCATABLE::FLUX20_ARY(:,:)
       INTEGER EXIST_FLUX
       LOGICAL APERIODIC_FLOW_BC     ! .true. if EXIST_FLUX is .true. .AND.
                                     ! NFFR=0 in fort.15
@@ -147,17 +166,17 @@ C     PARM15-3DVS section
       INTEGER :: I3DSD,NSPO3DSD       ! NSTA3DD is in presizes
       INTEGER :: I3DSV,NSPO3DSV       ! NSTA3DV is in presizes
       INTEGER :: I3DST,NSPO3DST       ! NSTA3DT is in presizes
-      REAL(SZ) :: TO3DSDS,TO3DSDF
-      REAL(SZ) :: TO3DSVS,TO3DSVF
-      REAL(SZ) :: TO3DSTS,TO3DSTF
+      REAL(8) :: TO3DSDS,TO3DSDF
+      REAL(8) :: TO3DSVS,TO3DSVF
+      REAL(8) :: TO3DSTS,TO3DSTF
       INTEGER,ALLOCATABLE :: ISDHOUT(:),ISVHOUT(:),ISTHOUT(:)
       INTEGER :: I3DGD,NSPO3DGD
       INTEGER :: I3DGV,NSPO3DGV
       INTEGER :: I3DGT,NSPO3DGT
-      REAL(SZ) :: TO3DGDS,TO3DGDF
-      REAL(SZ) :: TO3DGVS,TO3DGVF
-      REAL(SZ) :: TO3DGTS,TO3DGTF
-      REAL(SZ) :: KP,Z0S,Z0B,ALP1,ALP2,ALP3,EVMIN,EVCON,THETA1,THETA2
+      REAL(8) :: TO3DGDS,TO3DGDF
+      REAL(8) :: TO3DGVS,TO3DGVF
+      REAL(8) :: TO3DGTS,TO3DGTF
+      REAL(8) :: KP,Z0S,Z0B,ALP1,ALP2,ALP3,EVMIN,EVCON,THETA1,THETA2
       REAL(8),ALLOCATABLE,TARGET :: X3DD(:),Y3DD(:),SX3DD(:),SY3DD(:)
       REAL(8),ALLOCATABLE,TARGET :: SL3DD(:),SF3DD(:)
       REAL(8),ALLOCATABLE,TARGET :: X3DV(:),Y3DV(:),SX3DV(:),SY3DV(:)
@@ -167,33 +186,33 @@ C     PARM15-3DVS section
       CHARACTER*132,ALLOCATABLE :: STA3DDLOC(:),STA3DVLOC(:),
      &   STA3DTLOC(:)
       INTEGER,ALLOCATABLE ::   NNS3DDG(:),NNS3DVG(:),NNS3DTG(:)
-      REAL(SZ),ALLOCATABLE :: EVTot(:) !(NFEN) Vertical eddy viscosity
+      REAL(8),ALLOCATABLE :: EVTot(:) !(NFEN) Vertical eddy viscosity
       INTEGER IGC                      ! vertical grid code in fort.15
 
 C   kmd48.33bc variables for 3D baroclinic and hot start
-      REAL(SZ) :: RBCTIMEINC, SBCTIMEINC, TBCTIMEINC    ! flag for bcs on baroclinic
-      REAL(SZ) :: BCSTATIM, SBCSTATIM, TBCSTATIM       ! flag for bcs on baroclinic
-      REAL(SZ) :: TTBCSTATIM, TTBCTIMEINC       ! flag for bcs on baroclinic
+      REAL(8) :: RBCTIMEINC, SBCTIMEINC, TBCTIMEINC    ! flag for bcs on baroclinic
+      REAL(8) :: BCSTATIM, SBCSTATIM, TBCSTATIM       ! flag for bcs on baroclinic
+      REAL(8) :: TTBCSTATIM, TTBCTIMEINC       ! flag for bcs on baroclinic
       INTEGER N3DSD, I3DSDRec, N3DSV, I3DSVRec, N3DST, I3DSTRec
       INTEGER N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec
-      REAL(SZ),ALLOCATABLE :: DUU(:),DUV(:),DVV(:)
-      REAL(SZ),ALLOCATABLE :: UU(:),VV(:)
-      REAL(SZ),ALLOCATABLE :: BSX(:),BSY(:)
-      REAL(SZ),ALLOCATABLE :: WZ(:,:), q20(:,:), l(:,:)
-      REAL(SZ),ALLOCATABLE :: SigT(:,:), Sal(:,:), Temp(:,:)
-      REAL(SZ),ALLOCATABLE :: RealQ(:,:), ImagQ(:,:)
+      REAL(8),ALLOCATABLE :: DUU(:),DUV(:),DVV(:)
+      REAL(8),ALLOCATABLE :: UU(:),VV(:)
+      REAL(8),ALLOCATABLE :: BSX(:),BSY(:)
+      REAL(8),ALLOCATABLE :: WZ(:,:), q20(:,:), l(:,:)
+      REAL(8),ALLOCATABLE :: SigT(:,:), Sal(:,:), Temp(:,:)
+      REAL(8),ALLOCATABLE :: RealQ(:,:), ImagQ(:,:)
       INTEGER,ALLOCATABLE :: NODECODE(:)
       INTEGER IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
      &        IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW
 
 C     jgf45.12 Terms added for the transport parameters
 C     diffusion coefficients for the salinity field
-      REAL(SZ) :: NLSD, NVSD
+      REAL(8) :: NLSD, NVSD
 C     diffusion coefficients for the temperature field
-      REAL(SZ) :: NLTD, NVTD
+      REAL(8) :: NLTD, NVTD
 c     time weighting coefficient for the vertical diffusion term in the
 c     transport equation
-      REAL(SZ) :: Alp4
+      REAL(8) :: Alp4
 C     Flag for the top boundary condition for the temperature field in
 C     the transport equation
 !      INTEGER :: NTF ! kmd48.33bc took out with new evaluation of boundary condition
@@ -209,45 +228,45 @@ C  kmd48.33bc variables for boundary conditions
       CHARACTER(80) :: SPONGEDISTMSG, EqnstateMSG
 C
 C     ELESTAT section
-      REAL(SZ) TOUTSE,TOUTFE,TOUTSGE,TOUTFGE
+      REAL(8) TOUTSE,TOUTFE,TOUTSGE,TOUTFGE
       REAL(8),ALLOCATABLE, TARGET :: XEL(:),YEL(:),SLEL(:),SFEL(:)
 C
 C     VELSTAT section
-      REAL(SZ) TOUTSGV,TOUTFGV,TOUTSV,TOUTFV
+      REAL(8) TOUTSGV,TOUTFGV,TOUTSV,TOUTFV
       REAL(8),ALLOCATABLE, TARGET :: XEV(:),YEV(:),SLEV(:),SFEV(:)
 C
 C     CONSTAT section
-      REAL(SZ) TOUTSC,TOUTFC,TOUTSGC,TOUTFGC
+      REAL(8) TOUTSC,TOUTFC,TOUTSGC,TOUTFGC
       REAL(8),ALLOCATABLE, TARGET :: XEC(:),YEC(:),SLEC(:),SFEC(:)
 C
 C     METSTAT section
-      REAL(SZ) TOUTSM,TOUTFM,TOUTSGM,TOUTFGM
+      REAL(8) TOUTSM,TOUTFM,TOUTSGM,TOUTFGM
       REAL(8),ALLOCATABLE, TARGET ::  XEM(:),YEM(:),SLEM(:),SFEM(:)
-      REAL(SZ) TOUTSGW,TOUTFGW
+      REAL(8) TOUTSGW,TOUTFGW
 C
 C     INPUT15 section
       INTEGER    NODEDRYMIN,NODEWETRMP
-      REAL(SZ)   G
-      REAL(SZ)   TAU0,RNDAY,DRAMP
-      REAL(SZ)   A00,B00,C00,H0,VELMIN
+      REAL(8)   G
+      REAL(8)   TAU0,RNDAY,DRAMP
+      REAL(8)   A00,B00,C00,H0,VELMIN
       REAL(8)    SLAM0,SFEA0
-      REAL(SZ)   TAU,CF,ESL,CORI,ANGINN
+      REAL(8)   TAU,CF,ESL,CORI,ANGINN
       REAL(8)    DTDP
-      REAL(SZ)   ESLM,ESLC,HBREAK,FTHETA,FGAMMA
+      REAL(8)   ESLM,ESLC,HBREAK,FTHETA,FGAMMA
       REAL(8)    REFSEC
-      REAL(SZ)   WLATMAX,WLONMIN,WLATINC,WLONINC
-      REAL(SZ),ALLOCATABLE ::  FF(:),FACE(:)
+      REAL(8)   WLATMAX,WLONMIN,WLATINC,WLONINC
+      REAL(8),ALLOCATABLE ::  FF(:),FACE(:)
       REAL(8) ,ALLOCATABLE ::  EMO(:,:),EFA(:,:)
-      REAL(SZ),ALLOCATABLE ::  TPK(:),ETRF(:),FFT(:),FACET(:)
-      REAL(SZ),ALLOCATABLE ::  QNAM(:,:),QNPH(:,:)
-      REAL(SZ),ALLOCATABLE ::  FFF(:),FFACE(:)
+      REAL(8),ALLOCATABLE ::  TPK(:),ETRF(:),FFT(:),FACET(:)
+      REAL(8),ALLOCATABLE ::  QNAM(:,:),QNPH(:,:)
+      REAL(8),ALLOCATABLE ::  FFF(:),FFACE(:)
 C
 C     Time varying tau0 min and max
       CHARACTER(80) :: TAU0LIMMSG
-      REAL(SZ) Tau0FullDomainMin, Tau0FullDomainMax
+      REAL(8) Tau0FullDomainMin, Tau0FullDomainMax
 C
 C     INPUT15D section
-      REAL(SZ)   DT
+      REAL(8)   DT
       REAL(8)    STATIM,REFTIM,WTIMINC
       REAL(8),ALLOCATABLE ::   AMIG(:),AMIGT(:),FAMIG(:)
       REAL(8)  CICE_TIMINC   ! tcm v49.64.01 addition for ice
@@ -289,6 +308,7 @@ Casey 180318: Added NWS=13
 
 !JLW: add subgrid namelist control
       logical :: foundSubgridControlNamelist = .false.
+      character(200) :: subgridFilename
       logical :: level0 = .true. 
       logical :: level1 = .false.
 
@@ -297,20 +317,24 @@ Casey 180318: Added NWS=13
       ! but this must wait until build dependencies are resolved. 
       logical :: foundInundationOutputControlNamelist = .false.
       logical :: inundationOutput = .false.
-      real(sz) :: inunThresh = 0.6d0
+      real(8) :: inunThresh = 0.6d0
 
       ! jgf: added support for water level correction
       logical :: foundCorrectionControlNamelist = .false. 
       character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file 
       integer :: dynamicWaterLevelCorrectionSkipSnaps=0 ! number of correction data sets to skip 
-      real(sz) :: dynamicWaterLevelCorrectionMultiplier = 1.d0 ! multiply each correction value by this
-      real(sz) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
-      real(sz) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start     
+      real(8) :: dynamicWaterLevelCorrectionMultiplier = 1.d0 ! multiply each correction value by this
+      real(8) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
+      real(8) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start     
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime = 'hotstart'
 
+C     VEW1D channel namelist 11/06/2023 sb
+      logical :: foundVEW1DChannelControlNamelist = .false. 
+      logical :: activateVEW1DChannelWetPerimeter
+      
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
-      REAL(SZ) CONVCR
+      REAL(8) CONVCR
 C
 C     jgf48.03 netCDF metadata
       CHARACTER(80) title
@@ -366,7 +390,7 @@ C                                      ! Boundary Node I on PE
       INTEGER,ALLOCATABLE::NNSTA3DTP(:)! Number of 3D turbulence stationson(PE)
 C
 C     DIAGS section
-      REAL(SZ),ALLOCATABLE ::   PROC_SV(:)
+      REAL(8),ALLOCATABLE ::   PROC_SV(:)
 C
 C--Local-to-Global Mapping Variables
 C
@@ -406,7 +430,7 @@ C...tcm v49.48.01 -- Added for new point in element searches
 C-- KDTREE2 ENABLED SEARCH ALGORITHM VARIABLES
 C
       INTEGER :: SRCHDP=100
-      REAL(sz), ALLOCATABLE ::  RMAX(:),BCXY(:,:)
+      REAL(8), ALLOCATABLE ::  RMAX(:),BCXY(:,:)
 
 CCCCCCCCCCCCCCCCCC DW
       LOGICAL:: prep5354flag = .FALSE.
@@ -441,7 +465,7 @@ c----------------------------------------------------------------------
       SUBROUTINE ALLOC_MAIN1()
 c----------------------------------------------------------------------
       use memory_usage
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
 C
 C     Allocate space for Arrays except those dimensioned by MNPP and MNEP
 C
@@ -571,7 +595,7 @@ C---------------------------------------------------------------------
 C---------------------------------------------------------------------
       SUBROUTINE ALLOC_MAIN2()
       use memory_usage
-      integer nbytes
+      integer(8) :: nbytes
 C
 C     Allocate space for Arrays dimensioned by MNPP and MNEP
 C
@@ -597,7 +621,7 @@ C---------------------------------------------------------------------
 C---------------------------------------------------------------------
       subroutine dealloc_main2()
       use memory_usage
-      integer nbytes
+      integer(8) :: nbytes
 C
 C     Deallocate space for Arrays dimensioned by MNPP and MNEP
 C

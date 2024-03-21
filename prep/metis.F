@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 !-------------------------------------------------------------------------------!
 !
 ! ADCIRC - The ADvanced CIRCulation model
@@ -19,7 +17,6 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
->>>>>>> Stashed changes
       SUBROUTINE METIS()
       USE PRE_GLOBAL
       IMPLICIT NONE
@@ -36,7 +33,8 @@ C
         INTEGER I, J, K, IEL, INODE, JNODE, NCOUNT, ITOT, NEDGETOT
         INTEGER MAXDUALS
         INTEGER  WEIGHTFLAG, NUMFLAG, NPARTS, OPTIONS(5)
-        INTEGER  EDGECUT, OPTYPE, NBYTES
+        INTEGER  EDGECUT, OPTYPE
+        INTEGER(8) NBYTES
 C
         INTEGER,ALLOCATABLE :: IDUALS(:,:),ITVECT(:),ITVECT2(:)
         INTEGER,ALLOCATABLE :: XADJ(:), ADJNCY(:)

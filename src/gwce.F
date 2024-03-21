@@ -1,3 +1,22 @@
+!-------------------------------------------------------------------------------!
+!
+! ADCIRC - The ADvanced CIRCulation model
+! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+! 
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+! 
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+! 
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!-------------------------------------------------------------------------------!
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C 
 C                       M O D U L E   G W C E
@@ -57,35 +76,34 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C******************************************************************************
 
       module gwce
-      use sizes, only : sz
       use global, only : DEBUG, INFO, WARNING, ERROR, logMessage, 
      &   setMessageSource, unsetMessageSource, allMessage
       implicit none
 
-      real(sz),allocatable :: lsxx(:),lsxy(:),lsyx(:),lsyy(:)
-      real(sz),allocatable :: etas0(:)      
-      real(sz),allocatable :: eta0(:)
-      real(sz) :: convcr
+      real(8),allocatable :: lsxx(:),lsxy(:),lsyx(:),lsyy(:)
+      real(8),allocatable :: etas0(:)      
+      real(8),allocatable :: eta0(:)
+      real(8) :: convcr
       integer :: isldia
       integer :: itmax
-      real(sz) :: a00,b00,c00
-      real(sz) :: dt2
-      real(sz) :: ga00 
+      real(8) :: a00,b00,c00
+      real(8) :: dt2
+      real(8) :: ga00 
 
 C     Arrays used by JCG iterative solver
       integer :: nw
       integer, allocatable :: iwksp(:)
-      real(sz), allocatable :: wksp(:)
+      real(8), allocatable :: wksp(:)
       integer, allocatable :: iparm(:)
-      real(sz), allocatable :: rparm(:)
+      real(8), allocatable :: rparm(:)
       integer :: numitr ! number of iterations per timestep 
 
 cjjw...added 2 lines
 C.....for matrix conditioning,global to allow for reading in from hotstart file
-      REAL(SZ) :: EP !jgf45.08 EP global for predictor-corrector
+      REAL(8) :: EP !jgf45.08 EP global for predictor-corrector
       !
       ! for managing datasets for aperiodic elevation specified boundaries (fort.19)
-      real(sz) :: etime1, etime2, etiminc 
+      real(8) :: etime1, etime2, etiminc 
 
       ! jgf52.30.04: Allow the inverted barometer condition to be 
       ! activated on elevation-specified boundaries so that low pressure
@@ -104,7 +122,7 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
       subroutine initGWCE()
       use sizes, only : mnp
       use global, only : dt, ilump, alloc_main11, alloc_main11_lumped
-      use constants, only: g
+      USE ADC_CONSTANTS, only: g
       use mesh, only : np
       use itpackv, only : dfault
       implicit none
@@ -219,7 +237,7 @@ C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
-      USE SIZES, ONLY : sz, myproc
+      USE SIZES, ONLY : myproc
       USE GLOBAL, ONLY : GWCE_LV, COEF, COEFD, OBCCOEF, ETAS, ETA1, ETA2,
      &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1,
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
@@ -238,7 +256,7 @@ C
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
-      USE CONSTANTS, ONLY: G, RHOWAT0, Bd, Ad, Cs2
+      USE ADC_CONSTANTS, ONLY: G, RHOWAT0, Bd, Ad, Cs2
       USE MESH, ONLY : NE, NP, NM, DP, NNeigh, NeiTab, TotalArea, FDXE,
      &   Areas, NEIMAX, SFAC, nneighele, neitabele, FDYE,
      &   SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, SFCXEle,
@@ -286,94 +304,88 @@ C... SB
       INTEGER OnDiag, OffDiag
 
       LOGICAL  DIE
-      REAL(SZ) A00pB00
-      REAL(SZ) BCXAvg, BCYAvg
-      REAL(SZ) BndLenO6NC    !BNDLEN2O3NC, NCBND need to be removed from global.f and put in original GWCE subroutine
-      REAL(SZ) BSXN1, BSXN2, BSXN3, BSYN1, BSYN2, BSYN3, BSXAvg, BSYAvg
-      REAL(SZ) CorifAvg
-      REAL(SZ) DPAvg, GDPAvgOAreaIE4
-      REAL(SZ) DPAvgS0, GDPAvgOAreaIE4_S0
-      REAL(SZ) DispX, DispY, DispXAvg, DispYAvg
-      REAL(SZ) E0N1, E0N2, E0N3, E0XGrad2A, E0YGrad2A
-      REAL(SZ) E1N1, E1N2, E1N3, E1XGrad2A, E1YGrad2A
-      REAL(SZ) E1N1SQ, E1N2SQ, E1N3SQ
-      REAL(SZ) ESN1, ESN2, ESN3, ESAvg
-      REAL(SZ) EVMN1, EVMN2, EVMN3, EVMXGrad, EVMYGrad, EVMAvgODT
-      REAL(SZ) EVMEle, EVMSmag
-      REAL(SZ) GA00DPAvgOAreaIE4
-      REAL(SZ) GHAvg, GHAvgOAreaIE2, GOAreaIE4
-      REAL(SZ) H1N1, H1N2, H1N3, HAvg, H1, H2
-      REAL(SZ) H2OTotalArea
-      REAL(SZ) LSXXGradA, LSXYGradA, LSYXGradA, LSYYGradA
-      REAL(SZ) LSXXEle, LSXYEle, LSYXEle, LSYYEle
-      REAL(SZ) MsFacR, MsFacLOnDiag, MsFacLOffDiag
-      REAL(SZ) MX, MY, MXAvg, MYAvg
-      REAL(SZ) JXAvg, JYAvg
-      REAL(SZ) Pr1N1, Pr1N2, Pr1N3
-      REAL(SZ) Off1N1, Off1N2, Off1N3 ! water level offsets
-      REAL(SZ) QX1N1, QX1N2, QX1N3, QY1N1, QY1N2, QY1N3, QX1Avg, QY1Avg
-      REAL(SZ) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
-      REAL(SZ) SFCXAvg, SFCYAvg, YCFACAvg, SFCXADJ, SFCYADJ, TANPHIAvg
-      REAL(SZ) T0N1,T0N2, T0N3
-      REAL(SZ) Tau0Avg, Tau0QXAvg, Tau0QYAvg
-      REAL(SZ) Tau0XGrad2A, Tau0YGrad2A, Tau0SpaVar
-      REAL(SZ) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
-      REAL(SZ) TiPN1, TiPN2, TiPN3
-      REAL(SZ) U1N1,U1N2,U1N3, U1Avg
-      REAL(SZ) V1N1,V1N2,V1N3, V1Avg
-      REAL(SZ) WSXAvg, WSYAvg
+      REAL(8) A00pB00
+      REAL(8) BCXAvg, BCYAvg
+      REAL(8) BndLenO6NC    !BNDLEN2O3NC, NCBND need to be removed from global.f and put in original GWCE subroutine
+      REAL(8) BSXN1, BSXN2, BSXN3, BSYN1, BSYN2, BSYN3, BSXAvg, BSYAvg
+      REAL(8) CorifAvg
+      REAL(8) DPAvg, GDPAvgOAreaIE4
+      REAL(8) DPAvgS0, GDPAvgOAreaIE4_S0
+      REAL(8) DispX, DispY, DispXAvg, DispYAvg
+      REAL(8) E0N1, E0N2, E0N3, E0XGrad2A, E0YGrad2A
+      REAL(8) E1N1, E1N2, E1N3, E1XGrad2A, E1YGrad2A
+      REAL(8) E1N1SQ, E1N2SQ, E1N3SQ
+      REAL(8) ESN1, ESN2, ESN3, ESAvg
+      REAL(8) EVMN1, EVMN2, EVMN3, EVMXGrad, EVMYGrad, EVMAvgODT
+      REAL(8) EVMEle, EVMSmag
+      REAL(8) GA00DPAvgOAreaIE4
+      REAL(8) GHAvg, GHAvgOAreaIE2, GOAreaIE4
+      REAL(8) H1N1, H1N2, H1N3, HAvg, H1, H2
+      REAL(8) H2OTotalArea
+      REAL(8) LSXXGradA, LSXYGradA, LSYXGradA, LSYYGradA
+      REAL(8) LSXXEle, LSXYEle, LSYXEle, LSYYEle
+      REAL(8) MsFacR, MsFacLOnDiag, MsFacLOffDiag
+      REAL(8) MX, MY, MXAvg, MYAvg
+      REAL(8) JXAvg, JYAvg
+      REAL(8) Pr1N1, Pr1N2, Pr1N3
+      REAL(8) Off1N1, Off1N2, Off1N3 ! water level offsets
+      REAL(8) QX1N1, QX1N2, QX1N3, QY1N1, QY1N2, QY1N3, QX1Avg, QY1Avg
+      REAL(8) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
+      REAL(8) SFCXAvg, SFCYAvg, YCFACAvg, SFCXADJ, SFCYADJ, TANPHIAvg
+      REAL(8) T0N1,T0N2, T0N3
+      REAL(8) Tau0Avg, Tau0QXAvg, Tau0QYAvg
+      REAL(8) Tau0XGrad2A, Tau0YGrad2A, Tau0SpaVar
+      REAL(8) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
+      REAL(8) TiPN1, TiPN2, TiPN3
+      REAL(8) U1N1,U1N2,U1N3, U1Avg
+      REAL(8) V1N1,V1N2,V1N3, V1Avg
+      REAL(8) WSXAvg, WSYAvg
       REAL(8) AreaIE, AreaIE2, AreaIE4
-      REAL(SZ) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
-      REAL(SZ) FDXX1, FDXX2, FDXX3, FDYY1, FDYY2, FDYY3
+      REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
+      REAL(8) FDXX1, FDXX2, FDXX3, FDYY1, FDYY2, FDYY3
       REAL(8) TimeLoc, TimeH
-      REAL(SZ) HH1 !jgf46.02 Added for Katrina.
-      REAL(SZ) RDIAG ! jgf48.4619 Seizo parameter for fully explicit mode
+      REAL(8) HH1 !jgf46.02 Added for Katrina.
+      REAL(8) RDIAG ! jgf48.4619 Seizo parameter for fully explicit mode
       INTEGER :: j12, j13, j21, j23, j31, j32
-      REAL(SZ) :: arg, argj
-      REAL(SZ) :: celerity
-      REAL(SZ) :: etratio
+      REAL(8) :: arg, argj
+      REAL(8) :: celerity
+      REAL(8) :: etratio
       INTEGER :: ier
       INTEGER :: nbdj
-      REAL(SZ) :: rff
-      REAL(SZ) :: qforcei, qforcej
+      REAL(8) :: rff
+      REAL(8) :: qforcei, qforcej
 C...... SB
-      REAL(SZ) :: SX, SY
+      REAL(8) :: SX, SY
       INTEGER :: ROT_STATUS
 C...... SB
 C...... DW
-      REAL(SZ):: SigmaAvg, Tau0Avg_S
-      REAL(SZ):: SgN1_eta, SgN2_eta, SgN3_eta
-      REAL(SZ):: SgN1_mnx, SgN2_mnx, SgN3_mnx
-      REAL(SZ):: SgN1_mny, SgN2_mny, SgN3_mny
-      REAL(SZ):: Tau0SigmaAvg, SigmaQxAvg, SigmaQyAvg
-      REAL(SZ):: AvgSigmaHAbsU, AvgSigmaHAbsV
-      REAL(SZ):: MsFacR_S, MsFacRS_T, MsFacRS_ABC00
-      REAL(SZ):: E0AN1, E0AN2, E0AN3
-      REAL(SZ):: E1AN1, E1AN2, E1AN3
-      REAL(SZ):: E2AN1, E2AN2, E2AN3
-      REAL(SZ):: ESAN1, ESAN2, ESAN3 
-      REAL(SZ):: U1AN1, U1AN2, U1AN3
-      REAL(SZ):: V1AN1, V1AN2, V1AN3
-      REAL(SZ):: ABC00_EAN1, ABC00_EAN2, ABC00_EAN3
-      REAL(SZ):: fwsx1, fwsx2, fwsx3
-      REAL(SZ):: fwsy1, fwsy2, fwsy3
-      REAL(SZ) :: SPM1, SPM2, SPM3 
+      REAL(8):: SigmaAvg, Tau0Avg_S
+      REAL(8):: SgN1_eta, SgN2_eta, SgN3_eta
+      REAL(8):: SgN1_mnx, SgN2_mnx, SgN3_mnx
+      REAL(8):: SgN1_mny, SgN2_mny, SgN3_mny
+      REAL(8):: Tau0SigmaAvg, SigmaQxAvg, SigmaQyAvg
+      REAL(8):: AvgSigmaHAbsU, AvgSigmaHAbsV
+      REAL(8):: MsFacR_S, MsFacRS_T, MsFacRS_ABC00
+      REAL(8):: E0AN1, E0AN2, E0AN3
+      REAL(8):: E1AN1, E1AN2, E1AN3
+      REAL(8):: E2AN1, E2AN2, E2AN3
+      REAL(8):: ESAN1, ESAN2, ESAN3 
+      REAL(8):: U1AN1, U1AN2, U1AN3
+      REAL(8):: V1AN1, V1AN2, V1AN3
+      REAL(8):: ABC00_EAN1, ABC00_EAN2, ABC00_EAN3
+      REAL(8):: fwsx1, fwsx2, fwsx3
+      REAL(8):: fwsy1, fwsy2, fwsy3
+      REAL(8) :: SPM1, SPM2, SPM3 
       LOGICAL :: ETA_SPONGE = .false., GWCE_SPONGE = .false.
-      REAL(SZ) :: Ma2, Cfac = 1.0_SZ, CfacS0 = 1.0_SZ
+      REAL(8) :: Ma2, Cfac = 1.0D0, CfacS0 = 1.0D0
       INTEGER :: NNBB1, NNBB2  ! Added for VEW1D  08-11-2022 SB
-      REAL(SZ):: fBuf          !
+      REAL(8):: fBuf          !
 !JLW: adding total water depth variable for previous TS
-<<<<<<< Updated upstream
-      REAL(SZ) :: H0N1, H0N2, H0N3
-      REAL(SZ) :: CADV1, CADV2, CADV3
-      REAL(SZ) :: PHIAVG1, PHIAVG2
-=======
       REAL(8) :: H0N1, H0N2, H0N3
       REAL(8) :: CADV1, CADV2, CADV3
       REAL(8) :: PHIAVG1, PHIAVG2
       REAL(8) :: PHI1N1, PHI1N2, PHI1N3
       REAL(8) :: PHI2N1, PHI2N2, PHI2N3
->>>>>>> Stashed changes
 
       IF ( LoadAbsLayerSigma ) THEN
          IF (NumNodesAbsLayer(1) > 0 ) ETA_SPONGE = .true.
@@ -466,7 +478,7 @@ C.... Beg DW/WJP:
                SFmxAvg = SFMXEle(IE) ;
                SFmyAvg = SFMYEle(IE) ;
                sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ; 
-               sfdyfac = (1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ; 
+               sfdyfac = (1 - IFSFM)*1.0D0  + IFSFM*SFmyAvg ; 
                SFCXAvg = SFCXEle(IE) ;
                SFCYAvg = SFCYEle(IE) ;
                YCFACAvg = YCSFACEle(IE) ;
@@ -495,7 +507,7 @@ C.....         WJP adjust the dispersion equation through
 C              Ali et al. formula
                if (CAliDisp) then
                   Ma2   = G*DPavg/Cs2
-                  Cfac = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavg**Bd)**2
+                  Cfac = (1.0D0 - 0.25D0*Ma2 - Ad*DPavg**Bd)**2
                endif
                ! DMW 2022/06 Apply slope limiting to gravity
                GA00DPAvgOAreaIE4 = ALPHAL(IE)*A00*G*DPAvg*Cfac/AreaIE4
@@ -796,7 +808,7 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
             SFmxAvg=SFMXEle(IE) ;
             SFmyAvg=SFMYEle(IE) ;
             sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ; 
-            sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ;            
+            sfdyfac=(1 - IFSFM)*1.0D0  + IFSFM*SFmyAvg ;            
 C........ BEG DW:
             FDX1 = FDXE(1,IE)*sfdxfac ; 
             FDX2 = FDXE(2,IE)*sfdxfac ; 
@@ -898,7 +910,7 @@ C..... Beg DW:
             SFmxAvg=SFMXEle(IE) ;
             SFmyAvg=SFMYEle(IE) ;
             sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ; 
-            sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ;            
+            sfdyfac=(1 - IFSFM)*1.0D0  + IFSFM*SFmyAvg ;            
 
             FDX1 = FDXE(1,IE)*sfdxfac ; 
             FDX2 = FDXE(2,IE)*sfdxfac ; 
@@ -1158,13 +1170,14 @@ C
          ENDIF
          IF (C2DDI) THEN                       !2D bottom friction
             !WJP taking into account the symmetrical friction matrix
+            ! CPB: added resynthesized tidal velocity option
             BSXN1 = TKM(1,NM1)*QX1N1 + TKM(3,NM1)*QY1N1
             BSYN1 = TKM(3,NM1)*QX1N1 + TKM(2,NM1)*QY1N1
             BSXN2 = TKM(1,NM2)*QX1N2 + TKM(3,NM2)*QY1N2
             BSYN2 = TKM(3,NM2)*QX1N2 + TKM(2,NM2)*QY1N2
             BSXN3 = TKM(1,NM3)*QX1N3 + TKM(3,NM3)*QY1N3
             BSYN3 = TKM(3,NM3)*QX1N3 + TKM(2,NM3)*QY1N3
-         ENDIF
+         ENDIF         
          IF (C3D) THEN                         !3D bottom friction
             BSXN1=BSX1(NM1)
             BSXN2=BSX1(NM2)
@@ -1183,7 +1196,7 @@ C..... DW
          SFmxAvg=SFMXEle(IE)  ;
          SFmyAvg=SFMYEle(IE) ;
          sfdxfac=(1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ; 
-         sfdyfac=(1 - IFSFM)*1.0_SZ  + IFSFM*SFmyAvg ; 
+         sfdyfac=(1 - IFSFM)*1.0D0  + IFSFM*SFmyAvg ; 
          ! continuity
          SFCXAvg=SFCXEle(IE) ;
          SFCYAvg=SFCYEle(IE) ;
@@ -1296,9 +1309,9 @@ C.....   WJP adjust the dispersion equation through
 C        Ali et al. formula
          if (CAliDisp) then
             Ma2    = G*DPavg/Cs2
-            Cfac   = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavg**Bd)**2
+            Cfac   = (1.0D0 - 0.25D0*Ma2 - Ad*DPavg**Bd)**2D0
             Ma2    = G*DPavg/Cs2
-            CfacS0 = (1.0_SZ - 0.25_SZ*Ma2 - Ad*DPavgS0**Bd)**2
+            CfacS0 = (1.0D0 - 0.25D0*Ma2 - Ad*DPavgS0**Bd)**2D0
          endif
          ! DMW 2022/06 Apply slope limiting to gravity
          GDPAvgOAreaIE4 = ALPHAL(IE)*G*DPAvg*Cfac/AreaIE4
@@ -2161,7 +2174,7 @@ C
 #ifdef CMPI
      &   , dumy1, dumy2
 #endif
-      USE CONSTANTS, ONLY: G, RHOWAT0
+      USE ADC_CONSTANTS, ONLY: G, RHOWAT0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, TotalArea, Areas, NeiTab,
      &                  NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXGBC, NFLUXRBC,
@@ -2184,71 +2197,71 @@ C
       INTEGER NBDI
       INTEGER OnDiag, OffDiag
 
-      REAL(SZ) A00pB00
-      REAL(SZ) BCXAvg, BCYAvg
-      REAL(SZ) BndLenO6NC    !BNDLEN2O3NC, NCBND need to be removed from global.f and put in original GWCE subroutine
-      REAL(SZ) BSXN1, BSXN2, BSXN3, BSYN1, BSYN2, BSYN3, BSXAvg, BSYAvg
-      REAL(SZ) CorifAvg
-      REAL(SZ) DPAvg, GDPAvgOAreaIE4
-      REAL(SZ) DispX, DispY, DispXAvg, DispYAvg
-      REAL(SZ) E0N1, E0N2, E0N3, E0XGrad2A, E0YGrad2A
-      REAL(SZ) E1N1, E1N2, E1N3, E1XGrad2A, E1YGrad2A
-      REAL(SZ) E1N1SQ, E1N2SQ, E1N3SQ
-      REAL(SZ) ESN1, ESN2, ESN3, ESAvg
-      REAL(SZ) EVMN1, EVMN2, EVMN3, EVMXGrad, EVMYGrad, EVMAvgODT
-      REAL(SZ) EVMEle, EVMSmag
-      REAL(SZ) GHAvg, GHAvgOAreaIE2, GOAreaIE4
-      REAL(SZ) H1N1, H1N2, H1N3, H2N1, H2N2, H2N3, HAvg, H1, H2
-      REAL(SZ) H2OTotalArea
-      REAL(SZ) LSXXGradA, LSXYGradA, LSYXGradA, LSYYGradA
-      REAL(SZ) LSXXEle, LSXYEle, LSYXEle, LSYYEle
-      REAL(SZ) MsFacR
-      REAL(SZ) MX, MY, MXAvg, MYAvg
-      REAL(SZ) JXAvg, JYAvg
-      REAL(SZ) Pr1N1, Pr1N2, Pr1N3
-      REAL(SZ) QX1N1, QX1N2, QX1N3, QY1N1, QY1N2, QY1N3, QX1Avg, QY1Avg
-      REAL(SZ) SFacAvg
-      REAL(SZ) T0N1,T0N2, T0N3
-      REAL(SZ) Tau0Avg, Tau0QXAvg, Tau0QYAvg
-      REAL(SZ) Tau0XGrad2A, Tau0YGrad2A, Tau0SpaVar
-      REAL(SZ) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
-      REAL(SZ) TiPN1, TiPN2, TiPN3
-      REAL(SZ) UV0, UV1, UV2
-      REAL(SZ) U1N1,U1N2,U1N3, U1Avg
-      REAL(SZ) V1N1,V1N2,V1N3, V1Avg
-      REAL(SZ) WSXAvg, WSYAvg
+      REAL(8) A00pB00
+      REAL(8) BCXAvg, BCYAvg
+      REAL(8) BndLenO6NC    !BNDLEN2O3NC, NCBND need to be removed from global.f and put in original GWCE subroutine
+      REAL(8) BSXN1, BSXN2, BSXN3, BSYN1, BSYN2, BSYN3, BSXAvg, BSYAvg
+      REAL(8) CorifAvg
+      REAL(8) DPAvg, GDPAvgOAreaIE4
+      REAL(8) DispX, DispY, DispXAvg, DispYAvg
+      REAL(8) E0N1, E0N2, E0N3, E0XGrad2A, E0YGrad2A
+      REAL(8) E1N1, E1N2, E1N3, E1XGrad2A, E1YGrad2A
+      REAL(8) E1N1SQ, E1N2SQ, E1N3SQ
+      REAL(8) ESN1, ESN2, ESN3, ESAvg
+      REAL(8) EVMN1, EVMN2, EVMN3, EVMXGrad, EVMYGrad, EVMAvgODT
+      REAL(8) EVMEle, EVMSmag
+      REAL(8) GHAvg, GHAvgOAreaIE2, GOAreaIE4
+      REAL(8) H1N1, H1N2, H1N3, H2N1, H2N2, H2N3, HAvg, H1, H2
+      REAL(8) H2OTotalArea
+      REAL(8) LSXXGradA, LSXYGradA, LSYXGradA, LSYYGradA
+      REAL(8) LSXXEle, LSXYEle, LSYXEle, LSYYEle
+      REAL(8) MsFacR
+      REAL(8) MX, MY, MXAvg, MYAvg
+      REAL(8) JXAvg, JYAvg
+      REAL(8) Pr1N1, Pr1N2, Pr1N3
+      REAL(8) QX1N1, QX1N2, QX1N3, QY1N1, QY1N2, QY1N3, QX1Avg, QY1Avg
+      REAL(8) SFacAvg
+      REAL(8) T0N1,T0N2, T0N3
+      REAL(8) Tau0Avg, Tau0QXAvg, Tau0QYAvg
+      REAL(8) Tau0XGrad2A, Tau0YGrad2A, Tau0SpaVar
+      REAL(8) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
+      REAL(8) TiPN1, TiPN2, TiPN3
+      REAL(8) UV0, UV1, UV2
+      REAL(8) U1N1,U1N2,U1N3, U1Avg
+      REAL(8) V1N1,V1N2,V1N3, V1Avg
+      REAL(8) WSXAvg, WSYAvg
 
       REAL(8) AreaIE, AreaIE2, AreaIE4
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) TimeLoc, TimeH
 
 ckmd   Added in parameters for the pc algorithm
-      REAL(SZ) BSX0N1, BSX0N2, BSX0N3, BSY0N1
-      REAL(SZ) BSY0N2, BSY0N3, BSX0Avg, BSY0Avg
-      REAL(SZ) BSX2N1, BSX2N2, BSX2N3, BSY2N1
-      REAL(SZ) BSY2N2, BSY2N3, BSX2Avg, BSY2Avg
-      REAL(SZ) E2N1,E2N2,E2N3
-      REAL(SZ) E0N1SQ, E0N2SQ, E0N3SQ
-      REAL(SZ) E2N1SQ, E2N2SQ, E2N3SQ
-      REAL(SZ) H0N1, H0N2, H0N3, H00
-      REAL(SZ) QX0N1, QX0N2, QX0N3, QY0N1, QY0N2, QY0N3, QX0Avg, QY0Avg
-      REAL(SZ) QX2N1, QX2N2, QX2N3, QY2N1, QY2N2, QY2N3, QX2Avg, QY2Avg
-      REAL(SZ) Tau0QX0Avg, Tau0QY0Avg, Tau0QX2Avg, Tau0QY2Avg
-      REAL(SZ) Tau0SpaVar0, Tau0SpaVar2
-      REAL(SZ) U0N1,U0N2,U0N3, U0Avg
-      REAL(SZ) V0N1,V0N2,V0N3, V0Avg
-      REAL(SZ) U2N1,U2N2,U2N3, U2Avg
-      REAL(SZ) V2N1,V2N2,V2N3, V2Avg
-      REAL(SZ) timewtgwce0,timewtgwce1,timewtgwce2,timeagflag
-      REAL(SZ) :: arg, argj
-      REAL(SZ) :: celerity
-      REAL(SZ) :: etratio
+      REAL(8) BSX0N1, BSX0N2, BSX0N3, BSY0N1
+      REAL(8) BSY0N2, BSY0N3, BSX0Avg, BSY0Avg
+      REAL(8) BSX2N1, BSX2N2, BSX2N3, BSY2N1
+      REAL(8) BSY2N2, BSY2N3, BSX2Avg, BSY2Avg
+      REAL(8) E2N1,E2N2,E2N3
+      REAL(8) E0N1SQ, E0N2SQ, E0N3SQ
+      REAL(8) E2N1SQ, E2N2SQ, E2N3SQ
+      REAL(8) H0N1, H0N2, H0N3, H00
+      REAL(8) QX0N1, QX0N2, QX0N3, QY0N1, QY0N2, QY0N3, QX0Avg, QY0Avg
+      REAL(8) QX2N1, QX2N2, QX2N3, QY2N1, QY2N2, QY2N3, QX2Avg, QY2Avg
+      REAL(8) Tau0QX0Avg, Tau0QY0Avg, Tau0QX2Avg, Tau0QY2Avg
+      REAL(8) Tau0SpaVar0, Tau0SpaVar2
+      REAL(8) U0N1,U0N2,U0N3, U0Avg
+      REAL(8) V0N1,V0N2,V0N3, V0Avg
+      REAL(8) U2N1,U2N2,U2N3, U2Avg
+      REAL(8) V2N1,V2N2,V2N3, V2Avg
+      REAL(8) timewtgwce0,timewtgwce1,timewtgwce2,timeagflag
+      REAL(8) :: arg, argj
+      REAL(8) :: celerity
+      REAL(8) :: etratio
       INTEGER :: ier
       INTEGER :: nbdj
-      REAL(SZ) :: rff
-      REAL(SZ) :: qforcei, qforcej
-      REAL(SZ):: fwsx1, fwsx2, fwsx3
-      REAL(SZ):: fwsy1, fwsy2, fwsy3
+      REAL(8) :: rff
+      REAL(8) :: qforcei, qforcej
+      REAL(8):: fwsx1, fwsx2, fwsx3
+      REAL(8):: fwsy1, fwsy2, fwsy3
 
       call setMessageSource("gwce_new_pc")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -3149,7 +3162,7 @@ C         subroutine.
 C     jgf53.dev: Moved to GWCE module. 
 C*************************************************************************
       subroutine check_slopes(it,TimeLoc)
-      USE SIZES, ONLY : SZ, mnproc, myproc
+      USE SIZES, ONLY : mnproc, myproc
       use global, only : eta2,nodecode,NOFF,ESLCOUNT,screenUnit,
      &      setMessageSource, unsetMessageSource, scratchMessage,
      &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
@@ -3159,16 +3172,18 @@ C*************************************************************************
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active,
      &     elemental_slope_limiter_grad_max,
-     &     elemental_slope_limiter_max_exceeded
+     &     elemental_slope_limiter_max_exceeded,
+     &     LoadCondensedNodes, NCondensedNodes
+
       implicit none
       INTEGER, intent(in) :: IT
       Real(8), intent(in) :: TimeLoc
       INTEGER IE,I
       INTEGER NM1, NM2, NM3, NM123
       INTEGER NC1, NC2, NC3, NCEle, NCI
-      REAL(SZ) DEta2DX, DEta2DY, DEta2Mag
-      REAL(SZ) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
-      REAL(SZ) FDX1,FDX2,FDX3,FDY1,FDY2,FDY3
+      REAL(8) DEta2DX, DEta2DY, DEta2Mag
+      REAL(8) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
+      REAL(8) FDX1,FDX2,FDX3,FDY1,FDY2,FDY3
       REAL(8) :: AreaIE2
       integer nodeNumber ! fulldomain node number where wse slope is exceeded
       
@@ -3206,7 +3221,7 @@ C..... BEG DW/WJP
          SFmxAvg = SFMXEle(IE) ; 
          SFmyAvg = SFMYEle(IE) ; 
          sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+         sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
 C..... END DW/WJP
          FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
          FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
@@ -3228,6 +3243,8 @@ C.... end WP
          DO I=1,3
             ! If the limiter is on already, go to the next node. 
             IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
+            ! If this is one of the condensed nodes, go to the next node. 10/12/2023 sb
+            IF (LoadCondensedNodes .AND. NCondensedNodes(NM(IE,I)) > 0) CYCLE
             ! Compare the elemental slope to the maximum elemental gradient.
             grad_check: IF (dEta2Mag.GE.
      &           ABS(elemental_slope_limiter_grad_max(NM(IE,I)))) THEN
@@ -3268,7 +3285,6 @@ C.... end WP
          enddo ! loop around nodes of an element
       enddo ! loop over the elements
 
-
 1983  format('Elemental slope limiter turned on at fulldomain node ',i0,
      &  ' where the elemental slope is ',1pE12.4E3,
      &  ' and the maximum elemental slope is ',1pE12.4E3,
@@ -3299,7 +3315,6 @@ C     jgf53.dev: Moved to GWCE module.
 C***********************************************************************
 C
       SUBROUTINE APPLY_SLOPE_LIMITS(ETA2Lim,LocNP)
-      USE SIZES, ONLY : SZ
       use global, only : nodecode,NOFF,IFNLFA,
      &      setMessageSource, unsetMessageSource, allMessage,
      &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
@@ -3309,10 +3324,10 @@ C
       implicit none
       integer :: IE,NM1,NM2,NM3,NC1,NC2,NC3,NCEle
       integer, intent(in) :: LocNP
-      REAL(SZ) :: EtaN1,EtaN2,EtaN3,EtaN123
-      real(sz), intent(inout) :: Eta2lim(LocNP)
+      REAL(8) :: EtaN1,EtaN2,EtaN3,EtaN123
+      real(8), intent(inout) :: Eta2lim(LocNP)
       REAL(8) :: AreaEle
-      REAL(sz), ALLOCATABLE, SAVE :: elevSum(:) ! used if elemental slope limiter is active
+      REAL(8), ALLOCATABLE, SAVE :: elevSum(:) ! used if elemental slope limiter is active
       LOGICAL, SAVE :: firstCall = .true.
 
 

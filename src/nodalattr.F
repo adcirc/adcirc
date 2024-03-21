@@ -1,3 +1,22 @@
+!-------------------------------------------------------------------------------!
+!
+! ADCIRC - The ADvanced CIRCulation model
+! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+! 
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+! 
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+! 
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!-------------------------------------------------------------------------------!
 C******************************************************************************
 C     PADCIRC VERSION 46.00 xx/xx/2006
 C     last changes in this file VERSION 46.00
@@ -95,16 +114,16 @@ C             ADCIRC is coupled to SWAN.
       LOGICAL              :: FoundSwanWaveRefrac
       CHARACTER(LEN=80)    :: SwanWaveRefracUnits
       INTEGER              :: SwanWaveRefracNoOfVals
-      REAL(SZ)             :: SwanWaveRefracDefVal
-      REAL(SZ),ALLOCATABLE :: SwanWaveRefrac(:)
+      REAL(8)             :: SwanWaveRefracDefVal
+      REAL(8),ALLOCATABLE :: SwanWaveRefrac(:)
 C
 Corbitt 120321: Allow Advection to be Turned on Locally instead of Globally
       LOGICAL              :: LoadAdvectionState
       LOGICAL              :: FoundAdvectionState
       CHARACTER(LEN=80)    :: AdvectionStateUnits
       INTEGER              :: AdvectionStateNoOfVals
-      REAL(SZ)             :: AdvectionStateDefVal
-      REAL(SZ),ALLOCATABLE :: AdvectionState(:)
+      REAL(8)             :: AdvectionStateDefVal
+      REAL(8),ALLOCATABLE :: AdvectionState(:)
 Csb   Specify node groups for 1D condensation.
       LOGICAL              :: LoadCondensedNodes
       LOGICAL              :: FoundCondensedNodes
@@ -203,24 +222,24 @@ C     attribute.
       INTEGER subgridBarrierNoOfVals
 C
 C     These variables hold the default values for each attribute.
-      REAL(SZ) Tau0DefVal
-      REAL(SZ) StartDryDefVal
-      REAL(SZ) DirEffRLenDefVal(12)
-      REAL(SZ) CanopyCoefDefVal
-      REAL(SZ) QuadraticFricDefVal
-      REAL(SZ) BridgePilingsDefVal(4)
-      REAL(SZ) ChezyDefVal
-      REAL(SZ) ManningsNDefVal
-      REAL(SZ) GeoidOffsetDefVal
-      REAL(SZ) EVMDefVal
-      REAL(SZ) EVCDefVal
-      REAL(SZ) Tau0MinMaxDefVal(2)
-      REAL(SZ) Z0b_varDefVal
-      REAL(SZ) EleSlopeLimDefVal
-      REAL(SZ) River_et_WSEDefVal ! tcm 20140502 v51.27
-      REAL(SZ) IT_FricDefVal(3)  ! wjp internal tides
-      REAL(SZ) OverlandReductionFactorDefaultValue
-      REAL(SZ) SubgridBarrierDefaultValue(2)
+      REAL(8) Tau0DefVal
+      REAL(8) StartDryDefVal
+      REAL(8) DirEffRLenDefVal(12)
+      REAL(8) CanopyCoefDefVal
+      REAL(8) QuadraticFricDefVal
+      REAL(8) BridgePilingsDefVal(4)
+      REAL(8) ChezyDefVal
+      REAL(8) ManningsNDefVal
+      REAL(8) GeoidOffsetDefVal
+      REAL(8) EVMDefVal
+      REAL(8) EVCDefVal
+      REAL(8) Tau0MinMaxDefVal(2)
+      REAL(8) Z0b_varDefVal
+      REAL(8) EleSlopeLimDefVal
+      REAL(8) River_et_WSEDefVal ! tcm 20140502 v51.27
+      REAL(8) IT_FricDefVal(3)  ! wjp internal tides
+      REAL(8) OverlandReductionFactorDefaultValue
+      REAL(8) SubgridBarrierDefaultValue(2)
 C
       INTEGER NumOfNodes    ! number of nodes listed in unit 13 file, cf. NP
       INTEGER NAttr         ! number of nodal attributes in the unit 13 file
@@ -228,34 +247,34 @@ C
 C     The following variables are inputs from the unit 15 model param. file
       INTEGER NWP     ! number of nodal attributes to read from file
       INTEGER NoLiBF  ! nonlinear bottom friction indicator
-      REAL(SZ) Tau0   ! primitive continuity eqn. weight
-      REAL(SZ) Tau    ! linear friction coefficient (1/sec)
-      REAL(SZ) CF     ! 2DDI bottom fric. coef., effect varies based on NoLiBF
-      REAL(SZ) HBreak ! break depth for NOLIBF .eq. 2
-      REAL(SZ) FTheta ! dimless param. for NOLIBF .eq. 2
-      REAL(SZ) FGamma ! dimless param. for NOLIBF .eq.
-      REAL(SZ) ESLM   ! horizontal eddy viscosity (length^2/time)
-      REAL(SZ) ESLC   ! horizontal eddy diffusivity (length^2/time)
+      REAL(8) Tau0   ! primitive continuity eqn. weight
+      REAL(8) Tau    ! linear friction coefficient (1/sec)
+      REAL(8) CF     ! 2DDI bottom fric. coef., effect varies based on NoLiBF
+      REAL(8) HBreak ! break depth for NOLIBF .eq. 2
+      REAL(8) FTheta ! dimless param. for NOLIBF .eq. 2
+      REAL(8) FGamma ! dimless param. for NOLIBF .eq.
+      REAL(8) ESLM   ! horizontal eddy viscosity (length^2/time)
+      REAL(8) ESLC   ! horizontal eddy diffusivity (length^2/time)
       INTEGER  IFLINBF! flag to turn on linear bottom friction
       INTEGER  IFNLBF ! flag to turn on nonlinear bottom friction
       INTEGER  IFHYBF ! flag to turn on hybrid bottom friction
-      REAL(SZ) BFCdLLimit ! lower limit of quadratic bottom friction
-      REAL(SZ) Tau0FullDomainMin ! lower limit of tau0 if time varying
-      REAL(SZ) Tau0FullDomainMax ! upper limit of tau0 if time varying
+      REAL(8) BFCdLLimit ! lower limit of quadratic bottom friction
+      REAL(8) Tau0FullDomainMin ! lower limit of tau0 if time varying
+      REAL(8) Tau0FullDomainMax ! upper limit of tau0 if time varying
 C     jgf48.42 Used to control the back-loaded time averaged tau0
-      REAL(SZ), PARAMETER :: AlphaTau0 = 0.25d0
+      REAL(8), PARAMETER :: AlphaTau0 = 0.25d0
 C
 C     Nodal attributes.
-      REAL(SZ), ALLOCATABLE :: STARTDRY(:) ! 1=nodes below geoid initially dry
-      REAL(SZ), ALLOCATABLE :: FRIC(:)     ! bottom friction coefficient
-      REAL(SZ), ALLOCATABLE :: FRIC_ORIG(:)
-      REAL(SZ), ALLOCATABLE, TARGET :: TAU0VAR(:)! primitive equation weighting
-      REAL(SZ), ALLOCATABLE :: Tau0Temp(:) ! used in time varying tau0
+      REAL(8), ALLOCATABLE :: STARTDRY(:) ! 1=nodes below geoid initially dry
+      REAL(8), ALLOCATABLE :: FRIC(:)     ! bottom friction coefficient
+      REAL(8), ALLOCATABLE :: FRIC_ORIG(:)
+      REAL(8), ALLOCATABLE, TARGET :: TAU0VAR(:)! primitive equation weighting
+      REAL(8), ALLOCATABLE :: Tau0Temp(:) ! used in time varying tau0
 C     jjw&sb46.39.sb01: Base (original) primitive equation weighting.
 C     Tau0Var may be optimized later based on Tau0Base
-      REAL(SZ), ALLOCATABLE :: TAU0BASE(:)
+      REAL(8), ALLOCATABLE :: TAU0BASE(:)
 C     jgf47.33 Used for time averaged tau0
-      REAL(SZ), ALLOCATABLE :: LastTau0(:)
+      REAL(8), ALLOCATABLE :: LastTau0(:)
 
 C     jgf47.06: Added variables to trigger calculations and output of tau0
 C     jgf47.30: Added "FullDomain" or "High Res Areas Only" distinction
@@ -271,38 +290,44 @@ C     jgf48.42: Added backloaded time averaged tau0
       LOGICAL,ALLOCATABLE :: elemental_slope_limiter_max_exceeded(:) ! .true. if maximum gradient has been
                                                                    ! exceeded, used for gradient warnings
 
-      REAL(SZ), ALLOCATABLE :: z0land(:,:) ! directional wind speed red. fac.
-      REAL(SZ), ALLOCATABLE :: vcanopy(:)  ! canopy coefficient
+      REAL(8), ALLOCATABLE :: z0land(:,:) ! directional wind speed red. fac.
+      REAL(8), ALLOCATABLE :: vcanopy(:)  ! canopy coefficient
 C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
-      REAL(SZ), ALLOCATABLE :: BridgePilings(:,:)
-      REAL(SZ), ALLOCATABLE :: Chezy(:)
-      REAL(SZ), ALLOCATABLE :: ManningsN(:)
-      REAL(SZ), ALLOCATABLE :: GeoidOffset(:)
-      REAL(SZ), ALLOCATABLE :: EVM(:)
-      REAL(SZ), ALLOCATABLE :: EVC(:)
-      REAL(SZ), ALLOCATABLE :: Tau0MinMax(:,:)  ! (node,i); i=1(min), i=2(max)
-      REAL(SZ), ALLOCATABLE :: Z0b_var(:)  ! patially varying 3D bottom roughness length
-      REAL(SZ), ALLOCATABLE :: elemental_slope_limiter_grad_max(:)
-      REAL(SZ), ALLOCATABLE :: River_et_WSE(:)  ! tcm 20140502 v51.27
-      REAL(SZ), ALLOCATABLE :: IT_Fric(:,:)  ! WJP: Linear friction coefficient for internal tides
-      REAL(SZ), ALLOCATABLE :: OverlandReductionFactor(:)
-      REAL(SZ), ALLOCATABLE :: subgridBarrier(:,:)
-      REAL(SZ), ALLOCATABLE :: subgridBarrierFriction(:)
+      REAL(8), ALLOCATABLE :: BridgePilings(:,:)
+      REAL(8), ALLOCATABLE :: Chezy(:)
+      REAL(8), ALLOCATABLE :: ManningsN(:)
+
+C     Variables for bottom friction evaluation along VEW1D channels considering wet perimeter of rectangular cross-section 11/06/2023 sb
+      LOGICAL :: ActivateVEW1DChannelWetPerimeter
+      REAL(8), ALLOCATABLE :: WetPerimWidth(:)    ! Widths of the channels
+      REAL(8), ALLOCATABLE :: WetPerimBankElev(:) ! Elevations of the channel banks
+
+      REAL(8), ALLOCATABLE :: GeoidOffset(:)
+      REAL(8), ALLOCATABLE :: EVM(:)
+      REAL(8), ALLOCATABLE :: EVC(:)
+      REAL(8), ALLOCATABLE :: Tau0MinMax(:,:)  ! (node,i); i=1(min), i=2(max)
+      REAL(8), ALLOCATABLE :: Z0b_var(:)  ! patially varying 3D bottom roughness length
+      REAL(8), ALLOCATABLE :: elemental_slope_limiter_grad_max(:)
+      REAL(8), ALLOCATABLE :: River_et_WSE(:)  ! tcm 20140502 v51.27
+      REAL(8), ALLOCATABLE :: IT_Fric(:,:)  ! WJP: Linear friction coefficient for internal tides
+      REAL(8), ALLOCATABLE :: OverlandReductionFactor(:)
+      REAL(8), ALLOCATABLE :: subgridBarrier(:,:)
+      REAL(8), ALLOCATABLE :: subgridBarrierFriction(:)
       LOGICAL,ALLOCATABLE   :: subgridBarrierOvertopping(:)
 C
 C------------------ For absorbing layer, DW
-      REAL(SZ), pointer:: absorblayer_sigma(:,:), absorblayer_zero(:,:)
+      REAL(8), pointer:: absorblayer_sigma(:,:), absorblayer_zero(:,:)
 
-      REAL(SZ), pointer:: absorblayer_sigma_eta(:,:)
-      REAL(SZ), pointer:: absorblayer_sigma_mnx(:,:)
-      REAL(SZ), pointer:: absorblayer_sigma_mny(:,:)
+      REAL(8), pointer:: absorblayer_sigma_eta(:,:)
+      REAL(8), pointer:: absorblayer_sigma_mnx(:,:)
+      REAL(8), pointer:: absorblayer_sigma_mny(:,:)
 
 
       LOGICAL LoadAbsLayerSigma
       LOGICAL FoundAbsLayerSigma
 
       INTEGER AbsLayerSigmaNoOfVals  
-      REAL(SZ) AbsLayerSigmaDefVal(2)
+      REAL(8) AbsLayerSigmaDefVal(2)
       
       CHARACTER (LEN=80):: AbsLayerSigmaUnits
 
@@ -320,19 +345,20 @@ C------------------ For absorbing layer, DW
       INTEGER:: AbsLayerNBF
 
       ! Water elevation
-      REAL(SZ), ALLOCATABLE:: AbsLayerEtaAMIG(:), 
+      REAL(8), ALLOCATABLE:: AbsLayerEtaAMIG(:), 
      &                AbsLayerEtaFF(:), AbsLayerEtaFACE(:)
-      REAL(SZ), ALLOCATABLE:: AbsLayerEtaEMO(:,:), AbsLayerEtaEFA(:,:)
+      REAL(8), ALLOCATABLE:: AbsLayerEtaEMO(:,:), AbsLayerEtaEFA(:,:)
 
       ! Tentatively for Velocity or Dischage
-      REAL(SZ), ALLOCATABLE:: AbsLayerQAMIG(:), 
+      REAL(8), ALLOCATABLE:: AbsLayerQAMIG(:), 
      &                AbsLayerQFF(:), AbsLayerQFACE(:)
-      REAL(SZ), ALLOCATABLE:: AbsLayerQxEMO(:,:), AbsLayerQxEFA(:,:)
-      REAL(SZ), ALLOCATABLE:: AbsLayerQyEMO(:,:), AbsLayerQyEFA(:,:)
+      REAL(8), ALLOCATABLE:: AbsLayerQxEMO(:,:), AbsLayerQxEFA(:,:)
+      REAL(8), ALLOCATABLE:: AbsLayerQyEMO(:,:), AbsLayerQyEFA(:,:)
 
-      integer :: filtL = 25 ! Length of moving-mean filter [hrs]
-      REAL(SZ), ALLOCATABLE:: UAV(:,:), VAV(:,:) 
-
+C
+C.....CPB 9/2022: for computing tidal velocities in
+C                 apply2dinternalwavedrag
+      REAL(8), ALLOCATABLE, PRIVATE :: UT(:), VT(:)
 
 C------------------
 C     Make i,j,k private DW
@@ -904,6 +930,7 @@ C     ----------------------------------------------------------------
 C     Allocate memory to hold our data.
       subroutine allocateNodalAttributes()
       use mesh,only:ne
+      USE GLOBAL, ONLY: NTIF
       implicit none
       ALLOCATE(TAU0VAR(NumOfNodes),TAU0BASE(NumOfNodes)) ! jjw&sb46.39sb01
       ALLOCATE(STARTDRY(NumOfNodes))
@@ -914,6 +941,9 @@ C     Allocate memory to hold our data.
       ALLOCATE(GeoidOffset(NumOfNodes))
       ALLOCATE(Chezy(NumOfNodes))
       ALLOCATE(ManningsN(NumOfNodes))
+      IF ( ActivateVEW1DChannelWetPerimeter ) THEN
+         ALLOCATE(WetPerimWidth(NumOfNodes),WetPerimBankElev(NumOfNodes)) ! sb 11/06/2023
+      ENDIF
       ALLOCATE(Z0b_var(NumOfNodes))
       ALLOCATE(EVM(NumOfNodes))
       ALLOCATE(EVC(NumOfNodes))
@@ -933,7 +963,6 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
       elemental_slope_limiter_max_exceeded(:) = .FALSE.
       IF ( LoadIT_Fric ) THEN
          ALLOCATE(IT_Fric(NumOfNodes,IT_FricNoOfVals))
-         ALLOCATE(UAV(filtL,NumOfNodes),VAV(filtL,NumOfNodes))
       END IF   
       OverlandReductionFactor(:) = 1D0/30D0
       IF ( LoadAbsLayerSigma ) THEN
@@ -973,7 +1002,7 @@ C
 C
       ! temp array; used to load a real from the file,
       ! then convert to integer
-      REAL(sz), ALLOCATABLE :: real_loader(:)
+      REAL(8), ALLOCATABLE :: real_loader(:)
 C
       NAFound = .False.
       SkipDataSet = .False.
@@ -1456,12 +1485,16 @@ C 09232016 WP : Spatially varying linear internal tide friction
      &              OverlandReductionFactorDefaultValue,
      &              NumNodesNotDefault,nScreen,MyProc,
      &              NAbOut)
+            ELSE
+              SkipDataSet = .True.
             ENDIF
          CASE("subgrid_barrier")
              IF(LoadSubgridBarrier)THEN
                  CALL LoadAttrMat(SubgridBarrier,SubgridBarrierNoOfVals,
      &              subgridBarrierDefaultValue,NumNodesNotDefault,
      &              nScreen,MyProc,NAbOut)
+             ELSE
+               SkipDataSet = .True.
              ENDIF
 C          WP
 !------- DW ---- Absorbing layer -----------
@@ -1553,13 +1586,13 @@ C     ----------------------------------------------------------------
      &     NScreen, MyProc, NAbOut)
       USE MESH,ONLY:node_dict,find
       IMPLICIT NONE
-      REAL(SZ), intent(out), dimension(NumOfNodes) :: AttributeData
-      REAL(SZ), intent(in):: Default ! default value for all nodes
+      REAL(8), intent(out), dimension(NumOfNodes) :: AttributeData
+      REAL(8), intent(in):: Default ! default value for all nodes
       INTEGER, intent(in) :: NumNodesNotDef ! number of nodes specified in file
       INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
-      REAL(SZ)            :: TempData 
+      REAL(8)            :: TempData 
       INTEGER             :: NodeNum ! node label listed in the file
       INTEGER             :: DictNode ! node position in array
 C
@@ -1603,14 +1636,14 @@ C     ----------------------------------------------------------------
       USE MESH,ONLY:node_dict,find
       IMPLICIT NONE
       INTEGER, intent(in) :: NumCol  ! number of columns in the matrix
-      REAL(SZ), intent(out),
+      REAL(8), intent(out),
      &     dimension(NumOfNodes,NumCol) :: AttributeData
-      REAL(SZ), intent(in), dimension(NumCol) :: Default ! default values
+      REAL(8), intent(in), dimension(NumCol) :: Default ! default values
       INTEGER, intent(in) :: NumNodesNotDef  ! number of nodes spec. in file
       INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
-      REAL(SZ)            :: TempAttData(NumCol) 
+      REAL(8)            :: TempAttData(NumCol) 
       INTEGER             :: NodeNum ! node label listed in the file
       INTEGER             :: DictNode ! node position in array
 C------ DW
@@ -1731,13 +1764,13 @@ C     ----------------------------------------------------------------
       USE GLOBAL, ONLY : C3D, C2DDI, CBaroclinic
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in the grid file
-      REAL(SZ), intent(in), dimension(NP) :: DP ! array of bathymetric depths
-      REAL(SZ), intent(in):: G  ! gravitational acceleration
+      REAL(8), intent(in), dimension(NP) :: DP ! array of bathymetric depths
+      REAL(8), intent(in):: G  ! gravitational acceleration
       INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
       INTEGER, intent(in) :: ScreenUnit ! i/o for debug info to screen
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
-      REAL(SZ), intent(in) :: Z0B ! 3D bottom friction
+      REAL(8), intent(in) :: Z0B ! 3D bottom friction
       INTEGER Tau0Dig1  ! determines the tau0 scheme
       INTEGER Tau0Dig2  ! determines whether tau0 is being output
       LOGICAL :: invalidCanopyCoefficient ! .true. if any value is neither 0 nor 1
@@ -1767,7 +1800,7 @@ C
 C     ERROR CHECK: If Chezy, Manning's or Quadratic friction was loaded
 C     from the nodal attributes file, NOLIBF must be 1.
       IF ((LoadChezy.or.LoadManningsN.or.LoadQuadraticFric).and.
-     &     NoLiBF.ne.1) THEN
+     &     NoLiBF.ne.1.AND.NOLIBF.NE.3) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9800)
          WRITE(16,9800)
  9800    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
@@ -2054,10 +2087,10 @@ C     jgf46.27 Function to calculate tau0 based on the scheme selection
 C     and the depth. This assumes that Scheme is negative.
 C
 C     ----------------------------------------------------------------
-      REAL(SZ) FUNCTION Tau0NodalValue(Scheme, Depth)
+      REAL(8) FUNCTION Tau0NodalValue(Scheme, Depth)
       IMPLICIT NONE
-      REAL(SZ) Scheme
-      REAL(SZ) Depth
+      REAL(8) Scheme
+      REAL(8) Depth
 C
       IF (Scheme.eq.-2.d0) THEN
 C     Smoothly varying tau0 with depth.
@@ -2089,11 +2122,11 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
       IMPLICIT NONE
-      REAL(SZ), intent(in) :: TK(:)       ! bottom friction
+      REAL(8), intent(in) :: TK(:)       ! bottom friction
       INTEGER, intent(in) :: NNeigh(:)   ! number of neighbor nodes
       INTEGER, intent(in) :: NeiTab(:,:) ! table of neighbor nodes
       INTEGER, intent(in) :: NP           ! number of nodes in the domain
-      REAL(SZ) CaseySum  ! sum of tau0temp values around a particular node
+      REAL(8) CaseySum  ! sum of tau0temp values around a particular node
 
 Casey 050711 : Made changes for averaged variable Tau0.
 cjjw46.39.sb01 :  "high/low LIMITED" variable G.
@@ -2149,6 +2182,76 @@ C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
 
 
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E
+C     I N I T  V E W 1 D  C H A N N E L  W E T  P E R I M E T E R
+C     ----------------------------------------------------------------
+C
+C     Subroutine to initialize variable values for bottom friction
+C     evaluation along VEW1D channels considering wet perimeter  
+C     11/06/2023 sb
+C
+C     ----------------------------------------------------------------
+      SUBROUTINE initVEW1DChannelWetPerimeter()
+      USE SIZES          
+      USE MESH, ONLY: NP, X, Y, DP, LBArray_Pointer
+      USE BOUNDARIES,ONLY : LBCODEI,NBV,IBCONN
+      IMPLICIT NONE
+      INTEGER :: ICN, I1, I2, IBND, NNBB1, NNBB2
+      REAL(8) :: X1, Y1, X2, Y2, WIDTH, BE1, BE2
+
+      WetPerimWidth = 0.D0
+      WetPerimBankElev = 0.D0
+
+      write(scratchMessage,'(a)') 'Initializing channel wet perimeter variables:'
+      call logMessage(ECHO,trim(scratchMessage))
+
+      DO ICN=1,NListCondensedNodes
+         IF (NNodesListCondensedNodes(ICN).NE.2) CYCLE
+         I1 = ListCondensedNodes(ICN,1)
+         I2 = ListCondensedNodes(ICN,2)
+         
+         ! Width
+         X1 = X(I1)
+         Y1 = Y(I1)
+         X2 = X(I2)
+         Y2 = Y(I2)
+         WIDTH = SQRT((X1-X2)*(X1-X2) + (Y1-Y2)*(Y1-Y2))
+         
+         ! Bank elevation
+         !- I1
+         IBND = LBArray_Pointer(I1)
+         IF(LBCODEI(IBND).EQ.64) THEN
+            NNBB1=NBV(IBND)
+            NNBB2=IBCONN(IBND)
+            BE1 = -MIN(DP(NNBB1),DP(NNBB2))
+         ELSE
+            BE1 = 99999.D0
+         ENDIF
+         !- I2
+         IBND = LBArray_Pointer(I2)
+         IF(LBCODEI(IBND).EQ.64) THEN
+            NNBB1=NBV(IBND)
+            NNBB2=IBCONN(IBND)
+            BE2 = -MIN(DP(NNBB1),DP(NNBB2))
+         ELSE
+            BE2 = 99999.D0
+         ENDIF
+
+         ! Store the values
+         WetPerimWidth(I1) = WIDTH
+         WetPerimWidth(I2) = WIDTH
+         WetPerimBankElev(I1) = BE2
+         WetPerimBankElev(I2) = BE2
+
+         write(scratchMessage,'(a,I10,a,I10,a,F10.3,a,F10.3,a,F10.3)')
+     &      'I1=',I1,', I2=',I2,', WIDTH=',WIDTH,', BankElev1=',BE1,', BankElev2=',BE2
+         call logMessage(ECHO,trim(scratchMessage))
+            
+      ENDDO
+
+      END SUBROUTINE InitVEW1DChannelWetPerimeter
+
 
 C     ----------------------------------------------------------------
 C     S U B R O U T I N E
@@ -2176,23 +2279,23 @@ C     ----------------------------------------------------------------
 C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
-      REAL(SZ), intent(in), dimension(NP) :: UU1  ! x-dir velocities
-      REAL(SZ), intent(in), dimension(NP) :: VV1  ! y-dir velocities
-      REAL(SZ), intent(in), dimension(NP) :: DP   ! bathymetric depths
-      REAL(SZ), intent(in), dimension(NP) :: ETA2 ! water surf. elevations
-      REAL(SZ), intent(in) :: G                   ! gravitational constant
+      REAL(8), intent(in), dimension(NP) :: UU1  ! x-dir velocities
+      REAL(8), intent(in), dimension(NP) :: VV1  ! y-dir velocities
+      REAL(8), intent(in), dimension(NP) :: DP   ! bathymetric depths
+      REAL(8), intent(in), dimension(NP) :: ETA2 ! water surf. elevations
+      REAL(8), intent(in) :: G                   ! gravitational constant
       INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag
-      REAL(SZ), intent(inout), dimension(NP) :: TK! depth avg. fric.
+      REAL(8), intent(inout), dimension(NP) :: TK! depth avg. fric.
 C
-      REAL(SZ) UV1   ! velocity magnitude (speed)
-      REAL(SZ) H1    ! total depth
-      REAL(SZ) Fr
-      REAL(SZ) FricBP
-      REAL(SZ) BK    ! BK(1) is pier shape factor
-      REAL(SZ) BALPHA! BALPHA(2) is constriction fraction
-      REAL(SZ) BDELX ! BDELX(3) is effective delx
-      REAL(SZ) MLDrat ! MLD ratio to depth
-      REAL(SZ) HT, WCH, ManN
+      REAL(8) UV1   ! velocity magnitude (speed)
+      REAL(8) H1    ! total depth
+      REAL(8) Fr
+      REAL(8) FricBP
+      REAL(8) BK    ! BK(1) is pier shape factor
+      REAL(8) BALPHA! BALPHA(2) is constriction fraction
+      REAL(8) BDELX ! BDELX(3) is effective delx
+      REAL(8) MLDrat ! MLD ratio to depth
+      REAL(8) HT, WCH, HCH, WPFac
 
 
       !...Reset the friction to original values
@@ -2230,40 +2333,38 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
                ENDIF
             ELSE
                HT = DP(I)+IFNLFA*ETA2(I)
-               IF(LoadSubgridBarrier)THEN
-                   IF(subgridBarrierOvertopping(I).AND.
-     &                SubgridBarrierNoOfVals.EQ.2)THEN
-                       FRIC(I)=g*subgridBarrier(I,2)**2.d0
-     &                      /( ( HT )**(1.d0/3.d0) ) 
-                       IF(FRIC(I).LT.BFCdLLimit) THEN
-                          FRIC(I) = BFCdLLimit
-                       ENDIF
-                   ELSE
-                       IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
-                       FRIC(I)=g*ManningsN(I)**2.d0
-     &                      /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
-                       IF(FRIC(I).LT.BFCdLLimit) THEN
-                          FRIC(I) = BFCdLLimit
-                       ENDIF
-                   ENDIF
+               IF (activateVEW1DChannelWetPerimeter .AND.
+     &             WetPerimWidth(I).GT.0.D0) THEN    ! Evaluating wet perimeter factor along VEW1D channels
+                  HCH = DP(I)+IFNLFA*MIN( ETA2(I), WetPerimBankElev(I) ) ! Height from bottom to which ever lower among the water elevation and the bank elevation
+                  WCH = WetPerimWidth(I)
+                  WPFac = (1.D0+2.D0*HCH/WCH)**(2.D0/3.D0) ! Wet perimeter factor
                ELSE
-                   IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
-                   IF (ManningsN(I).gt.1.d0) THEN
-                      WCH = floor(ManningsN(I))
-                      ManN = ManningsN(I) - WCH
-                      FRIC(I)=g*((1.D0+2.D0*HT/WCH)**(2.D0/3.D0)*ManN)**2.d0
-     &                  /( HT**(1.d0/3.d0) )
+                  WPFac = 1.D0
+               ENDIF
+               IF(LoadSubgridBarrier)THEN
+                  IF(subgridBarrierOvertopping(I).AND.
+     &               SubgridBarrierNoOfVals.EQ.2)THEN
+                      FRIC(I)=g*subgridBarrier(I,2)**2.d0
+     &                     /( ( HT )**(1.d0/3.d0) ) 
                       IF(FRIC(I).LT.BFCdLLimit) THEN
                          FRIC(I) = BFCdLLimit
                       ENDIF
-                   ELSE
-                      FRIC(I)=g*ManningsN(I)**2.d0
-     &                  /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
-                      !sb46.28sb02  Lower limit is applied here.
+                  ELSE
+                      IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
+                      FRIC(I)=g*(WPFac*ManningsN(I))**2.d0
+     &                     /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
                       IF(FRIC(I).LT.BFCdLLimit) THEN
                          FRIC(I) = BFCdLLimit
                       ENDIF
-                   ENDIF
+                  ENDIF
+               ELSE
+                  IF (ManningsN(I).le.0d0) cycle ! Can use Cd where man <= 0
+                  FRIC(I)=g*(WPFac*ManningsN(I))**2.d0
+     &                    /( ( HT )**(1.d0/3.d0) ) ! sb46.28sb02
+                  !sb46.28sb02  Lower limit is applied here.
+                  IF(FRIC(I).LT.BFCdLLimit) THEN
+                     FRIC(I) = BFCdLLimit
+                  ENDIF
                ENDIF
             ENDIF
          ENDDO
@@ -2280,11 +2381,13 @@ C     ... Combined Cd for bottom friction and momentum dispersion
             UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             H1  = DP(I) + IFNLFA*ETA2(I)
             IF (HBREAK.gt.0d0) then
+C..............CPB 3/9/2023: moved calculation of Cd as a power function
+C              to a separate subroutine "apply2DMomentumDisp"
 C              ... Cd as a power function [a(x^b-1)] of x = MLD
-               FRIC(I) = CF + HBREAK*(max(4d-3,MLD(I))**FTHETA - 1d0)
+               FRIC(I) = CF ! + HBREAK*(max(4d-3,MLD(I))**FTHETA - 1d0)
             ELSE
 C              ... Cd directly from the 3D model (MLD here)
-               FRIC(I) = CF + MLD(I)
+               FRIC(I) = FRIC(I) + MLD(I)
             ENDIF
             TK(I) = MIN(FRIC(I) * UV1 / H1, 2.0/DTDP)
          ENDDO
@@ -2343,24 +2446,24 @@ C     ----------------------------------------------------------------
      &     IFNLFA, NP, TK, NFEN, Z0B)
       IMPLICIT NONE
       INTEGER, intent(in) :: NP, NFEN             ! number of nodes in grid Horizontal and Vertical
-      COMPLEX(SZ), intent(in), dimension(NP,NFEN) :: Q  ! x-dir velocities
-      REAL(SZ), intent(in), dimension(NFEN) :: SIGMA  ! x-dir velocities
-      REAL(SZ), intent(in), dimension(NP) :: DP   ! bathymetric depths
-      REAL(SZ), intent(in), dimension(NP) :: ETA2 ! water surf. elevations
-      REAL(SZ), intent(in) :: G                   ! gravitational constant
+      COMPLEX(8), intent(in), dimension(NP,NFEN) :: Q  ! x-dir velocities
+      REAL(8), intent(in), dimension(NFEN) :: SIGMA  ! x-dir velocities
+      REAL(8), intent(in), dimension(NP) :: DP   ! bathymetric depths
+      REAL(8), intent(in), dimension(NP) :: ETA2 ! water surf. elevations
+      REAL(8), intent(in) :: G                   ! gravitational constant
       INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag
-      REAL(SZ), intent(inout), dimension(NP) :: TK! depth avg. fric.
-      REAL(SZ), intent(in) :: Z0B
+      REAL(8), intent(inout), dimension(NP) :: TK! depth avg. fric.
+      REAL(8), intent(in) :: Z0B
 C
       INTEGER NH
-      REAL(SZ) Z0B1  ! velocity magnitude (speed)
-      REAL(SZ) UV1   ! velocity magnitude (speed)
-      REAL(SZ) H1    ! total depth
-      REAL(SZ) Fr
-      REAL(SZ) FricBP
-      REAL(SZ) BK    ! BK(1) is pier shape factor
-      REAL(SZ) BALPHA! BALPHA(2) is constriction fraction
-      REAL(SZ) BDELX ! BDELX(3) is effective delx
+      REAL(8) Z0B1  ! velocity magnitude (speed)
+      REAL(8) UV1   ! velocity magnitude (speed)
+      REAL(8) H1    ! total depth
+      REAL(8) Fr
+      REAL(8) FricBP
+      REAL(8) BK    ! BK(1) is pier shape factor
+      REAL(8) BALPHA! BALPHA(2) is constriction fraction
+      REAL(8) BDELX ! BDELX(3) is effective delx
 C
 C Determine the bottom roughness length either from fort.15, from Manning's n
 C or as read in from nodal attributes
@@ -2408,25 +2511,33 @@ C     the scalar version in here too
 C     WJP 02.24.2018 put into v53.dev
 C     WJP 07.24.2018 updated for baroclinic coupling type 
 C     ----------------------------------------------------------------
-      SUBROUTINE Apply2DInternalWaveDrag(NP, TK, TKM, U, V, DP, IT)
-      USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN, IFSPROTS
+      SUBROUTINE Apply2DInternalWaveDrag(NP, TK, TKM, U, V, DP,
+     & IT)      
+      USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN,
+     &                  IFSPROTS, RAMP
       USE MESH, ONLY: DRVMAP2DSPVEC, UVECTMP, VVECTMP, RVELF
+      USE INTERNALTIDE, ONLY: UBar, VBar, MunkHPFilter
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
-      REAL(SZ), intent(in), dimension(NP) :: TK   ! scalar friction
-      REAL(SZ), intent(inout), dimension(3,NP) :: TKM
+      REAL(8), intent(in), dimension(:) :: TK   ! scalar friction
+      REAL(8), intent(inout), dimension(:,:) :: TKM
       INTEGER,  intent(in), optional :: IT          ! temporal interations
-      REAL(SZ), intent(in), dimension(NP),optional :: U    ! x-dir velocities
-      REAL(SZ), intent(in), dimension(NP),optional :: V    ! y-dir velocities
-      REAL(SZ), intent(in), dimension(NP),optional :: DP   ! depth
-      REAL(SZ), allocatable :: Hx(:), Hy(:)
-      INTEGER  :: I, L, Lm, Lind 
-      REAL(SZ) :: omega = 1.4052d-4 ![rad/s] M2 tidal frequency
-      REAL(SZ) :: hr = 3600.0_SZ ! means one hour in seconds
-      REAL(SZ) :: SmallV = 1d-10 ! A small value
-      REAL(SZ) :: Fit, alpha2, gamma2, slope2, uavnow, vavnow 
-      REAL(SZ) :: Nmdiff, Nbdiff, Fdiff, adju, adjv, adjuv
+      REAL(8), intent(in), dimension(NP),optional :: U    ! x-dir velocities
+      REAL(8), intent(in), dimension(NP),optional :: V    ! y-dir velocities
+      REAL(8), intent(in), dimension(NP),optional :: DP   ! depth
+      REAL(8), allocatable :: Hx(:), Hy(:)
+      INTEGER  :: I, J 
+      REAL(8) :: omega = 1.4052d-4 ![rad/s] M2 tidal frequency
+      REAL(8) :: hr = 3600.0D0 ! means one hour in seconds
+      REAL(8) :: SmallV = 1d-10 ! A small value
+      REAL(8) :: Fit, alpha2, gamma2, slope2
+      REAL(8) :: Nmdiff, Nbdiff, Fdiff, adju, adjv, adjuv
       logical, save ::  first_entry = .TRUE.
+      ! CPB: for tidal velocities
+      REAL(8) :: cosAMIGT, sinAMIGT, DissTidal, DissTotal, jjwgamma,
+     &            Cxx, Cyy, Cxy
+      INTEGER :: NCYC
+      REAL(8),DIMENSION(:),ALLOCATABLE :: Udmy, Vdmy      
 C     Compute TKM by adding wave drag contribution to 
 C     current value of the bottom friction, TK
       LoadITFric: IF (LoadIT_Fric) THEN
@@ -2469,19 +2580,7 @@ C              (unnecessary for IT_FricNoOfVals == 1)
          Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
 C           2DDI ADCIRC with baroclinic coupling
             if (abs(IDEN).ne.7) then
-C              Filtering lengths if have baroclinic ocean currents
-               L  = floor((IT-1)*DTDP/hr) ! Get the current hour number
-               Lm = floor((IT-2)*DTDP/hr) ! Get the previous hour number
-               if (L > Lm) then
-                  ! Store new hour velocities
-                  ! Get actual index (wrap around)
-                  Lind = L - filtL*floor((IT-1)*DTDP/filtL/hr) + 1
-                  DO I = 1,NP
-                     UAV(Lind,I) = U(I)   
-                     VAV(Lind,I) = V(I)   
-                  ENDDO
-                  L = min(L,filtL)  
-               endif
+               CALL MunkHPFilter(U,V,IT)
             endif
             IF (IT_FricNoOfVals == 5) THEN
 C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
@@ -2514,11 +2613,11 @@ C           For the "Local" Lyard et al. (2004) type tensor wave drag
 C           1st column is coefficient, 2nd and 3rd columns are the Hx and Hy slopes
 C           For the scalar Zaron & Egbert (2006) type
 C           1st column is coefficient, 2nd column is the squared hypotenuse slope
-               adjuv = 1d0; adju = 1d0; adjv = 1d0;
                DO I = 1,NP
-                  NBdiff = (NB(I)**2 - omega**2)
-                  NMdiff = (NM(I)**2 - omega**2)
-                  Fdiff  = (omega**2 - CORIF(I)**2)
+                  adju = 1d0; adjv = 1d0;adjuv = 1d0;
+                  NBdiff = (NB(I)**2d0 - omega**2d0)
+                  NMdiff = (NM(I)**2d0 - omega**2d0)
+                  Fdiff  = (omega**2d0 - CORIF(I)**2d0)
                   IF (NBdiff.le.SmallV.or.Nmdiff.le.SmallV.or.
      &                Fdiff.le.SmallV) THEN
                      ! No freely propagating internal tides
@@ -2527,11 +2626,16 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                   ELSE 
                      ! Have freely propagating internal tides
                      ! Get the full coefficient
-                     Fit = IT_Fric(I,1)*sqrt(NBdiff*Nmdiff)/omega
+                     IF (NBdiff*NMdiff.LT.0d0) THEN
+                        Fit = 0d0
+                     ELSE
+                        Fit = IT_Fric(I,1)*sqrt(NBdiff*Nmdiff)/omega
+                     ENDIF
                      ! Check criticality of slope
                      alpha2 = Fdiff / NBdiff
+                     IF (alpha2.LT.0d0) Fit = 0d0
                      if (IT_FricNoOfVals == 3) then
-                        slope2 = IT_Fric(I,2)**2 + IT_Fric(I,3)**2
+                        slope2 = IT_Fric(I,2)**2d0 + IT_Fric(I,3)**2d0
                      else
                         slope2 = IT_Fric(I,2)
                      endif
@@ -2542,18 +2646,17 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      ! Calculate adjustment based on tidal residual
                      if (abs(IDEN).ne.7) then
                         ! Calculate the adjustment factors based on the delayed moving mean
-                        if (L.ge.1) then
-                           uavnow = sum(UAV(1:L,I)) / L
-                           vavnow = sum(VAV(1:L,I)) / L
-                           if (abs(U(I)) > 1d-3) adju = 1d0-uavnow/U(I)
-                           if (abs(V(I)) > 1d-3) adjv = 1d0-vavnow/V(I)
-                        endif
+                        IF (ABS(U(I)).GT.1d-3.AND.
+     &                      ABS(V(I)).GT.1d-3) THEN
+                           adju = UBar(I)/U(I)
+                           adjv = VBar(I)/V(I)
+                        ENDIF
                         adjuv = 0.5d0*(adju + adjv)
                      endif
                      ! Implement the friction with possible adjustment
-                     if (IT_FricNoOfVals == 3) then
-                        TKM(1,I) = TK(I) + adju*Fit*IT_Fric(I,2)**2
-                        TKM(2,I) = TK(I) + adjv*Fit*IT_Fric(I,3)**2
+                     IF (IT_FricNoOfVals == 3) then
+                        TKM(1,I) = TK(I) + adju*Fit*IT_Fric(I,2)**2d0
+                        TKM(2,I) = TK(I) + adjv*Fit*IT_Fric(I,3)**2d0
                         TKM(3,I) = adjuv*Fit*IT_Fric(I,2)*IT_Fric(I,3)
                      else
                         TKM(1:2,I) = TK(I) + adjuv*Fit*IT_Fric(I,2)
@@ -2593,6 +2696,74 @@ C       In case we did not load ITFric
 C     ----------------------------------------------------------------
       END SUBROUTINE Apply2DInternalWaveDrag
 C     ----------------------------------------------------------------
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E
+C     A P P L Y  2 D  M O M E N T U M D I S P
+C     ----------------------------------------------------------------
+C     CPB 3/9/2023: This subroutine applies momentum dispersion as a
+C     power function of mixed-layer depth calculated from a
+C     tide-omitting OGCM. It applies a Cd calculated from the power
+C     function fit to the non-tidal portion of velocity calculated using
+C     a 25-hour lagged average filter.
+C
+C     ----------------------------------------------------------------
+      SUBROUTINE Apply2DMomentumDisp(UU1, VV1, DP, ETA2,
+     &     IFNLFA, NP, TKM)
+      USE GLOBAL, ONLY: MLD, DTDP
+      USE INTERNALTIDE, ONLY: UBar, VBar
+C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
+      IMPLICIT NONE
+      INTEGER, intent(in) :: NP                   ! number of nodes in grid
+      REAL(8), intent(in), dimension(NP) :: UU1  ! x-dir velocities
+      REAL(8), intent(in), dimension(NP) :: VV1  ! y-dir velocities
+      REAL(8), intent(in), dimension(NP) :: DP   ! bathymetric depths
+      REAL(8), intent(in), dimension(NP) :: ETA2 ! water surf. elevations
+      INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag
+      REAL(8), intent(inout), dimension(:,:) :: TKM! bl/itfric matrix
+C
+      REAL(8) :: UVBar, UV1  ! non-tidal velocity magnitude
+      REAL(8) :: H1    ! total depth
+      REAL(8) :: Cd    ! Cd estimated as a power function
+      REAL(8) :: adju, adjv ! adjustment to apply only to nontidal vel
+      REAL(8) :: a, b, c ! for ensuring positive semidefinite
+      
+      ! if nolibf =/=3 then simply return
+      IF (NOLIBF.NE.3.OR.HBREAK.LE.0d0) RETURN
+C
+C     ... Combined Cd for bottom friction and momentum dispersion
+      DO I = 1,NP
+         IF (DP(I).LT.1000d0) CYCLE
+         UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
+         H1  = DP(I) + IFNLFA*ETA2(I)
+         UVBar = SQRT(UBar(I)*UBar(I)+VBar(I)*VBar(I))
+         H1  = DP(I) + IFNLFA*ETA2(I)
+C        ... Cd as a power function [a(x^b-1)] of x = MLD
+         Cd = HBREAK*(max(4d-3,MLD(I))**FTHETA - 1d0)
+         ! adjust to put in TKM matrix
+         IF ( ABS(UU1(I)).GT.1d-3
+     &        .AND.ABS(VV1(I)).GT.1d-3 ) THEN
+            adju = UBar(I)/UU1(I)
+            adjv = VBar(I)/VV1(I)
+         ELSE
+            adju = 1d0
+            adjv = 1d0
+         ENDIF
+         TKM(1,I) = TKM(1,I) + Cd*adju*UVBar/H1
+         TKM(2,I) = TKM(2,I) + Cd*adjv*UVBar/H1
+         ! ensure matrix is positive semi-definite
+         a = TKM(1,I)
+         b = TKM(3,I)
+         c = TKM(2,I)
+         TKM(1,I) = a
+         TKM(3,I) = b
+         TKM(2,I) = c
+      ENDDO
+C
+C
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE Apply2DMomentumDisp
+C     ----------------------------------------------------------------
 
 !     ----------------------------------------------------------------
 !>    @brief Subroutine to calculate the land wind reduction factor
@@ -2620,27 +2791,27 @@ C     ----------------------------------------------------------------
       SUBROUTINE ApplyDirectionalWindReduction(NodeNumber, WindDragCo,
      &     WindMag, BathymetricDepth, Elevation, WindX, WindY)
         USE GLOBAL,ONLY:h0
-        USE CONSTANTS,ONLY:RAD2DEG,G
+        USE ADC_CONSTANTS,ONLY:RAD2DEG,G
         implicit none
         intrinsic               :: atan2
         integer,  intent(in)    :: NodeNumber 
-        real(SZ), intent(in)    :: WindDragCo 
-        real(SZ), intent(in)    :: WindMag    
-        real(SZ), intent(in)    :: BathymetricDepth 
-        real(SZ), intent(in)    :: Elevation  
-        real(SZ), intent(inout) :: WindX   
-        real(SZ), intent(inout) :: WindY  
+        real(8), intent(in)    :: WindDragCo 
+        real(8), intent(in)    :: WindMag    
+        real(8), intent(in)    :: BathymetricDepth 
+        real(8), intent(in)    :: Elevation  
+        real(8), intent(inout) :: WindX   
+        real(8), intent(inout) :: WindY  
         
-        real(SZ),parameter      :: CutoffDepth = 999999.d0          !< Depth above which reduction is not applied
-        real(SZ),parameter,dimension(12) :: z0Angles=(/(i*30,i=0,5),(i*30-180,i=0,5)/)  !< centers of directional bins
+        real(8),parameter      :: CutoffDepth = 999999.d0          !< Depth above which reduction is not applied
+        real(8),parameter,dimension(12) :: z0Angles=(/(i*30,i=0,5),(i*30-180,i=0,5)/)  !< centers of directional bins
         
         integer                 :: idir        !< code for wind direction bins to interpolate between
         integer                 :: idir2       !< code for wind direction bins to interpolate between
-        real(SZ)                :: z0m         !< marine roughness coefficient based on Garratt's formula
-        real(SZ)                :: angle       !< direction wind is coming from
-        real(SZ)                :: z0l         !< drag for a particular node, for particular direction
-        real(SZ)                :: TotalDepth  !< bathymetric depth + sea surface elevation
-        real(SZ)                :: fr          !< land wind reduction factor
+        real(8)                :: z0m         !< marine roughness coefficient based on Garratt's formula
+        real(8)                :: angle       !< direction wind is coming from
+        real(8)                :: z0l         !< drag for a particular node, for particular direction
+        real(8)                :: TotalDepth  !< bathymetric depth + sea surface elevation
+        real(8)                :: fr          !< land wind reduction factor
 
 !       if windspeed is zero, exit now
         if((WindX.eq.0d0).and.(WindY.eq.0d0))return
@@ -2738,8 +2909,8 @@ C     ----------------------------------------------------------------
       SUBROUTINE ApplyCanopyCoefficient(NodeNumber, WindX, WindY)
       IMPLICIT NONE
       INTEGER,  intent(in) :: NodeNumber ! index of node under consideration
-      REAL(SZ), intent(inout) :: WindX   ! x-dir component of wind velocity
-      REAL(SZ), intent(inout) :: WindY   ! x-dir component of wind velocity
+      REAL(8), intent(inout) :: WindX   ! x-dir component of wind velocity
+      REAL(8), intent(inout) :: WindY   ! x-dir component of wind velocity
 C
       WindX = vcanopy(NodeNumber)*WindX
       WindY = vcanopy(NodeNumber)*WindY
@@ -2755,7 +2926,6 @@ C
 C                                   Corbitt 120322
 C*************************************************************************
       SUBROUTINE ADVECTLOCAL(IE)
-      USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : IFNLCAT, IFNLCATE, IFNLCT, IFNLCTE
       USE MESH, ONLY : NM, DP
       Implicit None
@@ -2804,7 +2974,7 @@ C     ----------------------------------------------------------------
       INTEGER NP2          ! number of nodes, according to fort.12 file
 
       CHARACTER(len=80) AGRID2 ! users comment/description line
-      REAL(SZ) DUM1, DUM2  ! data that we want to skip
+      REAL(8) DUM1, DUM2  ! data that we want to skip
 
       OPEN(12,FILE=TRIM(INPUTDIR)//'/'//'fort.12')
 C
@@ -2955,13 +3125,13 @@ C     Parepare list of condensed nodes
 C     ----------------------------------------------------------------
       SUBROUTINE PrepCondensedNodes()
 C     ----------------------------------------------------------------
-      USE SIZES,ONLY : SZ,MNVEL
+      USE SIZES,ONLY : MNVEL
       USE MESH,ONLY : NP,LBArray_Pointer,X,Y
       USE BOUNDARIES,ONLY : CSIICN,SIIICN
       IMPLICIT NONE
       INTEGER :: I,J,K,II,I1,I2,J1,J2
       INTEGER :: JMAX
-      REAL(SZ) :: X1,Y1,X2,Y2,DX,DY,LEN
+      REAL(8) :: X1,Y1,X2,Y2,DX,DY,LEN
       LOGICAL :: ON_THE_SAME_BOUNDARY
 
       IF (.NOT.LoadCondensedNodes) RETURN
@@ -3018,13 +3188,6 @@ C     ----------------------------------------------------------------
             J1 = LBArray_Pointer(I1)
             J2 = LBArray_Pointer(I2)
             IF(J1<1.OR.J2<1) CYCLE
-            IF(J1.EQ.(J2+1).OR.
-     &         J1.EQ.(J2-1)) THEN ! Whether Nodes J1 and J2 are on the same boundary.
-               ON_THE_SAME_BOUNDARY = .TRUE.
-            ELSE
-               ON_THE_SAME_BOUNDARY = .FALSE.
-            END IF
-            IF(ON_THE_SAME_BOUNDARY) CYCLE
 
             X1 = X(I1)
             Y1 = Y(I1)

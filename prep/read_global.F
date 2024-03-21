@@ -1,3 +1,22 @@
+!-------------------------------------------------------------------------------!
+!
+! ADCIRC - The ADvanced CIRCulation model
+! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+! 
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+! 
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+! 
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!-------------------------------------------------------------------------------!
 C----------------------------------------------------------------------------
 C
 C                           MODULE READ_GLOBAL
@@ -40,7 +59,7 @@ C---------------------------------------------------------------------
       use memory_usage
       implicit none
 
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER I,J,JW,K,ITEMP,ITYPE
       INTEGER DISC,BBN,IBP,I1
       INTEGER MAXNEIGH
@@ -388,7 +407,8 @@ C----------------------------------------------------------------------
      &    getBoundariesForPrep
       implicit none
       integer, allocatable :: nneigh(:)
-      integer :: i, j, k, nbytes
+      integer :: i, j, k
+      integer(8) :: nbytes
       !
       !
       call getMeshSizesForPrep(nnodg, nelg)
@@ -463,7 +483,6 @@ C---------------------------------------------------------------------
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
-      USE PRESIZES, ONLY : SZ
       USE PREP_WEIR
       USE NODALATTRIBUTES, ONLY : outputTau0
       use memory_usage
@@ -479,8 +498,8 @@ C
 C    ===================================================================
 
 
-      integer :: nbytes = 0
-      REAL(SZ) RSTIMINC
+      integer(8) :: nbytes = 0
+      REAL(8) RSTIMINC
       INTEGER N1, N2, N3, KMIN, JG, INDX
       INTEGER I,J,K,M
       INTEGER IG1,IG2,IG3,IL1,IL2,IL3
@@ -516,7 +535,7 @@ C.... "new" formula for computing vel in wetting/drying routine
 C.... DMW
 !JLW: adding subgrid control namelist
       integer :: ios_subgrid
-      namelist /subgridControl/ level0, level1
+      namelist /subgridControl/ subgridFilename, level0, level1
       ! jgf52.08.02 : For inundation output files.
       namelist /inundationOutputControl/ inundationOutput, inunThresh
 
@@ -528,6 +547,9 @@ C.....tcm v52.30.01 added for Smag_Control
      &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterlevelCorrectionMultiplier,
      &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
+
+C.....Control for VEW1D channels 11/06/2023 sb
+      NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter
 
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15
@@ -543,6 +565,7 @@ C
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       FOUND_WC_NML = .FALSE.
       foundCorrectionControlNamelist = .false.
+      foundVEW1DChannelControlNamelist = .false.
 #ifdef ADCNETCDF
       FOUND_OWINC_NML = .FALSE.
 #endif
@@ -695,6 +718,18 @@ Casey 180318: Added NWS=13
       end select
       rewind(15)  !Return to the top of the fort.15 file
 
+c..
+      read(unit=15,nml=VEW1DChannelControl,iostat=ios)
+      if ( ios.ge.0) then
+         foundVEW1DChannelControlNamelist = .true.
+         call logMessage(INFO,
+     &         'The VEW1DChannelControl namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The VEW1DChannelControl namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+
 c...  tcm v52.30.01 Addtions for Smagorinski Limits
 c...  read through the fort.15 file for the namelist (Smag_Control) for
 c...  the inputs for Smagorinski eddy viscosity limits.  This namelist must be
@@ -766,6 +801,7 @@ c..
      &         'The density control namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
+
 
       READ(15,80) RUNDES
 C
@@ -1952,18 +1988,18 @@ C     tjc  6/24/02
 C---------------------------------------------------------------------
       SUBROUTINE READ15_3DVS()
       USE PRE_GLOBAL
-      USE CONSTANTS, ONLY: deg2rad, day2sec
+      USE ADC_CONSTANTS, ONLY: deg2rad, day2sec
       USE GLOBAL, ONLY : parse, a2f, SNAMLEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET, SIGMA,
      &    FEGRIDS
       USE MESH, only : CYLINDERMAP
       use memory_usage
       IMPLICIT NONE
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       INTEGER I,J,K,M,N                                        ! loop counters
       CHARACTER(50) LVAR(3)
       REAL(8) :: STATIME
-      REAL(sz) :: HH1 ! domain averaged depth
+      REAL(8) :: HH1 ! domain averaged depth
       INTEGER :: NH   ! horizontal node counter
 C
 C     jgf49.43.19: Moved memory allocation for number of 3D stations
@@ -2458,7 +2494,7 @@ C----------------------------------------------------------------------
       TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
       LOGICAL ElementFound  ! .true. when a corresponding element is found
       INTEGER ClosestElement  ! element with closest match
-      REAL(sz), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match
+      REAL(8), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match
 
       ElementFound = .false.
 

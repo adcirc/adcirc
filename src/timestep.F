@@ -1,3 +1,22 @@
+!-------------------------------------------------------------------------------!
+!
+! ADCIRC - The ADvanced CIRCulation model
+! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+! 
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+! 
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+! 
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!-------------------------------------------------------------------------------!
 C#define SB_WETDRY
 C******************************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                            *
@@ -37,7 +56,7 @@ C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
-      USE SIZES, ONLY : SZ, MNP, MNWPROH
+      USE SIZES, ONLY : MNP, MNWPROH
       USE GLOBAL, ONLY : UU1, VV1, QX1, QY1, QX2, QY2, UU2, VV2, MOM_LV_X,
      &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0, 
      &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0, 
@@ -63,7 +82,7 @@ C
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE
-      USE CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier
+      USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier
       USE GWCE, ONLY : solveGWCE, numitr
       USE MOMENTUM, ONLY : solveMomentumEq
       USE WETDRY, ONLY : computeWettingAndDrying
@@ -87,8 +106,11 @@ C.....sb46.28sb03 added 09/xx/2006
       USE NodalAttributes, ONLY : 
      &     Apply2DBottomFriction,
      &     Apply2DInternalWaveDrag,
-     &     Apply3DBottomFriction
-     &    ,GeoidOffset
+     &     Apply3DBottomFriction,
+     &     Apply2DMomentumDisp,
+     &     GeoidOffset,
+     &     BFCdLLimit, fric, fgamma, ftheta, manningsn, 
+     &     hbreak, loadManningsN, iflinbf, ifnlbf, ifhybf
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
      &    writeFort066, writeFort067, writeFort065, 
      &    readFort020, readFort021, readFort019 
@@ -138,25 +160,25 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       INTEGER :: kemax
       INTEGER :: kvmax
       INTEGER :: nnbb
-      REAL(SZ) :: velabs
-      REAL(SZ) :: vel
-      REAL(SZ) :: velmax
+      REAL(8) :: velabs
+      REAL(8) :: vel
+      REAL(8) :: velmax
       INTEGER :: errorElevExceeded
       INTEGER :: warnElevExceeded
       logical, save ::  EtaDisc_Fill = .TRUE.
 
-      REAL(SZ) ArgT, ArgTP, ArgSAlt
-      REAL(SZ) CCSFEA
-      REAL(SZ) ElMax
-      REAL(SZ) PIPE_FLUX
-      REAL(SZ) H2N1, H2N2, H2N3
-      REAL(SZ) EtaN1,EtaN2,EtaN3
-      REAL(SZ) QTRatio
-      REAL(SZ) RStRatio, RSX, RSY
-      REAL(SZ) SAltMul, S2SFEA
-      REAL(SZ) H1
-      REAL(SZ) TPMul
-      REAL(SZ) UN1
+      REAL(8) ArgT, ArgTP, ArgSAlt
+      REAL(8) CCSFEA
+      REAL(8) ElMax
+      REAL(8) PIPE_FLUX
+      REAL(8) H2N1, H2N2, H2N3
+      REAL(8) EtaN1,EtaN2,EtaN3
+      REAL(8) QTRatio
+      REAL(8) RStRatio, RSX, RSY
+      REAL(8) SAltMul, S2SFEA
+      REAL(8) H1
+      REAL(8) TPMul
+      REAL(8) UN1
 
       REAL(8) AreaIE2,AreaEle
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
@@ -168,19 +190,19 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
 C   kmd48.33bc - added in the heat flux variables
       CHARACTER(80) :: CDUM80
       INTEGER :: NumofBCNode
-      REAL(SZ), SAVE :: StaTimHS, RefTimHS
+      REAL(8), SAVE :: StaTimHS, RefTimHS
       INTEGER :: NOD
 
 C   TCM V49.64.01 -- ADDED FOR ICE CONCENTRATION FIELDS
-      REAL(SZ) CICE_TRatio  !ICE VARIABLES
+      REAL(8) CICE_TRatio  !ICE VARIABLES
 
 C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       INTEGER :: IJK
-      REAL(SZ) ETA2TMP,DPTMP,DPTMP2,BTRATIO  !tcm v50.66.01 bathymetry changes
+      REAL(8) ETA2TMP,DPTMP,DPTMP2,BTRATIO  !tcm v50.66.01 bathymetry changes
 
-      REAL(SZ) :: ARG, ARGJ, RFF
+      REAL(8) :: ARG, ARGJ, RFF
 C....... DW
-      REAL(SZ):: RAMPTMP
+      REAL(8):: RAMPTMP
       LOGICAL, SAVE:: FIRST_ADJ_ABS_LAYER = .TRUE. 
       LOGICAL, SAVE:: FIRST_ENTER = .TRUE. 
       INTEGER:: NBDI, istep
@@ -544,18 +566,24 @@ C-------------------BOTTOM FRICTION-------------------------------------
 C
 C     2DDI.Set up the 2D friction coefficient
       if (C2DDI) then
-         CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP, TK)
+         CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP,
+     &                              TK)
          ! WJP 02.24.2018 Get the wave drag coefficients
          ! that are put into TKM (which include TK from bottom friction)
          IF (CBaroclinic) THEN
             CALL Apply2DInternalWaveDrag(NP, TK, TKM, UU1, VV1, DP, IT)
+            ! CPB 3/9/2023: vertically averaged momentum dispersion as a
+            ! power law function. If NOLIBF =/= 3 then this just returns
+            CALL Apply2DMomentumDisp(UU1, VV1, DP, ETA2, IFNLFA, NP,
+     &                               TKM)
          ELSE
             CALL Apply2DInternalWaveDrag(NP, TK, TKM)
-         ENDIF 
+         ENDIF         
       endif
 C..RJW Set up the 3D friction coefficient
       if (C3D) then
-         CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP, TK, NFEN, Z0B)
+         CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP,
+     &                              TK, NFEN, Z0B)
       endif
       
 C-------------------BOTTOM FRICTION-------------------------------------
@@ -1023,14 +1051,6 @@ C...  Compute new water surface elevation
 
 !JLW: adding subgrid
       IF(level0)THEN
-<<<<<<< Updated upstream
-         !JLW: update element arrays
-         call getEleLookup()
-         !JLW: update vertex arrays
-         call getVertLookup()
-         !JLW: update nodecode, ncele, etc
-         call subgridwetdry()
-=======
 #ifdef ADCNETCDF          
          !!JLW: update element arrays
          !call getEleLookup()
@@ -1046,7 +1066,6 @@ C...  Compute new water surface elevation
      &                          //"with netcdf enabled")
          call ADCIRC_Terminate()
 #endif         
->>>>>>> Stashed changes
       ELSE
 !--------------------WETTING AND DRYING--------------------------------
 
@@ -1366,10 +1385,9 @@ C
      &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
      &    setmessagesource, unsetmessagesource, DEBUG,
      &    allMessage
-      USE CONSTANTS, ONLY: rhowat0
+      USE ADC_CONSTANTS, ONLY: rhowat0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
       USE NodalAttributes, ONLY: EVC
-      use sizes, only: sz
 
       IMPLICIT NONE
 
@@ -1378,27 +1396,27 @@ C
       INTEGER NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle, NCI
 
-      REAL(SZ) C1, C2, C3, CBEDSTRD, CBEDSTRE, CCRITD
-      REAL(SZ) CH1N1, CH1N2, CH1N3, CHSUM
-      REAL(SZ) DHDX, DHDY
-      REAL(SZ) DXXYY11, DXXYY12, DXXYY13
-      REAL(SZ) DXXYY22, DXXYY23
-      REAL(SZ) DXXYY33
-      REAL(SZ) ECONST
-      REAL(SZ) EVC1, EVC2, EVC3, EVCEA
-      REAL(SZ) FDDDODT, FDDODODT
-      REAL(SZ) HEA
-      REAL(SZ) H1, H1N1, H1N2, H1N3
-      REAL(SZ) HSD, HSE
-      REAL(SZ) SFacAvg
-      REAL(SZ) SS1N1, SS1N2, SS1N3
-      REAL(SZ) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
-      REAL(SZ) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
-      REAL(SZ) U1N1, U1N2, U1N3
-      REAL(SZ) V1N1, V1N2, V1N3
-      REAL(SZ) UV1
-      REAL(SZ) UEA, VEA, UPEA, VPEA
-      REAL(SZ) WS, WSMOD
+      REAL(8) C1, C2, C3, CBEDSTRD, CBEDSTRE, CCRITD
+      REAL(8) CH1N1, CH1N2, CH1N3, CHSUM
+      REAL(8) DHDX, DHDY
+      REAL(8) DXXYY11, DXXYY12, DXXYY13
+      REAL(8) DXXYY22, DXXYY23
+      REAL(8) DXXYY33
+      REAL(8) ECONST
+      REAL(8) EVC1, EVC2, EVC3, EVCEA
+      REAL(8) FDDDODT, FDDODODT
+      REAL(8) HEA
+      REAL(8) H1, H1N1, H1N2, H1N3
+      REAL(8) HSD, HSE
+      REAL(8) SFacAvg
+      REAL(8) SS1N1, SS1N2, SS1N3
+      REAL(8) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
+      REAL(8) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
+      REAL(8) U1N1, U1N2, U1N3
+      REAL(8) V1N1, V1N2, V1N3
+      REAL(8) UV1
+      REAL(8) UEA, VEA, UPEA, VPEA
+      REAL(8) WS, WSMOD
 
       REAL(8) AreaIE2
       REAL(8) FDDD, FDDOD
@@ -1714,8 +1732,8 @@ c******************************************************************************
       
       SUBROUTINE BPG2D(IT,TimeLoc)
 
-      USE SIZES, ONLY : SZ, myproc
-      USE CONSTANTS, ONLY: G, RhoWat0, SigT0
+      USE SIZES, ONLY : myproc
+      USE ADC_CONSTANTS, ONLY: G, RhoWat0, SigT0
       USE GLOBAL, ONLY: IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF, 
      &    VIDBCPDXOH, VIDBCPDYOH, ETA2, DTDP, DASigT, 
      &    IFSFM
@@ -1735,27 +1753,27 @@ c******************************************************************************
       INTEGER :: NM1,NM2,NM3    !local node numbers used to compute gradients
       INTEGER :: NC1,NC2,NC3    !local node codes
 
-      REAL(SZ) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
-      REAL(SZ) :: AreaIE2, AreaEle
-      REAL(SZ) :: H2N1, H2N2, H2N3
-      REAL(SZ) :: FDX1, FDX2, FDX3
-      REAL(SZ) :: FDY1, FDY2, FDY3
-      REAL(SZ) :: FDX1O2A, FDX2O2A, FDX3O2A
-      REAL(SZ) :: FDY1O2A, FDY2O2A, FDY3O2A
-      REAL(SZ) :: EtaN1, EtaN2, EtaN3
-      REAL(SZ) :: DEta2DX, DEta2DY
-      REAL(SZ) :: DRhoDX, DRhoDY
-      REAL(SZ) :: DARhoMRho0N1,DARhoMRho0N2,DARhoMRho0N3
-      REAL(SZ) :: VIDBCPDXOHN1,VIDBCPDXOHN2,VIDBCPDXOHN3
-      REAL(SZ) :: VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3
-      REAL(SZ) :: VIDBCPDXOHAvgArea,VIDBCPDYOHAvgArea
+      REAL(8) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
+      REAL(8) :: AreaIE2, AreaEle
+      REAL(8) :: H2N1, H2N2, H2N3
+      REAL(8) :: FDX1, FDX2, FDX3
+      REAL(8) :: FDY1, FDY2, FDY3
+      REAL(8) :: FDX1O2A, FDX2O2A, FDX3O2A
+      REAL(8) :: FDY1O2A, FDY2O2A, FDY3O2A
+      REAL(8) :: EtaN1, EtaN2, EtaN3
+      REAL(8) :: DEta2DX, DEta2DY
+      REAL(8) :: DRhoDX, DRhoDY
+      REAL(8) :: DARhoMRho0N1,DARhoMRho0N2,DARhoMRho0N3
+      REAL(8) :: VIDBCPDXOHN1,VIDBCPDXOHN2,VIDBCPDXOHN3
+      REAL(8) :: VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3
+      REAL(8) :: VIDBCPDXOHAvgArea,VIDBCPDYOHAvgArea
 
       ! For the Coupling to 3D Baroclinic mode 
       IF (abs(IDEN).ge.5) THEN
          ! Update the 3D BC Information for the current timestep 
          call Update_BC3D_Info(IDEN,TimeLoc) 
 
-         if (abs(IDEN).ne.7) then         
+         if (abs(IDEN).ne.7.AND.abs(IDEN).ne.9) then
             ! Calculating the full Baroclinic pressure gradient and
             ! momentum dispersion terms required at every timestep
             ! from the 3D BC information that is on a longer time scale 
@@ -1784,7 +1802,7 @@ C..... BEG DW/WJP
          SFmxAvg= SFMXEle(IE) ; 
          SFmyAvg= SFMYEle(IE) ; 
          sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-         sfdyfac = (1 - IFSFM)*1.0_SZ + IFSFM*SFmyAvg ;
+         sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
 C..... END DW/WJP
 
          AreaIE2=Areas(IE)
@@ -1876,13 +1894,12 @@ c******************************************************************************
 
 Casey: Added the following variable declarations from GLOBAL.
 C
-      USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY: IFNLFA, IFNLCT,
      &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
      &      setMessageSource, unsetMessageSource, allMessage,
      &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &      ETA2, H0, DTDP
-      USE CONSTANTS, ONLY: SigT0
+      USE ADC_CONSTANTS, ONLY: SigT0
       USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, SFAC
       USE GLOBAL_3DVS, ONLY : BCP, BPG, NFEN, SIGT, SIGMA, IDEN,
@@ -1893,7 +1910,7 @@ C
 #ifdef CMPI
       USE MESSENGER
       IMPLICIT NONE
-      REAL(SZ) :: DUMV1(1),DUMV2(1)
+      REAL(8) :: DUMV1(1),DUMV2(1)
 #else
       IMPLICIT NONE
 #endif
@@ -1918,45 +1935,45 @@ Casey 140701: Debug.
 !     REAL(8) :: Hsp1           !Total water depth at time level s+1
 !     REAL(8) :: Hsp1OAMB       !Hsp1/(a-b)
 !     REAL(8) :: Hsp1Hsp1OAMBAMB !(Hsp1/(a-b))^2
-      REAL(SZ) :: Hs             !Total water depth at time level s
-      REAL(SZ) :: HsOAMB         !Hs/(a-b)
-      REAL(SZ) :: HsHsOAMBAMB    !(Hs/(a-b))^2
-      REAL(SZ) :: Hsp1           !Total water depth at time level s+1
-      REAL(SZ) :: Hsp1OAMB       !Hsp1/(a-b)
-      REAL(SZ) :: Hsp1Hsp1OAMBAMB !(Hsp1/(a-b))^2
+      REAL(8) :: Hs             !Total water depth at time level s
+      REAL(8) :: HsOAMB         !Hs/(a-b)
+      REAL(8) :: HsHsOAMBAMB    !(Hs/(a-b))^2
+      REAL(8) :: Hsp1           !Total water depth at time level s+1
+      REAL(8) :: Hsp1OAMB       !Hsp1/(a-b)
+      REAL(8) :: Hsp1Hsp1OAMBAMB !(Hsp1/(a-b))^2
 
-      REAL(SZ) :: Zk            !z depth of any node k in the vertical
-      REAL(SZ) :: DelSig        ! sigma(k+1)-sigma(k)
-      REAL(SZ) :: DelSigO2      !(sigma(k)-sigma(k-1))/2
-      REAL(SZ) :: SigmaMAOAMB   !(sigma(k)-A)/(a-b)
-      REAL(SZ) :: SigmaMBOAMB   !(sigma(k)-B)/(a-b)
-      REAL(SZ) :: SigAvgMAOAMB  !((sigma(k)+sigma(k-1))/2.d0 - A)/AMB
-      REAL(SZ) :: SigmaNN       !Sigma value of a neighbor node
-      REAL(SZ) :: HsN2          !Depth value of a neighbor node
+      REAL(8) :: Zk            !z depth of any node k in the vertical
+      REAL(8) :: DelSig        ! sigma(k+1)-sigma(k)
+      REAL(8) :: DelSigO2      !(sigma(k)-sigma(k-1))/2
+      REAL(8) :: SigmaMAOAMB   !(sigma(k)-A)/(a-b)
+      REAL(8) :: SigmaMBOAMB   !(sigma(k)-B)/(a-b)
+      REAL(8) :: SigAvgMAOAMB  !((sigma(k)+sigma(k-1))/2.d0 - A)/AMB
+      REAL(8) :: SigmaNN       !Sigma value of a neighbor node
+      REAL(8) :: HsN2          !Depth value of a neighbor node
 
-      REAL(SZ) :: SFacAvg       ! kmd48.33bc add in spherical factors
+      REAL(8) :: SFacAvg       ! kmd48.33bc add in spherical factors
 
-      REAL(SZ) :: BCPN1,BCPN2,BCPN3,BCPNFirst !nodal values of BCP
-      REAL(SZ) :: BCPDX2A,BCPDY2A !(Horiz. grads of BCP)*2*Element Area
-      REAL(SZ) :: SigTAvg       !avg SigT between 2 vertical nodes
-      REAL(SZ) :: HGORhoOAMB    !depth*gravity/(reference density)/(a-b)
+      REAL(8) :: BCPN1,BCPN2,BCPN3,BCPNFirst !nodal values of BCP
+      REAL(8) :: BCPDX2A,BCPDY2A !(Horiz. grads of BCP)*2*Element Area
+      REAL(8) :: SigTAvg       !avg SigT between 2 vertical nodes
+      REAL(8) :: HGORhoOAMB    !depth*gravity/(reference density)/(a-b)
 
-      REAL(SZ) :: a1,a2,a3,b1,b2,b3
-      REAL(SZ) :: TotalBCPGArea2
+      REAL(8) :: a1,a2,a3,b1,b2,b3
+      REAL(8) :: TotalBCPGArea2
 
-      REAL(SZ) :: DBCPDX2A
-      REAL(SZ) :: DBCPDY2A
-      COMPLEX(SZ) :: BCPG(NFEN)   !baroclinic pressure gradient
-      COMPLEX(SZ) :: VIBCPG         !baroclinic pressure gradient
+      REAL(8) :: DBCPDX2A
+      REAL(8) :: DBCPDY2A
+      COMPLEX(8) :: BCPG(NFEN)   !baroclinic pressure gradient
+      COMPLEX(8) :: VIBCPG         !baroclinic pressure gradient
 
 ! af:
       Integer      :: IT
-      Real(SZ)     :: time_local
-      Real(SZ)     ::  day_local
-      Real(Sz)     ::   diff_tol = 1.0d-5
+      Real(8)     :: time_local
+      Real(8)     ::  day_local
+      Real(8)     ::   diff_tol = 1.0d-5
 
-      Real(Sz)     :: SigT_mid_point, SigmaMP, f1, f2, f3
-      COMPLEX(SZ)  :: BCPG_mid_point
+      Real(8)     :: SigT_mid_point, SigmaMP, f1, f2, f3
+      COMPLEX(8)  :: BCPG_mid_point
 
 C
       call setMessageSource("bpg3D")
@@ -2357,8 +2374,8 @@ C
 
       USE GLOBAL_3DVS
       IMPLICIT NONE
-      REAL(SZ) :: BCPressNN
-      REAL(SZ) :: SigmaNN     !Sigma value of a neighbor node
+      REAL(8) :: BCPressNN
+      REAL(8) :: SigmaNN     !Sigma value of a neighbor node
 C     jgf46.00 Explicitly declared the following variables
       INTEGER NN
       INTEGER J
@@ -2366,9 +2383,9 @@ C     jgf46.00 Explicitly declared the following variables
       INTEGER LAbov
       INTEGER LTry
       INTEGER IDiag
-      REAL(SZ) SigBelo
-      REAL(SZ) SigAbov
-      REAL(SZ) SigTry
+      REAL(8) SigBelo
+      REAL(8) SigAbov
+      REAL(8) SigTry
 
       call setMessageSource("zsurfbuoy")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -2469,8 +2486,8 @@ C
 
       USE GLOBAL_3DVS
       IMPLICIT NONE
-      REAL(SZ) :: BCPressNN
-      REAL(SZ) :: SigmaNN     !Sigma value of a neighbor node
+      REAL(8) :: BCPressNN
+      REAL(8) :: SigmaNN     !Sigma value of a neighbor node
 C     jgf46.00 Explicitly declared the following variables
       INTEGER NN
       INTEGER J
@@ -2480,13 +2497,13 @@ C     jgf46.00 Explicitly declared the following variables
       INTEGER LAbov
       INTEGER LTry
       INTEGER IDiag
-      REAL(SZ) SigBelo
-      REAL(SZ) SigAbov
-      REAL(SZ) SigTry
+      REAL(8) SigBelo
+      REAL(8) SigAbov
+      REAL(8) SigTry
 ! af: variables for cubic interpolation
       Integer  :: k1, k2, k3, k4                 ! nodes used for cubic polynomial
-      REAL(SZ) :: f1, f2, f3, f4                 ! shape functions
-      REAL(SZ) :: top, bot
+      REAL(8) :: f1, f2, f3, f4                 ! shape functions
+      REAL(8) :: top, bot
       Integer  :: loop_situation = 0
 
       call setMessageSource("zsurfbuoy_p3")
