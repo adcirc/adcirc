@@ -1267,12 +1267,17 @@ C
      &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
       USE WIND, ONLY: windLimiter 
+<<<<<<< Updated upstream
       USE CONSTANTS, ONLY: Cs2, Ad, Bd, G
+=======
+      USE ADC_CONSTANTS, ONLY: Cs2, Ad, Bd, G
+!JLW: add subgrd additions
+>>>>>>> Stashed changes
       USE subgrid, ONLY: level0, level1
      &   , wetFracVertETA2, subgridVertList
-     &   , gridDepthEleETA1, gridDepthEleETA2
-     &   , cadvEleETA2, gridDepthVertETA2
-     &   , NCEleArray
+     &   , gridDepthVertETA2
+     &   , gridDepthVertETA1
+     &   , cadvVertETA2
        
       IMPLICIT NONE
 
@@ -1344,8 +1349,7 @@ Corbitt 120322: Localized Advection
          NC1=NODECODE(NM1)
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
-!JLW: move to after subgrid section
-!         NCELE=NC1*NC2*NC3*NOFF(IE)
+         NCELE=NC1*NC2*NC3*NOFF(IE)
          U1N1=UU1(NM1)
          U1N2=UU1(NM2)
          U1N3=UU1(NM3)
@@ -1354,21 +1358,18 @@ Corbitt 120322: Localized Advection
          V1N3=VV1(NM3)
 !JLW: add subgrid lookup
          IF(level0)THEN
-            H1N1 = gridDepthEleETA1(IE,1)   
-            H1N2 = gridDepthEleETA1(IE,2)   
-            H1N3 = gridDepthEleETA1(IE,3)   
-            H2N1 = gridDepthEleETA2(IE,1)   
-            H2N2 = gridDepthEleETA2(IE,2)   
-            H2N3 = gridDepthEleETA2(IE,3)   
-            NCELE = NCEleArray(IE)
-!JLW: possibly add control to turn off advection
+            H1N1 = gridDepthVertETA1(NM1)
+            H1N2 = gridDepthVertETA1(NM2)
+            H1N3 = gridDepthVertETA1(NM3)
+            H2N1 = gridDepthVertETA2(NM1)
+            H2N2 = gridDepthVertETA2(NM2)
+            H2N3 = gridDepthVertETA2(NM3)
             IF(level1)THEN
-               CADV1 = cadvEleETA2(IE,1)
-               CADV2 = cadvEleETA2(IE,2)
-               CADV3 = cadvEleETA2(IE,3)
+               CADV1 = cadvVertETA2(NM1)
+               CADV2 = cadvVertETA2(NM2)
+               CADV3 = cadvVertETA2(NM3)
             ENDIF
          ELSE
-            NCELE=NC1*NC2*NC3*NOFF(IE)
             H1N1=DP(NM1)+IFNLFA*ETA1(NM1)
             H1N2=DP(NM2)+IFNLFA*ETA1(NM2)
             H1N3=DP(NM3)+IFNLFA*ETA1(NM3)
@@ -1997,14 +1998,9 @@ C...
 C...  Compute velocities
 
       DO I=1,NP
+!JLW: can possibly take out the subgrid vert check
          IF(level0)THEN
             H2 = gridDepthVertETA2(I)
-            IF(subgridVertList(I).EQ.1)THEN
-               IF(H2.GT.0.d0)THEN
-                  UU2(I)=QX2(I)/H2
-                  VV2(I)=QY2(I)/H2
-               ENDIF
-            ELSE
             IF(H2.NE.0.) THEN
                UU2(I)=QX2(I)/H2
                VV2(I)=QY2(I)/H2
@@ -2021,7 +2017,6 @@ C...  Compute velocities
                WRITE(16,*) ''
                UU2(I)=-999.
                VV2(I)=-999.
-            ENDIF
             ENDIF
          ELSE
             H2=DP(I)+IFNLFA*ETA2(I)

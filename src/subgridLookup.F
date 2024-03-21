@@ -25,10 +25,11 @@
       ! Flag for subgrid corrections to bottom friction and advection
       LOGICAL :: level1
       ! Number of surface elevations used in subgrid preprocessor
-      INTEGER :: numSurLevs
-      ! Number of possible phi values
+!      INTEGER :: numSurLevs
+!      ! Number of possible phi values
       INTEGER :: numPhi
       ! Array of Phi values from 0 to 1
+<<<<<<< Updated upstream
       REAL(SZ), DIMENSION(:), ALLOCATABLE :: setPhi
       ! Max depth used for calculating lookup table
       REAL(SZ):: maxLookupDepth
@@ -46,10 +47,19 @@
       ! Advection corrections corresponding to each phi value on the
       ! element
       REAL(SZ), DIMENSION(:,:,:), ALLOCATABLE :: cadvEle
+=======
+      REAL(8), DIMENSION(:), ALLOCATABLE :: setPhi
+>>>>>>> Stashed changes
       ! averaged bottom friction coefficient without level 1 correction
       REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: cfVertTab
       ! averaged bottom friction coefficient with level 1 correction
+<<<<<<< Updated upstream
       REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: cmfVertTab
+=======
+      REAL(8), DIMENSION(:,:), ALLOCATABLE :: cmfVertTab
+      ! averaged advection with level 1 correction
+      REAL(8), DIMENSION(:,:), ALLOCATABLE :: cadvVertTab
+>>>>>>> Stashed changes
       ! Grid Averaged Total Water Depths corresponding to each phi valu
       ! on the vertex
       REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: gridDepthVertTab
@@ -60,6 +70,7 @@
       REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: wetFracVertTab
       ! Array of vertex numbers in the subgrid area
       INTEGER, DIMENSION(:), ALLOCATABLE :: subgridVertList
+<<<<<<< Updated upstream
       !! Array of elemental wet fractions for zeta at TS k
       !REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: wetFracEleETA1
       ! Array of elemental wet fractions for zeea at TS k+1
@@ -86,6 +97,14 @@
       INTEGER, DIMENSION(:), ALLOCATABLE :: NCEleArray
       ! Array to hold vertex averged wet fractions for zeta at k+1
       REAL(SZ), DIMENSION(:), ALLOCATABLE :: wetFracVertETA2
+=======
+      ! Array to hold vertex averged wet fractions for zeta at k
+      REAL(8), DIMENSION(:), ALLOCATABLE :: wetFracVertETA1
+      ! Array to hold vertex averged wet fractions for zeta at k+1
+      REAL(8), DIMENSION(:), ALLOCATABLE :: wetFracVertETA2
+      ! Array to hold vertex grid water depths for zeta at k
+      REAL(8), DIMENSION(:), ALLOCATABLE :: gridDepthVertETA1
+>>>>>>> Stashed changes
       ! Array to hold vertex grid water depths for zeta at k+1
       REAL(SZ), DIMENSION(:), ALLOCATABLE :: gridDepthVertETA2
       ! Array to hold vertex wet water depths for zeta at k+1
@@ -95,7 +114,14 @@
       REAL(SZ), DIMENSION(:), ALLOCATABLE :: cfVertETA2
       ! Array to hold vertex corrected bottom friction coefficients for
       ! zeta at k+1
+<<<<<<< Updated upstream
       REAL(SZ), DIMENSION(:), ALLOCATABLE :: cmfVertETA2
+=======
+      REAL(8), DIMENSION(:), ALLOCATABLE :: cmfVertETA2
+      ! Array to hold vertex corrected advection for
+      ! zeta at k+1
+      REAL(8), DIMENSION(:), ALLOCATABLE :: cadvVertETA2
+>>>>>>> Stashed changes
       ! Minimum depth in depth array used to preprocess lookup table 
       REAL(SZ) :: minDepth
       ! Maximum depth in depth array used to preprocess lookup table 
@@ -116,6 +142,10 @@
       subroutine initVar
 
 !JLW: initialize local arrays for subgrid variables
+      IF(ALLOCATED(wetFracVertETA1))DEALLOCATE(wetFracVertETA1)
+      ALLOCATE(wetFracVertETA1(NP))
+      IF(ALLOCATED(gridDepthVertETA1))DEALLOCATE(gridDepthVertETA1)
+      ALLOCATE(gridDepthVertETA1(NP))
       IF(ALLOCATED(wetFracVertETA2))DEALLOCATE(wetFracVertETA2)
       ALLOCATE(wetFracVertETA2(NP))
       IF(ALLOCATED(gridDepthVertETA2))DEALLOCATE(gridDepthVertETA2)
@@ -125,58 +155,24 @@
       IF(level1)THEN
          IF(ALLOCATED(cmfVertETA2))DEALLOCATE(cmfVertETA2)
          ALLOCATE(cmfVertETA2(NP))
+         IF(ALLOCATED(cadvVertETA2))DEALLOCATE(cadvVertETA2)
+         ALLOCATE(cadvVertETA2(NP))
+!JLW: will need to add vertex based advection
       ELSE
          IF(ALLOCATED(cfVertETA2))DEALLOCATE(cfVertETA2)
          ALLOCATE(cfVertETA2(NP))
       ENDIF
 
 !JLW: set intial value of all arrays to 0
+      wetFracVertETA1(:) = 0.d0
       wetFracVertETA2(:) = 0.d0
+      gridDepthVertETA1(:) = 0.d0
       gridDepthVertETA2(:) = 0.d0
       wetDepthVertETA2(:) = 0.d0
       cmfVertETA2(:) = 0.d0
+      cadvVertETA2(:) = 1.d0
       cfVertETA2(:) = 0.d0
-
-!JLW: initialize local arrays for subgrid element variables
-      !IF(ALLOCATED(wetFracEleETA1))DEALLOCATE(wetFracEleETA1)
-      !ALLOCATE(wetFracEleETA1(NE,3))
-      IF(ALLOCATED(wetFracEleETA2))DEALLOCATE(wetFracEleETA2)
-      ALLOCATE(wetFracEleETA2(NE,3))
-      IF(ALLOCATED(gridDepthEleETA1))DEALLOCATE(gridDepthEleETA1)
-      ALLOCATE(gridDepthEleETA1(NE,3))
-      IF(ALLOCATED(gridDepthEleETA2))DEALLOCATE(gridDepthEleETA2)
-      ALLOCATE(gridDepthEleETA2(NE,3))
-      IF(ALLOCATED(wetFracAvgETA1))DEALLOCATE(wetFracAvgETA1)
-      ALLOCATE(wetFracAvgETA1(NE))
-      IF(ALLOCATED(wetFracAvgETA2))DEALLOCATE(wetFracAvgETA2)
-      ALLOCATE(wetFracAvgETA2(NE))
-      !IF(ALLOCATED(HGAvgETA1))DEALLOCATE(HGAvgETA1)
-      !ALLOCATE(HGAvgETA1(NE))
-      !IF(ALLOCATED(HGAvgETA2))DEALLOCATE(HGAvgETA2)
-      !ALLOCATE(HGAvgETA2(NE))
-      IF(ALLOCATED(NCEleArray))DEALLOCATE(NCEleArray)
-      ALLOCATE(NCEleArray(NE))
-      IF(level1)THEN
-         !IF(ALLOCATED(cadvEleETA1))DEALLOCATE(cadvEleETA1)
-         !ALLOCATE(cadvEleETA1(NE,3))
-         IF(ALLOCATED(cadvEleETA2))DEALLOCATE(cadvEleETA2)
-         ALLOCATE(cadvEleETA2(NE,3))
-      ENDIF
-
-!JLW: set intial value of all arrays to 0
-      !wetFracEleETA1(:,:) = 0.d0
-      wetFracEleETA2(:,:) = 0.d0
-      gridDepthEleETA1(:,:) = 0.d0
-      gridDepthEleETA2(:,:) = 0.d0
-      wetFracAvgETA1(:) = 0.d0
-      wetFracAvgETA2(:) = 0.d0
-      !HGAvgETA1(:) = 0.d0
-      !HGAvgETA2(:) = 0.d0
-      NCEleArray(:) = 0
-      IF(level1)THEN
-         !cadvEleETA1(:,:) = 0.d0
-         cadvEleETA2(:,:) = 0.d0
-      ENDIF
+!JLW: will need to add vertex based advection
 
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
@@ -198,153 +194,59 @@
 
       subroutine readSubgridLookup
       use netcdf
+<<<<<<< Updated upstream
       use global, only: imap_el_lg, nodes_lg
+=======
+      ! use global, only: imap_el_lg, nodes_lg, allMessage, ERROR
+      use global, only: nodes_lg, allMessage, ERROR
+>>>>>>> Stashed changes
       
       implicit none
 
       ! Total number of elements and vertices in mesh (can most
       ! definitely be replaced by variables already in ADCIRC) 
-      integer :: numElems, numVerts, numVertsPerEle
+      !integer :: numElems, numVerts, numVertsPerEle
+      integer :: numVerts
       ! Used for transfering from global to local
-      integer :: currEle, currNode
+      ! integer :: currEle, currNode
+      integer :: currNode
       ! Arrays for holding global variables
+<<<<<<< Updated upstream
       REAL(SZ), DIMENSION(:,:,:), ALLOCATABLE :: globalEleLookup
       REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: globalVertLookup
       REAL(SZ), DIMENSION(:,:), ALLOCATABLE :: globalarea
       INTEGER, DIMENSION(:), ALLOCATABLE :: globalSubEleList
+=======
+      REAL(8), DIMENSION(:,:), ALLOCATABLE :: globalVertLookup
+>>>>>>> Stashed changes
       INTEGER, DIMENSION(:), ALLOCATABLE :: globalSubVertList
       ! variables needed to read in main NETCDF lookup table
-      INTEGER :: NC_ERR, IS, NC_ID, NC_VAR, NC_DIM_ELEM, NC_DIM_VERT
+      INTEGER :: NC_ERR, IS, NC_ID, NC_VAR 
       INTEGER :: I
 
 !JLW: adding subgrid lookup table read in
 !JLW: first open subgrid lookup table and read in dimensions
       CALL CHECK(NF90_OPEN("avgVars.nc",NF90_NOWRITE,NC_ID))
       
-      CALL CHECK(NF90_INQ_DIMID(NC_ID,"numEle",NC_VAR))
-      CALL CHECK(NF90_INQUIRE_DIMENSION(NC_ID,NC_VAR,len=numElems))
-      
       CALL CHECK(NF90_INQ_DIMID(NC_ID,"numNode",NC_VAR))
       CALL CHECK(NF90_INQUIRE_DIMENSION(NC_ID,NC_VAR,len=numVerts))
       
-      CALL CHECK(NF90_INQ_DIMID(NC_ID,"numSfcElevs",NC_VAR))
-      CALL CHECK(NF90_INQUIRE_DIMENSION(NC_ID,NC_VAR,len=numSurLevs))
-      
       CALL CHECK(NF90_INQ_DIMID(NC_ID,"numPhi",NC_VAR))
       CALL CHECK(NF90_INQUIRE_DIMENSION(NC_ID,NC_VAR,len=numPhi))
-!JLW: go through elemental arrays first
-!JLW: allocate arrays to fill
-      IF(ALLOCATED(wetFracDepthEle))DEALLOCATE(wetFracDepthEle)
-      ALLOCATE(wetFracDepthEle(NE,3,numPhi))
-      IF(ALLOCATED(gridDepthEle))DEALLOCATE(gridDepthEle)
-      ALLOCATE(gridDepthEle(NE,3,numPhi))
-      IF(ALLOCATED(cadvEle))DEALLOCATE(cadvEle)
-      ALLOCATE(cadvEle(NE,3,numPhi))
-      IF(ALLOCATED(area)) DEALLOCATE(area)
-      ALLOCATE(area(NE,3))
+
       IF(ALLOCATED(setPhi)) DEALLOCATE(setPhi)
       ALLOCATE(setPhi(numPhi))
-      IF(ALLOCATED(subgridEleList)) DEALLOCATE(subgridEleList)
-      ALLOCATE(subgridEleList(NE))
 
-!!!!!!!!!!!!!!!! MINIMUM AND MAXIMUM PREPROCESS DEPTHS !!!!!!!!!!!!!!!
-      CALL Check(NF90_INQ_VARID(NC_ID,"minSurfElev",NC_VAR))
-      CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,minDepth))
-      CALL Check(NF90_INQ_VARID(NC_ID,"maxSurfElev",NC_VAR))
-      CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,maxDepth))
-!!!!!!!!!!!!!!!!!!!!! READ IN SET WET FRACTIONS !!!!!!!!!!!!!!!!!!!!!!
       CALL Check(NF90_INQ_VARID(NC_ID,"phiSet",NC_VAR))
       CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,setPhi))
-!!!!!!!!!!!!!!!!!!!!! wet fraction depths !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF(ALLOCATED(globalEleLookup))DEALLOCATE(globalEleLookup)
-      ALLOCATE(globalEleLookup(numElems,3,numPhi))
-      CALL Check(NF90_INQ_VARID(NC_ID,"wetFractionDepths",NC_VAR))
-      CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalEleLookup))
 
-      DO I = 1,NE
-#ifdef CMPI
-         currEle = abs(imap_el_lg(I))
-#else
-         currEle = I
-#endif
-         wetFracDepthEle(I,:,:) = globalEleLookup(currEle,:,:)
-      ENDDO
-!!!!!!!!!!!!!!!!!!!!!!! total water depths !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!JLW: use only one global elemental array to save space
-      IF(ALLOCATED(globalEleLookup))DEALLOCATE(globalEleLookup)
-      ALLOCATE(globalEleLookup(numElems,3,numPhi))
-
-      CALL Check(NF90_INQ_VARID(NC_ID,"totWatDepth",NC_VAR))
-      CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalEleLookup))
-
-      DO I = 1,NE
-#ifdef CMPI
-         currEle = abs(imap_el_lg(I))
-#else
-         currEle = I
-#endif
-         gridDepthEle(I,:,:) = globalEleLookup(currEle,:,:)
-      ENDDO
-!JLW: now deallocate the large array
-      IF(ALLOCATED(globalEleLookup))DEALLOCATE(globalEleLookup)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! advection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF(level1)THEN
-!JLW: use only one global elemental array to save space
-         IF(ALLOCATED(globalEleLookup))DEALLOCATE(globalEleLookup)
-         ALLOCATE(globalEleLookup(numElems,3,numPhi))
-
-         CALL Check(NF90_INQ_VARID(NC_ID,"cadv",NC_VAR))
-         CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalEleLookup))
-
-         DO I = 1,NE
-#ifdef CMPI
-            currEle = abs(imap_el_lg(I))
-#else
-            currEle = I
-#endif
-            cadvEle(I,:,:) = globalEleLookup(currEle,:,:)
-         ENDDO
-!JLW: now deallocate the large array
-         IF(ALLOCATED(globalEleLookup))DEALLOCATE(globalEleLookup)
-      ENDIF
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! areas !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF(ALLOCATED(globalarea))DEALLOCATE(globalarea)
-      ALLOCATE(globalarea(3,numElems))
-
-      CALL Check(NF90_INQ_VARID(NC_ID,"area",NC_VAR))
-      CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalarea))
-
-      DO I = 1,NE
-#ifdef CMPI
-         currEle = abs(imap_el_lg(I))
-#else
-         currEle = I
-#endif
-         area(I,:) = globalarea(:,currEle)
-      ENDDO
-!JLW: now deallocate the large array
-      IF(ALLOCATED(globalarea))DEALLOCATE(globalarea)
-!!!!!!!!!!!!!!!!!!!!!!!!!! subgrid region flag !!!!!!!!!!!!!!!!!!!!!!!!
-      IF(ALLOCATED(globalSubEleList))DEALLOCATE(globalSubEleList)
-      ALLOCATE(globalSubEleList(numElems))
-
-      CALL Check(NF90_INQ_VARID(NC_ID,"binaryElementList",NC_VAR))
-      CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalSubEleList))
-
-      DO I = 1,NE
-#ifdef CMPI
-         currEle = abs(imap_el_lg(I))
-#else
-         currEle = I
-#endif
-         subgridEleList(I) = globalSubEleList(currEle)
-      ENDDO
-      IF(ALLOCATED(globalSubEleList)) DEALLOCATE(globalSubEleList)
-
-!JLW: now repeat this process with all of the vertex lookup tables  
+!JLW: go through and read in each of the vertex averaged variables
+!JLW: allocate arrays  
       IF(level1)THEN
          IF(ALLOCATED(cmfVertTab)) DEALLOCATE(cmfVertTab)
          ALLOCATE(cmfVertTab(NP,numPhi))
+         IF(ALLOCATED(cadvVertTab)) DEALLOCATE(cadvVertTab)
+         ALLOCATE(cadvVertTab(NP,numPhi))
       ELSE
          IF(ALLOCATED(cfVertTab)) DEALLOCATE(cfVertTab)
          ALLOCATE(cfVertTab(NP,numPhi))
@@ -383,6 +285,21 @@
             currNode = I
 #endif
             cfVertTab(I,:) = globalVertLookup(:,currNode)
+         ENDDO
+      ENDIF
+!!!!!!!!!!!!!!!!!! ADVECTION CORRECTION VETEX !!!!!!!!!!!!!!!!!!
+      IF(ALLOCATED(globalVertLookup))DEALLOCATE(globalVertLookup)
+      ALLOCATE(globalVertLookup(numPhi,numVerts))
+      IF(level1)THEN
+         CALL Check(NF90_INQ_VARID(NC_ID,"cadvVertex",NC_VAR))
+         CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
+         DO I = 1,NP
+#ifdef CMPI
+            currNode = abs(nodes_lg(I))
+#else
+            currNode = I
+#endif
+            cadvVertTab(I,:) = globalVertLookup(:,currNode)
          ENDDO
       ENDIF
 !!!!!!!!!!!!!!!!! grid depth vertex !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -458,146 +375,6 @@
 !---------------------------------------------------------------------
 !---------------------------------------------------------------------
 !
-!                  GET ELEMENTAL AVERAGED VARIABLES
-!
-!---------------------------------------------------------------------
-!---------------------------------------------------------------------
-! AFTER THE GWCE IS CALLED IN THE TIMESTEP FILE, THIS SUBROUTINE IS
-! CALLED TO UPDATE THE ELEMENTAL SUBGRID VARIABLES WITH THE NEWLY
-! AVAIABLE WATER SURFACE ELEVATIONS.
-
-      subroutine getEleLookup()
-      use mesh, only: ne, nm, totalarea, mju, areas, dp
-
-      implicit none
-      integer :: I,J,IE
-      integer :: NM1,NM2,NM3
-      integer :: numGreater
-
-!JLW: update previous timesteps 
-!      wetFracEleETA1 = wetFracEleETA2
-      gridDepthEleETA1 = gridDepthEleETA2
-      wetFracAvgETA1 = wetFracAvgETA2
-!      HGAvgETA1 = HGAvgETA2
-!      IF(level1)THEN
-!         cadvEleETA1 = cadvEleETA2
-!      ENDIF
-      MJU(:) = 0
-      TotalArea(:) = 0.d0
-
-!JLW: now loop through the elements are get subgrid variables from the
-! the most recent water levels calculated by the gwce.
-
-      DO IE = 1,NE
-         NM1 = NM(IE,1)
-         NM2 = NM(IE,2)
-         NM3 = NM(IE,3)
-!JLW: if the element is within the subgrid area
-         IF(subgridEleList(IE).EQ.1)THEN
-            DO I = 1,3
-!JLW: intitialize counter 
-               numGreater = 0
-               DO J = 1,numPhi
-!JLW: check to see how many depths in the list of wet fraction depths
-! are greater than the current water surface elevation
-                  IF(ETA2(NM(IE,I)).LT.wetFracDepthEle(IE,I,J))THEN
-                     numGreater = numGreater + 1
-                  ENDIF
-               ENDDO
-               IF(numGreater.EQ.numPhi)THEN
-!JLW: this means that none of the depths in the array are greater than
-!the current depth and this node is dry
-                  wetFracEleETA2(IE,I) = setPhi(1)
-                  gridDepthEleETA2(IE,I) = gridDepthEle(IE,I,1)
-                  IF(level1)THEN
-                     cadvEleETA2(IE,I) = cadvEle(IE,I,1)
-                  ENDIF
-               ELSEIF(numGreater.EQ.0)THEN
-!JLW: this means that none of the depths in the array are greater than
-!the current depth and this node is always wet
-                  wetFracEleETA2(IE,I) = setPhi(numPhi)   
-                  gridDepthEleETA2(IE,I) = gridDepthEle(IE,I,numPhi)
-     &               + (ETA2(NM(IE,I)) - wetFracDepthEle(IE,I,numPhi))
-                  IF(level1)THEN
-                     cadvEleETA2(IE,I) = cadvEle(IE,I,numPhi)
-                  ENDIF
-               ELSEIF(wetFracDepthEle(IE,I,numPhi-numGreater)
-     &           .NE.minLookupDepth)THEN
-!JLW: as long as the depth we are indexing is not equal to the minimum
-!depth that we used to calculate the subgrid lookup table we interpolate
-!between depths to find subgrid values
-                  wetFracEleETA2(IE,I) = ((ETA2(NM(IE,I))
-     &               - wetFracDepthEle(IE,I,numPhi-numGreater))
-     &               /(wetFracDepthEle(IE,I,numPhi-numGreater+1)
-     &               - wetFracDepthEle(IE,I,numPhi-numGreater))
-     &               *(setPhi(numPhi-numGreater+1)
-     &               - setPhi(numPhi-numGreater))
-     &               + setPhi(numPhi-numGreater))
-                  gridDepthEleETA2(IE,I) = ((ETA2(NM(IE,I))
-     &               - wetFracDepthEle(IE,I,numPhi-numGreater))
-     &               /(wetFracDepthEle(IE,I,numPhi-numGreater+1)
-     &               - wetFracDepthEle(IE,I,numPhi-numGreater))
-     &               *(gridDepthEle(IE,I,numPhi-numGreater+1)
-     &               - gridDepthEle(IE,I,numPhi-numGreater))
-     &               + gridDepthEle(IE,I,numPhi-numGreater))
-                  IF(level1)THEN
-                     cadvEleETA2(IE,I) = ((ETA2(NM(IE,I))
-     &                  - wetFracDepthEle(IE,I,numPhi-numGreater))
-     &                  /(wetFracDepthEle(IE,I,numPhi-numGreater+1)
-     &                  - wetFracDepthEle(IE,I,numPhi-numGreater))
-     &                  *(cadvEle(IE,I,numPhi-numGreater+1)
-     &                  - cadvEle(IE,I,numPhi-numGreater))
-     &                  + cadvEle(IE,I,numPhi-numGreater))
-                  ENDIF
-               ELSE
-!JLW: if the current water level is equal to the first depth of the
-!array wet set our averaged variables to fully wet
-                  wetFracEleETA2(IE,I) = setPhi(numPhi-numGreater+1)
-                  gridDepthEleETA2(IE,I) = 
-     &               gridDepthEle(IE,I,numPhi-numGreater+1)
-                  IF(level1)THEN
-                     cadvEleETA2(IE,I) =
-     &                  cadvEle(IE,I,numPhi-numGreater+1)
-                  ENDIF
-               ENDIF
-            ENDDO
-!JLW: calculate the average wet area fraction for the element
-            wetFracAvgETA2(IE) = (wetFracEleETA2(IE,1)
-     &         + wetFracEleETA2(IE,2)
-     &         + wetFracEleETA2(IE,3))/3.d0
-         ELSE
-!JLW: if the element is not contained within the subgrid area
-            wetFracAvgETA2(IE) = 1
-            ! NEED TO MOVE THIS TO wet/dry but just for areas outside
-            ! the subgrid area since I need the updated node codes
-            !NCEle = NODECODE(NM1)*NODECODE(NM2)*NODECODE(NM3)
-            DO I = 1,3
-!JLW: calcualte the water depth from bathymetry of mesh for areas
-!outside the subgrid
-               gridDepthEleETA2(IE,I) = DP(NM(IE,I))
-     &            + IFNLFA*ETA2(NM(IE,I))
-!JLW: set cadv to 1 for areas outside the subgrid so that it does not
-!contribute to the calculations 
-               cadvEleETA2(IE,I) = 1.d0
-            ENDDO
-         ENDIF
-!JLW: calculate the average total water depth for the element
-!         HGAvgETA2(IE) = (gridDepthEleETA2(IE,1) 
-!     &      + gridDepthEleETA2(IE,2)
-!     &      + gridDepthEleETA2(IE,3))/3.d0
-      ENDDO
-
- 
-!----------------------------------------------------------------------
-!----------------------------------------------------------------------
-      end subroutine getEleLookup
-!----------------------------------------------------------------------
-!----------------------------------------------------------------------
-
-
-!---------------------------------------------------------------------
-!---------------------------------------------------------------------
-!
 !                  GET VERTEX AVERAGED VARIABLES
 !
 !---------------------------------------------------------------------
@@ -611,14 +388,17 @@
       use sizes, only : sz, mne, mnp
       use mesh, only : ne, np, dp, mju, totalArea, nm, x, y, areas
      &   , NNeigh, NeiTab
+      use global, only : H0
 
       implicit none
       integer :: ie, i, j
       integer :: numGreater
-      REAL(8) :: H2
+      REAL(8) :: HABSMIN
 
-!JLW: set all temporary nodecodes to 0
-      NNODECODE(:) = 0
+!JLW: set k = k + 1 for new timestep
+      HABSMIN = 0.8d0*H0
+      wetFracVertETA1 = wetFracVertETA2
+      gridDepthVertETA1 = gridDepthVertETA2
 !JLW: now loop through the vertices and lookup vertex averages
       DO I = 1,NP
          IF(subgridVertList(I).EQ.1)THEN
@@ -638,6 +418,7 @@
                wetDepthVertETA2(i) = wetDepthVertTab(i,1)
                IF(level1)THEN
                   cmfVertETA2(i) = cmfVertTab(i,1)
+                  cadvVertETA2(i) = cadvVertTab(i,1)
                ELSE
                   cfVertETA2(i) = cfVertTab(i,1)
                ENDIF
@@ -651,6 +432,7 @@
      &            + (eta2(i) - wetFracVertTab(i,numPhi))
                IF(level1)THEN
                   cmfVertETA2(i) = cmfVertTab(i,numPhi)
+                  cadvVertETA2(i) = cadvVertTab(i,numPhi)
                ELSE
                   cfVertETA2(i) = cfVertTab(i,numPhi)
                ENDIF
@@ -688,6 +470,13 @@
      &               *(cmfVertTab(i,numPhi-numGreater+1)
      &               - cmfVertTab(i,numPhi-numGreater))
      &               + cmfVertTab(i,numPhi-numGreater))
+                  cadvVertETA2(i) = ((eta2(i)
+     &               - wetFracVertTab(i,numPhi-numGreater))
+     &               /(wetFracVertTab(i,numPhi-numGreater+1)
+     &               - wetFracVertTab(i,numPhi-numGreater))
+     &               *(cadvVertTab(i,numPhi-numGreater+1)
+     &               - cadvVertTab(i,numPhi-numGreater))
+     &               + cadvVertTab(i,numPhi-numGreater))
                ELSE
                   cfVertETA2(i) = ((eta2(i)
      &               - wetFracVertTab(i,numPhi-numGreater))
@@ -707,26 +496,19 @@
      &            wetDepthVertTab(i,numPhi-numGreater+1)
                IF(level1)THEN
                   cmfVertETA2(i) = cmfVertTab(i,numPhi-numGreater+1)
+                  cadvVertETA2(i) = cadvVertTab(i,numPhi-numGreater+1)
                ELSE
                   cfVertETA2(i) = cfVertTab(i,numPhi-numGreater+1)
                ENDIF
             ENDIF
-!!JLW: get water depth to determine nnodecode
-!            H2 = gridDepthVertETA2(i)
-!         ELSE
-!            H2 = dp(i) + eta2(i) 
+         ELSE
+         !JLW: if not in subgrid area set grid total depth (this was a
+         !bug)
+            gridDepthVertETA2(i) = eta2(i) + dp(i)
+            wetDepthVertETA2(i) = eta2(i) + dp(i)
+            wetFracVertETA2(i) = 1.d0
          ENDIF
-!!JLW: set nnodecode based on water depth
-!         IF(H2.GT.H0)THEN
-!            nnodecode(i) = 1
-!         ELSE
-!            nnodecode(i) = 0
-!         ENDIF
       ENDDO
-!!JLW: update nodecode
-!      nodecode = nnodecode
-!!JLW: make sure to activate ncchange
-!      ncchange = 1
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
       end subroutine getVertLookup
@@ -737,6 +519,7 @@
 !---------------------------------------------------------------------
 !---------------------------------------------------------------------
 !
+<<<<<<< Updated upstream
 !                  WET DRY CHECK AND UPDATE
 !
 !---------------------------------------------------------------------
@@ -878,6 +661,8 @@
 !---------------------------------------------------------------------
 !---------------------------------------------------------------------
 !
+=======
+>>>>>>> Stashed changes
 !                 READ NETCDF UTILITY
 !
 !---------------------------------------------------------------------
