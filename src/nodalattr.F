@@ -2328,6 +2328,9 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
                   FRIC(I) = g*ManningsN(I)**2.d0
      &               /((DP(I)+IFNLFA*ETA2(I))**(1.d0/3.d0))
                ENDIF
+               IF(FRIC(I).LT.BFCdLLimit) THEN
+                  FRIC(I) = BFCdLLimit
+               ENDIF
             ELSE
                HT = DP(I)+IFNLFA*ETA2(I)
                IF (activateVEW1DChannelWetPerimeter .AND.
@@ -2396,11 +2399,7 @@ C        with the sea floor.
          DO I=1, NP
             UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             IF(level0)THEN
-               IF(subgridVertList(I).EQ.1)THEN
-                  H1 = wetDepthVertETA2(I)
-               ELSE
-                  H1 = DP(I) + IFNLFA*ETA2(I)
-               ENDIF
+               H1 = wetDepthVertETA2(I)
             ELSE
                H1  = DP(I) + IFNLFA*ETA2(I)
             ENDIF
