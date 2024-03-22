@@ -142,9 +142,7 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
      &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
 
-!JLW: add subgrid module
-      USE subgrid, ONLY: level0, getEleLookup, getVertLookup
-     &   , subgridwetdry
+      USE subgrid, ONLY: level0, getVertLookup
 
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
@@ -1049,15 +1047,11 @@ C...  Compute new water surface elevation
 
 !JLW: adding subgrid
       IF(level0)THEN
-#ifdef ADCNETCDF          
-         !JLW: update element arrays
-         call getEleLookup()
+#ifdef ADCNETCDF
          !JLW: update vertex arrays
          call getVertLookup()
          !JLW: update nodecode, ncele, etc
-         call subgridwetdry(BFCdLLimit, fric, fgamma, ftheta,
-     &                      manningsn, hbreak, loadManningsN,
-     &                      iflinbf, ifnlbf, ifhybf)
+         call computeWettingAndDrying(it)
 #else
          call allMessage(ERROR, "Subgrid calculation requires building"
      &                          //"with netcdf enabled")
