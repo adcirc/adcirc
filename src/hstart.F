@@ -120,7 +120,6 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 C   kmd48.33bc - add variable for timestep change
       INTEGER NTHS
       REAL(8) ArgT, ArgTP, ArgSAlt
-      REAL(8) H2
       REAL(8) CCSFEA
       REAL(8) QTRatio
       REAL(8) SAltMul, S2SFEA
@@ -192,6 +191,11 @@ C     kmd -- Added variables for initial conditions
 
       INTEGER :: moderbin ! determines whether in binary or real
       INTEGER :: ncHundreds ! hundreds place of IHOT, used for netcdf hs file
+
+#ifdef ADCNETCDF
+      LOGICAL :: have_htot(2) 
+#endif
+
 
       call setMessageSource("hotstart")
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
@@ -541,6 +545,13 @@ C        jgf49.44: Add capability to read fulldomain binary hotstart
 C        file in parallel.
          CALL readAndMapToSubdomain2D(ETA1, IHOT, IHOTSTP, moderbin)
          CALL readAndMapToSubdomain2D(ETA2, IHOT, IHOTSTP, moderbin)
+
+         ! Todo : add reading H1, H2. Will need to 
+         !       think about backward compatibily
+         ! For now simply compute H = dp + IFNLFA*eta
+         H1 = DP + IFNLFA*ETA1 
+         H2 = DP + IFNLFA*ETA2 
+
 C        jgf46.34 Added support for IBTYPE=52.
          CALL readAndMapToSubdomain2D(ETADisc, IHOT, IHOTSTP, moderbin)
          CALL readAndMapToSubdomain2D(UU2, IHOT, IHOTSTP, moderbin)
@@ -686,6 +697,7 @@ C
             ncHundreds = 500
          ENDIF
          CALL readNetCDFHotstart(IHOT-ncHundreds, timeLoc)
+
          IF (C3D) THEN
             CALL readNetCDFHotstart3D(IHOT-ncHundreds)
          ENDIF
@@ -771,9 +783,14 @@ C     kmd48.33bc - added time and time step to be passed to the hotstart file
 C
       DO I=1, NP
          ETAS(I)=ETA2(I)-ETA1(I)
-         H2=DP(I)+IFNLFA*ETA2(I)
-         QX2(I)=UU2(I)*H2
-         QY2(I)=VV2(I)*H2
+C........DMW202401 Added global variable H2
+C         IF (I.EQ.1) THEN
+C            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST SAVE ON H2'
+C         ENDIF         
+C         H2(I)=DP(I)+IFNLFA*ETA2(I)
+C........        
+         QX2(I)=UU2(I)*H2(I)
+         QY2(I)=VV2(I)*H2(I)
       END DO
 C     jgf46.08 Fine grained ramp functions
 C     jgf46.21 Split flux into internal and external, added support

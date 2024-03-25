@@ -1777,6 +1777,8 @@ C---------------------------------------------------------------------------C
       CHARACTER LOCFN*80,PE*6,LOCSTATFN*20
       INTEGER,ALLOCATABLE :: NTIMEVARYINGWEIRP(:)
       CHARACTER*80 OUTMSG
+
+      CHARACTER (LEN=20):: FMT
 C
 C--Write a Local Input file ( fort.15 ) for each PE
 C
@@ -2228,16 +2230,17 @@ c           CALL PREP15_3DDSS(IPROC)
 C
 C     jgf48.03 Write netCDF metadata, if necessary
          IF (useNetCDF.eqv..true.) THEN
-            WRITE(15,*) trim(adjustl(title))
-            WRITE(15,*) trim(adjustl(institution))
-            WRITE(15,*) trim(adjustl(source))
-            WRITE(15,*) trim(adjustl(history))
-            WRITE(15,*) trim(adjustl(references))
-            WRITE(15,*) trim(adjustl(comments))
-            WRITE(15,*) trim(adjustl(host))
-            WRITE(15,*) trim(adjustl(convention))
-            WRITE(15,*) trim(adjustl(contact))
-            WRITE(15,*) trim(adjustl(base_date))
+            FMT = "(1X,A)" ;
+            WRITE(15,FMT) trim(adjustl(title))
+            WRITE(15,FMT) trim(adjustl(institution))
+            WRITE(15,FMT) trim(adjustl(source))
+            WRITE(15,FMT) trim(adjustl(history))
+            WRITE(15,FMT) trim(adjustl(references))
+            WRITE(15,FMT) trim(adjustl(comments))
+            WRITE(15,FMT) trim(adjustl(host))
+            WRITE(15,FMT) trim(adjustl(convention))
+            WRITE(15,FMT) trim(adjustl(contact))
+            WRITE(15,FMT) trim(adjustl(base_date))
          ENDIF
 
 c...     tcm v50.66.02 additions for time varying bathymetry
