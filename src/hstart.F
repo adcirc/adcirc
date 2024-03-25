@@ -784,6 +784,11 @@ C
       DO I=1, NP
          ETAS(I)=ETA2(I)-ETA1(I)
 C........DMW202401 Added global variable H2
+C         IF (I.EQ.1) THEN
+C            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST SAVE ON H2'
+C         ENDIF         
+C         H2(I)=DP(I)+IFNLFA*ETA2(I)
+C........        
          QX2(I)=UU2(I)*H2(I)
          QY2(I)=VV2(I)*H2(I)
       END DO

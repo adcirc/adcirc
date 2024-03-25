@@ -231,6 +231,8 @@ Cjgfdebug      REAL(8) :: HsN2           !Total water depth at time level s at l
       REAL(8) :: Hsp1OAMB       !Hsp1/(a-b)
       REAL(8) :: Hsp1Hsp1OAMBAMB !(Hsp1/(a-b))^2
 
+
+Casey 140701: Prevent depths from becoming negative in bottom roughness calculations.
 ! arash 12/14/2015
       Real(8) :: Biharmonic_viscosity
 
