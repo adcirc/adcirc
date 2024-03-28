@@ -27,7 +27,7 @@ default_env: &default_env
 default_testenv: &default_testenv
      run:
        name: Retrieve Test Suite
-       command: git clone --depth=1 -b v56 https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
+       command: git clone --depth=1 -b python_test_runner https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
 
 cache_key_build_base: &cache_key_build_base
       key: adcirc-build-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
@@ -161,16 +161,22 @@ jobs:
         - *get_cache_base
         - run: 
             name: <<parameters.test_name>>
-            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build adcirc/<<parameters.test_name>>
+            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build <<parameters.test_name>>
             no_output_timeout: 7200
         - run:
-            name: Store artifacts
+            name: Store log artifacts
             command: |
               mkdir -p /tmp/artifacts
               find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
-            when: on_fail
+            when: always
+        - run:
+            name: Store graphics artifacts
+            command: |
+              mkdir -p /tmp/artifacts
+              find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+            when: always
         - store_artifacts: 
-           path: /tmp/artifacts
+            path: /tmp/artifacts
   test_netcdf:
       <<: *default_env
       parameters:
@@ -182,14 +188,20 @@ jobs:
         - *get_cache_netcdf
         - run: 
             name: <<parameters.test_name>>
-            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build adcirc/<<parameters.test_name>>
+            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build <<parameters.test_name>>
             no_output_timeout: 7200
         - run:
-            name: Store artifacts
+            name: Store log artifacts
             command: |
               mkdir -p /tmp/artifacts
               find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
-            when: on_fail
+            when: always
+        - run:
+            name: Store graphics artifacts
+            command: |
+              mkdir -p /tmp/artifacts
+              find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+            when: always
         - store_artifacts: 
            path: /tmp/artifacts
   test_grib2:
@@ -203,14 +215,20 @@ jobs:
         - *get_cache_grib2
         - run: 
             name: <<parameters.test_name>>
-            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build adcirc/<<parameters.test_name>>
+            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build <<parameters.test_name>>
             no_output_timeout: 7200
         - run:
-            name: Store artifacts
+            name: Store log artifacts
             command: |
               mkdir -p /tmp/artifacts
               find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
-            when: on_fail
+            when: always
+        - run:
+            name: Store graphics artifacts
+            command: |
+              mkdir -p /tmp/artifacts
+              find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+            when: always
         - store_artifacts: 
            path: /tmp/artifacts
 workflows:
