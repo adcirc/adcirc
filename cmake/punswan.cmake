@@ -26,7 +26,10 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanGriddata.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanGridobjects.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanCompdata.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/couple2adcirc.f90)
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/couple2adcirc.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanIEM.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanBraggScat.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanQCM.f90)
 
   set(SWANONLY2_PARALLEL_SOURCES
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/swanmain.f
@@ -87,7 +90,11 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/ocpcre.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/ocpmix.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SdsBabanin.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanGradVel.f90)
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanGradVel.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanVTKWriteHeader.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanVTKWriteData.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/SwanVTKPDataSets.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/fftpack51.f90)
 
   set(MSGLIB_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F

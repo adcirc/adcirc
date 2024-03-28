@@ -267,8 +267,10 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
              id = mod ( iddum - 1 + MDC , MDC ) + 1
              !
              cad(id,is) = esin(id)*cd(2) - ecos(id)*cd(3)
-             if ( IDIFFR /= 0 ) cad(id,is) = cad(id,is)*DIFPARAM(iv1) - DIFPARDX(iv1)*cgo(is,1)*esin(id) + DIFPARDY(iv1)*cgo(is,1)*ecos(id)
-             if ( ICUR   /= 0 ) cad(id,is) = cad(id,is) + sincos(id)*(duxdx-duydy) + sinsin(id)*duydx - coscos(id)*duxdy
+             if ( IDIFFR /= 0 ) cad(id,is) = cad(id,is)*DIFPARAM(iv1) - &
+                 DIFPARDX(iv1)*cgo(is,1)*esin(id) + DIFPARDY(iv1)*cgo(is,1)*ecos(id)
+             if ( ICUR   /= 0 ) cad(id,is) = cad(id,is) + &
+                 sincos(id)*(duxdx-duydy) + sinsin(id)*duydx - coscos(id)*duxdy
              !
           enddo
           !

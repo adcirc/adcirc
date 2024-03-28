@@ -466,7 +466,8 @@ couple2adcirc.f90
 SWAN_MOBJ := $(patsubst %.f,   $(O_DIR)%.o, $(SWAN_MSRC)  )
 SWAN_MOBJ := $(patsubst %.f90, $(O_DIR)%.o, $(SWAN_MOBJ)  )
 
-SWAN_SRC   = swanmain.f swanpre1.f swanpre2.f swancom1.f swancom2.f swancom3.f swancom4.f \
+SWAN_SRC   = SwanQCM.f90 SwanIEM.f90 SwanBraggScat.f90 swanmain.f swanpre1.f fftpack51.f90 swanpre2.f \
+swancom1.f swancom2.f swancom3.f swancom4.f \
 swancom5.f swanout1.f swanout2.f swanser.f swanparll.f SwanReadGrid.f90 \
 SwanReadADCGrid.f90 SwanReadTriangleGrid.f90 SwanReadEasymeshGrid.f90 \
 SwanInitCompGrid.f90 SwanCheckGrid.f90 SwanCreateEdges.f90 SwanGridTopology.f90 SwanGridVert.f90 \
@@ -480,7 +481,7 @@ SwanFindObstacles.f90 SwanCrossObstacle.f90 \
 SwanComputeForce.f90 SwanIntgratSpc.f90 SwanBndStruc.f90 SwanReadfort18.f90 \
 SwanPunCollect.f90 \
 SwanSumOverNodes.f90 SwanMinOverNodes.f90 SwanMaxOverNodes.f90 \
-ocpids.f ocpcre.f ocpmix.f
+ocpids.f ocpcre.f ocpmix.f SwanVTKWriteHeader.f90 SwanVTKWriteData.f90 SwanVTKPDataSets.f90
 
 SWAN_OBJ:= $(patsubst %.f,   $(O_DIR)%.o, $(SWAN_SRC) )
 SWAN_OBJ:= $(patsubst %.f90, $(O_DIR)%.o, $(SWAN_OBJ) )
@@ -899,6 +900,10 @@ $(O_DIR)SwanGriddata.o          : SwanGriddata.f90
 $(O_DIR)SwanGridobjects.o       : SwanGridobjects.f90
 $(O_DIR)SwanCompdata.o          : SwanCompdata.f90
 $(O_DIR)SdsBabanin.o            : SdsBabanin.f90
+$(O_DIR)SwanIEM.o               : SwanIEM.f90
+$(O_DIR)SwanQCM.o				: SwanQCM.f90
+$(O_DIR)fftpack51.o             : fftpack51.f90
+$(O_DIR)SwanBraggScat.o         : SwanBraggScat.f90
 $(O_DIR)swanmain.o              : swanmain.f
 $(O_DIR)swanpre1.o              : swanpre1.f
 $(O_DIR)swanpre2.o              : swanpre2.f

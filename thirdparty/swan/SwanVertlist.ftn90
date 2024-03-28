@@ -116,7 +116,10 @@ subroutine SwanVertlist ( compda )
 !      if asort still does not have a value, try space-varying wind and take the mean of wind direction
        if ( VARWI ) then
 !         retrieve current wind field
-          if ( NSTATM == 1 ) call FLFILE ( 5, 6, WXI, WYI, 0, JWX2, JWX3, 0, JWY2, JWY3, COSWC, SINWC, compda, XCGRID, YCGRID, KGRPNT, ierr )
+          if ( NSTATM == 1 ) &
+            call FLFILE ( 5, 6, WXI, WYI, 0, JWX2, JWX3, 0, &
+                          JWY2, JWY3, COSWC, SINWC, compda, &
+                          XCGRID, YCGRID, KGRPNT, ierr )
           k     = 0
           wdsum = 0.
           do j = 1, nverts

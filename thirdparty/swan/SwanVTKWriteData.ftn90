@@ -143,7 +143,8 @@ subroutine SwanVTKWriteData ( uvtk, pstype, nvar, ivtyp, voqr, data, lenp, mxk, 
           do j = 1, myk
              ip = (j-1)*mxk
              do i = 1, mxk
-                if ( ios == 0 .and. ionod(ip+i) == iproc ) write(uvtk,iostat=ios) data(ip+i,voqr(ivtype)), data(ip+i,voqr(ivtype)+1), 0.
+                if ( ios == 0 .and. ionod(ip+i) == iproc ) &
+                    write(uvtk,iostat=ios) data(ip+i,voqr(ivtype)), data(ip+i,voqr(ivtype)+1), 0.
              enddo
           enddo
           !

@@ -1148,7 +1148,9 @@ subroutine SwanIEMsrfbeat ( HS, AC2, DEP2, SPCDIR, SPCSIG, KGRPNT )
                          T5 = 0.
                       endif
                       !
-                      cphi = T1 + T2 * ( kblx(ind) * cosbp - T3 * sinbp ) + T4 * ( kbly * cosbp - T5 * sinbp ) - T6 * ( kbly*kbly / kblx(ind) * sinbp )
+                      cphi = T1 + T2 * ( kblx(ind) * cosbp - T3 * sinbp ) + &
+                            T4 * ( kbly * cosbp - T5 * sinbp ) - &
+                            T6 * ( kbly*kbly / kblx(ind) * sinbp )
                       !
                       ! update biphase
                       !
