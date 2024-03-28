@@ -1062,9 +1062,12 @@ subroutine SwanCompUnstruc ( ac2, ac1, compda, spcsig, spcdir, xytst, cross, it 
                          !
                          if ( link(1)/=0 .or. link(2)/=0 ) then
                             !
-                            call SWTRCF ( compda(1,JDP2), compda(1,JWLV2), compda(1,JHS)  , link, obredf    , ac2, reflso, dummy ,         &
-                                          dummy         , dummy          , cax            , cay , rdx       , rdy, anybin, spcsig, spcdir, &
-                                          cgo           , kwave          , compda(1,JHSS2), compda(1,JTSS2) )
+                            call SWTRCF ( compda(1,JDP2),   compda(1,JWLV2), compda(1,JHS)  , &
+                                          link, obredf    , ac2, reflso, dummy ,              &
+                                          dummy           , dummy          , cax            , &
+                                          cay , rdx       , rdy, anybin, spcsig, spcdir,      &
+                                          cgo           , kwave          , compda(1,JHSS2),   &
+                                          compda(1,JTSS2) )
                             !
                          endif
                          !
@@ -1478,11 +1481,13 @@ subroutine SwanCompUnstruc ( ac2, ac1, compda, spcsig, spcdir, xytst, cross, it 
 !TIMG          call SWTSTA(102)
           if ( PNUMS(21) == 0. ) then
              !
-             call SwanConvAccur ( accur, hscurr, tmcurr, compda(1,JDHS), compda(1,JDTM), xytst, spcsig, ac2, ivlow, ivup )
+             call SwanConvAccur ( accur, hscurr, tmcurr, compda(1,JDHS), &
+                compda(1,JDTM), xytst, spcsig, ac2, ivlow, ivup )
              !
           else
              !
-             call SwanConvStopc ( accur, hscurr, hsprev, hsdifc, tmcurr, tmprev, tmdifc, compda(1,JDHS), compda(1,JDTM), xytst, spcsig, ac2, ivlow, ivup )
+             call SwanConvStopc ( accur, hscurr, hsprev, hsdifc, tmcurr, &
+                tmprev, tmdifc, compda(1,JDHS), compda(1,JDTM), xytst, spcsig, ac2, ivlow, ivup )
              !
           endif
           !

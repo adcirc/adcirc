@@ -1590,7 +1590,10 @@ subroutine SWQCWIG ( W, dwdx, dwdy, ac2, dep2, rdx, rdy, spcdir, spcsig )
                 else
                    wi1 = 1.- wi2
                    wj1 = 1.- wj2
-                   ctb = wi1*wj1*ac2(jk,ik,indx) + wi1*wj2*ac2(jk+1,ik,indx) + wi2*wj1*ac2(jk,ik+1,indx) + wi2*wj2*ac2(jk+1,ik+1,indx)
+                   ctb = wi1*wj1*ac2(jk,ik,indx) + &
+                        wi1*wj2*ac2(jk+1,ik,indx) + &
+                        wi2*wj1*ac2(jk,ik+1,indx) + &
+                        wi2*wj2*ac2(jk+1,ik+1,indx)
                 endif
                 !
                 ! multiply with the Jacobian
@@ -1881,7 +1884,9 @@ subroutine SwanGradWig ( W, dwdx, dwdy, ac2, dep2, spcdir, spcsig )
                 else
                    wi1 = 1.- wi2
                    wj1 = 1.- wj2
-                   ctb = wi1*wj1*ac2(jk,ik,v(j)) + wi1*wj2*ac2(jk+1,ik,v(j)) + wi2*wj1*ac2(jk,ik+1,v(j)) + wi2*wj2*ac2(jk+1,ik+1,v(j))
+                   ctb = wi1*wj1*ac2(jk,ik,v(j)) + wi1*wj2*ac2(jk+1,ik,v(j)) + &
+                        wi2*wj1*ac2(jk,ik+1,v(j)) + &
+                        wi2*wj2*ac2(jk+1,ik+1,v(j))
                 endif
                 !
                 ! multiply with the Jacobian
@@ -1989,7 +1994,9 @@ subroutine SwanGradWig ( W, dwdx, dwdy, ac2, dep2, spcdir, spcsig )
                 else
                    wi1 = 1.- wi2
                    wj1 = 1.- wj2
-                   ctb = wi1*wj1*ac2(jk,ik,v(j)) + wi1*wj2*ac2(jk+1,ik,v(j)) + wi2*wj1*ac2(jk,ik+1,v(j)) + wi2*wj2*ac2(jk+1,ik+1,v(j))
+                   ctb = wi1*wj1*ac2(jk,ik,v(j)) + wi1*wj2*ac2(jk+1,ik,v(j)) + &
+                        wi2*wj1*ac2(jk,ik+1,v(j)) + &
+                        wi2*wj2*ac2(jk+1,ik+1,v(j))
                 endif
                 !
                 ! multiply with the Jacobian
@@ -2236,7 +2243,8 @@ subroutine SWQCSCAT ( memqcm, W, dwdx, dwdy, sigft, cgft, uxft, uyft, dep2, kwav
                 cax = cg * kxl / k + real(u)
                 cay = cg * kyl / k + real(v)
                 !
-                ctb = ctb + 2. * ( sig + kxl*imag(u) + kyl*imag(v) ) * W(iky-jk,ikx-ik) - cax * dwdx(iky-jk,ikx-ik) - cay * dwdy(iky-jk,ikx-ik)
+                ctb = ctb + 2. * ( sig + kxl*imag(u) + kyl*imag(v) ) * W(iky-jk,ikx-ik) - &
+                        cax * dwdx(iky-jk,ikx-ik) - cay * dwdy(iky-jk,ikx-ik)
                 !
              enddo
           enddo
@@ -2255,7 +2263,8 @@ subroutine SWQCSCAT ( memqcm, W, dwdx, dwdy, sigft, cgft, uxft, uyft, dep2, kwav
                 cax = cg * kxl / k + real(u)
                 cay = cg * kyl / k + real(v)
                 !
-                ctb = ctb - 2. * ( sig + kxl*imag(u) + kyl*imag(v) ) * W(iky+jk,ikx+ik) - cax * dwdx(iky+jk,ikx+ik) - cay * dwdy(iky+jk,ikx+ik)
+                ctb = ctb - 2. * ( sig + kxl*imag(u) + kyl*imag(v) ) * W(iky+jk,ikx+ik) - &
+                            cax * dwdx(iky+jk,ikx+ik) - cay * dwdy(iky+jk,ikx+ik)
                 !
              enddo
           enddo
@@ -2274,7 +2283,8 @@ subroutine SWQCSCAT ( memqcm, W, dwdx, dwdy, sigft, cgft, uxft, uyft, dep2, kwav
                 cax = cg * kxl / k + real(u)
                 cay = cg * kyl / k + real(v)
                 !
-                ctb = ctb + 2. * ( sig + kxl*imag(u) + kyl*imag(v) ) * W(iky+jk,ikx-ik) - cax * dwdx(iky+jk,ikx-ik) - cay * dwdy(iky+jk,ikx-ik)
+                ctb = ctb + 2. * ( sig + kxl*imag(u) + kyl*imag(v) ) * W(iky+jk,ikx-ik) - &
+                        cax * dwdx(iky+jk,ikx-ik) - cay * dwdy(iky+jk,ikx-ik)
                 !
              enddo
           enddo
@@ -2293,7 +2303,8 @@ subroutine SWQCSCAT ( memqcm, W, dwdx, dwdy, sigft, cgft, uxft, uyft, dep2, kwav
                 cax = cg * kxl / k + real(u)
                 cay = cg * kyl / k + real(v)
                 !
-                ctb = ctb - 2. * ( sig + kxl*imag(u) + kyl*imag(v) ) * W(iky-jk,ikx+ik) - cax * dwdx(iky-jk,ikx+ik) - cay * dwdy(iky-jk,ikx+ik)
+                ctb = ctb - 2. * ( sig + kxl*imag(u) + kyl*imag(v) ) * W(iky-jk,ikx+ik) - &
+                    cax * dwdx(iky-jk,ikx+ik) - cay * dwdy(iky-jk,ikx+ik)
                 !
              enddo
           enddo
@@ -2560,7 +2571,8 @@ subroutine SWQCSURF ( memqcb, ac2, dep2, cfd, wfd, wsavd, kwave, cgo, spcdir, sp
           else
              wi1 = 1.- wi2
              wj1 = 1.- wj2
-             ctb = wi1*wj1*ac2(jk,ik,KCGRD(1)) + wi1*wj2*ac2(jk+1,ik,KCGRD(1)) + wi2*wj1*ac2(jk,ik+1,KCGRD(1)) + wi2*wj2*ac2(jk+1,ik+1,KCGRD(1))
+             ctb = wi1*wj1*ac2(jk,ik,KCGRD(1)) + wi1*wj2*ac2(jk+1,ik,KCGRD(1)) + &
+                    wi2*wj1*ac2(jk,ik+1,KCGRD(1)) + wi2*wj2*ac2(jk+1,ik+1,KCGRD(1))
           endif
           !
           ! multiply with the Jacobian
@@ -2880,7 +2892,10 @@ subroutine SWQCSURF ( memqcb, ac2, dep2, cfd, wfd, wsavd, kwave, cgo, spcdir, sp
                 !
              else
                 !
-                dpos(iyd,ixd) = wi1*wj1*disbk0(KGRPGL(ixg,iyg)) + wi1*wj2*disbk0(KGRPGL(ixg,iyg+1)) + wi2*wj1*disbk0(KGRPGL(ixg+1,iyg)) + wi2*wj2*disbk0(KGRPGL(ixg+1,iyg+1))
+                dpos(iyd,ixd) = wi1*wj1*disbk0(KGRPGL(ixg,iyg)) + &
+                    wi1*wj2*disbk0(KGRPGL(ixg,iyg+1)) + &
+                    wi2*wj1*disbk0(KGRPGL(ixg+1,iyg)) + &
+                    wi2*wj2*disbk0(KGRPGL(ixg+1,iyg+1))
                 !
              endif
              !
@@ -3054,7 +3069,10 @@ subroutine SWQCSURF ( memqcb, ac2, dep2, cfd, wfd, wsavd, kwave, cgo, spcdir, sp
                 !
              else
                 !
-                dneg(iyd,ixd) = wi1*wj1*disbk0(KGRPGL(ixg,iyg)) + wi1*wj2*disbk0(KGRPGL(ixg,iyg+1)) + wi2*wj1*disbk0(KGRPGL(ixg+1,iyg)) + wi2*wj2*disbk0(KGRPGL(ixg+1,iyg+1))
+                dneg(iyd,ixd) = wi1*wj1*disbk0(KGRPGL(ixg,iyg)) + &
+                    wi1*wj2*disbk0(KGRPGL(ixg,iyg+1)) + &
+                    wi2*wj1*disbk0(KGRPGL(ixg+1,iyg)) + &
+                    wi2*wj2*disbk0(KGRPGL(ixg+1,iyg+1))
                 !
              endif
              !
@@ -3136,9 +3154,13 @@ subroutine SWQCSURF ( memqcb, ac2, dep2, cfd, wfd, wsavd, kwave, cgo, spcdir, sp
           ! check convergence
           !
           if ( optg /= 5 ) then
-             write(PRTEST,'(a,i2,a,i5,a,i5,a)') ' ++ number of iterations to correct variance of bulk dissipation is ',j,' in grid point (',IXCGRD(1)+MXF-1,',',IYCGRD(1)+MYF-1,')'
+             write(PRTEST,'(a,i2,a,i5,a,i5,a)') &
+                ' ++ number of iterations to correct variance of bulk dissipation is ',j,&
+                ' in grid point (',IXCGRD(1)+MXF-1,',',IYCGRD(1)+MYF-1,')'
           else
-             write(PRTEST,'(a,i2,a,i7)') ' ++ number of iterations to correct variance of bulk dissipation is ',j,' in vertex k = ',vs(1)
+             write(PRTEST,'(a,i2,a,i7)') &
+             ' ++ number of iterations to correct variance of bulk dissipation is ',j,&
+             ' in vertex k = ',vs(1)
           endif
           !
        elseif ( disbk < 0. .and. varW > 0. ) then
@@ -3149,9 +3171,11 @@ subroutine SWQCSURF ( memqcb, ac2, dep2, cfd, wfd, wsavd, kwave, cgo, spcdir, sp
              rdev = 100. * abs(varD - varW * disbk) / abs(varW * disbk)
              if ( rdev > 1. ) then
                 if ( optg /= 5 ) then
-                   write (PRTEST, '(a,f5.1,a,i5,a,i5,a)') 'integral of QC dissipation is not consistent - deviation=',rdev,' % in grid point (',IXCGRD(1)+MXF-1,',',IYCGRD(1)+MYF-1,')'
+                   write (PRTEST, '(a,f5.1,a,i5,a,i5,a)') 'integral of QC dissipation is not consistent - deviation=',&
+                   rdev,' % in grid point (',IXCGRD(1)+MXF-1,',',IYCGRD(1)+MYF-1,')'
                 else
-                   write (PRTEST, '(a,f5.1,a,i7)') 'integral of QC dissipation is not consistent - deviation=',rdev,' % in vertex k = ',vs(1)
+                   write (PRTEST, '(a,f5.1,a,i7)') 'integral of QC dissipation is not consistent - deviation=',&
+                   rdev,' % in vertex k = ',vs(1)
                 endif
              endif
           endif

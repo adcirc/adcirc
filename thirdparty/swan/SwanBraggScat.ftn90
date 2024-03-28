@@ -752,7 +752,10 @@ subroutine SWFBXY ( dep2, mudl2, spcsig, spcdir )
                       sxk1 = 1.- sxk2
                       syk1 = 1.- syk2
                       !
-                      fbdxy(ida,id,is,ic) = sxk1*syk1*fb(ik,jk,ic) + sxk1*syk2*fb(ik,jk+1,ic) + sxk2*syk1*fb(ik+1,jk,ic) + sxk2*syk2*fb(ik+1,jk+1,ic)
+                      fbdxy(ida,id,is,ic) = sxk1*syk1*fb(ik,jk,ic) + &
+                            sxk1*syk2*fb(ik,jk+1,ic) + &
+                            sxk2*syk1*fb(ik+1,jk,ic) + &
+                            sxk2*syk2*fb(ik+1,jk+1,ic)
                       !
                    endif
                    !
@@ -925,7 +928,10 @@ subroutine SWFB ( fbd, dep2, kwave, ecos, esin )
                    sxk1 = 1.- sxk2
                    syk1 = 1.- syk2
                    !
-                   fbd(ida,id,is) = sxk1*syk1*fb(ik,jk,KCGRD(1)) + sxk1*syk2*fb(ik,jk+1,KCGRD(1)) + sxk2*syk1*fb(ik+1,jk,KCGRD(1)) + sxk2*syk2*fb(ik+1,jk+1,KCGRD(1))
+                   fbd(ida,id,is) = sxk1*syk1*fb(ik,jk,KCGRD(1)) + &
+                        sxk1*syk2*fb(ik,jk+1,KCGRD(1)) + &
+                        sxk2*syk1*fb(ik+1,jk,KCGRD(1)) + &
+                        sxk2*syk2*fb(ik+1,jk+1,KCGRD(1))
                    !
                 endif
                 !
