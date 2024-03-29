@@ -265,8 +265,7 @@
       DO
         DO
           IF(INDEX(TRIM(GroupOrder)," ").EQ.1)THEN
-            WRITE(UNIT=GroupOrder,FMT='(A)')
-     &          GroupOrder(2:LEN_TRIM(GroupOrder))
+            GroupOrder = GroupOrder(2:LEN_TRIM(GroupOrder))
           ELSE
             EXIT
           ENDIF
@@ -280,13 +279,11 @@
           GroupNameStart = 1
           GroupNameEnd = LEN_TRIM(GroupOrder)
         ENDIF
-        WRITE(UNIT=GroupNames(NumGroup),FMT='(A)')
-     &      GroupOrder(GroupNameStart:GroupNameEnd)
+        GroupNames(NumGroup) = GroupOrder(GroupNameStart:GroupNameEnd)
         IF(NextSpace.LE.0)THEN
           EXIT
         ELSE
-          WRITE(UNIT=GroupOrder,FMT='(A)')
-     &      GroupOrder(NextSpace+1:LEN_TRIM(GroupOrder))
+          GroupOrder = GroupOrder(NextSpace+1:LEN_TRIM(GroupOrder))
         ENDIF
       ENDDO
 
@@ -492,7 +489,6 @@
 
       ZERO = 0.D0
       D_QNAN = ZERO / ZERO
-!      WRITE(6, *) D_QNAN
 
       ! First, fill the ADCIRC wind fields with background values.
       WVNX2 = 0.D0
