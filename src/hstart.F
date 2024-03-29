@@ -2614,7 +2614,11 @@ Casey 090310: Added the possibility for NOUTGW = -4.
       ENDIF
 
 ! tcm v50.75 removed ifdef cswan and added test for nrs=3 or 4
-        IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+!        IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+! tcm v56 20240 -- added NRS=1 and NRS=5
+        IF ( (ABS(NRS).EQ.1).OR.(ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)
+     &       .OR.(ABS(NRS).EQ.5) ) THEN
+
 !#ifdef CSWAN
 Casey 090310: Added the output of radiation stress gradients.
            IF(NOUTGW.LT.0)THEN

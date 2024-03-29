@@ -1141,10 +1141,13 @@ C... v49.64.01 tcm -- added for ice stations
       RSDescript % alternate_value      = -99999.0
       RSDescript % considerWetDry       = .true.
       RSDescript % field_name           = 'RadStress'
-      RSDescript % file_basename            = 'rads'
+      RSDescript % file_basename        = 'rads'
       RSDescript % file_extension       = 64
       if (nrs.eq.0) then
          RSDescript % writeFlag         = .false.
+      ! tcm v56 2024 : added else to allow for outputting if nrs > 0
+      else
+         RSDescript % writeFlag         = .true.
       endif
 #ifndef CSWAN
       ! jgf52.30.02: Turn off rads.64 if compiled without SWAN but

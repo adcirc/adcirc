@@ -112,6 +112,9 @@
 
           !...Wave Wind Multiplier. Applied to winds sent to wave models
           REAL(8) :: waveWindMultiplier = 1.0D0
+          
+          !... Wave Stress Gradient Magnitude CAP
+          REAL(8) :: WaveStressGrad_Cap = 1000.0D0
 
           REAL(8), PARAMETER :: DEG2RAD = PI/180.0D0
           REAL(8), PARAMETER :: RAD2DEG = 180.0D0/PI

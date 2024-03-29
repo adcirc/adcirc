@@ -646,7 +646,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          FOUND_WC_NML = .TRUE.
          call logMessage(INFO,
      &         'The waveCoupling namelist was found.')
-      else
+      ELSE
          call logMessage(INFO,
      &         'The waveCoupling namelist was not found.')
       ENDIF
@@ -658,7 +658,7 @@ Casey 180318: Added NWS=13
          FOUND_OWINC_NML = .TRUE.
          call logMessage(INFO,
      &         'The owiWindNetcdf namelist was found.')
-      else
+      ELSE
          call logMessage(INFO,
      &         'The owiWindNetcdf namelist was not found.')
       ENDIF
