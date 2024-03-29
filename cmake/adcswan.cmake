@@ -118,6 +118,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/globalio.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F

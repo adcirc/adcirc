@@ -8876,6 +8876,7 @@ C     eliminate opening/closing the files repeatedly
 C----------------------------------------------------------------------
 #ifdef ADCNETCDF
       use netcdf
+      use netcdf_error, only: check_err
 #endif
 #ifdef CMPI
       USE MESSENGER, ONLY: MSG_BARRIER
@@ -9371,6 +9372,7 @@ C       NOTE: reads in on Proc 0 and broadcasts.
 C----------------------------------------------------------------------
 #ifdef ADCNETCDF
       use netcdf
+      use netcdf_error, only: check_err
 #endif
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
@@ -9495,6 +9497,7 @@ C     broadcasts.
 C----------------------------------------------------------------------
 #ifdef ADCNETCDF
       use netcdf
+      use netcdf_error, only: check_err
 #endif
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
@@ -9559,9 +9562,11 @@ C       broadcasts.
 C----------------------------------------------------------------------
 #ifdef ADCNETCDF
       use netcdf
+      use netcdf_error, only: check_err
 #endif
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_Int
       USE SIZES, ONLY : MYPROC
+      USE NETCDF_ERROR, ONLY: CHECK_ERR
       implicit none
       integer :: iret, iter
       INTEGER,INTENT(IN) :: NC_ID
@@ -9663,43 +9668,7 @@ C
 C----------------------------------------------------------------------
       END SUBROUTINE ArnoldSchwarzenegger
 C-----------------------------------------------------------------------
-#ifdef ADCNETCDF
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E   C H E C K  _  E R R
-C-----------------------------------------------------------------------
-      subroutine check_err(iret)
-      USE SIZES, ONLY : myproc
-      USE GLOBAL, ONLY : screenUnit
-#ifdef CMPI
-      USE MESSENGER, ONLY : subdomainFatalError
-#endif
-      USE NETCDF
-      IMPLICIT NONE
 
-      INTEGER, intent(in) :: iret
-      integer,allocatable :: dmy
-
-      call setMessageSource("check_err")
-#ifdef ALL_TRACE
-      call allMessage(DEBUG,"Enter.")
-#endif
-      if (iret .ne. NF90_NOERR) then
-#ifdef CMPI
-         subdomainFatalError = .true.
-#endif
-         call allMessage(ERROR,nf90_strerror(iret))
-         call windTerminate()
-      endif
-#ifdef ALL_TRACE
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C-----------------------------------------------------------------------
-      end subroutine check_err
-C-----------------------------------------------------------------------
-
-
-#endif
 C.....END WJP (NWS = 14) ..............................................
 #endif
 

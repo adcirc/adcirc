@@ -6531,7 +6531,7 @@ C-----------------------------------------------------------------------
         USE MESSENGER, only: mapToSubdomainRealMPI, allnodes
 #endif
 #ifdef ADCNETCDF        
-        USE NETCDFIO, ONLY: check_err
+        USE NETCDF_ERROR, ONLY: check_err
         USE NETCDF
 #endif        
         IMPLICIT NONE

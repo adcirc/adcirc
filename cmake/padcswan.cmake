@@ -122,6 +122,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/writer.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F

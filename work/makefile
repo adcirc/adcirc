@@ -368,6 +368,7 @@ SOLV_MSRC  =  itpackv.F
 NA_MSRC    =  nodalattr.F
 SG_MSRC    =  subgridLookup.F
 NC_MSRC    =  netcdfio.F
+NCE_MSRC   =  netcdf_error.F90
 GIO_MSRC   =  globalio.F
 WRIT_MSRC  =  write_output.F
 WRITER_MSRC = writer.F 
@@ -408,6 +409,7 @@ WIND_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WIND_MSRC)  )
 NA_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NA_MSRC)  )
 SG_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(SG_MSRC)  )
 NC_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NC_MSRC)  )
+NCE_MOBJ  := $(patsubst %.F90, $(O_DIR)%.o, $(NCE_MSRC)  )
 GIO_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(GIO_MSRC)  )
 #Casey 090302: Add rules for coupling to unstructured SWAN.
 COUP_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(COUP_MSRC)  )
@@ -491,6 +493,9 @@ SWAN_OBJ:= $(patsubst %.f90, $(O_DIR)%.o, $(SWAN_OBJ) )
 $(O_DIR)%.o  : %.c
 	$(COMPILE.c) $< -o $@
 $(O_DIR)%.o  : %.F
+	$(CF) -c $(FFLAGS) -o $@  $<
+	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
+$(O_DIR)%.o  : %.F90
 	$(CF) -c $(FFLAGS) -o $@  $<
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
@@ -673,7 +678,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -769,9 +774,9 @@ $(O_DIR)internaltide.o : internaltide.F $(O_DIR)sizes.o $(O_DIR)global.o
 $(O_DIR)gl2loc_mapping.o : gl2loc_mapping.F $(O_DIR)sizes.o $(O_DIR)global.o
 
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
-$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)messenger.o $(O_DIR)internaltide.o $(O_DIR)subgridLookup.o
+$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)messenger.o $(O_DIR)internaltide.o $(O_DIR)netcdf_error.o $(O_DIR)subgridLookup.o
 else
-$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)internaltide.o $(O_DIR)subgridLookup.o
+$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)internaltide.o $(O_DIR)netcdf_error.o $(O_DIR)subgridLookup.o
 endif
 
 $(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o

@@ -111,6 +111,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Read_BC3D_NetCDF()
       use netcdf, only: nf90_open, nf90_close, nf90_nowrite 
+      use netcdf_error, only: check_err
       implicit none
       integer :: nc_id
  
@@ -183,6 +184,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Get_LonLatDepthTime(NC_ID)
       use netcdf
+      use netcdf_error, only: check_err
       use mesh, ONLY: slam, sfea, binarysearch, bl_interp, np, ne, nm,
      &                conserve_interp, neitabele, nodele !indmax
       USE ADC_CONSTANTS, ONLY: rad2deg
@@ -486,6 +488,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Read_BC3D_NetCDF_on_ADCIRC_Grid(NC_ID)
       use netcdf
+      use netcdf_error, only: check_err
       use mesh, only : np,sfea,slam 
       use sizes, only : mnproc,myproc, localdir
       use global, only : nodes_lg, np_g
@@ -583,6 +586,7 @@ C-----------------------------------------------------------------------
       FUNCTION read_nc_var(NC_ID,varname,BCIT_IN,XIin,NXin,YIin,NYin)
      & result (Var)
       use netcdf
+      use netcdf_error, only: check_err
          
       implicit none
 
@@ -610,6 +614,7 @@ C-----------------------------------------------------------------------
       FUNCTION read_nc_var_adc(NC_ID,varname,BCIT_IN,NumNodes)
      & result (Var)
       use netcdf
+      use netcdf_error, only: check_err
          
       implicit none
 
@@ -624,39 +629,6 @@ C-----------------------------------------------------------------------
 C
 C-----------------------------------------------------------------------
       END FUNCTION read_nc_var_adc
-C-----------------------------------------------------------------------
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E   C H E C K  _  E R R
-C-----------------------------------------------------------------------
-C     jgf49.17.02 Checks the return value from netCDF calls; if there
-C     was an error, it writes the error message to the screen and to the
-C     fort.16 file.
-C-----------------------------------------------------------------------
-      subroutine check_err(iret)
-      USE SIZES, ONLY : myproc
-      USE GLOBAL, ONLY : screenUnit
-#ifdef CMPI
-      USE MESSENGER, ONLY : MSG_FINI
-#endif
-      USE NETCDF
-      IMPLICIT NONE
-
-      INTEGER, intent(in) :: iret
-
-      !call setMessageSource("check_err")
-#ifdef ALL_TRACE
-      call allMessage(DEBUG,"Enter.")
-#endif
-      if (iret .ne. NF90_NOERR) then
-         call allMessage(ERROR,nf90_strerror(iret))
-         call BC3DTerminate()
-      endif
-#ifdef ALL_TRACE
-      call allMessage(DEBUG,"Return.")
-#endif
-      !call unsetMessageSource()
-C-----------------------------------------------------------------------
-      end subroutine check_err
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  I N I T I A L _ B C 3 D _ N E T C D F
