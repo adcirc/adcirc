@@ -81,8 +81,10 @@ C
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
-     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE
-      USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier
+     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
+     &    Limit_WaveStressGrad     
+      USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
+     &                         WaveStressGrad_Cap 
       USE GWCE, ONLY : solveGWCE, numitr
       USE MOMENTUM, ONLY : solveMomentumEq
       USE WETDRY, ONLY : computeWettingAndDrying
@@ -171,6 +173,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) EtaN1,EtaN2,EtaN3
       REAL(8) QTRatio
       REAL(8) RStRatio, RSX, RSY
+      REAL(8) RSXLIM,RSYLIM,RSXYMAG,RSSCALE
       REAL(8) SAltMul, S2SFEA
       REAL(8) H1
       REAL(8) TPMul
@@ -668,7 +671,6 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       IF(NRS.NE.0) THEN
 
         if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3) .or. (nrs.eq.5)) then  !saeed added 5
-!          if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
             IF(TimeLoc.GT.RSTIME2) THEN
                RSTIME1=RSTIME2
                RSTIME2=RSTIME2+RSTIMINC
@@ -702,7 +704,7 @@ C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2
 C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
                NRS5: IF (NRS == 5) THEN    ! saeed
 
-                  DO I=1,NP
+                 DO I=1,NP
                    RSX = RSNX1(I)
                    RSY = RSNY1(I)
                    RSNX1(I) = RSNX2(I)
@@ -712,24 +714,47 @@ C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
                  ENDDO
                ENDIF NRS5 !(NRS = 5)
 
-            ENDIF
+            ENDIF  !timeloc gt rstime2
 
             RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
-            DO I=1,NP
-               RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
-               RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
-               WSX2(I) = WSX2(I) + RSX
-               WSY2(I) = WSY2(I) + RSY
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-!#ifdef CSWAN
+            
+! tcm v56 2024 -- added option for limiting wave stress gradient magnitude
+            IF (Limit_WaveStressGrad.eqv..false.) then            
+               DO I=1,NP
+                 RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
+                 RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
+                 WSX2(I) = WSX2(I) + RSX
+                 WSY2(I) = WSY2(I) + RSY
+
 Casey 090302: Added these lines for output to the rads.64 file.
-               IF(ABS(NRS).EQ.3) then
-                  RSNXOUT(I) = RSX
-                  RSNYOUT(I) = RSY
-               ENDIF
-!#endif
-            ENDDO
-         ENDIF  !nrs = 1,2,or 3
+!TCM v56 2024: removed the test for NRS=3, to allow for outputting if any NRS>0
+!                IF(ABS(NRS).EQ.3) then
+                 RSNXOUT(I) = RSX
+                 RSNYOUT(I) = RSY
+!                ENDIF
+               ENDDO
+            ELSE !test and limit wave stress
+               DO I=1,NP
+                 RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
+                 RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
+                 RSXYMAG = SQRT(RSX*RSX + RSY*RSY)
+                 IF ((RSXYMAG .gt. WaveStressGrad_Cap ).and.
+     &               (RSXYMAG.gt.0.0d0)) then
+                    RSSCALE = WaveStressGrad_Cap/RSXYMAG
+                    RSXLIM = RSX*RSSCALE
+                    RSYLIM = RSY*RSSCALE
+                 ELSE
+                    RSXLIM = RSX
+                    RSYLIM = RSY
+                 ENDIF
+                 WSX2(I) = WSX2(I) + RSXLIM
+                 WSY2(I) = WSY2(I) + RSYLIM
+                 RSNXOUT(I) = RSX    !keep unlimited value for writing
+                 RSNYOUT(I) = RSY    !keep unlimited value for writing
+               ENDDO
+            ENDIF  ! test for limiting wave stress gradient magnitudes
+            
+         ENDIF  !nrs = 1,2,3, or 5
 
          ! Tightly Coupled Code with STWAVE
          ! Apply the ramping function and add wave stress to WSX2,WSY2
@@ -742,19 +767,44 @@ Casey 090302: Added these lines for output to the rads.64 file.
             IF (TimeLoc > ENDWAVE+RSTIMINC) THEN
               RSNX2(:) = 0.0d0;  RSNY2(:) = 0.0d0
             ENDIF
-            DO I=1,NP
-               RSX = RampWRad*RSNX2(I)
-               RSY = RampWRad*RSNY2(I)
-               WSX2(I) = WSX2(I) + RSX
-               WSY2(I) = WSY2(I) + RSY
-               !  tcm v50.75 added for use whenever nrs=3 or nrs=4
-               RSNXOUT(I) = RSX
-               RSNYOUT(I) = RSY
-            END DO
+
+!tcm v56 2024: Added test for limiting wave stress gradient magnitudes
+            IF (Limit_WaveStressGrad.eqv..false.) then
+               DO I=1,NP
+                  RSX = RampWRad*RSNX2(I)
+                  RSY = RampWRad*RSNY2(I)
+                  WSX2(I) = WSX2(I) + RSX
+                  WSY2(I) = WSY2(I) + RSY
+                  !  tcm v50.75 added for use whenever nrs=3 or nrs=4
+                  RSNXOUT(I) = RSX
+                  RSNYOUT(I) = RSY
+               ENDDO
+               
+            ELSE !test and limit wave stress gradients
+             
+               DO I=1,NP
+                  RSX = RampWRad*RSNX2(I)
+                  RSY = RampWRad*RSNY2(I)
+
+                  RSXYMAG = SQRT(RSX*RSX + RSY*RSY)
+                  IF ((RSXYMAG .gt. WaveStressGrad_Cap ).and.
+     &                (RSXYMAG.gt.0.0d0)) then
+                     RSSCALE = WaveStressGrad_Cap/RSXYMAG
+                     RSXLIM = RSX*RSSCALE
+                     RSYLIM = RSY*RSSCALE
+                  ELSE
+                     RSXLIM = RSX
+                     RSYLIM = RSY
+                  ENDIF
+
+                  WSX2(I) = WSX2(I) + RSXLIM
+                  WSY2(I) = WSY2(I) + RSYLIM
+                  RSNXOUT(I) = RSX !keep unlimited value for writing
+                  RSNYOUT(I) = RSY !keep unlimited value for writing
+               ENDDO
+            ENDIF !test for limit wave stress gradients      
          ENDIF !(NRS = 4)
-
       ENDIF  !(End test for updating wave radiation stress)
-
 
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.

@@ -1113,7 +1113,10 @@ C...
       ENDIF
 
 !  tcm v50.75 changed ifdef cwan to output for nrs=3 or 4
-      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).eq.4)) then
+!      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).eq.4)) then
+! tcm v56 2024 added NRS = 1 and NRS = 5
+      IF ( (ABS(NRS).EQ.1).or.(ABS(NRS).EQ.3).or.(ABS(NRS).eq.4).or.
+     &     (ABS(NRS).EQ.5) ) then
 !#ifdef CSWAN  tcm temp
 Casey 090302: Added the output of radiation stress gradients.
          IGRadS=0

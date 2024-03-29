@@ -83,7 +83,7 @@ C-----------------------------------------------------------------------
      &   alloc_main6, openfileforread, nhoutonce, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
-     &   directvelWD,useHF
+     &   directvelWD,useHF,Limit_WaveStressGrad
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
@@ -95,7 +95,7 @@ C-----------------------------------------------------------------------
      &   ,NUOPC4WAV, NUOPC4MET
       USE ADC_CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
      &                     waveWindMultiplier,deg2rad,rhoAir,
-     &                     rad2deg,omega
+     &                     rad2deg,omega,WaveStressGrad_Cap
 
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
@@ -252,7 +252,9 @@ C.... DMW
       NAMELIST /Smag_Control/ SMAG_COMP_FLAG,SMAG_UPPER_LIM, SMAG_LOWER_LIM
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      NAMELIST /waveCoupling/ WaveWindMultiplier
+!tcm 2024: added wave stress gradient limiting
+      NAMELIST /waveCoupling/ WaveWindMultiplier,
+     &         Limit_WaveStressGrad, WaveStressGrad_Cap
 
       call setMessageSource("read_input")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
@@ -480,6 +482,14 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       call logNamelistReadStatus(namelistSpecifier,ios)
       write(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
       call logMessage(ECHO,trim(scratchMessage))
+!TCM 2024 -- added wave stress gradient limiter      
+      write(scratchMessage,*)"Limit_WaveStressGrad=",
+     &                        Limit_WaveStressGrad
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "WaveStressGrad_Cap=",
+     &                         WaveStressGrad_Cap
+      call logMessage(ECHO,trim(scratchMessage))
+      
       rewind(15)
       !
       ! jgf52.05: Add a namelist for the user to control

@@ -112,10 +112,12 @@ C----------------------------------------------------------------------------
 
       MODULE PRESIZES
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      USE ADC_CONSTANTS, ONLY: waveWindMultiplier, Ad, Bd, Cs
+      USE ADC_CONSTANTS, ONLY: waveWindMultiplier, Ad, Bd, Cs,
+     &                         WaveStressGrad_CAP !tcm v56 2024: added
       USE GLOBAL, ONLY :
      &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
-     &    outputWindDrag,slim,windlim,directvelWD,useHF
+     &    outputWindDrag,slim,windlim,directvelWD,useHF,
+     &    Limit_WaveStressGrad  !tcm v56 2024: added
 #if defined CSWAN || defined ADCSWAN
      &   ,SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &    SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
@@ -241,7 +243,8 @@ C Logicals added for adcprep paths
       LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
       LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      NAMELIST /waveCoupling/ WaveWindMultiplier
+      NAMELIST /waveCoupling/ WaveWindMultiplier,
+     &          Limit_WaveStressGrad, WaveStressGrad_Cap  !tcm v56 2024: added 
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,

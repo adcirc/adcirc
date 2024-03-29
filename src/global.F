@@ -59,6 +59,11 @@ C... v50.xx sm -- added for coupling with NOUPC Cap
       LOGICAL   ::  NUOPC4MET = .FALSE.  ! assign in CAP
       LOGICAL   ::  NUOPC4WAV = .FALSE.  ! assign in CAP
 
+C... TCM v56 2024 --- added variable for using a limiter or cap
+C           on wave stress gradients
+      LOGICAL   ::  Limit_WaveStressGrad = .FALSE. ! set in fort.15 file 
+      
+
 C      real(8) rampriver,drampriver,rampriver1,rampriver2
 C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(8) RampExtFlux,DRampExtFlux ! Ramp for external flux b.c.s
@@ -1476,7 +1481,8 @@ C
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !   nrs = 5 -- Saeed's nuopc implementation
-      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4).or.(ABS(NRS).EQ.5)) then
+! tcm v56 -- added nrs = 1
+      IF ((ABS(NRS).EQ.1).or.(ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4).or.(ABS(NRS).EQ.5)) then
 !#ifdef CSWAN
 Casey 090302: Added the next line for output of radiation stress gradients.
          ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )
