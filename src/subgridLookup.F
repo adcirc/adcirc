@@ -113,16 +113,6 @@
       ALLOCATE(gridDepthVertETA2(NP))
       IF(ALLOCATED(wetDepthVertETA2))DEALLOCATE(wetDepthVertETA2)
       ALLOCATE(wetDepthVertETA2(NP))
-      IF(level1)THEN
-         IF(ALLOCATED(cmfVertETA2))DEALLOCATE(cmfVertETA2)
-         ALLOCATE(cmfVertETA2(NP))
-         IF(ALLOCATED(cadvVertETA2))DEALLOCATE(cadvVertETA2)
-         ALLOCATE(cadvVertETA2(NP))
-!JLW: will need to add vertex based advection
-      ELSE
-         IF(ALLOCATED(cfVertETA2))DEALLOCATE(cfVertETA2)
-         ALLOCATE(cfVertETA2(NP))
-      ENDIF
 
 !JLW: set intial value of all arrays to 0
       wetFracVertETA1(:) = 0.d0
@@ -130,10 +120,21 @@
       gridDepthVertETA1(:) = 0.d0
       gridDepthVertETA2(:) = 0.d0
       wetDepthVertETA2(:) = 0.d0
-      cmfVertETA2(:) = 0.d0
-      cadvVertETA2(:) = 1.d0
-      cfVertETA2(:) = 0.d0
+
+      IF(level1)THEN
+         IF(ALLOCATED(cmfVertETA2))DEALLOCATE(cmfVertETA2)
+         ALLOCATE(cmfVertETA2(NP))
+         IF(ALLOCATED(cadvVertETA2))DEALLOCATE(cadvVertETA2)
+         ALLOCATE(cadvVertETA2(NP))
+         cmfVertETA2(:) = 0.d0
+         cadvVertETA2(:) = 1.d0
 !JLW: will need to add vertex based advection
+      ELSE
+         IF(ALLOCATED(cfVertETA2))DEALLOCATE(cfVertETA2)
+         ALLOCATE(cfVertETA2(NP))
+         cfVertETA2(:) = 0.d0
+      ENDIF
+
 
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
