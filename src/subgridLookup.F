@@ -31,8 +31,9 @@
      &   , eta2, tk, tkm, nolifa, tkm
      &   , H0, ifnlfa, uu1, vv1, ncchange
       use mesh, only: ne, np, nm, totalArea, mju, areas, dp
-      
-      
+#ifdef ADCNETCDF      
+      use netcdf_error, only: check_err
+#endif      
 
 ! JLW: initialize the arrays for use in the subgrid
 ! code
@@ -186,19 +187,19 @@
 
 !JLW: adding subgrid lookup table read in
 !JLW: first open subgrid lookup table and read in dimensions
-      CALL CHECK(NF90_OPEN(TRIM(subgridFilename),NF90_NOWRITE,NC_ID))
+      CALL CHECK_ERR(NF90_OPEN(TRIM(subgridFilename),NF90_NOWRITE,NC_ID))
       
-      CALL CHECK(NF90_INQ_DIMID(NC_ID,"numNode",NC_VAR))
-      CALL CHECK(NF90_INQUIRE_DIMENSION(NC_ID,NC_VAR,len=numVerts))
+      CALL CHECK_ERR(NF90_INQ_DIMID(NC_ID,"numNode",NC_VAR))
+      CALL CHECK_ERR(NF90_INQUIRE_DIMENSION(NC_ID,NC_VAR,len=numVerts))
       
-      CALL CHECK(NF90_INQ_DIMID(NC_ID,"numPhi",NC_VAR))
-      CALL CHECK(NF90_INQUIRE_DIMENSION(NC_ID,NC_VAR,len=numPhi))
+      CALL CHECK_ERR(NF90_INQ_DIMID(NC_ID,"numPhi",NC_VAR))
+      CALL CHECK_ERR(NF90_INQUIRE_DIMENSION(NC_ID,NC_VAR,len=numPhi))
 
       IF(ALLOCATED(setPhi)) DEALLOCATE(setPhi)
       ALLOCATE(setPhi(numPhi))
 
-      CALL Check(NF90_INQ_VARID(NC_ID,"phiSet",NC_VAR))
-      CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,setPhi))
+      CALL check_err(NF90_INQ_VARID(NC_ID,"phiSet",NC_VAR))
+      CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,setPhi))
 
 !JLW: go through and read in each of the vertex averaged variables
 !JLW: allocate arrays  
@@ -225,8 +226,8 @@
       ALLOCATE(globalVertLookup(numPhi,numVerts))
 
       IF(level1)THEN
-         CALL Check(NF90_INQ_VARID(NC_ID,"cmfVertex",NC_VAR))
-         CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
+         CALL check_err(NF90_INQ_VARID(NC_ID,"cmfVertex",NC_VAR))
+         CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
          DO I = 1,NP
 #ifdef CMPI
             currNode = abs(nodes_lg(I))
@@ -236,8 +237,8 @@
             cmfVertTab(I,:) = globalVertLookup(:,currNode)
          ENDDO
       ELSE
-         CALL Check(NF90_INQ_VARID(NC_ID,"cfVertex",NC_VAR))
-         CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
+         CALL check_err(NF90_INQ_VARID(NC_ID,"cfVertex",NC_VAR))
+         CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
          DO I = 1,NP
 #ifdef CMPI
             currNode = abs(nodes_lg(I))
@@ -251,8 +252,8 @@
       IF(ALLOCATED(globalVertLookup))DEALLOCATE(globalVertLookup)
       ALLOCATE(globalVertLookup(numPhi,numVerts))
       IF(level1)THEN
-         CALL Check(NF90_INQ_VARID(NC_ID,"cadvVertex",NC_VAR))
-         CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
+         CALL check_err(NF90_INQ_VARID(NC_ID,"cadvVertex",NC_VAR))
+         CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
          DO I = 1,NP
 #ifdef CMPI
             currNode = abs(nodes_lg(I))
@@ -266,8 +267,8 @@
       IF(ALLOCATED(globalVertLookup))DEALLOCATE(globalVertLookup)
       ALLOCATE(globalVertLookup(numPhi,numVerts))
 
-      CALL Check(NF90_INQ_VARID(NC_ID,"gridTotWatDepthVertex",NC_VAR))
-      CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
+      CALL check_err(NF90_INQ_VARID(NC_ID,"gridTotWatDepthVertex",NC_VAR))
+      CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
       DO I = 1,NP
 #ifdef CMPI
             currNode = abs(nodes_lg(I))
@@ -280,8 +281,8 @@
       IF(ALLOCATED(globalVertLookup))DEALLOCATE(globalVertLookup)
       ALLOCATE(globalVertLookup(numPhi,numVerts))
 
-      CALL Check(NF90_INQ_VARID(NC_ID,"wetTotWatDepthVertex",NC_VAR))
-      CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
+      CALL check_err(NF90_INQ_VARID(NC_ID,"wetTotWatDepthVertex",NC_VAR))
+      CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
       DO I = 1,NP
 #ifdef CMPI
             currNode = abs(nodes_lg(I))
@@ -294,8 +295,8 @@
       IF(ALLOCATED(globalVertLookup))DEALLOCATE(globalVertLookup)
       ALLOCATE(globalVertLookup(numPhi,numVerts))
 
-      CALL Check(NF90_INQ_VARID(NC_ID,"wetFractionVertex",NC_VAR))
-      CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
+      CALL check_err(NF90_INQ_VARID(NC_ID,"wetFractionVertex",NC_VAR))
+      CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
       DO I = 1,NP
 #ifdef CMPI
             currNode = abs(nodes_lg(I))
@@ -309,8 +310,8 @@
       IF(ALLOCATED(globalSubVertList))DEALLOCATE(globalSubVertList)
       ALLOCATE(globalSubVertList(numVerts))
 
-      CALL Check(NF90_INQ_VARID(NC_ID,"binaryVertexList",NC_VAR))
-      CALL Check(NF90_GET_VAR(NC_ID,NC_VAR,globalSubVertList))
+      CALL check_err(NF90_INQ_VARID(NC_ID,"binaryVertexList",NC_VAR))
+      CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,globalSubVertList))
 
       DO I = 1,NP
 #ifdef CMPI
@@ -483,23 +484,6 @@
 !
 !                 READ NETCDF UTILITY
 !
-!---------------------------------------------------------------------
-!---------------------------------------------------------------------
-
-!JLW: add subroutine for reading in netcdf
-#ifdef ADCNETCDF      
-      SUBROUTINE Check(Status)          
-        USE netcdf
-        INTEGER,INTENT(IN) :: Status
-        IF(Status.NE.NF90_NOERR)THEN
-            WRITE(*,'(A,A,A)') "FATAL ERRORfrom"
-     &         ,TRIM(NF90_STRERROR(Status)),"."
-            STOP
-        ENDIF
-!---------------------------------------------------------------------
-!---------------------------------------------------------------------
-      END SUBROUTINE
-#endif
 !---------------------------------------------------------------------
 !---------------------------------------------------------------------
 
