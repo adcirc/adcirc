@@ -432,7 +432,7 @@ C     jgf46.21 Added support for IBTYPE=52.
             NFLUXI=1
             NIBP=NIBP+NBN
          case(5,25)
-            meshHasWeirWithPipes = .false.
+            meshHasWeirWithPipes = .true.
             NFLUXIPipe=1
             NIBPPipe=NIBPPipe+NBN
          case default  ! mainland and island
