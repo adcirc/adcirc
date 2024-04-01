@@ -84,8 +84,6 @@
          INTEGER :: ibtypenc_id   ! discharge boundary type
          INTEGER :: ibtypeenc_id  ! elevation boundary type
          INTEGER :: nvellnc_id    ! nodes on norm flow spec boundary seg
-         INTEGER :: max_nvdllnc_id ! max num nodes on any elev boundary seg
-         INTEGER :: max_nvellnc_id ! max num nodes on any discharge boundary seg
          INTEGER :: slam0nc_id
          INTEGER :: sfea0nc_id
          INTEGER :: netanc_id
@@ -102,7 +100,6 @@
          INTEGER :: max_nvdllnc_dim_id
          INTEGER :: max_nvellnc_dim_id
          INTEGER :: num_v_nodes_dim_id
-         INTEGER :: mesh_dim_id       ! Mesh Definition (Corbitt)
          !WJP 02.20.2018: for one dimensional boundary
          INTEGER :: nvelnc_dim_id
          INTEGER :: netanc_dim_id
@@ -131,7 +128,6 @@
          INTEGER :: nopenc_dims(1)
          INTEGER :: nbdvnc_dims(2)
          INTEGER :: nbvvnc_dims(2)
-         INTEGER :: mesh_dims(1)       ! Mesh Definition (Corbitt)
          REAL(8), ALLOCATABLE :: xnc(:) ! x coordinate or longitude
          REAL(8), ALLOCATABLE :: ync(:) ! y coordinate or latitude
          !WJP 02.20.2018: changed to one dimensional boundary
@@ -9681,9 +9677,6 @@ C
          iret = nf90_def_dim(ncid, 'max_nvell',
      &          myMesh%max_nvellnc, myMesh%max_nvellnc_dim_id)
       endif
-!Corbitt: Define ADCIRC-Mesh Dimension
-      iret = nf90_def_dim(ncid,'mesh',1,myMesh%mesh_dim_id)
-      call check_err(iret)
 !
 !     Define variables
 !     Define X
@@ -9703,10 +9696,7 @@ C
      &       myMesh%ELE_dims, myMesh%ELE_id)
       CALL check_err(iret)
 !Corbitt: Define ADCIRC-Mesh Variable
-      myMesh%MESH_dims(1) = myMesh%mesh_dim_id
-      iret = nf90_def_var(ncid, 'adcirc_mesh',NF90_INT,
-     &       myMesh%MESH_dims, myMesh%MESH_id)
-      CALL check_err(iret)
+      call check_err(nf90_def_var(ncid,'adcirc_mesh',NF90_INT,myMesh%MESH_id))
       !
       ! jgf50.44: Turn on compression if this is a netcdf4-formatted file.
 #ifdef NETCDF_CAN_DEFLATE
@@ -9722,15 +9712,9 @@ C
 !
 !     Define elevation specified boundary forcing segments information
       if (myMesh%nopenc.ne.0) then
-         iret = nf90_def_var(ncid,'neta', NF90_INT,
-     &       varid=myMesh%netanc_id)
-         CALL check_err(iret)
          myMesh%nvdllnc_dims(1) = myMesh%nopenc_dim_id
          iret = nf90_def_var(ncid, 'nvdll',NF90_INT,
      &                  myMesh%nvdllnc_dims, myMesh%nvdllnc_id)
-         CALL check_err(iret)
-         iret = nf90_def_var(ncid, 'max_nvdll',NF90_INT,
-     &                  varid=myMesh%max_nvdllnc_id)
          CALL check_err(iret)
          myMesh%ibtypeenc_dims(1) = myMesh%nopenc_dim_id
          iret = nf90_def_var(ncid, 'ibtypee',NF90_INT,
@@ -9739,9 +9723,6 @@ C
          CALL check_err(iret)
 !        WJP to make arrays smaller only have dimension of neta
          myMesh%nbdvnc_dims(1) = myMesh%netanc_dim_id
-C         myMesh%nbdvnc_dims(1) = myMesh%nopenc_dim_id
-C         myMesh%nbdvnc_dims(2) = myMesh%netanc_dim_id
-C         myMesh%nbdvnc_dims(2) = myMesh%max_nvdllnc_dim_id
          iret = nf90_def_var(ncid, 'nbdv',NF90_INT,
      &          myMesh%nbdvnc_dims(1), myMesh%nbdvnc_id)
          CALL check_err(iret)
@@ -9762,15 +9743,9 @@ C         myMesh%nbdvnc_dims(2) = myMesh%max_nvdllnc_dim_id
       endif
 !     Define normal flow boundary information
       if (myMesh%nbounc.ne.0) then
-         iret = nf90_def_var(ncid,'nvel', NF90_INT,
-     &      varid=myMesh%nvelnc_id)
-         CALL check_err(iret)
          myMesh%nvellnc_dims(1) = myMesh%nbounc_dim_id
          iret = nf90_def_var(ncid, 'nvell',NF90_INT,
      &          myMesh%nvellnc_dims, myMesh%nvellnc_id)
-         CALL check_err(iret)
-         iret = nf90_def_var(ncid, 'max_nvell',NF90_INT,
-     &                  varid=myMesh%max_nvellnc_id)
          CALL check_err(iret)
          myMesh%ibtypenc_dims(1) = myMesh%nbounc_dim_id
          iret = nf90_def_var(ncid, 'ibtype',NF90_INT,
@@ -9778,9 +9753,6 @@ C         myMesh%nbdvnc_dims(2) = myMesh%max_nvdllnc_dim_id
          CALL check_err(iret)
 !        WJP to make arrays smaller only have dimension of nvel
          myMesh%nbvvnc_dims(1) = myMesh%nvelnc_dim_id
-C         myMesh%nbvvnc_dims(1) = myMesh%nbounc_dim_id
-C         myMesh%nbvvnc_dims(2) = myMesh%nvelnc_dim_id
-C         myMesh%nbvvnc_dims(2) = myMesh%max_nvellnc_dim_id
          iret = nf90_def_var(ncid, 'nbvv',NF90_INT,
      &          myMesh%nbvvnc_dims(1), myMesh%nbvvnc_id)
          CALL check_err(iret)
@@ -9863,14 +9835,6 @@ C         CALL check_err(iret)
 C         iret = nf90_put_att(ncid, myMesh%nopenc_id, 'units', 14,
 C     &                     'nondimensional')
 C         CALL check_err(iret)
-C        NETA
-         att_text = "total number of elevation specified boundary nodes"
-         iret = nf90_put_att(ncid, myMesh%netanc_id, 'long_name',
-     &          trim(att_text))
-         CALL check_err(iret)
-         iret = nf90_put_att(ncid, myMesh%netanc_id, 'units',
-     &   'nondimensional')
-         CALL check_err(iret)
 C        NVDLL
          att_text = "number of nodes in each elevation specified "
      &   //"boundary segment"
@@ -9908,16 +9872,6 @@ C         CALL check_err(iret)
 C         iret = nf90_put_att(ncid, myMesh%nbounc_id, 'units', 14,
 C     &                      'nondimensional')
 C         CALL check_err(iret)
-C        NVEL
-         att_text = "total number of normal flow specified boundary "
-     &      //"nodes including both the front and back nodes on "
-     &      //"internal barrier boundaries"
-         iret = nf90_put_att(ncid, myMesh%nvelnc_id, 'long_name',
-     &          trim(att_text))
-         CALL check_err(iret)
-         iret = nf90_put_att(ncid, myMesh%nvelnc_id, 'units',
-     &   'nondimensional')
-         CALL check_err(iret)
 C        IBTYPE
          att_text = "type of normal flow (discharge) boundary"
          iret = nf90_put_att(ncid, myMesh%ibtypenc_id, 'long_name',
@@ -10099,12 +10053,7 @@ C
 
 !     Store elevation boundary information
       if(myMesh%nopenc.ne.0) then
-         iret = nf90_put_var(ncid, myMesh%netanc_id, myMesh%netanc)
-         CALL check_err(iret)
          iret = nf90_put_var(ncid, myMesh%nvdllnc_id, myMesh%nvdllnc)
-         CALL check_err(iret)
-         iret = nf90_put_var(ncid, myMesh%max_nvdllnc_id,
-     &          myMesh%max_nvdllnc)
          CALL check_err(iret)
          iret = nf90_put_var(ncid,myMesh%ibtypeenc_id,
      &          myMesh%ibtypeenc)
@@ -10114,14 +10063,9 @@ C
       endif
 !     Store normal flow boundary information
       if(myMesh%nbounc.ne.0) then
-         iret = nf90_put_var(ncid, myMesh%nvelnc_id, myMesh%nvelnc)
-         CALL check_err(iret)
          iret = nf90_put_var(ncid,myMesh%ibtypenc_id, myMesh%ibtypenc)
          CALL check_err(iret)
          iret = nf90_put_var(ncid, myMesh%nvellnc_id, myMesh%nvellnc)
-         CALL check_err(iret)
-         iret = nf90_put_var(ncid, myMesh%max_nvellnc_id,
-     &          myMesh%max_nvellnc)
          CALL check_err(iret)
          iret = nf90_put_var(ncid, myMesh%nbvvnc_id, myMesh%nbvvnc)
          CALL check_err(iret)
