@@ -71,6 +71,8 @@
           ! REAL(8), PARAMETER :: RhoAir = 1.1774D0 !... T=79.79, P=1013D0
 
           REAL(8), PARAMETER :: PI = 3.141592653589793D0
+          REAL(8), PARAMETER :: TWOPI=PI*2.D0
+          REAL(8), PARAMETER :: HFPI=PI/2.D0
           REAL(8), PARAMETER :: e = 2.718281828459045D0
 
           !...Radius of earth (m)

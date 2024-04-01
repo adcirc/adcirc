@@ -90,8 +90,6 @@ C
       real(8) :: WLATMAX,WLONMIN,WLATINC,WLONINC
       integer  :: IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN
 
-      REAL(8), PARAMETER :: TWOPI=PI*2.D0
-      REAL(8), PARAMETER :: HFPI=PI/2.D0
       real(8) :: prbckgrnd_mH2O, RhoWat0g
       real(8) :: airwaterdensityrat
 
@@ -3781,6 +3779,7 @@ C     ----------------------------------------------------------------
       subroutine nws10Init()
       use global, only : ihot, ncice
       use mesh, only : np, slam, sfea
+      use adc_constants, only: twopi
       implicit none
       real(8) :: gdlon
       integer :: j, jj ! loop counters
@@ -3848,6 +3847,7 @@ C
 C***********************************************************************
       subroutine g2rini()
       use mesh, only : np, slam, sfea
+      use adc_constants, only: twopi, hfpi
       implicit none
       integer :: N,I,LON,LONP1,LAT,LATP1
       real(8) :: DLAT,DLON,FLONWORK,COLAT,DDLAT,XLAT,DFLAT,DFLAT1,
