@@ -16,7 +16,7 @@ module netcdf_error
 !-----------------------------------------------------------------------
     subroutine check_err(iret)
       USE SIZES, ONLY : myproc
-      USE GLOBAL, ONLY : screenUnit, ERROR, allMessage, &
+      USE GLOBAL, ONLY : screenUnit, ERROR, DEBUG, allMessage, &
           setMessageSource, unsetMessageSource
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
