@@ -8815,7 +8815,7 @@ C
      &     len=mesh_struct%num_nodes)
       CALL check_err(iret)
 C
-      iret=nf90_inq_dimid(ncid, "nele", mesh_struct%num_elems_dim_id)
+      iret=nf90_inq_dimid(ncid, "nfaces", mesh_struct%num_elems_dim_id)
       CALL check_err(iret)
       iret=nf90_inquire_dimension(ncid, mesh_struct%num_elems_dim_id,
      &     len=mesh_struct%num_elems)
@@ -9629,6 +9629,7 @@ C-----------------------------------------------------------------------
       character big_ben*10
       character zone*5
       integer values(8)
+      integer dmy
 C
       call setMessageSource("defineMeshVariables")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -9639,7 +9640,9 @@ C
       iret = nf90_def_dim(ncid,'node',myMesh%num_nodes,
      &       myMesh%num_nodes_dim_id)
       CALL check_err(iret)
-      iret = nf90_def_dim(ncid,'nele',myMesh%num_elems,
+      iret = nf90_def_dim(ncid,'nele',myMesh%num_elems,dmy)
+      call check_err(iret)
+      iret = nf90_def_dim(ncid,'nfaces',myMesh%num_elems,
      &       myMesh%num_elems_dim_id)
       call check_err(iret)
       IF (C3D.eqv..true.) THEN
@@ -10482,7 +10485,7 @@ C-----------------------------------------------------------------------
         CALL CHECK_ERR(nf90_get_att(NCID,NF90_GLOBAL,'cf',cf))
         CALL CHECK_ERR(nf90_get_att(NCID,NF90_GLOBAL,'eslm',eslm))
         CALL CHECK_ERR(nf90_inq_dimid(NCID,"node",dimid_node))
-        CALL CHECK_ERR(nf90_inq_dimid(NCID,"nele",dimid_nele))
+        CALL CHECK_ERR(nf90_inq_dimid(NCID,"nfaces",dimid_nele))
         CALL CHECK_ERR(nf90_inquire_dimension(ncid,dimid_node,len=NP_G))
         CALL CHECK_ERR(nf90_inquire_dimension(ncid,dimid_nele,len=NE_G))
         CALL CHECK_ERR(nf90_close(NCID))
