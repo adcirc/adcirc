@@ -118,6 +118,7 @@
 
           REAL(8), PARAMETER :: DEG2RAD = PI/180.0D0
           REAL(8), PARAMETER :: RAD2DEG = 180.0D0/PI
+          REAL(8), PARAMETER :: MPERDEG  = REarth * PI / 180.0d0
 
           !---Length based factors---!
           REAL(8), PARAMETER :: nm2m = 1852.0D0 ! nautical miles to meters
