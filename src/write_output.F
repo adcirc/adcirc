@@ -34,6 +34,7 @@ C----------------------------------------------------------------------
       USE GLOBAL, ONLY : OutputDataDescript_t, setMessageSource,
      &  unsetMessageSource, DEBUG, allMessage, screenMessage, ERROR,
      &  netcdf_avail
+      USE boundaries, only: freeFluxBoundaryArrayTemporaries
 
       !
       !    2 D   D A T A
@@ -1726,9 +1727,10 @@ C                      ! initialize it if it wasn't initialized above
             endif
          enddo
       endif ! ihot.ne.0
-      !
-      ! End  TCM v51.20.01 Mods for MaxMin Files to Local Variables
-      !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+
+      ! Initialization is complete, this information is
+      ! no longer needed
+      call freeFluxBoundaryArrayTemporaries()
 
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

@@ -57,6 +57,9 @@ C---------------------------------------------------------------------
      &   NPERBC, IPERCONN, IPERPTR 
       use hashtable
       use memory_usage
+      use boundaries, only: ibconnr_bc => ibconnr, barinhtr, barlanhtr,
+     &                      barlancfspr, barincfsbr, barincfspr, pipehtr, 
+     &                      pipediamr, pipecoefr
       implicit none
 
       integer(8) :: nbytes = 0
@@ -293,6 +296,17 @@ C..... DW
       !LBCODE array.
       numLBCodeValues = J
 
+      ! Save off the boundary data into the arrays used for 
+      ! writing into the netCDF files
+      ibconnr_bc  = ibconnr
+      barlanhtr   = bar1
+      barinhtr    = bar1
+      barlancfspr = bar2
+      barincfsbr  = bar2
+      barincfspr  = bar3
+      pipehtr     = bar4
+      pipecoefr   = bar5
+      pipediamr   = bar6
 
 C     jgf45.06 added the following section
 C MEB --------------------------------------------------
