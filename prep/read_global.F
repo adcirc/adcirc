@@ -1202,6 +1202,10 @@ C
       ELSE
          READ(H0MSG,*) H0,NODEDRYMIN,NODEWETRMP,VELMIN
       ENDIF
+      IF(H0<=0.0D0)THEN
+          WRITE(*,'(A)') "ERROR: The value of H0 must be greater than 0.0"
+          CALL EXIT(1)
+      ENDIF
 C
       READ(15,80) SLMSG
       READ(SLMSG,*) SLAM0,SFEA0
