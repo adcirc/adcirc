@@ -2925,12 +2925,7 @@ Csb...
 #else
       nfluxib64_gbl = nfluxib64
 #endif
-!sb...
 
-!jjwm001 - end add
-      ! jgf51.11.18: Free memory associated with the reading of the
-      ! levee and culvert parameters since it is no longer needed
-      call freeFluxBoundaryArrayTemporaries()
 !
 !...GENERAL PURPOSE FORMAT STATEMENTS for subtly expressed error messages
 !...
