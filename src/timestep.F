@@ -83,7 +83,7 @@ C
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
      &    Limit_WaveStressGrad,
-     &    earlyterminate, IT_foundNaN, ErrorVel, Flag_VelError
+     &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
      &                         WaveStressGrad_Cap 
      
