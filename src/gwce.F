@@ -1003,8 +1003,9 @@ Corbitt 120322: Localized Advection
          NC1=NODECODE(NM1)
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
-!JLW: moving NCEle calulation further down
-!         NCELE=NC1*NC2*NC3*NOFF(IE)
+!JLW: moving NCEle calulation further down. 
+!DW: uncomment line NCELE =  below to make the subgrid code run  
+         NCELE=NC1*NC2*NC3*NOFF(IE)
          E0N1=ETA1(NM1)
          E0N2=ETA1(NM2)
          E0N3=ETA1(NM3)
