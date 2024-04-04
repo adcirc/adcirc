@@ -7681,7 +7681,8 @@ C---------------------------------------------------------------------------
      &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
      &    foundCorrectionControlNamelist, NCICE, !GML added NCICE 20210727
-     &    foundVEW1DChannelControlNamelist
+     &    foundVEW1DChannelControlNamelist, meshHasWeir, meshHasInternalWeir,
+     &    meshHasWeirWithPipes
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
      &    initNetCDFHotstart3D, initNetCDFHotstart,
@@ -8916,9 +8917,9 @@ C     we collected in read_global.F and stored in pre_global.F.
      &   nfen, iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
      &   nvtd, alp4, C3D, runid)
-C
-C     Create NetCDF output files for those output files where NetCDF
-C     was specified.
+
+!     Create NetCDF output files for those output files where NetCDF
+!     was specified.
       reterr = .false.
       !WJP 02.20.2018 Adding capability for fort.51-54
       CALL initNetCDFOutputFile(HaElevStaDescript, reterr)

@@ -254,6 +254,9 @@ Casey 180318: Added NWS=13
       ! @jasonfleming: reduce memory usage if there are no weir boundaries
       ! with cross barrier pipes
       logical :: meshHasWeirWithPipes
+      logical :: meshHasExternalWeir
+      logical :: meshHasInternalWeir
+      logical :: meshHasWeir
       ! Warn Elev control namelist
 c.... !wjp added for warnElev namelist
       REAL(8) :: WarnElev = 20.0  !
@@ -325,6 +328,9 @@ C.... tcm v51.20.04 additions for station location file
       NETCDF_AVAIL = .false.
 #endif
       meshHasWeirWithPipes = .false.
+      meshHasInternalWeir  = .false.
+      meshHasExternalWeir  = .false.
+      meshHasWeir          = .false.
 C
 C...OPEN AND PROCESS THE UNIT 14 ADCIRC GRID FILE TO DETERMINE SIZES
 C
@@ -431,10 +437,16 @@ C     jgf46.21 Added support for IBTYPE=52.
          case(3,13,23)
             NFLUXB=1
             NBBN=NBBN+NBN
+            meshHasWeir = .true.
+            meshHasExternalWeir = .true.
          case(4,24,64)
             NFLUXI=1
             NIBP=NIBP+NBN
+            meshHasWeir = .true.
+            meshHasInternalWeir = .true.
          case(5,25)
+            meshHasWeir = .true.
+            meshHasInternalWeir = .true.
             meshHasWeirWithPipes = .true.
             NFLUXIPipe=1
             NIBPPipe=NIBPPipe+NBN
