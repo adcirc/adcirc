@@ -776,25 +776,19 @@ C           times for output if time step size has changed
          END IF
       END IF
 
-C     kmd48.33bc - added time and time step to be passed to the hotstart file
+!     kmd48.33bc - added time and time step to be passed to the hotstart file
       IF(C3D) THEN
         CALL HOTSTART_3D(TimeLoc,ITHS)
       ENDIF
-C
+ 
       DO I=1, NP
          ETAS(I)=ETA2(I)-ETA1(I)
-C........DMW202401 Added global variable H2
-C         IF (I.EQ.1) THEN
-C            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST SAVE ON H2'
-C         ENDIF         
-C         H2(I)=DP(I)+IFNLFA*ETA2(I)
-C........        
          QX2(I)=UU2(I)*H2(I)
          QY2(I)=VV2(I)*H2(I)
       END DO
-C     jgf46.08 Fine grained ramp functions
-C     jgf46.21 Split flux into internal and external, added support
-C     for IBTYPE=52.
+!     jgf46.08 Fine grained ramp functions
+!     jgf46.21 Split flux into internal and external, added support
+!     for IBTYPE=52.
 !Kendra: Changed these to DTDPHS because if timestep is changed then
 !       the value of DTDP will not match with the ITHS.
 !

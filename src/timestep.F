@@ -164,7 +164,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) :: vel
       REAL(8) :: velmax
       INTEGER :: errorElevExceeded
-C     DMW 202401 Check for Velocity exceeding error level
       INTEGER :: warnVelExceeded
       INTEGER :: warnElevExceeded
       logical, save ::  EtaDisc_Fill = .TRUE.
@@ -213,11 +212,8 @@ C.......
       LOGICAL foundNaN
       
       IF (IT .EQ. 1) THEN
-C.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
+!.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
         DO I = 1,NP
-           IF ((I.EQ.1)) THEN
-              WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST SAVE ON H2'
-           ENDIF
            H2(I) = DP(I)+IFNLFA*ETA2(I)
            H1(I) = H2(I)
         ENDDO
@@ -989,7 +985,6 @@ C...
          DO J=1,NVEL
             IF(LBCODEI(J).EQ.30) THEN
                NNBB=NBV(J)
-C..............DMW202401 Use saved H2
                UN1=UU1(NNBB)*CSII(J)+VV1(NNBB)*SIII(J)
                QN1(J)=H2(NNBB)*UN1
             ENDIF
@@ -1003,7 +998,6 @@ C...
           DO J=1,NVEL
             IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) THEN
               NNBB=NBV(J)
-C.............DMW202401 Use saved H2
               UN1=UU1(NNBB)*CSII(J)+VV1(NNBB)*SIII(J)
               QN1(J)=H2(NNBB)*UN1
               ENDIF
@@ -1127,12 +1121,9 @@ C...  Compute new water surface elevation
 !--------------------WETTING AND DRYING--------------------------------
       ENDIF
  
-C.....DMW202401 Add update for flow depth at current timestep
-C......We do this after wetting/drying since bathy could change with subgrid barriers.
+!.....DMW202401 Add update for flow depth at current timestep
+!......We do this after wetting/drying since bathy could change with subgrid barriers.
       DO I = 1,NP
-         IF ((I.EQ.1).AND.(IT.EQ.ITIME_BGN)) THEN
-            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS SECOND SAVE ON H2'
-         ENDIF
          H2(I) = DP(I)+IFNLFA*ETA2(I)
       ENDDO
 C...
@@ -1455,7 +1446,7 @@ C     output the global node number to debug the local PE fort.14s
       ENDIF
 
 #ifdef VELCHECK
-C....DMW 20240109 - WARNING FOR NaNs IN VELOCITY SOLN
+!....DMW 20240109 - WARNING FOR NaNs IN VELOCITY SOLN
       foundNaN = .false.
       DO I = 1,NP
          IF ((I.EQ.1).AND.(IT.EQ.ITIME_BGN)) THEN
@@ -1610,7 +1601,6 @@ C.... SEDIMENT TRANSPORT RELATIONS
 
       DO I=1,NP
         UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
-C.......DMW202401 Use saved H1
         BEDSTR=H1(I)*UV1*TK(I)*RhoWat0                           ![N/m^2]
         C1=CH1(I)/H1(I)
 
@@ -1675,7 +1665,6 @@ C.....SET NODAL VALUES FOR EACH ELEMENT
          SS1N1=SOURSIN(NM1)
          SS1N2=SOURSIN(NM2)
          SS1N3=SOURSIN(NM3)
-C........DMW202401 Use saved H1
          H1N1=H1(NM1)
          H1N2=H1(NM2)
          H1N3=H1(NM3)
@@ -1959,7 +1948,6 @@ c******************************************************************************
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCEle=NC1*NC2*NC3*NOFF(IE)
-C........DMW202401 Use saved H2
          H2N1=H2(NM1)
          H2N2=H2(NM2)
          H2N3=H2(NM3)
@@ -2171,7 +2159,6 @@ C
 
 Casey: Changed "NolIFA" to "IFNLFA."
 C
-C...........DMW202401 Use saved H2
             HGORhoOAMB=GORhoOAMB*H2(NH) !(gravity/rho ref)*(H/(a-b))
             BCP(NH,NFEN)=0.d0
 ! arash: this integration can be improved
@@ -2244,7 +2231,6 @@ C     Loop over each horizontal node to compute the horizontal velocity
 C
       DO NH=1,NP                !loop over horizontal nodes
 
-C........DMW202401 Use saved H2
          HsOAMB=H2(NH)/AMB
 
 c     Zero out baroclinic pressure gradient and vertically integrated
@@ -2277,8 +2263,7 @@ c     coordinates) at each node in the vertical
                N2=NEITAB(NH,2)  !operate on 1st neighbor
 
 Casey: Changed "NolIFA" to "IFNLFA."
-C
-C..............DMW202401 Use saved H2
+
                SigmaNN=B+AMB*(Zk+DP(N2))/H2(N2) !equivalent sigma value at neighbor
                CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
 !!!!!!!!!         CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
@@ -2291,8 +2276,7 @@ C..............DMW202401 Use saved H2
                   N2=NeiTab(NH,N) !select new neighbor to work on
 
 Casey: Changed "NolIFA" to "IFNLFA."
-C
-C.................DMW202401 Use saved H2
+
                   SigmaNN=B+AMB*(Zk+DP(N2))/H2(N2) !equivalent sigma value at neighbor
 !!!!!!!!!            CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
                   CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
@@ -2974,7 +2958,7 @@ C**********************************************************************
          !Write(*,'(I5,11f6.3)') NNeigh ( I ), weights(1:NNeigh ( I ))
          !Pause
          ! 2.4. compute elevation corresponding to this node
-C........DMW202401 Use saved H2  !Total depth at current timestep - 'center' node
+         ! Total depth at current timestep - 'center' node
          ! arash: not sure if the next line is necessary, but probably not. we aren't using it in the bpg routine either.
          ! IF( Hs .LT. H0 ) Hs = H0
          HsOAMB = H2(I) / AMB
@@ -2986,7 +2970,6 @@ C........DMW202401 Use saved H2  !Total depth at current timestep - 'center' nod
              Do K = 1, NFEN
                 ! 3.0. obtain the z and sigma value corresponding to the 'center' node
                 Zk = HsOAMB * ( Sigma(K) - B ) - DP(I)
-C...............DMW202401 Use saved H2
                 SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / H2(Neighbor_Node)
                 ! 3.1. linearly interpolate surrounding BPG on the same horizontal plane
                 Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, interpolated_value, K )

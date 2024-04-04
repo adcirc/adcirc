@@ -311,7 +311,6 @@ Corbitt 120322: Localized Advection
          V1N1=VV1(NM1)
          V1N2=VV1(NM2)
          V1N3=VV1(NM3)
-C........DMW202401 Use saved H1 and H2
          H1N1=H1(NM1)
          H1N2=H1(NM2)
          H1N3=H1(NM3)
@@ -378,15 +377,15 @@ C...  Compute element averaged quantities
             EVMEle=EVMSmag
          ENDIF         
 
-C...  Compute terms associated with the barotropic pressure
-C- DMW 2022/06 Apply slope limiting for elevation gradient, if needed. The slope limiting factor ALPHAL is determined in the wetting/drying routine.         
+!...  Compute terms associated with the barotropic pressure
+!- DMW 2022/06 Apply slope limiting for elevation gradient, if needed. The slope limiting factor ALPHAL is determined in the wetting/drying routine.         
          BTP1N1=ALPHAL(IE)*ETA1(NM1)
          BTP2N1=ALPHAL(IE)*ETA2(NM1)
          BTP1N2=ALPHAL(IE)*ETA1(NM2)
          BTP2N2=ALPHAL(IE)*ETA2(NM2)
          BTP1N3=ALPHAL(IE)*ETA1(NM3)
          BTP2N3=ALPHAL(IE)*ETA2(NM3)
-C- DMW
+
 C.....If using atm pressure add it into the barotropic pressure
 C....... DW
          IF (NWS.NE.0) THEN
@@ -754,18 +753,16 @@ C      DispY=0.D0
                MOM_LV_Y(I)=MOM_LV_Y(I)/MJU(I)
             ENDIF
          ENDIF
-C........DMW202401 Use saved H1 and H2
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
             WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
             WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
             
-C.....      DMW 202207 tail off wind forcing in very shallow water
+!.....      DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
                CALL windLimiter(H2(I),fwind)
                WSX = fwind*WSX
                WSY = fwind*WSY
             ENDIF
-C.....      DMW
 
          ENDIF
 
@@ -847,8 +844,6 @@ C...  AUV12=-AUV21)
          NCI=NODECODE(NBDI)
 
 C      Specified essential normal flow and free tangential slip
-C........DMW202401 Use saved H2
-
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
             VelNorm=-QN2(I)/H2(NBDI)
             IF (abs(adcirc_norm2(TKM(:,NBDI))-sqrt(2d0)*TK(NBDI))
@@ -881,7 +876,6 @@ C........DMW202401 Use saved H2
 C     Specified essential normal flow and no tangential slip
 
          IF (LBCODEI(I).GE.10.AND.LBCODEI(I).LE.19) THEN
-C...........DMW202401 Use saved H2
             VelNorm=-QN2(I)/H2(NBDI)
             VelTan=0.D0
             MOM_LV_X(NBDI)=VelTan*NCI !Tangential Eqn RHS
@@ -1213,7 +1207,6 @@ C...
 C...  Compute fluxes
 
       DO I=1,NP
-C........DMW202401 Use saved H2
          QX2(I) = UU2(I)*H2(I)
          QY2(I) = VV2(I)*H2(I)
       ENDDO
@@ -1387,7 +1380,6 @@ Corbitt 120322: Localized Advection
             ENDIF
          ELSE
             NCELE=NC1*NC2*NC3*NOFF(IE)
-C...........DMW202401 Use saved H1 and H2
             H1N1=H1(NM1)
             H1N2=H1(NM2)
             H1N3=H1(NM3)
@@ -1814,7 +1806,6 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
             
 C...........DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
-C..............DMW202401 Use saved H2
                CALL windLimiter(H2(I),fwind)
                WSX = fwind*WSX
                WSY = fwind*WSY
@@ -2036,7 +2027,6 @@ C...  Compute velocities
                VV2(I)=-999.
             ENDIF
          ELSE
-C...........DMW202401 Use saved H2
             IF(H2(I).NE.0.) THEN
                UU2(I)=QX2(I)/H2(I)
                VV2(I)=QY2(I)/H2(I)
@@ -2224,7 +2214,6 @@ Corbitt 120322: Localized Advection
          V2N1=VV2(NM1)
          V2N2=VV2(NM2)
          V2N3=VV2(NM3)
-C........DMW202401 Use saved H1 and H2
          H1N1=H1(NM1)
          H1N2=H1(NM2)
          H1N3=H1(NM3)
@@ -2611,12 +2600,11 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
                MOM_LV_Y(I)=MOM_LV_Y(I)/MJU(I)
             ENDIF
          ENDIF
-C........DMW202401 Use saved H1 and H2
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
             WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
             WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
             
-C...........DMW 202207 tail off wind forcing in very shallow water
+!...........DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
                CALL windLimiter(H2(I),fwind)
                WSX = fwind*WSX
@@ -2654,7 +2642,6 @@ C...  AUV12=-AUV21)
       DO J=1,NVELME
          I=ME2GW(J)
          NBDI=NBV(I)
-C........DMW202401 Use saved H2
          NCI=NODECODE(NBDI)
 
 C      Specified essential normal flow and free tangential slip
@@ -2800,7 +2787,6 @@ C...
 C...  Compute fluxes
 
       DO I=1,NP
-C........DMW202401 Use saved H2
          QX2(I)=UU2(I)*H2(I)
          QY2(I)=VV2(I)*H2(I)
          ENDDO

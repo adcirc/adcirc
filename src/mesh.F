@@ -1692,7 +1692,6 @@
 !          v49.48.02 tcm rewrote 2 x area to reuse values already being used
            AREAS(I)=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
   
-!           IF ( IFSPROTS.EQ.1 .and. AREAS(I).lt.0d0 ) THEN
            IF ( AREAS(I).lt.0d0 ) THEN
 !             reorder and start loop again
               NMM = NM(I,:)
