@@ -158,6 +158,9 @@
          !WJP 02.20.2018: added fort.53-54 harmonic outputs
          INTEGER :: const_id
          INTEGER :: constl_dim_id
+         LOGICAL :: hasWeirs
+         LOGICAL :: hasInternalWeirs
+         LOGICAL :: hasPipes
       END TYPE meshStructure
 
       type(meshStructure), private, save, target :: adcircMesh
@@ -4141,8 +4144,8 @@ C
       ALLOCATE(myMesh%pipediam(myMesh%nvelnc))
       ALLOCATE(myMesh%pipeht(myMesh%nvelnc))
       ALLOCATE(myMesh%nmnc(NE_G,myMesh%nface_len))
-C
-C     Store nodal coordinates
+ 
+!     Store nodal coordinates
       if (ics.eq.1) then
          myMesh%xnc = X
          myMesh%ync = Y
@@ -4162,12 +4165,11 @@ C     Store nodal coordinates
             ! WJP counting the linear index
             kj = kj + 1
             myMesh%nbdvnc(kj) = nbdv(k,j)
-            !myMesh%nbdvnc(k,j) = nbdv(k,j)
          END DO
       END DO
 !
 !     normal flow (discharge) specified boundary segments
-C
+!
       myMesh%nvellnc = 0
       myMesh%nbvvnc = 0
       myMesh%ibconnnc = 0
@@ -4181,6 +4183,20 @@ C
       DO k=1,myMesh%nbounc
          myMesh%nvellnc(k) = nvell(k)
          myMesh%ibtypenc(k) = ibtype(k)
+
+         ! Set the boundary type specific variables
+         select case(ibtype(k))
+         case(3,13,23)
+             myMesh%hasWeirs = .true.
+         case(4,14,24)
+             myMesh%hasWeirs = .true.
+             myMesh%hasInternalWeirs = .true.
+         case(5,25)
+             myMesh%hasWeirs = .true.
+             myMesh%hasInternalWeirs = .true.
+             myMesh%hasPipes = .true.
+         end select
+
          DO J=1,myMesh%nvellnc(k)
             kj = kj + 1
             myMesh%nbvvnc(kj) = nbvv(k,j)
@@ -9947,27 +9963,33 @@ C
          iret = nf90_def_var(ncid, 'nbvv',NF90_INT,
      &          myMesh%nbvvnc_dims(1), myMesh%nbvvnc_id)
          CALL check_err(iret)
-         iret = nf90_def_var(ncid, 'ibconn', NF90_INT, 
-     &          myMesh%nbvvnc_dims(1), myMesh%ibconn_id)
-         CALL check_err(iret)
-         iret = nf90_def_var(ncid, 'barht', NF90_DOUBLE,
-     &          myMesh%nbvvnc_dims(1), myMesh%barht_id)
-         CALL check_err(iret)
-         iret = nf90_def_var(ncid, 'barsp', NF90_DOUBLE,
-     &          myMesh%nbvvnc_dims(1), myMesh%barsp_id)
-         CALL check_err(iret)
-         iret = nf90_def_var(ncid, 'barsb', NF90_DOUBLE,
-     &          myMesh%nbvvnc_dims(1), myMesh%barsb_id)
-         CALL check_err(iret)
-         iret = nf90_def_var(ncid, 'pipeht', NF90_DOUBLE,
-     &          myMesh%nbvvnc_dims(1), myMesh%pipeht_id)
-         CALL check_err(iret)
-         iret = nf90_def_var(ncid, 'pipediam', NF90_DOUBLE,
-     &          myMesh%nbvvnc_dims(1), myMesh%pipediam_id)
-         CALL check_err(iret)
-         iret = nf90_def_var(ncid, 'pipecoef', NF90_DOUBLE,
-     &          myMesh%nbvvnc_dims(1), myMesh%pipecoef_id)
-         CALL check_err(iret)
+         if(mymesh%hasWeirs)then
+            iret = nf90_def_var(ncid, 'barsp', NF90_DOUBLE,
+     &             myMesh%nbvvnc_dims(1), myMesh%barsp_id)
+            CALL check_err(iret)
+            iret = nf90_def_var(ncid, 'barht', NF90_DOUBLE,
+     &             myMesh%nbvvnc_dims(1), myMesh%barht_id)
+            if(myMesh%hasInternalWeirs)then
+                CALL check_err(iret)
+                iret = nf90_def_var(ncid, 'ibconn', NF90_INT, 
+     &                 myMesh%nbvvnc_dims(1), myMesh%ibconn_id)
+                CALL check_err(iret)
+                iret = nf90_def_var(ncid, 'barsb', NF90_DOUBLE,
+     &                 myMesh%nbvvnc_dims(1), myMesh%barsb_id)
+                CALL check_err(iret)
+                if(myMesh%hasPipes)then
+                    iret = nf90_def_var(ncid, 'pipeht', NF90_DOUBLE,
+     &                 myMesh%nbvvnc_dims(1), myMesh%pipeht_id)
+                    CALL check_err(iret)
+                    iret = nf90_def_var(ncid, 'pipediam', NF90_DOUBLE,
+     &                     myMesh%nbvvnc_dims(1), myMesh%pipediam_id)
+                    CALL check_err(iret)
+                    iret = nf90_def_var(ncid, 'pipecoef', NF90_DOUBLE,
+     &                     myMesh%nbvvnc_dims(1), myMesh%pipecoef_id)
+                    CALL check_err(iret)
+                endif
+            endif
+         endif
 
          !jgf50.44: Turn on compression if this is a netcdf4 formatted file.
 #ifdef NETCDF_CAN_DEFLATE
@@ -9981,27 +10003,33 @@ C
             iret = nf90_def_var_deflate(ncid, myMesh%nbvvnc_id,
      &             1, 1, 2)
             CALL check_err(iret)
-            iret = nf90_def_var_deflate(ncid, myMesh%ibconn_id,
-     &             1, 1, 2)
-            CALL check_err(iret)
-            iret = nf90_def_var_deflate(ncid, myMesh%barht_id,
-     &             1, 1, 2)
-            CALL check_err(iret)
-            iret = nf90_def_var_deflate(ncid, myMesh%barsb_id,
-     &             1, 1, 2)
-            CALL check_err(iret)
-            iret = nf90_def_var_deflate(ncid, myMesh%barsp_id,
-     &             1, 1, 2)
-            CALL check_err(iret)
-            iret = nf90_def_var_deflate(ncid, myMesh%pipeht_id,
-     &             1, 1, 2)
-            CALL check_err(iret)
-            iret = nf90_def_var_deflate(ncid, myMesh%pipediam_id,
-     &             1, 1, 2)
-            CALL check_err(iret)
-            iret = nf90_def_var_deflate(ncid, myMesh%pipecoef_id,
-     &             1, 1, 2)
-            CALL check_err(iret)
+            if(myMesh%hasWeirs)then
+                iret = nf90_def_var_deflate(ncid, myMesh%barht_id,
+     &                 1, 1, 2)
+                CALL check_err(iret)
+                iret = nf90_def_var_deflate(ncid, myMesh%barsb_id,
+     &                 1, 1, 2)
+                CALL check_err(iret)
+                if(myMesh%hasInternalWeirs)then
+                    iret = nf90_def_var_deflate(ncid, myMesh%ibconn_id,
+     &                     1, 1, 2)
+                    CALL check_err(iret)
+                    iret = nf90_def_var_deflate(ncid, myMesh%barsp_id,
+     &                     1, 1, 2)
+                    CALL check_err(iret)
+                    if(myMesh%hasPipes)then
+                        iret = nf90_def_var_deflate(ncid, myMesh%pipeht_id,
+     &                         1, 1, 2)
+                        CALL check_err(iret)
+                        iret = nf90_def_var_deflate(ncid, myMesh%pipediam_id,
+     &                         1, 1, 2)
+                        CALL check_err(iret)
+                        iret = nf90_def_var_deflate(ncid, myMesh%pipecoef_id,
+     &                         1, 1, 2)
+                        CALL check_err(iret)
+                    endif
+                endif
+            endif
          ENDIF
 #endif
       endif
@@ -10122,62 +10150,68 @@ C        NBDV
          iret = nf90_put_att(ncid, myMesh%nbvvnc_id, 'units',
      &                      'nondimensional')
          CALL check_err(iret)
-!        IBCONN
-         att_text = "internal barrier nodal connections"
-         iret = nf90_put_att(ncid, myMesh%ibconn_id, 'long_name',
-     &          trim(att_text))
-         call check_err(iret)
-         iret = nf90_put_att(ncid, mymesh%ibconn_id, 'units',
-     &                      'nondimensional')
-         call check_err(iret)
-!        BARHT
-         att_text = 
-     &      "external/internal barrier boundary height above geoid"
-         iret = nf90_put_att(ncid, myMesh%barht_id, 'long_name',
-     &          trim(att_text))
-         iret = nf90_put_att(ncid, myMesh%barht_id, 'units', 'm')
-         call check_err(iret)
-!        BARSP
-         att_text = "external/internal barrier boundary"//
-     &              " weir coefficient of supercritical flow"
-         iret = nf90_put_att(ncid, myMesh%barsp_id, "long_name",
-     &          trim(att_text))
-         call check_err(iret)
-         iret = nf90_put_att(ncid, mymesh%barsp_id, 'units',
-     &                      'nondimensional')
-         call check_err(iret)
-!        BARSB
-         att_text = "internal barrier boundary"//
-     &              " weir coefficient of subcritical flow"
-         iret = nf90_put_att(ncid, myMesh%barsb_id, "long_name",
-     &          trim(att_text))
-         call check_err(iret)
-         iret = nf90_put_att(ncid, mymesh%barsb_id, 'units',
-     &                      'nondimensional')
-         call check_err(iret)
-!        PIPEHT
-         att_text = 
-     &      "internal barrier boundary cross-barrier pipe height"
-         iret = nf90_put_att(ncid, myMesh%pipeht_id, "long_name",
-     &      trim(att_text))
-         iret = nf90_put_att(ncid, myMesh%pipeht_id, 'units', 'm')
-         call check_err(iret)
-!        PIPEDIAM
-         att_text = 
-     &      "internal barrier boundary cross-barrier pipe diameter"
-         iret = nf90_put_att(ncid, myMesh%pipediam_id, "long_name",
-     &      trim(att_text))
-         iret = nf90_put_att(ncid, myMesh%pipediam_id, 'units', 'm')
-         call check_err(iret)
-!        PIPECOEF
-         att_text = 
-     &      "internal barrier boundary cross-barrier pipe coefficient"
-         iret = nf90_put_att(ncid, myMesh%pipecoef_id, "long_name",
-     &      trim(att_text))
-         iret = nf90_put_att(ncid, mymesh%pipecoef_id, 'units',
-     &                      'nondimensional')
-         call check_err(iret)
-      endif
+         if(myMesh%hasWeirs)then
+!           BARHT
+            att_text = 
+     &         "external/internal barrier boundary height above geoid"
+            iret = nf90_put_att(ncid, myMesh%barht_id, 'long_name',
+     &             trim(att_text))
+            iret = nf90_put_att(ncid, myMesh%barht_id, 'units', 'm')
+            call check_err(iret)
+!           BARSP
+            att_text = "external/internal barrier boundary"//
+     &                 " weir coefficient of supercritical flow"
+            iret = nf90_put_att(ncid, myMesh%barsp_id, "long_name",
+     &             trim(att_text))
+            call check_err(iret)
+            iret = nf90_put_att(ncid, mymesh%barsp_id, 'units',
+     &                         'nondimensional')
+            call check_err(iret)
+            if(myMesh%hasInternalWeirs)then
+!               IBCONN
+                att_text = "internal barrier nodal connections"
+                iret = nf90_put_att(ncid, myMesh%ibconn_id, 'long_name',
+     &                 trim(att_text))
+                call check_err(iret)
+                iret = nf90_put_att(ncid, mymesh%ibconn_id, 'units',
+     &                             'nondimensional')
+                call check_err(iret)
+!               BARSB
+                att_text = "internal barrier boundary"//
+     &                     " weir coefficient of subcritical flow"
+                iret = nf90_put_att(ncid, myMesh%barsb_id, "long_name",
+     &                 trim(att_text))
+                call check_err(iret)
+                iret = nf90_put_att(ncid, mymesh%barsb_id, 'units',
+     &                             'nondimensional')
+                call check_err(iret)
+                if(myMesh%hasPipes)then
+!                   PIPEHT
+                    att_text = 
+     &                 "internal barrier boundary cross-barrier pipe height"
+                    iret = nf90_put_att(ncid, myMesh%pipeht_id, "long_name",
+     &                 trim(att_text))
+                    iret = nf90_put_att(ncid, myMesh%pipeht_id, 'units', 'm')
+                    call check_err(iret)
+!                   PIPEDIAM
+                    att_text = 
+     &                 "internal barrier boundary cross-barrier pipe diameter"
+                    iret = nf90_put_att(ncid, myMesh%pipediam_id, "long_name",
+     &                 trim(att_text))
+                    iret = nf90_put_att(ncid, myMesh%pipediam_id, 'units', 'm')
+                    call check_err(iret)
+!                   PIPECOEF
+                    att_text = 
+     &                 "internal barrier boundary cross-barrier pipe coefficient"
+                    iret = nf90_put_att(ncid, myMesh%pipecoef_id, "long_name",
+     &                 trim(att_text))
+                    iret = nf90_put_att(ncid, mymesh%pipecoef_id, 'units',
+     &                                 'nondimensional')
+                    call check_err(iret)
+                endif
+              endif
+            endif
+         endif
 !Corbitt: Define ADCIRC-Mesh Attributes
          iret = nf90_put_att(ncid, myMesh%mesh_id, 'long_name',
      &                      'mesh_topology')
@@ -10349,20 +10383,26 @@ C
          CALL check_err(iret)
          iret = nf90_put_var(ncid, myMesh%nbvvnc_id, myMesh%nbvvnc)
          CALL check_err(iret)
-         iret = nf90_put_var(ncid, myMesh%ibconn_id, myMesh%ibconnnc)
-         CALL check_err(iret)
-         iret = nf90_put_var(ncid, myMesh%barht_id, myMesh%barht)
-         CALL check_err(iret)
-         iret = nf90_put_var(ncid, myMesh%barsb_id, myMesh%barsb)
-         CALL check_err(iret)
-         iret = nf90_put_var(ncid, myMesh%barsp_id, myMesh%barsp)
-         CALL check_err(iret)
-         iret = nf90_put_var(ncid, myMesh%pipeht_id, myMesh%pipeht)
-         CALL check_err(iret)
-         iret = nf90_put_var(ncid, myMesh%pipediam_id, myMesh%pipediam)
-         CALL check_err(iret)
-         iret = nf90_put_var(ncid, myMesh%pipecoef_id, myMesh%pipecoef)
-         CALL check_err(iret)
+         if(myMesh%hasWeirs)then
+            iret = nf90_put_var(ncid, myMesh%barht_id, myMesh%barht)
+            CALL check_err(iret)
+            iret = nf90_put_var(ncid, myMesh%barsp_id, myMesh%barsp)
+            CALL check_err(iret)
+            if(myMesh%hasInternalWeirs)then
+                iret = nf90_put_var(ncid, myMesh%ibconn_id, myMesh%ibconnnc)
+                CALL check_err(iret)
+                iret = nf90_put_var(ncid, myMesh%barsb_id, myMesh%barsb)
+                CALL check_err(iret)
+                if(myMesh%hasPipes)then
+                    iret = nf90_put_var(ncid, myMesh%pipeht_id, myMesh%pipeht)
+                    CALL check_err(iret)
+                    iret = nf90_put_var(ncid, myMesh%pipediam_id, myMesh%pipediam)
+                    CALL check_err(iret)
+                    iret = nf90_put_var(ncid, myMesh%pipecoef_id, myMesh%pipecoef)
+                    CALL check_err(iret)
+                endif
+            endif
+         endif
       endif
 
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -10888,8 +10928,8 @@ C-----------------------------------------------------------------------
       USE GWCE, ONLY : a00, b00, c00
       USE NodalAttributes, ONLY : nolibf, nwp, tau0, cf, eslm
       IMPLICIT NONE
-C
-C     Declare the argument variables coming in from adcprep.
+
+!     Declare the argument variables coming in from adcprep.
       CHARACTER(80), intent(in) :: base_date_p
       INTEGER, intent(in) :: NE_G_p
       INTEGER, intent(in) :: NBOU_p
@@ -10980,7 +11020,7 @@ C     Declare the argument variables coming in from adcprep.
       INTEGER, intent(in) :: neta_p
       INTEGER, intent(in) :: nabout_p
       INTEGER, intent(in) :: nscreen_p
-C
+
       INTEGER, intent(in) :: nfen_p
       INTEGER, intent(in) :: iden_p
       INTEGER, intent(in) :: islip_p
@@ -11002,12 +11042,12 @@ C
       REAL(8), intent(in) :: nvtd_p
       REAL(8), intent(in) :: alp4_p
       LOGICAL, intent(in) :: C3D_p
-C
+
       call setMessageSource("setADCIRCParameters")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-C
+
       base_date = base_date_p
       NE_G = NE_G_p
       NBOU = NBOU_p
@@ -11108,7 +11148,7 @@ C
       neta = neta_p
       nabout = nabout_p
       nscreen = nscreen_p
-C
+
       nfen = nfen_p
       iden = iden_p
       islip = islip_p
@@ -11130,7 +11170,7 @@ C
       nvtd = nvtd_p
       alp4 = alp4_p
       C3D = C3D_p
-C
+
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif

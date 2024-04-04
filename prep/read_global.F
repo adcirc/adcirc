@@ -54,7 +54,9 @@ C---------------------------------------------------------------------
      &   exist_flux, iden, mnbou, mnvel, nbou, nboumsg, nelg, neta, 
      &   netamsg, nfover, nnodg, nope, nopemsg, nvel, nvelmsg, nweir, 
      &   river_above_msl, numLBCodeValues, nfluxf, node_dict, labels,
-     &   NPERBC, IPERCONN, IPERPTR 
+     &   NPERBC, IPERCONN, IPERPTR
+      use presizes, only: meshHasWeirWithPipes, meshHasExternalWeir, 
+     &   meshHasInternalWeir
       use hashtable
       use memory_usage
       use boundaries, only: ibconnr_bc => ibconnr, barinhtr, barlanhtr,
@@ -298,15 +300,21 @@ C..... DW
 
       ! Save off the boundary data into the arrays used for 
       ! writing into the netCDF files
-      ibconnr_bc  = ibconnr
-      barlanhtr   = bar1
-      barinhtr    = bar1
-      barlancfspr = bar2
-      barincfsbr  = bar2
-      barincfspr  = bar3
-      pipehtr     = bar4
-      pipecoefr   = bar5
-      pipediamr   = bar6
+      if(meshHasExternalWeir)then
+        barlanhtr   = bar1
+      endif
+      if(meshHasInternalWeir)then
+        ibconnr_bc  = ibconnr
+        barinhtr    = bar1
+        barlancfspr = bar2
+        barincfsbr  = bar2
+        barincfspr  = bar3
+        if(meshHasWeirWithPipes)then
+          pipehtr     = bar4
+          pipecoefr   = bar5
+          pipediamr   = bar6
+        endif
+      endif
 
 C     jgf45.06 added the following section
 C MEB --------------------------------------------------
