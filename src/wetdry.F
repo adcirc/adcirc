@@ -387,8 +387,7 @@ C<<                     Convert Manning's N to Cd, if necessary.
                             FRIC(NM123) = BFCdLLimit
                           ENDIF
                         ENDIF
-C>>
-C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
+!-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
                         IF (directvelWD.AND.useHF) THEN
                            VEL=sqrt(g*H1*DELETA/DELDIST)
                         ELSEIF (directvelWD) THEN
@@ -526,8 +525,8 @@ C<<                     Convert Manning's N to Cd, if necessary.
                             FRIC(NM123) = BFCdLLimit
                           ENDIF
                         ENDIF
-C>>
-C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207                  
+
+!-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207                  
                         IF (directvelWD.AND.useHF) THEN
                            VEL=sqrt(g*H1*DELETA/DELDIST)
                         ELSEIF (directvelWD) THEN
@@ -665,8 +664,8 @@ C<<                     Convert Manning's N to Cd, if necessary.
                             FRIC(NM123) = BFCdLLimit
                           ENDIF
                         ENDIF
-C>>
-C-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207                  
+
+!-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207                  
                         IF (directvelWD.AND.useHF) THEN
                            VEL=sqrt(g*H1*DELETA/DELDIST)
                         ELSEIF (directvelWD) THEN
@@ -780,7 +779,7 @@ CWET...
 C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,NIBCNT,2)
-C-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well 
+!-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well 
          CALL UPDATER(FRIC,TK,ETA2,3)
          tmp1 = TKM(1,:)
          tmp2 = TKM(2,:)
@@ -789,7 +788,6 @@ C-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well
          TKM(1,:) = tmp1
          TKM(2,:) = tmp2
          TKM(3,:) = tmp3 
-C-- DMW
 #endif
 
 
@@ -1382,7 +1380,7 @@ CWET...
              ENDDO
          ENDIF
          
-C.....   DMW 202207 Compute a slope limiting factor if needed
+!.....   DMW 202207 Compute a slope limiting factor if needed
          call computeAlpha()
          
 #ifdef CMPI
@@ -1490,9 +1488,9 @@ c.....
       end subroutine applySubgridBarrier
 !-----------------------------------------------------------------------
 
-C..... DMW 202207 Compute a slope limiting factor for scaling down the 
-C..... elevation gradient if the slope of the water surface aligned with the 
-C..... bathy slope becomes too large, i.e., when it exceeds slim.
+!..... DMW 202207 Compute a slope limiting factor for scaling down the 
+!..... elevation gradient if the slope of the water surface aligned with the 
+!..... bathy slope becomes too large, i.e., when it exceeds slim.
 !-----------------------------------------------------------------------
       subroutine computeAlpha()
 !-----------------------------------------------------------------------
@@ -1573,7 +1571,6 @@ C..... bathy slope becomes too large, i.e., when it exceeds slim.
                   
             ENDIF 
          ENDDO
-C- DMW
 
 !-----------------------------------------------------------------------
       end subroutine computeAlpha
