@@ -2018,14 +2018,9 @@ C...  Compute velocities
       DO I=1,NP
          IF(level0)THEN
             H2s = gridDepthVertETA2(I)
-            IF(subgridVertList(I).EQ.1)THEN
-               IF(H2s.GT.0.d0)THEN
-                  UU2(I)=QX2(I)/H2s
-                  VV2(I)=QY2(I)/H2s
-               ENDIF
-            ELSE IF(H2s.NE.0.) THEN
-               UU2(I)=QX2(I)/H2s
-               VV2(I)=QY2(I)/H2s
+            IF(H2s.NE.0D0)THEN
+              UU2(I)=QX2(I)/H2s
+              VV2(I)=QY2(I)/H2s
             ELSE
                WRITE(16,*) ''
                WRITE(16,*) ''
