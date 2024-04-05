@@ -14,13 +14,19 @@
 version: 2.1
 
 #...CodeCov Orb
-orbs:
-  codecov: codecov/codecov@1.0.5
+#orbs:
+#  codecov: codecov/codecov@1.0.5
 
 #...Aliases used to shorthand this job script
 default_env: &default_env
     docker:
       - image: zcobell/adcirc-ci-container:latest
+    environment:
+      BASH_ENV: /etc/environment
+
+default_env_gcc: &default_env_gcc
+    docker:
+      - image: zcobell/adcirc-ci-container:latest-gcc
     environment:
       BASH_ENV: /etc/environment
 
@@ -102,6 +108,22 @@ jobs:
             paths:
                 - /root/project
                 - /root/adcirc-cg-testsuite
+
+  build_cmake_without_netcdf_gcc:
+      <<: *default_env_gcc
+      steps:
+        - checkout
+        - run:
+            name: Build ADCIRC without external libraries using CMake
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON; make -j4
+
+  build_cmake_with_netcdf_gcc:
+      <<: *default_env_gcc
+      steps:
+        - checkout
+        - run:
+            name: Build ADCIRC without external libraries using CMake
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON -DNETCDF_F90_INCLUDE_DIR=/usr/lib64/gfortran/modules -DENABLE_OUTPUT_NETCDF=ON; make -j4
 
   build_cmake_without_netcdf:
       <<: *default_env
@@ -238,6 +260,8 @@ workflows:
       - build_legacy_without_netcdf
       - build_legacy_with_netcdf
       - build_legacy_with_netcdf_and_xdmf
+      - build_cmake_without_netcdf_gcc
+      - build_cmake_with_netcdf_gcc
       - build_base
       - build_cmake_with_netcdf_and_xdmf:
             requires:
