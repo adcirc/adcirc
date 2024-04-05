@@ -189,13 +189,13 @@ jobs:
             name: Store log artifacts
             command: |
               mkdir -p /tmp/artifacts
-              find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
             when: always
         - run:
             name: Store graphics artifacts
             command: |
               mkdir -p /tmp/artifacts
-              find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
             when: always
         - store_artifacts: 
             path: /tmp/artifacts
