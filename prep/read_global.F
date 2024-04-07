@@ -545,6 +545,9 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 Casey 180318: Added NWS=13
       INTEGER :: IOS_OWINC
 #endif
+      ! DW
+      INTEGER :: IOS_NWS14Grib2NC
+
 C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
       INTEGER :: IOS_STATIONS
@@ -685,6 +688,20 @@ Casey 180318: Added NWS=13
      &         'The owiWindNetcdf namelist was not found.')
       ENDIF
       REWIND(15)
+#endif
+
+#ifdef DATETIME
+      READ(UNIT=15,NML=WindGrib2NetCdf,IOSTAT=IOS_NWS14Grib2NC)
+      IF(IOS_NWS14Grib2NC .EQ. 0)THEN
+         found_NWS14Grib2NetCdf_Namelist= .TRUE.
+         call logMessage(INFO,
+     &         'The WindGrid2NetCdf namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The WindGrib2NetCdf namelist was not found.')
+      ENDIF
+      REWIND(15)
+
 #endif
 
       READ(UNIT = 15, NML = wetDryControl,IOSTAT = ios_wetDry)

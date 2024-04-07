@@ -124,7 +124,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &    SWAN_OutputTMM10
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
-     &                  initWindModule
+     &                  initWindModule, 
+     &                  read_NWS14_using_core_0
       USE OWIWIND, ONLY: nPowellSearchDomains
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13

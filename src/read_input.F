@@ -125,7 +125,8 @@ C-----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionRampEnd,
      &   dynamicWaterLevelCorrectionSkipSnaps,
      &   dynamicWaterLevelCorrectionRampReferenceTime,
-     &   dynamicWaterLevelCorrectionMultiplier
+     &   dynamicWaterLevelCorrectionMultiplier,
+     &   read_NWS14_using_core_0
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
@@ -226,6 +227,8 @@ C.... DMW
 #endif
 !JLW: adding subgrid namelist
       NAMELIST /subgridControl/ subgridFilename, level0, level1
+
+      NAMELIST /WindGrib2NetCdf/ read_NWS14_using_core_0
 
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -448,6 +451,18 @@ Casey 180318: Added NWS=13
      & " NWS13ColdStartString=",trim(adjustl(NWS13ColdStartString)),
      & " NWS13WindMultiplier=",trim(adjustl(NWS13WindMultiplier)),
      & " NWS13GroupForPowell=",trim(adjustl(NWS13GroupForPowell))
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+#endif
+
+
+#ifdef DATETIME
+      namelistSpecifier = 'WindGrib2NetCdf' 
+      read( unit = 15, nml=WindGrib2NetCdf,iostat=ios ) ;
+      call logNamelistReadStatus(namelistSpecifier, ios)
+      write(scratchMessage,*) "NWS 14: use core 0"//
+     &   "to read grib2/netcdf data = ",
+     &   read_NWS14_using_core_0 
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 #endif
