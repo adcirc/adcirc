@@ -102,7 +102,12 @@ C
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
      &    getdynamicWaterLevelCorrections, 
+<<<<<<< HEAD
      &    CLOSE_MET_FILES 
+=======
+     &    CLOSE_MET_FILES, 
+     &    collect_wind_io_wall_time
+>>>>>>> 90255c5 (Progress in adding timers recording wall clock time spents in met forcing, gwce, 2D memomentum,)
 
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
@@ -213,6 +218,11 @@ C.......
       LOGICAL ISFRONT
       LOGICAL foundNaN
       
+      REAL (8), save:: gwce_time = 0.D0, mom2D_time = 0.D0 
+      REAL (8):: gwce_start_time = 0.D0, gwce_end_time = 0.D0 
+      REAL (8):: mom_start_time = 0.D0, mom_end_time = 0.D0
+
+
       IF (IT .EQ. 1) THEN
 !.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
         DO I = 1,NP
@@ -1096,12 +1106,25 @@ C...
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
 
+#ifdef WTIMER
+#ifdef CMPI
+      gwce_start_time = MPI_Wtime() 
+#endif
+#endif
+
 !----------------------SOLVE GWCE---------------------------------------
 C...
 C...  Compute new water surface elevation 
       call solveGWCE(it, ITIME_BGN, timeloc, timeh)
 
 !---------------------END SOLVE GWCE------------------------------------
+#ifdef WTIMER      
+#ifdef CMPI
+      gwce_end_time = MPI_Wtime()  
+#endif      
+      gwce_time = gwce_time + ( gwce_end_time - gwce_start_time)  
+#endif
+
 
 !JLW: adding subgrid
       IF(level0)THEN
@@ -1129,12 +1152,23 @@ C...  Compute new water surface elevation
          H2(I) = DP(I)+IFNLFA*ETA2(I)
       ENDDO
 C...
+#ifdef WTIMER
+#ifdef CMPI
+      mom_start_time = MPI_Wtime() ; 
+#endif      
+#endif      
 C---------------2DDI Momentum Equation Solution-------------------------
 C...
       call solveMomentumEq()
 C...
 C-------------END OF 2DDI MOMENTUM EQUATION SOLUTION--------------------
 C...
+#ifdef WTIMER
+#ifdef CMPI
+      mom_end_time = MPI_Wtime() ; 
+#endif
+      mom2D_time = mom2D_time + (mom_end_time - mom_start_time)      
+#endif
 
 C.....DW - ABS SPONGE LAYER     
       IF ( C2DDI .AND. LoadAbsLayerSigma .AND. (sponge_dis_mthd == 0) ) THEN
@@ -1522,6 +1556,13 @@ C         CALL MASSBAL3D(IT)
 C      ENDIF
 
       IF ( IT == NT ) THEN
+#ifdef WTIMER              
+        ! collect and record nws io_time !      
+        CALL collect_wind_io_wall_time( ) 
+      
+        ! sovler time
+        CALL collect_solver_wall_time()
+#endif
         ! close NWS14 NetCdf files !
         CALL CLOSE_MET_FILES() ; 
       END IF        
@@ -1533,6 +1574,73 @@ C      ENDIF
       RETURN
 
 C******************************************************************************
+      CONTAINS
+
+#ifdef WTIMER
+         SUBROUTINE collect_solver_wall_time()
+            USE SIZES, ONLY: MYPROC, MNPROC
+   
+            IMPLICIT NONE
+   
+            REAL (8):: gwce_max_rank, gwce_min_rank
+            REAL (8):: gwce_max_wall_time, gwce_min_wall_time, gwce_sum_wall_time
+   
+            REAL (8):: mom2D_max_rank, mom2D_min_rank
+            REAL (8):: mom2D_max_wall_time, mom2D_min_wall_time, mom2D_sum_wall_time
+   
+#ifdef CMPI
+            gwce_max_rank = DBLE(MYPROC)
+            gwce_min_rank = DBLE(MYPROC) 
+   
+            mom2D_max_rank = DBLE(MYPROC)
+            mom2D_min_rank = DBLE(MYPROC) 
+ 
+            ! GWCE
+            CALL MSG_RScalar_Reduce( 'MAX', gwce_time, 
+     &        gwce_max_wall_time, gwce_max_rank )
+   
+            CALL MSG_RScalar_Reduce( 'MIN', gwce_time, 
+     &        gwce_min_wall_time, gwce_min_rank )
+   
+            CALL MSG_RScalar_Reduce( 'SUM', gwce_time,
+     &        gwce_sum_wall_time ) ;
+   
+
+            ! 2D Mometum
+            CALL MSG_RScalar_Reduce( 'MAX', mom2D_time, 
+     &        mom2D_max_wall_time, mom2D_max_rank )
+   
+            CALL MSG_RScalar_Reduce( 'MIN', mom2D_time, 
+     &        mom2D_min_wall_time, mom2D_min_rank )
+   
+            CALL MSG_RScalar_Reduce( 'SUM', mom2D_time,
+     &        mom2D_sum_wall_time ) ;
+   
+   
+            IF ( MYPROC == 0 ) THEN
+             OPEN( UNIT = 820, FILE = 'solvers_wtime_report.out', 
+     &          ACTION="write") ;
+   
+             WRITE( 820, '(A)' ) '% Time (in second) spent in gwce and '//
+     &            ' 2D momentum sovlers.'
+             WRITE( 820, '(A)') ' max_time, max_rank, min_time,'// 
+     &                ' min_rank, average_time'
+             WRITE( 820, '(A)') '%% gwce: '  
+             WRITE( 820, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
+     &       gwce_max_wall_time, INT(gwce_max_rank), gwce_min_wall_time,
+     &       INT(gwce_min_rank), gwce_sum_wall_time/DBLE(MNPROC) 
+             WRITE( 820, '(A)') '%% 2D momentum' 
+             WRITE( 820, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
+     &       mom2D_max_wall_time, INT(mom2D_max_rank), mom2D_min_wall_time,
+     &       INT(mom2D_min_rank), mom2D_sum_wall_time/DBLE(MNPROC)
+   
+             CLOSE(820) ;
+            END IF     
+   
+#endif
+         END SUBROUTINE collect_solver_wall_time
+#endif   
+
       END SUBROUTINE TIMESTEP
 C******************************************************************************
 

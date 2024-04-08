@@ -94,12 +94,21 @@ C******************************************************************************
       MODULE ADCIRC_Mod
 C******************************************************************************
 C******************************************************************************
+#ifdef CMPI
+      USE mpi
+#endif
 
       IMPLICIT NONE
       PUBLIC
 
       INTEGER, SAVE :: ITIME_BGN, ITIME_END
 
+      REAL (8), private:: init_wtime = 0.D0, run_wtime = 0.D0, 
+     &   final_wtime = 0.D0, total_wtime = 0.D0
+      REAL (8), private:: start_total_wtime = 0.D0, 
+     &   end_total_wtime = 0.D0
+
+      PRIVATE::  collect_run_wall_time
 
       CONTAINS
 
@@ -153,6 +162,10 @@ C
       INTEGER :: argcount ! number of command line arguments
       CHARACTER(2048) :: cmdlinearg ! a single command line argument
       INTEGER :: i        ! command line argument counter
+
+      !
+      REAL (8):: start_time = 0.D0, end_time = 0.D0
+
       !
       ! jgf51.52.07: Added command line option to just write out
       ! the ADCIRC version number and exit. This is to allow 
@@ -234,6 +247,13 @@ C
          WRITE(ScreenUnit,'(a)')"ADCIRC Commit hash is "//ADC_HASH
       ENDIF
 
+#ifdef WTIMER
+#ifdef CMPI
+      start_time = MPI_Wtime()
+      start_total_wtime = MPI_Wtime() 
+#endif
+#endif
+      
       !jgf49.44: Allocate memory for reading and writing full domain arrays
       IF ( (MNPROC.gt.1).and.
      &        ( (myProc.eq.0)
@@ -392,6 +412,14 @@ Corbitt 1203022: Local Advection Flags
 C
  1999 format(1X, a," ADCIRC Version: ",a)
 C
+
+#ifdef WTIMER      
+#ifdef CMPI
+      end_time = MPI_Wtime()
+#endif
+      init_wtime = init_wtime + (end_time - start_time)  
+#endif
+
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -424,10 +452,20 @@ C
       INTEGER, OPTIONAL :: NTIME_STP
       REAL(8) :: TimeLoc
 C
+ 
+      REAL(8):: start_time, end_time
+
       call setMessageSource("ADCIRC_Run")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
+
+#ifdef WTIMER      
+#ifdef CMPI
+      start_time = MPI_Wtime() ; 
+#endif      
+#endif
+
 !TCM v49.52.01 added this ifdef (brought in from adcirc_init()
 #ifdef CMPI
       if (((mnwproh > 0).or.(mnwproc > 0)) .and. myproc >= mnproc) then
@@ -486,6 +524,13 @@ C
       IF (MYPROC == 0 .and. MNWPROH > 0) CALL HSWRITER_PAUSE()
 #endif
 
+#ifdef WTIMER
+#ifdef CMPI
+      end_time = MPI_Wtime() ; 
+#endif 
+      run_wtime = run_wtime + (end_time - start_time) 
+#endif
+
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -506,16 +551,27 @@ C******************************************************************************
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
+      USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
+
       IMPLICIT NONE
 C
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 C
       INTEGER :: I
+
+      REAL (8):: start_time, end_time
 C
       call setMessageSource("ADCIRC_Final")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
+
+#ifdef WTIMER
+#ifdef CMPI
+      start_time = MPI_Wtime() ; 
+#endif 
+#endif
+
 C
 C...
 C...*************** SOLVE THE HARMONIC ANALYSIS PROBLEM ****************
@@ -523,6 +579,21 @@ C...
       CALL solveHarmonicAnalysis(ITIME)
       CALL writeHarmonicAnalysisOutput(ITIME)
 C
+#ifdef WTIMER      
+#ifdef CMPI
+      end_time = MPI_Wtime() ; 
+      end_total_wtime = MPI_Wtime()
+#endif     
+      final_wtime = final_wtime + (end_time - start_time) 
+      total_wtime = total_Wtime + 
+     &              (end_total_wtime - start_total_wtime) 
+
+      if ( myproc < mnproc) then
+        !
+        CALL collect_run_wall_time()
+      end if  
+#endif
+
 #ifdef CMPI
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
         CALL MSG_FINI(NO_MPI_FINALIZE)
@@ -634,6 +705,125 @@ C-----------------------------------------------------------------------
 
 C******************************************************************************
 C******************************************************************************
+
+C......................................................................
+      SUBROUTINE collect_run_wall_time( )
+         USE SIZES, ONLY: MYPROC, MNPROC
+
+#ifdef CMPI         
+         USE MESSENGER, ONLY : MSG_RScalar_Reduce
+#endif
+
+         IMPLICIT NONE
+
+#ifdef WTIMER         
+         REAL (8):: init_max_rank, init_min_rank
+         REAL (8):: init_max_wall_time, init_min_wall_time, init_sum_wall_time
+
+         REAL (8):: run_max_rank, run_min_rank
+         REAL (8):: run_max_wall_time, run_min_wall_time, run_sum_wall_time
+
+         REAL (8):: final_max_rank, final_min_rank
+         REAL (8):: final_max_wall_time, final_min_wall_time, final_sum_wall_time
+
+         REAL (8):: total_max_rank, total_min_rank
+         REAL (8):: total_max_wall_time, total_min_wall_time, total_sum_wall_time
+
+#ifdef CMPI
+         init_max_rank = DBLE(MYPROC)
+         init_min_rank = DBLE(MYPROC) 
+         
+         run_max_rank = DBLE(MYPROC)
+         run_min_rank = DBLE(MYPROC)
+
+         final_max_rank = DBLE(MYPROC)
+         final_min_rank = DBLE(MYPROC)
+
+         total_max_rank = DBLE(MYPROC)
+         total_min_rank = DBLE(MYPROC)
+
+         ! init
+         CALL MSG_RScalar_Reduce( 'MAX', init_wtime, 
+     &        init_max_wall_time, init_max_rank )
+
+         CALL MSG_RScalar_Reduce( 'MIN', init_wtime, 
+     &        init_min_wall_time, init_min_rank )
+
+         CALL MSG_RScalar_Reduce( 'SUM', init_wtime,
+     &        init_sum_wall_time ) ;
+
+         ! run 
+         CALL MSG_RScalar_Reduce( 'MAX', run_wtime, 
+     &        run_max_wall_time, run_max_rank )
+
+         CALL MSG_RScalar_Reduce( 'MIN', run_wtime, 
+     &        run_min_wall_time, run_min_rank )
+
+         CALL MSG_RScalar_Reduce( 'SUM', run_wtime,
+     &        run_sum_wall_time ) ;
+
+         ! finalize
+         CALL MSG_RScalar_Reduce( 'MAX', final_wtime, 
+     &        final_max_wall_time, final_max_rank )
+
+         CALL MSG_RScalar_Reduce( 'MIN', final_wtime, 
+     &        final_min_wall_time, final_min_rank )
+
+         CALL MSG_RScalar_Reduce( 'SUM', final_wtime,
+     &        final_sum_wall_time ) ;
+
+
+         ! Total
+         CALL MSG_RScalar_Reduce( 'MAX', total_wtime, 
+     &        total_max_wall_time, total_max_rank )
+
+         CALL MSG_RScalar_Reduce( 'MIN', total_wtime, 
+     &        total_min_wall_time, total_min_rank )
+
+         CALL MSG_RScalar_Reduce( 'SUM', total_wtime,
+     &        total_sum_wall_time ) ;
+
+
+         IF ( MYPROC == 0 ) THEN
+          OPEN( UNIT = 830, FILE = 'runtime_report.out', 
+     &          ACTION="write") ;
+
+          !
+          WRITE( 830, '(A)' ) '% Time (in second) spent in the driver'//
+     &            ' subroutines.'
+          WRITE( 830, '(A)') ' max_time, max_rank, min_time,'// 
+     &                ' min_rank, average_time'
+
+          WRITE( 830, '(A)') '%% ADCIRC_Init : '  
+          WRITE( 830, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
+     &       init_max_wall_time, INT(init_max_rank), init_min_wall_time,
+     &       INT(init_min_rank), init_sum_wall_time/DBLE(MNPROC) 
+
+          WRITE( 830, '(A)') '%% ADCIRC_run : ' 
+          WRITE( 830, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
+     &       run_max_wall_time, INT(run_max_rank), run_min_wall_time,
+     &       INT(run_min_rank), run_sum_wall_time/DBLE(MNPROC)
+
+          WRITE( 830, '(A)') '%% ADCIRC_final : ' 
+          WRITE( 830, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
+     &       final_max_wall_time, INT(final_max_rank), final_min_wall_time,
+     &       INT(final_min_rank), final_sum_wall_time/DBLE(MNPROC)
+
+          WRITE( 830, '(A)') '%% Total :' 
+          WRITE( 830, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
+     &       total_max_wall_time, INT(total_max_rank), total_min_wall_time,
+     &       INT(total_min_rank), total_sum_wall_time/DBLE(MNPROC)
+
+
+          CLOSE(830) ;
+         END IF     
+
+#endif
+#endif
+
+      END SUBROUTINE collect_run_wall_time
+C----------------------------------------------------------------------
+
       END MODULE ADCIRC_Mod
 C******************************************************************************
 C******************************************************************************

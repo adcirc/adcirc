@@ -37,7 +37,8 @@ C
      &                      rhoWat0, Rearth, rhoAir, one2ten,
      &                      windReduction
 #ifdef CMPI
-      use messenger, only : msg_fini
+      use mpi
+      use messenger, only : msg_fini, msg_Rscalar_Reduce
 #endif
 #ifdef DATETIME
       use datetime_module, only: datetime, timedelta, strptime
@@ -290,6 +291,10 @@ C
         END FUNCTION p_computeWindDrag
       END INTERFACE
       PROCEDURE(p_computeWindDrag),POINTER :: f_computeWindDrag => null()
+
+
+      ! for record time  
+      REAL(8), private:: io_elapsed_time = 0.0D0, nws_elapsed_time = 0.0D0
 
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -931,12 +936,18 @@ C----------------------------------------------------------------------
       integer :: i ! node loop counter
       real(8) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
 
+      real(8) :: start_time = 0.D0, end_time = 0.D0 ;
+
       call setMessageSource("getMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 
-
+#ifdef WTIMER
+#ifdef CMPI
+      start_time = MPI_Wtime() ; 
+#endif 
+#endif 
 C------------------------MET FORCING---------------------------------------
 C
 C...  UPDATE THE WIND STRESS AND SURFACE PRESSURE AND READ IN NEW VALUES
@@ -1792,6 +1803,12 @@ C      DW/WJP: rotate wind stresses if coordinate transform
        ENDIF
 
 C--------------------END MET FORCING---------------------------------------
+#ifdef WTIMER
+#ifdef CMPI
+      end_time = MPI_Wtime() ; 
+#endif 
+      nws_elapsed_time = nws_elapsed_time + (end_time - start_time)  
+#endif      
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -1835,11 +1852,18 @@ Casey 180318: Added for NWS=13
       real(8) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
 
+      real(8) :: start_time = 0.D0, end_time = 0.D0 ;
+
       call setMessageSource("coldStartMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 
+#ifdef WTIMER
+#ifdef CMPI
+      start_time = MPI_Wtime() ; 
+#endif      
+#endif
 
       WSX2(:) = 0.d0
       WSY2(:) = 0.D0
@@ -2113,6 +2137,13 @@ C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
          WVNY1 = WVNY2
       endif
 
+#ifdef WTIMER 
+#ifdef CMPI
+      end_time = MPI_Wtime() ; 
+#endif 
+      nws_elapsed_time = nws_elapsed_time + (end_time - start_time) 
+#endif
+
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -2169,9 +2200,17 @@ C----------------------------------------------------------------------
       real(8) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
       integer :: TimeLoc_NM ! timeloc to the nearest minute
 
+      real(8) :: start_time = 0.D0, end_time = 0.D0 
+
       call setMessageSource("hotStartMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
+#endif
+
+#ifdef WTIMER
+#ifdef CMPI
+      start_time = mpi_wtime() ; 
+#endif
 #endif
 
 C
@@ -3291,7 +3330,14 @@ C      DW/WJP: rotate wind stresses if coordinate transform
           CALL DRVMAP2DSPVEC( WSX2, WSY2,
      &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
        ENDIF
-      
+
+#ifdef WTIMER     
+#ifdef CMPI
+       end_time = mpi_wtime() ; 
+#endif
+       nws_elapsed_time = nws_elapsed_time + (end_time - start_time) 
+#endif
+
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
        call allMessage(DEBUG,"Return.")
 #endif
@@ -9210,11 +9256,21 @@ C----------------------------------------------------------------------
       real(8),intent(out),optional :: CICE2(NP)
       integer :: i, NTkeep
       real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice
+
+      !
+      REAL(8):: start_time = 0.0, end_time = 0.0
+
       CALL setMessageSource('NWS14GET')
       ! Show the date in str_date format
       call logMessage(ECHO,'CurDT strng: '//
      &                CurDT%strftime("%Y-%m-%d %H:%M"))
-      
+
+#ifdef WTIMER      
+#ifdef CMPI
+      start_time = MPI_WTIME() ;       
+#endif  
+#endif
+
       ! Get the Pressure
       !':PRMSL:mean sea level:'
       call READNWS14(Pfile,Pmsl,Pinv,Pvar,PfileNCID)
@@ -9232,22 +9288,13 @@ C----------------------------------------------------------------------
          NT = NTkeep
       endif
 
-!      ! Get the Pressure
-!      !':PRMSL:mean sea level:'
-!      call READNWS14(Pfile,Pinv,Pvar,Pmsl)
-!
-!      ! Get the U-winds
-!      call READNWS14(Wfile,Winv,Uvar,U10)
-!
-!      ! Get the V-winds
-!      call READNWS14(Wfile1,Winv,Vvar,V10)
-!
-!      ! Get the ice concentration if required
-!      if (present(CICE2)) then
-!         NTkeep = NT; NT = NTC
-!         call READNWS14(Cfile,Cinv,Cvar,Cice)
-!         NT = NTkeep
-!      endif      
+#ifdef WTIMER
+#ifdef CMPI
+      end_time = MPI_WTIME() ;       
+#endif   
+      io_elapsed_time = io_elapsed_time + 
+     &  ( end_time - start_time )      
+#endif
 
       ! Doing the interpolation from their grid to ours
       do i = 1,np
@@ -9768,7 +9815,77 @@ C---------------------------------------------------------------------
       END SUBROUTINE CLOSE_MET_FILES        
 C---------------------------------------------------------------------
 
+C......................................................................
+      SUBROUTINE collect_wind_io_wall_time()
+         use global, only: NWS, NCICE
+         USE SIZES, ONLY: MYPROC, MNPROC
 
+         IMPLICIT NONE
+
+         REAL (8):: read_io_max_rank, read_io_min_rank
+         REAL (8):: max_wall_time, min_wall_time, sum_wall_time
+
+         REAL (8):: nws_read_io_max_rank, nws_read_io_min_rank
+         REAL (8):: nws_max_wall_time, nws_min_wall_time, nws_sum_wall_time
+
+#ifdef WTIMER
+#ifdef CMPI
+         read_io_max_rank = DBLE(MYPROC)
+         read_io_min_rank = DBLE(MYPROC) 
+         
+         nws_read_io_max_rank = DBLE(MYPROC)
+         nws_read_io_min_rank = DBLE(MYPROC)
+
+         CALL MSG_RScalar_Reduce( 'MAX', io_elapsed_time, 
+     &        max_wall_time, read_io_max_rank )
+
+         CALL MSG_RScalar_Reduce( 'MIN', io_elapsed_time, 
+     &        min_wall_time, read_io_min_rank )
+
+         CALL MSG_RScalar_Reduce( 'SUM', io_elapsed_time,
+     &        sum_wall_time ) ;
+
+         CALL MSG_RScalar_Reduce( 'MAX', nws_elapsed_time, 
+     &        nws_max_wall_time, nws_read_io_max_rank )
+
+         CALL MSG_RScalar_Reduce( 'MIN', nws_elapsed_time, 
+     &        nws_min_wall_time, nws_read_io_min_rank )
+
+         CALL MSG_RScalar_Reduce( 'SUM', nws_elapsed_time,
+     &        nws_sum_wall_time ) ;
+
+
+         IF ( MYPROC == 0 ) THEN
+          OPEN( UNIT = 825, FILE = 'nws_io_report.out', 
+     &          ACTION="write") ;
+
+          WRITE( 825, '(A)' ) '% Time (in second) spent in met'//
+     &            ' forcing subroutines.'
+          WRITE( 825, '(A,I5)') '% NWS = ', NWS
+          IF ( NWS == 14 ) THEN
+             WRITE( 825, '(A,L)') '% Use core 0 to read = ',
+     &                 read_NWS14_using_core_0 
+          END IF
+          WRITE( 825, '(A)') ' max_time, max_rank, min_time,'// 
+     &                ' min_rank, average_time'
+          WRITE( 825, '(A)') '%% Reading time: '  
+          WRITE( 825, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
+     &       max_wall_time, INT(read_io_max_rank), min_wall_time,
+     &       INT(read_io_min_rank), sum_wall_time/DBLE(MNPROC) 
+          WRITE( 825, '(A)') '%% Total time' 
+          WRITE( 825, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
+     &       nws_max_wall_time, INT(nws_read_io_max_rank), nws_min_wall_time,
+     &       INT(nws_read_io_min_rank), nws_sum_wall_time/DBLE(MNPROC)
+
+          CLOSE(825) ;
+         END IF     
+
+#endif
+#endif
+
+      END SUBROUTINE collect_wind_io_wall_time
+C----------------------------------------------------------------------
+ 
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   W I N D L I M I T E R 

@@ -1688,6 +1688,61 @@ C---------------------------------------------------------------------
 C---------------------------------------------------------------------      
 !=============================================================================
 
+!=============================================================================
+C--------------------------------------------------------------------- 
+C DW, 2024   
+      SUBROUTINE MSG_RScalar_Reduce( OP, vali, valo, loco )
+       IMPLICIT NONE
+
+       character (LEN=*):: OP
+       REAL (8):: vali, valo 
+       REAL (8), intent(inout), optional:: loco !/ in - rank, out - max/min rank
+
+       REAL (8):: tempi(2), tempo(2)
+C      
+       call setMessageSource("msg_rvecreduce")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+       call allMessage(DEBUG,"Enter.") 
+#endif
+C       
+       SELECT CASE(OP)
+       CASE ('max','MAX')
+         IF ( present(loco) ) THEN
+           tempi  = (/ vali, loco /) 
+           CALL MPI_Reduce( tempi, tempo, 1, MPI_2DOUBLE_PRECISION,
+     &         MPI_MAXLOC, 0, comm, ierr ) 
+           valo = tempo(1)  
+           loco = tempo(2)  
+         ELSE      
+           CALL MPI_Reduce( vali, valo, 1, DBLETYPE, MPI_MAX, 0, 
+     &         comm, ierr )
+         END IF
+       CASE ('min','MIN')
+         IF ( present(loco) ) THEN  
+           tempi  = (/ vali, loco /) 
+           CALL MPI_Reduce( tempi, tempo, 1, MPI_2DOUBLE_PRECISION,
+     &         MPI_MINLOC, 0, comm, ierr ) 
+           valo = tempo(1)  
+           loco = tempo(2)  
+         ELSE
+           CALL MPI_Reduce( vali, valo, 1, DBLETYPE, MPI_MIN, 0, 
+     &        comm, ierr )
+         END IF
+       CASE ('sum','SUM')
+         CALL MPI_Reduce( vali, valo, 1, DBLETYPE, MPI_SUM, 0, 
+     &      comm, ierr ) 
+       END SELECT    
+C
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+       call allMessage(DEBUG,"Return.")
+#endif
+       call unsetMessageSource() 
+
+       RETURN       
+      END SUBROUTINE MSG_RScalar_Reduce        
+C---------------------------------------------------------------------
+!=============================================================================
+
       END MODULE MESSENGER
 
       subroutine MSG_ABORT()
