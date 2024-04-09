@@ -9828,6 +9828,7 @@ C......................................................................
          REAL (8):: nws_read_io_max_rank, nws_read_io_min_rank
          REAL (8):: nws_max_wall_time, nws_min_wall_time, nws_sum_wall_time
 
+         CHARACTER (LEN=100):: outfmt
 #ifdef WTIMER
 #ifdef CMPI
          read_io_max_rank = DBLE(MYPROC)
@@ -9856,27 +9857,30 @@ C......................................................................
 
 
          IF ( MYPROC == 0 ) THEN
-          OPEN( UNIT = 825, FILE = 'nws_io_report.out', 
-     &          ACTION="write") ;
+!          OPEN( UNIT = 825, FILE = 'nws_io_report.out', 
+!     &          ACTION="write") ;                 
+          OPEN( UNIT = 825, FILE = 'wall_clock_report.out', 
+     &       POSITION='APPEND', ACTION='write') ;
 
-          WRITE( 825, '(A)' ) '% Time (in second) spent in met'//
-     &            ' forcing subroutines.'
-          WRITE( 825, '(A,I5)') '% NWS = ', NWS
+          outfmt = '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' ;
+          WRITE( 825, * ) '' 
+          WRITE( 825, '(A)' ) '%---  Time spent in met'//
+     &            ' forcing subroutines ----'
+          WRITE( 825, '(A,I5)') '%% NWS = ', NWS
           IF ( NWS == 14 ) THEN
-             WRITE( 825, '(A,L)') '% Use core 0 to read = ',
+             WRITE( 825, '(A,L)') '%% Use core 0 to read = ',
      &                 read_NWS14_using_core_0 
           END IF
-          WRITE( 825, '(A)') ' max_time, max_rank, min_time,'// 
-     &                ' min_rank, average_time'
-          WRITE( 825, '(A)') '%% Reading time: '  
-          WRITE( 825, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
+          WRITE( 825, '(A)') '%% Reading met files: '  
+          WRITE( 825, outfmt )
      &       max_wall_time, INT(read_io_max_rank), min_wall_time,
-     &       INT(read_io_min_rank), sum_wall_time/DBLE(MNPROC) 
-          WRITE( 825, '(A)') '%% Total time' 
-          WRITE( 825, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
+     &       INT(read_io_min_rank), sum_wall_time/DBLE(MNPROC)
+
+          WRITE( 825, '(A)') '%% Total met-related time : ' 
+          WRITE( 825, outfmt )
      &       nws_max_wall_time, INT(nws_read_io_max_rank), nws_min_wall_time,
      &       INT(nws_read_io_min_rank), nws_sum_wall_time/DBLE(MNPROC)
-
+         
           CLOSE(825) ;
          END IF     
 

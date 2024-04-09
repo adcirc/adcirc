@@ -888,10 +888,22 @@ C     cms51.06: moved fort.33 file from read_input.F to here
      &    STATUS='REPLACE')
       OPEN(33,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
      &    STATUS='REPLACE')
+      
 #else
       OPEN(16,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
       OPEN(33,FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
 #endif
+
+#ifdef WTIMER
+      OPEN(820,FILE='wall_clock_report.out', ACTION='WRITE') ;
+
+      WRITE(820, '(A)') '% ****** Wall clock time spent in different'//
+     &    ' parts of the code ******' 
+      WRITE(820,*) ''
+      WRITE(820, '(A)') ' max_time, max_rank, min_time,'// 
+     &                ' min_rank, average_time'
+      CLOSE(820) ; 
+#endif      
 C--------------------------------------------------------------------
       END SUBROUTINE openLogFile
 C--------------------------------------------------------------------

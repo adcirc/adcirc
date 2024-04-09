@@ -103,6 +103,7 @@ C******************************************************************************
 
       INTEGER, SAVE :: ITIME_BGN, ITIME_END
 
+      ! for timing
       REAL (8), private:: init_wtime = 0.D0, run_wtime = 0.D0, 
      &   final_wtime = 0.D0, total_wtime = 0.D0
       REAL (8), private:: start_total_wtime = 0.D0, 
@@ -706,7 +707,7 @@ C-----------------------------------------------------------------------
 C******************************************************************************
 C******************************************************************************
 
-C......................................................................
+C......................................................................      
       SUBROUTINE collect_run_wall_time( )
          USE SIZES, ONLY: MYPROC, MNPROC
 
@@ -728,6 +729,8 @@ C......................................................................
 
          REAL (8):: total_max_rank, total_min_rank
          REAL (8):: total_max_wall_time, total_min_wall_time, total_sum_wall_time
+
+         CHARACTER  (LEN=100):: outfmt
 
 #ifdef CMPI
          init_max_rank = DBLE(MYPROC)
@@ -785,41 +788,39 @@ C......................................................................
 
 
          IF ( MYPROC == 0 ) THEN
-          OPEN( UNIT = 830, FILE = 'runtime_report.out', 
-     &          ACTION="write") ;
+           OPEN( UNIT = 830, FILE = 'wall_clock_report.out', 
+     &        POSITION ='APPEND', ACTION="write") ;
 
-          !
-          WRITE( 830, '(A)' ) '% Time (in second) spent in the driver'//
-     &            ' subroutines.'
-          WRITE( 830, '(A)') ' max_time, max_rank, min_time,'// 
-     &                ' min_rank, average_time'
+           outfmt = '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' ;
+           !
+           WRITE( 830, *) '' 
+           WRITE( 830, '(A)' ) '% ---- Time spent in the driver'//
+     &            ' subroutines. ----'
 
-          WRITE( 830, '(A)') '%% ADCIRC_Init : '  
-          WRITE( 830, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
-     &       init_max_wall_time, INT(init_max_rank), init_min_wall_time,
-     &       INT(init_min_rank), init_sum_wall_time/DBLE(MNPROC) 
+           WRITE( 830, '(A)') '%% ADCIRC_Init() : '  
+           WRITE( 830, outfmt )
+     &        init_max_wall_time, INT(init_max_rank), init_min_wall_time,
+     &        INT(init_min_rank), init_sum_wall_time/DBLE(MNPROC) 
+ 
+           WRITE( 830, '(A)') '%% ADCIRC_run() : ' 
+           WRITE( 830, outfmt )
+     &        run_max_wall_time, INT(run_max_rank), run_min_wall_time,
+     &        INT(run_min_rank), run_sum_wall_time/DBLE(MNPROC)
 
-          WRITE( 830, '(A)') '%% ADCIRC_run : ' 
-          WRITE( 830, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
-     &       run_max_wall_time, INT(run_max_rank), run_min_wall_time,
-     &       INT(run_min_rank), run_sum_wall_time/DBLE(MNPROC)
+           WRITE( 830, '(A)') '%% ADCIRC_final() : ' 
+           WRITE( 830, outfmt )
+     &        final_max_wall_time, INT(final_max_rank), final_min_wall_time,
+     &        INT(final_min_rank), final_sum_wall_time/DBLE(MNPROC)
 
-          WRITE( 830, '(A)') '%% ADCIRC_final : ' 
-          WRITE( 830, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
-     &       final_max_wall_time, INT(final_max_rank), final_min_wall_time,
-     &       INT(final_min_rank), final_sum_wall_time/DBLE(MNPROC)
-
-          WRITE( 830, '(A)') '%% Total :' 
-          WRITE( 830, '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' )
-     &       total_max_wall_time, INT(total_max_rank), total_min_wall_time,
-     &       INT(total_min_rank), total_sum_wall_time/DBLE(MNPROC)
-
+           WRITE( 830, '(A)') '%% Total :' 
+           WRITE( 830, outfmt )
+     &        total_max_wall_time, INT(total_max_rank), total_min_wall_time,
+     &        INT(total_min_rank), total_sum_wall_time/DBLE(MNPROC)
 
           CLOSE(830) ;
          END IF     
-
-#endif
-#endif
+#endif ! CMPI
+#endif ! WTIMER
 
       END SUBROUTINE collect_run_wall_time
 C----------------------------------------------------------------------
