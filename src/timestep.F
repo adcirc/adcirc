@@ -1657,8 +1657,6 @@ C******************************************************************************
              WRITE( 820, *) '' 
              WRITE( 820, '(A)' ) '% ---- Time spent in gwce and '//
      &            ' 2D momentum sovlers. ----'
-             WRITE( 820, '(A)') ' max_time, max_rank, min_time,'// 
-     &                ' min_rank, average_time'
              WRITE( 820, '(A)') '%% gwce: '  
              WRITE( 820, outfmt )
      &         gwce_max_wall_time, INT(gwce_max_rank), gwce_min_wall_time,

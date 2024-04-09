@@ -9867,15 +9867,18 @@ C......................................................................
           WRITE( 825, '(A)' ) '%---  Time spent in met'//
      &            ' forcing subroutines ----'
           WRITE( 825, '(A,I5)') '%% NWS = ', NWS
-          IF ( NWS == 14 ) THEN
-             WRITE( 825, '(A,L)') '%% Use core 0 to read = ',
+          !
+          SELECT case(NWS)
+          CASE ( 14 ) 
+            WRITE( 825, '(A,L)') '%% Use core 0 to read = ',
      &                 read_NWS14_using_core_0 
-          END IF
-          WRITE( 825, '(A)') '%% Reading met files: '  
-          WRITE( 825, outfmt )
-     &       max_wall_time, INT(read_io_max_rank), min_wall_time,
-     &       INT(read_io_min_rank), sum_wall_time/DBLE(MNPROC)
-
+        
+            WRITE( 825, '(A)') '%% Reading met files: '  
+            WRITE( 825, outfmt )
+     &        max_wall_time, INT(read_io_max_rank), min_wall_time,
+     &        INT(read_io_min_rank), sum_wall_time/DBLE(MNPROC)
+          END SELECT
+          !
           WRITE( 825, '(A)') '%% Total met-related time : ' 
           WRITE( 825, outfmt )
      &       nws_max_wall_time, INT(nws_read_io_max_rank), nws_min_wall_time,
