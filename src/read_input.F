@@ -126,7 +126,7 @@ C-----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionSkipSnaps,
      &   dynamicWaterLevelCorrectionRampReferenceTime,
      &   dynamicWaterLevelCorrectionMultiplier,
-     &   read_NWS14_using_core_0
+     &   read_NWS14_NetCdf_using_core_0
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
@@ -228,7 +228,7 @@ C.... DMW
 !JLW: adding subgrid namelist
       NAMELIST /subgridControl/ subgridFilename, level0, level1
 
-      NAMELIST /WindGrib2NetCdf/ read_NWS14_using_core_0
+      NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
 
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -462,7 +462,7 @@ Casey 180318: Added NWS=13
       call logNamelistReadStatus(namelistSpecifier, ios)
       write(scratchMessage,*) "NWS 14: use core 0"//
      &   "to read grib2/netcdf data = ",
-     &   read_NWS14_using_core_0 
+     &   read_NWS14_NetCdf_using_core_0 
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 #endif

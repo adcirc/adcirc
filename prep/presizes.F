@@ -125,7 +125,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
      &                  initWindModule, 
-     &                  read_NWS14_using_core_0
+     &                  read_NWS14_NetCdf_using_core_0
       USE OWIWIND, ONLY: nPowellSearchDomains
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13

@@ -2315,6 +2315,14 @@ Casey 180318: Added NWS=13
          endif
 #endif
 
+#ifdef DATETIME
+         IF ( found_NWS14Grib2NetCdf_namelist ) THEN
+             write(15,'(a,L3,a)') "&WindGrib2NetCdf"//
+     &          " read_NWS14_NetCdf_using_core_0 = ", read_NWS14_NetCdf_using_core_0, "/"
+
+         END IF
+#endif 
+
          ! NCSU Subdomain Modeling
          if (FOUND_SM_NML) then
          WRITE(15,*) "&subdomainModeling subdomainOn=",subdomainOn," /"

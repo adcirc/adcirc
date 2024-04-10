@@ -271,7 +271,7 @@ C
       integer :: NT, NTC
 #endif
 
-      logical:: read_NWS14_using_core_0 = .true. ! read NWS14 (grib2,netcdf) from a computed core 0
+      logical:: read_NWS14_NetCdf_using_core_0 = .true. ! read NWS14 (grib2,netcdf) from a computed core 0
  
       real(8) :: wtime1_12 ! time associated with previous met dataset
       real(8) :: wtime2_12 ! time associated with new met dataset
@@ -8948,7 +8948,7 @@ C----------------------------------------------------------------------
 
 
 #ifdef ADCNETCDF ! BEGIN ADCNETCDF
-         IF ( read_NWS14_using_core_0 ) THEN
+         IF ( read_NWS14_NetCdf_using_core_0 ) THEN
            IF ( MYPROC .EQ. 0 ) THEN
              call Check_err(NF90_OPEN(Pfile,nf90_nowrite,PfileNCID))
              call Check_err(NF90_OPEN(Wfile,nf90_nowrite,WfileNCID))
@@ -9425,7 +9425,7 @@ C----------------------------------------------------------------------
       CALL setMessageSource('READNWS14_netCDF')
 
 #ifdef ADCNETCDF
-      IF ( read_NWS14_using_core_0 ) THEN
+      IF ( read_NWS14_NetCdf_using_core_0 ) THEN
         ! Use core zero to read data
         ! and then broadcast them 
         IF (MYPROC.EQ.0) THEN
@@ -9571,7 +9571,7 @@ C----------------------------------------------------------------------
 #ifdef ADCNETCDF
       IF (MYPROC.EQ.0) THEN
               
-         IF ( .NOT. read_NWS14_using_core_0 ) THEN
+         IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN
            call Check_err(NF90_OPEN(FileN,nf90_nowrite,ncid))  
          END IF      
                 
@@ -9605,7 +9605,7 @@ C----------------------------------------------------------------------
             enddo
          endif
 
-         IF ( .NOT. read_NWS14_using_core_0 ) THEN 
+         IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN 
            call Check_err(NF90_CLOSE(ncid))  
          END IF
 
@@ -9652,7 +9652,7 @@ C----------------------------------------------------------------------
       IF (MYPROC.EQ.0) THEN
 #endif
 
-         IF ( .NOT. read_NWS14_using_core_0 ) THEN
+         IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN
             call Check_err(NF90_OPEN(FileN,nf90_nowrite,NC_ID))  
          END IF     
 
@@ -9706,7 +9706,7 @@ C----------------------------------------------------------------------
          endif
          NTC = NT
 
-         IF ( .NOT. read_NWS14_using_core_0 ) THEN
+         IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN
             call Check_err(NF90_CLOSE(NC_ID))  
          END IF
 
@@ -9766,7 +9766,7 @@ C---------------------------------------------------------------------
 #ifdef DATATIME        
 #ifdef ADCNETCDF
         IF ( NWS == 14 ) THEN
-          IF ( read_NWS14_using_core_0 )  THEN   
+          IF ( read_NWS14_NetCdf_using_core_0 )  THEN   
              IF ( MYPROC == 0 ) THEN     
                call Check_err(NF90_CLOSE(PfileNCID))
                call Check_err(NF90_CLOSE(WfileNCID))
