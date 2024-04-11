@@ -9741,6 +9741,7 @@ C---------------------------------------------------------------------
     
 #ifdef ADCNETCDF
         use netcdf
+        use netcdf_error, only: check_err
 #endif
 
         IMPLICIT NONE
