@@ -8928,24 +8928,6 @@ C----------------------------------------------------------------------
          Uvar = 'dmy'
          Vvar = 'dmy'
          Cvar = 'dmy'
-!#ifdef ADCNETCDF ! BEG ADCNETCDF
-!
-!#ifdef CMPI
-!         IF (MYPROC.EQ.0) THEN
-!#endif
-!            call Check_err(NF90_OPEN(Pfile,nf90_nowrite,PfileNCID))
-!            call Check_err(NF90_OPEN(Wfile,nf90_nowrite,WfileNCID))
-!            call Check_err(NF90_OPEN(Wfile1,nf90_nowrite,Wfile1NCID))
-!            IF (NCICE.EQ.14) THEN
-!               call Check_err(NF90_OPEN(Cfile,nf90_nowrite,CfileNCID))
-!            ENDIF
-!#ifdef CMPI
-!         ENDIF
-!         ! wait til proc 0 has opened all the files
-!         CALL MSG_BARRIER()
-!#endif
-!#endif
-
 
 #ifdef ADCNETCDF ! BEGIN ADCNETCDF
          IF ( read_NWS14_NetCdf_using_core_0 ) THEN
@@ -9763,7 +9745,7 @@ C---------------------------------------------------------------------
 
         IMPLICIT NONE
 
-#ifdef DATATIME        
+#ifdef DATETIME        
 #ifdef ADCNETCDF
         IF ( NWS == 14 ) THEN
           IF ( read_NWS14_NetCdf_using_core_0 )  THEN   
