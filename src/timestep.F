@@ -101,7 +101,9 @@ C
       USE GLOBAL_IO, ONLY : nddt2get
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
-     &    getdynamicWaterLevelCorrections
+     &    getdynamicWaterLevelCorrections, 
+     &    CLOSE_MET_FILES 
+
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
@@ -1518,6 +1520,11 @@ c. RJW merged 08/26/2008 Casey 071219: Added the folowing call to the mass balan
 C      IF(C3DVS)THEN
 C         CALL MASSBAL3D(IT)
 C      ENDIF
+
+      IF ( IT == NT ) THEN
+        ! close NWS14 NetCdf files !
+        CALL CLOSE_MET_FILES() ; 
+      END IF        
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
