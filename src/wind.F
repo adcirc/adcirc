@@ -9749,7 +9749,7 @@ C---------------------------------------------------------------------
 #ifdef DATETIME        
 #ifdef ADCNETCDF
         IF ( NWS == 14 ) THEN
-          IF ( read_NWS14_NetCdf_using_core_0 )  THEN   
+          IF ( (.not. grb2flag) .AND. read_NWS14_NetCdf_using_core_0 )  THEN   
              IF ( MYPROC == 0 ) THEN     
                call Check_err(NF90_CLOSE(PfileNCID))
                call Check_err(NF90_CLOSE(WfileNCID))
