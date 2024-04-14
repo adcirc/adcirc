@@ -491,7 +491,7 @@
 #ifdef CMPI
       USE MESSENGER
 #endif
-      USE GLOBAL, ONLY: INFO,allMessage,
+      USE GLOBAL, ONLY: INFO,DEBUG,allMessage,
      &                  setMessageSource,unsetMessageSource
       IMPLICIT NONE
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
