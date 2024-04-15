@@ -1267,6 +1267,7 @@ C.....
       IF(LoadCondensedNodes) THEN
          DO K=1,NListCondensedNodes
             I = ListCondensedNodes(K,1)
+            IF(I==0) CYCLE
             ! 0) DEFAULT VALUE
             NNC = NNODECODE(I)
             ! 1) FIND UPDATED VALUE 
