@@ -2203,7 +2203,8 @@ C     ----------------------------------------------------------------
       WetPerimWidth = 0.D0
       WetPerimBankElev = 0.D0
 
-      write(scratchMessage,'(a)') 'Initializing channel wet perimeter variables:'
+      write(scratchMessage,'(a)') 
+     &   'Initializing channel wet perimeter variables:'
       call logMessage(ECHO,trim(scratchMessage))
 
       DO ICN=1,NListCondensedNodes
@@ -2220,22 +2221,24 @@ C     ----------------------------------------------------------------
          
          ! Bank elevation
          !- I1
+         BE1 = 99999.D0
          IBND = LBArray_Pointer(I1)
-         IF(LBCODEI(IBND).EQ.64) THEN
-            NNBB1=NBV(IBND)
-            NNBB2=IBCONN(IBND)
-            BE1 = -MIN(DP(NNBB1),DP(NNBB2))
-         ELSE
-            BE1 = 99999.D0
+         IF(IBND >= 1) THEN
+            IF(LBCODEI(IBND).EQ.64) THEN
+               NNBB1=NBV(IBND)
+               NNBB2=IBCONN(IBND)
+               BE1 = -MIN(DP(NNBB1),DP(NNBB2))
+            ENDIF
          ENDIF
          !- I2
+         BE2 = 99999.D0
          IBND = LBArray_Pointer(I2)
-         IF(LBCODEI(IBND).EQ.64) THEN
-            NNBB1=NBV(IBND)
-            NNBB2=IBCONN(IBND)
-            BE2 = -MIN(DP(NNBB1),DP(NNBB2))
-         ELSE
-            BE2 = 99999.D0
+         IF(IBND >= 1) THEN
+            IF(LBCODEI(IBND).EQ.64) THEN
+               NNBB1=NBV(IBND)
+               NNBB2=IBCONN(IBND)
+               BE2 = -MIN(DP(NNBB1),DP(NNBB2))
+            ENDIF
          ENDIF
 
          ! Store the values
@@ -2245,7 +2248,8 @@ C     ----------------------------------------------------------------
          WetPerimBankElev(I2) = BE2
 
          write(scratchMessage,'(a,I10,a,I10,a,F10.3,a,F10.3,a,F10.3)')
-     &      'I1=',I1,', I2=',I2,', WIDTH=',WIDTH,', BankElev1=',BE1,', BankElev2=',BE2
+     &      'I1=',I1,', I2=',I2,', WIDTH=',WIDTH,', 
+     &      BankElev1=',BE1,', BankElev2=',BE2
          call logMessage(ECHO,trim(scratchMessage))
             
       ENDDO
@@ -3126,6 +3130,8 @@ C     ----------------------------------------------------------------
       SUBROUTINE PrepCondensedNodes()
 C     ----------------------------------------------------------------
       USE SIZES,ONLY : MNVEL
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, allMessage,
+     &   DEBUG, ECHO, INFO, WARNING, ERROR  
       USE MESH,ONLY : NP,LBArray_Pointer,X,Y
       USE BOUNDARIES,ONLY : CSIICN,SIIICN
       IMPLICIT NONE
@@ -3133,6 +3139,11 @@ C     ----------------------------------------------------------------
       INTEGER :: JMAX
       REAL(8) :: X1,Y1,X2,Y2,DX,DY,LEN
       LOGICAL :: ON_THE_SAME_BOUNDARY
+
+      call setMessageSource("prepcondensednodes")
+#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       IF (.NOT.LoadCondensedNodes) RETURN
 
@@ -3153,7 +3164,9 @@ C     ----------------------------------------------------------------
       ALLOCATE(NNodesListCondensedNodes(NListCondensedNodes))
 
       NCondensedNodes(:) = 0
-
+      ListCondensedNodes(:,:) = 0
+      NNodesListCondensedNodes(:) = 0
+      
       K = 0
       DO I=1,NP
          IF(CondensedNodes(I,1).GT.0) THEN
@@ -3207,6 +3220,10 @@ C     ----------------------------------------------------------------
          END IF
       END DO
 
+#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
       END SUBROUTINE PrepCondensedNodes
 C     ----------------------------------------------------------------
 

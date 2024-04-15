@@ -1051,6 +1051,7 @@ C.... CONDENSED NODES: Summing up the values at condensed nodes
       IF((LoadCondensedNodes).AND.(ILump.NE.0)) THEN
          DO K=1,NListCondensedNodes
             I = ListCondensedNodes(K,1)
+            IF(I==0) CYCLE
             IF((NODECODE(I).NE.0)) THEN
                ! 1) Mutiply LHS & RHS by total area at Node I
                IF ((flgNodesMultipliedByTotalArea(I).eq.0).and.

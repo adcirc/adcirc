@@ -1641,7 +1641,8 @@ ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
          Eta1(I)=Eta2(I)
 C........DMW202401 Add update for flow depth at previous timestep, H1
          IF ((I.EQ.1).AND.(IT.EQ.ITIME_BGN)) THEN
-            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST SAVE ON H1'
+            WRITE(16,*) 
+     &         'dmw202401 THIS CODE IS NOW MAKING ITS FIRST SAVE ON H1'
          ENDIF
          H1(I) = H2(I)
          Eta2(I)=0.0d0
@@ -1954,6 +1955,7 @@ C.... CONDENSED NODES: Summing up the values at condensed nodes
       IF((LoadCondensedNodes).AND.(ILump.NE.0)) THEN
          DO K=1,NListCondensedNodes
             I = ListCondensedNodes(K,1)
+            IF(I==0) CYCLE
             IF((NODECODE(I).NE.0)) THEN
                ! 1) Sum them up
                DO L=2,NNodesListCondensedNodes(K)
