@@ -298,7 +298,7 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(8), ALLOCATABLE :: ManningsN(:)
 
 C     Variables for bottom friction evaluation along VEW1D channels considering wet perimeter of rectangular cross-section 11/06/2023 sb
-      LOGICAL :: ActivateVEW1DChannelWetPerimeter
+      LOGICAL :: ActivateVEW1DChannelWetPerimeter = .FALSE.
       REAL(8), ALLOCATABLE :: WetPerimWidth(:)    ! Widths of the channels
       REAL(8), ALLOCATABLE :: WetPerimBankElev(:) ! Elevations of the channel banks
 
@@ -2337,11 +2337,14 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
                ENDIF
             ELSE
                HT = DP(I)+IFNLFA*ETA2(I)
-               IF (activateVEW1DChannelWetPerimeter .AND.
-     &             WetPerimWidth(I).GT.0.D0) THEN    ! Evaluating wet perimeter factor along VEW1D channels
-                  HCH = DP(I)+IFNLFA*MIN( ETA2(I), WetPerimBankElev(I) ) ! Height from bottom to which ever lower among the water elevation and the bank elevation
-                  WCH = WetPerimWidth(I)
-                  WPFac = (1.D0+2.D0*HCH/WCH)**(2.D0/3.D0) ! Wet perimeter factor
+               IF (activateVEW1DChannelWetPerimeter)THEN
+                  IF(WetPerimWidth(I).GT.0.D0) THEN    ! Evaluating wet perimeter factor along VEW1D channels
+                      HCH = DP(I)+IFNLFA*MIN( ETA2(I), WetPerimBankElev(I) ) ! Height from bottom to which ever lower among the water elevation and the bank elevation
+                      WCH = WetPerimWidth(I)
+                      WPFac = (1.D0+2.D0*HCH/WCH)**(2.D0/3.D0) ! Wet perimeter factor
+                  ELSE
+                      WPFac = 1.D0
+                  ENDIF
                ELSE
                   WPFac = 1.D0
                ENDIF

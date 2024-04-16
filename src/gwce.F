@@ -3232,7 +3232,9 @@ C.... end WP
             ! If the limiter is on already, go to the next node. 
             IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
             ! If this is one of the condensed nodes, go to the next node. 10/12/2023 sb
-            IF (LoadCondensedNodes .AND. NCondensedNodes(NM(IE,I)) > 0) CYCLE
+            IF (LoadCondensedNodes) THEN
+                IF (NCondensedNodes(NM(IE,I)) > 0) CYCLE
+            ENDIF
             ! Compare the elemental slope to the maximum elemental gradient.
             grad_check: IF (dEta2Mag.GE.
      &           ABS(elemental_slope_limiter_grad_max(NM(IE,I)))) THEN
