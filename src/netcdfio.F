@@ -10000,21 +10000,21 @@ C
             iret = nf90_def_var_deflate(ncid, myMesh%ibtypenc_id,
      &             1, 1, 2)
             CALL check_err(iret)
-            iret = nf90_def_var_deflate(ncid, myMesh%nbvvnc_id,
-     &             1, 1, 2)
-            CALL check_err(iret)
             if(myMesh%hasWeirs)then
                 iret = nf90_def_var_deflate(ncid, myMesh%barht_id,
      &                 1, 1, 2)
                 CALL check_err(iret)
-                iret = nf90_def_var_deflate(ncid, myMesh%barsb_id,
+                iret = nf90_def_var_deflate(ncid, myMesh%nbvvnc_id,
+     &                 1, 1, 2)
+                CALL check_err(iret)
+                iret = nf90_def_var_deflate(ncid, myMesh%barsp_id,
      &                 1, 1, 2)
                 CALL check_err(iret)
                 if(myMesh%hasInternalWeirs)then
                     iret = nf90_def_var_deflate(ncid, myMesh%ibconn_id,
      &                     1, 1, 2)
                     CALL check_err(iret)
-                    iret = nf90_def_var_deflate(ncid, myMesh%barsp_id,
+                    iret = nf90_def_var_deflate(ncid, myMesh%barsb_id,
      &                     1, 1, 2)
                     CALL check_err(iret)
                     if(myMesh%hasPipes)then

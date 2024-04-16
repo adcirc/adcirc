@@ -302,11 +302,11 @@ C..... DW
       ! writing into the netCDF files
       if(meshHasExternalWeir)then
         barlanhtr   = bar1
+        barlancfspr = bar2
       endif
       if(meshHasInternalWeir)then
         ibconnr_bc  = ibconnr
         barinhtr    = bar1
-        barlancfspr = bar2
         barincfsbr  = bar2
         barincfspr  = bar3
         if(meshHasWeirWithPipes)then
