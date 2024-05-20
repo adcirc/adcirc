@@ -298,7 +298,7 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(8), ALLOCATABLE :: ManningsN(:)
 
 C     Variables for bottom friction evaluation along VEW1D channels considering wet perimeter of rectangular cross-section 11/06/2023 sb
-      LOGICAL :: ActivateVEW1DChannelWetPerimeter
+      LOGICAL :: ActivateVEW1DChannelWetPerimeter = .FALSE.
       REAL(8), ALLOCATABLE :: WetPerimWidth(:)    ! Widths of the channels
       REAL(8), ALLOCATABLE :: WetPerimBankElev(:) ! Elevations of the channel banks
 
@@ -2203,7 +2203,8 @@ C     ----------------------------------------------------------------
       WetPerimWidth = 0.D0
       WetPerimBankElev = 0.D0
 
-      write(scratchMessage,'(a)') 'Initializing channel wet perimeter variables:'
+      write(scratchMessage,'(a)') 
+     &   'Initializing channel wet perimeter variables:'
       call logMessage(ECHO,trim(scratchMessage))
 
       DO ICN=1,NListCondensedNodes
@@ -2220,22 +2221,24 @@ C     ----------------------------------------------------------------
          
          ! Bank elevation
          !- I1
+         BE1 = 99999.D0
          IBND = LBArray_Pointer(I1)
-         IF(LBCODEI(IBND).EQ.64) THEN
-            NNBB1=NBV(IBND)
-            NNBB2=IBCONN(IBND)
-            BE1 = -MIN(DP(NNBB1),DP(NNBB2))
-         ELSE
-            BE1 = 99999.D0
+         IF(IBND >= 1) THEN
+            IF(LBCODEI(IBND).EQ.64) THEN
+               NNBB1=NBV(IBND)
+               NNBB2=IBCONN(IBND)
+               BE1 = -MIN(DP(NNBB1),DP(NNBB2))
+            ENDIF
          ENDIF
          !- I2
+         BE2 = 99999.D0
          IBND = LBArray_Pointer(I2)
-         IF(LBCODEI(IBND).EQ.64) THEN
-            NNBB1=NBV(IBND)
-            NNBB2=IBCONN(IBND)
-            BE2 = -MIN(DP(NNBB1),DP(NNBB2))
-         ELSE
-            BE2 = 99999.D0
+         IF(IBND >= 1) THEN
+            IF(LBCODEI(IBND).EQ.64) THEN
+               NNBB1=NBV(IBND)
+               NNBB2=IBCONN(IBND)
+               BE2 = -MIN(DP(NNBB1),DP(NNBB2))
+            ENDIF
          ENDIF
 
          ! Store the values
@@ -2245,7 +2248,8 @@ C     ----------------------------------------------------------------
          WetPerimBankElev(I2) = BE2
 
          write(scratchMessage,'(a,I10,a,I10,a,F10.3,a,F10.3,a,F10.3)')
-     &      'I1=',I1,', I2=',I2,', WIDTH=',WIDTH,', BankElev1=',BE1,', BankElev2=',BE2
+     &      'I1=',I1,', I2=',I2,', WIDTH=',WIDTH,', 
+     &      BankElev1=',BE1,', BankElev2=',BE2
          call logMessage(ECHO,trim(scratchMessage))
             
       ENDDO
@@ -2328,13 +2332,19 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
                   FRIC(I) = g*ManningsN(I)**2.d0
      &               /((DP(I)+IFNLFA*ETA2(I))**(1.d0/3.d0))
                ENDIF
+               IF(FRIC(I).LT.BFCdLLimit) THEN
+                  FRIC(I) = BFCdLLimit
+               ENDIF
             ELSE
                HT = DP(I)+IFNLFA*ETA2(I)
-               IF (activateVEW1DChannelWetPerimeter .AND.
-     &             WetPerimWidth(I).GT.0.D0) THEN    ! Evaluating wet perimeter factor along VEW1D channels
-                  HCH = DP(I)+IFNLFA*MIN( ETA2(I), WetPerimBankElev(I) ) ! Height from bottom to which ever lower among the water elevation and the bank elevation
-                  WCH = WetPerimWidth(I)
-                  WPFac = (1.D0+2.D0*HCH/WCH)**(2.D0/3.D0) ! Wet perimeter factor
+               IF (activateVEW1DChannelWetPerimeter)THEN
+                  IF(WetPerimWidth(I).GT.0.D0) THEN    ! Evaluating wet perimeter factor along VEW1D channels
+                      HCH = DP(I)+IFNLFA*MIN( ETA2(I), WetPerimBankElev(I) ) ! Height from bottom to which ever lower among the water elevation and the bank elevation
+                      WCH = WetPerimWidth(I)
+                      WPFac = (1.D0+2.D0*HCH/WCH)**(2.D0/3.D0) ! Wet perimeter factor
+                  ELSE
+                      WPFac = 1.D0
+                  ENDIF
                ELSE
                   WPFac = 1.D0
                ENDIF
@@ -2396,11 +2406,7 @@ C        with the sea floor.
          DO I=1, NP
             UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             IF(level0)THEN
-               IF(subgridVertList(I).EQ.1)THEN
-                  H1 = wetDepthVertETA2(I)
-               ELSE
-                  H1 = DP(I) + IFNLFA*ETA2(I)
-               ENDIF
+               H1 = wetDepthVertETA2(I)
             ELSE
                H1  = DP(I) + IFNLFA*ETA2(I)
             ENDIF
@@ -3127,6 +3133,8 @@ C     ----------------------------------------------------------------
       SUBROUTINE PrepCondensedNodes()
 C     ----------------------------------------------------------------
       USE SIZES,ONLY : MNVEL
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, allMessage,
+     &   DEBUG, ECHO, INFO, WARNING, ERROR  
       USE MESH,ONLY : NP,LBArray_Pointer,X,Y
       USE BOUNDARIES,ONLY : CSIICN,SIIICN
       IMPLICIT NONE
@@ -3134,6 +3142,11 @@ C     ----------------------------------------------------------------
       INTEGER :: JMAX
       REAL(8) :: X1,Y1,X2,Y2,DX,DY,LEN
       LOGICAL :: ON_THE_SAME_BOUNDARY
+
+      call setMessageSource("prepcondensednodes")
+#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       IF (.NOT.LoadCondensedNodes) RETURN
 
@@ -3154,7 +3167,9 @@ C     ----------------------------------------------------------------
       ALLOCATE(NNodesListCondensedNodes(NListCondensedNodes))
 
       NCondensedNodes(:) = 0
-
+      ListCondensedNodes(:,:) = 0
+      NNodesListCondensedNodes(:) = 0
+      
       K = 0
       DO I=1,NP
          IF(CondensedNodes(I,1).GT.0) THEN
@@ -3208,6 +3223,10 @@ C     ----------------------------------------------------------------
          END IF
       END DO
 
+#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
       END SUBROUTINE PrepCondensedNodes
 C     ----------------------------------------------------------------
 

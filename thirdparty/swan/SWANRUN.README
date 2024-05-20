@@ -1,19 +1,16 @@
 Instructions for running a SWAN model
 -------------------------------------
 
-Windows 7/8.1/10
-----------------
+MS Windows
+----------
 
 *) Before running, first adapt the environment
    variable PATH by including the pathname of the
-   directory where swan.exe can be found. This
-   pathname can be specified through the category
-   System of Control Panel, on the Advanced tab,
-   click Environment Variables.
+   directory where swan.exe can be found.
 
 *) You may also need to add the directory path where
    bin of MPI is resided to PATH to have access to
-   the command mpiexec.exe or mpirun.
+   the command mpiexec/mpirun.
 
 *) Open a command prompt and change to the directory
    where your application is resided.
@@ -25,20 +22,18 @@ Windows 7/8.1/10
    where SWAN-inputfile is the name of your inputfile
    without extension (it is assumed that the extension
    is '.swn') and 'nprocs' indicates how many processors
-   need to be launched for a parallel MPI run (do not
-   type the brackets; they just indicate that nprocs
-   is optional). By default, nprocs=1.
+   need to be launched for a parallel MPI run.
+   By default, nprocs=1.
 
-   This script is also suited when no MPICH2 is available
-   (of course, nprocs must be 1).
+   This script is also suited when no MPI is available.
 
    This script is also suited for multi-core PC provided
    that SWAN source code with OpenMP directives is
    compiled. The parameter 'nprocs' must be set to 1.
 
 
-UNIX or Linux
--------------
+Linux/UNIX
+----------
 
 *) The name of the SWAN-executable must be swan.exe.
    Furthermore, adapt the environment variable PATH
@@ -63,8 +58,7 @@ UNIX or Linux
    '-input' is obliged, whereas the parameters '-omp n' or
    '-mpi n' can be omitted (default: n=1).
 
-   This script is also suited when no MPI is available
-   (of course, n must be 1).
+   This script is also suited when no MPI is available.
 
    You may redirect the output of swanrun to the file
    swanout (in this case). It is also possible to run

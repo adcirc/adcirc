@@ -161,7 +161,7 @@ C        initialize parameter arrays needed by iterative solver
 C     Two mutually exclusive possibilities are (1)
 C     the conventional GWCE or (2) the predictor-corrector GWCE.
 !----------------------------------------------------------------------
-      subroutine solveGWCE(it, timeloc, timeh)
+      subroutine solveGWCE(it, ITIME_BGN, timeloc, timeh)
       use sizes, only : mnp
       use global, only : CGWCE_New, CPRECOR, ETA2, QX2, QY2, UU2, VV2
 #ifdef CMPI
@@ -171,14 +171,14 @@ C     the conventional GWCE or (2) the predictor-corrector GWCE.
       use momentum, only : mom_eqs_new_nc
       use nodalattributes, only : loadEleSlopeLim
       implicit none
-      integer, intent(in) :: it ! time step 
+      integer, intent(in) :: it, ITIME_BGN ! time step 
       real(8), intent(in) :: timeloc ! simulation time in seconds
       real(8), intent(in) :: timeh
 
 C       -------------PREDICTOR-CORRECTOR-GWCE---------------------------
 ckmd    Changed to include the predictor-corrector algorithm
       IF(CPRECOR) THEN
-         CALL GWCE_New(IT,TimeLoc,TimeH)
+         CALL GWCE_New(IT,ITIME_BGN,TimeLoc,TimeH)
 c...tcm added call for slope limiting         
          IF (LoadEleSlopeLim) THEN
             call check_slopes(it,TimeLoc)
@@ -209,7 +209,7 @@ C                         -OR-
 
 C      -------------------GWCE------------------------------------------
       IF(CGWCE_New) THEN
-         CALL GWCE_New(IT,TimeLoc,TimeH)
+         CALL GWCE_New(IT,ITIME_BGN,TimeLoc,TimeH)
 c.... tcm added call to slope limiter         
          IF (LoadEleSlopeLim) THEN
             call check_slopes(it,TimeLoc)
@@ -232,14 +232,14 @@ C    Re-written to conform to the ADCIRC Theory Report                        *
 C                                                                             *
 C                            r.l.  06/22/2005                                 *
 C******************************************************************************
-      SUBROUTINE GWCE_New(IT,TimeLoc,TimeH)
+      SUBROUTINE GWCE_New(IT,ITIME_BGN,TimeLoc,TimeH)
 C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
       USE SIZES, ONLY : myproc
       USE GLOBAL, ONLY : GWCE_LV, COEF, COEFD, OBCCOEF, ETAS, ETA1, ETA2,
-     &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1,
+     &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1, H1, H2,
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
      &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, IFNLCAT,
@@ -286,15 +286,17 @@ C... SB
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
      &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
-!JLW: add subgrid module
-      USE subgrid, ONLY: level0, level1, gridDepthEleETA1
-     &   , gridDepthEleETA2, wetFracAvgETA1, wetFracAvgETA2
-     &   , NCEleArray, subgridEleList, cadvEleETA2, subgridVertList
+!JLW: add subgrid additions
+      USE subgrid, ONLY: level0, level1
+     &   , subgridVertList
+     &   , gridDepthVertETA1, gridDepthVertETA2
+     &   , wetFracVertETA1, wetFracVertETA2
+     &   , cadvVertETA2
 
       IMPLICIT NONE
 
       INTEGER IE, JN, IJ, I, J, K, L                     !local loop counters
-      INTEGER IT
+      INTEGER IT, ITIME_BGN
       INTEGER NM1, NM2, NM3, NMI1, NMI2, NMI3, NMJ1, NMJ2, NMJ3
       INTEGER NC1, NC2, NC3, NCEle, NCI, NCJ
       INTEGER NCyc
@@ -318,7 +320,7 @@ C... SB
       REAL(8) EVMEle, EVMSmag
       REAL(8) GA00DPAvgOAreaIE4
       REAL(8) GHAvg, GHAvgOAreaIE2, GOAreaIE4
-      REAL(8) H1N1, H1N2, H1N3, HAvg, H1, H2
+      REAL(8) H1N1, H1N2, H1N3, HAvg, H2N
       REAL(8) H2OTotalArea
       REAL(8) LSXXGradA, LSXYGradA, LSYXGradA, LSYYGradA
       REAL(8) LSXXEle, LSXYEle, LSYXEle, LSYYEle
@@ -382,6 +384,8 @@ C...... DW
       REAL(8) :: H0N1, H0N2, H0N3
       REAL(8) :: CADV1, CADV2, CADV3
       REAL(8) :: PHIAVG1, PHIAVG2
+      REAL(8) :: PHI1N1, PHI1N2, PHI1N3
+      REAL(8) :: PHI2N1, PHI2N2, PHI2N3
 
       IF ( LoadAbsLayerSigma ) THEN
          IF (NumNodesAbsLayer(1) > 0 ) ETA_SPONGE = .true.
@@ -450,20 +454,24 @@ C              WJP 02.24.2018 Get the infinity norm of the matrix
                NMJ1=NMI1
                NMJ2=NMI2
                NMJ3=NMI3
-!JLW: add subgrid additions
+               !JLW: add subgrid additions
                IF(level0)THEN
-                  H1N1 = gridDepthEleETA2(IE,1)
-                  H1N2 = gridDepthEleETA2(IE,2)
-                  H1N3 = gridDepthEleETA2(IE,3)
-                  PHIAVG1 = wetFracAvgETA1(IE)
-                  PHIAVG2 = wetFracAvgETA2(IE)
-                  NCEle = NCEleArray(IE)
-               ELSE
-                  NC1=NodeCode(NMI1)
-                  NC2=NodeCode(NMI2)
-                  NC3=NodeCode(NMI3)
-                  NCEle=NC1*NC2*NC3*NOFF(IE)
+                  H1N1 = gridDepthVertETA2(NMI1)
+                  H1N2 = gridDepthVertETA2(NMI2)
+                  H1N3 = gridDepthVertETA2(NMI3)
+                  PHI1N1 = wetFracVertETA1(NMI1)
+                  PHI1N2 = wetFracVertETA1(NMI2)
+                  PHI1N3 = wetFracVertETA1(NMI3)
+                  PHI2N1 = wetFracVertETA2(NMI1)
+                  PHI2N2 = wetFracVertETA2(NMI2)
+                  PHI2N3 = wetFracVertETA2(NMI3)
+                  PHIAVG1 = (PHI1N1+PHI1N2+PHI1N3)/3.d0
+                  PHIAVG2 = (PHI2N1+PHI2N2+PHI2N3)/3.d0
                ENDIF
+               NC1=NodeCode(NMI1)
+               NC2=NodeCode(NMI2)
+               NC3=NodeCode(NMI3)
+               NCEle=NC1*NC2*NC3*NOFF(IE)
 
                SFacAvg = SFacEle(IE)
 C.... Beg DW/WJP:
@@ -488,18 +496,10 @@ C.... End WJP/DW
                AreaIE4=AreaIE2*2.0d0
 !JLW: adding subgrid to water surface elevation gradiant term
                IF(level0)THEN
-                  IF(subgridEleList(IE).EQ.1)THEN
-!JLW: subgrid can only be run with the non-split form of the water
-! surface gradient term
-                     DPAvg = (H1N1+H1N2+H1N3)/3.d0 
-                  ELSE
-                     DPAvg = (DP(NMI1)+DP(NMI2)+DP(NMI3))/3.d0 + 
-     &               IFNLFA*IFNL_HDP*(ETA2(NMI1) + 
-     &               ETA2(NMI2)+ETA2(NMI3))/3.d0 ; 
-                  ENDIF
+                  DPAvg = (H1N1+H1N2+H1N3)/3.d0
                ELSE
 C.... DW, Nov 2019 if IFNL_HDP = 1 use DP + ETA = H in the GWCE
-               DPAvg = (DP(NMI1)+DP(NMI2)+DP(NMI3))/3.d0 +   ! BAVG if GWCE_NL_HDP = .FALSE.
+                  DPAvg = (DP(NMI1)+DP(NMI2)+DP(NMI3))/3.d0 +   ! BAVG if GWCE_NL_HDP = .FALSE.
      &              IFNLFA*IFNL_HDP*(ETA2(NMI1) + ! HAVG otherwise
      &              ETA2(NMI2)+ETA2(NMI3))/3.d0 ; 
                ENDIF   
@@ -797,15 +797,10 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
             NM1=NM(IE,1)
             NM2=NM(IE,2)
             NM3=NM(IE,3)
-!JLW: add subgrid wet/dry to lateral stress terms so we can use Smag
-            IF(level0)THEN
-               NCEle = NCEleArray(IE)
-            ELSE
-               NC1=NODECODE(NM1)
-               NC2=NODECODE(NM2)
-               NC3=NODECODE(NM3)
-               NCEle=NC1*NC2*NC3*NOFF(IE)
-            ENDIF
+            NC1=NODECODE(NM1)
+            NC2=NODECODE(NM2)
+            NC3=NODECODE(NM3)
+            NCEle=NC1*NC2*NC3*NOFF(IE)
             SFacAvg = SFacEle(IE)
             SFmxAvg=SFMXEle(IE) ;
             SFmyAvg=SFMYEle(IE) ;
@@ -857,8 +852,17 @@ C........ END DW:
 
          DO I=1,NP
             IF(TotalArea(I).NE.0.) THEN
-               H2=DP(I)+IFNLFA*ETA2(I)
-               H2OTotalArea=H2/TotalArea(I)
+
+
+!JLW: adding subgrid to velocity based lateral stress
+               IF(level0)THEN
+                  H2N = gridDepthVertETA2(I)
+               ELSE
+C..............DMW202401 Use saved H2
+                  H2N= H2(I)
+               ENDIF
+               H2OTotalArea=H2N/TotalArea(I)
+
                IF (CGWCE_LS_2PartV) THEN          !nonsymmetric
                   LSXX(I)=H2OTotalArea*LSXX(I)
                   LSXY(I)=H2OTotalArea*LSXY(I)
@@ -897,14 +901,10 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
             NM2=NM(IE,2)
             NM3=NM(IE,3)
 !JLW: add subgrid wet/dry to lateral stress term so we can use Smag
-            IF(level0)THEN
-               NCEle = NCEleArray(IE)
-            ELSE
-               NC1=NODECODE(NM1)
-               NC2=NODECODE(NM2)
-               NC3=NODECODE(NM3)
-               NCEle=NC1*NC2*NC3*NOFF(IE)
-            ENDIF
+            NC1=NODECODE(NM1)
+            NC2=NODECODE(NM2)
+            NC3=NODECODE(NM3)
+            NCEle=NC1*NC2*NC3*NOFF(IE)
             SFacAvg = SFacEle(IE)
 C..... Beg DW:
             SFmxAvg=SFMXEle(IE) ;
@@ -995,7 +995,7 @@ C...  Assemble the GWCE RHS except for the boundary integral terms
 C...     Set nodal values for each element
 
 Corbitt 120322: Localized Advection
-         IF (LoadAdvectionState) CALL ADVECTLOCAL(IE)
+        IF (LoadAdvectionState) CALL ADVECTLOCAL(IE)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -1003,8 +1003,9 @@ Corbitt 120322: Localized Advection
          NC1=NODECODE(NM1)
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
-!JLW: moving NCEle calulation further down
-!         NCELE=NC1*NC2*NC3*NOFF(IE)
+!JLW: moving NCEle calulation further down. 
+!DW: uncomment line NCELE =  below to make the subgrid code run  
+         NCELE=NC1*NC2*NC3*NOFF(IE)
          E0N1=ETA1(NM1)
          E0N2=ETA1(NM2)
          E0N3=ETA1(NM3)
@@ -1029,27 +1030,40 @@ Corbitt 120322: Localized Advection
          QY1N1=QY1(NM1)
          QY1N2=QY1(NM2)
          QY1N3=QY1(NM3)
+
 !JLW: similar to the LHS, look up wet area fraction, grid averaged water
 !depth, and advection
-         IF(level0)THEN
-            H0N1 = gridDepthEleETA1(IE,1)
-            H0N2 = gridDepthEleETA1(IE,2)
-            H0N3 = gridDepthEleETA1(IE,3)
-            H1N1 = gridDepthEleETA2(IE,1)
-            H1N2 = gridDepthEleETA2(IE,2)
-            H1N3 = gridDepthEleETA2(IE,3)
+        IF(level0)THEN
+            H0N1 = gridDepthVertETA1(NM1)
+            H0N2 = gridDepthVertETA1(NM2)
+            H0N3 = gridDepthVertETA1(NM3)
+            H1N1 = gridDepthVertETA2(NM1)
+            H1N2 = gridDepthVertETA2(NM2)
+            H1N3 = gridDepthVertETA2(NM3)
             IF(level1)THEN
-               CADV1 = cadvEleETA2(IE,1)
-               CADV2 = cadvEleETA2(IE,2)
-               CADV3 = cadvEleETA2(IE,3)
+               CADV1 = cadvVertETA2(NM1)
+               CADV2 = cadvVertETA2(NM2)
+               CADV3 = cadvVertETA2(NM3)
             ENDIF
-            PHIAVG1 = wetFracAvgETA1(IE)
-            PHIAVG2 = wetFracAvgETA2(IE)
-            NCEle = NCEleArray(IE)
+            PHI1N1 = wetFracVertETA1(NM1)
+            PHI1N2 = wetFracVertETA1(NM2)
+            PHI1N3 = wetFracVertETA1(NM3)
+            PHI2N1 = wetFracVertETA2(NM1)
+            PHI2N2 = wetFracVertETA2(NM2)
+            PHI2N3 = wetFracVertETA2(NM3)
+            PHIAVG1 = (PHI1N1+PHI1N2+PHI1N3)/3.d0
+            PHIAVG2 = (PHI2N1+PHI2N2+PHI2N3)/3.d0
          ELSE
-            H1N1=DP(NM1)+IFNLFA*E1N1
-            H1N2=DP(NM2)+IFNLFA*E1N2
-            H1N3=DP(NM3)+IFNLFA*E1N3
+
+C...........DMW202401 Use saved H2, H1
+            H0N1=H1(NM1)
+            H0N2=H2(NM1)
+            H0N3=H1(NM3) 
+
+C...........DMW202401 Use saved H2
+            H1N1=H2(NM1)
+            H1N2=H2(NM2)
+            H1N3=H2(NM3)
             NCELE=NC1*NC2*NC3*NOFF(IE)
          ENDIF
          EVMN1=EVM(NM1)
@@ -1289,16 +1303,8 @@ C...     Compute elemental averages
          ESAvg=(ESN1+ESN2+ESN3)/3.d0
 !JLW: add subgrid
          IF(level0)THEN
-            IF(subgridEleList(IE).EQ.1)THEN
-               DPAvg = (H1N1+H1N2+H1N3)/3.d0
-               DPAvgS0 = (H0N1+H0N2+H0N3)/3.d0
-            ELSE
-               DPAvg = (DP(NM1)+DP(NM2)+DP(NM3))/3.d0 +  
-     &              IFNLFA*IFNL_HDP*(E1N1 + E1N2 + E1N3)/3.d0 ; 
-               
-               DPAvgS0 = (DP(NM1)+DP(NM2)+DP(NM3))/3.d0 +  
-     &              IFNLFA*IFNL_HDP*(E0N1 + E0N2 + E0N3)/3.d0 ; 
-            ENDIF
+            DPAvg = (H1N1+H1N2+H1N3)/3.d0
+            DPAvgS0 = (H0N1+H0N2+H0N3)/3.d0
          ELSE
 C.....   DW, Nov 2019 
             DPAvg = (DP(NM1)+DP(NM2)+DP(NM3))/3.d0 + ! BAVG if GWCE_HDP = .FALSE. 
@@ -1315,13 +1321,13 @@ C        Ali et al. formula
             Ma2    = G*DPavg/Cs2
             CfacS0 = (1.0D0 - 0.25D0*Ma2 - Ad*DPavgS0**Bd)**2D0
          endif
-         ! DMW 2022/06 Apply slope limiting to gravity
+         ! DMW 202206 Apply slope limiting to gravity
          GDPAvgOAreaIE4 = ALPHAL(IE)*G*DPAvg*Cfac/AreaIE4
-         ! DMW 2022/06 Apply slope limiting to gravity
+         ! DMW 202206 Apply slope limiting to gravity
          GDPAvgOAreaIE4_S0 = ALPHAL(IE)*G*DPAvgS0*CfacS0/AreaIE4
 C....  END DW & WJP
          HAvg=(H1N1+H1N2+H1N3)/3.d0
-         ! DMW 2022/06 Apply slope limiting to gravity
+         ! DMW 202206 Apply slope limiting to gravity
          GHAvg=ALPHAL(IE)*G*HAvg
          GHAvgOAreaIE2=GHAvg/AreaIE2
          BSXAvg=(BSXN1+BSXN2+BSXN3)/3.d0
@@ -1383,10 +1389,8 @@ C.....      DMW
             WSYAvg=(fwsy1*WSY1(NM1)+fwsy2*WSY1(NM2)+fwsy3*WSY1(NM3))/3.d0
 !JLW: adding subgrid
             IF(level0)THEN
-               IF(subgridEleList(IE).EQ.1)THEN
-                  WSXAvg = PHIAVG2*WSXAvg
-                  WSYAvg = PHIAVG2*WSYAvg
-               ENDIF
+               WSXAvg = PHIAVG2*WSXAvg
+               WSYAvg = PHIAVG2*WSYAvg
             ENDIF
          ENDIF
 C------- END DW
@@ -1468,33 +1472,18 @@ C...     Complete the JX, JY terms depending on the advection formulation
          IF(CGWCE_Advec_C1) THEN        !conservative v1 advection
 !JLW: adding advection corrections
            IF(level1)THEN
-              IF(subgridEleList(IE).EQ.1)THEN
-                 JXAvg = JXAvg - IFNLCT*(
-     &                   (CADV1*U1N1*QX1N1*FDX1+CADV2*U1N2*QX1N2
-     &                   *FDX2+CADV3*U1N3*QX1N3*FDX3)
-     &                   +(CADV1*U1N1*QY1N1*FDY1+CADV2*U1N2*QY1N2
-     &                   *FDY2+CADV3*U1N3*QY1N3*FDY3))
-     &                   /AreaIE2
-                 JYAvg = JYAvg - IFNLCT*(
-     &                   (CADV1*V1N1*QX1N1*FDX1+CADV2*V1N2*QX1N2
-     &                   *FDX2+CADV3*V1N3*QX1N3*FDX3)
-     &                   +(CADV1*V1N1*QY1N1*FDY1+CADV2*V1N2*QY1N2
-     &                   *FDY2+CADV3*V1N3*QY1N3*FDY3))
-     &                   /AreaIE2
-              ELSE
-                 JXAvg = JXAvg - IFNLCT*(
-     &                   (U1N1*QX1N1*FDX1+U1N2*QX1N2*FDX2
-     &                   +U1N3*QX1N3*FDX3)
-     &                   +(U1N1*QY1N1*FDY1+U1N2*QY1N2*FDY2
-     &                   +U1N3*QY1N3*FDY3))
-     &                   /AreaIE2
-                 JYAvg = JYAvg - IFNLCT*(
-     &                   (V1N1*QX1N1*FDX1+V1N2*QX1N2*FDX2
-     &                   +V1N3*QX1N3*FDX3)
-     &                   +(V1N1*QY1N1*FDY1+V1N2*QY1N2*FDY2
-     &                   +V1N3*QY1N3*FDY3))
-     &                   /AreaIE2
-              ENDIF
+              JXAvg = JXAvg - IFNLCT*(
+     &                (CADV1*U1N1*QX1N1*FDX1+CADV2*U1N2*QX1N2
+     &                *FDX2+CADV3*U1N3*QX1N3*FDX3)
+     &                +(CADV1*U1N1*QY1N1*FDY1+CADV2*U1N2*QY1N2
+     &                *FDY2+CADV3*U1N3*QY1N3*FDY3))
+     &                /AreaIE2
+              JYAvg = JYAvg - IFNLCT*(
+     &                (CADV1*V1N1*QX1N1*FDX1+CADV2*V1N2*QX1N2
+     &                *FDX2+CADV3*V1N3*QX1N3*FDX3)
+     &                +(CADV1*V1N1*QY1N1*FDY1+CADV2*V1N2*QY1N2
+     &                *FDY2+CADV3*V1N3*QY1N3*FDY3))
+     &                /AreaIE2
            ELSE
               JXAvg = JXAvg - IFNLCT*(
      &                (U1N1*QX1N1*FDX1+U1N2*QX1N2*FDX2
@@ -1551,10 +1540,10 @@ C...     Spatially varying Tau0 terms
      &        +Tau0SpaVar
 C
 C..... DW: begin
-     &        +(OnDiag*E0N1 + OffDiag*(E0N2+E0N3))*MsFacR_S
-     &        +(onDiag*ESAN1 + OffDiag*(ESAN2+ESAN3))*MsFacRS_T
-     &        +(onDiag*ABC00_EAN1 + 
-     &                OffDiag*(ABC00_EAN2 + ABC00_EAN3))*MsFacRS_ABC00
+     &        +(OnDiag*E0N1*SPM1 + OffDiag*(E0N2*SPM2+E0N3*SPM3))*MsFacR_S
+     &        +(onDiag*ESAN1*SPM1 + OffDiag*(ESAN2*SPM2+ESAN3*SPM3))*MsFacRS_T
+     &        +(onDiag*ABC00_EAN1*SPM1 + 
+     &                OffDiag*(ABC00_EAN2*SPM2 + ABC00_EAN3*SPM3))*MsFacRS_ABC00
 C..... END DW
 C
 
@@ -1577,10 +1566,10 @@ C...     Spatially varying Tau0 terms
      &        +Tau0SpaVar 
 C
 C..... DW: begin
-     &        +(OnDiag*E0N2 + OffDiag*(E0N1+E0N3))*MsFacR_S
-     &        +(onDiag*ESAN2 + OffDiag*(ESAN1+ESAN3))*MsFacRS_T
-     &        +(onDiag*ABC00_EAN2 + 
-     &                 OffDiag*(ABC00_EAN1 + ABC00_EAN3))*MsFacRS_ABC00
+     &        +(OnDiag*E0N2*SPM2 + OffDiag*(E0N1*SPM1+E0N3*SPM3))*MsFacR_S
+     &        +(onDiag*ESAN2*SPM2 + OffDiag*(ESAN1*SPM1+ESAN3*SPM3))*MsFacRS_T
+     &        +(onDiag*ABC00_EAN2*SPM2 + 
+     &                 OffDiag*(ABC00_EAN1*SPM1 + ABC00_EAN3*SPM3))*MsFacRS_ABC00
 C..... END DW
 C
 
@@ -1605,10 +1594,10 @@ C...     Spatially varying Tau0 terms
      &        +Tau0SpaVar
 C
 C..... DW: begin, absorbing layer
-     &        +(OnDiag*E0N3 + OffDiag*(E0N1+E0N2))*MsFacR_S
-     &        +(OnDiag*ESAN3 + OffDiag*(ESAN1+ESAN2))*MsFacRS_T
-     &        +(OnDiag*ABC00_EAN3 + 
-     &               OffDiag*(ABC00_EAN1 + ABC00_EAN2))*MsFacRS_ABC00
+     &        +(OnDiag*E0N3*SPM3 + OffDiag*(E0N1*SPM1+E0N2*SPM1))*MsFacR_S
+     &        +(OnDiag*ESAN3*SPM3 + OffDiag*(ESAN1*SPM1+ESAN2*SPM2))*MsFacRS_T
+     &        +(OnDiag*ABC00_EAN3*SPM3 + 
+     &               OffDiag*(ABC00_EAN1*SPM1 + ABC00_EAN2*SPM2))*MsFacRS_ABC00
 C..... END DW
 C
 
@@ -1650,6 +1639,12 @@ ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
             Eta0(I)=Eta1(I)
          END IF
          Eta1(I)=Eta2(I)
+C........DMW202401 Add update for flow depth at previous timestep, H1
+         IF ((I.EQ.1).AND.(IT.EQ.ITIME_BGN)) THEN
+            WRITE(16,*) 
+     &         'dmw202401 THIS CODE IS NOW MAKING ITS FIRST SAVE ON H1'
+         ENDIF
+         H1(I) = H2(I)
          Eta2(I)=0.0d0
       END DO
 
@@ -1768,14 +1763,14 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
      &        QFORCEJ=(QN2(1)-QN0(1))/DT2 + Tau0VAR(NBDJ)*QN1(1)
 
          IF (LBCODEI(1).EQ.30) THEN
-            H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-            CELERITY=SQRT(G*H1)
+C...........DMW202401 Use saved H1
+            CELERITY=SQRT(G*H1(NBDJ))
             QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
          ENDIF
 
          IF (LBCODEI(1).EQ.32) THEN
-            H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-            CELERITY=SQRT(G*H1)
+C...........DMW202401 Use saved H1
+            CELERITY=SQRT(G*H1(NBDJ))
 !C DW, Below is an original scheme and is correct 
 !C            QFORCEJ=(QN1(1)-QN0(1))/DT
 !C     &           -CELERITY*(ETAS(NBDJ)-(EN1(1)-EN0(1)))/DT
@@ -1794,8 +1789,8 @@ C     jgf46.21 Added IBTYPE=52.
          IF(LBCODEI(1).EQ.52) THEN
             QFORCEJ=(QN2(1)-QN0(1))/DT2 + Tau0VAR(NBDJ)*QN1(1)
             IF (IT.GT.FluxSettlingIT) THEN
-               HH1=DP(NBDJ)+IFNLFA*Eta1(NBDJ)
-               Celerity=SQRT(G*HH1)
+C..............DMW202401 Use saved H1
+               Celerity=SQRT(G*H1(NBDJ))
                QforceJ=QforceJ - Celerity*(EtaS(NBDJ)/DT
      &              + Tau0Var(NBDJ)*(Eta1(NBDJ)-ElevDisc(1)))
             ENDIF
@@ -1809,14 +1804,14 @@ C
             IF((LBCODEI(J).LE.29).OR.(LBCODEI(J).EQ.64))     ! 64 is added for VEW  08-11-2022 SB
      &           QFORCEJ=(QN2(J)-QN0(J))/DT2 + Tau0VAR(NBDJ)*QN1(J)
             IF(LBCODEI(J).EQ.30) THEN
-               H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-               CELERITY=SQRT(G*H1)
+C..............DMW202401 Use saved H1
+               CELERITY=SQRT(G*H1(NBDJ))
                QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(J)
             ENDIF
 
             IF(LBCODEI(J).EQ.32) THEN
-               H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-               CELERITY=SQRT(G*H1)
+C..............DMW202401 Use saved H1
+               CELERITY=SQRT(G*H1(NBDJ))
 !C DW, This is an original formula and is definitely correct (1st order in time)
 !C                QFORCEJ=(QN1(J)-QN0(J))/DT
 !C     &              -CELERITY*(ETAS(NBDJ)-(EN1(J)-EN0(J)))/DT
@@ -1835,8 +1830,8 @@ C     jgf46.21 Added IBTYPE=52
             IF(LBCODEI(J).EQ.52) THEN
                QFORCEJ=(QN2(J)-QN0(J))/DT2 + Tau0VAR(NBDJ)*QN1(J)
                IF (IT.GT.FluxSettlingIT) THEN
-                  HH1=DP(NBDJ)+IFNLFA*Eta1(NBDJ)
-                  Celerity=SQRT(G*HH1)
+C.................DMW202401 Use saved H1
+                  Celerity=SQRT(G*H1(NBDJ))
                   QforceJ=QforceJ - Celerity*(EtaS(NBDJ)/DT
      &                 + Tau0Var(NBDJ)*(Eta1(NBDJ)-ElevDisc(J)))
                ENDIF
@@ -1960,6 +1955,7 @@ C.... CONDENSED NODES: Summing up the values at condensed nodes
       IF((LoadCondensedNodes).AND.(ILump.NE.0)) THEN
          DO K=1,NListCondensedNodes
             I = ListCondensedNodes(K,1)
+            IF(I==0) CYCLE
             IF((NODECODE(I).NE.0)) THEN
                ! 1) Sum them up
                DO L=2,NNodesListCondensedNodes(K)
@@ -2022,16 +2018,7 @@ C...  JCG ITERATIVE MATRIX SOLVER
      &        IWKSP,NW,WKSP,IPARM,RPARM,IER)
          NUMITR=IPARM(1)
          DO I=1,NP
-!JLW: add subgrid
-            IF(level0)THEN
-               IF(subgridVertList(I).EQ.1)THEN
-                  ETA2(I)=ETAS(I)+ETA1(I)
-               ELSE
-                  ETA2(I) = NODECODE(I)*ETAS(I)+ETA1(I) 
-               ENDIF
-            ELSE
-               ETA2(I) = NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
-            ENDIF
+            ETA2(I) = NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
          END DO
       ELSE ! lumped LHS
          DO I = 1, NP
@@ -2159,7 +2146,7 @@ C*******************************************************************************
 C
       USE SIZES
       USE GLOBAL, ONLY : GWCE_LV, COEF, COEFD, OBCCOEF, ETAS, ETA1, ETA2,
-     &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1,
+     &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1, H1, H2,
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
      &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, IFNLCAT,
@@ -2211,7 +2198,7 @@ C
       REAL(8) EVMN1, EVMN2, EVMN3, EVMXGrad, EVMYGrad, EVMAvgODT
       REAL(8) EVMEle, EVMSmag
       REAL(8) GHAvg, GHAvgOAreaIE2, GOAreaIE4
-      REAL(8) H1N1, H1N2, H1N3, H2N1, H2N2, H2N3, HAvg, H1, H2
+      REAL(8) H1N1, H1N2, H1N3, H2N1, H2N2, H2N3, HAvg
       REAL(8) H2OTotalArea
       REAL(8) LSXXGradA, LSXYGradA, LSYXGradA, LSYYGradA
       REAL(8) LSXXEle, LSXYEle, LSYXEle, LSYYEle
@@ -2384,8 +2371,8 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
 
          DO I=1,NP
             IF(TotalArea(I).NE.0.) THEN
-               H2=DP(I)+IFNLFA*ETA2(I)
-               H2OTotalArea=H2/TotalArea(I)
+C..............DMW202401 Use saved H2
+               H2OTotalArea=H2(I)/TotalArea(I)
                IF (CGWCE_LS_2PartV) THEN          !nonsymmetric
                   LSXX(I)=H2OTotalArea*LSXX(I)
                   LSXY(I)=H2OTotalArea*LSXY(I)
@@ -2506,14 +2493,14 @@ ckmd
             UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             UV2=SQRT(UU2(I)*UU2(I)+VV2(I)*VV2(I))
             H00=DP(I)+IFNLFA*ETA0(I)
-            H1=DP(I)+IFNLFA*ETA1(I)
-            H2=DP(I)+IFNLFA*ETA2(I)
+
+C...........DMW202401 Use saved H1 and H2  
             TK0(I)=FRIC(I)*(IFLINBF + (UV0/H00)*(IFNLBF + IFHYBF*
      &           (1+(HBREAK/H00)**FTHETA)**(FGAMMA/FTHETA)))
-            TK(I)=FRIC(I)*(IFLINBF + (UV1/H1)*(IFNLBF + IFHYBF*
-     &           (1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
-            TK2(I)=FRIC(I)*(IFLINBF + (UV2/H2)*(IFNLBF + IFHYBF*
-     &           (1+(HBREAK/H2)**FTHETA)**(FGAMMA/FTHETA)))
+            TK(I)=FRIC(I)*(IFLINBF + (UV1/H1(I))*(IFNLBF + IFHYBF*
+     &           (1+(HBREAK/H1(I))**FTHETA)**(FGAMMA/FTHETA)))
+            TK2(I)=FRIC(I)*(IFLINBF + (UV2/H2(I))*(IFNLBF + IFHYBF*
+     &           (1+(HBREAK/H2(I))**FTHETA)**(FGAMMA/FTHETA)))
        END DO
 
 ckmd      Added in the time weights
@@ -2605,12 +2592,13 @@ Corbitt 120322: Localized Advection
          H0N1=DP(NM1)+IFNLFA*E0N1
          H0N2=DP(NM2)+IFNLFA*E0N2
          H0N3=DP(NM3)+IFNLFA*E0N3
-         H1N1=DP(NM1)+IFNLFA*E1N1
-         H1N2=DP(NM2)+IFNLFA*E1N2
-         H1N3=DP(NM3)+IFNLFA*E1N3
-         H2N1=DP(NM1)+IFNLFA*E2N1
-         H2N2=DP(NM2)+IFNLFA*E2N2
-         H2N3=DP(NM3)+IFNLFA*E2N3
+C........DMW202401 Use saved H1 and H2
+         H1N1=H1(NM1)
+         H1N2=H1(NM2)
+         H1N3=H1(NM3)
+         H2N1=H2(NM1)
+         H2N2=H2(NM2)
+         H2N3=H2(NM3)
          EVMN1=EVM(NM1)
          EVMN2=EVM(NM2)
          EVMN3=EVM(NM3)
@@ -3046,14 +3034,14 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
      &          Tau0VAR(NBDJ)*QN1(1)
 
          IF(LBCODEI(1).EQ.30) THEN
-            H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-            CELERITY=SQRT(G*H1)
+C...........DMW202401 Use saved H1
+            CELERITY=SQRT(G*H1(NBDJ))
             QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
             ENDIF
 
          IF(LBCODEI(1).EQ.32) THEN
-            H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-            CELERITY=SQRT(G*H1)
+C...........DMW202401 Use saved H1
+            CELERITY=SQRT(G*H1(NBDJ))
             QFORCEJ=(QN1(1)-QN0(1))/DT
      &           -CELERITY*(ETAS(NBDJ)-(EN1(1)-EN0(1)))/DT
      &           +TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
@@ -3071,14 +3059,14 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
      &         QFORCEJ=(QN2(J)-QN0(J))/DT2+Tau0VAR(NBDJ)*QN1(J)
 
             IF(LBCODEI(J).EQ.30) THEN
-               H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-               CELERITY=SQRT(G*H1)
+C..............DMW202401 Use saved H1
+               CELERITY=SQRT(G*H1(NBDJ))
                QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(J)
                ENDIF
 
             IF(LBCODEI(J).EQ.32) THEN
-               H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-               CELERITY=SQRT(G*H1)
+C..............DMW202401 Use saved H1
+               CELERITY=SQRT(G*H1(NBDJ))
                QFORCEJ=(QN1(J)-QN0(J))/DT
      &              -CELERITY*(ETAS(NBDJ)-(EN1(J)-EN0(J)))/DT
      &              +TAU0VAR(NBDJ)*(QN1(J)-CELERITY*(ETA1(NBDJ)-EN1(J)))
@@ -3244,7 +3232,9 @@ C.... end WP
             ! If the limiter is on already, go to the next node. 
             IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
             ! If this is one of the condensed nodes, go to the next node. 10/12/2023 sb
-            IF (LoadCondensedNodes .AND. NCondensedNodes(NM(IE,I)) > 0) CYCLE
+            IF (LoadCondensedNodes) THEN
+                IF (NCondensedNodes(NM(IE,I)) > 0) CYCLE
+            ENDIF
             ! Compare the elemental slope to the maximum elemental gradient.
             grad_check: IF (dEta2Mag.GE.
      &           ABS(elemental_slope_limiter_grad_max(NM(IE,I)))) THEN

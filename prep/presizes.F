@@ -112,17 +112,20 @@ C----------------------------------------------------------------------------
 
       MODULE PRESIZES
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      USE ADC_CONSTANTS, ONLY: waveWindMultiplier, Ad, Bd, Cs
+      USE ADC_CONSTANTS, ONLY: waveWindMultiplier, Ad, Bd, Cs,
+     &                         WaveStressGrad_CAP !tcm v56 2024: added
       USE GLOBAL, ONLY :
      &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
-     &    outputWindDrag,slim,windlim,directvelWD,useHF
+     &    outputWindDrag,slim,windlim,directvelWD,useHF,
+     &    Limit_WaveStressGrad  !tcm v56 2024: added
 #if defined CSWAN || defined ADCSWAN
      &   ,SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &    SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
      &    SWAN_OutputTMM10
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
-     &                  initWindModule
+     &                  initWindModule, 
+     &                  read_NWS14_NetCdf_using_core_0
       USE OWIWIND, ONLY: nPowellSearchDomains
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
@@ -224,6 +227,8 @@ C Logicals added for adcprep paths
       LOGICAL :: useXDMF = .false.    !jgf51.27 trigger metadata read from fort.15
       INTEGER, ALLOCATABLE :: NM(:,:) !jgf48.08
 
+! DW
+      INTEGER:: PARTITION_APPROACH = 1 ;
 
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
@@ -239,7 +244,8 @@ C Logicals added for adcprep paths
       LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
       LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      NAMELIST /waveCoupling/ WaveWindMultiplier
+      NAMELIST /waveCoupling/ WaveWindMultiplier,
+     &          Limit_WaveStressGrad, WaveStressGrad_Cap  !tcm v56 2024: added 
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
@@ -249,6 +255,9 @@ Casey 180318: Added NWS=13
       ! @jasonfleming: reduce memory usage if there are no weir boundaries
       ! with cross barrier pipes
       logical :: meshHasWeirWithPipes
+      logical :: meshHasExternalWeir
+      logical :: meshHasInternalWeir
+      logical :: meshHasWeir
       ! Warn Elev control namelist
 c.... !wjp added for warnElev namelist
       REAL(8) :: WarnElev = 20.0  !
@@ -341,6 +350,9 @@ C.... tcm v51.20.04 additions for station location file
       NETCDF_AVAIL = .false.
 #endif
       meshHasWeirWithPipes = .false.
+      meshHasInternalWeir  = .false.
+      meshHasExternalWeir  = .false.
+      meshHasWeir          = .false.
 C
 C...OPEN AND PROCESS THE UNIT 14 ADCIRC GRID FILE TO DETERMINE SIZES
 C
@@ -447,11 +459,17 @@ C     jgf46.21 Added support for IBTYPE=52.
          case(3,13,23)
             NFLUXB=1
             NBBN=NBBN+NBN
+            meshHasWeir = .true.
+            meshHasExternalWeir = .true.
          case(4,24,64)
             NFLUXI=1
             NIBP=NIBP+NBN
+            meshHasWeir = .true.
+            meshHasInternalWeir = .true.
          case(5,25)
-            meshHasWeirWithPipes = .false.
+            meshHasWeir = .true.
+            meshHasInternalWeir = .true.
+            meshHasWeirWithPipes = .true.
             NFLUXIPipe=1
             NIBPPipe=NIBPPipe+NBN
          case default  ! mainland and island
@@ -1007,7 +1025,7 @@ C++! GML added 5
           IF(ABS(NWS).EQ.8) THEN
               READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,RSTIMINC
            ELSEIF (ABS(NWS).EQ.20) THEN
-              READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,RSTIMINC
+              READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,IDUM,RSTIMINC
            ELSE
               READ(15,*) WTIMINC,RSTIMINC
            ENDIF

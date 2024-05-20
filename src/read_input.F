@@ -83,7 +83,9 @@ C-----------------------------------------------------------------------
      &   alloc_main6, openfileforread, nhoutonce, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
-     &   directvelWD,useHF
+     &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
+     &   WarnVel
+
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
@@ -95,7 +97,7 @@ C-----------------------------------------------------------------------
      &   ,NUOPC4WAV, NUOPC4MET
       USE ADC_CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
      &                     waveWindMultiplier,deg2rad,rhoAir,
-     &                     rad2deg,omega
+     &                     rad2deg,omega,WaveStressGrad_Cap
 
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
@@ -125,7 +127,8 @@ C-----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionRampReferenceTime,
      &   dynamicWaterLevelCorrectionMultiplier,
      &   vortexModel, backgroundWindModel, BCalc, thetaLatDep,
-     &   useInflow, w_cool, CkCd_calc, CkCd
+     &   useInflow, w_cool, CkCd_calc, CkCd,
+     &   read_NWS14_NetCdf_using_core_0
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
@@ -238,6 +241,8 @@ C.... DMW
      &   CkCd                   ! value used. if CdCd_calc = true,
                                 ! this value will not be used
 
+      NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
+
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       CHARACTER(len=2000) :: origLineTVW
@@ -265,7 +270,9 @@ C.... DMW
       NAMELIST /Smag_Control/ SMAG_COMP_FLAG,SMAG_UPPER_LIM, SMAG_LOWER_LIM
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      NAMELIST /waveCoupling/ WaveWindMultiplier
+!tcm 2024: added wave stress gradient limiting
+      NAMELIST /waveCoupling/ WaveWindMultiplier,
+     &         Limit_WaveStressGrad, WaveStressGrad_Cap
 
       call setMessageSource("read_input")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
@@ -314,6 +321,9 @@ C...
 #ifdef CSCA
       WRITE(16,*) '      - CODE OPTIMIZED FOR A SCALAR COMPUTER'
 #endif
+      WRITE(16,*) '      - dmw202401 THIS CODE USES A VELCHECKER'
+      WRITE(16,*) '      - dmw202401 THIS CODE USES THE FIX FOR SUBGRID BARRIERS'
+	  WRITE(16,*) '      - dmw202401 adcirc-noaa e8aef69945a44c50fbc51350eddf26d8f559348c'
       write(16,1112)
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
@@ -458,6 +468,18 @@ Casey 180318: Added NWS=13
       rewind(15)
 #endif
 
+
+#ifdef DATETIME
+      namelistSpecifier = 'WindGrib2NetCdf' 
+      read( unit = 15, nml=WindGrib2NetCdf,iostat=ios ) ;
+      call logNamelistReadStatus(namelistSpecifier, ios)
+      write(scratchMessage,*) "NWS 14: use core 0"//
+     &   "to read grib2/netcdf data = ",
+     &   read_NWS14_NetCdf_using_core_0 
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+#endif
+
       !...Read in time varying weir control from fort.15
       NOUT_TVW = -99999
       TOUTS_TVW = -99999
@@ -493,6 +515,14 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       call logNamelistReadStatus(namelistSpecifier,ios)
       write(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
       call logMessage(ECHO,trim(scratchMessage))
+!TCM 2024 -- added wave stress gradient limiter      
+      write(scratchMessage,*)"Limit_WaveStressGrad=",
+     &                        Limit_WaveStressGrad
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "WaveStressGrad_Cap=",
+     &                         WaveStressGrad_Cap
+      call logMessage(ECHO,trim(scratchMessage))
+      
       rewind(15)
       !
       ! jgf52.05: Add a namelist for the user to control
@@ -649,6 +679,8 @@ C     for elevations. Initialize default values.
       WarnElevDumpLimit = 50  ! default
       WarnElevDumpCounter = 0 ! init
       ErrorElev = 1000.0      ! default
+C     DMW 202401 Add check for velocity warning level
+      WarnVel = 100.d0
 C     WJP add namelist
       namelistSpecifier = 'WarnElevControl'
       read(unit=15,nml=WarnElevControl,iostat=IOS)
@@ -4080,7 +4112,8 @@ C...  RECORDING STATIONS
          ELSE         
             WRITE(16,3207) NSTAC
             IF (NSTAC.NE.0) THEN
-               WRITE(16,*) "CONC. STATION LOCATIONS WILL BE READ FROM FORT.15"
+               WRITE(16,*) 
+     &            "CONC. STATION LOCATIONS WILL BE READ FROM FORT.15"
             ENDIF
          ENDIF
  3207    FORMAT(///,5X,'NUMBER OF INPUT CONCENTRATION RECORDING ',
@@ -4853,7 +4886,7 @@ C...  SB
 C     Preparation of condensed nodes  SB
       call PrepCondensedNodes()
       
-C     Recompute a & b coefficients            
+C     Recompute a & b coefficients
       CALL RecomputeFDXEFDYEAtCondensedNodes()
       
 C...  SB END
@@ -6591,7 +6624,7 @@ C-----------------------------------------------------------------------
         USE MESSENGER, only: mapToSubdomainRealMPI, allnodes
 #endif
 #ifdef ADCNETCDF        
-        USE NETCDFIO, ONLY: check_err
+        USE NETCDF_ERROR, ONLY: check_err
         USE NETCDF
 #endif        
         IMPLICIT NONE

@@ -36,6 +36,9 @@ SwanGriddata.$(EXTO) \
 SwanGridobjects.$(EXTO) \
 SwanCompdata.$(EXTO) \
 SdsBabanin.$(EXTO) \
+SwanIEM.$(EXTO) \
+SwanBraggScat.$(EXTO) \
+SwanQCM.$(EXTO) \
 $(NCF_OBJS) \
 swan2coh.$(EXTO) \
 swanmain.$(EXTO) \
@@ -94,24 +97,18 @@ SwanPunCollect.$(EXTO) \
 SwanSumOverNodes.$(EXTO) \
 SwanMinOverNodes.$(EXTO) \
 SwanMaxOverNodes.$(EXTO) \
+SwanVTKWriteHeader.$(EXTO) \
+SwanVTKWriteData.$(EXTO) \
+SwanVTKPDataSets.$(EXTO) \
 ocpids.$(EXTO) \
 ocpcre.$(EXTO) \
-ocpmix.$(EXTO)
+ocpmix.$(EXTO) \
+fftpack51.$(EXTO)
 
 SWAN_LIB = libswan.so
 
 HCAT_EXE = hcat.exe
 HCAT_OBJS = swanhcat.$(EXTO)
-
-MSG_OBJS = \
-$(O_DIR)mkdir.$(EXTO) \
-$(O_DIR)sizes.$(EXTO) \
-$(O_DIR)constants.$(EXTO) \
-$(O_DIR)global.$(EXTO) \
-$(O_DIR)global_3dvs.$(EXTO) \
-$(O_DIR)version.$(EXTO) \
-$(O_DIR)messenger.$(EXTO) \
-$(O_DIR)boundaries.$(EXTO)
 
 UNHCAT_EXE = unhcat.exe
 UNHCAT_OBJS = HottifySWAN.$(EXTO)

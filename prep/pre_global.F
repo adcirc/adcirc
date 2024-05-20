@@ -299,6 +299,10 @@ Casey 180318: Added NWS=13
       LOGICAL :: FOUND_OWINC_NML
 #endif
 
+      ! DW 2024
+      LOGICAL :: found_NWS14Grib2NetCdf_Namelist = .false. 
+      NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
+
       logical :: foundWetDryControlNamelist = .false. ! for namelist 
       logical :: outputNodeCode = .false.
       logical :: outputNOFF = .false.

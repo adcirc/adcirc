@@ -1777,6 +1777,8 @@ C---------------------------------------------------------------------------C
       CHARACTER LOCFN*80,PE*6,LOCSTATFN*20
       INTEGER,ALLOCATABLE :: NTIMEVARYINGWEIRP(:)
       CHARACTER*80 OUTMSG
+
+      CHARACTER (LEN=20):: FMT
 C
 C--Write a Local Input file ( fort.15 ) for each PE
 C
@@ -2228,16 +2230,17 @@ c           CALL PREP15_3DDSS(IPROC)
 C
 C     jgf48.03 Write netCDF metadata, if necessary
          IF (useNetCDF.eqv..true.) THEN
-            WRITE(15,*) trim(adjustl(title))
-            WRITE(15,*) trim(adjustl(institution))
-            WRITE(15,*) trim(adjustl(source))
-            WRITE(15,*) trim(adjustl(history))
-            WRITE(15,*) trim(adjustl(references))
-            WRITE(15,*) trim(adjustl(comments))
-            WRITE(15,*) trim(adjustl(host))
-            WRITE(15,*) trim(adjustl(convention))
-            WRITE(15,*) trim(adjustl(contact))
-            WRITE(15,*) trim(adjustl(base_date))
+            FMT = "(1X,A)" ;
+            WRITE(15,FMT) trim(adjustl(title))
+            WRITE(15,FMT) trim(adjustl(institution))
+            WRITE(15,FMT) trim(adjustl(source))
+            WRITE(15,FMT) trim(adjustl(history))
+            WRITE(15,FMT) trim(adjustl(references))
+            WRITE(15,FMT) trim(adjustl(comments))
+            WRITE(15,FMT) trim(adjustl(host))
+            WRITE(15,FMT) trim(adjustl(convention))
+            WRITE(15,FMT) trim(adjustl(contact))
+            WRITE(15,FMT) trim(adjustl(base_date))
          ENDIF
 
 c...     tcm v50.66.02 additions for time varying bathymetry
@@ -2311,6 +2314,14 @@ Casey 180318: Added NWS=13
      &         TRIM(ADJUSTL(NWS13GroupForPowell)),"' /"
          endif
 #endif
+
+#ifdef DATETIME
+         IF ( found_NWS14Grib2NetCdf_namelist ) THEN
+             write(15,'(a,L3,a)') "&WindGrib2NetCdf"//
+     &          " read_NWS14_NetCdf_using_core_0 = ", read_NWS14_NetCdf_using_core_0, "/"
+
+         END IF
+#endif 
 
          ! NCSU Subdomain Modeling
          if (FOUND_SM_NML) then
@@ -7694,7 +7705,8 @@ C---------------------------------------------------------------------------
      &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
      &    foundCorrectionControlNamelist, NCICE, !GML added NCICE 20210727
-     &    foundVEW1DChannelControlNamelist
+     &    foundVEW1DChannelControlNamelist, meshHasWeir, meshHasInternalWeir,
+     &    meshHasWeirWithPipes
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
      &    initNetCDFHotstart3D, initNetCDFHotstart,
@@ -8929,9 +8941,9 @@ C     we collected in read_global.F and stored in pre_global.F.
      &   nfen, iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
      &   nvtd, alp4, C3D, runid)
-C
-C     Create NetCDF output files for those output files where NetCDF
-C     was specified.
+
+!     Create NetCDF output files for those output files where NetCDF
+!     was specified.
       reterr = .false.
       !WJP 02.20.2018 Adding capability for fort.51-54
       CALL initNetCDFOutputFile(HaElevStaDescript, reterr)

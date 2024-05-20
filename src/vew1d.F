@@ -382,7 +382,7 @@ C
             EXIT
          END IF
       END DO
-      
+
       END FUNCTION CondensedNodePairFound
 
       FUNCTION FIND_IB2(N1,N2,N3)

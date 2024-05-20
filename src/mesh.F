@@ -1579,40 +1579,6 @@
             if(dp(i).lt.h0) dp(i)=h0
          end do
       endif
-!
-!      F I N A L I Z E   E L E M E N T   T A B L E
-!
-!...
-!...  Compute neighbor tables.
-!...
-!     estimate the number of neighbor nodes around any node = number of
-!     elements containing that node.  This is correct for non-boundary
-!     nodes and one too small for boundary nodes
-      dp_orig = dp
-      NNeigh(:) = 0
-      DO I=1,NE
-        NNeigh(NM(I,1))=NNeigh(NM(I,1))+1
-        NNeigh(NM(I,2))=NNeigh(NM(I,2))+1
-        NNeigh(NM(I,3))=NNeigh(NM(I,3))+1
-      ENDDO
-!     determine the maximum NNeigh
-      MNei=maxval(nneigh)
- 
-!     estimate the maximum array space needed for the neighbor table by
-!     increasing this number by 2, to provide array space for the node itself
-!     and in case the maximum number of nodes occurs at a boundary node
-      MNei = MNei+2
-!     allocate space for neighbor tables
-      call allocateNeighborArrays()
-!     compute the neighbor table and redo NNeigh array
-      call allMessage(INFO,'THE NEIGHBOR TABLE IS BEING COMPUTED.')
-      call neighb()
-      write(scratchMessage,1195) NEIMIN,NEIMAX,NEIMAX
-      call allMessage(INFO, scratchMessage)
- 1195 FORMAT('THE NEIGHBOR TABLE IS COMPLETED. ',
-     &   'THE MINIMUM NUMBER OF NEIGHBORS FOR ANY NODE = ',i0,
-     &   '. 1+THE MAXIMUM NUMBER OF NEIGHBORS FOR ANY NODE = ',i0,
-     &   '. THE PARAMETER MNEI CAN BE SET AS SMALL AS ',i0,'.')
  
 !     check that sufficient accuracy is provided by the code to handle
 !     the resolution of the input mesh (i.e., very fine meshes may have
@@ -1726,7 +1692,7 @@
 !          v49.48.02 tcm rewrote 2 x area to reuse values already being used
            AREAS(I)=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
   
-           IF ( IFSPROTS.EQ.1 .and. AREAS(I).lt.0d0 ) THEN
+           IF ( AREAS(I).lt.0d0 ) THEN
 !             reorder and start loop again
               NMM = NM(I,:)
               NM(I,2) = NMM(3); NM(I,3) = NMM(2);
@@ -1762,6 +1728,47 @@
          CALL COMPUTE_CYLINPROJ_SFAC( SLAM, SFEA ) ; 
       END IF
 
+! DW: It is necessary to move the block of code finalizing element table
+!     to this location beacse EXV, EYV are used to calculate the neigbor
+!     table instead of X, Y. This would resolve very seldom-but-serius
+!     mistake in the neighbor table of nodes whose
+!     their associated elements having repeated latitude coordinates and 
+!     longitude coordinates crossing the (imaginary) meridian line.  
+!   
+!
+!      F I N A L I Z E   E L E M E N T   T A B L E
+!
+!...
+!...  Compute neighbor tables.
+!...
+!     estimate the number of neighbor nodes around any node = number of
+!     elements containing that node.  This is correct for non-boundary
+!     nodes and one too small for boundary nodes
+      dp_orig = dp
+      NNeigh(:) = 0
+      DO I=1,NE
+        NNeigh(NM(I,1))=NNeigh(NM(I,1))+1
+        NNeigh(NM(I,2))=NNeigh(NM(I,2))+1
+        NNeigh(NM(I,3))=NNeigh(NM(I,3))+1
+      ENDDO
+!     determine the maximum NNeigh
+      MNei=maxval(nneigh)
+ 
+!     estimate the maximum array space needed for the neighbor table by
+!     increasing this number by 2, to provide array space for the node itself
+!     and in case the maximum number of nodes occurs at a boundary node
+      MNei = MNei+2
+!     allocate space for neighbor tables
+      call allocateNeighborArrays()
+!     compute the neighbor table and redo NNeigh array
+      call allMessage(INFO,'THE NEIGHBOR TABLE IS BEING COMPUTED.')
+      call neighb()
+      write(scratchMessage,1195) NEIMIN,NEIMAX,NEIMAX
+      call allMessage(INFO, scratchMessage)
+ 1195 FORMAT('THE NEIGHBOR TABLE IS COMPLETED. ',
+     &   'THE MINIMUM NUMBER OF NEIGHBORS FOR ANY NODE = ',i0,
+     &   '. 1+THE MAXIMUM NUMBER OF NEIGHBORS FOR ANY NODE = ',i0,
+     &   '. THE PARAMETER MNEI CAN BE SET AS SMALL AS ',i0,'.')
 
 !     check to ensure that the nodal ordering in the connectivity table is
 !     counter clockwise around the elements
@@ -2925,12 +2932,7 @@ Csb...
 #else
       nfluxib64_gbl = nfluxib64
 #endif
-!sb...
 
-!jjwm001 - end add
-      ! jgf51.11.18: Free memory associated with the reading of the
-      ! levee and culvert parameters since it is no longer needed
-      call freeFluxBoundaryArrayTemporaries()
 !
 !...GENERAL PURPOSE FORMAT STATEMENTS for subtly expressed error messages
 !...
@@ -3138,6 +3140,9 @@ Csb...
       INTEGER, ALLOCATABLE :: NEITEM(:)
       LOGICAL :: FOUND
 
+      INTEGER:: EJ, IJ, II
+      INTEGER, ALLOCATABLE::  NeiTabETMP(:,:)
+
       call setMessageSource("neighb")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -3145,7 +3150,11 @@ Csb...
 
       ALLOCATE ( ANGLE(MNEI) )
       ALLOCATE ( NEITEM(MNP) )
-      ALLOCATE ( NNeighEle(MNP) )
+      IF ( .NOT. ALLOCATED(NNeighEle) ) THEN
+          ALLOCATE ( NNeighEle(MNP) )
+      END IF
+
+      ALLOCATE ( NeiTabETMP(MNP,MNEI) ) ;
 
       DO N=1,NP
          NNeigh(N)=0
@@ -3183,6 +3192,9 @@ Csb...
             ENDIF
             NeiTab(NN1,NNeigh(NN1))=NN2
             NeiTab(NN2,NNeigh(NN2))=NN1
+
+            NeiTabETMP(NN1,NNeigh(NN1))=N ;
+            NeiTabETMP(NN2,NNeigh(NN2))=N ;
          ENDIF
 
          FOUND = .FALSE.
@@ -3200,6 +3212,9 @@ Csb...
             ENDIF
             NeiTab(NN1,NNeigh(NN1))=NN3
             NeiTab(NN3,NNeigh(NN3))=NN1
+
+            NeiTabETMP(NN1,NNeigh(NN1))=N ;
+            NeiTabETMP(NN3,NNeigh(NN3))=N ;
          ENDIF
 
          FOUND = .FALSE.
@@ -3217,6 +3232,9 @@ Csb...
             ENDIF
             NeiTab(NN2,NNeigh(NN2))=NN3
             NeiTab(NN3,NNeigh(NN3))=NN2
+
+            NeiTabETMP(NN2,NNeigh(NN2))=N ;
+            NeiTabETMP(NN3,NNeigh(NN3))=N ;
          ENDIF
       END DO
 
@@ -3229,7 +3247,20 @@ Csb...
             NEITEM(J)=NeiTab(I,J)
             DELX=X(NEITEM(J))-X(I)
             DELY=Y(NEITEM(J))-Y(I)
+
+            EJ = NeiTabETMP(I,J) ;
+            IJ = sum(MERGE( (/ 1, 2, 3 /), (/ 0, 0, 0 /),
+     &             NM(EJ,:) - NEITEM(J) == 0 )) ;
+
+            II = sum(MERGE( (/ 1, 2, 3 /), (/ 0, 0, 0 /),
+     &             NM(EJ,:) - I == 0 )) ;
+
+            DELX=EXV(IJ,EJ) - EXV(II,EJ) 
+            DELY=EYV(IJ,EJ) - EYV(II,EJ) 
+
             DIST=SQRT(DELX*DELX+DELY*DELY)
+
+
             IF(DIST.EQ.0.0d0) THEN
                 call neighb_terminateDuplicateNode(I,NEITEM(J))
             ENDIF
@@ -3326,6 +3357,8 @@ Csb...
       DEALLOCATE ( ANGLE )
       DEALLOCATE ( NEITEM )
 !      DEALLOCATE ( NNEIGHELE )
+      DEALLOCATE ( NeiTabETMP ) 
+
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -3916,12 +3949,7 @@ Csb...
             END DO
          END DO         
 
-!!$         PRINT*, "Ic = ", IC ;
-!!$         DO I = 1, IC
-!!$             PRINT*, PERBC_ELNDTAB(I,1:4) ; 
-!!$         END DO
          
-
 !        Modify NeiTab, NeiTabEle 
          ALLOCATE( ptab(Mnei), stab(Mnei), 
      &             mneitab(Mnei*2), mneitabele(2*Mnei) ) ; 

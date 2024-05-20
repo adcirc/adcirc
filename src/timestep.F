@@ -56,12 +56,12 @@ C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
-      USE SIZES, ONLY : MNP, MNWPROH
+      USE SIZES, ONLY : MNP, MNWPROH, MYPROC
       USE GLOBAL, ONLY : UU1, VV1, QX1, QY1, QX2, QY2, UU2, VV2, MOM_LV_X,
      &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0, 
      &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0, 
      &    EN0, EN1, EN2, CICE1, CICE2, CICEOUT, RSNX1, RSNX2, RSNY1, RSNY2,
-     &    QX0, QN1, QN2, RSNXOUT, RSNYOUT, LNM_BC1, LNM_BC2, 
+     &    QX0, QN1, QN2, RSNXOUT, RSNYOUT, LNM_BC1, LNM_BC2, H1, H2,
      &    QNIN1, QNIN2, ENIN1, ENIN2, EtaDisc, NIBNODECODE,
      &    BCHGTIMINC, ETA2,ElevDisc, BTIME1, BTIME2, BTIME_END, C2D_PTrans,
      &    C2DDI, C3D, C3DVS, CBAROCLINIC, CGWCE_New, CHOTHS, CICE_TIME1,
@@ -81,15 +81,19 @@ C
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
-     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE
-      USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier
+     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
+     &    Limit_WaveStressGrad,
+     &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError
+      USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
+     &                         WaveStressGrad_Cap 
+     
       USE GWCE, ONLY : solveGWCE, numitr
       USE MOMENTUM, ONLY : solveMomentumEq
       USE WETDRY, ONLY : computeWettingAndDrying
       USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart, 
      &    writeWarnElev, collectInundationData, collectMinMaxData
       USE MESH, ONLY : NE, NP, DP, SLAM, SFEA, ICS, TotalArea,
-     &                  MJU, Areas, SFAC 
+     &                  MJU, Areas, SFAC, NNeigh, NeiTab
       USE BOUNDARIES, ONLY : NOPE, NETA, NBOU, NVEL, LBCODEI, NBV, SIII,
      &    NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, NFLUXIBP, NFLUXRBC, CSII,
      &    BARLANHT, BARLANCFSP, NVELL, IBCONN, BARINHT, BARINCFSP,
@@ -97,7 +101,9 @@ C
       USE GLOBAL_IO, ONLY : nddt2get
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
-     &    getdynamicWaterLevelCorrections
+     &    getdynamicWaterLevelCorrections, 
+     &    CLOSE_MET_FILES 
+
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
@@ -117,9 +123,9 @@ C.....sb46.28sb03 added 09/xx/2006
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
       USE GLOBAL_3DVS, ONLY:
      &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA, Z0B,NFEN
-
 ! arash 1/20/2016
      &     , BPG
+      USE ADCIRC_Mod, ONLY: ITIME_BGN
 
 #ifdef CMPI
       USE MESSENGER
@@ -142,15 +148,13 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
      &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
 
-!JLW: add subgrid module
-      USE subgrid, ONLY: level0, getEleLookup, getVertLookup
-     &   , subgridwetdry
+      USE subgrid, ONLY: level0, getVertLookup
 
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
 C
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
-      INTEGER IE, I, J, K                  !local loop counters
+      INTEGER IE, I, J, K, JJ                  !local loop counters
       INTEGER NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle
       INTEGER NCyc, NA
@@ -162,6 +166,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) :: vel
       REAL(8) :: velmax
       INTEGER :: errorElevExceeded
+      INTEGER :: warnVelExceeded
       INTEGER :: warnElevExceeded
       logical, save ::  EtaDisc_Fill = .TRUE.
 
@@ -173,8 +178,8 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) EtaN1,EtaN2,EtaN3
       REAL(8) QTRatio
       REAL(8) RStRatio, RSX, RSY
+      REAL(8) RSXLIM,RSYLIM,RSXYMAG,RSSCALE
       REAL(8) SAltMul, S2SFEA
-      REAL(8) H1
       REAL(8) TPMul
       REAL(8) UN1
 
@@ -206,6 +211,15 @@ C....... DW
       INTEGER:: NBDI, istep
 C.......
       LOGICAL ISFRONT
+      LOGICAL foundNaN
+      
+      IF (IT .EQ. 1) THEN
+!.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
+        DO I = 1,NP
+           H2(I) = DP(I)+IFNLFA*ETA2(I)
+           H1(I) = H2(I)
+        ENDDO
+      ENDIF
 
       call setMessageSource("timestep")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -670,7 +684,6 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       IF(NRS.NE.0) THEN
 
         if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3) .or. (nrs.eq.5)) then  !saeed added 5
-!          if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
             IF(TimeLoc.GT.RSTIME2) THEN
                RSTIME1=RSTIME2
                RSTIME2=RSTIME2+RSTIMINC
@@ -704,7 +717,7 @@ C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2
 C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
                NRS5: IF (NRS == 5) THEN    ! saeed
 
-                  DO I=1,NP
+                 DO I=1,NP
                    RSX = RSNX1(I)
                    RSY = RSNY1(I)
                    RSNX1(I) = RSNX2(I)
@@ -714,24 +727,47 @@ C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
                  ENDDO
                ENDIF NRS5 !(NRS = 5)
 
-            ENDIF
+            ENDIF  !timeloc gt rstime2
 
             RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
-            DO I=1,NP
-               RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
-               RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
-               WSX2(I) = WSX2(I) + RSX
-               WSY2(I) = WSY2(I) + RSY
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-!#ifdef CSWAN
+            
+! tcm v56 2024 -- added option for limiting wave stress gradient magnitude
+            IF (Limit_WaveStressGrad.eqv..false.) then            
+               DO I=1,NP
+                 RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
+                 RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
+                 WSX2(I) = WSX2(I) + RSX
+                 WSY2(I) = WSY2(I) + RSY
+
 Casey 090302: Added these lines for output to the rads.64 file.
-               IF(ABS(NRS).EQ.3) then
-                  RSNXOUT(I) = RSX
-                  RSNYOUT(I) = RSY
-               ENDIF
-!#endif
-            ENDDO
-         ENDIF  !nrs = 1,2,or 3
+!TCM v56 2024: removed the test for NRS=3, to allow for outputting if any NRS>0
+!                IF(ABS(NRS).EQ.3) then
+                 RSNXOUT(I) = RSX
+                 RSNYOUT(I) = RSY
+!                ENDIF
+               ENDDO
+            ELSE !test and limit wave stress
+               DO I=1,NP
+                 RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
+                 RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
+                 RSXYMAG = SQRT(RSX*RSX + RSY*RSY)
+                 IF ((RSXYMAG .gt. WaveStressGrad_Cap ).and.
+     &               (RSXYMAG.gt.0.0d0)) then
+                    RSSCALE = WaveStressGrad_Cap/RSXYMAG
+                    RSXLIM = RSX*RSSCALE
+                    RSYLIM = RSY*RSSCALE
+                 ELSE
+                    RSXLIM = RSX
+                    RSYLIM = RSY
+                 ENDIF
+                 WSX2(I) = WSX2(I) + RSXLIM
+                 WSY2(I) = WSY2(I) + RSYLIM
+                 RSNXOUT(I) = RSX    !keep unlimited value for writing
+                 RSNYOUT(I) = RSY    !keep unlimited value for writing
+               ENDDO
+            ENDIF  ! test for limiting wave stress gradient magnitudes
+            
+         ENDIF  !nrs = 1,2,3, or 5
 
          ! Tightly Coupled Code with STWAVE
          ! Apply the ramping function and add wave stress to WSX2,WSY2
@@ -744,19 +780,44 @@ Casey 090302: Added these lines for output to the rads.64 file.
             IF (TimeLoc > ENDWAVE+RSTIMINC) THEN
               RSNX2(:) = 0.0d0;  RSNY2(:) = 0.0d0
             ENDIF
-            DO I=1,NP
-               RSX = RampWRad*RSNX2(I)
-               RSY = RampWRad*RSNY2(I)
-               WSX2(I) = WSX2(I) + RSX
-               WSY2(I) = WSY2(I) + RSY
-               !  tcm v50.75 added for use whenever nrs=3 or nrs=4
-               RSNXOUT(I) = RSX
-               RSNYOUT(I) = RSY
-            END DO
+
+!tcm v56 2024: Added test for limiting wave stress gradient magnitudes
+            IF (Limit_WaveStressGrad.eqv..false.) then
+               DO I=1,NP
+                  RSX = RampWRad*RSNX2(I)
+                  RSY = RampWRad*RSNY2(I)
+                  WSX2(I) = WSX2(I) + RSX
+                  WSY2(I) = WSY2(I) + RSY
+                  !  tcm v50.75 added for use whenever nrs=3 or nrs=4
+                  RSNXOUT(I) = RSX
+                  RSNYOUT(I) = RSY
+               ENDDO
+               
+            ELSE !test and limit wave stress gradients
+             
+               DO I=1,NP
+                  RSX = RampWRad*RSNX2(I)
+                  RSY = RampWRad*RSNY2(I)
+
+                  RSXYMAG = SQRT(RSX*RSX + RSY*RSY)
+                  IF ((RSXYMAG .gt. WaveStressGrad_Cap ).and.
+     &                (RSXYMAG.gt.0.0d0)) then
+                     RSSCALE = WaveStressGrad_Cap/RSXYMAG
+                     RSXLIM = RSX*RSSCALE
+                     RSYLIM = RSY*RSSCALE
+                  ELSE
+                     RSXLIM = RSX
+                     RSYLIM = RSY
+                  ENDIF
+
+                  WSX2(I) = WSX2(I) + RSXLIM
+                  WSY2(I) = WSY2(I) + RSYLIM
+                  RSNXOUT(I) = RSX !keep unlimited value for writing
+                  RSNYOUT(I) = RSY !keep unlimited value for writing
+               ENDDO
+            ENDIF !test for limit wave stress gradients      
          ENDIF !(NRS = 4)
-
       ENDIF  !(End test for updating wave radiation stress)
-
 
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.
@@ -926,9 +987,8 @@ C...
          DO J=1,NVEL
             IF(LBCODEI(J).EQ.30) THEN
                NNBB=NBV(J)
-               H1=DP(NNBB)+IFNLFA*ETA2(NNBB)
                UN1=UU1(NNBB)*CSII(J)+VV1(NNBB)*SIII(J)
-               QN1(J)=H1*UN1
+               QN1(J)=H2(NNBB)*UN1
             ENDIF
          END DO
       ENDIF
@@ -940,9 +1000,8 @@ C...
           DO J=1,NVEL
             IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) THEN
               NNBB=NBV(J)
-              H1=DP(NNBB)+IFNLFA*ETA2(NNBB)
               UN1=UU1(NNBB)*CSII(J)+VV1(NNBB)*SIII(J)
-              QN1(J)=H1*UN1
+              QN1(J)=H2(NNBB)*UN1
               ENDIF
             END DO
           ENDIF
@@ -1036,28 +1095,21 @@ C...
       if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
-      
-
-
 
 !----------------------SOLVE GWCE---------------------------------------
 C...
 C...  Compute new water surface elevation 
-      call solveGWCE(it, timeloc, timeh)
+      call solveGWCE(it, ITIME_BGN, timeloc, timeh)
 
 !---------------------END SOLVE GWCE------------------------------------
 
 !JLW: adding subgrid
       IF(level0)THEN
-#ifdef ADCNETCDF          
-         !JLW: update element arrays
-         call getEleLookup()
+#ifdef ADCNETCDF
          !JLW: update vertex arrays
          call getVertLookup()
          !JLW: update nodecode, ncele, etc
-         call subgridwetdry(BFCdLLimit, fric, fgamma, ftheta,
-     &                      manningsn, hbreak, loadManningsN,
-     &                      iflinbf, ifnlbf, ifhybf)
+         call computeWettingAndDrying(it)
 #else
          call allMessage(ERROR, "Subgrid calculation requires building"
      &                          //"with netcdf enabled")
@@ -1070,7 +1122,12 @@ C...  Compute new water surface elevation
 
 !--------------------WETTING AND DRYING--------------------------------
       ENDIF
-
+ 
+!.....DMW202401 Add update for flow depth at current timestep
+!......We do this after wetting/drying since bathy could change with subgrid barriers.
+      DO I = 1,NP
+         H2(I) = DP(I)+IFNLFA*ETA2(I)
+      ENDDO
 C...
 C---------------2DDI Momentum Equation Solution-------------------------
 C...
@@ -1270,8 +1327,8 @@ C     output the global node number to debug the local PE fort.14s
      &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1993       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
      &           2X,'ON MYPROC = ',I4,
      &           3X,'** WARNING: Elevation.gt.WarnElev **')
             IF (WarnElevDump) WarnElevExceeded=1
@@ -1292,8 +1349,8 @@ C     output the global node number to debug the local PE fort.14s
      &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
  1995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
      &           2X,'ON MYPROC = ',I4,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev,',
      &           ' ADCIRC stopping. **')
@@ -1305,6 +1362,29 @@ C     output the global node number to debug the local PE fort.14s
            CALL MSG_FINI()                    !  if there are Error Elvation nodes.
            CALL EXIT(1)                             !
          ENDIF                                !st3
+
+#ifdef VELCHECK
+         WarnVelExceeded = 0                
+         IF (IT .EQ. ITIME_BGN) THEN
+            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST CHECK FOR WARNING VELS'
+         ENDIF
+         IF(VELMAX.GT.WarnVel) THEN
+         
+            WRITE(ScreenUnit,3995)
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &           VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(16,3995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+ 3995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
+     &           2X,'ON MYPROC = ',I4,/,
+     &           2X,'** WARNING: Velocity.gt.WarnVel **')
+            WarnVelExceeded = 1                
+         ENDIF   
+#endif
+		 
 #else
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
@@ -1317,8 +1397,8 @@ C     output the global node number to debug the local PE fort.14s
  1992       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
      &           5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8)
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9)
          ENDIF
          IF(ELMAX.GT.WarnElev) THEN
             WRITE(ScreenUnit,1994)
@@ -1326,8 +1406,8 @@ C     output the global node number to debug the local PE fort.14s
             WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
      &           2X,'** WARNING: Elevation.gt.WarnElev **')
 #ifdef DEBUG_WARN_ELEV
             IF (WarnElevDump) CALL WriteWarnElev(TimeLoc, IT)
@@ -1341,14 +1421,96 @@ C     output the global node number to debug the local PE fort.14s
             WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,/,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev, '
      &           'ADCIRC stopping. **')
             CALL ADCIRC_Terminate()
          ENDIF
+#ifdef VELCHECK
+         IF (IT .EQ. ITIME_BGN) THEN
+            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST CHECK FOR ERROR VELS'
+         ENDIF
+         IF(VELMAX.GT.WarnVel) THEN
+            WRITE(ScreenUnit,3996)
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(16,3996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+ 3996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
+     &           2X,'** WARNING: Velocity.gt.WarnVel **')
+         ENDIF
 #endif
+
+#endif
+
       ENDIF
+
+#ifdef VELCHECK
+!....DMW 20240109 - WARNING FOR NaNs IN VELOCITY SOLN
+      foundNaN = .false.
+      DO I = 1,NP
+         IF ((I.EQ.1).AND.(IT.EQ.ITIME_BGN)) THEN
+            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST CHECK FOR NAN VELS'
+         ENDIF
+         IF(ISNAN(UU2(I)).OR.ISNAN(VV2(I))) THEN
+            foundNaN = .true.
+            IF(NSCREEN.NE.0) THEN
+               WRITE(ScreenUnit,2993)
+     &              IT,NUMITR,TimeLoc,NODES_LG(I),
+     &              ETA2(I),DP(I),MYPROC
+               WRITE(16,2993) IT,NUMITR,TimeLoc,
+     &              NODES_LG(I),ETA2(I),DP(I),MYPROC
+ 2993          FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &              5X,'TIME = ',E15.8,
+     &              2X,'SPEED IS NaN AT NODE I =',I9,
+     &              /,2X,'ETA2(I) = ', 1pE12.4E3,
+     &              2X,'DP(I) = ', 1pE12.4E3,
+     &              2X,'ON MYPROC = ',I4)
+               DO J = 2,NNeigh(I)
+                  JJ = NeiTab(I,J)
+                  WRITE(ScreenUnit,2995) NODES_LG(JJ),ETA2(JJ),DP(JJ),               
+     &                 UU2(JJ),VV2(JJ),MYPROC
+              
+                  WRITE(16,2995) NODES_LG(JJ),ETA2(JJ),DP(JJ),
+     &                 UU2(JJ),VV2(JJ),MYPROC
+ 2995             FORMAT(1X,'AT NEIGHBOR NODE I =',I9,
+     &                 /,2X,'ETA2(I) = ', 1pE12.4E3,
+     &                 2X,'DP(I) = ', 1pE12.4E3,
+     &                 2X,'UU2(I) = ', 1pE12.4E3,
+     &                 2X,'VV2(I) = ', 1pE12.4E3,
+     &                 2X,'ON MYPROC = ',I4)
+               ENDDO
+            ENDIF
+         ENDIF
+      ENDDO
+      IF (foundNaN) THEN
+         IF(NSCREEN.NE.0) THEN
+            WRITE(ScreenUnit,2994)
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &           VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(16,2994) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+ 2994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
+     &           2X,'ON MYPROC = ',I4,
+     &           3X,'** WARNING: Velocity is NaN **')
+         ENDIF
+      ENDIF
+      IF ((foundNaN).AND.(IT_foundNaN.EQ.0)) THEN
+         IT_foundNaN = IT
+      ELSEIF ((IT.EQ.IT_foundNaN + 20).AND.(IT_foundNaN.NE.0)) THEN
+         earlyterminate = 1
+      ENDIF
+#ifdef CMPI
+      call EarlyTermSum( earlyterminate )
+#endif
+
+#endif
+
 
 C...
 C...  ****************** TIME STEPPING LOOP ENDS HERE ********************
@@ -1358,6 +1520,11 @@ c. RJW merged 08/26/2008 Casey 071219: Added the folowing call to the mass balan
 C      IF(C3DVS)THEN
 C         CALL MASSBAL3D(IT)
 C      ENDIF
+
+      IF ( IT == NT ) THEN
+        ! close NWS14 NetCdf files !
+        CALL CLOSE_MET_FILES() ; 
+      END IF        
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -1381,7 +1548,8 @@ C
       USE GLOBAL, only: ch1, trans_lv_b, nodecode, noff, lumpt, dtdp,
      &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
      &    setmessagesource, unsetmessagesource, DEBUG,
-     &    allMessage
+     &    allMessage, H1
+
       USE ADC_CONSTANTS, ONLY: rhowat0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
       USE NodalAttributes, ONLY: EVC
@@ -1403,7 +1571,7 @@ C
       REAL(8) EVC1, EVC2, EVC3, EVCEA
       REAL(8) FDDDODT, FDDODODT
       REAL(8) HEA
-      REAL(8) H1, H1N1, H1N2, H1N3
+      REAL(8) H1N1, H1N2, H1N3
       REAL(8) HSD, HSE
       REAL(8) SFacAvg
       REAL(8) SS1N1, SS1N2, SS1N3
@@ -1440,9 +1608,8 @@ C.... SEDIMENT TRANSPORT RELATIONS
 
       DO I=1,NP
         UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
-        H1=DP(I)+IFNLFA*ETA1(I)
-        BEDSTR=H1*UV1*TK(I)*RhoWat0                           ![N/m^2]
-        C1=CH1(I)/H1
+        BEDSTR=H1(I)*UV1*TK(I)*RhoWat0                           ![N/m^2]
+        C1=CH1(I)/H1(I)
 
 C.....Calculate the deposition rate using Krone's (1962) formulation:
 C.....dC/dt = -P*WSMOD*C/D     where
@@ -1505,9 +1672,9 @@ C.....SET NODAL VALUES FOR EACH ELEMENT
          SS1N1=SOURSIN(NM1)
          SS1N2=SOURSIN(NM2)
          SS1N3=SOURSIN(NM3)
-         H1N1=DP(NM1)+IFNLFA*ETA1(NM1)
-         H1N2=DP(NM2)+IFNLFA*ETA1(NM2)
-         H1N3=DP(NM3)+IFNLFA*ETA1(NM3)
+         H1N1=H1(NM1)
+         H1N2=H1(NM2)
+         H1N3=H1(NM3)
          SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.
 
 C.....COMPUTE ELEMENTAL MATRICIES
@@ -1733,7 +1900,7 @@ c******************************************************************************
       USE ADC_CONSTANTS, ONLY: G, RhoWat0, SigT0
       USE GLOBAL, ONLY: IFNLFA, IFNLCT, IDEN, RAMP, NODECODE, NOFF, 
      &    VIDBCPDXOH, VIDBCPDYOH, ETA2, DTDP, DASigT, 
-     &    IFSFM
+     &    IFSFM, H2
       USE MESH, ONLY : NE, NM, FDXE, FDYE, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, TOTALAREA,
      &      SFacEle, SFMYEle, SFMXEle
@@ -1788,9 +1955,9 @@ c******************************************************************************
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCEle=NC1*NC2*NC3*NOFF(IE)
-         H2N1=DP(NM1)+IFNLFA*ETA2(NM1) !jgf45.11 add IFNLFA (kd bug fix)
-         H2N2=DP(NM2)+IFNLFA*ETA2(NM2) ! "
-         H2N3=DP(NM3)+IFNLFA*ETA2(NM3) ! "
+         H2N1=H2(NM1)
+         H2N2=H2(NM2)
+         H2N3=H2(NM3)
          EtaN1=IFNLFA*Eta2(NM1)
          EtaN2=IFNLFA*Eta2(NM2)
          EtaN3=IFNLFA*Eta2(NM3)
@@ -1895,7 +2062,7 @@ C
      &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
      &      setMessageSource, unsetMessageSource, allMessage,
      &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &      ETA2, H0, DTDP
+     &      ETA2, H0, DTDP, H2
       USE ADC_CONSTANTS, ONLY: SigT0
       USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, SFAC
@@ -1999,8 +2166,7 @@ C
 
 Casey: Changed "NolIFA" to "IFNLFA."
 C
-            Hs=DP(NH)+IFNLFA*Eta2(NH) !total depth at previous (s) timestep
-            HGORhoOAMB=GORhoOAMB*Hs !(gravity/rho ref)*(H/(a-b))
+            HGORhoOAMB=GORhoOAMB*H2(NH) !(gravity/rho ref)*(H/(a-b))
             BCP(NH,NFEN)=0.d0
 ! arash: this integration can be improved
             DO k=NFEN-1,1,-1    !loop over vertical nodes, starting at top and working down
@@ -2072,8 +2238,7 @@ C     Loop over each horizontal node to compute the horizontal velocity
 C
       DO NH=1,NP                !loop over horizontal nodes
 
-         Hs  = DP(NH)+IFNLFA*Eta2(NH) !Total depth at previous (s) timestep
-         HsOAMB=Hs/AMB
+         HsOAMB=H2(NH)/AMB
 
 c     Zero out baroclinic pressure gradient and vertically integrated
 c     baroclinic pressure gradient for a barotropic run
@@ -2105,9 +2270,8 @@ c     coordinates) at each node in the vertical
                N2=NEITAB(NH,2)  !operate on 1st neighbor
 
 Casey: Changed "NolIFA" to "IFNLFA."
-C
-               HsN2=DP(N2)+IFNLFA*Eta2(N2)
-               SigmaNN=B+AMB*(Zk+DP(N2))/HsN2 !equivalent sigma value at neighbor
+
+               SigmaNN=B+AMB*(Zk+DP(N2))/H2(N2) !equivalent sigma value at neighbor
                CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
 !!!!!!!!!         CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
                NNFirst=N2       !save these values until end
@@ -2119,9 +2283,8 @@ C
                   N2=NeiTab(NH,N) !select new neighbor to work on
 
 Casey: Changed "NolIFA" to "IFNLFA."
-C
-                  HsN2=DP(N2)+IFNLFA*Eta2(N2)
-                  SigmaNN=B+AMB*(Zk+DP(N2))/HsN2 !equivalent sigma value at neighbor
+
+                  SigmaNN=B+AMB*(Zk+DP(N2))/H2(N2) !equivalent sigma value at neighbor
 !!!!!!!!!            CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
                   CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
                   NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
@@ -2730,7 +2893,7 @@ C**********************************************************************
 
        Subroutine Gaussian_filter_complex_BPG ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
 
-       Use Global,      Only : IFNLFA, ETA2
+       Use Global,      Only : H2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B
 
@@ -2802,10 +2965,10 @@ C**********************************************************************
          !Write(*,'(I5,11f6.3)') NNeigh ( I ), weights(1:NNeigh ( I ))
          !Pause
          ! 2.4. compute elevation corresponding to this node
-         Hs = DP(I) + IFNLFA * Eta2(I)  !Total depth at current timestep - 'center' node
+         ! Total depth at current timestep - 'center' node
          ! arash: not sure if the next line is necessary, but probably not. we aren't using it in the bpg routine either.
          ! IF( Hs .LT. H0 ) Hs = H0
-         HsOAMB = Hs / AMB
+         HsOAMB = H2(I) / AMB
 
          ! 3. apply the Gaussian filter
           Do J = 1, NNeigh ( I )
@@ -2814,8 +2977,7 @@ C**********************************************************************
              Do K = 1, NFEN
                 ! 3.0. obtain the z and sigma value corresponding to the 'center' node
                 Zk = HsOAMB * ( Sigma(K) - B ) - DP(I)
-                Hs_Neighbor_Node = DP(Neighbor_Node) + IFNLFA * Eta2(Neighbor_Node)
-                SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / Hs_Neighbor_Node
+                SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / H2(Neighbor_Node)
                 ! 3.1. linearly interpolate surrounding BPG on the same horizontal plane
                 Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, interpolated_value, K )
                 quantity_smooth (I,K) = quantity_smooth (I,K) + Weights (J) * interpolated_value

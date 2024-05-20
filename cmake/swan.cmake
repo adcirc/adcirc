@@ -85,7 +85,14 @@ if(BUILD_SWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/ocpcre.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/ocpmix.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SdsBabanin.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanGradVel.f90)
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanGradVel.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanIEM.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanBraggScat.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanQCM.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanVTKWriteHeader.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanVTKWriteData.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/SwanVTKPDataSets.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/fftpack51.f90)
 
   add_executable(swan ${SWANONLY_SERIAL_SOURCES})
 

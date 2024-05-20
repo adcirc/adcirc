@@ -559,7 +559,7 @@ C     ------------------------------------------------------------------
       integer, intent(in) :: nfover
       integer, intent(inout) :: exist_flux
       integer :: i, j, k, nweir
-           
+
       if (nope.ne.0) then
          p_nvdll = nvdll
          p_nbdv = nbdv

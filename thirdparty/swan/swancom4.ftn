@@ -38,13 +38,22 @@
 !
 !     *** nonlinear 3 wave-wave interactions ***
 !
-!     TCOEF  (compute coupling coefficients for SPB of Becq-Girard et al, 1999)
-!     COAPP  (interpolation of energy densities at sum and diff freqs for triads)
-!     SWLTA  (triad-wave interactions calculated with the Lumped Triad
-!             Approximation of Eldeberky, 1996)
-!     SWSPB  (triad-wave interactions calculated with the Stochastic
-!             Parametric model based on the Boussinesq eqs (SPB) of
-!             Becq-Girard et al, 1999)
+!     TCOEF   (compute coupling coefficients for SPB of Becq-Girard et al, 1999)
+!     COAPP   (interpolation of energy densities at sum and diff freqs for triads)
+!     FAC3WW  (compute scaling factors for LTA/DCTA)
+!     SWLTA   (triad-wave interactions calculated with the Lumped Triad
+!              Approximation of Eldeberky, 1996)
+!     SWSPB   (triad-wave interactions calculated with the Stochastic
+!              Parametric model based on the Boussinesq eqs (SPB) of
+!              Becq-Girard et al, 1999)
+!     SWDCTA  (triad-wave interactions calculated with the Distributed
+!              Collinear Triad Approximation of Booij et al, 2009)
+!     SWDNCTA (triad-wave interactions calculated with the Distributed
+!              NonCollinear Triad Approximation)
+!     PEREXC  (includes periodic exchange between first and second harmonics
+!              for estimating biphase based on Saprykina et al, 2017)
+!     SWBIDW  (compute the biphase based on the parametrization of De Wit, 2022)
+!     SWBIPM  (spatially filter the De Wit's biphase)
 !
 !----------------------------------------------------------------------
 !
@@ -72,22 +81,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -505,7 +512,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -514,22 +521,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -707,22 +712,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -1205,22 +1208,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -1607,22 +1608,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -2001,22 +2000,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -2407,22 +2404,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -2686,7 +2681,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -2695,22 +2690,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -2824,22 +2817,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
       USE M_PARALL
@@ -3019,7 +3010,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -3028,22 +3019,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -3158,7 +3147,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -3167,22 +3156,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -3313,10 +3300,8 @@
 !     --- integrate over range dir0-(p) <= tht < dir+(p)
 !
       EI = 0.
-      PWDTH = PTRIAD(8) * PI/180.
-      !IF (PWDTH.EQ.0. .OR. PWDTH.GE.DDIR*MDC) THEN
-      IF (.NOT.PWDTH.NE.0.) THEN
-         ! --- Full circle integration
+      IF (.NOT.PTRIAD(8).NE.-1.) THEN
+         ! --- full circle integration
          DO IS = 1, MSC
             DO II = IDCMIN(IS), IDCMAX(IS)
                ID = MOD(II - 1 + MDC, MDC) + 1
@@ -3325,6 +3310,7 @@
          ENDDO
       ELSE
          ! --- integrate over range PWDTH
+         PWDTH = PTRIAD(8) * PI/180.
          PINT = INT((PWDTH/DDIR) - 0.5) + 1
          PEXC = (((PINT + 0.5) * DDIR) - PWDTH) / DDIR
          IF (FULCIR) THEN
@@ -3490,24 +3476,20 @@
 !
 !****************************************************************
 !
-      SUBROUTINE SWLTA ( AC2   , DEP2  , CGO   , SPCSIG,
-     &                   KWAVE , IMATRA, IMATDA, REDC0 , REDC1 ,
-     &                   IDDLOW, IDDTOP, ISSTOP, IDCMIN, IDCMAX,
-     &                   HS    , SMEBRK, PLTRI , URSELL )
+      SUBROUTINE FAC3WW ( DEP, SPCSIG )
 !
 !****************************************************************
 !
       USE OCPCOMM4
       USE SWCOMM3
-      USE SWCOMM4
-!
+      USE M_SNL3
+
       IMPLICIT NONE
-!
 !
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -3516,22 +3498,305 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
+!
+!
+!  0. Authors
+!
+!     42.01: Marcel Zijlema
+!
+!  1. Updates
+!
+!     42.01, November 2022: new subroutine
+!
+!  2. Purpose
+!
+!     computes frequency-dependent interpolation factors
+!     and frequency- and space-dependent scaling factors
+!     for the LTA/DCTA method
+!
+!  4. Argument variables
+!
+!     DEP         water depth
+!     SPCSIG      relative frequencies
+
+      REAL :: DEP(MCGRD)
+      REAL :: SPCSIG(MSC)
+!
+!  6. Local variables
+!
+!     A     :     = (kd)^2
+!     ARR   :     auxiliary array (not used)
+!     AUX1  :     auxiliary real
+!     AUX2  :     auxiliary real
+!     C0    :     phase velocity at central bin
+!     CG    :     group velocity as function of frequency
+!     CG1   :     group velocity at first frequency bin
+!     CG2   :     group velocity at second frequency bin
+!     CM    :     phase velocity at interacting bin
+!     DEPLOC:     local water depth
+!     FT    :     = tanh(kd)/kd
+!     I1    :     auxiliary integer
+!     I2    :     auxiliary integer
+!     IENT  :     number of entries
+!     IP    :     counter
+!     IS    :     loop counter
+!     IS1   :     first loop counter in frequency space
+!     IS2   :     second loop counter in frequency space
+!     IS3   :     frequency index of third component
+!     ISB   :     broken frequency index for third component
+!     ISLOW :     lowest frequency index for second component
+!     J     :     counter
+!     K     :     wave number as function of frequency
+!     K1    :     wave number at first frequency bin
+!     K2    :     wave number at second frequency bin
+!     K3    :     wave number at third interpolated bin
+!     KM    :     mean wave number
+!     P     :     shape coefficient (=4/3)
+!     RINT  :     interaction coefficient
+!     SIG1  :     frequency of first component
+!     SIG2  :     frequency of second component
+!     SIG3  :     frequency of third component
+!     W0    :     radian frequency of central bin
+!     WIS   :     interpolation weight factor
+!     WM    :     radian frequency of interacting bin
+!     WN0   :     wave number at central bin
+!     WNM   :     wave number at interacting bin
+!     XIS   :     rate between two succeeding frequency counters
+!     XISLN :     log of XIS
+!
+      INTEGER I1, I2, IENT, IP, IS, IS1, IS2, IS3, ISLOW, J
+      REAL    AUX1, AUX2, C0, CM, RINT, W0, WM, WN0, WNM, XIS,
+     &        XISLN
+      REAL    A, ARR(MSC), CG(MSC), CG1, CG2, DEPLOC, FT, ISB,
+     &        K(MSC), K1, K2, K3, KM, P, SIG1, SIG2, SIG3, WIS
+!
+! 13. Source text
+!
+      SAVE IENT
+      DATA IENT/0/
+      IF (LTRACE) CALL STRACE (IENT,'FAC3WW')
+!
+      QTRI1 = 0.
+
+      IF ( ITRIAD.EQ.1 .OR. ITRIAD.EQ.11 ) THEN
+!
+!        --- compute some indices in sigma space
+!
+         I2     = INT (FLOAT(MSC) / 2.)
+         I1     = I2 - 1
+         XIS    = SPCSIG(I2) / SPCSIG(I1)
+         XISLN  = LOG( XIS )
+
+         ISP    = INT( LOG(2.) / XISLN )
+         ISP1   = ISP + 1
+         WISP   = (2. - XIS**ISP) / (XIS**ISP1 - XIS**ISP)
+         WISP1  = 1. - WISP
+
+         ISM    = INT( LOG(0.5) / XISLN )
+         ISM1   = ISM - 1
+         WISM   = (XIS**ISM -0.5) / (XIS**ISM - XIS**ISM1)
+         WISM1  = 1. - WISM
+
+         IF (.NOT.ALLOCATED(SA)) ALLOCATE (SA(1:MDC,1:MSC+ISP1))
+!
+         DO IP = 1, MCGRD
+!
+            DEPLOC = DEP(IP)
+!
+!           --- compute wave number and group velocity
+!
+            IF ( DEPLOC.GT.DEPMIN ) THEN
+               CALL KSCIP1 (MSC, SPCSIG, DEPLOC, K, CG, ARR, ARR)
+            ELSE
+               K  = -1.
+               CG =  0.
+            ENDIF
+!
+!           --- compute LTA scaling factor
+!
+            DO IS = 1, MSC
+
+               W0  = SPCSIG(IS)
+               WN0 = K     (IS)
+               C0  = W0 / WN0
+
+               IF ( IS.GT.-ISM1 ) THEN
+                  WM  = WISM * SPCSIG(IS+ISM1) + WISM1 * SPCSIG(IS+ISM)
+                  WNM = WISM * K     (IS+ISM1) + WISM1 * K     (IS+ISM)
+                  CM  = WM / WNM
+               ELSE
+                  WM  = 0.
+                  WNM = 0.
+                  CM  = 0.
+               END IF
+
+               AUX1 = WNM**2 * ( GRAV * DEPLOC + 2.*CM**2 )
+               AUX2 = WN0 * DEPLOC * ( GRAV * DEPLOC +
+     &                            (2./15.) * GRAV * DEPLOC**3 * WN0**2 -
+     &                            (2./ 5.) * W0**2 * DEPLOC**2 )
+               RINT = AUX1 / AUX2
+
+               QTRI1(IS,IP) = PTRIAD(1) * C0 * CG(IS) * RINT**2
+
+            ENDDO
+!
+         ENDDO
+!
+      ELSE IF ( ITRIAD.EQ.5 ) THEN
+!
+         P = PTRIAD(2)
+!
+         QTRI2 = 0.
+!
+         DO IP = 1, MCGRD
+!
+            DEPLOC = DEP(IP)
+!
+!           --- compute wave number and group velocity
+!
+            IF ( DEPLOC.GT.DEPMIN ) THEN
+               CALL KSCIP1 (MSC, SPCSIG, DEPLOC, K, CG, ARR, ARR)
+            ELSE
+               K  = -1.
+               CG =  0.
+            ENDIF
+!
+            J = 0
+
+            DO IS1 = 1, MSC
+!
+!              --- get first wave component
+!
+               SIG1 = SPCSIG(IS1)
+               K1   = K     (IS1)
+               CG1  = CG    (IS1)
+!
+               IF (TCOLL) THEN
+                  ISLOW = IS1+1
+               ELSE
+                  ISLOW = 1
+               ENDIF
+!
+               DO IS2 = ISLOW, MSC
+
+!                 --- get second wave component
+!
+                  SIG2 = SPCSIG(IS2)
+                  K2   = K     (IS2)
+                  CG2  = CG    (IS2)
+!
+!                 --- determine third component by means of quasi-resonance condition
+                  SIG3 = ABS(SIG2 - SIG1)
+!
+                  J = J + 1
+!
+                  IF ( SIG3.GT.SPCSIG(1) ) THEN
+!
+!                    --- obtain and store interpolation factors
+!
+                     ISB = LOG( SIG3/SPCSIG(1) ) / FRINTF
+!
+                     IS3 = INT(ISB)
+                     WIS = ISB - REAL(IS3)
+                     IS3 = IS3 + 1
+
+                     QTRI1(J,1) = WIS
+                     QTRI1(J,2) = FLOAT(IS3)
+!
+!                    --- compute the wave number of third component
+!
+                     K3 = (1.-WIS) * K(IS3) + WIS * K(IS3+1)
+!
+!                    --- compute the mean of the three wave numbers
+!
+                     KM = ( K1 + K2 + K3 ) / 3.
+!
+!                    --- the interactions will be scaled with depth
+!                        note: use truncation of a continued fraction
+!                              to approximate tanh efficiently
+
+                     A = KM*DEPLOC
+                     IF ( A.GT.6 ) THEN
+                        FT = 1./A
+                     ELSE
+                        A  = A*A
+                        FT = 1./(1.+A/(3.+A/(5.+A/(7.+A/(9.+A/11.)))))
+                     ENDIF
+!
+!                    --- compute and store the DCTA scaling factors
+!
+                     QTRI2(J,IP,1) = FT**4 * CG1 * K1**P
+                     QTRI2(J,IP,2) = FT**4 * CG2 * K2**P
+!
+                  ENDIF
+!
+               ENDDO
+            ENDDO
+!
+         ENDDO
+!
+      ENDIF
+
+      RETURN
+      END SUBROUTINE FAC3WW
+!
+!****************************************************************
+!
+      SUBROUTINE SWLTA ( AC2   , DEP2  , SPCSIG,
+     &                   IMATRA, IMATDA, REDC0 , REDC1 ,
+     &                   IDDLOW, IDDTOP, ISSTOP, IDCMIN, IDCMAX,
+     &                   SMEBRK, PLTRI , URSELL, BIPHAS )
+!
+!****************************************************************
+!
+      USE OCPCOMM4
+      USE SWCOMM3
+      USE SWCOMM4
+      USE M_SNL3
+!
+      IMPLICIT NONE
+!
+!
+!
+!   --|-----------------------------------------------------------|--
+!     | Delft University of Technology                            |
+!     | Faculty of Civil Engineering and Geosciences              |
+!     | Environmental Fluid Mechanics Section                     |
+!     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
+!     |                                                           |
+!     | Programmers: The SWAN team                                |
+!   --|-----------------------------------------------------------|--
+!
+!
+!     SWAN (Simulating WAves Nearshore); a third generation wave model
+!     Copyright (C) 1993-2023  Delft University of Technology
+!
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
+!
+!     This program is distributed in the hope that it will be useful,
+!     but WITHOUT ANY WARRANTY; without even the implied warranty of
+!     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+!     GNU General Public License for more details.
+!
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -3539,12 +3804,14 @@
 !     40.56: Marcel Zijlema
 !     40.85: Marcel Zijlema
 !     41.44: James Salmon, Pieter Smit
+!     42.01: Marcel Zijlema
 !
 !  1. Updates
 !
 !     40.56, Feb. 06: New subroutine
 !     40.85, Aug. 08: store triads for output purposes
-!     41.44, Oct. 13: consistency fix
+!     41.44, Oct. 13: include consistent collinear approximation (CCA)
+!     42.01, Nov. 22: directional integration for CCA made tunable
 !
 !  2. Purpose
 !
@@ -3560,14 +3827,6 @@
 !
 !  3. Method
 !
-!     The parametrized biphase is given by (see eq. 3.19):
-!
-!                                  0.2
-!     beta = - pi/2 + pi/2 tanh ( ----- )
-!                                   Ur
-!
-!     The Ursell number is calculated in routine SINTGRL
-!
 !     The source term as function of frequency p is (see eq. 7.25):
 !
 !             +      -
@@ -3576,14 +3835,18 @@
 !     in which
 !
 !      +
-!     S(p) = alpha Cp Cg,p (R(p/2,p/2))**2 sin (|beta|) ( E(p/2)**2 -2 E(p) E(p/2) )
+!     S(p) = alpha Cp Cg,p (R(p/2,p/2))**2 sin (-beta) ( E(p/2)**2 -2 E(p) E(p/2) )
+!
+!     and
 !
 !      -          +
 !     S(p) = - 2 S(2p)
 !
-!     with alpha a tunable coefficient and R(p/2,p/2) is the interaction
-!     coefficient of which the expression can be found in Eldeberky (1996);
-!     see eq. 7.26.
+!     with alpha a tunable coefficient, beta a parametrized biphase and
+!     R(p/2,p/2) is the interaction coefficient of which the expression can
+!     be found in Eldeberky (1996); see Eq. 7.26.
+!
+!     The biphase is computed in routine SINTGRL
 !
 !     Note that a slightly adapted formulation of the LTA is used in
 !     in the SWAN model:
@@ -3597,6 +3860,10 @@
 !
 !     - The interactions are calculated up to 2.5 times the mean
 !       frequency only.
+!
+!     - The consistent collinear approximation (CCA) of Salmon et al (2016)
+!       is applied. The directional integration as given by their Eq. 13
+!       is determined by a tunable parameter.
 !
 !     - Since the spectral grid is logarithmically distributed in frequency
 !       space, the interactions between central bin and interacting bin
@@ -3614,9 +3881,8 @@
 !  4. Argument variables
 !
 !     AC2         action density
-!     CGO         group velocity
+!     BIPHAS      parameterized biphase of the spectrum                   41.97
 !     DEP2        water depth
-!     HS          significant wave height
 !     IDCMIN      minimum counter in directional space
 !     IDCMAX      maximum counter in directional space
 !     IDDLOW      minimum direction that is propagated within a sweep
@@ -3624,7 +3890,6 @@
 !     IMATDA      main diagonal of the linear system
 !     IMATRA      right-hand side of system of equations
 !     ISSTOP      maximum frequency counter in a sweep
-!     KWAVE       wave number
 !     PLTRI       triad contribution in TEST points
 !     SMEBRK      average (angular) frequency
 !     SPCSIG      relative frequencies in computational domain in sigma-space
@@ -3633,73 +3898,51 @@
       INTEGER IDDLOW, IDDTOP, ISSTOP
       INTEGER IDCMIN(MSC), IDCMAX(MSC)
 
-      REAL :: HS, SMEBRK
+      REAL :: SMEBRK
       REAL :: AC2(MDC,MSC,MCGRD)
 
-      REAL :: CGO(MSC,MICMAX)
       REAL :: DEP2(MCGRD)
       REAL :: IMATDA(MDC,MSC), IMATRA(MDC,MSC)
       REAL :: SPCSIG(MSC)
-      REAL :: KWAVE(MSC,MICMAX)
       REAL :: PLTRI(MDC,MSC,NPTST)
       REAL :: URSELL(MCGRD)
+      REAL :: BIPHAS(MCGRD)                                               41.97
       REAL :: REDC0 (MDC,MSC,MREDS)                                       40.85
       REAL :: REDC1 (MDC,MSC,MREDS)                                       40.85
 !
 !  6. Local variables
 !
-!     AUX1  :     auxiliary real
-!     AUX2  :     auxiliary real
-!     BIPH  :     parameterized biphase of the spectrum
-!     C0    :     phase velocity at central bin
-!     CM    :     phase velocity at interacting bin
+!     BIPH  :     local biphase
 !     DEP   :     water depth
-!     DEP_2 :     water depth to power 2
-!     DEP_3 :     water depth to power 3
 !     E     :     energy density as function of frequency
 !     E0    :     energy density at central bin
-!     ED    :     integral energy density over directions                  41.44
-!     ED0   :     integral energy density over directions at central bin   41.44
-!     EDM   :     integral energy density over directions at               41.44
+!     ED    :     integral energy density over directions                 41.44
+!     ED0   :     integral energy density over directions at central bin  41.44
+!     EDM   :     integral energy density over directions at              41.44
 !                 interacting bin
 !     EM    :     energy density at interacting bin
 !     FT    :     auxiliary real indicating multiplication factor
 !                 for triad contribution
-!     I1    :     auxiliary integer
-!     I2    :     auxiliary integer
 !     ID    :     counter
+!     ID1   :     first directional index
+!     ID2   :     last directional index
+!     IDD   :     another counter
 !     IDDUM :     loop counter in direction space
+!     IDW   :     directional range / 2
 !     IENT  :     number of entries
 !     II    :     loop counter
 !     IS    :     loop counter in frequency space
-!     ISM   :     negative range for IS
-!     ISM1  :     negative range for IS
 !     ISMAX :     maximum of the counter in frequency space for
 !                 which the triad interactions are calculated (cut-off)
-!     ISP   :     positive range for IS
-!     ISP1  :     positive range for IS
-!     RINT  :     interaction coefficient
-!     SA    :     interaction contribution of triad
+!     PWDTH :     integral range in rad. / 2
 !     SIGPI :     frequency times 2pi
-!     SINBPH:     absolute sine of biphase
+!     SINBPH:     sine of biphase
 !     STRI  :     total triad contribution
-!     WISM  :     interpolation weight factor corresponding to lower harmonic
-!     WISM1 :     interpolation weight factor corresponding to lower harmonic
-!     WISP  :     interpolation weight factor corresponding to higher harmonic
-!     WISP1 :     interpolation weight factor corresponding to higher harmonic
-!     W0    :     radian frequency of central bin
-!     WM    :     radian frequency of interacting bin
-!     WN0   :     wave number at central bin
-!     WNM   :     wave number at interacting bin
-!     XIS   :     rate between two succeeding frequency counters
-!     XISLN :     log of XIS
 !
-      INTEGER I1, I2, ID, IDDUM, IENT, II, IS, ISM, ISM1, ISMAX,
-     &        ISP, ISP1
-      REAL    AUX1, AUX2, BIPH, C0, CM, DEP, DEP_2, DEP_3, E0, ED0, EDM,
-     &        EM, FT, RINT, SIGPI, SINBPH, STRI, WISM, WISM1, WISP,
-     &        WISP1, W0, WM, WN0, WNM, XIS, XISLN
-      REAL, ALLOCATABLE :: E(:), ED(:), SA(:,:)
+      INTEGER ID, ID1, ID2, IDD, IDDUM, IDW, IENT, II, IS, ISMAX
+      REAL    BIPH, DEP, E0, ED0, EDM,
+     &        EM, FT, PWDTH, SIGPI, SINBPH, STRI
+      REAL    E(MSC), ED(MSC)
 !
 !  9. Subroutines calling
 !
@@ -3711,7 +3954,7 @@
 !     for which the interactions are calculated.
 !
 !     If Ursell number larger than prescribed value compute interactions
-!        Calculate biphase
+!        determine biphase
 !        Do for each direction
 !           Convert action density to energy density
 !           Do for all frequencies
@@ -3723,31 +3966,10 @@
       SAVE IENT
       DATA IENT/0/
       IF (LTRACE) CALL STRACE (IENT,'SWLTA')
-
-      DEP   = DEP2(KCGRD(1))
-      DEP_2 = DEP**2
-      DEP_3 = DEP**3
 !
-!     --- compute some indices in sigma space
-!
-      I2     = INT (FLOAT(MSC) / 2.)
-      I1     = I2 - 1
-      XIS    = SPCSIG(I2) / SPCSIG(I1)
-      XISLN  = LOG( XIS )
+      DEP  = DEP2  (KCGRD(1))
+      BIPH = BIPHAS(KCGRD(1))
 
-      ISP    = INT( LOG(2.) / XISLN )
-      ISP1   = ISP + 1
-      WISP   = (2. - XIS**ISP) / (XIS**ISP1 - XIS**ISP)
-      WISP1  = 1. - WISP
-
-      ISM    = INT( LOG(0.5) / XISLN )
-      ISM1   = ISM - 1
-      WISM   = (XIS**ISM -0.5) / (XIS**ISM - XIS**ISM1)
-      WISM1  = 1. - WISM
-
-      ALLOCATE (E (1:MSC))
-      ALLOCATE (ED(1:MSC))
-      ALLOCATE (SA(1:MDC,1:MSC+ISP1))
       E  = 0.
       ED = 0.
       SA = 0.
@@ -3764,60 +3986,70 @@
 !
 !     --- compute 3 wave-wave interactions
 !
-      IF ( URSELL(KCGRD(1)).GE.PTRIAD(5) ) THEN
+      IF ( .NOT.URSELL(KCGRD(1)).LT.PTRIAD(5) ) THEN
 !
-!       --- calculate biphase
+!       --- determine sine of biphase
 !
-        BIPH   = (0.5*PI)*(TANH(PTRIAD(4)/URSELL(KCGRD(1)))-1.)
-        SINBPH = ABS( SIN(BIPH) )
+        SINBPH = SIN(-BIPH)
 !
-!       --- calculate integral of energy density over directions
+!       --- determine directional range for CCA integration
 !
-        ED(:) = SUM(AC2(:,:,KCGRD(1)),DIM=1) * 2.*PI * SPCSIG(:) * DDIR   41.44
+        IF ( PTRIAD(8).NE.-1. ) THEN
+           PWDTH = PTRIAD(8) * PI/180.
+           IDW = NINT(PWDTH/(2.*DDIR))
+        ELSE
+!          full directional integration
+           IDW = -1
+        ENDIF
+!
+!       --- calculate integral of E(f,t) over all directions, if desired
+        IF ( IDW.EQ.-1 ) THEN
+           ED(:) = SUM(AC2(:,:,KCGRD(1)),DIM=1) * 2.*PI*SPCSIG(:) * DDIR  41.44
+        ENDIF
 !
         DO II = IDDLOW, IDDTOP
            ID = MOD ( II - 1 + MDC , MDC ) + 1
 !
-!          --- initialize array with E(f) for the direction considered
+!          --- initialize array with E(f) for the direction theta considered
 !
-           DO IS = 1, MSC
-              E(IS) = AC2(ID,IS,KCGRD(1)) * 2. * PI * SPCSIG(IS)
-           END DO
+           E(:) = AC2(ID,:,KCGRD(1)) * 2. * PI * SPCSIG(:)
+!
+!          --- integrate E(f,t) over range dir-p <= theta <= dir+p
+!
+           IF ( IDW.NE.-1 ) THEN
+              ID1 = II - IDW
+              ID2 = II + IDW
+              IF ( .NOT.FULCIR ) THEN
+                 ID1 = MAX(ID1,  1)
+                 ID2 = MIN(ID2,MDC)
+              ENDIF
+              ED(:) = 0.
+              DO IDDUM = ID1, ID2
+                 IDD = MOD( IDDUM - 1 + MDC , MDC ) + 1
+                 ED(:) = ED(:) + AC2(IDD,:,KCGRD(1))
+              ENDDO
+              ED(:) = ED(:) * 2. * PI * SPCSIG(:)
+              IF ( IDW.NE.0 ) ED = ED * DDIR
+           ENDIF
+!
+!          --- compute LTA contribution
 !
            DO IS = 1, ISMAX
 
-              E0  = E(IS)
+              E0  = E (IS)
               ED0 = ED(IS)
-              W0  = SPCSIG(IS)
-              WN0 = KWAVE(IS,1)
-              C0  = W0 / WN0
 
               IF ( IS.GT.-ISM1 ) THEN
-                 EM  = WISM * E(IS+ISM1)       + WISM1 * E(IS+ISM)
-                 EDM = WISM * ED(IS+ISM1)      + WISM1 * ED(IS+ISM)
-                 WM  = WISM * SPCSIG(IS+ISM1)  + WISM1 * SPCSIG(IS+ISM)
-                 WNM = WISM * KWAVE(IS+ISM1,1) + WISM1 * KWAVE(IS+ISM,1)
-                 CM  = WM / WNM
+                 EM  = WISM * E (IS+ISM1) + WISM1 * E (IS+ISM)
+                 EDM = WISM * ED(IS+ISM1) + WISM1 * ED(IS+ISM)
               ELSE
                  EM  = 0.
                  EDM = 0.
-                 WM  = 0.
-                 WNM = 0.
-                 CM  = 0.
               END IF
 
-              AUX1 = WNM**2 * ( GRAV * DEP + 2.*CM**2 )
-              AUX2 = WN0 * DEP * ( GRAV * DEP +
-     &                             (2./15.) * GRAV * DEP_3 * WN0**2 -
-     &                             (2./ 5.) * W0**2 * DEP_2 )
-              RINT = AUX1 / AUX2
-              FT = PTRIAD(1) * C0 * CGO(IS,1) * RINT**2 * SINBPH
+              FT = QTRI1(IS,KCGRD(1)) * SINBPH
 
-              IF (ITRIAD.EQ.11) THEN
-                SA(ID,IS) = MAX(0., FT * ( EM * EM - 2. * EM * E0 ))
-              ELSE
-                SA(ID,IS) = MAX(0., FT * ( EDM * (EM - E0) - ED0 * EM ))  41.44
-              ENDIF
+              SA(ID,IS) = MAX(0., FT * ( EDM * (EM - E0) - ED0 * EM ))    41.44
 
            END DO
         END DO
@@ -3855,15 +4087,13 @@
       IF ( ITEST .GE. 5 .AND. TESTFL ) THEN
          WRITE(PRINTF,2000) KCGRD(1), ISMAX
  2000    FORMAT (' SWLTA: KCGRD ISMAX  :',2I4)
-         WRITE(PRINTF,2001) GRAV, DEP, DEP_2, DEP_3
- 2001    FORMAT (' SWLTA: G DEP DEP2 DEP3   :',4E12.4)
+         WRITE(PRINTF,2001) GRAV, DEP
+ 2001    FORMAT (' SWLTA: G DEP   :',2E12.4)
          WRITE(PRINTF,2002) PTRIAD(1), PTRIAD(2), URSELL(KCGRD(1))
  2002    FORMAT (' SWLTA: P(1) P(2) P4) URSELL  :',4E12.4)
-         WRITE(PRINTF,2003) SMEBRK, HS, BIPH, ABS(SIN(BIPH))
- 2003    FORMAT (' SWLTA: SMEBRK HS B |SIN(B)|:',4E12.4)
+         WRITE(PRINTF,2003) SMEBRK, BIPH, SIN(-BIPH)
+ 2003    FORMAT (' SWLTA: SMEBRK B SIN(-B) :',3E12.4)
       END IF
-
-      DEALLOCATE(E,ED,SA)
 
       RETURN
       END SUBROUTINE SWLTA
@@ -3886,7 +4116,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -3895,22 +4125,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -4212,25 +4440,26 @@
       RETURN
       END subroutine SWSPB
 !
-!********************************************************************
+!****************************************************************
 !
-      SUBROUTINE STRICL (ACLOC   ,DEPLOC  ,SPCSIG  ,KWAVE   ,
-     &                   IDDLOW  ,IDDTOP  ,ANYBIN  ,IMATDA  ,IMATRA,
-     &                   CGO     ,KMESPC  ,ETOT    ,SMEBRK          )   40.45
+      SUBROUTINE SWDCTA ( AC2   , DEP2  , CGO   , SPCSIG,
+     &                    IMATRA, IMATDA, REDC0 , REDC1 ,
+     &                    IDDLOW, IDDTOP, ISSTOP, IDCMIN, IDCMAX,
+     &                    SIGM  , PLTRI , URSELL, BIPHAS )
 !
-!********************************************************************
+!****************************************************************
 !
       USE OCPCOMM4
       USE SWCOMM3
       USE SWCOMM4
+      USE M_SNL3
 
       IMPLICIT NONE
 !
 !
-!
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -4239,244 +4468,1366 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
-
+!
 !     40.45: Nico Booij
 !     40.96: Matthijs Benit
 !     41.45: James Salmon
-
+!     42.01: Marcel Zijlema
+!
 !  1. Updates
-
-!     40.45, July 04: new subroutine
-!     41.45, October 2013: energy conservative form
-
+!
+!     40.45,       July 04: new subroutine
+!     41.45,  October 2013: energy conservative form
+!     42.01, November 2022: code revised
+!
 !  2. Purpose
-
-!     In this subroutine the triad-wave interactions are calculated
-!     with the empiric distributed colinear approximation.
-
+!
+!     the triad wave-wave interactions are calculated with
+!     the distributed collinear triad approximation (DCTA)
+!     as described in Booij et al (2009)
+!
 !  3. Method
-
-!     Transfer of action between two components under influence of a
-!     third one is formulated as follows:
-
-!                  P+1          P+1
-!     M * N  (Sigma   N  - Sigma   N  )
-!          3       1   1        2   2
-
-!     in which:
-
-!     M      is a dimensional coefficient
-!     N      is action density
-!     Sigma  spectral (angular) frequency
-
-!     Dimensions:
-!     ACLOC#: m2s2
-!     KW#   : 1/m
-!     SIG#  : 1/s
-!     SDIA# : 1/s
-
+!
+!     Transfer of energy between two components under influence
+!     of a third one is formulated as follows:
+!
+!                                           p          p
+!     S    (f ,t) = T * sum R * E  * ( cg  k  E - cg  k  E  ) df
+!      nl3   1                   3       2  2  2    1  1  1     2
+!
+!     in which
+!
+!     T  is a dimensional empirical coefficient
+!     R  is a scaling factor depending on depth
+!     E  is energy density
+!     cg is group velocity
+!     k  is wave number
+!     p  is a shape coefficient to force the high-frequency tail
+!
+!     Note that factor T is a heuristically determined coefficient that depends
+!     on the group velocity, water depth, mean frequency and mean wave number
+!
+!     Note that the interactions are calculated in terms of energy
+!     density instead of action density
+!
 !  4. Argument variables
+!
+!     AC2         action density
+!     BIPHAS      parameterized biphase of the spectrum
+!     CGO         group velocity
+!     DEP2        water depth
+!     IDCMIN      minimum counter in directional space
+!     IDCMAX      maximum counter in directional space
+!     IDDLOW      minimum direction that is propagated within a sweep
+!     IDDTOP      maximum direction that is propagated within a sweep
+!     IMATDA      main diagonal of the linear system
+!     IMATRA      right-hand side of system of equations
+!     ISSTOP      maximum frequency counter in a sweep
+!     PLTRI       triad contribution in TEST points
+!     SIGM        mean angular frequency
+!     SPCSIG      relative frequencies in computational domain in sigma-space
+!     URSELL      Ursell number
+!
+      INTEGER IDDLOW, IDDTOP, ISSTOP
+      INTEGER IDCMIN(MSC), IDCMAX(MSC)
 
-      REAL, INTENT(IN)      :: ACLOC(1:MDC,1:MSC)                       ! local action density spectrum
-      REAL, INTENT(IN)      :: DEPLOC                                   ! Depth at gridpoint ix,iy (obtained from SWANCOM1)
-      REAL, INTENT(IN)      :: SPCSIG(1:MSC)                            ! Relative frequencies in computational domain in sigma-space
-      REAL                  :: KWAVE(1:MSC)                             ! Wave number in stencil points
-      INTEGER, INTENT(IN)   :: IDDLOW                                   ! Minimum counter in directional space
-      INTEGER, INTENT(IN)   :: IDDTOP                                   ! Maximum counter in directional space
-      LOGICAL, INTENT(IN)   :: ANYBIN(1:MDC,1:MSC)                      ! if True this bin is going to be updated using the matrix
-      REAL                  :: IMATDA(1:MDC,1:MSC)                      ! IMATDA: Diagonal of matrix
-      REAL                  :: IMATRA(1:MDC,1:MSC)                      ! IMATRA: Right hand vector of matrix
-      REAL, INTENT(IN)      :: CGO(1:MSC)                               ! Group velocities in stencil points
-      REAL, INTENT(IN)      :: KMESPC                                   ! Mean wave number of the spectrum
-      REAL, INTENT(IN)      :: ETOT                                     !
-      REAL, INTENT(IN)      :: SMEBRK                                   !
-
-!     Values from common
-
-!     MDC       : Size of array in theta-direction
-!     MSC       : Size of array in sigma-direction
-!     PI        : Circular constant Pi
-!     PTRIAD(1) : Interaction coefficient (lambda)
-!     PTRIAD(2) : Power of the tail of the spectrum (p)
-!     PTRIAD(4) : xxx (delta)
-
+      REAL :: SIGM
+      REAL :: AC2(MDC,MSC,MCGRD)
+      REAL :: CGO(MSC,MICMAX)
+      REAL :: DEP2(MCGRD)
+      REAL :: IMATDA(MDC,MSC), IMATRA(MDC,MSC)
+      REAL :: SPCSIG(MSC)
+      REAL :: PLTRI(MDC,MSC,NPTST)
+      REAL :: URSELL(MCGRD)
+      REAL :: BIPHAS(MCGRD)
+      REAL :: REDC0 (MDC,MSC,MREDS)
+      REAL :: REDC1 (MDC,MSC,MREDS)
+!
 !  6. Local variables
-
-      INTEGER, SAVE     :: IENT=0                                       ! Number of entries into this subroutine
-      INTEGER           :: ID                                           ! Grid counter in spectral space (direction)
-      INTEGER           :: II                                           ! Counter
-      INTEGER           :: IS1, IS2, IS3                                ! Grid counter for spectral frequency
-      REAL              :: SIG1, SIG2, SIG3                             ! frequencies of 3 components
-      REAL              :: E1, E2, E3                                   ! energy densities of 2 components
-      REAL              :: KW1, KW2, KW3                                ! wave numbers of 3 components
-      REAL              :: CG1, CG2                                     ! wave group velocities at interacting frequencies
-      REAL              :: RS3, SS                                      ! aux. var. for determining SIG3
-      REAL              :: DSIG                                         ! frequency increment
-      REAL              :: SIGMEAN                                      ! mean freq of the 3 components
-      REAL              :: KMEAN                                        ! mean wave number
-      REAL              :: SDIA1, SDIA2                                 ! source term to diagonal
-      REAL              :: SRHS
-      REAL              :: DISPC                                        ! dispersion coefficient
-      REAL              :: BETA
-      REAL              :: SINABS
-      REAL              :: BIPH
-      REAL              :: URSLOC                                       ! auxiliary coefficients
 !
-      REAL              :: ED1, ED2, ED3                                ! integration of energy density over all directions
-      REAL              :: SDIA1B, SDIA2B
-      REAL              :: F(2)
-      INTEGER           :: ISHAP
-      REAL              :: SMEAN
-      REAL              :: SHAP(2)                                      ! coefficient for shape
+!     BETA  :     proportionality factor for DCTA
+!     BIPH  :     local biphase
+!     CG    :     local group velocity
+!     DEP   :     water depth
+!     E     :     energy density as function of frequency
+!     E1    :     energy density at first frequency bin
+!     E2    :     energy density at second frequency bin
+!     E3    :     energy density at third interpolated bin
+!     FT    :     auxiliary factor
+!     FT2   :     = FT * FT
+!     ID    :     counter
+!     IDDUM :     loop counter in direction space
+!     IENT  :     number of entries
+!     IS    :     loop counter
+!     IS1   :     first loop counter in frequency space
+!     IS2   :     second loop counter in frequency space
+!     IS3   :     frequency index of third component
+!     J     :     counter
+!     KM    :     mean wave number
+!     P     :     shape coefficient (=4/3)
+!     SAN   :     negative contribution of triad interaction
+!     SAP   :     positive contribution of triad interaction
+!     SIG1  :     frequency of first component
+!     SIG2  :     frequency of second component
+!     SIG3  :     frequency of third component
+!     SINBPH:     sine of biphase
+!     STRI  :     total triad contribution
+!     STRI1 :     triad contribution related to E1
+!     STRI2 :     triad contribution related to E2
+!     WIS   :     interpolation weight factor
 !
-      REAL, ALLOCATABLE :: ED(:)                                        ! integration of energy density over all directions
-
-!  7. SUBROUTINES USED
-
-!  8. SUBROUTINES CALLING
-
-!     SOURCE
-
-!  9. ERROR MESSAGES
-
-!     ---
-
-! 10. REMARKS
-
-!     ---
-
-! 11. STRUCTURE
-
-!     -----------------------------------------------------------------
-!     For all active directions do
-!         For all first components do
-!             determine frequency and wave number of component
-!             For all second components do
-!                 determine frequency and wave number of components
-!                 determine frequency of third resonating component
-!                 If this frequency is within spectral range
-!                 Then determine source terms
-!                      determine contributions to matrix
-!     -----------------------------------------------------------------
-
+      INTEGER ID, IDDUM, IENT, IS, IS1, IS2, IS3, J
+      REAL    BETA, BIPH, CG, DEP, E1, E2, E3, FT, FT2,
+     &        KM, P, SIG1, SIG2, SIG3, SINBPH,
+     &        STRI, STRI1, STRI2, WIS
+      REAL    E(MSC), SAN(MDC,MSC), SAP(MDC,MSC)
+!
 ! 13. Source text
+!
+      SAVE IENT
+      DATA IENT/0/
+      IF (LTRACE) CALL STRACE (IENT,'SWDCTA')
+!
+      DEP  = DEP2(KCGRD(1))
+      BIPH = BIPHAS(KCGRD(1))
+      P    = PTRIAD(2)
+!
+      E   = 0.
+      SAN = 0.
+      SAP = 0.
+!
+!     --- compute 3 wave-wave interactions
+!
+      IF ( .NOT.URSELL(KCGRD(1)).LT.PTRIAD(5) ) THEN
+!
+!       --- determine sine of biphase
+!
+        SINBPH = SIN(-BIPH)
+!
+!       --- scaling factor
+!
+        KM   = SIGM / SQRT(GRAV*DEP)
+        FT   = DEP * SIGM
+        FT2  = FT * FT
+        BETA = PTRIAD(1) / FT2 * SINBPH * KM**(2.-P)
+!
+        DO IDDUM = IDDLOW, IDDTOP
+           ID = MOD ( IDDUM - 1 + MDC , MDC ) + 1
+!
+!          --- compute E(sigma) for each direction
+!
+           E(:) = AC2(ID,:,KCGRD(1)) * SPCSIG(:)
+!
+           J = 0
+!
+!          --- compute interactions based on DCTA
+!
+           DO IS1 = 1, MSC
+!
+!             --- get first wave component
+!
+              SIG1 = SPCSIG(IS1)
+              E1   = E     (IS1)
+!
+              DO IS2 = IS1+1, MSC
+!
+!                --- get second wave component
+!                    note: only difference interactions included
+!
+                 SIG2 = SPCSIG(IS2)
+                 E2   = E     (IS2)
+!
+!                --- determine third component by means of quasi-resonance condition
+                 SIG3 = SIG2 - SIG1
+!
+                 J = J + 1
+!
+                 IF ( SIG3.GT.SPCSIG(1) ) THEN
+!
+!                   --- obtain third energy density by means of interpolation
+!
+                    WIS = QTRI1(J,1)
+                    IS3 = INT(QTRI1(J,2))
 
-      IF (LTRACE) CALL STRACE (IENT,'STRICL')
+                    E3 = (1.-WIS) * E(IS3) + WIS * E(IS3+1)
 !
-      ISHAP = 0
+!                   --- assemble the triad contributions
 !
-      URSLOC = (GRAV*2.*SQRT(ETOT))/(SQRT(2.)*SMEBRK**2*DEPLOC**2)
-      BIPH   = 0.5 * PI * (TANH(PTRIAD(4)/URSLOC) - 1.)
-      SINABS = ABS(SIN(BIPH))
-      BETA   = PTRIAD(1) / DEPLOC / DEPLOC * SINABS *
-     &         KMESPC**(1.-PTRIAD(2))
+                    STRI1 = QTRI2(J,KCGRD(1),1) * E3 * E1
+                    STRI2 = QTRI2(J,KCGRD(1),2) * E3 * E2
+!
+                    SAN(ID,IS1) = SAN(ID,IS1) + STRI1 * FRINTF * SIG2
+                    SAP(ID,IS1) = SAP(ID,IS1) + STRI2 * FRINTF * SIG2
+!
+!                   --- to include sum interactions as well
+!
+                    SAN(ID,IS2) = SAN(ID,IS2) + STRI2 * FRINTF * SIG1
+                    SAP(ID,IS2) = SAP(ID,IS2) + STRI1 * FRINTF * SIG1
+!
+                 ENDIF
+!
+              ENDDO
+           ENDDO
+        ENDDO
+!
+!       --- store results in rhs and main diagonal according
+!           to Patankar-rules
+!
+        DO IS = 1, ISSTOP
+           CG = CGO(IS,1)
+           DO IDDUM = IDCMIN(IS), IDCMAX(IS)
+              ID = MOD ( IDDUM - 1 + MDC , MDC ) + 1
+!
+              STRI = BETA * CG * ( SAP(ID,IS) - SAN(ID,IS) )
+              IF(TESTFL) PLTRI(ID,IS,IPTST) = STRI
+!
+              STRI = BETA * CG * SAP(ID,IS)
+              IMATRA(ID,IS)  = IMATRA(ID,IS)  + STRI
+              REDC0(ID,IS,2) = REDC0(ID,IS,2) + STRI
+!
+              STRI = BETA * CG * SAN(ID,IS) /
+     &                                   MAX(1.E-18,AC2(ID,IS,KCGRD(1)))
+              IMATDA(ID,IS)  = IMATDA(ID,IS)  + STRI
+              REDC1(ID,IS,2) = REDC1(ID,IS,2) - STRI
+!
+           ENDDO
+        ENDDO
+!
+      ENDIF
 
-      ALLOCATE(ED(MSC))
-      ED = 0.
+      RETURN
+      END SUBROUTINE SWDCTA
 !
-!     --- calculate integral of energy density over directions
+!******************************************************************
 !
-      ED(:) = SUM(ACLOC(:,:),DIM=1) * DDIR
+      SUBROUTINE SWDNCTA ( AC2   , DEP2  , CGO   , SPCSIG, SPCDIR,
+     &                     KWAVE , IMATRA, IMATDA, REDC0 , REDC1 ,
+     &                     IDDLOW, IDDTOP, ISSTOP, IDCMIN, IDCMAX,
+     &                     ETOT  , SIGM  , PLTRI , URSELL, BIPHAS )
+!
+!******************************************************************
+!
+      USE OCPCOMM4
+      USE SWCOMM3
+      USE SWCOMM4
+      USE M_SNL3
 
-!     first loop over all directions
-      DO II = IDDLOW, IDDTOP
-         ID = MOD (II - 1 + MDC, MDC) + 1
-!        first loop over all frequencies
-         DO IS1 = 1, MSC
-            SIG1 = SPCSIG(IS1)
-!           second loop over all higher frequencies
-            DO IS2 = IS1+1, MSC
-              SIG2 = SPCSIG(IS2)
-!             determine properties of 3rd component
-              SIG3 = SIG2 - SIG1
-              IF (SIG3.GT.SPCSIG(1)) THEN
+      IMPLICIT NONE
+!
+!
+!   --|-----------------------------------------------------------|--
+!     | Delft University of Technology                            |
+!     | Faculty of Civil Engineering and Geosciences              |
+!     | Environmental Fluid Mechanics Section                     |
+!     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
+!     |                                                           |
+!     | Programmers: The SWAN team                                |
+!   --|-----------------------------------------------------------|--
+!
+!
+!     SWAN (Simulating WAves Nearshore); a third generation wave model
+!     Copyright (C) 1993-2023  Delft University of Technology
+!
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
+!
+!     This program is distributed in the hope that it will be useful,
+!     but WITHOUT ANY WARRANTY; without even the implied warranty of
+!     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+!     GNU General Public License for more details.
+!
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
+!
+!
+!  0. Authors
+!
+!     42.01: Matthijs Benit, Ad Reniers, Marcel Zijlema
+!
+!  1. Updates
+!
+!     42.01, November 2022: New subroutine
+!
+!  2. Purpose
+!
+!     the triad wave-wave interactions are calculated with
+!     the distributed collinear triad approximation (DCTA)
+!     as described in Booij et al (2009), and additionally,
+!     the effect of noncollinear interactions is included
+!
+!     Note: this method is referred to as DNCTA
+!           (Distributed NonCollinear Triad Approximation)
+!
+!  3. Method
+!
+!     Transfer of energy between two components under influence
+!     of a third one is formulated as follows:
+!
+!                                            p          p
+!     S    (f ,t ) = T * sum R * E  * ( cg  k  E - cg  k  E  ) df dt
+!      nl3   1  1                 3       2  2  2    1  1  1     2  2
+!
+!     in which
+!
+!     T  is a dimensional empirical coefficient
+!     R  is a scaling factor depending on depth and angle
+!        difference between second and third component
+!     E  is energy density
+!     cg is group velocity
+!     k  is wave number
+!     p  is a shape coefficient to force the high-frequency tail
+!
+!     Note that factor T is a heuristically determined coefficient that depends
+!     on the group velocity, water depth, mean frequency and mean wave number
+!
+!     Note that the interactions are calculated in terms of energy
+!     density instead of action density
+!
+!  4. Argument variables
+!
+!     AC2         action density
+!     BIPHAS      parameterized biphase of the spectrum
+!     CGO         group velocity
+!     DEP2        water depth
+!     ETOT        total energy in grid point
+!     IDCMIN      minimum counter in directional space
+!     IDCMAX      maximum counter in directional space
+!     IDDLOW      minimum direction that is propagated within a sweep
+!     IDDTOP      maximum direction that is propagated within a sweep
+!     IMATDA      main diagonal of the linear system
+!     IMATRA      right-hand side of system of equations
+!     ISSTOP      maximum frequency counter in a sweep
+!     KWAVE       wave number
+!     PLTRI       triad contribution in TEST points
+!     SIGM        mean angular frequency
+!     SPCDIR      (*,1); spectral directions (radians)
+!                 (*,2); cosine of spectral directions
+!                 (*,3); sine of spectral directions
+!                 (*,4); cosine^2 of spectral directions
+!                 (*,5); cosine*sine of spectral directions
+!                 (*,6); sine^2 of spectral directions
+!     SPCSIG      relative frequencies in computational domain in sigma-space
+!     URSELL      Ursell number
+!
+      INTEGER IDDLOW, IDDTOP, ISSTOP
+      INTEGER IDCMIN(MSC), IDCMAX(MSC)
 
-              SS  = ALOG(SIG3/SPCSIG(1)) / FRINTF
-              IS3 = INT(SS) + 1
-              RS3 = SS - REAL(IS3 - 1)
+      REAL :: ETOT, SIGM
+      REAL :: AC2(MDC,MSC,MCGRD)
+      REAL :: CGO(MSC,MICMAX)
+      REAL :: DEP2(MCGRD)
+      REAL :: IMATDA(MDC,MSC), IMATRA(MDC,MSC)
+      REAL :: SPCSIG(MSC), SPCDIR(MDC,6)
+      REAL :: KWAVE(MSC,MICMAX)
+      REAL :: PLTRI(MDC,MSC,NPTST)
+      REAL :: URSELL(MCGRD)
+      REAL :: BIPHAS(MCGRD)
+      REAL :: REDC0 (MDC,MSC,MREDS)
+      REAL :: REDC1 (MDC,MSC,MREDS)
 !
-!             --- convert action densities to energy densities
+!  6. Local variables
 !
-              E1 = ACLOC(ID,IS1) * SIG1
-              E2 = ACLOC(ID,IS2) * SIG2
-              E3 =   RS3        * ACLOC(ID,IS3+1) * SPCSIG(IS3+1)
-     &             + (1. - RS3) * ACLOC(ID,IS3  ) * SPCSIG(IS3  )
-              !
-              KW1  = KWAVE(IS1)
-              KW2  = KWAVE(IS2)
-              KW3  = RS3 * KWAVE(IS3+1) + (1. - RS3) * KWAVE(IS3)
-              CG1  = CGO(IS1)
-              CG2  = CGO(IS2)
-!             determine properties of triad
-              KMEAN = (KW1 + KW2 + KW3)/3.
+!     BETA  :     proportionality factor for DCTA
+!     BIPH  :     local biphase
+!     CG    :     local group velocity
+!     COS12 :     = cos(th1-th2)
+!     COS23 :     = cos(th2-th3)
+!     DEP   :     water depth
+!     DS2DD :     = dsigma2 * ddir
+!     E     :     energy density
+!     E1    :     energy density at first frequency bin
+!     E2    :     energy density at second frequency bin
+!     E3    :     energy density at third interpolated bin
+!     ECOS1 :     cosine of first spectral direction
+!     ECOS2 :     cosine of second spectral direction
+!     ESIN1 :     sine of first spectral direction
+!     ESIN2 :     sine of second spectral direction
+!     ETRSH :     threshold to exclude very small contributions
+!     FT    :     auxiliary factor
+!     FT2   :     = FT * FT
+!     I3    :     directional index of third component
+!     ID    :     counter
+!     ID1   :     first loop counter in directional space
+!     ID2   :     second loop counter in directional space
+!     ID3   :     directional index of third component
+!     ID3P  :     = ID3 + 1
+!     IDDUM :     loop counter in direction space
+!     IDP   :     broken directional index for third component
+!     IENT  :     number of entries
+!     IS    :     loop counter
+!     IS1   :     first loop counter in frequency space
+!     IS2   :     second loop counter in frequency space
+!     IS3   :     frequency index of third component
+!     J     :     counter
+!     K1    :     wave number at first frequency bin
+!     K2    :     wave number at second frequency bin
+!     K3    :     wave number at third interpolated bin
+!     K12   :     wave number of difference wave number
+!                 vector k1 - k2
+!     KM    :     mean wave number
+!     OUTSID:     indicates if interpolated value is/is not in grid
+!     P     :     shape coefficient (=4/3)
+!     SAN   :     negative contribution of triad interaction
+!     SAP   :     positive contribution of triad interaction
+!     SIG1  :     frequency of first component
+!     SIG2  :     frequency of second component
+!     SIG3  :     frequency of third component
+!     SINBPH:     sine of biphase
+!     SIN12 :     = sin(th1-th2)
+!     STRI  :     total triad contribution
+!     STRI1 :     triad contribution related to E1
+!     STRI2 :     triad contribution related to E2
+!     TH1   :     direction of first component
+!     TH2   :     direction of second component
+!     TH3   :     direction of third component
+!     WID   :     interpolation weight factor in dir space
+!     WIS   :     interpolation weight factor in freq space
+!
+      INTEGER I3, ID, ID1, ID2, ID3, IDDUM, ID3P, IS, IS1, IS2, IS3, J
+      REAL    BETA, BIPH, CG, COS12, COS23, DEP, DS2DD,
+     &        E1, E2, E3, ECOS1, ECOS2, ESIN1, ESIN2, ETRSH, FT, FT2,
+     &        IDP, K1, K2, K3, K12, KM, P, SIG1, SIG2, SIG3,
+     &        SIN12, SINBPH, STRI, STRI1, STRI2, TH1, TH2, TH3,
+     &        WIS, WID
+      REAL    E(MDC,MSC), SAN(MDC,MSC), SAP(MDC,MSC)
+      LOGICAL OUTSID
+!
+!  9. Subroutines calling
+!
+!     SOURCE
+!
+! 13. Source text
+!
+      INTEGER IENT
+      SAVE    IENT
+      DATA    IENT/0/
+      IF (LTRACE) CALL STRACE (IENT,'SWDNCTA')
+!
+      DEP   = DEP2(KCGRD(1))
+      BIPH  = BIPHAS(KCGRD(1))
+      P     = PTRIAD(2)
+      ETRSH = 1.E-4 * ETOT
+!
+      SAN = 0.
+      SAP = 0.
+!
+!     --- consider energy densities
+!
+      DO ID = 1, MDC
+         E(ID,:) = AC2(ID,:,KCGRD(1)) * SPCSIG(:)
+      END DO
+!
+!     --- compute 3 wave-wave interactions
+!
+      IF ( .NOT.URSELL(KCGRD(1)).LT.PTRIAD(5) ) THEN
+!
+!       --- determine sine of biphase
+!
+        SINBPH = SIN(-BIPH)
+!
+!       --- scaling factor
+!
+        KM   = SIGM / SQRT(GRAV*DEP)
+        FT   = DEP * SIGM
+        FT2  = FT * FT
+        BETA = PTRIAD(1) / FT2 * SINBPH * KM**(2.-P)
+!
+        DO IDDUM = IDDLOW, IDDTOP
+           ID1 = MOD ( IDDUM - 1 + MDC , MDC ) + 1
+!
+           J = 0
+!
+           DO IS1 = 1, MSC
+!
+!             --- get first wave component
+!
+              SIG1 = SPCSIG(IS1)
+              K1   = KWAVE (IS1,1  )
+              E1   = E     (ID1,IS1)
+!
+              TH1   = SPCDIR(ID1,1)
+              ECOS1 = SPCDIR(ID1,2)
+              ESIN1 = SPCDIR(ID1,3)
+!
+              DO IS2 = 1, MSC
+!
+                 J = J + 1
+!
+                 DO ID2 = 1, MDC
+!
+!                   --- get second wave component
+!
+                    SIG2 = SPCSIG(IS2)
+                    K2   = KWAVE (IS2,1  )
+                    E2   = E     (ID2,IS2)
+!
+                    TH2   = SPCDIR(ID2,1)
+                    ECOS2 = SPCDIR(ID2,2)
+                    ESIN2 = SPCDIR(ID2,3)
+!
+!                   --- determine third component by means of quasi-resonance condition
+                    SIG3 = ABS(SIG2 - SIG1)
+!
+                    IF ( SIG3.GT.SPCSIG(1) ) THEN
+!
+!                      --- compute wave number of the sum or difference wave number vector
+!
+                       SIN12 = ESIN1*ECOS2 - ECOS1*ESIN2
+                       COS12 = ECOS1*ECOS2 + ESIN1*ESIN2
+!
+                       K12 = SQRT(K1*K1 + K2*K2 - 2. * K1 * K2 * COS12)
+!
+!                      --- compute the corresponding wave direction
+!
+                       IF (SIG2.GT.SIG1) THEN
+!                         difference interactions
+                          TH3 = TH2 - ASIN(K1/K12*SIN12)
+                       ELSE
+!                         sum interactions
+                          TH3 = TH1 - ASIN(-K2/K12*SIN12)
+                       ENDIF
+!
+!                      --- obtain third energy density by means of interpolation
+!
+                       WIS = QTRI1(J,1)
+                       IS3 = INT(QTRI1(J,2))
+!
+                       OUTSID = .FALSE.
+!
+                       IF ( FULCIR ) THEN
+                          IDP  = ( TH3 - SPCDIR(1,1) ) / DDIR
+                          I3   = FLOOR(IDP)
+                          WID  = IDP - REAL(I3)
+                          ID3  = MOD( I3     + MDC , MDC ) + 1
+                          ID3P = MOD( I3 + 1 + MDC , MDC ) + 1
+                       ELSE
+                          TH3 = MOD( (TH3 + PI2), PI2 )
+                          IF ( SPCDIR(1,1).LT.0. .AND.
+     &                         TH3.GT.SPCDIR(MDC,1) ) TH3 = TH3 - PI2
+                          IDP = ( TH3 - SPCDIR(1,1) ) / DDIR
+                          IF ( IDP.LT.0. ) THEN
+                             OUTSID = .TRUE.
+                          ELSE IF ( IDP.GT.REAL(MDC-1) ) THEN
+                             OUTSID = .TRUE.
+                          ELSE IF ( .NOT. IDP.NE.REAL(MDC-1) ) THEN
+                             ID3 = MDC - 1
+                             WID = 1.
+                          ELSE
+                             ID3 = INT(IDP)
+                             WID = IDP - REAL(ID3)
+                             ID3 = ID3 + 1
+                          ENDIF
+                          ID3P = ID3 + 1
+                       ENDIF
+!
+                       K3 = (1.-WIS)*KWAVE(IS3,1) + WIS*KWAVE(IS3+1,1)
+!
+                       IF ( OUTSID ) THEN
+                          E3 = -1.
+                       ELSE
+                          E3 = (1.-WIS)* (1.-WID) * E(ID3 ,IS3  ) +
+     &                         (1.-WIS)*     WID  * E(ID3P,IS3  ) +
+     &                             WIS * (1.-WID) * E(ID3 ,IS3+1) +
+     &                             WIS *     WID  * E(ID3P,IS3+1)
+                       ENDIF
+!
+                       IF ( E3 * FRINTF * SIG3 * DDIR .GT. ETRSH ) THEN
+!
+!                         --- scale with angle difference between
+!                             the second and third component using
+!                             the transfer function of Sand (1982)
+!
+                          COS23 = (K2-K1*COS12) / K12
+                          IF (.NOT.SIG2.GT.SIG1) COS23 = -COS23
 
-              DISPC = TANH(2.*KMEAN * DEPLOC) / (2.*KMEAN * DEPLOC)
+                          IF (COS23.NE.1.) THEN
+                             FT = SANDN(COS23)
+                          ELSE
+                             FT = 1.
+                          ENDIF
+                          FT2 = FT * FT
+!
+!                         --- assemble the triad contributions
+!
+                          STRI1 = QTRI2(J,KCGRD(1),1) * FT2 * E3 * E1
+                          STRI2 = QTRI2(J,KCGRD(1),2) * FT2 * E3 * E2
+!
+                          DS2DD = FRINTF * SIG2 * DDIR
+!
+                          SAN(ID1,IS1) = SAN(ID1,IS1) + STRI1 * DS2DD
+                          SAP(ID1,IS1) = SAP(ID1,IS1) + STRI2 * DS2DD
+!
+                       ENDIF
+!
+                    ENDIF
+!
+                 ENDDO
+              ENDDO
+!
+           ENDDO
+        ENDDO
+!
+!       --- store results in rhs and main diagonal according
+!           to Patankar-rules
+!
+        DO IS = 1, ISSTOP
+           CG = CGO(IS,1)
+           DO IDDUM = IDCMIN(IS), IDCMAX(IS)
+              ID = MOD ( IDDUM - 1 + MDC , MDC ) + 1
+!
+              STRI = BETA * CG * ( SAP(ID,IS) - SAN(ID,IS) )
+              IF(TESTFL) PLTRI(ID,IS,IPTST) = STRI
+!
+              STRI = BETA * CG * SAP(ID,IS)
+              IMATRA(ID,IS)  = IMATRA(ID,IS)  + STRI
+              REDC0(ID,IS,2) = REDC0(ID,IS,2) + STRI
+!
+              STRI = BETA * CG * SAN(ID,IS) /
+     &                                   MAX(1.E-18,AC2(ID,IS,KCGRD(1)))
+              IMATDA(ID,IS)  = IMATDA(ID,IS)  + STRI
+              REDC1(ID,IS,2) = REDC1(ID,IS,2) - STRI
+!
+           ENDDO
+        ENDDO
+!
+      ENDIF
 
-              F(1)  = 1. !(SIG1 ) / SMEAN
-              F(2)  = 1. !(SIG2 ) / SMEAN
+      CONTAINS
 
-              SDIA1 = BETA * E3  * CG1 * KW1**(PTRIAD(2)) * DISPC
-              SDIA2 = BETA * E3  * CG2 * KW2**(PTRIAD(2)) * DISPC
-!
-!             --- integrals over all directions
-!
-              ED1 = ED(IS1) * SIG1
-              ED2 = ED(IS2) * SIG2
-              ED3 =   RS3        * ED(IS3+1) * SPCSIG(IS3+1)
-     &              + (1. - RS3) * ED(IS3  ) * SPCSIG(IS3  )
+      REAL FUNCTION SAND( COSNM )
 
-              SDIA1B= BETA * ED3 * SIG1 * CG1 * KW1**(PTRIAD(2)) * DISPC
-              SDIA2B= BETA * ED3 * SIG2 * CG2 * KW2**(PTRIAD(2)) * DISPC
+      REAL A, COSNM, DD, DM, DM2, DN, DN2, FAC, KDM, KDN, KH,
+     &     KM, KN, KNM, SM, SN, GH, ROOTDG
+
+      ROOTDG = SQRT(DEP/GRAV)
+
+      SM = SIG2 - SIG1
+      SN = SIG2
+
+      KM = K3 * SIGN(1.,SM)
+      KN = K2
+
+      KDM = KM * DEP
+      KDN = KN * DEP
+
+      DM = ROOTDG * SM
+      DN = ROOTDG * SN
+
+      DM2 = DM * DM
+      DN2 = DN * DN
+
+      DD = DN - DM
+
+      FAC = KDN * KDM * COSNM
+
+      KNM = SQRT(KN*KN + KM*KM - 2.*KN*KM*COSNM)
+
+      A = KNM*DEP
+      IF ( A.GT.6 ) THEN
+        KH = A
+      ELSE
+         A  = A*A
+         KH = A/(1.+A/(3.+A/(5.+A/(7.+A/(9.+A/11.)))))
+      ENDIF
+
+      IF ( DD*DD.NE.KH ) THEN
+         GH = ( DD * ( DM*(KDN*KDN - DN2*DN2) - DN*(KDM*KDM - DM2*DM2) )
+     &          + 2.*DD*DD * ( FAC + DN2*DM2 ) ) / (DD*DD - KH)
+         SAND = 0.5 * ( (GH - FAC - DM2*DN2) / (DN*DM) + DN2 + DM2 )
+      ELSE
+         SAND = 0.
+      ENDIF
+
+      RETURN
+      END FUNCTION SAND
+
+      REAL FUNCTION SANDN( COSNM )
+
+      REAL A, B, C, COSNM, D, DD, DM, DM2, DN, DN2, E, FAC1, FACA, FACB,
+     &     FACC, KDM, KDN, KH1, KHC, KM, KN, KNM1, KNMC, SM, SN,
+     &     GH1, GHC, ROOTDG
+
+      ROOTDG = SQRT(DEP/GRAV)
+
+      SM = SIG2 - SIG1
+      SN = SIG2
+
+      KM = K3 * SIGN(1.,SM)
+      KN = K2
+
+      KDM = KM * DEP
+      KDN = KN * DEP
+
+      DM = ROOTDG * SM
+      DN = ROOTDG * SN
+
+      DM2 = DM * DM
+      DN2 = DN * DN
+
+      DD = DN - DM
+
+      FAC1 = KDN * KDM
+      FACC = FAC1 * COSNM
+
+      FACA = KN*KN + KM*KM
+      FACB = 2.*KN*KM
+
+      KNM1 = SQRT(FACA - FACB)
+      KNMC = SQRT(FACA - FACB*COSNM)
+
+      A = KNM1*DEP
+      IF ( A.GT.6 ) THEN
+        KH1 = A
+      ELSE
+         A  = A*A
+         KH1 = A/(1.+A/(3.+A/(5.+A/(7.+A/(9.+A/11.)))))
+      ENDIF
+
+      A = KNMC*DEP
+      IF ( A.GT.6 ) THEN
+        KHC = A
+      ELSE
+         A  = A*A
+         KHC = A/(1.+A/(3.+A/(5.+A/(7.+A/(9.+A/11.)))))
+      ENDIF
+
+      A = DD * DD
+
+      IF ( A.NE.KH1 .AND. A.NE.KHC ) THEN
+         B  = DM2 * DN2
+         C  = DM  * DN * (DM2 + DN2) - B
+         D  = 2. * A
+         E  = DD * ( DM*(KDN*KDN - DN2*DN2) - DN*(KDM*KDM - DM2*DM2) ) +
+     &        B*D
+
+         GH1 = ( E + D * FAC1 ) / (A - KH1)
+         GHC = ( E + D * FACC ) / (A - KHC)
+
+         SANDN = (GHC - FACC + C) / (GH1 - FAC1 + C)
+      ELSE
+         SANDN = 0.
+      ENDIF
+
+      RETURN
+      END FUNCTION SANDN
+
+      END SUBROUTINE SWDNCTA
 !
-!             --- apply shape function to relaxation
+!****************************************************************
 !
-              IF (ISHAP.EQ.1) THEN
-                 SHAP(1) = EXP(-1.25*((SIG1/(2.*PI))/0.4)**-4)
-                 SHAP(2) = EXP(-1.25*((SIG2/(2.*PI))/0.4)**-4)
-                 !
-                 SDIA1  = SDIA1  / SHAP(1)
-                 SDIA2  = SDIA2  / SHAP(2)
-                 SDIA1B = SDIA1B / SHAP(1)
-                 SDIA2B = SDIA2B / SHAP(2)
-              ENDIF
-              !
-              IF (ANYBIN(ID,IS1)) THEN
-                  DSIG = (FRINTF * SIG2) / SIG1
-                  DSIG = DSIG * F(1)
-                  SRHS = 0.5 * (SDIA2B*E2 + SDIA2*ED2 - SDIA1*ED1)
-                  IMATDA(ID,IS1) = IMATDA(ID,IS1) + SDIA1B * DSIG * 0.5
-                  IMATRA(ID,IS1) = IMATRA(ID,IS1) + SRHS   * DSIG
-              ENDIF
-              IF (ANYBIN(ID,IS2)) THEN
-                  DSIG = (FRINTF * SIG1) / SIG2
-                  DSIG = DSIG * F(2)
-                  SRHS = 0.5 * (SDIA1B*E1 + SDIA1*ED1 - SDIA2*ED2)
-                  IMATDA(ID,IS2) = IMATDA(ID,IS2) + SDIA2B * DSIG * 0.5
-                  IMATRA(ID,IS2) = IMATRA(ID,IS2) + SRHS   * DSIG
-              ENDIF
-              ENDIF
+      SUBROUTINE PEREXC ( DELL, DEP2, AC2, SPCSIG, RDX, RDY, BOTLV )
+!
+!****************************************************************
+!
+      USE OCPCOMM4
+      USE SWCOMM3
+!
+      IMPLICIT NONE
+!
+!
+!   --|-----------------------------------------------------------|--
+!     | Delft University of Technology                            |
+!     | Faculty of Civil Engineering and Geosciences              |
+!     | Environmental Fluid Mechanics Section                     |
+!     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
+!     |                                                           |
+!     | Programmers: The SWAN team                                |
+!   --|-----------------------------------------------------------|--
+!
+!
+!     SWAN (Simulating WAves Nearshore); a third generation wave model
+!     Copyright (C) 1993-2023  Delft University of Technology
+!
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
+!
+!     This program is distributed in the hope that it will be useful,
+!     but WITHOUT ANY WARRANTY; without even the implied warranty of
+!     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+!     GNU General Public License for more details.
+!
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
+!
+!
+!  0. Authors
+!
+!     41.97: Marcel Zijlema
+!
+!  1. Updates
+!
+!     41.97, Sep. 22: New subroutine
+!
+!  2. Purpose
+!
+!     Computes ratio of distance of maximum wave run to the coast
+!     to the spatial period of energy exchange between first and
+!     second harmonics
+!
+!  3. Method
+!
+!     See Saprykina et al., 2017, Oceanology, vol. 57, 253-264
+!
+!  4. Argument variables
+!
+      REAL, INTENT(IN)  :: AC2(MDC,MSC,MCGRD) ! action densities
+      REAL, INTENT(IN)  :: BOTLV(MCGRD)       ! bottom levels
+      REAL, INTENT(OUT) :: DELL               ! delta l expressing the
+                                              ! ratio related to periodic
+                                              ! energy exchange
+      REAL, INTENT(IN)  :: DEP2(MCGRD)        ! depths at grid points
+      REAL, INTENT(IN)  :: RDX(MICMAX),       ! geometric coeffs for
+     &                     RDY(MICMAX)        ! spatial derivatives
+      REAL, INTENT(IN)  :: SPCSIG(MSC)        ! relative frequencies
+!
+!  6. Local variables
+!
+      INTEGER IENT, ID, IS, ISPK
+      REAL    CG, DEP, DDDS, DDDX, DDDY, EMAX, ETD,
+     &        K1, K2, LB, N, ND, SIG1, SIG2
+!
+! 13. Source text
+!
+      SAVE IENT
+      DATA IENT/0/
+      IF (LTRACE) CALL STRACE (IENT,'PEREXC')
+!
+!     --- determine local depth
+!
+      DEP = DEP2(KCGRD(1))
+!
+!     --- calculate peak frequency
+!
+      EMAX = 0.
+      ISPK = -1
+      DO IS = 1, MSC
+         ETD = 0.
+         DO ID = 1, MDC
+            ETD = ETD + SPCSIG(IS)*AC2(ID,IS,KCGRD(1))*DDIR
+         ENDDO
+         IF ( ETD.GT.EMAX ) THEN
+            EMAX = ETD
+            ISPK = IS
+         ENDIF
+      ENDDO
+!
+!     --- calculate wave numbers of first and second harmonics
+!
+      IF ( ISPK.GT.0 ) THEN
+!        first harmonic
+         SIG1 = SPCSIG(ISPK)
+         CALL KSCIP1 (1, SIG1, DEP, K1, CG, N, ND)
+!        second harmonic
+         SIG2 = 2.*SPCSIG(ISPK)
+         CALL KSCIP1 (1, SIG2, DEP, K2, CG, N, ND)
+      ELSE
+         K1 = 1.
+         K2 = 2.*K1 + 1.E-8
+      ENDIF
+!
+!     --- compute detuning length due to mismatch between
+!         first and second harmonics
+!
+      LB = MAX ( 1.E-8, PI2 / (K2 - 2.*K1) )
+!
+!     --- determine absolute bottom slope
+!
+      DDDX =  RDX(1) * (BOTLV(KCGRD(1)) - BOTLV(KCGRD(2)))
+     &      + RDX(2) * (BOTLV(KCGRD(1)) - BOTLV(KCGRD(3)))
+      DDDY =  RDY(1) * (BOTLV(KCGRD(1)) - BOTLV(KCGRD(2)))
+     &      + RDY(2) * (BOTLV(KCGRD(1)) - BOTLV(KCGRD(3)))
+!
+      DDDS = -1. * ( DDDX + DDDY )
+      DDDS = MAX( 1.E-8, ABS(DDDS) )
+!
+!     --- compute delta l
+!
+      DELL = ( DEP / DDDS ) / LB
+
+      RETURN
+      END
+!****************************************************************
+!
+      SUBROUTINE SWBIDW( BIP, AC2, SPCSIG, RDX, RDY, BOTLV, ECOS, ESIN )  41.97
+!
+!****************************************************************
+!
+      USE OCPCOMM4
+      USE SWCOMM3
+!
+      IMPLICIT NONE
+!
+!
+!   --|-----------------------------------------------------------|--
+!     | Delft University of Technology                            |
+!     | Faculty of Civil Engineering and Geosciences              |
+!     | Environmental Fluid Mechanics Section                     |
+!     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
+!     |                                                           |
+!     | Programmers: The SWAN team                                |
+!   --|-----------------------------------------------------------|--
+!
+!
+!     SWAN (Simulating WAves Nearshore); a third generation wave model
+!     Copyright (C) 1993-2023  Delft University of Technology
+!
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
+!
+!     This program is distributed in the hope that it will be useful,
+!     but WITHOUT ANY WARRANTY; without even the implied warranty of
+!     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+!     GNU General Public License for more details.
+!
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
+!
+!
+!  0. Authors
+!
+!     41.97: Floris de Wit, Ad Reniers
+!
+!  1. Updates
+!
+!     41.97, November 2022: New subroutine
+!
+!  2. Purpose
+!
+!     Computes the biphase based on the parametrization of De Wit (2022)
+!
+!  3. Method
+!
+!     The local biphase is computed by means of the lookup tables of
+!     the bed slope and the peak period
+!
+!     The lookup tables are derived on the basis of Figure 4.8 of
+!     De Wit, 2022, PhD thesis, Delft University of Technology
+!
+!     Note that the computed biphase is not scaled with the Ursell
+!     number (see routine SINTGRL)
+!
+!  4. Argument variables
+!
+      REAL, INTENT(IN)  :: AC2(MDC,MSC,MCGRD)   ! action densities
+      REAL, INTENT(OUT) :: BIP                  ! unscaled biphase
+      REAL, INTENT(IN)  :: BOTLV(MCGRD)         ! bottom levels
+      REAL, INTENT(IN)  :: ECOS(MDC), ESIN(MDC) ! cos/sin of spectral dirs
+      REAL, INTENT(IN)  :: RDX(MICMAX),         ! geometric coeffs for
+     &                     RDY(MICMAX)          ! spatial derivatives
+      REAL, INTENT(IN)  :: SPCSIG(MSC)          ! relative frequencies
+!
+!  5. Parameter variables
+!
+!     IDIM        number of interpolation nodes related to the bed slopes
+!     JDIM        number of interpolation nodes related to the peak periods
+!
+      INTEGER, PARAMETER :: IDIM = 8
+      INTEGER, PARAMETER :: JDIM = 5
+!
+!  6. Local variables
+!
+!     COSDIR    cosine of mean wave direction
+!     DDDS      local bed slope in mean wave direction
+!     DDDX      bed slope in x-direction
+!     DDDY      bed slope in y-direction
+!     EEX       x-component of integrated wave energy
+!     EEY       y-component of integrated wave energy
+!     EMAX      maximum energy in spectrum
+!     ET        energy integrated over spectral freq or dir
+!     ETOT      total wave energy
+!     ID        loop counter over directions
+!     IENT      number of entries
+!     IK        index of closest given value in array of bed slopes
+!     IS        loop counter over frequencies
+!     ISPK      index peak frequency
+!     JK        index of closest given value in array of peak periods
+!     NDPER     lookup table containing wave period nodes
+!     NDSLP     lookup table containing bed slope nodes
+!     PLBIP     lookup table of parametrized biphase polynomials as
+!               function of local bed slope and local peak period
+!     POFF      offset value w.r.t. given value in array peak period
+!     RSGN      sign of slope
+!               = -1; slope is positive
+!               = +1; slope is negative
+!     SINDIR    sine of mean wave direction
+!     SOFF      offset value w.r.t. given value in array bed slopes
+!     TP        local peak period
+!     WI1       first weight factor related to the bed slope
+!     WI2       second weight factor related to the bed slope
+!     WJ1       first weight factor related to the peak period
+!     WJ2       second weight factor related to the peak period
+!
+      INTEGER IENT, ID, IS, ISPK
+      INTEGER IK(1), JK(1)
+!
+      REAL    EEX, EEY, EMAX, ET, ETOT, COSDIR, SINDIR
+      REAL    DDDX, DDDY, DDDS, RSGN, TP
+      REAL    NDPER(JDIM)
+      REAL    NDSLP(IDIM)
+      REAL    PLBIP(IDIM,JDIM)
+      REAL    POFF(JDIM)
+      REAL    SOFF(IDIM)
+      REAL    WI1, WI2, WJ1, WJ2
+!
+! 13. Source text
+!
+      SAVE IENT
+      DATA IENT/0/
+!
+      DATA NDPER/1.,6.,8.,10.,12./
+      DATA NDSLP/0.,0.001,0.005,0.01,0.02,0.05,0.111,0.5/
+      DATA PLBIP/0.,0.1,0.5,0.9,2. ,4. ,4. ,4. ,
+     &           0.,0.1,0.4,0.8,1.5,4. ,4. ,4. ,
+     &           0.,0.1,0.3,0.6,1.2,3.3,3.3,3.3,
+     &           0.,0.1,0.3,0.6,1.2,3.3,3.3,3.3,
+     &           0.,0.1,0.3,0.6,1.2,3.3,3.3,3.3/
+!
+      IF (LTRACE) CALL STRACE (IENT,'SWBIDW')
+!
+!     --- initialize biphase
+!
+      BIP = 0.
+!
+!     --- first, calculate the mean wave direction ...
+!
+      EEX  = 0.
+      EEY  = 0.
+      ETOT = 0.
+      DO ID = 1, MDC
+         ET = 0.
+         DO IS = 1, MSC
+            ET = ET + SPCSIG(IS)**2 * AC2(ID,IS,KCGRD(1))
+         ENDDO
+         ETOT = ETOT + ET
+         EEX  = EEX  + ET * ECOS(ID)
+         EEY  = EEY  + ET * ESIN(ID)
+      ENDDO
+!
+      IF ( ETOT.GT.0. ) THEN
+         COSDIR = EEX / ETOT
+         SINDIR = EEY / ETOT
+      ELSE
+!        if no wave direction found, return
+         RETURN
+      ENDIF
+!
+!     ... next, calculate bottom slope in mean wave direction
+!
+      DDDX =  RDX(1) * (BOTLV(KCGRD(1)) - BOTLV(KCGRD(2)))
+     &      + RDX(2) * (BOTLV(KCGRD(1)) - BOTLV(KCGRD(3)))
+      DDDY =  RDY(1) * (BOTLV(KCGRD(1)) - BOTLV(KCGRD(2)))
+     &      + RDY(2) * (BOTLV(KCGRD(1)) - BOTLV(KCGRD(3)))
+!
+      DDDS = -1. * ( DDDX * COSDIR + DDDY * SINDIR )
+!
+!     --- determine sign of the local slope
+!
+      RSGN = SIGN(1.,-DDDS)
+      DDDS = ABS(DDDS)
+!
+!     --- calculate peak period
+!
+      EMAX = 0.
+      ISPK = -1
+      DO IS = 1, MSC
+         ET = 0.
+         DO ID = 1, MDC
+            ET = ET + SPCSIG(IS) * AC2(ID,IS,KCGRD(1))
+         ENDDO
+         IF ( ET.GT.EMAX ) THEN
+            EMAX = ET
+            ISPK = IS
+         ENDIF
+      ENDDO
+      IF ( ISPK.GT.0 ) THEN
+         TP = PI2 / SPCSIG(ISPK)
+      ELSE
+!        if no peak period found, return
+         RETURN
+      ENDIF
+!
+!     --- search for closest given values of bed slope and peak period
+!
+      SOFF = NDSLP - DDDS
+      IK = MINLOC(SOFF, MASK=SOFF.GT.0.)
+!
+      POFF = NDPER - TP
+      JK = MINLOC(POFF, MASK=POFF.GT.0.)
+!
+!     --- compute interpolation factors
+!
+      IF ( DDDS.LT.NDSLP(1) ) THEN
+         IK(1) = 2
+         WI2   = 0.
+      ELSE IF ( DDDS.GT.NDSLP(IDIM) ) THEN
+         IK(1) = IDIM
+         WI2   = 1.
+      ELSE
+         WI2 = (DDDS - NDSLP(IK(1)-1)) / (NDSLP(IK(1))-NDSLP(IK(1)-1))
+      ENDIF
+      WI1 = 1. - WI2
+!
+      IF ( TP.LT.NDPER(1) ) THEN
+         JK(1) = 2
+         WJ2   = 0.
+      ELSE IF ( TP.GT.NDPER(JDIM) ) THEN
+         JK(1) = JDIM
+         WJ2   = 1.
+      ELSE
+         WJ2 = (TP - NDPER(JK(1)-1)) / (NDPER(JK(1))-NDPER(JK(1)-1))
+      ENDIF
+      WJ1 = 1. - WJ2
+!
+!     --- determine unscaled biphase based on linear interpolation
+!
+      BIP = WI1 * WJ1 * PLBIP(IK(1)-1,JK(1)-1) +
+     &      WI1 * WJ2 * PLBIP(IK(1)-1,JK(1)  ) +
+     &      WI2 * WJ1 * PLBIP(IK(1)  ,JK(1)-1) +
+     &      WI2 * WJ2 * PLBIP(IK(1)  ,JK(1)  )
+!
+!     --- sign of biphase is made consistent, i.e. negative for a
+!         positive slope and vice versa
+!
+      BIP = RSGN * BIP * PI/6.
+!
+      RETURN
+      END
+!
+!****************************************************************
+!
+      SUBROUTINE SWBIPM( BIPHAS, DEP2, HSIBC )                            41.97
+!
+!****************************************************************
+!
+      USE OCPCOMM4
+      USE SWCOMM2
+      USE SWCOMM3
+      USE M_SNL3
+      USE M_GENARR
+      USE M_PARALL
+!
+      IMPLICIT NONE
+!
+!
+!   --|-----------------------------------------------------------|--
+!     | Delft University of Technology                            |
+!     | Faculty of Civil Engineering and Geosciences              |
+!     | Environmental Fluid Mechanics Section                     |
+!     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
+!     |                                                           |
+!     | Programmers: The SWAN team                                |
+!   --|-----------------------------------------------------------|--
+!
+!
+!     SWAN (Simulating WAves Nearshore); a third generation wave model
+!     Copyright (C) 1993-2023  Delft University of Technology
+!
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
+!
+!     This program is distributed in the hope that it will be useful,
+!     but WITHOUT ANY WARRANTY; without even the implied warranty of
+!     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+!     GNU General Public License for more details.
+!
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
+!
+!
+!  0. Authors
+!
+!     41.97: Ad Reniers, Marcel Zijlema
+!
+!  1. Updates
+!
+!     41.97, November 2022: New subroutine
+!
+!  2. Purpose
+!
+!     Spatially averages the De Wit's biphase
+!
+!  4. Argument variables
+!
+      REAL   , INTENT(OUT) :: BIPHAS(MCGRD)
+      REAL   , INTENT(IN)  :: DEP2(MCGRD)
+      INTEGER, INTENT(IN)  :: HSIBC(MCGRD)
+!
+!  6. Local variables
+!
+      INTEGER :: IENT, I, J, K, ID, IS, IE, JS, JE, MLX, MLY
+      INTEGER :: IX, IY, IX1, IX2, IY1, IY2, IXI, IYJ, IND, INDL, ISPK
+
+      REAL    :: DXA, DYA, DEPLOC, EMAX, ET, KW, LW
+      REAL    :: SIGMA(1), KWAVE(1), ARR(1)
+      REAL    :: LPAR, BETA
+!PUN      REAL    :: RVAL
+!MPI      LOGICAL :: STPNOW
+!
+! 13. Source text
+!
+      SAVE IENT
+      DATA IENT/0/
+      IF (LTRACE) CALL STRACE (IENT,'SWBIPM')
+
+      LPAR = PTRIAD(9)
+
+!     --- peak wave length at boundary
+      K  = 0
+      KW = 0.
+      IF (LPAR.NE.0.) THEN
+         DO IY = MYC, 1, -1
+            DO IX = 1, MXC
+               IND = KGRPNT(IX,IY)
+               IF ( HSIBC(IND).GT.1.E-25 ) THEN
+                  K = K + 1
+                  EMAX = 0.
+                  ISPK = -1
+                  DO IS = 1, MSC
+                     ET = 0.
+                     DO ID = 1, MDC
+                        ET = ET + SPCSIG(IS) * AC2(ID,IS,IND)
+                     ENDDO
+                     IF ( ET.GT.EMAX ) THEN
+                        EMAX = ET
+                        ISPK = IS
+                     ENDIF
+                  ENDDO
+                  IF ( ISPK.GT.0 ) THEN
+                     SIGMA(1) = SPCSIG(ISPK)
+                  ELSE
+                     SIGMA(1) = SPCSIG(1)
+                  ENDIF
+                  DEPLOC = DEP2(IND)
+                  IF ( DEPLOC.GT.DEPMIN ) THEN
+                     CALL KSCIP1(1, SIGMA, DEPLOC, KWAVE, ARR, ARR, ARR)
+                  ELSE
+                     KWAVE(1) = 0.
+                  ENDIF
+                  KW = KW + KWAVE(1)
+               ENDIF
             ENDDO
          ENDDO
-      ENDDO
-      DEALLOCATE(ED)
+!MPI         ! perform global reductions in parallel run
+!MPI         CALL SWREDUCE( K , 1, SWINT , SWSUM )
+!MPI         CALL SWREDUCE( KW, 1, SWREAL, SWSUM )
+!MPI         IF ( STPNOW() ) RETURN
+!PUN         ! perform global reductions in parallel run
+!PUN         RVAL = REAL(K)
+!PUN         CALL SwanSumOverNodes(RVAL)
+!PUN         K = NINT(RVAL)
+!PUN         CALL SwanSumOverNodes(KW)
+      ENDIF
+      IF (K.GE.1) THEN
+         KW = KW / FLOAT(K)
+      ELSE
+         KW   = 1.
+         LPAR = 0.  ! no smoothing...
+      ENDIF
+
+      LW = LPAR * PI2 / KW
+      IF (ITEST.GE.80.AND.IAMMASTER)
+     &   WRITE(PRINTF,'(A,2F12.5)') 'SWBIPM: KWAVE, LW ',KW,LW
+
+!     --- compute computational area for smoothing purposes
+      IF (.NOT.ONED) THEN
+!        --- first, estimate average step sizes
+         IF (OPTG.EQ.1) THEN
+!           rectilinear grid
+            DXA = DX*COSPC**2 + DY*SINPC**2
+            DYA = DX*SINPC**2 + DY*COSPC**2
+         ELSEIF (OPTG.EQ.3) THEN
+!           curvilinear grid
+            DXA = (XCLEN+YCLEN)/FLOAT(MXCGL+MYCGL)
+            DYA = DXA
+         ELSE
+            DXA = 1.
+            DYA = 1.
+         ENDIF
+!        --- next, compute the number of step sizes per
+!            peak wave length
+         MLX = FLOOR(CEILING(LW/DXA/SQRT(2.))/2.)
+         MLY = FLOOR(CEILING(LW/DYA/SQRT(2.))/2.)
+         IF (LPAR.NE.0.) THEN
+            MLX = MAX(MLX,1)
+            MLY = MAX(MLY,1)
+         ENDIF
+      ELSE
+         MLX = FLOOR(CEILING(LW/DX)/2.)
+         IF (LPAR.NE.0.) MLX = MAX(MLX,1)
+         MLY = 0
+      ENDIF
+      IF (ITEST.GE.80)
+     &   WRITE(PRINTF,'(A,2I4)') '       MLX, MLY = ',MLX, MLY
+      IS = -MLX
+      IE =  MLX
+      JS = -MLY
+      JE =  MLY
+
+      IF (OPTG.NE.5) THEN
+!        --- 2D smoothing of the De Wit's biphase around
+!            each structured internal grid point
+         IX1 = 1
+         IF (.NOT.LMXF) IX1 = 1+IHALOX
+         IX2 = MXC
+         IF (.NOT.LMXL) IX2 = MXC-IHALOX
+         IY1 = 1
+         IF (.NOT.LMYF) IY1 = 1+IHALOY
+         IY2 = MYC
+         IF (.NOT.LMYL) IY2 = MYC-IHALOY
+         DO IY = IY1, IY2
+            DO IX = IX1, IX2
+               IND = KGRPNT(IX,IY)
+               IF ( IND.GT.1 ) THEN
+                  K = 0
+                  BETA = 0.
+                  DO J = JS, JE
+                     DO I = IS, IE
+                        K = K + 1
+                        IXI = MIN(MAX(IX+I,IX1),IX2)
+                        IYJ = MIN(MAX(IY+J,IY1),IY2)
+                        INDL = KGRPNT(IXI,IYJ)
+                        IF (INDL.GT.1) BETA = BETA + BPHTMP(INDL)
+                     ENDDO
+                  ENDDO
+!                 --- store the spatially filtered biphase for triads
+                  IF (K.GE.1) THEN
+                     BIPHAS(IND) = BETA / FLOAT(K)
+                  ELSE
+                     BIPHAS(IND) = BPHTMP(IND)
+                  ENDIF
+               ENDIF
+            ENDDO
+         ENDDO
+      ELSE
+!        unstructered mesh: remain unfiltered
+         BIPHAS = BPHTMP
+      ENDIF
+
+!     End of subroutine SWBIPM
       RETURN
-      END subroutine STRICL
+      END

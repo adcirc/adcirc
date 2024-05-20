@@ -19,6 +19,7 @@
 !     SWOBSTO                                                             40.86
 !     TCROSS                                                              40.04
 !     SWTRCF
+!     REFLECT
 !     SSHAPE                                                              40.00
 !     SINTRP                                                              40.00
 !     HSOBND                                                              32.01
@@ -35,6 +36,7 @@
 !     SWCOPR                                                              40.23
 !MatL4!     SWI2B                                                               40.30
 !MatL4!     SWR2B                                                               40.30
+!     MKPATH                                                              41.95
 !
 !  functions:
 !  ----------
@@ -61,7 +63,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -70,22 +72,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -195,7 +195,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -204,22 +204,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -322,7 +320,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -331,22 +329,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -421,7 +417,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -430,22 +426,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !
@@ -575,7 +569,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -584,22 +578,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -750,7 +742,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -759,22 +751,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -918,7 +908,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -927,22 +917,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -1055,7 +1043,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -1064,22 +1052,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !     0. Authors
@@ -1126,7 +1112,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -1135,22 +1121,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !  0. Authors
 !
@@ -1356,7 +1340,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -1365,22 +1349,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -1697,7 +1679,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -1706,22 +1688,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -1825,15 +1805,20 @@
       RELDIS = -1.
 
 !     loop over the boundary of the computational grid
-      DO IBND = 1, NGRBND
+      DO IBND = 1, NGRBND+1
         IF (IX2.NE.0) THEN
            IX1 = IX2
            IY1 = IY2
            XP1 = XP2
            YP1 = YP2
         END IF
-        IX2 = KGRBND(2*IBND-1)
-        IY2 = KGRBND(2*IBND)
+        IF (IBND.GT.NGRBND) THEN
+           IX2 = KGRBND(2*1-1)
+           IY2 = KGRBND(2*1)
+        ELSE
+           IX2 = KGRBND(2*IBND-1)
+           IY2 = KGRBND(2*IBND)
+        ENDIF
         IF (IX2.NE.0 .AND. (ABS(IX2-IX1).GT.1 .OR.                        40.51
      &                      ABS(IY2-IY1).GT.1)) IX1 = 0                   40.51
         IF (IX2.GT.0) THEN
@@ -1885,7 +1870,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -1894,22 +1879,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !  0. Authors
 !
@@ -2100,7 +2083,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -2109,22 +2092,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !  0. Authors
 !
@@ -2252,7 +2233,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -2261,22 +2242,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -2374,7 +2353,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -2383,22 +2362,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -2599,22 +2576,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -2789,7 +2764,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -2798,22 +2773,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -3006,7 +2979,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -3015,22 +2988,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -3272,8 +3243,8 @@
       SUBROUTINE SWTRCF (DEP2  , WLEV2 , CHS   ,                          41.71 40.31 40.00
      &                   LINK  , OBREDF,                                  40.03
      &                   AC2   , REFLSO, KGRPNT, XCGRID,                  40.41 40.09
-     &                   YCGRID, CAX,    CAY,    RDX,    RDY,    ANYBIN,  40.09
-     &                   SPCSIG, SPCDIR)                                  40.13 40.28
+     &                   YCGRID, CAX,    CAY   , RDX   , RDY , ANYBIN,    40.09
+     &                   SPCSIG, SPCDIR, CGO   , KWAVE , HSS2, TSS2  )    41.82 40.13 40.28
 !                                                                      *
 !***********************************************************************
 
@@ -3285,14 +3256,14 @@
       USE M_PARALL                                                        40.31
       USE SwanGriddata                                                    40.80
       USE SwanCompdata                                                    40.80
-
-      IMPLICIT NONE                                                       40.09
+      USE SwanIEM, only: ntf, Ebig                                        41.85
 !
+      IMPLICIT NONE                                                       40.09
 !
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -3301,22 +3272,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -3336,6 +3305,9 @@
 !     40.80: Marcel Zijlema
 !     41.65: Marcel Zijlema
 !     41.71: Gerbrant van Vledder
+!     41.82: Dirk Rijnsdorp
+!     41.85: Ad Reniers
+!     41.93: Marcel Zijlema
 !
 !  1. Updates
 !
@@ -3364,6 +3336,9 @@
 !     40.80, Mar. 08: extension to unstructured grids
 !     41.65, Jun. 16: extension frequency and direction dependent tranmission coefficients
 !     41.71, Dec. 18: extension freeboard dependent transmission and reflection
+!     41.82, Aug. 21: introduce FIG source term
+!     41.85, May  19: implementation of IEM (surfbeat model)
+!     41.93, May  22: radiated seaward FIG
 !
 !  2. Purpose
 !
@@ -3406,6 +3381,7 @@
 !     CAY      input     Propagation velocity                             40.09
 !     CHS      input     Hs in all computational grid points
 !     DEP2     input     Water depth in grid points                       41.71
+!     HSS2     input     sea-swell sig wave height in all grid points     41.82
 !     KCGRD    input     Grid address of points of computational stencil
 !     LINK     input     indicates whether link in stencil                40.03
 !                        crosses an obstacle                              40.03
@@ -3414,6 +3390,7 @@
 !     REFLSO   inp/outp  contribution to the source term of action        40.41
 !                        balance equation due to reflection               40.41
 !     RDX,RDY  input     Array containing spatial derivative coefficients 40.09
+!     TSS2     input     sea-swell mean wave period in all grid points    41.82
 !     WLEV2    input     Water level in grid points
 !
       INTEGER  KGRPNT(MXC,MYC)
@@ -3424,6 +3401,8 @@
       REAL     :: CAX(MDC,MSC,MICMAX), CAY(MDC,MSC,MICMAX)                40.09 40.22
       REAL     :: REFLSO(MDC,MSC), RDX(MICMAX), RDY(MICMAX)               40.41 40.09 40.22 40.08
       REAL     :: SPCSIG(MSC), SPCDIR(MDC,6)                              40.13 40.28
+      REAL     :: CGO(MSC,MICMAX), KWAVE(MSC,MICMAX)                      41.82
+      REAL     :: HSS2(MCGRD), TSS2(MCGRD)                                41.82
       LOGICAL  :: ANYBIN(MDC,MSC)                                         40.09
 !
 !  5. Parameter variables
@@ -3488,7 +3467,7 @@
 !     WATHIG   freeboard of the dam (= HGT-waterlevel)
 !
       INTEGER    ID, IENT, ILINK, ITRAS, IS, JP, ICGRD, LREFL,
-     &           NUMCOR, NMPO, ISIGM
+     &           NUMCOR, NMPO, ISIGM, IFIG
       INTEGER    LREFDIFF, LRFRD                                          40.31
       INTEGER    LFREE, LQUAY                                             41.71
       REAL       ALOW, BUPL, FVH, HGT, HSIN, OBET, OBHKT,
@@ -3499,6 +3478,8 @@
       REAL       TRCF(MSC,MDC)                                            41.65
       REAL       FD1, FD2, FD3, FD4                                       40.31 40.28
       REAL       GAMR, GAMT, FBR, FBT                                     41.71
+      REAL       ALPHA, AIG, ACOEF, SIGPI, SFAC, FRQD, FIGSRC, HSS, TSS   41.82
+      REAL       BNORM, SDET, X, Y                                        41.93
       REAL       SQRTREF                                                  40.09
       LOGICAL    XONOBST                                                  40.14
       LOGICAL :: REFLTST                                                  40.13
@@ -3510,10 +3491,12 @@
 !
 !  8. Subroutines used
 !
-!     MSGERR           Writes error message
-!     REFLECT          Computes effect of reflection
-!     TCROSS           Searches for crossing point if exist               40.14
+!     EQREAL           indicates whether two reals are equal or not
+!     MSGERR           writes error message
+!     REFLECT          computes effect of reflection
+!     TCROSS           searches for crossing point if exist               40.14
 !
+      LOGICAL EQREAL
       LOGICAL TCROSS                                                      40.14
 !
 !  9. Subroutines calling
@@ -3740,84 +3723,143 @@
            ENDDO
         ENDIF
 !
-!     *** REFLECTION ****
-!     *** X1 X2 X3 ETC. are the coordinates of point according ***
-!     *** with the scheme in the function TCROSS header        ***        40.04
+!       reflection and FIG energy                                         41.93
         LREFL = COBST%RFTYP1                                              40.13
-        IF ( LREFL.GT.0. ) THEN                                           40.31
-!         Reflections are activated                                       40.09
-          SQRTREF  = FBR * COBST%RFCOEF(1)                                41.71 40.31
-          REFLCOEF = SQRTREF * SQRTREF                                    40.09
-          LREFDIFF = COBST%RFTYP2                                         40.31
-          POWN     = COBST%RFCOEF(2)                                      40.31
-          FD1      = COBST%RFCOEF(3)                                      40.31
-          FD2      = COBST%RFCOEF(4)                                      40.31
-          FD3      = COBST%RFCOEF(5)                                      40.31
-          FD4      = COBST%RFCOEF(6)                                      40.31
-          LRFRD    = COBST%RFTYP3                                         40.31
+        IFIG  = COBST%IGTYP                                               41.93
+        IF ( LREFL.GT.0 .OR. IFIG.NE.0 ) THEN                             41.93 40.31
 !
-          IF (OPTG.NE.5) THEN                                             40.80
-!            determine (X1,Y1) and (X2,Y2)
-             ICC   = KCGRD(1)                                             40.09
-             ICGRD = 0                                                    40.09
-             IF ( ICC.GT.1 ) THEN                                         40.09
-               X1 = XCGRID(IXCGRD(1),IYCGRD(1))                           40.09
-               Y1 = YCGRID(IXCGRD(1),IYCGRD(1))                           40.09
-               IF (KGRPNT(IXCGRD(ILINK+1),IYCGRD(ILINK+1)).GT.1) THEN     40.09
-                 X2    = XCGRID(IXCGRD(ILINK+1),IYCGRD(ILINK+1))          40.09
-                 Y2    = YCGRID(IXCGRD(ILINK+1),IYCGRD(ILINK+1))          40.09
-                 ICGRD = KCGRD(ILINK+1)                                   40.09
-               ENDIF
-             ENDIF
-             IF (ICGRD.EQ.0) GOTO 90                                      40.13
-!            select obstacle side crossing the grid link
-             X3 = COBST%XCRP(1)                                           40.31
-             Y3 = COBST%YCRP(1)                                           40.31
-             NUMCOR = COBST%NCRPTS                                        40.31
-             DO JP = 2, NUMCOR                                            40.09
-               X4 = COBST%XCRP(JP)                                        40.31
-               Y4 = COBST%YCRP(JP)                                        40.31
-               IF (TCROSS(X1,X2,X3,X4,Y1,Y2,Y3,Y4,XONOBST)) GOTO 70       40.14
-               X3 = X4                                                    40.09
-               Y3 = Y4                                                    40.09
-             ENDDO
-          ELSE                                                            40.80
-!           determine begin and end points of link                        40.80
-            X1 = xcugrd(vs(1))                                            40.80
-            Y1 = ycugrd(vs(1))                                            40.80
-            X2 = xcugrd(vs(ILINK+1))                                      40.80
-            Y2 = ycugrd(vs(ILINK+1))                                      40.80
-            XV(1) = X1                                                    40.80
-            YV(1) = Y1                                                    40.80
-            XV(2) = X2                                                    40.80
-            YV(2) = Y2                                                    40.80
-!           select obstacle side crossing the grid link                   40.80
-            X3 = COBST%XCRP(1)                                            40.80
-            Y3 = COBST%YCRP(1)                                            40.80
-            XOBS(1) = X3                                                  40.80
-            YOBS(1) = Y3                                                  40.80
-            DO JP = 2, COBST%NCRPTS                                       40.80
-               X4 = COBST%XCRP(JP)                                        40.80
-               Y4 = COBST%YCRP(JP)                                        40.80
-               XOBS(2) = X4                                               40.80
-               YOBS(2) = Y4                                               40.80
-               IF ( SwanCrossObstacle( XV, YV, XOBS, YOBS ) ) GOTO 70     40.80
-               X3 = X4                                                    40.80
-               Y3 = Y4                                                    40.80
-               XOBS(1) = X3                                               40.80
-               YOBS(1) = Y3                                               40.80
-            ENDDO                                                         40.80
-          ENDIF                                                           40.80
-!         no crossing found, skip procedure
-          GOTO 90
+!          check crossing with obstacle
+           IF (OPTG.NE.5) THEN                                            40.80
+!             determine grid points (X1,Y1) and (X2,Y2) of link
+              ICC   = KCGRD(1)                                            40.09
+              ICGRD = 0                                                   40.09
+              IF ( ICC.GT.1 ) THEN                                        40.09
+                 X1 = XCGRID(IXCGRD(1),IYCGRD(1))                         40.09
+                 Y1 = YCGRID(IXCGRD(1),IYCGRD(1))                         40.09
+                 IF (KGRPNT(IXCGRD(ILINK+1),IYCGRD(ILINK+1)).GT.1) THEN   40.09
+                    X2    = XCGRID(IXCGRD(ILINK+1),IYCGRD(ILINK+1))       40.09
+                    Y2    = YCGRID(IXCGRD(ILINK+1),IYCGRD(ILINK+1))       40.09
+                    ICGRD = KCGRD(ILINK+1)                                40.09
+                 ENDIF
+              ENDIF
+              IF (ICGRD.EQ.0) GOTO 90                                     40.13
+!             select obstacle side crossing the grid link
+              X3 = COBST%XCRP(1)                                          40.31
+              Y3 = COBST%YCRP(1)                                          40.31
+              NUMCOR = COBST%NCRPTS                                       40.31
+              DO JP = 2, NUMCOR                                           40.09
+                 X4 = COBST%XCRP(JP)                                      40.31
+                 Y4 = COBST%YCRP(JP)                                      40.31
+                 IF (TCROSS(X1,X2,X3,X4,Y1,Y2,Y3,Y4,XONOBST)) GOTO 70     40.14
+                 X3 = X4                                                  40.09
+                 Y3 = Y4                                                  40.09
+              ENDDO
+           ELSE                                                           40.80
+!             determine begin and end points of link (unstructured)       40.80
+              X1 = xcugrd(vs(1))                                          40.80
+              Y1 = ycugrd(vs(1))                                          40.80
+              X2 = xcugrd(vs(ILINK+1))                                    40.80
+              Y2 = ycugrd(vs(ILINK+1))                                    40.80
+              XV(1) = X1                                                  40.80
+              YV(1) = Y1                                                  40.80
+              XV(2) = X2                                                  40.80
+              YV(2) = Y2                                                  40.80
+!             select obstacle side crossing the grid link                 40.80
+              X3 = COBST%XCRP(1)                                          40.80
+              Y3 = COBST%YCRP(1)                                          40.80
+              XOBS(1) = X3                                                40.80
+              YOBS(1) = Y3                                                40.80
+              DO JP = 2, COBST%NCRPTS                                     40.80
+                 X4 = COBST%XCRP(JP)                                      40.80
+                 Y4 = COBST%YCRP(JP)                                      40.80
+                 XOBS(2) = X4                                             40.80
+                 YOBS(2) = Y4                                             40.80
+                 IF ( SwanCrossObstacle( XV, YV, XOBS, YOBS ) ) GOTO 70   40.80
+                 X3 = X4                                                  40.80
+                 Y3 = Y4                                                  40.80
+                 XOBS(1) = X3                                             40.80
+                 YOBS(1) = Y3                                             40.80
+              ENDDO                                                       40.80
+           ENDIF                                                          40.80
+!          no crossing found, skip procedure
+           GOTO 90
 
-  70      CALL REFLECT(AC2, REFLSO, X1, Y1, X2, Y2,                       40.13
+  70       IF ( LREFL.GT.0 ) THEN
+!             reflections are activated                                   40.09
+              SQRTREF  = FBR * COBST%RFCOEF(1)                            41.71 40.31
+              REFLCOEF = SQRTREF * SQRTREF                                40.09
+              LREFDIFF = COBST%RFTYP2                                     40.31
+              POWN     = COBST%RFCOEF(2)                                  40.31
+              FD1      = COBST%RFCOEF(3)                                  40.31
+              FD2      = COBST%RFCOEF(4)                                  40.31
+              FD3      = COBST%RFCOEF(5)                                  40.31
+              FD4      = COBST%RFCOEF(6)                                  40.31
+              LRFRD    = COBST%RFTYP3                                     40.31
+              IF ( LSRFB .AND. ntf.GT.0 ) THEN
+!                impose bound ig components at obstacle                   41.85
+                 CALL REFLECT(Ebig, REFLSO, X1, Y1, X2, Y2,               41.85
+     &                 X3, Y3, X4, Y4, CAX,                               41.85
+     &                 CAY, RDX, RDY, ILINK,                              41.85
+     &                 REFLCOEF, LREFDIFF, POWN, ANYBIN,                  41.85
+     &                 LRFRD, SPCSIG, SPCDIR, FD1, FD2, FD3, FD4,         41.85
+     &                 OBREDF, REFLTST)                                   41.85
+              ELSE
+                 CALL REFLECT(AC2, REFLSO, X1, Y1, X2, Y2,                40.13
      &                 X3, Y3, X4, Y4, CAX,                               40.13
      &                 CAY, RDX, RDY, ILINK,                              40.13
      &                 REFLCOEF, LREFDIFF, POWN, ANYBIN,                  40.13
      &                 LRFRD, SPCSIG, SPCDIR, FD1, FD2, FD3, FD4,         40.13
      &                 OBREDF, REFLTST)                                   40.13
-        END IF
+              ENDIF
+           ENDIF
+!
+           IF ( IFIG.NE.0 ) THEN                                          41.93
+!             compute seaward-radiated FIG source energy and              41.93
+!             add to right hand side of matrix                            41.93
+              X = X4 - X3                                                 41.93
+              Y = Y4 - Y3                                                 41.93
+              IF ( EQREAL(X,0.) .AND. EQREAL(Y,0.) ) GOTO 90              41.93
+!             sign of inner product with normal finds position            41.93
+!             of (X1,Y1) with respect to obstacle line                    41.93
+              SDET = Y*(X1-X3) - X*(Y1-Y3)                                41.93
+              IF ( .NOT. SDET.LT.0. ) GOTO 90                             41.93
+              ALPHA = COBST%IGCOEF(1)                                     41.82
+              IF ( VARHSS ) THEN                                          41.82
+                 HSS = HSS2(KCGRD(1))                                     41.82
+              ELSE                                                        41.82
+                 HSS = COBST%IGCOEF(2)                                    41.82
+              ENDIF                                                       41.82
+              IF ( VARTSS ) THEN                                          41.82
+                 TSS = TSS2(KCGRD(1))                                     41.82
+              ELSE                                                        41.82
+                 TSS = COBST%IGCOEF(3)                                    41.82
+              ENDIF                                                       41.82
+              AIG   = HSS * TSS**2.                                       41.82
+              ACOEF = 1.2 * ALPHA**2. * (AIG/4.)**2.                      41.82
+!             direction of normal pointing outwards from the obstacle     41.93
+              BNORM = ATAN2(Y,X) + 0.5*PI                                 41.93
+              DO IS = 1, MSC                                              41.82
+!                factor to convert back to N(sigma,theta)                 41.82
+                 SIGPI  = SPCSIG(IS) * 2. * PI                            41.82
+!                shoaling factor                                          41.82
+                 SFAC   = (KWAVE(IS,1)*GRAV**2.)/(CGO(IS,1)*SPCSIG(IS))   41.82
+!                frequency distribution for FIG source                    41.82
+                 FRQD   = COBST%IGFRQD(IS)                                41.82
+!                FIG source contribution according to the                 41.93
+!                parametrization of Ardhuin et al. (2014)                 41.93
+                 FIGSRC = ACOEF * SFAC * FRQD / SIGPI                     41.82
+                 DO ID = 1, MDC                                           41.82
+                    IF ( ANYBIN(ID,IS) ) THEN                             41.82
+!                      only FIG energy away from obstacle is              41.93
+!                      taken into account                                 41.93
+                       IF ( COS( BNORM - SPCDIR(ID,1) ).GT.0. )           41.93
+     &                          REFLSO(ID,IS) = REFLSO(ID,IS) + FIGSRC *  41.93 41.82
+     &               (RDX(ILINK)*CAX(ID,IS,1) + RDY(ILINK)*CAY(ID,IS,1))  41.82
+                    ENDIF                                                 41.82
+                 ENDDO                                                    41.82
+              ENDDO                                                       41.82
+           ENDIF                                                          41.93
+        ENDIF
 !
         IF (ITEST .GE. 120)  WRITE (PRTEST,10)
      &  IXCGRD(1)-1, IYCGRD(1)-1, NMPO, TRCF(1,1)
@@ -3855,7 +3897,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -3864,22 +3906,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors                                                             40.09
@@ -3890,6 +3930,7 @@
 !     40.28  Annette Kieftenburg                                          40.28
 !     40.38  Annette Kieftenburg                                          40.38
 !     40.41: Marcel Zijlema
+!     41.73: Ad Reniers
 !                                                                         40.09
 !  1. Updates                                                             40.09
 !                                                                         40.09
@@ -3904,6 +3945,7 @@
 !                     with other subroutines                              40.08
 !     40.13, Nov. 03: test on refl + transm added
 !     40.41, Oct. 04: common blocks replaced by modules, include files removed
+!     41.73, Apr. 20: bug fix reflection in case of 360->0
 !                                                                         40.09
 !  2. Purpose                                                             40.09
 !                                                                         40.09
@@ -3982,8 +4024,8 @@
 !  7. Local variables                                                     40.09
 !                                                                         40.09
       REAL :: AC2REF     ! reflected action density of one spectral bin
-      REAL :: BETA         ! local angle of obstacle                      40.09
-      REAL :: EPS                                                         40.09
+      REAL :: BETA       ! local angle of obstacle                        40.09
+      REAL :: X, Y
       REAL, ALLOCATABLE :: PRDIF(:)   ! scattering filter                 40.13
       REAL    :: TH_INC         ! direction of incident wave
       REAL    :: TH_NORM        ! direction of normal to obstacle
@@ -4005,10 +4047,6 @@
 !  9. Subroutines calling                                                 40.09
 !                                                                         40.09
 !     SWTRCF                                                              40.09
-!                                                                         40.09
-! 10. Error messages                                                      40.09
-!                                                                         40.09
-!     if obstacle linepiece is of length < EPS                            40.09
 !                                                                         40.09
 ! 11. Remarks                                                             40.09
 !                                                                         40.09
@@ -4056,11 +4094,8 @@
       SAVE     IENT                                                       40.09
       DATA     IENT /0/                                                   40.09
       CALL STRACE (IENT, 'REFLECT')                                       40.09
-!                                                                         40.09
-      EPS = EPSILON(X1)*SQRT((X2-X1)*(X2-X1)+(Y2-Y1)*(Y2-Y1))             40.09
-      IF (EPS ==0) EPS = TINY(X1)                                         40.09
 
-      IF (LREFDIFF .EQ. 0) THEN
+      IF ( LREFDIFF.EQ.0 ) THEN
         ALLOCATE (PRDIF(0:0))
         MAXIDR = 0
         PRDIF(0) = 1.
@@ -4069,12 +4104,14 @@
         ALLOCATE (PRDIF(0:MDC/2))
       ENDIF
 !                                                                         40.09
-!     Determine angle of obstacle BETA, and related                       40.09
+!     determine angle of obstacle BETA                                    40.09
 !                                                                         40.09
-      IF (.NOT. ((ABS(Y4-Y3).LE.EPS) .AND. (ABS(X4-X3).LE.EPS)) ) THEN    40.09
-        BETA = ATAN2((Y4-Y3),(X4-X3))                                     40.09
+      X = X4 - X3
+      Y = Y4 - Y3
+      IF ( X.NE.0. .OR. Y.NE.0. ) THEN
+        BETA = ATAN2(Y,X)
       ELSE                                                                40.09
-        CALL MSGERR (3, 'Obstacle contains line piece of length 0!')      40.09
+        CALL MSGERR (2, 'obstacle is a zero-dimensional point')           40.09
       END IF                                                              40.09
 !     determine direction of normal                         (4)
 !     this is the normal from (X1,Y1)                        |
@@ -4082,7 +4119,7 @@
 !     see sketch to establish sign                    (2)----+------(1)
 !                                                            |
 !                                                           (3)
-      IF ((X1-X3)*(Y4-Y3)-(Y1-Y3)*(X4-X3) .GT. 0.) THEN                   40.13
+      IF ( (X1-X3)*Y - (Y1-Y3)*X.GT.0. ) THEN                             40.13
         TH_NORM = BETA + 0.5*PI
       ELSE
         TH_NORM = BETA - 0.5*PI
@@ -4144,11 +4181,14 @@
             TH_OUT = SPCDIR(ID,1)
 !           corresponding incident direction (assuming specular reflection)
             TH_INC = 2.*BETA-TH_OUT
+            IF ( TH_INC.LT.0. ) TH_INC = TH_INC + 2.*PI                   41.73
 !           determine counter for which direction is TH_INC:
             IANG = MOD (TH_INC-SPCDIR(1,1), 2.*PI) / DDIR
+            IF ( IANG.LT.0. ) IANG = IANG + REAL(MDC)                     41.73
 !           incident angle is between ID_I1 and ID_I2
             ID_I1 = 1 + INT (IANG)
             ID_I2 = ID_I1+1
+            IF ( ID_I2.GT.MDC ) ID_I2 = ID_I2 - MDC                       41.73
 !           W1 and W2 are weighting coefficients for the above directions
 !           by linear interpolation
             W2 = IANG + 1. - REAL(ID_I1)
@@ -4203,7 +4243,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -4212,22 +4252,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -4239,6 +4277,7 @@
 !     30.82: IJsbrand Haagsma
 !     40.02: IJsbrand Haagsma
 !     40.41: Marcel Zijlema
+!     41.99: Marcel Zijlema
 !
 !  1. Updates
 !
@@ -4251,6 +4290,7 @@
 !     30.82, Oct. 98: Updated description of several variables
 !     40.02, Oct. 00: Modified test write statement to avoid division by MS=0
 !     40.41, Oct. 04: common blocks replaced by modules, include files removed
+!     41.99, Aug. 22: correction to cos m-model
 !
 !  2. Purpose
 !
@@ -4285,6 +4325,7 @@
 !             =2; Jonswap spectrum
 !             =3; bin
 !             =4; Gauss curve
+!             =5; TMA
 !             (if >0: period is interpreted as peak per.
 !              if <0: period is interpreted as mean per.)
 !
@@ -4309,6 +4350,7 @@
 !     CPSHAP   aux. var. used in computation of spectrum
 !     CTOT     total energy
 !     CTOTT    total energy (used for comparison)
+!     DD       directional width (in degrees)                             41.99
 !     DIFPER   auxiliary variable used to select bin closest
 !              to given frequency
 !     MPER
@@ -4326,6 +4368,8 @@
       REAL     COEFF ,SYF   ,MPER  ,CTOT  ,CTOTT,PKPER  ,DIFPER
       REAL     MS
       REAL     RA    ,SALPHA,SF   ,SF4   ,SF5   ,FPK   ,FPK4, FAC
+      REAL     DP, K, N, CG, ND
+      REAL     DD                                                         41.99
 !
 !     LOGPM    indicates whether peak or mean frequency is used
 !     DVERIF   logical used in verification of incident direction
@@ -4393,6 +4437,7 @@
 !       =2:   calculate value of Jonswap spectrum
 !       =3:   calculate value of bin spectrum
 !       =4:   calculate value of Gauss spectrum
+!       =5:   calculate value of TMA spectrum
 !       else: Give error message because of wrong shape
 !       ----------------------------------------------------------------
 !       if LOGPM is True
@@ -4445,7 +4490,7 @@
       FPK4 = FPK**4
       IF (LSHAPE.EQ.1) THEN
         SALPHA = ((SPPARM(1) ** 2) * (FPK4)) * 5. / 16.
-      ELSE IF (LSHAPE.EQ.2) THEN
+      ELSE IF (LSHAPE.EQ.2 .OR. LSHAPE.EQ.5) THEN
 !       *** SALPHA = alpha*(grav**2)/(2.*pi)**4)
         SALPHA = (SPPARM(1)**2 * FPK4) /
      &             ((0.06533*(PSHAPE(1)**0.8015)+0.13467)*16.)
@@ -4464,8 +4509,9 @@
           SF5 = SF**5
           RA = (SALPHA/SF5)*EXP(-(5.*FPK4)/(4.*SF4))/(PI2*SPCSIG(IS))
           ACLOC(MDC,IS) = RA
-        ELSE IF (LSHAPE.EQ.2) THEN
+        ELSE IF (LSHAPE.EQ.2 .OR. LSHAPE.EQ.5) THEN
 !         *** LSHAPE = 2 : JONSWAP ***
+!         *** LSHAPE = 5 : TMA     ***
           SF = SPCSIG(IS)/(PI2)
           SF4 = SF**4
           SF5 = SF**5
@@ -4474,6 +4520,11 @@
             RA = 0.
           ELSE
             RA = (SALPHA/SF5) * EXP(-CPSHAP)
+          ENDIF
+          IF (LSHAPE.EQ.5) THEN
+             DP = PSHAPE(3)
+             CALL KSCIP1 (1, SPCSIG(IS), DP, K, CG, N, ND)
+             RA = RA * (TANH(K*DP))**2 / (2.*N)
           ENDIF
           IF (SF .LT. FPK) THEN
             COEFF = 0.07
@@ -4574,13 +4625,21 @@
 !
       ADIR = PI * DEGCNV(SPPARM(3)) / 180.                                40.00
       IF (DSHAPL.EQ.1) THEN
+        DD = SPPARM(4)                                                    41.99
+        IF (DD.GT.23.) THEN                                               41.99
+           FAC = 1.2                                                      41.99
+        ELSEIF (DD.GT.17.) THEN                                           41.99
+           FAC = 1.096                                                    41.99
+        ELSE                                                              41.99
+           FAC = 1.01                                                     41.99
+        ENDIF                                                             41.99
         DSPR = PI * SPPARM(4) / 180.
-        MS = MAX (DSPR**(-2) - 2., 1.)
+        MS = MAX (FAC*DSPR**(-2) - 2., 1.)                                41.99
       ELSE
         MS = SPPARM(4)
       ENDIF
       IF (MS.LT.12.) THEN
-        CTOT = (2.**MS) * (GAMMAF(0.5*MS+1.))**2 / (PI * GAMMAF(MS+1.))
+        CTOT = GAMMAF(0.5*MS+1.) / (SQRT(PI) * GAMMAF(0.5*MS+0.5))        41.99
       ELSE
         CTOT =  SQRT (0.5*MS/PI) / (1. - 0.25/MS)
       ENDIF
@@ -4589,10 +4648,10 @@
         DO IS = 1, MSC
           ESOM = ESOM + FRINTF * SPCSIG(IS)**2 * ACLOC(MDC,IS)
         ENDDO
-        GAM1 = GAMMAF(0.5*MS+1.)                                               40.84
-        GAM2 = GAMMAF(MS+1.)                                                   40.84
+        GAM1 = GAMMAF(0.5*MS+1. )                                         40.84
+        GAM2 = GAMMAF(0.5*MS+0.5)                                         41.99 40.84
         WRITE (PRTEST, *) ' SSHAPE dir ', 4.*SQRT(ABS(ESOM)),
-     &        SPPARM(1), CTOT, MS, GAM1, GAM2, CTOT                            40.84 40.02
+     &        SPPARM(1), CTOT, MS, GAM1, GAM2, CTOT                       40.84 40.02
       ENDIF
       DVERIF = .FALSE.
       CTOTT = 0.
@@ -4644,22 +4703,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -5037,7 +5094,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -5046,22 +5103,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -5162,7 +5217,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -5171,22 +5226,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -5260,7 +5313,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -5269,22 +5322,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -5360,7 +5411,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -5369,22 +5420,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -5557,22 +5606,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Update history
@@ -5854,7 +5901,7 @@
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
-!     | Faculty of Civil Engineering                              |
+!     | Faculty of Civil Engineering and Geosciences              |
 !     | Environmental Fluid Mechanics Section                     |
 !     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
 !     |                                                           |
@@ -5863,22 +5910,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -5999,22 +6044,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -6115,22 +6158,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !TIMG!
 !TIMG!  0. Authors
@@ -6284,22 +6325,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !TIMG!
 !TIMG!  0. Authors
@@ -6447,22 +6486,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !TIMG!
 !TIMG!  0. Authors
@@ -6496,7 +6533,7 @@
 !TIMG!     TABLE :     array for computing aggregate cpu- and wallclock-times
 !TIMG!
 !TIMG      INTEGER          :: IENT, J, K, IDEBUG, MYPRC
-!TIMG      DOUBLE PRECISION :: TABLE(31,2)
+!TIMG      DOUBLE PRECISION :: TABLE(33,2)
 !TIMG      PARAMETER (IDEBUG=0)
 !TIMG!
 !TIMG!  7. Common blocks used
@@ -6661,6 +6698,14 @@
 !TIMG!
 !TIMG            TABLE(31,J) = TABLE(31,J) + DCUMTM(144,J)
 !TIMG
+!TIMG!           --- Bragg scattering:
+!TIMG!
+!TIMG            TABLE(32,J) = TABLE(32,J) + DCUMTM(145,J)
+!TIMG
+!TIMG!           --- quasi-coherent scattering:
+!TIMG!
+!TIMG            TABLE(33,J) = TABLE(33,J) + DCUMTM(146,J)
+!TIMG
 !TIMG         END DO
 !TIMG!
 !TIMG!        --- add up times for some basic blocks
@@ -6719,6 +6764,14 @@
 !TIMG!
 !TIMG            TABLE(8,J) = TABLE(8,J) + TABLE(31,J)
 !TIMG!
+!TIMG!                * Bragg scattering
+!TIMG!
+!TIMG            TABLE(8,J) = TABLE(8,J) + TABLE(32,J)
+!TIMG!
+!TIMG!                * quasi-coherent scattering
+!TIMG!
+!TIMG            TABLE(8,J) = TABLE(8,J) + TABLE(33,J)
+!TIMG!
 !TIMG!           --- other computing:
 !TIMG!
 !TIMG            TABLE(13,J) = TABLE(13,J) + TABLE( 3,J)
@@ -6775,6 +6828,8 @@
 !TIMG         WRITE(PRINTF,115) MYPRC,'wave breaking:'   ,(TABLE(21,j),j=1,2)
 !TIMG         WRITE(PRINTF,115) MYPRC,'quadruplets:'     ,(TABLE(22,j),j=1,2)
 !TIMG         WRITE(PRINTF,115) MYPRC,'triads:'          ,(TABLE(23,j),j=1,2)
+!TIMG         WRITE(PRINTF,115) MYPRC,'Bragg scattering:',(TABLE(32,j),j=1,2)
+!TIMG         WRITE(PRINTF,115) MYPRC,'QC scattering:'   ,(TABLE(33,j),j=1,2)
 !TIMG         WRITE(PRINTF,115) MYPRC,'limiter:'         ,(TABLE(24,j),j=1,2)
 !TIMG         WRITE(PRINTF,115) MYPRC,'rescaling:'       ,(TABLE(25,j),j=1,2)
 !TIMG         WRITE(PRINTF,115) MYPRC,'reflections:'     ,(TABLE(26,j),j=1,2)
@@ -6823,22 +6878,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -6925,22 +6978,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -7017,22 +7068,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -7099,22 +7148,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -7214,22 +7261,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -7329,22 +7374,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !MatL4!
 !MatL4!  0. Authors
@@ -7470,22 +7513,20 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !MatL4!
 !MatL4!  0. Authors
@@ -7713,3 +7754,108 @@
 !MatL4
 !MatL4      RETURN
 !MatL4      END
+!****************************************************************
+!
+      SUBROUTINE MKPATH ( PATH, IERR )
+!
+!****************************************************************
+!
+      USE OCPCOMM4
+!
+      IMPLICIT NONE
+!
+!
+!   --|-----------------------------------------------------------|--
+!     | Delft University of Technology                            |
+!     | Faculty of Civil Engineering and Geosciences              |
+!     | Environmental Fluid Mechanics Section                     |
+!     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
+!     |                                                           |
+!     | Programmer: Marcel Zijlema                                |
+!   --|-----------------------------------------------------------|--
+!
+!
+!     SWAN (Simulating WAves Nearshore); a third generation wave model
+!     Copyright (C) 1993-2023  Delft University of Technology
+!
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
+!
+!     This program is distributed in the hope that it will be useful,
+!     but WITHOUT ANY WARRANTY; without even the implied warranty of
+!     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+!     GNU General Public License for more details.
+!
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
+!
+!
+!  0. Authors
+!
+!     41.95: Marcel Zijlema
+!
+!  1. Updates
+!
+!     41.95, Jul. 22: New subroutine
+!
+!  2. Purpose
+!
+!     Creates a directory on OS (e.g. Windows, Linux and macOS)
+!
+!  3. Method
+!
+!     Use of a Fortran 2008 standard EXECUTE_COMMAND_LINE
+!
+!  4. Argument variables
+!
+!     IERR  :     status error
+!                 =0 : creating path successful
+!                 /=0: creating path failed
+!     PATH  :     string to pass path
+!
+      INTEGER          :: IERR
+      CHARACTER(LEN=*) :: PATH
+!
+!  6. Local variables
+!
+!     CSTAT :     command status
+!     CMSG  :     command error message
+!     ESTAT :     exit status
+!     IENT  :     number of entries
+!     MSGSTR:     string to pass message
+!
+      INTEGER            :: CSTAT, ESTAT, IENT
+!
+      CHARACTER(LEN=100) :: CMSG
+      CHARACTER(LEN=140) :: MSGSTR
+!
+! 13. Source text
+!
+      SAVE IENT
+      DATA IENT/0/
+      IF (LTRACE) CALL STRACE (IENT,'MKPATH')
+!
+      IERR = 0
+!
+      CALL EXECUTE_COMMAND_LINE('mkdir '//TRIM(PATH), EXITSTAT=ESTAT,
+     &                          CMDSTAT=CSTAT, CMDMSG=CMSG)
+      IF (CSTAT.GT.0) THEN
+         WRITE (MSGSTR,'(A)') 'Command execution failed with error '//
+     &                        TRIM(CMSG)
+         CALL MSGERR( 1, TRIM(MSGSTR) )
+         IERR = 1
+      ELSE IF (CSTAT.LT.0) THEN
+         CALL MSGERR( 2, ' Command execution not supported' )
+         IERR = 2
+      ELSE IF (ESTAT.NE.0) THEN
+         WRITE (MSGSTR, '(A,I5)')
+     &                        'Error while creating path '//TRIM(PATH)//
+     &                        ' - exit status number is ', ESTAT
+         CALL MSGERR( 2, TRIM(MSGSTR) )
+         IERR = 3
+      END IF
+!
+      RETURN
+      END
