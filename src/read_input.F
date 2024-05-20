@@ -810,11 +810,11 @@ C...
      &      w_cool," mm s^-1"
          call logMessage(ECHO,trim(scratchMessage))
          IF (CkCd_calc.EQV..true.) THEN
-            write(scratchMessage,'(a)') "CkCd will be calculated",
+            write(scratchMessage,'(a,a)') "CkCd will be calculated",
      & " using the relationship: CkCd = 0.00055*V^2 - 0.02590*V + 0.763"
             call logMessage(ECHO,trim(scratchMessage))
          ELSE
-            write(scratchMessage,'(a,f)') "CdCd  =",
+            write(scratchMessage,'(a,f)') "CkCd  =",
      &      CkCd
          ENDIF
       ENDIF
