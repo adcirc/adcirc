@@ -806,7 +806,7 @@ C...
       ! only print these next lines if we are using the CLE15 vortex
       ! model since they are not used in regular Holland
       IF (vortexModel.EQ."CLE15") THEN
-         write(scratchMessage,'(a,f15.7,a)') "w_cool  =",
+         write(scratchMessage,'(a,f6.2,a)') "w_cool  =",
      &      w_cool," mm s^-1"
          call logMessage(ECHO,trim(scratchMessage))
          IF (CkCd_calc.EQV..true.) THEN
@@ -814,7 +814,7 @@ C...
      & " using the relationship: CkCd = 0.00055*V^2 - 0.02590*V + 0.763"
             call logMessage(ECHO,trim(scratchMessage))
          ELSE
-            write(scratchMessage,'(a,f15.7)') "CkCd  =",
+            write(scratchMessage,'(a,f6.2)') "CkCd  =",
      &      CkCd
             call logMessage(ECHO,trim(scratchMessage))
          ENDIF

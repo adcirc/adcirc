@@ -6163,6 +6163,8 @@ C               DEALLOCATE(Vdiff)
             CkCd = 0.00055*Vm**2 - 
      &             0.0259*Vm + 
      &             0.763
+            CkCd=MAX(CkCd,0.4)
+            CkCd=MIN(CkCd,1.4)
          ENDIF
       
          r   = (/ (I, I = 0,int(r0),1000) /)
