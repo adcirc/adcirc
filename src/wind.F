@@ -6117,16 +6117,22 @@ C               DEALLOCATE(Vdiff)
          END DO
       
          r_N = int(r0/1000d0)+1
+         r_N = SIZE(Vinner)
          ALLOCATE (r             (r_N))
          ALLOCATE (Vout          (r_N))
+
+         DO I = 1,rmerge
+            r(I) = (I-1)*1000
+            Vout(I)=Vinner(I)
+         ENDDO
+         DO I = rmerge+1,r_N
+            r(I) = (I-1)*1000
+            Vout(I)=Vouter(I)
+         ENDDO
       
-         r = (/ (I, I = 0,int(r0),1000) /)
-      
-         Vout(:rmerge  ) = Vinner(:rmerge  )
-         Vout(rmerge+1:) = Vouter(rmerge+1:)
          r0out           = r0
 
-         DO I = 1, r_N, 1
+         DO I = 1, r_N
             IF ( r(I)<rm ) THEN
                Vout(I) = Vout(I) * (r(I)/rm)**0.25d0
             END IF
