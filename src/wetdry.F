@@ -290,12 +290,14 @@ C.....
                   J = LBArray_Pointer(I)
                   IF((ISSUBMERGED64(J).GT.0).AND.(NODECODE(I).EQ.0)) THEN
                      NNBB2=IBCONN(J)
-                     ETA2(I) = ETA2(NNBB2)
-                     HTOT=DP(I)+ETA2(I)
-                     IF(HTOT.GT.HOFF) THEN
-                        NNODECODE(I)=1
-                        NODECODE(I)=1
-                        NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
+                     IF(NNBB2.GT.0) THEN ! This check is needed ocasionally but not always when the barrier is splitted for paralell computation
+                        ETA2(I) = ETA2(NNBB2)
+                        HTOT=DP(I)+ETA2(I)
+                        IF(HTOT.GT.HOFF) THEN
+                           NNODECODE(I)=1
+                           NODECODE(I)=1
+                           NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
+                        ENDIF
                      ENDIF
                   ENDIF
                ENDIF
