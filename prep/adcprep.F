@@ -112,7 +112,7 @@ C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
       USE GLOBAL, ONLY : screenUnit, initLogging
-      USE CONSTANTS, ONLY: Rearth, deg2rad, rad2deg
+      USE ADC_CONSTANTS, ONLY: Rearth, deg2rad, rad2deg
       USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType,
      &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
      &  controlType, controlFileNameSpecified, globaldir, myproc
@@ -120,6 +120,7 @@ C
       USE PRE_GLOBAL
       USE VERSION
       use memory_usage
+
       IMPLICIT NONE
 C
       CHARACTER JOB*80 ! user input for menu selection
@@ -158,6 +159,9 @@ C
       strictBoundaries = .false.
       !PREP_88 = .FALSE.
       MNPROC = 0
+
+      PARTITION_APPROACH = 1 ; ! partion a nodal graph
+
 C
       ! jgf51.21.27: Add defaults for file types now that we support the
       ! loading of different file types.
@@ -188,6 +192,10 @@ C     having to do a prep all and without having to add menu items).
             SELECT CASE(TRIM(CMDLINEARG))
             CASE("--partmesh")
                PARTITION = .TRUE.
+               PARTITION_APPROACH = 1 
+            CASE("--partmesh_npart_from_epart")
+               PARTITION = .TRUE. 
+               PARTITION_APPROACH = 2 
             CASE("--prepall")
                PREP_ALL = .TRUE.
             CASE("--prep13")
@@ -314,6 +322,11 @@ C
 
         CASE("1","partmesh","PARTMESH")
            PARTITION   = .TRUE.
+           PARTITION_APPROACH = 1 
+
+        CASE("-1","partmesh_npart_from_epart","PARTMESH_NPART_FROM_EPART")
+           PARTITION = .TRUE.  
+           PARTITION_APPROACH = 2 
 
         CASE("2","prepall","PREPALL")
            USE_DEFAULT = .TRUE.
@@ -387,6 +400,10 @@ C
 #ifdef WINDOWS
       USE IFPORT
 #endif
+
+      ! DW
+      USE METIS_PARTITION  
+
       IMPLICIT NONE
 
       INTEGER I           ! loop counter for nodes, elements
@@ -528,7 +545,16 @@ C
          numPartitionAttempts = 0
          allocate(boundaryWeights(mnp))
          boundaryWeights(:) = 0
-         call metis()
+
+C... - DW
+         SELECT CASE(partition_approach)
+         CASE (1)
+            call metis()
+         CASE (2)
+            call metis_npart_from_epart() 
+         END SELECT
+C... 
+
          if (strictBoundaries.eqv..true.) then
             ! check for issues with subdomain boundaries
             partitionOK = .false.
@@ -566,7 +592,15 @@ C
      &               repartitionLimit,' attempts.'
                   CALL EXIT(1)
                endif
-               call metis()
+  
+C... DW               
+               SELECT CASE(partition_approach)
+               CASE (1)
+                  call metis() 
+               CASE (2)
+                  call metis_npart_from_epart() 
+               END SELECT 
+C...
             end do
          endif
          print *, 'INFO: METIS has partitioned nodes successfully.'

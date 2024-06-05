@@ -54,9 +54,14 @@ C---------------------------------------------------------------------
      &   exist_flux, iden, mnbou, mnvel, nbou, nboumsg, nelg, neta, 
      &   netamsg, nfover, nnodg, nope, nopemsg, nvel, nvelmsg, nweir, 
      &   river_above_msl, numLBCodeValues, nfluxf, node_dict, labels,
-     &   NPERBC, IPERCONN, IPERPTR 
+     &   NPERBC, IPERCONN, IPERPTR
+      use presizes, only: meshHasWeirWithPipes, meshHasExternalWeir, 
+     &   meshHasInternalWeir
       use hashtable
       use memory_usage
+      use boundaries, only: ibconnr_bc => ibconnr, barinhtr, barlanhtr,
+     &                      barlancfspr, barincfsbr, barincfspr, pipehtr, 
+     &                      pipediamr, pipecoefr
       implicit none
 
       integer(8) :: nbytes = 0
@@ -293,6 +298,23 @@ C..... DW
       !LBCODE array.
       numLBCodeValues = J
 
+      ! Save off the boundary data into the arrays used for 
+      ! writing into the netCDF files
+      if(meshHasExternalWeir)then
+        barlanhtr   = bar1
+        barlancfspr = bar2
+      endif
+      if(meshHasInternalWeir)then
+        ibconnr_bc  = ibconnr
+        barinhtr    = bar1
+        barincfsbr  = bar2
+        barincfspr  = bar3
+        if(meshHasWeirWithPipes)then
+          pipehtr     = bar4
+          pipecoefr   = bar5
+          pipediamr   = bar6
+        endif
+      endif
 
 C     jgf45.06 added the following section
 C MEB --------------------------------------------------
@@ -523,6 +545,9 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 Casey 180318: Added NWS=13
       INTEGER :: IOS_OWINC
 #endif
+      ! DW
+      INTEGER :: IOS_NWS14Grib2NC
+
 C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
       INTEGER :: IOS_STATIONS
@@ -548,6 +573,9 @@ C.....tcm v52.30.01 added for Smag_Control
      &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
 
+C.....Control for VEW1D channels 11/06/2023 sb
+      NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter
+
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15
 C..... file.
@@ -562,6 +590,7 @@ C
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       FOUND_WC_NML = .FALSE.
       foundCorrectionControlNamelist = .false.
+      foundVEW1DChannelControlNamelist = .false.
 #ifdef ADCNETCDF
       FOUND_OWINC_NML = .FALSE.
 #endif
@@ -642,7 +671,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          FOUND_WC_NML = .TRUE.
          call logMessage(INFO,
      &         'The waveCoupling namelist was found.')
-      else
+      ELSE
          call logMessage(INFO,
      &         'The waveCoupling namelist was not found.')
       ENDIF
@@ -654,11 +683,25 @@ Casey 180318: Added NWS=13
          FOUND_OWINC_NML = .TRUE.
          call logMessage(INFO,
      &         'The owiWindNetcdf namelist was found.')
-      else
+      ELSE
          call logMessage(INFO,
      &         'The owiWindNetcdf namelist was not found.')
       ENDIF
       REWIND(15)
+#endif
+
+#ifdef DATETIME
+      READ(UNIT=15,NML=WindGrib2NetCdf,IOSTAT=IOS_NWS14Grib2NC)
+      IF(IOS_NWS14Grib2NC .EQ. 0)THEN
+         found_NWS14Grib2NetCdf_Namelist= .TRUE.
+         call logMessage(INFO,
+     &         'The WindGrid2NetCdf namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The WindGrib2NetCdf namelist was not found.')
+      ENDIF
+      REWIND(15)
+
 #endif
 
       READ(UNIT = 15, NML = wetDryControl,IOSTAT = ios_wetDry)
@@ -712,6 +755,18 @@ Casey 180318: Added NWS=13
          call logMessage(INFO,
      &      'End-of-file when searching for dynamicWaterLevelCorrectionControl namelist.')
       end select
+      rewind(15)  !Return to the top of the fort.15 file
+
+c..
+      read(unit=15,nml=VEW1DChannelControl,iostat=ios)
+      if ( ios.ge.0) then
+         foundVEW1DChannelControlNamelist = .true.
+         call logMessage(INFO,
+     &         'The VEW1DChannelControl namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The VEW1DChannelControl namelist was not found.')
+      endif
       rewind(15)  !Return to the top of the fort.15 file
 
 c...  tcm v52.30.01 Addtions for Smagorinski Limits
@@ -1171,6 +1226,10 @@ C
          READ(H0MSG,*) H0
       ELSE
          READ(H0MSG,*) H0,NODEDRYMIN,NODEWETRMP,VELMIN
+      ENDIF
+      IF(H0<=0.0D0)THEN
+          WRITE(*,'(A)') "ERROR: The value of H0 must be greater than 0.0"
+          CALL EXIT(1)
       ENDIF
 C
       READ(15,80) SLMSG
@@ -1972,7 +2031,7 @@ C     tjc  6/24/02
 C---------------------------------------------------------------------
       SUBROUTINE READ15_3DVS()
       USE PRE_GLOBAL
-      USE CONSTANTS, ONLY: deg2rad, day2sec
+      USE ADC_CONSTANTS, ONLY: deg2rad, day2sec
       USE GLOBAL, ONLY : parse, a2f, SNAMLEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET, SIGMA,
      &    FEGRIDS

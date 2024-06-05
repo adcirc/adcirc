@@ -1,4 +1,4 @@
-########################################################################
+# #######################################################################
 # ADCIRC CircleCI Yaml
 #
 # Written By: Zach Cobell
@@ -8,56 +8,29 @@
 # This yaml runs a series of build tests
 # and acceptance tests used to ensure the
 # ADCIRC code is throughly checked before 
-# accepting code into the master branch
+# accepting code into the main branch
 #
-########################################################################
+# #######################################################################
 version: 2.1
 
-#...CodeCov Orb
-orbs:
-  codecov: codecov/codecov@1.0.5
-
-#...Aliases used to shorthand this job script
+# #############################
+# Aliases for the environments
+# #############################
 default_env: &default_env
     docker:
       - image: zcobell/adcirc-ci-container:latest
     environment:
       BASH_ENV: /etc/environment
 
-default_testenv: &default_testenv
-     run:
-       name: Retrieve Test Suite
-       command: git clone --depth=1 -b v56 https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
+default_env_gcc: &default_env_gcc
+    docker:
+      - image: zcobell/adcirc-ci-container:latest-gcc
+    environment:
+      BASH_ENV: /etc/environment
 
-cache_key_build_base: &cache_key_build_base
-      key: adcirc-build-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-
-get_cache_build_base: &get_cache_build_base
-        restore_cache:
-            <<: *cache_key_build_base
-
-cache_key_base: &cache_key_base
-      key: adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-
-get_cache_base: &get_cache_base
-     restore_cache:
-         <<: *cache_key_base
-
-cache_key_netcdf: &cache_key_netcdf
-      key: adcirc-netcdf-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-
-get_cache_netcdf: &get_cache_netcdf
-     restore_cache:
-         <<: *cache_key_netcdf
-
-cache_key_grib2: &cache_key_grib2
-      key: adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-
-get_cache_grib2: &get_cache_grib2
-     restore_cache:
-         <<: *cache_key_grib2
-
-#...List of jobs in the workflow
+# #######################################
+# Jobs that will be run in the workflow
+# #######################################
 jobs:
   build_legacy_without_netcdf:
       <<: *default_env
@@ -92,63 +65,76 @@ jobs:
             name: Build ADCIRC with netCDF and XDMF using legacy makefile
             command: cd work ; make compiler=circleci NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=$NETCDF_FORTRAN_HOME HDF5HOME=$HDF5HOME NETCDF_C_HOME=$NETCDFHOME XDMF=enable XDMFHOME=/opt/xdmf adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan 
 
-  build_base:
+  test_suite_data:
       <<: *default_env
       steps:
-        - checkout
-        - *default_testenv
+        - run:
+           name: Retrieve Test Suite
+           command: git clone --depth=1 -b main https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
         - save_cache:
-            <<: *cache_key_build_base
+            key: adcirc-test-suite-data-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
             paths:
-                - /root/project
                 - /root/adcirc-cg-testsuite
+
+  build_cmake_without_netcdf_gcc:
+      <<: *default_env_gcc
+      steps:
+        - checkout
+        - run:
+            name: Build ADCIRC without external libraries using CMake
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON; make -j4
+
+  build_cmake_with_netcdf_gcc:
+      <<: *default_env_gcc
+      steps:
+        - checkout
+        - run:
+            name: Build ADCIRC without external libraries using CMake
+            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON -DNETCDF_F90_INCLUDE_DIR=/usr/lib64/gfortran/modules -DENABLE_OUTPUT_NETCDF=ON; make -j4
 
   build_cmake_without_netcdf:
       <<: *default_env
       steps:
-        - *get_cache_build_base
+        - checkout 
         - run: 
             name: Build ADCIRC without external libraries using CMake
-            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise"; make -j4
+            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise"; make -j4
         - save_cache:
-            <<: *cache_key_base 
+            key: adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
             paths: 
                 - /root/project
-                - /root/adcirc-cg-testsuite
 
   build_cmake_with_netcdf:
       <<: *default_env
       steps:
-        - *get_cache_build_base
+        - checkout
         - run: 
             name: Build ADCIRC with netCDF using CMake
-            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME; make -j4
+            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME; make -j4
         - save_cache:
-            <<: *cache_key_netcdf
+            key: adcirc-netcdf-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
             paths: 
                 - /root/project
-                - /root/adcirc-cg-testsuite
 
   build_cmake_with_netcdf_and_xdmf:
       <<: *default_env
       steps:
-        - *get_cache_build_base
+        - checkout
         - run: 
             name: Build ADCIRC with netCDF and XDMF using CMake
-            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME -DHDF5_ROOT=$HDF5HOME; make -j4
+            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME -DHDF5_ROOT=$HDF5HOME; make -j4
 
   build_cmake_with_netcdf_and_xdmf_grib:
       <<: *default_env
       steps:
-        - *get_cache_build_base
+        - checkout
         - run: 
             name: Build ADCIRC with Grib, netCDF, and XDMF using CMake
-            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O3 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME; make -j4
+            command: mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME; make -j4
         - save_cache:
-            <<: *cache_key_grib2 
+            key: adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
             paths: 
                 - /root/project
-                - /root/adcirc-cg-testsuite
 
   test_base:
       <<: *default_env
@@ -158,19 +144,32 @@ jobs:
               default: "adcirc_quarterannular-2d"
               type: string
       steps:
-        - *get_cache_base
+        - restore_cache:
+            name: Restore test cache
+            keys:
+            - adcirc-test-suite-data-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+        - restore_cache:
+            name: Restore base build cache
+            keys:
+            - adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
         - run: 
             name: <<parameters.test_name>>
-            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build adcirc/<<parameters.test_name>>
+            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build <<parameters.test_name>>
             no_output_timeout: 7200
         - run:
-            name: Store artifacts
+            name: Store log artifacts
             command: |
               mkdir -p /tmp/artifacts
-              find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
-            when: on_fail
+              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+            when: always
+        - run:
+            name: Store graphics artifacts
+            command: |
+              mkdir -p /tmp/artifacts
+              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+            when: always
         - store_artifacts: 
-           path: /tmp/artifacts
+            path: /tmp/artifacts
   test_netcdf:
       <<: *default_env
       parameters:
@@ -179,17 +178,30 @@ jobs:
               default: "adcirc_quarterannular-2d"
               type: string
       steps:
-        - *get_cache_netcdf
+        - restore_cache:
+            name: Restore test cache
+            keys:
+            - adcirc-test-suite-data-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+        - restore_cache:
+            name: Restore netcdf build cache
+            keys:
+            - adcirc-netcdf-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
         - run: 
             name: <<parameters.test_name>>
-            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build adcirc/<<parameters.test_name>>
+            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build <<parameters.test_name>>
             no_output_timeout: 7200
         - run:
-            name: Store artifacts
+            name: Store log artifacts
             command: |
               mkdir -p /tmp/artifacts
-              find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
-            when: on_fail
+              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+            when: always
+        - run:
+            name: Store graphics artifacts
+            command: |
+              mkdir -p /tmp/artifacts
+              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+            when: always
         - store_artifacts: 
            path: /tmp/artifacts
   test_grib2:
@@ -200,41 +212,52 @@ jobs:
               default: "adcirc_quarterannular-2d"
               type: string
       steps:
-        - *get_cache_grib2
+        - restore_cache:
+            name: Restore test cache
+            keys:
+            - adcirc-test-suite-data-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+        - restore_cache:
+            name: Restore grib2 build cache
+            keys:
+            - adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
         - run: 
             name: <<parameters.test_name>>
-            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build adcirc/<<parameters.test_name>>
+            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build <<parameters.test_name>>
             no_output_timeout: 7200
         - run:
-            name: Store artifacts
+            name: Store log artifacts
             command: |
               mkdir -p /tmp/artifacts
-              find /root/adcirc-cg-testsuite/adcirc/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
-            when: on_fail
+              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+            when: always
+        - run:
+            name: Store graphics artifacts
+            command: |
+              mkdir -p /tmp/artifacts
+              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+            when: always
         - store_artifacts: 
            path: /tmp/artifacts
+# ##############################
+# Workflows in the CI process
+# ##############################
 workflows:
   version: 2.1
   build_and_test:
     jobs:
+      - test_suite_data
       - build_legacy_without_netcdf
       - build_legacy_with_netcdf
       - build_legacy_with_netcdf_and_xdmf
-      - build_base
-      - build_cmake_with_netcdf_and_xdmf:
-            requires:
-              - build_base
-      - build_cmake_without_netcdf:
-            requires:
-              - build_base
-      - build_cmake_with_netcdf:
-            requires:
-              - build_base
-      - build_cmake_with_netcdf_and_xdmf_grib:
-            requires:
-              - build_base
+      - build_cmake_without_netcdf_gcc
+      - build_cmake_with_netcdf_gcc
+      - build_cmake_with_netcdf_and_xdmf
+      - build_cmake_without_netcdf
+      - build_cmake_with_netcdf
+      - build_cmake_with_netcdf_and_xdmf_grib
       - test_base:
             requires: 
+                - test_suite_data
                 - build_cmake_without_netcdf
             matrix:
                 parameters:
@@ -244,8 +267,10 @@ workflows:
                         - adcirc_quarterannular-2d-hotstart
                         - adcirc_quarterannular-2d-parallel-hotstart
                         - adcirc_quarterannular-2d-parallel-writer
+                        - adcirc_swan_apes_irene
       - test_netcdf:
             requires: 
+                - test_suite_data
                 - build_cmake_with_netcdf
             matrix:
                 parameters:
@@ -264,8 +289,10 @@ workflows:
                         - adcirc_slopingbeach_vew1d-parallel
                         - adcirc_subgrid-serial
                         - adcirc_subgrid-parallel
+                        - adcirc_swan_apes_irene-parallel
       - test_grib2:
             requires: 
+                - test_suite_data
                 - build_cmake_with_netcdf_and_xdmf_grib
             matrix:
                 parameters:
@@ -289,6 +316,4 @@ workflows:
                         - adcirc_timevaryingweirs-parallel
                         - adcirc_baroclinic_2d_serial
                         - adcirc_baroclinic_2d_parallel
-                        
-
 

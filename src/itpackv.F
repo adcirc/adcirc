@@ -2314,54 +2314,52 @@ c
       ier = 0
       nsgncg = 0
       if (n.le.0) return
-      do 110 i = 1,n
-         if (jcoef(i,1).eq.i) go to 50
-         if (maxnz.lt.2) go to 20
-         do 10 j = 2,maxnz
-            if (jcoef(i,j).eq.i) go to 40
-   10    continue
-c
-c ... fatal error -- no diagonal entry for row i.
-c
-   20    ier = 402
-         if (level.ge.0) write (nout,30) i
-   30    format (//1x,'*** f a t a l     e r r o r ************'//1x,
-     *      '    in itpackv routine scal    '/1x,
-     *      '    no diagonal entry in row',i10)
-         return
-c
-c ... shift row i so that diagonal element is in column 1.
-c
-   40    save = coef(i,j)
-         coef(i,j) = coef(i,1)
-         jcoef(i,j) = jcoef(i,1)
-         coef(i,1) = save
-         jcoef(i,1) = i
-c
-c ... check sign of diagonal entry.  if negative, change signs of
-c ... all row coefficients and corresponding rhs element.
-c
-   50    if (coef(i,1)) 60 , 90 , 110
-   60    do 70 j = 1,maxnz
-            coef(i,j) = -coef(i,j)
-   70    continue
-         rhs(i) = -rhs(i)
-         nsgncg = nsgncg+1
-         if (level.ge.5) write (nout,80) i
-   80    format (//1x,'*** n o t e ***'//1x,
-     *      '    in itpackv routine scal'/1x,
-     *      '    equation ',i10,' has been negated')
-         go to 110
-c
-c ... fatal error -- zero diagonal element for row i.
-c
-   90    ier = 401
-         if (level.ge.0) write (nout,100) i
-  100    format (//1x,'*** f a t a l     e r r o r ************'//1x,
-     *      '    in itpackv routine scal    '/1x,
-     *      '    diagonal entry in row ',i10,' is zero')
-         return
-  110 continue
+      do i = 1,n
+         if (jcoef(i,1).ne.i) then
+            if (maxnz.lt.2)then
+! ... fatal error -- no diagonal entry for row i.
+                ier = 402
+                if (level.ge.0) write (nout,30) i
+  30            format (//1x,'*** f a t a l     e r r o r ************'//1x,
+     *             '    in itpackv routine scal    '/1x,
+     *             '    no diagonal entry in row',i10)
+                return
+            endif
+
+            do j = 2,maxnz
+               if (jcoef(i,j).eq.i) then
+! ... shift row i so that diagonal element is in column 1.
+                save = coef(i,j)
+                coef(i,j) = coef(i,1)
+                jcoef(i,j) = jcoef(i,1)
+                coef(i,1) = save
+                jcoef(i,1) = i
+               endif
+            enddo
+         endif
+! ... check sign of diagonal entry.  if negative, change signs of
+! ... all row coefficients and corresponding rhs element.
+         if(coef(i,1).lt.0d0)then
+             do j = 1,maxnz
+                coef(i,j) = -coef(i,j)
+             enddo
+             rhs(i) = -rhs(i)
+             nsgncg = nsgncg+1
+             if (level.ge.5) write (nout,80) i
+   80        format (//1x,'*** n o t e ***'//1x,
+     *          '    in itpackv routine scal'/1x,
+     *          '    equation ',i10,' has been negated')
+             continue
+         elseif(coef(i,1).eq.0d0)then
+! ... fatal error -- zero diagonal element for row i.
+             ier = 401
+             if (level.ge.0) write (nout,100) i
+  100        format (//1x,'*** f a t a l     e r r o r ************'//1x,
+     *          '    in itpackv routine scal    '/1x,
+     *          '    diagonal entry in row ',i10,' is zero')
+             return
+         endif
+      enddo
 c
 c ... change zero elements of jcoef array.
 c
@@ -2874,57 +2872,53 @@ c
       implicit none
       integer n,incx,incy,ix,iy,i,m,mp1,ns
       real(8) sx(*),sy(*)
-c
-c     copy single precision sx to single precision sy.
-c
+!
+!     copy single precision sx to single precision sy.
+!
       if(n.le.0)return
-      if(incx.eq.incy) if(incx-1) 5,20,60
-    5 continue
-c
-c        code for unequal or nonpositive increments.
-c
-      ix = 1
-      iy = 1
-      if(incx.lt.0)ix = (-n+1)*incx + 1
-      if(incy.lt.0)iy = (-n+1)*incy + 1
-      do 10 i = 1,n
-        sy(iy) = sx(ix)
-        ix = ix + incx
-        iy = iy + incy
-   10 continue
-      return
-c
-c        code for both increments equal to 1
-c
-c
-c        clean-up loop so remaining vector length is a multiple of 7.
-c
-   20 m = n - (n/7)*7
-      if( m .eq. 0 ) go to 40
-      do 30 i = 1,m
-        sy(i) = sx(i)
-   30 continue
-      if( n .lt. 7 ) return
-   40 mp1 = m + 1
-      do 50 i = mp1,n,7
-        sy(i) = sx(i)
-        sy(i + 1) = sx(i + 1)
-        sy(i + 2) = sx(i + 2)
-        sy(i + 3) = sx(i + 3)
-        sy(i + 4) = sx(i + 4)
-        sy(i + 5) = sx(i + 5)
-        sy(i + 6) = sx(i + 6)
-   50 continue
-      return
-c
-c        code for equal, positive, nonunit increments.
-c
-   60 continue
-      ns = n*incx
-          do 70 i=1,ns,incx
-          sy(i) = sx(i)
-   70     continue
-      return
+
+      if(incx-1.lt.0)then
+!        code for unequal or nonpositive increments.
+        ix = 1
+        iy = 1
+        if(incx.lt.0)ix = (-n+1)*incx + 1
+        if(incy.lt.0)iy = (-n+1)*incy + 1
+        do i = 1,n
+          sy(iy) = sx(ix)
+          ix = ix + incx
+          iy = iy + incy
+        enddo
+      elseif(incx-1.eq.0)then
+!
+!        code for both increments equal to 1
+!
+!
+!        clean-up loop so remaining vector length is a multiple of 7.
+!
+          m = n - (n/7)*7
+          if( m .ne. 0 ) then
+            do i = 1,m
+              sy(i) = sx(i)
+            enddo
+            if( n .lt. 7 ) return
+          endif
+          mp1 = m + 1
+          do i = mp1,n,7
+            sy(i) = sx(i)
+            sy(i + 1) = sx(i + 1)
+            sy(i + 2) = sx(i + 2)
+            sy(i + 3) = sx(i + 3)
+            sy(i + 4) = sx(i + 4)
+            sy(i + 5) = sx(i + 5)
+            sy(i + 6) = sx(i + 6)
+          enddo
+!        code for equal, positive, nonunit increments.
+      else    
+        ns = n*incx
+        do i=1,ns,incx
+         sy(i) = sx(i)
+        enddo
+      endif
       end subroutine
 
 

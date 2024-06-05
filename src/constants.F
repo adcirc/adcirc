@@ -18,7 +18,7 @@
 !
 !-------------------------------------------------------------------------------!
 !-----------------------------------------------------------------------
-!  MODULE CONSTANTS
+!  MODULE ADC_CONSTANTS
 !-----------------------------------------------------------------------
 !> @author Zachary Cobell, The Water Institute, zcobell@thewaterinstitute.org
 !> 
@@ -33,7 +33,7 @@
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-      MODULE CONSTANTS
+      MODULE ADC_CONSTANTS
 !-----------------------------------------------------------------------
 
           IMPLICIT NONE
@@ -71,6 +71,8 @@
           ! REAL(8), PARAMETER :: RhoAir = 1.1774D0 !... T=79.79, P=1013D0
 
           REAL(8), PARAMETER :: PI = 3.141592653589793D0
+          REAL(8), PARAMETER :: TWOPI=PI*2.D0
+          REAL(8), PARAMETER :: HFPI=PI/2.D0
           REAL(8), PARAMETER :: e = 2.718281828459045D0
 
           !...Radius of earth (m)
@@ -112,9 +114,13 @@
 
           !...Wave Wind Multiplier. Applied to winds sent to wave models
           REAL(8) :: waveWindMultiplier = 1.0D0
+          
+          !... Wave Stress Gradient Magnitude CAP
+          REAL(8) :: WaveStressGrad_Cap = 1000.0D0
 
           REAL(8), PARAMETER :: DEG2RAD = PI/180.0D0
           REAL(8), PARAMETER :: RAD2DEG = 180.0D0/PI
+          REAL(8), PARAMETER :: MPERDEG  = REarth * PI / 180.0d0
 
           !---Length based factors---!
           REAL(8), PARAMETER :: nm2m = 1852.0D0 ! nautical miles to meters
@@ -136,5 +142,5 @@
           REAL(8), PARAMETER :: GM2 = 3.486D0**2.0D0
 
 !-----------------------------------------------------------------------
-      END MODULE CONSTANTS
+      END MODULE ADC_CONSTANTS
 !-----------------------------------------------------------------------

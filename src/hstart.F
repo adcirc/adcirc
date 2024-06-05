@@ -54,7 +54,7 @@ C
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE GLOBAL
-      USE CONSTANTS, ONLY: G, PI
+      USE ADC_CONSTANTS, ONLY: G, PI
       USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
      &    NOPE, NVEL, BndBCRiver, LBCODEI, NBV, BARLANHT, BARLANCFSP,
@@ -120,7 +120,6 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 C   kmd48.33bc - add variable for timestep change
       INTEGER NTHS
       REAL(8) ArgT, ArgTP, ArgSAlt
-      REAL(8) H2
       REAL(8) CCSFEA
       REAL(8) QTRatio
       REAL(8) SAltMul, S2SFEA
@@ -192,6 +191,11 @@ C     kmd -- Added variables for initial conditions
 
       INTEGER :: moderbin ! determines whether in binary or real
       INTEGER :: ncHundreds ! hundreds place of IHOT, used for netcdf hs file
+
+#ifdef ADCNETCDF
+      LOGICAL :: have_htot(2) 
+#endif
+
 
       call setMessageSource("hotstart")
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
@@ -541,6 +545,13 @@ C        jgf49.44: Add capability to read fulldomain binary hotstart
 C        file in parallel.
          CALL readAndMapToSubdomain2D(ETA1, IHOT, IHOTSTP, moderbin)
          CALL readAndMapToSubdomain2D(ETA2, IHOT, IHOTSTP, moderbin)
+
+         ! Todo : add reading H1, H2. Will need to 
+         !       think about backward compatibily
+         ! For now simply compute H = dp + IFNLFA*eta
+         H1 = DP + IFNLFA*ETA1 
+         H2 = DP + IFNLFA*ETA2 
+
 C        jgf46.34 Added support for IBTYPE=52.
          CALL readAndMapToSubdomain2D(ETADisc, IHOT, IHOTSTP, moderbin)
          CALL readAndMapToSubdomain2D(UU2, IHOT, IHOTSTP, moderbin)
@@ -686,6 +697,7 @@ C
             ncHundreds = 500
          ENDIF
          CALL readNetCDFHotstart(IHOT-ncHundreds, timeLoc)
+
          IF (C3D) THEN
             CALL readNetCDFHotstart3D(IHOT-ncHundreds)
          ENDIF
@@ -764,20 +776,19 @@ C           times for output if time step size has changed
          END IF
       END IF
 
-C     kmd48.33bc - added time and time step to be passed to the hotstart file
+!     kmd48.33bc - added time and time step to be passed to the hotstart file
       IF(C3D) THEN
         CALL HOTSTART_3D(TimeLoc,ITHS)
       ENDIF
-C
+ 
       DO I=1, NP
          ETAS(I)=ETA2(I)-ETA1(I)
-         H2=DP(I)+IFNLFA*ETA2(I)
-         QX2(I)=UU2(I)*H2
-         QY2(I)=VV2(I)*H2
+         QX2(I)=UU2(I)*H2(I)
+         QY2(I)=VV2(I)*H2(I)
       END DO
-C     jgf46.08 Fine grained ramp functions
-C     jgf46.21 Split flux into internal and external, added support
-C     for IBTYPE=52.
+!     jgf46.08 Fine grained ramp functions
+!     jgf46.21 Split flux into internal and external, added support
+!     for IBTYPE=52.
 !Kendra: Changed these to DTDPHS because if timestep is changed then
 !       the value of DTDP will not match with the ITHS.
 !
@@ -2614,7 +2625,11 @@ Casey 090310: Added the possibility for NOUTGW = -4.
       ENDIF
 
 ! tcm v50.75 removed ifdef cswan and added test for nrs=3 or 4
-        IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+!        IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+! tcm v56 20240 -- added NRS=1 and NRS=5
+        IF ( (ABS(NRS).EQ.1).OR.(ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)
+     &       .OR.(ABS(NRS).EQ.5) ) THEN
+
 !#ifdef CSWAN
 Casey 090310: Added the output of radiation stress gradients.
            IF(NOUTGW.LT.0)THEN

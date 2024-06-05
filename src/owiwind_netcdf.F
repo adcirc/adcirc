@@ -175,6 +175,7 @@
       MODULE OWIWIND_NETCDF
 !-----------------------------------------------------------------------
       USE GLOBAL,ONLY : DEBUG, allMessage, setMessageSource, unsetMessageSource
+      USE NETCDF_ERROR, ONLY: CHECK_ERR
 
       CHARACTER(LEN=15)  :: NWS13ColdStartString = "99999999.999999"
       CHARACTER(LEN=1000)  :: NWS13File = "fort.22.nc"
@@ -256,16 +257,15 @@
       READ(NWS13GroupForPowell,*) NWS13GroupForPowellInt
 
       ! Open the NetCDF file.
-      NC_ERR = NF90_OPEN(TRIM(ADJUSTL(NWS13File)),NF90_NOWRITE,NC_ID)
+      call check_err(NF90_OPEN(TRIM(ADJUSTL(NWS13File)),NF90_NOWRITE,NC_ID))
 
       ! Develop the number of groups, and the group names.
-      NC_ERR = NF90_GET_ATT(NC_ID,NF90_GLOBAL,"group_order",GroupOrder)
+      call check_err(NF90_GET_ATT(NC_ID,NF90_GLOBAL,"group_order",GroupOrder))
       NumGroup = 0
       DO
         DO
           IF(INDEX(TRIM(GroupOrder)," ").EQ.1)THEN
-            WRITE(UNIT=GroupOrder,FMT='(A)')
-     &          GroupOrder(2:LEN_TRIM(GroupOrder))
+            GroupOrder = GroupOrder(2:LEN_TRIM(GroupOrder))
           ELSE
             EXIT
           ENDIF
@@ -279,13 +279,11 @@
           GroupNameStart = 1
           GroupNameEnd = LEN_TRIM(GroupOrder)
         ENDIF
-        WRITE(UNIT=GroupNames(NumGroup),FMT='(A)')
-     &      GroupOrder(GroupNameStart:GroupNameEnd)
+        GroupNames(NumGroup) = GroupOrder(GroupNameStart:GroupNameEnd)
         IF(NextSpace.LE.0)THEN
           EXIT
         ELSE
-          WRITE(UNIT=GroupOrder,FMT='(A)')
-     &      GroupOrder(NextSpace+1:LEN_TRIM(GroupOrder))
+          GroupOrder = GroupOrder(NextSpace+1:LEN_TRIM(GroupOrder))
         ENDIF
       ENDDO
 
@@ -294,15 +292,15 @@
 
 #ifdef HAVE_NETCDF4
       ! Connect to the first group.
-      NC_ERR = NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(1))),NC_IDG)
+      call check_err(NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(1))),NC_IDG))
 #else
       NC_IDG = 1
 #endif
 
       ! Find the starting date/time in YYYY-MM-DDTHH:MM:SS format,
       ! and convert it into Julian format.
-      NC_ERR = NF90_INQ_VARID(NC_IDG,"time",NC_VAR)
-      NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR,"units",TimeUnits)
+      call check_err(NF90_INQ_VARID(NC_IDG,"time",NC_VAR))
+      call check_err(NF90_GET_ATT(NC_IDG,NC_VAR,"units",TimeUnits))
       READ(UNIT=TimeUnits,FMT='(14X,I4,1X,I2,1X,I2,1X,I2,1X,I2,1X,I2)')
      &    Year,Month,Day,Hour,Minute,Second
       WindRefDateTimeInJulianDays = DBLE(JULIAN(Year,Month,Day))
@@ -323,25 +321,25 @@
       DO IG=1,NumGroup
         ! Connect to the group and its time variable.
 #ifdef HAVE_NETCDF4
-        NC_ERR = NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(IG))),
-     &      NC_IDG)
+        call check_err(NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(IG))),
+     &      NC_IDG))
 #else
         NC_IDG = IG
 #endif
-        NC_ERR = NF90_INQ_DIMID(NC_IDG,"time",NC_DIM)
-        NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,
-     &      LEN=NWS13(IG)%NumSnap)
-        NC_ERR = NF90_INQ_VARID(NC_IDG,"time",NC_VAR)
+        call check_err(NF90_INQ_DIMID(NC_IDG,"time",NC_DIM))
+        call check_err(NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,
+     &      LEN=NWS13(IG)%NumSnap))
+        call check_err(NF90_INQ_VARID(NC_IDG,"time",NC_VAR))
         ! Pull the time for the first snap ...
-        NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,TempI(:),
-     &      START=(/1/),COUNT=(/1/))
+        call check_err(NF90_GET_VAR(NC_IDG,NC_VAR,TempI(:),
+     &      START=(/1/),COUNT=(/1/)))
         ! ... and load it into our array.
         NWS13(IG)%PrevTime = DBLE( TempI(1)
      &      - ColdStartInMinutesSinceWindRefDateTime ) * 60.D0
         NWS13(IG)%PrevSnap = 1
         ! Pull the time for the second snap ...
-        NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,TempI(:),
-     &      START=(/2/),COUNT=(/1/))
+        call check_err(NF90_GET_VAR(NC_IDG,NC_VAR,TempI(:),
+     &      START=(/2/),COUNT=(/1/)))
         ! ... and also load it into our array.
         NWS13(IG)%NextTime = DBLE( TempI(1)
      &      - ColdStartInMinutesSinceWindRefDateTime ) * 60.D0
@@ -349,10 +347,10 @@
 
         if (IG.EQ.1) then
           ! Read number of cells in longitude, latitude.
-          NC_ERR = NF90_INQ_DIMID(NC_IDG,"xi",NC_DIM)
-          NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLon)
-          NC_ERR = NF90_INQ_DIMID(NC_IDG,"yi",NC_DIM)
-          NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLat)
+          call check_err(NF90_INQ_DIMID(NC_IDG,"xi",NC_DIM))
+          call check_err(NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLon))
+          call check_err(NF90_INQ_DIMID(NC_IDG,"yi",NC_DIM))
+          call check_err(NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLat))
 
           ! Initialize arrays.
           IF(ALLOCATED(Lon)) DEALLOCATE(Lon)
@@ -363,12 +361,12 @@
           ALLOCATE(W(1:NP,1:6))
 
           ! Read mesh.
-          NC_ERR = NF90_INQ_VARID(NC_IDG,"lon",NC_VAR)
-          NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,Lon(:,:),
-     &        START=(/1,1,1/),COUNT=(/NumLon,NumLat,1/))
-          NC_ERR = NF90_INQ_VARID(NC_IDG,"lat",NC_VAR)
-          NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,Lat(:,:),
-     &        START=(/1,1,1/),COUNT=(/NumLon,NumLat,1/))
+          call check_err(NF90_INQ_VARID(NC_IDG,"lon",NC_VAR))
+          call check_err(NF90_GET_VAR(NC_IDG,NC_VAR,Lon(:,:),
+     &        START=(/1,1,1/),COUNT=(/NumLon,NumLat,1/)))
+          call check_err(NF90_INQ_VARID(NC_IDG,"lat",NC_VAR))
+          call check_err(NF90_GET_VAR(NC_IDG,NC_VAR,Lat(:,:),
+     &        START=(/1,1,1/),COUNT=(/NumLon,NumLat,1/)))
           ! get reusable weights for main group
           CALL NWS13INTERP(IG,NumLon,NumLat,Lon,Lat,ILon,ILat,W)
           W(:,5) = ILon
@@ -380,7 +378,7 @@
 
 
       ! Close the NetCDF file.
-      NC_ERR = NF90_CLOSE(NC_ID)
+      call check_err(NF90_CLOSE(NC_ID))
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
@@ -407,11 +405,12 @@
       SUBROUTINE NWS13GET(TimeLoc,WVNX2,WVNY2,PRN2,
      &    WTIME2,EyeLonR,EyeLatR,FoundEye,W)
 !-----------------------------------------------------------------------
-      USE CONSTANTS, ONLY: G, RHOWAT0
+      USE ADC_CONSTANTS, ONLY: G, RHOWAT0
       USE GLOBAL, ONLY: RNDAY
       USE MESH, ONLY: NP
       USE netcdf
       USE SIZES, ONLY: MYPROC
+      USE netcdf_error, only: check_err
       USE,INTRINSIC :: IEEE_ARITHMETIC
 
       IMPLICIT NONE
@@ -490,7 +489,6 @@
 
       ZERO = 0.D0
       D_QNAN = ZERO / ZERO
-!      WRITE(6, *) D_QNAN
 
       ! First, fill the ADCIRC wind fields with background values.
       WVNX2 = 0.D0
@@ -498,7 +496,7 @@
       PRN2  = 101300.D0/RHOWAT0/G
 
       ! Open a connection to the wind file.
-      NC_ERR = NF90_OPEN(TRIM(ADJUSTL(NWS13File)),NF90_NOWRITE,NC_ID)
+      CALL check_err(NF90_OPEN(TRIM(ADJUSTL(NWS13File)),NF90_NOWRITE,NC_ID))
 
       ! We need to determine how many groups are active at the current
       ! time in the simulation.  Loop over the groups and find which
@@ -521,12 +519,12 @@
         ENDIF
 #ifdef HAVE_NETCDF4
         ! Find the current group and time variable in the file.
-        NC_ERR = NF90_INQ_NCID(NC_ID,
-     &      TRIM(ADJUSTL(GroupNames(IG))),NC_IDG)
+        call check_err(NF90_INQ_NCID(NC_ID,
+     &      TRIM(ADJUSTL(GroupNames(IG))),NC_IDG))
 #else
         NC_IDG = IG
 #endif
-        NC_ERR = NF90_INQ_VARID(NC_IDG,"time",NC_VAR)
+        call check_err(NF90_INQ_VARID(NC_IDG,"time",NC_VAR))
         ! Check whether we have progressed past the end of the current
         ! wind snap, and if so, then shift to the next wind snap.
         DO WHILE(TimeLoc.GE.NWS13(IG)%NextTime)
@@ -539,8 +537,8 @@
           NWS13(IG)%PrevTime = NWS13(IG)%NextTime
           NWS13(IG)%NextSnap = NWS13(IG)%NextSnap + 1
           ! Get the next time from the file.
-          NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,TempI(:),
-     &        START=(/NWS13(IG)%NextSnap/),COUNT=(/1/))
+          call check_err(NF90_GET_VAR(NC_IDG,NC_VAR,TempI(:),
+     &        START=(/NWS13(IG)%NextSnap/),COUNT=(/1/)))
           NWS13(IG)%NextTime = DBLE( TempI(1)
      &        - ColdStartInMinutesSinceWindRefDateTime ) * 60.D0
         ENDDO
@@ -604,16 +602,16 @@
           ENDIF
 #ifdef   HAVE_NETCDF4
           ! Connect to this group.
-          NC_ERR = NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(IG))),
-     &        NC_IDG)
+          call check_err(NF90_INQ_NCID(NC_ID,TRIM(ADJUSTL(GroupNames(IG))),
+     &        NC_IDG))
 #else
           NC_IDG = IG
 #endif  
           ! Read number of cells in longitude, latitude.
-          NC_ERR = NF90_INQ_DIMID(NC_IDG,"xi",NC_DIM)
-          NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLon)
-          NC_ERR = NF90_INQ_DIMID(NC_IDG,"yi",NC_DIM)
-          NC_ERR = NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLat)
+          call check_err(NF90_INQ_DIMID(NC_IDG,"xi",NC_DIM))
+          call check_err(NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLon))
+          call check_err(NF90_INQ_DIMID(NC_IDG,"yi",NC_DIM))
+          call check_err(NF90_INQUIRE_DIMENSION(NC_IDG,NC_DIM,LEN=NumLat))
 
           ! Initialize arrays.
 
@@ -664,18 +662,18 @@
             ! 1. Read this snap from the wind file.
 
             ! Read mesh.
-            NC_ERR = NF90_INQ_VARID(NC_IDG,"lon",NC_VAR)
-            NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,Lon(:,:),
-     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
-            NC_ERR = NF90_INQ_VARID(NC_IDG,"lat",NC_VAR)
-            NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,Lat(:,:),
-     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
+            call check_err(NF90_INQ_VARID(NC_IDG,"lon",NC_VAR))
+            call check_err(NF90_GET_VAR(NC_IDG,NC_VAR,Lon(:,:),
+     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/)))
+            call check_err(NF90_INQ_VARID(NC_IDG,"lat",NC_VAR))
+            call check_err(NF90_GET_VAR(NC_IDG,NC_VAR,Lat(:,:),
+     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/)))
 
             ! Read winds and pressures.
             ! U-wind component
-            NC_ERR = NF90_INQ_VARID(NC_IDG,"U10",NC_VAR)
-            NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,U(:,:),
-     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
+            call check_err(NF90_INQ_VARID(NC_IDG,"U10",NC_VAR))
+            call check_err(NF90_GET_VAR(NC_IDG,NC_VAR,U(:,:),
+     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/)))
             ! Apply scale/offset if attributes are present
             NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "_FillValue", var_scale_attr)
             IF (NC_ERR .EQ. 0) THEN
@@ -692,9 +690,9 @@
             NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "add_offset", var_offset_attr)
             IF (NC_ERR .EQ. 0) U = U + var_offset_attr
             ! V-wind component
-            NC_ERR = NF90_INQ_VARID(NC_IDG,"V10",NC_VAR)
-            NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,V(:,:),
-     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
+            call check_err(NF90_INQ_VARID(NC_IDG,"V10",NC_VAR))
+            call check_err(NF90_GET_VAR(NC_IDG,NC_VAR,V(:,:),
+     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/)))
             ! Apply scale/offset if attributes are present
             NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "_FillValue", var_scale_attr)
             IF (NC_ERR .EQ. 0) THEN
@@ -711,9 +709,9 @@
             NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "add_offset", var_offset_attr)
             IF (NC_ERR .EQ. 0) V = V + var_offset_attr
             ! Pressure
-            NC_ERR = NF90_INQ_VARID(NC_IDG,"PSFC",NC_VAR)
-            NC_ERR = NF90_GET_VAR(NC_IDG,NC_VAR,P(:,:),
-     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/))
+            call check_err(NF90_INQ_VARID(NC_IDG,"PSFC",NC_VAR))
+            call check_err(NF90_GET_VAR(NC_IDG,NC_VAR,P(:,:),
+     &          START=(/1,1,CurrSnap/),COUNT=(/NumLon,NumLat,1/)))
             ! Apply scale/offset if attributes are present
             NC_ERR = NF90_GET_ATT(NC_IDG,NC_VAR, "_FillValue", var_scale_attr)
             IF (NC_ERR .EQ. 0) THEN
@@ -879,7 +877,7 @@
       ENDIF
 
       ! Close the file.
-      NC_ERR = NF90_CLOSE(NC_ID)
+      call check_err(NF90_CLOSE(NC_ID))
 
       IF(PowellGroupTemp.NE.PowellGroup)THEN
         ! If this is a different group then we have been using
@@ -923,7 +921,7 @@
 !-----------------------------------------------------------------------
       SUBROUTINE NWS13INTERP(IG,NumLon,NumLat,Lon,Lat,ILon,ILat,W)
 !-----------------------------------------------------------------------
-      USE CONSTANTS, ONLY: RAD2DEG
+      USE ADC_CONSTANTS, ONLY: RAD2DEG
       USE kdtree2_module
       USE MESH, ONLY: NP, SLAM, SFEA
 

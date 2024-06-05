@@ -11,22 +11,20 @@ module swn_outnc
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !   Authors
@@ -76,7 +74,7 @@ module swn_outnc
 !      oqr(2)       :   delta
 !
 !   Module variables
-    character*40                :: STNAMES(71,2) = ''
+    character*40                :: STNAMES(171,2) = ''
     logical                     :: stnames_initialized = .false., &
                                    skip_range_error = .true.
     type(recordaxe_type), save  :: recordaxe(MAX_OUTP_REQ)
@@ -114,22 +112,20 @@ contains
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -263,22 +259,20 @@ contains
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -509,22 +503,20 @@ contains
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -887,22 +879,20 @@ contains
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2019  Delft University of Technology
+!     Copyright (C) 1993-2023  Delft University of Technology
 !
-!     This program is free software; you can redistribute it and/or
-!     modify it under the terms of the GNU General Public License as
-!     published by the Free Software Foundation; either version 2 of
-!     the License, or (at your option) any later version.
+!     This program is free software: you can redistribute it and/or modify
+!     it under the terms of the GNU General Public License as published by
+!     the Free Software Foundation, either version 3 of the License, or
+!     (at your option) any later version.
 !
 !     This program is distributed in the hope that it will be useful,
 !     but WITHOUT ANY WARRANTY; without even the implied warranty of
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 !     GNU General Public License for more details.
 !
-!     A copy of the GNU General Public License is available at
-!     http://www.gnu.org/copyleft/gpl.html#SEC3
-!     or by writing to the Free Software Foundation, Inc.,
-!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!     You should have received a copy of the GNU General Public License
+!     along with this program. If not, see <http://www.gnu.org/licenses/>.
 !
 !
 !  0. Authors
@@ -1668,32 +1658,56 @@ contains
     end subroutine create_variables
 
     subroutine stnames_init()
-        STNAMES( 4, 1) = 'depth'
-        STNAMES( 5, 1) = 'xcur'
-        STNAMES( 5, 2) = 'ycur'
-        STNAMES( 6, 1) = 'ubot'
-        STNAMES(10, 1) = 'hs'
-        STNAMES(11, 1) = 'tm01'
-        STNAMES(12, 1) = 'tp'
-        STNAMES(13, 1) = 'theta0'
-        STNAMES(14, 1) = 'thetap'
-        STNAMES(16, 1) = 'spread'
-        STNAMES(17, 1) = 'L'
-        STNAMES(26, 1) = 'xwnd'
-        STNAMES(26, 2) = 'ywnd'
-        STNAMES(28, 1) = 'rtm01'
-        STNAMES(30, 1) = 'dhs'
-        STNAMES(31, 1) = 'dtm'
-        STNAMES(32, 1) = 'tm02'
-        STNAMES(34, 1) = 'urms'
-        STNAMES(35, 1) = 'ustar'
-        STNAMES(38, 1) = 'cdrag'
-        STNAMES(44, 1) = 'hswe'
-        STNAMES(47, 1) = 'tmm10'
-        STNAMES(48, 1) = 'rtmm10'
-        STNAMES(51, 1) = 'ssh'
-        STNAMES(52, 1) = 'botl'
-        STNAMES(53, 1) = 'tps'
+        STNAMES(  4, 1) = 'depth'
+        STNAMES(  5, 1) = 'xcur'
+        STNAMES(  5, 2) = 'ycur'
+        STNAMES(  6, 1) = 'ubot'
+        STNAMES( 10, 1) = 'hs'
+        STNAMES( 11, 1) = 'tm01'
+        STNAMES( 12, 1) = 'tp'
+        STNAMES( 13, 1) = 'theta0'
+        STNAMES( 14, 1) = 'thetap'
+        STNAMES( 16, 1) = 'spread'
+        STNAMES( 17, 1) = 'L'
+        STNAMES( 26, 1) = 'xwnd'
+        STNAMES( 26, 2) = 'ywnd'
+        STNAMES( 28, 1) = 'rtm01'
+        STNAMES( 30, 1) = 'dhs'
+        STNAMES( 31, 1) = 'dtm'
+        STNAMES( 32, 1) = 'tm02'
+        STNAMES( 34, 1) = 'urms'
+        STNAMES( 35, 1) = 'ustar'
+        STNAMES( 38, 1) = 'cdrag'
+        STNAMES( 44, 1) = 'hswe'
+        STNAMES( 47, 1) = 'tmm10'
+        STNAMES( 48, 1) = 'rtmm10'
+        STNAMES( 51, 1) = 'ssh'
+        STNAMES( 52, 1) = 'botl'
+        STNAMES( 53, 1) = 'tps'
+        STNAMES(100, 1) = 'phs0'
+        STNAMES(101, 1) = 'phs1'
+        STNAMES(102, 1) = 'phs2'
+        STNAMES(103, 1) = 'phs3'
+        STNAMES(104, 1) = 'phs4'
+        STNAMES(105, 1) = 'phs5'
+        STNAMES(110, 1) = 'ptp0'
+        STNAMES(111, 1) = 'ptp1'
+        STNAMES(112, 1) = 'ptp2'
+        STNAMES(113, 1) = 'ptp3'
+        STNAMES(114, 1) = 'ptp4'
+        STNAMES(115, 1) = 'ptp5'
+        STNAMES(130, 1) = 'pdir0'
+        STNAMES(131, 1) = 'pdir1'
+        STNAMES(132, 1) = 'pdir2'
+        STNAMES(133, 1) = 'pdir3'
+        STNAMES(134, 1) = 'pdir4'
+        STNAMES(135, 1) = 'pdir5'
+        STNAMES(140, 1) = 'pspr0'
+        STNAMES(141, 1) = 'pspr1'
+        STNAMES(142, 1) = 'pspr2'
+        STNAMES(143, 1) = 'pspr3'
+        STNAMES(144, 1) = 'pspr4'
+        STNAMES(145, 1) = 'pspr5'
         stnames_initialized = .true.
 
     end subroutine stnames_init

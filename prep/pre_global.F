@@ -29,7 +29,7 @@ C                     current for ADCIRC v46.34   09/20/2006
 C----------------------------------------------------------------------------
 
       MODULE PRE_GLOBAL
-      USE CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG
+      USE ADC_CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
       USE VERSION
@@ -299,6 +299,10 @@ Casey 180318: Added NWS=13
       LOGICAL :: FOUND_OWINC_NML
 #endif
 
+      ! DW 2024
+      LOGICAL :: found_NWS14Grib2NetCdf_Namelist = .false. 
+      NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
+
       logical :: foundWetDryControlNamelist = .false. ! for namelist 
       logical :: outputNodeCode = .false.
       logical :: outputNOFF = .false.
@@ -328,6 +332,10 @@ Casey 180318: Added NWS=13
       real(8) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start     
       character(len=10) :: dynamicWaterLevelCorrectionRampReferenceTime = 'hotstart'
 
+C     VEW1D channel namelist 11/06/2023 sb
+      logical :: foundVEW1DChannelControlNamelist = .false. 
+      logical :: activateVEW1DChannelWetPerimeter
+      
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
       REAL(8) CONVCR

@@ -1,10 +1,10 @@
-##############################################################################
-# IA32_Intel/x86-64_Intel:	Intel Pentium with Linux using Intel compiler 17.
-##############################################################################
+################################################################################
+# IA32_Intel/x86-64_Intel:	Intel Core/Xeon with Linux using Intel compiler.
+################################################################################
 F90_SER = ifort
 F90_OMP = ifort
-# if appropriate, use mpiifort of Intel instead
-F90_MPI = mpif90
+# for older compiler versions, use mpif90
+F90_MPI = mpiifort
 FLAGS_OPT = -O2
 FLAGS_MSC = -W0 -assume byterecl -traceback -diag-disable 8290 -diag-disable 8291 -diag-disable 8293
 FLAGS90_MSC = $(FLAGS_MSC)
@@ -31,6 +31,12 @@ else
   NCF_OBJS =
 endif
 O_DIR = ../../work/odir4/
+BOU_OBJ = $(O_DIR)boundaries.o
+ifneq ("$(wildcard $(BOU_OBJ))","")
+  MSG_OBJS = $(O_DIR)mkdir.o $(O_DIR)boundaries.o $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)global_3dvs.o $(O_DIR)version.o $(O_DIR)messenger.o
+else
+  MSG_OBJS = $(O_DIR)mkdir.o $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)global_3dvs.o $(O_DIR)version.o $(O_DIR)messenger.o
+endif
 OUT = -o 
 EXTO = o
 MAKE = make

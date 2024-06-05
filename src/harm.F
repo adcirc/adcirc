@@ -115,7 +115,7 @@ c***********************************************************************
       USE GLOBAL, ONLY : screenMessage, logMessage, DEBUG, ECHO, INFO,
      &                   WARNING, ERROR, setMessageSource, IFSPROTS,
      &                   unsetMessageSource, allMessage, scratchMessage
-      USE CONSTANTS, ONLY: pi
+      USE ADC_CONSTANTS, ONLY: pi
 
 
       ! jgf49.44: parameters describing the harmonic constituents to be

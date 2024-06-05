@@ -71,6 +71,9 @@ C
       ALLOCATE(NodeCode_g(NP_G))
       ALLOCATE(NOFF_g(NE_G))
       ALLOCATE(NNodeCode_g(NP_G))
+
+      ALLOCATE(HTOT1_g(NP_G)) 
+      ALLOCATE(HTOT2_g(NP_G)) 
 C
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

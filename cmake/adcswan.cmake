@@ -26,9 +26,14 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanGriddata.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanGridobjects.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanCompdata.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/couple2adcirc.f90)
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/couple2adcirc.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SdsBabanin.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanIEM.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanBraggScat.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanQCM.f90)
 
   set(SWAN2SERIAL_SOURCES
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swan2coh.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swanmain.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swanpre1.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swanpre2.f
@@ -68,6 +73,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanDiffPar.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanGSECorr.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanGradDepthorK.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanGradVel.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanInterpolatePoint.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanInterpolateAc.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanInterpolateOutput.f90
@@ -83,11 +89,13 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanSumOverNodes.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanMinOverNodes.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanMaxOverNodes.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanVTKWriteHeader.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanVTKWriteData.f90
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanVTKPDataSets.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpids.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpcre.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/ocpmix.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SdsBabanin.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanGradVel.f90)
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/fftpack51.f90)
 
   set(ADCSWAN1_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
@@ -110,6 +118,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/globalio.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F

@@ -109,7 +109,7 @@ C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
-      USE VERSION, ONLY : adc_version, fileFmtMajor, fileFmtMinor, 
+      USE VERSION, ONLY : adc_version, adc_hash, fileFmtMajor, fileFmtMinor, 
      &   FileFmtRev
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
@@ -123,7 +123,9 @@ C******************************************************************************
      &   version_number, initLogging, setMessageSource, screenMessage,
      &   openLogFile, unsetMessageSource, np_global, rnp_global,
      &   scratchMessage, CTIP, L_N, writer_id
-      USE CONSTANTS, ONLY: g, rhowat0
+      USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
+     &   initVEW1DChannelWetPerimeter
+      USE ADC_CONSTANTS, ONLY: g, rhowat0
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
       USE GWCE, ONLY : initGWCE
@@ -162,12 +164,15 @@ C
          do while (i.lt.argcount)
             i = i + 1
             call getarg(i, cmdlinearg)
-            select case(cmdlinearg(1:2))
-            case("-V","-v") 
+            select case(trim(cmdlinearg))
+            case("-V","-v","--version") 
                ! write the version number string ... actually it is
                ! a series of two or three numbers with two digits 
                ! separated by dots, e.g., 51.02 or 51.52.07
                write(6,'(a)') trim(adc_version)                 
+               CALL EXIT(0) 
+            case("--hash")
+               write(6,'(a)') trim(adc_hash) 
                CALL EXIT(0) 
             case default
                ! do nothing, this is some other command line argument
@@ -226,6 +231,7 @@ C
      &   VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
       IF ((NSCREEN.NE.0).AND.(MYPROC.EQ.0)) THEN
          WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
+         WRITE(ScreenUnit,'(a)')"ADCIRC Commit hash is "//ADC_HASH
       ENDIF
 
       !jgf49.44: Allocate memory for reading and writing full domain arrays
@@ -237,6 +243,11 @@ C
       IF ( (MNPROC.gt.1).and.(myProc.eq.0).and.
      &     (WRITE_LOCAL_HARM_FILES.eqv..false.) ) THEN
           CALL allocateFullDomainHAIOArrays()
+      ENDIF
+
+      ! Initialize variables for bottom friction evaluation considering wet perimeter 11/06/2023
+      if ( activateVEW1DChannelWetPerimeter.eqv..true. ) THEN
+            CALL initVEW1DChannelWetPerimeter()
       ENDIF
 
       !jgf49.44: Initialize harmonic analysis parameters.
@@ -396,7 +407,7 @@ C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
       USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
-     &   unsetMessageSource, statim, dtdp, screenunit, logMessage
+     &   unsetMessageSource, statim, dtdp, screenunit, logMessage, earlyterminate
 #ifdef CMPI
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
@@ -451,10 +462,15 @@ C             to then call the SWAN time-stepping subroutine.
           CALL PADCSWAN_RUN(ITIME)
         ENDIF
 #endif
+        if ( earlyterminate.ne.0 ) then 
+           call writeOutput2D(ITIME_END,TimeLoc) 
+           exit
+        else
         !...WRITE OUTPUT
         !   zc - moved this here so that output occurs after
         !        the SWAN time step has been completed.
-        CALL writeOutput2D(ITIME,TimeLoc) ! =>see write_output.F
+            CALL writeOutput2D(ITIME,TimeLoc) ! =>see write_output.F
+        endif
 100   CONTINUE
 C
       IF (PRESENT(NTIME_STP)) THEN

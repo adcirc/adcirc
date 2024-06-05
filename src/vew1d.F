@@ -52,9 +52,12 @@ C*******************************************************************
 
       STATUS = 0
 
-      if (NCondensedNodes(nm1) < 2.or.
-     &    NCondensedNodes(nm2) < 2.or.
-     &    NCondensedNodes(nm3) < 2) then
+      if ((NCondensedNodes(nm1) < 2.or.  ! if any of the nodes are not condensed nodes
+     &     NCondensedNodes(nm2) < 2.or.
+     &     NCondensedNodes(nm3) < 2).or. ! or
+     &    (NCondensedNodes(nm1) > 2.and. ! if this is a joint element
+     &     NCondensedNodes(nm2) > 2.and.
+     &     NCondensedNodes(nm3) > 2)) then
          status = -1
          return
       end if
@@ -144,25 +147,16 @@ C*******************************************************************
       LOGICAL :: DO_ROTATE
       
       IF(.NOT.LoadCondensedNodes) RETURN
-      IF(.NOT.NCondensedNodes(IND).GE.2) RETURN
-
+      IF(.NOT.NCondensedNodes(IND).NE.2) RETURN
+      
       IBND = LBArray_Pointer(IND)
       IF (IBND.LE.0) RETURN
 
       ! Rotate the vector if there is no bank top
       ! side, i.e., along land boundaries, or along not-submerged
       ! vertical element walls 
-      DO_ROTATE = .false.
-      IF(LBCODEI(IBND).EQ.20) THEN
-         DO_ROTATE = .true.
-      ELSE IF(LBCODEI(IBND).EQ.64) THEN
-         NNBB1=NBV(IBND)
-         NNBB2=IBCONN(IBND)
-         IF ((ISSUBMERGED64(IBND).EQ.0).OR.
-     &       (NODECODE(NNBB1).EQ.0.OR.NODECODE(NNBB2).EQ.0)) THEN
-            DO_ROTATE = .true.
-         ENDIF
-      END IF
+      DO_ROTATE = ROTATE_OR_NOT(IBND)
+
       IF(.NOT.DO_ROTATE) RETURN
 
       CS = SX
@@ -202,18 +196,9 @@ C*******************************************************************
 
       ! Rotate back the vector if there is no bank top
       ! side, i.e., along land boundaries, or along not-submerged
-      ! vertical element walls 
-      DO_ROTATE = .false.
-      IF(LBCODEI(IBND).EQ.20) THEN
-         DO_ROTATE = .true.
-      ELSE IF(LBCODEI(IBND).EQ.64) THEN
-         NNBB1=NBV(IBND)
-         NNBB2=IBCONN(IBND)
-         IF ((ISSUBMERGED64(IBND).EQ.0).OR.
-     &       (NODECODE(NNBB1).EQ.0.OR.NODECODE(NNBB2).EQ.0)) THEN
-            DO_ROTATE = .true.
-         ENDIF
-      END IF
+      ! vertical element walls
+      DO_ROTATE = ROTATE_OR_NOT(IBND)
+
       IF(.NOT.DO_ROTATE) RETURN
 
       VLEN = SQRT(VECX*VECX+VECY*VECY)
@@ -317,20 +302,10 @@ C
       IBND = LBArray_Pointer(IND)
       IF (IBND.LE.0) RETURN
 
-      ! Remove the normal component if there is no bank top
-      ! side, i.e., along land boundaries, or along not-submerged
+      ! Remove the normal component if there is no water on the 
+      ! bank, i.e., along land boundaries, or along not-submerged
       ! vertical element walls 
-      DO_ROTATE = .false.
-      IF(LBCODEI(IBND).EQ.20) THEN
-         DO_ROTATE = .true.
-      ELSE IF(LBCODEI(IBND).EQ.64) THEN
-         NNBB1=NBV(IBND)
-         NNBB2=IBCONN(IBND)
-         IF ((ISSUBMERGED64(IBND).EQ.0).OR.
-     &       (NODECODE(NNBB1).EQ.0.OR.NODECODE(NNBB2).EQ.0)) THEN
-            DO_ROTATE = .true.
-         ENDIF
-      END IF
+      DO_ROTATE = ROTATE_OR_NOT(IBND)
 
       IF(.NOT.DO_ROTATE) RETURN  
 
@@ -350,7 +325,43 @@ C
 
       RETURN
       END SUBROUTINE REMOVE_NORMAL_AT_CONDENSEDNODES
+
+      !-------------------------------------------------------------
+      ! FUNCTION ROTATE_OR_NOT
+      !
+      ! Judges if velocity solutions should be rotated at a node 
+      ! along a boundary. They should be rotated if 1) a node is
+      ! along a IBTYPE=64 vertical element wall boundary and the
+      ! boundary is not submerged, or if 2) a node is along any
+      ! zero normal flow boundary. This function is applied to a
+      ! node where the condensed_nodes nodal attribute is given.
+      !-------------------------------------------------------------
+      FUNCTION ROTATE_OR_NOT(IBND)
+      !-------------------------------------------------------------
+      USE GLOBAL,ONLY : NODECODE
+      USE BOUNDARIES,ONLY : IBCONN,LBCODEI,NBV,ISSUBMERGED64
       
+      IMPLICIT NONE
+
+      INTEGER,INTENT(IN) :: IBND
+      INTEGER :: NNBB1,NNBB2
+      LOGICAL :: ROTATE_OR_NOT
+
+      ROTATE_OR_NOT = .false.
+      IF(LBCODEI(IBND).EQ.64) THEN
+         NNBB1=NBV(IBND)
+         NNBB2=IBCONN(IBND)
+         IF ((ISSUBMERGED64(IBND).EQ.0).OR.
+     &       (NODECODE(NNBB1).EQ.0.OR.NODECODE(NNBB2).EQ.0)) THEN
+            ROTATE_OR_NOT = .true.
+         ENDIF
+      ELSE IF(LBCODEI(IBND).EQ.0.OR.LBCODEI(IBND).EQ.1.OR.
+     &        LBCODEI(IBND).EQ.10.OR.LBCODEI(IBND).EQ.1.OR.
+     &        LBCODEI(IBND).EQ.20.OR.LBCODEI(IBND).EQ.21) THEN
+         ROTATE_OR_NOT = .true.
+      END IF
+      END FUNCTION
+
       FUNCTION CondensedNodePairFound(N1,N2)
       USE NodalAttributes, ONLY : NCondensedNodes,CondensedNodes,
      &                            CondensedNodesNoOfVals
@@ -371,7 +382,7 @@ C
             EXIT
          END IF
       END DO
-      
+
       END FUNCTION CondensedNodePairFound
 
       FUNCTION FIND_IB2(N1,N2,N3)

@@ -83,7 +83,9 @@ C-----------------------------------------------------------------------
      &   alloc_main6, openfileforread, nhoutonce, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
-     &   directvelWD,useHF
+     &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
+     &   WarnVel
+
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
@@ -93,9 +95,9 @@ C-----------------------------------------------------------------------
      &   ,basedatetime
 #endif
      &   ,NUOPC4WAV, NUOPC4MET
-      USE CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
+      USE ADC_CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
      &                     waveWindMultiplier,deg2rad,rhoAir,
-     &                     rad2deg,omega
+     &                     rad2deg,omega,WaveStressGrad_Cap
 
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
@@ -123,7 +125,8 @@ C-----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionRampEnd,
      &   dynamicWaterLevelCorrectionSkipSnaps,
      &   dynamicWaterLevelCorrectionRampReferenceTime,
-     &   dynamicWaterLevelCorrectionMultiplier
+     &   dynamicWaterLevelCorrectionMultiplier,
+     &   read_NWS14_NetCdf_using_core_0
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
@@ -137,6 +140,8 @@ C-----------------------------------------------------------------------
      &     InitNAModule, ReadNodalAttr, InitNodalAttr, ESLM, ESLC,
      &     Tau0FullDomainMin, Tau0FullDomainMax, Z0b_var,
      &     PrepCondensedNodes,   ! SB
+C.....SB
+     &     activateVEW1DChannelWetPerimeter,
 C ....DW
      &     LoadAbsLayerSigma, FoundAbsLayerSigma 
       USE SPONGELAYER, ONLY: SpongeLayerRelatedPrep, FLAGSPONGEELEM
@@ -199,7 +204,8 @@ C.... DMW 202207 Add options for controlling slope/wind limiting and
 C.... "new" formula for computing vel in wetting/drying routine
      &  slim, windlim, directvelWD, useHF
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
-
+C.... SB
+      NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
@@ -221,6 +227,8 @@ C.... DMW
 #endif
 !JLW: adding subgrid namelist
       NAMELIST /subgridControl/ subgridFilename, level0, level1
+
+      NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
 
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -249,7 +257,9 @@ C.... DMW
       NAMELIST /Smag_Control/ SMAG_COMP_FLAG,SMAG_UPPER_LIM, SMAG_LOWER_LIM
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      NAMELIST /waveCoupling/ WaveWindMultiplier
+!tcm 2024: added wave stress gradient limiting
+      NAMELIST /waveCoupling/ WaveWindMultiplier,
+     &         Limit_WaveStressGrad, WaveStressGrad_Cap
 
       call setMessageSource("read_input")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
@@ -298,6 +308,9 @@ C...
 #ifdef CSCA
       WRITE(16,*) '      - CODE OPTIMIZED FOR A SCALAR COMPUTER'
 #endif
+      WRITE(16,*) '      - dmw202401 THIS CODE USES A VELCHECKER'
+      WRITE(16,*) '      - dmw202401 THIS CODE USES THE FIX FOR SUBGRID BARRIERS'
+	  WRITE(16,*) '      - dmw202401 adcirc-noaa e8aef69945a44c50fbc51350eddf26d8f559348c'
       write(16,1112)
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
@@ -442,6 +455,18 @@ Casey 180318: Added NWS=13
       rewind(15)
 #endif
 
+
+#ifdef DATETIME
+      namelistSpecifier = 'WindGrib2NetCdf' 
+      read( unit = 15, nml=WindGrib2NetCdf,iostat=ios ) ;
+      call logNamelistReadStatus(namelistSpecifier, ios)
+      write(scratchMessage,*) "NWS 14: use core 0"//
+     &   "to read grib2/netcdf data = ",
+     &   read_NWS14_NetCdf_using_core_0 
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+#endif
+
       !...Read in time varying weir control from fort.15
       NOUT_TVW = -99999
       TOUTS_TVW = -99999
@@ -477,6 +502,14 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       call logNamelistReadStatus(namelistSpecifier,ios)
       write(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
       call logMessage(ECHO,trim(scratchMessage))
+!TCM 2024 -- added wave stress gradient limiter      
+      write(scratchMessage,*)"Limit_WaveStressGrad=",
+     &                        Limit_WaveStressGrad
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "WaveStressGrad_Cap=",
+     &                         WaveStressGrad_Cap
+      call logMessage(ECHO,trim(scratchMessage))
+      
       rewind(15)
       !
       ! jgf52.05: Add a namelist for the user to control
@@ -615,6 +648,16 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       endif
       rewind(15)
 
+C     Channel wet perimeter for bottom friction 11/06/2023 sb
+      namelistSpecifier = 'VEW1DChannelControl'
+      activateVEW1DChannelWetPerimeter = .false.
+      READ(UNIT=15,NML=VEW1DChannelControl,IOSTAT=ios)
+      call logNamelistReadStatus(namelistSpecifier, ios)
+      write(scratchMessage,'(a,l1)') "activateVEW1DChannelWetPerimeter=",
+     &   activateVEW1DChannelWetPerimeter
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
 C     jgf46.10 Add user-controllable warning, output, and stop criteria
 C     for elevations. Initialize default values.
       WarnElev = 20.0         ! default
@@ -623,6 +666,8 @@ C     for elevations. Initialize default values.
       WarnElevDumpLimit = 50  ! default
       WarnElevDumpCounter = 0 ! init
       ErrorElev = 1000.0      ! default
+C     DMW 202401 Add check for velocity warning level
+      WarnVel = 100.d0
 C     WJP add namelist
       namelistSpecifier = 'WarnElevControl'
       read(unit=15,nml=WarnElevControl,iostat=IOS)
@@ -4007,7 +4052,8 @@ C...  RECORDING STATIONS
          ELSE         
             WRITE(16,3207) NSTAC
             IF (NSTAC.NE.0) THEN
-               WRITE(16,*) "CONC. STATION LOCATIONS WILL BE READ FROM FORT.15"
+               WRITE(16,*) 
+     &            "CONC. STATION LOCATIONS WILL BE READ FROM FORT.15"
             ENDIF
          ENDIF
  3207    FORMAT(///,5X,'NUMBER OF INPUT CONCENTRATION RECORDING ',
@@ -4780,7 +4826,7 @@ C...  SB
 C     Preparation of condensed nodes  SB
       call PrepCondensedNodes()
       
-C     Recompute a & b coefficients            
+C     Recompute a & b coefficients
       CALL RecomputeFDXEFDYEAtCondensedNodes()
       
 C...  SB END
@@ -5169,7 +5215,7 @@ C    kmd48.33bc - added the variables from Global
      &                  scratchMessage, INFO, DEBUG, ERROR, allMessage,
      &                  setMessageSource, logMessage, unsetMessageSource,
      &                  OUTPUTSPONGE, screenMessage, ECHO
-      USE CONSTANTS, ONLY: sec2day
+      USE ADC_CONSTANTS, ONLY: sec2day
       USE MESH, ONLY : NP, DP, X, Y
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
@@ -5924,7 +5970,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : scratchMessage, ECHO, INFO, WARNING, ERROR,
      &   DTDP, NT, setMessageSource, logMessage, allMessage,
      &   unsetMessageSource, DEBUG, screenMessage, useNetCDF
-      USE CONSTANTS, ONLY: day2sec
+      USE ADC_CONSTANTS, ONLY: day2sec
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -6074,7 +6120,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE readStations(names, num_stations, nnv, xcoord, ycoord,
      &                        lat, lon, sta1, sta2, sta3, stat_lun,
      &                        Description)
-      USE CONSTANTS, ONLY: DEG2RAD, RAD2DEG
+      USE ADC_CONSTANTS, ONLY: DEG2RAD, RAD2DEG
       USE GLOBAL, ONLY : parse, IFSPROTS,
      &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
       USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
@@ -6518,7 +6564,7 @@ C-----------------------------------------------------------------------
         USE MESSENGER, only: mapToSubdomainRealMPI, allnodes
 #endif
 #ifdef ADCNETCDF        
-        USE NETCDFIO, ONLY: check_err
+        USE NETCDF_ERROR, ONLY: check_err
         USE NETCDF
 #endif        
         IMPLICIT NONE

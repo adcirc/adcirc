@@ -1871,7 +1871,7 @@ C   THIS MODULE CONTAINS THE ROUTINES FOR THE WEIR OVERTOPPING FLUX
 C   CALCULATIONS FOR INTERNAL AND EXTERNAL WEIR TYPE BOUNDARIES.
 C-----------------------------------------------------------------------
         MODULE WEIR_FLUX
-            USE CONSTANTS, ONLY: G
+            USE ADC_CONSTANTS, ONLY: G
             USE GLOBAL,ONLY:ETA2,RAMPINTFLUX,
      &          setMessageSource,unsetMessageSource,DEBUG,allMessage    
             USE BOUNDARIES,ONLY: LBCODEI,NBV
@@ -2162,8 +2162,9 @@ C-----------------------------------------------------------------------
                 INTEGER,POINTER             :: I,J,K
                 REAL(8)                    :: RBARWL1,RBARWL2,RBARWLL
                 REAL(8)                    :: RBARWL1F,RBARWL2F
+                LOGICAL                    :: CHECK
 
-                CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")
+                CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY64_FLUX")
 #if defined(WEIR_TRACE) || defined(ALL_TRACE) 
                 CALL allMessage(DEBUG,"Enter")
 #endif                
@@ -2179,20 +2180,64 @@ C...............SIMPLIFY VARIABLES
                 NNBB2WN = 0      ! COUNT NUMBER OF WET NEIGHBORS
                 FLOWDIR = 0      ! DIRECTION OF FLOW
 
+                ! Check if the node ids on both sides of the barrier are valid
+                ! Either of them can be invalid ocasionally but not always 
+                ! when the barrier is splitted for paralell computation
+                IF((NNBB1<=0).OR.(NNBB2<=0)) THEN
+                    FLUX = 0.D0
+                    ISSUBMERGED64(I) = 0
+                    IF(NNBB2>0) THEN
+                        IF(LBArray_Pointer(NNBB2)>0) THEN
+                            ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 0
+                        ENDIF
+                    ENDIF
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+                    CALL allMessage(DEBUG,"Return")
+#endif
+                    CALL unsetMessageSource()
+                    RETURN
+                ENDIF
+
 C...............CHECK TO SEE IF THERE IS A WET EDGE
+C                 This check is needed ocasionally but not always 
+C                 when the barrier is splitted for paralell computation
+                CHECK = .FALSE.
                 IF( (J.EQ.1).OR.(J.EQ.NVELL(K)+1) )THEN
-                    NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))
-                    NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))
-                ELSE
-                    IF( J.EQ.NVELL(K).OR.(J.EQ.NVELL(K)*2) ) THEN
-                        NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))
-                        NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))
-                    ELSE
-                        NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))
+                    IF((NBV(I+1)>0).AND.(IBCONN(I+1)>0)) THEN
                         NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))
                         NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))
-                        NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))
+                        CHECK = .TRUE.
                     ENDIF
+                ELSE
+                    IF( J.EQ.NVELL(K).OR.(J.EQ.NVELL(K)*2) ) THEN
+                        IF((NBV(I-1)>0).AND.(IBCONN(I-1)>0)) THEN
+                            NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))
+                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))
+                            CHECK = .TRUE.
+                        ENDIF
+                    ELSE
+                        IF((NBV(I-1)>0).AND.(IBCONN(I-1)>0).AND.
+     &                     (NBV(I+1)>0).AND.(IBCONN(I+1)>0)) THEN
+                            NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))
+                            NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))
+                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))
+                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))
+                            CHECK = .TRUE.
+                        ENDIF
+                    ENDIF
+               ENDIF
+
+               IF(.NOT.CHECK) THEN
+                   FLUX = 0.D0
+                   ISSUBMERGED64(I) = 0
+                   IF(LBArray_Pointer(NNBB2)>0) THEN
+                      ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 0
+                   ENDIF
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+                   CALL allMessage(DEBUG,"Return")
+#endif
+                   CALL unsetMessageSource()
+                   RETURN
                ENDIF
 
 C..............CHECK TO SEE IF THE BARRIER ELEVATION NEEDS UPDATING
@@ -2333,7 +2378,7 @@ C  CONDITIONS (CROSS BARRIER PIPES)
 C-----------------------------------------------------------------------
             SUBROUTINE COMPUTE_CROSS_BARRIER_PIPE_FLUX(IDX,TIMELOC,FLUX)
                 USE BOUNDARIES,ONLY:NBV,IBCONN,PIPEHT,PIPEDIAM,PIPECOEF
-                USE CONSTANTS, ONLY: G, PI
+                USE ADC_CONSTANTS, ONLY: G, PI
                 USE GLOBAL,ONLY: NODECODE,NIBNODECODE,ETA2,
      &                           RampIntFlux           
 
