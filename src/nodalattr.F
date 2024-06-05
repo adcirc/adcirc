@@ -2540,8 +2540,8 @@ C     ----------------------------------------------------------------
       REAL(8) :: Fit, alpha2, gamma2, slope2
       REAL(8) :: Nmdiff, Nbdiff, Fdiff, adju, adjv, adjuv
       logical, save ::  first_entry = .TRUE.
-      ! CPB: for tidal velocities
-      REAL(8) :: cosAMIGT, sinAMIGT, DissTidal, DissTotal, jjwgamma,
+      ! CPB: for adjusting internal tides in coupled mode
+      REAL(8) :: DTidal, DTotal,
      &            Cxx, Cyy, Cxy
       INTEGER :: NCYC
       REAL(8),DIMENSION(:),ALLOCATABLE :: Udmy, Vdmy      
@@ -2587,7 +2587,7 @@ C              (unnecessary for IT_FricNoOfVals == 1)
          Baroc: IF (CBaroclinic.and.abs(IDEN).ge.5) THEN
 C           2DDI ADCIRC with baroclinic coupling
             if (abs(IDEN).ne.7) then
-               CALL MunkHPFilter(U,V,IT)
+               CALL UNTIDE(U,V,IT)
             endif
             IF (IT_FricNoOfVals == 5) THEN
 C           Use the "Nonlocal" Nycander (2005) type tensor wave drag
@@ -2650,23 +2650,34 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      ! Divide coefficient by criticality if > 1
                      ! (saturates out at high criticalities) 
                      Fit = Fit / max(1d0,gamma2)                   
+                     Fit = max(0d0,Fit)
                      ! Calculate adjustment based on tidal residual
-                     if (abs(IDEN).ne.7) then
+                     ! Calculate adjustment based on tidal residual
+                     IF (abs(IDEN).NE.7) THEN
                         ! Calculate the adjustment factors based on the delayed moving mean
-                        IF (ABS(U(I)).GT.1d-3.AND.
-     &                      ABS(V(I)).GT.1d-3) THEN
-                           adju = UBar(I)/U(I)
-                           adjv = VBar(I)/V(I)
+                        Cxx = Fit*IT_Fric(I,2)**2d0
+                        Cyy = Fit*IT_Fric(I,3)**2d0
+                        Cxy = Fit*IT_Fric(I,2)*IT_Fric(I,3)
+                        Dtotal = Cxx*U(I)**2d0 + 
+     &                           2*Cxy*U(I)*V(I) +
+     &                           Cyy*V(I)**2d0
+                        Dtidal = Cxx*(U(I)-UBar(I))**2d0 + 
+     &                           2*Cxy*(U(I)-UBar(I))*(V(I)-VBar(I)) +
+     &                           Cyy*(V(I)-VBar(I))**2d0
+                        IF (Dtotal.lt.1d-10) THEN
+                           adju = 0d0
+                        ELSE
+                           adju = Dtidal/Dtotal
                         ENDIF
-                        adjuv = 0.5d0*(adju + adjv)
-                     endif
+                        adju = min(adju,100d0)
+                     ENDIF
                      ! Implement the friction with possible adjustment
                      IF (IT_FricNoOfVals == 3) then
                         TKM(1,I) = TK(I) + adju*Fit*IT_Fric(I,2)**2d0
-                        TKM(2,I) = TK(I) + adjv*Fit*IT_Fric(I,3)**2d0
-                        TKM(3,I) = adjuv*Fit*IT_Fric(I,2)*IT_Fric(I,3)
+                        TKM(2,I) = TK(I) + adju*Fit*IT_Fric(I,3)**2d0
+                        TKM(3,I) = adju*Fit*IT_Fric(I,2)*IT_Fric(I,3)
                      else
-                        TKM(1:2,I) = TK(I) + adjuv*Fit*IT_Fric(I,2)
+                        TKM(1:2,I) = TK(I) + adju*Fit*IT_Fric(I,2)
                         TKM(3,I)   = 0.0d0
                      endif
                   ENDIF 
