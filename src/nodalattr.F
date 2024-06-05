@@ -2523,7 +2523,7 @@ C     ----------------------------------------------------------------
       USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN,
      &                  IFSPROTS, RAMP
       USE MESH, ONLY: DRVMAP2DSPVEC, UVECTMP, VVECTMP, RVELF
-      USE INTERNALTIDE, ONLY: UBar, VBar, MunkHPFilter
+      USE INTERNALTIDE, ONLY: UBar, VBar, UNTIDE
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
       REAL(8), intent(in), dimension(:) :: TK   ! scalar friction
