@@ -104,7 +104,7 @@ C
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
      &    getdynamicWaterLevelCorrections,
      &    dynamicWaterLevelCorrectionMassAdjust,
-     &    CLOSE_MET_FILES 
+     &    CLOSE_MET_FILES
 
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
@@ -152,6 +152,9 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
 
       USE subgrid, ONLY: level0, getVertLookup
 
+      ! full luni-solar tidal potential !
+      USE mod_tidepotential, only: tidePotential
+
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
 C
@@ -159,7 +162,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       INTEGER IE, I, J, K, JJ                  !local loop counters
       INTEGER NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle
-      INTEGER NCyc, NA
+      INTEGER NCyc
       INTEGER :: itest
       INTEGER :: kemax
       INTEGER :: kvmax
@@ -172,7 +175,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       INTEGER :: warnElevExceeded
       logical, save ::  EtaDisc_Fill = .TRUE.
 
-      REAL(8) ArgT, ArgTP, ArgSAlt
       REAL(8) CCSFEA
       REAL(8) ElMax
       REAL(8) PIPE_FLUX
@@ -855,45 +857,9 @@ Casey 140701: Ending the IF statement.
          END IF
       END IF
 
-C...
-C...  Tidal Potential Forcing
-C...  Note, the Earth tide potential reduction factor, ETRF(J) has been
-C...        incorporated into this calculation.
-C...
-C...  WJP 02.21.2018 Rewriting for general formula for all species,
-C     cleaner code, and correct identification of 0,1,2 or higher species
-      IF(CTIP) THEN
-         TIPLOOP: DO J=1,NTIF
-            IF (PERT(J).EQ.0.) THEN
-               NCYC=0
-            ELSE
-#ifdef IBM
-               NCYC=INT(timeh/PERT(J),KIND(0.0d0))
-#else
-               NCYC=INT(timeh/PERT(J))
-#endif
-            ENDIF
 
-            ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
-            TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
-            SALTMUL=RampTip*FFT(J)
-C           WJP: We actually want to compare against diurnal and get 0,1,2
-C           or higher species (was opposite beforehand)
-#ifdef IBM
-            NA = MIN(NINT(AMIGT(J)/7d-5,KIND(0.0d0)),2)
-#else
-            NA = MIN(NINT(AMIGT(J)/7d-5),2)
-#endif
-C           WJP: Rewritten so that we have a general formula for all
-C           species
-            DO I = 1,NP
-                ARGTP   = ARGT + NA*SLAM(I)
-                ARGSALT = ARGT - SALTPHA(J,I)
-                TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
-     &                  + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
-            ENDDO
-         ENDDO TIPLOOP
-      ENDIF
+! Apply the tide potential forcing subroutine      
+      call applyTidePotentialForcing(TimeLoc, TimeH)
 
 C...
 C...  Depth Averaged Baroclinic Forcing needed by GWCE and 2DDI Momentum
@@ -1100,6 +1066,7 @@ C...
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
 
+
 !----------------------SOLVE GWCE---------------------------------------
 C...
 C...  Compute new water surface elevation 
@@ -1126,13 +1093,15 @@ C...  Compute new water surface elevation
 
 !--------------------WETTING AND DRYING--------------------------------
       ENDIF
- 
+
+
+
 !.....DMW202401 Add update for flow depth at current timestep
 !......We do this after wetting/drying since bathy could change with subgrid barriers.
       DO I = 1,NP
          H2(I) = DP(I)+IFNLFA*ETA2(I)
       ENDDO
-C...
+C...   
 C---------------2DDI Momentum Equation Solution-------------------------
 C...
       call solveMomentumEq()
@@ -1537,8 +1506,77 @@ C      ENDIF
       RETURN
 
 C******************************************************************************
+
       END SUBROUTINE TIMESTEP
 C******************************************************************************
+
+
+!****************************************************************************************
+! Subroutine to compute tide potential at the nodes                                     
+!                                                                                       
+! Tidal Potential Forcing
+! Note, the Earth tide potential reduction factor, ETRF(J) has been
+!       incorporated into this calculation.
+!
+! WJP 02.21.2018 Rewriting for general formula for all species,
+! cleaner code, and correct identification of 0,1,2 or higher species
+!****************************************************************************************
+      subroutine applyTidePotentialForcing(TimeLoc, TimeH)
+         use mod_tidepotential, only: tidePotential
+         use global, only: NTIP, TIP1, TIP2, CTIP, NTIF, RampTip, PERT, FACET,
+     &                     AMIGT, FFT, TPK, ETRF, SALTPHA, SALTAMP, L_N
+         use mesh , only: np, SLAM
+         implicit none
+         real(8), intent(IN) :: TimeLoc, TimeH
+         real(8) :: ArgT, ArgTP, ArgSAlt, SALTMUL, TPMUL
+         integer :: i, j, na, ncyc
+
+         IF(CTIP) THEN
+
+            ! use the full formula 
+            IF ( tidePotential%active() ) THEN
+               TIP2 = tidePotential%compute(TimeLoc, NP, SLAM) * RampTip
+            ENDIF  
+
+            ! The traditional approach: a sum of different constituents
+            ! TIP & SAL - for tidePotential%active() = .TRUE.  
+            ! SAL       - for tidePotential%active() = .FALSE.
+            IF(NTIP.EQ.2.or..not.tidePotential%active())THEN 
+               DO J=1,NTIF
+                  IF (PERT(J).EQ.0D0) THEN
+                     NCYC=0
+                  ELSE
+                     NCYC=INT(timeh/PERT(J))
+                  ENDIF
+
+                  ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
+                  TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
+                  SALTMUL=RampTip*FFT(J)
+
+   !              WJP: We actually want to compare against diurnal and get 0,1,2
+   !              or higher species (was opposite beforehand)
+                  NA = MIN(NINT(AMIGT(J)/7d-5),2)
+
+   !              WJP: Rewritten so that we have a general formula for all
+   !              species
+                  IF(tidePotential%active())THEN
+                     DO I = 1, NP
+                        ARGSALT = ARGT - SALTPHA(J,I) ; 
+                        TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+                     END DO
+                  ELSE
+                     DO I = 1,NP
+                        ARGTP   = ARGT + NA*SLAM(I)
+                        ARGSALT = ARGT - SALTPHA(J,I)
+                        TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
+     &                            + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+                     ENDDO
+                  ENDIF
+
+               ENDDO
+            ENDIF   
+         ENDIF
+      end subroutine applyTidePotentialForcing
 
 
 C****************************************************************************************

@@ -88,6 +88,9 @@
           REAL(8), PARAMETER :: day2sec = day2hour * hour2sec
           REAL(8), PARAMETER :: sec2day = 1.0D0/day2sec 
 
+          REAL (8), parameter:: hour2min = 60.D0 
+          REAL (8), parameter:: min2hour = 1.D0/hour2min
+          REAL (8), parameter:: min2day = 1.D0*min2hour*hour2day ; 
           !---Conversion Factors---!
           
           !...Wind Reduction Factor
