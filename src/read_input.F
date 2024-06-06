@@ -230,7 +230,7 @@ C.... DMW
 
       NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
 
-C---- DW, for full tidal pontential formula
+C---- DW/AC, for full tidal pontential formula
 C     UseFullTIPFormula = T/F (default F)
 C     TIPOrder = 2 (P2), 3(p3), >= 4(exact)  (default 2)
 C     TIPStartDate = 'BaseDate'/'YYYY-MM-DD HH:SS'
