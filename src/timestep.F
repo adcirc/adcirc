@@ -102,12 +102,8 @@ C
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
      &    getdynamicWaterLevelCorrections, 
-<<<<<<< HEAD
-     &    CLOSE_MET_FILES 
-=======
      &    CLOSE_MET_FILES, 
      &    collect_wind_io_wall_time
->>>>>>> 90255c5 (Progress in adding timers recording wall clock time spents in met forcing, gwce, 2D memomentum,)
 
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
