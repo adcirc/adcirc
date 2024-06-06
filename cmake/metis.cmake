@@ -81,7 +81,8 @@ if(${C_COMPILER_NAME} MATCHES "gcc.*"
   # For GCC >= 10, we need to add -Wno-implicit-function-declaration and -Wno-incompatible-pointer-types
   if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_C_COMPILER_VERSION} VERSION_EQUAL 10)
     set(ADDITIONAL_METIS_COMPILER_FLAGS
-        "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-implicit-function-declaration -Wno-incompatible-pointer-types")
+        "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-implicit-function-declaration -Wno-incompatible-pointer-types -Wno-shift-op-parentheses -Wno-format-security"
+    )
     message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
     set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
   endif()

@@ -290,6 +290,8 @@ workflows:
                         - adcirc_subgrid-serial
                         - adcirc_subgrid-parallel
                         - adcirc_swan_apes_irene-parallel
+                        - adcirc_global-tide-2d-full-tip-JPL-emphemerides-parallel
+                        - adcirc_global-tide-2d-full-tip-analytical-serial
       - test_grib2:
             requires: 
                 - test_suite_data
@@ -317,4 +319,6 @@ workflows:
                         - adcirc_baroclinic_2d_serial
                         - adcirc_baroclinic_2d_parallel
                         - adcirc_baroclinic_internaltide_2d
+                        - adcirc_global-tide-2d-full-tip-JPL-emphemerides-serial
+                        - adcirc_global-tide-2d-full-tip-analytical-parallel
 

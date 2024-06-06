@@ -37,7 +37,8 @@ C
      &                      rhoWat0, Rearth, rhoAir, one2ten,
      &                      windReduction
 #ifdef CMPI
-      use messenger, only : msg_fini
+      use mpi
+      use messenger, only : msg_fini, msg_Rscalar_Reduce
 #endif
 #ifdef DATETIME
       use datetime_module, only: datetime, timedelta, strptime
@@ -292,6 +293,10 @@ C
         END FUNCTION p_computeWindDrag
       END INTERFACE
       PROCEDURE(p_computeWindDrag),POINTER :: f_computeWindDrag => null()
+
+
+      ! for record time  
+      REAL(8), private:: io_elapsed_time = 0.0D0, nws_elapsed_time = 0.0D0
 
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -933,11 +938,11 @@ C----------------------------------------------------------------------
       integer :: i ! node loop counter
       real(8) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
 
+
       call setMessageSource("getMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-
 
 C------------------------MET FORCING---------------------------------------
 C
@@ -1794,6 +1799,7 @@ C      DW/WJP: rotate wind stresses if coordinate transform
        ENDIF
 
 C--------------------END MET FORCING---------------------------------------
+ 
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -1836,6 +1842,7 @@ Casey 180318: Added for NWS=13
       integer :: nhg ! node number temp
       real(8) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
+
 
       call setMessageSource("coldStartMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -3293,7 +3300,8 @@ C      DW/WJP: rotate wind stresses if coordinate transform
           CALL DRVMAP2DSPVEC( WSX2, WSY2,
      &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
        ENDIF
-      
+
+
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
        call allMessage(DEBUG,"Return.")
 #endif
@@ -9212,11 +9220,14 @@ C----------------------------------------------------------------------
       real(8),intent(out),optional :: CICE2(NP)
       integer :: i, NTkeep
       real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice
+
+      !
       CALL setMessageSource('NWS14GET')
       ! Show the date in str_date format
       call logMessage(ECHO,'CurDT strng: '//
      &                CurDT%strftime("%Y-%m-%d %H:%M"))
-      
+
+
       ! Get the Pressure
       !':PRMSL:mean sea level:'
       call READNWS14(Pfile,Pmsl,Pinv,Pvar,PfileNCID)
@@ -9234,22 +9245,6 @@ C----------------------------------------------------------------------
          NT = NTkeep
       endif
 
-!      ! Get the Pressure
-!      !':PRMSL:mean sea level:'
-!      call READNWS14(Pfile,Pinv,Pvar,Pmsl)
-!
-!      ! Get the U-winds
-!      call READNWS14(Wfile,Winv,Uvar,U10)
-!
-!      ! Get the V-winds
-!      call READNWS14(Wfile1,Winv,Vvar,V10)
-!
-!      ! Get the ice concentration if required
-!      if (present(CICE2)) then
-!         NTkeep = NT; NT = NTC
-!         call READNWS14(Cfile,Cinv,Cvar,Cice)
-!         NT = NTkeep
-!      endif      
 
       ! Doing the interpolation from their grid to ours
       do i = 1,np
@@ -9770,7 +9765,7 @@ C---------------------------------------------------------------------
       END SUBROUTINE CLOSE_MET_FILES        
 C---------------------------------------------------------------------
 
-
+ 
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   W I N D L I M I T E R 

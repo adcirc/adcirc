@@ -172,6 +172,7 @@ Casey 180318: Added NWS=13
 #endif
 !JLW: add subgrid 
       USE subgrid, only: subgridFilename, level0, level1
+      use mod_tidepotential, only: tidePotential, t_tidePotential
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -188,6 +189,17 @@ C
       character(len=100) :: densityRunType ! diagnostic or prognostic
       character(len=100) :: densityDimensions ! 2DDI or 3D
       character(len=100) :: densityForcingType ! sigmaT, salinity, etc
+
+      ! I/O variables for tide potential namelist
+      logical :: UseFullTIPFormula = .false.
+      integer :: TIPOrder = -1
+      character(len=24) :: TIPStartDate = ""
+      character(len=24) :: MoonSunPositionComputeMethod = "JM"
+      character(len=80) :: MoonSunCoordFile = "none"
+      logical :: IncludeNutation = .false.
+      real(8) :: k2Value = 0.302D0
+      real(8) :: h2Value = 0.609D0
+      logical :: UniformResMoonSunTimeData = .false.
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
 #if defined CSWAN || defined ADCSWAN
@@ -233,9 +245,28 @@ C.... DMW
 
       NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
 
+C---- DW/AC, for full tidal pontential formula
+C     UseFullTIPFormula = T/F (default F)
+C     TIPOrder = 2 (P2), 3(p3), >= 4(exact)  (default 2)
+C     TIPStartDate = 'BaseDate'/'YYYY-MM-DD HH:SS'
+C     MoonSunPostionMethod = 'JM'/'External' (defaul 'JM') 
+C           'JM' = Jean Meeus's approach 
+C           'External' = User supplied Moon's, Sun's RA, DEC and
+C                        distances 
+C     MoonSunCoordFile = filename of an external file storting the
+C                        coordinates of the Moon and the Sun         
+C     IncludeNutation = T/F , Include/exclude the nutation in JM formula
+C     k2value = Love number
+C     h2value = Love number     
+C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data 
+      NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
+     &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
+     &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData
+         
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       CHARACTER(len=2000) :: origLineTVW
+      CHARACTER(len=256) :: ios_nml_error_msg
       INTEGER :: commentStart            ! location of fort.15 comment start
       INTEGER :: ios = 0                 ! i/o status of read operation
 
@@ -368,8 +399,8 @@ C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
       namelistSpecifier = 'TimeBathyControl'
-      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
-      call logNamelistReadStatus(namelistSpecifier, ios_nddt)     
+      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT, IOMSG=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios_nddt, ios_nml_error_msg)     
 c     it is possible for the namelist to be present in the file and 
 C     occuring at the end of the file with no line breaks after the 
 C     ending "\" which causes the iostat to return a negative value.
@@ -402,13 +433,13 @@ c     a non-default value we can determine this was the case.
       ! jgf50.60.08: Add a namelist for the user to turn SWAN output
       ! on and off. Similar to tcm's timevaryingbathy namelist.
       namelistSpecifier = 'SWANOutputControl'
-      read(unit=15,nml=SWANOutputControl,iostat=ios)
+      read(unit=15,nml=SWANOutputControl,iostat=ios,iomsg=ios_nml_error_msg)
       IF(IOS.GT.0)THEN
         SWAN_OutputHS=.TRUE.
         SWAN_OutputTPS=.TRUE.
         SWAN_OutputDIR=.TRUE.
       ENDIF
-      call logNamelistReadStatus(namelistSpecifier, ios)     
+      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
       call logMessage(ECHO,
      &    "The values of SWANOutputControl are as follows:")
       write(scratchMessage,*) "SWAN_OutputHS=",SWAN_OutputHS,
@@ -425,8 +456,8 @@ c     a non-default value we can determine this was the case.
       ! jgf51.42: Add a namelist for the user to control subdomain
       ! modeling.
       namelistSpecifier = 'subdomainModeling'
-      read(unit=15,nml=subdomainModeling,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier, ios)
+      read(unit=15,nml=subdomainModeling,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
       write(scratchMessage,*) "subdomainOn=",subdomainOn
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
@@ -434,8 +465,8 @@ c     a non-default value we can determine this was the case.
       ! jgf50.60.13: Add a namelist for the user to control met forcing.
       ! Similar to tcm's timevaryingbathy namelist.
       namelistSpecifier = 'metControl'
-      read(unit=15,nml=metControl,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier, ios)
+      read(unit=15,nml=metControl,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
       write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
      & " DragLawString=",DragLawString, " rhoAir=",rhoAir,
      & ' invertedBarometerOnElevationBoundary=',
@@ -448,8 +479,8 @@ c     a non-default value we can determine this was the case.
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       namelistSpecifier = 'owiWindNetcdf'
-      read(unit=15,nml=owiWindNetcdf,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier, ios)
+      read(unit=15,nml=owiWindNetcdf,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
       write(scratchMessage,*) "NWS13File=",trim(adjustl(NWS13File)),
      & " NWS13ColdStartString=",trim(adjustl(NWS13ColdStartString)),
      & " NWS13WindMultiplier=",trim(adjustl(NWS13WindMultiplier)),
@@ -461,8 +492,8 @@ Casey 180318: Added NWS=13
 
 #ifdef DATETIME
       namelistSpecifier = 'WindGrib2NetCdf' 
-      read( unit = 15, nml=WindGrib2NetCdf,iostat=ios ) ;
-      call logNamelistReadStatus(namelistSpecifier, ios)
+      read( unit = 15, nml=WindGrib2NetCdf,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios,ios_nml_error_msg)
       write(scratchMessage,*) "NWS 14: use core 0"//
      &   "to read grib2/netcdf data = ",
      &   read_NWS14_NetCdf_using_core_0 
@@ -501,8 +532,8 @@ Casey 180318: Added NWS=13
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       namelistSpecifier = 'waveCoupling'
-      read(unit=15,nml=waveCoupling,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=waveCoupling,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
       call logMessage(ECHO,trim(scratchMessage))
 !TCM 2024 -- added wave stress gradient limiter      
@@ -520,8 +551,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ! tcm v52. added StatPartWetFix and How2FixStatPartWet for handling
       !  station output in partially wet/dry elements for elevation stations
       namelistSpecifier = 'wetDryControl'
-      read(unit=15,nml=wetDryControl,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=wetDryControl,iostat=IOS,iomsg=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,'(a,l)') "outputNodeCode=",outputNodeCode
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,l)') "outputNOFF=",outputNOFF
@@ -549,8 +580,8 @@ C.... DMW
       ! jgf52.08.01: Add a namelist for the user to control
       ! output of detailed inundation data.
       namelistSpecifier = 'inundationOutputControl'
-      READ(UNIT=15,NML=inundationOutputControl,IOSTAT=IOS)
-      call logNamelistReadStatus(namelistSpecifier,ios)
+      READ(UNIT=15,NML=inundationOutputControl,IOSTAT=IOS,IOMSG=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,'(a,l)') "inundationOutput=",inundationOutput
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,e15.8)') "inunThresh=",inunThresh
@@ -560,8 +591,8 @@ C.... DMW
 !JLW: adding subgrid namelist variable
       !JLW: adding subgrid name list variable
       namelistSpecifier = 'subgridControl'
-      read(unit=15,nml=subgridControl,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=subgridControl,iostat=IOS,iomsg=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,*)
      &   "subgridFilename=",TRIM(ADJUSTL(subgridFilename))
       call logMessage(ECHO,trim(scratchMessage))
@@ -583,8 +614,8 @@ c...  for further processing the traditional non-namelist components.
 C...
       namelistSpecifier = 'Smag_Control'
       IOS_Smag = 0
-      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_Smag)
-      call logNamelistReadStatus(namelistSpecifier, ios_Smag)
+      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_Smag,IOMSG=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios_Smag,ios_nml_error_msg)
 c
 c     it is possible for the namelist to be present in the file and
 C     occuring at the end of the file with no line breaks after the
@@ -622,8 +653,8 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       ! jgf: for water level offset
 
       namelistSpecifier = 'dynamicWaterLevelCorrectionControl'
-      read(unit=15,nml=dynamicWaterLevelCorrectionControl,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=dynamicWaterLevelCorrectionControl,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,'(a,a)') "dynamicWaterLevelCorrectionFileName=",
      &  trim(dynamicWaterLevelCorrectionFileName)
       write(scratchMessage,'(a,a)') "dynamicWaterLevelCorrectionMethod=",
@@ -666,8 +697,8 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C     Channel wet perimeter for bottom friction 11/06/2023 sb
       namelistSpecifier = 'VEW1DChannelControl'
       activateVEW1DChannelWetPerimeter = .false.
-      READ(UNIT=15,NML=VEW1DChannelControl,IOSTAT=ios)
-      call logNamelistReadStatus(namelistSpecifier, ios)
+      READ(UNIT=15,NML=VEW1DChannelControl,IOSTAT=ios,IOMSG=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios,ios_nml_error_msg)
       write(scratchMessage,'(a,l1)') "activateVEW1DChannelWetPerimeter=",
      &   activateVEW1DChannelWetPerimeter
       call logMessage(ECHO,trim(scratchMessage))
@@ -685,8 +716,8 @@ C     DMW 202401 Add check for velocity warning level
       WarnVel = 100.d0
 C     WJP add namelist
       namelistSpecifier = 'WarnElevControl'
-      read(unit=15,nml=WarnElevControl,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=WarnElevControl,iostat=IOS,IOMSG=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,'(a,f15.7)') "WarnElev=",WarnElev
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,l)') "WarnElevDump=",WarnElevDump
@@ -700,8 +731,8 @@ C     WJP add namelist
 !     WJP add namelist for Ali's dispersion
 !     Defaults are already in global 
       namelistSpecifier = 'AliDispersionControl'
-      read(unit=15,nml=AliDispersionControl,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=AliDispersionControl,iostat=IOS,iomsg=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
 !     Process the speed of sound squared
       if (Cs.le.0.0D0) then
          Cs2 = huge(0.0D0)
@@ -728,8 +759,8 @@ C     WJP add namelist
       densityTimeIterator = 1;
 !     read the namelist
       namelistSpecifier = 'densityControl'
-      read(unit=15,nml=densityControl,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=densityControl,iostat=IOS,iomsg=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,'(a,a)') "densityRunType=",
      &      trim(densityRunType)
       call logMessage(ECHO,trim(scratchMessage))
@@ -774,8 +805,32 @@ C     WJP add namelist
 !     Make sure to include the sign
       IDEN = IDEN*IDENsign
       if (IDEN.ne.0) CBaroclinic = .true.
+
 C...
 
+      namelistSpecifier = 'TidalPotentialControl'
+      read(unit=15,nml=TidalPotentialControl,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
+      write(scratchMessage,*) "USeFullTIPFormula=", UseFullTIPFormula
+      call logMessage(ECHO,trim(scratchMessage)) 
+      write(scratchMessage,*)"TIPOrder=", TIPOrder 
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "TIPStartDate=", trim(TIPStartDate)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*)"MoonSunPositionComputeMethod=",
+     &                        trim(MoonSunPositionComputeMethod)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "MoonSunCoordFile=", trim(MoonSunCoordFile)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "IncludeNutation=", IncludeNutation
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "k2Value=", k2Value
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "h2Value=", h2Value
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "UniformResMoonSunTimeData=",UniformResMoonSunTimeData
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
 
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
@@ -5026,6 +5081,27 @@ C
 #endif
       ENDIF
 
+      ! Check if we have been provided a base date for the tide potential calculations
+      if(UseFullTIPFormula.and.trim(TipStartDate)=="none")then
+         if(useNetCDF)then
+            TipStartDate = trim(base_date)
+            WRITE(scratchMessage,'(2A)') "The TipStartDate parameter was not set in the TidalPotentialControl namelist."//
+     &                                   " Using the base_date netCDF metadata value instead: ", TipStartDate
+            call allMessage(WARNING,scratchMessage)
+         else
+            scratchMessage = "The TipStartDate parameter must be set either in the netCDF metadata "//
+     &                       "or the tide potential namelist."
+            call allMessage(ERROR,scratchMessage)
+            call adcirc_terminate()
+         endif
+      endif
+
+      ! Initialize the tidal potential calculation
+      tidePotential = t_tidePotential(np, rnday, UseFullTIPFormula,
+     &                                TIPOrder, TIPStartDate,  
+     &                                MoonSunPositionComputeMethod, 
+     &                                MoonSunCoordFile, IncludeNutation, 
+     &                                k2Value, h2Value)
 C...
 C...  CLOSE FORT.15
 C...
@@ -6520,12 +6596,13 @@ C-----------------------------------------------------------------------
 C     jgf52.08.02: Record the i/o status associated with reading the
 C     namelist using the negative, zero, or positive value of ios.
 C-----------------------------------------------------------------------
-      subroutine logNamelistReadStatus(nmlname, ios)
+      subroutine logNamelistReadStatus(nmlname, ios, msg)
       use global, only : logMessage, scratchMessage, DEBUG, ECHO, INFO,
      &   WARNING, ERROR, setMessageSource, unsetMessageSource,
      &   allMessage
       implicit none
-      character(len=1000), intent(in) :: nmlname
+      character(len=*), intent(in) :: nmlname
+      character(len=*), intent(in) :: msg
       integer, intent(in) :: ios
 
       call setMessageSource("logNameListReadStatus")
@@ -6545,11 +6622,13 @@ C-----------------------------------------------------------------------
          call logMessage(INFO,
      &      'The '//trim(nmlName)//' namelist was found.')
       ! positive values indicate some sort of i/o error, other than
-      ! reaching the end-file before finding the namelist
+      ! reaching the end-file before finding the namselist
       case(1:)
          write(scratchMessage,'(a,i0,a)')
      &      'Could not read '//trim(nmlName)//
      &     ' namelist. The Fortran i/o error code was ',ios,'.'
+         call allMessage(ERROR,scratchMessage)
+         write(scratchMessage, '(a,a)') "Error Message: ", trim(msg)
          call allMessage(ERROR,scratchMessage)
       end select
 
