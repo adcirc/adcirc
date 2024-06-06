@@ -230,6 +230,23 @@ C.... DMW
 
       NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
 
+C---- DW, for full tidal pontential formula
+C     UseFullTIPFormula = T/F (default F)
+C     TIPOrder = 2 (P2), 3(p3), >= 4(exact)  (default 2)
+C     TIPStartDate = 'BaseDate'/'YYYY-MM-DD HH:SS'
+C     MoonSunPostionMethod = 'JM'/'External' (defaul 'JM') 
+C           'JM' = Jean Meeus's approach 
+C           'External' = User supplied Moon's, Sun's RA, DEC and
+C                        distances 
+C     MoonSunCoordFile = filename of an external file storting the
+C                        coordinates of the Moon and the Sun         
+C     IncludeNutation = T/F , Include/exclude the nutation in JM formula
+C     k2value = Love number
+C     h2value = Love number      
+      NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
+     &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
+     &    IncludeNutation, k2Value, h2Value
+         
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       CHARACTER(len=2000) :: origLineTVW
