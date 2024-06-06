@@ -2317,7 +2317,7 @@ Casey 180318: Added NWS=13
 
 #ifdef DATETIME
          IF ( found_NWS14Grib2NetCdf_namelist ) THEN
-             write(15,'(a,L3,a)') "&WindGrib2NetCdf"/
+             write(15,'(a,L3,a)') "&WindGrib2NetCdf"//
      &          " read_NWS14_NetCdf_using_core_0 = ", read_NWS14_NetCdf_using_core_0, "/"
          END IF
 #endif 
