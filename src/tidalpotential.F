@@ -1,12 +1,20 @@
-      MODULE TIPMOD
-         USE MESH, ONLY : NE, SLAM0, SFEA0, 
-     &      NP, SLAM, SFEA
+      MODULE TIPFUNCMOD
 
-        REAL (8), ALLOCATABLE, DIMENSION(:,:):: L_N
+#ifndef TIPSTANDALONE          
+        USE ADC_CONSTANTS, only: hour2day, min2day, sec2day, 
+     &       DEG2RAD, RAD2DEG 
+#endif
 
+#ifdef DATETIME
+        use datetime_module, only: strptime
+#endif
+
+        USE MOON_SUN_COORS
+
+        !
         !  UseFullTIPFormula = T/F (default F)
         !  TIPOrder = 2 (P2), 3(p3), >= 4(exact)  (default 2)
-        !  TIPStartDate = 'BaseDate'/'YYYY-MM-DD HH:SS'
+        !  TIPStartDate = 'BaseDate'/'YYYY-MM-DD HH:mm:SS'
         !  MoonSunPostionMethod = 'JM'/'External' (defaul 'JM') 
         !           'JM' = Jean Meeus's approach 
         !           'External' = User supplied Moon's, Sun's RA, DEC and
@@ -14,37 +22,310 @@
         !  MoonSunCoordFile = filename of an external file storting the
         !                        coordinates of the Moon and the Sun         
         !  IncludeNutation = T/F, Include/exclude the nutation in JM formula
+        !  MSWTINC = interpolatio 403353.33814948n interval (in seconds)  
         !  k2value = Love number
         !  h2value = Love number
+        !
         LOGICAL:: UseFullTIPFormula = .FALSE. 
-        INTEGER:: TIPOrder = 2 
+        INTEGER:: TIPOrder = 2
         CHARACTER (LEN=24):: TIPStartDate = 'Basedate' 
         CHARACTER (LEN=24):: MoonSunPositionComputeMethod = 'JM' 
         CHARACTER (LEN=80):: MoonSunCoordFile = 'none' 
         LOGICAL:: IncludeNutation = .TRUE. 
-        REAL (8):: MSWTINC = 3
+        REAL (8):: MSWTINC = 3600.D0 
         REAL (8):: k2value = 0.302D0 
         REAL (8):: h2value = 0.609D0    
-  
-      CONTAINS
+ 
+        REAL (8), private:: JDE_BEG,  JDE_CURRENT 
+        REAL (8), private, dimension(:), allocatable:: AH, cosZA, workarr, workarr1
+
+        REAL (8), private, parameter:: massratio(2) = (/
+     &                       MassRatioMoonEarth, MassRatioSunEarth  /) ; 
+
+        REAL (8), private, parameter:: significant_radiusearth(2) = (/
+     &                       EarthRadiuskm(1), EarthRadiusAu(1) /) ;
+        REAL (8), private, parameter:: exponent_radiusearth(2) = (/
+     &                       EarthRadiuskm(2), EarthRadiusAu(2) /) ; 
+
+#ifdef TIPSTANDALONE
+        REAL(8), PARAMETER :: hour2sec = 3600.0D0
+        REAL(8), PARAMETER :: sec2hour = 1.0D0 / hour2sec
+        REAL(8), PARAMETER :: day2hour = 24.0D0
+        REAL(8), PARAMETER :: hour2day = 1.0D0 / day2hour
+        REAL(8), PARAMETER :: day2sec = day2hour * hour2sec
+        REAL(8), PARAMETER :: sec2day = 1.0D0/day2sec
+
+        REAL (8), parameter:: hour2min = 60.D0 
+        REAL (8), parameter:: min2hour = 1.D0/hour2min
+        REAL (8), parameter:: min2day = 1.D0*min2hour*hour2day ;
+#endif        
+
+       CONTAINS
          
-        SUBROUTINE INIT_TIP_FTCE( ) 
+        !
+        ! 
+        SUBROUTINE COMP_FULL_TIP( TIPVAL, TimeLoc, SLAM, SFEA )  
+           IMPLICIT NONE
+
+           REAL (8), INTENT(INOUT):: TIPVAL(:) 
+           REAL (8), INTENT(IN):: TimeLoc      ! Time in seconds since TIPStartDate !
+           REAL (8), INTENT(IN), DIMENSION(:):: SLAM, SFEA ! lon-lat in radian
+
+           ! local ! 
+           INTEGER:: I, IOBJ, iexp, NPP
+
+           REAL (8):: JDELoc, tocgmst
+           REAL (8):: MoonSunCoor(3,2), RA, DEC, DELTA
+           REAL (8):: radius_div_Delta, KP
+
+           LOGICAL, SAVE:: first = .true.
+
+           NPP = SIZE( TIPVAL ) ; 
+           IF ( first ) THEN   
+                CALL INIT_TIP( NPP ) ;
+           END IF     
+
+           ! Julian day
+           JDELoc = JDE_BEG + TimeLoc*sec2day ;            
+
+!           PRINT*, "JDE = ", JDELoc ; 
+           ! Compute the postions of the Moon and Sun !
+           CALL HEAVENLY_OBJS_COORDS( 
+     &         MoonSunCoor(:,1), MoonSunCoor(:,2), JDELoc ) ; !
+           
+
+!           PRINT*, "Moon: " ;
+!           PRINT*, " RA  = ", MoonSunCoor(1,1)
+!           PRINT*, " DEC = ", MoonSunCoor(2,1) 
+!           PRINT*, " Delta = ", MoonSunCoor(3,1)  
+!
+!           PRINT*, "Sun: " ;
+!           PRINT*, " RA  = ", MoonSunCoor(1,2)
+!           PRINT*, " DEC = ", MoonSunCoor(2,2) 
+!           PRINT*, " Delta = ", MoonSunCoor(3,2)  
+
+           ! Convert RA, DEC from deg --> rad
+           MoonSunCoor(1:2,:) = MoonSunCoor(1:2,:)*DEG2RAD ;
+
+           ! Sidereal time at Greenwich ! 
+           tocgmst = GMST_DEG_FN( JDELoc )  ;
+          
+
+           TIPVAL = 0.D0 ;
+           DO IOBJ = 1, 1 
+              ! Hour angle !
+              AH = DEG2RAD*tocgmst + SLAM - MoonSunCoor(1,IOBJ) ;
+
+              RA = MoonSunCoor(1,IOBJ) ; ! right ascendsion
+              DEC = MoonSunCoor(2,IOBJ) ; ! declination
+              DELTA = MoonSunCoor(3,IOBJ) ; ! distance (km for the Moon,
+                                            ! AU for the sun
+              radius_div_delta = significant_radiusearth(IOBJ)/DELTA
+              radius_div_delta = radius_div_delta*exponent_radiusearth(IOBJ) 
+
+!              PRINT*," ratio = ", radius_div_delta ; 
+
+              !c ZAngle = cos( Z )            
+              cosZA = sin(SFEA)*sin(DEC) ;
+              cosZA = cosZA + cos(SFEA)*cos(DEC)*cos(AH) ;   
+              
+              SELECT CASE( TipOrder )
+              CASE (2,3)
+                ! P2  
+                workarr = 3.D0*cosZA*cosZA ; 
+                workarr = workarr - 1.D0   ;
+                workarr = 0.5D0*workarr ;
+ 
+                KP = AINTPOWER( radius_div_delta, 3 ) ;
+                KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ; 
+                KP = KP*massratio(IOBJ) ;
+
+                TIPVAL = TIPVAL + KP*workarr ; 
+
+                ! if include P3 
+                IF ( TipOrder == 3 ) THEN
+                   workarr = 5.D0*cosZA*cosZA*cosZA ;
+                   workarr = workarr - 3.D0*cosZA ; 
+                   workarr = 0.5D0*workarr ;
+
+                   KP = AINTPOWER( radius_div_delta, 4 ) ; 
+                   KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ;
+                   KP = KP*massratio(IOBJ) ; 
+
+                   TIPVAL = TIPVAL + KP*workarr ; 
+                END IF   
+              CASE (22)
+                ! P2 - Only dirunal + semi-dirunal
+                workarr = (3.D0/4.D0)*sin(2.D0*SFEA)*cos(2.D0*DEC)*cos(AH) ;
+
+                workarr1 = cos( SFEA ) ; 
+                workarr = workarr + 
+     &                workarr1*workarr1*cos(DEC)*cos(DEC)*cos(2.D0*AH) ;
+
+                KP = AINTPOWER( radius_div_delta, 3 ) ;
+                KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ; 
+                KP = KP*massratio(IOBJ) ; 
+
+                TIPVAL = TIPVAL + KP*workarr ; 
+              CASE DEFAULT
+                ! Exact
+              END SELECT 
+           END DO
+
+           TIPVAL = (1.D0 + k2value - h2value)*TIPVAL ; 
+
+!           open( unit = 10, file = 'tip.dat', action = 'write' ) ;  
+!           DO I = 1, NPP
+!              WRITE(10,'(3F17.7)') SLAM(I), SFEA(I), TIPVAL(I) ; 
+!           END DO
+!           close( unit = 10 ) ; 
+
+           RETURN ;
+        END SUBROUTINE COMP_FULL_TIP 
+        !        
+
+        ! A^{N}
+        FUNCTION AINTPOWER( A, N ) RESULT ( AP )
+           IMPLICIT NONE 
+
+           REAL (8):: AP
+           REAL (8), INTENT(IN):: A
+           INTEGER, INTENT(IN):: N 
+
+           INTEGER:: I
+
+           AP = 1.D0 ; 
+           DO I = 1, N
+            AP = AP*A ; 
+           END DO
+
+        END FUNCTION AINTPOWER
+
+        !
+        SUBROUTINE INIT_TIP( NP ) 
           IMPLICIT NONE
 
-          IF ( ALLOCATED(L_N) ) DEALLOCATE(L_N) ;
-          ALLOCATE( L_N(0:2,NP) ) ; L_N = 0.D0 ;
+          INTEGER, INTENT(IN):: NP
 
-          DO I = 1,NP
-C           LONG-TERM SPECIES
-            L_N(0,I) = 1.5d0*COS(SFEA(I))*COS(SFEA(I)) - 1d0
-C           DIURNAL SPECIES
-            L_N(1,I) = SIN(2d0*SFEA(I))
-C           SEMIDIURNAL SPECIES
-            L_N(2,I) = COS(SFEA(I))*COS(SFEA(I))
-          END DO
+          REAL (8):: DDD
+          INTEGER:: YYYY, MM, DD, HH, MMM, SS
 
-          RETURN      
-        END SUBROUTINE INIT_TIP_FTCE
+          INTEGER:: ii, cpos(2), ivec(3)
+          CHARACTER (LEN=80)::  tmparr
+          CHARACTER:: delimter(2) = (/ '-', ':' /) ; 
 
-      END MODULE TIPMOD        
+          ! Extract date from base_date
+          tmparr = adjustl(TIPStartDate) ;
+ 
+          CALL extractvalues( YYYY, MM, DD, delimter(1) ) ;  
+          CALL extractvalues(  HH, MMM, SS, delimter(2) ) ; 
+
+          DDD = DBLE(DD) + DBLE(HH)*hour2day + 
+     &       DBLE(MMM)*min2day + DBLE(SS)*sec2day ;
+           
+          ! Get  correspond Julian days !
+          JDE_BEG = JULIANDAY( DDD, MM, YYYY )  ;
+          JDE_CURRENT = JDE_BEG ; 
+
+          CALL StringUpper( MoonSunPositionComputeMethod ) ; 
+          IF ( TRIM(ADJUSTL(MoonSunPositionComputeMethod)) == 'JM' ) THEN 
+            CALL SET_NUTATION(  IncludeNutation  ) ;
+          END IF
+
+          CALL ALLOCATEWORKARR( AH, NP ) ; 
+          CALL ALLOCATEWORKARR( cosZA, NP )
+          CALL ALLOCATEWORKARR( workarr, NP ) ; 
+
+          IF ( TIPOrder == 22 ) THEN
+            CALL ALLOCATEWORKARR( workarr1, NP ) ; 
+          END IF
+
+          RETURN 
+        CONTAINS
+
+           SUBROUTINE ALLOCATEWORKARR( arr, N ) 
+              IMPLICIT NONE
+
+              INTEGER:: N
+              REAL (8), ALLOCATABLE:: arr(:)
+
+              IF ( ALLOCATED(arr) ) THEN
+                DEALLOCATE(arr) ;
+              END IF
+              ALLOCATE( arr(1:N) ) ; 
+              arr = 0.D0 ; 
+
+              RETURN ;
+           END SUBROUTINE ALLOCATEWORKARR  
+
+           SUBROUTINE extractvalues( arg1, arg2, arg3, delimc )
+             IMPLICIT NONE
+
+             CHARACTER:: delimc
+             INTEGER:: arg1, arg2, arg3 
+
+             INTEGER:: ii,  cpos(3), ivec(3) 
+
+             cpos(1) = 1 ;
+   
+             DO ii = 1, 3
+               cpos(2) = index( tmparr, delimc ) ;
+             
+               if ( cpos(2) == 0 )  cpos(2) = index( tmparr, ' ' ) ; 
+  
+               if ( cpos(2) > 0  ) then
+                  read( tmparr(cpos(1):cpos(2)-1), * ) ivec(ii)  ;
+                  
+                  tmparr = adjustl(tmparr(cpos(2)+1:) ) ;
+               else
+                  read( tmparr(cpos(1):), * ) ivec(ii)  ;
+               end if
+             END DO    
+             
+             arg1 = ivec(1) ;
+             arg2 = ivec(2) ;
+             arg3 = ivec(3) ;
+
+             RETURN 
+           END SUBROUTINE extractvalues        
+            
+           SUBROUTINE StringUpper( string ) 
+              IMPLICIT NONE     
+
+              CHARACTER (LEN=*):: string
+
+              INTEGER:: I, asciinum
+
+              DO I = 1, len(string)
+                 asciinum = iachar(string(I:I)) ; 
+
+                 SELECT case(asciinum)
+                 CASE (97:122)
+                   string(I:I) = char( asciinum - 32 ) ; 
+                 END SELECT       
+              END DO
+
+           END SUBROUTINE StringUpper
+
+        END SUBROUTINE INIT_TIP 
+        !
+
+!        SUBROUTINE INIT_TIP_FTCE( ) 
+!          IMPLICIT NONE
+!
+!          IF ( ALLOCATED(L_N) ) DEALLOCATE(L_N) ;
+!          ALLOCATE( L_N(0:2,NP) ) ; L_N = 0.D0 ;
+!
+!          DO I = 1,NP
+!C           LONG-TERM SPECIES
+!            L_N(0,I) = 1.5d0*COS(SFEA(I))*COS(SFEA(I)) - 1d0
+!C           DIURNAL SPECIES
+!            L_N(1,I) = SIN(2d0*SFEA(I))
+!C           SEMIDIURNAL SPECIES
+!            L_N(2,I) = COS(SFEA(I))*COS(SFEA(I))
+!          END DO
+!          RETURN      
+!        END SUBROUTINE INIT_TIP_FTCE
+
+      END MODULE TIPFUNCMOD        
 
