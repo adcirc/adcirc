@@ -7,16 +7,31 @@
 !    T - JDE or JD centuries 
 !
       MODULE ASTROFORMOD
+#ifdef TIPSTANDALONE
+#else
+        USE ADC_CONSTANTS       
+#endif              
         IMPLICIT NONE
 
+#ifdef TIPSTANDALONE        
         REAL (8), parameter:: DEG2RAD = 0.017453292519943D0
         REAL (8), parameter:: RAD2DEG = 57.295779513082323D0
+#endif
 
         REAL (8), parameter:: SEC2DEG = 2.777777777777778D-4,
      &                        MIN2DEG = 0.01666666666666D0   
 
         ! Astronomical unit in km
-        REAL (8), parameter:: AUDIST = 1.495978707e+11
+        REAL (8), parameter:: AUDIST = 1.495978707e+8
+
+        ! Ratio of Sun/Moon mass to Earth mass: Wikipedia ! 
+        REAL (8), parameter:: MassRatioSunEarth = 332946.0487       
+        REAL (8), parameter:: MassRatioMoonEarth = 1.D0/81.3005678D0 
+
+        ! Keep the value in two saperate numbers: significant and exponent
+        REAL (8), parameter:: EarthRadiuskm(2) = (/ 6371.0088D0, 1.0D0  /) ;  ! km
+        REAL (8), parameter:: EarthRadiusm(2)  = (/ 6.3710088D0, 1.0D+6 /) ;  ! m
+        REAL (8), parameter:: EarthRadiusAU(2) = (/ 4.258756338033895D0, 1.0D-5 /) ; ! in AU   
 
         INTERFACE ECLIP2EQ
             MODULE PROCEDURE ECLIP2EQ_S, ECLIP2EQ_V    
@@ -1168,5 +1183,15 @@
 
            RETURN ;            
         END SUBROUTINE HEAVENLY_OBJS_COORDS  
+
+        FUNCTION GMST_DEG_FN( JDE ) RESULT( GMST )
+           IMPLICIT NONE 
+
+           REAL (8):: gmst
+           REAL (8), INTENT(IN):: JDE
+             
+           gmst = GMST_DEG( JDE, INCLUDE_NUTATION, ASTRO_VALUES ) ; 
+  
+        END FUNCTION GMST_DEG_FN        
 
       END MODULE MOON_SUN_COORS        
