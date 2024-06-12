@@ -60,6 +60,7 @@
         REAL (8), parameter:: min2day = 1.D0*min2hour*hour2day ;
 #endif        
 
+        PRIVATE::  AINTPOWER, INIT_TIP
        CONTAINS
          
         !
@@ -93,7 +94,6 @@
            CALL HEAVENLY_OBJS_COORDS( 
      &         MoonSunCoor(:,1), MoonSunCoor(:,2), JDELoc ) ; !
            
-
 !           PRINT*, "Moon: " ;
 !           PRINT*, " RA  = ", MoonSunCoor(1,1)
 !           PRINT*, " DEC = ", MoonSunCoor(2,1) 
@@ -112,7 +112,7 @@
           
 
            TIPVAL = 0.D0 ;
-           DO IOBJ = 1, 1 
+           DO IOBJ = 1, 2 
               ! Hour angle !
               AH = DEG2RAD*tocgmst + SLAM - MoonSunCoor(1,IOBJ) ;
 
@@ -310,22 +310,27 @@
         END SUBROUTINE INIT_TIP 
         !
 
-!        SUBROUTINE INIT_TIP_FTCE( ) 
-!          IMPLICIT NONE
-!
-!          IF ( ALLOCATED(L_N) ) DEALLOCATE(L_N) ;
-!          ALLOCATE( L_N(0:2,NP) ) ; L_N = 0.D0 ;
-!
-!          DO I = 1,NP
-!C           LONG-TERM SPECIES
-!            L_N(0,I) = 1.5d0*COS(SFEA(I))*COS(SFEA(I)) - 1d0
-!C           DIURNAL SPECIES
-!            L_N(1,I) = SIN(2d0*SFEA(I))
-!C           SEMIDIURNAL SPECIES
-!            L_N(2,I) = COS(SFEA(I))*COS(SFEA(I))
-!          END DO
-!          RETURN      
-!        END SUBROUTINE INIT_TIP_FTCE
+        !
+        SUBROUTINE INIT_TIP_FTCE( L_N, NP, SFEA ) 
+          IMPLICIT NONE
+
+          INTEGER:: NP
+          REAL (8):: L_N(:,:), SFEA(:)
+
+          INTEGER:: I 
+
+          L_N = 0.D0 ;
+
+          DO I = 1,NP
+C           LONG-TERM SPECIES
+            L_N(0,I) = 1.5d0*COS(SFEA(I))*COS(SFEA(I)) - 1d0
+C           DIURNAL SPECIES
+            L_N(1,I) = SIN(2d0*SFEA(I))
+C           SEMIDIURNAL SPECIES
+            L_N(2,I) = COS(SFEA(I))*COS(SFEA(I))
+          END DO
+          RETURN      
+        END SUBROUTINE INIT_TIP_FTCE
 
       END MODULE TIPFUNCMOD        
 
