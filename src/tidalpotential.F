@@ -22,7 +22,6 @@
         !  MoonSunCoordFile = filename of an external file storting the
         !                        coordinates of the Moon and the Sun         
         !  IncludeNutation = T/F, Include/exclude the nutation in JM formula
-        !  MSWTINC = interpolatio 403353.33814948n interval (in seconds)  
         !  k2value = Love number
         !  h2value = Love number
         !
@@ -31,8 +30,7 @@
         CHARACTER (LEN=24):: TIPStartDate = 'Basedate' 
         CHARACTER (LEN=24):: MoonSunPositionComputeMethod = 'JM' 
         CHARACTER (LEN=80):: MoonSunCoordFile = 'none' 
-        LOGICAL:: IncludeNutation = .TRUE. 
-        REAL (8):: MSWTINC = 3600.D0 
+        LOGICAL:: IncludeNutation = .TRUE.  
         REAL (8):: k2value = 0.302D0 
         REAL (8):: h2value = 0.609D0    
  
@@ -77,7 +75,7 @@
 
            REAL (8):: JDELoc, tocgmst
            REAL (8):: MoonSunCoor(3,2), RA, DEC, DELTA
-           REAL (8):: radius_div_Delta, KP
+           REAL (8):: radius_div_Delta, KP, C0
 
            LOGICAL, SAVE:: first = .true.
 
@@ -123,15 +121,13 @@
               radius_div_delta = significant_radiusearth(IOBJ)/DELTA
               radius_div_delta = radius_div_delta*exponent_radiusearth(IOBJ) 
 
-!              PRINT*," ratio = ", radius_div_delta ; 
-
-              !c ZAngle = cos( Z )            
+              !c cosZA = cos( Z )            
               cosZA = sin(SFEA)*sin(DEC) ;
               cosZA = cosZA + cos(SFEA)*cos(DEC)*cos(AH) ;   
               
               SELECT CASE( TipOrder )
               CASE (2,3)
-                ! P2  
+                ! P2  term
                 workarr = 3.D0*cosZA*cosZA ; 
                 workarr = workarr - 1.D0   ;
                 workarr = 0.5D0*workarr ;
@@ -142,7 +138,7 @@
 
                 TIPVAL = TIPVAL + KP*workarr ; 
 
-                ! if include P3 
+                ! if include P3 term 
                 IF ( TipOrder == 3 ) THEN
                    workarr = 5.D0*cosZA*cosZA*cosZA ;
                    workarr = workarr - 3.D0*cosZA ; 
@@ -151,6 +147,7 @@
                    KP = AINTPOWER( radius_div_delta, 4 ) ; 
                    KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ;
                    KP = KP*massratio(IOBJ) ; 
+                   ! Offset values is zero for this term c!
 
                    TIPVAL = TIPVAL + KP*workarr ; 
                 END IF   
@@ -169,23 +166,53 @@
                 TIPVAL = TIPVAL + KP*workarr ; 
               CASE DEFAULT
                 ! Exact
+                workarr = 1.D0 + AINTPOWER( radius_div_delta, 2) ;
+                workarr = workarr - 2.D0*radius_div_delta*cosZA  ;
+
+                workarr = sqrt( workarr ) ; 
+                workarr = 1.D0/workarr ; 
+
+                workarr = workarr - radius_div_delta*cosZA ; 
+
+                ! Offset value, use Proudman's approach, see Kowalik
+                C0 = 1.D0 + AINTPOWER(radius_div_delta, 2) ;
+                C0 =  SQRT(C0 + 2.D0*radius_div_delta) - 
+     &                SQRT(C0 - 2.D0*radius_div_delta)  ;
+                C0 = -0.5D0*C0/radius_div_delta ;          
+
+                ! NOTE: 
+                ! 
+                ! C0 = -1/2*(1/e)*(sqrt(1 + e**2  + 2*e) - sqrt(1 + e**2 - 2*e))
+                ! e =  a/r = radius_div_delta
+                !
+                ! For radius_div_delta (a/r) << 1, it can be shown
+                ! throug the use of the Taylor series that
+                !
+                !    sqrt(1 + (a/r)^2 + 2*(a/r)) \sim  1 + (a/r) + High order terms 
+                !    sqrt(1 + (a/r)^2 + 2*(a/r)) \sim  1 - (a/r) + High order terms
+                !
+                ! As a result, the value of the offset 
+                !    C0 \sim -1 
+                !             
+                workarr = workarr + C0  ;
+
+                KP = AINTPOWER( radius_div_delta, 1 ) ;
+                KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ;
+                KP = KP*massratio(IOBJ) ; 
+
+                TIPVAL = TIPVAL + KP*workarr ;  
               END SELECT 
            END DO
 
            TIPVAL = (1.D0 + k2value - h2value)*TIPVAL ; 
 
-!           open( unit = 10, file = 'tip.dat', action = 'write' ) ;  
-!           DO I = 1, NPP
-!              WRITE(10,'(3F17.7)') SLAM(I), SFEA(I), TIPVAL(I) ; 
-!           END DO
-!           close( unit = 10 ) ; 
 
            RETURN ;
         END SUBROUTINE COMP_FULL_TIP 
         !        
 
         ! A^{N}
-        FUNCTION AINTPOWER( A, N ) RESULT ( AP )
+        ELEMENTAL FUNCTION AINTPOWER( A, N ) RESULT ( AP )
            IMPLICIT NONE 
 
            REAL (8):: AP
@@ -236,7 +263,7 @@
           CALL ALLOCATEWORKARR( cosZA, NP )
           CALL ALLOCATEWORKARR( workarr, NP ) ; 
 
-          IF ( TIPOrder == 22 ) THEN
+          IF ( TIPOrder > 3 ) THEN
             CALL ALLOCATEWORKARR( workarr1, NP ) ; 
           END IF
 
