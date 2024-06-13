@@ -289,6 +289,7 @@ c.... !wjp added for warnElev namelist
       CHARACTER(LEN=100) :: BCalc = 'limited'
       LOGICAL :: thetaLatDep = .FALSE.
       LOGICAL :: useInflow = .FALSE.
+      INTEGER :: windspeed_averaging_minute = 1
       REAL(8) :: w_cool = 2d0 ! mm/s
       LOGICAL :: CkCd_calc = .FALSE.
       REAL(8) :: CkCd = 1d0
@@ -298,6 +299,7 @@ c.... !wjp added for warnElev namelist
      &   BCalc,                 ! exact or limited
      &   thetaLatDep,           ! true or false
      &   useInflow,             ! true or false
+     &   windspeed_averaging_minute, ! 1- or 10-min
      &   w_cool,                ! ~1-3 (mm/s)
      &   CkCd_calc,             ! true or false
      &   CkCd                   ! value used. if CdCd_calc = true,

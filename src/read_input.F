@@ -127,7 +127,7 @@ C-----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionRampReferenceTime,
      &   dynamicWaterLevelCorrectionMultiplier,
      &   vortexModel, backgroundWindModel, BCalc, thetaLatDep,
-     &   useInflow, w_cool, CkCd_calc, CkCd,
+     &   windspeed_averaging_minute, useInflow, w_cool, CkCd_calc, CkCd,
      &   read_NWS14_NetCdf_using_core_0
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
@@ -236,6 +236,7 @@ C.... DMW
      &   BCalc,                 ! exact or limited
      &   thetaLatDep,           ! true or false
      &   useInflow,             ! true or false
+     &   windspeed_averaging_minute, ! 1- or 10-min
      &   w_cool,                ! ~1-3 (mm/s)
      &   CkCd_calc,             ! true or false
      &   CkCd                   ! value used. if CdCd_calc = true,
@@ -781,6 +782,7 @@ C...
       BCalc = 'limited'
       thetaLatDep = .false.
       useInflow = .false.
+      windspeed_averaging_minute = 1
       w_cool = 2d0
       CkCd_calc = .false.
       CkCd = 1d0 
@@ -791,17 +793,20 @@ C...
       write(scratchMessage,'(a,a)') "vortexModel = ",
      &      trim(vortexModel)
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,a)') "backgroundWindModel =",
+      write(scratchMessage,'(a,a)') "backgroundWindModel = ",
      &      trim(backgroundWindModel)
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,a)') "BCalc =",      
+      write(scratchMessage,'(a,a)') "BCalc = ",      
      &      trim(BCalc)
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,l)') "thetaLatDep =",
+      write(scratchMessage,'(a,l)') "thetaLatDep = ",
      &      thetaLatDep
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,l)') "useInflow  =",
+      write(scratchMessage,'(a,l)') "useInflow = ",
      &      useInflow
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,i0)') "windspeed_averaging_minute = ",
+     &      windspeed_averaging_minute
       call logMessage(ECHO,trim(scratchMessage))
       ! only print these next lines if we are using the CLE15 vortex
       ! model since they are not used in regular Holland

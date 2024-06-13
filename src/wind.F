@@ -124,6 +124,9 @@ C     Holland-type wind models, i.e., vortex models that use track data
       LOGICAL :: useInflow              ! whether to use inflow angle in
                                         ! calcution of translation speed
                                         ! or just use inflowangle=0
+      INTEGER :: windspeed_averaging_minute  ! fort.22 contains X-minute 
+                                        ! sustained windspeeds, e.g., 
+                                        ! 1-min: NHC, or 10-min: STORM
 C.....These next parameters are used in either the CLE15 vortex model
 C     (Chavas et. al, 2015) or the LC12 background wind model (Lin and
 C     Chavas, 2012). See those publications for more information.
@@ -5310,8 +5313,10 @@ C     jgf46.31 Add the storm translation speed.
          WVNY(I)=WVNY(I)+TransSpdY
 C     jgf46.21 Also convert from 1 minute averaged winds to 10
 C     minute averaged winds (0.88 factor).
-         WVNX(I)=WVNX(I)*one2ten
-         WVNY(I)=WVNY(I)*one2ten
+         if (windspeed_averaging_minute.eq.1) then
+            WVNX(I)=WVNX(I)*one2ten
+            WVNY(I)=WVNY(I)*one2ten
+         endif
 C
 C
 !P.V 11/04/2022
@@ -5973,8 +5978,10 @@ C     jgf46.31 Add the storm translation speed.
          WVNY(I)=WVNY(I)+TransSpdY
 C     jgf46.21 Also convert from 1 minute averaged winds to 10
 C     minute averaged winds (0.88 factor).
-         WVNX(I)=WVNX(I)*one2ten
-         WVNY(I)=WVNY(I)*one2ten
+         if (windspeed_averaging_minute.eq.1) then
+            WVNX(I)=WVNX(I)*one2ten
+            WVNY(I)=WVNY(I)*one2ten
+         endif
 C
 C
 

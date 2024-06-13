@@ -2418,6 +2418,8 @@ c...     wjp additions for density Control Namelist
             write(15,'(3A)') 'BCalc = "',trim(BCalc),'",'
             write(15,'(A,L,A)') 'thetaLatDep = ',thetaLatDep,','
             write(15,'(A,L,A)') 'useInflow = ',useInflow,','
+            write(15,'(A,I0,A)') 'windspeed_averaging_minute = ',
+     &                           windspeed_averaging_minute,','
             write(15,'(A,F6.2,A)') 'w_cool = ',w_cool,','
             write(15,'(A,L,A)') 'CkCd_calc = ',CkCd_calc,','
             write(15,'(A,F6.2,A)') 'CkCd = ',CkCd,','
