@@ -335,6 +335,20 @@ Casey 180318: Added NWS=13
 C     VEW1D channel namelist 11/06/2023 sb
       logical :: foundVEW1DChannelControlNamelist = .false. 
       logical :: activateVEW1DChannelWetPerimeter
+
+C     Full luni-solar tidal potential namelist: 2024
+      logical:: foundTidalPotentialControlNamelist = .false. 
+      LOGICAL:: UseFullTIPFormula = .FALSE. 
+      INTEGER:: TIPOrder = 2
+      CHARACTER (LEN=24):: TIPStartDate = 'Basedate' 
+      CHARACTER (LEN=24):: MoonSunPositionComputeMethod = 'JM' 
+      CHARACTER (LEN=80):: MoonSunCoordFile = 'none' 
+      LOGICAL:: IncludeNutation = .TRUE.  
+      REAL (8):: k2value = 0.302D0 
+      REAL (8):: h2value = 0.609D0    
+      NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
+     &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
+     &    IncludeNutation, k2Value, h2Value
       
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX

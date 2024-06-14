@@ -151,6 +151,9 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
 
       USE subgrid, ONLY: level0, getVertLookup
 
+      ! full luni-solar tidal potential !
+      USE TIPFUNCMOD, ONLY: UseFullTIPFormula, COMP_FULL_TIP
+
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
 C
@@ -866,6 +869,17 @@ C...
 C...  WJP 02.21.2018 Rewriting for general formula for all species,
 C     cleaner code, and correct identification of 0,1,2 or higher species
       IF(CTIP) THEN
+
+         ! use the full formula 
+         IF ( useFullTIPFormula ) THEN
+            CALL COMP_FULL_TIP( TIP2, TimeLoc, SLAM, SFEA ) 
+
+            TIP2 = RampTip*TIP2 ; 
+         END IF  
+
+         ! The traditional approach: a sum of different constituents
+         ! TIP & SAL - for useFullTIPFormula = .TRUE.  
+         ! SAL       - for useFullTIPFormula = .FALSE. 
          TIPLOOP: DO J=1,NTIF
             IF (PERT(J).EQ.0.) THEN
                NCYC=0
@@ -889,12 +903,19 @@ C           or higher species (was opposite beforehand)
 #endif
 C           WJP: Rewritten so that we have a general formula for all
 C           species
-            DO I = 1,NP
+            IF ( .NOT. useFullTipFormula ) THEN
+              DO I = 1,NP
                 ARGTP   = ARGT + NA*SLAM(I)
                 ARGSALT = ARGT - SALTPHA(J,I)
                 TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
      &                  + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
-            ENDDO
+              ENDDO
+            ELSE
+              DO I = 1, NP
+                 TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+              END DO
+            END IF
+
          ENDDO TIPLOOP
       ENDIF
 

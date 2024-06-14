@@ -548,6 +548,8 @@ Casey 180318: Added NWS=13
       ! DW
       INTEGER :: IOS_NWS14Grib2NC
 
+      INTEGER :: IOS_TIPNL 
+
 C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
       INTEGER :: IOS_STATIONS
@@ -701,7 +703,6 @@ Casey 180318: Added NWS=13
      &         'The WindGrib2NetCdf namelist was not found.')
       ENDIF
       REWIND(15)
-
 #endif
 
       READ(UNIT = 15, NML = wetDryControl,IOSTAT = ios_wetDry)
@@ -841,7 +842,18 @@ c..
       endif
       rewind(15)  !Return to the top of the fort.15 file
 
-
+C  DW
+      read(unit=15,nml=TidalPotentialControl,iostat=IOS_TIPNL)
+      IF( IOS_TIPNL .ge. 0 )THEN
+         foundTidalPotentialControlNamelist = .true. 
+         call logMessage(INFO,
+     &         'The Tidalpotentialcontrol namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The Tidalpotentialcontrol namelist was not found.')
+      ENDIF
+      REWIND(15)
+     
       READ(15,80) RUNDES
 C
       READ(15,80) RUNID

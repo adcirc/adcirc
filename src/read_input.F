@@ -171,6 +171,11 @@ Casey 180318: Added NWS=13
 !JLW: add subgrid 
       USE subgrid, only: subgridFilename, level0, level1
 
+      USE TIPFUNCMOD, only: UseFullTIPFormula, TIPOrder, TIPStartDate, 
+     &    MoonSunPositionComputeMethod, MoonSunCoordFile, IncludeNutation,
+     &    k2value, h2value, SET_TIP_BASEDATE
+  
+
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
       INTEGER NTimeVaryingWeir
@@ -776,8 +781,31 @@ C     WJP add namelist
 !     Make sure to include the sign
       IDEN = IDEN*IDENsign
       if (IDEN.ne.0) CBaroclinic = .true.
+
 C...
 
+      namelistSpecifier = 'TidalPotentialControl' ; 
+      read(unit=15,nml=TidalPotentialControl,iostat=ios)
+      call logNamelistReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,*) "USeFullTIPFormula=", UseFullTIPFormula
+      call logMessage(ECHO,trim(scratchMessage))
+!TCM 2024 -- added wave stress gradient limiter      
+      write(scratchMessage,*)"TIPOrder=", TIPOrder 
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "TIPStartDate=", TIPStartDate
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*)"MoonSunPositionComputeMethod",
+     &                          MoonSunPositionComputeMethod 
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "MoonSunCoordFile=", MoonSunCoordFile
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "IncludeNutation", IncludeNutation
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "k2Value=", k2Value
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "h2Value=", h2Value
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
 
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
@@ -5028,6 +5056,9 @@ C
 #endif
       ENDIF
 
+      IF ( UseFullTIPFormula ) THEN
+         CALL SET_TIP_BASEDATE( base_date ) ;
+      END IF
 C...
 C...  CLOSE FORT.15
 C...
