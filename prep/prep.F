@@ -2322,6 +2322,19 @@ Casey 180318: Added NWS=13
          END IF
 #endif 
 
+         ! Namelist of input variable for the full luni-Solar tidal potential function 
+         IF ( foundTidalPotentialControlNamelist ) THEN
+             write(15,'(a,L3,a)') "&TidalPotentialControl"//
+     &          " UseFullTIPFormula = ", UseFullTIPFormula, ","
+             write(15,'(a,I5,a)') " TIPORder = ", TIPOrder, ","
+             write(15,'(a)') " TIPStartDate = '"//trim(TIPStartDate)//"',"
+             Write(15,'(a)') " MoonSunPostitionComputeMethod = "
+     &                       //trim(MoonSunPositionComputeMethod)//","
+             write(15,'(a,L3,a)') " IncludeNutation = ", IncludeNutation, ","
+             write(15,'(a,F15.9,a)') " k2Value = ", k2Value, ","
+             write(15,'(a,F15.9,a)') " h2Value = ", h2Value, " /"
+         END IF
+
          ! NCSU Subdomain Modeling
          if (FOUND_SM_NML) then
          WRITE(15,*) "&subdomainModeling subdomainOn=",subdomainOn," /"

@@ -1,8 +1,11 @@
+! Fortran module for computing the equ
+! 
       MODULE TIPFUNCMOD
 
 #ifndef TIPSTANDALONE          
         USE ADC_CONSTANTS, only: hour2day, min2day, sec2day, 
      &       DEG2RAD, RAD2DEG 
+        USE SIZES, only: MYPROC
 #endif
 
 #ifdef DATETIME
@@ -58,7 +61,7 @@
         REAL (8), parameter:: min2day = 1.D0*min2hour*hour2day ;
 #endif        
 
-        PRIVATE::  AINTPOWER, INIT_TIP
+        PRIVATE:: AINTPOWER, INIT_TIP
        CONTAINS
          
         !
@@ -81,43 +84,41 @@
 
            NPP = SIZE( TIPVAL ) ; 
            IF ( first ) THEN   
-                CALL INIT_TIP( NPP ) ;
+              CALL INIT_TIP( NPP ) ;
+              first = .false. ;
            END IF     
+
 
            ! Julian day
            JDELoc = JDE_BEG + TimeLoc*sec2day ;            
 
-!           PRINT*, "JDE = ", JDELoc ; 
            ! Compute the postions of the Moon and Sun !
            CALL HEAVENLY_OBJS_COORDS( 
      &         MoonSunCoor(:,1), MoonSunCoor(:,2), JDELoc ) ; !
-           
-!           PRINT*, "Moon: " ;
-!           PRINT*, " RA  = ", MoonSunCoor(1,1)
-!           PRINT*, " DEC = ", MoonSunCoor(2,1) 
-!           PRINT*, " Delta = ", MoonSunCoor(3,1)  
-!
-!           PRINT*, "Sun: " ;
-!           PRINT*, " RA  = ", MoonSunCoor(1,2)
-!           PRINT*, " DEC = ", MoonSunCoor(2,2) 
-!           PRINT*, " Delta = ", MoonSunCoor(3,2)  
-
+             
+           !IF ( MYPROC .EQ. 0 ) THEN
+           !   WRITE(*,'(5F18.9)'), JDELOc, MoonSunCoor(1:2,1), MoonSunCoor(1:2,2) ; 
+           !END IF            
            ! Convert RA, DEC from deg --> rad
            MoonSunCoor(1:2,:) = MoonSunCoor(1:2,:)*DEG2RAD ;
 
            ! Sidereal time at Greenwich ! 
            tocgmst = GMST_DEG_FN( JDELoc )  ;
           
-
+!           IF ( MYPROC .EQ. 0 ) THEN
+!              WRITE(*,'(6F18.9)'), JDELOc, MoonSunCoor(1:2,1), MoonSunCoor(1:2,2), tocgmst ; 
+!           END IF   
            TIPVAL = 0.D0 ;
            DO IOBJ = 1, 2 
               ! Hour angle !
-              AH = DEG2RAD*tocgmst + SLAM - MoonSunCoor(1,IOBJ) ;
-
+              ! AH = DEG2RAD*tocgmst + SLAM - MoonSunCoor(1,IOBJ) ;
+              AH = modulo( tocgmst + SLAM*RAD2DEG, 360.D0 )*DEG2RAD -  MoonSunCoor(1,IOBJ) ;
               RA = MoonSunCoor(1,IOBJ) ; ! right ascendsion
               DEC = MoonSunCoor(2,IOBJ) ; ! declination
               DELTA = MoonSunCoor(3,IOBJ) ; ! distance (km for the Moon,
                                             ! AU for the sun
+
+              ! Ratio of the radius of the earth and the Moon/Sun                              
               radius_div_delta = significant_radiusearth(IOBJ)/DELTA
               radius_div_delta = radius_div_delta*exponent_radiusearth(IOBJ) 
 
@@ -151,14 +152,22 @@
 
                    TIPVAL = TIPVAL + KP*workarr ; 
                 END IF   
-              CASE (22)
-                ! P2 - Only dirunal + semi-dirunal
-                workarr = (3.D0/4.D0)*sin(2.D0*SFEA)*cos(2.D0*DEC)*cos(AH) ;
+              CASE (22)    
+                ! P2 - Only dirunal + semi-dirunali
+                ! Long period
+                workarr = 1.D0 - 3.D0*sin(SFEA)*sin(SFEA) ; 
+                workarr = workarr*(1.D0 - 3.D0*sin(DEC)*sin(DEC))
+                workarr = (1.D0/4.D0)*workarr ; 
 
+                ! Dirunal
+                workarr = workarr + (3.D0/4.D0)*sin(2.D0*SFEA)*sin(2.D0*DEC)*cos(AH) ;
+
+                ! Semi-Diurnal
                 workarr1 = cos( SFEA ) ; 
                 workarr = workarr + 
-     &                workarr1*workarr1*cos(DEC)*cos(DEC)*cos(2.D0*AH) ;
+     &                  (3.D0/4.D0)*workarr1*workarr1*cos(DEC)*cos(DEC)*cos(2.D0*AH) ;
 
+ 
                 KP = AINTPOWER( radius_div_delta, 3 ) ;
                 KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ; 
                 KP = KP*massratio(IOBJ) ; 
@@ -174,24 +183,27 @@
 
                 workarr = workarr - radius_div_delta*cosZA ; 
 
-                ! Offset value, use Proudman's approach, see Kowalik
+                ! Offset value, use Proudman's approach, see Kowalik,
+                ! page 14
                 C0 = 1.D0 + AINTPOWER(radius_div_delta, 2) ;
                 C0 =  SQRT(C0 + 2.D0*radius_div_delta) - 
      &                SQRT(C0 - 2.D0*radius_div_delta)  ;
                 C0 = -0.5D0*C0/radius_div_delta ;          
 
                 ! NOTE: 
-                ! 
+                ! The constant of integration C0 equals to
+                !
                 ! C0 = -1/2*(1/e)*(sqrt(1 + e**2  + 2*e) - sqrt(1 + e**2 - 2*e))
                 ! e =  a/r = radius_div_delta
-                !
+                ! 
                 ! For radius_div_delta (a/r) << 1, it can be shown
-                ! throug the use of the Taylor series that
+                ! through the use of the Taylor series that
                 !
                 !    sqrt(1 + (a/r)^2 + 2*(a/r)) \sim  1 + (a/r) + High order terms 
                 !    sqrt(1 + (a/r)^2 + 2*(a/r)) \sim  1 - (a/r) + High order terms
                 !
-                ! As a result, the value of the offset 
+                ! As a result, a good approximate value of the offset is 
+                ! 
                 !    C0 \sim -1 
                 !             
                 workarr = workarr + C0  ;
@@ -210,6 +222,40 @@
            RETURN ;
         END SUBROUTINE COMP_FULL_TIP 
         !        
+
+        !
+        SUBROUTINE SET_TIP_BASEDATE( base_date )
+           IMPLICIT NONE
+
+           CHARACTER (LEN=*):: base_date
+ 
+           CALL StringUpper( TIPStartDate ) ; 
+
+           IF ( trim(TIPStartDate) == 'BASEDATE' ) THEN
+              TIPStartDate =trim( base_date)    
+           END IF
+
+           RETURN ;     
+        END SUBROUTINE SET_TIP_BASEDATE
+
+        !
+        SUBROUTINE StringUpper( string ) 
+           IMPLICIT NONE     
+ 
+           CHARACTER (LEN=*):: string
+ 
+           INTEGER:: I, asciinum
+ 
+           DO I = 1, len(string)
+              asciinum = iachar(string(I:I)) ; 
+ 
+              SELECT case(asciinum)
+              CASE (97:122)
+                string(I:I) = char( asciinum - 32 ) ; 
+              END SELECT       
+           END DO
+ 
+        END SUBROUTINE StringUpper
 
         ! A^{N}
         ELEMENTAL FUNCTION AINTPOWER( A, N ) RESULT ( AP )
@@ -254,6 +300,7 @@
           JDE_BEG = JULIANDAY( DDD, MM, YYYY )  ;
           JDE_CURRENT = JDE_BEG ; 
 
+          PRINT*, DDD, MM, YYYY
           CALL StringUpper( MoonSunPositionComputeMethod ) ; 
           IF ( TRIM(ADJUSTL(MoonSunPositionComputeMethod)) == 'JM' ) THEN 
             CALL SET_NUTATION(  IncludeNutation  ) ;
@@ -298,6 +345,7 @@
              DO ii = 1, 3
                cpos(2) = index( tmparr, delimc ) ;
              
+!               print*, tmparr ; 
                if ( cpos(2) == 0 )  cpos(2) = index( tmparr, ' ' ) ; 
   
                if ( cpos(2) > 0  ) then
@@ -315,25 +363,7 @@
 
              RETURN 
            END SUBROUTINE extractvalues        
-            
-           SUBROUTINE StringUpper( string ) 
-              IMPLICIT NONE     
-
-              CHARACTER (LEN=*):: string
-
-              INTEGER:: I, asciinum
-
-              DO I = 1, len(string)
-                 asciinum = iachar(string(I:I)) ; 
-
-                 SELECT case(asciinum)
-                 CASE (97:122)
-                   string(I:I) = char( asciinum - 32 ) ; 
-                 END SELECT       
-              END DO
-
-           END SUBROUTINE StringUpper
-
+           
         END SUBROUTINE INIT_TIP 
         !
 
