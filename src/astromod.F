@@ -23,6 +23,7 @@
 
         ! Astronomical unit in km
         REAL (8), parameter:: AUDIST = 1.495978707e+8
+        REAL (8), parameter:: km2AU = 1.D0/AUDIST ;
 
         ! Ratio of Sun/Moon mass to Earth mass: Wikipedia ! 
         REAL (8), parameter:: MassRatioSunEarth = 332946.0487       
@@ -1167,11 +1168,12 @@
         ! 
         !     prior to the use of this subroutine. 
         !        
-        SUBROUTINE HEAVENLY_OBJS_COORDS( MOON_POS, SUN_POS, JD )
+        SUBROUTINE HEAVENLY_OBJS_COORDS_JM( MOON_POS, SUN_POS, JD, IERR )
            IMPLICIT NONE
 
            REAL (8), INTENT(IN):: JD
            REAL (8), INTENT(OUT):: MOON_POS(3), SUN_POS(3)
+           INTEGER:: IERR
 
            ASTRO_VALUES = COMP_ASTROVAL(  JD  ) ;
 
@@ -1181,8 +1183,10 @@
            CALL SUN_COORDINATES( SUN_POS(1), SUN_POS(2), 
      &          SUN_POS(3), JD, ASTRO_VALUES, INCLUDE_NUTATION )
 
+           IERR = 0 
+
            RETURN ;            
-        END SUBROUTINE HEAVENLY_OBJS_COORDS  
+        END SUBROUTINE HEAVENLY_OBJS_COORDS_JM  
 
         FUNCTION GMST_DEG_FN( JDE ) RESULT( GMST )
            IMPLICIT NONE 
