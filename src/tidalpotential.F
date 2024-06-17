@@ -1,5 +1,17 @@
-! Fortran module for computing the equ
+!
+! Fortran module for computing the full luna-solar equilibrium tides of
+! different orders of approximation, 
 ! 
+! Ref:
+!   J,-M. Hervouet, Free surface flows: modelling with the finite
+!      element method. John Wiley & Sons, Ltd, 2007
+!          
+!   Z. Kowalik and J. L. Luick, Modern theory and practice of tide
+!      analysis and tidal power, Austides consulting, 2019 
+!      https://austides.com/downloads/
+!   
+! DW/AC, 2024
+!      
       MODULE TIPFUNCMOD
 
 #ifndef TIPSTANDALONE          
@@ -12,7 +24,16 @@
         use datetime_module, only: strptime
 #endif
 
-        USE MOON_SUN_COORS
+        USE ASTROFORMOD
+        USE MOON_SUN_COORS, only: HEAVENLY_OBJS_COORDS_JM, 
+     &                                 SET_NUTATION, GMST_DEG_FN
+        USE ephemri_module, only: HEAVENLY_OBJS_COORDS_FROM_TABLE
+
+
+        INTERFACE HEAVENLY_OBJS_COORDS
+            MODULE PROCEDURE  HEAVENLY_OBJS_COORDS_JM, 
+     &             HEAVENLY_OBJS_COORDS_FROM_TABLE            
+        END INTERFACE HEAVENLY_OBJS_COORDS
 
         !
         !  UseFullTIPFormula = T/F (default F)
@@ -79,6 +100,7 @@
            REAL (8):: JDELoc, tocgmst
            REAL (8):: MoonSunCoor(3,2), RA, DEC, DELTA
            REAL (8):: radius_div_Delta, KP, C0
+           INTEGER:: IERR
 
            LOGICAL, SAVE:: first = .true.
 
@@ -93,8 +115,15 @@
            JDELoc = JDE_BEG + TimeLoc*sec2day ;            
 
            ! Compute the postions of the Moon and Sun !
-           CALL HEAVENLY_OBJS_COORDS( 
-     &         MoonSunCoor(:,1), MoonSunCoor(:,2), JDELoc ) ; !
+           IF ( TRIM(MoonSunPositionComputeMethod) == 'JM' ) THEN
+              ! use algorithms in Jean Meeus's book !
+              CALL HEAVENLY_OBJS_COORDS( MoonSunCoor(:,1), 
+     &                     MoonSunCoor(:,2), JDELoc, IERR ) ; 
+           ELSE
+              ! interpolate from an external look up table !
+              CALL HEAVENLY_OBJS_COORDS( MoonSunCoor, JDELoc, 
+     &                             MoonSunCoordFile, IERR ) ;
+           END IF   
              
            !IF ( MYPROC .EQ. 0 ) THEN
            !   WRITE(*,'(5F18.9)'), JDELOc, MoonSunCoor(1:2,1), MoonSunCoor(1:2,2) ; 
@@ -155,7 +184,8 @@
               CASE (22)    
                 ! P2 - Only dirunal + semi-dirunali
                 ! Long period
-                workarr = 1.D0 - 3.D0*sin(SFEA)*sin(SFEA) ; 
+                workarr1 = sin(SFEA) ;
+                workarr = 1.D0 - 3.D0*workarr1*workarr1 ; 
                 workarr = workarr*(1.D0 - 3.D0*sin(DEC)*sin(DEC))
                 workarr = (1.D0/4.D0)*workarr ; 
 
@@ -175,7 +205,7 @@
                 TIPVAL = TIPVAL + KP*workarr ; 
               CASE DEFAULT
                 ! Exact
-                workarr = 1.D0 + AINTPOWER( radius_div_delta, 2) ;
+                workarr = 1.D0 + AINTPOWER( radius_div_delta, 2 ) ;
                 workarr = workarr - 2.D0*radius_div_delta*cosZA  ;
 
                 workarr = sqrt( workarr ) ; 
@@ -300,7 +330,6 @@
           JDE_BEG = JULIANDAY( DDD, MM, YYYY )  ;
           JDE_CURRENT = JDE_BEG ; 
 
-          PRINT*, DDD, MM, YYYY
           CALL StringUpper( MoonSunPositionComputeMethod ) ; 
           IF ( TRIM(ADJUSTL(MoonSunPositionComputeMethod)) == 'JM' ) THEN 
             CALL SET_NUTATION(  IncludeNutation  ) ;
@@ -344,8 +373,7 @@
    
              DO ii = 1, 3
                cpos(2) = index( tmparr, delimc ) ;
-             
-!               print*, tmparr ; 
+              
                if ( cpos(2) == 0 )  cpos(2) = index( tmparr, ' ' ) ; 
   
                if ( cpos(2) > 0  ) then

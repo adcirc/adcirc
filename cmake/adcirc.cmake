@@ -56,6 +56,7 @@ if(BUILD_ADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/astromod.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemri_module.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
 
