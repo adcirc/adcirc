@@ -14,7 +14,12 @@
 !      
       MODULE TIPFUNCMOD
 
-#ifndef TIPSTANDALONE          
+#ifndef TIPSTANDALONE
+       use global, only: DEBUG, INFO, ECHO, WARNING, ERROR,
+     &   scratchMessage, logMessage, screenMessage, allMessage,
+     &   setMessageSource, openFileForRead, unsetMessageSource,
+     &   scratchFormat
+
         USE ADC_CONSTANTS, only: hour2day, min2day, sec2day, 
      &       DEG2RAD, RAD2DEG 
         USE SIZES, only: MYPROC
@@ -83,6 +88,7 @@
 #endif        
 
         PRIVATE:: AINTPOWER, INIT_TIP
+
        CONTAINS
          
         !
@@ -104,12 +110,18 @@
 
            LOGICAL, SAVE:: first = .true.
 
+#ifndef TIPSTANDALONE           
+          call setMessageSource("comp_full_tip")
+#if defined(ALL_TRACE)
+          call allMessage(DEBUG,"Enter.")
+#endif
+#endif
+
            NPP = SIZE( TIPVAL ) ; 
            IF ( first ) THEN   
               CALL INIT_TIP( NPP ) ;
               first = .false. ;
            END IF     
-
 
            ! Julian day
            JDELoc = JDE_BEG + TimeLoc*sec2day ;            
@@ -124,7 +136,8 @@
               CALL HEAVENLY_OBJS_COORDS( MoonSunCoor, JDELoc, 
      &                             MoonSunCoordFile, IERR ) ;
            END IF   
-             
+
+
            !IF ( MYPROC .EQ. 0 ) THEN
            !   WRITE(*,'(5F18.9)'), JDELOc, MoonSunCoor(1:2,1), MoonSunCoor(1:2,2) ; 
            !END IF            
@@ -140,8 +153,8 @@
            TIPVAL = 0.D0 ;
            DO IOBJ = 1, 2 
               ! Hour angle !
-              ! AH = DEG2RAD*tocgmst + SLAM - MoonSunCoor(1,IOBJ) ;
-              AH = modulo( tocgmst + SLAM*RAD2DEG, 360.D0 )*DEG2RAD -  MoonSunCoor(1,IOBJ) ;
+              AH = DEG2RAD*tocgmst + SLAM - MoonSunCoor(1,IOBJ) ;
+              ! AH = modulo( tocgmst + SLAM*RAD2DEG, 360.D0 )*DEG2RAD -  MoonSunCoor(1,IOBJ) ;
               RA = MoonSunCoor(1,IOBJ) ; ! right ascendsion
               DEC = MoonSunCoor(2,IOBJ) ; ! declination
               DELTA = MoonSunCoor(3,IOBJ) ; ! distance (km for the Moon,
@@ -246,10 +259,51 @@
               END SELECT 
            END DO
 
-           TIPVAL = (1.D0 + k2value - h2value)*TIPVAL ; 
+           TIPVAL = (1.D0 + k2value - h2value)*TIPVAL ;
 
+#ifndef TIPSTANDALONE
+#if defined(ALL_TRACE)
+           call allMessage(DEBUG,"Return.")
+#endif
+           call unsetMessageSource()
+#endif
 
            RETURN ;
+         CONTAINS
+
+           SUBROUTINE check_err( IERR  )
+             IMPLICIT NONE
+             
+             INTEGER:: IERR 
+
+             IF ( IERR > 1 ) THEN
+#ifndef TIPSTANDALONE      
+               SELECT CASE( IERR )
+               CASE (1)      
+                 CALL  screenMessage( ERROR, "Error in the calculation"//
+     &             " the postion of the Moon and Sun. ADCIRC is not "//
+     &              " built with the -DADCNETCDF flag." ) ;
+                CASE (2)
+                  CALL  screenMessage( ERROR, "Error in the calculation"//
+     &              " the postion of the Moon and Sun. Date not within"//
+     &               "  database." ) ;
+               END SELECT
+#else
+               SELECT CASE( IERR )
+               CASE (1)
+                 WRITE(*,*) "Erorr in the calculation of"//
+     &             " the position of the Moon and Sun. ADCIRC is not "//
+     &             " built with the -DADCNETCDF flag."  ;
+               CASE (2)   
+                 WRITE(*,*) "Error in the calculation of"//
+     &             " the postion of the Moon and Sun. Date not within"//
+     &              "  database."  ;
+               END SELECT 
+             STOP ;             
+#endif            
+             END IF
+           END SUBROUTINE check_err
+
         END SUBROUTINE COMP_FULL_TIP 
         !        
 

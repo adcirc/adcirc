@@ -212,8 +212,8 @@ contains
 
     IERR = 0 ; 
     if (.not. match) then
-      write(*,*) 'Error: Date not within database.'
-      IERR = 1 ; 
+      ! write(*,*) 'Error: Date not within database.'
+      IERR = 2 ; 
       !stop
     end if
 
