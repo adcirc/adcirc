@@ -912,6 +912,7 @@ C           species
               ENDDO
             ELSE
               DO I = 1, NP
+                 ARGSALT = ARGT - SALTPHA(J,I) ; 
                  TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
               END DO
             END IF
