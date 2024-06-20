@@ -70,11 +70,21 @@ add_library(metis STATIC ${METIS_SOURCES})
 target_include_directories(metis PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/metis/Lib)
 set_target_properties(metis PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-# ...In gcc-10+, we need to ignore some things that were elevated to errors. This is a thirdparty library, so adcirc
-# devs are in nofix mode
+# Below are issues with a third party library, so Adcirc devs will not fix
 get_filename_component(C_COMPILER_NAME ${CMAKE_C_COMPILER} NAME)
 if(${C_COMPILER_NAME} MATCHES "gcc.*" OR ${C_COMPILER_NAME} MATCHES "cc")
+  SET(ADDITIONAL_METIS_COMPILER_FLAGS "")
+  # For GCC >= 10, we need to add -Wno-implicit-function-declaration
   if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_C_COMPILER_VERSION} VERSION_EQUAL 10)
-    set_target_properties(metis PROPERTIES COMPILE_FLAGS "-Wno-implicit-function-declaration")
+    set(ADDITIONAL_METIS_COMPILER_FLAGS "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-implicit-function-declaration")
+  endif()
+  # For GCC >= 14, we need to add -Wno-incompatible-pointer-types too
+  if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 14 OR ${CMAKE_C_COMPILER_VERSION} VERSION_EQUAL 14)
+    set(ADDITIONAL_METIS_COMPILER_FLAGS "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-incompatible-pointer-types")
+  endif()
+  # Add the flags to the metis target
+  if(ADDITIONAL_METIS_COMPILER_FLAGS)
+    message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
+    set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
   endif()
 endif()
