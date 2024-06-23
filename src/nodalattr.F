@@ -3148,7 +3148,13 @@ C     ----------------------------------------------------------------
       call allMessage(DEBUG,"Enter.")
 #endif
 
-      IF (.NOT.LoadCondensedNodes) RETURN
+      IF (.NOT.LoadCondensedNodes) THEN
+#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+         call unsetMessageSource()
+         RETURN
+      ENDIF
 
       NListCondensedNodes = 0
       JMAX = 0
