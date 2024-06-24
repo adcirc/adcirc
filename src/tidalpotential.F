@@ -197,13 +197,15 @@
               CASE (22)    
                 ! P2 - Only dirunal + semi-dirunali
                 ! Long period
-                workarr1 = sin(SFEA) ;
-                workarr = 1.D0 - 3.D0*workarr1*workarr1 ; 
-                workarr = workarr*(1.D0 - 3.D0*sin(DEC)*sin(DEC))
-                workarr = (1.D0/4.D0)*workarr ; 
+                ! workarr1 = sin(SFEA) ;
+                ! workarr = 1.D0 - 3.D0*workarr1*workarr1 ; 
+                ! workarr = workarr*(1.D0 - 3.D0*sin(DEC)*sin(DEC))
+                ! workarr = (1.D0/4.D0)*workarr ; 
+                ! Dirunal
+                ! workarr = workarr + (3.D0/4.D0)*sin(2.D0*SFEA)*sin(2.D0*DEC)*cos(AH) ;
 
                 ! Dirunal
-                workarr = workarr + (3.D0/4.D0)*sin(2.D0*SFEA)*sin(2.D0*DEC)*cos(AH) ;
+                workarr = (3.D0/4.D0)*sin(2.D0*SFEA)*sin(2.D0*DEC)*cos(AH) ;
 
                 ! Semi-Diurnal
                 workarr1 = cos( SFEA ) ; 

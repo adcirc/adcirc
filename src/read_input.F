@@ -799,7 +799,7 @@ C...
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "MoonSunCoordFile=", MoonSunCoordFile
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*) "IncludeNutation", IncludeNutation
+      write(scratchMessage,*) "IncludeNutation=", IncludeNutation
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "k2Value=", k2Value
       call logMessage(ECHO,trim(scratchMessage))
