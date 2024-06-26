@@ -12,6 +12,11 @@ module ephemri_module
 
   implicit none
 
+  INTEGER, PRIVATE:: len_times
+  REAL(8), PRIVATE:: tbeg(2), tend(2)  
+  REAL(8), PRIVATE, ALLOCATABLE, DIMENSION(:):: times, lunar_distances, &
+       & solar_distances, lunar_ras, solar_ras, lunar_decs, solar_decs   
+
   private::  interpolate, L, adjust_RA, check
 
 contains
@@ -25,23 +30,25 @@ contains
     real(8):: MoonSunCoor(3, 2)
     INTEGER:: IERR
 
-    integer :: ncid, time_varid, lunar_distance_varid, solar_distance_varid
-    integer :: lunar_ra_varid, solar_ra_varid, lunar_dec_varid, solar_dec_varid
-    integer :: retval, j, len_times
+    integer:: ncid, time_varid, lunar_distance_varid, solar_distance_varid
+    integer:: lunar_ra_varid, solar_ra_varid, lunar_dec_varid, solar_dec_varid
+    integer :: retval, j
     integer, parameter :: NC_ERR = -1
-    real(8), allocatable :: times(:), lunar_distances(:), solar_distances(:)
-    real(8), allocatable :: lunar_ras(:), solar_ras(:), lunar_decs(:), solar_decs(:)
+!    integer::  len_times
+!    real(8), allocatable :: times(:), lunar_distances(:), solar_distances(:)
+!    real(8), allocatable :: lunar_ras(:), solar_ras(:), lunar_decs(:), solar_decs(:)
     real(8) :: julian_datetime_2000, seconds_between
 
     real(8) :: ratmp(4) 
     logical :: match
     integer :: time_dimid, ndimsp, dimlen
 
+    logical:: first = .true. 
 #ifndef ADCNETCDF
     WRITE(*,*) " Error:"
     WRITE(*,*) "   To include this subroutine,"
     WRITE(*,*) "    1. Compile this file witth -DADCNETCDF in compiler flags."
-    WRITE(*,*) "    2. A fortran netcdf library is requried."  
+    WRITE(*,*) "    2. A netcdf and fortran netcdf library are requried."  
     WRITE(*,*) "    3. Include the location of the netcdf fortran module file"// &
                        "(-I$(netcdf_include_path))"//" to complie this file" 
     WRITE(*,*) "    4. Link the netcdf library when building an execubale"//
@@ -52,40 +59,50 @@ contains
 #else
     integer:: dimids(nf90_max_dims) 
 
-    ! Open the NetCDF file
-    call check(nf90_open(MoonSunCoordFile, nf90_nowrite, ncid))
+    IF ( first ) THEN
+      ! Open the NetCDF file
+      call check(nf90_open(MoonSunCoordFile, nf90_nowrite, ncid))
+  
+      ! Get variable IDs
+      call check(nf90_inq_varid(ncid, 'time', time_varid))
+      call check(nf90_inq_varid(ncid, 'lunar_distance', lunar_distance_varid))
+      call check(nf90_inq_varid(ncid, 'solar_distance', solar_distance_varid))
+      call check(nf90_inq_varid(ncid, 'lunar_ra', lunar_ra_varid))
+      call check(nf90_inq_varid(ncid, 'solar_ra', solar_ra_varid))
+      call check(nf90_inq_varid(ncid, 'lunar_dec', lunar_dec_varid))
+      call check(nf90_inq_varid(ncid, 'solar_dec', solar_dec_varid))
+  
+      ! Inquire about the time variable to get dimension IDs
+      call check(nf90_inquire_variable(ncid, time_varid, ndims=ndimsp, dimids=dimids))
+      
+      ! Get the length of the time dimension
+      call check(nf90_inquire_dimension(ncid, dimids(1), len=dimlen))
+      len_times = dimlen
+      
+      ! Allocate arrays
+      allocate(times(len_times), lunar_distances(len_times), solar_distances(len_times))
+      allocate(lunar_ras(len_times), solar_ras(len_times), lunar_decs(len_times), solar_decs(len_times))
+  
+      ! Read variables
+      call check(nf90_get_var(ncid, time_varid, times))
+      call check(nf90_get_var(ncid, lunar_distance_varid, lunar_distances))
+      call check(nf90_get_var(ncid, solar_distance_varid, solar_distances))
+      call check(nf90_get_var(ncid, lunar_ra_varid, lunar_ras))
+      call check(nf90_get_var(ncid, solar_ra_varid, solar_ras))
+      call check(nf90_get_var(ncid, lunar_dec_varid, lunar_decs))
+      call check(nf90_get_var(ncid, solar_dec_varid, solar_decs))
+  
+      ! Close the NetCDF file
+      call check(nf90_close(ncid))
 
-    ! Get variable IDs
-    call check(nf90_inq_varid(ncid, 'time', time_varid))
-    call check(nf90_inq_varid(ncid, 'lunar_distance', lunar_distance_varid))
-    call check(nf90_inq_varid(ncid, 'solar_distance', solar_distance_varid))
-    call check(nf90_inq_varid(ncid, 'lunar_ra', lunar_ra_varid))
-    call check(nf90_inq_varid(ncid, 'solar_ra', solar_ra_varid))
-    call check(nf90_inq_varid(ncid, 'lunar_dec', lunar_dec_varid))
-    call check(nf90_inq_varid(ncid, 'solar_dec', solar_dec_varid))
+      tbeg(2) = times(1) ; 
+      tend(2) = times(len_times) ; 
 
-    ! Inquire about the time variable to get dimension IDs
-    call check(nf90_inquire_variable(ncid, time_varid, ndims=ndimsp, dimids=dimids))
-    
-    ! Get the length of the time dimension
-    call check(nf90_inquire_dimension(ncid, dimids(1), len=dimlen))
-    len_times = dimlen
-    
-    ! Allocate arrays
-    allocate(times(len_times), lunar_distances(len_times), solar_distances(len_times))
-    allocate(lunar_ras(len_times), solar_ras(len_times), lunar_decs(len_times), solar_decs(len_times))
+      tbeg(1) = tbeg(2) ;
+      tend(1) = tend(2) ;
 
-    ! Read variables
-    call check(nf90_get_var(ncid, time_varid, times))
-    call check(nf90_get_var(ncid, lunar_distance_varid, lunar_distances))
-    call check(nf90_get_var(ncid, solar_distance_varid, solar_distances))
-    call check(nf90_get_var(ncid, lunar_ra_varid, lunar_ras))
-    call check(nf90_get_var(ncid, solar_ra_varid, solar_ras))
-    call check(nf90_get_var(ncid, lunar_dec_varid, lunar_decs))
-    call check(nf90_get_var(ncid, solar_dec_varid, solar_decs))
-
-    ! Close the NetCDF file
-    call check(nf90_close(ncid))
+      first = .false. ;
+     END IF
 
     ! Calculate seconds between the provided date and the reference date
     julian_datetime_2000 = 2451544.5d0
