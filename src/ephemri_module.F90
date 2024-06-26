@@ -8,6 +8,10 @@ module ephemri_module
   use netcdf
 #endif
 
+#ifndef TIPSTANDALONE
+  use global, only: RNDAY
+#endif
+
   use astroformod, only: km2AU 
 
   implicit none
@@ -16,6 +20,8 @@ module ephemri_module
   REAL(8), PRIVATE:: tbeg(2), tend(2)  
   REAL(8), PRIVATE, ALLOCATABLE, DIMENSION(:):: times, lunar_distances, &
        & solar_distances, lunar_ras, solar_ras, lunar_decs, solar_decs   
+
+  REAL(8), PRIVATE:: tcache = 2592000.D0 ; 
 
   private::  interpolate, L, adjust_RA, check
 
@@ -39,11 +45,15 @@ contains
 !    real(8), allocatable :: lunar_ras(:), solar_ras(:), lunar_decs(:), solar_decs(:)
     real(8) :: julian_datetime_2000, seconds_between
 
+    INTEGER:: lenarr, iabeg, iaend
+    real(8), ALLOCATABLE :: tmparr(:)
+
     real(8) :: ratmp(4) 
     logical :: match
     integer :: time_dimid, ndimsp, dimlen
 
     logical:: first = .true. 
+
 #ifndef ADCNETCDF
     WRITE(*,*) " Error:"
     WRITE(*,*) "   To include this subroutine,"
@@ -59,6 +69,7 @@ contains
 #else
     integer:: dimids(nf90_max_dims) 
 
+    julian_datetime_2000 = 2451544.5d0
     IF ( first ) THEN
       ! Open the NetCDF file
       call check(nf90_open(MoonSunCoordFile, nf90_nowrite, ncid))
@@ -77,29 +88,64 @@ contains
       
       ! Get the length of the time dimension
       call check(nf90_inquire_dimension(ncid, dimids(1), len=dimlen))
-      len_times = dimlen
+      ! len_times = dimlen
       
+      lenarr = dimlen ;
+      allocate( tmparr(lenarr) ) ; 
+      call check(nf90_get_var(ncid, time_varid, tmparr )) ;
+      tbeg(2) = tmparr(1) ;
+      tend(2) = tmparr(lenarr) ; 
+
+      seconds_between = (julian_date_loc - julian_datetime_2000) * 86400.0d0
+      do j = 1: lenarr
+         if ( seconds_between <= tmparr(j) ) 
+            iabeg = j - 4 ;
+            exit ;
+         endif
+      end do
+      if ( iabeg < 1 ) then iabeg = 1 ; 
+      tbeg(1) = tmparr(iabeg) ; 
+      
+      do j = 1: lenarr
+         if ( sedonc_between + tcache <= tmparr(hj) ) 
+           iaend = j + 4 ;
+           exit ;
+         endif 
+      end do  
+      if ( iaend > lenarr ) iaend = lenarr ;  
+      tend(2) = tmparr(iaend) ; 
+
+      len_times = (iaend - iabeg) + 1 ; 
+
       ! Allocate arrays
       allocate(times(len_times), lunar_distances(len_times), solar_distances(len_times))
       allocate(lunar_ras(len_times), solar_ras(len_times), lunar_decs(len_times), solar_decs(len_times))
   
-      ! Read variables
-      call check(nf90_get_var(ncid, time_varid, times))
-      call check(nf90_get_var(ncid, lunar_distance_varid, lunar_distances))
-      call check(nf90_get_var(ncid, solar_distance_varid, solar_distances))
-      call check(nf90_get_var(ncid, lunar_ra_varid, lunar_ras))
-      call check(nf90_get_var(ncid, solar_ra_varid, solar_ras))
-      call check(nf90_get_var(ncid, lunar_dec_varid, lunar_decs))
-      call check(nf90_get_var(ncid, solar_dec_varid, solar_decs))
+      times = tmparr(iabeg:iaend) ; 
+      call check(nf90_get_var(ncid, lunar_distance_varid, lunar_distances, iabeg, len_times ))
+      call check(nf90_get_var(ncid, solar_distance_varid, solar_distances, iabeg, len_times ))
+      call check(nf90_get_var(ncid, lunar_ra_varid, lunar_ras, iabeg, len_times ))
+      call check(nf90_get_var(ncid, solar_ra_varid, solar_ras, iabeg, len_times ))
+      call check(nf90_get_var(ncid, lunar_dec_varid, lunar_decs, iabeg, len_times ))
+      call check(nf90_get_var(ncid, solar_dec_varid, solar_decs, iabeg, len_times ))
+
+!      ! Read variables
+!      call check(nf90_get_var(ncid, time_varid, times))
+!      call check(nf90_get_var(ncid, lunar_distance_varid, lunar_distances))
+!      call check(nf90_get_var(ncid, solar_distance_varid, solar_distances))
+!      call check(nf90_get_var(ncid, lunar_ra_varid, lunar_ras))
+!      call check(nf90_get_var(ncid, solar_ra_varid, solar_ras))
+!      call check(nf90_get_var(ncid, lunar_dec_varid, lunar_decs))
+!      call check(nf90_get_var(ncid, solar_dec_varid, solar_decs))
   
       ! Close the NetCDF file
       call check(nf90_close(ncid))
 
-      tbeg(2) = times(1) ; 
-      tend(2) = times(len_times) ; 
-
-      tbeg(1) = tbeg(2) ;
-      tend(1) = tend(2) ;
+!      tbeg(2) = times(1) ; 
+!      tend(2) = times(len_times) ; 
+!
+!      tbeg(1) = tbeg(2) ;
+!      tend(1) = tend(2) ;
 
       first = .false. ;
      END IF
