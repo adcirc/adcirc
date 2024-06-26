@@ -41,6 +41,74 @@ C---------------------------------------------------------------------C
 C---------------------------------------------------------------------C
       CONTAINS
 C---------------------------------------------------------------------C
+C-----------------------------------------------------------------------
+      SUBROUTINE UNTIDE(U_i,V_i,TimeStep)
+C---------------------------------------------------------------------C
+C     This subroutine takes as inputs the current time step velocity,
+C     updates the average velocity vectors (if necessary) and outputs
+C     the 25 hour lagged average velocity based on a lagged, 25 hour
+C     filter with sampling frequency of 12 minutes. It replaces a good
+C     chunk of code in the apply2dinternalwavedrag to make that
+C     subroutine more readable as well as to eliminate some global
+C     variables
+C---------------------------------------------------------------------C
+      USE MESH, ONLY : NP
+      USE GLOBAL, ONLY: DTDP
+      IMPLICIT NONE
+      REAL(8),INTENT(IN),DIMENSION(:) :: U_i, V_i ! current velocity
+      INTEGER,INTENT(IN) :: TimeStep    ! current time step
+      REAL(8) :: filtL = 25d0*3600d0        ! filter length (s)
+      REAL(8) :: Fs = 12d0*60d0             ! sampling interval (s)
+      INTEGER,SAVE :: NS = 1   ! number of samples
+      LOGICAL,SAVE :: first_call = .TRUE.
+      ! need indices to check if the current and previous time step are
+      ! in the same 12 min windo2
+      INTEGER :: L, Lm           
+      INTEGER :: ii, kk ! for loops
+      ! for populating the UAV, VAV matrices at the start of the run
+      INTEGER,SAVE :: ISTA
+
+      IF ( first_call ) THEN
+         first_call = .FALSE.
+         NS = FLOOR(filtL/Fs)
+         ista = 1
+         ALLOCATE( UAV(NP,NS), VAV(NP,NS) )
+         UAV = 0d0
+         VAV = 0d0
+         ALLOCATE( UBar(NP), VBar(NP) )
+         UBar = 0d0
+         VBar = 0d0
+      ENDIF
+
+      L = FLOOR(TimeStep*DTDP/Fs)
+      Lm = FLOOR((TimeStep-1)*DTDP/Fs)
+      IF ( L.GT.Lm ) THEN
+         IF ( ISTA.GT.NS ) THEN
+            DO ii = 1,NP
+               DO kk = 1,NS-1
+                  UAV(ii,kk) = UAV(ii,kk+1)
+                  VAV(ii,kk) = VAV(ii,kk+1)
+               ENDDO
+               UAV(ii,NS) = U_i(ii)
+               VAV(ii,NS) = V_i(ii)
+            ENDDO
+            DO ii = 1,NP
+               UBar(ii) = SUM(UAV(ii,1:NS))/DBLE(NS)
+               VBar(ii) = SUM(VAV(ii,1:NS))/DBLE(NS)
+            ENDDO
+         ELSE
+            DO ii = 1,NP
+               UAV(ii,ISTA) = U_i(ii)
+               VAV(ii,ISTA) = V_i(ii)
+               UBar(ii) = SUM(UAV(ii,1:ISTA))/DBLE(ISTA)
+               VBar(ii) = SUM(VAV(ii,1:ISTA))/DBLE(ISTA)
+            ENDDO
+            ISTA = ISTA + 1
+         ENDIF
+      ENDIF
+C-----------------------------------------------------------------------
+      END SUBROUTINE UNTIDE
+C-----------------------------------------------------------------------
       SUBROUTINE MunkHPFilter(U_i,V_i,TimeStep)
 C---------------------------------------------------------------------C
 C     This subroutine applies a high-pass filter derived from the
