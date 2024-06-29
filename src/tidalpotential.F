@@ -58,7 +58,8 @@
         INTEGER:: TIPOrder = 2
         CHARACTER (LEN=24):: TIPStartDate = 'Basedate' 
         CHARACTER (LEN=24):: MoonSunPositionComputeMethod = 'JM' 
-        CHARACTER (LEN=80):: MoonSunCoordFile = 'none' 
+        CHARACTER (LEN=80):: MoonSunCoordFile = 'none'
+        LOGICAL:: UniformResMoonSunTimeData = .FALSE.  
         LOGICAL:: IncludeNutation = .TRUE.  
         REAL (8):: k2value = 0.302D0 
         REAL (8):: h2value = 0.609D0    
@@ -134,22 +135,15 @@
            ELSE
               ! interpolate from an external look up table !
               CALL HEAVENLY_OBJS_COORDS( MoonSunCoor, JDELoc, 
-     &                             MoonSunCoordFile, IERR ) ;
+     &          MoonSunCoordFile, IERR, UniformResMoonSunTimeData ) ;
            END IF   
-
-
-           !IF ( MYPROC .EQ. 0 ) THEN
-           !   WRITE(*,'(5F18.9)'), JDELOc, MoonSunCoor(1:2,1), MoonSunCoor(1:2,2) ; 
-           !END IF            
+        
            ! Convert RA, DEC from deg --> rad
            MoonSunCoor(1:2,:) = MoonSunCoor(1:2,:)*DEG2RAD ;
 
            ! Sidereal time at Greenwich ! 
            tocgmst = GMST_DEG_FN( JDELoc )  ;
           
-!           IF ( MYPROC .EQ. 0 ) THEN
-!              WRITE(*,'(6F18.9)'), JDELOc, MoonSunCoor(1:2,1), MoonSunCoor(1:2,2), tocgmst ; 
-!           END IF   
            TIPVAL = 0.D0 ;
            DO IOBJ = 1, 2 
               ! Hour angle !

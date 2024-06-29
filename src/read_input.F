@@ -173,7 +173,8 @@ Casey 180318: Added NWS=13
 
       USE TIPFUNCMOD, only: UseFullTIPFormula, TIPOrder, TIPStartDate, 
      &    MoonSunPositionComputeMethod, MoonSunCoordFile, IncludeNutation,
-     &    k2value, h2value, SET_TIP_BASEDATE
+     &    k2value, h2value, SET_TIP_BASEDATE, UniformResMoonSunTimeData
+
   
 
       IMPLICIT NONE
@@ -250,7 +251,7 @@ C     k2value = Love number
 C     h2value = Love number      
       NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
      &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
-     &    IncludeNutation, k2Value, h2Value
+     &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData
          
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist

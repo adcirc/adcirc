@@ -342,13 +342,14 @@ C     Full luni-solar tidal potential namelist: 2024
       INTEGER:: TIPOrder = 2
       CHARACTER (LEN=24):: TIPStartDate = 'Basedate' 
       CHARACTER (LEN=24):: MoonSunPositionComputeMethod = 'JM' 
-      CHARACTER (LEN=80):: MoonSunCoordFile = 'none' 
+      CHARACTER (LEN=80):: MoonSunCoordFile = 'none'
+      LOGICAL:: UniformResMoonSunTimeData = .FALSE.  
       LOGICAL:: IncludeNutation = .TRUE.  
       REAL (8):: k2value = 0.302D0 
       REAL (8):: h2value = 0.609D0    
       NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
      &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
-     &    IncludeNutation, k2Value, h2Value
+     &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData 
       
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
