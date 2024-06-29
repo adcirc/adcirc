@@ -2332,6 +2332,8 @@ Casey 180318: Added NWS=13
      &                       //trim(MoonSunPositionComputeMethod)//"',"
              write(15,'(a)') " MoonSunCoordFile = '"
      &                       //trim(MoonSunCoordFile)//"',"
+             write(15,'(a,L3,a)') " UniformResMoonSunTimeData = ",
+     &        UniformResMoonSunTimeData, "," 
              write(15,'(a,L3,a)') " IncludeNutation = ", IncludeNutation, ","
              write(15,'(a,F15.9,a)') " k2Value = ", k2Value, ","
              write(15,'(a,F15.9,a)') " h2Value = ", h2Value, " /"
