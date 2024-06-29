@@ -872,7 +872,8 @@ C     cleaner code, and correct identification of 0,1,2 or higher species
 
          ! use the full formula 
          IF ( useFullTIPFormula ) THEN
-            CALL COMP_FULL_TIP( TIP2, TimeLoc, SLAM, SFEA ) 
+            ! CALL COMP_FULL_TIP( TIP2, TimeLoc, SLAM, SFEA ) 
+            CALL COMP_FULL_TIP( TIP2, TimeLoc ) 
 
             TIP2 = RampTip*TIP2 ; 
          END IF  
