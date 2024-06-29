@@ -23,6 +23,7 @@
         USE ADC_CONSTANTS, only: hour2day, min2day, sec2day, 
      &       DEG2RAD, RAD2DEG 
         USE SIZES, only: MYPROC
+        USE MESH, only: SLAM, SFEA 
 #endif
 
 #ifdef DATETIME
@@ -36,20 +37,37 @@
 
 
         INTERFACE HEAVENLY_OBJS_COORDS
-            MODULE PROCEDURE  HEAVENLY_OBJS_COORDS_JM, 
+          MODULE PROCEDURE  HEAVENLY_OBJS_COORDS_JM, 
      &             HEAVENLY_OBJS_COORDS_FROM_TABLE            
         END INTERFACE HEAVENLY_OBJS_COORDS
-
+        
+#ifndef TIPSTANDALONE
+        INTERFACE COMP_FULL_TIP
+          MODULE PROCEDURE COMP_FULL_TIP_DRV0, COMP_FULL_TIP_DRV1      
+        END INTERFACE COMP_FULL_TIP
+#else        
+        INTERFACE COMP_FULL_TIP
+          MODULE PROCEDURE COMP_FULL_TIP_DRV0      
+        END INTERFACE COMP_FULL_TIP
+#endif
         !
         !  UseFullTIPFormula = T/F (default F)
         !  TIPOrder = 2 (P2), 3(p3), >= 4(exact)  (default 2)
         !  TIPStartDate = 'BaseDate'/'YYYY-MM-DD HH:mm:SS'
         !  MoonSunPostionMethod = 'JM'/'External' (defaul 'JM') 
         !           'JM' = Jean Meeus's approach 
-        !           'External' = User supplied Moon's, Sun's RA, DEC and
-        !                        distances 
+        !           'External' = User supplied epherides (Moon's, Sun's RA, DEC and
+        !                        distances)
         !  MoonSunCoordFile = filename of an external file storting the
-        !                        coordinates of the Moon and the Sun         
+        !                        coordinates of the Moon and the Sun
+        !  UniformResMoonSunTimeData = T/F (deafult F). Logical flag
+        !                indicating the time intervals of the MoonSunCoordFile. 
+        !                T = Uniform interval (locating the intervals
+        !                    from which the Moon/Sun coordinates are
+        !                    interpolate is trivial).  
+        !                F = non uniform interval (using a binary search 
+        !                    to locate the intervals from which the
+        !                    Moon/Sun coordiantes are interpolated). 
         !  IncludeNutation = T/F, Include/exclude the nutation in JM formula
         !  k2value = Love number
         !  h2value = Love number
@@ -66,6 +84,7 @@
  
         REAL (8), private:: JDE_BEG,  JDE_CURRENT 
         REAL (8), private, dimension(:), allocatable:: AH, cosZA, workarr, workarr1
+        REAL (8), private, dimension(:), allocatable:: CSFEA, SSFEA, S2SFEA
 
         REAL (8), private, parameter:: massratio(2) = (/
      &                       MassRatioMoonEarth, MassRatioSunEarth  /) ; 
@@ -88,13 +107,147 @@
         REAL (8), parameter:: min2day = 1.D0*min2hour*hour2day ;
 #endif        
 
-        PRIVATE:: AINTPOWER, INIT_TIP
+        PRIVATE:: AINTPOWER, COMP_FULL_TIP_SUB0, cehck_err
 
        CONTAINS
+
+
+        ! subroutine computing the tidal potential. It is a private
+        ! subroutine (for now) called by the higher level subroutines:
+        !
+        ! COMP_FULL_TIP_DRV0 and COMP_FULL_TIP_DRV1 
+        !
+        ! (the latter is intended to be used in the ADCIRC code. 
+        ! the former is a stand alone.         
+        SUBROUTINE COMP_FULL_TIP_SUB0( TIPVAL, tocgmst, MoonSunCoor, 
+     &                              SLAM, SFEA, CSFEA, SSFEA, S2SFEA  ) 
+          IMPLICIT NONE 
+       
+          REAL (8), INTENT(INOUT):: TIPVAL(:) 
+          REAL (8), INTENT(IN):: tocgmst      ! Time in seconds since TIPStartDate !
+          REAL (8), INTENT(IN):: MoonSunCoor(3,2)
+          REAL (8), INTENT(IN), DIMENSION(:):: SLAM, SFEA, CSFEA, 
+     &                                         SSFEA, S2SFEA  ! radians
+
+          INTEGER:: IOBJ, iexp
+          REAL (8):: RA, DEC, DELTA
+          REAL (8):: radius_div_Delta, KP, C0
          
+     
+          TIPVAL = 0.D0 ;
+          DO IOBJ = 1, 2 
+             ! Hour angle !
+             AH = DEG2RAD*tocgmst + SLAM - MoonSunCoor(1,IOBJ) ;
+             ! AH = modulo( tocgmst + SLAM*RAD2DEG, 360.D0 )*DEG2RAD -  MoonSunCoor(1,IOBJ) ;
+             RA = MoonSunCoor(1,IOBJ) ; ! right ascendsion
+             DEC = MoonSunCoor(2,IOBJ) ; ! declination
+             DELTA = MoonSunCoor(3,IOBJ) ; ! distance (km for the Moon,
+                                           ! AU for the sun
+
+             ! Ratio of the radius of the earth and the Moon/Sun                              
+             radius_div_delta = significant_radiusearth(IOBJ)/DELTA
+             radius_div_delta = radius_div_delta*exponent_radiusearth(IOBJ) 
+
+             !c cosZA = cos( Z )            
+             cosZA = SSFEA*sin(DEC) ;
+             cosZA = cosZA + CSFEA*cos(DEC)*cos(AH) ;   
+             
+             SELECT CASE( TipOrder )
+             CASE (2,3)
+               ! P2  term. Degree 2 or 3 tidal potential !
+               workarr = 3.D0*cosZA*cosZA ; 
+               workarr = workarr - 1.D0   ;
+               workarr = 0.5D0*workarr ;
+
+               KP = AINTPOWER( radius_div_delta, 3 ) ;
+               KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ; 
+               KP = KP*massratio(IOBJ) ;
+
+               TIPVAL = TIPVAL + KP*workarr ; 
+
+               ! if include P3 term 
+               IF ( TipOrder == 3 ) THEN
+                  workarr = 5.D0*cosZA*cosZA*cosZA ;
+                  workarr = workarr - 3.D0*cosZA ; 
+                  workarr = 0.5D0*workarr ;
+
+                  KP = AINTPOWER( radius_div_delta, 4 ) ; 
+                  KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ;
+                  KP = KP*massratio(IOBJ) ; 
+                  ! Offset values is zero for this term c!
+
+                  TIPVAL = TIPVAL + KP*workarr ; 
+               END IF   
+             CASE (22)    
+               !   P2 - Only dirunal + semi-dirunal. A special case of
+               !   the degree 2 tidal potential,
+               !
+               ! Dirunal
+               workarr = (3.D0/4.D0)*S2SFEA*sin(2.D0*DEC)*cos(AH) ;
+
+               ! Semi-Diurnal
+               workarr1 = CSFEA ; 
+               workarr = workarr + 
+     &            (3.D0/4.D0)*workarr1*workarr1*cos(DEC)*cos(DEC)*cos(2.D0*AH) ;
+
+
+               KP = AINTPOWER( radius_div_delta, 3 ) ;
+               KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ; 
+               KP = KP*massratio(IOBJ) ; 
+
+               TIPVAL = TIPVAL + KP*workarr ; 
+             CASE DEFAULT
+               ! Exact form without any truncation ! 
+               workarr = 1.D0 + AINTPOWER( radius_div_delta, 2 ) ;
+               workarr = workarr - 2.D0*radius_div_delta*cosZA  ;
+
+               workarr = sqrt( workarr ) ; 
+               workarr = 1.D0/workarr ; 
+
+               workarr = workarr - radius_div_delta*cosZA ; 
+
+               ! Offset value, use Proudman's approach, see Kowalik,
+               ! page 14.
+               C0 = 1.D0 + AINTPOWER(radius_div_delta, 2) ;
+               C0 =  SQRT(C0 + 2.D0*radius_div_delta) - 
+     &               SQRT(C0 - 2.D0*radius_div_delta)  ;
+               C0 = -0.5D0*C0/radius_div_delta ;          
+
+               ! NOTE: 
+               ! The constant of integration C0 equals to
+               !
+               ! C0 = -1/2*(1/e)*(sqrt(1 + e**2  + 2*e) - sqrt(1 + e**2 - 2*e))
+               ! e =  a/r = radius_div_delta
+               ! 
+               ! For radius_div_delta (a/r) << 1, it can be shown
+               ! through the use of the Taylor series that
+               !
+               !    sqrt(1 + (a/r)^2 + 2*(a/r)) \sim  1 + (a/r) + High order terms 
+               !    sqrt(1 + (a/r)^2 + 2*(a/r)) \sim  1 - (a/r) + High order terms
+               !
+               ! As a result, a good approximate value of the offset is 
+               ! 
+               !    C0 \sim -1 
+               !             
+               workarr = workarr + C0  ;
+
+               KP = AINTPOWER( radius_div_delta, 1 ) ;
+               KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ;
+               KP = KP*massratio(IOBJ) ; 
+
+               TIPVAL = TIPVAL + KP*workarr ;  
+             END SELECT 
+          END DO
+
+          TIPVAL = (1.D0 + k2value - h2value)*TIPVAL ;
+         
+
+          RETURN 
+        END SUBROUTINE COMP_FULL_TIP_SUB0
+
         !
         ! 
-        SUBROUTINE COMP_FULL_TIP( TIPVAL, TimeLoc, SLAM, SFEA )  
+        SUBROUTINE COMP_FULL_TIP_DRV0( TIPVAL, TimeLoc, SLAM, SFEA )  
            IMPLICIT NONE
 
            REAL (8), INTENT(INOUT):: TIPVAL(:) 
@@ -102,11 +255,10 @@
            REAL (8), INTENT(IN), DIMENSION(:):: SLAM, SFEA ! lon-lat in radian
 
            ! local ! 
-           INTEGER:: I, IOBJ, iexp, NPP
+           INTEGER:: NPP
 
            REAL (8):: JDELoc, tocgmst
-           REAL (8):: MoonSunCoor(3,2), RA, DEC, DELTA
-           REAL (8):: radius_div_Delta, KP, C0
+           REAL (8):: MoonSunCoor(3,2)
            INTEGER:: IERR
 
            LOGICAL, SAVE:: first = .true.
@@ -120,7 +272,7 @@
 
            NPP = SIZE( TIPVAL ) ; 
            IF ( first ) THEN   
-              CALL INIT_TIP( NPP ) ;
+              CALL INIT_FULL_TIP( NPP ) ;
               first = .false. ;
            END IF     
 
@@ -137,126 +289,24 @@
               CALL HEAVENLY_OBJS_COORDS( MoonSunCoor, JDELoc, 
      &          MoonSunCoordFile, IERR, UniformResMoonSunTimeData ) ;
            END IF   
-        
+           CALL check_err( IERR  )
+       
            ! Convert RA, DEC from deg --> rad
            MoonSunCoor(1:2,:) = MoonSunCoor(1:2,:)*DEG2RAD ;
 
            ! Sidereal time at Greenwich ! 
            tocgmst = GMST_DEG_FN( JDELoc )  ;
-          
-           TIPVAL = 0.D0 ;
-           DO IOBJ = 1, 2 
-              ! Hour angle !
-              AH = DEG2RAD*tocgmst + SLAM - MoonSunCoor(1,IOBJ) ;
-              ! AH = modulo( tocgmst + SLAM*RAD2DEG, 360.D0 )*DEG2RAD -  MoonSunCoor(1,IOBJ) ;
-              RA = MoonSunCoor(1,IOBJ) ; ! right ascendsion
-              DEC = MoonSunCoor(2,IOBJ) ; ! declination
-              DELTA = MoonSunCoor(3,IOBJ) ; ! distance (km for the Moon,
-                                            ! AU for the sun
 
-              ! Ratio of the radius of the earth and the Moon/Sun                              
-              radius_div_delta = significant_radiusearth(IOBJ)/DELTA
-              radius_div_delta = radius_div_delta*exponent_radiusearth(IOBJ) 
+           CSFEA = cos( SFEA ) ; 
+           SSFEA = sin( SFEA ) ; 
+           IF ( TipOrder == 22 ) THEN
+             S2SFEA = sin( 2.D0*SFEA ) ; 
+           END IF
 
-              !c cosZA = cos( Z )            
-              cosZA = sin(SFEA)*sin(DEC) ;
-              cosZA = cosZA + cos(SFEA)*cos(DEC)*cos(AH) ;   
-              
-              SELECT CASE( TipOrder )
-              CASE (2,3)
-                ! P2  term
-                workarr = 3.D0*cosZA*cosZA ; 
-                workarr = workarr - 1.D0   ;
-                workarr = 0.5D0*workarr ;
- 
-                KP = AINTPOWER( radius_div_delta, 3 ) ;
-                KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ; 
-                KP = KP*massratio(IOBJ) ;
+           CALL COMP_FULL_TIP_SUB0( TIPVAL, tocgmst, MoonSunCoor, 
+     &                           SLAM, SFEA, CSFEA, SSFEA, S2SFEA  ) 
 
-                TIPVAL = TIPVAL + KP*workarr ; 
-
-                ! if include P3 term 
-                IF ( TipOrder == 3 ) THEN
-                   workarr = 5.D0*cosZA*cosZA*cosZA ;
-                   workarr = workarr - 3.D0*cosZA ; 
-                   workarr = 0.5D0*workarr ;
-
-                   KP = AINTPOWER( radius_div_delta, 4 ) ; 
-                   KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ;
-                   KP = KP*massratio(IOBJ) ; 
-                   ! Offset values is zero for this term c!
-
-                   TIPVAL = TIPVAL + KP*workarr ; 
-                END IF   
-              CASE (22)    
-                ! P2 - Only dirunal + semi-dirunali
-                ! Long period
-                ! workarr1 = sin(SFEA) ;
-                ! workarr = 1.D0 - 3.D0*workarr1*workarr1 ; 
-                ! workarr = workarr*(1.D0 - 3.D0*sin(DEC)*sin(DEC))
-                ! workarr = (1.D0/4.D0)*workarr ; 
-                ! Dirunal
-                ! workarr = workarr + (3.D0/4.D0)*sin(2.D0*SFEA)*sin(2.D0*DEC)*cos(AH) ;
-
-                ! Dirunal
-                workarr = (3.D0/4.D0)*sin(2.D0*SFEA)*sin(2.D0*DEC)*cos(AH) ;
-
-                ! Semi-Diurnal
-                workarr1 = cos( SFEA ) ; 
-                workarr = workarr + 
-     &                  (3.D0/4.D0)*workarr1*workarr1*cos(DEC)*cos(DEC)*cos(2.D0*AH) ;
-
- 
-                KP = AINTPOWER( radius_div_delta, 3 ) ;
-                KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ; 
-                KP = KP*massratio(IOBJ) ; 
-
-                TIPVAL = TIPVAL + KP*workarr ; 
-              CASE DEFAULT
-                ! Exact
-                workarr = 1.D0 + AINTPOWER( radius_div_delta, 2 ) ;
-                workarr = workarr - 2.D0*radius_div_delta*cosZA  ;
-
-                workarr = sqrt( workarr ) ; 
-                workarr = 1.D0/workarr ; 
-
-                workarr = workarr - radius_div_delta*cosZA ; 
-
-                ! Offset value, use Proudman's approach, see Kowalik,
-                ! page 14
-                C0 = 1.D0 + AINTPOWER(radius_div_delta, 2) ;
-                C0 =  SQRT(C0 + 2.D0*radius_div_delta) - 
-     &                SQRT(C0 - 2.D0*radius_div_delta)  ;
-                C0 = -0.5D0*C0/radius_div_delta ;          
-
-                ! NOTE: 
-                ! The constant of integration C0 equals to
-                !
-                ! C0 = -1/2*(1/e)*(sqrt(1 + e**2  + 2*e) - sqrt(1 + e**2 - 2*e))
-                ! e =  a/r = radius_div_delta
-                ! 
-                ! For radius_div_delta (a/r) << 1, it can be shown
-                ! through the use of the Taylor series that
-                !
-                !    sqrt(1 + (a/r)^2 + 2*(a/r)) \sim  1 + (a/r) + High order terms 
-                !    sqrt(1 + (a/r)^2 + 2*(a/r)) \sim  1 - (a/r) + High order terms
-                !
-                ! As a result, a good approximate value of the offset is 
-                ! 
-                !    C0 \sim -1 
-                !             
-                workarr = workarr + C0  ;
-
-                KP = AINTPOWER( radius_div_delta, 1 ) ;
-                KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ;
-                KP = KP*massratio(IOBJ) ; 
-
-                TIPVAL = TIPVAL + KP*workarr ;  
-              END SELECT 
-           END DO
-
-           TIPVAL = (1.D0 + k2value - h2value)*TIPVAL ;
-
+                     
 #ifndef TIPSTANDALONE
 #if defined(ALL_TRACE)
            call allMessage(DEBUG,"Return.")
@@ -265,43 +315,122 @@
 #endif
 
            RETURN ;
-         CONTAINS
+ 
 
-           SUBROUTINE check_err( IERR  )
-             IMPLICIT NONE
-             
-             INTEGER:: IERR 
-
-             IF ( IERR > 1 ) THEN
-#ifndef TIPSTANDALONE      
-               SELECT CASE( IERR )
-               CASE (1)      
-                 CALL  screenMessage( ERROR, "Error in the calculation"//
-     &             " the postion of the Moon and Sun. ADCIRC is not "//
-     &              " built with the -DADCNETCDF flag." ) ;
-                CASE (2)
-                  CALL  screenMessage( ERROR, "Error in the calculation"//
-     &              " the postion of the Moon and Sun. Date not within"//
-     &               "  database." ) ;
-               END SELECT
-#else
-               SELECT CASE( IERR )
-               CASE (1)
-                 WRITE(*,*) "Erorr in the calculation of"//
-     &             " the position of the Moon and Sun. ADCIRC is not "//
-     &             " built with the -DADCNETCDF flag."  ;
-               CASE (2)   
-                 WRITE(*,*) "Error in the calculation of"//
-     &             " the postion of the Moon and Sun. Date not within"//
-     &              "  database."  ;
-               END SELECT 
-             STOP ;             
-#endif            
-             END IF
-           END SUBROUTINE check_err
-
-        END SUBROUTINE COMP_FULL_TIP 
+        END SUBROUTINE COMP_FULL_TIP_DRV0 
         !        
+
+
+#ifndef TIPSTANDALONE ! BEGIN COMP_FULL_TIP_DRV1() 
+        ! For use in the ADICRC code, 
+        !  1. use SFEA and SLAM from the ADCIRC mesh module
+        !  2.  precomputed cos(SFEA), sin(SFEA), sin(2*SFEA) (if TipOrder == 22)       
+        SUBROUTINE COMP_FULL_TIP_DRV1( TIPVAL, TimeLoc )  
+           IMPLICIT NONE
+
+           REAL (8), INTENT(INOUT):: TIPVAL(:) 
+           REAL (8), INTENT(IN):: TimeLoc      ! Time in seconds since TIPStartDate !
+          
+           ! local ! 
+           INTEGER:: NPP
+
+           REAL (8):: JDELoc, tocgmst
+           REAL (8):: MoonSunCoor(3,2)
+           INTEGER:: IERR
+
+           LOGICAL, SAVE:: first = .true.
+
+           
+          call setMessageSource("comp_full_tip")
+#if defined(ALL_TRACE)
+          call allMessage(DEBUG,"Enter.")
+#endif
+
+           NPP = SIZE( TIPVAL ) ; 
+           IF ( first ) THEN   
+              CALL INIT_FULL_TIP( NPP ) ;
+              first = .false. ;
+
+              CSFEA = cos( SFEA ) ; 
+              SSFEA = sin( SFEA ) ; 
+              IF ( TipOrder == 22 ) THEN
+                 S2SFEA = sin( 2.D0*SFEA ) ; 
+              END IF
+           END IF     
+
+           ! Julian day
+           JDELoc = JDE_BEG + TimeLoc*sec2day ;            
+
+           ! Compute the postions of the Moon and Sun !
+           IF ( TRIM(MoonSunPositionComputeMethod) == 'JM' ) THEN
+              ! use algorithms in Jean Meeus's book !
+              CALL HEAVENLY_OBJS_COORDS( MoonSunCoor(:,1), 
+     &                     MoonSunCoor(:,2), JDELoc, IERR ) ; 
+           ELSE
+              ! interpolate from an external look up table !
+              CALL HEAVENLY_OBJS_COORDS( MoonSunCoor, JDELoc, 
+     &          MoonSunCoordFile, IERR, UniformResMoonSunTimeData ) ;
+           END IF   
+           CALL check_err( IERR  )
+       
+           ! Convert RA, DEC from deg --> rad
+           MoonSunCoor(1:2,:) = MoonSunCoor(1:2,:)*DEG2RAD ;
+
+           ! Sidereal time at Greenwich ! 
+           tocgmst = GMST_DEG_FN( JDELoc )  ;
+
+
+           CALL COMP_FULL_TIP_SUB0( TIPVAL, tocgmst, MoonSunCoor, 
+     &                           SLAM, SFEA, CSFEA, SSFEA, S2SFEA  ) 
+
+                    
+#if defined(ALL_TRACE)
+           call allMessage(DEBUG,"Return.")
+#endif
+           call unsetMessageSource()
+
+
+           RETURN ; 
+        END SUBROUTINE COMP_FULL_TIP_DRV1 
+        !     
+#endif  ! END  COMP_FULL_TIP_DRV1() 
+
+
+
+        SUBROUTINE check_err( IERR  )
+          IMPLICIT NONE
+             
+          INTEGER:: IERR 
+
+          IF ( IERR > 1 ) THEN
+#ifndef TIPSTANDALONE      
+           SELECT CASE( IERR )
+           CASE (1)      
+              CALL  screenMessage( ERROR, "Error in the calculation"//
+     &           " the postion of the Moon and Sun. ADCIRC is not "//
+     &           " built with the -DADCNETCDF flag." ) ;
+           CASE (2)
+              CALL  screenMessage( ERROR, "Error in the calculation"//
+     &           " the postion of the Moon and Sun. Date not within"//
+     &           "  database." ) ;
+           END SELECT
+#else
+           SELECT CASE( IERR )
+           CASE (1)
+              WRITE(*,*) "Erorr in the calculation of"//
+     &           " the position of the Moon and Sun. ADCIRC is not "//
+     &           " built with the -DADCNETCDF flag."  ;
+           CASE (2)   
+              WRITE(*,*) "Error in the calculation of"//
+     &           " the postion of the Moon and Sun. Date not within"//
+     &           "  database."  ;
+           END SELECT 
+           STOP ;             
+#endif            
+          END IF
+
+        END SUBROUTINE check_err
+
 
         !
         SUBROUTINE SET_TIP_BASEDATE( base_date )
@@ -355,7 +484,7 @@
         END FUNCTION AINTPOWER
 
         !
-        SUBROUTINE INIT_TIP( NP ) 
+        SUBROUTINE INIT_FULL_TIP( NP ) 
           IMPLICIT NONE
 
           INTEGER, INTENT(IN):: NP
@@ -388,6 +517,12 @@
           CALL ALLOCATEWORKARR( AH, NP ) ; 
           CALL ALLOCATEWORKARR( cosZA, NP )
           CALL ALLOCATEWORKARR( workarr, NP ) ; 
+          CALL ALLOCATEWORKARR( CSFEA, NP ) ;
+          CALL ALLOCATEWORKARR( SSFEA, NP ) ; 
+          
+          IF ( TipOrder == 22 ) THEN
+            CALL ALLOCATEWORKARR( S2SFEA, NP ) ; 
+          END IF
 
           IF ( TIPOrder > 3 ) THEN
             CALL ALLOCATEWORKARR( workarr1, NP ) ; 
@@ -442,7 +577,7 @@
              RETURN 
            END SUBROUTINE extractvalues        
            
-        END SUBROUTINE INIT_TIP 
+        END SUBROUTINE INIT_FULL_TIP 
         !
 
         !
