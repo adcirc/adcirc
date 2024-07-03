@@ -38,7 +38,7 @@
 ! JLW: initialize the arrays for use in the subgrid
 ! code
       implicit none
-      CHARACTER(200) :: subgridFilename
+      CHARACTER(200) :: subgridFilename = 'null'
       ! Flag for subgrid corrections to wetting and drying
       LOGICAL :: level0
       ! Flag for subgrid corrections to bottom friction and advection
