@@ -72,19 +72,25 @@ set_target_properties(metis PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 # Below are issues with a third party library, so Adcirc devs will not fix
 get_filename_component(C_COMPILER_NAME ${CMAKE_C_COMPILER} NAME)
-if(${C_COMPILER_NAME} MATCHES "gcc.*" OR ${C_COMPILER_NAME} MATCHES "cc")
-  SET(ADDITIONAL_METIS_COMPILER_FLAGS "")
-  # For GCC >= 10, we need to add -Wno-implicit-function-declaration
+if(${C_COMPILER_NAME} MATCHES "gcc.*" OR ${C_COMPILER_NAME} MATCHES "cc" AND NOT ${C_COMPILER_NAME} MATCHES "icc.*")
+  # For GCC >= 10, we need to add -Wno-implicit-function-declaration and -Wno-incompatible-pointer-types
   if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_C_COMPILER_VERSION} VERSION_EQUAL 10)
-    set(ADDITIONAL_METIS_COMPILER_FLAGS "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-implicit-function-declaration")
-  endif()
-  # For GCC >= 14, we need to add -Wno-incompatible-pointer-types too
-  if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 14 OR ${CMAKE_C_COMPILER_VERSION} VERSION_EQUAL 14)
-    set(ADDITIONAL_METIS_COMPILER_FLAGS "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-incompatible-pointer-types")
-  endif()
-  # Add the flags to the metis target
-  if(ADDITIONAL_METIS_COMPILER_FLAGS)
+    set(ADDITIONAL_METIS_COMPILER_FLAGS "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-implicit-function-declaration -Wno-incompatible-pointer-types")
     message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
     set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
   endif()
+elseif(${C_COMPILER_NAME} MATCHES "icx.*")
+  # For IntelLLVM, we need to add -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses
+  set(ADDITIONAL_METIS_COMPILER_FLAGS "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses")
+  message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
+  set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
+elseif(${C_COMPILER_NAME} MATCHES "icc.*")
+  # For Intel (classic), we need to add -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses
+  set(ADDITIONAL_METIS_COMPILER_FLAGS "${ADDITIONAL_METIS_COMPILER_FLAGS} -diag-disable 167")
+  message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
+  set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
+elseif(${C_COMPILER_NAME} MATCHES "nvc.*")
+  # For nvc, suppress diagnostic warnings that are not part of ADCIRC 
+  set(ADDITIONAL_METIS_COMPILER_FLAGS "${ADDITIONAL_METIS_COMPILER_FLAGS} --display_error_number --diag_suppress 550 --diag_suppress 177 --diag_suppress 167")
+  set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
 endif()

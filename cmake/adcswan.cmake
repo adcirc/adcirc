@@ -33,7 +33,6 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanQCM.f90)
 
   set(SWAN2SERIAL_SOURCES
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swan2coh.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swanmain.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swanpre1.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swanpre2.f
@@ -111,20 +110,16 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/globalio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/control.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/write_output.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F
@@ -145,6 +140,21 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/vsmy.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/driver.F)
+
+  
+  if(NETCDF_WORKING)
+    set(ADCSWAN1_SOURCES ${ADCSWAN1_SOURCES}
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
+    )
+  endif()
+
+  if(XDMF_WORKING)
+    set(ADCSWAN1_SOURCES ${ADCSWAN1_SOURCES}
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F
+    )
+  endif()
 
   # ...SWAN Configuration
   swanconfigureadcswan()
