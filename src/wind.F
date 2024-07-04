@@ -5185,7 +5185,7 @@ C            WVNY(I)=0.0d0
 C         ENDIF
 C
 !P.V 11/04/2022
-        PRESS(I) = max(0.85d5,min(1.1e5,PRESS(I))) !Typhoon Tip 870 hPa ... 12-oct-1979
+        PRESS(I) = max(0.85d5,min(1.1d5,PRESS(I))) !Typhoon Tip 870 hPa ... 12-oct-1979
         WVNX(I)  = max(-200.d0,min(200.d0,WVNX(I)))
         WVNY(I)  = max(-200.d0,min(200.d0,WVNY(I)))
         !-------------------------------------------
@@ -6939,7 +6939,7 @@ C     we are running off the end of the data.
 
 
          !P.V 11/04/2022
-         press(i) = max(0.85d5,min(1.1e5,press(i)))  ! Typhoon Tip 870 hPa ... 12-oct-1979
+         press(i) = max(0.85d5,min(1.1d5,press(i)))  ! Typhoon Tip 870 hPa ... 12-oct-1979
          wvnx(i)  = max(-200.d0,min(200.d0,wvnx(i)))
          wvny(i)  = max(-200.d0,min(200.d0,wvny(i)))
 
@@ -8931,7 +8931,7 @@ C----------------------------------------------------------------------
          Vvar = 'dmy'
          Cvar = 'dmy'
 
-#ifdef ADCNETCDF ! BEGIN ADCNETCDF
+#ifdef ADCNETCDF
          IF ( read_NWS14_NetCdf_using_core_0 ) THEN
            IF ( MYPROC .EQ. 0 ) THEN
              call Check_err(NF90_OPEN(Pfile,nf90_nowrite,PfileNCID))
@@ -8947,7 +8947,7 @@ C----------------------------------------------------------------------
 #endif
          END IF
 
-#endif ! END ADCNETCDF
+#endif
 
          RETURN
       ELSE
