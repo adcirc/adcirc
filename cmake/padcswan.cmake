@@ -33,7 +33,6 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanQCM.f90)
 
   set(SWAN2PARALLEL_SOURCES
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swan2coh.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanmain.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanpre1.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanpre2.f
@@ -112,7 +111,6 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
@@ -121,8 +119,6 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/write_output.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/writer.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F
@@ -133,7 +129,6 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/control.F)
 
   set(PADCSWAN_SOURCES
@@ -148,6 +143,20 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/vsmy.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/driver.F)
+  
+  if(NETCDF_WORKING)
+    set(PADCSWAN1_SOURCES ${PADCSWAN1_SOURCES}
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
+    )
+  endif()
+
+  if(XDMF_WORKING)
+    set(PADCSWAN1_SOURCES ${PADCSWAN1_SOURCES}
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F
+    )
+  endif()
 
   # ...SWAN Configuration
   swanconfigurepadcswan()
