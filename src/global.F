@@ -840,6 +840,8 @@ C     v49.48.01 tcm 20110126 Variables related to kdtree searches
       real(8), allocatable, target :: dynamicWaterLevelCorrection2(:)
       logical :: usingDynamicWaterLevelCorrection = .false.
       real(8), allocatable, target :: dynamicWaterLevelCorrectionSta(:)
+      !tga: tgaContOffset offset term for continuity eq
+      real(8), allocatable :: deltaOffset(:)
 
 C----- DW --- periodic bc 
       INTEGER:: NPERSEG, NNPERBC
