@@ -316,4 +316,5 @@ workflows:
                         - adcirc_timevaryingweirs-parallel
                         - adcirc_baroclinic_2d_serial
                         - adcirc_baroclinic_2d_parallel
+                        - adcirc_baroclinic_internaltide_2d
 
