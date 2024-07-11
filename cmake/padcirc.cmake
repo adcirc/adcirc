@@ -76,9 +76,13 @@ if(BUILD_PADCIRC)
   add_executable(padcirc ${PADCIRC_SOURCES})
 
   addcompilerflags(padcirc)
+  addNetCDFLibraries(padcirc)
+  addGrib2Libraries(padcirc)
+  addDatetimeLibraries(padcirc)
+  addXDMFLibraries(padcirc)
+  addVersionLibrary(padcirc)
+  addMkdirLibrary(padcirc)
   addmpi(padcirc)
-  addlibmkdir(padcirc)
-  addlibversion(padcirc)
 
   add_dependencies(padcirc version mkdir)
 

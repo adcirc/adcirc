@@ -173,15 +173,20 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   addcompilerflagsswan(templib_swan1parallel ${ADDITIONAL_FLAGS_SWAN})
   addcompilerflagsswan(templib_swan2parallel ${ADDITIONAL_FLAGS_SWAN})
 
-  addlibmkdir(templib_padcswan1)
-  addlibmkdir(padcswan)
-
-  addlibversion(padcswan)
+  add_dependencies(templib_padcswan1 version)
+  target_include_directories(templib_padcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_mod)
 
   addmpi(templib_padcswan1)
   addmpi(padcswan)
   addmpi(templib_swan1parallel)
   addmpi(templib_swan2parallel)
+
+  addNetCDFLibraries(padcswan)
+  addGrib2Libraries(templib_padcswan1)
+  addDatetimeLibraries(padcswan)
+  addXDMFLibraries(padcswan)
+  addVersionLibrary(padcswan)
+  addMkdirLibrary(templib_padcswan1)
 
   target_compile_definitions(templib_padcswan1 PRIVATE CSWAN)
   target_compile_definitions(padcswan PRIVATE CSWAN)
