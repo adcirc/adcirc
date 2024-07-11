@@ -122,7 +122,7 @@ C******************************************************************************
      &   nolica, nolicat, nolifa, nscreen, nstae, nt, screenunit,
      &   version_number, initLogging, setMessageSource, screenMessage,
      &   openLogFile, unsetMessageSource, np_global, rnp_global,
-     &   scratchMessage, CTIP, L_N, writer_id, deltaOffset
+     &   scratchMessage, CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
      &   initVEW1DChannelWetPerimeter
       USE ADC_CONSTANTS, ONLY: g, rhowat0
@@ -343,8 +343,8 @@ C...  attached to each node
       END IF
 
       !jgf: Initialize water level offset if needed
-      allocate(deltaOffset(np)) !time difference in offset tgaContOffset
-      deltaOffset=0.D0
+      allocate(dynamicWaterLevelCorrectionDelta(np)) !time difference in offset tgaContOffset
+      dynamicWaterLevelCorrectionDelta=0.D0
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          allocate(dynamicWaterLevelCorrection1(np))
          allocate(dynamicWaterLevelCorrection2(np)) ! used in timestepping
