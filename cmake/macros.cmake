@@ -21,16 +21,17 @@ macro(addCompilerFlags TARGET)
   string(STRIP ${LOCAL_COMPILER_FLAGS} LOCAL_COMPILER_FLAGS)
   separate_arguments(LOCAL_COMPILER_DEFINITIONS)
 
-  set_target_properties(${TARGET} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/${TARGET})
+  set_target_properties(${TARGET} PROPERTIES Fortran_MODULE_DIRECTORY
+                                             ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/${TARGET})
   set_target_properties(${TARGET} PROPERTIES COMPILE_FLAGS ${LOCAL_COMPILER_FLAGS})
   target_compile_definitions(${TARGET} PRIVATE ${LOCAL_COMPILER_DEFINITIONS})
 
-  addVersionDefinitions(${TARGET})
-  addMkdirDefinitions(${TARGET})
-  addNetCDFDefinitions(${TARGET})
-  addXDMFDefinitions(${TARGET})
-  addGrib2Definitions(${TARGET})
-  addDatetimeDefinitions(${TARGET})
+  addversiondefinitions(${TARGET})
+  addmkdirdefinitions(${TARGET})
+  addnetcdfdefinitions(${TARGET})
+  addxdmfdefinitions(${TARGET})
+  addgrib2definitions(${TARGET})
+  adddatetimedefinitions(${TARGET})
 
   set(LOCAL_COMPILER_FLAGS "")
   set(LOCAL_COMPILER_DEFINITIONS "")
@@ -50,7 +51,8 @@ macro(addCompilerFlagsSwan TARGET)
     set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -diag-disable 6843 -diag-disable 8291")
   endif()
 
-  set_target_properties(${TARGET} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/${TARGET})
+  set_target_properties(${TARGET} PROPERTIES Fortran_MODULE_DIRECTORY
+                                             ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/${TARGET})
   if(NOT
      "${LOCAL_COMPILER_FLAGS}"
      STREQUAL
@@ -71,10 +73,10 @@ macro(addGrib2Definitions TARGET)
     target_compile_definitions(${TARGET} PRIVATE GRIB2API)
     target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/grib2)
     add_dependencies(
-            ${TARGET}
-            grib2
-            ipolates
-            geo)
+      ${TARGET}
+      grib2
+      ipolates
+      geo)
   endif()
 endmacro(addGrib2Definitions)
 
@@ -130,11 +132,11 @@ endmacro()
 macro(addXDMFLibraries TARGET)
   if(XDMF_WORKING)
     target_link_libraries(
-            ${TARGET}
-            ${XDMF_LibXdmfCore}
-            ${XDMF_LibXdmfUtils}
-            ${XDMF_LibXdmf}
-            ${XDMF_AdditionalLibs})
+      ${TARGET}
+      ${XDMF_LibXdmfCore}
+      ${XDMF_LibXdmfUtils}
+      ${XDMF_LibXdmf}
+      ${XDMF_AdditionalLibs})
   endif()
 endmacro()
 
@@ -183,7 +185,8 @@ macro(swanConfigureAdcswan)
     add_custom_command(
       OUTPUT ${SWAN1SERIAL_SOURCES} ${SWAN2SERIAL_SOURCES}
       COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source
-      COMMAND ${PERL} switch.pl -adcirc -unix -outdir ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source *.ftn *.ftn90
+      COMMAND ${PERL} switch.pl -adcirc -unix -outdir ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source *.ftn
+              *.ftn90
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/swan
       COMMENT "Generating Serial unSWAN Sources...")
   endif(WIN32)
@@ -204,8 +207,8 @@ macro(swanConfigurePadcswan)
     add_custom_command(
       OUTPUT ${SWAN1PARALLEL_SOURCES} ${SWAN2PARALLEL_SOURCES}
       COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source
-      COMMAND ${PERL} switch.pl -pun -adcirc -unix -outdir ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source *.ftn
-              *.ftn90
+      COMMAND ${PERL} switch.pl -pun -adcirc -unix -outdir ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source
+              *.ftn *.ftn90
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/swan
       COMMENT "Generating Parallel unSWAN Sources...")
   endif(WIN32)
@@ -226,7 +229,8 @@ macro(swanConfigureSerial)
     add_custom_command(
       OUTPUT ${SWANONLY_SERIAL_SOURCES}
       COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source
-      COMMAND ${PERL} switch.pl -unix -outdir ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source *.ftn *.ftn90
+      COMMAND ${PERL} switch.pl -unix -outdir ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source *.ftn
+              *.ftn90
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/swan
       COMMENT "Generating Serial SWAN stand alone Sources...")
   endif(WIN32)
@@ -247,7 +251,8 @@ macro(swanConfigureParallel)
     add_custom_command(
       OUTPUT ${SWANONLY1_PARALLEL_SOURCES} ${SWANONLY2_PARALLEL_SOURCES}
       COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source
-      COMMAND ${PERL} switch.pl -pun -unix -outdir ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source *.ftn *.ftn90
+      COMMAND ${PERL} switch.pl -pun -unix -outdir ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source *.ftn
+              *.ftn90
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/swan
       COMMENT "Generating Parallel unSWAN Sources...")
   endif(WIN32)

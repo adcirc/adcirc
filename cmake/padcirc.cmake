@@ -58,30 +58,28 @@ if(BUILD_PADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
-  
+
   if(NETCDF_WORKING)
-    set(PADCIRC_SOURCES ${PADCIRC_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
-    )
+    set(PADCIRC_SOURCES
+        ${PADCIRC_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
   if(XDMF_WORKING)
-    set(PADCIRC_SOURCES ${PADCIRC_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F
-    )
+    set(PADCIRC_SOURCES ${PADCIRC_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
   endif()
 
   add_executable(padcirc ${PADCIRC_SOURCES})
 
   addcompilerflags(padcirc)
-  addNetCDFLibraries(padcirc)
-  addGrib2Libraries(padcirc)
-  addDatetimeLibraries(padcirc)
-  addXDMFLibraries(padcirc)
-  addVersionLibrary(padcirc)
-  addMkdirLibrary(padcirc)
+  addnetcdflibraries(padcirc)
+  addgrib2libraries(padcirc)
+  adddatetimelibraries(padcirc)
+  addxdmflibraries(padcirc)
+  addversionlibrary(padcirc)
+  addmkdirlibrary(padcirc)
   addmpi(padcirc)
 
   add_dependencies(padcirc version mkdir)

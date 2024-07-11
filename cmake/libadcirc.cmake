@@ -56,20 +56,18 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F)
-  
-  if(NETCDF_WORKING)
-    set(LIBADC_SOURCES ${LIBADC_SOURCES}
+
+if(NETCDF_WORKING)
+  set(LIBADC_SOURCES
+      ${LIBADC_SOURCES}
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
-    )
-  endif()
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
+endif()
 
-  if(XDMF_WORKING)
-    set(LIBADC_SOURCES ${LIBADC_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F
-    )
-  endif()
+if(XDMF_WORKING)
+  set(LIBADC_SOURCES ${LIBADC_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
+endif()
 
 if(BUILD_LIBADCIRC_STATIC)
 
@@ -100,11 +98,11 @@ if(BUILD_LIBADCIRC_SHARED)
   addcompilerflags(libadcirc_shared)
   addmpi(libadcirc_shared)
 
-  addNetCDFLibraries(libadcirc_shared)
-  addGrib2Libraries(libadcirc_shared)
-  addXDMFLibraries(libadcirc_shared)
-  addDatetimeLibraries(libadcirc_shared)
-  addVersionLibrary(libadcirc_shared)
+  addnetcdflibraries(libadcirc_shared)
+  addgrib2libraries(libadcirc_shared)
+  addxdmflibraries(libadcirc_shared)
+  adddatetimelibraries(libadcirc_shared)
+  addversionlibrary(libadcirc_shared)
 
   add_dependencies(libadcirc_shared version mkdir2)
   target_link_libraries(libadcirc_shared mkdir2)

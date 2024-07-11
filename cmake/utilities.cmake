@@ -36,8 +36,8 @@ if(BUILD_UTILITIES)
   addcompilerflags(inflate)
   addcompilerflags(hstime)
 
-  addNetCDFLibraries(hstime)
-  addNetCDFLibraries(adcircResultsComparison)
+  addnetcdflibraries(hstime)
+  addnetcdflibraries(adcircResultsComparison)
 
   install(
     TARGETS adccmp
