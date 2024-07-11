@@ -252,7 +252,7 @@ C
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH,
      &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, ALPHAL, windlim,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1,
-     &   deltaOffset, 
+     &   dynamicWaterLevelCorrectionDelta, 
      &   COEFDTemp, COEFDTempMem  ! Added for VED1D  08-11-2022 SB
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
@@ -2020,7 +2020,7 @@ C...  JCG ITERATIVE MATRIX SOLVER
      &        IWKSP,NW,WKSP,IPARM,RPARM,IER)
          NUMITR=IPARM(1)
          DO I=1,NP
-            ETA2(I)=NODECODE(I)*(ETAS(I)+deltaOffset(I))+ETA1(I) !COMPUTE NEW ELEVATIONS tgaContOffset
+            ETA2(I)=NODECODE(I)*(ETAS(I)+dynamicWaterLevelCorrectionDelta(I))+ETA1(I) !COMPUTE NEW ELEVATIONS tgaContOffset
          END DO
       ELSE ! lumped LHS
          DO I = 1, NP
@@ -2033,7 +2033,7 @@ C...  JCG ITERATIVE MATRIX SOLVER
          ENDDO
          NUMITR=0
          DO I=1,NP
-            ETA2(I)=NODECODE(I)*(ETAS(I)+deltaOffset(I))+ETA1(I) !COMPUTE NEW ELEVATIONS tgaContOffset
+            ETA2(I)=NODECODE(I)*(ETAS(I)+dynamicWaterLevelCorrectionDelta(I))+ETA1(I) !COMPUTE NEW ELEVATIONS tgaContOffset
          END DO
       ENDIF
 

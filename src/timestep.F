@@ -84,7 +84,7 @@ C
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
      &    Limit_WaveStressGrad,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
-     &    deltaOffset
+     &    dynamicWaterLevelCorrectionDelta
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
      &                         WaveStressGrad_Cap 
      
@@ -646,7 +646,7 @@ C     jgf: update water level correction fields
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc)
          if (dynamicWaterLevelCorrectionMassAdjust.eqv..true.) then
-            deltaOffset=dynamicWaterLevelCorrection2-dynamicWaterLevelCorrection1
+            dynamicWaterLevelCorrectionDelta=dynamicWaterLevelCorrection2-dynamicWaterLevelCorrection1
          endif
       endif
 C
