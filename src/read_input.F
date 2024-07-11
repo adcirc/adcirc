@@ -84,7 +84,7 @@ C-----------------------------------------------------------------------
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
-     &   WarnVel
+     &   WarnVel, toLowercase
 
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
@@ -121,6 +121,8 @@ C-----------------------------------------------------------------------
      &   BLADJ, STORMNUMBER, WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
      &   NWSok, WINDREFTIME, Allowable_NWS, PUREBACKGROUND, TimeConv, 
      &   DragLawString, dynamicWaterLevelCorrectionFileName, WTIMINC_12,
+     &   dynamicWaterLevelCorrectionMethod,
+     &   dynamicWaterLevelCorrectionMassAdjust,
      &   dynamicWaterLevelCorrectionRampStart,
      &   dynamicWaterLevelCorrectionRampEnd,
      &   dynamicWaterLevelCorrectionSkipSnaps,
@@ -211,6 +213,7 @@ C.... DMW
      &                      TOUTF_TVW,NSPOOL_TVW
       NAMELIST /dynamicWaterLevelCorrectionControl/
      &  dynamicWaterLevelCorrectionFileName,
+     &  dynamicWaterLevelCorrectionMethod,
      &  dynamicWaterLevelCorrectionSkipSnaps,
      &  dynamicWaterLevelCorrectionMultiplier,
      &  dynamicWaterLevelCorrectionRampStart,
@@ -623,6 +626,8 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       call logNamelistReadStatus(namelistSpecifier,ios)
       write(scratchMessage,'(a,a)') "dynamicWaterLevelCorrectionFileName=",
      &  trim(dynamicWaterLevelCorrectionFileName)
+      write(scratchMessage,'(a,a)') "dynamicWaterLevelCorrectionMethod=",
+     &  trim(dynamicWaterLevelCorrectionMethod)
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,i0)') "dynamicWaterLevelCorrectionSkipSnaps=",
      &  dynamicWaterLevelCorrectionSkipSnaps
@@ -641,6 +646,16 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       call logMessage(ECHO,trim(scratchMessage))
       if (trim(dynamicWaterLevelCorrectionFileName).ne.'null') then
          usingDynamicWaterLevelCorrection = .true.
+         ! set flags based on the method
+         select case (toLowercase(trim(dynamicWaterLevelCorrectionMethod)))
+         case ('default', 'momentumpapforcingandmassadjust')
+            dynamicWaterLevelCorrectionMassAdjust = .true.
+         case ('momentumpapforcing')
+            dynamicWaterLevelCorrectionMassAdjust = .false.
+         case default
+            call allMessage(ERROR, 'Invalid dynamicWaterLevelCorrectionMethod')
+            call adcirc_terminate()
+         end select
       endif
       ! exit if there was an error reading the dynamicWaterLevelCorrectionControl namelist
       if (ios.gt.0) then

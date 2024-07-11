@@ -251,7 +251,7 @@ C
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH,
      &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, ALPHAL, windlim,
-     &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1, 
+     &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1,
      &   deltaOffset, 
      &   COEFDTemp, COEFDTempMem  ! Added for VED1D  08-11-2022 SB
 #ifdef CMPI
@@ -287,6 +287,7 @@ C... SB
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
      &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
+
 !JLW: add subgrid additions
       USE subgrid, ONLY: level0, level1
      &   , subgridVertList
@@ -1730,7 +1731,7 @@ C     on and off according to analyst preference.
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          DO I=1,NETA
             ETA2(NBD(I))=ETA2(NBD(I)) + dynamicWaterLevelCorrection1(nbd(i)) 
-           END DO
+         END DO
       endif
 
 C   kmd48.33bc add information for the levels of no motion boundary conditions

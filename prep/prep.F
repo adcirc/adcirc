@@ -2367,9 +2367,11 @@ c...     tcm v52.30.01 additions for Smag_Control Namelist
          ENDIF
          ! jgf: dynamicWaterlevel control namelist
          if (foundCorrectionControlNamelist) then
-            write(15,'(a,a, a,i0, a,f15.8, a,a, a,f20.8, a,f20.8, a)')
+            write(15,'(a,a, a,a, a,i0, a,f15.8, a,a, a,f20.8, a,f20.8, a)')
      &       '&dynamicWaterLevelCorrectionControl dynamicWaterLevelCorrectionFileName="',
      &       trim(adjustl(dynamicWaterLevelCorrectionFileName)),
+     &       '",  dynamicWaterLevelCorrectionMethod="',
+     &       trim(adjustl(dynamicWaterLevelCorrectionMethod)),
      &       '",  dynamicWaterLevelCorrectionSkipSnaps=',dynamicWaterLevelCorrectionSkipSnaps,
      &       ', dynamicWaterlevelCorrectionMultiplier=',dynamicWaterLevelCorrectionMultiplier,
      &       ', dynamicWaterLevelCorrectionRampReferenceTime="',

@@ -237,6 +237,8 @@ C
       ! jgf: variables needed for water level correction data
       ! from control file
       character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file
+      character(len=64) :: dynamicWaterLevelCorrectionMethod = 'default' ! method specifiation for water level correction
+      logical :: dynamicWaterLevelCorrectionMassAdjust = .true. ! true if eta is adjusted directly
       real(8) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
       real(8) :: dynamicWaterLevelCorrectionRampEnd = 0.d0   ! seconds after run start
       integer :: dynamicWaterLevelCorrectionSkipSnaps = 0 ! number of correction data sets to skip
