@@ -26,9 +26,6 @@ if(BUILD_UTILITIES)
 
   add_executable(adcircResultsComparison util/adcircResultsComparison.F90)
   addcompilerflags(adcircResultsComparison)
-  if(NETCDF_WORKING)
-    addnetcdf(adcircResultsComparison)
-  endif(NETCDF_WORKING)
 
   addcompilerflags(adccmp)
   addcompilerflags(p15)
@@ -38,6 +35,9 @@ if(BUILD_UTILITIES)
   addcompilerflags(hot2asc)
   addcompilerflags(inflate)
   addcompilerflags(hstime)
+
+  addNetCDFLibraries(hstime)
+  addNetCDFLibraries(adcircResultsComparison)
 
   install(
     TARGETS adccmp

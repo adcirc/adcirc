@@ -44,7 +44,12 @@ if(BUILD_ASWIP)
   add_executable(aswip ${ASWIP_SOURCES})
 
   addcompilerflags(aswip ${ADDITIONAL_FLAGS_ASWIP})
-  addlibversion(aswip)
+  addNetCDFLibraries(aswip)
+  addGrib2Libraries(aswip)
+  addXDMFLibraries(aswip)
+  addDatetimeLibraries(aswip)
+  addVersionLibrary(aswip)
+  addMkdirLibrary(aswip)
 
   install(TARGETS aswip RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

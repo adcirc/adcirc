@@ -171,6 +171,16 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   addcompilerflags(templib_adcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
   addcompilerflags(adcswan ${ADDITIONAL_FLAGS_ADCIRC})
 
+  addNetCDFLibraries(adcswan)
+  addGrib2Libraries(templib_adcswan1)
+  addDatetimeLibraries(adcswan)
+  addXDMFLibraries(adcswan)
+  addVersionLibrary(adcswan)
+  addMkdirLibrary(adcswan)
+
+  add_dependencies(templib_adcswan1 version)
+  target_include_directories(templib_adcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_mod)
+
   target_compile_definitions(templib_adcswan1 PRIVATE CSWAN)
   target_compile_definitions(adcswan PRIVATE CSWAN)
 

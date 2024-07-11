@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5)
 
 project(JasPer C)
 
@@ -23,7 +23,7 @@ set(JAS_VERSION
 	"${JAS_VERSION_MAJOR}.${JAS_VERSION_MINOR}.${JAS_VERSION_PATCH}")
 
 IF( JAS_DEBUG_MSG )
-    message("Software version: ${JAS_VERSION}")
+    message("Jasper Software version: ${JAS_VERSION}")
 ENDIF( JAS_DEBUG_MSG )
 
 # The shared library versioning information, which is specified by the

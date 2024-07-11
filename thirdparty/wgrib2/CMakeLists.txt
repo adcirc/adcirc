@@ -8,7 +8,7 @@
 ###########################################################################
 #  GENERAL OPTIONS
 ###########################################################################
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5)
 PROJECT(wgrib2)
 ###########################################################################
 
@@ -26,7 +26,6 @@ SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
 ###########################################################################
 # COMPILER DEPENDENT FLAGS
 ###########################################################################
-MESSAGE(STATUS ${CMAKE_Fortran_COMPILER_ID})
 IF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM")
     SET(IPOLATES_R8_FLAG "-r8")
 ELSEIF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")

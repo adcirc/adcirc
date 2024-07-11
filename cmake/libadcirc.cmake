@@ -100,6 +100,12 @@ if(BUILD_LIBADCIRC_SHARED)
   addcompilerflags(libadcirc_shared)
   addmpi(libadcirc_shared)
 
+  addNetCDFLibraries(libadcirc_shared)
+  addGrib2Libraries(libadcirc_shared)
+  addXDMFLibraries(libadcirc_shared)
+  addDatetimeLibraries(libadcirc_shared)
+  addVersionLibrary(libadcirc_shared)
+
   add_dependencies(libadcirc_shared version mkdir2)
   target_link_libraries(libadcirc_shared mkdir2)
 
