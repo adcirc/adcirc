@@ -141,25 +141,23 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/driver.F)
 
-  
   if(NETCDF_WORKING)
-    set(ADCSWAN1_SOURCES ${ADCSWAN1_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
-    )
+    set(ADCSWAN1_SOURCES
+        ${ADCSWAN1_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
   if(XDMF_WORKING)
-    set(ADCSWAN1_SOURCES ${ADCSWAN1_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F
-    )
+    set(ADCSWAN1_SOURCES ${ADCSWAN1_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
   endif()
 
   # ...SWAN Configuration
   swanconfigureadcswan()
 
-  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source)
+  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
+                                      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source)
 
   add_library(templib_swan1serial STATIC ${SWAN1SERIAL_SOURCES})
   add_library(templib_swan2serial STATIC ${SWAN2SERIAL_SOURCES})
@@ -171,12 +169,12 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   addcompilerflags(templib_adcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
   addcompilerflags(adcswan ${ADDITIONAL_FLAGS_ADCIRC})
 
-  addNetCDFLibraries(adcswan)
-  addGrib2Libraries(templib_adcswan1)
-  addDatetimeLibraries(adcswan)
-  addXDMFLibraries(adcswan)
-  addVersionLibrary(adcswan)
-  addMkdirLibrary(adcswan)
+  addnetcdflibraries(adcswan)
+  addgrib2libraries(templib_adcswan1)
+  adddatetimelibraries(adcswan)
+  addxdmflibraries(adcswan)
+  addversionlibrary(adcswan)
+  addmkdirlibrary(adcswan)
 
   add_dependencies(templib_adcswan1 version)
   target_include_directories(templib_adcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_mod)

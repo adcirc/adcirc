@@ -54,25 +54,25 @@ if(BUILD_ADCPREP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
-  
+
   if(NETCDF_WORKING)
-    set(ADCPREP_SOURCES ${ADCPREP_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
-    )
+    set(ADCPREP_SOURCES
+        ${ADCPREP_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
   add_executable(adcprep ${ADCPREP_SOURCES})
 
   addcompilerflags(adcprep ${ADDITIONAL_FLAGS_ADCPREP})
-  addLibMetis(adcprep)
-  addNetCDFLibraries(adcprep)
-  addGrib2Libraries(adcprep)
-  addXDMFLibraries(adcprep)
-  addDatetimeLibraries(adcprep)
-  addVersionLibrary(adcprep)
-  addMkdirLibrary(adcprep)
+  addlibmetis(adcprep)
+  addnetcdflibraries(adcprep)
+  addgrib2libraries(adcprep)
+  addxdmflibraries(adcprep)
+  adddatetimelibraries(adcprep)
+  addversionlibrary(adcprep)
+  addmkdirlibrary(adcprep)
 
   if(BUILD_PADCSWAN OR BUILD_PUNSWAN)
     target_compile_definitions(adcprep PRIVATE ${PREP_SWAN_FLAG})

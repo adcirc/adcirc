@@ -143,25 +143,24 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/vsmy.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/driver.F)
-  
+
   if(NETCDF_WORKING)
-    set(PADCSWAN1_SOURCES ${PADCSWAN1_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
-    )
+    set(PADCSWAN1_SOURCES
+        ${PADCSWAN1_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
   if(XDMF_WORKING)
-    set(PADCSWAN1_SOURCES ${PADCSWAN1_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F
-    )
+    set(PADCSWAN1_SOURCES ${PADCSWAN1_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
   endif()
 
   # ...SWAN Configuration
   swanconfigurepadcswan()
 
-  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source)
+  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
+                                      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source)
 
   add_library(templib_swan1parallel STATIC ${SWAN1PARALLEL_SOURCES})
   add_library(templib_swan2parallel STATIC ${SWAN2PARALLEL_SOURCES})
@@ -181,19 +180,20 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   addmpi(templib_swan1parallel)
   addmpi(templib_swan2parallel)
 
-  addNetCDFLibraries(padcswan)
-  addGrib2Libraries(templib_padcswan1)
-  addDatetimeLibraries(padcswan)
-  addXDMFLibraries(padcswan)
-  addVersionLibrary(padcswan)
-  addMkdirLibrary(templib_padcswan1)
+  addnetcdflibraries(padcswan)
+  addgrib2libraries(templib_padcswan1)
+  adddatetimelibraries(padcswan)
+  addxdmflibraries(padcswan)
+  addversionlibrary(padcswan)
+  addmkdirlibrary(templib_padcswan1)
 
   target_compile_definitions(templib_padcswan1 PRIVATE CSWAN)
   target_compile_definitions(padcswan PRIVATE CSWAN)
 
   target_include_directories(templib_padcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
   target_include_directories(templib_swan2parallel PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_padcswan1)
-  target_include_directories(templib_swan2parallel PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
+  target_include_directories(templib_swan2parallel
+                             PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
   target_include_directories(padcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_padcswan1)
   target_include_directories(padcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
   target_include_directories(padcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan2parallel)

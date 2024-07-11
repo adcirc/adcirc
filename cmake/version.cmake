@@ -18,7 +18,8 @@ if(WIN32)
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/version.F)
     add_custom_command(
       OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
-      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/version.F ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/version.F
+              ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
       COMMENT "Generating ADCIRC version...")
   elseif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/version_default.F)
     add_custom_command(
@@ -28,16 +29,16 @@ if(WIN32)
       COMMENT "Generating ADCIRC version...")
   endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/version.F)
 else(WIN32)
-    add_custom_command(
-      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
-      COMMAND ./adcirc_version.py --create-version-file --directory ${CMAKE_CURRENT_SOURCE_DIR} >/dev/null
-      COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/version.F ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts
-      COMMENT "Generating ADCIRC version...")
-    add_custom_target(version_generate
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts
-        COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
-    )
+  add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
+    COMMAND ./adcirc_version.py --create-version-file --directory ${CMAKE_CURRENT_SOURCE_DIR} >/dev/null
+    COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/version.F ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts
+    COMMENT "Generating ADCIRC version...")
+  add_custom_target(
+    version_generate
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts
+    COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F)
 endif(WIN32)
 set_target_properties(version PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/version_mod)
 set_target_properties(version PROPERTIES COMPILE_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG}")
