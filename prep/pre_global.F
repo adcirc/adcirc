@@ -326,6 +326,7 @@ Casey 180318: Added NWS=13
       ! jgf: added support for water level correction
       logical :: foundCorrectionControlNamelist = .false. 
       character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file 
+      character(len=64) :: dynamicWaterLevelCorrectionMethod='default' ! method specifiation for water level correction
       integer :: dynamicWaterLevelCorrectionSkipSnaps=0 ! number of correction data sets to skip 
       real(8) :: dynamicWaterLevelCorrectionMultiplier = 1.d0 ! multiply each correction value by this
       real(8) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start

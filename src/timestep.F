@@ -102,7 +102,8 @@ C
       USE GLOBAL_IO, ONLY : nddt2get
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
-     &    getdynamicWaterLevelCorrections, 
+     &    getdynamicWaterLevelCorrections,
+     &    dynamicWaterLevelCorrectionMassAdjust,
      &    CLOSE_MET_FILES 
 
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
@@ -644,7 +645,9 @@ C---------------------WATER LEVEL OFFSET-----------------------------------
 C     jgf: update water level correction fields
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc)
-         deltaOffset=dynamicWaterLevelCorrection2-dynamicWaterLevelCorrection1
+         if (dynamicWaterLevelCorrectionMassAdjust.eqv..true.) then
+            deltaOffset=dynamicWaterLevelCorrection2-dynamicWaterLevelCorrection1
+         endif
       endif
 C
 C---------------------BEGIN MET FORCING----------------------------------------
