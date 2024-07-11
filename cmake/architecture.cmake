@@ -80,8 +80,9 @@ elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "PGI" OR ${CMAKE_Fortran_COMPILER_I
 
 else()
   message(WARNING "Unknown Fortran Compiler. Fortran Compiler ID detected as ${CMAKE_Fortran_COMPILER_ID}")
-  message(WARNING
-    "No known predefined Fortran extended line length flag known. Please manually set the Fortran_LINELENGTH_FLAG")
+  message(
+    WARNING
+      "No known predefined Fortran extended line length flag known. Please manually set the Fortran_LINELENGTH_FLAG")
   set(Fortran_LINELENGTH_FLAG
       ""
       CACHE STRING "Compiler specific flag to enable extended Fortran line length")

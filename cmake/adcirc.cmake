@@ -55,32 +55,29 @@ if(BUILD_ADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
-      )
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
 
   if(NETCDF_WORKING)
-    set(ADCIRC_SOURCES ${ADCIRC_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
-    )
+    set(ADCIRC_SOURCES
+        ${ADCIRC_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
   if(XDMF_WORKING)
-    set(ADCIRC_SOURCES ${ADCIRC_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F
-    )
+    set(ADCIRC_SOURCES ${ADCIRC_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
   endif()
 
   add_executable(adcirc ${ADCIRC_SOURCES})
   set(ADCIRC_COMPILER_FLAGS "${ADDITIONAL_FLAGS_ADCIRC} ${ADCIRC_OPTION_FLAGS}")
   addcompilerflags(adcirc ${ADDITIONAL_FLAGS_ADCIRC})
-  addNetCDFLibraries(adcirc)
-  addGrib2Libraries(adcirc)
-  addDatetimeLibraries(adcirc)
-  addXDMFLibraries(adcirc)
-  addVersionLibrary(adcirc)
-  addMkdirLibrary(adcirc)
+  addnetcdflibraries(adcirc)
+  addgrib2libraries(adcirc)
+  adddatetimelibraries(adcirc)
+  addxdmflibraries(adcirc)
+  addversionlibrary(adcirc)
+  addmkdirlibrary(adcirc)
   install(TARGETS adcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 endif(BUILD_ADCIRC)

@@ -33,23 +33,21 @@ if(BUILD_ASWIP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
       ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
       ${CMAKE_CURRENT_SOURCE_DIR}/wind/aswip.F)
-  
+
   if(NETCDF_WORKING)
-    set(ASWIP_SOURCES ${ASWIP_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
-    )
+    set(ASWIP_SOURCES ${ASWIP_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+                      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
   add_executable(aswip ${ASWIP_SOURCES})
 
   addcompilerflags(aswip ${ADDITIONAL_FLAGS_ASWIP})
-  addNetCDFLibraries(aswip)
-  addGrib2Libraries(aswip)
-  addXDMFLibraries(aswip)
-  addDatetimeLibraries(aswip)
-  addVersionLibrary(aswip)
-  addMkdirLibrary(aswip)
+  addnetcdflibraries(aswip)
+  addgrib2libraries(aswip)
+  addxdmflibraries(aswip)
+  adddatetimelibraries(aswip)
+  addversionlibrary(aswip)
+  addmkdirlibrary(aswip)
 
   install(TARGETS aswip RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
