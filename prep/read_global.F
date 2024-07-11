@@ -569,6 +569,7 @@ C.....tcm v52.30.01 added for Smag_Control
       INTEGER :: IOS_Smag = 0
       ! jgf: Added support for water level correction
       NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName,
+     &  dynamicWaterLevelCorrectionMethod,
      &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterlevelCorrectionMultiplier,
      &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
