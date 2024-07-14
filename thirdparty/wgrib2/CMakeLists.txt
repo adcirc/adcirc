@@ -391,12 +391,15 @@ ADD_LIBRARY( grib2 STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/Wrt_grib.c 
     ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/wrtieee.c 
     ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/wxtext.c 
-    ${CMAKE_CURRENT_SOURCE_DIR}/ftn_api/fort_wgrib2.c 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ftn_api/fort_wgrib2.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/wgrib2.c
+)
+add_library(grib2_ftn STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/ftn_api/wgrib2api.f90  
     ${CMAKE_CURRENT_SOURCE_DIR}/ftn_api/wgrib2lowapi.f90 
-    ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/wgrib2.c ) 
+)
 
-ADD_DEPENDENCIES( grib2 ipolates geo libjasper ) 
+ADD_DEPENDENCIES( grib2 grib2_ftn ipolates geo libjasper )
 TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/ipolates 
                                           ${CMAKE_CURRENT_SOURCE_DIR}/gctpc/source
                                           ${CMAKE_CURRENT_SOURCE_DIR} )
@@ -407,7 +410,43 @@ IF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID}
 ELSEIF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
     TARGET_COMPILE_DEFINITIONS( grib2 PRIVATE "GFORTRAN" )
 ENDIF()
-TARGET_LINK_LIBRARIES( grib2 PRIVATE ipolates geo libjasper ${JPEG_LIBRARIES} )
+
+# Below are issues with a third party library, so Adcirc devs will not fix
+get_filename_component(C_COMPILER_NAME ${CMAKE_C_COMPILER} NAME)
+if(${C_COMPILER_NAME} MATCHES "gcc.*"
+   OR ${C_COMPILER_NAME} MATCHES "cc"
+   AND NOT
+       ${C_COMPILER_NAME}
+       MATCHES
+       "icc.*")
+  # For GCC >= 10, we need to add -Wno-implicit-function-declaration and -Wno-incompatible-pointer-types
+  if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_C_COMPILER_VERSION} VERSION_EQUAL 10)
+    set(ADDITIONAL_METIS_COMPILER_FLAGS
+        "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-implicit-function-declaration -Wno-incompatible-pointer-types")
+    message(STATUS "Adding additional compiler flags to grib2: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
+    set_target_properties(grib2 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
+  endif()
+elseif(${C_COMPILER_NAME} MATCHES "icx.*")
+  # For IntelLLVM, we need to add -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses
+  set(ADDITIONAL_METIS_COMPILER_FLAGS
+      "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses"
+  )
+  message(STATUS "Adding additional compiler flags to grib2: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
+  set_target_properties(grib2 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
+elseif(${C_COMPILER_NAME} MATCHES "icc.*")
+  # For Intel (classic), we need to add -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses
+  set(ADDITIONAL_METIS_COMPILER_FLAGS "${ADDITIONAL_METIS_COMPILER_FLAGS} -diag-disable 167")
+  message(STATUS "Adding additional compiler flags to grib2: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
+  set_target_properties(grib2 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
+elseif(${C_COMPILER_NAME} MATCHES "nvc.*")
+  # For nvc, suppress diagnostic warnings that are not part of ADCIRC
+  set(ADDITIONAL_METIS_COMPILER_FLAGS
+      "${ADDITIONAL_METIS_COMPILER_FLAGS} --display_error_number --diag_suppress 550 --diag_suppress 177 --diag_suppress 167"
+  )
+  set_target_properties(grib2 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
+endif()
+
+TARGET_LINK_LIBRARIES( grib2 PRIVATE grib2_ftn ipolates geo libjasper ${JPEG_LIBRARIES} )
 TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${JPEG_INCLUDE_DIR} )
 TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/jasper/src/libjasper/include )
 TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/jasper/src/libjasper/include )
