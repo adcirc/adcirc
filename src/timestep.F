@@ -102,8 +102,7 @@ C
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
      &    getdynamicWaterLevelCorrections, 
-     &    CLOSE_MET_FILES, 
-     &    collect_wind_io_wall_time
+     &    CLOSE_MET_FILES
 
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
@@ -217,12 +216,6 @@ C.......
       LOGICAL ISFRONT
       LOGICAL foundNaN
       
-      REAL (8), save:: gwce_time = 0.D0, 
-     &              mom2D_time = 0.D0, wd_time = 0.D0 
-      REAL (8):: gwce_start_time = 0.D0, gwce_end_time = 0.D0 
-      REAL (8):: mom_start_time = 0.D0, mom_end_time = 0.D0
-      REAL (8):: wd_start_time = 0.D0, wd_end_time = 0.D0 
-
       IF (IT .EQ. 1) THEN
 !.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
         DO I = 1,NP
@@ -1126,11 +1119,6 @@ C...
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
 
-#ifdef WTIMER
-#ifdef CMPI
-      gwce_start_time = MPI_Wtime() 
-#endif
-#endif
 
 !----------------------SOLVE GWCE---------------------------------------
 C...
@@ -1138,18 +1126,6 @@ C...  Compute new water surface elevation
       call solveGWCE(it, ITIME_BGN, timeloc, timeh)
 
 !---------------------END SOLVE GWCE------------------------------------
-#ifdef WTIMER      
-#ifdef CMPI
-      gwce_end_time = MPI_Wtime()  
-#endif      
-      gwce_time = gwce_time + ( gwce_end_time - gwce_start_time)  
-#endif
-
-#ifdef WTIMER
-#ifdef CMPI
-      wd_start_time = MPI_Wtime()  
-#endif 
-#endif
 
 !JLW: adding subgrid
       IF(level0)THEN
@@ -1171,12 +1147,6 @@ C...  Compute new water surface elevation
 !--------------------WETTING AND DRYING--------------------------------
       ENDIF
 
-#ifdef WTIMER      
-#ifdef CMPI
-      wd_end_time = MPI_Wtime()  
-#endif      
-      wd_time = wd_time + ( wd_end_time - wd_start_time)  
-#endif
 
 
 !.....DMW202401 Add update for flow depth at current timestep
@@ -1184,24 +1154,13 @@ C...  Compute new water surface elevation
       DO I = 1,NP
          H2(I) = DP(I)+IFNLFA*ETA2(I)
       ENDDO
-C...
-#ifdef WTIMER
-#ifdef CMPI
-      mom_start_time = MPI_Wtime() ; 
-#endif      
-#endif      
+C...   
 C---------------2DDI Momentum Equation Solution-------------------------
 C...
       call solveMomentumEq()
 C...
 C-------------END OF 2DDI MOMENTUM EQUATION SOLUTION--------------------
 C...
-#ifdef WTIMER
-#ifdef CMPI
-      mom_end_time = MPI_Wtime() ; 
-#endif
-      mom2D_time = mom2D_time + (mom_end_time - mom_start_time)      
-#endif
 
 C.....DW - ABS SPONGE LAYER     
       IF ( C2DDI .AND. LoadAbsLayerSigma .AND. (sponge_dis_mthd == 0) ) THEN
@@ -1589,13 +1548,6 @@ C         CALL MASSBAL3D(IT)
 C      ENDIF
 
       IF ( IT == NT ) THEN
-#ifdef WTIMER              
-        ! collect and record nws io_time !      
-        CALL collect_wind_io_wall_time( ) 
-      
-        ! sovler time
-        CALL collect_solver_wall_time()
-#endif
         ! close NWS14 NetCdf files !
         CALL CLOSE_MET_FILES() ; 
       END IF        
@@ -1607,96 +1559,6 @@ C      ENDIF
       RETURN
 
 C******************************************************************************
-      CONTAINS
-
-#ifdef WTIMER
-         SUBROUTINE collect_solver_wall_time()
-            USE SIZES, ONLY: MYPROC, MNPROC
-   
-            IMPLICIT NONE
-   
-            REAL (8):: gwce_max_rank, gwce_min_rank
-            REAL (8):: gwce_max_wall_time, gwce_min_wall_time, gwce_sum_wall_time
-   
-            REAL (8):: mom2D_max_rank, mom2D_min_rank
-            REAL (8):: mom2D_max_wall_time, mom2D_min_wall_time, mom2D_sum_wall_time
-
-            REAL (8):: wd_max_rank, wd_min_rank
-            REAL (8):: wd_max_wall_time, wd_min_wall_time, wd_sum_wall_time
-
-            CHARACTER (LEN=100):: outfmt
-#ifdef CMPI
-            gwce_max_rank = DBLE(MYPROC)
-            gwce_min_rank = DBLE(MYPROC) 
-   
-            mom2D_max_rank = DBLE(MYPROC)
-            mom2D_min_rank = DBLE(MYPROC) 
-
-            wd_max_rank = DBLE(MYPROC)
-            wd_min_rank = DBLE(MYPROC)
-
-            ! GWCE
-            CALL MSG_RScalar_Reduce( 'MAX', gwce_time, 
-     &        gwce_max_wall_time, gwce_max_rank )
-   
-            CALL MSG_RScalar_Reduce( 'MIN', gwce_time, 
-     &        gwce_min_wall_time, gwce_min_rank )
-   
-            CALL MSG_RScalar_Reduce( 'SUM', gwce_time,
-     &        gwce_sum_wall_time ) ;
-   
-
-            ! 2D Mometum
-            CALL MSG_RScalar_Reduce( 'MAX', mom2D_time, 
-     &        mom2D_max_wall_time, mom2D_max_rank )
-   
-            CALL MSG_RScalar_Reduce( 'MIN', mom2D_time, 
-     &        mom2D_min_wall_time, mom2D_min_rank )
-   
-            CALL MSG_RScalar_Reduce( 'SUM', mom2D_time,
-     &        mom2D_sum_wall_time ) ;
-   
-   
-            ! Wet/dry
-            CALL MSG_RScalar_Reduce( 'MAX', wd_time, 
-     &        wd_max_wall_time, wd_max_rank )
-   
-            CALL MSG_RScalar_Reduce( 'MIN', wd_time, 
-     &        wd_min_wall_time, wd_min_rank )
-   
-            CALL MSG_RScalar_Reduce( 'SUM', wd_time,
-     &        wd_sum_wall_time ) ;
-
-
-            IF ( MYPROC == 0 ) THEN
-             OPEN( UNIT = 820, FILE = 'wall_clock_report.out', 
-     &          POSITION = 'APPEND', ACTION="write") ;
-   
-             outfmt = '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' ;
-             WRITE( 820, *) '' 
-             WRITE( 820, '(A)' ) '% ---- Time spent in gwce and '//
-     &            ' 2D momentum sovlers. ----'
-             WRITE( 820, '(A)') '%% gwce: '  
-             WRITE( 820, outfmt )
-     &         gwce_max_wall_time, INT(gwce_max_rank), gwce_min_wall_time,
-     &         INT(gwce_min_rank), gwce_sum_wall_time/DBLE(MNPROC) 
-
-             WRITE( 820, '(A)') '%% 2D momentum: ' 
-             WRITE( 820, outfmt )
-     &         mom2D_max_wall_time, INT(mom2D_max_rank), mom2D_min_wall_time,
-     &         INT(mom2D_min_rank), mom2D_sum_wall_time/DBLE(MNPROC)
-
-             WRITE( 820, '(A)') '%% Wet/Dry: ' 
-             WRITE( 820, outfmt )
-     &         wd_max_wall_time, INT(wd_max_rank), wd_min_wall_time,
-     &         INT(wd_min_rank), wd_sum_wall_time/DBLE(MNPROC)
-
-             CLOSE(820) ;
-            END IF     
-   
-#endif
-         END SUBROUTINE collect_solver_wall_time
-#endif   
 
       END SUBROUTINE TIMESTEP
 C******************************************************************************

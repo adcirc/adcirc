@@ -936,18 +936,12 @@ C----------------------------------------------------------------------
       integer :: i ! node loop counter
       real(8) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
 
-      real(8) :: start_time = 0.D0, end_time = 0.D0 ;
 
       call setMessageSource("getMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 
-#ifdef WTIMER
-#ifdef CMPI
-      start_time = MPI_Wtime() ; 
-#endif 
-#endif 
 C------------------------MET FORCING---------------------------------------
 C
 C...  UPDATE THE WIND STRESS AND SURFACE PRESSURE AND READ IN NEW VALUES
@@ -1803,12 +1797,7 @@ C      DW/WJP: rotate wind stresses if coordinate transform
        ENDIF
 
 C--------------------END MET FORCING---------------------------------------
-#ifdef WTIMER
-#ifdef CMPI
-      end_time = MPI_Wtime() ; 
-#endif 
-      nws_elapsed_time = nws_elapsed_time + (end_time - start_time)  
-#endif      
+ 
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -1852,18 +1841,12 @@ Casey 180318: Added for NWS=13
       real(8) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
 
-      real(8) :: start_time = 0.D0, end_time = 0.D0 ;
 
       call setMessageSource("coldStartMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 
-#ifdef WTIMER
-#ifdef CMPI
-      start_time = MPI_Wtime() ; 
-#endif      
-#endif
 
       WSX2(:) = 0.d0
       WSY2(:) = 0.D0
@@ -2137,13 +2120,6 @@ C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
          WVNY1 = WVNY2
       endif
 
-#ifdef WTIMER 
-#ifdef CMPI
-      end_time = MPI_Wtime() ; 
-#endif 
-      nws_elapsed_time = nws_elapsed_time + (end_time - start_time) 
-#endif
-
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -2200,17 +2176,9 @@ C----------------------------------------------------------------------
       real(8) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
       integer :: TimeLoc_NM ! timeloc to the nearest minute
 
-      real(8) :: start_time = 0.D0, end_time = 0.D0 
-
       call setMessageSource("hotStartMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif
-
-#ifdef WTIMER
-#ifdef CMPI
-      start_time = mpi_wtime() ; 
-#endif
 #endif
 
 C
@@ -3331,12 +3299,6 @@ C      DW/WJP: rotate wind stresses if coordinate transform
      &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
        ENDIF
 
-#ifdef WTIMER     
-#ifdef CMPI
-       end_time = mpi_wtime() ; 
-#endif
-       nws_elapsed_time = nws_elapsed_time + (end_time - start_time) 
-#endif
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
        call allMessage(DEBUG,"Return.")
@@ -9258,18 +9220,11 @@ C----------------------------------------------------------------------
       real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice
 
       !
-      REAL(8):: start_time = 0.0, end_time = 0.0
-
       CALL setMessageSource('NWS14GET')
       ! Show the date in str_date format
       call logMessage(ECHO,'CurDT strng: '//
      &                CurDT%strftime("%Y-%m-%d %H:%M"))
 
-#ifdef WTIMER      
-#ifdef CMPI
-      start_time = MPI_WTIME() ;       
-#endif  
-#endif
 
       ! Get the Pressure
       !':PRMSL:mean sea level:'
@@ -9288,13 +9243,6 @@ C----------------------------------------------------------------------
          NT = NTkeep
       endif
 
-#ifdef WTIMER
-#ifdef CMPI
-      end_time = MPI_WTIME() ;       
-#endif   
-      io_elapsed_time = io_elapsed_time + 
-     &  ( end_time - start_time )      
-#endif
 
       ! Doing the interpolation from their grid to ours
       do i = 1,np
@@ -9815,83 +9763,6 @@ C---------------------------------------------------------------------
       END SUBROUTINE CLOSE_MET_FILES        
 C---------------------------------------------------------------------
 
-C......................................................................
-      SUBROUTINE collect_wind_io_wall_time()
-         use global, only: NWS, NCICE
-         USE SIZES, ONLY: MYPROC, MNPROC
-
-         IMPLICIT NONE
-
-         REAL (8):: read_io_max_rank, read_io_min_rank
-         REAL (8):: max_wall_time, min_wall_time, sum_wall_time
-
-         REAL (8):: nws_read_io_max_rank, nws_read_io_min_rank
-         REAL (8):: nws_max_wall_time, nws_min_wall_time, nws_sum_wall_time
-
-         CHARACTER (LEN=100):: outfmt
-#ifdef WTIMER
-#ifdef CMPI
-         read_io_max_rank = DBLE(MYPROC)
-         read_io_min_rank = DBLE(MYPROC) 
-         
-         nws_read_io_max_rank = DBLE(MYPROC)
-         nws_read_io_min_rank = DBLE(MYPROC)
-
-         CALL MSG_RScalar_Reduce( 'MAX', io_elapsed_time, 
-     &        max_wall_time, read_io_max_rank )
-
-         CALL MSG_RScalar_Reduce( 'MIN', io_elapsed_time, 
-     &        min_wall_time, read_io_min_rank )
-
-         CALL MSG_RScalar_Reduce( 'SUM', io_elapsed_time,
-     &        sum_wall_time ) ;
-
-         CALL MSG_RScalar_Reduce( 'MAX', nws_elapsed_time, 
-     &        nws_max_wall_time, nws_read_io_max_rank )
-
-         CALL MSG_RScalar_Reduce( 'MIN', nws_elapsed_time, 
-     &        nws_min_wall_time, nws_read_io_min_rank )
-
-         CALL MSG_RScalar_Reduce( 'SUM', nws_elapsed_time,
-     &        nws_sum_wall_time ) ;
-
-
-         IF ( MYPROC == 0 ) THEN
-!          OPEN( UNIT = 825, FILE = 'nws_io_report.out', 
-!     &          ACTION="write") ;                 
-          OPEN( UNIT = 825, FILE = 'wall_clock_report.out', 
-     &       POSITION='APPEND', ACTION='write') ;
-
-          outfmt = '(F19.5,1X,I6,1X,F19.5,I6,1X,F19.5)' ;
-          WRITE( 825, * ) '' 
-          WRITE( 825, '(A)' ) '%---  Time spent in met'//
-     &            ' forcing subroutines ----'
-          WRITE( 825, '(A,I5)') '%% NWS = ', NWS
-          !
-          SELECT case(NWS)
-          CASE ( 14 ) 
-            WRITE( 825, '(A,L)') '%% Use core 0 to read = ',
-     &                 read_NWS14_using_core_0 
-        
-            WRITE( 825, '(A)') '%% Reading met files: '  
-            WRITE( 825, outfmt )
-     &        max_wall_time, INT(read_io_max_rank), min_wall_time,
-     &        INT(read_io_min_rank), sum_wall_time/DBLE(MNPROC)
-          END SELECT
-          !
-          WRITE( 825, '(A)') '%% Total met-related time : ' 
-          WRITE( 825, outfmt )
-     &       nws_max_wall_time, INT(nws_read_io_max_rank), nws_min_wall_time,
-     &       INT(nws_read_io_min_rank), nws_sum_wall_time/DBLE(MNPROC)
-         
-          CLOSE(825) ;
-         END IF     
-
-#endif
-#endif
-
-      END SUBROUTINE collect_wind_io_wall_time
-C----------------------------------------------------------------------
  
 
 C-----------------------------------------------------------------------

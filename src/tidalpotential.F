@@ -324,7 +324,7 @@
 #ifndef TIPSTANDALONE ! BEGIN COMP_FULL_TIP_DRV1() 
         ! For use in the ADICRC code, 
         !  1. use SFEA and SLAM from the ADCIRC mesh module
-        !  2.  precomputed cos(SFEA), sin(SFEA), sin(2*SFEA) (if TipOrder == 22)       
+        !  2. precomputed cos(SFEA), sin(SFEA), sin(2*SFEA) (if TipOrder == 22)       
         SUBROUTINE COMP_FULL_TIP_DRV1( TIPVAL, TimeLoc )  
            IMPLICIT NONE
 
@@ -491,6 +491,7 @@
 
           REAL (8):: DDD
           INTEGER:: YYYY, MM, DD, HH, MMM, SS
+          INTEGER:: argval(3) ; 
 
           INTEGER:: ii, cpos(2), ivec(3)
           CHARACTER (LEN=80)::  tmparr
@@ -499,8 +500,28 @@
           ! Extract date from base_date
           tmparr = adjustl(TIPStartDate) ;
  
-          CALL extractvalues( YYYY, MM, DD, delimter(1) ) ;  
-          CALL extractvalues(  HH, MMM, SS, delimter(2) ) ; 
+          ! Default J2000 epoch !
+          YYYY = 2000 ; 
+          MM   = 1    ;
+          DD   = 1    ;
+
+          HH = 0 ;
+          MMM = 0 ;
+          SS  = 0 ;
+
+!          CALL extractvalues( YYYY, MM, DD, delimter(1) ) ;  
+!          CALL extractvalues(  HH, MMM, SS, delimter(2) ) ;
+          argval = (/ YYYY, MM, DD /) ;  
+          CALL extractvalues( argval, delimter(1) ) ;
+          YYYY = argval(1) ;
+          MM = argval(2) ;
+          DD = argval(3) ;
+
+          argval = (/ HH, MMM, SS /) ; 
+          CALL extractvalues( argval, delimter(2) ) ; 
+          HH = argval(1) ;
+          MMM = argval(2) ;
+          DD = argval(3) ;  
 
           DDD = DBLE(DD) + DBLE(HH)*hour2day + 
      &       DBLE(MMM)*min2day + DBLE(SS)*sec2day ;
@@ -546,34 +567,47 @@
               RETURN ;
            END SUBROUTINE ALLOCATEWORKARR  
 
-           SUBROUTINE extractvalues( arg1, arg2, arg3, delimc )
+           SUBROUTINE extractvalues( arg,  delimc )
              IMPLICIT NONE
 
              CHARACTER:: delimc
-             INTEGER:: arg1, arg2, arg3 
+             INTEGER:: arg(3)
 
+             LOGICAL:: earlystop 
              INTEGER:: ii,  cpos(3), ivec(3) 
 
+             earlystop = .false. ; 
+
+             ivec = 0 ; 
              cpos(1) = 1 ;
-   
              DO ii = 1, 3
+               if (  len(trim( tmparr(cpos(1):) )) == 0 ) EXIT ;
+
                cpos(2) = index( tmparr, delimc ) ;
-              
-               if ( cpos(2) == 0 )  cpos(2) = index( tmparr, ' ' ) ; 
+
+               if ( cpos(2) == 0 )  then  
+                   cpos(2) = index( tmparr, ' ' ) ;
+                   
+                   earlystop = .true. ;
+               end if   
   
                if ( cpos(2) > 0  ) then
                   read( tmparr(cpos(1):cpos(2)-1), * ) ivec(ii)  ;
                   
                   tmparr = adjustl(tmparr(cpos(2)+1:) ) ;
-               else
-                  read( tmparr(cpos(1):), * ) ivec(ii)  ;
+               else   
+                 if ( len(trim( tmparr(cpos(1):) )) > 0 ) then        
+                   read( tmparr(cpos(1):), * ) ivec(ii)  ;
+                 end if
                end if
+
+               arg(ii) = ivec(ii) ; 
+               if ( earlystop ) EXIT ; 
              END DO    
              
-             arg1 = ivec(1) ;
-             arg2 = ivec(2) ;
-             arg3 = ivec(3) ;
-
+             ! arg1 = ivec(1) ;
+             ! arg2 = ivec(2) ;
+             ! arg3 = ivec(3) ;
              RETURN 
            END SUBROUTINE extractvalues        
            

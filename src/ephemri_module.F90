@@ -126,11 +126,20 @@ contains
         return ;
       END IF
 
+#ifndef TIPSTANDALONE
       IF ( .not. UniformRankSearch ) THEN
         iabeg = GET_RANK_BINARY_SEARCH( seconds_between, tmparr, lenarr ) - 4 ;    
       ELSE
         iabeg = GET_RANK_UNIFORM( seconds_between, tmparr, lenarr) - 4 ;
       END IF        
+#else
+      IF ( .not. UniformRankSearch ) THEN
+        iabeg = GET_RANK_BINARY_SEARCH( seconds_between - tcache, tmparr, lenarr ) - 4 ;    
+      ELSE
+        iabeg = GET_RANK_UNIFORM( seconds_between - tcache, tmparr, lenarr) - 4 ;
+      END IF      
+#endif
+
       if ( iabeg < 1 ) iabeg = 1 ; 
 
       IF ( .not. UniformRankSearch ) THEN
