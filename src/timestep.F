@@ -104,7 +104,7 @@ C
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
      &    getdynamicWaterLevelCorrections,
      &    dynamicWaterLevelCorrectionMassAdjust,
-     &    CLOSE_MET_FILES, 
+     &    CLOSE_MET_FILES
 
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE

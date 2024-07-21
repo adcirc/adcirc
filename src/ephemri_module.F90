@@ -30,9 +30,7 @@ module ephemri_module
 
 
 contains
-
   subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE( MoonSunCoor, julian_date_loc, MoonSunCoordFile, IERR, UniformDT  )
-    ! use netcdf
     implicit none
 
     real(8), intent(in) :: julian_date_loc
@@ -40,6 +38,11 @@ contains
     real(8):: MoonSunCoor(3, 2)
     INTEGER:: IERR
     LOGICAL, optional:: UniformDT 
+
+#ifndef ADCNETCDF 
+    WRITE(*,'(A)') "ERROR: Must compile with netCDF support enabled"
+    CALL EXIT(1)
+#else
 
     integer:: ncid, time_varid, lunar_distance_varid, solar_distance_varid
     integer:: lunar_ra_varid, solar_ra_varid, lunar_dec_varid, solar_dec_varid
@@ -60,20 +63,6 @@ contains
     integer :: idarr(4) 
 
     logical:: first = .true., recache = .false.  
-
-#ifndef ADCNETCDF
-    WRITE(*,*) " Error:"
-    WRITE(*,*) "   To include this subroutine,"
-    WRITE(*,*) "    1. Compile this file witth -DADCNETCDF in compiler flags."
-    WRITE(*,*) "    2. A netcdf and fortran netcdf library are requried."  
-    WRITE(*,*) "    3. Include the location of the netcdf fortran module file"// &
-                       "(-I$(netcdf_include_path))"//" to complie this file" 
-    WRITE(*,*) "    4. Link the netcdf library when building an execubale"//
-                      "(-L$(netcdf_library_path) -lnetcdf -lnetcdff."
-    ierr = 1 ;
-
-    RETURN ;     
-#else
     integer:: dimids(nf90_max_dims) 
 
     ! Calculate seconds between the provided date and the reference date !
@@ -230,8 +219,7 @@ contains
     ! Convert solar distance to AU
     ! MoonSunCoor(3,2) = MoonSunCoor(3,2) * 6.6845871226706E-9
     MoonSunCoor(3,2) = MoonSunCoor(3,2) * km2AU ; 
-#endif
-
+#endif  
   end subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE
 
   ! check whether RA change cross the zero hr line.

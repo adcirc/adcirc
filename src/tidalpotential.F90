@@ -14,42 +14,27 @@
 !      
       MODULE TIPFUNCMOD
 
-#ifndef TIPSTANDALONE
-       use global, only: DEBUG, INFO, ECHO, WARNING, ERROR,
-     &   scratchMessage, logMessage, screenMessage, allMessage,
-     &   setMessageSource, openFileForRead, unsetMessageSource,
-     &   scratchFormat
+       use global, only: DEBUG, INFO, ECHO, WARNING, ERROR, &
+         scratchMessage, logMessage, screenMessage, allMessage, &
+         setMessageSource, openFileForRead, unsetMessageSource, &
+         scratchFormat
 
-        USE ADC_CONSTANTS, only: hour2day, min2day, sec2day, 
-     &       DEG2RAD, RAD2DEG 
+        USE ADC_CONSTANTS, only: hour2day, min2day, sec2day, &
+             DEG2RAD, RAD2DEG 
         USE SIZES, only: MYPROC
         USE MESH, only: SLAM, SFEA 
-#endif
 
 #ifdef DATETIME
         use datetime_module, only: strptime
 #endif
 
         USE ASTROFORMOD
-        USE MOON_SUN_COORS, only: HEAVENLY_OBJS_COORDS_JM, 
-     &                                 SET_NUTATION, GMST_DEG_FN
+        USE MOON_SUN_COORS, only: HEAVENLY_OBJS_COORDS_JM, SET_NUTATION, GMST_DEG_FN
         USE ephemri_module, only: HEAVENLY_OBJS_COORDS_FROM_TABLE
 
-
-        INTERFACE HEAVENLY_OBJS_COORDS
-          MODULE PROCEDURE  HEAVENLY_OBJS_COORDS_JM, 
-     &             HEAVENLY_OBJS_COORDS_FROM_TABLE            
-        END INTERFACE HEAVENLY_OBJS_COORDS
-        
-#ifndef TIPSTANDALONE
         INTERFACE COMP_FULL_TIP
           MODULE PROCEDURE COMP_FULL_TIP_DRV0, COMP_FULL_TIP_DRV1      
         END INTERFACE COMP_FULL_TIP
-#else        
-        INTERFACE COMP_FULL_TIP
-          MODULE PROCEDURE COMP_FULL_TIP_DRV0      
-        END INTERFACE COMP_FULL_TIP
-#endif
         !
         !  UseFullTIPFormula = T/F (default F)
         !  TIPOrder = 2 (P2), 3(p3), >= 4(exact)  (default 2)
@@ -86,13 +71,10 @@
         REAL (8), private, dimension(:), allocatable:: AH, cosZA, workarr, workarr1
         REAL (8), private, dimension(:), allocatable:: CSFEA, SSFEA, S2SFEA
 
-        REAL (8), private, parameter:: massratio(2) = (/
-     &                       MassRatioMoonEarth, MassRatioSunEarth  /) ; 
+        REAL (8), private, parameter:: massratio(2) = (/ MassRatioMoonEarth, MassRatioSunEarth  /) 
 
-        REAL (8), private, parameter:: significant_radiusearth(2) = (/
-     &                       EarthRadiuskm(1), EarthRadiusAu(1) /) ;
-        REAL (8), private, parameter:: exponent_radiusearth(2) = (/
-     &                       EarthRadiuskm(2), EarthRadiusAu(2) /) ; 
+        REAL (8), private, parameter:: significant_radiusearth(2) = (/ EarthRadiuskm(1), EarthRadiusAu(1) /) 
+        REAL (8), private, parameter:: exponent_radiusearth(2) = (/ EarthRadiuskm(2), EarthRadiusAu(2) /) 
 
 #ifdef TIPSTANDALONE
         REAL(8), PARAMETER :: hour2sec = 3600.0D0
@@ -104,7 +86,7 @@
 
         REAL (8), parameter:: hour2min = 60.D0 
         REAL (8), parameter:: min2hour = 1.D0/hour2min
-        REAL (8), parameter:: min2day = 1.D0*min2hour*hour2day ;
+        REAL (8), parameter:: min2day = 1.D0*min2hour*hour2day 
 #endif        
 
         PRIVATE:: AINTPOWER, COMP_FULL_TIP_SUB0, cehck_err
@@ -119,29 +101,26 @@
         !
         ! (the latter is intended to be used in the ADCIRC code. 
         ! the former is a stand alone.         
-        SUBROUTINE COMP_FULL_TIP_SUB0( TIPVAL, tocgmst, MoonSunCoor, 
-     &                              SLAM, SFEA, CSFEA, SSFEA, S2SFEA  ) 
+        SUBROUTINE COMP_FULL_TIP_SUB0( TIPVAL, tocgmst, MoonSunCoor, SLAM, SFEA, CSFEA, SSFEA, S2SFEA  ) 
           IMPLICIT NONE 
        
           REAL (8), INTENT(INOUT):: TIPVAL(:) 
           REAL (8), INTENT(IN):: tocgmst      ! Time in seconds since TIPStartDate !
           REAL (8), INTENT(IN):: MoonSunCoor(3,2)
-          REAL (8), INTENT(IN), DIMENSION(:):: SLAM, SFEA, CSFEA, 
-     &                                         SSFEA, S2SFEA  ! radians
+          REAL (8), INTENT(IN), DIMENSION(:):: SLAM, SFEA, CSFEA, SSFEA, S2SFEA  ! radians
 
           INTEGER:: IOBJ, iexp
           REAL (8):: RA, DEC, DELTA
           REAL (8):: radius_div_Delta, KP, C0
          
-     
-          TIPVAL = 0.D0 ;
+          TIPVAL = 0.D0 
           DO IOBJ = 1, 2 
              ! Hour angle !
-             AH = DEG2RAD*tocgmst + SLAM - MoonSunCoor(1,IOBJ) ;
-             ! AH = modulo( tocgmst + SLAM*RAD2DEG, 360.D0 )*DEG2RAD -  MoonSunCoor(1,IOBJ) ;
-             RA = MoonSunCoor(1,IOBJ) ; ! right ascendsion
-             DEC = MoonSunCoor(2,IOBJ) ; ! declination
-             DELTA = MoonSunCoor(3,IOBJ) ; ! distance (km for the Moon,
+             AH = DEG2RAD*tocgmst + SLAM - MoonSunCoor(1,IOBJ) 
+             ! AH = modulo( tocgmst + SLAM*RAD2DEG, 360.D0 )*DEG2RAD -  MoonSunCoor(1,IOBJ) 
+             RA = MoonSunCoor(1,IOBJ)  ! right ascendsion
+             DEC = MoonSunCoor(2,IOBJ)  ! declination
+             DELTA = MoonSunCoor(3,IOBJ)  ! distance (km for the Moon,
                                            ! AU for the sun
 
              ! Ratio of the radius of the earth and the Moon/Sun                              
@@ -149,69 +128,68 @@
              radius_div_delta = radius_div_delta*exponent_radiusearth(IOBJ) 
 
              !c cosZA = cos( Z )            
-             cosZA = SSFEA*sin(DEC) ;
-             cosZA = cosZA + CSFEA*cos(DEC)*cos(AH) ;   
+             cosZA = SSFEA*sin(DEC) 
+             cosZA = cosZA + CSFEA*cos(DEC)*cos(AH)    
              
              SELECT CASE( TipOrder )
              CASE (2,3)
                ! P2  term. Degree 2 or 3 tidal potential !
-               workarr = 3.D0*cosZA*cosZA ; 
-               workarr = workarr - 1.D0   ;
-               workarr = 0.5D0*workarr ;
+               workarr = 3.D0*cosZA*cosZA  
+               workarr = workarr - 1.D0   
+               workarr = 0.5D0*workarr 
 
-               KP = AINTPOWER( radius_div_delta, 3 ) ;
-               KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ; 
-               KP = KP*massratio(IOBJ) ;
+               KP = AINTPOWER( radius_div_delta, 3 ) 
+               KP = KP*EarthRadiusm(1)*EarthRadiusm(2)  
+               KP = KP*massratio(IOBJ) 
 
-               TIPVAL = TIPVAL + KP*workarr ; 
+               TIPVAL = TIPVAL + KP*workarr  
 
                ! if include P3 term 
                IF ( TipOrder == 3 ) THEN
-                  workarr = 5.D0*cosZA*cosZA*cosZA ;
-                  workarr = workarr - 3.D0*cosZA ; 
-                  workarr = 0.5D0*workarr ;
+                  workarr = 5.D0*cosZA*cosZA*cosZA 
+                  workarr = workarr - 3.D0*cosZA  
+                  workarr = 0.5D0*workarr 
 
-                  KP = AINTPOWER( radius_div_delta, 4 ) ; 
-                  KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ;
-                  KP = KP*massratio(IOBJ) ; 
+                  KP = AINTPOWER( radius_div_delta, 4 )  
+                  KP = KP*EarthRadiusm(1)*EarthRadiusm(2) 
+                  KP = KP*massratio(IOBJ)  
                   ! Offset values is zero for this term c!
 
-                  TIPVAL = TIPVAL + KP*workarr ; 
+                  TIPVAL = TIPVAL + KP*workarr  
                END IF   
              CASE (22)    
                !   P2 - Only dirunal + semi-dirunal. A special case of
                !   the degree 2 tidal potential,
                !
                ! Dirunal
-               workarr = (3.D0/4.D0)*S2SFEA*sin(2.D0*DEC)*cos(AH) ;
+               workarr = (3.D0/4.D0)*S2SFEA*sin(2.D0*DEC)*cos(AH) 
 
                ! Semi-Diurnal
-               workarr1 = CSFEA ; 
-               workarr = workarr + 
-     &            (3.D0/4.D0)*workarr1*workarr1*cos(DEC)*cos(DEC)*cos(2.D0*AH) ;
+               workarr1 = CSFEA 
+               workarr = workarr + (3.D0/4.D0)*workarr1*workarr1*cos(DEC)*cos(DEC)*cos(2.D0*AH) 
 
 
-               KP = AINTPOWER( radius_div_delta, 3 ) ;
-               KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ; 
-               KP = KP*massratio(IOBJ) ; 
+               KP = AINTPOWER( radius_div_delta, 3 ) 
+               KP = KP*EarthRadiusm(1)*EarthRadiusm(2)  
+               KP = KP*massratio(IOBJ)  
 
-               TIPVAL = TIPVAL + KP*workarr ; 
+               TIPVAL = TIPVAL + KP*workarr  
              CASE DEFAULT
                ! Exact form without any truncation ! 
-               workarr = 1.D0 + AINTPOWER( radius_div_delta, 2 ) ;
-               workarr = workarr - 2.D0*radius_div_delta*cosZA  ;
+               workarr = 1.D0 + AINTPOWER( radius_div_delta, 2 ) 
+               workarr = workarr - 2.D0*radius_div_delta*cosZA  
 
-               workarr = sqrt( workarr ) ; 
-               workarr = 1.D0/workarr ; 
+               workarr = sqrt( workarr )  
+               workarr = 1.D0/workarr  
 
-               workarr = workarr - radius_div_delta*cosZA ; 
+               workarr = workarr - radius_div_delta*cosZA  
 
                ! Offset value, use Proudman's approach, see Kowalik,
                ! page 14.
-               C0 = 1.D0 + AINTPOWER(radius_div_delta, 2) ;
-               C0 =  SQRT(C0 + 2.D0*radius_div_delta) - 
-     &               SQRT(C0 - 2.D0*radius_div_delta)  ;
-               C0 = -0.5D0*C0/radius_div_delta ;          
+               C0 = 1.D0 + AINTPOWER(radius_div_delta, 2) 
+               C0 =  SQRT(C0 + 2.D0*radius_div_delta) - &
+                     SQRT(C0 - 2.D0*radius_div_delta)  
+               C0 = -0.5D0*C0/radius_div_delta           
 
                ! NOTE: 
                ! The constant of integration C0 equals to
@@ -229,24 +207,20 @@
                ! 
                !    C0 \sim -1 
                !             
-               workarr = workarr + C0  ;
+               workarr = workarr + C0  
 
-               KP = AINTPOWER( radius_div_delta, 1 ) ;
-               KP = KP*EarthRadiusm(1)*EarthRadiusm(2) ;
-               KP = KP*massratio(IOBJ) ; 
+               KP = AINTPOWER( radius_div_delta, 1 ) 
+               KP = KP*EarthRadiusm(1)*EarthRadiusm(2) 
+               KP = KP*massratio(IOBJ)  
 
-               TIPVAL = TIPVAL + KP*workarr ;  
+               TIPVAL = TIPVAL + KP*workarr   
              END SELECT 
           END DO
 
-          TIPVAL = (1.D0 + k2value - h2value)*TIPVAL ;
-         
+          TIPVAL = (1.D0 + k2value - h2value)*TIPVAL 
 
-          RETURN 
         END SUBROUTINE COMP_FULL_TIP_SUB0
 
-        !
-        ! 
         SUBROUTINE COMP_FULL_TIP_DRV0( TIPVAL, TimeLoc, SLAM, SFEA )  
            IMPLICIT NONE
 
@@ -262,66 +236,52 @@
            INTEGER:: IERR
 
            LOGICAL, SAVE:: first = .true.
-
-#ifndef TIPSTANDALONE           
+      
           call setMessageSource("comp_full_tip")
 #if defined(ALL_TRACE)
           call allMessage(DEBUG,"Enter.")
 #endif
-#endif
 
-           NPP = SIZE( TIPVAL ) ; 
+           NPP = SIZE( TIPVAL )  
            IF ( first ) THEN   
-              CALL INIT_FULL_TIP( NPP ) ;
-              first = .false. ;
+              CALL INIT_FULL_TIP( NPP ) 
+              first = .false. 
            END IF     
 
            ! Julian day
-           JDELoc = JDE_BEG + TimeLoc*sec2day ;            
+           JDELoc = JDE_BEG + TimeLoc*sec2day             
 
            ! Compute the postions of the Moon and Sun !
            IF ( TRIM(MoonSunPositionComputeMethod) == 'JM' ) THEN
               ! use algorithms in Jean Meeus's book !
-              CALL HEAVENLY_OBJS_COORDS( MoonSunCoor(:,1), 
-     &                     MoonSunCoor(:,2), JDELoc, IERR ) ; 
+              CALL HEAVENLY_OBJS_COORDS_JM( MoonSunCoor(:,1), MoonSunCoor(:,2), JDELoc, IERR )  
            ELSE
               ! interpolate from an external look up table !
-              CALL HEAVENLY_OBJS_COORDS( MoonSunCoor, JDELoc, 
-     &          MoonSunCoordFile, IERR, UniformResMoonSunTimeData ) ;
+              CALL HEAVENLY_OBJS_COORDS_FROM_TABLE( MoonSunCoor, JDELoc, MoonSunCoordFile, IERR, UniformResMoonSunTimeData ) 
            END IF   
            CALL check_err( IERR  )
        
            ! Convert RA, DEC from deg --> rad
-           MoonSunCoor(1:2,:) = MoonSunCoor(1:2,:)*DEG2RAD ;
+           MoonSunCoor(1:2,:) = MoonSunCoor(1:2,:)*DEG2RAD 
 
            ! Sidereal time at Greenwich ! 
-           tocgmst = GMST_DEG_FN( JDELoc )  ;
+           tocgmst = GMST_DEG_FN( JDELoc )  
 
-           CSFEA = cos( SFEA ) ; 
-           SSFEA = sin( SFEA ) ; 
+           CSFEA = cos( SFEA )  
+           SSFEA = sin( SFEA )  
            IF ( TipOrder == 22 ) THEN
-             S2SFEA = sin( 2.D0*SFEA ) ; 
+             S2SFEA = sin( 2.D0*SFEA )  
            END IF
 
-           CALL COMP_FULL_TIP_SUB0( TIPVAL, tocgmst, MoonSunCoor, 
-     &                           SLAM, SFEA, CSFEA, SSFEA, S2SFEA  ) 
+           CALL COMP_FULL_TIP_SUB0( TIPVAL, tocgmst, MoonSunCoor, SLAM, SFEA, CSFEA, SSFEA, S2SFEA  ) 
 
-                     
-#ifndef TIPSTANDALONE
 #if defined(ALL_TRACE)
            call allMessage(DEBUG,"Return.")
 #endif
            call unsetMessageSource()
-#endif
 
-           RETURN ;
- 
+        END SUBROUTINE COMP_FULL_TIP_DRV0     
 
-        END SUBROUTINE COMP_FULL_TIP_DRV0 
-        !        
-
-
-#ifndef TIPSTANDALONE ! BEGIN COMP_FULL_TIP_DRV1() 
         ! For use in the ADICRC code, 
         !  1. use SFEA and SLAM from the ADCIRC mesh module
         !  2. precomputed cos(SFEA), sin(SFEA), sin(2*SFEA) (if TipOrder == 22)       
@@ -346,42 +306,39 @@
           call allMessage(DEBUG,"Enter.")
 #endif
 
-           NPP = SIZE( TIPVAL ) ; 
+           NPP = SIZE( TIPVAL )  
            IF ( first ) THEN   
-              CALL INIT_FULL_TIP( NPP ) ;
-              first = .false. ;
+              CALL INIT_FULL_TIP( NPP ) 
+              first = .false. 
 
-              CSFEA = cos( SFEA ) ; 
-              SSFEA = sin( SFEA ) ; 
+              CSFEA = cos( SFEA )  
+              SSFEA = sin( SFEA )  
               IF ( TipOrder == 22 ) THEN
-                 S2SFEA = sin( 2.D0*SFEA ) ; 
+                 S2SFEA = sin( 2.D0*SFEA )  
               END IF
            END IF     
 
            ! Julian day
-           JDELoc = JDE_BEG + TimeLoc*sec2day ;            
+           JDELoc = JDE_BEG + TimeLoc*sec2day             
 
            ! Compute the postions of the Moon and Sun !
            IF ( TRIM(MoonSunPositionComputeMethod) == 'JM' ) THEN
               ! use algorithms in Jean Meeus's book !
-              CALL HEAVENLY_OBJS_COORDS( MoonSunCoor(:,1), 
-     &                     MoonSunCoor(:,2), JDELoc, IERR ) ; 
+              CALL HEAVENLY_OBJS_COORDS_JM( MoonSunCoor(:,1), MoonSunCoor(:,2), JDELoc, IERR )  
            ELSE
               ! interpolate from an external look up table !
-              CALL HEAVENLY_OBJS_COORDS( MoonSunCoor, JDELoc, 
-     &          MoonSunCoordFile, IERR, UniformResMoonSunTimeData ) ;
+              CALL HEAVENLY_OBJS_COORDS_FROM_TABLE( MoonSunCoor, JDELoc, MoonSunCoordFile, IERR, UniformResMoonSunTimeData ) 
            END IF   
            CALL check_err( IERR  )
        
            ! Convert RA, DEC from deg --> rad
-           MoonSunCoor(1:2,:) = MoonSunCoor(1:2,:)*DEG2RAD ;
+           MoonSunCoor(1:2,:) = MoonSunCoor(1:2,:)*DEG2RAD 
 
            ! Sidereal time at Greenwich ! 
-           tocgmst = GMST_DEG_FN( JDELoc )  ;
+           tocgmst = GMST_DEG_FN( JDELoc )  
 
 
-           CALL COMP_FULL_TIP_SUB0( TIPVAL, tocgmst, MoonSunCoor, 
-     &                           SLAM, SFEA, CSFEA, SSFEA, S2SFEA  ) 
+           CALL COMP_FULL_TIP_SUB0( TIPVAL, tocgmst, MoonSunCoor, SLAM, SFEA, CSFEA, SSFEA, S2SFEA ) 
 
                     
 #if defined(ALL_TRACE)
@@ -389,44 +346,25 @@
 #endif
            call unsetMessageSource()
 
-
-           RETURN ; 
         END SUBROUTINE COMP_FULL_TIP_DRV1 
         !     
-#endif  ! END  COMP_FULL_TIP_DRV1() 
-
-
 
         SUBROUTINE check_err( IERR  )
           IMPLICIT NONE
              
           INTEGER:: IERR 
 
-          IF ( IERR > 1 ) THEN
-#ifndef TIPSTANDALONE      
+          IF ( IERR > 1 ) THEN  
            SELECT CASE( IERR )
            CASE (1)      
-              CALL  screenMessage( ERROR, "Error in the calculation"//
-     &           " the postion of the Moon and Sun. ADCIRC is not "//
-     &           " built with the -DADCNETCDF flag." ) ;
+              CALL  screenMessage( ERROR, "Error in the calculation"//&
+                 " the postion of the Moon and Sun. ADCIRC is not "//&
+                 " built with the -DADCNETCDF flag." ) 
            CASE (2)
-              CALL  screenMessage( ERROR, "Error in the calculation"//
-     &           " the postion of the Moon and Sun. Date not within"//
-     &           "  database." ) ;
-           END SELECT
-#else
-           SELECT CASE( IERR )
-           CASE (1)
-              WRITE(*,*) "Erorr in the calculation of"//
-     &           " the position of the Moon and Sun. ADCIRC is not "//
-     &           " built with the -DADCNETCDF flag."  ;
-           CASE (2)   
-              WRITE(*,*) "Error in the calculation of"//
-     &           " the postion of the Moon and Sun. Date not within"//
-     &           "  database."  ;
-           END SELECT 
-           STOP ;             
-#endif            
+              CALL  screenMessage( ERROR, "Error in the calculation"//&
+                 " the postion of the Moon and Sun. Date not within"//&
+                 "  database." ) 
+           END SELECT   
           END IF
 
         END SUBROUTINE check_err
@@ -438,13 +376,13 @@
 
            CHARACTER (LEN=*):: base_date
  
-           CALL StringUpper( TIPStartDate ) ; 
+           CALL StringUpper( TIPStartDate )  
 
            IF ( trim(TIPStartDate) == 'BASEDATE' ) THEN
               TIPStartDate =trim( base_date)    
            END IF
 
-           RETURN ;     
+           RETURN      
         END SUBROUTINE SET_TIP_BASEDATE
 
         !
@@ -456,11 +394,11 @@
            INTEGER:: I, asciinum
  
            DO I = 1, len(string)
-              asciinum = iachar(string(I:I)) ; 
+              asciinum = iachar(string(I:I))  
  
               SELECT case(asciinum)
               CASE (97:122)
-                string(I:I) = char( asciinum - 32 ) ; 
+                string(I:I) = char( asciinum - 32 )  
               END SELECT       
            END DO
  
@@ -476,9 +414,9 @@
 
            INTEGER:: I
 
-           AP = 1.D0 ; 
+           AP = 1.D0  
            DO I = 1, N
-            AP = AP*A ; 
+            AP = AP*A  
            END DO
 
         END FUNCTION AINTPOWER
@@ -491,62 +429,61 @@
 
           REAL (8):: DDD
           INTEGER:: YYYY, MM, DD, HH, MMM, SS
-          INTEGER:: argval(3) ; 
+          INTEGER:: argval(3)  
 
           INTEGER:: ii, cpos(2), ivec(3)
           CHARACTER (LEN=80)::  tmparr
-          CHARACTER:: delimter(2) = (/ '-', ':' /) ; 
+          CHARACTER:: delimter(2) = (/ '-', ':' /)  
 
           ! Extract date from base_date
-          tmparr = adjustl(TIPStartDate) ;
+          tmparr = adjustl(TIPStartDate) 
  
           ! Default J2000 epoch !
-          YYYY = 2000 ; 
-          MM   = 1    ;
-          DD   = 1    ;
+          YYYY = 2000  
+          MM   = 1    
+          DD   = 1    
 
-          HH = 0 ;
-          MMM = 0 ;
-          SS  = 0 ;
+          HH = 0 
+          MMM = 0 
+          SS  = 0 
 
-!          CALL extractvalues( YYYY, MM, DD, delimter(1) ) ;  
-!          CALL extractvalues(  HH, MMM, SS, delimter(2) ) ;
-          argval = (/ YYYY, MM, DD /) ;  
-          CALL extractvalues( argval, delimter(1) ) ;
-          YYYY = argval(1) ;
-          MM = argval(2) ;
-          DD = argval(3) ;
+!          CALL extractvalues( YYYY, MM, DD, delimter(1) )   
+!          CALL extractvalues(  HH, MMM, SS, delimter(2) ) 
+          argval = (/ YYYY, MM, DD /)   
+          CALL extractvalues( argval, delimter(1) ) 
+          YYYY = argval(1) 
+          MM = argval(2) 
+          DD = argval(3) 
 
-          argval = (/ HH, MMM, SS /) ; 
-          CALL extractvalues( argval, delimter(2) ) ; 
-          HH = argval(1) ;
-          MMM = argval(2) ;
-          DD = argval(3) ;  
+          argval = (/ HH, MMM, SS /)  
+          CALL extractvalues( argval, delimter(2) )  
+          HH = argval(1) 
+          MMM = argval(2) 
+          DD = argval(3)   
 
-          DDD = DBLE(DD) + DBLE(HH)*hour2day + 
-     &       DBLE(MMM)*min2day + DBLE(SS)*sec2day ;
+          DDD = DBLE(DD) + DBLE(HH)*hour2day + DBLE(MMM)*min2day + DBLE(SS)*sec2day 
            
           ! Get  correspond Julian days !
-          JDE_BEG = JULIANDAY( DDD, MM, YYYY )  ;
-          JDE_CURRENT = JDE_BEG ; 
+          JDE_BEG = JULIANDAY( DDD, MM, YYYY )  
+          JDE_CURRENT = JDE_BEG  
 
-          CALL StringUpper( MoonSunPositionComputeMethod ) ; 
+          CALL StringUpper( MoonSunPositionComputeMethod )  
           IF ( TRIM(ADJUSTL(MoonSunPositionComputeMethod)) == 'JM' ) THEN 
-            CALL SET_NUTATION(  IncludeNutation  ) ;
+            CALL SET_NUTATION(  IncludeNutation  ) 
           END IF
 
-          CALL ALLOCATEWORKARR( AH, NP ) ; 
+          CALL ALLOCATEWORKARR( AH, NP )  
           CALL ALLOCATEWORKARR( cosZA, NP )
-          CALL ALLOCATEWORKARR( workarr, NP ) ; 
-          CALL ALLOCATEWORKARR( CSFEA, NP ) ;
-          CALL ALLOCATEWORKARR( SSFEA, NP ) ; 
+          CALL ALLOCATEWORKARR( workarr, NP )  
+          CALL ALLOCATEWORKARR( CSFEA, NP ) 
+          CALL ALLOCATEWORKARR( SSFEA, NP )  
           
           IF ( TipOrder == 22 ) THEN
-            CALL ALLOCATEWORKARR( S2SFEA, NP ) ; 
+            CALL ALLOCATEWORKARR( S2SFEA, NP )  
           END IF
 
           IF ( TIPOrder > 3 ) THEN
-            CALL ALLOCATEWORKARR( workarr1, NP ) ; 
+            CALL ALLOCATEWORKARR( workarr1, NP )  
           END IF
 
           RETURN 
@@ -559,12 +496,12 @@
               REAL (8), ALLOCATABLE:: arr(:)
 
               IF ( ALLOCATED(arr) ) THEN
-                DEALLOCATE(arr) ;
+                DEALLOCATE(arr) 
               END IF
-              ALLOCATE( arr(1:N) ) ; 
-              arr = 0.D0 ; 
+              ALLOCATE( arr(1:N) )  
+              arr = 0.D0  
 
-              RETURN ;
+              RETURN 
            END SUBROUTINE ALLOCATEWORKARR  
 
            SUBROUTINE extractvalues( arg,  delimc )
@@ -576,65 +513,42 @@
              LOGICAL:: earlystop 
              INTEGER:: ii,  cpos(3), ivec(3) 
 
-             earlystop = .false. ; 
+             earlystop = .false.  
 
-             ivec = 0 ; 
-             cpos(1) = 1 ;
+             ivec = 0  
+             cpos(1) = 1 
              DO ii = 1, 3
-               if (  len(trim( tmparr(cpos(1):) )) == 0 ) EXIT ;
+               if (  len(trim( tmparr(cpos(1):) )) == 0 ) EXIT 
 
-               cpos(2) = index( tmparr, delimc ) ;
+               cpos(2) = index( tmparr, delimc ) 
 
                if ( cpos(2) == 0 )  then  
-                   cpos(2) = index( tmparr, ' ' ) ;
+                   cpos(2) = index( tmparr, ' ' ) 
                    
-                   earlystop = .true. ;
+                   earlystop = .true. 
                end if   
   
                if ( cpos(2) > 0  ) then
-                  read( tmparr(cpos(1):cpos(2)-1), * ) ivec(ii)  ;
+                  read( tmparr(cpos(1):cpos(2)-1), * ) ivec(ii)  
                   
-                  tmparr = adjustl(tmparr(cpos(2)+1:) ) ;
+                  tmparr = adjustl(tmparr(cpos(2)+1:) ) 
                else   
                  if ( len(trim( tmparr(cpos(1):) )) > 0 ) then        
-                   read( tmparr(cpos(1):), * ) ivec(ii)  ;
+                   read( tmparr(cpos(1):), * ) ivec(ii)  
                  end if
                end if
 
-               arg(ii) = ivec(ii) ; 
-               if ( earlystop ) EXIT ; 
+               arg(ii) = ivec(ii)  
+               if ( earlystop ) EXIT  
              END DO    
              
-             ! arg1 = ivec(1) ;
-             ! arg2 = ivec(2) ;
-             ! arg3 = ivec(3) ;
+             ! arg1 = ivec(1) 
+             ! arg2 = ivec(2) 
+             ! arg3 = ivec(3) 
              RETURN 
            END SUBROUTINE extractvalues        
            
         END SUBROUTINE INIT_FULL_TIP 
-        !
-
-        !
-        SUBROUTINE INIT_TIP_FTCE( L_N, NP, SFEA ) 
-          IMPLICIT NONE
-
-          INTEGER:: NP
-          REAL (8):: L_N(:,:), SFEA(:)
-
-          INTEGER:: I 
-
-          L_N = 0.D0 ;
-
-          DO I = 1,NP
-C           LONG-TERM SPECIES
-            L_N(0,I) = 1.5d0*COS(SFEA(I))*COS(SFEA(I)) - 1d0
-C           DIURNAL SPECIES
-            L_N(1,I) = SIN(2d0*SFEA(I))
-C           SEMIDIURNAL SPECIES
-            L_N(2,I) = COS(SFEA(I))*COS(SFEA(I))
-          END DO
-          RETURN      
-        END SUBROUTINE INIT_TIP_FTCE
 
       END MODULE TIPFUNCMOD        
 
