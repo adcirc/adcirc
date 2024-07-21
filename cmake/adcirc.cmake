@@ -52,9 +52,9 @@ if(BUILD_ADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/driver.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/astromod.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemri_module.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90

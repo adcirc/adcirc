@@ -124,11 +124,11 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/astromod.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemri_module.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90

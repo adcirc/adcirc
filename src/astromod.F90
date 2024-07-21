@@ -662,10 +662,318 @@
         ! Variables string periodic terms in the the Moon's longtitude,
         ! latitude, and dfistance 
         INTEGER, private, parameter:: NPER = 60 !
-        REAL (8), private:: LATARG(NPER,4), LAT_SIN_COEF(NPER)  ! for Moon's Latitude
-        REAL (8), private:: LONARG(NPER,4), LON_SIN_COEF(NPER), LON_COS_COEF(NPER) ! For Moon's longitud and distance
-    
-        INTEGER, private:: LONMEU(NPER), LATMEU(NPER) ! Absolue value of factor of M argument in LATARG, and ONARG  
+
+        !  TABLE 47. B. page 341. Periodic terms for the latitude of
+        !  the Moon (\Sum b). The unit is 1e-6 degree
+        real(8), parameter, private :: LATARG(NPER, 4) = reshape((/0.d0, 0.d0, 0.d0, 1.d0, &
+                                                                   0.d0, 0.d0, 1.d0, 1.d0, &
+                                                                   0.d0, 0.d0, 1.d0, -1.d0, &
+                                                                   2.d0, 0.d0, 0.d0, -1.d0, &
+                                                                   2.d0, 0.d0, -1.d0, 1.d0, &
+                                                                   2.d0, 0.d0, -1.d0, -1.d0, &
+                                                                   2.d0, 0.d0, 0.d0, 1.d0, &
+                                                                   0.d0, 0.d0, 2.d0, 1.d0, &
+                                                                   2.d0, 0.d0, 1.d0, -1.d0, &
+                                                                   0.d0, 0.d0, 2.d0, -1.d0, &
+                                                                   2.d0, -1.d0, 0.d0, -1.d0, &
+                                                                   2.d0, 0.d0, -2.d0, -1.d0, &
+                                                                   2.d0, 0.d0, 1.d0, 1.d0, &
+                                                                   2.d0, 1.d0, 0.d0, -1.d0, &
+                                                                   2.d0, -1.d0, -1.d0, 1.d0, &
+                                                                   2.d0, -1.d0, 0.d0, 1.d0, &
+                                                                   2.d0, -1.d0, -1.d0, -1.d0, &
+                                                                   0.d0, 1.d0, -1.d0, -1.d0, &
+                                                                   4.d0, 0.d0, -1.d0, -1.d0, &
+                                                                   0.d0, 1.d0, 0.d0, 1.d0, &
+                                                                   0.d0, 0.d0, 0.d0, 3.d0, &
+                                                                   0.d0, 1.d0, -1.d0, 1.d0, &
+                                                                   1.d0, 0.d0, 0.d0, 1.d0, &
+                                                                   0.d0, 1.d0, 1.d0, 1.d0, &
+                                                                   0.d0, 1.d0, 1.d0, -1.d0, &
+                                                                   0.d0, 1.d0, 0.d0, -1.d0, &
+                                                                   1.d0, 0.d0, 0.d0, -1.d0, &
+                                                                   0.d0, 0.d0, 3.d0, 1.d0, &
+                                                                   4.d0, 0.d0, 0.d0, -1.d0, &
+                                                                   4.d0, 0.d0, -1.d0, 1.d0, &
+                                                                   0.d0, 0.d0, 1.d0, -3.d0, &
+                                                                   4.d0, 0.d0, -2.d0, 1.d0, &
+                                                                   2.d0, 0.d0, 0.d0, -3.d0, &
+                                                                   2.d0, 0.d0, 2.d0, -1.d0, &
+                                                                   2.d0, -1.d0, 1.d0, -1.d0, &
+                                                                   2.d0, 0.d0, -2.d0, 1.d0, &
+                                                                   0.d0, 0.d0, 3.d0, -1.d0, &
+                                                                   2.d0, 0.d0, 2.d0, 1.d0, &
+                                                                   2.d0, 0.d0, -3.d0, -1.d0, &
+                                                                   2.d0, 1.d0, -1.d0, 1.d0, &
+                                                                   2.d0, 1.d0, 0.d0, 1.d0, &
+                                                                   4.d0, 0.d0, 0.d0, 1.d0, &
+                                                                   2.d0, -1.d0, 1.d0, 1.d0, &
+                                                                   2.d0, -2.d0, 0.d0, -1.d0, &
+                                                                   0.d0, 0.d0, 1.d0, 3.d0, &
+                                                                   2.d0, 1.d0, 1.d0, -1.d0, &
+                                                                   1.d0, 1.d0, 0.d0, -1.d0, &
+                                                                   1.d0, 1.d0, 0.d0, 1.d0, &
+                                                                   0.d0, 1.d0, -2.d0, -1.d0, &
+                                                                   2.d0, 1.d0, -1.d0, -1.d0, &
+                                                                   1.d0, 0.d0, 1.d0, 1.d0, &
+                                                                   2.d0, -1.d0, -2.d0, -1.d0, &
+                                                                   0.d0, 1.d0, 2.d0, 1.d0, &
+                                                                   4.d0, 0.d0, -2.d0, -1.d0, &
+                                                                   4.d0, -1.d0, -1.d0, -1.d0, &
+                                                                   1.d0, 0.d0, 1.d0, -1.d0, &
+                                                                   4.d0, 0.d0, 1.d0, -1.d0, &
+                                                                   1.d0, 0.d0, -1.d0, -1.d0, &
+                                                                   4.d0, -1.d0, 0.d0, -1.d0, &
+                                                                   2.d0, -2.d0, 0.d0, 1.d0/), (/NPER, 4/))
+
+        real(8), parameter, private :: LAT_SIN_COEF(NPER) = (/5128122.d0, &
+                                                              280602.d0, &
+                                                              277693.d0, &
+                                                              173237.d0, &
+                                                              55413.d0, &
+                                                              46271.d0, &
+                                                              32573.d0, &
+                                                              17198.d0, &
+                                                              9266.d0, &
+                                                              8822.d0, &
+                                                              8216.d0, &
+                                                              4324.d0, &
+                                                              4200.d0, &
+                                                              -3359.d0, &
+                                                              2463.d0, &
+                                                              2211.d0, &
+                                                              2065.d0, &
+                                                              -1870.d0, &
+                                                              1828.d0, &
+                                                              -1794.d0, &
+                                                              -1749.d0, &
+                                                              -1565.d0, &
+                                                              -1491.d0, &
+                                                              -1475.d0, &
+                                                              -1410.d0, &
+                                                              -1344.d0, &
+                                                              -1335.d0, &
+                                                              1107.d0, &
+                                                              1021.d0, &
+                                                              833.d0, &
+                                                              777.d0, &
+                                                              671.d0, &
+                                                              607.d0, &
+                                                              596.d0, &
+                                                              491.d0, &
+                                                              -451.d0, &
+                                                              439.d0, &
+                                                              422.d0, &
+                                                              421.d0, &
+                                                              -366.d0, &
+                                                              -351.d0, &
+                                                              331.d0, &
+                                                              315.d0, &
+                                                              302.d0, &
+                                                              -283.d0, &
+                                                              -229.d0, &
+                                                              223.d0, &
+                                                              223.d0, &
+                                                              -220.d0, &
+                                                              -220.d0, &
+                                                              -185.d0, &
+                                                              181.d0, &
+                                                              -177.d0, &
+                                                              176.d0, &
+                                                              166.d0, &
+                                                              -164.d0, &
+                                                              132.d0, &
+                                                              -119.d0, &
+                                                              115.d0, &
+                                                              107.d0/)
+
+        ! TABLE 47. A.
+        !  Periodic terms for the longitude \Sum l and distance \Sum r
+        !  of the Moon. The unit is 1e-6 for \Sum l and Kilometer for \Sum r
+        real(8), parameter, private :: LONARG(NPER, 4) = reshape((/0.d0, 0.d0, 1.d0, 0.d0, &
+                                                                   2.d0, 0.d0, -1.d0, 0.d0, &
+                                                                   2.d0, 0.d0, 0.d0, 0.d0, &
+                                                                   0.d0, 0.d0, 2.d0, 0.d0, &
+                                                                   0.d0, 1.d0, 0.d0, 0.d0, &
+                                                                   0.d0, 0.d0, 0.d0, 2.d0, &
+                                                                   2.d0, 0.d0, -2.d0, 0.d0, &
+                                                                   2.d0, -1.d0, -1.d0, 0.d0, &
+                                                                   2.d0, 0.d0, 1.d0, 0.d0, &
+                                                                   2.d0, -1.d0, 0.d0, 0.d0, &
+                                                                   0.d0, 1.d0, -1.d0, 0.d0, &
+                                                                   1.d0, 0.d0, 0.d0, 0.d0, &
+                                                                   0.d0, 1.d0, 1.d0, 0.d0, &
+                                                                   2.d0, 0.d0, 0.d0, -2.d0, &
+                                                                   0.d0, 0.d0, 1.d0, 2.d0, &
+                                                                   0.d0, 0.d0, 1.d0, -2.d0, &
+                                                                   4.d0, 0.d0, -1.d0, 0.d0, &
+                                                                   0.d0, 0.d0, 3.d0, 0.d0, &
+                                                                   4.d0, 0.d0, -2.d0, 0.d0, &
+                                                                   2.d0, 1.d0, -1.d0, 0.d0, &
+                                                                   2.d0, 1.d0, 0.d0, 0.d0, &
+                                                                   1.d0, 0.d0, -1.d0, 0.d0, &
+                                                                   1.d0, 1.d0, 0.d0, 0.d0, &
+                                                                   2.d0, -1.d0, 1.d0, 0.d0, &
+                                                                   2.d0, 0.d0, 2.d0, 0.d0, &
+                                                                   4.d0, 0.d0, 0.d0, 0.d0, &
+                                                                   2.d0, 0.d0, -3.d0, 0.d0, &
+                                                                   0.d0, 1.d0, -2.d0, 0.d0, &
+                                                                   2.d0, 0.d0, -1.d0, 2.d0, &
+                                                                   2.d0, -1.d0, -2.d0, 0.d0, &
+                                                                   1.d0, 0.d0, 1.d0, 0.d0, &
+                                                                   2.d0, -2.d0, 0.d0, 0.d0, &
+                                                                   0.d0, 1.d0, 2.d0, 0.d0, &
+                                                                   0.d0, 2.d0, 0.d0, 0.d0, &
+                                                                   2.d0, -2.d0, -1.d0, 0.d0, &
+                                                                   2.d0, 0.d0, 1.d0, -2.d0, &
+                                                                   2.d0, 0.d0, 0.d0, 2.d0, &
+                                                                   4.d0, -1.d0, -1.d0, 0.d0, &
+                                                                   0.d0, 0.d0, 2.d0, 2.d0, &
+                                                                   3.d0, 0.d0, -1.d0, 0.d0, &
+                                                                   2.d0, 1.d0, 1.d0, 0.d0, &
+                                                                   4.d0, -1.d0, -2.d0, 0.d0, &
+                                                                   0.d0, 2.d0, -1.d0, 0.d0, &
+                                                                   2.d0, 2.d0, -1.d0, 0.d0, &
+                                                                   2.d0, 1.d0, -2.d0, 0.d0, &
+                                                                   2.d0, -1.d0, 0.d0, -2.d0, &
+                                                                   4.d0, 0.d0, 1.d0, 0.d0, &
+                                                                   0.d0, 0.d0, 4.d0, 0.d0, &
+                                                                   4.d0, -1.d0, 0.d0, 0.d0, &
+                                                                   1.d0, 0.d0, -2.d0, 0.d0, &
+                                                                   2.d0, 1.d0, 0.d0, -2.d0, &
+                                                                   0.d0, 0.d0, 2.d0, -2.d0, &
+                                                                   1.d0, 1.d0, 1.d0, 0.d0, &
+                                                                   3.d0, 0.d0, -2.d0, 0.d0, &
+                                                                   4.d0, 0.d0, -3.d0, 0.d0, &
+                                                                   2.d0, -1.d0, 2.d0, 0.d0, &
+                                                                   0.d0, 2.d0, 1.d0, 0.d0, &
+                                                                   1.d0, 1.d0, -1.d0, 0.d0, &
+                                                                   2.d0, 0.d0, 3.d0, 0.d0, &
+                                                                   2.d0, 0.d0, -1.d0, -2.d0/), (/NPER, 4/))
+
+        real(8), parameter, private :: LON_SIN_COEF(NPER) = (/6288774.d0, &
+                                                              1274027.d0, &
+                                                              658314.d0, &
+                                                              213618.d0, &
+                                                              -185116.d0, &
+                                                              -114332.d0, &
+                                                              58793.d0, &
+                                                              57066.d0, &
+                                                              53322.d0, &
+                                                              45758.d0, &
+                                                              -40923.d0, &
+                                                              -34720.d0, &
+                                                              -30383.d0, &
+                                                              15327.d0, &
+                                                              -12528.d0, &
+                                                              10980.d0, &
+                                                              10675.d0, &
+                                                              10034.d0, &
+                                                              8548.d0, &
+                                                              -7888.d0, &
+                                                              -6766.d0, &
+                                                              -5163.d0, &
+                                                              4987.d0, &
+                                                              4036.d0, &
+                                                              3994.d0, &
+                                                              3861.d0, &
+                                                              3665.d0, &
+                                                              -2689.d0, &
+                                                              -2602.d0, &
+                                                              2390.d0, &
+                                                              -2348.d0, &
+                                                              2236.d0, &
+                                                              -2120.d0, &
+                                                              -2069.d0, &
+                                                              2048.d0, &
+                                                              -1773.d0, &
+                                                              -1595.d0, &
+                                                              1215.d0, &
+                                                              -1110.d0, &
+                                                              -892.d0, &
+                                                              -810.d0, &
+                                                              759.d0, &
+                                                              -713.d0, &
+                                                              -700.d0, &
+                                                              691.d0, &
+                                                              596.d0, &
+                                                              549.d0, &
+                                                              537.d0, &
+                                                              520.d0, &
+                                                              -487.d0, &
+                                                              -399.d0, &
+                                                              -381.d0, &
+                                                              351.d0, &
+                                                              -340.d0, &
+                                                              330.d0, &
+                                                              327.d0, &
+                                                              -323.d0, &
+                                                              299.d0, &
+                                                              294.d0, &
+                                                              0.d0/)
+
+        real(8), parameter, private :: LON_COS_COEF(NPER) = (/-20905355.d0, &
+                                                              -3699111.d0, &
+                                                              -2955968.d0, &
+                                                              -569925.d0, &
+                                                              48888.d0, &
+                                                              -3149.d0, &
+                                                              246158.d0, &
+                                                              -152138.d0, &
+                                                              -170733.d0, &
+                                                              -204586.d0, &
+                                                              -129620.d0, &
+                                                              108743.d0, &
+                                                              104755.d0, &
+                                                              10321.d0, &
+                                                              0.d0, &
+                                                              79661.d0, &
+                                                              -34782.d0, &
+                                                              -23210.d0, &
+                                                              -21636.d0, &
+                                                              24208.d0, &
+                                                              30824.d0, &
+                                                              -8379.d0, &
+                                                              -16675.d0, &
+                                                              -12831.d0, &
+                                                              -10445.d0, &
+                                                              -11650.d0, &
+                                                              14403.d0, &
+                                                              -7003.d0, &
+                                                              0.d0, &
+                                                              10056.d0, &
+                                                              6322.d0, &
+                                                              -9884.d0, &
+                                                              5751.d0, &
+                                                              0.d0, &
+                                                              -4950.d0, &
+                                                              4130.d0, &
+                                                              0.d0, &
+                                                              -3958.d0, &
+                                                              0.d0, &
+                                                              3258.d0, &
+                                                              2616.d0, &
+                                                              -1897.d0, &
+                                                              -2117.d0, &
+                                                              2354.d0, &
+                                                              0.d0, &
+                                                              0.d0, &
+                                                              -1423.d0, &
+                                                              -1117.d0, &
+                                                              -1571.d0, &
+                                                              -1739.d0, &
+                                                              0.d0, &
+                                                              -4421.d0, &
+                                                              0.d0, &
+                                                              0.d0, &
+                                                              0.d0, &
+                                                              0.d0, &
+                                                              1165.d0, &
+                                                              0.d0, &
+                                                              0.d0, &
+                                                              8752.d0/)
+          integer, private, parameter :: LATMEU(NPER) = INT(ABS(LATARG(:,2))) 
+          integer, private, parameter :: LONMEU(NPER) = INT(ABS(LONARG(:,2)))  
 
         PRIVATE:: CAL_EPMUL
 
@@ -842,14 +1150,6 @@
          REAL (8):: suml, sumr, sumb
          REAL (8):: vec(4), argval(NPER), epmul(NPER)
 
-         LOGICAL, save:: first = .TRUE. 
-
-         ! Initialize the periodic argements 
-         IF ( first ) THEN 
-            CALL INIT_MOON_POS_ARG() 
-         END IF   
-         first = .FALSE. 
-
          ! Convert from degree to radian 
          vec = DEG2RAD*(/ D, M, MP, F /) 
 
@@ -906,142 +1206,6 @@
 
        END SUBROUTINE MOON_COORDINATES_SUB0
 
-       ! TABLE 47. A and TABLE 47. B. Pages 339-341
-       SUBROUTINE INIT_MOON_POS_ARG( )
-          IMPLICIT NONE  
-
-          !  TABLE 47. B. page 341. Periodic terms for the latitude of
-          !  the Moon (\Sum b). The unit is 1e-6 degree                
-          LATARG( 1,:) = (/    0.D0,   0.D0,   0.D0,   1.D0 /) ;  LAT_SIN_COEF( 1) =   5128122.D0  
-          LATARG( 2,:) = (/    0.D0,   0.D0,   1.D0,   1.D0 /) ;  LAT_SIN_COEF( 2) =    280602.D0  
-          LATARG( 3,:) = (/    0.D0,   0.D0,   1.D0,  -1.D0 /) ;  LAT_SIN_COEF( 3) =    277693.D0  
-          LATARG( 4,:) = (/    2.D0,   0.D0,   0.D0,  -1.D0 /) ;  LAT_SIN_COEF( 4) =    173237.D0  
-          LATARG( 5,:) = (/    2.D0,   0.D0,  -1.D0,   1.D0 /) ;  LAT_SIN_COEF( 5) =     55413.D0  
-          LATARG( 6,:) = (/    2.D0,   0.D0,  -1.D0,  -1.D0 /) ;  LAT_SIN_COEF( 6) =     46271.D0  
-          LATARG( 7,:) = (/    2.D0,   0.D0,   0.D0,   1.D0 /) ;  LAT_SIN_COEF( 7) =     32573.D0  
-          LATARG( 8,:) = (/    0.D0,   0.D0,   2.D0,   1.D0 /) ;  LAT_SIN_COEF( 8) =     17198.D0  
-          LATARG( 9,:) = (/    2.D0,   0.D0,   1.D0,  -1.D0 /) ;  LAT_SIN_COEF( 9) =      9266.D0  
-          LATARG(10,:) = (/    0.D0,   0.D0,   2.D0,  -1.D0 /) ;  LAT_SIN_COEF(10) =      8822.D0  
-          LATARG(11,:) = (/    2.D0,  -1.D0,   0.D0,  -1.D0 /) ;  LAT_SIN_COEF(11) =      8216.D0  
-          LATARG(12,:) = (/    2.D0,   0.D0,  -2.D0,  -1.D0 /) ;  LAT_SIN_COEF(12) =      4324.D0  
-          LATARG(13,:) = (/    2.D0,   0.D0,   1.D0,   1.D0 /) ;  LAT_SIN_COEF(13) =      4200.D0  
-          LATARG(14,:) = (/    2.D0,   1.D0,   0.D0,  -1.D0 /) ;  LAT_SIN_COEF(14) =     -3359.D0  
-          LATARG(15,:) = (/    2.D0,  -1.D0,  -1.D0,   1.D0 /) ;  LAT_SIN_COEF(15) =      2463.D0  
-          LATARG(16,:) = (/    2.D0,  -1.D0,   0.D0,   1.D0 /) ;  LAT_SIN_COEF(16) =      2211.D0  
-          LATARG(17,:) = (/    2.D0,  -1.D0,  -1.D0,  -1.D0 /) ;  LAT_SIN_COEF(17) =      2065.D0  
-          LATARG(18,:) = (/    0.D0,   1.D0,  -1.D0,  -1.D0 /) ;  LAT_SIN_COEF(18) =     -1870.D0  
-          LATARG(19,:) = (/    4.D0,   0.D0,  -1.D0,  -1.D0 /) ;  LAT_SIN_COEF(19) =      1828.D0  
-          LATARG(20,:) = (/    0.D0,   1.D0,   0.D0,   1.D0 /) ;  LAT_SIN_COEF(20) =     -1794.D0  
-          LATARG(21,:) = (/    0.D0,   0.D0,   0.D0,   3.D0 /) ;  LAT_SIN_COEF(21) =     -1749.D0  
-          LATARG(22,:) = (/    0.D0,   1.D0,  -1.D0,   1.D0 /) ;  LAT_SIN_COEF(22) =     -1565.D0  
-          LATARG(23,:) = (/    1.D0,   0.D0,   0.D0,   1.D0 /) ;  LAT_SIN_COEF(23) =     -1491.D0  
-          LATARG(24,:) = (/    0.D0,   1.D0,   1.D0,   1.D0 /) ;  LAT_SIN_COEF(24) =     -1475.D0  
-          LATARG(25,:) = (/    0.D0,   1.D0,   1.D0,  -1.D0 /) ;  LAT_SIN_COEF(25) =     -1410.D0  
-          LATARG(26,:) = (/    0.D0,   1.D0,   0.D0,  -1.D0 /) ;  LAT_SIN_COEF(26) =     -1344.D0  
-          LATARG(27,:) = (/    1.D0,   0.D0,   0.D0,  -1.D0 /) ;  LAT_SIN_COEF(27) =     -1335.D0  
-          LATARG(28,:) = (/    0.D0,   0.D0,   3.D0,   1.D0 /) ;  LAT_SIN_COEF(28) =      1107.D0  
-          LATARG(29,:) = (/    4.D0,   0.D0,   0.D0,  -1.D0 /) ;  LAT_SIN_COEF(29) =      1021.D0  
-          LATARG(30,:) = (/    4.D0,   0.D0,  -1.D0,   1.D0 /) ;  LAT_SIN_COEF(30) =       833.D0  
-          LATARG(31,:) = (/    0.D0,   0.D0,   1.D0,  -3.D0 /) ;  LAT_SIN_COEF(31) =       777.D0  
-          LATARG(32,:) = (/    4.D0,   0.D0,  -2.D0,   1.D0 /) ;  LAT_SIN_COEF(32) =       671.D0  
-          LATARG(33,:) = (/    2.D0,   0.D0,   0.D0,  -3.D0 /) ;  LAT_SIN_COEF(33) =       607.D0  
-          LATARG(34,:) = (/    2.D0,   0.D0,   2.D0,  -1.D0 /) ;  LAT_SIN_COEF(34) =       596.D0  
-          LATARG(35,:) = (/    2.D0,  -1.D0,   1.D0,  -1.D0 /) ;  LAT_SIN_COEF(35) =       491.D0  
-          LATARG(36,:) = (/    2.D0,   0.D0,  -2.D0,   1.D0 /) ;  LAT_SIN_COEF(36) =      -451.D0  
-          LATARG(37,:) = (/    0.D0,   0.D0,   3.D0,  -1.D0 /) ;  LAT_SIN_COEF(37) =       439.D0  
-          LATARG(38,:) = (/    2.D0,   0.D0,   2.D0,   1.D0 /) ;  LAT_SIN_COEF(38) =       422.D0  
-          LATARG(39,:) = (/    2.D0,   0.D0,  -3.D0,  -1.D0 /) ;  LAT_SIN_COEF(39) =       421.D0  
-          LATARG(40,:) = (/    2.D0,   1.D0,  -1.D0,   1.D0 /) ;  LAT_SIN_COEF(40) =      -366.D0  
-          LATARG(41,:) = (/    2.D0,   1.D0,   0.D0,   1.D0 /) ;  LAT_SIN_COEF(41) =      -351.D0  
-          LATARG(42,:) = (/    4.D0,   0.D0,   0.D0,   1.D0 /) ;  LAT_SIN_COEF(42) =       331.D0  
-          LATARG(43,:) = (/    2.D0,  -1.D0,   1.D0,   1.D0 /) ;  LAT_SIN_COEF(43) =       315.D0  
-          LATARG(44,:) = (/    2.D0,  -2.D0,   0.D0,  -1.D0 /) ;  LAT_SIN_COEF(44) =       302.D0  
-          LATARG(45,:) = (/    0.D0,   0.D0,   1.D0,   3.D0 /) ;  LAT_SIN_COEF(45) =      -283.D0  
-          LATARG(46,:) = (/    2.D0,   1.D0,   1.D0,  -1.D0 /) ;  LAT_SIN_COEF(46) =      -229.D0  
-          LATARG(47,:) = (/    1.D0,   1.D0,   0.D0,  -1.D0 /) ;  LAT_SIN_COEF(47) =       223.D0  
-          LATARG(48,:) = (/    1.D0,   1.D0,   0.D0,   1.D0 /) ;  LAT_SIN_COEF(48) =       223.D0  
-          LATARG(49,:) = (/    0.D0,   1.D0,  -2.D0,  -1.D0 /) ;  LAT_SIN_COEF(49) =      -220.D0  
-          LATARG(50,:) = (/    2.D0,   1.D0,  -1.D0,  -1.D0 /) ;  LAT_SIN_COEF(50) =      -220.D0  
-          LATARG(51,:) = (/    1.D0,   0.D0,   1.D0,   1.D0 /) ;  LAT_SIN_COEF(51) =      -185.D0  
-          LATARG(52,:) = (/    2.D0,  -1.D0,  -2.D0,  -1.D0 /) ;  LAT_SIN_COEF(52) =       181.D0  
-          LATARG(53,:) = (/    0.D0,   1.D0,   2.D0,   1.D0 /) ;  LAT_SIN_COEF(53) =      -177.D0  
-          LATARG(54,:) = (/    4.D0,   0.D0,  -2.D0,  -1.D0 /) ;  LAT_SIN_COEF(54) =       176.D0  
-          LATARG(55,:) = (/    4.D0,  -1.D0,  -1.D0,  -1.D0 /) ;  LAT_SIN_COEF(55) =       166.D0  
-          LATARG(56,:) = (/    1.D0,   0.D0,   1.D0,  -1.D0 /) ;  LAT_SIN_COEF(56) =      -164.D0  
-          LATARG(57,:) = (/    4.D0,   0.D0,   1.D0,  -1.D0 /) ;  LAT_SIN_COEF(57) =       132.D0  
-          LATARG(58,:) = (/    1.D0,   0.D0,  -1.D0,  -1.D0 /) ;  LAT_SIN_COEF(58) =      -119.D0  
-          LATARG(59,:) = (/    4.D0,  -1.D0,   0.D0,  -1.D0 /) ;  LAT_SIN_COEF(59) =       115.D0  
-          LATARG(60,:) = (/    2.D0,  -2.D0,   0.D0,   1.D0 /) ;  LAT_SIN_COEF(60) =       107.D0 
-          LATMEU(:) = INT( ABS(LATARG(:,2)) ) 
-
-          ! TABLE 47. A. 
-          !  Periodic terms for the longitude \Sum l and distance \Sum r
-          !  of the Moon. The unit is 1e-6 for \Sum l and Kilometer for \Sum r 
-          LONARG( 1,:) = (/  0.D0,  0.D0,  1.D0,  0.D0 /) ; LON_SIN_COEF( 1) = 6288774.D0  ; LON_COS_COEF( 1) = -20905355.D0  
-          LONARG( 2,:) = (/  2.D0,  0.D0, -1.D0,  0.D0 /) ; LON_SIN_COEF( 2) = 1274027.D0  ; LON_COS_COEF( 2) =  -3699111.D0  
-          LONARG( 3,:) = (/  2.D0,  0.D0,  0.D0,  0.D0 /) ; LON_SIN_COEF( 3) =  658314.D0  ; LON_COS_COEF( 3) =  -2955968.D0  
-          LONARG( 4,:) = (/  0.D0,  0.D0,  2.D0,  0.D0 /) ; LON_SIN_COEF( 4) =  213618.D0  ; LON_COS_COEF( 4) =   -569925.D0  
-          LONARG( 5,:) = (/  0.D0,  1.D0,  0.D0,  0.D0 /) ; LON_SIN_COEF( 5) = -185116.D0  ; LON_COS_COEF( 5) =     48888.D0  
-          LONARG( 6,:) = (/  0.D0,  0.D0,  0.D0,  2.D0 /) ; LON_SIN_COEF( 6) = -114332.D0  ; LON_COS_COEF( 6) =     -3149.D0  
-          LONARG( 7,:) = (/  2.D0,  0.D0, -2.D0,  0.D0 /) ; LON_SIN_COEF( 7) =   58793.D0  ; LON_COS_COEF( 7) =    246158.D0  
-          LONARG( 8,:) = (/  2.D0, -1.D0, -1.D0,  0.D0 /) ; LON_SIN_COEF( 8) =   57066.D0  ; LON_COS_COEF( 8) =   -152138.D0  
-          LONARG( 9,:) = (/  2.D0,  0.D0,  1.D0,  0.D0 /) ; LON_SIN_COEF( 9) =   53322.D0  ; LON_COS_COEF( 9) =   -170733.D0  
-          LONARG(10,:) = (/  2.D0, -1.D0,  0.D0,  0.D0 /) ; LON_SIN_COEF(10) =   45758.D0  ; LON_COS_COEF(10) =   -204586.D0  
-          LONARG(11,:) = (/  0.D0,  1.D0, -1.D0,  0.D0 /) ; LON_SIN_COEF(11) =  -40923.D0  ; LON_COS_COEF(11) =   -129620.D0  
-          LONARG(12,:) = (/  1.D0,  0.D0,  0.D0,  0.D0 /) ; LON_SIN_COEF(12) =  -34720.D0  ; LON_COS_COEF(12) =    108743.D0  
-          LONARG(13,:) = (/  0.D0,  1.D0,  1.D0,  0.D0 /) ; LON_SIN_COEF(13) =  -30383.D0  ; LON_COS_COEF(13) =    104755.D0  
-          LONARG(14,:) = (/  2.D0,  0.D0,  0.D0, -2.D0 /) ; LON_SIN_COEF(14) =   15327.D0  ; LON_COS_COEF(14) =     10321.D0  
-          LONARG(15,:) = (/  0.D0,  0.D0,  1.D0,  2.D0 /) ; LON_SIN_COEF(15) =  -12528.D0  ; LON_COS_COEF(15) =         0.D0  
-          LONARG(16,:) = (/  0.D0,  0.D0,  1.D0, -2.D0 /) ; LON_SIN_COEF(16) =   10980.D0  ; LON_COS_COEF(16) =     79661.D0  
-          LONARG(17,:) = (/  4.D0,  0.D0, -1.D0,  0.D0 /) ; LON_SIN_COEF(17) =   10675.D0  ; LON_COS_COEF(17) =    -34782.D0  
-          LONARG(18,:) = (/  0.D0,  0.D0,  3.D0,  0.D0 /) ; LON_SIN_COEF(18) =   10034.D0  ; LON_COS_COEF(18) =    -23210.D0  
-          LONARG(19,:) = (/  4.D0,  0.D0, -2.D0,  0.D0 /) ; LON_SIN_COEF(19) =    8548.D0  ; LON_COS_COEF(19) =    -21636.D0  
-          LONARG(20,:) = (/  2.D0,  1.D0, -1.D0,  0.D0 /) ; LON_SIN_COEF(20) =   -7888.D0  ; LON_COS_COEF(20) =     24208.D0  
-          LONARG(21,:) = (/  2.D0,  1.D0,  0.D0,  0.D0 /) ; LON_SIN_COEF(21) =   -6766.D0  ; LON_COS_COEF(21) =     30824.D0  
-          LONARG(22,:) = (/  1.D0,  0.D0, -1.D0,  0.D0 /) ; LON_SIN_COEF(22) =   -5163.D0  ; LON_COS_COEF(22) =     -8379.D0  
-          LONARG(23,:) = (/  1.D0,  1.D0,  0.D0,  0.D0 /) ; LON_SIN_COEF(23) =    4987.D0  ; LON_COS_COEF(23) =    -16675.D0  
-          LONARG(24,:) = (/  2.D0, -1.D0,  1.D0,  0.D0 /) ; LON_SIN_COEF(24) =    4036.D0  ; LON_COS_COEF(24) =    -12831.D0  
-          LONARG(25,:) = (/  2.D0,  0.D0,  2.D0,  0.D0 /) ; LON_SIN_COEF(25) =    3994.D0  ; LON_COS_COEF(25) =    -10445.D0  
-          LONARG(26,:) = (/  4.D0,  0.D0,  0.D0,  0.D0 /) ; LON_SIN_COEF(26) =    3861.D0  ; LON_COS_COEF(26) =    -11650.D0  
-          LONARG(27,:) = (/  2.D0,  0.D0, -3.D0,  0.D0 /) ; LON_SIN_COEF(27) =    3665.D0  ; LON_COS_COEF(27) =     14403.D0  
-          LONARG(28,:) = (/  0.D0,  1.D0, -2.D0,  0.D0 /) ; LON_SIN_COEF(28) =   -2689.D0  ; LON_COS_COEF(28) =     -7003.D0  
-          LONARG(29,:) = (/  2.D0,  0.D0, -1.D0,  2.D0 /) ; LON_SIN_COEF(29) =   -2602.D0  ; LON_COS_COEF(29) =         0.D0  
-          LONARG(30,:) = (/  2.D0, -1.D0, -2.D0,  0.D0 /) ; LON_SIN_COEF(30) =    2390.D0  ; LON_COS_COEF(30) =     10056.D0  
-          LONARG(31,:) = (/  1.D0,  0.D0,  1.D0,  0.D0 /) ; LON_SIN_COEF(31) =   -2348.D0  ; LON_COS_COEF(31) =      6322.D0  
-          LONARG(32,:) = (/  2.D0, -2.D0,  0.D0,  0.D0 /) ; LON_SIN_COEF(32) =    2236.D0  ; LON_COS_COEF(32) =     -9884.D0  
-          LONARG(33,:) = (/  0.D0,  1.D0,  2.D0,  0.D0 /) ; LON_SIN_COEF(33) =   -2120.D0  ; LON_COS_COEF(33) =      5751.D0  
-          LONARG(34,:) = (/  0.D0,  2.D0,  0.D0,  0.D0 /) ; LON_SIN_COEF(34) =   -2069.D0  ; LON_COS_COEF(34) =         0.D0  
-          LONARG(35,:) = (/  2.D0, -2.D0, -1.D0,  0.D0 /) ; LON_SIN_COEF(35) =    2048.D0  ; LON_COS_COEF(35) =     -4950.D0  
-          LONARG(36,:) = (/  2.D0,  0.D0,  1.D0, -2.D0 /) ; LON_SIN_COEF(36) =   -1773.D0  ; LON_COS_COEF(36) =      4130.D0  
-          LONARG(37,:) = (/  2.D0,  0.D0,  0.D0,  2.D0 /) ; LON_SIN_COEF(37) =   -1595.D0  ; LON_COS_COEF(37) =         0.D0  
-          LONARG(38,:) = (/  4.D0, -1.D0, -1.D0,  0.D0 /) ; LON_SIN_COEF(38) =    1215.D0  ; LON_COS_COEF(38) =     -3958.D0  
-          LONARG(39,:) = (/  0.D0,  0.D0,  2.D0,  2.D0 /) ; LON_SIN_COEF(39) =   -1110.D0  ; LON_COS_COEF(39) =         0.D0  
-          LONARG(40,:) = (/  3.D0,  0.D0, -1.D0,  0.D0 /) ; LON_SIN_COEF(40) =    -892.D0  ; LON_COS_COEF(40) =      3258.D0  
-          LONARG(41,:) = (/  2.D0,  1.D0,  1.D0,  0.D0 /) ; LON_SIN_COEF(41) =    -810.D0  ; LON_COS_COEF(41) =      2616.D0  
-          LONARG(42,:) = (/  4.D0, -1.D0, -2.D0,  0.D0 /) ; LON_SIN_COEF(42) =     759.D0  ; LON_COS_COEF(42) =     -1897.D0  
-          LONARG(43,:) = (/  0.D0,  2.D0, -1.D0,  0.D0 /) ; LON_SIN_COEF(43) =    -713.D0  ; LON_COS_COEF(43) =     -2117.D0  
-          LONARG(44,:) = (/  2.D0,  2.D0, -1.D0,  0.D0 /) ; LON_SIN_COEF(44) =    -700.D0  ; LON_COS_COEF(44) =      2354.D0  
-          LONARG(45,:) = (/  2.D0,  1.D0, -2.D0,  0.D0 /) ; LON_SIN_COEF(45) =     691.D0  ; LON_COS_COEF(45) =         0.D0  
-          LONARG(46,:) = (/  2.D0, -1.D0,  0.D0, -2.D0 /) ; LON_SIN_COEF(46) =     596.D0  ; LON_COS_COEF(46) =         0.D0  
-          LONARG(47,:) = (/  4.D0,  0.D0,  1.D0,  0.D0 /) ; LON_SIN_COEF(47) =     549.D0  ; LON_COS_COEF(47) =     -1423.D0  
-          LONARG(48,:) = (/  0.D0,  0.D0,  4.D0,  0.D0 /) ; LON_SIN_COEF(48) =     537.D0  ; LON_COS_COEF(48) =     -1117.D0  
-          LONARG(49,:) = (/  4.D0, -1.D0,  0.D0,  0.D0 /) ; LON_SIN_COEF(49) =     520.D0  ; LON_COS_COEF(49) =     -1571.D0  
-          LONARG(50,:) = (/  1.D0,  0.D0, -2.D0,  0.D0 /) ; LON_SIN_COEF(50) =    -487.D0  ; LON_COS_COEF(50) =     -1739.D0  
-          LONARG(51,:) = (/  2.D0,  1.D0,  0.D0, -2.D0 /) ; LON_SIN_COEF(51) =    -399.D0  ; LON_COS_COEF(51) =         0.D0  
-          LONARG(52,:) = (/  0.D0,  0.D0,  2.D0, -2.D0 /) ; LON_SIN_COEF(52) =    -381.D0  ; LON_COS_COEF(52) =     -4421.D0  
-          LONARG(53,:) = (/  1.D0,  1.D0,  1.D0,  0.D0 /) ; LON_SIN_COEF(53) =     351.D0  ; LON_COS_COEF(53) =         0.D0  
-          LONARG(54,:) = (/  3.D0,  0.D0, -2.D0,  0.D0 /) ; LON_SIN_COEF(54) =    -340.D0  ; LON_COS_COEF(54) =         0.D0  
-          LONARG(55,:) = (/  4.D0,  0.D0, -3.D0,  0.D0 /) ; LON_SIN_COEF(55) =     330.D0  ; LON_COS_COEF(55) =         0.D0  
-          LONARG(56,:) = (/  2.D0, -1.D0,  2.D0,  0.D0 /) ; LON_SIN_COEF(56) =     327.D0  ; LON_COS_COEF(56) =         0.D0  
-          LONARG(57,:) = (/  0.D0,  2.D0,  1.D0,  0.D0 /) ; LON_SIN_COEF(57) =    -323.D0  ; LON_COS_COEF(57) =      1165.D0  
-          LONARG(58,:) = (/  1.D0,  1.D0, -1.D0,  0.D0 /) ; LON_SIN_COEF(58) =     299.D0  ; LON_COS_COEF(58) =         0.D0  
-          LONARG(59,:) = (/  2.D0,  0.D0,  3.D0,  0.D0 /) ; LON_SIN_COEF(59) =     294.D0  ; LON_COS_COEF(59) =         0.D0  
-          LONARG(60,:) = (/  2.D0,  0.D0, -1.D0, -2.D0 /) ; LON_SIN_COEF(60) =       0.D0  ; LON_COS_COEF(60) =      8752.D0 
-          LONMEU(:) = INT(ABS(LONARG(:,2)))  
-
-          RETURN    
-       END SUBROUTINE INIT_MOON_POS_ARG         
-        
       END MODULE MOONPOS
      
       ! Driver subroutine 
