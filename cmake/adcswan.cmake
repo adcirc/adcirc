@@ -128,7 +128,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/astronomic.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemri_module.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemerides.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sun.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/moon.F90

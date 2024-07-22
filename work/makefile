@@ -383,7 +383,7 @@ SPG_MSRC = quadrature.F sponge_layer.F
 BC3D_MSRC = couple2baroclinic3D.F
 # CPB baroclinic internal tide updates
 GL2LOC_MSRC = gl2loc_mapping.F
-TIDE_MSRC = astronomic.F90 sun.F90 moon.F90 sun_moon_system.F90 ephemri_module.F90 tidalpotential.F90
+TIDE_MSRC = astronomic.F90 sun.F90 moon.F90 sun_moon_system.F90 ephemerides.F90 tidalpotential.F90
 ITTIDE_MSRC = internaltide.F
 
 HASH_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HASH_MSRC) )

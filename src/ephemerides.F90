@@ -21,11 +21,11 @@
 ! By Al Cerrone,
 ! Jun 2024.
 !
-module ephemri_module
+module mod_ephemerides
 
   implicit none
 
-  type t_ephemri
+  type t_ephemerides
     private
     logical :: first = .true.
     integer :: len_times
@@ -41,22 +41,22 @@ module ephemri_module
     procedure, pass(self) :: HEAVENLY_OBJS_COORDS_FROM_TABLE
     procedure, pass(self), private :: reallocate_arrays
     procedure, pass(self), private :: recache_data
-    procedure, pass(self), private :: init => initialize_ephemri
-  end type t_ephemri
+    procedure, pass(self), private :: init => initialize_ephemerides
+  end type t_ephemerides
 
-  interface t_ephemri
-    module procedure createEphemri
-  end interface t_ephemri
+  interface t_ephemerides
+    module procedure createEphemerides
+  end interface t_ephemerides
 
   private :: interpolate, L, adjust_RA, GET_RANK_SIMPLE_SEARCH, &
-             GET_RANK_UNIFORM, GET_RANK_BINARY_SEARCH, initialize_ephemri, &
+             GET_RANK_UNIFORM, GET_RANK_BINARY_SEARCH, initialize_ephemerides, &
              recache_data, reallocate_arrays
 
 contains
 
-  subroutine initialize_ephemri(self, in_rnday, in_MoonSunCoordFile)
+  subroutine initialize_ephemerides(self, in_rnday, in_MoonSunCoordFile)
     implicit none
-    class(t_ephemri), intent(inout) :: self
+    class(t_ephemerides), intent(inout) :: self
     real(8), intent(in) :: in_rnday
     character(len=*), intent(in) :: in_MoonSunCoordFile
 
@@ -67,17 +67,17 @@ contains
     ! Keep a portion of ephemeride data that covers an entire run period
     self%tcache = in_rnday*86400.0d0
 
-  end subroutine initialize_ephemri
+  end subroutine initialize_ephemerides
 
-  function createEphemri(rnday, MoonSunCoordFile) result(ephemri)
+  function createEphemerides(rnday, MoonSunCoordFile) result(ephemerides)
     implicit none
     real(8), intent(in) :: rnday
     character(len=*), intent(in) :: MoonSunCoordFile
-    type(t_ephemri) :: ephemri
+    type(t_ephemerides) :: ephemerides
 
-    call ephemri%init(rnday, MoonSunCoordFile)
+    call ephemerides%init(rnday, MoonSunCoordFile)
 
-  end function createEphemri
+  end function createEphemerides
 
   subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE(self, MoonSunCoor, julian_date_loc, ierr, UniformDT)
     use mod_astronomic, only: km2AU
@@ -85,7 +85,7 @@ contains
     use messenger, only: msg_fini
 #endif
     implicit none
-    class(t_ephemri), intent(inout) :: self
+    class(t_ephemerides), intent(inout) :: self
     real(8), intent(in) :: julian_date_loc
     real(8) :: MoonSunCoor(3, 2)
     integer, intent(out) :: ierr
@@ -179,7 +179,7 @@ contains
     use netcdf_error, only: check_err
 #endif
     implicit none
-    class(t_ephemri), intent(inout) :: self
+    class(t_ephemerides), intent(inout) :: self
     logical, optional :: UniformRankSearch
     real(8), optional :: seconds_between
 
@@ -255,7 +255,7 @@ contains
 
   subroutine reallocate_arrays(self)
     implicit none
-    class(t_ephemri), intent(inout) :: self
+    class(t_ephemerides), intent(inout) :: self
 
     ! Allocate arrays !
     if (allocated(self%times)) then
@@ -438,4 +438,4 @@ contains
 
   end function GET_RANK_BINARY_SEARCH
 
-end module ephemri_module
+end module mod_ephemerides

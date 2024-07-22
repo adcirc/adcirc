@@ -59,7 +59,7 @@ if(BUILD_ADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sun.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/moon.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemri_module.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemerides.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
 

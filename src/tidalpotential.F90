@@ -34,7 +34,7 @@
 module mod_tidepotential
    use mod_astronomic, only: MassRatioSunEarth, MassRatioMoonEarth, EarthRadiusAU, EarthRadiuskm
    use mod_moon_sun_coors, only: t_moon_sun
-   use ephemri_module, only: t_ephemri
+   use mod_ephemerides, only: t_ephemerides
    implicit none
    !
    !  UseFullTIPFormula = T/F (default F)
@@ -62,6 +62,7 @@ module mod_tidepotential
    real(8), private, parameter :: significant_radiusearth(2) = (/EarthRadiuskm(1), EarthRadiusAu(1)/)
    real(8), private, parameter :: exponent_radiusearth(2) = (/EarthRadiuskm(2), EarthRadiusAu(2)/)
 
+   integer, private, parameter :: ComputeMethod_FT = 0
    integer, private, parameter :: ComputeMethod_JM = 1
    integer, private, parameter :: ComputeMethod_External = 2
 
@@ -85,7 +86,7 @@ module mod_tidepotential
       real(8), dimension(:), allocatable :: m_SSFEA
       real(8), dimension(:), allocatable :: m_S2SFEA
       type(t_moon_sun)                   :: m_moon_sun_position
-      type(t_ephemri)                    :: m_ephemri
+      type(t_ephemerides)                :: m_ephemerides
 
       contains
          procedure, pass(self), public   :: compute => compute_full_tip
@@ -147,6 +148,7 @@ contains
          character(LEN=*), intent(IN)  :: in_MoonSunCoordFile
          logical, intent(IN)           :: in_IncludeNutation
          real(8), intent(IN)           :: in_k2value, in_h2value
+         character(len=len_trim(in_MoonSunPositionComputeMethod)) :: moonSunPositionString
 
          self%m_UseFullTIPFormula = in_UseFullTIPFormula
 
@@ -158,7 +160,7 @@ contains
          self%m_k2value = in_k2value
          self%m_h2value = in_h2value
 
-         call StringUpper(in_MoonSunPositionComputeMethod)
+         moonSunPositionString = StringUpper(in_MoonSunPositionComputeMethod)
          if(trim(adjustl(in_MoonSunPositionComputeMethod)) == 'JM') then
             self%m_MoonSunPositionComputeMethod = ComputeMethod_JM
          else
@@ -167,7 +169,10 @@ contains
 
          call self%INIT_FULL_TIP(np)
          call self%set_base_date(in_base_date)
-         self%m_ephemri = t_ephemri(rnday, in_MoonSunCoordFile)
+
+         if (self%m_MoonSunPositionComputeMethod == ComputeMethod_External) then
+            self%m_ephemerides = t_ephemerides(rnday, in_moonsuncoordfile)
+         end if
 
       end subroutine tidalPotentialConstructor
 
@@ -346,7 +351,7 @@ contains
    function compute_full_tip(self, TimeLoc, NP, SLAM) result(tip)
       use ADC_CONSTANTS, only: sec2day, DEG2RAD
       use global, only: setMessageSource, unsetMessageSource, allMessage, DEBUG
-      use ephemri_module, only: HEAVENLY_OBJS_COORDS_FROM_TABLE
+      use mod_ephemerides, only: HEAVENLY_OBJS_COORDS_FROM_TABLE
       implicit none
 
       class(t_tidePotential), intent(INOUT) :: self
@@ -372,11 +377,13 @@ contains
       if (self%m_MoonSunPositionComputeMethod == ComputeMethod_JM) then
          ! use algorithms in Jean Meeus's book !
          call self%m_moon_sun_position%HEAVENLY_OBJS_COORDS_JM(MoonSunCoor(:, 1), MoonSunCoor(:, 2), JDELoc, IERR)
-      else
+      elseif(self%m_MoonSunPositionComputeMethod == ComputeMethod_External) then
          ! interpolate from an external look up table !
-         call self%m_ephemri%HEAVENLY_OBJS_COORDS_FROM_TABLE(MoonSunCoor, JDELoc, IERR, self%m_UniformResMoonSunTimeData)
+         call self%m_ephemerides%HEAVENLY_OBJS_COORDS_FROM_TABLE(MoonSunCoor, JDELoc, IERR, self%m_UniformResMoonSunTimeData)
+      else
+         IERR = 1
       end if
-      call check_err(IERR)
+      call check_tip_err(IERR)
 
       ! Convert RA, DEC from deg --> rad
       MoonSunCoor(1:2, :) = MoonSunCoor(1:2, :)*DEG2RAD
@@ -393,11 +400,10 @@ contains
 
    end function compute_full_tip
 
-   subroutine check_err(IERR)
+   subroutine check_tip_err(IERR)
       use global, only: screenMessage, ERROR
       implicit none
-
-      integer:: IERR
+      integer, intent(IN) :: IERR
 
       if (IERR > 1) then
          select case (IERR)
@@ -412,22 +418,25 @@ contains
          end select
       end if
 
-   end subroutine check_err
+   end subroutine check_tip_err
 
    subroutine SET_TIP_BASEDATE(self, base_date)
       implicit none
-      class(t_tidePotential), intent(INOUT):: self
-      character(LEN=*):: base_date
-      call StringUpper(self%m_TIPStartDate)
+      class(t_tidePotential), intent(INOUT) :: self
+      character(LEN=*), intent(IN)          :: base_date
+      character(LEN=len_trim(base_date))    :: start_date
+
+      start_date = StringUpper(self%m_TIPStartDate)
       if (trim(self%m_TIPStartDate) == 'BASEDATE') then
          self%m_TIPStartDate = trim(base_date)
       end if
    end subroutine SET_TIP_BASEDATE
 
-   subroutine StringUpper(string)
+   function StringUpper(string) result(outString)
       implicit none
 
-      character(LEN=*):: string
+      character(LEN=*), intent(IN)    :: string
+      character(LEN=len_trim(string)) :: outString
 
       integer:: I, asciinum
 
@@ -435,10 +444,10 @@ contains
          asciinum = iachar(string(I:I))
          select case (asciinum)
          case (97:122)
-            string(I:I) = char(asciinum - 32)
+            outString(I:I) = char(asciinum - 32)
          end select
       end do
-   end subroutine StringUpper
+   end function StringUpper
 
    ! A^{N}
    elemental function AINTPOWER(A, N) result(AP)
