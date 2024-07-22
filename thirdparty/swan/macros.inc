@@ -6,7 +6,7 @@ F90_OMP = ifort
 # for older compiler versions, use mpif90
 F90_MPI = mpiifort
 FLAGS_OPT = -O2
-FLAGS_MSC = -fallow-argument-mismatch 
+FLAGS_MSC = -W0 -assume byterecl -traceback -diag-disable 8290 -diag-disable 8291 -diag-disable 8293
 FLAGS90_MSC = $(FLAGS_MSC)
 FLAGS_DYN = -fPIC
 FLAGS_SER =

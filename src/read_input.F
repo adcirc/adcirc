@@ -172,12 +172,7 @@ Casey 180318: Added NWS=13
 #endif
 !JLW: add subgrid 
       USE subgrid, only: subgridFilename, level0, level1
-
-      USE TIPFUNCMOD, only: UseFullTIPFormula, TIPOrder, TIPStartDate, 
-     &    MoonSunPositionComputeMethod, MoonSunCoordFile, IncludeNutation,
-     &    k2value, h2value, SET_TIP_BASEDATE, UniformResMoonSunTimeData
-
-  
+      use mod_tidepotential, only: tidePotential, t_tidePotential
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -194,6 +189,17 @@ C
       character(len=100) :: densityRunType ! diagnostic or prognostic
       character(len=100) :: densityDimensions ! 2DDI or 3D
       character(len=100) :: densityForcingType ! sigmaT, salinity, etc
+
+      ! I/O variables for tide potential namelist
+      logical :: UseFullTIPFormula = .false.
+      integer :: TIPOrder = -1
+      character(len=24) :: TIPStartDate = ""
+      character(len=24) :: MoonSunPositionComputeMethod = "JM"
+      character(len=80) :: MoonSunCoordFile = "none"
+      logical :: IncludeNutation = .false.
+      real(8) :: k2Value = 0.302D0
+      real(8) :: h2Value = 0.609D0
+      logical :: UniformResMoonSunTimeData = .false.
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
 #if defined CSWAN || defined ADCSWAN
@@ -804,14 +810,13 @@ C...
       read(unit=15,nml=TidalPotentialControl,iostat=ios)
       call logNamelistReadStatus(namelistSpecifier,ios)
       write(scratchMessage,*) "USeFullTIPFormula=", UseFullTIPFormula
-      call logMessage(ECHO,trim(scratchMessage))
-!TCM 2024 -- added wave stress gradient limiter      
+      call logMessage(ECHO,trim(scratchMessage)) 
       write(scratchMessage,*)"TIPOrder=", TIPOrder 
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "TIPStartDate=", TIPStartDate
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*)"MoonSunPositionComputeMethod",
-     &                          MoonSunPositionComputeMethod 
+     &                        MoonSunPositionComputeMethod 
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "MoonSunCoordFile=", MoonSunCoordFile
       call logMessage(ECHO,trim(scratchMessage))
@@ -5072,9 +5077,16 @@ C
 #endif
       ENDIF
 
-      IF ( UseFullTIPFormula ) THEN
-         CALL SET_TIP_BASEDATE( base_date ) ;
-      END IF
+      ! Initialize the tidal potential calculation
+      if(.not.useNetCDF.and.UseFullTIPFormula) then
+         call allMessage(ERROR, "Tidal potential calculation relies on netCDF metadata. You must activate netCDF output.")
+         call adcirc_terminate()
+      endif
+      tidePotential = t_tidePotential(np, rnday, UseFullTIPFormula, TIPOrder, 
+     &                                TIPStartDate, base_date, 
+     &                                MoonSunPositionComputeMethod, 
+     &                                MoonSunCoordFile, IncludeNutation, 
+     &                                k2Value, h2Value)
 C...
 C...  CLOSE FORT.15
 C...

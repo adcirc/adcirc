@@ -1,256 +1,305 @@
+!-------------------------------------------------------------------------------!
+!
+! ADCIRC - The ADvanced CIRCulation model
+! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+!
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!-------------------------------------------------------------------------------!
 !
 ! By Al Cerrone,
 ! Jun 2024.
 !
 module ephemri_module
 
-#ifdef ADCNETCDF         
-  use netcdf
-#endif
-
-#ifndef TIPSTANDALONE
-  use global, only: RNDAY
-#endif
-
-  use astroformod, only: km2AU 
-
   implicit none
 
-  INTEGER, PRIVATE:: len_times = 0 
-  REAL(8), PRIVATE:: tbeg(2) = 0.D0, tend(2) = 0.D0  
-  REAL(8), PRIVATE, ALLOCATABLE, DIMENSION(:):: times, lunar_distances, &
-       & solar_distances, lunar_ras, solar_ras, lunar_decs, solar_decs   
+  type t_ephemri
+    private
+    logical :: first = .true.
+    integer :: len_times
+    character(len=256) :: MoonSunCoordFile
+    real(8) :: tbeg(2) = 0d0
+    real(8) :: tend(2) = 0d0
+    real(8), allocatable :: times(:), lunar_distances(:), solar_distances(:)
+    real(8), allocatable :: lunar_ras(:), solar_ras(:), lunar_decs(:), solar_decs(:)
+    real(8) :: tcache = 2592000.d0 ! cache 30 days of data for a faster retrival when
+    ! HAVENLY_OBJS_COORDS_FROM_TABLE is called multiple
+    ! times in a single program
+  contains
+    procedure, pass(self) :: HEAVENLY_OBJS_COORDS_FROM_TABLE
+    procedure, pass(self), private :: reallocate_arrays
+    procedure, pass(self), private :: recache_data
+    procedure, pass(self), private :: init => initialize_ephemri
+  end type t_ephemri
 
-  REAL(8), PRIVATE:: tcache = 2592000.D0 ; ! cache 30 days of data for a faster retrival when
-                                           ! HAVENLY_OBJS_COORDS_FROM_TABLE is called multiple 
-                                           ! times in a single program  
+  interface t_ephemri
+    module procedure createEphemri
+  end interface t_ephemri
 
-  private::  interpolate, L, adjust_RA, check, GET_RANK_SIMPLE_SEARCH, &
-          GET_RANK_UNIFORM, GET_RANK_BINARY_SEARCH 
-
+  private :: interpolate, L, adjust_RA, GET_RANK_SIMPLE_SEARCH, &
+             GET_RANK_UNIFORM, GET_RANK_BINARY_SEARCH, initialize_ephemri, &
+             recache_data, reallocate_arrays
 
 contains
-  subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE( MoonSunCoor, julian_date_loc, MoonSunCoordFile, IERR, UniformDT  )
+
+  subroutine initialize_ephemri(self, in_rnday, in_MoonSunCoordFile)
     implicit none
+    class(t_ephemri), intent(inout) :: self
+    real(8), intent(in) :: in_rnday
+    character(len=*), intent(in) :: in_MoonSunCoordFile
 
-    real(8), intent(in) :: julian_date_loc
+    self%first = .true.
+    self%len_times = 0
+    self%MoonSunCoordFile = in_MoonSunCoordFile
+
+    ! Keep a portion of ephemeride data that covers an entire run period
+    self%tcache = in_rnday*86400.0d0
+
+  end subroutine initialize_ephemri
+
+  function createEphemri(rnday, MoonSunCoordFile) result(ephemri)
+    implicit none
+    real(8), intent(in) :: rnday
     character(len=*), intent(in) :: MoonSunCoordFile
-    real(8):: MoonSunCoor(3, 2)
-    INTEGER:: IERR
-    LOGICAL, optional:: UniformDT 
+    type(t_ephemri) :: ephemri
 
-#ifndef ADCNETCDF 
-    WRITE(*,'(A)') "ERROR: Must compile with netCDF support enabled"
-    CALL EXIT(1)
+    call ephemri%init(rnday, MoonSunCoordFile)
+
+  end function createEphemri
+
+  subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE(self, MoonSunCoor, julian_date_loc, ierr, UniformDT)
+    use mod_astronomic, only: km2AU
+#ifdef CMPI
+    use messenger, only: msg_fini
+#endif
+    implicit none
+    class(t_ephemri), intent(inout) :: self
+    real(8), intent(in) :: julian_date_loc
+    real(8) :: MoonSunCoor(3, 2)
+    integer, intent(out) :: ierr
+    logical, optional :: UniformDT
+
+#ifndef ADCNETCDF
+    write (*, '(A)') "ERROR: Must compile with netCDF support enabled"
+#ifdef CMPI
+    call msg_fini()
+#endif
+    call exit(1)
 #else
-
-    integer:: ncid, time_varid, lunar_distance_varid, solar_distance_varid
-    integer:: lunar_ra_varid, solar_ra_varid, lunar_dec_varid, solar_dec_varid
     integer :: retval, j, ii
-    integer, parameter :: NC_ERR = -1
-!    integer::  len_times
-!    real(8), allocatable :: times(:), lunar_distances(:), solar_distances(:)
-!    real(8), allocatable :: lunar_ras(:), solar_ras(:), lunar_decs(:), solar_decs(:)
     real(8) :: julian_datetime_2000, seconds_between
-
-    LOGICAL:: UniformRankSearch = .false. ; 
-    INTEGER:: lenarr, iabeg, iaend
-    real(8), ALLOCATABLE :: tmparr(:)
-
-    real(8) :: ratmp(4) 
+    logical :: UniformRankSearch = .false.
+    real(8) :: ratmp(4)
     logical :: match
-    integer :: time_dimid, ndimsp, dimlen
-    integer :: idarr(4) 
-
-    logical:: first = .true., recache = .false.  
-    integer:: dimids(nf90_max_dims) 
+    integer :: idarr(4)
 
     ! Calculate seconds between the provided date and the reference date !
     julian_datetime_2000 = 2451544.5d0
-    seconds_between = (julian_date_loc - julian_datetime_2000) * 86400.0d0
+    seconds_between = (julian_date_loc - julian_datetime_2000)*86400.0d0
 
-#ifndef TIPSTANDALONE
-    ! For ADCIRC, keep a portion of ephemeride data that covers an entire run period  
-    tcache = RNDAY*86400.0D0 
-#endif
+    if (present(UniformDT)) then
+      UniformRankSearch = UniformDT
+    end if
 
-    IF ( present(UniformDT) ) THEN
-      UniformRankSearch = UniformDT ;
-    END IF   
+    if (.not. self%first) then
+      if (seconds_between > self%times(self%len_times - 4)) then
+        ierr = self%recache_data()
+      end if
+    else
+      ierr = self%recache_data()
+    end if
 
-    IF ( .not. first ) THEN
-      IF ( seconds_between > times(len_times - 4) ) THEN
-        recache = .true. ; 
-      END IF         
-    END IF
+    if (.not. UniformRankSearch) then
+      J = GET_RANK_BINARY_SEARCH(seconds_between, self%times, self%len_times); 
+    else
+      J = GET_RANK_UNIFORM(seconds_between, self%times, self%len_times); 
+    end if
 
-    IF ( first .OR. recache ) THEN    
-      ! Open the NetCDF file
-      call check(nf90_open(MoonSunCoordFile, nf90_nowrite, ncid))
-  
-      ! Get variable IDs
-      call check(nf90_inq_varid(ncid, 'time', time_varid))
-      call check(nf90_inq_varid(ncid, 'lunar_distance', lunar_distance_varid))
-      call check(nf90_inq_varid(ncid, 'solar_distance', solar_distance_varid))
-      call check(nf90_inq_varid(ncid, 'lunar_ra', lunar_ra_varid))
-      call check(nf90_inq_varid(ncid, 'solar_ra', solar_ra_varid))
-      call check(nf90_inq_varid(ncid, 'lunar_dec', lunar_dec_varid))
-      call check(nf90_inq_varid(ncid, 'solar_dec', solar_dec_varid))
-  
-      ! Inquire about the time variable to get dimension IDs
-      call check(nf90_inquire_variable(ncid, time_varid, ndims=ndimsp, dimids=dimids))
-      
-      ! Get the length of the time dimension
-      call check(nf90_inquire_dimension(ncid, dimids(1), len=dimlen))
-      
-      lenarr = dimlen ;
-      allocate( tmparr(lenarr) ) ; tmparr = 0.D0 ;
-      call check(nf90_get_var( ncid, time_varid, tmparr )) ;
+    match = .false.; 
+    if (j >= 3 .and. j <= self%len_times - 2) then
+      match = .true.; 
+      idarr = (/(j - ii, ii=-2, 1)/); 
+    else if (j == 2) then
+      match = .true.; 
+      idarr = (/(ii, ii=1, 4)/); 
+    else if (j == self%len_times) then
+      match = .true.
+      idarr = (/(self%len_times - 3 + ii, ii=0, 3)/); 
+    end if
 
-      tbeg(2) = tmparr(1) ;
-      tend(2) = tmparr(lenarr) ; 
+    if (match) then
+      ! Lunar distance interpolation
+      call interpolate(self%times(idarr), self%lunar_distances(idarr), seconds_between, MoonSunCoor(3, 1))
 
-      IF ( seconds_between < tbeg(2) .OR. seconds_between > tend(2) ) THEN
-        IERR = 2 ;
-        return ;
-      END IF
+      ! Solar distance interpolation
+      call interpolate(self%times(idarr), self%solar_distances(idarr), seconds_between, MoonSunCoor(3, 2))
 
-#ifndef TIPSTANDALONE
-      IF ( .not. UniformRankSearch ) THEN
-        iabeg = GET_RANK_BINARY_SEARCH( seconds_between, tmparr, lenarr ) - 4 ;    
-      ELSE
-        iabeg = GET_RANK_UNIFORM( seconds_between, tmparr, lenarr) - 4 ;
-      END IF        
-#else
-      IF ( .not. UniformRankSearch ) THEN
-        iabeg = GET_RANK_BINARY_SEARCH( seconds_between - tcache, tmparr, lenarr ) - 4 ;    
-      ELSE
-        iabeg = GET_RANK_UNIFORM( seconds_between - tcache, tmparr, lenarr) - 4 ;
-      END IF      
-#endif
+      ! Lunar right ascension interpolation
+      ratmp(1:4) = self%lunar_ras(idarr); 
+      call adjust_RA(ratmp(1:4)); 
+      call interpolate(self%times(idarr), ratmp(1:4), seconds_between, MoonSunCoor(1, 1))
+      MoonSunCoor(1, 1) = modulo(MoonsunCoor(1, 1), 360.d0); 
+      ! Solar right ascension interpolation
+      ratmp(1:4) = self%solar_ras(idarr); 
+      call adjust_RA(ratmp(1:4)); 
+      call interpolate(self%times(idarr), ratmp(1:4), seconds_between, MoonSunCoor(1, 2))
+      MoonSunCoor(1, 2) = modulo(MoonsunCoor(1, 2), 360.d0); 
+      ! Lunar declination interpolation
+      call interpolate(self%times(idarr), self%lunar_decs(idarr), seconds_between, MoonSunCoor(2, 1))
 
-      if ( iabeg < 1 ) iabeg = 1 ; 
-
-      IF ( .not. UniformRankSearch ) THEN
-        iaend = GET_RANK_BINARY_SEARCH( seconds_between + tcache, tmparr, lenarr ) + 4 ;
-      ELSE  
-        iaend = GET_RANK_UNIFORM( seconds_between + tcache, tmparr, lenarr ) + 4 ;
-      END IF        
-      if ( iaend > lenarr ) iaend = lenarr ; 
-
-      tbeg(1) = tmparr(iabeg) ; 
-      tend(1) = tmparr(iaend) ; 
-
-      ! Allocate arrays !
-      len_times = (iaend - iabeg) + 1 ; 
-      if ( allocated( times ) ) then
-        deallocate( times ) ; 
-        deallocate( lunar_distances, solar_distances ) ;
-        deallocate( lunar_ras, solar_ras ) ; 
-        deallocate( lunar_decs, solar_decs ) ; 
-      endif    
-      allocate(times(len_times), lunar_distances(len_times), solar_distances(len_times))
-      allocate(lunar_ras(len_times), solar_ras(len_times), lunar_decs(len_times), solar_decs(len_times))
-  
-      times = tmparr(iabeg:iaend) ; 
-      call check( nf90_get_var( ncid, lunar_distance_varid, lunar_distances, (/ iabeg /), (/ len_times /) ))
-      call check( nf90_get_var( ncid, solar_distance_varid, solar_distances, (/ iabeg /), (/ len_times /) ))
-      call check( nf90_get_var( ncid, lunar_ra_varid, lunar_ras, (/ iabeg /), (/ len_times /) ))
-      call check( nf90_get_var( ncid, solar_ra_varid, solar_ras, (/ iabeg /), (/ len_times /) ))
-      call check( nf90_get_var( ncid, lunar_dec_varid, lunar_decs, (/ iabeg /), (/ len_times /) ))
-      call check( nf90_get_var( ncid, solar_dec_varid, solar_decs, (/ iabeg /), (/ len_times /) ))
-  
-      ! Close the NetCDF file
-      call check(nf90_close(ncid))
-      deallocate(tmparr) ;
-
-      first = .false. ;
-      if ( recache ) recache = .false. ;
-    END IF
-
-    IF ( .not. UniformRankSearch ) THEN
-      J = GET_RANK_BINARY_SEARCH( seconds_between, times, len_times ) ;
-    ELSE
-      J = GET_RANK_UNIFORM( seconds_between, times, len_times ) ; 
-    END IF    
-
-    match = .false. ;
-    if ( j >= 3 .and. j <= len_times - 2 ) then
-       match = .true. ;
-       idarr = (/ ( j - ii, ii = -2, 1 ) /)  ;
-    else if ( j == 2 ) then
-       match = .true. ;
-       idarr = (/ (ii, ii = 1, 4) /)  ; 
-    else if ( j == len_times ) then
-       match = .true. 
-       idarr = (/ (len_times - 3 + ii, ii = 0, 3 ) /) ;
-    end if     
-
-    if ( match ) then
-       ! Lunar distance interpolation
-       call interpolate(times(idarr), lunar_distances(idarr), seconds_between, MoonSunCoor(3,1))
-
-       ! Solar distance interpolation   
-       call interpolate(times(idarr), solar_distances(idarr), seconds_between, MoonSunCoor(3,2))
-      
-       ! Lunar right ascension interpolation
-       ratmp(1:4) = lunar_ras(idarr) ;
-       call adjust_RA( ratmp(1:4) ) ;
-       call interpolate( times(idarr), ratmp(1:4), seconds_between, MoonSunCoor(1,1) )
-       MoonSunCoor(1,1) = modulo( MoonsunCoor(1,1), 360.D0 ) ; 
-
-       ! Solar right ascension interpolation
-       ratmp(1:4) = solar_ras(idarr) ;
-       call adjust_RA( ratmp(1:4) ) ;
-       call interpolate(times(idarr), ratmp(1:4), seconds_between, MoonSunCoor(1,2))
-       MoonSunCoor(1,2) = modulo( MoonsunCoor(1,2), 360.D0 ) ; 
-
-       ! Lunar declination interpolation
-       call interpolate(times(idarr), lunar_decs(idarr), seconds_between, MoonSunCoor(2,1))
-
-       ! Solar declination interpolation
-       call interpolate(times(idarr), solar_decs(idarr), seconds_between, MoonSunCoor(2,2))
-    end if   
+      ! Solar declination interpolation
+      call interpolate(self%times(idarr), self%solar_decs(idarr), seconds_between, MoonSunCoor(2, 2))
+    end if
 
     if (.not. match) then
-      IERR = 2 ; 
+      IERR = 2; 
     end if
 
     ! Convert solar distance to AU
     ! MoonSunCoor(3,2) = MoonSunCoor(3,2) * 6.6845871226706E-9
-    MoonSunCoor(3,2) = MoonSunCoor(3,2) * km2AU ; 
-#endif  
+    MoonSunCoor(3, 2) = MoonSunCoor(3, 2)*km2AU; 
+#endif
   end subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE
 
+  integer function recache_data(self, UniformRankSearch, seconds_between) result(ierr)
+#ifdef ADCNETCDF
+    use netcdf
+    use netcdf_error, only: check_err
+#endif
+    implicit none
+    class(t_ephemri), intent(inout) :: self
+    logical, optional :: UniformRankSearch
+    real(8), optional :: seconds_between
+
+#ifdef ADCNETCDF
+    integer, parameter :: NC_ERR = -1
+    integer :: time_dimid, ndimsp, dimlen
+    integer :: ncid, time_varid, lunar_distance_varid, solar_distance_varid
+    integer :: lunar_ra_varid, solar_ra_varid, lunar_dec_varid, solar_dec_varid
+    integer :: lenarr, iabeg, iaend
+    integer :: dimids(nf90_max_dims)
+    real(8), allocatable :: tmparr(:)
+
+    ! Open the NetCDF file
+    call check_err(nf90_open(self%MoonSunCoordFile, nf90_nowrite, ncid))
+
+    ! Get variable IDs
+    call check_err(nf90_inq_varid(ncid, 'time', time_varid))
+    call check_err(nf90_inq_varid(ncid, 'lunar_distance', lunar_distance_varid))
+    call check_err(nf90_inq_varid(ncid, 'solar_distance', solar_distance_varid))
+    call check_err(nf90_inq_varid(ncid, 'lunar_ra', lunar_ra_varid))
+    call check_err(nf90_inq_varid(ncid, 'solar_ra', solar_ra_varid))
+    call check_err(nf90_inq_varid(ncid, 'lunar_dec', lunar_dec_varid))
+    call check_err(nf90_inq_varid(ncid, 'solar_dec', solar_dec_varid))
+
+    ! Inquire about the time variable to get dimension IDs
+    call check_err(nf90_inquire_variable(ncid, time_varid, ndims=ndimsp, dimids=dimids))
+
+    ! Get the length of the time dimension
+    call check_err(nf90_inquire_dimension(ncid, dimids(1), len=dimlen))
+
+    lenarr = dimlen
+    allocate (tmparr(lenarr)); tmparr = 0.d0
+    call check_err(nf90_get_var(ncid, time_varid, tmparr))
+    self%tbeg(2) = tmparr(1)
+    self%tend(2) = tmparr(lenarr)
+    if (seconds_between < self%tbeg(2) .or. seconds_between > self%tend(2)) then
+      ierr = 2
+      return
+    end if
+
+    if (.not. UniformRankSearch) then
+      iabeg = GET_RANK_BINARY_SEARCH(seconds_between, tmparr, lenarr) - 4; 
+    else
+      iabeg = GET_RANK_UNIFORM(seconds_between, tmparr, lenarr) - 4; 
+    end if
+
+    if (iabeg < 1) iabeg = 1; 
+    if (.not. UniformRankSearch) then
+      iaend = GET_RANK_BINARY_SEARCH(seconds_between + self%tcache, tmparr, lenarr) + 4
+    else
+      iaend = GET_RANK_UNIFORM(seconds_between + self%tcache, tmparr, lenarr) + 4
+    end if
+    if (iaend > lenarr) iaend = lenarr; 
+    self%tbeg(1) = tmparr(iabeg); 
+    self%tend(1) = tmparr(iaend); 
+    self%len_times = (iaend - iabeg) + 1; 
+    call self%reallocate_arrays()
+
+    self%times = tmparr(iabeg:iaend); 
+    call check_err(nf90_get_var(ncid, lunar_distance_varid, self%lunar_distances, (/iabeg/), (/self%len_times/)))
+    call check_err(nf90_get_var(ncid, solar_distance_varid, self%solar_distances, (/iabeg/), (/self%len_times/)))
+    call check_err(nf90_get_var(ncid, lunar_ra_varid, self%lunar_ras, (/iabeg/), (/self%len_times/)))
+    call check_err(nf90_get_var(ncid, solar_ra_varid, self%solar_ras, (/iabeg/), (/self%len_times/)))
+    call check_err(nf90_get_var(ncid, lunar_dec_varid, self%lunar_decs, (/iabeg/), (/self%len_times/)))
+    call check_err(nf90_get_var(ncid, solar_dec_varid, self%solar_decs, (/iabeg/), (/self%len_times/)))
+
+    ! Close the NetCDF file
+    call check_err(nf90_close(ncid))
+    deallocate (tmparr)
+    self%first = .false.
+#endif
+  end function recache_data
+
+  subroutine reallocate_arrays(self)
+    implicit none
+    class(t_ephemri), intent(inout) :: self
+
+    ! Allocate arrays !
+    if (allocated(self%times)) then
+      deallocate (self%times)
+      deallocate (self%lunar_distances)
+      deallocate (self%solar_distances)
+      deallocate (self%lunar_ras, self%solar_ras)
+      deallocate (self%lunar_decs, self%solar_decs)
+    end if
+    allocate (self%times(self%len_times))
+    allocate (self%lunar_distances(self%len_times))
+    allocate (self%solar_distances(self%len_times))
+    allocate (self%lunar_ras(self%len_times))
+    allocate (self%solar_ras(self%len_times))
+    allocate (self%lunar_decs(self%len_times))
+    allocate (self%solar_decs(self%len_times))
+  end subroutine reallocate_arrays
+
   ! check whether RA change cross the zero hr line.
-  ! if so, adjust accordingly                  
-  subroutine adjust_RA( RA, fadjust )
+  ! if so, adjust accordingly
+  subroutine adjust_RA(RA, fadjust)
     implicit none
 
-    LOGICAL, optional:: fadjust
-    REAL (8), INTENT(INOUT):: RA(:)
+    logical, optional :: fadjust
+    real(8), intent(INOUT) :: RA(:)
 
-    INTEGER:: I, N
-    LOGICAL:: CrossZeroRA 
+    integer :: I, N
+    logical :: CrossZeroRA
 
-    N = ubound( RA, 1 ) ; 
+    N = ubound(RA, 1); 
+    CrossZeroRA = .false.; 
+    do I = 1, N - 1
+      if (abs(RA(I + 1) - RA(I)) > 120.d0) then
+        CrossZeroRA = .true.; 
+      end if
+    end do
 
-    CrossZeroRA = .FALSE. ;
-    DO I = 1, N - 1
-      IF ( abs(RA(I+1) - RA(I)) > 120.D0 ) THEN
-        CrossZeroRA = .TRUE. ;
-      END IF
-    END DO
+    if (CrossZeroRA) then
+      where (RA < 180.d0) RA = RA + 360.d0; 
+    end if
 
-    IF ( CrossZeroRA ) THEN
-      WHERE ( RA < 180.D0 ) RA = RA + 360.D0 ;        
-    END IF
-
-    IF ( present(fadjust) ) fadjust = CrossZeroRA ;  
-
-    RETURN ; 
+    if (present(fadjust)) fadjust = CrossZeroRA; 
+    return; 
   end subroutine adjust_RA
-
 
   ! Subroutine to perform Lagrange interpolation
   subroutine interpolate(x, y, xi, yi)
@@ -261,7 +310,7 @@ contains
     yi = 0.0d0
     do k = 1, size(x)
       call L(k, xi, x, term)
-      yi = yi + y(k) * term
+      yi = yi + y(k)*term
     end do
   end subroutine interpolate
 
@@ -274,133 +323,119 @@ contains
     term = 1.0d0
     do i = 1, size(x)
       if (i /= k) then
-        term = term * (xi - x(i)) / (x(k) - x(i))
+        term = term*(xi - x(i))/(x(k) - x(i))
       end if
     end do
   end subroutine L
 
-  ! Subroutine for error checking
-  subroutine check(status)
-    integer, intent(in) :: status
- 
-#ifdef ADCNETCDF    
-    if (status /= nf90_noerr) then
-      print *, trim(nf90_strerror(status))
-      stop "Stopped"
+  ! Return a rank j in ARR such that arr(j-1) < val <= arr(j1) !
+  function GET_RANK_SIMPLE_SEARCH(val, arr, len) result(rank)
+    implicit none
+
+    integer :: rank
+    real(8), intent(IN) :: val
+    real(8), intent(IN) :: arr(:)
+    integer, intent(IN) :: len
+
+    integer :: J
+
+    if (val < arr(1)) then
+      rank = 0; 
+      return; 
     end if
-#endif
 
-  end subroutine check
+    if (val > arr(len)) then
+      rank = len + 1; 
+      return; 
+    end if
 
-  ! Return a rank j in ARR such that arr(j-1) < val <= arr(j1) !  
-  FUNCTION GET_RANK_SIMPLE_SEARCH( val, arr, len ) RESULT( rank ) 
-    IMPLICIT NONE
+    RANK = 0; 
+    do J = 1, LEN
+      if (ARR(J) >= val) then
+        RANK = J; 
+        exit; 
+      end if
+    end do
 
-    INTEGER:: rank 
-    REAL(8), INTENT(IN):: val
-    REAL(8), INTENT(IN):: arr(:)
-    INTEGER, INTENT(IN):: len
+  end function GET_RANK_SIMPLE_SEARCH
 
-    INTEGER:: J
-
-    IF ( val < arr(1) ) THEN 
-       rank = 0  ;
-       return ;
-    END IF
-
-    IF ( val > arr(len) ) THEN
-       rank = len + 1  ;
-       return ; 
-    END IF
-
-    RANK = 0 ; 
-    DO J = 1, LEN
-       IF ( ARR(J) >= val ) THEN
-         RANK = J ;
-         EXIT ;
-       END IF
-    END DO
-    
-  END FUNCTION GET_RANK_SIMPLE_SEARCH     
-
-  ! Find a rank j in arr such that arr(j-1) < val < = arr(j)         !        
+  ! Find a rank j in arr such that arr(j-1) < val < = arr(j)         !
   ! in a unifrom table, i,e, arr(i+1) - arr(i) = arr(i+2) - arr(i+1) !
-  FUNCTION GET_RANK_UNIFORM( val, arr, len ) RESULT( rank )
-     IMPLICIT NONE
+  function GET_RANK_UNIFORM(val, arr, len) result(rank)
+    implicit none
 
-     INTEGER:: rank
-     REAL(8), INTENT(IN):: val 
-     REAL(8), INTENT(IN):: arr(:)
-     INTEGER, INTENT(IN):: len
+    integer :: rank
+    real(8), intent(IN) :: val
+    real(8), intent(IN) :: arr(:)
+    integer, intent(IN) :: len
 
-     REAL (8):: ds
+    real(8) :: ds
 
-     IF ( val < arr(1) ) THEN 
-        rank = 0  ;
-        return ;
-     END IF
- 
-     IF ( val > arr(len) ) THEN
-        rank = len + 1  ;
-        return ; 
-     END IF
- 
-     ds = (arr(2) - arr(1)) ; 
-     rank = ceiling( (val - arr(1))/ds ) + 1 ;
+    if (val < arr(1)) then
+      rank = 0; 
+      return; 
+    end if
 
-  END FUNCTION GET_RANK_UNIFORM
+    if (val > arr(len)) then
+      rank = len + 1; 
+      return; 
+    end if
 
-  ! Find a rank j in arr such that arr(j-1) < val < = arr(j)  !        
+    ds = (arr(2) - arr(1)); 
+    rank = ceiling((val - arr(1))/ds) + 1; 
+  end function GET_RANK_UNIFORM
+
+  ! Find a rank j in arr such that arr(j-1) < val < = arr(j)  !
   ! using a binary search                                     !
-  FUNCTION GET_RANK_BINARY_SEARCH( val, arr, len ) RESULT( rank )
-     IMPLICIT NONE
+  function GET_RANK_BINARY_SEARCH(val, arr, len) result(rank)
+    implicit none
 
-     INTEGER:: rank
-     REAL(8), INTENT(IN):: val 
-     REAL(8), INTENT(IN):: arr(:)
-     INTEGER:: len
+    integer :: rank
+    real(8), intent(IN) :: val
+    real(8), intent(IN) :: arr(:)
+    integer :: len
 
-     INTEGER:: low, high, mid
+    integer :: low, high, mid
 
-     IF ( val < arr(1) ) THEN 
-        rank = 0  ;
-        return ;
-     END IF
-     IF ( val > arr(len) ) THEN
-        rank = len + 1  ;
-        return ; 
-     END IF
+    if (val < arr(1)) then
+      rank = 0; 
+      return; 
+    end if
+    if (val > arr(len)) then
+      rank = len + 1; 
+      return; 
+    end if
 
-     low = 1 ;
-     high = len ; 
-     DO
-       mid = (low + high)/2 ; 
-       IF ( abs(val - arr(mid)) < 1.0e-12 ) THEN
-           ! Exact match is found !
-           rank = mid ; 
-           EXIT ;
-       END IF
- 
-       IF ( val < arr(mid) ) THEN
-           high = mid ;    
-       ELSE     
-           low = mid ;
-       END IF
- 
-       IF ( high == low + 1 ) THEN
-          ! found the interval to which val  !
-          ! falls inbetween is found         !     
-          rank = high ;
-          EXIT ;
-       END IF
- 
-       IF ( high < low ) THEN
-         WRITE(*,*) "Error in GET_RANK_BINARY_SEARCH()" ; 
-         rank = -1 ;
-         EXIT ; 
-       END IF
-    END DO
-                 
-  END FUNCTION GET_RANK_BINARY_SEARCH       
+    low = 1; 
+    high = len; 
+    do
+      mid = (low + high)/2; 
+      if (abs(val - arr(mid)) < 1.0e-12) then
+        ! Exact match is found !
+        rank = mid; 
+        exit; 
+      end if
+
+      if (val < arr(mid)) then
+        high = mid; 
+      else
+        low = mid; 
+      end if
+
+      if (high == low + 1) then
+        ! found the interval to which val  !
+        ! falls inbetween is found         !
+        rank = high; 
+        exit; 
+      end if
+
+      if (high < low) then
+        write (*, *) "Error in GET_RANK_BINARY_SEARCH()"; 
+        rank = -1; 
+        exit; 
+      end if
+    end do
+
+  end function GET_RANK_BINARY_SEARCH
 
 end module ephemri_module
