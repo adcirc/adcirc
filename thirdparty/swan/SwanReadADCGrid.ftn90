@@ -190,7 +190,8 @@ subroutine SwanReadADCGrid
 !PUN       else
 !PUN          read(ndsd, *, end=950, err=910) n2, itype, vm
 !PUN       endif
-       if ( itype /= 4 .and. itype /= 24 ) then
+!Casey 240710
+       if ( itype /= 4 .and. itype /= 24 .and. itype /= 64 ) then
           do k = 1, n2
              read(ndsd, *, end=950, err=910) ivert
 !Casey 231217: Carrying forward changes from earlier version.
@@ -204,7 +205,10 @@ subroutine SwanReadADCGrid
 !NADC             vmark(ivert ) = vm
 !NADC             vmark(ivert1) = vm
 !ADC            vmark(find(node_dict,ivert )) = vm
-!ADC            vmark(find(node_dict,ivert1)) = vm
+!ADC            n3 = find(node_dict,ivert1)
+!ADC            if(n3 > 0) then              ! 9/1/2023 sb
+!ADC               vmark(n3) = vm
+!ADC            endif                        ! 9/1/2023 sb
           enddo
        endif
     enddo
