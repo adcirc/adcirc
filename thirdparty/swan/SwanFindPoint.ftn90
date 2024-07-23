@@ -143,7 +143,7 @@ subroutine SwanFindPoint ( x, y, kvert )
              !
              reldis = abs( dyb*(x-x1) - dxb*(y-y1) ) / ( dxb*dxb + dyb*dyb )
              !
-             if ( reldis < 0.01 ) then
+             if ( reldis < 0.0001 ) then
                 !
                 r   = ( dxb*(x-x1) + dyb*(y-y1) ) / ( dxb*dxb + dyb*dyb )
                 !
