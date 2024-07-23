@@ -30,8 +30,8 @@ module mod_ephemerides
     logical :: first = .true.
     integer :: len_times
     character(len=256) :: MoonSunCoordFile = "none"
-    real(8) :: tbeg(2) = (/0D0, 0D0/)
-    real(8) :: tend(2) = (/0d0, 0D0/)
+    real(8) :: tbeg(2) = (/0d0, 0d0/)
+    real(8) :: tend(2) = (/0d0, 0d0/)
     real(8), allocatable :: times(:), lunar_distances(:), solar_distances(:)
     real(8), allocatable :: lunar_ras(:), solar_ras(:), lunar_decs(:), solar_decs(:)
     real(8) :: tcache = 2592000.d0 ! cache 30 days of data for a faster retrival when
