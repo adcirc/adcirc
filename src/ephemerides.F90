@@ -29,9 +29,9 @@ module mod_ephemerides
     private
     logical :: first = .true.
     integer :: len_times
-    character(len=256) :: MoonSunCoordFile
-    real(8) :: tbeg(2) = 0d0
-    real(8) :: tend(2) = 0d0
+    character(len=256) :: MoonSunCoordFile = "none"
+    real(8) :: tbeg(2) = (/0D0, 0D0/)
+    real(8) :: tend(2) = (/0d0, 0D0/)
     real(8), allocatable :: times(:), lunar_distances(:), solar_distances(:)
     real(8), allocatable :: lunar_ras(:), solar_ras(:), lunar_decs(:), solar_decs(:)
     real(8) :: tcache = 2592000.d0 ! cache 30 days of data for a faster retrival when
@@ -115,10 +115,10 @@ contains
 
     if (.not. self%first) then
       if (seconds_between > self%times(self%len_times - 4)) then
-        ierr = self%recache_data()
+        ierr = self%recache_data(seconds_between, UniformRankSearch)
       end if
     else
-      ierr = self%recache_data()
+      ierr = self%recache_data(seconds_between, UniformRankSearch)
     end if
 
     if (.not. UniformRankSearch) then
@@ -173,15 +173,15 @@ contains
 #endif
   end subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE
 
-  integer function recache_data(self, UniformRankSearch, seconds_between) result(ierr)
+  integer function recache_data(self, seconds_between, UniformRankSearch) result(ierr)
 #ifdef ADCNETCDF
     use netcdf
     use netcdf_error, only: check_err
 #endif
     implicit none
     class(t_ephemerides), intent(inout) :: self
-    logical, optional :: UniformRankSearch
-    real(8), optional :: seconds_between
+    real(8), intent(in) :: seconds_between
+    logical, intent(in) :: UniformRankSearch
 
 #ifdef ADCNETCDF
     integer, parameter :: NC_ERR = -1

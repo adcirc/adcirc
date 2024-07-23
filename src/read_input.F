@@ -196,6 +196,7 @@ C
       character(len=24) :: TIPStartDate = ""
       character(len=24) :: MoonSunPositionComputeMethod = "JM"
       character(len=80) :: MoonSunCoordFile = "none"
+      character(len=24) :: TpBaseDate = "none"
       logical :: IncludeNutation = .false.
       real(8) :: k2Value = 0.302D0
       real(8) :: h2Value = 0.609D0
@@ -257,10 +258,13 @@ C     MoonSunCoordFile = filename of an external file storting the
 C                        coordinates of the Moon and the Sun         
 C     IncludeNutation = T/F , Include/exclude the nutation in JM formula
 C     k2value = Love number
-C     h2value = Love number      
+C     h2value = Love number     
+C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data 
+C     TpBaseDate = 'YYYY-MM-DD HH:SS'
       NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
      &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
-     &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData
+     &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData,
+     &    TpBaseDate
          
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -807,25 +811,29 @@ C     WJP add namelist
 
 C...
 
-      namelistSpecifier = 'TidalPotentialControl' ; 
+      namelistSpecifier = 'TidalPotentialControl'
       read(unit=15,nml=TidalPotentialControl,iostat=ios,iomsg=ios_nml_error_msg)
       call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,*) "USeFullTIPFormula=", UseFullTIPFormula
       call logMessage(ECHO,trim(scratchMessage)) 
       write(scratchMessage,*)"TIPOrder=", TIPOrder 
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*) "TIPStartDate=", TIPStartDate
+      write(scratchMessage,*) "TIPStartDate=", trim(TIPStartDate)
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*)"MoonSunPositionComputeMethod",
-     &                        MoonSunPositionComputeMethod 
+      write(scratchMessage,*)"MoonSunPositionComputeMethod=",
+     &                        trim(MoonSunPositionComputeMethod)
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*) "MoonSunCoordFile=", MoonSunCoordFile
+      write(scratchMessage,*) "MoonSunCoordFile=", trim(MoonSunCoordFile)
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "IncludeNutation=", IncludeNutation
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "k2Value=", k2Value
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "h2Value=", h2Value
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "UniformResMoonSunTimeData=",UniformResMoonSunTimeData
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "TpBaseDate=", trim(TpBaseDate)
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
@@ -5078,13 +5086,24 @@ C
 #endif
       ENDIF
 
-      ! Initialize the tidal potential calculation
-      if(.not.useNetCDF.and.UseFullTIPFormula) then
-         call allMessage(ERROR, "Tidal potential calculation relies on netCDF metadata. You must activate netCDF output.")
-         call adcirc_terminate()
+      ! Check if we have been provided a base date for the tide potential calculations
+      if(UseFullTIPFormula.and.trim(TpBaseDate)=="none")then
+         if(useNetCDF)then
+            TpBaseDate = trim(base_date)
+            WRITE(scratchMessage,'(2A)') "The TpBaseDate parameter was not set in the TidalPotentialControl namelist."//
+     &                                   " Using the base_date netCDF metadata value instead: ", TpBaseDate
+            call allMessage(WARNING,scratchMessage)
+         else
+            scratchMessage = "The TpBaseDate parameter must be set either in the netCDF metadata "//
+     &                       "or the tide potential namelist."
+            call allMessage(ERROR,scratchMessage)
+            call adcirc_terminate()
+         endif
       endif
+
+      ! Initialize the tidal potential calculation
       tidePotential = t_tidePotential(np, rnday, UseFullTIPFormula, TIPOrder, 
-     &                                TIPStartDate, base_date, 
+     &                                TIPStartDate, TpBaseDate, 
      &                                MoonSunPositionComputeMethod, 
      &                                MoonSunCoordFile, IncludeNutation, 
      &                                k2Value, h2Value)

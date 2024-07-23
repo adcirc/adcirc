@@ -135,6 +135,7 @@ contains
    subroutine tidalPotentialConstructor(self, np, rnday, in_UseFullTIPFormula, in_TIPOrder, in_TIPStartDate, &
                                         in_base_date, in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
                                         in_IncludeNutation, in_k2value, in_h2value)
+         use global, only: allMessage, WARNING                               
          implicit none
 
          class(t_tidePotential), intent(INOUT) :: self
@@ -163,8 +164,12 @@ contains
          moonSunPositionString = StringUpper(in_MoonSunPositionComputeMethod)
          if(trim(adjustl(in_MoonSunPositionComputeMethod)) == 'JM') then
             self%m_MoonSunPositionComputeMethod = ComputeMethod_JM
-         else
+         elseif(trim(adjustl(in_MoonSunPositionComputeMethod)) == 'EXTERNAL') then
             self%m_MoonSunPositionComputeMethod = ComputeMethod_External
+         else
+            call allMessage(WARNING, "Invalid MoonSunPositionComputeMethod: "//trim(adjustl(in_MoonSunPositionComputeMethod)))
+            call allMessage(WARNING, "Defaulting to JM")
+            self%m_MoonSunPositionComputeMethod = ComputeMethod_JM
          end if
 
          call self%INIT_FULL_TIP(np)
