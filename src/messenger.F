@@ -73,6 +73,8 @@ C  Message-Passing Array space
       REAL(8),ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
       !jgf50.82: Create a flag for unrecoverable issue on a subdomain
       LOGICAL :: subdomainFatalError ! true if mpi_abort should be called
+      LOGICAL :: writers_active = .false.
+      LOGICAL :: hs_writers_active = .false.
 
 C
 C
@@ -222,7 +224,7 @@ C
       call allMessage(DEBUG,"Enter.") 
 #endif
 C
-      IF(MNWPROC > 0) THEN
+      IF(MNWPROC > 0.and.writers_active) THEN
         IF(MYPROC.eq.0) THEN
           DO I=1,MNWPROC
             WRITE(16,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO WRITER ',
@@ -233,7 +235,7 @@ C
         ENDIF
       ENDIF
 
-      IF(MNWPROH > 0) THEN             !st3 100711 for hsfile
+      IF(MNWPROH > 0.and.hs_writers_active) THEN             !st3 100711 for hsfile
         IF(MYPROC.eq.0) THEN
           DO I=1,MNWPROH
             WRITE(16,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO HSWRITER',
