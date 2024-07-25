@@ -977,12 +977,15 @@ C     subroutine is only called by processor 0.
 C-----------------------------------------------------------------------
       subroutine writer_pause()
       use global
-      use messenger, only: tag, comm_writeh
+      use messenger, only: tag, comm_writeh, writers_active
       use mpi
       implicit none
       integer i
       integer ierr
-C
+
+      if(.not.writers_active)return
+      writers_active = .false.
+
       call setMessageSource("writer_pause")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -1082,11 +1085,14 @@ C...  Main loop
 !
       subroutine HSWRITER_PAUSE()
       use global
-      use messenger, only: tag, comm_writeh
+      use messenger, only: tag, comm_writeh,hs_writers_active
       use mpi
       implicit none
       integer i
       integer ierr
+
+      if(.not.hs_writers_active)return
+      hs_writers_active = .false.
 
       DO I=1,MNWPROH
          CALL MPI_SEND( SIG_PAUSE, 1, MPI_INTEGER, MNPROC,
