@@ -419,6 +419,9 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
      &                       PADCSWAN_RUN
 #endif
       USE WRITE_OUTPUT,ONLY: writeOutput2D
+#ifdef CMPI      
+      USE MESSENGER, ONLY: writers_active, hs_writers_active
+#endif      
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: NTIME_STP
@@ -442,8 +445,14 @@ C
             call unsetMessageSource()  !tcm 20150924 -- added
             return
          endif
-      elseif ( mnwproc > 0 .and. myproc == 0 ) then
-         call sendLabelInfoToWriters()
+      elseif ( (mnwproc > 0 .or. mnwproh > 0) .and. myproc == 0 ) then
+         if(mnwproc > 0)then
+             call sendLabelInfoToWriters()
+             writers_active = .true.
+         endif
+         if(mnwproh > 0)then
+             hs_writers_active = .true.
+         endif
       endif
 #endif
 
