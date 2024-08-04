@@ -153,7 +153,7 @@ C-----------------------------------------------------------------------
               ENDDO
           ELSEIF(myproc.GT.mnproc-1.and.myproc.LT.mnproc+mnwproc)THEN
               CALL mpi_recv(n,1,mpi_integer,0,0,mpi_comm_adcirc,mpistat,ierr)
-              allocate(labels_g(1:n))
+              if (.not.allocated(labels_g)) allocate(labels_g(1:n))   !tcm 20240804 added test for allocated
               CALL mpi_recv(labels_g,n,mpi_integer,0,0,mpi_comm_adcirc,mpistat,ierr)
           ENDIF
 
