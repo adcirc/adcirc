@@ -1,17 +1,3 @@
-# executables
-adcirc
-padcirc
-adcprep
-adcpost
-adccmp
-inflate
-hot2asc
-hstime
-aswip
-p15
-adcswan
-padcswan
-
 # compiled module and object files
 *.o
 *.mod
@@ -24,7 +10,6 @@ actualflags.txt
 changelog
 version.F
 adcircResultsComparison
-lib/
 work/libadc.a
 build/
 build13
