@@ -11,6 +11,16 @@ AC_PROG_F77 dnl Note that we'll end up always using the f90 compiler
 AC_PROG_FC
 AC_FC_LINE_LENGTH([132])
 
+dnl Add option for --with-swan
+ac_with_swan=no
+AC_ARG_WITH(swan, AS_HELP_STRING([--with-swan],[Build coupled ADCIRC+SWAN]),[
+if test "x$with_swan" = "xyes" ; then
+    ac_with_swan=yes
+else
+    ac_with_swan=no
+fi
+])
+
 dnl Add option for --with-mpi
 ac_have_mpi=no
 AC_ARG_WITH(mpi, AS_HELP_STRING([--with-mpi],[Build with parallel support]),[
@@ -81,18 +91,64 @@ if test "x$ac_build_mpi" = "xyes" ; then
     AC_LANG_POP()
 fi
 
+dnl If building swan, we need perl
+AS_IF([test x$ac_with_swan = "xyes"],
+    [
+     AC_CHECK_PROG([HAS_PERL],[perl],[yes],[no])
+     AS_IF([test x$HAS_PERL != xyes],AC_MSG_ERROR([Perl required to build SWAN source code]),[])
+    ],[])
+
+dnl To generate the version file, we need python
+AC_CHECK_PROG([HAS_PYTHON],[python],[yes],[no])
+AS_IF([test x$HAS_PYTHON != xyes],AC_MSG_ERROR([Python require to generate the version information]),[])
+
 dnl Set the conditional values in all Makefile.am files 
-AM_CONDITIONAL([HAVE_MPI], [test x$ac_have_mpi = xyes])
-AM_CONDITIONAL([HAVE_NETCDF], [test x$nc_has_fortran = xyes])
+AM_CONDITIONAL([BUILD_MPI], [test x$ac_have_mpi = xyes])
+AM_CONDITIONAL([BUILD_NETCDF], [test x$nc_has_fortran = xyes])
+AM_CONDITIONAL([BUILD_SWAN], [test x$ac_with_swan])
+
+dnl Generate the SWAN source files via the preprocessor
+AS_IF([test x$ac_with_swan = "xyes"],
+    [
+     AC_CONFIG_COMMANDS([adcswan], 
+        [
+         perl thirdparty/swan/switch.pl -unix -adcirc thirdparty/swan/*.ftn thirdparty/swan/*.ftn90
+         mkdir -p autotools/lib/libswan_serial_source
+         mv thirdparty/swan/*.f thirdparty/swan/*.f90 autotools/lib/libswan_serial_source/.
+        ]
+     )
+    ],[]
+)
+AS_IF([test x$ac_with_swan = "xyes" && test x$ac_have_mpi = xyes],
+    [
+     AC_CONFIG_COMMANDS([padcswan], 
+        [
+         perl thirdparty/swan/switch.pl -unix -adcirc -pun thirdparty/swan/*.ftn thirdparty/swan/*.ftn90
+         mkdir -p autotools/lib/libswan_parallel_source
+         mv thirdparty/swan/*.f thirdparty/swan/*.f90 autotools/lib/libswan_parallel_source/.
+        ]
+     )
+    ],[]
+)
+
+AC_CONFIG_COMMANDS([version],
+  [scripts/adcirc_version.py --create-version-file --directory $ac_top_srcdir]
+)
 
 dnl Set the Makefiles to be created
 AC_CONFIG_FILES([
   Makefile
   autotools/Makefile
-  autotools/adcirc/Makefile
-  autotools/metis/Makefile
-  autotools/adcprep/Makefile
-  autotools/padcirc/Makefile
+  autotools/lib/Makefile
+  autotools/lib/libswan_serial1/Makefile
+  autotools/lib/libadcswan/Makefile
+  autotools/lib/libswan_serial2/Makefile
+  autotools/lib/metis/Makefile
+  autotools/bin/Makefile
+  autotools/bin/adcirc/Makefile
+  autotools/bin/adcprep/Makefile
+  autotools/bin/padcirc/Makefile
+  autotools/bin/adcswan/Makefile
 ])
 
 dnl Write the output

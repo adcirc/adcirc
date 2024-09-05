@@ -17,16 +17,22 @@ adcprep_SOURCES = \
 	  momentum.F gwce.F wetdry.F netcdfio.F prep.F interp.F machdep.F \
 	  couple2baroclinic3D.F gl2loc_mapping.F 
 
-adcprep_LDADD = $(top_builddir)/autotools/metis/libmetis.a
+adcprep_LDADD = $(top_builddir)/autotools/lib/metis/libmetis.a
 ARCH_FLAGS = -DLINUX -DCSCA
 
-if HAVE_NETCDF
+if BUILD_NETCDF
 NETCDF_FLAGS = -DADCNETCDF -DHAVE_NETCDF4 -DNETCDF_CAN_DEFLATE
 AM_FFLAGS = $(NETCDF_FLAGS) $(FCFLAGS) $(ARCH_FLAGS)
 AM_FCFLAGS = $(NETCDF_FLAGS)
 adcprep_LDADD += -lnetcdf -lnetcdff 
 else
 AM_FFLAGS = $(FCFLAGS) $(ARCH_FLAGS)
+AM_FCFLAGS = 
+endif
+
+if BUILD_SWAN
+AM_FFLAGS += -DADCSWAN
+AM_FCFLAGS += -DADCSWAN
 endif
 
 CLEANFILES = *.mod
