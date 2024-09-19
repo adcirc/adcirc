@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-libtoolize
+libtoolize --copy
 aclocal
-automake --add-missing
+automake --add-missing --copy
 autoconf

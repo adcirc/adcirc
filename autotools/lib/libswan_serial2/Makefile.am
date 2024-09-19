@@ -1,5 +1,11 @@
 VPATH = $(top_srcdir)/autotools/lib/libswan_serial_source
 
+AM_FFLAGS = -I../libswan_serial1 -I../libadcswan
+AM_FCFLAGS = -I../libswan_serial1 -I../libadcswan
+ARFLAGS = cr
+
+if BUILD_SWAN
+
 noinst_LIBRARIES = libswan_serial2.a
 
 libswan_serial2_a_SOURCES = \
@@ -19,5 +25,4 @@ libswan_serial2_a_SOURCES = \
 	  SwanMinOverNodes.f90 SwanMaxOverNodes.f90 SwanVTKWriteHeader.f90 SwanVTKWriteData.f90 \
       SwanVTKPDataSets.f90 ocpids.f ocpcre.f ocpmix.f fftpack51.f90
 
-AM_FFLAGS = -I../libswan_serial1 -I../libadcswan
-AM_FCFLAGS = -I../libswan_serial1 -I../libadcswan
+endif

@@ -7,6 +7,13 @@ VPATH = $(top_srcdir) \
 		$(top_srcdir)/wind \
 		$(top_srcdir)/thirdparty/KDTREE2
 
+internal_includes = -I$(top_srcdir)/autotools/lib/libswan_serial1 
+AM_FFLAGS += $(internal_includes) -DCSWAN
+AM_FCFLAGS += $(internal_includes) -DCSWAN
+ARFLAGS = cr
+
+if BUILD_SWAN
+
 noinst_LIBRARIES = libadcswan.a
 
 libadcswan_a_SOURCES = \
@@ -18,9 +25,6 @@ libadcswan_a_SOURCES = \
 	  gwce.F wetdry.F control.F netcdfio.F write_output.F couple2swan.F \
 	  couple2baroclinic3D.F gl2loc_mapping.F couple2baroclinic3D.F
 
-internal_includes = -I$(top_srcdir)/autotools/lib/libswan_serial1 
-
-AM_FFLAGS += $(internal_includes) -DCSWAN
-AM_FCFLAGS += $(internal_includes) -DCSWAN
+endif
 
 CLEANFILES = *.mod

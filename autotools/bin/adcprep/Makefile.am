@@ -6,6 +6,8 @@ VPATH = $(top_srcdir) \
 		$(top_srcdir)/wind \
 		$(top_srcdir)/thirdparty/KDTREE2
 
+if BUILD_MPI
+
 bin_PROGRAMS = adcprep
 
 adcprep_SOURCES = \
@@ -18,6 +20,7 @@ adcprep_SOURCES = \
 	  couple2baroclinic3D.F gl2loc_mapping.F 
 
 adcprep_LDADD = $(top_builddir)/autotools/lib/metis/libmetis.a
+
 ARCH_FLAGS = -DLINUX -DCSCA
 
 if BUILD_NETCDF
@@ -33,6 +36,8 @@ endif
 if BUILD_SWAN
 AM_FFLAGS += -DADCSWAN
 AM_FCFLAGS += -DADCSWAN
+endif
+
 endif
 
 CLEANFILES = *.mod
