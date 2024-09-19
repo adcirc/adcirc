@@ -1,5 +1,9 @@
 VPATH = $(top_srcdir)/thirdparty/metis/Lib
 
+ARFLAGS = cr
+
+if BUILD_MPI
+
 noinst_LIBRARIES = libmetis.a
 
 libmetis_a_SOURCES = \
@@ -12,4 +16,6 @@ libmetis_a_SOURCES = \
     mfm.c mkmetis.c mkwayrefine.c mkwayfmh.c mrefine2.c minitpart2.c \
     mbalance2.c mfm2.c kvmetis.c kwayvolrefine.c kwayvolfm.c subdomains.c
 
-DISTCLEANFILES = .deps
+endif
+
+DISTCLEANFILES = .deps/*

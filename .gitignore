@@ -30,3 +30,18 @@ work/util/*
 .idea/
 .vscode/
 .project
+
+# Autotools Files
+Makefile.in
+Makefile
+autom4te.cache
+config.log
+configure
+configure~
+config.sub
+config.guess
+compile
+missing
+ltmain.sh
+depcomp
+aclocal.m4

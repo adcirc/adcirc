@@ -4,6 +4,8 @@ F77 = $(FC)
 
 VPATH = $(top_srcdir)/src
 
+if BUILD_SWAN
+
 bin_PROGRAMS = adcswan
 
 adcswan_SOURCES = \
@@ -22,6 +24,8 @@ AM_FCFLAGS += $(internal_includedirs) -DCSWAN
 
 if BUILD_NETCDF
 adcswan_LDADD += -lnetcdf -lnetcdff
+endif
+
 endif
 
 CLEANFILES = *.mod

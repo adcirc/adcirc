@@ -9,6 +9,8 @@ VPATH = $(top_srcdir) \
 		$(top_srcdir)/wind \
 		$(top_srcdir)/thirdparty/KDTREE2
 
+if BUILD_MPI
+
 bin_PROGRAMS = padcirc
 
 padcirc_SOURCES = \
@@ -25,6 +27,8 @@ AM_FCFLAGS += -DCMPI
 AM_FFLAGS += -DCMPI
 if BUILD_NETCDF
 padcirc_LDADD = -lnetcdf -lnetcdff 
+endif
+
 endif
 
 CLEANFILES = *.mod
