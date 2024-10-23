@@ -145,6 +145,7 @@ C     Chavas, 2012). See those publications for more information.
                                         ! of enthalpy (Ck) and momentum 
                                         ! (Cd). If CkCd_calc = true this
                                         ! is value will be overwritten
+      REAL(8) :: backgroundWindFac      ! factor of translation speed to remove from Vmax
 C.....END CPB
 
       ! jgf49.1001 Variables for use in NWS=29, for embedding an asymmetric
@@ -5068,6 +5069,18 @@ C     the fort.22 file.
             ENDIF
          ENDIF
       ENDDO
+      
+C     Get factor of forward speed to remove from Vmax
+      SELECT CASE(TRIM(backgroundWindModel))
+         CASE ("radialVelocityWeighted")
+             backgroundWindFac = 1.0d0
+         CASE ("LC12")
+             backgroundWindFac = 0.62d0
+         CASE DEFAULT
+            call allMessage(ERROR,'Unrecognized backgroundWindModel: '
+     &                         //trim(backgroundWindModel))
+            call windTerminate()
+      END SELECT
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -5160,20 +5173,17 @@ C     ----------------------------------------------------------------
       INTEGER I, J
       REAL(8) :: TVX,TVY,RRP,RMW,A,B,WTRATIO
       REAL(8) :: TransSpdX, TransSpdY
-      REAL(8) :: TM, cpress, lon, lat, spd
+      REAL(8) :: TM, cpress, lon, lat, spd, rrad, alpha
       REAL(8) :: ts        ! storm translation speed, m/s
       REAL(8) :: WindMultiplier         ! for storm 2 in LPFS ensemble
       REAL(8) :: centralPressureDeficit ! difference btw ambient and cpress
       REAL(8) :: inflowAngle
-C
-      REAL(8) :: coriolis
+      REAL(8) :: non_cyclostrophic_part
 
       call setMessageSource("HollandGet")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-!      omega = 2.0d0*pi / 86164.2d0
-
 C
 C     Get data for this time step.
       CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,
@@ -5226,7 +5236,7 @@ C     jgf46.29 Subtract the translational speed of the storm from the
 C     observed max wind speed to avoid distortion in the Holland curve
 C     fit. The translational speed will be added back later.
       ts=sqrt(tvx*tvx+tvy*tvy)
-      spd=spd-ts
+      spd=spd-backgroundWindFac*ts
 C
 C     Convert wind speed from 10 meter altitude (which is what the
 C     NHC forecast contains) to wind speed at the top of the atmospheric
@@ -5239,8 +5249,11 @@ C     range.
          B = rhoAir*e*(spd**2.d0)/(centralPressureDeficit)
          IF (B.lt.1.0d0) B=1.0d0
          IF (B.gt.2.5d0) B=2.5d0
+         non_cyclostrophic_part = 0d0
       ENDIF
 C
+C     WJP convert RMW to meters
+      RMW = RMW*1000d0
 C
 #ifdef DEBUG_HOLLAND
       WRITE(16,4321) B
@@ -5269,22 +5282,22 @@ C     Compute the distances based on haversine formula for distance along a sphe
          rad(i) = sphericalDistance(DX(I),DY(I),lat, ycoor(i))
 C     Add option to calculate exact B parameter
          IF (BCalc.EQ.'exact') THEN
-            B=rhoAir*e*(spd**2.d0+spd*RMW*1000.d0*CORIF(I))
+            non_cyclostrophic_part = RMW*CORIF(I)
+            B=rhoAir*e*spd*(spd+non_cyclostrophic_part)
      &      /(centralPressureDeficit)
          ENDIF
 C     
 C     Compute pressure field
+         alpha = (RMW/RAD(I))**B
 !P.V 11/04/2022 to account for Southern Hemisphere
-         PRESS(I)=cpress+(centralPressureDeficit)*
-     &        EXP(-(RMW*1000.d0/RAD(I))**B)
+         PRESS(I) = cpress + centralPressureDeficit * EXP(-alpha)
 C     Compute velocity field with absolute around 
 C     CORIOLIS for the Southern Hempisphere
          V_r(I) = sqrt(
-     &        (RMW*1000.d0/RAD(I))**B *
-     &        EXP(1.d0-(RMW*1000.d0/RAD(I))**B)*spd**2.d0
-     &        + (RAD(I)**2.d0)*(CORIF(I)**2.d0)/4.d0
+     &        alpha * EXP(1.d0-alpha)*spd*(spd+non_cyclostrophic_part)
+     &        + 0.25d0*(RAD(I)**2.d0)*(CORIF(I)**2.d0)
      &        )
-     &        - RAD(I)*ABS(CORIF(I))/2.d0
+     &        - 0.5d0*RAD(I)*ABS(CORIF(I))
 C     Apply mutliplier for Storm2 in LPFS ensemble.
          V_r(I) = V_r(I) * WindMultiplier
 C     Convert wind velocity from top of atmospheric boundary layer to
@@ -5292,7 +5305,8 @@ C     10m wind velocity.
          V_r(I) = V_r(I) * BLADj
 C
 C     Find the velocity components.
-         CALL calcInflowAngle(RAD(I),RMW,inflowAngle)
+         rrad = RAD(I)/RMW
+         CALL calcInflowAngle(rrad,inflowAngle)
 !P.V 11/04/2022 to account for Southern Hemisphere
          WVNX(I)=SIGN(1.0d0,-lat)*V_r(I)*
      &           SIN(THETA(I)+SIGN(1.0d0,lat)*inflowangle)
@@ -5303,10 +5317,8 @@ C     jgf46.31 Determine translation speed that should be added to final
 C     storm wind speed. This is tapered to zero as the storm wind tapers
 C     to zero toward the eye of the storm and at long distances from the
 C     storm.
-         CALL calcTranslationSpeed(V_r(I),spd,TVX,TVY,lat,
+         CALL calcTranslationSpeed(V_r(I),spd,TVX,TVY,lat,rrad,
      &           TransSpdX,TransSpdY)
-C
-C
 C
 C     jgf46.31 Add the storm translation speed.
          WVNX(I)=WVNX(I)+TransSpdX
@@ -5342,27 +5354,56 @@ C     ----------------------------------------------------------------
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   C A L C T R A N S L A T I O N S P E E D
 C-----------------------------------------------------------------------
-      SUBROUTINE calcTranslationSpeed(V_r,spd,TVX,TVY,lat,
+      SUBROUTINE calcTranslationSpeed(V_r,spd,TVX,TVY,lat,rrad,
      &   TransSpdX,TransSpdY)
       IMPLICIT NONE
-      REAL(8),INTENT(IN) :: V_r, spd, TVX, TVY, lat
+      REAL(8),INTENT(IN) :: V_r, spd, TVX, TVY, lat, rrad
       REAL(8),INTENT(OUT) :: TransSpdX, TransSpdY
-      REAL(8) :: beta
+      REAL(8) :: beta, alpha
       call setMessageSource("calcTranslationSpeed")
 #ifdef ALL_TRACE
       call allMessage(DEBUG,"Enter.")
 #endif
       SELECT CASE(TRIM(backgroundWindModel))
          CASE ("radialVelocityWeighted")
+C           translation speed weighted by the relative radial velocity
             TransSpdX = (abs(V_r)/spd)*TVX
             TransSpdY = (abs(V_r)/spd)*TVY
          CASE ("LC12")
-C      Add 0.55vt to the left of the direction of forward motion
-C      or use constant direction change of 20deg; note the hemisphere
-            beta=0.3491d0
-            TransSpdX = 0.55d0*( TVX*cos(beta)
+C           Add (0.3-0.67)vt to the left of the direction of forward motion
+C           and use direction change of (0-20)deg clockwise; note the hemisphere
+            ! Get the ts factor, alpha in LC12
+            if (rrad <= 1d0) then
+               alpha = 0.3d0 + (0.62d0 - 0.3d0) * rrad
+            elseif (rrad <= 1.35d0) then
+               alpha = 0.62d0 + (0.67d0 - 0.62d0) * (rrad - 1d0) / 0.35d0
+            elseif (rrad <= 2.2d0) then
+               alpha = 0.67d0 + (0.6d0 - 0.67d0) * (rrad - 1.35d0) / 0.85d0
+            elseif (rrad <= 8d0) then
+               alpha = 0.6d0 + (0.5d0 - 0.6d0) * (rrad - 2.2d0) / 5.8d0
+            elseif (rrad <= 12d0) then
+               alpha = 0.5d0 + (0.55d0 - 0.5d0) * (rrad - 8d0) / 4d0
+            else
+               alpha = 0.55d0
+            endif
+            ! Get the rotation factor, beta in LC12
+            if (rrad <= 0.8d0) then
+               beta = 0.0d0 + (20d0 - 0.0d0) * rrad / 0.8d0
+            elseif (rrad <= 1.25d0) then
+               beta = 20d0 + (10d0 - 20d0) * (rrad - 0.8d0) / 0.45d0
+            elseif (rrad <= 1.5d0) then
+               beta = 10d0
+            elseif (rrad <= 3d0) then
+               beta = 10d0 + (15d0 - 10d0) * (rrad - 1.5d0) / 1.5d0
+            elseif (rrad <= 8d0) then
+               beta = 15d0 + (20d0 - 15d0) * (rrad - 3d0) / 5d0
+            else
+               beta = 20d0
+            endif
+            beta = deg2rad * beta
+            TransSpdX = alpha*( TVX*cos(beta)
      &                          -SIGN(1.0d0,lat)*TVY*sin(beta) )
-            TransSpdY = 0.55d0*( TVY*cos(beta)
+            TransSpdY = alpha*( TVY*cos(beta)
      &                          +SIGN(1.0d0,lat)*TVX*sin(beta) )
          CASE DEFAULT
             call allMessage(ERROR,'Unrecognized backgroundWindModel: '
@@ -5381,10 +5422,9 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   C A L C I N F L O W A N G L E
 C-----------------------------------------------------------------------
-      subroutine calcInflowAngle(RAD, RMW, inflowAngle)
+      subroutine calcInflowAngle(RRAD, inflowAngle)
       IMPLICIT NONE
-      REAL(8),INTENT(IN) :: RAD
-      REAL(8),INTENT(IN) :: RMW
+      REAL(8),INTENT(IN) :: RRAD ! relative radial distance (fraction of RMW)
       REAL(8),INTENT(OUT) :: inflowAngle
       call setMessageSource("calcInflowAngle")
 #ifdef ALL_TRACE
@@ -5393,10 +5433,10 @@ C-----------------------------------------------------------------------
       IF (useInflow.EQV..true.) THEN
 C     Adjustment to account for the inflow toward the center
 C     Bretschneider, 1972. New by Ning 
-         IF (RAD .lt. (RMW*1000.d0)) THEN
-           inflowangle=0.1745d0*(1.d0+RAD/RMW/1000.d0)
-         ELSEIF (RAD .lt. (1.2d0*RMW*1000.d0)) THEN
-            inflowangle=0.3491d0+0.4363d0*(RAD/RMW/1000.d0-1.0d0)
+         IF (RRAD .lt. 1d0) THEN
+           inflowangle=0.1745d0*(1.d0+RRAD)
+         ELSEIF (RRAD .lt. 1.2d0) THEN
+            inflowangle=0.3491d0+0.4363d0*(RRAD-1.0d0)
          ELSE
             inflowangle=0.4363d0
          END IF
@@ -5836,7 +5876,7 @@ C     ----------------------------------------------------------------
       INTEGER I, J
       REAL(8) :: TVX,TVY,RRP,RMW,A,B,WTRATIO
       REAL(8) :: TransSpdX, TransSpdY
-      REAL(8) :: TM, cpress, lon, lat, spd
+      REAL(8) :: TM, cpress, lon, lat, spd, rrad
       REAL(8) :: ts        ! storm translation speed, m/s
       REAL(8) :: WindMultiplier         ! for storm 2 in LPFS ensemble
       REAL(8) :: centralPressureDeficit ! difference btw ambient and cpress
@@ -5902,7 +5942,7 @@ C     jgf46.29 Subtract the translational speed of the storm from the
 C     observed max wind speed to avoid distortion in the Holland curve
 C     fit. The translational speed will be added back later.
       ts=sqrt(tvx*tvx+tvy*tvy)
-      spd=spd-ts
+      spd=spd-backgroundWindFac*ts
 C
 C     Convert wind speed from 10 meter altitude (which is what the
 C     NHC forecast contains) to wind speed at the top of the atmospheric
@@ -5917,8 +5957,10 @@ C     range.
          IF (B.gt.2.5d0) B=2.5d0
       ENDIF
 C
+C     WJP convert RMW to meters
+      RMW = RMW*1000d0
 C     Get CLE15 profile for this time steop
-      CALL get_CLE15_profile(spd,RMW*1000d0,lat,V_cle15,r0)
+      CALL get_CLE15_profile(spd,RMW,lat,V_cle15,r0)
 C
 C     Calculate wind velocity and pressure at each node.
       DO I=1,NP
@@ -5934,14 +5976,14 @@ C     Compute the distances based on haversine formula for distance along a sphe
          rad(i) = sphericalDistance(DX(I),DY(I),lat, ycoor(i))
 C     Add option to calculate exact B parameter
          IF (BCalc.EQ.'exact') THEN
-            B=rhoAir*e*(spd**2.d0+spd*RMW*1000.d0*CORIF(I))
+            B=rhoAir*e*(spd**2.d0+spd*RMW*CORIF(I))
      &      /(centralPressureDeficit)
          ENDIF
 C     
 C     Compute pressure field
 !P.V 11/04/2022 to account for Southern Hemisphere
          PRESS(I)=cpress+(centralPressureDeficit)*
-     &        EXP(-(RMW*1000.d0/RAD(I))**B)
+     &        EXP(-(RMW/RAD(I))**B)
 !P.V 11/04/2022
          PRESS(I) = PRESS(I) / (RHOWAT0*G)
 C     CLE15 model: complete TC wind profile
@@ -5957,7 +5999,8 @@ C     10m wind velocity.
          V_r(I) = V_r(I) * BLADj
 C
 C     Find the velocity components.
-         CALL calcInflowAngle(RAD(I),RMW,inflowAngle)
+         rrad = RAD(I)/RMW
+         CALL calcInflowAngle(rrad,inflowAngle)
 !P.V 11/04/2022 to account for Southern Hemisphere
          WVNX(I)=SIGN(1.0d0,-lat)*V_r(I)*
      &           SIN(THETA(I)+SIGN(1.0d0,lat)*inflowangle)
@@ -5968,10 +6011,8 @@ C     jgf46.31 Determine translation speed that should be added to final
 C     storm wind speed. This is tapered to zero as the storm wind tapers
 C     to zero toward the eye of the storm and at long distances from the
 C     storm.
-         CALL calcTranslationSpeed(V_r(I),spd,TVX,TVY,lat,
+         CALL calcTranslationSpeed(V_r(I),spd,TVX,TVY,lat,rrad,
      &           TransSpdX,TransSpdY)
-C
-C
 C
 C     jgf46.31 Add the storm translation speed.
          WVNX(I)=WVNX(I)+TransSpdX
