@@ -193,64 +193,64 @@ ifeq ($(compiler),intel)
   PPFC          :=  ifort
   FC            :=  ifort
   PFC           ?=  mpif90
-  FFLAGS1       := $(INCDIRS) -O2 -g -traceback -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+  FFLAGS1       := $(INCDIRS) -O2 -g -traceback -assume byterecl -132 -xSSE4.2 -assume buffered_io
   CFLAGS        := $(INCDIRS) -O2 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
   FLIBS         :=
   ifeq ($(DEBUG),full)
      CFLAGS        := $(INCDIRS) -g -O0 -m64 -mcmodel=medium -DLINUX
   endif
   ifeq ($(DEBUG),full)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0 -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   ifeq ($(DEBUG),full-not-fpe)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   ifeq ($(DEBUG),trace)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   ifeq ($(DEBUG),buserror)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES -check bounds
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES -check bounds
   endif
   ifeq ($(DEBUG),netcdf_trace)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -DNETCDF_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -assume byterecl -132 -DNETCDF_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   #
   ifeq ($(MACHINENAME),stampede2)
-     FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -assume buffered_io
+     FFLAGS1 := $(INCDIRS) -O3 -assume byterecl -132 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -assume buffered_io
      CFLAGS  := $(INCDIRS) -O3 -DLINUX -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512
      FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512
      ifeq ($(DEBUG),trace)
-        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -assume buffered_io
+        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -assume byterecl -132 -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512 -assume buffered_io
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512
         FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512
      endif
   endif
   ifeq ($(MACHINENAME),frontera) 
-     FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xCORE-AVX512 -assume buffered_io
+     FFLAGS1 := $(INCDIRS) -O3 -assume byterecl -132 -xCORE-AVX512 -assume buffered_io
      CFLAGS  := $(INCDIRS) -O3 -DLINUX -xCORE-AVX512 
      FLIBS   := $(INCDIRS) -xCORE-AVX512 
      ifeq ($(DEBUG),trace)
-        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xCORE-AVX512 -assume buffered_io
+        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -assume byterecl -132 -xCORE-AVX512 -assume buffered_io
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xCORE-AVX512
         FLIBS   := $(INCDIRS) -xCORE-AVX512 
      endif
   endif
   ifeq ($(MACHINENAME),queenbee)
-     FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+     FFLAGS1 := $(INCDIRS) -O3 -assume byterecl -132 -xSSE4.2 -assume buffered_io
      CFLAGS  := $(INCDIRS) -O3 -DLINUX -xSSE4.2
      FLIBS   := $(INCDIRS) -xSSE4.2
      ifeq ($(DEBUG),trace)
-        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -assume byterecl -132 -xSSE4.2 -assume buffered_io
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xSSE4.2
         FLIBS   := $(INCDIRS) -xSSE4.2
      endif
   endif
   ifeq ($(MACHINENAME),supermic) 
-     FFLAGS1 := $(INCDIRS) -O3 -FI -assume byterecl -132 -xAVX -assume buffered_io
+     FFLAGS1 := $(INCDIRS) -O3 -assume byterecl -132 -xAVX -assume buffered_io
      CFLAGS  := $(INCDIRS) -O3 -DLINUX -xAVX
      FLIBS   := $(INCDIRS) -xAVX
      ifeq ($(DEBUG),trace)
-        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -FI -assume byterecl -132 -xAVX -assume buffered_io
+        FFLAGS1 := $(INCDIRS) -g -O0 -traceback -assume byterecl -132 -xAVX -assume buffered_io
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX  -xAVX 
         FLIBS   := $(INCDIRS) -xAVX
      endif
@@ -371,7 +371,7 @@ ifeq ($(compiler),intel-ND)
 #      FFLAGS1     :=  $(INCDIRS) -O0 -g -traceback -check bounds -xSSE4.2 -assume byterecl -132 -mcmodel=medium -shared-intel -assume buffered_io
   endif
   ifeq ($(DEBUG),full)
-     FFLAGS1    :=  $(INCDIRS) -g -O0 -traceback -debug -check all -FI -assume byterecl -132 -DEBUG -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+     FFLAGS1    :=  $(INCDIRS) -g -O0 -traceback -debug -check all -assume byterecl -132 -DEBUG -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
