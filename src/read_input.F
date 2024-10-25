@@ -196,7 +196,6 @@ C
       character(len=24) :: TIPStartDate = ""
       character(len=24) :: MoonSunPositionComputeMethod = "JM"
       character(len=80) :: MoonSunCoordFile = "none"
-      character(len=24) :: TpBaseDate = "none"
       logical :: IncludeNutation = .false.
       real(8) :: k2Value = 0.302D0
       real(8) :: h2Value = 0.609D0
@@ -260,11 +259,9 @@ C     IncludeNutation = T/F , Include/exclude the nutation in JM formula
 C     k2value = Love number
 C     h2value = Love number     
 C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data 
-C     TpBaseDate = 'YYYY-MM-DD HH:SS'
       NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
      &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
-     &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData,
-     &    TpBaseDate
+     &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData
          
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -832,8 +829,6 @@ C...
       write(scratchMessage,*) "h2Value=", h2Value
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "UniformResMoonSunTimeData=",UniformResMoonSunTimeData
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*) "TpBaseDate=", trim(TpBaseDate)
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
@@ -5087,14 +5082,14 @@ C
       ENDIF
 
       ! Check if we have been provided a base date for the tide potential calculations
-      if(UseFullTIPFormula.and.trim(TpBaseDate)=="none")then
+      if(UseFullTIPFormula.and.trim(TipStartDate)=="none")then
          if(useNetCDF)then
-            TpBaseDate = trim(base_date)
-            WRITE(scratchMessage,'(2A)') "The TpBaseDate parameter was not set in the TidalPotentialControl namelist."//
-     &                                   " Using the base_date netCDF metadata value instead: ", TpBaseDate
+            TipStartDate = trim(base_date)
+            WRITE(scratchMessage,'(2A)') "The TipStartDate parameter was not set in the TidalPotentialControl namelist."//
+     &                                   " Using the base_date netCDF metadata value instead: ", TipStartDate
             call allMessage(WARNING,scratchMessage)
          else
-            scratchMessage = "The TpBaseDate parameter must be set either in the netCDF metadata "//
+            scratchMessage = "The TipStartDate parameter must be set either in the netCDF metadata "//
      &                       "or the tide potential namelist."
             call allMessage(ERROR,scratchMessage)
             call adcirc_terminate()
@@ -5102,8 +5097,8 @@ C
       endif
 
       ! Initialize the tidal potential calculation
-      tidePotential = t_tidePotential(np, rnday, UseFullTIPFormula, TIPOrder, 
-     &                                TIPStartDate, TpBaseDate, 
+      tidePotential = t_tidePotential(np, rnday, UseFullTIPFormula,
+     &                                TIPOrder, TIPStartDate,  
      &                                MoonSunPositionComputeMethod, 
      &                                MoonSunCoordFile, IncludeNutation, 
      &                                k2Value, h2Value)

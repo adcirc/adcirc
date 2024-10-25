@@ -91,7 +91,6 @@ module mod_tidepotential
   contains
     procedure, pass(self), public :: compute => compute_full_tip
     procedure, pass(self), public :: active => useFullTIPFormula
-    procedure, pass(self), private :: set_base_date => SET_TIP_BASEDATE
     procedure, pass(self), private :: COMP_FULL_TIP_SUB0
     procedure, pass(self), private :: init => tidalPotentialConstructor
     procedure, pass(self), private :: init_full_tip
@@ -104,7 +103,7 @@ module mod_tidepotential
   type(t_tidePotential), public :: tidePotential
 
   private :: AINTPOWER, COMP_FULL_TIP_SUB0, compute_full_tip, &
-             INIT_FULL_TIP, SET_TIP_BASEDATE, StringUpper, tidalPotentialConstructor, &
+             INIT_FULL_TIP, StringUpper, tidalPotentialConstructor, &
              useFullTIPFormula
 
 contains
@@ -120,7 +119,6 @@ contains
   !> @param in_UseFullTIPFormula A logical value indicating whether to use the full TIP formula.
   !> @param in_TIPOrder The order of the TIP formula.
   !> @param in_TIPStartDate The start date for the TIP calculations.
-  !> @param in_base_date The base date for the TIP calculations.
   !> @param in_MoonSunPositionComputeMethod The method used to compute the positions of the Moon and Sun.
   !> @param in_MoonSunCoordFile The file containing the coordinates of the Moon and Sun.
   !> @param in_IncludeNutation A logical value indicating whether to include nutation in the calculations.
@@ -133,7 +131,7 @@ contains
   !>       Moon and Sun from an external file.
   !>
   subroutine tidalPotentialConstructor(self, np, rnday, in_UseFullTIPFormula, in_TIPOrder, in_TIPStartDate, &
-                                       in_base_date, in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
+                                       in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
                                        in_IncludeNutation, in_k2value, in_h2value)
     use global, only: allMessage, WARNING
     implicit none
@@ -144,7 +142,6 @@ contains
     logical, intent(IN) :: in_UseFullTIPFormula
     integer, intent(IN) :: in_TIPOrder
     character(LEN=*), intent(IN) :: in_TIPStartDate
-    character(LEN=*), intent(IN) :: in_base_date
     character(LEN=*), intent(IN) :: in_MoonSunPositionComputeMethod
     character(LEN=*), intent(IN) :: in_MoonSunCoordFile
     logical, intent(IN) :: in_IncludeNutation
@@ -173,7 +170,6 @@ contains
     end if
 
     call self%INIT_FULL_TIP(np)
-    call self%set_base_date(in_base_date)
 
     if (self%m_MoonSunPositionComputeMethod == ComputeMethod_External) then
       self%m_ephemerides = t_ephemerides(rnday, in_moonsuncoordfile)
@@ -188,7 +184,6 @@ contains
   !> @param in_UseFullTIPFormula Flag indicating whether to use the full Tidal Inverse Problem (TIP) formula.
   !> @param in_TIPOrder Order of the TIP formula.
   !> @param in_TIPStartDate Start date of the TIP formula.
-  !> @param in_base_date Base date for the tidal potential calculations.
   !> @param in_MoonSunPositionComputeMethod Method for computing the positions of the Moon and Sun.
   !> @param in_MoonSunCoordFile File containing the coordinates of the Moon and Sun.
   !> @param in_IncludeNutation Flag indicating whether to include nutation in the tidal potential calculations.
@@ -197,7 +192,7 @@ contains
   !>
   !> @return tp Tidal potential object.
   type(t_tidePotential) function createTidalPotential(np, in_rnday, in_UseFullTIPFormula, in_TIPOrder, in_TIPStartDate, &
-                                                      in_base_date, in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
+                                                      in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
                                                       in_IncludeNutation, in_k2value, in_h2value) result(tp)
     implicit none
 
@@ -206,14 +201,13 @@ contains
     logical, intent(IN) :: in_UseFullTIPFormula
     integer, intent(IN) :: in_TIPOrder
     character(LEN=*), intent(IN) :: in_TIPStartDate
-    character(LEN=*), intent(IN) :: in_base_date
     character(LEN=*), intent(IN) :: in_MoonSunPositionComputeMethod
     character(LEN=*), intent(IN) :: in_MoonSunCoordFile
     logical, intent(IN) :: in_IncludeNutation
     real(8), intent(IN) :: in_k2value, in_h2value
 
     call tp%init(np, in_rnday, in_UseFullTIPFormula, in_TIPOrder, in_TIPStartDate, &
-                 in_base_date, in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
+                 in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
                  in_IncludeNutation, in_k2value, in_h2value)
 
   end function createTidalPotential
@@ -423,18 +417,6 @@ contains
     end if
 
   end subroutine check_tip_err
-
-  subroutine SET_TIP_BASEDATE(self, base_date)
-    implicit none
-    class(t_tidePotential), intent(INOUT) :: self
-    character(LEN=*), intent(IN) :: base_date
-    character(LEN=len_trim(base_date)) :: start_date
-
-    start_date = StringUpper(self%m_TIPStartDate)
-    if (trim(self%m_TIPStartDate) == 'BASEDATE') then
-      self%m_TIPStartDate = trim(base_date)
-    end if
-  end subroutine SET_TIP_BASEDATE
 
   function StringUpper(string) result(outString)
     implicit none
