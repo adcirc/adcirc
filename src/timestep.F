@@ -402,7 +402,7 @@ C...  Wind (& wave radiation stress if used)
             PR1(I)=PR2(I)
             PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
          ELSE
-C WJP 02.26.2018 inserted from Dam's code    
+C WJP 02.26.2018 inserted from Dams code    
 !c dw ------------- otherwise, tide run could fail      
             PR2(I) = PRBCKGRND_MH2O 
          END IF
@@ -654,6 +654,15 @@ C---------------------BEGIN MET FORCING----------------------------------------
 
       call getMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
      &   wvnxout, wvnyout, timeloc)
+! CBOB
+!       IF ( MYPROC .EQ. 0 ) THEN
+!       print*,'TS: WVNXOUT(1)=',WVNXOUT(1)                              ! CBOB
+!       print*,'TS: WVNYOUT(1)=',WVNYOUT(1)                              ! CBOB
+!       print*,'TS: WSX2(1)=',WSX2(1)                              ! CBOB
+!       print*,'TS: WSY2(1)=',WSY2(1)                              ! CBOB
+!       print*,'TS: PR2(1)=',PR2(1)                                      ! CBOB
+!       ENDIF
+! CBOB
 C
 C----------------------END MET FORCING----------------------------------------
 

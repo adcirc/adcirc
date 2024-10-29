@@ -71,7 +71,7 @@ C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data
       real(8) :: wtimed ! time in seconds associated with a dataset
       real(8) :: wreftim ! met reference time
 
-Casey 110518: Added for Mark Powell's sectorial wind drag.
+Casey 110518: Added for Mark Powells sectorial wind drag.
       REAL(8)  :: EyeLat(3) = 0.D0
       REAL(8)  :: EyeLon(3) = 0.D0
       LOGICAL  :: FoundEye
@@ -213,6 +213,8 @@ C
       type(gfdl_Data_t), allocatable, target :: gfdl_Files(:) ! array of info about GFDL Met files
       real(8) :: GFDL_max_extrap_dist     ! maximum distance for extrapolating values (meters)
       real(8) :: GFDL_WindMultiplier      ! all GFDL wind u,v's multiplied by this
+      real(8) :: NWS14NC_WindMultiplier=1.0      ! all NWS14NC wind u,v multiplied by this
+      real(8) :: NWS14NC_PresMultiplier=1.0      ! all NWS14NC msl pressure multiplied by this
       !
       ! jgf52.51.21: Fixes for NWS10. Changed from NWLAT and NWLON to
       ! latb and lonb and moved from read_input() to wind module and
@@ -750,7 +752,7 @@ C....... the minimum value for Garratt (.000075), when pic = 50
 C....... it has a value of 0.0025 and a zero gradient, and
 C....... when pic = 100 it has a value of 0.00125.
 C....... This represents a smoother transition between Garratt
-C....... and Ray's Ice for low ice values and low winds
+C....... and Rays Ice for low ice values and low winds
 
          IF (PercentIce.lt.0.d0) then
             WindIceDrag = WindDrag
@@ -996,7 +998,7 @@ C  tcm v49.16 20100617
 
 C     Wind velocity in US Navy Fleet Numeric format interpolated in
 C     space onto the ADCIRC grid and in time to synchronize the wind and
-C     pressure information with the model time step. Garratt's formula
+C     pressure information with the model time step. Garratts formula
 C     is used to compute wind stress from the wind velocity.
       IF(NWS.EQ.3) THEN
          IF(TimeLoc.GT.WTIME2) THEN
@@ -1037,7 +1039,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 C     Wind velocity and atmospheric pressure are read in (PBL/JAG
 C     format) at selected ADCIRC grid nodes. Interpolation in time is
 C     used to synchronize the wind and pressure information with the
-C     model time step. Garratt's formula is used to compute wind stress
+C     model time step. Garratts formula is used to compute wind stress
 C     from wind velocity.
       IF(ABS(NWS).EQ.4) THEN
          IF(TimeLoc.GT.WTIME2) THEN
@@ -1083,7 +1085,7 @@ C  tcm v49.16 20100617
 
 C     Wind velocity and atmospheric pressure are read in at all grid
 C     nodes. Interpolation in time is used to synchronize the wind and
-C     pressure information with the model time step. Garratt's formula
+C     pressure information with the model time step. Garratts formula
 C     is used to compute wind stress from wind velocity.
       IF(ABS(NWS).EQ.5) THEN
          IF(TimeLoc.GT.WTIME2) THEN
@@ -1132,7 +1134,7 @@ C     rectangular grid (either in Longitude, Latitude or Cartesian
 C     coordinates, consistent with the grid coordinates) and
 C     interpolated in space onto the ADCIRC grid and in time to
 C     synchronize the wind and pressure information with the model time
-C     step. Garratt's formula is used to compute wind stress from the
+C     step. Garratts formula is used to compute wind stress from the
 C     wind velocity.
       IF(NWS.EQ.6) THEN
          IF(TimeLoc.GT.WTIME2) THEN
@@ -1246,7 +1248,7 @@ C     Wind velocity (10 m) and atmospheric pressure are read in from a
 C     sequence of National Weather Service (NWS) Aviation (AVN) model
 C     output files. Each AVN file is assumed to contain data on a
 C     Gaussian longitude, latitude grid at a single time. Consecutive
-C     files in the sequence are separated by N hours in time. Garratt's
+C     files in the sequence are separated by N hours in time. Garratts
 C     formula is used to compute wind stress from the wind velocity.
       IF(NWS.EQ.10) THEN
          IF(TimeLoc.GT.WTIME2) THEN
@@ -1303,7 +1305,7 @@ C     model output files. Each ETA file is assumed to contain data on an
 C     E grid for a single day (8 data sets, one every 3 hours, beginning
 C     @ 03:00 and continuing through 24:00 of the given day). The wind
 C     data is converted to an east-west, north-south coordinate system
-C     inside ADCIRC. Garratt's formula is used to compute wind stress
+C     inside ADCIRC. Garratts formula is used to compute wind stress
 C     from the wind velocity.
       IF(NWS.EQ.11) THEN
          IF(TimeLoc.GT.WTIME2) THEN
@@ -1354,6 +1356,7 @@ C  tcm v49.16 20100617
 C...  sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
 C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
       IF (ABS(NWS).EQ.12.or.ABS(NWS).eq.14) THEN
+!         print*,'BOB:wind:line 1357 at ABS(NWS).EQ.12.or.ABS(NWS).eq.14'   ! CBOB
          IF (TimeLoc.GT.WTIME2) THEN
             CHANGE_14 = .true.
             WTIME1 = WTIME2
@@ -1368,6 +1371,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
 #ifdef DATETIME
 #if defined(GRIB2API) || defined(ADCNETCDF)
             ELSE
+!               print*,'BOB here 97656345'  ! CBOB
                IF ((NCICE.eq.14.or.NCICE.eq.13).and.
      &             TimeLoc.GT.CICE_TIME2) THEN
                   CICE_TIME1 = CICE_TIME2
@@ -1376,6 +1380,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
                   CALL NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
                ELSE
                   CALL NWS14GET(WVNX2,WVNY2,PRN2) 
+!                  print*,'After NWS14GET call:  PRN2(1)=', PRN2(1)   ! CBOB
                ENDIF
 #endif
 #endif
@@ -1464,6 +1469,27 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             WVNYOUT(I) = RampMete*WINDY
 
           END DO
+!CBOB
+!          print*,'BOB: WARNING! MET FORCING IS ZEROED OUT for NWS14'   ! CBOB
+!          print*,'Before'                                              ! CBOB
+!          print*,'WVNXOUT(1)=',WVNXOUT(1)                              ! CBOB
+!          print*,'WVNYOUT(1)=',WVNYOUT(1)                              ! CBOB
+!          print*,'WSX2(1)=',WSX2(1)                                    ! CBOB
+!          print*,'WSY2(1)=',WSY2(1)                                    ! CBOB
+!          print*,'PR2(1)=',PR2(1)                                      ! CBOB
+!          print*,'PRDIFF(1)=',prdiffatnode1                            ! CBOB
+!          WSX2=0.                                                      ! CBOB
+!          WSY2=0.                                                      ! CBOB
+!          WVNXOUT = 0.
+!          WVNYOUT = 0.
+!          !PR2=0.                                                       ! CBOB
+!          print*,'After'                                               ! CBOB
+!          print*,'WVNXOUT(1)=',WVNXOUT(1)                              ! CBOB
+!          print*,'WVNYOUT(1)=',WVNYOUT(1)                              ! CBOB
+!          print*,'WSX2(1)=',WSX2(1)                                    ! CBOB
+!          print*,'WSY2(1)=',WSY2(1)                                    ! CBOB
+!          print*,'PR2(1)=',PR2(1)                                      ! CBOB
+!CBOB
       ENDIF
 
 #ifdef ADCNETCDF
@@ -1793,6 +1819,7 @@ C      DW/WJP: rotate wind stresses if coordinate transform
      &              UVECTMP, VVECTMP, NP, FWD = .TRUE. )
        ENDIF
 
+       
 C--------------------END MET FORCING---------------------------------------
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -2044,6 +2071,7 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
 #ifdef DATETIME
 #if defined(GRIB2API) || defined(ADCNETCDF)
       IF (ABS(NWS).eq.14) THEN
+!         print*,'BOB:wind:line2074 : at ABS(NWS).eq.14'   ! CBOB
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
          ! Set datetime and make/check the grib header
@@ -2266,7 +2294,7 @@ C  tcm v49.16 20100617
 
 C     Wind velocity in US Navy Fleet Numeric format interpolated in
 C     space onto the ADCIRC grid and in time to synchronize the wind and
-C     pressure information with the model time step. Garratt's formula
+C     pressure information with the model time step. Garratts formula
 C     is used to compute wind stress from the wind velocity.
       IF(NWS.EQ.3) THEN
 C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
@@ -2341,7 +2369,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 C     Wind velocity and atmospheric pressure are read in (PBL/JAG
 C     format) at selected ADCIRC grid nodes. Interpolation in time is
 C     used to synchronize the wind and pressure information with the
-C     model time step. Garratt's formula is used to compute wind stress
+C     model time step. Garratts formula is used to compute wind stress
 C     from wind velocity.
       IF(NWS.EQ.4) THEN
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
@@ -2430,7 +2458,7 @@ C  tcm v49.16 20100617
 
 C     Wind velocity and atmospheric pressure are read in at all grid
 C     nodes. Interpolation in time is used to synchronize the wind and
-C     pressure information with the model time step. Garratt's formula
+C     pressure information with the model time step. Garratts formula
 C     is used to compute wind stress from wind velocity.
       IF(NWS.EQ.5) THEN
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
@@ -2524,7 +2552,7 @@ C     rectangular grid (either in Longitude, Latitude or Cartesian
 C     coordinates, consistent with the grid coordinates) and
 C     interpolated in space onto the ADCIRC grid and in time to
 C     synchronize the wind and pressure information with the model time
-C     step. Garratt's formula is used to compute wind stress from the
+C     step. Garratts formula is used to compute wind stress from the
 C     wind velocity.
       IF(NWS.EQ.6) THEN
 C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
@@ -2735,7 +2763,7 @@ C     Wind velocity (10 m) and atmospheric pressure are read in from a
 C     sequence of National Weather Service (NWS) Aviation (AVN) model
 C     output files. Each AVN file is assumed to contain data on a
 C     Gaussian longitude, latitude grid at a single time. Consecutive
-C     files in the sequence are separated by N hours in time. Garratt's
+C     files in the sequence are separated by N hours in time. Garratts
 C     formula is used to compute wind stress from the wind velocity.
       IF(NWS.EQ.10) THEN
          WTIME1 = TimeLoc
@@ -2793,7 +2821,7 @@ C     model output files. Each ETA file is assumed to contain data on an
 C     E grid for a single day (8 data sets, one every 3 hours, beginning
 C     @ 03:00 and continuing through 24:00 of the given day). The wind
 C     data is converted to an east-west, north-south coordinate system
-C     inside ADCIRC. Garratt's formula is used to compute wind stress
+C     inside ADCIRC. Garratts formula is used to compute wind stress
 C     from the wind velocity.
       IF(NWS.EQ.11) THEN
          WTIME1=TimeLoc
@@ -2982,6 +3010,7 @@ C     from NAM data
 #if defined(GRIB2API) || defined(ADCNETCDF)
 !     WJP Feb27-2019: Added for NWS=14 for grib2
       IF (ABS(NWS).eq.14) THEN
+!         print*,'BOB:wind:line 3012 : at ABS(NWS).eq.14'   ! CBOB
          ! TimeLoc should be rounded down to nearest WTIMINC
          TimeLoc_NM = nint(TimeLoc/60d0) ! first round to nearest minute
          WTIME1 = WTIMINC*floor(TimeLoc_NM*60d0/WTIMINC)
@@ -4987,7 +5016,7 @@ C     forward.
 C
 C     Assumes spherical coordinates (ICS=2 in fort.15 file).
 C
-C     Based on bob's NWS67GET (See below).
+C     Based on bobs NWS67GET (See below).
 C
 C     ----------------------------------------------------------------
       SUBROUTINE HollandGet(WVNX,WVNY,PRESS,TIMELOC)
@@ -6093,7 +6122,7 @@ C
 
 C     If time exceeds the next hindcast/nowcast/forecast time, increment the
 C     array counter.
-C     jgf50.30 Changed .ge. to .gt. so that we wouldn't start looking at the
+C     jgf50.30 Changed .ge. to .gt. so that we wouldnt start looking at the
 C     next cycle until we are in it ... this should prevent problems when
 C     the ADCIRC run ends right at the end of the fort.22 ... otherwise,
 C     we are running off the end of the data.
@@ -6701,7 +6730,7 @@ C***********************************************************************
 
 C     If time exceeds the next hindcast/nowcast/forecast time, increment the
 C     array counter.
-C     jgf50.30 Changed .ge. to .gt. so that we wouldn't start looking at the
+C     jgf50.30 Changed .ge. to .gt. so that we wouldnt start looking at the
 C     next cycle until we are in it ... this should prevent problems when
 C     the ADCIRC run ends right at the end of the fort.22 ... otherwise,
 C     we are running off the end of the data.
@@ -8847,7 +8876,6 @@ C----------------------------------------------------------------------
       INQUIRE(file=Pfile,exist=Fexists)
 #ifdef GRIB2API
       IF (Fexists) THEN
-
          grb2flag = .TRUE.
          RETURN
       ENDIF
@@ -9042,14 +9070,62 @@ C     in the met data. If we are using grib2 it just returns
 C----------------------------------------------------------------------
       USE SIZES, ONLY : MYPROC
       USE GLOBAL, ONLY : NCICE
+      USE GLOBAL, ONLY : DEBUG, setMessageSource, allMessage, logMessage, scratchMessage
       implicit none
       INTEGER,INTENT(IN) :: NWS
       logical :: Fexists
       integer :: ierr, PvarInd
+
+      INTEGER :: ios = 0                 ! i/o status of read operation
+
+!     CHARACTER(len=20) :: Tdim = 'time'
+!     CHARACTER(len=20) :: Tvar = 'time'
+!     CHARACTER(len=20) :: Tformat = 'none'
+!     CHARACTER(len=20) :: Londim = 'longitude'
+!     CHARACTER(len=20) :: Lonvar = 'longitude'
+!     CHARACTER(len=20) :: Latdim = 'latitude'
+!     CHARACTER(len=20) :: Latvar = 'latitude'
+!     CHARACTER(len=20) :: Pvar = 'msl'
+      CHARACTER(len=20) :: Punits = 'Pa'
+!     CHARACTER(len=20) :: Uvar = 'u10'
+!     CHARACTER(len=20) :: Vvar = 'v10'
+!     CHARACTER(len=20) :: Cvar = 'none'
+      CHARACTER(len=1000) namelistSpecifier ! used in log messages
+ 
+      Tdim = 'time'
+      Tvar = 'time'
+      Tformat = 'none'
+      Londim = 'longitude'
+      Lonvar = 'longitude'
+      Latdim = 'latitude'
+      Latvar = 'latitude'
+      Pvar = 'msl'
+      Punits = 'Pa'
+      Uvar = 'u10'
+      Vvar = 'v10'
+      Cvar = 'none'
+ 
+      !NWS14NC_WindMultiplier & NWS14NC_PresMultiplier are defined in the module 
+      NAMELIST /nws14control/ Tdim,    ! 1 Time dimension name
+     &                        Tvar,    ! 2 Time variable name
+     &                        Tformat, ! 3 Format of time datestr
+     &                        Londim,  ! 4 Lon dimension name
+     &                        Lonvar,  ! 5 Lon var name
+     &                        Latdim,  ! 6 Lat dimension name
+     &                        Latvar,  ! 7 Lat var name
+     &                        Pvar,    ! 8 Pressure var name
+     &                        Punits,  ! 9 Pressure units
+     &                        Uvar,    ! 10 U10 var name
+     &                        Vvar,    ! 11 V10 Var name
+     &                        Cvar, ! 12 (maybe) Ice var name
+     &                        NWS14NC_WindMultiplier,      ! windMultiplier
+     &                        NWS14NC_PresMultiplier     ! presMultiplier
+
       ! return if we are using grib2
       IF (grb2flag) THEN
          RETURN
       ENDIF
+
       CALL setMessageSource("NWS14NC_READ_F22")
       IF (NWS.EQ.-14) THEN
          ! For inset OWI winds with netcdf files something needs to be
@@ -9059,6 +9135,7 @@ C----------------------------------------------------------------------
      &                   //"background wind files.")
          CALL windTerminate()
       ENDIF
+
       ! open the fort.22
       OPEN(22,file='fort.22',ACTION='READ',IOSTAT=ierr)
       ! if we had trouble opening then abort
@@ -9066,26 +9143,39 @@ C----------------------------------------------------------------------
          call allMessage(ERROR,'Unable to open fort.22.')
          call windTerminate()
       ENDIF
-      read(22,*) Tdim    ! Time dimension name
-      read(22,*) Tvar    ! Time variable name
-      read(22,*) Tformat ! Format of time datestr
-      read(22,*) Londim  ! Lon dimension name
-      read(22,*) Lonvar  ! Lon var name
-      read(22,*) Latdim  ! Lat dimension name
-      read(22,*) Latvar  ! Lat var name
-      read(22,*) Pvar    ! Pressure var name
-      read(22,*) Uvar    ! U10 var name
-      read(22,*) Vvar    ! V10 Var name
-      if (NCICE.eq.14) then
-         read(22,*) Cvar ! Ice var name
-      endif
+
+      namelistSpecifier = 'nws14control'
+      read(unit=22,nml=nws14control,iostat=ierr)
       close(22)
-      PvarInd = index(Pvar,'HPa')
-      if (PvarInd > 0) then
+      !call logNamelistReadStatus(namelistSpecifier, ios)
+      !write(scratchMessage,*) "Tdim=",trim(adjustl(Tdim)),
+      write(*,*) "Tdim=",trim(adjustl(Tdim)),
+     &                        " Tvar=",trim(adjustl(Tvar)),
+     &                        " Tformat=",trim(adjustl(Tformat)),
+     &                        " Londim=",trim(adjustl(Londim)),
+     &                        " Lonvar=",trim(adjustl(Lonvar)),
+     &                        " Latdim=",trim(adjustl(Latdim)),
+     &                        " Latvar=",trim(adjustl(Latvar)),
+     &                        " Pvar=",trim(adjustl(Pvar)),
+     &                        " Punits=",trim(adjustl(Punits)),
+     &                        " Uvar=",trim(adjustl(Uvar)),
+     &                        " Vvar=",trim(adjustl(Vvar)),
+     &                        " Cvar=",trim(adjustl(Cvar)),
+     &                        " NWS14NC_WindMultiplier=",
+     &                          NWS14NC_WindMultiplier,
+     &                        " NWS14NC_PresMultiplier=",
+     &                          NWS14NC_PresMultiplier
+      !call logMessage(ECHO,trim(scratchMessage))
+
+      ! process pvar name for units spec.  Check for HPa first, then Pa
+      if (trim(Punits).EQ.'HPa')then
          rhoWat0g = rhoWat0g/100d0
-         Pvar = Pvar(1:PvarInd-1)
-         write(16,*) 'Pressure is in Hpa, New Pvar = ',trim(Pvar)
+         write(16,*) 'Pressure is in HPa.'
+      elseif (trim(Punits).EQ.'Pa')then
+         rhoWat0g = rhoWat0g/1d0
+         write(16,*) 'Pressure is in Pa.'
       endif
+      
       ! get starting time index for netcdf file
       CALL READNWS14_NC_StaTime(Pfile, PfileNCID)
       CALL unsetMessageSource()
@@ -9223,7 +9313,7 @@ C----------------------------------------------------------------------
 
       ! Get the U-winds 
       call READNWS14(Wfile,U10,Winv,Uvar,WfileNCID)
-      
+       
       ! Get the V-winds 
       call READNWS14(Wfile1,V10,Winv,Vvar,Wfile1NCID)
 
@@ -9316,8 +9406,24 @@ C----------------------------------------------------------------------
       REAL,ALLOCATABLE,INTENT(OUT) :: data2(:,:)
       CHARACTER(LEN=200),INTENT(IN) :: invN, var
       INTEGER,INTENT(INOUT) :: ncid
+      real(8) :: fac
+
+!      CALL setMessageSource("READNWS14")
       IF (.NOT.grb2flag) THEN
+
          CALL READNWS14_netCDF(fileN, ncid, var, data2)
+         fac=1.d0
+         if (var.eq.Pvar)then
+            fac=NWS14NC_PresMultiplier
+         elseif (var.eq.Uvar .OR. var.eq.Vvar)then
+            fac=NWS14NC_WindMultiplier
+         else
+            call logMessage(ERROR,'netcdf var fall-through.')
+            CALL windterminate()
+         endif
+         !print*,'var=',trim(var),'  fac=',fac
+         data2=data2*fac
+
       ELSEIF (grb2flag) THEN
          CALL READNWS14_grib2(fileN, invN, var, data2)
       ELSE
@@ -9405,7 +9511,8 @@ C----------------------------------------------------------------------
       real,allocatable,intent(out) :: data2(:,:) 
       INTEGER,INTENT(INOUT) :: NC_ID
       integer :: i, Temp_ID, Lat_ID, Lon_ID, NX, NY
-
+      integer :: rcode
+      real :: scale_factor, add_offset
       CALL setMessageSource('READNWS14_netCDF')
 
 #ifdef ADCNETCDF
@@ -9421,11 +9528,26 @@ C----------------------------------------------------------------------
         CALL BcastToLocal_Int(NX)
         CALL BcastToLocal_Int(NY)
         allocate(data2(NX,NY))
+
+        scale_factor=1.
+        add_offset=0.
+
         IF (MYPROC.EQ.0) THEN
            call Check_err(NF90_INQ_VARID(NC_ID,var,Temp_ID))
+           rcode=nf90_inquire_attribute(nc_id, Temp_ID, "scale_factor")
+           if (rcode == nf90_noerr) then
+               rcode=NF90_GET_ATT(nc_id,Temp_ID,'scale_factor',scale_factor)
+           endif
+           rcode=nf90_inquire_attribute(nc_id, Temp_ID, "add_offset")
+           if (rcode == nf90_noerr) then
+               rcode=NF90_GET_ATT(nc_id,Temp_ID,'add_offset',add_offset)
+           endif
            call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,data2,
      &                  start=[1, 1, NT],count=[NX, NY, 1]))
         ENDIF
+
+        data2=(data2*scale_factor)+add_offset
+
         CALL BCastToLocal_2DRealArray(Data2,NX,NY)
       ELSE 
         ! Each core read data
