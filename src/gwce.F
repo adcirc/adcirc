@@ -262,7 +262,7 @@ C
      &   Areas, NEIMAX, SFAC, nneighele, neitabele, FDYE,
      &   SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, SFCXEle,
      &   SFCYEle, YCSFacEle, TANPHI, SFCT, TANPHIEle, LBArray_Pointer,
-     &   X, Y
+     &   X, Y, CSR_POSITION
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, 
      &   NFLUXRBC, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3, NPEBC,
      &   NBOU, NVELL, IBCONN, ISSUBMERGED64, NFLUXIB64_GBL  ! Added for VEW1D  08-11-2022 SB
@@ -300,7 +300,7 @@ C... SB
 
       INTEGER IE, JN, IJ, I, J, K, L                     !local loop counters
       INTEGER IT, ITIME_BGN
-      INTEGER NM1, NM2, NM3, NMI1, NMI2, NMI3, NMJ1, NMJ2, NMJ3
+      INTEGER NM1, NM2, NM3, NMI1, NMI2, NMI3
       INTEGER NC1, NC2, NC3, NCEle, NCI, NCJ
       INTEGER NCyc
       INTEGER NBDI
@@ -454,9 +454,6 @@ C              WJP 02.24.2018 Get the infinity norm of the matrix
                NMI1=NM(IE,1)
                NMI2=NM(IE,2)
                NMI3=NM(IE,3)
-               NMJ1=NMI1
-               NMJ2=NMI2
-               NMJ3=NMI3
                !JLW: add subgrid additions
                IF(level0)THEN
                   H1N1 = gridDepthVertETA2(NMI1)
@@ -545,16 +542,15 @@ C
                   MSFacLOffDiag = MSFacLOffDiag*PHIAVG2 + OffDiag
      &               *dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/12.d0
                ENDIF
-C
-C.......... DW
-               DO JN=2,NEIMAX
-                  IF(NeiTab(NMI1,JN).EQ.NMJ2) J12=JN
-                  IF(NeiTab(NMI1,JN).EQ.NMJ3) J13=JN
-                  IF(NeiTab(NMI2,JN).EQ.NMJ1) J21=JN
-                  IF(NeiTab(NMI2,JN).EQ.NMJ3) J23=JN
-                  IF(NeiTab(NMI3,JN).EQ.NMJ1) J31=JN
-                  IF(NeiTab(NMI3,JN).EQ.NMJ2) J32=JN
-               END DO
+
+               ! Use the pre-computed CSR positions
+               J12 = CSR_POSITION(IE, 1, 1)
+               J13 = CSR_POSITION(IE, 1, 2)
+               J21 = CSR_POSITION(IE, 2, 1)
+               J23 = CSR_POSITION(IE, 2, 2)
+               J31 = CSR_POSITION(IE, 3, 1)
+               J32 = CSR_POSITION(IE, 3, 2)
+
 C.........     WJP multiplying by cosine(lat) if doing the 
 C              spherical correction 
 C              Node-by-Node
