@@ -102,7 +102,8 @@ C-----------------------------------------------------------------------
 
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
-     &   freeMesh, node_dict, find, agrid, GET_ROTSPCOORD_CORIFVAL
+     &   compute_csr_positions, freeMesh, node_dict, find, agrid,
+     &   GET_ROTSPCOORD_CORIFVAL
       USE BOUNDARIES, ONLY : ANGINN, COSTSET, NETA, NVEL, NVELME, NPEBC,
      &   NFLUXF, NBD, ME2GW, LBCODEI, NBV, simpleFluxBoundaries, ibtype,
      &   numSimpleFluxBoundaries
@@ -5138,6 +5139,9 @@ C...
 C...  CLOSE FORT.15
 C...
       CLOSE(15)
+
+!...  When using the consistent matrix, we need to pre-compute the CSR positions
+      if (ILUMP==0) call compute_csr_positions()
 
 C
 C... v49.48.02 tcm -- Deallocating rmax, bcxy and kdresults
