@@ -29,7 +29,7 @@
 !      analysis and tidal power, Austides consulting, 2019
 !      https://austides.com/downloads/
 !
-! DW/AC, 2024
+! DW/AC/ZC, 2024
 !
 module mod_tidepotential
   use mod_astronomic, only: MassRatioSunEarth, MassRatioMoonEarth, EarthRadiusAU, EarthRadiuskm
@@ -463,7 +463,6 @@ contains
 
     real(8) :: DDD
     integer :: YYYY, MM, DD, HH, MMM, SS
-    integer :: argval(3)
 
     integer :: ii, cpos(2), ivec(3)
     character(LEN=80) :: tmparr
@@ -481,18 +480,9 @@ contains
     MMM = 0
     SS = 0
 
-    argval = (/YYYY, MM, DD/)
-    call extractvalues(argval, delimter(1))
-    YYYY = argval(1)
-    MM = argval(2)
-    DD = argval(3)
-
-    argval = (/HH, MMM, SS/)
-    call extractvalues(argval, delimter(2))
-    HH = argval(1)
-    MMM = argval(2)
-    DD = argval(3)
-
+    call extractvalues( YYYY, MM, DD, delimter(1))
+    call extractvalues( HH, MMM, SS, delimter(2))
+ 
     DDD = dble(DD) + dble(HH)*hour2day + dble(MMM)*min2day + dble(SS)*sec2day
 
     ! Get  correspond Julian days !
@@ -541,16 +531,19 @@ contains
       return
     end subroutine ALLOCATEWORKARR
 
-    subroutine extractvalues(arg, delimc)
+    subroutine extractvalues(a1, a2, a3,  delimc)
       implicit none
 
       character :: delimc
+      integer:: a1, a2, a3 
+
       integer :: arg(3)
 
       logical :: earlystop
       integer :: ii, cpos(3), ivec(3)
 
       earlystop = .false.
+      arg = (/ a1, a2, a3 /) ; 
 
       ivec = 0
       cpos(1) = 1
@@ -578,6 +571,11 @@ contains
         arg(ii) = ivec(ii)
         if (earlystop) exit
       end do
+
+      a1 = arg(1) ;
+      a2 = arg(2) ;
+      a3 = arg(3) ;  
+
     end subroutine extractvalues
 
   end subroutine INIT_FULL_TIP
