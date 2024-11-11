@@ -2336,8 +2336,7 @@ Casey 180318: Added NWS=13
      &        UniformResMoonSunTimeData, "," 
              write(15,'(a,L3,a)') " IncludeNutation = ", IncludeNutation, ","
              write(15,'(a,F15.9,a)') " k2Value = ", k2Value, ","
-             write(15,'(a,F15.9,a)') " h2Value = ", h2Value, ","
-             write(15,'(2a)') " TpBaseDate = '"//trim(TpBaseDate)//"' /"
+             write(15,'(a,F15.9,a)') " h2Value = ", h2Value," /"
          END IF
 
          ! NCSU Subdomain Modeling
