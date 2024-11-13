@@ -213,8 +213,6 @@ C
       type(gfdl_Data_t), allocatable, target :: gfdl_Files(:) ! array of info about GFDL Met files
       real(8) :: GFDL_max_extrap_dist     ! maximum distance for extrapolating values (meters)
       real(8) :: GFDL_WindMultiplier      ! all GFDL wind u,v's multiplied by this
-      real(8) :: NWS14NC_WindMultiplier=1.0      ! all NWS14NC wind u,v multiplied by this
-      real(8) :: NWS14NC_PresMultiplier=1.0      ! all NWS14NC msl pressure multiplied by this
       !
       ! jgf52.51.21: Fixes for NWS10. Changed from NWLAT and NWLON to
       ! latb and lonb and moved from read_input() to wind module and
@@ -268,8 +266,22 @@ C
       character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
       character(len=200) :: Wfile1, Pinv1, Winv1
       INTEGER :: PfileNCID, WfileNCID, CfileNCID, Wfile1NCID
-      character(len=200) :: Pvar, Uvar, Vvar, Cvar, Tvar, Lonvar, Latvar
-      character(len=200) :: Tdim, Londim, Latdim, Tformat
+
+      ! namelist variables for NWS14NC
+      character(len=200) :: Tdim='time'
+      character(len=200) :: Tvar='time'
+      character(len=200) :: Tformat='none'
+      character(len=200) :: Lonvar='longitude'
+      character(len=200) :: Latvar='latitude'
+      character(len=200) :: Londim='longitude'
+      character(len=200) :: Latdim='latitude'
+      character(len=200) :: Pvar='msl'
+      character(len=200) :: Uvar='u10'
+      character(len=200) :: Vvar='v10'
+      character(len=200) :: Cvar='none'
+      real(8) :: NWS14NC_WindMultiplier=1.0      ! all NWS14NC wind u,v multiplied by this
+      real(8) :: NWS14NC_PresMultiplier=1.0      ! all NWS14NC msl pressure multiplied by this
+
       type(datetime) :: CurDT, refdate, stepdate
       logical :: grb2flag
       integer :: NT, NTC
@@ -1356,7 +1368,6 @@ C  tcm v49.16 20100617
 C...  sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
 C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
       IF (ABS(NWS).EQ.12.or.ABS(NWS).eq.14) THEN
-!         print*,'BOB:wind:line 1357 at ABS(NWS).EQ.12.or.ABS(NWS).eq.14'   ! CBOB
          IF (TimeLoc.GT.WTIME2) THEN
             CHANGE_14 = .true.
             WTIME1 = WTIME2
@@ -1371,7 +1382,6 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
 #ifdef DATETIME
 #if defined(GRIB2API) || defined(ADCNETCDF)
             ELSE
-!               print*,'BOB here 97656345'  ! CBOB
                IF ((NCICE.eq.14.or.NCICE.eq.13).and.
      &             TimeLoc.GT.CICE_TIME2) THEN
                   CICE_TIME1 = CICE_TIME2
@@ -1380,7 +1390,6 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
                   CALL NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
                ELSE
                   CALL NWS14GET(WVNX2,WVNY2,PRN2) 
-!                  print*,'After NWS14GET call:  PRN2(1)=', PRN2(1)   ! CBOB
                ENDIF
 #endif
 #endif
@@ -1469,27 +1478,6 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             WVNYOUT(I) = RampMete*WINDY
 
           END DO
-!CBOB
-!          print*,'BOB: WARNING! MET FORCING IS ZEROED OUT for NWS14'   ! CBOB
-!          print*,'Before'                                              ! CBOB
-!          print*,'WVNXOUT(1)=',WVNXOUT(1)                              ! CBOB
-!          print*,'WVNYOUT(1)=',WVNYOUT(1)                              ! CBOB
-!          print*,'WSX2(1)=',WSX2(1)                                    ! CBOB
-!          print*,'WSY2(1)=',WSY2(1)                                    ! CBOB
-!          print*,'PR2(1)=',PR2(1)                                      ! CBOB
-!          print*,'PRDIFF(1)=',prdiffatnode1                            ! CBOB
-!          WSX2=0.                                                      ! CBOB
-!          WSY2=0.                                                      ! CBOB
-!          WVNXOUT = 0.
-!          WVNYOUT = 0.
-!          !PR2=0.                                                       ! CBOB
-!          print*,'After'                                               ! CBOB
-!          print*,'WVNXOUT(1)=',WVNXOUT(1)                              ! CBOB
-!          print*,'WVNYOUT(1)=',WVNYOUT(1)                              ! CBOB
-!          print*,'WSX2(1)=',WSX2(1)                                    ! CBOB
-!          print*,'WSY2(1)=',WSY2(1)                                    ! CBOB
-!          print*,'PR2(1)=',PR2(1)                                      ! CBOB
-!CBOB
       ENDIF
 
 #ifdef ADCNETCDF
@@ -2071,7 +2059,6 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
 #ifdef DATETIME
 #if defined(GRIB2API) || defined(ADCNETCDF)
       IF (ABS(NWS).eq.14) THEN
-!         print*,'BOB:wind:line2074 : at ABS(NWS).eq.14'   ! CBOB
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
          ! Set datetime and make/check the grib header
@@ -3010,7 +2997,6 @@ C     from NAM data
 #if defined(GRIB2API) || defined(ADCNETCDF)
 !     WJP Feb27-2019: Added for NWS=14 for grib2
       IF (ABS(NWS).eq.14) THEN
-!         print*,'BOB:wind:line 3012 : at ABS(NWS).eq.14'   ! CBOB
          ! TimeLoc should be rounded down to nearest WTIMINC
          TimeLoc_NM = nint(TimeLoc/60d0) ! first round to nearest minute
          WTIME1 = WTIMINC*floor(TimeLoc_NM*60d0/WTIMINC)
@@ -8840,9 +8826,10 @@ C----------------------------------------------------------------------
 
       ! check if we are using grib2 or netcdf input files:
       CALL NWS14CHECK_FILETYPE()
-
+      print*,'CBOB Pvar=',trim(Pvar)
       ! set filenames appropriately
       CALL NWS14SET_FILENAMES()
+      print*,'CBOB Pvar=',trim(Pvar)
 
       ! make grib2 .inv files (returns if using netcdf)
       CALL NWS14GRB2_MAKE_INV()
@@ -8954,10 +8941,10 @@ C----------------------------------------------------------------------
          Winv = 'dmy'
          Cinv = 'dmy'
          ! create dummy names for the grib2 variables
-         Pvar = 'dmy'
-         Uvar = 'dmy'
-         Vvar = 'dmy'
-         Cvar = 'dmy'
+         !Pvar = 'dmy'
+         !Uvar = 'dmy'
+         !Vvar = 'dmy'
+         !Cvar = 'dmy'
 
 #ifdef ADCNETCDF
          IF ( read_NWS14_NetCdf_using_core_0 ) THEN
@@ -9078,46 +9065,23 @@ C----------------------------------------------------------------------
 
       INTEGER :: ios = 0                 ! i/o status of read operation
 
-!     CHARACTER(len=20) :: Tdim = 'time'
-!     CHARACTER(len=20) :: Tvar = 'time'
-!     CHARACTER(len=20) :: Tformat = 'none'
-!     CHARACTER(len=20) :: Londim = 'longitude'
-!     CHARACTER(len=20) :: Lonvar = 'longitude'
-!     CHARACTER(len=20) :: Latdim = 'latitude'
-!     CHARACTER(len=20) :: Latvar = 'latitude'
-!     CHARACTER(len=20) :: Pvar = 'msl'
       CHARACTER(len=20) :: Punits = 'Pa'
-!     CHARACTER(len=20) :: Uvar = 'u10'
-!     CHARACTER(len=20) :: Vvar = 'v10'
-!     CHARACTER(len=20) :: Cvar = 'none'
+
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
  
-      Tdim = 'time'
-      Tvar = 'time'
-      Tformat = 'none'
-      Londim = 'longitude'
-      Lonvar = 'longitude'
-      Latdim = 'latitude'
-      Latvar = 'latitude'
-      Pvar = 'msl'
-      Punits = 'Pa'
-      Uvar = 'u10'
-      Vvar = 'v10'
-      Cvar = 'none'
- 
-      !NWS14NC_WindMultiplier & NWS14NC_PresMultiplier are defined in the module 
-      NAMELIST /nws14control/ Tdim,    ! 1 Time dimension name
-     &                        Tvar,    ! 2 Time variable name
-     &                        Tformat, ! 3 Format of time datestr
-     &                        Londim,  ! 4 Lon dimension name
-     &                        Lonvar,  ! 5 Lon var name
-     &                        Latdim,  ! 6 Lat dimension name
-     &                        Latvar,  ! 7 Lat var name
-     &                        Pvar,    ! 8 Pressure var name
-     &                        Punits,  ! 9 Pressure units
-     &                        Uvar,    ! 10 U10 var name
-     &                        Vvar,    ! 11 V10 Var name
-     &                        Cvar, ! 12 (maybe) Ice var name
+      !NWS14NC_WindMultiplier & NWS14NC_PresMultiplier are defined in the module  above
+      NAMELIST /nws14control/ Tdim,    !  Time dimension name
+     &                        Tvar,    !  Time variable name
+     &                        Tformat, !  Format of time datestr
+     &                        Londim,  !  Lon dimension name
+     &                        Lonvar,  !  Lon var name
+     &                        Latdim,  !  Lat dimension name
+     &                        Latvar,  !  Lat var name
+     &                        Pvar,    !  Pressure var name
+     &                        Punits,  !  Pressure units
+     &                        Uvar,    !  U10 var name
+     &                        Vvar,    !  V10 Var name
+     &                        Cvar,    !  (maybe) Ice var name
      &                        NWS14NC_WindMultiplier,      ! windMultiplier
      &                        NWS14NC_PresMultiplier     ! presMultiplier
 
@@ -9145,7 +9109,12 @@ C----------------------------------------------------------------------
       ENDIF
 
       namelistSpecifier = 'nws14control'
+      rewind(22)
       read(unit=22,nml=nws14control,iostat=ierr)
+      IF (ierr.NE.0) THEN
+         call allMessage(ERROR,'Failed to read fort.22.')
+         call windTerminate()
+      ENDIF
       close(22)
       !call logNamelistReadStatus(namelistSpecifier, ios)
       !write(scratchMessage,*) "Tdim=",trim(adjustl(Tdim)),
