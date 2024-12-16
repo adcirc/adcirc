@@ -35,6 +35,7 @@ module mod_tidepotential
   use mod_astronomic, only: MassRatioSunEarth, MassRatioMoonEarth, EarthRadiusAU, EarthRadiuskm
   use mod_moon_sun_coors, only: t_moon_sun
   use mod_ephemerides, only: t_ephemerides
+ 
   implicit none
   !
   !  UseFullTIPFormula = T/F (default F)
@@ -388,7 +389,7 @@ contains
 
     ! Sidereal time at Greenwich !
     tocgmst = self%m_moon_sun_position%GMST_DEG_FN(JDELoc)
-
+    
     tip = self%COMP_FULL_TIP_SUB0(tocgmst, np, slam, MoonSunCoor)
 
 #if defined(ALL_TRACE)
