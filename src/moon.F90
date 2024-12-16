@@ -21,6 +21,7 @@
 ! Postion of the Moon. Chapter 47
 ! Page. 337 -344
 module mod_moon_position
+  
 
   implicit none
 
@@ -30,7 +31,7 @@ module mod_moon_position
 
   !  TABLE 47. B. page 341. Periodic terms for the latitude of
   !  the Moon (\Sum b). The unit is 1e-6 degree
-  real(8), parameter, private :: LATARG(NPER, 4) = reshape((/0.d0, 0.d0, 0.d0, 1.d0, &
+  real(8), parameter, private :: LATARG(NPER,4) = reshape((/0.d0, 0.d0, 0.d0, 1.d0, &
                                                              0.d0, 0.d0, 1.d0, 1.d0, &
                                                              0.d0, 0.d0, 1.d0, -1.d0, &
                                                              2.d0, 0.d0, 0.d0, -1.d0, &
@@ -89,7 +90,7 @@ module mod_moon_position
                                                              4.d0, 0.d0, 1.d0, -1.d0, &
                                                              1.d0, 0.d0, -1.d0, -1.d0, &
                                                              4.d0, -1.d0, 0.d0, -1.d0, &
-                                                             2.d0, -2.d0, 0.d0, 1.d0/), (/NPER, 4/))
+                                                             2.d0, -2.d0, 0.d0, 1.d0/), SHAPE(LATARG),ORDER=(/2,1/) )
 
   real(8), parameter, private :: LAT_SIN_COEF(NPER) = (/5128122.d0, &
                                                         280602.d0, &
@@ -214,7 +215,7 @@ module mod_moon_position
                                                              0.d0, 2.d0, 1.d0, 0.d0, &
                                                              1.d0, 1.d0, -1.d0, 0.d0, &
                                                              2.d0, 0.d0, 3.d0, 0.d0, &
-                                                             2.d0, 0.d0, -1.d0, -2.d0/), (/NPER, 4/))
+                                                             2.d0, 0.d0, -1.d0, -2.d0/), SHAPE(LONARG), order = (/ 2, 1 /) )
 
   real(8), parameter, private :: LON_SIN_COEF(NPER) = (/6288774.d0, &
                                                         1274027.d0, &
@@ -337,9 +338,12 @@ module mod_moon_position
                                                         0.d0, &
                                                         0.d0, &
                                                         8752.d0/)
+
+!  REAL(8), private, parameter:: LATARG(NPER,4) = transpose( LATARGTMP ) ;  
+ 
   integer, private, parameter :: LATMEU(NPER) = int(abs(LATARG(:, 2)))
   integer, private, parameter :: LONMEU(NPER) = int(abs(LONARG(:, 2)))
-
+ 
   private :: CAL_EPMUL, E_MUL_COEF, A1_DEG, A2_DEG, A3_DEG, &
              MOON_COORDINATES_SUB0, MOON_COORDINATES_SUB1
 
@@ -474,7 +478,7 @@ contains
     A2 = modulo(A2_DEG(T), 360.d0)
     A3 = modulo(A3_DEG(T), 360.d0)
     E = E_MUL_COEF(T)
-
+    
     call MOON_COORDINATES_SUB0(lambda, beta, Delta, LP, D, M, MP, F, E, A1, A2, A3)
 
     ! PRINT*, "-------- RA & DEC --------"
@@ -486,7 +490,9 @@ contains
 
     ! Geometric right ascension & declination
     ! CALL ECLIP2EQ( RA, DEC, lambda, beta, vareps )
-
+    ! PRINT*, "Geometrical RA  = ", MODULO(RA,360.D0)
+    ! PRINT*, "Geometrical DEC = ", DEC
+ 
   end subroutine MOON_COORDINATES_SUB1
 
   ! Chaper 47.
@@ -518,6 +524,8 @@ contains
     integer :: I, J
     real(8) :: suml, sumr, sumb
     real(8) :: vec(4), argval(NPER), epmul(NPER)
+
+    LOGICAL, save:: first = .TRUE. ; 
 
     ! Convert from degree to radian
     vec = DEG2RAD*(/D, M, MP, F/)
