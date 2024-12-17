@@ -160,9 +160,9 @@ contains
     self%m_h2value = in_h2value
 
     moonSunPositionString = StringUpper(in_MoonSunPositionComputeMethod)
-    if (trim(adjustl(in_MoonSunPositionComputeMethod)) == 'JM') then
+    if (trim(adjustl(moonSunPositionString)) == 'JM') then
       self%m_MoonSunPositionComputeMethod = ComputeMethod_JM
-    elseif (trim(adjustl(in_MoonSunPositionComputeMethod)) == 'EXTERNAL') then
+    elseif (trim(adjustl(MoonSunPositionString)) == 'EXTERNAL') then  
       self%m_MoonSunPositionComputeMethod = ComputeMethod_External
     else
       call allMessage(WARNING, "Invalid MoonSunPositionComputeMethod: "//trim(adjustl(in_MoonSunPositionComputeMethod)))
@@ -427,6 +427,7 @@ contains
 
     integer :: I, asciinum
 
+    outString = string ;
     do I = 1, len(string)
       asciinum = iachar(string(I:I))
       select case (asciinum)
