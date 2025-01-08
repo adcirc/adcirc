@@ -3486,33 +3486,8 @@ C...
       DO I=1,NTIF
          FACET(I)=FACET(I)*DEG2RAD
       END DO
-C...
-C...  CHECK CONSISTENCY OF INPUT PARAMETERS NTIF AND NTIP
-C...
-      IF(((NTIP.EQ.0).AND.(NTIF.NE.0)).OR.((NTIP.NE.0).AND.
-     &     (NTIF.EQ.0))) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9961)
-         WRITE(16,9961)
- 9961    FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
-     &        'INPUT ERROR  !!!!!!!!!',
-     &        //,1X,'YOUR SELECTION OF NTIF AND NTIP (UNIT 15 INPUT ',
-     &        'PARAMETERS) IS INCONSISTENT',
-     &        /,1X,'PLEASE CHECK THESE VALUES')
-         IF(NFOVER.EQ.1) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9987)
-            WRITE(16,9987)
- 9987       FORMAT(/,1X,'PROGRAM WILL OVERRIDE THE SPECIFIED ',
-     &           'INPUT AND NEGLECT TIDAL POTENTIAL TERMS',
-     &           /,1X,' AND/OR RESET NTIP = 0',
-     &           //,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!',//)
-            NTIP=0
-         ELSE
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-            WRITE(16,9973)
-            CALL ADCIRC_Terminate()
-         ENDIF
 
-      ELSE IF(NTIP.GE.1) THEN
+      IF(NTIP.GE.1) THEN
 C...
 C...  PRINT OUT LAT/LON VALUES TO BE USED IN COMPUTING TIDAL POTENTIAL
 C...  IF NOT ALREADY DONE SO IN CORIOLIS SECTION AND TIDAL POTENTIAL IS
@@ -5096,6 +5071,21 @@ C
          endif
       endif
 
+!...  CHECK CONSISTENCY OF INPUT PARAMETERS NTIF AND NTIP
+      if((.not.UseFullTIPFormula.and.(NTIP.EQ.0.AND.NTIF.NE.0)).OR.
+     &   (.not.UseFullTIPFormula.and.(NTIP.NE.0.AND.NTIF.EQ.0)).OR.
+     &   (NTIP.GT.1.AND.NTIF.EQ.0))then
+        if(NSCREEN.NE.0.AND.MYPROC.EQ.0) write(ScreenUnit,9961)
+        write(16,9961)
+ 9961   format(////,1X,'!!!!!!!!!!  WARNING - FATAL ',
+     &      'INPUT ERROR  !!!!!!!!!',
+     &      //,1X,'YOUR SELECTION OF NTIF AND NTIP (UNIT 15 INPUT ',
+     &      'PARAMETERS) IS INCONSISTENT',
+     &      /,1X,'PLEASE CHECK THESE VALUES')
+        if(NSCREEN.NE.0.AND.MYPROC.EQ.0)write(ScreenUnit,9973)
+        write(16,9973)
+        call ADCIRC_Terminate()
+      endif
       ! Initialize the tidal potential calculation
       tidePotential = t_tidePotential(np, rnday, UseFullTIPFormula,
      &                                TIPOrder, TIPStartDate,  
