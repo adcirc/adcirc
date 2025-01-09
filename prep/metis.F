@@ -27,6 +27,7 @@
 
       SUBROUTINE METIS()
       USE PRE_GLOBAL
+      USE MEMORY_USAGE, ONLY: memory_usage_string
       IMPLICIT NONE
 C----------------------------------------------------------------------
 C  INTERFACE ROUTINE FOR PADCIRC TO USE THE METIS 4.0 LIBRARY 
@@ -348,7 +349,8 @@ C
  
       print *, ""
       print *, "Grid Partition Data"
-      print *, "METIS 4.0 will require approximately ",nbytes," bytes"
+      print *, "METIS 4.0 will require approximately ",
+     &          trim(memory_usage_string(nbytes))
 C
       CALL metis_partgraphkway( MNP,XADJ,ADJNCY,VWGTS,EWGTS,
      &      WEIGHTFLAG,NUMFLAG,NPARTS,OPTIONS,EDGECUT,PROC)
