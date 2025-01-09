@@ -1306,12 +1306,13 @@ C     output the global node number to debug the local PE fort.14s
      &           3X,'** WARNING: Elevation.gt.WarnElev **')
             IF (WarnElevDump) WarnElevExceeded=1
          ENDIF
-#ifdef DEBUG_WARN_ELEV
-         call WarnElevSum(WarnElevExceeded)
-         IF (WarnElevExceeded.ne.0) THEN
-            CALL WriteWarnElev(TimeLoc, IT)
+
+         IF(WarnElevDump)THEN
+             call WarnElevSum(WarnElevExceeded)
+             IF (WarnElevExceeded.ne.0) THEN
+                CALL WriteWarnElev(TimeLoc, IT)
+             ENDIF
          ENDIF
-#endif
          ErrorElevExceeded = 0                ! Clint's Zombie Slyaer
          IF(ELMAX.GT.ErrorElev) THEN
 
@@ -1382,9 +1383,7 @@ C     output the global node number to debug the local PE fort.14s
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
      &           2X,'** WARNING: Elevation.gt.WarnElev **')
-#ifdef DEBUG_WARN_ELEV
             IF (WarnElevDump) CALL WriteWarnElev(TimeLoc, IT)
-#endif
          ENDIF
          IF(ELMAX.GT.ErrorElev) THEN
             write(6,*) 'elmax, errorelev',elmax, errorelev !jgf
