@@ -44,7 +44,7 @@ int CheckNodePartitionParams(GraphType *);
 int IsSeparable(GraphType *);
 
 /* estmem.c */
-void METIS_EstimateMemory(int *, idxtype *, idxtype *, int *, int *, int *);
+void METIS_EstimateMemory(int *, idxtype *, idxtype *, int *, int *, long *);
 void EstimateCFraction(int, idxtype *, idxtype *, float *, float *);
 int ComputeCoarseGraphSize(int, idxtype *, idxtype *, int, idxtype *, idxtype *, idxtype *);
 
@@ -105,10 +105,10 @@ void METIS_MESHTODUAL(int *, int *, idxtype *, int *, int *, idxtype *, idxtype 
 void metis_meshtodual(int *, int *, idxtype *, int *, int *, idxtype *, idxtype *);
 void metis_meshtodual_(int *, int *, idxtype *, int *, int *, idxtype *, idxtype *);
 void metis_meshtodual__(int *, int *, idxtype *, int *, int *, idxtype *, idxtype *);
-void METIS_ESTIMATEMEMORY(int *, idxtype *, idxtype *, int *, int *, int *);
-void metis_estimatememory(int *, idxtype *, idxtype *, int *, int *, int *);
-void metis_estimatememory_(int *, idxtype *, idxtype *, int *, int *, int *);
-void metis_estimatememory__(int *, idxtype *, idxtype *, int *, int *, int *);
+void METIS_ESTIMATEMEMORY(int *, idxtype *, idxtype *, int *, int *, long *);
+void metis_estimatememory(int *, idxtype *, idxtype *, int *, int *, long *);
+void metis_estimatememory_(int *, idxtype *, idxtype *, int *, int *, long *);
+void metis_estimatememory__(int *, idxtype *, idxtype *, int *, int *, long *);
 void METIS_MCPARTGRAPHRECURSIVE(int *, int *, idxtype *, idxtype *, idxtype *, idxtype *, int *, int *, int *, int *, int *, idxtype *);
 void metis_mcpartgraphrecursive(int *, int *, idxtype *, idxtype *, idxtype *, idxtype *, int *, int *, int *, int *, int *, idxtype *);
 void metis_mcpartgraphrecursive_(int *, int *, idxtype *, idxtype *, idxtype *, idxtype *, int *, int *, int *, int *, int *, idxtype *);

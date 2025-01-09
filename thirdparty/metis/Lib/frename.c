@@ -219,19 +219,19 @@ void metis_meshtodual__(int *ne, int *nn, idxtype *elmnts, int *etype, int *numf
 }
 
 
-void METIS_ESTIMATEMEMORY(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *optype, int *nbytes)
+void METIS_ESTIMATEMEMORY(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *optype, long *nbytes)
 {
   METIS_EstimateMemory(nvtxs, xadj, adjncy, numflag, optype, nbytes);
 }
-void metis_estimatememory(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *optype, int *nbytes)
+void metis_estimatememory(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *optype, long *nbytes)
 {
   METIS_EstimateMemory(nvtxs, xadj, adjncy, numflag, optype, nbytes);
 }
-void metis_estimatememory_(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *optype, int *nbytes)
+void metis_estimatememory_(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *optype, long *nbytes)
 {
   METIS_EstimateMemory(nvtxs, xadj, adjncy, numflag, optype, nbytes);
 }
-void metis_estimatememory__(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *optype, int *nbytes)
+void metis_estimatememory__(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *optype, long *nbytes)
 {
   METIS_EstimateMemory(nvtxs, xadj, adjncy, numflag, optype, nbytes);
 }
