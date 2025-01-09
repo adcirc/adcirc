@@ -19,16 +19,16 @@
 * This function computes how much memory will be required by the various
 * routines in METIS
 **************************************************************************/
-void METIS_EstimateMemory(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *optype, int *nbytes)
+void METIS_EstimateMemory(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *optype, long *nbytes)
 {
-  int i, j, k, nedges, nlevels;
+  long i, j, k, nedges, nlevels;
   float vfraction, efraction, vmult, emult;
-  int coresize, gdata, rdata;
+  long coresize, gdata, rdata;
 
   if (*numflag == 1)
     Change2CNumbering(*nvtxs, xadj, adjncy);
 
-  nedges = xadj[*nvtxs];
+  nedges = (long)xadj[*nvtxs];
 
   InitRandom(-1);
   EstimateCFraction(*nvtxs, xadj, adjncy, &vfraction, &efraction);
@@ -38,22 +38,22 @@ void METIS_EstimateMemory(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numfl
     coresize = nedges;
   else
     coresize = 0;
-  coresize += nedges + 11*(*nvtxs) + 4*1024 + 2*(NEG_GAINSPAN+PLUS_GAINSPAN+1)*(sizeof(ListNodeType *)/sizeof(idxtype));
-  coresize += 2*(*nvtxs);  /* add some more fore other vectors */
+  coresize += nedges + (long)(11*(*nvtxs)) + (long)(4*1024) + (long)(2*(NEG_GAINSPAN+PLUS_GAINSPAN+1)*(sizeof(ListNodeType *)/sizeof(idxtype)));
+  coresize += (long)(2*(*nvtxs));  /* add some more fore other vectors */
 
   gdata = nedges;   /* Assume that the user does not pass weights */
 
-  nlevels = (int)(log(100.0/(*nvtxs))/log(vfraction) + .5);
+  nlevels = (long)(log(100.0/(*nvtxs))/log(vfraction) + .5);
   vmult = 0.5 + (1.0 - pow(vfraction, nlevels))/(1.0 - vfraction);
   emult = 1.0 + (1.0 - pow(efraction, nlevels+1))/(1.0 - efraction);
 
-  gdata += vmult*4*(*nvtxs) + emult*2*nedges;
+  gdata += (long)(vmult*4*(*nvtxs) + emult*2*nedges);
   if ((vmult-1.0)*4*(*nvtxs) + (emult-1.0)*2*nedges < 5*(*nvtxs))
     rdata = 0;
   else
-    rdata = 5*(*nvtxs);
+    rdata = (long)(5*(*nvtxs));
 
-  *nbytes = sizeof(idxtype)*(coresize+gdata+rdata+(*nvtxs));
+  *nbytes = (long)(sizeof(idxtype)*(coresize+gdata+rdata+(*nvtxs)));
 
   if (*numflag == 1)
     Change2FNumbering2(*nvtxs, xadj, adjncy);

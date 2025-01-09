@@ -38,12 +38,36 @@
 
 
       subroutine memory_status( )
-        print *, " "
-        print *, "memory currently allocated = ", mem_descript % currmem, " bytes"
-        print *, "memory high water mark     = ", mem_descript % highmem, " bytes"
-        print *, " "
+        write(*,'(A)') ""
+        write(*,'(A, A)') "memory currently allocated = ", 
+     &      trim(memory_usage_string(mem_descript%currmem))
+        write(*,'(A, A)') "memory high water mark     = ", 
+     &      trim(memory_usage_string(mem_descript%highmem))
+        write(*,'(A)') ""
       end subroutine memory_status
 
+      character(200) function memory_usage_string(bytes) result(out_str)
+        implicit none
+
+        integer(8), parameter  :: gigabytes = 1e9
+        integer(8), parameter  :: megabytes = 1e6
+        integer(8), parameter  :: kilobytes = 1e3
+        integer(8), intent(in) :: bytes 
+
+        if(bytes>=gigabytes)then
+            write(out_str, '(F0.3,X,A)') dble(bytes)/dble(gigabytes),
+     &          "gigabytes"
+        elseif(bytes>=megabytes)then
+            write(out_str, '(F0.3,X,A)') dble(bytes)/dble(megabytes),
+     &          "megabytes"
+        elseif(bytes>=kilobytes)then
+            write(out_str, '(F0.3,X,A)') dble(bytes)/dble(kilobytes),
+     &          "kilobytes"
+        else
+            write(out_str, '(I0,X,A)') bytes, "bytes"
+        endif
+
+      end function memory_usage_string  
 
       subroutine memory_alloc(nbytes)
       integer(8),intent(in) :: nbytes
