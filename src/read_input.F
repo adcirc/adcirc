@@ -682,6 +682,31 @@ C     WJP add namelist
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
+      if(iWarnElevDump.ne.0) WarnElevDump = .True.
+      write(scratchMessage,'(A,e16.8)') 'A warning will be issued '//
+     &                     'if elevation exceeds WarnElev = ',WarnElev
+      call logMessage(INFO,scratchMessage)
+      if(WarnElevDump)then
+          write(scratchMessage,'(A,e16.8,A)') 
+     &     'A global elevation file (fort.69)'//
+     &     ' will be written if WarnElev (',WarnElev,') is exceeded'
+          call logMessage(INFO,scratchMessage)
+          write(scratchMessage,'(A,I0,A)') 
+     &     'Execution will be terminated '//
+     &     'if ',WarnElevDumpLimit,' global elevation snaps have been '//
+     &     'written as warning.'
+          call logMessage(INFO,scratchMessage)
+      else
+          write(scratchMessage,'(A,e16.8,A)') 
+     &     'A global elevation file (fort.69)'//
+     &     ' will NOT be written if WarnElev (',WarnElev,') is exceeded'
+          call logMessage(INFO,scratchMessage)
+      endif    
+      write(scratchMessage,'(A,e16.8)') 
+     &     'Execution will be terminated if elevation exceeds ',
+     &     ErrorElev 
+      call logMessage(INFO,scratchMessage)
+
 !     WJP add namelist for Ali's dispersion
 !     Defaults are already in global 
       namelistSpecifier = 'AliDispersionControl'
@@ -811,20 +836,6 @@ C
  1952    FORMAT(/,5X,'NFOVER = ',I3,
      &        /,9X,'NON-FATAL INPUT ERRORS WILL STOP EXECUTION ',/)
       ENDIF
-#ifdef DEBUG_WARN_ELEV
-      IF (iWarnElevDump .ne. 0) WarnElevDump = .True.
-      WRITE(16,1953) WarnElev,WarnElevDump,WarnElevDumpLimit,ErrorElev
- 1953 FORMAT(//,5X,
-     &     'A warning will be issued if elevation exceeds WarnElev = ',
-     &     e16.8,
-     &     /,5X,'A global elevation file (fort.69) will be written if '
-     &     /,5X,'WarnElev is exceeded and WarnElevDump is true: ',L2,
-     &     /,5X,'Execution will be terminated if ',
-     &     '(WarnElevDumpLimit = 'I3,') ',
-     &     /,5X,'global elevation files have been written as warning.'
-     &     /,5X,'Execution will be terminated if elevation exceeds'
-     &     ' ErrorElev =',e16.8)
-#endif
 C...
 C...  READ AND PROCESS NABOUT - ABBREVIATED UNIT 16 OUTPUT OPTION
 C...
