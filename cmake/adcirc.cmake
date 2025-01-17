@@ -61,7 +61,8 @@ if(BUILD_ADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemerides.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundary_forcing.F90)
 
   if(NETCDF_WORKING)
     set(ADCIRC_SOURCES
