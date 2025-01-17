@@ -293,8 +293,9 @@ C... SB
      &   , subgridVertList
      &   , gridDepthVertETA1, gridDepthVertETA2
      &   , wetFracVertETA1, wetFracVertETA2
-     &   , cadvVertETA2
-     &   , dphidt
+     &   , cadvVertETA2, dphidt
+      use boundary_forcing, only: gwce_apply_boundary_conditions, apply_vew1d_and_condensed_nodes,
+     &                            apply_subdomain_boundary_nodes
 
       IMPLICIT NONE
 
@@ -750,8 +751,7 @@ C...  element by element assembly section.
 C...
 
 C...  Initialize variables to zero if these forcings are not used
-      IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
-      ELSE
+      IF((NWS==0).AND.(NRS==0)) THEN
         WSXAvg=0.d0
         WSYAvg=0.d0
         Pr1N1=0.d0
@@ -767,21 +767,18 @@ C...  Initialize variables to zero if these forcings are not used
          Off1N3 = 0.d0
       endif
 
-      IF (CTIP) THEN
-      ELSE
+      IF (.not.CTIP) THEN
         TiPN1=0.d0
         TiPN2=0.d0
         TiPN3=0.d0
       ENDIF
 
-      IF(C3D) THEN
-      ELSE
+      IF(.not.C3D) THEN
         DispXAvg=0.d0
         DispYAvg=0.d0
       ENDIF
 
-      IF(CBaroclinic) THEN
-      ELSE
+      IF(.not.CBaroclinic) THEN
         BCXAvg=0.d0
         BCYAvg=0.d0
       ENDIF
@@ -994,7 +991,7 @@ C..... End DW
 
 C...  Assemble the GWCE RHS except for the boundary integral terms
 
-      DO 1037 IE=1,NE
+      DO IE=1,NE
 
 C...     Set nodal values for each element
 
@@ -1622,7 +1619,7 @@ C...     Put these partial products directly into nodal storage for a scalar (no
          GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A3*NCEle
 #endif
 
- 1037 CONTINUE                  !End of elemental loop
+      end do                  !End of elemental loop
 
 C...  Put load vector elemental values into nodal storage for a vector computer
 #ifdef CVEC
@@ -1638,259 +1635,27 @@ C...  Put load vector elemental values into nodal storage for a vector computer
 
 C...  Save the elevation at the past time step into Eta1 and zero out Eta2
 ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
-
-      DO I=1,NP
-         IF(CPRECOR) THEN
-            ETAS0(I)=ETAS(I)
-            Eta0(I)=Eta1(I)
-         END IF
-         Eta1(I)=Eta2(I)
-C........DMW202401 Add update for flow depth at previous timestep, H1
-         IF ((I.EQ.1).AND.(IT.EQ.ITIME_BGN)) THEN
-            WRITE(16,*) 
-     &         'dmw202401 THIS CODE IS NOW MAKING ITS FIRST SAVE ON H1'
-         ENDIF
-         H1(I) = H2(I)
-         Eta2(I)=0.0d0
-      END DO
-
-C...  At elevation boundary condition nodes, determine the elevation at
-C...  the s+1 time step
-C...
-C...  For periodic elevation boundary conditions
-
-      DO J=1,NBFR
-         IF(PER(J).EQ.0.) THEN
-            NCYC=0
-         ELSE
-#ifdef IBM
-            NCYC=INT(timeh/PER(J),KIND(0.0d0))
-#else
-            NCYC=INT(timeh/PER(J))
-#endif
-         ENDIF
-         ARGJ=AMIG(J)*(timeh-NCYC*PER(J))+FACE(J)
-         RFF=FF(J)*RampElev
-         DO I=1,NETA
-            ARG=ARGJ-EFA(J,I)
-            NBDI=NBD(I)
-            Eta2(NBDI)=Eta2(NBDI)+EMO(J,I)*RFF*COS(ARG)
-         END DO
-      END DO
-
-C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
-
-      if (subdomainOn) then                     ! NCSU Subdomain
-          if(enforceBN.eq.1) call enforceEcb()  ! NCSU Subdomain
-      else                                      ! NCSU Subdomain
-! 03.27.2018 WJP allowing for periodic plus non-periodic Elevation BCS
-          IF (NPEBC) THEN
-            IF(TimeLoc.GT.ETIME2) THEN
-               ETIME1=ETIME2
-               ETIME2=ETIME1+ETIMINC
-               DO J=1,NETA
-                  ESBIN1(J)=ESBIN2(J)
-                  READ(19,*) ESBIN2(J)
-               END DO
-            ENDIF
-            ETRATIO=(TimeLoc-ETIME1)/ETIMINC
-            DO I=1,NETA
-               NBDI=NBD(I)
-               Eta2(NBDI)=Eta2(NBDI) + RampElev
-     &           *(ESBIN1(I)+ETRATIO*(ESBIN2(I)-ESBIN1(I)))
-            END DO
-         ENDIF
-      endif                                   ! NCSU Subdomain
-      ! 
-      ! jgf46.02 Added the ability to include geoid offset on the boundary.
-      !
-      ! aaltuntas51.48: Deactivated geoidOffset for subdomain boundary 
-      ! conditions.
-      if (subdomainOn.and.enforceBN.eq.1) then  ! NCSU Subdomain
-         continue                                ! NCSU Subdomain
-      else 
-         IF (LoadGeoidOffset) THEN
-            DO I=1,NETA
-               ETA2(NBD(I))=ETA2(NBD(I))+GeoidOffset(NBD(I))
-            END DO
-         ENDIF
-      endif                                      ! NCSU Subdomain
-C
-C
-C     jgf48.04 Added an inverted barometer boundary condition so that
-C     low pressure systems can cross the boundary without creating an
-C     elevation anomaly.
-C     jgf52.30.04: Included a parameter from fort.15 to turn this 
-C     on and off according to analyst preference. 
-      IF (NO_MET_IN_SPONGE.eqv..false.) THEN
-         if (invertedBarometerOnElevationBoundary.eqv..true.) then
-            DO I=1,NETA
-               ETA2(NBD(I)) = ETA2(NBD(I))
-     &                  + RampMete*(101300.d0/(RHOWAT0*G) - PR2(NBD(I)))
-            END DO
-         endif
-      ENDIF
-
-      !jgf: Added water level offset to elevation specified boundary
-      if (usingDynamicWaterLevelCorrection.eqv..true.) then
-         DO I=1,NETA
-            ETA2(NBD(I))=ETA2(NBD(I)) + dynamicWaterLevelCorrection1(nbd(i)) 
-         END DO
-      endif
-
-C   kmd48.33bc add information for the levels of no motion boundary conditions
-C              these are considered the steric adjustments.
-      IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))THEN
-Casey 140701: Added the following IF statement.
-         IF(BCFLAG_LNM.GT.0)THEN
-            DO I=1,NETA
-              NBDI=NBD(I)
-              ETA2(NBDI) = ETA2(NBDI) + LNM_BC(I)
-            END DO
-         END IF
-      ENDIF
-
-C...  IMPOSE NORMAL FLOW, RADIATION OR GRADIENT BOUNDARY CONDITIONS
-C...  ALONG FLOW BOUNDARY TO LOAD VECTOR GWCE_LV(I)
-
-C...  Note 2, Boundary conditions using specified fluxes (LBCODEI < 29)
-C...  assume that QN is positive into the domain.  QFORCEJ has a -1
-C...  built in and the terms are not explicitly negated. Boundary
-C...  conditions using computed fluxes (LBCODEI 30, 40) compute a normal
-C...  flux that  is positive out of the domain.  Therefore, to match
-C...  the formulation these terms must be explicitly multiplied by -1.
-
-C...Note 3, Eta1 is the latest computed elevation (it was updated above).
-
-      IF((NFLUXF.EQ.1).OR.(NFLUXB.EQ.1).OR.(NFLUXIB.EQ.1)
-     &     .OR.(NFLUXGBC.EQ.1).OR.(NFLUXRBC.EQ.1)) THEN
-         NBDJ=NBV(1)
-         IF ((LBCODEI(1).LE.29).OR.(LBCODEI(1).EQ.64))    ! 64 is added for VEW  08-11-2022 SB
-     &        QFORCEJ=(QN2(1)-QN0(1))/DT2 + Tau0VAR(NBDJ)*QN1(1)
-
-         IF (LBCODEI(1).EQ.30) THEN
-C...........DMW202401 Use saved H1
-            CELERITY=SQRT(G*H1(NBDJ))
-            QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
-         ENDIF
-
-         IF (LBCODEI(1).EQ.32) THEN
-C...........DMW202401 Use saved H1
-            CELERITY=SQRT(G*H1(NBDJ))
-!C DW, Below is an original scheme and is correct 
-!C            QFORCEJ=(QN1(1)-QN0(1))/DT
-!C     &           -CELERITY*(ETAS(NBDJ)-(EN1(1)-EN0(1)))/DT
-!C     &           +TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
-!C DW, a 2nd order extrapolation formula: \eta^{n+1} = 2*\eta^{n} - \eta^{n-1} is used
-!C     and second order in time derivative is used
-            QFORCEJ=(QN2(1)-QN0(1))/DT2
-     &           - CELERITY*(2.0*ETAS(NBDJ) - (EN2(1)-EN0(1)))/DT2
-     &           + TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1))) 
-         ENDIF
-
-         IF((LBCODEI(1).EQ.40).OR.(LBCODEI(1).EQ.41)) QFORCEJ=
-     &        -(QN1(1)-QN0(1))/DT - TAU0VAR(NBDJ)*(QN1(1)+QN0(1))/2.d0
-
-C     jgf46.21 Added IBTYPE=52.
-         IF(LBCODEI(1).EQ.52) THEN
-            QFORCEJ=(QN2(1)-QN0(1))/DT2 + Tau0VAR(NBDJ)*QN1(1)
-            IF (IT.GT.FluxSettlingIT) THEN
-C..............DMW202401 Use saved H1
-               Celerity=SQRT(G*H1(NBDJ))
-               QforceJ=QforceJ - Celerity*(EtaS(NBDJ)/DT
-     &              + Tau0Var(NBDJ)*(Eta1(NBDJ)-ElevDisc(1)))
-            ENDIF
-         ENDIF
-C
-         DO J=2,NVEL
-            NBDI=NBDJ
-            NBDJ=NBV(J)
-            QFORCEI=QFORCEJ
-
-            IF((LBCODEI(J).LE.29).OR.(LBCODEI(J).EQ.64))     ! 64 is added for VEW  08-11-2022 SB
-     &           QFORCEJ=(QN2(J)-QN0(J))/DT2 + Tau0VAR(NBDJ)*QN1(J)
-            IF(LBCODEI(J).EQ.30) THEN
-C..............DMW202401 Use saved H1
-               CELERITY=SQRT(G*H1(NBDJ))
-               QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(J)
-            ENDIF
-
-            IF(LBCODEI(J).EQ.32) THEN
-C..............DMW202401 Use saved H1
-               CELERITY=SQRT(G*H1(NBDJ))
-!C DW, This is an original formula and is definitely correct (1st order in time)
-!C                QFORCEJ=(QN1(J)-QN0(J))/DT
-!C     &              -CELERITY*(ETAS(NBDJ)-(EN1(J)-EN0(J)))/DT
-!C     &              +TAU0VAR(NBDJ)*(QN1(J)-CELERITY*(ETA1(NBDJ)-EN1(J)))
-!C DW, below a 2nd-order extrapolation formula: \eta^{n+1} = 2*\eta^{n} - \eta^{n-1}
-!C     and second order in time derivative is used
-                QFORCEJ=(QN2(J)-QN0(J))/DT2
-     &              -CELERITY*(2.0*ETAS(NBDJ)-(EN2(J)-EN0(J)))/DT2
-     &              +TAU0VAR(NBDJ)*(QN1(J)-CELERITY*(ETA1(NBDJ)-EN1(J)))
-            ENDIF
-
-            IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) QFORCEJ=
-     &        -(QN1(J)-QN0(J))/DT - TAU0VAR(NBDJ)*(QN1(J)+QN0(J))/2.d0
-C
-C     jgf46.21 Added IBTYPE=52
-            IF(LBCODEI(J).EQ.52) THEN
-               QFORCEJ=(QN2(J)-QN0(J))/DT2 + Tau0VAR(NBDJ)*QN1(J)
-               IF (IT.GT.FluxSettlingIT) THEN
-C.................DMW202401 Use saved H1
-                  Celerity=SQRT(G*H1(NBDJ))
-                  QforceJ=QforceJ - Celerity*(EtaS(NBDJ)/DT
-     &                 + Tau0Var(NBDJ)*(Eta1(NBDJ)-ElevDisc(J)))
-               ENDIF
-            ENDIF
-
-            NCI=NodeCode(NBDI)
-            NCJ=NodeCode(NBDJ)
-            BndLenO6NC=NCI*NCJ*BndLen2O3(J-1)/4.d0
-            GWCE_LV(NBDI)=GWCE_LV(NBDI)
-     &                              + BndLenO6NC*(2.d0*QForceI+QForceJ)
-            GWCE_LV(NBDJ)=GWCE_LV(NBDJ)
-     &                              + BndLenO6NC*(2.d0*QForceJ+QForceI)
-          ENDDO
+        IF(CPRECOR)THEN
+          ETAS0(1:NP) = ETAS(1:NP)
+          ETA0(1:NP) = ETA1(1:NP)
         ENDIF
+        ETA1(1:NP) = ETA2(1:NP)
+        ETA2(1:NP) = 0.0D0
+        H1(1:NP) = H2(1:NP)
 
-C..... DW
-      CALL UPDATE_RHS_SLPERBC() ;
-C..... DW
-C...
-C...  IMPOSE ELEVATION BOUNDARY CONDITIONS TO LOAD VECTOR GWCE_LV(I) NOTE; EP
-C...  IS THE RMS OF ALL THE DIAGONAL MEMBERS IN THE GWCE.  IT IS USED TO
-C...  SCALE THE DIAGONAL ELEMENT FOR THE ELEVATION SPECIFIED BOUNDARY
-C...  NODES AND THEREFORE MUST ALSO BE USED TO SCALE THE RHS OF THE
-C...  EQUATIONS
-C...
-      IF ( ILump.eq.0 ) THEN ! default, fully consistent GWCE LHS
-         DO I=1,NETA
-            NBDI = NBD(I)
-            ETAS(NBDI) = ETA2(NBDI)-ETA1(NBDI)
-            GWCE_LV(NBDI) = ETAS(NBDI)*NODECODE(NBDI)*EP
-            DO J=2,NNEIGH(NBDI)
-               GWCE_LV(NEITAB(NBDI,J))=GWCE_LV(NEITAB(NBDI,J))
-     &              -ETAS(NBDI)*OBCCOEF(I,J-1)
-            END DO
-         END DO
-      ELSE                   ! ILump.eq.1, lumped GWCE
-         DO I=1,NETA
-            NBDI=NBD(I)
-            ETAS(NBDI)=ETA2(NBDI)-ETA1(NBDI)
-            GWCE_LV(NBDI) = ETAS(NBDI)*NODECODE(NBDI)*COEFD(NBDI)
-         END DO
-      ENDIF
+!...  Apply boundary conditions
+      call gwce_apply_boundary_conditions(IT, TimeLoc, TimeH, dt, invertedBarometerOnElevationBoundary,
+     &                                    esbin1, esbin2, etime1, etime2, etratio, etiminc, eta1, eta2,
+     &                                    etas, h1, elevdisc, en0, en1, en2, rampelev, rampmete, ep, gwce_lv)
+
 C...
 C...  SOLVE GWCE FOR ELEVATION AT NEW TIME LEVEL
 C...
 
-C...  UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
-
 #ifdef CMPI
-C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
-      IF (ILump.eq.0) THEN ! default, fully consistent LHS
-C... DW, periodic bcs
-         IF(NPERSEG.GT.0)THEN
+!...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
+      IF (ILump==0) THEN ! default, fully consistent LHS
+         IF(NPERSEG>0)THEN
              CALL UPDATER_W_PERBC(GWCE_LV,COEF(1,1),DUMY1,2)
          ELSE
              CALL UPDATER(GWCE_LV,COEF(1,1),DUMY1,2)
@@ -1900,122 +1665,12 @@ C... DW, periodic bcs
       ENDIF
 #endif
 
-      if (subdomainOn.and.enforceBN.eq.2) call enforceEob() ! NCSU Subdomain
-      if (subdomainOn.and.enforceBN.eq.2) call enforceEib() ! NCSU Subdomain
-      if (subdomainOn.and.enforceBN.eq.2) call enforceGWCELVob() ! NCSU Subdomain
+      call apply_subdomain_boundary_nodes(subdomainOn, enforceBN)
 
-C<<.. SECTION FOR VEW1D (=1D channel)   08-11-2022 SB
-C.... Nodal equations at IBTYPE=64 VEW boundary nodes and at condensed nodes are
-C.... summed up together in the following part. First, the value on the front side,
-C.... i.e., the floodplain side, is summed to the back side, i.e., the channel side.
-C.... Secondly, the values at the condensed nodes which are most likely on channel
-C.... beds are summed together. Notice that by this second step the nodes on channel
-C.... bed hold the sum of all the values on the floodplain side and the grouped 
-C.... condensed nodes. And then finally, the value on the backside, i.e. on the
-C.... channel bed, is copied to the front side, i.e., the floodplain side. Through
-C.... this procedure, the values at the floodplain nodes and (condensed) channel nodes
-C.... have the same values on both sides of the equations.
-C
-C.... Prep for the temporary LHS lumped array
-      IF(((NFLUXIB64_GBL.GT.0).AND.(ILump.NE.0)).OR.
-     &   (LoadCondensedNodes)) THEN
-         COEFDTemp => COEFDTempMem
-         COEFDTemp(:) = COEFD(:)
-      ELSE
-         COEFDTemp => COEFD
-      ENDIF
-C
-C     VEW: Sum front side values to back side
-      IF((NFLUXIB64_GBL.GT.0).AND.(ILump.NE.0)) THEN
-         I = 0                         
-         DO K = 1, NBOU
-            SELECT CASE(LBCODEI(I+1))
-                CASE(64)
-                    DO J = 1,NVELL(K)
-                        I = I + 1
-                        IF(ISSUBMERGED64(I).NE.0) THEN
-                           NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
-                           NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
-                           IF(NODECODE(NNBB1).NE.0.AND.NODECODE(NNBB2).NE.0) THEN
-                               COEFDTemp(NNBB2) =
-     &                           COEFD(NNBB1) + COEFD(NNBB2)
-                               GWCE_LV(NNBB2) =
-     &                           GWCE_LV(NNBB1) + GWCE_LV(NNBB2)
-                               ETA1(NNBB2) =
-     &                           ( ETA1(NNBB1) + ETA1(NNBB2) ) * 0.5D0
-                               GWCE_LV(NNBB1) = 0.D0  ! Set zero to avoid duplicated additions
-                               ETA1(NNBB1) = ETA1(NNBB2) ! Substitute here to make duplicated averaging ineffective
-                           ENDIF
-                        ENDIF
-                     ENDDO
-                     I = I + NVELL(K)
-                  CASE(4,24,5,25)
-                     I = I + NVELL(K)*2
-                  CASE DEFAULT
-                     I = I + NVELL(K)
-            END SELECT
-         ENDDO
-      ENDIF
-
-C.... CONDENSED NODES: Summing up the values at condensed nodes
-      IF((LoadCondensedNodes).AND.(ILump.NE.0)) THEN
-         DO K=1,NListCondensedNodes
-            I = ListCondensedNodes(K,1)
-            IF(I==0) CYCLE
-            IF((NODECODE(I).NE.0)) THEN
-               ! 1) Sum them up
-               DO L=2,NNodesListCondensedNodes(K)
-                  J = ListCondensedNodes(K,L)
-                  COEFDTemp(I) = COEFDTemp(I) + COEFDTemp(J)
-                  GWCE_LV(I)   = GWCE_LV(I) + GWCE_LV(J)
-                  ETA1(I)      = ETA1(I) + ETA1(J)
-               ENDDO
-               ! 2) Distribute them
-               ETA1(I) = ETA1(I) / NNodesListCondensedNodes(K)
-               DO L=2,NNodesListCondensedNodes(K)
-                  J = ListCondensedNodes(K,L)
-                  COEFDTemp(J) = COEFDTemp(I)
-                  GWCE_LV(J)   = GWCE_LV(I)
-                  ETA1(J)      = ETA1(I)
-               ENDDO
-            ENDIF
-         ENDDO
-      ENDIF
-
-#ifdef CMPI
-      IF ((NFLUXIB64_GBL.GT.0.OR.LoadCondensedNodes)
-     &    .AND.(ILump.NE.0)) THEN
-         CALL UPDATER(COEFDTemp,GWCE_LV,DUMY1,2)
-      ENDIF
-#endif      
-      
-C     VEW: Copy values from back side to front side
-      IF((NFLUXIB64_GBL.GT.0).AND.(ILump.NE.0)) THEN
-         I = 0                         
-         DO K = 1, NBOU
-            SELECT CASE(LBCODEI(I+1))
-                CASE(64)
-                    DO J = 1,NVELL(K)
-                        I = I + 1
-                        IF(ISSUBMERGED64(I).NE.0) THEN
-                           NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
-                           NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
-                           IF(NODECODE(NNBB1).NE.0.AND.NODECODE(NNBB2).NE.0) THEN
-                              COEFDTemp(NNBB1) = COEFDTemp(NNBB2)
-                              GWCE_LV(NNBB1) = GWCE_LV(NNBB2)
-                              ETA1(NNBB1) = ETA1(NNBB2)
-                           ENDIF
-                        ENDIF
-                     ENDDO
-                     I = I + NVELL(K)
-                  CASE(4,24,5,25)
-                     I = I + NVELL(K)*2
-                  CASE DEFAULT
-                     I = I + NVELL(K)
-            END SELECT
-         ENDDO
-      ENDIF
-C..>>
+      call apply_vew1d_and_condensed_nodes(ILump, NP, NFLUXIB64_GBL, NBOU, NVEL, NVELL, NBV, IBCONN, LBCODEI,
+     &                                     NODECODE, NListCondensedNodes, NNodesListCondensedNodes,
+     &                                     ListCondensedNodes, LoadCondensedNodes, IsSubmerged64, COEFD,
+     &                                     COEFDTempMem, GWCE_LV, ETA1)
 
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
 C...  JCG ITERATIVE MATRIX SOLVER
@@ -2097,22 +1752,7 @@ c......terms on the row and set diagnoal term to EP
 
         RETURN ;
         END SUBROUTINE  UPDATE_COEF_PERBCSL_LUMPED
-      
-        SUBROUTINE UPDATE_RHS_SLPERBC() 
-        IMPLICIT NONE
-        
-        INTEGER:: I, I2
-        
-        IF ( NPERSEG > 0 ) THEN
-           DO I = 1, NNPERBC
-              I2 = IPERCONN(I,2) ;
-              ETAS(I2) = 0.0D0   ; !  ETA1 ==> ETA2  
-              GWCE_LV(I2)=ETAS(I2)*NODECODE(I2)*EP
-           END DO
-        END IF
-        
-        RETURN ;
-        END SUBROUTINE UPDATE_RHS_SLPERBC 
+
       
         SUBROUTINE UPDATE_PERSLNODES()
         IMPLICIT NONE

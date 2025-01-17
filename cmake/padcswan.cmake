@@ -135,6 +135,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sun.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/moon.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundary_forcing.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/control.F)
 
   set(PADCSWAN_SOURCES
