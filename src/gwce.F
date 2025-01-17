@@ -1670,7 +1670,7 @@ C...
       call apply_vew1d_and_condensed_nodes(ILump, NP, NFLUXIB64_GBL, NBOU, NVEL, NVELL, NBV, IBCONN, LBCODEI,
      &                                     NODECODE, NListCondensedNodes, NNodesListCondensedNodes,
      &                                     ListCondensedNodes, LoadCondensedNodes, IsSubmerged64, COEFD,
-     &                                     COEFDTempMem, GWCE_LV, ETA1)
+     &                                     COEFDTemp, COEFDTempMem, GWCE_LV, ETA1)
 
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
 C...  JCG ITERATIVE MATRIX SOLVER

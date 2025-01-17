@@ -649,7 +649,7 @@ contains
    subroutine apply_vew1d_and_condensed_nodes(ILump, NP, NFLUXIB64_GBL, NBOU, NVEL, NVELL, NBV, IBCONN, LBCODEI, &
                                               NODECODE, NListCondensedNodes, NNodesListCondensedNodes, &
                                               ListCondensedNodes, LoadCondensedNodes, IsSubmerged64, COEFD, &
-                                              COEFDTempMem, GWCE_LV, ETA1)
+                                              COEFDTemp, COEFDTempMem, GWCE_LV, ETA1)
 #ifdef CMPI
       use global, only: dumy1
       use messenger, only: updater
@@ -663,8 +663,8 @@ contains
       integer, intent(in) :: NBOU
       integer, intent(in) :: NVEL
       integer, intent(in) :: NVELL(NBOU)
-      integer, intent(in) :: NBV(NBOU)
-      integer, intent(in) :: IBCONN(NBOU)
+      integer, intent(in) :: NBV(NVEL)
+      integer, intent(in) :: IBCONN(NVEL)
       integer, intent(in) :: LBCODEI(NVEL)
       integer, intent(in) :: NODECODE(NP)
       integer, intent(in) :: NListCondensedNodes
@@ -676,8 +676,8 @@ contains
       real(8), target, intent(inout) :: COEFDTempMem(NP)
       real(8), intent(inout) :: GWCE_LV(NP)
       real(8), intent(inout) :: ETA1(NP)
+      real(8), pointer, intent(inout) :: COEFDTemp(:)
 
-      real(8), pointer :: COEFDTemp(:)
       integer :: I, J, K, L, NNBB1, NNBB2
 
       !.... Prep for the temporary LHS lumped array
