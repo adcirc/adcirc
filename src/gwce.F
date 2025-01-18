@@ -1758,6 +1758,7 @@ C
       USE MESSENGER
 #endif
       USE WIND, ONLY: windLimiter
+      USE boundary_forcing, only: gwce_apply_boundary_conditions
 
       IMPLICIT NONE
 
@@ -2549,143 +2550,13 @@ ckmd
 ckmd  Already did this and haven't advanced in time yet, so just
 ckmd  comment out the save elevation line. But we do need to zero
 ckmd  out eta2 because it's involved in the summation below.
-ckmd
-      DO I=1,NP
-c         Eta1(I)=Eta2(I)
-         Eta2(I)=0.0d0
-      END DO
+      Eta2(:) = 0.0d0
 
 C...  At elevation boundary condition nodes, determine the elevation at
 C...  the s+1 time step
-C...
-C...  For periodic elevation boundary conditions
-
-      DO J=1,NBFR
-         IF(PER(J).EQ.0.) THEN
-            NCYC=0
-         ELSE
-#ifdef IBM
-            NCYC=INT(timeh/PER(J),KIND(0.0d0))
-#else
-            NCYC=INT(timeh/PER(J))
-#endif
-         ENDIF
-         ARGJ=AMIG(J)*(timeh-NCYC*PER(J))+FACE(J)
-         RFF=FF(J)*RampElev
-         DO I=1,NETA
-            ARG=ARGJ-EFA(J,I)
-            NBDI=NBD(I)
-            Eta2(NBDI)=Eta2(NBDI)+EMO(J,I)*RFF*COS(ARG)
-         END DO
-      END DO
-
-C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
-
-       IF (NPEBC) THEN
-         IF(TimeLoc.GT.ETIME2) THEN
-            ETIME1=ETIME2
-            ETIME2=ETIME1+ETIMINC
-            DO J=1,NETA
-               ESBIN1(J)=ESBIN2(J)
-               READ(19,*) ESBIN2(J)
-            END DO
-         ENDIF
-         ETRATIO=(TimeLoc-ETIME1)/ETIMINC
-         DO I=1,NETA
-            NBDI=NBD(I)
-            Eta2(NBDI)=RampElev
-     &           *(ESBIN1(I)+ETRATIO*(ESBIN2(I)-ESBIN1(I)))
-         END DO
-      ENDIF
-
-
-C...  IMPOSE NORMAL FLOW, RADIATION OR GRADIENT BOUNDARY CONDITIONS
-C...  ALONG FLOW BOUNDARY TO LOAD VECTOR GWCE_LV(I)
-
-C...  Note 2, Boundary conditions using specified fluxes (LBCODEI < 29)
-C...  assume that QN is positive into the domain.  QFORCEJ has a -1
-C...  built in and the terms are not explicitly negated. Boundary
-C...  conditions using computed fluxes (LBCODEI 30, 40) compute a normal
-C...  flux that  is positive out of the domain.  Therefore, to match
-C...  the formulation these terms must be explicitly multiplied by -1.
-
-C...Note 3, Eta1 is the latest computed elevation (it was updated above).
-
-      IF((NFLUXF.EQ.1).OR.(NFLUXB.EQ.1).OR.(NFLUXIB.EQ.1)
-     &     .OR.(NFLUXGBC.EQ.1).OR.(NFLUXRBC.EQ.1)) THEN
-         NBDJ=NBV(1)
-         IF((LBCODEI(1).LE.29).OR.(LBCODEI(1).EQ.64))     ! 64 is added for VEW  08-22-2022 SB
-     &        QFORCEJ=(QN2(1)-QN0(1))/DT2 +
-     &          Tau0VAR(NBDJ)*QN1(1)
-
-         IF(LBCODEI(1).EQ.30) THEN
-C...........DMW202401 Use saved H1
-            CELERITY=SQRT(G*H1(NBDJ))
-            QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
-            ENDIF
-
-         IF(LBCODEI(1).EQ.32) THEN
-C...........DMW202401 Use saved H1
-            CELERITY=SQRT(G*H1(NBDJ))
-            QFORCEJ=(QN1(1)-QN0(1))/DT
-     &           -CELERITY*(ETAS(NBDJ)-(EN1(1)-EN0(1)))/DT
-     &           +TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
-            ENDIF
-
-         IF((LBCODEI(1).EQ.40).OR.(LBCODEI(1).EQ.41)) QFORCEJ=
-     &        -(QN1(1)-QN0(1))/DT - TAU0VAR(NBDJ)*(QN1(1)+QN0(1))/2.d0
-
-         DO J=2,NVEL
-            NBDI=NBDJ
-            NBDJ=NBV(J)
-            QFORCEI=QFORCEJ
-
-            IF((LBCODEI(J).LE.29).OR.(LBCODEI(J).EQ.64))     ! 64 is added for VEW  08-22-2022 SB
-     &         QFORCEJ=(QN2(J)-QN0(J))/DT2+Tau0VAR(NBDJ)*QN1(J)
-
-            IF(LBCODEI(J).EQ.30) THEN
-C..............DMW202401 Use saved H1
-               CELERITY=SQRT(G*H1(NBDJ))
-               QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(J)
-               ENDIF
-
-            IF(LBCODEI(J).EQ.32) THEN
-C..............DMW202401 Use saved H1
-               CELERITY=SQRT(G*H1(NBDJ))
-               QFORCEJ=(QN1(J)-QN0(J))/DT
-     &              -CELERITY*(ETAS(NBDJ)-(EN1(J)-EN0(J)))/DT
-     &              +TAU0VAR(NBDJ)*(QN1(J)-CELERITY*(ETA1(NBDJ)-EN1(J)))
-               ENDIF
-
-            IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) QFORCEJ=
-     &        -(QN1(J)-QN0(J))/DT - TAU0VAR(NBDJ)*(QN1(J)+QN0(J))/2.d0
-
-            NCI=NodeCode(NBDI)
-            NCJ=NodeCode(NBDJ)
-            BndLenO6NC=NCI*NCJ*BndLen2O3(J-1)/4.d0
-            GWCE_LV(NBDI)=GWCE_LV(NBDI)
-     &                              + BndLenO6NC*(2.d0*QForceI+QForceJ)
-            GWCE_LV(NBDJ)=GWCE_LV(NBDJ)
-     &                              + BndLenO6NC*(2.d0*QForceJ+QForceI)
-          ENDDO
-        ENDIF
-
-C...
-C...  IMPOSE ELEVATION BOUNDARY CONDITIONS TO LOAD VECTOR GWCE_LV(I) NOTE; EP
-C...  IS THE RMS OF ALL THE DIAGONAL MEMBERS IN THE GWCE.  IT IS USED TO
-C...  SCALE THE DIAGONAL ELEMENT FOR THE ELEVATION SPECIFIED BOUNDARY
-C...  NODES AND THEREFORE MUST ALSO BE USED TO SCALE THE RHS OF THE
-C...  EQUATIONS
-C...
-      DO I=1,NETA
-         NBDI=NBD(I)
-         ETAS(NBDI)=ETA2(NBDI)-ETA1(NBDI)
-         GWCE_LV(NBDI)=ETAS(NBDI)*NODECODE(NBDI)*EP
-         DO J=2,NNEIGH(NBDI)
-            GWCE_LV(NEITAB(NBDI,J))=GWCE_LV(NEITAB(NBDI,J))
-     &           -ETAS(NBDI)*OBCCOEF(I,J-1)
-         END DO
-      END DO
+      call gwce_apply_boundary_conditions(IT, TimeLoc, TimeH, dt, invertedBarometerOnElevationBoundary,
+     &                                    esbin1, esbin2, etime1, etime2, etratio, etiminc, eta1, eta2,
+     &                                    etas, h1, elevdisc, en0, en1, en2, rampelev, rampmete, ep, gwce_lv)
 
 C...
 C...  SOLVE GWCE FOR ELEVATION AT NEW TIME LEVEL
