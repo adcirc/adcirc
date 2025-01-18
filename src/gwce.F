@@ -295,7 +295,8 @@ C... SB
      &   , wetFracVertETA1, wetFracVertETA2
      &   , cadvVertETA2, dphidt
       use boundary_forcing, only: gwce_apply_boundary_conditions, apply_vew1d_and_condensed_nodes,
-     &                            apply_subdomain_boundary_nodes
+     &                            apply_subdomain_boundary_nodes, update_coef_periodic_sponge_layer_lumped,
+     &                            update_coef_periodic_sponge_layer_consistent, update_periodic_sponge_layer_nodes
 
       IMPLICIT NONE
 
@@ -673,9 +674,9 @@ c...        boundary value and subtracted from the RHS
                   ENDDO
                ENDDO
             ENDDO
-C.....   DW
-            CALL UPDATE_COEF_PERBCSL_CONSISTENT() ;
-C.....   DW
+
+            CALL update_coef_periodic_sponge_layer_consistent(NP, MNEI, NPERSEG, NNPERBC, IPERCONN, NNEIGH, EP, COEF)
+
 C.....      Check that all the diagonal elements in "COEF" are > 0.
             DIE = .FALSE.
             DO I=1,NP
@@ -720,7 +721,7 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                Coefd(NBD(I))=EP
             ENDDO
 C......  DW
-            CALL UPDATE_COEF_PERBCSL_LUMPED() ;
+            CALL update_coef_periodic_sponge_layer_lumped(NP, NPERSEG, NNPERBC, IPERCONN, EP, COEFD)
 C......  DW
 C.....      Check that all the diagonal elements in "COEFD" are > 0.
             DIE = .FALSE.
@@ -1697,9 +1698,9 @@ C...  JCG ITERATIVE MATRIX SOLVER
       ENDIF
 
 C...... DW, periodic bcs
-      CALL UPDATE_PERSLNODES() ;
+      call update_periodic_sponge_layer_nodes(NP, NPERSEG, NNPERBC, IPERCONN, ETAS, ETA2)
 C     Switch back to the original element table 
-      CALL SWITCH_ELTAB_PERBC( IDIREC = 2 ) ;
+      CALL SWITCH_ELTAB_PERBC( IDIREC = 2 )
 C......
 
 #ifdef CMPI
@@ -1711,68 +1712,6 @@ C......
 #endif
       call unsetMessageSource()
 
-      RETURN
-
-C**********************************************************************
-      CONTAINS
-
-C.... DW, perioidic boundary condition
-        SUBROUTINE UPDATE_COEF_PERBCSL_CONSISTENT() 
-        IMPLICIT NONE
-
-        INTEGER I, I2
-
-C...  Modify equations associated with the slave nodes. 
-C...  For each slave node, zero all off diagonal
-c......terms on the row and set diagnoal term to EP
-        IF ( NPERSEG > 0 ) THEN
-           DO I = 1, NNPERBC
-              I2 = IPERCONN(I,2) ;
-              Coef(I2,1)=EP ;
-              DO J = 2, NNEIGH(I2)
-                 Coef(I2,J) = 0.0D0 ;
-              END DO
-           END DO
-        END IF
-
-        RETURN ;
-        END SUBROUTINE UPDATE_COEF_PERBCSL_CONSISTENT      
-
-        SUBROUTINE UPDATE_COEF_PERBCSL_LUMPED() 
-        IMPLICIT NONE 
-      
-        INTEGER:: I, I2 
-        
-        IF ( NPERSEG > 0 ) THEN
-           DO I = 1, NNPERBC
-              I2 = IPERCONN(I,2) ;
-              Coefd(I2)=EP ;  
-           END DO
-        END IF
-
-        RETURN ;
-        END SUBROUTINE  UPDATE_COEF_PERBCSL_LUMPED
-
-      
-        SUBROUTINE UPDATE_PERSLNODES()
-        IMPLICIT NONE
-       
-        INTEGER:: I, I1, I2
-        IF ( NPERSEG > 0 ) THEN
-C     Update values of slave node ! 
-           DO I = 1, NNPERBC
-              I1 = IPERCONN(I,1) ; 
-              I2 = IPERCONN(I,2) ;
-              
-              ETAS(I2)=ETAS(I1) ; 
-              ETA2(I2)=ETA2(I1) ;
-           END DO
-        END IF 
-        
-        RETURN ;
-        END SUBROUTINE UPDATE_PERSLNODES
-C..... DW
-C.....
       END SUBROUTINE GWCE_NEW
 C**********************************************************************
 
