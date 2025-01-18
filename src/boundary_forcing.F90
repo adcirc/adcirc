@@ -22,7 +22,8 @@ module boundary_forcing
    implicit none
 
    public :: gwce_apply_boundary_conditions, apply_vew1d_and_condensed_nodes, &
-             apply_subdomain_boundary_nodes
+             apply_subdomain_boundary_nodes, update_periodic_sponge_layer_nodes, &
+             update_coef_periodic_sponge_layer_lumped, update_coef_periodic_sponge_layer_consistent
 
    private
 
@@ -958,5 +959,111 @@ contains
          end do
       end if
    end subroutine apply_vew1d_and_condensed_nodes
+
+   ! *********************************************************************
+   !> Update the right hand side sponge layer periodic boundary condition nodes
+   !> for the consistent formulation
+   !>
+   !> @param NP The number of nodes
+   !> @param MNEI The maximum number of neighbors
+   !> @param NPERSEG The number of periodic segments
+   !> @param NNPERBC The number of nodes per boundary condition
+   !> @param IPERCONN The sponge layer periodic boundary connectivity table
+   !> @param NNEIGH The number of neighbors
+   !> @param EP The rms of the diagonal members of the gwce
+   !> @param COEF The coefficient for the elevation specified boundary nodes
+   ! *********************************************************************
+   subroutine update_coef_periodic_sponge_layer_consistent(NP, MNEI, NPERSEG, NNPERBC, IPERCONN, NNEIGH, EP, COEF)
+      implicit none
+
+      integer, intent(in) :: np
+      integer, intent(in) :: mnei
+      integer, intent(in) :: nperseg
+      integer, intent(in) :: nnperbc
+      integer, intent(in) :: iperconn(:, :)
+      integer, intent(in) :: nneigh(np)
+      real(8), intent(in) :: ep
+      real(8), intent(inout) :: coef(np, mnei)
+
+      integer :: I, J, I2
+
+      !...  Modify equations associated with the slave nodes.
+      !...  For each slave node, zero all off diagonal
+      !......terms on the row and set diagnoal term to EP
+      if (NPERSEG > 0) then
+         do I = 1, NNPERBC
+            I2 = IPERCONN(I, 2)
+            Coef(I2, 1) = EP
+            do J = 2, NNEIGH(I2)
+               Coef(I2, J) = 0.0d0
+            end do
+         end do
+      end if
+
+   end subroutine update_coef_periodic_sponge_layer_consistent
+
+   ! *********************************************************************
+   !> Update the right hand side sponge layer periodic boundary condition nodes
+   !> for the lumped formulation
+   !>
+   !> @param NP The number of nodes
+   !> @param NPERSEG The number of periodic segments
+   !> @param NNPERBC The number of nodes per boundary condition
+   !> @param IPERCONN The sponge layer periodic boundary connectivity table
+   !> @param EP The rms of the diagonal members of the gwce
+   !> @param COEFD The coefficient for the elevation specified boundary nodes
+   ! *********************************************************************
+   subroutine update_coef_periodic_sponge_layer_lumped(NP, NPERSEG, NNPERBC, IPERCONN, EP, COEFD)
+      implicit none
+
+      integer, intent(in) :: np
+      integer, intent(in) :: NPERSEG
+      integer, intent(in) :: NNPERBC
+      integer, intent(in) :: IPERCONN(:, :)
+      real(8), intent(in) :: EP
+      real(8), intent(inout) :: COEFD(np)
+
+      integer :: I, I2
+
+      if (NPERSEG > 0) then
+         do I = 1, NNPERBC
+            I2 = IPERCONN(I, 2)
+            Coefd(I2) = EP
+         end do
+      end if
+
+   end subroutine update_coef_periodic_sponge_layer_lumped
+
+   ! *********************************************************************
+   !> Update eta for the sponge layer periodic boundary condition nodes
+   !>
+   !> @param NP The number of nodes
+   !> @param NPERSEG The number of periodic segments
+   !> @param NNPERBC The number of nodes per boundary condition
+   !> @param IPERCONN The sponge layer periodic boundary connectivity table
+   !> @param ETAS The eta solution
+   ! *********************************************************************
+   subroutine update_periodic_sponge_layer_nodes(NP, NPERSEG, NNPERBC, IPERCONN, ETAS, ETA2)
+      implicit none
+
+      integer, intent(in) :: np
+      integer, intent(in) :: NPERSEG
+      integer, intent(in) :: NNPERBC
+      integer, intent(in) :: IPERCONN(:, :)
+      real(8), intent(inout) :: ETAS(np)
+      real(8), intent(inout) :: ETA2(np)
+
+      integer :: I, I1, I2
+
+      if (NPERSEG > 0) then
+         do I = 1, NNPERBC
+            I1 = IPERCONN(I, 1)
+            I2 = IPERCONN(I, 2)
+            ETAS(I2) = ETAS(I1)
+            ETA2(I2) = ETA2(I1)
+         end do
+      end if
+
+   end subroutine update_periodic_sponge_layer_nodes
 
 end module boundary_forcing
