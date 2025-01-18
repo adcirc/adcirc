@@ -781,8 +781,9 @@ else
 $(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)netcdf_error.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)internaltide.o $(O_DIR)subgridLookup.o
 endif
 
-$(O_DIR)boundary_forcing.o : boundary_forcing.F90
-$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o $(O_DIR)boundary_forcing.o
+$(O_DIR)gwce_bc_forcing_impl.o : gwce_bc_forcing_impl.F90 $(O_DIR)subdomain.o $(O_DIR)constants.o
+$(O_DIR)gwce_bc_forcing.o : gwce_bc_forcing.F90 $(O_DIR)gwce_bc_forcing_impl.o
+$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o $(O_DIR)gwce_bc_forcing.o
 $(O_DIR)momentum.o    :  momentum.F $(O_DIR)vew1d.o $(O_DIR)subdomain.o
 $(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
 $(O_DIR)messenger.o   :  messenger.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)global_3dvs.o
