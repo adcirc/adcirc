@@ -367,7 +367,185 @@ contains
    end subroutine apply_levels_of_no_motion_boundary_conditions
 
    ! *********************************************************************
+   !> Compute the default inward flux boundary condition forcing
+   !>
+   !> @param qn0 The flow at the previous time step
+   !> @param qn1 The flow at the current time step
+   !> @param qn2 The flow at the next time step
+   !> @param tau0 The tau0 value for the boundary node
+   !> @param dt The time step
+   ! *********************************************************************
+   real(8) pure function compute_qforce_default(qn0, qn1, qn2, tau0, dt) result(qforce)
+
+      implicit none
+
+      real(8), intent(in) :: QN0
+      real(8), intent(in) :: QN1
+      real(8), intent(in) :: QN2
+      real(8), intent(in) :: Tau0
+      real(8), intent(in) :: DT
+
+      real(8) :: dt2
+
+      ! Specified flux boundary condition
+      dt2 = dt*2.d0
+      qforce = (QN2 - QN0)/dt2 + Tau0*QN1
+
+   end function compute_qforce_default
+
+   ! *********************************************************************
+   !> Compute the qforcing for the time varying flux boundary type 30
+   !>
+   !> @param etas The solution to dE/dt from the prior solution
+   !> @param qn1 The flow at the current time step
+   !> @param h1 The total depth at the previous time step
+   !> @param tau0 The tau0 value for the boundary node
+   !> @param dt The time step
+   ! *********************************************************************
+   real(8) pure function compute_qforce_ibtype30(etas, qn1, h1, tau0, dt) result(qforce)
+      use adc_constants, only: G
+      implicit none
+
+      real(8), intent(in) :: ETAS
+      real(8), intent(in) :: QN1
+      real(8), intent(in) :: H1
+      real(8), intent(in) :: Tau0
+      real(8), intent(in) :: DT
+
+      real(8) :: celerity
+
+      celerity = sqrt(G*H1)
+      qforce = -CELERITY*ETAS/DT - Tau0*QN1
+   end function compute_qforce_ibtype30
+
+   ! *********************************************************************
+   !> Compute the qforcing for time varying flux/elevation boundary type 32
+   !>
+   !> 2nd order extrapolation formula: \eta^{n+1} = 2*\eta^{n} - \eta^{n-1} is used
+   !> and second order in time derivative is used
+   !>
+   !> @param etas The solution to dE/dt from the prior solution
+   !> @param qn0 The flow at the previous time step
+   !> @param qn1 The flow at the current time step
+   !> @param qn2 The flow at the next time step
+   !> @param en0 The elevation at the previous time step
+   !> @param en1 The elevation at the current time step
+   !> @param en2 The elevation at the next time step
+   !> @param eta1 The elevation at the current time step
+   !> @param h1 The total depth at the previous time step
+   !> @param tau0 The tau0 value for the boundary node
+   !> @param dt The time step
+   ! *********************************************************************
+   real(8) pure function compute_qforce_ibtype32(etas, qn0, qn1, qn2, en0, en1, en2, eta1, h1, tau0, dt) result(qforce)
+      use adc_constants, only: G
+      implicit none
+
+      real(8), intent(in) :: ETAS
+      real(8), intent(in) :: QN0
+      real(8), intent(in) :: QN1
+      real(8), intent(in) :: QN2
+      real(8), intent(in) :: EN0
+      real(8), intent(in) :: EN1
+      real(8), intent(in) :: EN2
+      real(8), intent(in) :: ETA1
+      real(8), intent(in) :: H1
+      real(8), intent(in) :: TAU0
+      real(8), intent(in) :: DT
+
+      real(8) :: celerity
+      real(8) :: dt2
+
+      dt2 = dt*2.d0
+      celerity = sqrt(G*H1)
+
+      qforce = (QN2 - QN0)/dt2 - CELERITY*(2.0d0*ETAS - (EN2 - EN0))/dt2 + &
+               TAU0*(QN1 - CELERITY*(ETA1 - EN1))
+   end function compute_qforce_ibtype32
+
+   ! *********************************************************************
+   !> Compute the qforcing for the outward flux boundary type 40, 41
+   !>
+   !> @param qn0 The flow at the previous time step
+   !> @param qn1 The flow at the current time step
+   !> @param tau0 The tau0 value for the boundary node
+   !> @param dt The time step
+   ! *********************************************************************
+   real(8) pure function compute_qforce_ibtype4041(qn0, qn1, tau0, dt) result(qforce)
+      implicit none
+
+      real(8), intent(in) :: QN0
+      real(8), intent(in) :: QN1
+      real(8), intent(in) :: Tau0
+      real(8), intent(in) :: DT
+
+      ! Specified flux with flow out of the domain
+      qforce = -(QN1 - QN0)/DT - Tau0*(QN1 + QN0)/2.0d0
+   end function compute_qforce_ibtype4041
+
+   ! *********************************************************************
+   !> Compute the qforcing for the combined radiation and specified flux
+   !> boundary condition
+   !>
+   !> @param qn0 The flow at the previous time step
+   !> @param qn1 The flow at the current time step
+   !> @param qn2 The flow at the next time step
+   !> @param etas The solution to dE/dt from the prior solution
+   !> @param en0 The elevation at the previous time step
+   !> @param en1 The elevation at the current time step
+   !> @param en2 The elevation at the next time step
+   !> @param eta1 The elevation at the current time step
+   !> @param elevdisc The elevation at the discharge boundaries
+   !> @param h1 The total depth at the previous time step
+   !> @param tau0 The tau0 value for the boundary node
+   !> @param it The current time step
+   !> @param dt The time step
+   !> @param FluxSettlingIT The number of iterations of flux settling
+   ! *********************************************************************
+   real(8) pure function compute_qforce_ibtype52(qn0, qn1, qn2, etas, &
+                                                 en0, en1, en2, eta1, &
+                                                 elevdisc, h1, tau0, &
+                                                 it, dt, FluxSettlingIT) result(qforce)
+      use adc_constants, only: G
+      implicit none
+
+      real(8), intent(in) :: QN0
+      real(8), intent(in) :: QN1
+      real(8), intent(in) :: QN2
+      real(8), intent(in) :: en0
+      real(8), intent(in) :: en1
+      real(8), intent(in) :: en2
+      real(8), intent(in) :: EtaS
+      real(8), intent(in) :: Eta1
+      real(8), intent(in) :: ElevDisc
+      real(8), intent(in) :: H1
+      real(8), intent(in) :: Tau0
+      real(8), intent(in) :: DT
+      integer, intent(in) :: IT
+      integer, intent(in) :: FluxSettlingIT
+
+      real(8) :: celerity
+      real(8) :: dt2
+
+      ! Specified flux boundary condition with radiation boundary condition
+      dt2 = dt*2.d0
+      qforce = (QN2 - QN0)/dt2 + Tau0*QN1
+      if (IT > FluxSettlingIT) then
+         celerity = sqrt(G*H1)
+         qforce = qforce - Celerity*(EtaS/DT + Tau0*(Eta1 - ElevDisc))
+      end if
+   end function compute_qforce_ibtype52
+
+   ! *********************************************************************
    !> Compute the normal flow boundary condition force at the given boundary index
+   !>
+   !> Note 2, Boundary conditions using specified fluxes (LBCODEI < 29)
+   !> assume that QN is positive into the domain.  QFORCEJ has a -1
+   !> built in and the terms are not explicitly negated. Boundary
+   !> conditions using computed fluxes (LBCODEI 30, 40) compute a normal
+   !> flux that  is positive out of the domain.  Therefore, to match
+   !> the formulation these terms must be explicitly multiplied by -1.
+   !>
+   !> Note 3, Eta1 is the latest computed elevation (it was updated previously).
    !>
    !> @param LBCode The boundary code for the boundary
    !> @param IT The current time step
@@ -404,43 +582,53 @@ contains
       real(8), intent(in) :: dt
 
       real(8) :: celerity
+      real(8) :: dt2
 
-      celerity = sqrt(G*H1)
-      if ((LBCODE <= 29) .or. (LBCODE == 64)) then
-         qforce = (QN2 - QN0)/(DT*2) + Tau0*QN1
-      elseif (LBCODE == 30) then
-         qforce = -CELERITY*ETAS/DT - Tau0*QN1
-      elseif (LBCODE == 32) then
-         !  2nd order extrapolation formula: \eta^{n+1} = 2*\eta^{n} - \eta^{n-1} is used
-         !  and second order in time derivative is used
-         qforce = (QN2 - QN0)/(DT*2.0) - CELERITY*(2.0*ETAS - (EN2 - EN0))/(DT*2) + &
-                  TAU0*(QN1 - CELERITY*(ETA1 - EN1))
-      elseif ((LBCODE == 40) .or. (LBCODE == 41)) then
-         qforce = -(QN1 - QN0)/DT - Tau0*(QN1 + QN0)/2.d0
-      elseif (LBCODE == 52) then
-         qforce = (QN2 - QN0)/(DT*2) + Tau0*QN1
-         if (IT > FluxSettlingIT) then
-            qforce = qforce - Celerity*(EtaS/DT + Tau0*(Eta1 - ElevDisc))
-         end if
-      else
-         qforce = 0.d0
-      end if
+      select case (LBCode)
+      case (30)
+         qforce = compute_qforce_ibtype30(ETAS, QN1, H1, TAU0, DT)
+      case (32)
+         qforce = compute_qforce_ibtype32(ETAS, QN0, QN1, QN2, EN0, &
+                                          EN1, EN2, ETA1, H1, TAU0, DT)
+      case (40, 41)
+         qforce = compute_qforce_ibtype4041(QN0, QN1, TAU0, DT)
+      case (52)
+         qforce = compute_qforce_ibtype52(QN0, QN1, QN2, ETAS, EN0, &
+                                          EN1, EN2, ETA1, ElevDisc, &
+                                          H1, TAU0, IT, DT, FluxSettlingIT)
+      case default
+         qforce = compute_qforce_default(QN0, QN1, QN2, TAU0, DT)
+      end select
 
    end function compute_qforce_normal_flow_boundary
 
    ! *********************************************************************
    !> Apply the normal flow boundary conditions to the load vector
-   !> IMPOSE NORMAL FLOW, RADIATION OR GRADIENT BOUNDARY CONDITIONS
-   !> ALONG FLOW BOUNDARY TO LOAD VECTOR GWCE_LV(I)
+   !> Impose normal flow, radiation or gradient boundary conditions
+   !> along flow boundary to load vector GWCE_LV(I)
    !>
-   !> Note 2, Boundary conditions using specified fluxes (LBCODEI < 29)
-   !> assume that QN is positive into the domain.  QFORCEJ has a -1
-   !> built in and the terms are not explicitly negated. Boundary
-   !> conditions using computed fluxes (LBCODEI 30, 40) compute a normal
-   !> flux that  is positive out of the domain.  Therefore, to match
-   !> the formulation these terms must be explicitly multiplied by -1.
+   !> @param IT The current time step
+   !> @param NFLUXF The number of flow boundaries
+   !> @param NFLUXB The number of boundaries
+   !> @param NFLUXIB The number of internal boundaries
+   !> @param NFLUXGBC The number of flux
+   !> @param NFLUXRBC The number of radiation boundaries
+   !> @param NVEL The number of elevation boundary nodes
+   !> @param NP The number of nodes
+   !> @param NBV The node boundary indices
+   !> @param LBCODEI The boundary code
+   !> @param NodeCode The wet/dry node code
+   !> @param FluxSettlingIT The number of iterations of flux settling
+   !> @param QN0 The flow at the previous time step
+   !> @param QN1 The flow at the current time step
+   !> @param QN2 The flow at the next time step
+   !> @param ETAS The solution to dE/dt from the prior solution
+   !> @param EN0
+   !> @param EN1
+   !> @param EN2
+   !> @param ETA1 Elevation at the current time step
+   !> @param ElevDisc Elevation at discharge boundaries
    !>
-   !> Note 3, Eta1 is the latest computed elevation (it was updated previously).
    ! *********************************************************************
    subroutine apply_normal_flow_boundary_conditions(IT, NFLUXF, NFLUXB, NFLUXIB, NFLUXGBC, NFLUXRBC, &
                                                     NVEL, NP, NBV, LBCODEI, NodeCode, FluxSettlingIT, &
@@ -505,10 +693,10 @@ contains
          nodecode_current_node = NodeCode(current_node)
 
          ! Compute the length of the boundary segment and zero for non-wet nodes
-         BndLenO6NC = nodecode_prev_node*nodecode_current_node*BndLen2O3(J - 1)/4.d0
+         BndLenO6NC = nodecode_prev_node*nodecode_current_node*BndLen2O3(J - 1)/4.0d0
 
          ! Apply the boundary conditions to the load vector
-         GWCE_LV(previous_node) = GWCE_LV(previous_node) + BndLenO6NC*(2.d0*QForceI + QForceJ)
+         GWCE_LV(previous_node) = GWCE_LV(previous_node) + BndLenO6NC*(2.0d0*QForceI + QForceJ)
          GWCE_LV(current_node) = GWCE_LV(current_node) + BndLenO6NC*(2.d0*QForceJ + QForceI)
       end do
    end subroutine apply_normal_flow_boundary_conditions
