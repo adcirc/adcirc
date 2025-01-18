@@ -1635,13 +1635,13 @@ C...  Put load vector elemental values into nodal storage for a vector computer
 
 C...  Save the elevation at the past time step into Eta1 and zero out Eta2
 ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
-        IF(CPRECOR)THEN
-          ETAS0(1:NP) = ETAS(1:NP)
-          ETA0(1:NP) = ETA1(1:NP)
-        ENDIF
-        ETA1(1:NP) = ETA2(1:NP)
-        ETA2(1:NP) = 0.0D0
-        H1(1:NP) = H2(1:NP)
+      IF(CPRECOR)THEN
+        ETAS0(1:NP) = ETAS(1:NP)
+        ETA0(1:NP) = ETA1(1:NP)
+      ENDIF
+      ETA1(1:NP) = ETA2(1:NP)
+      ETA2(1:NP) = 0.0D0
+      H1(1:NP) = H2(1:NP)
 
 !...  Apply boundary conditions
       call gwce_apply_boundary_conditions(IT, TimeLoc, TimeH, dt, invertedBarometerOnElevationBoundary,
