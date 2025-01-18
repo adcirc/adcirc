@@ -294,9 +294,9 @@ C... SB
      &   , gridDepthVertETA1, gridDepthVertETA2
      &   , wetFracVertETA1, wetFracVertETA2
      &   , cadvVertETA2, dphidt
-      use boundary_forcing, only: gwce_apply_boundary_conditions, apply_vew1d_and_condensed_nodes,
-     &                            apply_subdomain_boundary_nodes, update_coef_periodic_sponge_layer_lumped,
-     &                            update_coef_periodic_sponge_layer_consistent, update_periodic_sponge_layer_nodes
+      use gwce_bc_forcing, only: apply_boundary_conditions, apply_vew1d_and_condensed_nodes,
+     &                           apply_subdomain_boundary_nodes, update_coef_periodic_sponge_layer_lumped,
+     &                           update_coef_periodic_sponge_layer_consistent, update_periodic_sponge_layer_nodes
 
       IMPLICIT NONE
 
@@ -1645,9 +1645,9 @@ ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
       H1(1:NP) = H2(1:NP)
 
 !...  Apply boundary conditions
-      call gwce_apply_boundary_conditions(IT, TimeLoc, TimeH, dt, invertedBarometerOnElevationBoundary,
-     &                                    esbin1, esbin2, etime1, etime2, etratio, etiminc, eta1, eta2,
-     &                                    etas, h1, elevdisc, en0, en1, en2, rampelev, rampmete, ep, gwce_lv)
+      call apply_boundary_conditions(IT, TimeLoc, TimeH, dt, invertedBarometerOnElevationBoundary,
+     &                               esbin1, esbin2, etime1, etime2, etratio, etiminc, eta1, eta2,
+     &                               etas, h1, elevdisc, en0, en1, en2, rampelev, rampmete, ep, gwce_lv)
 
 C...
 C...  SOLVE GWCE FOR ELEVATION AT NEW TIME LEVEL
@@ -1758,7 +1758,7 @@ C
       USE MESSENGER
 #endif
       USE WIND, ONLY: windLimiter
-      USE boundary_forcing, only: gwce_apply_boundary_conditions
+      USE gwce_bc_forcing, only: apply_boundary_conditions
 
       IMPLICIT NONE
 
@@ -2554,9 +2554,9 @@ ckmd  out eta2 because it's involved in the summation below.
 
 C...  At elevation boundary condition nodes, determine the elevation at
 C...  the s+1 time step
-      call gwce_apply_boundary_conditions(IT, TimeLoc, TimeH, dt, invertedBarometerOnElevationBoundary,
-     &                                    esbin1, esbin2, etime1, etime2, etratio, etiminc, eta1, eta2,
-     &                                    etas, h1, elevdisc, en0, en1, en2, rampelev, rampmete, ep, gwce_lv)
+      call apply_boundary_conditions(IT, TimeLoc, TimeH, dt, invertedBarometerOnElevationBoundary,
+     &                               esbin1, esbin2, etime1, etime2, etratio, etiminc, eta1, eta2,
+     &                               etas, h1, elevdisc, en0, en1, en2, rampelev, rampmete, ep, gwce_lv)
 
 C...
 C...  SOLVE GWCE FOR ELEVATION AT NEW TIME LEVEL

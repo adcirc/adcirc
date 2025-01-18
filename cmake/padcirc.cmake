@@ -63,7 +63,8 @@ if(BUILD_PADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sun.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/moon.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundary_forcing.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce_bc_forcing.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce_bc_forcing_impl.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
 
   if(NETCDF_WORKING)
