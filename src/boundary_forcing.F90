@@ -524,11 +524,9 @@ contains
       integer, intent(in) :: FluxSettlingIT
 
       real(8) :: celerity
-      real(8) :: dt2
 
       ! Specified flux boundary condition with radiation boundary condition
-      dt2 = dt*2.d0
-      qforce = (QN2 - QN0)/dt2 + Tau0*QN1
+      qforce = compute_qforce_default(QN0, QN1, QN2, Tau0, DT)
       if (IT > FluxSettlingIT) then
          celerity = sqrt(G*H1)
          qforce = qforce - Celerity*(EtaS/DT + Tau0*(Eta1 - ElevDisc))
@@ -580,9 +578,6 @@ contains
       real(8), intent(in) :: h1
       real(8), intent(in) :: Tau0
       real(8), intent(in) :: dt
-
-      real(8) :: celerity
-      real(8) :: dt2
 
       select case (LBCode)
       case (30)
@@ -674,7 +669,7 @@ contains
 
       qforcej = compute_qforce_normal_flow_boundary(LBCodeI(1), DT, IT, FluxSettlingIT, QN0(1), QN1(1), QN2(1), &
                                                     ETAS(NBV(1)), EN0(1), EN1(1), EN2(1), ETA1(NBV(1)), &
-                                                    ElevDisc(NBV(1)), H1(NBV(1)), TAU0(NBV(1)))
+                                                    ElevDisc(1), H1(NBV(1)), TAU0(NBV(1)))
 
       do J = 2, NVEL
          ! Get the current and previous node id
@@ -685,7 +680,7 @@ contains
          qforcei = qforcej
          qforcej = compute_qforce_normal_flow_boundary(LBCODEI(J), DT, IT, FluxSettlingIT, QN0(J), QN1(J), QN2(J), &
                                                        ETAS(current_node), EN0(J), EN1(J), EN2(J), &
-                                                       ETA1(current_node), ElevDisc(current_node), &
+                                                       ETA1(current_node), ElevDisc(J), &
                                                        H1(current_node), TAU0(current_node))
 
          ! Compute the nodecode for the two nodes in the boundary
