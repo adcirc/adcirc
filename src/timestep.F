@@ -84,9 +84,9 @@ C
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
      &    Limit_WaveStressGrad,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
-     &    dynamicWaterLevelCorrectionDelta
+     &    dynamicWaterLevelCorrectionDelta, RampIntFlux
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
-     &                         WaveStressGrad_Cap 
+     &                         WaveStressGrad_Cap, G
      
       USE GWCE, ONLY : solveGWCE, numitr
       USE MOMENTUM, ONLY : solveMomentumEq
@@ -148,7 +148,9 @@ Casey 090302: We need these values from other places.
 Casey 100205: Add a variable for writing of SWAN hot-start files.
      &                      ,WriteSwanHotStart
 #endif
-      USE WEIR_FLUX
+      USE WEIR_FLUX, ONLY: COMPUTE_EXTERNAL_BOUNDARY_FLUX, COMPUTE_INTERNAL_BOUNDARY_FLUX,
+     & BARINHT1, BARINHT2, BARLANHT1, BARLANHT2, COMPUTE_INTERNAL_BOUNDARY64_FLUX,
+     & COMPUTE_CROSS_BARRIER_PIPE_FLUX, SET_SUBMERGED64_AT
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
      &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
 

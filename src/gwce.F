@@ -1668,9 +1668,9 @@ C...
 
       call apply_subdomain_boundary_nodes(subdomainOn, enforceBN)
 
-      call apply_vew1d_and_condensed_nodes(ILump, NP, NFLUXIB64_GBL, NBOU, NVEL, NVELL, NBV, IBCONN, LBCODEI,
-     &                                     NODECODE, NListCondensedNodes, NNodesListCondensedNodes,
-     &                                     ListCondensedNodes, LoadCondensedNodes, IsSubmerged64, COEFD,
+      call apply_vew1d_and_condensed_nodes(LoadCondensedNodes, ILump, NP, NFLUXIB64_GBL, NBOU, NVEL, NVELL, NBV, IBCONN,
+     &                                     LBCODEI, NODECODE, NListCondensedNodes, NNodesListCondensedNodes,
+     &                                     ListCondensedNodes, IsSubmerged64, COEFD,
      &                                     COEFDTemp, COEFDTempMem, GWCE_LV, ETA1)
 
       IF (ILump.eq.0) THEN ! default, fully consistent LHS

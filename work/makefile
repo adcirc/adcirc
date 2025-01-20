@@ -117,7 +117,7 @@ ifeq ($(BUILDTYPE),adcprep)
   CF:= $(PPFC)
   O_DIR:=$(SRCDIR)/work/odir1/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind
+	VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR)/src/boundaries
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -133,7 +133,7 @@ ifeq ($(BUILDTYPE),adcprep_be)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir2/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR)
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind
+	VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind:$(SRCDIR)/src/boundaries
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -149,7 +149,7 @@ ifeq ($(BUILDTYPE),adcirc)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir3/
   FFLAGS:= $(FFLAGS2) $(DA) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+	VPATH:=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR)/src/boundaries:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -165,7 +165,7 @@ ifeq ($(BUILDTYPE),adcswan)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir33/
   FFLAGS:= $(FFLAGS2) -DCSWAN $(DA) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan
+	VPATH:=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/src/boundaries:$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -188,7 +188,7 @@ ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odir4/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+	VPATH :=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/src/boundaries:$(SRCDIR)/prep
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -204,7 +204,7 @@ ifeq ($(BUILDTYPE),padcswan)
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odir44/
   FFLAGS:= $(FFLAGS3) -DCSWAN $(DP) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan
+	VPATH :=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR)/src/boundaries:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -228,7 +228,7 @@ ifeq ($(BUILDTYPE),$(LIBADC))
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odircp/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
-  VPATH := $(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+	VPATH := $(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/src/boundaries:$(SRCDIR)/prep
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
