@@ -44,7 +44,7 @@ if(BUILD_PADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/write_output.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/weir_boundary.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F
@@ -63,8 +63,8 @@ if(BUILD_PADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sun.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/moon.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce_bc_forcing.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce_bc_forcing_impl.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/gwce_bc_forcing.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/gwce_bc_forcing_impl.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
 
   if(NETCDF_WORKING)
