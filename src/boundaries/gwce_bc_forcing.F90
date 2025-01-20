@@ -579,7 +579,7 @@ contains
    !> @param Eta2 The elevation field
    ! *********************************************************************
    subroutine apply_periodic_boundaries(NBFR, NETA, NP, NBD, RampElev, TimeLoc, TimeH, PER, AMIG, FACE, FF, &
-           EFA, EMO, Eta2)
+                                        EFA, EMO, Eta2)
       implicit none
 
       integer, intent(in) :: NBFR
@@ -636,7 +636,7 @@ contains
    !> @param Eta2 The elevation field
    ! *********************************************************************
    subroutine apply_aperiodic_boundaries(subdomainOn, enforceBN, NETA, NPEBC, NP, NBD, RampElev, TimeLoc, TimeH, &
-           ETIME1, ETIME2, ETIMINC, ESBIN1, ESBIN2, ETRATIO, Eta2)
+                                         ETIME1, ETIME2, ETIMINC, ESBIN1, ESBIN2, ETRATIO, Eta2)
       use subdomain, only: enforceEcb
       implicit none
 
@@ -729,7 +729,7 @@ contains
    !>
    ! *********************************************************************
    subroutine apply_inverted_barometer_on_elevation_boundaries(NO_MET_IN_SPONGE, invertedBarometerOnElevationBoundary, &
-           NETA, NP, NBD, RampMete, PR2, ETA2)
+                                                               NETA, NP, NBD, RampMete, PR2, ETA2)
       use adc_constants, only: G, RHOWAT0
       implicit none
 
@@ -762,7 +762,7 @@ contains
    !> @param eta2 The elevation field
    ! *********************************************************************
    subroutine apply_dynamic_water_level_correction(usingDynamicWaterLevelCorrection, np, neta, nbd, &
-           dynamicWaterLevelCorrection1, eta2)
+                                                   dynamicWaterLevelCorrection1, eta2)
       implicit none
 
       logical, intent(in) :: usingDynamicWaterLevelCorrection
@@ -795,7 +795,7 @@ contains
    !> @param ETA2 The elevation field
    ! *********************************************************************
    subroutine apply_levels_of_no_motion_boundary_conditions(RES_BC_FLAG, NP, NOPE, BCFLAG_LNM, CBaroclinic, NETA, NBD, &
-           LNM_BC, ETA2)
+                                                            LNM_BC, ETA2)
       implicit none
 
       integer, intent(in) :: res_bc_flag
@@ -909,7 +909,7 @@ contains
       celerity = sqrt(G*H1)
 
       qforce = (QN2 - QN0)/dt2 - CELERITY*(2.0d0*ETAS - (EN2 - EN0))/dt2 + &
-              TAU0*(QN1 - CELERITY*(ETA1 - EN1))
+               TAU0*(QN1 - CELERITY*(ETA1 - EN1))
    end function compute_qforce_ibtype32
 
    ! *********************************************************************
@@ -952,9 +952,9 @@ contains
    !> @param FluxSettlingIT The number of iterations of flux settling
    ! *********************************************************************
    real(8) pure function compute_qforce_ibtype52(qn0, qn1, qn2, etas, &
-           en0, en1, en2, eta1, &
-           elevdisc, h1, tau0, &
-           it, dt, FluxSettlingIT) result(qforce)
+                                                 en0, en1, en2, eta1, &
+                                                 elevdisc, h1, tau0, &
+                                                 it, dt, FluxSettlingIT) result(qforce)
       use adc_constants, only: G
       implicit none
 
@@ -1009,7 +1009,7 @@ contains
    !> @param dt The time step
    ! *********************************************************************
    real(8) pure function compute_qforce_normal_flow_boundary(LBCode, DT, IT, FluxSettlingIT, QN0, QN1, QN2, ETAS, EN0, &
-           EN1, EN2, ETA1, ElevDisc, H1, TAU0) result(qforce)
+                                                             EN1, EN2, ETA1, ElevDisc, H1, TAU0) result(qforce)
       use adc_constants, only: G
       implicit none
 
@@ -1034,13 +1034,13 @@ contains
          qforce = compute_qforce_ibtype30(ETAS, QN1, H1, TAU0, DT)
       case (32)
          qforce = compute_qforce_ibtype32(ETAS, QN0, QN1, QN2, EN0, &
-                 EN1, EN2, ETA1, H1, TAU0, DT)
+                                          EN1, EN2, ETA1, H1, TAU0, DT)
       case (40, 41)
          qforce = compute_qforce_ibtype4041(QN0, QN1, TAU0, DT)
       case (52)
          qforce = compute_qforce_ibtype52(QN0, QN1, QN2, ETAS, EN0, &
-                 EN1, EN2, ETA1, ElevDisc, &
-                 H1, TAU0, IT, DT, FluxSettlingIT)
+                                          EN1, EN2, ETA1, ElevDisc, &
+                                          H1, TAU0, IT, DT, FluxSettlingIT)
       case default
          qforce = compute_qforce_default(QN0, QN1, QN2, TAU0, DT)
       end select
@@ -1076,9 +1076,9 @@ contains
    !>
    ! *********************************************************************
    subroutine apply_normal_flow_boundary_conditions(IT, NFLUXF, NFLUXB, NFLUXIB, NFLUXGBC, NFLUXRBC, &
-           NVEL, NP, NBV, LBCODEI, NodeCode, FluxSettlingIT, &
-           QN0, QN1, QN2, ETAS, EN0, EN1, EN2, ETA1, ElevDisc, &
-           H1, TAU0, DT, BndLen2O3, GWCE_LV)
+                                                    NVEL, NP, NBV, LBCODEI, NodeCode, FluxSettlingIT, &
+                                                    QN0, QN1, QN2, ETAS, EN0, EN1, EN2, ETA1, ElevDisc, &
+                                                    H1, TAU0, DT, BndLen2O3, GWCE_LV)
       implicit none
 
       integer, intent(in) :: IT
@@ -1118,8 +1118,8 @@ contains
       end if
 
       qforcej = compute_qforce_normal_flow_boundary(LBCodeI(1), DT, IT, FluxSettlingIT, QN0(1), QN1(1), QN2(1), &
-              ETAS(NBV(1)), EN0(1), EN1(1), EN2(1), ETA1(NBV(1)), &
-              ElevDisc(1), H1(NBV(1)), TAU0(NBV(1)))
+                                                    ETAS(NBV(1)), EN0(1), EN1(1), EN2(1), ETA1(NBV(1)), &
+                                                    ElevDisc(1), H1(NBV(1)), TAU0(NBV(1)))
 
       do J = 2, NVEL
          ! Get the current and previous node id
@@ -1129,9 +1129,9 @@ contains
          ! Swap the qforce values and compute the new qforce value at the next node
          qforcei = qforcej
          qforcej = compute_qforce_normal_flow_boundary(LBCODEI(J), DT, IT, FluxSettlingIT, QN0(J), QN1(J), QN2(J), &
-                 ETAS(current_node), EN0(J), EN1(J), EN2(J), &
-                 ETA1(current_node), ElevDisc(J), &
-                 H1(current_node), TAU0(current_node))
+                                                       ETAS(current_node), EN0(J), EN1(J), EN2(J), &
+                                                       ETA1(current_node), ElevDisc(J), &
+                                                       H1(current_node), TAU0(current_node))
 
          ! Compute the nodecode for the two nodes in the boundary
          nodecode_prev_node = NodeCode(previous_node)
@@ -1158,8 +1158,8 @@ contains
    !> @param ETAS The eta solution
    !> @param GWCE_LV The gwce load vector
    subroutine update_rhs_sponge_periodic_boundary_nodes(NP, NPERSEG, NNPERBC, &
-           IPERCONN, NODECODE, EP, &
-           ETAS, GWCE_LV)
+                                                        IPERCONN, NODECODE, EP, &
+                                                        ETAS, GWCE_LV)
       implicit none
 
       integer, intent(in) :: NP
@@ -1206,7 +1206,7 @@ contains
    !>
    ! *********************************************************************
    subroutine update_load_vector(ILump, NETA, NP, MNEI, NBD, NNEIGH, NEITAB, NODECODE, ETA1, ETA2, &
-           OBCCOEF, COEFD, EP, ETAS, GWCE_LV)
+                                 OBCCOEF, COEFD, EP, ETAS, GWCE_LV)
       implicit none
 
       integer, intent(in) :: ilump
