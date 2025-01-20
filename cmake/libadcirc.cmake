@@ -62,7 +62,6 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/gwce_bc_forcing.F90
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/gwce_bc_forcing_impl.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F)
 
 if(NETCDF_WORKING)
