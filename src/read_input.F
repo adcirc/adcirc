@@ -84,7 +84,7 @@ C-----------------------------------------------------------------------
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
-     &   WarnVel, toLowercase
+     &   WarnVel, toLowercase, ScreenUnit
 
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
@@ -113,8 +113,8 @@ C-----------------------------------------------------------------------
       USE SUBDOMAIN, ONLY : subdomainOn
       USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
-      USE WEIR
-      USE TIME_VARYING_WEIR_BOUNDARY
+      USE WEIR_DATA, ONLY: found_tvw_nml
+      USE TIME_VARYING_WEIR_BOUNDARY, only: WEIR_SETUP
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
      &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
