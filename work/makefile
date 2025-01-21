@@ -443,6 +443,8 @@ INF_SRC    =  inflate.F
 HST_SRC    =  hstime.F
 ASW_SRC    =  aswip.F
 CMP_SRC    =  adccmp.F
+LOG_SRC     =  logging.F90
+T_SRC      =  terminate.F90
 
 METIS_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(METIS_SRC) )
 PREP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PREP_SRC) ) $(O_DIR)mkdir.o
@@ -458,6 +460,8 @@ INF_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(INF_SRC) )
 HST_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HST_SRC) )
 ASW_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(ASW_SRC) )
 CMP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CMP_SRC) )
+LOG_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(LOG_SRC) )
+T_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(T_SRC) )
 
 #################### SWAN Source & Object Files #########################
 # Casey 090302: Added this section for coupling to unstructured SWAN.
@@ -679,8 +683,8 @@ endif
    hstime ::  $(HST_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-   aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+   aswip ::   $(ADCIRC_DEP) $(ASW_OBJ) $(LOG_OBJ) $(T_OBJ)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LOG_OBJ) $(T_OBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -770,8 +774,10 @@ $(O_DIR)aswip.o      :  aswip.F $(VORT_MOBJ) $(NA_MOBJ)
 
 $(O_DIR)version.o     :  version.F
 $(O_DIR)sizes.o       :  sizes.F
+$(O_DIR)terminate.o   :  terminate.F90	
+$(O_DIR)logging.o     :  logging.F90	
 $(O_DIR)constants.o   :  constants.F $(O_DIR)sizes.o
-$(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)constants.o $(O_DIR)kdtree2.o
+$(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)constants.o $(O_DIR)kdtree2.o $(O_DIR)logging.o $(O_DIR)terminate.o
 $(O_DIR)internaltide.o : internaltide.F $(O_DIR)sizes.o $(O_DIR)global.o
 $(O_DIR)gl2loc_mapping.o : gl2loc_mapping.F $(O_DIR)sizes.o $(O_DIR)global.o
 
@@ -782,7 +788,7 @@ $(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)n
 endif
 
 $(O_DIR)gwce_bc_forcing.o : gwce_bc_forcing.F90
-$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o $(O_DIR)gwce_bc_forcing.o
+$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o $(O_DIR)gwce_bc_forcing.o 
 $(O_DIR)momentum.o    :  momentum.F $(O_DIR)vew1d.o $(O_DIR)subdomain.o
 $(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
 $(O_DIR)messenger.o   :  messenger.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)global_3dvs.o

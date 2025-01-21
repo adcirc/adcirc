@@ -7,9 +7,10 @@ C-----------------------------------------------------------------------
          USE ADC_CONSTANTS, only: g, rhowat0, prbckgrnd, deg2rad,
      &                        rad2deg, ms2kt, ten2one, windReduction
          use global, only : 
-     &                   nws, sphericalDistance,
+     &                   nws, sphericalDistance, openFileForRead
+         use mod_logging, only:
      &                   DEBUG, WARNING, ERROR, INFO, screenunit,
-     &                   setMessageSource, allMessage, openFileForRead,
+     &                   setMessageSource, allMessage,
      &                   screenMessage, initLogging, scratchMessage
          ! Import asymmetric hurricane vortex class
          use mesh, only : np, ne, nm, slam, sfea, ics, slam0, sfea0
@@ -2697,7 +2698,7 @@ C     jgf49.30: New variables to support command line options
       CHARACTER(2) :: CMDLINEOPTION ! the option flag itself
       integer :: i
 
-      call initLogging()
+      call initLogging(1,0)
       call setMessageSource("aswip")
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")

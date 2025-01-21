@@ -25,10 +25,11 @@ C***********************************************************************
 C
        MODULE WIND
        USE SIZES, ONLY : LOCALDIR
-       USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage,
+       use mod_terminate, only: terminate
+       USE mod_logging, ONLY : ScreenUnit, setMessageSource, allMessage,
      &    screenMessage, logMessage, unsetMessageSource,
-     &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
-     &    sphericalDistance, openFileForRead, RNDAY, cice_timinc, 
+     &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage
+       use global, only: sphericalDistance, openFileForRead, RNDAY, cice_timinc,
      &    cice_time1, cice_time2
 #ifdef DATETIME
      &   ,basedatetime
@@ -881,7 +882,7 @@ C
       IF(IMO.GT.12) THEN
          call allMessage(ERROR,
      &     'Fatal error in subroutine timeconv: month > 12.')
-         call windTerminate()
+         call terminate()
 
       ENDIF
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -3894,7 +3895,7 @@ C......  Check that this value is reasonable.
      &       '("i=",i0," lon=",f15.8," dlon=",f15.8," flon(i)=",f15.8)')
      &       i, lon, dlon, slam(i)
             call allMessage(ERROR, scratchMessage)
-            call windTerminate()
+            call terminate()
          endif
 
 C.....   Compute initial guess of which lat value FLAT(I) is in the Gaussian file
@@ -3909,7 +3910,7 @@ C....... Check that this value is reasonable.
      &       '("i=",i0," lat=",f15.8," dlat=",f15.8," flat(i)=",f15.8)')
      &       i, lat, dlat, sfea(i)
             call allMessage(ERROR, scratchMessage)
-            call windTerminate()
+            call terminate()
          endif
 
          DO WHILE(.TRUE.)
@@ -4027,7 +4028,7 @@ C
       if (modulo(int(wtiminc),3600).ne.0) then
          call allMessage(ERROR,
      &      'For NWS=10, WTIMINC must be evenly divisible by 3600.')
-         call windTerminate()
+         call terminate()
       endif
       !
       ! Form the data file name.
@@ -4038,7 +4039,7 @@ C
       ! parallel operation.
       call openFileForRead(iext,trim(gblinputdir)//'/'//trim(fname1),ios)
       if (ios.ne.0) then
-         call windTerminate()
+         call terminate()
       endif
 C
 C...  Read the ASCII data file
@@ -4311,7 +4312,7 @@ C...  Figure out the met data file name
 C...  If appropriate, enter, locate and open the met data file
       call openFileForRead(IEXT,FNAME1,errorIO)
       if (errorIO.ne.0) then
-         call windTerminate()
+         call terminate()
       endif
 
 C...  Read the met data file
@@ -5137,7 +5138,7 @@ C     Compute pressure field
 !     &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
          PRESS(I)=cpress+(centralPressureDeficit)*
      &        EXP(-(RMW*1000.d0/RAD(I))**B)
-C     Compute velocity field with absolute around 
+C     Compute velocity field with absolute around
 C     CORIOLIS for the Southern Hempisphere
          V_r(I) = sqrt(
      &        (RMW*1000.d0/RAD(I))**B *
@@ -5167,7 +5168,7 @@ C     Find the velocity components.
          WVNX(I)=-V_r(I)*SIN(THETA(I))
          WVNY(I)= V_r(I)*COS(THETA(I))
         endif
- 
+
 C
 C     jgf46.19 Convert wind velocity from top of atmospheric boundary
 C     layer (which is what the Holland curve fit produces) to wind
@@ -5271,7 +5272,7 @@ C     Determine the number of lines in the file.
             call allMessage(ERROR,
      &       "The symmetric vortex parameter file was not found. "
      &       //"ADCIRC terminating.")
-            call windTerminate()
+            call terminate()
          endif
 
          DO
@@ -5381,7 +5382,7 @@ C     the NHC does not forecast these parameters), exit with a fatal error.
                   call allMessage(ERROR,
      &            'The storm hindcast/forecast input file (unit 22) '//
      &            'contains invalid data for central pressure or Rmax.')
-                  call windTerminate()
+                  call terminate()
                endif
 C
       ! @jasonfleming: Adding a new type to allow the analyst to add lines
@@ -5417,7 +5418,7 @@ C
                call allMessage(ERROR,
      &          'Only "BEST", "OFCL", or "CALM" are allowed '//
      &          'in the 5th column of fort.22.')
-               call windTerminate()
+               call terminate()
             END SELECT
 C
 C     Convert integers to reals.
@@ -5502,7 +5503,7 @@ C     the fort.22 file.
      &             //"does not contain times/dates that correspond "
      &             //"to the ADCIRC current model time. "
      &             //" ADCIRC terminating.")
-                  call windTerminate()
+                  call terminate()
                ENDIF
             ENDIF
          ENDDO
@@ -5513,7 +5514,7 @@ C     the fort.22 file.
       ! the whole run and bomb out immediately if there isn't.
       if (castTime(pl).lt.RNDAY*86400.d0) then
          call allMessage(ERROR,'The fort.22 file ends before RNDAY.')
-         call windTerminate()
+         call terminate()
       endif
 
 C     ----------------------------------------------------------
@@ -5534,7 +5535,7 @@ C        meteorological data.
           IF (i.gt.pl) THEN
              call allMessage(ERROR,'The simulation time has extended '//
      &          'beyond the end of the meteorological dataset.')
-             call windTerminate()
+             call terminate()
           ENDIF
       ENDIF
 C
@@ -6088,7 +6089,7 @@ C
          if (cycleTime(num_cycles).lt.rndaySeconds) then
             call allMessage(ERROR,"There aren't enough data in the "//
      &      'fort.22 file to cover the entire run time.')
-            call windTerminate()
+            call terminate()
          endif
 
       END IF   ! (firstCall .EQ. 0)
@@ -6469,7 +6470,7 @@ C***********************************************************************
             xcoor(i) = slam(i) * rad2deg
             ycoor(i) = sfea(i) * rad2deg
          END DO
-         
+
          timeOffset = nint(TIMELOC/60d0)*60d0 ! round initial time to nearest minute
          rndaySeconds = RNDAY * 86400.d0
 
@@ -6620,7 +6621,7 @@ C***********************************************************************
      &             'The GAHM fort.22 input file has more than 4 ',
      &             'isotachs in cycle ',cycle_num1(ient),'.'
                   call allMessage(ERROR,scratchMessage)
-                  call windTerminate()
+                  call terminate()
                endif
             else
                isot=1 ! initialize isotach #
@@ -6696,7 +6697,7 @@ C***********************************************************************
          if (cycleTime(num_cycles).lt.rndaySeconds) then
             call allMessage(ERROR,"There aren't enough data in the "//
      &      'fort.22 file to cover the entire run time.')
-            call windTerminate()
+            call terminate()
          endif
 
       END IF   ! (firstCall .EQ. 0)
@@ -7002,7 +7003,7 @@ C
 #endif
       errorio = 0
       call openFileForRead(22,trim(globaldir)//"/fort.22",errorio)
-      if (errorio.gt.0) call windTerminate()
+      if (errorio.gt.0) call terminate()
       !
       ! read fort.22 to determine how many HWind files there are
       currentLine = 1
@@ -7062,7 +7063,7 @@ C
          call allMessage(ERROR,"Only one HWind file was specified.")
          call allMessage(ERROR,
      &    "ADCIRC requires at least two HWind files for interpolation.")
-         call windTerminate()
+         call terminate()
       endif
       !
       ! check to make sure that the cycleTimes are
@@ -7072,7 +7073,7 @@ C
             write(scratchMessage,
      &    '("Cycle time ",i0," must be less cycle time ",i0,".")')i,i+1
             call allMessage(ERROR,scratchMessage)
-            call windTerminate()
+            call terminate()
          endif
       end do
       !
@@ -7085,7 +7086,7 @@ C
       case default
          call allMessage(ERROR,"The "//trim(pressureWindRelationship)//
      &      " pressure-wind relationship is not supported by ADCIRC.")
-         call windTerminate()
+         call terminate()
       end select
       !
       ! check to make sure that all the HWind files are actually there;
@@ -7098,7 +7099,7 @@ C
          if (fileFound.eqv..false.) then
             call allMessage(ERROR,"The HWind file "//
      &          trim(hWindFiles(i)%file_name)//" was not found.")
-            call windTerminate()
+            call terminate()
          endif
       end do
       call logMessage(INFO,"All specified HWind files were found.")
@@ -7146,7 +7147,7 @@ C
             call allMessage(ERROR,
      &    "The current ADCIRC time is later than the last HWind file.")
          endif
-         call windTerminate()
+         call terminate()
       endif
       currentCycle = i
       !
@@ -7181,7 +7182,7 @@ C     We jump to this section if there was an error reading a file.
       write(scratchMessage,'(A,I3,A)')
      &       'The value of the i/o error flag was ',errorio,'.'
       call allMessage(ERROR,scratchMessage)
-      CALL windTerminate()
+      CALL terminate()
 C     ----------------------------------------------------------------
       END SUBROUTINE NWS15INIT
 C     ----------------------------------------------------------------
@@ -7269,7 +7270,7 @@ C
             write(scratchMessage,
      &    '("ADCIRC time=",E15.3," (sec), last HWind time=",E15.3,".")')
      &      timeloc, hWindFiles(numFiles)%cycleTime
-            call windTerminate()
+            call terminate()
          endif
       endif
       !
@@ -7381,7 +7382,7 @@ C
             call allMessage(ERROR,"The "
      &          //trim(pressureWindRelationship)//
      &        " pressure-wind relationship is not supported by ADCIRC.")
-            call windTerminate()
+            call terminate()
       end select
       !
       ! use central pressure and max wind speed to estimate the Holland B value
@@ -7465,7 +7466,7 @@ C
      &                     //trim(hWindFiles(cn)%file_name)//"'.")
       call openFileForRead(220,trim(hWindFiles(cn)%file_name), errorio)
       if (errorio.gt.0) then
-         call windTerminate()
+         call terminate()
       endif
       currentLine = 1
       dataset = 0
@@ -7597,7 +7598,7 @@ C     We jump to this section if there was an error reading a file.
       write(scratchMessage,'(A,i0,A)')
      &       'The value of the i/o error flag was ',errorio,'.'
       call allMessage(ERROR,scratchMessage)
-      CALL windTerminate()
+      CALL terminate()
 C
 C     ----------------------------------------------------------------
       end subroutine loadHWindFile
@@ -7711,9 +7712,9 @@ C          Lines 4-end -- cycleTime  rampValue  filename
 C
 
        subroutine init_gfdl(timeloc)
-       use sizes, only : globaldir 
-       use global, only : ihot, nws, nabout, openFileForRead,
-     &                setMessageSource,unsetMessageSource,allMessage,
+       use sizes, only : globaldir
+       use global, only : ihot, nws, nabout, openFileForRead
+       use mod_logging, only: setMessageSource,unsetMessageSource,allMessage,
      &                logMessage,scratchMessage,DEBUG,ECHO,INFO,
      &                ERROR,WARNING
       USE ADC_CONSTANTS, only: PRBCKGRND,RHOWAT0
@@ -7736,7 +7737,7 @@ C
 #endif
       errorio = 0
       call openFileForRead(22,trim(globaldir)//"/fort.22",errorio)
-      if (errorio.gt.0) call windTerminate()
+      if (errorio.gt.0) call terminate()
       !
       ! read fort.22 to determine how many GFDL files there are
       currentLine = 1
@@ -7799,7 +7800,7 @@ C
          call allMessage(ERROR,"Only one GFDL Met file was specified.")
          call allMessage(ERROR,
      &    "ADCIRC requires at least two GFDL Met files for interpolation.")
-         call windTerminate()
+         call terminate()
       endif
       !
       ! check to make sure that the cycleTimes are
@@ -7809,7 +7810,7 @@ C
             write(scratchMessage,
      &  '("Cycle time ",i0," must be less cycle time ",i0,".")')i,i+1
             call allMessage(ERROR,scratchMessage)
-            call windTerminate()
+            call terminate()
          endif
       end do
 
@@ -7824,7 +7825,7 @@ C
          if (fileFound.eqv..false.) then
             call allMessage(ERROR,"The GFDL Met file "//
      &          trim(GFDL_Files(i)%file_name)//" was not found.")
-            call windTerminate()
+            call terminate()
          endif
          GFDL_Files(i)%loaded = .false.
       end do
@@ -7925,7 +7926,7 @@ C     We jump to this section if there was an error reading a file.
       write(scratchMessage,'(A,i0,A)')
      &       'The value of the i/o error flag was ',errorio,'.'
       call allMessage(ERROR,scratchMessage)
-      CALL windTerminate()
+      CALL terminate()
       call unsetMessageSource()
 C ---------------------------------------------------------------------
       end subroutine init_gfdl
@@ -7963,8 +7964,8 @@ C
        USE SIZES
        USE MESH, ONLY: ICS, DRVSPCOORSROTS, CYLINDERMAP
        USE ADC_CONSTANTS, ONLY: DEG2RAD,PRBCKGRND,G,RHOWAT0
-       USE GLOBAL, ONLY: IFSPROTS,
-     &        setMessageSource,unsetMessageSource,allMessage,
+       USE GLOBAL, ONLY: IFSPROTS
+       use mod_logging, only: setMessageSource,unsetMessageSource,allMessage,
      &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR
        USE KDTREE2_MODULE     ! USED FOR FAST SEARCHING
 
@@ -8013,7 +8014,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
      &                     //trim(fname)//"'.")
        call openFileForRead(lun,trim(fname), errorio)
        if (errorio.gt.0) then
-          call windTerminate()
+          call terminate()
        endif
 
 !       OPEN(LUN,FILE=TRIM(FNAME),STATUS='OLD',ACTION='READ',
@@ -8050,10 +8051,10 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           IF ( IFSPROTS.eq. 1) THEN
              CALL DRVSPCOORSROTS( lonr, latr, LON_GFDL, LAT_GFDL )
           ELSE
-             latr = LAT_GFDL ;  lonr = LON_GFDL; 
+             latr = LAT_GFDL ;  lonr = LON_GFDL;
           END IF
           CALL CYLINDERMAP( XY_GFDL(1,I),XY_GFDL(2,I),
-     &           lonr, latr, SLAM0, SFEA0, ICS) ; 
+     &           lonr, latr, SLAM0, SFEA0, ICS) ;
        ENDDO !I
 
        CLOSE(LUN)  !CLOSE THIS GFDL DATA FILE
@@ -8204,7 +8205,7 @@ C ---------------------------------------------------------------------
 C
       subroutine nws16get(timeloc,wvnx,wvny,press)
       use mesh, only : x,y,np,slam0,sfea0
-      use global, only : setMessageSource,unsetMessageSource,allMessage,
+      use mod_logging, only : setMessageSource,unsetMessageSource,allMessage,
      &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR,
      &        WARNING
       USE ADC_CONSTANTS, only: PRBCKGRND,RHOWAT0,G
@@ -8333,7 +8334,7 @@ C
          read(23,'(a80)',end=500,err=600,iostat=errorio) pbljagf
          if (pbljagf(1:1).eq.'#') then
             call allMessage(ERROR,'Found "#" in column 1 of fort.23.')
-            call windTerminate()
+            call terminate()
          endif
          if(pbljagf(2:2).ne.'#') exit
       enddo
@@ -8348,7 +8349,7 @@ C
          if (pbljagf(1:1).eq.'#') then
             call allMessage(ERROR,'Found "#" in column 1 of fort.23; '//
      &         ' this character should only appear in column 2.')
-            call windTerminate()
+            call terminate()
          endif
          if(pbljagf(2:2).eq.'#') exit
       enddo
@@ -8375,7 +8376,7 @@ C     We jump to this section if there was an error reading a file.
       write(scratchMessage,'(a,i0,a)')
      &       'The value of the i/o error flag was ',errorio,'.'
       call allMessage(ERROR,scratchMessage)
-      CALL windTerminate()
+      CALL terminate()
 C----------------------------------------------------------------------
       end subroutine rsget
 C----------------------------------------------------------------------
@@ -8438,7 +8439,7 @@ C----------------------------------------------------------------------
       endif
       ! give up if the file was still not found
       if (errorio.gt.0) then
-         call windTerminate()
+         call terminate()
       endif
       ! file exists, allocate space to hold the data
 #ifdef CMPI
@@ -8465,7 +8466,7 @@ C----------------------------------------------------------------------
       if (dynamicWaterLevelCorrectionTimeIncrement.le.0.d0) then
          call allMessage(ERROR,'Water level correction time increment ' //
      &       'dynamicWaterLevelCorrectionTimeIncrement must be greater than zero')
-         call windTerminate()
+         call terminate()
       endif
       ! 3nd line is default correction value
       read(dynamicWaterLevelCorrectionUn,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionDefaultValue
@@ -8510,21 +8511,21 @@ C----------------------------------------------------------------------
             call allMessage(ERROR,'Water level correction ramp reference '//
      &      'time was set to coldstart but negative ramp time(s) '//
      &      'were found.')
-            call windTerminate()
+            call terminate()
          endif
       case default
          call allMessage(ERROR,'Water level correction ramp '//
      &   'reference time was set to "'//trim(dynamicWaterLevelCorrectionRampReferenceTime)//
      &   '" which is not a valid value. The dynamicWaterLevelCorrectionRampReferenceTime '//
      &   'parameter must be set to "coldstart" or "hotstart".')
-         call windTerminate()
+         call terminate()
       end select
       !
       ! make sure start of ramp occurs before end of ramp
       if (dynamicWaterLevelCorrectionRampStart.gt.dynamicWaterLevelCorrectionRampEnd) then
          call allMessage(ERROR,
      &   'dynamicWaterLevelCorrectionRampStart is after dynamicWaterLevelCorrectionRampEnd.')
-         call windTerminate()
+         call terminate()
       endif
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -8549,7 +8550,7 @@ C----------------------------------------------------------------------
       write(scratchMessage,'(a,i0,a)')
      &       'The value of the i/o error flag was ',errorio,'.'
       call allMessage(ERROR,scratchMessage)
-      CALL windTerminate()
+      CALL terminate()
 
 
 C----------------------------------------------------------------------
@@ -8701,7 +8702,7 @@ C----------------------------------------------------------------------
      &        ' of the water '//
      &        ' correction file is out of range.'
             call allMessage(ERROR,scratchMessage)
-            call windTerminate()
+            call terminate()
          endif
          ! set the correction value as specified
 #ifdef CMPI
@@ -8763,43 +8764,12 @@ C     We jump to this section if there was an error reading a file.
       write(scratchMessage,'(a,i0,a)')
      &       'The value of the i/o error flag was ',errorio,'.'
       call allMessage(ERROR,scratchMessage)
-      CALL windTerminate()
+      CALL terminate()
 
 C----------------------------------------------------------------------
       end subroutine readDynamicWaterLevelCorrectionDataSet
 C----------------------------------------------------------------------
 
-C----------------------------------------------------------------------
-C...  jgf50.38.05: Subroutine to terminate the run cleanly.
-C...
-C----------------------------------------------------------------------
-      SUBROUTINE windTerminate()
-#ifdef CMPI
-      USE MESSENGER, ONLY : MSG_FINI
-#endif
-      IMPLICIT NONE
-      INTEGER,ALLOCATABLE :: dmy(:)
-C
-      call setMessageSource("windTerminate")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-C
-      call allMessage(ERROR,"ADCIRC terminating.")
-#ifdef CMPI
-      call msg_fini()
-#endif
-      CALL EXIT(1)
-C
-
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      RETURN
-C----------------------------------------------------------------------
-      END SUBROUTINE windTerminate
-C----------------------------------------------------------------------
 #ifdef DATETIME
 C----------------------------------------------------------------------
       SUBROUTINE NWS14INIT(NWS)
@@ -8812,7 +8782,7 @@ C.... as well as to improve input for TACC
 C----------------------------------------------------------------------
       implicit none
       INTEGER,INTENT(IN) :: NWS
-      
+
       ! Initialise the datetime
       CurDT = basedatetime + timedelta(minutes=floor(WTIME1/60d0))
       NT = 0; NTC = 0;
@@ -8869,7 +8839,7 @@ C----------------------------------------------------------------------
          call allMessage(ERROR,
      &       'Neither .grb2 nor .nc wind files exist. Or, if .grb2 '//
      &       'files exist, did you compile with GRIB2 compiler flags?')
-         call windTerminate()
+         call terminate()
       ENDIF
 
 C----------------------------------------------------------------------
@@ -8960,7 +8930,7 @@ C----------------------------------------------------------------------
          RETURN
       ELSE
          ! should be unreachable
-         CALL windTerminate()
+         CALL terminate()
       ENDIF
 C----------------------------------------------------------------------
       END SUBROUTINE NWS14SET_FILENAMES
@@ -9034,7 +9004,7 @@ C----------------------------------------------------------------------
 #endif
       CALL BcastToLocal_Int(iret)
       if (iret.ne.0) then
-         call windTerminate()
+         call terminate()
       endif
       RETURN
 #endif
@@ -9065,14 +9035,14 @@ C----------------------------------------------------------------------
          CALL allMessage(ERROR,"NWS = -14 has not yet been set up to "
      &                   //"use netcdf files. Try again with grib2 "
      &                   //"background wind files.")
-         CALL windTerminate()
+         CALL terminate()
       ENDIF
       ! open the fort.22
       OPEN(22,file='fort.22',ACTION='READ',IOSTAT=ierr)
       ! if we had trouble opening then abort
       IF (ierr.NE.0) THEN
          call allMessage(ERROR,'Unable to open fort.22.')
-         call windTerminate()
+         call terminate()
       ENDIF
       read(22,*) Tdim    ! Time dimension name
       read(22,*) Tvar    ! Time variable name
@@ -9125,7 +9095,7 @@ C----------------------------------------------------------------------
       integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi, cc
       real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice, lat, lon
       real(8), allocatable ::  lonv(:), latv(:), XY(:,:)
-      real(8) :: xx, yy, wt(4) 
+      real(8) :: xx, yy, wt(4)
       logical :: regular_grid
       type(kdtree2), pointer :: tree
       ! determine if wind/pressure/ice grids match or not.
@@ -9157,7 +9127,7 @@ C----------------------------------------------------------------------
       ENDIF
       ! Allocate the indices and weights
       allocate(indp(ub,4,np),weightsp(ub,4,np))
-      ! Make the interpolant weights. If w 
+      ! Make the interpolant weights. If w
       do ii = 1,ub
          if (ii.eq.1) then
             CALL READNWS14LatLon(Pfile,lat,lon,Pinv,Pvar,PfileNCID)
@@ -9167,12 +9137,12 @@ C----------------------------------------------------------------------
          nxp = ubound(lon,1); nyp = ubound(lat,2)
          ! Check if structured regular..
          if (abs(lon(1,1) - lon(1,nyp)) < 1d-6) then
-            regular_grid = .true. 
+            regular_grid = .true.
             allocate(lonv(nxp),latv(nyp))
             lonv = lon(:,1)
             latv = lat(1,:)
-         else       
-            regular_grid = .false. 
+         else
+            regular_grid = .false.
             ! Convert point matrices to 2 X (NXP*NYP) point vector
             allocate(XY(2,nxp*nyp))
             cc = 0
@@ -9184,7 +9154,7 @@ C----------------------------------------------------------------------
                enddo
             enddo
             ! Create the search tree
-            tree => kdtree2_create(XY) 
+            tree => kdtree2_create(XY)
          endif
          ! Loop over each node and interpolate
          do i = 1,np
@@ -9232,13 +9202,13 @@ C----------------------------------------------------------------------
       !':PRMSL:mean sea level:'
       call READNWS14(Pfile,Pmsl,Pinv,Pvar,PfileNCID)
 
-      ! Get the U-winds 
+      ! Get the U-winds
       call READNWS14(Wfile,U10,Winv,Uvar,WfileNCID)
-      
-      ! Get the V-winds 
+
+      ! Get the V-winds
       call READNWS14(Wfile1,V10,Winv,Vvar,Wfile1NCID)
 
-      ! Get the ice concentration if required 
+      ! Get the ice concentration if required
       if (present(CICE2)) then
          NTkeep = NT; NT = NTC
          call READNWS14(Cfile,Cice,Cinv,Cvar,CfileNCID)
@@ -9250,11 +9220,11 @@ C----------------------------------------------------------------------
       do i = 1,np
          if (indp(1,1,i) < 0) then
             PRN2(i) = PRBCKGRND_MH2O
-         else           
-            PRN2(i) = ( Pmsl(indp(1,1,i),indp(1,2,i))*weightsp(1,1,i) + 
+         else
+            PRN2(i) = ( Pmsl(indp(1,1,i),indp(1,2,i))*weightsp(1,1,i) +
      &             Pmsl(indp(1,3,i),indp(1,2,i))*weightsp(1,2,i)      +
      &             Pmsl(indp(1,1,i),indp(1,4,i))*weightsp(1,3,i)      +
-     &             Pmsl(indp(1,3,i),indp(1,4,i))*weightsp(1,4,i) )  
+     &             Pmsl(indp(1,3,i),indp(1,4,i))*weightsp(1,4,i) )
      &              / rhoWat0g
          endif
          if (indp(ub,1,i) < 0) then
@@ -9269,21 +9239,21 @@ C----------------------------------------------------------------------
      &              V10(indp(ub,1,i),indp(ub,4,i))*weightsp(ub,3,i)    +
      &              V10(indp(ub,3,i),indp(ub,4,i))*weightsp(ub,4,i)
          endif
-      enddo 
+      enddo
       deallocate(Pmsl,U10,V10)
-      
-      ! Add WTIMINC on CurDT for next WTIME  
+
+      ! Add WTIMINC on CurDT for next WTIME
       CurDT = CurDT + timedelta(minutes=nint(WTIMINC/60d0))
       ! Next time index for the netcdf reading
       NT = NT + 1
-      
+
       ! If ice concentration is present
       if (present(CICE2)) then
          do i = 1,np
             if (indp(ubc,1,i) < 0) then
                CICE2(i) = 0d0;
             else
-               CICE2(i) = 
+               CICE2(i) =
      &             Cice(indp(ubc,1,i),indp(ubc,2,i))*weightsp(ubc,1,i) +
      &             Cice(indp(ubc,3,i),indp(ubc,2,i))*weightsp(ubc,2,i) +
      &             Cice(indp(ubc,1,i),indp(ubc,4,i))*weightsp(ubc,3,i) +
@@ -9302,8 +9272,8 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       SUBROUTINE READNWS14(fileN,data2,invN,var,ncid)
 C----------------------------------------------------------------------
-C     CPB 10/2023: Added to make NWS = 14 more more readable. Simply 
-C     calls the appropriate subroutine based on the filetype we are 
+C     CPB 10/2023: Added to make NWS = 14 more more readable. Simply
+C     calls the appropriate subroutine based on the filetype we are
 C     using.
 C----------------------------------------------------------------------
       implicit none
@@ -9317,7 +9287,7 @@ C----------------------------------------------------------------------
          CALL READNWS14_grib2(fileN, invN, var, data2)
       ELSE
          ! should be unreachable
-         CALL windterminate()
+         CALL terminate()
       ENDIF
 C----------------------------------------------------------------------
       END SUBROUTINE READNWS14
@@ -9331,13 +9301,13 @@ C----------------------------------------------------------------------
 #ifdef GRIB2API
       use wgrib2api
 #endif
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
       USE SIZES, ONLY : MYPROC
       implicit none
       integer :: iret, iter
       character(len=200),intent(in) :: var, fileN, invN
-      real,allocatable,intent(out) :: data2(:,:) 
+      real,allocatable,intent(out) :: data2(:,:)
       character(len=200) :: str_date
       integer :: NX, NY
       CALL setMessageSource("READNWS14_grib2")
@@ -9345,7 +9315,7 @@ C----------------------------------------------------------------------
          ! Getting the date in str_date format
          str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
          iret = -1; iter = 0
-         do while (iret.le.0.and.iter < 10) 
+         do while (iret.le.0.and.iter < 10)
             if (iter > 0) then
                call logMessage(WARNING,'Trying to read again '//var)
                call sleep(5)
@@ -9390,14 +9360,14 @@ C----------------------------------------------------------------------
       use netcdf
       use netcdf_error, only: check_err
 #endif
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
       USE SIZES, ONLY : MYPROC
       implicit none
 
       character(len=*),intent(in):: fileN
       character(len=200),intent(in) :: var
-      real,allocatable,intent(out) :: data2(:,:) 
+      real,allocatable,intent(out) :: data2(:,:)
       INTEGER,INTENT(INOUT) :: NC_ID
       integer :: i, Temp_ID, Lat_ID, Lon_ID, NX, NY
 
@@ -9406,13 +9376,13 @@ C----------------------------------------------------------------------
 #ifdef ADCNETCDF
       IF ( read_NWS14_NetCdf_using_core_0 ) THEN
         ! Use core zero to read data
-        ! and then broadcast them 
+        ! and then broadcast them
         IF (MYPROC.EQ.0) THEN
            call Check_err(NF90_INQ_DIMID(NC_ID,Latdim,Temp_ID))
            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
            call Check_err(NF90_INQ_DIMID(NC_ID,Londim,Temp_ID))
            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NX))
-        ENDIF        
+        ENDIF
         CALL BcastToLocal_Int(NX)
         CALL BcastToLocal_Int(NY)
         allocate(data2(NX,NY))
@@ -9422,9 +9392,9 @@ C----------------------------------------------------------------------
      &                  start=[1, 1, NT],count=[NX, NY, 1]))
         ENDIF
         CALL BCastToLocal_2DRealArray(Data2,NX,NY)
-      ELSE 
+      ELSE
         ! Each core read data
-        call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID)) 
+        call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID))
         call Check_err(NF90_INQ_DIMID(NC_ID,Latdim,Temp_ID))
         call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
         call Check_err(NF90_INQ_DIMID(NC_ID,Londim,Temp_ID))
@@ -9447,8 +9417,8 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       SUBROUTINE READNWS14LatLon(fileN,lat,lon,invN,var,ncid)
 C----------------------------------------------------------------------
-C     CPB 10/2023: Added to make NWS = 14 more more readable. Simply 
-C     calls the appropriate subroutine based on the filetype we are 
+C     CPB 10/2023: Added to make NWS = 14 more more readable. Simply
+C     calls the appropriate subroutine based on the filetype we are
 C     using.
 C----------------------------------------------------------------------
       implicit none
@@ -9462,7 +9432,7 @@ C----------------------------------------------------------------------
          CALL READNWS14LatLon_netCDF(fileN,ncid,lat,lon)
       ELSE
          ! should be unreachable
-         CALL windterminate()
+         CALL terminate()
       ENDIF
 C----------------------------------------------------------------------
       END SUBROUTINE READNWS14LatLon
@@ -9476,7 +9446,7 @@ C----------------------------------------------------------------------
 #ifdef GRIB2API
       use wgrib2api
 #endif
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
       USE SIZES, ONLY : MYPROC
       implicit none
@@ -9491,7 +9461,7 @@ C----------------------------------------------------------------------
       ! read in on core 0
       IF (MYPROC.EQ.0) THEN
          iret = -1; iter = 0
-         do while (iret.le.0.and.iter < 10) 
+         do while (iret.le.0.and.iter < 10)
             if (iter > 0) then
                call logMessage(WARNING,'Trying to read again '//var)
                call sleep(5)
@@ -9538,7 +9508,7 @@ C----------------------------------------------------------------------
       use netcdf
       use netcdf_error, only: check_err
 #endif
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
       USE SIZES, ONLY : MYPROC
       implicit none
@@ -9549,11 +9519,11 @@ C----------------------------------------------------------------------
       CALL setMessageSource("READNWS14LatLon_netCDF")
 #ifdef ADCNETCDF
       IF (MYPROC.EQ.0) THEN
-              
+
          IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN
-           call Check_err(NF90_OPEN(FileN,nf90_nowrite,ncid))  
-         END IF      
-                
+           call Check_err(NF90_OPEN(FileN,nf90_nowrite,ncid))
+         END IF
+
          call Check_err(NF90_INQ_DIMID(ncid,Latdim,Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(ncid,Temp_ID,
      &                                         len=NY))
@@ -9584,8 +9554,8 @@ C----------------------------------------------------------------------
             enddo
          endif
 
-         IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN 
-           call Check_err(NF90_CLOSE(ncid))  
+         IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN
+           call Check_err(NF90_CLOSE(ncid))
          END IF
 
       ENDIF
@@ -9620,7 +9590,7 @@ C----------------------------------------------------------------------
       integer :: iret, iter
       INTEGER,INTENT(INOUT) :: NC_ID
       character(len=200),intent(in) :: fileN
-      character(len=19),allocatable :: TimeStr(:) 
+      character(len=19),allocatable :: TimeStr(:)
       character(len=200) :: str_date
       integer :: i, Temp_ID, TL
       ! CPB 4/20/2023
@@ -9632,8 +9602,8 @@ C----------------------------------------------------------------------
 #endif
 
          IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN
-            call Check_err(NF90_OPEN(FileN,nf90_nowrite,NC_ID))  
-         END IF     
+            call Check_err(NF90_OPEN(FileN,nf90_nowrite,NC_ID))
+         END IF
 
          call Check_err(NF90_INQ_DIMID(NC_ID,Tdim,Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,
@@ -9648,7 +9618,7 @@ C----------------------------------------------------------------------
             call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
             call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
             ! Determine the first timestep index
-            str_date = CurDT%strftime(trim(Tformat)) 
+            str_date = CurDT%strftime(trim(Tformat))
             do NT = 1,TL
                if (trim(str_date).eq.TimeStr(NT)) exit
             enddo
@@ -9681,12 +9651,12 @@ C----------------------------------------------------------------------
      &                      'Neither a datetime variable nor a '
      &          //'reference date were provided. Assume met forcing '
      &          //'starts at the beginning of the netCDF file.')
-            NT = 1 
+            NT = 1
          endif
          NTC = NT
 
          IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN
-            call Check_err(NF90_CLOSE(NC_ID))  
+            call Check_err(NF90_CLOSE(NC_ID))
          END IF
 
 #ifdef CMPI
@@ -9713,7 +9683,7 @@ C
       if (iret.eq.0) then
          call allMessage(ERROR,'Cound not find message when reading '
      &                         //trim(var)//' in '//trim(fileN)//'.')
-      elseif (iret.lt.0) then 
+      elseif (iret.lt.0) then
          call allMessage(ERROR,'Fatal error when reading '
      &                         //trim(var)//' in '//trim(fileN)//'.')
       elseif (iret.gt.1) then
@@ -9723,7 +9693,7 @@ C
 #ifdef CMPI
       subdomainFatalError = .true.
 #endif
-      call windTerminate()
+      call terminate()
 C----------------------------------------------------------------------
       END SUBROUTINE ArnoldSchwarzenegger
 C-----------------------------------------------------------------------

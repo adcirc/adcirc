@@ -35,7 +35,8 @@ C
       MODULE RS2
       USE SIZES
 
-      USE GLOBAL,ONLY : NSCREEN, ScreenUnit
+      USE GLOBAL,ONLY : NSCREEN
+      USE mod_logging, only: ScreenUnit
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif

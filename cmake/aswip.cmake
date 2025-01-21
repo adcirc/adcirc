@@ -32,6 +32,8 @@ if(BUILD_ASWIP)
       ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
       ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/wind/aswip.F)
 
   if(NETCDF_WORKING)
