@@ -443,6 +443,7 @@ INF_SRC    =  inflate.F
 HST_SRC    =  hstime.F
 ASW_SRC    =  aswip.F
 CMP_SRC    =  adccmp.F
+CON_SRC    = constants.F90
 LOG_SRC     =  logging.F90
 T_SRC      =  terminate.F90
 
@@ -460,6 +461,7 @@ INF_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(INF_SRC) )
 HST_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HST_SRC) )
 ASW_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(ASW_SRC) )
 CMP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CMP_SRC) )
+CON_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(CON_SRC) )
 LOG_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(LOG_SRC) )
 T_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(T_SRC) )
 
@@ -683,8 +685,8 @@ endif
    hstime ::  $(HST_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-   aswip ::   $(ADCIRC_DEP) $(ASW_OBJ) $(LOG_OBJ) $(T_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LOG_OBJ) $(T_OBJ) $(LIBS) $(LDFLAGS)
+   aswip ::   $(ADCIRC_DEP) $(ASW_OBJ) $(LOG_OBJ) $(T_OBJ) $(CON_OBJ)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LOG_OBJ) $(T_OBJ) $(CON_OBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
