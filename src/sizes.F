@@ -118,7 +118,8 @@ C     file format of the mesh file.
 C-----------------------------------------------------------------------
       SUBROUTINE MAKE_DIRNAME()
 !tcm v50.85 added for windows builds
-#ifdef CMPI      
+#ifdef CMPI
+      USE MPI, only: MPI_COMM_WORLD, MPI_ABORT
 #ifdef WINDOWS
       USE IFPORT
 #endif
@@ -130,6 +131,7 @@ C-----------------------------------------------------------------------
       CHARACTER(8)    :: PREFIX(2) = (/ '/PE0000 ', '/DOM0000' /)
       logical         :: fileFound
       logical(4) :: dir_result
+      integer :: ierr
 
       INPUTDIR  = ""
       GLOBALDIR = ""
@@ -337,7 +339,10 @@ C.....Default root working directory
      &         "/fort.14' was not found."
 
             print *, "ERROR: ADCIRC stopping."
-            call msg_abort()
+#ifdef CMPI
+            call mpi_abort(mpi_comm_world, 1, ierr)
+#endif
+            call exit(1)
          end if
       end do
 C

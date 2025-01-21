@@ -29,12 +29,12 @@ C
      &     NETCDF3, NETCDF4, XDMF, iSplit, globalDir, meshType, 
      &     controlType, meshFileName_g, controlFileName_g
       use global, only: c3d, comm,
-     &    bufsize_max, buf, resultbuf, outputdatadescript_t, float_type,
-     &     debug, echo, info, warning, error, logmessage, allmessage,
-     &     setmessagesource, unsetmessagesource, initLogging, nabout,
+     &    bufsize_max, buf, resultbuf, outputdatadescript_t, float_type, nabout,
      &     scratchMessage, dbletype, realtype, 
      &     sig_val, sig_write, sig_ini, sig_pause, comm_writer, 
      &     sig_term, sig_mesh, writer_id
+      use mod_logging, only: debug, echo, info, warning, error, logmessage, allmessage,
+     &     setmessagesource, unsetmessagesource, initLogging
       use messenger, only: tag, msg_fini
       implicit none
       ! tcm v50.27 increased size from 3 to 4, cobell increase to 6,
@@ -175,7 +175,7 @@ C     When it receives a signal, it performs the specified action,
 C     then goes back to waiting for another signal.
 C-----------------------------------------------------------------------
       subroutine writer_main ()
-      use global, only : ScreenUnit
+      use mod_logging, only : ScreenUnit
       use mpi
       use messenger, only: msg_barrier, mpi_comm_adcirc
       IMPLICIT NONE
@@ -1040,7 +1040,7 @@ C
 !------------------------------------------------------------
 !
       SUBROUTINE HSWRITER_MAIN ()
-        USE GLOBAL,ONLY : ScreenUnit
+        USE mod_logging,ONLY : ScreenUnit
         IMPLICIT NONE
         INTEGER :: SIG,IERR
         INTEGER :: STAT(MPI_STATUS_SIZE)
@@ -1116,6 +1116,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeHotstart_through_HSwriter(TimeLoc, IT)
 
       USE SIZES
+      USE mod_logging, only: screenUnit
       USE GLOBAL
       USE MESH, ONLY : NE, NP
       USE GLOBAL_IO, ONLY: packOne, unpackOne, 

@@ -1317,7 +1317,7 @@ C    Adapted from Numerical Recipes chapter 2                          *
 C***********************************************************************
 c
       SUBROUTINE ADC_TRIDAG2(A,B,C,R,U,N)
-      USE GLOBAL, ONLY: ScreenUnit
+      USE mod_logging, ONLY: ScreenUnit
       IMPLICIT NONE
       INTEGER :: J, N
 
