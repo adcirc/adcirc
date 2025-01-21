@@ -106,6 +106,8 @@ contains
     logical :: match
     integer :: idarr(4)
 
+    ierr = 0
+
     ! Calculate seconds between the provided date and the reference date !
     julian_datetime_2000 = 2451544.5d0
     seconds_between = (julian_date_loc - julian_datetime_2000)*86400.0d0
