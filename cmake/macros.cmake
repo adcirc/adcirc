@@ -14,8 +14,8 @@
 #
 # ######################################################################################################################
 macro(addCompilerFlags TARGET)
-
-  set(LOCAL_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG}")
+  set(ADDITIONAL_FLAGS ${ARGN})
+  set(LOCAL_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${ADDITIONAL_FLAGS}")
   set(LOCAL_COMPILER_DEFINITIONS "${ADCIRC_OPTION_FLAGS} ${PRECISION_FLAG} ${MACHINE_FLAG}")
 
   string(STRIP ${LOCAL_COMPILER_FLAGS} LOCAL_COMPILER_FLAGS)
@@ -39,13 +39,13 @@ macro(addCompilerFlags TARGET)
 endmacro(addCompilerFlags)
 
 macro(addCompilerFlagsSwan TARGET)
-
-  set(LOCAL_COMPILER_FLAGS "${Fortran_COMPILER_SPECIFIC_FLAG}")
+  set(ADDITIONAL_FLAGS ${ARGN})
+  set(LOCAL_COMPILER_FLAGS "${Fortran_COMPILER_SPECIFIC_FLAG} ${ADDITIONAL_FLAGS}")
 
   get_filename_component(Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
   if(${Fortran_COMPILER_NAME} MATCHES "gfortran.*")
     if(${CMAKE_Fortran_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_Fortran_COMPILER_VERSION} VERSION_EQUAL 10)
-      set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -fallow-argument-mismatch")
+      set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -fallow-argument-mismatch -Wno-argument-mismatch")
     endif()
   elseif(${Fortran_COMPILER_NAME} MATCHES "ifx.*" OR ${Fortran_COMPILER_NAME} MATCHES "ifort.*")
     set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -diag-disable 6843 -diag-disable 8291")
@@ -138,6 +138,15 @@ macro(addXDMFLibraries TARGET)
       ${XDMF_LibXdmf}
       ${XDMF_AdditionalLibs})
   endif()
+endmacro()
+
+macro(addKdtree2Definitions TARGET)
+  target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/kdtree)
+  add_dependencies(${TARGET} kdtree)
+endmacro()
+
+macro(addKdtree2Library TARGET)
+  target_link_libraries(${TARGET} kdtree)
 endmacro()
 
 macro(addVersionDefinitions TARGET)

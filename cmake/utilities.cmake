@@ -27,17 +27,33 @@ if(BUILD_UTILITIES)
   add_executable(adcircResultsComparison util/adcircResultsComparison.F90)
   addcompilerflags(adcircResultsComparison)
 
-  addcompilerflags(adccmp)
-  addcompilerflags(p15)
-  addcompilerflags(owi22)
-  addcompilerflags(build13)
-  addcompilerflags(buildstwave23)
-  addcompilerflags(hot2asc)
-  addcompilerflags(inflate)
-  addcompilerflags(hstime)
+  addcompilerflags(adccmp ${ADDITIONAL_FLAGS_UTILITIES})
+  addcompilerflags(p15 ${ADDITIONAL_FLAGS_UTILITIES})
+  addcompilerflags(owi22 ${ADDITIONAL_FLAGS_UTILITIES})
+  addcompilerflags(build13 ${ADDITIONAL_FLAGS_UTILITIES})
+  addcompilerflags(buildstwave23 ${ADDITIONAL_FLAGS_UTILITIES})
+  addcompilerflags(hot2asc ${ADDITIONAL_FLAGS_UTILITIES})
+  addcompilerflags(inflate ${ADDITIONAL_FLAGS_UTILITIES})
+  addcompilerflags(hstime ${ADDITIONAL_FLAGS_UTILITIES})
 
   addnetcdflibraries(hstime)
   addnetcdflibraries(adcircResultsComparison)
+
+  # Add flags set as ADDITIONAL_FLAGS_ADCIRC
+  if(DEFINED ADDITIONAL_FLAGS_UTILITIES
+     AND NOT
+         "${ADDITIONAL_FLAGS_UTILITIES}"
+         STREQUAL
+         "")
+    set_target_properties(adccmp PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(p15 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(owi22 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(build13 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(buildstwave23 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(hot2asc PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(inflate PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(hstime PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
+  endif()
 
   install(
     TARGETS adccmp

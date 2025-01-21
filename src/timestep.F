@@ -1901,6 +1901,7 @@ C
       SUBROUTINE CALC_SIGMAT_2D ()
 
       USE GLOBAL
+      USE MESH, ONLY: NP
 
       INTEGER NH
 

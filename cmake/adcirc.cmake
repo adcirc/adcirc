@@ -17,8 +17,7 @@ if(BUILD_ADCIRC)
 
   set(ADCIRC_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
@@ -79,14 +78,16 @@ if(BUILD_ADCIRC)
   endif()
 
   add_executable(adcirc ${ADCIRC_SOURCES})
-  set(ADCIRC_COMPILER_FLAGS "${ADDITIONAL_FLAGS_ADCIRC} ${ADCIRC_OPTION_FLAGS}")
   addcompilerflags(adcirc ${ADDITIONAL_FLAGS_ADCIRC})
+  addkdtree2definitions(adcirc)
+  addkdtree2library(adcirc)
   addnetcdflibraries(adcirc)
   addgrib2libraries(adcirc)
   adddatetimelibraries(adcirc)
   addxdmflibraries(adcirc)
   addversionlibrary(adcirc)
   addmkdirlibrary(adcirc)
+
   install(TARGETS adcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 endif(BUILD_ADCIRC)

@@ -92,6 +92,7 @@ contains
     logical, optional :: UniformDT
 
 #ifndef ADCNETCDF
+    ierr = 1
     write (*, '(A)') "ERROR: Must compile with netCDF support enabled"
 #ifdef CMPI
     call msg_fini()
@@ -171,7 +172,7 @@ contains
 
     ! Convert solar distance to AU
     ! MoonSunCoor(3,2) = MoonSunCoor(3,2) * 6.6845871226706E-9
-    MoonSunCoor(3, 2) = MoonSunCoor(3, 2)*km2AU; 
+    MoonSunCoor(3, 2) = MoonSunCoor(3, 2)*km2AU;
 #endif
   end subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE
 
@@ -254,6 +255,8 @@ contains
     call check_err(nf90_close(ncid))
     deallocate (tmparr)
     self%first = .false.
+#else
+    ierr = 0
 #endif
   end function recache_data
 

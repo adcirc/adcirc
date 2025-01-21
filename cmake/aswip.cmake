@@ -17,7 +17,7 @@ if(BUILD_ASWIP)
 
   set(ASWIP_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
@@ -29,7 +29,6 @@ if(BUILD_ASWIP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
       ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
@@ -45,6 +44,8 @@ if(BUILD_ASWIP)
 
   addcompilerflags(aswip ${ADDITIONAL_FLAGS_ASWIP})
   addnetcdflibraries(aswip)
+  addkdtree2definitions(aswip)
+  addkdtree2library(aswip)
   addgrib2libraries(aswip)
   addxdmflibraries(aswip)
   adddatetimelibraries(aswip)
