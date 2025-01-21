@@ -117,15 +117,17 @@ C******************************************************************************
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
      &   get_numwriters, mnstae
+      USE mod_logging, only: DEBUG, INFO, allMessage, ScreenUnit, setMessageSource,
+     &       scratchMessage, unsetMessageSource, openLogFile, screenMessage,
+     &       initLogging
       USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
      &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, 
-     &   dynamicWaterLevelCorrectionSta, DEBUG, INFO, allMessage, itime, dtdp, statim,
+     &   dynamicWaterLevelCorrectionSta, itime, dtdp, statim,
      &   CHotHS, dtdpHS, FileFmtVersion, ifnlcat, nabout, ncchange,
      &   ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im, iths,
-     &   nolica, nolicat, nolifa, nscreen, nstae, nt, screenunit,
-     &   version_number, initLogging, setMessageSource, screenMessage,
-     &   openLogFile, unsetMessageSource, np_global, rnp_global,
-     &   scratchMessage, CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta
+     &   nolica, nolicat, nolifa, nscreen, nstae, nt,
+     &   version_number, np_global, rnp_global,
+     &   CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
      &   initVEW1DChannelWetPerimeter
       USE ADC_CONSTANTS, ONLY: g, rhowat0
@@ -187,7 +189,7 @@ C
          end do
       endif
       !
-      call initLogging()
+      call initLogging(NSCREEN,NABOUT)
       nabout = 0 !jgf52.08.01: Initialize log level to ECHO.
 #ifdef EBUG
       nabout = -1 !jgf52.08.01: Initialize log level to DEBUG if so compiled
@@ -419,8 +421,9 @@ C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
-      USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
-     &   unsetMessageSource, statim, dtdp, screenunit, logMessage, earlyterminate
+      USE GLOBAL, ONLY : iTime, statim, dtdp, earlyterminate
+      USE mod_logging, only: INFO, DEBUG, allMessage, setMessageSource,
+     &       unsetMessageSource, logMessage
 #ifdef CMPI
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
@@ -574,102 +577,6 @@ C
 C-----------------------------------------------------------------------
       END SUBROUTINE ADCIRC_Final
 C-----------------------------------------------------------------------
-
-C******************************************************************************
-C*    ADCIRC terminate routine
-C*    jgf50.44: Mostly just needed so that we can clean up mpi when
-C*    bombing out.
-C******************************************************************************
-      SUBROUTINE ADCIRC_Terminate(NO_MPI_FINALIZE)
-      USE GLOBAL, ONLY : DEBUG, INFO, setMessageSource, allMessage, 
-     &   unsetMessageSource
-#ifdef CMPI
-      USE MESSENGER, ONLY : subdomainFatalError, msg_fini
-#endif
-
-      IMPLICIT NONE
-C
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("ADCIRC_Terminate")
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1) 
-C
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-C-----------------------------------------------------------------------
-      END SUBROUTINE ADCIRC_Terminate
-C-----------------------------------------------------------------------
-
-C*****************************************************************************
-C  ADCIRC Local Terminate Routine and corresponding collection routine
-C  zc50.81 In the case where there is an error on a single processor, allow
-C          everyone to check if we need to bomb out. For example, mesh errors
-C          might only occur on a single processor and hang the code. Care
-C          must be taken not to inadvertantly hang the code by allowing for
-C          cases where not all compute processors pass through the same call
-C          to this routine.
-C*****************************************************************************
-#ifdef CMPI
-C-----------------------------------------------------------------------
-C-----------------------------------------------------------------------
-      SUBROUTINE ADCIRC_LocalTerminate()
-        USE GLOBAL,ONLY: terminate_localproc, screenUnit
-        IMPLICIT NONE
-        !...Set the local terminator and then go wait for the rest of
-        !   the compute processors to check in
-        TERMINATE_LOCALPROC = 1
-        CALL ADCIRC_CheckLocalTerminate()
-C-----------------------------------------------------------------------
-      END SUBROUTINE ADCIRC_LocalTerminate
-C-----------------------------------------------------------------------
-
-
-C-----------------------------------------------------------------------
-C-----------------------------------------------------------------------
-      SUBROUTINE ADCIRC_CheckLocalTerminate()
-        USE MESSENGER
-        USE GLOBAL,ONLY: terminate_localproc, screenUnit
-        USE MPI
-        IMPLICIT NONE
-        INTEGER :: TERM_LOCAL(2)
-        INTEGER :: TERM_GLOBAL(2)
-        TERM_LOCAL(1) = TERMINATE_LOCALPROC
-        TERM_LOCAL(2) = MYPROC
-        CALL MPI_ALLREDUCE(TERM_LOCAL,TERM_GLOBAL,1,
-     &      MPI_2INTEGER,MPI_MAXLOC,COMM,IERR)
-        IF(TERM_GLOBAL(2).NE.0)THEN
-            IF(MYPROC.EQ.0)THEN
-                WRITE(ScreenUnit,'(A,I5)') "ERROR: ADCIRC Terminating "//
-     &          "from error originating from MYPROC = ",TERM_GLOBAL(2)
-                WRITE(ScreenUnit,'(A)')    "       Check the local PE "//
-     &          "fort.16 output file for details."
-            ENDIF
-            CALL ADCIRC_TERMINATE()
-        ENDIF
-C-----------------------------------------------------------------------
-      END SUBROUTINE ADCIRC_CheckLocalTerminate
-C-----------------------------------------------------------------------
-#endif
-
-C******************************************************************************
-C******************************************************************************
-
 
       END MODULE ADCIRC_Mod
 C******************************************************************************

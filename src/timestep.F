@@ -69,13 +69,12 @@ C
      &    CME_New_NC, CPRECOR, CTiP, DRAMP, DRampElev, DRampExtFlux, 
      &    DRampIntFlux, DRampMete, DRampTip, DRampWRad, DTDP, DTDPHS,
      &    DUnRampMete, ENDWAVE, ErrorElev, Flag_ElevError, FluxSettlingIT,
-     &    FluxSettlingTime, FTIMINC, IFNLFA, H0, IHOT, IM, INFO, WARNING,
-     &    ERROR, logMessage, allMessage, setMessageSource, unsetMessageSource,
+     &    FluxSettlingTime, FTIMINC, IFNLFA, H0, IHOT, IM,
      &    inundationOutput, ITHS, METONLY, NCICE, NDDT, NFFR, NHSINC,
      &    NHSTAR, NOLIFA, NRamp, NRS, NSCREEN, NTIF, QTIME1, QTIME2, Ramp,
      &    RampElev, RampExtFlux, RampMete, RampTip, RampWRad, RBCRATIO,
      &    RBCTIME1, RBCTIME2, RBCTIMEINC, REFTIM, RES_BC_FLAG, 
-     &    RSTIME1, RSTIME2, NWS, RSTIMINC, SCREENUNIT, STATIM, TK,
+     &    RSTIME1, RSTIME2, NWS, RSTIMINC, STATIM, TK,
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
      &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
@@ -85,6 +84,8 @@ C
      &    Limit_WaveStressGrad,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
      &    dynamicWaterLevelCorrectionDelta, RampIntFlux
+      use mod_logging, only: ScreenUnit, INFO, WARNING,
+     &    ERROR, logMessage, allMessage, setMessageSource, unsetMessageSource
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
      &                         WaveStressGrad_Cap, G
      
@@ -108,7 +109,7 @@ C
      &    dynamicWaterLevelCorrectionMassAdjust,
      &    CLOSE_MET_FILES
 
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, only: terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
 C.....sb46.28sb03 added 09/xx/2006
@@ -1177,7 +1178,7 @@ C...  Compute new water surface elevation
 #else
          call allMessage(ERROR, "Subgrid calculation requires building"
      &                          //"with netcdf enabled")
-         call ADCIRC_Terminate()
+         call terminate()
 #endif         
       ELSE
 !--------------------WETTING AND DRYING--------------------------------
@@ -1490,7 +1491,7 @@ C     output the global node number to debug the local PE fort.14s
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev, '
      &           'ADCIRC stopping. **')
-            CALL ADCIRC_Terminate()
+            CALL terminate()
          ENDIF
 #ifdef VELCHECK
          IF (IT .EQ. ITIME_BGN) THEN
@@ -2194,9 +2195,9 @@ Casey: Added the following variable declarations from GLOBAL.
 C
       USE GLOBAL, ONLY: IFNLFA, IFNLCT,
      &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
-     &      setMessageSource, unsetMessageSource, allMessage,
-     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &      ETA2, H0, DTDP, H2
+      use mod_logging, only: setMessageSource, unsetMessageSource, allMessage,
+     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       USE ADC_CONSTANTS, ONLY: SigT0
       USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, SFAC

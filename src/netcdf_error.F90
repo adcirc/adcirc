@@ -16,7 +16,7 @@ module netcdf_error
 !-----------------------------------------------------------------------
     subroutine check_err(iret)
       USE SIZES, ONLY : myproc
-      USE GLOBAL, ONLY : screenUnit, ERROR, DEBUG, allMessage, &
+      USE mod_logging, ONLY: screenUnit, ERROR, DEBUG, allMessage, &
           setMessageSource, unsetMessageSource
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
@@ -47,7 +47,7 @@ module netcdf_error
 #ifdef CMPI
       USE MESSENGER
 #endif
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,&
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,&
          allMessage, DEBUG, ECHO, INFO, WARNING, ERROR, allMessage
       IMPLICIT NONE
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE

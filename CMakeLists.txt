@@ -23,21 +23,6 @@
 #
 # ######################################################################################################################
 
-# ...Set the default build type
-if(DEFINED CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE
-      ${CMAKE_BUILD_TYPE}
-      CACHE STRING "Choose the type of
-        build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug
-        Release RelWithDebInfo MinSizeRel.")
-else()
-  set(CMAKE_BUILD_TYPE
-      Release
-      CACHE STRING "Choose the type of build,
-        options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release
-        RelWithDebInfo MinSizeRel.")
-endif()
-
 # ######################################################################################################################
 # GENERAL OPTIONS
 # ######################################################################################################################
@@ -49,6 +34,13 @@ project(adcirc)
 # ######################################################################################################################
 # COMPILERS/LANGUAGE
 # ######################################################################################################################
+enable_language(Fortran)
+enable_language(C)
+enable_language(CXX)
+cmake_policy(SET CMP0069 NEW)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/StandardProjectSettings.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PreventInSourceBuilds.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/InterproceduralOptimization.cmake)
 
 # ######################################################################################################################
 # ...Perl Perl is required to use SWAN since it generates the source files. All SWAN options will be disabled if perl
@@ -63,8 +55,6 @@ endif()
 
 # ######################################################################################################################
 # ...Language Specifications
-enable_language(Fortran)
-enable_language(C)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 # ######################################################################################################################

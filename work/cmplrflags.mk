@@ -1546,10 +1546,10 @@ endif
 ########################################################################
 ifneq ($(FOUND), TRUE)
      $(warning (WARNING) None of the platforms in cmplrflags.mk match your platform. As a result, the specific compilers and flags that are appropriate for you could not be specified. Please edit the cmplrflags.mk file to include your machine and operating system. Continuing with generic selections for compilers.)
-  PPFC	        := gfortran
-  FC	        := gfortran
+  PPFC	        := f90
+  FC	        := f90
   PFC	        := mpif90
-  FFLAGS1	:=  $(INCDIRS) -ffixed-line-length-none
+  FFLAGS1	:=  $(INCDIRS)
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA  	   	:=  -DREAL8 -DCSCA -DLINUX

@@ -32,7 +32,8 @@ C
       MODULE OWI_ICE
 C
       USE SIZES,ONLY : MYPROC
-      USE GLOBAL,ONLY : NSCREEN, ScreenUnit
+      USE GLOBAL,ONLY : NSCREEN
+      USE mod_logging, only: ScreenUnit
 #ifdef CMPI
       USE MESSENGER,ONLY : MSG_FINI
 #endif         

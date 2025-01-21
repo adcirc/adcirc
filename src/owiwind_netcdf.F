@@ -265,7 +265,7 @@
       DO
         DO
           IF(INDEX(TRIM(GroupOrder)," ").EQ.1)THEN
-            GroupOrder = GroupOrder(2:LEN_TRIM(GroupOrder))
+            GroupOrder(2:LEN_TRIM(GroupOrder)) = GroupOrder(2:LEN_TRIM(GroupOrder))
           ELSE
             EXIT
           ENDIF
@@ -283,7 +283,7 @@
         IF(NextSpace.LE.0)THEN
           EXIT
         ELSE
-          GroupOrder = GroupOrder(NextSpace+1:LEN_TRIM(GroupOrder))
+          GroupOrder(1:LEN_TRIM(GroupOrder)) = GroupOrder(NextSpace+1:LEN_TRIM(GroupOrder))
         ENDIF
       ENDDO
 

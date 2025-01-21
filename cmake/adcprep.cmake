@@ -54,6 +54,8 @@ if(BUILD_ADCPREP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/gwce_bc_forcing.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
 
   if(NETCDF_WORKING)
