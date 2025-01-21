@@ -24,7 +24,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
       USE WRITE_OUTPUT, ONLY : terminate
-      USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
+      USE mod_logging, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          setMessageSource, unsetMessageSource, allMessage,
      &          scratchMessage
 #ifdef CSWAN

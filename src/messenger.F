@@ -27,9 +27,9 @@ C
      &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
      &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, 
      &    SIG_TERM, FLOAT_TYPE, REALTYPE, DBLETYPE,
-     &    DEBUG, ECHO, INFO, WARNING, ERROR, CPL2STWAVE,Flag_ElevError,
-     &    screenMessage, logMessage, allMessage, setMessageSource,
-     &    unsetMessageSource, scratchMessage,Flag_VelError
+     &    CPL2STWAVE,Flag_ElevError, Flag_VelError
+      use mod_logging, only: screenMessage, logMessage, allMessage, setMessageSource,
+     &    unsetMessageSource, scratchMessage, DEBUG, ECHO, INFO, WARNING, ERROR
      
       USE MPI
       IMPLICIT NONE
@@ -1746,9 +1746,4 @@ C---------------------------------------------------------------------
 !=============================================================================
 
       END MODULE MESSENGER
-
-      subroutine MSG_ABORT()
-      integer myerr, myerrcode
-      call mpi_abort(comm,myerrcode,myerr)
-      end subroutine MSG_ABORT
 

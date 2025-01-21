@@ -112,9 +112,10 @@ c***********************************************************************
 
       USE SIZES, ONLY : MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
      &                   WRITE_LOCAL_HARM_FILES
-      USE GLOBAL, ONLY : screenMessage, logMessage, DEBUG, ECHO, INFO,
-     &                   WARNING, ERROR, setMessageSource, IFSPROTS,
-     &                   unsetMessageSource, allMessage, scratchMessage
+      USE GLOBAL, ONLY : IFSPROTS
+      USE mod_logging, ONLY : screenMessage, logMessage, DEBUG, ECHO, INFO,
+     &                   WARNING, ERROR, setMessageSource, unsetMessageSource,
+     &                   allMessage, scratchMessage
       USE ADC_CONSTANTS, ONLY: pi
 
 
@@ -1999,7 +2000,8 @@ C--------------------------------------------------------------------
       SUBROUTINE checkHAHotstart()
       USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MYPROC
       USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, NSTAE, NSTAV,
-     &                   NSCREEN, SCREENUNIT, NP_G
+     &                   NSCREEN, NP_G
+      USE mod_logging, only: screenUnit
       USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER :: i    ! loop counter

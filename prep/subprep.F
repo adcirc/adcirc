@@ -34,9 +34,10 @@ C    |                                                                      |
 C    ========================================================================
 
       module subprep
-      use global, only : DEBUG, ECHO, INFO, WARNING, ERROR, 
-     &  openFileForRead, scratchMessage, logMessage, allMessage,
+      use mod_logging, only : DEBUG, ECHO, INFO, WARNING, ERROR,
+     &  scratchMessage, logMessage, allMessage,
      &  setMessageSource, unsetMessageSource
+      use global, only: openFileForRead
 
 C   NCSU Subdomain Modeling variables:
        logical :: subdomainOn

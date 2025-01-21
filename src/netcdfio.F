@@ -61,7 +61,7 @@
       USE SIZES, ONLY : OFF, ASCII, SPARSE_ASCII, NETCDF3,
      &   NETCDF4, XDMF
       USE NETCDF_ERROR, ONLY: CHECK_ERR, NETCDFTERMINATE
-      USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
+      USE mod_logging, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &   screenMessage, logMessage, allMessage, setMessageSource,
      &   unsetMessageSource, scratchMessage
      &
@@ -3940,8 +3940,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE createNetCDFOutputFile(ncid, myFile, myTime,
      &                                  descript, ret_error)
       USE SIZES, ONLY : globaldir
-      USE GLOBAL, ONLY : OutputDataDescript_t, IHOT, DEBUG, ERROR,
-     &                   screenUnit, allMessage, scratchMessage
+      USE GLOBAL, ONLY : OutputDataDescript_t, IHOT
+      USE mod_logging, only: screenUnit
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -4250,7 +4250,8 @@ C     write output files in NetCDF format.
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutArrayNetCDF(lun, timesec, it, descript1,
      &   descript2, descript3, descript4 )
-      USE GLOBAL, ONLY : OutputDataDescript_t, ScreenUnit
+      USE GLOBAL, ONLY : OutputDataDescript_t
+      USE mod_logging, only: screenUnit
 C
       IMPLICIT NONE
 C     args
@@ -5287,7 +5288,7 @@ C     inserted data will remain, due to the inability of netcdf to
 C     delete data from files.
 C-----------------------------------------------------------------------
       SUBROUTINE setRecordCounterAndStoreTime(ncid, f, t)
-      USE GLOBAL, ONLY : scratchMessage, scratchFormat
+      USE mod_logging, ONLY : scratchMessage, scratchFormat
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: ncid
@@ -10707,7 +10708,8 @@ C-----------------------------------------------------------------------
      &   references, comments, host, convention, contact, dtdp, ihot,
      &   nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
      &   reftim, rnday, dramp, h0, cori, ntif, nbfr,
-     &   screenUnit, nabout, nscreen, C3D, runid
+     &   nabout, nscreen, C3D, runid
+      use mod_logging, only: screenUnit
       USE GLOBAL_3DVS, ONLY :
      &   nfen, n3dsd, i3dsdrec, n3dsv, i3dsvrec,
      &   n3dst, i3dstrec, n3dgd, i3dgdrec, n3dgv, i3dgvrec,
@@ -10909,7 +10911,7 @@ C-----------------------------------------------------------------------
       ntif = ntif_p
       nbfr = nbfr_p
       myProc = myProc_p
-      screenUnit = screenUnit_p
+!     screenUnit = screenUnit_p
       nolibf = nolibf_p
       nwp = nwp_p
       tau0 = tau0_p

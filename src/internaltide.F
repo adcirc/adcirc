@@ -27,9 +27,9 @@ C     velocities here. I plan to move more of the subroutine into this
 C     module to hopefully make it a little clearer what is happening in
 C     that subroutine.
 C---------------------------------------------------------------------C
-      USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
+      USE mod_logging, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          setMessageSource, unsetMessageSource, allMessage,
-     &          scratchMessage, logMessage      
+     &          scratchMessage, logMessage, screenUnit
       IMPLICIT NONE
       ! stored velocity samples for moving average calculation
       REAL(8),ALLOCATABLE,PRIVATE :: UAV(:,:), VAV(:,:)        
@@ -247,7 +247,6 @@ C     fort.16 file.
 C-----------------------------------------------------------------------
       subroutine check_err(iret)
       USE SIZES, ONLY : myproc
-      USE GLOBAL, ONLY : screenUnit
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif

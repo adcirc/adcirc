@@ -103,6 +103,7 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F)
 
   add_library(templib_punmsglib ${MSGLIB_SOURCES})

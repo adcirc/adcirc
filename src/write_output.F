@@ -34,6 +34,7 @@ C----------------------------------------------------------------------
       USE GLOBAL, ONLY : OutputDataDescript_t, setMessageSource,
      &  unsetMessageSource, DEBUG, allMessage, screenMessage, ERROR,
      &  netcdf_avail
+      use mod_terminate, only: terminate
       USE boundaries, only: freeFluxBoundaryArrayTemporaries
 
       !
@@ -2977,10 +2978,10 @@ C-----------------------------------------------------------------------
       USE SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC,
      &    WRITE_LOCAL_FILES, MNPROC, GLOBALDIR, MYPROC
 C RJW added MYPROC
-      USE GLOBAL, ONLY : ScreenUnit, BCFLAG_TEMP, scratchMessage,
+      USE GLOBAL, ONLY : BCFLAG_TEMP, NODES_LG, NP_G, OutputDataDescript_t
+      USE mod_logging, ONLY : ScreenUnit, scratchMessage,
      &    DEBUG, INFO, WARNING, ERROR, screenMessage, setMessageSource,
-     &    unsetMessageSource, allMessage, OutputDataDescript_t, NP_G,
-     &    NODES_LG
+     &    unsetMessageSource, allMessage
       USE MESH, ONLY : NP, ICS, NM
       USE GLOBAL_3DVS
       USE GLOBAL_IO, ONLY: packNPbyM, unpackNPbyM,
@@ -4370,6 +4371,7 @@ C-----------------------------------------------------------------------
 
       USE SIZES
       USE GLOBAL
+      USE mod_logging, only: screenUnit
       USE HARM
       USE GLOBAL_IO, ONLY: packOne, unpackOne,
      &    packTwo, unpackTwo, packMbyNP, unpackMbyNP, HEADER_MAX,
@@ -5342,6 +5344,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL
       USE GLOBAL_IO, ONLY: collectFullDomainArray, unpackOne
       USE MESH, ONLY : NP
+      USE mod_logging, only: ScreenUnit
       USE GLOBAL_IO, ONLY: packOne, unpackOne
 #ifdef CMPI
       USE MESSENGER
@@ -5444,38 +5447,6 @@ C
 C-----------------------------------------------------------------------
       END SUBROUTINE WriteWarnElev
 C-----------------------------------------------------------------------
-
-      SUBROUTINE terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
-     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
-      IMPLICIT NONE
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("terminate")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1)
-C
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE terminate
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  i n i t S w a n O u t p u t

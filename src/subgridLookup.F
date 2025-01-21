@@ -30,6 +30,7 @@
       use global, only: nodecode, nnodecode
      &   , eta2, tk, tkm, nolifa, tkm
      &   , H0, ifnlfa, uu1, vv1, ncchange
+      use mod_terminate, only: terminate
       use mesh, only: ne, np, nm, totalArea, mju, areas, dp
 #ifdef ADCNETCDF      
       use netcdf_error, only: check_err
@@ -480,45 +481,5 @@
       end subroutine getVertLookup
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
-
-
-!---------------------------------------------------------------------
-!---------------------------------------------------------------------
-!
-!                 READ NETCDF UTILITY
-!
-!---------------------------------------------------------------------
-!---------------------------------------------------------------------
-
-      SUBROUTINE terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      USE GLOBAL, ONLY: INFO,DEBUG,allMessage,
-     &                  setMessageSource,unsetMessageSource
-      IMPLICIT NONE
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-      call setMessageSource("terminate")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1)
-C
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE terminate
 
       end module subgrid

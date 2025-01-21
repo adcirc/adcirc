@@ -111,7 +111,7 @@ C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
-      USE GLOBAL, ONLY : screenUnit, initLogging
+      USE mod_logging, ONLY : screenUnit, initLogging
       USE ADC_CONSTANTS, ONLY: Rearth, deg2rad, rad2deg
       USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType,
      &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
@@ -130,7 +130,7 @@ C
       CHARACTER(2048) :: CMDLINEARG ! content of cmd line arg
 C
       ! set the names of the log levels for use in log messages
-      call initLogging()
+      call initLogging(1,0)
       ! set the present working directory as the directory containing
       ! the fulldomain input files as the
       globaldir = '.'

@@ -2256,7 +2256,7 @@ C***********************************************************************
 C
 C  kmd48.33bc changed to use Implicit None
       SUBROUTINE TRIDIAG(A,B,C,R,U,nfen)
-      USE GLOBAL, ONLY : ScreenUnit, setMessageSource,
+      USE mod_logging, ONLY : ScreenUnit, setMessageSource,
      &   unsetMessageSource, logMessage, allMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER :: J,nfen
@@ -2320,7 +2320,7 @@ C                          R.L. 06/22/05                               *
 C***********************************************************************
 
       Subroutine VSDISP(it,node,H,UU,VV,Duu,Duv,Dvv)
-      USE GLOBAL, ONLY : ScreenUnit, allMessage, DEBUG, scratchMessage
+      USE mod_logging, ONLY : ScreenUnit, allMessage, DEBUG, scratchMessage
 Cjgfdebug      USE GLOBAL_3DVS, ONLY : Qkp1,NFEN,SIGMA,GAMMA,AMB,I,NSCREEN
       USE GLOBAL_3DVS, ONLY : Qkp1,NFEN,SIGMA,GAMMA,AMB,IY,
      &    setMessageSource,
@@ -3288,8 +3288,7 @@ C    Adapted from Numerical Recipes chapter 2                          *
 C***********************************************************************
 c
       SUBROUTINE ADC_TRIDAG(A,B,C,R,U,N)
-      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : setMessageSource,
+      USE mod_logging, ONLY : setMessageSource, ScreenUnit,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER :: J, N

@@ -124,8 +124,8 @@ end module WEIR_DATA
 !-----------------------------------------------------------------------
 module TIME_VARYING_WEIR_BOUNDARY
    use SIZES, only: MYPROC, LOCALDIR, GLOBALDIR
-   use ADCIRC_MOD, only: ADCIRC_TERMINATE
-   use GLOBAL, only: SCREENUNIT, logMessage, allMessage, &
+   use mod_terminate, only: terminate
+   use mod_logging, only: SCREENUNIT, logMessage, allMessage, &
                      setMessageSource, unsetMessageSource, ERROR, INFO, ECHO, &
                      DEBUG, WARNING, ScratchMessage, ScreenMessage
    use KDTREE2_MODULE, only: KDTREE2, KDTREE2_CREATE, KDTREE2_RESULT, &
@@ -425,7 +425,7 @@ contains
          call allMessage(ERROR, &
                          "MULTIPLE LOCATIONS FOUND FOR TIME VARYING "// &
                          "BOUNDARY NODES")
-         call ADCIRC_TERMINATE()
+         call terminate()
       end if
 
       if (abs(KDRESULTS(1)%DIS) > EPS) then
@@ -442,7 +442,7 @@ contains
                LAT, " Y=", LON, &
                " NOT FOUND IN LIST OF BOUNDARY NODES."
             call allMessage(ERROR, ScratchMessage)
-            call ADCIRC_TERMINATE()
+            call terminate()
          else
             IDX = -1
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -458,7 +458,7 @@ contains
             LAT, " Y=", LON, &
             " NOT FOUND IN LIST OF BOUNDARY NODES."
          call allMessage(ERROR, ScratchMessage)
-         call ADCIRC_TERMINATE()
+         call terminate()
 
 #endif
       end if
@@ -528,7 +528,7 @@ contains
       case DEFAULT
          call allMessage(ERROR, "Invalid Barrier " &
                          //"Variation")
-         call ADCIRC_TERMINATE()
+         call terminate()
       end select
 
       !..WRITE SCREEN/UNIT 16 INFORMATION AT START/END
@@ -600,7 +600,8 @@ contains
    subroutine COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX, &
                                             TIMELOC, BAR_HEIGHT_CURRENT, BAR_HEIGHT, BARHT_START)
 
-      use GLOBAL, only: DT, SCREENUNIT
+      use GLOBAL, only: DT
+      use mod_logging, only: SCREENUNIT
       use MESH, only: DP
       use BOUNDARIES, only: BARINHT, BARLANHT, LBCODEI, &
                             NBV, IBCONN
@@ -736,7 +737,8 @@ contains
    subroutine COMPUTE_BARRIER_HEIGHT_ETAMAX(MYIDX, TIMELOC, &
                                             BAR_HEIGHT_CURRENT, BAR_HEIGHT)
 
-      use GLOBAL, only: DT, SCREENUNIT, ETA2, NNODECODE
+      use GLOBAL, only: DT, ETA2, NNODECODE
+      use mod_logging, only: SCREENUNIT
       use MESH, only: DP
       use BOUNDARIES, only: BARINHT, BARLANHT, LBCODEI, NBV, IBCONN
 
@@ -1187,7 +1189,7 @@ contains
                                " HOT START VALUE SPECIFIED. HOT=1 OR "// &
                                "HOT=0 FOR HOT START RELATIVE TIME "// &
                                "VARYING WEIRS.")
-               call ADCIRC_TERMINATE()
+               call terminate()
             end if
          case DEFAULT
             HOTADD = 0d0
@@ -1197,7 +1199,7 @@ contains
                             "YOU MUST "// &
                             "SPECIFY VARYTYPE= IN THE FORT.15 INPUT "// &
                             "FILE.")
-            call ADCIRC_TERMINATE()
+            call terminate()
          end if
          select case (VARYTYPE)
          case (1, 2, 3)
@@ -1207,7 +1209,7 @@ contains
                   call allMessage(ERROR, &
                                   "YOU MUST SPECIFY X1=, Y1=, and "// &
                                   "ZF= ")
-                  call ADCIRC_TERMINATE()
+                  call terminate()
                end if
                if (ISNULL(TimeStartday) .and. &
                    ISNULL(TimeStartHour) .and. &
@@ -1215,7 +1217,7 @@ contains
                   call allMessage(ERROR, &
                                   "TIME VARYING BOUNDARY START TIME"// &
                                   " MUST BE SPECIFIED.")
-                  call ADCIRC_TERMINATE()
+                  call terminate()
                end if
                if (ISNULL(TimeEndday) .and. &
                    ISNULL(TimeEndHour) .and. &
@@ -1223,7 +1225,7 @@ contains
                   call allMessage(ERROR, &
                                   "TIME VARYING BOUNDARY END TIME"// &
                                   " MUST BE SPECIFIED.")
-                  call ADCIRC_TERMINATE()
+                  call terminate()
                end if
                if (ISNULL(TimeStartDay)) TimeStartDay = 0d0
                if (ISNULL(TimeStartHour)) TimeStartHour = 0d0
@@ -1239,7 +1241,7 @@ contains
                   call allMessage(ERROR, &
                                   "YOU MUST SPECIFY X1=, Y1=, "// &
                                   "and ZF= ")
-                  call ADCIRC_TERMINATE()
+                  call terminate()
                end if
                if ((ISNULL(FAILUREDURATIONDAY) .and. &
                     ISNULL(FAILUREDURATIONHOUR) .and. &
@@ -1251,7 +1253,7 @@ contains
                                   " DURATION AND MAXIMUM WATER"// &
                                   " SURFACE BEFORE ELEVATION"// &
                                   " CHANGE.")
-                  call ADCIRC_TERMINATE()
+                  call terminate()
                end if
                if (ISNULL(FAILUREDURATIONDAY)) &
                   FAILUREDURATIONDAY = 0d0
@@ -1265,13 +1267,13 @@ contains
                if (ISNULL(X1) .or. ISNULL(Y1)) then
                   call allMessage(ERROR, &
                                   "YOU MUST SPECIFY X1= and Y1=")
-                  call ADCIRC_TERMINATE()
+                  call terminate()
                end if
                if (ISNULL(S=SCHEDULEFILE)) then
                   call allMessage(ERROR, &
                                   "YOU MUST SPECIFY SCHEDULEFILE= "// &
                                   "FOR VARYTYPE=3.")
-                  call ADCIRC_TERMINATE()
+                  call terminate()
                end if
                if (ISNULL(TimeStartDay)) TimeStartDay = 0d0
                if (ISNULL(TimeStartHour)) TimeStartHour = 0d0
@@ -1298,14 +1300,14 @@ contains
                                      "TIME VARYING BOUNDARY END "// &
                                      "TIME MUST BE GREATER THAN "// &
                                      "ZERO.")
-                     call ADCIRC_TERMINATE()
+                     call terminate()
                   end if
                elseif (VARYTYPE == 2) then
                   if (BAR_FAILURE_DURATION(IDX) <= 0d0) then
                      call allMessage(ERROR, &
                                      "FAILURE_DURATION MUST BE "// &
                                      "GREATER THAN ZERO")
-                     call ADCIRC_TERMINATE()
+                     call terminate()
                   end if
                elseif (VARYTYPE == 3) then
                   BAR_SCHEDULE(IDX)%OFFSET = OFFSET
@@ -1317,7 +1319,7 @@ contains
                if (IDX2 == -1) then
                   call allMessage(ERROR, "BOUNDARY CONDITION IMPROPERLY "// &
                                   "SPLIT INTO GHOST NODE SPACE!")
-                  call ADCIRC_TERMINATE()
+                  call terminate()
                end if
                INT_TVW = .true.
 
@@ -1339,7 +1341,7 @@ contains
                      " X2= ", X2, &
                      " Y2=", Y2, " LOCAL NODE=", NBV(IDX2)
                   call allMessage(ERROR, ScratchMessage)
-                  call ADCIRC_TERMINATE()
+                  call terminate()
                end if
                call ASSIGN_TVW_TIMING(VARYTYPE, IDX, IDX2)
                if (VARYTYPE == 1) then
@@ -1348,7 +1350,7 @@ contains
                      call allMessage(ERROR, &
                                      "INVALID BARRIER DEGREDATION"// &
                                      "TIME.")
-                     call ADCIRC_TERMINATE()
+                     call terminate()
                   end if
                elseif (VARYTYPE == 2) then
                   if ((BAR_FAILURE_DURATION(IDX) <= 0d0) &
@@ -1357,7 +1359,7 @@ contains
                      call allMessage(ERROR, &
                                      "FAILURE_DURATION MUST BE "// &
                                      "GREATER THAN ZERO.")
-                     call ADCIRC_TERMINATE()
+                     call terminate()
                   end if
                elseif (VARYTYPE == 3) then
                   BAR_SCHEDULE(IDX)%OFFSET = OFFSET
@@ -1367,13 +1369,13 @@ contains
                !...........................WE SHOULD NOT BE HERE?
                call allMessage(ERROR, &
                                "INVALID BOUNDARY CONDITION DETECTED.")
-               call ADCIRC_TERMINATE()
+               call terminate()
             end select
 
          case DEFAULT
             call allMessage(ERROR, "INVALID WEIR VARIATION"// &
                             "SPECIFIED.")
-            call ADCIRC_TERMINATE()
+            call terminate()
          end select
 
       end do
@@ -1392,7 +1394,7 @@ contains
       call unsetMessageSource()
       return
 200   call allMessage(ERROR, "PROBLEM READING TIME VARYING WEIR FILE.")
-      call ADCIRC_TERMINATE()
+      call terminate()
 
       !..GENERAL MESSAGES FOR TIME VARYING WEIRS
 101   format("Time varying weir file was not found. All weirs" &
@@ -1504,20 +1506,20 @@ contains
                call allMessage(ERROR, &
                                "You must specify start and end for "// &
                                "each point in barrier schedule.")
-               call ADCIRC_Terminate()
+               call terminate()
             end if
             if (ISNULL(ZF)) then
                call allMessage(ERROR, "You must specicy"// &
                                " a flag or final elevation for "// &
                                "BARHT_FINAL")
-               call ADCIRC_Terminate()
+               call terminate()
             elseif ((ZF == -99991) .or. &
                     (ZF == -99992)) then
                if (ISNULL(DELTA)) then
                   call allMessage(ERROR, "If specifying a " &
                                   //"relative value for ZF, you must " &
                                   //"specify DELTA = ")
-                  call ADCIRC_Terminate()
+                  call terminate()
                end if
             end if
          end do
@@ -1630,7 +1632,7 @@ contains
             end if
             if (I == NSCHEDULES) then
                call allMessage(ERROR, "Schedule not found.")
-               call ADCIRC_Terminate()
+               call terminate()
             end if
          end do
       end if
@@ -1687,7 +1689,7 @@ contains
          end if
       else
          call allMessage(ERROR, "No check specified for null.")
-         call ADCIRC_TERMINATE()
+         call terminate()
       end if
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Return")

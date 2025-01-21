@@ -76,7 +76,7 @@ C
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
      &                 checkHAHotstart
       USE WETDRY, ONLY : initializeWettingAndDrying
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, only: terminate
       USE WIND, ONLY : hotstartMeteorologicalForcing, rsget
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
@@ -263,7 +263,7 @@ C
                WRITE(ScreenUnit,1711)
                WRITE(16,9773)      ! execution terminated
             ENDIF
-            CALL ADCIRC_Terminate()
+            CALL terminate()
          ENDIF
 C        start reading ascii initial conditions file
          WRITE(16,1740)
@@ -718,7 +718,7 @@ C
          write(scratchMessage,'(A,I3,A)') "IHOT was set to '",IHOT,
      &    "' but this value of IHOT is not valid."
          call allMessage(ERROR, scratchMessage)
-         call ADCIRC_Terminate()
+         call terminate()
       END SELECT
 C
 C     Compare the harmonic analysis data read in from the hotstart file
@@ -2116,11 +2116,11 @@ C   kmd48.33bc - variable information needed from the global.F file
      &                   BCFLAG_LNM, BCFLAG_TEMP, TTBCTIME1,
      &                   TTBCTIME2, TTBCSTATIM, TTBCTIMEINC,
      &                   q_heat1, q_heat2, HFLUX, TTBCRATIO,
-     &                   setMessageSource, unsetMessageSource,
-     &                   DEBUG, ECHO, INFO, WARNING, ERROR, 
-     &                   allMessage, screenMessage,
      &                   RIVBCTIMINC, RIVBCTIME1,RIVBCTIME2,
-     &                   BCRivRATIO, RIVBCSTATIM, NP_G     
+     &                   BCRivRATIO, RIVBCSTATIM, NP_G
+      use mod_logging, only: setMessageSource, unsetMessageSource,
+     &                   DEBUG, ECHO, INFO, WARNING, ERROR,
+     &                   allMessage, screenMessage
       IMPLICIT NONE
       INTEGER :: IRType                  !number of fields in output file
       INTEGER :: NH, N                   !horizontal & vertical loop counters

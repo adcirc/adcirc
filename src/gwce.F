@@ -76,8 +76,9 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C******************************************************************************
 
       module gwce
-      use global, only : DEBUG, INFO, WARNING, ERROR, logMessage, 
+      use mod_logging, only : DEBUG, INFO, WARNING, ERROR, logMessage,
      &   setMessageSource, unsetMessageSource, allMessage
+      use mod_terminate, only: terminate
       implicit none
 
       real(8),allocatable :: lsxx(:),lsxy(:),lsyx(:),lsyy(:)
@@ -244,7 +245,7 @@ C
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
      &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, IFNLCAT,
      &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NSCREEN, NCCHANGE, IDEN,
-     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG, screenUnit,
+     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG,
      &   SMAG_LOWER_LIM, SMAG_UPPER_LIM, TK, NOFF, UU1, VV1, QX1, QY1,
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
@@ -257,6 +258,7 @@ C
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
+      use mod_logging, only: screenUnit
       USE ADC_CONSTANTS, ONLY: G, RHOWAT0, Bd, Ad, Cs2
       USE MESH, ONLY : NE, NP, NM, DP, NNeigh, NeiTab, TotalArea, FDXE,
      &   Areas, NEIMAX, SFAC, nneighele, neitabele, FDYE,
@@ -704,7 +706,7 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                   enddo
                close(899)
                ! end jgfdebug
-               CALL gwceTerminate()
+               CALL terminate()
             ENDIF
 
          ELSE  ! jgf48.4619: include Seizo's changes for lumped LHS
@@ -737,7 +739,7 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
                   DIE = .TRUE.
                ENDIF
             ENDDO
-            IF (DIE) CALL gwceTerminate()
+            IF (DIE) CALL terminate()
          ENDIF
       ENDIF NCIFBLCK                    !End of GWCE matrix setup
 C...
@@ -1728,7 +1730,7 @@ C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
       SUBROUTINE GWCE_new_pc(IT,TimeLoc,TimeH)
-C
+
       USE SIZES
       USE GLOBAL, ONLY : GWCE_LV, COEF, COEFD, OBCCOEF, ETAS, ETA1, ETA2,
      &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1, H1, H2,
@@ -1736,7 +1738,7 @@ C
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
      &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, IFNLCAT,
      &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NSCREEN, NCCHANGE, IDEN,
-     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG, screenUnit,
+     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG,
      &   SMAG_LOWER_LIM, SMAG_UPPER_LIM, TK, NOFF, UU1, VV1, QX1, QY1,
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
@@ -1746,6 +1748,7 @@ C
 #ifdef CMPI
      &   , dumy1, dumy2
 #endif
+      use mod_logging, only: screenUnit
       USE ADC_CONSTANTS, ONLY: G, RHOWAT0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, TotalArea, Areas, NeiTab,
      &                  NNEIGH, SFAC
@@ -2607,10 +2610,10 @@ C     jgf53.dev: Moved to GWCE module.
 C*************************************************************************
       subroutine check_slopes(it,TimeLoc)
       USE SIZES, ONLY : mnproc, myproc
-      use global, only : eta2,nodecode,NOFF,ESLCOUNT,screenUnit,
+      use global, only : eta2,nodecode,NOFF,ESLCOUNT,nodes_lg, IFSFM
+      use mod_logging, only: screenUnit,
      &      setMessageSource, unsetMessageSource, scratchMessage,
-     &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &      nodes_lg, IFSFM
+     &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       use mesh, only : nm, ne, areas, FDXE, FDYE, 
      &      SFacEle, SFMYEle, SFMXEle
       use NodalAttributes, ONLY : LoadEleSlopeLim,
@@ -2761,9 +2764,10 @@ C     jgf53.dev: Moved to GWCE module.
 C***********************************************************************
 C
       SUBROUTINE APPLY_SLOPE_LIMITS(ETA2Lim,LocNP)
-      use global, only : nodecode,NOFF,IFNLFA,
-     &      setMessageSource, unsetMessageSource, allMessage,
-     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
+      use global, only : nodecode,NOFF,IFNLFA
+      use mod_logging, only:
+     &  setMessageSource, unsetMessageSource, allMessage,
+     &  logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       use mesh, only : ne, nm, areas, totalArea
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active
@@ -2843,46 +2847,6 @@ C... Will apply the updating outside the subroutine
       END SUBROUTINE APPLY_SLOPE_LIMITS
 
 C***********************************************************************
-
-
-!-----------------------------------------------------------------------
-!      S U B R O U T I N E   G  W  C  E   T E R M I N A T E 
-!-----------------------------------------------------------------------
-!     jgf: Placed this subroutine here to eliminate dependency of this
-!     module on adcirc_mod module. Bombs out of mpi gracefully when
-!     there is an issue. 
-!-----------------------------------------------------------------------
-      subroutine gwceTerminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      use messenger
-#endif
-      implicit none
-      logical, optional :: no_mpi_finalize
-C
-      call setMessageSource("gwceTerminate")
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      if (present(no_mpi_finalize)) then
-        call msg_fini(no_mpi_finalize)
-      else
-        call msg_fini()
-      endif
-#endif
-      CALL EXIT(1)
-C
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-!-----------------------------------------------------------------------
-      end subroutine gwceTerminate
-!-----------------------------------------------------------------------
-
 
 
 C----------------------------------------------------------------------

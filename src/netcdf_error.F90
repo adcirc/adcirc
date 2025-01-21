@@ -15,10 +15,11 @@ module netcdf_error
 !     fort.16 file.
 !-----------------------------------------------------------------------
     subroutine check_err(iret)
-      USE GLOBAL, ONLY : ERROR, allMessage, &
+      USE SIZES, ONLY : myproc
+      USE mod_logging, ONLY: screenUnit, ERROR, allMessage, &
           setMessageSource, unsetMessageSource
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      USE GLOBAL, ONLY : DEBUG
+      USE mod_logging, ONLY : DEBUG
 #endif
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
@@ -49,7 +50,7 @@ module netcdf_error
 #ifdef CMPI
       USE MESSENGER
 #endif
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,&
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,&
          allMessage, DEBUG, ECHO, INFO, WARNING, ERROR, allMessage
       IMPLICIT NONE
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE

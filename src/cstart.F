@@ -32,6 +32,7 @@ C
       SUBROUTINE COLDSTART()
 C
       USE SIZES
+      use mod_logging, only: screenUnit
       USE GLOBAL, only: DP1, DP2, eta1, qx2, qy2, tk, etas, eta2, ch1,
      &    en2, nddt, btime1, statim, btime2, btiminc, btime_end, qn1,
      &    qn0, nffr, ftiminc, qnin1, enin1, qnin2, enin2, qtime1, nws,
@@ -42,7 +43,7 @@ C
      &    nstae, rdes4, rid4, rdes8, rid8, aid8, esbin1, vv2, nolifa,
      &    uu2, inundationoutput, esbin2, nspoolv, nscouc, icstp, nstac,
      &    nstac_g, ntrspc, nspoolc, nscoum, bchgtiminc, nscreen,
-     &    screenunit, h0, ntrspe, dt, nspoole, nscouv, np_g,
+     &    h0, ntrspe, dt, nspoole, nscouv, np_g,
      &    outputsponge, ne_g, usingDynamicWaterLevelCorrection, ndsetse,
      &    nspoolge,
      &    nscougv, ndsetsv, nspoolgv, use_tvw, nscou_tvw,
@@ -62,7 +63,7 @@ C
      &    header74, header93, header91, header61, header62, header71,
      &    header72, header81, writedomainheader, open_gbl_file, nddt2get
       USE SUBDOMAIN, ONLY : subdomainOn, readFort015
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, only: terminate
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NODALATTRIBUTES, ONLY : outputTau0
@@ -127,7 +128,7 @@ C...    read in the second depth dp2 for btime2
          IOS = 0
          CALL openFileForRead(141,TRIM(INPUTDIR)//'/'//'fort.141',IOS)
          IF (IOS.GT.0) THEN
-            CALL ADCIRC_Terminate()
+            CALL terminate()
          ENDIF
 
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
@@ -734,7 +735,7 @@ c******************************************************************************
       USE MESH, ONLY : NP, AGRID
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD,
      &  totalbcrivernodes, bndbcriver
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, only: terminate
       IMPLICIT NONE
 
       INTEGER :: IRType
@@ -770,7 +771,7 @@ C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
      &           "ERROR: 2DDI baroclinic runs not ", 
      &           "currently supported."
          ENDIF
-         CALL ADCIRC_Terminate()
+         CALL terminate()
       ENDIF
 C
       IF(CBaroclinic .and. C3DVS) THEN
@@ -790,7 +791,7 @@ C
      &           /,2X,'***** NVN = ',I4,' MUST MATCH NFEN = ',I4,
      &           ' *****',
      &           /,10X,'****** RUN TERMINATED ******')
-            CALL ADCIRC_Terminate()
+            CALL terminate()
          ENDIF
          DO IHN=1,NP
             DO IVN=1,NFEN
@@ -1133,7 +1134,7 @@ C     overwriting the values computed here.
 C----------------------------------------------------------------------
       subroutine setColdWetDryStateAndWaterSurfaceElevation()
       use sizes, only : inputdir
-      use ADCIRC_MOD, only : ADCIRC_Terminate
+      use mod_terminate, only: terminate
       use mesh, only : dp, np, mju, ne, nm
       use boundaries, only : nvel, lbcodei, nbv
       use global, only : eta2, nnodecode, noff, logMessage, allMessage,
@@ -1359,7 +1360,7 @@ C----------------------------------------------------------------------
 #else
          call allMessage(ERROR, "Subgrid calculation requires building"
      &                          //"with netcdf enabled")
-         call ADCIRC_Terminate()
+         call terminate()
 #endif
       ELSE
       !

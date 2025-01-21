@@ -37,9 +37,10 @@
       use hashtable
       use sizes, only: meshFileName, mne, mnp, mnope, mneta, myproc,
      &   mnbou, mnvel, nprec, meshtype, ascii, xdmf, mnei, GBLINPUTDIR
-      use global, only: DEBUG, INFO, ECHO, WARNING, ERROR,
+      use global, only: openFileForRead
+      use mod_logging, only: DEBUG, INFO, ECHO, WARNING, ERROR,
      &   scratchMessage, logMessage, screenMessage, allMessage,
-     &   setMessageSource, openFileForRead, unsetMessageSource,
+     &   setMessageSource, unsetMessageSource,
      &   scratchFormat
       USE ADC_CONSTANTS, only: deg2rad, rad2deg, pi, omega, rearth
 

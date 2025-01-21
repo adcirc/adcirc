@@ -23,33 +23,40 @@
 #
 # ######################################################################################################################
 
-# Set a default build type if none was specified
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "Setting build type to 'RelWithDebInfo' as none was specified.")
-  set(CMAKE_BUILD_TYPE
-          RelWithDebInfo
-          CACHE STRING "Choose the type of build." FORCE)
-  # Set the possible values of build type for cmake-gui, ccmake
-  set_property(
-          CACHE CMAKE_BUILD_TYPE
-          PROPERTY STRINGS
-          "Debug"
-          "Release"
-          "MinSizeRel"
-          "RelWithDebInfo")
-endif()
-
 # ######################################################################################################################
 # GENERAL OPTIONS
 # ######################################################################################################################
 cmake_minimum_required(VERSION 3.12)
 project(adcirc)
 
+# Set a default build type if none was specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "Setting build type to 'RelWithDebInfo' as none was specified.")
+    set(CMAKE_BUILD_TYPE
+            RelWithDebInfo
+            CACHE STRING "Choose the type of build." FORCE)
+    # Set the possible values of build type for cmake-gui, ccmake
+    set_property(
+            CACHE CMAKE_BUILD_TYPE
+            PROPERTY STRINGS
+            "Debug"
+            "Release"
+            "MinSizeRel"
+            "RelWithDebInfo")
+endif()
+
 # ######################################################################################################################
 
 # ######################################################################################################################
 # COMPILERS/LANGUAGE
 # ######################################################################################################################
+enable_language(Fortran)
+enable_language(C)
+enable_language(CXX)
+cmake_policy(SET CMP0069 NEW)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/StandardProjectSettings.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PreventInSourceBuilds.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/InterproceduralOptimization.cmake)
 
 # ######################################################################################################################
 # ...Perl Perl is required to use SWAN since it generates the source files. All SWAN options will be disabled if perl
@@ -64,8 +71,6 @@ endif()
 
 # ######################################################################################################################
 # ...Language Specifications
-enable_language(Fortran)
-enable_language(C)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 # ######################################################################################################################
