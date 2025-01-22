@@ -76,6 +76,16 @@ mark_as_advanced(
   CMAKE_CXX_FLAGS_DEBUG
   CMAKE_C_FLAGS_DEBUG
   CMAKE_Fortran_FLAGS_DEBUG)
+mark_as_advanced(
+  CLEAR
+  CMAKE_CXX_FLAGS_RELWITHDEBINFO
+  CMAKE_C_FLAGS_RELWITHDEBINFO
+  CMAKE_Fortran_FLAGS_RELWITHDEBINFO)
+mark_as_advanced(
+  CLEAR
+  CMAKE_CXX_FLAGS_MINSIZEREL
+  CMAKE_C_FLAGS_MINSIZEREL
+  CMAKE_Fortran_FLAGS_MINSIZEREL)
 # ######################################################################################################################
 
 # ######################################################################################################################
