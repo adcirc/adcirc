@@ -128,13 +128,13 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemerides.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/astronomic.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sun.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/moon.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/internaltide.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/ephemerides.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/tidalpotential.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/astronomic.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/sun.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/moon.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/sun_moon_system.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/gwce_bc_forcing.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
