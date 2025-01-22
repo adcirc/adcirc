@@ -234,7 +234,7 @@ C                                                                             *
 C                            r.l.  06/22/2005                                 *
 C******************************************************************************
       SUBROUTINE GWCE_New(IT,ITIME_BGN,TimeLoc,TimeH)
-C
+
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
@@ -302,8 +302,12 @@ C... SB
 
       IMPLICIT NONE
 
+      integer,intent(in) :: IT
+      integer,intent(in) :: ITIME_BGN
+      real(8),intent(in) :: TimeLoc
+      real(8),intent(in) :: TimeH
+
       INTEGER IE, JN, IJ, I, J, K, L                     !local loop counters
-      INTEGER IT, ITIME_BGN
       INTEGER NM1, NM2, NM3, NMI1, NMI2, NMI3, NMJ1, NMJ2, NMJ3
       INTEGER NC1, NC2, NC3, NCEle, NCI, NCJ
       INTEGER NCyc
@@ -350,7 +354,6 @@ C... SB
       REAL(8) AreaIE, AreaIE2, AreaIE4
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) FDXX1, FDXX2, FDXX3, FDYY1, FDYY2, FDYY3
-      REAL(8) TimeLoc, TimeH
       REAL(8) HH1 !jgf46.02 Added for Katrina.
       REAL(8) RDIAG ! jgf48.4619 Seizo parameter for fully explicit mode
       INTEGER :: j12, j13, j21, j23, j31, j32
@@ -1765,8 +1768,11 @@ C*******************************************************************************
 
       IMPLICIT NONE
 
+      integer,intent(in) :: IT
+      real(8),intent(in) :: TimeLoc
+      real(8),intent(in) :: TimeH
+
       INTEGER IE, I, J                           !local loop counters
-      INTEGER IT
       INTEGER  NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle, NCI, NCJ
       INTEGER NCyc
@@ -1809,7 +1815,6 @@ C*******************************************************************************
 
       REAL(8) AreaIE, AreaIE2, AreaIE4
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
-      REAL(8) TimeLoc, TimeH
 
 ckmd   Added in parameters for the pc algorithm
       REAL(8) BSX0N1, BSX0N2, BSX0N3, BSY0N1
