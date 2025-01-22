@@ -22,7 +22,7 @@ if(BUILD_ASWIP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/internaltide.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
