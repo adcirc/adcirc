@@ -93,7 +93,7 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
      &     OutputTau0, 
      &     LoadRiver_et_WSE, River_et_WSE
-      USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
+      USE mod_time_varying_weir_boundary,ONLY:WEIR_SETUP
       USE WRITE_OUTPUT, ONLY : initInundationOutput,
      &   inundationTime, inundationTime_onset, maxInunDepth, 
      &   maxInunDepth_time, outputNodeCode, outputNOFF

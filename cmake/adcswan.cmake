@@ -126,22 +126,25 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/internaltide.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/astronomic.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/ephemerides.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/tidalpotential.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/sun.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/moon.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/sun_moon_system.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/ephemerides.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/tidalpotential.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/gwce_bc_forcing.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F)
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/timestep_bc_forcing.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/weir_data.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/weir_flow.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/time_varying_weir.F90)
 
   set(ADCSWAN_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/weir_boundary.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F

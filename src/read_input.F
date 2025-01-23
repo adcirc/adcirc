@@ -113,8 +113,8 @@ C-----------------------------------------------------------------------
       USE SUBDOMAIN, ONLY : subdomainOn
       USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
-      USE WEIR_DATA, ONLY: found_tvw_nml
-      USE TIME_VARYING_WEIR_BOUNDARY, only: WEIR_SETUP
+      USE mod_weir_data, ONLY: found_tvw_nml
+      USE mod_time_varying_weir_boundary, only: WEIR_SETUP
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
      &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
