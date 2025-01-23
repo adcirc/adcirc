@@ -69,7 +69,7 @@ C
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
      &    initInundationOutput
-      USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
+      USE mod_time_varying_weir_boundary,ONLY:WEIR_SETUP
       USE GWCE, ONLY : etime1, etime2, etiminc
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF

@@ -50,9 +50,9 @@ C                        and momentum equations (package deal)                *
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
-C
+
       SUBROUTINE TIMESTEP(IT,TimeLoc)
-C
+
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
@@ -81,7 +81,7 @@ C
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
-     &    Limit_WaveStressGrad,
+     &    Limit_WaveStressGrad, TVW,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
      &    dynamicWaterLevelCorrectionDelta, RampIntFlux
       use mod_logging, only: ScreenUnit, INFO, WARNING,
@@ -145,24 +145,24 @@ Casey 090302: We need these values from other places.
      &                       COUPWIND,
      &                       InterpoWeight,
      &                       SWAN_WX2,
-     &                       SWAN_WY2
-Casey 100205: Add a variable for writing of SWAN hot-start files.
-     &                      ,WriteSwanHotStart
+     &                       SWAN_WY2,
+     &                       WriteSwanHotStart
 #endif
-      USE WEIR_FLUX, ONLY: COMPUTE_EXTERNAL_BOUNDARY_FLUX, COMPUTE_INTERNAL_BOUNDARY_FLUX,
-     & BARINHT1, BARINHT2, BARLANHT1, BARLANHT2, COMPUTE_INTERNAL_BOUNDARY64_FLUX,
-     & COMPUTE_CROSS_BARRIER_PIPE_FLUX, SET_SUBMERGED64_AT
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
      &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
 
       USE subgrid, ONLY: level0, getVertLookup
+
+      USE mod_weir_data, only: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2,
+     &                         step_weir_elevation
+      USE timestep_bc_forcing, only: apply_boundary_conditions
 
       ! full luni-solar tidal potential !
       USE mod_tidepotential, only: tidePotential
 
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
-C
+
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
       INTEGER IE, I, J, K, II, JJ                  !local loop counters
       INTEGER NM1, NM2, NM3
@@ -884,282 +884,12 @@ c     WJP 03.23.18 adding in the 2D baroclinic option
          IF (C2DDI) CALL BPG2D(IT,TimeLoc)
 
       ENDIF
-C...
-C...  COMPUTE SPECIFIED NORMAL FLOW BOUNDARY CONDITION
-C...
-      IF(NFLUXF.EQ.1) THEN
-         IF (NFFR.GT.0) THEN
-          DO J=1,NFFR
-            IF(FPER(J).EQ.0.D0) THEN
-               NCYC=0
-            ELSE
-#ifdef IBM
-               NCYC=INT(timeh/FPER(J),KIND(0.0d0))
-#else
-               NCYC=INT(timeh/FPER(J))
-#endif
-            ENDIF
-            ARGJ=FAMIG(J)*(timeh-NCYC*FPER(J))+FFACE(J)
-            RFF=FFF(J)*RampExtFlux  !jgf46.02 use river ramp for Katrina
-            DO I=1,NVEL
-               ARG=ARGJ-QNPH(J,I)
-               QN2(I)=QN2(I)+QNAM(J,I)*RFF*COS(ARG)
-               IF (LBCODEI(I).EQ.32) THEN
-                  ARG=ARGJ-ENPH(J,I)
-                  EN2(I)=EN2(I)+ENAM(J,I)*RFF*COS(ARG)
-               ENDIF
-            END DO
-          END DO
-         END IF
 
-         IF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
-            IF(TimeLoc.GT.QTIME2) THEN
-               QTIME1=QTIME2
-               QTIME2=QTIME2+FTIMINC
-               DO J=1,NVEL
-                  IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &                 .OR.(LBCODEI(J).EQ.22)) THEN
-                     QNIN1(J)=QNIN2(J)
-                     READ(20,*) QNIN2(J)
-                  ELSEIF(LBCODEI(J).EQ.32) THEN
-                     QNIN1(J)=QNIN2(J)
-                     ENIN1(J)=ENIN2(J)
-                     READ(20,*) QNIN2(J),ENIN2(J)
-                  ENDIF
-               END DO
-            ENDIF
-
-            QTRATIO=(TimeLoc-QTIME1)/FTIMINC
-            QN2=RampExtFlux*(QNIN1+QTRATIO*(QNIN2-QNIN1))
-            EN2=RampExtFlux*(ENIN1+QTRATIO*(ENIN2-ENIN1))
-         ENDIF
-
-CRAL_add_42.06f
-C     jgf46.21 Collect elevation information for river radiation b.c.
-         IF(IT.EQ.FluxSettlingIT) THEN
-            EtaDisc_Fill = .FALSE.    ! sb v46.48 11/06/2006
-            DO I=1, NP
-               EtaDisc(I) = Eta2(I)   ! EtaDisc written to hotstart file
-            ENDDO
-            DO I=1,NVEL
-               IF(LBCODEI(I).EQ.52) THEN
-                  NNBB=NBV(I)
-                  ElevDisc(I)=Eta2(NNBB)
-               ENDIF
-            END DO
-         ELSE IF(EtaDisc_Fill .and. IT > FluxSettlingIT) THEN
-            EtaDisc_Fill = .FALSE.
-            DO I=1,NVEL
-               IF(LBCODEI(I).EQ.52) THEN
-                  NNBB=NBV(I)
-                  ElevDisc(I)=EtaDisc(NNBB)   ! sb v46.48 11/06/2006
-               ENDIF
-            END DO
-         ENDIF
-
-      ENDIF
-C...
-C...  COMPUTE DISCHARGE CONTRIBUTION FROM RADIATION BOUNDARY CONDITION
-C...
-      IF(NFLUXRBC.EQ.1) THEN
-         DO J=1,NVEL
-            IF(LBCODEI(J).EQ.30) THEN
-               NNBB=NBV(J)
-               UN1=UU1(NNBB)*CSII(J)+VV1(NNBB)*SIII(J)
-               QN1(J)=H2(NNBB)*UN1
-            ENDIF
-         END DO
-      ENDIF
-
-C...  COMPUTE DISCHARGE CONTRIBUTION FROM ZERO NORMAL VELOCITY GRADIENT
-C...  BOUNDARY CONDITION
-C...
-        IF(NFLUXGBC.EQ.1) THEN
-          DO J=1,NVEL
-            IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) THEN
-              NNBB=NBV(J)
-              UN1=UU1(NNBB)*CSII(J)+VV1(NNBB)*SIII(J)
-              QN1(J)=H2(NNBB)*UN1
-              ENDIF
-            END DO
-          ENDIF
-C...
-C...  COMPUTE SUPERCRITICAL OUTWARD NORMAL FLOW OVER SPECIFIED
-C.... EXTERNAL BARRIER BOUNDARY NODES
-C...  COBELL - MOVED TO WEIR_BOUNDARY.F
-        IF(NFLUXB.EQ.1) THEN
-          DO I=1,NVEL
-            SELECT CASE(LBCODEI(I))
-            CASE(3,13,23)
-                CALL COMPUTE_EXTERNAL_BOUNDARY_FLUX(I,TIMELOC,QN2(I))
-            END SELECT 
-          END DO
-        ENDIF
-
-      IF(NFLUXIB64.EQ.1) THEN
-         ! Setting ISSUBMERGED64 flag
-         I = 0                         
-         DO K = 1, NBOU  
-            SELECT CASE(LBCODEI(I+1))
-               CASE(4,24,5,25)
-                  I = I + NVELL(K)*2
-               CASE(64)
-                  DO J = 1,NVELL(K)
-                     I = I + 1
-                     CALL SET_SUBMERGED64_AT(I,J,K,TIMELOC)
-                     ISSUBMERGED64P(I) = ISSUBMERGED64(I)
-                  ENDDO
-                  I = I + NVELL(K)
-               CASE DEFAULT
-                  I = I + NVELL(K)
-            END SELECT    
-         ENDDO
-         ! Cancelling ISSUBMERGED64 flag if any of the adjacent nodes along the boundary is not submerged. sb 8/9/2024
-         I = 0                         
-         DO K = 1, NBOU  
-            SELECT CASE(LBCODEI(I+1))
-               CASE(4,24,5,25)
-                  I = I + NVELL(K)*2
-               CASE(64)
-                  DO J = 1,NVELL(K)
-                     I = I + 1
-                     NNBB1 = NBV(I)
-                     HTOT = ETA2(NNBB1) + IFNLFA*DP(NNBB1)
-                     IF(ISSUBMERGED64(I).NE.0.AND.
-     &                  NODECODE(NNBB1).NE.0.AND.
-     &                  HTOT.LT.4.D0*H0) THEN
-                        UNSUBMERGE = .FALSE.
-                        X1 = X(NNBB1)
-                        Y1 = Y(NNBB1)
-                        ET1 = ETA2(NNBB1)
-                        IF(J>1) THEN
-                           NNBBNEI = NBV(I-1)
-                           X2 = X(NNBBNEI)
-                           Y2 = Y(NNBBNEI)
-                           ET2 = ETA2(NNBBNEI)
-                           LEN = SQRT((X1-X2)**2+(Y1-Y2)**2)
-                           SLP = ABS(ET1-ET2)/LEN
-                           IF(SLP.GT.0.0001) THEN
-                              UNSUBMERGE = .TRUE.
-                           ENDIF
-                        ENDIF
-                        IF(J<NVELL(K)) THEN
-                           NNBBNEI = NBV(I+1)
-                           X2 = X(NNBBNEI)
-                           Y2 = Y(NNBBNEI)
-                           ET2 = ETA2(NNBBNEI)
-                           LEN = SQRT((X1-X2)**2+(Y1-Y2)**2)
-                           SLP = ABS(ET1-ET2)/LEN
-                           IF(SLP.GT.0.0001) THEN
-                              UNSUBMERGE = .TRUE.
-                           ENDIF
-                        ENDIF
-                        IF(.NOT.UNSUBMERGE) THEN
-                           NWETNEI = 0
-                           DO JJ = 2,NNeigh(NNBB1)
-                              II = NeiTab(NNBB1,JJ)
-                              IF(NODECODE(II).NE.0) THEN
-                                 NWETNEI = NWETNEI + 1
-                              ENDIF
-                           ENDDO
-                           IF(NWETNEI.LT.3) THEN
-                              UNSUBMERGE = .TRUE.
-                           ENDIF
-                        ENDIF
-                        IF(UNSUBMERGE) THEN
-                           ISSUBMERGED64(I) = 0
-                           NNBB2 = IBCONN(I)
-                           IF(NNBB2>0) THEN
-                              ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 0
-                           ENDIF
-                        ENDIF
-                     ENDIF
-                  ENDDO
-                  I = I + NVELL(K)
-               CASE DEFAULT
-                  I = I + NVELL(K)
-            END SELECT    
-         ENDDO 
-      ENDIF
-
-C...  COMPUTE INWARD/OUTWARD NORMAL FLOW OVER SPECIFIED INTERNAL BARRIER
-C...  BOUNDARY (PERMEABLE OR NOT) NODES
-C...
-C     jgf46.03 Begin block of notes for internal barrier boundaries
-C
-C     NFLUXIB is set to 1 in read_input.F if there are internal barrier
-C     boundaries in the fort.14 (mesh) file.
-C
-C     IBSTART is a flag that indicates the first time through the time
-C     stepping loop; set to 0 in read_input.F and set to 1 here.
-C
-C     BARAVGWT was apparently intended for use in averaging internal
-C     barrier water levels. It is set to 0 in read_input.F, which seems
-C     to turn off any time averaging here.
-C
-C     NIBNODECODE seems to be set to 1 for nodes receiving water across
-C     the barrier
-C
-C     BARMIN is used in several places, mainly as the minimum elevation
-C     above the levee for flow to occur. It is a parameter and is set to
-C     0.04 in global.F.
-C
-C
-C...ZC - SIMPLIFIED THIS SECTION, MOVED FLUX COMPUTATION TO WEIR_BOUNDARY.F
-C   USE THE COMPILER FLAGS TO CHANGE IMPLEMENTATION:
-C        -DORIGWEIR - JOANNES WESTERINK ET AL IMPLEMENTATION (ORIGINAL)
-C                     THIS DOES NOT APPEAR TO HAVE BEEN USED IN QUITE 
-C                     SOME TIME
-C         DEFAULT   - SHINTARO BUNYA/SEIZO TANAKA IMPLEMENTATION FOR 
-C                     CHECKING FOR A WET EDGE BEFORE PASSING FLOW
-C                     ACROSS A WEIR
-      IF(NFLUXIB.EQ.1) THEN
-         NIBNODECODE(:) = 0
-         I = 0                         
-         DO K = 1, NBOU  
-            SELECT CASE(LBCODEI(I+1))
-                CASE(4,24,5,25)
-                    DO J = 1,NVELL(K)*2
-                        I = I + 1
-                        CALL COMPUTE_INTERNAL_BOUNDARY_FLUX(I,J,K,
-     &                      TIMELOC,QN2(I))
-                    ENDDO
-                CASE(64)
-                    DO J = 1,NVELL(K)*2
-                        I = I + 1
-                        IF(J.LE.NVELL(K)) THEN
-                           ISFRONT = .TRUE.
-                        ELSE
-                           ISFRONT = .FALSE.
-                        ENDIF
-                        CALL COMPUTE_INTERNAL_BOUNDARY64_FLUX(I,J,K,
-     &                      TIMELOC,QN2(I),ISFRONT)
-                    ENDDO
-                CASE DEFAULT
-                    I = I + NVELL(K)
-            END SELECT    
-         ENDDO
-      ENDIF
-
-C...
-C...  COMPUTE INWARD/OUTWARD NORMAL FLOW FOR INTERNAL BARRIER
-C.... BOUNDARY NODES THROUGH CROSS BARRIER PIPES
-C.... NOTE THAT THIS ADDS AN ADDITIONAL FLOW COMPONENT INTO QN2
-C...
-      IF(NFLUXIBP.EQ.1) THEN
-         DO I=1,NVEL
-            IF((LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)) THEN
-                PIPE_FLUX = 0D0
-                CALL COMPUTE_CROSS_BARRIER_PIPE_FLUX(I,TIMELOC,PIPE_FLUX)
-                QN2(I) = QN2(I) + PIPE_FLUX
-            ENDIF
-         ENDDO
-      ENDIF 
-
-      if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain
-      if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
-      if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
-
+!...  COMPUTE BOUNDARY CONDITIONS
+      call apply_boundary_conditions(IT, FluxSettlingIT, NFFR, timeh, TimeLoc, FTIMINC, RampExtFlux,
+     &                               NODECODE, NIBNODECODE, Eta2, DP, H2, UU1, VV1, QTIME1, QTIME2, ENIN1,
+     &                               ENIN2, QNIN1, QNIN2, EtaDisc, QN1, QN2, EN2, ElevDisc,
+     &                               TVW, EtaDisc_Fill, ISSUBMERGED64, ISSUBMERGED64P)
 
 !----------------------SOLVE GWCE---------------------------------------
 C...
@@ -1318,12 +1048,7 @@ C             everything is up-to-date.
       ENDIF
 
 C...  SAVE THE CURRENT TIME LEVEL OF BARRIER INTO THE PREVIOUS TIME LEVEL
-      IF(NFLUXIB.EQ.1)THEN
-        BARINHT1(:)=BARINHT2(:)
-      ENDIF
-      IF(NFLUXB.EQ.1)THEN
-        BARLANHT1(:)=BARLANHT2(:)
-      ENDIF  
+      call step_weir_elevation(NFLUXIB, NFLUXB, NVEL, BARINHT2, BARLANHT2, BARINHT1, BARLANHT1)
 
 C...
 c...  find and print to unit 6, the maximum elevation, the maximum
