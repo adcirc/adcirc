@@ -82,7 +82,7 @@ contains
                                                                   QN1)
       call apply_exterior_weir_boundary_discharge(NFLUXB, NP, NVEL, LBCODEI, TIMELOC, TVW, QN2)
       call apply_interior_weir_boundary_discharge(NFLUXIB, NP, NBOU, NVEL, NVELL, LBCODEI, TIMELOC, NIBNODECODE, TVW, QN2)
-      call apply_cross_barrier_pipe_discharge(NFLUXIBP, NP, NVEL, LBCODEI, TIMELOC, NIBNODECODE, QN2)
+      call apply_cross_barrier_pipe_discharge(NFLUXIBP, NP, NVEL, LBCODEI, NIBNODECODE, QN2)
 
    end subroutine apply_boundary_conditions
 
@@ -251,6 +251,8 @@ contains
 
       implicit none
 
+      real(8), parameter  :: eps = EPSILON(1.d0)
+
       integer, intent(in) :: NFFR
       integer, intent(in) :: NVEL
       integer, intent(in) :: LBCODEI(NVEL)
@@ -273,7 +275,8 @@ contains
       real(8) :: RFF
 
       do J = 1, NFFR
-         if (FPER(J) == 0.d0) then
+         ! Check if the period is zero
+         if (abs(FPER(J)) <= eps) then
             NCYC = 0
          else
             NCYC = int(timeh/FPER(J))
@@ -489,7 +492,7 @@ contains
                   else
                      ISFRONT = .false.
                   end if
-                  QN2(I) = COMPUTE_INTERNAL_BOUNDARY64_FLUX(I, J, K, TIMELOC, ISFRONT, NIBNODECODE, TVW)
+                  QN2(I) = COMPUTE_INTERNAL_BOUNDARY64_FLUX(I, J, K, TIMELOC, TVW)
                end do
             case DEFAULT
                I = I + NVELL(K)
@@ -510,7 +513,7 @@ contains
    !> @param[in] TIMELOC Current time
    !> @param[in,out] QN2 Array of boundary discharges
    !*******************************************************************************
-   subroutine apply_cross_barrier_pipe_discharge(NFLUXIBP, NP, NVEL, LBCODEI, TIMELOC, NIBNODECODE, QN2)
+   subroutine apply_cross_barrier_pipe_discharge(NFLUXIBP, NP, NVEL, LBCODEI, NIBNODECODE, QN2)
       use mod_weir_flow, only: COMPUTE_CROSS_BARRIER_PIPE_FLUX
 
       implicit none
@@ -519,7 +522,6 @@ contains
       integer, intent(in) :: NP
       integer, intent(in) :: NVEL
       integer, intent(in) :: LBCODEI(NVEL)
-      real(8), intent(in) :: TIMELOC
       integer, intent(inout) :: NIBNODECODE(NP)
       real(8), intent(inout) :: QN2(NVEL)
 
@@ -528,7 +530,7 @@ contains
       if (NFLUXIBP == 1) then
          do I = 1, NVEL
             if ((LBCODEI(I) == 5) .or. (LBCODEI(I) == 25)) then
-               QN2(I) = QN2(I) + COMPUTE_CROSS_BARRIER_PIPE_FLUX(I, TIMELOC, NIBNODECODE)
+               QN2(I) = QN2(I) + COMPUTE_CROSS_BARRIER_PIPE_FLUX(I, NIBNODECODE)
             end if
          end do
       end if

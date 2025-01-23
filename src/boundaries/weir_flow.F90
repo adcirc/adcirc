@@ -140,7 +140,7 @@ contains
                                                    TVW) result(FLUX)
 
       use BOUNDARIES, only: BARINCFSB, BARINCFSP, NVELL, IBCONN, BARINHT
-      use GLOBAL, only: USE_TVW, NODECODE
+      use GLOBAL, only: NODECODE
       use MESH, only: NP
 
       implicit none
@@ -300,14 +300,13 @@ contains
    !> @param ISFRONT - A flag to indicate if the boundary is a front
    !> @return FLUX - The flux in/out of the domain
    !-----------------------------------------------------------------------
-   real(8) function COMPUTE_INTERNAL_BOUNDARY64_FLUX( &
-      BARRIER_INDEX, BOUNDARYNODE, BOUNDARY, TIMELOC, &
-      ISFRONT, NIBNODECODE, TVW) result(FLUX)
+   real(8) function COMPUTE_INTERNAL_BOUNDARY64_FLUX(BARRIER_INDEX, BOUNDARYNODE, &
+                                                     BOUNDARY, TIMELOC, TVW) result(FLUX)
 
       use BOUNDARIES, only: BARINCFSB, BARINCFSP, &
                             NVELL, IBCONN, BARINHT, ISSUBMERGED64, NBV
-      use GLOBAL, only: USE_TVW, NODECODE, H0
-      use MESH, only: LBArray_Pointer, MNEI, NEITAB, NNEIGH, DP, NP
+      use GLOBAL, only: NODECODE
+      use MESH, only: LBArray_Pointer, DP, NP
 
       implicit none
 
@@ -315,9 +314,7 @@ contains
       integer, intent(in), target :: BOUNDARY
       integer, intent(in), target :: BOUNDARYNODE
       real(8), intent(in) :: TIMELOC
-      logical, intent(in) :: ISFRONT
       real(8), intent(inout) :: TVW(NP)
-      integer, intent(inout) :: NIBNODECODE(NP)
 
       integer :: NNBB1, NNBB2
       integer :: NNBB1WN, NNBB2WN
@@ -518,7 +515,7 @@ contains
    !> @param TIMELOC - The time location of the simulation
    !> @param FLUX - The flux out of the domain
    !-----------------------------------------------------------------------
-   real(8) function COMPUTE_CROSS_BARRIER_PIPE_FLUX(IDX, TIMELOC, NIBNODECODE) result(FLUX)
+   real(8) function COMPUTE_CROSS_BARRIER_PIPE_FLUX(IDX, NIBNODECODE) result(FLUX)
       use BOUNDARIES, only: NBV, IBCONN, PIPEHT, PIPEDIAM, PIPECOEF
       use ADC_CONSTANTS, only: G, PI
       use GLOBAL, only: NODECODE, ETA2, RampIntFlux
@@ -527,7 +524,6 @@ contains
       implicit none
 
       integer, intent(in) :: IDX
-      real(8), intent(in) :: TIMELOC
       integer, intent(inout) :: NIBNODECODE(NP)
 
       integer :: NNBB1

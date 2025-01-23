@@ -41,7 +41,6 @@ module mod_time_varying_weir_boundary
 
    real(8), allocatable :: BARHT_FINAL(:) !...Final elevation for time varying boundary
    real(8), allocatable :: BAR_LOCATIONS(:, :) !...Location array for boundary conditions
-   real(8), allocatable :: GHOST_LOCATIONS(:, :) !...Location array for the ghost nodes
    real(8), allocatable :: BAR_DEG_START(:) !...Start time for time varying boundary
    real(8), allocatable :: BAR_DEG_END(:) !...End time for time varying boundary
    real(8), allocatable :: BAR_ETA_MAX(:) !...Used if the boundary changes at a critical water surface elevation
@@ -50,7 +49,11 @@ module mod_time_varying_weir_boundary
    logical, allocatable :: BAR_DEG(:) !...T/F this node is a time varying boundary
    integer, allocatable :: BAR_VARYTYPE(:) !...Type of variation to apply to this boundary node
    type(KDTREE2), pointer :: BARRIER_SEARCHTREE !...Search tree for boundary nodes
+
+#ifdef CMPI
+   real(8), allocatable :: GHOST_LOCATIONS(:, :) !...Location array for the ghost nodes
    type(KDTREE2), pointer :: GHOST_SEARCHTREE !...Search tree for ghost nodes
+#endif
 
    !..CHARACTERIZES A SECTION OF THE SCHEDULE
    type BSCHED
@@ -170,8 +173,10 @@ contains
    !  WEIR TYPE BOUNDARY CONDITIONS AND WEIRS WITH PIPES
    !-----------------------------------------------------------------------
    subroutine ALLOCATE_TIMEVARYINGWEIRS()
-
-      use MESH, only: X, Y, NP
+#ifdef CMPI
+      use MESH, only: NP
+#endif
+      use MESH, only: X, Y
       use BOUNDARIES, only: NVEL, LBCODEI, NBV
 #ifdef CMPI
       use MESSENGER, only: RESNODE
@@ -181,8 +186,10 @@ contains
 
       integer :: I
       integer :: NWEIR
-      integer :: NGHOST
       integer :: IDX
+#ifdef CMPI
+      integer :: NGHOST
+#endif
 
       call setMessageSource("ALLOCATE_TIMEVARYINGWEIRS")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -281,11 +288,8 @@ contains
    subroutine FIND_BOUNDARY_NODES(LON, LAT, IDX)
       use MESH, only: ICS, SLAM0, SFEA0, &
                       DRVSPCOORSROTS, CYLINDERMAP
-      use BOUNDARIES, only: NBV
       use GLOBAL, only: DEG2RAD, IFSPROTS
-#ifdef CMPI
-      use MESSENGER, only: RESNODE
-#endif
+
       implicit none
       real(8), intent(in) :: LAT
       real(8), intent(in) :: LON
@@ -398,6 +402,8 @@ contains
 
       implicit none
 
+      real(8), parameter :: EPS = epsilon(1.0d0)
+
       integer, intent(in) :: MYIDX
       character(20) :: VC
       real(8), intent(in) :: TIMELOC
@@ -436,7 +442,7 @@ contains
       !..WRITE SCREEN/UNIT 16 INFORMATION AT START/END
       select case (BAR_VARYTYPE(MYIDX))
       case (1, 2)
-         if (BAR_DEG_START(MYIDX) == TIMELOC) then
+         if (abs(BAR_DEG_START(MYIDX) - TIMELOC) <= EPS) then
             if (BAR_VARYTYPE(MYIDX) == 1) then
                VC = 'LINEAR'
             elseif (BAR_VARYTYPE(MYIDX) == 2) then
@@ -451,7 +457,7 @@ contains
 #endif
             call allMessage(INFO, scratchMessage)
          end if
-         if (BAR_DEG_END(MYIDX) == TIMELOC) then
+         if (abs(BAR_DEG_END(MYIDX) - TIMELOC) <= EPS) then
             if (BAR_VARYTYPE(MYIDX) == 1) then
                VC = 'LINEAR'
             elseif (BAR_VARYTYPE(MYIDX) == 2) then
@@ -502,13 +508,13 @@ contains
    subroutine COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX, &
                                             TIMELOC, BAR_HEIGHT_CURRENT, BAR_HEIGHT, BARHT_START)
 
-      use GLOBAL, only: DT
-      use mod_logging, only: SCREENUNIT
       use MESH, only: DP
       use BOUNDARIES, only: BARINHT, BARLANHT, LBCODEI, &
                             NBV, IBCONN
 
       implicit none
+
+      real(8), parameter :: EPS = epsilon(1.0d0)
 
       integer, intent(in) :: MYIDX
       real(8), intent(in) :: TIMELOC
@@ -566,8 +572,7 @@ contains
          end select
       end if
 
-      if (BAR_DEG_END(MYIDX) == TIMELOC) then
-
+      if (abs(BAR_DEG_END(MYIDX) - TIMELOC) < EPS) then
          BAR_HEIGHT = BARHT_FINAL(MYIDX)
       else
          BAR_DT = BAR_DEG_END(MYIDX) - BAR_DEG_START(MYIDX)
@@ -639,20 +644,17 @@ contains
    subroutine COMPUTE_BARRIER_HEIGHT_ETAMAX(MYIDX, TIMELOC, &
                                             BAR_HEIGHT_CURRENT, BAR_HEIGHT)
 
-      use GLOBAL, only: DT, ETA2, NNODECODE
-      use mod_logging, only: SCREENUNIT
-      use MESH, only: DP
-      use BOUNDARIES, only: BARINHT, BARLANHT, LBCODEI, NBV, IBCONN
+      use GLOBAL, only: ETA2, NNODECODE
+      use BOUNDARIES, only: NBV, IBCONN
 
       implicit none
+
+      real(8), parameter :: EPS = epsilon(1.0d0)
 
       integer, intent(in) :: MYIDX
       real(8), intent(in) :: TIMELOC
       real(8), intent(in) :: BAR_HEIGHT_CURRENT
       real(8), intent(out) :: BAR_HEIGHT
-      real(8) :: BAR_DZ, BAR_DT
-      real(8) :: BAR_START
-      real(8) :: DEPTH
 
       call setMessageSource("COMPUTE_BARRIER_HEIGHT_ETAMAX")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -663,7 +665,7 @@ contains
       BAR_HEIGHT = BAR_HEIGHT_CURRENT
 
       !..CHECK IF THE ETA_MAX HAS BEEN EXCEEDED ALREADY
-      if (BAR_FAILURE_START(MYIDX) == -1d0) then
+      if (abs(BAR_FAILURE_START(MYIDX) + 1d0) <= EPS) then
          if (ETA2(NBV(MYIDX)) > BAR_ETA_MAX(MYIDX) .and. NNODECODE(NBV(MYIDX)) == 1) then
             !..WE NEED TO INITIALIZE OUR START TIME FOR THE FAILURE
             BAR_DEG_START(MYIDX) = TIMELOC
@@ -717,6 +719,9 @@ contains
       use MESH, only: DP
       use BOUNDARIES, only: IBCONN, NBV, LBCODEI, BARLANHT, BARINHT
       implicit none
+
+      real(8), parameter :: EPS = epsilon(1.0d0)
+
       integer, intent(in) :: MYIDX
       real(8), intent(in) :: TIMELOC
       real(8), intent(in) :: BAR_HEIGHT_CURRENT
@@ -753,8 +758,7 @@ contains
 
       !..IF THIS IS THE FIRST TIMESTEP IN THIS SECTINO OF THE
       !               SCHEDULE, THEN SET UP THE VARIABLES NEEDED
-      if (BAR_SCHEDULE(MYIDX)%SECTION(MYSEC)%BAR_DEG_START == &
-          TIMELOC - PREVEND - OFFSET) then
+      if (abs(BAR_SCHEDULE(MYIDX)%SECTION(MYSEC)%BAR_DEG_START - (TIMELOC - PREVEND - OFFSET)) <= EPS) then
 
          !..THIS IS THE BARRIER HEIGHT AT THE START OF THIS
          !                   PORTION OF THE SCHEDULE. SAVE IT FOR LINEAR
@@ -848,8 +852,7 @@ contains
          !..THIS IS THE END OF A SCHEDULE SECTION, WE NEED TO
          !  INCREMENT COUNTERS AND PREPARE FOR THE NEXT SECTION
          !  OF THE SCHEDULE
-      elseif (BAR_SCHEDULE(MYIDX)%SECTION(MYSEC)% &
-              BAR_DEG_END == TIMELOC - PREVEND - OFFSET) then
+      elseif (abs(BAR_SCHEDULE(MYIDX)%SECTION(MYSEC)%BAR_DEG_END - (TIMELOC - PREVEND - OFFSET)) <= EPS) then
 
          !..GET NODE NUMBER AND INFORM SCREEN AND UNIT 16
          NNBB1 = NBV(MYIDX)
@@ -1331,6 +1334,8 @@ contains
       character(*), intent(in) :: MYFILE
       type(BARRIER_SCHEDULE_T), intent(out) :: MYSCHED
 
+      real(8), parameter :: eps = epsilon(1d0)
+
       character(500) :: origLine, modLine
       real(8) :: BAR_DEG_START, BAR_DEG_END
       real(8) :: DELTA, HOTSEC
@@ -1404,7 +1409,7 @@ contains
             MYSCHED%SECTION(I)%BARHT_FINAL = ZF
             MYSCHED%SECTION(I)%BARHT_DELTA = DELTA
             if ((BAR_DEG_START < 0d0) .or. &
-                (BAR_DEG_END == 0d0)) then
+                (abs(BAR_DEG_END) <= eps)) then
                call allMessage(ERROR, &
                                "You must specify start and end for "// &
                                "each point in barrier schedule.")
@@ -1415,8 +1420,7 @@ contains
                                " a flag or final elevation for "// &
                                "BARHT_FINAL")
                call terminate()
-            elseif ((ZF == -99991) .or. &
-                    (ZF == -99992)) then
+            elseif (abs(ZF + 99991d0) <= eps .or. abs(ZF + 99992d0) <= eps) then
                if (ISNULL(DELTA)) then
                   call allMessage(ERROR, "If specifying a " &
                                   //"relative value for ZF, you must " &
