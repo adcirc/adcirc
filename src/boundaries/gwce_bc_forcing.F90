@@ -66,9 +66,8 @@ contains
                             nfluxb, nfluxf, nfluxib, nfluxgbc, nfluxrbc
       use global, only: per, amig, face, ff, efa, emo, nbfr, pr2, ilump, obccoef, coefd, &
                         usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1, &
-                        dynamicWaterLevelCorrection2, RES_BC_FLAG, BCFLAG_LNM, CBaroclinic, &
-                        LNM_BC, FluxSettlingIT, nodecode, qn0, qn1, qn2, nperseg, iperconn, &
-                        nnperbc
+                        RES_BC_FLAG, BCFLAG_LNM, CBaroclinic, LNM_BC, FluxSettlingIT, &
+                        nodecode, qn0, qn1, qn2, nperseg, iperconn, nnperbc
       use subdomain, only: subdomainOn, enforceBN, enforceECB
       use nodalattributes, only: geoidoffset, loadGeoidOffset, tau0var
       use spongelayer, only: no_met_in_sponge
@@ -89,11 +88,10 @@ contains
       integer, intent(in)    :: IT
       logical, intent(in)    :: invertedBarometerOnElevationBoundary
 
-      call apply_periodic_boundaries(NBFR, NETA, NP, NBD, RampElev, TimeLoc, TimeH, PER, &
+      call apply_periodic_boundaries(NBFR, NETA, NP, NBD, RampElev, TimeH, PER, &
                                      AMIG, FACE, FF, EFA, EMO, Eta2)
-      call apply_aperiodic_boundaries(subdomainOn, enforceBN, NETA, NPEBC, NP, NBD, RampElev, &
-                                      TimeLoc, TimeH, ETIME1, ETIME2, ETIMINC, ESBIN1, ESBIN2, &
-                                      ETRATIO, Eta2)
+      call apply_aperiodic_boundaries(subdomainOn, enforceBN, NETA, NPEBC, NP, NBD, RampElev, TimeLoc, &
+                                      ETIME1, ETIME2, ETIMINC, ESBIN1, ESBIN2, ETRATIO, Eta2)
       call apply_geoid_offset(subdomainOn, LoadGeoidOffset, enforceBN, NETA, NP, NBD, GeoidOffset, ETA2)
       call apply_inverted_barometer_on_elevation_boundaries(NO_MET_IN_SPONGE, &
                                                             invertedBarometerOnElevationBoundary, NETA, &
@@ -146,19 +144,15 @@ contains
    !> @param IBCONN The connectivity table for the boundary nodes
    !> @param LBCODEI The boundary code for each boundary node
    !> @param NODECODE The node code
-   !> @param NListCondensedNodes The number of condensed nodes
-   !> @param NNodesListCondensedNodes The number of nodes in the condensed nodes list
-   !> @param ListCondensedNodes The list of condensed nodes
    !> @param ISSUBMERGED64 The submerged flag for the vew boundary nodes
    !> @param COEFD The coefficient for the elevation specified boundary nodes
-   !> @param COEFDTempMem The temporary memory for the coefficient
    !> @param GWCE_LV The gwce load vector
    !> @param ETA1 The eta1 solution
    !> @param COEFDTemp The temporary coefficient
    ! *********************************************************************
    subroutine vew1d_sum_front_and_back_side(NFLUXIB64_GBL, ILump, NP, NBOU, NVEL, NVELL, NBV, IBCONN, LBCODEI, &
-                                            NODECODE, NListCondensedNodes, NNodesListCondensedNodes, &
-                                            ListCondensedNodes, ISSUBMERGED64, COEFD, COEFDTempMem, GWCE_LV, ETA1, COEFDTemp)
+                                            NODECODE, ISSUBMERGED64, COEFD, GWCE_LV, ETA1, &
+                                            COEFDTemp)
       implicit none
 
       integer, intent(in) :: NFLUXIB64_GBL
@@ -171,17 +165,13 @@ contains
       integer, intent(in) :: IBCONN(NVEL)
       integer, intent(in) :: LBCODEI(NVEL)
       integer, intent(in) :: NODECODE(NP)
-      integer, intent(in) :: NListCondensedNodes
-      integer, intent(in) :: NNodesListCondensedNodes(NListCondensedNodes)
-      integer, intent(in) :: ListCondensedNodes(:, :)
       integer, intent(in) :: ISSUBMERGED64(NVEL)
       real(8), intent(inout) :: COEFD(NP)
-      real(8), intent(inout) :: COEFDTempMem(NP)
       real(8), intent(inout) :: GWCE_LV(NP)
       real(8), intent(inout) :: ETA1(NP)
       real(8), pointer, intent(inout) :: COEFDTemp(:)
 
-      integer :: I, J, K, L, NNBB1, NNBB2
+      integer :: I, J, K, NNBB1, NNBB2
 
       if ((NFLUXIB64_GBL > 0) .and. (ILump /= 0)) then
          I = 0
@@ -231,7 +221,7 @@ contains
    !> @param LoadCondensedNodes Flag to indicate if the condensed nodes are loaded
    ! *********************************************************************
    subroutine condensed_nodes_sum_values(LoadCondensedNodes, ILump, NP, NListCondensedNodes, NNodesListCondensedNodes, &
-                                         ListCondensedNodes, NODECODE, COEFDTempMem, GWCE_LV, ETA1, COEFDTemp)
+                                         ListCondensedNodes, NODECODE, GWCE_LV, ETA1, COEFDTemp)
       implicit none
 
       logical, intent(in) :: LoadCondensedNodes
@@ -241,7 +231,6 @@ contains
       integer, intent(in) :: NNodesListCondensedNodes(NListCondensedNodes)
       integer, intent(in) :: ListCondensedNodes(:, :)
       integer, intent(in) :: NODECODE(NP)
-      real(8), intent(inout) :: COEFDTempMem(NP)
       real(8), intent(inout) :: GWCE_LV(NP)
       real(8), intent(inout) :: ETA1(NP)
       real(8), pointer, intent(inout) :: COEFDTemp(:)
@@ -288,20 +277,14 @@ contains
    !> @param IBCONN The connectivity table for the boundary nodes
    !> @param LBCODEI The boundary code for each boundary node
    !> @param NODECODE The node code
-   !> @param NListCondensedNodes The number of condensed nodes
-   !> @param NNodesListCondensedNodes The number of nodes in the condensed nodes list
-   !> @param ListCondensedNodes The list of condensed nodes
    !> @param ISSUBMERGED64 The submerged flag for the vew boundary nodes
    !> @param COEFD The gwce matrix diagonal entries
-   !> @param COEFDTempMem The temporary memory for temporary diagonal entries
    !> @param GWCE_LV The gwce load vector
    !> @param ETA1 The eta1 solution
    !> @param COEFDTemp The temporary matrix diagonal entries
    ! *********************************************************************
    subroutine vew1d_copy_values_front_to_back(NFLUXIB64_GBL, ILump, NP, NBOU, NVEL, NVELL, NBV, IBCONN, LBCODEI, &
-                                              NODECODE, NListCondensedNodes, NNodesListCondensedNodes, &
-                                              ListCondensedNodes, ISSUBMERGED64, COEFDTempMem, GWCE_LV, &
-                                              ETA1, COEFDTemp)
+                                              NODECODE, ISSUBMERGED64, GWCE_LV, ETA1, COEFDTemp)
       implicit none
 
       integer, intent(in) :: NFLUXIB64_GBL
@@ -314,11 +297,7 @@ contains
       integer, intent(in) :: IBCONN(NVEL)
       integer, intent(in) :: LBCODEI(NVEL)
       integer, intent(in) :: NODECODE(NP)
-      integer, intent(in) :: NListCondensedNodes
-      integer, intent(in) :: NNodesListCondensedNodes(NListCondensedNodes)
-      integer, intent(in) :: ListCondensedNodes(:, :)
       integer, intent(in) :: ISSUBMERGED64(NVEL)
-      real(8), intent(inout) :: COEFDTempMem(NP)
       real(8), intent(inout) :: GWCE_LV(NP)
       real(8), intent(inout) :: ETA1(NP)
       real(8), pointer, intent(inout) :: COEFDTemp(:)
@@ -422,8 +401,6 @@ contains
       real(8), intent(inout) :: ETA1(NP)
       real(8), pointer, intent(inout) :: COEFDTemp(:)
 
-      integer :: I, J, K, L, NNBB1, NNBB2
-
       !.... Prep for the temporary LHS lumped array
       if (((NFLUXIB64_GBL > 0) .and. (ILump /= 0)) .or. LoadCondensedNodes) then
          COEFDTemp => COEFDTempMem
@@ -434,12 +411,11 @@ contains
 
       ! VEW: Sum front side values to back side
       call vew1d_sum_front_and_back_side(NFLUXIB64_GBL, ILump, NP, NBOU, NVEL, NVELL, NBV, IBCONN, LBCODEI, &
-                                         NODECODE, NListCondensedNodes, NNodesListCondensedNodes, &
-                                         ListCondensedNodes, ISSUBMERGED64, COEFD, COEFDTempMem, GWCE_LV, ETA1, COEFDTemp)
+                                         NODECODE, ISSUBMERGED64, COEFD, GWCE_LV, ETA1, COEFDTemp)
 
       !.... CONDENSED NODES: Summing up the values at condensed nodes
       call condensed_nodes_sum_values(LoadCondensedNodes, ILump, NP, NListCondensedNodes, NNodesListCondensedNodes, &
-                                      ListCondensedNodes, NODECODE, COEFDTempMem, GWCE_LV, ETA1, COEFDTemp)
+                                      ListCondensedNodes, NODECODE, GWCE_LV, ETA1, COEFDTemp)
 
 #ifdef CMPI
       if ((NFLUXIB64_GBL > 0 .or. LoadCondensedNodes) .and. (ILump /= 0)) then
@@ -449,8 +425,7 @@ contains
 
       ! VEW: Copy values from back side to front side
       call vew1d_copy_values_front_to_back(NFLUXIB64_GBL, ILump, NP, NBOU, NVEL, NVELL, NBV, IBCONN, LBCODEI, &
-                                           NODECODE, NListCondensedNodes, NNodesListCondensedNodes, &
-                                           ListCondensedNodes, ISSUBMERGED64, COEFDTempMem, GWCE_LV, ETA1, COEFDTemp)
+                                           NODECODE, ISSUBMERGED64, GWCE_LV, ETA1, COEFDTemp)
 
    end subroutine apply_vew1d_and_condensed_nodes
 
@@ -578,16 +553,17 @@ contains
    !> @param EMO
    !> @param Eta2 The elevation field
    ! *********************************************************************
-   subroutine apply_periodic_boundaries(NBFR, NETA, NP, NBD, RampElev, TimeLoc, TimeH, PER, AMIG, FACE, FF, &
+   subroutine apply_periodic_boundaries(NBFR, NETA, NP, NBD, RampElev, TimeH, PER, AMIG, FACE, FF, &
                                         EFA, EMO, Eta2)
       implicit none
+
+      real(8), parameter  :: eps = EPSILON(1.d0)
 
       integer, intent(in) :: NBFR
       integer, intent(in) :: NETA
       integer, intent(in) :: NP
       integer, intent(in) :: NBD(NETA)
       real(8), intent(in) :: RampElev
-      real(8), intent(in) :: TimeLoc
       real(8), intent(in) :: TimeH
       real(8), intent(in) :: PER(NBFR)
       real(8), intent(in) :: AMIG(NBFR)
@@ -601,7 +577,7 @@ contains
       real(8) :: ARGJ, ARG, RFF
 
       do J = 1, NBFR
-         if (PER(J) == 0.) then
+         if (abs(PER(J)) <= eps) then
             NCYC = 0
          else
             NCYC = int(timeh/PER(J))
@@ -635,7 +611,7 @@ contains
    !> @param ETRATIO The ratio of the current time to the end time
    !> @param Eta2 The elevation field
    ! *********************************************************************
-   subroutine apply_aperiodic_boundaries(subdomainOn, enforceBN, NETA, NPEBC, NP, NBD, RampElev, TimeLoc, TimeH, &
+   subroutine apply_aperiodic_boundaries(subdomainOn, enforceBN, NETA, NPEBC, NP, NBD, RampElev, TimeLoc, &
                                          ETIME1, ETIME2, ETIMINC, ESBIN1, ESBIN2, ETRATIO, Eta2)
       use subdomain, only: enforceEcb
       implicit none
@@ -648,7 +624,6 @@ contains
       integer, intent(in) :: NBD(NETA)
       real(8), intent(in) :: RampElev
       real(8), intent(in) :: TimeLoc
-      real(8), intent(in) :: TimeH
       real(8), intent(in) :: ETIMINC
       real(8), intent(inout) :: ETRATIO
       real(8), intent(inout) :: ESBIN1(NETA)
@@ -951,8 +926,7 @@ contains
    !> @param dt The time step
    !> @param FluxSettlingIT The number of iterations of flux settling
    ! *********************************************************************
-   real(8) pure function compute_qforce_ibtype52(qn0, qn1, qn2, etas, &
-                                                 en0, en1, en2, eta1, &
+   real(8) pure function compute_qforce_ibtype52(qn0, qn1, qn2, etas, eta1, &
                                                  elevdisc, h1, tau0, &
                                                  it, dt, FluxSettlingIT) result(qforce)
       use adc_constants, only: G
@@ -961,9 +935,6 @@ contains
       real(8), intent(in) :: QN0
       real(8), intent(in) :: QN1
       real(8), intent(in) :: QN2
-      real(8), intent(in) :: en0
-      real(8), intent(in) :: en1
-      real(8), intent(in) :: en2
       real(8), intent(in) :: EtaS
       real(8), intent(in) :: Eta1
       real(8), intent(in) :: ElevDisc
@@ -1010,7 +981,6 @@ contains
    ! *********************************************************************
    real(8) pure function compute_qforce_normal_flow_boundary(LBCode, DT, IT, FluxSettlingIT, QN0, QN1, QN2, ETAS, EN0, &
                                                              EN1, EN2, ETA1, ElevDisc, H1, TAU0) result(qforce)
-      use adc_constants, only: G
       implicit none
 
       integer, intent(in) :: IT
@@ -1038,8 +1008,7 @@ contains
       case (40, 41)
          qforce = compute_qforce_ibtype4041(QN0, QN1, TAU0, DT)
       case (52)
-         qforce = compute_qforce_ibtype52(QN0, QN1, QN2, ETAS, EN0, &
-                                          EN1, EN2, ETA1, ElevDisc, &
+         qforce = compute_qforce_ibtype52(QN0, QN1, QN2, ETAS, ETA1, ElevDisc, &
                                           H1, TAU0, IT, DT, FluxSettlingIT)
       case default
          qforce = compute_qforce_default(QN0, QN1, QN2, TAU0, DT)
