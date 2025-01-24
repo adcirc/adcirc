@@ -19,7 +19,7 @@ if(BUILD_ADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/boundaries.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
@@ -66,8 +66,7 @@ if(BUILD_ADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/timestep_bc_forcing.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/weir_data.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/weir_flow.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/time_varying_weir.F90
-  )
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/time_varying_weir.F90)
 
   if(NETCDF_WORKING)
     set(ADCIRC_SOURCES

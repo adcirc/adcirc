@@ -19,7 +19,7 @@ if(BUILD_ADCPREP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/boundaries.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F

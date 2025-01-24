@@ -124,7 +124,10 @@ contains
 
       integer, intent(in) :: level
       character(*), intent(in) :: message
+
+#ifdef FULL_STACK
       integer :: j ! loop counter for stack
+#endif
 
       if (myProc == 0) then
          if (NSCREEN /= 0) then
@@ -172,7 +175,10 @@ contains
 
       integer, intent(in) :: level
       character(*), intent(in) :: message
+
+#ifdef FULL_STACK
       integer :: j ! loop counter for stack
+#endif
 
       if (level >= NABOUT) then
 #ifdef FULL_STACK

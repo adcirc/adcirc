@@ -434,8 +434,7 @@ C----------------------------------------------------------------------
       !
       !
       call getMeshSizesForPrep(nnodg, nelg)
-      call getBoundarySizesForPrep(nbou, nvel, neta, nope,
-     &   nweir, exist_flux)
+      call getBoundarySizesForPrep(nbou, nvel, neta, nope, nweir, exist_flux)
       write(netamsg,'(i0)') neta
       write(nopemsg,'(i0)') nope
       write(nboumsg,'(i0)') nbou
@@ -461,8 +460,7 @@ C----------------------------------------------------------------------
       ! get mesh parameters
       call getMeshForPrep(agrid, x, y, dp)
       call getBoundariesForPrep(nvdll, nvell, ibtypee, nbdv, lbcode, ibtype, nbvv,
-     &   ibconnr, bar1, bar2, bar3, weir, weird, iden, nfover,
-     &   exist_flux, flux14_ary)
+     &   ibconnr, bar1, bar2, bar3, weir, weird, exist_flux, flux14_ary)
       do k=1,nope
          write(nvdllmsg(k),'(i0)') nvdll(k)
       end do

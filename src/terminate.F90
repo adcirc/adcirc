@@ -44,8 +44,12 @@ contains
 #ifdef CMPI
    subroutine MSG_ABORT()
       use mpi, only: mpi_comm_world, mpi_abort
+
       implicit none
-      integer myerr, myerrcode
+
+      integer, parameter :: myerrcode = 1
+      integer :: myerr
+
       call mpi_abort(mpi_comm_world, myerrcode, myerr)
    end subroutine MSG_ABORT
 #endif

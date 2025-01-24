@@ -111,28 +111,27 @@ C******************************************************************************
 C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
-      !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE VERSION, ONLY : adc_version, adc_hash, fileFmtMajor, fileFmtMinor, 
      &   FileFmtRev
-      USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
+      USE SIZES, ONLY : rootDir, mnproc, mnwproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
      &   get_numwriters, mnstae
-      USE mod_logging, only: DEBUG, INFO, allMessage, ScreenUnit, setMessageSource,
-     &       scratchMessage, unsetMessageSource, openLogFile, screenMessage,
+      USE mod_logging, only: DEBUG, allMessage, ScreenUnit, setMessageSource,
+     &       unsetMessageSource, openLogFile, screenMessage,
      &       initLogging
       USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
      &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, 
-     &   dynamicWaterLevelCorrectionSta, itime, dtdp, statim,
+     &   dynamicWaterLevelCorrectionSta, dtdp, statim,
      &   CHotHS, dtdpHS, FileFmtVersion, ifnlcat, nabout, ncchange,
      &   ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im, iths,
-     &   nolica, nolicat, nolifa, nscreen, nstae, nt,
+     &   nolica, nolicat, nolifa, nscreen, nt,
      &   version_number, np_global, rnp_global,
-     &   CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta
+     &   CTIP, L_N, dynamicWaterLevelCorrectionDelta
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
      &   initVEW1DChannelWetPerimeter
       USE ADC_CONSTANTS, ONLY: g, rhowat0
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
-      USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
+      USE MESH, ONLY : totalAreaCalc, np, SFEA
       USE GWCE, ONLY : initGWCE
       USE MOMENTUM, ONLY : initMomentumEq
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
@@ -148,7 +147,7 @@ C******************************************************************************
       USE HSWRITER, ONLY : hswriter_init
 #endif
       IMPLICIT NONE
-C
+
       INTEGER, OPTIONAL :: COMM
       CHARACTER(*), OPTIONAL :: ROOTD
       REAL(8) :: StaTimHS
@@ -158,9 +157,9 @@ C
       INTEGER :: argcount ! number of command line arguments
       CHARACTER(2048) :: cmdlinearg ! a single command line argument
       INTEGER :: i        ! command line argument counter
-
-      !
-      REAL (8):: start_time = 0.D0, end_time = 0.D0
+#ifndef CMPI
+      INTEGER :: MNALLPROC
+#endif
 
       !
       ! jgf51.52.07: Added command line option to just write out
@@ -421,14 +420,14 @@ C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
-      USE GLOBAL, ONLY : iTime, statim, dtdp, earlyterminate
+      USE GLOBAL, ONLY : iTime, earlyterminate
       USE mod_logging, only: INFO, DEBUG, allMessage, setMessageSource,
      &       unsetMessageSource, logMessage
 #ifdef CMPI
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
 #endif
-C
+
 #ifdef CSWAN
 Casey 090302: We need the following information to couple to unstructured SWAN.
       USE Couple2Swan, ONLY: CouplingInterval,
@@ -439,18 +438,14 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
       USE MESSENGER, ONLY: writers_active, hs_writers_active
 #endif      
       IMPLICIT NONE
-C
+
       INTEGER, OPTIONAL :: NTIME_STP
       REAL(8) :: TimeLoc
-C
- 
-      REAL(8):: start_time, end_time
 
       call setMessageSource("ADCIRC_Run")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-
 
 !TCM v49.52.01 added this ifdef (brought in from adcirc_init()
 #ifdef CMPI
@@ -480,11 +475,11 @@ C
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_END = ITIME_BGN+NTIME_STP-1
       ENDIF
-C
+
       call allMessage(INFO,"Begin timestepping.")
-      DO 100 ITIME=ITIME_BGN,ITIME_END
+      DO ITIME=ITIME_BGN,ITIME_END
         CALL TIMESTEP(ITIME,TimeLoc)
-C
+
 #ifdef CSWAN
 Casey 090302: If it is time, then call the following subroutine
 C             to then call the SWAN time-stepping subroutine.
@@ -501,12 +496,12 @@ C             to then call the SWAN time-stepping subroutine.
         !        the SWAN time step has been completed.
             CALL writeOutput2D(ITIME,TimeLoc) ! =>see write_output.F
         endif
-100   CONTINUE
-C
+      end do
+
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_BGN = ITIME_END+1
       ENDIF
-C
+
 
 !TCM v49.52.01 added the following ifdef to pause writer processors
 ! before exiting adcirc_run phase.  This is to allow them to be
@@ -537,16 +532,11 @@ C******************************************************************************
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
-      USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
 
       IMPLICIT NONE
-C
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      INTEGER :: I
 
-      REAL (8):: start_time, end_time
-C
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+
       call setMessageSource("ADCIRC_Final")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
