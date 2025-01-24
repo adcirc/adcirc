@@ -348,7 +348,7 @@ SUBD_MSRC  =  subdomain.F
 SUBP_MSRC  =  subprep.F
 CONT_MSRC  =  control.F
 MESH_MSRC  =  mesh.F
-BND_MSRC   =  boundaries.F
+BND_MSRC   =  boundaries.F90
 PREP_MSRC  =  presizes.F
 PGLO_MSRC  =  pre_global.F
 3D_MSRC    =  global_3dvs.F
@@ -398,7 +398,7 @@ CONT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CONT_MSRC) )
 XDMF_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(XDMF_MSRC) )
 WRIT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WRIT_MSRC) )
 MESH_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(MESH_MSRC) )
-BND_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(BND_MSRC) )
+BND_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(BND_MSRC) )
 PREP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PREP_MSRC) )
 POST_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(POST_MSRC) )
 PGLO_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PGLO_MSRC) )
@@ -740,7 +740,7 @@ $(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ) $(O_DIR)global.o
 $(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
 $(O_DIR)mesh.o        :  mesh.F $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)hashtable.o
 $(O_DIR)pre_global.o  :  pre_global.F  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ) $(O_DIR)global_3dvs.o
-$(O_DIR)boundaries.o  :  boundaries.F $(O_DIR)sizes.o
+$(O_DIR)boundaries.o  :  boundaries.F90 $(O_DIR)sizes.o
 $(O_DIR)subprep.o     :  subprep.F $(O_DIR)subprep.o $(O_DIR)global.o
 
 #  adcprep
@@ -828,7 +828,7 @@ $(O_DIR)mesh.o        :  mesh.F $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)me
 else
 $(O_DIR)mesh.o        :  mesh.F $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)hashtable.o
 endif
-$(O_DIR)boundaries.o  :  boundaries.F $(O_DIR)sizes.o
+$(O_DIR)boundaries.o  :  boundaries.F90 $(O_DIR)sizes.o
 # jgf51.21.24: promoted write_output to a module
 
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(LIBADC) $(PARALLEL_ADCIRC) padcswan))
