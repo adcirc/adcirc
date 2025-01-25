@@ -792,9 +792,10 @@ $(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)n
 endif
 
 $(O_DIR)gwce_bc_forcing.o : gwce_bc_forcing.F90
+$(O_DIR)momentum_bc_forcing.o : momentum_bc_forcing.F90	
 $(O_DIR)timestep_bc_forcing.o : timestep_bc_forcing.F90
 $(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o $(O_DIR)timestep_bc_forcing.o $(O_DIR)gwce_bc_forcing.o
-$(O_DIR)momentum.o    :  momentum.F $(O_DIR)vew1d.o $(O_DIR)subdomain.o
+$(O_DIR)momentum.o    :  momentum.F $(O_DIR)momentum_bc_forcing.o $(O_DIR)vew1d.o $(O_DIR)subdomain.o
 $(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
 $(O_DIR)messenger.o   :  messenger.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)global_3dvs.o
 #!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
