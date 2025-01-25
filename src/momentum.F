@@ -169,7 +169,7 @@ C*******************************************************************************
      &  NODECODE, NOFF, UU1, VV1, ETA2, ETA1, QX1, QX2, QY1, PR1, PR2,
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
      &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, TKM, NPERSEG, NNPERBC, 
-     &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, adcirc_norm2, CAliDisp,
+     &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, CAliDisp,
      &  usingDynamicWaterLevelCorrection, windlim,
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0,
      &  flgNodesMultipliedByTotalArea, ilump, H1, H2
@@ -186,17 +186,17 @@ C*******************************************************************************
      &    CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3                 
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal,
      &     NOLIBF,
-C----- DW: begin !c absorbing layer
      &     LoadAbsLayerSigma, absorblayer_sigma_eta,
      &     absorblayer_sigma_mnx, absorblayer_sigma_mny,
-C----- END DW
      &     LoadCondensedNodes, CondensedNodes, NCondensedNodes,
      &     ListCondensedNodes, NListCondensedNodes,
      &     NNodesListCondensedNodes
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB, 
-     &                       enforceUVCB
+     &                      enforceUVCB
       USE SPONGELAYER
-      USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter 
+      USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
+      USE mod_momentum_bc_forcing, only: apply_velocity_boundary_conditions,
+     &                                   apply_zero_normal_velocity_gradient
 C... SB
       USE VEW1D, ONLY :
      &     ROTATE_AT_CONDENSEDNODES_ALL,
@@ -833,319 +833,9 @@ C        WJP 02.24.2018 Get the lefthand side momentum
         AUV(4,I) = VCOEFYX*NCI
       END DO
 
-C...  Modify the momentum equations to impose velocity boundary
-C...  conditions In each case the equations are manipulated to
-C...  maintain the LHS matrix structure of AUV11=AUV22;
-C...  AUV12=-AUV21)
-
-      DO J=1,NVELME
-         I=ME2GW(J)
-         NBDI=NBV(I)
-         NCI=NODECODE(NBDI)
-
-C      Specified essential normal flow and free tangential slip
-         IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
-            VelNorm=-QN2(I)/H2(NBDI)
-            IF (abs(adcirc_norm2(TKM(:,NBDI))-sqrt(2d0)*TK(NBDI))
-     &          .lt.epsilon(H2(NBDI))) THEN
-            ! WJP 03.6.2018 In the case of the symmetric matrix..
-            ! Should be equivalent to the non-symmetric formula below
-            ! but for consistency when testing using this formula helps
-            ! to keep the same solution
-                MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI)
-     &                     - CSII(I)*MOM_LV_Y(NBDI)
-     &                     - VelNorm*AUV(3,NBDI))*NCI !Tangential Eqn RHS
-                MOM_LV_Y(NBDI) = VelNorm*AUV(1,NBDI)*NCI   !Normal Eqn RHS
-                AUV(3,NBDI) = -CSII(I)*AUV(1,NBDI)
-                AUV(4,NBDI) = -AUV(3,NBDI)
-                AUV(1,NBDI) = SIII(I)*AUV(1,NBDI)
-                AUV(2,NBDI) = AUV(1,NBDI)
-            ELSE
-            ! WJP 02.24.2018 in the case of the non-symmetric matrix
-                MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI)
-     &                         - CSII(I)*MOM_LV_Y(NBDI)
-     &                         )*NCI                      !Tangetial Eqn RHS
-                MOM_LV_Y(NBDI) = VelNorm*NCI              !Normal Eqn RHS
-                AUV(1,NBDI) = AUV(1,NBDI)*SIII(I) - AUV(4,NBDI)*CSII(I)
-                AUV(3,NBDI) = AUV(3,NBDI)*SIII(I) - AUV(2,NBDI)*CSII(I)
-                AUV(4,NBDI) = CSII(I)
-                AUV(2,NBDI) = SIII(I)
-            ENDIF
-         ENDIF
-
-C     Specified essential normal flow and no tangential slip
-
-         IF (LBCODEI(I).GE.10.AND.LBCODEI(I).LE.19) THEN
-            VelNorm=-QN2(I)/H2(NBDI)
-            VelTan=0.D0
-            MOM_LV_X(NBDI)=VelTan*NCI !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
-            !WJP 02.24.2018 considering the symmetric matrix
-            AUV(1,NBDI) = SIII(I)
-            AUV(3,NBDI) = -CSII(I) 
-            AUV(4,NBDI) = CSII(I)
-            AUV(2,NBDI) = SIII(I)
-         ENDIF
-
-C     Zero normal velocity gradient using a Galerkin approximation to
-C     the normal derivatives. Note: this is fully explicit and therefore
-C     the velocity at the boundary is computed entirely from surrounding
-C     velocities at the previous time step.
-
-         IF (LBCODEI(I).EQ.41) THEN
-            NM1 = NBDI
-            ZNGRHS1 = 0.d0     !Zero Norm Grad of U Eqn
-            ZNGRHS2 = 0.d0     !Zero Norm Grad of V Eqn
-            ZNGLHS  = 0.d0
-            NM2 = NeiTab(NBDI,2) !operate on 1st neighbor
-            NNFirst = NM2      !save these values until end
-            DO N=3,NNeigh(NBDI) !operate on rest of neighbors
-               NM3 = NM2       !shift previously computed values
-               NM2 = NEITAB(NBDI,N) !select new neighbor to work on
-               NEle = NeiTabEle(NBDI,N-2) !element # defined by nodes NM1,NM2,NM3
-               NCEle = NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NEle)
-               IF (NEle.NE.0.AND.NCEle.NE.0) THEN !if element is active, compute contribution
-C.....DW
-                  SFacAvg = SFacEle(NEle)
-                  SFmxAvg = SFMXEle(NEle)
-                  SFmyAvg = SFMYEle(NEle)
-                  sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-                  sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
-                  FDX1 = FDXE(1,NEle)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-                  FDX2 = FDXE(2,NEle)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-                  FDX3 = FDXE(3,NEle)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-                  FDY1 = FDYE(1,NEle)*sfdyfac ; !c  FDY1=X(NM3)-X(NM2) !a1
-                  FDY2 = FDYE(2,NEle)*sfdyfac ; !c  FDY2=X(NM1)-X(NM3) !a2
-                  FDY3 = FDYE(3,NEle)*sfdyfac ; !c  FDY3=X(NM2)-X(NM1) !a3
-C.....DW
-                  ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*UU1(NM2)
-     &                           -(CSII(I)*FDX3+SIII(I)*FDY3)*UU1(NM3)
-                  ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*VV1(NM2)
-     &                           -(CSII(I)*FDX3+SIII(I)*FDY3)*VV1(NM3)
-                  ZNGLHS =ZNGLHS  +  CSII(I)*FDX1+SIII(I)*FDY1
-               ENDIF
-            END DO
-            NM3=NM2          !wrap back to beginning to get final contribution
-            NM2=NNFirst
-            NEle=NeiTabEle(NBDI,NNeigh(NBDI)-1)
-            NCEle=NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NELE)
-            IF (NEle.NE.0.AND.NCEle.NE.0) THEN
-C.....DW
-               SFacAvg = SFacEle(NEle)
-               SFmxAvg = SFMXEle(NEle)
-               SFmyAvg = SFMYEle(NEle)
-               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-               sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
-               FDX1 = FDXE(1,NEle)*sfdxfac ; 
-               FDX2 = FDXE(2,NEle)*sfdxfac ;
-               FDX3 = FDXE(3,NEle)*sfdxfac ; 
-               FDY1 = FDYE(1,NEle)*sfdyfac ; 
-               FDY2 = FDYE(2,NEle)*sfdyfac ; 
-               FDY3 = FDYE(3,NEle)*sfdyfac ; 
-C.....DW
-               ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*UU1(NM2)
-     &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*UU1(NM3)
-               ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*VV1(NM2)
-     &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*VV1(NM3)
-               ZNGLHS =ZNGLHS + CSII(I)*FDX1+SIII(I)*FDY1
-            ENDIF
-            IF (NCI.EQ.0) THEN
-               MOM_LV_X(NBDI)=0.d0
-               MOM_LV_Y(NBDI)=0.d0
-            ELSE
-               MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
-               MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
-            ENDIF
-            AUV(1,NBDI) = 1.d0
-            AUV(2,NBDI) = 1.d0
-            AUV(3,NBDI) = 0.d0
-            AUV(4,NBDI) = 0.d0
-         ENDIF
-
-      ENDDO
-
-C<<.. SECTION FOR VEW1D (=1D channel)   08-11-2022 SB
-C.... Nodal equations at IBTYPE=64 VEW boundary nodes and at condensed nodes are
-C.... summed up together in the following part. First, the value on the front side,
-C.... i.e., the floodplain side, is summed to the back side, i.e., the channel side.
-C.... Secondly, the values at the condensed nodes which are most likely on channel
-C.... beds are summed together. Notice that by this second step the nodes on channel
-C.... bed hold the sum of all the values on the floodplain side and the grouped 
-C.... condensed nodes. And then finally, the value on the backside, i.e. on the
-C.... channel bed, is copied to the front side, i.e., the floodplain side. Through
-C.... this procedure, the values at the floodplain nodes and (condensed) channel nodes
-C.... have the same values on both sides of the equations.
-C 
-C     
-
-C     VEW: Sum front side values to back side
-      IF((NFLUXIB64_GBL.GT.0).AND.(ILUMP.NE.0)) THEN
-         flgNodesMultipliedByTotalArea(:) = 0  ! Initialize flags for nodes multiplied by total areas
-
-         I = 0                         
-         DO K = 1, NBOU
-            SELECT CASE(LBCODEI(I+1))
-               CASE(64)
-               DO J = 1,NVELL(K)
-                  I = I + 1
-                  IF(ISSUBMERGED64(I).NE.0) THEN
-                     NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
-                     NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
-              
-                     IF(NODECODE(NNBB1).NE.0.AND.NODECODE(NNBB2).NE.0) THEN
-                        IF ((flgNodesMultipliedByTotalArea(NNBB1).eq.0).and.
-     &                      (TotalArea(NNBB1).ne.0.d0)) THEN
-                           IF (CME_AreaInt_Corr) THEN       !Correct area integration
-                              TotalArea1 = TotalArea(NNBB1)
-                           ENDIF
-                           IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
-                              TotalArea1 = MJU(NNBB1)
-                           ENDIF
-                        ELSE
-                           TotalArea1 = 1.D0
-                        ENDIF
-                        IF ((flgNodesMultipliedByTotalArea(NNBB2).eq.0).and.
-     &                      (TotalArea(NNBB2).ne.0.d0)) THEN
-                           IF (CME_AreaInt_Corr) THEN       !Correct area integration
-                              TotalArea2 = TotalArea(NNBB2)
-                           ENDIF
-                           IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
-                              TotalArea2 = MJU(NNBB2)
-                           ENDIF
-                        ELSE
-                           TotalArea2 = 1.D0
-                        ENDIF
-
-                        AUV(1,NNBB2) = TotalArea1*AUV(1,NNBB1) + TotalArea2*AUV(1,NNBB2)
-                        AUV(2,NNBB2) = TotalArea1*AUV(2,NNBB1) + TotalArea2*AUV(2,NNBB2)
-                        AUV(3,NNBB2) = TotalArea1*AUV(3,NNBB1) + TotalArea2*AUV(3,NNBB2)
-                        AUV(4,NNBB2) = TotalArea1*AUV(4,NNBB1) + TotalArea2*AUV(4,NNBB2)
-
-                        MOM_LV_X(NNBB2) =
-     &                       TotalArea1*MOM_LV_X(NNBB1) + TotalArea2*MOM_LV_X(NNBB2)
-                        MOM_LV_Y(NNBB2) =
-     &                       TotalArea1*MOM_LV_Y(NNBB1) + TotalArea2*MOM_LV_Y(NNBB2)
-
-                        AUV(1,NNBB1) = 0.D0    ! Set zero to avoid duplicated additions
-                        AUV(2,NNBB1) = 0.D0    !
-                        AUV(3,NNBB1) = 0.D0    !
-                        AUV(4,NNBB1) = 0.D0    !
-                        MOM_LV_X(NNBB1) = 0.D0 !
-                        MOM_LV_Y(NNBB1) = 0.D0 !
-                        
-                        flgNodesMultipliedByTotalArea(NNBB1) = 1
-                        flgNodesMultipliedByTotalArea(NNBB2) = 1
-                     ENDIF
-                  ENDIF
-               ENDDO
-               I = I + NVELL(K)
-               CASE(4,24,5,25)
-               I = I + NVELL(K)*2
-               CASE DEFAULT
-               I = I + NVELL(K)
-            END SELECT    
-         ENDDO 
-      ENDIF
-
-C.... CONDENSED NODES: Summing up the values at condensed nodes
-      IF((LoadCondensedNodes).AND.(ILump.NE.0)) THEN
-         DO K=1,NListCondensedNodes
-            I = ListCondensedNodes(K,1)
-            IF(I==0) CYCLE
-            IF((NODECODE(I).NE.0)) THEN
-               ! 1) Mutiply LHS & RHS by total area at Node I
-               IF ((flgNodesMultipliedByTotalArea(I).eq.0).and.
-     &             (TotalArea(I).ne.0.d0)) THEN
-                  IF (CME_AreaInt_Corr) THEN       !Correct area integration
-                     TotalArea1 = TotalArea(I)
-                  ENDIF
-                  IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
-                     TotalArea1 = MJU(I)
-                  ENDIF
-               ELSE
-                  TotalArea1 = 1.D0
-               ENDIF
-               AUV(1,I) = TotalArea1*AUV(1,I)
-               AUV(2,I) = TotalArea1*AUV(2,I)
-               AUV(3,I) = TotalArea1*AUV(3,I)
-               AUV(4,I) = TotalArea1*AUV(4,I)
-               MOM_LV_X(I) = TotalArea1*MOM_LV_X(I)
-               MOM_LV_Y(I) = TotalArea1*MOM_LV_Y(I)
-
-               ! 2) Sum them up
-               DO L=2,NNodesListCondensedNodes(K)
-                  J = ListCondensedNodes(K,L)
-                  IF ((flgNodesMultipliedByTotalArea(J).eq.0).and.
-     &               (TotalArea(J).ne.0.d0)) THEN
-                     IF (CME_AreaInt_Corr) THEN       !Correct area integration
-                        TotalArea1 = TotalArea(J)
-                     ENDIF
-                     IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
-                        TotalArea1 = MJU(J)
-                     ENDIF
-                  ELSE
-                     TotalArea1 = 1.D0
-                  ENDIF
-                  AUV(1,I) = AUV(1,I) + TotalArea1*AUV(1,J)
-                  AUV(2,I) = AUV(2,I) + TotalArea1*AUV(2,J)
-                  AUV(3,I) = AUV(3,I) + TotalArea1*AUV(3,J)
-                  AUV(4,I) = AUV(4,I) + TotalArea1*AUV(4,J)
-                  MOM_LV_X(I) = MOM_LV_X(I) + TotalArea1*MOM_LV_X(J)
-                  MOM_LV_Y(I) = MOM_LV_Y(I) + TotalArea1*MOM_LV_Y(J)
-               ENDDO
-
-               ! 3) Distribute them
-               DO L=2,NNodesListCondensedNodes(K)
-                  J = ListCondensedNodes(K,L)
-                  AUV(1,J) = AUV(1,I)
-                  AUV(2,J) = AUV(2,I)
-                  AUV(3,J) = AUV(3,I)
-                  AUV(4,J) = AUV(4,I)
-                  MOM_LV_X(J) = MOM_LV_X(I)
-                  MOM_LV_Y(J) = MOM_LV_Y(I)
-               ENDDO
-            ENDIF
-         ENDDO
-      ENDIF
-
-#ifdef CMPI
-      IF ((NFLUXIB64_GBL.GT.0.OR.LoadCondensedNodes)
-     &    .AND.(ILump.NE.0)) THEN
-         CALL UPDATEM4R(AUV)
-         CALL UPDATER(MOM_LV_X,MOM_LV_Y,DUMY1,2)
-      ENDIF
-#endif            
-
-C     VEW: Copy values from back side to front side
-      IF((NFLUXIB64_GBL.GT.0).AND.(ILUMP.NE.0)) THEN
-         I = 0                         
-         DO K = 1, NBOU
-            SELECT CASE(LBCODEI(I+1))
-                CASE(64)
-                    DO J = 1,NVELL(K)
-                        I = I + 1
-                        IF(ISSUBMERGED64(I).NE.0) THEN
-                           NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
-                           NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
-                           IF(NODECODE(NNBB1).NE.0.AND.NODECODE(NNBB2).NE.0) THEN
-                              AUV(1,NNBB1) = AUV(1,NNBB2)
-                              AUV(2,NNBB1) = AUV(2,NNBB2)
-                              AUV(3,NNBB1) = AUV(3,NNBB2)
-                              AUV(4,NNBB1) = AUV(4,NNBB2)
-                              MOM_LV_X(NNBB1) = MOM_LV_X(NNBB2)
-                              MOM_LV_Y(NNBB1) = MOM_LV_Y(NNBB2)
-                           ENDIF
-                        ENDIF
-                     ENDDO
-                     I = I + NVELL(K)
-                  CASE(4,24,5,25)
-                     I = I + NVELL(K)*2
-                  CASE DEFAULT
-                     I = I + NVELL(K)
-            END SELECT    
-         ENDDO 
-      ENDIF
-
+      call apply_velocity_boundary_conditions(.false., NODECODE, QN2, H2,
+     &                                        TKM, TK, UU1, VV1, QX1, QY1,
+     &                                        MOM_LV_X, MOM_LV_Y, AUV)
 
 C...
 C...  SOLVE FOR VELOCITY AT NEW LEVEL  (s+1)
@@ -1176,34 +866,7 @@ C....... DW
       CALL UPDATE_U_PERSLNODES() ; 
 C....... DW
 
-C...
-C...  Impose a zero normal velocity gradient based on interpolating the
-C...  velocity at a fictitious point in the interior of the domain,
-C...  normal to a specified boundary node and setting the boundary
-C...  velocity equal to the interpolated value at the fictitious point.
-C...  Provided the fictitious point does not lie in an element that
-C...  contains a boundary point, this is an entirely implicit
-C...  calculation.
-C...
-      IF (NFLUXGBC.EQ.1) THEN
-         DO J = 1,NVELME
-            I = ME2GW(J)
-            NBDI = NBV(I)
-            IF (LBCODEI(I).EQ.40) THEN
-               NM1=NM(NEleZNG(I),1)
-               NM2=NM(NEleZNG(I),2)
-               NM3=NM(NEleZNG(I),3)
-               NC1=NODECODE(NM1)
-               NC2=NODECODE(NM2)
-               NC3=NODECODE(NM3)
-               NCEle=NC1*NC2*NC3*NOFF(NEleZNG(I))
-               UU2(NBDI)=NCEle*(UU2(NM1)*ZNGIF1(I)+UU2(NM2)*ZNGIF2(I)
-     &                                            +UU2(NM3)*ZNGIF3(I))
-               VV2(NBDI)=NCEle*(VV2(NM1)*ZNGIF1(I)+VV2(NM2)*ZNGIF2(I)
-     &                                            +VV2(NM3)*ZNGIF3(I))
-            ENDIF
-         ENDDO
-      ENDIF
+      call apply_zero_normal_velocity_gradient(.false., NODECODE, NOFF, QX2, QY2, UU2, VV2)
 
 C...  Compute fluxes
 
@@ -1217,7 +880,6 @@ C...  Compute fluxes
 #endif
       call unsetMessageSource()
 
-      RETURN
 C*******************************************************************************
       CONTAINS
 C     DW 
@@ -1267,7 +929,7 @@ C*******************************************************************************
 C
       USE GLOBAL, only: NWS, CTIP, PR2, PR1, TIP1, TIP2, CME_NEW_C1, DT,
      & CME_NEW_C2, CME_LS_IBPSQ, CME_LS_IBPV, CME_LS_IBPSV, CME_LS_IBPQ,
-     & IFNLCT, MOM_LV_X, MOM_LV_Y, TKM, CORIF, VIDBCPDXOH, VIDBCPDYOH,
+     & IFNLCT, MOM_LV_X, MOM_LV_Y, TK, TKM, CORIF, VIDBCPDXOH, VIDBCPDYOH,
      & NRS, IFWIND, WSX1, WSY1, WSX2, WSY2, QX2, QY2, QN2, UU2, VV2,
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
@@ -1287,6 +949,8 @@ C
      &   , gridDepthVertETA2
      &   , gridDepthVertETA1
      &   , cadvVertETA2
+      use mod_momentum_bc_forcing, only: apply_velocity_boundary_conditions,
+     &                                    apply_zero_normal_velocity_gradient
        
       IMPLICIT NONE
 
@@ -1844,115 +1508,10 @@ C        WJP 02.24.2018 Get the lefthand side momentum
          AUV(4,I) = VCOEFYX*NCI
       ENDDO
 
-C...  Modify the momentum equations to impose velocity boundary
-C...  conditions In each case the equations are manipulated to
-C...  maintain the LHS matrix structure of AUV11=AUV22;
-C...  AUV12=-AUV21)
-
-      DO J=1,NVELME
-         I=ME2GW(J)
-         NBDI=NBV(I)
-         NCI=NODECODE(NBDI)
-
-C      Specified essential normal flow and free tangential slip
-
-         IF ((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
-             MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI)
-     &                       - CSII(I)*MOM_LV_Y(NBDI)
-     &                      )*NCI                      !Tangetial Eqn RHS
-             MOM_LV_Y(NBDI) = -QN2(I)*NCI              !Normal Eqn RHS
-             AUV(1,NBDI) = AUV(1,NBDI)*SIII(I) - AUV(4,NBDI)*CSII(I)
-             AUV(3,NBDI) = AUV(3,NBDI)*SIII(I) - AUV(2,NBDI)*CSII(I)
-             AUV(4,NBDI) = CSII(I)
-             AUV(2,NBDI) = SIII(I)
-         ENDIF
-
-C     Specified essential normal flow and no tangential slip
-
-         IF((LBCODEI(I).GE.10).AND.(LBCODEI(I).LE.19)) THEN
-            QTAN=0.D0
-            MOM_LV_X(NBDI)=QTan*NCI                          !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=-QN2(I)*NCI                       !Normal Eqn RHS
-            AUV(1,NBDI) = SIII(I)
-            AUV(3,NBDI) = -CSII(I) 
-            AUV(4,NBDI) = CSII(I)
-            AUV(2,NBDI) = SIII(I)
-         ENDIF
-
-C     Zero normal flux gradient using a Galerkin approximation to
-C     the normal derivatives. Note: this is fully explicit and therefore
-C     the flux at the boundary is computed entirely from surrounding
-C     fluxes at the previous time step.
-
-         IF(LBCODEI(I).EQ.41) THEN
-            NM1=NBDI
-            ZNGRHS1=0.d0                                     !Zero Norm Grad of U Eqn
-            ZNGRHS2=0.d0                                     !Zero Norm Grad of V Eqn
-            ZNGLHS=0.d0
-            NM2=NeiTab(NBDI,2)                               !operate on 1st neighbor
-            NNFirst=NM2                                      !save these values until end
-            DO N=3,NNeigh(NBDI)                              !operate on rest of neighbors
-               NM3=NM2                                       !shift previously computed values
-               NM2=NEITAB(NBDI,N)                            !select new neighbor to work on
-               NEle=NeiTabEle(NBDI,N-2)                      !element # defined by nodes NM1,NM2,NM3
-               NCEle=NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NEle)
-               IF((NEle.NE.0).AND.(NCEle.NE.0)) THEN         !if element is active, compute contribution
-                  SFacAvg = SFacEle(NEle)
-                  SFmxAvg = SFMXEle(NEle)
-                  SFmyAvg = SFMYEle(NEle)
-                  sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-                  sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
-                  FDX1 = FDXE(1,NEle)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-                  FDX2 = FDXE(2,NEle)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-                  FDX3 = FDXE(3,NEle)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-                  FDY1 = FDYE(1,NEle)*sfdyfac ; !c  FDY1=X(NM3)-X(NM2) !a1
-                  FDY2 = FDYE(2,NEle)*sfdyfac ; !c  FDY2=X(NM1)-X(NM3) !a2
-                  FDY3 = FDYE(3,NEle)*sfdyfac ; !c  FDY3=X(NM2)-X(NM1) !a3
-                  ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*QX1(NM2)
-     &                           -(CSII(I)*FDX3+SIII(I)*FDY3)*QX1(NM3)
-                  ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*QY1(NM2)
-     &                           -(CSII(I)*FDX3+SIII(I)*FDY3)*QY1(NM3)
-                  ZNGLHS =ZNGLHS  +  CSII(I)*FDX1+SIII(I)*FDY1
-               ENDIF
-            END DO
-            NM3=NM2                                          !wrap back to beginning to get final contribution
-            NM2=NNFirst
-            NEle=NeiTabEle(NBDI,NNeigh(NBDI)-1)
-            NCEle=NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NELE)
-            IF((NEle.NE.0).AND.(NCEle.NE.0)) THEN
-              
-               SFacAvg = SFacEle(NEle)
-               SFmxAvg = SFMXEle(NEle)
-               SFmyAvg = SFMYEle(NEle)
-               sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-               sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
-               FDX1 = FDXE(1,NEle)*sfdxfac ; 
-               FDX2 = FDXE(2,NEle)*sfdxfac ;
-               FDX3 = FDXE(3,NEle)*sfdxfac ; 
-               FDY1 = FDYE(1,NEle)*sfdyfac ; 
-               FDY2 = FDYE(2,NEle)*sfdyfac ; 
-               FDY3 = FDYE(3,NEle)*sfdyfac ; 
-              
-               ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*QX1(NM2)
-     &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*QX1(NM3)
-               ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*QY1(NM2)
-     &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*QY1(NM3)
-               ZNGLHS =ZNGLHS + CSII(I)*FDX1+SIII(I)*FDY1
-            ENDIF
-            IF (NCI.EQ.0) THEN
-               MOM_LV_X(NBDI)=0.d0
-               MOM_LV_Y(NBDI)=0.d0
-            ELSE
-               MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
-               MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
-            ENDIF
-            AUV(1,NBDI) = 1.d0
-            AUV(2,NBDI) = 1.d0
-            AUV(3,NBDI) = 0.d0
-            AUV(4,NBDI) = 0.d0
-         ENDIF
-
-      ENDDO
+      call apply_velocity_boundary_conditions(.true., NODECODE, QN2, H2,
+     &                                        TKM, TK, UU1, VV1, QX1, QY1,
+     &                                        MOM_LV_X, MOM_LV_Y,
+     &                                        AUV)
 
 C...
 C...  SOLVE FOR FLUX AT NEW LEVEL  (K+1)
@@ -1976,34 +1535,7 @@ c           QY2(I)=0.D0    !on wet/dry interface nodes
 c        ENDIF
        END DO
 
-C...
-C...  Impose a zero normal flux gradient based on interpolating the
-C...  flux at a fictitious point in the interior of the domain,
-C...  normal to a specified boundary node and setting the boundary
-C...  flux equal to the interpolated value at the fictitious point.
-C...  Provided the fictitious point does not lie in an element that
-C...  contains a boundary point, this is an entirely implicit
-C...  calculation.
-C...
-      IF(NFLUXGBC.EQ.1) THEN
-         DO J=1,NVELME
-            I=ME2GW(J)
-            NBDI=NBV(I)
-            IF(LBCODEI(I).EQ.40) THEN
-               NM1=NM(NEleZNG(I),1)
-               NM2=NM(NEleZNG(I),2)
-               NM3=NM(NEleZNG(I),3)
-               NC1=NODECODE(NM1)
-               NC2=NODECODE(NM2)
-               NC3=NODECODE(NM3)
-               NCEle=NC1*NC2*NC3*NOFF(NEleZNG(I))
-               QX2(NBDI)=NCEle*(QX2(NM1)*ZNGIF1(I)+QX2(NM2)*ZNGIF2(I)
-     &                                            +QX2(NM3)*ZNGIF3(I))
-               QY2(NBDI)=NCEle*(QY2(NM1)*ZNGIF1(I)+QY2(NM2)*ZNGIF2(I)
-     &                                            +QY2(NM3)*ZNGIF3(I))
-            ENDIF
-         ENDDO
-      ENDIF
+      call apply_zero_normal_velocity_gradient(.true., NODECODE, NOFF, QX2, QY2, UU2, VV2)
 
 C...  Compute velocities
 
@@ -2084,7 +1616,7 @@ C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
       SUBROUTINE Mom_Eqs_Non_Conserv_pc()
-C
+
       USE GLOBAL, only: NWS, CTIP, PR2, PR1, TIP1, TIP2, CME_NEW_C1, DT,
      & CME_NEW_C2, CME_LS_IBPSQ, CME_LS_IBPV, CME_LS_IBPSV, CME_LS_IBPQ,
      & IFNLCT, MOM_LV_X, MOM_LV_Y, TK, CORIF, VIDBCPDXOH, VIDBCPDYOH,

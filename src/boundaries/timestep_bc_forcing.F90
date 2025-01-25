@@ -18,7 +18,7 @@
 !
 !-------------------------------------------------------------------------------!
 !
-module timestep_bc_forcing
+module mod_timestep_bc_forcing
 
    implicit none
 
@@ -698,4 +698,4 @@ contains
 
    end subroutine enforce_subdomain_boundaries
 
-end module timestep_bc_forcing
+end module mod_timestep_bc_forcing
