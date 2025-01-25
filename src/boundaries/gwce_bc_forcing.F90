@@ -18,7 +18,7 @@
 !
 !-------------------------------------------------------------------------------!
 !
-module gwce_bc_forcing
+module mod_gwce_bc_forcing
 
    implicit none
 
@@ -1214,4 +1214,4 @@ contains
       end if
    end subroutine update_load_vector
 
-end module gwce_bc_forcing
+end module mod_gwce_bc_forcing

@@ -1788,30 +1788,6 @@ C     available to different parts of ADCIRC.
       END FUNCTION a2i
       !=================================================================
 
-!-----------------------------------------------------------------------
-!     @brief Internal norm2 function
-!     If the compiler supports Fortran 2008 then the intrinsic is used. 
-!     Otherwise, the implementation is provided here. Use the compiler 
-!     flag -DNOF2008 to enable the internal implementation. norm2
-!     calculates the Euclidean vector norm (L2 norm) of an array
-!     @param[in] x array to calculate the L2 norm of 
-!     @result euclidean vector norm of x
-!-----------------------------------------------------------------------
-      pure function adcirc_norm2(x)
-!-----------------------------------------------------------------------
-        implicit none
-        real(8), intent(in) :: x(:)
-        real(8)             :: adcirc_norm2
-#ifdef NOF2008
-        intrinsic            :: dot_product, sqrt
-        adcirc_norm2 = sqrt(dot_product(x,x))
-#else 
-        intrinsic            :: norm2
-        adcirc_norm2 = norm2(x)
-#endif
-!-----------------------------------------------------------------------
-      end function adcirc_norm2
-!-----------------------------------------------------------------------
 
 !     ------------------------------------------------------------------
 !     ------------------------------------------------------------------

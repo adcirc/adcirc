@@ -155,7 +155,7 @@ Casey 090302: We need these values from other places.
 
       USE mod_weir_data, only: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2,
      &                         step_weir_elevation
-      USE timestep_bc_forcing, only: apply_boundary_conditions
+      USE mod_timestep_bc_forcing, only: apply_boundary_conditions
 
       ! full luni-solar tidal potential !
       USE mod_tidepotential, only: tidePotential

@@ -296,7 +296,7 @@ C... SB
      &   , gridDepthVertETA1, gridDepthVertETA2
      &   , wetFracVertETA1, wetFracVertETA2
      &   , cadvVertETA2, dphidt
-      use gwce_bc_forcing, only: apply_boundary_conditions, apply_vew1d_and_condensed_nodes,
+      use mod_gwce_bc_forcing, only: apply_boundary_conditions, apply_vew1d_and_condensed_nodes,
      &                           apply_subdomain_boundary_nodes, update_coef_periodic_sponge_layer_lumped,
      &                           update_coef_periodic_sponge_layer_consistent, update_periodic_sponge_layer_nodes
 
@@ -1764,7 +1764,7 @@ C*******************************************************************************
       USE MESSENGER
 #endif
       USE WIND, ONLY: windLimiter
-      USE gwce_bc_forcing, only: apply_boundary_conditions
+      USE mod_gwce_bc_forcing, only: apply_boundary_conditions
 
       IMPLICIT NONE
 
