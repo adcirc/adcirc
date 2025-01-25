@@ -64,6 +64,7 @@ if(BUILD_ADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tide/tidalpotential.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/gwce_bc_forcing.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/timestep_bc_forcing.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/momentum_bc_forcing.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/weir_data.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/weir_flow.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries/time_varying_weir.F90)
