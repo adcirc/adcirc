@@ -33,10 +33,10 @@ contains
                                         ENIN2, QNIN1, QNIN2, EtaDisc, QN1, QN2, EN2, ElevDisc, &
                                         TVW, EtaDisc_Fill)
 
-      use mesh, only: NP
       use boundaries, only: NBOU, NFLUXB, NFLUXRBC, NFLUXF, NFLUXGBC, NFLUXIB, NFLUXIBP, LBCODEI, &
                             NBV, NVEL, NVELL, CSII, SIII
       use global, only: qnph, qnam, fper, famig, fface, fff, enph, enam
+      use subdomain, only: subdomainOn, enforceBN
 
       implicit none
 
@@ -47,47 +47,48 @@ contains
       real(8), intent(in) :: TimeLoc
       real(8), intent(in) :: FTIMINC
       real(8), intent(in) :: RampExtFlux
-      real(8), intent(in) :: Eta2(NP)
-      real(8), intent(in) :: H2(NP)
-      real(8), intent(in) :: UU1(NP)
-      real(8), intent(in) :: VV1(NP)
-      integer, intent(inout) :: NIBNODECODE(NP)
+      real(8), intent(in) :: Eta2(:)
+      real(8), intent(in) :: H2(:)
+      real(8), intent(in) :: UU1(:)
+      real(8), intent(in) :: VV1(:)
+      integer, intent(inout) :: NIBNODECODE(:)
       real(8), intent(inout) :: QTIME1
       real(8), intent(inout) :: QTIME2
-      real(8), intent(inout) :: ENIN1(NVEL)
-      real(8), intent(inout) :: ENIN2(NVEL)
-      real(8), intent(inout) :: QNIN1(NVEL)
-      real(8), intent(inout) :: QNIN2(NVEL)
-      real(8), intent(inout) :: EtaDisc(NP)
-      real(8), intent(inout) :: QN1(NVEL)
-      real(8), intent(inout) :: QN2(NVEL)
-      real(8), intent(inout) :: EN2(NVEL)
-      real(8), intent(inout) :: ElevDisc(NVEL)
-      real(8), intent(inout) :: TVW(NP)
+      real(8), intent(inout) :: ENIN1(:)
+      real(8), intent(inout) :: ENIN2(:)
+      real(8), intent(inout) :: QNIN1(:)
+      real(8), intent(inout) :: QNIN2(:)
+      real(8), intent(inout) :: EtaDisc(:)
+      real(8), intent(inout) :: QN1(:)
+      real(8), intent(inout) :: QN2(:)
+      real(8), intent(inout) :: EN2(:)
+      real(8), intent(inout) :: ElevDisc(:)
+      real(8), intent(inout) :: TVW(:)
       logical, intent(inout) :: EtaDisc_Fill
 
       call apply_specified_normal_flow_boundary_conditions(IT, NFLUXF, &
-                                                           NFFR, NVEL, NP, FluxSettlingIT, &
+                                                           NFFR, NVEL, FluxSettlingIT, &
                                                            LBCODEI, NBV, timeh, TimeLoc, FTIMINC, &
                                                            RampExtFlux, QNPH, QNAM, FPER, FAMIG, &
                                                            FFACE, FFF, QNIN1, QNIN2, ENPH, ENAM, &
                                                            QTIME1, QTIME2, ENIN1, ENIN2, Eta2, &
                                                            EtaDisc, QN2, EN2, ElevDisc, &
                                                            EtaDisc_Fill)
-      call apply_radiation_boundary_discharge(NFLUXRBC, NP, NVEL, LBCODEI, &
+      call apply_radiation_boundary_discharge(NFLUXRBC, NVEL, LBCODEI, &
                                               NBV, UU1, VV1, CSII, SIII, H2, &
                                               QN1)
-      call apply_zero_normal_velocity_gradient_boundary_discharge(NFLUXGBC, NP, NVEL, LBCODEI, &
+      call apply_zero_normal_velocity_gradient_boundary_discharge(NFLUXGBC, NVEL, LBCODEI, &
                                                                   NBV, UU1, VV1, CSII, SIII, H2, &
                                                                   QN1)
-      call apply_exterior_weir_boundary_discharge(NFLUXB, NP, NVEL, LBCODEI, TIMELOC, TVW, QN2)
-      call apply_interior_weir_boundary_discharge(NFLUXIB, NP, NBOU, NVEL, NVELL, LBCODEI, TIMELOC, NIBNODECODE, TVW, QN2)
-      call apply_cross_barrier_pipe_discharge(NFLUXIBP, NP, NVEL, LBCODEI, NIBNODECODE, QN2)
+      call apply_exterior_weir_boundary_discharge(NFLUXB, NVEL, LBCODEI, TIMELOC, TVW, QN2)
+      call apply_interior_weir_boundary_discharge(NFLUXIB, NBOU, NVELL, LBCODEI, TIMELOC, NIBNODECODE, TVW, QN2)
+      call apply_cross_barrier_pipe_discharge(NFLUXIBP, NVEL, LBCODEI, NIBNODECODE, QN2)
+      call enforce_subdomain_boundaries(IT, subdomainOn, enforceBN)
 
    end subroutine apply_boundary_conditions
 
    subroutine apply_specified_normal_flow_boundary_conditions(IT, NFLUXF, &
-                                                              NFFR, NVEL, NP, FluxSettlingIT, &
+                                                              NFFR, NVEL, FluxSettlingIT, &
                                                               LBCODEI, NBV, timeh, TimeLoc, FTIMINC, &
                                                               RampExtFlux, QNPH, QNAM, FPER, FAMIG, &
                                                               FFACE, FFF, QNIN1, QNIN2, ENPH, ENAM, &
@@ -100,33 +101,32 @@ contains
       integer, intent(in) :: NFLUXF
       integer, intent(in) :: NFFR
       integer, intent(in) :: NVEL
-      integer, intent(in) :: NP
       integer, intent(in) :: FluxSettlingIT
-      integer, intent(in) :: LBCODEI(NVEL)
-      integer, intent(in) :: NBV(NVEL)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(in) :: NBV(:)
       real(8), intent(in) :: timeh
       real(8), intent(in) :: TimeLoc
       real(8), intent(in) :: FTIMINC
       real(8), intent(in) :: RampExtFlux
-      real(8), intent(in) :: QNPH(NFFR, NVEL)
-      real(8), intent(in) :: QNAM(NFFR, NVEL)
-      real(8), intent(in) :: FPER(NFFR)
-      real(8), intent(in) :: FAMIG(NFFR)
-      real(8), intent(in) :: FFACE(NFFR)
-      real(8), intent(in) :: FFF(NFFR)
-      real(8), intent(in) :: ENPH(NFFR, NVEL)
-      real(8), intent(in) :: ENAM(NFFR, NVEL)
-      real(8), intent(in) :: Eta2(NP)
+      real(8), intent(in) :: QNPH(:, :)
+      real(8), intent(in) :: QNAM(:, :)
+      real(8), intent(in) :: FPER(:)
+      real(8), intent(in) :: FAMIG(:)
+      real(8), intent(in) :: FFACE(:)
+      real(8), intent(in) :: FFF(:)
+      real(8), intent(in) :: ENPH(:, :)
+      real(8), intent(in) :: ENAM(:, :)
+      real(8), intent(in) :: Eta2(:)
       real(8), intent(inout) :: QTIME1
       real(8), intent(inout) :: QTIME2
-      real(8), intent(inout) :: ENIN1(NVEL)
-      real(8), intent(inout) :: ENIN2(NVEL)
-      real(8), intent(inout) :: QNIN1(NVEL)
-      real(8), intent(inout) :: QNIN2(NVEL)
-      real(8), intent(inout) :: EtaDisc(NP)
-      real(8), intent(inout) :: QN2(NVEL)
-      real(8), intent(inout) :: EN2(NVEL)
-      real(8), intent(inout) :: ElevDisc(NVEL)
+      real(8), intent(inout) :: ENIN1(:)
+      real(8), intent(inout) :: ENIN2(:)
+      real(8), intent(inout) :: QNIN1(:)
+      real(8), intent(inout) :: QNIN2(:)
+      real(8), intent(inout) :: EtaDisc(:)
+      real(8), intent(inout) :: QN2(:)
+      real(8), intent(inout) :: EN2(:)
+      real(8), intent(inout) :: ElevDisc(:)
       logical, intent(inout) :: EtaDisc_Fill
 
       integer :: I
@@ -192,15 +192,15 @@ contains
       real(8), intent(in) :: TimeLoc
       real(8), intent(in) :: FTIMINC
       real(8), intent(in) :: RampExtFlux
-      integer, intent(in) :: LBCODEI(NVEL)
+      integer, intent(in) :: LBCODEI(:)
       real(8), intent(inout) :: QTIME1
       real(8), intent(inout) :: QTIME2
-      real(8), intent(inout) :: QNIN1(NVEL)
-      real(8), intent(inout) :: QNIN2(NVEL)
-      real(8), intent(inout) :: ENIN1(NVEL)
-      real(8), intent(inout) :: ENIN2(NVEL)
-      real(8), intent(inout) :: QN2(NVEL)
-      real(8), intent(inout) :: EN2(NVEL)
+      real(8), intent(inout) :: QNIN1(:)
+      real(8), intent(inout) :: QNIN2(:)
+      real(8), intent(inout) :: ENIN1(:)
+      real(8), intent(inout) :: ENIN2(:)
+      real(8), intent(inout) :: QN2(:)
+      real(8), intent(inout) :: EN2(:)
 
       integer :: J
       real(8) :: QTRATIO
@@ -251,23 +251,23 @@ contains
 
       implicit none
 
-      real(8), parameter  :: eps = EPSILON(1.d0)
+      real(8), parameter  :: eps = epsilon(1.d0)
 
       integer, intent(in) :: NFFR
       integer, intent(in) :: NVEL
-      integer, intent(in) :: LBCODEI(NVEL)
+      integer, intent(in) :: LBCODEI(:)
       real(8), intent(in) :: timeh
       real(8), intent(in) :: RampExtFlux
-      real(8), intent(in) :: FPER(NFFR)
-      real(8), intent(in) :: FAMIG(NFFR)
-      real(8), intent(in) :: FFACE(NFFR)
-      real(8), intent(in) :: FFF(NFFR)
-      real(8), intent(in) :: QNPH(NFFR, NVEL)
-      real(8), intent(in) :: QNAM(NFFR, NVEL)
-      real(8), intent(in) :: ENPH(NFFR, NVEL)
-      real(8), intent(in) :: ENAM(NFFR, NVEL)
-      real(8), intent(inout) :: QN2(NVEL)
-      real(8), intent(inout) :: EN2(NVEL)
+      real(8), intent(in) :: FPER(:)
+      real(8), intent(in) :: FAMIG(:)
+      real(8), intent(in) :: FFACE(:)
+      real(8), intent(in) :: FFF(:)
+      real(8), intent(in) :: QNPH(:, :)
+      real(8), intent(in) :: QNAM(:, :)
+      real(8), intent(in) :: ENPH(:, :)
+      real(8), intent(in) :: ENAM(:, :)
+      real(8), intent(inout) :: QN2(:)
+      real(8), intent(inout) :: EN2(:)
 
       integer :: I, J
       integer :: NCYC
@@ -312,23 +312,22 @@ contains
    !> @param[in] H2 Array of water depths
    !> @param[in,out] QN1 Array of boundary discharges
    !*******************************************************************************
-   subroutine apply_radiation_boundary_discharge(NFLUXRBC, NP, NVEL, LBCODEI, &
+   subroutine apply_radiation_boundary_discharge(NFLUXRBC, NVEL, LBCODEI, &
                                                  NBV, UU1, VV1, CSII, SIII, H2, &
                                                  QN1)
 
       implicit none
 
       integer, intent(in) :: NFLUXRBC
-      integer, intent(in) :: NP
       integer, intent(in) :: NVEL
-      integer, intent(in) :: LBCODEI(NVEL)
-      integer, intent(in) :: NBV(NVEL)
-      real(8), intent(in) :: UU1(NP)
-      real(8), intent(in) :: VV1(NP)
-      real(8), intent(in) :: CSII(NVEL)
-      real(8), intent(in) :: SIII(NVEL)
-      real(8), intent(in) :: H2(NP)
-      real(8), intent(inout) :: QN1(NVEL)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(in) :: NBV(:)
+      real(8), intent(in) :: UU1(:)
+      real(8), intent(in) :: VV1(:)
+      real(8), intent(in) :: CSII(:)
+      real(8), intent(in) :: SIII(:)
+      real(8), intent(in) :: H2(:)
+      real(8), intent(inout) :: QN1(:)
 
       integer :: J
       integer :: NNBB
@@ -350,7 +349,6 @@ contains
    !> Apply zero normal velocity gradient boundary discharge
    !>
    !> @param[in] NFLUXGBC Flag to indicate if there are zero normal velocity gradient boundaries
-   !> @param[in] NP Number of nodes in the mesh
    !> @param[in] NVEL Number of boundary nodes
    !> @param[in] LBCODEI Array of boundary condition codes
    !> @param[in] NBV Array of boundary nodes
@@ -361,22 +359,21 @@ contains
    !> @param[in] H2 Array of water depths
    !> @param[in,out] QN1 Array of boundary discharges
    !*******************************************************************************
-   subroutine apply_zero_normal_velocity_gradient_boundary_discharge(NFLUXGBC, NP, NVEL, LBCODEI, &
+   subroutine apply_zero_normal_velocity_gradient_boundary_discharge(NFLUXGBC, NVEL, LBCODEI, &
                                                                      NBV, UU1, VV1, CSII, SIII, H2, &
                                                                      QN1)
       implicit none
 
       integer, intent(in) :: NFLUXGBC
-      integer, intent(in) :: NP
       integer, intent(in) :: NVEL
-      integer, intent(in) :: LBCODEI(NVEL)
-      integer, intent(in) :: NBV(NVEL)
-      real(8), intent(in) :: UU1(NP)
-      real(8), intent(in) :: VV1(NP)
-      real(8), intent(in) :: CSII(NVEL)
-      real(8), intent(in) :: SIII(NVEL)
-      real(8), intent(in) :: H2(NP)
-      real(8), intent(inout) :: QN1(NVEL)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(in) :: NBV(:)
+      real(8), intent(in) :: UU1(:)
+      real(8), intent(in) :: VV1(:)
+      real(8), intent(in) :: CSII(:)
+      real(8), intent(in) :: SIII(:)
+      real(8), intent(in) :: H2(:)
+      real(8), intent(inout) :: QN1(:)
 
       integer :: J
       integer :: NNBB
@@ -403,18 +400,17 @@ contains
    !> @param[in] TIMELOC Current time
    !> @param[in,out] QN2 Array of boundary discharges
    !*******************************************************************************
-   subroutine apply_exterior_weir_boundary_discharge(NFLUXB, NP, NVEL, LBCODEI, TIMELOC, TVW, QN2)
+   subroutine apply_exterior_weir_boundary_discharge(NFLUXB, NVEL, LBCODEI, TIMELOC, TVW, QN2)
       use mod_weir_flow, only: COMPUTE_EXTERNAL_BOUNDARY_FLUX
 
       implicit none
 
       integer, intent(in) :: NFLUXB
-      integer, intent(in) :: NP
       integer, intent(in) :: NVEL
-      integer, intent(in) :: LBCODEI(NVEL)
+      integer, intent(in) :: LBCODEI(:)
       real(8), intent(in) :: TIMELOC
-      real(8), intent(inout) :: TVW(NP)
-      real(8), intent(inout) :: QN2(NVEL)
+      real(8), intent(inout) :: TVW(:)
+      real(8), intent(inout) :: QN2(:)
 
       integer :: I
 
@@ -454,22 +450,19 @@ contains
    !> @param[in] NIBNODECODE Array of internal barrier boundary codes
    !> @param[in,out] QN2 Array of boundary discharges
    !*******************************************************************************
-   subroutine apply_interior_weir_boundary_discharge(NFLUXIB, NP, NBOU, NVEL, NVELL, &
-                                                     LBCODEI, TIMELOC, NIBNODECODE, TVW, QN2)
+   subroutine apply_interior_weir_boundary_discharge(NFLUXIB, NBOU, NVELL, LBCODEI, TIMELOC, NIBNODECODE, TVW, QN2)
       use mod_weir_flow, only: COMPUTE_INTERNAL_BOUNDARY_FLUX, COMPUTE_INTERNAL_BOUNDARY64_FLUX
 
       implicit none
 
       integer, intent(in) :: NFLUXIB
-      integer, intent(in) :: NP
       integer, intent(in) :: NBOU
-      integer, intent(in) :: NVEL
-      integer, intent(in) :: NVELL(NBOU)
-      integer, intent(in) :: LBCODEI(NVEL)
+      integer, intent(in) :: NVELL(:)
+      integer, intent(in) :: LBCODEI(:)
       real(8), intent(in) :: TIMELOC
-      integer, intent(inout) :: NIBNODECODE(NP)
-      real(8), intent(inout) :: TVW(NP)
-      real(8), intent(inout) :: QN2(NVEL)
+      integer, intent(inout) :: NIBNODECODE(:)
+      real(8), intent(inout) :: TVW(:)
+      real(8), intent(inout) :: QN2(:)
 
       integer :: I, J, K
       logical :: ISFRONT
@@ -513,17 +506,16 @@ contains
    !> @param[in] TIMELOC Current time
    !> @param[in,out] QN2 Array of boundary discharges
    !*******************************************************************************
-   subroutine apply_cross_barrier_pipe_discharge(NFLUXIBP, NP, NVEL, LBCODEI, NIBNODECODE, QN2)
+   subroutine apply_cross_barrier_pipe_discharge(NFLUXIBP, NVEL, LBCODEI, NIBNODECODE, QN2)
       use mod_weir_flow, only: COMPUTE_CROSS_BARRIER_PIPE_FLUX
 
       implicit none
 
       integer, intent(in) :: NFLUXIBP
-      integer, intent(in) :: NP
       integer, intent(in) :: NVEL
-      integer, intent(in) :: LBCODEI(NVEL)
-      integer, intent(inout) :: NIBNODECODE(NP)
-      real(8), intent(inout) :: QN2(NVEL)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(inout) :: NIBNODECODE(:)
+      real(8), intent(inout) :: QN2(:)
 
       integer :: I
 

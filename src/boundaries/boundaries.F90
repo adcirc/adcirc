@@ -309,7 +309,6 @@ contains
    !------------------------------------------------------------------
    subroutine allocateBoundaryArrays()
       use sizes, only: mnope
-      use global, only: nabout
       implicit none
       integer :: i
 
