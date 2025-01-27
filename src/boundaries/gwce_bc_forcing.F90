@@ -60,8 +60,7 @@ contains
                                         esbin1, esbin2, etime1, etime2, etratio, etiminc, eta1, eta2, etas, h1, &
                                         elevdisc, en0, en1, en2, rampelev, rampmete, ep, gwce_lv)
 
-      use mesh, only: np, nneigh, neitab
-      use sizes, only: mnei
+      use mesh, only: nneigh, neitab
       use boundaries, only: neta, nbv, nbd, npebc, nope, nvel, bndlen2o3, lbcodei, &
                             nfluxb, nfluxf, nfluxib, nfluxgbc, nfluxrbc
       use global, only: per, amig, face, ff, efa, emo, nbfr, pr2, ilump, obccoef, coefd, &
@@ -74,38 +73,38 @@ contains
 
       implicit none
 
-      real(8), intent(in)    :: h1(np)
-      real(8), intent(in)    :: elevdisc(neta)
-      real(8), intent(in)    :: en0(neta), en1(neta), en2(neta)
+      real(8), intent(in)    :: h1(:)
+      real(8), intent(in)    :: elevdisc(:)
+      real(8), intent(in)    :: en0(:), en1(:), en2(:)
       real(8), intent(in)    :: etiminc, TimeLoc, TimeH
       real(8), intent(in)    :: rampelev, rampmete, dt, ep
-      real(8), intent(inout) :: esbin1(neta)
-      real(8), intent(inout) :: esbin2(neta)
+      real(8), intent(inout) :: esbin1(:)
+      real(8), intent(inout) :: esbin2(:)
       real(8), intent(inout) :: etime1, etime2, etratio
-      real(8), intent(inout) :: eta1(np), eta2(np), etas(np)
-      real(8), intent(inout) :: gwce_lv(np)
+      real(8), intent(inout) :: eta1(:), eta2(:), etas(:)
+      real(8), intent(inout) :: gwce_lv(:)
 
       integer, intent(in)    :: IT
       logical, intent(in)    :: invertedBarometerOnElevationBoundary
 
-      call apply_periodic_boundaries(NBFR, NETA, NP, NBD, RampElev, TimeH, PER, &
+      call apply_periodic_boundaries(NBFR, NETA, NBD, RampElev, TimeH, PER, &
                                      AMIG, FACE, FF, EFA, EMO, Eta2)
-      call apply_aperiodic_boundaries(subdomainOn, enforceBN, NETA, NPEBC, NP, NBD, RampElev, TimeLoc, &
+      call apply_aperiodic_boundaries(subdomainOn, enforceBN, NETA, NPEBC, NBD, RampElev, TimeLoc, &
                                       ETIME1, ETIME2, ETIMINC, ESBIN1, ESBIN2, ETRATIO, Eta2)
-      call apply_geoid_offset(subdomainOn, LoadGeoidOffset, enforceBN, NETA, NP, NBD, GeoidOffset, ETA2)
+      call apply_geoid_offset(subdomainOn, LoadGeoidOffset, enforceBN, NETA, NBD, GeoidOffset, ETA2)
       call apply_inverted_barometer_on_elevation_boundaries(NO_MET_IN_SPONGE, &
                                                             invertedBarometerOnElevationBoundary, NETA, &
-                                                            NP, NBD, RampMete, PR2, ETA2)
-      call apply_dynamic_water_level_correction(usingDynamicWaterLevelCorrection, np, neta, nbd, &
+                                                            NBD, RampMete, PR2, ETA2)
+      call apply_dynamic_water_level_correction(usingDynamicWaterLevelCorrection, neta, nbd, &
                                                 dynamicWaterLevelCorrection1, eta2)
-      call apply_levels_of_no_motion_boundary_conditions(RES_BC_FLAG, NP, NOPE, BCFLAG_LNM, CBaroclinic, NETA, NBD, &
+      call apply_levels_of_no_motion_boundary_conditions(RES_BC_FLAG, NOPE, BCFLAG_LNM, CBaroclinic, NETA, NBD, &
                                                          LNM_BC, ETA2)
       call apply_normal_flow_boundary_conditions(IT, NFLUXF, NFLUXB, NFLUXIB, NFLUXGBC, NFLUXRBC, &
-                                                 NVEL, NP, NBV, LBCODEI, NodeCode, FluxSettlingIT, &
+                                                 NVEL, NBV, LBCODEI, NodeCode, FluxSettlingIT, &
                                                  QN0, QN1, QN2, ETAS, EN0, EN1, EN2, ETA1, ElevDisc, &
                                                  H1, TAU0Var, DT, BndLen2O3, GWCE_LV)
-      call update_rhs_sponge_periodic_boundary_nodes(NP, NPERSEG, NNPERBC, IPERCONN, NODECODE, EP, ETAS, GWCE_LV)
-      call update_load_vector(ILump, NETA, NP, MNEI, NBD, NNEIGH, NEITAB, NODECODE, ETA1, ETA2, &
+      call update_rhs_sponge_periodic_boundary_nodes(NPERSEG, NNPERBC, IPERCONN, NODECODE, EP, ETAS, GWCE_LV)
+      call update_load_vector(ILump, NETA, NBD, NNEIGH, NEITAB, NODECODE, ETA1, ETA2, &
                               OBCCOEF, COEFD, EP, ETAS, GWCE_LV)
 
    end subroutine apply_boundary_conditions
@@ -136,7 +135,6 @@ contains
    !>
    !> @param NFLUXIB64_GBL The number of global flux boundary nodes
    !> @param ILump The lumping flag
-   !> @param NP The number of nodes
    !> @param NBOU The number of boundary nodes
    !> @param NVEL The number of velocity components
    !> @param NVELL The number of velocity components for each boundary node
@@ -150,25 +148,23 @@ contains
    !> @param ETA1 The eta1 solution
    !> @param COEFDTemp The temporary coefficient
    ! *********************************************************************
-   subroutine vew1d_sum_front_and_back_side(NFLUXIB64_GBL, ILump, NP, NBOU, NVEL, NVELL, NBV, IBCONN, LBCODEI, &
+   subroutine vew1d_sum_front_and_back_side(NFLUXIB64_GBL, ILump, NBOU, NVELL, NBV, IBCONN, LBCODEI, &
                                             NODECODE, ISSUBMERGED64, COEFD, GWCE_LV, ETA1, &
                                             COEFDTemp)
       implicit none
 
       integer, intent(in) :: NFLUXIB64_GBL
       integer, intent(in) :: ILump
-      integer, intent(in) :: NP
       integer, intent(in) :: NBOU
-      integer, intent(in) :: NVEL
-      integer, intent(in) :: NVELL(NBOU)
-      integer, intent(in) :: NBV(NVEL)
-      integer, intent(in) :: IBCONN(NVEL)
-      integer, intent(in) :: LBCODEI(NVEL)
-      integer, intent(in) :: NODECODE(NP)
-      integer, intent(in) :: ISSUBMERGED64(NVEL)
-      real(8), intent(inout) :: COEFD(NP)
-      real(8), intent(inout) :: GWCE_LV(NP)
-      real(8), intent(inout) :: ETA1(NP)
+      integer, intent(in) :: NVELL(:)
+      integer, intent(in) :: NBV(:)
+      integer, intent(in) :: IBCONN(:)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(in) :: NODECODE(:)
+      integer, intent(in) :: ISSUBMERGED64(:)
+      real(8), intent(inout) :: COEFD(:)
+      real(8), intent(inout) :: GWCE_LV(:)
+      real(8), intent(inout) :: ETA1(:)
       real(8), pointer, intent(inout) :: COEFDTemp(:)
 
       integer :: I, J, K, NNBB1, NNBB2
@@ -208,7 +204,6 @@ contains
    !>
    !> @param LoadCondensedNodes Flag to indicate if the condensed nodes are loaded
    !> @param ILump The lumping flag
-   !> @param NP The number of nodes
    !> @param NListCondensedNodes The number of condensed nodes
    !> @param NNodesListCondensedNodes The number of nodes in the condensed nodes list
    !> @param ListCondensedNodes The list of condensed nodes
@@ -220,19 +215,18 @@ contains
    !> @param COEFDTemp The temporary matrix diagonal entries
    !> @param LoadCondensedNodes Flag to indicate if the condensed nodes are loaded
    ! *********************************************************************
-   subroutine condensed_nodes_sum_values(LoadCondensedNodes, ILump, NP, NListCondensedNodes, NNodesListCondensedNodes, &
+   subroutine condensed_nodes_sum_values(LoadCondensedNodes, ILump, NListCondensedNodes, NNodesListCondensedNodes, &
                                          ListCondensedNodes, NODECODE, GWCE_LV, ETA1, COEFDTemp)
       implicit none
 
       logical, intent(in) :: LoadCondensedNodes
       integer, intent(in) :: ILump
-      integer, intent(in) :: NP
       integer, intent(in) :: NListCondensedNodes
-      integer, intent(in) :: NNodesListCondensedNodes(NListCondensedNodes)
+      integer, intent(in) :: NNodesListCondensedNodes(:)
       integer, intent(in) :: ListCondensedNodes(:, :)
-      integer, intent(in) :: NODECODE(NP)
-      real(8), intent(inout) :: GWCE_LV(NP)
-      real(8), intent(inout) :: ETA1(NP)
+      integer, intent(in) :: NODECODE(:)
+      real(8), intent(inout) :: GWCE_LV(:)
+      real(8), intent(inout) :: ETA1(:)
       real(8), pointer, intent(inout) :: COEFDTemp(:)
 
       integer :: I, J, K, L
@@ -269,7 +263,6 @@ contains
    !>
    !> @param NFLUXIB64_GBL The number of global flux boundary nodes
    !> @param ILump The lumping flag
-   !> @param NP The number of nodes
    !> @param NBOU The number of boundary nodes
    !> @param NVEL The number of velocity components
    !> @param NVELL The number of velocity components for each boundary node
@@ -283,23 +276,21 @@ contains
    !> @param ETA1 The eta1 solution
    !> @param COEFDTemp The temporary matrix diagonal entries
    ! *********************************************************************
-   subroutine vew1d_copy_values_front_to_back(NFLUXIB64_GBL, ILump, NP, NBOU, NVEL, NVELL, NBV, IBCONN, LBCODEI, &
+   subroutine vew1d_copy_values_front_to_back(NFLUXIB64_GBL, ILump, NBOU, NVELL, NBV, IBCONN, LBCODEI, &
                                               NODECODE, ISSUBMERGED64, GWCE_LV, ETA1, COEFDTemp)
       implicit none
 
       integer, intent(in) :: NFLUXIB64_GBL
       integer, intent(in) :: ILump
-      integer, intent(in) :: NP
       integer, intent(in) :: NBOU
-      integer, intent(in) :: NVEL
-      integer, intent(in) :: NVELL(NBOU)
-      integer, intent(in) :: NBV(NVEL)
-      integer, intent(in) :: IBCONN(NVEL)
-      integer, intent(in) :: LBCODEI(NVEL)
-      integer, intent(in) :: NODECODE(NP)
-      integer, intent(in) :: ISSUBMERGED64(NVEL)
-      real(8), intent(inout) :: GWCE_LV(NP)
-      real(8), intent(inout) :: ETA1(NP)
+      integer, intent(in) :: NVELL(:)
+      integer, intent(in) :: NBV(:)
+      integer, intent(in) :: IBCONN(:)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(in) :: NODECODE(:)
+      integer, intent(in) :: ISSUBMERGED64(:)
+      real(8), intent(inout) :: GWCE_LV(:)
+      real(8), intent(inout) :: ETA1(:)
       real(8), pointer, intent(inout) :: COEFDTemp(:)
 
       integer :: I, J, K, NNBB1, NNBB2
@@ -349,7 +340,6 @@ contains
    !>
    !> @param NFLUXIB64_GBL The number of global flux boundary nodes
    !> @param ILump The lumping flag
-   !> @param NP The number of nodes
    !> @param NBOU The number of boundary nodes
    !> @param NVEL The number of velocity components
    !> @param NVELL The number of velocity components for each boundary node
@@ -368,7 +358,7 @@ contains
    !> @param ETA1 The eta1 solution
    !> @param COEFDTemp The temporary matrix diagonal entries
    ! *********************************************************************
-   subroutine apply_vew1d_and_condensed_nodes(LoadCondensedNodes, ILump, NP, NFLUXIB64_GBL, NBOU, NVEL, &
+   subroutine apply_vew1d_and_condensed_nodes(LoadCondensedNodes, ILump, NFLUXIB64_GBL, NBOU, &
                                               NVELL, NBV, IBCONN, LBCODEI, &
                                               NODECODE, NListCondensedNodes, NNodesListCondensedNodes, &
                                               ListCondensedNodes, IsSubmerged64, COEFD, &
@@ -382,23 +372,21 @@ contains
 
       integer, intent(in) :: NFLUXIB64_GBL
       integer, intent(in) :: ILump
-      integer, intent(in) :: NP
       integer, intent(in) :: NBOU
-      integer, intent(in) :: NVEL
-      integer, intent(in) :: NVELL(NBOU)
-      integer, intent(in) :: NBV(NVEL)
-      integer, intent(in) :: IBCONN(NVEL)
-      integer, intent(in) :: LBCODEI(NVEL)
-      integer, intent(in) :: NODECODE(NP)
+      integer, intent(in) :: NVELL(:)
+      integer, intent(in) :: NBV(:)
+      integer, intent(in) :: IBCONN(:)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(in) :: NODECODE(:)
       integer, intent(in) :: NListCondensedNodes
-      integer, intent(in) :: NNodesListCondensedNodes(NListCondensedNodes)
+      integer, intent(in) :: NNodesListCondensedNodes(:)
       integer, intent(in) :: ListCondensedNodes(:, :)
-      integer, intent(in) :: Issubmerged64(nvel)
+      integer, intent(in) :: Issubmerged64(:)
       logical, intent(in) :: LoadCondensedNodes
-      real(8), target, intent(inout) :: COEFD(NP)
-      real(8), target, intent(inout) :: COEFDTempMem(NP)
-      real(8), intent(inout) :: GWCE_LV(NP)
-      real(8), intent(inout) :: ETA1(NP)
+      real(8), target, intent(inout) :: COEFD(:)
+      real(8), target, intent(inout) :: COEFDTempMem(:)
+      real(8), intent(inout) :: GWCE_LV(:)
+      real(8), intent(inout) :: ETA1(:)
       real(8), pointer, intent(inout) :: COEFDTemp(:)
 
       !.... Prep for the temporary LHS lumped array
@@ -410,11 +398,11 @@ contains
       end if
 
       ! VEW: Sum front side values to back side
-      call vew1d_sum_front_and_back_side(NFLUXIB64_GBL, ILump, NP, NBOU, NVEL, NVELL, NBV, IBCONN, LBCODEI, &
+      call vew1d_sum_front_and_back_side(NFLUXIB64_GBL, ILump, NBOU, NVELL, NBV, IBCONN, LBCODEI, &
                                          NODECODE, ISSUBMERGED64, COEFD, GWCE_LV, ETA1, COEFDTemp)
 
       !.... CONDENSED NODES: Summing up the values at condensed nodes
-      call condensed_nodes_sum_values(LoadCondensedNodes, ILump, NP, NListCondensedNodes, NNodesListCondensedNodes, &
+      call condensed_nodes_sum_values(LoadCondensedNodes, ILump, NListCondensedNodes, NNodesListCondensedNodes, &
                                       ListCondensedNodes, NODECODE, GWCE_LV, ETA1, COEFDTemp)
 
 #ifdef CMPI
@@ -424,7 +412,7 @@ contains
 #endif
 
       ! VEW: Copy values from back side to front side
-      call vew1d_copy_values_front_to_back(NFLUXIB64_GBL, ILump, NP, NBOU, NVEL, NVELL, NBV, IBCONN, LBCODEI, &
+      call vew1d_copy_values_front_to_back(NFLUXIB64_GBL, ILump, NBOU, NVELL, NBV, IBCONN, LBCODEI, &
                                            NODECODE, ISSUBMERGED64, GWCE_LV, ETA1, COEFDTemp)
 
    end subroutine apply_vew1d_and_condensed_nodes
@@ -433,8 +421,6 @@ contains
    !> Update the right hand side sponge layer periodic boundary condition nodes
    !> for the consistent formulation
    !>
-   !> @param NP The number of nodes
-   !> @param MNEI The maximum number of neighbors
    !> @param NPERSEG The number of periodic segments
    !> @param NNPERBC The number of nodes per boundary condition
    !> @param IPERCONN The sponge layer periodic boundary connectivity table
@@ -442,17 +428,15 @@ contains
    !> @param EP The rms of the diagonal members of the gwce
    !> @param COEF The gwce matrix entries
    ! *********************************************************************
-   subroutine update_coef_periodic_sponge_layer_consistent(NP, MNEI, NPERSEG, NNPERBC, IPERCONN, NNEIGH, EP, COEF)
+   subroutine update_coef_periodic_sponge_layer_consistent(NPERSEG, NNPERBC, IPERCONN, NNEIGH, EP, COEF)
       implicit none
 
-      integer, intent(in) :: np
-      integer, intent(in) :: mnei
       integer, intent(in) :: nperseg
       integer, intent(in) :: nnperbc
       integer, intent(in) :: iperconn(:, :)
-      integer, intent(in) :: nneigh(np)
+      integer, intent(in) :: nneigh(:)
       real(8), intent(in) :: ep
-      real(8), intent(inout) :: coef(np, mnei)
+      real(8), intent(inout) :: coef(:, :)
 
       integer :: I, J, I2
 
@@ -475,22 +459,20 @@ contains
    !> Update the right hand side sponge layer periodic boundary condition nodes
    !> for the lumped formulation
    !>
-   !> @param NP The number of nodes
    !> @param NPERSEG The number of periodic segments
    !> @param NNPERBC The number of nodes per boundary condition
    !> @param IPERCONN The sponge layer periodic boundary connectivity table
    !> @param EP The rms of the diagonal members of the gwce
    !> @param COEFD The coefficient for the elevation specified boundary nodes
    ! *********************************************************************
-   subroutine update_coef_periodic_sponge_layer_lumped(NP, NPERSEG, NNPERBC, IPERCONN, EP, COEFD)
+   subroutine update_coef_periodic_sponge_layer_lumped(NPERSEG, NNPERBC, IPERCONN, EP, COEFD)
       implicit none
 
-      integer, intent(in) :: np
       integer, intent(in) :: NPERSEG
       integer, intent(in) :: NNPERBC
       integer, intent(in) :: IPERCONN(:, :)
       real(8), intent(in) :: EP
-      real(8), intent(inout) :: COEFD(np)
+      real(8), intent(inout) :: COEFD(:)
 
       integer :: I, I2
 
@@ -506,21 +488,19 @@ contains
    ! *********************************************************************
    !> Update eta for the sponge layer periodic boundary condition nodes
    !>
-   !> @param NP The number of nodes
    !> @param NPERSEG The number of periodic segments
    !> @param NNPERBC The number of nodes per boundary condition
    !> @param IPERCONN The sponge layer periodic boundary connectivity table
    !> @param ETAS The eta solution
    ! *********************************************************************
-   subroutine update_periodic_sponge_layer_nodes(NP, NPERSEG, NNPERBC, IPERCONN, ETAS, ETA2)
+   subroutine update_periodic_sponge_layer_nodes(NPERSEG, NNPERBC, IPERCONN, ETAS, ETA2)
       implicit none
 
-      integer, intent(in) :: np
       integer, intent(in) :: NPERSEG
       integer, intent(in) :: NNPERBC
       integer, intent(in) :: IPERCONN(:, :)
-      real(8), intent(inout) :: ETAS(np)
-      real(8), intent(inout) :: ETA2(np)
+      real(8), intent(inout) :: ETAS(:)
+      real(8), intent(inout) :: ETA2(:)
 
       integer :: I, I1, I2
 
@@ -540,7 +520,6 @@ contains
    !>
    !> @param NBFR The number of flow boundaries
    !> @param NETA The number of elevation boundary nodes
-   !> @param NP The number of nodes
    !> @param NBD The node boundary indices
    !> @param RampElev The ramp elevation
    !> @param TimeLoc The current time
@@ -553,25 +532,24 @@ contains
    !> @param EMO
    !> @param Eta2 The elevation field
    ! *********************************************************************
-   subroutine apply_periodic_boundaries(NBFR, NETA, NP, NBD, RampElev, TimeH, PER, AMIG, FACE, FF, &
+   subroutine apply_periodic_boundaries(NBFR, NETA, NBD, RampElev, TimeH, PER, AMIG, FACE, FF, &
                                         EFA, EMO, Eta2)
       implicit none
 
-      real(8), parameter  :: eps = EPSILON(1.d0)
+      real(8), parameter  :: eps = epsilon(1.d0)
 
       integer, intent(in) :: NBFR
       integer, intent(in) :: NETA
-      integer, intent(in) :: NP
-      integer, intent(in) :: NBD(NETA)
+      integer, intent(in) :: NBD(:)
       real(8), intent(in) :: RampElev
       real(8), intent(in) :: TimeH
-      real(8), intent(in) :: PER(NBFR)
-      real(8), intent(in) :: AMIG(NBFR)
-      real(8), intent(in) :: FACE(NBFR)
-      real(8), intent(in) :: FF(NBFR)
-      real(8), intent(in) :: EFA(NBFR, NETA)
-      real(8), intent(in) :: EMO(NBFR, NETA)
-      real(8), intent(inout) :: Eta2(NP)
+      real(8), intent(in) :: PER(:)
+      real(8), intent(in) :: AMIG(:)
+      real(8), intent(in) :: FACE(:)
+      real(8), intent(in) :: FF(:)
+      real(8), intent(in) :: EFA(:, :)
+      real(8), intent(in) :: EMO(:, :)
+      real(8), intent(inout) :: Eta2(:)
 
       integer :: I, J, NCYC, NBDI
       real(8) :: ARGJ, ARG, RFF
@@ -599,7 +577,6 @@ contains
    !> @param subdomainOn Flag to indicate if the subdomain model is active
    !> @param enforceBN Flag to enforce the boundary nodes
    !> @param NETA The number of elevation boundary nodes
-   !> @param NP The number of nodes
    !> @param NBD The node boundary indices
    !> @param RampElev The ramp elevation
    !> @param TimeLoc The current time
@@ -611,7 +588,7 @@ contains
    !> @param ETRATIO The ratio of the current time to the end time
    !> @param Eta2 The elevation field
    ! *********************************************************************
-   subroutine apply_aperiodic_boundaries(subdomainOn, enforceBN, NETA, NPEBC, NP, NBD, RampElev, TimeLoc, &
+   subroutine apply_aperiodic_boundaries(subdomainOn, enforceBN, NETA, NPEBC, NBD, RampElev, TimeLoc, &
                                          ETIME1, ETIME2, ETIMINC, ESBIN1, ESBIN2, ETRATIO, Eta2)
       use subdomain, only: enforceEcb
       implicit none
@@ -619,18 +596,17 @@ contains
       logical, intent(in) :: subdomainOn
       integer, intent(in) :: enforceBN
       integer, intent(in) :: NETA
-      integer, intent(in) :: NP
       logical, intent(in) :: NPEBC
-      integer, intent(in) :: NBD(NETA)
+      integer, intent(in) :: NBD(:)
       real(8), intent(in) :: RampElev
       real(8), intent(in) :: TimeLoc
       real(8), intent(in) :: ETIMINC
       real(8), intent(inout) :: ETRATIO
-      real(8), intent(inout) :: ESBIN1(NETA)
-      real(8), intent(inout) :: ESBIN2(NETA)
+      real(8), intent(inout) :: ESBIN1(:)
+      real(8), intent(inout) :: ESBIN2(:)
       real(8), intent(inout) :: ETIME1
       real(8), intent(inout) :: ETIME2
-      real(8), intent(inout) :: Eta2(NP)
+      real(8), intent(inout) :: Eta2(:)
       integer :: I, J
 
       if (subdomainOn) then
@@ -663,21 +639,19 @@ contains
    !> @param LoadGeoidOffset Flag to indicate if the geoid offset is loaded
    !> @param enforceBN Flag to enforce the boundary nodes
    !> @param NETA The number of elevation boundary nodes
-   !> @param NP The number of nodes
    !> @param NBD The node boundary indicesq
    !> @param GeoidOffset The geoid offset
    !> @param ETA2 The elevation field
    ! *********************************************************************
-   subroutine apply_geoid_offset(subdomainOn, LoadGeoidOffset, enforceBN, NETA, NP, NBD, GeoidOffset, ETA2)
+   subroutine apply_geoid_offset(subdomainOn, LoadGeoidOffset, enforceBN, NETA, NBD, GeoidOffset, ETA2)
       implicit none
       logical, intent(in) :: subdomainOn
       logical, intent(in) :: LoadGeoidOffset
       integer, intent(in) :: enforceBN
       integer, intent(in) :: NETA
-      integer, intent(in) :: NP
-      integer, intent(in) :: NBD(NETA)
-      real(8), intent(in) :: GeoidOffset(NP)
-      real(8), intent(inout) :: ETA2(NP)
+      integer, intent(in) :: NBD(:)
+      real(8), intent(in) :: GeoidOffset(:)
+      real(8), intent(inout) :: ETA2(:)
       integer :: i
 
       if (.not. subdomainOn .and. enforceBN /= 1 .and. LoadGeoidOffset) then
@@ -696,7 +670,6 @@ contains
    !> @param NO_MET_IN_SPONGE Flag to indicate if meteorological forcing is applied in the sponge layer
    !> @param invertedBarometerOnElevationBoundary Flag to apply the inverted barometer boundary condition
    !> @param NETA The number of elevation boundary nodes
-   !> @param NP The number of nodes
    !> @param NBD The node boundary indices
    !> @param RampMete The ramp meteorological value
    !> @param PR2 The pressure field at the current time step
@@ -704,18 +677,17 @@ contains
    !>
    ! *********************************************************************
    subroutine apply_inverted_barometer_on_elevation_boundaries(NO_MET_IN_SPONGE, invertedBarometerOnElevationBoundary, &
-                                                               NETA, NP, NBD, RampMete, PR2, ETA2)
+                                                               NETA, NBD, RampMete, PR2, ETA2)
       use adc_constants, only: G, RHOWAT0
       implicit none
 
       logical, intent(in) :: NO_MET_IN_SPONGE
       logical, intent(in) :: invertedBarometerOnElevationBoundary
       integer, intent(in) :: NETA
-      integer, intent(in) :: NP
-      integer, intent(in) :: NBD(NETA)
+      integer, intent(in) :: NBD(:)
       real(8), intent(in) :: RampMete
-      real(8), intent(in) :: PR2(NP)
-      real(8), intent(inout) :: ETA2(NP)
+      real(8), intent(in) :: PR2(:)
+      real(8), intent(inout) :: ETA2(:)
       integer :: i
 
       if (.not. NO_MET_IN_SPONGE .and. invertedBarometerOnElevationBoundary) then
@@ -730,22 +702,20 @@ contains
    !> Apply the dynamic water level correction to the elevation boundaries
    !>
    !> @param usingDynamicWaterLevelCorrection Flag to apply the dynamic water level correction
-   !> @param np The number of nodes
    !> @param neta The number of elevation boundary nodes
    !> @param nbd The node boundary indices
    !> @param dynamicWaterLevelCorrection1 The dynamic water level correction at the current time
    !> @param eta2 The elevation field
    ! *********************************************************************
-   subroutine apply_dynamic_water_level_correction(usingDynamicWaterLevelCorrection, np, neta, nbd, &
+   subroutine apply_dynamic_water_level_correction(usingDynamicWaterLevelCorrection, neta, nbd, &
                                                    dynamicWaterLevelCorrection1, eta2)
       implicit none
 
       logical, intent(in) :: usingDynamicWaterLevelCorrection
-      integer, intent(in) :: np
       integer, intent(in) :: neta
-      integer, intent(in) :: nbd(neta)
-      real(8), intent(in) :: dynamicWaterLevelCorrection1(np)
-      real(8), intent(inout) :: eta2(np)
+      integer, intent(in) :: nbd(:)
+      real(8), intent(in) :: dynamicWaterLevelCorrection1(:)
+      real(8), intent(inout) :: eta2(:)
       integer :: i
 
       if (usingDynamicWaterLevelCorrection) then
@@ -760,7 +730,6 @@ contains
    !> These are considered the steric adjustments.
    !>
    !> @param RES_BC_FLAG The flag boundary condition
-   !> @param NP The number of nodes
    !> @param NOPE The number of open boundaries
    !> @param BCFLAG_LNM The flag for the levels of no motion boundary conditions
    !> @param CBaroclinic The flag for the baroclinic model
@@ -769,19 +738,18 @@ contains
    !> @param LNM_BC The levels of no motion boundary condition
    !> @param ETA2 The elevation field
    ! *********************************************************************
-   subroutine apply_levels_of_no_motion_boundary_conditions(RES_BC_FLAG, NP, NOPE, BCFLAG_LNM, CBaroclinic, NETA, NBD, &
+   subroutine apply_levels_of_no_motion_boundary_conditions(RES_BC_FLAG, NOPE, BCFLAG_LNM, CBaroclinic, NETA, NBD, &
                                                             LNM_BC, ETA2)
       implicit none
 
       integer, intent(in) :: res_bc_flag
-      integer, intent(in) :: np
       integer, intent(in) :: nope
       integer, intent(in) :: bcflag_lnm
       logical, intent(in) :: cbaroclinic
       integer, intent(in) :: neta
-      integer, intent(in) :: nbd(neta)
-      real(8), intent(in) :: lnm_bc(neta)
-      real(8), intent(inout) :: eta2(np)
+      integer, intent(in) :: nbd(:)
+      real(8), intent(in) :: lnm_bc(:)
+      real(8), intent(inout) :: eta2(:)
       integer :: i
 
       if (abs(RES_BC_FLAG) >= 1 .and. CBaroclinic .and. NOPE > 0 .and. BCFLAG_LNM > 0) then
@@ -1028,7 +996,6 @@ contains
    !> @param NFLUXGBC The number of flux
    !> @param NFLUXRBC The number of radiation boundaries
    !> @param NVEL The number of elevation boundary nodes
-   !> @param NP The number of nodes
    !> @param NBV The node boundary indices
    !> @param LBCODEI The boundary code
    !> @param NodeCode The wet/dry node code
@@ -1045,7 +1012,7 @@ contains
    !>
    ! *********************************************************************
    subroutine apply_normal_flow_boundary_conditions(IT, NFLUXF, NFLUXB, NFLUXIB, NFLUXGBC, NFLUXRBC, &
-                                                    NVEL, NP, NBV, LBCODEI, NodeCode, FluxSettlingIT, &
+                                                    NVEL, NBV, LBCODEI, NodeCode, FluxSettlingIT, &
                                                     QN0, QN1, QN2, ETAS, EN0, EN1, EN2, ETA1, ElevDisc, &
                                                     H1, TAU0, DT, BndLen2O3, GWCE_LV)
       implicit none
@@ -1057,25 +1024,24 @@ contains
       integer, intent(in) :: NFLUXGBC
       integer, intent(in) :: NFLUXRBC
       integer, intent(in) :: NVEL
-      integer, intent(in) :: NP
-      integer, intent(in) :: NBV(NVEL)
-      integer, intent(in) :: LBCODEI(NVEL)
-      integer, intent(in) :: NodeCode(NP)
+      integer, intent(in) :: NBV(:)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(in) :: NodeCode(:)
       integer, intent(in) :: FluxSettlingIT
-      real(8), intent(in) :: QN0(NVEL)
-      real(8), intent(in) :: QN1(NVEL)
-      real(8), intent(in) :: QN2(NVEL)
-      real(8), intent(in) :: ETAS(NP)
-      real(8), intent(in) :: EN0(NVEL)
-      real(8), intent(in) :: EN1(NVEL)
-      real(8), intent(in) :: EN2(NVEL)
-      real(8), intent(in) :: ETA1(NP)
-      real(8), intent(in) :: ElevDisc(NP)
-      real(8), intent(in) :: H1(NP)
-      real(8), intent(in) :: TAU0(NP)
+      real(8), intent(in) :: QN0(:)
+      real(8), intent(in) :: QN1(:)
+      real(8), intent(in) :: QN2(:)
+      real(8), intent(in) :: ETAS(:)
+      real(8), intent(in) :: EN0(:)
+      real(8), intent(in) :: EN1(:)
+      real(8), intent(in) :: EN2(:)
+      real(8), intent(in) :: ETA1(:)
+      real(8), intent(in) :: ElevDisc(:)
+      real(8), intent(in) :: H1(:)
+      real(8), intent(in) :: TAU0(:)
       real(8), intent(in) :: DT
-      real(8), intent(in) :: BndLen2O3(NVEL)
-      real(8), intent(inout) :: GWCE_LV(NP)
+      real(8), intent(in) :: BndLen2O3(:)
+      real(8), intent(inout) :: GWCE_LV(:)
 
       real(8) :: qforcei, qforcej
       real(8) :: bndleno6nc
@@ -1118,7 +1084,6 @@ contains
    ! *********************************************************************
    !> Update the right hand side sponge layer periodic boundary condition nodes
    !>
-   !> @param NP The number of nodes
    !> @param NPERSEG The number of periodic segments
    !> @param NNPERBC The number of nodes per boundary condition
    !> @param IPERCONN The connectivity table
@@ -1126,19 +1091,18 @@ contains
    !> @param EP The rms of the diagonal members of the gwce
    !> @param ETAS The eta solution
    !> @param GWCE_LV The gwce load vector
-   subroutine update_rhs_sponge_periodic_boundary_nodes(NP, NPERSEG, NNPERBC, &
+   subroutine update_rhs_sponge_periodic_boundary_nodes(NPERSEG, NNPERBC, &
                                                         IPERCONN, NODECODE, EP, &
                                                         ETAS, GWCE_LV)
       implicit none
 
-      integer, intent(in) :: NP
       integer, intent(in) :: NPERSEG
       integer, intent(in) :: NNPERBC
       integer, intent(in) :: IPERCONN(:, :)
-      integer, intent(in) :: NODECODE(NP)
+      integer, intent(in) :: NODECODE(:)
       real(8), intent(in) :: EP
-      real(8), intent(inout) :: ETAS(NP)
-      real(8), intent(inout) :: GWCE_LV(NP)
+      real(8), intent(inout) :: ETAS(:)
+      real(8), intent(inout) :: GWCE_LV(:)
 
       integer :: I, I2
 
@@ -1160,7 +1124,6 @@ contains
    !>
    !> @param ILump Flag to indicate if the gwce is lumped
    !> @param NETA The number of elevation boundary nodes
-   !> @param NP The number of nodes
    !> @param NBD The node boundary indices
    !> @param NNEIGH The number of neighbors
    !> @param NEITAB The neighbor table
@@ -1174,25 +1137,23 @@ contains
    !> @param GWCE_LV The gwce load vector
    !>
    ! *********************************************************************
-   subroutine update_load_vector(ILump, NETA, NP, MNEI, NBD, NNEIGH, NEITAB, NODECODE, ETA1, ETA2, &
+   subroutine update_load_vector(ILump, NETA, NBD, NNEIGH, NEITAB, NODECODE, ETA1, ETA2, &
                                  OBCCOEF, COEFD, EP, ETAS, GWCE_LV)
       implicit none
 
       integer, intent(in) :: ilump
       integer, intent(in) :: neta
-      integer, intent(in) :: np
-      integer, intent(in) :: mnei
-      integer, intent(in) :: nbd(neta)
-      integer, intent(in) :: nneigh(np)
-      integer, intent(in) :: nodecode(np)
-      integer, intent(in) :: neitab(np, mnei)
-      real(8), intent(in) :: eta1(np)
-      real(8), intent(in) :: eta2(np)
-      real(8), intent(in) :: obccoef(neta, mnei - 1)
-      real(8), intent(in) :: coefd(np)
+      integer, intent(in) :: nbd(:)
+      integer, intent(in) :: nneigh(:)
+      integer, intent(in) :: nodecode(:)
+      integer, intent(in) :: neitab(:, :)
+      real(8), intent(in) :: eta1(:)
+      real(8), intent(in) :: eta2(:)
+      real(8), intent(in) :: obccoef(:, :)
+      real(8), intent(in) :: coefd(:)
       real(8), intent(in) :: ep
-      real(8), intent(inout) :: etas(np)
-      real(8), intent(inout) :: gwce_lv(np)
+      real(8), intent(inout) :: etas(:)
+      real(8), intent(inout) :: gwce_lv(:)
 
       integer :: i, j, nbdi
 

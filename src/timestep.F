@@ -1048,7 +1048,7 @@ C             everything is up-to-date.
       ENDIF
 
 C...  SAVE THE CURRENT TIME LEVEL OF BARRIER INTO THE PREVIOUS TIME LEVEL
-      call step_weir_elevation(NFLUXIB, NFLUXB, NVEL, BARINHT2, BARLANHT2, BARINHT1, BARLANHT1)
+      call step_weir_elevation(NFLUXIB, NFLUXB, BARINHT2, BARLANHT2, BARINHT1, BARLANHT1)
 
 C...
 c...  find and print to unit 6, the maximum elevation, the maximum
