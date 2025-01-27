@@ -41,49 +41,49 @@ contains
                                                  MOM_LV_X, MOM_LV_Y, &
                                                  AUV)
 
-      use mesh, only: NP, NeiTab, NeiTabEle, NNeigh, FDXE, FDYE, SFMXEle, &
+      use mesh, only: NeiTab, NeiTabEle, NNeigh, FDXE, FDYE, SFMXEle, &
                       SFMYEle, SFacEle, MJU, TotalArea
       use global, only: NOFF, IFSFM, ILUMP, flgNodesMultipliedByTotalArea
       use boundaries, only: NBV, SIII, CSII, LBCODEI, ME2GW, NVELME, NFLUXIB64_GBL, IBCONN, &
-                            ISSUBMERGED64, NBOU, NVEL, NVELL
+                            ISSUBMERGED64, NBOU, NVELL
       use nodalattributes, only: ListCondensedNodes, NListCondensedNodes, NNodesListCondensedNodes, &
                                  LoadCondensedNodes
 
       implicit none
 
       logical, intent(in) :: use_conservative
-      integer, intent(in) :: NODECODE(NP)
-      real(8), intent(in) :: QN2(NVELME)
-      real(8), intent(in) :: H2(NP)
-      real(8), intent(in) :: TKM(NVELME, NP)
-      real(8), intent(in) :: TK(NP)
-      real(8), intent(in) :: UU1(NP)
-      real(8), intent(in) :: VV1(NP)
-      real(8), intent(in) :: QX1(NP)
-      real(8), intent(in) :: QY1(NP)
-      real(8), intent(inout) :: MOM_LV_X(NP)
-      real(8), intent(inout) :: MOM_LV_Y(NP)
-      real(8), intent(inout) :: AUV(4, NP)
+      integer, intent(in) :: NODECODE(:)
+      real(8), intent(in) :: QN2(:)
+      real(8), intent(in) :: H2(:)
+      real(8), intent(in) :: TKM(:, :)
+      real(8), intent(in) :: TK(:)
+      real(8), intent(in) :: UU1(:)
+      real(8), intent(in) :: VV1(:)
+      real(8), intent(in) :: QX1(:)
+      real(8), intent(in) :: QY1(:)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+      real(8), intent(inout) :: AUV(:, :)
       integer :: J
 
       do J = 1, NVELME
          select case (LBCODEI(ME2GW(J)))
          case (0:9)
-            call essential_normal_flow_free_tangential_slip(use_conservative, J, NVELME, NP, ME2GW, NBV, NODECODE, QN2, &
+            call essential_normal_flow_free_tangential_slip(use_conservative, J, ME2GW, NBV, NODECODE, QN2, &
                                                             H2, TKM, TK, SIII, CSII, MOM_LV_X, &
                                                             MOM_LV_Y, AUV)
          case (10:19)
-            call essential_normal_flow_no_tangential_slip(use_conservative, J, NVELME, NP, ME2GW, NBV, NODECODE, QN2, &
+            call essential_normal_flow_no_tangential_slip(use_conservative, J, ME2GW, NBV, NODECODE, QN2, &
                                                           H2, SIII, CSII, MOM_LV_X, MOM_LV_Y, AUV)
          case (41)
-            call zero_normal_velocity_gradient(use_conservative, J, NVELME, NP, IFSFM, ME2GW, NBV, NODECODE, NOFF, &
+            call zero_normal_velocity_gradient(use_conservative, J, IFSFM, ME2GW, NBV, NODECODE, NOFF, &
                                                NeiTab, NeiTabEle, NNeigh, SIII, CSII, UU1, VV1, QX1, QY1, &
                                                SFacEle, SFMXEle, SFMYEle, FDXE, FDYE, MOM_LV_X, &
                                                MOM_LV_Y, AUV)
          end select
       end do
 
-      call apply_vew1d_and_condensed_nodes(use_conservative, NFLUXIB64_GBL, ILUMP, NBOU, NVEL, NP, &
+      call apply_vew1d_and_condensed_nodes(use_conservative, NFLUXIB64_GBL, ILUMP, NBOU, &
                                            NVELL, LBCODEI, NBV, IBCONN, ISSUBMERGED64, NODECODE, &
                                            NListCondensedNodes, NNodesListCondensedNodes, &
                                            ListCondensedNodes, LoadCondensedNodes, MJU, TotalArea, &
@@ -99,7 +99,7 @@ contains
    !>
    !>
    !************************************************************************
-   subroutine essential_normal_flow_free_tangential_slip(use_conservative, J, NVEL, NP, ME2GW, NBV, NODECODE, &
+   subroutine essential_normal_flow_free_tangential_slip(use_conservative, J, ME2GW, NBV, NODECODE, &
                                                          QN2, H2, TKM, TK, SIII, CSII, MOM_LV_X, &
                                                          MOM_LV_Y, AUV)
 
@@ -107,20 +107,18 @@ contains
 
       logical, intent(in) :: use_conservative
       integer, intent(in) :: J
-      integer, intent(in) :: NVEL
-      integer, intent(in) :: NP
-      integer, intent(in) :: ME2GW(NVEL)
-      integer, intent(in) :: NBV(NVEL)
-      integer, intent(in) :: NODECODE(NP)
-      real(8), intent(in) :: QN2(NVEL)
-      real(8), intent(in) :: H2(NP)
-      real(8), intent(in) :: TKM(NVEL, NP)
-      real(8), intent(in) :: TK(NP)
-      real(8), intent(in) :: SIII(NVEL)
-      real(8), intent(in) :: CSII(NVEL)
-      real(8), intent(inout) :: MOM_LV_X(NP)
-      real(8), intent(inout) :: MOM_LV_Y(NP)
-      real(8), intent(inout) :: AUV(4, NP)
+      integer, intent(in) :: ME2GW(:)
+      integer, intent(in) :: NBV(:)
+      integer, intent(in) :: NODECODE(:)
+      real(8), intent(in) :: QN2(:)
+      real(8), intent(in) :: H2(:)
+      real(8), intent(in) :: TKM(:, :)
+      real(8), intent(in) :: TK(:)
+      real(8), intent(in) :: SIII(:)
+      real(8), intent(in) :: CSII(:)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+      real(8), intent(inout) :: AUV(:, :)
 
       integer :: I
       integer :: NBDI
@@ -131,11 +129,11 @@ contains
       NCI = NODECODE(NBDI)
 
       if (use_conservative) then
-         call essential_normal_flow_free_tangential_slip_conservative(I, NBDI, NCI, NP, NVEL, QN2, &
+         call essential_normal_flow_free_tangential_slip_conservative(I, NBDI, NCI, QN2, &
                                                                       SIII, CSII, MOM_LV_X, &
                                                                       MOM_LV_Y, AUV)
       elseif (.not. use_conservative) then
-         call essential_normal_flow_free_tangential_slip_nonconservative(I, NBDI, NCI, NP, NVEL, QN2, H2, &
+         call essential_normal_flow_free_tangential_slip_nonconservative(I, NBDI, NCI, QN2, H2, &
                                                                          TKM, TK, SIII, CSII, MOM_LV_X, &
                                                                          MOM_LV_Y, AUV)
       end if
@@ -149,8 +147,6 @@ contains
    !> @param[in] I The index of the boundary node.
    !> @param[in] NBDI The index of the boundary node in the global array.
    !> @param[in] NCI The node code of the boundary node (i.e. wet/dry state)
-   !> @param[in] NP The number of nodes in the mesh.
-   !> @param[in] NVEL The number of boundary nodes.
    !> @param[in] QN2 The flux at the boundary node.
    !> @param[in] SIII The sine of the angle between the normal and the x-axis.
    !> @param[in] CSII The cosine of the angle between the normal and the x-axis.
@@ -158,7 +154,7 @@ contains
    !> @param[in,out] MOM_LV_Y The y-component of the momentum at the boundary node.
    !> @param[in,out] AUV
    !************************************************************************
-   subroutine essential_normal_flow_free_tangential_slip_conservative(I, NBDI, NCI, NP, NVEL, QN2, &
+   subroutine essential_normal_flow_free_tangential_slip_conservative(I, NBDI, NCI, QN2, &
                                                                       SIII, CSII, MOM_LV_X, &
                                                                       MOM_LV_Y, AUV)
 
@@ -167,14 +163,12 @@ contains
       integer, intent(in) :: I
       integer, intent(in) :: NBDI
       integer, intent(in) :: NCI
-      integer, intent(in) :: NP
-      integer, intent(in) :: NVEL
-      real(8), intent(in) :: QN2(NVEL)
-      real(8), intent(in) :: SIII(NVEL)
-      real(8), intent(in) :: CSII(NVEL)
-      real(8), intent(inout) :: MOM_LV_X(NP)
-      real(8), intent(inout) :: MOM_LV_Y(NP)
-      real(8), intent(inout) :: AUV(4, NP)
+      real(8), intent(in) :: QN2(:)
+      real(8), intent(in) :: SIII(:)
+      real(8), intent(in) :: CSII(:)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+      real(8), intent(inout) :: AUV(:, :)
 
       MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI) - CSII(I)*MOM_LV_Y(NBDI))*NCI !Tangetial Eqn RHS
       MOM_LV_Y(NBDI) = -QN2(I)*NCI !Normal Eqn RHS
@@ -192,8 +186,6 @@ contains
    !> @param[in] I The index of the boundary node.
    !> @param[in] NBDI The index of the boundary node in the global array.
    !> @param[in] NCI The node code of the boundary node (i.e. wet/dry state)
-   !> @param[in] NP The number of nodes in the mesh.
-   !> @param[in] NVEL The number of boundary nodes.
    !> @param[in] QN2 The flux at the boundary node.
    !> @param[in] H2 The depth at the boundary node.
    !> @param[in] TKM
@@ -203,7 +195,7 @@ contains
    !> @param[in,out] MOM_LV_X The x-component of the momentum at the boundary node.
    !> @param[in,out] MOM_LV_Y The y-component of the momentum at the boundary node.
    !> @param[in,out] AUV
-   subroutine essential_normal_flow_free_tangential_slip_nonconservative(I, NBDI, NCI, NP, NVEL, QN2, H2, &
+   subroutine essential_normal_flow_free_tangential_slip_nonconservative(I, NBDI, NCI, QN2, H2, &
                                                                          TKM, TK, SIII, CSII, MOM_LV_X, &
                                                                          MOM_LV_Y, AUV)
 
@@ -215,17 +207,15 @@ contains
       integer, intent(in) :: I
       integer, intent(in) :: NBDI
       integer, intent(in) :: NCI
-      integer, intent(in) :: NP
-      integer, intent(in) :: NVEL
-      real(8), intent(in) :: QN2(NVEL)
-      real(8), intent(in) :: H2(NP)
-      real(8), intent(in) :: SIII(NVEL)
-      real(8), intent(in) :: CSII(NVEL)
-      real(8), intent(in) :: TK(NP)
-      real(8), intent(in) :: TKM(NVEL, NP)
-      real(8), intent(inout) :: MOM_LV_X(NP)
-      real(8), intent(inout) :: MOM_LV_Y(NP)
-      real(8), intent(inout) :: AUV(4, NP)
+      real(8), intent(in) :: QN2(:)
+      real(8), intent(in) :: H2(:)
+      real(8), intent(in) :: SIII(:)
+      real(8), intent(in) :: CSII(:)
+      real(8), intent(in) :: TK(:)
+      real(8), intent(in) :: TKM(:, :)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+      real(8), intent(inout) :: AUV(:, :)
 
       real(8) :: VelNorm
 
@@ -263,7 +253,6 @@ contains
    !> @param[in] use_conservative A flag to indicate whether the conservative or non-conservative formulation should be used.
    !> @param[in] J The index of the boundary node.
    !> @param[in] NVEL The number of boundary nodes.
-   !> @param[in] NP The number of nodes in the mesh.
    !> @param[in] ME2GW The mapping from the boundary node from momentum equations to gwce
    !> @param[in] NBV The mapping from the global node index to the boundary node index.
    !> @param[in] NODECODE The node code of the boundary node (i.e. wet/dry state).
@@ -275,25 +264,23 @@ contains
    !> @param[in,out] MOM_LV_Y The y-component of the momentum at the boundary node.
    !> @param[in,out] AUV
    !************************************************************************
-   subroutine essential_normal_flow_no_tangential_slip(use_conservative, J, NVEL, NP, ME2GW, NBV, NODECODE, &
+   subroutine essential_normal_flow_no_tangential_slip(use_conservative, J, ME2GW, NBV, NODECODE, &
                                                        QN2, H2, SIII, CSII, MOM_LV_X, MOM_LV_Y, AUV)
 
       implicit none
 
       logical, intent(in) :: use_conservative
       integer, intent(in) :: J
-      integer, intent(in) :: NVEL
-      integer, intent(in) :: NP
-      integer, intent(in) :: ME2GW(NVEL)
-      integer, intent(in) :: NBV(NVEL)
-      integer, intent(in) :: NODECODE(NP)
-      real(8), intent(in) :: QN2(NVEL)
-      real(8), intent(in) :: H2(NP)
-      real(8), intent(in) :: SIII(NVEL)
-      real(8), intent(in) :: CSII(NVEL)
-      real(8), intent(inout) :: MOM_LV_X(NP)
-      real(8), intent(inout) :: MOM_LV_Y(NP)
-      real(8), intent(inout) :: AUV(4, NP)
+      integer, intent(in) :: ME2GW(:)
+      integer, intent(in) :: NBV(:)
+      integer, intent(in) :: NODECODE(:)
+      real(8), intent(in) :: QN2(:)
+      real(8), intent(in) :: H2(:)
+      real(8), intent(in) :: SIII(:)
+      real(8), intent(in) :: CSII(:)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+      real(8), intent(inout) :: AUV(:, :)
 
       integer :: I
       integer :: NBDI
@@ -307,18 +294,18 @@ contains
          MOM_LV_X(NBDI) = 0.d0
          MOM_LV_Y(NBDI) = 0.d0
       elseif (use_conservative) then
-         call essential_normal_flow_no_tangential_slip_conservative(I, NBDI, NP, NVEL, NCI, QN2, &
+         call essential_normal_flow_no_tangential_slip_conservative(I, NBDI, NCI, QN2, &
                                                                     SIII, CSII, MOM_LV_X, &
                                                                     MOM_LV_Y, AUV)
       elseif (.not. use_conservative) then
-         call essential_normal_flow_no_tangential_slip_nonconservative(I, NBDI, NCI, NP, NVEL, QN2, H2, &
+         call essential_normal_flow_no_tangential_slip_nonconservative(I, NBDI, NCI, QN2, H2, &
                                                                        SIII, CSII, MOM_LV_X, &
                                                                        MOM_LV_Y, AUV)
       end if
 
    end subroutine essential_normal_flow_no_tangential_slip
 
-   subroutine essential_normal_flow_no_tangential_slip_conservative(I, NBDI, NP, NVEL, NCI, QN2, &
+   subroutine essential_normal_flow_no_tangential_slip_conservative(I, NBDI, NCI, QN2, &
                                                                     SIII, CSII, MOM_LV_X, &
                                                                     MOM_LV_Y, AUV)
 
@@ -328,15 +315,13 @@ contains
 
       integer, intent(in) :: I
       integer, intent(in) :: NBDI
-      integer, intent(in) :: NP
-      integer, intent(in) :: NVEL
       integer, intent(in) :: NCI
-      real(8), intent(in) :: QN2(NVEL)
-      real(8), intent(in) :: SIII(NVEL)
-      real(8), intent(in) :: CSII(NVEL)
-      real(8), intent(inout) :: MOM_LV_X(NP)
-      real(8), intent(inout) :: MOM_LV_Y(NP)
-      real(8), intent(inout) :: AUV(4, NP)
+      real(8), intent(in) :: QN2(:)
+      real(8), intent(in) :: SIII(:)
+      real(8), intent(in) :: CSII(:)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+      real(8), intent(inout) :: AUV(:, :)
 
       MOM_LV_X(NBDI) = QTan*NCI !Tangential Eqn RHS
       MOM_LV_Y(NBDI) = -QN2(I)*NCI !Normal Eqn RHS
@@ -347,7 +332,7 @@ contains
 
    end subroutine essential_normal_flow_no_tangential_slip_conservative
 
-   subroutine essential_normal_flow_no_tangential_slip_nonconservative(I, NBDI, NCI, NP, NVEL, QN2, H2, &
+   subroutine essential_normal_flow_no_tangential_slip_nonconservative(I, NBDI, NCI, QN2, H2, &
                                                                        SIII, CSII, MOM_LV_X, &
                                                                        MOM_LV_Y, AUV)
       implicit none
@@ -355,15 +340,13 @@ contains
       integer, intent(in) :: I
       integer, intent(in) :: NBDI
       integer, intent(in) :: NCI
-      integer, intent(in) :: NVEL
-      integer, intent(in) :: NP
-      real(8), intent(in) :: QN2(NVEL)
-      real(8), intent(in) :: H2(NP)
-      real(8), intent(in) :: SIII(NVEL)
-      real(8), intent(in) :: CSII(NVEL)
-      real(8), intent(inout) :: MOM_LV_X(NP)
-      real(8), intent(inout) :: MOM_LV_Y(NP)
-      real(8), intent(inout) :: AUV(4, NP)
+      real(8), intent(in) :: QN2(:)
+      real(8), intent(in) :: H2(:)
+      real(8), intent(in) :: SIII(:)
+      real(8), intent(in) :: CSII(:)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+      real(8), intent(inout) :: AUV(:, :)
 
       real(8) :: VelNorm
       real(8), parameter :: VelTan = 0.0d0
@@ -388,7 +371,7 @@ contains
    !>
    !>
    !************************************************************************
-   subroutine zero_normal_velocity_gradient(use_conservative, J, NVEL, NP, IFSFM, ME2GW, NBV, &
+   subroutine zero_normal_velocity_gradient(use_conservative, J, IFSFM, ME2GW, NBV, &
                                             NODECODE, NOFF, NeiTab, NeiTabEle, &
                                             NNeigh, SIII, CSII, UU1, VV1, QX1, QY1, SFacEle, &
                                             SFMXEle, SFMYEle, FDXE, FDYE, &
@@ -397,30 +380,28 @@ contains
 
       logical, intent(in) :: use_conservative
       integer, intent(in) :: J
-      integer, intent(in) :: NVEL
-      integer, intent(in) :: NP
       integer, intent(in) :: IFSFM
-      integer, intent(in) :: ME2GW(NVEL)
-      integer, intent(in) :: NBV(NVEL)
-      integer, intent(in) :: NODECODE(NP)
-      integer, intent(in) :: NOFF(NP)
-      integer, intent(in) :: NeiTab(NP, 3)
-      integer, intent(in) :: NeiTabEle(NP, 3)
-      integer, intent(in) :: NNeigh(NP)
-      real(8), intent(in) :: SIII(NVEL)
-      real(8), intent(in) :: CSII(NVEL)
-      real(8), intent(in) :: UU1(NP)
-      real(8), intent(in) :: VV1(NP)
-      real(8), intent(in) :: SFacEle(NP)
-      real(8), intent(in) :: SFMXEle(NP)
-      real(8), intent(in) :: SFMYEle(NP)
-      real(8), intent(in) :: FDXE(3, NP)
-      real(8), intent(in) :: FDYE(3, NP)
-      real(8), intent(in) :: QX1(NP)
-      real(8), intent(in) :: QY1(NP)
-      real(8), intent(inout) :: MOM_LV_X(NP)
-      real(8), intent(inout) :: MOM_LV_Y(NP)
-      real(8), intent(inout) :: AUV(4, NP)
+      integer, intent(in) :: ME2GW(:)
+      integer, intent(in) :: NBV(:)
+      integer, intent(in) :: NODECODE(:)
+      integer, intent(in) :: NOFF(:)
+      integer, intent(in) :: NeiTab(:, :)
+      integer, intent(in) :: NeiTabEle(:, :)
+      integer, intent(in) :: NNeigh(:)
+      real(8), intent(in) :: SIII(:)
+      real(8), intent(in) :: CSII(:)
+      real(8), intent(in) :: UU1(:)
+      real(8), intent(in) :: VV1(:)
+      real(8), intent(in) :: SFacEle(:)
+      real(8), intent(in) :: SFMXEle(:)
+      real(8), intent(in) :: SFMYEle(:)
+      real(8), intent(in) :: FDXE(:, :)
+      real(8), intent(in) :: FDYE(:, :)
+      real(8), intent(in) :: QX1(:)
+      real(8), intent(in) :: QY1(:)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+      real(8), intent(inout) :: AUV(:, :)
 
       integer :: I
       integer :: NBDI
@@ -431,20 +412,20 @@ contains
       NCI = NODECODE(NBDI)
 
       if (use_conservative) then
-         call zero_normal_velocity_gradient_conservative(I, IFSFM, NBDI, NCI, NP, NeiTab, NeiTabEle, &
+         call zero_normal_velocity_gradient_conservative(I, IFSFM, NBDI, NCI, NeiTab, NeiTabEle, &
                                                          NNeigh, NOFF, NodeCode, QX1, QY1, &
                                                          SFacEle, SFMXEle, SFMYEle, &
                                                          FDXE, FDYE, SIII, CSII, MOM_LV_X, &
                                                          MOM_LV_Y, AUV)
       elseif (.not. use_conservative) then
-         call zero_normal_velocity_gradient_nonconservative(I, IFSFM, NBDI, NCI, NP, NeiTab, NeiTabEle, &
+         call zero_normal_velocity_gradient_nonconservative(I, IFSFM, NBDI, NCI, NeiTab, NeiTabEle, &
                                                             NNeigh, NOFF, NodeCode, UU1, VV1, SFacEle, SFMXEle, SFMYEle, &
                                                             FDXE, FDYE, SIII, CSII, MOM_LV_X, MOM_LV_Y, AUV)
       end if
 
    end subroutine zero_normal_velocity_gradient
 
-   subroutine zero_normal_velocity_gradient_conservative(I, IFSFM, NBDI, NCI, NP, NeiTab, NeiTabEle, &
+   subroutine zero_normal_velocity_gradient_conservative(I, IFSFM, NBDI, NCI, NeiTab, NeiTabEle, &
                                                          NNeigh, NOFF, NodeCode, QX1, QY1, SFacEle, SFMXEle, SFMYEle, &
                                                          FDXE, FDYE, SIII, CSII, MOM_LV_X, MOM_LV_Y, AUV)
 
@@ -452,24 +433,23 @@ contains
       integer, intent(in) :: IFSFM
       integer, intent(in) :: NBDI
       integer, intent(in) :: NCI
-      integer, intent(in) :: NP
-      integer, intent(in) :: NeiTab(NP, 3)
-      integer, intent(in) :: NeiTabEle(NP, 3)
-      integer, intent(in) :: NNeigh(NP)
-      integer, intent(in) :: NOFF(NP)
-      integer, intent(in) :: NodeCode(NP)
-      real(8), intent(in) :: QX1(NP)
-      real(8), intent(in) :: QY1(NP)
-      real(8), intent(in) :: SFacEle(NP)
-      real(8), intent(in) :: SFMXEle(NP)
-      real(8), intent(in) :: SFMYEle(NP)
-      real(8), intent(in) :: FDXE(3, NP)
-      real(8), intent(in) :: FDYE(3, NP)
-      real(8), intent(in) :: SIII(NP)
-      real(8), intent(in) :: CSII(NP)
-      real(8), intent(inout) :: MOM_LV_X(NP)
-      real(8), intent(inout) :: MOM_LV_Y(NP)
-      real(8), intent(inout) :: AUV(4, NP)
+      integer, intent(in) :: NeiTab(:, :)
+      integer, intent(in) :: NeiTabEle(:, :)
+      integer, intent(in) :: NNeigh(:)
+      integer, intent(in) :: NOFF(:)
+      integer, intent(in) :: NodeCode(:)
+      real(8), intent(in) :: QX1(:)
+      real(8), intent(in) :: QY1(:)
+      real(8), intent(in) :: SFacEle(:)
+      real(8), intent(in) :: SFMXEle(:)
+      real(8), intent(in) :: SFMYEle(:)
+      real(8), intent(in) :: FDXE(:, :)
+      real(8), intent(in) :: FDYE(:, :)
+      real(8), intent(in) :: SIII(:)
+      real(8), intent(in) :: CSII(:)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+      real(8), intent(inout) :: AUV(:, :)
 
       integer :: NM1, NM2, NM3, N, NEle, NCEle, NNFirst
       real(8) :: ZNGRHS1, ZNGRHS2, ZNGLHS
@@ -540,7 +520,7 @@ contains
 
    end subroutine zero_normal_velocity_gradient_conservative
 
-   subroutine zero_normal_velocity_gradient_nonconservative(I, IFSFM, NBDI, NCI, NP, NeiTab, NeiTabEle, &
+   subroutine zero_normal_velocity_gradient_nonconservative(I, IFSFM, NBDI, NCI, NeiTab, NeiTabEle, &
                                                             NNeigh, NOFF, NodeCode, UU1, VV1, SFacEle, SFMXEle, SFMYEle, &
                                                             FDXE, FDYE, SIII, CSII, MOM_LV_X, MOM_LV_Y, AUV)
 
@@ -550,24 +530,23 @@ contains
       integer, intent(in) :: IFSFM
       integer, intent(in) :: NBDI
       integer, intent(in) :: NCI
-      integer, intent(in) :: NP
-      integer, intent(in) :: NeiTab(NP, 3)
-      integer, intent(in) :: NeiTabEle(NP, 3)
-      integer, intent(in) :: NNeigh(NP)
-      integer, intent(in) :: NOFF(NP)
-      integer, intent(in) :: NodeCode(NP)
-      real(8), intent(in) :: UU1(NP)
-      real(8), intent(in) :: VV1(NP)
-      real(8), intent(in) :: SFacEle(NP)
-      real(8), intent(in) :: SFMXEle(NP)
-      real(8), intent(in) :: SFMYEle(NP)
-      real(8), intent(in) :: FDXE(3, NP)
-      real(8), intent(in) :: FDYE(3, NP)
-      real(8), intent(in) :: SIII(NP)
-      real(8), intent(in) :: CSII(NP)
-      real(8), intent(inout) :: MOM_LV_X(NP)
-      real(8), intent(inout) :: MOM_LV_Y(NP)
-      real(8), intent(inout) :: AUV(4, NP)
+      integer, intent(in) :: NeiTab(:, :)
+      integer, intent(in) :: NeiTabEle(:, :)
+      integer, intent(in) :: NNeigh(:)
+      integer, intent(in) :: NOFF(:)
+      integer, intent(in) :: NodeCode(:)
+      real(8), intent(in) :: UU1(:)
+      real(8), intent(in) :: VV1(:)
+      real(8), intent(in) :: SFacEle(:)
+      real(8), intent(in) :: SFMXEle(:)
+      real(8), intent(in) :: SFMYEle(:)
+      real(8), intent(in) :: FDXE(:, :)
+      real(8), intent(in) :: FDYE(:, :)
+      real(8), intent(in) :: SIII(:)
+      real(8), intent(in) :: CSII(:)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+      real(8), intent(inout) :: AUV(:, :)
 
       integer :: NM1, NM2, NM3, N, NEle, NCEle, NNFirst
       real(8) :: ZNGRHS1, ZNGRHS2, ZNGLHS
@@ -652,7 +631,7 @@ contains
    !>
    !>
    !************************************************************************
-   subroutine apply_vew1d_and_condensed_nodes(use_conservative, NFLUXIB64_GBL, ILUMP, NBOU, NVEL, NP, &
+   subroutine apply_vew1d_and_condensed_nodes(use_conservative, NFLUXIB64_GBL, ILUMP, NBOU, &
                                               NVELL, LBCODEI, NBV, IBCONN, ISSUBMERGED64, NODECODE, &
                                               NListCondensedNodes, NNodesListCondensedNodes, &
                                               ListCondensedNodes, LoadCondensedNodes, MJU, TotalArea, &
@@ -672,24 +651,22 @@ contains
       integer, intent(in) :: NFLUXIB64_GBL
       integer, intent(in) :: ILUMP
       integer, intent(in) :: NBOU
-      integer, intent(in) :: NVEL
-      integer, intent(in) :: NP
-      integer, intent(in) :: NVELL(NBOU)
-      integer, intent(in) :: LBCODEI(NVEL)
-      integer, intent(in) :: NBV(NVEL)
-      integer, intent(in) :: IBCONN(NVEL)
-      integer, intent(in) :: ISSUBMERGED64(NVEL)
-      integer, intent(in) :: NODECODE(NP)
+      integer, intent(in) :: NVELL(:)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(in) :: NBV(:)
+      integer, intent(in) :: IBCONN(:)
+      integer, intent(in) :: ISSUBMERGED64(:)
+      integer, intent(in) :: NODECODE(:)
       integer, intent(in) :: NListCondensedNodes
-      integer, intent(in) :: NNodesListCondensedNodes(NListCondensedNodes)
+      integer, intent(in) :: NNodesListCondensedNodes(:)
       integer, intent(in) :: ListCondensedNodes(:, :)
-      integer, intent(in) :: MJU(NP)
+      integer, intent(in) :: MJU(:)
       logical, intent(in) :: LoadCondensedNodes
-      real(8), intent(in) :: TotalArea(NP)
-      integer, intent(inout) :: flgNodesMultipliedByTotalArea(NP)
-      real(8), intent(inout) :: AUV(4, NP)
-      real(8), intent(inout) :: MOM_LV_X(NP)
-      real(8), intent(inout) :: MOM_LV_Y(NP)
+      real(8), intent(in) :: TotalArea(:)
+      integer, intent(inout) :: flgNodesMultipliedByTotalArea(:)
+      real(8), intent(inout) :: AUV(:, :)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
 
       logical, parameter :: CME_AreaInt_Corr = .true.
       logical, parameter :: CME_AreaInt_Orig = .false.
@@ -880,7 +857,6 @@ contains
    !>
    !> @param[in] use_conservative Logical flag to indicate whether the conservative or nonconservative form of the boundary condition is to be applied
    !> @param[in] NFLUXGBC Integer flag to indicate whether the boundary condition is to be applied
-   !> @param[in] NP Integer number of nodes
    !> @param[in] NVEL Integer number of velocity components
    !> @param[in] NVELME Integer number of velocity components in the mixed element
    !> @param[in] ME2GW Integer array mapping mixed element velocity components to global velocity components
@@ -901,27 +877,27 @@ contains
    subroutine apply_zero_normal_velocity_gradient(use_conservative, NODECODE, NOFF, &
                                                   QX2, QY2, UU2, VV2)
 
-      use mesh, only: NP, NM
-      use boundaries, only: NFLUXGBC, NVEL, NVELME, ME2GW, NBV, LBCODEI, NEleZNG, &
+      use mesh, only: NM
+      use boundaries, only: NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI, NEleZNG, &
                             ZNGIF1, ZNGIF2, ZNGIF3
 
       implicit none
 
       logical, intent(in) :: use_conservative
-      integer, intent(in) :: NODECODE(NP)
-      integer, intent(in) :: NOFF(NP)
-      real(8), intent(inout) :: QX2(NVEL)
-      real(8), intent(inout) :: QY2(NVEL)
-      real(8), intent(inout) :: UU2(NVEL)
-      real(8), intent(inout) :: VV2(NVEL)
+      integer, intent(in) :: NODECODE(:)
+      integer, intent(in) :: NOFF(:)
+      real(8), intent(inout) :: QX2(:)
+      real(8), intent(inout) :: QY2(:)
+      real(8), intent(inout) :: UU2(:)
+      real(8), intent(inout) :: VV2(:)
 
       if (NFLUXGBC == 1) then
          if (use_conservative) then
-            call apply_zero_normal_velocity_gradient_conservative(NP, NVEL, NVELME, ME2GW, NBV, &
+            call apply_zero_normal_velocity_gradient_conservative(NVELME, ME2GW, NBV, &
                                                                   LBCODEI, NEleZNG, NODECODE, NOFF, NM, &
                                                                   ZNGIF1, ZNGIF2, ZNGIF3, QX2, QY2)
          else
-            call apply_zero_normal_velocity_gradient_nonconservative(NP, NVEL, NVELME, ME2GW, NBV, &
+            call apply_zero_normal_velocity_gradient_nonconservative(NVELME, ME2GW, NBV, &
                                                                      LBCODEI, NEleZNG, NODECODE, NOFF, NM, &
                                                                      ZNGIF1, ZNGIF2, ZNGIF3, UU2, VV2)
          end if
@@ -938,8 +914,6 @@ contains
    !> contains a boundary point, this is an entirely implicit
    !> calculation.
    !>
-   !> @param[in] NP Integer number of nodes
-   !> @param[in] NVEL Integer number of boundary nodes
    !> @param[in] NVELME Integer number of boundary nodes for momentum equations
    !> @param[in] ME2GW Integer array mapping the boundary nodes to the gwce nodes
    !> @param[in] NBV Integer array mapping the boundary nodes to the global nodes
@@ -954,27 +928,25 @@ contains
    !> @param[in,out] QX2
    !> @param[in,out] QY2
    !************************************************************************
-   subroutine apply_zero_normal_velocity_gradient_conservative(NP, NVEL, NVELME, ME2GW, NBV, &
+   subroutine apply_zero_normal_velocity_gradient_conservative(NVELME, ME2GW, NBV, &
                                                                LBCODEI, NEleZNG, NODECODE, NOFF, NM, &
                                                                ZNGIF1, ZNGIF2, ZNGIF3, QX2, QY2)
 
       implicit none
 
-      integer, intent(in) :: NP
-      integer, intent(in) :: NVEL
       integer, intent(in) :: NVELME
-      integer, intent(in) :: ME2GW(NVELME)
-      integer, intent(in) :: NBV(NVEL)
-      integer, intent(in) :: LBCODEI(NP)
-      integer, intent(in) :: NEleZNG(NVEL)
-      integer, intent(in) :: NODECODE(NP)
-      integer, intent(in) :: NOFF(NP)
-      integer, intent(in) :: NM(NVEL, 3)
-      real(8), intent(in) :: ZNGIF1(NVEL)
-      real(8), intent(in) :: ZNGIF2(NVEL)
-      real(8), intent(in) :: ZNGIF3(NVEL)
-      real(8), intent(inout) :: QX2(NVEL)
-      real(8), intent(inout) :: QY2(NVEL)
+      integer, intent(in) :: ME2GW(:)
+      integer, intent(in) :: NBV(:)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(in) :: NEleZNG(:)
+      integer, intent(in) :: NODECODE(:)
+      integer, intent(in) :: NOFF(:)
+      integer, intent(in) :: NM(:, :)
+      real(8), intent(in) :: ZNGIF1(:)
+      real(8), intent(in) :: ZNGIF2(:)
+      real(8), intent(in) :: ZNGIF3(:)
+      real(8), intent(inout) :: QX2(:)
+      real(8), intent(inout) :: QY2(:)
 
       integer :: I, J, NBDI, NM1, NM2, NM3, NC1, NC2, NC3, NCEle
 
@@ -1005,8 +977,6 @@ contains
    !> contains a boundary point, this is an entirely implicit
    !> calculation.
    !>
-   !> @param[in] NP Integer number of nodes
-   !> @param[in] NVEL Integer number of boundary nodes
    !> @param[in] NVELME Integer number of boundary nodes for momentum equations
    !> @param[in] ME2GW Integer array mapping the boundary nodes to the gwce nodes
    !> @param[in] NBV Integer array mapping the boundary nodes to the global nodes
@@ -1021,27 +991,25 @@ contains
    !> @param[in,out] UU2 Real array of x-velocity values
    !> @param[in,out] VV2 Real array of y-velocity values
    !************************************************************************
-   subroutine apply_zero_normal_velocity_gradient_nonconservative(NP, NVEL, NVELME, ME2GW, NBV, &
+   subroutine apply_zero_normal_velocity_gradient_nonconservative(NVELME, ME2GW, NBV, &
                                                                   LBCODEI, NEleZNG, NODECODE, NOFF, NM, &
                                                                   ZNGIF1, ZNGIF2, ZNGIF3, UU2, VV2)
 
       implicit none
 
-      integer, intent(in) :: NP
-      integer, intent(in) :: NVEL
       integer, intent(in) :: NVELME
-      integer, intent(in) :: ME2GW(NVELME)
-      integer, intent(in) :: NBV(NVEL)
-      integer, intent(in) :: LBCODEI(NP)
-      integer, intent(in) :: NEleZNG(NVEL)
-      integer, intent(in) :: NODECODE(NP)
-      integer, intent(in) :: NOFF(NP)
-      integer, intent(in) :: NM(NVEL, 3)
-      real(8), intent(in) :: ZNGIF1(NVEL)
-      real(8), intent(in) :: ZNGIF2(NVEL)
-      real(8), intent(in) :: ZNGIF3(NVEL)
-      real(8), intent(inout) :: UU2(NVEL)
-      real(8), intent(inout) :: VV2(NVEL)
+      integer, intent(in) :: ME2GW(:)
+      integer, intent(in) :: NBV(:)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(in) :: NEleZNG(:)
+      integer, intent(in) :: NODECODE(:)
+      integer, intent(in) :: NOFF(:)
+      integer, intent(in) :: NM(:, :)
+      real(8), intent(in) :: ZNGIF1(:)
+      real(8), intent(in) :: ZNGIF2(:)
+      real(8), intent(in) :: ZNGIF3(:)
+      real(8), intent(inout) :: UU2(:)
+      real(8), intent(inout) :: VV2(:)
 
       integer :: I, J, NBDI, NM1, NM2, NM3, NC1, NC2, NC3, NCEle
 

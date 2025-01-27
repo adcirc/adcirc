@@ -473,12 +473,16 @@ contains
             call allMessage(INFO, ScratchMessage)
          end if
       end select
+
+#ifdef CMPI
 1900  format('INFO: ', A, ' TIME VARYING BOUNDARY ', A, &
              ' CHANGING AT TIME = ', E15.8, ' AT NODE = ', &
              I7, ' ON MYPROC = ', I4)
+#else
 1901  format('INFO: ', A, ' TIME VARYING BOUNDARY ', A, &
              ' CHANGING AT TIME = ', E15.8, ' AT NODE = ', &
              I7)
+#endif
 
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Return")
@@ -606,16 +610,18 @@ contains
          end if
       end if
 
+#ifdef CMPI
 1904  format('WARNING: BARRIER CANNOT DECREASE TO ', &
              'A VALUE BELOW PREVAILING GROUND.', /, &
              '      BARRIER SET TO MINIMUM VALUE AT ', &
              'TIME = ', E15.8, ' NODE = ', I7, &
              ' ON MYPROC = ', I4)
-
+#else
 1905  format('WARNING: BARRIER CANNOT DECREASE TO ', &
              'A VALUE BELOW PREVAILING GROUND.', /, &
              '      BARRIER SET TO MINIMUM VALUE AT ', &
              ' TIME = ', E15.8, ' NODE = ', I7)
+#endif
 
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Return")
@@ -918,17 +924,20 @@ contains
 #endif
       call unsetMessageSource()
       return
+#ifdef CMPI
 101   format("INFO: SCHEDULE STYLE BOUNDARY BEGAN SEGMENT ", &
              I4, " AT NODE = ", I9, " AT TIME = ", E15.8, &
              "ON MYPROC = ", I4)
-102   format("INFO: SCHEDULE STYLE BOUNDARY BEGAN SEGMENT ", &
-             I4, " AT NODE = ", I9, " AT TIME = ", E15.8)
 103   format("INFO: SCHEDULE STYLE BOUNDARY CONCLUDED", &
              " SEGMENT ", I4, " AT NODE = ", I9, " AT TIME = ", &
              E15.8, " ON MYPROC = ", I4)
+#else
+102   format("INFO: SCHEDULE STYLE BOUNDARY BEGAN SEGMENT ", &
+             I4, " AT NODE = ", I9, " AT TIME = ", E15.8)
 104   format("INFO: SCHEDULE STYLE BOUNDARY CONDLUDED", &
              " SEGMENT ", I4, " AT NODE = ", I9, " AT TIME = ", &
              E15.8)
+#endif
 
    end subroutine COMPUTE_BARRIER_HEIGHT_SCHEDULE
    !-----------------------------------------------------------------------
@@ -1302,18 +1311,21 @@ contains
       call terminate()
 
       !..GENERAL MESSAGES FOR TIME VARYING WEIRS
+#ifdef CMPI
 101   format("Time varying weir file was not found. All weirs" &
              , " will be static on MYPROC = ", I6)
-102   format("Time varying weir file was not found. All weirs" &
-             , " will be static.")
 103   format("Time varying weir file was found. Time varying", &
              " weirs have been specified on MYPROC = ", I6)
-104   format("Time varying weir file was found. Time varying", &
-             " weirs have been specified.")
 105   format("Time varying weir file was found. No time ", &
              "varying weirs specified on MYPROC = ", I6)
+#else
+102   format("Time varying weir file was not found. All weirs" &
+             , " will be static.")
+104   format("Time varying weir file was found. Time varying", &
+             " weirs have been specified.")
 106   format("Time varying weir file was found. No time ", &
              "varying weirs specified.")
+#endif
 
    end subroutine PARSE_TIME_VARYING_WEIR_INFO
    !-----------------------------------------------------------------------

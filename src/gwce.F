@@ -680,7 +680,7 @@ c...        boundary value and subtracted from the RHS
                ENDDO
             ENDDO
 
-            CALL update_coef_periodic_sponge_layer_consistent(NP, MNEI, NPERSEG, NNPERBC, IPERCONN, NNEIGH, EP, COEF)
+            CALL update_coef_periodic_sponge_layer_consistent( NPERSEG, NNPERBC, IPERCONN, NNEIGH, EP, COEF)
 
 C.....      Check that all the diagonal elements in "COEF" are > 0.
             DIE = .FALSE.
@@ -726,7 +726,7 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                Coefd(NBD(I))=EP
             ENDDO
 C......  DW
-            CALL update_coef_periodic_sponge_layer_lumped(NP, NPERSEG, NNPERBC, IPERCONN, EP, COEFD)
+            CALL update_coef_periodic_sponge_layer_lumped(NPERSEG, NNPERBC, IPERCONN, EP, COEFD)
 C......  DW
 C.....      Check that all the diagonal elements in "COEFD" are > 0.
             DIE = .FALSE.
@@ -1673,7 +1673,7 @@ C...
 
       call apply_subdomain_boundary_nodes(subdomainOn, enforceBN)
 
-      call apply_vew1d_and_condensed_nodes(LoadCondensedNodes, ILump, NP, NFLUXIB64_GBL, NBOU, NVEL, NVELL, NBV, IBCONN,
+      call apply_vew1d_and_condensed_nodes(LoadCondensedNodes, ILump, NFLUXIB64_GBL, NBOU, NVELL, NBV, IBCONN,
      &                                     LBCODEI, NODECODE, NListCondensedNodes, NNodesListCondensedNodes,
      &                                     ListCondensedNodes, IsSubmerged64, COEFD,
      &                                     COEFDTemp, COEFDTempMem, GWCE_LV, ETA1)
@@ -1703,7 +1703,7 @@ C...  JCG ITERATIVE MATRIX SOLVER
       ENDIF
 
 C...... DW, periodic bcs
-      call update_periodic_sponge_layer_nodes(NP, NPERSEG, NNPERBC, IPERCONN, ETAS, ETA2)
+      call update_periodic_sponge_layer_nodes(NPERSEG, NNPERBC, IPERCONN, ETAS, ETA2)
 C     Switch back to the original element table 
       CALL SWITCH_ELTAB_PERBC( IDIREC = 2 )
 C......

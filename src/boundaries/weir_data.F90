@@ -51,7 +51,10 @@ contains
    !-----------------------------------------------------------------------
    subroutine ALLOCATE_WEIRS()
       use GLOBAL, only: allMessage, setMessageSource, &
-                        unsetMessageSource, DEBUG
+                        unsetMessageSource
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+      use GLOBAL, only: DEBUG
+#endif
       use BOUNDARIES, only: NVEL, BARINHT, BARLANHT
       implicit none
 
@@ -78,15 +81,14 @@ contains
    end subroutine ALLOCATE_WEIRS
    !-----------------------------------------------------------------------
 
-   subroutine step_weir_elevation(NFLUXIB, NFLUXB, NVEL, BARINHT2, BARLANHT2, BARINHT1, BARLANHT1)
+   subroutine step_weir_elevation(NFLUXIB, NFLUXB, BARINHT2, BARLANHT2, BARINHT1, BARLANHT1)
 
       integer, intent(in) :: NFLUXIB
       integer, intent(in) :: NFLUXB
-      integer, intent(in) :: NVEL
-      real(8), intent(in) :: BARINHT2(NVEL)
-      real(8), intent(in) :: BARLANHT2(NVEL)
-      real(8), intent(inout) :: BARINHT1(NVEL)
-      real(8), intent(inout) :: BARLANHT1(NVEL)
+      real(8), intent(in) :: BARINHT2(:)
+      real(8), intent(in) :: BARLANHT2(:)
+      real(8), intent(inout) :: BARINHT1(:)
+      real(8), intent(inout) :: BARLANHT1(:)
 
       if (NFLUXIB == 1) BARINHT1 = BARINHT2
       if (NFLUXB == 1) BARLANHT1 = BARLANHT2
