@@ -74,13 +74,12 @@ contains
    !-----------------------------------------------------------------------
    real(8) function COMPUTE_EXTERNAL_BOUNDARY_FLUX(BARRIER_INDEX, TIMELOC, TVW) result(FLUX)
       use BOUNDARIES, only: BARLANCFSP, BARLANHT
-      use MESH, only: NP
 
       implicit none
 
       integer, intent(in) :: BARRIER_INDEX
       real(8), intent(in) :: TIMELOC
-      real(8), intent(inout) :: TVW(NP)
+      real(8), intent(inout) :: TVW(:)
 
       integer :: NNBB
       real(8) :: RBARWL
@@ -142,16 +141,15 @@ contains
 
       use BOUNDARIES, only: BARINCFSB, BARINCFSP, NVELL, IBCONN, BARINHT
       use GLOBAL, only: NODECODE
-      use MESH, only: NP
 
       implicit none
 
       integer, intent(in), target :: BARRIER_INDEX
       integer, intent(in), target :: BOUNDARY
       integer, intent(in), target :: BOUNDARYNODE
-      integer, intent(inout), target :: NIBNODECODE(NP)
+      integer, intent(inout), target :: NIBNODECODE(:)
       real(8), intent(in) :: TIMELOC
-      real(8), intent(inout) :: TVW(NP)
+      real(8), intent(inout) :: TVW(:)
 
       integer :: NNBB1, NNBB2
       integer :: NNBB1WN, NNBB2WN
@@ -474,7 +472,7 @@ contains
       use BOUNDARIES, only: BARINCFSB, BARINCFSP, &
                             NVELL, IBCONN, BARINHT, ISSUBMERGED64, NBV
       use GLOBAL, only: NODECODE
-      use MESH, only: LBArray_Pointer, DP, NP
+      use MESH, only: LBArray_Pointer, DP
 
       implicit none
 
@@ -482,7 +480,7 @@ contains
       integer, intent(in), target :: BOUNDARY
       integer, intent(in), target :: BOUNDARYNODE
       real(8), intent(in) :: TIMELOC
-      real(8), intent(inout) :: TVW(NP)
+      real(8), intent(inout) :: TVW(:)
 
       integer :: NNBB1, NNBB2
       integer :: NNBB1WN, NNBB2WN
@@ -687,12 +685,11 @@ contains
       use BOUNDARIES, only: NBV, IBCONN, PIPEHT, PIPEDIAM, PIPECOEF
       use ADC_CONSTANTS, only: G, PI
       use GLOBAL, only: NODECODE, ETA2, RampIntFlux
-      use MESH, only: NP
 
       implicit none
 
       integer, intent(in) :: IDX
-      integer, intent(inout) :: NIBNODECODE(NP)
+      integer, intent(inout) :: NIBNODECODE(:)
 
       integer :: NNBB1
       integer :: NNBB2
