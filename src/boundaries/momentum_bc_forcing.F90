@@ -83,11 +83,13 @@ contains
          end select
       end do
 
-      call apply_vew1d_and_condensed_nodes(use_conservative, NFLUXIB64_GBL, ILUMP, NBOU, &
-                                           NVELL, LBCODEI, NBV, IBCONN, ISSUBMERGED64, NODECODE, &
-                                           NListCondensedNodes, NNodesListCondensedNodes, &
-                                           ListCondensedNodes, LoadCondensedNodes, MJU, TotalArea, &
-                                           flgNodesMultipliedByTotalArea, AUV, MOM_LV_X, MOM_LV_Y)
+      if (.not. use_conservative .and. ILUMP /= 0) then
+         call apply_vew1d_and_condensed_nodes(NFLUXIB64_GBL, NBOU, &
+                                              NVELL, LBCODEI, NBV, IBCONN, ISSUBMERGED64, NODECODE, &
+                                              NListCondensedNodes, NNodesListCondensedNodes, &
+                                              ListCondensedNodes, LoadCondensedNodes, MJU, TotalArea, &
+                                              flgNodesMultipliedByTotalArea, AUV, MOM_LV_X, MOM_LV_Y)
+      end if
 
    end subroutine apply_velocity_boundary_conditions
 
@@ -631,25 +633,18 @@ contains
    !>
    !>
    !************************************************************************
-   subroutine apply_vew1d_and_condensed_nodes(use_conservative, NFLUXIB64_GBL, ILUMP, NBOU, &
-                                              NVELL, LBCODEI, NBV, IBCONN, ISSUBMERGED64, NODECODE, &
-                                              NListCondensedNodes, NNodesListCondensedNodes, &
+   subroutine apply_vew1d_and_condensed_nodes(NFLUXIB64_GBL, NBOU, NVELL, LBCODEI, NBV, IBCONN, ISSUBMERGED64, &
+                                              NodeCode, NListCondensedNodes, NNodesListCondensedNodes, &
                                               ListCondensedNodes, LoadCondensedNodes, MJU, TotalArea, &
                                               flgNodesMultipliedByTotalArea, AUV, MOM_LV_X, MOM_LV_Y)
 
 #ifdef CMPI
       use messenger, only: UPDATEM4R, UPDATER
 #endif
-      use mod_logging, only: scratchMessage, allMessage, ERROR
-      use mod_terminate, only: terminate
 
       implicit none
 
-      real(8), parameter :: eps = epsilon(1.d0)
-
-      logical, intent(in) :: use_conservative
       integer, intent(in) :: NFLUXIB64_GBL
-      integer, intent(in) :: ILUMP
       integer, intent(in) :: NBOU
       integer, intent(in) :: NVELL(:)
       integer, intent(in) :: LBCODEI(:)
@@ -668,169 +663,277 @@ contains
       real(8), intent(inout) :: MOM_LV_X(:)
       real(8), intent(inout) :: MOM_LV_Y(:)
 
-      logical, parameter :: CME_AreaInt_Corr = .true.
-      logical, parameter :: CME_AreaInt_Orig = .false.
-
-      integer :: I, J, K, L
-      integer :: NNBB1, NNBB2
-      real(8) :: TotalArea1, TotalArea2
-
 #ifdef CMPI
       real(8), allocatable :: DUMY1(:)
 #endif
 
-      ! VEW: Sum front side values to back side
-      if (use_conservative) then
-         if (NFLUXIB64_GBL > 0) then
-            ScratchMessage = 'Conservative VEW boundary condition is not implemented yet.'
-            call allMessage(ERROR, scratchMessage)
-            call terminate()
-         end if
-      else if (.not. use_conservative) then
+      if (NFLUXIB64_GBL > 0) then
+         call vew1d_sum_front_to_back_side(NBOU, NVELL, LBCODEI, NBV, IBCONN, ISSUBMERGED64, &
+                                           NODECODE, TotalArea, MJU, flgNodesMultipliedByTotalArea, AUV, MOM_LV_X, MOM_LV_Y)
+      end if
 
-         if ((NFLUXIB64_GBL > 0) .and. (ILUMP /= 0)) then
-            flgNodesMultipliedByTotalArea(:) = 0 ! Initialize flags for nodes multiplied by total areas
-
-            I = 0
-            do K = 1, NBOU
-               select case (LBCODEI(I + 1))
-               case (64)
-                  do J = 1, NVELL(K)
-                     I = I + 1
-                     if (ISSUBMERGED64(I) /= 0) then
-                        NNBB1 = NBV(I) ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
-                        NNBB2 = IBCONN(I) ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
-
-                        if (NODECODE(NNBB1) /= 0 .and. NODECODE(NNBB2) /= 0) then
-                           if ((flgNodesMultipliedByTotalArea(NNBB1) == 0) .and. (abs(TotalArea(NNBB1)) > eps)) then
-                              if (CME_AreaInt_Corr) then !Correct area integration
-                                 TotalArea1 = TotalArea(NNBB1)
-                              elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
-                                 TotalArea1 = MJU(NNBB1)
-                              end if
-                           else
-                              TotalArea1 = 1.d0
-                           end if
-                           if ((flgNodesMultipliedByTotalArea(NNBB2) == 0) .and. (abs(TotalArea(NNBB2)) > eps)) then
-                              if (CME_AreaInt_Corr) then !Correct area integration
-                                 TotalArea2 = TotalArea(NNBB2)
-                              elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
-                                 TotalArea2 = MJU(NNBB2)
-                              end if
-                           else
-                              TotalArea2 = 1.d0
-                           end if
-
-                           AUV(:, NNBB2) = TotalArea1*AUV(:, NNBB1) + TotalArea2*AUV(:, NNBB2)
-                           MOM_LV_X(NNBB2) = TotalArea1*MOM_LV_X(NNBB1) + TotalArea2*MOM_LV_X(NNBB2)
-                           MOM_LV_Y(NNBB2) = TotalArea1*MOM_LV_Y(NNBB1) + TotalArea2*MOM_LV_Y(NNBB2)
-
-                           AUV(:, NNBB1) = 0.d0 ! Set zero to avoid duplicated additions
-                           MOM_LV_X(NNBB1) = 0.d0 !
-                           MOM_LV_Y(NNBB1) = 0.d0 !
-
-                           flgNodesMultipliedByTotalArea(NNBB1) = 1
-                           flgNodesMultipliedByTotalArea(NNBB2) = 1
-                        end if
-                     end if
-                  end do
-                  I = I + NVELL(K)
-               case (4, 24, 5, 25)
-                  I = I + NVELL(K)*2
-               case DEFAULT
-                  I = I + NVELL(K)
-               end select
-            end do
-         end if
-
-         !.... CONDENSED NODES: Summing up the values at condensed nodes
-         if ((LoadCondensedNodes) .and. (ILump /= 0)) then
-            do K = 1, NListCondensedNodes
-               I = ListCondensedNodes(K, 1)
-               if (I == 0) cycle
-               if ((NODECODE(I) /= 0)) then
-                  ! 1) Mutiply LHS & RHS by total area at Node I
-                  if ((flgNodesMultipliedByTotalArea(I) == 0) .and. (abs(TotalArea(I)) > eps)) then
-                     if (CME_AreaInt_Corr) then !Correct area integration
-                        TotalArea1 = TotalArea(I)
-                     elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
-                        TotalArea1 = MJU(I)
-                     end if
-                  else
-                     TotalArea1 = 1.d0
-                  end if
-                  AUV(:, I) = TotalArea1*AUV(:, I)
-                  MOM_LV_X(I) = TotalArea1*MOM_LV_X(I)
-                  MOM_LV_Y(I) = TotalArea1*MOM_LV_Y(I)
-
-                  ! 2) Sum them up
-                  do L = 2, NNodesListCondensedNodes(K)
-                     J = ListCondensedNodes(K, L)
-                     if ((flgNodesMultipliedByTotalArea(J) == 0) .and. (abs(TotalArea(J)) > eps)) then
-                        if (CME_AreaInt_Corr) then !Correct area integration
-                           TotalArea1 = TotalArea(J)
-                        elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
-                           TotalArea1 = MJU(J)
-                        end if
-                     else
-                        TotalArea1 = 1.d0
-                     end if
-                     AUV(:, I) = AUV(:, I) + TotalArea1*AUV(:, J)
-                     MOM_LV_X(I) = MOM_LV_X(I) + TotalArea1*MOM_LV_X(J)
-                     MOM_LV_Y(I) = MOM_LV_Y(I) + TotalArea1*MOM_LV_Y(J)
-                  end do
-
-                  ! 3) Distribute them
-                  do L = 2, NNodesListCondensedNodes(K)
-                     J = ListCondensedNodes(K, L)
-                     AUV(:, J) = AUV(:, I)
-                     MOM_LV_X(J) = MOM_LV_X(I)
-                     MOM_LV_Y(J) = MOM_LV_Y(I)
-                  end do
-               end if
-            end do
-         end if
-
+      if (LoadCondensedNodes) then
+         call condensed_nodes_sum(NListCondensedNodes, NNodesListCondensedNodes, ListCondensedNodes, &
+                                  NodeCode, MJU, TotalArea, flgNodesMultipliedByTotalArea, AUV, MOM_LV_X, MOM_LV_Y)
       end if
 
 #ifdef CMPI
-      if ((NFLUXIB64_GBL > 0 .or. LoadCondensedNodes) .and. (ILump /= 0)) then
+      if (NFLUXIB64_GBL > 0 .or. LoadCondensedNodes) then
          call UPDATEM4R(AUV)
          call UPDATER(MOM_LV_X, MOM_LV_Y, DUMY1, 2)
       end if
 #endif
 
-      ! VEW: Copy values from back side to front side
-      if ((NFLUXIB64_GBL > 0) .and. (ILUMP /= 0)) then
-         I = 0
-         do K = 1, NBOU
-            select case (LBCODEI(I + 1))
-            case (64)
-               do J = 1, NVELL(K)
-                  I = I + 1
-                  if (ISSUBMERGED64(I) /= 0) then
-                     NNBB1 = NBV(I) ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
-                     NNBB2 = IBCONN(I) ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
-                     if (NODECODE(NNBB1) /= 0 .and. NODECODE(NNBB2) /= 0) then
-                        AUV(1, NNBB1) = AUV(1, NNBB2)
-                        AUV(2, NNBB1) = AUV(2, NNBB2)
-                        AUV(3, NNBB1) = AUV(3, NNBB2)
-                        AUV(4, NNBB1) = AUV(4, NNBB2)
-                        MOM_LV_X(NNBB1) = MOM_LV_X(NNBB2)
-                        MOM_LV_Y(NNBB1) = MOM_LV_Y(NNBB2)
-                     end if
-                  end if
-               end do
-               I = I + NVELL(K)
-            case (4, 24, 5, 25)
-               I = I + NVELL(K)*2
-            case DEFAULT
-               I = I + NVELL(K)
-            end select
-         end do
+      if (NFLUXIB64_GBL > 0) then
+         call vew1d_copy_back_to_front_side(NBOU, NVELL, LBCODEI, NBV, IBCONN, ISSUBMERGED64, NODECODE, &
+                                            AUV, MOM_LV_X, MOM_LV_Y)
       end if
 
    end subroutine apply_vew1d_and_condensed_nodes
+
+   !************************************************************************
+   !> Copy values from back side to front side of the 1D channel boundary
+   !>
+   !> @param[in] NBOU Number of boundaries
+   !> @param[in] NVELL Number of vertices on each boundary
+   !> @param[in] LBCODEI Boundary code for each vertex
+   !> @param[in] NBV Global node number on this side of the barrier
+   !> @param[in] IBCONN Global node number on opposite side of the barrier
+   !> @param[in] ISSUBMERGED64 Submerged flag for each vertex
+   !> @param[in] NODECODE Node code for each vertex
+   !> @param[inout] AUV AUV values
+   !> @param[inout] MOM_LV_X X-momentum values
+   !> @param[inout] MOM_LV_Y Y-momentum values
+   !************************************************************************
+   subroutine vew1d_copy_back_to_front_side(NBOU, NVELL, LBCODEI, NBV, IBCONN, &
+                                            ISSUBMERGED64, NODECODE, AUV, MOM_LV_X, MOM_LV_Y)
+
+      implicit none
+
+      integer, intent(in) :: NBOU
+      integer, intent(in) :: NVELL(:)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(in) :: NBV(:)
+      integer, intent(in) :: IBCONN(:)
+      integer, intent(in) :: ISSUBMERGED64(:)
+      integer, intent(in) :: NODECODE(:)
+      real(8), intent(inout) :: AUV(:, :)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+
+      integer :: I, J, K
+      integer :: NNBB1, NNBB2
+
+      I = 0
+      do K = 1, NBOU
+         select case (LBCODEI(I + 1))
+         case (64)
+            do J = 1, NVELL(K)
+               I = I + 1
+               if (ISSUBMERGED64(I) /= 0) then
+                  NNBB1 = NBV(I) ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
+                  NNBB2 = IBCONN(I) ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+                  if (NODECODE(NNBB1) /= 0 .and. NODECODE(NNBB2) /= 0) then
+                     AUV(:, NNBB1) = AUV(:, NNBB2)
+                     MOM_LV_X(NNBB1) = MOM_LV_X(NNBB2)
+                     MOM_LV_Y(NNBB1) = MOM_LV_Y(NNBB2)
+                  end if
+               end if
+            end do
+            I = I + NVELL(K)
+         case (4, 24, 5, 25)
+            I = I + NVELL(K)*2
+         case DEFAULT
+            I = I + NVELL(K)
+         end select
+      end do
+
+   end subroutine vew1d_copy_back_to_front_side
+
+   !************************************************************************
+   !> Sum the condensed nodes
+   !>
+   !> @param[in] NListCondensedNodes Number of sets of condensed nodes
+   !> @param[in] NNodesListCondensedNodes Number of nodes for each condensed node
+   !> @param[in] ListCondensedNodes List of condensed nodes
+   !> @param[in] NodeCode Node code for each vertex
+   !> @param[in] MJU MJU values
+   !> @param[in] TotalArea Total area for each vertex
+   !> @param[inout] flgNodesMultipliedByTotalArea Flags for nodes multiplied by total areas
+   !> @param[inout] AUV AUV values
+   !> @param[inout] MOM_LV_X X-momentum values
+   !> @param[inout] MOM_LV_Y Y-momentum values
+   !************************************************************************
+   subroutine condensed_nodes_sum(NListCondensedNodes, NNodesListCondensedNodes, &
+                                  ListCondensedNodes, NodeCode, MJU, TotalArea, flgNodesMultipliedByTotalArea, &
+                                  AUV, MOM_LV_X, MOM_LV_Y)
+
+      implicit none
+
+      real(8), parameter :: eps = epsilon(1.d0)
+      logical, parameter :: CME_AreaInt_Corr = .true.
+      logical, parameter :: CME_AreaInt_Orig = .false.
+
+      integer, intent(in) :: NListCondensedNodes
+      integer, intent(in) :: NNodesListCondensedNodes(:)
+      integer, intent(in) :: ListCondensedNodes(:, :)
+      integer, intent(in) :: NodeCode(:)
+      integer, intent(in) :: MJU(:)
+      real(8), intent(in) :: TotalArea(:)
+      integer, intent(inout) :: flgNodesMultipliedByTotalArea(:)
+      real(8), intent(inout) :: AUV(:, :)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+
+      integer :: I, J, K, L
+      real(8) :: TotalArea1
+
+      do K = 1, NListCondensedNodes
+         I = ListCondensedNodes(K, 1)
+         if (I == 0) cycle
+         if ((NODECODE(I) /= 0)) then
+            ! 1) Mutiply LHS & RHS by total area at Node I
+            if ((flgNodesMultipliedByTotalArea(I) == 0) .and. (abs(TotalArea(I)) > eps)) then
+               if (CME_AreaInt_Corr) then !Correct area integration
+                  TotalArea1 = TotalArea(I)
+               elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
+                  TotalArea1 = MJU(I)
+               end if
+            else
+               TotalArea1 = 1.d0
+            end if
+            AUV(:, I) = TotalArea1*AUV(:, I)
+            MOM_LV_X(I) = TotalArea1*MOM_LV_X(I)
+            MOM_LV_Y(I) = TotalArea1*MOM_LV_Y(I)
+
+            ! 2) Sum them up
+            do L = 2, NNodesListCondensedNodes(K)
+               J = ListCondensedNodes(K, L)
+               if ((flgNodesMultipliedByTotalArea(J) == 0) .and. (abs(TotalArea(J)) > eps)) then
+                  if (CME_AreaInt_Corr) then !Correct area integration
+                     TotalArea1 = TotalArea(J)
+                  elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
+                     TotalArea1 = MJU(J)
+                  end if
+               else
+                  TotalArea1 = 1.d0
+               end if
+               AUV(:, I) = AUV(:, I) + TotalArea1*AUV(:, J)
+               MOM_LV_X(I) = MOM_LV_X(I) + TotalArea1*MOM_LV_X(J)
+               MOM_LV_Y(I) = MOM_LV_Y(I) + TotalArea1*MOM_LV_Y(J)
+            end do
+
+            ! 3) Distribute them
+            do L = 2, NNodesListCondensedNodes(K)
+               J = ListCondensedNodes(K, L)
+               AUV(:, J) = AUV(:, I)
+               MOM_LV_X(J) = MOM_LV_X(I)
+               MOM_LV_Y(J) = MOM_LV_Y(I)
+            end do
+         end if
+      end do
+
+   end subroutine condensed_nodes_sum
+
+   !************************************************************************
+   !> Sum front side values to back side of the 1D channel boundary
+   !>
+   !> @param[in] NBOU Number of boundaries
+   !> @param[in] NVELL Number of vertices on each boundary
+   !> @param[in] LBCODEI Boundary code for each vertex
+   !> @param[in] NBV Global node number on this side of the barrier
+   !> @param[in] IBCONN Global node number on opposite side of the barrier
+   !> @param[in] ISSUBMERGED64 Submerged flag for each vertex
+   !> @param[in] NODECODE Node code for each vertex
+   !> @param[in] TotalArea Total area for each vertex
+   !> @param[inout] flgNodesMultipliedByTotalArea Flags for nodes multiplied by total areas
+   !> @param[inout] AUV AUV values
+   !> @param[inout] MOM_LV_X X-momentum values
+   !> @param[inout] MOM_LV_Y Y-momentum values
+   !************************************************************************
+   subroutine vew1d_sum_front_to_back_side(NBOU, NVELL, LBCODEI, NBV, IBCONN, &
+                                           ISSUBMERGED64, NODECODE, TotalArea, MJU, &
+                                           flgNodesMultipliedByTotalArea, &
+                                           AUV, MOM_LV_X, MOM_LV_Y)
+
+      implicit none
+
+      real(8), parameter :: eps = epsilon(1.d0)
+      logical, parameter :: CME_AreaInt_Corr = .true.
+      logical, parameter :: CME_AreaInt_Orig = .false.
+
+      integer, intent(in) :: NBOU
+      integer, intent(in) :: NVELL(:)
+      integer, intent(in) :: LBCODEI(:)
+      integer, intent(in) :: NBV(:)
+      integer, intent(in) :: IBCONN(:)
+      integer, intent(in) :: ISSUBMERGED64(:)
+      integer, intent(in) :: NODECODE(:)
+      integer, intent(in) :: MJU(:)
+      real(8), intent(in) :: TotalArea(:)
+      integer, intent(inout) :: flgNodesMultipliedByTotalArea(:)
+      real(8), intent(inout) :: AUV(:, :)
+      real(8), intent(inout) :: MOM_LV_X(:)
+      real(8), intent(inout) :: MOM_LV_Y(:)
+
+      integer :: I, J, K
+      integer :: NNBB1, NNBB2
+      real(8) :: TotalArea1, TotalArea2
+
+      flgNodesMultipliedByTotalArea(:) = 0 ! Initialize flags for nodes multiplied by total areas
+
+      I = 0
+      do K = 1, NBOU
+         select case (LBCODEI(I + 1))
+         case (64)
+            do J = 1, NVELL(K)
+               I = I + 1
+               if (ISSUBMERGED64(I) /= 0) then
+                  NNBB1 = NBV(I) ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
+                  NNBB2 = IBCONN(I) ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+
+                  if (NODECODE(NNBB1) /= 0 .and. NODECODE(NNBB2) /= 0) then
+                     if ((flgNodesMultipliedByTotalArea(NNBB1) == 0) .and. (abs(TotalArea(NNBB1)) > eps)) then
+                        if (CME_AreaInt_Corr) then !Correct area integration
+                           TotalArea1 = TotalArea(NNBB1)
+                        elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
+                           TotalArea1 = MJU(NNBB1)
+                        end if
+                     else
+                        TotalArea1 = 1.d0
+                     end if
+                     if ((flgNodesMultipliedByTotalArea(NNBB2) == 0) .and. (abs(TotalArea(NNBB2)) > eps)) then
+                        if (CME_AreaInt_Corr) then !Correct area integration
+                           TotalArea2 = TotalArea(NNBB2)
+                        elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
+                           TotalArea2 = MJU(NNBB2)
+                        end if
+                     else
+                        TotalArea2 = 1.d0
+                     end if
+
+                     AUV(:, NNBB2) = TotalArea1*AUV(:, NNBB1) + TotalArea2*AUV(:, NNBB2)
+                     MOM_LV_X(NNBB2) = TotalArea1*MOM_LV_X(NNBB1) + TotalArea2*MOM_LV_X(NNBB2)
+                     MOM_LV_Y(NNBB2) = TotalArea1*MOM_LV_Y(NNBB1) + TotalArea2*MOM_LV_Y(NNBB2)
+
+                     AUV(:, NNBB1) = 0.d0 ! Set zero to avoid duplicated additions
+                     MOM_LV_X(NNBB1) = 0.d0 !
+                     MOM_LV_Y(NNBB1) = 0.d0 !
+
+                     flgNodesMultipliedByTotalArea(NNBB1) = 1
+                     flgNodesMultipliedByTotalArea(NNBB2) = 1
+                  end if
+               end if
+            end do
+            I = I + NVELL(K)
+         case (4, 24, 5, 25)
+            I = I + NVELL(K)*2
+         case DEFAULT
+            I = I + NVELL(K)
+         end select
+      end do
+
+   end subroutine vew1d_sum_front_to_back_side
 
    !************************************************************************
    !> Apply zero normal velocity gradient boundary condition
