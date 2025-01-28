@@ -660,8 +660,8 @@ contains
       integer, intent(in) :: NListCondensedNodes
       integer, intent(in) :: NNodesListCondensedNodes(:)
       integer, intent(in) :: ListCondensedNodes(:, :)
-      integer, intent(in) :: MJU(:)
       logical, intent(in) :: LoadCondensedNodes
+      integer, intent(in) :: MJU(:)
       real(8), intent(in) :: TotalArea(:)
       integer, intent(inout) :: flgNodesMultipliedByTotalArea(:)
       real(8), intent(inout) :: AUV(:, :)
@@ -702,39 +702,30 @@ contains
                         NNBB2 = IBCONN(I) ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
 
                         if (NODECODE(NNBB1) /= 0 .and. NODECODE(NNBB2) /= 0) then
-                           if ((flgNodesMultipliedByTotalArea(NNBB1) == 0) .and. (abs(TotalArea(NNBB1)) < eps)) then
+                           if ((flgNodesMultipliedByTotalArea(NNBB1) == 0) .and. (abs(TotalArea(NNBB1)) > eps)) then
                               if (CME_AreaInt_Corr) then !Correct area integration
                                  TotalArea1 = TotalArea(NNBB1)
-                              end if
-                              if (CME_AreaInt_Orig) then !Original (incorrect) area integration
+                              elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
                                  TotalArea1 = MJU(NNBB1)
                               end if
                            else
                               TotalArea1 = 1.d0
                            end if
-                           if ((flgNodesMultipliedByTotalArea(NNBB2) == 0) .and. (abs(TotalArea(NNBB2)) < eps)) then
+                           if ((flgNodesMultipliedByTotalArea(NNBB2) == 0) .and. (abs(TotalArea(NNBB2)) > eps)) then
                               if (CME_AreaInt_Corr) then !Correct area integration
                                  TotalArea2 = TotalArea(NNBB2)
-                              end if
-                              if (CME_AreaInt_Orig) then !Original (incorrect) area integration
+                              elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
                                  TotalArea2 = MJU(NNBB2)
                               end if
                            else
                               TotalArea2 = 1.d0
                            end if
 
-                           AUV(1, NNBB2) = TotalArea1*AUV(1, NNBB1) + TotalArea2*AUV(1, NNBB2)
-                           AUV(2, NNBB2) = TotalArea1*AUV(2, NNBB1) + TotalArea2*AUV(2, NNBB2)
-                           AUV(3, NNBB2) = TotalArea1*AUV(3, NNBB1) + TotalArea2*AUV(3, NNBB2)
-                           AUV(4, NNBB2) = TotalArea1*AUV(4, NNBB1) + TotalArea2*AUV(4, NNBB2)
-
+                           AUV(:, NNBB2) = TotalArea1*AUV(:, NNBB1) + TotalArea2*AUV(:, NNBB2)
                            MOM_LV_X(NNBB2) = TotalArea1*MOM_LV_X(NNBB1) + TotalArea2*MOM_LV_X(NNBB2)
                            MOM_LV_Y(NNBB2) = TotalArea1*MOM_LV_Y(NNBB1) + TotalArea2*MOM_LV_Y(NNBB2)
 
-                           AUV(1, NNBB1) = 0.d0 ! Set zero to avoid duplicated additions
-                           AUV(2, NNBB1) = 0.d0 !
-                           AUV(3, NNBB1) = 0.d0 !
-                           AUV(4, NNBB1) = 0.d0 !
+                           AUV(:, NNBB1) = 0.d0 ! Set zero to avoid duplicated additions
                            MOM_LV_X(NNBB1) = 0.d0 !
                            MOM_LV_Y(NNBB1) = 0.d0 !
 
@@ -762,17 +753,13 @@ contains
                   if ((flgNodesMultipliedByTotalArea(I) == 0) .and. (abs(TotalArea(I)) > eps)) then
                      if (CME_AreaInt_Corr) then !Correct area integration
                         TotalArea1 = TotalArea(I)
-                     end if
-                     if (CME_AreaInt_Orig) then !Original (incorrect) area integration
+                     elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
                         TotalArea1 = MJU(I)
                      end if
                   else
                      TotalArea1 = 1.d0
                   end if
-                  AUV(1, I) = TotalArea1*AUV(1, I)
-                  AUV(2, I) = TotalArea1*AUV(2, I)
-                  AUV(3, I) = TotalArea1*AUV(3, I)
-                  AUV(4, I) = TotalArea1*AUV(4, I)
+                  AUV(:, I) = TotalArea1*AUV(:, I)
                   MOM_LV_X(I) = TotalArea1*MOM_LV_X(I)
                   MOM_LV_Y(I) = TotalArea1*MOM_LV_Y(I)
 
@@ -782,17 +769,13 @@ contains
                      if ((flgNodesMultipliedByTotalArea(J) == 0) .and. (abs(TotalArea(J)) > eps)) then
                         if (CME_AreaInt_Corr) then !Correct area integration
                            TotalArea1 = TotalArea(J)
-                        end if
-                        if (CME_AreaInt_Orig) then !Original (incorrect) area integration
+                        elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
                            TotalArea1 = MJU(J)
                         end if
                      else
                         TotalArea1 = 1.d0
                      end if
-                     AUV(1, I) = AUV(1, I) + TotalArea1*AUV(1, J)
-                     AUV(2, I) = AUV(2, I) + TotalArea1*AUV(2, J)
-                     AUV(3, I) = AUV(3, I) + TotalArea1*AUV(3, J)
-                     AUV(4, I) = AUV(4, I) + TotalArea1*AUV(4, J)
+                     AUV(:, I) = AUV(:, I) + TotalArea1*AUV(:, J)
                      MOM_LV_X(I) = MOM_LV_X(I) + TotalArea1*MOM_LV_X(J)
                      MOM_LV_Y(I) = MOM_LV_Y(I) + TotalArea1*MOM_LV_Y(J)
                   end do
@@ -800,10 +783,7 @@ contains
                   ! 3) Distribute them
                   do L = 2, NNodesListCondensedNodes(K)
                      J = ListCondensedNodes(K, L)
-                     AUV(1, J) = AUV(1, I)
-                     AUV(2, J) = AUV(2, I)
-                     AUV(3, J) = AUV(3, I)
-                     AUV(4, J) = AUV(4, I)
+                     AUV(:, J) = AUV(:, I)
                      MOM_LV_X(J) = MOM_LV_X(I)
                      MOM_LV_Y(J) = MOM_LV_Y(I)
                   end do
