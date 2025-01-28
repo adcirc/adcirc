@@ -24,7 +24,8 @@ module mod_momentum_bc_forcing
 
    private
 
-   public :: apply_velocity_boundary_conditions, apply_zero_normal_velocity_gradient
+   public :: apply_velocity_boundary_conditions, apply_zero_normal_velocity_gradient, &
+             apply_subdomain_boundaries, UPDATE_U_PERSLNODES
 
 contains
 
@@ -99,6 +100,20 @@ contains
    !> This subroutine modifies the momentum equations to impose an essential
    !> normal flow boundary condition with free tangential slip.
    !>
+   !> @param[in] use_conservative A flag to indicate whether the conservative or non-conservative formulation should be used.
+   !> @param[in] J The index of the boundary node.
+   !> @param[in] ME2GW The mapping from the boundary node from momentum equations to gwce
+   !> @param[in] NBV The mapping from the global node index to the boundary node index.
+   !> @param[in] NODECODE The node code of the boundary node (i.e. wet/dry state).
+   !> @param[in] QN2 The flux at the boundary node.
+   !> @param[in] H2 The depth at the boundary node.
+   !> @param[in] TKM
+   !> @param[in] TK
+   !> @param[in] SIII The sine of the angle between the normal and the x-axis.
+   !> @param[in] CSII The cosine of the angle between the normal and the x-axis.
+   !> @param[in,out] MOM_LV_X The x-component of the momentum at the boundary node.
+   !> @param[in,out] MOM_LV_Y The y-component of the momentum at the boundary node.
+   !> @param[in,out] AUV
    !>
    !************************************************************************
    subroutine essential_normal_flow_free_tangential_slip(use_conservative, J, ME2GW, NBV, NODECODE, &
@@ -106,6 +121,9 @@ contains
                                                          MOM_LV_Y, AUV)
 
       implicit none
+
+      real(8), parameter :: eps = epsilon(1.d0)
+      real(8), parameter :: sqrt2 = sqrt(2.d0)
 
       logical, intent(in) :: use_conservative
       integer, intent(in) :: J
@@ -125,126 +143,44 @@ contains
       integer :: I
       integer :: NBDI
       integer :: NCI
+      real(8) :: VelNorm
 
       I = ME2GW(J)
       NBDI = NBV(I)
       NCI = NODECODE(NBDI)
 
       if (use_conservative) then
-         call essential_normal_flow_free_tangential_slip_conservative(I, NBDI, NCI, QN2, &
-                                                                      SIII, CSII, MOM_LV_X, &
-                                                                      MOM_LV_Y, AUV)
-      elseif (.not. use_conservative) then
-         call essential_normal_flow_free_tangential_slip_nonconservative(I, NBDI, NCI, QN2, H2, &
-                                                                         TKM, TK, SIII, CSII, MOM_LV_X, &
-                                                                         MOM_LV_Y, AUV)
-      end if
-
-   end subroutine essential_normal_flow_free_tangential_slip
-
-   !************************************************************************
-   !> Essential normal flow with free tangential slip and conservative
-   !> formulation.
-   !>
-   !> @param[in] I The index of the boundary node.
-   !> @param[in] NBDI The index of the boundary node in the global array.
-   !> @param[in] NCI The node code of the boundary node (i.e. wet/dry state)
-   !> @param[in] QN2 The flux at the boundary node.
-   !> @param[in] SIII The sine of the angle between the normal and the x-axis.
-   !> @param[in] CSII The cosine of the angle between the normal and the x-axis.
-   !> @param[in,out] MOM_LV_X The x-component of the momentum at the boundary node.
-   !> @param[in,out] MOM_LV_Y The y-component of the momentum at the boundary node.
-   !> @param[in,out] AUV
-   !************************************************************************
-   subroutine essential_normal_flow_free_tangential_slip_conservative(I, NBDI, NCI, QN2, &
-                                                                      SIII, CSII, MOM_LV_X, &
-                                                                      MOM_LV_Y, AUV)
-
-      implicit none
-
-      integer, intent(in) :: I
-      integer, intent(in) :: NBDI
-      integer, intent(in) :: NCI
-      real(8), intent(in) :: QN2(:)
-      real(8), intent(in) :: SIII(:)
-      real(8), intent(in) :: CSII(:)
-      real(8), intent(inout) :: MOM_LV_X(:)
-      real(8), intent(inout) :: MOM_LV_Y(:)
-      real(8), intent(inout) :: AUV(:, :)
-
-      MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI) - CSII(I)*MOM_LV_Y(NBDI))*NCI !Tangetial Eqn RHS
-      MOM_LV_Y(NBDI) = -QN2(I)*NCI !Normal Eqn RHS
-      AUV(1, NBDI) = AUV(1, NBDI)*SIII(I) - AUV(4, NBDI)*CSII(I)
-      AUV(3, NBDI) = AUV(3, NBDI)*SIII(I) - AUV(2, NBDI)*CSII(I)
-      AUV(4, NBDI) = CSII(I)
-      AUV(2, NBDI) = SIII(I)
-
-   end subroutine essential_normal_flow_free_tangential_slip_conservative
-
-   !************************************************************************
-   !> Essential normal flow with free tangential slip and non-conservative
-   !> formulation.
-   !>
-   !> @param[in] I The index of the boundary node.
-   !> @param[in] NBDI The index of the boundary node in the global array.
-   !> @param[in] NCI The node code of the boundary node (i.e. wet/dry state)
-   !> @param[in] QN2 The flux at the boundary node.
-   !> @param[in] H2 The depth at the boundary node.
-   !> @param[in] TKM
-   !> @param[in] TK
-   !> @param[in] SIII The sine of the angle between the normal and the x-axis.
-   !> @param[in] CSII The cosine of the angle between the normal and the x-axis.
-   !> @param[in,out] MOM_LV_X The x-component of the momentum at the boundary node.
-   !> @param[in,out] MOM_LV_Y The y-component of the momentum at the boundary node.
-   !> @param[in,out] AUV
-   subroutine essential_normal_flow_free_tangential_slip_nonconservative(I, NBDI, NCI, QN2, H2, &
-                                                                         TKM, TK, SIII, CSII, MOM_LV_X, &
-                                                                         MOM_LV_Y, AUV)
-
-      implicit none
-
-      real(8), parameter :: eps = epsilon(1.d0)
-      real(8), parameter :: sqrt2 = sqrt(2.d0)
-
-      integer, intent(in) :: I
-      integer, intent(in) :: NBDI
-      integer, intent(in) :: NCI
-      real(8), intent(in) :: QN2(:)
-      real(8), intent(in) :: H2(:)
-      real(8), intent(in) :: SIII(:)
-      real(8), intent(in) :: CSII(:)
-      real(8), intent(in) :: TK(:)
-      real(8), intent(in) :: TKM(:, :)
-      real(8), intent(inout) :: MOM_LV_X(:)
-      real(8), intent(inout) :: MOM_LV_Y(:)
-      real(8), intent(inout) :: AUV(:, :)
-
-      real(8) :: VelNorm
-
-      VelNorm = -QN2(I)/H2(NBDI)
-
-      if (abs(adcirc_norm2(TKM(:, NBDI)) - sqrt2*TK(NBDI)) < eps) then
-         ! WJP 03.6.2018 In the case of the symmetric matrix..
-         ! Should be equivalent to the non-symmetric formula below
-         ! but for consistency when testing using this formula helps
-         ! to keep the same solution
-         MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI) - CSII(I)*MOM_LV_Y(NBDI) - VelNorm*AUV(3, NBDI))*NCI !Tangential Eqn RHS
-         MOM_LV_Y(NBDI) = VelNorm*AUV(1, NBDI)*NCI !Normal Eqn RHS
-         AUV(3, NBDI) = -CSII(I)*AUV(1, NBDI)
-         AUV(4, NBDI) = -AUV(3, NBDI)
-         AUV(1, NBDI) = SIII(I)*AUV(1, NBDI)
-         AUV(2, NBDI) = AUV(1, NBDI)
-      else
-         ! WJP 02.24.2018 in the case of the non-symmetric matrix
          MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI) - CSII(I)*MOM_LV_Y(NBDI))*NCI !Tangetial Eqn RHS
-         MOM_LV_Y(NBDI) = VelNorm*NCI !Normal Eqn RHS
+         MOM_LV_Y(NBDI) = -QN2(I)*NCI !Normal Eqn RHS
          AUV(1, NBDI) = AUV(1, NBDI)*SIII(I) - AUV(4, NBDI)*CSII(I)
          AUV(3, NBDI) = AUV(3, NBDI)*SIII(I) - AUV(2, NBDI)*CSII(I)
          AUV(4, NBDI) = CSII(I)
          AUV(2, NBDI) = SIII(I)
+      elseif (.not. use_conservative) then
+         VelNorm = -QN2(I)/H2(NBDI)
+         if (abs(adcirc_norm2(TKM(:, NBDI)) - sqrt2*TK(NBDI)) < eps) then
+            ! WJP 03.6.2018 In the case of the symmetric matrix..
+            ! Should be equivalent to the non-symmetric formula below
+            ! but for consistency when testing using this formula helps
+            ! to keep the same solution
+            MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI) - CSII(I)*MOM_LV_Y(NBDI) - VelNorm*AUV(3, NBDI))*NCI !Tangential Eqn RHS
+            MOM_LV_Y(NBDI) = VelNorm*AUV(1, NBDI)*NCI !Normal Eqn RHS
+            AUV(3, NBDI) = -CSII(I)*AUV(1, NBDI)
+            AUV(4, NBDI) = -AUV(3, NBDI)
+            AUV(1, NBDI) = SIII(I)*AUV(1, NBDI)
+            AUV(2, NBDI) = AUV(1, NBDI)
+         else
+            ! WJP 02.24.2018 in the case of the non-symmetric matrix
+            MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI) - CSII(I)*MOM_LV_Y(NBDI))*NCI !Tangetial Eqn RHS
+            MOM_LV_Y(NBDI) = VelNorm*NCI !Normal Eqn RHS
+            AUV(1, NBDI) = AUV(1, NBDI)*SIII(I) - AUV(4, NBDI)*CSII(I)
+            AUV(3, NBDI) = AUV(3, NBDI)*SIII(I) - AUV(2, NBDI)*CSII(I)
+            AUV(4, NBDI) = CSII(I)
+            AUV(2, NBDI) = SIII(I)
+         end if
       end if
 
-   end subroutine essential_normal_flow_free_tangential_slip_nonconservative
+   end subroutine essential_normal_flow_free_tangential_slip
 
    !************************************************************************
    !> Essential normal flow with no tangential slip.
@@ -295,75 +231,21 @@ contains
       if (NCI == 0) then
          MOM_LV_X(NBDI) = 0.d0
          MOM_LV_Y(NBDI) = 0.d0
-      elseif (use_conservative) then
-         call essential_normal_flow_no_tangential_slip_conservative(I, NBDI, NCI, QN2, &
-                                                                    SIII, CSII, MOM_LV_X, &
-                                                                    MOM_LV_Y, AUV)
-      elseif (.not. use_conservative) then
-         call essential_normal_flow_no_tangential_slip_nonconservative(I, NBDI, NCI, QN2, H2, &
-                                                                       SIII, CSII, MOM_LV_X, &
-                                                                       MOM_LV_Y, AUV)
+      else
+         if (use_conservative) then
+            MOM_LV_X(NBDI) = 0.0 !Tangential Eqn RHS
+            MOM_LV_Y(NBDI) = -QN2(I)*NCI !Normal Eqn RHS
+         elseif (.not. use_conservative) then
+            MOM_LV_X(NBDI) = 0.0 !Tangential Eqn RHS
+            MOM_LV_Y(NBDI) = -QN2(I)/H2(NBDI)*NCI !Normal Eqn RHS
+         end if
+         AUV(1, NBDI) = SIII(I)
+         AUV(2, NBDI) = SIII(I)
+         AUV(3, NBDI) = -CSII(I)
+         AUV(4, NBDI) = CSII(I)
       end if
 
    end subroutine essential_normal_flow_no_tangential_slip
-
-   subroutine essential_normal_flow_no_tangential_slip_conservative(I, NBDI, NCI, QN2, &
-                                                                    SIII, CSII, MOM_LV_X, &
-                                                                    MOM_LV_Y, AUV)
-
-      implicit none
-
-      real(8), parameter :: QTAN = 0.d0
-
-      integer, intent(in) :: I
-      integer, intent(in) :: NBDI
-      integer, intent(in) :: NCI
-      real(8), intent(in) :: QN2(:)
-      real(8), intent(in) :: SIII(:)
-      real(8), intent(in) :: CSII(:)
-      real(8), intent(inout) :: MOM_LV_X(:)
-      real(8), intent(inout) :: MOM_LV_Y(:)
-      real(8), intent(inout) :: AUV(:, :)
-
-      MOM_LV_X(NBDI) = QTan*NCI !Tangential Eqn RHS
-      MOM_LV_Y(NBDI) = -QN2(I)*NCI !Normal Eqn RHS
-      AUV(1, NBDI) = SIII(I)
-      AUV(3, NBDI) = -CSII(I)
-      AUV(4, NBDI) = CSII(I)
-      AUV(2, NBDI) = SIII(I)
-
-   end subroutine essential_normal_flow_no_tangential_slip_conservative
-
-   subroutine essential_normal_flow_no_tangential_slip_nonconservative(I, NBDI, NCI, QN2, H2, &
-                                                                       SIII, CSII, MOM_LV_X, &
-                                                                       MOM_LV_Y, AUV)
-      implicit none
-
-      integer, intent(in) :: I
-      integer, intent(in) :: NBDI
-      integer, intent(in) :: NCI
-      real(8), intent(in) :: QN2(:)
-      real(8), intent(in) :: H2(:)
-      real(8), intent(in) :: SIII(:)
-      real(8), intent(in) :: CSII(:)
-      real(8), intent(inout) :: MOM_LV_X(:)
-      real(8), intent(inout) :: MOM_LV_Y(:)
-      real(8), intent(inout) :: AUV(:, :)
-
-      real(8) :: VelNorm
-      real(8), parameter :: VelTan = 0.0d0
-
-      ! Specified essential normal flow and no tangential slip
-      VelNorm = -QN2(I)/H2(NBDI)
-      MOM_LV_X(NBDI) = VelTan*NCI !Tangential Eqn RHS
-      MOM_LV_Y(NBDI) = VelNorm*NCI !Normal Eqn RHS
-
-      ! WJP 02.24.2018 considering the symmetric matrix
-      AUV(1, NBDI) = SIII(I)
-      AUV(2, NBDI) = SIII(I)
-      AUV(3, NBDI) = -CSII(I)
-      AUV(4, NBDI) = CSII(I)
-   end subroutine essential_normal_flow_no_tangential_slip_nonconservative
 
    !************************************************************************
    !> Zero normal velocity gradient boundary condition using a Galerkin approximation to
@@ -371,7 +253,25 @@ contains
    !> the velocity at the boundary is computed entirely from surrounding
    !> velocities at the previous time step.
    !>
-   !>
+   !> @param[in] use_conservative A flag to indicate whether the conservative or non-conservative formulation should be used.
+   !> @param[in] J The index of the boundary node.
+   !> @param[in] IFSFM The flag to indicate whether to use the SFM or SFMx/SFMy.
+   !> @param[in] ME2GW The mapping from the boundary node from momentum equations to gwce
+   !> @param[in] NBV The mapping from the global node index to the boundary node index.
+   !> @param[in] NODECODE The node code of the boundary node (i.e. wet/dry state).
+   !> @param[in] NOFF The offset for the element.
+   !> @param[in] NeiTab The neighbor table.
+   !> @param[in] NeiTabEle The element table.
+   !> @param[in] NNeigh The number of neighbors.
+   !> @param[in] SIII The sine of the angle between the normal and the x-axis.
+   !> @param[in] CSII The cosine of the angle between the normal and the x-axis.
+   !> @param[in] UU1 The x-component of the velocity.
+   !> @param[in] VV1 The y-component of the velocity.
+   !> @param[in] QX1 The x-component of the velocity at the previous time step.
+   !> @param[in] QY1 The y-component of the velocity at the previous time step.
+   !> @param[in,out] MOM_LV_X The x-component of the momentum at the boundary node.
+   !> @param[in,out] MOM_LV_Y The y-component of the momentum at the boundary node.
+   !> @param[in,out] AUV
    !************************************************************************
    subroutine zero_normal_velocity_gradient(use_conservative, J, IFSFM, ME2GW, NBV, &
                                             NODECODE, NOFF, NeiTab, NeiTabEle, &
@@ -408,55 +308,16 @@ contains
       integer :: I
       integer :: NBDI
       integer :: NCI
+      integer :: NM1, NM2, NM3
+      integer :: N, NEle, NCEle, NNFirst
+      real(8) :: SFacAvg, SFmxAvg, SFmyAvg
+      real(8) :: sfdxfac, sfdyfac
+      real(8) :: FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
+      real(8) :: ZNGRHS1, ZNGRHS2, ZNGLHS
 
       I = ME2GW(J)
       NBDI = NBV(I)
       NCI = NODECODE(NBDI)
-
-      if (use_conservative) then
-         call zero_normal_velocity_gradient_conservative(I, IFSFM, NBDI, NCI, NeiTab, NeiTabEle, &
-                                                         NNeigh, NOFF, NodeCode, QX1, QY1, &
-                                                         SFacEle, SFMXEle, SFMYEle, &
-                                                         FDXE, FDYE, SIII, CSII, MOM_LV_X, &
-                                                         MOM_LV_Y, AUV)
-      elseif (.not. use_conservative) then
-         call zero_normal_velocity_gradient_nonconservative(I, IFSFM, NBDI, NCI, NeiTab, NeiTabEle, &
-                                                            NNeigh, NOFF, NodeCode, UU1, VV1, SFacEle, SFMXEle, SFMYEle, &
-                                                            FDXE, FDYE, SIII, CSII, MOM_LV_X, MOM_LV_Y, AUV)
-      end if
-
-   end subroutine zero_normal_velocity_gradient
-
-   subroutine zero_normal_velocity_gradient_conservative(I, IFSFM, NBDI, NCI, NeiTab, NeiTabEle, &
-                                                         NNeigh, NOFF, NodeCode, QX1, QY1, SFacEle, SFMXEle, SFMYEle, &
-                                                         FDXE, FDYE, SIII, CSII, MOM_LV_X, MOM_LV_Y, AUV)
-
-      integer, intent(in) :: I
-      integer, intent(in) :: IFSFM
-      integer, intent(in) :: NBDI
-      integer, intent(in) :: NCI
-      integer, intent(in) :: NeiTab(:, :)
-      integer, intent(in) :: NeiTabEle(:, :)
-      integer, intent(in) :: NNeigh(:)
-      integer, intent(in) :: NOFF(:)
-      integer, intent(in) :: NodeCode(:)
-      real(8), intent(in) :: QX1(:)
-      real(8), intent(in) :: QY1(:)
-      real(8), intent(in) :: SFacEle(:)
-      real(8), intent(in) :: SFMXEle(:)
-      real(8), intent(in) :: SFMYEle(:)
-      real(8), intent(in) :: FDXE(:, :)
-      real(8), intent(in) :: FDYE(:, :)
-      real(8), intent(in) :: SIII(:)
-      real(8), intent(in) :: CSII(:)
-      real(8), intent(inout) :: MOM_LV_X(:)
-      real(8), intent(inout) :: MOM_LV_Y(:)
-      real(8), intent(inout) :: AUV(:, :)
-
-      integer :: NM1, NM2, NM3, N, NEle, NCEle, NNFirst
-      real(8) :: ZNGRHS1, ZNGRHS2, ZNGLHS
-      real(8) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac
-      real(8) :: FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
 
       NM1 = NBDI
       ZNGRHS1 = 0.d0 !Zero Norm Grad of U Eqn
@@ -464,11 +325,13 @@ contains
       ZNGLHS = 0.d0
       NM2 = NeiTab(NBDI, 2) !operate on 1st neighbor
       NNFirst = NM2 !save these values until end
+
       do N = 3, NNeigh(NBDI) !operate on rest of neighbors
          NM3 = NM2 !shift previously computed values
          NM2 = NEITAB(NBDI, N) !select new neighbor to work on
          NEle = NeiTabEle(NBDI, N - 2) !element # defined by nodes NM1,NM2,NM3
          NCEle = NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NEle)
+
          if ((NEle /= 0) .and. (NCEle /= 0)) then !if element is active, compute contribution
             SFacAvg = SFacEle(NEle)
             SFmxAvg = SFMXEle(NEle)
@@ -481,129 +344,48 @@ contains
             FDY1 = FDYE(1, NEle)*sfdyfac !c  FDY1=X(NM3)-X(NM2) !a1
             FDY2 = FDYE(2, NEle)*sfdyfac !c  FDY2=X(NM1)-X(NM3) !a2
             FDY3 = FDYE(3, NEle)*sfdyfac !c  FDY3=X(NM2)-X(NM1) !a3
+
+            if (use_conservative) then
+               ZNGRHS1 = ZNGRHS1 - (CSII(I)*FDX2 + SIII(I)*FDY2)*QX1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*QX1(NM3)
+               ZNGRHS2 = ZNGRHS2 - (CSII(I)*FDX2 + SIII(I)*FDY2)*QY1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*QY1(NM3)
+            else
+               ZNGRHS1 = ZNGRHS1 - (CSII(I)*FDX2 + SIII(I)*FDY2)*UU1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*UU1(NM3)
+               ZNGRHS2 = ZNGRHS2 - (CSII(I)*FDX2 + SIII(I)*FDY2)*VV1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*VV1(NM3)
+            end if
+
+            ZNGLHS = ZNGLHS + CSII(I)*FDX1 + SIII(I)*FDY1
+         end if
+
+      end do
+
+      NM3 = NM2 !wrap back to beginning to get final contribution
+      NM2 = NNFirst
+      NEle = NeiTabEle(NBDI, NNeigh(NBDI) - 1)
+      NCEle = NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NELE)
+
+      if ((NEle /= 0) .and. (NCEle /= 0)) then
+         SFacAvg = SFacEle(NEle)
+         SFmxAvg = SFMXEle(NEle)
+         SFmyAvg = SFMYEle(NEle)
+         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
+         sfdyfac = (1 - IFSFM)*1.0d0 + IFSFM*SFmyAvg
+         FDX1 = FDXE(1, NEle)*sfdxfac
+         FDX2 = FDXE(2, NEle)*sfdxfac
+         FDX3 = FDXE(3, NEle)*sfdxfac
+         FDY1 = FDYE(1, NEle)*sfdyfac
+         FDY2 = FDYE(2, NEle)*sfdyfac
+         FDY3 = FDYE(3, NEle)*sfdyfac
+
+         if (use_conservative) then
             ZNGRHS1 = ZNGRHS1 - (CSII(I)*FDX2 + SIII(I)*FDY2)*QX1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*QX1(NM3)
             ZNGRHS2 = ZNGRHS2 - (CSII(I)*FDX2 + SIII(I)*FDY2)*QY1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*QY1(NM3)
-            ZNGLHS = ZNGLHS + CSII(I)*FDX1 + SIII(I)*FDY1
-         end if
-      end do
-      NM3 = NM2 !wrap back to beginning to get final contribution
-      NM2 = NNFirst
-      NEle = NeiTabEle(NBDI, NNeigh(NBDI) - 1)
-      NCEle = NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NELE)
-      if ((NEle /= 0) .and. (NCEle /= 0)) then
-
-         SFacAvg = SFacEle(NEle)
-         SFmxAvg = SFMXEle(NEle)
-         SFmyAvg = SFMYEle(NEle)
-         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
-         sfdyfac = (1 - IFSFM)*1.0d0 + IFSFM*SFmyAvg
-         FDX1 = FDXE(1, NEle)*sfdxfac
-         FDX2 = FDXE(2, NEle)*sfdxfac
-         FDX3 = FDXE(3, NEle)*sfdxfac
-         FDY1 = FDYE(1, NEle)*sfdyfac
-         FDY2 = FDYE(2, NEle)*sfdyfac
-         FDY3 = FDYE(3, NEle)*sfdyfac
-
-         ZNGRHS1 = ZNGRHS1 - (CSII(I)*FDX2 + SIII(I)*FDY2)*QX1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*QX1(NM3)
-         ZNGRHS2 = ZNGRHS2 - (CSII(I)*FDX2 + SIII(I)*FDY2)*QY1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*QY1(NM3)
-         ZNGLHS = ZNGLHS + CSII(I)*FDX1 + SIII(I)*FDY1
-      end if
-      if (NCI == 0) then
-         MOM_LV_X(NBDI) = 0.d0
-         MOM_LV_Y(NBDI) = 0.d0
-      else
-         MOM_LV_X(NBDI) = ZNGRHS1/ZNGLHS
-         MOM_LV_Y(NBDI) = ZNGRHS2/ZNGLHS
-      end if
-      AUV(1, NBDI) = 1.d0
-      AUV(2, NBDI) = 1.d0
-      AUV(3, NBDI) = 0.d0
-      AUV(4, NBDI) = 0.d0
-
-   end subroutine zero_normal_velocity_gradient_conservative
-
-   subroutine zero_normal_velocity_gradient_nonconservative(I, IFSFM, NBDI, NCI, NeiTab, NeiTabEle, &
-                                                            NNeigh, NOFF, NodeCode, UU1, VV1, SFacEle, SFMXEle, SFMYEle, &
-                                                            FDXE, FDYE, SIII, CSII, MOM_LV_X, MOM_LV_Y, AUV)
-
-      implicit none
-
-      integer, intent(in) :: I
-      integer, intent(in) :: IFSFM
-      integer, intent(in) :: NBDI
-      integer, intent(in) :: NCI
-      integer, intent(in) :: NeiTab(:, :)
-      integer, intent(in) :: NeiTabEle(:, :)
-      integer, intent(in) :: NNeigh(:)
-      integer, intent(in) :: NOFF(:)
-      integer, intent(in) :: NodeCode(:)
-      real(8), intent(in) :: UU1(:)
-      real(8), intent(in) :: VV1(:)
-      real(8), intent(in) :: SFacEle(:)
-      real(8), intent(in) :: SFMXEle(:)
-      real(8), intent(in) :: SFMYEle(:)
-      real(8), intent(in) :: FDXE(:, :)
-      real(8), intent(in) :: FDYE(:, :)
-      real(8), intent(in) :: SIII(:)
-      real(8), intent(in) :: CSII(:)
-      real(8), intent(inout) :: MOM_LV_X(:)
-      real(8), intent(inout) :: MOM_LV_Y(:)
-      real(8), intent(inout) :: AUV(:, :)
-
-      integer :: NM1, NM2, NM3, N, NEle, NCEle, NNFirst
-      real(8) :: ZNGRHS1, ZNGRHS2, ZNGLHS
-      real(8) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac
-      real(8) :: FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
-
-      NM1 = NBDI
-      ZNGRHS1 = 0.d0 !Zero Norm Grad of U Eqn
-      ZNGRHS2 = 0.d0 !Zero Norm Grad of V Eqn
-      ZNGLHS = 0.d0
-      NM2 = NeiTab(NBDI, 2) !operate on 1st neighbor
-      NNFirst = NM2 !save these values until end
-      do N = 3, NNeigh(NBDI) !operate on rest of neighbors
-         NM3 = NM2 !shift previously computed values
-         NM2 = NEITAB(NBDI, N) !select new neighbor to work on
-         NEle = NeiTabEle(NBDI, N - 2) !element # defined by nodes NM1,NM2,NM3
-         NCEle = NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NEle)
-         if (NEle /= 0 .and. NCEle /= 0) then !if element is active, compute contribution
-            SFacAvg = SFacEle(NEle)
-            SFmxAvg = SFMXEle(NEle)
-            SFmyAvg = SFMYEle(NEle)
-            sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
-            sfdyfac = (1 - IFSFM)*1.0d0 + IFSFM*SFmyAvg
-            FDX1 = FDXE(1, NEle)*sfdxfac !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
-            FDX2 = FDXE(2, NEle)*sfdxfac !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
-            FDX3 = FDXE(3, NEle)*sfdxfac !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
-            FDY1 = FDYE(1, NEle)*sfdyfac !c  FDY1=X(NM3)-X(NM2) !a1
-            FDY2 = FDYE(2, NEle)*sfdyfac !c  FDY2=X(NM1)-X(NM3) !a2
-            FDY3 = FDYE(3, NEle)*sfdyfac !c  FDY3=X(NM2)-X(NM1) !a3
-
+         else
             ZNGRHS1 = ZNGRHS1 - (CSII(I)*FDX2 + SIII(I)*FDY2)*UU1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*UU1(NM3)
             ZNGRHS2 = ZNGRHS2 - (CSII(I)*FDX2 + SIII(I)*FDY2)*VV1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*VV1(NM3)
-            ZNGLHS = ZNGLHS + CSII(I)*FDX1 + SIII(I)*FDY1
          end if
-      end do
-      NM3 = NM2 !wrap back to beginning to get final contribution
-      NM2 = NNFirst
-      NEle = NeiTabEle(NBDI, NNeigh(NBDI) - 1)
-      NCEle = NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NELE)
-      if (NEle /= 0 .and. NCEle /= 0) then
-         SFacAvg = SFacEle(NEle)
-         SFmxAvg = SFMXEle(NEle)
-         SFmyAvg = SFMYEle(NEle)
-         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
-         sfdyfac = (1 - IFSFM)*1.0d0 + IFSFM*SFmyAvg
-         FDX1 = FDXE(1, NEle)*sfdxfac
-         FDX2 = FDXE(2, NEle)*sfdxfac
-         FDX3 = FDXE(3, NEle)*sfdxfac
-         FDY1 = FDYE(1, NEle)*sfdyfac
-         FDY2 = FDYE(2, NEle)*sfdyfac
-         FDY3 = FDYE(3, NEle)*sfdyfac
-         ZNGRHS1 = ZNGRHS1 - (CSII(I)*FDX2 + SIII(I)*FDY2)*UU1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*UU1(NM3)
-         ZNGRHS2 = ZNGRHS2 - (CSII(I)*FDX2 + SIII(I)*FDY2)*VV1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*VV1(NM3)
          ZNGLHS = ZNGLHS + CSII(I)*FDX1 + SIII(I)*FDY1
       end if
+
       if (NCI == 0) then
          MOM_LV_X(NBDI) = 0.d0
          MOM_LV_Y(NBDI) = 0.d0
@@ -611,12 +393,13 @@ contains
          MOM_LV_X(NBDI) = ZNGRHS1/ZNGLHS
          MOM_LV_Y(NBDI) = ZNGRHS2/ZNGLHS
       end if
+
       AUV(1, NBDI) = 1.d0
       AUV(2, NBDI) = 1.d0
       AUV(3, NBDI) = 0.d0
       AUV(4, NBDI) = 0.d0
 
-   end subroutine zero_normal_velocity_gradient_nonconservative
+   end subroutine zero_normal_velocity_gradient
 
    !************************************************************************
    !> VEW1D (=1D channel) 08-11-2022 SB
@@ -631,7 +414,24 @@ contains
    !> this procedure, the values at the floodplain nodes and (condensed) channel nodes
    !> have the same values on both sides of the equations.
    !>
-   !>
+   !> @param[in] NFLUXIB64_GBL Number of 1D channel boundary nodes
+   !> @param[in] NBOU Number of boundaries
+   !> @param[in] NVELL Number of vertices on each boundary
+   !> @param[in] LBCODEI Boundary code for each vertex
+   !> @param[in] NBV Global node number on this side of the barrier
+   !> @param[in] IBCONN Global node number on opposite side of the barrier
+   !> @param[in] ISSUBMERGED64 Submerged flag for each vertex
+   !> @param[in] NODECODE Node code for each vertex
+   !> @param[in] NListCondensedNodes Number of condensed nodes
+   !> @param[in] NNodesListCondensedNodes Number of nodes in each condensed node group
+   !> @param[in] ListCondensedNodes List of condensed nodes
+   !> @param[in] LoadCondensedNodes Flag to indicate whether to load condensed nodes
+   !> @param[in] MJU Node code for each vertex
+   !> @param[in] TotalArea Total area of the 1D channel boundary
+   !> @param[inout] flgNodesMultipliedByTotalArea Flag to indicate whether the nodes are multiplied by the total area
+   !> @param[inout] AUV AUV values
+   !> @param[inout] MOM_LV_X X-momentum values
+   !> @param[inout] MOM_LV_Y Y-momentum values
    !************************************************************************
    subroutine apply_vew1d_and_condensed_nodes(NFLUXIB64_GBL, NBOU, NVELL, LBCODEI, NBV, IBCONN, ISSUBMERGED64, &
                                               NodeCode, NListCondensedNodes, NNodesListCondensedNodes, &
@@ -974,146 +774,35 @@ contains
       real(8), intent(inout) :: UU2(:)
       real(8), intent(inout) :: VV2(:)
 
+      integer :: I, J
+      integer :: NBDI, NCEle, NM1, NM2, NM3, NC1, NC2, NC3
+
       if (NFLUXGBC == 1) then
-         if (use_conservative) then
-            call apply_zero_normal_velocity_gradient_conservative(NVELME, ME2GW, NBV, &
-                                                                  LBCODEI, NEleZNG, NODECODE, NOFF, NM, &
-                                                                  ZNGIF1, ZNGIF2, ZNGIF3, QX2, QY2)
-         else
-            call apply_zero_normal_velocity_gradient_nonconservative(NVELME, ME2GW, NBV, &
-                                                                     LBCODEI, NEleZNG, NODECODE, NOFF, NM, &
-                                                                     ZNGIF1, ZNGIF2, ZNGIF3, UU2, VV2)
-         end if
+         do J = 1, NVELME
+            I = ME2GW(J)
+            NBDI = NBV(I)
+            if (LBCODEI(I) == 40) then
+               NM1 = NM(NEleZNG(I), 1)
+               NM2 = NM(NEleZNG(I), 2)
+               NM3 = NM(NEleZNG(I), 3)
+               NC1 = NODECODE(NM1)
+               NC2 = NODECODE(NM2)
+               NC3 = NODECODE(NM3)
+               NCEle = NC1*NC2*NC3*NOFF(NEleZNG(I))
+               if (use_conservative) then
+                  QX2(NBDI) = NCEle*(QX2(NM1)*ZNGIF1(I) + QX2(NM2)*ZNGIF2(I) + QX2(NM3)*ZNGIF3(I))
+                  QY2(NBDI) = NCEle*(QY2(NM1)*ZNGIF1(I) + QY2(NM2)*ZNGIF2(I) + QY2(NM3)*ZNGIF3(I))
+               else
+                  UU2(NBDI) = NCEle*(UU2(NM1)*ZNGIF1(I) + UU2(NM2)*ZNGIF2(I) + UU2(NM3)*ZNGIF3(I))
+                  VV2(NBDI) = NCEle*(VV2(NM1)*ZNGIF1(I) + VV2(NM2)*ZNGIF2(I) + VV2(NM3)*ZNGIF3(I))
+               end if
+            end if
+         end do
       end if
 
    end subroutine apply_zero_normal_velocity_gradient
 
    !************************************************************************
-   !> Impose a zero normal flux gradient based on interpolating the
-   !> flux at a fictitious point in the interior of the domain,
-   !> normal to a specified boundary node and setting the boundary
-   !> flux equal to the interpolated value at the fictitious point.
-   !> Provided the fictitious point does not lie in an element that
-   !> contains a boundary point, this is an entirely implicit
-   !> calculation.
-   !>
-   !> @param[in] NVELME Integer number of boundary nodes for momentum equations
-   !> @param[in] ME2GW Integer array mapping the boundary nodes to the gwce nodes
-   !> @param[in] NBV Integer array mapping the boundary nodes to the global nodes
-   !> @param[in] LBCODEI Integer array of boundary condition codes
-   !> @param[in] NEleZNG
-   !> @param[in] NODECODE
-   !> @param[in] NOFF
-   !> @param[in] NM
-   !> @param[in] ZNGIF1
-   !> @param[in] ZNGIF2
-   !> @param[in] ZNGIF3
-   !> @param[in,out] QX2
-   !> @param[in,out] QY2
-   !************************************************************************
-   subroutine apply_zero_normal_velocity_gradient_conservative(NVELME, ME2GW, NBV, &
-                                                               LBCODEI, NEleZNG, NODECODE, NOFF, NM, &
-                                                               ZNGIF1, ZNGIF2, ZNGIF3, QX2, QY2)
-
-      implicit none
-
-      integer, intent(in) :: NVELME
-      integer, intent(in) :: ME2GW(:)
-      integer, intent(in) :: NBV(:)
-      integer, intent(in) :: LBCODEI(:)
-      integer, intent(in) :: NEleZNG(:)
-      integer, intent(in) :: NODECODE(:)
-      integer, intent(in) :: NOFF(:)
-      integer, intent(in) :: NM(:, :)
-      real(8), intent(in) :: ZNGIF1(:)
-      real(8), intent(in) :: ZNGIF2(:)
-      real(8), intent(in) :: ZNGIF3(:)
-      real(8), intent(inout) :: QX2(:)
-      real(8), intent(inout) :: QY2(:)
-
-      integer :: I, J, NBDI, NM1, NM2, NM3, NC1, NC2, NC3, NCEle
-
-      do J = 1, NVELME
-         I = ME2GW(J)
-         NBDI = NBV(I)
-         if (LBCODEI(I) == 40) then
-            NM1 = NM(NEleZNG(I), 1)
-            NM2 = NM(NEleZNG(I), 2)
-            NM3 = NM(NEleZNG(I), 3)
-            NC1 = NODECODE(NM1)
-            NC2 = NODECODE(NM2)
-            NC3 = NODECODE(NM3)
-            NCEle = NC1*NC2*NC3*NOFF(NEleZNG(I))
-            QX2(NBDI) = NCEle*(QX2(NM1)*ZNGIF1(I) + QX2(NM2)*ZNGIF2(I) + QX2(NM3)*ZNGIF3(I))
-            QY2(NBDI) = NCEle*(QY2(NM1)*ZNGIF1(I) + QY2(NM2)*ZNGIF2(I) + QY2(NM3)*ZNGIF3(I))
-         end if
-      end do
-
-   end subroutine apply_zero_normal_velocity_gradient_conservative
-
-   !************************************************************************
-   !> Impose a zero normal velocity gradient based on interpolating the
-   !> velocity at a fictitious point in the interior of the domain,
-   !> normal to a specified boundary node and setting the boundary
-   !> velocity equal to the interpolated value at the fictitious point.
-   !> Provided the fictitious point does not lie in an element that
-   !> contains a boundary point, this is an entirely implicit
-   !> calculation.
-   !>
-   !> @param[in] NVELME Integer number of boundary nodes for momentum equations
-   !> @param[in] ME2GW Integer array mapping the boundary nodes to the gwce nodes
-   !> @param[in] NBV Integer array mapping the boundary nodes to the global nodes
-   !> @param[in] LBCODEI Integer array of boundary condition codes
-   !> @param[in] NEleZNG
-   !> @param[in] NODECODE
-   !> @param[in] NOFF
-   !> @param[in] NM
-   !> @param[in] ZNGIF1
-   !> @param[in] ZNGIF2
-   !> @param[in] ZNGIF3
-   !> @param[in,out] UU2 Real array of x-velocity values
-   !> @param[in,out] VV2 Real array of y-velocity values
-   !************************************************************************
-   subroutine apply_zero_normal_velocity_gradient_nonconservative(NVELME, ME2GW, NBV, &
-                                                                  LBCODEI, NEleZNG, NODECODE, NOFF, NM, &
-                                                                  ZNGIF1, ZNGIF2, ZNGIF3, UU2, VV2)
-
-      implicit none
-
-      integer, intent(in) :: NVELME
-      integer, intent(in) :: ME2GW(:)
-      integer, intent(in) :: NBV(:)
-      integer, intent(in) :: LBCODEI(:)
-      integer, intent(in) :: NEleZNG(:)
-      integer, intent(in) :: NODECODE(:)
-      integer, intent(in) :: NOFF(:)
-      integer, intent(in) :: NM(:, :)
-      real(8), intent(in) :: ZNGIF1(:)
-      real(8), intent(in) :: ZNGIF2(:)
-      real(8), intent(in) :: ZNGIF3(:)
-      real(8), intent(inout) :: UU2(:)
-      real(8), intent(inout) :: VV2(:)
-
-      integer :: I, J, NBDI, NM1, NM2, NM3, NC1, NC2, NC3, NCEle
-
-      do J = 1, NVELME
-         I = ME2GW(J)
-         NBDI = NBV(I)
-         if (LBCODEI(I) == 40) then
-            NM1 = NM(NEleZNG(I), 1)
-            NM2 = NM(NEleZNG(I), 2)
-            NM3 = NM(NEleZNG(I), 3)
-            NC1 = NODECODE(NM1)
-            NC2 = NODECODE(NM2)
-            NC3 = NODECODE(NM3)
-            NCEle = NC1*NC2*NC3*NOFF(NEleZNG(I))
-            UU2(NBDI) = NCEle*(UU2(NM1)*ZNGIF1(I) + UU2(NM2)*ZNGIF2(I) + UU2(NM3)*ZNGIF3(I))
-            VV2(NBDI) = NCEle*(VV2(NM1)*ZNGIF1(I) + VV2(NM2)*ZNGIF2(I) + VV2(NM3)*ZNGIF3(I))
-         end if
-      end do
-   end subroutine apply_zero_normal_velocity_gradient_nonconservative
-
-   !-----------------------------------------------------------------------
    !> @brief Internal norm2 function
    !> If the compiler supports Fortran 2008 then the intrinsic is used.
    !> Otherwise, the implementation is provided here. Use the compiler
@@ -1122,7 +811,7 @@ contains
    !>
    !> @param[in] x array to calculate the L2 norm of
    !> @result euclidean vector norm of x
-   !-----------------------------------------------------------------------
+   !************************************************************************
    real(8) pure function adcirc_norm2(x) result(v)
       implicit none
       real(8), intent(in) :: x(:)
@@ -1134,6 +823,62 @@ contains
       v = norm2(x)
 #endif
    end function adcirc_norm2
-   !-----------------------------------------------------------------------
+
+   !************************************************************************
+   !> Apply the subdomain boundaries for velocity components
+   !>
+   !> @param[in] subdomainOn Logical flag to indicate whether the subdomain boundaries are to be applied
+   !> @param[in] enforceBN Integer flag to indicate whether the boundary nodes are to be enforced
+   !************************************************************************
+   subroutine apply_subdomain_boundaries(subdomainOn, enforceBN)
+
+      use subdomain, only: enforceUVcb, enforceUVob
+
+      implicit none
+
+      logical, intent(in) :: subdomainOn
+      integer, intent(in) :: enforceBN
+
+      if (subdomainOn) then
+         if (enforceBN == 1) then
+            call enforceUVcb()
+         elseif (enforceBN == 2) then
+            call enforceUVob()
+         end if
+      end if
+
+   end subroutine apply_subdomain_boundaries
+
+   !************************************************************************
+   !> Update the U and V values at the nodes on the periodic sponge layer
+   !> boundary
+   !>
+   !> @param[in] NPERSEG Number of periodic segments
+   !> @param[in] NNPERBC Number of nodes on the periodic boundary
+   !> @param[in] IPERCONN Integer array of periodic node connections
+   !> @param[in,out] UU2 Real array of x-velocity values
+   !> @param[in,out] VV2 Real array of y-velocity values
+   !************************************************************************
+   subroutine UPDATE_U_PERSLNODES(NPERSEG, NNPERBC, IPERCONN, UU2, VV2)
+      implicit none
+
+      integer, intent(in) :: NPERSEG, NNPERBC
+      integer, intent(in) :: IPERCONN(NNPERBC, 2)
+      real(8), intent(inout) :: UU2(:)
+      real(8), intent(inout) :: VV2(:)
+
+      integer :: I, I1, I2
+
+      if (NPERSEG > 0) then
+         ! Update values of secondary node !
+         do I = 1, NNPERBC
+            I1 = IPERCONN(I, 1)
+            I2 = IPERCONN(I, 2)
+
+            UU2(I2) = UU2(I1)
+            VV2(I2) = VV2(I1)
+         end do
+      end if
+   end subroutine UPDATE_U_PERSLNODES
 
 end module mod_momentum_bc_forcing

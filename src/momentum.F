@@ -116,19 +116,20 @@ C******************************************************************************
       subroutine solveMomentumEq()
       use global, only : C2DDI, CME_New_NC, CME_New_C1, CME_New_C2,
      &   CPRECOR, UU2, VV2, QX2, QY2
+
 #ifdef CMPI
-     & , DUMY1
+      use global, only: DUMY1
       use messenger
 #endif
+
       IF (C2DDI) THEN
          IF (CME_New_NC) THEN
-            CALL Mom_Eqs_New_NC()
-         ENDIF
-         IF ((CME_New_C1).OR.(CME_New_C2)) THEN
-            CALL Mom_Eqs_New_Conserv()
+            CALL momentum_eq_nonconservative()
+         ELSEIF((CME_New_C1).OR.(CME_New_C2)) THEN
+            CALL momentum_eq_conservative()
          ENDIF
          IF (CPRECOR) THEN
-            CALL Mom_Eqs_Non_Conserv_pc()
+            CALL momentum_eq_nonconservative_predictor_corrector()
          ENDIF
 C...  If running in parallel, update velocities & fluxes on all processors
 #ifdef CMPI
@@ -161,7 +162,7 @@ C                                                                              *
 C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
-      SUBROUTINE Mom_Eqs_New_NC()
+      SUBROUTINE momentum_eq_nonconservative()
       USE GLOBAL, ONLY : UU2, VV2, QX2, QY2, ALPHAL, CBaroclinic, C3D, IDEN,
      &  CME_AreaInt_Corr, CME_AreaInt_Orig, CME_LS_IBPQ, CME_LS_IBPSQ,
      &  CME_LS_IBPSV, CSmag_Eh, Smag_Comp_Flag, CTIP, DT, CME_LS_IBPV,
@@ -174,7 +175,7 @@ C*******************************************************************************
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0,
      &  flgNodesMultipliedByTotalArea, ilump, H1, H2
 #ifdef CMPI
-     &  , dumy1
+      use global, only: dumy1
 #endif
       USE ADC_CONSTANTS, ONLY: Cs2, Ad, Bd, G
       USE MESH, ONLY : NE, NP, NM, DP, Areas, TotalArea,
@@ -196,7 +197,8 @@ C*******************************************************************************
       USE SPONGELAYER
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
       USE mod_momentum_bc_forcing, only: apply_velocity_boundary_conditions,
-     &                                   apply_zero_normal_velocity_gradient
+     &                                   apply_zero_normal_velocity_gradient,
+     &                                   UPDATE_U_PERSLNODES, apply_subdomain_boundaries
 C... SB
       USE VEW1D, ONLY :
      &     ROTATE_AT_CONDENSEDNODES_ALL,
@@ -851,21 +853,16 @@ C.....interface nodes.
          DDU    = AUV(1,I)*AUV(2,I)-AUV(3,I)*AUV(4,I)
          UU2(I) = (MOM_LV_X(I)*AUV(2,I)-MOM_LV_Y(I)*AUV(3,I))/DDU
          VV2(I) = (MOM_LV_Y(I)*AUV(1,I)-MOM_LV_X(I)*AUV(4,I))/DDU
-         
+
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           UBAR2(I)=0.D0    !no slip and normal flux
 c           VBAR2(I)=0.D0    !on wet/dry interface nodes
 c        ENDIF
       END DO
 
-      if (subdomainOn.and.enforceBN.eq.1) call enforceUVcb() ! NCSU Subdomain
-      if (subdomainOn.and.enforceBN.eq.2) call enforceUVob() ! NCSU Subdomain
-
-C....... DW
-      CALL SWITCH_ELTAB_PERBC( IDIREC = 2 ) ; 
-      CALL UPDATE_U_PERSLNODES() ; 
-C....... DW
-
+      call apply_subdomain_boundaries(subdomainOn, enforceBN)
+      call SWITCH_ELTAB_PERBC( IDIREC = 2 )
+      call UPDATE_U_PERSLNODES(NPERSEG, NNPERBC, IPERCONN, UU2, VV2)
       call apply_zero_normal_velocity_gradient(.false., NODECODE, NOFF, QX2, QY2, UU2, VV2)
 
 C...  Compute fluxes
@@ -881,29 +878,7 @@ C...  Compute fluxes
       call unsetMessageSource()
 
 C*******************************************************************************
-      CONTAINS
-C     DW 
-          SUBROUTINE UPDATE_U_PERSLNODES()
-          IMPLICIT NONE
-          
-          INTEGER:: I, I1, I2
-
-          IF ( NPERSEG > 0 ) THEN
-C     Update values of slave node ! 
-             DO I = 1, NNPERBC
-                I1 = IPERCONN(I,1) ; 
-                I2 = IPERCONN(I,2) ;
-                
-                UU2(I2)=UU2(I1) ; 
-                VV2(I2)=VV2(I1) ;
-             END DO
-          END IF 
-          
-          RETURN ;
-          END SUBROUTINE UPDATE_U_PERSLNODES
-C     END DW
-C*******************************************************************************
-      END SUBROUTINE MOM_EQS_NEW_NC
+      END SUBROUTINE momentum_eq_nonconservative
 C*******************************************************************************
 
 
@@ -925,7 +900,7 @@ C                                                                              *
 C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
-      SUBROUTINE Mom_Eqs_New_Conserv()
+      SUBROUTINE momentum_eq_conservative()
 C
       USE GLOBAL, only: NWS, CTIP, PR2, PR1, TIP1, TIP2, CME_NEW_C1, DT,
      & CME_NEW_C2, CME_LS_IBPSQ, CME_LS_IBPV, CME_LS_IBPSV, CME_LS_IBPQ,
@@ -1587,7 +1562,7 @@ C...  Compute velocities
 
       RETURN
 C**********************************************************************
-      END SUBROUTINE MOM_EQS_NEW_CONSERV
+      END SUBROUTINE momentum_eq_conservative
 C**********************************************************************
 
 
@@ -1615,7 +1590,7 @@ C                            k.d.  06/24/2004                                  *
 C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
-      SUBROUTINE Mom_Eqs_Non_Conserv_pc()
+      SUBROUTINE momentum_eq_nonconservative_predictor_corrector()
 
       USE GLOBAL, only: NWS, CTIP, PR2, PR1, TIP1, TIP2, CME_NEW_C1, DT,
      & CME_NEW_C2, CME_LS_IBPSQ, CME_LS_IBPV, CME_LS_IBPSV, CME_LS_IBPQ,
@@ -2331,7 +2306,7 @@ C...  Compute fluxes
 
       RETURN
 C**********************************************************************
-      END SUBROUTINE MOM_EQS_NON_CONSERV_PC
+      END SUBROUTINE momentum_eq_nonconservative_predictor_corrector
 C**********************************************************************
 
 

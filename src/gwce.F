@@ -169,7 +169,7 @@ C     the conventional GWCE or (2) the predictor-corrector GWCE.
      & , dumy1, dumy2
       use messenger
 #endif
-      use momentum, only : mom_eqs_new_nc
+      use momentum, only : momentum_eq_nonconservative
       use nodalattributes, only : loadEleSlopeLim
       implicit none
       integer, intent(in) :: it, ITIME_BGN ! time step 
@@ -188,7 +188,7 @@ c...tcm added call for slope limiting
             CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif
          ENDIF         
-         CALL Mom_Eqs_New_NC()
+         CALL momentum_eq_nonconservative()
 C...  If running in parallel, update velocities & fluxes on all processors
 #ifdef CMPI
          CALL UPDATER(UU2,VV2,DUMY1,2)
