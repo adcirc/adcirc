@@ -83,6 +83,10 @@ C******************************************************************************
       real(8),allocatable :: auv11(:), auv12(:)! For the pc subroutine
       real(8) :: dto2  ! time step divided by 2.0
       real(8) :: go2   ! gravitational acceleration divided by 2.0
+
+      private
+
+      public :: initMomentumEq, solveMomentumEq, momentum_eq_nonconservative
       
       contains
 
@@ -750,8 +754,7 @@ C      DispY=0.D0
             IF (CME_AreaInt_Corr) THEN       !Correct area integration
                MOM_LV_X(I)=MOM_LV_X(I)/TotalArea(I)
                MOM_LV_Y(I)=MOM_LV_Y(I)/TotalArea(I)
-            ENDIF
-            IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
+            ELSEIF(CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
                MOM_LV_X(I)=MOM_LV_X(I)/MJU(I)
                MOM_LV_Y(I)=MOM_LV_Y(I)/MJU(I)
             ENDIF
@@ -863,7 +866,7 @@ c        ENDIF
 
       call apply_subdomain_boundaries(subdomainOn, enforceBN)
       call SWITCH_ELTAB_PERBC( IDIREC = 2 )
-      call UPDATE_U_PERSLNODES(NPERSEG, NNPERBC, IPERCONN, UU2, VV2)
+      if( NPERSEG > 0 ) call UPDATE_U_PERSLNODES(NNPERBC, IPERCONN, UU2, VV2)
       call apply_zero_normal_velocity_gradient(non_conservative, NODECODE, NOFF, QX2, QY2, UU2, VV2)
 
 C...  Compute fluxes
