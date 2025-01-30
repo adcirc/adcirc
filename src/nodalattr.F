@@ -2277,7 +2277,7 @@ C     ----------------------------------------------------------------
      &     IFNLFA, NP, TK)
       USE GLOBAL, ONLY: MLD, DTDP
 !JLW: incorporate subgrid
-      USE subgrid, ONLY: level0, level1
+      USE subgrid, ONLY: subgrid_level0 => level0, subgrid_level1 => level1
      &   , cmfVertETA2, cfVertETA2, subgridVertList
      &   , wetDepthVertETA2
 C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
@@ -2321,9 +2321,9 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
       IF (LoadManningsN) THEN
          DO I=1, NP
 !JLW: adding subgrid
-            IF(level0)THEN
+            IF(subgrid_level0)THEN
                IF(subgridVertList(I).EQ.1)THEN
-                  IF(level1)THEN
+                  IF(subgrid_level1)THEN
                      FRIC(I) = cmfVertETA2(I)
                   ELSE
                      FRIC(I) = cfVertETA2(I)
@@ -2405,7 +2405,7 @@ C     .. Step 1. Apply friction arising from turbulent viscous interaction
 C        with the sea floor.
          DO I=1, NP
             UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
-            IF(level0)THEN
+            IF(subgrid_level0)THEN
                H1 = wetDepthVertETA2(I)
             ELSE
                H1  = DP(I) + IFNLFA*ETA2(I)
