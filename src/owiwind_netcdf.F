@@ -1082,7 +1082,7 @@
       ENDDO
 
       CALL kdtree2_destroy(tp=kdTree)
-
+      IF(ALLOCATED(kdResult)) DEALLOCATE(kdResult)
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
 #endif
