@@ -3148,6 +3148,7 @@ C...  Create the search tree
 
 C...  allocate space for the search results from the tree
 C...  this space will be deallocated later in the subroutine
+      IF(ALLOCATED(KDRESULTS)) DEALLOCATE(KDRESULTS)
       ALLOCATE(KDRESULTS(SRCHDP))
 
       ! Making baroclinic terms zero initially
@@ -6335,6 +6336,8 @@ C
 
       Xsta = InputXCoordinate
       Ysta = InputYCoordinate
+      IF(ALLOCATED(KDRESULTS)) DEALLOCATE(KDRESULTS)
+      allocate(KDRESULTS(srchdp))
 
       call kdtree2_n_nearest(tp=tree,qv=(/Xsta,Ysta/),
      &                  nn=srchdp,results=KDRESULTS)
@@ -6407,6 +6410,8 @@ C...             the next element
             call ADCIRC_Terminate()
          ENDIF
       ENDIF
+       
+      IF(ALLOCATED(KDRESULTS)) DEALLOCATE(KDRESULTS)
 
  9892 FORMAT(///,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
      &     'INPUT ERROR  !!!!!!!!!',//
