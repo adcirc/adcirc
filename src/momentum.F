@@ -920,7 +920,7 @@ C
       USE WIND, ONLY: windLimiter 
       USE ADC_CONSTANTS, ONLY: Cs2, Ad, Bd, G
 !JLW: add subgrd additions
-      USE subgrid, ONLY: level0, level1
+      USE subgrid, ONLY: subgrid_level0 => level0, subgrid_level1 => level1
      &   , wetFracVertETA2, subgridVertList
      &   , gridDepthVertETA2
      &   , gridDepthVertETA1
@@ -1008,14 +1008,14 @@ Corbitt 120322: Localized Advection
          V1N3=VV1(NM3)
 
 !JLW: add subgrid lookup
-         IF(level0)THEN
+         IF(subgrid_level0)THEN
             H1N1 = gridDepthVertETA1(NM1)
             H1N2 = gridDepthVertETA1(NM2)
             H1N3 = gridDepthVertETA1(NM3)
             H2N1 = gridDepthVertETA2(NM1)
             H2N2 = gridDepthVertETA2(NM2)
             H2N3 = gridDepthVertETA2(NM3)
-            IF(level1)THEN
+            IF(subgrid_level1)THEN
                CADV1 = cadvVertETA2(NM1)
                CADV2 = cadvVertETA2(NM2)
                CADV3 = cadvVertETA2(NM3)
@@ -1138,7 +1138,7 @@ C...  Compute the advective term gradients for the element version 1
 
          IF (CME_New_C1) THEN
 !JLW: add correction to advection
-            IF(level1)THEN
+            IF(subgrid_level1)THEN
                DU1QX1DXA=(CADV1*U1N1*QX1N1*FDX1+CADV2*U1N2*QX1N2*FDX2
      &            +CADV3*U1N3*QX1N3*FDX3)*0.5d0
                DV1QX1DYA=(CADV1*V1N1*QX1N1*FDY1+CADV2*V1N2*QX1N2*FDY2
@@ -1441,7 +1441,7 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
             WSX=DTO2*IFWIND*(WSX1(I)+WSX2(I))
             WSY=DTO2*IFWIND*(WSY1(I)+WSY2(I))
 !JLW: add subgrid correction
-            IF(level0)THEN
+            IF(subgrid_level0)THEN
                WSX = WSX*wetFracVertETA2(I)
                WSY = WSY*wetFracVertETA2(I)
             ENDIF
@@ -1517,7 +1517,7 @@ c        ENDIF
 C...  Compute velocities
 
       DO I=1,NP
-         IF(level0)THEN
+         IF(subgrid_level0)THEN
             H2s = gridDepthVertETA2(I)
             IF(H2s.NE.0D0)THEN
               UU2(I)=QX2(I)/H2s
