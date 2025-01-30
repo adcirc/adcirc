@@ -22,10 +22,15 @@ module mod_momentum_bc_forcing
 
    implicit none
 
+   integer, parameter :: conservative = 0
+   integer, parameter :: non_conservative = 1
+   integer, parameter :: predictor_corrector = 2
+
    private
 
    public :: apply_velocity_boundary_conditions, apply_zero_normal_velocity_gradient, &
-             apply_subdomain_boundaries, UPDATE_U_PERSLNODES
+             apply_subdomain_boundaries, UPDATE_U_PERSLNODES, conservative, &
+             non_conservative, predictor_corrector
 
 contains
 
@@ -37,10 +42,10 @@ contains
    !> structure of: AUV11=AUV22; AUV12=-AUV21.
    !>
    !************************************************************************
-   subroutine apply_velocity_boundary_conditions(use_conservative, NODECODE, QN2, H2, &
+   subroutine apply_velocity_boundary_conditions(formulation, NODECODE, QN2, H2, &
                                                  TKM, TK, UU1, VV1, QX1, QY1, &
                                                  MOM_LV_X, MOM_LV_Y, &
-                                                 AUV)
+                                                 AUV, AUV11, AUV12)
 
       use mesh, only: NeiTab, NeiTabEle, NNeigh, FDXE, FDYE, SFMXEle, &
                       SFMYEle, SFacEle, MJU, TotalArea
@@ -52,7 +57,7 @@ contains
 
       implicit none
 
-      logical, intent(in) :: use_conservative
+      integer, intent(in) :: formulation
       integer, intent(in) :: NODECODE(:)
       real(8), intent(in) :: QN2(:)
       real(8), intent(in) :: H2(:)
@@ -65,26 +70,28 @@ contains
       real(8), intent(inout) :: MOM_LV_X(:)
       real(8), intent(inout) :: MOM_LV_Y(:)
       real(8), intent(inout) :: AUV(:, :)
+      real(8), intent(inout), optional :: AUV11(:), AUV12(:)
       integer :: J
 
       do J = 1, NVELME
          select case (LBCODEI(ME2GW(J)))
          case (0:9)
-            call essential_normal_flow_free_tangential_slip(use_conservative, J, ME2GW, NBV, NODECODE, QN2, &
+            call essential_normal_flow_free_tangential_slip(formulation, J, ME2GW, NBV, NODECODE, QN2, &
                                                             H2, TKM, TK, SIII, CSII, MOM_LV_X, &
-                                                            MOM_LV_Y, AUV)
+                                                            MOM_LV_Y, AUV, AUV11, AUV12)
          case (10:19)
-            call essential_normal_flow_no_tangential_slip(use_conservative, J, ME2GW, NBV, NODECODE, QN2, &
-                                                          H2, SIII, CSII, MOM_LV_X, MOM_LV_Y, AUV)
+            call essential_normal_flow_no_tangential_slip(formulation, J, ME2GW, NBV, NODECODE, QN2, &
+                                                          H2, SIII, CSII, MOM_LV_X, MOM_LV_Y, AUV, &
+                                                          AUV11, AUV12)
          case (41)
-            call zero_normal_velocity_gradient(use_conservative, J, IFSFM, ME2GW, NBV, NODECODE, NOFF, &
+            call zero_normal_velocity_gradient(formulation, J, IFSFM, ME2GW, NBV, NODECODE, NOFF, &
                                                NeiTab, NeiTabEle, NNeigh, SIII, CSII, UU1, VV1, QX1, QY1, &
                                                SFacEle, SFMXEle, SFMYEle, FDXE, FDYE, MOM_LV_X, &
-                                               MOM_LV_Y, AUV)
+                                               MOM_LV_Y, AUV, AUV11, AUV12)
          end select
       end do
 
-      if (.not. use_conservative .and. ILUMP /= 0) then
+      if (formulation == non_conservative .and. ILUMP /= 0) then
          call apply_vew1d_and_condensed_nodes(NFLUXIB64_GBL, NBOU, &
                                               NVELL, LBCODEI, NBV, IBCONN, ISSUBMERGED64, NODECODE, &
                                               NListCondensedNodes, NNodesListCondensedNodes, &
@@ -100,7 +107,7 @@ contains
    !> This subroutine modifies the momentum equations to impose an essential
    !> normal flow boundary condition with free tangential slip.
    !>
-   !> @param[in] use_conservative A flag to indicate whether the conservative or non-conservative formulation should be used.
+   !> @param[in] formulation A flag to indicate whether the conservative or non-conservative formulation should be used.
    !> @param[in] J The index of the boundary node.
    !> @param[in] ME2GW The mapping from the boundary node from momentum equations to gwce
    !> @param[in] NBV The mapping from the global node index to the boundary node index.
@@ -114,18 +121,20 @@ contains
    !> @param[in,out] MOM_LV_X The x-component of the momentum at the boundary node.
    !> @param[in,out] MOM_LV_Y The y-component of the momentum at the boundary node.
    !> @param[in,out] AUV
+   !> @param[in,out] AUV11 Predictor-corrector AUV values
+   !> @param[in,out] AUV12 Predictor-corrector AUV values
    !>
    !************************************************************************
-   subroutine essential_normal_flow_free_tangential_slip(use_conservative, J, ME2GW, NBV, NODECODE, &
+   subroutine essential_normal_flow_free_tangential_slip(formulation, J, ME2GW, NBV, NODECODE, &
                                                          QN2, H2, TKM, TK, SIII, CSII, MOM_LV_X, &
-                                                         MOM_LV_Y, AUV)
+                                                         MOM_LV_Y, AUV, AUV11, AUV12)
 
       implicit none
 
       real(8), parameter :: eps = epsilon(1.d0)
       real(8), parameter :: sqrt2 = sqrt(2.d0)
 
-      logical, intent(in) :: use_conservative
+      integer, intent(in) :: formulation
       integer, intent(in) :: J
       integer, intent(in) :: ME2GW(:)
       integer, intent(in) :: NBV(:)
@@ -139,6 +148,7 @@ contains
       real(8), intent(inout) :: MOM_LV_X(:)
       real(8), intent(inout) :: MOM_LV_Y(:)
       real(8), intent(inout) :: AUV(:, :)
+      real(8), intent(inout), optional :: AUV11(:), AUV12(:)
 
       integer :: I
       integer :: NBDI
@@ -149,14 +159,14 @@ contains
       NBDI = NBV(I)
       NCI = NODECODE(NBDI)
 
-      if (use_conservative) then
+      if (formulation == conservative) then
          MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI) - CSII(I)*MOM_LV_Y(NBDI))*NCI !Tangetial Eqn RHS
          MOM_LV_Y(NBDI) = -QN2(I)*NCI !Normal Eqn RHS
          AUV(1, NBDI) = AUV(1, NBDI)*SIII(I) - AUV(4, NBDI)*CSII(I)
          AUV(3, NBDI) = AUV(3, NBDI)*SIII(I) - AUV(2, NBDI)*CSII(I)
          AUV(4, NBDI) = CSII(I)
          AUV(2, NBDI) = SIII(I)
-      elseif (.not. use_conservative) then
+      elseif (formulation == non_conservative) then
          VelNorm = -QN2(I)/H2(NBDI)
          if (abs(adcirc_norm2(TKM(:, NBDI)) - sqrt2*TK(NBDI)) < eps) then
             ! WJP 03.6.2018 In the case of the symmetric matrix..
@@ -178,6 +188,12 @@ contains
             AUV(4, NBDI) = CSII(I)
             AUV(2, NBDI) = SIII(I)
          end if
+      elseif (formulation == predictor_corrector) then
+         VelNorm = -QN2(I)/H2(NBDI)
+         MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI) - CSII(I)*MOM_LV_Y(NBDI) - VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
+         MOM_LV_Y(NBDI) = VelNorm*AUV11(NBDI)*NCI !Normal Eqn RHS
+         AUV12(NBDI) = -CSII(I)*AUV11(NBDI)
+         AUV11(NBDI) = SIII(I)*AUV11(NBDI)
       end if
 
    end subroutine essential_normal_flow_free_tangential_slip
@@ -188,7 +204,7 @@ contains
    !> This subroutine modifies the momentum equations to impose an essential
    !> normal flow boundary condition with no tangential slip.
    !>
-   !> @param[in] use_conservative A flag to indicate whether the conservative or non-conservative formulation should be used.
+   !> @param[in] formulation A flag to indicate whether the conservative or non-conservative formulation should be used.
    !> @param[in] J The index of the boundary node.
    !> @param[in] NVEL The number of boundary nodes.
    !> @param[in] ME2GW The mapping from the boundary node from momentum equations to gwce
@@ -201,13 +217,16 @@ contains
    !> @param[in,out] MOM_LV_X The x-component of the momentum at the boundary node.
    !> @param[in,out] MOM_LV_Y The y-component of the momentum at the boundary node.
    !> @param[in,out] AUV
+   !> @param[in,out] AUV11 Predictor-corrector AUV values
+   !> @param[in,out] AUV12 Predictor-corrector AUV values
    !************************************************************************
-   subroutine essential_normal_flow_no_tangential_slip(use_conservative, J, ME2GW, NBV, NODECODE, &
-                                                       QN2, H2, SIII, CSII, MOM_LV_X, MOM_LV_Y, AUV)
+   subroutine essential_normal_flow_no_tangential_slip(formulation, J, ME2GW, NBV, NODECODE, &
+                                                       QN2, H2, SIII, CSII, MOM_LV_X, MOM_LV_Y, &
+                                                       AUV, AUV11, AUV12)
 
       implicit none
 
-      logical, intent(in) :: use_conservative
+      integer, intent(in) :: formulation
       integer, intent(in) :: J
       integer, intent(in) :: ME2GW(:)
       integer, intent(in) :: NBV(:)
@@ -219,6 +238,7 @@ contains
       real(8), intent(inout) :: MOM_LV_X(:)
       real(8), intent(inout) :: MOM_LV_Y(:)
       real(8), intent(inout) :: AUV(:, :)
+      real(8), intent(inout), optional :: AUV11(:), AUV12(:)
 
       integer :: I
       integer :: NBDI
@@ -232,17 +252,26 @@ contains
          MOM_LV_X(NBDI) = 0.d0
          MOM_LV_Y(NBDI) = 0.d0
       else
-         if (use_conservative) then
+         if (formulation == conservative) then
             MOM_LV_X(NBDI) = 0.0 !Tangential Eqn RHS
             MOM_LV_Y(NBDI) = -QN2(I)*NCI !Normal Eqn RHS
-         elseif (.not. use_conservative) then
+            AUV(1, NBDI) = SIII(I)
+            AUV(2, NBDI) = SIII(I)
+            AUV(3, NBDI) = -CSII(I)
+            AUV(4, NBDI) = CSII(I)
+         elseif (formulation == non_conservative) then
             MOM_LV_X(NBDI) = 0.0 !Tangential Eqn RHS
             MOM_LV_Y(NBDI) = -QN2(I)/H2(NBDI)*NCI !Normal Eqn RHS
+            AUV(1, NBDI) = SIII(I)
+            AUV(2, NBDI) = SIII(I)
+            AUV(3, NBDI) = -CSII(I)
+            AUV(4, NBDI) = CSII(I)
+         elseif (formulation == predictor_corrector) then
+            MOM_LV_X(NBDI) = 0.0 !Tangential Eqn RHS
+            MOM_LV_Y(NBDI) = -QN2(I)/H2(NBDI)*NCI !Normal Eqn RHS
+            AUV11(NBDI) = SIII(I)
+            AUV12(NBDI) = -CSII(I)
          end if
-         AUV(1, NBDI) = SIII(I)
-         AUV(2, NBDI) = SIII(I)
-         AUV(3, NBDI) = -CSII(I)
-         AUV(4, NBDI) = CSII(I)
       end if
 
    end subroutine essential_normal_flow_no_tangential_slip
@@ -253,7 +282,7 @@ contains
    !> the velocity at the boundary is computed entirely from surrounding
    !> velocities at the previous time step.
    !>
-   !> @param[in] use_conservative A flag to indicate whether the conservative or non-conservative formulation should be used.
+   !> @param[in] formulation A flag to indicate whether the conservative or non-conservative formulation should be used.
    !> @param[in] J The index of the boundary node.
    !> @param[in] IFSFM The flag to indicate whether to use the SFM or SFMx/SFMy.
    !> @param[in] ME2GW The mapping from the boundary node from momentum equations to gwce
@@ -272,15 +301,17 @@ contains
    !> @param[in,out] MOM_LV_X The x-component of the momentum at the boundary node.
    !> @param[in,out] MOM_LV_Y The y-component of the momentum at the boundary node.
    !> @param[in,out] AUV
+   !> @param[in,out] AUV11 Predictor-corrector AUV values
+   !> @param[in,out] AUV12 Predictor-corrector AUV values
    !************************************************************************
-   subroutine zero_normal_velocity_gradient(use_conservative, J, IFSFM, ME2GW, NBV, &
+   subroutine zero_normal_velocity_gradient(formulation, J, IFSFM, ME2GW, NBV, &
                                             NODECODE, NOFF, NeiTab, NeiTabEle, &
                                             NNeigh, SIII, CSII, UU1, VV1, QX1, QY1, SFacEle, &
                                             SFMXEle, SFMYEle, FDXE, FDYE, &
-                                            MOM_LV_X, MOM_LV_Y, AUV)
+                                            MOM_LV_X, MOM_LV_Y, AUV, AUV11, AUV12)
       implicit none
 
-      logical, intent(in) :: use_conservative
+      integer, intent(in) :: formulation
       integer, intent(in) :: J
       integer, intent(in) :: IFSFM
       integer, intent(in) :: ME2GW(:)
@@ -304,6 +335,7 @@ contains
       real(8), intent(inout) :: MOM_LV_X(:)
       real(8), intent(inout) :: MOM_LV_Y(:)
       real(8), intent(inout) :: AUV(:, :)
+      real(8), intent(inout), optional :: AUV11(:), AUV12(:)
 
       integer :: I
       integer :: NBDI
@@ -345,10 +377,10 @@ contains
             FDY2 = FDYE(2, NEle)*sfdyfac !c  FDY2=X(NM1)-X(NM3) !a2
             FDY3 = FDYE(3, NEle)*sfdyfac !c  FDY3=X(NM2)-X(NM1) !a3
 
-            if (use_conservative) then
+            if (formulation == conservative) then
                ZNGRHS1 = ZNGRHS1 - (CSII(I)*FDX2 + SIII(I)*FDY2)*QX1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*QX1(NM3)
                ZNGRHS2 = ZNGRHS2 - (CSII(I)*FDX2 + SIII(I)*FDY2)*QY1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*QY1(NM3)
-            else
+            elseif (formulation == non_conservative .or. formulation == predictor_corrector) then
                ZNGRHS1 = ZNGRHS1 - (CSII(I)*FDX2 + SIII(I)*FDY2)*UU1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*UU1(NM3)
                ZNGRHS2 = ZNGRHS2 - (CSII(I)*FDX2 + SIII(I)*FDY2)*VV1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*VV1(NM3)
             end if
@@ -376,10 +408,10 @@ contains
          FDY2 = FDYE(2, NEle)*sfdyfac
          FDY3 = FDYE(3, NEle)*sfdyfac
 
-         if (use_conservative) then
+         if (formulation == conservative) then
             ZNGRHS1 = ZNGRHS1 - (CSII(I)*FDX2 + SIII(I)*FDY2)*QX1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*QX1(NM3)
             ZNGRHS2 = ZNGRHS2 - (CSII(I)*FDX2 + SIII(I)*FDY2)*QY1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*QY1(NM3)
-         else
+         elseif (formulation == non_conservative .or. formulation == predictor_corrector) then
             ZNGRHS1 = ZNGRHS1 - (CSII(I)*FDX2 + SIII(I)*FDY2)*UU1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*UU1(NM3)
             ZNGRHS2 = ZNGRHS2 - (CSII(I)*FDX2 + SIII(I)*FDY2)*VV1(NM2) - (CSII(I)*FDX3 + SIII(I)*FDY3)*VV1(NM3)
          end if
@@ -394,10 +426,15 @@ contains
          MOM_LV_Y(NBDI) = ZNGRHS2/ZNGLHS
       end if
 
-      AUV(1, NBDI) = 1.d0
-      AUV(2, NBDI) = 1.d0
-      AUV(3, NBDI) = 0.d0
-      AUV(4, NBDI) = 0.d0
+      if (formulation == conservative .or. formulation == non_conservative) then
+         AUV(1, NBDI) = 1.d0
+         AUV(2, NBDI) = 1.d0
+         AUV(3, NBDI) = 0.d0
+         AUV(4, NBDI) = 0.d0
+      elseif (formulation == predictor_corrector) then
+         AUV11(NBDI) = 1.d0
+         AUV12(NBDI) = 0.d0
+      end if
 
    end subroutine zero_normal_velocity_gradient
 
@@ -738,7 +775,7 @@ contains
    !************************************************************************
    !> Apply zero normal velocity gradient boundary condition
    !>
-   !> @param[in] use_conservative Logical flag to indicate whether the conservative or nonconservative form of the boundary condition is to be applied
+   !> @param[in] formulation flag to indicate whether the conservative or nonconservative form of the boundary condition is to be applied
    !> @param[in] NFLUXGBC Integer flag to indicate whether the boundary condition is to be applied
    !> @param[in] NVEL Integer number of velocity components
    !> @param[in] NVELME Integer number of velocity components in the mixed element
@@ -757,7 +794,7 @@ contains
    !> @param[in,out] UU2 Real array of x-velocity values
    !> @param[in,out] VV2 Real array of y-velocity values
    !************************************************************************
-   subroutine apply_zero_normal_velocity_gradient(use_conservative, NODECODE, NOFF, &
+   subroutine apply_zero_normal_velocity_gradient(formulation, NODECODE, NOFF, &
                                                   QX2, QY2, UU2, VV2)
 
       use mesh, only: NM
@@ -766,7 +803,7 @@ contains
 
       implicit none
 
-      logical, intent(in) :: use_conservative
+      integer, intent(in) :: formulation
       integer, intent(in) :: NODECODE(:)
       integer, intent(in) :: NOFF(:)
       real(8), intent(inout) :: QX2(:)
@@ -789,7 +826,7 @@ contains
                NC2 = NODECODE(NM2)
                NC3 = NODECODE(NM3)
                NCEle = NC1*NC2*NC3*NOFF(NEleZNG(I))
-               if (use_conservative) then
+               if (formulation == conservative) then
                   QX2(NBDI) = NCEle*(QX2(NM1)*ZNGIF1(I) + QX2(NM2)*ZNGIF2(I) + QX2(NM3)*ZNGIF3(I))
                   QY2(NBDI) = NCEle*(QY2(NM1)*ZNGIF1(I) + QY2(NM2)*ZNGIF2(I) + QY2(NM3)*ZNGIF3(I))
                else

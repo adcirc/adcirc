@@ -198,7 +198,8 @@ C*******************************************************************************
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
       USE mod_momentum_bc_forcing, only: apply_velocity_boundary_conditions,
      &                                   apply_zero_normal_velocity_gradient,
-     &                                   UPDATE_U_PERSLNODES, apply_subdomain_boundaries
+     &                                   UPDATE_U_PERSLNODES, apply_subdomain_boundaries,
+     &                                   non_conservative
 C... SB
       USE VEW1D, ONLY :
      &     ROTATE_AT_CONDENSEDNODES_ALL,
@@ -835,7 +836,7 @@ C        WJP 02.24.2018 Get the lefthand side momentum
         AUV(4,I) = VCOEFYX*NCI
       END DO
 
-      call apply_velocity_boundary_conditions(.false., NODECODE, QN2, H2,
+      call apply_velocity_boundary_conditions(non_conservative, NODECODE, QN2, H2,
      &                                        TKM, TK, UU1, VV1, QX1, QY1,
      &                                        MOM_LV_X, MOM_LV_Y, AUV)
 
@@ -863,7 +864,7 @@ c        ENDIF
       call apply_subdomain_boundaries(subdomainOn, enforceBN)
       call SWITCH_ELTAB_PERBC( IDIREC = 2 )
       call UPDATE_U_PERSLNODES(NPERSEG, NNPERBC, IPERCONN, UU2, VV2)
-      call apply_zero_normal_velocity_gradient(.false., NODECODE, NOFF, QX2, QY2, UU2, VV2)
+      call apply_zero_normal_velocity_gradient(non_conservative, NODECODE, NOFF, QX2, QY2, UU2, VV2)
 
 C...  Compute fluxes
 
@@ -925,7 +926,8 @@ C
      &   , gridDepthVertETA1
      &   , cadvVertETA2
       use mod_momentum_bc_forcing, only: apply_velocity_boundary_conditions,
-     &                                    apply_zero_normal_velocity_gradient
+     &                                    apply_zero_normal_velocity_gradient,
+     &                                    conservative
        
       IMPLICIT NONE
 
@@ -1483,7 +1485,7 @@ C        WJP 02.24.2018 Get the lefthand side momentum
          AUV(4,I) = VCOEFYX*NCI
       ENDDO
 
-      call apply_velocity_boundary_conditions(.true., NODECODE, QN2, H2,
+      call apply_velocity_boundary_conditions(conservative, NODECODE, QN2, H2,
      &                                        TKM, TK, UU1, VV1, QX1, QY1,
      &                                        MOM_LV_X, MOM_LV_Y,
      &                                        AUV)
@@ -1510,7 +1512,7 @@ c           QY2(I)=0.D0    !on wet/dry interface nodes
 c        ENDIF
        END DO
 
-      call apply_zero_normal_velocity_gradient(.true., NODECODE, NOFF, QX2, QY2, UU2, VV2)
+      call apply_zero_normal_velocity_gradient(conservative, NODECODE, NOFF, QX2, QY2, UU2, VV2)
 
 C...  Compute velocities
 
@@ -1599,13 +1601,16 @@ C*******************************************************************************
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, UU0, VV0, QX0, QY0, TK2, CBaroclinic,
-     & windlim, H1, H2
+     & windlim, H1, H2, TK, TKM
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &                  NEITAB, NEITABELE, NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
      &   CSII, SIII, ME2GW, NBV, LBCODEI, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
-      USE WIND, ONLY: windLimiter 
+      USE WIND, ONLY: windLimiter
+      use mod_momentum_bc_forcing, only: predictor_corrector,
+     &                                   apply_velocity_boundary_conditions,
+     &                                   apply_zero_normal_velocity_gradient
 
       IMPLICIT NONE
 
@@ -2084,7 +2089,7 @@ C           AND AUV
          MOM_LV_Y(NM1)=MOM_LV_Y(NM1)+TEMP_LV_B(IE,1)
          MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B(IE,2)
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B(IE,3)
-         END DO
+      END DO
 #endif
 
 
@@ -2130,7 +2135,7 @@ ckmd
          IF(CBaroclinic) THEN
             VIDBCPDX=DT*VIDBCPDXOH(I)
             VIDBCPDY=DT*VIDBCPDYOH(I)
-            ENDIF
+         ENDIF
 
          MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
      &                                     +VCoef2*VV1(I)-VIDBCPDX)
@@ -2140,105 +2145,15 @@ ckmd
 ckmd    Change for the corrector formulation
          AUV11(I)=1.D0+VCoef12*NCI
          AUV12(I)=-VCoef2*NCI
-         END DO
+      END DO
 
 C...  Modify the momentum equations to impose velocity boundary
 C...  conditions In each case the equations are manipulated to
 C...  maintain the LHS matrix structure of AUV11=AUV22;
 C...  AUV12=-AUV21)
-
-      DO J=1,NVELME
-         I=ME2GW(J)
-         NBDI=NBV(I)
-         NCI=NODECODE(NBDI)
-
-C      Specified essential normal flow and free tangential slip
-
-         IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
-            VelNorm=-QN2(I)/H2(NBDI)
-            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
-     &                     -CSII(I)*MOM_LV_Y(NBDI)
-     &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
-            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
-            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
-            ENDIF
-
-C     Specified essential normal flow and no tangential slip
-
-         IF((LBCODEI(I).GE.10).AND.(LBCODEI(I).LE.19)) THEN
-            VelNorm=-QN2(I)/H2(NBDI)
-            VelTan=0.D0
-            MOM_LV_X(NBDI)=VelTan*NCI !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
-            AUV11(NBDI)=SIII(I)
-            AUV12(NBDI)=-CSII(I)
-            ENDIF
-
-C     Zero normal velocity gradient using a Galerkin approximation to
-C     the normal derivatives. Note: this is fully explicit and therefore
-C     the velocity at the boundary is computed entirely from surrounding
-C     velocities at the previous time step.
-
-         IF(LBCODEI(I).EQ.41) THEN
-            NM1=NBDI
-            ZNGRHS1=0.d0     !Zero Norm Grad of U Eqn
-            ZNGRHS2=0.d0     !Zero Norm Grad of V Eqn
-            ZNGLHS=0.d0
-            NM2=NeiTab(NBDI,2) !operate on 1st neighbor
-            NNFirst=NM2      !save these values until end
-            DO N=3,NNeigh(NBDI) !operate on rest of neighbors
-               NM3=NM2       !shift previously computed values
-               NM2=NEITAB(NBDI,N) !select new neighbor to work on
-               SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
-               NEle=NeiTabEle(NBDI,N-2) !element # defined by nodes NM1,NM2,NM3
-               NCEle=NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NEle)
-               IF((NEle.NE.0).AND.(NCEle.NE.0)) THEN !if element is active, compute contribution
-                  FDX1 = (Y(NM2)-Y(NM3))*SFacAvg !b1
-                  FDX2 = (Y(NM3)-Y(NM1))*SFacAvg !b2
-                  FDX3 = (Y(NM1)-Y(NM2))*SFacAvg !b3
-                  FDY1 = X(NM3)-X(NM2) !a1
-                  FDY2 = X(NM1)-X(NM3) !a2
-                  FDY3 = X(NM2)-X(NM1) !a3
-                  ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*UU1(NM2)
-     &                           -(CSII(I)*FDX3+SIII(I)*FDY3)*UU1(NM3)
-                  ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*VV1(NM2)
-     &                           -(CSII(I)*FDX3+SIII(I)*FDY3)*VV1(NM3)
-                  ZNGLHS =ZNGLHS  +  CSII(I)*FDX1+SIII(I)*FDY1
-                  ENDIF
-               END DO
-            NM3=NM2          !wrap back to beginning to get final contribution
-            NM2=NNFirst
-            SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
-            NEle=NeiTabEle(NBDI,NNeigh(NBDI)-1)
-            NCEle=NCI*NodeCode(NM2)*NodeCode(NM3)*NOFF(NELE)
-            IF((NEle.NE.0).AND.(NCEle.NE.0)) THEN
-               FDX1 = (Y(NM2)-Y(NM3))*SFacAvg !b1
-               FDX2 = (Y(NM3)-Y(NM1))*SFacAvg !b2
-               FDX3 = (Y(NM1)-Y(NM2))*SFacAvg !b3
-               FDY1 = X(NM3)-X(NM2) !a1
-               FDY2 = X(NM1)-X(NM3) !a2
-               FDY3 = X(NM2)-X(NM1) !a3
-               ZNGRHS1=ZNGRHS1-(CSII(I)*FDX2+SIII(I)*FDY2)*UU1(NM2)
-     &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*UU1(NM3)
-               ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*VV1(NM2)
-     &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*VV1(NM3)
-               ZNGLHS =ZNGLHS + CSII(I)*FDX1+SIII(I)*FDY1
-               ENDIF
-            IF(NCI.EQ.0) THEN
-               AUV11(NBDI)=1.d0
-               AUV12(NBDI)=0.d0
-               MOM_LV_X(NBDI)=0.d0
-               MOM_LV_Y(NBDI)=0.d0
-               ELSE
-               AUV11(NBDI)=1.d0
-               AUV12(NBDI)=0.d0
-               MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
-               MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
-               ENDIF
-            ENDIF
-
-         ENDDO
+      call apply_velocity_boundary_conditions(predictor_corrector, NODECODE, QN2, H2,
+     &                                        TKM, TK, UU1, VV1, QX1, QY1,
+     &                                        MOM_LV_X, MOM_LV_Y, AUV, AUV11, AUV12)
 
 C...
 C...  SOLVE FOR VELOCITY AT NEW LEVEL  (s+1)
@@ -2261,43 +2176,16 @@ c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           UBAR2(I)=0.D0    !no slip and normal flux
 c           VBAR2(I)=0.D0    !on wet/dry interface nodes
 c           ENDIF
-         END DO
+      END DO
 
-C...
-C...  Impose a zero normal velocity gradient based on interpolating the
-C...  velocity at a fictitious point in the interior of the domain,
-C...  normal to a specified boundary node and setting the boundary
-C...  velocity equal to the interpolated value at the fictitious point.
-C...  Provided the fictitious point does not lie in an element that
-C...  contains a boundary point, this is an entirely implicit
-C...  calculation.
-C...
-      IF(NFLUXGBC.EQ.1) THEN
-         DO J=1,NVELME
-            I=ME2GW(J)
-            NBDI=NBV(I)
-            IF(LBCODEI(I).EQ.40) THEN
-               NM1=NM(NEleZNG(I),1)
-               NM2=NM(NEleZNG(I),2)
-               NM3=NM(NEleZNG(I),3)
-               NC1=NODECODE(NM1)
-               NC2=NODECODE(NM2)
-               NC3=NODECODE(NM3)
-               NCEle=NC1*NC2*NC3*NOFF(NEleZNG(I))
-               UU2(NBDI)=NCEle*(UU2(NM1)*ZNGIF1(I)+UU2(NM2)*ZNGIF2(I)
-     &                                            +UU2(NM3)*ZNGIF3(I))
-               VV2(NBDI)=NCEle*(VV2(NM1)*ZNGIF1(I)+VV2(NM2)*ZNGIF2(I)
-     &                                            +VV2(NM3)*ZNGIF3(I))
-               ENDIF
-            ENDDO
-         ENDIF
+      call apply_zero_normal_velocity_gradient(predictor_corrector, NODECODE, NOFF,
+     &                                         QX2, QY2, UU2, VV2)
 
 C...  Compute fluxes
-
       DO I=1,NP
          QX2(I)=UU2(I)*H2(I)
          QY2(I)=VV2(I)*H2(I)
-         ENDDO
+      ENDDO
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
