@@ -890,32 +890,29 @@ contains
    !> Update the U and V values at the nodes on the periodic sponge layer
    !> boundary
    !>
-   !> @param[in] NPERSEG Number of periodic segments
    !> @param[in] NNPERBC Number of nodes on the periodic boundary
    !> @param[in] IPERCONN Integer array of periodic node connections
    !> @param[in,out] UU2 Real array of x-velocity values
    !> @param[in,out] VV2 Real array of y-velocity values
    !************************************************************************
-   subroutine UPDATE_U_PERSLNODES(NPERSEG, NNPERBC, IPERCONN, UU2, VV2)
+   subroutine UPDATE_U_PERSLNODES(NNPERBC, IPERCONN, UU2, VV2)
       implicit none
 
-      integer, intent(in) :: NPERSEG, NNPERBC
-      integer, intent(in) :: IPERCONN(NNPERBC, 2)
+      integer, intent(in) :: NNPERBC
+      integer, intent(in) :: IPERCONN(:, :)
       real(8), intent(inout) :: UU2(:)
       real(8), intent(inout) :: VV2(:)
 
       integer :: I, I1, I2
 
-      if (NPERSEG > 0) then
-         ! Update values of secondary node !
-         do I = 1, NNPERBC
-            I1 = IPERCONN(I, 1)
-            I2 = IPERCONN(I, 2)
+      ! Update values of secondary node !
+      do I = 1, NNPERBC
+         I1 = IPERCONN(I, 1)
+         I2 = IPERCONN(I, 2)
 
-            UU2(I2) = UU2(I1)
-            VV2(I2) = VV2(I1)
-         end do
-      end if
+         UU2(I2) = UU2(I1)
+         VV2(I2) = VV2(I1)
+      end do
    end subroutine UPDATE_U_PERSLNODES
 
 end module mod_momentum_bc_forcing

@@ -113,6 +113,12 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
       ! in the metControl namelist. 
       logical :: invertedBarometerOnElevationBoundary = .false.
 
+      private
+
+      public :: initGwce, solveGwce, a00, b00, c00, convcr, isldia, itmax,
+     &          invertedBarometerOnElevationBoundary, etime1, etime2, etiminc,
+     &          numitr
+
       contains
 
 !----------------------------------------------------------------------
