@@ -18,7 +18,7 @@ version: 2.1
 # #############################
 default_env: &default_env
     docker:
-      - image: zcobell/adcirc-ci-container:latest
+      - image: zcobell/adcirc-ci-container:v56
     environment:
       BASH_ENV: /etc/environment
 
@@ -70,11 +70,11 @@ jobs:
       steps:
         - run:
            name: Retrieve Test Suite
-           command: git clone --depth=1 -b main https://github.com/adcirc/adcirc-cg-testsuite.git /root/adcirc-cg-testsuite
+           command: aws s3 cp s3://adcirc-testsuite/v56/adcirc_testsuite.tar.gz /root/adcirc_testsuite.tar.gz
         - save_cache:
             key: adcirc-test-suite-data-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
             paths:
-                - /root/adcirc-cg-testsuite
+                - /root/adcirc_testsuite.tar.gz
 
   build_cmake_without_netcdf_gcc:
       <<: *default_env_gcc
@@ -152,6 +152,9 @@ jobs:
             name: Restore base build cache
             keys:
             - adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+        - run:
+            name: Unpack Tests
+            command: mkdir /root/adcirc-cg-testsuite && cd /root/adcirc-cg-testsuite && tar -xvzf /root/adcirc_testsuite.tar.gz 
         - run: 
             name: <<parameters.test_name>>
             command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build <<parameters.test_name>>
@@ -186,6 +189,9 @@ jobs:
             name: Restore netcdf build cache
             keys:
             - adcirc-netcdf-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+        - run:
+            name: Unpack Tests
+            command: mkdir /root/adcirc-cg-testsuite && cd /root/adcirc-cg-testsuite && tar -xvzf /root/adcirc_testsuite.tar.gz 
         - run: 
             name: <<parameters.test_name>>
             command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build <<parameters.test_name>>
@@ -220,6 +226,9 @@ jobs:
             name: Restore grib2 build cache
             keys:
             - adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+        - run:
+            name: Unpack Tests
+            command: mkdir /root/adcirc-cg-testsuite && cd /root/adcirc-cg-testsuite && tar -xvzf /root/adcirc_testsuite.tar.gz 
         - run: 
             name: <<parameters.test_name>>
             command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build <<parameters.test_name>>
