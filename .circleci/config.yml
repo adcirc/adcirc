@@ -26,7 +26,7 @@ default_env_gcc: &default_env_gcc
     docker:
       - image: zcobell/adcirc-ci-container:latest-gcc
     environment:
-      BASH_ENV: /opt/spack-environment/activate.sh
+      BASH_ENV: /etc/environment
 
 # #######################################
 # Jobs that will be run in the workflow
@@ -63,18 +63,18 @@ jobs:
             command: cd work ; cp ../thirdparty/swan/macros.inc.gfortran ../thirdparty/swan/macros.inc
         - run: 
             name: Build ADCIRC with netCDF and XDMF using legacy makefile
-            command: cd work ; make compiler=circleci NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=$NETCDF_FORTRAN_HOME HDF5HOME=$HDF5HOME NETCDF_C_HOME=$NETCDFHOME XDMF=enable XDMFHOME=/opt/xdmf adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan 
+            command: cd work ; make compiler=circleci NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=$NETCDF_FORTRAN_HOME HDF5HOME=$HDF5HOME NETCDF_C_HOME=$NETCDFHOME XDMF=enable XDMFHOME=$XDMFHOME adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
 
   test_suite_data:
       <<: *default_env
       steps:
         - run:
            name: Retrieve Test Suite
-           command: aws s3 cp s3://adcirc-testsuite/v56/adcirc_testsuite.tar.gz /root/adcirc_testsuite.tar.gz
+           command: aws s3 cp s3://adcirc-testsuite/v56/adcirc_testsuite.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
         - save_cache:
             key: adcirc-test-suite-data-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
             paths:
-                - /root/adcirc_testsuite.tar.gz
+                - /home/adcirc/adcirc_testsuite.tar.gz
 
   build_cmake_without_netcdf_gcc:
       <<: *default_env_gcc
@@ -102,7 +102,7 @@ jobs:
         - save_cache:
             key: adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
             paths: 
-                - /root/project
+                - /home/adcirc/project
 
   build_cmake_with_netcdf:
       <<: *default_env
@@ -114,7 +114,7 @@ jobs:
         - save_cache:
             key: adcirc-netcdf-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
             paths: 
-                - /root/project
+                - /home/adcirc/project
 
   build_cmake_with_netcdf_and_xdmf:
       <<: *default_env
@@ -134,7 +134,7 @@ jobs:
         - save_cache:
             key: adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
             paths: 
-                - /root/project
+                - /home/adcirc/project
 
   test_base:
       <<: *default_env
@@ -154,22 +154,22 @@ jobs:
             - adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
         - run:
             name: Unpack Tests
-            command: mkdir /root/adcirc-cg-testsuite && cd /root/adcirc-cg-testsuite && tar -xvzf /root/adcirc_testsuite.tar.gz 
+            command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz 
         - run: 
             name: <<parameters.test_name>>
-            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build <<parameters.test_name>>
+            command: cd /home/adcirc/adcirc-cg-testsuite ; ./RunSingleTest.sh /home/adcirc/project/build <<parameters.test_name>>
             no_output_timeout: 7200
         - run:
             name: Store log artifacts
             command: |
               mkdir -p /tmp/artifacts
-              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+              find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
             when: always
         - run:
             name: Store graphics artifacts
             command: |
               mkdir -p /tmp/artifacts
-              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+              find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
             when: always
         - store_artifacts: 
             path: /tmp/artifacts
@@ -191,22 +191,22 @@ jobs:
             - adcirc-netcdf-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
         - run:
             name: Unpack Tests
-            command: mkdir /root/adcirc-cg-testsuite && cd /root/adcirc-cg-testsuite && tar -xvzf /root/adcirc_testsuite.tar.gz 
+            command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz 
         - run: 
             name: <<parameters.test_name>>
-            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build <<parameters.test_name>>
+            command: cd /home/adcirc/adcirc-cg-testsuite ; ./RunSingleTest.sh /home/adcirc/project/build <<parameters.test_name>>
             no_output_timeout: 7200
         - run:
             name: Store log artifacts
             command: |
               mkdir -p /tmp/artifacts
-              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+              find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
             when: always
         - run:
             name: Store graphics artifacts
             command: |
               mkdir -p /tmp/artifacts
-              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+              find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
             when: always
         - store_artifacts: 
            path: /tmp/artifacts
@@ -228,22 +228,22 @@ jobs:
             - adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
         - run:
             name: Unpack Tests
-            command: mkdir /root/adcirc-cg-testsuite && cd /root/adcirc-cg-testsuite && tar -xvzf /root/adcirc_testsuite.tar.gz 
+            command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz 
         - run: 
             name: <<parameters.test_name>>
-            command: cd /root/adcirc-cg-testsuite ; ./RunSingleTest.sh /root/project/build <<parameters.test_name>>
+            command: cd /home/adcirc/adcirc-cg-testsuite ; ./RunSingleTest.sh /home/adcirc/project/build <<parameters.test_name>>
             no_output_timeout: 7200
         - run:
             name: Store log artifacts
             command: |
               mkdir -p /tmp/artifacts
-              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+              find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
             when: always
         - run:
             name: Store graphics artifacts
             command: |
               mkdir -p /tmp/artifacts
-              find /root/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+              find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
             when: always
         - store_artifacts: 
            path: /tmp/artifacts
