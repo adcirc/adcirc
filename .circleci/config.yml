@@ -20,13 +20,13 @@ default_env: &default_env
     docker:
       - image: zcobell/adcirc-ci-container:v56
     environment:
-      BASH_ENV: /etc/environment
+      BASH_ENV: /opt/spack-environment/activate.sh
 
 default_env_gcc: &default_env_gcc
     docker:
       - image: zcobell/adcirc-ci-container:latest-gcc
     environment:
-      BASH_ENV: /etc/environment
+      BASH_ENV: /opt/spack-environment/activate.sh
 
 # #######################################
 # Jobs that will be run in the workflow
