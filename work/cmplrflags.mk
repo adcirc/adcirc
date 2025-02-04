@@ -834,8 +834,8 @@ endif
 #
 # Compiler Flags for CircleCI Build Server
 ifeq ($(compiler),circleci)
-  PPFC		:=  ifort
-  FC		:=  ifort
+  PPFC		:=  ifx
+  FC		:=  ifx
   PFC		:=  mpif90
   FFLAGS1	:=  $(INCDIRS) -O0 -132
   FFLAGS2	:=  $(FFLAGS1)
