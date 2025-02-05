@@ -853,6 +853,9 @@ ifeq ($(compiler),circleci)
   ifeq ($(NETCDF),enable)
      FLIBS          := $(FLIBS) -L${NETCDF_C_HOME}/lib -lnetcdff
   endif
+  ifeq ($(XDMF),enable)
+	 FLIBS          := $(FLIBS) -L${XDMFHOME}/lib64
+  endif
   $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
      FOUND := TRUE
