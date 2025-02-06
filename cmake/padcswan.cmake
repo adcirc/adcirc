@@ -98,7 +98,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
 
   set(PADCSWAN1_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
@@ -176,8 +176,8 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   add_library(templib_padcswan1 STATIC ${PADCSWAN1_SOURCES})
   add_executable(padcswan ${PADCSWAN_SOURCES})
 
-  addcompilerflags(templib_padcswan1)
-  addcompilerflags(padcswan)
+  addcompilerflags(templib_padcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
+  addcompilerflags(padcswan ${ADDITIONAL_FLAGS_ADCIRC})
   addcompilerflagsswan(templib_swan1parallel ${ADDITIONAL_FLAGS_SWAN})
   addcompilerflagsswan(templib_swan2parallel ${ADDITIONAL_FLAGS_SWAN})
 
@@ -191,6 +191,8 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
 
   addnetcdflibraries(padcswan)
   addgrib2libraries(templib_padcswan1)
+  addkdtree2definitions(padcswan)
+  addkdtree2library(padcswan)
   adddatetimelibraries(padcswan)
   addxdmflibraries(padcswan)
   addversionlibrary(padcswan)

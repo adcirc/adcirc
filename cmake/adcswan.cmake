@@ -98,7 +98,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
 
   set(ADCSWAN1_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
@@ -177,8 +177,9 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   addcompilerflagsswan(templib_swan2serial ${ADDITIONAL_FLAGS_SWAN})
   addcompilerflags(templib_adcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
   addcompilerflags(adcswan ${ADDITIONAL_FLAGS_ADCIRC})
-
   addnetcdflibraries(adcswan)
+  addkdtree2definitions(adcswan)
+  addkdtree2library(adcswan)
   addgrib2libraries(templib_adcswan1)
   adddatetimelibraries(adcswan)
   addxdmflibraries(adcswan)

@@ -125,6 +125,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.cmake)
 # ...Build the mkdir library
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/mkdir.cmake)
 
+# ...Build the kdtree2 library
+include(${CMAKE_SOURCE_DIR}/cmake/kdtree2.cmake)
+
 # ...Build ADCIRC
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adcirc.cmake)
 

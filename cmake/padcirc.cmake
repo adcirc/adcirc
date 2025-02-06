@@ -17,8 +17,7 @@ if(BUILD_PADCIRC)
 
   set(PADCIRC_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
@@ -82,7 +81,9 @@ if(BUILD_PADCIRC)
 
   add_executable(padcirc ${PADCIRC_SOURCES})
 
-  addcompilerflags(padcirc)
+  addcompilerflags(padcirc ${ADDITIONAL_FLAGS_ADCIRC})
+  addkdtree2definitions(padcirc)
+  addkdtree2library(padcirc)
   addnetcdflibraries(padcirc)
   addgrib2libraries(padcirc)
   adddatetimelibraries(padcirc)

@@ -17,8 +17,7 @@ if(BUILD_ADCPREP)
 
   set(ADCPREP_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F
@@ -70,6 +69,8 @@ if(BUILD_ADCPREP)
 
   addcompilerflags(adcprep ${ADDITIONAL_FLAGS_ADCPREP})
   addlibmetis(adcprep)
+  addkdtree2definitions(adcprep)
+  addkdtree2library(adcprep)
   addnetcdflibraries(adcprep)
   addgrib2libraries(adcprep)
   addxdmflibraries(adcprep)
@@ -79,7 +80,7 @@ if(BUILD_ADCPREP)
 
   if(BUILD_PADCSWAN OR BUILD_PUNSWAN)
     target_compile_definitions(adcprep PRIVATE ${PREP_SWAN_FLAG})
-  endif(BUILD_PADCSWAN OR BUILD_PUNSWAN)
+  endif()
 
   target_include_directories(adcprep PRIVATE prep)
 

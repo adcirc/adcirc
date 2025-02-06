@@ -46,8 +46,17 @@ endif(MPI_FOUND)
 
 option(BUILD_ASWIP "Build ASWIP (ASymmetric Wind Input Preprocessor)")
 option(BUILD_UTILITIES "Build the ADCIRC utility programs" OFF)
+mark_as_advanced(BUILD_UTILITIES)
+
+# Options for GRIB2 and DATETIME. Note that if GRIB2 is selected, DATETIME is automatically selected.
 option(ENABLE_GRIB2 "Use GRIB2API static libraries." OFF)
-option(ENABLE_DATETIME "Use DATETIME static libraries." OFF)
+if(ENABLE_GRIB2)
+  set(ENABLE_DATETIME
+      ON
+      CACHE BOOL "Use DATETIME static libraries." FORCE)
+endif()
+option(ENABLE_DATETIME "Use DATETIME static libraries." ${ENABLE_DATETIME})
+
 # ######################################################################################################################
 
 # ######################################################################################################################
@@ -124,6 +133,12 @@ set(ADDITIONAL_FLAGS_ASWIP
 set(ADDITIONAL_FLAGS_UTLIITIES
     ""
     CACHE STRING "Additional flags for utility programs")
+mark_as_advanced(
+  ADDITIONAL_FLAGS_ADCIRC
+  ADDITIONAL_FLAGS_SWAN
+  ADDITIONAL_FLAGS_ADCPREP
+  ADDITIONAL_FLAGS_ASWIP
+  ADDITIONAL_FLAGS_UTLIITIES)
 # ######################################################################################################################
 
 # ######################################################################################################################
@@ -135,6 +150,7 @@ if(ENABLE_WARN_ELEV_DEBUG)
       "The compile time enabled fort.69 file is deprecated and the user should use the &warnElevControl namelist instead. This option will be removed in a future release."
   )
 endif()
+mark_as_advanced(ENABLE_WARN_ELEV_DEBUG)
 
 option(IBM "Format code for IBM based architectures" OFF)
 option(SGI "Format code for SGI based architectures" OFF)
@@ -177,6 +193,10 @@ option(DEBUG_ADCIRC_TRACE "Write the tracing debug information for the main ADCI
 option(DEBUG_HOLLAND "Write the debugging information for the symmetric Holland model" OFF)
 option(DEBUG_NWS14 "Write the debugging information for NWS=14 interpolation" OFF)
 mark_as_advanced(
+  DEBUG_FLUSH_MESSAGES
+  DEBUG_FULL_STACK
+  DEBUG_LOG_LEVEL
+  DEBUG_ALL_TRACE
   DEBUG_GLOBALIO_TRACE
   DEBUG_WRITER_TRACE
   DEBUG_WRITE_OUTPUT_TRACE

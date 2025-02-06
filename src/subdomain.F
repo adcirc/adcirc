@@ -827,7 +827,12 @@ C     | to recalculate COEF of outer-inner boundary nodes
 #ifdef CMPI
          Use MESSENGER         
 #endif
+         implicit none
+
          integer :: i
+         integer :: ncchange
+
+         ncchange = 0
 
          if (bchange.eq.1) then
              ncchange = 1

@@ -14,8 +14,8 @@
 #
 # ######################################################################################################################
 macro(addCompilerFlags TARGET)
-
-  set(LOCAL_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG}")
+  set(ADDITIONAL_FLAGS ${ARGN})
+  set(LOCAL_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${ADDITIONAL_FLAGS}")
   set(LOCAL_COMPILER_DEFINITIONS "${ADCIRC_OPTION_FLAGS} ${PRECISION_FLAG} ${MACHINE_FLAG}")
 
   string(STRIP ${LOCAL_COMPILER_FLAGS} LOCAL_COMPILER_FLAGS)
@@ -39,8 +39,8 @@ macro(addCompilerFlags TARGET)
 endmacro(addCompilerFlags)
 
 macro(addCompilerFlagsSwan TARGET)
-
-  set(LOCAL_COMPILER_FLAGS "${Fortran_COMPILER_SPECIFIC_FLAG}")
+  set(ADDITIONAL_FLAGS ${ARGN})
+  set(LOCAL_COMPILER_FLAGS "${Fortran_COMPILER_SPECIFIC_FLAG} ${ADDITIONAL_FLAGS}")
 
   # SWAN is not under our control, so to get a warning-free build, we need to suppress warning generated in their code
   if(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
@@ -138,6 +138,15 @@ macro(addXDMFLibraries TARGET)
       ${XDMF_LibXdmf}
       ${XDMF_AdditionalLibs})
   endif()
+endmacro()
+
+macro(addKdtree2Definitions TARGET)
+  target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/kdtree)
+  add_dependencies(${TARGET} kdtree)
+endmacro()
+
+macro(addKdtree2Library TARGET)
+  target_link_libraries(${TARGET} kdtree)
 endmacro()
 
 macro(addVersionDefinitions TARGET)

@@ -98,8 +98,7 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
 
   set(MSGLIB_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
@@ -113,12 +112,15 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
   # ...SWAN Configuration
   swanconfigureparallel()
 
-  addcompilerflags(templib_punmsglib)
+  addcompilerflags(templib_punmsglib ${ADDITIONAL_FLAGS_ADCIRC})
   addcompilerflagsswan(templib_punswan1 ${ADDITIONAL_FLAGS_SWAN})
   addcompilerflagsswan(punswan ${ADDITIONAL_FLAGS_SWAN})
   addmpi(templib_punmsglib)
   addmpi(templib_punswan1)
   addmpi(punswan)
+  addkdtree2definitions(templib_punmsglib)
+  addkdtree2definitions(punswan)
+  addkdtree2library(punswan)
 
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
                                       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source)

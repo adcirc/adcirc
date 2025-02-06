@@ -15,8 +15,7 @@
 # ######################################################################################################################
 set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
@@ -82,11 +81,20 @@ if(BUILD_LIBADCIRC_STATIC)
 
   add_library(libadcirc_static STATIC ${LIBADC_SOURCES})
   install(TARGETS libadcirc_static ARCHIVE DESTINATION lib)
-  add_dependencies(libadcirc_static version mkdir)
+
   target_link_libraries(libadcirc_static version mkdir)
   set_target_properties(libadcirc_static PROPERTIES OUTPUT_NAME "adcirc")
-  addcompilerflags(libadcirc_static)
+  addcompilerflags(libadcirc_static ${ADDITIONAL_FLAGS_ADCIRC})
+
   addmpi(libadcirc_static)
+  addkdtree2definitions(libadcirc_static)
+  addkdtree2library(libadcirc_static)
+  addnetcdflibraries(libadcirc_static)
+  addgrib2libraries(libadcirc_static)
+  addxdmflibraries(libadcirc_static)
+  adddatetimelibraries(libadcirc_static)
+  addversionlibrary(libadcirc_static)
+
   set_target_properties(libadcirc_static PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
   install(
@@ -104,9 +112,10 @@ if(BUILD_LIBADCIRC_SHARED)
   add_library(mkdir2 STATIC ${LIBMKDIR2_SOURCES})
   add_library(libadcirc_shared SHARED ${LIBADC_SHARED_SOURCES})
 
-  addcompilerflags(libadcirc_shared)
+  addcompilerflags(libadcirc_shared ${ADDITIONAL_FLAGS_ADCIRC})
   addmpi(libadcirc_shared)
-
+  addkdtree2definitions(libadcirc_shared)
+  addkdtree2library(libadcirc_shared)
   addnetcdflibraries(libadcirc_shared)
   addgrib2libraries(libadcirc_shared)
   addxdmflibraries(libadcirc_shared)

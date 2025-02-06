@@ -219,6 +219,8 @@
       USE SIZES, ONLY: MYPROC
       USE MESH, ONLY: NP
 
+      IMPLICIT NONE
+
       REAL(8),INTENT(IN) :: TimeLoc
       REAL(8),INTENT(INOUT),ALLOCATABLE :: W(:,:)
 
@@ -247,6 +249,7 @@
       INTEGER :: Month
       INTEGER :: Second
       INTEGER :: Year
+      INTEGER :: IG 
 
       call setMessageSource("nws13init")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
