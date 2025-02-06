@@ -39,14 +39,19 @@ if(BUILD_UTILITIES)
   addnetcdflibraries(hstime)
   addnetcdflibraries(adcircResultsComparison)
 
-  # Some of these utilities are very old and no longer updated. We will
-  # pass some compiler flags to suppress warnings. If this happened in the
-  # main code, we would fix the code instead of suppressing the warning.
+  # Some of these utilities are very old and no longer updated. We will pass some compiler flags to suppress warnings.
+  # If this happened in the main code, we would fix the code instead of suppressing the warning.
   if(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
     # Disable warnings for deleted features
     target_compile_options(p15 PRIVATE -std=legacy ${ADDITIONAL_FLAGS_UTILITIES})
   else()
-    set_target_properties(p15 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
+    if(DEFINED ADDITIONAL_FLAGS_UTILITIES
+       AND NOT
+           "${ADDITIONAL_FLAGS_UTILITIES}"
+           STREQUAL
+           "")
+      set_target_properties(p15 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
+    endif()
   endif()
 
   # Add flags set as ADDITIONAL_FLAGS_ADCIRC
