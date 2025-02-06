@@ -1,6 +1,25 @@
+!-------------------------------------------------------------------------------!
+!
+! ADCIRC - The ADvanced CIRCulation model
+! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+!
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU Lesser General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU Lesser General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!
+!-------------------------------------------------------------------------------!
 module mod_logging
 
-   ! jgf49.44: Log levels, in order from largest amount of log messages
+   ! Log levels, in order from largest amount of log messages
    ! written (DEBUG) to fewest log messages written (ERROR). Compared
    ! to the value of NABOUT when determining which messages to write
    ! to the screen or to log files.
@@ -9,9 +28,9 @@ module mod_logging
    integer, parameter :: INFO = 1 ! don't echo input; write all non-debug
    integer, parameter :: WARNING = 2 ! don't echo input; write only warn/err
    integer, parameter :: ERROR = 3 ! don't echo input; only fatal msgs
-
    character(len=10), dimension(5), parameter :: logLevelNames = &
                                                  (/"DEBUG  ", "ECHO   ", "INFO   ", "WARNING", "ERROR  "/)
+
    character(len=50), dimension(50) :: messageSources ! subroutine names
    character(len=1024) :: scratchMessage ! used for formatted messages
    character(len=1024) :: scratchFormat ! used for Fortran format strings
@@ -30,17 +49,19 @@ module mod_logging
 contains
 
    !--------------------------------------------------------------------
-   !     S U B R O U T I N E    I N I T   L O G G I N G
+   ! S U B R O U T I N E    I N I T   L O G G I N G
    !--------------------------------------------------------------------
-   !     jgf49.44: Initialize the names for the logging levels and the counter
-   !     for the current subroutine.
+   !> Initialize the names for the logging levels and the counter
+   !> for the current subroutine.
+   !>
+   !> @param in_nscreen The value of NSCREEN from the fort.15 file.
+   !> @param in_nabout The value of NABOUT from the fort.15 file.
    !--------------------------------------------------------------------
    subroutine initLogging(in_nscreen, in_nabout)
       implicit none
+
       integer, intent(in) :: in_nscreen, in_nabout
-      !...
-      !...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
-      !...
+
       nscreen = in_nscreen
       nabout = in_nabout
       sourceNumber = 0
@@ -48,13 +69,15 @@ contains
    !--------------------------------------------------------------------
 
    !--------------------------------------------------------------------
-   !     S U B R O U T I N E    O P E N   L O G   F I L E
+   ! S U B R O U T I N E    O P E N   L O G   F I L E
    !--------------------------------------------------------------------
-   !     jgf50.65: Open the log file; this must be called after make dirname
-   !     so that we know where to put this log file.
+   !> Open the log file; this must be called after make dirname
+   !> so that we know where to put this log file.
    !--------------------------------------------------------------------
    subroutine openLogFile()
+
       use sizes, only: localDir
+
       implicit none
       !...
       !...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
@@ -74,29 +97,34 @@ contains
    !--------------------------------------------------------------------
 
    !--------------------------------------------------------------------
-   !     S U B R O U T I N E    S C R E E N
+   ! S U B R O U T I N E    S C R E E N
    !--------------------------------------------------------------------
-   !     jgf49.44: General purpose subroutine to write a message to
-   !     the screen with a certain "logging level", and subject to the
-   !     user's selection of where to write screen output. The logging
-   !     level is controlled by NABOUT from the fort.15 file. The actual
-   !     destination of messages written to the screen is controlled by
-   !     NSCREEN from the fort.15 file.
-   !
-   !     In parallel, only the processor with rank 0 actually writes
-   !     the message.
-   !     This subroutine assumes that the global variable "caller" has
-   !     been set to the name of the subroutine calling it. Therefore,
-   !     the setMessageSource subroutine must be called at the beginning
-   !     of the subroutine that calls this one, and unsetMessageSource
-   !     must be called at the end.
+   !> General purpose subroutine to write a message to
+   !> the screen with a certain "logging level", and subject to the
+   !> user's selection of where to write screen output. The logging
+   !> level is controlled by NABOUT from the fort.15 file. The actual
+   !> destination of messages written to the screen is controlled by
+   !> NSCREEN from the fort.15 file.
+   !>
+   !> In parallel, only the processor with rank 0 actually writes
+   !> the message.
+   !> This subroutine assumes that the global variable "caller" has
+   !> been set to the name of the subroutine calling it. Therefore,
+   !> the setMessageSource subroutine must be called at the beginning
+   !> of the subroutine that calls this one, and unsetMessageSource
+   !> must be called at the end.
+   !>
+   !> @param level The logging level of the message.
+   !> @param message The message to write to the screen.
    !--------------------------------------------------------------------
    subroutine screenMessage(level, message)
       use SIZES, only: myProc
+
       implicit none
+
       integer, intent(in) :: level
       character(*), intent(in) :: message
-      integer j ! loop counter for stack
+      integer :: j ! loop counter for stack
 
       if (myProc == 0) then
          if (NSCREEN /= 0) then
@@ -124,23 +152,27 @@ contains
    !--------------------------------------------------------------------
 
    !--------------------------------------------------------------------
-   !     S U B R O U T I N E    L O G   M E S S A G E
+   ! S U B R O U T I N E    L O G   M E S S A G E
    !--------------------------------------------------------------------
-   !     jgf49.44: General purpose subroutine to write a message to
-   !     the fort.16 file. In parallel, processors of all ranks will
-   !     write the message to their own subdomain fort.16 files.
-   !
-   !     This subroutine assumes that the global variable "caller" has
-   !     been set to the name of the subroutine calling it. Therefore,
-   !     the setMessageSource subroutine must be called at the beginning
-   !     of the subroutine that calls this one, and unsetMessageSource
-   !     must be called at the end.
+   !> General purpose subroutine to write a message to
+   !> the fort.16 file. In parallel, processors of all ranks will
+   !> write the message to their own subdomain fort.16 files.
+   !>
+   !> This subroutine assumes that the global variable "caller" has
+   !> been set to the name of the subroutine calling it. Therefore,
+   !> the setMessageSource subroutine must be called at the beginning
+   !> of the subroutine that calls this one, and unsetMessageSource
+   !> must be called at the end.
+   !>
+   !> @param level The logging level of the message.
+   !> @param message The message to write to the log file.
    !--------------------------------------------------------------------
    subroutine logMessage(level, message)
       implicit none
+
       integer, intent(in) :: level
       character(*), intent(in) :: message
-      integer j ! loop counter for stack
+      integer :: j ! loop counter for stack
 
       if (level >= NABOUT) then
 #ifdef FULL_STACK
@@ -151,9 +183,7 @@ contains
          write (16, 333) trim(logLevelNames(level + 2)), &
             trim(messageSources(sourceNumber)), trim(message)
 #endif
-         !               !#ifdef FLUSH_MESSAGES
          flush (16)
-         !               !#endif
       end if
 331   format(A, ": ", A, 50(:, "->", A))
 332   format(": ", A)
@@ -163,13 +193,17 @@ contains
    !--------------------------------------------------------------------
 
    !--------------------------------------------------------------------
-   !     S U B R O U T I N E   A L L    M E S S A G E
+   ! S U B R O U T I N E   A L L    M E S S A G E
    !--------------------------------------------------------------------
-   !     jgf49.44: General purpose subroutine to write a message to
-   !     both the screen and to the fort.16 log file.
+   !> General purpose subroutine to write a message to
+   !> both the screen and to the fort.16 log file.
+   !>
+   !> @param level The logging level of the message.
+   !> @param message The message to write to the screen and log file.
    !--------------------------------------------------------------------
    subroutine allMessage(level, message)
       implicit none
+
       integer, intent(in) :: level
       character(*), intent(in) :: message
 
@@ -180,14 +214,17 @@ contains
    !--------------------------------------------------------------------
 
    !--------------------------------------------------------------------
-   !     S U B R O U T I N E   S E T   M E S S A G E   S O U R C E
+   ! S U B R O U T I N E   S E T   M E S S A G E   S O U R C E
    !--------------------------------------------------------------------
-   !     jgf49.44: Sets the name of the subroutine that is writing
-   !     log and/or screen messages. Must use at the start of any subroutine
-   !     that calls screen, logMessage, or allMessage.
+   !> Sets the name of the subroutine that is writing
+   !> log and/or screen messages. Must use at the start of any subroutine
+   !> that calls screen, logMessage, or allMessage.
+   !>
+   !> @param source The name of the subroutine writing log and/or screen messages
    !--------------------------------------------------------------------
    subroutine setMessageSource(source)
       implicit none
+
       character(*), intent(in) :: source
 
       sourceNumber = sourceNumber + 1
@@ -197,17 +234,17 @@ contains
    !--------------------------------------------------------------------
 
    !--------------------------------------------------------------------
-   !     S U B R O U T I N E   U N S E T   M E S S A G E   S O U R C E
+   ! S U B R O U T I N E   U N S E T   M E S S A G E   S O U R C E
    !--------------------------------------------------------------------
-   !     jgf49.44: Removes the name of the subroutine that is no longer
-   !     writing log and/or screen messages. Must use at the end of
-   !     any subroutine that calls screen, logMessage, or allMessage.
+   !> Removes the name of the subroutine that is no longer
+   !> writing log and/or screen messages. Must use at the end of
+   !> any subroutine that calls screen, logMessage, or allMessage.
    !--------------------------------------------------------------------
    subroutine unsetMessageSource()
       implicit none
 
       sourceNumber = sourceNumber - 1
-      !--------------------------------------------------------------------
+
    end subroutine unsetMessageSource
    !--------------------------------------------------------------------
 
