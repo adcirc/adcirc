@@ -7,24 +7,39 @@
 #
 # This yaml runs a series of build tests
 # and acceptance tests used to ensure the
-# ADCIRC code is throughly checked before 
+# ADCIRC code is checked before 
 # accepting code into the main branch
 #
 # #######################################################################
 version: 2.1
 
 # #############################
+# Pipeline parameters
+# #############################
+parameters:
+  ci-version:
+    type: string
+    default: "v56.0.3"
+
+# #############################
+# Executor Definitions
+# #############################
+executors:
+  intel_executor:
+    docker:
+      - image: zcobell/adcirc-ci-container:v56
+  gcc_executor:
+    docker:
+      - image: zcobell/adcirc-ci-container:latest-gcc
+
+# #############################
 # Aliases for the environments
 # #############################
 default_env: &default_env
-    docker:
-      - image: zcobell/adcirc-ci-container:v56
-#    environment:
-#      BASH_ENV: /opt/spack-environment/activate.sh
+    executor: intel_executor
 
 default_env_gcc: &default_env_gcc
-    docker:
-      - image: zcobell/adcirc-ci-container:latest-gcc
+    executor: gcc_executor
     environment:
       BASH_ENV: /etc/environment
 
@@ -33,228 +48,217 @@ default_env_gcc: &default_env_gcc
 # #######################################
 jobs:
   build_legacy_without_netcdf:
-      <<: *default_env
-      steps:
-        - checkout
-        - run: 
-            name: Configure SWAN for legacy makefile
-            command: cd work ; cp ../thirdparty/swan/macros.inc.gfortran ../thirdparty/swan/macros.inc
-        - run: 
-            name: Build ADCIRC without external libraries using legacy makefile
-            command: source /opt/spack-environment/activate.sh; cd work ; make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
+    <<: *default_env
+    steps:
+      - checkout
+      - run:
+          name: Configure SWAN for legacy makefile
+          command: cd work && cp ../thirdparty/swan/macros.inc.gfortran ../thirdparty/swan/macros.inc
+      - run:
+          name: Build ADCIRC without external libraries using legacy makefile
+          command: source /opt/spack-environment/activate.sh && cd work && make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
 
   build_legacy_with_netcdf:
-      <<: *default_env
-      steps:
-        - checkout
-        - run: 
-            name: Configure SWAN for legacy makefile
-            command: cd work ; cp ../thirdparty/swan/macros.inc.circleci ../thirdparty/swan/macros.inc
-        - run: 
-            name: Build ADCIRC with netCDF using legacy makefile
-            command: source /opt/spack-environment/activate.sh; cd work ; make compiler=circleci NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=$NETCDF_FORTRAN_HOME HDF5HOME=$HDF5HOME NETCDF_C_HOME=$NETCDFHOME adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
+    <<: *default_env
+    steps:
+      - checkout
+      - run:
+          name: Configure SWAN for legacy makefile
+          command: cd work && cp ../thirdparty/swan/macros.inc.circleci ../thirdparty/swan/macros.inc
+      - run:
+          name: Build ADCIRC with netCDF using legacy makefile
+          command: source /opt/spack-environment/activate.sh && cd work && make compiler=circleci NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=$NETCDF_FORTRAN_HOME HDF5HOME=$HDF5HOME NETCDF_C_HOME=$NETCDFHOME adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
 
   build_legacy_with_netcdf_and_xdmf:
-      <<: *default_env
-      steps:
-        - checkout
-        - run: 
-            name: Configure SWAN for legacy makefile
-            command: cd work ; cp ../thirdparty/swan/macros.inc.gfortran ../thirdparty/swan/macros.inc
-        - run: 
-            name: Build ADCIRC with netCDF and XDMF using legacy makefile
-            command: source /opt/spack-environment/activate.sh; cd work ; make compiler=circleci NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=$NETCDF_FORTRAN_HOME HDF5HOME=$HDF5HOME NETCDF_C_HOME=$NETCDFHOME XDMF=enable XDMFHOME=$XDMFHOME adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
+    <<: *default_env
+    steps:
+      - checkout
+      - run:
+          name: Configure SWAN for legacy makefile
+          command: cd work && cp ../thirdparty/swan/macros.inc.gfortran ../thirdparty/swan/macros.inc
+      - run:
+          name: Build ADCIRC with netCDF and XDMF using legacy makefile
+          command: source /opt/spack-environment/activate.sh && cd work && make compiler=circleci NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=$NETCDF_FORTRAN_HOME HDF5HOME=$HDF5HOME NETCDF_C_HOME=$NETCDFHOME XDMF=enable XDMFHOME=$XDMFHOME adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
 
-  test_suite_data:
-      <<: *default_env
-      steps:
-        - run:
-           name: Retrieve Test Suite
-           command: source /opt/spack-environment/activate.sh; aws s3 cp s3://adcirc-testsuite/v56/adcirc_testsuite.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
-        - save_cache:
-            key: adcirc-test-suite-data-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-            paths:
-                - /home/adcirc/adcirc_testsuite.tar.gz
 
   build_cmake_without_netcdf_gcc:
-      <<: *default_env_gcc
-      steps:
-        - checkout
-        - run:
-            name: Build ADCIRC without external libraries using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON; make -j4
+    <<: *default_env_gcc
+    steps:
+      - checkout
+      - run:
+          name: Build ADCIRC without external libraries using CMake
+          command: mkdir build && cd build && cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON &&  make -j4
 
   build_cmake_with_netcdf_gcc:
-      <<: *default_env_gcc
-      steps:
-        - checkout
-        - run:
-            name: Build ADCIRC without external libraries using CMake
-            command: mkdir build ; cd build ; cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON -DNETCDF_F90_INCLUDE_DIR=/usr/lib64/gfortran/modules -DENABLE_OUTPUT_NETCDF=ON; make -j4
+    <<: *default_env_gcc
+    steps:
+      - checkout
+      - run:
+          name: Build ADCIRC without external libraries using CMake
+          command: mkdir build && cd build && cmake .. -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON -DNETCDF_F90_INCLUDE_DIR=/usr/lib64/gfortran/modules -DENABLE_OUTPUT_NETCDF=ON &&  make -j4
 
   build_cmake_without_netcdf:
-      <<: *default_env
-      steps:
-        - checkout 
-        - run: 
-            name: Build ADCIRC without external libraries using CMake
-            command: source /opt/spack-environment/activate.sh; mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise"; make -j4
-        - save_cache:
-            key: adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-            paths: 
-                - /home/adcirc/project
+    <<: *default_env
+    steps:
+      - checkout
+      - run:
+          name: Build ADCIRC without external libraries using CMake
+          command: source /opt/spack-environment/activate.sh && mkdir build && cd build && cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" &&  make -j4
+      - save_cache:
+          key: adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+          paths:
+            - /home/adcirc/project
 
   build_cmake_with_netcdf:
-      <<: *default_env
-      steps:
-        - checkout
-        - run: 
-            name: Build ADCIRC with netCDF using CMake
-            command: source /opt/spack-environment/activate.sh; mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME; make -j4
-        - save_cache:
-            key: adcirc-netcdf-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-            paths: 
-                - /home/adcirc/project
+    <<: *default_env
+    steps:
+      - checkout
+      - run:
+          name: Build ADCIRC with netCDF using CMake
+          command: source /opt/spack-environment/activate.sh && mkdir build && cd build && cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME &&  make -j4
+      - save_cache:
+          key: adcirc-netcdf-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+          paths:
+            - /home/adcirc/project
 
   build_cmake_with_netcdf_and_xdmf:
-      <<: *default_env
-      steps:
-        - checkout
-        - run: 
-            name: Build ADCIRC with netCDF and XDMF using CMake
-            command: source /opt/spack-environment/activate.sh; mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME -DHDF5_ROOT=$HDF5HOME; make -j4
+    <<: *default_env
+    steps:
+      - checkout
+      - run:
+          name: Build ADCIRC with netCDF and XDMF using CMake
+          command: source /opt/spack-environment/activate.sh && mkdir build && cd build && cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME -DHDF5_ROOT=$HDF5HOME &&  make -j4
 
   build_cmake_with_netcdf_and_xdmf_grib:
-      <<: *default_env
-      steps:
-        - checkout
-        - run: 
-            name: Build ADCIRC with Grib, netCDF, and XDMF using CMake
-            command: source /opt/spack-environment/activate.sh; mkdir build ; cd build ; cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME; make -j4
-        - save_cache:
-            key: adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-            paths: 
-                - /home/adcirc/project
+    <<: *default_env
+    steps:
+      - checkout
+      - run:
+          name: Build ADCIRC with Grib, netCDF, and XDMF using CMake
+          command: source /opt/spack-environment/activate.sh && mkdir build && cd build && cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DBUILD_ADCIRC=ON -DBUILD_PADCIRC=ON -DBUILD_ADCSWAN=ON -DBUILD_PADCSWAN=ON -DBUILD_ADCPREP=ON -DBUILD_UTILITIES=ON -DBUILD_ASWIP=ON -DBUILD_SWAN=ON -DBUILD_PUNSWAN=ON -DBUILD_LIBADCIRC_STATIC=ON -DBUILD_LIBADCIRC_SHARED=ON -DENABLE_OUTPUT_NETCDF=ON -DENABLE_OUTPUT_XDMF=ON -DBUILD_UTILITIES=ON -DENABLE_DATETIME=ON -DENABLE_GRIB2=ON -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME -DNETCDFHOME=$NETCDFHOME -DXDMFHOME=$XDMFHOME &&  make -j4
+      - save_cache:
+          key: adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
+          paths:
+            - /home/adcirc/project
 
   test_base:
-      <<: *default_env
-      parameters:
-          test_name:
-              description: "Name of test job to be run"
-              default: "adcirc_quarterannular-2d"
-              type: string
-      steps:
-        - restore_cache:
-            name: Restore test cache
-            keys:
-            - adcirc-test-suite-data-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-        - restore_cache:
-            name: Restore base build cache
-            keys:
+    <<: *default_env
+    parameters:
+      test_name:
+        description: "Name of test job to be run"
+        default: "adcirc_quarterannular-2d"
+        type: string
+    steps:
+      - restore_cache:
+          name: Restore base build cache
+          keys:
             - adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-        - run:
-            name: Unpack Tests
-            command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz 
-        - run: 
-            name: <<parameters.test_name>>
-            command: source /opt/spack-environment/activate.sh; cd /home/adcirc/adcirc-cg-testsuite ; ./RunSingleTest.sh /home/adcirc/project/build <<parameters.test_name>>
-            no_output_timeout: 7200
-        - run:
-            name: Store log artifacts
-            command: |
-              mkdir -p /tmp/artifacts
-              find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
-            when: always
-        - run:
-            name: Store graphics artifacts
-            command: |
-              mkdir -p /tmp/artifacts
-              find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
-            when: always
-        - store_artifacts: 
-            path: /tmp/artifacts
+      - run:
+          name: Get test data from AWS, <<parameters.test_name>>
+          command: source /opt/spack-environment/activate.sh && aws s3 cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
+      - run:
+          name: Unpack Tests
+          command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
+      - run:
+          name: Run Test <<parameters.test_name>>
+          command: source /opt/spack-environment/activate.sh && cd /home/adcirc/adcirc-cg-testsuite && ./RunSingleTest.sh /home/adcirc/project/build <<parameters.test_name>>
+          no_output_timeout: 7200
+      - run:
+          name: Store log artifacts
+          command: |
+            mkdir -p /tmp/artifacts
+            find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+          when: always
+      - run:
+          name: Store graphics artifacts
+          command: |
+            mkdir -p /tmp/artifacts
+            find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+          when: always
+      - store_artifacts:
+          path: /tmp/artifacts
+
   test_netcdf:
-      <<: *default_env
-      parameters:
-          test_name:
-              description: "Name of test job to be run"
-              default: "adcirc_quarterannular-2d"
-              type: string
-      steps:
-        - restore_cache:
-            name: Restore test cache
-            keys:
-            - adcirc-test-suite-data-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-        - restore_cache:
-            name: Restore netcdf build cache
-            keys:
+    <<: *default_env
+    parameters:
+      test_name:
+        description: "Name of test job to be run"
+        default: "adcirc_quarterannular-2d"
+        type: string
+    steps:
+      - restore_cache:
+          name: Restore netcdf build cache
+          keys:
             - adcirc-netcdf-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-        - run:
-            name: Unpack Tests
-            command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
-        - run: 
-            name: <<parameters.test_name>>
-            command: source /opt/spack-environment/activate.sh; cd /home/adcirc/adcirc-cg-testsuite ; ./RunSingleTest.sh /home/adcirc/project/build <<parameters.test_name>>
-            no_output_timeout: 7200
-        - run:
-            name: Store log artifacts
-            command: |
-              mkdir -p /tmp/artifacts
-              find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
-            when: always
-        - run:
-            name: Store graphics artifacts
-            command: |
-              mkdir -p /tmp/artifacts
-              find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
-            when: always
-        - store_artifacts: 
-           path: /tmp/artifacts
+      - run:
+          name: Get test data from AWS, <<parameters.test_name>>
+          command: source /opt/spack-environment/activate.sh && aws s3 cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
+      - run:
+          name: Unpack Tests
+          command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
+      - run:
+          name: <<parameters.test_name>>
+          command: source /opt/spack-environment/activate.sh && cd /home/adcirc/adcirc-cg-testsuite && ./RunSingleTest.sh /home/adcirc/project/build <<parameters.test_name>>
+          no_output_timeout: 7200
+      - run:
+          name: Store log artifacts
+          command: |
+            mkdir -p /tmp/artifacts
+            find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+          when: always
+      - run:
+          name: Store graphics artifacts
+          command: |
+            mkdir -p /tmp/artifacts
+            find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+          when: always
+      - store_artifacts:
+          path: /tmp/artifacts
+
   test_grib2:
-      <<: *default_env
-      parameters:
-          test_name:
-              description: "Name of test job to be run"
-              default: "adcirc_quarterannular-2d"
-              type: string
-      steps:
-        - restore_cache:
-            name: Restore test cache
-            keys:
-            - adcirc-test-suite-data-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-        - restore_cache:
-            name: Restore grib2 build cache
-            keys:
+    <<: *default_env
+    parameters:
+      test_name:
+        description: "Name of test job to be run"
+        default: "adcirc_quarterannular-2d"
+        type: string
+    steps:
+      - restore_cache:
+          name: Restore grib2 build cache
+          keys:
             - adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
-        - run:
-            name: Unpack Tests
-            command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz 
-        - run: 
-            name: <<parameters.test_name>>
-            command: source /opt/spack-environment/activate.sh; cd /home/adcirc/adcirc-cg-testsuite ; ./RunSingleTest.sh /home/adcirc/project/build <<parameters.test_name>>
-            no_output_timeout: 7200
-        - run:
-            name: Store log artifacts
-            command: |
-              mkdir -p /tmp/artifacts
-              find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
-            when: always
-        - run:
-            name: Store graphics artifacts
-            command: |
-              mkdir -p /tmp/artifacts
-              find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
-            when: always
-        - store_artifacts: 
-           path: /tmp/artifacts
+      - run:
+          name: Get test data from AWS, <<parameters.test_name>>
+          command: source /opt/spack-environment/activate.sh && aws s3 cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
+      - run:
+          name: Unpack Tests
+          command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
+      - run:
+          name: <<parameters.test_name>>
+          command: source /opt/spack-environment/activate.sh && cd /home/adcirc/adcirc-cg-testsuite && ./RunSingleTest.sh /home/adcirc/project/build <<parameters.test_name>>
+          no_output_timeout: 7200
+      - run:
+          name: Store log artifacts
+          command: |
+            mkdir -p /tmp/artifacts
+            find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.log" -exec cp {} /tmp/artifacts/. \;
+          when: always
+      - run:
+          name: Store graphics artifacts
+          command: |
+            mkdir -p /tmp/artifacts
+            find /home/adcirc/adcirc-cg-testsuite/adcirc*/<<parameters.test_name>> -name "*.png" -exec cp {} /tmp/artifacts/. \;
+          when: always
+      - store_artifacts:
+          path: /tmp/artifacts
+
 # ##############################
 # Workflows in the CI process
 # ##############################
 workflows:
-  version: 2.1
+  version: 2
   build_and_test:
     jobs:
-      - test_suite_data
       - build_legacy_without_netcdf
       - build_legacy_with_netcdf
       - build_legacy_with_netcdf_and_xdmf
@@ -265,8 +269,7 @@ workflows:
       - build_cmake_with_netcdf
       - build_cmake_with_netcdf_and_xdmf_grib
       - test_base:
-            requires: 
-                - test_suite_data
+            requires:
                 - build_cmake_without_netcdf
             matrix:
                 parameters:
@@ -278,8 +281,7 @@ workflows:
                         - adcirc_quarterannular-2d-parallel-writer
                         - adcirc_swan_apes_irene
       - test_netcdf:
-            requires: 
-                - test_suite_data
+            requires:
                 - build_cmake_with_netcdf
             matrix:
                 parameters:
@@ -302,8 +304,7 @@ workflows:
                         - adcirc_global-tide-2d-full-tip-JPL-emphemerides-parallel
                         - adcirc_global-tide-2d-full-tip-analytical-serial
       - test_grib2:
-            requires: 
-                - test_suite_data
+            requires:
                 - build_cmake_with_netcdf_and_xdmf_grib
             matrix:
                 parameters:
@@ -330,4 +331,3 @@ workflows:
                         - adcirc_baroclinic_internaltide_2d
                         - adcirc_global-tide-2d-full-tip-JPL-emphemerides-serial
                         - adcirc_global-tide-2d-full-tip-analytical-parallel
-
