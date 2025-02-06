@@ -48,10 +48,10 @@ the code to be reviewed by other developers before it is merged into the main br
 code to be tested by the continuous integration system.
 3. If you are submitting a bug fix, you should also submit a pull request to the stable branch (i.e. `vXXRelease`) 
 once it is accepted into the main branch. This will allow the bug fix to be incorporated into the next minor release.
-3. Pull requests should be submitted against the `main` branch. Prior ADCIRC development has maintained a `main` and 
+4. Pull requests should be submitted against the `main` branch. Prior ADCIRC development has maintained a `main` and 
 `development` branch, however, in practical use, it seems that only the `main` branch in addition to the release branches
 are necessary.
-4. Pull requests for new features will not be accepted without an acceptance test. This test can be included in the pull
+5. Pull requests for new features will not be accepted without an acceptance test. This test can be included in the pull
 request and should be briefly described in the pull request description, including what the expected result should be. The
 acceptance test should run in a few minutes on a single core of a modern desktop computer. If the test takes longer than
 this, it will not be viable to run within the continuous integration system.
