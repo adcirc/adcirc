@@ -39,6 +39,15 @@ if(BUILD_UTILITIES)
   addnetcdflibraries(hstime)
   addnetcdflibraries(adcircResultsComparison)
 
+  # Some of these utilities are very old and no longer updated. We will
+  # pass some compiler flags to suppress warnings. If this happened in the
+  # main code, we would fix the code instead of suppressing the warning.
+  if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    # Disable warnings for deleted features
+    target_compile_options(p15 PRIVATE -std=legacy)
+  endif()
+
+
   install(
     TARGETS adccmp
             p15

@@ -317,6 +317,10 @@
                     ENDDO
                 ENDDO
                 CALL EXIT(1)
+#else
+                VARID1 = -1
+                VARID2 = -1
+                NCOLS = -1
 #endif                
             END SUBROUTINE getNetCDFVarId
 
@@ -594,6 +598,9 @@
                 CALL CHECK(NF90_INQUIRE_DIMENSION(ncid,dimid_node,LEN=numnodes))
                 CALL FindMyNetCDFVariable(ncid)
                 CALL CHECK(NF90_CLOSE(ncid))
+#else
+                numsnaps = -1
+                numnodes = -1
 #endif
                 RETURN
             END SUBROUTINE getMetadataNetCDF
