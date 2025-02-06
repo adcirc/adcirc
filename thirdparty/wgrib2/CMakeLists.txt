@@ -416,3 +416,20 @@ IF(NETCDF_WORKING)
     TARGET_LINK_LIBRARIES(grib2 PRIVATE ${NETCDF_LIBRARIES} ${NETCDF_AdditionalLibs})
 ENDIF()
 ###########################################################################
+
+if(${CMAKE_C_COMPILER_ID} MATCHES "GNU")
+    set(ADDITIONAL_WGRIB2_COMPILER_FLAGS "-Wno-incompatible-pointer-types")
+    message(STATUS "Adding additional compiler flags to grib2: ${ADDITIONAL_WGRIB2_COMPILER_FLAGS}")
+    target_compile_options(grib2 PRIVATE $<$<COMPILE_LANGUAGE:C>:${ADDITIONAL_WGRIB2_COMPILER_FLAGS}>)
+elseif(${CMAKE_C_COMPILER_ID} MATCHES "IntelLLVM")
+    set(ADDITIONAL_WGRIB2_COMPILER_FLAGS "-Wno-deprecated-non-prototype;-Wno-fortify-source;-Wno-enum-conversion;-Wno-incompatible-pointer-types-discards-qualifiers")
+    set(ADDITIONAL_GEO_COMPILER_FLAGS "-Wno-deprecated-non-prototype;-Wno-absolute-value;-Wno-return-type")
+    message(STATUS "Adding additional compiler flags to geo: ${ADDITIONAL_GEO_COMPILER_FLAGS}")
+    message(STATUS "Adding additional compiler flags to grib2: ${ADDITIONAL_WGRIB2_COMPILER_FLAGS}")
+    target_compile_options(geo PRIVATE $<$<COMPILE_LANGUAGE:C>:${ADDITIONAL_GEO_COMPILER_FLAGS}>)
+    target_compile_options(grib2 PRIVATE $<$<COMPILE_LANGUAGE:C>:${ADDITIONAL_WGRIB2_COMPILER_FLAGS}>)
+elseif(${CMAKE_C_COMPILER_ID} MATCHES "Intel")
+    # Empty
+elseif(${CMAKE_C_COMPILER_ID} MATCHES "NVIDIA")
+    # Empty
+endif()

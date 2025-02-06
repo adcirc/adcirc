@@ -42,12 +42,12 @@ macro(addCompilerFlagsSwan TARGET)
 
   set(LOCAL_COMPILER_FLAGS "${Fortran_COMPILER_SPECIFIC_FLAG}")
 
-  get_filename_component(Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
-  if(${Fortran_COMPILER_NAME} MATCHES "gfortran.*")
+  # SWAN is not under our control, so to get a warning-free build, we need to suppress warning generated in their code
+  if(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
     if(${CMAKE_Fortran_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_Fortran_COMPILER_VERSION} VERSION_EQUAL 10)
-      set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -fallow-argument-mismatch")
+      set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -fallow-argument-mismatch -w")
     endif()
-  elseif(${Fortran_COMPILER_NAME} MATCHES "ifx.*" OR ${Fortran_COMPILER_NAME} MATCHES "ifort.*")
+  elseif(${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel" OR ${CMAKE_Fortran_COMPILER_ID} MATCHES "IntelLLVM")
     set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -diag-disable 6843 -diag-disable 8291")
   endif()
 
