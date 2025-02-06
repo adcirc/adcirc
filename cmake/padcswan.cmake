@@ -218,6 +218,13 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
     version
     templib_swan1parallel)
 
+  # Create a false target for the Ninja build system. The generated sources don't give it a full
+  # picture of where it can parallelize and this helps it make the correct determinations
+  if (${CMAKE_GENERATOR} STREQUAL "Ninja")
+    add_custom_target(templib_padcswan1-stub BYPRODUCTS templib_padcswan1-stublib COMMAND "" DEPENDS templib_padcswan1)
+    add_dependencies(templib_swan2parallel templib_padcswan1-stub)
+  endif()
+
   install(TARGETS padcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 endif(BUILD_PADCSWAN AND PERL_FOUND)

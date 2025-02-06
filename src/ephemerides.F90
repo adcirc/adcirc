@@ -92,6 +92,7 @@ contains
     logical, optional :: UniformDT
 
 #ifndef ADCNETCDF
+    ierr = 1
     write (*, '(A)') "ERROR: Must compile with netCDF support enabled"
 #ifdef CMPI
     call msg_fini()
@@ -250,6 +251,8 @@ contains
     call check_err(nf90_close(ncid))
     deallocate (tmparr)
     self%first = .false.
+#else
+    ierr = 1
 #endif
   end function recache_data
 
