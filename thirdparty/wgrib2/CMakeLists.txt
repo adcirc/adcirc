@@ -26,10 +26,12 @@ SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
 ###########################################################################
 # COMPILER DEPENDENT FLAGS
 ###########################################################################
-IF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM")
+IF(${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel" OR ${CMAKE_Fortran_COMPILER_ID} MATCHES "IntelLLVM")
     SET(IPOLATES_R8_FLAG "-r8")
-ELSEIF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
+ELSEIF(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
     SET(IPOLATES_R8_FLAG "-fdefault-real-8 -fdefault-double-8")
+ELSEIF(${CMAKE_Fortran_COMPILER_ID} MATCHES "NVHPC")
+    SET(IPOLATES_R8_FLAG "-r8")
 ENDIF()
 ###########################################################################
     
@@ -402,9 +404,11 @@ TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/ipo
                                           ${CMAKE_CURRENT_SOURCE_DIR} )
 SET_TARGET_PROPERTIES( grib2 PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles/mod/grib2 )
 TARGET_COMPILE_DEFINITIONS( grib2 PRIVATE CALLABLE_WGRIB2 USE_IPOLATES=3 )
-IF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM")
+IF(${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel" OR ${CMAKE_Fortran_COMPILER_ID} MATCHES "IntelLLVM")
     TARGET_COMPILE_DEFINITIONS( grib2 PRIVATE "IFORT" )
-ELSEIF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
+ELSEIF(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
+    TARGET_COMPILE_DEFINITIONS( grib2 PRIVATE "GFORTRAN" )
+ELSEIF(${CMAKE_Fortran_COMPILER_ID} MATCHES "NVHPC")
     TARGET_COMPILE_DEFINITIONS( grib2 PRIVATE "GFORTRAN" )
 ENDIF()
 
@@ -435,6 +439,11 @@ elseif(${CMAKE_C_COMPILER_ID} MATCHES "IntelLLVM")
     target_compile_options(grib2 PRIVATE $<$<COMPILE_LANGUAGE:C>:${ADDITIONAL_WGRIB2_COMPILER_FLAGS}>)
 elseif(${CMAKE_C_COMPILER_ID} MATCHES "Intel")
     # Empty
-elseif(${CMAKE_C_COMPILER_ID} MATCHES "NVIDIA")
-    # Empty
+elseif(${CMAKE_C_COMPILER_ID} MATCHES "NVHPC")
+    set(ADDITIONAL_GEO_COMPILER_FLAGS "--display_error_number;--diag_suppress 177;--diag_suppress 550;--diag_suppress 941;--diag_suppress 549")
+    set(ADDITIONAL_WGRIB2_COMPILER_FLAGS "--display_error_number;--diag_suppress 111;--diag_suppress 1098;--diag_suppress 68;--diag_suppress 188;--diag_suppress 550;--diag_suppress 167")
+    message(STATUS "Adding additional compiler flags to geo: ${ADDITIONAL_GEO_COMPILER_FLAGS}")
+    message(STATUS "Adding additional compiler flags to grib2: ${ADDITIONAL_WGRIB2_COMPILER_FLAGS}")
+    target_compile_options(geo PRIVATE $<$<COMPILE_LANGUAGE:C>:${ADDITIONAL_GEO_COMPILER_FLAGS}>)
+    target_compile_options(grib2 PRIVATE $<$<COMPILE_LANGUAGE:C>:${ADDITIONAL_WGRIB2_COMPILER_FLAGS}>)
 endif()
