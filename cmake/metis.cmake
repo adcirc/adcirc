@@ -91,7 +91,7 @@ elseif(${CMAKE_C_COMPILER_ID} MATCHES "Intel")
   set(ADDITIONAL_METIS_COMPILER_FLAGS "${ADDITIONAL_METIS_COMPILER_FLAGS} -diag-disable 167")
   message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
   set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
-elseif(${CMAKE_C_COMPILER_ID} MATCHES "NVIDIA")
+elseif(${CMAKE_C_COMPILER_ID} MATCHES "NVHPC")
   # For nvc, suppress diagnostic warnings that are not part of ADCIRC
   set(ADDITIONAL_METIS_COMPILER_FLAGS
       "${ADDITIONAL_METIS_COMPILER_FLAGS} --display_error_number --diag_suppress 550 --diag_suppress 177 --diag_suppress 167"

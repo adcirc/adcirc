@@ -49,6 +49,8 @@ macro(addCompilerFlagsSwan TARGET)
     endif()
   elseif(${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel" OR ${CMAKE_Fortran_COMPILER_ID} MATCHES "IntelLLVM")
     set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -diag-disable 6843 -diag-disable 8291")
+  elseif(${CMAKE_Fortran_COMPILER_ID} MATCHES "NVHPC")
+    set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -w")
   endif()
 
   set_target_properties(${TARGET} PROPERTIES Fortran_MODULE_DIRECTORY
