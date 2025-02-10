@@ -2216,8 +2216,6 @@ C     harmonic analysis arrays from binary hotstart file.
 C--------------------------------------------------------------------
       SUBROUTINE binaryRead3D(array, iLength, jLength, lun,
      &                        counter)
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
-     &                    allMessage, DEBUG
       IMPLICIT NONE
       REAL(8), intent(out), dimension(ilength,jlength) :: array ! data to read from the hotstart file
       INTEGER, intent(in) :: iLength  ! the number of horiz values to read

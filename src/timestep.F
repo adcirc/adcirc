@@ -76,15 +76,15 @@ C******************************************************************************
      &    RBCTIME1, RBCTIME2, RBCTIMEINC, REFTIM, RES_BC_FLAG, 
      &    RSTIME1, RSTIME2, NWS, RSTIMINC, STATIM, TK,
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
-     &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
+     &    SALTAMP, NODECODE, TPK, NOFF, DASigT, FFF,
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
-     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
+     &    WarnElevDump, nodes_lg, NT, NM, NB, NHOUTONCE,
      &    Limit_WaveStressGrad, TVW,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
      &    dynamicWaterLevelCorrectionDelta, RampIntFlux
-      use mod_logging, only: ScreenUnit, INFO, WARNING,
+      use mod_logging, only: ScreenUnit, INFO, DEBUG, WARNING, scratchMessage,
      &    ERROR, logMessage, allMessage, setMessageSource, unsetMessageSource
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
      &                         WaveStressGrad_Cap, G
@@ -1406,9 +1406,9 @@ C
       SUBROUTINE SCALAR_TRANS_2D (IT,TimeLoc)
 
       USE GLOBAL, only: ch1, trans_lv_b, nodecode, noff, lumpt, dtdp,
-     &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
-     &    setmessagesource, unsetmessagesource, DEBUG,
-     &    allMessage, H1
+     &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk, H1
+      use mod_logging, only: setmessagesource, unsetmessagesource, DEBUG,
+     &    allMessage
 
       USE ADC_CONSTANTS, ONLY: rhowat0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
@@ -1716,10 +1716,11 @@ C
 
       SUBROUTINE CALC_SIGMAT_2D ()
 
-      USE GLOBAL
+      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG
       USE MESH, ONLY: NP
+      USE GLOBAL, ONLY: IDEN
 
-      INTEGER NH
+      INTEGER :: NH
 
       call setMessageSource("calc_sigmat_2D")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
