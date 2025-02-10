@@ -75,8 +75,6 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
       module momentum
-      use global, only : DEBUG, INFO, WARNING, ERROR, setMessageSource,
-     &   allMessage, logMessage, unsetMessageSource
       implicit none
 
       real(8),allocatable :: auv(:,:) ! WJP allowing for the case auv11 ~= auv22
@@ -120,7 +118,6 @@ C******************************************************************************
       subroutine solveMomentumEq()
       use global, only : C2DDI, CME_New_NC, CME_New_C1, CME_New_C2,
      &   CPRECOR, UU2, VV2, QX2, QY2
-
 #ifdef CMPI
       use global, only: DUMY1
       use messenger
@@ -204,6 +201,7 @@ C*******************************************************************************
      &                                   apply_zero_normal_velocity_gradient,
      &                                   UPDATE_U_PERSLNODES, apply_subdomain_boundaries,
      &                                   non_conservative
+      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG
 C... SB
       USE VEW1D, ONLY :
      &     ROTATE_AT_CONDENSEDNODES_ALL,
@@ -931,6 +929,7 @@ C
       use mod_momentum_bc_forcing, only: apply_velocity_boundary_conditions,
      &                                    apply_zero_normal_velocity_gradient,
      &                                    conservative
+      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG
        
       IMPLICIT NONE
 
@@ -1614,6 +1613,7 @@ C*******************************************************************************
       use mod_momentum_bc_forcing, only: predictor_corrector,
      &                                   apply_velocity_boundary_conditions,
      &                                   apply_zero_normal_velocity_gradient
+      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG
 
       IMPLICIT NONE
 

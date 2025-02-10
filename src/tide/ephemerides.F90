@@ -38,9 +38,11 @@ module mod_ephemerides
     ! HAVENLY_OBJS_COORDS_FROM_TABLE is called multiple
     ! times in a single program
   contains
+#ifdef ADCNETCDF
     procedure, pass(self) :: HEAVENLY_OBJS_COORDS_FROM_TABLE
-    procedure, pass(self), private :: reallocate_arrays
     procedure, pass(self), private :: recache_data
+#endif
+    procedure, pass(self), private :: reallocate_arrays
     procedure, pass(self), private :: init => initialize_ephemerides
   end type t_ephemerides
 
@@ -48,9 +50,13 @@ module mod_ephemerides
     module procedure createEphemerides
   end interface t_ephemerides
 
-  private :: interpolate, L, adjust_RA, GET_RANK_SIMPLE_SEARCH, &
-             GET_RANK_UNIFORM, GET_RANK_BINARY_SEARCH, initialize_ephemerides, &
-             recache_data, reallocate_arrays
+  private
+
+  public :: t_ephemerides
+
+#ifdef ADCNETCDF
+  public :: HEAVENLY_OBJS_COORDS_FROM_TABLE
+#endif
 
 contains
 
@@ -79,6 +85,7 @@ contains
 
   end function createEphemerides
 
+#ifdef ADCNETCDF
   subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE(self, MoonSunCoor, julian_date_loc, ierr, UniformDT)
     use mod_astronomic, only: km2AU
 #ifdef CMPI
@@ -91,15 +98,7 @@ contains
     integer, intent(out) :: ierr
     logical, optional :: UniformDT
 
-#ifndef ADCNETCDF
-    ierr = 1
-    write (*, '(A)') "ERROR: Must compile with netCDF support enabled"
-#ifdef CMPI
-    call msg_fini()
-#endif
-    call exit(1)
-#else
-    integer :: retval, j, ii
+    integer :: j, ii
     real(8) :: julian_datetime_2000, seconds_between
     logical :: UniformRankSearch = .false.
     real(8) :: ratmp(4)
@@ -173,22 +172,20 @@ contains
     ! Convert solar distance to AU
     ! MoonSunCoor(3,2) = MoonSunCoor(3,2) * 6.6845871226706E-9
     MoonSunCoor(3, 2) = MoonSunCoor(3, 2)*km2AU;
-#endif
+
   end subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE
 
   integer function recache_data(self, seconds_between, UniformRankSearch) result(ierr)
-#ifdef ADCNETCDF
+
     use netcdf
     use netcdf_error, only: check_err
-#endif
+
     implicit none
     class(t_ephemerides), intent(inout) :: self
     real(8), intent(in) :: seconds_between
     logical, intent(in) :: UniformRankSearch
 
-#ifdef ADCNETCDF
-    integer, parameter :: NC_ERR = -1
-    integer :: time_dimid, ndimsp, dimlen
+    integer :: ndimsp, dimlen
     integer :: ncid, time_varid, lunar_distance_varid, solar_distance_varid
     integer :: lunar_ra_varid, solar_ra_varid, lunar_dec_varid, solar_dec_varid
     integer :: lenarr, iabeg, iaend
@@ -255,10 +252,9 @@ contains
     call check_err(nf90_close(ncid))
     deallocate (tmparr)
     self%first = .false.
-#else
-    ierr = 1
-#endif
+
   end function recache_data
+#endif
 
   subroutine reallocate_arrays(self)
     implicit none
@@ -336,35 +332,35 @@ contains
   end subroutine L
 
   ! Return a rank j in ARR such that arr(j-1) < val <= arr(j1) !
-  function GET_RANK_SIMPLE_SEARCH(val, arr, len) result(rank)
-    implicit none
-
-    integer :: rank
-    real(8), intent(IN) :: val
-    real(8), intent(IN) :: arr(:)
-    integer, intent(IN) :: len
-
-    integer :: J
-
-    if (val < arr(1)) then
-      rank = 0; 
-      return; 
-    end if
-
-    if (val > arr(len)) then
-      rank = len + 1; 
-      return; 
-    end if
-
-    RANK = 0; 
-    do J = 1, LEN
-      if (ARR(J) >= val) then
-        RANK = J; 
-        exit; 
-      end if
-    end do
-
-  end function GET_RANK_SIMPLE_SEARCH
+!  function GET_RANK_SIMPLE_SEARCH(val, arr, len) result(rank)
+!    implicit none
+!
+!    integer :: rank
+!    real(8), intent(IN) :: val
+!    real(8), intent(IN) :: arr(:)
+!    integer, intent(IN) :: len
+!
+!    integer :: J
+!
+!    if (val < arr(1)) then
+!      rank = 0;
+!      return;
+!    end if
+!
+!    if (val > arr(len)) then
+!      rank = len + 1;
+!      return;
+!    end if
+!
+!    RANK = 0;
+!    do J = 1, LEN
+!      if (ARR(J) >= val) then
+!        RANK = J;
+!        exit;
+!      end if
+!    end do
+!
+!  end function GET_RANK_SIMPLE_SEARCH
 
   ! Find a rank j in arr such that arr(j-1) < val < = arr(j)         !
   ! in a unifrom table, i,e, arr(i+1) - arr(i) = arr(i+2) - arr(i+1) !

@@ -171,7 +171,7 @@ contains
     logical :: include_nutation = .false.
 
     ! If nutation is require !
-    real(8) :: LP, L0, OG, DPsi, Dvareps, vareps
+    real(8) :: LP, L0, OG, DPsi, vareps
     logical :: have_asval = .false.
     ! Find JD of the date at UT 0h
     RM = JD - floor(JD)

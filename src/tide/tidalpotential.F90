@@ -134,7 +134,7 @@ contains
   subroutine tidalPotentialConstructor(self, np, rnday, in_UseFullTIPFormula, in_TIPOrder, in_TIPStartDate, &
                                        in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
                                        in_IncludeNutation, in_k2value, in_h2value)
-    use global, only: allMessage, WARNING
+    use mod_logging, only: allMessage, WARNING
     implicit none
 
     class(t_tidePotential), intent(INOUT) :: self
@@ -349,8 +349,13 @@ contains
 
   function compute_full_tip(self, TimeLoc, NP, SLAM) result(tip)
     use ADC_CONSTANTS, only: sec2day, DEG2RAD
-    use global, only: setMessageSource, unsetMessageSource, allMessage, DEBUG
+    use mod_terminate, only: terminate
+    use mod_logging, only: allMessage, ERROR, setMessageSource, unsetMessageSource
+
+#ifdef ADCNETCDF
     use mod_ephemerides, only: HEAVENLY_OBJS_COORDS_FROM_TABLE
+#endif
+
     implicit none
 
     class(t_tidePotential), intent(INOUT) :: self
@@ -378,7 +383,12 @@ contains
       call self%m_moon_sun_position%HEAVENLY_OBJS_COORDS_JM(MoonSunCoor(:, 1), MoonSunCoor(:, 2), JDELoc, IERR)
     elseif (self%m_MoonSunPositionComputeMethod == ComputeMethod_External) then
       ! interpolate from an external look up table !
+#ifdef ADCNETCDF
       call self%m_ephemerides%HEAVENLY_OBJS_COORDS_FROM_TABLE(MoonSunCoor, JDELoc, IERR, self%m_UniformResMoonSunTimeData)
+#else
+      call allMessage(ERROR, "ADCIRC must be built with the -DADCNETCDF flag to use external ephemerides table.")
+      call terminate()
+#endif
     else
       IERR = 1
     end if
@@ -400,7 +410,7 @@ contains
   end function compute_full_tip
 
   subroutine check_tip_err(IERR)
-    use global, only: screenMessage, ERROR
+    use mod_logging, only: screenMessage, ERROR
     implicit none
     integer, intent(IN) :: IERR
 

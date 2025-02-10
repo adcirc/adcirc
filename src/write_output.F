@@ -31,9 +31,7 @@ C dry.
 C----------------------------------------------------------------------
       MODULE WRITE_OUTPUT
 C----------------------------------------------------------------------
-      USE GLOBAL, ONLY : OutputDataDescript_t, setMessageSource,
-     &  unsetMessageSource, DEBUG, allMessage, screenMessage, ERROR,
-     &  netcdf_avail
+      USE GLOBAL, ONLY : OutputDataDescript_t, netcdf_avail
       use mod_terminate, only: terminate
       USE boundaries, only: freeFluxBoundaryArrayTemporaries
 
@@ -365,14 +363,14 @@ C----------------------------------------------------------------------
      &   noutm, nstam, ntcyfgv, ntcysm, ntcyfm, nspoolm, nws,
      &   noutgw, ntcysgw, ntcyfgw, nspoolgw, nddt, ncice, nrs,
      &   noutc, nstac_g, nstac, im, noutgc, ntcyfgc, ntcysgc,
-     &   nspoolgc, INFO, scratchMessage, allMessage, nscougi, nscougp,
+     &   nspoolgc, nscougi, nscougp,
      &   nscours, nscoub, nscougb, nscoui, nscoup,
      &   use_tvw, nout_tvw, ntcys_tvw, ntcyf_tvw, ig_tvw, tvw,
      &   nspool_tvw, nscou_tvw,
      &   nodeCodeOutSpoolCounter, noffOutSpoolCounter, noffOutFilePos,
      &   nodeCodeOutFilePos, NE_G, IMAP_EL_LG, nodecode, noff,
      &   fauxFilePosition, initiallyDrySpoolCounter,
-     &   inundationOutput, ihot, logMessage, windDragFilePosition,
+     &   inundationOutput, ihot, windDragFilePosition,
      &   windDragOut, windDragSpoolCounter, outputWindDrag,
      &   dynamicWaterLevelCorrectionFilePos, dynamicWaterLevelCorrectionSpoolCounter, 
      &   dynamicWaterLevelCorrection2, usingDynamicWaterLevelCorrection,
@@ -391,6 +389,8 @@ C----------------------------------------------------------------------
       USE NETCDFIO, ONLY : initNetCDFOutputFile,
      &                      readAndMapToSubdomainMaxMinNetCDF
 #endif
+      USE mod_logging, only: allMessage, setMessageSource, unsetMessageSource,
+     &                     DEBUG, INFO, ERROR, screenMessage, logMessage, scratchMessage
 #ifdef ADCXDMF
       USE XDMFIO, ONLY : initOutputXDMF, writeControlXDMF
       USE CONTROL, ONLY : readControlFile
@@ -1802,10 +1802,15 @@ C----------------------------------------------------------------------
      &                  GLOBALDIR, OFF
       USE GLOBAL, only: nt, noutge, noutgv, noutgw, nws, nrs,
      &   inundationOutput
+
 #ifdef CSWAN
-     &   ,SWAN_OutputHS, SWAN_OutputDIR, SWAN_OutputTM01,
+      USE GLOBAL, ONLY: SWAN_OutputHS, SWAN_OutputDIR, SWAN_OutputTM01,
      &   SWAN_OutputTPS, SWAN_OutputTM02, SWAN_OutputTMM10, SWAN_OutputWind
 #endif
+
+      use mod_logging, only: setMessageSource, unsetMessageSource, logMessage,
+     &  DEBUG, INFO
+
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE GLOBAL_IO, ONLY: storeOne, storeTwo,
      &    packOne, unpackOne, packTwo, unpackTwo
@@ -1998,7 +2003,8 @@ C     the interpolation on both components for output data that contains
 C     two components.
 C-----------------------------------------------------------------------
       subroutine stationDataInterp(descript)
-      use global
+      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG
+      use global, only: OutputDataDescript_t
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
 
@@ -2031,8 +2037,8 @@ C     jgf51.21.24: Performs station interpolations on a single array.
 C-----------------------------------------------------------------------
       subroutine stationArrayInterp(descript, fromArray, toArray)
       use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2, NOFF,
-     &                   allMessage, DEBUG, setMessageSource, unsetMessageSource,
      &                   StatPartWetFix,How2FixStatPartWet, h0
+      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG, INFO
       use mesh, only : dp, nm
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
@@ -2173,10 +2179,9 @@ C removed from global  myProc, MNPROC,
      &                   NOUTE, NSTAE, IMAP_STAE_LG, SLEL,
      &                   XEL, SFEL, YEL, NSTAV_G, NSTAV,
      &                   IMAP_STAV_LG, SLEV, XEV, SFEV,
-     &                   YEV, screenMessage, DEBUG,
-     &                   setMessageSource, unsetMessageSource,
-     &                   NE_G, NP_G, NODES_LG
+     &                   YEV, NE_G, NP_G, NODES_LG
       USE MESH, ONLY : NP, NE, ICS
+      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG
       USE GLOBAL_IO, ONLY:
      &    open_gbl_file, collectFullDomainArray,
      &    packOne, unpackOne, packTwo, unpackTwo, packMbyNP, unpackMbyNP
@@ -2735,9 +2740,10 @@ C-----------------------------------------------------------------------
      & MYPROC, HARMDIR, WRITE_LOCAL_HARM_FILES
       USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
       USE MESH, ONLY : labels
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenMessage, ERROR,
-     &                   DEBUG, setMessageSource, unsetMessageSource,
-     &                   allMessage, scratchMessage, labels_g
+      USE GLOBAL, ONLY : OutputDataDescript_t, labels_g
+      USE mod_logging, only: setMessageSource, unsetMessageSource,
+     &  scratchMessage, logMessage, DEBUG, INFO, ERROR, allMessage
+
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY: writeOutArrayNetCDF
 #endif
@@ -2858,10 +2864,11 @@ C----------------------------------------------------------------------
 C RJW added myproc
 C MYPROC,
       USE GLOBAL, ONLY : RUNDES, RUNID, RDES4, RID4,
-     &   RDES8, RID8, DTDP, IHOT, DEBUG, scratchMessage,
-     &   logMessage, ERROR, allMessage
+     &   RDES8, RID8, DTDP, IHOT
       USE GLOBAL_3DVS, ONLY : NFEN
       USE MESH, ONLY : AGRID, AID4, AID8
+      USE mod_logging, only: setMessageSource, unsetMessageSource,
+     &  logMessage, allMessage, DEBUG, ERROR, scratchMessage
 
       IMPLICIT NONE
 C
@@ -2883,10 +2890,6 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-
-
-
-
 
       ios=0
 C
@@ -4366,6 +4369,8 @@ C-----------------------------------------------------------------------
       USE GLOBAL_IO, ONLY : collectFullDomainArray, storeOne, storeTwo,
      &                      writeSparse,writeFullFormat,writeBinaryFormat
       USE MESH, ONLY: labels
+      use mod_logging, only: setMessageSource, unsetMessageSource, logMessage,
+     &  allMessage, DEBUG, INFO, ERROR, scratchMessage
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : writeOutArrayNetCDF
 #endif
@@ -4473,6 +4478,8 @@ C-----------------------------------------------------------------------
       USE MESH, ONLY : NP, labels
       USE GLOBAL_IO, ONLY : collectFullDomainArray, HEADER_MAX,
      &                      open_minmax_file
+      use mod_logging, only: setMessageSource, unsetMessageSource, logMessage,
+     &  allMessage, DEBUG, INFO, ERROR, scratchMessage
 #ifdef ADCNETCDF
       USE NetCDFIO, ONLY :  initNetCDFOutputFile, writeOutArrayNetCDF
 #endif
@@ -5607,7 +5614,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL
       USE GLOBAL_IO, ONLY: collectFullDomainArray, unpackOne
       USE MESH, ONLY : NP
-      USE mod_logging, only: ScreenUnit
+      USE mod_logging, only: ScreenUnit, setMessageSource, unsetMessageSource, DEBUG
       USE GLOBAL_IO, ONLY: packOne, unpackOne
 #ifdef CMPI
       USE MESSENGER
@@ -6157,6 +6164,8 @@ C-----------------------------------------------------------------------
      &    fauxFilePosition, nodes_lg
       use global_io, only : writeDomainHeader, packOne, unpackOne
       use mesh, only : np
+      use mod_logging, only: allMessage, setMessageSource, unsetMessageSource,
+     &  INFO, DEBUG, ERROR
 #ifdef ADCNETCDF
       use netcdfio, only : initNetCDFOutputFile
 #endif
@@ -6291,6 +6300,7 @@ C-----------------------------------------------------------------------
       use sizes, only : mnp
       use global, only : nodecode, dtdp, eta1, eta2, nt, inunThresh
       use mesh, only : dp, np
+      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG
       implicit none
       real(8), intent(in) :: timeloc ! time in s since cold start
       integer, intent(in) :: it     ! timesteps since cold start
@@ -6392,6 +6402,7 @@ C-----------------------------------------------------------------------
      &  prmin_time, wvnoutmax, wvnoutmax_time, rsnmax, rsnmax_time,
      &  wvnxout, wvnyout, nrs, nws, noutge, noutgv, noutgw
       use mesh, only : np
+      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG
       implicit none
       real(8), intent(in) :: timeloc ! time in s since cold start
       integer :: i
