@@ -6246,8 +6246,8 @@ C-----------------------------------------------------------------------
      &                        lat, lon, sta1, sta2, sta3, stat_lun,
      &                        Description)
       USE ADC_CONSTANTS, ONLY: DEG2RAD, RAD2DEG
-      USE GLOBAL, ONLY : parse, IFSPROTS,
-     &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
+      USE GLOBAL, ONLY : parse, IFSPROTS, a2f
+      use mod_logging, only: DEBUG, allMessage, setMessageSource, unsetMessageSource
       USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
@@ -6587,7 +6587,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE ComputeInterpolatingFactors(InputXCoordinate,
      &     InputYCoordinate, InputElement, Factor1, Factor2, Factor3)
 
-      USE GLOBAL, ONLY : DEBUG, screenMessage,
+      USE mod_logging, ONLY : DEBUG, screenMessage,
      &    setMessageSource, unsetMessageSource, allMessage
       USE MESH, ONLY : NM, X, Y, Areas
       IMPLICIT NONE

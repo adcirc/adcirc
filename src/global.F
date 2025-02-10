@@ -39,8 +39,6 @@ C
       MODULE GLOBAL
       USE ADC_CONSTANTS, ONLY: DEG2RAD
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
-      USE mod_logging, ONLY: setMessageSource, unsetMessageSource, logMessage, allMessage,
-     &      INFO, DEBUG, WARNING, ERROR, screenMessage, scratchMessage
 #ifdef DATETIME
       use datetime_module, only: datetime
 #endif
@@ -817,6 +815,8 @@ C     jgf50.16 Added general subroutine for opening an existing input
 C     file for reading. Includes error checking.
 C-----------------------------------------------------------------------
       SUBROUTINE openFileForRead(lun, filename, errorIO)
+      use mod_logging, only: setMessageSource, unsetMessageSource, logMessage,
+     &                       allMessage, ERROR, INFO, DEBUG, scratchMessage
       IMPLICIT NONE
       INTEGER, intent(in) :: lun   ! fortran logical unit number
       CHARACTER(*), intent(in) :: filename ! full pathname of file
@@ -1399,6 +1399,7 @@ C-------------------------------------------------------------------
       !                          and not just spaces.
       !=================================================================
       subroutine parse (line, lvar)
+      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG
       IMPLICIT NONE
       CHARACTER(132) LINE,L
       CHARACTER(50) LVAR(3)
@@ -1481,6 +1482,7 @@ C              SPACES; DELETES CONTROL CHARACTERS;REMOVES INITIAL SPACES.
 C              Adapted from stringmod.f90 from the website:
 C              http://www.gbenthien.net/strings/index.html
       !=================================================================
+       use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG
        IMPLICIT NONE
 
        INTEGER :: I,K,ISP,LENSTR,ICH

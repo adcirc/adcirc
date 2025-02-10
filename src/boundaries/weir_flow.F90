@@ -39,8 +39,8 @@
 !-----------------------------------------------------------------------
 module mod_weir_flow
    use ADC_CONSTANTS, only: G
-   use GLOBAL, only: ETA2, RAMPINTFLUX, &
-                     setMessageSource, unsetMessageSource, DEBUG, allMessage
+   use GLOBAL, only: ETA2, RAMPINTFLUX
+   use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG, allMessage
    use BOUNDARIES, only: LBCODEI, NBV
    use mod_time_varying_weir_boundary, only: COMPUTE_BARRIER_HEIGHT, &
                                              BAR_DEG

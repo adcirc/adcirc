@@ -30,11 +30,10 @@ C
      &     controlType, meshFileName_g, controlFileName_g
       use global, only: c3d, comm,
      &    bufsize_max, buf, resultbuf, outputdatadescript_t, float_type, nabout,
-     &     scratchMessage, dbletype, realtype, 
-     &     sig_val, sig_write, sig_ini, sig_pause, comm_writer, 
+     &     dbletype, realtype, sig_val, sig_write, sig_ini, sig_pause, comm_writer,
      &     sig_term, sig_mesh, writer_id
       use mod_logging, only: debug, echo, info, warning, error, logmessage, allmessage,
-     &     setmessagesource, unsetmessagesource, initLogging
+     &     setmessagesource, unsetmessagesource, initLogging, scratchMessage
       use messenger, only: tag, msg_fini
       implicit none
       ! tcm v50.27 increased size from 3 to 4, cobell increase to 6,
@@ -1040,7 +1039,7 @@ C
 !------------------------------------------------------------
 !
       SUBROUTINE HSWRITER_MAIN ()
-        USE mod_logging,ONLY : ScreenUnit
+        USE mod_logging,ONLY : ScreenUnit, setMessageSource, unsetMessageSource, DEBUG
         IMPLICIT NONE
         INTEGER :: SIG,IERR
         INTEGER :: STAT(MPI_STATUS_SIZE)
@@ -1117,8 +1116,10 @@ C-----------------------------------------------------------------------
 
       USE SIZES
       USE mod_logging, only: screenUnit
-      USE GLOBAL
+      USE GLOBAL, ONLY: NHSTAR, IM, NP_G, NE_G, hss, FileFmtVersion,
+     &    NSCOUE, NSCOUV, NSCOUC, NSCOUM, NSCOUGE, NSCOUGV, NSCOUGC, NSCOUGW, NHSINC
       USE MESH, ONLY : NE, NP
+      use mod_logging, only : setMessageSource, unsetMessageSource, DEBUG
       USE GLOBAL_IO, ONLY: packOne, unpackOne, 
      &    packTwo, unpackTwo, HEADER_MAX
 !

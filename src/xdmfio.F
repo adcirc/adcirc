@@ -53,11 +53,7 @@ C-----------------------------------------------------------------------
       if (abs(descript%specifier).ne.XDMF) then
          return
       endif
-#ifndef ADCXDMF
-      call allMessage(ERROR,'XDMF output was specified.')
-      call allMessage(ERROR,'This executable was not compiled with XDMF support.')
-      call terminate()
-#else
+
       !jgfdebug
       write(6,'(a)') 'fn='//trim(descript % file_name)
       write(6,'(a,i0)') 'lun=',descript % lun
@@ -94,7 +90,6 @@ C-----------------------------------------------------------------------
      &        "Temporal"//CHAR(0), XDMF_GRID_COLLECTION_TYPE_TEMPORAL)
 
 
-#endif
       !----------------------------------------------------------------
       end subroutine initOutputXDMF
       !----------------------------------------------------------------
@@ -105,14 +100,14 @@ C-----------------------------------------------------------------------
       ! Writes an array to an existing XDMF file. 
       !----------------------------------------------------------------
       subroutine writeOutArrayXDMF(timeLoc, it, descript)
-      use global, only: OutputDataDescript_t, scratchmessage, error, nt,
-     &            allMessage
+      use global, only: OutputDataDescript_t, nt
+      use mod_logging, only: scratchMessage, error, allMessage
       use mesh, only: NM, NE, agrid, dp, ics, np, x, y, terminate
       use sizes,only: mnproc
       implicit none
-#ifdef ADCXDMF
+
       include 'adcirc_Xdmf.f'
-#endif
+
       type(OutputDataDescript_t) :: descript
       real(8), intent(in) :: timeLoc
       integer, intent(in) :: it
@@ -134,12 +129,7 @@ C-----------------------------------------------------------------------
       logical :: lastOutput
       integer :: timeStepsRemaining
       integer :: i, j
-#ifndef ADCXDMF
-      call allMessage(ERROR,'XDMF output was specified.')
-      call allMessage(ERROR,
-     &    'This executable was not compiled with XDMF support.')
-      call terminate()
-#else
+
       !jgfdebug
       write(6,'(a)') 'call to write '//trim(descript % file_name)
       ! 
@@ -347,7 +337,7 @@ C-----------------------------------------------------------------------
          write(6,'(a)') 'finalizing output'
          call finalizeOutputFileXDMF(descript)
       endif
-#endif
+
       !-----------------------------------------------------------------      
       end subroutine writeOutArrayXDMF
       !-----------------------------------------------------------------
@@ -361,7 +351,7 @@ C-----------------------------------------------------------------------
       subroutine finalizeOutputFileXDMF(descript)
       use global, only : OutputDataDescript_t
       implicit none
-#ifdef ADCXDMF      
+
       include 'adcirc_Xdmf.f'
       type(OutputDataDescript_t) :: descript   
       !
@@ -382,7 +372,7 @@ C-----------------------------------------------------------------------
       ! call the close method (deletes the XdmfFortran object)
       write(6,'(A)') 'INFO: Cleaning up and deleting XDMF object.'
       call xdmfClose(descript % xdmfMD % xdmfFortranObj)
-#endif
+
       !----------------------------------------------------------------
       end subroutine finalizeOutputFileXDMF      
       !----------------------------------------------------------------
@@ -395,7 +385,7 @@ C-----------------------------------------------------------------------
       subroutine writeMetaData(descript)
       use global
       implicit none
-#ifdef ADCXDMF
+
       include 'adcirc_Xdmf.f' 
       !
       type(OutputDataDescript_t) :: descript 
@@ -448,7 +438,7 @@ C-----------------------------------------------------------------------
 !         endif
          descript % xdmfMD % createdIDs = .true.
       endif
-#endif
+
       !----------------------------------------------------------------------
       end subroutine writeMetaData
       !----------------------------------------------------------------------
@@ -465,7 +455,7 @@ C-----------------------------------------------------------------------
       use boundaries
       use global, only : OutputDataDescript_t
       implicit none
-#ifdef ADCXDMF
+
       include 'adcirc_Xdmf.f' 
       !
       type(OutputDataDescript_t) :: descript
@@ -605,7 +595,7 @@ C-----------------------------------------------------------------------
      &       '("ERROR: File contains IBTYPE=",i0," which is invalid.")') ibtype_orig(i)
          end select
       end do
-#endif
+
       !----------------------------------------------------------------------
       end subroutine addBoundaries
       !----------------------------------------------------------------------
@@ -620,7 +610,7 @@ C-----------------------------------------------------------------------
       use boundaries
       use global, only : OutputDataDescript_t
       implicit none
-#ifdef ADCXDMF      
+
       include 'adcirc_Xdmf.f' 
       !
       type(OutputDataDescript_t) :: descript
@@ -699,7 +689,7 @@ C-----------------------------------------------------------------------
             write(6,'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")') ibtype_orig(i)
          end select
       end do
-#endif
+
       !----------------------------------------------------------------------
       end subroutine addBoundaryReferences
       !----------------------------------------------------------------------

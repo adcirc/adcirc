@@ -339,8 +339,9 @@ module mod_moon_position
                                                         0.d0, &
                                                         8752.d0/)
 
-  private :: CAL_EPMUL, E_MUL_COEF, A1_DEG, A2_DEG, A3_DEG, &
-             MOON_COORDINATES_SUB0, MOON_COORDINATES_SUB1
+  private
+
+  public :: MOON_COORDINATES
 
   interface MOON_COORDINATES
     module procedure MOON_COORDINATES_SUB0, MOON_COORDINATES_SUB1
@@ -348,28 +349,28 @@ module mod_moon_position
 contains
 
   ! Coefficient muitplying sine and cosine arguments. page 338
-  real(8) elemental function E_MUL_COEF(T) result(E)
+  real(8) pure elemental function E_MUL_COEF(T) result(E)
     implicit none
     real(8), intent(IN) :: T
     E = 1.d0 + T*(-0.002516d0 + T*(-0.0000074d0))
   end function E_MUL_COEF
 
   ! Page. 338
-  real(8) elemental function A1_DEG(T) result(A1)
+  real(8) pure elemental function A1_DEG(T) result(A1)
     implicit none
     real(8), intent(IN) :: T
     A1 = 119.75d0 + 131.849d0*T
   end function A1_DEG
 
   ! Page. 338
-  real(8) elemental function A2_DEG(T) result(A2)
+  real(8) pure elemental function A2_DEG(T) result(A2)
     implicit none
     real(8), intent(IN) :: T
     A2 = 53.09d0 + 479264.290d0*T
   end function A2_DEG
 
   ! Page. 338
-  real(8) elemental function A3_DEG(T) result(A3)
+  real(8) pure elemental function A3_DEG(T) result(A3)
     implicit none
     real(8), intent(IN) :: T
     A3 = 313.45d0 + 481266.484d0*T
@@ -377,12 +378,12 @@ contains
 
   ! Coefficients for terms contains angle M. See description on
   ! Page 338
-  function CAL_EPMUL(MEU, E) result(EPMUL)
+   pure function CAL_EPMUL(MEU, E) result(EPMUL)
     implicit none
 
+    real(8), intent(in) :: E
+    integer, intent(in) :: MEU(:)
     real(8) :: EPMUL(NPER)
-    real(8), intent(IN) :: E
-    integer, intent(IN) :: MEU(:)
 
     integer :: I, J
 
@@ -555,14 +556,14 @@ contains
 
   contains
 
-    real(8) function additive_suml() result(asuml)
+    real(8) pure function additive_suml() result(asuml)
       implicit none
       asuml = 3958.d0*sin(DEG2RAD*A1) &
               + 1962.d0*sin(DEG2RAD*(LP - F)) &
               + 318.d0*sin(DEG2RAD*A2)
     end function additive_suml
 
-    real(8) function additive_sumb() result(asumb)
+    real(8) pure function additive_sumb() result(asumb)
       implicit none
       asumb = -2235.d0*sin(DEG2RAD*LP) &
               + 382.d0*sin(DEG2RAD*A3) &

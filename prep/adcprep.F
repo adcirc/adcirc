@@ -391,7 +391,7 @@ C
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
-      use global, only : logMessage, INFO, setMessageSource,
+      use mod_logging, only : logMessage, INFO, setMessageSource,
      &   unsetMessageSource, DEBUG, allMessage
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,

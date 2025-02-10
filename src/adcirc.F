@@ -525,7 +525,8 @@ C******************************************************************************
 C*    ADCIRC finalize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Final(NO_MPI_FINALIZE)
-      USE GLOBAL, ONLY : iTime, DEBUG, setMessageSource, allMessage,
+      USE GLOBAL, ONLY : iTime
+      use mod_logging, only: DEBUG, setMessageSource, allMessage,
      &   unsetMessageSource
       USE HARM, ONLY : solveHarmonicAnalysis
       USE WRITE_OUTPUT, ONLY : writeHarmonicAnalysisOutput

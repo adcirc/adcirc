@@ -729,9 +729,8 @@ c******************************************************************************
      &                   TBCTIMEINC, TTBCTIMEINC, TTBCSTATIM,
      &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2, 
      &                   LNM_BC, LNM_BC1, LNM_BC2, RIVBCTIMINC,
-     &                   RIVBCTIME1, RIVBCTIME2, 
-     &                   RIVBCSTATIM, DEBUG, setMessageSource,
-     &                   unsetMessageSource, allMessage, NP_G
+     &                   RIVBCTIME1, RIVBCTIME2, RIVBCSTATIM, NP_G
+      use mod_logging, only: DEBUG, setMessageSource,  unsetMessageSource, allMessage
       USE MESH, ONLY : NP, AGRID
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD,
      &  totalbcrivernodes, bndbcriver
@@ -1137,10 +1136,11 @@ C----------------------------------------------------------------------
       use mod_terminate, only: terminate
       use mesh, only : dp, np, mju, ne, nm
       use boundaries, only : nvel, lbcodei, nbv
-      use global, only : eta2, nnodecode, noff, logMessage, allMessage,
-     &   scratchMessage, INFO, h0, setMessageSource, unsetMessageSource,
-     &   DEBUG, WARNING, INFO, ERROR, scratchMessage, eta1, nolifa,
-     &   EtaDisc, River_above_MSL
+      use mod_logging, only: setMessageSource, unsetMessageSource,
+     &   DEBUG, WARNING, INFO, ERROR, logMessage, allMessage,
+     &   scratchMessage
+      use global, only : eta2, nnodecode, noff, h0, eta1, nolifa,
+     &    EtaDisc, River_above_MSL
       use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE,
      &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,

@@ -4414,7 +4414,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeStationData(sta, lun, descript1, timesec,
      &   descript2, descript3, descript4)
       USE SIZES, ONLY : MNPROC
-      USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, scratchMessage,
+      USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t,
      &  IDEN
       IMPLICIT NONE
 C
@@ -4753,7 +4753,7 @@ C-----------------------------------------------------------------------
      &   descript2, descript3, descript4 )
       USE SIZES, ONLY : MNPROC, MYPROC
       USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, NODECODE,
-     &                   scratchMessage, IDEN
+     &                   IDEN
 
       IMPLICIT NONE
 C
@@ -6499,7 +6499,7 @@ C     jgf49.49.02 Sets up netCDF variables for hotstarting 3D.
 C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFHotstart3D(lun, netcdf_format)
       USE SIZES, ONLY : MNPROC
-      USE GLOBAL, ONLY : OutputDataDescript_t, IDEN, scratchMessage
+      USE GLOBAL, ONLY : OutputDataDescript_t, IDEN
       USE GLOBAL_3DVS, ONLY : NFEN
       IMPLICIT NONE
 C
@@ -8263,7 +8263,8 @@ C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomainMaxMinNetCDF(descript, timeloc)
       use sizes, only : mnproc,myproc
       use mesh, only: np
-      use global, only : OutputDataDescript_t, allMessage, logMessage, nfover,np_g
+      use mod_logging, only: logMessage, allMessage
+      use global, only : OutputDataDescript_t, nfover,np_g
 #ifdef CMPI
       use messenger, only: mapToSubdomainRealMPI,mapToSubdomainIntMPI,msg_lbcast
 #endif      
@@ -9601,7 +9602,7 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Defines data that are common to all netCDF files.
 C-----------------------------------------------------------------------
       subroutine defineMeshVariables(ncid, myMesh, myFile)
-      USE GLOBAL, ONLY : C3D, scratchMessage
+      USE GLOBAL, ONLY : C3D
       USE ADC_CONSTANTS, ONLY: RAD2DEG
       USE MESH, ONLY : SLAM0, SFEA0, AGRID
       USE GLOBAL_3DVS, ONLY : NFEN

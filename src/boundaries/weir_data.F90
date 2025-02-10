@@ -50,10 +50,10 @@ contains
    !  LEVELS
    !-----------------------------------------------------------------------
    subroutine ALLOCATE_WEIRS()
-      use GLOBAL, only: allMessage, setMessageSource, &
+      use mod_logging, only: allMessage, setMessageSource, &
                         unsetMessageSource
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: DEBUG
 #endif
       use BOUNDARIES, only: NVEL, BARINHT, BARLANHT
       implicit none

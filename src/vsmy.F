@@ -5176,7 +5176,7 @@ C     input argument and returns the new value of the file counter
 C     at the end of the write.
 C--------------------------------------------------------------------
       SUBROUTINE binaryWrite2D(array, length, lun, counter)
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, DEBUG,
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource, DEBUG,
      &                    allMessage
       IMPLICIT NONE
       REAL(8), intent(in), dimension(length) :: array ! data to write
