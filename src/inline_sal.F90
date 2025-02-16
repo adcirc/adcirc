@@ -70,7 +70,7 @@ CONTAINS
     !> self-attraction and loading.
     !
     !-----------------------------------------------------------------------
-    subroutine self_attraction_loading_parallel( ssh_sal, lon, colat, np, sshSmoothed, nCells  )!{{{
+    subroutine self_attraction_loading_parallel( ssh_sal, sshSmoothed, nCells  )!{{{
         implicit none 
 
        
@@ -79,16 +79,15 @@ CONTAINS
         ! dummy variables
         !
         !-----------------------------------------------------------------
-        integer:: np, nCells
+        integer:: nCells
         real (kind=RKIND), dimension(:), intent(inout):: ssh_sal 
-        real (kind=RKIND), dimension(:), intent(in):: sshSmoothed, Lon, coLat 
+        real (kind=RKIND), dimension(:), intent(in):: sshSmoothed 
 
         !
         ! local varibles
-        integer :: iCell
+        integer :: iCell, ii
         integer :: n, m, l, blk
         integer :: startIdx, endIdx
-        integer :: ii, npBlock, nnpBlocks  
         real (kind=RKIND) :: mFac
 
       
@@ -226,7 +225,7 @@ CONTAINS
             SnmRe(m) = Snm(m)       ! real part
             SnmIm(m) = Snm(lmax+m)  ! imaginary part
 
-            print*, SnmRe(m), Snm(lmax+m) ;
+            ! print*, SnmRe(m), Snm(lmax+m) ;
         enddo
 
 
@@ -248,17 +247,17 @@ CONTAINS
         ! Inverse transform: will be needed at the nodes other than those at the cell center
         !!!!!!!!!!!!!!!!!!!!
         ! Calculate blocking indices
-        npBlock = nCellBlock ; 
-        IF ( .not. use_blocking_scheme ) npBlock = np ;            
-        nnpBlocks = ceiling(real(np,RKIND)/real(npBlock,RKIND))
-        IF ( .not. allocated( blockIdxInverse ) ) allocate( blockIdxInverse(2,nnpBlocks) ) ; 
-
-        blockIdxInverse(1,1) = 1
-        do ii = 1,nnpBlocks-1
-           blockIdxInverse(2,ii) = ii*nCellBlock
-           blockIdxInverse(1,ii+1) = blockIdxInverse(2,ii) + 1
-        enddo
-        blockIdxInverse(2,nnpBlocks) = np
+        !npBlock = nCellBlock ; 
+        !IF ( .not. use_blocking_scheme ) npBlock = np ;            
+        !nnpBlocks = ceiling(real(np,RKIND)/real(npBlock,RKIND))
+        !IF ( .not. allocated( blockIdxInverse ) ) allocate( blockIdxInverse(2,nnpBlocks) ) ; 
+        !
+        !blockIdxInverse(1,1) = 1
+        !do ii = 1,nnpBlocks-1
+        !   blockIdxInverse(2,ii) = ii*nCellBlock
+        !   blockIdxInverse(1,ii+1) = blockIdxInverse(2,ii) + 1
+        !enddo
+        !blockIdxInverse(2,nnpBlocks) = np
 
         do iCell = 1,nCells
            ssh_sal(iCell) = 0.0_RKIND
@@ -272,7 +271,7 @@ CONTAINS
                 mFac = 1.0_RKIND
             endif
 
-            do blk = 1,nnpBlocks
+            do blk = 1, nBlocks
                 startIdx = blockIdxInverse(1,blk)
                 endIdx = blockIdxInverse(2,blk)
 
@@ -436,14 +435,13 @@ CONTAINS
       enddo
       blockIdxForward(2,nBlocks) = nCells
 
-      
-      !! -- Don't need this ---
-      !! blockIdxInverse(1,1) = 1
-      !! do i = 1,nBlocks-1
-      !!   blockIdxInverse(2,i) = i*nCellBlock
-      !!   blockIdxInverse(1,i+1) = blockIdxInverse(2,i) + 1
-      !! enddo
-      !! blockIdxInverse(2,nBlocks) = nCells
+       
+      blockIdxInverse(1,1) = 1
+      do ii = 1,nBlocks-1
+         blockIdxInverse(2,ii) = ii*nCellBlock
+         blockIdxInverse(1,ii+1) = blockIdxInverse(2,ii) + 1
+      enddo
+      blockIdxInverse(2,nBlocks) = nCells
 
 
       return   
