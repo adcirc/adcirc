@@ -3057,7 +3057,7 @@ C
                DO IPROC=1, NPROC
                   IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d.
                      !WRITE(SDU(IPROC),50) FLUX_VAL
-                     WRITE(SDU(IPROC),*) TRIM(FLUX_MSG)
+                     WRITE(SDU(IPROC),'(A)') TRIM(FLUX_MSG)
                   ENDIF
                END DO
             END DO
