@@ -155,7 +155,7 @@ jobs:
             - adcirc-base-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
       - run:
           name: Get test data from AWS, <<parameters.test_name>>
-          command: source /opt/spack-environment/activate.sh && aws s3 cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
+          command: source /opt/spack-environment/activate.sh && aws s3 --no-sign-request cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
       - run:
           name: Unpack Tests
           command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
@@ -192,7 +192,7 @@ jobs:
             - adcirc-netcdf-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
       - run:
           name: Get test data from AWS, <<parameters.test_name>>
-          command: source /opt/spack-environment/activate.sh && aws s3 cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
+          command: source /opt/spack-environment/activate.sh && aws s3 --no-sign-request cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
       - run:
           name: Unpack Tests
           command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
@@ -229,7 +229,7 @@ jobs:
             - adcirc-grib2-{{ arch }}-{{ .Environment.CIRCLE_SHA1 }}-{{ .Environment.CIRCLE_WORKFLOW_ID }}
       - run:
           name: Get test data from AWS, <<parameters.test_name>>
-          command: source /opt/spack-environment/activate.sh && aws s3 cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
+          command: source /opt/spack-environment/activate.sh && aws s3 --no-sign-request cp s3://adcirc-testsuite/adcirc/<<pipeline.parameters.ci-version>>/<<parameters.test_name>>.tar.gz /home/adcirc/adcirc_testsuite.tar.gz
       - run:
           name: Unpack Tests
           command: mkdir /home/adcirc/adcirc-cg-testsuite && cd /home/adcirc/adcirc-cg-testsuite && tar -xvzf /home/adcirc/adcirc_testsuite.tar.gz
