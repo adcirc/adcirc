@@ -138,7 +138,7 @@ CWET...
 !     Determines which nodes should be wet and which should be dry.
 !----------------------------------------------------------------------
       subroutine computeWettingAndDrying(it)
-      use sizes, only : mne, mnp
+      use sizes, only : mne, mnp, mnei
       use nodalattributes,only: loadSubgridBarrier
       USE ADC_CONSTANTS, only: g
       use global, only : noff, nodecode, nnodecode, eta1, eta2, tk,
@@ -150,7 +150,8 @@ CWET...
       use messenger
 #endif
       use mesh, only : ne, np, nm, dp, mju, totalArea, nm, x, y, areas,
-     &   LBArray_Pointer, nneighele, neitabele, onIBTYP64Floodplain
+     &   LBArray_Pointer, nneighele, neitabele, onIBTYP64Floodplain,
+     &   neitab, nneigh
       use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
      &   manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,
      &   loadZ0B_var, z0b_var, loadSubgridBarrier,
@@ -192,6 +193,8 @@ CWET...
       integer :: nwetele
       integer :: ibtype64floodplaincnt = 0
       integer :: numGreater
+      ! integer :: nmn1, nmn2, nmn3, nwetnei, nwetadj, n
+      integer :: cntwet, cntdry, fstwet, curwet
   
       if (nolifa.ne.2) then
          return ! wetting and drying is not active 
