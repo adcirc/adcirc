@@ -50,8 +50,8 @@ C-----------------------------------------------------------------------
      &   nolifa, nolicat, dtdp, nramp, nrs, cprecor, dtdphs, statim, nt,
      &   cice_timinc, reftim, refsec, rstiminc, rnday, dramp, drampelev,
      &   fluxsettlingtime, drampextflux, drampintflux, dunrampmete, day,
-     &   dramptip, drampmete, drampwrad, nddt, nodedrymin, tree,
-     &   nodewetmin, srchdp, kdresults, vidbcpdxoh, vidbcpdyoh, tpk,
+     &   dramptip, drampmete, drampwrad, nddt, nodedrymin,
+     &   nodewetmin, vidbcpdxoh, vidbcpdyoh, tpk,
      &   dasigt, dasalt, datemp, daconc, corif, ntif, amigt, vidispdxoh,
      &   tipotag, cori, etrf, fft, facet, pert, saltamp, nbfr, 
      &   saltamp, saltpha, amig, face, per, csmag_eh, fbountag,
@@ -175,6 +175,39 @@ Casey 180318: Added NWS=13
       use mod_tidepotential, only: tidePotential, t_tidePotential
 
       IMPLICIT NONE
+
+      INTERFACE
+        SUBROUTINE readStations(names, num_stations, nnv, xcoord, ycoord,
+     &                          lat, lon, SEARCH_TREE, SEARCH_DEPTH,
+     &                          sta1, sta2, sta3, stat_lun, Description)
+          USE KDTREE2_MODULE, ONLY : KDTREE2
+          IMPLICIT NONE
+          CHARACTER(50), INTENT(OUT) :: names(num_stations)
+          CHARACTER(30), INTENT(IN) :: Description
+          INTEGER, INTENT(IN) :: num_stations
+          TYPE(KDTREE2), INTENT(IN), POINTER :: SEARCH_TREE
+          INTEGER, INTENT(IN) :: SEARCH_DEPTH
+          INTEGER, INTENT(IN) :: stat_lun
+          INTEGER, INTENT(OUT) :: nnv(num_stations)
+          REAL(8), INTENT(OUT) :: xcoord(num_stations)
+          REAL(8), INTENT(OUT) :: ycoord(num_stations)
+          REAL(8), INTENT(OUT) :: lat(num_stations)
+          REAL(8), INTENT(OUT) :: lon(num_stations)
+          REAL(8), INTENT(OUT) :: sta1(num_stations)
+          REAL(8), INTENT(OUT) :: sta2(num_stations)
+          REAL(8), INTENT(OUT) :: sta3(num_stations)
+        END SUBROUTINE readStations
+
+        SUBROUTINE READ_INPUT_3D(StaTime,NT,SEARCH_TREE,SEARCH_DEPTH)
+          USE KDTREE2_MODULE, ONLY : KDTREE2
+          IMPLICIT NONE
+          INTEGER, INTENT(IN) :: NT
+          TYPE(KDTREE2), INTENT(IN), POINTER :: SEARCH_TREE
+          INTEGER, INTENT(IN) :: SEARCH_DEPTH
+          REAL(8), INTENT(IN) :: StaTime
+        END SUBROUTINE READ_INPUT_3D
+      END INTERFACE
+
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
       INTEGER NTimeVaryingWeir
       INTEGER IDUM80
@@ -200,6 +233,9 @@ C
       real(8) :: k2Value = 0.302D0
       real(8) :: h2Value = 0.609D0
       logical :: UniformResMoonSunTimeData = .false.
+
+      INTEGER, PARAMETER :: KDTREE_MAX_SEARCH_DEPTH=100
+      TYPE(KDTREE2), POINTER :: BCXY_SEARCH_TREE  => NULL()
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
 #if defined CSWAN || defined ADCSWAN
@@ -3138,17 +3174,8 @@ C   For Sponge layer
          CALL FLAGSPONGEELEM()
       END IF
 
-C...  v49.48.02 tcm -- Allocate space for kdtree search
-C...       Be sure the maximum search depth is not larger than
-C...       the number of elements being kept
-      IF (NE.LT.SRCHDP) SRCHDP = NE
-
 C...  Create the search tree
-      tree => kdtree2_create(bcxy,rearrange=.true.,sort=.true.)
-
-C...  allocate space for the search results from the tree
-C...  this space will be deallocated later in the subroutine
-      ALLOCATE(KDRESULTS(SRCHDP))
+      bcxy_search_tree => kdtree2_create(bcxy,rearrange=.true.,sort=.true.)
 
       ! Making baroclinic terms zero initially
       DO I=1,NP
@@ -3848,8 +3875,8 @@ C....INPUT COORDINATES OF ELEVATION RECORDING STATIONS THEN COMPUTE
 C....THE ELEMENT NO. THE STATION LIES IN
       ALLOCATE(STATNAME(MNSTAE))
       CALL readStations(STATNAME, NSTAE, NNE, XEL, YEL, SLEL, SFEL,
-     &                  STAIE1, STAIE2, STAIE3,STAT_LUN,
-     &                  'ELEVATION RECORDING STATION   ')
+     &                  BCXY_SEARCH_TREE, MIN(KDTREE_MAX_SEARCH_DEPTH, MNE),
+     &                  STAIE1, STAIE2, STAIE3,STAT_LUN, 'ELEVATION RECORDING STATION   ')
       !tcm v51.20.04 addition for external station file
       IF ((USE_ELEV_STAT_FILE).AND.(STAT_LUN ==151)) CLOSE(STAT_LUN)
  9911 FORMAT(F12.3,2X,F12.3, 6X, A50)
@@ -3986,6 +4013,7 @@ C....INPUT COORDINATES OF VELOCITY RECORDING STATIONS
 C....THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
       ALLOCATE(STATNAMEV(MNSTAV))
       CALL readStations(STATNAMEV, NSTAV, NNV, XEV, YEV, SLEV, SFEV,
+     &                  BCXY_SEARCH_TREE, MIN(KDTREE_MAX_SEARCH_DEPTH, MNE),
      &                  STAIV1, STAIV2, STAIV3,STAT_LUN,
      &                 'VELOCITY RECORDING STATION    ' )
       !tcm v51.20.04 addition for external station file
@@ -4133,6 +4161,7 @@ C...  INPUT COORDINATES OF CONCENTRATION RECORDING STATIONS
 C...  THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
          ALLOCATE(STATNAMEC(NSTAC))
          CALL readStations(STATNAMEC, NSTAC, NNC, XEC, YEC, SLEC, SFEC,
+     &                  BCXY_SEARCH_TREE, MIN(KDTREE_MAX_SEARCH_DEPTH, MNE),
      &                  STAIC1, STAIC2, STAIC3,STAT_LUN,
      &                  'CONCENTRATION REC. STATION    ')
          !tcm v51.20.04 addition for external station file
@@ -4283,6 +4312,7 @@ C...  INPUT COORDINATES OF METEOROLOGICAL RECORDING STATIONS
 C...  THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
          ALLOCATE(STATNAMEM(MNSTAM))
          CALL readStations(STATNAMEM, NSTAM, NNM, XEM, YEM, SLEM, SFEM,
+     &                     BCXY_SEARCH_TREE, MIN(KDTREE_MAX_SEARCH_DEPTH, MNE),
      &                     STAIM1, STAIM2, STAIM3,STAT_LUN,
      &                      'METEOROLOGICAL REC. STATION   ')
          !tcm v51.20.04 addition for external station file
@@ -4868,7 +4898,7 @@ C...
 C...  Read input for 3D run
 C...
       IF(C3D) THEN
-        CALL READ_INPUT_3D(StaTim,NT)
+        CALL READ_INPUT_3D(StaTim,NT,BCXY_SEARCH_TREE,KDTREE_MAX_SEARCH_DEPTH)
 c     ELSEIF(C3DDSS) THEN
 c     CALL READ_INPUT_3DDSS(STATIM,NT)
       ENDIF
@@ -5108,11 +5138,8 @@ C...  CLOSE FORT.15
 C...
       CLOSE(15)
 
-C
-C... v49.48.02 tcm -- Deallocating rmax, bcxy and kdresults
-C...                 used for searching and finding points in elements
-      IF(ALLOCATED(KDRESULTS)) DEALLOCATE(KDRESULTS)
       call freeMesh()
+      call kdtree2_destroy(tp=BCXY_SEARCH_TREE)
 
 C... zc50.80 - All compute processors pass through here and check if anyone
 C              encountered an error while reading the input files.
@@ -5295,7 +5322,7 @@ C        in for a cold start in subroutine COLD_START_3D                      *
 C                                                                             *
 c******************************************************************************
 
-      SUBROUTINE READ_INPUT_3D(StaTime,NT)
+      SUBROUTINE READ_INPUT_3D(StaTime,NT,SEARCH_TREE,SEARCH_DEPTH)
       USE SIZES
 C    kmd48.33bc - added the variables from Global
       USE GLOBAL, ONLY: RES_BC_FLAG, BCSTATIM, RBCTIME1,
@@ -5313,6 +5340,7 @@ C    kmd48.33bc - added the variables from Global
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE GLOBAL_3DVS
       USE NodalAttributes, ONLY : Z0b_var
+      USE KDTREE2_MODULE, ONLY: KDTREE2
 
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -5320,8 +5348,33 @@ C    kmd48.33bc - added the variables from Global
       IMPLICIT NONE !jgf45.09 added
 C...  Declaration and definition of local variables used in this subroutine
 
+      INTERFACE
+        SUBROUTINE readStations(names, num_stations, nnv, xcoord, ycoord,
+     &                          lat, lon, SEARCH_TREE, SEARCH_DEPTH,
+     &                          sta1, sta2, sta3, stat_lun, Description)
+          USE KDTREE2_MODULE, ONLY : KDTREE2
+          IMPLICIT NONE
+          CHARACTER(50), INTENT(OUT) :: names(num_stations)
+          CHARACTER(30), INTENT(IN) :: Description
+          INTEGER, INTENT(IN) :: num_stations
+          TYPE(KDTREE2), INTENT(IN), POINTER :: SEARCH_TREE
+          INTEGER, INTENT(IN) :: SEARCH_DEPTH
+          INTEGER, INTENT(IN) :: stat_lun
+          INTEGER, INTENT(OUT) :: nnv(num_stations)
+          REAL(8), INTENT(OUT) :: xcoord(num_stations)
+          REAL(8), INTENT(OUT) :: ycoord(num_stations)
+          REAL(8), INTENT(OUT) :: lat(num_stations)
+          REAL(8), INTENT(OUT) :: lon(num_stations)
+          REAL(8), INTENT(OUT) :: sta1(num_stations)
+          REAL(8), INTENT(OUT) :: sta2(num_stations)
+          REAL(8), INTENT(OUT) :: sta3(num_stations)
+        END SUBROUTINE readStations
+      END INTERFACE
+
       REAL(8), intent(in)  :: StaTime          !Model start time
       INTEGER, intent(in)  :: NT   !Total number of time steps in model run
+      TYPE(KDTREE2), intent(in), pointer :: search_tree
+      INTEGER, intent(in) :: search_depth
 C
       REAL(8) :: HH1  !domain averaged depth used for some vertical FE grids
       INTEGER  :: N,K,NN,J         !loop counters
@@ -5621,7 +5674,8 @@ C.... Input the coordinates of the density output stations
 C.... and then compute the element # containing each station
       IF(NSta3DD.GT.0) THEN
          CALL readStations(STATNAMED, NSta3DD, NE3DD, XED, YED,
-     &         SLED, SFED, StaI3DD1, StaI3DD2, StaI3DD3,15,
+     &         SLED, SFED, SEARCH_TREE, MIN(SEARCH_DEPTH, MNE),
+     &         StaI3DD1, StaI3DD2, StaI3DD3,15,
      &                      '3D DENSITY RECORDING STATION  ')
       ENDIF
 C
@@ -5666,8 +5720,9 @@ C....Input the coordinates of the velocity output stations
 C....and then compute the element # containing each station
       IF(NSta3DV.GT.0) THEN
          CALL readStations(STATNAMEV3D, NSta3DV, NE3DV, XE3DV, YE3DV,
-     &         SLE3DV, SFE3DV, StaI3DV1, StaI3DV2, StaI3DV3,15,
-     &                      '3D VELOCITY RECORDING STATION ')
+     &         SLE3DV, SFE3DV, SEARCH_TREE, MIN(SEARCH_DEPTH, MNE),
+     &         StaI3DV1, StaI3DV2, StaI3DV3,15,
+     &         '3D VELOCITY RECORDING STATION ')
       ENDIF
 C
 C...3D Station Turbulence Output  (fort.43)
@@ -5709,8 +5764,9 @@ C....Input the coordinates of the turbulence output stations
 C....and then compute the element # containing each station
       IF(NSta3DT.GT.0) THEN
          CALL readStations(STATNAMET, NSta3DT, NE3DT, XET, YET,
-     &         SLET, SFET, StaI3DT1, StaI3DT2, StaI3DT3,15,
-     &                      '3D TURBULENCE REC. STATION    ')
+     &         SLET, SFET, SEARCH_TREE, MIN(SEARCH_DEPTH, MNE),
+     &         StaI3DT1, StaI3DT2, StaI3DT3,15,
+     &         '3D TURBULENCE REC. STATION    ')
       ENDIF
 C
 C...3D Global Density Output (fort.44)
@@ -6210,23 +6266,44 @@ C     to read the station information from.  The default stat_lun = 15
 C     but for external files it is stat_lun = 151.
 C-----------------------------------------------------------------------
       SUBROUTINE readStations(names, num_stations, nnv, xcoord, ycoord,
-     &                        lat, lon, sta1, sta2, sta3, stat_lun,
-     &                        Description)
+     &                        lat, lon, SEARCH_TREE, SEARCH_DEPTH,
+     &                        sta1, sta2, sta3, stat_lun, Description)
       USE ADC_CONSTANTS, ONLY: DEG2RAD, RAD2DEG
       USE GLOBAL, ONLY : parse, IFSPROTS,
      &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
       USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
+      USE KDTREE2_MODULE, ONLY : KDTREE2
       IMPLICIT NONE
-      CHARACTER(50) :: names(num_stations)
-      INTEGER num_stations, stat_lun
-      INTEGER, dimension(num_stations) :: nnv
-      REAL(8), dimension(num_stations) :: xcoord
-      REAL(8), dimension(num_stations) :: ycoord
-      REAL(8), dimension(num_stations) :: lat
-      REAL(8), dimension(num_stations) :: lon
-      REAL(8), dimension(num_stations) :: sta1
-      REAL(8), dimension(num_stations) :: sta2
-      REAL(8), dimension(num_stations) :: sta3
+
+      ! Interfaces for KDTSEARCH
+      INTERFACE
+        SUBROUTINE kdtsearch(InputXCoordinate, InputYCoordinate, SEARCH_TREE,
+     &     SEARCH_DEPTH, OutputElement, StationNumber, Description)
+          USE KDTREE2_MODULE
+          IMPLICIT NONE
+          REAL(8), INTENT(IN) :: InputXCoordinate, InputYCoordinate
+          TYPE(KDTREE2), INTENT(IN), POINTER :: SEARCH_TREE
+          INTEGER, INTENT(IN) :: SEARCH_DEPTH
+          INTEGER, INTENT(IN) :: StationNumber
+          INTEGER, INTENT(OUT) :: OutputElement
+          CHARACTER(LEN=30),INTENT(IN) :: Description
+        END SUBROUTINE kdtsearch
+      END INTERFACE
+
+      CHARACTER(50), INTENT(OUT) :: names(num_stations)
+      INTEGER, INTENT(IN) :: num_stations
+      TYPE(KDTREE2), INTENT(IN), POINTER :: SEARCH_TREE
+      INTEGER, INTENT(IN) :: SEARCH_DEPTH
+      INTEGER, INTENT(IN) :: stat_lun
+      INTEGER, INTENT(OUT) :: nnv(num_stations)
+      REAL(8), INTENT(OUT) :: xcoord(num_stations)
+      REAL(8), INTENT(OUT) :: ycoord(num_stations)
+      REAL(8), INTENT(OUT) :: lat(num_stations)
+      REAL(8), INTENT(OUT) :: lon(num_stations)
+      REAL(8), INTENT(OUT) :: sta1(num_stations)
+      REAL(8), INTENT(OUT) :: sta2(num_stations)
+      REAL(8), INTENT(OUT) :: sta3(num_stations)
+
       INTEGER I
       CHARACTER(132) STATLINE
       CHARACTER(50) LVAR(3)
@@ -6261,8 +6338,8 @@ C
 C... v49.48.02 -- tcm replaced with call to kdtsearch
 C         CALL CoordinateToElement(xcoord(I), ycoord(I),
 C     &         NNV(I), I, Description)
-         CALL KDTSEARCH(xcoord(I), ycoord(I),
-     &         NNV(I), I, Description)
+         CALL KDTSEARCH(xcoord(I), ycoord(I), SEARCH_TREE,
+     &                  SEARCH_DEPTH, NNV(I), I, Description)
 
          IF(ICS.EQ.1) THEN
             WRITE(16,1880) I,NNV(I),xcoord(I),xcoord(I)
@@ -6298,11 +6375,11 @@ C  Added in v49.48.02
 C
 C-----------------------------------------------------------------------
 
-      SUBROUTINE kdtsearch(InputXCoordinate, InputYCoordinate,
-     &     OutputElement, StationNumber, Description)
+      SUBROUTINE kdtsearch(InputXCoordinate, InputYCoordinate, SEARCH_TREE,
+     &     SEARCH_DEPTH, OutputElement, StationNumber, Description)
       use sizes, only : MyProc
-      use global, only : NFOver, NScreen, ScreenUnit, srchdp, tree,
-     &   kdresults, DEBUG, screenMessage, allMessage, setMessageSource,
+      use global, only : NFOver, NScreen, ScreenUnit,
+     &   DEBUG, screenMessage, allMessage, setMessageSource,
      &   unsetMessageSource
       use mesh, only : ne, nm, x, y, areas, rmax, bcxy
       use adcirc_mod, only : adcirc_terminate
@@ -6313,6 +6390,8 @@ C-----------------------------------------------------------------------
       implicit none
       REAL(8), intent(in) :: InputXCoordinate                  ! cartesian
       REAL(8), intent(in) :: InputYCoordinate                  ! cartesian
+      TYPE(KDTREE2), intent(in), pointer :: SEARCH_TREE
+      INTEGER, intent(in) :: SEARCH_DEPTH
       INTEGER, intent(out) :: OutputElement
       INTEGER, intent(in) :: StationNumber                     ! for err. mesg.
       CHARACTER(len=30), intent(in) :: Description             ! for err. mesg.
@@ -6324,9 +6403,10 @@ C-----------------------------------------------------------------------
       REAL(8) A1, A2, A3, AE, AREASK, AA            ! area
       real(8) :: elmmin(2),xelm(3),yelm(3),dist
       LOGICAL ElementFound  ! .true. when a corresponding element is found
+      TYPE(KDTREE2_RESULT) :: KDRESULTS(SEARCH_DEPTH)
 
       REAL(8), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match
-C
+
       call setMessageSource("kdtsearch")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -6336,19 +6416,19 @@ C
       Xsta = InputXCoordinate
       Ysta = InputYCoordinate
 
-      call kdtree2_n_nearest(tp=tree,qv=(/Xsta,Ysta/),
-     &                  nn=srchdp,results=KDRESULTS)
+      call kdtree2_n_nearest(tp=SEARCH_TREE,qv=(/Xsta,Ysta/),
+     &                  nn=SEARCH_DEPTH,results=KDRESULTS)
 C...    Check to see if the point lies with rmax of any of these elements
 
       ITC = 1
       ClosestElement = KDRESULTS(itc)%idx
 
-      elmmin = minval(sqrt(KDRESULTS(1:srchdp)%dis)
-     &                              - rmax(KDRESULTS(1:srchdp)%idx) )
+      elmmin = minval(sqrt(KDRESULTS(1:SEARCH_DEPTH)%dis)
+     &                              - rmax(KDRESULTS(1:SEARCH_DEPTH)%idx) )
 
       if(elmmin(1).le.0.0D0) then  ! Point lies within search radius of an element
 C...        loop through the elements in the search list
-         do while ((ElementFound.eqv..false.).and.(itc.le.srchdp))
+         do while ((ElementFound.eqv..false.).and.(itc.le.SEARCH_DEPTH))
             iek = KDRESULTS(itc)%idx  !Current search element number
 C...           Get the distance from this point to the barycenter of the
 C...           current element

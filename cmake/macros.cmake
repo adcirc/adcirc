@@ -95,6 +95,18 @@ macro(addDatetimeDefinitions TARGET)
     target_compile_definitions(${TARGET} PRIVATE DATETIME)
     target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/datetime_fortran)
     add_dependencies(${TARGET} datetime)
+
+    # Create a false target for the Ninja build system. The generated sources don't give it a full picture of where it
+    # can parallelize and this helps it make the correct determinations
+    if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+      add_custom_target(
+        templib_datetime-${TARGET}-stub
+        BYPRODUCTS templib_datetime-${TARGET}-stublib
+        COMMAND ""
+        DEPENDS datetime)
+      add_dependencies(${TARGET} templib_datetime-${TARGET}-stub)
+    endif()
+
   endif()
 endmacro()
 

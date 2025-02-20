@@ -38,7 +38,6 @@ C
 
       MODULE GLOBAL
       USE ADC_CONSTANTS, ONLY: DEG2RAD
-      USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
 #ifdef DATETIME
       use datetime_module, only: datetime
 #endif
@@ -829,11 +828,6 @@ C
       CHARACTER(len=1024) :: scratchMessage ! used for formatted messages
       CHARACTER(len=1024) :: scratchFormat  ! used for Fortran format strings
       INTEGER :: sourceNumber ! index into messageSources for current sub
-
-C     v49.48.01 tcm 20110126 Variables related to kdtree searches
-      INTEGER :: SRCHDP=100
-      TYPE(KDTREE2), POINTER :: TREE
-      TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
 
       !jgf: water level offset at two time levels
       real(8), allocatable :: dynamicWaterLevelCorrection1(:)
