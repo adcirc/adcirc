@@ -331,3 +331,4 @@ workflows:
                         - adcirc_baroclinic_internaltide_2d
                         - adcirc_global-tide-2d-full-tip-JPL-emphemerides-serial
                         - adcirc_global-tide-2d-full-tip-analytical-parallel
+                        - adcirc_global-nws14-inset-parallel
