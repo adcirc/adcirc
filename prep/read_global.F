@@ -538,6 +538,7 @@ C
 !   tcm v50.66.02 -- added timebathycontrol namelist related variables
       INTEGER :: ios_nddt
       INTEGER :: ios_metCon
+      INTEGER :: ios_interpinset
       INTEGER :: ios_tvw
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       INTEGER :: IOS_WC
@@ -658,6 +659,22 @@ c... tcm v50.79 added
      &         'The metControl namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
+C-------------------------------------------------------------
+!Aman Tejaswi added namelist for NETCDF Inset
+
+      READ(UNIT = 15, NML = InterpInset,IOSTAT = ios_interpinset)
+      if ( ios_interpinset.ge.0) then
+         found_InterpInset_Namelist  = .true.
+         call logMessage(INFO,
+     &         'The InterpInset namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The InterpInset namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+
+C----------------------------------------------------------------
+
 
 Cobell - Added TVW Namelist
       READ(15,NML=tvwControl,IOSTAT=IOS_TVW)

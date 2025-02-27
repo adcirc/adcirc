@@ -2281,6 +2281,18 @@ C
             write(15,*) '! -- End Met Control Namelist --'
          endif
 
+
+         IF( found_InterpInset_Namelist ) then 
+            WRITE(15,*) "!---Begin InterpInset Namelist-----!"
+            WRITE(15,*) "&InterpInset "
+            WRITE(15,*) "UseInterpInset=", UseInterpInset,","
+            WRITE(15,*) "Pfile_inset='", TRIM(ADJUSTL(Pfile_inset)),"',"
+            WRITE(15,*) "Wfile_inset='", TRIM(ADJUSTL(Wfile_inset)),"',"
+            WRITE(15,*) "InsetControlfile='",TRIM(ADJUSTL(InsetControlFile)),"',"
+            WRITE(15,*) "/"  
+            WRITE(15,*) "!----End InterpInset Namelist------!"
+         ENDIF   
+
          if (found_tvw_nml) then
              write(15,*) '! -- Begin TVW Control Namelist --'
              write(15,*) "&TVWControl "
@@ -8972,7 +8984,6 @@ C++
       CALL initNetCDFOutputFile(UMaxDescript, reterr)
       CALL initNetCDFOutputFile(PrMinDescript, reterr)
       CALL initNetCDFOutputFile(WVMaxDescript, reterr)
-      CALL initNetCDFOutputFile(RSMaxDescript,reterr)
       if (inundationOutput.eqv..true.) then
          CALL initNetCDFOutputFile(InundationTimeDescript,reterr)
          CALL initNetCDFOutputFile(MaxInunDepthDescript,reterr)
@@ -8998,6 +9009,7 @@ C++
       ! dw: added NRS == 5 for NEMS support
       IF ((NRS.EQ.3).OR.(NRS.EQ.4).OR.(NRS.EQ.5)) THEN 
         CALL initNetCDFOutputFile(RSDescript,reterr)
+        CALL initNetCDFOutputFile(RSMaxDescript,reterr)
       ENDIF
       ! tcm v50.75 moved ifdef adcswan to here
 #ifdef ADCSWAN

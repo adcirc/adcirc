@@ -141,7 +141,10 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       USE GLOBAL, ONLY :
      &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
      &    outputWindDrag,slim,windlim,directvelWD,useHF,
-     &    Limit_WaveStressGrad  !tcm v56 2024: added
+     &    Limit_WaveStressGrad,  !tcm v56 2024: added
+
+     &    PFile_inset, Wfile_inset, InsetControlFile !aman added
+
 #if defined CSWAN || defined ADCSWAN
      &   ,SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &    SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
@@ -595,6 +598,11 @@ C.... tcm v52.30.01 additions for Smagorinski Eddy Viscosity Namelist
       LOGICAL :: FOUND_Smag_NML = .false. ! flag to determine if the Smag_Control namelist was present
       NAMELIST /Smag_Control/ SMAG_UPPER_LIM,SMAG_LOWER_LIM,SMAG_COMP_FLAG
 
+      LOGICAL :: found_InterpInset_namelist = .FALSE.
+      LOGICAL :: UseInterpInset = .FALSE.
+      NAMELIST /InterpInset/UseInterpInset,Pfile_inset,Wfile_inset,InsetControlFile
+
+     
 #ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
 #else
@@ -788,7 +796,17 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          found_WarnElev_nml = .true.  
       ENDIF
       REWIND(15)
-      
+
+      READ(UNIT=15,NML=InterpInset,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         write(*,*) "INFO: The WarnElevControl namelist was not found."
+      ELSE
+         found_InterpInset_namelist = .true.  
+      ENDIF
+      REWIND(15)
+
+
+
       READ(UNIT=15,NML=AliDispersionControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The AliDisp Control namelist was not found."

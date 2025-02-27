@@ -503,6 +503,14 @@ C     jgf48.4627 When only meteorological output is requested, skip past
 C     the GWCE and Momentum equations, so that ADCIRC runs faster and
 C     only calculates the requested quantities.
       LOGICAL :: METONLY             = .FALSE.
+
+
+!Aman Tejaswi  added for inset W/P files
+      LOGICAL :: found_InterpInset_namelist = .FALSE.
+      LOGICAL :: UseInterpInset             = .FALSE.
+      CHARACTER(LEN=256)   :: Pfile_inset, Wfile_inset, InsetControlFile
+
+
 C
 C     jgf51.14: Moved the parameters that control output timing 
 C     from read_input.F to here so that they can be used to recalculate

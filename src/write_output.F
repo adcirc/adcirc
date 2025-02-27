@@ -1374,8 +1374,12 @@ C      IF (mnproc.gt.1) THEN
          ! RSNMAX_g(:) = 0.d0
          ! RSNMAX_Time_G(:) = -99999.d0
       ENDIF
+      if (nrs.eq.0) then
+         RSMaxDescript % specifier          = OFF
+      else
+         RSMaxDescript % specifier          = NOUTGW
+      endif
       RSMaxDescript % lun                   = 315
-      RSMaxDescript % specifier             = NOUTGW
       RSMaxDescript % num_items_per_record  = 2
       RSMaxDescript % array2                => RSNMAX_Time
       RSMaxDescript % array2_g              => RSNMAX_Time_G

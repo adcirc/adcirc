@@ -84,7 +84,8 @@ C-----------------------------------------------------------------------
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
-     &   WarnVel, toLowercase
+     &   WarnVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
+     &   Pfile_inset, Wfile_inset, InsetControlFile 
 
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
@@ -244,7 +245,10 @@ C.... DMW
       NAMELIST /subgridControl/ subgridFilename, level0, level1
 
       NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
+!Aman Tejaswi
 
+      NAMELIST /InterpInset/ UseInterpInset, PFile_inset,Wfile_inset,
+     &         InsetControlFile 
 C---- DW/AC, for full tidal pontential formula
 C     UseFullTIPFormula = T/F (default F)
 C     TIPOrder = 2 (P2), 3(p3), >= 4(exact)  (default 2)
@@ -474,6 +478,23 @@ c     a non-default value we can determine this was the case.
      & ' outputWindDrag=',outputWindDrag,
      & ' nPowellSearchDomains=',nPowellSearchDomains
       call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
+
+!Aman Tejaswi
+      namelistSpecifier = 'InterpInset'
+      read(unit=15,nml=InterpInset,iostat=ios,iomsg=ios_nml_error_msg)
+      IF(ios.NE.0)THEN
+        CALL logMessage(INFO,"The InterpInset namelist was not found.")
+        found_InterpInset_namelist = .FALSE.
+      ELSE
+        CALL logMessage(INFO,"The InterpInset namelist was found.")
+        found_InterpInset_namelist = .TRUE.
+      
+      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
+      write(scratchMessage,*) "UseInterpInset=",UseInterpInset
+      call logMessage(ECHO,trim(scratchMessage))
+      ENDIF
       rewind(15)
 
 #ifdef ADCNETCDF
