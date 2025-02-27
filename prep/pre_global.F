@@ -303,12 +303,22 @@ Casey 180318: Added NWS=13
       LOGICAL :: found_NWS14Grib2NetCdf_Namelist = .false. 
       NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
 
+      ! AMAN TEJASWI
+      LOGICAL :: found_InterpInset_Namelist = .FALSE.
+      LOGICAL :: UseInterpInset
+      NAMELIST /InterpInset/ UseInterpInset,Pfile_inset, Wfile_inset, InsetControlFile
+
       logical :: foundWetDryControlNamelist = .false. ! for namelist 
       logical :: outputNodeCode = .false.
       logical :: outputNOFF = .false.
       logical :: noffActive = .true.
       logical :: StatPartWetFix = .false.  ! tcm v53.01.02
       integer :: How2FixStatPartWet = 0    ! tcm v52.01.02 (Can also be 1 in v54.)
+
+
+
+       
+
 
 !JLW: add subgrid namelist control
       logical :: foundSubgridControlNamelist = .false.
