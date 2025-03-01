@@ -294,6 +294,7 @@ C... SB
      &   , gridDepthVertETA1, gridDepthVertETA2
      &   , wetFracVertETA1, wetFracVertETA2
      &   , cadvVertETA2
+     &   , dphidt
 
       IMPLICIT NONE
 
@@ -538,10 +539,11 @@ C
                MsFacLOffDiag=OffDiag*AreaIE*(1.d0/DT+Tau0Avg_S/2.d0)/DT/12.d0
 !JLW: adding subgrid to the on and off diagonal terms
                IF(level0)THEN
+!JLW: adding option to turn off dphidt term
                   MSFacLOnDiag = MSFacLOnDiag*PHIAVG2 + OnDiag
-     &               *AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/12.d0
+     &               *dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/12.d0
                   MSFacLOffDiag = MSFacLOffDiag*PHIAVG2 + OffDiag
-     &               *AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/12.d0
+     &               *dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/12.d0
                ENDIF
 C
 C.......... DW
@@ -1429,9 +1431,11 @@ C
 !JLW: adding the wet area fraction to the time derivative terms and the
 !water surface gradient term
          IF(level0)THEN
+!JLW: adding dphidt option
             MSFacR = PHIAVG2*MSFacR - 
-     &         AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/12.d0
-            GOAreaIE4 = GOAreaIE4*PHIAVG2
+     &         dphidt*AreaIE*((PHIAVG2-PHIAVG1)/2.d0)/DT/12.d0
+!JLW: removing the following subgrid addition because incorrect
+!            GOAreaIE4 = GOAreaIE4*PHIAVG2
          ENDIF
          Tau0SpaVar=(QX1Avg*Tau0XGrad2A+QY1Avg*Tau0YGrad2A)/6.d0
          A00pB00=A00+B00
