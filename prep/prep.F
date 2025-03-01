@@ -2350,7 +2350,8 @@ Casey 180318: Added NWS=13
      &         "&subgridControl",
      &         " subgridFilename='",trim(adjustl(subgridFilename)),
      &         "' level0=",level0,
-     &         " level1=",level1," /"
+     &         " level1=",level1,
+     &         " dphidtoff=",dphidtoff," /"
          endif
 
 

@@ -562,7 +562,7 @@ C.... "new" formula for computing vel in wetting/drying routine
 C.... DMW
 !JLW: adding subgrid control namelist
       integer :: ios_subgrid
-      namelist /subgridControl/ subgridFilename, level0, level1
+      namelist /subgridControl/ subgridFilename, level0, level1, dphidtoff
       ! jgf52.08.02 : For inundation output files.
       namelist /inundationOutputControl/ inundationOutput, inunThresh
 
