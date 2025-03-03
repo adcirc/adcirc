@@ -1770,7 +1770,7 @@ C----------------------------------------------------------------------
      &                   , numPhi
      &                   , wetDepthVertETA2
      &                   , gridDepthVertTab
-     &                   , dphidtoff, dphidt
+     &                   , phi_time_derivative, dphidt
       implicit none
       integer :: nm1, nm2, nm3  ! node numbers around the element
       integer :: nc1, nc2, nc3  ! nodecodes around the element
@@ -1847,10 +1847,10 @@ C----------------------------------------------------------------------
          ! set all elements to wet by default.
          noff(:)=1
 !JLW: set dphidt term
-         if(dphidtoff)then
-            dphidt = 0
-         else
+         if(phi_time_derivative)then
             dphidt = 1
+         else
+            dphidt = 0
          endif
 !JLW: call subgrid lookup table read in
          call readSubgridLookup()

@@ -2351,7 +2351,7 @@ Casey 180318: Added NWS=13
      &         " subgridFilename='",trim(adjustl(subgridFilename)),
      &         "' level0=",level0,
      &         " level1=",level1,
-     &         " dphidtoff=",dphidtoff," /"
+     &         " phi_time_derivative=",phi_time_derivative," /"
          endif
 
 
