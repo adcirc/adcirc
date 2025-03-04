@@ -15,7 +15,7 @@ MODULE MOD_INLINE_SAL
     INTEGER, parameter, private:: RKIND=8
 
     ! global varibles: private
-    INTEGER, private::  nOrder = 256 
+    INTEGER, private::  nOrder = 128 
     INTEGER, private::  nCellBlock = 500 
     LOGICAL, private::  use_direct_shtns_self_attraction_loading = .TRUE.
 
@@ -24,12 +24,15 @@ MODULE MOD_INLINE_SAL
 
 
     real(kind=RKIND), private, dimension(:,:), allocatable :: aRecurrenceCoeff, bRecurrenceCoeff 
-    real(kind=RKIND), private, dimension(:),   allocatable :: pmnm2, pmnm1, pmn                 
-    real(kind=RKIND), private, dimension(:),   allocatable :: sinLatCell, cosLatCell
-    real(kind=RKIND), private, dimension(:),   allocatable :: LoveScaling
+    real(kind=RKIND), private, dimension(:), allocatable :: pmnm2, pmnm1, pmn                 
+    real(kind=RKIND), private, dimension(:), allocatable :: LoveSalScaling, LovLoadScaling
 
-    real(kind=RKIND), private, dimension(:,:), allocatable :: complexFactorRe, complexFactorIm
+    real(kind=RKIND), private, dimension(:), allocatable :: lonCell
+    real(kind=RKIND), private, dimension(:), allocatable :: sinLatCell, cosLatCell, dASc ! dASc - intended for dA = dlon dlat 
+    real(kind=RKIND), private, dimension(:), allocatable :: sphtRe, sphtIm ! for temporarily holding the inegrad at the quadrature points
+
     real(kind=RKIND), private, dimension(:,:), allocatable :: complexExpRe, complexExpIm
+    real(kind=RKIND), private, dimension(:,:), allocatable :: complexFactorRe, complexFactorIm
 
     real(kind=RKIND), private, dimension(:),   allocatable :: Snm, SnmRe, SnmIm
     real(kind=RKIND), private, dimension(:),   allocatable :: Snm_local, SnmRe_local, SnmIm_local
@@ -38,17 +41,309 @@ MODULE MOD_INLINE_SAL
     real(kind=RKIND), private, dimension(:), allocatable :: sshSmoothed
     real(kind=RKIND), private, dimension(:), pointer :: coastalSmoothingFactor
 
+    integer, private :: lmax
+    integer, private :: nBlocks, nPoints
     integer, private, dimension(:,:), allocatable :: blockIdxForward
     integer, private, dimension(:,:), allocatable :: blockIdxInverse
-    integer, private :: nBlocks
-    integer, private :: lmax
 
-    real(kind=RKIND), private, parameter:: pii = acos(-1.0_RKIND) ;
+    real(kind=RKIND), private, parameter:: onethird = 1.0_RKIND/3.0_RKIND 
+    real(kind=RKIND), private, parameter:: pii = acos(-1.0_RKIND) 
     real(kind=RKIND), private, parameter:: SqrtInv4Pi = sqrt(1.0_RKIND/(4.0_RKIND*pii))
 
 CONTAINS
 
+    ! 
+    ! DW:
+    ! Spherical harminic transformation of linear C^{0} FEM data using a direct approach. 
+    !    
+    !
+    ! 1. Forward transform
+    !      f^{m}_{n} = \int_{0}^{2pi} \int_{0}^{pi} f(phi,theta) Y^{m}_{n} sin( \theta) d \phi \d \theta
+    !
+    !      SPHT(ssh) -> (SnmRe,SnmIm) 
+    !   
+    !     - input: ssh(:)      - Values of a given function at FEM nodes 
+    !              elements(:) - node conectivity table 
+    !              nCells      - number of elements
+    !              forward = .true. 
+    !     - output: spherial harmonic coefficeints are stored in the private arrays SnmRe, SnmIm
+    !              SnmRe = Re( f^{m}_{n} )
+    !              SnmIm = Im( f^{m}_{n} ) 
+    ! 
+    ! 2. Inverse tramsform
+    !      f(phi,theta) = \sum_{n=0}^{N} \sum
+    !    
+    !      ISHT(SnmRe,SnmIm) -> ssh
+    !  
+    !     * resynthesize ssh from the spherical harmonic coefficeints stored in the SnmRe, SnmIm
+    !     - input: elements
+    !              nCells
+    !              forward = .fasle. 
+    !     - outout: ssh(:)  - Resynthesized function at FEM nodes
+    !
+    !
+    subroutine spherical_harmonics_transform_direct_fem(  ssh, elements, nCells, forward ) 
+        implicit none
 
+        real (kind=RKIND), dimension(:), intent(inout):: ssh
+        integer, dimension(:,:), intent(in):: elements
+        integer, intent(in):: nCells
+        logical, intent(in):: forward 
+
+        ! local varibles
+        integer :: iCell
+        integer :: n, m, l, blk
+        integer :: startIdx, endIdx, ii
+        real (kind=RKIND) :: mFac
+
+        FORWARDSPHT: IF ( forward ) THEN
+          !!!!!!!!!!!!!!!!!!!!!
+          ! Forward Transform
+          !!!!!!!!!!!!!!!!!!!!!
+          do m = 0,nOrder
+             do n = m,nOrder
+                  l = SHOrderDegreeToIndex(n,m)
+  
+                  SnmRe_local(l) = 0.0_RKIND
+                  SnmIm_local(l) = 0.0_RKIND
+              enddo
+          enddo
+  
+          do m = 0,nOrder  
+             !! do blk = 1,nBlocks
+             !!     startIdx = blockIdxForward(1,blk)
+             !!     endIdx = blockIdxForward(2,blk)
+  
+             !------------
+             ! n = m
+             !------------
+             n = m
+  
+             ! Calculate associated Legendre polynomial for n=m (output pmnm2)
+             call associatedLegendrePolynomials(n, m, 1, nPoints, sinLatCell, cosLatCell, l, pmnm2, pmnm1, pmn)
+  
+             ! Compute local integral contribution
+             do iCell = 1, nPoints
+               sphtRe(iCell) = ssh(iCell)*pmnm2(iCell)*complexExpRe(iCell,m+1)*sinLatCell(iCell) ;
+               sphtIm(iCell) = ssh(iCell)*pmnm2(iCell)*complexExpIm(iCell,m+1)*sinLatCell(iCell) ;
+               ! sphtRe(iCell) = ssh(iCell)*pmnm2(iCell)*cos( m*lonCell(iCell) )*sinLatCell(iCell) ;
+               ! sphtIm(iCell) = ssh(iCell)*pmnm2(iCell)*sin( m*lonCell(iCell) )*sinLatCell(iCell) ; 
+             end do
+             CALL NewtonCoteLinearFEM( l ) ; 
+             
+
+             !------------
+             ! n = m+1
+             !------------
+             n = m+1
+             if (n <= nOrder) then
+  
+                 ! Calculate associated Legendre polynomial for n = m+1 using recurrence relationship
+                 call associatedLegendrePolynomials(n, m, 1, nPoints, sinLatCell, cosLatCell, l, pmnm2, pmnm1, pmn)
+  
+                 do iCell = 1, nPoints
+                    sphtRe(iCell) = ssh(iCell)*pmnm1(iCell)*complexExpRe(iCell,m+1)*sinLatCell(iCell)
+                    sphtIm(iCell) = ssh(iCell)*pmnm1(iCell)*complexExpIm(iCell,m+1)*sinLatCell(iCell)
+                    ! sphtRe(iCell) = ssh(iCell)*pmnm1(iCell)*cos( m*lonCell(iCell) )*sinLatCell(iCell)
+                    ! sphtIm(iCell) = ssh(iCell)*pmnm1(iCell)*sin( m*lonCell(iCell) )*sinLatCell(iCell)
+                 enddo
+                 CALL NewtonCoteLinearFEM( l ) ; 
+
+             endif
+  
+             !------------
+             ! n > m+1
+             !------------
+             do n = m+2,nOrder
+  
+                 ! Calculate associated Legendre polynomial using recurrence relationship
+                 call associatedLegendrePolynomials(n, m, 1, nPoints, sinLatCell, cosLatCell, l, pmnm2, pmnm1, pmn)
+  
+                 ! Update associated Ledgendre polynomial values for next recurre
+                 pmnm2 = pmnm1
+                 pmnm1 = pmn
+               
+                 ! Compute local integral contribution
+                 do iCell = 1, nPoints
+                    sphtRe(iCell) = ssh(iCell)*pmn(iCell)*complexExpRe(iCell,m+1)*sinLatCell(iCell) 
+                    sphtIm(iCell) = ssh(iCell)*pmn(iCell)*complexExpIm(iCell,m+1)*sinLatCell(iCell)
+                    ! sphtRe(iCell) = ssh(iCell)*pmn(iCell)*cos( m*lonCell(iCell) )*sinLatCell(iCell) 
+                    ! sphtIm(iCell) = ssh(iCell)*pmn(iCell)*sin( m*lonCell(iCell) )*sinLatCell(iCell)
+                 end do
+                 CALL NewtonCoteLinearFEM(  l ) ;
+
+                 !if ( l == 3  ) then 
+                 !    print*, l, n, m, SnmRe_local(l)
+                 !    open( unit = 10, file = 'pmn.dat' ) ; 
+                 !    do  ii = 1, nPoints
+                 !     write( 10, * ) pmn(ii) ; 
+                 !    enddo
+                 !    close(10) ; 
+                 !endif
+
+             enddo ! n loop
+             ! print*, "l = ", l ; 
+             !    
+             ! enddo ! blocks loop
+          enddo ! m loop
+
+          do m = 1,lmax
+             Snm_local(m) = SnmRe_local(m)      ! real part of f^{m}_{n}
+             Snm_local(lmax+m) = SnmIm_local(m) ! imaginary part of f^{m}_{n}
+          enddo
+
+          ! Will need allreduce for parallel ! 
+          Snm = Snm_local ; 
+       
+          ! output: spherical harmonic coefficeints !
+          do m = 1,lmax
+             SnmRe(m) = Snm(m)       ! real part
+             SnmIm(m) = Snm(lmax+m)  ! imaginary 
+
+             ! PRINT*, SnmRe(m), SnmIm(m) ; 
+          enddo
+
+
+        ENDIF FORWARDSPHT
+
+
+        INVERSESPHT: IF ( .not. forward ) THEN
+         ! do iCell = 1,nCells
+         !    ssh(iCell) = 0.0_RKIND
+         ! enddo
+          ssh = 0.0_RKIND
+
+          do m = 0,nOrder
+
+              if (m>0) then
+                  mFac = 2.0_RKIND
+              else
+                  mFac = 1.0_RKIND
+              endif
+
+              ! blocking gscheme
+              do blk = 1, nBlocks
+                  startIdx = blockIdxInverse(1,blk)
+                  endIdx = blockIdxInverse(2,blk)
+
+                  !------------
+                  ! n = m
+                  !------------
+                  n = m
+
+                  ! Calculate associated Legendre polynomial using recurrence relationship
+                  call associatedLegendrePolynomials(n, m, startIdx, endIdx, sinLatCell, cosLatCell, l, pmnm2, pmnm1, pmn)
+
+                  ! Sum together product of spherical harmonic functions and coefficients
+                  do iCell = endIdx, startIdx, -1
+                      ssh(iCell) = ssh(iCell) + mFac*pmnm2(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                  enddo
+
+                  !------------
+                  ! n = m+1
+                  !------------
+                  n = m+1
+                  if (n <= nOrder) then
+
+                      ! Calculate associated Legendre polynomial using recurrence relationship
+                      call associatedLegendrePolynomials(n, m, startIdx, endIdx, sinLatCEll, cosLatCell, l, pmnm2, pmnm1, pmn)
+
+                      ! Sum together product of spherical harmonic functions and coefficients
+                      do iCell = endIdx, startIdx, -1
+                          ssh(iCell) = ssh(iCell) + mFac*pmnm1(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                      enddo
+
+                  endif
+
+                  !------------
+                  ! n > m+1
+                  !------------
+                  do n = m+2,nOrder
+
+                      ! Calculate associated Legendre polynomial using recurrence relationship
+                      call associatedLegendrePolynomials(n, m, startIdx, endIdx, sinLatCell, cosLatCell, l, pmnm2, pmnm1, pmn)
+
+                      ! Update associated Ledgendre polynomial values for next recurrence
+                      do iCell = endIdx, startIdx, -1
+                          pmnm2(iCell) = pmnm1(iCell)
+                      enddo
+                      do iCell = startIdx, endIdx
+                          pmnm1(iCell) = pmn(iCell)
+                      enddo
+
+                      ! Sum together product of spherical harmonic functions and coefficients
+                      do iCell = endIdx, startIdx, -1
+                          ssh(iCell) = ssh(iCell) + mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                      enddo
+
+                  enddo ! n loop
+              enddo ! block loop
+          enddo ! m loop
+          !!
+        ENDIF INVERSESPHT
+
+
+        return ; 
+    contains
+
+         subroutine NewtonCoteLinearFEM( l )
+            implicit none
+
+            integer:: l
+
+            integer:: ii, ie, ipoint
+
+            DO ii = 1, 3
+               DO ie = 1, nCells
+                  ipoint = elements(ie,ii) 
+                  SnmRe_local(l) = SnmRe_local(l) + onethird*sphtRe(ipoint)*dASc(ie) ;
+                  SnmIm_local(l) = SnmIm_local(l) + onethird*sphtIm(ipoint)*dASc(ie) ;   
+               ENDDO
+            ENDDO
+
+            return ;
+         end subroutine NewtonCoteLinearFEM
+
+    end subroutine spherical_harmonics_transform_direct_fem        
+
+    !
+    ! Apply/reset scaling of Love numbers to the spherical harmonic coefficients 
+    !
+    subroutine ApplyLoveScaling(  LoveScaling, reset ) 
+       implicit none   
+
+
+       REAL (kind=RKIND), dimension(:):: LoveScaling
+       LOGICAL, optional:: reset  
+       
+       INTEGER:: m, n, l
+       LOGICAL:: ApplyReset = .false. 
+
+       if ( present(reset) ) ApplyReset = reset ; 
+       
+       if ( .NOT. ApplyReset ) then
+         !
+         do m = 0,nOrder
+            do n = m,nOrder
+               l = SHOrderDegreeToIndex(n,m)
+               SnmRe(l) = SnmRe(l)*LoveScaling(l)
+               SnmIm(l) = SnmIm(l)*LoveScaling(l)
+            enddo
+         enddo
+         !
+       else
+         !
+         do m = 0,nOrder
+            do n = m,nOrder
+               l = SHOrderDegreeToIndex(n,m)
+               SnmRe(l) = SnmRe(l)/LoveScaling(l)
+               SnmIm(l) = SnmIm(l)/LoveScaling(l)
+            enddo
+         enddo
+         !
+       endif
+
+    end subroutine ApplyLoveScaling
     !
     ! Given 
     !    - sshSmoothed(:) - ssh after smoothening at the integration points
@@ -67,13 +362,13 @@ CONTAINS
     !> \date    August 2020
     !> \details
     !> This routine computes the sea surface height perturbation due to
-    !> self-attraction and loading.
+    !> self-attraction and loading. The mid point rule is used in the forward integration
     !
+    ! 
     !-----------------------------------------------------------------------
     subroutine self_attraction_loading_parallel( ssh_sal, sshSmoothed, nCells  )!{{{
         implicit none 
-
-       
+ 
         !-----------------------------------------------------------------
         !
         ! dummy variables
@@ -88,7 +383,7 @@ CONTAINS
         integer :: iCell, ii
         integer :: n, m, l, blk
         integer :: startIdx, endIdx
-        real (kind=RKIND) :: mFac
+        real (kind=RKIND) :: mFac, tbeg, tend
 
       
         !!!!!!!!!!!!!!!!!!!!!
@@ -109,6 +404,7 @@ CONTAINS
             enddo
         enddo
 
+        CALL CPU_TIME( tbeg )
         do m = 0,nOrder
 
            do blk = 1,nBlocks
@@ -193,7 +489,8 @@ CONTAINS
            enddo ! blocks loop
 
         enddo ! m loop
-
+        CALL CPU_TIME( tend ) ;
+        print*, "forward transform time = ", tend - tbeg ;   
         
         if (  use_direct_shtns_self_attraction_loading_bfb ) then   
           do m = 1,lmax
@@ -222,13 +519,11 @@ CONTAINS
 
         ! Resulting spherical harmonics !
         do m = 1,lmax
-            SnmRe(m) = Snm(m)       ! real part
-            SnmIm(m) = Snm(lmax+m)  ! imaginary part
+           SnmRe(m) = Snm(m)       ! real part
+           SnmIm(m) = Snm(lmax+m)  ! imaginary part
 
-            ! print*, SnmRe(m), Snm(lmax+m) ;
+           ! print*, SnmRe(m), Snm(lmax+m) ;
         enddo
-
-
         
         !!!!!!!!!!!!!!!!!!!!!
         ! Apply SAL scaling
@@ -237,28 +532,16 @@ CONTAINS
         !! do m = 0,nOrder
         !!    do n = m,nOrder
         !!        l = SHOrderDegreeToIndex(n,m)
-        !!        SnmRe(l) = SnmRe(l)*LoveScaling(l)
-        !!        SnmIm(l) = SnmIm(l)*LoveScaling(l)
+        !!        SnmRe(l) = SnmRe(l)*LoveSalScaling(l)
+        !!        SnmIm(l) = SnmIm(l)*LoveSalScaling(l)
         !!    enddo
         !! enddo
 
-
+        CALL CPU_TIME( tbeg )
         !!!!!!!!!!!!!!!!!!!!
         ! Inverse transform: will be needed at the nodes other than those at the cell center
         !!!!!!!!!!!!!!!!!!!!
         ! Calculate blocking indices
-        !npBlock = nCellBlock ; 
-        !IF ( .not. use_blocking_scheme ) npBlock = np ;            
-        !nnpBlocks = ceiling(real(np,RKIND)/real(npBlock,RKIND))
-        !IF ( .not. allocated( blockIdxInverse ) ) allocate( blockIdxInverse(2,nnpBlocks) ) ; 
-        !
-        !blockIdxInverse(1,1) = 1
-        !do ii = 1,nnpBlocks-1
-        !   blockIdxInverse(2,ii) = ii*nCellBlock
-        !   blockIdxInverse(1,ii+1) = blockIdxInverse(2,ii) + 1
-        !enddo
-        !blockIdxInverse(2,nnpBlocks) = np
-
         do iCell = 1,nCells
            ssh_sal(iCell) = 0.0_RKIND
         enddo
@@ -329,7 +612,9 @@ CONTAINS
             enddo ! block loop
         enddo ! m loop
         !!
-       
+        CALL CPU_TIME( tend ) ;
+        print*, "inverse transform time = ", tend - tbeg ;   
+      
         return 
     end subroutine self_attraction_loading_parallel!}}}
 
@@ -347,11 +632,16 @@ CONTAINS
       integer, intent(in):: nSHTOrder, nCells
       real (kind=RKIND), dimension(:):: lonc, latc, areae
 
-
-      integer:: m, n, iCell, ii 
+      integer:: m, n, iCell, ii, ndA 
       integer, allocatable:: lvec(:)
 
       nOrder = nSHTOrder ; 
+      nPoints = nCells ; 
+
+
+      ndA = size(areae) ;
+      allocate( dASc(ndA) ) ; 
+      dASc = areae ; 
 
       ! Set up coastal ssh smoothing
       allocate(sshSmoothed(nCells))
@@ -366,6 +656,7 @@ CONTAINS
       allocate(SnmRe_local(lmax),SnmRe(lmax))
       allocate(SnmIm_local(lmax),SnmIm(lmax))
 
+      allocate(  sphtRe(nCells), sphtIm(nCells) ) 
       ! allocate(SnmIm_local_reproSum(nCellsOwned,lmax))
       ! allocate(SnmRe_local_reproSum(nCellsOwned,lmax))
       ! allocate(Snm_local_reproSum(nCellsOwned,2*lmax))
@@ -399,8 +690,8 @@ CONTAINS
              
       ! Get SAL scaling factors
       allocate(lvec(lmax))
-      allocate(LoveScaling(lmax))
-      call getloadLoveNums(nOrder, lvec, LoveScaling)
+      allocate(LoveSalScaling(lmax))
+      call getloadLoveNums(nOrder, lvec, LoveSalScaling)
 
 
       ! - DW Note: might be better to compute on the fly (will revisit)
@@ -418,7 +709,9 @@ CONTAINS
 
       ! Pre-compute sin and cos of latCell (co-latitude) values
       allocate(sinLatCell(nCells), cosLatCell(nCells))
+      allocate(lonCell(nCells)) ; 
       do iCell = 1, nCells
+          lonCell(iCell) = lonc(iCell) ;  
           sinLatCell(iCell) = sin(0.5_RKIND*pii-latc(iCell))
           cosLatCell(iCell) = cos(0.5_RKIND*pii-latc(iCell))
       enddo
@@ -2031,7 +2324,7 @@ CONTAINS
 
 
        ! 
-       LoveScaling(:) = 1.0_RKIND ; 
+       LoveSalScaling(:) = 1.0_RKIND ; 
 
        allocate(H(lmax+1),L(lmax+1),K(lmax+1))
 
@@ -2067,7 +2360,7 @@ CONTAINS
          !
        endif
 
-       LoveScaling = LoveScaling * 3.0_RKIND * rhoW / rhoE
+       LoveSalScaling = LoveScaling * 3.0_RKIND * rhoW / rhoE
        !
 
        DEALLOCATE( H, L, K, LoveDat ) ; 
