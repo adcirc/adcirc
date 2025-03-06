@@ -155,6 +155,9 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
       ! full luni-solar tidal potential !
       USE mod_tidepotential, only: tidePotential
 
+      ! inline sal
+      USE MOD_INLINE_SAL, only: ssh_inline_sal
+
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
 C
@@ -1522,8 +1525,10 @@ C******************************************************************************
 !****************************************************************************************
       subroutine applyTidePotentialForcing(TimeLoc, TimeH)
          use mod_tidepotential, only: tidePotential
+         use MOD_INLINE_SAL, only: ssh_inline_sal
+
          use global, only: NTIP, TIP1, TIP2, CTIP, NTIF, RampTip, PERT, FACET,
-     &                     AMIGT, FFT, TPK, ETRF, SALTPHA, SALTAMP, L_N
+     &                     AMIGT, FFT, TPK, ETRF, SALTPHA, SALTAMP, L_N, ETA2
          use mesh , only: np, SLAM
          implicit none
          real(8), intent(IN) :: TimeLoc, TimeH
@@ -1536,6 +1541,11 @@ C******************************************************************************
             IF ( tidePotential%active() ) THEN
                TIP2 = tidePotential%compute(TimeLoc, NP, SLAM) * RampTip
             ENDIF  
+
+            IF ( ssh_inline_sal%use_inline_sal ) THEN
+               TIP2 = TIP2 + ssh_inline_sal%sal_compute( ETA2 ) ; 
+               ! ssh_sal( eta^{n} ) 
+            END IF
 
             ! The traditional approach: a sum of different constituents
             ! TIP & SAL - for tidePotential%active() = .TRUE.  

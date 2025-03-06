@@ -4,14 +4,49 @@
 !     their original descriptions and writers.  
 !
 MODULE MOD_INLINE_SAL
-    ! USE CONSTANT, only:: rhoW => RhoSeaWat0, RhoE => RhoEarth   
-    
+    !
+#ifndef NONADC    
+    USE ADC_CONSTANTS, only: rhoW => RhoSeaWat0, RhoE => RhoEarth, Rearth, deg2rad, rad2deg
+    USE global, only: resident_elemask => imap_el_lg, H0, DTDP 
+    USE mesh, only: etov => nm, nele => ne, nnode => np, depth => dp, gridics => ICS, &
+                    slam, sfea, slamr, sfear     
+#endif
+
+#ifdef CMPI    
+    USE MESSENGER, only: msg_rvec_allreduce_sum
+#endif
+ 
     IMPLICIT NONE
 
-    REAL(8), PARAMETER :: rhoW = 1035.0D0 ! kg/m^3
-    REAL(8), PARAMETER :: rhoE = 5517.0D0 ! Average Earth density
-    REAL(8), PARAMETER :: Rearth = 6378206.4d0
+!#ifdef NONADC
+!    REAL(8), PARAMETER :: rhoW = 1035.0D0 ! kg/m^3
+!    REAL(8), PARAMETER :: rhoE = 5517.0D0 ! Average Earth density
+!    REAL(8), PARAMETER :: Rearth = 6378206.4d0 
+!#endif
 
+    type salmethod
+        LOGICAL:: use_inline_sal = .FALSE. 
+        LOGICAL:: use_direct_shtns_self_attraction_loading = .TRUE.
+        LOGICAL:: use_blocking_scheme = .TRUE.
+        LOGICAL:: use_direct_shtns_self_attraction_loading_bfb = .FALSE. 
+      
+        INTEGER:: nOrder = 64 
+        INTEGER:: nCellBlock = 500  
+        INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
+                                 ! dtdp = time step size 
+        REAL (8):: saldtinc = -9999.D0 
+
+        LOGICAL:: sal_init = .FALSE. 
+    contains 
+        procedure, pass(this), public:: sal_param_init
+#ifndef NONADC        
+        procedure, pass(this), public:: sal_privatedata_init
+        procedure, pass(this), public:: sal_compute => direct_spht_self_attraction_loading
+#endif    
+    end type salmethod        
+
+    type(salmethod), public :: ssh_inline_sal
+    
     INTEGER, parameter, private:: RKIND=8
 
     ! global varibles: private
@@ -21,7 +56,6 @@ MODULE MOD_INLINE_SAL
 
     LOGICAL, private::  use_blocking_scheme = .TRUE.
     LOGICAL, private::  use_direct_shtns_self_attraction_loading_bfb = .FALSE. 
-
 
     real(kind=RKIND), private, dimension(:,:), allocatable :: aRecurrenceCoeff, bRecurrenceCoeff 
     real(kind=RKIND), private, dimension(:), allocatable :: pmnm2, pmnm1, pmn                 
@@ -51,6 +85,207 @@ MODULE MOD_INLINE_SAL
     real(kind=RKIND), private, parameter:: SqrtInv4Pi = sqrt(1.0_RKIND/(4.0_RKIND*pii))
 
 CONTAINS
+  
+    subroutine sal_param_init( this, useinlinesal, usedirectsh, usecacheblocking, shorder, ncellblock, salinc )
+      implicit none
+
+      class (salmethod), intent(inout):: this
+      logical:: useinlinesal, usedirectsh, usecacheblocking
+      integer:: shorder, ncellblock
+      integer:: salinc
+
+      this%use_inline_sal = useinlinesal   
+      this%use_direct_shtns_self_attraction_loading = usedirectsh
+      this%use_blocking_scheme = usecacheblocking 
+  
+      this%nOrder = shorder 
+      this%nCellBlock = ncellblock 
+      this%salinc = salinc 
+
+      if ( this%use_direct_shtns_self_attraction_loading == .FALSE.  &
+                                     .AND. this%use_inline_sal == .TRUE. ) then
+           this%use_inline_sal = .FALSE. ; ! other methods are not implemetned yet 
+      endif
+
+      this%saldtinc = salinc*dtdp ;  
+
+      this%sal_init = .true. ;
+
+      return      
+    end subroutine sal_param_init
+
+#ifndef NONADC
+    ! 
+    ! subroutine direct_spht_self_attraction_loading( ssh_sal, ssh )
+    !  implicit none 
+    !
+    !  real (kind=RKIND), dimension(:):: ssh_sal, ssh
+    !
+    !  
+    !  CALL self_atttraction_loading_parallel_fem( ssh_sal, ssh, &
+    !                             element_table, nele, resident_elemask ) ;  
+    !    
+    !  return ;
+    ! end subroutine direct_spht_self_attraction_loading
+    !
+
+
+    !
+    ! 
+    function direct_spht_self_attraction_loading( this, ssh ) result( ssh_sal ) 
+      implicit none 
+
+      class (salmethod), intent(inout):: this
+      real (kind=RKIND), dimension(:):: ssh
+
+      real (kind=RKIND):: ssh_sal( nnode ) ; 
+     
+      ! local !
+      INTEGER:: ii
+      
+      ssh_sal = 0.D0 ;
+      if ( this%use_inline_sal ) then 
+        ! 
+        sshSmoothed = ssh ; 
+        do ii = 1, nnode
+          !
+          if ( DEPTH(ii) < 0.0D0 ) then
+             sshSmoothed = 0.D0 ;     
+             IF (  sshSmoothed(ii) + DEPTH(ii) > H0 ) THEN
+                sshSmoothed(ii) = sshSmoothed(ii) + DEPTH(ii) - H0 ;       
+             END IF  
+          end if
+          !  
+        end do
+        !
+  
+        CALL self_attraction_loading_parallel_fem( ssh_sal, sshSmoothed, &
+                                   etov, nele, resident_elemask ) ;
+      endif 
+
+      !
+    end function direct_spht_self_attraction_loading
+                  
+    !
+
+    !
+
+    ! initalize private data in this module !
+    subroutine sal_privatedata_init( this )
+      use global, only: setMessageSource, unsetMessageSource, allMessage, DEBUG
+
+      implicit none 
+
+      class (salmethod), intent(inout):: this
+
+      integer:: ii 
+      real (8), dimension(3):: xs, ys,xc,yc
+      real (8), allocatable:: dA(:), lon(:), lat(:)
+
+      real (8), parameter:: eps = 1.0e-10 ; 
+
+      call setMessageSource("sal_privatedata_init")
+#if defined(ALL_TRACE)
+      call allMessage(DEBUG, "Enter.")
+#endif
+ 
+  
+      INITSALPRIVATE: if ( this%use_inline_sal ) then
+         use_direct_shtns_self_attraction_loading = this%use_direct_shtns_self_attraction_loading ;       
+         nCellBlock = this%nCellBlock 
+         use_blocking_scheme = this%use_blocking_scheme ;
+         use_direct_shtns_self_attraction_loading_bfb = .FALSE. 
+
+         !      
+         if ( gridICS == 0 ) then     
+           write(*,*) "Error : SAL is not applicable in the Cartesian coordinates" ;         
+         endif        
+   
+         allocate( dA(nele), lon(nnode), lat(nnode) ) ; 
+         dA = -9999.D0 ; lon = -9999.D0 ; lat = -9999.D0 ;
+   
+         lon = slam*deg2rad ; ! in DEG
+         lat = sfea*deg2rad ; 
+   
+         ! find dA in lat and lon,      !
+         ! will move it to mesh.F later !
+         DO ii = 1, nele
+           xs(1:3) = lon( etov(ii,:) ) ; 
+           ys(1:3) = lat( etov(ii,:) ) ; 
+           
+           yc = cosd( ys )*sind( xs )  ; 
+           xc = cosd( ys )*cosd( xs )  ;
+           dA(ii) = 0.5D0*getarea( xs*deg2rad, ys*deg2rad ) ;
+       
+           ! more elegant than what implemented in mesh.F !
+           if ( count(yc >= 0.0D0) >= 1  .and. &
+                count(yc >= 0.0D0)  < 3  .and. &      
+                count( (xc - eps) < 0.D0  ) == 3 ) then
+       
+               if ( maxval(xs) - minval(xs) > 180 ) then
+                  dA(ii) = 0.5D0*getarea( modulo(xs,360.0)*deg2rad, ys*deg2rad ) ;
+               endif
+           end if
+         END DO
+         
+         lon = lon*deg2rad ; ! in Rad
+         lat = lat*deg2rad ;
+   
+         CALL InlineSALDirectMthdtInit( this%nOrder, nnode, lon, lat, dA  ) ; 
+   
+         deallocate( dA, lon, lat ) ; 
+       endif INITSALPRIVATE
+  
+#if defined(ALL_TRACE)
+      call allMessage(DEBUG, "Return.")
+#endif
+      call unsetMessageSource()
+
+      return ; 
+    contains 
+
+      ! will move this to mesh.F
+      function getarea( x, y ) result( dA )
+        implicit none 
+  
+        REAL (8):: x(:), y(:), dA
+  
+        REAL (8):: x2mx1, x3mx2, x1mx3, y2my1, y3my2, y1my3  
+  
+        X2mX1 = (X(2) - X(1));
+        X3mX2 = (X(3) - X(2));
+        X1mX3 = (X(1) - X(3));
+        Y2mY1 = (Y(2) - Y(1));
+        Y3mY2 = (Y(3) - Y(2));
+        Y1mY3 = (Y(1) - Y(3));
+  
+        dA=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
+        
+      end function getarea
+  
+    end subroutine sal_privatedata_init
+
+
+#endif
+
+    !  
+    subroutine self_attraction_loading_parallel_fem( ssh_sal, ssh, elements, nCells, elemask  )
+       implicit none 
+
+       real(kind=RKIND), dimension(:):: ssh_sal, ssh
+       integer:: nCells, elements(:,:), elemask(:)
+
+       !  apply forward transform
+       CALL spherical_harmonics_transform_direct_fem( ssh, elements, nCells, .true., elemask ) ;
+
+       !  apply Love number scaling
+       CALL ApplyLoveScaling( LoveSalScaling, .false. ) ; 
+
+       !  apply inverse transform
+       CALL spherical_harmonics_transform_direct_fem( ssh_sal, elements, nCells, .false., elemask ) ;      
+      
+       return ; 
+    end subroutine self_attraction_loading_parallel_fem
 
     ! 
     ! DW:
@@ -82,13 +317,15 @@ CONTAINS
     !     - outout: ssh(:)  - Resynthesized function at FEM nodes
     !
     !
-    subroutine spherical_harmonics_transform_direct_fem(  ssh, elements, nCells, forward ) 
+    subroutine spherical_harmonics_transform_direct_fem(  ssh, elements, nCells, forward, elemask ) 
         implicit none
 
         real (kind=RKIND), dimension(:), intent(inout):: ssh
         integer, dimension(:,:), intent(in):: elements
         integer, intent(in):: nCells
         logical, intent(in):: forward 
+        integer, intent(in), dimension(:):: elemask ! mask for element
+                                      ! excldue elemask(i) < 0 from spherical harmonic   
 
         ! local varibles
         integer :: iCell
@@ -172,19 +409,8 @@ CONTAINS
                  end do
                  CALL NewtonCoteLinearFEM(  l ) ;
 
-                 !if ( l == 3  ) then 
-                 !    print*, l, n, m, SnmRe_local(l)
-                 !    open( unit = 10, file = 'pmn.dat' ) ; 
-                 !    do  ii = 1, nPoints
-                 !     write( 10, * ) pmn(ii) ; 
-                 !    enddo
-                 !    close(10) ; 
-                 !endif
-
              enddo ! n loop
-             ! print*, "l = ", l ; 
-             !    
-             ! enddo ! blocks loop
+             !
           enddo ! m loop
 
           do m = 1,lmax
@@ -192,9 +418,12 @@ CONTAINS
              Snm_local(lmax+m) = SnmIm_local(m) ! imaginary part of f^{m}_{n}
           enddo
 
+#ifdef CMPI 
           ! Will need allreduce for parallel ! 
+          CALL msg_rvec_allreduce_sum( Snm_local, Snm, lmax )
+#else
           Snm = Snm_local ; 
-       
+#endif
           ! output: spherical harmonic coefficeints !
           do m = 1,lmax
              SnmRe(m) = Snm(m)       ! real part
@@ -202,8 +431,6 @@ CONTAINS
 
              ! PRINT*, SnmRe(m), SnmIm(m) ; 
           enddo
-
-
         ENDIF FORWARDSPHT
 
 
@@ -292,12 +519,16 @@ CONTAINS
             integer:: l
 
             integer:: ii, ie, ipoint
+            real(8):: efactor
 
             DO ii = 1, 3
                DO ie = 1, nCells
-                  ipoint = elements(ie,ii) 
-                  SnmRe_local(l) = SnmRe_local(l) + onethird*sphtRe(ipoint)*dASc(ie) ;
-                  SnmIm_local(l) = SnmIm_local(l) + onethird*sphtIm(ipoint)*dASc(ie) ;   
+                  ipoint = elements(ie,ii) ;
+
+                  efactor = merge(  1.0D0, 0.0D0, elemask(ie) > 0 ) ;  ! exclude elements with elemask(ie) < 0  
+
+                  SnmRe_local(l) = SnmRe_local(l) + onethird*sphtRe(ipoint)*dASc(ie)*efactor ;
+                  SnmIm_local(l) = SnmIm_local(l) + onethird*sphtIm(ipoint)*dASc(ie)*efactor ;   
                ENDDO
             ENDDO
 
@@ -490,7 +721,7 @@ CONTAINS
 
         enddo ! m loop
         CALL CPU_TIME( tend ) ;
-        print*, "forward transform time = ", tend - tbeg ;   
+        ! print*, "forward transform time = ", tend - tbeg ;   
         
         if (  use_direct_shtns_self_attraction_loading_bfb ) then   
           do m = 1,lmax
@@ -645,7 +876,7 @@ CONTAINS
 
       ! Set up coastal ssh smoothing
       allocate(sshSmoothed(nCells))
-      sshSmoothed = 1.0_RKIND ; 
+      sshSmoothed = 0.0_RKIND ; 
 
       !
       allocate(pmn(nCells),pmnm1(nCells),pmnm2(nCells)) 
@@ -2324,7 +2555,7 @@ CONTAINS
 
 
        ! 
-       LoveSalScaling(:) = 1.0_RKIND ; 
+       LoveScaling(:) = 1.0_RKIND ; 
 
        allocate(H(lmax+1),L(lmax+1),K(lmax+1))
 
@@ -2360,7 +2591,7 @@ CONTAINS
          !
        endif
 
-       LoveSalScaling = LoveScaling * 3.0_RKIND * rhoW / rhoE
+       LoveScaling = LoveScaling * 3.0_RKIND * rhoW / rhoE
        !
 
        DEALLOCATE( H, L, K, LoveDat ) ; 

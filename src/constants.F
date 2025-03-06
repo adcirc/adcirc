@@ -80,6 +80,11 @@
 
           REAL(8), PARAMETER :: omega = 7.29212d-5
 
+          REAL(8), PARAMETER :: RhoSeaWat0 = 1035.0D0 ! kg/m^3
+          REAL(8), PARAMETER :: RhoEarth = 5517.0D0 ! Average Earth density
+
+
+
           !---Time based factors---!
           REAL(8), PARAMETER :: hour2sec = 3600.0D0
           REAL(8), PARAMETER :: sec2hour = 1.0D0 / hour2sec

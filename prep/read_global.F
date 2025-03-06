@@ -854,7 +854,21 @@ C  DW
      &         'The Tidalpotentialcontrol namelist was not found.')
       ENDIF
       REWIND(15)
-     
+   
+C DW 
+      read(unit=15,nml=InlineSALControl,iostat=ios)
+      IF( ios .ge. 0 )THEN
+         foundInlineSALControlNamelist = .true. 
+         call logMessage(INFO,
+     &         'The InlineSALcontrol namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The InlineSALControl namelist was not found.')
+      ENDIF
+      REWIND(15)
+
+
+
       READ(15,80) RUNDES
 C
       READ(15,80) RUNID

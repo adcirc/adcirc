@@ -351,7 +351,23 @@ C     Full luni-solar tidal potential namelist: 2024
       NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
      &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
      &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData  
-      
+
+C    inline Self Attraction and Loading
+      ! I/O Self-attraction-loading
+      LOGICAL:: foundInlineSALControlNamelist = .false. 
+      LOGICAL:: use_inline_sal = .FALSE. 
+      LOGICAL:: sal_use_direct_sh = .TRUE.
+      LOGICAL:: sal_use_cache_blocking = .TRUE.     
+      INTEGER:: nSHOrder = 64 
+      INTEGER:: nCellBlock = 500  
+      INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
+
+      NAMELIST /InlineSALControl/ use_inline_sal,
+     &     sal_use_direct_sh,
+     &     sal_use_cache_blocking,
+     &     nSHOrder, nCellBlock, salinc
+C    
+
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
       REAL(8) CONVCR

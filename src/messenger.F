@@ -1505,6 +1505,41 @@ C------------------------------------------------------------------------------
       END SUBROUTINE EarlyTermSum
 !------------------------------------------------------------------------------
 
+C---------------------------------------------------------------------
+C    SUBROUTINE   MSG _RVEC_ALLREDUCE( )
+C---------------------------------------------------------------------
+C    allreduce sum  of a one dimensional double-precision array
+C    input:: v(:), n  n <= dim(v)
+C    output:: vall(:) = allreduce sum v
+C---------------------------------------------------------------------
+      subroutine msg_rvec_allreduce_sum( v, vall, n )
+        implicit none 
+
+        integer:: n
+        real(8), dimension(:)::  v, vall
+
+        integer:: kount
+C
+        call setMessageSource("msg_rvec_allreduce")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Enter.") 
+#endif
+C 
+        kount = n
+        call MPI_ALLREDUCE( v, vall, kount, MPI_DOUBLE,
+     &      MPI_SUM, COMM, ierr)
+
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.")
+#endif
+        call unsetMessageSource()
+        return
+C---------------------------------------------------------------------      
+      end subroutine msg_rvec_allreduce_sum
+C---------------------------------------------------------------------
+
+
+
 
 C---------------------------------------------------------------------
 C     S U B R O U T I N E   M S G _ I B C A S T
