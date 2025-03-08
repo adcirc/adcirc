@@ -874,7 +874,7 @@ C...
       rewind(15)
 
       namelistSpecifier =  'InlineSALControl'
-      read(unit=15,nml=TidalPotentialControl,iostat=ios,iomsg=ios_nml_error_msg)
+      read(unit=15,nml=InlineSALControl,iostat=ios,iomsg=ios_nml_error_msg)
       call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,*) "use_inline_sal=", use_inline_sal
       call logMessage(ECHO,trim(scratchMessage)) 
@@ -5136,9 +5136,6 @@ C
      &                                MoonSunPositionComputeMethod, 
      &                                MoonSunCoordFile, IncludeNutation, 
      &                                k2Value, h2Value)
-C...
-C...  CLOSE FORT.15
-C...
 
       if ( ntip .EQ. 2  ) then
          call ssh_inline_sal%sal_param_init( useinlinesal = use_inline_sal,
@@ -5148,6 +5145,10 @@ C...
      &         ncellblock = nCellBlock,
      &         salinc = salinc ) ;        
       endif
+
+C...
+C...  CLOSE FORT.15
+C...
 
       CLOSE(15)
 
@@ -6734,12 +6735,15 @@ C-----------------------------------------------------------------------
         CHARACTER,ALLOCATABLE :: sal_const(:,:)
 
         IF(NTIP.EQ.2) THEN
-           !
+           ! initialze  
+           SALTAMP = 0.0D0
+           SALTPHA = 0.0D0
+
            IFINLINESAL: IF ( ssh_inline_sal%use_inline_sal ) THEN
               !      
               CALL ssh_inline_sal%sal_privatedata_init() ; 
 
-           else        
+           ELSE       
               filename_netcdf = TRIM(GBLINPUTDIR)//'/'//"fort.24.nc"
   
 #ifdef CMPI
@@ -6753,7 +6757,7 @@ C-----------------------------------------------------------------------
 #else
              netcdf_file_found = .false.
 #endif           
-             IF(netcdf_file_found)THEN
+             IFNETCDF: IF(netcdf_file_found)THEN
 #ifdef ADCNETCDF               
   
               allocate(amp(1:np),pha(1:np))
@@ -6833,10 +6837,10 @@ C-----------------------------------------------------------------------
                   ENDDO
   
 #endif                
-              ENDIF
+              ENDIF 
   
 #endif               
-             ELSE
+             ELSE     
                CALL openFileForRead(24,TRIM(INPUTDIR)//'/'//'fort.24',ios)
                IF (ios.gt.0) THEN
                    CALL ADCIRC_Terminate()
@@ -6872,7 +6876,8 @@ C-----------------------------------------------------------------------
                END DO
                CLOSE(24)
                SALTPHA = SALTPHA*DEG2RAD
-             ENDIF
+
+             ENDIF IFNETCDF
 
            ENDIF IFINLINESAL 
            !

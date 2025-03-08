@@ -204,9 +204,12 @@ CONTAINS
          allocate( dA(nele), lon(nnode), lat(nnode) ) ; 
          dA = -9999.D0 ; lon = -9999.D0 ; lat = -9999.D0 ;
    
-         lon = slam*deg2rad ; ! in DEG
-         lat = sfea*deg2rad ; 
-   
+         ! lon = slam*deg2rad ; ! in DEG
+         ! lat = sfea*deg2rad ; 
+         lon = slam*rad2deg ;
+         lat = sfea*rad2deg ;
+
+
          ! find dA in lat and lon,      !
          ! will move it to mesh.F later !
          DO ii = 1, nele
@@ -222,10 +225,12 @@ CONTAINS
                 count(yc >= 0.0D0)  < 3  .and. &      
                 count( (xc - eps) < 0.D0  ) == 3 ) then
        
-               if ( maxval(xs) - minval(xs) > 180 ) then
+               if ( maxval(xs) - minval(xs) > 180.D0 ) then
                   dA(ii) = 0.5D0*getarea( modulo(xs,360.0)*deg2rad, ys*deg2rad ) ;
                endif
            end if
+
+           !! if ( ii < 10 ) print*, dA(ii) ;
          END DO
          
          lon = lon*deg2rad ; ! in Rad

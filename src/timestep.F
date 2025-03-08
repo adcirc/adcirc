@@ -1530,6 +1530,8 @@ C******************************************************************************
          use global, only: NTIP, TIP1, TIP2, CTIP, NTIF, RampTip, PERT, FACET,
      &                     AMIGT, FFT, TPK, ETRF, SALTPHA, SALTAMP, L_N, ETA2
          use mesh , only: np, SLAM
+         use sizes, only: myproc
+
          implicit none
          real(8), intent(IN) :: TimeLoc, TimeH
          real(8) :: ArgT, ArgTP, ArgSAlt, SALTMUL, TPMUL
@@ -1542,16 +1544,18 @@ C******************************************************************************
                TIP2 = tidePotential%compute(TimeLoc, NP, SLAM) * RampTip
             ENDIF  
 
+            ! use inline sal
             IF ( ssh_inline_sal%use_inline_sal ) THEN
                TIP2 = TIP2 + ssh_inline_sal%sal_compute( ETA2 ) ; 
                ! ssh_sal( eta^{n} ) 
             END IF
 
-            ! The traditional approach: a sum of different constituents
-            ! TIP & SAL - for tidePotential%active() = .TRUE.  
-            ! SAL       - for tidePotential%active() = .FALSE.
-            IF(NTIP.EQ.2.or..not.tidePotential%active())THEN 
+            !
+            NOTEXACTSALTIP: IF ( .not. tidepotential%active() .or. 
+     &                           .not. ssh_inline_sal%use_inline_sal ) THEN
+               !
                DO J=1,NTIF
+
                   IF (PERT(J).EQ.0D0) THEN
                      NCYC=0
                   ELSE
@@ -1562,28 +1566,95 @@ C******************************************************************************
                   TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
                   SALTMUL=RampTip*FFT(J)
 
-   !              WJP: We actually want to compare against diurnal and get 0,1,2
-   !              or higher species (was opposite beforehand)
+            !     WJP: We actually want to compare against diurnal and get 0,1,2
+            !     or higher species (was opposite beforehand)
                   NA = MIN(NINT(AMIGT(J)/7d-5),2)
 
-   !              WJP: Rewritten so that we have a general formula for all
-   !              species
-                  IF(tidePotential%active())THEN
-                     DO I = 1, NP
-                        ARGSALT = ARGT - SALTPHA(J,I) ; 
-                        TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
-                     END DO
-                  ELSE
+            !     WJP: Rewritten so that we have a general formula for all
+            !     species 
+                  IF ( .not. tidepotential%active() .and.
+     &                   .not. ssh_inline_sal%use_inline_sal ) THEN
+                     ! harmonic TIP & Harmonic SAL (default) !         
+                     ! SAL + TIP
                      DO I = 1,NP
                         ARGTP   = ARGT + NA*SLAM(I)
                         ARGSALT = ARGT - SALTPHA(J,I)
                         TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
      &                            + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
                      ENDDO
+                  ELSEIF (  tidePotential%active() .and. 
+     &                  .not. ssh_inline_sal%use_inline_sal ) THEN
+                     ! exact tip & harmonic SAL
+                     ! SAL
+                     ! IF ( MYPROC == 0 ) THEN
+                     !  ! PRINT*, "HERE ................", tidepotential%active(), ssh_inline_sal%use_inline_sal
+                     !  ! PRINT*, SALTPHA(J,1:2), SALTAMP(J,1:2)
+                     ! END IF
+                     DO I = 1, NP
+                        ARGSALT = ARGT - SALTPHA(J,I) ; 
+                        TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+                     END DO
+                  ELSE 
+                     ! harmonic tip 
+                     ! TIP
+                     DO I = 1,NP
+                        ARGTP   = ARGT + NA*SLAM(I)
+                        ARGSALT = ARGT - SALTPHA(J,I)
+                        TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) *COS(ARGTP) 
+                     ENDDO                          
                   ENDIF
-
+                  !
                ENDDO
-            ENDIF   
+               !               
+            ENDIF NOTEXACTSALTIP 
+            !
+
+!            ! The traditional approach: a sum of different constituents
+!            ! TIP & SAL - for tidePotential%active() = .TRUE.  
+!            ! SAL       - for tidePotential%active() = .FALSE.     
+!            IF( NTIP.EQ.2 .or. .not.tidePotential%active )THEN 
+!           
+!               IF ( .not. ssh_inline_sal%use_inline_sal ) THEN
+!                 DO J=1,NTIF
+!                    IF (PERT(J).EQ.0D0) THEN
+!                       NCYC=0
+!                    ELSE
+!                       NCYC=INT(timeh/PERT(J))
+!                    ENDIF
+!  
+!                    ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
+!                    TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
+!                    SALTMUL=RampTip*FFT(J)
+!  
+!     !              WJP: We actually want to compare against diurnal and get 0,1,2
+!     !              or higher species (was opposite beforehand)
+!                    NA = MIN(NINT(AMIGT(J)/7d-5),2)
+!  
+!     !              WJP: Rewritten so that we have a general formula for all
+!     !              species
+!                    IF(tidePotential%active())THEN
+!                       ! 
+!                       DO I = 1, NP
+!                          ARGSALT = ARGT - SALTPHA(J,I) ; 
+!                          TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+!                       END DO
+!                    ELSE
+!                       ! SAL + TIP
+!                       DO I = 1,NP
+!                          ARGTP   = ARGT + NA*SLAM(I)
+!                          ARGSALT = ARGT - SALTPHA(J,I)
+!                          TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
+!     &                            + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+!                       ENDDO
+!                    ENDIF
+!  
+!                 ENDDO
+!               ENDIF
+!
+!            ENDIF
+
+
+
          ENDIF
       end subroutine applyTidePotentialForcing
 
