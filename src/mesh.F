@@ -75,6 +75,7 @@
       integer, allocatable :: nodele(:)
       integer, allocatable :: neitab(:,:) !(MNP,MNEI) table of neighbor nodes for each node
       integer, allocatable :: neitabele(:,:) !(MNP,MNei)table of neighboring elements for each node
+      integer, allocatable :: csr_position(:,:,:) !(MNE,3,2) positions of neighboring nodes in csr matrix space
       real(8), allocatable :: areas(:) !(MNE) = 2*Element Area
       real(8), allocatable :: totalarea(:)
       real(8), allocatable :: bcxy(:,:)  ! element barycenters for kdtree
@@ -3055,8 +3056,8 @@ Csb...
       call allMessage(DEBUG,"Enter.")
 #endif
 
-      allocate ( neitab(mnp,mnei))
-      allocate ( neitabele(mnp,mnei))
+      allocate (neitab(mnp,mnei))
+      allocate (neitabele(mnp,mnei))
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -3237,7 +3238,6 @@ Csb...
             NeiTabETMP(NN3,NNeigh(NN3))=N ;
          ENDIF
       END DO
-
 !
 !     INSERT NODE ITSELF IN PLACE #1 and SORT other NEIGHBORS by
 !     increasing cw angle from East
@@ -3341,6 +3341,7 @@ Csb...
          IF(NNeigh(N).LT.NEIMIN) NEIMIN=NNeigh(N)
          IF(NNeigh(N).GT.NEIMAX) NEIMAX=NNeigh(N)
       END DO
+
 !
 !  WRITE OUT DIAGNOSTIC OUTPUT
 !
@@ -5589,6 +5590,35 @@ C
          end if
       end if
       end function onIBTYP64Floodplain
+
+      !-----------------------------------------------------------------------
+      ! Compute the CSR matrix positions for the consistent matrix
+      ! These are the off-diagnoal positions only, since we always know
+      ! the diagonal position.
+      !-----------------------------------------------------------------------
+      subroutine compute_csr_positions()
+        implicit none
+
+        integer :: i,jn,nn1,nn2,nn3
+
+        allocate (csr_position(mne,3,2))
+        do I=1,NE
+           NN1=NM(I,1)
+           NN2=NM(I,2)
+           NN3=NM(I,3)
+           do JN=2,NEIMAX
+              if(NeiTab(NN1,JN)==NN2) CSR_POSITION(I,1,1) = JN
+              if(NeiTab(NN1,JN)==NN3) CSR_POSITION(I,1,2) = JN
+              if(NeiTab(NN2,JN)==NN1) CSR_POSITION(I,2,1) = JN
+              if(NeiTab(NN2,JN)==NN3) CSR_POSITION(I,2,2) = JN
+              if(NeiTab(NN3,JN)==NN1) CSR_POSITION(I,3,1) = JN
+              if(NeiTab(NN3,JN)==NN2) CSR_POSITION(I,3,2) = JN
+           enddo
+        enddo
+
+      !-----------------------------------------------------------------------
+      end subroutine compute_csr_positions
+      !-----------------------------------------------------------------------
 
 !     ------------------------------------------------------------------
       end module mesh
