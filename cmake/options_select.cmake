@@ -128,14 +128,6 @@ set(ADDITIONAL_FLAGS_UTLIITIES
 
 # ######################################################################################################################
 # ...Options enabled via compiler flags within the code
-option(ENABLE_WARN_ELEV_DEBUG "Enable writing of the fort.69 debug file" OFF)
-if(ENABLE_WARN_ELEV_DEBUG)
-  message(
-    WARNING
-      "The compile time enabled fort.69 file is deprecated and the user should use the &warnElevControl namelist instead. This option will be removed in a future release."
-  )
-endif()
-
 option(IBM "Format code for IBM based architectures" OFF)
 option(SGI "Format code for SGI based architectures" OFF)
 option(SUN "Format code for SUN based architectures" OFF)
