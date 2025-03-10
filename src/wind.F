@@ -9624,7 +9624,7 @@ C----------------------------------------------------------------------
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
-      USE GLOBAL, ONLY: scratchMessage, allMessage, ERROR
+      USE mod_logging, ONLY: scratchMessage, allMessage, ERROR
       
       IMPLICIT NONE
 

@@ -76,7 +76,9 @@ contains
    !--------------------------------------------------------------------
    subroutine openLogFile()
 
+#ifdef CMPI
       use sizes, only: localDir
+#endif
 
       implicit none
       !...
@@ -137,9 +139,12 @@ contains
                   trim(logLevelNames(level + 2)), &
                   (trim(messageSources(j)), j=1, sourceNumber)
                write (screenUnit, 332) trim(message)
+331            format(A, ": ", A, 50(:, "->", A))
+332            format(": ", A)
 #else
                write (screenUnit, 333) trim(logLevelNames(level + 2)), &
                   trim(messageSources(sourceNumber)), trim(message)
+333            format(A, ": ", A, ": ", A)
 #endif
                !       !#ifdef FLUSH_MESSAGES
                flush (screenUnit)
@@ -147,9 +152,6 @@ contains
             end if
          end if
       end if
-331   format(A, ": ", A, 50(:, "->", A))
-332   format(": ", A)
-333   format(A, ": ", A, ": ", A)
 
    end subroutine screenMessage
    !--------------------------------------------------------------------
@@ -185,15 +187,15 @@ contains
          write (16, 331, advance="no") trim(logLevelNames(level + 2)), &
             (trim(messageSources(j)), j=1, sourceNumber)
          write (16, 332) trim(message)
+331      format(A, ": ", A, 50(:, "->", A))
+332      format(": ", A)
 #else
          write (16, 333) trim(logLevelNames(level + 2)), &
             trim(messageSources(sourceNumber)), trim(message)
+333      format(A, ": ", A, ": ", A)
 #endif
          flush (16)
       end if
-331   format(A, ": ", A, 50(:, "->", A))
-332   format(": ", A)
-333   format(A, ": ", A, ": ", A)
 
    end subroutine logMessage
    !--------------------------------------------------------------------

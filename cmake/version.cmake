@@ -43,4 +43,15 @@ endif(WIN32)
 set_target_properties(version PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/version_mod)
 set_target_properties(version PROPERTIES COMPILE_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG}")
 set_target_properties(version PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+# Create a false target for the Ninja build system
+if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+  add_custom_target(
+          templib_version-stub
+          BYPRODUCTS templib_version-stublib
+          COMMAND ""
+          DEPENDS version)
+endif()
+
+
 add_dependencies(version version_generate)

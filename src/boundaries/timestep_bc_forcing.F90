@@ -33,12 +33,9 @@ contains
                                         ENIN2, QNIN1, QNIN2, EtaDisc, QN1, QN2, EN2, ElevDisc, &
                                         TVW, EtaDisc_Fill, ISSUBMERGED64, ISSUBMERGED64P)
 
-      use boundaries, only: NBOU, NFLUXB, NFLUXRBC, NFLUXF, NFLUXGBC, NFLUXIB, NFLUXIBP, LBCODEI, &
-                            NBV, NVEL, NVELL, CSII, SIII, IBCONN, NFLUXIB64
+      use boundaries, only: NBOU, NFLUXF, NFLUXIB, LBCODEI, NBV, NVEL, NVELL, CSII, SIII, IBCONN
       use global, only: qnph, qnam, fper, famig, fface, fff, enph, enam, h0, ifnlfa
-      use mesh, only: NP, LBArray_Pointer, NeiTab, NNeigh, X, Y
-      use boundaries, only: NBOU, NFLUXF, NFLUXIB, LBCODEI, &
-                            NBV, NVEL, NVELL, CSII, SIII, IBCONN, NFLUXIB64
+      use mesh, only: LBArray_Pointer, NeiTab, NNeigh, X, Y
       use global, only: qnph, qnam, fper, famig, fface, fff, enph, enam, h0, ifnlfa
       use subdomain, only: subdomainOn, enforceBN
 
