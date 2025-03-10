@@ -9523,8 +9523,6 @@ C----------------------------------------------------------------------
        
        CALL setMessageSource("INSET_NC_INPUT")
 
-       !TempNCID_P = -99999
-       !TempNCID_W = -99999
 
        INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//TRIM(ADJUSTL(InsetControlFile)), EXIST=InsetFileExist)
        IF(.NOT.InsetFileExist) THEN
