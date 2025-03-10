@@ -9523,8 +9523,8 @@ C----------------------------------------------------------------------
        
        CALL setMessageSource("INSET_NC_INPUT")
 
-       TempNCID_P = -99999
-       TempNCID_W = -99999
+       !TempNCID_P = -99999
+       !TempNCID_W = -99999
 
        INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//TRIM(ADJUSTL(InsetControlFile)), EXIST=InsetFileExist)
        IF(.NOT.InsetFileExist) THEN
@@ -9553,23 +9553,23 @@ C----------------------------------------------------------------------
        CLOSE(2200) !closing the file here.. 
       
    
-       Pfile_inset= TRIM(GBLINPUTDIR)//'/'//TRIM(ADJUSTL(Pfile_inset))
-       Wfile_inset= TRIM(GBLINPUTDIR)//'/'//TRIM(ADJUSTL(Wfile_inset))
+       Pfile_inset= TRIM(ADJUSTL(Pfile_inset))
+       Wfile_inset= TRIM(ADJUSTL(Wfile_inset))
         
 
-         CALL READINSET_NC(TRIM(ADJUSTL(Pfile_inset))
+         CALL READINSET_NC(Pfile_inset
      &       ,TempNCID_P,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetPvar,InsetPData)
         
 
-         CALL READINSET_NC(TRIM(ADJUSTL(Wfile_inset))
+         CALL READINSET_NC(Wfile_inset
      &       ,TempNCID_W,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetUVar,InsetUData)
          
-         CALL READINSET_NC(TRIM(ADJUSTL(Wfile_inset))
+         CALL READINSET_NC(Wfile_inset
      &       ,TempNCID_W,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetVvar,InsetVData)
         
 
-         CALL INTERP_INSET_GRID(TRIM(ADJUSTL(Pfile_inset)),
-     &            TRIM(ADJUSTL(Wfile_inset)) ,TempNCID_P, TempNCID_W,
+         CALL INTERP_INSET_GRID(Pfile_inset,
+     &            Wfile_inset ,TempNCID_P, TempNCID_W,
      &      InsetPData,InsetUData, InsetLatDim,InsetLat, InsetLonDim,InsetLon,InsetVData)
       
          CALL unsetMessageSource()
@@ -9632,7 +9632,7 @@ C----------------------------------------------------------------------
 
       CHARACTER(LEN=*), INTENT(IN)      :: InsetFileN
       CHARACTER(LEN=*), INTENT(IN)      :: InsetVar, InsetLat, InsetLon,InsetLatDim, InsetLonDim  
-      INTEGER, INTENT(INOUT)            :: InsetID
+      INTEGER                           :: InsetID
       REAL(8), ALLOCATABLE, INTENT(OUT) :: InsetOUT(:,:)
       INTEGER                           :: InsetLoc, INSET_NX, INSET_NY, VarLoc,alloc_err
      
@@ -9686,7 +9686,7 @@ C------------------------------------------------------------------------
         REAL(8), INTENT(IN) :: InsetPData(:,:)
         REAL(8), INTENT(IN) :: InsetUData(:,:), InsetVData(:,:)       
         CHARACTER(len=80), INTENT(IN) :: InsetLat, InsetLon, InsetLatDim,InsetLonDim 
-        INTEGER, INTENT(INOUT) :: NCID_p, NCID_w
+        INTEGER :: NCID_p, NCID_w
 
         integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi, cc
         real,allocatable,dimension(:,:) :: lat, lon
@@ -9829,7 +9829,7 @@ C-------------------------------------------------------------------------------
     
       CHARACTER(LEN=80), INTENT(IN)  :: InsetLat, InsetLon, InsetLatDim,InsetLonDim
       INTEGER, INTENT(OUT) :: NXP, NYP
-      INTEGER, INTENT(INOUT)  :: NCIDf    
+      INTEGER              :: NCIDf    
       
       INTEGER :: i, Temp_ID, Lat_ID, Lon_ID, ndims
         
