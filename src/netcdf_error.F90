@@ -15,12 +15,14 @@ module netcdf_error
 !     fort.16 file.
 !-----------------------------------------------------------------------
     subroutine check_err(iret)
-      USE SIZES, ONLY : myproc
-      USE mod_logging, ONLY: screenUnit, ERROR, DEBUG, allMessage, &
-          setMessageSource, unsetMessageSource
+      USE mod_logging, ONLY: ERROR, allMessage, setMessageSource, unsetMessageSource
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      USE mod_logging, ONLY : allMessage, DEBUG
+#endif
+
       IMPLICIT NONE
       INTEGER, intent(in) :: iret
 
@@ -43,16 +45,25 @@ module netcdf_error
 !-----------------------------------------------------------------------
 !     S U B R O U T I N E   N E T C D F   T E R M I N A T E
 !-----------------------------------------------------------------------
-      subroutine netcdfTerminate(NO_MPI_FINALIZE)
 #ifdef CMPI
+      subroutine netcdfTerminate(NO_MPI_FINALIZE)
       USE MESSENGER
+#else
+      subroutine netcdfTerminate()
 #endif
-      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,&
-         allMessage, DEBUG, ECHO, INFO, WARNING, ERROR, allMessage
-      IMPLICIT NONE
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+      USE mod_logging, only: allMessage, ERROR, setMessageSource, unsetMessageSource
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      REAL, ALLOCATABLE :: dummy(:)
+      USE mod_logging, ONLY : DEBUG
+#endif
+
+      IMPLICIT NONE
+
+#ifdef CMPI
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+#endif
+
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      REAL(8), ALLOCATABLE :: dummy(:)
 #endif
 
       call setMessageSource("netcdfTerminate")
@@ -60,7 +71,7 @@ module netcdf_error
       call allMessage(DEBUG,"Enter.")
 #endif
 
-      call allMessage(INFO,"ADCIRC Terminating.")
+      call allMessage(ERROR,"ADCIRC Terminating.")
 
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
          ! intentionally create a segmentation fault so that we can get

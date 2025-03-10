@@ -289,10 +289,9 @@ contains
    subroutine SET_SUBMERGED64_AT( &
       BARRIER_INDEX, BOUNDARYNODE, BOUNDARY, TIMELOC)
 
-      use BOUNDARIES, only: BARINCFSB, BARINCFSP, &
-                            NVELL, IBCONN, BARINHT, ISSUBMERGED64, NBV
-      use GLOBAL, only: NIBNODECODE, TVW, USE_TVW, NODECODE, H0
-      use MESH, only: LBArray_Pointer, MNEI, NEITAB, NNEIGH, DP
+      use BOUNDARIES, only: NVELL, IBCONN, BARINHT, ISSUBMERGED64, NBV
+      use GLOBAL, only: TVW, NODECODE
+      use MESH, only: LBArray_Pointer, DP
       implicit none
       integer, intent(IN), target   :: BARRIER_INDEX
       integer, intent(IN), target   :: BOUNDARY

@@ -158,6 +158,9 @@ endmacro()
 
 macro(addVersionLibrary TARGET)
   target_link_libraries(${TARGET} version)
+  if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+    add_dependencies(${TARGET} templib_version-stub)
+  endif()
 endmacro()
 
 macro(addMkdirDefinitions TARGET)
