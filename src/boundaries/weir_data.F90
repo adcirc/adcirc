@@ -51,7 +51,7 @@ contains
    !-----------------------------------------------------------------------
    subroutine ALLOCATE_WEIRS()
       use mod_logging, only: allMessage, setMessageSource, &
-                        unsetMessageSource
+                             unsetMessageSource
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
       use mod_logging, only: DEBUG
 #endif
