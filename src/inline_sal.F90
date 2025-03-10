@@ -14,6 +14,7 @@ MODULE MOD_INLINE_SAL
 
 #ifdef CMPI    
     USE MESSENGER, only: msg_rvec_allreduce_sum
+    USE sizes, only: myproc
 #endif
  
     IMPLICIT NONE
@@ -33,8 +34,8 @@ MODULE MOD_INLINE_SAL
         INTEGER:: nOrder = 64 
         INTEGER:: nCellBlock = 500  
         INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
-                                 ! dtdp = time step size 
-        REAL (8):: saldtinc = -9999.D0 
+                                 ! dtdp = time step size, current not used  
+        REAL (8):: saldtinc = -9999.D0  ! currently not used
 
         LOGICAL:: sal_init = .FALSE. 
     contains 
@@ -141,7 +142,7 @@ CONTAINS
       real (kind=RKIND):: ssh_sal( nnode ) ; 
      
       ! local !
-      INTEGER:: ii
+      INTEGER:: ii, jj
       
       ssh_sal = 0.D0 ;
       if ( this%use_inline_sal ) then 
@@ -149,16 +150,18 @@ CONTAINS
         sshSmoothed = ssh ; 
         do ii = 1, nnode
           !
-          if ( DEPTH(ii) < 0.0D0 ) then
-             sshSmoothed = 0.D0 ;     
-             IF (  sshSmoothed(ii) + DEPTH(ii) > H0 ) THEN
+          if ( depth(ii) < 0.0D0 ) then
+             ! sshSmoothed(ii) = 0.D0 ;     
+             IF (  sshSmoothed(ii) + depth(ii) > H0 ) THEN
                 sshSmoothed(ii) = sshSmoothed(ii) + DEPTH(ii) - H0 ;       
-             END IF  
+             ELSE
+                sshSmoothed(ii) = 0.D0 
+             ENDIF     
           end if
-          !  
+          !
         end do
         !
-  
+ 
         CALL self_attraction_loading_parallel_fem( ssh_sal, sshSmoothed, &
                                    etov, nele, resident_elemask ) ;
       endif 
@@ -228,9 +231,10 @@ CONTAINS
                if ( maxval(xs) - minval(xs) > 180.D0 ) then
                   dA(ii) = 0.5D0*getarea( modulo(xs,360.0)*deg2rad, ys*deg2rad ) ;
                endif
+               
+               if ( dA(ii) <= 0.D0 ) dA(ii) = 0.D0 ;  ! 
            end if
 
-           !! if ( ii < 10 ) print*, dA(ii) ;
          END DO
          
          lon = lon*deg2rad ; ! in Rad
@@ -422,27 +426,26 @@ CONTAINS
              Snm_local(m) = SnmRe_local(m)      ! real part of f^{m}_{n}
              Snm_local(lmax+m) = SnmIm_local(m) ! imaginary part of f^{m}_{n}
           enddo
+          
 
 #ifdef CMPI 
-          ! Will need allreduce for parallel ! 
-          CALL msg_rvec_allreduce_sum( Snm_local, Snm, lmax )
+          ! all reduce
+          CALL msg_rvec_allreduce_sum( Snm_local, Snm, 2*lmax )
 #else
           Snm = Snm_local ; 
 #endif
           ! output: spherical harmonic coefficeints !
+          ! PRINT*, "my proc r", myproc ;
           do m = 1,lmax
              SnmRe(m) = Snm(m)       ! real part
-             SnmIm(m) = Snm(lmax+m)  ! imaginary 
-
-             ! PRINT*, SnmRe(m), SnmIm(m) ; 
+             SnmIm(m) = Snm(lmax+m)  ! imaginary part
           enddo
+         
         ENDIF FORWARDSPHT
 
 
         INVERSESPHT: IF ( .not. forward ) THEN
-         ! do iCell = 1,nCells
-         !    ssh(iCell) = 0.0_RKIND
-         ! enddo
+          !
           ssh = 0.0_RKIND
 
           do m = 0,nOrder
@@ -640,7 +643,7 @@ CONTAINS
             enddo
         enddo
 
-        CALL CPU_TIME( tbeg )
+        ! CALL CPU_TIME( tbeg )
         do m = 0,nOrder
 
            do blk = 1,nBlocks
@@ -725,7 +728,7 @@ CONTAINS
            enddo ! blocks loop
 
         enddo ! m loop
-        CALL CPU_TIME( tend ) ;
+        ! CALL CPU_TIME( tend ) ;
         ! print*, "forward transform time = ", tend - tbeg ;   
         
         if (  use_direct_shtns_self_attraction_loading_bfb ) then   
@@ -765,13 +768,13 @@ CONTAINS
         ! Apply SAL scaling
         !!!!!!!!!!!!!!!!!!!!!
 
-        !! do m = 0,nOrder
-        !!    do n = m,nOrder
-        !!        l = SHOrderDegreeToIndex(n,m)
-        !!        SnmRe(l) = SnmRe(l)*LoveSalScaling(l)
-        !!        SnmIm(l) = SnmIm(l)*LoveSalScaling(l)
-        !!    enddo
-        !! enddo
+        do m = 0,nOrder
+            do n = m,nOrder
+                l = SHOrderDegreeToIndex(n,m)
+                SnmRe(l) = SnmRe(l)*LoveSalScaling(l)
+                SnmIm(l) = SnmIm(l)*LoveSalScaling(l)
+            enddo
+        enddo
 
         CALL CPU_TIME( tbeg )
         !!!!!!!!!!!!!!!!!!!!
@@ -938,6 +941,7 @@ CONTAINS
           do iCell = 1,nCells
               complexExpRe(iCell,m+1)    = cos(real(m,RKIND)*lonc(iCell))
               complexExpIm(iCell,m+1)    = sin(real(m,RKIND)*lonc(iCell))
+
               complexFactorRe(iCell,m+1) = complexExpRe(iCell,m+1)*areae(iCell) ;
               complexFactorIm(iCell,m+1) = complexExpIm(iCell,m+1)*areae(iCell) ;
           enddo

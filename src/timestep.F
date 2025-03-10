@@ -1541,14 +1541,16 @@ C******************************************************************************
 
             ! use the full formula 
             IF ( tidePotential%active() ) THEN
-               TIP2 = tidePotential%compute(TimeLoc, NP, SLAM) * RampTip
+               TIP2 = tidePotential%compute(TimeLoc, NP, SLAM)*RampTip
+
             ENDIF  
 
             ! use inline sal
             IF ( ssh_inline_sal%use_inline_sal ) THEN
-               TIP2 = TIP2 + ssh_inline_sal%sal_compute( ETA2 ) ; 
-               ! ssh_sal( eta^{n} ) 
+               TIP2 = TIP2 + ssh_inline_sal%sal_compute( ETA2 )*RampTip
+               ! ssh_sal( eta^{n} )
             END IF
+           
 
             !
             NOTEXACTSALTIP: IF ( .not. tidepotential%active() .or. 
@@ -1586,10 +1588,6 @@ C******************************************************************************
      &                  .not. ssh_inline_sal%use_inline_sal ) THEN
                      ! exact tip & harmonic SAL
                      ! SAL
-                     ! IF ( MYPROC == 0 ) THEN
-                     !  ! PRINT*, "HERE ................", tidepotential%active(), ssh_inline_sal%use_inline_sal
-                     !  ! PRINT*, SALTPHA(J,1:2), SALTAMP(J,1:2)
-                     ! END IF
                      DO I = 1, NP
                         ARGSALT = ARGT - SALTPHA(J,I) ; 
                         TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
