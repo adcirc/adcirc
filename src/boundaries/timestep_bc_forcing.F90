@@ -126,7 +126,7 @@ contains
       integer, intent(in) :: NBV(:)
       integer, intent(in) :: IBCONN(:)
       integer, intent(in) :: LBArray_Pointer(:)
-      integer, intent(in) :: NeiTab(:,:)
+      integer, intent(in) :: NeiTab(:, :)
       integer, intent(in) :: NNeigh(:)
       integer, intent(in) :: NODECODE(:)
       integer, intent(in) :: IFNLFA
@@ -172,7 +172,7 @@ contains
             I = I + NVELL(K)*2
          case (64)
             call check_vew1d_submerged(K, I, NVELL(K), NBV, TIMELOC, X, Y, ETA2, DP, IBCONN, &
-                    LBArray_Pointer, NeiTab, NNeigh, NODECODE, H0, IFNLFA, ISSUBMERGED64, ISSUBMERGED64P)
+                                       LBArray_Pointer, NeiTab, NNeigh, NODECODE, H0, IFNLFA, ISSUBMERGED64, ISSUBMERGED64P)
             call apply_vew1d_boundary_flux(K, I, NVELL(K), TIMELOC, TVW, QN2)
             I = I + NVELL(K)*2
          case DEFAULT
@@ -298,7 +298,7 @@ contains
       do J = 1, NVELL*2
          I = I + 1
          QN2(I) = compute_internal_boundary_flux(I, J, K, TIMELOC, NIBNODECODE, TVW) + &
-                 compute_cross_barrier_pipe_flux(I, NIBNODECODE)
+                  compute_cross_barrier_pipe_flux(I, NIBNODECODE)
       end do
 
    end subroutine apply_internal_weir_with_pipes_flux
@@ -307,8 +307,8 @@ contains
    !> Check if nodes along vew1d boundaries are submerged
    !*******************************************************************************
    subroutine check_vew1d_submerged(K, I_in, NVELL, NBV, TIMELOC, X, Y, ETA2, DP, &
-           IBCONN, LBArray_Pointer, NeiTab, NNeigh, &
-           NODECODE, H0, IFNLFA, ISSUBMERGED64, ISSUBMERGED64P)
+                                    IBCONN, LBArray_Pointer, NeiTab, NNeigh, &
+                                    NODECODE, H0, IFNLFA, ISSUBMERGED64, ISSUBMERGED64P)
       use mod_weir_flow, only: SET_SUBMERGED64_AT
 
       implicit none
@@ -318,7 +318,7 @@ contains
       integer, intent(in) :: NVELL
       integer, intent(in) :: NBV(:)
       integer, intent(in) :: LBArray_Pointer(:)
-      integer, intent(in) :: NeiTab(:,:)
+      integer, intent(in) :: NeiTab(:, :)
       integer, intent(in) :: NNeigh(:)
       integer, intent(in) :: NODECODE(:)
       integer, intent(in) :: IBCONN(:)
@@ -352,8 +352,8 @@ contains
          NNBB1 = NBV(I)
          HTOT = ETA2(NNBB1) + IFNLFA*DP(NNBB1)
          if (ISSUBMERGED64(I) /= 0 .and. &
-                 NODECODE(NNBB1) /= 0 .and. &
-                 HTOT < 4.d0*H0) then
+             NODECODE(NNBB1) /= 0 .and. &
+             HTOT < 4.d0*H0) then
             UNSUBMERGE = .false.
             X1 = X(NNBB1)
             Y1 = Y(NNBB1)
