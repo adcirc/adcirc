@@ -325,6 +325,7 @@ Casey 180318: Added NWS=13
       character(200) :: subgridFilename = 'null'
       logical :: level0 = .true. 
       logical :: level1 = .false.
+      logical :: phi_time_derivative = .false.
 
       ! jgf52.08.02: For inundation output control. Wanted to just
       ! use the variables of the same name from the write_output module,

@@ -43,6 +43,9 @@
       LOGICAL :: level0
       ! Flag for subgrid corrections to bottom friction and advection
       LOGICAL :: level1
+!JLW: adding logical for dphidt to be turned off - set default to off
+      LOGICAL :: phi_time_derivative = .false.
+      INTEGER :: dphidt ! used to 0 out the term
       ! Number of surface elevations used in subgrid preprocessor
 !      INTEGER :: numSurLevs
 !      ! Number of possible phi values

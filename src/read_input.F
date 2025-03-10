@@ -172,7 +172,7 @@ Casey 180318: Added NWS=13
      &                          NWS13WindMultiplier
 #endif
 !JLW: add subgrid 
-      USE subgrid, only: subgridFilename, level0, level1
+      USE subgrid, only: subgridFilename, level0, level1, phi_time_derivative
       use mod_tidepotential, only: tidePotential, t_tidePotential
 
       IMPLICIT NONE
@@ -242,7 +242,8 @@ C.... DMW
      &    NWS13WindMultiplier,NWS13GroupForPowell
 #endif
 !JLW: adding subgrid namelist
-      NAMELIST /subgridControl/ subgridFilename, level0, level1
+      NAMELIST /subgridControl/ subgridFilename, level0, level1,
+     &    phi_time_derivative
 
       NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
 !Aman Tejaswi
@@ -620,6 +621,8 @@ C.... DMW
       write(scratchMessage,*) "level0=",level0
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "level1=",level1
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "phi_time_derivative=",phi_time_derivative
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
