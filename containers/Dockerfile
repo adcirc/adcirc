@@ -1,4 +1,4 @@
-FROM zcobell/adcirc-ci-container:v56 AS builder
+FROM adcircorg/adcirc-ci:2025.0.1-intel AS builder
 
 USER root
 
@@ -39,7 +39,7 @@ RUN cd /home/adcirc/adcirc-build/build && \
         ninja && \
         ninja install 
 
-FROM zcobell/adcirc-ci-container:v56 AS adcirc
+FROM adcircorg/adcirc-ci:2025.0.1-intel AS adcirc
 
 USER root 
 COPY --from=builder /opt/adcirc /opt/adcirc 
