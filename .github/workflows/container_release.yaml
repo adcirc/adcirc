@@ -1,0 +1,10 @@
+name: Release ADCIRC Container Build
+on:
+  release:
+    types: [published]
+jobs:
+  release-version-build-and-deploy:
+    uses: ./.github/workflows/build_container.yaml
+    with:
+      tag: ${{ github.event.release.tag_name }}
+    secrets: inherit
