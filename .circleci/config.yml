@@ -27,10 +27,10 @@ parameters:
 executors:
   intel_executor:
     docker:
-      - image: zcobell/adcirc-ci-container:v56
+      - image: adcircorg/adcirc-ci:2025.0.1-intel
   gcc_executor:
     docker:
-      - image: zcobell/adcirc-ci-container:latest-gcc
+      - image: adcircorg/adcirc-ci:2025.0.1-gcc
 
 # #############################
 # Aliases for the environments
