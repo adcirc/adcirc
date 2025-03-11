@@ -111,20 +111,7 @@ jobs:
           name: Build ADCIRC without external libraries using CMake
           command: |
             mkdir build && cd build && \
-            cmake .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DADCIRC_BUILD_ADCIRC=ON \
-            -DADCIRC_BUILD_PADCIRC=ON \
-            -DADCIRC_BUILD_ADCSWAN=ON \
-            -DADCIRC_BUILD_PADCSWAN=ON \
-            -DADCIRC_BUILD_ADCPREP=ON \
-            -DADCIRC_BUILD_UTILITIES=ON \
-            -DADCIRC_BUILD_ASWIP=ON \
-            -DADCIRC_BUILD_SWAN=ON \
-            -DADCIRC_BUILD_PUNSWAN=ON \
-            -DADCIRC_BUILD_LIBADCIRC_STATIC=ON \
-            -DADCIRC_BUILD_LIBADCIRC_SHARED=ON \
-            -DADCIRC_STRICT_COMPILE=ON && \
+            cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/tc-linux-x86-circleci-gcc.cmake && \
             make -j4
 
   build_cmake_with_netcdf_gcc:
@@ -135,22 +122,9 @@ jobs:
           name: Build ADCIRC without external libraries using CMake
           command: |
             mkdir build && cd build && \
-            cmake .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DADCIRC_BUILD_ADCIRC=ON \
-            -DADCIRC_BUILD_PADCIRC=ON \
-            -DADCIRC_BUILD_ADCSWAN=ON \
-            -DADCIRC_BUILD_PADCSWAN=ON \
-            -DADCIRC_BUILD_ADCPREP=ON \
-            -DADCIRC_BUILD_UTILITIES=ON \
-            -DADCIRC_BUILD_ASWIP=ON \
-            -DADCIRC_BUILD_SWAN=ON \
-            -DADCIRC_BUILD_PUNSWAN=ON \
-            -DADCIRC_BUILD_LIBADCIRC_STATIC=ON \
-            -DADCIRC_BUILD_LIBADCIRC_SHARED=ON \
+            cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/tc-linux-x86-circleci-gcc.cmake \
             -DNETCDF_F90_INCLUDE_DIR=/usr/lib64/gfortran/modules \
-            -DADCIRC_ENABLE_OUTPUT_NETCDF=ON \
-            -DADCIRC_STRICT_COMPILE=ON && \
+            -DADCIRC_ENABLE_OUTPUT_NETCDF=ON && \
             make -j4
 
   build_cmake_without_netcdf:
@@ -161,26 +135,7 @@ jobs:
           name: Build ADCIRC without external libraries using CMake
           command: |
             source /opt/spack-environment/activate.sh && mkdir build && cd build && \
-            cmake .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_COMPILER=icx \
-            -DCMAKE_CXX_COMPILER=icx \
-            -DCMAKE_Fortran_COMPILER=ifx \
-            -DADCIRC_BUILD_ADCIRC=ON \
-            -DADCIRC_BUILD_PADCIRC=ON \
-            -DADCIRC_BUILD_ADCSWAN=ON \
-            -DADCIRC_BUILD_PADCSWAN=ON \
-            -DADCIRC_BUILD_ADCPREP=ON \
-            -DADCIRC_BUILD_UTILITIES=ON \
-            -DADCIRC_BUILD_ASWIP=ON \
-            -DADCIRC_BUILD_SWAN=ON \
-            -DADCIRC_BUILD_PUNSWAN=ON \
-            -DADCIRC_BUILD_LIBADCIRC_STATIC=ON \
-            -DADCIRC_BUILD_LIBADCIRC_SHARED=ON \
-            -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" \
-            -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
-            -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
-            -DADCIRC_STRICT_COMPILE=ON \
+            cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/tc-linux-x86-circleci-intel.cmake \
             -G Ninja && \
             ninja
       - save_cache:
@@ -196,29 +151,10 @@ jobs:
           name: Build ADCIRC with netCDF using CMake
           command: |
             source /opt/spack-environment/activate.sh && mkdir build && cd build && \
-            cmake .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_COMPILER=icx \
-            -DCMAKE_CXX_COMPILER=icx \
-            -DCMAKE_Fortran_COMPILER=ifx \
-            -DADCIRC_BUILD_ADCIRC=ON \
-            -DADCIRC_BUILD_PADCIRC=ON \
-            -DADCIRC_BUILD_ADCSWAN=ON \
-            -DADCIRC_BUILD_PADCSWAN=ON \
-            -DADCIRC_BUILD_ADCPREP=ON \
-            -DADCIRC_BUILD_UTILITIES=ON \
-            -DADCIRC_BUILD_ASWIP=ON \
-            -DADCIRC_BUILD_SWAN=ON \
-            -DADCIRC_BUILD_PUNSWAN=ON \
-            -DADCIRC_BUILD_LIBADCIRC_STATIC=ON \
-            -DADCIRC_BUILD_LIBADCIRC_SHARED=ON \
+            cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/tc-linux-x86-circleci-intel.cmake \
             -DADCIRC_ENABLE_OUTPUT_NETCDF=ON \
-            -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" \
-            -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
-            -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
             -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME \
             -DNETCDFHOME=$NETCDFHOME \
-            -DADCIRC_STRICT_COMPILE=ON \
             -G Ninja && \
             ninja
       - save_cache:
@@ -234,31 +170,13 @@ jobs:
           name: Build ADCIRC with netCDF and XDMF using CMake
           command: |
             source /opt/spack-environment/activate.sh && mkdir build && cd build && \
-            cmake .. -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_COMPILER=icx \
-            -DCMAKE_CXX_COMPILER=icx \
-            -DCMAKE_Fortran_COMPILER=ifx \
-            -DADCIRC_BUILD_ADCIRC=ON \
-            -DADCIRC_BUILD_PADCIRC=ON \
-            -DADCIRC_BUILD_ADCSWAN=ON \
-            -DADCIRC_BUILD_PADCSWAN=ON \
-            -DADCIRC_BUILD_ADCPREP=ON \
-            -DADCIRC_BUILD_UTILITIES=ON \
-            -DADCIRC_BUILD_ASWIP=ON \
-            -DADCIRC_BUILD_SWAN=ON \
-            -DADCIRC_BUILD_PUNSWAN=ON \
-            -DADCIRC_BUILD_LIBADCIRC_STATIC=ON \
-            -DADCIRC_BUILD_LIBADCIRC_SHARED=ON \
+            cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/tc-linux-x86-circleci-intel.cmake \
             -DADCIRC_ENABLE_OUTPUT_NETCDF=ON \
             -DADCIRC_ENABLE_OUTPUT_XDMF=ON \
-            -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" \
-            -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
-            -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
             -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME \
             -DNETCDFHOME=$NETCDFHOME \
             -DXDMFHOME=$XDMFHOME \
             -DHDF5_ROOT=$HDF5HOME \
-            -DADCIRC_STRICT_COMPILE=ON \
             -G Ninja && \
             ninja
 
@@ -270,33 +188,13 @@ jobs:
           name: Build ADCIRC with Grib, netCDF, and XDMF using CMake
           command: |
             source /opt/spack-environment/activate.sh && mkdir build && cd build && \
-            cmake .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_COMPILER=icx \
-            -DCMAKE_CXX_COMPILER=icx \
-            -DCMAKE_Fortran_COMPILER=ifx \
-            -DADCIRC_BUILD_ADCIRC=ON \
-            -DADCIRC_BUILD_PADCIRC=ON \
-            -DADCIRC_BUILD_ADCSWAN=ON \
-            -DADCIRC_BUILD_PADCSWAN=ON \
-            -DADCIRC_BUILD_ADCPREP=ON \
-            -DADCIRC_BUILD_UTILITIES=ON \
-            -DADCIRC_BUILD_ASWIP=ON \
-            -DADCIRC_BUILD_SWAN=ON \
-            -DADCIRC_BUILD_PUNSWAN=ON \
-            -DADCIRC_BUILD_LIBADCIRC_STATIC=ON \
-            -DADCIRC_BUILD_LIBADCIRC_SHARED=ON \
+            cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/tc-linux-x86-circleci-intel.cmake \
             -DADCIRC_ENABLE_OUTPUT_NETCDF=ON \
             -DADCIRC_ENABLE_OUTPUT_XDMF=ON \
             -DADCIRC_ENABLE_DATETIME=ON \
             -DADCIRC_ENABLE_GRIB2=ON \
-            -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" \
-            -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
-            -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
-            -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME \
             -DNETCDFHOME=$NETCDFHOME \
             -DXDMFHOME=$XDMFHOME \
-            -DADCIRC_STRICT_COMPILE=ON \
             -G Ninja && \
             ninja
       - save_cache:
