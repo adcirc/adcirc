@@ -213,7 +213,8 @@ contains
       call check_err(nf90_inquire_dimension(ncid, dimids(1), len=dimlen))
 
       lenarr = dimlen
-      allocate (tmparr(lenarr)) tmparr = 0.d0
+      allocate (tmparr(lenarr))
+      tmparr = 0.d0
       call check_err(nf90_get_var(ncid, time_varid, tmparr))
       self%tbeg(2) = tmparr(1)
       self%tend(2) = tmparr(lenarr)

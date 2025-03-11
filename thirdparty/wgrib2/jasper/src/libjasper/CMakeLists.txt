@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.12)
+
 configure_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/jasper/jas_config.h.in"
 	"${CMAKE_CURRENT_BINARY_DIR}/include/jasper/jas_config.h"
