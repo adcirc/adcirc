@@ -7,7 +7,7 @@ MODULE MOD_INLINE_SAL
     !
 #ifndef NONADC    
     USE ADC_CONSTANTS, only: rhoW => RhoSeaWat0, RhoE => RhoEarth, Rearth, deg2rad, rad2deg
-    USE global, only: resident_elemask => imap_el_lg, H0, DTDP 
+    USE global, only: resident_elemask => imap_el_lg, H0, DTDP, wdnodecode => nodecode 
     USE mesh, only: etov => nm, nele => ne, nnode => np, depth => dp, gridics => ICS, &
                     slam, sfea, slamr, sfear     
 #endif
@@ -42,7 +42,7 @@ MODULE MOD_INLINE_SAL
         procedure, pass(this), public:: sal_param_init
 #ifndef NONADC        
         procedure, pass(this), public:: sal_privatedata_init
-        procedure, pass(this), public:: sal_compute => direct_spht_self_attraction_loading
+        procedure, pass(this), public:: sal_compute => direct_spht_self_attraction_loading_fn
 #endif    
     end type salmethod        
 
@@ -117,23 +117,49 @@ CONTAINS
 
 #ifndef NONADC
     ! 
-    ! subroutine direct_spht_self_attraction_loading( ssh_sal, ssh )
-    !  implicit none 
-    !
-    !  real (kind=RKIND), dimension(:):: ssh_sal, ssh
-    !
-    !  
-    !  CALL self_atttraction_loading_parallel_fem( ssh_sal, ssh, &
-    !                             element_table, nele, resident_elemask ) ;  
-    !    
-    !  return ;
-    ! end subroutine direct_spht_self_attraction_loading
-    !
+    subroutine direct_spht_self_attraction_loading_sub( this, ssh_sal, ssh )
+      implicit none 
 
+      class (salmethod), intent(inout):: this
+      real (kind=RKIND), dimension(:):: ssh_sal, ssh
+    
+      ! local !
+      INTEGER:: ii, jj
+
+      ssh_sal = 0.D0 ;
+      if ( this%use_inline_sal ) then 
+        ! 
+        sshSmoothed = ssh ; 
+
+        ! adjust value of nodes on land !
+        do ii = 1, nnode
+          !
+          if ( depth(ii) < 0.0D0 ) then
+             ! sshSmoothed(ii) = 0.D0 ;
+             !  might need to add node code:     
+             IF (  sshSmoothed(ii) + depth(ii) > H0 ) THEN
+                sshSmoothed(ii) = sshSmoothed(ii) + DEPTH(ii) - H0 ;       
+             ELSE
+                sshSmoothed(ii) = 0.D0 
+             ENDIF
+
+             sshSmoothed(ii) = wdnodecode(ii)*sshSmoothed(ii) ;        
+          end if
+          !
+        end do
+        !
+
+         CALL self_atttraction_loading_parallel_fem( ssh_sal, ssh, &
+                                 element_table, nele, resident_elemask ) ;  
+       endif                   
+        
+      return ;
+    end subroutine direct_spht_self_attraction_loading_sub
+    
 
     !
     ! 
-    function direct_spht_self_attraction_loading( this, ssh ) result( ssh_sal ) 
+    function direct_spht_self_attraction_loading_fn( this, ssh ) result( ssh_sal ) 
       implicit none 
 
       class (salmethod), intent(inout):: this
@@ -148,15 +174,20 @@ CONTAINS
       if ( this%use_inline_sal ) then 
         ! 
         sshSmoothed = ssh ; 
+
+        ! adjust value of nodes on land !
         do ii = 1, nnode
           !
           if ( depth(ii) < 0.0D0 ) then
-             ! sshSmoothed(ii) = 0.D0 ;     
+             ! sshSmoothed(ii) = 0.D0 ;
+             !  might need to add node code:     
              IF (  sshSmoothed(ii) + depth(ii) > H0 ) THEN
                 sshSmoothed(ii) = sshSmoothed(ii) + DEPTH(ii) - H0 ;       
              ELSE
                 sshSmoothed(ii) = 0.D0 
-             ENDIF     
+             ENDIF
+
+             sshSmoothed(ii) = wdnodecode(ii)*sshSmoothed(ii) ;        
           end if
           !
         end do
@@ -167,12 +198,10 @@ CONTAINS
       endif 
 
       !
-    end function direct_spht_self_attraction_loading
-                  
+    end function direct_spht_self_attraction_loading_fn 
     !
 
     !
-
     ! initalize private data in this module !
     subroutine sal_privatedata_init( this )
       use global, only: setMessageSource, unsetMessageSource, allMessage, DEBUG
@@ -212,7 +241,6 @@ CONTAINS
          lon = slam*rad2deg ;
          lat = sfea*rad2deg ;
 
-
          ! find dA in lat and lon,      !
          ! will move it to mesh.F later !
          DO ii = 1, nele
@@ -232,9 +260,8 @@ CONTAINS
                   dA(ii) = 0.5D0*getarea( modulo(xs,360.0)*deg2rad, ys*deg2rad ) ;
                endif
                
-               if ( dA(ii) <= 0.D0 ) dA(ii) = 0.D0 ;  ! 
-           end if
-
+               if ( dA(ii) <= 0.D0 ) dA(ii) = 0.D0 ;  ! just in case  
+           endif
          END DO
          
          lon = lon*deg2rad ; ! in Rad
