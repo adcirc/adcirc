@@ -13,7 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_ASWIP)
+if(ADCIRC_BUILD_ASWIP)
 
   set(ASWIP_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
@@ -54,4 +54,4 @@ if(BUILD_ASWIP)
 
   install(TARGETS aswip RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-endif(BUILD_ASWIP)
+endif()

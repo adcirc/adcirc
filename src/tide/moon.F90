@@ -438,7 +438,7 @@ contains
 
       ! Check if the astroval
       if (present(ASVAL)) then
-         if (abs(JD - ASVAL%JD) < 1.e-9) have_asval = .true.
+         if (abs(JD - ASVAL%JD) < 1.d-9) have_asval = .true.
       end if
       if (present(NUTATION)) use_nutation = NUTATION
 

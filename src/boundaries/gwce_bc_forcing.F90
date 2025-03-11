@@ -244,7 +244,7 @@ contains
                   ETA1(I) = ETA1(I) + ETA1(J)
                end do
                ! 2) Distribute them
-               ETA1(I) = ETA1(I)/NNodesListCondensedNodes(K)
+               ETA1(I) = ETA1(I)/dble(NNodesListCondensedNodes(K))
                do L = 2, NNodesListCondensedNodes(K)
                   J = ListCondensedNodes(K, L)
                   COEFDTemp(J) = COEFDTemp(I)
@@ -560,7 +560,7 @@ contains
          else
             NCYC = int(timeh/PER(J))
          end if
-         ARGJ = AMIG(J)*(timeh - NCYC*PER(J)) + FACE(J)
+         ARGJ = AMIG(J)*(timeh - dble(NCYC)*PER(J)) + FACE(J)
          RFF = FF(J)*RampElev
          do I = 1, NETA
             ARG = ARGJ - EFA(J, I)
@@ -1073,7 +1073,7 @@ contains
          nodecode_current_node = NodeCode(current_node)
 
          ! Compute the length of the boundary segment and zero for non-wet nodes
-         BndLenO6NC = nodecode_prev_node*nodecode_current_node*BndLen2O3(J - 1)/4.0d0
+         BndLenO6NC = dble(nodecode_prev_node*nodecode_current_node)*BndLen2O3(J - 1)/4.0d0
 
          ! Apply the boundary conditions to the load vector
          GWCE_LV(previous_node) = GWCE_LV(previous_node) + BndLenO6NC*(2.0d0*QForceI + QForceJ)
@@ -1110,7 +1110,7 @@ contains
          do I = 1, NNPERBC
             I2 = IPERCONN(I, 2)
             ETAS(I2) = 0.0d0 !  ETA1 ==> ETA2
-            GWCE_LV(I2) = ETAS(I2)*NODECODE(I2)*EP
+            GWCE_LV(I2) = ETAS(I2)*dble(NODECODE(I2))*EP
          end do
       end if
 
@@ -1161,7 +1161,7 @@ contains
          do I = 1, NETA
             NBDI = NBD(I)
             ETAS(NBDI) = ETA2(NBDI) - ETA1(NBDI)
-            GWCE_LV(NBDI) = ETAS(NBDI)*NODECODE(NBDI)*EP
+            GWCE_LV(NBDI) = ETAS(NBDI)*dble(NODECODE(NBDI))*EP
             do J = 2, NNEIGH(NBDI)
                GWCE_LV(NEITAB(NBDI, J)) = GWCE_LV(NEITAB(NBDI, J)) - ETAS(NBDI)*OBCCOEF(I, J - 1)
             end do
@@ -1170,7 +1170,7 @@ contains
          do I = 1, NETA
             NBDI = NBD(I)
             ETAS(NBDI) = ETA2(NBDI) - ETA1(NBDI)
-            GWCE_LV(NBDI) = ETAS(NBDI)*NODECODE(NBDI)*COEFD(NBDI)
+            GWCE_LV(NBDI) = ETAS(NBDI)*dble(NODECODE(NBDI))*COEFD(NBDI)
          end do
       end if
    end subroutine update_load_vector

@@ -1,8 +1,6 @@
 #ifdef ADCNETCDF
 module netcdf_error
       
-    USE NETCDF
-
     implicit none
 
     contains
@@ -22,6 +20,8 @@ module netcdf_error
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       USE mod_logging, ONLY : allMessage, DEBUG
 #endif
+
+      use netcdf, only: NF90_NOERR, nf90_strerror
 
       IMPLICIT NONE
       INTEGER, intent(in) :: iret
@@ -47,7 +47,7 @@ module netcdf_error
 !-----------------------------------------------------------------------
 #ifdef CMPI
       subroutine netcdfTerminate(NO_MPI_FINALIZE)
-      USE MESSENGER
+      USE MESSENGER, only: msg_fini
 #else
       subroutine netcdfTerminate()
 #endif
@@ -82,7 +82,6 @@ module netcdf_error
 #endif
 
 #ifdef CMPI
-      subdomainFatalError = .true.
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
         CALL MSG_FINI(NO_MPI_FINALIZE)
       ELSE

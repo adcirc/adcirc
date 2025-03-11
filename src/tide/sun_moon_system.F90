@@ -81,7 +81,7 @@ contains
       IERR = 0
    end subroutine HEAVENLY_OBJS_COORDS_JM
 
-   real(8) function GMST_DEG_FN(self, JDE) result(GMST)
+   real(8) pure function GMST_DEG_FN(self, JDE) result(GMST)
       use mod_astronomic, only: GMST_DEG
       implicit none
       class(t_moon_sun), intent(IN) :: self

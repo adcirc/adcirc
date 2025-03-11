@@ -152,12 +152,12 @@ contains
 
       integer :: I
       integer :: NBDI
-      integer :: NCI
+      real(8) :: NCI
       real(8) :: VelNorm
 
       I = ME2GW(J)
       NBDI = NBV(I)
-      NCI = NODECODE(NBDI)
+      NCI = dble(NODECODE(NBDI))
 
       if (formulation == conservative) then
          MOM_LV_X(NBDI) = (SIII(I)*MOM_LV_X(NBDI) - CSII(I)*MOM_LV_Y(NBDI))*NCI !Tangetial Eqn RHS
@@ -242,32 +242,32 @@ contains
 
       integer :: I
       integer :: NBDI
-      integer :: NCI
+      real(8) :: NCI
 
       I = ME2GW(J)
       NBDI = NBV(I)
-      NCI = NODECODE(NBDI)
+      NCI = dble(NODECODE(NBDI))
 
-      if (NCI == 0) then
+      if (int(NCI) == 0) then
          MOM_LV_X(NBDI) = 0.d0
          MOM_LV_Y(NBDI) = 0.d0
       else
          if (formulation == conservative) then
-            MOM_LV_X(NBDI) = 0.0 !Tangential Eqn RHS
+            MOM_LV_X(NBDI) = 0.0d0 !Tangential Eqn RHS
             MOM_LV_Y(NBDI) = -QN2(I)*NCI !Normal Eqn RHS
             AUV(1, NBDI) = SIII(I)
             AUV(2, NBDI) = SIII(I)
             AUV(3, NBDI) = -CSII(I)
             AUV(4, NBDI) = CSII(I)
          elseif (formulation == non_conservative) then
-            MOM_LV_X(NBDI) = 0.0 !Tangential Eqn RHS
+            MOM_LV_X(NBDI) = 0.0d0 !Tangential Eqn RHS
             MOM_LV_Y(NBDI) = -QN2(I)/H2(NBDI)*NCI !Normal Eqn RHS
             AUV(1, NBDI) = SIII(I)
             AUV(2, NBDI) = SIII(I)
             AUV(3, NBDI) = -CSII(I)
             AUV(4, NBDI) = CSII(I)
          elseif (formulation == predictor_corrector) then
-            MOM_LV_X(NBDI) = 0.0 !Tangential Eqn RHS
+            MOM_LV_X(NBDI) = 0.0d0 !Tangential Eqn RHS
             MOM_LV_Y(NBDI) = -QN2(I)/H2(NBDI)*NCI !Normal Eqn RHS
             AUV11(NBDI) = SIII(I)
             AUV12(NBDI) = -CSII(I)
@@ -368,8 +368,8 @@ contains
             SFacAvg = SFacEle(NEle)
             SFmxAvg = SFMXEle(NEle)
             SFmyAvg = SFMYEle(NEle)
-            sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
-            sfdyfac = (1 - IFSFM)*1.0d0 + IFSFM*SFmyAvg
+            sfdxfac = dble(1 - IFSFM)*SFacAvg + dble(IFSFM)*SFmxAvg
+            sfdyfac = dble(1 - IFSFM)*1.0d0 + dble(IFSFM)*SFmyAvg
             FDX1 = FDXE(1, NEle)*sfdxfac !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
             FDX2 = FDXE(2, NEle)*sfdxfac !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
             FDX3 = FDXE(3, NEle)*sfdxfac !c FDX3=(Y(NM1)-Y(NM2))*SFacAvg !b3
@@ -399,8 +399,8 @@ contains
          SFacAvg = SFacEle(NEle)
          SFmxAvg = SFMXEle(NEle)
          SFmyAvg = SFMYEle(NEle)
-         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg
-         sfdyfac = (1 - IFSFM)*1.0d0 + IFSFM*SFmyAvg
+         sfdxfac = dble(1 - IFSFM)*SFacAvg + dble(IFSFM)*SFmxAvg
+         sfdyfac = dble(1 - IFSFM)*1.0d0 + dble(IFSFM)*SFmyAvg
          FDX1 = FDXE(1, NEle)*sfdxfac
          FDX2 = FDXE(2, NEle)*sfdxfac
          FDX3 = FDXE(3, NEle)*sfdxfac
@@ -634,7 +634,7 @@ contains
                if (CME_AreaInt_Corr) then !Correct area integration
                   TotalArea1 = TotalArea(I)
                elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
-                  TotalArea1 = MJU(I)
+                  TotalArea1 = dble(MJU(I))
                end if
             else
                TotalArea1 = 1.d0
@@ -650,7 +650,7 @@ contains
                   if (CME_AreaInt_Corr) then !Correct area integration
                      TotalArea1 = TotalArea(J)
                   elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
-                     TotalArea1 = MJU(J)
+                     TotalArea1 = dble(MJU(J))
                   end if
                else
                   TotalArea1 = 1.d0
@@ -734,7 +734,7 @@ contains
                         if (CME_AreaInt_Corr) then !Correct area integration
                            TotalArea1 = TotalArea(NNBB1)
                         elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
-                           TotalArea1 = MJU(NNBB1)
+                           TotalArea1 = dble(MJU(NNBB1))
                         end if
                      else
                         TotalArea1 = 1.d0
@@ -743,7 +743,7 @@ contains
                         if (CME_AreaInt_Corr) then !Correct area integration
                            TotalArea2 = TotalArea(NNBB2)
                         elseif (CME_AreaInt_Orig) then !Original (incorrect) area integration
-                           TotalArea2 = MJU(NNBB2)
+                           TotalArea2 = dble(MJU(NNBB2))
                         end if
                      else
                         TotalArea2 = 1.d0
@@ -812,7 +812,8 @@ contains
       real(8), intent(inout) :: VV2(:)
 
       integer :: I, J
-      integer :: NBDI, NCEle, NM1, NM2, NM3, NC1, NC2, NC3
+      integer :: NBDI, NM1, NM2, NM3, NC1, NC2, NC3
+      real(8) :: NCEle
 
       if (NFLUXGBC == 1) then
          do J = 1, NVELME
@@ -825,7 +826,7 @@ contains
                NC1 = NODECODE(NM1)
                NC2 = NODECODE(NM2)
                NC3 = NODECODE(NM3)
-               NCEle = NC1*NC2*NC3*NOFF(NEleZNG(I))
+               NCEle = dble(NC1*NC2*NC3*NOFF(NEleZNG(I)))
                if (formulation == conservative) then
                   QX2(NBDI) = NCEle*(QX2(NM1)*ZNGIF1(I) + QX2(NM2)*ZNGIF2(I) + QX2(NM3)*ZNGIF3(I))
                   QY2(NBDI) = NCEle*(QY2(NM1)*ZNGIF1(I) + QY2(NM2)*ZNGIF2(I) + QY2(NM3)*ZNGIF3(I))

@@ -1093,7 +1093,7 @@ contains
             if (ISNULL(I=HOT) .or. (HOT == 0)) then
                HOTADD = 0d0
             elseif (HOT == 1) then
-               HOTADD = DTDP*ITHS
+               HOTADD = DTDP*dble(ITHS)
                OFFSET = OFFSET + HOTADD
                write (*, *) DTDP, ITHS
                write (*, *) HOTADD, OFFSET
@@ -1399,7 +1399,7 @@ contains
             if (HOT == 1) then
                select case (IHOT)
                case (17, 67, 68, 367, 368, 567, 568)
-                  HOTSEC = DTDP*ITHS
+                  HOTSEC = DTDP*dble(ITHS)
                case DEFAULT
                   HOTSEC = 0d0
                end select
@@ -1577,17 +1577,12 @@ contains
    !> @param S - The character variable to check
    !> @return .true. if the variable was not modified, .false. if it was
    !-----------------------------------------------------------------------
-   logical function ISNULL(R, I, S)
+   pure logical function ISNULL(R, I, S)
       implicit none
       real(8), intent(in), optional :: R
       integer, intent(in), optional :: I
       character(*), intent(in), optional :: S
       real(8) :: EPS
-
-      call setMessageSource("ISNULL")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
 
       if (present(R)) then
          EPS = epsilon(1.0d0)
@@ -1605,14 +1600,7 @@ contains
          if (trim(adjustl(S)) == "NOFILE") then
             ISNULL = .true.
          end if
-      else
-         call allMessage(ERROR, "No check specified for null.")
-         call terminate()
       end if
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
 
    end function ISNULL
    !-----------------------------------------------------------------------

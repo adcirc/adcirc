@@ -13,7 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(ENABLE_OUTPUT_NETCDF)
+if(ADCIRC_ENABLE_OUTPUT_NETCDF)
 
   if(NOT
      "${NETCDFHOME}"
@@ -104,4 +104,4 @@ if(ENABLE_OUTPUT_NETCDF)
     endif(NETCDF_TEST1)
 
   endif(NOT NETCDF_FOUND)
-endif(ENABLE_OUTPUT_NETCDF)
+endif()

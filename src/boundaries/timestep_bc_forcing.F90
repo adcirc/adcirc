@@ -347,7 +347,7 @@ contains
       do J = 1, NVELL
          I = I + 1
          NNBB1 = NBV(I)
-         HTOT = ETA2(NNBB1) + IFNLFA*DP(NNBB1)
+         HTOT = ETA2(NNBB1) + dble(IFNLFA)*DP(NNBB1)
          if (ISSUBMERGED64(I) /= 0 .and. &
              NODECODE(NNBB1) /= 0 .and. &
              HTOT < 4.d0*H0) then
@@ -362,7 +362,7 @@ contains
                ET2 = ETA2(NNBBNEI)
                LEN = sqrt((X1 - X2)**2 + (Y1 - Y2)**2)
                SLP = abs(ET1 - ET2)/LEN
-               if (SLP > 0.0001) then
+               if (SLP > 0.0001d0) then
                   UNSUBMERGE = .true.
                end if
             elseif (J < NVELL) then
@@ -372,7 +372,7 @@ contains
                ET2 = ETA2(NNBBNEI)
                LEN = sqrt((X1 - X2)**2 + (Y1 - Y2)**2)
                SLP = abs(ET1 - ET2)/LEN
-               if (SLP > 0.0001) then
+               if (SLP > 0.0001d0) then
                   UNSUBMERGE = .true.
                end if
             end if
@@ -697,7 +697,7 @@ contains
             NCYC = int(timeh/FPER(J))
          end if
 
-         ARGJ = FAMIG(J)*(timeh - NCYC*FPER(J)) + FFACE(J)
+         ARGJ = FAMIG(J)*(timeh - dble(NCYC)*FPER(J)) + FFACE(J)
          RFF = FFF(J)*RampExtFlux
 
          do I = 1, NVEL

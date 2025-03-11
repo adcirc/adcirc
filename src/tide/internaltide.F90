@@ -89,8 +89,8 @@ contains
          VBar = 0d0
       end if
 
-      L = floor(TimeStep*DTDP/Fs)
-      Lm = floor((TimeStep - 1)*DTDP/Fs)
+      L = floor(dble(TimeStep)*DTDP/Fs)
+      Lm = floor(dble(TimeStep - 1)*DTDP/Fs)
       if (L > Lm) then
          if (ISTA > NS) then
             do ii = 1, NP
@@ -177,8 +177,8 @@ contains
          call CalcMunkWeights()
       end if
       ! check if this and the previous timestep are in the same hour
-      L = floor(TimeStep*DTDP/T)
-      Lm = floor((TimeStep - 1)*DTDP/T)
+      L = floor(dble(TimeStep)*DTDP/T)
+      Lm = floor(dble(TimeStep - 1)*DTDP/T)
       if (L > Lm) then
          ! check if we are >= 49 hours into the run
          if (ISTA > NS) then
@@ -227,10 +227,10 @@ contains
       ! allocate weights
       allocate (wts(NS))
       ! define low-pass filter weights (not normalized and one-sided)
-      LPwts = (/395287, 386839, 370094, 354118, 338603, 325633, 314959, &
-                300054, 278167, 251492, 234033, 219260, 208050, 195518, &
-                180727, 165525, 146225, 122665, 101603, 85349, 72261, &
-                60772, 47028, 30073, 13307/)
+      LPwts = (/395287d0, 386839d0, 370094d0, 354118d0, 338603d0, 325633d0, 314959d0, &
+                300054d0, 278167d0, 251492d0, 234033d0, 219260d0, 208050d0, 195518d0, &
+                180727d0, 165525d0, 146225d0, 122665d0, 101603d0, 85349d0, 72261d0, &
+                60772d0, 47028d0, 30073d0, 13307d0/)
       ! find sum to normalize low pass filter
       K = LPwts(1)
       do ii = 2, 25

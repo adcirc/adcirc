@@ -13,7 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_UTILITIES)
+if(ADCIRC_BUILD_UTILITIES)
 
   add_executable(adccmp util/adccmp.F)
   add_executable(p15 wind/p15.F)
@@ -43,30 +43,30 @@ if(BUILD_UTILITIES)
   # If this happened in the main code, we would fix the code instead of suppressing the warning.
   if(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
     # Disable warnings for deleted features
-    target_compile_options(p15 PRIVATE -std=legacy ${ADDITIONAL_FLAGS_UTILITIES})
+    target_compile_options(p15 PRIVATE -std=legacy ${ADCIRC_ADDITIONAL_FLAGS_UTILITIES})
   else()
-    if(DEFINED ADDITIONAL_FLAGS_UTILITIES
+    if(DEFINED ADCIRC_ADDITIONAL_FLAGS_UTILITIES
        AND NOT
-           "${ADDITIONAL_FLAGS_UTILITIES}"
+           "${ADCIRC_ADDITIONAL_FLAGS_UTILITIES}"
            STREQUAL
            "")
-      set_target_properties(p15 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
+      set_target_properties(p15 PROPERTIES COMPILE_FLAGS ${ADCIRC_ADDITIONAL_FLAGS_UTILITIES})
     endif()
   endif()
 
   # Add flags set as ADDITIONAL_FLAGS_ADCIRC
-  if(DEFINED ADDITIONAL_FLAGS_UTILITIES
+  if(DEFINED ADCIRC_ADDITIONAL_FLAGS_UTILITIES
      AND NOT
-         "${ADDITIONAL_FLAGS_UTILITIES}"
+         "${ADCIRC_ADDITIONAL_FLAGS_UTILITIES}"
          STREQUAL
          "")
-    set_target_properties(adccmp PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
-    set_target_properties(owi22 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
-    set_target_properties(build13 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
-    set_target_properties(buildstwave23 PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
-    set_target_properties(hot2asc PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
-    set_target_properties(inflate PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
-    set_target_properties(hstime PROPERTIES COMPILE_FLAGS ${ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(adccmp PROPERTIES COMPILE_FLAGS ${ADCIRC_ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(owi22 PROPERTIES COMPILE_FLAGS ${ADCIRC_ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(build13 PROPERTIES COMPILE_FLAGS ${ADCIRC_ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(buildstwave23 PROPERTIES COMPILE_FLAGS ${ADCIRC_ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(hot2asc PROPERTIES COMPILE_FLAGS ${ADCIRC_ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(inflate PROPERTIES COMPILE_FLAGS ${ADCIRC_ADDITIONAL_FLAGS_UTILITIES})
+    set_target_properties(hstime PROPERTIES COMPILE_FLAGS ${ADCIRC_ADDITIONAL_FLAGS_UTILITIES})
   endif()
 
   install(
@@ -80,4 +80,4 @@ if(BUILD_UTILITIES)
             hstime
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-endif(BUILD_UTILITIES)
+endif()

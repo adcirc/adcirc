@@ -13,7 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_ADCIRC)
+if(ADCIRC_BUILD_ADCIRC)
 
   set(ADCIRC_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
@@ -82,7 +82,7 @@ if(BUILD_ADCIRC)
   endif()
 
   add_executable(adcirc ${ADCIRC_SOURCES})
-  addcompilerflags(adcirc ${ADDITIONAL_FLAGS_ADCIRC})
+  addcompilerflags(adcirc ${ADCIRC_ADDITIONAL_FLAGS_ADCIRC})
   addkdtree2definitions(adcirc)
   addkdtree2library(adcirc)
   addnetcdflibraries(adcirc)
@@ -92,6 +92,8 @@ if(BUILD_ADCIRC)
   addversionlibrary(adcirc)
   addmkdirlibrary(adcirc)
 
+  add_strict_compiler_flags(${ADCIRC_SOURCES})
+
   install(TARGETS adcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-endif(BUILD_ADCIRC)
+endif()

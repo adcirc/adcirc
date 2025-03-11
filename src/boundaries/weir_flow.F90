@@ -701,6 +701,8 @@ contains
       call allMessage(DEBUG, "Enter")
 #endif
 
+      FLUX = 0.0d0
+
       NNBB1 = NBV(IDX) ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
       NNBB2 = IBCONN(IDX) ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
 

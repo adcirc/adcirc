@@ -13,7 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(ENABLE_OUTPUT_XDMF)
+if(ADCIRC_ENABLE_OUTPUT_XDMF)
 
   find_package(HDF5 COMPONENTS C HL)
 
@@ -72,4 +72,4 @@ if(ENABLE_OUTPUT_XDMF)
       set(XDMF_WORKING FALSE)
     endif(XDMF_TEST)
   endif(${XDMFHOME} STREQUAL "XDMF-NOTFOUND")
-endif(ENABLE_OUTPUT_XDMF)
+endif()

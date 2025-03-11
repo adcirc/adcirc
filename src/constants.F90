@@ -42,7 +42,7 @@ module ADC_CONSTANTS
    !...Default gravitational acceleration
    ! Note that the user can update this in the
    ! control file so this isn't made constant
-   real(8) :: g = 9.80665
+   real(8) :: g = 9.80665d0
 
    !...Nominal density of water
    real(8), parameter :: RhoWat0 = 1000.0d0

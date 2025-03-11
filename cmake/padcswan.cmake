@@ -13,7 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_PADCSWAN AND PERL_FOUND)
+if(ADCIRC_BUILD_PADCSWAN AND PERL_FOUND)
 
   set(SWAN1PARALLEL_SOURCES
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swmod1.f
@@ -180,10 +180,10 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   add_library(templib_padcswan1 STATIC ${PADCSWAN1_SOURCES})
   add_executable(padcswan ${PADCSWAN_SOURCES})
 
-  addcompilerflags(templib_padcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
-  addcompilerflags(padcswan ${ADDITIONAL_FLAGS_ADCIRC})
-  addcompilerflagsswan(templib_swan1parallel ${ADDITIONAL_FLAGS_SWAN})
-  addcompilerflagsswan(templib_swan2parallel ${ADDITIONAL_FLAGS_SWAN})
+  addcompilerflags(templib_padcswan1 ${ADCIRC_ADDITIONAL_FLAGS_ADCIRC})
+  addcompilerflags(padcswan ${ADCIRC_ADDITIONAL_FLAGS_ADCIRC})
+  addcompilerflagsswan(templib_swan1parallel ${ADCIRC_ADDITIONAL_FLAGS_SWAN})
+  addcompilerflagsswan(templib_swan2parallel ${ADCIRC_ADDITIONAL_FLAGS_SWAN})
 
   add_dependencies(templib_padcswan1 version)
   target_include_directories(templib_padcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_mod)
@@ -227,6 +227,9 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
     version
     templib_swan1parallel)
 
+  add_strict_compiler_flags(${PADCSWAN_SOURCES})
+  add_strict_compiler_flags(${PADCSWAN1_SOURCES})
+
   # Create a false target for the Ninja build system. The generated sources don't give it a full picture of where it can
   # parallelize and this helps it make the correct determinations
   if(${CMAKE_GENERATOR} STREQUAL "Ninja")
@@ -240,4 +243,4 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
 
   install(TARGETS padcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-endif(BUILD_PADCSWAN AND PERL_FOUND)
+endif()

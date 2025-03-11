@@ -33,11 +33,11 @@ module mod_astronomic
                          MIN2DEG = 0.01666666666666d0
 
    ! Astronomical unit in km
-   real(8), parameter :: AUDIST = 1.495978707e+8
+   real(8), parameter :: AUDIST = 1.495978707d+8
    real(8), parameter :: km2AU = 1.d0/AUDIST
 
    ! Ratio of Sun/Moon mass to Earth mass: Wikipedia !
-   real(8), parameter :: MassRatioSunEarth = 332946.0487
+   real(8), parameter :: MassRatioSunEarth = 332946.0487d0
    real(8), parameter :: MassRatioMoonEarth = 1.d0/81.3005678d0
 
    ! Keep the value in two saperate numbers: significant and exponent
@@ -104,24 +104,26 @@ contains
    end subroutine compute_astronomic_values
 
    ! Julian day, p. 61
-   real(8) function JULIANDAY(DD, MM, YYYY, CALENDAR_TYPE) result(JD)
+   real(8) pure function JULIANDAY(DD, MM, YYYY, CALENDAR_TYPE) result(JD)
       implicit none
 
       real(8), intent(IN) :: DD
-      integer :: MM, YYYY
-      character(LEN=*), optional :: CALENDAR_TYPE
+      integer, intent(IN) :: MM, YYYY
+      character(LEN=*), intent(IN), optional :: CALENDAR_TYPE
 
       integer :: A, B
       real(8) :: D, M, Y
-      character(LEN=9) :: CTYPE = 'Gregorian'
-      D = DD
-      M = MM
-      Y = YYYY
+      character(LEN=9) :: CTYPE
+      D = dble(DD)
+      M = dble(MM)
+      Y = dble(YYYY)
 
       if (present(CALENDAR_TYPE)) then
          select case (trim(CALENDAR_TYPE))
          case ('Julian', 'JULIAN', 'julian')
-            CTYPE = 'Julian'
+            CTYPE = 'Julian   '
+         case default
+            CTYPE = 'Gregorian'
          end select
       end if
 
@@ -131,22 +133,23 @@ contains
       end if
 
       A = floor(Y/100.d0)
-      B = 2 - A + floor(A/4.d0)
+      B = 2 - A + floor(dble(A)/4.d0)
       select case (trim(CTYPE))
       case ('Julian')
          B = 0
       end select
 
-      JD = floor(365.25d0*(Y + 4716)) + floor(30.6001d0*(M + 1)) + D + B - 1524.50
+      JD = dble(floor(365.25d0*dble(Y + 4716))) + &
+           dble(floor(30.6001d0*dble(M + 1))) + &
+           dble(D) + dble(B) - 1524.50d0
 
    end function JULIANDAY
 
    ! - Compute Julian centuries from the Epoch J2000.0 (JDE
    !    2451545)
-   function JULIAN_CENTURIES(JDE) result(T)
+   real(8) pure function JULIAN_CENTURIES(JDE) result(T)
       implicit none
 
-      real(8) :: T
       real(8), intent(IN) :: JDE
 
       T = (JDE - 2451545.d0)/36525.d0
@@ -158,38 +161,41 @@ contains
    !  JD     = Julian days                                     !
    !  DPSi (optional)   = The nutation in longitude (degrees)  !
    !  vareps (optional) = obliquity of the ecliptic.           !
-   function GMST_DEG(JD, NUTATION, ASVAL) result(gmst)
+   real(8) pure function GMST_DEG(JD, NUTATION, ASVAL) result(gmst)
       use ADC_CONSTANTS, only: DEG2RAD
       implicit none
 
-      real(8) :: gmst
       real(8), intent(IN) :: JD
       logical, optional, intent(IN) :: NUTATION
-      type(t_astronomic_values), optional :: ASVAL
+      type(t_astronomic_values), intent(IN), optional :: ASVAL
 
       real(8) :: T, JD0, RM
-      logical :: include_nutation = .false.
+      logical :: include_nutation
 
       ! If nutation is require !
       real(8) :: LP, L0, OG, DPsi, vareps
-      logical :: have_asval = .false.
+      logical :: have_asval
+
+      include_nutation = .false.
+      have_asval = .false.
+
       ! Find JD of the date at UT 0h
-      RM = JD - floor(JD)
+      RM = JD - dble(floor(JD))
 
       JD0 = JD
-      if (RM < 0.5d0 - 1.0e-10) then
-         JD0 = floor(JD) - 0.5
-      else if (RM > 0.5d0 + 1.0e-10) then
-         JD0 = floor(JD) + 0.5
+      if (RM < 0.5d0 - 1.0d-10) then
+         JD0 = dble(floor(JD)) - 0.5d0
+      else if (RM > 0.5d0 + 1.0d-10) then
+         JD0 = dble(floor(JD)) + 0.5d0
       end if
       RM = JD - JD0
 
       ! Compute T at UT 0h
-      T = (JD0 - 2451545.0)/36525.d0
+      T = (JD0 - 2451545.0d0)/36525.d0
 
       ! \Theta0 EQ. (12.2) page 87
-      gmst = 100.46061837d0 + 36000.770053608*T &
-             + T*T*(0.000387933 - T/38710000.d0)
+      gmst = 100.46061837d0 + 36000.770053608d0*T &
+             + T*T*(0.000387933d0 - T/38710000.d0)
 
       ! Mean sidereal time at Greenwich for JD. Page 87
       gmst = gmst + 1.00273790935d0*RM*360.d0
@@ -198,7 +204,7 @@ contains
 
       if (include_nutation) then
          if (present(ASVAL)) then
-            if (abs(JD - ASVAL%JD) < 1.0e-9) have_asval = .true.
+            if (abs(JD - ASVAL%JD) < 1.0d-9) have_asval = .true.
          end if
 
          if (.not. have_asval) then
@@ -227,10 +233,9 @@ contains
    end function GMST_DEG
 
    ! Moon's mean longtitude, J2000.0 Epoch. page 338
-   elemental function LP_DEG(T) result(LP)
+   real(8) pure elemental function LP_DEG(T) result(LP)
       implicit none
 
-      real(8) :: LP
       real(8), intent(IN) :: T ! Julian centuries
 
       LP = 218.3164477d0 + T*(481267.88123421d0 &
@@ -241,10 +246,9 @@ contains
    end function LP_DEG
 
    ! Mean elongation of the Moon, J2000.0 Epoch. page 338
-   elemental function D_DEG(T) result(D)
+   real(8) pure elemental function D_DEG(T) result(D)
       implicit none
 
-      real(8) :: D
       real(8), intent(IN) :: T
 
       D = 297.8501921d0 + T*(445267.1114034d0 &
@@ -255,22 +259,20 @@ contains
    end function D_DEG
 
    ! Sun's mean anomaly, J2000.0 Epoch, page 338
-   elemental function M_DEG(T) result(M)
+   real(8) pure elemental function M_DEG(T) result(M)
       implicit none
 
-      real(8) :: M
       real(8), intent(IN) :: T
 
-      M = 357.5291092d0 + T*(35999.0502909 &
+      M = 357.5291092d0 + T*(35999.0502909d0 &
                              + T*(-0.0001536d0 &
                                   + T*(1.d0/24490000.d0)))
    end function M_DEG
 
    ! Moon's mean anomaly, J2000 Epoch. Page 338
-   elemental function MP_DEG(T) result(MP)
+   real(8) pure elemental function MP_DEG(T) result(MP)
       implicit none
 
-      real(8) :: MP
       real(8), intent(IN) :: T
 
       MP = 134.9633964d0 + T*(477198.8675055d0 &
@@ -280,21 +282,20 @@ contains
    end function MP_DEG
 
    ! Moon's argument of latitude, J2000 Epoch. Page 338
-   elemental function F_DEG(T) result(F)
+   real(8) pure elemental function F_DEG(T) result(F)
       implicit none
 
-      real(8) :: F
       real(8), intent(IN) :: T
 
       F = 93.2720950d0 + T*(483202.0175233d0 &
-                            + T*(-0.0036539 &
-                                 + T*(-1.d0/3526000 &
+                            + T*(-0.0036539d0 &
+                                 + T*(-1.d0/3526000d0 &
                                       + T*(1.d0/863310000.d0))))
    end function F_DEG
 
    ! Longtitude of the ascending node of the moon's mean orbit on
    ! the ecliptic. Page 144
-   real(8) elemental function OMEGA_DEG(T) result(OMEGA)
+   real(8) pure elemental function OMEGA_DEG(T) result(OMEGA)
       implicit none
       real(8), intent(IN) :: T
       OMEGA = 125.04452d0 + T*(-1934.136261d0 &
@@ -304,24 +305,24 @@ contains
 
    ! Mean longitude of the Sun, refered to the mean equnoix of the
    ! date. Page 163
-   real(8) elemental function L0_DEG(T) result(L0)
+   real(8) pure elemental function L0_DEG(T) result(L0)
       implicit none
       real(8), intent(IN) :: T
       L0 = 280.46646d0 + T*(36000.76983d0 + T*(0.0003032d0))
    end function L0_DEG
 
    ! The eccentricity of the Earth's orbit. Page 163
-   real(8) elemental function eccentricity_earth_orbit(T) result(eps)
+   real(8) pure elemental function eccentricity_earth_orbit(T) result(eps)
       implicit none
       real(8), intent(IN) :: T
       eps = 0.016708634d0 + T*(-0.000042037d0 &
-                               - 0.0000001267*T)
+                               - 0.0000001267d0*T)
    end function eccentricity_earth_orbit
 
    ! The nutation in longitude. p. 144
    !  -- low accuracy
    ! \Delta \Psi
-   real(8) elemental function DeltaPsiL(OMEGA, L, LP) result(DPsi)
+   real(8) pure elemental function DeltaPsiL(OMEGA, L, LP) result(DPsi)
       use ADC_CONSTANTS, only: DEG2RAD
       implicit none
       real(8), intent(IN) :: OMEGA, L, LP
@@ -340,7 +341,7 @@ contains
    ! The nutation in obliquity. p. 144
    !  -- low accuracy
    ! \Delta \varepsilon
-   real(8) elemental function DeltaVarepsL(OMEGA, L, LP) result(DVareps)
+   real(8) pure elemental function DeltaVarepsL(OMEGA, L, LP) result(DVareps)
       use ADC_CONSTANTS, only: DEG2RAD
       implicit none
       real(8), intent(IN) :: OMEGA, L, LP
@@ -358,7 +359,7 @@ contains
    end function DeltaVarepsL
 
    ! Mean obliquity of the ecliptic. Eq. 22.3. Page 147
-   real(8) elemental function varepsilon0_ecliptic(T) result(varepsilon0)
+   real(8) pure elemental function varepsilon0_ecliptic(T) result(varepsilon0)
       implicit none
       real(8), intent(IN) :: T
       real(8) :: U
@@ -367,12 +368,12 @@ contains
 
       varepsilon0 = 23.d0 + 26.d0*min2deg + 21.448d0*sec2deg
 
-      varepsilon0 = varepsilon0 + U*(-4680.93*sec2deg &
+      varepsilon0 = varepsilon0 + U*(-4680.93d0*sec2deg &
                                      + U*(-1.55d0 &
                                           + U*(1999.25d0 &
                                                + U*(-51.38d0 &
                                                     + U*(-249.67d0 &
-                                                         + U*(-39.05d00 &
+                                                         + U*(-39.05d0 &
                                                               + U*(7.12d0 &
                                                                    + U*(27.87d0 &
                                                                         + U*(5.79d0 &

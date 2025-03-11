@@ -13,7 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_PUNSWAN AND PERL_FOUND)
+if(ADCIRC_BUILD_PUNSWAN AND PERL_FOUND)
 
   set(SWANONLY1_PARALLEL_SOURCES
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source/swmod1.f
@@ -112,9 +112,9 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
   # ...SWAN Configuration
   swanconfigureparallel()
 
-  addcompilerflags(templib_punmsglib ${ADDITIONAL_FLAGS_ADCIRC})
-  addcompilerflagsswan(templib_punswan1 ${ADDITIONAL_FLAGS_SWAN})
-  addcompilerflagsswan(punswan ${ADDITIONAL_FLAGS_SWAN})
+  addcompilerflags(templib_punmsglib ${ADCIRC_ADDITIONAL_FLAGS_ADCIRC})
+  addcompilerflagsswan(templib_punswan1 ${ADCIRC_ADDITIONAL_FLAGS_SWAN})
+  addcompilerflagsswan(punswan ${ADCIRC_ADDITIONAL_FLAGS_SWAN})
   addmpi(templib_punmsglib)
   addmpi(templib_punswan1)
   addmpi(punswan)
@@ -144,4 +144,4 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
 
   install(TARGETS punswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-endif(BUILD_PUNSWAN AND PERL_FOUND)
+endif()

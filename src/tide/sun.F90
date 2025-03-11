@@ -35,7 +35,7 @@ contains
    ! Sun's equation of the center. Page 164
    !  T - Julain centuries of 36525 ephemeris from epoch J2000
    !  M - The mean anomaly of the sun
-   real(8) elemental function SUN_CENTER(T, M) result(C)
+   real(8) pure elemental function SUN_CENTER(T, M) result(C)
       use ADC_CONSTANTS, only: DEG2RAD
       implicit none
       real(8), intent(IN) :: T, M
@@ -53,7 +53,7 @@ contains
    !  L0 = the geometric mean longitude of the Sun
    !  C  = the Sun's eq1.495978707×1011uation of the center
    !  Dpsi (optional) = nutation
-   real(8) elemental function SUN_LON(C, L0, DPsi) result(SLON)
+   real(8) pure elemental function SUN_LON(C, L0, DPsi) result(SLON)
       implicit none
       real(8), intent(IN) :: L0, C
       real(8), optional, intent(IN) :: Dpsi
@@ -61,14 +61,14 @@ contains
       SLON = L0 + C ! Sun's true longtiude
 
       if (present(DPsi)) then
-         SLON = SLON - 0.00569 + Dpsi
+         SLON = SLON - 0.00569d0 + Dpsi
       end if
    end function SUN_LON
 
    ! True anomaly of the Sun longitude. Page 164.
    !  M  = the mean anomaly of the Sun
    !  C  = the Sun's equation of the center
-   real(8) elemental function SUN_NU(M, C) result(nu)
+   real(8) pure elemental function SUN_NU(M, C) result(nu)
       implicit none
       real(8), intent(IN) :: M, C
       nu = M + C ! its true anomerly
@@ -78,7 +78,7 @@ contains
    ! the Earth in astronomical units
    !   nu = True anomaly of the Sun's true longitude
    !   eccen = eccentricity of the Earth's orbit
-   real(8) elemental function SUN_RADIUS(nu, eccen) result(R)
+   real(8) pure elemental function SUN_RADIUS(nu, eccen) result(R)
       use ADC_CONSTANTS, only: DEG2RAD
       implicit none
       real(8), intent(IN) :: nu, eccen
@@ -121,7 +121,7 @@ contains
       logical :: have_asval = .false., use_nutation = .true.
 
       if (present(ASVAL)) then
-         if (abs(ASVAL%JD - JD) < 1.0e-9) then
+         if (abs(ASVAL%JD - JD) < 1.0d-9) then
             have_asval = .true.
          end if
       end if

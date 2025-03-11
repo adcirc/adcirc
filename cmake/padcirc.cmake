@@ -13,7 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_PADCIRC)
+if(ADCIRC_BUILD_PADCIRC)
 
   set(PADCIRC_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
@@ -85,7 +85,7 @@ if(BUILD_PADCIRC)
 
   add_executable(padcirc ${PADCIRC_SOURCES})
 
-  addcompilerflags(padcirc ${ADDITIONAL_FLAGS_ADCIRC})
+  addcompilerflags(padcirc ${ADCIRC_ADDITIONAL_FLAGS_ADCIRC})
   addkdtree2definitions(padcirc)
   addkdtree2library(padcirc)
   addnetcdflibraries(padcirc)
@@ -96,8 +96,10 @@ if(BUILD_PADCIRC)
   addmkdirlibrary(padcirc)
   addmpi(padcirc)
 
+  add_strict_compiler_flags(${PADCIRC_SOURCES})
+
   add_dependencies(padcirc version mkdir)
 
   install(TARGETS padcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-endif(BUILD_PADCIRC)
+endif()
