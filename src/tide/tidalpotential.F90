@@ -216,7 +216,7 @@ contains
    !> @brief Returns the value of the UseFullTIPFormula flag.
    !> @param self The tidal potential object.
    !> @return The value of the UseFullTIPFormula flag. (Used in self%active)
-   logical function useFullTIPFormula(self)
+   pure logical function useFullTIPFormula(self)
       class(t_tidePotential), intent(IN) :: self
       useFullTIPFormula = self%m_UseFullTIPFormula
    end function useFullTIPFormula
@@ -369,7 +369,7 @@ contains
       ! local !
       real(8) :: JDELoc, tocgmst
       real(8) :: MoonSunCoor(3, 2)
-      integer :: IERR
+      integer :: IERR = 0
 
       call setMessageSource("comp_full_tip")
 #if defined(ALL_TRACE)
@@ -431,7 +431,7 @@ contains
 
    end subroutine check_tip_err
 
-   function StringUpper(string) result(outString)
+   pure function StringUpper(string) result(outString)
       implicit none
 
       character(LEN=*), intent(IN) :: string
@@ -439,7 +439,7 @@ contains
 
       integer :: I, asciinum
 
-      outString = string; 
+      outString = string
       do I = 1, len(string)
          asciinum = iachar(string(I:I))
          select case (asciinum)
@@ -450,10 +450,9 @@ contains
    end function StringUpper
 
    ! A^{N}
-   elemental function AINTPOWER(A, N) result(AP)
+   real(8) pure elemental function AINTPOWER(A, N) result(AP)
       implicit none
 
-      real(8) :: AP
       real(8), intent(IN) :: A
       integer, intent(IN) :: N
 
@@ -556,7 +555,7 @@ contains
          integer :: ii, cpos(3), ivec(3)
 
          earlystop = .false.
-         arg = (/a1, a2, a3/); 
+         arg = (/a1, a2, a3/)
          ivec = 0
          cpos(1) = 1
          do ii = 1, 3
@@ -584,9 +583,9 @@ contains
             if (earlystop) exit
          end do
 
-         a1 = arg(1); 
-         a2 = arg(2); 
-         a3 = arg(3); 
+         a1 = arg(1)
+         a2 = arg(2)
+         a3 = arg(3)
       end subroutine extractvalues
 
    end subroutine INIT_FULL_TIP

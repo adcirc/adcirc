@@ -21,23 +21,23 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/mpi_check.cmake)
 # ...Compiler specific options
 if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
   # gfortran
-  set(Fortran_LINELENGTH_FLAG
+  set(ADCIRC_Fortran_LINELENGTH_FLAG
       "-ffixed-line-length-none"
       CACHE STRING "Compiler specific flag to enable extended Fortran line length")
 
   if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-    set(Fortran_COMPILER_SPECIFIC_FLAG
+    set(ADCIRC_Fortran_COMPILER_SPECIFIC_FLAG
         "-mcmodel=medium"
         CACHE STRING "Compiler specific flags")
   else()
-    set(Fortran_COMPILER_SPECIFIC_FLAG
+    set(ADCIRC_Fortran_COMPILER_SPECIFIC_FLAG
         ""
         CACHE STRING "Compiler specific flag")
   endif()
 
 elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM")
   # ifort/ifx
-  set(Fortran_LINELENGTH_FLAG
+  set(ADCIRC_Fortran_LINELENGTH_FLAG
       "-132"
       CACHE STRING "Compiler specific flag to enable extended Fortran line length")
 
@@ -62,18 +62,18 @@ elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER
   endif()
 
   string(STRIP ${ifort_FLAG} ifort_FLAG_TRIMMED)
-  set(Fortran_COMPILER_SPECIFIC_FLAG
+  set(ADCIRC_Fortran_COMPILER_SPECIFIC_FLAG
       ${ifort_FLAG_TRIMMED}
       CACHE STRING "Compiler specific flags")
 
 elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "PGI" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "NVHPC")
   # pgf90
-  set(Fortran_LINELENGTH_FLAG
+  set(ADCIRC_Fortran_LINELENGTH_FLAG
       "-Mextend"
       CACHE STRING "Compiler specific flag to enable extended Fortran line length")
 
   if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-    set(Fortran_COMPILER_SPECIFIC_FLAG
+    set(ADCIRC_Fortran_COMPILER_SPECIFIC_FLAG
         "-Mlarge_arrays"
         CACHE STRING "Compiler specific flags")
   endif()
@@ -83,10 +83,10 @@ else()
   message(
     WARNING
       "No known predefined Fortran extended line length flag known. Please manually set the Fortran_LINELENGTH_FLAG")
-  set(Fortran_LINELENGTH_FLAG
+  set(ADCIRC_Fortran_LINELENGTH_FLAG
       ""
       CACHE STRING "Compiler specific flag to enable extended Fortran line length")
-  set(Fortran_COMPILER_SPECIFIC_FLAG
+  set(ADCIRC_Fortran_COMPILER_SPECIFIC_FLAG
       ""
       CACHE STRING "Compiler specific flags")
 endif()

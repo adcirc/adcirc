@@ -13,7 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_SWAN AND PERL_FOUND)
+if(ADCIRC_BUILD_SWAN AND PERL_FOUND)
 
   set(SWANONLY_SERIAL_SOURCES
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source/swmod1.f
@@ -99,11 +99,11 @@ if(BUILD_SWAN AND PERL_FOUND)
   # ...SWAN Configuration
   swanconfigureserial()
 
-  addcompilerflagsswan(swan ${ADDITIONAL_FLAGS_SWAN})
+  addcompilerflagsswan(swan ${ADCIRC_ADDITIONAL_FLAGS_SWAN})
 
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
                                       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source)
 
   install(TARGETS swan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-endif(BUILD_SWAN AND PERL_FOUND)
+endif()

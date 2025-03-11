@@ -16,46 +16,48 @@
 
 # ######################################################################################################################
 # ...Output format options
-option(ENABLE_OUTPUT_NETCDF "Turn on netCDF output options" OFF)
-if(ENABLE_OUTPUT_NETCDF)
-  option(ENABLE_OUTPUT_XDMF "Turn on XDMF output options" OFF)
-endif(ENABLE_OUTPUT_NETCDF)
+option(ADCIRC_ENABLE_OUTPUT_NETCDF "Turn on netCDF output options" OFF)
+if(ADCIRC_ENABLE_OUTPUT_NETCDF)
+  option(ADICRC_ENABLE_OUTPUT_XDMF "Turn on XDMF output options" OFF)
+endif(ADCIRC_ENABLE_OUTPUT_NETCDF)
 # ######################################################################################################################
 
 # ######################################################################################################################
 # ...Executables
-option(BUILD_ADCIRC "Build the serial ADCIRC executable" OFF)
+option(ADCIRC_BUILD_ADCIRC "Build the serial ADCIRC executable" OFF)
 
 if(PERL_FOUND)
-  option(BUILD_ADCSWAN "Build the serial SWAN+ADCIRC executable" OFF)
-  option(BUILD_SWAN "Build the serial SWAN executable" OFF)
-  mark_as_advanced(BUILD_SWAN)
+  option(ADCIRC_BUILD_ADCSWAN "Build the serial SWAN+ADCIRC executable" OFF)
+  option(ADCIRC_BUILD_SWAN "Build the serial SWAN executable" OFF)
+  mark_as_advanced(ADCIRC_BUILD_SWAN)
 endif(PERL_FOUND)
 
 if(MPI_FOUND)
-  option(BUILD_ADCPREP "Build the MPI parallel ADCIRC preprocessor" OFF)
-  option(BUILD_PADCIRC "Build the MPI parallel ADCIRC executable" OFF)
-  option(BUILD_LIBADCIRC_STATIC "Build the static library version of ADCIRC" OFF)
-  option(BUILD_LIBADCIRC_SHARED "Build the shared library version of ADCIRC" OFF)
+  option(ADCIRC_BUILD_ADCPREP "Build the MPI parallel ADCIRC preprocessor" OFF)
+  option(ADCIRC_BUILD_PADCIRC "Build the MPI parallel ADCIRC executable" OFF)
+  option(ADCIRC_BUILD_LIBADCIRC_STATIC "Build the static library version of ADCIRC" OFF)
+  option(ADCIRC_BUILD_LIBADCIRC_SHARED "Build the shared library version of ADCIRC" OFF)
   if(PERL_FOUND)
-    option(BUILD_PADCSWAN "Build the MPI parallel SWAN+ADCIRC executable" OFF)
-    option(BUILD_PUNSWAN "Build the MPI parallel unstructured SWAN executable" OFF)
-    mark_as_advanced(BUILD_PUNSWAN)
+    option(ADCIRC_BUILD_PADCSWAN "Build the MPI parallel SWAN+ADCIRC executable" OFF)
+    option(ADCIRC_BUILD_PUNSWAN "Build the MPI parallel unstructured SWAN executable" OFF)
+    mark_as_advanced(ADCIRC_BUILD_PUNSWAN)
   endif(PERL_FOUND)
 endif(MPI_FOUND)
 
-option(BUILD_ASWIP "Build ASWIP (ASymmetric Wind Input Preprocessor)")
-option(BUILD_UTILITIES "Build the ADCIRC utility programs" OFF)
-mark_as_advanced(BUILD_UTILITIES)
+option(ADCIRC_BUILD_ASWIP "Build ASWIP (ASymmetric Wind Input Preprocessor)")
+option(ADCIRC_BUILD_UTILITIES "Build the ADCIRC utility programs" OFF)
+mark_as_advanced(ADCIRC_BUILD_UTILITIES)
+
+option(ADCIRC_STRICT_COMPILE "Enable strict compile options for ADCIRC" OFF)
 
 # Options for GRIB2 and DATETIME. Note that if GRIB2 is selected, DATETIME is automatically selected.
-option(ENABLE_GRIB2 "Use GRIB2API static libraries." OFF)
-if(ENABLE_GRIB2)
-  set(ENABLE_DATETIME
+option(ADCIRC_ENABLE_GRIB2 "Use GRIB2API static libraries." OFF)
+if(ADCIRC_ENABLE_GRIB2)
+  set(ADCIRC_ENABLE_DATETIME
       ON
       CACHE BOOL "Use DATETIME static libraries." FORCE)
 endif()
-option(ENABLE_DATETIME "Use DATETIME static libraries." ${ENABLE_DATETIME})
+option(ADCIRC_ENABLE_DATETIME "Use DATETIME static libraries." ${ADCIRC_ENABLE_DATETIME})
 
 # ######################################################################################################################
 
@@ -90,7 +92,7 @@ mark_as_advanced(
 
 # ######################################################################################################################
 # ...Library paths
-if(ENABLE_OUTPUT_XDMF)
+if(ADCIRC_ENABLE_OUTPUT_XDMF)
   if(NOT
      ${XDMFHOME}
      STREQUAL
@@ -119,132 +121,132 @@ if(ENABLE_OUTPUT_XDMF)
     ${XDMFHOME}
     STREQUAL
     "")
-else(ENABLE_OUTPUT_XDMF)
+else()
   unset(XDMFHOME CACHE)
-endif(ENABLE_OUTPUT_XDMF)
+endif()
 # ######################################################################################################################
 
 # ######################################################################################################################
 # ...Additional flags
-set(ADDITIONAL_FLAGS_ADCIRC
+set(ADCIRC_ADDITIONAL_FLAGS_ADCIRC
     ""
     CACHE STRING "Additional flags to compile ADCIRC with")
 if(PERL_FOUND)
-  set(ADDITIONAL_FLAGS_SWAN
+  set(ADCIRC_ADDITIONAL_FLAGS_SWAN
       ""
       CACHE STRING "Additional flags to compile SWAN with")
 endif(PERL_FOUND)
-set(ADDITIONAL_FLAGS_ADCPREP
+set(ADCIRC_ADDITIONAL_FLAGS_ADCPREP
     ""
     CACHE STRING "Additional flags to compile ADCPREP with")
-set(ADDITIONAL_FLAGS_ASWIP
+set(ADCIRC_ADDITIONAL_FLAGS_ASWIP
     ""
     CACHE STRING "Additional flags to compile ASWIP with")
-set(ADDITIONAL_FLAGS_UTLIITIES
+set(ADCIRC_ADDITIONAL_FLAGS_UTLIITIES
     ""
     CACHE STRING "Additional flags for utility programs")
 mark_as_advanced(
-  ADDITIONAL_FLAGS_ADCIRC
-  ADDITIONAL_FLAGS_SWAN
-  ADDITIONAL_FLAGS_ADCPREP
-  ADDITIONAL_FLAGS_ASWIP
-  ADDITIONAL_FLAGS_UTLIITIES)
+  ADCIRC_ADDITIONAL_FLAGS_ADCIRC
+  ADCIRC_ADDITIONAL_FLAGS_SWAN
+  ADCIRC_ADDITIONAL_FLAGS_ADCPREP
+  ADCIRC_ADDITIONAL_FLAGS_ASWIP
+  ADCIRC_ADDITIONAL_FLAGS_UTLIITIES)
 # ######################################################################################################################
 
 # ######################################################################################################################
 # ...Options enabled via compiler flags within the code
-option(ENABLE_WARN_ELEV_DEBUG "Enable writing of the fort.69 debug file" OFF)
-if(ENABLE_WARN_ELEV_DEBUG)
+option(ADCIRC_ENABLE_WARN_ELEV_DEBUG "Enable writing of the fort.69 debug file" OFF)
+if(ADCIRC_ENABLE_WARN_ELEV_DEBUG)
   message(
     WARNING
       "The compile time enabled fort.69 file is deprecated and the user should use the &warnElevControl namelist instead. This option will be removed in a future release."
   )
 endif()
-mark_as_advanced(ENABLE_WARN_ELEV_DEBUG)
+mark_as_advanced(ADCIRC_ENABLE_WARN_ELEV_DEBUG)
 
-option(IBM "Format code for IBM based architectures" OFF)
-option(SGI "Format code for SGI based architectures" OFF)
-option(SUN "Format code for SUN based architectures" OFF)
-option(CRAY "Format code for CRAY based architectures" OFF)
-option(CRAYX1 "Format code for CRAYX1 based architectures" OFF)
+option(ADCIRC_IBM "Format code for IBM based architectures" OFF)
+option(ADCIRC_SGI "Format code for SGI based architectures" OFF)
+option(ADCIRC_SUN "Format code for SUN based architectures" OFF)
+option(ADCIRC_CRAY "Format code for CRAY based architectures" OFF)
+option(ADCIRC_CRAYX1 "Format code for CRAYX1 based architectures" OFF)
 mark_as_advanced(
-  IBM
-  SGI
-  SUN
-  CRAY
-  CRAYX1)
+  ADCIRC_IBM
+  ADCIRC_SGI
+  ADCIRC_SUN
+  ADCIRC_CRAY
+  ADCIRC_CRAYX1)
 
-option(DEBUG_FULL_STACK "Write the detailed stack trace during debugging" OFF)
-option(DEBUG_FLUSH_MESSAGES "Do not allow caching of screen printed messages" OFF)
-option(DEBUG_LOG_LEVEL "Force debug log level for screen messages" OFF)
-option(DEBUG_ALL_TRACE "Write all tracing debug information to screen output during debugging" OFF)
-option(DEBUG_GLOBALIO_TRACE "Write tracing debug information from the GLOBALIO module" OFF)
-option(DEBUG_WRITER_TRACE "Write tracing debug information for writer processors" OFF)
-option(DEBUG_WRITE_OUTPUT_TRACE "Write tracing debug information for the write output module" OFF)
-option(DEBUG_WIND_TRACE "Write tracing debug information for the wind module" OFF)
-option(DEBUG_WEIR_TRACE "Write tracing debug information for the weir module" OFF)
-option(DEBUG_TVW_TRACE "Write tracing debug information for the time varying weir module" OFF)
-option(DEBUG_VSMY_TRACE "Write tracing debug information for the 3D momentum equation module" OFF)
-option(DEBUG_TIMESTEP_TRACE "Write the tracing debug information for the timestepping module" OFF)
-option(DEBUG_SUBPREP_TRACE "Write the tracing debug information for the subdomain prep module" OFF)
-option(DEBUG_SUBDOMAIN_TRACE "Write the tracing debug information for the subdomain module" OFF)
-option(DEBUG_READ_INPUT_TRACE "Write the tracing debug information for the read_input module" OFF)
-option(DEBUG_OWIWIND_TRACE "Write the tracing debug information for the OWI wind module" OFF)
-option(DEBUG_NODALATTR_TRACE "Write the tracing debug information for the nodal attributes module" OFF)
-option(DEBUG_NETCDF_TRACE "Write the tracing debug information for the netCDF modle" OFF)
-option(DEBUG_MESSENGER_TRACE "Write the tracing debug information for the message passing (MPI) module" OFF)
-option(DEBUG_MESH_TRACE "Write the tracing debug information for the mesh module" OFF)
-option(DEBUG_HOTSTART_TRACE "Write the tracing debug information for the hotstart module" OFF)
-option(DEBUG_GLOBAL_TRACE "Write the tracing debug information for the global module" OFF)
-option(DEBUG_HARM_TRACE "Write the tracing debug information for the harmonics module" OFF)
-option(DEBUG_COLDSTART_TRACE "Write the tracing debug information for the coldstart module" OFF)
-option(DEBUG_COUPLE2SWAN_TRACE "Write the tracing debug information for the couple2swan module" OFF)
-option(DEBUG_ADCIRC_TRACE "Write the tracing debug information for the main ADCIRC module" OFF)
-option(DEBUG_HOLLAND "Write the debugging information for the symmetric Holland model" OFF)
-option(DEBUG_NWS14 "Write the debugging information for NWS=14 interpolation" OFF)
+option(ADCIRC_DEBUG_FULL_STACK "Write the detailed stack trace during debugging" OFF)
+option(ADCIRC_DEBUG_FLUSH_MESSAGES "Do not allow caching of screen printed messages" OFF)
+option(ADCIRC_DEBUG_LOG_LEVEL "Force debug log level for screen messages" OFF)
+option(ADCIRC_DEBUG_ALL_TRACE "Write all tracing debug information to screen output during debugging" OFF)
+option(ADCIRC_DEBUG_GLOBALIO_TRACE "Write tracing debug information from the GLOBALIO module" OFF)
+option(ADCIRC_DEBUG_WRITER_TRACE "Write tracing debug information for writer processors" OFF)
+option(ADCIRC_DEBUG_WRITE_OUTPUT_TRACE "Write tracing debug information for the write output module" OFF)
+option(ADCIRC_DEBUG_WIND_TRACE "Write tracing debug information for the wind module" OFF)
+option(ADCIRC_DEBUG_WEIR_TRACE "Write tracing debug information for the weir module" OFF)
+option(ADCIRC_DEBUG_TVW_TRACE "Write tracing debug information for the time varying weir module" OFF)
+option(ADCIRC_DEBUG_VSMY_TRACE "Write tracing debug information for the 3D momentum equation module" OFF)
+option(ADCIRC_DEBUG_TIMESTEP_TRACE "Write the tracing debug information for the timestepping module" OFF)
+option(ADCIRC_DEBUG_SUBPREP_TRACE "Write the tracing debug information for the subdomain prep module" OFF)
+option(ADCIRC_DEBUG_SUBDOMAIN_TRACE "Write the tracing debug information for the subdomain module" OFF)
+option(ADCIRC_DEBUG_READ_INPUT_TRACE "Write the tracing debug information for the read_input module" OFF)
+option(ADCIRC_DEBUG_OWIWIND_TRACE "Write the tracing debug information for the OWI wind module" OFF)
+option(ADCIRC_DEBUG_NODALATTR_TRACE "Write the tracing debug information for the nodal attributes module" OFF)
+option(ADCIRC_DEBUG_NETCDF_TRACE "Write the tracing debug information for the netCDF modle" OFF)
+option(ADCIRC_DEBUG_MESSENGER_TRACE "Write the tracing debug information for the message passing (MPI) module" OFF)
+option(ADCIRC_DEBUG_MESH_TRACE "Write the tracing debug information for the mesh module" OFF)
+option(ADCIRC_DEBUG_HOTSTART_TRACE "Write the tracing debug information for the hotstart module" OFF)
+option(ADCIRC_DEBUG_GLOBAL_TRACE "Write the tracing debug information for the global module" OFF)
+option(ADCIRC_DEBUG_HARM_TRACE "Write the tracing debug information for the harmonics module" OFF)
+option(ADCIRC_DEBUG_COLDSTART_TRACE "Write the tracing debug information for the coldstart module" OFF)
+option(ADCIRC_DEBUG_COUPLE2SWAN_TRACE "Write the tracing debug information for the couple2swan module" OFF)
+option(ADCIRC_DEBUG_ADCIRC_TRACE "Write the tracing debug information for the main ADCIRC module" OFF)
+option(ADCIRC_DEBUG_HOLLAND "Write the debugging information for the symmetric Holland model" OFF)
+option(ADCIRC_DEBUG_NWS14 "Write the debugging information for NWS=14 interpolation" OFF)
 mark_as_advanced(
-  DEBUG_FLUSH_MESSAGES
-  DEBUG_FULL_STACK
-  DEBUG_LOG_LEVEL
-  DEBUG_ALL_TRACE
-  DEBUG_GLOBALIO_TRACE
-  DEBUG_WRITER_TRACE
-  DEBUG_WRITE_OUTPUT_TRACE
-  DEBUG_WIND_TRACE
-  DEBUG_WEIR_TRACE
-  DEBUG_TVW_TRACE
-  DEBUG_VSMY_TRACE
-  DEBUG_TIMESTEP_TRACE
-  DEBUG_SUBPREP_TRACE
-  DEBUG_SUBDOMAIN_TRACE
-  DEBUG_READ_INPUT_TRACE
-  DEBUG_OWIWIND_TRACE
-  DEBUG_NODALATTR_TRACE
-  DEBUG_NETCDF_TRACE
-  DEBUG_MESSENGER_TRACE
-  DEBUG_MESH_TRACE
-  DEBUG_HOTSTART_TRACE
-  DEBUG_GLOBAL_TRACE
-  DEBUG_HARM_TRACE
-  DEBUG_COLDSTART_TRACE
-  DEBUG_COUPLE2SWAN_TRACE
-  DEBUG_ADCIRC_TRACE
-  DEBUG_HOLLAND
-  DEBUG_NWS14
-  IBM)
+  ADCIRC_DEBUG_FLUSH_MESSAGES
+  ADCIRC_DEBUG_FULL_STACK
+  ADCIRC_DEBUG_LOG_LEVEL
+  ADCIRC_DEBUG_ALL_TRACE
+  ADCIRC_DEBUG_GLOBALIO_TRACE
+  ADCIRC_DEBUG_WRITER_TRACE
+  ADCIRC_DEBUG_WRITE_OUTPUT_TRACE
+  ADCIRC_DEBUG_WIND_TRACE
+  ADCIRC_DEBUG_WEIR_TRACE
+  ADCIRC_DEBUG_TVW_TRACE
+  ADCIRC_DEBUG_VSMY_TRACE
+  ADCIRC_DEBUG_TIMESTEP_TRACE
+  ADCIRC_DEBUG_SUBPREP_TRACE
+  ADCIRC_DEBUG_SUBDOMAIN_TRACE
+  ADCIRC_DEBUG_READ_INPUT_TRACE
+  ADCIRC_DEBUG_OWIWIND_TRACE
+  ADCIRC_DEBUG_NODALATTR_TRACE
+  ADCIRC_DEBUG_NETCDF_TRACE
+  ADCIRC_DEBUG_MESSENGER_TRACE
+  ADCIRC_DEBUG_MESH_TRACE
+  ADCIRC_DEBUG_HOTSTART_TRACE
+  ADCIRC_DEBUG_GLOBAL_TRACE
+  ADCIRC_DEBUG_HARM_TRACE
+  ADCIRC_DEBUG_COLDSTART_TRACE
+  ADCIRC_DEBUG_COUPLE2SWAN_TRACE
+  ADCIRC_DEBUG_ADCIRC_TRACE
+  ADCIRC_DEBUG_HOLLAND
+  ADCIRC_DEBUG_NWS14
+  ADCIRC_IBM)
 
-option(ENABLE_POWELL
+option(ADCIRC_ENABLE_POWELL
        "Force Powell wind drag to be enabled. Warning: Overrides any other options specified at run time." OFF)
-mark_as_advanced(ENABLE_POWELL)
-if(ENABLE_POWELL)
+mark_as_advanced(ADCIRC_ENABLE_POWELL)
+if(ADCIRC_ENABLE_POWELL)
   message(
     WARNING
       "The compile time enabled Powell wind drag forcing is deprecated and users should switch to the &metControl namelist. This feature will be removed in a future release"
   )
 endif()
 
-option(VECTOR_COMPUTER "Assume the system is a vector computer" OFF)
-mark_as_advanced(VECTOR_COMPUTER)
+option(ADCIRC_VECTOR_COMPUTER "Assume the system is a vector computer" OFF)
+mark_as_advanced(ADCIRC_VECTOR_COMPUTER)
 
 option(ADCIRC_NOF2008 "The fortran compiler being used does not have F2008 intrinsics" OFF)
 mark_as_advanced(ADCIRC_NOF2008)

@@ -15,8 +15,9 @@
 # ######################################################################################################################
 macro(addCompilerFlags TARGET)
   set(ADDITIONAL_FLAGS ${ARGN})
-  set(LOCAL_COMPILER_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG} ${ADDITIONAL_FLAGS}")
-  set(LOCAL_COMPILER_DEFINITIONS "${ADCIRC_OPTION_FLAGS} ${PRECISION_FLAG} ${MACHINE_FLAG}")
+  set(LOCAL_COMPILER_FLAGS
+      "${ADCIRC_Fortran_LINELENGTH_FLAG} ${ADCIRC_Fortran_COMPILER_SPECIFIC_FLAG} ${ADDITIONAL_FLAGS}")
+  set(LOCAL_COMPILER_DEFINITIONS "${ADCIRC_OPTION_FLAGS} ${ADCIRC_PRECISION_FLAG} ${ADCIRC_MACHINE_FLAG}")
 
   string(STRIP ${LOCAL_COMPILER_FLAGS} LOCAL_COMPILER_FLAGS)
   separate_arguments(LOCAL_COMPILER_DEFINITIONS)
@@ -71,7 +72,7 @@ macro(addCompilerFlagsSwan TARGET)
 endmacro(addCompilerFlagsSwan)
 
 macro(addGrib2Definitions TARGET)
-  if(ENABLE_GRIB2)
+  if(ADCIRC_ENABLE_GRIB2)
     target_compile_definitions(${TARGET} PRIVATE GRIB2API)
     target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/grib2)
     add_dependencies(
@@ -83,7 +84,7 @@ macro(addGrib2Definitions TARGET)
 endmacro(addGrib2Definitions)
 
 macro(addGrib2Libraries TARGET)
-  if(ENABLE_GRIB2)
+  if(ADCIRC_ENABLE_GRIB2)
     target_link_libraries(
       ${TARGET}
       grib2
@@ -93,15 +94,15 @@ macro(addGrib2Libraries TARGET)
 endmacro()
 
 macro(addDatetimeDefinitions TARGET)
-  if(ENABLE_DATETIME)
+  if(ADCIRC_ENABLE_DATETIME)
     target_compile_definitions(${TARGET} PRIVATE DATETIME)
-    target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/datetime_fortran)
+    target_include_directories(${TARGET} PRIVATE ${CMAKE_BINARY_DIR}/CMakeFiles/mod/datetime_fortran)
     add_dependencies(${TARGET} datetime)
   endif()
 endmacro()
 
 macro(addDatetimeLibraries TARGET)
-  if(ENABLE_DATETIME)
+  if(ADCIRC_ENABLE_DATETIME)
     target_link_libraries(${TARGET} datetime)
   endif()
 endmacro()
@@ -271,3 +272,33 @@ macro(swanConfigureParallel)
       COMMENT "Generating Parallel unSWAN Sources...")
   endif(WIN32)
 endmacro(swanConfigureParallel)
+
+# Adds the strict compiler flags for .F90 sources
+macro(add_strict_compiler_flags)
+
+  if(${ADCIRC_STRICT_COMPILE})
+
+    # Strict Flag List
+    if(${CMAKE_Fortran_COMPILER_ID} MATCHES "NVHPC")
+      set(STRICT_FLAGS
+          "-Werror -Wall -Wextra -Wconversion -pedantic -Mimplicitnone -Wuninitialized -Wsurprising -Waliasing -Wampersand"
+      )
+    elseif(${CMAKE_Fortran_COMPILER_ID} MATCHES "IntelLLVM")
+      set(STRICT_FLAGS
+        "-warn all -diag-enable remark -implicit-none"
+      )
+    else()  
+      set(STRICT_FLAGS
+        "-Werror -Wall -Wextra -Wconversion -pedantic -fimplicit-none -Wuninitialized -Wsurprising -Wuse-without-only -Wimplicit-procedure -Winteger-division -Wconversion-extra"
+      )
+    endif()
+
+    foreach(SOURCE_FILE ${ARGN})
+      if(${SOURCE_FILE} MATCHES ".*\\.F90$")
+        set_source_files_properties(${SOURCE_FILE} PROPERTIES COMPILE_FLAGS "${STRICT_FLAGS}")
+      endif()
+    endforeach()
+
+  endif()
+
+endmacro()

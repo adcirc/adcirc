@@ -295,7 +295,7 @@ contains
       pipediam = -99999.d0
       ibconn = -99999
       nbvv = -99999
-      bndlen2o3 = -99999.0
+      bndlen2o3 = -99999.d0
       bcrnbvv = -99999
       bcrnvell = -99999
 

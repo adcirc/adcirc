@@ -9447,7 +9447,6 @@ C----------------------------------------------------------------------
       END SUBROUTINE READNWS14_netCDF
 C----------------------------------------------------------------------
 
-
 C---------------------------------------------------------------------
       SUBROUTINE INSET_NC_INPUT()
 C----------------------------------------------------------------------
@@ -9514,7 +9513,8 @@ C----------------------------------------------------------------------
       SUBROUTINE INIT_INSET_NC()
        
        USE SIZES, ONLY : MYPROC, GBLINPUTDIR
-       USE GLOBAL, ONLY : InsetControlFile 
+       USE GLOBAL, ONLY : InsetControlFile
+       USE mod_terminate, ONLY: terminate
  
        IMPLICIT NONE
        
@@ -9539,7 +9539,7 @@ C----------------------------------------------------------------------
           call allMessage(ERROR,scratchMessage)
           call terminate()
        ENDIF
-     
+
        READ(2200, '(A)', IOSTAT=IERR) InsetLonDim
        READ(2200, '(A)', IOSTAT=IERR) InsetLatDim
        READ(2200, '(A)', IOSTAT=IERR) InsetLon
@@ -9549,94 +9549,43 @@ C----------------------------------------------------------------------
        READ(2200, '(A)', IOSTAT=IERR) InsetVVar
 
        CLOSE(2200) !closing the file here..
-   
-       Pfile_inset= TRIM(GBLINPUTDIR)//'/'//TRIM(ADJUSTL(Pfile_inset))
-       Wfile_inset= TRIM(GBLINPUTDIR)//'/'//TRIM(ADJUSTL(Wfile_inset))
-        
-
-         CALL READINSET_NC(TRIM(ADJUSTL(Pfile_inset))
-     &       ,TempNCID_P,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetPvar,InsetPData)
-        
-
-         CALL READINSET_NC(TRIM(ADJUSTL(Wfile_inset))
-     &       ,TempNCID_W,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetUVar,InsetUData)
-         
-         CALL READINSET_NC(TRIM(ADJUSTL(Wfile_inset))
-     &       ,TempNCID_W,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetVvar,InsetVData)
-        
-
-         CALL INTERP_INSET_GRID(TRIM(ADJUSTL(Pfile_inset)),
-     &            TRIM(ADJUSTL(Wfile_inset)) ,TempNCID_P, TempNCID_W,
-     &      InsetPData,InsetUData, InsetLatDim,InsetLat, InsetLonDim,InsetLon,InsetVData)
-      
-         CALL unsetMessageSource()
-     
-C----------------------------------------------------------------------
-      END SUBROUTINE INSET_NC_INPUT
-
-C----------------------------------------------------------------------
-      SUBROUTINE INIT_INSET_NC(InsetFName, InsetFNCID)
-        USE netcdf 
-        use netcdf_error, only: check_err
-        USE SIZES, ONLY : MYPROC
-        IMPLICIT NONE
-
-        CHARACTER(LEN=*), INTENT(IN) :: InsetFName
-        LOGICAL :: InFileExist
-        INTEGER, INTENT(INOUT) :: InsetFNCID
-#ifdef ADCNETCDF
-         INQUIRE(file=InsetFName, exist=InFileExist)
-
-         IF(InFileExist) THEN   
-             CALL Check_err(NF90_OPEN(InsetFName,nf90_nowrite,InsetFNCID))
-         ELSE
-             WRITE(ScratchMessage,'(2A)') 
-     &         "Inset file was not found: ",TRIM(InsetFName)
-             call allMessage(ERROR, scratchMessage)
-             call terminate()
-         ENDIF    
-            
-#endif            
-         RETURN
 
       END SUBROUTINE INIT_INSET_NC
 C----------------------------------------------------------------------
 
-
-
-
 C----------------------------------------------------------------------
-C     Aman Tejaswi (11 Feb 2025) 
-C     Read High Res-Inset Winds in NETCDF format and Interpolate onto 
+C     Aman Tejaswi (11 Feb 2025)
+C     Read High Res-Inset Winds in NETCDF format and Interpolate onto
 C     ADCIRC grid. These insets can be used particularly with a
 C     background global wind (e.g GFS) which is read also in NETCDF. The
-C     advantage of using this is specific to GLOBAL MODEL (GSTOFS).      
+C     advantage of using this is specific to GLOBAL MODEL (GSTOFS).
 
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       SUBROUTINE READINSET_NC(InsetFileN,InsetID,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetVar,InsetOUT)
-       
+
 #ifdef ADCNETCDF
       use netcdf
       use netcdf_error, only: check_err
-#endif     
-      
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+#endif
+
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
       USE mod_logging, ONLY: scratchMessage, allMessage, ERROR
-      
+      USE mod_terminate, ONLY: terminate
+
       IMPLICIT NONE
 
       CHARACTER(LEN=*), INTENT(IN)      :: InsetFileN
-      CHARACTER(LEN=*), INTENT(IN)      :: InsetVar, InsetLat, InsetLon,InsetLatDim, InsetLonDim  
+      CHARACTER(LEN=*), INTENT(IN)      :: InsetVar, InsetLat, InsetLon,InsetLatDim, InsetLonDim
       INTEGER                           :: InsetID
       REAL(8), ALLOCATABLE, INTENT(OUT) :: InsetOUT(:,:)
       INTEGER                           :: InsetLoc, INSET_NX, INSET_NY, VarLoc,alloc_err
-     
+
          CALL setMessageSource('READINSET_NC')
 #ifdef ADCNETCDF
-      
+
          CALL Check_err(NF90_OPEN(InsetFileN,nf90_nowrite,InsetID))
 
          CALL Check_err(NF90_INQ_DIMID(InsetID,InsetLonDim,InsetLoc))
@@ -9644,7 +9593,7 @@ C----------------------------------------------------------------------
 
          CALL Check_err(NF90_INQ_DIMID(InsetID,InsetLatDim,InsetLoc))
          CALL Check_err(NF90_INQUIRE_DIMENSION(InsetID,InsetLoc,len=INSET_NY))
-              
+
          ALLOCATE(InsetOUT(INSET_NX,INSET_NY),STAT=alloc_err)
 
          IF (alloc_err /= 0) THEN

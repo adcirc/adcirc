@@ -13,7 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_ADCPREP)
+if(ADCIRC_BUILD_ADCPREP)
 
   set(ADCPREP_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
@@ -68,7 +68,7 @@ if(BUILD_ADCPREP)
 
   add_executable(adcprep ${ADCPREP_SOURCES})
 
-  addcompilerflags(adcprep ${ADDITIONAL_FLAGS_ADCPREP})
+  addcompilerflags(adcprep ${ADCIRC_ADDITIONAL_FLAGS_ADCPREP})
   addlibmetis(adcprep)
   addkdtree2definitions(adcprep)
   addkdtree2library(adcprep)
@@ -79,12 +79,12 @@ if(BUILD_ADCPREP)
   addversionlibrary(adcprep)
   addmkdirlibrary(adcprep)
 
-  if(BUILD_PADCSWAN OR BUILD_PUNSWAN)
-    target_compile_definitions(adcprep PRIVATE ${PREP_SWAN_FLAG})
+  if(ADCIRC_BUILD_PADCSWAN OR ADCIRC_BUILD_PUNSWAN)
+    target_compile_definitions(adcprep PRIVATE ${ADCIRC_PREP_SWAN_FLAG})
   endif()
 
   target_include_directories(adcprep PRIVATE prep)
 
   install(TARGETS adcprep RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-endif(BUILD_ADCPREP)
+endif()

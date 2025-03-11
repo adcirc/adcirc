@@ -54,6 +54,7 @@ enable_language(Fortran)
 enable_language(C)
 enable_language(CXX)
 cmake_policy(SET CMP0069 NEW)
+cmake_policy(SET CMP0077 NEW)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/StandardProjectSettings.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PreventInSourceBuilds.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/InterproceduralOptimization.cmake)
@@ -102,17 +103,18 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/options_flags.cmake)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/netcdf_check.cmake)
 
-if(ENABLE_GRIB2)
+if(ADCIRC_ENABLE_GRIB2)
   set(JAS_ENABLE_SHARED
       FALSE
       CACHE BOOL "Enable shared JAS")
-  set(ENABLE_DATETIME
+  set(ADCIRC_ENABLE_DATETIME
       TRUE
       CACHE BOOL "Enable datetime library")
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/wgrib2 EXCLUDE_FROM_ALL)
 endif()
 
-if(ENABLE_DATETIME)
+
+if(ADCIRC_ENABLE_DATETIME)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/datetime_fortran EXCLUDE_FROM_ALL)
 endif()
 

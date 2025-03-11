@@ -13,7 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_ADCSWAN AND PERL_FOUND)
+if(ADCIRC_BUILD_ADCSWAN AND PERL_FOUND)
 
   set(SWAN1SERIAL_SOURCES
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swmod1.f
@@ -177,10 +177,10 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   add_library(templib_adcswan1 STATIC ${ADCSWAN1_SOURCES})
   add_executable(adcswan ${ADCSWAN_SOURCES})
 
-  addcompilerflagsswan(templib_swan1serial ${ADDITIONAL_FLAGS_SWAN})
-  addcompilerflagsswan(templib_swan2serial ${ADDITIONAL_FLAGS_SWAN})
-  addcompilerflags(templib_adcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
-  addcompilerflags(adcswan ${ADDITIONAL_FLAGS_ADCIRC})
+  addcompilerflagsswan(templib_swan1serial ${ADCIRC_ADDITIONAL_FLAGS_SWAN})
+  addcompilerflagsswan(templib_swan2serial ${ADCIRC_ADDITIONAL_FLAGS_SWAN})
+  addcompilerflags(templib_adcswan1 ${ADCIRC_ADDITIONAL_FLAGS_ADCIRC})
+  addcompilerflags(adcswan ${ADCIRC_ADDITIONAL_FLAGS_ADCIRC})
   addnetcdflibraries(adcswan)
   addkdtree2definitions(adcswan)
   addkdtree2library(adcswan)
@@ -217,6 +217,9 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   add_dependencies(templib_swan2serial templib_adcswan1 templib_swan1serial)
   add_dependencies(templib_adcswan1 templib_swan1serial)
 
+  add_strict_compiler_flags(${ADCSWAN1_SOURCES})
+  add_strict_compiler_flags(${ADCSWAN_SOURCES})
+
   # Create a false target for the Ninja build system. The generated sources don't give it a full picture of where it can
   # parallelize and this helps it make the correct determinations
   if(${CMAKE_GENERATOR} STREQUAL "Ninja")
@@ -230,4 +233,4 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
 
   install(TARGETS adcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-endif(BUILD_ADCSWAN AND PERL_FOUND)
+endif()
