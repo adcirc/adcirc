@@ -128,6 +128,7 @@ set(ADDITIONAL_FLAGS_UTLIITIES
 
 # ######################################################################################################################
 # ...Options enabled via compiler flags within the code
+option(ADCIRC_STRICT_COMPILER_FLAGS "Enable strict compiler flags" OFF)
 option(ENABLE_WARN_ELEV_DEBUG "Enable writing of the fort.69 debug file" OFF)
 if(ENABLE_WARN_ELEV_DEBUG)
   message(

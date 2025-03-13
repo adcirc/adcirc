@@ -49,6 +49,8 @@ if(BUILD_ASWIP)
   addversionlibrary(aswip)
   addmkdirlibrary(aswip)
 
+  add_strict_compiler_flags(${ASWIP_SOURCES})
+
   install(TARGETS aswip RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 endif(BUILD_ASWIP)

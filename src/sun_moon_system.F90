@@ -73,7 +73,6 @@ contains
     real(8), intent(IN) :: JD
     real(8), intent(OUT) :: MOON_POS(3), SUN_POS(3)
     integer, intent(OUT) :: IERR
-    type(t_astronomic_values) :: astronomic_values
 
     call self%astronomic_values%compute_astronomic_values(JD)
     call MOON_COORDINATES(MOON_POS(1), MOON_POS(2), MOON_POS(3), JD, self%astronomic_values, self%INCLUDE_NUTATION)

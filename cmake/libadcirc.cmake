@@ -84,6 +84,7 @@ if(BUILD_LIBADCIRC_STATIC)
   set_target_properties(libadcirc_static PROPERTIES OUTPUT_NAME "adcirc")
   addcompilerflags(libadcirc_static)
   addmpi(libadcirc_static)
+  add_strict_compiler_flags(${LIBADC_SOURCES})
   set_target_properties(libadcirc_static PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
   install(
@@ -109,6 +110,8 @@ if(BUILD_LIBADCIRC_SHARED)
   addxdmflibraries(libadcirc_shared)
   adddatetimelibraries(libadcirc_shared)
   addversionlibrary(libadcirc_shared)
+
+  add_strict_compiler_flags(${LIBADC_SHARED_SOURCES})
 
   add_dependencies(libadcirc_shared version mkdir2)
   target_link_libraries(libadcirc_shared mkdir2)

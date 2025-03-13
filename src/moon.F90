@@ -443,7 +443,7 @@ contains
 
     ! Check if the astroval
     if (present(ASVAL)) then
-      if (abs(JD - ASVAL%JD) < 1.e-9) have_asval = .true.
+      if (abs(JD - ASVAL%JD) < 1.d-9) have_asval = .true.
     end if
     if (present(NUTATION)) use_nutation = NUTATION
 
@@ -521,11 +521,8 @@ contains
     real(8), intent(IN) :: LP, D, M, MP, F
     real(8), intent(IN) :: E, A1, A2, A3
 
-    integer :: I, J
     real(8) :: suml, sumr, sumb
     real(8) :: vec(4), argval(NPER), epmul(NPER)
-
-    LOGICAL, save:: first = .TRUE. ; 
 
     ! Convert from degree to radian
     vec = DEG2RAD*(/D, M, MP, F/)

@@ -84,6 +84,7 @@ if(BUILD_ADCIRC)
   addxdmflibraries(adcirc)
   addversionlibrary(adcirc)
   addmkdirlibrary(adcirc)
+  add_strict_compiler_flags(${ADCIRC_SOURCES})
   install(TARGETS adcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 endif(BUILD_ADCIRC)

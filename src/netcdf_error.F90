@@ -1,7 +1,5 @@
 #ifdef ADCNETCDF
 module netcdf_error
-      
-    USE NETCDF
 
     implicit none
 
@@ -15,12 +13,16 @@ module netcdf_error
 !     fort.16 file.
 !-----------------------------------------------------------------------
     subroutine check_err(iret)
-      USE SIZES, ONLY : myproc
-      USE GLOBAL, ONLY : screenUnit, ERROR, DEBUG, allMessage, &
-          setMessageSource, unsetMessageSource
+      USE GLOBAL, ONLY : ERROR, allMessage, setMessageSource, unsetMessageSource
+
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      USE GLOBAL, ONLY : allMessage, DEBUG
+#endif
+
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
+      USE NETCDF, ONLY: NF90_NOERR, nf90_strerror
       IMPLICIT NONE
       INTEGER, intent(in) :: iret
 
@@ -43,16 +45,26 @@ module netcdf_error
 !-----------------------------------------------------------------------
 !     S U B R O U T I N E   N E T C D F   T E R M I N A T E
 !-----------------------------------------------------------------------
-      subroutine netcdfTerminate(NO_MPI_FINALIZE)
 #ifdef CMPI
-      USE MESSENGER
+      subroutine netcdfTerminate(NO_MPI_FINALIZE)
+      USE MESSENGER, ONLY : MSG_FINI
+#else
+      subroutine netcdfTerminate()
 #endif
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,&
-         allMessage, DEBUG, ECHO, INFO, WARNING, ERROR, allMessage
-      IMPLICIT NONE
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+         allMessage, INFO, allMessage
+
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      REAL, ALLOCATABLE :: dummy(:)
+      USE GLOBAL, ONLY : DEBUG
+#endif
+
+      IMPLICIT NONE
+#ifdef CMPI
+      logical, intent(in), optional :: NO_MPI_FINALIZE
+      logical :: subdomainFatalError
+#endif
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      REAL(8), ALLOCATABLE :: dummy(:)
 #endif
 
       call setMessageSource("netcdfTerminate")
@@ -67,7 +79,8 @@ module netcdf_error
          ! a stack trace to determine the line number of the netcdf call
          ! that went bad ... this assumes that the code was compiled with
          ! debugging symbols, bounds checking, and stack trace turned on.
-         dummy(1) = 99.9d0
+         allocate(dummy(1))
+         dummy(2) = 99.9d0
 #endif
 
 #ifdef CMPI

@@ -87,6 +87,7 @@ if(BUILD_PADCIRC)
   addversionlibrary(padcirc)
   addmkdirlibrary(padcirc)
   addmpi(padcirc)
+  add_strict_compiler_flags(${PADCIRC_SOURCES})
 
   add_dependencies(padcirc version mkdir)
 

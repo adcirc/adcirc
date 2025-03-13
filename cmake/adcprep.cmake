@@ -74,6 +74,8 @@ if(BUILD_ADCPREP)
   addversionlibrary(adcprep)
   addmkdirlibrary(adcprep)
 
+  add_strict_compiler_flags(${ADCPREP_SOURCES})
+
   if(BUILD_PADCSWAN OR BUILD_PUNSWAN)
     target_compile_definitions(adcprep PRIVATE ${PREP_SWAN_FLAG})
   endif(BUILD_PADCSWAN OR BUILD_PUNSWAN)
