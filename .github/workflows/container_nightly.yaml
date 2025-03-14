@@ -10,4 +10,5 @@ jobs:
     uses: ./.github/workflows/build_container.yaml
     with:
       tag: nightly 
+      push: true
     secrets: inherit

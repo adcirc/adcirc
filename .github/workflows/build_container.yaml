@@ -5,6 +5,9 @@ on:
       tag:
         required: true
         type: string
+      push:
+        required: true
+        type: boolean
     secrets:
       DOCKERHUB_LOGIN_USERNAME:
         required: true
@@ -36,7 +39,7 @@ jobs:
         with:
           context: .
           file: ./containers/Dockerfile
-          push: true
-          platforms: linux/amd64
+          push: ${{ inputs.push }}
+          platforms: linux/amd64, linux/arm64
           tags: adcircorg/adcirc:${{ inputs.tag }}
           labels: org.adcircorg.adcirc
