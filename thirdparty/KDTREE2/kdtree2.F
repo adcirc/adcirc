@@ -760,7 +760,7 @@
             call spread_in_coordinate(tp,i,l,u,res%box(i))
          end do
          res%cut_dim = 0
-         res%cut_val = 0.0
+         res%cut_val = 0.0d0
          res%l = l
          res%u = u
          res%left =>null()
@@ -810,7 +810,7 @@
             ! actually compute average
             average = sum(tp%the_data(c,tp%ind(l:u))) / real(u-l+1,kdkind)
             else
-            average = (res%box(c)%upper + res%box(c)%lower)/2.0
+            average = (res%box(c)%upper + res%box(c)%lower)/2.0d0
             endif
             
             res%cut_val = average
@@ -1047,7 +1047,7 @@
       type(kdtree2_result), target :: results(:)
 
 
-      sr%ballsize = huge(1.0)
+      sr%ballsize = huge(1.0d0)
       sr%qv => qv
       sr%nn = nn
       sr%nfound = 0
@@ -1091,7 +1091,7 @@
 
       allocate (sr%qv(tp%dimen))
       sr%qv = tp%the_data(:,idxin) ! copy the vector
-      sr%ballsize = huge(1.0)       ! the largest real(kdkind) number
+      sr%ballsize = huge(1.0d0)       ! the largest real(kdkind) number
       sr%centeridx = idxin
       sr%correltime = correltime
 
@@ -1475,7 +1475,7 @@
          res = (amin-x)**2;
          return
          else
-         res = 0.0
+         res = 0.0d0
          return
          endif
       endif
@@ -1498,7 +1498,7 @@
 
       dimen = sr%dimen
       ballsize = sr%ballsize
-      dis = 0.0
+      dis = 0.0d0
       res = .true.
       do i=1,dimen
          l = node%box(i)%lower
@@ -1552,7 +1552,7 @@
 
       mainloop: do i = node%l, node%u
          if (rearrange) then
-         sd = 0.0
+         sd = 0.0d0
          do k = 1,dimen
             sd = sd + (data(k,i) - qv(k))**2
             if (sd>ballsize) cycle mainloop
@@ -1560,7 +1560,7 @@
          indexofi = ind(i)  ! only read it if we have not broken out
          else
          indexofi = ind(i)
-         sd = 0.0
+         sd = 0.0d0
          do k = 1,dimen
             sd = sd + (data(k,indexofi) - qv(k))**2
             if (sd>ballsize) cycle mainloop
@@ -1675,7 +1675,7 @@
          ! which index to the point do we use? 
 
          if (rearrange) then
-         sd = 0.0
+         sd = 0.0d0
          do k = 1,dimen
             sd = sd + (data(k,i) - qv(k))**2
             if (sd>ballsize) cycle mainloop
@@ -1683,7 +1683,7 @@
          indexofi = ind(i)  ! only read it if we have not broken out
          else
          indexofi = ind(i)
-         sd = 0.0
+         sd = 0.0d0
          do k = 1,dimen
             sd = sd + (data(k,indexofi) - qv(k))**2
             if (sd>ballsize) cycle mainloop
@@ -1729,7 +1729,7 @@
       end do
       ! now find 'n' smallest distances
       do i = 1, nn
-         results(i)%dis =  huge(1.0)
+         results(i)%dis =  huge(1.0d0)
          results(i)%idx = -1
       end do
       do i = 1, tp%n

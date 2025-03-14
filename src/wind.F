@@ -3398,10 +3398,10 @@ C
             YCOOR=Y(I)
             XCOOR=X(I)
          ENDIF
-         LATIND2=(WLATMAX-YCOOR)/WLATINC + 1
+         LATIND2=int((WLATMAX-YCOOR)/WLATINC) + 1
          IF(LATIND2.EQ.NWLAT) LATIND2=LATIND2-1
          LATIND1=LATIND2 + 1
-         LONIND1=(XCOOR-WLONMIN)/WLONINC + 1
+         LONIND1=int((XCOOR-WLONMIN)/WLONINC) + 1
          IF(LONIND1.EQ.NWLON) LONIND1=LONIND1-1
          LONIND2=LONIND1+1
          WLONM = WLONMIN + (LONIND1-1)*WLONINC
@@ -3613,10 +3613,10 @@ C
             YCOOR=Y(I)
             XCOOR=X(I)
          ENDIF
-         LATIND2=(WLATMAX-YCOOR)/WLATINC + 1
+         LATIND2=int((WLATMAX-YCOOR)/WLATINC) + 1
          IF(LATIND2.EQ.NWLAT) LATIND2=LATIND2-1
          LATIND1=LATIND2 + 1
-         LONIND1=(XCOOR-WLONMIN)/WLONINC + 1
+         LONIND1=int((XCOOR-WLONMIN)/WLONINC) + 1
          LONIND2=LONIND1 + 1
 C
          WLONM = WLONMIN + (LONIND1-1)*WLONINC
@@ -3750,10 +3750,10 @@ C
             YCOOR=Y(I)
             XCOOR=X(I)
          ENDIF
-         LATIND2=(WLATMAX-YCOOR)/WLATINC + 1
+         LATIND2=int((WLATMAX-YCOOR)/WLATINC) + 1
          IF(LATIND2.EQ.NWLAT) LATIND2=LATIND2-1
          LATIND1=LATIND2 + 1
-         LONIND1=(XCOOR-WLONMIN)/WLONINC + 1
+         LONIND1=int((XCOOR-WLONMIN)/WLONINC) + 1
          LONIND2=LONIND1 + 1
 C
          WLONM = WLONMIN + (LONIND1-1)*WLONINC
@@ -3892,7 +3892,7 @@ C.....   Compute initial guess of which lon value FLON(I) is in the Gaussian fil
 C......  Check that this value is reasonable.
          flonwork=slam(i)
          if(flonwork.lt.0.) flonwork=flonwork+twopi
-         lon=flonwork/dlon + 1
+         lon=int(flonwork/dlon + 1)
          lonp1=lon+1
          if(lon.eq.lonb) lonp1=1 !circle condition
          if((lon.lt.1).or.(lon.gt.lonb)) then
@@ -3907,7 +3907,7 @@ C......  Check that this value is reasonable.
 C.....   Compute initial guess of which lat value FLAT(I) is in the Gaussian file
 C....... Check that this value is reasonable.
          colat=hfpi-sfea(i)
-         lat=colat/dlat + 1
+         lat=int(colat/dlat) + 1
          if(lat.eq.latb) lat=lat-1
          latp1=lat+1
          if((lat.lt.1).or.(lat.gt.latb)) then
@@ -4424,10 +4424,10 @@ c
       ri2=(rlamda/rdlamda+nwlon+1)/2.
       ri1=(rlamda/rdlamda+nwlon)/2.
       rj=rphii/rdphi+(nwlat+1)/2
-      j=(rj+0.5d0)
+      j=int(rj+0.5d0)
       ri=ri1
       if(mod(j,2).eq.0) ri=ri2
-      i=(ri+0.5d0)
+      i=int(ri+0.5d0)
 
 c     if (myproc == 0) then
 c       write(screenunit,*) "lamda, phi = ",flon,flat
@@ -5818,11 +5818,11 @@ C     ----------------------------------------------------------------
       INTEGER  :: i, nwi
       INTEGER  :: num_entry
       REAL(8) :: TIMELOC, time1, wtratio
-      REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
-      REAL( 8) :: wvnx(np),wvny(np), press(np)
+      REAL(8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
+      REAL(8) :: wvnx(np),wvny(np), press(np)
       REAL(8) :: RhoWatG
 
-      REAL,DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+      REAL(8),DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
       INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd,icpress

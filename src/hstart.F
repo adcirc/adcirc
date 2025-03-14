@@ -1598,8 +1598,8 @@ C...
         IESTP=0
         NSCOUE=0
         IF((NTCYSE.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
-          NTCYSE=NTCYSE+((REAL(ITHS)-REAL(NTCYSE))/
-     &           REAL(NSPOOLE))*REAL(NSPOOLE)
+          NTCYSE=int(NTCYSE+((DBLE(ITHS)-DBLE(NTCYSE))/
+     &           DBLE(NSPOOLE))*DBLE(NSPOOLE))
           IF(NTCYSE.LT.ITHS) NTCYSE=NTCYSE+NSPOOLE
           IF(NSPOOLE.NE.0) NTRSPE=(NTCYFE-NTCYSE)/NSPOOLE
         ENDIF
@@ -1676,8 +1676,8 @@ C...
         IVSTP=0
         NSCOUV=0
         IF((NTCYSV.LT.ITHS).AND.(NSPOOLV.GT.0)) THEN
-          NTCYSV=NTCYSV+((REAL(ITHS)-REAL(NTCYSV))/
-     &           REAL(NSPOOLV))*REAL(NSPOOLV)
+          NTCYSV=INT(NTCYSV+((DBLE(ITHS)-DBLE(NTCYSV))/
+     &           DBLE(NSPOOLV))*DBLE(NSPOOLV))
           IF(NTCYSV.LT.ITHS) NTCYSV=NTCYSV+NSPOOLV
           NTRSPV=(NTCYFV-NTCYSV)/NSPOOLV
         ENDIF
@@ -1752,8 +1752,8 @@ C...
         ICSTP=0
         NSCOUC=0
         IF((NTCYSC.LT.ITHS).AND.(NSPOOLC.GT.0)) THEN
-          NTCYSC=NTCYSC+((REAL(ITHS)-REAL(NTCYSC))/
-     &           REAL(NSPOOLC))*REAL(NSPOOLC)
+          NTCYSC=INT(NTCYSC+((DBLE(ITHS)-DBLE(NTCYSC))/
+     &           DBLE(NSPOOLC))*DBLE(NSPOOLC))
           IF(NTCYSC.LT.ITHS) NTCYSC=NTCYSC+NSPOOLC
           NTRSPC=(NTCYFC-NTCYSC)/NSPOOLC
         ENDIF
@@ -1850,8 +1850,8 @@ C
         IICESTP = 0  !v49.64.01 tcm added ice station
         NSCOUM=0
         IF((NTCYSM.LT.ITHS).AND.(NSPOOLM.GT.0)) THEN
-          NTCYSM=NTCYSM+((REAL(ITHS)-REAL(NTCYSM))/
-     &           REAL(NSPOOLM))*REAL(NSPOOLM)
+          NTCYSM=INT(NTCYSM+((DBLE(ITHS)-DBLE(NTCYSM))/
+     &           DBLE(NSPOOLM))*DBLE(NSPOOLM))
           IF(NTCYSM.LT.ITHS) NTCYSM=NTCYSM+NSPOOLM
           NTRSPM=(NTCYFM-NTCYSM)/NSPOOLM
         ENDIF
@@ -2013,8 +2013,8 @@ C...
         IBSTP=0
         NSCOUB=0
         IF((NTCYSB.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
-          NTCYSB=NTCYSB+((REAL(ITHS)-REAL(NTCYSB))/
-     &           REAL(NSPOOLE))*REAL(NSPOOLE)
+          NTCYSB=INT(NTCYSB+((DBLE(ITHS)-DBLE(NTCYSB))/
+     &           DBLE(NSPOOLE))*DBLE(NSPOOLE))
           IF(NTCYSB.LT.ITHS) NTCYSB=NTCYSB+NSPOOLE
           IF(NSPOOLE.NE.0) NTRSPB=(NTCYFB-NTCYSB)/NSPOOLE
         ENDIF
@@ -2099,13 +2099,13 @@ C....   SET THESE VARIABLES FOR USE LATER
           IGEP=0
           NSCOUGE=0
           IF((NTCYSGE.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
-            NTCYSGE=NTCYSGE+((REAL(ITHS)-REAL(NTCYSGE))/
-     &              REAL(NSPOOLGE))*REAL(NSPOOLGE) 
+            NTCYSGE=INT(NTCYSGE+((DBLE(ITHS)-DBLE(NTCYSGE))/
+     &              DBLE(NSPOOLGE))*DBLE(NSPOOLGE) )
             IF(NTCYSGE.LT.ITHS) NTCYSGE=NTCYSGE+NSPOOLGE
 C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
             IF(DTDP.NE.DTDPHS) THEN
-              NDSETSE=((NTCYFGE*DTDP)-(NTCYSGE*DTDPHS))/
-     &                (NSPOOLGE*DTDP)
+              NDSETSE=INT(((NTCYFGE*DTDP)-(NTCYSGE*DTDPHS))/
+     &                (NSPOOLGE*DTDP))
             ELSE
               NDSETSE=(NTCYFGE-NTCYSGE)/NSPOOLGE
             END IF
@@ -2218,13 +2218,13 @@ C...
           IGVP=0
           NSCOUGV=0
           IF((NTCYSGV.LT.ITHS).AND.(NSPOOLGV.GT.0)) THEN
-            NTCYSGV=NTCYSGV+((REAL(ITHS)-REAL(NTCYSGV))/
-     &              REAL(NSPOOLGV))*REAL(NSPOOLGV)
+            NTCYSGV=INT(NTCYSGV+((DBLE(ITHS)-DBLE(NTCYSGV))/
+     &              DBLE(NSPOOLGV))*DBLE(NSPOOLGV))
             IF(NTCYSGV.LT.ITHS) NTCYSGV=NTCYSGV+NSPOOLGV
 C  kmd48.33bc - change the NDSETSV for the change in the DTDP
             IF(DTDP.NE.DTDPHS) THEN
-              NDSETSV=((NTCYFGV*DTDP)-(NTCYSGV*DTDPHS))/
-     &                (NSPOOLGV*DTDP)
+              NDSETSV=INT(((NTCYFGV*DTDP)-(NTCYSGV*DTDPHS))/
+     &                (NSPOOLGV*DTDP))
             ELSE
               NDSETSV=(NTCYFGV-NTCYSGV)/NSPOOLGV
             END IF
@@ -2297,12 +2297,12 @@ Cobell - Open the fort.77 (weir elevation change) if necessary
           IG_TVW=0
           NSCOU_TVW=0
           IF((NTCYS_TVW.LT.ITHS).AND.(NSPOOL_TVW.GT.0)) THEN
-            NTCYS_TVW=NTCYS_TVW+((REAL(ITHS)-REAL(NTCYS_TVW))/
-     &              REAL(NSPOOL_TVW))*REAL(NSPOOL_TVW)
+            NTCYS_TVW=INT(NTCYS_TVW+((DBLE(ITHS)-DBLE(NTCYS_TVW))/
+     &              DBLE(NSPOOL_TVW))*DBLE(NSPOOL_TVW))
             IF(NTCYS_TVW.LT.ITHS) NTCYS_TVW=NTCYS_TVW+NSPOOL_TVW
             IF(DTDP.NE.DTDPHS) THEN
-              NDSETS_TVW=((NTCYF_TVW*DTDP)-(NTCYS_TVW*DTDPHS))/
-     &                (NSPOOL_TVW*DTDP)
+              NDSETS_TVW=INT(((NTCYF_TVW*DTDP)-(NTCYS_TVW*DTDPHS))/
+     &                (NSPOOL_TVW*DTDP))
             ELSE
               NDSETS_TVW=(NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW
             ENDIF
@@ -2375,13 +2375,13 @@ C...
           IGCP=0
           NSCOUGC=0
           IF((NTCYSGC.LT.ITHS).AND.(NSPOOLGC.GT.0)) THEN
-            NTCYSGC=NTCYSGC+((REAL(ITHS)-REAL(NTCYSGC))/
-     &              REAL(NSPOOLGC))*REAL(NSPOOLGC)
+            NTCYSGC=INT(NTCYSGC+((DBLE(ITHS)-DBLE(NTCYSGC))/
+     &              DBLE(NSPOOLGC))*DBLE(NSPOOLGC))
             IF(NTCYSGC.LT.ITHS) NTCYSGC=NTCYSGC+NSPOOLGC
 C  kmd48.33bc - change the NDSETSC for the change in the DTDP
             IF(DTDP.NE.DTDPHS) THEN
-              NDSETSC=((NTCYFGC*DTDP)-(NTCYSGC*DTDPHS))/
-     &                (NSPOOLGC*DTDP)
+              NDSETSC=INT(((NTCYFGC*DTDP)-(NTCYSGC*DTDPHS))/
+     &                (NSPOOLGC*DTDP))
             ELSE
               NDSETSC=(NTCYFGC-NTCYSGC)/NSPOOLGC
             END IF
@@ -2481,13 +2481,13 @@ c
           NSCOUGW=0
           IGIP=0
           IF((NTCYSGW.LT.ITHS).AND.(NSPOOLGW.GT.0)) THEN
-            NTCYSGW=NTCYSGW+((REAL(ITHS)-REAL(NTCYSGW))/
-     &              REAL(NSPOOLGW))*REAL(NSPOOLGW)
+            NTCYSGW=INT(NTCYSGW+((DBLE(ITHS)-DBLE(NTCYSGW))/
+     &              DBLE(NSPOOLGW))*DBLE(NSPOOLGW))
             IF(NTCYSGW.LT.ITHS) NTCYSGW=NTCYSGW+NSPOOLGW
 C  kmd48.33bc - change the NDSETSC for the change in the DTDP
             IF(DTDP.NE.DTDPHS) THEN
-              NDSETSW=((NTCYFGW*DTDP)-(NTCYSGW*DTDPHS))/
-     &                (NSPOOLGW*DTDP)
+              NDSETSW=INT(((NTCYFGW*DTDP)-(NTCYSGW*DTDPHS))/
+     &                (NSPOOLGW*DTDP))
             ELSE
               NDSETSW=(NTCYFGW-NTCYSGW)/NSPOOLGW
             END IF
@@ -2719,12 +2719,12 @@ C...
            NSCOUGB=0
            IF(NTCYSGB.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGB = ITHS + NSPOOLGE - 1 
            IF((NTCYSGB.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
-              NTCYSGB=NTCYSGB+((REAL(ITHS)-REAL(NTCYSGB))/
-     &               REAL(NSPOOLGE))*REAL(NSPOOLGE)
+              NTCYSGB=INT(NTCYSGB+((DBLE(ITHS)-DBLE(NTCYSGB))/
+     &               DBLE(NSPOOLGE))*DBLE(NSPOOLGE))
               IF(NTCYSGB.LT.ITHS) NTCYSGB=NTCYSGB+NSPOOLGE
               IF(DTDP.NE.DTDPHS) THEN
-                 NDSETSB=((NTCYFGB*DTDP)-(NTCYSGB*DTDPHS))/
-     &                (NSPOOLGE*DTDP)
+                 NDSETSB=INT(((NTCYFGB*DTDP)-(NTCYSGB*DTDPHS))/
+     &                (NSPOOLGE*DTDP))
               ELSE
                  NDSETSB=(NTCYFGB-NTCYSGB)/NSPOOLGE
               ENDIF
@@ -3302,8 +3302,8 @@ C.... Initialize the 3D turbulence station output file (Unit 43)
 
 C  kmd48.33bc - changed NDSet3DST to use DTDPHS
       IF (DTDP.NE.DTDPHS) THEN
-         NDSet3DST=((NTO3DSTF*DTDP)-(NTO3DSTS*DTDPHS))/
-     &              (NSpo3DST*DTDP)
+         NDSet3DST=int(((NTO3DSTF*DTDP)-(NTO3DSTS*DTDPHS))/
+     &              (NSpo3DST*DTDP))
       END IF
 
       CALL initOutput3D(43, I3DST, NDSET3DST, NSTA3DT, NSTA3DT_g,
@@ -3401,12 +3401,12 @@ C
       tsCounter=0
       recCounter=0
       IF ((startTS.LT.ITHS).AND.(tsPeriod.GT.0)) THEN
-         startTS=startTS+((REAL(ITHS)-REAL(startTS))/
-     &           REAL(tsPeriod))*REAL(tsPeriod)
+         startTS=int(startTS+((REAL(ITHS)-REAL(startTS))/
+     &           DBLE(tsPeriod))*DBLE(tsPeriod))
          IF (startTS.LT.ITHS) startTS=startTS+tsPeriod
          IF (CHOTHS.eqv..true.) THEN
-            nSets=((endTS*DTDP)-(startTS*DTDPHS))/
-     &                (tsPeriod*DTDP)
+            nSets=int(((endTS*DTDP)-(startTS*DTDPHS))/
+     &                (tsPeriod*DTDP))
          ELSE
            nSets=(endTS-startTS)/tsPeriod
          END IF
@@ -3498,7 +3498,7 @@ C
      &                            / DTDP, KIND(0.0d0))
 #else
       remainingTimeSteps = INT((outputtime - elapsed + 0.5d0)
-     &                            / DTDP, KIND(0.0d0))
+     &                            / DTDP)
 #endif
       ts = ITHS + remainingTimeSteps
 C

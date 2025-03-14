@@ -80,8 +80,8 @@ C---------------------------------------------------------------------C
          VBar = 0d0
       ENDIF
 
-      L = FLOOR(TimeStep*DTDP/Fs)
-      Lm = FLOOR((TimeStep-1)*DTDP/Fs)
+      L = FLOOR(dble(TimeStep)*DTDP/Fs)
+      Lm = FLOOR(dble(TimeStep-1)*DTDP/Fs)
       IF ( L.GT.Lm ) THEN
          IF ( ISTA.GT.NS ) THEN
             DO ii = 1,NP
@@ -163,8 +163,8 @@ C---------------------------------------------------------------------C
          CALL CalcMunkWeights()
       ENDIF
       ! check if this and the previous timestep are in the same hour
-      L = FLOOR(TimeStep*DTDP/T)
-      Lm = FLOOR((TimeStep-1)*DTDP/T)
+      L = FLOOR(dble(TimeStep)*DTDP/T)
+      Lm = FLOOR(dble(TimeStep-1)*DTDP/T)
       IF ( L.GT.Lm ) THEN
          ! check if we are >= 49 hours into the run
          IF ( ISTA.GT.NS ) THEN
@@ -213,10 +213,10 @@ C---------------------------------------------------------------------C
       ! allocate weights
       ALLOCATE( wts(NS) )
       ! define low-pass filter weights (not normalized and one-sided)
-      LPwts = (/395287,386839,370094,354118,338603,325633,314959,
-     &          300054,278167,251492,234033,219260,208050,195518,
-     &          180727,165525,146225,122665,101603,85349,72261,
-     &          60772,47028,30073,13307 /)
+      LPwts = (/395287d0,386839d0,370094d0,354118d0,338603d0,325633d0,314959d0,
+     &          300054d0,278167d0,251492d0,234033d0,219260d0,208050d0,195518d0,
+     &          180727d0,165525d0,146225d0,122665d0,101603d0, 85349d0, 72261d0,
+     &           60772d0, 47028d0, 30073d0, 13307d0 /)
       ! find sum to normalize low pass filter
       K = LPwts(1)
       DO ii = 2,25
@@ -286,7 +286,7 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE 
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 #ifdef ALL_TRACE
-      REAL, ALLOCATABLE :: dummy(:)
+      REAL(8), ALLOCATABLE :: dummy(:)
 #endif
 C
       !call setMessageSource("BC3DTerminate")

@@ -180,10 +180,10 @@ cvjp      XCOOR=SLAM(I)*RAD2DEG
           YCOOR=Y(I)
           XCOOR=X(I)
         ENDIF
-        LATIND2=(WLATMAX-YCOOR)/WLATINC + 1
+        LATIND2=int((WLATMAX-YCOOR)/WLATINC) + 1
         IF(LATIND2.EQ.NWLAT) LATIND2=LATIND2-1
         LATIND1=LATIND2 + 1
-        LONIND1=(XCOOR-WLONMIN)/WLONINC + 1
+        LONIND1=int((XCOOR-WLONMIN)/WLONINC) + 1
         IF(LONIND1.EQ.NWLON) LONIND1=LONIND1-1
         LONIND2=LONIND1+1
         WLONM = WLONMIN + (LONIND1-1)*WLONINC
@@ -684,7 +684,7 @@ C.......Check that this value is reasonable.
 
           FLONWORK=FLON(I)
           IF(FLONWORK.LT.0.) FLONWORK=FLONWORK+TWOPI
-          LON=FLONWORK/DLON + 1
+          LON=int(FLONWORK/DLON) + 1
           LONP1=LON+1
           IF(LON.EQ.NLON) LONP1=1        !Circle condition
           IF((LON.LT.1).OR.(LON.GT.NLON)) THEN
@@ -700,7 +700,7 @@ C.....Compute initial guess of which lat value FLAT(I) is in the Gaussian file
 C.......Check that this value is reasonable.
 
           COLAT=HFPI-FLAT(I)
-          LAT=COLAT/DLAT + 1
+          LAT=int(COLAT/DLAT) + 1
           IF(LAT.EQ.NLAT) LAT=LAT-1
           LATP1=LAT+1
           IF((LAT.LT.1).OR.(LAT.GT.NLAT)) THEN
@@ -1013,10 +1013,10 @@ c     compute the position of the closest node in the E29 grid
         ri2=(rlamda/rdlamda+nwlon+1)/2.
       ri1=(rlamda/rdlamda+nwlon)/2.
       rj=rphii/rdphi+(nwlat+1)/2
-      j=(rj+0.5)
+      j=int(rj+0.5)
       ri=ri1
       if(mod(j,2).eq.0) ri=ri2
-      i=(ri+0.5)
+      i=int(ri+0.5)
 
 c      write(*,*) "lamda, phi = ",flon,flat
 c      write(*,*) "ri1, ri2, ri, rj = ",ri1,ri2,ri,rj

@@ -165,9 +165,9 @@ C----------------------------------------------------------------------
       SUBROUTINE BcastToLocal_2DRealArray(Val,NX, NY)
 C----------------------------------------------------------------------
       IMPLICIT NONE
-      REAL,INTENT(INOUT) :: Val(:,:)
+      REAL(4),INTENT(INOUT) :: Val(:,:)
       INTEGER,INTENT(IN) :: NX, NY
-      REAL(8),ALLOCATABLE :: TMP(:)
+      REAL(4),ALLOCATABLE :: TMP(:)
       INTEGER :: ii, jj, NumVals, kk, ierr
 #ifdef CMPI
       NumVals = NX*NY

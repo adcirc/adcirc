@@ -496,10 +496,10 @@ c     igc = 1 - Evenly spaced grid
 c
       case(1)
          if(nfen.le.1) nfen = 2
-         deta = (a-b)/(nfen-1)
+         deta = (a-b)/dble(nfen-1)
          sigma(1) = b
          do n=2,nfen-1
-            sigma(n) = b + deta*(n-1)
+            sigma(n) = b + deta*dble(n-1)
          end do
          nfen2 = nfen/2
          if(2*nfen2.ne.nfen) sigma(nfen2+1) = 0.d0
@@ -516,10 +516,10 @@ c     write(screenunit,*) '********** Enter So from the keyboard ***********'
 c     write(screenunit,*) '   '
 c     read(*,*) Sb
          if(nfen.le.1) nfen = 2
-         deta = 1.d0/(nfen-1)
+         deta = 1.d0/dble(nfen-1)
          sigma(1) = b
          do n=2,nfen-1
-            sigma(n) = b + (a-b)*Sb/H*(((H+Sb)/Sb)**(deta*(n-1))-1.d0)
+            sigma(n) = b + (a-b)*Sb/H*(((H+Sb)/Sb)**(deta*dble(n-1))-1.d0)
          enddo
          sigma(nfen) = a
 c
@@ -541,14 +541,14 @@ c
          write(screenunit,*) '   '
          read(*,*) Sstar
          if(nfen.le.1) nfen = 2
-         deta = 1.d0/(nfen-1)
+         deta = 1.d0/dble(nfen-1)
          denom = log((H+Sb)/Sb) + H/Sstar
          sigma(1) = b
          do n=2,nfen-1
-            sig0 = b + (a-b)*deta*(n-1)
+            sig0 = b + (a-b)*deta*dble(n-1)
             do while(.true.)
                sigma(n)= b - (a-b)*Sstar/H*(log(1.d0+H/Sb*(sig0-b)/(a-b))
-     +              -denom*deta*(n-1))
+     +              -denom*deta*dble(n-1))
                if(abs(sigma(n)-sig0).ge.1.d-8)then
                   sig0 = sigma(n)
                   cycle
@@ -597,16 +597,16 @@ c
             num = nfen/2
          else
             num=(nfen-1)/2
-            sigma(num+1)=(a+b)/2.
+            sigma(num+1)=(a+b)/2d0
          endif
-         deta = 2.d0/(nfen-1)
+         deta = 2.d0/dble(nfen-1)
          sigma(1) = b
          sigma(nfen) = a
          do n=2,num
             sigma(n)
-     &        = b + 0.5d0*(a-b)*Sb/H*(((H+Sb)/Sb)**(deta*(n-1))-1.d0)
+     &        = b + 0.5d0*(a-b)*Sb/H*(((H+Sb)/Sb)**(deta*dble(n-1))-1.d0)
             sigma(nfen+1-n) = a - 0.5d0*(a-b)*Ss/H*(((H+Ss)/Ss)**
-     &           (deta*(n-1))-1.d0)
+     &           (deta*dble(n-1))-1.d0)
          enddo
 c
 c     igc = 5 - "P-grid" after Fortunato and Baptista (IJNMF submitted 12/1994)
@@ -623,7 +623,7 @@ c
          read(*,*)rp
          do i = 1,nfen
             sigma(i) = -1.d0 + 2.d0
-     &          *(1.d0+((1.d0-i)/(1.d0-nfen))**(1.d0/rp) - 1.d0)
+     &          *(1.d0+((1.d0-dble(i))/(1.d0-dble(nfen)))**(1.d0/rp) - 1.d0)
          end do
 c
 c     igc = 6 - "sine grid" after Naimie,Lynch
@@ -637,7 +637,7 @@ c
          write(screenunit,*)
          read(*,*)aval
          do i = 1,nfen
-            eps = float(i-1)/float(nfen-1)
+            eps = dble(i-1)/dble(nfen-1)
             sigma(i) = -1.d0
      &         + (2.d0/H)*(eps*H-aval*sin(2.d0*3.14159d0*eps))
          end do

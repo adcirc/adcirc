@@ -4737,7 +4737,7 @@ C     compute thas and thaf in terms of the number of time steps
       ITHAF=INT((THAF-STATIM)*(86400.D0/DTDP) + 0.5d0)
 #endif
       THAF=ITHAF*DTDP/86400.D0 + STATIM
-      ITMV = ITHAF - (ITHAF-ITHAS)*FMV
+      ITMV = int(ITHAF - (ITHAF-ITHAS)*FMV)
       IF(NFREQ.GT.0) THEN
          WRITE(16,34634) THAS,ITHAS,THAF,ITHAF,NHAINC
 34634    FORMAT(/,5X,'HARMONIC ANALYSIS WILL START AFTER THAS =',F8.3,

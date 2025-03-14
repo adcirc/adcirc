@@ -43,7 +43,7 @@
           !...Default gravitational acceleration
           ! Note that the user can update this in the
           ! control file so this isn't made constant
-          REAL(8) :: g = 9.80665
+          REAL(8) :: g = 9.80665D0
 
           !...Nominal density of water
           REAL(8), PARAMETER :: RhoWat0 = 1000.0D0

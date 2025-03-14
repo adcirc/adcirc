@@ -1113,7 +1113,7 @@ C...Accumulate mean and variance at each node.
             XVELVA(I) = XVELVA(I)/NTSTEPS - XVELAV(I)*XVELAV(I)
             YVELVA(I) = YVELVA(I)/NTSTEPS - YVELAV(I)*YVELAV(I)
          END DO
-         TIMEBEG=ITMV*DTDP + (STATIM-REFTIM)*86400.D0
+         TIMEBEG=int(ITMV*DTDP + (STATIM-REFTIM)*86400.D0)
       ENDIF
 
 C......Fill out and decompose the LHS harmonic analaysis matrix

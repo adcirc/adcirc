@@ -1149,7 +1149,7 @@ C
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspe, size_this, dtdp*nspoole, nspoole, 1,
+      write(lun, 1010) ntrspe, size_this, dtdp*dble(nspoole), nspoole, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1171,7 +1171,7 @@ C
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspv, size_this, dtdp*nspoolv, nspoolv, 2,
+      write(lun, 1010) ntrspv, size_this, dtdp*dble(nspoolv), nspoolv, 2,
      &     FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1193,7 +1193,7 @@ C
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetse, size_this, dtdp*nspoolge, nspoolge, 1,
+      write(lun, 1010) ndsetse, size_this, dtdp*dble(nspoolge), nspoolge, 1,
      &                 FileFmtVersion
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1237,7 +1237,7 @@ C
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsv, size_this, dtdp*nspoolgv, nspoolgv, 2,
+      write(lun, 1010) ndsetsv, size_this, dtdp*dble(nspoolgv), nspoolgv, 2,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1259,7 +1259,7 @@ C
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
+      write(lun, 1010) ntrspm, size_this, dtdp*dble(nspoolm), nspoolm, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1281,7 +1281,7 @@ C
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 2,
+      write(lun, 1010) ntrspm, size_this, dtdp*dble(nspoolm), nspoolm, 2,
      &                  FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1303,7 +1303,7 @@ C
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
+      write(lun, 1010) ndsetsw, size_this, dtdp*dble(nspoolgw), nspoolgw, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1325,7 +1325,7 @@ C
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 2,
+      write(lun, 1010) ndsetsw, size_this, dtdp*dble(nspoolgw), nspoolgw, 2,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1347,7 +1347,7 @@ C
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsets_tvw, size_this, dtdp*nspool_tvw,
+      write(lun, 1010) ndsets_tvw, size_this, dtdp*dble(nspool_tvw),
      &                 nspool_tvw, 1, FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1370,7 +1370,7 @@ C
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
+      write(lun, 1010) ntrspm, size_this, dtdp*dble(nspoolm), nspoolm, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1393,7 +1393,7 @@ C
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
+      write(lun, 1010) ndsetsw, size_this, dtdp*dble(nspoolgw), nspoolgw, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1416,7 +1416,7 @@ C
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspc, size_this, dtdp*nspoolc, nspoolc, 1,
+      write(lun, 1010) ntrspc, size_this, dtdp*dble(nspoolc), nspoolc, 1,
      &                  FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1468,32 +1468,32 @@ C     Set the appropriate number of nodes
 C    
       select case(trim(typeStr))
       case("Elev")
-          write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
+          write(lun, 1010) ntrspe, nstations, dtdp*dble(nspoole), nspoole, 1,
      &         FileFmtVersion
       case("offset")
-          write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
+          write(lun, 1010) ntrspe, nstations, dtdp*dble(nspoole), nspoole, 1,
      &         FileFmtVersion
       case("Vel2D")
-          write(lun, 1010) ntrspv, nstations, dtdp*nspoolv, nspoolv, 2,
+          write(lun, 1010) ntrspv, nstations, dtdp*dble(nspoolv), nspoolv, 2,
      &         FileFmtVersion
       case("Vel3D")
-          write(lun, 1020) ndset3dsv, nstations, dtdp*nspo3dsv,
+          write(lun, 1020) ndset3dsv, nstations, dtdp*dble(nspo3dsv),
      &         nspo3dsv, nfen, 3, FileFmtVersion
       case("Turb3D")
-          write(lun, 1020) ndset3dst, nstations, dtdp*nspo3dst,
+          write(lun, 1020) ndset3dst, nstations, dtdp*dble(nspo3dst),
      &         nspo3dst, nfen, 3, FileFmtVersion
       case("Dens2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D density station output not implemented.'
           CALL EXIT(1)
       case("Dens3D")
-          write(lun, 1020) ndset3dsd, nstations, dtdp*nspo3dsd,
+          write(lun, 1020) ndset3dsd, nstations, dtdp*dble(nspo3dsd),
      &         nspo3dsd, nfen, 3, FileFmtVersion
       case("Press","Wind")
-          write(lun, 1010) ntrspm, nstations, dtdp*nspoolm, nspoolm, 1,
+          write(lun, 1010) ntrspm, nstations, dtdp*dble(nspoolm), nspoolm, 1,
      &                 FileFmtVersion
       case("Conc2D")
-          write(lun, 1010) ntrspc, nstations, dtdp*nspoolc, nspoolc, 1,
+          write(lun, 1010) ntrspc, nstations, dtdp*dble(nspoolc), nspoolc, 1,
      &                  FileFmtVersion
       case("Conc3D")
           write(ScreenUnit,*)
@@ -1556,28 +1556,28 @@ C     Open the file
 
       select case(trim(typeStr))
       case("Elev")
-          write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
+          write(lun, 1010) ndsetse, nodes, dtdp*dble(nspoolge),
      &                 nspoolge, 1, FileFmtVersion
       case("ElevMax")
           write(lun, 1010) 1, numNodes, 1.d0, 1, 1, FileFmtVersion
       case("Vel2D")
-          write(lun, 1010) ndsetsv, nodes, dtdp*nspoolgv,
+          write(lun, 1010) ndsetsv, nodes, dtdp*dble(nspoolgv),
      &                     nspoolgv, 2, FileFmtVersion
       case("Vel3D")
-          write(lun, 1020) ndset3dgv, nodes, dtdp*nspo3dgv,
+          write(lun, 1020) ndset3dgv, nodes, dtdp*dble(nspo3dgv),
      &                     nspo3dgv, nfen, 3, FileFmtVersion
       case("Turb3D")
-          write(lun, 1020) ndset3dgt, nodes, dtdp*nspo3dgt,
+          write(lun, 1020) ndset3dgt, nodes, dtdp*dble(nspo3dgt),
      &                     nspo3dgt, nfen, 3, FileFmtVersion
       case("Dens2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D density output not implemented.'
           CALL EXIT(1)
       case("Dens3D")
-          write(lun, 1020) ndset3dgd, nodes, dtdp*nspo3dgd,
+          write(lun, 1020) ndset3dgd, nodes, dtdp*dble(nspo3dgd),
      &                     nspo3dgd, nfen, 3, FileFmtVersion
       case("Press","Wind")
-          write(lun, 1010) ndsetsw, nodes, dtdp*nspoolgw,
+          write(lun, 1010) ndsetsw, nodes, dtdp*dble(nspoolgw),
      &                     nspoolgw, 1, FileFmtVersion
       case("Conc2D")
           write(ScreenUnit,*)
@@ -1588,21 +1588,21 @@ C     Open the file
      &         'ERROR: 3D conc. output not implemented.'
           CALL EXIT(1)
       case("Tau0")
-          write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
+          write(lun, 1010) ndsetse, nodes, dtdp*dble(nspoolge),
      &                 nspoolge, 1, FileFmtVersion
       case("sponge")
-          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+          write(lun, 1010) 1, nodes, dtdp*dble(nspoolge),
      &                 nspoolge, 1, FileFmtVersion
       case("noff")
-          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+          write(lun, 1010) 1, nodes, dtdp*dble(nspoolge),
      &                 nspoolge, 1, FileFmtVersion
       case("nodecode")
-          write(lun, 1010) 1, nodes, dtdp*nspoolge,
+          write(lun, 1010) 1, nodes, dtdp*dble(nspoolge),
      &                 nspoolge, 1, FileFmtVersion
       case("initDry")
           write(lun, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
       case("dynamicWaterlevelCorrection")
-          write(lun, 1010) 1, nodes, dtdp*nspoolge, nspoolge, 1, 
+          write(lun, 1010) 1, nodes, dtdp*dble(nspoolge), nspoolge, 1,
      &    FileFmtVersion
       case default
           write(ScreenUnit,*)

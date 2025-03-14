@@ -1192,7 +1192,7 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE 
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 #ifdef ALL_TRACE
-      REAL, ALLOCATABLE :: dummy(:)
+      REAL(8), ALLOCATABLE :: dummy(:)
 #endif
 C
       !call setMessageSource("BC3DTerminate")

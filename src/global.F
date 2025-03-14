@@ -1883,30 +1883,30 @@ C     available to different parts of ADCIRC.
         END IF
         END DO
         res = DBLE(itmp)
-        dtmp = 0.
+        dtmp = 0d0
         q = 0
         IF(.NOT. exponential) THEN
 !// We do not have an exponential number
         DO i = LEN_TRIM(buf), k+1, -1
         itmp = (IACHAR(buf(i:i)) - 48)
-        dtmp = dtmp + FLOAT(itmp)
-        dtmp = dtmp / 10.
+        dtmp = dtmp + DBLE(itmp)
+        dtmp = dtmp / 10d0
         END DO
         ELSE
 !// We have an exponential number
         DO i = p-1, k+1, -1
         itmp = (IACHAR(buf(i:i)) - 48)
-        dtmp = dtmp + FLOAT(itmp)
-        dtmp = dtmp / 10.
+        dtmp = dtmp + DBLE(itmp)
+        dtmp = dtmp / 10d0
         END DO
         q = a2i(buf(p+1:LEN_TRIM(buf)))
         END IF
         res = res + dtmp
         IF(exponential) THEN
-        res = res * 10.**q
+        res = res * 10d0**q
         END IF
         IF(neg) THEN
-        res = res * (-1)
+        res = res * (-1d0)
         END IF
         ELSE
 !// We have an integer
@@ -1917,7 +1917,7 @@ C     available to different parts of ADCIRC.
       !=================================================================
 C
       !=================================================================
-      FUNCTION a2f(buf) RESULT(res)
+      REAL(4) FUNCTION a2f(buf) RESULT(res)
 C     jgf49.31 Subroutine to convert a single precision real number to
 C     a string. Moved here from read_input.F to make it more generally
 C     available to different parts of ADCIRC.
@@ -1925,13 +1925,13 @@ C     available to different parts of ADCIRC.
       IMPLICIT NONE
       !// Arguments
       CHARACTER(LEN=*)               :: buf
-      REAL                           :: res
       !// Local variables
       INTEGER                        :: i,j,k,itmp, foffs, lng
       INTEGER                        :: p, q
-      REAL                           :: rtmp
+      REAL(8)                        :: rtmp, res_d
       LOGICAL                        :: neg
       LOGICAL                        :: exponential
+
       neg = .FALSE.
       exponential = .FALSE.
       lng = LEN_TRIM(buf)
@@ -1961,31 +1961,31 @@ C     available to different parts of ADCIRC.
                itmp = itmp + (IACHAR(buf(i:i)) - 48)
             END IF
          END DO
-         res = DBLE(itmp)
-         rtmp = 0.
+         res_d = DBLE(itmp)
+         rtmp = 0d0
          q = 0
          IF(.NOT. exponential) THEN
 !// We do not have an exponential number
             DO i = LEN_TRIM(buf), k+1, -1
                itmp = (IACHAR(buf(i:i)) - 48)
-               rtmp = rtmp + FLOAT(itmp)
-               rtmp = rtmp / 10.
+               rtmp = rtmp + DBLE(itmp)
+               rtmp = rtmp / 10d0
             END DO
          ELSE
 !// We have an exponential number
             DO i = p-1, k+1, -1
                itmp = (IACHAR(buf(i:i)) - 48)
-               rtmp = rtmp + FLOAT(itmp)
-               rtmp = rtmp / 10.
+               rtmp = rtmp + DBLE(itmp)
+               rtmp = rtmp / 10d0
             END DO
             q = a2i(buf(p+1:LEN_TRIM(buf)))
          END IF
-         res = res + rtmp
+         res_d = res_d + rtmp
          IF(exponential) THEN
-            res = res * 10.**q
+            res_d = res_d * 10d0**q
          END IF
          IF(neg) THEN
-            res = res * (-1)
+            res_d = res_d * (-1d0)
          END IF
       ELSE
          !// We have an integer

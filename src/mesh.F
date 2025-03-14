@@ -96,9 +96,10 @@
       REAL(8), POINTER, DIMENSION(:,:):: EXVR, EYVR
       REAL(8), ALLOCATABLE, DIMENSION(:):: SFEAR, SLAMR
       !c Matrix mapping two Cartesian frames
-      REAL(8):: ROTMAT(3,3) = reshape( (/ 1.0, 0.0, 0.0, 
-     &                             0.0, 1.0, 0.0,
-     &                             0.0, 0.0, 1.0 /), (/3, 3/)) ;  
+      REAL(8):: ROTMAT(3,3) = reshape( (/ 1.0D0, 0.0D0, 0.0D0,
+     &                                    0.0D0, 1.0D0, 0.0D0,
+     &                                    0.0D0, 0.0D0, 1.0D0 /),
+     &                                    (/3, 3/)) ;
       !c 
       !c RVELF: V(\varphi,\theta)  -> V'(\varphi',\theta')
       !c RVELI: V'(\varphi,\theta) -> V(\varphi,\theta)
@@ -2422,7 +2423,7 @@
                ! modification a 2DDI-only feature.
                if (C2DDI.eqv..true.) then
                   LBCODEI(JGW)=IBTYPE(K)
-                  IF((COSTHETA.GT.COSTSET).AND.(CROSS.GT.0.0)) THEN
+                  IF((COSTHETA.GT.COSTSET).AND.(CROSS.GT.0.0D0)) THEN
                      IF(IBTYPE(K).EQ.0) LBCODEI(JGW)=10
                      IF(IBTYPE(K).EQ.1) LBCODEI(JGW)=11
                      IF(IBTYPE(K).EQ.2) LBCODEI(JGW)=12
@@ -2466,7 +2467,7 @@
                   ZNGFicNodeDist=1.001d0*ZNGFicNodeDist
                   X4=X(NBVI)-ZNGFicNodeDist*CSII(JGW)
                   Y4=Y(NBVI)-ZNGFicNodeDist*SIII(JGW)
-                  AEMIN=1.0E+25
+                  AEMIN=1.0D+25
 
                   DO N=1,NE
                      N1=NM(N,1)
@@ -2489,7 +2490,7 @@
                      ENDIF
                   ENDDO  !N=1,NE
 
-                  IF(AEMIN.GT.1.0E-5) THEN
+                  IF(AEMIN.GT.1.0D-5) THEN
                      write(scratchMessage,9770) nbvi
                      call allMessage(WARNING,scratchMessage)
  9770                FORMAT('!!!!!!!!!!  ERROR !!!!!!!!! ',
@@ -2809,8 +2810,8 @@ Csb...
 !.....TRANSFER FLOW BOUNDARY INFORMATION INTO NODAL ARRAYS
       DO I=1,NP
          LBArray_Pointer(I)=-1
-         CSI(I)=0.
-         SII(I)=1.
+         CSI(I)=0d0
+         SII(I)=1d0
       END DO
 
       !do i=1,np !jgfdebug
@@ -3266,7 +3267,7 @@ Csb...
             ENDIF
             IF(DELY.NE.0.0d0) THEN
                ANGLE(J)=RAD2DEG*ACOS(DELX/DIST)
-               IF(DELY.GT.0.0) ANGLE(J)=360.0d0-ANGLE(J)
+               IF(DELY.GT.0.0d0) ANGLE(J)=360.0d0-ANGLE(J)
             ENDIF
             IF(DELY.EQ.0.0d0) THEN
                IF(DELX.GT.0.0d0) ANGLE(J)=0.0d0
@@ -3441,7 +3442,7 @@ Csb...
          nodele(nm1)=nodele(nm1)+1
          nodele(nm2)=nodele(nm2)+1
          nodele(nm3)=nodele(nm3)+1
-         areaele=ncele*areas(ie)/2.d0
+         areaele=dble(ncele)*areas(ie)/2.d0
          totalarea(nm1)=totalarea(nm1)+areaele
          totalarea(nm2)=totalarea(nm2)+areaele
          totalarea(nm3)=totalarea(nm3)+areaele
@@ -4156,7 +4157,7 @@ Csb...
           right = length
           do
              if (left > right) exit
-             middle = nint((left+right) / 2.0d0)
+             middle = nint(dble(left+right) / 2.0d0)
              if ( abs(array(middle) - value) <= d) then
                 binarySearch = middle
                 return
@@ -4247,7 +4248,7 @@ Csb...
           endif 
           denom = x2x1*y2y1
          
-          if (denom < 1e-12) then
+          if (denom < 1d-12) then
              write(16,*) 'Denominator is small',denom
              write(16,*) x,y,x1,y1,x2,y2,i,j,ir,jr
           endif
@@ -4272,7 +4273,7 @@ Csb...
      &                              kdtree2_n_nearest
           implicit none
           integer, intent(in) :: xp, yp           
-          real, dimension(xp,yp), intent(in) :: x_mat, y_mat
+          real(8), dimension(xp,yp), intent(in) :: x_mat, y_mat
           real(8), intent(in) :: x,y
           real(8), intent(out) :: w(4)
           integer, intent(out) :: ii(4)
@@ -4314,8 +4315,8 @@ Csb...
              endif
              do j = max(1,yi-1),min(yi+1,yp-1) !1,yp-1
                 jr = j + 1
-                x11 = x_mat(i,j);  x21 = x_mat(ir,j) + ia*360d0
-                x12 = x_mat(i,jr); x22 = x_mat(ir,jr) + ia*360d0
+                x11 = x_mat(i,j);  x21 = x_mat(ir,j) + dble(ia)*360d0
+                x12 = x_mat(i,jr); x22 = x_mat(ir,jr) + dble(ia)*360d0
                 y11 = y_mat(i,j);  y21 = y_mat(ir,j)
                 y12 = y_mat(i,jr); y22 = y_mat(ir,jr)
 
@@ -4684,14 +4685,14 @@ C
         ! trace of a matrix RTT 
         TR = RTT(1,1) + RTT(2,2) + RTT(3,3) ; 
        
-        RTT(1,1) = 0.0 ;
-        RTT(2,2) = 0.0 ;
-        RTT(3,3) = 0.0 ;
+        RTT(1,1) = 0.0d0 ;
+        RTT(2,2) = 0.0d0 ;
+        RTT(3,3) = 0.0d0 ;
         
         SOFFD = SUM( MATMUL(ABS(RTT), (/ 1.0D0, 1.0D0, 1.0D0 /)) )  ;
 
         IERR = 0 ;
-        IF ( SOFFD > 1.0e-10 ) THEN
+        IF ( SOFFD > 1.0d-10 ) THEN
            IERR = 1 ; 
            
            WRITE(6,*) "Error: a given rotation matrix is not"// 
@@ -5273,7 +5274,7 @@ C
          Y= 1.25d0*Rearth*log(tan(0.25D0*PI + 0.4d0*PHI))*cos(PHI0)
       CASE (24) ! Gall stereographic
          X = 0.5D0*SQRT(2.D0)*RLAMBDA ;
-         Y = Rearth*(1.0 + 0.5D0*SQRT(2.D0))*tan( 0.5D0*PHI )
+         Y = Rearth*(1.0D0 + 0.5D0*SQRT(2.D0))*tan( 0.5D0*PHI )
       CASE DEFAULT
          WRITE(6,'(A)') "Error in cylindermap(): "
          WRITE(6,'(A,I1,A)') "   Mapping type =  ", MTYPE, 

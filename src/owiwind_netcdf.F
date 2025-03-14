@@ -800,8 +800,8 @@
             CALL NWS13INTERP(IG,NumLon,NumLat,Lon,Lat,ILon,ILat,W2)
           else
             W2 = W(:, 1:4)
-            ILon = W(:, 5)
-            ILat = W(:, 6)
+            ILon = int(W(:, 5))
+            ILat = int(W(:, 6))
           endif
           DO IV=1,NP
             IF(ILon(IV).GT.0)THEN

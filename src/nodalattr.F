@@ -473,28 +473,28 @@ C
       OverlandReductionFactorNoOfVals = 1
       SubgridBarrierNoOfVals = 1 ! 1 or 2 
 C
-      Tau0DefVal             = 0.0
-      StartDryDefVal         = 0.0
+      Tau0DefVal             = 0.0d0
+      StartDryDefVal         = 0.0d0
       DO j=1, DirEffRLenNoOfVals
-         DirEffRLenDefVal(j) = 0.0
+         DirEffRLenDefVal(j) = 0.0d0
       END DO
-      CanopyCoefDefVal       = 1.0 ! jgf49.1001 default is now full wind stress
-      QuadraticFricDefVal    = 0.0
+      CanopyCoefDefVal       = 1.0d0 ! jgf49.1001 default is now full wind stress
+      QuadraticFricDefVal    = 0.0d0
       DO j=1, BridgePilingsNoOfVals
-         BridgePilingsDefVal(j) = 0.0
+         BridgePilingsDefVal(j) = 0.0d0
       END DO
-      ChezyDefVal            = 0.0
-      ManningsNDefVal        = 0.0
-      GeoidOffsetDefVal      = 0.0
-      EVMDefVal              = 0.0
-      EVCDefVal              = 0.0
+      ChezyDefVal            = 0.0d0
+      ManningsNDefVal        = 0.0d0
+      GeoidOffsetDefVal      = 0.0d0
+      EVMDefVal              = 0.0d0
+      EVCDefVal              = 0.0d0
       DO j=1, Tau0MinMaxNoOfVals
-         Tau0DefVal = 0.0
+         Tau0DefVal = 0.0d0
       END DO
-      Z0b_varDefVal          = 0.001
+      Z0b_varDefVal          = 0.001d0
       EleSlopeLimDefVal      = 0D0
       River_et_WSEDefVal     = 0.d0      
-      IT_FricDefVal          = 0.0 ! WP
+      IT_FricDefVal          = 0.0d0 ! WP
       SubgridBarrierDefaultValue = 999999D0
 C
       HighResTimeVaryingTau0     = .False.
@@ -513,7 +513,7 @@ C              the input file. The InitNAModule originally come before
 C              the read_input call but now it appears after the read_input
 C              call.
 !      ESLM=0.0
-      ESLC=0.0
+      ESLC=0.0d0
 
 C---------------- DW ------------------
       LoadAbsLayerSigma = .FALSE. ;
