@@ -1,4 +1,9 @@
-FROM adcircorg/adcirc-ci:2025.0.1-intel AS builder
+FROM adcircorg/adcirc-base:2025.0.1 AS builder
+
+ARG TARGETARCH
+ARG TARGETPLATFORM
+
+SHELL [ "/bin/bash", "-o", "pipefail", "-c" ]
 
 USER root
 
@@ -11,35 +16,63 @@ COPY wind /home/adcirc/adcirc-build/wind
 COPY cmake /home/adcirc/adcirc-build/cmake
 COPY thirdparty /home/adcirc/adcirc-build/thirdparty
 COPY CMakeLists.txt /home/adcirc/adcirc-build/CMakeLists.txt 
+COPY .git /home/adcirc/adcirc-build/.git
 
 RUN cd /home/adcirc/adcirc-build/build && \
     source /opt/spack-environment/activate.sh && \
-    cmake .. \
-        -DCMAKE_INSTALL_PREFIX=/opt/adcirc \
-        -DCMAKE_C_COMPILER=icx \
-        -DCMAKE_CXX_COMPILER=icx \
-        -DCMAKE_Fortran_COMPILER=ifx \
-        -DBUILD_ADCIRC=ON \
-        -DBUILD_PADCIRC=ON \
-        -DBUILD_ADCSWAN=ON \
-        -DBUILD_PADCSWAN=ON \
-        -DBUILD_ADCPREP=ON \
-        -DBUILD_ASWIP=ON \
-        -DENABLE_OUTPUT_NETCDF=ON \
-        -DENABLE_OUTPUT_XDMF=ON \
-        -DENABLE_DATETIME=ON \
-        -DENABLE_GRIB2=ON \
-        -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" \
-        -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
-        -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
-        -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME \
-        -DNETCDFHOME=$NETCDFHOME \
-        -DXDMFHOME=$XDMFHOME \
-        -G Ninja && \
-        ninja && \
-        ninja install 
+    if [[ "x${TARGETARCH}" == "xamd64" ]]; then \
+      cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=/opt/adcirc \
+          -DCMAKE_C_COMPILER=icx \
+          -DCMAKE_CXX_COMPILER=icpx \
+          -DCMAKE_Fortran_COMPILER=ifx \
+          -DBUILD_ADCIRC=ON \
+          -DBUILD_PADCIRC=ON \
+          -DBUILD_ADCSWAN=ON \
+          -DBUILD_PADCSWAN=ON \
+          -DBUILD_ADCPREP=ON \
+          -DBUILD_ASWIP=ON \
+          -DENABLE_OUTPUT_NETCDF=ON \
+          -DENABLE_OUTPUT_XDMF=ON \
+          -DENABLE_DATETIME=ON \
+          -DENABLE_GRIB2=ON \
+          -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" \
+          -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
+          -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
+          -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME \
+          -DNETCDFHOME=$NETCDFHOME \
+          -DXDMFHOME=$XDMFHOME \
+          -G Ninja; \ 
+    elif [[ "x${TARGETARCH}" == "xarm64" ]]; then \
+      cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=/opt/adcirc \
+          -DCMAKE_C_COMPILER=gcc \
+          -DCMAKE_CXX_COMPILER=g++ \
+          -DCMAKE_Fortran_COMPILER=gfortran \
+          -DBUILD_ADCIRC=ON \
+          -DBUILD_PADCIRC=ON \
+          -DBUILD_ADCSWAN=ON \
+          -DBUILD_PADCSWAN=ON \
+          -DBUILD_ADCPREP=ON \
+          -DBUILD_ASWIP=ON \
+          -DENABLE_OUTPUT_NETCDF=ON \
+          -DENABLE_OUTPUT_XDMF=ON \
+          -DENABLE_DATETIME=ON \
+          -DENABLE_GRIB2=ON \
+          -DCMAKE_Fortran_FLAGS_RELEASE="-O2" \
+          -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG" \
+          -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG" \
+          -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME \
+          -DNETCDFHOME=$NETCDFHOME \
+          -DXDMFHOME=$XDMFHOME \
+          -G Ninja; \
+    fi; \
+    ninja && \
+    ninja install 
 
-FROM adcircorg/adcirc-ci:2025.0.1-intel AS adcirc
+FROM adcircorg/adcirc-base:2025.0.1 AS adcirc
 
 USER root 
 COPY --from=builder /opt/adcirc /opt/adcirc 
