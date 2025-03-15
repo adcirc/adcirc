@@ -6228,7 +6228,7 @@ C-----------------------------------------------------------------------
      &                        Description)
       USE ADC_CONSTANTS, ONLY: DEG2RAD, RAD2DEG
       USE GLOBAL, ONLY : parse, IFSPROTS,
-     &   a2d, DEBUG, allMessage, setMessageSource, unsetMessageSource
+     &   DEBUG, allMessage, setMessageSource, unsetMessageSource
       USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
@@ -6258,11 +6258,13 @@ C
          call parse(STATLINE, LVAR)
          names(I)=LVAR(3)
          IF(ICS.EQ.1) THEN
-            xcoord(I)=a2d(LVAR(1))
-            ycoord(I)=a2d(LVAR(2))
+            read(LVAR(1),*) xcoord(I)
+            read(LVAR(2),*) ycoord(I)
          ELSE
-            lon(I)=a2d(LVAR(1))*DEG2RAD
-            lat(I)=a2d(LVAR(2))*DEG2RAD
+            read(LVAR(1),*) lon(I)
+            read(LVAR(2),*) lat(I)
+            lon(I) = lon(I) * DEG2RAD
+            lat(I) = lat(I) * DEG2RAD
             IF ( IFSPROTS .EQ. 1 ) THEN            
                CALL DRVSPCOORSROTS( lonr, latr,  lon(I), lat(I) )
             ELSE
