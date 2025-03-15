@@ -1,0 +1,15 @@
+name: Latest ADCIRC Container Build
+
+# Trigger the workflow on changes to the main branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  push-build:
+    uses: ./.github/workflows/build_container.yaml
+    with:
+      tag: latest 
+      push: true
+    secrets: inherit
