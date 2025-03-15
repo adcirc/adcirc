@@ -8351,8 +8351,8 @@ C
       ENDIF
 
       ! Use DP reading in from read_input()
-      IF ( .not. hs%have_htot2 ) htot2 = DP + IFNLFA*eta2  
-      IF ( .not. hs%have_htot1 ) htot1 = DP + IFNLFA*eta1 
+      IF ( .not. hs%have_htot2 ) htot2 = DP + dble(IFNLFA)*eta2
+      IF ( .not. hs%have_htot1 ) htot1 = DP + dble(IFNLFA)*eta1
 
 C
 C     Read in model parameters to ADCIRC variables
@@ -9716,7 +9716,7 @@ C
      &      nfen, hs%myMesh%num_nodes, hs%velocity3D%w_nodal_data_id,
      &      subdomain_reals=wz)
       ENDIF
-      q(:,:) = rp(:,:) + iy*ip(:,:) ! construct q from real and imaginary
+      q(:,:) = dcmplx(rp(:,:)) + iy*dcmplx(ip(:,:)) ! construct q from real and imaginary
       deallocate(rp,ip)
       !
       ! 3D turbulence

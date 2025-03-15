@@ -655,7 +655,7 @@ C
       ! Read first value in time 
       BC3D_IT = 1
       ! Times are rounded down to nearest minute
-      DTIME1  = floor(TimeLoc/60d0)*60d0
+      DTIME1  = dble(floor(TimeLoc/60d0))*60d0
 #ifdef DATETIME
       CurDT   = basedatetime + timedelta(minutes=floor(DTIME1/60d0))
 #endif           
@@ -916,7 +916,7 @@ C
                   VIDBCPDXOH_F(2,i) = VIDBCPDXOH_F(2,i) + BC3D_BX(ii,jj)
                enddo
             enddo
-            VIDBCPDXOH_F(2,i) = VIDBCPDXOH_F(2,i)/icount
+            VIDBCPDXOH_F(2,i) = VIDBCPDXOH_F(2,i)/dble(icount)
          endif
          if (weightsy(1,i).le.1d0) then
             ! Linear interpolation 
@@ -933,7 +933,7 @@ C
                   VIDBCPDYOH_F(2,i) = VIDBCPDYOH_F(2,i) + BC3D_BY(ii,jj)
                enddo
             enddo
-            VIDBCPDYOH_F(2,i) = VIDBCPDYOH_F(2,i)/icount
+            VIDBCPDYOH_F(2,i) = VIDBCPDYOH_F(2,i)/dble(icount)
          endif
       enddo
       endif IDEN7
@@ -983,7 +983,7 @@ C
                         CD_F(2,i) = CD_F(2,i) + BC3D_CD(ii,jj)
                      enddo
                   enddo
-                  CD_F(2,i) = CD_F(2,i)/icount
+                  CD_F(2,i) = CD_F(2,i)/dble(icount)
                endif
             enddo
          endif
@@ -1011,8 +1011,8 @@ C
                      VIDISPDYOH_F(2,i) = VIDISPDYOH_F(2,i) + BC3D_DY(ii,jj)
                   enddo
                enddo
-               VIDISPDXOH_F(2,i) = VIDISPDXOH_F(2,i)/icount
-               VIDISPDYOH_F(2,i) = VIDISPDYOH_F(2,i)/icount
+               VIDISPDXOH_F(2,i) = VIDISPDXOH_F(2,i)/dble(icount)
+               VIDISPDYOH_F(2,i) = VIDISPDYOH_F(2,i)/dble(icount)
             endif
          enddo
       endif 
@@ -1084,15 +1084,15 @@ C
          NC2 = NODECODE(NM2)
          NC3 = NODECODE(NM3)
          NCEle = NC1*NC2*NC3*NOFF(IE)
-         EtaN1 = IFNLFA*Eta2(NM1)
-         EtaN2 = IFNLFA*Eta2(NM2)
-         EtaN3 = IFNLFA*Eta2(NM3)
+         EtaN1 = dble(IFNLFA)*Eta2(NM1)
+         EtaN2 = dble(IFNLFA)*Eta2(NM2)
+         EtaN3 = dble(IFNLFA)*Eta2(NM3)
          SFacAvg = SFacEle(IE)
          ! CPB 5/25/2022: correct rotated coordinates
          SFmxAvg = SFMXEle(IE) ;
          SFmyAvg = SFMYEle(IE) ;
-         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ; 
-         sfdyfac = (1 - IFSFM)*1.0D0  + IFSFM*SFmyAvg ; 
+         sfdxfac = dble(1 - IFSFM)*SFacAvg + dble(IFSFM)*SFmxAvg ;
+         sfdyfac = dble(1 - IFSFM)*1.0D0  + dble(IFSFM)*SFmyAvg ;
 
          FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
          FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*SFacAvg !b2
@@ -1102,7 +1102,7 @@ C
          FDY3 = FDYE(3,IE)*sfdyfac ; !c  FDY3=X(NM2)-X(NM1) !a3
 
          AreaIE2 = Areas(IE)
-         AreaEle = 0.5d0*NCEle*AreaIE2
+         AreaEle = 0.5d0*dble(NCEle)*AreaIE2
         
          FDX1O2A = FDX1/AreaIE2 !dphi1/dx
          FDY1O2A = FDY1/AreaIE2 !dphi1/dy
@@ -1157,10 +1157,10 @@ C
          ENDIF
          ! If need to omit from sponge..
          IF ( NO_BPG_IN_SPONGE ) THEN
-            IF ( absorblayer_sigma_mnx(J,1) > 1.0e-9 ) THEN
+            IF ( absorblayer_sigma_mnx(J,1) > 1.0d-9 ) THEN
                VIDBCPDXOH(J) = 0.0d0; VIDISPDXOH(J) = 0.0d0; 
             ENDIF
-            IF ( absorblayer_sigma_mny(J,1) > 1.0e-9 ) THEN
+            IF ( absorblayer_sigma_mny(J,1) > 1.0d-9 ) THEN
                VIDBCPDYOH(J) = 0.0d0; VIDISPDYOH(J) = 0.0d0; 
             ENDIF
          ENDIF

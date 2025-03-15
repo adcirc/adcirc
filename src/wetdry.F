@@ -380,12 +380,12 @@ C<<                     Convert Manning's N to Cd, if necessary.
                                 ENDIF
                              ELSE
                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                            /( ( DP(NM123)+dble(IFNLFA)*ETA2(NM123) )
      &                                                   **(1.d0/3.d0) )
                              ENDIF
                           ELSE
                              FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                         /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                         /( ( DP(NM123)+dble(IFNLFA)*ETA2(NM123) )
      &                                                  **(1.d0/3.d0) )
                           ENDIF
                           IF(FRIC(NM123).LT.BFCdLLimit) THEN
@@ -398,8 +398,8 @@ C<<                     Convert Manning's N to Cd, if necessary.
                         ELSEIF (directvelWD) THEN
                            VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
                         ELSE
-                           TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                                  (IFNLBF+IFHYBF*
+                           TKWET = MAX(FRIC(NM123)*(dble(IFLINBF)+(VELMIN/H1)*
+     &                                  (dble(IFNLBF)+dble(IFHYBF)*
      &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
      &                          0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
@@ -412,8 +412,8 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                        IF(LoadZ0B_var) THEN
                            Z0B1 = Z0B_var(NM123)
                         ELSEIF (LoadManningsN) THEN
-                     Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )* exp(-(1.0D0+
-     &               ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**(1.0D0/6.0D0) )/
+                     Z0B1 = ( DP(NM123)+dble(IFNLFA)*ETA2(NM123) )* exp(-(1.0D0+
+     &               ( (0.41D0*( DP(NM123)+dble(IFNLFA)*ETA2(NM123))**(1.0D0/6.0D0) )/
      &                                 (ManningsN(NM123)*sqrt(g)) ) ))
                         ELSE
                            Z0B1 = Z0B
@@ -429,8 +429,8 @@ c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the 
                         IF(C2DDI)THEN
 
                            TK_TMP(NM123) = MIN(
-     &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
-     &                        (IFNLBF+IFHYBF*
+     &                     FRIC(NM123)*(dble(IFLINBF)+(TKNF*VEL/H1)*
+     &                        (dble(IFNLBF)+dble(IFHYBF)*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA))), 
      &                     2.0D0/DTDP)
@@ -457,7 +457,7 @@ c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the 
                         ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
-     &                           /(SIGMA(2)-SIGMA(1))
+     &                           /dcmplx(SIGMA(2)-SIGMA(1))
                               BSX1(NM123)=EVTOT(1)*REAL(DUDS)
                               BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
                               BSX1(NM3)=EVTOT(1)*REAL(DUDS)
@@ -471,7 +471,7 @@ c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the 
                                      KSLIP = (1.D0 /
      &                                     ( (1.D0/0.41D0) *
      &                            LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
-     &                                  (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                  (DP(NM123)+dble(IFNLFA)*ETA2(NM123)))
      &                                       +Z0B1)
      &                                       / (Z0B1) ) ) )**2.D0
      &                                     * ABS(Q(NM123,1))
@@ -518,12 +518,12 @@ C<<                     Convert Manning's N to Cd, if necessary.
                                 ENDIF
                              ELSE
                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                            /( ( DP(NM123)+dble(IFNLFA)*ETA2(NM123) )
      &                                                   **(1.d0/3.d0) )
                              ENDIF
                           ELSE
                              FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                         /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                         /( ( DP(NM123)+dble(IFNLFA)*ETA2(NM123) )
      &                                                  **(1.d0/3.d0) )
                           ENDIF
                           IF(FRIC(NM123).LT.BFCdLLimit) THEN
@@ -537,8 +537,8 @@ C<<                     Convert Manning's N to Cd, if necessary.
                         ELSEIF (directvelWD) THEN
                            VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
                         ELSE
-                           TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                                  (IFNLBF+IFHYBF*
+                           TKWET = MAX(FRIC(NM123)*(dble(IFLINBF)+(VELMIN/H1)*
+     &                                  (dble(IFNLBF)+dble(IFHYBF)*
      &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
      &                          0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
@@ -552,8 +552,8 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         IF(LoadZ0B_var) THEN
                            Z0B1=Z0B_var(NM123)
                         ELSEIF (LoadManningsN) THEN
-                     Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )* exp(-(1.0D0+
-     &               ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**(1.0D0/6.0D0) )/
+                     Z0B1 = ( DP(NM123)+dble(IFNLFA)*ETA2(NM123) )* exp(-(1.0D0+
+     &               ( (0.41D0*( DP(NM123)+dble(IFNLFA)*ETA2(NM123))**(1.0D0/6.0D0) )/
      &                                 (ManningsN(NM123)*sqrt(g)) ) ))
                         ELSE
                            Z0B1=Z0B
@@ -567,8 +567,8 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
                            TK_TMP(NM123) = MIN(
-     &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
-     &                        (IFNLBF+IFHYBF*
+     &                     FRIC(NM123)*(dble(IFLINBF)+(TKNF*VEL/H1)*
+     &                        (dble(IFNLBF)+dble(IFHYBF)*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA))), 
      &                     2.0D0/DTDP)
@@ -595,7 +595,7 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
                         ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
-     &                           /(SIGMA(2)-SIGMA(1))
+     &                           /dcmplx(SIGMA(2)-SIGMA(1))
                               BSX1(NM123)=EVTOT(1)*REAL(DUDS)
                               BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
                               BSX1(NM1)=EVTOT(1)*REAL(DUDS)
@@ -609,7 +609,7 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
                                      KSLIP = (1.D0 /
      &                                     ( (1.D0/0.41D0) *
      &                            LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
-     &                                  (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                  (DP(NM123)+dble(IFNLFA)*ETA2(NM123)))
      &                                       +Z0B1)
      &                                       / (Z0B1) ) ) )**2.D0
      &                                     * ABS(Q(NM123,1))
@@ -657,12 +657,12 @@ C<<                     Convert Manning's N to Cd, if necessary.
                                 ENDIF
                              ELSE
                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                            /( ( DP(NM123)+dble(IFNLFA)*ETA2(NM123) )
      &                                                   **(1.d0/3.d0) )
                              ENDIF
                           ELSE
                              FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                         /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                         /( ( DP(NM123)+dble(IFNLFA)*ETA2(NM123) )
      &                                                  **(1.d0/3.d0) )
                           ENDIF
                           IF(FRIC(NM123).LT.BFCdLLimit) THEN
@@ -676,8 +676,8 @@ C<<                     Convert Manning's N to Cd, if necessary.
                         ELSEIF (directvelWD) THEN
                            VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
                         ELSE
-                           TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                                  (IFNLBF+IFHYBF*
+                           TKWET = MAX(FRIC(NM123)*(dble(IFLINBF)+(VELMIN/H1)*
+     &                                  (dble(IFNLBF)+dble(IFHYBF)*
      &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
      &                          0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
@@ -690,8 +690,8 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         IF(LoadZ0B_var) THEN
                            Z0B1 = Z0B_var(NM123)
                         ELSEIF (LoadManningsN) THEN
-                     Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )* exp(-(1.0D0+
-     &               ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**(1.0D0/6.0D0) )/
+                     Z0B1 = ( DP(NM123)+dble(IFNLFA)*ETA2(NM123) )* exp(-(1.0D0+
+     &               ( (0.41D0*( DP(NM123)+dble(IFNLFA)*ETA2(NM123))**(1.0D0/6.0D0) )/
      &                                 (ManningsN(NM123)*sqrt(g)) ) ))
                         ELSE
                            Z0B1 = Z0B
@@ -706,8 +706,8 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
                         IF(C2DDI)THEN                   
                         
                            TK_TMP(NM123) = MIN(
-     &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
-     &                        (IFNLBF+IFHYBF*
+     &                     FRIC(NM123)*(dble(IFLINBF)+(TKNF*VEL/H1)*
+     &                        (dble(IFNLBF)+dble(IFHYBF)*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA))), 
      &                     2.0D0/DTDP)
@@ -734,7 +734,7 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
                         ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
-     &                           /(SIGMA(2)-SIGMA(1))
+     &                           /dcmplx(SIGMA(2)-SIGMA(1))
                               BSX1(NM123)=EVTOT(1)*REAL(DUDS)
                               BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
                               BSX1(NM2)=EVTOT(1)*REAL(DUDS)
@@ -748,7 +748,7 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
                                      KSLIP = (1.D0 /
      &                                     ( (1.D0/0.41D0) *
      &                            LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
-     &                                  (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                  (DP(NM123)+dble(IFNLFA)*ETA2(NM123)))
      &                                       +Z0B1)
      &                                       / (Z0B1) ) ) )**2.D0
      &                                     * ABS(Q(NM123,1))
@@ -803,7 +803,7 @@ C tcm v50.66.01 -- This is an additional test for wetting only when time varying
 C                  bathymetry is used and is only performed during the period of 
 C                  bathymetry evolution.
 C
-         IF ((NDDT.NE.0).AND.(IT.LE.BTIME_END+1) ) THEN
+         IF ((NDDT.NE.0).AND.(dble(IT).LE.BTIME_END+1) ) THEN
             DO I=1,NE
                NM1=NM(I,1)
                NM2=NM(I,2)
@@ -832,7 +832,7 @@ C
 C<<                           Convert Manning's N to Cd, if necessary.
                               IF (LoadManningsN) THEN
                                  FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                              /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                              /( ( DP(NM123)+dble(IFNLFA)*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
                                  IF(FRIC(NM123).LT.BFCdLLimit) THEN
                                     FRIC(NM123) = BFCdLLimit
@@ -842,8 +842,8 @@ C<<                           Convert Manning's N to Cd, if necessary.
                            VEL=VELMIN
                            H1 = HTOTN1
                            IF(C2DDI)THEN
-                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-     &                          (IFNLBF+IFHYBF*
+                              TK(NM123)=FRIC(NM123)*(dble(IFLINBF)+(VEL/H1)*
+     &                          (dble(IFNLBF)+dble(IFHYBF)*
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
                               !WJP needed for internal_tide stuff
@@ -851,7 +851,7 @@ C<<                           Convert Manning's N to Cd, if necessary.
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
-     &                              /(SIGMA(2)-SIGMA(1))
+     &                              /dcmplx(SIGMA(2)-SIGMA(1))
                                  BSX1(NM123)=EVTOT(1)*REAL(DUDS)
                                  BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
                                  BSX1(NM3)=EVTOT(1)*REAL(DUDS)
@@ -865,7 +865,7 @@ C<<                           Convert Manning's N to Cd, if necessary.
                                      KSLIP = (1.D0 /
      &                                     ( (1.D0/0.41D0) *
      &                               LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
-     &                                  (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                  (DP(NM123)+dble(IFNLFA)*ETA2(NM123)))
      &                                       +Z0B1)
      &                                       / (Z0B1) ) ) )**2.D0
      &                                     * ABS(Q(NM123,1))
@@ -890,7 +890,7 @@ C<<                           Convert Manning's N to Cd, if necessary.
 C<<                        Convert Manning's N to Cd, if necessary.
                               IF (LoadManningsN) THEN
                                  FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                            /( ( DP(NM123)+dble(IFNLFA)*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
                                  IF(FRIC(NM123).LT.BFCdLLimit) THEN
                                     FRIC(NM123) = BFCdLLimit
@@ -900,8 +900,8 @@ C<<                        Convert Manning's N to Cd, if necessary.
                            VEL = VELMIN
                            H1 = HTOTN2
                            IF(C2DDI)THEN
-                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-     &                          (IFNLBF+IFHYBF*
+                              TK(NM123)=FRIC(NM123)*(dble(IFLINBF)+(VEL/H1)*
+     &                          (dble(IFNLBF)+dble(IFHYBF)*
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
                               !WJP needed for internal_tide stuff
@@ -909,7 +909,7 @@ C<<                        Convert Manning's N to Cd, if necessary.
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
-     &                              /(SIGMA(2)-SIGMA(1))
+     &                              /dcmplx(SIGMA(2)-SIGMA(1))
                                  BSX1(NM123)=EVTOT(1)*REAL(DUDS)
                                  BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
                                  BSX1(NM1)=EVTOT(1)*REAL(DUDS)
@@ -923,7 +923,7 @@ C<<                        Convert Manning's N to Cd, if necessary.
                                      KSLIP = (1.D0 /
      &                                     ( (1.D0/0.41D0) *
      &                               LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
-     &                                 (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                 (DP(NM123)+dble(IFNLFA)*ETA2(NM123)))
      &                                       +Z0B1)
      &                                       / (Z0B1) ) ) )**2.D0
      &                                     * ABS(Q(NM123,1))
@@ -948,7 +948,7 @@ C<<                        Convert Manning's N to Cd, if necessary.
 C<<                         Convert Manning's N to Cd, if necessary.
                               IF (LoadManningsN) THEN
                                  FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                           /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                           /( ( DP(NM123)+dble(IFNLFA)*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
                                  IF(FRIC(NM123).LT.BFCdLLimit) THEN
                                     FRIC(NM123) = BFCdLLimit
@@ -958,8 +958,8 @@ C<<                         Convert Manning's N to Cd, if necessary.
                            VEL=VELMIN
                            H1 = HTOTN3
                            IF(C2DDI)THEN
-                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-     &                           (IFNLBF+IFHYBF*
+                              TK(NM123)=FRIC(NM123)*(dble(IFLINBF)+(VEL/H1)*
+     &                           (dble(IFNLBF)+dble(IFHYBF)*
      &                           (1.D0+(HBREAK/H1)**FTHETA)**
      &                           (FGAMMA/FTHETA)))
                               !WJP needed for internal_tide stuff
@@ -967,7 +967,7 @@ C<<                         Convert Manning's N to Cd, if necessary.
                            ELSEIF(C3D)THEN
                               IF(ISLIP.EQ.0)THEN
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
-     &                             /(SIGMA(2)-SIGMA(1))
+     &                             /dcmplx(SIGMA(2)-SIGMA(1))
                                  BSX1(NM123)=EVTOT(1)*REAL(DUDS)
                                  BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
                                  BSX1(NM2)=EVTOT(1)*REAL(DUDS)
@@ -981,7 +981,7 @@ C<<                         Convert Manning's N to Cd, if necessary.
                                      KSLIP = (1.D0 /
      &                                     ( (1.D0/0.41D0) *
      &                               LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
-     &                                  (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                  (DP(NM123)+dble(IFNLFA)*ETA2(NM123)))
      &                                       +Z0B1)
      &                                       / (Z0B1) ) ) )**2.D0
      &                                     * ABS(Q(NM123,1))
@@ -1311,7 +1311,7 @@ CWET...
             NC3=NNODECODE(NM3)
 
             NCEle=NC1*NC2*NC3*NOFF(IE)
-            AreaEle=NCEle*Areas(IE)/2.d0
+            AreaEle=dble(NCEle)*Areas(IE)/2.d0
             MJU(NM1)=MJU(NM1)+NCEle
             MJU(NM2)=MJU(NM2)+NCEle
             MJU(NM3)=MJU(NM3)+NCEle
@@ -1462,9 +1462,9 @@ c.....
                 E2 = ETA2(NM2)
                 E3 = ETA2(NM3)
                 ETA = MAX(E1,E2,E3)
-                DOT1 = E1*NODECODE(NM1)+SB1
-                DOT2 = E2*NODECODE(NM2)+SB2
-                DOT3 = E3*NODECODE(NM3)+SB3
+                DOT1 = E1*dble(NODECODE(NM1))+SB1
+                DOT2 = E2*dble(NODECODE(NM2))+SB2
+                DOT3 = E3*dble(NODECODE(NM3))+SB3
                 DOT  = MAX(DOT1,DOT2,DOT3)
 
                 IF(DOT.GT.-1.2D0*H0)THEN
@@ -1539,8 +1539,8 @@ c.....
                   SFacAvg = SFacEle(I)
                   SFmxAvg = SFMXEle(I)  
                   SFmyAvg = SFMYEle(I)  
-                  sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-                  sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
+                  sfdxfac = dble(1 - IFSFM)*SFacAvg + dble(IFSFM)*SFmxAvg ;
+                  sfdyfac = dble(1 - IFSFM)*1.0D0 + dble(IFSFM)*SFmyAvg ;
                
                   FDX1 = FDXE(1,I)*sfdxfac  !b1
                   FDX2 = FDXE(2,I)*sfdxfac  !b2

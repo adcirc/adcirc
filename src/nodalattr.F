@@ -1778,7 +1778,7 @@ C     ----------------------------------------------------------------
       IF (Tau0.lt.0) THEN
          Tau0Dig1 = INT(Tau0)   ! jgf47.30 truncate the fractional part
          !jgf47.34 round away from zero by subtracting 0.5d0
-         Tau0Dig2 = INT( (Tau0 - REAL(Tau0Dig1))*10.0d0 - 0.5d0)
+         Tau0Dig2 = INT( (Tau0 - DBLE(Tau0Dig1))*10.0d0 - 0.5d0)
       ELSE
          Tau0Dig1 = 0
          Tau0Dig2 = 0
@@ -2094,15 +2094,15 @@ C     ----------------------------------------------------------------
 C
       IF (Scheme.eq.-2.d0) THEN
 C     Smoothly varying tau0 with depth.
-         IF(Depth.GE.200.) Tau0NodalValue=0.005
-         IF((Depth.LT.200.).AND.(Depth.GE.1.)) THEN
-            Tau0NodalValue=1./Depth
+         IF(Depth.GE.200d0) Tau0NodalValue=0.005d0
+         IF((Depth.LT.200d0).AND.(Depth.GE.1d0)) THEN
+            Tau0NodalValue=1d0/Depth
          ENDIF
-         IF(Depth.LT.1.) Tau0NodalValue=1.0
+         IF(Depth.LT.1d0) Tau0NodalValue=1.0d0
       ELSE
 C     Abrupt variation in tau0 with depth.
-         IF(Depth.LE.10.) Tau0NodalValue=0.020d0
-         IF(Depth.GT.10.) Tau0NodalValue=0.005d0
+         IF(Depth.LE.10d0) Tau0NodalValue=0.020d0
+         IF(Depth.GT.10d0) Tau0NodalValue=0.005d0
       ENDIF
 C     ----------------------------------------------------------------
       END FUNCTION Tau0NodalValue
@@ -2133,7 +2133,7 @@ cjjw46.39.sb01 :  "high/low LIMITED" variable G.
       !jgf47.30: Distinction between fulldomain and hi res only
       IF ( FullDomainTimeVaryingTau0 ) THEN
          DO i = 1, NP
-            Tau0Temp(i)=Tau0MinMax(i,1)+1.5*TK(i)
+            Tau0Temp(i)=Tau0MinMax(i,1)+1.5d0*TK(i)
             IF (Tau0Temp(i).lt.Tau0MinMax(i,1)) THEN
                Tau0Temp(i)=Tau0MinMax(i,1)
             ENDIF
@@ -2144,21 +2144,21 @@ cjjw46.39.sb01 :  "high/low LIMITED" variable G.
       ENDIF
       IF ( HighResTimeVaryingTau0 ) THEN
          DO i = 1, NP
-            IF(Tau0Base(i).lt.0.025) THEN
+            IF(Tau0Base(i).lt.0.025d0) THEN
                Tau0Temp(I)=Tau0Base(i) ! not time varying
             ELSE
-               Tau0Temp(i)=Tau0Base(i)+1.5*TK(i) ! time varying
-               IF (Tau0Temp(i).gt.0.2) Tau0Temp(i)=0.2 ! ceiling
+               Tau0Temp(i)=Tau0Base(i)+1.5d0*TK(i) ! time varying
+               IF (Tau0Temp(i).gt.0.2d0) Tau0Temp(i)=0.2d0 ! ceiling
             ENDIF
          ENDDO
       ENDIF
       ! smoothing
       DO I=1, NP
-         CaseySum = 0.0
+         CaseySum = 0.0d0
          DO J=1,NNeigh(I)
             CaseySum = CaseySum + Tau0Temp(NeiTab(I,J))
          ENDDO
-         TAU0VAR(I) = CaseySum / NNeigh(I)
+         TAU0VAR(I) = CaseySum / dble(NNeigh(I))
       ENDDO
 C
 C     jgf47.33 Perform time averaging of tau0 if requested.
@@ -2330,16 +2330,16 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
                   ENDIF
                ELSE
                   FRIC(I) = g*ManningsN(I)**2.d0
-     &               /((DP(I)+IFNLFA*ETA2(I))**(1.d0/3.d0))
+     &               /((DP(I)+dble(IFNLFA)*ETA2(I))**(1.d0/3.d0))
                ENDIF
                IF(FRIC(I).LT.BFCdLLimit) THEN
                   FRIC(I) = BFCdLLimit
                ENDIF
             ELSE
-               HT = DP(I)+IFNLFA*ETA2(I)
+               HT = DP(I)+dble(IFNLFA)*ETA2(I)
                IF (activateVEW1DChannelWetPerimeter)THEN
                   IF(WetPerimWidth(I).GT.0.D0) THEN    ! Evaluating wet perimeter factor along VEW1D channels
-                      HCH = DP(I)+IFNLFA*MIN( ETA2(I), WetPerimBankElev(I) ) ! Height from bottom to which ever lower among the water elevation and the bank elevation
+                      HCH = DP(I)+DBLE(IFNLFA)*MIN( ETA2(I), WetPerimBankElev(I) ) ! Height from bottom to which ever lower among the water elevation and the bank elevation
                       WCH = WetPerimWidth(I)
                       WPFac = (1.D0+2.D0*HCH/WCH)**(2.D0/3.D0) ! Wet perimeter factor
                   ELSE
@@ -2377,7 +2377,7 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
          ENDDO
       ELSEIF (LoadChezy) THEN
          DO I=1,NP
-            FRIC(I) = G/(Chezy(I)**2)
+            FRIC(I) = G/(Chezy(I)**2d0)
          END DO
       ENDIF
 
@@ -2386,7 +2386,7 @@ C
 C     ... Combined Cd for bottom friction and momentum dispersion
          DO I = 1,NP
             UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
-            H1  = DP(I) + IFNLFA*ETA2(I)
+            H1  = DP(I) + dble(IFNLFA)*ETA2(I)
             IF (HBREAK.gt.0d0) then
 C..............CPB 3/9/2023: moved calculation of Cd as a power function
 C              to a separate subroutine "apply2DMomentumDisp"
@@ -2396,7 +2396,7 @@ C              ... Cd as a power function [a(x^b-1)] of x = MLD
 C              ... Cd directly from the 3D model (MLD here)
                FRIC(I) = FRIC(I) + MLD(I)
             ENDIF
-            TK(I) = MIN(FRIC(I) * UV1 / H1, 2.0/DTDP)
+            TK(I) = MIN(FRIC(I) * UV1 / H1, 2.0d0/DTDP)
          ENDDO
 C
       ELSE
@@ -2408,13 +2408,13 @@ C        with the sea floor.
             IF(level0)THEN
                H1 = wetDepthVertETA2(I)
             ELSE
-               H1  = DP(I) + IFNLFA*ETA2(I)
+               H1  = DP(I) + dble(IFNLFA)*ETA2(I)
             ENDIF
             TK(I) = MIN(FRIC(I)*
-     &                     (IFLINBF +                                          ! linear
-     &                     (UV1/H1) * (IFNLBF +                               ! nonlinear
-     &                     IFHYBF*(1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)) ), ! hybrid 
-     &                  2.0/DTDP)
+     &                     (dble(IFLINBF) +                                          ! linear
+     &                     (UV1/H1) * (dble(IFNLBF) +                               ! nonlinear
+     &                     dble(IFHYBF)*(1d0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)) ), ! hybrid
+     &                  2.0d0/DTDP)
          END DO
 C
       ENDIF NOLIBFRIC
@@ -2424,14 +2424,14 @@ C     pilings, if required.
       IF (LoadBridgePilings) THEN 
          DO I=1, NP
             UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
-            H1=DP(I)+IFNLFA*ETA2(I)
+            H1=DP(I)+dble(IFNLFA)*ETA2(I)
             Fr=UV1*UV1/(G*H1)
             BK = BridgePilings(I,1)
             BALPHA = BridgePilings(I,2)
             BDELX = BridgePilings(I,3)
             FricBP=(H1/BDELX)*BK*(BK+5.d0*Fr*Fr-0.6d0)
      &           *(BALPHA+15.d0*BALPHA**4)
-            TK(I) = MIN(TK(I)+FricBP*UV1/H1, 2.0/DTDP)
+            TK(I) = MIN(TK(I)+FricBP*UV1/H1, 2.0d0/DTDP)
          END DO
       ENDIF
 C
@@ -2475,7 +2475,7 @@ C
 C Determine the bottom roughness length either from fort.15, from Manning's n
 C or as read in from nodal attributes
       DO NH=1,NP
-         H1=DP(NH)+IFNLFA*ETA2(NH)
+         H1=DP(NH)+dble(IFNLFA)*ETA2(NH)
          IF (LoadZ0B_var) THEN
             Z0B1 = Z0B_var(NH)
          ELSEIF (LoadManningsN) THEN
@@ -2752,9 +2752,9 @@ C     ... Combined Cd for bottom friction and momentum dispersion
       DO I = 1,NP
          IF (DP(I).LT.1000d0) CYCLE
          UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
-         H1  = DP(I) + IFNLFA*ETA2(I)
+         H1  = DP(I) + dble(IFNLFA)*ETA2(I)
          UVBar = SQRT(UBar(I)*UBar(I)+VBar(I)*VBar(I))
-         H1  = DP(I) + IFNLFA*ETA2(I)
+         H1  = DP(I) + dble(IFNLFA)*ETA2(I)
 C        ... Cd as a power function [a(x^b-1)] of x = MLD
          Cd = HBREAK*(max(4d-3,MLD(I))**FTHETA - 1d0)
          ! adjust to put in TKM matrix
@@ -2821,7 +2821,7 @@ C     ----------------------------------------------------------------
         real(8), intent(inout) :: WindY  
         
         real(8),parameter      :: CutoffDepth = 999999.d0          !< Depth above which reduction is not applied
-        real(8),parameter,dimension(12) :: z0Angles=(/(i*30,i=0,5),(i*30-180,i=0,5)/)  !< centers of directional bins
+        real(8),parameter,dimension(12) :: z0Angles=(/(dble(i)*30d0,i=0,5),(dble(i)*30d0-180d0,i=0,5)/)  !< centers of directional bins
         
         integer                 :: idir        !< code for wind direction bins to interpolate between
         integer                 :: idir2       !< code for wind direction bins to interpolate between

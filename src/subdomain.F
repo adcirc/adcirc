@@ -229,12 +229,12 @@ C     | during a full run. This subroutine is called within timestep.F
              write(procLoc,'(A2,I4.4)') "PE",myproc
              open(1065,file=procLoc//'/'//'fort.065', status='REPLACE')
              write(1065,*) 'Subdomain Modeling CBN output'
-             write(1065,*) nspoolgs,localncbnr,int(rnday*86400/(dt*nspoolgs)),
+             write(1065,*) nspoolgs,localncbnr,int(rnday*86400/(dt*dble(nspoolgs))),
      &                      " ! NSPOOLGS,lncbnr,tsteps"
 #else
              open(1065,file='fort.065',status='REPLACE')
              write(1065,*) 'Subdomain Modeling CBN output'
-             write(1065,*) nspoolgs,ncbnr,int(rnday*86400/(dt*nspoolgs)), 
+             write(1065,*) nspoolgs,ncbnr,int(rnday*86400/(dt*dble(nspoolgs))),
      &                     " ! NSPOOLGS,ncbnr,tsteps"
 #endif 
              close(1065)
@@ -295,12 +295,12 @@ C     | during a full run. This subroutine is called within timestep.F
              write(procLoc,'(A2,I4.4)') "PE",myproc
              open(1066,file=procLoc//'/'//'fort.066', status='REPLACE')
              write(1066,*) 'Subdomain Modeling OBN output'
-             write(1066,*) nspoolgs,localnobnr,int(rnday*86400/(dt*nspoolgs)),
+             write(1066,*) nspoolgs,localnobnr,int(rnday*86400/(dt*dble(nspoolgs))),
      &                     " ! NSPOOLSG,lnobnr,tsteps"
 #else
              open(1066,file='fort.066',status='REPLACE')
              write(1066,*) 'Subdomain Modeling OBN output'
-             write(1066,*) nspoolgs, nobnr,int(rnday*86400/(dt*nspoolgs)),
+             write(1066,*) nspoolgs, nobnr,int(rnday*86400/(dt*dble(nspoolgs))),
      &                     " ! NSPOOLGS,nobnr,tsteps"
 #endif 
              close(1066)
@@ -361,12 +361,12 @@ C     | within timestep.F
              write(procLoc,'(A2,I4.4)') "PE",myproc
              open(1067,file=procLoc//'/'//'fort.067', status='REPLACE')
              write(1067,*) 'Subdomain Modeling IBN output'
-             write(1067,*) nspoolgs,localnibnr,int(rnday*86400/(dt*nspoolgs)),
+             write(1067,*) nspoolgs,localnibnr,int(rnday*86400/(dt*dble(nspoolgs))),
      &                     " ! NSPOOLGS,lnibnr,tsteps"
 #else
              open(1067,file='fort.067',status='REPLACE')
              write(1067,*) 'Subdomain Modeling IBN output'
-             write(1067,*) nspoolgs, nibnr, int(rnday*86400/(dt*nspoolgs)),
+             write(1067,*) nspoolgs, nibnr, int(rnday*86400/(dt*dble(nspoolgs))),
      &                     " ! NSPOOLGS,nibnr,tsteps"
 #endif 
              close(1067)
@@ -435,9 +435,9 @@ C     | finds the proper place in the b.c. file.
          allocate(setEcb(ncbn),setUcb(ncbn))
          allocate(setVcb(ncbn),setWDcb(ncbn))
          do i=1,ncbn
-             ecbn1(i)=0.0
-             ucbn1(i)=0.0
-             vcbn1(i)=0.0
+             ecbn1(i)=0.0d0
+             ucbn1(i)=0.0d0
+             vcbn1(i)=0.0d0
              wdcbn1(i)=0
          enddo
          ! Read the first set of boundary conditions:
@@ -487,9 +487,9 @@ C     | This subroutine opens fort.019 for a cold-started model
          allocate(setEcb(ncbn),setUcb(ncbn))
          allocate(setVcb(ncbn),setWDcb(ncbn))
          do i=1,ncbn
-             ecbn1(i)=0.0
-             ucbn1(i)=0.0
-             vcbn1(i)=0.0
+             ecbn1(i)=0.0d0
+             ucbn1(i)=0.0d0
+             vcbn1(i)=0.0d0
              wdcbn1(i)=0
          enddo
 
@@ -539,7 +539,7 @@ C     | a subdomain run. This subroutine is called within timestep.F.
          endif
 
          ! Iteration
-         rateTS = mod(it,sbtiminc)/dble(sbtiminc)
+         rateTS = dble(mod(it,sbtiminc))/dble(sbtiminc)
          do i=1,ncbn
              setEcb(i) = ecbn1(i) + (ecbn2(i)-ecbn1(i))*ratets
              setUcb(i) = ucbn1(i) + (ucbn2(i)-ucbn1(i))*ratets
@@ -802,7 +802,7 @@ C     | the outer boundary nodes.
 
          do i=1,nobn
              n = obn(i)
-             newGWCElv = 0.
+             newGWCElv = 0d0
              do j=1,mnei
                  neighbor = neitab(n,j)
                  if (neighbor.ne.0) then

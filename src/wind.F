@@ -353,10 +353,10 @@ C.... convert background pressure from millibars to meters of water
       prn2 = PRBCKGRND_MH2O
 
       ! dw
-      wvnx1 = 0.0
-      wvny1 = 0.0
-      wvnx2 = 0.0
-      wvny2 = 0.0
+      wvnx1 = 0.0d0
+      wvny1 = 0.0d0
+      wvnx2 = 0.0d0
+      wvny2 = 0.0d0
 
       CALL checkWindDragType()
       CALL mapWindDragFunctionPointer()
@@ -866,20 +866,20 @@ C
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      TIMESEC = (IDAY-1)*86400 + IHR*3600 + IMIN*60 + SEC
-      IF(IMO.GE.2)  TIMESEC = TIMESEC + 31*86400
+      TIMESEC = dble((IDAY-1)*86400 + IHR*3600 + IMIN*60) + SEC
+      IF(IMO.GE.2)  TIMESEC = TIMESEC + 31d0*86400d0
       ILEAP = (IYR/4)*4
-      IF((ILEAP.EQ.IYR).AND.(IMO.GE.3)) TIMESEC = TIMESEC + 29*86400
-      IF((ILEAP.NE.IYR).AND.(IMO.GE.3)) TIMESEC = TIMESEC + 28*86400
-      IF(IMO.GE.4)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.5)  TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GE.6)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.7)  TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GE.8)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.9)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.10) TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GE.11) TIMESEC = TIMESEC + 31*86400
-      IF(IMO.EQ.12) TIMESEC = TIMESEC + 30*86400
+      IF((ILEAP.EQ.IYR).AND.(IMO.GE.3)) TIMESEC = TIMESEC + 29d0*86400d0
+      IF((ILEAP.NE.IYR).AND.(IMO.GE.3)) TIMESEC = TIMESEC + 28d0*86400d0
+      IF(IMO.GE.4)  TIMESEC = TIMESEC + 31d0*86400d0
+      IF(IMO.GE.5)  TIMESEC = TIMESEC + 30d0*86400d0
+      IF(IMO.GE.6)  TIMESEC = TIMESEC + 31d0*86400d0
+      IF(IMO.GE.7)  TIMESEC = TIMESEC + 30d0*86400d0
+      IF(IMO.GE.8)  TIMESEC = TIMESEC + 31d0*86400d0
+      IF(IMO.GE.9)  TIMESEC = TIMESEC + 31d0*86400d0
+      IF(IMO.GE.10) TIMESEC = TIMESEC + 30d0*86400d0
+      IF(IMO.GE.11) TIMESEC = TIMESEC + 31d0*86400d0
+      IF(IMO.EQ.12) TIMESEC = TIMESEC + 30d0*86400d0
       IF(IMO.GT.12) THEN
          call allMessage(ERROR,
      &     'Fatal error in subroutine timeconv: month > 12.')
@@ -1753,8 +1753,8 @@ C++ GML added 20210727
              CTRATIO = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          ENDIF
 C++
-         if (WTRatio .GT. 1.0) then
-             WTRatio = 1.0
+         if (WTRatio .GT. 1.0d0) then
+             WTRatio = 1.0d0
              print *, '[Warning:] WTRatio is .GE. 1.0 and Set to 1.0'
          endif
 
@@ -2110,12 +2110,12 @@ Casey 180318: Added for NWS=13, ARC modified 190108
       !
       ! jgf50.38.05: Added NWS=15,-15 for reading HWind data
       IF (ABS(NWS).EQ.15) THEN
-         CALL NWS15INIT(STATIM*86400.0)
+         CALL NWS15INIT(STATIM*86400.0d0)
       ENDIF
 C
 C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
       IF (ABS(NWS).EQ.16) THEN
-         CALL INIT_GFDL(STATIM*86400.0)
+         CALL INIT_GFDL(STATIM*86400.0d0)
       ENDIF
       !
       ! jgf52.14: Implementing Casey's fix for uninitialized
@@ -2236,7 +2236,7 @@ C     pressure information with the model time step.
          READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
          READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          DO IT=1,ITHS
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.WTIME2) THEN
                WTIME1=WTIME2
                WTIME2=WTIME2+WTIMINC
@@ -2314,7 +2314,7 @@ C....                           to correspond with having only a global wind fil
          WTIME2=WTIMED-WREFTIM  !CAST INTO MODEL TIME REFERENCE
          WTIME1=WTIME2-WTIMINC
          DO IT=1,ITHS
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.WTIME2) THEN
                WTIME1=WTIME2
                WTIME2=WTIME2+WTIMINC
@@ -2366,7 +2366,7 @@ C     from wind velocity.
          wvny1 = wvny2
          CALL NWS4GET()
          DO IT=1,ITHS
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.WTIME2) THEN
                WTIME1=WTIME2
                WTIME2=WTIME2+WTIMINC
@@ -2453,7 +2453,7 @@ C     is used to compute wind stress from wind velocity.
          READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
          READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          DO IT=1,ITHS
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.WTIME2) THEN
                WTIME1=WTIME2
                WTIME2=WTIME2+WTIMINC
@@ -2870,7 +2870,7 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
           ! fast forward if wind data are relative to cold start time
          if (nws.gt.0) then
             DO IT=1,ITHS
-               TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+               TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
                IF(TIMEIT.GT.WTIME2) THEN
                   WTIME1=WTIME2
                   WTIME2=WTIME2+WTIMINC
@@ -2998,7 +2998,7 @@ C     from NAM data
       IF (ABS(NWS).eq.14) THEN
          ! TimeLoc should be rounded down to nearest WTIMINC
          TimeLoc_NM = nint(TimeLoc/60d0) ! first round to nearest minute
-         WTIME1 = WTIMINC*floor(TimeLoc_NM*60d0/WTIMINC)
+         WTIME1 = WTIMINC*dble(floor(dble(TimeLoc_NM)*60d0/WTIMINC))
          WTIME2 = WTIME1 + WTIMINC
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
          IF(NCICE.NE.0)THEN
@@ -3009,7 +3009,7 @@ C     from NAM data
          ! Initialising winds (pressure is already initialized)
          ! Get the first wind snap
          if (NCICE.eq.14) then
-            CICE_TIME1 = CICE_TIMINC*floor(TimeLoc_NM*60d0/CICE_TIMINC)
+            CICE_TIME1 = CICE_TIMINC*dble(floor(dble(TimeLoc_NM)*60d0/CICE_TIMINC))
             CICE_TIME2 = CICE_TIME1 + CICE_TIMINC
             CALL NWS14GET(WVNX1,WVNY1,PRN1,CICE1)
          else
@@ -3162,7 +3162,7 @@ C.....tcm v51.06.02 NWS=16,-16 were added to deal with GFDL Met files.
           WTIME2 = WTIME1 + WTIMINC
           CALL INIT_GFDL(wtime1)  !this will read in the two time series
           DO IT=1,ITHS
-             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+             TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
              IF(TIMEIT.GT.WTIME2) THEN
                 WTIME1=WTIME2
                 WTIME2=WTIME2+WTIMINC
@@ -3238,7 +3238,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
          WTIME1 = TimeLoc
          WTIME2 = WTIME1 + WTIMINC
          DO IT=1,ITHS
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0
+            TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0
             IF(TIMEIT.GT.WTIME2) THEN
                WTIME1=WTIME2
                WTIME2=WTIME2+WTIMINC
@@ -3252,8 +3252,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 
          WTRatio=(TimeLoc-WTIME1)/WTIMINC
 
-         if (WTRatio .GT. 1.0) then
-             WTRatio = 1.0
+         if (WTRatio .GT. 1.0d0) then
+             WTRatio = 1.0d0
              print *, '[Warning:] WTRatio is .GE. 1.0 and Set to 1.0'
          endif
 
@@ -3404,8 +3404,8 @@ C
          LONIND1=int((XCOOR-WLONMIN)/WLONINC) + 1
          IF(LONIND1.EQ.NWLON) LONIND1=LONIND1-1
          LONIND2=LONIND1+1
-         WLONM = WLONMIN + (LONIND1-1)*WLONINC
-         WLATM = WLATMAX - (LATIND1-1)*WLATINC
+         WLONM = WLONMIN + dble(LONIND1-1)*WLONINC
+         WLATM = WLATMAX - dble(LATIND1-1)*WLATINC
          XWRATIO=(XCOOR-WLONM)/WLONINC
          YWRATIO=(YCOOR-WLATM)/WLATINC
 C
@@ -3483,7 +3483,7 @@ C        jgf46.02 Added the following two lines.
          WVNX2(NHG)=WVNX2(NHG)*0.5144d0 !CONVERT KNOTS TO  M/S
          WVNY2(NHG)=WVNY2(NHG)*0.5144d0
          PRN2(NHG)=100.d0*PRN2(NHG)/RHOWATG !CONVERT MILLIBARS TO M OF WATER
-         IF(PRN2(NHG).EQ.0.) PRN2(NHG)=101300.d0/RHOWATG                       !RAL0315+ OK
+         IF(PRN2(NHG).EQ.0d0) PRN2(NHG)=101300.d0/RHOWATG                       !RAL0315+ OK
          READ(22,'(A80)') PBLJAGF
          IF(PBLJAGF(2:2).EQ.'#') EXIT
       ENDDO
@@ -3619,8 +3619,8 @@ C
          LONIND1=int((XCOOR-WLONMIN)/WLONINC) + 1
          LONIND2=LONIND1 + 1
 C
-         WLONM = WLONMIN + (LONIND1-1)*WLONINC
-         WLATM = WLATMAX - (LATIND1-1)*WLATINC
+         WLONM = WLONMIN + dble(LONIND1-1)*WLONINC
+         WLATM = WLATMAX - dble(LATIND1-1)*WLATINC
          XWRATIO=(XCOOR-WLONM)/WLONINC
          YWRATIO=(YCOOR-WLATM)/WLATINC
 C
@@ -3756,8 +3756,8 @@ C
          LONIND1=int((XCOOR-WLONMIN)/WLONINC) + 1
          LONIND2=LONIND1 + 1
 C
-         WLONM = WLONMIN + (LONIND1-1)*WLONINC
-         WLATM = WLATMAX - (LATIND1-1)*WLATINC
+         WLONM = WLONMIN + dble(LONIND1-1)*WLONINC
+         WLATM = WLATMAX - dble(LATIND1-1)*WLATINC
          XWRATIO=(XCOOR-WLONM)/WLONINC
          YWRATIO=(YCOOR-WLATM)/WLATINC
 C
@@ -3829,7 +3829,7 @@ C     for the ADCIRC grid.
       enddo
       gdlon=twopi/lonb
       do j=1,lonb
-         gclon(j)=gdlon*(j-1)
+         gclon(j)=gdlon*dble(j-1)
       end do
       call g2rini()
       !
@@ -3891,7 +3891,7 @@ C.....compute the interpolating factors.
 C.....   Compute initial guess of which lon value FLON(I) is in the Gaussian file
 C......  Check that this value is reasonable.
          flonwork=slam(i)
-         if(flonwork.lt.0.) flonwork=flonwork+twopi
+         if(flonwork.lt.0d0) flonwork=flonwork+twopi
          lon=int(flonwork/dlon + 1)
          lonp1=lon+1
          if(lon.eq.lonb) lonp1=1 !circle condition
@@ -4142,7 +4142,7 @@ CCCC  1 10X, 'ITER  RES')
 C
       SI = 1.0d0
       L2=2*LGGHAF
-      RL2=L2
+      RL2=dble(L2)
       SCALEVAL = 2.0d0/(RL2*RL2)
       K1=L2-1
       !yf51.52.25 DRADZ = PI / 360.d0
@@ -4153,8 +4153,8 @@ C
       ! are I want to use the original T126 latitudinal number (as the
       ! base number) for the future update of GFS.
       multiple = L2/(190+2)
-      dradz = pi/(multiple*360.d0)
-      RAD = 0.0
+      dradz = pi/(dble(multiple)*360.d0)
+      RAD = 0.0d0
       DO 1000 K=1,LGGHAF
          ITER=0
          DRAD=DRADZ
@@ -4421,9 +4421,9 @@ c     compute the position of the closest node in the E29 grid
       rlamda=acos(cphiicrlamda/cos(rphii))
       if(flon.lt.lamda0) rlamda=-rlamda
 c
-      ri2=(rlamda/rdlamda+nwlon+1)/2.
-      ri1=(rlamda/rdlamda+nwlon)/2.
-      rj=rphii/rdphi+(nwlat+1)/2
+      ri2=(rlamda/rdlamda+dble(nwlon)+1)/2d0
+      ri1=(rlamda/rdlamda+dble(nwlon))/2d0
+      rj=rphii/rdphi+(dble(nwlat)+1)/2d0
       j=int(rj+0.5d0)
       ri=ri1
       if(mod(j,2).eq.0) ri=ri2
@@ -4435,7 +4435,7 @@ c       write(screenunit,*) "ri1, ri2, ri, rj = ",ri1,ri2,ri,rj
 c       write(screenunit,*) "i, j = ",i,j
 c     endif
 
-      if ((rj.lt.1).or.(rj.gt.nwlat)) then
+      if ((rj.lt.1).or.(rj.gt.dble(nwlat))) then
 c        write(333,*) 'ADCIRC grid node ',node,
 c     &             ' falls outside of the ETA 29 grid'
         icode=1
@@ -4449,7 +4449,7 @@ c     &             ' falls outside of the ETA 29 grid'
       endif
 
       if (mod(j,2).eq.0) then
-         if ((ri.lt.1).or.(ri.gt.(nwlon+0.5d0))) then
+         if ((ri.lt.1).or.(ri.gt.(dble(nwlon)+0.5d0))) then
 c          write(333,*) 'ADCIRC grid node ',node,
 c     &                 ' falls outside of the ETA 29 grid'
             icode=1
@@ -4464,7 +4464,7 @@ c     &                 ' falls outside of the ETA 29 grid'
       endif
 
       if (mod(j,2).ne.0) then
-         if ((ri.lt.0.5).or.(ri.gt.nwlon)) then
+         if ((ri.lt.0.5d0).or.(ri.gt.dble(nwlon))) then
 c           write(333,*) 'ADCIRC grid node ',node,
 c     &                 ' falls outside of the ETA 29 grid'
             icode=1
@@ -4886,7 +4886,7 @@ c
       if(rlamar.gt.1.0d0) rlamar=1.0d0
       if(rlamar.lt.-1.d0) rlamar=-1.d0
       a=acos(rlamar)/dgtora
-      if(rlamda.le.0.) then
+      if(rlamda.le.0d0) then
          lamda=lamda0-a
       else
          lamda=lamda0+a
@@ -5349,7 +5349,7 @@ C     of the year.
 C
 C     Determine the CastTime in seconds since the beginning of the simulation.
                CastTime(i)=CastTime(i)-WindRefTime
-               FcstInc(i)=iFcstInc(i)
+               FcstInc(i)=dble(iFcstInc(i))
 C
 C           ------------
             CASE("OFCL")        ! forecast
@@ -5367,7 +5367,7 @@ C     directly to the next line without any processing.
                   CYCLE
                ENDIF
                ENDIF
-               FcstInc(i) = iFcstInc(i)
+               FcstInc(i) = dble(iFcstInc(i))
 C
 C     Determine the time of this forecast in seconds since the beginning
 C     of the year.
@@ -5408,7 +5408,7 @@ C
                   CYCLE
                ENDIF
                ENDIF
-               FcstInc(i) = iFcstInc(i)
+               FcstInc(i) = dble(iFcstInc(i))
 
                IF ( iFcstInc(i).eq.0 ) THEN
                   CALL TimeConv(iYear(i),iMth(i),iDay(i),iHr(i),0,0.d0,
@@ -5428,12 +5428,12 @@ C
             END SELECT
 C
 C     Convert integers to reals.
-            Lat(i) = iLat(i)
-            Lon(i) = iLon(i)
-            Spd(i) = iSpd(i)
-            CPress(i) = iCPress(i)
-            RRP(i) = iRRP(i)
-            RMW(i) = iRMW(i)
+            Lat(i) = dble(iLat(i))
+            Lon(i) = dble(iLon(i))
+            Spd(i) = dble(iSpd(i))
+            CPress(i) = dble(iCPress(i))
+            RRP(i) = dble(iRRP(i))
+            RMW(i) = dble(iRMW(i))
 C
 C     Convert units.
             Lat(i) = Lat(i) / 10.d0 ! convert 10ths of degs to degs
@@ -5476,8 +5476,8 @@ C
 C     Calculate storm translation velocities based on change in position, then
 C     convert degrees/time to m/s
          ! initialize storm translation speeds
-         TVX = 0.0
-         TVY = 0.0
+         TVX = 0.0d0
+         TVY = 0.0d0
          DO i=2, pl
 C     Calculate storm translation velocities based on change in position,
             ! approximate u and v translation velocities
@@ -5498,8 +5498,8 @@ C     Determine the correspondence between the current simulation time and
 C     the fort.22 file.
          i=2
          DO
-            IF (ceiling(TIMELOC).ge.CastTime(i-1).and.
-     &          floor(TIMELOC).lt.CastTime(i)) THEN
+            IF (dble(ceiling(TIMELOC)).ge.CastTime(i-1).and.
+     &          dble(floor(TIMELOC)).lt.CastTime(i)) THEN
                EXIT
             ELSE
                i=i+1
@@ -5699,13 +5699,13 @@ C23456
          T2=((CORIOLIS**2.d0)/4.d0)*RAD(I)**2.d0
          T3=RAD(I)*CORIOLIS/2.d0
          VG(I)=sqrt(T1+T2)-T3
-         TM=(RAD(I)/(RMW*1000))-5.
-         IF (TM.LT.0.)THEN
-            TM=0.
-         ELSEIF (TM.GT.1.)THEN
-            TM=1.
+         TM=(RAD(I)/(RMW*1000d0))-5d0
+         IF (TM.LT.0d0)THEN
+            TM=0d0
+         ELSEIF (TM.GT.1d0)THEN
+            TM=1d0
          END IF
-         TM=-TM/2
+         TM=-TM/2d0
          TM=COS(TM*PI)
          WVNX(I)=-VG(I)*SIN(THETA(I))+TVX*TM
          WVNY(I)= VG(I)*COS(THETA(I))+TVY*TM
@@ -5896,7 +5896,7 @@ C
             xcoor(i) = slam(i) * rad2deg
             ycoor(i) = sfea(i) * rad2deg
          END DO
-         timeOffset = nint(TIMELOC/60d0)*60d0 ! round to nearest minute
+         timeOffset = dble(nint(TIMELOC/60d0))*60d0 ! round to nearest minute
       END IF   ! end of first Time data allocations and such
       !
       ! the mesh changes at each time step if we are writing out
@@ -5983,16 +5983,16 @@ C
          ipn(icyc)   =  ipn1(ient)
          atcfRMW(icyc) = atcfRMW1(ient)
          !    dir(icyc)   =  dir1(ient)
-         h_speed(icyc) =  real(speed1(ient))
+         h_speed(icyc) =  dble(speed1(ient))
          name(icyc)  =  name1(ient)
          cycle_num(icyc) = cycle_num1(ient)
          HollB(icyc) = HollB1(ient)
 
          ! switch sin and cos b/c these are compass directions
-         uTrans(icyc) = sin(dir1(ient)*deg2rad)*speed1(ient)
-         vTrans(icyc) = cos(dir1(ient)*deg2rad)*speed1(ient)
+         uTrans(icyc) = sin(dble(dir1(ient))*deg2rad)*dble(speed1(ient))
+         vTrans(icyc) = cos(dble(dir1(ient))*deg2rad)*dble(speed1(ient))
 
-         CycleTime(icyc) =  iFcstInc1(ient) * 3600.d0 + timeOffset
+         CycleTime(icyc) =  dble(iFcstInc1(ient)) * 3600.d0 + timeOffset
 !         The logic for the code is set for W and N so if E or S
 !         multiply lats and lons by -1
 !
@@ -6002,8 +6002,8 @@ C
          IF(ns.EQ.'S')THEN
             ilat(icyc)=(-1)*ilat(icyc)
          ENDIF
-         lon(icyc) = (-1.0d0) * ilon(icyc) * 0.1d0
-         lat(icyc)=ilat(icyc) * 0.1d0
+         lon(icyc) = (-1.0d0) * dble(ilon(icyc)) * 0.1d0
+         lat(icyc)= dble(ilat(icyc)) * 0.1d0
 
          ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
          do i=1,4  ! loop quads
@@ -6050,16 +6050,16 @@ C
                ipn(icyc)   =  ipn1(ient)
                atcfRMW(icyc) = atcfRMW1(ient)
                dir(icyc)   =  dir1(ient)
-               h_speed(icyc) =  speed1(ient)
+               h_speed(icyc) =  dble(speed1(ient))
                name(icyc)  =  name1(ient)
                cycle_num(icyc) = cycle_num1(ient)
                HollB(icyc) = HollB1(ient)
 
                ! switch sin and cos b/c these are compass directions
-               uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
-               vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
+               uTrans(icyc)=sin(dble(dir1(ient))*deg2rad)*dble(speed1(ient))
+               vTrans(icyc)=cos(dble(dir1(ient))*deg2rad)*dble(speed1(ient))
 
-               CycleTime(icyc) =  iFcstInc(icyc) * 3600.d0 + timeOffset
+               CycleTime(icyc) =  dble(iFcstInc(icyc)) * 3600.d0 + timeOffset
 
 !              The logic for the code is set for W and N so if E or S
 !              multiply lats and lons by -1
@@ -6069,8 +6069,8 @@ C
                IF(ns.EQ.'S')THEN
                   ilat(icyc)=(-1)*ilat(icyc)
                ENDIF
-               lon(icyc) = (-1.0d0) * ilon(icyc) * 0.1d0
-               lat(icyc) = ilat(icyc) * 0.1d0
+               lon(icyc) = (-1.0d0) * dble(ilon(icyc)) * 0.1d0
+               lat(icyc) = dble(ilat(icyc)) * 0.1d0
 
             endif
 
@@ -6162,12 +6162,12 @@ C     we are running off the end of the data.
      &                         wtratio * (lat(icyc)-lat(icyc-1))
       cLon  =  lon(icyc-1)  +
      &                         wtratio * (lon(icyc)-lon(icyc-1))
-      Vmax  =  1.d0*(ispd(icyc-1) +
-     &                         wtratio * (ispd(icyc)-ispd(icyc-1)))
-      Pn    =  1.d0*(ipn(icyc-1)  +
-     &                         wtratio * (ipn(icyc)-ipn(icyc-1)))
-      Pc    =  1.d0*(icpress(icyc-1) +
-     &                         wtratio*(icpress(icyc)-icpress(icyc-1)))
+      Vmax  =  1.d0*(dble(ispd(icyc-1)) +
+     &                         wtratio * dble(ispd(icyc)-ispd(icyc-1)))
+      Pn    =  1.d0*(dble(ipn(icyc-1))  +
+     &                         wtratio * dble(ipn(icyc)-ipn(icyc-1)))
+      Pc    =  1.d0*(dble(icpress(icyc-1))) +
+     &                         wtratio*dble(icpress(icyc)-icpress(icyc-1))
       cHollB   =  HollB(icyc-1) +
      &                         wtratio * (HollB(icyc)-HollB(icyc-1))
       do i=1,4
@@ -6222,8 +6222,8 @@ C     we are running off the end of the data.
       ! a 1-minute (max sustained) to a 10-minute average prior to
       ! adding the translational velocity in subroutine uvp.
       !-------------------------------------------------------------
-      stormMotionU=sin(dir(icyc)/rad2deg)*stormMotion
-      stormMotionV=cos(dir(icyc)/rad2deg)*stormMotion
+      stormMotionU=sin(dble(dir(icyc))/rad2deg)*stormMotion
+      stormMotionV=cos(dble(dir(icyc))/rad2deg)*stormMotion
       DO i=1,np
          CALL uvp(ycoor(i),xcoor(i),stormMotionU,stormMotionV,
      &        wvnx(i),wvny(i), press(i)) !
@@ -6477,7 +6477,7 @@ C***********************************************************************
             ycoor(i) = sfea(i) * rad2deg
          END DO
          
-         timeOffset = nint(TIMELOC/60d0)*60d0 ! round initial time to nearest minute
+         timeOffset = dble(nint(TIMELOC/60d0))*60d0 ! round initial time to nearest minute
          rndaySeconds = RNDAY * 86400.d0
 
       END IF   ! end of first Time data allocations and such
@@ -6575,16 +6575,16 @@ C***********************************************************************
          ipn(icyc)   =  ipn1(ient)
          atcfRMW(icyc) = atcfRMW1(ient)
          !    dir(icyc)   =  dir1(ient)
-         h_speed(icyc) =  real(speed1(ient))
+         h_speed(icyc) =  dble(speed1(ient))
          name(icyc)  =  name1(ient)
          cycle_num(icyc) = cycle_num1(ient)
          HollB(icyc) = HollB1(ient)
 
          ! switch sin and cos b/c these are compass directions
-         uTrans(icyc) = sin(dir1(ient)*deg2rad)*speed1(ient)
-         vTrans(icyc) = cos(dir1(ient)*deg2rad)*speed1(ient)
+         uTrans(icyc) = sin(dble(dir1(ient))*deg2rad)*dble(speed1(ient))
+         vTrans(icyc) = cos(dble(dir1(ient))*deg2rad)*dble(speed1(ient))
 
-         CycleTime(icyc) =  iFcstInc1(ient) * 3600.d0 + timeOffset
+         CycleTime(icyc) =  dble(iFcstInc1(ient)) * 3600.d0 + timeOffset
 !         The logic for the code is set for W and N so if E or S
 !         multiply lats and lons by -1
 !
@@ -6594,8 +6594,8 @@ C***********************************************************************
          IF(ns.EQ.'S')THEN
             ilat(icyc)=(-1)*ilat(icyc)
          ENDIF
-         lon(icyc) = (-1.0d0) * ilon(icyc) * 0.1d0
-         lat(icyc)=ilat(icyc) * 0.1d0
+         lon(icyc) = (-1.0d0) * dble(ilon(icyc)) * 0.1d0
+         lat(icyc)=dble(ilat(icyc)) * 0.1d0
 
          ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
          do i=1,4  ! loop quads
@@ -6653,16 +6653,16 @@ C***********************************************************************
                ipn(icyc)   =  ipn1(ient)
                atcfRMW(icyc) = atcfRMW1(ient)
                dir(icyc)   =  dir1(ient)
-               h_speed(icyc) =  speed1(ient)
+               h_speed(icyc) =  dble(speed1(ient))
                name(icyc)  =  name1(ient)
                cycle_num(icyc) = cycle_num1(ient)
                HollB(icyc) = HollB1(ient)
 
                ! switch sin and cos b/c these are compass directions
-               uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
-               vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
+               uTrans(icyc)=sin(dble(dir1(ient))*deg2rad)*dble(speed1(ient))
+               vTrans(icyc)=cos(dble(dir1(ient))*deg2rad)*dble(speed1(ient))
 
-               CycleTime(icyc) =  iFcstInc(icyc) * 3600.d0 + timeOffset
+               CycleTime(icyc) =  dble(iFcstInc(icyc)) * 3600.d0 + timeOffset
 
 !              The logic for the code is set for W and N so if E or S
 !              multiply lats and lons by -1
@@ -6672,8 +6672,8 @@ C***********************************************************************
                IF(ns.EQ.'S')THEN
                   ilat(icyc)=(-1)*ilat(icyc)
                ENDIF
-               lon(icyc) = (-1.0d0) * ilon(icyc) * 0.1d0
-               lat(icyc) = ilat(icyc) * 0.1d0
+               lon(icyc) = (-1.0d0) * dble(ilon(icyc)) * 0.1d0
+               lat(icyc) = dble(ilat(icyc)) * 0.1d0
 
             endif
 
@@ -6786,7 +6786,7 @@ C     we are running off the end of the data.
  !        call setVmaxesBL4(reshape(VmaxesBL(icyc-1,:,:),(/4,4/)))
 
       QuadFlag4(2:5,1:4) = quadflag(icyc-1,1:4,1:4)
-      QuadIr4(2:5,1:4) = real(ir(icyc-1,1:4,1:4))
+      QuadIr4(2:5,1:4) = dble(ir(icyc-1,1:4,1:4))
       Rmaxes4(2:5,1:4) = rmaxw(icyc-1,1:4,1:4)
       Bs4(2:5,1:4) = HollBs(icyc-1,1:4,1:4)
       VmBL4(2:5,1:4) = VmaxesBL(icyc-1,1:4,1:4)
@@ -6821,7 +6821,7 @@ C     we are running off the end of the data.
 !         call setVmaxesBL4(reshape(VmaxesBL(icyc,:,:),(/4,4/)))
 
       QuadFlag4(2:5,1:4) = quadflag(icyc,1:4,1:4)
-      QuadIr4(2:5,1:4) = real(ir(icyc,1:4,1:4))
+      QuadIr4(2:5,1:4) = dble(ir(icyc,1:4,1:4))
       Rmaxes4(2:5,1:4) = rmaxw(icyc,1:4,1:4)
       Bs4(2:5,1:4) = HollBs(icyc,1:4,1:4)
       VmBL4(2:5,1:4) = VmaxesBL(icyc,1:4,1:4)
@@ -6844,10 +6844,10 @@ C     we are running off the end of the data.
       ! Perform time interpolation, transform variables from integers
       ! to real numbers for hurricane vortex calcualtions.
 
-      Pn    =  1.d0*(ipn(icyc-1)  +
-     &                         wtratio*(ipn(icyc)-ipn(icyc-1)))
-      Pc    =  1.d0*(icpress(icyc-1) +
-     &                         wtratio*(icpress(icyc)-icpress(icyc-1)))
+      Pn    =  1.d0*(dble(ipn(icyc-1))  +
+     &                         wtratio*(dble(ipn(icyc))-dble(ipn(icyc-1))))
+      Pc    =  1.d0*(dble(icpress(icyc-1)) +
+     &                         wtratio*(dble(icpress(icyc))-dble(icpress(icyc-1))))
       crmaxw   =  crmaxw1(:) +
      &                         wtratio*(crmaxw2(:)-crmaxw1(:))
       crmaxwTrue   =  crmaxwTrue1(:) +
@@ -7553,15 +7553,15 @@ C
       hWindFiles(cn)%indexLimit = indexLimit
       !
       ! find the maximum wind speed in this dataset
-      windMag(:,:) = sqrt(hWindFiles(cn)%u(:,:)**2
-     &    + hWindFiles(cn)%v(:,:)**2)
+      windMag(:,:) = sqrt(hWindFiles(cn)%u(:,:)**2d0
+     &    + hWindFiles(cn)%v(:,:)**2d0)
       hWindFiles(cn)%vmax = maxval(windMag)
       maxIndices = maxloc(windMag) ! returns indices as if array is 1-indexed
       !
       ! now calculate rmax in nautical miles
-      dx = (real(maxindices(1)-(indexLimit+1)))*hWindFiles(cn)%dh
-      dy = (real(maxindices(2)-(indexLimit+1)))*hWindFiles(cn)%dh
-      hWindFiles(cn)%rmax = m2nm * sqrt(dx**2 + dy**2)
+      dx = (dble(maxindices(1)-(indexLimit+1)))*hWindFiles(cn)%dh
+      dy = (dble(maxindices(2)-(indexLimit+1)))*hWindFiles(cn)%dh
+      hWindFiles(cn)%rmax = m2nm * sqrt(dx**2d0 + dy**20)
       !
       ! calculate angle at which rmax occurs
       hWindFiles(cn)%rmaxAngle = 360.0d0 + rad2deg * ATAN2(dx,dy)
@@ -7653,20 +7653,20 @@ C
       y_indices = floor(y_mercator/dh)
       !
       ! calculate bilinear interpolation weights
-      oneOverW2 = 1.d0 / real(dh**2)
+      oneOverW2 = 1.d0 / dble(dh**2d0)
       where ( (x_indices.ge.-il).and.(y_indices.ge.-il).and.
      &        (x_indices.le.(il-1)).and.(y_indices.le.(il-1)) )
          ! the adcirc node is inside the bounding box of the HWind data;
          ! we will calculate interpolation weights for these nodes
          inside = .true.
-         w1 = ((dh*(x_indices+1) - x_mercator)
-     &       *  (dh*(y_indices+1) - y_mercator)) * oneOverW2
-         w2 = ((x_mercator - dh*x_indices)
-     &       * (dh*(y_indices+1) - y_mercator) ) * oneOverW2
-         w3 = ((x_mercator - dh*x_indices)
-     &       * (y_mercator - dh*y_indices) ) * oneOverW2
-         w4 = ((dh*(x_indices+1) - x_mercator )
-     &       * (y_mercator - dh*y_indices) ) * oneOverW2
+         w1 = ((dh*dble(x_indices+1) - x_mercator)
+     &       *  (dh*dble(y_indices+1) - y_mercator)) * oneOverW2
+         w2 = ((x_mercator - dh*dble(x_indices))
+     &       * (dh*dble(y_indices+1) - y_mercator) ) * oneOverW2
+         w3 = ((x_mercator - dh*dble(x_indices))
+     &       * (y_mercator - dh*dble(y_indices)) ) * oneOverW2
+         w4 = ((dh*dble(x_indices+1) - x_mercator )
+     &       * (y_mercator - dh*dble(y_indices)) ) * oneOverW2
       elsewhere
          inside = .false.
       end where
@@ -8079,7 +8079,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           II2(:) = 0
           WHERE( ABS(XLOC-MAXDIST) < TOL ) II2 = 1
           INCELL = MAX(SUM(II2)-1,1)
-          MAXDIST = (MAXVAL(XY_GFDL(2,:))-MINVAL(XY_GFDL(2,:)))/REAL(INCELL)  !ESTIMATED CELL SPACING
+          MAXDIST = (MAXVAL(XY_GFDL(2,:))-MINVAL(XY_GFDL(2,:)))/DBLE(INCELL)  !ESTIMATED CELL SPACING
           MAXDIST = 6.0D0*MAXDIST  !MAXIMUM DISTANCE TO LOOK AWAY
 
           DEALLOCATE(XLOC)
@@ -9136,7 +9136,7 @@ C----------------------------------------------------------------------
       USE GLOBAL, ONLY : NCICE
       implicit none
       integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi, cc
-      real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice, lat, lon
+      real(8),allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice, lat, lon
       real(8), allocatable ::  lonv(:), latv(:), XY(:,:)
       real(8) :: xx, yy, wt(4) 
       logical :: regular_grid
@@ -9232,7 +9232,7 @@ C----------------------------------------------------------------------
       real(8),intent(out) :: PRN2(NP), WVNX2(NP), WVNY2(NP)
       real(8),intent(out),optional :: CICE2(NP)
       integer :: i, NTkeep
-      real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice
+      real(8),allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice
 
       !
       CALL setMessageSource('NWS14GET')
@@ -9331,17 +9331,19 @@ C     using.
 C----------------------------------------------------------------------
       implicit none
       CHARACTER(LEN=200),INTENT(IN) :: fileN
-      REAL,ALLOCATABLE,INTENT(OUT) :: data2(:,:)
+      REAL(8),ALLOCATABLE,INTENT(OUT) :: data2(:,:)
+      REAL(4),ALLOCATABLE :: datasp(:,:)
       CHARACTER(LEN=200),INTENT(IN) :: invN, var
       INTEGER,INTENT(INOUT) :: ncid
       IF (.NOT.grb2flag) THEN
-         CALL READNWS14_netCDF(fileN, ncid, var, data2)
+         CALL READNWS14_netCDF(fileN, ncid, var, datasp)
       ELSEIF (grb2flag) THEN
-         CALL READNWS14_grib2(fileN, invN, var, data2)
+         CALL READNWS14_grib2(fileN, invN, var, datasp)
       ELSE
          ! should be unreachable
          CALL windterminate()
       ENDIF
+      data2 = dble(datasp)
 C----------------------------------------------------------------------
       END SUBROUTINE READNWS14
 C----------------------------------------------------------------------
@@ -9354,13 +9356,13 @@ C----------------------------------------------------------------------
 #ifdef GRIB2API
       use wgrib2api
 #endif
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
       USE SIZES, ONLY : MYPROC
       implicit none
       integer :: iret, iter
       character(len=200),intent(in) :: var, fileN, invN
-      real,allocatable,intent(out) :: data2(:,:) 
+      real(4),allocatable,intent(out) :: data2(:,:)
       character(len=200) :: str_date
       integer :: NX, NY
       CALL setMessageSource("READNWS14_grib2")
@@ -9687,7 +9689,7 @@ C------------------------------------------------------------------------
         INTEGER :: NCID_p, NCID_w
 
         integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi, cc
-        real,allocatable,dimension(:,:) :: lat, lon
+        real(8),allocatable,dimension(:,:) :: lat, lon
         real(8), allocatable ::  lonv(:), latv(:), XY(:,:)
         real(8) :: xx, yy, wt(4) 
         logical :: regular_grid
@@ -9823,7 +9825,7 @@ C-------------------------------------------------------------------------------
       IMPLICIT NONE 
 
       CHARACTER(len=*), INTENT(IN) :: ncfile  ! NetCDF file name
-      REAL, ALLOCATABLE, DIMENSION(:,:), INTENT(OUT) :: lat_ins,lon_ins
+      REAL(8), ALLOCATABLE, DIMENSION(:,:), INTENT(OUT) :: lat_ins,lon_ins
     
       CHARACTER(LEN=80), INTENT(IN)  :: InsetLat, InsetLon, InsetLatDim,InsetLonDim
       INTEGER, INTENT(OUT) :: NXP, NYP
@@ -9885,7 +9887,7 @@ C     using.
 C----------------------------------------------------------------------
       implicit none
       CHARACTER(len=200),INTENT(IN) :: fileN
-      REAL,ALLOCATABLE,INTENT(OUT) :: lat(:,:),lon(:,:)
+      REAL(8),ALLOCATABLE,INTENT(OUT) :: lat(:,:),lon(:,:)
       CHARACTER(LEN=200),INTENT(IN),OPTIONAL :: var, invN
       INTEGER,INTENT(INOUT),OPTIONAL :: ncid
       IF (grb2flag) THEN
@@ -9908,13 +9910,14 @@ C----------------------------------------------------------------------
 #ifdef GRIB2API
       use wgrib2api
 #endif
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DDoubleArray,
      &                           BcastToLocal_Int
       USE SIZES, ONLY : MYPROC
       implicit none
       integer :: iret, iter
       character(len=200),intent(in) :: var, fileN, invN
-      real,allocatable,intent(out) :: lat(:,:), lon(:,: )
+      real(8),allocatable,intent(out) :: lat(:,:), lon(:,:)
+      real(4),allocatable :: latsp(:,:),lonsp(:,:)
       integer :: NX, NY
       character(len=200) :: str_date
       CALL setMessageSource("READNWS14LatLon_grib2")
@@ -9930,7 +9933,9 @@ C----------------------------------------------------------------------
             endif
 #ifdef GRIB2API
             iret = grb2_inq(fileN,invN,var,str_date,
-     &                      lat=lat,lon=lon)
+     &                      lat=latsp,lon=lonsp)
+            lat = dble(latsp)
+            lon = dble(lonsp)
 #endif
             iter = iter + 1
          enddo
@@ -9951,9 +9956,9 @@ C----------------------------------------------------------------------
          ALLOCATE( lat(NX,NY), lon(NX,NY) )
       ENDIF
       ! latitude
-      CALL BcastToLocal_2DRealArray(lat,NX,NY)
+      CALL BcastToLocal_2DDoubleArray(lat,NX,NY)
       ! longitude
-      CALL BcastToLocal_2DRealArray(lon,NX,NY)
+      CALL BcastToLocal_2DDoubleArray(lon,NX,NY)
       CALL unsetMessageSource()
       RETURN
 C----------------------------------------------------------------------
@@ -9970,13 +9975,14 @@ C----------------------------------------------------------------------
       use netcdf
       use netcdf_error, only: check_err
 #endif
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DDoubleArray,
      &                           BcastToLocal_Int
       USE SIZES, ONLY : MYPROC
       implicit none
       INTEGER,INTENT(INOUT) :: ncid ! already opened ncid tag
       character(len=200),intent(in) :: fileN
-      real,allocatable,intent(out) :: lat(:,:), lon(:,:)
+      real(8),allocatable,intent(out) :: lat(:,:), lon(:,:)
+      real(4),allocatable :: latsp(:,:), lonsp(:,:)
       integer :: i, Temp_ID, Lat_ID, Lon_ID, NX, NY, ndims
       CALL setMessageSource("READNWS14LatLon_netCDF")
 #ifdef ADCNETCDF
@@ -9993,28 +9999,32 @@ C----------------------------------------------------------------------
          call Check_err(NF90_INQUIRE_DIMENSION(ncid,Temp_ID,
      &                                         len=NX))
          allocate(lon(NX,NY),lat(NX,NY))
+         allocate(lonsp(NY,NY),latsp(NX,NY))
          call Check_err(NF90_INQ_VARID(ncid,Latvar,Lat_ID))
          call Check_err(nf90_inquire_variable(ncid,Lat_ID,
      &               ndims=ndims))
          call Check_err(NF90_INQ_VARID(ncid,Lonvar,Lon_ID))
          if (ndims.eq.3) then
-            call Check_err(NF90_GET_VAR(ncid,Lat_ID,lat,
+            call Check_err(NF90_GET_VAR(ncid,Lat_ID,latsp,
      &                     start=[1, 1, NT],count=[NX, NY, 1]))
-            call Check_err(NF90_GET_VAR(ncid,Lon_ID,lon,
+            call Check_err(NF90_GET_VAR(ncid,Lon_ID,lonsp,
      &                     start=[1, 1, NT],count=[NX, NY, 1]))
          elseif (ndims.eq.2) then
-            call Check_err(NF90_GET_VAR(ncid,Lat_ID,lat))
-            call Check_err(NF90_GET_VAR(ncid,Lon_ID,lon))
+            call Check_err(NF90_GET_VAR(ncid,Lat_ID,latsp))
+            call Check_err(NF90_GET_VAR(ncid,Lon_ID,lonsp))
          else
-            call Check_err(NF90_GET_VAR(ncid,Lat_ID,lat(1,:)))
-            call Check_err(NF90_GET_VAR(ncid,Lon_ID,lon(:,1)))
+            call Check_err(NF90_GET_VAR(ncid,Lat_ID,latsp(1,:)))
+            call Check_err(NF90_GET_VAR(ncid,Lon_ID,lonsp(:,1)))
             do i = 2,NX
-               lat(i,:) = lat(1,:)
+               latsp(i,:) = latsp(1,:)
             enddo
             do i = 2,NY
-               lon(:,i) = lon(:,1)
+               lonsp(:,i) = lonsp(:,1)
             enddo
          endif
+
+         lon = dble(lonsp)
+         lat = dble(latsp)
 
          IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN 
            call Check_err(NF90_CLOSE(ncid))  
@@ -10026,8 +10036,8 @@ C----------------------------------------------------------------------
       IF (MYPROC.NE.0) THEN
          ALLOCATE( lon(NX,NY), lat(NX,NY) )
       ENDIF
-      CALL BcastToLocal_2DRealArray(lon,NX,NY)
-      CALL BcastToLocal_2DRealArray(lat,NX,NY)
+      CALL BcastToLocal_2DDoubleArray(lon,NX,NY)
+      CALL BcastToLocal_2DDoubleArray(lat,NX,NY)
 #endif
       CALL unsetMessageSource()
       RETURN

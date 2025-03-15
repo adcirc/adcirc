@@ -117,10 +117,10 @@ C*******************************************************************
          return
       end if
 
-      CAX = 0.5*(X(IA1)+X(IA2))
-      CAY = 0.5*(Y(IA1)+Y(IA2)) 
-      CBX = 0.5*(X(IB1)+X(IB2))
-      CBY = 0.5*(Y(IB1)+Y(IB2)) 
+      CAX = 0.5d0*(X(IA1)+X(IA2))
+      CAY = 0.5d0*(Y(IA1)+Y(IA2))
+      CBX = 0.5d0*(X(IB1)+X(IB2))
+      CBY = 0.5d0*(Y(IB1)+Y(IB2))
       SX = CAX - CBX
       SY = CAY - CBY
       LEN = SQRT(SX*SX+SY*SY)

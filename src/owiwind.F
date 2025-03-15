@@ -444,8 +444,8 @@
                FoundEye = .FALSE.
             ELSE
                FoundEye = .TRUE.
-               EyeLatTemp = owi(EyeDomainI)%swlat+(EyeLatI-1)*owi(EyeDomainI)%dLat
-               EyeLonTemp = owi(EyeDomainI)%swlon+(EyeLonI-1)*owi(EyeDomainI)%dLon
+               EyeLatTemp = owi(EyeDomainI)%swlat+dble(EyeLatI-1)*owi(EyeDomainI)%dLat
+               EyeLonTemp = owi(EyeDomainI)%swlon+dble(EyeLonI-1)*owi(EyeDomainI)%dLon
                IF((EyeLatTemp.EQ.EyeLat(3)).AND.(EyeLonTemp.EQ.EyeLon(3)))THEN
                   CONTINUE
                ELSE
@@ -706,7 +706,7 @@
         real(8)             :: ui(4)
         real(8)             :: vi(4)
         real(8)             :: pi(4)
-        real(8),parameter   :: flag = -999.0
+        real(8),parameter   :: flag = -999.0d0
 
         call setMessageSource("owi_interpolateToMesh")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -732,9 +732,9 @@
      &           any(vi.eq.flag).or.
      &           any(pi.eq.flag))cycle
         
-              u=0.0
-              v=0.0
-              p=0.0
+              u=0.0d0
+              v=0.0d0
+              p=0.0d0
               
               do i=1,4
                   u = u + owi(j)%weight(node,i)*ui(i)
@@ -833,10 +833,10 @@
             ALLOCATE(lon(1:this%ilon))
 
             DO I = 1,this%ilat
-                lat(I) = this%swlat+(I-1)*this%dLat
+                lat(I) = this%swlat+dble(I-1)*this%dLat
             ENDDO
             DO I = 1,this%ilon
-                lon(i) = this%swlon+(I-1)*this%dLon
+                lon(i) = this%swlon+dble(I-1)*this%dLon
             ENDDO
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)

@@ -277,7 +277,7 @@ C...Compute the reciprocal of the number of nodes in the entire domain
 
 #ifdef CMPI
       CALL ALLNODES(NP_GLOBAL)
-      RNP_GLOBAL = 1.0D0/NP_GLOBAL
+      RNP_GLOBAL = 1.0D0/dble(NP_GLOBAL)
 #endif
 
 C     jgf45.08 put this here so it can be used in hot start
@@ -343,11 +343,11 @@ C...  attached to each node
       ! If the time in the min/max file is later than the current time
       ! in ADCIRC, we don't load the min/max files. TODO: This is computed
       ! again in subroutine timestep().
-      TimeLoc=ITIME_BGN*DTDP + StaTim*86400.D0
+      TimeLoc=dble(ITIME_BGN)*DTDP + StaTim*86400.D0
       IF (CHOTHS.eqv..true.) THEN
-         StaTimHS=((ITIME_BGN-1)*DTDPHS)/86400.D0
-         RefTimHS=((ITIME_BGN-1)*DTDP)/86400.D0
-         TimeLoc=ITIME_BGN*DTDP + (StaTimHS - RefTimHS)*86400.D0
+         StaTimHS=(dble(ITIME_BGN-1)*DTDPHS)/86400.D0
+         RefTimHS=(dble(ITIME_BGN-1)*DTDP)/86400.D0
+         TimeLoc=dble(ITIME_BGN)*DTDP + (StaTimHS - RefTimHS)*86400.D0
       END IF
 
       !jgf: Initialize water level offset if needed

@@ -349,7 +349,7 @@ C...LINES TO USE TIDAL POTENTIAL FORCING
 C...
       if (CTIP) then
          DO I=1,NP
-            TIP2(I)=0.0
+            TIP2(I)=0.0d0
          END DO
       endif
 
@@ -408,7 +408,7 @@ C...
             ENDIF
          WRITE(61,REC=IESTP+1) NTRSPE
          WRITE(61,REC=IESTP+2) NSTAE
-         WRITE(61,REC=IESTP+3) DT*NSPOOLE
+         WRITE(61,REC=IESTP+3) DT*dble(NSPOOLE)
          WRITE(61,REC=IESTP+4) NSPOOLE
          WRITE(61,REC=IESTP+5) 1
          IESTP=IESTP+5
@@ -468,7 +468,7 @@ C...
             ENDIF
          WRITE(62,REC=IVSTP+1) NTRSPV
          WRITE(62,REC=IVSTP+2) NSTAV
-         WRITE(62,REC=IVSTP+3) DT*NSPOOLV
+         WRITE(62,REC=IVSTP+3) DT*dble(NSPOOLV)
          WRITE(62,REC=IVSTP+4) NSPOOLV
          WRITE(62,REC=IVSTP+5) 2
          IVSTP=IVSTP+5
@@ -528,7 +528,7 @@ C...
             ENDIF
          WRITE(81,REC=ICSTP+1) NTRSPC
          WRITE(81,REC=ICSTP+2) NSTAC
-         WRITE(81,REC=ICSTP+3) DT*NSPOOLC
+         WRITE(81,REC=ICSTP+3) DT*dble(NSPOOLC)
          WRITE(81,REC=ICSTP+4) NSPOOLC
          WRITE(81,REC=ICSTP+5) 1
          ICSTP=ICSTP+5
@@ -640,12 +640,12 @@ C...
          ENDIF
          WRITE(71,REC=IPSTP+1) NTRSPM
          WRITE(71,REC=IPSTP+2) NSTAM
-         WRITE(71,REC=IPSTP+3) DT*NSPOOLM
+         WRITE(71,REC=IPSTP+3) DT*dble(NSPOOLM)
          WRITE(71,REC=IPSTP+4) NSPOOLM
          WRITE(71,REC=IPSTP+5) 1
          WRITE(72,REC=IWSTP+1) NTRSPM
          WRITE(72,REC=IWSTP+2) NSTAM
-         WRITE(72,REC=IWSTP+3) DT*NSPOOLM
+         WRITE(72,REC=IWSTP+3) DT*dble(NSPOOLM)
          WRITE(72,REC=IWSTP+4) NSPOOLM
          WRITE(72,REC=IWSTP+5) 2
          IPSTP=IPSTP+5
@@ -656,7 +656,7 @@ C...
          IF(NCICE.NE.0) THEN
             WRITE(91,REC=IICESTP+1) NTRSPM
             WRITE(91,REC=IICESTP+2) NSTAM
-            WRITE(91,REC=IICESTP+3) DT*NSPOOLM
+            WRITE(91,REC=IICESTP+3) DT*dble(NSPOOLM)
             WRITE(91,REC=IICESTP+4) NSPOOLM
             WRITE(91,REC=IICESTP+5) 1
             IICESTP = IICESTP + 5
@@ -720,7 +720,7 @@ C...
          ENDIF
          WRITE(75,REC=IBSTP+1) NTRSPE
          WRITE(75,REC=IBSTP+2) NSTAE
-         WRITE(75,REC=IBSTP+3) DT*NSPOOLE
+         WRITE(75,REC=IBSTP+3) DT*dble(NSPOOLE)
          WRITE(75,REC=IBSTP+4) NSPOOLE
          WRITE(75,REC=IBSTP+5) 1
          IBSTP=IBSTP+5
@@ -859,7 +859,7 @@ Casey 090302: Corrected the unit number from 10 to 90.
             ENDIF
          WRITE(63,REC=IGEP+1) NDSETSE
          WRITE(63,REC=IGEP+2) NP
-         WRITE(63,REC=IGEP+3) DT*NSPOOLGE
+         WRITE(63,REC=IGEP+3) DT*dble(NSPOOLGE)
          WRITE(63,REC=IGEP+4) NSPOOLGE
          WRITE(63,REC=IGEP+5) 1
          IGEP=IGEP+5
@@ -921,7 +921,7 @@ C...
             ENDIF
          WRITE(64,REC=IGVP+1) NDSETSV
          WRITE(64,REC=IGVP+2) NP
-         WRITE(64,REC=IGVP+3) DT*NSPOOLGV
+         WRITE(64,REC=IGVP+3) DT*dble(NSPOOLGV)
          WRITE(64,REC=IGVP+4) NSPOOLGV
          WRITE(64,REC=IGVP+5) 2
          IGVP=IGVP+5
@@ -971,7 +971,7 @@ Cobell - Open the fort.77 (weir elevation change) file
                 ENDIF
                 WRITE(77,REC=IG_TVW+1) NDSETS_TVW
                 WRITE(77,REC=IG_TVW+2) NP
-                WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
+                WRITE(77,REC=IG_TVW+3) DT*dble(NSPOOL_TVW)
                 WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
                 WRITE(77,REC=IG_TVW+5) 2
                 IG_TVW=IG_TVW+5
@@ -1089,14 +1089,14 @@ C...
          ENDIF
          write(73,rec=igpp+1) ndsetsw
          write(73,rec=igpp+2) np
-         write(73,rec=igpp+3) dt*nspoolgw
+         write(73,rec=igpp+3) dt*dble(nspoolgw)
          write(73,rec=igpp+4) nspoolgw
          write(73,rec=igpp+5) 2
          igpp=igpp+5
          close(73)
          WRITE(74,REC=IGWP+1) NDSETSW
          WRITE(74,REC=IGWP+2) NP
-         WRITE(74,REC=IGWP+3) DT*NSPOOLGW
+         WRITE(74,REC=IGWP+3) DT*dble(NSPOOLGW)
          WRITE(74,REC=IGWP+4) NSPOOLGW
          WRITE(74,REC=IGWP+5) 2
          IGWP=IGWP+5
@@ -1104,7 +1104,7 @@ C...
          IF(NCICE.NE.0) THEN
             WRITE(93,REC=IGIP+1) NDSETSW
             WRITE(93,REC=IGIP+2) NP
-            WRITE(93,REC=IGIP+3) DT*NSPOOLGW
+            WRITE(93,REC=IGIP+3) DT*dble(NSPOOLGW)
             WRITE(93,REC=IGIP+4) NSPOOLGW
             WRITE(93,REC=IGIP+5) 2
             IGIP=IGIP+5
@@ -1163,7 +1163,7 @@ Casey 090302: Added the output of radiation stress gradients.
             ENDIF
             WRITE(164,REC=IGRadS+1) NDSETSW
             WRITE(164,REC=IGRadS+2) NP
-            WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
+            WRITE(164,REC=IGRadS+3) DT*dble(NSPOOLGW)
             WRITE(164,REC=IGRadS+4) NSPOOLGW
             WRITE(164,REC=IGRadS+5) 2
             IGRadS=IGRadS+5
@@ -1185,7 +1185,7 @@ C...
       IF(ABS(NOUTGC).EQ.1) THEN
          OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83')
          WRITE(83,3220) RUNDES,RUNID,AGRID
-         WRITE(83,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
+         WRITE(83,3645) NDSETSC,NP,DTDP*dble(NSPOOLGC),NSPOOLGC,1
          CLOSE(83)
          IGCP=2
          ENDIF
@@ -1223,7 +1223,7 @@ C...
             ENDIF
          WRITE(83,REC=IGCP+1) NDSETSC
          WRITE(83,REC=IGCP+2) NP
-         WRITE(83,REC=IGCP+3) DT*NSPOOLGC
+         WRITE(83,REC=IGCP+3) DT*dble(NSPOOLGC)
          WRITE(83,REC=IGCP+4) NSPOOLGC
          WRITE(83,REC=IGCP+5) 1
          IGCP=IGCP+5
@@ -1291,7 +1291,7 @@ C...
          ENDIF
          WRITE(76,REC=IGBP+1) NDSETSE
          WRITE(76,REC=IGBP+2) NP
-         WRITE(76,REC=IGBP+3) DT*NSPOOLGE
+         WRITE(76,REC=IGBP+3) DT*dble(NSPOOLGE)
          WRITE(76,REC=IGBP+4) NSPOOLGE
          WRITE(76,REC=IGBP+5) 1
          IGBP=IGBP+5
@@ -1597,8 +1597,8 @@ C kmd - River information for boundary conditions in baroclinic simulation
 
 
            ! arash debug
-           BCRivSalN1(:,:) = 0.0
-           BCRivTempN1(:,:) = 0.0
+           BCRivSalN1(:,:) = 0.0d0
+           BCRivTempN1(:,:) = 0.0d0
 
 
 
@@ -1614,8 +1614,8 @@ C kmd - River information for boundary conditions in baroclinic simulation
 
 
            ! arash debug
-           BCRivSalN2(:,:) = 0.0
-           BCRivTempN2(:,:) = 0.0
+           BCRivSalN2(:,:) = 0.0d0
+           BCRivTempN2(:,:) = 0.0d0
 
 
          END IF
@@ -1688,23 +1688,23 @@ C     jgf46.27 Replaced IRType with IDen in header.
      &                  NSPO3DGD, IDen, I3DGDRec)
 
       IF (ABS(I3DGD).EQ.1) THEN
-         IF ((MNPROC.EQ.1.).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
+         IF ((MNPROC.EQ.1).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
             IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
                IF (BCFLAG_TEMP.NE.0) THEN
                   OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
                   WRITE(47,499) RUNDES,RUNID,AGRID
-                  WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+                  WRITE(47,498) NDSet3DGD,NP,DTDP*dble(NSpo3DGD),NSpo3DGD,1
                   CLOSE(47)
                END IF
             END IF
          ENDIF
-         IF ((MNPROC.GT.1.).AND.(WRITE_LOCAL_FILES.eqv..false.).and.
+         IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).and.
      &       (myProc.eq.0)) THEN
             IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
                IF (BCFLAG_TEMP.NE.0) THEN
                   OPEN(47,FILE=TRIM(GLOBALDIR)//'/'//'fort.47')
                   WRITE(47,499) RUNDES,RUNID,AGRID
-                  WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+                  WRITE(47,498) NDSet3DGD,NP,DTDP*dble(NSpo3DGD),NSpo3DGD,1
                   CLOSE(47)
                END IF
             END IF

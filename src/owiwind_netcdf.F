@@ -369,8 +369,8 @@
      &        START=(/1,1,1/),COUNT=(/NumLon,NumLat,1/)))
           ! get reusable weights for main group
           CALL NWS13INTERP(IG,NumLon,NumLat,Lon,Lat,ILon,ILat,W)
-          W(:,5) = ILon
-          W(:,6) = ILat
+          W(:,5) = dble(ILon)
+          W(:,6) = dble(ILat)
         endif
 
       ENDDO
@@ -842,9 +842,9 @@
      &                  + W2(IV,4)*P(ILon(IV)  ,ILat(IV)+1)
               ENDIF
 	      ! Adjust U/V Based on scalar wind magnitude
-              IF ((UU(iV) .eq. 0.) .and.
-     &            (VV(iV) .eq. 0.)) then
-                sWdir = 0.
+              IF ((UU(iV) .eq. 0d0) .and.
+     &            (VV(iV) .eq. 0d0)) then
+                sWdir = 0d0
               ELSE
                 sWdir = ATAN2(UU(iV),VV(iV))
                 UU(IV) = Wind(IV)*SIN(sWDir)
@@ -1118,7 +1118,7 @@
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      FRACTIONTIME = (HOUR + (MINUTE + SECOND/60.D0)/60.D0)/24.D0
+      FRACTIONTIME = (dble(HOUR) + (dble(MINUTE) + dble(SECOND)/60.D0)/60.D0)/24.D0
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif

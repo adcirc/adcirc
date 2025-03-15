@@ -283,9 +283,9 @@ C***********************************************************************
       regionExists = .TRUE.
 
       IF(numSets.EQ.1) regionExists = .FALSE.
-      if(iCYMDHB.lt.date1R) regionExists = .FALSE.
-      if(iCYMDHB.eq.date2R.and.iMinR.ne.0) regionExists = .FALSE.
-      if(iCYMDHB.gt.date2R) regionExists = .FALSE.
+      if(int(iCYMDHB,8).lt.date1R) regionExists = .FALSE.
+      if(int(iCYMDHB,8).eq.date2R.and.iMinR.ne.0) regionExists = .FALSE.
+      if(int(iCYMDHB,8).gt.date2R) regionExists = .FALSE.
 
       if ( regionExists ) then
 
@@ -342,11 +342,11 @@ C***********************************************************************
 
 ! Interpolate onto ADCIRC grid and write to file -------------------------
       
-      rampfrac = isnapB-1
+      rampfrac = dble(isnapB-1)
 c      if (rampfrac<36) then
 c        ramp = tanh(18d0*rampfrac/36d0)
 c      end if
-      ramp = 1.0
+      ramp = 1.0d0
 
       IF(NSCREEN.GE.1) THEN
         if(regionExists.EQV..TRUE.) then
@@ -553,10 +553,10 @@ C***********************************************************************
         
       ! Generate long&lat on each grid point
       do i=1,iLatB
-        latB(i) = swlatB+(i-1)*dyB
+        latB(i) = swlatB+dble(i-1)*dyB
       enddo
       do i=1,iLongB
-        longB(i) = swlongB+(i-1)*dxB
+        longB(i) = swlongB+dble(i-1)*dxB
       enddo
         
       ! Generate interpolation coefficients (south west point and weights)
@@ -642,10 +642,10 @@ C***********************************************************************
 
       ! Generate long&lat on each grid point
       do i=1,iLatR
-        latR(i) = swlatR+(i-1)*dyR
+        latR(i) = swlatR+dble(i-1)*dyR
       enddo
       do i=1,iLongR
-        longR(i) = swlongR+(i-1)*dxR
+        longR(i) = swlongR+dble(i-1)*dxR
       enddo
 
       ! Generate interpolation info (south west point and weights)

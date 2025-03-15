@@ -201,7 +201,7 @@ C
 
 
 C     update QX
-            H2=DP(I)+IFNLFA*ETA2(I)
+            H2=DP(I)+dble(IFNLFA)*ETA2(I)
             QX2(I)=UU2(I)*H2
             QY2(I)=VV2(I)*H2
 
@@ -331,7 +331,7 @@ C     update QX
 
                  DO J = 1, NAL
                     SSDUM(J) = SSDUM(J) + 
-     &                   NINT(SSIGM_PT(NODEID,2) - allowabstype(J)) ; 
+     &                   NINT(SSIGM_PT(NODEID,2) - dble(allowabstype(J))) ;
                  END DO   
 
               END DO
@@ -632,9 +632,9 @@ C     update QX
      &                          GeoidOffset) 
         IMPLICIT NONE
 
-        INTEGER:: IT
-        REAL(8):: TimeLoc, TimeH
-        REAL(8):: RampVal
+        INTEGER :: IT
+        REAL(8) :: TimeLoc, TimeH
+        REAL(8) :: RampVal
         REAL(8) :: GeoidOffset(:) 
 
         INTEGER:: I, J
@@ -650,16 +650,12 @@ C.............................DW, generating layer ..............
             !  Harmonic forcing
             !
             !  \zeta in the sponge Layer
-            WorkVecEta = 0.D0 ;
+            WorkVecEta = 0.D0
             DO J=1, AbsLayerNBF
-              IF(pert_eta_abslayer(J).EQ.0.) THEN
+              IF(pert_eta_abslayer(J).EQ.0d0) THEN
                   NCYC=0
               ELSE
-#ifdef IBM
-                 NCYC=INT(timeh/PERT_ETA_ABSLAYER(J),KIND(0.0d0))
-#else 
-                 NCYC=INT(timeh/PERT_ETA_ABSLAYER(J))
-#endif
+                 NCYC=dble(INT(timeh/PERT_ETA_ABSLAYER(J)))
               ENDIF
 
               ARGT=AbsLayerEtaAMIG(J)*(timeh-NCYC*pert_eta_abslayer(J))+
@@ -676,17 +672,13 @@ C.............................DW, generating layer ..............
             Eta2_AbsLayer(AbsLayer_Eta_NodesID) = WorkVecEta ;
 
             !  (u,v) in the sponge layer 
-            WorkVecUU = 0.D0 ;
-            WorkVecVV = 0.D0 ;
+            WorkVecUU = 0.D0
+            WorkVecVV = 0.D0
             DO J=1, AbsLayerNBF
-              IF(pert_vel_abslayer(J).EQ.0.) THEN
+              IF(pert_vel_abslayer(J).EQ.0d0) THEN
                  NCYC=0
               ELSE
-#ifdef IBM
-                 NCYC=INT(timeh/pert_vel_abslayer(J),KIND(0.0d0))
-#else
-                 NCYC=INT(timeh/pert_vel_abslayer(J))
-#endif
+                 NCYC=dble(INT(timeh/pert_vel_abslayer(J)))
               ENDIF
 
               ARGT=AbsLayerQAMIG(J)*(timeh-NCYC*pert_vel_abslayer(J))+
@@ -843,23 +835,23 @@ C$$$
       SUBROUTINE LAYERSOLTEST1( IT, TimeLoc, TimeH, RampVal )
         IMPLICIT NONE 
 
-        INTEGER:: IT
-        REAL(8):: TimeLoc, TimeH
-        REAL(8):: RampVal
+        INTEGER :: IT
+        REAL(8) :: TimeLoc, TimeH
+        REAL(8) :: RampVal
         
-        REAL(8):: bb, R2, L, xc, LDA, PI 
-        REAL(8):: CVEL, LS, DY, XX, YY, CVV
-        INTEGER:: I, NIDX
+        REAL(8) :: bb, R2, L, xc, LDA, PI
+        REAL(8) :: CVEL, LS, DY, XX, YY, CVV
+        INTEGER :: I, NIDX
 
-        bb = 74.D0 ;
-        R2 = 250*100.D0 ;
-        R2 = R2*R2 ; 
+        bb = 74.D0
+        R2 = 250d0*100.D0
+        R2 = R2*R2
         
-        L = 500*1000.D0 ; 
-        DY = L/25.D0 ; 
+        L = 500d0*1000.D0
+        DY = L/25.D0
 
-        XC = 2*L + L/4 ; 
-        LDA = 4.0/L ; 
+        XC = 2d0*L + L/4d0
+        LDA = 4.0d0/L
 
         CVEL = sqrt(G*bb) ;  
         CVV = sqrt(G/bb) ; 

@@ -225,7 +225,7 @@ C.......
       IF (IT .EQ. 1) THEN
 !.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
         DO I = 1,NP
-           H2(I) = DP(I)+IFNLFA*ETA2(I)
+           H2(I) = DP(I)+dble(IFNLFA)*ETA2(I)
            H1(I) = H2(I)
         ENDDO
       ENDIF
@@ -261,29 +261,29 @@ C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
 C...  
 C...  Computation of TimeLoc and TimeH are consolidated. SB,ZC,RL 2022-06-22
 C...
-      TimeLoc=IT*DTDP + StaTim*86400.D0
-      TimeH=IT*DTDP + (StaTim - RefTim)*86400.D0
+      TimeLoc=dble(IT)*DTDP + StaTim*86400.D0
+      TimeH=dble(IT)*DTDP + (StaTim - RefTim)*86400.D0
       IF (CHOTHS.eqv..true.) THEN
          IF ((ITHS+1).EQ.IT) THEN
-           StaTimHS=((IT-1)*DTDPHS)/86400.D0
-           RefTimHS=((IT-1)*DTDP)/86400.D0
+           StaTimHS=(dble(IT-1)*DTDPHS)/86400.D0
+           RefTimHS=(dble(IT-1)*DTDP)/86400.D0
          END IF
-         TimeLoc=IT*DTDP + (StaTimHS - RefTimHS)*86400.D0
-         TimeH=IT*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
+         TimeLoc=dble(IT)*DTDP + (StaTimHS - RefTimHS)*86400.D0
+         TimeH=dble(IT)*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
       END IF
 
 C...  HARMONIC CALCULATIONS ARE MADE FOR TIME WHICH INCLUDES THE REFTIM
 C...  TO ALLOW FOR THE POSSIBILITY THAT THE EQUILIBRIUM ARGUMENTS MAY
 C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
 C...
-      TimeH=IT*DTDP + (StaTim - RefTim)*86400.D0
+      TimeH=dble(IT)*DTDP + (StaTim - RefTim)*86400.D0
 !kmd - added this for the cases where the timestep changes from hot start timestep
       IF (CHOTHS.eqv..true.) THEN
          IF ((ITHS+1).EQ.IT) THEN
-           StaTimHS=((IT-1)*DTDPHS)/86400.D0
-           StaTim=((IT-1)*DTDP)/86400.D0
+           StaTimHS=(dble(IT-1)*DTDPHS)/86400.D0
+           StaTim=(dble(IT-1)*DTDP)/86400.D0
          END IF
-         TimeH=IT*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
+         TimeH=dble(IT)*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
       END IF
 
 C-------------------TEMPORAL RAMP-------------------------------------
@@ -320,17 +320,17 @@ C     the FluxSettlingTime. When the FluxSettlingTime has ended, turn
 C     all forcings back on.
       IF (NRamp.gt.1.AND.FluxSettlingIT.GT.0) THEN
          IF(IT.LT.(FluxSettlingIT+10)) THEN
-            Ramp=0.0
-            RampIntFlux=0.0
-            RampElev=0.0
-            RampTip=0.0
-            RampMete=0.0
-            RampWRad=0.0
+            Ramp=0.0d0
+            RampIntFlux=0.0d0
+            RampElev=0.0d0
+            RampTip=0.0d0
+            RampMete=0.0d0
+            RampWRad=0.0d0
          ELSE
-            TimeLocFluxSettling=(IT-FluxSettlingIT-10)*DTDP
+            TimeLocFluxSettling=dble(IT-FluxSettlingIT-10)*DTDP
      &           + StaTim*86400.D0
             IF (CHOTHS.eqv..true.) THEN
-               TimeLocFluxSettling=(IT-FluxSettlingIT-10)*DTDP
+               TimeLocFluxSettling=dble(IT-FluxSettlingIT-10)*DTDP
      &           + (StaTimHS - RefTimHS)*86400.D0
             END IF
 
@@ -351,13 +351,13 @@ C     all forcings back on.
       ENDIF
 
       !jgf49.44: Cover the case where the ramp length is zero.
-      IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
-      IF (DRampExtFlux.lt.1.0e-6) RampExtFlux = 1.0d0
-      IF (DRampIntFlux.lt.1.0e-6) RampIntFlux = 1.0d0
-      IF (DRampElev.lt.1.0e-6) RampElev = 1.0d0
-      IF (DRampTip.lt.1.0e-6) RampTip = 1.0d0
-      IF (DRampMete.lt.1.0e-6) RampMete = 1.0d0
-      IF (DRampWRad.lt.1.0e-6) RampWRad = 1.0d0
+      IF (DRamp.lt.1.0d-6) Ramp = 1.0d0
+      IF (DRampExtFlux.lt.1.0d-6) RampExtFlux = 1.0d0
+      IF (DRampIntFlux.lt.1.0d-6) RampIntFlux = 1.0d0
+      IF (DRampElev.lt.1.0d-6) RampElev = 1.0d0
+      IF (DRampTip.lt.1.0d-6) RampTip = 1.0d0
+      IF (DRampMete.lt.1.0d-6) RampMete = 1.0d0
+      IF (DRampWRad.lt.1.0d-6) RampWRad = 1.0d0
 C     
 C------DW
       IF ( LoadAbsLayerSigma ) THEN
@@ -442,13 +442,13 @@ C.............................DW, sponge layer ..................
             RampTMP = RampElev ;
             DO istep = 2, 1, -1
                IF ( NRamp > 0 ) THEN
-                  RampTMP=TANH((2.D0*(TimeLoc - istep*DTDP)/86400.D0)/DRampElev)
+                  RampTMP=TANH((2.D0*(TimeLoc - dble(istep)*DTDP)/86400.D0)/DRampElev)
                END IF
                RampTMP = max(0.D0,RampTMP) ;                   
                
                !  u_{ext}^{n + 1 - istep} --> uu2
-               CALL GETABSLAYEREXT( IT - istep, TimeLoc - istep*DTDP,
-     &              TimeH - istep*DTDP, RampTMP,
+               CALL GETABSLAYEREXT( IT - istep, TimeLoc - dble(istep)*DTDP,
+     &              TimeH - dble(istep)*DTDP, RampTMP,
      &              GeoidOffset ) 
 
                CALL SPONGE_SHIFT_SOLN( ) ; 
@@ -890,13 +890,9 @@ C...
             IF(FPER(J).EQ.0.D0) THEN
                NCYC=0
             ELSE
-#ifdef IBM
-               NCYC=INT(timeh/FPER(J),KIND(0.0d0))
-#else
                NCYC=INT(timeh/FPER(J))
-#endif
             ENDIF
-            ARGJ=FAMIG(J)*(timeh-NCYC*FPER(J))+FFACE(J)
+            ARGJ=FAMIG(J)*(timeh-dble(NCYC)*FPER(J))+FFACE(J)
             RFF=FFF(J)*RampExtFlux  !jgf46.02 use river ramp for Katrina
             DO I=1,NVEL
                ARG=ARGJ-QNPH(J,I)
@@ -1021,7 +1017,7 @@ C...  COBELL - MOVED TO WEIR_BOUNDARY.F
                   DO J = 1,NVELL(K)
                      I = I + 1
                      NNBB1 = NBV(I)
-                     HTOT = ETA2(NNBB1) + IFNLFA*DP(NNBB1)
+                     HTOT = ETA2(NNBB1) + dble(IFNLFA)*DP(NNBB1)
                      IF(ISSUBMERGED64(I).NE.0.AND.
      &                  NODECODE(NNBB1).NE.0.AND.
      &                  HTOT.LT.4.D0*H0) THEN
@@ -1036,7 +1032,7 @@ C...  COBELL - MOVED TO WEIR_BOUNDARY.F
                            ET2 = ETA2(NNBBNEI)
                            LEN = SQRT((X1-X2)**2+(Y1-Y2)**2)
                            SLP = ABS(ET1-ET2)/LEN
-                           IF(SLP.GT.0.0001) THEN
+                           IF(SLP.GT.0.0001d0) THEN
                               UNSUBMERGE = .TRUE.
                            ENDIF
                         ENDIF
@@ -1047,7 +1043,7 @@ C...  COBELL - MOVED TO WEIR_BOUNDARY.F
                            ET2 = ETA2(NNBBNEI)
                            LEN = SQRT((X1-X2)**2+(Y1-Y2)**2)
                            SLP = ABS(ET1-ET2)/LEN
-                           IF(SLP.GT.0.0001) THEN
+                           IF(SLP.GT.0.0001d0) THEN
                               UNSUBMERGE = .TRUE.
                            ENDIF
                         ENDIF
@@ -1190,7 +1186,7 @@ C...  Compute new water surface elevation
 !.....DMW202401 Add update for flow depth at current timestep
 !......We do this after wetting/drying since bathy could change with subgrid barriers.
       DO I = 1,NP
-         H2(I) = DP(I)+IFNLFA*ETA2(I)
+         H2(I) = DP(I)+dble(IFNLFA)*ETA2(I)
       ENDDO
 C...   
 C---------------2DDI Momentum Equation Solution-------------------------
@@ -1360,7 +1356,7 @@ C     a fort.69 (global elevation debug) file.
 C     jgf46.12 Removed the dependence on KEMAX for producing output to
 C     the screen.
 
-         runperccomplete=REAL(IT-ITHS)/REAL(NT-ITHS)*100d0    !percentage of time steps completed
+         runperccomplete=DBLE(IT-ITHS)/DBLE(NT-ITHS)*100d0    !percentage of time steps completed
 #ifdef CMPI
          IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
@@ -1639,7 +1635,7 @@ C******************************************************************************
                      NCYC=INT(timeh/PERT(J))
                   ENDIF
 
-                  ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
+                  ARGT=AMIGT(J)*(timeh-dble(NCYC)*PERT(J))+FACET(J)
                   TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
                   SALTMUL=RampTip*FFT(J)
 
@@ -1656,7 +1652,7 @@ C******************************************************************************
                      END DO
                   ELSE
                      DO I = 1,NP
-                        ARGTP   = ARGT + NA*SLAM(I)
+                        ARGTP   = ARGT + dble(NA)*SLAM(I)
                         ARGSALT = ARGT - SALTPHA(J,I)
                         TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
      &                            + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
@@ -1765,8 +1761,8 @@ C.....WSMOD = WS when C = Ccrit.
 C.....Calculate the surface erosion rate for cohesive sediment using
 C.....the Ariathurai et at. (1977) adaption of Partheniades' (1962) findings
 
-        HSE=0.
-        IF(BEDSTR.GT.CBEDSTRE) HSE=ECONST*(BEDSTR/CBEDSTRE-1.0)
+        HSE=0D0
+        IF(BEDSTR.GT.CBEDSTRE) HSE=ECONST*(BEDSTR/CBEDSTRE-1.0d0)
 
 C.....Determine the total source sink term
 
@@ -1807,7 +1803,7 @@ C.....SET NODAL VALUES FOR EACH ELEMENT
          H1N1=H1(NM1)
          H1N2=H1(NM2)
          H1N3=H1(NM3)
-         SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.
+         SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3d0
 
 C.....COMPUTE ELEMENTAL MATRICIES
 
@@ -1825,8 +1821,8 @@ C.....COMPUTE ELEMENTAL MATRICIES
          FDX3O2A=FDX3/AREAIE2  !dphi3/dx
          FDY3O2A=FDY3/AREAIE2  !dphi3/dy
 
-         DDX1=FDX1/3.        !<2*(dphi1/dx)*phij> j=1,2,3
-         DDY1=FDY1/3.        !<2*(dphi1/dy)*phij> j=1,2,3
+         DDX1=FDX1/3d0        !<2*(dphi1/dx)*phij> j=1,2,3
+         DDY1=FDY1/3d0        !<2*(dphi1/dy)*phij> j=1,2,3
          DXX11=FDX1O2A*FDX1   !<2*(dphi1/dx)*(dphi1/dx)>
          DYY11=FDY1O2A*FDY1   !<2*(dphi1/dy)*(dphi1/dy)>
          DXXYY11=DXX11+DYY11
@@ -1837,8 +1833,8 @@ C.....COMPUTE ELEMENTAL MATRICIES
          DYY13=FDY1O2A*FDY3   !<2*(dphi1/dy)*(dphi3/dy)>
          DXXYY13=DXX13+DYY13
 
-         DDX2=FDX2/3.        !<2*(dphi2/dx)*phij> j=1,2,3
-         DDY2=FDY2/3.        !<2*(dphi2/dy)*phij> j=1,2,3
+         DDX2=FDX2/3d0        !<2*(dphi2/dx)*phij> j=1,2,3
+         DDY2=FDY2/3d0        !<2*(dphi2/dy)*phij> j=1,2,3
          DXX22=FDX2O2A*FDX2   !<2*(dphi2/dx)*(dphi2/dx)>
          DYY22=FDY2O2A*FDY2   !<2*(dphi2/dy)*(dphi2/dy)>
          DXXYY22=DXX22+DYY22
@@ -1846,24 +1842,24 @@ C.....COMPUTE ELEMENTAL MATRICIES
          DYY23=FDY2O2A*FDY3   !<2*(dphi2/dy)*(dphi3/dy)>
          DXXYY23=DXX23+DYY23
 
-         DDX3=FDX3/3.        !<2*(dphi3/dx)*phij> j=1,2,3
-         DDY3=FDY3/3.        !<2*(dphi3/dy)*phij> j=1,2,3
+         DDX3=FDX3/3d0        !<2*(dphi3/dx)*phij> j=1,2,3
+         DDY3=FDY3/3d0        !<2*(dphi3/dy)*phij> j=1,2,3
          DXX33=FDX3O2A*FDX3   !<2*(dphi3/dx)*(dphi3/dx)>
          DYY33=FDY3O2A*FDY3   !<2*(dphi3/dy)*(dphi3/dy)>
          DXXYY33=DXX33+DYY33
 
          LUMPT=1             !=1/0; LUMP/DO NOT LUMP THE TRANSPORT EQN
-         FDDD=(1+LUMPT)*AREAIE2/6.D0 !<2*(phii*phij) i=j>
-         FDDOD=(1-LUMPT)*AREAIE2/12.D0 !<2*(phii*phij) i<>j>
+         FDDD=dble(1+LUMPT)*AREAIE2/6.D0 !<2*(phii*phij) i=j>
+         FDDOD=dble(1-LUMPT)*AREAIE2/12.D0 !<2*(phii*phij) i<>j>
          FDDDODT=FDDD/DTDP
          FDDODODT=FDDOD/DTDP
 
 C.....COMPUTE ELEMENTAL QUANTITIES
 
-         UEA=(U1N1+U1N2+U1N3)/3.
-         VEA=(V1N1+V1N2+V1N3)/3.
-         HEA=(H1N1+H1N2+H1N3)/3.
-         EVCEA=(EVC1+EVC2+EVC3)/3.
+         UEA=(U1N1+U1N2+U1N3)/3d0
+         VEA=(V1N1+V1N2+V1N3)/3d0
+         HEA=(H1N1+H1N2+H1N3)/3d0
+         EVCEA=(EVC1+EVC2+EVC3)/3d0
          DHDX=H1N1*FDX1O2A+H1N2*FDX2O2A+H1N3*FDX3O2A
          DHDY=H1N1*FDY1O2A+H1N2*FDY2O2A+H1N3*FDY3O2A
          UPEA=UEA+DHDX*EVCEA/HEA
@@ -1887,7 +1883,7 @@ C......SOURCE SINK TERMS (EITHER LUMPED OR CONSISTENT)
      &           +FDDD*SS1N1+FDDOD*(SS1N2+SS1N3)
          TEMP_LV_A1=             !LHS VECTOR
 C......TRANSIENT TERM (LUMPED)
-     &           FDDDODT+2.*FDDODODT
+     &           FDDDODT+2d0*FDDODODT
 
 C.....LOAD ELEMENTAL COMPONENTS FOR TRANSPORT EQUATION INTO TEMP_LV_A2 AND
 C.....TEMP_LV_B2 VECTOR FOR NODE NM2
@@ -1903,7 +1899,7 @@ C......SOURCE SINK TERMS (EITHER LUMPED OR CONSISTENT)
      &           +FDDD*SS1N2+FDDOD*(SS1N1+SS1N3)
          TEMP_LV_A2=             !LHS VECTOR
 C......TRANSIENT TERM (LUMPED)
-     &           FDDDODT+2.*FDDODODT
+     &           FDDDODT+2d0*FDDODODT
 
 C.....LOAD ELEMENTAL COMPONENTS FOR TRANSPORT EQUATION INTO TEMP_LV_A3 AND
 C.....TEMP_LV_B3 VECTOR FOR NODE NM3
@@ -1919,28 +1915,28 @@ C......SOURCE SINK TERMS (EITHER LUMPED OR CONSISTENT)
      &           +FDDD*SS1N3+FDDOD*(SS1N1+SS1N2)
          TEMP_LV_A3=             !LHS VECTOR
 C......TRANSIENT TERM (LUMPED)
-     &           FDDDODT+2.*FDDODODT
+     &           FDDDODT+2d0*FDDODODT
 
 C     VEC...LINES TO RUN ON A VECTOR COMPUTER
 #ifdef CVEC
-         TEMP_LV_B(IE,1)=TEMP_LV_B1*NCELE !LOAD VECTOR
-         TEMP_LV_B(IE,2)=TEMP_LV_B2*NCELE !LOAD VECTOR
-         TEMP_LV_B(IE,3)=TEMP_LV_B3*NCELE !LOAD VECTOR
-         TEMP_LV_A(IE,1)=TEMP_LV_A1*NCELE !LUMPED LHS MATRIX
-         TEMP_LV_A(IE,2)=TEMP_LV_A2*NCELE !LUMPED LHS MATRIX
-         TEMP_LV_A(IE,3)=TEMP_LV_A3*NCELE !LUMPED LHS MATRIX
+         TEMP_LV_B(IE,1)=TEMP_LV_B1*dble(NCELE) !LOAD VECTOR
+         TEMP_LV_B(IE,2)=TEMP_LV_B2*dble(NCELE) !LOAD VECTOR
+         TEMP_LV_B(IE,3)=TEMP_LV_B3*dble(NCELE) !LOAD VECTOR
+         TEMP_LV_A(IE,1)=TEMP_LV_A1*dble(NCELE) !LUMPED LHS MATRIX
+         TEMP_LV_A(IE,2)=TEMP_LV_A2*dble(NCELE) !LUMPED LHS MATRIX
+         TEMP_LV_A(IE,3)=TEMP_LV_A3*dble(NCELE) !LUMPED LHS MATRIX
 #endif
 
 C     LINES TO RUN ON A SCALAR COMPUTER
 C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR QC AND TRANS_LV_A
 C     ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
 #ifdef CSCA
-         TRANS_LV_B(NM1)=TRANS_LV_B(NM1)+TEMP_LV_B1*NCELE !LOAD VECTOR
-         TRANS_LV_B(NM2)=TRANS_LV_B(NM2)+TEMP_LV_B2*NCELE !LOAD VECTOR
-         TRANS_LV_B(NM3)=TRANS_LV_B(NM3)+TEMP_LV_B3*NCELE !LOAD VECTOR
-         TRANS_LV_A(NM1)=TRANS_LV_A(NM1)+TEMP_LV_A1*NCELE !LUMPED LHS MATRIX
-         TRANS_LV_A(NM2)=TRANS_LV_A(NM2)+TEMP_LV_A2*NCELE !LUMPED LHS MATRIX
-         TRANS_LV_A(NM3)=TRANS_LV_A(NM3)+TEMP_LV_A3*NCELE !LUMPED LHS MATRIX
+         TRANS_LV_B(NM1)=TRANS_LV_B(NM1)+TEMP_LV_B1*dble(NCELE) !LOAD VECTOR
+         TRANS_LV_B(NM2)=TRANS_LV_B(NM2)+TEMP_LV_B2*dble(NCELE) !LOAD VECTOR
+         TRANS_LV_B(NM3)=TRANS_LV_B(NM3)+TEMP_LV_B3*dble(NCELE) !LOAD VECTOR
+         TRANS_LV_A(NM1)=TRANS_LV_A(NM1)+TEMP_LV_A1*dble(NCELE) !LUMPED LHS MATRIX
+         TRANS_LV_A(NM2)=TRANS_LV_A(NM2)+TEMP_LV_A2*dble(NCELE) !LUMPED LHS MATRIX
+         TRANS_LV_A(NM3)=TRANS_LV_A(NM3)+TEMP_LV_A3*dble(NCELE) !LUMPED LHS MATRIX
 #endif
 
       ENDDO
@@ -2090,19 +2086,19 @@ c******************************************************************************
          H2N1=H2(NM1)
          H2N2=H2(NM2)
          H2N3=H2(NM3)
-         EtaN1=IFNLFA*Eta2(NM1)
-         EtaN2=IFNLFA*Eta2(NM2)
-         EtaN3=IFNLFA*Eta2(NM3)
+         EtaN1=dble(IFNLFA)*Eta2(NM1)
+         EtaN2=dble(IFNLFA)*Eta2(NM2)
+         EtaN3=dble(IFNLFA)*Eta2(NM3)
          SFacAvg= SFacEle(IE)
 C..... BEG DW/WJP
          SFmxAvg= SFMXEle(IE) ; 
          SFmyAvg= SFMYEle(IE) ; 
-         sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-         sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
+         sfdxfac = dble(1 - IFSFM)*SFacAvg + dble(IFSFM)*SFmxAvg ;
+         sfdyfac = dble(1 - IFSFM)*1.0D0 + dble(IFSFM)*SFmyAvg ;
 C..... END DW/WJP
 
          AreaIE2=Areas(IE)
-         AreaEle=NCEle*AreaIE2*0.5d0
+         AreaEle=dble(NCEle)*AreaIE2*0.5d0
          FDX1 = FDXE(1,IE)*sfdxfac ; !c FDX1=(Y(NM2)-Y(NM3))*MX !b1*mx
          FDX2 = FDXE(2,IE)*sfdxfac ; !c FDX2=(Y(NM3)-Y(NM1))*MX !b2*mx
          FDX3 = FDXE(3,IE)*sfdxfac ; !c FDX3=(Y(NM1)-Y(NM2))*MX !b3*mx
@@ -2327,7 +2323,7 @@ C
             SigT_mid_point = f1 * SigT(NH,NFEN) + f2 * SigT(NH,NFEN-1) + f3 * SigT(NH,NFEN-2)
 
             ! 3. evaluate the integral at node NFEN-1
-            BCP (NH,NFEN-1) = (1.0/6.0) * ( Sigma(NFEN) - Sigma(NFEN-1) ) * HGORhoOAMB *
+            BCP (NH,NFEN-1) = (1.0d0/6.0d0) * ( Sigma(NFEN) - Sigma(NFEN-1) ) * HGORhoOAMB *
      &                        ( (SigT(NH,NFEN)-SigT0) + 4.0d0 * (SigT_mid_point-SigT0) +  (SigT(NH,NFEN-1)-SigT0) )
 
             ! 4. evaluate the integral at the rest of the vertical nodes
@@ -2346,7 +2342,7 @@ C
                SigT_mid_point = f1 * SigT(NH,k+2) + f2 * SigT(NH,k+1) + f3 * SigT(NH,k)
 
                 ! 4.2. evaluate the integral
-               BCP (NH,k) = BCP (NH,k+1) + (1.0/6.0) * ( Sigma(k+1) - Sigma(k) ) * HGORhoOAMB 
+               BCP (NH,k) = BCP (NH,k+1) + (1.0d0/6.0d0) * ( Sigma(k+1) - Sigma(k) ) * HGORhoOAMB
      &                    * ( (SigT(NH,k+1)-SigT0) + 4.0d0 * (SigT_mid_point-SigT0) +  (SigT(NH,k)-SigT0) )
 
             End Do
@@ -2432,7 +2428,7 @@ Casey: Added the computation of "NCELE" and the last part of the IF statement.
 C
                   NCELE = NODECODE(NH)*NODECODE(N2)
      &                *NODECODE(N3)*NOFF(NELE)
-                  IF((BCPN2.NE.-999.).AND.(BCPN3.NE.-999.)
+                  IF((BCPN2.NE.-999d0).AND.(BCPN3.NE.-999d0)
      &                 .AND.(NEle.NE.0).AND.(NCELE.NE.0)) THEN !if all 3 nodes are active, compute bu
                      TotalBCPGArea2=TotalBCPGArea2+Areas(NEle)
 C    kmd48.33bc add in spherical factors
@@ -2461,7 +2457,7 @@ C
                   NCELE = NODECODE(NH)*NODECODE(N2)
      &                *NODECODE(N3)*NOFF(NELE)
                ENDIF
-               IF((BCPN2.NE.-999.).AND.(BCPN3.NE.-999.)
+               IF((BCPN2.NE.-999d0).AND.(BCPN3.NE.-999d0)
      &              .AND.(NEle.NE.0).AND.(NCELE.NE.0)) THEN
                   TotalBCPGArea2=TotalBCPGArea2+Areas(NEle)
 C    kmd48.33bc add in spherical factors
@@ -2477,14 +2473,14 @@ C    kmd48.33bc add in spherical factors
                ENDIF
 
 C    kmd48.33bc changed the BPG calculation for bottom boundary issues
-               IF(TotalBCPGArea2.EQ.0.) THEN
+               IF(TotalBCPGArea2.EQ.0d0) THEN
 !                  IF (k.eq.NFEN) THEN !kd46.01
                      BCPG(k)=(0.d0,0.d0)
 !                  ELSE
 !                     BCPG(k)=BCPG(k+1)
 !                  END IF
                ELSE
-                  BCPG(k)=(DBCPDX2A+iy*DBCPDY2A)/TotalBCPGArea2
+                  BCPG(k)=(dcmplx(DBCPDX2A)+iy*dcmplx(DBCPDY2A))/dcmplx(TotalBCPGArea2)
                ENDIF
 
             ENDDO
@@ -2508,8 +2504,8 @@ c     integrate over the vertical first and differentiate second.
 ! this old scheme has been replaced by the new one below ...
             VIBCPG=(0.d0,0.d0)
             DO k=NFEN-1,1,-1
-               VIBCPG=VIBCPG+0.5d0*(BCPG(k+1)+BCPG(k))
-     &              *(Sigma(k+1)-Sigma(k))
+               VIBCPG=VIBCPG+dcmplx(0.5d0)*(BCPG(k+1)+BCPG(k))
+     &              *dcmplx(Sigma(k+1)-Sigma(k))
             ENDDO
 !--------------------------------------------------------------------------------------------------
 ! arash 25/2/2016: Simpson integration, using quadratic function interpolation.
@@ -2528,10 +2524,11 @@ c     integrate over the vertical first and differentiate second.
             f3 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-1)) ) 
      &         / ( (Sigma(NFEN-2) - Sigma(NFEN))   * (Sigma(NFEN-2) - Sigma(NFEN-1)) )
 
-            BCPG_mid_point = f1 * BCPG(NFEN) + f2 * BCPG(NFEN-1) + f3 * BCPG(NFEN-2)
+            BCPG_mid_point = dcmplx(f1) * BCPG(NFEN) + dcmplx(f2) * BCPG(NFEN-1) + dcmplx(f3) * BCPG(NFEN-2)
 
             ! 3. evaluate the integral at node NFEN-1
-            VIBCPG = (1.0/6.0) * ( Sigma(NFEN) - Sigma(NFEN-1) ) * ( BCPG(NFEN) + 4.0d0 * BCPG_mid_point + BCPG(NFEN-1) )
+            VIBCPG = dcmplx(1.0d0/6.0d0) * dcmplx( Sigma(NFEN) - Sigma(NFEN-1) ) *
+     &               ( BCPG(NFEN) + dcmplx(4.0d0) * BCPG_mid_point + BCPG(NFEN-1) )
 
             ! 4. evaluate the integral at the rest of the vertical nodes
             Do k = NFEN-2, 1, -1
@@ -2546,10 +2543,12 @@ c     integrate over the vertical first and differentiate second.
                f3 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k+1)) ) 
      &            / ( (Sigma(k)   - Sigma(k+2)) * (Sigma(k)   - Sigma(k+1)) )
 
-               BCPG_mid_point = f1 * BCPG(k+2) + f2 * BCPG(k+1) + f3 * BCPG(k)
+               BCPG_mid_point = dcmplx(f1) * BCPG(k+2) + dcmplx(f2) * BCPG(k+1) + dcmplx(f3) * BCPG(k)
 
                 ! 4.2. evaluate the integral
-               VIBCPG = VIBCPG + (1.0/6.0) * ( Sigma(k+1) - Sigma(k) ) * ( BCPG(k+1) + 4.0d0 * BCPG_mid_point + BCPG(k) )
+               VIBCPG = VIBCPG + dcmplx(1.0d0/6.0d0) *
+     &            dcmplx( Sigma(k+1) - Sigma(k) ) *
+     &            ( BCPG(k+1) + dcmplx(4.0d0) * BCPG_mid_point + BCPG(k) )
 
             End Do
 
@@ -2685,13 +2684,13 @@ C     jgf46.00 Explicitly declared the following variables
 #endif
       IDiag=0
 
-      IF(SigmaNN.LE.1.0001*b) THEN !if into ground then skip
+      IF(SigmaNN.LE.1.0001d0*b) THEN !if into ground then skip
          SigBelo=-999
          SigAbov=-999
-         BCPressNN=-999.
+         BCPressNN=-999d0
          GOTO 100
       ENDIF
-      IF((SigmaNN.GT.1.0001*b).AND.(SigmaNN.LE.b)) THEN !at bottom then use bottom
+      IF((SigmaNN.GT.1.0001d0*b).AND.(SigmaNN.LE.b)) THEN !at bottom then use bottom
          LBelo=1
          BCPressNN=BCP(NN,LBelo)
          SigBelo=b
@@ -2807,7 +2806,7 @@ C     jgf46.00 Explicitly declared the following variables
       IF(SigmaNN.LE.(1.00010d0*b)) THEN !if into ground then skip
          SigBelo=-999
          SigAbov=-999
-         BCPressNN=-999.
+         BCPressNN=-999d0
 !--------------------------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------------------------
 ! try this Jan 20 2016: this is a bad idea
@@ -3079,9 +3078,9 @@ C**********************************************************************
           Weights = 0.0d0
           Do J = 1, NNeigh ( I ) ! also includes node I
              Neighbor_Node = NeiTab ( I , J )
-             numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 
-             denominator = 2.0d0 * sigma_Gauss**2
-             Weights (J) = exp ( -1.0 * numerator / denominator )
+             numerator = ( X(Neighbor_Node) - X(I) )**2d0 + ( Y(Neighbor_Node) - Y(I) )**2
+             denominator = 2.0d0 * sigma_Gauss**2d0
+             Weights (J) = exp ( -1.0d0 * numerator / denominator )
           End Do
           ! 2.1 normalize weights
           sum_Weights = 0.0d0
@@ -3112,7 +3111,7 @@ C**********************************************************************
                 SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / H2(Neighbor_Node)
                 ! 3.1. linearly interpolate surrounding BPG on the same horizontal plane
                 Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, interpolated_value, K )
-                quantity_smooth (I,K) = quantity_smooth (I,K) + Weights (J) * interpolated_value
+                quantity_smooth (I,K) = quantity_smooth(I,K) + dcmplx(Weights(J)) * interpolated_value
              End Do
           End Do
        End Do

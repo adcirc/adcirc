@@ -572,7 +572,7 @@ C
       ICHA=0
       icall=0
 C
-      if (hafreq(1).eq.0.0) then
+      if (hafreq(1).eq.0.0d0) then
          nz=0
          nf=1
       else
@@ -805,7 +805,7 @@ c     SUBROUTINE FULSOL prior to the matrix's decomposition
 c     Take care of the steady constituent if included in the analysis
 
       if(nf.eq.1) then
-         ha(1,1)=icall
+         ha(1,1)=dble(icall)
          do j=1,nfreq
             tf1=hafreq(j+nf)*TIMELOC
             ha(1,2*j)   = ha(1,2*j) + cos(tf1)
@@ -1106,14 +1106,14 @@ C...Compute means and variances for checking the harmonic analysis results
 C...Accumulate mean and variance at each node.
       if ((CHARMV.eqv..true.).and.(FMV.gt.1.0d-3)) then
          DO I=1,NP
-            ELAV(I)   = ELAV(I)/NTSTEPS
-            XVELAV(I) = XVELAV(I)/NTSTEPS
-            YVELAV(I) = YVELAV(I)/NTSTEPS
-            ELVA(I)   = ELVA(I)/NTSTEPS   - ELAV(I)*ELAV(I)
-            XVELVA(I) = XVELVA(I)/NTSTEPS - XVELAV(I)*XVELAV(I)
-            YVELVA(I) = YVELVA(I)/NTSTEPS - YVELAV(I)*YVELAV(I)
+            ELAV(I)   = ELAV(I)/dble(NTSTEPS)
+            XVELAV(I) = XVELAV(I)/dble(NTSTEPS)
+            YVELAV(I) = YVELAV(I)/dble(NTSTEPS)
+            ELVA(I)   = ELVA(I)/dble(NTSTEPS)   - ELAV(I)*ELAV(I)
+            XVELVA(I) = XVELVA(I)/dble(NTSTEPS) - XVELAV(I)*XVELAV(I)
+            YVELVA(I) = YVELVA(I)/dble(NTSTEPS) - YVELAV(I)*YVELAV(I)
          END DO
-         TIMEBEG=int(ITMV*DTDP + (STATIM-REFTIM)*86400.D0)
+         TIMEBEG=int(dble(ITMV)*DTDP + (STATIM-REFTIM)*86400.D0)
       ENDIF
 
 C......Fill out and decompose the LHS harmonic analaysis matrix
@@ -1276,7 +1276,7 @@ c        phase is between 0 and 360 deg.
                i1=2*i-1-nf
                i2=i1+1
                emag(i,n)=sqrt(hax(i1)*hax(i1)+hax(i2)*hax(i2))/haff(i)
-               if((hax(i1).eq.0.).and.(hax(i2).eq.0.)) then
+               if((hax(i1).eq.0d0).and.(hax(i2).eq.0d0)) then
                   phasee=0.d0
                else
                   phasee = atan2(hax(i2),hax(i1))
@@ -1348,29 +1348,29 @@ c        phase is between 0 and 360 deg.
             if((nf.eq.1).and.(i.eq.1)) then
                umag(i,n)=hax(i)/haff(i)
                vmag(i,n)=y(i)/haff(i)
-               phaseu=0.
-               phasev=0.
+               phaseu=0d0
+               phasev=0d0
             else
                i1=2*i-1-nf
                i2=i1+1
                umag(i,n)=sqrt(hax(i1)*hax(i1)+hax(i2)*hax(i2))/haff(i)
                vmag(i,n)=sqrt(y(i1)*y(i1)+y(i2)*y(i2))/haff(i)
-               if((hax(i1).eq.0.).and.(hax(i2).eq.0.)) then
-                  phaseu=0.
+               if((hax(i1).eq.0d0).and.(hax(i2).eq.0d0)) then
+                  phaseu=0d0
                else
                   phaseu = atan2(hax(i2),hax(i1))
                endif
-               if((y(i1).eq.0.).and.(y(i2).eq.0.)) then
-                  phasev=0.
+               if((y(i1).eq.0d0).and.(y(i2).eq.0d0)) then
+                  phasev=0d0
                else
                   phasev = atan2(y(i2),y(i1))
                endif
             endif
             phasedu(i,n)=convrd*phaseu+haface(i)
-            if(phasedu(i,n).lt.0.) phasedu(i,n)=phasedu(i,n)+360.d0
+            if(phasedu(i,n).lt.0d0) phasedu(i,n)=phasedu(i,n)+360.d0
             if(phasedu(i,n).ge.360.d0) phasedu(i,n)=phasedu(i,n)-360.d0
             phasedv(i,n)=convrd*phasev+haface(i)
-            if(phasedv(i,n).lt.0.) phasedv(i,n)=phasedv(i,n)+360.d0
+            if(phasedv(i,n).lt.0d0) phasedv(i,n)=phasedv(i,n)+360.d0
             if(phasedv(i,n).ge.360.d0) phasedv(i,n)=phasedv(i,n)-360.d0
          end do
       end do
@@ -1415,10 +1415,10 @@ c
       ALLOCATE ( PHASEE(MNHARF),EMAG(MNHARF) )
 C
       if (CHARMV) then
-         EAVMAX=-999.
-         EVAMAX=-999.
-         EAVMIN= 999.
-         EVAMIN= 999.
+         EAVMAX=-999d0
+         EVAMAX=-999d0
+         EAVMIN= 999d0
+         EVAMIN= 999d0
       end if
 c
 c***** AT each node transfer each load vector to p, solve and write output
@@ -1436,20 +1436,20 @@ c
             if((nf.eq.1).and.(i.eq.1)) then
                emag(i)=hax(i)
                emagt(i,n)=emag(i)/haff(i)
-               phasee(i)=0.
+               phasee(i)=0d0
             else
                i1=2*i-1-nf
                i2=i1+1
                emag(i)=sqrt(hax(i1)*hax(i1)+hax(i2)*hax(i2))
                emagt(i,n)=emag(i)/haff(i)
-               if((hax(i1).eq.0.).and.(hax(i2).eq.0.)) then
-                  phasee(i)=0.
+               if((hax(i1).eq.0d0).and.(hax(i2).eq.0d0)) then
+                  phasee(i)=0d0
                else
                   phasee(i) = atan2(hax(i2),hax(i1))
                endif
             endif
             phaseden(i,n)=convrd*phasee(i)+haface(i)
-            if(phaseden(i,n).lt.0.) phaseden(i,n)=phaseden(i,n)+360.d0
+            if(phaseden(i,n).lt.0d0) phaseden(i,n)=phaseden(i,n)+360.d0
             if(phaseden(i,n).ge.360.d0) phaseden(i,n)=phaseden(i,n)-360.d0
          end do
 
@@ -1457,7 +1457,7 @@ c
             eav(n) = 0.d0
             esq(n) = 0.d0
             do it=1,ntsteps
-               TIMELOC=TIMEBEG+DTDP*IT
+               TIMELOC=dble(TIMEBEG)+DTDP*dble(IT)
                rse=0.d0
                do ifr=1,nfreq+nf
                   ftime=hafreq(ifr)*TIMELOC
@@ -1467,17 +1467,17 @@ c
                esq(n)=esq(n)+rse*rse
             end do
 C
-            eav(n)=eav(n)/ntsteps
-            esq(n)=esq(n)/ntsteps-eav(n)*eav(n)
-            if(elav(n).eq.0.) then
-               if(eav(n).eq.0.) eavdif(n)=1.0d0
-               if(eav(n).ne.0.) eavdif(n)=99d19
+            eav(n)=eav(n)/dble(ntsteps)
+            esq(n)=esq(n)/dble(ntsteps)-eav(n)*eav(n)
+            if(elav(n).eq.0d0) then
+               if(eav(n).eq.0d0) eavdif(n)=1.0d0
+               if(eav(n).ne.0d0) eavdif(n)=99d19
             else
                eavdif(n)=eav(n)/elav(n)
             endif
-            if(elva(n).eq.0.) then
-               if(esq(n).eq.0.) evadif(n)=1.0d0
-               if(esq(n).ne.0.) evadif(n)=99e19
+            if(elva(n).eq.0d0) then
+               if(esq(n).eq.0d0) evadif(n)=1.0d0
+               if(esq(n).ne.0d0) evadif(n)=99d19
             else
                evadif(n)=esq(n)/elva(n)
             endif
@@ -1565,14 +1565,14 @@ c
 c
 c
       if ( charmv ) then
-         UAVMAX=-999.
-         VAVMAX=-999.
-         UVAMAX=-999.
-         VVAMAX=-999.
-         UAVMIN= 999.
-         VAVMIN= 999.
-         UVAMIN= 999.
-         VVAMIN= 999.
+         UAVMAX=-999d0
+         VAVMAX=-999d0
+         UVAMAX=-999d0
+         VVAMAX=-999d0
+         UAVMIN= 999d0
+         VAVMIN= 999d0
+         UVAMIN= 999d0
+         VVAMIN= 999d0
       endif                     ! charmv
 c
 c***** AT each node transfer each load vector to p, solve and write output
@@ -1604,22 +1604,22 @@ c
                umagt(i,n)=umagg(i)/haff(i)
                vmagg(i)=sqrt(y(i1)*y(i1)+y(i2)*y(i2))
                vmagt(i,n)=vmagg(i)/haff(i)
-               if((hax(i1).eq.0.).and.(hax(i2).eq.0.)) then
-                  phaseug(i)=0.
+               if((hax(i1).eq.0d0).and.(hax(i2).eq.0d0)) then
+                  phaseug(i)=0d0
                else
                   phaseug(i)=atan2(hax(i2),hax(i1))
                endif
-               if((y(i1).eq.0.).and.(y(i2).eq.0.)) then
-                  phasevg(i)=0.
+               if((y(i1).eq.0d0).and.(y(i2).eq.0d0)) then
+                  phasevg(i)=0d0
                else
                   phasevg(i)=atan2(y(i2),y(i1))
                endif
             endif
             phasedut(i,n)=convrd*phaseug(i)+haface(i)
-            if(phasedut(i,n).lt.0.) phasedut(i,n)=phasedut(i,n)+360.d0
+            if(phasedut(i,n).lt.0d0) phasedut(i,n)=phasedut(i,n)+360.d0
             if(phasedut(i,n).ge.360.d0) phasedut(i,n)=phasedut(i,n)-360.d0
             phasedvt(i,n)=convrd*phasevg(i)+haface(i)
-            if(phasedvt(i,n).lt.0.) phasedvt(i,n)=phasedvt(i,n)+360.d0
+            if(phasedvt(i,n).lt.0d0) phasedvt(i,n)=phasedvt(i,n)+360.d0
             if(phasedvt(i,n).ge.360.d0) phasedvt(i,n)=phasedvt(i,n)-360.d0
  6636       format(2x,e16.8,1x,f11.4,2x,e16.8,1x,f11.4)
          end do
@@ -1634,9 +1634,9 @@ CHARMV...Compare resynthesized values with those computed during time stepping.
             usq(n) = 0.d0
             vsq(n) = 0.d0
             do it=1,ntsteps
-               TIMELOC=TIMEBEG+DTDP*IT
-               rsu=0.
-               rsv=0.
+               TIMELOC=dble(TIMEBEG)+DTDP*dble(IT)
+               rsu=0d0
+               rsv=0d0
                do ifr=1,nfreq+nf
                   ftime=hafreq(ifr)*TIMELOC
                   rsu=rsu+umagg(ifr)*cos(ftime-phaseug(ifr))
@@ -1648,31 +1648,31 @@ CHARMV...Compare resynthesized values with those computed during time stepping.
                vsq(n)=vsq(n)+rsv*rsv
             end do
 
-            uav(n)=uav(n)/ntsteps
-            vav(n)=vav(n)/ntsteps
-            usq(n)=usq(n)/ntsteps-uav(n)*uav(n)
-            vsq(n)=vsq(n)/ntsteps-vav(n)*vav(n)
-            if(xvelav(n).eq.0.) then
-               if(uav(n).eq.0.) uavdif(n)=1.0d0
-               if(uav(n).ne.0.) uavdif(n)=99e19
+            uav(n)=uav(n)/dble(ntsteps)
+            vav(n)=vav(n)/dble(ntsteps)
+            usq(n)=usq(n)/dble(ntsteps)-uav(n)*uav(n)
+            vsq(n)=vsq(n)/dble(ntsteps)-vav(n)*vav(n)
+            if(xvelav(n).eq.0d0) then
+               if(uav(n).eq.0d0) uavdif(n)=1.0d0
+               if(uav(n).ne.0d0) uavdif(n)=99d19
             else
                uavdif(n)=uav(n)/xvelav(n)
             endif
-            if(yvelav(n).eq.0.) then
-               if(vav(n).eq.0.) vavdif(n)=1.0d0
-               if(vav(n).ne.0.) vavdif(n)=99e19
+            if(yvelav(n).eq.0d0) then
+               if(vav(n).eq.0d0) vavdif(n)=1.0d0
+               if(vav(n).ne.0d0) vavdif(n)=99d19
             else
                vavdif(n)=vav(n)/yvelav(n)
             endif
-            if(xvelva(n).eq.0.) then
-               if(usq(n).eq.0.) uvadif(n)=1.0d0
-               if(usq(n).ne.0.) uvadif(n)=99e19
+            if(xvelva(n).eq.0d0) then
+               if(usq(n).eq.0d0) uvadif(n)=1.0d0
+               if(usq(n).ne.0d0) uvadif(n)=99d19
             else
                uvadif(n)=usq(n)/xvelva(n)
             endif
-            if(yvelva(n).eq.0.) then
-               if(vsq(n).eq.0.) vvadif(n)=1.0d0
-               if(vsq(n).ne.0.) vvadif(n)=99e19
+            if(yvelva(n).eq.0d0) then
+               if(vsq(n).eq.0d0) vvadif(n)=1.0d0
+               if(vsq(n).ne.0d0) vvadif(n)=99d19
             else
                vvadif(n)=vsq(n)/yvelva(n)
             endif
@@ -1892,7 +1892,7 @@ c     Read in Global Velocity LHS load vector
       ENDIF
 C..   Read in Means and Squares
       IF (CHARMV.eqv..true.) THEN
-         IF ((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
+         IF ((FMV.NE.0d0).AND.(ITHS.GT.ITMV)) THEN
             READ(lun,REC=counter) NTSTEPS ; counter = counter + 1
             IF(NHAGE.ne.0) THEN
                DO I=1,num_nodes
@@ -1960,7 +1960,7 @@ C     Map data from fulldomain to subdomain in parallel
          
 C..      Map Means and Squares
          IF (CHARMV.eqv..true.) THEN
-            IF ((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
+            IF ((FMV.NE.0d0).AND.(ITHS.GT.ITMV)) THEN
                IF(NHAGE.ne.0) THEN
                   DO subdomainNode=1,NP
                      fulldomainNode = ABS(NODES_LG(subdomainNode))
@@ -2035,19 +2035,19 @@ c
       do i=1,nfreq+nf
          if(namefr(i).ne.inamefr(i)) iflag=1
          if(abs(hafreq(i)+ifreq(i)).lt.1.0d-30) then
-            fdiff=0.
+            fdiff=0d0
          else
             fdiff=abs(hafreq(i)-ifreq(i))/abs(hafreq(i)+ifreq(i))
          endif
          if(fdiff.ge.1.d-6) iflag=1
          if(abs(HAFF(i)+iFF(i)).lt.1d-30) then
-            fdiff=0.
+            fdiff=0d0
          else
             fdiff=abs(HAFF(i)-iFF(i))/abs(HAFF(i)+iFF(i))
          endif
          if(fdiff.ge.1.d-6) iflag=1
          if(abs(HAFACE(i)+iFACE(i)).lt.1d-30) then
-            fdiff=0.
+            fdiff=0d0
          else
             fdiff=abs(HAFACE(i)-iFACE(i))/abs(HAFACE(i)+iFACE(i))
          endif

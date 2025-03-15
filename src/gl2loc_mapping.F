@@ -195,5 +195,39 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       END SUBROUTINE BcastToLocal_2DRealArray
 C----------------------------------------------------------------------
+C----------------------------------------------------------------------
+      SUBROUTINE BcastToLocal_2DDoubleArray(Val,NX, NY)
+C----------------------------------------------------------------------
+      IMPLICIT NONE
+      REAL(8),INTENT(INOUT) :: Val(:,:)
+      INTEGER,INTENT(IN) :: NX, NY
+      REAL(8),ALLOCATABLE :: TMP(:)
+      INTEGER :: ii, jj, NumVals, kk, ierr
+#ifdef CMPI
+      NumVals = NX*NY
+      ALLOCATE( TMP(NumVals) )
+      IF (MYPROC.EQ.0) THEN
+         kk = 1
+         DO ii = 1,NX
+            DO jj = 1,NY
+               TMP(kk) = Val(ii,jj)
+               kk = kk + 1
+            ENDDO
+         ENDDO
+      ENDIF
+      CALL MPI_BCAST(TMP,NumVals,REALTYPE,0,COMM,ierr)
+      kk = NumVals
+      DO ii = NX,1,-1
+         DO jj = NY,1,-1
+            Val(ii,jj) = TMP(kk)
+            kk = kk - 1
+         ENDDO
+      ENDDO
+
+      DEALLOCATE( TMP )
+#endif
+C----------------------------------------------------------------------
+      END SUBROUTINE BcastToLocal_2DDoubleArray
+C----------------------------------------------------------------------
       ENDMODULE GL2LOC_MAPPING 
 C----------------------------------------------------------------------

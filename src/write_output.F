@@ -478,7 +478,7 @@ C
          ptr(i) % descript2D % num_records_this = np
          ptr(i) % descript2D % imap => nodes_lg
          ptr(i) % descript2D % considerWetDry = .false.
-         ptr(i) % descript2D % alternate_value = -99999.0
+         ptr(i) % descript2D % alternate_value = -99999.0d0
          ptr(i) % descript2D % isStation = .false.
          ptr(i) % descript2D % divideByDepth = .false.
          ! jgf52.08.03: initiallydry.63 already initialized and written by now
@@ -1144,7 +1144,7 @@ C... v49.64.01 tcm -- added for ice stations
       RSDescript % array_g              => RSNXOUT_g
       RSDescript % array2               => RSNYOUT
       RSDescript % array2_g             => RSNYOUT_g
-      RSDescript % alternate_value      = -99999.0
+      RSDescript % alternate_value      = -99999.0d0
       RSDescript % considerWetDry       = .true.
       RSDescript % field_name           = 'RadStress'
       RSDescript % file_basename        = 'rads'
@@ -2059,9 +2059,9 @@ C-----------------------------------------------------------------------
          !
          ! if the value should be divided by the total depth
          if ( descript % divideByDepth .eqv. .true.) then
-            H2N1=DP(NM(e,1))+IFNLFA*ETA2(nm(e,1))
-            H2N2=DP(NM(e,2))+IFNLFA*ETA2(NM(e,2))
-            H2N3=DP(NM(e,3))+IFNLFA*ETA2(NM(e,3))
+            H2N1=DP(NM(e,1))+dble(IFNLFA)*ETA2(nm(e,1))
+            H2N2=DP(NM(e,2))+dble(IFNLFA)*ETA2(NM(e,2))
+            H2N3=DP(NM(e,3))+dble(IFNLFA)*ETA2(NM(e,3))
             d1=d1/H2N1
             d2=d2/H2N2
             d3=d3/H2N3
@@ -2230,7 +2230,7 @@ C     scenario.
             ! fort.51 magnitude
             HAElevStaMagDescript % specifier            = NHASE
             HAElevStaMagDescript % lun                  = 51
-            HAElevStaMagDescript % initial_value        = 0.0
+            HAElevStaMagDescript % initial_value        = 0.0d0
             HAElevStaMagDescript % num_items_per_record = MNHARF
             HAElevStaMagDescript % num_fd_records       = NSTAE_G
             HAElevStaMagDescript % num_records_this     = NSTAE
@@ -2255,7 +2255,7 @@ C     scenario.
             ENDIF
             ! fort.51 phase
             HAElevStaPhaseDescript % specifier            = NHASE
-            HAElevStaPhaseDescript % initial_value        = 0.0
+            HAElevStaPhaseDescript % initial_value        = 0.0d0
             HAElevStaPhaseDescript % num_items_per_record = MNHARF
             HAElevStaPhaseDescript % num_fd_records       = NSTAE_G
             HAElevStaPhaseDescript % num_records_this     = NSTAE
@@ -2284,7 +2284,7 @@ C
             ! fort.52 u velocity magnitude
             HAVelStaUMagDescript % specifier            = NHASV
             HAVelStaUMagDescript % lun                  = 52
-            HAVelStaUMagDescript % initial_value        = 0.0
+            HAVelStaUMagDescript % initial_value        = 0.0d0
             HAVelStaUMagDescript % num_items_per_record = MNHARF
             HAVelStaUMagDescript % num_fd_records       = NSTAV_G
             HAVelStaUMagDescript % num_records_this     = NSTAV
@@ -2292,7 +2292,7 @@ C
             HAVelStaUMagDescript % array2D              => UMAG
             HAVelStaUMagDescript % array2D_g            => null()
             HAVelStaUMagDescript % ConsiderWetDry       = .FALSE.
-            HAVelStaUMagDescript % alternate_value      = 0.0
+            HAVelStaUMagDescript % alternate_value      = 0.0d0
             HAVelStaUMagDescript % field_name           = 'HAVelStaUMag'
             HAVelStaUMagDescript % file_name            = 'fort.52'
             IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
@@ -2310,7 +2310,7 @@ C
             ENDIF
             ! fort.52 v velocity magnitude
             HAVelStaVMagDescript % specifier            = NHASV
-            HAVelStaVMagDescript % initial_value        = 0.0
+            HAVelStaVMagDescript % initial_value        = 0.0d0
             HAVelStaVMagDescript % num_items_per_record = MNHARF
             HAVelStaVMagDescript % num_fd_records       = NSTAV_G
             HAVelStaVMagDescript % num_records_this     = NSTAV
@@ -2318,7 +2318,7 @@ C
             HAVelStaVMagDescript % array2D              => VMAG
             HAVelStaVMagDescript % array2D_g            => null()
             HAVelStaVMagDescript % ConsiderWetDry       = .FALSE.
-            HAVelStaVMagDescript % alternate_value      = 0.0
+            HAVelStaVMagDescript % alternate_value      = 0.0d0
             HAVelStaVMagDescript % field_name           = 'HAVelStaVMag'
             IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
                IF (MyProc.eq.0) THEN
@@ -2335,7 +2335,7 @@ C
             ENDIF
             ! fort.52 u velocity phase
             HAVelStaUPhaseDescript % specifier            = NHASV
-            HAVelStaUPhaseDescript % initial_value        = 0.0
+            HAVelStaUPhaseDescript % initial_value        = 0.0d0
             HAVelStaUPhaseDescript % num_items_per_record = MNHARF
             HAVelStaUPhaseDescript % num_fd_records       = NSTAV_G
             HAVelStaUPhaseDescript % num_records_this     = NSTAV
@@ -2343,7 +2343,7 @@ C
             HAVelStaUPhaseDescript % array2D              => PHASEDU
             HAVelStaUPhaseDescript % array2D_g            => null()
             HAVelStaUPhaseDescript % ConsiderWetDry       = .FALSE.
-            HAVelStaUPhaseDescript % alternate_value      = 0.0
+            HAVelStaUPhaseDescript % alternate_value      = 0.0d0
             HAVelStaUPhaseDescript % field_name   = 'HAVelStaUPhase'
             IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
                IF (MyProc.eq.0) THEN
@@ -2360,7 +2360,7 @@ C
             ENDIF
             ! fort.52 v velocity phase
             HAVelStaVPhaseDescript % specifier            = NHASV
-            HAVelStaVPhaseDescript % initial_value        = 0.0
+            HAVelStaVPhaseDescript % initial_value        = 0.0d0
             HAVelStaVPhaseDescript % num_items_per_record = MNHARF
             HAVelStaVPhaseDescript % num_fd_records       = NSTAV_G
             HAVelStaVPhaseDescript % num_records_this     = NSTAV
@@ -2368,7 +2368,7 @@ C
             HAVelStaVPhaseDescript % array2D              => PHASEDV
             HAVelStaVPhaseDescript % array2D_g            => null()
             HAVelStaVPhaseDescript % ConsiderWetDry       = .FALSE.
-            HAVelStaVPhaseDescript % alternate_value      = 0.0
+            HAVelStaVPhaseDescript % alternate_value      = 0.0d0
             HAVelStaVPhaseDescript % field_name      = 'HAVelStaVPhase'
             IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
                IF (MyProc.eq.0) THEN
@@ -2391,7 +2391,7 @@ C
             ! fort.53 Full Domain Elevation Magnitude
             HAElevMagDescript % specifier            = NHAGE
             HAElevMagDescript % lun                  = 53
-            HAElevMagDescript % initial_value        = 0.0
+            HAElevMagDescript % initial_value        = 0.0d0
             HAElevMagDescript % num_items_per_record = MNHARF
             HAElevMagDescript % num_fd_records       = NP_G
             HAElevMagDescript % num_records_this     = NP
@@ -2399,7 +2399,7 @@ C
             HAElevMagDescript % array2D              => EMAGT
             HAElevMagDescript % array2D_g            => null()
             HAElevMagDescript % ConsiderWetDry       = .FALSE.
-            HAElevMagDescript % alternate_value      = -99999.0
+            HAElevMagDescript % alternate_value      = -99999.0d0
             HAElevMagDescript % field_name           = 'HAElevMag'
             HAElevMagDescript % file_name            = 'fort.53'
             IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
@@ -2410,7 +2410,7 @@ C
             ENDIF
             ! fort.53 Full Domain Elevation Phase
             HAElevPhaseDescript % specifier            = NHAGE
-            HAElevPhaseDescript % initial_value        = 0.0
+            HAElevPhaseDescript % initial_value        = 0.0d0
             HAElevPhaseDescript % num_items_per_record = MNHARF
             HAElevPhaseDescript % num_fd_records       = NP_G
             HAElevPhaseDescript % num_records_this     = NP
@@ -2418,7 +2418,7 @@ C
             HAElevPhaseDescript % array2D              => PHASEDEN
             HAElevPhaseDescript % array2D_g            => null()
             HAElevPhaseDescript % ConsiderWetDry       = .FALSE.
-            HAElevPhaseDescript % alternate_value      = -99999.0
+            HAElevPhaseDescript % alternate_value      = -99999.0d0
             HAElevPhaseDescript % field_name           = 'HAElevPhase'
             IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
                IF (MyProc.eq.0) THEN
@@ -2434,7 +2434,7 @@ C
             ! fort.54 Full Domain U Velocity Magnitude
             HAVelUMagDescript % specifier            = NHAGV
             HAVelUMagDescript % lun                  = 54
-            HAVelUMagDescript % initial_value        = 0.0
+            HAVelUMagDescript % initial_value        = 0.0d0
             HAVelUMagDescript % num_items_per_record = MNHARF
             HAVelUMagDescript % num_fd_records       = NP_G
             HAVelUMagDescript % num_records_this     = NP
@@ -2442,7 +2442,7 @@ C
             HAVelUMagDescript % array2D              => UMAGT
             HAVelUMagDescript % array2D_g            => null()
             HAVelUMagDescript % ConsiderWetDry       = .FALSE.
-            HAVelUMagDescript % alternate_value      = -99999.0
+            HAVelUMagDescript % alternate_value      = -99999.0d0
             HAVelUMagDescript % field_name           = 'HAVelUMag'
             HAVelUMagDescript % file_name            = 'fort.54'
             IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
@@ -2453,7 +2453,7 @@ C
             ENDIF
             ! fort.54 Full Domain V Velocity Magnitude
             HAVelVMagDescript % specifier            = NHAGV
-            HAVelVMagDescript % initial_value        = 0.0
+            HAVelVMagDescript % initial_value        = 0.0d0
             HAVelVMagDescript % num_items_per_record = MNHARF
             HAVelVMagDescript % num_fd_records       = NP_G
             HAVelVMagDescript % num_records_this     = NP
@@ -2461,7 +2461,7 @@ C
             HAVelVMagDescript % array2D              => VMAGT
             HAVelVMagDescript % array2D_g            => null()
             HAVelVMagDescript % ConsiderWetDry       = .FALSE.
-            HAVelVMagDescript % alternate_value      = -99999.0
+            HAVelVMagDescript % alternate_value      = -99999.0d0
             HAVelVMagDescript % field_name           = 'HAVelVMag'
             IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
                IF (MyProc.eq.0) THEN
@@ -2471,7 +2471,7 @@ C
             ENDIF
             ! fort.54 Full Domain U Velocity Phase
             HAVelUPhaseDescript % specifier            = NHAGV
-            HAVelUPhaseDescript % initial_value        = 0.0
+            HAVelUPhaseDescript % initial_value        = 0.0d0
             HAVelUPhaseDescript % num_items_per_record = MNHARF
             HAVelUPhaseDescript % num_fd_records       = NP_G
             HAVelUPhaseDescript % num_records_this     = NP
@@ -2479,7 +2479,7 @@ C
             HAVelUPhaseDescript % array2D              => PHASEDUT
             HAVelUPhaseDescript % array2D_g            => null()
             HAVelUPhaseDescript % ConsiderWetDry       = .FALSE.
-            HAVelUPhaseDescript % alternate_value      = -99999.0
+            HAVelUPhaseDescript % alternate_value      = -99999.0d0
             HAVelUPhaseDescript % field_name           = 'HAVelUPhase'
             IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
                IF (MyProc.eq.0) THEN
@@ -2489,7 +2489,7 @@ C
             ENDIF
             ! fort.54 Full Domain V Velocity Phase
             HAVelVPhaseDescript % specifier            = NHAGV
-            HAVelVPhaseDescript % initial_value        = 0.0
+            HAVelVPhaseDescript % initial_value        = 0.0d0
             HAVelVPhaseDescript % num_items_per_record = MNHARF
             HAVelVPhaseDescript % num_fd_records       = NP_G
             HAVelVPhaseDescript % num_records_this     = NP
@@ -2497,7 +2497,7 @@ C
             HAVelVPhaseDescript % array2D              => PHASEDVT
             HAVelVPhaseDescript % array2D_g            => null()
             HAVelVPhaseDescript % ConsiderWetDry       = .FALSE.
-            HAVelVPhaseDescript % alternate_value      = -99999.0
+            HAVelVPhaseDescript % alternate_value      = -99999.0d0
             HAVelVPhaseDescript % field_name           = 'HAVelVPhase'
             IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
                IF (MyProc.eq.0) THEN
@@ -2515,7 +2515,7 @@ C        ! as the full domain elevation harmonic analysis file (fort.53)
 
             ! MVDescript is used over and over for different arrays
             MVDescript % specifier            = NHAGE
-            MVDescript % initial_value        = 0.0
+            MVDescript % initial_value        = 0.0d0
             MVDescript % num_items_per_record = 1
             MVDescript % num_fd_records       = NP_G
             MVDescript % num_records_this     = NP
@@ -2523,7 +2523,7 @@ C        ! as the full domain elevation harmonic analysis file (fort.53)
             MVDescript % array                => ELAV
             MVDescript % array_g              => null()
             MVDescript % ConsiderWetDry       = .false.
-            MVDescript % alternate_value      = -99999.0
+            MVDescript % alternate_value      = -99999.0d0
             MVDescript % field_name           = 'HAMeansVariances'
             IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) .and.
      &         WRITE_LOCAL_HARM_FILES.eqv..false. ) THEN
@@ -2900,7 +2900,7 @@ C
             OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn,STATUS="REPLACE")
             WRITE(lun,499) RUNDes,RunID,AGrid
             WRITE(lun,498)
-     &         nset,nPerSet,(tsPeriod*DTDP),tsPeriod,NFEN,outputShape
+     &         nset,nPerSet,(dble(tsPeriod)*DTDP),tsPeriod,NFEN,outputShape
 
             CLOSE(lun)
             recNum=2
@@ -2910,7 +2910,7 @@ C
             WRITE(16,497) lun
             OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn,STATUS="REPLACE")
             WRITE(lun,499) RUNDes,RunID,AGrid
-            WRITE(lun,498) nset,nPerSet_g,tsPeriod*DTDP,tsPeriod,
+            WRITE(lun,498) nset,nPerSet_g,dble(tsPeriod)*DTDP,tsPeriod,
      &                     NFEN,outputShape
             CLOSE(lun)
             recNum=2
@@ -3005,7 +3005,7 @@ C
         ENDIF
         WRITE(lun,REC=recNum+1) nset
         WRITE(lun,REC=recNum+2) nPerSet
-        WRITE(lun,REC=recNum+3) tsPeriod*DTDP
+        WRITE(lun,REC=recNum+3) dble(tsPeriod)*DTDP
         WRITE(lun,REC=recNum+4) tsPeriod
         WRITE(lun,REC=recNum+5) NFEN
         WRITE(lun,REC=recNum+6) outputShape
@@ -3105,7 +3105,7 @@ C
 C
          SigTStaDescript % specifier            =  I3DSD
          SigTStaDescript % lun                  =  41
-         SigTStaDescript % initial_value        =  0.0
+         SigTStaDescript % initial_value        =  0.0d0
          SigTStaDescript % num_items_per_record =  NFEN
          SigTStaDescript % num_fd_records       =  NSTA3DD_G
          SigTStaDescript % num_records_this     =  NSTA3DD
@@ -3113,7 +3113,7 @@ C
          SigTStaDescript % array2D              => SigTSta
          SigTStaDescript % array2D_g            => SigTSta_g
          SigTStaDescript % considerWetDry       = .FALSE.
-         SigTStaDescript % alternate_value      = -99999.0
+         SigTStaDescript % alternate_value      = -99999.0d0
          SigTStaDescript % field_name           = 'SigmaTStations'
          IF (ICS.eq.1) THEN
          SigTStaDescript % x_coord           => XED  ! use orig coord
@@ -3125,7 +3125,7 @@ C
 
          SalStaDescript % specifier            =  I3DSD
          SalStaDescript % lun                  =  41
-         SalStaDescript % initial_value        =  0.0
+         SalStaDescript % initial_value        =  0.0d0
          SalStaDescript % num_items_per_record =  NFEN
          SalStaDescript % num_fd_records       =  NSTA3DD_G
          SalStaDescript % num_records_this     =  NSTA3DD
@@ -3133,7 +3133,7 @@ C
          SalStaDescript % array2D              => SalSta
          SalStaDescript % array2D_g            => SalSta_g
          SalStaDescript % considerWetDry       = .FALSE.
-         SalStaDescript % alternate_value      = -99999.0
+         SalStaDescript % alternate_value      = -99999.0d0
          SalStaDescript % field_name           = 'SalinityStations'
          IF (ICS.eq.1) THEN
          SalStaDescript % x_coord           => XED ! use orig coord
@@ -3145,7 +3145,7 @@ C
 
          TempStaDescript % specifier            =  I3DSD
          TempStaDescript % lun                  =  41
-         TempStaDescript % initial_value        =  0.0
+         TempStaDescript % initial_value        =  0.0d0
          TempStaDescript % num_items_per_record =  NFEN
          TempStaDescript % num_fd_records       =  NSTA3DD_G
          TempStaDescript % num_records_this     =  NSTA3DD
@@ -3153,7 +3153,7 @@ C
          TempStaDescript % array2D              => TempSta
          TempStaDescript % array2D_g            => TempSta_g
          TempStaDescript % considerWetDry       = .FALSE.
-         TempStaDescript % alternate_value      = -99999.0
+         TempStaDescript % alternate_value      = -99999.0d0
          TempStaDescript % field_name           = 'TemperatureStations'
          IF (ICS.eq.1) THEN
          TempStaDescript % x_coord           => XED ! use orig coord
@@ -3165,7 +3165,7 @@ C
 
          RealQStaDescript % specifier            =  I3DSV
          RealQStaDescript % lun                  =  42
-         RealQStaDescript % initial_value        =  0.0
+         RealQStaDescript % initial_value        =  0.0d0
          RealQStaDescript % num_items_per_record =  NFEN
          RealQStaDescript % num_fd_records       =  NSta3DV_G
          RealQStaDescript % num_records_this     =  NSta3DV
@@ -3173,7 +3173,7 @@ C
          RealQStaDescript % array2D              => rpSta
          RealQStaDescript % array2D_g            => rpSta_g
          RealQStaDescript % considerWetDry       = .FALSE.
-         RealQStaDescript % alternate_value      = -99999.0
+         RealQStaDescript % alternate_value      = -99999.0d0
          RealQStaDescript % field_name           = 'RealQStations'
          IF (ICS.eq.1) THEN
          RealQStaDescript % x_coord           => XE3DV ! use orig coord
@@ -3185,7 +3185,7 @@ C
 
          ImaginaryQStaDescript % specifier            =  I3DSV
          ImaginaryQStaDescript % lun                  =  42
-         ImaginaryQStaDescript % initial_value        =  0.0
+         ImaginaryQStaDescript % initial_value        =  0.0d0
          ImaginaryQStaDescript % num_items_per_record =  NFEN
          ImaginaryQStaDescript % num_fd_records       =  NSTA3DV_G
          ImaginaryQStaDescript % num_records_this     =  NSTA3DV
@@ -3193,7 +3193,7 @@ C
          ImaginaryQStaDescript % array2D              => ipSta
          ImaginaryQStaDescript % array2D_g            => ipSta_g
          ImaginaryQStaDescript % considerWetDry       = .FALSE.
-         ImaginaryQStaDescript % alternate_value      = -99999.0
+         ImaginaryQStaDescript % alternate_value      = -99999.0d0
          ImaginaryQStaDescript % field_name      ='ImaginaryQStations'
          IF (ICS.eq.1) THEN
          ImaginaryQStaDescript % x_coord           => XE3DV ! use orig coord
@@ -3205,7 +3205,7 @@ C
 
          WZStaDescript % specifier            =  I3DSV
          WZStaDescript % lun                  =  42
-         WZStaDescript % initial_value        =  0.0
+         WZStaDescript % initial_value        =  0.0d0
          WZStaDescript % num_items_per_record =  NFEN
          WZStaDescript % num_fd_records       =  NSTA3DV_G
          WZStaDescript % num_records_this     =  NSTA3DV
@@ -3213,7 +3213,7 @@ C
          WZStaDescript % array2D              => WZSta
          WZStaDescript % array2D_g            => WZSta_g
          WZStaDescript % considerWetDry       = .FALSE.
-         WZStaDescript % alternate_value      = -99999.0
+         WZStaDescript % alternate_value      = -99999.0d0
          WZStaDescript % field_name           = 'WZStations'
          IF (ICS.eq.1) THEN
          WZStaDescript % x_coord           => XE3DV  ! use orig coord
@@ -3225,7 +3225,7 @@ C
 
          Q20StaDescript % specifier            =  I3DST
          Q20StaDescript % lun                  =  43
-         Q20StaDescript % initial_value        =  0.0
+         Q20StaDescript % initial_value        =  0.0d0
          Q20StaDescript % num_items_per_record =  NFEN
          Q20StaDescript % num_fd_records       =  NSta3DT_G
          Q20StaDescript % num_records_this     =  NSta3DT
@@ -3233,7 +3233,7 @@ C
          Q20StaDescript % array2D              => q20Sta
          Q20StaDescript % array2D_g            => q20Sta_g
          Q20StaDescript % considerWetDry       = .FALSE.
-         Q20StaDescript % alternate_value      = -99999.0
+         Q20StaDescript % alternate_value      = -99999.0d0
          Q20StaDescript % field_name           = 'q20Stations'
          IF (ICS.eq.1) THEN
          Q20StaDescript % x_coord           => XET  ! use orig coord
@@ -3245,7 +3245,7 @@ C
 
          LStaDescript % specifier            =  I3DST
          LStaDescript % lun                  =  43
-         LStaDescript % initial_value        =  0.0
+         LStaDescript % initial_value        =  0.0d0
          LStaDescript % num_items_per_record =  NFEN
          LStaDescript % num_fd_records       =  NSTA3DT_G
          LStaDescript % num_records_this     =  NSTA3DT
@@ -3253,7 +3253,7 @@ C
          LStaDescript % array2D              => lSta
          LStaDescript % array2D_g            => lSta_g
          LStaDescript % considerWetDry       = .FALSE.
-         LStaDescript % alternate_value      = -99999.0
+         LStaDescript % alternate_value      = -99999.0d0
          LStaDescript % field_name           = 'LStations'
          IF (ICS.eq.1) THEN
          LStaDescript % x_coord           => XET  ! use orig coord
@@ -3265,7 +3265,7 @@ C
 
          EVStaDescript % specifier            =  I3DST
          EVStaDescript % lun                  =  43
-         EVStaDescript % initial_value        =  0.0
+         EVStaDescript % initial_value        =  0.0d0
          EVStaDescript % num_items_per_record =  NFEN
          EVStaDescript % num_fd_records       =  NSTA3DT_G
          EVStaDescript % num_records_this     =  NSTA3DT
@@ -3273,7 +3273,7 @@ C
          EVStaDescript % array2D              => EVSta
          EVStaDescript % array2D_g            => EVSta_g
          EVStaDescript % considerWetDry       = .FALSE.
-         EVStaDescript % alternate_value      = -99999.0
+         EVStaDescript % alternate_value      = -99999.0d0
          EVStaDescript % field_name           = 'EVStations'
          IF (ICS.eq.1) THEN
          EVStaDescript % x_coord           => XET ! use orig coord
@@ -3285,7 +3285,7 @@ C
 
          QSurfKp1Descript % specifier            =  I3DGD
          QSurfKp1Descript % lun                  =  47
-         QSurfKp1Descript % initial_value        =  0.0
+         QSurfKp1Descript % initial_value        =  0.0d0
          QSurfKp1Descript % num_items_per_record =  1
          QSurfKp1Descript % num_fd_records     =  NP_G
          QSurfKp1Descript % num_records_this   =  NP
@@ -3293,12 +3293,12 @@ C
          QSurfKp1Descript % array              => qsurfkp1
          QSurfKp1Descript % array_g            => qsurfkp1_g
          QSurfKp1Descript % considerWetDry       = .FALSE.
-         QSurfKp1Descript % alternate_value      = -99999.0
+         QSurfKp1Descript % alternate_value      = -99999.0d0
          QSurfKp1Descript % field_name           = 'qsurfkp1'
 
          SigTDescript % specifier            =  I3DGD
          SigTDescript % lun                  =  44
-         SigTDescript % initial_value        =  0.0
+         SigTDescript % initial_value        =  0.0d0
          SigTDescript % num_items_per_record =  NFEN
          SigTDescript % num_fd_records        =  NP_G
          SigTDescript % num_records_this     =  NP
@@ -3306,12 +3306,12 @@ C
          SigTDescript % array2D              => SigT
          SigTDescript % array2D_g            => SigT_g
          SigTDescript % considerWetDry       = .FALSE.
-         SigTDescript % alternate_value      = -99999.0
+         SigTDescript % alternate_value      = -99999.0d0
          SigTDescript % field_name           = 'SigmaT'
 
          SalDescript % specifier            =  I3DGD
          SalDescript % lun                  =  44
-         SalDescript % initial_value        =  0.0
+         SalDescript % initial_value        =  0.0d0
          SalDescript % num_items_per_record =  NFEN
          SalDescript % num_fd_records       =  NP_G
          SalDescript % num_records_this     =  NP
@@ -3319,12 +3319,12 @@ C
          SalDescript % array2D              => Sal
          SalDescript % array2D_g            => Sal_g
          SalDescript % considerWetDry       = .FALSE.
-         SalDescript % alternate_value      = -99999.0
+         SalDescript % alternate_value      = -99999.0d0
          SalDescript % field_name           = 'Salinity'
 
          TempDescript % specifier            =  I3DGD
          TempDescript % lun                  =  44
-         TempDescript % initial_value        =  0.0
+         TempDescript % initial_value        =  0.0d0
          TempDescript % num_items_per_record =  NFEN
          TempDescript % num_fd_records       =  NP_G
          TempDescript % num_records_this     =  NP
@@ -3332,12 +3332,12 @@ C
          TempDescript % array2D              => Temp
          TempDescript % array2D_g            => Temp_g
          TempDescript % considerWetDry       = .FALSE.
-         TempDescript % alternate_value      = -99999.0
+         TempDescript % alternate_value      = -99999.0d0
          TempDescript % field_name           = 'Temperature'
 
          RealQDescript % specifier            =  I3DGV
          RealQDescript % lun                  =  45
-         RealQdescript % initial_value        =  0.0
+         RealQdescript % initial_value        =  0.0d0
          RealQDescript % num_items_per_record =  NFEN
          RealQDescript % num_fd_records       =  NP_G
          RealQDescript % num_records_this     =  NP
@@ -3345,12 +3345,12 @@ C
          RealQDescript % array2D              => rp
          RealQDescript % array2D_g            => rp_g
          RealQDescript % considerWetDry       = .FALSE.
-         RealQDescript % alternate_value      = -99999.0
+         RealQDescript % alternate_value      = -99999.0d0
          RealQDescript % field_name           = 'RealQ'
 
          ImaginaryQDescript % specifier            =  I3DGV
          ImaginaryQDescript % lun                  =  45
-         ImaginaryQDescript % initial_value        =  0.0
+         ImaginaryQDescript % initial_value        =  0.0d0
          ImaginaryQDescript % num_items_per_record =  NFEN
          ImaginaryQDescript % num_fd_records       =  NP_G
          ImaginaryQDescript % num_records_this     =  NP
@@ -3358,12 +3358,12 @@ C
          ImaginaryQDescript % array2D              => ip
          ImaginaryQDescript % array2D_g            => ip_g
          ImaginaryQDescript % considerWetDry       = .FALSE.
-         ImaginaryQDescript % alternate_value      = -99999.0
+         ImaginaryQDescript % alternate_value      = -99999.0d0
          ImaginaryQDescript % field_name           = 'ImaginaryQ'
 
          WZDescript % specifier            =  I3DGV
          WZDescript % lun                  =  45
-         WZDescript % initial_value        =  0.0
+         WZDescript % initial_value        =  0.0d0
          WZDescript % num_items_per_record =  NFEN
          WZDescript % num_fd_records       =  NP_G
          WZDescript % num_records_this     =  NP
@@ -3371,12 +3371,12 @@ C
          WZDescript % array2D              => WZ
          WZDescript % array2D_g            => WZ_g
          WZDescript % considerWetDry       = .FALSE.
-         WZDescript % alternate_value      = -99999.0
+         WZDescript % alternate_value      = -99999.0d0
          WZDescript % field_name           = 'WZ'
 
          Q20Descript % specifier            =  I3DGT
          Q20Descript % lun                  =  46
-         Q20Descript % initial_value        =  0.0
+         Q20Descript % initial_value        =  0.0d0
          Q20Descript % num_items_per_record =  NFEN
          Q20Descript % num_fd_records       =  NP_G
          Q20Descript % num_records_this     =  NP
@@ -3384,12 +3384,12 @@ C
          Q20Descript % array2D              => q20
          Q20Descript % array2D_g            => q20_g
          Q20Descript % considerWetDry       = .FALSE.
-         Q20Descript % alternate_value      = -99999.0
+         Q20Descript % alternate_value      = -99999.0d0
          Q20Descript % field_name           = 'q20'
 
          LDescript % specifier            =  I3DGT
          LDescript % lun                  =  46
-         LDescript % initial_value        =  0.0
+         LDescript % initial_value        =  0.0d0
          LDescript % num_items_per_record =  NFEN
          LDescript % num_fd_records       =  NP_G
          LDescript % num_records_this     =  NP
@@ -3397,12 +3397,12 @@ C
          LDescript % array2D              => l
          LDescript % array2D_g            => l_g
          LDescript % considerWetDry       = .FALSE.
-         LDescript % alternate_value      = -99999.0
+         LDescript % alternate_value      = -99999.0d0
          LDescript % field_name           = 'L'
 
          EVDescript % specifier            =  I3DGT
          EVDescript % lun                  =  46
-         EVDescript % initial_value        =  0.0
+         EVDescript % initial_value        =  0.0d0
          EVDescript % num_items_per_record =  NFEN
          EVDescript % num_fd_records       =  NP_G
          EVDescript % num_records_this     =  NP
@@ -3410,7 +3410,7 @@ C
          EVDescript % array2D              => EV
          EVDescript % array2D_g            => EV_g
          EVDescript % considerWetDry       = .FALSE.
-         EVDescript % alternate_value      = -99999.0
+         EVDescript % alternate_value      = -99999.0d0
          EVDescript % field_name           = 'EV'
 
 #ifdef ADCNETCDF
@@ -3676,9 +3676,9 @@ C              Interpolate to station locations
                N2=NM(NEle,2)
                N3=NM(NEle,3)
                DO k=1,NFEN
-                  qSta(NN,k) =q(N1,k)*StaI3DV1(NN)
-     &                       +q(N2,k)*StaI3DV2(NN)
-     &                       +q(N3,k)*StaI3DV3(NN)
+                  qSta(NN,k) =q(N1,k)*dcmplx(StaI3DV1(NN))
+     &                       +q(N2,k)*dcmplx(StaI3DV2(NN))
+     &                       +q(N3,k)*dcmplx(StaI3DV3(NN))
                   WZSta(NN,k)=WZ(N1,k)*StaI3DV1(NN)
      &                       +WZ(N2,k)*StaI3DV2(NN)
      &                       +WZ(N3,k)*StaI3DV3(NN)
@@ -4657,7 +4657,7 @@ C
       IF (FirstCall) THEN
 
          Elev1Descript % specifier            = NHSTAR
-         Elev1Descript % initial_value        = 0.0
+         Elev1Descript % initial_value        = 0.0d0
          Elev1Descript % num_items_per_record = 1
          Elev1Descript % num_fd_records       = NP_G
          Elev1Descript % num_records_this     = NP
@@ -4666,7 +4666,7 @@ C
          Elev1Descript % array_g              => ETA1_g
 
          Elev2Descript % specifier            = NHSTAR
-         Elev2Descript % initial_value        = 0.0
+         Elev2Descript % initial_value        = 0.0d0
          Elev2Descript % num_items_per_record = 1
          Elev2Descript % num_fd_records       = NP_G
          Elev2Descript % num_records_this     = NP
@@ -4675,7 +4675,7 @@ C
          Elev2Descript % array_g              => ETA2_g
 
          HotstartVelDescript % specifier            = NHSTAR
-         HotstartVelDescript % initial_value        = 0.0
+         HotstartVelDescript % initial_value        = 0.0d0
          HotstartVelDescript % num_items_per_record = 2
          HotstartVelDescript % num_fd_records       = NP_G
          HotstartVelDescript % num_records_this     = NP
@@ -4686,7 +4686,7 @@ C
          HotstartVelDescript % array2_g             => VV2_g
 
          H1_HS_Descript % specifier            = NHSTAR
-         H1_HS_Descript % initial_value        = 0.0
+         H1_HS_Descript % initial_value        = 0.0d0
          H1_HS_Descript % num_items_per_record = 1
          H1_HS_Descript % num_fd_records       = NP_G
          H1_HS_Descript % num_records_this     = NP
@@ -4695,7 +4695,7 @@ C
          H1_HS_Descript % array_g              => HTOT1_g
 
          H2_HS_Descript % specifier            = NHSTAR
-         H2_HS_Descript % initial_value        = 0.0
+         H2_HS_Descript % initial_value        = 0.0d0
          H2_HS_Descript % num_items_per_record = 1
          H2_HS_Descript % num_fd_records       = NP_G
          H2_HS_Descript % num_records_this     = NP
@@ -4706,7 +4706,7 @@ C
 
          IF (IM.eq.10) THEN
             CH1Descript % specifier            = NHSTAR
-            CH1Descript % initial_value        = 0.0
+            CH1Descript % initial_value        = 0.0d0
             CH1Descript % num_items_per_record = 1
             CH1Descript % num_fd_records       = NP_G
             CH1Descript % num_records_this     = NP
@@ -4716,7 +4716,7 @@ C
          ENDIF
 
          EtaDiscDescript % specifier            = NHSTAR
-         EtaDiscDescript % initial_value        = 0.0
+         EtaDiscDescript % initial_value        = 0.0d0
          EtaDiscDescript % num_items_per_record = 1
          EtaDiscDescript % num_fd_records       = NP_G
          EtaDiscDescript % num_records_this     = NP
@@ -4746,7 +4746,7 @@ C
 C
          IF (IHARIND.eq.1) THEN
             HarmElevFDLVDescript % specifier            = NHSTAR
-            HarmElevFDLVDescript % initial_value        = 0.0
+            HarmElevFDLVDescript % initial_value        = 0.0d0
             HarmElevFDLVDescript % num_items_per_record = 2*MNHARF
             HarmElevFDLVDescript % num_fd_records       = NP_G
             HarmElevFDLVDescript % num_records_this     = NP
@@ -4755,7 +4755,7 @@ C
             HarmElevFDLVDescript % array2D_g            => GLOELV_g
 
             HarmElevSLVDescript % specifier            = NHSTAR
-            HarmElevSLVDescript % initial_value        = 0.0
+            HarmElevSLVDescript % initial_value        = 0.0d0
             HarmElevSLVDescript % num_items_per_record = 2*MNHARF
             HarmElevSLVDescript % num_fd_records       = NSTAE_G
             HarmElevSLVDescript % num_records_this     = NSTAE
@@ -4764,7 +4764,7 @@ C
             HarmElevSLVDescript % array2D_g            => STAELV_g
 
             HarmUVelFDLVDescript % specifier            = NHSTAR
-            HarmUVelFDLVDescript % initial_value        = 0.0
+            HarmUVelFDLVDescript % initial_value        = 0.0d0
             HarmUVelFDLVDescript % num_items_per_record = 2*MNHARF
             HarmUVelFDLVDescript % num_fd_records       = NP_G
             HarmUVelFDLVDescript % num_records_this     = NP
@@ -4773,7 +4773,7 @@ C
             HarmUVelFDLVDescript % array2D_g            => GLOULV_g
 
             HarmVVelFDLVDescript % specifier            = NHSTAR
-            HarmVVelFDLVDescript % initial_value        = 0.0
+            HarmVVelFDLVDescript % initial_value        = 0.0d0
             HarmVVelFDLVDescript % num_items_per_record = 2*MNHARF
             HarmVVelFDLVDescript % num_fd_records       = NP_G
             HarmVVelFDLVDescript % num_records_this     = NP
@@ -4782,7 +4782,7 @@ C
             HarmVVelFDLVDescript % array2D_g            => GLOVLV_g
 
             HarmUvelSLVDescript % specifier            = NHSTAR
-            HarmUVelSLVDescript % initial_value        = 0.0
+            HarmUVelSLVDescript % initial_value        = 0.0d0
             HarmUVelSLVDescript % num_items_per_record = 2*MNHARF
             HarmUVelSLVDescript % num_fd_records       = NSTAV_G
             HarmUVelSLVDescript % num_records_this     = NSTAV
@@ -4791,7 +4791,7 @@ C
             HarmUVelSLVDescript % array2D_g            => STAULV_g
 
             HarmVVelSLVDescript % specifier            = NHSTAR
-            HarmVVelSLVDescript % initial_value        = 0.0
+            HarmVVelSLVDescript % initial_value        = 0.0d0
             HarmVVelSLVDescript % num_items_per_record = 2*MNHARF
             HarmVVelSLVDescript % num_fd_records       = NSTAV_G
             HarmVVelSLVDescript % num_records_this     = NSTAV
@@ -4802,7 +4802,7 @@ C
 
          IF (CHARMV.eqv..true.) THEN
             ELAVDescript % specifier            = NHSTAR
-            ELAVDescript % initial_value        = 0.0
+            ELAVDescript % initial_value        = 0.0d0
             ELAVDescript % num_items_per_record = 1
             ELAVDescript % num_fd_records       = NP_G
             ELAVDescript % num_records_this     = NP
@@ -4811,7 +4811,7 @@ C
             ELAVDescript % array_g              => ELAV_g
 
             ELVADescript % specifier            = NHSTAR
-            ELVADescript % initial_value        = 0.0
+            ELVADescript % initial_value        = 0.0d0
             ELVADescript % num_items_per_record = 1
             ELVADescript % num_fd_records       = NP_G
             ELVADescript % num_records_this     = NP
@@ -4820,7 +4820,7 @@ C
             ELVADescript % array_g              => ELVA_g
 
             XVELAVDescript % specifier            = NHSTAR
-            XVELAVDescript % initial_value        = 0.0
+            XVELAVDescript % initial_value        = 0.0d0
             XVELAVDescript % num_items_per_record = 1
             XVELAVDescript % num_fd_records       = NP_G
             XVELAVDescript % num_records_this     = NP
@@ -4829,7 +4829,7 @@ C
             XVELAVDescript % array_g              => XVELAV_g
 
             YVELAVDescript % specifier            = NHSTAR
-            YVELAVDescript % initial_value        = 0.0
+            YVELAVDescript % initial_value        = 0.0d0
             YVELAVDescript % num_items_per_record = 1
             YVELAVDescript % num_fd_records       = NP_G
             YVELAVDescript % num_records_this     = NP
@@ -4838,7 +4838,7 @@ C
             YVELAVDescript % array_g              => YVELAV_g
 
             XVELVADescript % specifier            = NHSTAR
-            XVELVADescript % initial_value        = 0.0
+            XVELVADescript % initial_value        = 0.0d0
             XVELVADescript % num_items_per_record = 1
             XVELVADescript % num_fd_records       = NP_G
             XVELVADescript % num_records_this     = NP
@@ -4847,7 +4847,7 @@ C
             XVELVADescript % array_g              => XVELVA_g
 
             YVELVADescript % specifier            = NHSTAR
-            YVELVADescript % initial_value        = 0.0
+            YVELVADescript % initial_value        = 0.0d0
             YVELVADescript % num_items_per_record = 1
             YVELVADescript % num_fd_records       = NP_G
             YVELVADescript % num_records_this     = NP
@@ -5637,7 +5637,7 @@ C     file.
          ENDIF
          DebugElevDescript % lun                  = 69
          DebugElevDescript % specifier            = ASCII ! TODO: make configurable
-         DebugElevDescript % initial_value        = 0.0
+         DebugElevDescript % initial_value        = 0.0d0
          DebugElevDescript % num_items_per_record = 1
          DebugElevDescript % num_fd_records       = NP_G
          DebugElevDescript % num_records_this     = NP
@@ -5646,7 +5646,7 @@ C     file.
          DebugElevDescript % array_g              => ETA_DEBUG_g
          DebugElevDescript % ConsiderWetDry       = .TRUE.
          DebugElevDescript % filepos              => IGDP
-         DebugElevDescript % alternate_value      = -99999.0
+         DebugElevDescript % alternate_value      = -99999.0d0
          DebugElevDescript % field_name           = 'DebugElev'
          DebugElevDescript % writeFlag            = .true.
          DebugElevDescript % isStation            = .false.
@@ -6236,13 +6236,13 @@ C-----------------------------------------------------------------------
       InitiallyDryDescript % filepos              => fauxFilePosition
       InitiallyDryDescript % isInteger            = .true.
       InitiallyDryDescript % writeFlag            = .false.
-      InitiallyDryDescript % initial_value        = 0.0
+      InitiallyDryDescript % initial_value        = 0.0d0
       InitiallyDryDescript % num_items_per_record = 1
       InitiallyDryDescript % num_fd_records       = np_g
       InitiallyDryDescript % num_records_this     = np
       InitiallyDryDescript % imap                 => nodes_lg
       InitiallyDryDescript % considerWetDry       = .false.
-      InitiallyDryDescript % alternate_value      = -99999.0
+      InitiallyDryDescript % alternate_value      = -99999.0d0
       InitiallyDryDescript % isStation            = .false.
       InitiallyDryDescript % divideByDepth        = .false.
       allocate(InitiallyDryDescript % writerFormats(numFormats))

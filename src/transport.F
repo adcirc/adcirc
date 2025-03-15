@@ -202,7 +202,7 @@ C     Compute 3D transport equation
 !      d_dy_SalOrTemp_nodes (:,:) = 0.0d0
 
       DO NH = 1, NP                      !loop over horizontal nodes
-         Hs = DP(NH) + IFNLFA * Eta1(NH) !Total depth at current timestep - 'center' node
+         Hs = DP(NH) + dble(IFNLFA) * Eta1(NH) !Total depth at current timestep - 'center' node
          HsOAMB = Hs / AMB
          ! begin the vertical loop
          DO k = 1, NFEN
@@ -217,7 +217,7 @@ C     Compute 3D transport equation
             SalOrTempN1_z = inarray(N1,k)
 
             N2  = NEITAB(NH,2)     !operate on 1st neighbor
-            HsN2 = DP(N2) + IFNLFA * Eta1(N2)
+            HsN2 = DP(N2) + dble(IFNLFA) * Eta1(N2)
             SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2 !equivalent sigma value at neighbor
             inarray_vertical (:) = inarray(N2,:)
             Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, SalOrTempN2_z, k )
@@ -230,7 +230,7 @@ C     Compute 3D transport equation
                SalOrTempN3_z = SalOrTempN2_z
 
                N2 = NEITAB(NH,N)  !select new neighbor to work on
-               HsN2 = DP(N2) + IFNLFA * Eta1(N2)
+               HsN2 = DP(N2) + dble(IFNLFA) * Eta1(N2)
                SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2 !equivalent sigma value at neighbor
                inarray_vertical (:) = inarray(N2,:)
                Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, SalOrTempN2_z, k )
@@ -292,7 +292,7 @@ C     Compute 3D transport equation
                ENDIF
             ENDIF
 
-            IF(TotalArea2.EQ.0.) THEN
+            IF(TotalArea2.EQ.0d0) THEN
                ! do nothing
             ELSE
                Biharmonic_auxiliary_var_SalOrTemp (NH,k) = -3.d0 * (DSalOrTempDXDPhiDX2A+DSalOrTempDYDPhiDY2A) / TotalArea2
@@ -338,9 +338,9 @@ C     the rectangle and define two vertical nodes for the depths.
 C     Compute the depths at the vertical nodes associated with
 C     these two nodes.
 Casey 140701: Avoid zero depths.
-         Hsp1N1=DP(NM1)+IFNLFA*ETA2(NM1)
+         Hsp1N1=DP(NM1)+dble(IFNLFA)*ETA2(NM1)
          IF(Hsp1N1.LT.H0) Hsp1N1=H0
-         Hsp1N2=DP(NM2)+IFNLFA*ETA2(NM2)
+         Hsp1N2=DP(NM2)+dble(IFNLFA)*ETA2(NM2)
          IF(Hsp1N2.LT.H0) Hsp1N2=H0
          Hsp1OAMBN1=Hsp1N1/AMB
          Hsp1OAMBN2=Hsp1N2/AMB
@@ -545,9 +545,9 @@ C     the rectangle and define two vertical nodes for the depths.
 C     Compute the depths at the vertical nodes associated with
 C     these two nodes.
 Casey 140701: Avoid zero depths.
-             Hsp1N1=DP(NM1)+IFNLFA*ETA2(NM1)
+             Hsp1N1=DP(NM1)+dble(IFNLFA)*ETA2(NM1)
              IF(Hsp1N1.LT.H0) Hsp1N1=H0
-             Hsp1N2=DP(NM2)+IFNLFA*ETA2(NM2)
+             Hsp1N2=DP(NM2)+dble(IFNLFA)*ETA2(NM2)
              IF(Hsp1N2.LT.H0) Hsp1N2=H0
              Hsp1OAMBN1=Hsp1N1/AMB
              Hsp1OAMBN2=Hsp1N2/AMB
@@ -664,12 +664,12 @@ C        IFNLCT = 1
 C     Set up some values at the node being worked on
          
 Casey 140701: Avoid zero depths.
-         Hstrans  = DP(NH)+IFNLFA*Eta1(NH) !Total depth at previous (s) timestep
+         Hstrans  = DP(NH)+dble(IFNLFA)*Eta1(NH) !Total depth at previous (s) timestep
          IF(Hstrans.LT.H0) Hstrans=H0
          HsOAMBtrans=Hstrans/AMB
          HsHsOAMBAMBtrans=HsOAMBtrans*HsOAMBtrans
          
-         Hsp1trans= DP(NH)+IFNLFA*Eta2(NH) !Total depth at present (s+1) timestep
+         Hsp1trans= DP(NH)+dble(IFNLFA)*Eta2(NH) !Total depth at present (s+1) timestep
          Hsp1OAMBtrans=Hsp1trans/AMB
          Hsp1Hsp1OAMBAMBtrans=Hsp1OAMBtrans*Hsp1OAMBtrans
          
@@ -757,11 +757,11 @@ C     depth. Note: TotalArea2 = 2X total elemental area surrounding a node
          TotalArea2=0.d0
 
          N1=NH
-         EtaN1=IFNLFA*(Eta1(N1)+Eta2(N1))/2.d0
+         EtaN1=dble(IFNLFA)*(Eta1(N1)+Eta2(N1))/2.d0
          hN1=DP(N1)
 
          N2=NeiTab(NH,2)        !operate on 1st neighbor
-         EtaN2=IFNLFA*(Eta1(N2)+Eta2(N2))/2.d0
+         EtaN2=dble(IFNLFA)*(Eta1(N2)+Eta2(N2))/2.d0
          hN2=DP(N2)
 
          NNFirst=N2             !save these values until end
@@ -773,7 +773,7 @@ C     depth. Note: TotalArea2 = 2X total elemental area surrounding a node
             hN3=hN2             !shift previously computed values
             EtaN3=EtaN2
             N2=NeiTab(NH,N)     !select new neighbor to work on
-            EtaN2=IFNLFA*(Eta1(N2)+Eta2(N2))/2.d0
+            EtaN2=dble(IFNLFA)*(Eta1(N2)+Eta2(N2))/2.d0
             hN2=DP(N2)
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
 
@@ -834,7 +834,7 @@ C   kmd48.33bc add in spherical factors
             DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
          ENDIF
 
-         IF(TotalArea2.NE.0.) THEN
+         IF(TotalArea2.NE.0d0) THEN
             DhDX=DhDX2A/TotalArea2
             DhDY=DhDY2A/TotalArea2
             DEtaDX=DEtaDX2A/TotalArea2
@@ -895,7 +895,7 @@ C     Compute the vertical advection and vertical diffusion terms
             ENDIF
             
 C      kmd48.33bc added sponge layer for the vertical advective term
-            VAdvectrans(k)=sponge(NH)*IFNLCT*VAdvectrans(k)
+            VAdvectrans(k)=sponge(NH)*dble(IFNLCT)*VAdvectrans(k)
 
 !----------------------------------------------------------------------------------------------------------------------------------------------------
 C     Compute lateral advection and lateral diffusion terms - af modified computation of horizontal diffusion terms
@@ -929,7 +929,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
             qN2=q(N2,k)
             transN2=inarray(N2,k)
 ! find transN2 at the same z coordinate as transN1:
-            HsN2trans = DP(N2) + IFNLFA * Eta1(N2)
+            HsN2trans = DP(N2) + dble(IFNLFA) * Eta1(N2)
             SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2trans !equivalent sigma value at neighbor
             inarray_vertical (:) = inarray(N2,:)
 !            CALL cubic_vertical_interpolation ( inarray_vertical, SigmaNN, transN2_z, N2, k ) !interp inarray at neighbor
@@ -967,7 +967,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
                qN2=q(N2,k)
                transN2=inarray(N2,k)
 ! find transN2 at the same z coordinate as transN1:
-               HsN2trans = DP(N2) + IFNLFA * Eta1(N2)
+               HsN2trans = DP(N2) + dble(IFNLFA) * Eta1(N2)
                SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2trans !equivalent sigma value at neighbor
                inarray_vertical (:) = inarray(N2,:)
 !!cubic               CALL cubic_vertical_interpolation ( inarray_vertical, SigmaNN, transN2_z, N2, k ) !interp inarray at neighbor
@@ -991,7 +991,7 @@ C
                NCELE = NODECODE(NH)*NODECODE(N2)
      &              *NODECODE(N3)*NOFF(NELE)
                IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN !if element exists, compute terms
-                  qn=(qN1+qN2+qN3)/3.d0
+                  qn=(qN1+qN2+qN3)/dcmplx(3.d0)
                   Un=REAL(qn)
                   Vn=AIMAG(qn)
 C   kmd48.33bc add in spherical factors
@@ -1082,7 +1082,7 @@ C
      &             *NODECODE(N3)*NOFF(NELE)
             ENDIF
             IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN
-               qn=(qN1+qN2+qN3)/3.d0
+               qn=(qN1+qN2+qN3)/dcmplx(3.d0)
                Un=real(qn)
                Vn=aimag(qn)
 C   kmd48.33bc add in spherical factors
@@ -1141,7 +1141,7 @@ C   kmd48.33bc add in spherical factors
 !----------------------------------------------------------------------------------------------------------------------------------------------------
             ENDIF
 
-            IF(TotalArea2.EQ.0.) THEN
+            IF(TotalArea2.EQ.0d0) THEN
 ! af: why is this a complex value? arash changed them to real.
 !               LAdvectrans(k)=(0.d0,0.d0)
 !               LDiffusion(k)=(0.d0,0.d0)
@@ -1152,7 +1152,7 @@ C   kmd48.33bc add in spherical factors
             ELSE
 
 C  kmd48.33bc added sponge layer for the lateral advective terms
-               LAdvectrans(k)=sponge(NH)*IFNLCT*(UnDtransDX2A+VnDtransDY2A)/
+               LAdvectrans(k)=sponge(NH)*dble(IFNLCT)*(UnDtransDX2A+VnDtransDY2A)/
      &                        TotalArea2   
                LDiffusion(k)=3.d0*diffhoriz*(DtransDXDPhiDX2A+
      &                       DtransDYDPhiDY2A)/TotalArea2
@@ -1328,7 +1328,7 @@ c
 c     check for zero elements on diagonal
 c     
       DO J=1,N
-         if(B(j).EQ.0.) then
+         if(B(j).EQ.0d0) then
             write(screenunit,*) 'Problem in Tridag Solver.  ',
      +           'B array value in row ',j,' = 0'
             CALL EXIT(1)
@@ -1437,7 +1437,7 @@ C*************************************************************************
       IF(SigmaNN.LE.(1.00010d0*b)) THEN !if into ground then skip
          SigBelo=-999
          SigAbov=-999
-         transN2_z=-999.
+         transN2_z=-999d0
          GOTO 100
       ENDIF
       IF((SigmaNN.GT.(1.0001d0*b)).AND.(SigmaNN.LE.b)) THEN !at bottom then use bottom

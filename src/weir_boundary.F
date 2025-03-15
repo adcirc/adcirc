@@ -1186,7 +1186,7 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
                         IF(ISNULL(I=HOT).OR.(HOT.EQ.0))THEN
                             HOTADD = 0D0
                         ELSEIF(HOT.EQ.1)THEN
-                            HOTADD = DTDP*ITHS
+                            HOTADD = DTDP*dble(ITHS)
                             OFFSET = OFFSET + HOTADD
                             WRITE(*,*) DTDP,ITHS
                             WRITE(*,*) HOTADD,OFFSET
@@ -1488,7 +1488,7 @@ C-----------------------------------------------------------------------
                         IF(HOT.EQ.1)THEN
                             SELECT CASE(IHOT)
                                 CASE(17,67,68,367,368,567,568)
-                                    HOTSEC = DTDP*ITHS
+                                    HOTSEC = DTDP*dble(ITHS)
                                 CASE DEFAULT
                                     HOTSEC = 0D0
                             END SELECT        

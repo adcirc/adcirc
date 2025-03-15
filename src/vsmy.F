@@ -346,8 +346,8 @@ C........DMW202401 Use saved H1 !Total depth at current timestep - 'center' node
          HsOAMB = H1(NH) / AMB
          ! begin the vertical loop
          DO k = 1, NFEN
-            DqDXDPhiDX2A = 0.d0    ! variables for computing the biharmonic operator
-            DqDYDPhiDY2A = 0.d0
+            DqDXDPhiDX2A = dcmplx(0.d0)  ! variables for computing the biharmonic operator
+            DqDYDPhiDY2A = dcmplx(0.d0)
             TotalArea2   = 0.d0
             d_dx_q_element = ( 0.0d0 , 0.0d0 ) ! to compute the viscosity constant
             d_dy_q_element = ( 0.0d0 , 0.0d0 )
@@ -412,12 +412,12 @@ C..............DMW202401 Use saved H1
 !                     d_dy_q_element = d_dy_q_element + qN1*a1+qN2*a2+qN3*a3
 ! z-level:
                      DqDXDPhiDX2A = DqDXDPhiDX2A
-     &                 + (qN1_z*b1+qN2_z*b2+qN3_z*b3)*b1/Areas(NEle)
+     &                 + (qN1_z*dcmplx(b1)+qN2_z*dcmplx(b2)+qN3_z*dcmplx(b3))*dcmplx(b1)/dcmplx(Areas(NEle))
                      DqDYDPhiDY2A=DqDYDPhiDY2A
-     &                 +(qN1_z*a1+qN2_z*a2+qN3_z*a3)*a1/Areas(NEle)
+     &                 +(qN1_z*dcmplx(a1)+qN2_z*dcmplx(a2)+qN3_z*dcmplx(a3))*dcmplx(a1)/dcmplx(Areas(NEle))
                      ! variables for modified Leith viscosity parameter
-                     d_dx_q_element = d_dx_q_element + qN1_z*b1+qN2_z*b2+qN3_z*b3
-                     d_dy_q_element = d_dy_q_element + qN1_z*a1+qN2_Z*a2+qN3_z*a3
+                     d_dx_q_element = d_dx_q_element + qN1_z*dcmplx(b1)+qN2_z*dcmplx(b2)+qN3_z*dcmplx(b3)
+                     d_dy_q_element = d_dy_q_element + qN1_z*dcmplx(a1)+qN2_Z*dcmplx(a2)+qN3_z*dcmplx(a3)
                   ENDIF
                ENDIF
             ENDDO
@@ -457,22 +457,22 @@ C..............DMW202401 Use saved H1
 !                  d_dy_q_element = d_dy_q_element + qN1*a1+qN2*a2+qN3*a3
 ! z-level:
                      DqDXDPhiDX2A = DqDXDPhiDX2A
-     &                 + (qN1_z*b1+qN2_z*b2+qN3_z*b3)*b1/Areas(NEle)
+     &                 + (qN1_z*dcmplx(b1)+qN2_z*dcmplx(b2)+qN3_z*dcmplx(b3))*dcmplx(b1)/dcmplx(Areas(NEle))
                      DqDYDPhiDY2A=DqDYDPhiDY2A
-     &                 +(qN1_z*a1+qN2_z*a2+qN3_z*a3)*a1/Areas(NEle)
+     &                 +(qN1_z*dcmplx(a1)+qN2_z*dcmplx(a2)+qN3_z*dcmplx(a3))*dcmplx(a1)/dcmplx(Areas(NEle))
                      ! variables for modified Leith viscosity parameter
-                     d_dx_q_element = d_dx_q_element + qN1_z*b1+qN2_z*b2+qN3_z*b3
-                     d_dy_q_element = d_dy_q_element + qN1_z*a1+qN2_Z*a2+qN3_z*a3
+                     d_dx_q_element = d_dx_q_element + qN1_z*dcmplx(b1)+qN2_z*dcmplx(b2)+qN3_z*dcmplx(b3)
+                     d_dy_q_element = d_dy_q_element + qN1_z*dcmplx(a1)+qN2_Z*dcmplx(a2)+qN3_z*dcmplx(a3)
                ENDIF
             ENDIF
 
-            IF(TotalArea2.EQ.0.) THEN
+            IF(TotalArea2.EQ.0d0) THEN
                ! do nothing
             ELSE
-               Biharmonic_auxiliary_var(NH,k) = -3.d0 * (DqDXDPhiDX2A+DqDYDPhiDY2A) / TotalArea2
+               Biharmonic_auxiliary_var(NH,k) = dcmplx(-3.d0) * (DqDXDPhiDX2A+DqDYDPhiDY2A) / dcmplx(TotalArea2)
                ! variables for modified Leith viscosity parameter
-               d_dx_q_nodes (NH,k) = d_dx_q_element / TotalArea2
-               d_dy_q_nodes (NH,k) = d_dy_q_element / TotalArea2
+               d_dx_q_nodes (NH,k) = d_dx_q_element / dcmplx(TotalArea2)
+               d_dy_q_nodes (NH,k) = d_dy_q_element / dcmplx(TotalArea2)
             ENDIF
 
          END DO ! end vertical loop
@@ -579,9 +579,9 @@ c     to the solution
                CLBP=CSII(LBP)
                DO k=1,NFEN
                   Mkm1(k)=(0.D0,0.D0)
-                  Mk(k)=SLBP+iy*CLBP
+                  Mk(k)=dcmplx(SLBP)+iy*dcmplx(CLBP)
                   Mkp1(k)=(0.D0,0.D0)
-                  Fr(k)=VelTan+iy*VelNorm
+                  Fr(k)=dcmplx(VelTan)+iy*dcmplx(VelNorm)
 C                  EVTot(k)=0.D0 !f77diff??
                ENDDO
                !write(6,*) 'lbp=',lbp,' lbcodei(lbp)=',lbcodei(lbp),' skip to 999 nh=',nh !jgfdebug               
@@ -655,12 +655,12 @@ c     surrounding a node
          TotalArea2=0.d0
 
          N1=NH
-         EtaN1=IFNLFA*(Eta1(N1)+Eta2(N1))/2.d0
+         EtaN1=dble(IFNLFA)*(Eta1(N1)+Eta2(N1))/2.d0
          hN1=DP(N1)
          BTPN1=BTP(N1)
 
          N2=NeiTab(NH,2)        !operate on 1st neighbor
-         EtaN2=IFNLFA*(Eta1(N2)+Eta2(N2))/2.d0
+         EtaN2=dble(IFNLFA)*(Eta1(N2)+Eta2(N2))/2.d0
          hN2=DP(N2)
          BTPN2=BTP(N2)
 
@@ -675,7 +675,7 @@ c     surrounding a node
             EtaN3=EtaN2
             BTPN3=BTPN2
             N2=NeiTab(NH,N)     !select new neighbor to work on
-            EtaN2=IFNLFA*(Eta1(N2)+Eta2(N2))/2.d0
+            EtaN2=dble(IFNLFA)*(Eta1(N2)+Eta2(N2))/2.d0
             hN2=DP(N2)
             BTPN2=BTP(N2)
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
@@ -744,12 +744,12 @@ C    kmd48.33bc added in spherical factors for 3D
             ENDIF
          ENDIF
 
-         IF(TotalArea2.NE.0.) THEN
+         IF(TotalArea2.NE.0d0) THEN
             DhDX=DhDX2A/TotalArea2
             DhDY=DhDY2A/TotalArea2
             DEtaDX=DEtaDX2A/TotalArea2
             DEtaDY=DEtaDY2A/TotalArea2
-            BTPG=(BTPDX2A+iy*BTPDY2A)/TotalArea2
+            BTPG=(dcmplx(BTPDX2A)+iy*dcmplx(BTPDY2A))/dcmplx(TotalArea2)
          ENDIF
 
 c     Finished computing horizontal derivatives of water level,
@@ -786,40 +786,40 @@ c     equation at each level in the vertical
 c     Compute the vertical advection and vertical stress terms
 
             IF(k.EQ.1) THEN
-               DqDSigmakp1=(q(NH,k+1)-q(NH,k))/(Sigma(k+1)-Sigma(k))
+               DqDSigmakp1=(q(NH,k+1)-q(NH,k))/dcmplx(Sigma(k+1)-Sigma(k))
                VAdvec(k)=DqDsigmakp1*
-     &              (2.d0*WSigma(k)+WSigma(k+1))*Inm(k,3)/HsOAMB
-               VStress(k)=(q(NH,k)*KVnm(k,2)+q(NH,k+1)*KVnm(k,3))
-     &              /HsHsOAMBAMB
+     &              dcmplx(2.d0*WSigma(k)+WSigma(k+1))*dcmplx(Inm(k,3))/dcmplx(HsOAMB)
+               VStress(k)=(q(NH,k)*dcmplx(KVnm(k,2))+q(NH,k+1)*dcmplx(KVnm(k,3)))
+     &              /dcmplx(HsHsOAMBAMB)
             ENDIF
             IF((k.GT.1).AND.(k.LT.NFEN)) THEN
                DqDSigmakm1=DqDSigmakp1
-               DqDSigmakp1=(q(NH,k+1)-q(NH,k))/(Sigma(k+1)-Sigma(k))
+               DqDSigmakp1=(q(NH,k+1)-q(NH,k))/dcmplx(Sigma(k+1)-Sigma(k))
                VAdvec(k)=
-     &              ( DqDSigmakm1*(WSigma(k-1)+2.d0*WSigma(k))*Inm(k,1)
-     &              +DqDSigmakp1*(2.d0*WSigma(k)+WSigma(k+1))*Inm(k,3) )
-     &              /HsOAMB
-               VStress(k)=(q(NH,k-1)*KVnm(k,1)+q(NH,k)*KVnm(k,2)
-     &              +q(NH,k+1)*KVnm(k,3))/HsHsOAMBAMB
+     &              ( DqDSigmakm1*dcmplx(WSigma(k-1)+2.d0*WSigma(k))*dcmplx(Inm(k,1))
+     &              +DqDSigmakp1*dcmplx(2.d0*WSigma(k)+WSigma(k+1))*dcmplx(Inm(k,3)) )
+     &              /dcmplx(HsOAMB)
+               VStress(k)=(q(NH,k-1)*dcmplx(KVnm(k,1))+q(NH,k)*dcmplx(KVnm(k,2))
+     &              +q(NH,k+1)*dcmplx(KVnm(k,3)))/dcmplx(HsHsOAMBAMB)
             ENDIF
             IF(k.EQ.NFEN) THEN
                DqDSigmakm1=DqDSigmakp1
                VAdvec(k)=
-     &              DqDSigmakm1*(WSigma(k-1)+2.d0*WSigma(k))*Inm(k,1)
-     &              /HsOAMB
-               VStress(k)=(q(NH,k-1)*KVnm(k,1)+q(NH,k)*KVnm(k,2))
-     &              /HsHsOAMBAMB
+     &              DqDSigmakm1*dcmplx(WSigma(k-1)+2.d0*WSigma(k))*dcmplx(Inm(k,1))
+     &              /dcmplx(HsOAMB)
+               VStress(k)=(q(NH,k-1)*dcmplx(KVnm(k,1))+q(NH,k)*dcmplx(KVnm(k,2)))
+     &              /dcmplx(HsHsOAMBAMB)
             ENDIF
-            VAdvec(k)=sponge(NH)*IFNLCT*VAdvec(k)
+            VAdvec(k)=dcmplx(sponge(NH)*dble(IFNLCT))*VAdvec(k)
 
 !--------------------------------------------------------------------------------------------------
 c     Compute lateral advection and lateral stress terms
 ! -------------------------------------------------------------------------------------------------
 
-            UnDqDX2A=0.d0
-            VnDqDY2A=0.d0
-            DqDXDPhiDX2A=0.d0
-            DqDYDPhiDY2A=0.d0
+            UnDqDX2A=dcmplx(0.d0)
+            VnDqDY2A=dcmplx(0.d0)
+            DqDXDPhiDX2A=dcmplx(0.d0)
+            DqDYDPhiDY2A=dcmplx(0.d0)
 ! arash 12/14/2015: Biharmonic auxiliary variable derivatives
             Biharmonic_DqDXDPhiDX2A =  ( 0.d0 , 0.0d0 )
             Biharmonic_DqDYDPhiDY2A =  ( 0.d0 , 0.0d0 )
@@ -928,7 +928,7 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
                   IF (NCELE.NE.0) THEN !if element exists, compute terms
 C    kmd48.33bc added in spherical factors for 3D
                      SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
-                     qn=(qN1+qN2+qN3)/3.d0
+                     qn=(qN1+qN2+qN3)/dcmplx(3.d0)
                      Un=REAL(qn)
                      Vn=AIMAG(qn)
                      a1=X(N3)-X(N2)
@@ -937,8 +937,8 @@ C    kmd48.33bc added in spherical factors for 3D
                      b1=(Y(N2)-Y(N3))*SFacAvg
                      b2=(Y(N3)-Y(N1))*SFacAvg
                      b3=(Y(N1)-Y(N2))*SFacAvg
-                     UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
-                     VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
+                     UnDqDX2A=UnDqDX2A+dcmplx(Un)*(qN1*dcmplx(b1)+qN2*dcmplx(b2)+qN3*dcmplx(b3))
+                     VnDqDY2A=VnDqDY2A+dcmplx(Vn)*(qN1*dcmplx(a1)+qN2*dcmplx(a2)+qN3*dcmplx(a3))
 ! iso-sigma:
 !                     DqDXDPhiDX2A=DqDXDPhiDX2A
 !     &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
@@ -955,18 +955,20 @@ C    kmd48.33bc added in spherical factors for 3D
 !                     d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1*b1+d_dy_qN2*b2+d_dy_qN3*b3
 ! z-level
                      DqDXDPhiDX2A=DqDXDPhiDX2A
-     &                 +(qN1_z*b1+qN2_z*b2+qN3_z*b3)*b1/Areas(NEle)
+     &                 +(qN1_z*dcmplx(b1)+qN2_z*dcmplx(b2)+qN3_z*dcmplx(b3))*dcmplx(b1)/dcmplx(Areas(NEle))
                      DqDYDPhiDY2A=DqDYDPhiDY2A
-     &                 +(qN1_z*a1+qN2_z*a2+qN3_z*a3)*a1/Areas(NEle)
+     &                 +(qN1_z*dcmplx(a1)+qN2_z*dcmplx(a2)+qN3_z*dcmplx(a3))*dcmplx(a1)/dcmplx(Areas(NEle))
 
                      Biharmonic_DqDXDPhiDX2A = Biharmonic_DqDXDPhiDX2A
-     &                 +(Biharmonic_qN1_z*b1+Biharmonic_qN2_z*b2+Biharmonic_qN3_z*b3)*b1/Areas(NEle)
+     &                 +(Biharmonic_qN1_z*dcmplx(b1)+Biharmonic_qN2_z*dcmplx(b2)+Biharmonic_qN3_z*
+     &                    dcmplx(b3))*dcmplx(b1)/dcmplx(Areas(NEle))
                      Biharmonic_DqDYDPhiDY2A = Biharmonic_DqDYDPhiDY2A
-     &                 +(Biharmonic_qN1_z*a1+Biharmonic_qN2_z*a2+Biharmonic_qN3_z*a3)*a1/Areas(NEle)
+     &                 +(Biharmonic_qN1_z*dcmplx(a1)+Biharmonic_qN2_z*dcmplx(a2)+Biharmonic_qN3_z*
+     &                    dcmplx(a3))*dcmplx(a1)/dcmplx(Areas(NEle))
 
-                     d2_dx2_q_element = d2_dx2_q_element + d_dx_qN1_z*b1+d_dx_qN2_z*b2+d_dx_qN3_z*b3
-                     d2_dy2_q_element = d2_dy2_q_element + d_dy_qN1_z*a1+d_dy_qN2_z*a2+d_dy_qN3_z*a3
-                     d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1_z*b1+d_dy_qN2_z*b2+d_dy_qN3_z*b3
+                     d2_dx2_q_element = d2_dx2_q_element + d_dx_qN1_z*dcmplx(b1)+d_dx_qN2_z*dcmplx(b2)+d_dx_qN3_z*dcmplx(b3)
+                     d2_dy2_q_element = d2_dy2_q_element + d_dy_qN1_z*dcmplx(a1)+d_dy_qN2_z*dcmplx(a2)+d_dy_qN3_z*dcmplx(a3)
+                     d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1_z*dcmplx(b1)+d_dy_qN2_z*dcmplx(b2)+d_dy_qN3_z*dcmplx(b3)
                   ENDIF
                ENDIF
             ENDDO
@@ -1011,7 +1013,7 @@ c.RJW 06092009  modified to elimiate zero index NOFF
             IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
 C    kmd48.33bc added in spherical factors for 3D
                   SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
-                  qn=(qN1+qN2+qN3)/3.d0
+                  qn=(qN1+qN2+qN3)/dcmplx(3.d0)
                   Un=real(qn)
                   Vn=aimag(qn)
 
@@ -1023,8 +1025,8 @@ C    kmd48.33bc added in spherical factors for 3D
                   b1=(Y(N2)-Y(N3))*SFacAvg
                   b2=(Y(N3)-Y(N1))*SFacAvg
                   b3=(Y(N1)-Y(N2))*SFacAvg
-                  UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
-                  VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
+                  UnDqDX2A=UnDqDX2A+dcmplx(Un)*(qN1*dcmplx(b1)+qN2*dcmplx(b2)+qN3*dcmplx(b3))
+                  VnDqDY2A=VnDqDY2A+dcmplx(Vn)*(qN1*dcmplx(a1)+qN2*dcmplx(a2)+qN3*dcmplx(a3))
 ! iso-sigma
 !                  DqDXDPhiDX2A=DqDXDPhiDX2A
 !     &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
@@ -1041,39 +1043,41 @@ C    kmd48.33bc added in spherical factors for 3D
 !                  d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1*b1+d_dy_qN2*b2+d_dy_qN3*b3
 ! z-level
                   DqDXDPhiDX2A=DqDXDPhiDX2A
-     &               +(qN1_z*b1+qN2_z*b2+qN3_z*b3)*b1/Areas(NEle)
+     &               +(qN1_z*dcmplx(b1)+qN2_z*dcmplx(b2)+qN3_z*dcmplx(b3))*dcmplx(b1)/dcmplx(Areas(NEle))
                   DqDYDPhiDY2A=DqDYDPhiDY2A
-     &              +(qN1_z*a1+qN2_z*a2+qN3_z*a3)*a1/Areas(NEle)
+     &              +(qN1_z*dcmplx(a1)+qN2_z*dcmplx(a2)+qN3_z*dcmplx(a3))*dcmplx(a1)/dcmplx(Areas(NEle))
 
                   Biharmonic_DqDXDPhiDX2A = Biharmonic_DqDXDPhiDX2A
-     &              +(Biharmonic_qN1_z*b1+Biharmonic_qN2_z*b2+Biharmonic_qN3_z*b3)*b1/Areas(NEle)
+     &              +(Biharmonic_qN1_z*dcmplx(b1)+Biharmonic_qN2_z*dcmplx(b2)+Biharmonic_qN3_z*dcmplx(b3))*
+     &                dcmplx(b1)/dcmplx(Areas(NEle))
                   Biharmonic_DqDYDPhiDY2A = Biharmonic_DqDYDPhiDY2A
-     &              +(Biharmonic_qN1_z*a1+Biharmonic_qN2_z*a2+Biharmonic_qN3_z*a3)*a1/Areas(NEle)
+     &              +(Biharmonic_qN1_z*dcmplx(a1)+Biharmonic_qN2_z*dcmplx(a2)+Biharmonic_qN3_z*dcmplx(a3))*
+     &                dcmplx(a1)/dcmplx(Areas(NEle))
 
-                  d2_dx2_q_element = d2_dx2_q_element + d_dx_qN1_z*b1+d_dx_qN2_z*b2+d_dx_qN3_z*b3
-                  d2_dy2_q_element = d2_dy2_q_element + d_dy_qN1_z*a1+d_dy_qN2_z*a2+d_dy_qN3_z*a3
-                  d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1_z*b1+d_dy_qN2_z*b2+d_dy_qN3_z*b3
+                  d2_dx2_q_element = d2_dx2_q_element + d_dx_qN1_z*dcmplx(b1)+d_dx_qN2_z*dcmplx(b2)+d_dx_qN3_z*dcmplx(b3)
+                  d2_dy2_q_element = d2_dy2_q_element + d_dy_qN1_z*dcmplx(a1)+d_dy_qN2_z*dcmplx(a2)+d_dy_qN3_z*dcmplx(a3)
+                  d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1_z*dcmplx(b1)+d_dy_qN2_z*dcmplx(b2)+d_dy_qN3_z*dcmplx(b3)
                ENDIF
             ENDIF
 
-            IF(TotalArea2.EQ.0.) THEN
+            IF(TotalArea2.EQ.0d0) THEN
                LAdvec(k)=(0.d0,0.d0)
                LStress(k)=(0.d0,0.d0)
 ! arash 12/14/2015
                Biharmonic_LStress(k)=(0.d0,0.d0)
             ELSE
-               LAdvec(k)=sponge(NH)*IFNLCT*(UnDqDX2A+VnDqDY2A)/TotalArea2
-               LStress(k)=3.d0*EVM(NH)*(DqDXDPhiDX2A+DqDYDPhiDY2A)
-     &              /TotalArea2
+               LAdvec(k)=dcmplx(sponge(NH)*dble(IFNLCT))*(UnDqDX2A+VnDqDY2A)/dcmplx(TotalArea2)
+               LStress(k)=dcmplx(3.d0*EVM(NH))*(DqDXDPhiDX2A+DqDYDPhiDY2A)
+     &              /dcmplx(TotalArea2)
 ! arash 12/21/2015: modified Leith viscosity
                ! 0. preliminaries
                modified_Leith_delta_x = sqrt ( TotalArea2 * 0.5d0 ) ! grid length
-               modified_Leith_Lambda_vorticity  = 2.5 !1.4d0 !             ! tuning constant O(1) ========================================================
-               modified_Leith_Lambda_divergence = 2.5 !1.4d0 !             ! the modification - see MITgcm manual ========================================
+               modified_Leith_Lambda_vorticity  = 2.5d0 !1.4d0 !             ! tuning constant O(1) ========================================================
+               modified_Leith_Lambda_divergence = 2.5d0 !1.4d0 !             ! the modification - see MITgcm manual ========================================
                ! 1. nodal second derivatives: during the computations, we multiplied them by 2A.
-               d2_dx2_q_element = d2_dx2_q_element / TotalArea2
-               d2_dy2_q_element = d2_dy2_q_element / TotalArea2
-               d2_dxy_q_element = d2_dxy_q_element / TotalArea2
+               d2_dx2_q_element = d2_dx2_q_element / dcmplx(TotalArea2)
+               d2_dy2_q_element = d2_dy2_q_element / dcmplx(TotalArea2)
+               d2_dxy_q_element = d2_dxy_q_element / dcmplx(TotalArea2)
                ! 2. magnitude of the gradient of divergence and vorticity
                modified_Leith_grad_vorticity = sqrt( ( aimag(d2_dx2_q_element) - real(d2_dxy_q_element) )**2
      &                                       +       ( aimag(d2_dxy_q_element) - real(d2_dy2_q_element) )**2 )
@@ -1096,8 +1100,8 @@ C    kmd48.33bc added in spherical factors for 3D
                 Biharmonic_viscosity_modified_Leith ( NH, k ) = Biharmonic_viscosity
                !write(6,'("nh, k, nele, ncele, biharmonic_viscosity_modified_leith",i0,1x,i0,1x,i0,1x,i0,f8.2)'),nh, k, nele, ncele, Biharmonic_viscosity_modified_Leith(nh,k) !jgfdebug
                ! 4. congratulations! we have computed modified Leith viscosity!
-               Biharmonic_LStress(k) = -3.d0 * Biharmonic_viscosity * (Biharmonic_DqDXDPhiDX2A+Biharmonic_DqDYDPhiDY2A)
-     &              /TotalArea2
+               Biharmonic_LStress(k) = dcmplx(-3.d0 * Biharmonic_viscosity) * Biharmonic_DqDXDPhiDX2A+Biharmonic_DqDYDPhiDY2A
+     &              /dcmplx(TotalArea2)
             ENDIF
 
          ENDDO
@@ -1163,8 +1167,8 @@ C          IF(KSlip.LT.0.0010d0*ABS(Q(NH,1))) KSlip=0.0010d0*ABS(Q(NH,1))
 c     Set up the RHS forcing vector Fr and LHS matrix in compact storage
 c     (Mkm1,Mk,Mkp1)
 
-         CCL = 1.d0+Corif(NH)*IDTAlp1
-         CCR = 1.d0-Corif(NH)*IDT1MAlp1
+         CCL = dcmplx(1.d0)+dcmplx(Corif(NH))*IDTAlp1
+         CCR = dcmplx(1.d0)-dcmplx(Corif(NH))*IDT1MAlp1
          RCL = DTAlp3/Hsp1Hsp1OAMBAMB
 
          IF(ISlip.EQ.0) THEN    !no slip bottom boundary condition
@@ -1174,46 +1178,46 @@ c     (Mkm1,Mk,Mkp1)
             Mkp1(1) = (0.d0,0.d0)
          ELSE                   ! slip bottom boundary condition
             Fr(1) = (CCR*q(NH,1)
-     &           -DelT*(LAdvec(1)  +LStress(1)  +BPG(NH,1)))*Inm(1,2)
+     &           -dcmplx(DelT)*(LAdvec(1)  +LStress(1)  +BPG(NH,1)))*dcmplx(Inm(1,2))
      &           + (CCR*q(NH,2)
-     &           -DelT*(LAdvec(2)  +LStress(2)  +BPG(NH,2)))*Inm(1,3)
-     &           - DelT*(VAdvec(1)+BTPG*LVn(1))-DT1MAlp3*VStress(1)
+     &           -dcmplx(DelT)*(LAdvec(2)  +LStress(2)  +BPG(NH,2)))*dcmplx(Inm(1,3))
+     &           - dcmplx(DelT)*(VAdvec(1)+BTPG*dcmplx(LVn(1)))-dcmplx(DT1MAlp3)*VStress(1)
 ! arash May 31 2016 did this based on Rosemary's work 
 !     &           - q(NH,1)*DT1MAlp2*KSlip/HsOAMB
-     &           - q(NH,1)*DT1MAlp2*TK(NH)/HsOAMB
+     &           - q(NH,1)*dcmplx(DT1MAlp2*TK(NH)/HsOAMB)
 
             Mkm1(1) = (0.d0,0.d0)
-            Mk(1)   = CCL*Inm(1,2) + RCL*KVnm(1,2)
+            Mk(1)   = CCL*dcmplx(Inm(1,2)) + dcmplx(RCL*KVnm(1,2))
 ! arash May 31 2016 did this based on Rosemary's work 
 !     &           + DTAlp2*KSlip/Hsp1OAMB
-     &           + DTAlp2*TK(NH)/Hsp1OAMB
-            Mkp1(1) = CCL*Inm(1,3) + RCL*KVnm(1,3)
+     &           + dcmplx(DTAlp2*TK(NH)/Hsp1OAMB)
+            Mkp1(1) = CCL*dcmplx(Inm(1,3)) + dcmplx(RCL*KVnm(1,3))
          ENDIF
 
          DO k=2,NFEN-1
             Fr(k) = (CCR*q(NH,k-1)
-     &           -DelT*(LAdvec(k-1)+LStress(k-1)+BPG(NH,k-1)))*Inm(k,1)
+     &           -dcmplx(DelT)*(LAdvec(k-1)+LStress(k-1)+BPG(NH,k-1)))*dcmplx(Inm(k,1))
      &           + (CCR*q(NH,k)
-     &           -DelT*(LAdvec(k)  +LStress(k)  +BPG(NH,k)  ))*Inm(k,2)
+     &           -dcmplx(DelT)*(LAdvec(k)  +LStress(k)  +BPG(NH,k)  ))*dcmplx(Inm(k,2))
      &           + (CCR*q(NH,k+1)
-     &           -DelT*(LAdvec(k+1)+LStress(k+1)+BPG(NH,k+1)))*Inm(k,3)
-     &           - DelT*(VAdvec(k)+BTPG*LVn(k))-DT1MAlp3*VStress(k)
-            Mkm1(k) = CCL*Inm(k,1) + RCL*KVnm(k,1)
-            Mk(k)   = CCL*Inm(k,2) + RCL*KVnm(k,2)
-            Mkp1(k) = CCL*Inm(k,3) + RCL*KVnm(k,3)
+     &           -dcmplx(DelT)*(LAdvec(k+1)+LStress(k+1)+BPG(NH,k+1)))*dcmplx(Inm(k,3))
+     &           - dcmplx(DelT)*(VAdvec(k)+BTPG*dcmplx(LVn(k)))-dcmplx(DT1MAlp3)*VStress(k)
+            Mkm1(k) = CCL*dcmplx(Inm(k,1)) + dcmplx(RCL*KVnm(k,1))
+            Mk(k)   = CCL*dcmplx(Inm(k,2)) + dcmplx(RCL*KVnm(k,2))
+            Mkp1(k) = CCL*dcmplx(Inm(k,3)) + dcmplx(RCL*KVnm(k,3))
          ENDDO
 C RJW 09/01/2009 RJW k = NFEN-1
 C            try to fix this by setting k=NFEN
 C         k=NFEN
          Fr(NFEN) = (CCR*q(NH,k-1)
-     &        -DelT*(LAdvec(k-1)+LStress(k-1)+BPG(NH,k-1)))*Inm(k,1)
+     &        -dcmplx(DelT)*(LAdvec(k-1)+LStress(k-1)+BPG(NH,k-1)))*dcmplx(Inm(k,1))
      &        + (CCR*q(NH,k)
-     &        -DelT*(LAdvec(k)  +LStress(k)  +BPG(NH,k)  ))*Inm(k,2)
-     &        - DelT*(VAdvec(k)+BTPG*LVn(k))-DT1MAlp3*VStress(k)
-     &        + DelT*0.5d0*((WSX2(NH)+iy*WSY2(NH))/Hsp1OAMB
-     &        +(WSX1(NH)+iy*WSY1(NH))/HsOAMB)
-         Mkm1(NFEN) = CCL*Inm(NFEN,1) + RCL*KVnm(NFEN,1)
-         Mk(NFEN)   = CCL*Inm(NFEN,2) + RCL*KVnm(NFEN,2)
+     &        -dcmplx(DelT)*(LAdvec(k)  +LStress(k)  +BPG(NH,k)  ))*dcmplx(Inm(k,2))
+     &        - dcmplx(DelT)*(VAdvec(k)+BTPG*dcmplx(LVn(k)))-dcmplx(DT1MAlp3)*VStress(k)
+     &        + dcmplx(DelT*0.5d0)*((dcmplx(WSX2(NH))+iy*dcmplx(WSY2(NH)))/dcmplx(Hsp1OAMB)
+     &        +(dcmplx(WSX1(NH))+iy*dcmplx(WSY1(NH)))/dcmplx(HsOAMB))
+         Mkm1(NFEN) = CCL*dcmplx(Inm(NFEN,1)) + dcmplx(RCL*KVnm(NFEN,1))
+         Mk(NFEN)   = CCL*dcmplx(Inm(NFEN,2)) + dcmplx(RCL*KVnm(NFEN,2))
          Mkp1(NFEN) = (0.d0,0.d0)
 
 c     Start section to modify equations depending on normal flux
@@ -1237,51 +1241,51 @@ c     this b.c. requires on manipulation of momentum eqns.  Do nothing!
                Auv2k      =AImag(Mk(1))
                Auv1kstar  =Auv1k*SLBP
                Auv2kstar  =Auv1k*CLBP
-               Mk(1)      =Auv1kstar+iy*Auv2kstar
+               Mk(1)      =dcmplx(Auv1kstar)+iy*dcmplx(Auv2kstar)
                Auv1kp1    =Real(Mkp1(1))
                Auv2kp1    =AImag(Mkp1(1))
                Auv1kp1star=Auv1kp1*SLBP
                Auv2kp1star=Auv1kp1*CLBP
-               Mkp1(1)    =Auv1kp1star+iy*Auv2kp1star
-               Frstar     =Real(Fr(1))*SLBP-AImag(Fr(1))*CLBP
-     &              +  (Auv2k+Auv2kp1)*VelNorm
-     &              +iy*(Auv1k+Auv1kp1)*VelNorm
+               Mkp1(1)    =dcmplx(Auv1kp1star)+iy*dcmplx(Auv2kp1star)
+               Frstar     =Fr(1)*dcmplx(SLBP)-dcmplx(AImag(Fr(1)))*dcmplx(CLBP)
+     &              +  dcmplx(Auv2k+Auv2kp1)*dcmplx(VelNorm)
+     &              +iy*dcmplx(Auv1k+Auv1kp1)*dcmplx(VelNorm)
                Fr(1)      =Frstar
                DO k=2,NFEN-1
                   Auv1km1    =Real(Mkm1(k))
                   Auv2km1    =AImag(Mkm1(k))
                   Auv1km1star=Auv1km1*SLBP
                   Auv2km1star=Auv1km1*CLBP
-                  Mkm1(k)    =Auv1km1star+iy*Auv2km1star
-                  Auv1k      =Real(Mk(k))
+                  Mkm1(k)    =dcmplx(Auv1km1star)+iy*dcmplx(Auv2km1star)
+                  Auv1k      =dble(Mk(k))
                   Auv2k      =AImag(Mk(k))
                   Auv1kstar  =Auv1k*SLBP
                   Auv2kstar  =Auv1k*CLBP
-                  Mk(k)      =Auv1kstar+iy*Auv2kstar
+                  Mk(k)      =dcmplx(Auv1kstar)+iy*dcmplx(Auv2kstar)
                   Auv1kp1    =Real(Mkp1(k))
                   Auv2kp1    =AImag(Mkp1(k))
                   Auv1kp1star=Auv1kp1*SLBP
                   Auv2kp1star=Auv1kp1*CLBP
-                  Mkp1(k)    =Auv1kp1star+iy*Auv2kp1star
-                  Frstar     =Real(Fr(k))*SLBP-AImag(Fr(k))*CLBP
-     &                 +  (Auv2km1+Auv2k+Auv2kp1)*VelNorm
-     &                 +iy*(Auv1km1+Auv1k+Auv1kp1)*VelNorm
+                  Mkp1(k)    =dcmplx(Auv1kp1star)+iy*dcmplx(Auv2kp1star)
+                  Frstar     =Fr(k)*dcmplx(SLBP)-dcmplx(AImag(Fr(k))*CLBP)
+     &                 +  dcmplx((Auv2km1+Auv2k+Auv2kp1)*VelNorm)
+     &                 +iy*dcmplx(Auv1km1+Auv1k+Auv1kp1)*dcmplx(VelNorm)
                   Fr(k)      =Frstar
                ENDDO
                Auv1km1    =Real(Mkm1(NFEN))
                Auv2km1    =AImag(Mkm1(NFEN))
                Auv1km1star=Auv1km1*SLBP
                Auv2km1star=Auv1km1*CLBP
-               Mkm1(NFEN) =Auv1km1star+iy*Auv2km1star
+               Mkm1(NFEN) =dcmplx(Auv1km1star)+iy*dcmplx(Auv2km1star)
                Auv1k      =Real(Mk(NFEN))
                Auv2k      =AImag(Mk(NFEN))
                Auv1kstar  =Auv1k*SLBP
                Auv2kstar  =Auv1k*CLBP
-               Mk(NFEN)   =Auv1kstar+iy*Auv2kstar
+               Mk(NFEN)   =dcmplx(Auv1kstar)+iy*dcmplx(Auv2kstar)
                Mkp1(NFEN) =(0.d0,0.d0)
-               Frstar     =Real(Fr(NFEN))*SLBP-AImag(Fr(NFEN))*CLBP
-     &              +  (Auv2km1+Auv2k)*VelNorm
-     &              +iy*(Auv1km1+Auv1k)*VelNorm
+               Frstar     =Fr(NFEN)*dcmplx(SLBP)-dcmplx(AImag(Fr(NFEN))*CLBP)
+     &              +  dcmplx((Auv2km1+Auv2k)*VelNorm)
+     &              +iy*dcmplx(Auv1km1+Auv1k)*dcmplx(VelNorm)
                Fr(NFEN)   =Frstar
             ENDIF
          ENDIF
@@ -1336,9 +1340,9 @@ C........DMW202401 Use saved H2
          Hsp1= H2(NH)           !Total depth at present (s+1) timestep
          VIVel = (0.d0,0.d0)
          DO k=1,NFEN
-            VIVel = VIVel + Qkp1(NH,k)*LVn(k)
+            VIVel = VIVel + Qkp1(NH,k)*dcmplx(LVn(k))
          END DO
-         VIVel = VIVel/amb
+         VIVel = VIVel/dcmplx(amb)
          UU(NH) = REAL(VIVel)
          VV(NH) = AIMAG(VIVel)
 
@@ -1346,7 +1350,7 @@ C........DMW202401 Use saved H2
          DAFluxY(NH)=VV(NH)*Hsp1
 
          IF(ISlip.EQ.0) THEN
-            DUDS = (Qkp1(NH,2)-Qkp1(NH,1))/(Sigma(2)-Sigma(1))
+            DUDS = (Qkp1(NH,2)-Qkp1(NH,1))/dcmplx(Sigma(2)-Sigma(1))
             BSX(NH) = EV(NH,1)*REAL(DUDS)
             BSY(NH) = EV(NH,1)*AIMAG(DUDS)
          ENDIF
@@ -1449,11 +1453,11 @@ c     total elemental area surrounding a node
          TotalArea2=0.d0
 
          N1=NH
-         EtaN1=IFNLFA*Eta2(N1)
+         EtaN1=dble(IFNLFA)*Eta2(N1)
          hN1=DP(N1)
 
          N2=NeiTab(NH,2)        !operate on 1st neighbor
-         EtaN2=IFNLFA*Eta2(N2)
+         EtaN2=dble(IFNLFA)*Eta2(N2)
          hN2=DP(N2)
 
          NNFirst=N2             !save these values until end
@@ -1465,7 +1469,7 @@ c     total elemental area surrounding a node
             hN3=hN2             !shift previously computed values
             EtaN3=EtaN2
             N2=NeiTab(NH,N)     !select new neighbor to work on
-            EtaN2=IFNLFA*Eta2(N2)
+            EtaN2=dble(IFNLFA)*Eta2(N2)
             hN2=DP(N2)
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of this IF statement.
@@ -1493,8 +1497,8 @@ C    kmd48.33bc added in spherical factors for 3D
                   qN1=qkp1(N1,k)
                   qN2=qkp1(N2,k)
                   qN3=qkp1(N3,k)
-                  DqDX2A(k)=DqDX2A(k)+(qN1*b1+qN2*b2+qN3*b3)
-                  DqDY2A(k)=DqDY2A(k)+(qN1*a1+qN2*a2+qN3*a3)
+                  DqDX2A(k)=DqDX2A(k)+(qN1*dcmplx(b1)+qN2*dcmplx(b2)+qN3*dcmplx(b3))
+                  DqDY2A(k)=DqDY2A(k)+(qN1*dcmplx(a1)+qN2*dcmplx(a2)+qN3*dcmplx(a3))
                ENDDO
             ENDIF
          ENDDO
@@ -1529,13 +1533,13 @@ C    kmd48.33bc added in spherical factors for 3D
                   qN1=qkp1(N1,k)
                   qN2=qkp1(N2,k)
                   qN3=qkp1(N3,k)
-                  DqDX2A(k)=DqDX2A(k)+(qN1*b1+qN2*b2+qN3*b3)
-                  DqDY2A(k)=DqDY2A(k)+(qN1*a1+qN2*a2+qN3*a3)
+                  DqDX2A(k)=DqDX2A(k)+(qN1*dcmplx(b1)+qN2*dcmplx(b2)+qN3*dcmplx(b3))
+                  DqDY2A(k)=DqDY2A(k)+(qN1*dcmplx(a1)+qN2*dcmplx(a2)+qN3*dcmplx(a3))
                ENDDO
             ENDIF
          ENDIF
 
-         IF(TotalArea2.NE.0.) THEN
+         IF(TotalArea2.NE.0d0) THEN
             DhDX=DhDX2A/TotalArea2
             DhDY=DhDY2A/TotalArea2
             DEtaDX=DEtaDX2A/TotalArea2
@@ -1587,7 +1591,7 @@ C     that are not connected to any active elements.
 C
          ELSEIF(TEMPNCELE.EQ.0)THEN
             DO K=1,NFEN
-               WZkp1(NH,K) = (0.D0,0.D0)
+               WZkp1(NH,K) = 0.D0
             ENDDO
          ENDIF
 c.
@@ -1974,7 +1978,7 @@ C     jgf46.00 explicitly declared the following variables
 Cjgfdebug 350  FORMAT(//,2X,'***** INVALID INPUT IN THE PRIMARY VERTICAL INPUT',
 Cjgfdebug     &     ' FILE (UNIT 15) ****',/,'****** RUN TERMINATED ******')
 
-      RKAPPA = 0.41
+      RKAPPA = 0.41d0
 
 C...
 C...  IEVC=0 READ IN FROM UNIT 15 in subroutine READ_INPUT_3DVS
@@ -2059,8 +2063,8 @@ C...
          USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
 
          USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
-         EVTOT(1)=RKAPPA*0.5*(USTARB+USTARS)*Z0B1
-         EVBASE=RKAPPA*0.5*(USTARB+USTARS)*H*0.2D0
+         EVTOT(1)=RKAPPA*0.5d0*(USTARB+USTARS)*Z0B1
+         EVBASE=RKAPPA*0.5d0*(USTARB+USTARS)*H*0.2D0
          IF(EVBASE.LT.EVTOT(1)) EVBASE=EVTOT(1)
          SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
          BREAK=b+0.2D0*amb
@@ -2078,9 +2082,9 @@ C...
           USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
 
           USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
-          EVTOT(1)=0.1*0.5*(USTARB+USTARS)*H
+          EVTOT(1)=0.1d0*0.5d0*(USTARB+USTARS)*H
          DO J=2,NFEN
-           EVTOT(J)=0.1*0.5*(USTARB+USTARS)*H
+           EVTOT(J)=0.1d0*0.5d0*(USTARB+USTARS)*H
          ENDDO
          GOTO 100
       ENDIF
@@ -2090,7 +2094,7 @@ C...  H UAVG FORMULATION FOLLOWING DAVIES (1990) + [EQ. (33)]
 C...
       IF(IEVC.EQ.30) THEN
          UAVMAG=SQRT(UU*UU+VV*VV)
-         EVBASE=0.025*H*UAVMAG/9.001D0
+         EVBASE=0.025d0*H*UAVMAG/9.001D0
          DO J=1,NFEN
             EVTOT(J) = EVBASE
          END DO
@@ -2106,7 +2110,7 @@ C...
       ENDIF
       IF(IEVC.EQ.32) THEN
          UAVMAG=SQRT(UU*UU+VV*VV)
-         EVBASE = 0.025*H*UAVMAG/9.001D0
+         EVBASE = 0.025d0*H*UAVMAG/9.001D0
          EVTOT(1) = EVBASE/1000.D0
          SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
          BREAK=b+0.2D0*amb
@@ -2270,7 +2274,7 @@ C
 #endif
 C
       DO J=nfen-1,1,-1
-         IF(ABS(B(J+1)).EQ.0.) then
+         IF(ABS(B(J+1)).EQ.0d0) then
             write(screenunit,*) 'Diagonal term in the VS matrix is zero'
             write(screenunit,*) '*********** Fatal error *************'
             write(1,*) 'Diagonal term in the VS matrix is zero'
@@ -2282,7 +2286,7 @@ C
          R(J)=R(J)-R(J+1)*P1
       END DO
 
-      IF(ABS(B(1)).EQ.0.) then
+      IF(ABS(B(1)).EQ.0d0) then
          write(screenunit,*) 'B1 term in the VS matrix is zero'
          write(screenunit,*) '*********** Fatal error *************'
          write(1,*) 'B1 term in the VS matrix is zero'
@@ -2402,7 +2406,7 @@ c
          Tyy = Tyy + (Vm*Vm + Vmp*Vmp + Vm*Vmp)*D1P1
  100  continue
 
-      if(Txx.lt.0.) then
+      if(Txx.lt.0d0) then
          write(screenunit,1001)
  1001    format(/'**** Serious Error Detected in SUBROUTINE VSDISP ***'/
      +        '          the partial uu dispersion term < 0        '/
@@ -2421,7 +2425,7 @@ c
          Txx = 0.d0
       endif
 
-      if(Tyy.lt.0.) then
+      if(Tyy.lt.0d0) then
          write(screenunit,1003)
  1003    format(/'**** Serious Error Detected in SUBROUTINE VSSOL ****'/
      +        '          the partial vv dispersion term < 0        '/
@@ -2448,8 +2452,8 @@ c
       Duv = Txy*H/amb - H*UU*VV
       Dvv = Tyy*H/amb - H*VV*VV
 
-      if(Duu.lt.0.) Duu = 0.d0
-      if(Dvv.lt.0.) Dvv = 0.d0
+      if(Duu.lt.0d0) Duu = 0.d0
+      if(Dvv.lt.0d0) Dvv = 0.d0
 
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -2816,11 +2820,12 @@ C     jgf46.12 gave them SAVE and PARAMETER properties (from jgf45.18)
       REAL(8), PARAMETER :: E3 = 0.25d0
       REAL(8), PARAMETER :: q2min=1.d-8
       REAL(8), SAVE :: B123, Sq, sig, rl1, rl2, HOamb, zval, HOamb2
-      REAL(8), SAVE :: dsig, drhodz, dudz, dvdz, dsig1, dsig2
+      REAL(8), SAVE :: dsig, dudz, dvdz, dsig1, dsig2
       REAL(8), SAVE :: drhodz1, drhodz2, BSlay, SSlay, db, db2, ds, ds2
       REAL(8), SAVE :: qprev, qlprev, Gh, tdiss, elmax
       REAL(8), SAVE :: coef1, coef2, coef3, coef4, coef5
       REAL(8) :: USTARS
+      COMPLEX(8) :: drhodz
 
       call setMessageSource("turb")
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
@@ -2954,10 +2959,10 @@ c     and split out the mixing length
       rmlen2(1)=rmlen(1)*rmlen(1)
       dsig=sigma(2)-sigma(1)
       if(iden.ne.0) then
-         drhodz=((SIGT(nh,2)-SIGT(nh,1))/dsig)/HOamb
-         BVfreq2(1)=-GORHO*drhodz
+         drhodz=(dcmplx(SIGT(nh,2)-SIGT(nh,1))/dcmplx(dsig))/dcmplx(HOamb)
+         BVfreq2(1)=dble(dcmplx(-GORHO)*drhodz)
       endif
-      dQdz=((Q(nh,2)-Q(nh,1))/dsig)/HOamb
+      dQdz=((Q(nh,2)-Q(nh,1))/dcmplx(dsig))/dcmplx(HOamb)
       dudz=real(dQdz)
       dvdz=aimag(dQdz)
       spgrad2(1)=dudz*dudz+dvdz*dvdz
@@ -2972,9 +2977,9 @@ c     and split out the mixing length
             drhodz2=((SIGT(nh,n)-SIGT(nh,n-1))/dsig2)/HOamb
             BVfreq2(n)=-GORHO*(drhodz1+drhodz2)/2.d0
          endif
-         dQdz1=((Q(nh,n+1)-Q(nh,n))/dsig1)/HOamb
-         dQdz2=((Q(nh,n)-Q(nh,n-1))/dsig2)/HOamb
-         dQdz=(dQdz1+dQdz2)/2.d0
+         dQdz1=((Q(nh,n+1)-Q(nh,n))/dcmplx(dsig1))/dcmplx(HOamb)
+         dQdz2=((Q(nh,n)-Q(nh,n-1))/dcmplx(dsig2))/dcmplx(HOamb)
+         dQdz=(dQdz1+dQdz2)/dcmplx(2.d0)
          dudz=real(dQdz)
          dvdz=aimag(dQdz)
          spgrad2(n)=dudz*dudz+dvdz*dvdz
@@ -2984,10 +2989,10 @@ c     and split out the mixing length
       rmlen2(nfen)=rmlen(nfen)*rmlen(nfen)
       dsig=sigma(nfen)-sigma(nfen-1)
       if(iden.ne.0) then
-         drhodz=((SIGT(nh,nfen)-SIGT(nh,nfen-1))/dsig)/HOamb
-         BVfreq2(nfen)=-GORHO*drhodz
+         drhodz=(dcmplx(SIGT(nh,nfen)-SIGT(nh,nfen-1))/dcmplx(dsig))/dcmplx(HOamb)
+         BVfreq2(nfen)=dble(dcmplx(-GORHO)*drhodz)
       endif
-      dQdz=((Q(nh,nfen)-Q(nh,nfen-1))/dsig)/HOamb
+      dQdz=((Q(nh,nfen)-Q(nh,nfen-1))/dcmplx(dsig))/dcmplx(HOamb)
       dudz=real(dQdz)
       dvdz=aimag(dQdz)
       spgrad2(nfen)=dudz*dudz+dvdz*dvdz
@@ -3020,7 +3025,7 @@ C and alpha = 60 - 250
          qprev=sqrt(q2prev(n))
          qlprev=qprev*rmlen(n)
          Gh=-BVfreq2(n)*rmlen2(n)/q2prev(n)
-         if(Gh.gt.0.0233) Gh=0.0233
+         if(Gh.gt.0.0233d0) Gh=0.0233d0
          Sm(n)=(g2-g3*Gh)/((1.d0-g4*Gh)*(1.d0-g5*Gh))
          Sh(n)=g6/(1.d0-g4*Gh) ! kmd48.33bc changed Sh to an array
          Km(n)=Sm(n)*qlprev
@@ -3036,7 +3041,7 @@ c     Kq(n)=Km(n)*Sq/Sm(n)                           !rog way
          diss(n)=qprev/(B1*rmlen(n))
 c     diss(n)=q2prev(n)*Sm(n)/(Km(n)*B1)             !rog way
            if ((n.eq.nfen).and.(IEVC.eq.51)) then
-             prod(n)=prod(n)+(150.0*USTARS*USTARS*USTARS)
+             prod(n)=prod(n)+(150.0d0*USTARS*USTARS*USTARS)
            endif
       enddo
 
@@ -3119,7 +3124,7 @@ c     Transfer to global array and check for zero or negative values
 c     (generally for startup)
 
       do n = 1,nfen
-         if(q2(n).le.0.)then
+         if(q2(n).le.0d0)then
             q2(n) = q2min
          endif
          q20(nh,n) = q2(n)
@@ -3134,7 +3139,7 @@ c     Compute length scale
             rl2 = 1.d0/(rkap*(H-sig*H+Z0Sw))
             l(nh,n) = 1.d0/(rl1+rl2)
 
-            if(l(nh,n).lt.0.001) l(nh,n)=0.001
+            if(l(nh,n).lt.0.001d0) l(nh,n)=0.001d0
             if(l(nh,n).gt.H) l(nh,n)=H
          enddo
       endif
@@ -3204,10 +3209,10 @@ c     Transfer to global array and check for stability limit
          l(nh,1) = q2l(1)/q2(1)
          do n = 2,nfen-1
             l(nh,n) = q2l(n)/q2(n)
-            if(l(nh,n).lt.0.)
+            if(l(nh,n).lt.0d0)
      &     l(nh,n)=rkap*(Z0B1*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb
             if(l(nh,n).gt.H) l(nh,n)=H
-            if((iden.ne.0).and.(BVfreq2(n).gt.0.0)) then
+            if((iden.ne.0).and.(BVfreq2(n).gt.0.0d0)) then
                elmax = 0.53D0*sqrt(q2(n))/sqrt(BVfreq2(n))
                if(l(nh,n).gt.elmax) l(nh,n)=elmax
             endif
@@ -3223,11 +3228,11 @@ c set Hlimit = 1.0 and l_2 = H
 c If the total water depth is less than 1.0 meter
 c then we want to set the turbulent length scale to
 c equal the water depth
-        H_crit = 1.0
+        H_crit = 1.0d0
 
         do n = 1, nfen
 
-          if (l(nh,n) .lt. 0.10 ) l(nh,n) = 0.10
+          if (l(nh,n) .lt. 0.10d0 ) l(nh,n) = 0.10d0
 
           if ( H .le. H_crit ) then
 
@@ -3305,7 +3310,7 @@ c
 c     check for zero elements on diagonal
 c
       DO J=1,N
-         if(B(j).EQ.0.) then
+         if(B(j).EQ.0d0) then
             write(screenunit,*) 'Problem in Tridag Solver.  ',
      +           'B array value in row ',j,' = 0'
             CALL EXIT(1)
@@ -3492,7 +3497,7 @@ C     kmd48.33bc write out results in global IO format
            Allocate(DUU_g(NP_G))
         END IF
         Duudescript % specifier            =  NHSTAR
-        Duudescript % initial_value        =  0.0
+        Duudescript % initial_value        =  0.0d0
         Duudescript % num_items_per_record =  1
         Duudescript % num_fd_records       =  NP_G
         Duudescript % num_records_this     =  NP
@@ -3504,7 +3509,7 @@ C     kmd48.33bc write out results in global IO format
            Allocate(DUV_g(NP_G))
         END IF
         Duvdescript % specifier            =  NHSTAR
-        Duvdescript % initial_value        =  0.0
+        Duvdescript % initial_value        =  0.0d0
         Duvdescript % num_items_per_record =  1
         Duvdescript % num_fd_records       =  NP_G
         Duvdescript % num_records_this     =  NP
@@ -3516,7 +3521,7 @@ C     kmd48.33bc write out results in global IO format
            Allocate(DVV_g(NP_G))
         END IF
         Dvvdescript % specifier            =  NHSTAR
-        Dvvdescript % initial_value        =  0.0
+        Dvvdescript % initial_value        =  0.0d0
         Dvvdescript % num_items_per_record =  1
         Dvvdescript % num_fd_records       =  NP_G
         Dvvdescript % num_records_this     =  NP
@@ -3528,7 +3533,7 @@ C     kmd48.33bc write out results in global IO format
            Allocate(UU_g(NP_G))
         END IF
         Uudescript % specifier            =  NHSTAR
-        Uudescript % initial_value        =  0.0
+        Uudescript % initial_value        =  0.0d0
         Uudescript % num_items_per_record =  1
         Uudescript % num_fd_records       =  NP_G
         Uudescript % num_records_this     =  NP
@@ -3540,7 +3545,7 @@ C     kmd48.33bc write out results in global IO format
            Allocate(VV_g(NP_G))
         END IF
         Vvdescript % specifier            =  NHSTAR
-        Vvdescript % initial_value        =  0.0
+        Vvdescript % initial_value        =  0.0d0
         Vvdescript % num_items_per_record =  1
         Vvdescript % num_fd_records       =  NP_G
         Vvdescript % num_records_this     =  NP
@@ -3552,7 +3557,7 @@ C     kmd48.33bc write out results in global IO format
            Allocate(BSX_g(NP_G))
         END IF
         Bsxdescript % specifier            =  NHSTAR
-        Bsxdescript % initial_value        =  0.0
+        Bsxdescript % initial_value        =  0.0d0
         Bsxdescript % num_items_per_record =  1
         Bsxdescript % num_fd_records       =  NP_G
         Bsxdescript % num_records_this     =  NP
@@ -3564,7 +3569,7 @@ C     kmd48.33bc write out results in global IO format
            Allocate(BSY_g(NP_G))
         END IF
         Bsydescript % specifier            =  NHSTAR
-        Bsydescript % initial_value        =  0.0
+        Bsydescript % initial_value        =  0.0d0
         Bsydescript % num_items_per_record =  1
         Bsydescript % num_fd_records       =  NP_G
         Bsydescript % num_records_this     =  NP
@@ -3573,7 +3578,7 @@ C     kmd48.33bc write out results in global IO format
         Bsydescript % array_g              => BSY_g
 
          SigTDescript % specifier            =  I3DGD
-         SigTDescript % initial_value        =  0.0
+         SigTDescript % initial_value        =  0.0d0
          SigTDescript % num_items_per_record =  NFEN
          SigTDescript % num_fd_records       =  NP_G
          SigTDescript % num_records_this     =  NP
@@ -3581,11 +3586,11 @@ C     kmd48.33bc write out results in global IO format
          SigTDescript % array2D              => SigT
          SigTDescript % array2D_g            => SigT_g
          SigTDescript % considerWetDry       = .FALSE.
-         SigTDescript % alternate_value      = -99999.0
+         SigTDescript % alternate_value      = -99999.0d0
          SigTDescript % field_name           = 'SigmaT'
 
          SalDescript % specifier            =  I3DGD
-         SalDescript % initial_value        =  0.0
+         SalDescript % initial_value        =  0.0d0
          SalDescript % num_items_per_record =  NFEN
          SalDescript % num_fd_records       =  NP_G
          SalDescript % num_records_this     =  NP
@@ -3593,11 +3598,11 @@ C     kmd48.33bc write out results in global IO format
          SalDescript % array2D              => Sal
          SalDescript % array2D_g            => Sal_g
          SalDescript % considerWetDry       = .FALSE.
-         SalDescript % alternate_value      = -99999.0
+         SalDescript % alternate_value      = -99999.0d0
          SalDescript % field_name           = 'Salinity'
 
          TempDescript % specifier            =  I3DGD
-         TempDescript % initial_value        =  0.0
+         TempDescript % initial_value        =  0.0d0
          TempDescript % num_items_per_record =  NFEN
          TempDescript % num_fd_records       =  NP_G
          TempDescript % num_records_this     =  NP
@@ -3605,11 +3610,11 @@ C     kmd48.33bc write out results in global IO format
          TempDescript % array2D              => Temp
          TempDescript % array2D_g            => Temp_g
          TempDescript % considerWetDry       = .FALSE.
-         TempDescript % alternate_value      = -99999.0
+         TempDescript % alternate_value      = -99999.0d0
          TempDescript % field_name           = 'Temperature'
 
          RealQDescript % specifier            =  I3DGV
-         RealQdescript % initial_value        =  0.0
+         RealQdescript % initial_value        =  0.0d0
          RealQDescript % num_items_per_record =  NFEN
          RealQDescript % num_fd_records       =  NP_G
          RealQDescript % num_records_this     =  NP
@@ -3617,11 +3622,11 @@ C     kmd48.33bc write out results in global IO format
          RealQDescript % array2D              => rp
          RealQDescript % array2D_g            => rp_g
          RealQDescript % considerWetDry       = .FALSE.
-         RealQDescript % alternate_value      = -99999.0
+         RealQDescript % alternate_value      = -99999.0d0
          RealQDescript % field_name           = 'u-vel3D'
 
          ImaginaryQDescript % specifier            =  I3DGV
-         ImaginaryQDescript % initial_value        =  0.0
+         ImaginaryQDescript % initial_value        =  0.0d0
          ImaginaryQDescript % num_items_per_record =  NFEN
          ImaginaryQDescript % num_fd_records       =  NP_G
          ImaginaryQDescript % num_records_this     =  NP
@@ -3629,11 +3634,11 @@ C     kmd48.33bc write out results in global IO format
          ImaginaryQDescript % array2D              => ip
          ImaginaryQDescript % array2D_g            => ip_g
          ImaginaryQDescript % considerWetDry       = .FALSE.
-         ImaginaryQDescript % alternate_value      = -99999.0
+         ImaginaryQDescript % alternate_value      = -99999.0d0
          ImaginaryQDescript % field_name           = 'v-vel3D'
 
          WZDescript % specifier            =  I3DGV
-         WZDescript % initial_value        =  0.0
+         WZDescript % initial_value        =  0.0d0
          WZDescript % num_items_per_record =  NFEN
          WZDescript % num_fd_records       =  NP_G
          WZDescript % num_records_this     =  NP
@@ -3641,11 +3646,11 @@ C     kmd48.33bc write out results in global IO format
          WZDescript % array2D              => WZ
          WZDescript % array2D_g            => WZ_g
          WZDescript % considerWetDry       = .FALSE.
-         WZDescript % alternate_value      = -99999.0
+         WZDescript % alternate_value      = -99999.0d0
          WZDescript % field_name           = 'w-vel3D'
 
          Q20Descript % specifier            =  I3DGT
-         Q20Descript % initial_value        =  0.0
+         Q20Descript % initial_value        =  0.0d0
          Q20Descript % num_items_per_record =  NFEN
          Q20Descript % num_fd_records       =  NP_G
          Q20Descript % num_records_this     =  NP
@@ -3653,11 +3658,11 @@ C     kmd48.33bc write out results in global IO format
          Q20Descript % array2D              => q20
          Q20Descript % array2D_g            => q20_g
          Q20Descript % considerWetDry       = .FALSE.
-         Q20Descript % alternate_value      = -99999.0
+         Q20Descript % alternate_value      = -99999.0d0
          Q20Descript % field_name           = 'q20'
 
          LDescript % specifier            =  I3DGT
-         LDescript % initial_value        =  0.0
+         LDescript % initial_value        =  0.0d0
          LDescript % num_items_per_record =  NFEN
          LDescript % num_fd_records       =  NP_G
          LDescript % num_records_this     =  NP
@@ -3665,7 +3670,7 @@ C     kmd48.33bc write out results in global IO format
          LDescript % array2D              => l
          LDescript % array2D_g            => l_g
          LDescript % considerWetDry       = .FALSE.
-         LDescript % alternate_value      = -99999.0
+         LDescript % alternate_value      = -99999.0d0
          LDescript % field_name           = 'l'
 
 
@@ -4199,7 +4204,7 @@ C        of states used in QUODDY
            R_ref = P1/P2
 ! Second, determine the depths of the layers
            DO NH=1,NP
-            Hs = DP(NH) + IFNLFA*ETA2(NH)
+            Hs = DP(NH) + dble(IFNLFA)*ETA2(NH)
             HsOAMB = Hs/(A-B)
             DO N=1, NFEN
               Zk = HsOAMB * (Sigma(n)-B)-DP(NH)
@@ -4281,7 +4286,7 @@ C        with both salinity and temperature.
            END DO
 ! Second, determine the depths of the layers
            DO NH=1,NP
-            Hs = DP(NH) + IFNLFA*ETA2(NH)
+            Hs = DP(NH) + dble(IFNLFA)*ETA2(NH)
             HsOAMB = Hs/(A-B)
             DO N=1, NFEN
               Zk = HsOAMB * (Sigma(n)-B)-DP(NH)
@@ -4362,8 +4367,8 @@ C*****************************************************************************
 !---------------------------------------------------------------------------------------------------
 ! arash 21 July 2016: adaptive filtering, depending on local Peclet number
 ! I tuned these parameters for the SURA/SL16 mesh based on trial and error, pain, and engineering judgment.
-       low_peclet_threshold  =  1.0d0;         low_factor = 0.15
-       high_peclet_threshold =  16.0d0;        high_factor = 0.185 ! filter 1
+       low_peclet_threshold  =  1.0d0;         low_factor = 0.15d0
+       high_peclet_threshold =  16.0d0;        high_factor = 0.185d0 ! filter 1
 !       high_peclet_threshold =  18.0d0;        high_factor = 0.185 ! filter 2
 !       high_peclet_threshold =  4.0d0;        high_factor = 0.185 ! filter 3
 !       high_peclet_threshold =  20.0d0;        high_factor = 0.185 ! filter 1
@@ -4382,25 +4387,25 @@ C*****************************************************************************
           length_max = 0.0d0
           Do J = 2, NNeigh ( I ) ! also includes node I
              Neighbor_Node = NeiTab ( I , J )
-             length = SQRT ( ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 )
+             length = SQRT ( ( X(Neighbor_Node) - X(I) )**2d0 + ( Y(Neighbor_Node) - Y(I) )**2d0 )
              If ( length > length_max ) length_max = length
           End Do
           ! 1.2. compute the maximum velocity in the xy plane
           velocity_magnitude_max_in_xy = 0.0d0
           average_velocity = 0.0d0
           Do K = 1, NFEN
-             velocity_magnitude = sqrt( (real ( quantity( I , K ) ))**2 + (aimag ( quantity( I , K ) ))**2 )
+             velocity_magnitude = sqrt( (real ( quantity( I , K ) ))**2d0 + (aimag ( quantity( I , K ) ))**2d0 )
              If ( velocity_magnitude > velocity_magnitude_max_in_xy ) velocity_magnitude_max_in_xy = velocity_magnitude
              average_velocity = average_velocity + velocity_magnitude
           End Do
-          average_velocity = average_velocity / NFEN
+          average_velocity = average_velocity / dble(NFEN)
           ! 1.3. compute the average viscosity in the xy plane
           average_viscosity = 0.0d0
           Do K = 1, NFEN
              !write(6,*) 'i, k, biharmonic_viscosity_modified_leith ',i, k, Biharmonic_viscosity_modified_Leith(i,k) !jgfdebug
              average_viscosity = average_viscosity + Biharmonic_viscosity_modified_Leith ( I, K )
           End Do
-          average_viscosity = average_viscosity / NFEN
+          average_viscosity = average_viscosity / dble(NFEN)
 
           ! 1.3.1 compute the element Peclet number
           !write(6,'("i=",i0," nodecode=",i0," average_viscosity=",f8.2)') i, nodecode(i), average_viscosity !jgfdebug
@@ -4420,7 +4425,8 @@ C*****************************************************************************
                 factor = high_factor
              Else
                 factor = low_factor + ( high_factor - low_factor ) * 
-     &           ( ( average_element_peclet_number - low_peclet_threshold ) / ( high_peclet_threshold - low_peclet_threshold ) )**0.5
+     &           ( ( average_element_peclet_number - low_peclet_threshold ) /
+     &             ( high_peclet_threshold - low_peclet_threshold ) )**0.5d0
              End If
    
           If ( velocity_magnitude_max_in_xy > 1.80d0 ) factor = 0.19d0
@@ -4480,9 +4486,9 @@ C*****************************************************************************
           Weights = 0.0d0
           Do J = 1, NNeigh ( I ) ! also includes node I
              Neighbor_Node = NeiTab ( I , J )
-             numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 
-             denominator = 2.0d0 * sigma_Gauss**2
-             Weights (J) = exp ( -1.0 * numerator / denominator )
+             numerator = ( X(Neighbor_Node) - X(I) )**2d0 + ( Y(Neighbor_Node) - Y(I) )**2d0
+             denominator = 2.0d0 * sigma_Gauss**2d0
+             Weights (J) = exp ( -1.0d0 * numerator / denominator )
           End Do
           ! 2.1 normalize weights
           sum_Weights = 0.0d0
@@ -4498,7 +4504,7 @@ C*****************************************************************************
          !Write(*,'(I5,11f6.3)') NNeigh ( I ), weights(1:NNeigh ( I ))
          !Pause
          ! 2.4. compute elevation corresponding to this node
-         Hs = DP(I) + IFNLFA * Eta2(I)  !Total depth at current timestep - 'center' node
+         Hs = DP(I) + dble(IFNLFA) * Eta2(I)  !Total depth at current timestep - 'center' node
          ! arash: not sure if the next line is necessary, but probably not. we aren't using it in the bpg routine either.
          ! IF( Hs .LT. H0 ) Hs = H0
          HsOAMB = Hs / AMB
@@ -4510,11 +4516,11 @@ C*****************************************************************************
              Do K = 1, NFEN
                 ! 3.0. obtain the z and sigma value corresponding to the 'center' node
                 Zk = HsOAMB * ( Sigma(K) - B ) - DP(I)
-                Hs_Neighbor_Node = DP(Neighbor_Node) + IFNLFA * Eta2(Neighbor_Node)
+                Hs_Neighbor_Node = DP(Neighbor_Node) + dble(IFNLFA) * Eta2(Neighbor_Node)
                 SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / Hs_Neighbor_Node
                 ! 3.1. linearly interpolate surrounding velocities on the same horizontal plane
                 Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, interpolated_value, K )
-                quantity_smooth (I,K) = quantity_smooth (I,K) + Weights (J) * interpolated_value
+                quantity_smooth(I,K) = quantity_smooth (I,K) + dcmplx(Weights(J)) * interpolated_value
              End Do
           End Do
        End Do
@@ -4569,8 +4575,8 @@ C*****************************************************************************
 !---------------------------------------------------------------------------------------------------
 ! arash 21 July 2016: adaptive filtering, depending on local Peclet number
 ! I tuned these parameters for the SURA/SL16 mesh based on trial and error, pain, and engineering judgment.
-       low_peclet_threshold  =  1.0d0;         low_factor = 0.15
-       high_peclet_threshold =  10.0d0;        high_factor = 0.185
+       low_peclet_threshold  =  1.0d0;         low_factor = 0.15d0
+       high_peclet_threshold =  10.0d0;        high_factor = 0.185d0
 !---------------------------------------------------------------------------------------------------
 
        Allocate ( quantity_smooth(NP,NFEN) )
@@ -4613,7 +4619,8 @@ C*****************************************************************************
                 factor(K) = high_factor
              Else
                 factor(K) = low_factor + ( high_factor - low_factor ) * 
-     &           ( ( element_peclet_number(K) - low_peclet_threshold ) / ( high_peclet_threshold - low_peclet_threshold ) )**0.5
+     &           ( ( element_peclet_number(K) - low_peclet_threshold ) /
+     &             ( high_peclet_threshold - low_peclet_threshold ) )**0.5d0
 
              End If
              ! limit factor for high velocities -------------------------------
@@ -4629,9 +4636,9 @@ C*****************************************************************************
           Do K = 1, NFEN
              Do J = 1, NNeigh ( I ) ! also includes node I
                 Neighbor_Node = NeiTab ( I , J )
-                numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 
-                denominator(K) = 2.0d0 * sigma_Gauss(K)**2
-                Weights (J,K) = exp ( -1.0 * numerator / denominator(K) )
+                numerator = ( X(Neighbor_Node) - X(I) )**2d0 + ( Y(Neighbor_Node) - Y(I) )**2d0
+                denominator(K) = 2.0d0 * sigma_Gauss(K)**2d0
+                Weights (J,K) = exp ( -1.0d0 * numerator / denominator(K) )
              End Do
              ! 2.1 normalize weights
              sum_Weights(:) = 0.0d0
@@ -4642,13 +4649,13 @@ C*****************************************************************************
                 Write(*,*) 'Possible error in Gaussian filter - error code = 1'
                 call exit(1)
              End If
-            Weights (:,K) = Weights (:,K) / sum_Weights(K)
+            Weights(:,K) = Weights(:,K) / sum_Weights(K)
          End Do
          ! 2.3 debug
          !Write(*,'(I5,11f6.3)') NNeigh ( I ), weights(1:NNeigh ( I ))
          !Pause
          ! 2.4. compute elevation corresponding to this node
-         Hs = DP(I) + IFNLFA * Eta2(I)  !Total depth at current timestep - 'center' node
+         Hs = DP(I) + dble(IFNLFA) * Eta2(I)  !Total depth at current timestep - 'center' node
          ! arash: not sure if the next line is necessary, but probably not. we aren't using it in the bpg routine either.
          ! IF( Hs .LT. H0 ) Hs = H0
          HsOAMB = Hs / AMB
@@ -4660,11 +4667,11 @@ C*****************************************************************************
              Do K = 1, NFEN
                 ! 3.0. obtain the z and sigma value corresponding to the 'center' node
                 Zk = HsOAMB * ( Sigma(K) - B ) - DP(I)
-                Hs_Neighbor_Node = DP(Neighbor_Node) + IFNLFA * Eta2(Neighbor_Node)
+                Hs_Neighbor_Node = DP(Neighbor_Node) + dble(IFNLFA) * Eta2(Neighbor_Node)
                 SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / Hs_Neighbor_Node
                 ! 3.1. linearly interpolate surrounding velocities on the same horizontal plane
                 Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, interpolated_value, K )
-                quantity_smooth (I,K) = quantity_smooth (I,K) + Weights (J,K) * interpolated_value
+                quantity_smooth (I,K) = quantity_smooth(I,K) + dcmplx(Weights(J,K)) * interpolated_value
              End Do
           End Do
        End Do
@@ -4819,7 +4826,7 @@ C*************************************************************************
 
 ! linear interpolation should be enough. the goal is to smooth the velocity
       interpolated_value = (inarray_vertical(LAbov) - inarray_vertical(LBelo))
-     &     *(SigmaNN-SigBelo)/(SigAbov-SigBelo) + inarray_vertical(LBelo)
+     &     *dcmplx((SigmaNN-SigBelo)/(SigAbov-SigBelo)) + inarray_vertical(LBelo)
 
 ! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
  100  CONTINUE
@@ -4885,8 +4892,8 @@ C**********************************************************************
 !---------------------------------------------------------------------------------------------------
 ! arash 21 July 2016: adaptive filtering, depending on local Peclet number
 ! I tuned these parameters for the SURA/SL16 mesh based on trial and error, pain, and engineering judgment.
-       low_peclet_threshold  =  1.0d0;         low_factor = 0.15
-       high_peclet_threshold =  16.0d0;        high_factor = 0.185
+       low_peclet_threshold  =  1.0d0;         low_factor = 0.15d0
+       high_peclet_threshold =  16.0d0;        high_factor = 0.185d0
 !---------------------------------------------------------------------------------------------------
 
        quantity_smooth(:,:) = 0.0d0
@@ -4912,7 +4919,7 @@ C**********************************************************************
           Do K = 1, NFEN
              average_viscosity = average_viscosity + Biharmonic_viscosity_modified_Leith ( I, K )
           End Do
-          average_viscosity = average_viscosity / NFEN
+          average_viscosity = average_viscosity / dble(NFEN)
 
           ! 1.3.1 compute the element Peclet number
                   element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity !constant_diffusivity !average_viscosity
@@ -4926,7 +4933,8 @@ C**********************************************************************
                 factor = high_factor
              Else
                 factor = low_factor + ( high_factor - low_factor ) * 
-     &           ( ( average_element_peclet_number - low_peclet_threshold ) / ( high_peclet_threshold - low_peclet_threshold ) )**0.5
+     &           ( ( average_element_peclet_number - low_peclet_threshold ) /
+     &             ( high_peclet_threshold - low_peclet_threshold ) )**0.5d0
              End If
    
           If ( velocity_magnitude_max_in_xy > 1.80d0 ) factor = 0.19d0
@@ -4958,9 +4966,9 @@ C**********************************************************************
           Weights = 0.0d0
           Do J = 1, NNeigh ( I ) ! also includes node I
              Neighbor_Node = NeiTab ( I , J )
-             numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 
-             denominator = 2.0d0 * sigma_Gauss**2
-             Weights (J) = exp ( -1.0 * numerator / denominator )
+             numerator = ( X(Neighbor_Node) - X(I) )**2d0 + ( Y(Neighbor_Node) - Y(I) )**2d0
+             denominator = 2.0d0 * sigma_Gauss**2d0
+             Weights (J) = exp ( -1.0d0 * numerator / denominator )
           End Do
           ! 2.1 normalize weights
           sum_Weights = 0.0d0
@@ -4976,7 +4984,7 @@ C**********************************************************************
          !Write(*,'(I5,11f6.3)') NNeigh ( I ), weights(1:NNeigh ( I ))
          !Pause
          ! 2.4. compute elevation corresponding to this node
-         Hs = DP(I) + IFNLFA * Eta2(I)  !Total depth at current timestep - 'center' node
+         Hs = DP(I) + dble(IFNLFA) * Eta2(I)  !Total depth at current timestep - 'center' node
          ! arash: not sure if the next line is necessary, but probably not. we aren't using it in the bpg routine either.
          ! IF( Hs .LT. H0 ) Hs = H0
          HsOAMB = Hs / AMB
@@ -4988,7 +4996,7 @@ C**********************************************************************
              Do K = 1, NFEN
                 ! 3.0. obtain the z and sigma value corresponding to the 'center' node
                 Zk = HsOAMB * ( Sigma(K) - B ) - DP(I)
-                Hs_Neighbor_Node = DP(Neighbor_Node) + IFNLFA * Eta2(Neighbor_Node)
+                Hs_Neighbor_Node = DP(Neighbor_Node) + dble(IFNLFA) * Eta2(Neighbor_Node)
                 SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / Hs_Neighbor_Node
                 ! 3.1. linearly interpolate surrounding sal/temp on the same horizontal plane
                 Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, interpolated_value, K )

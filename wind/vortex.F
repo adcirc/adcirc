@@ -360,7 +360,7 @@
          !      r2 = r4
          !      dr = dr * zoom
          !   END DO
-         root=1.0*radius(quad)
+         root=1.0d0*radius(quad)
          norootflg=1
          endif
          Rmaxes(n+1) = root  
@@ -555,7 +555,7 @@
       ! or solution diverges.
       findRoot = a
       DO iter = 1,itmax
-         b = x1 + iter * dx
+         b = x1 + dble(iter) * dx
          fb = func(b)
          ! Check progress
          IF ((fa*fb < 0.0d0) .OR. (ABS(fb) > ABS(fa))) THEN
@@ -578,7 +578,7 @@
       IF (iter >= itmax) THEN
          PRINT *,
      &              "FUNCTION findRoot: exceeded max # of iterations"
-         findRoot = -99999.0
+         findRoot = -99999.0d0
       END IF
       END FUNCTION findRoot
       !=================================================================
@@ -952,7 +952,7 @@
              temp1= interpR(param, iquad, dist)
              temp2= interpR(param, iquad+1, dist)
              spInterp = ( temp1/delta_angle**2.d0
-     &             + temp2/(90.0-delta_angle)**2.d0 )
+     &             + temp2/(90.0d0-delta_angle)**2.d0 )
      &             / ( 1.d0/delta_angle**2.d0
      &              + 1.d0/(90.d0-delta_angle)**2.d0 )
          end if
@@ -1065,7 +1065,7 @@
          Rmw = Rmaxes(base_quadrant+1) ! avoid div by zero
       else
          Rmw = ( Rmaxes(base_quadrant)/delta_angle**2.d0
-     &             + Rmaxes(base_quadrant+1)/(90.0-delta_angle)**2.d0 )
+     &             + Rmaxes(base_quadrant+1)/(90.0d0-delta_angle)**2.d0 )
      &             / ( 1.d0/delta_angle**2.d0
      &              + 1.d0/(90.d0-delta_angle)**2.d0 )
       endif

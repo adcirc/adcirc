@@ -535,15 +535,15 @@ Casey 180318: Added NWS=13
         CALL logMessage(INFO,"The tvwControl namelist was found.")
         found_tvw_nml = .TRUE.
         IF(USE_TVW)THEN
-            IF(NOUT_TVW.EQ.-99999D0)THEN
+            IF(NOUT_TVW.EQ.-99999)THEN
                 NOUT_TVW=NOUTGE
                 IF(TOUTS_TVW.EQ.-99999D0)TOUTS_TVW=TOUTSGE
                 IF(TOUTF_TVW.EQ.-99999D0)TOUTF_TVW=TOUTFGE
-                IF(NSPOOL_TVW.EQ.-99999D0)NSPOOL_TVW=NSPOOLGE
+                IF(NSPOOL_TVW.EQ.-99999)NSPOOL_TVW=NSPOOLGE
             ELSE
                 IF(TOUTS_TVW.EQ.-99999D0)TOUTS_TVW=TOUTSGE
                 IF(TOUTF_TVW.EQ.-99999D0)TOUTF_TVW=TOUTFGE
-                IF(NSPOOL_TVW.EQ.-99999D0)NSPOOL_TVW=NSPOOLGE
+                IF(NSPOOL_TVW.EQ.-99999)NSPOOL_TVW=NSPOOLGE
             ENDIF
         ELSE
             NOUT_TVW = 0
@@ -727,12 +727,12 @@ C     Channel wet perimeter for bottom friction 11/06/2023 sb
 
 C     jgf46.10 Add user-controllable warning, output, and stop criteria
 C     for elevations. Initialize default values.
-      WarnElev = 20.0         ! default
+      WarnElev = 20.0d0       ! default
       iWarnElevDump = 0       ! init
       WarnElevDump = .False.  ! default
       WarnElevDumpLimit = 50  ! default
       WarnElevDumpCounter = 0 ! init
-      ErrorElev = 1000.0      ! default
+      ErrorElev = 1000.0d0    ! default
 C     DMW 202401 Add check for velocity warning level
       WarnVel = 100.d0
 C     WJP add namelist
@@ -2542,7 +2542,7 @@ C...
 C...  PROCESS G - GRAVITY
 C...
       READ(15,*) G
-      IF((ICS.NE.1).AND.(abs(G-9.81).gt.0.01)) THEN
+      IF((ICS.NE.1).AND.(abs(G-9.81d0).gt.0.01d0)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'G =',G
@@ -2739,7 +2739,7 @@ C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
       IF(NWS.EQ.11) THEN
          NWLAT=271
          NWLON=181
-         WTIMINC=10800.
+         WTIMINC=10800d0
 C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) RSTIMINC
          IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) CICE_TIMINC
@@ -2928,12 +2928,12 @@ c...     !READ(15,*) BTIMINC,BCHGTIMINC  !read from namelist
          ENDIF
 
 C....... MAKE SURE THAT BATHYMETRY TRANSITION LENGTH IS AN INTEGER MULTIPLE OF THE TIMESTEP SIZE
-         IF ( BCHGTIMINC/ABS(DTDP) - REAL(INT(BCHGTIMINC/ABS(DTDP))) .NE. 0.D0 ) THEN
+         IF ( BCHGTIMINC/ABS(DTDP) - DBLE(INT(BCHGTIMINC/ABS(DTDP))) .NE. 0.D0 ) THEN
             WRITE(16,*) 'BATHYMETRY TRANSITION LENGTH MUST',
      &         ' BE AN INTEGER MULTIPLE OF THE TIME STEP SIZE.  RESETTING.'
-            BCHGTIMINC = ABS(DTDP)*REAL(INT(BCHGTIMINC/ABS(DTDP) + 0.5D0))
+            BCHGTIMINC = ABS(DTDP)*DBLE(INT(BCHGTIMINC/ABS(DTDP) + 0.5D0))
             DO WHILE ((BCHGTIMINC.GT.BTIMINC).AND.(BCHGTIMINC.GE.ABS(DTDP)) )
-               BCHGTIMINC = ABS(DTDP)*REAL(INT(BCHGTIMINC/ABS(DTDP) + 0.5D0)-1)
+               BCHGTIMINC = ABS(DTDP)*DBLE(INT(BCHGTIMINC/ABS(DTDP) + 0.5D0)-1)
             ENDDO
          ENDIF
       ELSE
@@ -3085,7 +3085,7 @@ C
                WRITE(16,5845) Day,Day+StaTim,RampVal
  5845          FORMAT(15X,F8.2,6X,F8.2,2X,F15.7)
                DAY=DAY+0.5d0
-               IF(Day.GE.DRAMP*1.25) EXIT
+               IF(Day.GE.DRAMP*1.25d0) EXIT
             ENDDO
          ENDIF
       ENDIF
@@ -3395,7 +3395,7 @@ C     initialized in the call to InitNodalAttr.
      &         5X,'EVC, EDDY DIFFUSIVITY COEFFICIENT =',E15.8,//)
       ELSE
         READ(15,*) ESLM
-        IF(ESLM.LT.0.) THEN
+        IF(ESLM.LT.0d0) THEN
           CSmag_Eh= .TRUE.
           ESLM=ABS(ESLM)
           WRITE(16,1111) ESLM
@@ -3484,8 +3484,8 @@ C....
       DO I=1,NTIF
          READ(15,'(A5)')  TIPOTAG(I)
          READ(15,*)  TPK(I),AMIGT(I),ETRF(I),FFT(I),FACET(I)
-         IF(AMIGT(I).EQ.0.) THEN
-            PERT(I)=0.
+         IF(AMIGT(I).EQ.0d0) THEN
+            PERT(I)=0d0
          ELSE
             PERT(I)=2.D0*PI/AMIGT(I)
          ENDIF
@@ -3571,8 +3571,8 @@ C     Allocate arrays dimensioned by MNBFR
          WRITE(16,1850) I,AMIG(I),FF(I),FACE(I),BOUNTAG(I)
  1850    FORMAT(12X,I2,6X,F16.12,2X,F10.7,2X,F10.3,10X,A5)
          FACE(I)=FACE(I)*DEG2RAD
-         IF(AMIG(I).EQ.0.) THEN
-            PER(I)=0.
+         IF(AMIG(I).EQ.0d0) THEN
+            PER(I)=0d0
          ELSE
             PER(I)=2.D0*PI/AMIG(I)
          ENDIF
@@ -3657,8 +3657,8 @@ C.....Allocate space for periodic normal flow boundary conditions
 C
          DO I=1,NVELME
             J=ME2GW(I)
-            QNAM(1,J)=0.
-            QNPH(1,J)=0.
+            QNAM(1,J)=0d0
+            QNPH(1,J)=0d0
          END DO
 
 C.....READ IN AND WRITE OUT INFO ON SPECIFIED NORMAL FLOW BOUNDARIES
@@ -3688,8 +3688,8 @@ C     river data from time=0.
                WRITE(16,2204) I,FAMIG(I),FFF(I),FFACE(I),FBOUNTAG(I)
  2204          FORMAT(12X,I2,6X,F16.12,2X,F10.7,2X,F10.3,10X,A5)
                FFACE(I)=FFACE(I)*DEG2RAD
-               IF(FAMIG(I).EQ.0.) THEN
-                  FPER(I)=0.
+               IF(FAMIG(I).EQ.0d0) THEN
+                  FPER(I)=0d0
                ELSE
                   FPER(I)=2.D0*PI/FAMIG(I)
                ENDIF
@@ -4725,19 +4725,12 @@ C     read in interval information for harmonic analysis
 C     compute thas and thaf in terms of the number of time steps
 
       READ(15,*) THAS,THAF,NHAINC,FMV
-#ifdef IBM
-      ITHAS=INT((THAS-STATIM)*(86400.D0/DTDP) + 0.5d0, KIND(0.0d0))
-#else
       ITHAS=INT((THAS-STATIM)*(86400.D0/DTDP) + 0.5d0)
-#endif
-      THAS=ITHAS*DTDP/86400.D0 + STATIM
-#ifdef IBM
-      ITHAF=INT((THAF-STATIM)*(86400.D0/DTDP) + 0.5d0, KIND(0.0d0))
-#else
+      THAS=dble(ITHAS)*DTDP/86400.D0 + STATIM
       ITHAF=INT((THAF-STATIM)*(86400.D0/DTDP) + 0.5d0)
-#endif
-      THAF=ITHAF*DTDP/86400.D0 + STATIM
-      ITMV = int(ITHAF - (ITHAF-ITHAS)*FMV)
+
+      THAF=dble(ITHAF)*DTDP/86400.D0 + STATIM
+      ITMV = int(dble(ITHAF) - dble(ITHAF-ITHAS)*FMV)
       IF(NFREQ.GT.0) THEN
          WRITE(16,34634) THAS,ITHAS,THAF,ITHAF,NHAINC
 34634    FORMAT(/,5X,'HARMONIC ANALYSIS WILL START AFTER THAS =',F8.3,
@@ -4748,7 +4741,7 @@ C     compute thas and thaf in terms of the number of time steps
      &        ' TIME STEPS INTO THE SIMULATION'
      &        ,//,5X,'INFORMATION WILL BE ANALYZED EVERY ',
      &        'NHAINC =',I8,' TIME STEPS.')
-         WRITE(16,34639) FMV*100.,ITMV
+         WRITE(16,34639) FMV*100d0,ITMV
 34639    FORMAT(/,5X,'MEANS AND VARIANCES WILL BE COMPUTED FOR THE ',
      &        'FINAL ',F10.5,' %',/9X,'OF THE HARMONIC ANALYSIS ',
      &        'PERIOD OR AFTER ',I9,' TIME STEPS INTO THE ',
@@ -4759,7 +4752,7 @@ C     compute thas and thaf in terms of the number of time steps
 34645    FORMAT(///,5X,'NO HARMONIC ANALYSIS WILL BE DONE')
       ENDIF
 
-      IF ((FMV.GT.0.).AND.(NFREQ.GT.0).AND.(C2DDI)) CHARMV = .TRUE.
+      IF ((FMV.GT.0d0).AND.(NFREQ.GT.0).AND.(C2DDI)) CHARMV = .TRUE.
 
 C     read in and write out information on where harmonic analysis will
 C     be done
@@ -4956,8 +4949,8 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
       IF(NWS.EQ.19) WRITE(16,4018)      !rjw added nws = 19
       IF(NWS.EQ.19) WRITE(16,4019)      !rjw added nws = 19
       IF(NWS.EQ.20) WRITE(16,4020)      !jie added nws = 20
-      IF((NFREQ.EQ.0).OR.(FMV.EQ.0.)) WRITE(16,4021)
-      IF((NFREQ.GE.1).AND.(FMV.NE.0.)) WRITE(16,4022)
+      IF((NFREQ.EQ.0).OR.(FMV.EQ.0d0)) WRITE(16,4021)
+      IF((NFREQ.GE.1).AND.(FMV.NE.0d0)) WRITE(16,4022)
       IF(ILUMP.EQ.0) WRITE(16,4031)
       IF(ILUMP.EQ.1) WRITE(16,4032)
       IF(IM.EQ.0) WRITE(16,4101)
@@ -5428,12 +5421,12 @@ C...  READ IN THE TIME STEPPING COEFFICIENTS AND COMPUTE ASSOCIATED VARIABLES
  390  FORMAT(/,5X,'3D TIME STEPPING COEFFS Alp1 = ',E9.2,' Alp2 = ',
      &     E9.2,' Alp3 = ',E9.2)
 
-      IDTAlp1 = iy*DelT*Alp1
-      IDT1MAlp1 = iy*DelT*(1.-Alp1)
+      IDTAlp1 = iy*dcmplx(DelT*Alp1)
+      IDT1MAlp1 = iy*dcmplx(DelT*(1d0-Alp1))
       DTAlp3 = DelT*Alp3
-      DT1MAlp3 = DelT*(1-Alp3)
+      DT1MAlp3 = DelT*(1d0-Alp3)
       DTAlp2 = DelT*Alp2
-      DT1MAlp2 = DelT*(1.-Alp2)
+      DT1MAlp2 = DelT*(1d0-Alp2)
 
 C...  READ IN IGC & NFEN: F.E. GRID CODE & # NODES IN F.E. GRID
 
@@ -5514,7 +5507,7 @@ c     IGC <> 0 - Set up grid in subroutine FEGRIDS
          DO NH=1,NP
             HH1=HH1+DP(NH)
          ENDDO
-         HH1=HH1/NP                        !domain averaged depth
+         HH1=HH1/dble(NP)                        !domain averaged depth
 ! tcm v49.74 -- removed NH from call to FEGRIDS which does not need it
          !CALL FEGRIDS(IGC,HH1,NH)
          CALL FEGRIDS(IGC,HH1)
@@ -5608,7 +5601,7 @@ C
 C.....WRITE Density station output information to UNIT 16
       IF (I3DSD.ne.0) THEN
          WRITE(scratchMessage,571) trim(CDUM80), NSpo3DSD,TO3DSDS,
-     &                (TO3DSDS+NSpo3DSD*DTDP*Sec2Day),
+     &                (TO3DSDS+dble(NSpo3DSD)*DTDP*Sec2Day),
      &                (NTO3DSDS+NSpo3DSD),TO3DSDF,NTO3DSDF,NSpo3DSD,
      &                NDSet3DSD
          CALL logMessage(INFO,scratchMessage)
@@ -5662,7 +5655,7 @@ C
 C.....WRITE Velocity station output information to UNIT 16
       IF (I3DSV.ne.0) THEN
          WRITE(scratchMessage,571) CDUM80,NSpo3DSV,TO3DSVS,
-     &                (TO3DSVS+NSpo3DSV*DTDP*Sec2Day),
+     &                (TO3DSVS+dble(NSpo3DSV)*DTDP*Sec2Day),
      &                (NTO3DSVS+NSpo3DSV),TO3DSVF,NTO3DSVF,NSpo3DSV,
      &                NDSet3DSV
          CALL logMessage(INFO,scratchMessage)
@@ -5705,7 +5698,7 @@ C
 C.....  Write turbulence station output information to UNIT 16
       IF (I3DST.ne.0) THEN
          WRITE(scratchMessage,571) CDUM80, NSpo3DST,TO3DSTS,
-     &                (TO3DSTS+NSpo3DST*DTDP*Sec2Day),
+     &                (TO3DSTS+dble(NSpo3DST)*DTDP*Sec2Day),
      &                (NTO3DSTS+NSpo3DST),TO3DSTF,NTO3DSTF,NSpo3DST,
      &                NDSet3DST
          CALL logMessage(INFO,scratchMessage)
@@ -5750,7 +5743,7 @@ C
 C.....  Write global 3D Density output information to UNIT 16
       IF (I3DGD.ne.0) THEN
          WRITE(scratchMessage,571) CDUM80,
-     &                NSpo3DGD,TO3DGDS,(TO3DGDS+NSpo3DGD*DTDP*Sec2Day),
+     &                NSpo3DGD,TO3DGDS,(TO3DGDS+dble(NSpo3DGD)*DTDP*Sec2Day),
      &                (NTO3DGDS+NSpo3DGD),TO3DGDF,NTO3DGDF,NSpo3DGD,
      &                NDSet3DGD
          CALL logMessage(INFO,scratchMessage)
@@ -5772,7 +5765,7 @@ C
 C.....  Write global velocity output information to UNIT 16
       IF (I3DGV.ne.0) THEN
          WRITE(scratchMessage,571) CDUM80, NSpo3DGV,TO3DGVS,
-     &                (TO3DGVS+NSpo3DGV*DTDP*Sec2Day),
+     &                (TO3DGVS+dble(NSpo3DGV)*DTDP*Sec2Day),
      &                (NTO3DGVS+NSpo3DGV),TO3DGVF,NTO3DGVF,NSpo3DGV,
      &                NDSet3DGV
          CALL logMessage(INFO,scratchMessage)
@@ -5794,7 +5787,7 @@ C
 C.....  Write global turbulence output information to UNIT 16
       IF (I3DGT.ne.0) THEN
          WRITE(scratchMessage,571) CDUM80, NSpo3DGT,TO3DGTS,
-     &                (TO3DGTS+NSpo3DGT*DTDP*Sec2Day),
+     &                (TO3DGTS+dble(NSpo3DGT)*DTDP*Sec2Day),
      &                (NTO3DGTS+NSpo3DGT),TO3DGTF,NTO3DGTF,NSpo3DGT,
      &                NDSet3DGT
          CALL logMessage(INFO,scratchMessage)
@@ -6235,7 +6228,7 @@ C-----------------------------------------------------------------------
      &                        Description)
       USE ADC_CONSTANTS, ONLY: DEG2RAD, RAD2DEG
       USE GLOBAL, ONLY : parse, IFSPROTS,
-     &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
+     &   a2d, DEBUG, allMessage, setMessageSource, unsetMessageSource
       USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
@@ -6265,11 +6258,11 @@ C
          call parse(STATLINE, LVAR)
          names(I)=LVAR(3)
          IF(ICS.EQ.1) THEN
-            xcoord(I)=a2f(LVAR(1))
-            ycoord(I)=a2f(LVAR(2))
+            xcoord(I)=a2d(LVAR(1))
+            ycoord(I)=a2d(LVAR(2))
          ELSE
-            lon(I)=a2f(LVAR(1))*DEG2RAD
-            lat(I)=a2f(LVAR(2))*DEG2RAD
+            lon(I)=a2d(LVAR(1))*DEG2RAD
+            lat(I)=a2d(LVAR(2))*DEG2RAD
             IF ( IFSPROTS .EQ. 1 ) THEN            
                CALL DRVSPCOORSROTS( lonr, latr,  lon(I), lat(I) )
             ELSE
@@ -6484,7 +6477,7 @@ C-----------------------------------------------------------------------
       REAL(8) X1, X2, X3, X4, Y1, Y2, Y3, Y4       ! geometry
       REAL(8) A1, A2, A3, AE, AEMIN, AA            ! area
       LOGICAL ElementFound  ! .true. when a corresponding element is found
-      REAL(8), PARAMETER :: Tolerance = 1.0E-5     ! area difference for match
+      REAL(8), PARAMETER :: Tolerance = 1.0D-5     ! area difference for match
 C
       call setMessageSource("CoordinateToElement")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
@@ -6492,7 +6485,7 @@ C
 #endif
 
       ElementFound = .false.
-      AEMIN=1.0E+25
+      AEMIN=1.0D+25
       ClosestElement=0
       DO Element=1,NE
          X1=X(NM(Element,1))

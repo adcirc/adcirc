@@ -284,7 +284,7 @@
       linenum = linenum + 1
       read(15,*,err=10,end=20,iostat=ios) tau0
       linenum = linenum + 1
-      if ((tau0.le.-5.0).and.(tau0.ge.-5.99)) then
+      if ((tau0.le.-5.0d0).and.(tau0.ge.-5.99d0)) then
          read(15,*,err=10,end=20,iostat=ios) tau0fulldomainmin, tau0fulldomainmax
          linenum = linenum + 1
       endif
@@ -343,7 +343,7 @@ c     arc add nws13 190110
       case(11)
          nwlat=271
          nwlon=181
-         wtiminc=10800.
+         wtiminc=10800d0
       case(29)
          read(wtimincLine,*,err=10,end=20,iostat=ios)
      &       irefyr,irefmo,irefday,irefhr,stormnumber,bladj,purevortex,purebackground,wtiminc
@@ -802,7 +802,7 @@ c     arc add nws13 190110
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       write(echoUnit,fmt='(f6.3, 10x, "! tau0")') tau0
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      if ((tau0.le.-5.0).and.(tau0.ge.-5.99)) then
+      if ((tau0.le.-5.0d0).and.(tau0.ge.-5.99d0)) then
          write(echoUnit,
      & fmt='(f6.3, f6.3, 10x, "! tau0fulldomainmin tau0fulldomainmax")')
      & tau0fulldomainmin, tau0fulldomainmax

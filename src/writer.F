@@ -1262,7 +1262,7 @@ C-----------------------------------------------------------------------
             ENDIF
          ENDIF
          Elev1Descript % specifier            = NHSTAR
-         Elev1Descript % initial_value        = 0.0
+         Elev1Descript % initial_value        = 0.0d0
          Elev1Descript % num_items_per_record = 1
          Elev1Descript % num_fd_records       = NP_G
          Elev1Descript % num_records_this     = NP
@@ -1277,7 +1277,7 @@ C-----------------------------------------------------------------------
             ENDIF
          ENDIF
          Elev2Descript % specifier            = NHSTAR
-         Elev2Descript % initial_value        = 0.0
+         Elev2Descript % initial_value        = 0.0d0
          Elev2Descript % num_items_per_record = 1
          Elev2Descript % num_fd_records       = NP_G
          Elev2Descript % num_records_this     = NP
@@ -1292,7 +1292,7 @@ C-----------------------------------------------------------------------
             ENDIF
          ENDIF
          H1_HS_Descript % specifier            = NHSTAR
-         H1_HS_Descript % initial_value        = 0.0
+         H1_HS_Descript % initial_value        = 0.0d0
          H1_HS_Descript % num_items_per_record = 1
          H1_HS_Descript % num_fd_records       = NP_G
          H1_HS_Descript % num_records_this     = NP
@@ -1307,7 +1307,7 @@ C-----------------------------------------------------------------------
             ENDIF
          ENDIF
          H2_HS_Descript % specifier            = NHSTAR
-         H2_HS_Descript % initial_value        = 0.0
+         H2_HS_Descript % initial_value        = 0.0d0
          H2_HS_Descript % num_items_per_record = 1
          H2_HS_Descript % num_fd_records       = NP_G
          H2_HS_Descript % num_records_this     = NP
@@ -1324,7 +1324,7 @@ C-----------------------------------------------------------------------
             ENDIF
          ENDIF
          VelDescript % specifier            = NHSTAR
-         VelDescript % initial_value        = 0.0
+         VelDescript % initial_value        = 0.0d0
          VelDescript % num_items_per_record = 2
          VelDescript % num_fd_records       = NP_G
          VelDescript % num_records_this     = NP
@@ -1340,7 +1340,7 @@ C-----------------------------------------------------------------------
                ALLOCATE(CH1_g(NP_G))
             ENDIF
             CH1Descript % specifier            = NHSTAR
-            CH1Descript % initial_value        = 0.0
+            CH1Descript % initial_value        = 0.0d0
             CH1Descript % num_items_per_record = 1
             CH1Descript % num_fd_records       = NP_G
             CH1Descript % num_records_this     = NP
@@ -1354,7 +1354,7 @@ C-----------------------------------------------------------------------
             ALLOCATE(EtaDisc_g(NP_G))
          ENDIF
          EtaDiscDescript % specifier            = NHSTAR
-         EtaDiscDescript % initial_value        = 0.0
+         EtaDiscDescript % initial_value        = 0.0d0
          EtaDiscDescript % num_items_per_record = 1
          EtaDiscDescript % num_fd_records       = NP_G
          EtaDiscDescript % num_records_this     = NP

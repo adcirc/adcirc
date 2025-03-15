@@ -384,7 +384,7 @@ C           kmd48.33bc - allocate realQ_tmp
 C           kmd48.33bc - changed to format used in global IO, layer output
             CALL readAndMapToSubdomain3D(RealQ_Tmp, NFEN, IHOT, IHOTSTP, moderbin)
             CALL readAndMapToSubdomain3D(ImQ_Tmp, NFEN, IHOT, IHOTSTP, moderbin)
-            Q = RealQ_Tmp + iy*ImQ_Tmp ! reconstruct Q matrix from parts
+            Q = dcmplx(RealQ_Tmp) + iy*dcmplx(ImQ_Tmp) ! reconstruct Q matrix from parts
             DEALLOCATE(RealQ_Tmp, ImQ_Tmp)
             CALL readAndMapToSubdomain3D(WZ, NFEN, IHOT, IHOTSTP, moderbin)
             CALL readAndMapToSubdomain3D(q20, NFEN, IHOT, IHOTSTP, moderbin)
@@ -549,8 +549,8 @@ C        file in parallel.
          ! Todo : add reading H1, H2. Will need to 
          !       think about backward compatibily
          ! For now simply compute H = dp + IFNLFA*eta
-         H1 = DP + IFNLFA*ETA1 
-         H2 = DP + IFNLFA*ETA2 
+         H1 = DP + dble(IFNLFA)*ETA1
+         H2 = DP + dble(IFNLFA)*ETA2
 
 C        jgf46.34 Added support for IBTYPE=52.
          CALL readAndMapToSubdomain2D(ETADisc, IHOT, IHOTSTP, moderbin)
@@ -631,7 +631,7 @@ C           kmd48.33bc - allocate realQ_tmp
 C           kmd48.33bc - changed to format used in global IO, layer output
             CALL readAndMapToSubdomain3D(RealQ_Tmp, NFEN, IHOT, IHOTSTP, moderbin)
             CALL readAndMapToSubdomain3D(ImQ_Tmp, NFEN, IHOT, IHOTSTP, moderbin)
-            Q = RealQ_Tmp + iy*ImQ_Tmp ! reconstruct Q matrix from parts
+            Q = dcmplx(RealQ_Tmp) + iy*dcmplx(ImQ_Tmp) ! reconstruct Q matrix from parts
             DEALLOCATE(RealQ_Tmp, ImQ_Tmp)
             CALL readAndMapToSubdomain3D(WZ, NFEN, IHOT, IHOTSTP, moderbin)
             CALL readAndMapToSubdomain3D(q20, NFEN, IHOT, IHOTSTP, moderbin)
@@ -736,10 +736,10 @@ C     ---------------------------------------------
       ! run (i.e, in the fort.15 file) ... if so, this affects any 
       ! calculation of time in seconds since cold start, and any 
       ! feature that counts time steps since cold start
-      DTDPHS=TimeLoc/ITHS  ! Set up time step information for hotstart file.
+      DTDPHS=TimeLoc/dble(ITHS)  ! Set up time step information for hotstart file.
       dtChange = DTDPHS - DTDP
       ! we don't use .ne. for dtChange b/c of the limitations in machine precision
-      IF ( (abs(dtChange).gt.1.0e-10).OR.
+      IF ( (abs(dtChange).gt.1.0d-10).OR.
      &     ( (IDEN.GE.1).AND.
      &       (C3D.eqv..true.).AND.
      &       (CBAROCLINIC.eqv..true.) ) ) THEN
@@ -801,14 +801,14 @@ C           times for output if time step size has changed
          RampMete2=1.0d0
          RampWRad2=1.0d0
       ELSE
-         RampExtFlux1=TANH((2.D0*(ITHS-1)*DTDPHS/86400.D0)/DRampExtFlux)
-         RampExtFlux2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampExtFlux)
-         RampIntFlux1=TANH((2.D0*(ITHS-1)*DTDPHS/86400.D0)/DRampIntFlux)
-         RampIntFlux2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampIntFlux)
-         RampTip2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampTip)
+         RampExtFlux1=TANH((2.D0*dble(ITHS-1)*DTDPHS/86400.D0)/DRampExtFlux)
+         RampExtFlux2=TANH((2.D0*dble(ITHS)*DTDPHS/86400.D0)/DRampExtFlux)
+         RampIntFlux1=TANH((2.D0*dble(ITHS-1)*DTDPHS/86400.D0)/DRampIntFlux)
+         RampIntFlux2=TANH((2.D0*dble(ITHS)*DTDPHS/86400.D0)/DRampIntFlux)
+         RampTip2=TANH((2.D0*dble(ITHS)*DTDPHS/86400.D0)/DRampTip)
 Corbitt 1203022: Added Zach''s Fix for Assigning a Start Time to Mete Ramping
-         RampMete2=TANH((2.D0*((ITHS)*DTDPHS/86400.D0-DUnRampMete))/DRampMete)
-         RampWRad2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampWRad)
+         RampMete2=TANH((2.D0*(dble(ITHS)*DTDPHS/86400.D0-DUnRampMete))/DRampMete)
+         RampWRad2=TANH((2.D0*dble(ITHS)*DTDPHS/86400.D0)/DRampWRad)
          write(16,*) 'Initial RampMete2 is =',RampMete2 
       ENDIF
 #ifdef IBM
@@ -898,7 +898,7 @@ C      IF((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
                READ(19,*) ESBIN2(J)
             END DO
             DO IT=1,ITHS-1
-               TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
+               TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
                IF(TIMEIT.GT.ETIME2) THEN
                   ETIME1=ETIME2
                   ETIME2=ETIME1+ETIMINC
@@ -953,7 +953,7 @@ C......FILE IF IT IS REQUIRED
          END DO
 
          DO IT=1,ITHS-1
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
+            TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
             IF(TIMEIT.GT.QTIME2) THEN
                QTIME1=QTIME2
                QTIME2=QTIME2+FTIMINC
@@ -1054,17 +1054,13 @@ C......RESTART THE PERIODIC NORMAL FLOW BOUNDARY CONDITION
 
       IF((NFLUXF.EQ.1).AND.(NFFR.GT.0)) THEN
          DO J=1,NFFR
-            IF(FPER(J).EQ.0.) THEN
-               NCYC=0.
+            IF(FPER(J).EQ.0d0) THEN
+               NCYC=0
             ELSE
-#ifdef IBM
-               NCYC=INT(TimeLoc/FPER(J),KIND(0.0d0))
-#else
                NCYC=INT(TimeLoc/FPER(J))
-#endif
             ENDIF
-            ARGJ1=FAMIG(J)*(TimeLoc-DTDPHS-NCYC*FPER(J))+FFACE(J) ! kmd48.33bc - changed from DTDP to DTDPHS
-            ARGJ2=FAMIG(J)*(TimeLoc-NCYC*FPER(J))+FFACE(J)
+            ARGJ1=FAMIG(J)*(TimeLoc-DTDPHS-dble(NCYC)*FPER(J))+FFACE(J) ! kmd48.33bc - changed from DTDP to DTDPHS
+            ARGJ2=FAMIG(J)*(TimeLoc-dble(NCYC)*FPER(J))+FFACE(J)
             RFF1=FFF(J)*RampExtFlux1
             RFF2=FFF(J)*RampExtFlux2
             DO I=1,NVEL
@@ -1119,7 +1115,7 @@ C.............RESET INFORMATION FOR K-1 TIME LEVEL
                RBARWL2=ETA1(NNBB2)-BARINHT(I)
                RBARWL1F=2.0D0*RBARWL1/3.0D0
                RBARWL2F=2.0D0*RBARWL2/3.0D0
-               IF((RBARWL1.LT.0.0).AND.(RBARWL2.LT.0.0)) THEN ! WATER LEVEL BELOW BARRIER
+               IF((RBARWL1.LT.0.0d0).AND.(RBARWL2.LT.0.0d0)) THEN ! WATER LEVEL BELOW BARRIER
                   QN1(I)=0.0D0  ! NO FLOW
 
                ELSE IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
@@ -1147,7 +1143,7 @@ C.............RESET INFORMATION FOR K TIME LEVEL
                RBARWL2=ETA2(NNBB2)-BARINHT(I)
                RBARWL1F=2.0D0*RBARWL1/3.0D0
                RBARWL2F=2.0D0*RBARWL2/3.0D0
-               IF((RBARWL1.LT.0.0).AND.(RBARWL2.LT.0.0)) THEN ! WATER LEVEL BELOW BARRIER
+               IF((RBARWL1.LT.0.0d0).AND.(RBARWL2.LT.0.0d0)) THEN ! WATER LEVEL BELOW BARRIER
                   QN2(I)=0.0D0  ! NO FLOW
 
                ELSE IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
@@ -1190,7 +1186,7 @@ C...
 C.............RESET INFORMATION FOR K-1 TIME LEVEL
                RBARWL1=ETA1(NNBB1)-PIPEHT(I)
                RBARWL2=ETA1(NNBB2)-PIPEHT(I)
-               IF((RBARWL1.LT.0.0).AND.(RBARWL2.LT.0.0)) THEN ! WATER LEVEL BELOW PIPE
+               IF((RBARWL1.LT.0.0d0).AND.(RBARWL2.LT.0.0d0)) THEN ! WATER LEVEL BELOW PIPE
                   QN1(I)=QN1(I)+0.0D0 ! NO FLOW
 
                ELSE IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF PIPE
@@ -1199,28 +1195,28 @@ C.............RESET INFORMATION FOR K-1 TIME LEVEL
                ELSE IF(RBARWL1.GT.RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF PIPE
                   IF(RBARWL2.LE.0) THEN ! OUTWARD FREE DISCHARGE
                      QN1(I)=QN1(I)-RampIntFlux1
-     &                    *0.25D0*PI*(PIPEDIAM(I))**2
+     &                    *0.25D0*PI*(PIPEDIAM(I))**2d0
      &                    *(2.D0*G*RBARWL1/(1+PIPECOEF(I)))**0.5D0
                   ELSE          ! OUTWARD SUBMERGED DISCHARGE
                      QN1(I)=QN1(I)-RampIntFlux1
-     &                    *0.25D0*PI*(PIPEDIAM(I))**2
+     &                    *0.25D0*PI*(PIPEDIAM(I))**2d0
      &                    *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(I))**0.5D0
                   ENDIF
                ELSE IF(RBARWL2.GT.RBARWL1) THEN ! WATER LEVEL LOWER ON THIS SIDE OF PIPE
                   IF(RBARWL1.LE.0) THEN ! INWARD FREE DISCHARGE
                      QN1(I)=QN1(I)+RampIntFlux1
-     &                    *0.25D0*PI*(PIPEDIAM(I))**2
+     &                    *0.25D0*PI*(PIPEDIAM(I))**2d0
      &                    *(2.D0*G*RBARWL2/(1+PIPECOEF(I)))**0.5D0
                   ELSE          ! INWARD SUBMERGED DISCHARGE
                      QN1(I)=QN1(I)+RampIntFlux1
-     &                    *0.25D0*PI*(PIPEDIAM(I))**2
+     &                    *0.25D0*PI*(PIPEDIAM(I))**2d0
      &                    *(2.D0*G*(RBARWL2-RBARWL1)/PIPECOEF(I))**0.5D0
                   ENDIF
                ENDIF
 C.............RESET INFORMATION FOR K TIME LEVEL
                RBARWL1=ETA2(NNBB1)-PIPEHT(I)
                RBARWL2=ETA2(NNBB2)-PIPEHT(I)
-               IF((RBARWL1.LT.0.0).AND.(RBARWL2.LT.0.0)) THEN ! WATER LEVEL BELOW PIPE
+               IF((RBARWL1.LT.0.0d0).AND.(RBARWL2.LT.0.0d0)) THEN ! WATER LEVEL BELOW PIPE
                   QN2(I)=QN2(I)+0.0D0 ! NO FLOW
 
                ELSE IF(RBARWL1.EQ.RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF PIPE
@@ -1277,7 +1273,7 @@ C...     DEPTHS ARE > OR = TO H0.
             ENDDO
          ENDIF
          DO IT=1,ITHS
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.bTIME2) THEN
                bTIME1=bTIME2
                bTIME2=bTIME2+bTIMINC
@@ -1361,7 +1357,7 @@ C...     DEPTHS ARE > OR = TO H0.
         ENDIF
 
          DO IT=1,ITHS
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.bTIME2) THEN
                bTIME1=bTIME2
                bTIME2=bTIME2+bTIMINC
@@ -1442,7 +1438,7 @@ C
           CALL NCICE1_GET(CICE1,NP)
           CALL NCICE1_GET(CICE2,NP)
           DO IT=1,ITHS
-             TIMEIT=IT*DTDP + STATIM*86400.D0
+             TIMEIT=dble(IT)*DTDP + STATIM*86400.D0
              IF(TIMEIT.GT.CICE_TIME2) THEN
                 CICE_TIME1 = CICE_TIME2
                 CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
@@ -1535,10 +1531,10 @@ C......RESTART THE WAVE RADIATION STRESS
        if (CTIP) then
 Cjromo 11-01-00  Initialize TIP2 for HOTSTART
           DO I = 1,NP
-             TIP2(I) = 0.0
+             TIP2(I) = 0.0d0
           END DO
           TIPLOOP: DO J = 1,NTIF
-            IF (PERT(J).EQ.0.) THEN
+            IF (PERT(J).EQ.0d0) THEN
                NCYC = 0
             ELSE
 #ifdef IBM
@@ -1548,7 +1544,7 @@ Cjromo 11-01-00  Initialize TIP2 for HOTSTART
 #endif
             ENDIF
 
-            ARGT    = AMIGT(J)*(TimeLoc-NCYC*PERT(J))+FACET(J)
+            ARGT    = AMIGT(J)*(TimeLoc-dble(NCYC)*PERT(J))+FACET(J)
             TPMUL   = RampTip2*ETRF(J)*TPK(J)*FFT(J)
             SALTMUL = RampTip2*FFT(J)
 C           WJP: We actually want to compare against diurnal and get 0,1,2
@@ -1561,7 +1557,7 @@ C           or higher species (was opposite beforehand)
 C           WJP: Rewritten so that we have a general formula for all
 C           species
             DO I = 1,NP
-                ARGTP   = ARGT + NA*SLAM(I)
+                ARGTP   = ARGT + dble(NA)*SLAM(I)
                 ARGSALT = ARGT - SALTPHA(J,I)
                 TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
      &                  + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
@@ -1598,7 +1594,7 @@ C...
         IESTP=0
         NSCOUE=0
         IF((NTCYSE.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
-          NTCYSE=int(NTCYSE+((DBLE(ITHS)-DBLE(NTCYSE))/
+          NTCYSE=int(dble(NTCYSE)+((DBLE(ITHS)-DBLE(NTCYSE))/
      &           DBLE(NSPOOLE))*DBLE(NSPOOLE))
           IF(NTCYSE.LT.ITHS) NTCYSE=NTCYSE+NSPOOLE
           IF(NSPOOLE.NE.0) NTRSPE=(NTCYFE-NTCYSE)/NSPOOLE
@@ -1639,7 +1635,7 @@ C...
         ENDIF
         WRITE(61,REC=IESTP+1) NTRSPE
         WRITE(61,REC=IESTP+2) NSTAE
-        WRITE(61,REC=IESTP+3) DT*NSPOOLE
+        WRITE(61,REC=IESTP+3) DT*dble(NSPOOLE)
         WRITE(61,REC=IESTP+4) NSPOOLE
         WRITE(61,REC=IESTP+5) 1
         IESTP=IESTP+5
@@ -1676,7 +1672,7 @@ C...
         IVSTP=0
         NSCOUV=0
         IF((NTCYSV.LT.ITHS).AND.(NSPOOLV.GT.0)) THEN
-          NTCYSV=INT(NTCYSV+((DBLE(ITHS)-DBLE(NTCYSV))/
+          NTCYSV=INT(dble(NTCYSV)+((DBLE(ITHS)-DBLE(NTCYSV))/
      &           DBLE(NSPOOLV))*DBLE(NSPOOLV))
           IF(NTCYSV.LT.ITHS) NTCYSV=NTCYSV+NSPOOLV
           NTRSPV=(NTCYFV-NTCYSV)/NSPOOLV
@@ -1718,7 +1714,7 @@ C...
         ENDIF
         WRITE(62,REC=IVSTP+1) NTRSPV
         WRITE(62,REC=IVSTP+2) NSTAV
-        WRITE(62,REC=IVSTP+3) DT*NSPOOLV
+        WRITE(62,REC=IVSTP+3) DT*dble(NSPOOLV)
         WRITE(62,REC=IVSTP+4) NSPOOLV
         WRITE(62,REC=IVSTP+5) 2
         IVSTP=IVSTP+5
@@ -1752,7 +1748,7 @@ C...
         ICSTP=0
         NSCOUC=0
         IF((NTCYSC.LT.ITHS).AND.(NSPOOLC.GT.0)) THEN
-          NTCYSC=INT(NTCYSC+((DBLE(ITHS)-DBLE(NTCYSC))/
+          NTCYSC=INT(dble(NTCYSC)+((DBLE(ITHS)-DBLE(NTCYSC))/
      &           DBLE(NSPOOLC))*DBLE(NSPOOLC))
           IF(NTCYSC.LT.ITHS) NTCYSC=NTCYSC+NSPOOLC
           NTRSPC=(NTCYFC-NTCYSC)/NSPOOLC
@@ -1795,7 +1791,7 @@ C...
         ENDIF
         WRITE(81,REC=ICSTP+1) NTRSPC
         WRITE(81,REC=ICSTP+2) NSTAC
-        WRITE(81,REC=ICSTP+3) DT*NSPOOLC
+        WRITE(81,REC=ICSTP+3) DT*dble(NSPOOLC)
         WRITE(81,REC=ICSTP+4) NSPOOLC
         WRITE(81,REC=ICSTP+5) 1
         ICSTP=ICSTP+5
@@ -1850,7 +1846,7 @@ C
         IICESTP = 0  !v49.64.01 tcm added ice station
         NSCOUM=0
         IF((NTCYSM.LT.ITHS).AND.(NSPOOLM.GT.0)) THEN
-          NTCYSM=INT(NTCYSM+((DBLE(ITHS)-DBLE(NTCYSM))/
+          NTCYSM=INT(dble(NTCYSM)+((DBLE(ITHS)-DBLE(NTCYSM))/
      &           DBLE(NSPOOLM))*DBLE(NSPOOLM))
           IF(NTCYSM.LT.ITHS) NTCYSM=NTCYSM+NSPOOLM
           NTRSPM=(NTCYFM-NTCYSM)/NSPOOLM
@@ -1923,12 +1919,12 @@ C
         ENDIF
         WRITE(71,REC=IPSTP+1) NTRSPM
         WRITE(71,REC=IPSTP+2) NSTAM
-        WRITE(71,REC=IPSTP+3) DT*NSPOOLM
+        WRITE(71,REC=IPSTP+3) DT*dble(NSPOOLM)
         WRITE(71,REC=IPSTP+4) NSPOOLM
         WRITE(71,REC=IPSTP+5) 1
         WRITE(72,REC=IWSTP+1) NTRSPM
         WRITE(72,REC=IWSTP+2) NSTAM
-        WRITE(72,REC=IWSTP+3) DT*NSPOOLM
+        WRITE(72,REC=IWSTP+3) DT*dble(NSPOOLM)
         WRITE(72,REC=IWSTP+4) NSPOOLM
         WRITE(72,REC=IWSTP+5) 2
         IPSTP=IPSTP+5
@@ -1939,7 +1935,7 @@ C
         IF(NCICE.NE.0) THEN
            WRITE(91,REC=IICESTP+1) NTRSPM
            WRITE(91,REC=IICESTP+2) NSTAM
-           WRITE(91,REC=IICESTP+3) DT*NSPOOLM
+           WRITE(91,REC=IICESTP+3) DT*dble(NSPOOLM)
            WRITE(91,REC=IICESTP+4) NSPOOLM
            WRITE(91,REC=IICESTP+5) 1
            IICESTP = IICESTP + 5
@@ -2013,7 +2009,7 @@ C...
         IBSTP=0
         NSCOUB=0
         IF((NTCYSB.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
-          NTCYSB=INT(NTCYSB+((DBLE(ITHS)-DBLE(NTCYSB))/
+          NTCYSB=INT(dble(NTCYSB)+((DBLE(ITHS)-DBLE(NTCYSB))/
      &           DBLE(NSPOOLE))*DBLE(NSPOOLE))
           IF(NTCYSB.LT.ITHS) NTCYSB=NTCYSB+NSPOOLE
           IF(NSPOOLE.NE.0) NTRSPB=(NTCYFB-NTCYSB)/NSPOOLE
@@ -2054,7 +2050,7 @@ C...
         ENDIF
         WRITE(75,REC=IBSTP+1) NTRSPB
         WRITE(75,REC=IBSTP+2) NSTAE
-        WRITE(75,REC=IBSTP+3) DT*NSPOOLE
+        WRITE(75,REC=IBSTP+3) DT*dble(NSPOOLE)
         WRITE(75,REC=IBSTP+4) NSPOOLE
         WRITE(75,REC=IBSTP+5) 1
         IBSTP=IBSTP+5
@@ -2099,13 +2095,13 @@ C....   SET THESE VARIABLES FOR USE LATER
           IGEP=0
           NSCOUGE=0
           IF((NTCYSGE.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
-            NTCYSGE=INT(NTCYSGE+((DBLE(ITHS)-DBLE(NTCYSGE))/
+            NTCYSGE=INT(dble(NTCYSGE)+((DBLE(ITHS)-DBLE(NTCYSGE))/
      &              DBLE(NSPOOLGE))*DBLE(NSPOOLGE) )
             IF(NTCYSGE.LT.ITHS) NTCYSGE=NTCYSGE+NSPOOLGE
 C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
             IF(DTDP.NE.DTDPHS) THEN
-              NDSETSE=INT(((NTCYFGE*DTDP)-(NTCYSGE*DTDPHS))/
-     &                (NSPOOLGE*DTDP))
+              NDSETSE=INT(((dble(NTCYFGE)*DTDP)-(dble(NTCYSGE)*DTDPHS))/
+     &                (dble(NSPOOLGE)*DTDP))
             ELSE
               NDSETSE=(NTCYFGE-NTCYSGE)/NSPOOLGE
             END IF
@@ -2147,7 +2143,7 @@ C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
             ENDIF
           WRITE(63,REC=IGEP+1) NDSETSE
           WRITE(63,REC=IGEP+2) NP
-          WRITE(63,REC=IGEP+3) DT*NSPOOLGE
+          WRITE(63,REC=IGEP+3) DT*dble(NSPOOLGE)
           WRITE(63,REC=IGEP+4) NSPOOLGE
           WRITE(63,REC=IGEP+5) 1
           IGEP=IGEP+5
@@ -2218,13 +2214,13 @@ C...
           IGVP=0
           NSCOUGV=0
           IF((NTCYSGV.LT.ITHS).AND.(NSPOOLGV.GT.0)) THEN
-            NTCYSGV=INT(NTCYSGV+((DBLE(ITHS)-DBLE(NTCYSGV))/
+            NTCYSGV=INT(dble(NTCYSGV)+((DBLE(ITHS)-DBLE(NTCYSGV))/
      &              DBLE(NSPOOLGV))*DBLE(NSPOOLGV))
             IF(NTCYSGV.LT.ITHS) NTCYSGV=NTCYSGV+NSPOOLGV
 C  kmd48.33bc - change the NDSETSV for the change in the DTDP
             IF(DTDP.NE.DTDPHS) THEN
-              NDSETSV=INT(((NTCYFGV*DTDP)-(NTCYSGV*DTDPHS))/
-     &                (NSPOOLGV*DTDP))
+              NDSETSV=INT(((dble(NTCYFGV)*DTDP)-(dble(NTCYSGV)*DTDPHS))/
+     &                (dble(NSPOOLGV)*DTDP))
             ELSE
               NDSETSV=(NTCYFGV-NTCYSGV)/NSPOOLGV
             END IF
@@ -2266,7 +2262,7 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
             ENDIF
           WRITE(64,REC=IGVP+1) NDSETSV
           WRITE(64,REC=IGVP+2) NP
-          WRITE(64,REC=IGVP+3) DT*NSPOOLGV
+          WRITE(64,REC=IGVP+3) DT*dble(NSPOOLGV)
           WRITE(64,REC=IGVP+4) NSPOOLGV
           WRITE(64,REC=IGVP+5) 2
           IGVP=IGVP+5
@@ -2297,12 +2293,12 @@ Cobell - Open the fort.77 (weir elevation change) if necessary
           IG_TVW=0
           NSCOU_TVW=0
           IF((NTCYS_TVW.LT.ITHS).AND.(NSPOOL_TVW.GT.0)) THEN
-            NTCYS_TVW=INT(NTCYS_TVW+((DBLE(ITHS)-DBLE(NTCYS_TVW))/
+            NTCYS_TVW=INT(dble(NTCYS_TVW)+((DBLE(ITHS)-DBLE(NTCYS_TVW))/
      &              DBLE(NSPOOL_TVW))*DBLE(NSPOOL_TVW))
             IF(NTCYS_TVW.LT.ITHS) NTCYS_TVW=NTCYS_TVW+NSPOOL_TVW
             IF(DTDP.NE.DTDPHS) THEN
-              NDSETS_TVW=INT(((NTCYF_TVW*DTDP)-(NTCYS_TVW*DTDPHS))/
-     &                (NSPOOL_TVW*DTDP))
+              NDSETS_TVW=INT(((dble(NTCYF_TVW)*DTDP)-(dble(NTCYS_TVW)*DTDPHS))/
+     &                (dble(NSPOOL_TVW)*DTDP))
             ELSE
               NDSETS_TVW=(NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW
             ENDIF
@@ -2344,7 +2340,7 @@ Cobell - Open the fort.77 (weir elevation change) if necessary
           ENDIF
           WRITE(77,REC=IG_TVW+1) NDSETS_TVW
           WRITE(77,REC=IG_TVW+2) NP
-          WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
+          WRITE(77,REC=IG_TVW+3) DT*dble(NSPOOL_TVW)
           WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
           WRITE(77,REC=IG_TVW+5) 1
           IG_TVW=IG_TVW+5
@@ -2375,13 +2371,13 @@ C...
           IGCP=0
           NSCOUGC=0
           IF((NTCYSGC.LT.ITHS).AND.(NSPOOLGC.GT.0)) THEN
-            NTCYSGC=INT(NTCYSGC+((DBLE(ITHS)-DBLE(NTCYSGC))/
+            NTCYSGC=INT(dble(NTCYSGC)+((DBLE(ITHS)-DBLE(NTCYSGC))/
      &              DBLE(NSPOOLGC))*DBLE(NSPOOLGC))
             IF(NTCYSGC.LT.ITHS) NTCYSGC=NTCYSGC+NSPOOLGC
 C  kmd48.33bc - change the NDSETSC for the change in the DTDP
             IF(DTDP.NE.DTDPHS) THEN
-              NDSETSC=INT(((NTCYFGC*DTDP)-(NTCYSGC*DTDPHS))/
-     &                (NSPOOLGC*DTDP))
+              NDSETSC=INT(((dble(NTCYFGC)*DTDP)-(dble(NTCYSGC)*DTDPHS))/
+     &                (dble(NSPOOLGC)*DTDP))
             ELSE
               NDSETSC=(NTCYFGC-NTCYSGC)/NSPOOLGC
             END IF
@@ -2423,7 +2419,7 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
             ENDIF
           WRITE(83,REC=IGCP+1) NDSETSC
           WRITE(83,REC=IGCP+2) NP
-          WRITE(83,REC=IGCP+3) DT*NSPOOLGC
+          WRITE(83,REC=IGCP+3) DT*dble(NSPOOLGC)
           WRITE(83,REC=IGCP+4) NSPOOLGC
           WRITE(83,REC=IGCP+5) 1
           IGCP=IGCP+5
@@ -2432,7 +2428,7 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
         IF(NOUTGC.EQ.-1) THEN
           OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83')
           WRITE(83,3220) RUNDES,RUNID,AGRID
-          WRITE(83,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
+          WRITE(83,3645) NDSETSC,NP,DTDP*dble(NSPOOLGC),NSPOOLGC,1
           IGCP=2
           CLOSE(83)
         ENDIF
@@ -2481,13 +2477,13 @@ c
           NSCOUGW=0
           IGIP=0
           IF((NTCYSGW.LT.ITHS).AND.(NSPOOLGW.GT.0)) THEN
-            NTCYSGW=INT(NTCYSGW+((DBLE(ITHS)-DBLE(NTCYSGW))/
+            NTCYSGW=INT(dble(NTCYSGW)+((DBLE(ITHS)-DBLE(NTCYSGW))/
      &              DBLE(NSPOOLGW))*DBLE(NSPOOLGW))
             IF(NTCYSGW.LT.ITHS) NTCYSGW=NTCYSGW+NSPOOLGW
 C  kmd48.33bc - change the NDSETSC for the change in the DTDP
             IF(DTDP.NE.DTDPHS) THEN
-              NDSETSW=INT(((NTCYFGW*DTDP)-(NTCYSGW*DTDPHS))/
-     &                (NSPOOLGW*DTDP))
+              NDSETSW=INT(((dble(NTCYFGW)*DTDP)-(dble(NTCYSGW)*DTDPHS))/
+     &                (dble(NSPOOLGW)*DTDP))
             ELSE
               NDSETSW=(NTCYFGW-NTCYSGW)/NSPOOLGW
             END IF
@@ -2567,14 +2563,14 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
           ENDIF
           WRITE(73,rec=igpp+1) ndsetsw
           WRITE(73,rec=igpp+2) np
-          WRITE(73,rec=igpp+3) dt*nspoolgw
+          WRITE(73,rec=igpp+3) dt*dble(nspoolgw)
           WRITE(73,rec=igpp+4) nspoolgw
           WRITE(73,rec=igpp+5) 2
           IGPP=IGPP+5
           CLOSE(73)                    ! DO THIS TO FLUSH THE WRITE BUFFER
           WRITE(74,REC=IGWP+1) NDSETSW
           WRITE(74,REC=IGWP+2) NP
-          WRITE(74,REC=IGWP+3) DT*NSPOOLGW
+          WRITE(74,REC=IGWP+3) DT*dble(NSPOOLGW)
           WRITE(74,REC=IGWP+4) NSPOOLGW
           WRITE(74,REC=IGWP+5) 2
           IGWP=IGWP+5
@@ -2583,7 +2579,7 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
           IF(NCICE.NE.0) THEN
              WRITE(93,REC=IGIP+1) NDSETSW
              WRITE(93,REC=IGIP+2) NP
-             WRITE(93,REC=IGIP+3) DT*NSPOOLGW
+             WRITE(93,REC=IGIP+3) DT*dble(NSPOOLGW)
              WRITE(93,REC=IGIP+4) NSPOOLGW
              WRITE(93,REC=IGIP+5) 2
              IGIP=IGIP+5
@@ -2668,7 +2664,7 @@ Casey 090310: Added the output of radiation stress gradients.
               ENDIF
               WRITE(164,REC=IGRadS+1) NDSETSW
               WRITE(164,REC=IGRadS+2) NP
-              WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
+              WRITE(164,REC=IGRadS+3) DT*dble(NSPOOLGW)
               WRITE(164,REC=IGRadS+4) NSPOOLGW
               WRITE(164,REC=IGRadS+5) 2
               IGRadS=IGRadS+5
@@ -2719,12 +2715,12 @@ C...
            NSCOUGB=0
            IF(NTCYSGB.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGB = ITHS + NSPOOLGE - 1 
            IF((NTCYSGB.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
-              NTCYSGB=INT(NTCYSGB+((DBLE(ITHS)-DBLE(NTCYSGB))/
+              NTCYSGB=INT(dble(NTCYSGB)+((DBLE(ITHS)-DBLE(NTCYSGB))/
      &               DBLE(NSPOOLGE))*DBLE(NSPOOLGE))
               IF(NTCYSGB.LT.ITHS) NTCYSGB=NTCYSGB+NSPOOLGE
               IF(DTDP.NE.DTDPHS) THEN
-                 NDSETSB=INT(((NTCYFGB*DTDP)-(NTCYSGB*DTDPHS))/
-     &                (NSPOOLGE*DTDP))
+                 NDSETSB=INT(((dble(NTCYFGB)*DTDP)-(dble(NTCYSGB)*DTDPHS))/
+     &                (dble(NSPOOLGE)*DTDP))
               ELSE
                  NDSETSB=(NTCYFGB-NTCYSGB)/NSPOOLGE
               ENDIF
@@ -2766,7 +2762,7 @@ C...
            ENDIF
            WRITE(76,REC=IGBP+1) NDSETSE
            WRITE(76,REC=IGBP+2) NP
-           WRITE(76,REC=IGBP+3) DT*NSPOOLGE
+           WRITE(76,REC=IGBP+3) DT*dble(NSPOOLGE)
            WRITE(76,REC=IGBP+4) NSPOOLGE
            WRITE(76,REC=IGBP+5) 1
            IGBP=IGBP+5
@@ -2938,7 +2934,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
                  READ(35,*) NOD,LNM_BC2(NumofBCNodes)
               END DO
               DO IT=1,ITHS
-                 TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                 TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0
                  IF(TIMEIT.GT.RBCTIME2) THEN
                     RBCTIME1=RBCTIME2
                     RBCTIME2=RBCTIME1+RBCTIMEINC
@@ -2984,7 +2980,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
                  READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
               END DO
               DO IT=1,ITHS
-                 TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                 TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0
                  IF(TIMEIT.GT.SBCTIME2) THEN
                     SBCTIME1=SBCTIME2
                     SBCTIME2=SBCTIME1+SBCTIMEINC
@@ -3026,7 +3022,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
                  READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
               END DO
               DO IT=1,ITHS
-                 TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                 TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0
                  IF(TIMEIT.GT.TBCTIME2) THEN
                     TBCTIME1=TBCTIME2
                     TBCTIME2=TBCTIME1+TBCTIMEINC
@@ -3063,7 +3059,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
                   READ(38,*) NOD, q_heat2(NumofNodes)
                END DO
                DO IT=1,ITHS
-                  TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                  TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0
                   IF(TIMEIT.GT.TTBCTIME2) THEN
                      TTBCTIME1=TTBCTIME2
                      TTBCTIME2=TTBCTIME1+TTBCTIMEINC
@@ -3100,7 +3096,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
      &               TMP(NumofNodes,6)
                END DO
                DO IT=1,ITHS
-                  TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                  TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0
                   IF(TIMEIT.GT.TTBCTIME2) THEN
                      TTBCTIME1=TTBCTIME2
                      TTBCTIME2=TTBCTIME1+TTBCTIMEINC
@@ -3142,7 +3138,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
      &               TMP(NumofNodes,2)
                END DO
                DO IT=1,ITHS
-                  TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                  TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0
                   IF(TIMEIT.GT.TTBCTIME2) THEN
                      TTBCTIME1=TTBCTIME2
                      TTBCTIME2=TTBCTIME1+TTBCTIMEINC
@@ -3209,7 +3205,7 @@ C kmd - River information for boundary conditions
          END IF
         END DO
         DO IT=1,ITHS-1
-           TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
+           TIMEIT=dble(IT)*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
            IF(TIMEIT.GT.RIVBCTIME2) THEN
               RIVBCTIME1=RIVBCTIME2
               RIVBCTIME2=RIVBCTIME2+RIVBCTIMINC
@@ -3302,8 +3298,8 @@ C.... Initialize the 3D turbulence station output file (Unit 43)
 
 C  kmd48.33bc - changed NDSet3DST to use DTDPHS
       IF (DTDP.NE.DTDPHS) THEN
-         NDSet3DST=int(((NTO3DSTF*DTDP)-(NTO3DSTS*DTDPHS))/
-     &              (NSpo3DST*DTDP))
+         NDSet3DST=int(((dble(NTO3DSTF)*DTDP)-(dble(NTO3DSTS)*DTDPHS))/
+     &              (dble(NSpo3DST)*DTDP))
       END IF
 
       CALL initOutput3D(43, I3DST, NDSET3DST, NSTA3DT, NSTA3DT_g,
@@ -3331,7 +3327,7 @@ C     jgf46.27 Replaced IRType with IDen
           IF (BCFLAG_TEMP.NE.0) THEN
             OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
             WRITE(47,499) RUNDES,RUNID,AGRID
-            WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+            WRITE(47,498) NDSet3DGD,NP,DTDP*dble(NSpo3DGD),NSpo3DGD,1
             CLOSE(47)
           END IF
         END IF
@@ -3401,12 +3397,12 @@ C
       tsCounter=0
       recCounter=0
       IF ((startTS.LT.ITHS).AND.(tsPeriod.GT.0)) THEN
-         startTS=int(startTS+((REAL(ITHS)-REAL(startTS))/
+         startTS=int(dble(startTS)+((dble(ITHS)-dble(startTS))/
      &           DBLE(tsPeriod))*DBLE(tsPeriod))
          IF (startTS.LT.ITHS) startTS=startTS+tsPeriod
          IF (CHOTHS.eqv..true.) THEN
-            nSets=int(((endTS*DTDP)-(startTS*DTDPHS))/
-     &                (tsPeriod*DTDP))
+            nSets=int(((dble(endTS)*DTDP)-(dble(startTS)*DTDPHS))/
+     &                (dble(tsPeriod)*DTDP))
          ELSE
            nSets=(endTS-startTS)/tsPeriod
          END IF
@@ -3452,7 +3448,7 @@ C
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      secElapsed = DTDPHS * ITHS - STATIM * 86400.0d0
+      secElapsed = DTDPHS * dble(ITHS) - STATIM * 86400.0d0
       outputStartSec = (outputStartDay - STATIM) * 86400.0d0     
       if (outputStartSec.gt.secElapsed) then
          call calcTS(secElapsed, outputStartSec, outputStartTimeStep)

@@ -523,11 +523,11 @@ C***********************************************************************
         if(myproc.eq.0) then
           write(screenunit,*) 'PREPARING SEARCH BINS FOR GRID ',s,'...'
         endif
-        tol = abs(stwlonmax-stwlonmin)/real(nSearchBins)*0.01d0
+        tol = abs(stwlonmax-stwlonmin)/dble(nSearchBins)*0.01d0
         do p=1,nSearchBins
           searchBinPartitions(p+1) = 
      &         stwlonmin + (stwlonmax-stwlonmin)*
-     &         real(p)/real(nSearchBins)
+     &         dble(p)/dble(nSearchBins)
 
           p1 = searchBinPartitions(p)
           p2 = searchBinPartitions(p+1)
