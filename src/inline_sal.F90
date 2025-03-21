@@ -7,9 +7,9 @@ MODULE MOD_INLINE_SAL
     !
 #ifndef NONADC    
     USE ADC_CONSTANTS, only: rhoW => RhoSeaWat0, RhoE => RhoEarth, Rearth, deg2rad, rad2deg
-    USE global, only: resident_elemask => imap_el_lg, H0, DTDP, wdnodecode => nodecode 
+    USE global, only: resident_elemask => imap_el_lg, H0, DTDP, wdnodecode => nodecode, ifsprots   
     USE mesh, only: etov => nm, nele => ne, nnode => np, depth => dp, gridics => ICS, &
-                    slam, sfea, slamr, sfear     
+            slam, sfea, slamr, sfear   
 #endif
 
 #ifdef CMPI    
@@ -51,7 +51,7 @@ MODULE MOD_INLINE_SAL
     INTEGER, parameter, private:: RKIND=8
 
     ! global varibles: private
-    INTEGER, private::  nOrder = 128 
+    INTEGER, private::  nOrder = 64 
     INTEGER, private::  nCellBlock = 500 
     LOGICAL, private::  use_direct_shtns_self_attraction_loading = .TRUE.
 
@@ -149,8 +149,8 @@ CONTAINS
         end do
         !
 
-         CALL self_atttraction_loading_parallel_fem( ssh_sal, ssh, &
-                                 element_table, nele, resident_elemask ) ;  
+        CALL self_attraction_loading_parallel_fem( ssh_sal, ssh, &
+                                 etov, nele, resident_elemask ) ;  
        endif                   
         
       return ;
@@ -179,7 +179,6 @@ CONTAINS
         do ii = 1, nnode
           !
           if ( depth(ii) < 0.0D0 ) then
-             ! sshSmoothed(ii) = 0.D0 ;
              !  might need to add node code:     
              IF (  sshSmoothed(ii) + depth(ii) > H0 ) THEN
                 sshSmoothed(ii) = sshSmoothed(ii) + DEPTH(ii) - H0 ;       
@@ -214,7 +213,7 @@ CONTAINS
       real (8), dimension(3):: xs, ys,xc,yc
       real (8), allocatable:: dA(:), lon(:), lat(:)
 
-      real (8), parameter:: eps = 1.0e-10 ; 
+      real (8), parameter:: eps = 1.0D-10, pii = acos(-1.D0) 
 
       call setMessageSource("sal_privatedata_init")
 #if defined(ALL_TRACE)
@@ -238,8 +237,12 @@ CONTAINS
    
          ! lon = slam*deg2rad ; ! in DEG
          ! lat = sfea*deg2rad ; 
-         lon = slam*rad2deg ;
-         lat = sfea*rad2deg ;
+         lon = slam ;
+         lat = sfea ;
+         if ( ifsprots .EQ. 1 ) then
+            lon = slamr ;
+            lat = sfear ;
+         endif   
 
          ! find dA in lat and lon,      !
          ! will move it to mesh.F later !
@@ -247,29 +250,35 @@ CONTAINS
            xs(1:3) = lon( etov(ii,:) ) ; 
            ys(1:3) = lat( etov(ii,:) ) ; 
            
-           yc = cosd( ys )*sind( xs )  ; 
-           xc = cosd( ys )*cosd( xs )  ;
-           dA(ii) = 0.5D0*getarea( xs*deg2rad, ys*deg2rad ) ;
-       
+           yc = cos( ys )*sin( xs )  ; 
+           xc = cos( ys )*cos( xs )  ;
+           ! - Use area based on the chord 
+           ! dA(ii) = 0.5D0*getarea( xs, ys ) ;
+         
+           ! - Use an area of the shperical trangle
+           !     See K. Hesse, Numerical integration on the sphere
+           dA(ii) = getSphericaldA( xs, ys ) 
+ 
            ! more elegant than what implemented in mesh.F !
            if ( count(yc >= 0.0D0) >= 1  .and. &
                 count(yc >= 0.0D0)  < 3  .and. &      
                 count( (xc - eps) < 0.D0  ) == 3 ) then
        
-               if ( maxval(xs) - minval(xs) > 180.D0 ) then
-                  dA(ii) = 0.5D0*getarea( modulo(xs,360.0)*deg2rad, ys*deg2rad ) ;
+               if ( maxval(xs) - minval(xs) > pii ) then
+                  ! dA(ii) = 0.5D0*getarea( modulo(xs,2.D0*pii), ys* ) ;
+                  dA(ii) = getSphericaldA( xs, ys )
                endif
                
-               if ( dA(ii) <= 0.D0 ) dA(ii) = 0.D0 ;  ! just in case  
+               ! if ( dA(ii) <= 0.D0 ) dA(ii) = 0.D0 ;  ! just in case   
            endif
          END DO
          
-         lon = lon*deg2rad ; ! in Rad
-         lat = lat*deg2rad ;
-   
+         ! lon = lon*deg2rad ; ! in Rad
+         ! lat = lat*deg2rad ;
          CALL InlineSALDirectMthdtInit( this%nOrder, nnode, lon, lat, dA  ) ; 
    
          deallocate( dA, lon, lat ) ; 
+
        endif INITSALPRIVATE
   
 #if defined(ALL_TRACE)
@@ -298,6 +307,69 @@ CONTAINS
         dA=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
         
       end function getarea
+ 
+      ! x - lon in rad
+      ! y - lat in rad
+      function getSphericaldA( x, y ) result( dA )
+        implicit none 
+  
+        REAL (8):: x(:), y(:), dA
+  
+        REAL(8):: xv(3), yv(3), zv(3)
+        REAL(8):: avec(3), bvec(3), cvec(3), axb(3) 
+        REAL(8):: ap, bp, cp 
+        REAL(8):: A, B, C
+  
+        xv = cos( y )*cos( x ) ; 
+        yv = cos( y )*sin( x ) ; 
+        zv = sin( y ) ; 
+  
+        ! vector 
+        avec = (/ xv(1), yv(1), zv(1) /) ; ! ov1
+        bvec = (/ xv(2), yv(2), zv(2) /) ; ! ov2
+        cvec = (/ xv(3), yv(3), zv(3) /) ; ! ov3
+  
+        ! 1, Find arclength of the great circle
+        !%  use arccosine of the dot product
+        !%  
+        ! cp = acos( sum(avec*bvec) ) ;
+        ! bp = acos( sum(avec*cvec) ) ;
+        ! ap = acos( sum(bvec*cvec) ) ;
+  
+        !% Suposed to be well conditioned for all angles
+        axb = cross_product( avec, bvec ) ; 
+        cp = atan( sqrt(sum(axb*axb))/sum(avec*bvec) ) ;
+  
+        axb = cross_product( avec, cvec ) ; 
+        bp = atan( sqrt(sum(axb*axb))/sum(avec*cvec) ) ; 
+  
+        axb = cross_product( bvec, cvec ) ; 
+        ap = atan( sqrt(sum(axb*axb))/sum(bvec*cvec) ) ; 
+  
+        ! 2. Find internal angle 
+        A = (cos(ap) - cos(bp)*cos(cp))/( sin(bp)*sin(cp) ) ; 
+        B = (cos(bp) - cos(cp)*cos(ap))/( sin(cp)*sin(ap) ) ; 
+        C = (cos(cp) - cos(ap)*cos(bp))/( sin(ap)*sin(bp) ) ;  
+  
+        A = acos( A ) ; 
+        B = acos( B ) ;
+        C = acos( C ) ; 
+  
+        ! 3. Return area
+        dA = A + B + C - pii ;     
+      end function
+  
+      function cross_product( avec, bvec ) result( axb )
+         implicit none
+  
+         real (8):: avec(3), bvec(3)
+         real (8):: axb(3)
+  
+         axb(1) = avec(2)*bvec(3) - bvec(2)*avec(3) ;
+         axb(2) = avec(3)*bvec(1) - bvec(3)*avec(1) ;
+         axb(3) = avec(1)*bvec(2) - bvec(1)*avec(2) ;
+       
+      end function        
   
     end subroutine sal_privatedata_init
 
@@ -397,8 +469,12 @@ CONTAINS
   
              ! Compute local integral contribution
              do iCell = 1, nPoints
-               sphtRe(iCell) = ssh(iCell)*pmnm2(iCell)*complexExpRe(iCell,m+1)*sinLatCell(iCell) ;
-               sphtIm(iCell) = ssh(iCell)*pmnm2(iCell)*complexExpIm(iCell,m+1)*sinLatCell(iCell) ;
+               sphtRe(iCell) = ssh(iCell)*pmnm2(iCell)*complexExpRe(iCell,m+1)  ;
+               sphtIm(iCell) = ssh(iCell)*pmnm2(iCell)*complexExpIm(iCell,m+1)  ;
+
+               ! sphtRe(iCell) = ssh(iCell)*pmnm2(iCell)*complexExpRe(iCell,m+1)*sinLatCell(iCell) ;
+               ! sphtIm(iCell) = ssh(iCell)*pmnm2(iCell)*complexExpIm(iCell,m+1)*sinLatCell(iCell) ;
+
                ! sphtRe(iCell) = ssh(iCell)*pmnm2(iCell)*cos( m*lonCell(iCell) )*sinLatCell(iCell) ;
                ! sphtIm(iCell) = ssh(iCell)*pmnm2(iCell)*sin( m*lonCell(iCell) )*sinLatCell(iCell) ; 
              end do
@@ -415,8 +491,12 @@ CONTAINS
                  call associatedLegendrePolynomials(n, m, 1, nPoints, sinLatCell, cosLatCell, l, pmnm2, pmnm1, pmn)
   
                  do iCell = 1, nPoints
-                    sphtRe(iCell) = ssh(iCell)*pmnm1(iCell)*complexExpRe(iCell,m+1)*sinLatCell(iCell)
-                    sphtIm(iCell) = ssh(iCell)*pmnm1(iCell)*complexExpIm(iCell,m+1)*sinLatCell(iCell)
+                    sphtRe(iCell) = ssh(iCell)*pmnm1(iCell)*complexExpRe(iCell,m+1) ;
+                    sphtIm(iCell) = ssh(iCell)*pmnm1(iCell)*complexExpIm(iCell,m+1) ;
+
+                    ! sphtRe(iCell) = ssh(iCell)*pmnm1(iCell)*complexExpRe(iCell,m+1)*sinLatCell(iCell)
+                    ! sphtIm(iCell) = ssh(iCell)*pmnm1(iCell)*complexExpIm(iCell,m+1)*sinLatCell(iCell)
+
                     ! sphtRe(iCell) = ssh(iCell)*pmnm1(iCell)*cos( m*lonCell(iCell) )*sinLatCell(iCell)
                     ! sphtIm(iCell) = ssh(iCell)*pmnm1(iCell)*sin( m*lonCell(iCell) )*sinLatCell(iCell)
                  enddo
@@ -438,14 +518,19 @@ CONTAINS
                
                  ! Compute local integral contribution
                  do iCell = 1, nPoints
-                    sphtRe(iCell) = ssh(iCell)*pmn(iCell)*complexExpRe(iCell,m+1)*sinLatCell(iCell) 
-                    sphtIm(iCell) = ssh(iCell)*pmn(iCell)*complexExpIm(iCell,m+1)*sinLatCell(iCell)
+                    sphtRe(iCell) = ssh(iCell)*pmn(iCell)*complexExpRe(iCell,m+1) ;
+                    sphtIm(iCell) = ssh(iCell)*pmn(iCell)*complexExpIm(iCell,m+1) ;
+
+                    ! sphtRe(iCell) = ssh(iCell)*pmn(iCell)*complexExpRe(iCell,m+1)*sinLatCell(iCell) 
+                    ! sphtIm(iCell) = ssh(iCell)*pmn(iCell)*complexExpIm(iCell,m+1)*sinLatCell(iCell)
+
                     ! sphtRe(iCell) = ssh(iCell)*pmn(iCell)*cos( m*lonCell(iCell) )*sinLatCell(iCell) 
                     ! sphtIm(iCell) = ssh(iCell)*pmn(iCell)*sin( m*lonCell(iCell) )*sinLatCell(iCell)
                  end do
                  CALL NewtonCoteLinearFEM(  l ) ;
 
              enddo ! n loop
+    
              !
           enddo ! m loop
 
