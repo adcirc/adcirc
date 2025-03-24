@@ -271,6 +271,9 @@ C
       INTEGER :: PfileNCID, WfileNCID, CfileNCID, Wfile1NCID
       character(len=200) :: Pvar, Uvar, Vvar, Cvar, Tvar, Lonvar, Latvar
       character(len=200) :: Tdim, Londim, Latdim, Tformat
+
+      CHARACTER(LEN=80)  :: InsetLon, InsetLat, InsetLonDim, InsetLatDim
+      CHARACTER(LEN=256) :: InsetPvar, InsetUVar, InsetVVar
       type(datetime) :: CurDT, refdate, stepdate
       logical :: grb2flag
       integer :: NT, NTC
@@ -8841,11 +8844,16 @@ C----------------------------------------------------------------------
       CALL NWS14_CALC_INTERP_WTS()
       
 
-
+      
       call allMessage(ECHO,'Finished init of NWS14')
       IF(Found_InterpInset_Namelist) THEN
       CALL allMessage(ECHO,'Requesting to use insets. If files found,
      &                      insets will be interpolated!')
+      
+      CALL INIT_INSET_NC()
+
+      CALL CALC_INSET_WTS()
+
       ENDIF
 C----------------------------------------------------------------------
       END SUBROUTINE NWS14INIT
@@ -9499,30 +9507,51 @@ C     advantage that one doesn't need to write global and regional
 C     wind/pressure data in a particular (OWI) format as sometimes it
 C     becomes tedious if running decadal simulations.
 C----------------------------------------------------------------------
-       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
        USE GLOBAL, ONLY : PFile_inset, Wfile_inset, InsetControlFile 
-#ifdef  ADCNETCDF
-       use netcdf
-       use netcdf_error, only: check_err
-#endif  
+  
        IMPLICIT NONE
        
-       LOGICAL :: InsetFileExist
-       INTEGER :: IERR, InsetNo
-
-       CHARACTER(LEN=80)  :: InsetLon, InsetLat, InsetLonDim, InsetLatDim
-       CHARACTER(LEN=256) :: InsetPvar, InsetUVar, InsetVVar
-       
-       
-       INTEGER :: I, J, IOS
        INTEGER :: TempNCID_P, TempNCID_W
-       CHARACTER(LEN=10) :: InsetIndex
+       
 
        REAL(8), ALLOCATABLE, DIMENSION(:,:) :: InsetPData
        REAL(8), ALLOCATABLE, DIMENSION(:,:) :: InsetUData, InsetVData
        
-       CALL setMessageSource("INSET_NC_INPUT")
+       CALL setMessageSource("INSET_NC_INPUT")   
+       Pfile_inset= TRIM(ADJUSTL(Pfile_inset))
+       Wfile_inset= TRIM(ADJUSTL(Wfile_inset))
+        
+         CALL READINSET_NC(Pfile_inset
+     &       ,TempNCID_P,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetPvar,InsetPData)
+        
 
+         CALL READINSET_NC(Wfile_inset
+     &       ,TempNCID_W,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetUVar,InsetUData)
+         
+         CALL READINSET_NC(Wfile_inset
+     &       ,TempNCID_W,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetVvar,InsetVData)
+        
+
+         CALL INTERP_INSET_GRID(InsetPData,InsetUData,InsetVData)
+      
+         CALL unsetMessageSource()
+     
+C----------------------------------------------------------------------
+      END SUBROUTINE INSET_NC_INPUT
+
+C----------------------------------------------------------------------
+      SUBROUTINE INIT_INSET_NC()
+       
+       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
+       USE GLOBAL, ONLY : InsetControlFile 
+ 
+       IMPLICIT NONE
+       
+       LOGICAL :: InsetFileExist
+       INTEGER :: IERR      
+       
+            
+       CALL setMessageSource("INIT_INSET_NC")
 
        INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//TRIM(ADJUSTL(InsetControlFile)), EXIST=InsetFileExist)
        IF(.NOT.InsetFileExist) THEN
@@ -9549,56 +9578,7 @@ C----------------------------------------------------------------------
        READ(2200, '(A)', IOSTAT=IERR) InsetVVar
 
        CLOSE(2200) !closing the file here.. 
-      
-   
-       Pfile_inset= TRIM(ADJUSTL(Pfile_inset))
-       Wfile_inset= TRIM(ADJUSTL(Wfile_inset))
-        
-
-         CALL READINSET_NC(Pfile_inset
-     &       ,TempNCID_P,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetPvar,InsetPData)
-        
-
-         CALL READINSET_NC(Wfile_inset
-     &       ,TempNCID_W,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetUVar,InsetUData)
-         
-         CALL READINSET_NC(Wfile_inset
-     &       ,TempNCID_W,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetVvar,InsetVData)
-        
-
-         CALL INTERP_INSET_GRID(Pfile_inset,
-     &            Wfile_inset ,TempNCID_P, TempNCID_W,
-     &      InsetPData,InsetUData, InsetLatDim,InsetLat, InsetLonDim,InsetLon,InsetVData)
-      
-         CALL unsetMessageSource()
-     
-C----------------------------------------------------------------------
-      END SUBROUTINE INSET_NC_INPUT
-
-C----------------------------------------------------------------------
-      SUBROUTINE INIT_INSET_NC(InsetFName, InsetFNCID)
-        USE netcdf 
-        use netcdf_error, only: check_err
-        USE SIZES, ONLY : MYPROC
-        IMPLICIT NONE
-
-        CHARACTER(LEN=*), INTENT(IN) :: InsetFName
-        LOGICAL :: InFileExist
-        INTEGER, INTENT(INOUT) :: InsetFNCID
-#ifdef ADCNETCDF
-         INQUIRE(file=InsetFName, exist=InFileExist)
-
-         IF(InFileExist) THEN   
-             CALL Check_err(NF90_OPEN(InsetFName,nf90_nowrite,InsetFNCID))
-         ELSE
-             WRITE(ScratchMessage,'(2A)') 
-     &         "Inset file was not found: ",TRIM(InsetFName)
-             call allMessage(ERROR, scratchMessage)
-             call windTerminate()
-         ENDIF    
-            
-#endif            
-         RETURN 
+ 
       END SUBROUTINE INIT_INSET_NC
 C----------------------------------------------------------------------
 
@@ -9668,25 +9648,16 @@ C----------------------------------------------------------------------
         
        END SUBROUTINE READINSET_NC  
 
+!--------------------------------------------------------------------------
+       SUBROUTINE CALC_INSET_WTS()
 
-
-C------------------------------------------------------------------------
-       SUBROUTINE INTERP_INSET_GRID(ncfile_p,ncfile_w,NCID_p, NCID_w,InsetPData,InsetUData,
-     &                InsetLatDim, InsetLat, InsetLonDim,InsetLon,InsetVData)
 
         use mesh, only: NP, SLAM, SFEA, bl_interp, bl_interp2
-        use kdtree2_module, only: kdtree2, kdtree2_create,kdtree2_destroy
-        use netcdf_error, only: check_err  
-        USE SIZES, ONLY: MYPROC, GBLINPUTDIR 
+        use kdtree2_module, only: kdtree2, kdtree2_create,kdtree2_destroy 
+        USE GLOBAL, ONLY : Pfile_inset
         IMPLICIT NONE 
-        
-        CHARACTER(len=*), INTENT(IN) :: ncfile_p, ncfile_w   ! NetCDF files with wind/pressure data
-        REAL(8), INTENT(IN) :: InsetPData(:,:)
-        REAL(8), INTENT(IN) :: InsetUData(:,:), InsetVData(:,:)       
-        CHARACTER(len=80), INTENT(IN) :: InsetLat, InsetLon, InsetLatDim,InsetLonDim 
-        INTEGER :: NCID_p, NCID_w
-
-        integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi, cc
+          
+        integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi,cc,ncid_p
         real,allocatable,dimension(:,:) :: lat, lon
         real(8), allocatable ::  lonv(:), latv(:), XY(:,:)
         real(8) :: xx, yy, wt(4) 
@@ -9696,10 +9667,10 @@ C------------------------------------------------------------------------
         ! assume grids are the same to start
         ub = 1
               
-        CALL READ_INSET_LatLon(ncfile_p,NCID_p,lat,InsetLatDim,InsetLat,lon,InsetLonDim,InsetLon,nxp,nyp)
+        CALL READ_INSET_LatLon(Pfile_inset,NCID_p,lat,InsetLatDim,InsetLat,lon,InsetLonDim,InsetLon,nxp,nyp)
         nxp = ubound(lon,1); nyp = ubound(lat,2)
         
-        CALL READ_INSET_LATLON(ncfile_w,NCID_w,lat,InsetLatDim,InsetLat,lon,InsetLonDim,InsetLon,nxp,nyp)
+        
           
         if (nxp.NE.ubound(lon,1).OR.nyp.NE.ubound(lat,2)) then
            ! if we don't match both lat and lon then we need to store two
@@ -9769,7 +9740,20 @@ C------------------------------------------------------------------------
 
         enddo
       
+       END SUBROUTINE CALC_inset_wts
+
+C------------------------------------------------------------------------
+       SUBROUTINE INTERP_INSET_GRID(InsetPData,InsetUData,InsetVData)
+
 C---------------------------------------------------------------------------------------
+        USE MESH, ONLY : NP
+        IMPLICIT NONE 
+        
+         
+        INTEGER :: i 
+        REAL(8), INTENT(IN) :: InsetPData(:,:), InsetUData(:,:), InsetVData(:,:)
+        
+
         ! Doing the interpolation from inset grid to finite ele grid
         do i = 1,np
          if (inset_indp(1,1,i) < 0) then
