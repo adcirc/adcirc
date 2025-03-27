@@ -58,7 +58,7 @@
       !                                            files. Added in fort.51-54.nc
       !=================================================================
       MODULE NETCDFIO
-      USE SIZES, ONLY : OFF, ASCII, BINARY, SPARSE_ASCII, NETCDF3,
+      USE SIZES, ONLY : OFF, ASCII, SPARSE_ASCII, NETCDF3,
      &   NETCDF4, XDMF
       USE NETCDF_ERROR, ONLY: CHECK_ERR, NETCDFTERMINATE
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
@@ -5731,20 +5731,7 @@ C
       iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
      &       trim(att_text))
       CALL check_err(iret)
-C
-      iret = nf90_def_var(hs%ncid, 'iestp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      att_text = 'line number (for ASCII output) or record number'
-     &  //' (for binary output) of the most recent entry in the'
-     &  //' elevation time series at specified elevation recording'
-     &  //' stations output file'
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',trim(att_text))
-      CALL check_err(iret)
-      att_text = 'line/record_number_of_last_entry_in_elev_rec_stations'
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       trim(att_text))
-      CALL check_err(iret)
-c
+
       iret = nf90_def_var(hs%ncid, 'nscoue', NF90_INT, varid=tempid)
       CALL check_err(iret)
       att_text = 'time step counter to determine when the'
@@ -5758,18 +5745,6 @@ c
      &       trim(att_text))
       CALL check_err(iret)
 C
-      iret = nf90_def_var(hs%ncid, 'ivstp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                   ' line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' depth-averaged velocity time series at specified velocity'
-     & //' recording stations output file')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &               'record_number_of_last_entry_in_vel_rec_stations')
-      CALL check_err(iret)
-C
       iret = nf90_def_var(hs%ncid, 'nscouv', NF90_INT, varid=tempid)
       CALL check_err(iret)
       iret = nf90_put_att(hs%ncid, tempid, 'long_name',
@@ -5779,23 +5754,7 @@ C
      & //' file.')
       CALL check_err(iret)
 
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &           'time_step_counter_for_next_entry_vel_rec_stations')
-      CALL check_err(iret)
-C
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-         iret = nf90_def_var(hs%ncid, 'icstp', NF90_INT, varid=tempid)
-         CALL check_err(iret)
-         iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                       'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' scalar concentration time series at specified concentration'
-     & //' recording stations output file')
-         CALL check_err(iret)
-         iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &               'record_number_of_last_entry_in_conc_rec_stations')
-         CALL check_err(iret)
-C
          iret = nf90_def_var(hs%ncid, 'nscouc', NF90_INT, varid=tempid)
          CALL check_err(iret)
          iret = nf90_put_att(hs%ncid, tempid, 'long_name',
@@ -5807,31 +5766,7 @@ C
      &           'time_step_counter_for_next_entry_conc_rec_stations')
          CALL check_err(iret)
       ENDIF
-C
-      iret = nf90_def_var(hs%ncid, 'ipstp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                       'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' atmospheric pressure time series at specified meteorological'
-     & //' recording stations')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_atm_press_at_rec_stations')
-      CALL check_err(iret)
-C
-      iret = nf90_def_var(hs%ncid, 'iwstp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                      'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' wind velocity time series at specified meteorological'
-     & //' recording stations')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_wind_vel_at_rec_stations')
-      CALL check_err(iret)
-C
+
       iret = nf90_def_var(hs%ncid, 'nscoum', NF90_INT, varid=tempid)
       CALL check_err(iret)
       iret = nf90_put_att(hs%ncid, tempid, 'long_name',
@@ -5845,18 +5780,6 @@ C
      &   'time_step_counter_of_atm_press_and_wind_vel_at_rec_stations')
       CALL check_err(iret)
 C
-      iret = nf90_def_var(hs%ncid, 'igep', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                       'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' elevation time series at all nodes in the model grid output'
-     & //' file')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_elev_at_model_nodes')
-      CALL check_err(iret)
-C
       iret = nf90_def_var(hs%ncid, 'nscouge', NF90_INT, varid=tempid)
       CALL check_err(iret)
       iret = nf90_put_att(hs%ncid, tempid, 'long_name',
@@ -5866,18 +5789,6 @@ C
       CALL check_err(iret)
       iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
      &   'time_step_counter_of_elev_at_model_nodes')
-      CALL check_err(iret)
-C
-      iret = nf90_def_var(hs%ncid, 'igvp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                       'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' depth-averaged velocity time series at all nodes in the'
-     & //' model grid output file')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_vel_at_model_nodes')
       CALL check_err(iret)
 C
       iret = nf90_def_var(hs%ncid, 'nscougv', NF90_INT, varid=tempid)
@@ -5892,18 +5803,6 @@ C
       CALL check_err(iret)
 C
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-         iret = nf90_def_var(hs%ncid, 'igcp', NF90_INT, varid=tempid)
-         CALL check_err(iret)
-         iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                     'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' scalar concentration time series at all nodes in the model'
-     & //' grid output file')
-         CALL check_err(iret)
-         iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_conc_at_model_nodes')
-         CALL check_err(iret)
-C
          iret = nf90_def_var(hs%ncid, 'nscougc', NF90_INT, varid=tempid)
          CALL check_err(iret)
          iret = nf90_put_att(hs%ncid, tempid, 'long_name',
@@ -5915,30 +5814,6 @@ C
      &   'time_step_counter_of_conc_at_model_nodes')
          CALL check_err(iret)
       ENDIF
-C
-      iret = nf90_def_var(hs%ncid, 'igpp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                       'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' atmospheric pressure time series at all nodes in the model'
-     & //' grid output file')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_atm_press_at_model_nodes')
-      CALL check_err(iret)
-C
-      iret = nf90_def_var(hs%ncid, 'igwp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                      'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' wind Stress or velocity time series at all nodes in the'
-     & //' model grid output file')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_wind_vel_at_model_nodes')
-      CALL check_err(iret)
 C
       iret = nf90_def_var(hs%ncid, 'nscougw', NF90_INT, varid=tempid)
       CALL check_err(iret)
@@ -7034,11 +6909,9 @@ C-----------------------------------------------------------------------
      &        NodeCodeDescript, NOFFDescript, H1_HS_Descript,
      &        H2_HS_Descript, timesec, it )
       USE SIZES, ONLY : globaldir, mnproc
-      USE GLOBAL, ONLY : OutputDataDescript_t,
-     &                   im, iestp, nscoue, ivstp, imhs,
-     &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
-     &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
-     &                   igpp, igwp, nscougw
+      USE GLOBAL, ONLY : OutputDataDescript_t, im, nscoue, imhs,
+     &                   nscouv, icstp, nscouc, nscoum,
+     &                   nscouge, nscougv, nscougc, nscougw
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: lun
@@ -7233,78 +7106,38 @@ C     going on to the next one.
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, it)
       CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"iestp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, iestp)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscoue",tempid)
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, nscoue)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"ivstp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, ivstp)
       CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscouv",tempid)
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, nscouv)
       CALL check_err(iret)
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-         iret = nf90_inq_varid(hs%ncid,"icstp",tempid)
-         CALL check_err(iret)
-         iret = nf90_put_var(hs%ncid, tempid, icstp)
-         CALL check_err(iret)
          iret = nf90_inq_varid(hs%ncid,"nscouc",tempid)
          CALL check_err(iret)
          iret = nf90_put_var(hs%ncid, tempid, nscouc)
          CALL check_err(iret)
       ENDIF
-      iret = nf90_inq_varid(hs%ncid,"ipstp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, ipstp)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"iwstp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, iwstp)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscoum",tempid)
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, nscoum)
       CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"igep",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, igep)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscouge",tempid)
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, nscouge)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"igvp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, igvp)
       CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscougv",tempid)
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, nscougv)
       CALL check_err(iret)
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-         iret = nf90_inq_varid(hs%ncid,"igcp",tempid)
-         CALL check_err(iret)
-         iret = nf90_put_var(hs%ncid, tempid, igcp)
-         CALL check_err(iret)
          iret = nf90_inq_varid(hs%ncid,"nscougc",tempid)
          CALL check_err(iret)
          iret = nf90_put_var(hs%ncid, tempid, nscougc)
          CALL check_err(iret)
       ENDIF
-      iret = nf90_inq_varid(hs%ncid,"igpp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, igpp)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"igwp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, igwp)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscougw",tempid)
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, nscougw)
@@ -8135,10 +7968,9 @@ C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstart(lun, timeLoc)
       USE VERSION, ONLY : FileFmtRev, FileFmtMinor, FileFmtMajor
       USE SIZES, ONLY : globaldir, mnproc, myproc
-      USE GLOBAL, ONLY : OutputDataDescript_t, imhs, iths, iestp, nscoue, ivstp,
-     &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
-     &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
-     &                   igpp, igwp, nscougw, ETA1, ETA2, EtaDisc,
+      USE GLOBAL, ONLY : OutputDataDescript_t, imhs, iths,  nscoue,
+     &                   nscouv, nscouc, nscoum, nscouge,  nscougv, nscougc,
+     &                   nscougw, ETA1, ETA2, EtaDisc,
      &                   UU2, VV2, NNODECODE, NOFF,
      &                   IM, NP_G, NE_G, NODES_LG, IMAP_EL_LG,
      &                   htot1 => H1, htot2 => H2,
@@ -8364,78 +8196,38 @@ C     Read in model parameters to ADCIRC variables
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, iths)
       CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"iestp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, iestp)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscoue", tempid)
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, nscoue)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"ivstp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, ivstp)
       CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscouv", tempid)
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, nscouv)
       CALL check_err(iret)
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-         iret = nf90_inq_varid(hs%ncid,"icstp", tempid)
-         CALL check_err(iret)
-         iret = nf90_get_var(hs%ncid, tempid, icstp)
-         CALL check_err(iret)
          iret = nf90_inq_varid(hs%ncid,"nscouc", tempid)
          CALL check_err(iret)
          iret = nf90_get_var(hs%ncid, tempid, nscouc)
          CALL check_err(iret)
       ENDIF
-      iret = nf90_inq_varid(hs%ncid,"ipstp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, ipstp)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"iwstp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, iwstp)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscoum", tempid)
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, nscoum)
       CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"igep", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, igep)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscouge", tempid)
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, nscouge)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"igvp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, igvp)
       CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscougv", tempid)
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, nscougv)
       CALL check_err(iret)
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-         iret = nf90_inq_varid(hs%ncid,"igcp", tempid)
-         CALL check_err(iret)
-         iret = nf90_get_var(hs%ncid, tempid, igcp)
-         CALL check_err(iret)
          iret = nf90_inq_varid(hs%ncid,"nscougc", tempid)
          CALL check_err(iret)
          iret = nf90_get_var(hs%ncid, tempid, nscougc)
          CALL check_err(iret)
       ENDIF
-      iret = nf90_inq_varid(hs%ncid,"igpp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, igpp)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"igwp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, igwp)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscougw", tempid)
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, nscougw)
@@ -10888,10 +10680,9 @@ C-----------------------------------------------------------------------
      &   NVDLL_p, NBDV_p, NVELL_p, X_p, Y_p,
      &   IBTYPE_p, IBTYPEE_p, SLAM_p, SFEA_p,
      &   NODECODE_p, G_p, FileFmtRev_p, FileFmtMinor_p,
-     &   FileFmtMajor_p, im_p, iestp_p, nscoue_p, ivstp_p, nscouv_p,
-     &   icstp_p, nscouc_p, ipstp_p, iwstp_p, nscoum_p, igep_p,
-     &   nscouge_p, igvp_p, nscougv_p, igcp_p, nscougc_p, igpp_p,
-     &   igwp_p, nscougw_p, NM_p, DP_p, RUNDES_p, AGRID_p, title_p,
+     &   FileFmtMajor_p, im_p, nscoue_p, nscouv_p,
+     &   nscouc_p, nscoum_p, nscouge_p, nscougv_p, nscougc_p,
+     &   nscougw_p, NM_p, DP_p, RUNDES_p, AGRID_p, title_p,
      &   institution_p, source_p, history_p, references_p, comments_p,
      &   host_p, convention_p, contact_p, dtdp_p, ihot_p, ics_p,
      &   nolifa_p, nolica_p, nolicat_p, ncor_p, ntip_p, nws_p, nramp_p,
@@ -10910,9 +10701,8 @@ C-----------------------------------------------------------------------
       USE VERSION, ONLY : FileFmtRev, FileFmtMinor, FileFmtMajor
       USE ADC_CONSTANTS, ONLY: G, RAD2DEG
       USE GLOBAL, ONLY : base_date, SNAMLEN, NODECODE,
-     &   NP_G, NE_G, im, iestp, nscoue, ivstp, nscouv,
-     &   icstp, nscouc, ipstp, iwstp, nscoum, igep, nscouge, igvp,
-     &   nscougv, igcp, nscougc, igpp, igwp, nscougw,
+     &   NP_G, NE_G, im, nscoue, nscouv,
+     &   nscouc, nscoum, nscouge, nscougv, nscougc, nscougw,
      &   RUNDES, title, institution, source, history,
      &   references, comments, host, convention, contact, dtdp, ihot,
      &   nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
@@ -10954,23 +10744,13 @@ C-----------------------------------------------------------------------
       INTEGER, intent(in) :: FileFmtMinor_p
       INTEGER, intent(in) :: FileFmtMajor_p
       INTEGER, intent(in) :: im_p
-      INTEGER, intent(in) :: iestp_p
       INTEGER, intent(in) :: nscoue_p
-      INTEGER, intent(in) :: ivstp_p
       INTEGER, intent(in) :: nscouv_p
-      INTEGER, intent(in) :: icstp_p
       INTEGER, intent(in) :: nscouc_p
-      INTEGER, intent(in) :: ipstp_p
-      INTEGER, intent(in) :: iwstp_p
       INTEGER, intent(in) :: nscoum_p
-      INTEGER, intent(in) :: igep_p
       INTEGER, intent(in) :: nscouge_p
-      INTEGER, intent(in) :: igvp_p
       INTEGER, intent(in) :: nscougv_p
-      INTEGER, intent(in) :: igcp_p
       INTEGER, intent(in) :: nscougc_p
-      INTEGER, intent(in) :: igpp_p
-      INTEGER, intent(in) :: igwp_p
       INTEGER, intent(in) :: nscougw_p
       INTEGER, intent(in) :: NM_p(:,:)
       REAL(8), intent(in) :: DP_p(:)
@@ -11083,23 +10863,13 @@ C-----------------------------------------------------------------------
       FileFmtMinor = FileFmtMinor_p
       FileFmtMajor = FileFmtMajor_p
       im = im_p
-      iestp = iestp_p
       nscoue = nscoue_p
-      ivstp = ivstp_p
       nscouv = nscouv_p
-      icstp = icstp_p
       nscouc = nscouc_p
-      ipstp = ipstp_p
-      iwstp = iwstp_p
       nscoum = nscoum_p
-      igep = igep_p
       nscouge = nscouge_p
-      igvp = igvp_p
       nscougv = nscougv_p
-      igcp = igcp_p
       nscougc = nscougc_p
-      igpp = igpp_p
-      igwp = igwp_p
       nscougw = nscougw_p
       ALLOCATE(NM(NE_G_p,3))
       NM = NM_p

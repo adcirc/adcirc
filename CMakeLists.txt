@@ -23,19 +23,20 @@
 #
 # ######################################################################################################################
 
-# ...Set the default build type
-if(DEFINED CMAKE_BUILD_TYPE)
+# Set a default build type if none was specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to 'RelWithDebInfo' as none was specified.")
   set(CMAKE_BUILD_TYPE
-      ${CMAKE_BUILD_TYPE}
-      CACHE STRING "Choose the type of
-        build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug
-        Release RelWithDebInfo MinSizeRel.")
-else()
-  set(CMAKE_BUILD_TYPE
-      Release
-      CACHE STRING "Choose the type of build,
-        options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release
-        RelWithDebInfo MinSizeRel.")
+          RelWithDebInfo
+          CACHE STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui, ccmake
+  set_property(
+          CACHE CMAKE_BUILD_TYPE
+          PROPERTY STRINGS
+          "Debug"
+          "Release"
+          "MinSizeRel"
+          "RelWithDebInfo")
 endif()
 
 # ######################################################################################################################
@@ -71,7 +72,7 @@ include(CMakePackageConfigHelpers)
 
 # ######################################################################################################################
 # ...Put the static libraries in the CMakeFiles folder so they don't contaminate the build directory
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles)
 # ######################################################################################################################
 
 # ...Set the version string (used for libraries)
@@ -81,20 +82,20 @@ set(ADCIRC_VERSION_PATCH 0)
 set(ADCIRC_VERSION_STRING ${ADCIRC_VERSION_MAJOR}.${ADCIRC_VERSION_MINOR}.${ADCIRC_VERSION_PATCH})
 
 # ...Include Macros to build components
-include(${CMAKE_SOURCE_DIR}/cmake/macros.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros.cmake)
 
 # ...Determine architecture specific parameters
-include(${CMAKE_SOURCE_DIR}/cmake/architecture.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/architecture.cmake)
 
 # ...Generate the selection list of options
-include(${CMAKE_SOURCE_DIR}/cmake/options_select.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/options_select.cmake)
 
 # ...Translate the selected options list into compiler flags
-include(${CMAKE_SOURCE_DIR}/cmake/options_flags.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/options_flags.cmake)
 
 # ...Ensure that the netCDF libraries are working
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/netcdf_check.cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/netcdf_check.cmake)
 
 if(ENABLE_GRIB2)
   set(JAS_ENABLE_SHARED
@@ -103,51 +104,51 @@ if(ENABLE_GRIB2)
   set(ENABLE_DATETIME
       TRUE
       CACHE BOOL "Enable datetime library")
-  add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/wgrib2 EXCLUDE_FROM_ALL)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/wgrib2 EXCLUDE_FROM_ALL)
 endif()
 
 if(ENABLE_DATETIME)
-  add_subdirectory(${CMAKE_SOURCE_DIR}/thirdparty/datetime_fortran EXCLUDE_FROM_ALL)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/datetime_fortran EXCLUDE_FROM_ALL)
 endif()
 
 # ...Ensure that the XDMF libraries are working
-include(${CMAKE_SOURCE_DIR}/cmake/xdmf_check.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/xdmf_check.cmake)
 
 # ...Build the version module
-include(${CMAKE_SOURCE_DIR}/cmake/version.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.cmake)
 
 # ...Build the mkdir library
-include(${CMAKE_SOURCE_DIR}/cmake/mkdir.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/mkdir.cmake)
 
 # ...Build ADCIRC
-include(${CMAKE_SOURCE_DIR}/cmake/adcirc.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adcirc.cmake)
 
 # ...Build METIS
-include(${CMAKE_SOURCE_DIR}/cmake/metis.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/metis.cmake)
 
 # ...Build ADCPREP
-include(${CMAKE_SOURCE_DIR}/cmake/adcprep.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adcprep.cmake)
 
 # ...Build ADCSWAN (Serial ADCIRC+SWAN)
-include(${CMAKE_SOURCE_DIR}/cmake/adcswan.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adcswan.cmake)
 
 # ...Build SWAN (Serial structured SWAN)
-include(${CMAKE_SOURCE_DIR}/cmake/swan.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/swan.cmake)
 
 # ...Build PADCIRC (Parallel ADCIRC)
-include(${CMAKE_SOURCE_DIR}/cmake/padcirc.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/padcirc.cmake)
 
 # ...Build PADCSWAN (Parallel ADCIRC+SWAN)
-include(${CMAKE_SOURCE_DIR}/cmake/padcswan.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/padcswan.cmake)
 
 # ...Build PUNSWAN (Parallel Unstructured SWAN)
-include(${CMAKE_SOURCE_DIR}/cmake/punswan.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/punswan.cmake)
 
 # ...Build ASWIP
-include(${CMAKE_SOURCE_DIR}/cmake/aswip.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/aswip.cmake)
 
 # ...Build ADCIRC Utility Codes
-include(${CMAKE_SOURCE_DIR}/cmake/utilities.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/utilities.cmake)
 
 # ...Build LIBADC
-include(${CMAKE_SOURCE_DIR}/cmake/libadcirc.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libadcirc.cmake)
