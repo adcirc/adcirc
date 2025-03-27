@@ -38,18 +38,18 @@ C
      &    qtime2, noute, noutv, noutc, noutge, noutgv, noutgc, nrs, qn2,
      &    noute, noutm, noutgw, metonly, rstime1, rstime2, rstiminc,
      &    rsnx1, rsny1, rsnx2, rsny2, ncice, cice1, cice2, cice_time1,
-     &    cice_time2, cice_timinc, ctip, tip2, nscoue, iestp, nstae_g,
+     &    cice_time2, cice_timinc, ctip, tip2, nscoue, nstae_g,
      &    nstae, rdes4, rid4, rdes8, rid8, aid8, esbin1, vv2, nolifa,
      &    uu2, inundationoutput, esbin2, nspoolv, nscouc, icstp, nstac,
-     &    nstac_g, ntrspc, nspoolc, nscoum, iwstp, bchgtiminc, nscreen,
-     &    screenunit, h0, ntrspe, dt, nspoole, nscouv, ivstp, np_g,
+     &    nstac_g, ntrspc, nspoolc, nscoum, bchgtiminc, nscreen,
+     &    screenunit, h0, ntrspe, dt, nspoole, nscouv, np_g,
      &    outputsponge, ne_g, usingDynamicWaterLevelCorrection, ndsetse,
      &    nspoolge,
-     &    nscougv, igvp, ndsetsv, nspoolgv, use_tvw, nscou_tvw, ig_tvw,
-     &    nout_tvw, ndsets_tvw, nspool_tvw, nscougw, igwp, igpp, igip,
-     &    igep, ndsetsw, nspoolgw, igrads, nscougc, igcp, c2ddi, iden, 
+     &    nscougv, ndsetsv, nspoolgv, use_tvw, nscou_tvw,
+     &    nout_tvw, ndsets_tvw, nspool_tvw, nscougw, ndsetsw, nspoolgw,
+     &    nscougc, c2ddi, iden,
      &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge, 
-     &    ndsetsc, nspoolgc, nscougb, igbp, c3d, ipstp, nstav_g, nstav,
+     &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
      &    ntrspv, iicestp, nstam_g, nstam, openfileforread, cbaroclinic
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
@@ -359,7 +359,6 @@ C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPE (NO. OF DATA PTS. AT EACH
 C....ELEVATION STATION), NSTAE, DT*NSPOOLE, NSPOOLE, IRTYPE
 C...
       NSCOUE=0
-      IESTP=0
 
  3220 FORMAT(1X,A32,2X,A24,2X,A24)
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
@@ -372,7 +371,6 @@ C...
             CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61',
      &       NSTAE_G, NSTAE, HEADER61)
          endif
-         IESTP=2
       ENDIF
 
 C...
@@ -382,7 +380,6 @@ C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPV (NO. OF DATA PTS. AT EACH
 C....VELOCITY STATION), NSTAV, DT*NSPOOLV, NSPOOLV, IRTYPE
 C...
       NSCOUV=0
-      IVSTP=0
 
       IF(ABS(NOUTV).EQ.1) THEN
          if (write_local_files.eqv..false.) then
@@ -392,7 +389,6 @@ C...
             CALL OPEN_GBL_FILE(62, TRIM(LOCALDIR)//'/'//'fort.62',
      &          NSTAV_G, NSTAV, HEADER62)         
          endif
-         IVSTP=2
       ENDIF
 
 C...
@@ -402,7 +398,6 @@ C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPC (NO. OF DATA PTS. AT EACH
 C....CONCENTRATION STATION), NSTAC, DT*NSPOOLC, NSPOOLC, IRTYPE
 C...
       NSCOUC=0
-      ICSTP=0
 
       IF(ABS(NOUTC).EQ.1) THEN
          if (write_local_files.eqv..false.) then
@@ -422,36 +417,28 @@ C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPM (NO. OF DATA PTS. AT EACH
 C....METEOROLOGICAL STATION), NSTAM, DT*NSPOOLM, NSPOOLM, IRTYPE
 C...
       NSCOUM=0
-      IPSTP=0
-      IWSTP=0
       IICESTP = 0  ! v49.64.01 tcm -added ice stations
 
       IF(ABS(NOUTM).EQ.1) THEN
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
      &          NSTAM_G, NSTAM, HEADER71)
-            IPSTP=2
             CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
      &         NSTAM_G, NSTAM, HEADER72)
-            IWSTP=2
 ! V49.64.01 TCM -ADDED ICE STATIONS
             IF(NCICE.NE.0) THEN
                CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
      &             NSTAM_G, NSTAM, HEADER91)
-                IICESTP=2
             ENDIF
          else
             CALL OPEN_GBL_FILE(71, TRIM(LOCALDIR)//'/'//'fort.71',
      &          NSTAM_G, NSTAM, HEADER71)
-            IPSTP=2
             CALL OPEN_GBL_FILE(72, TRIM(LOCALDIR)//'/'//'fort.72',
      &         NSTAM_G, NSTAM, HEADER72)
-            IWSTP=2
 ! V49.64.01 TCM -ADDED ICE STATIONS
             IF(NCICE.NE.0) THEN
                CALL OPEN_GBL_FILE(91, TRIM(LOCALDIR)//'/'//'fort.91',
      &             NSTAM_G, NSTAM, HEADER91)
-                IICESTP=2
             ENDIF
          endif 
       ENDIF
@@ -466,7 +453,6 @@ C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPE (NO. OF DATA PTS. AT EACH
 C....BATHYMETRY STATION), NSTAE, DT*NSPOOLE, NSPOOLE, IRTYPE
 C...
       NSCOUB=0
-      IBSTP=0
 
       IF ((NDDT.NE.0).AND.(ABS(NOUTE).EQ.1)) THEN
          if (write_local_files.eqv..false.) then
@@ -487,7 +473,6 @@ C....(NO. OF GLOBAL ELEVATION DATA SETS TO BE SPOOLED),
 C....NP, DT*NSPOOLGE, NSPOOLGE, IRTYPE
 C...
       NSCOUGE=0
-      IGEP=0
 
       IF((ABS(NOUTGE).EQ.1).OR.(ABS(NOUTGE).EQ.4)) THEN
          if (write_local_files.eqv..false.) then
@@ -528,7 +513,6 @@ Casey 090302: Corrected the unit number from 10 to 90.
      $           NP_G, NP, 'Tau0      ')
             ENDIF
          endif
-         IGEP=2
       ENDIF
 
       ! jgf52.04.03: Create files for nodecode and noff output 
@@ -574,7 +558,6 @@ Casey 090302: Corrected the unit number from 10 to 90.
             CALL OPEN_GBL_FILE(109, TRIM(LOCALDIR)//'/'//'dynamicWaterlevelCorrection.61',
      &       NSTAE_G, NSTAE, HEADER61)
          endif
-         IESTP=2
       ENDIF
 
 C...
@@ -585,7 +568,6 @@ C....(NO. OF GLOBAL VELOCITY DATA SETS TO BE SPOOLED),
 C....NP, DT*NSPOOLGV, NSPOOLGV, IRTYPE
 C...
       NSCOUGV=0
-      IGVP=0
 
 !kmd - changed for -4 option      IF((ABS(NOUTGV).EQ.1)) THEN
 !Casey 090828: Added the possibility of NOUTGV = +/- 4.
@@ -597,17 +579,14 @@ C...
             CALL OPEN_GBL_FILE(64, TRIM(LOCALDIR)//'/'//'fort.64',
      &        NP_G, NP, HEADER64)
          endif
-         IGVP=2
       ENDIF
 
 Cobell - Open the fort.77 (weir elevation change) file
          IF(USE_TVW)THEN
             NSCOU_TVW = 0
-            IG_TVW = 0
             IF((ABS(NOUT_TVW).EQ.1).OR.(ABS(NOUT_TVW).EQ.4))THEN
                 CALL OPEN_GBL_FILE(77,TRIM(GLOBALDIR)//'/'//'fort.77',
      &              NP_G,NP,HEADER77)
-                IG_TVW = 2
             ENDIF
          ENDIF    
             
@@ -619,9 +598,6 @@ C....(NO. OF GLOBAL WIND DATA SETS TO BE SPOOLED),
 C....NP, DT*NSPOOLGW, NSPOOLGW, IRTYPE
 C...
       NSCOUGW=0
-      IGWP=0
-      IGPP=0
-      IGIP=0  !tcm v49.64.01 added for global ice concentration field
 
 !Casey 090302: Added the possibility of NOUTGW = +/- 4.
 !kmd - changed for -4 option      IF((ABS(NOUTGW).EQ.1)) THEN
@@ -629,29 +605,23 @@ C...
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
      &         NP_G, NP, HEADER73)
-            IGPP=2
             CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
      $        NP_G, NP, HEADER74)
-            IGWP=2
 ! tcm v49.64.01 added for ice
             IF(NCICE.NE.0) then
                CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
      $           NP_G, NP, HEADER93)
-               IGIP=2
             ENDIF
          else
          
             CALL OPEN_GBL_FILE(73, TRIM(LOCALDIR)//'/'//'fort.73',
      &            NP_G, NP, HEADER73)
-            IGPP=2
             CALL OPEN_GBL_FILE(74, TRIM(LOCALDIR)//'/'//'fort.74',
      $        NP_G, NP, HEADER74)
-            IGWP=2
 ! tcm v49.64.01 added for ice
             IF(NCICE.NE.0) then
                CALL OPEN_GBL_FILE(93, TRIM(LOCALDIR)//'/'//'fort.93',
      $           NP_G, NP, HEADER93)
-               IGIP=2
             ENDIF
          
          endif
@@ -663,7 +633,6 @@ C...
       IF ( (ABS(NRS).EQ.1).or.(ABS(NRS).EQ.3).or.(ABS(NRS).eq.4).or.
      &     (ABS(NRS).EQ.5) ) then
 Casey 090302: Added the output of radiation stress gradients.
-         IGRadS=0
          IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4)) THEN
             if (write_local_files.eqv..false.) then
                CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
@@ -672,7 +641,6 @@ Casey 090302: Added the output of radiation stress gradients.
                CALL OPEN_GBL_FILE(164, TRIM(LOCALDIR)//'/'//'rads.64',
      &             NP_G, NP, HEADER74)
             endif
-            IGRadS=2
          ENDIF
       ENDIF
 
@@ -684,14 +652,12 @@ C....(NO. OF GLOBAL CONCENTRATION DATA SETS TO BE SPOOLED),
 C....NP, DT*NSPOOLGC, NSPOOLGC, IRTYPE
 C...
       NSCOUGC=0
-      IGCP=0
 
       IF(ABS(NOUTGC).EQ.1) THEN
          OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83')
          WRITE(83,3220) RUNDES,RUNID,AGRID
          WRITE(83,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
          CLOSE(83)
-         IGCP=2
       ENDIF
  1112 FORMAT(/,1X,79('_'))
 
@@ -705,7 +671,6 @@ C....(NO. OF GLOBAL BATHYMETRY DATA SETS TO BE SPOOLED),
 C....NP, DT*NSPOOLGE, NSPOOLGE, IRTYPE
 C...
       NSCOUGB=0
-      IGBP=0
       
       IF ((NDDT.NE.0).AND.
      &       ((ABS(NOUTGE).EQ.1).OR.(ABS(NOUTGE).EQ.4))) THEN
@@ -715,8 +680,7 @@ C...
          else
             CALL OPEN_GBL_FILE(76, TRIM(LOCALDIR)//'/'//'fort.76',
      &       NP_G, NP, HEADER63)  !NO NEED TO CREATE HEADER76 
-         endif 
-         IGBP=2
+         endif
       ENDIF
 
 C...
