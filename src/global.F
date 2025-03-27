@@ -1565,8 +1565,6 @@ C...
          typeHolder = 0 
       case('ASCII')
          typeHolder = 1
-      case('BINARY')
-         typeHolder = 2 
       case('NETCDF3')
          typeHolder = 3 
       case('SPARSE_ASCII')

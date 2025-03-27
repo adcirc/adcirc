@@ -555,7 +555,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE SwanOutput(ITIME, IT)
 
-      USE SIZES, ONLY : OFF, ASCII, SPARSE_ASCII, BINARY, NETCDF3,
+      USE SIZES, ONLY : OFF, ASCII, SPARSE_ASCII, NETCDF3,
      &   NETCDF4, XDMF
       USE Couple2Adcirc,ONLY: COMPDA
       USE MESH, ONLY : DP, NP, AID4

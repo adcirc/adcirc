@@ -3758,7 +3758,8 @@ C....CHECK INPUT PARAMETER NOUTE
          CASE(1)
             CALL logMessage(INFO,'UNIT 61 FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'UNIT 61 FORMAT WILL BE BINARY.')
+            CALL allMessage(ERROR,'Binary format output is deprecated.')
+            CALL ADCIRC_Terminate()
          CASE(3)
             useNetCDF = .true.
             useNetCDFOutput = .true.
@@ -3884,7 +3885,7 @@ C...
 
 C....READ IN NOUTV,TOUTSV,TOUTFV,NSPOOLV : IF NOUTV<>0,INTERPOLATED VELOCITIES AT
 C....VELOCITY STATIONS ARE SPOOLED TO UNIT 62 EVERY NSPOOLV TIME STEPS BETWEEN
-C....TIMES TOUTSV AND TOUTFV; IF ABS(NOUTV)=2, OUTPUT WILL BE BINARY
+C....TIMES TOUTSV AND TOUTFV; IF ABS(NOUTV)=3, OUTPUT WILL BE NETCDF3, ETC
 
       READ(15,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
       WRITE(16,3101) NOUTV
@@ -3900,7 +3901,8 @@ C....CHECK INPUT PARAMETER NOUTV
          CASE(1)
             CALL logMessage(INFO,'UNIT 62 FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'UNIT 62 FORMAT WILL BE BINARY.')
+            CALL allMessage(ERROR,'Binary format output is deprecated.')
+            CALL ADCIRC_Terminate()
          CASE(3)
             useNetCDF = .true.
             useNetCDFOutput = .true.
@@ -4025,7 +4027,8 @@ C...
 
 C...  READ IN NOUTC,TOUTSC,TOUTFC,NSPOOLC : IF NOUTC<>0,INTERPOLATED
 C...  CONCENTRATIONS ARE SPOOLED TO UNIT 81 EVERY NSPOOLC TIME STEPS
-C...  BETWEEN TIMES TOUTSC AND TOUTFC; IF ABS(NOUTC)=2, OUTPUT WILL BE BINARY
+C...  BETWEEN TIMES TOUTSC AND TOUTFC; IF ABS(NOUTC)=3, OUTPUT WILL BE
+C     NETCDF3, ETC
 
          READ(15,*) NOUTC,TOUTSC,TOUTFC,NSPOOLC
          WRITE(16,3201) NOUTC
@@ -4041,7 +4044,8 @@ C...     CHECK INPUT PARAMETER NOUTC
             CASE(1)
                CALL logMessage(INFO,'UNIT 81 FORMAT WILL BE ASCII.')
             CASE(2)
-               CALL logMessage(INFO,'UNIT 81 FORMAT WILL BE BINARY.')
+               CALL allMessage(ERROR,'Binary format output is deprecated.')
+               CALL ADCIRC_Terminate()
             CASE(3)
                useNetCDF = .true.
                useNetCDFOutput = .true.
@@ -4173,7 +4177,7 @@ C
 
 C...  READ IN NOUTM,TOUTSM,TOUTFM,NSPOOLM : IF NOUTM<>0,INTERPOLATED
 C...  MET DATA ARE SPOOLED TO UNITS 71&72 EVERY NSPOOLM TIME STEPS
-C...  BETWEEN TIMES TOUTSM AND TOUTFM; IF ABS(NOUTM)=2, OUTPUT WILL BE BINARY
+C...  BETWEEN TIMES TOUTSM AND TOUTFM; IF ABS(NOUTM)=3, OUTPUT WILL BE NETCDF3, ETC
 
          READ(15,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
          WRITE(16,3211) NOUTM
@@ -4190,8 +4194,8 @@ C...     CHECK INPUT PARAMETER NOUTM
                CALL logMessage(INFO,
      &         'UNIT 71 AND 72 FORMATS WILL BE ASCII.')
             CASE(2)
-               CALL logMessage(INFO,
-     &          'UNIT 71 AND 72 FORMATS WILL BE BINARY.')
+               CALL allMessage(ERROR,'Binary format output is deprecated.')
+               CALL ADCIRC_Terminate()
             CASE(3)
                useNetCDF = .true.
                useNetCDFOutput = .true.
@@ -4319,7 +4323,7 @@ C...
 
 C...  READ IN NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE : IF NOUTGE<>0, GLOBAL ELEV.
 C...  OUTPUT IS SPOOLED TO UNIT 63 EVERY NSPOOLGE TIME STEPS BETWEEN
-C...  TIMES TOUTSGE AND TOUTFGE; IF ABS(NOUTGE)=2, OUTPUT WILL BE BINARY
+C...  TIMES TOUTSGE AND TOUTFGE; IF ABS(NOUTGE)=3, OUTPUT WILL BE NETCDF3
 
       READ(15,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
       WRITE(16,3301) NOUTGE
@@ -4333,9 +4337,10 @@ C...  CHECK INPUT PARAMETER NOUTGE
             CALL logMessage(INFO,
      &         'NO GLOBAL ELEVATION OUTPUT WILL BE SPOOLED.')
          CASE(1)
-            CALL logMessage(INFO,'UNIT 63 FORMAT WILL BE ASCII.')
+            CALL logMessage(INFO, 'UNIT 63 FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'UNIT 63 FORMAT WILL BE BINARY.')
+            CALL allMessage(ERROR,'Binary format output is deprecated.')
+            CALL ADCIRC_Terminate()
          CASE(3)
             useNetCDF = .true.
             useNetCDFOutput = .true.
@@ -4405,7 +4410,7 @@ C...
 
 C...  READ IN NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV : IF NOUTGV<>0, GLOBAL VEL.
 C...  OUTPUT IS SPOOLED TO UNIT 64 EVERY NSPOOLGV TIME STEPS BETWEEN
-C...  TIMES TOUTSGV AND TOUTFGV; IF ABS(NOUTGV)=2, OUTPUT WILL BE BINARY
+C...  TIMES TOUTSGV AND TOUTFGV; IF ABS(NOUTGV)=3, OUTPUT WILL BE NETCDF3, ETC
 
       READ(15,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
       WRITE(16,3351) NOUTGV
@@ -4421,7 +4426,8 @@ C...  CHECK INPUT PARAMETER NOUTGV
          CASE(1)
             CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE BINARY.')
+            CALL allMessage(ERROR,'Binary format output is deprecated.')
+            CALL ADCIRC_Terminate()
          CASE(3)
             useNetCDF = .true.
             useNetCDFOutput = .true.
@@ -4525,8 +4531,8 @@ C...
 
 C...  READ IN NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC : IF NOUTGC<>0, GLOBAL
 C...  CONCENTRATION OUTPUT IS SPOOLED TO UNIT 73 EVERY NSPOOLGC TIME
-C...  STEPS BETWEEN TIMES TOUTSGC AND TOUTFGC; IF ABS(NOUTGC)=2, OUTPUT
-C...  WILL BE BINARY
+C...  STEPS BETWEEN TIMES TOUTSGC AND TOUTFGC; IF ABS(NOUTGC)=3, OUTPUT
+C...  WILL BE NETCDF3, ETC
 
          READ(15,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
          WRITE(16,3401) NOUTGC
@@ -4542,7 +4548,8 @@ C...  CHECK INPUT PARAMETER NOUTGC
             CASE(1)
                CALL logMessage(INFO,'UNIT 83 FORMAT WILL BE ASCII.')
             CASE(2)
-               CALL logMessage(INFO,'UNIT 83 FORMAT WILL BE BINARY.')
+               CALL allMessage(ERROR,'Binary format output is deprecated.')
+               CALL ADCIRC_Terminate()
             CASE(3:)
                call allMessage(ERROR,"This NOUTGV value is invalid.")
                call ADCIRC_Terminate()
@@ -4598,8 +4605,8 @@ C...
 
 C...  READ IN NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW : IF NOUTGW<>0, GLOBAL
 C...  WIND OUTPUT IS SPOOLED TO UNIT 74 EVERY NSPOOLGW TIME STEPS
-C...  BETWEEN TIMES TOUTSGW AND TOUTFGW; IF ABS(NOUTGW)=2, OUTPUT WILL
-C...  BE BINARY
+C...  BETWEEN TIMES TOUTSGW AND TOUTFGW; IF ABS(NOUTGW)=3, OUTPUT WILL
+C...  BE NETCDF3, ETC
 
          READ(15,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
          WRITE(16,3451) NOUTGW
@@ -4615,8 +4622,8 @@ C...  CHECK INPUT PARAMETER NOUTGW
                CALL logMessage(INFO,
      &         'UNIT 73 AND 74 FORMATS WILL BE ASCII.')
             CASE(2)
-               CALL logMessage(INFO,
-     &          'UNIT 73 AND 74 FORMATS WILL BE BINARY.')
+               CALL allMessage(ERROR,'Binary format output is deprecated.')
+               CALL ADCIRC_Terminate()
             CASE(3)
                useNetCDF = .true.
                useNetCDFOutput = .true.
@@ -6092,7 +6099,7 @@ C-----------------------------------------------------------------------
       USE MESSENGER, ONLY : msg_fini
 #endif
       IMPLICIT NONE
-      INTEGER, intent(in) :: specifier   ! format, 1=ascii, 2=binary, etc
+      INTEGER, intent(in) :: specifier   ! format, 1=ascii, 3=netcdf3, etc
       CHARACTER(len=80), intent(in) :: description ! type of output data
       REAL(8), intent(in) :: staTime
       INTEGER, intent(inout) :: tsPeriod ! period of time steps between outputs
@@ -6125,7 +6132,8 @@ C     specified format.
          CASE(1)
             CALL logMessage(INFO,'OUTPUT FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'OUTPUT FORMAT WILL BE BINARY.')
+            CALL allMessage(ERROR,'Binary format output is deprecated.')
+            CALL ADCIRC_Terminate()
          CASE(3)
             useNetCDF = .true.
             CALL logMessage(INFO,
