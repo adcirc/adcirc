@@ -7034,11 +7034,9 @@ C-----------------------------------------------------------------------
      &        NodeCodeDescript, NOFFDescript, H1_HS_Descript,
      &        H2_HS_Descript, timesec, it )
       USE SIZES, ONLY : globaldir, mnproc
-      USE GLOBAL, ONLY : OutputDataDescript_t,
-     &                   im, iestp, nscoue, ivstp, imhs,
-     &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
-     &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
-     &                   igpp, igwp, nscougw
+      USE GLOBAL, ONLY : OutputDataDescript_t, im, nscoue, imhs,
+     &                   nscouv, icstp, nscouc, nscoum,
+     &                   nscouge, nscougv, nscougc, nscougw
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: lun
@@ -7233,78 +7231,38 @@ C     going on to the next one.
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, it)
       CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"iestp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, iestp)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscoue",tempid)
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, nscoue)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"ivstp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, ivstp)
       CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscouv",tempid)
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, nscouv)
       CALL check_err(iret)
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-         iret = nf90_inq_varid(hs%ncid,"icstp",tempid)
-         CALL check_err(iret)
-         iret = nf90_put_var(hs%ncid, tempid, icstp)
-         CALL check_err(iret)
          iret = nf90_inq_varid(hs%ncid,"nscouc",tempid)
          CALL check_err(iret)
          iret = nf90_put_var(hs%ncid, tempid, nscouc)
          CALL check_err(iret)
       ENDIF
-      iret = nf90_inq_varid(hs%ncid,"ipstp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, ipstp)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"iwstp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, iwstp)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscoum",tempid)
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, nscoum)
       CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"igep",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, igep)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscouge",tempid)
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, nscouge)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"igvp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, igvp)
       CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscougv",tempid)
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, nscougv)
       CALL check_err(iret)
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-         iret = nf90_inq_varid(hs%ncid,"igcp",tempid)
-         CALL check_err(iret)
-         iret = nf90_put_var(hs%ncid, tempid, igcp)
-         CALL check_err(iret)
          iret = nf90_inq_varid(hs%ncid,"nscougc",tempid)
          CALL check_err(iret)
          iret = nf90_put_var(hs%ncid, tempid, nscougc)
          CALL check_err(iret)
       ENDIF
-      iret = nf90_inq_varid(hs%ncid,"igpp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, igpp)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"igwp",tempid)
-      CALL check_err(iret)
-      iret = nf90_put_var(hs%ncid, tempid, igwp)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscougw",tempid)
       CALL check_err(iret)
       iret = nf90_put_var(hs%ncid, tempid, nscougw)
@@ -8135,10 +8093,9 @@ C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstart(lun, timeLoc)
       USE VERSION, ONLY : FileFmtRev, FileFmtMinor, FileFmtMajor
       USE SIZES, ONLY : globaldir, mnproc, myproc
-      USE GLOBAL, ONLY : OutputDataDescript_t, imhs, iths, iestp, nscoue, ivstp,
-     &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
-     &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
-     &                   igpp, igwp, nscougw, ETA1, ETA2, EtaDisc,
+      USE GLOBAL, ONLY : OutputDataDescript_t, imhs, iths,  nscoue,
+     &                   nscouv, nscouc, nscoum, nscouge,  nscougv, nscougc,
+     &                   nscougw, ETA1, ETA2, EtaDisc,
      &                   UU2, VV2, NNODECODE, NOFF,
      &                   IM, NP_G, NE_G, NODES_LG, IMAP_EL_LG,
      &                   htot1 => H1, htot2 => H2,
@@ -8364,78 +8321,38 @@ C     Read in model parameters to ADCIRC variables
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, iths)
       CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"iestp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, iestp)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscoue", tempid)
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, nscoue)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"ivstp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, ivstp)
       CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscouv", tempid)
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, nscouv)
       CALL check_err(iret)
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-         iret = nf90_inq_varid(hs%ncid,"icstp", tempid)
-         CALL check_err(iret)
-         iret = nf90_get_var(hs%ncid, tempid, icstp)
-         CALL check_err(iret)
          iret = nf90_inq_varid(hs%ncid,"nscouc", tempid)
          CALL check_err(iret)
          iret = nf90_get_var(hs%ncid, tempid, nscouc)
          CALL check_err(iret)
       ENDIF
-      iret = nf90_inq_varid(hs%ncid,"ipstp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, ipstp)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"iwstp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, iwstp)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscoum", tempid)
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, nscoum)
       CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"igep", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, igep)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscouge", tempid)
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, nscouge)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"igvp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, igvp)
       CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscougv", tempid)
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, nscougv)
       CALL check_err(iret)
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-         iret = nf90_inq_varid(hs%ncid,"igcp", tempid)
-         CALL check_err(iret)
-         iret = nf90_get_var(hs%ncid, tempid, igcp)
-         CALL check_err(iret)
          iret = nf90_inq_varid(hs%ncid,"nscougc", tempid)
          CALL check_err(iret)
          iret = nf90_get_var(hs%ncid, tempid, nscougc)
          CALL check_err(iret)
       ENDIF
-      iret = nf90_inq_varid(hs%ncid,"igpp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, igpp)
-      CALL check_err(iret)
-      iret = nf90_inq_varid(hs%ncid,"igwp", tempid)
-      CALL check_err(iret)
-      iret = nf90_get_var(hs%ncid, tempid, igwp)
-      CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"nscougw", tempid)
       CALL check_err(iret)
       iret = nf90_get_var(hs%ncid, tempid, nscougw)
@@ -10888,10 +10805,9 @@ C-----------------------------------------------------------------------
      &   NVDLL_p, NBDV_p, NVELL_p, X_p, Y_p,
      &   IBTYPE_p, IBTYPEE_p, SLAM_p, SFEA_p,
      &   NODECODE_p, G_p, FileFmtRev_p, FileFmtMinor_p,
-     &   FileFmtMajor_p, im_p, iestp_p, nscoue_p, ivstp_p, nscouv_p,
-     &   icstp_p, nscouc_p, ipstp_p, iwstp_p, nscoum_p, igep_p,
-     &   nscouge_p, igvp_p, nscougv_p, igcp_p, nscougc_p, igpp_p,
-     &   igwp_p, nscougw_p, NM_p, DP_p, RUNDES_p, AGRID_p, title_p,
+     &   FileFmtMajor_p, im_p, nscoue_p, nscouv_p,
+     &   nscouc_p, nscoum_p, nscouge_p, nscougv_p, nscougc_p,
+     &   nscougw_p, NM_p, DP_p, RUNDES_p, AGRID_p, title_p,
      &   institution_p, source_p, history_p, references_p, comments_p,
      &   host_p, convention_p, contact_p, dtdp_p, ihot_p, ics_p,
      &   nolifa_p, nolica_p, nolicat_p, ncor_p, ntip_p, nws_p, nramp_p,
@@ -10910,9 +10826,8 @@ C-----------------------------------------------------------------------
       USE VERSION, ONLY : FileFmtRev, FileFmtMinor, FileFmtMajor
       USE ADC_CONSTANTS, ONLY: G, RAD2DEG
       USE GLOBAL, ONLY : base_date, SNAMLEN, NODECODE,
-     &   NP_G, NE_G, im, iestp, nscoue, ivstp, nscouv,
-     &   icstp, nscouc, ipstp, iwstp, nscoum, igep, nscouge, igvp,
-     &   nscougv, igcp, nscougc, igpp, igwp, nscougw,
+     &   NP_G, NE_G, im, nscoue, nscouv,
+     &   nscouc, nscoum, nscouge, nscougv, nscougc, nscougw,
      &   RUNDES, title, institution, source, history,
      &   references, comments, host, convention, contact, dtdp, ihot,
      &   nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
@@ -10954,23 +10869,13 @@ C-----------------------------------------------------------------------
       INTEGER, intent(in) :: FileFmtMinor_p
       INTEGER, intent(in) :: FileFmtMajor_p
       INTEGER, intent(in) :: im_p
-      INTEGER, intent(in) :: iestp_p
       INTEGER, intent(in) :: nscoue_p
-      INTEGER, intent(in) :: ivstp_p
       INTEGER, intent(in) :: nscouv_p
-      INTEGER, intent(in) :: icstp_p
       INTEGER, intent(in) :: nscouc_p
-      INTEGER, intent(in) :: ipstp_p
-      INTEGER, intent(in) :: iwstp_p
       INTEGER, intent(in) :: nscoum_p
-      INTEGER, intent(in) :: igep_p
       INTEGER, intent(in) :: nscouge_p
-      INTEGER, intent(in) :: igvp_p
       INTEGER, intent(in) :: nscougv_p
-      INTEGER, intent(in) :: igcp_p
       INTEGER, intent(in) :: nscougc_p
-      INTEGER, intent(in) :: igpp_p
-      INTEGER, intent(in) :: igwp_p
       INTEGER, intent(in) :: nscougw_p
       INTEGER, intent(in) :: NM_p(:,:)
       REAL(8), intent(in) :: DP_p(:)
@@ -11083,23 +10988,13 @@ C-----------------------------------------------------------------------
       FileFmtMinor = FileFmtMinor_p
       FileFmtMajor = FileFmtMajor_p
       im = im_p
-      iestp = iestp_p
       nscoue = nscoue_p
-      ivstp = ivstp_p
       nscouv = nscouv_p
-      icstp = icstp_p
       nscouc = nscouc_p
-      ipstp = ipstp_p
-      iwstp = iwstp_p
       nscoum = nscoum_p
-      igep = igep_p
       nscouge = nscouge_p
-      igvp = igvp_p
       nscougv = nscougv_p
-      igcp = igcp_p
       nscougc = nscougc_p
-      igpp = igpp_p
-      igwp = igwp_p
       nscougw = nscougw_p
       ALLOCATE(NM(NE_G_p,3))
       NM = NM_p
