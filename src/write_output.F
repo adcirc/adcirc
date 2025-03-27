@@ -2883,10 +2883,6 @@ C
 #endif
 C
 
-
-
-
-
       ios=0
 C
 C     form file name from lun
@@ -2969,57 +2965,6 @@ C
             CLOSE(lun)
          ENDIF
       ENDIF
-      IF ((specifier.EQ.-2).OR.((specifier.eq.2).AND.(IHOT.EQ.0))) THEN
-        !start a new BINARY file
-        WRITE(16,496) lun
-        OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn,ACCESS='DIRECT',
-     &       RECL=NByte,STATUS="REPLACE")
-        recNum=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            recNum=recNum+1
-            WRITE(lun,REC=recNum) RDES4(N)
-          ENDDO
-          DO N=1,6
-            recNum=recNum+1
-            WRITE(lun,REC=recNum) RID4(N)
-          ENDDO
-          DO N=1,6
-            recNum=recNum+1
-            WRITE(lun,REC=recNum) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            recNum=recNum+1
-            WRITE(lun,REC=recNum) RDES8(N)
-          ENDDO
-          DO N=1,3
-            recNum=recNum+1
-            WRITE(lun,REC=recNum) RID8(N)
-          ENDDO
-          DO N=1,3
-            recNum=recNum+1
-            WRITE(lun,REC=recNum) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(lun,REC=recNum+1) nset
-        WRITE(lun,REC=recNum+2) nPerSet
-        WRITE(lun,REC=recNum+3) tsPeriod*DTDP
-        WRITE(lun,REC=recNum+4) tsPeriod
-        WRITE(lun,REC=recNum+5) NFEN
-        WRITE(lun,REC=recNum+6) outputShape
-        recNum=recNum+6
-        CLOSE(lun)
-      ENDIF
-      IF ((specifier.eq.2).and.(IHOT.NE.0)) THEN
-         !find spot in existing BINARY file
-         WRITE(16,496) lun
-         OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn,ACCESS='DIRECT',
-     &       RECL=NByte)
-         CLOSE(lun)
-      ENDIF
-C
 
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -3597,41 +3542,6 @@ C                 Write time header into file
      &                 "IDEN is not +/- 0 to 4 and is invalid.")
                   END SELECT
                ENDIF
-            CASE(2) ! binary
-               OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41',
-     &            ACCESS='DIRECT', RECL=NByte)
-               WRITE(41,REC=I3DSDRec+1) TimeLoc
-               WRITE(41,REC=I3DSDRec+2) IT
-               I3DSDRec=I3DSDRec+2
-C              Write station output
-               DO NN=1,NSTA3DD
-                  WRITE(41,REC=I3DSDRec+1) NN
-                  I3DSDRec=I3DSDRec+1
-                  DO k=1,NFEN
-                     SELECT CASE(ABS(IDEN))
-                     CASE(1)
-                        WRITE(41,REC=I3DSDRec+1) SigTSta(NN,k)
-                        I3DSDRec=I3DSDRec+1
-                     CASE(2)
-                        WRITE(41,REC=I3DSDRec+1) SigTSta(NN,k)
-                        WRITE(41,REC=I3DSDRec+2) SalSta(NN,k)
-                        I3DSDRec=I3DSDRec+2
-                     CASE(3)
-                        WRITE(41,REC=I3DSDRec+1) SigTSta(NN,k)
-                        WRITE(41,REC=I3DSDRec+2) TempSta(NN,k)
-                        I3DSDRec=I3DSDRec+2
-                     CASE(4)
-                        WRITE(41,REC=I3DSDRec+1) SigTSta(NN,k)
-                        WRITE(41,REC=I3DSDRec+2) SalSta(NN,k)
-                        WRITE(41,REC=I3DSDRec+3) TempSta(NN,k)
-                        I3DSDRec=I3DSDRec+3
-                     CASE DEFAULT
-                        CALL allMessage(WARNING,
-     &                    "IDEN is not +/- 0 to 4 and is invalid.")
-                     END SELECT
-                  ENDDO
-               ENDDO
-               CLOSE(41)
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
@@ -3740,23 +3650,6 @@ C                 Write time header into file
                   ENDDO
                   CLOSE(42)
                ENDIF
-            CASE(2) !BINARY FORMAT
-               OPEN(42,FILE=TRIM(LOCALDIR)//'/'//'fort.42',
-     &            ACCESS='DIRECT', RECL=NByte)
-               WRITE(42,REC=I3DSVRec+1) TimeLoc
-               WRITE(42,REC=I3DSVRec+2) IT
-               I3DSVRec=I3DSVRec+2
-               WRITE(42,REC=I3DSVRec+1) NN
-               I3DSVRec=I3DSVRec+1
-               DO NN=1,NSTA3DV
-                  DO k=1,NFEN
-                     WRITE(42,REC=I3DSVRec+1) REAL(qSta(NN,k))
-                     WRITE(42,REC=I3DSVRec+2) AIMAG(qSta(NN,k))
-                     WRITE(42,REC=I3DSVRec+3) WZSta(NN,k)
-                     I3DSVRec=I3DSVRec+3
-                  END DO
-               END DO
-               CLOSE(42)
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
@@ -3850,23 +3743,6 @@ C                 Write time header into file
                   END DO
                   CLOSE(43)
                ENDIF
-            CASE(2)  ! binary
-               OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43',
-     &            ACCESS='DIRECT', RECL=NByte)
-               WRITE(43,REC=I3DSTRec+1) TimeLoc
-               WRITE(43,REC=I3DSTRec+2) IT
-               I3DSTRec=I3DSTRec+2
-               DO NN=1,NSta3DT
-                  WRITE(43,REC=I3DSTRec+1) NN
-                  I3DSTRec=I3DSTRec+1
-                  DO k=1,NFEN
-                     WRITE(43,REC=I3DSTRec+1) q20Sta(NN,k)
-                     WRITE(43,REC=I3DSTRec+2) lSta(NN,k)
-                     WRITE(43,REC=I3DSTRec+3) EVSta(NN,k)
-                     I3DSTRec=I3DSTRec+3
-                  END DO
-               END DO
-               CLOSE(43)
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
@@ -4066,61 +3942,6 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                   I3DGDRec=I3DGDRec+1 ! for the header line
                   CLOSE(44)
                ENDIF
-            CASE(2)  !BINARY FORMAT
-               OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',
-     &            ACCESS='DIRECT', RECL=NByte)
-               WRITE(44,REC=I3DGDRec+1) TimeLoc
-               WRITE(44,REC=I3DGDRec+2) IT
-               I3DGDRec=I3DGDRec+2
-               SELECT CASE(ABS(IDEN))
-               CASE(0) ! barotropic
-                  CALL allMessage(WARNING,
-     &            "IDEN was set to 0 but density output was requested.")
-               CASE(1) ! sigmaT density
-                  DO NH=1,NP
-                     WRITE(44,REC=I3DGDRec+1) NH
-                     I3DGDRec=I3DGDRec+1
-                     DO k=1,NFEN
-                        WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
-                        I3DGDRec=I3DGDRec+1
-                     ENDDO
-                  END DO
-               CASE(2) ! salinity density
-                  DO NH=1,NP
-                     WRITE(44,REC=I3DGDRec+1) NH
-                     I3DGDRec=I3DGDRec+1
-                     DO k=1,NFEN
-                        WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
-                        WRITE(44,REC=I3DGDRec+2) Sal(NH,k)
-                        I3DGDRec=I3DGDRec+2
-                     END DO
-                  END DO
-               CASE(3) ! temperature density
-                  DO NH=1,NP
-                     WRITE(44,REC=I3DGDRec+1) NH
-                     I3DGDRec=I3DGDRec+1
-                     DO k=1,NFEN
-                        WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
-                        WRITE(44,REC=I3DGDRec+2) Temp(NH,k)
-                        I3DGDRec=I3DGDRec+2
-                     ENDDO
-                  END DO
-               CASE(4) ! salinity+temperature density
-                  DO NH=1,NP
-                     WRITE(44,REC=I3DGDRec+1) NH
-                     I3DGDRec=I3DGDRec+1
-                     DO k=1,NFEN
-                        WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
-                        WRITE(44,REC=I3DGDRec+2) Temp(NH,k)
-                        WRITE(44,REC=I3DGDRec+3) Sal(NH,k)
-                        I3DGDRec=I3DGDRec+3
-                     ENDDO
-                  END DO
-               CASE DEFAULT
-                  CALL allMessage(WARNING,
-     &              "IDEN is not +/- 0 to 4 and is invalid.")
-               END SELECT
-               CLOSE(44)
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
@@ -4213,23 +4034,6 @@ C                 Write time header into file
                      CLOSE(45)
                   ENDIF
                ENDIF
-            CASE(2) !BINARY FORMAT
-               OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45',
-     &              ACCESS='DIRECT',RECL=NByte)
-               WRITE(45,REC=I3DGVRec+1) TimeLoc
-               WRITE(45,REC=I3DGVRec+2) IT
-               I3DGVRec=I3DGVRec+2
-               DO NH=1,NP
-                  WRITE(45,REC=I3DGVRec+1) NH
-                  I3DGVRec=I3DGVRec+1
-                  DO k=1,NFEN
-                     WRITE(45,REC=I3DGVRec+1) REAL(q(NH,k))
-                     WRITE(45,REC=I3DGVRec+2) AIMAG(q(NH,k))
-                     WRITE(45,REC=I3DGVRec+3) WZ(NH,k)
-                     I3DGVRec=I3DGVRec+3
-                  END DO
-               END DO
-               CLOSE(45)
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
@@ -4302,23 +4106,6 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
                      CLOSE(46)
                   ENDIF
                ENDIF
-            CASE(2)
-               OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46',
-     &            ACCESS='DIRECT',RECL=NByte)
-               WRITE(46,REC=I3DGTRec+1) TimeLoc
-               WRITE(46,REC=I3DGTRec+2) IT
-               I3DGTRec=I3DGTRec+2
-               DO NH=1,NP
-                  WRITE(46,REC=I3DGTRec+1) NH
-                  I3DGTRec=I3DGTRec+1
-                  DO k=1,NFEN
-                     WRITE(46,REC=I3DGTRec+1) q20(NH,k)
-                     WRITE(46,REC=I3DGTRec+2) l(NH,k)
-                     WRITE(46,REC=I3DGTRec+3) EV(NH,k)
-                     I3DGTREC=I3DGTREC+3
-                  ENDDO
-               ENDDO
-               CLOSE(46)
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
@@ -4363,7 +4150,7 @@ C-----------------------------------------------------------------------
       USE SIZES
       USE GLOBAL
       USE GLOBAL_IO, ONLY : collectFullDomainArray, storeOne, storeTwo,
-     &                      writeSparse,writeFullFormat,writeBinaryFormat
+     &                      writeSparse,writeFullFormat
       USE MESH, ONLY: labels
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : writeOutArrayNetCDF
@@ -4404,8 +4191,6 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
           ELSEIF(descript%num_items_per_record.EQ.2)then
               CALL writeFullFormat(descript,timeLoc,it,storeTwo)
           ENDIF
-        CASE(BINARY) ! nonportable
-          CALL writeBinaryFormat(descript,timeLoc,it)
         CASE(SPARSE_ASCII)
            if(descript % num_items_per_record.eq.1)then
                CALL writeSparse(descript, timeLoc, it, storeOne)
@@ -4507,7 +4292,7 @@ C     write data in ascii text only (other output formats are not supported)
      &   ' but output for this file is turned off.'
          call allMessage(INFO, scratchMessage)
 
-      CASE(ASCII,BINARY,SPARSE_ASCII) ! just write ascii text
+      CASE(ASCII,SPARSE_ASCII) ! just write ascii text
 
          call logMessage(INFO,'Opening min/max file "'//
      &          trim(descript%file_name)//'" for writing.')
@@ -5749,7 +5534,7 @@ C SWAN OUTPUT VARIABLES USED IN WRITE_OUTPUT.F
 C-----------------------------------------------------------------------
 #ifdef CSWAN
       SUBROUTINE initSwanOutput()
-          USE SIZES, ONLY : MNPROC, OFF, ASCII, BINARY, NETCDF3,
+          USE SIZES, ONLY : MNPROC, OFF, ASCII, NETCDF3,
      &                       NETCDF4, XDMF, MYPROC
           USE GLOBAL
           USE MESH
