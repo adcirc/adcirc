@@ -5731,20 +5731,7 @@ C
       iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
      &       trim(att_text))
       CALL check_err(iret)
-C
-      iret = nf90_def_var(hs%ncid, 'iestp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      att_text = 'line number (for ASCII output) or record number'
-     &  //' (for binary output) of the most recent entry in the'
-     &  //' elevation time series at specified elevation recording'
-     &  //' stations output file'
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',trim(att_text))
-      CALL check_err(iret)
-      att_text = 'line/record_number_of_last_entry_in_elev_rec_stations'
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       trim(att_text))
-      CALL check_err(iret)
-c
+
       iret = nf90_def_var(hs%ncid, 'nscoue', NF90_INT, varid=tempid)
       CALL check_err(iret)
       att_text = 'time step counter to determine when the'
@@ -5758,18 +5745,6 @@ c
      &       trim(att_text))
       CALL check_err(iret)
 C
-      iret = nf90_def_var(hs%ncid, 'ivstp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                   ' line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' depth-averaged velocity time series at specified velocity'
-     & //' recording stations output file')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &               'record_number_of_last_entry_in_vel_rec_stations')
-      CALL check_err(iret)
-C
       iret = nf90_def_var(hs%ncid, 'nscouv', NF90_INT, varid=tempid)
       CALL check_err(iret)
       iret = nf90_put_att(hs%ncid, tempid, 'long_name',
@@ -5779,23 +5754,7 @@ C
      & //' file.')
       CALL check_err(iret)
 
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &           'time_step_counter_for_next_entry_vel_rec_stations')
-      CALL check_err(iret)
-C
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-         iret = nf90_def_var(hs%ncid, 'icstp', NF90_INT, varid=tempid)
-         CALL check_err(iret)
-         iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                       'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' scalar concentration time series at specified concentration'
-     & //' recording stations output file')
-         CALL check_err(iret)
-         iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &               'record_number_of_last_entry_in_conc_rec_stations')
-         CALL check_err(iret)
-C
          iret = nf90_def_var(hs%ncid, 'nscouc', NF90_INT, varid=tempid)
          CALL check_err(iret)
          iret = nf90_put_att(hs%ncid, tempid, 'long_name',
@@ -5807,31 +5766,7 @@ C
      &           'time_step_counter_for_next_entry_conc_rec_stations')
          CALL check_err(iret)
       ENDIF
-C
-      iret = nf90_def_var(hs%ncid, 'ipstp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                       'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' atmospheric pressure time series at specified meteorological'
-     & //' recording stations')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_atm_press_at_rec_stations')
-      CALL check_err(iret)
-C
-      iret = nf90_def_var(hs%ncid, 'iwstp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                      'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' wind velocity time series at specified meteorological'
-     & //' recording stations')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_wind_vel_at_rec_stations')
-      CALL check_err(iret)
-C
+
       iret = nf90_def_var(hs%ncid, 'nscoum', NF90_INT, varid=tempid)
       CALL check_err(iret)
       iret = nf90_put_att(hs%ncid, tempid, 'long_name',
@@ -5845,18 +5780,6 @@ C
      &   'time_step_counter_of_atm_press_and_wind_vel_at_rec_stations')
       CALL check_err(iret)
 C
-      iret = nf90_def_var(hs%ncid, 'igep', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                       'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' elevation time series at all nodes in the model grid output'
-     & //' file')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_elev_at_model_nodes')
-      CALL check_err(iret)
-C
       iret = nf90_def_var(hs%ncid, 'nscouge', NF90_INT, varid=tempid)
       CALL check_err(iret)
       iret = nf90_put_att(hs%ncid, tempid, 'long_name',
@@ -5866,18 +5789,6 @@ C
       CALL check_err(iret)
       iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
      &   'time_step_counter_of_elev_at_model_nodes')
-      CALL check_err(iret)
-C
-      iret = nf90_def_var(hs%ncid, 'igvp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                       'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' depth-averaged velocity time series at all nodes in the'
-     & //' model grid output file')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_vel_at_model_nodes')
       CALL check_err(iret)
 C
       iret = nf90_def_var(hs%ncid, 'nscougv', NF90_INT, varid=tempid)
@@ -5892,18 +5803,6 @@ C
       CALL check_err(iret)
 C
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-         iret = nf90_def_var(hs%ncid, 'igcp', NF90_INT, varid=tempid)
-         CALL check_err(iret)
-         iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                     'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' scalar concentration time series at all nodes in the model'
-     & //' grid output file')
-         CALL check_err(iret)
-         iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_conc_at_model_nodes')
-         CALL check_err(iret)
-C
          iret = nf90_def_var(hs%ncid, 'nscougc', NF90_INT, varid=tempid)
          CALL check_err(iret)
          iret = nf90_put_att(hs%ncid, tempid, 'long_name',
@@ -5915,30 +5814,6 @@ C
      &   'time_step_counter_of_conc_at_model_nodes')
          CALL check_err(iret)
       ENDIF
-C
-      iret = nf90_def_var(hs%ncid, 'igpp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                       'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' atmospheric pressure time series at all nodes in the model'
-     & //' grid output file')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_atm_press_at_model_nodes')
-      CALL check_err(iret)
-C
-      iret = nf90_def_var(hs%ncid, 'igwp', NF90_INT, varid=tempid)
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'long_name',
-     &                      'line number (for ASCII output) or record'
-     & //' number (for binary output) of the most recent entry in the'
-     & //' wind Stress or velocity time series at all nodes in the'
-     & //' model grid output file')
-      CALL check_err(iret)
-      iret = nf90_put_att(hs%ncid, tempid, 'standard_name',
-     &       'record_number_of_last_entry_of_wind_vel_at_model_nodes')
-      CALL check_err(iret)
 C
       iret = nf90_def_var(hs%ncid, 'nscougw', NF90_INT, varid=tempid)
       CALL check_err(iret)
