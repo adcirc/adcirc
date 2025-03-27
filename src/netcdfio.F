@@ -58,7 +58,7 @@
       !                                            files. Added in fort.51-54.nc
       !=================================================================
       MODULE NETCDFIO
-      USE SIZES, ONLY : OFF, ASCII, BINARY, SPARSE_ASCII, NETCDF3,
+      USE SIZES, ONLY : OFF, ASCII, SPARSE_ASCII, NETCDF3,
      &   NETCDF4, XDMF
       USE NETCDF_ERROR, ONLY: CHECK_ERR, NETCDFTERMINATE
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,

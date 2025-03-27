@@ -69,13 +69,12 @@ C
       integer, parameter :: numFormats = 7
       integer, parameter :: OFF = 0
       integer, parameter :: ASCII = 1
-      integer, parameter :: BINARY = 2
       integer, parameter :: NETCDF3 = 3
       integer, parameter :: SPARSE_ASCII = 4
       integer, parameter :: NETCDF4 = 5
       integer, parameter :: XDMF = 7
       character(len=20) :: formatString(0:7) = (/ 'OFF         ', 
-     &   'ASCII       ', 'BINARY      ', 'NETCDF3     ', 'SPARSE_ASCII', 
+     &   'ASCII       ', 'UNDEF       ', 'NETCDF3     ', 'SPARSE_ASCII',
      &   'NETCDF4     ', 'UNDEF       ', 'XDMF        ' /)
            
       !
