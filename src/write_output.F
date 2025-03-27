@@ -343,17 +343,17 @@ C----------------------------------------------------------------------
      &                  numFormats, write_local_files, localdir,
      &                  controlFileName
       USE GLOBAL, ONLY : imap_stae_lg, imap_stav_lg, et00, eta2,
-     &   nscoue, iestp, nne, staie1, staie2, staie3, xel, yel,
-     &   slel, sfel, uu00, vv00, uu2, vv2, nscouv, ivstp, nnv,
+     &   nscoue, nne, staie1, staie2, staie3, xel, yel,
+     &   slel, sfel, uu00, vv00, uu2, vv2, nscouv, nnv,
      &   staiv1, staiv2, staiv3, xev, yev, slev, sfev, nscouge,
-     &   igep, nodes_lg, labels_g, eta2_g, nscougt, itau0p, nscougs, igsp,
-     &   sponge, nscougv, igvp, uu2_g, vv2_g, imap_stam_lg, rmp00,
-     &   pr2, nscoum, ipstp, nnm, staim1, staim2, staim3,
+     &   nodes_lg, labels_g, eta2_g, nscougt, nscougs,
+     &   sponge, nscougv, uu2_g, vv2_g, imap_stam_lg, rmp00,
+     &   pr2, nscoum, nnm, staim1, staim2, staim3,
      &   xem, yem, slem, sfem, rmu00, rmv00,
-     &   iwstp, nscougw, igpp, igwp, dp00, ibstp, igbp, igip,
-     &   ciceout, rmice00, iicestp, igrads, rsnxout, rsnyout,
+     &   nscougw, dp00, ibstp, igbp, igip,
+     &   ciceout, rmice00, iicestp, rsnxout, rsnyout,
      &   imap_stac_lg, cc00, ch1, xec, yec, slec, sfec, ch1_g,
-     &   nscougc, igcp, ch1, ch1_g, etamax_time_g, etamax,
+     &   nscougc, ch1, ch1_g, etamax_time_g, etamax,
      &   etamax_time, umax_time_g, umax, umax_time, prmin_time_g,
      &   prmin, wvnoutmax_time_g, wvnoutmax_time, rsnmax_time_g,
      &   rsnmax_time, eslcount, prmin_time, wvnoutmax, rsnmax,
@@ -366,19 +366,18 @@ C----------------------------------------------------------------------
      &   noutc, nstac_g, nstac, im, noutgc, ntcyfgc, ntcysgc,
      &   nspoolgc, INFO, scratchMessage, allMessage, nscougi, nscougp,
      &   nscours, nscoub, nscougb, nscoui, nscoup,
-     &   use_tvw, nout_tvw, ntcys_tvw, ntcyf_tvw, ig_tvw, tvw,
+     &   use_tvw, nout_tvw, ntcys_tvw, ntcyf_tvw, tvw,
      &   nspool_tvw, nscou_tvw,
-     &   nodeCodeOutSpoolCounter, noffOutSpoolCounter, noffOutFilePos,
-     &   nodeCodeOutFilePos, NE_G, IMAP_EL_LG, nodecode, noff,
-     &   fauxFilePosition, initiallyDrySpoolCounter,
-     &   inundationOutput, ihot, logMessage, windDragFilePosition,
+     &   nodeCodeOutSpoolCounter, noffOutSpoolCounter,
+     &   NE_G, IMAP_EL_LG, nodecode, noff,
+     &   initiallyDrySpoolCounter,
+     &   inundationOutput, ihot, logMessage,
      &   windDragOut, windDragSpoolCounter, outputWindDrag,
-     &   dynamicWaterLevelCorrectionFilePos, dynamicWaterLevelCorrectionSpoolCounter, 
+     &   dynamicWaterLevelCorrectionSpoolCounter,
      &   dynamicWaterLevelCorrection2, usingDynamicWaterLevelCorrection,
      &   dynamicWaterLevelCorrectionSpoolCounter, dynamicWaterLevelCorrection2, 
      &   usingdynamicWaterLevelCorrection, dynamicWaterLevelCorrectionStaSpoolCounter, 
-     &   dynamicWaterLevelCorrectionFilePos, dynamicWaterLevelCorrectionSta,
-     &   dynamicWaterLevelCorrectionStaFilePos
+     &   dynamicWaterLevelCorrectionSta
       USE ADC_CONSTANTS, ONLY: PRBCKGRND
 
       USE MESH, ONLY : NP, NE, DP, NM, ICS, labels
@@ -516,7 +515,6 @@ C
       ElevStaDescript % endTimeStep             = NTCYFE
       ElevStaDescript % outputTimeStepIncrement = NSPOOLE
       ElevStaDescript % spoolCounter            => NSCOUE
-      ElevStaDescript % filepos                 => IESTP
       ElevStaDescript % elements                => NNE
       ElevStaDescript % interp_fac1             => STAIE1
       ElevStaDescript % interp_fac2             => STAIE2
@@ -557,7 +555,6 @@ C
       VelStaDescript % endTimeStep             = NTCYFV
       VelStaDescript % outputTimeStepIncrement = NSPOOLV
       VelStaDescript % spoolCounter            => NSCOUV
-      VelStaDescript % filepos                 => IVSTP
       VelStaDescript % elements                => NNV
       VelStaDescript % interp_fac1             => STAIV1
       VelStaDescript % interp_fac2             => STAIV2
@@ -597,7 +594,6 @@ C
       ElevDescript % endTimeStep             = NTCYFGE
       ElevDescript % outputTimeStepIncrement = NSPOOLGE
       ElevDescript % spoolCounter            => NSCOUGE
-      ElevDescript % filepos                 => IGEP
       ElevDescript % array                => ETA2
       ElevDescript % array_g              => ETA2_g
       ElevDescript % ConsiderWetDry       = .TRUE.
@@ -619,7 +615,6 @@ C
       Tau0Descript % endTimeStep             = NTCYFGE
       Tau0Descript % outputTimeStepIncrement = NSPOOLGE
       Tau0Descript % spoolCounter            => NSCOUGT
-      Tau0Descript % filepos                 => ITAU0P
       Tau0Descript % array                => TAU0VAR
       Tau0Descript % array_g              => TAU0VAR_g
       Tau0Descript % field_name           = 'Tau0'
@@ -642,7 +637,6 @@ C
       SpongeDescript % endTimeStep             = NTCYFGE
       SpongeDescript % outputTimeStepIncrement = NSPOOLGE
       SpongeDescript % spoolCounter            => NSCOUGS
-      SpongeDescript % filepos                 => IGSP
       SpongeDescript % array                => sponge
       SpongeDescript % array_g              => sponge_g
       SpongeDescript % writeFlag            = outputsponge
@@ -664,7 +658,6 @@ C
       nodeCodeOutDescript % endTimeStep             = NTCYFGE
       nodeCodeOutDescript % outputTimeStepIncrement = NSPOOLGE
       nodeCodeOutDescript % spoolCounter    => nodeCodeOutSpoolCounter
-      nodeCodeOutDescript % filepos         => nodeCodeOutFilePos
       nodeCodeOutDescript % iarray               => NODECODE
       nodeCodeOutDescript % iarray_g             => NodeCode_out_g
       nodeCodeOutDescript % field_name           = 'NodeCode'
@@ -690,7 +683,6 @@ C
       noffOutDescript % endTimeStep             = NTCYFGE
       noffOutDescript % outputTimeStepIncrement = NSPOOLGE
       noffOutDescript % spoolCounter            => noffOutSpoolCounter
-      noffOutDescript % filepos                 => noffOutFilePos
       noffOutDescript % num_fd_records       = NE_G
       noffOutDescript % num_records_this     = NE
       noffOutDescript % imap                 => IMAP_EL_LG
@@ -714,7 +706,6 @@ C
       VelDescript % endTimeStep             = NTCYFGV
       VelDescript % outputTimeStepIncrement = NSPOOLGV
       VelDescript % spoolCounter            => NSCOUGV
-      VelDescript % filepos                 => IGVP
       VelDescript % num_items_per_record = 2
       VelDescript % array                => UU2
       VelDescript % array2               => VV2
@@ -748,7 +739,6 @@ C
       PrStaDescript % endTimeStep             = NTCYFM
       PrStaDescript % outputTimeStepIncrement = NSPOOLM
       PrStaDescript % spoolCounter            => NSCOUP
-      PrStaDescript % filepos                 => IPSTP
       PrStaDescript % elements                => NNM
       PrStaDescript % interp_fac1             => STAIM1
       PrStaDescript % interp_fac2             => STAIM2
@@ -793,7 +783,6 @@ C
       WindVelStaDescript % endTimeStep             = NTCYFM
       WindVelStaDescript % outputTimeStepIncrement = NSPOOLM
       WindVelStaDescript % spoolCounter            => NSCOUM
-      WindVelStaDescript % filepos                 => IWSTP
       WindVelStaDescript % elements                => NNM
       WindVelStaDescript % interp_fac1             => STAIM1
       WindVelStaDescript % interp_fac2             => STAIM2
@@ -824,7 +813,6 @@ C
       PrDescript % endTimeStep             = NTCYFGW
       PrDescript % outputTimeStepIncrement = NSPOOLGW
       PrDescript % spoolCounter            => NSCOUGP
-      PrDescript % filepos                 => IGPP
       PrDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
       PrDescript % array                => Pr2
       PrDescript % array_g              => Pr2_g
@@ -851,7 +839,6 @@ C
       dynamicWaterLevelCorrectionDescript % endTimeStep             = NTCYFGE
       dynamicWaterLevelCorrectionDescript % outputTimeStepIncrement = NSPOOLGE
       dynamicWaterLevelCorrectionDescript % spoolCounter => dynamicWaterLevelCorrectionSpoolCounter
-      dynamicWaterLevelCorrectionDescript % filepos => dynamicWaterLevelCorrectionFilePos
       dynamicWaterLevelCorrectionDescript % array => dynamicWaterLevelCorrection2
       dynamicWaterLevelCorrectionDescript % array_g => dynamicWaterLevelCorrection2_g
       dynamicWaterLevelCorrectionDescript % field_name           = 'dynamicWaterlevelCorrection'
@@ -884,7 +871,6 @@ C
       dynamicWaterLevelCorrectionStaDescript % endTimeStep             = NTCYFE
       dynamicWaterLevelCorrectionStaDescript % outputTimeStepIncrement = NSPOOLE
       dynamicWaterLevelCorrectionStaDescript % spoolCounter => dynamicWaterLevelCorrectionStaSpoolCounter
-      dynamicWaterLevelCorrectionStaDescript % filepos => dynamicWaterLevelCorrectionStaFilePos
       dynamicWaterLevelCorrectionStaDescript % elements                => NNE
       dynamicWaterLevelCorrectionStaDescript % interp_fac1             => STAIE1 
       dynamicWaterLevelCorrectionStaDescript % interp_fac2             => STAIE2
@@ -916,7 +902,6 @@ C
       WindVelDescript % endTimeStep             = NTCYFGW
       WindVelDescript % outputTimeStepIncrement = NSPOOLGW
       WindVelDescript % spoolCounter            => NSCOUGW
-      WindVelDescript % filepos                 => IGWP
       WindVelDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
       WindVelDescript % num_items_per_record = 2
       WindVelDescript % array                => WVNXOut
@@ -944,7 +929,6 @@ C
       windDragDescript % endTimeStep             = NTCYFGW
       windDragDescript % outputTimeStepIncrement = NSPOOLGW
       windDragDescript % spoolCounter            => windDragSpoolCounter
-      windDragDescript % filepos                 => windDragFilePosition
       windDragDescript % array                => windDragOut
       windDragDescript % array_g              => windDragOut_g
       windDragDescript % field_name           = 'windDrag'
@@ -976,7 +960,6 @@ C
       BathyStaDescript % endTimeStep             = NTCYFE
       BathyStaDescript % outputTimeStepIncrement = NSPOOLE
       BathyStaDescript % spoolCounter            => NSCOUB
-      BathyStaDescript % filepos                 => IBSTP
       BathyStaDescript % elements                => NNE
       BathyStaDescript % interp_fac1             => STAIE1
       BathyStaDescript % interp_fac2             => STAIE2
@@ -1009,7 +992,6 @@ C
       BathyDescript % endTimeStep             = NTCYFGE
       BathyDescript % outputTimeStepIncrement = NSPOOLGE
       BathyDescript % spoolCounter            => NSCOUGB
-      BathyDescript % filepos                 => IGBP
       BathyDescript % array                => DP
       BathyDescript % array_g              => DPOut_g
       BathyDescript % field_name           = 'Bathy'
@@ -1036,7 +1018,6 @@ C
          weirElevDescript % endTimeStep            = NTCYF_TVW
          weirElevDescript % outputTimeStepIncrement = NSPOOL_TVW
          weirElevDescript % spoolCounter           => NSCOU_TVW
-         weirElevDescript % filepos                => IG_TVW
          weirElevDescript % num_fd_records         = NP_G
          weirElevDescript % num_records_this       = NP
          weirElevDescript % imap                   => NODES_LG
@@ -1064,7 +1045,6 @@ C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
       IceDescript % endTimeStep             = NTCYFGW
       IceDescript % outputTimeStepIncrement = NSPOOLGW
       IceDescript % spoolCounter            => NSCOUGI
-      IceDescript % filepos                 => IGIP
       IceDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
       IceDescript % array                => CICEOUT
       IceDescript % array_g              => CICEOUT_g
@@ -1097,7 +1077,6 @@ C... v49.64.01 tcm -- added for ice stations
       IceStaDescript % endTimeStep             = NTCYFM
       IceStaDescript % outputTimeStepIncrement = NSPOOLM
       IceStaDescript % spoolCounter            => NSCOUI
-      IceStaDescript % filepos                 => IICESTP
       IceStaDescript % elements                => NNM
       IceStaDescript % interp_fac1             => STAIM1
       IceStaDescript % interp_fac2             => STAIM2
@@ -1137,7 +1116,6 @@ C... v49.64.01 tcm -- added for ice stations
       RSDescript % endTimeStep             = NTCYFGW
       RSDescript % outputTimeStepIncrement = NSPOOLGW
       RSDescript % spoolCounter            => NSCOURS
-      RSDescript % filepos                 => IGRadS
       RSDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
       RSDescript % num_items_per_record = 2
       RSDescript % array                => RSNXOUT
@@ -1209,7 +1187,6 @@ C... v49.64.01 tcm -- added for ice stations
       ConcDescript % endTimeStep             = NTCYFGC
       ConcDescript % outputTimeStepIncrement = NSPOOLGC
       ConcDescript % spoolCounter            => NSCOUGC
-      ConcDescript % filepos                 => IGCP
       ConcDescript % array                => CH1
       ConcDescript % array_g              => CH1_g
       ConcDescript % field_name           = 'Conc'
@@ -1508,7 +1485,6 @@ C      IF (mnproc.gt.1) THEN
       ENDIF
       EndRisingInunDescript % lun                  = 403
       EndRisingInunDescript % specifier            = NOUTGE
-      EndRisingInunDescript % filepos              => fauxFilePosition
       EndRisingInunDescript % iarray               => endRisingInun
       EndRisingInunDescript % iarray_g             => endRisingInun_g
       EndRisingInunDescript % field_name           = 'endRisingInun'
@@ -4891,33 +4867,29 @@ C        program to exit immediately after writing the hotstart file.
 C
          IF ((MYPROC.eq.0).or.
      &            (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN
-            WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0   ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0   ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) ICSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0   ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IPSTP   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IWSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0   ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
+            WRITE(hss % lun,REC=IHOTSTP) 0   ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGEP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0    ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGVP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0    ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGCP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0    ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
-!         if(ncice.ne.0) then
-!           WRITE(hss % lun,REC=IHOTSTP) IGIP    ; IHOTSTP = IHOTSTP + 1
-!         endif
-!         igip is in sync. with igpp so no need to store it
+            WRITE(hss % lun,REC=IHOTSTP) 0    ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
+            WRITE(hss % lun,REC=IHOTSTP) 0    ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
          ENDIF
 C...
@@ -5194,23 +5166,13 @@ C        formats) anyway.
          DO I=1, NOFFDescript % num_records_this
             WRITE(hss%lun,*) i," ",NOFFDescript % iarray(I)
          ENDDO
-         WRITE(hss%lun,*) "IESTP = ",IESTP
          WRITE(hss%lun,*) "NSCOUE = ",NSCOUE
-         WRITE(hss%lun,*) "IVSTP = ",IVSTP
          WRITE(hss%lun,*) "NSCOUV = ",NSCOUV
-         WRITE(hss%lun,*) "ICSTP = ",ICSTP
          WRITE(hss%lun,*) "NSCOUC = ",NSCOUC
-         WRITE(hss%lun,*) "IPSTP = ",IPSTP
-         WRITE(hss%lun,*) "IWSTP = ",IWSTP
          WRITE(hss%lun,*) "NSCOUM = ",NSCOUM
-         WRITE(hss%lun,*) "IGEP = ",IGEP
          WRITE(hss%lun,*) "NSCOUGE = ",NSCOUGE
-         WRITE(hss%lun,*) "IGVP = ",IGVP
          WRITE(hss%lun,*) "NSCOUGV = ",NSCOUGV
-         WRITE(hss%lun,*) "IGCP = ",IGCP
          WRITE(hss%lun,*) "NSCOUGC = ",NSCOUGC
-         WRITE(hss%lun,*) "IGPP = ",IGPP
-         WRITE(hss%lun,*) "IGWP = ",IGWP
          WRITE(hss%lun,*) "NSCOUGW = ",NSCOUGW
          CLOSE(hss%lun)
 C
@@ -5258,23 +5220,13 @@ C
             DO I=1, NOFFDescript % num_fd_records
                WRITE(hss%lun,*) i," ",NOFFDescript % iarray_g(I)
             ENDDO
-            WRITE(hss%lun,*) "IESTP = ",IESTP
             WRITE(hss%lun,*) "NSCOUE = ",NSCOUE
-            WRITE(hss%lun,*) "IVSTP = ",IVSTP
             WRITE(hss%lun,*) "NSCOUV = ",NSCOUV
-            WRITE(hss%lun,*) "ICSTP = ",ICSTP
             WRITE(hss%lun,*) "NSCOUC = ",NSCOUC
-            WRITE(hss%lun,*) "IPSTP = ",IPSTP
-            WRITE(hss%lun,*) "IWSTP = ",IWSTP
             WRITE(hss%lun,*) "NSCOUM = ",NSCOUM
-            WRITE(hss%lun,*) "IGEP = ",IGEP
             WRITE(hss%lun,*) "NSCOUGE = ",NSCOUGE
-            WRITE(hss%lun,*) "IGVP = ",IGVP
             WRITE(hss%lun,*) "NSCOUGV = ",NSCOUGV
-            WRITE(hss%lun,*) "IGCP = ",IGCP
             WRITE(hss%lun,*) "NSCOUGC = ",NSCOUGC
-            WRITE(hss%lun,*) "IGPP = ",IGPP
-            WRITE(hss%lun,*) "IGWP = ",IGWP
             WRITE(hss%lun,*) "NSCOUGW = ",NSCOUGW
             CLOSE(hss%lun)
          ENDIF
@@ -5430,7 +5382,6 @@ C     file.
          DebugElevDescript % array                => ETA2
          DebugElevDescript % array_g              => ETA_DEBUG_g
          DebugElevDescript % ConsiderWetDry       = .TRUE.
-         DebugElevDescript % filepos              => IGDP
          DebugElevDescript % alternate_value      = -99999.0
          DebugElevDescript % field_name           = 'DebugElev'
          DebugElevDescript % writeFlag            = .true.
@@ -5616,7 +5567,6 @@ C.....Significant Wave Height
           SwanHSDescript % specifier        = OFF
       ENDIF
       SwanHSDescript % lun                  = 301
-      SwanHSDescript % filepos              => SWAN_HS_POS
       SwanHSDescript % initial_value        = 0.0
       SwanHSDescript % num_items_per_record = 1
       SwanHSDescript % num_fd_records       = NP_G
@@ -5663,7 +5613,6 @@ C.....Mean Wave Direction
           SwanDIRDescript % specifier        = OFF
       ENDIF
       SwanDIRDescript % lun                  = 302
-      SwanDIRDescript % filepos              => SWAN_DIR_POS
       SwanDIRDescript % initial_value        = 0.0
       SwanDIRDescript % num_items_per_record = 1
       SwanDIRDescript % num_fd_records       = NP_G
@@ -5710,7 +5659,6 @@ C.....Mean Wave Period (TM01)
           SwanTM01Descript % specifier        = OFF
       ENDIF
       SwanTM01Descript % lun                  = 303
-      SwanTM01Descript % filepos              => SWAN_TM01_POS
       SwanTM01Descript % initial_value        = 0.0
       SwanTM01Descript % num_items_per_record = 1
       SwanTM01Descript % num_fd_records       = NP_G
@@ -5757,7 +5705,6 @@ C.....Peak Wave Period (TPS)
           SwanTPSDescript % specifier        = OFF
       ENDIF
       SwanTPSDescript % lun                  = 304
-      SwanTPSDescript % filepos              => SWAN_TPS_POS
       SwanTPSDescript % initial_value        = 0.0
       SwanTPSDescript % num_items_per_record = 1
       SwanTPSDescript % num_fd_records       = NP_G
@@ -5804,7 +5751,6 @@ C.....SWAN Wind Values (WINDX,WINDY)
           SwanWindDescript % specifier        = OFF
       ENDIF
       SwanWindDescript % lun                  = 305
-      SwanWindDescript % filepos              => SWAN_WIND_POS
       SwanWindDescript % initial_value        = 0.0
       SwanWindDescript % num_items_per_record = 2
       SwanWindDescript % num_fd_records       = NP_G
@@ -5853,7 +5799,6 @@ C.....Mean Wave Period (TM02)
           SwanTM02Descript % specifier        = OFF
       ENDIF
       SwanTM02Descript % lun                  = 306
-      SwanTM02Descript % filepos              => SWAN_TM02_POS
       SwanTM02Descript % initial_value        = 0.0
       SwanTM02Descript % num_items_per_record = 1
       SwanTM02Descript % num_fd_records       = NP_G
@@ -5900,7 +5845,6 @@ C.....Mean Wave Period (TMM10)
           SwanTMM10Descript % specifier        = OFF
       ENDIF
       SwanTMM10Descript % lun                  = 307
-      SwanTMM10Descript % filepos              => SWAN_TMM10_POS
       SwanTMM10Descript % initial_value        = 0.0
       SwanTMM10Descript % num_items_per_record = 1
       SwanTMM10Descript % num_fd_records       = NP_G
@@ -5968,7 +5912,7 @@ C-----------------------------------------------------------------------
       use sizes, only : mnp, globaldir, localdir, write_local_files,
      &    OFF, ASCII, NETCDF3, NETCDF4, XDMF, mnproc, myproc, numFormats
       use global, only : nnodecode, np_g, OutputDataDescript_t, noutge,
-     &    fauxFilePosition, nodes_lg
+     &    nodes_lg
       use global_io, only : writeDomainHeader, packOne, unpackOne
       use mesh, only : np
 #ifdef ADCNETCDF
@@ -6018,7 +5962,6 @@ C-----------------------------------------------------------------------
       InitiallyDryDescript % field_name           = 'initiallyDry'
       InitiallyDryDescript % file_basename        = 'initiallydry'
       InitiallyDryDescript % file_extension       = 63
-      InitiallyDryDescript % filepos              => fauxFilePosition
       InitiallyDryDescript % isInteger            = .true.
       InitiallyDryDescript % writeFlag            = .false.
       InitiallyDryDescript % initial_value        = 0.0

@@ -1349,6 +1349,28 @@ C
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
+      ! S U B R O U T I N E  H E A D E R 8 3
+      !--------------------------------------------------------------
+      ! Concentration Field for all nodes: fort.83
+      !--------------------------------------------------------------
+      subroutine header83(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ndsetsc, size_this, dtdp*nspoolgc, nspoolgc, 1,
+     &                 FileFmtVersion
+
+1000  FORMAT(1X,A32,2X,A24,2X,A24)
+1010  FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &      'FileFmtVersion: ',I10)
+
+      !--------------------------------------------------------------
+      end subroutine header83
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
       ! S U B R O U T I N E
       !    W R I T E  S T A T I O N  H E A D E R
       !--------------------------------------------------------------

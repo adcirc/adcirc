@@ -191,6 +191,7 @@ C     kmd -- Added variables for initial conditions
 
       INTEGER :: moderbin ! determines whether in binary or real
       INTEGER :: ncHundreds ! hundreds place of IHOT, used for netcdf hs file
+      INTEGER :: IDMY
 
 #ifdef ADCNETCDF
       LOGICAL :: have_htot(2) 
@@ -330,23 +331,23 @@ C        jgf46.34 Added support for IBTYPE=52.
          nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
 C
-         READ(IHOT,*) IESTP
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUE
-         READ(IHOT,*) IVSTP
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUV
-         READ(IHOT,*) ICSTP
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUC
-         READ(IHOT,*) IPSTP
-         READ(IHOT,*) IWSTP
+         READ(IHOT,*) IDMY
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUM
-         READ(IHOT,*) IGEP
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUGE
-         READ(IHOT,*) IGVP
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUGV
-         READ(IHOT,*) IGCP
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUGC
-         READ(IHOT,*) IGPP
-         READ(IHOT,*) IGWP
+         READ(IHOT,*) IDMY
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUGW
          !
          !     R E A D   3 D   H O T S T A R T   D A T A
@@ -564,23 +565,23 @@ C        jgf46.34 Added support for IBTYPE=52.
          nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
 C
-         READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
          !
          !     R E A D   3 D   H O T S T A R T   D A T A
@@ -1582,20 +1583,14 @@ C.... FOR USE LATER ON
       NTCYSB = NTCYSE
       NTCYFB = NTCYFE
       NSCOUB = NSCOUE
-      IBSTP = IESTP
 
 C...
 C....IF RESTARTING THE ELEVATION STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
-      IF(NTCYSE.LT.ITHS.AND.NOUTE.GT.0) NTCYSE = ITHS + NSPOOLE - 1 
-      WRITE(16,1040) IESTP,NSCOUE
- 1040 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN ELEVATION ',
-     &                'STATION FILE BY THE TIME OF THE HOT START',
-     &           /,8X,'SPOOL COUNTER = ',I6)
+      IF(NTCYSE.LT.ITHS.AND.NOUTE.GT.0) NTCYSE = ITHS + NSPOOLE - 1
 
       IF(NOUTE.LT.0) THEN
-        IESTP=0
         NSCOUE=0
         IF((NTCYSE.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
           NTCYSE=NTCYSE+((REAL(ITHS)-REAL(NTCYSE))/
@@ -1609,25 +1604,18 @@ C...
       IF(NOUTE.EQ.-1) THEN
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
-     $        NSTAE_G, NSTAE, HEADER61)
+     &        NSTAE_G, NSTAE, HEADER61)
          else
             CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61',
-     $        NSTAE_G, NSTAE, HEADER61)
+     &        NSTAE_G, NSTAE, HEADER61)
          endif
-        IESTP=2
       ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE VELOCITY STATION OUTPUT FILE
 C...
-      WRITE(16,1042) IVSTP,NSCOUV
- 1042 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN VELOCITY ',
-     &                'STATION FILE BY THE TIME OF THE HOT START',
-     &           /,8X,'SPOOL COUNTER =',I6)
-
       IF(NTCYSV.LT.ITHS.AND.NOUTV.GT.0) NTCYSV = ITHS + NSPOOLV - 1 
       IF(NOUTV.LT.0) THEN
-        IVSTP=0
         NSCOUV=0
         IF((NTCYSV.LT.ITHS).AND.(NSPOOLV.GT.0)) THEN
           NTCYSV=NTCYSV+((REAL(ITHS)-REAL(NTCYSV))/
@@ -1647,18 +1635,12 @@ C...
             CALL OPEN_GBL_FILE(62, TRIM(LOCALDIR)//'/'//'fort.62',
      $         NSTAV_G, NSTAV, HEADER62)
          endif
-        IVSTP=2
       ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE CONCENTRATION STATION OUTPUT FILE
 C...
-      WRITE(16,1044) ICSTP,NSCOUC
- 1044 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN CONCENTRATION ',
-     &                'STATION FILE BY THE TIME OF THE HOT START',
-     &           /,8X,'SPOOL COUNTER = ',I6)
       IF(NOUTC.LT.0) THEN
-        ICSTP=0
         NSCOUC=0
         IF((NTCYSC.LT.ITHS).AND.(NSPOOLC.GT.0)) THEN
           NTCYSC=NTCYSC+((REAL(ITHS)-REAL(NTCYSC))/
@@ -1679,7 +1661,6 @@ C...
             CALL OPEN_GBL_FILE(81, TRIM(LOCALDIR)//'/'//'fort.81',
      $       NSTAC_G, NSTAC, HEADER81)
          endif
-        ICSTP=2
         CLOSE(81)
       ENDIF
 
@@ -1687,32 +1668,9 @@ C...
 C....GO TO THE PROPER PLACE IN THE METEOROLOGICAL STATION OUTPUT FILE
 C...
 c... v49.64.01 tcm -added support for ice stations
-      IF(NTCYSM.LT.ITHS.AND.NOUTM.GT.0) NTCYSM = ITHS + NSPOOLM - 1 
-      IF(NCICE.EQ.0)  THEN
-         WRITE(16,1038) IWSTP,IPSTP,NSCOUM
-      ELSE
-         IICESTP = IPSTP  !SET TO THE SAME PLACE AS THE PRESSURE FILE
-         WRITE(16,2038) IWSTP,IPSTP,IICESTP,NSCOUM
-      ENDIF
-      WRITE(16,1038) IWSTP,IPSTP,NSCOUM
- 1038 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE WIND STATION',
-     &                ' FILE BY THE TIME OF THE HOT START',
-     &        /,1X,I6,' LINES OR RECORDS WRITTIN IN THE PRES STATION',
-     &                ' FILE BY THE TIME OF THE HOT START',
-     &           /,8X,'SPOOL COUNTER = ',I6)
- 2038 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE WIND STATION',
-     &                ' FILE BY THE TIME OF THE HOT START',
-     &        /,1X,I6,' LINES OR RECORDS WRITTEN IN THE PRES STATION',
-     &                ' FILE BY THE TIME OF THE HOT START',
-     &        /,1X,I6,' LINES OR RECORDS WRITTEN IN THE ICE STATION',
-     &                ' FILE BY THE TIME OF THE HOT START',
-     &           /,8X,'SPOOL COUNTER = ',I6)
+      IF(NTCYSM.LT.ITHS.AND.NOUTM.GT.0) NTCYSM = ITHS + NSPOOLM - 1
 C
       IF(NOUTM.LT.0) THEN
-        IPSTP=0
-        IWSTP=0
-        IICESTP = 0  !v49.64.01 tcm added ice station
-        NSCOUM=0
         IF((NTCYSM.LT.ITHS).AND.(NSPOOLM.GT.0)) THEN
           NTCYSM=NTCYSM+((REAL(ITHS)-REAL(NTCYSM))/
      &           REAL(NSPOOLM))*REAL(NSPOOLM)
@@ -1727,30 +1685,25 @@ C
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
      $         NSTAM_G, NSTAM, HEADER71)
-            IPSTP=2
             CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
      $         NSTAM_G, NSTAM, HEADER72)
-            IWSTP=2
+
 !           v49.64.01 tcm added ice station support
             IF(NCICE.NE.0) THEN
                CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
      $            NSTAM_G, NSTAM, HEADER91)
-               IICESTP=2
             ENDIF
 
          else
          
             CALL OPEN_GBL_FILE(71, TRIM(LOCALDIR)//'/'//'fort.71',
      $         NSTAM_G, NSTAM, HEADER71)
-            IPSTP=2
             CALL OPEN_GBL_FILE(72, TRIM(LOCALDIR)//'/'//'fort.72',
      $         NSTAM_G, NSTAM, HEADER72)
-            IWSTP=2
 !           v49.64.01 tcm added ice station support
             IF(NCICE.NE.0) THEN
                CALL OPEN_GBL_FILE(91, TRIM(LOCALDIR)//'/'//'fort.91',
      $            NSTAM_G, NSTAM, HEADER91)
-               IICESTP=2
             ENDIF
          
          endif
@@ -1770,7 +1723,6 @@ C...
      &           /,8X,'SPOOL COUNTER = ',I6)
 
       IF ((NDDT.NE.0).AND.(NOUTE.LT.0)) THEN
-        IBSTP=0
         NSCOUB=0
         IF((NTCYSB.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
           NTCYSB=NTCYSB+((REAL(ITHS)-REAL(NTCYSB))/
@@ -1789,8 +1741,7 @@ C...
          else
             CALL OPEN_GBL_FILE(75, TRIM(LOCALDIR)//'/'//'fort.75',
      $         NSTAE_G, NSTAE, HEADER61)         
-         endif 
-        IESTP=2
+         endif
       ENDIF
 
 C...
@@ -1798,20 +1749,13 @@ C....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
 C...
         IF(NTCYSGE.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGE = ITHS + NSPOOLGE - 1 
 
-        WRITE(16,1046) IGEP,NSCOUGE
- 1046   FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'ELEVATION FILE BY THE TIME OF THE HOT START',
-     &          /,8X,'SPOOL COUNTER =',I8)
-
 C....   TCM V50.66.01 ADDITIONS FOR TIME VARYING BATYMETRY
-C....   SET THESE VARIABLES FOR USE LATER 
-        IGBP = IGEP
+C....   SET THESE VARIABLES FOR USE LATER
         NTCYSGB = NTCYSGE
         NTCYFGB = NTCYFGE
         NSCOUGB = NSCOUGE
 
         IF(NOUTGE.LT.0) THEN
-          IGEP=0
           NSCOUGE=0
           IF((NTCYSGE.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
             NTCYSGE=NTCYSGE+((REAL(ITHS)-REAL(NTCYSGE))/
@@ -1871,20 +1815,13 @@ C kmd48.33bc - information for writing out the sponge layer
             END IF
 
          endif
-         IGEP=2
       ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL VELOCITY OUTPUT FILE
 C...
-        IF(NTCYSGV.LT.ITHS.AND.NOUTGV.GT.0) NTCYSGV = ITHS + NSPOOLGV - 1 
-
-        WRITE(16,1048) IGVP,NSCOUGV
- 1048   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'VELOCITY FILE BY THE TIME OF THE HOT START',
-     &          /,8X,'SPOOL COUNTER =',I6)
+        IF(NTCYSGV.LT.ITHS.AND.NOUTGV.GT.0) NTCYSGV = ITHS + NSPOOLGV - 1
         IF(NOUTGV.LT.0) THEN
-          IGVP=0
           NSCOUGV=0
           IF((NTCYSGV.LT.ITHS).AND.(NSPOOLGV.GT.0)) THEN
             NTCYSGV=NTCYSGV+((REAL(ITHS)-REAL(NTCYSGV))/
@@ -1905,18 +1842,16 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
       IF((NOUTGV.EQ.-1).OR.(NOUTGV.EQ.-4)) THEN
          if (write_local_files.eqv..false.) then 
             CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
-     $         NP_G, NP, HEADER64)
+     &         NP_G, NP, HEADER64)
          else
             CALL OPEN_GBL_FILE(64, TRIM(LOCALDIR)//'/'//'fort.64',
-     $         NP_G, NP, HEADER64)
+     &         NP_G, NP, HEADER64)
          endif
-      IGVP=2
       ENDIF
 
 Cobell - Open the fort.77 (weir elevation change) if necessary
         IF(NTCYS_TVW.LT.ITHS.AND.NOUT_TVW.GT.0) NTCYS_TVW = ITHS + NSPOOL_TVW - 1 
         IF(NOUT_TVW.LT.0.AND.USE_TVW) THEN
-          IG_TVW=0
           NSCOU_TVW=0
           IF((NTCYS_TVW.LT.ITHS).AND.(NSPOOL_TVW.GT.0)) THEN
             NTCYS_TVW=NTCYS_TVW+((REAL(ITHS)-REAL(NTCYS_TVW))/
@@ -1935,21 +1870,14 @@ Cobell - Open the fort.77 (weir elevation change) if necessary
 
         IF((NOUT_TVW.EQ.-1).OR.(NOUT_TVW.EQ.-4)) THEN
            CALL OPEN_GBL_FILE(77, TRIM(GLOBALDIR)//'/'//'fort.77',
-     $         NP_G, NP, HEADER77)
-           IG_TVW=2
+     &         NP_G, NP, HEADER77)
         ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL CONCENTRATION OUTPUT FILE
 C...
-        IF(NTCYSGC.LT.ITHS.AND.NOUTGC.GT.0) NTCYSGC = ITHS + NSPOOLGC - 1 
-        WRITE(16,1053) IGCP,NSCOUGC
- 1053   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                'CONCENTRATION FILE BY THE TIME OF THE HOT START',
-     &          /,8X,'SPOOL COUNTER =',I6)
-
+        IF(NTCYSGC.LT.ITHS.AND.NOUTGC.GT.0) NTCYSGC = ITHS + NSPOOLGC - 1
         IF(NOUTGC.LT.0) THEN
-          IGCP=0
           NSCOUGC=0
           IF((NTCYSGC.LT.ITHS).AND.(NSPOOLGC.GT.0)) THEN
             NTCYSGC=NTCYSGC+((REAL(ITHS)-REAL(NTCYSGC))/
@@ -1971,47 +1899,23 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
           OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83')
           WRITE(83,3220) RUNDES,RUNID,AGRID
           WRITE(83,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
-          IGCP=2
           CLOSE(83)
-        ENDIF
-        IF(NOUTGC.EQ.1) THEN
-          OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83')
-          DO I=1,IGCP           !I DON'T KNOW OF A PRACTICAL WAY TO CHANGE NDSETSC
-            READ(83,1050)
- 1050       FORMAT(1X)
-          ENDDO
-          ENDFILE(83)
-          CLOSE(83)
+          if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(83, TRIM(GLOBALDIR)//'/'//'fort.83',
+     &                         NP_G, NP, HEADER83)
+          else
+            CALL OPEN_GBL_FILE(83, TRIM(LOCALDIR)//'/'//'fort.83',
+     &                         NP_G, NP, HEADER83)
+          endif
         ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL METEOROLOGICAL OUTPUT FILES
 C...
 !       V49.64.01 TCM ADDED GLOBAL ICE CONCENTRATION FILES
-        IF(NTCYSGW.LT.ITHS.AND.NOUTGW.GT.0) NTCYSGW = ITHS + NSPOOLGW - 1 
-        IF(NCICE.NE.0) THEN
-           WRITE(16,2055) IGWP,IGPP,IGIP,NSCOUGW
-        ELSE
-           WRITE(16,1055) IGWP,IGPP,NSCOUGW
-        ENDIF
- 1055   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'WIND FILE BY THE TIME OF THE HOT START',
-     &          /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'PRESSURE FILE BY THE TIME OF THE HOT START',
-     &          /,8X,'SPOOL COUNTER =',I6)
- 2055   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'WIND FILE BY THE TIME OF THE HOT START',
-     &          /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'PRESSURE FILE BY THE TIME OF THE HOT START',
-     &          /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'ICE FILE BY THE TIME OF THE HOT START',
-     &          /,8X,'SPOOL COUNTER =',I6)
-c
+        IF(NTCYSGW.LT.ITHS.AND.NOUTGW.GT.0) NTCYSGW = ITHS + NSPOOLGW - 1
         IF(NOUTGW.LT.0) THEN
-          IGPP=0
-          IGWP=0
           NSCOUGW=0
-          IGIP=0
           IF((NTCYSGW.LT.ITHS).AND.(NSPOOLGW.GT.0)) THEN
             NTCYSGW=NTCYSGW+((REAL(ITHS)-REAL(NTCYSGW))/
      &              REAL(NSPOOLGW))*REAL(NSPOOLGW)
@@ -2039,30 +1943,24 @@ Casey 090310: Added the possibility for NOUTGW = -4.
       IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
          if (write_local_files.eqv..false.) then  
             CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
-     $         NP_G, NP, HEADER73)
-            IGPP=2
+     &         NP_G, NP, HEADER73)
             CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
-     $        NP_G, NP, HEADER74)
-            IGWP=2
+     &        NP_G, NP, HEADER74)
 ! TCM V49.64.01 -- ADDED ICE SUPPORT
             IF (NCICE.NE.0) THEN
                CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
-     $           NP_G, NP, HEADER93)
-               IGIP=2
+     &           NP_G, NP, HEADER93)
             ENDIF
             
          else
             CALL OPEN_GBL_FILE(73, TRIM(LOCALDIR)//'/'//'fort.73',
-     $         NP_G, NP, HEADER73)
-            IGPP=2
+     &         NP_G, NP, HEADER73)
             CALL OPEN_GBL_FILE(74, TRIM(LOCALDIR)//'/'//'fort.74',
-     $        NP_G, NP, HEADER74)
-            IGWP=2
+     &        NP_G, NP, HEADER74)
 ! TCM V49.64.01 -- ADDED ICE SUPPORT
             IF (NCICE.NE.0) THEN
                CALL OPEN_GBL_FILE(93, TRIM(LOCALDIR)//'/'//'fort.93',
-     $           NP_G, NP, HEADER93)
-               IGIP=2
+     &           NP_G, NP, HEADER93)
             ENDIF
          endif
             
@@ -2074,10 +1972,6 @@ Casey 090310: Added the possibility for NOUTGW = -4.
         IF ( (ABS(NRS).EQ.1).OR.(ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)
      &       .OR.(ABS(NRS).EQ.5) ) THEN
 
-Casey 090310: Added the output of radiation stress gradients.
-           IF(NOUTGW.LT.0)THEN
-              IGRadS=0
-           ENDIF
            IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
               if (write_local_files.eqv..false.) then
                  CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
@@ -2086,7 +1980,6 @@ Casey 090310: Added the output of radiation stress gradients.
                  CALL OPEN_GBL_FILE(164, TRIM(LOCALDIR)//'/'//'rads.64',
      &               NP_G, NP, HEADER74)
               endif
-              IGRadS=2
            ENDIF
         ENDIF
 
@@ -2100,7 +1993,6 @@ C...
      &          /,8X,'SPOOL COUNTER =',I8)
 
         IF ((NDDT.NE.0).AND.(NOUTGE.LT.0)) THEN
-           IGBP=0
            NSCOUGB=0
            IF(NTCYSGB.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGB = ITHS + NSPOOLGE - 1 
            IF((NTCYSGB.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
@@ -2127,7 +2019,6 @@ C...
               CALL OPEN_GBL_FILE(76, TRIM(LOCALDIR)//'/'//'fort.76',
      &            NP_G, NP, HEADER63)
            endif
-           IGBP=2
         ENDIF
 
       ! jgf52.08.08: Create files for nodecode and noff output 
