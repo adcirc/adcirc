@@ -15,9 +15,11 @@ module netcdf_error
 !     fort.16 file.
 !-----------------------------------------------------------------------
     subroutine check_err(iret)
-      USE SIZES, ONLY : myproc
-      USE GLOBAL, ONLY : screenUnit, ERROR, DEBUG, allMessage, &
+      USE GLOBAL, ONLY : ERROR, allMessage, &
           setMessageSource, unsetMessageSource
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      USE GLOBAL, ONLY : DEBUG
+#endif
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -52,7 +54,7 @@ module netcdf_error
       IMPLICIT NONE
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      REAL, ALLOCATABLE :: dummy(:)
+      REAL(8), ALLOCATABLE :: dummy(:)
 #endif
 
       call setMessageSource("netcdfTerminate")
@@ -67,7 +69,8 @@ module netcdf_error
          ! a stack trace to determine the line number of the netcdf call
          ! that went bad ... this assumes that the code was compiled with
          ! debugging symbols, bounds checking, and stack trace turned on.
-         dummy(1) = 99.9d0
+         allocate(dummy(1)) ! Allocating (too small) so that -Wuninitialized doesn't complain
+         dummy(2) = 99.9d0
 #endif
 
 #ifdef CMPI

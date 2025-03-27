@@ -28,8 +28,7 @@ module mod_sun_coordinates
   end interface SUN_COORDINATES
 
   private :: SUN_COORDINATES_SUB0, SUN_COORDINATES_SUB1, &
-             SUN_CENTER, SUN_LON, SUN_NU, SUN_RADIUS, &
-             SOLAR_DEC, SOLAR_RA
+             SUN_CENTER, SUN_LON, SUN_NU, SUN_RADIUS
 
 contains
 
@@ -62,7 +61,7 @@ contains
     SLON = L0 + C    ! Sun's true longtiude
 
     if (present(DPsi)) then
-      SLON = SLON - 0.00569 + Dpsi
+      SLON = SLON - 0.00569d0 + Dpsi
     end if
   end function SUN_LON
 
@@ -97,42 +96,42 @@ contains
   ! Solar's declination. Page 165.
   !  - SLON = the Sun's longtitude
   !  - VarEps = the obliquity of the ecliptic
-  real(8) elemental function SOLAR_DEC(SLON, VarEps) result(DEC)
-    use ADC_CONSTANTS, only: DEG2RAD, RAD2DEG
-    implicit none
-
-    real(8), intent(IN) :: SLON, VarEps
-
-    real(8) :: SLON_RAD, VarEps_RAD
-
-    SLON_RAD = SLON*DEG2RAD
-    VarEps_RAD = VarEps*DEG2RAD
-
-    DEC = sin(SLON_RAD)*sin(VarEps_RAD)
-
-    DEC = asin(DEC)*RAD2DEG
-  end function SOLAR_DEC
+!  real(8) elemental function SOLAR_DEC(SLON, VarEps) result(DEC)
+!    use ADC_CONSTANTS, only: DEG2RAD, RAD2DEG
+!    implicit none
+!
+!    real(8), intent(IN) :: SLON, VarEps
+!
+!    real(8) :: SLON_RAD, VarEps_RAD
+!
+!    SLON_RAD = SLON*DEG2RAD
+!    VarEps_RAD = VarEps*DEG2RAD
+!
+!    DEC = sin(SLON_RAD)*sin(VarEps_RAD)
+!
+!    DEC = asin(DEC)*RAD2DEG
+!  end function SOLAR_DEC
 
   ! Solar's right ascension. Page 165.
   !  - SLON = the Sun's longtitude
   !  - VarEps = the obliquity of the ecliptic
-  real(8) elemental function SOLAR_RA(SLON, VarEps) result(RA)
-    use ADC_CONSTANTS, only: DEG2RAD, RAD2DEG
-    implicit none
-
-    real(8), intent(IN) :: SLON, VarEps
-
-    real(8) :: NUM, DEN
-    real(8) :: SLON_RAD, VarEps_RAD
-
-    SLON_RAD = SLON*DEG2RAD
-    VarEps_RAD = VarEps*DEG2RAD
-
-    NUM = cos(VarEps_RAD)*sin(SLON_RAD)
-    DEN = cos(SLON_RAD)
-
-    RA = mod(atan2(NUM, DEN)*RAD2DEG, 360.d0)
-  end function SOLAR_RA
+!  real(8) elemental function SOLAR_RA(SLON, VarEps) result(RA)
+!    use ADC_CONSTANTS, only: DEG2RAD, RAD2DEG
+!    implicit none
+!
+!    real(8), intent(IN) :: SLON, VarEps
+!
+!    real(8) :: NUM, DEN
+!    real(8) :: SLON_RAD, VarEps_RAD
+!
+!    SLON_RAD = SLON*DEG2RAD
+!    VarEps_RAD = VarEps*DEG2RAD
+!
+!    NUM = cos(VarEps_RAD)*sin(SLON_RAD)
+!    DEN = cos(SLON_RAD)
+!
+!    RA = mod(atan2(NUM, DEN)*RAD2DEG, 360.d0)
+!  end function SOLAR_RA
 
   !
   ! Chapter 25. Solar coordinates. Page. 163-169
@@ -157,12 +156,12 @@ contains
     type(t_astronomic_values), optional, intent(IN) :: ASVAL
     logical, optional :: NUTATION
 
-    real(8) :: lambda, beta, T, LP, OG, L0, M, C, snu, eccen
+    real(8) :: lambda, beta, T, LP, OG, L0, M, C, eccen
     real(8) :: DPsi, vareps0, DVareps, vareps
     logical :: have_asval = .false., use_nutation = .true.
 
     if (present(ASVAL)) then
-      if (abs(ASVAL%JD - JD) < 1.0e-9) then
+      if (abs(ASVAL%JD - JD) < 1.0d-9) then
         have_asval = .true.
       end if
     end if

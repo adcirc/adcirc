@@ -224,7 +224,7 @@ contains
   ! subroutine computing the tidal potential. It is a private
   ! subroutine called by the higher level subroutines
   function COMP_FULL_TIP_SUB0(self, tocgmst, np, slam, MoonSunCoor) result(tipval)
-    use ADC_CONSTANTS, only: sec2day, DEG2RAD, RAD2DEG
+    use ADC_CONSTANTS, only: DEG2RAD
     use mod_astronomic, only: EarthRadiusm
     implicit none
 
@@ -234,7 +234,7 @@ contains
     real(8), intent(IN) :: MoonSunCoor(3, 2)
     real(8), intent(IN) :: SLAM(:)
 
-    integer :: IOBJ, iexp
+    integer :: IOBJ
     real(8) :: RA, DEC, DELTA
     real(8) :: radius_div_Delta, KP, C0
 
@@ -349,8 +349,13 @@ contains
 
   function compute_full_tip(self, TimeLoc, NP, SLAM) result(tip)
     use ADC_CONSTANTS, only: sec2day, DEG2RAD
-    use global, only: setMessageSource, unsetMessageSource, allMessage, DEBUG
+    use global, only: setMessageSource, unsetMessageSource, allMessage
     use mod_ephemerides, only: HEAVENLY_OBJS_COORDS_FROM_TABLE
+
+#ifdef ALL_TRACE
+    use global, only: DEBUG
+#endif
+
     implicit none
 
     class(t_tidePotential), intent(INOUT) :: self
@@ -457,7 +462,7 @@ contains
   subroutine INIT_FULL_TIP(self, NP)
     use ADC_CONSTANTS, only: sec2day, hour2day, min2day
     use mod_astronomic, only: JULIANDAY
-    use mesh, only: SFEA, SLAM
+    use mesh, only: SFEA
     implicit none
 
     class(t_tidePotential), intent(INOUT) :: self
@@ -466,7 +471,6 @@ contains
     real(8) :: DDD
     integer :: YYYY, MM, DD, HH, MMM, SS
 
-    integer :: ii, cpos(2), ivec(3)
     character(LEN=80) :: tmparr
     character :: delimter(2) = (/'-', ':'/)
 
