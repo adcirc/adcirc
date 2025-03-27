@@ -33,11 +33,11 @@ module mod_astronomic
                         MIN2DEG = 0.01666666666666d0
 
   ! Astronomical unit in km
-  real(8), parameter :: AUDIST = 1.495978707e+8
+  real(8), parameter :: AUDIST = 1.495978707d+8
   real(8), parameter :: km2AU = 1.d0/AUDIST
 
   ! Ratio of Sun/Moon mass to Earth mass: Wikipedia !
-  real(8), parameter :: MassRatioSunEarth = 332946.0487
+  real(8), parameter :: MassRatioSunEarth = 332946.0487d0
   real(8), parameter :: MassRatioMoonEarth = 1.d0/81.3005678d0
 
   ! Keep the value in two saperate numbers: significant and exponent
@@ -114,9 +114,9 @@ contains
     integer :: A, B
     real(8) :: D, M, Y
     character(LEN=9) :: CTYPE = 'Gregorian'
-    D = DD
-    M = MM
-    Y = YYYY
+    D = dble(DD)
+    M = dble(MM)
+    Y = dble(YYYY)
 
     if (present(CALENDAR_TYPE)) then
       select case (trim(CALENDAR_TYPE))
@@ -131,13 +131,13 @@ contains
     end if
 
     A = floor(Y/100.d0)
-    B = 2 - A + floor(A/4.d0)
+    B = 2 - A + floor(dble(A)/4.d0)
     select case (trim(CTYPE))
     case ('Julian')
       B = 0
     end select
 
-    JD = floor(365.25d0*(Y + 4716)) + floor(30.6001d0*(M + 1)) + D + B - 1524.50
+    JD = dble(floor(365.25d0*(Y + 4716d0))) + dble(floor(30.6001d0*(M + 1d0))) + dble(D) + dble(B) - 1524.50d0
 
   end function JULIANDAY
 
@@ -171,25 +171,25 @@ contains
     logical :: include_nutation = .false.
 
     ! If nutation is require !
-    real(8) :: LP, L0, OG, DPsi, Dvareps, vareps
+    real(8) :: LP, L0, OG, DPsi, vareps
     logical :: have_asval = .false.
     ! Find JD of the date at UT 0h
-    RM = JD - floor(JD)
+    RM = JD - dble(floor(JD))
 
     JD0 = JD
-    if (RM < 0.5d0 - 1.0e-10) then
-      JD0 = floor(JD) - 0.5
-    else if (RM > 0.5d0 + 1.0e-10) then
-      JD0 = floor(JD) + 0.5
+    if (RM < 0.5d0 - 1.0d-10) then
+      JD0 = dble(floor(JD)) - 0.5d0
+    else if (RM > 0.5d0 + 1.0d-10) then
+      JD0 = dble(floor(JD)) + 0.5d0
     end if
     RM = JD - JD0
 
     ! Compute T at UT 0h
-    T = (JD0 - 2451545.0)/36525.d0
+    T = (JD0 - 2451545.0d0)/36525.d0
 
     ! \Theta0 EQ. (12.2) page 87
-    gmst = 100.46061837d0 + 36000.770053608*T &
-           + T*T*(0.000387933 - T/38710000.d0)
+    gmst = 100.46061837d0 + 36000.770053608d0*T &
+           + T*T*(0.000387933d0 - T/38710000.d0)
 
     ! Mean sidereal time at Greenwich for JD. Page 87
     gmst = gmst + 1.00273790935d0*RM*360.d0
@@ -198,7 +198,7 @@ contains
 
     if (include_nutation) then
       if (present(ASVAL)) then
-        if (abs(JD - ASVAL%JD) < 1.0e-9) have_asval = .true.
+        if (abs(JD - ASVAL%JD) < 1.0d-9) have_asval = .true.
       end if
 
       if (.not. have_asval) then
@@ -261,7 +261,7 @@ contains
     real(8) :: M
     real(8), intent(IN) :: T
 
-    M = 357.5291092d0 + T*(35999.0502909 &
+    M = 357.5291092d0 + T*(35999.0502909d0 &
                            + T*(-0.0001536d0 &
                                 + T*(1.d0/24490000.d0)))
   end function M_DEG
@@ -287,8 +287,8 @@ contains
     real(8), intent(IN) :: T
 
     F = 93.2720950d0 + T*(483202.0175233d0 &
-                          + T*(-0.0036539 &
-                               + T*(-1.d0/3526000 &
+                          + T*(-0.0036539d0 &
+                               + T*(-1.d0/3526000d0 &
                                     + T*(1.d0/863310000.d0))))
   end function F_DEG
 
@@ -315,7 +315,7 @@ contains
     implicit none
     real(8), intent(IN) :: T
     eps = 0.016708634d0 + T*(-0.000042037d0 &
-                             - 0.0000001267*T)
+                             - 0.0000001267d0*T)
   end function eccentricity_earth_orbit
 
   ! The nutation in longitude. p. 144
@@ -367,7 +367,7 @@ contains
 
     varepsilon0 = 23.d0 + 26.d0*min2deg + 21.448d0*sec2deg
 
-    varepsilon0 = varepsilon0 + U*(-4680.93*sec2deg &
+    varepsilon0 = varepsilon0 + U*(-4680.93d0*sec2deg &
                                    + U*(-1.55d0 &
                                         + U*(1999.25d0 &
                                              + U*(-51.38d0 &

@@ -48,9 +48,9 @@ module mod_ephemerides
     module procedure createEphemerides
   end interface t_ephemerides
 
-  private :: interpolate, L, adjust_RA, GET_RANK_SIMPLE_SEARCH, &
-             GET_RANK_UNIFORM, GET_RANK_BINARY_SEARCH, initialize_ephemerides, &
-             recache_data, reallocate_arrays
+  private
+
+  public :: t_ephemerides, heavenly_objs_coords_from_table
 
 contains
 
@@ -99,7 +99,7 @@ contains
 #endif
     call exit(1)
 #else
-    integer :: retval, j, ii
+    integer :: j, ii
     real(8) :: julian_datetime_2000, seconds_between
     logical :: UniformRankSearch = .false.
     real(8) :: ratmp(4)
@@ -185,13 +185,14 @@ contains
     logical, intent(in) :: UniformRankSearch
 
 #ifdef ADCNETCDF
-    integer, parameter :: NC_ERR = -1
-    integer :: time_dimid, ndimsp, dimlen
+    integer :: ndimsp, dimlen
     integer :: ncid, time_varid, lunar_distance_varid, solar_distance_varid
     integer :: lunar_ra_varid, solar_ra_varid, lunar_dec_varid, solar_dec_varid
     integer :: lenarr, iabeg, iaend
     integer :: dimids(nf90_max_dims)
     real(8), allocatable :: tmparr(:)
+
+    ierr = 0
 
     ! Open the NetCDF file
     call check_err(nf90_open(self%MoonSunCoordFile, nf90_nowrite, ncid))
@@ -332,35 +333,35 @@ contains
   end subroutine L
 
   ! Return a rank j in ARR such that arr(j-1) < val <= arr(j1) !
-  function GET_RANK_SIMPLE_SEARCH(val, arr, len) result(rank)
-    implicit none
-
-    integer :: rank
-    real(8), intent(IN) :: val
-    real(8), intent(IN) :: arr(:)
-    integer, intent(IN) :: len
-
-    integer :: J
-
-    if (val < arr(1)) then
-      rank = 0; 
-      return; 
-    end if
-
-    if (val > arr(len)) then
-      rank = len + 1; 
-      return; 
-    end if
-
-    RANK = 0; 
-    do J = 1, LEN
-      if (ARR(J) >= val) then
-        RANK = J; 
-        exit; 
-      end if
-    end do
-
-  end function GET_RANK_SIMPLE_SEARCH
+!  function GET_RANK_SIMPLE_SEARCH(val, arr, len) result(rank)
+!    implicit none
+!
+!    integer :: rank
+!    real(8), intent(IN) :: val
+!    real(8), intent(IN) :: arr(:)
+!    integer, intent(IN) :: len
+!
+!    integer :: J
+!
+!    if (val < arr(1)) then
+!      rank = 0;
+!      return;
+!    end if
+!
+!    if (val > arr(len)) then
+!      rank = len + 1;
+!      return;
+!    end if
+!
+!    RANK = 0;
+!    do J = 1, LEN
+!      if (ARR(J) >= val) then
+!        RANK = J;
+!        exit;
+!      end if
+!    end do
+!
+!  end function GET_RANK_SIMPLE_SEARCH
 
   ! Find a rank j in arr such that arr(j-1) < val < = arr(j)         !
   ! in a unifrom table, i,e, arr(i+1) - arr(i) = arr(i+2) - arr(i+1) !
@@ -413,7 +414,7 @@ contains
     high = len; 
     do
       mid = (low + high)/2; 
-      if (abs(val - arr(mid)) < 1.0e-12) then
+      if (abs(val - arr(mid)) < 1.0d-12) then
         ! Exact match is found !
         rank = mid; 
         exit; 
