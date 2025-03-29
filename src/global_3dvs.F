@@ -106,9 +106,16 @@ c.RJW merged 9/02/2008 Casey 071219: Added the following variable for cumulative
       REAL(8),ALLOCATABLE :: LVN(:)         !  LVN(NFEN): Integral used in vertical FE assembly
       REAL(8),ALLOCATABLE,TARGET :: WZ(:,:)        !  WZ(MNP,NFEN): "z" vertical velocity, all nodes
       REAL(8),ALLOCATABLE,TARGET :: SIGT(:,:)      !  SIGT(MNP,NFEN): sigma T, all nodes
+      INTEGER,PARAMETER :: NumIP = 4
+      INTEGER,ALLOCATABLE :: IIP(:)
+      INTEGER,PARAMETER :: NumGQP = 2
+      REAL(8),ALLOCATABLE :: GQP(:)
+      REAL(8),ALLOCATABLE :: GQW(:)
+      REAL(8),ALLOCATABLE :: SIGTM(:,:)
       REAL(8),ALLOCATABLE,TARGET :: Temp(:,:)      !  TEMP(MNP,NFEN): temperature, all nodes
       REAL(8),ALLOCATABLE,TARGET :: Sal(:,:)       !  Sal(MNP,NFEN): salinity, all nodes
       REAL(8),ALLOCATABLE :: BCP(:,:)       !  BCP(MNP,NFEN): baroclinic pressure, integrated down from surface,all nodes
+
       REAL(8),ALLOCATABLE,TARGET :: Q20(:,:)       !  Q20(MNP,NFEN): Turbulent Kinetic Energy computed by Mellor-Yamada L2.5 closure, all nodes
       REAL(8),ALLOCATABLE,TARGET :: L(:,:)         !  L(MNP,NFEN): turbulent length scale computed by Mellor-Yamada L2.5 closure, all nodes
       REAL(8),ALLOCATABLE,TARGET :: EV(:,:)        !  EV(MNP,NFEN): Vertical eddy viscosity, all nodes
@@ -323,6 +330,14 @@ C...3D Global turbulence output variables
       INTEGER :: N3DGT        !counter to determine if it is time to write 3D global turbulence data
       INTEGER :: I3DGTRec     !record pointer for binary file writes
 
+!Casey 221115 : Add output of internal variables in fort.48.nc file.
+C...3D Global internal output variables.
+
+      INTEGER :: I3DGB
+      INTEGER :: NTO3DGBS
+      INTEGER :: NTO3DGBF
+      INTEGER :: N3DGB
+
 C     jgf49.44: These variables represent fulldomain arrays and are
 C     used in hstart.F for reading fulldomain hotstart files as well as in
 C     write_output.F/writeHotstart and writer.F/writeHotstart_through_HSwriter
@@ -348,6 +363,25 @@ C     global array sizes for use in globalio
       integer,allocatable,target :: imap_sta3Dv_lg(:)
       integer,allocatable,target :: imap_sta3Dt_lg(:)
 
+!Casey 221103 : Added the baroclinic3D namelist
+      LOGICAL :: found_baroclinic3D_NML = .FALSE.
+      LOGICAL :: iterateEqnState2 = .TRUE. ! or .FALSE.
+      CHARACTER(LEN=100) :: densityIntegration = 'quadrature' ! or 'trapezoidal' or 'simpson'
+      CHARACTER(LEN=100) :: verticalInterpolationScheme = 'cubic' ! or 'linear'
+      LOGICAL :: useLeithViscosity = .TRUE. ! or .FALSE.
+      REAL(8) :: lambdaLeith = 2.5D0 ! 1.4 < lambdaLeith < 2.5 ??
+      CHARACTER(LEN=100) :: viscosityOperator = 'biharmonic' ! or 'Laplacian'
+      CHARACTER(LEN=100) :: diffusionOperator = 'biharmonic' ! or 'Laplacian'
+      LOGICAL :: useAdaptiveFilter = .TRUE. ! or .FALSE.
+      LOGICAL :: outputFort48 = .FALSE.
+      NAMELIST /baroclinic3D/ iterateEqnState2,
+     &    densityIntegration, verticalInterpolationScheme,
+     &    useLeithViscosity, lambdaLeith,
+     &    viscosityOperator, diffusionOperator,
+     &    useAdaptiveFilter
+!Casey 221115 : Add output of internal variables in fort.48.nc file.
+     &   ,outputFort48
+
 
 C-------------------end of data declarations----------------------------------C
 
@@ -370,6 +404,30 @@ C
       ALLOCATE( GAMMA(NFEN), INM(NFEN,3), LVN(NFEN) )
       ALLOCATE( Q(MNP,NFEN), WZ(MNP,NFEN) )
       ALLOCATE( SIGT(MNP,NFEN), TEMP(MNP,NFEN) )
+!Casey 230106 : Add to compute SigT at higher resolution.
+      ALLOCATE( IIP(1:NumIP) )
+      ALLOCATE( GQP(1:NumGQP) )
+      ! ... NumGQP = 2
+      GQP = (/ -1.D0/SQRT(3.D0) , 1.D0/SQRT(3.D0) /)
+      ! ... NumGQP = 3
+!     GQP = (/ -SQRT(0.6D0) , 0.D0 , SQRT(0.6D0) /)
+      ! ... NumGQP = 4
+!     GQP = (/ -SQRT( 3.D0/7.D0 + 2.D0/7.D0 * SQRT( 1.2D0 ) ) ,
+!    &         -SQRT( 3.D0/7.D0 - 2.D0/7.D0 * SQRT( 1.2D0 ) ) ,
+!    &          SQRT( 3.D0/7.D0 - 2.D0/7.D0 * SQRT( 1.2D0 ) ) ,
+!    &          SQRT( 3.D0/7.D0 + 2.D0/7.D0 * SQRT( 1.2D0 ) ) /)
+      ALLOCATE( GQW(1:NumGQP) )
+      ! ... NumGQP = 2
+      GQW = (/ 1.D0 , 1.D0 /)
+      ! ... NumGQP = 3
+!     GQW = (/ 5.D0/9.D0 , 8.D0/9.D0 , 5.D0/9.D0 /)
+      ! ... NumGQP = 4
+!     GQW = (/ ( 18.D0 - SQRT( 30.D0 ) )/36.D0 ,
+!    &         ( 18.D0 + SQRT( 30.D0 ) )/36.D0 ,
+!    &         ( 18.D0 + SQRT( 30.D0 ) )/36.D0 ,
+!    &         ( 18.D0 - SQRT( 30.D0 ) )/36.D0 /)
+      ALLOCATE( SIGTM(MNP,NumGQP*(NFEN-1)) )
+!Casey 230120 : End of additions.
       ALLOCATE( SAL(MNP,NFEN), BCP(MNP,NFEN) )
       ALLOCATE( Q20(MNP,NFEN), L(MNP,NFEN), EV(MNP,NFEN) )
       ALLOCATE( Gammatrans(NFEN) )

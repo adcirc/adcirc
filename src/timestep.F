@@ -2203,6 +2203,13 @@ C
      &      GORhoOAMB, AMB, B, IY
 ! arash: this is not necessary. I just want to print this here
      &     ,Sal
+!Casey 221103 : Use variables from the baroclinic3D namelist
+     &     ,densityIntegration
+     &     ,verticalInterpolationScheme
+!Casey 230106 : Add to compute SigT at higher resolution.
+     &     ,NumIP,IIP
+     &     ,NumGQP,GQP,GQW
+     &     ,SIGTM
 
 #ifdef CMPI
       USE MESSENGER
@@ -2272,6 +2279,13 @@ Casey 140701: Debug.
       Real(8)     :: SigT_mid_point, SigmaMP, f1, f2, f3
       COMPLEX(8)  :: BCPG_mid_point
 
+!Casey 230120 : Add to compute SigT at higher resolution.
+      INTEGER :: IGQ,GQI
+      REAL(8) :: halfdist,midpoint
+      INTEGER :: IIP1,IIP2
+      REAL(8) :: w(NumIP)
+      COMPLEX(8) :: BCPGM(NumGQP*(NFEN-1))
+
 C
       call setMessageSource("bpg3D")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -2297,63 +2311,80 @@ C
       IF((IDEN.GE.1).OR.(IDEN.LE.-1)) THEN
          DO NH=1,NP             !loop over horizontal nodes
 
-Casey: Changed "NolIFA" to "IFNLFA."
-C
-            HGORhoOAMB=GORhoOAMB*H2(NH) !(gravity/rho ref)*(H/(a-b))
-            BCP(NH,NFEN)=0.d0
-! arash: this integration can be improved
-            DO k=NFEN-1,1,-1    !loop over vertical nodes, starting at top and working down
-               SigTAvg=(SigT(NH,k+1)+SigT(NH,k))/2.d0
-               DelSig=Sigma(k+1)-Sigma(k)
-               BCP(NH,k)=BCP(NH,k+1)+HGORhoOAMB*(SigTAvg-SigT0)*DelSig
-            ENDDO
+            Hs=DP(NH)+IFNLFA*Eta2(NH) !total depth at previous (s) timestep
+            HGORhoOAMB=GORhoOAMB*Hs !(gravity/rho ref)*(H/(a-b))
+
+            IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
+              BCP (NH,NFEN) = 0.d0
+              DO k=NFEN-1,1,-1    !loop over vertical nodes, starting at top and working down
+                 SigTAvg=(SigT(NH,k+1)+SigT(NH,k))/2.d0
+                 DelSig=Sigma(k+1)-Sigma(k)
+                 BCP(NH,k)=BCP(NH,k+1)+HGORhoOAMB*(SigTAvg-SigT0)*DelSig
+              ENDDO
+            ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
 !--------------------------------------------------------------------------------------------------
 ! arash 21/1/2016: Simpson integration, using quadratic function interpolation.
 ! arash 25/2/2016: fixed a bug.
 !------------------------------------------------------------------------------
-            ! 1. initialize
-            BCP (NH,NFEN) = 0.d0
+              ! 1. initialize
+              BCP (NH,NFEN) = 0.d0
 
-            ! 2. to compute the integral at node NFEN-1, we need the mid-point value, which we evaluate by using a quadratic
-            !    interpolation, using nodes NFEN, NFEN-1, and NFEN-2.
-            SigmaMP = ( Sigma(NFEN) + Sigma(NFEN-1) ) / 2.0d0
+!              ! 2. to compute the integral at node NFEN-1, we need the mid-point value, which we evaluate by using a quadratic
+!              !    interpolation, using nodes NFEN, NFEN-1, and NFEN-2.
+!              SigmaMP = ( Sigma(NFEN) + Sigma(NFEN-1) ) / 2.0d0
+!
+!              f1 = ( (SigmaMP       - Sigma(NFEN-1)) * (SigmaMP       - Sigma(NFEN-2)) )
+!     &           / ( (Sigma(NFEN)   - Sigma(NFEN-1)) * (Sigma(NFEN)   - Sigma(NFEN-2)) )
+!              f2 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-2)) ) 
+!     &           / ( (Sigma(NFEN-1) - Sigma(NFEN))   * (Sigma(NFEN-1) - Sigma(NFEN-2)) )
+!              f3 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-1)) ) 
+!     &           / ( (Sigma(NFEN-2) - Sigma(NFEN))   * (Sigma(NFEN-2) - Sigma(NFEN-1)) )
+!
+!              SigT_mid_point = f1 * SigT(NH,NFEN) + f2 * SigT(NH,NFEN-1) + f3 * SigT(NH,NFEN-2)
+              SigT_mid_point = SIGTM(NH,NFEN-1)
 
-            f1 = ( (SigmaMP       - Sigma(NFEN-1)) * (SigmaMP       - Sigma(NFEN-2)) )
-     &         / ( (Sigma(NFEN)   - Sigma(NFEN-1)) * (Sigma(NFEN)   - Sigma(NFEN-2)) )
-            f2 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-2)) ) 
-     &         / ( (Sigma(NFEN-1) - Sigma(NFEN))   * (Sigma(NFEN-1) - Sigma(NFEN-2)) )
-            f3 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-1)) ) 
-     &         / ( (Sigma(NFEN-2) - Sigma(NFEN))   * (Sigma(NFEN-2) - Sigma(NFEN-1)) )
+              ! 3. evaluate the integral at node NFEN-1
+              BCP (NH,NFEN-1) = (1.0/6.0) * ( Sigma(NFEN) - Sigma(NFEN-1) ) * HGORhoOAMB *
+     &                          ( (SigT(NH,NFEN)-SigT0) + 4.0d0 * (SigT_mid_point-SigT0) +  (SigT(NH,NFEN-1)-SigT0) )
 
-            SigT_mid_point = f1 * SigT(NH,NFEN) + f2 * SigT(NH,NFEN-1) + f3 * SigT(NH,NFEN-2)
+              ! 4. evaluate the integral at the rest of the vertical nodes
+              Do k = NFEN-2, 1, -1
 
-            ! 3. evaluate the integral at node NFEN-1
-            BCP (NH,NFEN-1) = (1.0/6.0) * ( Sigma(NFEN) - Sigma(NFEN-1) ) * HGORhoOAMB *
-     &                        ( (SigT(NH,NFEN)-SigT0) + 4.0d0 * (SigT_mid_point-SigT0) +  (SigT(NH,NFEN-1)-SigT0) )
+!                  ! 4.1. 
+!                 SigmaMP = ( Sigma(k+1) + Sigma(k) ) / 2.0d0
+!
+!                 f1 = ( (SigmaMP    - Sigma(k+1)) * (SigmaMP    - Sigma(k)) )
+!     &              / ( (Sigma(k+2) - Sigma(k+1)) * (Sigma(k+2) - Sigma(k)) )
+!                 f2 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k)) ) 
+!     &              / ( (Sigma(k+1) - Sigma(k+2)) * (Sigma(k+1) - Sigma(k)) )
+!                 f3 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k+1)) ) 
+!     &              / ( (Sigma(k)   - Sigma(k+2)) * (Sigma(k)   - Sigma(k+1)) )
+!
+!                 SigT_mid_point = f1 * SigT(NH,k+2) + f2 * SigT(NH,k+1) + f3 * SigT(NH,k)
+                 SigT_mid_point = SIGTM(NH,k)
 
-            ! 4. evaluate the integral at the rest of the vertical nodes
-            Do k = NFEN-2, 1, -1
+                  ! 4.2. evaluate the integral
+                 BCP (NH,k) = BCP (NH,k+1) + (1.0/6.0) * ( Sigma(k+1) - Sigma(k) ) * HGORhoOAMB 
+     &                      * ( (SigT(NH,k+1)-SigT0) + 4.0d0 * (SigT_mid_point-SigT0) +  (SigT(NH,k)-SigT0) )
 
-                ! 4.1. 
-               SigmaMP = ( Sigma(k+1) + Sigma(k) ) / 2.0d0
+              End Do
 
-               f1 = ( (SigmaMP    - Sigma(k+1)) * (SigmaMP    - Sigma(k)) )
-     &            / ( (Sigma(k+2) - Sigma(k+1)) * (Sigma(k+2) - Sigma(k)) )
-               f2 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k)) ) 
-     &            / ( (Sigma(k+1) - Sigma(k+2)) * (Sigma(k+1) - Sigma(k)) )
-               f3 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k+1)) ) 
-     &            / ( (Sigma(k)   - Sigma(k+2)) * (Sigma(k)   - Sigma(k+1)) )
+              ! 5. let's hope we are better of now.
 
-               SigT_mid_point = f1 * SigT(NH,k+2) + f2 * SigT(NH,k+1) + f3 * SigT(NH,k)
-
-                ! 4.2. evaluate the integral
-               BCP (NH,k) = BCP (NH,k+1) + (1.0/6.0) * ( Sigma(k+1) - Sigma(k) ) * HGORhoOAMB 
-     &                    * ( (SigT(NH,k+1)-SigT0) + 4.0d0 * (SigT_mid_point-SigT0) +  (SigT(NH,k)-SigT0) )
-
-            End Do
-
-            ! 5. let's hope we are better of now.
-
+!Casey 230106 : Try Arash's higher-order integration, but with SigT actually
+!               computed at the quadrature points of each vertical cell.
+            ELSE ! default is densityIntegration = 'quadrature'
+              BCP(NH,NFEN)=0.D0
+              DO k=NFEN-1,1,-1
+                BCP(NH,k) = 0.D0
+                DO IGQ=NumGQP,1,-1
+                  GQI = NumGQP*(k-1)+IGQ
+                  BCP(NH,k) = BCP(NH,k) + ( Sigma(k+1) - Sigma(k) ) * HGORhooAMB
+     &                                  * GQW(IGQ) * SIGTM(NH,GQI)
+                ENDDO
+                BCP(NH,k) = BCP(NH,k+1) + BCP(NH,k) / SUM(GQW)
+              ENDDO
+            ENDIF  
 !--------------------------------------------------------------------------------------------------
          ENDDO
 #ifdef CMPI
@@ -2376,13 +2407,11 @@ C
 c     Zero out baroclinic pressure gradient and vertically integrated
 c     baroclinic pressure gradient for a barotropic run
 
-         IF (IDEN.EQ.0) THEN
             DO k=1,NFEN
                BCPG(k)=(0.d0,0.d0)
             END DO
             VIDBCPDXOH(NH)=0.d0
             VIDBCPDYOH(NH)=0.d0
-         ENDIF
 
 c     Start computing baroclinic terms
 
@@ -2392,108 +2421,83 @@ c     Start computing baroclinic pressure gradient (computed in level
 c     coordinates) at each node in the vertical
 
             DO k=1,NFEN
-
+               ! Start from zero
                DBCPDX2A=0.d0
                DBCPDY2A=0.d0
                TotalBCPGArea2=0.d0
-               N1=NH
-               BCPN1=BCP(NH,k)
 
-               Zk=HsOAMB*(Sigma(k)-B)-DP(NH) !determine z corresponding to sigma level k
-               N2=NEITAB(NH,2)  !operate on 1st neighbor
-
-Casey: Changed "NolIFA" to "IFNLFA."
-
-               SigmaNN=B+AMB*(Zk+DP(N2))/H2(N2) !equivalent sigma value at neighbor
-               CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
-!!!!!!!!!         CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
-               NNFirst=N2       !save these values until end
-               BCPNFirst=BCPN2  !save these values until end
-
-               DO N=3,NNeigh(NH) !operate on rest of neighbors
-                  N3=N2         !shift previously computed values
-                  BCPN3=BCPN2   !shift previously computed values
-                  N2=NeiTab(NH,N) !select new neighbor to work on
-
-Casey: Changed "NolIFA" to "IFNLFA."
-
-                  SigmaNN=B+AMB*(Zk+DP(N2))/H2(N2) !equivalent sigma value at neighbor
-!!!!!!!!!            CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
-                  CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
-                  NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
-                  ! jgf49.58: The NeiTabEle matrix is semi sparse; see
-                  ! Casey's comments in vsmy.F. NOFF array lookups fail
-                  ! if NEle comes back 0, so I will just cycle to the next
-                  ! N value here if that happens ... TODO: somebody please
-                  ! confirm that this is the right answer here.
-                  IF (NEle.eq.0) THEN
-                     CYCLE
+               BCPG(k)=(0.d0,0.d0)
+               DO N=1,SIZE(NeiTabEle,2)
+                  ! Find neighbor element
+                  NEle=NeiTabEle(NH,N)
+                  ! Skip blank entries in NeiTabEle
+                  IF(NEle.EQ.0) CYCLE
+                  ! Find vertices in counterclockwise order
+                  IF(NM(NEle,1).EQ.NH)THEN
+                     N1=NM(NEle,1)
+                     N2=NM(NEle,2)
+                     N3=NM(NEle,3)
+                  ELSEIF(NM(NEle,2).EQ.NH)THEN
+                     N1=NM(NEle,2)
+                     N2=NM(NEle,3)
+                     N3=NM(NEle,1)
+                  ELSEIF(NM(NEle,3).EQ.NH)THEN
+                     N1=NM(NEle,3)
+                     N2=NM(NEle,1)
+                     N3=NM(NEle,2)
+                  ELSE
+                     PRINT*, "Aack! ",NH,NEle,NM(Nele,:)
                   ENDIF
-Casey: Added the computation of "NCELE" and the last part of the IF statement.
-C
-                  NCELE = NODECODE(NH)*NODECODE(N2)
-     &                *NODECODE(N3)*NOFF(NELE)
-                  IF((BCPN2.NE.-999.).AND.(BCPN3.NE.-999.)
-     &                 .AND.(NEle.NE.0).AND.(NCELE.NE.0)) THEN !if all 3 nodes are active, compute bu
+                  ! Skip dry elements
+                  NCEle=NODECODE(N1)*NODECODE(N2)
+     &                 *NODECODE(N3)*NOFF(NEle)
+                  IF(NCEle.EQ.0) CYCLE
+                  ! For vertex of interest
+                  BCPN1=BCP(N1,k)
+                  Zk=HsOAMB*(Sigma(k)-B)-DP(N1)
+                  ! For first neighbor vertex
+                  HsN2=DP(N2)+IFNLFA*Eta2(N2)
+                  IF(HsN2.LT.H0) HsN2=H0
+                  SigmaNN=B+AMB*(Zk+DP(N2))/HsN2
+!Casey 221103 : User control over cubic interpolation
+                  IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                     CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k)
+                  ELSE ! Default
+                     CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k)
+                  ENDIF
+                  ! For second neighbor vertex
+                  HsN2=DP(N3)+IFNLFA*Eta2(N3)
+                  IF(HsN2.LT.H0) HsN2=H0
+                  SigmaNN=B+AMB*(Zk+DP(N3))/HsN2
+!Casey 221103 : User control over cubic interpolation
+                  IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                     CALL ZSURFBUOY(SigmaNN,BCPN3,N3,k)
+                  ELSE ! Default
+                     CALL ZSURFBUOY_p3(SigmaNN,BCPN3,N3,k)
+                  ENDIF
+                  ! Compute gradients
+                  IF((BCPN2.GT.-990.).AND.(BCPN3.GT.-990.))THEN
                      TotalBCPGArea2=TotalBCPGArea2+Areas(NEle)
-C    kmd48.33bc add in spherical factors
                      SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
-                     a1=X(N3)-X(N2)
-                     a2=X(N1)-X(N3)
-                     a3=X(N2)-X(N1)
+                     a1= X(N3)-X(N2)
+                     a2= X(N1)-X(N3)
+                     a3= X(N2)-X(N1)
                      b1=(Y(N2)-Y(N3))*SFacAvg
                      b2=(Y(N3)-Y(N1))*SFacAvg
                      b3=(Y(N1)-Y(N2))*SFacAvg
                      DBCPDX2A=DBCPDX2A+(BCPN1*b1+BCPN2*b2+BCPN3*b3)
                      DBCPDY2A=DBCPDY2A+(BCPN1*a1+BCPN2*a2+BCPN3*a3)
                   ENDIF
-               END DO
-
-               N3=N2            !wrap back to beginning to get final contributio
-               N2=NNFirst
-               BCPN3=BCPN2
-               BCPN2=BCPNFirst
-               NEle=NeiTabEle(NH,NNeigh(NH)-1)
-
-Casey: Added the computation of "NCELE" and the last part of the IF statement.
-C
-               ! jgf49.58 NOFF lookups fail if NELE comes back 0.
-               IF (NELE.ne.0) THEN
-                  NCELE = NODECODE(NH)*NODECODE(N2)
-     &                *NODECODE(N3)*NOFF(NELE)
-               ENDIF
-               IF((BCPN2.NE.-999.).AND.(BCPN3.NE.-999.)
-     &              .AND.(NEle.NE.0).AND.(NCELE.NE.0)) THEN
-                  TotalBCPGArea2=TotalBCPGArea2+Areas(NEle)
-C    kmd48.33bc add in spherical factors
-                  SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
-                  a1=X(N3)-X(N2)
-                  a2=X(N1)-X(N3)
-                  a3=X(N2)-X(N1)
-                  b1=(Y(N2)-Y(N3))*SFacAvg
-                  b2=(Y(N3)-Y(N1))*SFacAvg
-                  b3=(Y(N1)-Y(N2))*SFacAvg
-                  DBCPDX2A=DBCPDX2A+(BCPN1*b1+BCPN2*b2+BCPN3*b3)
-                  DBCPDY2A=DBCPDY2A+(BCPN1*a1+BCPN2*a2+BCPN3*a3)
-               ENDIF
-
-C    kmd48.33bc changed the BPG calculation for bottom boundary issues
-               IF(TotalBCPGArea2.EQ.0.) THEN
-!                  IF (k.eq.NFEN) THEN !kd46.01
-                     BCPG(k)=(0.d0,0.d0)
-!                  ELSE
-!                     BCPG(k)=BCPG(k+1)
-!                  END IF
-               ELSE
+               ENDDO
+               IF(TotalBCPGArea2.GT.0.0001D0) THEN
                   BCPG(k)=(DBCPDX2A+iy*DBCPDY2A)/TotalBCPGArea2
+!Casey 230317 Debug
+!                 BCPG(k)=(0.D0,0.D0)
                ENDIF
-
             ENDDO
 
             DO k=1,NFEN
-Casey 150128: Debug.
                BPG(NH,k) = BCPG(k)
-C              BPG(NH,k) = (0.D0,0.D0)
             END DO
 
 c     Finished computing baroclinic pressure gradient (computed in level
@@ -2507,58 +2511,108 @@ c     after the new density field is computed.  In this case one would
 c     integrate over the vertical first and differentiate second.
 
 ! this old scheme has been replaced by the new one below ...
-            VIBCPG=(0.d0,0.d0)
-            DO k=NFEN-1,1,-1
-               VIBCPG=VIBCPG+0.5d0*(BCPG(k+1)+BCPG(k))
-     &              *(Sigma(k+1)-Sigma(k))
-            ENDDO
+!Casey 230120 : This integration has been replaced below.
+            IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
+              VIBCPG=(0.d0,0.d0)
+              DO k=NFEN-1,1,-1
+                 VIBCPG=VIBCPG+0.5d0*(BCPG(k+1)+BCPG(k))
+     &                *(Sigma(k+1)-Sigma(k))
+              ENDDO
+              VIDBCPDXOH(NH)=REAL(VIBCPG)/AMB
+              VIDBCPDYOH(NH)=AIMAG(VIBCPG)/AMB
+!Casey 230120 : This integration has been replaced below.
+            ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
 !--------------------------------------------------------------------------------------------------
 ! arash 25/2/2016: Simpson integration, using quadratic function interpolation.
 !------------------------------------------------------------------------------
-            ! 1. initialize
-            VIBCPG = ( 0.d0 , 0.d0 )
+              ! 1. initialize
+              VIBCPG = ( 0.d0 , 0.d0 )
 
-            ! 2. to compute the integral at node NFEN-1, we need the mid-point value, which we evaluate by using a quadratic
-            !    interpolation, using nodes NFEN, NFEN-1, and NFEN-2.
-            SigmaMP = ( Sigma(NFEN) + Sigma(NFEN-1) ) / 2.0d0
+              ! 2. to compute the integral at node NFEN-1, we need the mid-point value, which we evaluate by using a quadratic
+              !    interpolation, using nodes NFEN, NFEN-1, and NFEN-2.
+              SigmaMP = ( Sigma(NFEN) + Sigma(NFEN-1) ) / 2.0d0
 
-            f1 = ( (SigmaMP       - Sigma(NFEN-1)) * (SigmaMP       - Sigma(NFEN-2)) )
-     &         / ( (Sigma(NFEN)   - Sigma(NFEN-1)) * (Sigma(NFEN)   - Sigma(NFEN-2)) )
-            f2 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-2)) ) 
-     &         / ( (Sigma(NFEN-1) - Sigma(NFEN))   * (Sigma(NFEN-1) - Sigma(NFEN-2)) )
-            f3 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-1)) ) 
-     &         / ( (Sigma(NFEN-2) - Sigma(NFEN))   * (Sigma(NFEN-2) - Sigma(NFEN-1)) )
+              f1 = ( (SigmaMP       - Sigma(NFEN-1)) * (SigmaMP       - Sigma(NFEN-2)) )
+     &           / ( (Sigma(NFEN)   - Sigma(NFEN-1)) * (Sigma(NFEN)   - Sigma(NFEN-2)) )
+              f2 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-2)) ) 
+     &           / ( (Sigma(NFEN-1) - Sigma(NFEN))   * (Sigma(NFEN-1) - Sigma(NFEN-2)) )
+              f3 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-1)) ) 
+     &           / ( (Sigma(NFEN-2) - Sigma(NFEN))   * (Sigma(NFEN-2) - Sigma(NFEN-1)) )
 
-            BCPG_mid_point = f1 * BCPG(NFEN) + f2 * BCPG(NFEN-1) + f3 * BCPG(NFEN-2)
+              BCPG_mid_point = f1 * BCPG(NFEN) + f2 * BCPG(NFEN-1) + f3 * BCPG(NFEN-2)
 
-            ! 3. evaluate the integral at node NFEN-1
-            VIBCPG = (1.0/6.0) * ( Sigma(NFEN) - Sigma(NFEN-1) ) * ( BCPG(NFEN) + 4.0d0 * BCPG_mid_point + BCPG(NFEN-1) )
+              ! 3. evaluate the integral at node NFEN-1
+              VIBCPG = (1.0/6.0) * ( Sigma(NFEN) - Sigma(NFEN-1) ) * ( BCPG(NFEN) + 4.0d0 * BCPG_mid_point + BCPG(NFEN-1) )
 
-            ! 4. evaluate the integral at the rest of the vertical nodes
-            Do k = NFEN-2, 1, -1
+              ! 4. evaluate the integral at the rest of the vertical nodes
+              Do k = NFEN-2, 1, -1
 
-                ! 4.1. 
-               SigmaMP = ( Sigma(k+1) + Sigma(k) ) / 2.0d0
+                  ! 4.1. 
+                 SigmaMP = ( Sigma(k+1) + Sigma(k) ) / 2.0d0
 
-               f1 = ( (SigmaMP    - Sigma(k+1)) * (SigmaMP    - Sigma(k)) )
-     &            / ( (Sigma(k+2) - Sigma(k+1)) * (Sigma(k+2) - Sigma(k)) )
-               f2 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k)) ) 
-     &            / ( (Sigma(k+1) - Sigma(k+2)) * (Sigma(k+1) - Sigma(k)) )
-               f3 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k+1)) ) 
-     &            / ( (Sigma(k)   - Sigma(k+2)) * (Sigma(k)   - Sigma(k+1)) )
+                 f1 = ( (SigmaMP    - Sigma(k+1)) * (SigmaMP    - Sigma(k)) )
+     &              / ( (Sigma(k+2) - Sigma(k+1)) * (Sigma(k+2) - Sigma(k)) )
+                 f2 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k)) ) 
+     &              / ( (Sigma(k+1) - Sigma(k+2)) * (Sigma(k+1) - Sigma(k)) )
+                 f3 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k+1)) ) 
+     &              / ( (Sigma(k)   - Sigma(k+2)) * (Sigma(k)   - Sigma(k+1)) )
 
-               BCPG_mid_point = f1 * BCPG(k+2) + f2 * BCPG(k+1) + f3 * BCPG(k)
+                 BCPG_mid_point = f1 * BCPG(k+2) + f2 * BCPG(k+1) + f3 * BCPG(k)
 
-                ! 4.2. evaluate the integral
-               VIBCPG = VIBCPG + (1.0/6.0) * ( Sigma(k+1) - Sigma(k) ) * ( BCPG(k+1) + 4.0d0 * BCPG_mid_point + BCPG(k) )
+                  ! 4.2. evaluate the integral
+                 VIBCPG = VIBCPG + (1.0/6.0) * ( Sigma(k+1) - Sigma(k) ) * ( BCPG(k+1) + 4.0d0 * BCPG_mid_point + BCPG(k) )
 
-            End Do
+              End Do
 
-            ! 5. let's hope we are better of now.
-!------------------------------------------------------------------------------
-!------------------------------------------------------------------------------
-            VIDBCPDXOH(NH)=REAL(VIBCPG)/AMB
-            VIDBCPDYOH(NH)=AIMAG(VIBCPG)/AMB
+              ! 5. let's hope we are better of now.
+!-----------  -------------------------------------------------------------------
+!-----------  -------------------------------------------------------------------
+              VIDBCPDXOH(NH)=REAL(VIBCPG)/AMB
+              VIDBCPDYOH(NH)=AIMAG(VIBCPG)/AMB
+!Casey 230120 : Try to improve this?
+            ELSE ! default is densityIntegration = 'quadrature'
+              VIBCPG = ( 0.D0 , 0.D0 )
+              DO k=NFEN-1,1,-1
+                DO IGQ=NumGQP,1,-1
+                  GQI = NumGQP*(k-1)+IGQ
+                  ! Determine sigma at quadrature point
+                  midpoint = 0.5D0*(Sigma(k)+Sigma(k+1))
+                  halfdist = midpoint-Sigma(k)
+                  SigmaMP  = midpoint + GQP(IGQ)*halfdist
+                  ! Interpolation for BCPG ...
+                  ! ... quadratic.
+!                 IIP = (/ k-1 , k , k+1 /)
+!                 IF(k.EQ.1)      IIP = IIP + 1
+                  ! ... cubic.
+                  IIP = (/ k-1 , k , k+1 , k+2 /)
+                  IF(k.EQ.1)      IIP = IIP + 1
+                  IF(k.EQ.NFEN-1) IIP = IIP - 1
+                  ! ... quartic.
+!                 IIP = (/ k-2 , k-1 , k , k+1 , k+2 /)
+!                 IF(k.EQ.1)      IIP = IIP + 2
+!                 IF(k.EQ.2)      IIP = IIP + 1
+!                 IF(k.EQ.NFEN-1) IIP = IIP - 1
+                  w = 1.D0
+                  BCPGM(GQI) = 0.D0
+                  DO IIP1=1,NumIP
+                    ! Multiply up the weight for this term.
+                    DO IIP2=1,NumIP
+                      IF(IIP1.NE.IIP2)THEN
+                        w(IIP1) = w(IIP1)
+     &                          * (SigmaMP         -Sigma(IIP(IIP2)))
+     &                          / (Sigma(IIP(IIP1))-Sigma(IIP(IIP2)))
+                      ENDIF
+                    ENDDO
+                    ! Add to the weighted interpolation.
+                    BCPGM(GQI) = BCPGM(GQI) + w(IIP1) * BCPG(IIP(IIP1))
+                  ENDDO
+                  VIBCPG = VIBCPG + ( Sigma(k+1) - Sigma(k) )
+     &                        * GQW(IGQ) / SUM(GQW) * BCPGM(GQI)
+                ENDDO
+              ENDDO
+              VIDBCPDXOH(NH)=REAL(VIBCPG)/AMB
+              VIDBCPDYOH(NH)=AIMAG(VIBCPG)/AMB
+           ENDIF
 
          ENDIF
 
@@ -2778,6 +2832,16 @@ C
       SUBROUTINE ZSURFBUOY_p3 (SigmaNN,BCPressNN,NN,J)
 
       USE GLOBAL_3DVS
+     &    ,ONLY :
+     &            A, B,
+     &            BCP,
+     &            NFEN,
+     &            SIGMA,
+     &            allMessage,
+     &            setMessageSource,
+     &            unsetMessageSource
+      USE GLOBAL, ONLY : DEBUG
+      USE SIZES, ONLY : 
       IMPLICIT NONE
       REAL(8) :: BCPressNN
       REAL(8) :: SigmaNN     !Sigma value of a neighbor node
@@ -2805,7 +2869,8 @@ C     jgf46.00 Explicitly declared the following variables
 #endif
       IDiag=0
 
-      IF(SigmaNN.LE.(1.00010d0*b)) THEN !if into ground then skip
+!Casey 221122 : Let's be more restrictive here.
+      IF(SigmaNN.LE.(1.000000010d0*b)) THEN !if into ground then skip
          SigBelo=-999
          SigAbov=-999
          BCPressNN=-999.
@@ -2820,7 +2885,7 @@ C     jgf46.00 Explicitly declared the following variables
 !--------------------------------------------------------------------------------------------------
          GOTO 100
       ENDIF
-      IF((SigmaNN.GT.(1.0001d0*b)).AND.(SigmaNN.LE.b)) THEN !at bottom then use bottom
+      IF((SigmaNN.GT.(1.00000001d0*b)).AND.(SigmaNN.LE.b)) THEN !at bottom then use bottom
          LBelo=1
          BCPressNN=BCP(NN,LBelo)
          SigBelo=b
@@ -3012,6 +3077,12 @@ C     jgf46.00 Explicitly declared the following variables
          WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
+
+!Casey 220126 : These lines are surprisingly important.
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
       RETURN
 C**********************************************************************

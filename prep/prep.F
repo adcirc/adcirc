@@ -277,8 +277,22 @@ C     WJP 03.11.2018 made to work for 2D runs too
          ELSE
             DO i=1, nvp
                DO j=1, nfen
-                  READ(11,*,END=411) nhnn, nvnn, FD_MSG(nhnn,nvnn) ! get a flo val for this f.d. flow node
-                  READ(FD_MSG,*) nvn, nvp
+!Casey 220128 : These two lines don't work with the * format.
+!                 READ(11,*,END=411) nhnn, nvnn, FD_MSG(nhnn,nvnn) ! get a flo val for this f.d. flow node
+!                 READ(FD_MSG,*) nvn, nvp
+!Casey 220128 : Similar to the C2DDI lines above.
+                  READ(11,'(A120)',END=411) Dummy
+                  WRITE(Dummy,'(A)') TRIM(ADJUSTL(Dummy))
+                  do k = 1,len_trim(Dummy)
+                    if (Dummy(k:k).eq.' '.or.Dummy(k:k).eq.',') exit
+                  enddo
+                  READ(Dummy(1:k-1),*) nhnn
+                  WRITE(Dummy,'(A)') TRIM(ADJUSTL(Dummy(k+1:120)))
+                  do k = 1,len_trim(Dummy)
+                    if (Dummy(k:k).eq.' '.or.Dummy(k:k).eq.',') exit
+                  enddo
+                  READ(Dummy(1:k-1),*) nvnn
+                  FD_MSG(nhnn,nvnn) = TRIM(ADJUSTL(Dummy(k+1:120)))
                ENDDO
             ENDDO
          ENDIF
@@ -2457,6 +2471,27 @@ c...     wjp additions for density Control Namelist
             write(15,'(A,F6.2,A)') 'WindMultiplier = ',WindMultiplier,','
             write(15,'(A)') '/'
             write(15,*) '! -- End nws8 Control NameList --'
+         ENDIF
+
+!Casey 221103 : Write the baroclinic3D namelist to the local fort.15 
+         IF( found_baroclinic3D_NML )THEN
+            WRITE(15,'(A)') '! -- Begin baroclinic3D Namelist --'
+            WRITE(15,'(A)') "&baroclinic3D "
+            WRITE(15,*) "    iterateEqnState2=",iterateEqnState2,","
+            WRITE(15,*) "    densityIntegration='",
+     &          TRIM(densityIntegration),"',"
+            WRITE(15,*) "    verticalInterpolationScheme='",
+     &          TRIM(verticalInterpolationScheme),"',"
+            WRITE(15,*) "    useLeithViscosity=",useLeithViscosity,","
+            WRITE(15,*) "    lambdaLeith=",lambdaLeith,","
+            WRITE(15,*) "    viscosityOperator='",
+     &          TRIM(viscosityOperator),"',"
+            WRITE(15,*) "    diffusionOperator='",
+     &          TRIM(diffusionOperator),"',"
+            WRITE(15,*) "    useAdaptiveFilter=",useAdaptiveFilter,","
+!Casey 221115 : Add output of internal variables in fort.48 file.
+            WRITE(15,*) "    outputFort48=",outputFort48,"  /"
+            WRITE(15,'(A)') '! -- End baroclinic3D Namelist --'
          ENDIF
 
          CLOSE(15)
@@ -7741,6 +7776,7 @@ C---------------------------------------------------------------------------
      &    foundCorrectionControlNamelist, NCICE, !GML added NCICE 20210727
      &    foundVEW1DChannelControlNamelist, meshHasWeir, meshHasInternalWeir,
      &    meshHasWeirWithPipes
+      USE GLOBAL_3DVS, ONLY: I3DGB
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
      &    initNetCDFHotstart3D, initNetCDFHotstart,
@@ -7840,6 +7876,9 @@ C     3D output data
       type(OutputDataDescript_t), save :: Q20Descript        ! fort.46
       type(OutputDataDescript_t), save :: LDescript
       type(OutputDataDescript_t), save :: EVDescript
+!Casey 221115 : Add output of internal variables in fort.48 file.
+      type(OutputDataDescript_t), save :: RealBPGDescript
+      type(OutputDataDescript_t), save :: ImaginaryBPGDescript
 C     For hotstart files:
       type(OutputDataDescript_t), SAVE :: Elev1Descript
       type(OutputDataDescript_t), SAVE :: Elev2Descript
@@ -8855,7 +8894,30 @@ C     fort.47
       QSurfKp1Descript % num_fd_records     =  MNP
       QSurfKp1Descript % num_records_this   =  MNP
       QSurfKp1Descript % field_name           = 'qsurfkp1'
+      ! Casey 220120
+      QSurfKp1Descript % file_extension        = 47
+      QSurfKp1Descript % file_basename        = 'fort'
       call makeFileName(QSurfKp1Descript)
+C
+!Casey 221115 : Add output of internal variables in fort.48 file.
+C     fort.45
+      RealBPGDescript % specifier            =  I3DGB
+      RealBPGDescript % lun                  =  48
+      RealBPGDescript % initial_value        =  0.0
+      RealBPGDescript % num_items_per_record =  NFEN
+      RealBPGDescript % num_fd_records       =  MNP
+      RealBPGDescript % num_records_this     =  MNP
+      RealBPGDescript % field_name           = 'RealBPG'
+      RealBPGDescript % file_extension       =  48
+      RealBPGDescript % file_basename        = 'fort'
+      call makeFileName(RealBPGDescript)
+      ImaginaryBPGDescript % specifier            =  I3DGB
+      ImaginaryBPGDescript % lun                  =  48
+      ImaginaryBPGDescript % initial_value        =  0.0
+      ImaginaryBPGDescript % num_items_per_record =  NFEN
+      ImaginaryBPGDescript % num_fd_records       =  MNP
+      ImaginaryBPGDescript % num_records_this     =  MNP
+      ImaginaryBPGDescript % field_name           = 'ImaginaryBPG'
 C
 C     fort.67 and fort.68
       Elev1Descript % specifier            = NHSTAR
@@ -9079,6 +9141,9 @@ C
          CALL initNetCDFOutputFile(Q20Descript, reterr,
      &      LDescript, EVDescript)
          CALL initNetCDFOutputFile(QSurfKp1Descript, reterr)
+!Casey 221115 : Add output of internal variables in fort.48 file.
+         CALL initNetCDFOutputFile(RealBPGDescript, reterr,
+     &      ImaginaryBPGDescript)
       ENDIF
 C
 C     Create NetCDF hotstart files if NetCDF was specified.
