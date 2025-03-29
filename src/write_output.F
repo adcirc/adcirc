@@ -193,6 +193,9 @@ C
       type(OutputDataDescript_t) :: Q20Descript
       type(OutputDataDescript_t) :: LDescript
       type(OutputDataDescript_t) :: EVDescript
+!Casey 221115 : Add output of internal variables in fort.48.nc file.
+      type(OutputDataDescript_t) :: RealBPGDescript
+      type(OutputDataDescript_t) :: ImaginaryBPGDescript
 C
 C     parts of complex variables
       REAL(8), ALLOCATABLE, TARGET :: rp(:,:) !real part subdomain data
@@ -3036,6 +3039,8 @@ C
          SigTStaDescript % considerWetDry       = .FALSE.
          SigTStaDescript % alternate_value      = -99999.0
          SigTStaDescript % field_name           = 'SigmaTStations'
+         ! Casey 220120
+         SigTStaDescript % file_name            = 'fort.41'
          IF (ICS.eq.1) THEN
          SigTStaDescript % x_coord           => XED  ! use orig coord
          SigTStaDescript % y_coord           => YED  ! use orig coord
@@ -3056,6 +3061,8 @@ C
          SalStaDescript % considerWetDry       = .FALSE.
          SalStaDescript % alternate_value      = -99999.0
          SalStaDescript % field_name           = 'SalinityStations'
+         ! Casey 220120
+         SalStaDescript % file_name            = 'fort.41'
          IF (ICS.eq.1) THEN
          SalStaDescript % x_coord           => XED ! use orig coord
          SalStaDescript % y_coord           => YED ! use orig coord
@@ -3076,6 +3083,8 @@ C
          TempStaDescript % considerWetDry       = .FALSE.
          TempStaDescript % alternate_value      = -99999.0
          TempStaDescript % field_name           = 'TemperatureStations'
+         ! Casey 220120
+         TempStaDescript % file_name            = 'fort.41'
          IF (ICS.eq.1) THEN
          TempStaDescript % x_coord           => XED ! use orig coord
          TempStaDescript % y_coord           => YED
@@ -3096,6 +3105,8 @@ C
          RealQStaDescript % considerWetDry       = .FALSE.
          RealQStaDescript % alternate_value      = -99999.0
          RealQStaDescript % field_name           = 'RealQStations'
+         ! Casey 220120
+         RealQStaDescript % file_name            = 'fort.42'
          IF (ICS.eq.1) THEN
          RealQStaDescript % x_coord           => XE3DV ! use orig coord
          RealQStaDescript % y_coord           => YE3DV
@@ -3116,6 +3127,8 @@ C
          ImaginaryQStaDescript % considerWetDry       = .FALSE.
          ImaginaryQStaDescript % alternate_value      = -99999.0
          ImaginaryQStaDescript % field_name      ='ImaginaryQStations'
+         ! Casey 220120
+         ImaginaryQStaDescript % file_name            = 'fort.42'
          IF (ICS.eq.1) THEN
          ImaginaryQStaDescript % x_coord           => XE3DV ! use orig coord
          ImaginaryQStaDescript % y_coord           => YE3DV
@@ -3136,6 +3149,8 @@ C
          WZStaDescript % considerWetDry       = .FALSE.
          WZStaDescript % alternate_value      = -99999.0
          WZStaDescript % field_name           = 'WZStations'
+         ! Casey 220120
+         WZStaDescript % file_name            = 'fort.42'
          IF (ICS.eq.1) THEN
          WZStaDescript % x_coord           => XE3DV  ! use orig coord
          WZStaDescript % y_coord           => YE3DV
@@ -3156,6 +3171,8 @@ C
          Q20StaDescript % considerWetDry       = .FALSE.
          Q20StaDescript % alternate_value      = -99999.0
          Q20StaDescript % field_name           = 'q20Stations'
+         ! Casey 220120
+         Q20StaDescript % file_name            = 'fort.43'
          IF (ICS.eq.1) THEN
          Q20StaDescript % x_coord           => XET  ! use orig coord
          Q20StaDescript % y_coord           => YET  ! use orig coord
@@ -3176,6 +3193,8 @@ C
          LStaDescript % considerWetDry       = .FALSE.
          LStaDescript % alternate_value      = -99999.0
          LStaDescript % field_name           = 'LStations'
+         ! Casey 220120
+         LStaDescript % file_name            = 'fort.43'
          IF (ICS.eq.1) THEN
          LStaDescript % x_coord           => XET  ! use orig coord
          LStaDescript % y_coord           => YET
@@ -3196,6 +3215,8 @@ C
          EVStaDescript % considerWetDry       = .FALSE.
          EVStaDescript % alternate_value      = -99999.0
          EVStaDescript % field_name           = 'EVStations'
+         ! Casey 220120
+         EVStaDescript % file_name            = 'fort.43'
          IF (ICS.eq.1) THEN
          EVStaDescript % x_coord           => XET ! use orig coord
          EVStaDescript % y_coord           => YET
@@ -3216,6 +3237,8 @@ C
          QSurfKp1Descript % considerWetDry       = .FALSE.
          QSurfKp1Descript % alternate_value      = -99999.0
          QSurfKp1Descript % field_name           = 'qsurfkp1'
+         ! Casey 220120
+         QSurfKp1Descript % file_name            = 'fort.47'
 
          SigTDescript % specifier            =  I3DGD
          SigTDescript % lun                  =  44
@@ -3229,6 +3252,8 @@ C
          SigTDescript % considerWetDry       = .FALSE.
          SigTDescript % alternate_value      = -99999.0
          SigTDescript % field_name           = 'SigmaT'
+         ! Casey 220120
+         SigTDescript % file_name            = 'fort.44'
 
          SalDescript % specifier            =  I3DGD
          SalDescript % lun                  =  44
@@ -3242,6 +3267,8 @@ C
          SalDescript % considerWetDry       = .FALSE.
          SalDescript % alternate_value      = -99999.0
          SalDescript % field_name           = 'Salinity'
+         ! Casey 220120
+         SalDescript % file_name            = 'fort.44'
 
          TempDescript % specifier            =  I3DGD
          TempDescript % lun                  =  44
@@ -3255,6 +3282,8 @@ C
          TempDescript % considerWetDry       = .FALSE.
          TempDescript % alternate_value      = -99999.0
          TempDescript % field_name           = 'Temperature'
+         ! Casey 220120
+         TempDescript % file_name            = 'fort.44'
 
          RealQDescript % specifier            =  I3DGV
          RealQDescript % lun                  =  45
@@ -3268,6 +3297,8 @@ C
          RealQDescript % considerWetDry       = .FALSE.
          RealQDescript % alternate_value      = -99999.0
          RealQDescript % field_name           = 'RealQ'
+         ! Casey 220120
+         RealQDescript % file_name            = 'fort.45'
 
          ImaginaryQDescript % specifier            =  I3DGV
          ImaginaryQDescript % lun                  =  45
@@ -3281,6 +3312,8 @@ C
          ImaginaryQDescript % considerWetDry       = .FALSE.
          ImaginaryQDescript % alternate_value      = -99999.0
          ImaginaryQDescript % field_name           = 'ImaginaryQ'
+         ! Casey 220120
+         ImaginaryQDescript % file_name            = 'fort.45'
 
          WZDescript % specifier            =  I3DGV
          WZDescript % lun                  =  45
@@ -3294,6 +3327,8 @@ C
          WZDescript % considerWetDry       = .FALSE.
          WZDescript % alternate_value      = -99999.0
          WZDescript % field_name           = 'WZ'
+         ! Casey 220120
+         WZDescript % file_name            = 'fort.45'
 
          Q20Descript % specifier            =  I3DGT
          Q20Descript % lun                  =  46
@@ -3307,6 +3342,8 @@ C
          Q20Descript % considerWetDry       = .FALSE.
          Q20Descript % alternate_value      = -99999.0
          Q20Descript % field_name           = 'q20'
+         ! Casey 220120
+         Q20Descript % file_name            = 'fort.46'
 
          LDescript % specifier            =  I3DGT
          LDescript % lun                  =  46
@@ -3320,6 +3357,8 @@ C
          LDescript % considerWetDry       = .FALSE.
          LDescript % alternate_value      = -99999.0
          LDescript % field_name           = 'L'
+         ! Casey 220120
+         LDescript % file_name            = 'fort.46'
 
          EVDescript % specifier            =  I3DGT
          EVDescript % lun                  =  46
@@ -3333,6 +3372,38 @@ C
          EVDescript % considerWetDry       = .FALSE.
          EVDescript % alternate_value      = -99999.0
          EVDescript % field_name           = 'EV'
+         ! Casey 220120
+         EVDescript % file_name            = 'fort.46'
+
+!Casey 221115 : Add output of internal variables in fort.48 file.
+         RealBPGDescript % specifier            =  I3DGB
+         RealBPGDescript % lun                  =  48
+         RealBPGDescript % initial_value        =  0.0
+         RealBPGDescript % num_items_per_record =  NFEN
+         RealBPGDescript % num_fd_records       =  NP_G
+         RealBPGDescript % num_records_this     =  NP
+         RealBPGDescript % imap                 => nodes_lg
+         RealBPGDescript % array2D              => rp
+         RealBPGDescript % array2D_g            => rp_g
+         RealBPGDescript % considerWetDry       = .FALSE.
+         RealBPGDescript % alternate_value      = -99999.0
+         RealBPGDescript % field_name           = 'RealBPG'
+         RealBPGDescript % file_name            = 'fort.48'
+
+         ImaginaryBPGDescript % specifier            =  I3DGB
+         ImaginaryBPGDescript % lun                  =  48
+         ImaginaryBPGDescript % initial_value        =  0.0
+         ImaginaryBPGDescript % num_items_per_record =  NFEN
+         ImaginaryBPGDescript % num_fd_records       =  NP_G
+         ImaginaryBPGDescript % num_records_this     =  NP
+         ImaginaryBPGDescript % imap                 => nodes_lg
+         ImaginaryBPGDescript % array2D              => ip
+         ImaginaryBPGDescript % array2D_g            => ip_g
+         ImaginaryBPGDescript % considerWetDry       = .FALSE.
+         ImaginaryBPGDescript % alternate_value      = -99999.0
+         ImaginaryBPGDescript % field_name           = 'ImaginaryBPG'
+         ImaginaryBPGDescript % file_name            = 'fort.48'
+!Casey 221115 : End of code additions.
 
 #ifdef ADCNETCDF
          netcdf_error = .false.
@@ -3353,10 +3424,14 @@ C
      &           netcdf_error(6), LDescript, EVDescript)
             CALL initNetCDFOutputFile(QSurfKp1Descript,
      &           netcdf_error(7))
+!Casey 221115 : Add output of internal variables in fort.48 file.
+            CALL initNetCDFOutputFile(RealBPGDescript,
+     &           netcdf_error(8), ImaginaryBPGDescript)
          ENDIF
 #ifdef CMPI
-         CALL msg_lbcast(netcdf_error,7)
-         DO i=1,7
+!Casey 221115 : Changed 7 to 8 through these lines.
+         CALL msg_lbcast(netcdf_error,8)
+         DO i=1,8
             IF (netcdf_error(i).eqv..true.) THEN
                CALL msg_fini()
                CALL EXIT(1)
@@ -4101,6 +4176,51 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
 
          ENDIF
       ENDIF
+
+!Casey 221115 : Adding output of internal variables in NetCDF only.
+C
+C.... 3D Internal Variables Output (Unit 48)
+C
+#ifdef ADCNETCDF
+      IF(I3DGB.NE.0) THEN
+         IF ((IT.GT.NTO3DGBS).AND.(IT.LE.NTO3DGBF)) N3DGB=N3DGB+1
+!Casey 221115 : Use the same spool (NSpo3DGD) as the fort.44 file.
+         IF (N3DGB.EQ.NSpo3DGD) THEN
+            rp = real(BPG)
+            ip = aimag(BPG)
+            IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+               IF (myProc.eq.0) THEN
+                  ALLOCATE(rp_g(NP_G,NFEN),ip_g(NP_G,NFEN))
+                  RealBPGDescript % array2D_g => rp_g
+                  ImaginaryBPGDescript % array2D_g => ip_g
+               ENDIF
+               CALL collectFullDomainArray(RealBPGDescript,
+     &            packNPbyM, unpackNPbyM)
+               CALL collectFullDomainArray(ImaginaryBPGDescript,
+     &            packNPbyM, unpackNPbyM)
+            ENDIF
+            SELECT CASE(ABS(I3DGB))
+#ifdef ADCNETCDF
+            CASE(3,5) ! netcdf
+               IF (myProc.eq.0) THEN
+                  CALL writeOutArrayNetCDF(48, TimeLoc, it,
+     &               RealBPGDescript,ImaginaryBPGDescript)
+               ENDIF
+#endif
+            CASE DEFAULT
+               write(scratchMessage,'("Invalid I3DGB: ",I2)') ABS(I3DGV)
+               CALL allMessage(ERROR, scratchMessage)
+            END SELECT
+            N3DGB=0
+            IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.).and.
+     &          (myProc.eq.0)) THEN
+               DEALLOCATE(rp_g,ip_g)
+            ENDIF
+         ENDIF
+      ENDIF
+#endif
+!Casey 221115 : End of code additions.
+
 
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
