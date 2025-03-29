@@ -112,6 +112,17 @@ C-----------------------------------------------------------------------
       USE GLOBAL_3DVS, ONLY: C3D_PTrans, NSTA3DD, NSTA3DV, NSTA3DT,
      &   I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT, NSTA3DD_G, NSTA3DV_G,
      &   NSTA3DT_G, Z0B
+!Casey 221103 : Use variables from the baroclinic3D namelist.
+     &  ,baroclinic3D,found_baroclinic3D_NML,
+     &   iterateEqnState2,
+     &   densityIntegration,
+     &   verticalInterpolationScheme,
+     &   useLeithViscosity,
+     &   lambdaLeith,
+     &   viscosityOperator,
+     &   diffusionOperator,
+     &   useAdaptiveFilter
+     &  ,outputFort48
       USE SUBDOMAIN, ONLY : subdomainOn
       USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
@@ -574,6 +585,71 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       call logMessage(ECHO,trim(scratchMessage))
       
       rewind(15)
+      !
+!Casey 221103 : Read the baroclinic3D namelist.
+      namelistSpecifier = 'baroclinic3D'
+      READ(UNIT=15,NML=baroclinic3D,IOSTAT=IOS,IOMSG=ios_nml_error_msg)
+      CALL logNamelistReadStatus(namelistSpecifier,IOS,ios_nml_error_msg)
+      ! iterateEqnState2
+      WRITE(scratchMessage,*) "iterateEqnState2=",iterateEqnState2
+      CALL logMessage(ECHO,TRIM(scratchMessage))
+      ! densityIntegration
+      IF ( INDEX(densityIntegration,'Trapezoidal').GT.0 .OR.
+     &     INDEX(densityIntegration,'TRAPEZOIDAL').GT.0 )THEN
+         WRITE(densityIntegration,'(A)') "trapezoidal"
+      ENDIF
+      IF ( INDEX(densityIntegration,'Simpson').GT.0 .OR.
+     &     INDEX(densityIntegration,'SIMPSON').GT.0)THEN
+         WRITE(densityIntegration,'(A)') "simpson"
+      ENDIF
+      WRITE(scratchMessage,*) "densityIntegration=",TRIM(densityIntegration)
+      CALL logMessage(ECHO,TRIM(scratchMessage))
+      ! verticalInterpolationScheme
+      IF( INDEX(verticalInterpolationScheme,'Linear').GT.0 .OR.
+     &    INDEX(verticalInterpolationScheme,'LINEAR').GT.0 )THEN
+         WRITE(verticalInterpolationScheme,'(A)') "linear"
+      ENDIF
+      WRITE(scratchMessage,*) "verticalInterpolationScheme=",
+     &    TRIM(verticalInterpolationScheme)
+      CALL logMessage(ECHO,TRIM(scratchMessage))
+      ! useLeithViscosity
+      WRITE(scratchMessage,*) "useLeithViscosity=",useLeithViscosity
+      CALL logMessage(ECHO,TRIM(scratchMessage))
+      ! lambdaLeith
+      WRITE(scratchMessage,*) "lambdaLeith=",lambdaLeith
+      CALL logMessage(ECHO,TRIM(scratchMessage))
+      ! viscosityOperator
+      IF( INDEX(viscosityOperator,'laplacian').GT.0 .OR.
+     &    INDEX(viscosityOperator,'LAPLACIAN').GT.0 .OR.
+     &    INDEX(viscosityOperator,'harmonic' ).GT.0 .OR.
+     &    INDEX(viscosityOperator,'Harmonic' ).GT.0 .OR.
+     &    INDEX(viscosityOperator,'HARMONIC' ).GT.0 )THEN
+         WRITE(viscosityOperator,'(A)') "Laplacian"
+      ENDIF
+      WRITE(scratchMessage,*) "viscosityOperator=",
+     &    TRIM(viscosityOperator)
+      CALL logMessage(ECHO,TRIM(scratchMessage))
+      ! diffusionOperator
+      IF( INDEX(diffusionOperator,'laplacian').GT.0 .OR.
+     &    INDEX(diffusionOperator,'LAPLACIAN').GT.0 .OR.
+     &    INDEX(diffusionOperator,'harmonic' ).GT.0 .OR.
+     &    INDEX(diffusionOperator,'Harmonic' ).GT.0 .OR.
+     &    INDEX(diffusionOperator,'HARMONIC' ).GT.0 )THEN
+         WRITE(diffusionOperator,'(A)') "Laplacian"
+      ENDIF
+      WRITE(scratchMessage,*) "diffusionOperator=",
+     &    TRIM(diffusionOperator)
+      CALL logMessage(ECHO,TRIM(scratchMessage))
+      ! useAdaptiveFilter
+      WRITE(scratchMessage,*) "useAdaptiveFilter=",useAdaptiveFilter
+      CALL logMessage(ECHO,TRIM(scratchMessage))
+      ! outputFort48
+#ifndef ADCNETCDF
+      outputFort48 = .FALSE.
+#endif
+      WRITE(scratchMessage,*) "outputFort48=",outputFort48
+      CALL logMessage(ECHO,TRIM(scratchMessage))
+      REWIND(15)
       !
       ! jgf52.05: Add a namelist for the user to control
       ! output of NODECODE and NOFF.
@@ -1180,7 +1256,9 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     f i n e   g r a i n e d   o p t i o n s ( i m )
 c     - - - - - - - - - - - - - - - - - - - - - - - -
-      ELSEIF ((IM.GE.111111).AND.(IM.LE.634323)) THEN
+Casey 220124: Allowed option 7 for first digit.
+C     ELSEIF ((IM.GE.111111).AND.(IM.LE.634322)) THEN
+      ELSEIF ((IM.GE.111111).AND.(IM.LE.734323)) THEN
          IMDig1 = IM/100000
          IMDig2 = (IM - 100000*IMDig1)/10000
          IMDig3 = (IM - 100000*IMDig1 - 10000*IMDig2)/1000
@@ -1219,6 +1297,14 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
             CGWCE_LS_KGQ  = .TRUE.
             C3D           = .TRUE.
             C3DVS         = .TRUE.
+            ILump=0
+Casey 220124: Allowed for option 7 in first digit.
+         ELSEIF(IMDig1.EQ.7) THEN
+            C2DDI        = .FALSE.
+            CGWCE_LS_KGQ  = .TRUE.
+            C3D           = .TRUE.
+            C3DVS         = .TRUE.
+            CBaroclinic   = .TRUE.
             ILump=0
           WRITE(16,*) '    ADCIRC is configured for a Barotropic 3D ',
      &        'run using: New GWCE and velocity based ',
@@ -5820,6 +5906,13 @@ C.....  Write global turbulence output information to UNIT 16
      &                NDSet3DGT
          CALL logMessage(INFO,scratchMessage)
       ENDIF
+C
+C...3D Global Internal Output  (fort.48)
+C
+!Casey 221115 : Add output of internal variables in fort.48 file.
+      I3DGB = I3DGD
+      NTO3DGBS = NTO3DGDS
+      NTO3DGBF = NTO3DGDF
 C
 C    kmd48.33bc - added in the information of the 3D boundary conditions
 C                 these boundary conditions are the level of no motion,
