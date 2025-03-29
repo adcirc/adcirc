@@ -144,7 +144,8 @@ CWET...
       use global, only : noff, nodecode, nnodecode, eta1, eta2, tk,
      &    nolifa,
      &    bsx1, bsy1, btime_end, C2DDI, C3D, h0, ifnlfa, nddt, dtdp,
-     &    nibnodecode, ilump, ncchange, tkm, directvelWD, useHF
+     &    nibnodecode, ilump, ncchange, tkm, directvelWD, useHF,
+     &    cbaroclinic, iden 
 #ifdef CMPI
      &    ,idumy,dumy1,dumy2
       use messenger
@@ -160,6 +161,8 @@ CWET...
      &   NNodesListCondensedNodes
       USE BOUNDARIES, ONLY : IBCONN, ISSUBMERGED64, NFLUXIB64_GBL
       use global_3dvs, only : a, b, islip, kp, z0b, sigma, evtot, q
+!Casey 220207 from Rosemary
+     &    , nfen, sal, temp
       use subdomain, only : subdomainOn, enforceBN, enforceWDcb, enforceWDob
       use subgrid, only: level0, subgridVertList, gridDepthVertETA2,
      &   level1, cmfVertETA2, cfVertETA2, wetDepthVertETA2,
@@ -485,6 +488,13 @@ c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the 
                               BSX1(NM3)=KSLIP*REAL(Q(NM123,1))
                               BSY1(NM3)=KSLIP*AIMAG(Q(NM123,1))
                            ENDIF
+!Casey 220207 from Rosemary : Update sal/temp at newly wet node
+                           IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
+                              DO k = 1,NFEN
+                               SAL(NM3,k) =0.5D0*(SAL(NM1,k)+SAL(NM2,k))
+                               TEMP(NM3,k)=0.5D0*(TEMP(NM1,k)+TEMP(NM2,k))
+                              ENDDO
+                           ENDIF
                         ENDIF
                      ENDIF
                   ENDIF
@@ -623,6 +633,13 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
                               BSX1(NM1)=KSLIP*REAL(Q(NM123,1))
                               BSY1(NM1)=KSLIP*AIMAG(Q(NM123,1))
                            ENDIF
+!Casey 220207 from Rosemary : Again in the 3 wetting criteria
+                           IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
+                              DO k = 1,NFEN
+                               SAL(NM1,k) =0.5D0*(SAL(NM2,k)+SAL(NM3,k))
+                               TEMP(NM1,k)=0.5D0*(TEMP(NM2,k)+TEMP(NM3,k))
+                              ENDDO
+                        ENDIF
                         ENDIF
 
                      ENDIF
@@ -762,6 +779,13 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
                               BSX1(NM2)=KSLIP*REAL(Q(NM123,1))
                               BSY1(NM2)=KSLIP*AIMAG(Q(NM123,1))
                            ENDIF
+!Casey 220207 from Rosemary : Again in all wetting criteria
+                           IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
+                              DO k = 1,NFEN
+                               SAL(NM2,k) =0.5D0*(SAL(NM1,k)+SAL(NM3,k))
+                               TEMP(NM2,k)=0.5D0*(TEMP(NM1,k)+TEMP(NM3,k))
+                              ENDDO
+                           ENDIF
                         ENDIF
 
                      ENDIF
@@ -879,6 +903,13 @@ C<<                           Convert Manning's N to Cd, if necessary.
                                  BSX1(NM3)=KSLIP*REAL(Q(NM123,1))
                                  BSY1(NM3)=KSLIP*AIMAG(Q(NM123,1))
                               ENDIF
+!Casey 220207 from Rosemary : In ALL wetting criteria
+                              IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
+                                 DO k = 1,NFEN
+                                    SAL(NM3,k) =0.5D0*(SAL(NM1,k)+SAL(NM2,k))
+                                    TEMP(NM3,k)=0.5D0*(TEMP(NM1,k)+TEMP(NM2,k))
+                                 ENDDO
+                           ENDIF
                            ENDIF
                         ENDIF  !end node 1
 
@@ -937,6 +968,13 @@ C<<                        Convert Manning's N to Cd, if necessary.
                                  BSX1(NM1)=KSLIP*REAL(Q(NM123,1))
                                  BSY1(NM1)=KSLIP*AIMAG(Q(NM123,1))
                               ENDIF
+!Casey 220207 from Rosemary : And again in the next two wetting criteria
+                              IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
+                                 DO k = 1,NFEN
+                                    SAL(NM1,k) =0.5D0*(SAL(NM2,k)+SAL(NM3,k))
+                                    TEMP(NM1,k)=0.5D0*(TEMP(NM2,k)+TEMP(NM3,k))
+                                 ENDDO
+                           ENDIF
                            ENDIF
                         ENDIF  !node 2
 
@@ -994,6 +1032,13 @@ C<<                         Convert Manning's N to Cd, if necessary.
                                  BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
                                  BSX1(NM2)=KSLIP*REAL(Q(NM123,1))
                                  BSY1(NM2)=KSLIP*AIMAG(Q(NM123,1))
+                              ENDIF
+!Casey 220207 from Rosemary : In ALL wetting criteria
+                              IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
+                                 DO k = 1,NFEN
+                                    SAL(NM2,k) =0.5D0*(SAL(NM1,k)+SAL(NM3,k))
+                                    TEMP(NM2,k)=0.5D0*(TEMP(NM1,k)+TEMP(NM3,k))
+                                 ENDDO
                               ENDIF
                            ENDIF
                         ENDIF !node3

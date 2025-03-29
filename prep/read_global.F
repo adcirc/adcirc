@@ -255,7 +255,9 @@ C
                WEIR(NWEIR) = NBVV(K,I)
                WEIRD(NWEIR) = IBCONNR(K,I)
             ENDDO
-         case(2,12,22,32,52)
+!Casey 241211 Debug
+!        case(2,12,22,32,52)
+         case(2,12,22,32,52,122)
            NFLUXF=1 !jgf51.52.23
            DO I=1,NVELL(K)
               EXIST_FLUX = EXIST_FLUX + 1
@@ -359,7 +361,9 @@ c
             END IF
             ! jgf50.21 Use select case and add IBTYPE 32.
             select case(DITYPE)
-            case(2,12,22,32,52)
+!Casey 241211 Debug
+!           case(2,12,22,32,52)
+            case(2,12,22,32,52,122)
                DO I=1, DNVELL(K)
                   EXIST_FLUX = EXIST_FLUX + 1
                   READ(14,*) n1
@@ -883,6 +887,18 @@ C  DW
       ENDIF
       REWIND(15)
      
+!Casey 221103 : Try to read the baroclinic3D namelist from fort.15
+      READ(UNIT=15,NML=baroclinic3D,IOSTAT=IOS)
+      IF( IOS.GE.0 )THEN
+         found_baroclinic3D_NML = .TRUE.
+         CALL logMessage(INFO,
+     &       'The baroclinic3D namelist was found.')
+      ELSE
+         CALL logMessage(INFO,
+     &       'The baroclinic3D namelist was not found.')
+      ENDIF
+      REWIND(15)
+
       READ(15,80) RUNDES
 C
       READ(15,80) RUNID
@@ -2074,7 +2090,7 @@ C---------------------------------------------------------------------
       USE ADC_CONSTANTS, ONLY: deg2rad, day2sec
       USE GLOBAL, ONLY : parse, a2f, SNAMLEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET, SIGMA,
-     &    FEGRIDS
+     &    FEGRIDS, I3DGB
       USE MESH, only : CYLINDERMAP
       use memory_usage
       IMPLICIT NONE
@@ -2425,6 +2441,13 @@ C   kmd48.33bc changed to -2
  516     FORMAT(/,2X,'    I3DGT MUST BE -3,-2,-1,0,1,2, or 3')
          CALL EXIT(1)
       ENDIF
+
+!Casey 221115 : Add output of internal variables in fort.48 file.
+#ifdef ADCNETCDF
+      IF(outputFort48)THEN
+         I3DGB = I3DGD
+      ENDIF
+#endif
 
 C   kmd48.33bc add in information for 3D boundary condition
       IF (CBAROCLINIC) THEN

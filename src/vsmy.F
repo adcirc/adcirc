@@ -34,6 +34,8 @@ C******************************************************************************
       USE MESH, ONLY : NP      
       IMPLICIT NONE
       INTEGER :: NH, N
+!Casey 230203 : Add variables for integration of densities.
+      INTEGER :: GQI, IGQ
 C
       call setMessageSource("vsstup")
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
@@ -50,16 +52,42 @@ C...
 C...  COMPUTE THE DEPTH-AVERAGED Sigma T FIELD
 C...
 
+!Casey 230203 : Add user-control for this integration.
+        IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
       DO NH=1,NP
          DASigT(NH)=0.d0
-         IF(CBaroclinic) THEN
             DO N=1,NFEN-1
                DASigT(NH)=DASigT(NH)+(Sigma(N+1)-Sigma(N))
      &                                   *(SigT(NH,N+1)+SigT(NH,N))/2.d0
              ENDDO
             DASigT(NH)=DASigT(NH)/AMB
-          ENDIF
        ENDDO
+!Casey 230203 : Add option for Simpson integration.
+        ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+          DO NH=1,NP
+            DASigT(NH)=0.d0
+            DO N=1,NFEN-1
+              DASigT(NH) = DASigT(NH) + (1.D0/6.D0) * ( Sigma(N+1)-Sigma(N) )
+     &            * ( SigT(NH,N+1) + 4.0D0 * SIGTM(NH,N) + SigT(NH,N) )
+            ENDDO
+            DASigT(NH)=DASigT(NH)/AMB
+          ENDDO
+!Casey 230203 : Add option for Gauss-Legendre quadrature.
+        ELSE ! default is densityIntegration = 'quadrature'
+           DO NH=1,NP
+             DASigT(NH)=0.d0
+             DO N=1,NFEN-1
+               DO IGQ=1,NumGQP
+                 GQI = NumGQP*(N-1)+IGQ
+                 DASigT(NH) = DASigT(NH) + ( Sigma(N+1)-Sigma(N) )
+     &               + GQW(IGQ) / SUM(GQW) * SIGTM(NH,GQI)
+               ENDDO
+             ENDDO
+             DASigT(NH)=DASigT(NH)/AMB
+           ENDDO
+        ENDIF
+!Casey 230317 Debug
+!       DASigT = 0.D0
 
 C...
 C...  ADDITIONAL RUN SETUP
@@ -185,8 +213,6 @@ Cjgfdebug      REAL(8) :: SigmaNN       !Sigma value of a neighbor node
       REAL(8) :: CLBP,SLBP     !local values of CSII, SIII at boundary node LBP
       REAL(8) :: Auv1km1,Auv2km1 !initial real,imaginary parts of Mkm1 at flux boundary node
       REAL(8) :: Auv1km1star,Auv2km1star !rotated real,imaginary parts of Mkm1 at flux boundary node
-Cjgfdebug      REAL(8) :: Auv1k1,Auv2k1 !initial real,imaginary parts of Mk at flux boundary node
-Cjgfdebug      REAL(8) :: Auv1k1star,Auv2k1star !rotated real,imaginary parts of Mk at flux boundary node
       REAL(8) :: Auv1kp1,Auv2kp1 !initial real,imaginary parts of Mkp1 at flux boundary node
       REAL(8) :: Auv1kp1star,Auv2kp1star !rotated real,imaginary parts of Mkp1 at flux boundary node
 
@@ -199,13 +225,6 @@ Cjgfdebug      REAL(8) :: Auv1k1star,Auv2k1star !rotated real,imaginary parts of
       REAL(8) :: BTPN1,BTPN2,BTPN3,BTPNFirst !nodal values of BTP
       REAL(8) :: BTPDX2A,BTPDY2A !(Horiz. grads of BTP)*2*Element Area
 
-Cjgfdebug      REAL(8) :: BCPN1,BCPN2,BCPN3,BCPNFirst !nodal values of BCP
-Cjgfdebug      REAL(8) :: BCPDX2A,BCPDY2A !(Horiz. grads of BCP)*2*Element Area
-Cjgfdebug      REAL(8) :: SigTAvg       !avg SigT between 2 vertical nodes
-Cjgfdebug      REAL(8) :: HGORhoOAMB    !depth*gravity/(reference density)/(a-b)
-
-Cjgfdebug      REAL(8) :: DBCPDX2A
-Cjgfdebug      REAL(8) :: DBCPDY2A
       REAL(8) :: RCL
       REAL(8) :: Auv1k
       REAL(8) :: Auv2k
@@ -220,19 +239,13 @@ Cjgfdebug      REAL(8) :: DBCPDY2A
       REAL(8) :: DhDX,DhDY      !horizontal derivatives of DP
       REAL(8) :: DhDX2A,DhDY2A  !(DhDX,DhDY)*2*Element Area
       REAL(8) :: TotalArea2     !2*Area of all elements around a node
-Cjgfdebug      REAL(8) :: TotalBCPGArea2 !2*Area of all elements around a node used to compute the BCPG
       REAL(8) :: a1,a2,a3,b1,b2,b3 !elemental coefficients used in horizontal FE method
-
       REAL(8) :: Hs             !Total water depth at time level s
-Cjgfdebug      REAL(8) :: HsN2           !Total water depth at time level s at local node N2
       REAL(8) :: HsOAMB         !Hs/(a-b)
       REAL(8) :: HsHsOAMBAMB    !(Hs/(a-b))^2
       REAL(8) :: Hsp1           !Total water depth at time level s+1
       REAL(8) :: Hsp1OAMB       !Hsp1/(a-b)
       REAL(8) :: Hsp1Hsp1OAMBAMB !(Hsp1/(a-b))^2
-
-
-Casey 140701: Prevent depths from becoming negative in bottom roughness calculations.
 ! arash 12/14/2015
       Real(8) :: Biharmonic_viscosity
 
@@ -289,6 +302,8 @@ C   kmd48.33bc added the following variables for boundary conditions
       INTEGER :: J, NumofBCNode
       INTEGER :: NOD
       CHARACTER(80) :: CDUM80
+!Casey 230203 : Add variables for integration the densities.
+      INTEGER :: GQI,IGQ
 
       call setMessageSource("vssol")
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
@@ -341,141 +356,93 @@ C!      ENDIF
       Biharmonic_viscosity_modified_Leith (:,:) = 0.0d0
 
       DO NH = 1, NP                      !loop over horizontal nodes
-
 C........DMW202401 Use saved H1 !Total depth at current timestep - 'center' node
-         HsOAMB = H1(NH) / AMB
+         IF(H1(NH).LT.H0)THEN
+           HS = H0
+         ELSE
+           HS = H1(NH)
+         ENDIF
+         HsOAMB = Hs / AMB
          ! begin the vertical loop
+
          DO k = 1, NFEN
-            DqDXDPhiDX2A = 0.d0    ! variables for computing the biharmonic operator
-            DqDYDPhiDY2A = 0.d0
+            !Start from zero
             TotalArea2   = 0.d0
-            d_dx_q_element = ( 0.0d0 , 0.0d0 ) ! to compute the viscosity constant
-            d_dy_q_element = ( 0.0d0 , 0.0d0 )
-            Zk = HsOAMB * ( Sigma(k) - B ) - DP(NH)
-
-            N1  = NH               !node 1 is always the central node
-            qN1 = q(N1,k)
-            qN1_z = qN1
-            N2  = NEITAB(NH,2)     !operate on 1st neighbor
-            qN2 = q(N2,k)
-! af 01/04/2016: interpolate it at the same z level as N1
-C...........DMW202401 Use saved H1
-            SigmaNN = B + AMB * ( Zk + DP(N2) ) / H1(N2) !equivalent sigma value at neighbor
-            inarray_vertical (:) = q(N2,:)
-            Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, qN2_z, k )
-
-            NNFirst = N2           !save these values until end
-            qNFirst = qN2
-! af 01/04/2016
-            qNFirst_z = qN2_z
-
-            DO N = 3, NNEIGH(NH)   !operate on rest of neighbors
-               N3  = N2            !shift previously computed values
-               qN3 = qN2
-! af 01/04/2016
-               qN3_z = qN2_z
-
-               N2  = NEITAB(NH,N)  !select new neighbor to work on
-               qN2 = q(N2,k)
-! af 01/04/2016: interpolate it at the same z level as N1
-C..............DMW202401 Use saved H1
-               SigmaNN = B + AMB * ( Zk + DP(N2) ) / H1(N2) !equivalent sigma value at neighbor
+            DqDXDPhiDX2A = 0.d0
+            DqDYDPhiDY2A = 0.d0
+            d_dx_q_element = (0.d0,0.d0)
+            d_dy_q_element = (0.d0,0.d0)
+            DO N=1,SIZE(NeiTabEle,2)
+               ! Find neighbor element
+               NEle = NeiTabEle(NH,N)
+               ! Skip blank entries in NeiTabEle
+               IF(NEle.EQ.0) CYCLE
+               ! Find vertices in counterclockwise order
+               IF(NM(NEle,1).EQ.NH)THEN
+                  N1=NM(NEle,1)
+                  N2=NM(NEle,2)
+                  N3=NM(NEle,3)
+               ELSEIF(NM(NEle,2).EQ.NH)THEN
+                  N1=NM(NEle,2)
+                  N2=NM(NEle,3)
+                  N3=NM(NEle,1)
+               ELSEIF(NM(NEle,3).EQ.NH)THEN
+                  N1=NM(NEle,3)
+                  N2=NM(NEle,1)
+                  N3=NM(NEle,2)
+               ELSE
+                  PRINT*, "Aack! ",NH,NEle,NM(Nele,:)
+               ENDIF
+               ! Skip dry elements
+               NCEle=NODECODE(N1)*NODECODE(N2)
+     &              *NODECODE(N3)*NOFF(NEle)
+               IF(NCEle.EQ.0) CYCLE
+               ! For vertex of interest
+               qN1=q(N1,k)
+               qN1_z=qN1
+               Zk=HsOAMB*(Sigma(k)-B)-DP(N1)
+               ! For first neighbor vertex
+               qN2=q(N2,k)
+               HsN2=DP(N2)+IFNLFA*Eta2(N2)
+               IF(HsN2.LT.H0) HsN2=H0
+               SigmaNN=B+AMB*(Zk+DP(N2))/HsN2
                inarray_vertical (:) = q(N2,:)
-               Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, qN2_z, k )
-
-               NEle= NeiTabEle(NH,N-2) !element # defined by nodes N1,N2,N3
-               IF (NEle.eq.0) THEN
-                  CYCLE
-               ENDIF
-               IF((NEle.NE.0)) THEN    !if element is active, compute velocity grads
-                  NCELE = NODECODE(NH) * NODECODE(N2) *
-     &                 NODECODE(N3) * NOFF(NELE)
-                  IF (NCELE.NE.0) THEN !if element exists, compute terms
-                     TotalArea2 = TotalArea2 + Areas(NEle) !accumulate 2X total areas to complete calc.
-                     SFacAvg = (SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
-                     !qn = (qN1+qN2+qN3)/3.d0
-                     !Un = REAL(qn)
-                     !Vn = AIMAG(qn)
-                     a1 = X(N3)-X(N2)
-                     a2 = X(N1)-X(N3)
-                     a3 = X(N2)-X(N1)
-                     b1 = (Y(N2)-Y(N3))*SFacAvg
-                     b2 = (Y(N3)-Y(N1))*SFacAvg
-                     b3 = (Y(N1)-Y(N2))*SFacAvg
-! iso-sigma:
-!                     DqDXDPhiDX2A = DqDXDPhiDX2A
-!     &                 + (qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
-!                     DqDYDPhiDY2A=DqDYDPhiDY2A
-!     &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
-                     ! variables for modified Leith viscosity parameter
-!                     d_dx_q_element = d_dx_q_element + qN1*b1+qN2*b2+qN3*b3
-!                     d_dy_q_element = d_dy_q_element + qN1*a1+qN2*a2+qN3*a3
-! z-level:
-                     DqDXDPhiDX2A = DqDXDPhiDX2A
-     &                 + (qN1_z*b1+qN2_z*b2+qN3_z*b3)*b1/Areas(NEle)
-                     DqDYDPhiDY2A=DqDYDPhiDY2A
-     &                 +(qN1_z*a1+qN2_z*a2+qN3_z*a3)*a1/Areas(NEle)
-                     ! variables for modified Leith viscosity parameter
-                     d_dx_q_element = d_dx_q_element + qN1_z*b1+qN2_z*b2+qN3_z*b3
-                     d_dy_q_element = d_dy_q_element + qN1_z*a1+qN2_Z*a2+qN3_z*a3
-                  ENDIF
-               ENDIF
+               CALL linear_vertical_interpolation_complex(
+     &                 inarray_vertical, SigmaNN, qN2_z, k )
+               ! For second neighbor vertex
+               qN3=q(N3,k)
+               HsN2=DP(N3)+IFNLFA*Eta2(N3)
+               IF(HsN2.LT.H0) HsN2=H0
+               SigmaNN=B+AMB*(Zk+DP(N3))/HsN2
+               inarray_vertical (:) = q(N3,:)
+               CALL linear_vertical_interpolation_complex(
+     &                 inarray_vertical, SigmaNN, qN3_z, k )
+               ! Compute gradients
+               TotalArea2=TotalArea2+Areas(NEle)
+               SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+               a1= X(N3)-X(N2)
+               a2= X(N1)-X(N3)
+               a3= X(N2)-X(N1)
+               b1=(Y(N2)-Y(N3))*SFacAvg
+               b2=(Y(N3)-Y(N1))*SFacAvg
+               b3=(Y(N1)-Y(N2))*SFacAvg
+               DqDXDPhiDX2A = DqDXDPhiDX2A
+     &            + ( qN1_z*b1 + qN2_z*b2 + qN3_z*b3 )*b1/Areas(NEle)
+               DqDYDPhiDY2A = DqDYDPhiDY2A
+     &            + ( qN1_z*a1 + qN2_z*a2 + qN3_z*a3 )*a1/Areas(NEle)
+               d_dx_q_element = d_dx_q_element
+     &            + ( qN1_z*b1 + qN2_z*b2 + qN3_z*b3 )
+               d_dy_q_element = d_dy_q_element
+     &            + ( qN1_z*a1 + qN2_Z*a2 + qN3_z*a3 )
             ENDDO
-            N3  = N2               !wrap back to beginning to get final contribution
-            qN3 = qN2
-! af 01/04/2016
-            qN3_z = qN2_z
-
-            N2  = NNFIRST
-            qN2 = qNFirst
-! af 01/04/2016
-            qN2_z = qNFirst_z
-
-            NEle=NeiTabEle(NH,NNeigh(NH)-1)
-            IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
-               NCELE = NODECODE(NH) * NODECODE(N2) *
-     &              NODECODE(N3) * NOFF(NELE)
-               IF ((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
-                  TotalArea2 = TotalArea2 + Areas(NEle) !accumulate 2X total areas to complete calc.
-                  SFacAvg = (SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
-                  !qn = (qN1+qN2+qN3)/3.d0
-                  !Un = real(qn)
-                  !Vn = aimag(qn)
-                  a1 = X(N3)-X(N2)
-                  a2 = X(N1)-X(N3)
-                  a3 = X(N2)-X(N1)
-                  b1 = (Y(N2)-Y(N3))*SFacAvg
-                  b2 = (Y(N3)-Y(N1))*SFacAvg
-                  b3 = (Y(N1)-Y(N2))*SFacAvg
-! iso-sigma:
-!                  DqDXDPhiDX2A = DqDXDPhiDX2A
-!     &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
-!                  DqDYDPhiDY2A = DqDYDPhiDY2A
-!     &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
-                  ! variables for modified Leith viscosity parameter - velocity derivatives at nodes
-!                  d_dx_q_element = d_dx_q_element + qN1*b1+qN2*b2+qN3*b3
-!                  d_dy_q_element = d_dy_q_element + qN1*a1+qN2*a2+qN3*a3
-! z-level:
-                     DqDXDPhiDX2A = DqDXDPhiDX2A
-     &                 + (qN1_z*b1+qN2_z*b2+qN3_z*b3)*b1/Areas(NEle)
-                     DqDYDPhiDY2A=DqDYDPhiDY2A
-     &                 +(qN1_z*a1+qN2_z*a2+qN3_z*a3)*a1/Areas(NEle)
-                     ! variables for modified Leith viscosity parameter
-                     d_dx_q_element = d_dx_q_element + qN1_z*b1+qN2_z*b2+qN3_z*b3
-                     d_dy_q_element = d_dy_q_element + qN1_z*a1+qN2_Z*a2+qN3_z*a3
-               ENDIF
-            ENDIF
-
-            IF(TotalArea2.EQ.0.) THEN
-               ! do nothing
-            ELSE
-               Biharmonic_auxiliary_var(NH,k) = -3.d0 * (DqDXDPhiDX2A+DqDYDPhiDY2A) / TotalArea2
-               ! variables for modified Leith viscosity parameter
+            IF(TotalArea2.GT.0.0001D0)THEN
+               Biharmonic_auxiliary_var(NH,k) = -3.D0 
+     &            * ( DqDXDPhiDX2A + DqDYDPhiDY2A ) / TotalArea2
                d_dx_q_nodes (NH,k) = d_dx_q_element / TotalArea2
                d_dy_q_nodes (NH,k) = d_dy_q_element / TotalArea2
             ENDIF
+         ENDDO
 
-         END DO ! end vertical loop
       End Do ! end horizontal loop
 
 ! end computing Biharmonic_auxiliary_var(:,:)
@@ -543,6 +510,13 @@ C    &      NOFF(NEITABELE(NH,K+TEMPSTOP))
      &      NODECODE(NM(NEITABELE(NH,K),3))*
      &      NOFF(NEITABELE(NH,K))
          ENDDO
+
+!Casey 220518 : If the vertex is connected to only one element,
+!               itself plus two neighbors (so NNEIGH(NH) = 3),
+!               then skip the computation of velocities.
+!        IF(NNEIGH(NH).LT.4)THEN
+!           TEMPNCELE = 0
+!        ENDIF
 
 Casey 071219: If TEMPNCELE is zero, then the current horizontal node is
 C     not attached to any active elements.  Thus, the horizontal velocities
@@ -641,6 +615,88 @@ c     depth and total barotropic pressure (atmos pres, water level,
 c     tidal potential) Note: TotalArea2 = 2X total elemental area
 c     surrounding a node
 
+#ifndef CASEY
+
+!Casey 220523 : Wouldn't this be easier?
+
+         ! Start from zero
+         TotalArea2=0.d0
+         DhDX2A=0.d0
+         DhDY2A=0.d0
+         DEtaDX2A=0.d0
+         DEtaDY2A=0.d0
+         BTPDX2A=0.d0
+         BTPDY2A=0.d0
+         DhDX=0.d0
+         DhDY=0.d0
+         DEtaDX=0.d0
+         DEtaDY=0.d0
+         BTPG=(0.d0,0.d0)
+         DO N=1,SIZE(NeiTabEle,2)
+            ! Find neighbor element
+            NEle=NeiTabEle(NH,N)
+            ! Skip blank entries in NeiTabEle
+            IF(NEle.EQ.0) CYCLE
+            ! Find vertices in counterclockwise order
+            IF(NM(NEle,1).EQ.NH)THEN
+               N1=NM(NEle,1)
+               N2=NM(NEle,2)
+               N3=NM(NEle,3)
+            ELSEIF(NM(NEle,2).EQ.NH)THEN
+               N1=NM(NEle,2)
+               N2=NM(NEle,3)
+               N3=NM(NEle,1)
+            ELSEIF(NM(NEle,3).EQ.NH)THEN
+               N1=NM(NEle,3)
+               N2=NM(NEle,1)
+               N3=NM(NEle,2)
+            ELSE
+               PRINT*, "Aack! ",NH,NEle,NM(Nele,:)
+            ENDIF
+            ! Skip dry elements
+            NCEle=NODECODE(N1)*NODECODE(N2)
+     &           *NODECODE(N3)*NOFF(NEle)
+            IF(NCEle.EQ.0) CYCLE
+            ! For vertex of interest
+            hN1=DP(N1)
+            EtaN1=IFNLFA*(Eta1(N1)+Eta2(N1))/ 2.d0
+            BTPN1=BTP(N1)
+            ! For first neighbor vertex
+            hN2=DP(N2)
+            EtaN2=IFNLFA*(Eta1(N2)+Eta2(N2))/2.d0
+            BTPN2=BTP(N2)
+            ! For second neighbor vertex
+            hN3=DP(N3)
+            EtaN3=IFNLFA*(Eta1(N3)+Eta2(N3))/2.d0
+            BTPN3=BTP(N3)
+            ! Compute gradients
+            TotalArea2=TotalArea2+Areas(NEle)
+            SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+            a1= X(N3)-X(N2)
+            a2= X(N1)-X(N3)
+            a3= X(N2)-X(N1)
+            b1=(Y(N2)-Y(N3))*SFacAvg
+            b2=(Y(N3)-Y(N1))*SFacAvg
+            b3=(Y(N1)-Y(N2))*SFacAvg
+            DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
+            DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
+            DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
+            DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
+            BTPDX2A=BTPDX2A+(BTPN1*b1+BTPN2*b2+BTPN3*b3)
+            BTPDY2A=BTPDY2A+(BTPN1*a1+BTPN2*a2+BTPN3*a3)
+         ENDDO
+         IF(TotalArea2.GT.0.0001D0)THEN
+            DhDX=DhDX2A/TotalArea2
+            DhDY=DhDY2A/TotalArea2
+            DEtaDX=DEtaDX2A/TotalArea2
+            DEtaDY=DEtaDY2A/TotalArea2
+            BTPG=(BTPDX2A+iy*BTPDY2A)/TotalArea2
+         ENDIF
+
+#else
+
+!Casey 220523 : End of code additions, let's comment the stuff below.
+
          DEtaDX=0.d0
          DEtaDY=0.d0
          DhDX=0.d0
@@ -678,6 +734,28 @@ c     surrounding a node
             EtaN2=IFNLFA*(Eta1(N2)+Eta2(N2))/2.d0
             hN2=DP(N2)
             BTPN2=BTP(N2)
+!Casey 220520 : This code worked fine when NeiTabEle was sparse,
+!               but it is broken now that array has been fixed.
+!               Need to check that our vertices are still
+!               in counter-clockwise order.
+            CCWArea = ( X(N1)-X(N3) )*( Y(N2)-Y(N3) )
+     &              + ( X(N3)-X(N2) )*( Y(N1)-Y(N3) )
+            CCWSign = CCWArea / ABS(CCWArea)
+            IF(CCWSign.LT.0.D0)THEN
+              CCWI = N3
+              N3 = N2
+              N2 = CCWI
+              CCWR = hN3
+              hN3 = hN2
+              hN2 = CCWR
+              CCWR = EtaN3
+              EtaN3 = EtaN2
+              EtaN2 = CCWR
+              CCWR = BTPN3
+              BTPN3 = BTPN2
+              BTPN2 = CCWR
+            ENDIF
+!Casey 220520 : End addition.
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
 c.RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
             !jgf48.50 If NEle is zero, the NOFF check would be out of
@@ -719,6 +797,28 @@ C               kmd48.33bc added in spherical factors for 3D
          hN2=hNFirst
          EtaN2=EtaNFirst
          BTPN2=BTPNFirst
+!Casey 220520 : This code worked fine when NeiTabEle was sparse,
+!               but it is broken now that array has been fixed.
+!               Need to check that our vertices are still
+!               in counter-clockwise order.
+         CCWArea = ( X(N1)-X(N3) )*( Y(N2)-Y(N3) )
+     &           + ( X(N3)-X(N2) )*( Y(N1)-Y(N3) )
+         CCWSign = CCWArea / ABS(CCWArea)
+         IF(CCWSign.LT.0.D0)THEN
+           CCWI = N3
+           N3 = N2
+           N2 = CCWI
+           CCWR = hN3
+           hN3 = hN2
+           hN2 = CCWR
+           CCWR = EtaN3
+           EtaN3 = EtaN2
+           EtaN2 = CCWR
+           CCWR = BTPN3
+           BTPN3 = BTPN2
+           BTPN2 = CCWR
+         ENDIF
+!Casey 220520 : End addition.
          NEle=NeiTabEle(NH,NNeigh(NH)-1)
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
          !jgf48.50 Avoid array out of bounds
@@ -751,6 +851,10 @@ C    kmd48.33bc added in spherical factors for 3D
             DEtaDY=DEtaDY2A/TotalArea2
             BTPG=(BTPDX2A+iy*BTPDY2A)/TotalArea2
          ENDIF
+
+!Casey 220523 : End of commenting.
+
+#endif
 
 c     Finished computing horizontal derivatives of water level,
 c     bathymetric depth and total barotropic pressure (atmos pres, water
@@ -816,245 +920,121 @@ c     Compute the vertical advection and vertical stress terms
 c     Compute lateral advection and lateral stress terms
 ! -------------------------------------------------------------------------------------------------
 
+            ! Start from zero
             UnDqDX2A=0.d0
             VnDqDY2A=0.d0
             DqDXDPhiDX2A=0.d0
             DqDYDPhiDY2A=0.d0
-! arash 12/14/2015: Biharmonic auxiliary variable derivatives
-            Biharmonic_DqDXDPhiDX2A =  ( 0.d0 , 0.0d0 )
-            Biharmonic_DqDYDPhiDY2A =  ( 0.d0 , 0.0d0 )
-! arash 12/21/2015: for modified Leith viscosity
-            d2_dx2_q_element = ( 0.d0 , 0.0d0 )
-            d2_dy2_q_element = ( 0.d0 , 0.0d0 )
-            d2_dxy_q_element = ( 0.d0 , 0.0d0 )
-
-            Zk = HsOAMB * ( Sigma(k) - B ) - DP(NH)
-
-            N1=NH               !node 1 is always the central node
-            qN1=q(N1,k)
-! af 01/04/2016
-            qN1_z = qN1
-! arash 12/14/2015
-            Biharmonic_qN1 = Biharmonic_auxiliary_var(N1,k)
-! af 01/04/2016
-            Biharmonic_qN1_z = Biharmonic_qN1
-! arash 12/21/2015
-            d_dx_qN1 = d_dx_q_nodes (N1,k)
-            d_dy_qN1 = d_dy_q_nodes (N1,k)
-! af 01/04/2016
-            d_dx_qN1_z = d_dx_qN1
-            d_dy_qN1_z = d_dy_qN1
-
-            N2=NEITAB(NH,2)     !operate on 1st neighbor
-            qN2=q(N2,k)
-! af 01/04/2016: interpolate it at the same z level as N1
-C...........DMW202401 Use saved H1
-            SigmaNN = B + AMB * ( Zk + DP(N2) ) / H1(N2) !equivalent sigma value at neighbor
-            inarray_vertical (:) = q(N2,:)
-            Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, qN2_z, k )
-
-! arash 12/14/2015
-            Biharmonic_qN2 = Biharmonic_auxiliary_var(N2,k)
-! af 01/04/2016: interpolate it at the same z level as N1
-            inarray_vertical (:) = Biharmonic_auxiliary_var(N2,:)
-            Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, Biharmonic_qN2_z, k )
-
-! arash 12/21/2015
-            d_dx_qN2 = d_dx_q_nodes (N2,k)
-            d_dy_qN2 = d_dy_q_nodes (N2,k)
-! af 01/04/2016: interpolate it at the same z level as N1
-            inarray_vertical (:) = d_dx_q_nodes(N2,:)
-            Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, d_dx_qN2_z, k )
-            inarray_vertical (:) = d_dy_q_nodes(N2,:)
-            Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, d_dy_qN2_z, k )
-
-            NNFirst=N2          !save these values until end
-            qNFirst=qN2
-! arash 12/14/2015
-            Biharmonic_qNFirst = Biharmonic_qN2
-! arash 12/21/2015
-            d_dx_qNFirst = d_dx_qN2
-            d_dy_qNFirst = d_dy_qN2
-! af 01/04/2016
-            qNFirst_z = qN2_z
-            Biharmonic_qNFirst_z = Biharmonic_qN2_z
-            d_dx_qNFirst_z = d_dx_qN2_z
-            d_dy_qNFirst_z = d_dy_qN2_z
-
-            DO N = 3, NNEIGH(NH)   !operate on rest of neighbors
-               N3  = N2            !shift previously computed values
-               qN3 = qN2
-! arash 12/22/2015
-               Biharmonic_qN3 = Biharmonic_qN2
-               d_dx_qN3 = d_dx_qN2
-               d_dy_qN3 = d_dy_qN2
-! af 01/04/2016
-               qN3_z = qN2_z
-               Biharmonic_qN3_z = Biharmonic_qN2_z
-               d_dx_qN3_z = d_dx_qN2_z
-               d_dy_qN3_z = d_dy_qN2_z
-
-               N2  = NEITAB(NH,N)  !select new neighbor to work on
+            Biharmonic_DqDXDPhiDX2A=(0.d0,0.0d0)
+            Biharmonic_DqDYDPhiDY2A=(0.d0,0.0d0)
+            d2_dx2_q_element=(0.d0,0.0d0)
+            d2_dy2_q_element=(0.d0,0.0d0)
+            d2_dxy_q_element=(0.d0,0.0d0)
+            DO N=1,SIZE(NeiTabEle,2)
+               ! Find neighbor element
+               NEle=NeiTabEle(NH,N)
+               ! Skip blank entries in NeiTabEle
+               IF(NEle.EQ.0) CYCLE
+               ! Find vertices in counterclockwise order
+               IF(NM(NEle,1).EQ.NH)THEN
+                  N1=NM(NEle,1)
+                  N2=NM(NEle,2)
+                  N3=NM(NEle,3)
+               ELSEIF(NM(NEle,2).EQ.NH)THEN
+                  N1=NM(NEle,2)
+                  N2=NM(NEle,3)
+                  N3=NM(NEle,1)
+               ELSEIF(NM(NEle,3).EQ.NH)THEN
+                  N1=NM(NEle,3)
+                  N2=NM(NEle,1)
+                  N3=NM(NEle,2)
+               ELSE
+                  PRINT*, "Aack! ",NH,NEle,NM(Nele,:)
+               ENDIF
+               ! Skip dry elements
+               NCEle=NODECODE(N1)*NODECODE(N2)
+     &              *NODECODE(N3)*NOFF(NEle)
+               IF(NCEle.EQ.0) CYCLE
+               ! For vertex of interest
+               Zk = HsOAMB * ( Sigma(k) - B ) - DP(NH)
+               qN1   = q(N1,k)
+               qN1_z = qN1
+               Biharmonic_qN1   = Biharmonic_auxiliary_var(N1,k)
+               Biharmonic_qN1_z = Biharmonic_qN1
+               d_dx_qN1   = d_dx_q_nodes(N1,k)
+               d_dx_qN1_z = d_dx_qN1
+               d_dy_qN1   = d_dy_q_nodes(N1,k)
+               d_dy_qN1_z = d_dy_qN1
+               ! For first neighbor vertex
                qN2 = q(N2,k)
-! af 01/04/2016: interpolate it at the same z level as N1
-C..............DMW202401 Use saved H1
-               SigmaNN = B + AMB * ( Zk + DP(N2) ) / H1(N2) !equivalent sigma value at neighbor
+               HsN2 = DP(N2)+IFNLFA*Eta1(N2)
+               IF(HsN2.LT.H0) HsN2 = H0
+               SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2
                inarray_vertical (:) = q(N2,:)
-               Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, qN2_z, k )
-
-! arash 12/14/2015
+               CALL linear_vertical_interpolation_complex (
+     &                 inarray_vertical, SigmaNN, qN2_z, k )
                Biharmonic_qN2 = Biharmonic_auxiliary_var(N2,k)
-! af 01/04/2016: interpolate it at the same z level as N1
                inarray_vertical (:) = Biharmonic_auxiliary_var(N2,:)
-               Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, Biharmonic_qN2_z, k )
-! arash 12/21/2015
+               CALL linear_vertical_interpolation_complex (
+     &                 inarray_vertical, SigmaNN, Biharmonic_qN2_z, k )
                d_dx_qN2 = d_dx_q_nodes (N2,k)
-               d_dy_qN2 = d_dy_q_nodes (N2,k)
-! af 01/04/2016: interpolate it at the same z level as N1
                inarray_vertical (:) = d_dx_q_nodes(N2,:)
-               Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, d_dx_qN2_z, k )
+               CALL linear_vertical_interpolation_complex (
+     &                 inarray_vertical, SigmaNN, d_dx_qN2_z, k )
+               d_dy_qN2 = d_dy_q_nodes (N2,k)
                inarray_vertical (:) = d_dy_q_nodes(N2,:)
-               Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, d_dy_qN2_z, k )
-
-               NEle=NeiTabEle(NH,N-2) !element # defined by nodes N1,N2,N3
-c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
-               !jgf48.50 Avoid array out of bounds
-               IF (NEle.eq.0) THEN
-                  CYCLE
-               ENDIF
-               IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
-                  NCELE = NODECODE(NH)*NODECODE(N2)*
-     &                 NODECODE(N3)*NOFF(NELE)
-                  IF (NCELE.NE.0) THEN !if element exists, compute terms
-C    kmd48.33bc added in spherical factors for 3D
-                     SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
-                     qn=(qN1+qN2+qN3)/3.d0
-                     Un=REAL(qn)
-                     Vn=AIMAG(qn)
-                     a1=X(N3)-X(N2)
-                     a2=X(N1)-X(N3)
-                     a3=X(N2)-X(N1)
-                     b1=(Y(N2)-Y(N3))*SFacAvg
-                     b2=(Y(N3)-Y(N1))*SFacAvg
-                     b3=(Y(N1)-Y(N2))*SFacAvg
-                     UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
-                     VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
-! iso-sigma:
-!                     DqDXDPhiDX2A=DqDXDPhiDX2A
-!     &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
-!                     DqDYDPhiDY2A=DqDYDPhiDY2A
-!     &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
-! arash 12/14/2015
-!                     Biharmonic_DqDXDPhiDX2A = Biharmonic_DqDXDPhiDX2A
-!     &                 +(Biharmonic_qN1*b1+Biharmonic_qN2*b2+Biharmonic_qN3*b3)*b1/Areas(NEle)
-!                     Biharmonic_DqDYDPhiDY2A = Biharmonic_DqDYDPhiDY2A
-!     &                 +(Biharmonic_qN1*a1+Biharmonic_qN2*a2+Biharmonic_qN3*a3)*a1/Areas(NEle)
-! arash 12/21/2015
-!                     d2_dx2_q_element = d2_dx2_q_element + d_dx_qN1*b1+d_dx_qN2*b2+d_dx_qN3*b3
-!                     d2_dy2_q_element = d2_dy2_q_element + d_dy_qN1*a1+d_dy_qN2*a2+d_dy_qN3*a3
-!                     d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1*b1+d_dy_qN2*b2+d_dy_qN3*b3
-! z-level
-                     DqDXDPhiDX2A=DqDXDPhiDX2A
-     &                 +(qN1_z*b1+qN2_z*b2+qN3_z*b3)*b1/Areas(NEle)
-                     DqDYDPhiDY2A=DqDYDPhiDY2A
-     &                 +(qN1_z*a1+qN2_z*a2+qN3_z*a3)*a1/Areas(NEle)
-
-                     Biharmonic_DqDXDPhiDX2A = Biharmonic_DqDXDPhiDX2A
-     &                 +(Biharmonic_qN1_z*b1+Biharmonic_qN2_z*b2+Biharmonic_qN3_z*b3)*b1/Areas(NEle)
-                     Biharmonic_DqDYDPhiDY2A = Biharmonic_DqDYDPhiDY2A
-     &                 +(Biharmonic_qN1_z*a1+Biharmonic_qN2_z*a2+Biharmonic_qN3_z*a3)*a1/Areas(NEle)
-
-                     d2_dx2_q_element = d2_dx2_q_element + d_dx_qN1_z*b1+d_dx_qN2_z*b2+d_dx_qN3_z*b3
-                     d2_dy2_q_element = d2_dy2_q_element + d_dy_qN1_z*a1+d_dy_qN2_z*a2+d_dy_qN3_z*a3
-                     d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1_z*b1+d_dy_qN2_z*b2+d_dy_qN3_z*b3
-                  ENDIF
-               ENDIF
+               CALL linear_vertical_interpolation_complex (
+     &                 inarray_vertical, SigmaNN, d_dy_qN2_z, k )
+               ! For second neighbor vertex
+               qN3 = q(N3,k)
+               HsN2 = DP(N3)+IFNLFA*Eta1(N3)
+               IF(HsN2.LT.H0) HsN2 = H0
+               SigmaNN = B + AMB * ( Zk + DP(N3) ) / HsN2
+               inarray_vertical (:) = q(N3,:)
+               CALL linear_vertical_interpolation_complex (
+     &                 inarray_vertical, SigmaNN, qN3_z, k )
+               Biharmonic_qN3 = Biharmonic_auxiliary_var(N3,k)
+               inarray_vertical (:) = Biharmonic_auxiliary_var(N3,:)
+               CALL linear_vertical_interpolation_complex (
+     &                 inarray_vertical, SigmaNN, Biharmonic_qN3_z, k )
+               d_dx_qN3 = d_dx_q_nodes(N3,k)
+               inarray_vertical (:) = d_dx_q_nodes(N3,:)
+               CALL linear_vertical_interpolation_complex (
+     &                 inarray_vertical, SigmaNN, d_dx_qN3_z, k )
+               d_dy_qN3 = d_dy_q_nodes(N3,k)
+               inarray_vertical (:) = d_dy_q_nodes(N3,:)
+               CALL linear_vertical_interpolation_complex (
+     &                 inarray_vertical, SigmaNN, d_dy_qN3_z, k )
+               ! Compute gradients
+               SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+               qn=(qN1+qN2+qN3)/3.d0
+               Un=REAL(qn)
+               Vn=AIMAG(qn)
+               a1= X(N3)-X(N2)
+               a2= X(N1)-X(N3)
+               a3= X(N2)-X(N1)
+               b1=(Y(N2)-Y(N3))*SFacAvg
+               b2=(Y(N3)-Y(N1))*SFacAvg
+               b3=(Y(N1)-Y(N2))*SFacAvg
+               UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
+               VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
+               DqDXDPhiDX2A=DqDXDPhiDX2A
+     &            + ( qN1_z*b1 + qN2_z*b2 + qN3_z*b3 )*b1/Areas(NEle)
+               DqDYDPhiDY2A=DqDYDPhiDY2A
+     &            + ( qN1_z*a1 + qN2_z*a2 + qN3_z*a3 )*a1/Areas(NEle)
+               Biharmonic_DqDXDPhiDX2A = Biharmonic_DqDXDPhiDX2A
+     &            + ( Biharmonic_qN1_z*b1 + Biharmonic_qN2_z*b2
+     &              + Biharmonic_qN3_z*b3 )*b1/Areas(NEle)
+               Biharmonic_DqDYDPhiDY2A = Biharmonic_DqDYDPhiDY2A
+     &            + ( Biharmonic_qN1_z*a1 + Biharmonic_qN2_z*a2
+     &              + Biharmonic_qN3_z*a3 )*a1/Areas(NEle)
+               d2_dx2_q_element = d2_dx2_q_element 
+     &            + d_dx_qN1_z*b1 + d_dx_qN2_z*b2 + d_dx_qN3_z*b3
+               d2_dy2_q_element = d2_dy2_q_element 
+     &            + d_dy_qN1_z*a1 + d_dy_qN2_z*a2 + d_dy_qN3_z*a3
+               d2_dxy_q_element = d2_dxy_q_element 
+     &            + d_dy_qN1_z*b1 + d_dy_qN2_z*b2 + d_dy_qN3_z*b3
             ENDDO
-
-            N3 = N2               !wrap back to beginning to get final contribution
-            qN3 = qN2
-! af 01/04/2016
-            qN3_z = qN2_z
-! arash 12/14/2015
-            Biharmonic_qN3 = Biharmonic_qN2
-! af 01/04/2016
-            Biharmonic_qN3_z = Biharmonic_qN2_z
-! arash 12/21/2015
-            d_dx_qN3 = d_dx_qN2
-            d_dy_qN3 = d_dy_qN2
-! af 01/04/2016
-            d_dx_qN3_z = d_dx_qN2_z
-            d_dy_qN3_z = d_dy_qN2_z
-
-            N2=NNFIRST
-            qN2=qNFirst
-! arash 12/14/2015
-            Biharmonic_qN2 = Biharmonic_qNFirst
-! arash 12/21/2015
-            d_dx_qN2 = d_dx_qNFirst
-            d_dy_qN2 = d_dy_qNFirst
-! af 01/04/2016
-            qN2_z = qNFirst_z
-            Biharmonic_qN2_z = Biharmonic_qNFirst_z
-            d_dx_qN2_z = d_dx_qNFirst_z
-            d_dy_qN2_z = d_dy_qNFirst_z
-
-            NEle=NeiTabEle(NH,NNeigh(NH)-1)
-
-! arash Feb/18/2016
-            velocity_magnitude = 0.0d0
-c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
-c.RJW 06092009  modified to elimiate zero index NOFF
-        IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
-            NCELE = NODECODE(NH)*NODECODE(N2)*
-     &              NODECODE(N3)*NOFF(NELE)
-            IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
-C    kmd48.33bc added in spherical factors for 3D
-                  SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
-                  qn=(qN1+qN2+qN3)/3.d0
-                  Un=real(qn)
-                  Vn=aimag(qn)
-
-                  velocity_magnitude = sqrt( Un**2 + Vn**2 )
-
-                  a1=X(N3)-X(N2)
-                  a2=X(N1)-X(N3)
-                  a3=X(N2)-X(N1)
-                  b1=(Y(N2)-Y(N3))*SFacAvg
-                  b2=(Y(N3)-Y(N1))*SFacAvg
-                  b3=(Y(N1)-Y(N2))*SFacAvg
-                  UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
-                  VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
-! iso-sigma
-!                  DqDXDPhiDX2A=DqDXDPhiDX2A
-!     &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
-!                  DqDYDPhiDY2A=DqDYDPhiDY2A
-!     &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
-! arash 12/14/2015
-!                  Biharmonic_DqDXDPhiDX2A = Biharmonic_DqDXDPhiDX2A
-!     &              +(Biharmonic_qN1*b1+Biharmonic_qN2*b2+Biharmonic_qN3*b3)*b1/Areas(NEle)
-!                  Biharmonic_DqDYDPhiDY2A = Biharmonic_DqDYDPhiDY2A
-!     &              +(Biharmonic_qN1*a1+Biharmonic_qN2*a2+Biharmonic_qN3*a3)*a1/Areas(NEle)
-! arash 12/21/2015
-!                  d2_dx2_q_element = d2_dx2_q_element + d_dx_qN1*b1+d_dx_qN2*b2+d_dx_qN3*b3
-!                  d2_dy2_q_element = d2_dy2_q_element + d_dy_qN1*a1+d_dy_qN2*a2+d_dy_qN3*a3
-!                  d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1*b1+d_dy_qN2*b2+d_dy_qN3*b3
-! z-level
-                  DqDXDPhiDX2A=DqDXDPhiDX2A
-     &               +(qN1_z*b1+qN2_z*b2+qN3_z*b3)*b1/Areas(NEle)
-                  DqDYDPhiDY2A=DqDYDPhiDY2A
-     &              +(qN1_z*a1+qN2_z*a2+qN3_z*a3)*a1/Areas(NEle)
-
-                  Biharmonic_DqDXDPhiDX2A = Biharmonic_DqDXDPhiDX2A
-     &              +(Biharmonic_qN1_z*b1+Biharmonic_qN2_z*b2+Biharmonic_qN3_z*b3)*b1/Areas(NEle)
-                  Biharmonic_DqDYDPhiDY2A = Biharmonic_DqDYDPhiDY2A
-     &              +(Biharmonic_qN1_z*a1+Biharmonic_qN2_z*a2+Biharmonic_qN3_z*a3)*a1/Areas(NEle)
-
-                  d2_dx2_q_element = d2_dx2_q_element + d_dx_qN1_z*b1+d_dx_qN2_z*b2+d_dx_qN3_z*b3
-                  d2_dy2_q_element = d2_dy2_q_element + d_dy_qN1_z*a1+d_dy_qN2_z*a2+d_dy_qN3_z*a3
-                  d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1_z*b1+d_dy_qN2_z*b2+d_dy_qN3_z*b3
-               ENDIF
-            ENDIF
 
             IF(TotalArea2.EQ.0.) THEN
                LAdvec(k)=(0.d0,0.d0)
@@ -1068,8 +1048,11 @@ C    kmd48.33bc added in spherical factors for 3D
 ! arash 12/21/2015: modified Leith viscosity
                ! 0. preliminaries
                modified_Leith_delta_x = sqrt ( TotalArea2 * 0.5d0 ) ! grid length
-               modified_Leith_Lambda_vorticity  = 2.5 !1.4d0 !             ! tuning constant O(1) ========================================================
-               modified_Leith_Lambda_divergence = 2.5 !1.4d0 !             ! the modification - see MITgcm manual ========================================
+!Casey 231218 : Allow user control of lambda.
+!              modified_Leith_Lambda_vorticity  = 2.5 !1.4d0 !             ! tuning constant O(1) ========================================================
+!              modified_Leith_Lambda_divergence = 2.5 !1.4d0 !             ! the modification - see MITgcm manual ========================================
+               modified_Leith_Lambda_vorticity  = lambdaLeith
+               modified_Leith_Lambda_divergence = lambdaLeith
                ! 1. nodal second derivatives: during the computations, we multiplied them by 2A.
                d2_dx2_q_element = d2_dx2_q_element / TotalArea2
                d2_dy2_q_element = d2_dy2_q_element / TotalArea2
@@ -1086,9 +1069,19 @@ C    kmd48.33bc added in spherical factors for 3D
                ! 3.1. engineering
                ! 3.1.1. minimum viscosity
                If ( Biharmonic_viscosity < 1.0d-2 ) Biharmonic_viscosity = 1.0d-2
-
+!Casey 220207 from Rosemary : Not sure why this is necessary?
+!           The velocity_magnitude_max_in_xy and average_velocity are
+!           not used in the computations below. The velocity_magnitude
+!           is used to the compute the element_peclet_number, which is
+!           not used.
+               ! 1.2. compute the maximum velocity in the xy plane
+!              velocity_magnitude_max_in_xy = 0.0d0
+!              average_velocity = 0.0d0
+               velocity_magnitude = sqrt((real(q(NH,K)))**2+(aimag(q(NH,K)))**2 )
                ! 3.1.2. maximum viscosity 
-               element_peclet_number = velocity_magnitude * length / Biharmonic_viscosity
+!Casey 230315 : It seems like this should be length_max?
+!              element_peclet_number = velocity_magnitude * length / Biharmonic_viscosity
+               element_peclet_number = velocity_magnitude * length_max / Biharmonic_viscosity
 !               If ( element_peclet_number > 2.0 ) Then
 !                  Biharmonic_viscosity = velocity_magnitude * length / 2.0d0
 !               End If
@@ -1096,6 +1089,12 @@ C    kmd48.33bc added in spherical factors for 3D
                 Biharmonic_viscosity_modified_Leith ( NH, k ) = Biharmonic_viscosity
                !write(6,'("nh, k, nele, ncele, biharmonic_viscosity_modified_leith",i0,1x,i0,1x,i0,1x,i0,f8.2)'),nh, k, nele, ncele, Biharmonic_viscosity_modified_Leith(nh,k) !jgfdebug
                ! 4. congratulations! we have computed modified Leith viscosity!
+!Casey 221103 : User control over Leith viscosity
+               IF( .NOT.useLeithViscosity )THEN
+                  Biharmonic_viscosity = EVM(NH)
+               ELSE ! Default
+                  CONTINUE
+               ENDIF
                Biharmonic_LStress(k) = -3.d0 * Biharmonic_viscosity * (Biharmonic_DqDXDPhiDX2A+Biharmonic_DqDYDPhiDY2A)
      &              /TotalArea2
             ENDIF
@@ -1105,7 +1104,12 @@ C    kmd48.33bc added in spherical factors for 3D
 ! |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
 ! arash 12/14/2015: Use Biharmonic viscosity instead of a harmonic one
 ! We may want to make this cleaner later by having an option in the fort.15 file
+!Casey 221103 : User control over biharmonic operator for viscosity
+         IF( INDEX(viscosityOperator,'Laplacian').GT.0 )THEN
+            CONTINUE
+         ELSE ! Default
          LStress(:) = Biharmonic_LStress(:)
+         ENDIF
 ! |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
 
 !--------------------------------------------------------------------------------------------------
@@ -1181,7 +1185,6 @@ c     (Mkm1,Mk,Mkp1)
 ! arash May 31 2016 did this based on Rosemary's work 
 !     &           - q(NH,1)*DT1MAlp2*KSlip/HsOAMB
      &           - q(NH,1)*DT1MAlp2*TK(NH)/HsOAMB
-
             Mkm1(1) = (0.d0,0.d0)
             Mk(1)   = CCL*Inm(1,2) + RCL*KVnm(1,2)
 ! arash May 31 2016 did this based on Rosemary's work 
@@ -1210,8 +1213,14 @@ C         k=NFEN
      &        + (CCR*q(NH,k)
      &        -DelT*(LAdvec(k)  +LStress(k)  +BPG(NH,k)  ))*Inm(k,2)
      &        - DelT*(VAdvec(k)+BTPG*LVn(k))-DT1MAlp3*VStress(k)
+!Casey 220120 : Move the wind stress behind an IF statement.
+!    &        + DelT*0.5d0*((WSX2(NH)+iy*WSY2(NH))/Hsp1OAMB
+!    &        +(WSX1(NH)+iy*WSY1(NH))/HsOAMB)
+         IF(NWS.NE.0)THEN
+           Fr(NFEN) = Fr(NFEN)
      &        + DelT*0.5d0*((WSX2(NH)+iy*WSY2(NH))/Hsp1OAMB
      &        +(WSX1(NH)+iy*WSY1(NH))/HsOAMB)
+         ENDIF
          Mkm1(NFEN) = CCL*Inm(NFEN,1) + RCL*KVnm(NFEN,1)
          Mk(NFEN)   = CCL*Inm(NFEN,2) + RCL*KVnm(NFEN,2)
          Mkp1(NFEN) = (0.d0,0.d0)
@@ -1290,7 +1299,6 @@ c     Finished section to modify equations depending on normal flux
 c     boundary condition
 c     Decompose and solve the system
 
-
  999     CALL TRIDIAG(Mkm1,Mk,Mkp1,Fr,Gamma,NFEN)
 
 C     Changed this q value to qkp1 since we need to save q and qkp1 for
@@ -1315,7 +1323,13 @@ c     Finished computing horizontal velocities
       CALL UPDATEC3D(Qkp1)
 #endif
 ! arash: apply a 1-layer Gaussian filter to the horizontal velocities
-       Call Gaussian_filter_complex ( X, Y, NeiTab, NNeigh, qkp1, NP, NFEN, MNEI )
+!Casey 221103 : User control over adaptive filtering
+       IF( .NOT.useAdaptiveFilter )THEN
+          CONTINUE
+       ELSE ! Default
+          CALL Gaussian_filter_complex ( X, Y, NeiTab, NNeigh, qkp1, 
+     &        NP, NFEN, MNEI )
+       ENDIF
 ! -------------------------------------------------------------------------------------------------
 
 
@@ -1334,6 +1348,8 @@ C     velocity dispersion
       DO NH=1,NP                                !loop over horizontal nodes
 C........DMW202401 Use saved H2
          Hsp1= H2(NH)           !Total depth at present (s+1) timestep
+!Casey 220207 from Rosemary : Set minimum depth
+         IF(Hsp1.LT.H0) Hsp1 = H0
          VIVel = (0.d0,0.d0)
          DO k=1,NFEN
             VIVel = VIVel + Qkp1(NH,k)*LVn(k)
@@ -1432,6 +1448,110 @@ c     Compute horizontal derivatives of water surface position,
 c     bathymetric depth and horizontal velocity Note: TotalArea2 = 2X
 c     total elemental area surrounding a node
 
+#ifndef CASEY
+
+!Casey 220523 : Wouldn't this be easier?
+
+         ! Start from zero
+         TotalArea2=0.d0
+         DhDX2A=0.d0
+         DhDY2A=0.d0
+         DEtaDX2A=0.d0
+         DEtaDY2A=0.d0
+         DO k=1,NFEN
+            DqDX2A(k)=(0.d0,0.d0)
+            DqDY2A(k)=(0.d0,0.d0)
+         ENDDO
+         DhDX=0.d0
+         DhDY=0.d0
+         DEtaDX=0.d0
+         DEtaDY=0.d0
+         DO k=1,NFEN
+            DUDX(k)=0.d0
+            DVDY(k)=0.d0
+         ENDDO
+         DO N=1,SIZE(NeiTabEle,2)
+            ! Find neighbor element
+            NEle=NeiTabEle(NH,N)
+            ! Skip blank entries in NeiTabEle
+            IF(NEle.EQ.0) CYCLE
+            ! Find vertices in counterclockwise order
+            IF(NM(NEle,1).EQ.NH)THEN
+               N1=NM(NEle,1)
+               N2=NM(NEle,2)
+               N3=NM(NEle,3)
+            ELSEIF(NM(NEle,2).EQ.NH)THEN
+               N1=NM(NEle,2)
+               N2=NM(NEle,3)
+               N3=NM(NEle,1)
+            ELSEIF(NM(NEle,3).EQ.NH)THEN
+               N1=NM(NEle,3)
+               N2=NM(NEle,1)
+               N3=NM(NEle,2)
+            ELSE
+               PRINT*, "Aack! ",NH,NEle,NM(Nele,:)
+            ENDIF
+            ! Skip dry elements
+            NCEle=NODECODE(N1)*NODECODE(N2)
+     &           *NODECODE(N3)*NOFF(NEle)
+            IF(NCEle.EQ.0) CYCLE
+            ! For vertex of interest
+            EtaN1=IFNLFA*Eta2(N1)
+            hN1=DP(N1)
+            ! For first neighbor vertex
+            EtaN2=IFNLFA*Eta2(N2)
+            hN2=DP(N2)
+            ! For second neighbor vertex
+            EtaN3=IFNLFA*Eta2(N3)
+            hN3=DP(N3)
+            ! Compute gradients
+            TotalArea2=TotalArea2+Areas(NEle)
+            SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+            a1= X(N3)-X(N2)
+            a2= X(N1)-X(N3)
+            a3= X(N2)-X(N1)
+            b1=(Y(N2)-Y(N3))*SFacAvg
+            b2=(Y(N3)-Y(N1))*SFacAvg
+            b3=(Y(N1)-Y(N2))*SFacAvg
+            DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
+            DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
+            DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
+            DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
+!           IF((MYPROC.EQ.7.AND.NH.EQ. 1).OR.
+!    &         (MYPROC.EQ.4.AND.NH.EQ.49))THEN
+!              WRITE(7100+MYPROC,*) "DhDX2A,DhDY2A = ",
+!    &            DhDX2A,DhDy2A
+!              WRITE(7110+MYPROC,*) "DEtaDX2A,DEtaDY2A = ",
+!    &            DEtaDX2A,DEtaDY2A
+!           ENDIF
+            DO k=1,NFEN
+               qN1=qkp1(N1,k)
+               qN2=qkp1(N2,k)
+               qN3=qkp1(N3,k)
+               DqDX2A(k)=DqDX2A(k)+(qN1*b1+qN2*b2+qN3*b3)
+               DqDY2A(k)=DqDY2A(k)+(qN1*a1+qN2*a2+qN3*a3)
+!              IF((MYPROC.EQ.7.AND.NH.EQ. 1).OR.
+!    &            (MYPROC.EQ.4.AND.NH.EQ.49))THEN
+!                 WRITE(7120+MYPROC,*) "k,DqDX2A(k),DqDY2A(k) = ",
+!    &               k,DqDX2A(k),DqDY2A(k)
+!              ENDIF
+            ENDDO
+         ENDDO
+         IF(TotalArea2.GT.0.0001D0) THEN
+            DhDX=DhDX2A/TotalArea2
+            DhDY=DhDY2A/TotalArea2
+            DEtaDX=DEtaDX2A/TotalArea2
+            DEtaDY=DEtaDY2A/TotalArea2
+            DO k=1,NFEN
+               DUDX(k)=REAL(DqDX2A(k))/TotalArea2
+               DVDY(k)=AIMAG(DqDY2A(k))/TotalArea2
+            ENDDO
+         ENDIF
+
+#else
+
+!Casey 220523 : End of code additions, let's comment the stuff below.
+
          DO k=1,NFEN
             DqDX2A(k)=(0.d0,0.d0)
             DqDY2A(k)=(0.d0,0.d0)
@@ -1467,6 +1587,25 @@ c     total elemental area surrounding a node
             N2=NeiTab(NH,N)     !select new neighbor to work on
             EtaN2=IFNLFA*Eta2(N2)
             hN2=DP(N2)
+!Casey 220520 : This code worked fine when NeiTabEle was sparse,
+!               but it is broken now that array has been fixed.
+!               Need to check that our vertices are still
+!               in counter-clockwise order.
+            CCWArea = ( X(N1)-X(N3) )*( Y(N2)-Y(N3) )
+     &              + ( X(N3)-X(N2) )*( Y(N1)-Y(N3) )
+            CCWSign = CCWArea / ABS(CCWArea)
+            IF(CCWSign.LT.0.D0)THEN
+              CCWI = N3
+              N3 = N2
+              N2 = CCWI
+              CCWR = hN3
+              hN3 = hN2
+              hN2 = CCWR
+              CCWR = EtaN3
+              EtaN3 = EtaN2
+              EtaN2 = CCWR
+            ENDIF
+!Casey 220520 : End addition.
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of this IF statement.
             !jgf48.50 Avoid array out of bounds
@@ -1505,6 +1644,25 @@ C    kmd48.33bc added in spherical factors for 3D
          N2=NNFirst
          hN2=hNFirst
          EtaN2=EtaNFirst
+!Casey 220520 : This code worked fine when NeiTabEle was sparse,
+!               but it is broken now that array has been fixed.
+!               Need to check that our vertices are still
+!               in counter-clockwise order.
+         CCWArea = ( X(N1)-X(N3) )*( Y(N2)-Y(N3) )
+     &           + ( X(N3)-X(N2) )*( Y(N1)-Y(N3) )
+         CCWSign = CCWArea / ABS(CCWArea)
+         IF(CCWSign.LT.0.D0)THEN
+           CCWI = N3
+           N3 = N2
+           N2 = CCWI
+           CCWR = hN3
+           hN3 = hN2
+           hN2 = CCWR
+           CCWR = EtaN3
+           EtaN3 = EtaN2
+           EtaN2 = CCWR
+         ENDIF
+!Casey 220520 : End addition.
          NEle=NeiTabEle(NH,NNeigh(NH)-1)
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of this IF statement.
          !jgf48.50 Avoid array out-of-bounds
@@ -1545,6 +1703,10 @@ C    kmd48.33bc added in spherical factors for 3D
                DVDY(k)=AIMAG(DqDY2A(k))/TotalArea2
             ENDDO
          ENDIF
+
+!Casey 220523 : End of commenting.
+
+#endif
 
 c     Evaluate the "z" vertical velocity
 
@@ -1768,6 +1930,7 @@ C      CALL UPDATER3D(SIGT) !jgf45.12
 #endif
 
 ! Gausian filter
+!Casey 221103 : All of these calls are commented?
       IF(IDEN.EQ.1) THEN
          ELSE IF(IDEN.EQ.2) THEN
             ! salinity:
@@ -1809,6 +1972,8 @@ C     new sigma-t values. We will update velocities later.
 
 C     Compute Depth averaged SigmaT
 
+!Casey 230203 : Add user-control for this integration.
+        IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
         DO NH=1,NP
          DASigT(NH)=0.d0
           DO k=1,NFEN-1
@@ -1817,6 +1982,32 @@ C     Compute Depth averaged SigmaT
           ENDDO
           DASigT(NH)=DASigT(NH)/AMB
         ENDDO
+!Casey 230203 : Add option for Simpson integration.
+        ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+          DO NH=1,NP
+            DASigT(NH)=0.d0
+            DO k=1,NFEN-1
+              DASigT(NH) = DASigT(NH) + (1.D0/6.D0) * ( Sigma(k+1)-Sigma(k) )
+     &            * ( SigT(NH,k+1) + 4.0D0 * SIGTM(NH,k) + SigT(NH,k) )
+            ENDDO
+            DASigT(NH)=DASigT(NH)/AMB
+          ENDDO
+!Casey 230203 : Add option for Gauss-Legendre quadrature.
+        ELSE ! default is densityIntegration = 'quadrature'
+           DO NH=1,NP
+             DASigT(NH)=0.d0
+             DO k=1,NFEN-1
+               DO IGQ=1,NumGQP
+                 GQI = NumGQP*(k-1)+IGQ
+                 DASigT(NH) = DASigT(NH) + ( Sigma(k+1)-Sigma(k) )
+     &               + GQW(IGQ) / SUM(GQW) * SIGTM(NH,GQI)
+               ENDDO
+             ENDDO
+             DASigT(NH)=DASigT(NH)/AMB
+           ENDDO
+      ENDIF
+!Casey 230317 Debug
+!       DASigT = 0.D0
       ENDIF
 
 C     Need to update and move results from the future time levels to the
@@ -2821,6 +3012,8 @@ C     jgf46.12 gave them SAVE and PARAMETER properties (from jgf45.18)
       REAL(8), SAVE :: qprev, qlprev, Gh, tdiss, elmax
       REAL(8), SAVE :: coef1, coef2, coef3, coef4, coef5
       REAL(8) :: USTARS
+!Casey 220207 from Rosemary
+      REAL(8) :: NTVMIN
 
       call setMessageSource("turb")
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
@@ -2955,6 +3148,14 @@ c     and split out the mixing length
       dsig=sigma(2)-sigma(1)
       if(iden.ne.0) then
          drhodz=((SIGT(nh,2)-SIGT(nh,1))/dsig)/HOamb
+!Casey 230317 Debug
+!        drhodz=0.D0
+!        drhodz=((-0.5D0*SIGT(nh,2)+2.D0*SIGTM(nh,1)-1.5D0*SIGT(nh,1))/(0.5D0*dsig))/HOamb
+!        drhodz=((- 1.D0/ 4.D0*SIGT(nh,3)
+!    &            + 4.D0/ 3.D0*SIGTM(nh,2)
+!    &            - 3.D0      *SIGT(nh,2)
+!    &            + 4.D0      *SIGTM(nh,1)
+!    &            -25.D0/12.D0*SIGT(nh,1))/(0.5D0*dsig))/HOamb
          BVfreq2(1)=-GORHO*drhodz
       endif
       dQdz=((Q(nh,2)-Q(nh,1))/dsig)/HOamb
@@ -2970,6 +3171,11 @@ c     and split out the mixing length
          if(iden.ne.0) then
             drhodz1=((SIGT(nh,n+1)-SIGT(nh,n))/dsig1)/HOamb
             drhodz2=((SIGT(nh,n)-SIGT(nh,n-1))/dsig2)/HOamb
+!Casey 230317 Debug
+!           drhodz1=0.D0
+!           drhodz2=0.D0
+!           drhodz1=((-0.5D0*SIGT(nh,n+1)+2.D0*SIGTM(nh,n  )-1.5D0*SIGT(nh,n))/(0.5D0*dsig1))/HOamb
+!           drhodz2=(( 0.5D0*SIGT(nh,n-1)-2.D0*SIGTM(nh,n-1)+1.5D0*SIGT(nh,n))/(0.5D0*dsig2))/HOamb
             BVfreq2(n)=-GORHO*(drhodz1+drhodz2)/2.d0
          endif
          dQdz1=((Q(nh,n+1)-Q(nh,n))/dsig1)/HOamb
@@ -2985,6 +3191,14 @@ c     and split out the mixing length
       dsig=sigma(nfen)-sigma(nfen-1)
       if(iden.ne.0) then
          drhodz=((SIGT(nh,nfen)-SIGT(nh,nfen-1))/dsig)/HOamb
+!Casey 230317 Debug
+!        drhodz=0.D0
+!        drhodz=((0.5D0*SIGT(nh,nfen-1)-2.D0*SIGTM(nh,nfen-1)+1.5D0*SIGT(nh,nfen))/(0.5D0*dsig))/HOamb
+!        drhodz=((  1.D0/ 4.D0*SIGT(nh,nfen-2)
+!    &            - 4.D0/ 3.D0*SIGTM(nh,nfen-2)
+!    &            + 3.D0      *SIGT(nh,nfen-1)
+!    &            - 4.D0      *SIGTM(nh,nfen-1)
+!    &            +25.D0/12.D0*SIGT(nh,nfen))/(0.5D0*dsig))/HOamb
          BVfreq2(nfen)=-GORHO*drhodz
       endif
       dQdz=((Q(nh,nfen)-Q(nh,nfen-1))/dsig)/HOamb
@@ -3020,9 +3234,17 @@ C and alpha = 60 - 250
          qprev=sqrt(q2prev(n))
          qlprev=qprev*rmlen(n)
          Gh=-BVfreq2(n)*rmlen2(n)/q2prev(n)
+!Casey 230320 Debug
+!        Gh=0.D0
          if(Gh.gt.0.0233) Gh=0.0233
+!Casey 230323 : This lower limit is suggested in the Galperin reference.
+         if(Gh.lt.-0.28D0) Gh=-0.28D0
          Sm(n)=(g2-g3*Gh)/((1.d0-g4*Gh)*(1.d0-g5*Gh))
+!Casey 230320 Debug
+!        Sm(n)=(g2      )/((1.d0      )*(1.d0      ))
          Sh(n)=g6/(1.d0-g4*Gh) ! kmd48.33bc changed Sh to an array
+!Casey 230320 Debug
+!        Sh(n)=g6/(1.d0      )
          Km(n)=Sm(n)*qlprev
          if(Km(n).lt.EVMIN) Km(n)=EVMIN
 c     if(istart.eq.1) Km(n)=EVMIN                        !rog way
@@ -3032,7 +3254,9 @@ c     Kq(n)=Km(n)*Sq/Sm(n)                           !rog way
          Kh(n)=Sh(n)*qlprev ! kmd48.33bc changed Sh to an array
          if(Kh(n).lt.EVMIN) Kh(n)=EVMIN
          prod(n)=Km(n)*spgrad2(n)-Kh(n)*BVfreq2(n)
-         IF(B1*rmlen(n).EQ.0.d0) PRINT*, B1,rmlen(n)
+!Casey 230320 Debug
+!        prod(n)=Km(n)*spgrad2(n)
+!        IF(B1*rmlen(n).EQ.0.d0) PRINT*, B1,rmlen(n)
          diss(n)=qprev/(B1*rmlen(n))
 c     diss(n)=q2prev(n)*Sm(n)/(Km(n)*B1)             !rog way
            if ((n.eq.nfen).and.(IEVC.eq.51)) then
@@ -3209,7 +3433,8 @@ c     Transfer to global array and check for stability limit
             if(l(nh,n).gt.H) l(nh,n)=H
             if((iden.ne.0).and.(BVfreq2(n).gt.0.0)) then
                elmax = 0.53D0*sqrt(q2(n))/sqrt(BVfreq2(n))
-               if(l(nh,n).gt.elmax) l(nh,n)=elmax
+!Casey 230320 Debug
+!              if(l(nh,n).gt.elmax) l(nh,n)=elmax
             endif
          end do
          l(nh,nfen) = q2l(nfen)/q2(nfen)
@@ -3227,6 +3452,7 @@ c equal the water depth
 
         do n = 1, nfen
 
+!Casey 230323 Debug
           if (l(nh,n) .lt. 0.10 ) l(nh,n) = 0.10
 
           if ( H .le. H_crit ) then
@@ -3249,9 +3475,21 @@ C              viscosity
       do n = 1,nfen
          EVTOT(n) = Sm(n)*sqrt(q2(n))*l(nh,n)
          NTVTOT(n) = Sh(n)*sqrt(q2(n))*l(nh,n)
+!Casey 220207 from Rosemary : But this could be moved outside the loops
+          NTVMIN = EVMIN
+!Casey 220302 : Let's comment this for now.
+!        if(H.LE.15.d0) THEN
+!          NTVMIN = 0.0
+!        else if ((H.GE.15.d0) .and. (H.LE.30.d0)) THEN
+!          NTVMIN = 0.0 + (0.001/15.d0)*(H-15.d0)
+!        else if (H.GE.30.d0) THEN
+!          NTVMIN = 0.001
+!        endif
          if(EVTOT(n).lt.EVMIN) EVTOT(n)=EVMIN
          if(EVTOT(n).gt.100.0d0) EVTOT(n)=100.0d0
-         if(NTVTOT(n).lt.EVMIN) NTVTOT(n)=EVMIN
+!Casey 220207 from Rosemary
+!        if(NTVTOT(n).lt.EVMIN)  NTVTOT(n)=EVMIN
+         if(NTVTOT(n).lt.NTVMIN) NTVTOT(n)=NTVMIN
       end do
 
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
@@ -4061,10 +4299,19 @@ C   kmd48.33bc need to add variables for new equation of state
       USE GLOBAL_3DVS, ONLY : SAL, TEMP, SIGT, IDEN, NFEN, 
      &                        SIGMA, EQNSTATE, A, B, setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
+!Casey 230106 : Add to compute SigT at higher resolution.
+     &   ,NumIP,IIP
+     &   ,NumGQP,GQP
+     &   ,SIGTM
+!Casey 230110 : Add to allow user control.
+     &   ,iterateEqnState2
+     &   ,densityIntegration
 Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
       USE GLOBAL, ONLY : ETA2, IFNLFA
       USE ADC_CONSTANTS, ONLY: RHOWAT0, G
       USE MESH, ONLY : NP, DP
+!Casey 240512 Debug
+      USE SIZES, ONLY : MYPROC
       IMPLICIT NONE
       INTEGER NH,N
       REAL(8) :: T_alpha=0.00017d0, S_beta=0.00076d0
@@ -4103,6 +4350,22 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
       REAL(8) :: R_ref
       REAL(8) :: Hs, HsOAMB, Zk
       REAL(8) :: Z(NP,NFEN)
+!Casey 230106 : Add variables to compute SigT at higher resolution.
+      REAL(8) :: es2rho, es2rhoa, es2rhog
+      REAL(8) :: es2dz, es2sal, es2temp
+      INTEGER  :: NumLoop
+      INTEGER  :: IGQ,GQI
+      REAL(8) :: halfdist,midpoint
+      INTEGER  :: IIP1,IIP2
+      REAL(8),ALLOCATABLE :: w(:)
+      REAL(8) :: RHOM(1:NP,1:NumGQP*(NFEN-1))
+      REAL(8) :: SALM(1:NP,1:NumGQP*(NFEN-1))
+      REAL(8) :: TEMPM(1:NP,1:NumGQP*(NFEN-1))
+      REAL(8) :: ZM(1:NP,1:NumGQP*(NFEN-1))
+!Casey 230109 : Add variables to iterate to convergence.
+      REAL(8) :: PB
+      REAL(8) :: Tolerance
+      INTEGER :: II
 !Kendra: Parameters for the 3rd equation of state
       REAL(8), PARAMETER :: c00=999.842594d0, c11=0.06793952d0
       REAL(8), PARAMETER :: c12=-0.00909529d0, c13=0.0001001685d0
@@ -4133,12 +4396,97 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
       call allMessage(DEBUG,"Enter.")
 #endif
 
+! Determine depths of layers.
+      DO NH=1,NP
+        Hs = DP(NH) + IFNLFA*ETA2(NH)
+        HsOAMB = Hs/(A-B)
+        DO N=1,NFEN
+          Zk = HsOAMB * (Sigma(n)-B)-DP(NH)
+          Z(NH,N) = Zk
+        ENDDO
+      ENDDO
+
+!Casey 230126 : Two BPG integration methods (simpson and quadrature)
+!               require salinities and temperatures at points other than
+!               the given layers. Let's interpolate that information.
+      IF( INDEX(densityIntegration,'simpson').GT.0 .OR.
+     &    INDEX(densityIntegration,'quadrature').GT.0 )THEN
+        ALLOCATE(w(1:NumIP))
+        DO NH=1,NP
+          DO N=1,NFEN-1
+            ! Interpolation for sal,temp ...
+            ! ... quadratic.
+!           IIP = (/ N-1 , N , N+1 /)
+!           IF(N.EQ.1)      IIP = IIP + 1
+            ! ... cubic.
+            IIP = (/ N-1 , N , N+1 , N+2 /)
+            IF(N.EQ.1)      IIP = IIP + 1
+            IF(N.EQ.NFEN-1) IIP = IIP - 1
+            ! ... quartic.
+!           IIP = (/ N-2 , N-1 , N , N+1 , N+2 /)
+!           IF(N.EQ.1)      IIP = IIP + 2
+!           IF(N.EQ.2)      IIP = IIP + 1
+!           IF(N.EQ.NFEN-1) IIP = IIP - 1
+            ! Loop over other points.
+            DO IGQ=1,NumGQP
+              IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                IF( IGQ.EQ.1 )THEN
+                  GQI = N
+                ELSE
+                  CYCLE
+                ENDIF
+              ELSE
+                GQI = NumGQP*(N-1)+IGQ
+              ENDIF
+              ! Determine z at point.
+              midpoint = 0.5D0*(Z(NH,N)+Z(NH,N+1))
+              IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                ZM(NH,GQI) = midpoint
+              ELSE
+                halfdist = midpoint-Z(NH,N)
+                ZM(NH,GQI) = midpoint + GQP(IGQ)*halfdist
+              ENDIF
+              ! Initialize weights and sal/temp values.
+              w = 1.D0
+              IF(ABS(IDEN).EQ.2.OR.ABS(IDEN).EQ.4)THEN
+                SALM(NH,GQI) = 0.D0
+              ENDIF
+              IF(ABS(IDEN).EQ.3.OR.ABS(IDEN).EQ.4)THEN
+                TEMPM(NH,GQI) = 0.D0
+              ENDIF
+              DO IIP1=1,NumIP
+                ! Multiply up the weight for this term.
+                DO IIP2=1,NumIP
+                  IF(IIP1.NE.IIP2)THEN
+                    w(IIP1) = W(IIP1)
+     &                      * (ZM(NH,GQI )    -Z(NH,IIP(IIP2)))
+     &                      / (Z(NH,IIP(IIP1))-Z(NH,IIP(IIP2)))
+                  ENDIF
+                ENDDO
+                ! Add to the weighted interpolation.
+                IF(ABS(IDEN).EQ.2.OR.ABS(IDEN).EQ.4)THEN
+                  SALM(NH,GQI)  = SALM(NH,GQI)
+     &                          + w(IIP1) * SAL(NH,IIP(IIP1))
+                ENDIF
+                IF(ABS(IDEN).EQ.3.OR.ABS(IDEN).EQ.4)THEN
+                  TEMPM(NH,GQI) = TEMPM(NH,GQI)
+     &                          + w(IIP1) * TEMP(NH,IIP(IIP1))
+                ENDIF
+              ENDDO
+            ENDDO
+          ENDDO
+        ENDDO
+      ENDIF
 
 !Kendra: Equation of state from Cushman-Roisin book entitled "Introduction to
 !        Geophysical Fluid Dynamics".
       IF (Eqnstate.EQ.1) THEN
        T_ref=10.d0
        S_ref=35.d0
+!Casey 230126 : Rewrote this section to allow user control of integration.
+!Casey 230126 : Compute SIGT at the sigma layers.
+       IF( INDEX(densityIntegration,'trapezoidal').GT.0 .OR.
+     &     INDEX(densityIntegration,'simpson').GT.0 )THEN
        IF(ABS(IDEN).EQ.2) THEN
         DO NH=1,NP
           DO N=1,NFEN
@@ -4162,6 +4510,67 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
           ENDDO
         ENDDO
        ENDIF
+       ENDIF
+!Casey 230126 : Compute SIGT at additional vertical points.
+       IF( INDEX(densityIntegration,'simpson').GT.0 .OR.
+     &     INDEX(densityIntegration,'quadrature').GT.0 )THEN
+         IF(ABS(IDEN).EQ.2) THEN
+           DO NH=1,NP
+             DO N=1,NFEN-1
+               DO IGQ=1,NumGQP
+                 IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                   IF( IGQ.EQ.1 )THEN
+                     GQI = N
+                   ELSE
+                     CYCLE
+                   ENDIF
+                 ELSE
+                   GQI = NumGQP*(N-1)+IGQ
+                 ENDIF
+                 SIGTM(NH,GQI) = 1028.d0*(1.d0+S_beta*(SALM(NH,GQI)-
+     &                       S_ref))-RHOWAT0
+               ENDDO
+             ENDDO
+           ENDDO
+         ELSEIF(ABS(IDEN).EQ.3) THEN
+           DO NH=1,NP
+             DO N=1,NFEN-1
+               DO IGQ=1,NumGQP
+                 IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                   IF( IGQ.EQ.1 )THEN
+                     GQI = N
+                   ELSE
+                     CYCLE
+                   ENDIF
+                 ELSE
+                   GQI = NumGQP*(N-1)+IGQ
+                 ENDIF
+                 SIGTM(NH,GQI) = 1028.d0*(1.d0-T_alpha*(TEMPM(NH,GQI)-
+     &                         T_ref))-RHOWAT0
+               ENDDO
+             ENDDO
+           ENDDO
+         ELSEIF(ABS(IDEN).EQ.4) THEN
+           DO NH=1,NP
+             DO N=1,NFEN-1
+               DO IGQ=1,NumGQP
+                 IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                   IF( IGQ.EQ.1 )THEN
+                     GQI = N
+                   ELSE
+                     CYCLE
+                   ENDIF
+                 ELSE
+                   GQI = NumGQP*(N-1)+IGQ
+                 ENDIF
+                 SIGTM(NH,GQI) = 1028.d0*(1.d0-T_alpha*(TEMPM(NH,GQI)-
+     &                         T_ref)+S_beta*(SALM(NH,GQI)-S_ref))-
+     &                         RHOWAT0
+               ENDDO
+             ENDDO
+           ENDDO
+         ENDIF
+       ENDIF
       ELSE IF (Eqnstate.EQ.2) THEN
         T_ref=10.d0
         S_ref=32.d0
@@ -4169,6 +4578,12 @@ C  kmd48.33bc Equation of state from McDougall et al. (2003) - only used
 C        with both salinity and temperature. This is one of the equation
 C        of states used in QUODDY
         IF (ABS(IDEN).EQ.4) THEN
+!Casey 230110 : Add to allow user control.
+           IF(.NOT.iterateEqnState2)THEN
+             Tolerance = 1e+7  ! This will be achieved without iterations.
+           ELSE
+             Tolerance = 1e-12 ! Typically 4-5 iterations?
+           ENDIF
 ! Look at the values for Temperature and Salinity to see if still
 ! inside the range of the equation of state
            DO NH=1,NP
@@ -4188,6 +4603,7 @@ C        of states used in QUODDY
             END DO
            END DO
 ! First, determine the reference density
+!Casey 230109 : But R_ref is never used?
            P1 = Q1 + (a1 + (a2 + a3*T_ref)*T_ref)*
      &               T_ref + (b1 + b2*T_ref +
      &               b3*S_ref)*S_ref
@@ -4197,15 +4613,6 @@ C        of states used in QUODDY
      &               SQRT(S_ref) + (e2 + e3*T_ref*
      &               T_ref)*T_ref)*S_ref
            R_ref = P1/P2
-! Second, determine the depths of the layers
-           DO NH=1,NP
-            Hs = DP(NH) + IFNLFA*ETA2(NH)
-            HsOAMB = Hs/(A-B)
-            DO N=1, NFEN
-              Zk = HsOAMB * (Sigma(n)-B)-DP(NH)
-              Z(NH,N) = Zk
-            END DO
-           END DO
 ! Third, calculate the new density
            DO NH=1,NP
             DO N=NFEN,1,-1
@@ -4221,20 +4628,92 @@ C        of states used in QUODDY
      &               TEMP(NH,N))*TEMP(NH,N))*SAL(NH,N)
                 RHO(NH,N) = P1/P2
               ELSE IF (N.NE.NFEN) THEN
-                p(NH) = p(NH) + g*RHO(NH,N+1)*(Z(NH,N+1)-
-     &                  Z(NH,N))*0.0001d0
-                P1 = Q1 + (a1 + (a2 + a3*TEMP(NH,N))*TEMP(NH,N))*
-     &               TEMP(NH,N) + (b1 + b2*TEMP(NH,N) +
-     &               b3*SAL(NH,N))*SAL(NH,N) + (c1 + c2*
-     &               TEMP(NH,N)*TEMP(NH,N) + c3*SAL(NH,N) +
-     &               (c4 + ((c5+c6*TEMP(NH,N))*TEMP(NH,N) +
-     &               c7*p(NH))*TEMP(NH,N))*p(NH))*p(NH)
-                P2 = Q2 + (d1 + (d2 + (d3 + d4*TEMP(NH,N))*
-     &               TEMP(NH,N))*TEMP(NH,N))*TEMP(NH,N) +
-     &               (e1 + (f1 + f2*TEMP(NH,N)*TEMP(NH,N))*
-     &               SQRT(SAL(NH,N)) + (e2 + e3*TEMP(NH,N)*
-     &               TEMP(NH,N))*TEMP(NH,N))*SAL(NH,N)
-                RHO(NH,N) = P1/(P2 + p(NH))
+                IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
+                  NumLoop = 1
+                ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                  NumLoop = 2 ! midpoint and next layer
+                ELSE
+                  NumLoop = NumGQP+1 ! quadrature points and nest layer
+              END IF
+                DO IGQ=NumLoop,1,-1
+                  PB = p(NH)
+                  IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
+                    es2rhoa = RHO(NH,N+1)
+                    es2dz   = Z(NH,N+1)-Z(NH,N) ! previous sigma layer to next sigma layer
+                    es2sal  = SAL(NH,N)
+                    es2temp = TEMP(NH,N)
+                  ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                    IF( IGQ.EQ.NumLoop )THEN
+                      es2rhoa = RHO(NH,N+1)
+                      es2dz   = Z(NH,N+1)-ZM(NH,N) ! previous sigma layer to midpoint
+                      es2sal  = SALM(NH,N)
+                      es2temp = TEMPM(NH,N)
+                    ELSE
+                      es2rhoa = RHOM(NH,N)
+                      es2dz   = ZM(NH,N)-Z(NH,N) ! midpoint to next sigma layer
+                      es2sal  = SAL(NH,N)
+                      es2temp = TEMP(NH,N)
+                    ENDIF
+                  ELSE ! densityIntegration = 'quadrature'
+                    GQI = NumGQP*(N-1)+IGQ
+                    GQI = GQI - 1
+                    IF( IGQ.EQ.NumLoop )THEN
+                      es2rhoa = RHO(NH,N+1)
+                      es2dz   = Z(NH,N+1)-ZM(NH,GQI) ! previous sigma layer to top quad point
+                      es2sal  = SALM(NH,GQI)
+                      es2temp = TEMPM(NH,GQI)
+                    ELSEIF( IGQ.NE.1 )THEN
+                      es2rhoa = RHOM(NH,GQI+1)
+                      es2dz   = ZM(NH,GQI+1)-ZM(NH,GQI) ! between quad points
+                      es2sal  = SALM(NH,GQI)
+                      es2temp = TEMPM(NH,GQI)
+                    ELSEIF( IGQ.EQ.1 )THEN
+                      es2rhoa = RHOM(NH,GQI+1)
+                      es2dz   = ZM(NH,GQI+1)-Z(NH,N) ! bottom quad point to next sigma layer
+                      es2sal  = SAL(NH,N)
+                      es2temp = TEMP(NH,N)
+                    ENDIF
+                  ENDIF
+                  es2rhog = es2rhoa
+!Casey 230109 : Iterate to convergence?
+!Casey 240320 : ... but don't iterate forever.
+!                 inner1: DO
+                  inner1: DO II=1,20
+                    p(NH) = PB + g*0.5d0*(es2rhoa+es2rhog)
+     &                  *es2dz*0.0001d0
+                    P1 = Q1 + (a1 + (a2 + a3*es2temp)*es2temp)*
+     &                   es2temp + (b1 + b2*es2temp +
+     &                   b3*es2sal)*es2sal + (c1 + c2*
+     &                   es2temp*es2temp + c3*es2sal +
+     &                   (c4 + ((c5+c6*es2temp)*es2temp +
+     &                   c7*p(NH))*es2temp)*p(NH))*p(NH)
+                    P2 = Q2 + (d1 + (d2 + (d3 + d4*es2temp)*
+     &                   es2temp)*es2temp)*es2temp +
+     &                   (e1 + (f1 + f2*es2temp*es2temp)*
+     &                   SQRT(es2sal) + (e2 + e3*es2temp*
+     &                   es2temp)*es2temp)*es2sal
+                    es2rho = P1/(P2 + p(NH))
+                    IF(ABS(es2rho-es2rhog).LT.Tolerance)THEN
+                      EXIT inner1
+                    ENDIF
+                    es2rhog = es2rho
+                  ENDDO inner1
+                  IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
+                    RHO(NH,N) = es2rho
+                  ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                    IF( IGQ.GT.NumLoop )THEN
+                      RHOM(NH,N) = es2rho
+                    ELSE
+                      RHO(NH,N) = es2rho
+                    ENDIF
+                  ELSE ! densityIntegration = 'quadrature'
+                     IF( IGQ.GT.1 )THEN
+                       RHOM(NH,GQI) = es2rho
+                     ELSE
+                       RHO(NH,N) = es2rho
+                     ENDIF
+                  ENDIF
+            END DO
               END IF
             END DO
 ! Fourth, calculate the new values of sigma-t for calculation
@@ -4242,6 +4721,15 @@ C        of states used in QUODDY
             DO N=1,NFEN
               SIGT(NH,N) = RHO(NH,N)-RHOWAT0
             END DO
+            IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+              DO N=1,NFEN-1
+                SIGTM(NH,N) = RHOM(NH,N)-RHOWAT0
+           END DO
+            ELSEIF( INDEX(densityIntegration,'quadrature').GT.0 )THEN
+              DO GQI=1,NumGQP*(NFEN-1)
+                SIGTM(NH,GQI) = RHOM(NH,GQI)-RHOWAT0
+              ENDDO
+        END IF
            END DO
         END IF
       ELSE IF(Eqnstate.EQ.3) THEN
@@ -4279,16 +4767,10 @@ C        with both salinity and temperature.
      &         TEMP(NH,N))*SAL(NH,N)*SQRT(SAL(NH,N)) +
      &         c41*SAL(NH,N)*SAL(NH,N)
            END DO
-! Second, determine the depths of the layers
-           DO NH=1,NP
-            Hs = DP(NH) + IFNLFA*ETA2(NH)
-            HsOAMB = Hs/(A-B)
-            DO N=1, NFEN
-              Zk = HsOAMB * (Sigma(n)-B)-DP(NH)
-              Z(NH,N) = Zk
-            END DO
-           END DO
-! Third, calculate the new density
+!Casey 220126 : Compute SIGT at the levels.
+           IF( INDEX(densityIntegration,'trapezoidal').GT.0 .OR.
+     &         INDEX(densityIntegration,'simpson').GT.0 .OR.
+     &         INDEX(densityIntegration,'quadrature').GT.0 )THEN
            DO NH=1,NP
             DO N=NFEN-1,1,-1
               Kappa = d00 + (d11 + (d12 + (d13 + d14*TEMP(NH,N))*
@@ -4309,7 +4791,44 @@ C        with both salinity and temperature.
             END DO
            END DO
         END IF
+!Casey 220126 : Also compute SIGT at addditional points.
+           IF( INDEX(densityIntegration,'simpson').GT.0 .OR.
+     &         INDEX(densityIntegration,'quadrature').GT.0 )THEN
+              DO NH=1,NP
+                DO N=NFEN-1,1,-1
+                  DO IGQ=NumGQP,1,-1
+                    IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                      IF( IGQ.EQ.1 )THEN
+                        GQI = N
+                      ELSE
+                        CYCLE
+                      ENDIF
+                    ELSE
+                      GQI = NumGQP*(N-1)+IGQ
+                    ENDIF
+                    Kappa = d00 + (d11 + (d12 + (d13 + d14*TEMPM(NH,GQI))*
+     &                TEMPM(NH,GQI))*TEMPM(NH,GQI))*TEMPM(NH,GQI) + (d21 +
+     &                (d22 + (d23 + d24*TEMPM(NH,GQI))*TEMPM(NH,GQI))*TEMPM(NH,GQI))*
+     &                SALM(NH,GQI) + (d31 + (d32 + d33*TEMPM(NH,GQI))*TEMPM(NH,GQI))*
+     &                SALM(NH,GQI)*SQRT(SALM(NH,GQI)) + (d41 + (d42 + (d43 + d44*
+     &                TEMPM(NH,GQI))*TEMPM(NH,GQI))*TEMPM(NH,GQI))*ZM(NH,GQI) + (d51 +
+     &                (d52 + d53*TEMPM(NH,GQI))*TEMPM(NH,GQI))*ZM(NH,GQI)*SALM(NH,GQI) +
+     &                d61*ZM(NH,GQI)*SALM(NH,GQI)*SQRT(SALM(NH,GQI)) + (d71 + (d72 +
+     &                d73*TEMPM(NH,GQI))*TEMPM(NH,GQI))*ZM(NH,GQI)*ZM(NH,GQI) + (d81 +
+     &                (d82 + d83*TEMPM(NH,GQI))*TEMPM(NH,GQI))*SALM(NH,GQI)*ZM(NH,GQI)*
+     &                ZM(NH,GQI)
+                    RHOM(NH,GQI) = RHO(NH,NFEN)/(1.d0+(ZM(NH,GQI)/Kappa))
+                    SIGTM(NH,GQI) = RHOM(NH,GQI)-RHOWAT0
+                  ENDDO
+                ENDDO
+              ENDDO
+           ENDIF
+        END IF
       END IF
+
+!Casey 230317 Debug
+!     SIGT = 0.D0
+!     SIGTM = 0.D0
 
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

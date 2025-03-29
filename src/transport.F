@@ -188,6 +188,8 @@ C  kmd48.33bc added in variables used in the heat flux boundary condition
       Real(8) :: Hs, HsOAMB, HsN2
       Real(8) :: Biharmonic_viscosity
       Real(8) :: Biharmonic_LDiffusion(MNFEN) !lateral diffusion term in transport eqn - biharmonic diffusion
+!Casey 220207 from Rosemary : For diffusion term in wet/dry interface
+      Real(8) :: LDiffusion_WetDryInterface(MNFEN)
 
 C*************************************************************************************
 C     Compute 3D transport equation
@@ -203,7 +205,104 @@ C     Compute 3D transport equation
 
       DO NH = 1, NP                      !loop over horizontal nodes
          Hs = DP(NH) + IFNLFA * Eta1(NH) !Total depth at current timestep - 'center' node
+!Casey 220207 from Rosemary
+         IF(Hs.LT.H0) Hs = H0
          HsOAMB = Hs / AMB
+
+#ifndef CASEY
+
+!Casey 220523 : Wouldn't this be easier?
+
+         DO k=1,NFEN
+            ! Start from zero
+            TotalArea2=0.d0
+            DSalOrTempDXDPhiDX2A=0.d0
+            DSalOrTempDYDPhiDY2A=0.d0
+            DO N=1,SIZE(NeiTabEle,2)
+               ! Find neighbor element
+               NEle=NeiTabEle(NH,N)
+               ! Skip blank entries in NeiTabEle
+               IF(NEle.EQ.0) CYCLE
+               ! Find vertices in counterclockwise order
+               IF(NM(NEle,1).EQ.NH)THEN
+                  N1=NM(NEle,1)
+                  N2=NM(NEle,2)
+                  N3=NM(NEle,3)
+               ELSEIF(NM(NEle,2).EQ.NH)THEN
+                  N1=NM(NEle,2)
+                  N2=NM(NEle,3)
+                  N3=NM(NEle,1)
+               ELSEIF(NM(NEle,3).EQ.NH)THEN
+                  N1=NM(NEle,3)
+                  N2=NM(NEle,1)
+                  N3=NM(NEle,2)
+               ELSE
+                  PRINT*, "Aack! ",NH,NEle,NM(Nele,:)
+               ENDIF
+               ! Skip dry elements
+               NCEle=NODECODE(N1)*NODECODE(N2)
+     &              *NODECODE(N3)*NOFF(NEle)
+               IF(NCEle.EQ.0) CYCLE
+               ! For vertex of interest
+               Zk = HsOAMB * ( Sigma(k) - B ) - DP(N1)
+               SalOrTempN1_z = inarray(N1,k)
+               ! For first neighbor vertex 
+               HsN2 = DP(N2) + IFNLFA * Eta1(N2)
+               IF(HsN2.LT.H0) HsN2 = H0
+               SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2
+               inarray_vertical (:) = inarray(N2,:)
+!Casey 221103 : User control over cubic interpolation
+               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                  CALL linear_vertical_interpolation_real ( 
+     &                 inarray_vertical,
+     &                 SigmaNN, SalOrTempN2_z, k )
+               ELSE ! Default
+                  CALL cubic_vertical_interpolation( inarray_vertical, 
+     &                 SigmaNN, SalOrTempN2_z, N2, k )
+               ENDIF
+               ! For second neighbor vertex 
+               HsN2 = DP(N3) + IFNLFA * Eta1(N3)
+               IF(HsN2.LT.H0) HsN2 = H0
+               SigmaNN = B + AMB * ( Zk + DP(N3) ) / HsN2
+               inarray_vertical (:) = inarray(N3,:)
+!Casey 221103 : User control over cubic interpolation
+               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                  CALL linear_vertical_interpolation_real ( 
+     &                 inarray_vertical,
+     &                 SigmaNN, SalOrTempN3_z, k )
+               ELSE ! Default
+                  CALL cubic_vertical_interpolation( inarray_vertical,
+     &                 SigmaNN, SalOrTempN3_z, N2, k )
+               ENDIF
+               ! Compute gradients
+               IF(SalOrTempN2_z.GT.-990.D0.AND.
+     &            SalOrTempN3_z.GT.-990.D0)THEN
+                  TotalArea2 = TotalArea2 + Areas(NEle)
+                  SFacAvg = (SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+                  a1 = X(N3)-X(N2)
+                  a2 = X(N1)-X(N3)
+                  a3 = X(N2)-X(N1)
+                  b1 =(Y(N2)-Y(N3))*SFacAvg
+                  b2 =(Y(N3)-Y(N1))*SFacAvg
+                  b3 =(Y(N1)-Y(N2))*SFacAvg
+                  DSalOrTempDXDPhiDX2A = DSalOrTempDXDPhiDX2A
+     &               + ( SalOrTempN1_z*b1 + SalOrTempN2_z*b2
+     &                 + SalOrTempN3_z*b3 )*b1/Areas(NEle)
+                  DSalOrTempDYDPhiDY2A = DSalOrTempDYDPhiDY2A
+     &               + ( SalOrTempN1_z*a1 + SalOrTempN2_z*a2
+     &                 + SalOrTempN3_z*a3 )*a1/Areas(NEle)
+               ENDIF
+            ENDDO
+            IF(TotalArea2.GT.0.0001D0)THEN
+               Biharmonic_auxiliary_var_SalOrTemp(NH,k) = -3.d0 *
+     &            (DSalOrTempDXDPhiDX2A+DSalOrTempDYDPhiDY2A)/TotalArea2
+            ENDIF
+         ENDDO
+
+#else
+
+!Casey 220523 : End of code additions, let's comment the stuff below.
+
          ! begin the vertical loop
          DO k = 1, NFEN
             DSalOrTempDXDPhiDX2A = 0.d0    ! variables for computing the biharmonic operator
@@ -218,9 +317,19 @@ C     Compute 3D transport equation
 
             N2  = NEITAB(NH,2)     !operate on 1st neighbor
             HsN2 = DP(N2) + IFNLFA * Eta1(N2)
+!Casey 220207 from Rosemary
+            IF(HsN2.LT.H0) HsN2 = H0
             SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2 !equivalent sigma value at neighbor
             inarray_vertical (:) = inarray(N2,:)
-            Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, SalOrTempN2_z, k )
+!Casey 220227 from Arash/Rosemary
+!Casey 221103 : User control over cubic interpolation
+            IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+               CALL linear_vertical_interpolation_real ( 
+     &             inarray_vertical, SigmaNN, SalOrTempN2_z, k )
+            ELSE ! Default
+               CALL cubic_vertical_interpolation( inarray_vertical,
+     &             SigmaNN,SalOrTempN2_z,N2,k)
+            ENDIF
 
             NNFirst = N2           !save these values until end
             SalOrTempNFirst_z = SalOrTempN2_z
@@ -231,9 +340,19 @@ C     Compute 3D transport equation
 
                N2 = NEITAB(NH,N)  !select new neighbor to work on
                HsN2 = DP(N2) + IFNLFA * Eta1(N2)
+!Casey 220207 from Rosemary
+               IF(HsN2.LT.H0) HsN2 = H0
                SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2 !equivalent sigma value at neighbor
                inarray_vertical (:) = inarray(N2,:)
-               Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, SalOrTempN2_z, k )
+!Casey 220227 from Arash/Rosemary
+!Casey 221103 : User control over cubic interpolation
+               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                  CALL linear_vertical_interpolation_real ( 
+     &                inarray_vertical, SigmaNN, SalOrTempN2_z, k )
+               ELSE ! Default
+                  CALL cubic_vertical_interpolation( inarray_vertical,
+     &                SigmaNN,SalOrTempN2_z,N2,k)
+               ENDIF
 
                NEle= NeiTabEle(NH,N-2) !element # defined by nodes N1,N2,N3
                IF (NEle.eq.0) THEN
@@ -242,7 +361,10 @@ C     Compute 3D transport equation
                IF((NEle.NE.0)) THEN    !if element is active, compute velocity grads
                   NCELE = NODECODE(NH) * NODECODE(N2) *
      &                 NODECODE(N3) * NOFF(NELE)
-                  IF (NCELE.NE.0) THEN !if element exists, compute terms
+!Casey 220227 from Arash/Rosemary
+!                 IF (NCELE.NE.0) THEN !if element exists, compute terms
+                  IF ((NCELE.NE.0).and.(SalOrTempN2_z.GT.-998.d0).and.
+     &                    (SalOrTempN3_z.GT.-998.d0))THEN !if element exists, compute terms
                      TotalArea2 = TotalArea2 + Areas(NEle) !accumulate 2X total areas to complete calc.
                      SFacAvg = (SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
                      a1 = X(N3)-X(N2)
@@ -272,7 +394,10 @@ C     Compute 3D transport equation
             IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
                NCELE = NODECODE(NH) * NODECODE(N2) *
      &              NODECODE(N3) * NOFF(NELE)
-               IF ((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+!Casey 220227 from Arash/Rosemary
+!              IF ((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+               IF ((NCELE.NE.0).and.(SalOrTempN2_z.GT.-998.d0).and.
+     &                   (SalOrTempN3_z.GT.-998.d0)) THEN  !if element is active, compute velocity grads
                   TotalArea2 = TotalArea2 + Areas(NEle) !accumulate 2X total areas to complete calc.
                   SFacAvg = (SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
                   a1 = X(N3)-X(N2)
@@ -302,6 +427,11 @@ C     Compute 3D transport equation
             ENDIF
 
          END DO ! end vertical loop
+
+!Casey 220523 : End of commenting.
+
+#endif
+
       End Do ! end horizontal loop
 
 ! end computing Biharmonic_auxiliary_var(:,:)
@@ -670,6 +800,8 @@ Casey 140701: Avoid zero depths.
          HsHsOAMBAMBtrans=HsOAMBtrans*HsOAMBtrans
          
          Hsp1trans= DP(NH)+IFNLFA*Eta2(NH) !Total depth at present (s+1) timestep
+!Casey 220207 from Rosemary
+         IF(Hsp1trans.LT.H0) Hsp1trans = H0
          Hsp1OAMBtrans=Hsp1trans/AMB
          Hsp1Hsp1OAMBAMBtrans=Hsp1OAMBtrans*Hsp1OAMBtrans
          
@@ -746,6 +878,82 @@ C     Compute time derivative of water surface position
 C     Start computing horizontal derivatives of water level, bathymetric
 C     depth. Note: TotalArea2 = 2X total elemental area surrounding a node
          
+#ifndef CASEY
+
+!Casey 220523 : Wouldn't this be easier?
+
+         ! Start from zero
+         TotalArea2=0.d0
+         DhDX2A=0.d0
+         DhDY2A=0.d0
+         DEtaDX2A=0.d0
+         DEtaDY2A=0.d0
+         DhDX=0.d0
+         DhDY=0.d0
+         DEtaDX=0.d0
+         DEtaDY=0.d0
+         DO N=1,SIZE(NeiTabEle,2)
+            ! Find neighbor element
+            NEle=NeiTabEle(NH,N)
+            ! Skip blank entries in NeiTabEle
+            IF(NEle.EQ.0) CYCLE
+            ! Find vertices in counterclockwise order
+            IF(NM(NEle,1).EQ.NH)THEN
+               N1=NM(NEle,1)
+               N2=NM(NEle,2)
+               N3=NM(NEle,3)
+            ELSEIF(NM(NEle,2).EQ.NH)THEN
+               N1=NM(NEle,2)
+               N2=NM(NEle,3)
+               N3=NM(NEle,1)
+            ELSEIF(NM(NEle,3).EQ.NH)THEN
+               N1=NM(NEle,3)
+               N2=NM(NEle,1)
+               N3=NM(NEle,2)
+            ELSE
+               PRINT*, "Aack! ",NH,NEle,NM(Nele,:)
+            ENDIF
+            ! Skip dry elements
+            NCEle=NODECODE(N1)*NODECODE(N2)
+     &           *NODECODE(N3)*NOFF(NEle)
+            IF(NCEle.EQ.0) CYCLE
+            ! For vertex of interest
+            EtaN1=IFNLFA*(Eta1(N1)+Eta2(N1))/2.d0
+            hN1=DP(N1)
+            IF(hN1.LT.H0) hN1 = H0
+            ! For first neighbor vertex
+            EtaN2=IFNLFA*(Eta1(N2)+Eta2(N2))/2.d0
+            hN2=DP(N2)
+            IF(hN2.LT.H0) hN2 = H0
+            ! For second neighbor vertex
+            EtaN3=IFNLFA*(Eta1(N3)+Eta2(N3))/2.d0
+            hN3=DP(N3)
+            IF(hN3.LT.H0) hN3 = H0
+            ! Compute gradients
+            TotalArea2=TotalArea2+Areas(NEle)
+            SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+            a1= X(N3)-X(N2)
+            a2= X(N1)-X(N3)
+            a3= X(N2)-X(N1)
+            b1=(Y(N2)-Y(N3))*SFacAvg
+            b2=(Y(N3)-Y(N1))*SFacAvg
+            b3=(Y(N1)-Y(N2))*SFacAvg
+            DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
+            DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
+            DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
+            DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
+         ENDDO
+         IF(TotalArea2.GT.0.0001D0) THEN
+            DhDX=DhDX2A/TotalArea2
+            DhDY=DhDY2A/TotalArea2
+            DEtaDX=DEtaDX2A/TotalArea2
+            DEtaDY=DEtaDY2A/TotalArea2
+         ENDIF
+
+#else
+
+!Casey 220523 : End of code additions, let's comment the stuff below.
+
          DEtaDX=0.d0
          DEtaDY=0.d0
          DhDX=0.d0
@@ -759,10 +967,14 @@ C     depth. Note: TotalArea2 = 2X total elemental area surrounding a node
          N1=NH
          EtaN1=IFNLFA*(Eta1(N1)+Eta2(N1))/2.d0
          hN1=DP(N1)
+!Casey 220207 from Rosemary
+         IF(hN1.LT.H0) hN1 = H0
 
          N2=NeiTab(NH,2)        !operate on 1st neighbor
          EtaN2=IFNLFA*(Eta1(N2)+Eta2(N2))/2.d0
          hN2=DP(N2)
+!Casey 220207 from Rosemary
+         IF(hN2.LT.H0) hN2 = H0
 
          NNFirst=N2             !save these values until end
          EtaNFirst=EtaN2
@@ -775,6 +987,8 @@ C     depth. Note: TotalArea2 = 2X total elemental area surrounding a node
             N2=NeiTab(NH,N)     !select new neighbor to work on
             EtaN2=IFNLFA*(Eta1(N2)+Eta2(N2))/2.d0
             hN2=DP(N2)
+!Casey 220207 from Rosemary
+            IF(hN2.LT.H0) hN2 = H0
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
 
             ! jgf49.58: NOFF array lookups fail if NEle comes back 0.
@@ -841,6 +1055,10 @@ C   kmd48.33bc add in spherical factors
             DEtaDY=DEtaDY2A/TotalArea2
          ENDIF
 
+!Casey 220523 : End of commenting.
+
+#endif
+
 C     Finished computing horizontal derivatives of water level,
 C     bathymetric depth.
 
@@ -901,7 +1119,174 @@ C      kmd48.33bc added sponge layer for the vertical advective term
 C     Compute lateral advection and lateral diffusion terms - af modified computation of horizontal diffusion terms
 !----------------------------------------------------------------------------------------------------------------------------------------------------
 
+!Casey 220523 : Zero these variables.
+            LAdvectrans(k) = 0.d0
+            LDiffusion(k)  = 0.d0
+            Biharmonic_LDiffusion(k) = 0.d0
+            LDiffusion_WetDryInterface(k) = 0.d0
+
             Zk = HsOAMBtrans * ( Sigma(k) - B ) - DP(NH)               ! determine z corresponding to sigma level k
+
+#ifndef CASEY
+
+!Casey 220523 : Wouldn't this be easier?
+
+            ! Start from zero
+            TotalArea2 = 0.d0
+            UnDtransDX2A=0.d0
+            VnDtransDY2A=0.d0
+            DtransDXDPhiDX2A=0.d0
+            DtransDYDPhiDY2A=0.d0
+            Biharmonic_DSalOrTempDXDPhiDX2A = 0.d0
+            Biharmonic_DSalOrTempDYDPhiDY2A = 0.d0
+            DO N=1,SIZE(NeiTabEle,2)
+               ! Find neighbor element
+               NEle=NeiTabEle(NH,N)
+               ! Skip blank entries in NeiTabEle
+               IF(NEle.EQ.0) CYCLE
+               ! Find vertices in counterclockwise order
+               IF(NM(NEle,1).EQ.NH)THEN
+                  N1=NM(NEle,1)
+                  N2=NM(NEle,2)
+                  N3=NM(NEle,3)
+               ELSEIF(NM(NEle,2).EQ.NH)THEN
+                  N1=NM(NEle,2)
+                  N2=NM(NEle,3)
+                  N3=NM(NEle,1)
+               ELSEIF(NM(NEle,3).EQ.NH)THEN
+                  N1=NM(NEle,3)
+                  N2=NM(NEle,1)
+                  N3=NM(NEle,2)
+               ELSE
+                  PRINT*, "Aack! ",NH,NEle,NM(Nele,:)
+               ENDIF
+               ! Skip dry elements
+               NCEle=NODECODE(N1)*NODECODE(N2)
+     &              *NODECODE(N3)*NOFF(NEle)
+               IF(NCEle.EQ.0) CYCLE
+               ! For vertex of interest
+               qN1=q(N1,k)
+               transN1   = inarray(N1,k)
+               transN1_z = transN1
+               Biharmonic_SalOrTempN1_z = 
+     &            Biharmonic_auxiliary_var_SalOrTemp(N1,k)
+               ! For first neighbor vertex
+               qN2=q(N2,k)
+               transN2=inarray(N2,k)
+               HsN2trans = DP(N2) + IFNLFA * Eta1(N2)
+               IF(HsN2trans.LT.H0) HsN2trans = H0
+               SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2trans
+               inarray_vertical (:) = inarray(N2,:)
+!Casey 220207 from Rosemary : Some confusing changes through this
+!             section. In her code, the two cubic interpolations are
+!             used, not sure why they would be disabled here. Let's try them.
+!Casey 221103 : User control over cubic interpolation
+               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                  CALL linear_vertical_interpolation_real( 
+     &                inarray_vertical, SigmaNN, transN2_z, k )
+               ELSE ! Default
+                  CALL cubic_vertical_interpolation( inarray_vertical,
+     &                SigmaNN, transN2_z, N2, k )
+               ENDIF
+               inarray_vertical(:) =
+     &            Biharmonic_auxiliary_var_SalOrTemp(N2,:)
+!Casey 221103 : User control over cubic interpolation
+               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                  CALL linear_vertical_interpolation_real( 
+     &                inarray_vertical,
+     &                SigmaNN, Biharmonic_SalOrTempN2_z, k )
+               ELSE ! Default
+                  CALL cubic_vertical_interpolation( inarray_vertical,
+     &                SigmaNN, Biharmonic_SalorTempN2_z, N2, k )
+               ENDIF
+               ! For second neighbor vertex
+               qN3=q(N3,k)
+               transN3=inarray(N3,k)
+               HsN2trans = DP(N3) + IFNLFA * Eta1(N3)
+               IF(HsN2trans.LT.H0) HsN2trans = H0
+               SigmaNN = B + AMB * ( Zk + DP(N3) ) / HsN2trans
+               inarray_vertical (:) = inarray(N3,:)
+!Casey 220207 from Rosemary : Same thing here?
+!Casey 221103 : User control over cubic interpolation
+               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                  CALL linear_vertical_interpolation_real( 
+     &                inarray_vertical,
+     &                SigmaNN, transN3_z, k )
+               ELSE ! Default
+                  CALL cubic_vertical_interpolation( inarray_vertical,
+     &                SigmaNN, transN3_z, N3, k )
+               ENDIF
+               inarray_vertical(:) =
+     &            Biharmonic_auxiliary_var_SalOrTemp(N3,:)
+!Casey 221103 : User control over cubic interpolation
+               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                  CALL linear_vertical_interpolation_real( 
+     &                inarray_vertical,
+     &                SigmaNN, Biharmonic_SalOrTempN3_z, k )
+               ELSE ! Default
+                  CALL cubic_vertical_interpolation( inarray_vertical,
+     &                SigmaNN, Biharmonic_SalorTempN3_z, N3, k )
+               ENDIF
+               ! Compute gradients
+               TotalArea2=TotalArea2+Areas(NEle)
+               qn=(qN1+qN2+qN3)/3.d0
+               Un=REAL(qn)
+               Vn=AIMAG(qn)
+               SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+               a1= X(N3)-X(N2)
+               a2= X(N1)-X(N3)
+               a3= X(N2)-X(N1)
+               b1=(Y(N2)-Y(N3))*SFacAvg
+               b2=(Y(N3)-Y(N1))*SFacAvg
+               b3=(Y(N1)-Y(N2))*SFacAvg
+               UnDtransDX2A = UnDtransDX2A 
+     &            + Un*( transN1*b1 + transN2*b2 + transN3*b3 )
+               VnDtransDY2A = VnDtransDY2A
+     &            + Vn*( transN1*a1 + transN2*a2 + transN3*a3 )
+               IF(transN2_z.GT.-990.D0.AND.transN3_z.GT.-990.D0)THEN
+                  DtransDXDPhiDX2A = DtransDXDPhiDX2A
+     &               + ( transN1_z*b1 + transN2_z*b2 + transN3_z*b3 )
+     &                 * b1/Areas(NEle)
+                  DtransDYDPhiDY2A = DtransDYDPhiDY2A
+     &               + ( transN1_z*a1 + transN2_z*a2 + transN3_z*a3 )
+     &                 * a1/Areas(NEle)
+               ENDIF
+               IF(Biharmonic_SalOrTempN2_z.GT.-990.D0.AND.
+     &            Biharmonic_SalorTempN3_z.GT.-998.D0)THEN
+                  Biharmonic_DSalOrTempDXDPhiDX2A = 
+     &               Biharmonic_DSalOrTempDXDPhiDX2A
+     &               + ( Biharmonic_SalOrTempN1_z*b1
+     &                 + Biharmonic_SalOrTempN2_z*b2
+     &                 + Biharmonic_SalOrTempN3_z*b3 )
+     &                 * b1/Areas(NEle)
+                  Biharmonic_DSalOrTempDYDPhiDY2A =
+     &               Biharmonic_DSalOrTempDYDPhiDY2A
+     &               + ( Biharmonic_SalOrTempN1_z*a1
+     &                 + Biharmonic_SalOrTempN2_z*a2
+     &                 + Biharmonic_SalOrTempN3_z*a3 )
+     &                 * a1/Areas(NEle)
+               ENDIF
+            ENDDO
+            IF(TotalArea2.GT.0.0001D0)THEN
+               LAdvectrans(k)=sponge(NH)*IFNLCT
+     &            *(UnDtransDX2A+VnDtransDY2A)/TotalArea2
+               LDiffusion(k)=3.d0*diffhoriz
+     &            *(DtransDXDPhiDX2A+DtransDYDPhiDY2A)/TotalArea2
+!Casey 221103 : User control over Leith viscosity
+               IF( .NOT.useLeithViscosity )THEN
+                  Biharmonic_viscosity = diffhoriz
+               ELSE ! Default
+                  Biharmonic_viscosity =
+     &               Biharmonic_viscosity_modified_Leith ( NH, k ) * 1.00d0
+               ENDIF
+               Biharmonic_LDiffusion(k) = -3.d0 * Biharmonic_viscosity *
+     &            ( Biharmonic_DSalOrTempDXDPhiDX2A
+     &            + Biharmonic_DSalOrTempDYDPhiDY2A )/TotalArea2
+            ENDIF
+
+#else
+
+!Casey 220523 : End of code additions, let's comment the stuff below.
 
             UnDtransDX2A=0.d0
             VnDtransDY2A=0.d0
@@ -911,6 +1296,8 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
 ! arash 01/05/2016: Biharmonic auxiliary variable derivatives and modified Leith viscosity
             Biharmonic_DSalOrTempDXDPhiDX2A = 0.d0
             Biharmonic_DSalOrTempDYDPhiDY2A = 0.d0
+!Casey 220227 from Arash/Rosemary
+            TotalArea2 = 0.d0
 !            d2_dx2_SalOrTemp_element = 0.d0
 !            d2_dy2_SalOrTemp_element = 0.d0
 !            d2_dxy_SalOrTemp_element = 0.d0
@@ -930,13 +1317,32 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
             transN2=inarray(N2,k)
 ! find transN2 at the same z coordinate as transN1:
             HsN2trans = DP(N2) + IFNLFA * Eta1(N2)
+!Casey 220207 from Rosemary
+            IF(HsN2trans.LT.H0) HsN2trans = H0
             SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2trans !equivalent sigma value at neighbor
             inarray_vertical (:) = inarray(N2,:)
-!            CALL cubic_vertical_interpolation ( inarray_vertical, SigmaNN, transN2_z, N2, k ) !interp inarray at neighbor
-            Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, transN2_z, k )
+!Casey 220207 from Rosemary : Some confusing changes through this
+!             section. In her code, the two cubic interpolations are used, not
+!             sure why they would be disabled here. Let's try them.
+!Casey 221103 : User control over cubic interpolation
+            IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+               CALL linear_vertical_interpolation_real ( 
+     &             inarray_vertical, SigmaNN, transN2_z, k )
+            ELSE ! Default
+               CALL cubic_vertical_interpolation ( inarray_vertical, 
+     &             SigmaNN, transN2_z, N2, k ) !interp inarray at neighbor
+            ENDIF
 ! af 01/05/2016:
             inarray_vertical (:) = Biharmonic_auxiliary_var_SalOrTemp (N2,:)
-            Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, Biharmonic_SalOrTempN2_z, k )
+!Casey 221103 : User control over cubic interpolation
+            IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+               CALL linear_vertical_interpolation_real ( 
+     &             inarray_vertical, SigmaNN, Biharmonic_SalOrTempN2_z,
+     &             k )
+            ELSE ! Default
+               CALL cubic_vertical_interpolation ( inarray_vertical,
+     &             SigmaNN, Biharmonic_SalorTempN2_z, N2, k )
+            ENDIF
 !            inarray_vertical (:) = d_dx_SalOrTemp_nodes(N2,:)
 !            Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, d_dx_SalOrTempN2_z, k )
 !            inarray_vertical (:) = d_dy_SalOrTemp_nodes(N2,:)
@@ -968,13 +1374,31 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
                transN2=inarray(N2,k)
 ! find transN2 at the same z coordinate as transN1:
                HsN2trans = DP(N2) + IFNLFA * Eta1(N2)
+!Casey 220207 from Rosemary
+               IF(HsN2trans.LT.H0) HsN2trans = H0
                SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2trans !equivalent sigma value at neighbor
                inarray_vertical (:) = inarray(N2,:)
-!!cubic               CALL cubic_vertical_interpolation ( inarray_vertical, SigmaNN, transN2_z, N2, k ) !interp inarray at neighbor
-               Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, transN2_z, k )
+!Casey 220207 from Rosemary : Same thing here?
+!Casey 221103 : User control over cubic interpolation
+               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                  CALL linear_vertical_interpolation_real ( 
+     &                inarray_vertical, SigmaNN, transN2_z, k )
+               ELSE ! Default
+                  CALL cubic_vertical_interpolation ( inarray_vertical,
+     &                SigmaNN, transN2_z, N2, k ) !interp inarray at neighbor
+               ENDIF
 ! af 01/05/2016:
                inarray_vertical (:) = Biharmonic_auxiliary_var_SalOrTemp (N2,:)
-               Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, Biharmonic_SalOrTempN2_z, k )
+!Casey 221103 : User control over cubic interpolation
+               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                  CALL linear_vertical_interpolation_real ( 
+     &                inarray_vertical, SigmaNN, 
+     &                Biharmonic_SalOrTempN2_z, k )
+               ELSE ! Default
+                  CALL cubic_vertical_interpolation ( inarray_vertical,
+     &                SigmaNN, Biharmonic_SalOrTempN2_z, N2, k )
+               ENDIF
+!               Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, Biharmonic_SalOrTempN2_z, k )
 !               inarray_vertical (:) = d_dx_SalOrTemp_nodes(N2,:)
 !               Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, d_dx_SalOrTempN2_z, k )
 !               inarray_vertical (:) = d_dy_SalOrTemp_nodes(N2,:)
@@ -991,6 +1415,8 @@ C
                NCELE = NODECODE(NH)*NODECODE(N2)
      &              *NODECODE(N3)*NOFF(NELE)
                IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN !if element exists, compute terms
+!Casey 220227 from Arash/Rosemary 
+                  TotalArea2=TotalArea2+Areas(NEle)
                   qn=(qN1+qN2+qN3)/3.d0
                   Un=REAL(qn)
                   Vn=AIMAG(qn)
@@ -1031,18 +1457,26 @@ C   kmd48.33bc add in spherical factors
 ! ********** **********
 !                  Else
                      ! element is active with engineered linear interpolation
+!Casey 220227 from Arash/Rosemary
+                 IF((transN2_z.GT.-998.d0).and.(transN3_z.GT.-998.d0))THEN
                      DtransDXDPhiDX2A=DtransDXDPhiDX2A
      &                         +(transN1_z*b1+transN2_z*b2+transN3_z*b3)*
      &                         b1/Areas(NEle)
                      DtransDYDPhiDY2A=DtransDYDPhiDY2A
      &                         +(transN1_z*a1+transN2_z*a2+transN3_z*a3)*
      &                         a1/Areas(NEle)
+!Casey 220227 from Arash/Rosemary
+                 ENDIF
 !                  End If
 ! af 01/05/2016:
+!Casey 220227 from Arash/Rosemary
+                 IF((Biharmonic_SalOrTempN2_z.GT.-998.d0).and.(Biharmonic_SalorTempN3_z.GT.-998.d0))THEN
                      Biharmonic_DSalOrTempDXDPhiDX2A = Biharmonic_DSalOrTempDXDPhiDX2A
      &                 +(Biharmonic_SalOrTempN1_z*b1+Biharmonic_SalOrTempN2_z*b2+Biharmonic_SalOrTempN3_z*b3)*b1/Areas(NEle)
                      Biharmonic_DSalOrTempDYDPhiDY2A = Biharmonic_DSalOrTempDYDPhiDY2A
      &                 +(Biharmonic_SalOrTempN1_z*a1+Biharmonic_SalOrTempN2_z*a2+Biharmonic_SalOrTempN3_z*a3)*a1/Areas(NEle)
+!Casey 220227 from Arash/Rosemary
+                 ENDIF
 
 !                     d2_dx2_SalOrTemp_element = d2_dx2_SalOrTemp_element + d_dx_SalOrTempN1_z*b1+d_dx_SalOrTempN2_z*b2+d_dx_SalOrTempN3_z*b3
 !                     d2_dy2_SalOrTemp_element = d2_dy2_SalOrTemp_element + d_dy_SalOrTempN1_z*a1+d_dy_SalOrTempN2_z*a2+d_dy_SalOrTempN3_z*a3
@@ -1121,19 +1555,27 @@ C   kmd48.33bc add in spherical factors
 ! ********** **********
 !                  Else
                      ! element is active with engineered linear interpolation
+!Casey 220227 from Arash/Rosemary
+                  IF((transN2_z.GT.-998.d0).and.(transN3_z.GT.-998.d0))THEN
                      DtransDXDPhiDX2A=DtransDXDPhiDX2A
      &                         +(transN1_z*b1+transN2_z*b2+transN3_z*b3)*
      &                         b1/Areas(NEle)
                      DtransDYDPhiDY2A=DtransDYDPhiDY2A
      &                         +(transN1_z*a1+transN2_z*a2+transN3_z*a3)*
      &                         a1/Areas(NEle)
+!Casey 220227 from Arash/Rosemary
+                  ENDIF
 !                  End If
 
 ! af 01/05/2016:
+!Casey 220227 from Arash/Rosemary
+                  IF((Biharmonic_SalorTempN2_z.GT.-998.d0).and.(Biharmonic_SalorTempN3_z.GT.-998.d0))THEN
                   Biharmonic_DSalOrTempDXDPhiDX2A = Biharmonic_DSalOrTempDXDPhiDX2A
      &              +(Biharmonic_SalOrTempN1_z*b1+Biharmonic_SalOrTempN2_z*b2+Biharmonic_SalOrTempN3_z*b3)*b1/Areas(NEle)
                   Biharmonic_DSalOrTempDYDPhiDY2A = Biharmonic_DSalOrTempDYDPhiDY2A
      &              +(Biharmonic_SalOrTempN1_z*a1+Biharmonic_SalOrTempN2_z*a2+Biharmonic_SalOrTempN3_z*a3)*a1/Areas(NEle)
+!Casey 220227 from Arash/Rosemary
+                  ENDIF
 
 !                  d2_dx2_SalOrTemp_element = d2_dx2_SalOrTemp_element + d_dx_SalOrTempN1_z*b1+d_dx_SalOrTempN2_z*b2+d_dx_SalOrTempN3_z*b3
 !                  d2_dy2_SalOrTemp_element = d2_dy2_SalOrTemp_element + d_dy_SalOrTempN1_z*a1+d_dy_SalOrTempN2_z*a2+d_dy_SalOrTempN3_z*a3
@@ -1149,6 +1591,8 @@ C   kmd48.33bc add in spherical factors
                LDiffusion(k)  = 0.d0
 ! arash 12/14/2015
                Biharmonic_LDiffusion(k) = 0.d0
+!Casey 220227 from Rosemary
+               LDiffusion_WetDryInterface(k) = 0.d0
             ELSE
 
 C  kmd48.33bc added sponge layer for the lateral advective terms
@@ -1175,18 +1619,49 @@ C  kmd48.33bc added sponge layer for the lateral advective terms
 !     &                           sqrt ( modified_Leith_Lambda_vorticity**6  * modified_Leith_grad_vorticity**2
 !     &                                + modified_Leith_Lambda_divergence**6 * modified_Leith_grad_divergence**2 )
 !               ! 4. congratulations! we have computed modified Leith viscosity!
+!Casey 221103 : User control over Leith viscosity
+                IF( .NOT.useLeithViscosity )THEN
+                   Biharmonic_viscosity = diffhoriz
+                ELSE ! Default
                 Biharmonic_viscosity = Biharmonic_viscosity_modified_Leith ( NH, k ) * 1.00d0 ! to prevent loosing eddies
+                ENDIF
                 Biharmonic_LDiffusion(k) = -3.d0 * Biharmonic_viscosity * 
      &                                     (Biharmonic_DSalOrTempDXDPhiDX2A+Biharmonic_DSalOrTempDYDPhiDY2A) / TotalArea2
             ENDIF
 
+!Casey 220523 : End of commenting.
+
+#endif
+
          ENDDO
 
+!Casey 220207 from Rosemary : To resolve diffusion problem along wet/dry
+!             fronts, if any of the neigboring elements are dry, then preserve
+!             the harmonic formulation (i.e. do not apply biharmonic formulation)
+!             for Lateral Diffusion term.
+         LDiffusion_WetDryInterface(:) = LDiffusion(:)
 ! |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
 ! arash 1/19/2016: Use Biharmonic diffusion instead of a harmonic one
 ! We may want to make this cleaner later by having an option in the fort.15 file
+!Casey 221103 : User control over bhiarmonic operator for diffusion
+         IF( INDEX(diffusionOperator,'Laplacian').GT.0 )THEN
+            CONTINUE
+         ELSE ! Default
          LDiffusion(:) = Biharmonic_LDiffusion(:)
+         ENDIF
 ! |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+!Casey 220207 from Rosemary : For vertices connected to dry elements, preserve harmonic formulation
+          DO N = 1,NNeigh(NH)
+             NEle = NeiTabEle(NH,N)
+             IF (NEle.NE.0) THEN
+                IF (NOFF(NELE).EQ.0) THEN
+!                  LDiffusion(:) = LDiffusion_WetDryInterface(:)
+                   LDiffusion(:) = 0.d0
+                   LAdvectrans(:) = 0.d0
+                   EXIT
+                ENDIF
+             ENDIF
+          ENDDO
 
 !----------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -1212,6 +1687,28 @@ C  kmd48.33bc changed the way the top temperature is evaluated.
       ELSE
          topbcs = 0.d0
       END IF
+!Casey 220207 from Rosemary : Heat flux was turned off at the 
+!             river boundary nodes were we are specifying an incoming flux
+      IF (BNDBCRiver) THEN
+         DO BCSEC=1, bcriversec
+            DO NBC=1,BCRNVELL(BCSEC)
+               NM1=BCRNBVV(BCSEC,NBC)
+               IF(NH.EQ.NM1) topbcs = 0.d0
+            ENDDO
+         ENDDO
+      ENDIF
+!Casey 220207 from Rosemary : For vertices connected to dry elements, turn off heat flux
+      IF(field.EQ.3) THEN
+         DO N = 1,NNeigh(NH)
+            NEle = NeiTabEle(NH,N)
+            IF (NEle.NE.0) THEN
+               IF (NOFF(NELE).EQ.0) THEN
+         topbcs = 0.d0
+                  EXIT
+      END IF
+            ENDIF
+         ENDDO
+      ENDIF
 
 C     Need to add in the boundary conditions. Note: We loop through
 C     all the nodes and the only ones which have results should be
@@ -1252,12 +1749,20 @@ C     (Mkm1,Mk,Mkp1)
             Mkp1trans(k) = 1.d0*Inm(k,3) + RCLtrans*KNVnm(k,3)
          END DO
 
-         Frtrans(NFEN) = (1.d0*inarray(NH,k-1)
-     &        -DelT*(LAdvectrans(k-1)+LDiffusion(k-1)))*Inm(k,1)
-     &        + (1.d0*inarray(NH,k)
-     &        -DelT*(LAdvectrans(k)  +LDiffusion(k)))*Inm(k,2)
-     &        - DelT*(VAdvectrans(k))-DT1MAlp4*VDiffusion(k)
+!Casey 220227 from Rosemary
+!        Frtrans(NFEN) = (1.d0*inarray(NH,k-1)
+!    &        -DelT*(LAdvectrans(k-1)+LDiffusion(k-1)))*Inm(k,1)
+!    &        + (1.d0*inarray(NH,k)
+!    &        -DelT*(LAdvectrans(k)  +LDiffusion(k)))*Inm(k,2)
+!    &        - DelT*(VAdvectrans(k))-DT1MAlp4*VDiffusion(k)
+!    &        + topbcs + WBC(NH,NFEN)
+         Frtrans(NFEN) = (1.d0*inarray(NH,NFEN-1)
+     &        -DelT*(LAdvectrans(NFEN-1)+LDiffusion(NFEN-1)))*Inm(NFEN,1)
+     &        + (1.d0*inarray(NH,NFEN)
+     &        -DelT*(LAdvectrans(NFEN)  +LDiffusion(NFEN)))*Inm(NFEN,2)
+     &        - DelT*(VAdvectrans(NFEN))-DT1MAlp4*VDiffusion(NFEN)
      &        + topbcs + WBC(NH,NFEN)
+
          Mkm1trans(NFEN) = 1.d0*Inm(NFEN,1) + RCLtrans*KNVnm(NFEN,1)
          Mktrans(NFEN)   = 1.d0*Inm(NFEN,2) + RCLtrans*KNVnm(NFEN,2)
          Mkp1trans(NFEN) = 0.d0
@@ -1283,6 +1788,15 @@ C      outgoing variables
      
          DO k=1,NFEN
             outarray(NH,k) = Gammatrans(k)
+         END DO
+     
+!Casey 220227 from Rosemary
+         DO k=1,NFEN
+           IF(NODECODE(NH).EQ.1)THEN
+            outarray(NH,k) = Gammatrans(k)
+           ELSE
+             outarray(NH,k) = inarray(NH,k)
+           ENDIF
          END DO
 
       ENDDO
@@ -1450,17 +1964,26 @@ C*************************************************************************
 
 ! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
 ! arash 150513
-      IF(SigmaNN.GE.(1.0001d0*a)) THEN            ! in the air - non-existent 
-         transN2_z=-999.0d0
-         GOTO 100
-      ENDIF
-      IF((SigmaNN.GE.a).and.(SigmaNN.LT.(1.0001d0*a))) THEN     ! surface
+!Casey 220207 from Rosemary : Skip Arash's formulation, try different
+!     IF(SigmaNN.GE.(1.0001d0*a)) THEN            ! in the air - non-existent 
+!        transN2_z=-999.0d0
+!        GOTO 100
+!     ENDIF
+!     IF((SigmaNN.GE.a).and.(SigmaNN.LT.(1.0001d0*a))) THEN     ! surface
+!        LAbov=NFEN
+!        transN2_z=inarray_vertical(LAbov) ! this is zero
+!        SigBelo=a
+!        SigAbov=a
+!        GOTO 100
+!     ENDIF
+      IF(SigmaNN.GE.a) THEN
          LAbov=NFEN
-         transN2_z=inarray_vertical(LAbov) ! this is zero
+         transN2_z=inarray_vertical(LAbov)
          SigBelo=a
          SigAbov=a
          GOTO 100
       ENDIF
+
 ! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
 
 
@@ -1553,6 +2076,11 @@ C*************************************************************************
 ! 3- interpolate
       transN2_z = f1 * inarray_vertical(k1) + f2 * inarray_vertical(k2) 
      &          + f3 * inarray_vertical(k3) + f4 * inarray_vertical(k4)
+!Casey 220227 from Arash/Rosemary : They used the lines below, 
+!          which look like a linear interpolation? Let's keep the cubic.
+!     transN2_z = (inarray_vertical(LAbov) - inarray_vertical(LBelo))
+!    &     *(SigmaNN-SigBelo)/(SigAbov-SigBelo) +inarray_vertical(LBelo)
+
 
 ! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
  100  CONTINUE
