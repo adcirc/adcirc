@@ -161,6 +161,18 @@ Casey 180318: Added NWS=13
      &                          NWS13GroupForPowell,
      &                          NWS13WindMultiplier
 #endif
+!Casey 221103 : Use the baroclinic3D namelist from global_3dvs
+      USE GLOBAL_3DVS, ONLY : baroclinic3D,
+     &                        iterateEqnState2,
+     &                        densityIntegration,
+     &                        found_baroclinic3D_NML,
+     &                        verticalInterpolationScheme,
+     &                        useLeithViscosity,
+     &                        lambdaLeith,
+     &                        viscosityOperator,
+     &                        diffusionOperator,
+     &                        useAdaptiveFilter,
+     &                        outputFort48
 C
       IMPLICIT NONE
 C
@@ -457,7 +469,8 @@ C
       ENDDO
       NETA = MNETA
       skipNETA = MNETA
-      IF(MNOPE.EQ.0) MNOPE=1
+!Casey 220128 : This screws up the reading of the fort.15 file.
+!     IF(MNOPE.EQ.0) MNOPE=1
       IF(MNETA.EQ.0) MNETA=1
 C
       NVEL=0                            !PROCESS LAND BOUNDARIES
@@ -831,8 +844,6 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       ENDIF
       REWIND(15)
 
-
-
       READ(UNIT=15,NML=AliDispersionControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The AliDisp Control namelist was not found."
@@ -856,7 +867,14 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          found_nws8_nml = .true.  
       ENDIF
       REWIND(15)
-
+!Casey 221103 : Try to read the baroclinic3D namelist from fort.15
+      READ(UNIT=15,NML=baroclinic3D,IOSTAT=IOS)
+      IF( IOS.GT.0 )THEN
+         WRITE(*,'(A)') "INFO: The baroclinic3D namelist was not found."
+      ELSE
+         found_baroclinic3D_NML = .TRUE.
+      ENDIF
+      REWIND(15)
 C
 C
 C  Initialize all runtime option logicals to false
@@ -941,8 +959,13 @@ c        C3DDSS = .TRUE.
                 CBaroclinic = .TRUE.
             ENDIF
          ELSEIF ((IM.GE.611111).AND.(IM.LE.634322)) THEN
+            C3D  = .TRUE.
+            C3DVS  = .TRUE.
+!Casey 220128
+         ELSEIF ((IM.GE.711111).AND.(IM.LE.734322)) THEN
            C3D  = .TRUE.
            C3DVS  = .TRUE.
+            CBaroclinic   = .TRUE.
          ELSE
             print *, "model type not supported"
             CALL EXIT(1)
@@ -1466,15 +1489,23 @@ C     jgf45.12 add code to handle user specified vertical eddy viscosity.
          IF (CBAROCLINIC) THEN
            READ(15,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP    !Process RES_BC_FLAG
            IF ((RES_BC_FLAG.LT.0).OR.(RES_BC_FLAG.EQ.1)) THEN
+!Casey 220128 : Read boundary forcing only if we have open boundaries.
+              IF(MNOPE.GT.0)THEN
               READ(15,*) RDUM
               READ(15,*) RDUM
+              END IF
            ELSE IF ((RES_BC_FLAG.EQ.2).OR.(RES_BC_FLAG.EQ.3)) THEN
+!Casey 220128 : Read boundary forcing only if we have open boundaries.
+              IF(MNOPE.GT.0)THEN
               READ(15,*) RDUM,RDUM
               READ(15,*) RDUM,RDUM
               IF (BCFLAG_TEMP.NE.0) THEN
                  READ(15,*) RDUM, RDUM
               END IF
+              END IF
            ELSE IF (RES_BC_FLAG.EQ.4) THEN
+!Casey 220128 : Read boundary forcing only if we have open boundaries.
+              IF(MNOPE.GT.0)THEN
               READ(15,*) RDUM,RDUM,RDUM
               READ(15,*) RDUM,RDUM,RDUM
               IF (BCFLAG_TEMP.NE.0) THEN
@@ -1482,6 +1513,9 @@ C     jgf45.12 add code to handle user specified vertical eddy viscosity.
               END IF
            END IF
          END IF
+         END IF
+!Casey 220128 : Moved from above.
+         IF(MNOPE.EQ.0) MNOPE=1
 
 C         PRINT *, "Made it to sponge information"
          IF (CBAROCLINIC) THEN

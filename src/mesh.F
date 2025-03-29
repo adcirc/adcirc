@@ -1464,7 +1464,7 @@
       nfluxf = 0
       do k=1,nbou
          select case(ibtype(k))
-         case(2,12,22,32,52)
+         case(2,12,22,32,52,122)
             nfluxf = 1 ! at least one specified flux boundary is present
             exit
          case default
@@ -2177,6 +2177,8 @@
      &            7X,'ON BOTH SIDES OF THE BARRIER, BARRIER COEFFICIEN',
      &               'T AND THE APPROPRIATE BARRIER FLOW FORMULA',/,
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED.',/)
+         CASE(122)   
+           NFLUXF=1
          END SELECT
          !
          ! set the constants used in setting up the boundary arrays
@@ -2440,8 +2442,8 @@
                ! to support boundary types with no tangential slip, so
                ! as an interim measure, I am making this boundary type
                ! modification a 2DDI-only feature.
+               LBCODEI(JGW)=IBTYPE(K)
                if (C2DDI.eqv..true.) then
-                  LBCODEI(JGW)=IBTYPE(K)
                   IF((COSTHETA.GT.COSTSET).AND.(CROSS.GT.0.0)) THEN
                      IF(IBTYPE(K).EQ.0) LBCODEI(JGW)=10
                      IF(IBTYPE(K).EQ.1) LBCODEI(JGW)=11

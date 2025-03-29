@@ -966,31 +966,16 @@ C...  and baroclinic.
 C kmd - River information for boundary conditions in baroclinic simulation
       IF (BndBCRiver) THEN
         OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
-
-!        write(*,*) 'file fort.39 opened.'
-
         READ(39,*) RIVBCTIMINC, RIVBCSTATIM
         RIVBCTIME1=RIVBCSTATIM*86400.d0
         RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
         DO J=1,totalbcrivernodes
-
-!         write(*,*) 'inside the DO J=1,totalbcrivernodes loop.'
-
          IF (IDEN.EQ.2) THEN
            READ(39,*) (BCRivSalN1(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.3) THEN
            READ(39,*) (BCRivTempN1(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.4) THEN
            READ(39,*) (BCRivSalN1(J,K), BCRivTempN1(J,K),K=1,NFEN)
-
-
-
-           ! arash debug
-           BCRivSalN1(:,:) = 0.0
-           BCRivTempN1(:,:) = 0.0
-
-
-
          END IF
         END DO
         DO J=1,totalbcrivernodes
@@ -1000,13 +985,6 @@ C kmd - River information for boundary conditions in baroclinic simulation
            READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.4) THEN
            READ(39,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
-
-
-           ! arash debug
-           BCRivSalN2(:,:) = 0.0
-           BCRivTempN2(:,:) = 0.0
-
-
          END IF
         END DO
       END IF
