@@ -53,7 +53,7 @@ C...  COMPUTE THE DEPTH-AVERAGED Sigma T FIELD
 C...
 
 !Casey 230203 : Add user-control for this integration.
-        IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
+        IF(densityIntegrationID==DENSITY_INTEGRATION_TRAPEZOIDAL)THEN
       DO NH=1,NP
          DASigT(NH)=0.d0
             DO N=1,NFEN-1
@@ -63,7 +63,7 @@ C...
             DASigT(NH)=DASigT(NH)/AMB
        ENDDO
 !Casey 230203 : Add option for Simpson integration.
-        ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+        ELSEIF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
           DO NH=1,NP
             DASigT(NH)=0.d0
             DO N=1,NFEN-1
@@ -1105,10 +1105,8 @@ c     Compute lateral advection and lateral stress terms
 ! arash 12/14/2015: Use Biharmonic viscosity instead of a harmonic one
 ! We may want to make this cleaner later by having an option in the fort.15 file
 !Casey 221103 : User control over biharmonic operator for viscosity
-         IF( INDEX(viscosityOperator,'Laplacian').GT.0 )THEN
-            CONTINUE
-         ELSE ! Default
-         LStress(:) = Biharmonic_LStress(:)
+         IF(viscosityOperatorID/=VISCOSITY_OPERATOR_LAPLACIAN)THEN
+          LStress(:) = Biharmonic_LStress(:)
          ENDIF
 ! |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
 
@@ -1973,7 +1971,7 @@ C     new sigma-t values. We will update velocities later.
 C     Compute Depth averaged SigmaT
 
 !Casey 230203 : Add user-control for this integration.
-        IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
+        IF(densityIntegrationID==DENSITY_INTEGRATION_TRAPEZOIDAL)THEN
         DO NH=1,NP
          DASigT(NH)=0.d0
           DO k=1,NFEN-1
@@ -1983,7 +1981,7 @@ C     Compute Depth averaged SigmaT
           DASigT(NH)=DASigT(NH)/AMB
         ENDDO
 !Casey 230203 : Add option for Simpson integration.
-        ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+        ELSEIF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
           DO NH=1,NP
             DASigT(NH)=0.d0
             DO k=1,NFEN-1
@@ -4305,7 +4303,9 @@ C   kmd48.33bc need to add variables for new equation of state
      &   ,SIGTM
 !Casey 230110 : Add to allow user control.
      &   ,iterateEqnState2
-     &   ,densityIntegration
+     &   ,densityIntegrationID,
+     &   DENSITY_INTEGRATION_TRAPEZOIDAL, DENSITY_INTEGRATION_SIMPSON,
+     &   DENSITY_INTEGRATION_QUADRATURE
 Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
       USE GLOBAL, ONLY : ETA2, IFNLFA
       USE ADC_CONSTANTS, ONLY: RHOWAT0, G
@@ -4409,8 +4409,8 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
 !Casey 230126 : Two BPG integration methods (simpson and quadrature)
 !               require salinities and temperatures at points other than
 !               the given layers. Let's interpolate that information.
-      IF( INDEX(densityIntegration,'simpson').GT.0 .OR.
-     &    INDEX(densityIntegration,'quadrature').GT.0 )THEN
+      IF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON.OR.
+     &   densityIntegrationID==DENSITY_INTEGRATION_QUADRATURE)THEN
         ALLOCATE(w(1:NumIP))
         DO NH=1,NP
           DO N=1,NFEN-1
@@ -4429,7 +4429,7 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
 !           IF(N.EQ.NFEN-1) IIP = IIP - 1
             ! Loop over other points.
             DO IGQ=1,NumGQP
-              IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+              IF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
                 IF( IGQ.EQ.1 )THEN
                   GQI = N
                 ELSE
@@ -4440,7 +4440,7 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
               ENDIF
               ! Determine z at point.
               midpoint = 0.5D0*(Z(NH,N)+Z(NH,N+1))
-              IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+              IF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
                 ZM(NH,GQI) = midpoint
               ELSE
                 halfdist = midpoint-Z(NH,N)
@@ -4485,8 +4485,8 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
        S_ref=35.d0
 !Casey 230126 : Rewrote this section to allow user control of integration.
 !Casey 230126 : Compute SIGT at the sigma layers.
-       IF( INDEX(densityIntegration,'trapezoidal').GT.0 .OR.
-     &     INDEX(densityIntegration,'simpson').GT.0 )THEN
+       IF(densityIntegrationID==DENSITY_INTEGRATION_TRAPEZOIDAL .OR.
+     &    densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
        IF(ABS(IDEN).EQ.2) THEN
         DO NH=1,NP
           DO N=1,NFEN
@@ -4512,13 +4512,13 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
        ENDIF
        ENDIF
 !Casey 230126 : Compute SIGT at additional vertical points.
-       IF( INDEX(densityIntegration,'simpson').GT.0 .OR.
-     &     INDEX(densityIntegration,'quadrature').GT.0 )THEN
+       IF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON .OR.
+     &    densityIntegrationID==DENSITY_INTEGRATION_QUADRATURE)THEN
          IF(ABS(IDEN).EQ.2) THEN
            DO NH=1,NP
              DO N=1,NFEN-1
                DO IGQ=1,NumGQP
-                 IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                 IF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
                    IF( IGQ.EQ.1 )THEN
                      GQI = N
                    ELSE
@@ -4536,7 +4536,7 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
            DO NH=1,NP
              DO N=1,NFEN-1
                DO IGQ=1,NumGQP
-                 IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                 IF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
                    IF( IGQ.EQ.1 )THEN
                      GQI = N
                    ELSE
@@ -4554,7 +4554,7 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
            DO NH=1,NP
              DO N=1,NFEN-1
                DO IGQ=1,NumGQP
-                 IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                 IF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
                    IF( IGQ.EQ.1 )THEN
                      GQI = N
                    ELSE
@@ -4628,21 +4628,21 @@ C        of states used in QUODDY
      &               TEMP(NH,N))*TEMP(NH,N))*SAL(NH,N)
                 RHO(NH,N) = P1/P2
               ELSE IF (N.NE.NFEN) THEN
-                IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
+                IF(densityIntegrationID==DENSITY_INTEGRATION_TRAPEZOIDAL)THEN
                   NumLoop = 1
-                ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                ELSEIF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
                   NumLoop = 2 ! midpoint and next layer
                 ELSE
                   NumLoop = NumGQP+1 ! quadrature points and nest layer
               END IF
                 DO IGQ=NumLoop,1,-1
                   PB = p(NH)
-                  IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
+                  IF(densityIntegrationID==DENSITY_INTEGRATION_TRAPEZOIDAL)THEN
                     es2rhoa = RHO(NH,N+1)
                     es2dz   = Z(NH,N+1)-Z(NH,N) ! previous sigma layer to next sigma layer
                     es2sal  = SAL(NH,N)
                     es2temp = TEMP(NH,N)
-                  ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                  ELSEIF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
                     IF( IGQ.EQ.NumLoop )THEN
                       es2rhoa = RHO(NH,N+1)
                       es2dz   = Z(NH,N+1)-ZM(NH,N) ! previous sigma layer to midpoint
@@ -4698,9 +4698,9 @@ C        of states used in QUODDY
                     ENDIF
                     es2rhog = es2rho
                   ENDDO inner1
-                  IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
+                  IF(densityIntegrationID==DENSITY_INTEGRATION_TRAPEZOIDAL)THEN
                     RHO(NH,N) = es2rho
-                  ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                  ELSEIF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
                     IF( IGQ.GT.NumLoop )THEN
                       RHOM(NH,N) = es2rho
                     ELSE
@@ -4721,11 +4721,11 @@ C        of states used in QUODDY
             DO N=1,NFEN
               SIGT(NH,N) = RHO(NH,N)-RHOWAT0
             END DO
-            IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+            IF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
               DO N=1,NFEN-1
                 SIGTM(NH,N) = RHOM(NH,N)-RHOWAT0
            END DO
-            ELSEIF( INDEX(densityIntegration,'quadrature').GT.0 )THEN
+            ELSEIF(densityIntegrationID==DENSITY_INTEGRATION_QUADRATURE)THEN
               DO GQI=1,NumGQP*(NFEN-1)
                 SIGTM(NH,GQI) = RHOM(NH,GQI)-RHOWAT0
               ENDDO
@@ -4768,9 +4768,9 @@ C        with both salinity and temperature.
      &         c41*SAL(NH,N)*SAL(NH,N)
            END DO
 !Casey 220126 : Compute SIGT at the levels.
-           IF( INDEX(densityIntegration,'trapezoidal').GT.0 .OR.
-     &         INDEX(densityIntegration,'simpson').GT.0 .OR.
-     &         INDEX(densityIntegration,'quadrature').GT.0 )THEN
+           IF( densityIntegrationID==DENSITY_INTEGRATION_TRAPEZOIDAL .OR.
+     &         densityIntegrationID==DENSITY_INTEGRATION_SIMPSON .OR.
+     &         densityIntegrationID==DENSITY_INTEGRATION_QUADRATURE )THEN
            DO NH=1,NP
             DO N=NFEN-1,1,-1
               Kappa = d00 + (d11 + (d12 + (d13 + d14*TEMP(NH,N))*
@@ -4792,12 +4792,12 @@ C        with both salinity and temperature.
            END DO
         END IF
 !Casey 220126 : Also compute SIGT at addditional points.
-           IF( INDEX(densityIntegration,'simpson').GT.0 .OR.
-     &         INDEX(densityIntegration,'quadrature').GT.0 )THEN
+           IF( densityIntegrationID==DENSITY_INTEGRATION_SIMPSON .OR.
+     &         densityIntegrationID==DENSITY_INTEGRATION_QUADRATURE )THEN
               DO NH=1,NP
                 DO N=NFEN-1,1,-1
                   DO IGQ=NumGQP,1,-1
-                    IF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+                    IF( densityIntegrationID==DENSITY_INTEGRATION_SIMPSON )THEN
                       IF( IGQ.EQ.1 )THEN
                         GQI = N
                       ELSE
