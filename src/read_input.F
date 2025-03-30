@@ -121,8 +121,9 @@ C-----------------------------------------------------------------------
      &   lambdaLeith,
      &   viscosityOperator,
      &   diffusionOperator,
-     &   useAdaptiveFilter
-     &  ,outputFort48
+     &   useAdaptiveFilter,
+     &   outputFort48,
+     &   initialize_baroclinic3d_namelist_options
       USE SUBDOMAIN, ONLY : subdomainOn
       USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
@@ -593,52 +594,12 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ! iterateEqnState2
       WRITE(scratchMessage,*) "iterateEqnState2=",iterateEqnState2
       CALL logMessage(ECHO,TRIM(scratchMessage))
-      ! densityIntegration
-      IF ( INDEX(densityIntegration,'Trapezoidal').GT.0 .OR.
-     &     INDEX(densityIntegration,'TRAPEZOIDAL').GT.0 )THEN
-         WRITE(densityIntegration,'(A)') "trapezoidal"
-      ENDIF
-      IF ( INDEX(densityIntegration,'Simpson').GT.0 .OR.
-     &     INDEX(densityIntegration,'SIMPSON').GT.0)THEN
-         WRITE(densityIntegration,'(A)') "simpson"
-      ENDIF
-      WRITE(scratchMessage,*) "densityIntegration=",TRIM(densityIntegration)
-      CALL logMessage(ECHO,TRIM(scratchMessage))
-      ! verticalInterpolationScheme
-      IF( INDEX(verticalInterpolationScheme,'Linear').GT.0 .OR.
-     &    INDEX(verticalInterpolationScheme,'LINEAR').GT.0 )THEN
-         WRITE(verticalInterpolationScheme,'(A)') "linear"
-      ENDIF
-      WRITE(scratchMessage,*) "verticalInterpolationScheme=",
-     &    TRIM(verticalInterpolationScheme)
-      CALL logMessage(ECHO,TRIM(scratchMessage))
+      CALL initialize_baroclinic3d_namelist_options()
       ! useLeithViscosity
       WRITE(scratchMessage,*) "useLeithViscosity=",useLeithViscosity
       CALL logMessage(ECHO,TRIM(scratchMessage))
       ! lambdaLeith
       WRITE(scratchMessage,*) "lambdaLeith=",lambdaLeith
-      CALL logMessage(ECHO,TRIM(scratchMessage))
-      ! viscosityOperator
-      IF( INDEX(viscosityOperator,'laplacian').GT.0 .OR.
-     &    INDEX(viscosityOperator,'LAPLACIAN').GT.0 .OR.
-     &    INDEX(viscosityOperator,'harmonic' ).GT.0 .OR.
-     &    INDEX(viscosityOperator,'Harmonic' ).GT.0 .OR.
-     &    INDEX(viscosityOperator,'HARMONIC' ).GT.0 )THEN
-         WRITE(viscosityOperator,'(A)') "Laplacian"
-      ENDIF
-      WRITE(scratchMessage,*) "viscosityOperator=",
-     &    TRIM(viscosityOperator)
-      CALL logMessage(ECHO,TRIM(scratchMessage))
-      ! diffusionOperator
-      IF( INDEX(diffusionOperator,'laplacian').GT.0 .OR.
-     &    INDEX(diffusionOperator,'LAPLACIAN').GT.0 .OR.
-     &    INDEX(diffusionOperator,'harmonic' ).GT.0 .OR.
-     &    INDEX(diffusionOperator,'Harmonic' ).GT.0 .OR.
-     &    INDEX(diffusionOperator,'HARMONIC' ).GT.0 )THEN
-         WRITE(diffusionOperator,'(A)') "Laplacian"
-      ENDIF
-      WRITE(scratchMessage,*) "diffusionOperator=",
-     &    TRIM(diffusionOperator)
       CALL logMessage(ECHO,TRIM(scratchMessage))
       ! useAdaptiveFilter
       WRITE(scratchMessage,*) "useAdaptiveFilter=",useAdaptiveFilter
@@ -646,6 +607,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ! outputFort48
 #ifndef ADCNETCDF
       outputFort48 = .FALSE.
+#else
+      call allMessage(WARNING, "outputFort48 parameter is not supported without NetCDF output enabled.")
 #endif
       WRITE(scratchMessage,*) "outputFort48=",outputFort48
       CALL logMessage(ECHO,TRIM(scratchMessage))
