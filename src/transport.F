@@ -252,7 +252,7 @@ C     Compute 3D transport equation
                SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2
                inarray_vertical (:) = inarray(N2,:)
 !Casey 221103 : User control over cubic interpolation
-               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+               IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
                   CALL linear_vertical_interpolation_real ( 
      &                 inarray_vertical,
      &                 SigmaNN, SalOrTempN2_z, k )
@@ -266,7 +266,7 @@ C     Compute 3D transport equation
                SigmaNN = B + AMB * ( Zk + DP(N3) ) / HsN2
                inarray_vertical (:) = inarray(N3,:)
 !Casey 221103 : User control over cubic interpolation
-               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+               IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
                   CALL linear_vertical_interpolation_real ( 
      &                 inarray_vertical,
      &                 SigmaNN, SalOrTempN3_z, k )
@@ -323,7 +323,7 @@ C     Compute 3D transport equation
             inarray_vertical (:) = inarray(N2,:)
 !Casey 220227 from Arash/Rosemary
 !Casey 221103 : User control over cubic interpolation
-            IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+            IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
                CALL linear_vertical_interpolation_real ( 
      &             inarray_vertical, SigmaNN, SalOrTempN2_z, k )
             ELSE ! Default
@@ -346,7 +346,7 @@ C     Compute 3D transport equation
                inarray_vertical (:) = inarray(N2,:)
 !Casey 220227 from Arash/Rosemary
 !Casey 221103 : User control over cubic interpolation
-               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+               IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
                   CALL linear_vertical_interpolation_real ( 
      &                inarray_vertical, SigmaNN, SalOrTempN2_z, k )
                ELSE ! Default
@@ -1181,7 +1181,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
 !             section. In her code, the two cubic interpolations are
 !             used, not sure why they would be disabled here. Let's try them.
 !Casey 221103 : User control over cubic interpolation
-               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+               IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
                   CALL linear_vertical_interpolation_real( 
      &                inarray_vertical, SigmaNN, transN2_z, k )
                ELSE ! Default
@@ -1191,7 +1191,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
                inarray_vertical(:) =
      &            Biharmonic_auxiliary_var_SalOrTemp(N2,:)
 !Casey 221103 : User control over cubic interpolation
-               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+               IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
                   CALL linear_vertical_interpolation_real( 
      &                inarray_vertical,
      &                SigmaNN, Biharmonic_SalOrTempN2_z, k )
@@ -1208,7 +1208,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
                inarray_vertical (:) = inarray(N3,:)
 !Casey 220207 from Rosemary : Same thing here?
 !Casey 221103 : User control over cubic interpolation
-               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+               IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
                   CALL linear_vertical_interpolation_real( 
      &                inarray_vertical,
      &                SigmaNN, transN3_z, k )
@@ -1219,7 +1219,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
                inarray_vertical(:) =
      &            Biharmonic_auxiliary_var_SalOrTemp(N3,:)
 !Casey 221103 : User control over cubic interpolation
-               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+               IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
                   CALL linear_vertical_interpolation_real( 
      &                inarray_vertical,
      &                SigmaNN, Biharmonic_SalOrTempN3_z, k )
@@ -1325,7 +1325,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
 !             section. In her code, the two cubic interpolations are used, not
 !             sure why they would be disabled here. Let's try them.
 !Casey 221103 : User control over cubic interpolation
-            IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+            IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
                CALL linear_vertical_interpolation_real ( 
      &             inarray_vertical, SigmaNN, transN2_z, k )
             ELSE ! Default
@@ -1335,7 +1335,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
 ! af 01/05/2016:
             inarray_vertical (:) = Biharmonic_auxiliary_var_SalOrTemp (N2,:)
 !Casey 221103 : User control over cubic interpolation
-            IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+            IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
                CALL linear_vertical_interpolation_real ( 
      &             inarray_vertical, SigmaNN, Biharmonic_SalOrTempN2_z,
      &             k )
@@ -1380,7 +1380,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
                inarray_vertical (:) = inarray(N2,:)
 !Casey 220207 from Rosemary : Same thing here?
 !Casey 221103 : User control over cubic interpolation
-               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+               IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
                   CALL linear_vertical_interpolation_real ( 
      &                inarray_vertical, SigmaNN, transN2_z, k )
                ELSE ! Default
@@ -1390,7 +1390,7 @@ C     Compute lateral advection and lateral diffusion terms - af modified comput
 ! af 01/05/2016:
                inarray_vertical (:) = Biharmonic_auxiliary_var_SalOrTemp (N2,:)
 !Casey 221103 : User control over cubic interpolation
-               IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+               IF( verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR )THEN
                   CALL linear_vertical_interpolation_real ( 
      &                inarray_vertical, SigmaNN, 
      &                Biharmonic_SalOrTempN2_z, k )
@@ -1644,7 +1644,7 @@ C  kmd48.33bc added sponge layer for the lateral advective terms
 ! arash 1/19/2016: Use Biharmonic diffusion instead of a harmonic one
 ! We may want to make this cleaner later by having an option in the fort.15 file
 !Casey 221103 : User control over bhiarmonic operator for diffusion
-         IF( INDEX(diffusionOperator,'Laplacian').GT.0 )THEN
+         IF( diffusionOperatorID==DIFFUSION_OPERATOR_LAPLACIAN )THEN
             CONTINUE
          ELSE ! Default
          LDiffusion(:) = Biharmonic_LDiffusion(:)
