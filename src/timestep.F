@@ -2200,16 +2200,17 @@ C
       USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, SFAC
       USE GLOBAL_3DVS, ONLY : BCP, BPG, NFEN, SIGT, SIGMA, IDEN,
-     &      GORhoOAMB, AMB, B, IY
+     &      GORhoOAMB, AMB, B, IY,
 ! arash: this is not necessary. I just want to print this here
-     &     ,Sal
+     &      Sal,
 !Casey 221103 : Use variables from the baroclinic3D namelist
-     &     ,densityIntegration
-     &     ,verticalInterpolationScheme
+     &      densityIntegrationID,
+     &      verticalInterpolationSchemeID,
 !Casey 230106 : Add to compute SigT at higher resolution.
-     &     ,NumIP,IIP
-     &     ,NumGQP,GQP,GQW
-     &     ,SIGTM
+     &      NumIP,IIP,NumGQP,GQP,GQW,SIGTM,
+     &      DENSITY_INTEGRATION_TRAPEZOIDAL, DENSITY_INTEGRATION_SIMPSON,
+     &      VERTICAL_INTERPOLATION_LINEAR, VERTICAL_INTERPOLATION_CUBIC
+
 
 #ifdef CMPI
       USE MESSENGER
@@ -2314,14 +2315,14 @@ C
             Hs=DP(NH)+IFNLFA*Eta2(NH) !total depth at previous (s) timestep
             HGORhoOAMB=GORhoOAMB*Hs !(gravity/rho ref)*(H/(a-b))
 
-            IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
+            IF(densityIntegrationID == DENSITY_INTEGRATION_TRAPEZOIDAL)THEN
               BCP (NH,NFEN) = 0.d0
               DO k=NFEN-1,1,-1    !loop over vertical nodes, starting at top and working down
                  SigTAvg=(SigT(NH,k+1)+SigT(NH,k))/2.d0
                  DelSig=Sigma(k+1)-Sigma(k)
                  BCP(NH,k)=BCP(NH,k+1)+HGORhoOAMB*(SigTAvg-SigT0)*DelSig
               ENDDO
-            ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+            ELSEIF( densityIntegrationID == DENSITY_INTEGRATION_SIMPSON )THEN
 !--------------------------------------------------------------------------------------------------
 ! arash 21/1/2016: Simpson integration, using quadratic function interpolation.
 ! arash 25/2/2016: fixed a bug.
@@ -2460,7 +2461,7 @@ c     coordinates) at each node in the vertical
                   IF(HsN2.LT.H0) HsN2=H0
                   SigmaNN=B+AMB*(Zk+DP(N2))/HsN2
 !Casey 221103 : User control over cubic interpolation
-                  IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                  IF(verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR)THEN
                      CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k)
                   ELSE ! Default
                      CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k)
@@ -2470,7 +2471,7 @@ c     coordinates) at each node in the vertical
                   IF(HsN2.LT.H0) HsN2=H0
                   SigmaNN=B+AMB*(Zk+DP(N3))/HsN2
 !Casey 221103 : User control over cubic interpolation
-                  IF( INDEX(verticalInterpolationScheme,'linear').GT.0 )THEN
+                  IF(verticalInterpolationSchemeID==VERTICAL_INTERPOLATION_LINEAR)THEN
                      CALL ZSURFBUOY(SigmaNN,BCPN3,N3,k)
                   ELSE ! Default
                      CALL ZSURFBUOY_p3(SigmaNN,BCPN3,N3,k)
@@ -2512,7 +2513,7 @@ c     integrate over the vertical first and differentiate second.
 
 ! this old scheme has been replaced by the new one below ...
 !Casey 230120 : This integration has been replaced below.
-            IF( INDEX(densityIntegration,'trapezoidal').GT.0 )THEN
+            IF(densityIntegrationID==DENSITY_INTEGRATION_TRAPEZOIDAL)THEN
               VIBCPG=(0.d0,0.d0)
               DO k=NFEN-1,1,-1
                  VIBCPG=VIBCPG+0.5d0*(BCPG(k+1)+BCPG(k))
@@ -2521,7 +2522,7 @@ c     integrate over the vertical first and differentiate second.
               VIDBCPDXOH(NH)=REAL(VIBCPG)/AMB
               VIDBCPDYOH(NH)=AIMAG(VIBCPG)/AMB
 !Casey 230120 : This integration has been replaced below.
-            ELSEIF( INDEX(densityIntegration,'simpson').GT.0 )THEN
+            ELSEIF(densityIntegrationID==DENSITY_INTEGRATION_SIMPSON)THEN
 !--------------------------------------------------------------------------------------------------
 ! arash 25/2/2016: Simpson integration, using quadratic function interpolation.
 !------------------------------------------------------------------------------

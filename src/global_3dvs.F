@@ -382,6 +382,20 @@ C     global array sizes for use in globalio
 !Casey 221115 : Add output of internal variables in fort.48.nc file.
      &   ,outputFort48
 
+      ! Integer values used for checking the options during the run
+      INTEGER, PARAMETER :: DENSITY_INTEGRATION_QUADRATURE = 100001
+      INTEGER, PARAMETER :: DENSITY_INTEGRATION_TRAPEZOIDAL = 100002
+      INTEGER, PARAMETER :: DENSITY_INTEGRATION_SIMPSON = 100003
+      INTEGER, PARAMETER :: VERTICAL_INTERPOLATION_CUBIC = 200001
+      INTEGER, PARAMETER :: VERTICAL_INTERPOLATION_LINEAR = 200002
+      INTEGER, PARAMETER :: VISCOSITY_OPERATOR_BIHARMONIC = 300001
+      INTEGER, PARAMETER :: VISCOSITY_OPERATOR_LAPLACIAN = 300002
+      INTEGER, PARAMETER :: DIFFUSION_OPERATOR_BIHARMONIC = 400001
+      INTEGER, PARAMETER :: DIFFUSION_OPERATOR_LAPLACIAN = 400002
+      INTEGER :: viscosityOperatorID = VISCOSITY_OPERATOR_BIHARMONIC
+      INTEGER :: diffusionOperatorID = DIFFUSION_OPERATOR_BIHARMONIC
+      INTEGER :: densityIntegrationID = DENSITY_INTEGRATION_QUADRATURE
+      INTEGER :: verticalInterpolationSchemeID = VERTICAL_INTERPOLATION_CUBIC
 
 C-------------------end of data declarations----------------------------------C
 
@@ -719,6 +733,76 @@ c******************************************************************************
       END SUBROUTINE FEGRIDS
 c******************************************************************************
 
+      subroutine initialize_baroclinic3d_namelist_options()
+          use global, only: toLowercase, allMessage, INFO, ERROR
+          implicit none
+          character(len=len(viscosityOperator)) :: viscosityOperatorStringInternal
+          character(len=len(densityIntegration)) :: densityIntegrationStringInternal
+          character(len=len(verticalInterpolationScheme)) :: verticalInterpolationSchemeStringInternal
+          character(len=len(diffusionOperator)) :: diffusionOperatorStringInternal
+
+          ! Convert all input strings to lower case
+          viscosityOperatorStringInternal = toLowercase(trim(adjustl(viscosityOperator)))
+          densityIntegrationStringInternal = toLowercase(trim(adjustl(densityIntegration)))
+          verticalInterpolationSchemeStringInternal = toLowercase(trim(adjustl(verticalInterpolationScheme)))
+          diffusionOperatorStringInternal = toLowercase(trim(adjustl(diffusionOperator)))
+
+          ! Set the viscosity operator ID based on the string input
+          select case (viscosityOperatorStringInternal)
+              case ('biharmonic')
+                  viscosityOperatorID = VISCOSITY_OPERATOR_BIHARMONIC
+                  call logMessage(INFO, "Using biharmonic viscosity operator.")
+              case ('laplacian', 'harmonic')
+                  viscosityOperatorID = VISCOSITY_OPERATOR_LAPLACIAN
+                  call logMessage(INFO, "Using Laplacian viscosity operator.")
+              case default
+                  call allMessage(ERROR, "Invalid viscosity operator option: " // trim(viscosityOperator))
+                  call exit(1)
+          end select
+
+          ! Set the diffusion operator ID based on the string input
+          select case (diffusionOperatorStringInternal)
+              case ('biharmonic')
+                  diffusionOperatorID = DIFFUSION_OPERATOR_BIHARMONIC
+                  call logMessage(INFO, "Using biharmonic diffusion operator.")
+              case ('laplacian', 'harmonic')
+                  diffusionOperatorID = DIFFUSION_OPERATOR_LAPLACIAN
+                  call logMessage(INFO, "Using Laplacian diffusion operator.")
+              case default
+                  call allMessage(ERROR, "Invalid diffusion operator option: " // trim(diffusionOperator))
+                  call exit(1)
+          end select
+
+          ! Set the density integration method ID based on the string input
+          select case (densityIntegrationStringInternal)
+              case ('quadrature')
+                  densityIntegrationID = DENSITY_INTEGRATION_QUADRATURE
+                  call logMessage(INFO, "Using quadrature density integration.")
+              case ('trapezoidal')
+                  densityIntegrationID = DENSITY_INTEGRATION_TRAPEZOIDAL
+                  call logMessage(INFO, "Using trapezoidal density integration.")
+              case ('simpson')
+                  densityIntegrationID = DENSITY_INTEGRATION_SIMPSON
+                  call logMessage(INFO, "Using Simpson density integration.")
+              case default
+                  call allMessage(ERROR, "Invalid density integration option: " // trim(densityIntegration))
+                  call exit(1)
+          end select
+
+          ! Set the vertical interpolation scheme ID based on the string input
+          select case (verticalInterpolationSchemeStringInternal)
+              case ('cubic')
+                  verticalInterpolationSchemeID = VERTICAL_INTERPOLATION_CUBIC
+                  call logMessage(INFO, "Using cubic vertical interpolation scheme.")
+              case ('linear')
+                  verticalInterpolationSchemeID = VERTICAL_INTERPOLATION_LINEAR
+                  call logMessage(INFO, "Using linear vertical interpolation scheme.")
+              case default
+                  call allMessage(ERROR, "Invalid vertical interpolation scheme option: " // trim(verticalInterpolationScheme))
+                  call exit(1)
+          end select
+
+      end subroutine initialize_baroclinic3d_namelist_options
 
 
       END MODULE GLOBAL_3DVS
