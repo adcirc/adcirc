@@ -1457,7 +1457,7 @@ C--Read Elevation Recording Stations
 C...
       READ(15,80) STAEMSG
       READ(STAEMSG,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE
-      IF (ABS(NOUTE).GT.5) THEN
+      IF (ABS(NOUTE).GT.5.OR.ABS(NOUTE).EQ.2) THEN
         print *, "The value of NOUTE is not allowed"
         CALL EXIT(1)
       ENDIF
@@ -1566,7 +1566,7 @@ C--Read Velocity Recording Stations
 C
       READ(15,80) STAVMSG
       READ(STAVMSG,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
-      IF (ABS(NOUTV).GT.5) THEN
+      IF (ABS(NOUTV).GT.5.OR.ABS(NOUTV).EQ.2) THEN
         print *, "Value for NOUTV is not allowable"
         CALL EXIT(1)
       ENDIF
@@ -1677,7 +1677,7 @@ C
 C
         READ(15,80) STACMSG
         READ(STACMSG,*) NOUTC,TOUTSC,TOUTFC,NSPOOLC
-        IF (ABS(NOUTC).GT.2) THEN
+        IF (ABS(NOUTC).GT.1) THEN
           print *, "Value of NOUTC is not allowable"
           CALL EXIT(1)
         ENDIF
@@ -1745,7 +1745,7 @@ C
 C
          READ(15,80) STAMMSG
          READ(STAMMSG,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
-         IF (ABS(NOUTM).GT.5) THEN
+         IF (ABS(NOUTM).GT.5.OR.ABS(NOUTM).EQ.2) THEN
             print *, "Value of NOUTM is not allowable"
             CALL EXIT(1)
          ENDIF
@@ -1858,7 +1858,7 @@ C--Read Global Elevation Data Output
 C
       READ(15,80) OUTGEMSG
       READ(OUTGEMSG,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
-      IF (ABS(NOUTGE).GT.7) THEN
+      IF (ABS(NOUTGE).GT.7.OR.ABS(NOUTGE).EQ.2) THEN
          print *, "NOUTGE does not have an allowable value"
          CALL EXIT(1)
       ENDIF
@@ -1867,7 +1867,7 @@ C--Read Global Velocity Data Output
 C
       READ(15,80) OUTGVMSG
       READ(OUTGVMSG,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
-      IF (ABS(NOUTGV).GT.7) THEN
+      IF (ABS(NOUTGV).GT.7.OR.ABS(NOUTGV).EQ.2) THEN
         print *, "NOUTGV does not have an allowable value"
         CALL EXIT(1)
       ENDIF
@@ -1877,7 +1877,7 @@ C
       IF (C2D_PTrans.or.C3D_PTrans) THEN
         READ(15,80) OUTGCMSG
         READ(OUTGCMSG,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
-        IF (ABS(NOUTGC).GT.2) THEN
+        IF (ABS(NOUTGC).GT.1) THEN
           print *, "NOUTGC does not have an allowable value"
           CALL EXIT(1)
         ENDIF
@@ -1886,8 +1886,7 @@ C
       IF (NWS.NE.0) THEN
         READ(15,80) OUTGWMSG
         READ(OUTGWMSG,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
-Casey 090302: Changed the following line for ABS(NOUTGW).EQ.4
-        IF (ABS(NOUTGW).GT.7) THEN
+        IF (ABS(NOUTGW).GT.7.OR.ABS(NOUTGW).EQ.2) THEN
           print *, "NOUTGW does not have an allowable value"
           CALL EXIT(1)
         ENDIF
