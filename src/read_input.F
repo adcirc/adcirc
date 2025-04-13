@@ -885,8 +885,8 @@ C...
       CkCd = 1d0 
 !     read the namelist
       namelistSpecifier = 'nws8Control'
-      read(unit=15,nml=nws8Control,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=nws8Control,iostat=IOS,iomsg=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,'(a,a)') "vortexModel = ",
      &      trim(vortexModel)
       call logMessage(ECHO,trim(scratchMessage))
