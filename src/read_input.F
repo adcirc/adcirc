@@ -130,6 +130,8 @@ C-----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionSkipSnaps,
      &   dynamicWaterLevelCorrectionRampReferenceTime,
      &   dynamicWaterLevelCorrectionMultiplier,
+     &   vortexModel, backgroundWindModel, BCalc, thetaLatDep,
+     &   windspeed_averaging_minute, useInflow, w_cool, CkCd_calc, CkCd,
      &   read_NWS14_NetCdf_using_core_0
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
@@ -245,6 +247,19 @@ C.... DMW
 !JLW: adding subgrid namelist
       NAMELIST /subgridControl/ subgridFilename, level0, level1,
      &    phi_time_derivative
+
+!CPB: adding nws8Control namelist
+      NAMELIST /nws8Control/ 
+     &   vortexModel,           ! Holland or CLE15
+     &   backgroundWindModel,   ! radialVelocityWeighted or LC12
+     &   BCalc,                 ! exact or limited
+     &   thetaLatDep,           ! true or false
+     &   useInflow,             ! true or false
+     &   windspeed_averaging_minute, ! 1- or 10-min
+     &   w_cool,                ! ~1-3 (mm/s)
+     &   CkCd_calc,             ! true or false
+     &   CkCd                   ! value used. if CdCd_calc = true,
+                                ! this value will not be used
 
       NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
 !Aman Tejaswi
@@ -858,6 +873,60 @@ C     WJP add namelist
 
 C...
 
+!     CPB: add nws8Control namelist
+!     defaults
+      vortexModel = 'Holland'
+      backgroundWindModel = 'radialVelocityWeighted'
+      BCalc = 'limited'
+      thetaLatDep = .false.
+      useInflow = .false.
+      windspeed_averaging_minute = 1
+      w_cool = 2d0
+      CkCd_calc = .false.
+      CkCd = 1d0 
+!     read the namelist
+      namelistSpecifier = 'nws8Control'
+      read(unit=15,nml=nws8Control,iostat=IOS,iomsg=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
+      write(scratchMessage,'(a,a)') "vortexModel = ",
+     &      trim(vortexModel)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,a)') "backgroundWindModel = ",
+     &      trim(backgroundWindModel)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,a)') "BCalc = ",      
+     &      trim(BCalc)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "thetaLatDep = ",
+     &      thetaLatDep
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "useInflow = ",
+     &      useInflow
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,i0)') "windspeed_averaging_minute = ",
+     &      windspeed_averaging_minute
+      call logMessage(ECHO,trim(scratchMessage))
+      ! only print these next lines if we are using the CLE15 vortex
+      ! model since they are not used in regular Holland
+      IF (vortexModel.EQ."CLE15") THEN
+         write(scratchMessage,'(a,f6.2,a)') "w_cool  =",
+     &      w_cool," mm s^-1"
+         call logMessage(ECHO,trim(scratchMessage))
+         IF (CkCd_calc.EQV..true.) THEN
+            write(scratchMessage,'(a,a)') "CkCd will be calculated",
+     & " using the relationship: CkCd = 0.00055*V^2 - 0.02590*V + 0.763"
+            call logMessage(ECHO,trim(scratchMessage))
+         ELSE
+            write(scratchMessage,'(a,f6.2)') "CkCd  =",
+     &      CkCd
+            call logMessage(ECHO,trim(scratchMessage))
+         ENDIF
+      ENDIF
+      rewind(15)
+      ! convert w_cool from mm per second to m per second
+      w_cool = w_cool/1000
+
+C...  tidal potential control namelist
       namelistSpecifier = 'TidalPotentialControl'
       read(unit=15,nml=TidalPotentialControl,iostat=ios,iomsg=ios_nml_error_msg)
       call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
@@ -1989,9 +2058,9 @@ C     in NWS=6)
       ENDIF
 C     jgf46.03 Added NWS=8 (Holland wind model).
       IF(NWS.EQ.8) THEN
-         WRITE(16,1237) NWS
+         WRITE(16,1237) NWS, vortexModel
  1237    FORMAT(/,5X,'NWS = ',I3,
-     &    /,9X,'HURRICANE PARAMETERS AND THE HOLLAND WIND MODEL',
+     &    /,9X,'HURRICANE PARAMETERS AND THE ',A,' WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
      &    /,9X,'VALUES ARE READ AT FOR THE STORM FROM UNIT 22',
      &    /,9X,'THE UNIT 22 FILE BEGINS AT TIME=STATIM.',
@@ -1999,9 +2068,9 @@ C     jgf46.03 Added NWS=8 (Holland wind model).
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
       IF(NWS.EQ.-8) THEN
-         WRITE(16,1238) NWS
+         WRITE(16,1238) NWS, vortexModel
  1238    FORMAT(/,5X,'NWS = ',I3,
-     &    /,9X,'HURRICANE PARAMETERS AND THE HOLLAND WIND MODEL',
+     &    /,9X,'HURRICANE PARAMETERS AND THE ',A,' WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
      &    /,9X,'VALUES ARE READ AT FOR THE STORM FROM UNIT 22',
      &    /,9X,'THE UNIT 22 FILE BEGINS AT THE TIME OF THE HOT START.',
