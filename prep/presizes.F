@@ -309,6 +309,29 @@ c.... !wjp added for warnElev namelist
      &  densityTimeIterator, densityForcingType
       ! itfric control namelist
       LOGICAL :: FOUND_ITFRIC_NML = .FALSE. !
+      ! CPB Feb. 2024: nws8 Control namelist
+      LOGICAL :: FOUND_NWS8_NML = .FALSE.
+      CHARACTER(LEN=100) :: vortexModel = 'Holland'
+      CHARACTER(LEN=100) :: backgroundWindModel = 'radialVelocityWeighted'
+      CHARACTER(LEN=100) :: BCalc = 'limited'
+      LOGICAL :: thetaLatDep = .FALSE.
+      LOGICAL :: useInflow = .FALSE.
+      INTEGER :: windspeed_averaging_minute = 1
+      REAL(8) :: w_cool = 2d0 ! mm/s
+      LOGICAL :: CkCd_calc = .FALSE.
+      REAL(8) :: CkCd = 1d0
+      NAMELIST /nws8Control/ 
+     &   vortexModel,           ! Holland or CLE15
+     &   backgroundWindModel,   ! None or LC12
+     &   BCalc,                 ! exact or limited
+     &   thetaLatDep,           ! true or false
+     &   useInflow,             ! true or false
+     &   windspeed_averaging_minute, ! 1- or 10-min
+     &   w_cool,                ! ~1-3 (mm/s)
+     &   CkCd_calc,             ! true or false
+     &   CkCd                   ! value used. if CdCd_calc = true,
+                                ! this value will not be used
+      ! end CPB
 
 C---------------------end of data declarations--------------------------------C
 
@@ -586,6 +609,7 @@ Casey 180318: Added NWS=13
       LOGICAL :: found_WarnElev_nml = .false.
       LOGICAL :: found_AliDisp_nml = .false.
       LOGICAL :: found_density_nml = .false.
+      LOGICAL :: found_nws8_nml = .false.
 C.... tcm v51.20.04 additions for station location file
       integer ::  ios_stations
       integer :: MNSTAE2,MNSTAV2,MNSTAC2,MNSTAM2
@@ -822,7 +846,14 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          found_density_nml = .true.  
       ENDIF
       REWIND(15)
-
+      ! nws8Control
+      READ(UNIT=15,NML=nws8Control,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         write(*,*) "INFO: The nws8 Control namelist was not found."
+      ELSE
+         found_nws8_nml = .true.  
+      ENDIF
+      REWIND(15)
 
 C
 C
