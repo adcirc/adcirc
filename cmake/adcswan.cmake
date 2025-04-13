@@ -33,7 +33,6 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/SwanQCM.f90)
 
   set(SWAN2SERIAL_SOURCES
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swan2coh.f90
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swanmain.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swanpre1.f
       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source/swanpre2.f
@@ -111,20 +110,16 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/globalio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/control.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/write_output.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F
@@ -132,6 +127,12 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/astronomic.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemerides.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/sun.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/moon.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F)
 
@@ -146,10 +147,23 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/driver.F)
 
+  if(NETCDF_WORKING)
+    set(ADCSWAN1_SOURCES
+        ${ADCSWAN1_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
+  endif()
+
+  if(XDMF_WORKING)
+    set(ADCSWAN1_SOURCES ${ADCSWAN1_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
+  endif()
+
   # ...SWAN Configuration
   swanconfigureadcswan()
 
-  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source)
+  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
+                                      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source)
 
   add_library(templib_swan1serial STATIC ${SWAN1SERIAL_SOURCES})
   add_library(templib_swan2serial STATIC ${SWAN2SERIAL_SOURCES})
@@ -160,6 +174,16 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   addcompilerflagsswan(templib_swan2serial ${ADDITIONAL_FLAGS_SWAN})
   addcompilerflags(templib_adcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
   addcompilerflags(adcswan ${ADDITIONAL_FLAGS_ADCIRC})
+
+  addnetcdflibraries(adcswan)
+  addgrib2libraries(templib_adcswan1)
+  adddatetimelibraries(adcswan)
+  addxdmflibraries(adcswan)
+  addversionlibrary(adcswan)
+  addmkdirlibrary(adcswan)
+
+  add_dependencies(templib_adcswan1 version)
+  target_include_directories(templib_adcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_mod)
 
   target_compile_definitions(templib_adcswan1 PRIVATE CSWAN)
   target_compile_definitions(adcswan PRIVATE CSWAN)
@@ -184,6 +208,13 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
     templib_swan1serial)
   add_dependencies(templib_swan2serial templib_adcswan1 templib_swan1serial)
   add_dependencies(templib_adcswan1 templib_swan1serial)
+
+  # Create a false target for the Ninja build system. The generated sources don't give it a full
+  # picture of where it can parallelize and this helps it make the correct determinations
+  if (${CMAKE_GENERATOR} STREQUAL "Ninja")
+    add_custom_target(templib_adcswan1-stub BYPRODUCTS templib_adcswan1-stublib COMMAND "" DEPENDS templib_adcswan1)
+    add_dependencies(templib_swan2serial templib_adcswan1-stub)
+  endif()
 
   install(TARGETS adcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

@@ -1,6 +1,8 @@
 # ADCIRC
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/adcirc/adcirc/tree/main.svg?style=shield&circle-token=468312e3a9341f3a519bbdfb4df0cda07c98bd91)](https://dl.circleci.com/status-badge/redirect/gh/adcirc/adcirc/tree/main)
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
+[![Docker Image Version (tag)](https://img.shields.io/docker/v/adcircorg/adcirc/v56.0.3?logo=docker&label=adcircorg%2Fadcirc)](https://hub.docker.com/r/adcircorg/adcirc)
+
 
 ADCIRC is a system of computer programs for solving time dependent, free surface circulation and transport problems in
 two and three dimensions. These programs utilize the finite element method in space allowing the use of highly flexible,
@@ -41,21 +43,31 @@ ADCIRC mesh in the Chesapeake Bay area used for the FEMA Coastal Storm Surge Stu
 
 # Versions
 
-Code versions are published based approximately on semantic versioning. Using the major version number (i.e. XX in the
-version XX.YY) will maintain solution consistency across minor version numbers except when there are critical bug fixes.
-Changes to the major version do not guarantee solution consistency, which may be due to improvements in the algorithm or
-other fixes. The general opinion is that the solution is improved in greater major version numbers and if exact
-consistency is required, it's recommended that the same major version is used. Note that other factors, including
-compiler versions and optimization may also impact solution consistency and the user should understand their compiler.
+Code versions are published based on semantic versioning as of version 56. Prior to that, ADCIRC used a two level
+versioning scheme, though it approximately mirrors semantic versioning. 
 
-## Documentation
+# Documentation
 
 Documentation is presently undergoing upgrades, however, the main documentation locations for users are:
 
 1. [ADCIRC website](https://adcirc.org)
 2. [ADCIRC Wiki](https://wiki.adcirc.org/Main_Page)
 
-## Examples
+# Docker Containers
+
+To help new users get spun up quickly with the ADCIRC model, ADCIRC is provided as Linux Docker containers and pushed to DockerHub.
+New images are published either when a new version is released or the main branch has changes. The DockerHub repository is 
+located [here](https://hub.docker.com/r/adcircorg/adcirc). Images may be used with Docker Desktop or Singularity on x86 or ARM CPUs
+on Windows, Mac, and Linux.
+
+Images are tagged for release versions (using semantic versioning) as well as the current state of the main branch as "latest". 
+By default, a release tag should be used and only use latest to try the newest version of the code. The ADCIRC Docker images are 
+distributed under the same license and conditions as this repository. 
+
+Images built for x86 systems use the IntelLLVM compiler while images build for ARM CPUs use the GCC compiler, version 14.2. The 
+x86 base image is the same that is used to build ADCIRC during continuous integration testing. 
+
+# Examples
 
 The ADCIRC [testing repository](http://github.com/adcirc/adcirc-testsuite) doubles as a set of examples which can be used
 for new users to become acquainted with the model. Since version 55, the branches are annotated with the expected

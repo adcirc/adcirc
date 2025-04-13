@@ -174,3 +174,17 @@ install(TARGETS libjasper
 install(FILES ${libjasper_headers}
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/jasper"
 )
+
+if(${CMAKE_C_COMPILER_ID} MATCHES "GNU")
+	set(ADDITIONAL_JASPER_COMPILER_FLAGS "-Wno-stringop-overflow")
+	message(STATUS "Adding additional compiler flags to libjasper: ${ADDITIONAL_JASPER_COMPILER_FLAGS}")
+	set_target_properties(libjasper PROPERTIES COMPILE_FLAGS ${ADDITIONAL_JASPER_COMPILER_FLAGS})
+elseif(${CMAKE_C_COMPILER_ID} MATCHES "IntelLLVM")
+	set(ADDITIONAL_JASPER_COMPILER_FLAGS "-Wno-shift-negative-value -Wno-tautological-constant-out-of-range-compare")
+	message(STATUS "Adding additional compiler flags to libjasper: ${ADDITIONAL_JASPER_COMPILER_FLAGS}")
+	set_target_properties(libjasper PROPERTIES COMPILE_FLAGS ${ADDITIONAL_JASPER_COMPILER_FLAGS})
+elseif(${CMAKE_C_COMPILER_ID} MATCHES "Intel")
+	# Empty
+elseif(${CMAKE_C_COMPILER_ID} MATCHES "NVIDIA")
+	# Empty
+endif()

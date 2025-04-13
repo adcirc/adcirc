@@ -503,6 +503,14 @@ C     jgf48.4627 When only meteorological output is requested, skip past
 C     the GWCE and Momentum equations, so that ADCIRC runs faster and
 C     only calculates the requested quantities.
       LOGICAL :: METONLY             = .FALSE.
+
+
+!Aman Tejaswi  added for inset W/P files
+      LOGICAL :: found_InterpInset_namelist = .FALSE.
+      LOGICAL :: UseInterpInset             = .FALSE.
+      CHARACTER(LEN=256)   :: Pfile_inset, Wfile_inset, InsetControlFile
+
+
 C
 C     jgf51.14: Moved the parameters that control output timing 
 C     from read_input.F to here so that they can be used to recalculate
@@ -533,34 +541,6 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFWIND
       integer :: IFSFM = 0 ! corrected spherical coordinates (1) or not (0)
       integer :: IFSPROTS = 0 ! rotated spherical coordinates (1) or not (0)
-      ! 
-      ! fulldomain (a.k.a. global) file position counters
-      integer, target :: igcp ! concentration
-      integer, target :: igep ! elevation
-      integer, target :: igpp ! barometric pressure
-      integer, target :: igvp ! water velocity
-      integer, target :: igwp ! wind velocity
-      integer, target :: itau0p ! position in tau0 output file for variable tau0
-      integer, target :: igsp ! sponge layer output
-      integer, target :: igdp ! debug elevation
-      ! station file position counters
-      integer, target :: ivstp ! file position in velocity station file
-      integer, target :: iwstp ! file position in wind velocity station file
-      integer, target :: ipstp ! position in barometric pressure station file
-      integer, target :: iestp ! file position in station elevation file 
-      integer, target :: ig_tvw ! file position in weir elevation file
-      integer, target :: nodeCodeOutFilePos
-      integer, target :: noffOutFilePos
-      integer, target :: windDragFilePosition
-      ! jgf52.08.03: Some files (e.g., initiallydry.63 and endrisinginun.63)
-      ! are only written once, but are written using the same subroutines
-      ! that write time varying output files; the output subroutine increments
-      ! the file position counter; so we have to have a fake file position 
-      ! counter even for output files that are only written once.
-      integer, target :: fauxFilePosition 
-      ! jgf: added support for water level offset
-      integer, target :: dynamicWaterLevelCorrectionFilePos
-      integer, target :: dynamicWaterLevelCorrectionStaFilePos
 
       INTEGER  IHOTSTP, IMHS
       INTEGER  ITIME, ITEMPSTP
@@ -572,11 +552,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  NDSETSE, NDSETSV, NDSETSW, NDSETS_TVW
       INTEGER  NHSINC, NHSTAR
       LOGICAL :: NHOUTONCE = .false.
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-!#ifdef CSWAN 
-Casey 090302: Added a variable for output of radiation stress gradients.
-      INTEGER, TARGET :: IGRadS
-!#endif
+
       INTEGER  NOUTGC, NOUTGE, NOUTGV, NOUTGW, NOUTM, NOUT_TVW
       INTEGER, TARGET :: NSCOUC, NSCOUE, NSCOUGC, NSCOUGE, NSCOUGV ! output spool counters
       INTEGER, TARGET :: NSCOUGW, NSCOURS, NSCOUGP, NSCOUM, NSCOUV ! output spool counters
@@ -788,7 +764,6 @@ C     elements to the structure
         integer :: endTimeStep   ! last time step when output should occur    
         integer :: outputTimeStepIncrement ! num time steps between outputs          
         integer, pointer :: spoolCounter ! counts time steps between outputs
-        integer, pointer :: filepos ! keeps track of position in output files
         integer, pointer :: elements(:) ! array of elements that contain the stations
         real(8), pointer :: interp_fac1(:) ! array of interp. factors for stations
         real(8), pointer :: interp_fac2(:) ! array of interp. factors for stations        
@@ -840,6 +815,8 @@ C     v49.48.01 tcm 20110126 Variables related to kdtree searches
       real(8), allocatable, target :: dynamicWaterLevelCorrection2(:)
       logical :: usingDynamicWaterLevelCorrection = .false.
       real(8), allocatable, target :: dynamicWaterLevelCorrectionSta(:)
+      !tga: tgaContOffset offset term for continuity eq
+      real(8), allocatable :: dynamicWaterLevelCorrectionDelta(:)
 
 C----- DW --- periodic bc 
       INTEGER:: NPERSEG, NNPERBC
@@ -888,10 +865,13 @@ C     cms51.06: moved fort.33 file from read_input.F to here
      &    STATUS='REPLACE')
       OPEN(33,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
      &    STATUS='REPLACE')
+      
 #else
       OPEN(16,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
       OPEN(33,FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
 #endif
+
+    
 C--------------------------------------------------------------------
       END SUBROUTINE openLogFile
 C--------------------------------------------------------------------
@@ -1552,8 +1532,6 @@ C...
          typeHolder = 0 
       case('ASCII')
          typeHolder = 1
-      case('BINARY')
-         typeHolder = 2 
       case('NETCDF3')
          typeHolder = 3 
       case('SPARSE_ASCII')

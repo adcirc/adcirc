@@ -27,7 +27,6 @@ if(BUILD_ADCPREP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
       ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
@@ -46,8 +45,6 @@ if(BUILD_ADCPREP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/prep.F
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/interp.F
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/machdep.F
@@ -58,11 +55,24 @@ if(BUILD_ADCPREP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
 
+  if(NETCDF_WORKING)
+    set(ADCPREP_SOURCES
+        ${ADCPREP_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
+  endif()
+
   add_executable(adcprep ${ADCPREP_SOURCES})
 
   addcompilerflags(adcprep ${ADDITIONAL_FLAGS_ADCPREP})
-  addlibmkdir(adcprep)
   addlibmetis(adcprep)
+  addnetcdflibraries(adcprep)
+  addgrib2libraries(adcprep)
+  addxdmflibraries(adcprep)
+  adddatetimelibraries(adcprep)
+  addversionlibrary(adcprep)
+  addmkdirlibrary(adcprep)
 
   if(BUILD_PADCSWAN OR BUILD_PUNSWAN)
     target_compile_definitions(adcprep PRIVATE ${PREP_SWAN_FLAG})

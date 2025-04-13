@@ -191,6 +191,7 @@ C     kmd -- Added variables for initial conditions
 
       INTEGER :: moderbin ! determines whether in binary or real
       INTEGER :: ncHundreds ! hundreds place of IHOT, used for netcdf hs file
+      INTEGER :: IDMY
 
 #ifdef ADCNETCDF
       LOGICAL :: have_htot(2) 
@@ -330,23 +331,23 @@ C        jgf46.34 Added support for IBTYPE=52.
          nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
 C
-         READ(IHOT,*) IESTP
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUE
-         READ(IHOT,*) IVSTP
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUV
-         READ(IHOT,*) ICSTP
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUC
-         READ(IHOT,*) IPSTP
-         READ(IHOT,*) IWSTP
+         READ(IHOT,*) IDMY
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUM
-         READ(IHOT,*) IGEP
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUGE
-         READ(IHOT,*) IGVP
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUGV
-         READ(IHOT,*) IGCP
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUGC
-         READ(IHOT,*) IGPP
-         READ(IHOT,*) IGWP
+         READ(IHOT,*) IDMY
+         READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUGW
          !
          !     R E A D   3 D   H O T S T A R T   D A T A
@@ -564,23 +565,23 @@ C        jgf46.34 Added support for IBTYPE=52.
          nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
 C
-         READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IDMY ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
          !
          !     R E A D   3 D   H O T S T A R T   D A T A
@@ -1582,20 +1583,14 @@ C.... FOR USE LATER ON
       NTCYSB = NTCYSE
       NTCYFB = NTCYFE
       NSCOUB = NSCOUE
-      IBSTP = IESTP
 
 C...
 C....IF RESTARTING THE ELEVATION STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
-      IF(NTCYSE.LT.ITHS.AND.NOUTE.GT.0) NTCYSE = ITHS + NSPOOLE - 1 
-      WRITE(16,1040) IESTP,NSCOUE
- 1040 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN ELEVATION ',
-     &                'STATION FILE BY THE TIME OF THE HOT START',
-     &           /,8X,'SPOOL COUNTER = ',I6)
+      IF(NTCYSE.LT.ITHS.AND.NOUTE.GT.0) NTCYSE = ITHS + NSPOOLE - 1
 
       IF(NOUTE.LT.0) THEN
-        IESTP=0
         NSCOUE=0
         IF((NTCYSE.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
           NTCYSE=NTCYSE+((REAL(ITHS)-REAL(NTCYSE))/
@@ -1606,74 +1601,21 @@ C...
         WRITE(16,1041)
  1041   FORMAT(//,' A NEW ELEVATION STATION FILE WILL BE STARTED')
       ENDIF
-      IF(NOUTE.EQ.-2) THEN
-        OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-        IF(NBYTE.EQ.4) THEN
-          DO I=1,8
-            WRITE(61,REC=IESTP+I) RDES4(I)
-          ENDDO
-          IESTP=IESTP+8
-          DO I=1,6
-            WRITE(61,REC=IESTP+I) RID4(I)
-          ENDDO
-          IESTP=IESTP+6
-          DO I=1,6
-            WRITE(61,REC=IESTP+I) AID4(I)
-          ENDDO
-          IESTP=IESTP+6
-        ENDIF
-        IF(NBYTE.EQ.8) THEN
-          DO I=1,4
-            WRITE(61,REC=IESTP+I) RDES8(I)
-          ENDDO
-          IESTP=IESTP+4
-          DO I=1,3
-            WRITE(61,REC=IESTP+I) RID8(I)
-          ENDDO
-          IESTP=IESTP+3
-          DO I=1,3
-            WRITE(61,REC=IESTP+I) AID8(I)
-          ENDDO
-          IESTP=IESTP+3
-        ENDIF
-        WRITE(61,REC=IESTP+1) NTRSPE
-        WRITE(61,REC=IESTP+2) NSTAE
-        WRITE(61,REC=IESTP+3) DT*NSPOOLE
-        WRITE(61,REC=IESTP+4) NSPOOLE
-        WRITE(61,REC=IESTP+5) 1
-        IESTP=IESTP+5
-        CLOSE(61)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-      ENDIF
       IF(NOUTE.EQ.-1) THEN
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
-     $        NSTAE_G, NSTAE, HEADER61)
+     &        NSTAE_G, NSTAE, HEADER61)
          else
             CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61',
-     $        NSTAE_G, NSTAE, HEADER61)
+     &        NSTAE_G, NSTAE, HEADER61)
          endif
-        IESTP=2
-      ENDIF
-
-      IF(NOUTE.EQ.2) THEN
-        OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-c       WRITE(61,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-        CLOSE(61)                         ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE VELOCITY STATION OUTPUT FILE
 C...
-      WRITE(16,1042) IVSTP,NSCOUV
- 1042 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN VELOCITY ',
-     &                'STATION FILE BY THE TIME OF THE HOT START',
-     &           /,8X,'SPOOL COUNTER =',I6)
-
       IF(NTCYSV.LT.ITHS.AND.NOUTV.GT.0) NTCYSV = ITHS + NSPOOLV - 1 
       IF(NOUTV.LT.0) THEN
-        IVSTP=0
         NSCOUV=0
         IF((NTCYSV.LT.ITHS).AND.(NSPOOLV.GT.0)) THEN
           NTCYSV=NTCYSV+((REAL(ITHS)-REAL(NTCYSV))/
@@ -1685,45 +1627,6 @@ C...
  1043   FORMAT(//,' A NEW VELOCITY STATION FILE WILL BE STARTED')
       ENDIF
 
-      IF(NOUTV.EQ.-2) THEN
-        OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-        IF(NBYTE.EQ.4) THEN
-          DO I=1,8
-            WRITE(62,REC=IVSTP+I) RDES4(I)
-          ENDDO
-          IVSTP=IVSTP+8
-          DO I=1,6
-            WRITE(62,REC=IVSTP+I) RID4(I)
-          ENDDO
-          IVSTP=IVSTP+6
-          DO I=1,6
-            WRITE(62,REC=IVSTP+I) AID4(I)
-          ENDDO
-          IVSTP=IVSTP+6
-          ENDIF
-        IF(NBYTE.EQ.8) THEN
-          DO I=1,4
-            WRITE(62,REC=IVSTP+I) RDES8(I)
-          ENDDO
-          IVSTP=IVSTP+4
-          DO I=1,3
-            WRITE(62,REC=IVSTP+I) RID8(I)
-          ENDDO
-          IVSTP=IVSTP+3
-          DO I=1,3
-            WRITE(62,REC=IVSTP+I) AID8(I)
-          ENDDO
-          IVSTP=IVSTP+3
-        ENDIF
-        WRITE(62,REC=IVSTP+1) NTRSPV
-        WRITE(62,REC=IVSTP+2) NSTAV
-        WRITE(62,REC=IVSTP+3) DT*NSPOOLV
-        WRITE(62,REC=IVSTP+4) NSPOOLV
-        WRITE(62,REC=IVSTP+5) 2
-        IVSTP=IVSTP+5
-        CLOSE(62)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-      ENDIF
       IF(NOUTV.EQ.-1) THEN
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62',
@@ -1732,24 +1635,12 @@ C...
             CALL OPEN_GBL_FILE(62, TRIM(LOCALDIR)//'/'//'fort.62',
      $         NSTAV_G, NSTAV, HEADER62)
          endif
-        IVSTP=2
-      ENDIF
-      IF(NOUTV.EQ.2) THEN
-        OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-c       WRITE(62,REC=ITEMPSTP+1) NTRSPV   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-        CLOSE(62)                         ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE CONCENTRATION STATION OUTPUT FILE
 C...
-      WRITE(16,1044) ICSTP,NSCOUC
- 1044 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN CONCENTRATION ',
-     &                'STATION FILE BY THE TIME OF THE HOT START',
-     &           /,8X,'SPOOL COUNTER = ',I6)
       IF(NOUTC.LT.0) THEN
-        ICSTP=0
         NSCOUC=0
         IF((NTCYSC.LT.ITHS).AND.(NSPOOLC.GT.0)) THEN
           NTCYSC=NTCYSC+((REAL(ITHS)-REAL(NTCYSC))/
@@ -1761,46 +1652,7 @@ C...
  1045   FORMAT(//,' A NEW CONCENTRATION STATION FILE WILL BE STARTED')
       ENDIF
 
-      IF(NTCYSC.LT.ITHS.AND.NOUTC.GT.0) NTCYSC = ITHS + NSPOOLC - 1 
-      IF(NOUTC.EQ.-2) THEN
-        OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-        IF(NBYTE.EQ.4) THEN
-          DO I=1,8
-            WRITE(81,REC=ICSTP+I) RDES4(I)
-          ENDDO
-          ICSTP=ICSTP+8
-          DO I=1,6
-            WRITE(81,REC=ICSTP+I) RID4(I)
-          ENDDO
-          ICSTP=ICSTP+6
-          DO I=1,6
-            WRITE(81,REC=ICSTP+I) AID4(I)
-          ENDDO
-          ICSTP=ICSTP+6
-        ENDIF
-        IF(NBYTE.EQ.8) THEN
-          DO I=1,4
-            WRITE(81,REC=ICSTP+I) RDES8(I)
-          ENDDO
-          ICSTP=ICSTP+4
-          DO I=1,3
-            WRITE(81,REC=ICSTP+I) RID8(I)
-          ENDDO
-          ICSTP=ICSTP+3
-          DO I=1,3
-            WRITE(81,REC=ICSTP+I) AID8(I)
-          ENDDO
-          ICSTP=ICSTP+3
-        ENDIF
-        WRITE(81,REC=ICSTP+1) NTRSPC
-        WRITE(81,REC=ICSTP+2) NSTAC
-        WRITE(81,REC=ICSTP+3) DT*NSPOOLC
-        WRITE(81,REC=ICSTP+4) NSPOOLC
-        WRITE(81,REC=ICSTP+5) 1
-        ICSTP=ICSTP+5
-        CLOSE(81)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-      ENDIF
+      IF(NTCYSC.LT.ITHS.AND.NOUTC.GT.0) NTCYSC = ITHS + NSPOOLC - 1
       IF(NOUTC.EQ.-1) THEN
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
@@ -1809,46 +1661,16 @@ C...
             CALL OPEN_GBL_FILE(81, TRIM(LOCALDIR)//'/'//'fort.81',
      $       NSTAC_G, NSTAC, HEADER81)
          endif
-        ICSTP=2
         CLOSE(81)
-      ENDIF
-      IF(NOUTC.EQ.2) THEN
-        OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-c       WRITE(81,REC=ITEMPSTP+1) NTRSPC   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-        CLOSE(81)                         ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE METEOROLOGICAL STATION OUTPUT FILE
 C...
 c... v49.64.01 tcm -added support for ice stations
-      IF(NTCYSM.LT.ITHS.AND.NOUTM.GT.0) NTCYSM = ITHS + NSPOOLM - 1 
-      IF(NCICE.EQ.0)  THEN
-         WRITE(16,1038) IWSTP,IPSTP,NSCOUM
-      ELSE
-         IICESTP = IPSTP  !SET TO THE SAME PLACE AS THE PRESSURE FILE
-         WRITE(16,2038) IWSTP,IPSTP,IICESTP,NSCOUM
-      ENDIF
-      WRITE(16,1038) IWSTP,IPSTP,NSCOUM
- 1038 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE WIND STATION',
-     &                ' FILE BY THE TIME OF THE HOT START',
-     &        /,1X,I6,' LINES OR RECORDS WRITTIN IN THE PRES STATION',
-     &                ' FILE BY THE TIME OF THE HOT START',
-     &           /,8X,'SPOOL COUNTER = ',I6)
- 2038 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE WIND STATION',
-     &                ' FILE BY THE TIME OF THE HOT START',
-     &        /,1X,I6,' LINES OR RECORDS WRITTEN IN THE PRES STATION',
-     &                ' FILE BY THE TIME OF THE HOT START',
-     &        /,1X,I6,' LINES OR RECORDS WRITTEN IN THE ICE STATION',
-     &                ' FILE BY THE TIME OF THE HOT START',
-     &           /,8X,'SPOOL COUNTER = ',I6)
+      IF(NTCYSM.LT.ITHS.AND.NOUTM.GT.0) NTCYSM = ITHS + NSPOOLM - 1
 C
       IF(NOUTM.LT.0) THEN
-        IPSTP=0
-        IWSTP=0
-        IICESTP = 0  !v49.64.01 tcm added ice station
-        NSCOUM=0
         IF((NTCYSM.LT.ITHS).AND.(NSPOOLM.GT.0)) THEN
           NTCYSM=NTCYSM+((REAL(ITHS)-REAL(NTCYSM))/
      &           REAL(NSPOOLM))*REAL(NSPOOLM)
@@ -1859,142 +1681,33 @@ C
  1039   FORMAT(//,' A NEW METEOROLOGICAL STATION FILE WILL BE STARTED')
       ENDIF
 
-      IF(NOUTM.EQ.-2) THEN
-        OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-        OPEN(72,FILE=TRIM(LOCALDIR)//'/'//'fort.72',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-!       v49.64.01 tcm added ice station
-        IF(NCICE.NE.0) THEN
-           OPEN(91,FILE=TRIM(LOCALDIR)//'/'//'fort.91',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-        ENDIF
-        IF(NBYTE.EQ.4) THEN
-          DO I=1,8
-            WRITE(71,REC=IPSTP+I) RDES4(I)
-            WRITE(72,REC=IWSTP+I) RDES4(I)
-            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RDES4(I)
-          ENDDO
-          IPSTP=IPSTP+8
-          IWSTP=IWSTP+8
-          IF (NCICE.NE.0) IICESTP = IICESTP+8
-          DO I=1,6
-            WRITE(71,REC=IPSTP+I) RID4(I)
-            WRITE(72,REC=IWSTP+I) RID4(I)
-            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RID4(I)
-          ENDDO
-          IPSTP=IPSTP+6
-          IWSTP=IWSTP+6
-          IF (NCICE.NE.0) IICESTP = IICESTP+6
-          DO I=1,6
-            WRITE(71,REC=IPSTP+I) AID4(I)
-            WRITE(72,REC=IWSTP+I) AID4(I)
-            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) AID4(I)
-          ENDDO
-          IPSTP=IPSTP+6
-          IWSTP=IWSTP+6
-          IF (NCICE.NE.0) IICESTP = IICESTP+6
-        ENDIF
-        IF(NBYTE.EQ.8) THEN
-          DO I=1,4
-            WRITE(71,REC=IPSTP+I) RDES8(I)
-            WRITE(72,REC=IWSTP+I) RDES8(I)
-            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RDES8(I)
-          ENDDO
-          IPSTP=IPSTP+4
-          IWSTP=IWSTP+4
-          IF (NCICE.NE.0) IICESTP = IICESTP+4
-          DO I=1,3
-            WRITE(71,REC=IPSTP+I) RID8(I)
-            WRITE(72,REC=IWSTP+I) RID8(I)
-            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RID8(I)
-          ENDDO
-          IPSTP=IPSTP+3
-          IWSTP=IWSTP+3
-          IF (NCICE.NE.0) IICESTP = IICESTP+3
-          DO I=1,3
-            WRITE(71,REC=IPSTP+I) AID8(I)
-            WRITE(72,REC=IWSTP+I) AID8(I)
-            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) AID8(I)
-          ENDDO
-          IPSTP=IPSTP+3
-          IWSTP=IWSTP+3
-          IF (NCICE.NE.0) IICESTP = IICESTP+3
-        ENDIF
-        WRITE(71,REC=IPSTP+1) NTRSPM
-        WRITE(71,REC=IPSTP+2) NSTAM
-        WRITE(71,REC=IPSTP+3) DT*NSPOOLM
-        WRITE(71,REC=IPSTP+4) NSPOOLM
-        WRITE(71,REC=IPSTP+5) 1
-        WRITE(72,REC=IWSTP+1) NTRSPM
-        WRITE(72,REC=IWSTP+2) NSTAM
-        WRITE(72,REC=IWSTP+3) DT*NSPOOLM
-        WRITE(72,REC=IWSTP+4) NSPOOLM
-        WRITE(72,REC=IWSTP+5) 2
-        IPSTP=IPSTP+5
-        IWSTP=IWSTP+5
-        CLOSE(71)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-        CLOSE(72)
-        ! v49.64.01 tcm -- added ice stations
-        IF(NCICE.NE.0) THEN
-           WRITE(91,REC=IICESTP+1) NTRSPM
-           WRITE(91,REC=IICESTP+2) NSTAM
-           WRITE(91,REC=IICESTP+3) DT*NSPOOLM
-           WRITE(91,REC=IICESTP+4) NSPOOLM
-           WRITE(91,REC=IICESTP+5) 1
-           IICESTP = IICESTP + 5
-           CLOSE(91)
-        ENDIF
-      ENDIF
       IF(NOUTM.EQ.-1) THEN
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
      $         NSTAM_G, NSTAM, HEADER71)
-            IPSTP=2
             CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
      $         NSTAM_G, NSTAM, HEADER72)
-            IWSTP=2
+
 !           v49.64.01 tcm added ice station support
             IF(NCICE.NE.0) THEN
                CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
      $            NSTAM_G, NSTAM, HEADER91)
-               IICESTP=2
             ENDIF
 
          else
          
             CALL OPEN_GBL_FILE(71, TRIM(LOCALDIR)//'/'//'fort.71',
      $         NSTAM_G, NSTAM, HEADER71)
-            IPSTP=2
             CALL OPEN_GBL_FILE(72, TRIM(LOCALDIR)//'/'//'fort.72',
      $         NSTAM_G, NSTAM, HEADER72)
-            IWSTP=2
 !           v49.64.01 tcm added ice station support
             IF(NCICE.NE.0) THEN
                CALL OPEN_GBL_FILE(91, TRIM(LOCALDIR)//'/'//'fort.91',
      $            NSTAM_G, NSTAM, HEADER91)
-               IICESTP=2
             ENDIF
          
          endif
       ENDIF
-      IF(NOUTM.EQ.2) THEN
-        OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-        OPEN(72,FILE=TRIM(LOCALDIR)//'/'//'fort.72',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-c         WRITE(71,REC=ITEMPSTP+1) NTRSPM   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-c         WRITE(72,REC=ITMEPSTP+1) NTRSPM
-        CLOSE(71)                         ! DO THIS TO FLUSH THE WRITE BUFFER
-        CLOSE(72)
-!       v49.64.01 tcm added ice station support
-        IF(NCICE.NE.0) THEN
-           OPEN(91,FILE=TRIM(LOCALDIR)//'/'//'fort.91',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-           CLOSE(91)
-        ENDIF
-      ENDIF
-
 
 C... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
 C... THIS FILE IS CONTROLLED BY THE ELEVATION STATION DATA
@@ -2010,7 +1723,6 @@ C...
      &           /,8X,'SPOOL COUNTER = ',I6)
 
       IF ((NDDT.NE.0).AND.(NOUTE.LT.0)) THEN
-        IBSTP=0
         NSCOUB=0
         IF((NTCYSB.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
           NTCYSB=NTCYSB+((REAL(ITHS)-REAL(NTCYSB))/
@@ -2021,45 +1733,7 @@ C...
         WRITE(16,1036)
  1036   FORMAT(//,' A NEW BATHYMETRY STATION FILE WILL BE STARTED')
       ENDIF
-      IF ((NDDT.NE.0).AND.(NOUTE.EQ.-2)) THEN
-        OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-        IF(NBYTE.EQ.4) THEN
-          DO I=1,8
-            WRITE(75,REC=IBSTP+I) RDES4(I)
-          ENDDO
-          IBSTP=IBSTP+8
-          DO I=1,6
-            WRITE(75,REC=IBSTP+I) RID4(I)
-          ENDDO
-          IBSTP=IBSTP+6
-          DO I=1,6
-            WRITE(75,REC=IBSTP+I) AID4(I)
-          ENDDO
-          IBSTP=IBSTP+6
-        ENDIF
-        IF(NBYTE.EQ.8) THEN
-          DO I=1,4
-            WRITE(75,REC=IBSTP+I) RDES8(I)
-          ENDDO
-          IBSTP=IBSTP+4
-          DO I=1,3
-            WRITE(75,REC=IBSTP+I) RID8(I)
-          ENDDO
-          IBSTP=IBSTP+3
-          DO I=1,3
-            WRITE(75,REC=IBSTP+I) AID8(I)
-          ENDDO
-          IBSTP=IBSTP+3
-        ENDIF
-        WRITE(75,REC=IBSTP+1) NTRSPB
-        WRITE(75,REC=IBSTP+2) NSTAE
-        WRITE(75,REC=IBSTP+3) DT*NSPOOLE
-        WRITE(75,REC=IBSTP+4) NSPOOLE
-        WRITE(75,REC=IBSTP+5) 1
-        IBSTP=IBSTP+5
-        CLOSE(75)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-      ENDIF
+
       IF ((NDDT.NE.0).AND.(NOUTE.EQ.-1)) THEN
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
@@ -2067,15 +1741,7 @@ C...
          else
             CALL OPEN_GBL_FILE(75, TRIM(LOCALDIR)//'/'//'fort.75',
      $         NSTAE_G, NSTAE, HEADER61)         
-         endif 
-        IESTP=2
-      ENDIF
-
-      IF ((NDDT.NE.0).AND.(NOUTE.EQ.2)) THEN
-        OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
-     &                      ACCESS='DIRECT',RECL=NBYTE)
-c       WRITE(75,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-        CLOSE(75)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+         endif
       ENDIF
 
 C...
@@ -2083,20 +1749,13 @@ C....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
 C...
         IF(NTCYSGE.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGE = ITHS + NSPOOLGE - 1 
 
-        WRITE(16,1046) IGEP,NSCOUGE
- 1046   FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'ELEVATION FILE BY THE TIME OF THE HOT START',
-     &          /,8X,'SPOOL COUNTER =',I8)
-
 C....   TCM V50.66.01 ADDITIONS FOR TIME VARYING BATYMETRY
-C....   SET THESE VARIABLES FOR USE LATER 
-        IGBP = IGEP
+C....   SET THESE VARIABLES FOR USE LATER
         NTCYSGB = NTCYSGE
         NTCYFGB = NTCYFGE
         NSCOUGB = NSCOUGE
 
         IF(NOUTGE.LT.0) THEN
-          IGEP=0
           NSCOUGE=0
           IF((NTCYSGE.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
             NTCYSGE=NTCYSGE+((REAL(ITHS)-REAL(NTCYSGE))/
@@ -2112,46 +1771,6 @@ C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
             ENDIF
           WRITE(16,1047)
  1047     FORMAT(//,' A NEW GLOBAL ELEVATION FILE WILL BE STARTED')
-        ENDIF
-
-        IF(NOUTGE.EQ.-2) THEN
-          OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-          IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-              WRITE(63,REC=IGEP+I) RDES4(I)
-              ENDDO
-            IGEP=IGEP+8
-            DO I=1,6
-              WRITE(63,REC=IGEP+I) RID4(I)
-              ENDDO
-            IGEP=IGEP+6
-            DO I=1,6
-              WRITE(63,REC=IGEP+I) AID4(I)
-              ENDDO
-            IGEP=IGEP+6
-            ENDIF
-          IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-              WRITE(63,REC=IGEP+I) RDES8(I)
-              ENDDO
-            IGEP=IGEP+4
-            DO I=1,3
-              WRITE(63,REC=IGEP+I) RID8(I)
-              ENDDO
-            IGEP=IGEP+3
-            DO I=1,3
-              WRITE(63,REC=IGEP+I) AID8(I)
-              ENDDO
-            IGEP=IGEP+3
-            ENDIF
-          WRITE(63,REC=IGEP+1) NDSETSE
-          WRITE(63,REC=IGEP+2) NP
-          WRITE(63,REC=IGEP+3) DT*NSPOOLGE
-          WRITE(63,REC=IGEP+4) NSPOOLGE
-          WRITE(63,REC=IGEP+5) 1
-          IGEP=IGEP+5
-          CLOSE(63)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
 Casey 090310: Added the possibility for NOUTGE = -4.
@@ -2196,26 +1815,13 @@ C kmd48.33bc - information for writing out the sponge layer
             END IF
 
          endif
-         IGEP=2
-      ENDIF
-      IF(NOUTGE.EQ.2) THEN
-          OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-c         WRITE(63,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-          CLOSE(63)                         ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL VELOCITY OUTPUT FILE
 C...
-        IF(NTCYSGV.LT.ITHS.AND.NOUTGV.GT.0) NTCYSGV = ITHS + NSPOOLGV - 1 
-
-        WRITE(16,1048) IGVP,NSCOUGV
- 1048   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'VELOCITY FILE BY THE TIME OF THE HOT START',
-     &          /,8X,'SPOOL COUNTER =',I6)
+        IF(NTCYSGV.LT.ITHS.AND.NOUTGV.GT.0) NTCYSGV = ITHS + NSPOOLGV - 1
         IF(NOUTGV.LT.0) THEN
-          IGVP=0
           NSCOUGV=0
           IF((NTCYSGV.LT.ITHS).AND.(NSPOOLGV.GT.0)) THEN
             NTCYSGV=NTCYSGV+((REAL(ITHS)-REAL(NTCYSGV))/
@@ -2233,68 +1839,19 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
  1049     FORMAT(//,' A NEW GLOBAL VELOCITY FILE WILL BE STARTED')
           ENDIF
 
-        IF(NOUTGV.EQ.-2) THEN
-          OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-          IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-              WRITE(64,REC=IGVP+I) RDES4(I)
-              ENDDO
-            IGVP=IGVP+8
-            DO I=1,6
-              WRITE(64,REC=IGVP+I) RID4(I)
-              ENDDO
-            IGVP=IGVP+6
-            DO I=1,6
-              WRITE(64,REC=IGVP+I) AID4(I)
-              ENDDO
-            IGVP=IGVP+6
-            ENDIF
-          IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-              WRITE(64,REC=IGVP+I) RDES8(I)
-              ENDDO
-            IGVP=IGVP+4
-            DO I=1,3
-              WRITE(64,REC=IGVP+I) RID8(I)
-              ENDDO
-            IGVP=IGVP+3
-            DO I=1,3
-              WRITE(64,REC=IGVP+I) AID8(I)
-              ENDDO
-            IGVP=IGVP+3
-            ENDIF
-          WRITE(64,REC=IGVP+1) NDSETSV
-          WRITE(64,REC=IGVP+2) NP
-          WRITE(64,REC=IGVP+3) DT*NSPOOLGV
-          WRITE(64,REC=IGVP+4) NSPOOLGV
-          WRITE(64,REC=IGVP+5) 2
-          IGVP=IGVP+5
-          CLOSE(64)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-        ENDIF
       IF((NOUTGV.EQ.-1).OR.(NOUTGV.EQ.-4)) THEN
          if (write_local_files.eqv..false.) then 
             CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
-     $         NP_G, NP, HEADER64)
+     &         NP_G, NP, HEADER64)
          else
             CALL OPEN_GBL_FILE(64, TRIM(LOCALDIR)//'/'//'fort.64',
-     $         NP_G, NP, HEADER64)
+     &         NP_G, NP, HEADER64)
          endif
-      IGVP=2
       ENDIF
-        IF(NOUTGV.EQ.2) THEN
-          OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-c         WRITE(64,REC=ITEMPSTP+1) NDSETSV  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-          CLOSE(64)                         ! DO THIS TO FLUSH THE WRITE BUFFER
-        ENDIF
-
-
 
 Cobell - Open the fort.77 (weir elevation change) if necessary
         IF(NTCYS_TVW.LT.ITHS.AND.NOUT_TVW.GT.0) NTCYS_TVW = ITHS + NSPOOL_TVW - 1 
         IF(NOUT_TVW.LT.0.AND.USE_TVW) THEN
-          IG_TVW=0
           NSCOU_TVW=0
           IF((NTCYS_TVW.LT.ITHS).AND.(NSPOOL_TVW.GT.0)) THEN
             NTCYS_TVW=NTCYS_TVW+((REAL(ITHS)-REAL(NTCYS_TVW))/
@@ -2311,68 +1868,16 @@ Cobell - Open the fort.77 (weir elevation change) if necessary
  1057     FORMAT(//,' A NEW WEIR ELEVATION FILE WILL BE STARTED')
         ENDIF
 
-        IF(NOUT_TVW.EQ.-2) THEN
-          OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-          IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-              WRITE(77,REC=IG_TVW+I) RDES4(I)
-              ENDDO
-            IG_TVW=IG_TVW+8
-            DO I=1,6
-              WRITE(77,REC=IG_TVW+I) RID4(I)
-              ENDDO
-            IG_TVW=IG_TVW+6
-            DO I=1,6
-              WRITE(77,REC=IG_TVW+I) AID4(I)
-            ENDDO
-            IG_TVW=IG_TVW+6
-          ENDIF
-          IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-              WRITE(77,REC=IG_TVW+I) RDES8(I)
-            ENDDO
-            IG_TVW=IG_TVW+4
-            DO I=1,3
-              WRITE(77,REC=IG_TVW+I) RID8(I)
-            ENDDO
-            IG_TVW=IG_TVW+3
-            DO I=1,3
-              WRITE(77,REC=IG_TVW+I) AID8(I)
-            ENDDO
-            IG_TVW=IG_TVW+3
-          ENDIF
-          WRITE(77,REC=IG_TVW+1) NDSETS_TVW
-          WRITE(77,REC=IG_TVW+2) NP
-          WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
-          WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
-          WRITE(77,REC=IG_TVW+5) 1
-          IG_TVW=IG_TVW+5
-          CLOSE(77)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-        ENDIF
         IF((NOUT_TVW.EQ.-1).OR.(NOUT_TVW.EQ.-4)) THEN
            CALL OPEN_GBL_FILE(77, TRIM(GLOBALDIR)//'/'//'fort.77',
-     $         NP_G, NP, HEADER77)
-           IG_TVW=2
-        ENDIF
-        IF(NOUT_TVW.EQ.2) THEN
-          OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-c         WRITE(77,REC=ITEMPSTP+1) NDSETS_TVW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-          CLOSE(77)                           ! DO THIS TO FLUSH THE WRITE BUFFER
+     &         NP_G, NP, HEADER77)
         ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL CONCENTRATION OUTPUT FILE
 C...
-        IF(NTCYSGC.LT.ITHS.AND.NOUTGC.GT.0) NTCYSGC = ITHS + NSPOOLGC - 1 
-        WRITE(16,1053) IGCP,NSCOUGC
- 1053   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                'CONCENTRATION FILE BY THE TIME OF THE HOT START',
-     &          /,8X,'SPOOL COUNTER =',I6)
-
+        IF(NTCYSGC.LT.ITHS.AND.NOUTGC.GT.0) NTCYSGC = ITHS + NSPOOLGC - 1
         IF(NOUTGC.LT.0) THEN
-          IGCP=0
           NSCOUGC=0
           IF((NTCYSGC.LT.ITHS).AND.(NSPOOLGC.GT.0)) THEN
             NTCYSGC=NTCYSGC+((REAL(ITHS)-REAL(NTCYSGC))/
@@ -2390,96 +1895,27 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
  1054     FORMAT(//,' A NEW GLOBAL CONCENTRATION FILE WILL BE STARTED')
         ENDIF
 
-        IF(NOUTGC.EQ.-2) THEN
-          OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83',
-     &           ACCESS='DIRECT',RECL=NBYTE)
-          IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-              WRITE(83,REC=IGCP+I) RDES4(I)
-              ENDDO
-            IGCP=IGCP+8
-            DO I=1,6
-              WRITE(83,REC=IGCP+I) RID4(I)
-              ENDDO
-            IGCP=IGCP+6
-            DO I=1,6
-              WRITE(83,REC=IGCP+I) AID4(I)
-              ENDDO
-            IGCP=IGCP+6
-            ENDIF
-          IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-              WRITE(83,REC=IGCP+I) RDES8(I)
-              ENDDO
-            IGCP=IGCP+4
-            DO I=1,3
-              WRITE(83,REC=IGCP+I) RID8(I)
-              ENDDO
-            IGCP=IGCP+3
-            DO I=1,3
-              WRITE(83,REC=IGCP+I) AID8(I)
-              ENDDO
-            IGCP=IGCP+3
-            ENDIF
-          WRITE(83,REC=IGCP+1) NDSETSC
-          WRITE(83,REC=IGCP+2) NP
-          WRITE(83,REC=IGCP+3) DT*NSPOOLGC
-          WRITE(83,REC=IGCP+4) NSPOOLGC
-          WRITE(83,REC=IGCP+5) 1
-          IGCP=IGCP+5
-          CLOSE(83)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-        ENDIF
         IF(NOUTGC.EQ.-1) THEN
           OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83')
           WRITE(83,3220) RUNDES,RUNID,AGRID
           WRITE(83,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
-          IGCP=2
           CLOSE(83)
-        ENDIF
-        IF(NOUTGC.EQ.1) THEN
-          OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83')
-          DO I=1,IGCP           !I DON'T KNOW OF A PRACTICAL WAY TO CHANGE NDSETSC
-            READ(83,1050)
- 1050       FORMAT(1X)
-          ENDDO
-          ENDFILE(83)
-          CLOSE(83)
-        ENDIF
-        IF(NOUTGC.EQ.2) THEN
-          OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-c         WRITE(83,REC=ITEMPSTP+1) NDSETSC  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-          CLOSE(83)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+          if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(83, TRIM(GLOBALDIR)//'/'//'fort.83',
+     &                         NP_G, NP, HEADER83)
+          else
+            CALL OPEN_GBL_FILE(83, TRIM(LOCALDIR)//'/'//'fort.83',
+     &                         NP_G, NP, HEADER83)
+          endif
         ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL METEOROLOGICAL OUTPUT FILES
 C...
 !       V49.64.01 TCM ADDED GLOBAL ICE CONCENTRATION FILES
-        IF(NTCYSGW.LT.ITHS.AND.NOUTGW.GT.0) NTCYSGW = ITHS + NSPOOLGW - 1 
-        IF(NCICE.NE.0) THEN
-           WRITE(16,2055) IGWP,IGPP,IGIP,NSCOUGW
-        ELSE
-           WRITE(16,1055) IGWP,IGPP,NSCOUGW
-        ENDIF
- 1055   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'WIND FILE BY THE TIME OF THE HOT START',
-     &          /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'PRESSURE FILE BY THE TIME OF THE HOT START',
-     &          /,8X,'SPOOL COUNTER =',I6)
- 2055   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'WIND FILE BY THE TIME OF THE HOT START',
-     &          /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'PRESSURE FILE BY THE TIME OF THE HOT START',
-     &          /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'ICE FILE BY THE TIME OF THE HOT START',
-     &          /,8X,'SPOOL COUNTER =',I6)
-c
+        IF(NTCYSGW.LT.ITHS.AND.NOUTGW.GT.0) NTCYSGW = ITHS + NSPOOLGW - 1
         IF(NOUTGW.LT.0) THEN
-          IGPP=0
-          IGWP=0
           NSCOUGW=0
-          IGIP=0
           IF((NTCYSGW.LT.ITHS).AND.(NSPOOLGW.GT.0)) THEN
             NTCYSGW=NTCYSGW+((REAL(ITHS)-REAL(NTCYSGW))/
      &              REAL(NSPOOLGW))*REAL(NSPOOLGW)
@@ -2503,122 +1939,28 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
  2056   FORMAT(//,' NEW GLOBAL WIND & pressure & Ice FILEs WILL BE STARTED')
         ENDIF
 
-        IF(NOUTGW.EQ.-2) THEN
-          OPEN(73,file=trim(LOCALDIR)//'/'//'fort.73',
-     &          access='DIRECT',recl=nbyte)
-          OPEN(74,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-! TCM V49.64.01 -- ADDED ICE SUPPORT
-          IF(NCICE.NE.0) THEN
-             OPEN(93,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-          ENDIF
-          IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-              write(73,rec=igpp+i) rdes4(i)
-              WRITE(74,REC=IGWP+I) RDES4(I)
-              IF(NCICE.NE.0) write(93,rec=igip+i) rdes4(i)
-              ENDDO
-            igpp=igpp+8
-            IGWP=IGWP+8
-            if(ncice.ne.0) igip = igip+8
-            DO I=1,6
-              write(73,rec=igpp+i) rid4(i)
-              WRITE(74,REC=IGWP+I) RID4(I)
-              IF(NCICE.NE.0) write(93,rec=igip+i) rid4(i)
-            ENDDO
-            igpp=igpp+6
-            IGWP=IGWP+6
-            if(ncice.ne.0) igip = igip+6
-            DO I=1,6
-              write(73,rec=igpp+i) aid4(i)
-              WRITE(74,REC=IGWP+I) AID4(I)
-              IF(NCICE.NE.0) write(93,rec=igip+i) aid4(i)
-            ENDDO
-            igpp=igpp+6
-            IGWP=IGWP+6
-            if(ncice.ne.0) igip = igip+6
-          ENDIF
-          IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-              write(73,rec=igpp+i) rdes8(i)
-              WRITE(74,REC=IGWP+I) RDES8(I)
-              IF(NCICE.NE.0) write(93,rec=igip+i) rdes8(i)
-            ENDDO
-            igpp=igpp+4
-            IGWP=IGWP+4
-            if(ncice.ne.0) igip = igip+4
-            DO I=1,3
-              write(73,rec=igpp+i) rid8(i)
-              WRITE(74,REC=IGWP+I) RID8(I)
-              IF(NCICE.NE.0) write(93,rec=igip+i) rid8(i)
-            ENDDO
-            igpp=igpp+3
-            IGWP=IGWP+3
-            if(ncice.ne.0) igip = igip+3
-            DO I=1,3
-              write(73,rec=igpp+i) aid8(i)
-              WRITE(74,REC=IGWP+I) AID8(I)
-              IF(NCICE.NE.0) write(93,rec=igip+i) aid8(i)
-            ENDDO
-            igpp=igpp+3
-            IGWP=IGWP+3
-            if(ncice.ne.0) igip = igip+3
-          ENDIF
-          WRITE(73,rec=igpp+1) ndsetsw
-          WRITE(73,rec=igpp+2) np
-          WRITE(73,rec=igpp+3) dt*nspoolgw
-          WRITE(73,rec=igpp+4) nspoolgw
-          WRITE(73,rec=igpp+5) 2
-          IGPP=IGPP+5
-          CLOSE(73)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-          WRITE(74,REC=IGWP+1) NDSETSW
-          WRITE(74,REC=IGWP+2) NP
-          WRITE(74,REC=IGWP+3) DT*NSPOOLGW
-          WRITE(74,REC=IGWP+4) NSPOOLGW
-          WRITE(74,REC=IGWP+5) 2
-          IGWP=IGWP+5
-          CLOSE(74)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-! TCM V49.64.01 -- ADDED ICE SUPPORT
-          IF(NCICE.NE.0) THEN
-             WRITE(93,REC=IGIP+1) NDSETSW
-             WRITE(93,REC=IGIP+2) NP
-             WRITE(93,REC=IGIP+3) DT*NSPOOLGW
-             WRITE(93,REC=IGIP+4) NSPOOLGW
-             WRITE(93,REC=IGIP+5) 2
-             IGIP=IGIP+5
-             CLOSE(93)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-          ENDIF
-        ENDIF
-
 Casey 090310: Added the possibility for NOUTGW = -4.
       IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
          if (write_local_files.eqv..false.) then  
             CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
-     $         NP_G, NP, HEADER73)
-            IGPP=2
+     &         NP_G, NP, HEADER73)
             CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
-     $        NP_G, NP, HEADER74)
-            IGWP=2
+     &        NP_G, NP, HEADER74)
 ! TCM V49.64.01 -- ADDED ICE SUPPORT
             IF (NCICE.NE.0) THEN
                CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
-     $           NP_G, NP, HEADER93)
-               IGIP=2
+     &           NP_G, NP, HEADER93)
             ENDIF
             
          else
             CALL OPEN_GBL_FILE(73, TRIM(LOCALDIR)//'/'//'fort.73',
-     $         NP_G, NP, HEADER73)
-            IGPP=2
+     &         NP_G, NP, HEADER73)
             CALL OPEN_GBL_FILE(74, TRIM(LOCALDIR)//'/'//'fort.74',
-     $        NP_G, NP, HEADER74)
-            IGWP=2
+     &        NP_G, NP, HEADER74)
 ! TCM V49.64.01 -- ADDED ICE SUPPORT
             IF (NCICE.NE.0) THEN
                CALL OPEN_GBL_FILE(93, TRIM(LOCALDIR)//'/'//'fort.93',
-     $           NP_G, NP, HEADER93)
-               IGIP=2
+     &           NP_G, NP, HEADER93)
             ENDIF
          endif
             
@@ -2630,50 +1972,6 @@ Casey 090310: Added the possibility for NOUTGW = -4.
         IF ( (ABS(NRS).EQ.1).OR.(ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)
      &       .OR.(ABS(NRS).EQ.5) ) THEN
 
-!#ifdef CSWAN
-Casey 090310: Added the output of radiation stress gradients.
-           IF(NOUTGW.LT.0)THEN
-              IGRadS=0
-           ENDIF
-           IF(NOUTGW.EQ.-2)THEN
-              OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
-     &            ACCESS='DIRECT',RECL=NBYTE)
-              IF(NBYTE.EQ.4) THEN
-                 DO I=1,8
-                    WRITE(164,REC=IGRadS+I) RDES4(I)
-                 ENDDO
-                 IGRadS=IGRadS+8
-                 DO I=1,6
-                    WRITE(164,REC=IGRadS+I) RID4(I)
-                 ENDDO
-                 IGRadS=IGRadS+6
-                 DO I=1,6
-                    WRITE(164,REC=IGRadS+I) AID4(I)
-                 ENDDO
-                 IGRadS=IGRadS+6
-              ENDIF
-              IF(NBYTE.EQ.8) THEN
-                 DO I=1,4
-                    WRITE(164,REC=IGRadS+I) RDES8(I)
-                 ENDDO
-                 IGRadS=IGRadS+4
-                 DO I=1,3
-                    WRITE(164,REC=IGRadS+I) RID8(I)
-                 ENDDO
-                 IGRadS=IGRadS+3
-                 DO I=1,3
-                    WRITE(164,REC=IGRadS+I) AID8(I)
-                 ENDDO
-                 IGRadS=IGRadS+3
-              ENDIF
-              WRITE(164,REC=IGRadS+1) NDSETSW
-              WRITE(164,REC=IGRadS+2) NP
-              WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
-              WRITE(164,REC=IGRadS+4) NSPOOLGW
-              WRITE(164,REC=IGRadS+5) 2
-              IGRadS=IGRadS+5
-              CLOSE(164)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-           ENDIF
            IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
               if (write_local_files.eqv..false.) then
                  CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
@@ -2682,27 +1980,7 @@ Casey 090310: Added the output of radiation stress gradients.
                  CALL OPEN_GBL_FILE(164, TRIM(LOCALDIR)//'/'//'rads.64',
      &               NP_G, NP, HEADER74)
               endif
-              IGRadS=2
            ENDIF
-        ENDIF
-!#endif
-
-        IF(NOUTGW.EQ.2) THEN
-          open(73,file=TRIM(LOCALDIR)//'/'//'fort.73',
-     &          access='DIRECT',recl=nbyte)
-c         WRITE(73,REC=ITempStp+1) ndsetsw  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-          close(73)                         ! DO THIS TO FLUSH THE WRITE BUFFER
-          OPEN(74,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-c         WRITE(74,REC=ITEMPSTP+1) NDSETSW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-          CLOSE(74)                         ! DO THIS TO FLUSH THE WRITE BUFFER
-! TCM V49.64.01 -- ADDED ICE SUPPORT
-          IF(NCICE.NE.0) THEN
-             OPEN(93,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-c         WRITE(93,REC=ITempStp+1) ndsetsw  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-             CLOSE(93)                      ! DO THIS TO FLUSH THE WRITE BUFFER
-          ENDIF
         ENDIF
 
 C... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
@@ -2715,7 +1993,6 @@ C...
      &          /,8X,'SPOOL COUNTER =',I8)
 
         IF ((NDDT.NE.0).AND.(NOUTGE.LT.0)) THEN
-           IGBP=0
            NSCOUGB=0
            IF(NTCYSGB.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGB = ITHS + NSPOOLGE - 1 
            IF((NTCYSGB.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
@@ -2733,46 +2010,6 @@ C...
  1052      FORMAT(//,' A NEW GLOBAL BATHYMETRY FILE WILL BE STARTED')
         ENDIF
 
-        IF ((NDDT.NE.0).AND.(NOUTGE.EQ.-2)) THEN
-           OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-           IF(NBYTE.EQ.4) THEN
-              DO I=1,8
-                WRITE(76,REC=IGBP+I) RDES4(I)
-              ENDDO
-              IGBP=IGBP+8
-              DO I=1,6
-                 WRITE(76,REC=IGBP+I) RID4(I)
-              ENDDO
-              IGBP=IGBP+6
-              DO I=1,6
-                 WRITE(76,REC=IGBP+I) AID4(I)
-              ENDDO
-              IGBP=IGBP+6
-           ENDIF
-           IF(NBYTE.EQ.8) THEN
-              DO I=1,4
-                 WRITE(76,REC=IGBP+I) RDES8(I)
-              ENDDO
-              IGBP=IGBP+4
-              DO I=1,3
-                 WRITE(76,REC=IGBP+I) RID8(I)
-              ENDDO
-              IGBP=IGBP+3
-              DO I=1,3
-                 WRITE(76,REC=IGBP+I) AID8(I)
-              ENDDO
-              IGBP=IGBP+3
-           ENDIF
-           WRITE(76,REC=IGBP+1) NDSETSE
-           WRITE(76,REC=IGBP+2) NP
-           WRITE(76,REC=IGBP+3) DT*NSPOOLGE
-           WRITE(76,REC=IGBP+4) NSPOOLGE
-           WRITE(76,REC=IGBP+5) 1
-           IGBP=IGBP+5
-           CLOSE(76)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-        ENDIF
-
         IF ((NDDT.NE.0).AND.
      &            ((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4))) THEN
            if (write_local_files.eqv..false.) then
@@ -2782,15 +2019,7 @@ C...
               CALL OPEN_GBL_FILE(76, TRIM(LOCALDIR)//'/'//'fort.76',
      &            NP_G, NP, HEADER63)
            endif
-           IGBP=2
         ENDIF
-        IF ((NDDT.NE.0).AND.(NOUTGE.EQ.2)) THEN
-           OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
-           CLOSE(76)                         ! DO THIS TO FLUSH THE WRITE BUFFER
-        ENDIF
-
 
       ! jgf52.08.08: Create files for nodecode and noff output 
       ! (wet/dry state of nodes and wet/dry state of elements)      

@@ -73,6 +73,8 @@ C  Message-Passing Array space
       REAL(8),ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
       !jgf50.82: Create a flag for unrecoverable issue on a subdomain
       LOGICAL :: subdomainFatalError ! true if mpi_abort should be called
+      LOGICAL :: writers_active = .false.
+      LOGICAL :: hs_writers_active = .false.
 
 C
 C
@@ -222,7 +224,7 @@ C
       call allMessage(DEBUG,"Enter.") 
 #endif
 C
-      IF(MNWPROC > 0) THEN
+      IF(MNWPROC > 0.and.writers_active) THEN
         IF(MYPROC.eq.0) THEN
           DO I=1,MNWPROC
             WRITE(16,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO WRITER ',
@@ -233,7 +235,7 @@ C
         ENDIF
       ENDIF
 
-      IF(MNWPROH > 0) THEN             !st3 100711 for hsfile
+      IF(MNWPROH > 0.and.hs_writers_active) THEN             !st3 100711 for hsfile
         IF(MYPROC.eq.0) THEN
           DO I=1,MNWPROH
             WRITE(16,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO HSWRITER',
@@ -1686,6 +1688,61 @@ C---------------------------------------------------------------------
 C---------------------------------------------------------------------      
       end subroutine MSG_BARRIER
 C---------------------------------------------------------------------      
+!=============================================================================
+
+!=============================================================================
+C--------------------------------------------------------------------- 
+C DW, 2024   
+      SUBROUTINE MSG_RScalar_Reduce( OP, vali, valo, loco )
+       IMPLICIT NONE
+
+       character (LEN=*):: OP
+       REAL (8):: vali, valo 
+       REAL (8), intent(inout), optional:: loco !/ in - rank, out - max/min rank
+
+       REAL (8):: tempi(2), tempo(2)
+C      
+       call setMessageSource("msg_rvecreduce")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+       call allMessage(DEBUG,"Enter.") 
+#endif
+C       
+       SELECT CASE(OP)
+       CASE ('max','MAX')
+         IF ( present(loco) ) THEN
+           tempi  = (/ vali, loco /) 
+           CALL MPI_Reduce( tempi, tempo, 1, MPI_2DOUBLE_PRECISION,
+     &         MPI_MAXLOC, 0, comm, ierr ) 
+           valo = tempo(1)  
+           loco = tempo(2)  
+         ELSE      
+           CALL MPI_Reduce( vali, valo, 1, DBLETYPE, MPI_MAX, 0, 
+     &         comm, ierr )
+         END IF
+       CASE ('min','MIN')
+         IF ( present(loco) ) THEN  
+           tempi  = (/ vali, loco /) 
+           CALL MPI_Reduce( tempi, tempo, 1, MPI_2DOUBLE_PRECISION,
+     &         MPI_MINLOC, 0, comm, ierr ) 
+           valo = tempo(1)  
+           loco = tempo(2)  
+         ELSE
+           CALL MPI_Reduce( vali, valo, 1, DBLETYPE, MPI_MIN, 0, 
+     &        comm, ierr )
+         END IF
+       CASE ('sum','SUM')
+         CALL MPI_Reduce( vali, valo, 1, DBLETYPE, MPI_SUM, 0, 
+     &      comm, ierr ) 
+       END SELECT    
+C
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+       call allMessage(DEBUG,"Return.")
+#endif
+       call unsetMessageSource() 
+
+       RETURN       
+      END SUBROUTINE MSG_RScalar_Reduce        
+C---------------------------------------------------------------------
 !=============================================================================
 
       END MODULE MESSENGER

@@ -303,6 +303,11 @@ Casey 180318: Added NWS=13
       LOGICAL :: found_NWS14Grib2NetCdf_Namelist = .false. 
       NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
 
+      ! AMAN TEJASWI
+      LOGICAL :: found_InterpInset_Namelist = .FALSE.
+      LOGICAL :: UseInterpInset
+      NAMELIST /InterpInset/ UseInterpInset,Pfile_inset, Wfile_inset, InsetControlFile
+
       logical :: foundWetDryControlNamelist = .false. ! for namelist 
       logical :: outputNodeCode = .false.
       logical :: outputNOFF = .false.
@@ -310,11 +315,17 @@ Casey 180318: Added NWS=13
       logical :: StatPartWetFix = .false.  ! tcm v53.01.02
       integer :: How2FixStatPartWet = 0    ! tcm v52.01.02 (Can also be 1 in v54.)
 
+
+
+       
+
+
 !JLW: add subgrid namelist control
       logical :: foundSubgridControlNamelist = .false.
-      character(200) :: subgridFilename
+      character(200) :: subgridFilename = 'null'
       logical :: level0 = .true. 
       logical :: level1 = .false.
+      logical :: phi_time_derivative = .false.
 
       ! jgf52.08.02: For inundation output control. Wanted to just
       ! use the variables of the same name from the write_output module,
@@ -326,6 +337,7 @@ Casey 180318: Added NWS=13
       ! jgf: added support for water level correction
       logical :: foundCorrectionControlNamelist = .false. 
       character(len=2048) :: dynamicWaterLevelCorrectionFileName='null' ! water level correction file 
+      character(len=64) :: dynamicWaterLevelCorrectionMethod='default' ! method specifiation for water level correction
       integer :: dynamicWaterLevelCorrectionSkipSnaps=0 ! number of correction data sets to skip 
       real(8) :: dynamicWaterLevelCorrectionMultiplier = 1.d0 ! multiply each correction value by this
       real(8) :: dynamicWaterLevelCorrectionRampStart = 0.d0 ! seconds after run start
@@ -335,6 +347,21 @@ Casey 180318: Added NWS=13
 C     VEW1D channel namelist 11/06/2023 sb
       logical :: foundVEW1DChannelControlNamelist = .false. 
       logical :: activateVEW1DChannelWetPerimeter
+
+C     Full luni-solar tidal potential namelist: 2024
+      logical:: foundTidalPotentialControlNamelist = .false. 
+      LOGICAL:: UseFullTIPFormula = .FALSE. 
+      INTEGER:: TIPOrder = 2
+      CHARACTER (LEN=24):: TIPStartDate = 'none'
+      CHARACTER (LEN=24):: MoonSunPositionComputeMethod = 'JM' 
+      CHARACTER (LEN=80):: MoonSunCoordFile = 'none'
+      LOGICAL:: UniformResMoonSunTimeData = .TRUE.  
+      LOGICAL:: IncludeNutation = .TRUE.  
+      REAL (8):: k2value = 0.302D0 
+      REAL (8):: h2value = 0.609D0    
+      NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
+     &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
+     &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData  
       
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX

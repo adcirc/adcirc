@@ -538,6 +538,7 @@ C
 !   tcm v50.66.02 -- added timebathycontrol namelist related variables
       INTEGER :: ios_nddt
       INTEGER :: ios_metCon
+      INTEGER :: ios_interpinset
       INTEGER :: ios_tvw
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       INTEGER :: IOS_WC
@@ -547,6 +548,8 @@ Casey 180318: Added NWS=13
 #endif
       ! DW
       INTEGER :: IOS_NWS14Grib2NC
+
+      INTEGER :: IOS_TIPNL 
 
 C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
@@ -560,7 +563,7 @@ C.... "new" formula for computing vel in wetting/drying routine
 C.... DMW
 !JLW: adding subgrid control namelist
       integer :: ios_subgrid
-      namelist /subgridControl/ subgridFilename, level0, level1
+      namelist /subgridControl/ subgridFilename, level0, level1, phi_time_derivative
       ! jgf52.08.02 : For inundation output files.
       namelist /inundationOutputControl/ inundationOutput, inunThresh
 
@@ -569,6 +572,7 @@ C.....tcm v52.30.01 added for Smag_Control
       INTEGER :: IOS_Smag = 0
       ! jgf: Added support for water level correction
       NAMELIST /dynamicWaterLevelCorrectionControl/ dynamicWaterLevelCorrectionFileName,
+     &  dynamicWaterLevelCorrectionMethod,
      &  dynamicWaterLevelCorrectionSkipSnaps, dynamicWaterlevelCorrectionMultiplier,
      &  dynamicWaterLevelCorrectionRampStart, dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
@@ -655,6 +659,22 @@ c... tcm v50.79 added
      &         'The metControl namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
+C-------------------------------------------------------------
+!Aman Tejaswi added namelist for NETCDF Inset
+
+      READ(UNIT = 15, NML = InterpInset,IOSTAT = ios_interpinset)
+      if ( ios_interpinset.ge.0) then
+         found_InterpInset_Namelist  = .true.
+         call logMessage(INFO,
+     &         'The InterpInset namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The InterpInset namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+
+C----------------------------------------------------------------
+
 
 Cobell - Added TVW Namelist
       READ(15,NML=tvwControl,IOSTAT=IOS_TVW)
@@ -701,7 +721,6 @@ Casey 180318: Added NWS=13
      &         'The WindGrib2NetCdf namelist was not found.')
       ENDIF
       REWIND(15)
-
 #endif
 
       READ(UNIT = 15, NML = wetDryControl,IOSTAT = ios_wetDry)
@@ -852,6 +871,18 @@ c..
       endif
       rewind(15)  !Return to the top of the fort.15 file
 
+C  DW
+      read(unit=15,nml=TidalPotentialControl,iostat=IOS_TIPNL)
+      IF( IOS_TIPNL .ge. 0 )THEN
+         foundTidalPotentialControlNamelist = .true. 
+         call logMessage(INFO,
+     &         'The Tidalpotentialcontrol namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The Tidalpotentialcontrol namelist was not found.')
+      ENDIF
+      REWIND(15)
+     
       READ(15,80) RUNDES
 C
       READ(15,80) RUNID
@@ -1437,7 +1468,7 @@ C--Read Elevation Recording Stations
 C...
       READ(15,80) STAEMSG
       READ(STAEMSG,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE
-      IF (ABS(NOUTE).GT.5) THEN
+      IF (ABS(NOUTE).GT.5.OR.ABS(NOUTE).EQ.2) THEN
         print *, "The value of NOUTE is not allowed"
         CALL EXIT(1)
       ENDIF
@@ -1546,7 +1577,7 @@ C--Read Velocity Recording Stations
 C
       READ(15,80) STAVMSG
       READ(STAVMSG,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
-      IF (ABS(NOUTV).GT.5) THEN
+      IF (ABS(NOUTV).GT.5.OR.ABS(NOUTV).EQ.2) THEN
         print *, "Value for NOUTV is not allowable"
         CALL EXIT(1)
       ENDIF
@@ -1657,7 +1688,7 @@ C
 C
         READ(15,80) STACMSG
         READ(STACMSG,*) NOUTC,TOUTSC,TOUTFC,NSPOOLC
-        IF (ABS(NOUTC).GT.2) THEN
+        IF (ABS(NOUTC).GT.1) THEN
           print *, "Value of NOUTC is not allowable"
           CALL EXIT(1)
         ENDIF
@@ -1725,7 +1756,7 @@ C
 C
          READ(15,80) STAMMSG
          READ(STAMMSG,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
-         IF (ABS(NOUTM).GT.5) THEN
+         IF (ABS(NOUTM).GT.5.OR.ABS(NOUTM).EQ.2) THEN
             print *, "Value of NOUTM is not allowable"
             CALL EXIT(1)
          ENDIF
@@ -1838,7 +1869,7 @@ C--Read Global Elevation Data Output
 C
       READ(15,80) OUTGEMSG
       READ(OUTGEMSG,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
-      IF (ABS(NOUTGE).GT.7) THEN
+      IF (ABS(NOUTGE).GT.7.OR.ABS(NOUTGE).EQ.2) THEN
          print *, "NOUTGE does not have an allowable value"
          CALL EXIT(1)
       ENDIF
@@ -1847,7 +1878,7 @@ C--Read Global Velocity Data Output
 C
       READ(15,80) OUTGVMSG
       READ(OUTGVMSG,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
-      IF (ABS(NOUTGV).GT.7) THEN
+      IF (ABS(NOUTGV).GT.7.OR.ABS(NOUTGV).EQ.2) THEN
         print *, "NOUTGV does not have an allowable value"
         CALL EXIT(1)
       ENDIF
@@ -1857,7 +1888,7 @@ C
       IF (C2D_PTrans.or.C3D_PTrans) THEN
         READ(15,80) OUTGCMSG
         READ(OUTGCMSG,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
-        IF (ABS(NOUTGC).GT.2) THEN
+        IF (ABS(NOUTGC).GT.1) THEN
           print *, "NOUTGC does not have an allowable value"
           CALL EXIT(1)
         ENDIF
@@ -1866,8 +1897,7 @@ C
       IF (NWS.NE.0) THEN
         READ(15,80) OUTGWMSG
         READ(OUTGWMSG,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
-Casey 090302: Changed the following line for ABS(NOUTGW).EQ.4
-        IF (ABS(NOUTGW).GT.7) THEN
+        IF (ABS(NOUTGW).GT.7.OR.ABS(NOUTGW).EQ.2) THEN
           print *, "NOUTGW does not have an allowable value"
           CALL EXIT(1)
         ENDIF

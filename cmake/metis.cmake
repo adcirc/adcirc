@@ -70,11 +70,31 @@ add_library(metis STATIC ${METIS_SOURCES})
 target_include_directories(metis PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/metis/Lib)
 set_target_properties(metis PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-# ...In gcc-10+, we need to ignore some things that were elevated to errors. This is a thirdparty library, so adcirc
-# devs are in nofix mode
-get_filename_component(C_COMPILER_NAME ${CMAKE_C_COMPILER} NAME)
-if(${C_COMPILER_NAME} MATCHES "gcc.*" OR ${C_COMPILER_NAME} MATCHES "cc")
+if(${CMAKE_C_COMPILER_ID} MATCHES "GNU")
+  # For GCC >= 10, we need to add -Wno-implicit-function-declaration and -Wno-incompatible-pointer-types
   if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_C_COMPILER_VERSION} VERSION_EQUAL 10)
-    set_target_properties(metis PROPERTIES COMPILE_FLAGS "-Wno-implicit-function-declaration")
+    set(ADDITIONAL_METIS_COMPILER_FLAGS
+        "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-implicit-function-declaration -Wno-incompatible-pointer-types -Wno-shift-op-parentheses -Wno-format-security"
+    )
+    message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
+    set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
   endif()
+elseif(${CMAKE_C_COMPILER_ID} MATCHES "IntelLLVM")
+  # For IntelLLVM, we need to add -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses
+  set(ADDITIONAL_METIS_COMPILER_FLAGS
+      "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses"
+  )
+  message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
+  set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
+elseif(${CMAKE_C_COMPILER_ID} MATCHES "Intel")
+  # For Intel (classic), we need to add -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses
+  set(ADDITIONAL_METIS_COMPILER_FLAGS "${ADDITIONAL_METIS_COMPILER_FLAGS} -diag-disable 167")
+  message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
+  set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
+elseif(${CMAKE_C_COMPILER_ID} MATCHES "NVIDIA")
+  # For nvc, suppress diagnostic warnings that are not part of ADCIRC
+  set(ADDITIONAL_METIS_COMPILER_FLAGS
+      "${ADDITIONAL_METIS_COMPILER_FLAGS} --display_error_number --diag_suppress 550 --diag_suppress 177 --diag_suppress 167"
+  )
+  set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
 endif()

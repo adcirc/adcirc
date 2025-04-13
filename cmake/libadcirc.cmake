@@ -28,7 +28,6 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
@@ -38,10 +37,7 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/control.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/writer.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/write_output.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
@@ -58,8 +54,26 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/astronomic.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemerides.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sun.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/moon.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F)
+
+if(NETCDF_WORKING)
+  set(LIBADC_SOURCES
+      ${LIBADC_SOURCES}
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
+endif()
+
+if(XDMF_WORKING)
+  set(LIBADC_SOURCES ${LIBADC_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
+endif()
 
 if(BUILD_LIBADCIRC_STATIC)
 
@@ -89,6 +103,12 @@ if(BUILD_LIBADCIRC_SHARED)
 
   addcompilerflags(libadcirc_shared)
   addmpi(libadcirc_shared)
+
+  addnetcdflibraries(libadcirc_shared)
+  addgrib2libraries(libadcirc_shared)
+  addxdmflibraries(libadcirc_shared)
+  adddatetimelibraries(libadcirc_shared)
+  addversionlibrary(libadcirc_shared)
 
   add_dependencies(libadcirc_shared version mkdir2)
   target_link_libraries(libadcirc_shared mkdir2)

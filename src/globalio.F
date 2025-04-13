@@ -233,14 +233,6 @@ C! CMPI
                   if ( descript % isStation.eqv..false. ) then
                      if ( nodecode(i).eq.0 ) then
                         buf(iglobal-ioffset) = descript % alternate_value
-#ifdef ADCNETCDF
-#ifdef WDVAL_NETCDF
-! DW to prevent NaN in matlab
-
-                        buf(iglobal-ioffset) = descript % alternate_value
-     &                      + sign(100.0, descript%alternate_value)
-#endif
-#endif
                      endif
                   endif
                endif
@@ -332,19 +324,11 @@ C! CMPI
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
           j = 2*(iglobal - ioffset) - 1
-          if(descript%considerWetDry.and.nodecode(i).eq.0)then
+          if (descript%considerWetDry .and. 
+     &         (.not.descript%isStation) .and. 
+     &         (nodecode(i).eq.0) ) then
             buf(j)     = descript % alternate_value
             buf(j + 1) = descript % alternate_value
-
-#ifdef ADCNETCDF
-#ifdef WDVAL_NETCDF
-            buf(j)     = descript % alternate_value +
-     &             sign(100.0,descript%alternate_value)
-            buf(j + 1) = descript % alternate_value +
-     &             sign(100.0,descript%alternate_value)
-#endif
-#endif
-
           else
             buf(j)     = descript % array(i)
             buf(j + 1) = descript % array2(i)
@@ -752,84 +736,6 @@ C
  1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
       !--------------------------------------------------------------
       end subroutine writeFullFormat
-      !--------------------------------------------------------------
-
-
-      !--------------------------------------------------------------
-      !      S U B R O U T I N E  W R I T E   B I N A R Y F O R M A T 
-      !--------------------------------------------------------------
-      ! Subroutine to write binary format output files
-      !--------------------------------------------------------------
-      subroutine writeBinaryFormat(descript,timeloc,it)
-         use global
-         use sizes
-         implicit none
-         type(outputdatadescript_t),intent(in) :: descript
-         integer,intent(in)                    :: it
-         real(8)                              :: timeloc
-         integer                               :: i
-
-         IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
-     &         .and.(.not.WRITE_LOCAL_FILES)) THEN
-            OPEN(descript%lun,FILE=trim(descript%file_name),
-     &           ACCESS='DIRECT',RECL=NBYTE)
-            WRITE(descript % lun,REC=descript % filepos+1) TimeLoc
-            WRITE(descript % lun,REC=descript % filepos+2) IT
-            descript%filepos = descript%filepos + 2
-            IF ( descript % num_items_per_record .eq. 1 ) THEN
-               DO I=1, descript % num_fd_records
-                  WRITE(descript % lun,REC=descript % filepos+I)
-     &               descript % array_g(I)
-               END DO
-            ENDIF
-            IF ( descript % num_items_per_record .eq. 2 ) THEN
-               DO I=1, descript % num_fd_records
-                  WRITE(descript % lun,REC=descript % filepos+2*I-1)
-     &                descript % array_g(I)
-                  WRITE(descript % lun,REC=descript % filepos+2*I)
-     &                descript % array2_g(I)
-               END DO
-            ENDIF
-            CLOSE(descript%lun)
-         ENDIF
-
-         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
-            OPEN(descript % lun,FILE=TRIM(descript % file_name),
-     &           ACCESS='DIRECT',RECL=NBYTE)
-            WRITE(descript % lun,REC=descript % filepos+1) TimeLoc
-            WRITE(descript % lun,REC=descript % filepos+2) IT
-            descript % filepos = descript % filepos + 2
-            IF ( descript % num_items_per_record .eq. 1 ) THEN
-               IF ((trim(descript % field_name) .eq. 'Elev').and.
-     &             (descript % ConsiderWetDry .EQV. .TRUE.)) THEN
-                  DO I=1, descript % num_records_this
-                     if(NODECODE(I).EQ.1) THEN
-                        WRITE(descript % lun,REC=descript % filepos+I) descript % array(I)
-                     ELSE
-                        WRITE(descript % lun,REC=descript % filepos+I)
-     &                    descript % alternate_value !-99999.0 for dry nodes
-                     ENDIF
-                  END DO
-               ELSE
-                  DO I=1, descript % num_records_this
-                     WRITE(descript % lun,REC=descript % filepos+I) descript % array(I)
-                  END DO
-               ENDIF
-            ENDIF
-            IF ( descript % num_items_per_record .eq. 2 ) THEN
-               DO I=1, descript % num_records_this
-                  !tcmv48.4618 -- changed from array_g to array
-                  WRITE(descript % lun,REC=descript % filepos+2*I-1) descript % array(I)
-                  !tcmv48.4618 -- changed from array2_g to array2
-                  WRITE(descript % lun,REC=descript % filepos+2*I)   descript % array2(I)
-               END DO
-            ENDIF
-            CLOSE(descript % lun)
-         ENDIF
-         descript % filepos = descript % filepos + descript % num_records_this
-         return
-      !--------------------------------------------------------------
-      end subroutine writeBinaryFormat 
       !--------------------------------------------------------------
 
 
@@ -1440,6 +1346,28 @@ C
      &      'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header81
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E  H E A D E R 8 3
+      !--------------------------------------------------------------
+      ! Concentration Field for all nodes: fort.83
+      !--------------------------------------------------------------
+      subroutine header83(lun, size_this)
+      USE SIZES
+      USE GLOBAL
+      implicit none
+      integer :: lun, size_this
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ndsetsc, size_this, dtdp*nspoolgc, nspoolgc, 1,
+     &                 FileFmtVersion
+
+1000  FORMAT(1X,A32,2X,A24,2X,A24)
+1010  FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
+     &      'FileFmtVersion: ',I10)
+
+      !--------------------------------------------------------------
+      end subroutine header83
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------

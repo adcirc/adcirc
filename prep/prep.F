@@ -2281,6 +2281,18 @@ C
             write(15,*) '! -- End Met Control Namelist --'
          endif
 
+
+         IF( found_InterpInset_Namelist ) then 
+            WRITE(15,*) "!---Begin InterpInset Namelist-----!"
+            WRITE(15,*) "&InterpInset "
+            WRITE(15,*) "UseInterpInset=", UseInterpInset,","
+            WRITE(15,*) "Pfile_inset='", TRIM(ADJUSTL(Pfile_inset)),"',"
+            WRITE(15,*) "Wfile_inset='", TRIM(ADJUSTL(Wfile_inset)),"',"
+            WRITE(15,*) "InsetControlfile='",TRIM(ADJUSTL(InsetControlFile)),"',"
+            WRITE(15,*) "/"  
+            WRITE(15,*) "!----End InterpInset Namelist------!"
+         ENDIF   
+
          if (found_tvw_nml) then
              write(15,*) '! -- Begin TVW Control Namelist --'
              write(15,*) "&TVWControl "
@@ -2319,13 +2331,29 @@ Casey 180318: Added NWS=13
          IF ( found_NWS14Grib2NetCdf_namelist ) THEN
              write(15,'(a,L3,a)') "&WindGrib2NetCdf"//
      &          " read_NWS14_NetCdf_using_core_0 = ", read_NWS14_NetCdf_using_core_0, "/"
-
          END IF
 #endif 
 
+         ! Namelist of input variable for the full luni-Solar tidal potential function 
+         IF ( foundTidalPotentialControlNamelist ) THEN
+             write(15,'(a,L3,a)') "&TidalPotentialControl"//
+     &          " UseFullTIPFormula = ", UseFullTIPFormula, ","
+             write(15,'(a,I5,a)') " TIPORder = ", TIPOrder, ","
+             write(15,'(a)') " TIPStartDate = '"//trim(TIPStartDate)//"',"
+             write(15,'(a)') " MoonSunPositionComputeMethod = '"
+     &                       //trim(MoonSunPositionComputeMethod)//"',"
+             write(15,'(a)') " MoonSunCoordFile = '"
+     &                       //trim(MoonSunCoordFile)//"',"
+             write(15,'(a,L3,a)') " UniformResMoonSunTimeData = ",
+     &        UniformResMoonSunTimeData, "," 
+             write(15,'(a,L3,a)') " IncludeNutation = ", IncludeNutation, ","
+             write(15,'(a,F15.9,a)') " k2Value = ", k2Value, ","
+             write(15,'(a,F15.9,a)') " h2Value = ", h2Value," /"
+         END IF
+
          ! NCSU Subdomain Modeling
          if (FOUND_SM_NML) then
-         WRITE(15,*) "&subdomainModeling subdomainOn=",subdomainOn," /"
+           WRITE(15,*) "&subdomainModeling subdomainOn=",subdomainOn," /"
          endif
 
 !JLW: adding subgridcontrol namelist
@@ -2334,7 +2362,8 @@ Casey 180318: Added NWS=13
      &         "&subgridControl",
      &         " subgridFilename='",trim(adjustl(subgridFilename)),
      &         "' level0=",level0,
-     &         " level1=",level1," /"
+     &         " level1=",level1,
+     &         " phi_time_derivative=",phi_time_derivative," /"
          endif
 
 
@@ -2367,9 +2396,11 @@ c...     tcm v52.30.01 additions for Smag_Control Namelist
          ENDIF
          ! jgf: dynamicWaterlevel control namelist
          if (foundCorrectionControlNamelist) then
-            write(15,'(a,a, a,i0, a,f15.8, a,a, a,f20.8, a,f20.8, a)')
+            write(15,'(a,a, a,a, a,i0, a,f15.8, a,a, a,f20.8, a,f20.8, a)')
      &       '&dynamicWaterLevelCorrectionControl dynamicWaterLevelCorrectionFileName="',
      &       trim(adjustl(dynamicWaterLevelCorrectionFileName)),
+     &       '",  dynamicWaterLevelCorrectionMethod="',
+     &       trim(adjustl(dynamicWaterLevelCorrectionMethod)),
      &       '",  dynamicWaterLevelCorrectionSkipSnaps=',dynamicWaterLevelCorrectionSkipSnaps,
      &       ', dynamicWaterlevelCorrectionMultiplier=',dynamicWaterLevelCorrectionMultiplier,
      &       ', dynamicWaterLevelCorrectionRampReferenceTime="',
@@ -3057,7 +3088,7 @@ C
                DO IPROC=1, NPROC
                   IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d.
                      !WRITE(SDU(IPROC),50) FLUX_VAL
-                     WRITE(SDU(IPROC),*) TRIM(FLUX_MSG)
+                     WRITE(SDU(IPROC),'(A)') TRIM(FLUX_MSG)
                   ENDIF
                END DO
             END DO
@@ -8931,9 +8962,8 @@ C     we collected in read_global.F and stored in pre_global.F.
      &   base_date, MNE, NBOU,
      &   NVEL, NOPE, MNP, SL0, SF0, NBVV, NVDLL, NBDV, NVELL, X, Y,
      &   IBTYPE, IBTYPEE, SL1, SF1, NODECODE, G, FileFmtRev,
-     &   FileFmtMinor, FileFmtMajor, im, iestp, nscoue, ivstp, nscouv,
-     &   icstp, nscouc, ipstp, iwstp, nscoum, igep, nscouge, igvp,
-     &   nscougv, igcp, nscougc, igpp, igwp, nscougw, NM,
+     &   FileFmtMinor, FileFmtMajor, im, nscoue, nscouv,
+     &   nscouc, nscoum, nscouge, nscougv, nscougc, nscougw, NM,
      &   DP, RUNDES, AGRID, title, institution, source, history,
      &   references, comments, host, convention, contact, DT, ihot,
      &   ics, nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
@@ -8972,7 +9002,6 @@ C++
       CALL initNetCDFOutputFile(UMaxDescript, reterr)
       CALL initNetCDFOutputFile(PrMinDescript, reterr)
       CALL initNetCDFOutputFile(WVMaxDescript, reterr)
-      CALL initNetCDFOutputFile(RSMaxDescript,reterr)
       if (inundationOutput.eqv..true.) then
          CALL initNetCDFOutputFile(InundationTimeDescript,reterr)
          CALL initNetCDFOutputFile(MaxInunDepthDescript,reterr)
@@ -8998,6 +9027,7 @@ C++
       ! dw: added NRS == 5 for NEMS support
       IF ((NRS.EQ.3).OR.(NRS.EQ.4).OR.(NRS.EQ.5)) THEN 
         CALL initNetCDFOutputFile(RSDescript,reterr)
+        CALL initNetCDFOutputFile(RSMaxDescript,reterr)
       ENDIF
       ! tcm v50.75 moved ifdef adcswan to here
 #ifdef ADCSWAN

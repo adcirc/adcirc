@@ -153,7 +153,7 @@ C-----------------------------------------------------------------------
               ENDDO
           ELSEIF(myproc.GT.mnproc-1.and.myproc.LT.mnproc+mnwproc)THEN
               CALL mpi_recv(n,1,mpi_integer,0,0,mpi_comm_adcirc,mpistat,ierr)
-              allocate(labels_g(1:n))
+              if (.not.allocated(labels_g)) allocate(labels_g(1:n))   !tcm 20240804 added test for allocated
               CALL mpi_recv(labels_g,n,mpi_integer,0,0,mpi_comm_adcirc,mpistat,ierr)
           ENDIF
 
@@ -977,12 +977,15 @@ C     subroutine is only called by processor 0.
 C-----------------------------------------------------------------------
       subroutine writer_pause()
       use global
-      use messenger, only: tag, comm_writeh
+      use messenger, only: tag, comm_writeh, writers_active
       use mpi
       implicit none
       integer i
       integer ierr
-C
+
+      if(.not.writers_active)return
+      writers_active = .false.
+
       call setMessageSource("writer_pause")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -1082,11 +1085,14 @@ C...  Main loop
 !
       subroutine HSWRITER_PAUSE()
       use global
-      use messenger, only: tag, comm_writeh
+      use messenger, only: tag, comm_writeh,hs_writers_active
       use mpi
       implicit none
       integer i
       integer ierr
+
+      if(.not.hs_writers_active)return
+      hs_writers_active = .false.
 
       DO I=1,MNWPROH
          CALL MPI_SEND( SIG_PAUSE, 1, MPI_INTEGER, MNPROC,
@@ -1166,23 +1172,23 @@ C-----------------------------------------------------------------------
         ipack( 5) = NE_G
         ipack( 6) = hss%lun
         ipack( 7) = FileFmtVersion
-        ipack( 8) = IESTP
+        ipack( 8) = 0
         ipack( 9) = NSCOUE
-        ipack(10) = IVSTP
+        ipack(10) = 0
         ipack(11) = NSCOUV
-        ipack(12) = ICSTP
+        ipack(12) = 0
         ipack(13) = NSCOUC
-        ipack(14) = IPSTP
-        ipack(15) = IWSTP
+        ipack(14) = 0
+        ipack(15) = 0
         ipack(16) = NSCOUM
-        ipack(17) = IGEP
+        ipack(17) = 0
         ipack(18) = NSCOUGE
-        ipack(19) = IGVP
+        ipack(19) = 0
         ipack(20) = NSCOUGV
-        ipack(21) = IGCP
+        ipack(21) = 0
         ipack(22) = NSCOUGC
-        ipack(23) = IGPP
-        ipack(24) = IGWP
+        ipack(23) = 0
+        ipack(24) = 0
         ipack(25) = NSCOUGW
         ipack(26) = NHSINC  !tcm v51.26
 
@@ -1212,23 +1218,13 @@ C-----------------------------------------------------------------------
         NE_G           = ipack( 5)
         hss%lun        = ipack( 6)
         FileFmtVersion = ipack( 7)
-        IESTP          = ipack( 8)
         NSCOUE         = ipack( 9)
-        IVSTP          = ipack(10)
         NSCOUV         = ipack(11)
-        ICSTP          = ipack(12)
         NSCOUC         = ipack(13)
-        IPSTP          = ipack(14)
-        IWSTP          = ipack(15)
         NSCOUM         = ipack(16)
-        IGEP           = ipack(17)
         NSCOUGE        = ipack(18)
-        IGVP           = ipack(19)
         NSCOUGV        = ipack(20)
-        IGCP           = ipack(21)
         NSCOUGC        = ipack(22)
-        IGPP           = ipack(23)
-        IGWP           = ipack(24)
         NSCOUGW        = ipack(25)
         iNHSINC        = ipack(26) !tcm v51.26
         
@@ -1470,30 +1466,30 @@ C     collect up the data from subdomains if running in parallel
          ENDIF
 C
          IF (WRITER_ID /= 0) THEN
-            WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0   ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0   ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) ICSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0   ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IPSTP   ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IWSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0   ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
+            WRITE(hss % lun,REC=IHOTSTP) 0   ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGEP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0    ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGVP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0    ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGCP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0    ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
 
-            WRITE(hss % lun,REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
-            WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) 0    ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
+            WRITE(hss % lun,REC=IHOTSTP) 0    ; IHOTSTP = IHOTSTP + 1 ! Note: Writing a zero since this value is not used, but format can remain unchanged
             WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
          ENDIF
       CASE(2) ! ascii?

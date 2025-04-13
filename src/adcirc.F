@@ -94,6 +94,9 @@ C******************************************************************************
       MODULE ADCIRC_Mod
 C******************************************************************************
 C******************************************************************************
+#ifdef CMPI
+      USE mpi
+#endif
 
       IMPLICIT NONE
       PUBLIC
@@ -122,7 +125,7 @@ C******************************************************************************
      &   nolica, nolicat, nolifa, nscreen, nstae, nt, screenunit,
      &   version_number, initLogging, setMessageSource, screenMessage,
      &   openLogFile, unsetMessageSource, np_global, rnp_global,
-     &   scratchMessage, CTIP, L_N, writer_id
+     &   scratchMessage, CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
      &   initVEW1DChannelWetPerimeter
       USE ADC_CONSTANTS, ONLY: g, rhowat0
@@ -153,6 +156,10 @@ C
       INTEGER :: argcount ! number of command line arguments
       CHARACTER(2048) :: cmdlinearg ! a single command line argument
       INTEGER :: i        ! command line argument counter
+
+      !
+      REAL (8):: start_time = 0.D0, end_time = 0.D0
+
       !
       ! jgf51.52.07: Added command line option to just write out
       ! the ADCIRC version number and exit. This is to allow 
@@ -234,6 +241,7 @@ C
          WRITE(ScreenUnit,'(a)')"ADCIRC Commit hash is "//ADC_HASH
       ENDIF
 
+      
       !jgf49.44: Allocate memory for reading and writing full domain arrays
       IF ( (MNPROC.gt.1).and.
      &        ( (myProc.eq.0)
@@ -343,6 +351,8 @@ C...  attached to each node
       END IF
 
       !jgf: Initialize water level offset if needed
+      allocate(dynamicWaterLevelCorrectionDelta(np)) !time difference in offset tgaContOffset
+      dynamicWaterLevelCorrectionDelta=0.D0
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          allocate(dynamicWaterLevelCorrection1(np))
          allocate(dynamicWaterLevelCorrection2(np)) ! used in timestepping
@@ -350,6 +360,7 @@ C...  attached to each node
          call initDynamicWaterLevelCorrection(timeloc) ! initializes the i/o 
          call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc) ! populate 
       endif
+
 C
 C     jgf51.21.24: Initialize output.
       call initOutput2D(timeloc)
@@ -392,6 +403,8 @@ Corbitt 1203022: Local Advection Flags
 C
  1999 format(1X, a," ADCIRC Version: ",a)
 C
+
+
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -419,15 +432,23 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
      &                       PADCSWAN_RUN
 #endif
       USE WRITE_OUTPUT,ONLY: writeOutput2D
+#ifdef CMPI      
+      USE MESSENGER, ONLY: writers_active, hs_writers_active
+#endif      
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: NTIME_STP
       REAL(8) :: TimeLoc
 C
+ 
+      REAL(8):: start_time, end_time
+
       call setMessageSource("ADCIRC_Run")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
+
+
 !TCM v49.52.01 added this ifdef (brought in from adcirc_init()
 #ifdef CMPI
       if (((mnwproh > 0).or.(mnwproc > 0)) .and. myproc >= mnproc) then
@@ -442,8 +463,14 @@ C
             call unsetMessageSource()  !tcm 20150924 -- added
             return
          endif
-      elseif ( mnwproc > 0 .and. myproc == 0 ) then
-         call sendLabelInfoToWriters()
+      elseif ( (mnwproc > 0 .or. mnwproh > 0) .and. myproc == 0 ) then
+         if(mnwproc > 0)then
+             call sendLabelInfoToWriters()
+             writers_active = .true.
+         endif
+         if(mnwproh > 0)then
+             hs_writers_active = .true.
+         endif
       endif
 #endif
 
@@ -486,6 +513,7 @@ C
       IF (MYPROC == 0 .and. MNWPROH > 0) CALL HSWRITER_PAUSE()
 #endif
 
+
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -506,16 +534,22 @@ C******************************************************************************
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
+      USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
+
       IMPLICIT NONE
 C
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 C
       INTEGER :: I
+
+      REAL (8):: start_time, end_time
 C
       call setMessageSource("ADCIRC_Final")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
+
+
 C
 C...
 C...*************** SOLVE THE HARMONIC ANALYSIS PROBLEM ****************
@@ -523,6 +557,7 @@ C...
       CALL solveHarmonicAnalysis(ITIME)
       CALL writeHarmonicAnalysisOutput(ITIME)
 C
+
 #ifdef CMPI
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
         CALL MSG_FINI(NO_MPI_FINALIZE)
@@ -634,6 +669,8 @@ C-----------------------------------------------------------------------
 
 C******************************************************************************
 C******************************************************************************
+
+
       END MODULE ADCIRC_Mod
 C******************************************************************************
 C******************************************************************************

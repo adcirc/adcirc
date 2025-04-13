@@ -38,12 +38,36 @@
 
 
       subroutine memory_status( )
-        print *, " "
-        print *, "memory currently allocated = ", mem_descript % currmem, " bytes"
-        print *, "memory high water mark     = ", mem_descript % highmem, " bytes"
-        print *, " "
+        write(*,'(A)') ""
+        write(*,'(A, A)') "memory currently allocated = ", 
+     &      trim(memory_usage_string(mem_descript%currmem))
+        write(*,'(A, A)') "memory high water mark     = ", 
+     &      trim(memory_usage_string(mem_descript%highmem))
+        write(*,'(A)') ""
       end subroutine memory_status
 
+      character(200) function memory_usage_string(bytes) result(out_str)
+        implicit none
+
+        integer(8), parameter  :: gigabytes = 1e9
+        integer(8), parameter  :: megabytes = 1e6
+        integer(8), parameter  :: kilobytes = 1e3
+        integer(8), intent(in) :: bytes 
+
+        if(bytes>=gigabytes)then
+            write(out_str, '(F0.3,X,A)') dble(bytes)/dble(gigabytes),
+     &          "gigabytes"
+        elseif(bytes>=megabytes)then
+            write(out_str, '(F0.3,X,A)') dble(bytes)/dble(megabytes),
+     &          "megabytes"
+        elseif(bytes>=kilobytes)then
+            write(out_str, '(F0.3,X,A)') dble(bytes)/dble(kilobytes),
+     &          "kilobytes"
+        else
+            write(out_str, '(I0,X,A)') bytes, "bytes"
+        endif
+
+      end function memory_usage_string  
 
       subroutine memory_alloc(nbytes)
       integer(8),intent(in) :: nbytes
@@ -117,7 +141,10 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       USE GLOBAL, ONLY :
      &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
      &    outputWindDrag,slim,windlim,directvelWD,useHF,
-     &    Limit_WaveStressGrad  !tcm v56 2024: added
+     &    Limit_WaveStressGrad,  !tcm v56 2024: added
+
+     &    PFile_inset, Wfile_inset, InsetControlFile !aman added
+
 #if defined CSWAN || defined ADCSWAN
      &   ,SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &    SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
@@ -595,6 +622,11 @@ C.... tcm v52.30.01 additions for Smagorinski Eddy Viscosity Namelist
       LOGICAL :: FOUND_Smag_NML = .false. ! flag to determine if the Smag_Control namelist was present
       NAMELIST /Smag_Control/ SMAG_UPPER_LIM,SMAG_LOWER_LIM,SMAG_COMP_FLAG
 
+      LOGICAL :: found_InterpInset_namelist = .FALSE.
+      LOGICAL :: UseInterpInset = .FALSE.
+      NAMELIST /InterpInset/UseInterpInset,Pfile_inset,Wfile_inset,InsetControlFile
+
+     
 #ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
 #else
@@ -788,7 +820,17 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          found_WarnElev_nml = .true.  
       ENDIF
       REWIND(15)
-      
+
+      READ(UNIT=15,NML=InterpInset,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         write(*,*) "INFO: The WarnElevControl namelist was not found."
+      ELSE
+         found_InterpInset_namelist = .true.  
+      ENDIF
+      REWIND(15)
+
+
+
       READ(UNIT=15,NML=AliDispersionControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The AliDisp Control namelist was not found."

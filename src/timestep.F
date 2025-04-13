@@ -83,7 +83,8 @@ C
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
      &    Limit_WaveStressGrad,
-     &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError
+     &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
+     &    dynamicWaterLevelCorrectionDelta
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
      &                         WaveStressGrad_Cap 
      
@@ -93,16 +94,19 @@ C
       USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart, 
      &    writeWarnElev, collectInundationData, collectMinMaxData
       USE MESH, ONLY : NE, NP, DP, SLAM, SFEA, ICS, TotalArea,
-     &                  MJU, Areas, SFAC, NNeigh, NeiTab
+     &    MJU, Areas, SFAC, NNeigh, NeiTab, X, Y,
+     &    LBARRAY_POINTER
       USE BOUNDARIES, ONLY : NOPE, NETA, NBOU, NVEL, LBCODEI, NBV, SIII,
      &    NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, NFLUXIBP, NFLUXRBC, CSII,
+     &    NFLUXIB64,
      &    BARLANHT, BARLANCFSP, NVELL, IBCONN, BARINHT, BARINCFSP,
-     &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM
+     &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM, ISSUBMERGED64, ISSUBMERGED64P
       USE GLOBAL_IO, ONLY : nddt2get
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
-     &    getdynamicWaterLevelCorrections, 
-     &    CLOSE_MET_FILES 
+     &    getdynamicWaterLevelCorrections,
+     &    dynamicWaterLevelCorrectionMassAdjust,
+     &    CLOSE_MET_FILES
 
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
@@ -150,14 +154,17 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
 
       USE subgrid, ONLY: level0, getVertLookup
 
+      ! full luni-solar tidal potential !
+      USE mod_tidepotential, only: tidePotential
+
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
 C
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
-      INTEGER IE, I, J, K, JJ                  !local loop counters
+      INTEGER IE, I, J, K, II, JJ                  !local loop counters
       INTEGER NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle
-      INTEGER NCyc, NA
+      INTEGER NCyc
       INTEGER :: itest
       INTEGER :: kemax
       INTEGER :: kvmax
@@ -170,7 +177,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       INTEGER :: warnElevExceeded
       logical, save ::  EtaDisc_Fill = .TRUE.
 
-      REAL(8) ArgT, ArgTP, ArgSAlt
       REAL(8) CCSFEA
       REAL(8) ElMax
       REAL(8) PIPE_FLUX
@@ -212,6 +218,9 @@ C....... DW
 C.......
       LOGICAL ISFRONT
       LOGICAL foundNaN
+      INTEGER NNBB1, NNBB2, NNBBNEI, NWETNEI
+      LOGICAL UNSUBMERGE
+      REAL(8) X1, X2, Y1, Y2, ET1, ET2, LEN, SLP, HTOT
       
       IF (IT .EQ. 1) THEN
 !.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
@@ -643,8 +652,10 @@ C---------------------WATER LEVEL OFFSET-----------------------------------
 C     jgf: update water level correction fields
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc)
+         if (dynamicWaterLevelCorrectionMassAdjust.eqv..true.) then
+            dynamicWaterLevelCorrectionDelta=dynamicWaterLevelCorrection2-dynamicWaterLevelCorrection1
+         endif
       endif
-
 C
 C---------------------BEGIN MET FORCING----------------------------------------
 
@@ -851,45 +862,9 @@ Casey 140701: Ending the IF statement.
          END IF
       END IF
 
-C...
-C...  Tidal Potential Forcing
-C...  Note, the Earth tide potential reduction factor, ETRF(J) has been
-C...        incorporated into this calculation.
-C...
-C...  WJP 02.21.2018 Rewriting for general formula for all species,
-C     cleaner code, and correct identification of 0,1,2 or higher species
-      IF(CTIP) THEN
-         TIPLOOP: DO J=1,NTIF
-            IF (PERT(J).EQ.0.) THEN
-               NCYC=0
-            ELSE
-#ifdef IBM
-               NCYC=INT(timeh/PERT(J),KIND(0.0d0))
-#else
-               NCYC=INT(timeh/PERT(J))
-#endif
-            ENDIF
 
-            ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
-            TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
-            SALTMUL=RampTip*FFT(J)
-C           WJP: We actually want to compare against diurnal and get 0,1,2
-C           or higher species (was opposite beforehand)
-#ifdef IBM
-            NA = MIN(NINT(AMIGT(J)/7d-5,KIND(0.0d0)),2)
-#else
-            NA = MIN(NINT(AMIGT(J)/7d-5),2)
-#endif
-C           WJP: Rewritten so that we have a general formula for all
-C           species
-            DO I = 1,NP
-                ARGTP   = ARGT + NA*SLAM(I)
-                ARGSALT = ARGT - SALTPHA(J,I)
-                TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
-     &                  + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
-            ENDDO
-         ENDDO TIPLOOP
-      ENDIF
+! Apply the tide potential forcing subroutine      
+      call applyTidePotentialForcing(TimeLoc, TimeH)
 
 C...
 C...  Depth Averaged Baroclinic Forcing needed by GWCE and 2DDI Momentum
@@ -1018,6 +993,92 @@ C...  COBELL - MOVED TO WEIR_BOUNDARY.F
           END DO
         ENDIF
 
+      IF(NFLUXIB64.EQ.1) THEN
+         ! Setting ISSUBMERGED64 flag
+         I = 0                         
+         DO K = 1, NBOU  
+            SELECT CASE(LBCODEI(I+1))
+               CASE(4,24,5,25)
+                  I = I + NVELL(K)*2
+               CASE(64)
+                  DO J = 1,NVELL(K)
+                     I = I + 1
+                     CALL SET_SUBMERGED64_AT(I,J,K,TIMELOC)
+                     ISSUBMERGED64P(I) = ISSUBMERGED64(I)
+                  ENDDO
+                  I = I + NVELL(K)
+               CASE DEFAULT
+                  I = I + NVELL(K)
+            END SELECT    
+         ENDDO
+         ! Cancelling ISSUBMERGED64 flag if any of the adjacent nodes along the boundary is not submerged. sb 8/9/2024
+         I = 0                         
+         DO K = 1, NBOU  
+            SELECT CASE(LBCODEI(I+1))
+               CASE(4,24,5,25)
+                  I = I + NVELL(K)*2
+               CASE(64)
+                  DO J = 1,NVELL(K)
+                     I = I + 1
+                     NNBB1 = NBV(I)
+                     HTOT = ETA2(NNBB1) + IFNLFA*DP(NNBB1)
+                     IF(ISSUBMERGED64(I).NE.0.AND.
+     &                  NODECODE(NNBB1).NE.0.AND.
+     &                  HTOT.LT.4.D0*H0) THEN
+                        UNSUBMERGE = .FALSE.
+                        X1 = X(NNBB1)
+                        Y1 = Y(NNBB1)
+                        ET1 = ETA2(NNBB1)
+                        IF(J>1) THEN
+                           NNBBNEI = NBV(I-1)
+                           X2 = X(NNBBNEI)
+                           Y2 = Y(NNBBNEI)
+                           ET2 = ETA2(NNBBNEI)
+                           LEN = SQRT((X1-X2)**2+(Y1-Y2)**2)
+                           SLP = ABS(ET1-ET2)/LEN
+                           IF(SLP.GT.0.0001) THEN
+                              UNSUBMERGE = .TRUE.
+                           ENDIF
+                        ENDIF
+                        IF(J<NVELL(K)) THEN
+                           NNBBNEI = NBV(I+1)
+                           X2 = X(NNBBNEI)
+                           Y2 = Y(NNBBNEI)
+                           ET2 = ETA2(NNBBNEI)
+                           LEN = SQRT((X1-X2)**2+(Y1-Y2)**2)
+                           SLP = ABS(ET1-ET2)/LEN
+                           IF(SLP.GT.0.0001) THEN
+                              UNSUBMERGE = .TRUE.
+                           ENDIF
+                        ENDIF
+                        IF(.NOT.UNSUBMERGE) THEN
+                           NWETNEI = 0
+                           DO JJ = 2,NNeigh(NNBB1)
+                              II = NeiTab(NNBB1,JJ)
+                              IF(NODECODE(II).NE.0) THEN
+                                 NWETNEI = NWETNEI + 1
+                              ENDIF
+                           ENDDO
+                           IF(NWETNEI.LT.3) THEN
+                              UNSUBMERGE = .TRUE.
+                           ENDIF
+                        ENDIF
+                        IF(UNSUBMERGE) THEN
+                           ISSUBMERGED64(I) = 0
+                           NNBB2 = IBCONN(I)
+                           IF(NNBB2>0) THEN
+                              ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 0
+                           ENDIF
+                        ENDIF
+                     ENDIF
+                  ENDDO
+                  I = I + NVELL(K)
+               CASE DEFAULT
+                  I = I + NVELL(K)
+            END SELECT    
+         ENDDO 
+      ENDIF
+
 C...  COMPUTE INWARD/OUTWARD NORMAL FLOW OVER SPECIFIED INTERNAL BARRIER
 C...  BOUNDARY (PERMEABLE OR NOT) NODES
 C...
@@ -1074,7 +1135,7 @@ C                     ACROSS A WEIR
                 CASE DEFAULT
                     I = I + NVELL(K)
             END SELECT    
-         ENDDO 
+         ENDDO
       ENDIF
 
 C...
@@ -1095,6 +1156,7 @@ C...
       if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
+
 
 !----------------------SOLVE GWCE---------------------------------------
 C...
@@ -1122,13 +1184,15 @@ C...  Compute new water surface elevation
 
 !--------------------WETTING AND DRYING--------------------------------
       ENDIF
- 
+
+
+
 !.....DMW202401 Add update for flow depth at current timestep
 !......We do this after wetting/drying since bathy could change with subgrid barriers.
       DO I = 1,NP
          H2(I) = DP(I)+IFNLFA*ETA2(I)
       ENDDO
-C...
+C...   
 C---------------2DDI Momentum Equation Solution-------------------------
 C...
       call solveMomentumEq()
@@ -1333,12 +1397,13 @@ C     output the global node number to debug the local PE fort.14s
      &           3X,'** WARNING: Elevation.gt.WarnElev **')
             IF (WarnElevDump) WarnElevExceeded=1
          ENDIF
-#ifdef DEBUG_WARN_ELEV
-         call WarnElevSum(WarnElevExceeded)
-         IF (WarnElevExceeded.ne.0) THEN
-            CALL WriteWarnElev(TimeLoc, IT)
+
+         IF(WarnElevDump)THEN
+             call WarnElevSum(WarnElevExceeded)
+             IF (WarnElevExceeded.ne.0) THEN
+                CALL WriteWarnElev(TimeLoc, IT)
+             ENDIF
          ENDIF
-#endif
          ErrorElevExceeded = 0                ! Clint's Zombie Slyaer
          IF(ELMAX.GT.ErrorElev) THEN
 
@@ -1409,9 +1474,7 @@ C     output the global node number to debug the local PE fort.14s
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
      &           2X,'** WARNING: Elevation.gt.WarnElev **')
-#ifdef DEBUG_WARN_ELEV
             IF (WarnElevDump) CALL WriteWarnElev(TimeLoc, IT)
-#endif
          ENDIF
          IF(ELMAX.GT.ErrorElev) THEN
             write(6,*) 'elmax, errorelev',elmax, errorelev !jgf
@@ -1533,8 +1596,77 @@ C      ENDIF
       RETURN
 
 C******************************************************************************
+
       END SUBROUTINE TIMESTEP
 C******************************************************************************
+
+
+!****************************************************************************************
+! Subroutine to compute tide potential at the nodes                                     
+!                                                                                       
+! Tidal Potential Forcing
+! Note, the Earth tide potential reduction factor, ETRF(J) has been
+!       incorporated into this calculation.
+!
+! WJP 02.21.2018 Rewriting for general formula for all species,
+! cleaner code, and correct identification of 0,1,2 or higher species
+!****************************************************************************************
+      subroutine applyTidePotentialForcing(TimeLoc, TimeH)
+         use mod_tidepotential, only: tidePotential
+         use global, only: NTIP, TIP1, TIP2, CTIP, NTIF, RampTip, PERT, FACET,
+     &                     AMIGT, FFT, TPK, ETRF, SALTPHA, SALTAMP, L_N
+         use mesh , only: np, SLAM
+         implicit none
+         real(8), intent(IN) :: TimeLoc, TimeH
+         real(8) :: ArgT, ArgTP, ArgSAlt, SALTMUL, TPMUL
+         integer :: i, j, na, ncyc
+
+         IF(CTIP) THEN
+
+            ! use the full formula 
+            IF ( tidePotential%active() ) THEN
+               TIP2 = tidePotential%compute(TimeLoc, NP, SLAM) * RampTip
+            ENDIF  
+
+            ! The traditional approach: a sum of different constituents
+            ! TIP & SAL - for tidePotential%active() = .TRUE.  
+            ! SAL       - for tidePotential%active() = .FALSE.
+            IF(NTIP.EQ.2.or..not.tidePotential%active())THEN 
+               DO J=1,NTIF
+                  IF (PERT(J).EQ.0D0) THEN
+                     NCYC=0
+                  ELSE
+                     NCYC=INT(timeh/PERT(J))
+                  ENDIF
+
+                  ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
+                  TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
+                  SALTMUL=RampTip*FFT(J)
+
+   !              WJP: We actually want to compare against diurnal and get 0,1,2
+   !              or higher species (was opposite beforehand)
+                  NA = MIN(NINT(AMIGT(J)/7d-5),2)
+
+   !              WJP: Rewritten so that we have a general formula for all
+   !              species
+                  IF(tidePotential%active())THEN
+                     DO I = 1, NP
+                        ARGSALT = ARGT - SALTPHA(J,I) ; 
+                        TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+                     END DO
+                  ELSE
+                     DO I = 1,NP
+                        ARGTP   = ARGT + NA*SLAM(I)
+                        ARGSALT = ARGT - SALTPHA(J,I)
+                        TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
+     &                            + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+                     ENDDO
+                  ENDIF
+
+               ENDDO
+            ENDIF   
+         ENDIF
+      end subroutine applyTidePotentialForcing
 
 
 C****************************************************************************************

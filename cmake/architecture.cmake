@@ -25,7 +25,6 @@ if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
       "-ffixed-line-length-none"
       CACHE STRING "Compiler specific flag to enable extended Fortran line length")
 
-  # 64 bit array sizing
   if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
     set(Fortran_COMPILER_SPECIFIC_FLAG
         "-mcmodel=medium"
@@ -37,7 +36,7 @@ if(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
   endif()
 
 elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM")
-  # ifort
+  # ifort/ifx
   set(Fortran_LINELENGTH_FLAG
       "-132"
       CACHE STRING "Compiler specific flag to enable extended Fortran line length")
@@ -56,7 +55,6 @@ elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER
     set(heaparray_FLAG "-heap-arrays ${STACKSIZE_TRIMMED}")
   endif("${STACKSIZE_TRIMMED}" STREQUAL "unlimited")
 
-  # 64 bit array sizing
   if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
     set(ifort_FLAG "${heaparray_FLAG} -assume byterecl -mcmodel=medium")
   else()
@@ -68,13 +66,12 @@ elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER
       ${ifort_FLAG_TRIMMED}
       CACHE STRING "Compiler specific flags")
 
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "PGI")
+elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "PGI" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "NVHPC")
   # pgf90
   set(Fortran_LINELENGTH_FLAG
       "-Mextend"
       CACHE STRING "Compiler specific flag to enable extended Fortran line length")
 
-  # 64 bit array sizing
   if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
     set(Fortran_COMPILER_SPECIFIC_FLAG
         "-Mlarge_arrays"
@@ -83,8 +80,9 @@ elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "PGI")
 
 else()
   message(WARNING "Unknown Fortran Compiler. Fortran Compiler ID detected as ${CMAKE_Fortran_COMPILER_ID}")
-  message(WARNING
-    "No known predefined Fortran extended line length flag known. Please manually set the Fortran_LINELENGTH_FLAG")
+  message(
+    WARNING
+      "No known predefined Fortran extended line length flag known. Please manually set the Fortran_LINELENGTH_FLAG")
   set(Fortran_LINELENGTH_FLAG
       ""
       CACHE STRING "Compiler specific flag to enable extended Fortran line length")

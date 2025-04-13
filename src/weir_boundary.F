@@ -2130,6 +2130,175 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
+C     S U B R O U T I N E  S E T _ S U B M E R G E D 64 _ A T
+C-----------------------------------------------------------------------
+C  THIS SUBROUTINE SETS THE SUBMERGED FLAG
+C-----------------------------------------------------------------------
+            SUBROUTINE SET_SUBMERGED64_AT(
+     &          BARRIER_INDEX,BOUNDARYNODE,BOUNDARY,TIMELOC)
+
+                USE BOUNDARIES,ONLY:BARINCFSB,BARINCFSP,
+     &              NVELL,IBCONN,BARINHT,ISSUBMERGED64,NBV
+                USE GLOBAL,ONLY:NIBNODECODE,TVW,USE_TVW,NODECODE,H0
+                USE MESH,ONLY:LBArray_Pointer,MNEI,NEITAB,NNEIGH,DP
+                IMPLICIT NONE
+                INTEGER,INTENT(IN),TARGET   :: BARRIER_INDEX
+                INTEGER,INTENT(IN),TARGET   :: BOUNDARY
+                INTEGER,INTENT(IN),TARGET   :: BOUNDARYNODE
+                REAL(8),INTENT(IN)         :: TIMELOC
+
+                INTEGER                     :: NNBB1,NNBB2, NNBBL, NNBBH
+                INTEGER                     :: NNBB1WN,NNBB2WN
+                INTEGER                     :: FLOWDIR
+                INTEGER,POINTER             :: I,J,K
+                REAL(8)                    :: RBARWL1,RBARWL2,RBARWLL
+                REAL(8)                    :: RBARWL1F,RBARWL2F
+                LOGICAL                    :: CHECK
+                INTEGER                    :: ISSUBMP
+
+                CALL setMessageSource("SET_SUBMERGED64_AT")
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+                CALL allMessage(DEBUG,"Enter")
+#endif                
+
+C...............SIMPLIFY VARIABLES
+                I => BARRIER_INDEX
+                J => BOUNDARYNODE
+                K => BOUNDARY
+
+                NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
+                NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+                NNBB1WN = 0      ! COUNT NUMBER OF WET NEIGHBORS
+                NNBB2WN = 0      ! COUNT NUMBER OF WET NEIGHBORS
+                FLOWDIR = 0      ! DIRECTION OF FLOW
+
+                ! Check if the node ids on both sides of the barrier are valid
+                ! Either of them can be invalid ocasionally but not always 
+                ! when the barrier is splitted for paralell computation
+                IF((NNBB1<=0).OR.(NNBB2<=0)) THEN
+                    ISSUBMERGED64(I) = 0
+                    IF(NNBB2>0) THEN
+                        IF(LBArray_Pointer(NNBB2)>0) THEN
+                            ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 0
+                        ENDIF
+                    ENDIF
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+                    CALL allMessage(DEBUG,"Return")
+#endif
+                    CALL unsetMessageSource()
+                    RETURN
+                ENDIF
+
+C...............CHECK TO SEE IF THERE IS A WET EDGE
+C                 This check is needed ocasionally but not always 
+C                 when the barrier is splitted for paralell computation
+                CHECK = .FALSE.
+                IF( (J.EQ.1).OR.(J.EQ.NVELL(K)+1) )THEN
+                    IF((NBV(I+1)>0).AND.(IBCONN(I+1)>0)) THEN
+                        NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))
+                        NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))
+                        CHECK = .TRUE.
+                    ENDIF
+                ELSE
+                    IF( J.EQ.NVELL(K).OR.(J.EQ.NVELL(K)*2) ) THEN
+                        IF((NBV(I-1)>0).AND.(IBCONN(I-1)>0)) THEN
+                            NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))
+                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))
+                            CHECK = .TRUE.
+                        ENDIF
+                    ELSE
+                        IF((NBV(I-1)>0).AND.(IBCONN(I-1)>0).AND.
+     &                     (NBV(I+1)>0).AND.(IBCONN(I+1)>0)) THEN
+                            NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))
+                            NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))
+                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))
+                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))
+                            CHECK = .TRUE.
+                        ENDIF
+                    ENDIF
+               ENDIF
+
+               IF(.NOT.CHECK) THEN
+                   ISSUBMERGED64(I) = 0
+                   IF(LBArray_Pointer(NNBB2)>0) THEN
+                      ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 0
+                   ENDIF
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+                   CALL allMessage(DEBUG,"Return")
+#endif
+                   CALL unsetMessageSource()
+                   RETURN
+               ENDIF
+
+C..............CHECK TO SEE IF THE BARRIER ELEVATION NEEDS UPDATING
+               IF(INT_TVW)THEN
+                   IF(BAR_DEG(I))THEN
+                       CALL COMPUTE_BARRIER_HEIGHT(I,TIMELOC,BARINHT1(I)
+     &                  ,BARINHT2(I))
+                   ENDIF
+                   TVW(NNBB1) = BARINHT2(I)-BARINHT(I)
+               ENDIF
+
+C..............GET WATER LEVEL ABOVE WEIR ON EACH SIDE TO COMPUTE HEAD
+C              DEFINE COMPILER FLAG -DAVERAGEWEIRFLOW TO USE BARAVGWT,
+C              WHICH GENERALLY IS SET TO ZERO, AND IS HARD CODED
+C              TO ZERO HERE. READ_INPUT.F CONTAINS THE SPECIFICATION OF 
+C              BARAVGWT. WITH BARAVGWT SET TO ZERO, THERE IS NO NEED FOR
+C              IBSTART EITHER.
+#if AVERAGEWEIRFLOW
+               IF(IBSTART.EQ.0)THEN
+                  RBARWL1AVG(I)=ETA2(NNBB1)-BARINHT2(I)
+                  RBARWL2AVG(I)=ETA2(NNBB2)-BARINHT2(I)
+                  IBSTART=1
+               ELSE
+                  RBARWL1AVG(I)=(ETA2(NNBB1)-BARINHT2(I)+BARAVGWT
+     &                 *RBARWL1)/(1.D0+BARAVGWT)
+                  RBARWL2AVG(I)=(ETA2(NNBB2)-BARINHT2(I)+BARAVGWT
+     &                 *RBARWL2)/(1.D0+BARAVGWT)
+               ENDIF
+               RBARWL1=RBARWL1AVG(I)
+               RBARWL2=RBARWL2AVG(I)
+#else               
+C..............ZC - STREAMLINE THE PROCESS SINCE BARAVGWT IS ZERO BY DEFAULT
+               RBARWL1=ETA2(NNBB1)-BARINHT2(I)
+               RBARWL2=ETA2(NNBB2)-BARINHT2(I)
+#endif               
+C..............RBARWL on the lower ground side SB
+               IF(DP(NNBB1).GE.DP(NNBB2)) THEN
+                    RBARWLL = RBARWL1
+                    NNBBL = NNBB1
+                    NNBBH = NNBB2
+               ELSE
+                    RBARWLL = RBARWL2
+                    NNBBL = NNBB2
+                    NNBBH = NNBB1
+               ENDIF
+
+               RBARWL1F=2.D0*RBARWL1/3.D0
+               RBARWL2F=2.D0*RBARWL2/3.D0
+               ISSUBMP = ISSUBMERGED64(I)
+               ISSUBMERGED64(I) = 0
+               ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 0
+
+               IF(RBARWLL.GE.BARMIN64) THEN
+    !            IF(RBARWLL.GE.BARMIN64.AND.
+    !  &            (ISSUBMP.NE.0.OR.(ETA2(NNBBL).GT.(ETA2(NNBBH)+2.D0*H0)))) THEN
+C...............THIS IS THE MAJOR DIFFERENCE OF IBTYPE=64 FROM IBTYPE=24.
+C               WATER LEVEL ON BOTH SIDES OF BARRIER ABOVE BARRIER -> CASE 0
+                  ISSUBMERGED64(I) = 1
+                  ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 1
+               ENDIF
+               
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+               CALL allMessage(DEBUG,"Return")
+#endif
+               CALL unsetMessageSource()
+               RETURN
+C-----------------------------------------------------------------------
+            END SUBROUTINE SET_SUBMERGED64_AT
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
 C     S U B R O U T I N E 
 C       C O M P U T E _ I N T E R N A L _ B O U N D A R Y 6 4 _ F L U X
 C-----------------------------------------------------------------------
@@ -2162,8 +2331,9 @@ C-----------------------------------------------------------------------
                 INTEGER,POINTER             :: I,J,K
                 REAL(8)                    :: RBARWL1,RBARWL2,RBARWLL
                 REAL(8)                    :: RBARWL1F,RBARWL2F
+                LOGICAL                    :: CHECK
 
-                CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")
+                CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY64_FLUX")
 #if defined(WEIR_TRACE) || defined(ALL_TRACE) 
                 CALL allMessage(DEBUG,"Enter")
 #endif                
@@ -2179,20 +2349,54 @@ C...............SIMPLIFY VARIABLES
                 NNBB2WN = 0      ! COUNT NUMBER OF WET NEIGHBORS
                 FLOWDIR = 0      ! DIRECTION OF FLOW
 
+                ! Check if the node ids on both sides of the barrier are valid
+                ! Either of them can be invalid ocasionally but not always 
+                ! when the barrier is splitted for paralell computation
+                IF((NNBB1<=0).OR.(NNBB2<=0)) THEN
+                    FLUX = 0.D0
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+                    CALL allMessage(DEBUG,"Return")
+#endif
+                    CALL unsetMessageSource()
+                    RETURN
+                ENDIF
+
 C...............CHECK TO SEE IF THERE IS A WET EDGE
+C                 This check is needed ocasionally but not always 
+C                 when the barrier is splitted for paralell computation
+                CHECK = .FALSE.
                 IF( (J.EQ.1).OR.(J.EQ.NVELL(K)+1) )THEN
-                    NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))
-                    NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))
-                ELSE
-                    IF( J.EQ.NVELL(K).OR.(J.EQ.NVELL(K)*2) ) THEN
-                        NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))
-                        NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))
-                    ELSE
-                        NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))
+                    IF((NBV(I+1)>0).AND.(IBCONN(I+1)>0)) THEN
                         NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))
                         NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))
-                        NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))
+                        CHECK = .TRUE.
                     ENDIF
+                ELSE
+                    IF( J.EQ.NVELL(K).OR.(J.EQ.NVELL(K)*2) ) THEN
+                        IF((NBV(I-1)>0).AND.(IBCONN(I-1)>0)) THEN
+                            NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))
+                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))
+                            CHECK = .TRUE.
+                        ENDIF
+                    ELSE
+                        IF((NBV(I-1)>0).AND.(IBCONN(I-1)>0).AND.
+     &                     (NBV(I+1)>0).AND.(IBCONN(I+1)>0)) THEN
+                            NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))
+                            NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))
+                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))
+                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))
+                            CHECK = .TRUE.
+                        ENDIF
+                    ENDIF
+               ENDIF
+
+               IF(.NOT.CHECK) THEN
+                   FLUX = 0.D0
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
+                   CALL allMessage(DEBUG,"Return")
+#endif
+                   CALL unsetMessageSource()
+                   RETURN
                ENDIF
 
 C..............CHECK TO SEE IF THE BARRIER ELEVATION NEEDS UPDATING
@@ -2238,15 +2442,11 @@ C..............RBARWL on the lower ground side SB
                RBARWL1F=2.D0*RBARWL1/3.D0
                RBARWL2F=2.D0*RBARWL2/3.D0
                FLUX=0.D0
-               ISSUBMERGED64(I) = 0
-               ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 0
 
-               IF(RBARWLL.GE.BARMIN64) THEN
+               IF(ISSUBMERGED64(I).NE.0) THEN
 C...............THIS IS THE MAJOR DIFFERENCE OF IBTYPE=64 FROM IBTYPE=24.
 C               WATER LEVEL ON BOTH SIDES OF BARRIER ABOVE BARRIER -> CASE 0
                   FLUX = 0.D0
-                  ISSUBMERGED64(I) = 1
-                  ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 1
                ELSEIF((RBARWL1.LT.BARMIN64).AND.(RBARWL2.LT.BARMIN64)) THEN
 C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
                   FLUX=0.D0

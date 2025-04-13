@@ -84,7 +84,8 @@ C-----------------------------------------------------------------------
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
-     &   WarnVel
+     &   WarnVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
+     &   Pfile_inset, Wfile_inset, InsetControlFile 
 
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
@@ -121,6 +122,8 @@ C-----------------------------------------------------------------------
      &   BLADJ, STORMNUMBER, WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
      &   NWSok, WINDREFTIME, Allowable_NWS, PUREBACKGROUND, TimeConv, 
      &   DragLawString, dynamicWaterLevelCorrectionFileName, WTIMINC_12,
+     &   dynamicWaterLevelCorrectionMethod,
+     &   dynamicWaterLevelCorrectionMassAdjust,
      &   dynamicWaterLevelCorrectionRampStart,
      &   dynamicWaterLevelCorrectionRampEnd,
      &   dynamicWaterLevelCorrectionSkipSnaps,
@@ -171,7 +174,8 @@ Casey 180318: Added NWS=13
      &                          NWS13WindMultiplier
 #endif
 !JLW: add subgrid 
-      USE subgrid, only: subgridFilename, level0, level1
+      USE subgrid, only: subgridFilename, level0, level1, phi_time_derivative
+      use mod_tidepotential, only: tidePotential, t_tidePotential
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -188,6 +192,17 @@ C
       character(len=100) :: densityRunType ! diagnostic or prognostic
       character(len=100) :: densityDimensions ! 2DDI or 3D
       character(len=100) :: densityForcingType ! sigmaT, salinity, etc
+
+      ! I/O variables for tide potential namelist
+      logical :: UseFullTIPFormula = .false.
+      integer :: TIPOrder = -1
+      character(len=24) :: TIPStartDate = ""
+      character(len=24) :: MoonSunPositionComputeMethod = "JM"
+      character(len=80) :: MoonSunCoordFile = "none"
+      logical :: IncludeNutation = .false.
+      real(8) :: k2Value = 0.302D0
+      real(8) :: h2Value = 0.609D0
+      logical :: UniformResMoonSunTimeData = .false.
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
 #if defined CSWAN || defined ADCSWAN
@@ -213,6 +228,7 @@ C.... DMW
      &                      TOUTF_TVW,NSPOOL_TVW
       NAMELIST /dynamicWaterLevelCorrectionControl/
      &  dynamicWaterLevelCorrectionFileName,
+     &  dynamicWaterLevelCorrectionMethod,
      &  dynamicWaterLevelCorrectionSkipSnaps,
      &  dynamicWaterLevelCorrectionMultiplier,
      &  dynamicWaterLevelCorrectionRampStart,
@@ -228,8 +244,10 @@ C.... DMW
      &    NWS13WindMultiplier,NWS13GroupForPowell
 #endif
 !JLW: adding subgrid namelist
-      NAMELIST /subgridControl/ subgridFilename, level0, level1
-!CLB: adding nws8Control namelist
+      NAMELIST /subgridControl/ subgridFilename, level0, level1,
+     &    phi_time_derivative
+
+!CPB: adding nws8Control namelist
       NAMELIST /nws8Control/ 
      &   vortexModel,           ! Holland or CLE15
      &   backgroundWindModel,   ! radialVelocityWeighted or LC12
@@ -243,10 +261,32 @@ C.... DMW
                                 ! this value will not be used
 
       NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
+!Aman Tejaswi
 
+      NAMELIST /InterpInset/ UseInterpInset, PFile_inset,Wfile_inset,
+     &         InsetControlFile 
+C---- DW/AC, for full tidal pontential formula
+C     UseFullTIPFormula = T/F (default F)
+C     TIPOrder = 2 (P2), 3(p3), >= 4(exact)  (default 2)
+C     TIPStartDate = 'BaseDate'/'YYYY-MM-DD HH:SS'
+C     MoonSunPostionMethod = 'JM'/'External' (defaul 'JM') 
+C           'JM' = Jean Meeus's approach 
+C           'External' = User supplied Moon's, Sun's RA, DEC and
+C                        distances 
+C     MoonSunCoordFile = filename of an external file storting the
+C                        coordinates of the Moon and the Sun         
+C     IncludeNutation = T/F , Include/exclude the nutation in JM formula
+C     k2value = Love number
+C     h2value = Love number     
+C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data 
+      NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
+     &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
+     &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData
+         
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       CHARACTER(len=2000) :: origLineTVW
+      CHARACTER(len=256) :: ios_nml_error_msg
       INTEGER :: commentStart            ! location of fort.15 comment start
       INTEGER :: ios = 0                 ! i/o status of read operation
 
@@ -379,8 +419,8 @@ C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
       namelistSpecifier = 'TimeBathyControl'
-      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
-      call logNamelistReadStatus(namelistSpecifier, ios_nddt)     
+      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT, IOMSG=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios_nddt, ios_nml_error_msg)     
 c     it is possible for the namelist to be present in the file and 
 C     occuring at the end of the file with no line breaks after the 
 C     ending "\" which causes the iostat to return a negative value.
@@ -413,13 +453,13 @@ c     a non-default value we can determine this was the case.
       ! jgf50.60.08: Add a namelist for the user to turn SWAN output
       ! on and off. Similar to tcm's timevaryingbathy namelist.
       namelistSpecifier = 'SWANOutputControl'
-      read(unit=15,nml=SWANOutputControl,iostat=ios)
+      read(unit=15,nml=SWANOutputControl,iostat=ios,iomsg=ios_nml_error_msg)
       IF(IOS.GT.0)THEN
         SWAN_OutputHS=.TRUE.
         SWAN_OutputTPS=.TRUE.
         SWAN_OutputDIR=.TRUE.
       ENDIF
-      call logNamelistReadStatus(namelistSpecifier, ios)     
+      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
       call logMessage(ECHO,
      &    "The values of SWANOutputControl are as follows:")
       write(scratchMessage,*) "SWAN_OutputHS=",SWAN_OutputHS,
@@ -436,8 +476,8 @@ c     a non-default value we can determine this was the case.
       ! jgf51.42: Add a namelist for the user to control subdomain
       ! modeling.
       namelistSpecifier = 'subdomainModeling'
-      read(unit=15,nml=subdomainModeling,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier, ios)
+      read(unit=15,nml=subdomainModeling,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
       write(scratchMessage,*) "subdomainOn=",subdomainOn
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
@@ -445,8 +485,8 @@ c     a non-default value we can determine this was the case.
       ! jgf50.60.13: Add a namelist for the user to control met forcing.
       ! Similar to tcm's timevaryingbathy namelist.
       namelistSpecifier = 'metControl'
-      read(unit=15,nml=metControl,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier, ios)
+      read(unit=15,nml=metControl,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
       write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
      & " DragLawString=",DragLawString, " rhoAir=",rhoAir,
      & ' invertedBarometerOnElevationBoundary=',
@@ -456,11 +496,28 @@ c     a non-default value we can determine this was the case.
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
+
+!Aman Tejaswi
+      namelistSpecifier = 'InterpInset'
+      read(unit=15,nml=InterpInset,iostat=ios,iomsg=ios_nml_error_msg)
+      IF(ios.NE.0)THEN
+        CALL logMessage(INFO,"The InterpInset namelist was not found.")
+        found_InterpInset_namelist = .FALSE.
+      ELSE
+        CALL logMessage(INFO,"The InterpInset namelist was found.")
+        found_InterpInset_namelist = .TRUE.
+      
+      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
+      write(scratchMessage,*) "UseInterpInset=",UseInterpInset
+      call logMessage(ECHO,trim(scratchMessage))
+      ENDIF
+      rewind(15)
+
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       namelistSpecifier = 'owiWindNetcdf'
-      read(unit=15,nml=owiWindNetcdf,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier, ios)
+      read(unit=15,nml=owiWindNetcdf,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
       write(scratchMessage,*) "NWS13File=",trim(adjustl(NWS13File)),
      & " NWS13ColdStartString=",trim(adjustl(NWS13ColdStartString)),
      & " NWS13WindMultiplier=",trim(adjustl(NWS13WindMultiplier)),
@@ -472,8 +529,8 @@ Casey 180318: Added NWS=13
 
 #ifdef DATETIME
       namelistSpecifier = 'WindGrib2NetCdf' 
-      read( unit = 15, nml=WindGrib2NetCdf,iostat=ios ) ;
-      call logNamelistReadStatus(namelistSpecifier, ios)
+      read( unit = 15, nml=WindGrib2NetCdf,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios,ios_nml_error_msg)
       write(scratchMessage,*) "NWS 14: use core 0"//
      &   "to read grib2/netcdf data = ",
      &   read_NWS14_NetCdf_using_core_0 
@@ -512,8 +569,8 @@ Casey 180318: Added NWS=13
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       namelistSpecifier = 'waveCoupling'
-      read(unit=15,nml=waveCoupling,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=waveCoupling,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
       call logMessage(ECHO,trim(scratchMessage))
 !TCM 2024 -- added wave stress gradient limiter      
@@ -531,8 +588,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ! tcm v52. added StatPartWetFix and How2FixStatPartWet for handling
       !  station output in partially wet/dry elements for elevation stations
       namelistSpecifier = 'wetDryControl'
-      read(unit=15,nml=wetDryControl,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=wetDryControl,iostat=IOS,iomsg=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,'(a,l)') "outputNodeCode=",outputNodeCode
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,l)') "outputNOFF=",outputNOFF
@@ -560,8 +617,8 @@ C.... DMW
       ! jgf52.08.01: Add a namelist for the user to control
       ! output of detailed inundation data.
       namelistSpecifier = 'inundationOutputControl'
-      READ(UNIT=15,NML=inundationOutputControl,IOSTAT=IOS)
-      call logNamelistReadStatus(namelistSpecifier,ios)
+      READ(UNIT=15,NML=inundationOutputControl,IOSTAT=IOS,IOMSG=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,'(a,l)') "inundationOutput=",inundationOutput
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,e15.8)') "inunThresh=",inunThresh
@@ -571,14 +628,16 @@ C.... DMW
 !JLW: adding subgrid namelist variable
       !JLW: adding subgrid name list variable
       namelistSpecifier = 'subgridControl'
-      read(unit=15,nml=subgridControl,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=subgridControl,iostat=IOS,iomsg=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,*)
      &   "subgridFilename=",TRIM(ADJUSTL(subgridFilename))
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "level0=",level0
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "level1=",level1
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "phi_time_derivative=",phi_time_derivative
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
@@ -594,8 +653,8 @@ c...  for further processing the traditional non-namelist components.
 C...
       namelistSpecifier = 'Smag_Control'
       IOS_Smag = 0
-      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_Smag)
-      call logNamelistReadStatus(namelistSpecifier, ios_Smag)
+      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_Smag,IOMSG=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios_Smag,ios_nml_error_msg)
 c
 c     it is possible for the namelist to be present in the file and
 C     occuring at the end of the file with no line breaks after the
@@ -633,10 +692,12 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       ! jgf: for water level offset
 
       namelistSpecifier = 'dynamicWaterLevelCorrectionControl'
-      read(unit=15,nml=dynamicWaterLevelCorrectionControl,iostat=ios)
-      call logNamelistReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=dynamicWaterLevelCorrectionControl,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,'(a,a)') "dynamicWaterLevelCorrectionFileName=",
      &  trim(dynamicWaterLevelCorrectionFileName)
+      write(scratchMessage,'(a,a)') "dynamicWaterLevelCorrectionMethod=",
+     &  trim(dynamicWaterLevelCorrectionMethod)
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,i0)') "dynamicWaterLevelCorrectionSkipSnaps=",
      &  dynamicWaterLevelCorrectionSkipSnaps
@@ -655,6 +716,16 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       call logMessage(ECHO,trim(scratchMessage))
       if (trim(dynamicWaterLevelCorrectionFileName).ne.'null') then
          usingDynamicWaterLevelCorrection = .true.
+         ! set flags based on the method
+         select case (toLowercase(trim(dynamicWaterLevelCorrectionMethod)))
+         case ('default', 'momentumpapforcingandmassadjust')
+            dynamicWaterLevelCorrectionMassAdjust = .true.
+         case ('momentumpapforcing')
+            dynamicWaterLevelCorrectionMassAdjust = .false.
+         case default
+            call allMessage(ERROR, 'Invalid dynamicWaterLevelCorrectionMethod')
+            call adcirc_terminate()
+         end select
       endif
       ! exit if there was an error reading the dynamicWaterLevelCorrectionControl namelist
       if (ios.gt.0) then
@@ -665,8 +736,8 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C     Channel wet perimeter for bottom friction 11/06/2023 sb
       namelistSpecifier = 'VEW1DChannelControl'
       activateVEW1DChannelWetPerimeter = .false.
-      READ(UNIT=15,NML=VEW1DChannelControl,IOSTAT=ios)
-      call logNamelistReadStatus(namelistSpecifier, ios)
+      READ(UNIT=15,NML=VEW1DChannelControl,IOSTAT=ios,IOMSG=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios,ios_nml_error_msg)
       write(scratchMessage,'(a,l1)') "activateVEW1DChannelWetPerimeter=",
      &   activateVEW1DChannelWetPerimeter
       call logMessage(ECHO,trim(scratchMessage))
@@ -684,8 +755,8 @@ C     DMW 202401 Add check for velocity warning level
       WarnVel = 100.d0
 C     WJP add namelist
       namelistSpecifier = 'WarnElevControl'
-      read(unit=15,nml=WarnElevControl,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=WarnElevControl,iostat=IOS,IOMSG=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,'(a,f15.7)') "WarnElev=",WarnElev
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,l)') "WarnElevDump=",WarnElevDump
@@ -696,11 +767,36 @@ C     WJP add namelist
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
+      if(iWarnElevDump.ne.0) WarnElevDump = .True.
+      write(scratchMessage,'(A,e16.8)') 'A warning will be issued '//
+     &                     'if elevation exceeds WarnElev = ',WarnElev
+      call logMessage(INFO,scratchMessage)
+      if(WarnElevDump)then
+          write(scratchMessage,'(A,e16.8,A)') 
+     &     'A global elevation file (fort.69)'//
+     &     ' will be written if WarnElev (',WarnElev,') is exceeded'
+          call logMessage(INFO,scratchMessage)
+          write(scratchMessage,'(A,I0,A)') 
+     &     'Execution will be terminated '//
+     &     'if ',WarnElevDumpLimit,' global elevation snaps have been '//
+     &     'written as warning.'
+          call logMessage(INFO,scratchMessage)
+      else
+          write(scratchMessage,'(A,e16.8,A)') 
+     &     'A global elevation file (fort.69)'//
+     &     ' will NOT be written if WarnElev (',WarnElev,') is exceeded'
+          call logMessage(INFO,scratchMessage)
+      endif    
+      write(scratchMessage,'(A,e16.8)') 
+     &     'Execution will be terminated if elevation exceeds ',
+     &     ErrorElev 
+      call logMessage(INFO,scratchMessage)
+
 !     WJP add namelist for Ali's dispersion
 !     Defaults are already in global 
       namelistSpecifier = 'AliDispersionControl'
-      read(unit=15,nml=AliDispersionControl,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=AliDispersionControl,iostat=IOS,iomsg=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
 !     Process the speed of sound squared
       if (Cs.le.0.0D0) then
          Cs2 = huge(0.0D0)
@@ -727,8 +823,8 @@ C     WJP add namelist
       densityTimeIterator = 1;
 !     read the namelist
       namelistSpecifier = 'densityControl'
-      read(unit=15,nml=densityControl,iostat=IOS)
-      call logNameListReadStatus(namelistSpecifier,ios)
+      read(unit=15,nml=densityControl,iostat=IOS,iomsg=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,'(a,a)') "densityRunType=",
      &      trim(densityRunType)
       call logMessage(ECHO,trim(scratchMessage))
@@ -773,6 +869,7 @@ C     WJP add namelist
 !     Make sure to include the sign
       IDEN = IDEN*IDENsign
       if (IDEN.ne.0) CBaroclinic = .true.
+
 C...
 
 !     CPB: add nws8Control namelist
@@ -828,6 +925,31 @@ C...
       ! convert w_cool from mm per second to m per second
       w_cool = w_cool/1000
 
+C...  tidal potential control namelist
+      namelistSpecifier = 'TidalPotentialControl'
+      read(unit=15,nml=TidalPotentialControl,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
+      write(scratchMessage,*) "USeFullTIPFormula=", UseFullTIPFormula
+      call logMessage(ECHO,trim(scratchMessage)) 
+      write(scratchMessage,*)"TIPOrder=", TIPOrder 
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "TIPStartDate=", trim(TIPStartDate)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*)"MoonSunPositionComputeMethod=",
+     &                        trim(MoonSunPositionComputeMethod)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "MoonSunCoordFile=", trim(MoonSunCoordFile)
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "IncludeNutation=", IncludeNutation
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "k2Value=", k2Value
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "h2Value=", h2Value
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "UniformResMoonSunTimeData=",UniformResMoonSunTimeData
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION
@@ -877,20 +999,6 @@ C
  1952    FORMAT(/,5X,'NFOVER = ',I3,
      &        /,9X,'NON-FATAL INPUT ERRORS WILL STOP EXECUTION ',/)
       ENDIF
-#ifdef DEBUG_WARN_ELEV
-      IF (iWarnElevDump .ne. 0) WarnElevDump = .True.
-      WRITE(16,1953) WarnElev,WarnElevDump,WarnElevDumpLimit,ErrorElev
- 1953 FORMAT(//,5X,
-     &     'A warning will be issued if elevation exceeds WarnElev = ',
-     &     e16.8,
-     &     /,5X,'A global elevation file (fort.69) will be written if '
-     &     /,5X,'WarnElev is exceeded and WarnElevDump is true: ',L2,
-     &     /,5X,'Execution will be terminated if ',
-     &     '(WarnElevDumpLimit = 'I3,') ',
-     &     /,5X,'global elevation files have been written as warning.'
-     &     /,5X,'Execution will be terminated if elevation exceeds'
-     &     ' ErrorElev =',e16.8)
-#endif
 C...
 C...  READ AND PROCESS NABOUT - ABBREVIATED UNIT 16 OUTPUT OPTION
 C...
@@ -3482,33 +3590,8 @@ C...
       DO I=1,NTIF
          FACET(I)=FACET(I)*DEG2RAD
       END DO
-C...
-C...  CHECK CONSISTENCY OF INPUT PARAMETERS NTIF AND NTIP
-C...
-      IF(((NTIP.EQ.0).AND.(NTIF.NE.0)).OR.((NTIP.NE.0).AND.
-     &     (NTIF.EQ.0))) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9961)
-         WRITE(16,9961)
- 9961    FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
-     &        'INPUT ERROR  !!!!!!!!!',
-     &        //,1X,'YOUR SELECTION OF NTIF AND NTIP (UNIT 15 INPUT ',
-     &        'PARAMETERS) IS INCONSISTENT',
-     &        /,1X,'PLEASE CHECK THESE VALUES')
-         IF(NFOVER.EQ.1) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9987)
-            WRITE(16,9987)
- 9987       FORMAT(/,1X,'PROGRAM WILL OVERRIDE THE SPECIFIED ',
-     &           'INPUT AND NEGLECT TIDAL POTENTIAL TERMS',
-     &           /,1X,' AND/OR RESET NTIP = 0',
-     &           //,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!',//)
-            NTIP=0
-         ELSE
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-            WRITE(16,9973)
-            CALL ADCIRC_Terminate()
-         ENDIF
 
-      ELSE IF(NTIP.GE.1) THEN
+      IF(NTIP.GE.1) THEN
 C...
 C...  PRINT OUT LAT/LON VALUES TO BE USED IN COMPUTING TIDAL POTENTIAL
 C...  IF NOT ALREADY DONE SO IN CORIOLIS SECTION AND TIDAL POTENTIAL IS
@@ -3744,7 +3827,8 @@ C....CHECK INPUT PARAMETER NOUTE
          CASE(1)
             CALL logMessage(INFO,'UNIT 61 FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'UNIT 61 FORMAT WILL BE BINARY.')
+            CALL allMessage(ERROR,'Binary format output is deprecated.')
+            CALL ADCIRC_Terminate()
          CASE(3)
             useNetCDF = .true.
             useNetCDFOutput = .true.
@@ -3870,7 +3954,7 @@ C...
 
 C....READ IN NOUTV,TOUTSV,TOUTFV,NSPOOLV : IF NOUTV<>0,INTERPOLATED VELOCITIES AT
 C....VELOCITY STATIONS ARE SPOOLED TO UNIT 62 EVERY NSPOOLV TIME STEPS BETWEEN
-C....TIMES TOUTSV AND TOUTFV; IF ABS(NOUTV)=2, OUTPUT WILL BE BINARY
+C....TIMES TOUTSV AND TOUTFV; IF ABS(NOUTV)=3, OUTPUT WILL BE NETCDF3, ETC
 
       READ(15,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
       WRITE(16,3101) NOUTV
@@ -3886,7 +3970,8 @@ C....CHECK INPUT PARAMETER NOUTV
          CASE(1)
             CALL logMessage(INFO,'UNIT 62 FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'UNIT 62 FORMAT WILL BE BINARY.')
+            CALL allMessage(ERROR,'Binary format output is deprecated.')
+            CALL ADCIRC_Terminate()
          CASE(3)
             useNetCDF = .true.
             useNetCDFOutput = .true.
@@ -4011,7 +4096,8 @@ C...
 
 C...  READ IN NOUTC,TOUTSC,TOUTFC,NSPOOLC : IF NOUTC<>0,INTERPOLATED
 C...  CONCENTRATIONS ARE SPOOLED TO UNIT 81 EVERY NSPOOLC TIME STEPS
-C...  BETWEEN TIMES TOUTSC AND TOUTFC; IF ABS(NOUTC)=2, OUTPUT WILL BE BINARY
+C...  BETWEEN TIMES TOUTSC AND TOUTFC; IF ABS(NOUTC)=3, OUTPUT WILL BE
+C     NETCDF3, ETC
 
          READ(15,*) NOUTC,TOUTSC,TOUTFC,NSPOOLC
          WRITE(16,3201) NOUTC
@@ -4027,7 +4113,8 @@ C...     CHECK INPUT PARAMETER NOUTC
             CASE(1)
                CALL logMessage(INFO,'UNIT 81 FORMAT WILL BE ASCII.')
             CASE(2)
-               CALL logMessage(INFO,'UNIT 81 FORMAT WILL BE BINARY.')
+               CALL allMessage(ERROR,'Binary format output is deprecated.')
+               CALL ADCIRC_Terminate()
             CASE(3)
                useNetCDF = .true.
                useNetCDFOutput = .true.
@@ -4159,7 +4246,7 @@ C
 
 C...  READ IN NOUTM,TOUTSM,TOUTFM,NSPOOLM : IF NOUTM<>0,INTERPOLATED
 C...  MET DATA ARE SPOOLED TO UNITS 71&72 EVERY NSPOOLM TIME STEPS
-C...  BETWEEN TIMES TOUTSM AND TOUTFM; IF ABS(NOUTM)=2, OUTPUT WILL BE BINARY
+C...  BETWEEN TIMES TOUTSM AND TOUTFM; IF ABS(NOUTM)=3, OUTPUT WILL BE NETCDF3, ETC
 
          READ(15,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
          WRITE(16,3211) NOUTM
@@ -4176,8 +4263,8 @@ C...     CHECK INPUT PARAMETER NOUTM
                CALL logMessage(INFO,
      &         'UNIT 71 AND 72 FORMATS WILL BE ASCII.')
             CASE(2)
-               CALL logMessage(INFO,
-     &          'UNIT 71 AND 72 FORMATS WILL BE BINARY.')
+               CALL allMessage(ERROR,'Binary format output is deprecated.')
+               CALL ADCIRC_Terminate()
             CASE(3)
                useNetCDF = .true.
                useNetCDFOutput = .true.
@@ -4305,7 +4392,7 @@ C...
 
 C...  READ IN NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE : IF NOUTGE<>0, GLOBAL ELEV.
 C...  OUTPUT IS SPOOLED TO UNIT 63 EVERY NSPOOLGE TIME STEPS BETWEEN
-C...  TIMES TOUTSGE AND TOUTFGE; IF ABS(NOUTGE)=2, OUTPUT WILL BE BINARY
+C...  TIMES TOUTSGE AND TOUTFGE; IF ABS(NOUTGE)=3, OUTPUT WILL BE NETCDF3
 
       READ(15,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
       WRITE(16,3301) NOUTGE
@@ -4319,9 +4406,10 @@ C...  CHECK INPUT PARAMETER NOUTGE
             CALL logMessage(INFO,
      &         'NO GLOBAL ELEVATION OUTPUT WILL BE SPOOLED.')
          CASE(1)
-            CALL logMessage(INFO,'UNIT 63 FORMAT WILL BE ASCII.')
+            CALL logMessage(INFO, 'UNIT 63 FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'UNIT 63 FORMAT WILL BE BINARY.')
+            CALL allMessage(ERROR,'Binary format output is deprecated.')
+            CALL ADCIRC_Terminate()
          CASE(3)
             useNetCDF = .true.
             useNetCDFOutput = .true.
@@ -4391,7 +4479,7 @@ C...
 
 C...  READ IN NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV : IF NOUTGV<>0, GLOBAL VEL.
 C...  OUTPUT IS SPOOLED TO UNIT 64 EVERY NSPOOLGV TIME STEPS BETWEEN
-C...  TIMES TOUTSGV AND TOUTFGV; IF ABS(NOUTGV)=2, OUTPUT WILL BE BINARY
+C...  TIMES TOUTSGV AND TOUTFGV; IF ABS(NOUTGV)=3, OUTPUT WILL BE NETCDF3, ETC
 
       READ(15,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
       WRITE(16,3351) NOUTGV
@@ -4407,7 +4495,8 @@ C...  CHECK INPUT PARAMETER NOUTGV
          CASE(1)
             CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE BINARY.')
+            CALL allMessage(ERROR,'Binary format output is deprecated.')
+            CALL ADCIRC_Terminate()
          CASE(3)
             useNetCDF = .true.
             useNetCDFOutput = .true.
@@ -4511,8 +4600,8 @@ C...
 
 C...  READ IN NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC : IF NOUTGC<>0, GLOBAL
 C...  CONCENTRATION OUTPUT IS SPOOLED TO UNIT 73 EVERY NSPOOLGC TIME
-C...  STEPS BETWEEN TIMES TOUTSGC AND TOUTFGC; IF ABS(NOUTGC)=2, OUTPUT
-C...  WILL BE BINARY
+C...  STEPS BETWEEN TIMES TOUTSGC AND TOUTFGC; IF ABS(NOUTGC)=3, OUTPUT
+C...  WILL BE NETCDF3, ETC
 
          READ(15,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
          WRITE(16,3401) NOUTGC
@@ -4528,7 +4617,8 @@ C...  CHECK INPUT PARAMETER NOUTGC
             CASE(1)
                CALL logMessage(INFO,'UNIT 83 FORMAT WILL BE ASCII.')
             CASE(2)
-               CALL logMessage(INFO,'UNIT 83 FORMAT WILL BE BINARY.')
+               CALL allMessage(ERROR,'Binary format output is deprecated.')
+               CALL ADCIRC_Terminate()
             CASE(3:)
                call allMessage(ERROR,"This NOUTGV value is invalid.")
                call ADCIRC_Terminate()
@@ -4584,8 +4674,8 @@ C...
 
 C...  READ IN NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW : IF NOUTGW<>0, GLOBAL
 C...  WIND OUTPUT IS SPOOLED TO UNIT 74 EVERY NSPOOLGW TIME STEPS
-C...  BETWEEN TIMES TOUTSGW AND TOUTFGW; IF ABS(NOUTGW)=2, OUTPUT WILL
-C...  BE BINARY
+C...  BETWEEN TIMES TOUTSGW AND TOUTFGW; IF ABS(NOUTGW)=3, OUTPUT WILL
+C...  BE NETCDF3, ETC
 
          READ(15,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
          WRITE(16,3451) NOUTGW
@@ -4601,8 +4691,8 @@ C...  CHECK INPUT PARAMETER NOUTGW
                CALL logMessage(INFO,
      &         'UNIT 73 AND 74 FORMATS WILL BE ASCII.')
             CASE(2)
-               CALL logMessage(INFO,
-     &          'UNIT 73 AND 74 FORMATS WILL BE BINARY.')
+               CALL allMessage(ERROR,'Binary format output is deprecated.')
+               CALL ADCIRC_Terminate()
             CASE(3)
                useNetCDF = .true.
                useNetCDFOutput = .true.
@@ -5077,6 +5167,42 @@ C
 #endif
       ENDIF
 
+      ! Check if we have been provided a base date for the tide potential calculations
+      if(UseFullTIPFormula.and.trim(TipStartDate)=="none")then
+         if(useNetCDF)then
+            TipStartDate = trim(base_date)
+            WRITE(scratchMessage,'(2A)') "The TipStartDate parameter was not set in the TidalPotentialControl namelist."//
+     &                                   " Using the base_date netCDF metadata value instead: ", TipStartDate
+            call allMessage(WARNING,scratchMessage)
+         else
+            scratchMessage = "The TipStartDate parameter must be set either in the netCDF metadata "//
+     &                       "or the tide potential namelist."
+            call allMessage(ERROR,scratchMessage)
+            call adcirc_terminate()
+         endif
+      endif
+
+!...  CHECK CONSISTENCY OF INPUT PARAMETERS NTIF AND NTIP
+      if((.not.UseFullTIPFormula.and.(NTIP.EQ.0.AND.NTIF.NE.0)).OR.
+     &   (.not.UseFullTIPFormula.and.(NTIP.NE.0.AND.NTIF.EQ.0)).OR.
+     &   (NTIP.GT.1.AND.NTIF.EQ.0))then
+        if(NSCREEN.NE.0.AND.MYPROC.EQ.0) write(ScreenUnit,9961)
+        write(16,9961)
+ 9961   format(////,1X,'!!!!!!!!!!  WARNING - FATAL ',
+     &      'INPUT ERROR  !!!!!!!!!',
+     &      //,1X,'YOUR SELECTION OF NTIF AND NTIP (UNIT 15 INPUT ',
+     &      'PARAMETERS) IS INCONSISTENT',
+     &      /,1X,'PLEASE CHECK THESE VALUES')
+        if(NSCREEN.NE.0.AND.MYPROC.EQ.0)write(ScreenUnit,9973)
+        write(16,9973)
+        call ADCIRC_Terminate()
+      endif
+      ! Initialize the tidal potential calculation
+      tidePotential = t_tidePotential(np, rnday, UseFullTIPFormula,
+     &                                TIPOrder, TIPStartDate,  
+     &                                MoonSunPositionComputeMethod, 
+     &                                MoonSunCoordFile, IncludeNutation, 
+     &                                k2Value, h2Value)
 C...
 C...  CLOSE FORT.15
 C...
@@ -6042,7 +6168,7 @@ C-----------------------------------------------------------------------
       USE MESSENGER, ONLY : msg_fini
 #endif
       IMPLICIT NONE
-      INTEGER, intent(in) :: specifier   ! format, 1=ascii, 2=binary, etc
+      INTEGER, intent(in) :: specifier   ! format, 1=ascii, 3=netcdf3, etc
       CHARACTER(len=80), intent(in) :: description ! type of output data
       REAL(8), intent(in) :: staTime
       INTEGER, intent(inout) :: tsPeriod ! period of time steps between outputs
@@ -6075,7 +6201,8 @@ C     specified format.
          CASE(1)
             CALL logMessage(INFO,'OUTPUT FORMAT WILL BE ASCII.')
          CASE(2)
-            CALL logMessage(INFO,'OUTPUT FORMAT WILL BE BINARY.')
+            CALL allMessage(ERROR,'Binary format output is deprecated.')
+            CALL ADCIRC_Terminate()
          CASE(3)
             useNetCDF = .true.
             CALL logMessage(INFO,
@@ -6571,12 +6698,13 @@ C-----------------------------------------------------------------------
 C     jgf52.08.02: Record the i/o status associated with reading the
 C     namelist using the negative, zero, or positive value of ios.
 C-----------------------------------------------------------------------
-      subroutine logNamelistReadStatus(nmlname, ios)
+      subroutine logNamelistReadStatus(nmlname, ios, msg)
       use global, only : logMessage, scratchMessage, DEBUG, ECHO, INFO,
      &   WARNING, ERROR, setMessageSource, unsetMessageSource,
      &   allMessage
       implicit none
-      character(len=1000), intent(in) :: nmlname
+      character(len=*), intent(in) :: nmlname
+      character(len=*), intent(in) :: msg
       integer, intent(in) :: ios
 
       call setMessageSource("logNameListReadStatus")
@@ -6596,11 +6724,13 @@ C-----------------------------------------------------------------------
          call logMessage(INFO,
      &      'The '//trim(nmlName)//' namelist was found.')
       ! positive values indicate some sort of i/o error, other than
-      ! reaching the end-file before finding the namelist
+      ! reaching the end-file before finding the namselist
       case(1:)
          write(scratchMessage,'(a,i0,a)')
      &      'Could not read '//trim(nmlName)//
      &     ' namelist. The Fortran i/o error code was ',ios,'.'
+         call allMessage(ERROR,scratchMessage)
+         write(scratchMessage, '(a,a)') "Error Message: ", trim(msg)
          call allMessage(ERROR,scratchMessage)
       end select
 
