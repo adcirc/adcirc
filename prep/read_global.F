@@ -860,6 +860,17 @@ c..
       endif
       rewind(15)  !Return to the top of the fort.15 file
 
+      read(unit=15,nml=nws8Control,iostat=ios)
+      if ( ios.ge.0) then
+         FOUND_NWS8_NML = .true.
+         call logMessage(INFO,
+     &         'The NWS8 control namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The NWS8 control namelist was not found.')
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+
 C  DW
       read(unit=15,nml=TidalPotentialControl,iostat=IOS_TIPNL)
       IF( IOS_TIPNL .ge. 0 )THEN
