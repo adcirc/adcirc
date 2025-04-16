@@ -43,6 +43,7 @@ MODULE MOD_INLINE_SAL
 #ifndef NONADC        
         procedure, pass(this), public:: sal_privatedata_init
         procedure, pass(this), public:: sal_compute => direct_spht_self_attraction_loading_fn
+        procedure, pass(this), public:: sal_compute_sub => direct_spht_self_attraction_loading_sub
 #endif    
     end type salmethod        
 
