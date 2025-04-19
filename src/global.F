@@ -2052,6 +2052,91 @@ C     available to different parts of ADCIRC.
           ENDDO
       END FUNCTION toUppercase
 
+C***********************************************************************
+C                                                                      *
+C   Convert time from year,month,day,hour,min,sec into seconds since   *
+C   the beginning of the year.                                         *
+C                                                                      *
+C***********************************************************************
+      REAL(8) FUNCTION TIMECONV(IYR,IMO,IDAY,IHR,IMIN,SEC) RESULT(TIMESEC)
+      IMPLICIT NONE
+      INTEGER, INTENT(IN) :: IYR,IMO,IDAY,IHR,IMIN
+      REAL(8), INTENT(IN) :: SEC
+      INTEGER :: ILEAP
+
+      TIMESEC = (IDAY-1)*86400 + IHR*3600 + IMIN*60 + SEC
+      IF(IMO.GE.2)  TIMESEC = TIMESEC + 31*86400
+      ILEAP = (IYR/4)*4
+      IF((ILEAP.EQ.IYR).AND.(IMO.GE.3)) TIMESEC = TIMESEC + 29*86400
+      IF((ILEAP.NE.IYR).AND.(IMO.GE.3)) TIMESEC = TIMESEC + 28*86400
+      IF(IMO.GE.4)  TIMESEC = TIMESEC + 31*86400
+      IF(IMO.GE.5)  TIMESEC = TIMESEC + 30*86400
+      IF(IMO.GE.6)  TIMESEC = TIMESEC + 31*86400
+      IF(IMO.GE.7)  TIMESEC = TIMESEC + 30*86400
+      IF(IMO.GE.8)  TIMESEC = TIMESEC + 31*86400
+      IF(IMO.GE.9)  TIMESEC = TIMESEC + 31*86400
+      IF(IMO.GE.10) TIMESEC = TIMESEC + 30*86400
+      IF(IMO.GE.11) TIMESEC = TIMESEC + 31*86400
+      IF(IMO.EQ.12) TIMESEC = TIMESEC + 30*86400
+      IF(IMO.GT.12) THEN
+         call allMessage(ERROR,'Error in function timeconv: month > 12.')
+         TIMESEC = TIMESEC + 30*86400
+      ENDIF
+
+C-----------------------------------------------------------------------
+      END FUNCTION TIMECONV
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C                    S U B R O U T I N E
+C          L O G   N A M E L I S T   R E A D   S T A T U S
+C-----------------------------------------------------------------------
+C     jgf52.08.02: Record the i/o status associated with reading the
+C     namelist using the negative, zero, or positive value of ios.
+C-----------------------------------------------------------------------
+      subroutine logNamelistReadStatus(nmlname, ios, msg)
+      implicit none
+      character(len=*), intent(in) :: nmlname
+      character(len=*), intent(in) :: msg
+      integer, intent(in) :: ios
+
+      call setMessageSource("logNameListReadStatus")
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      select case(ios)
+      ! negative value indicates that we reached the end of the file
+      ! before reading the namelist (not an error, since namelists
+      ! are generally used for optional input)
+      case(:-1)
+         call logMessage(INFO,
+     &      'End-of-file when searching for '//trim(nmlName)//'.')
+      ! zero indicates success
+      case(0)
+         call logMessage(INFO,
+     &      'The '//trim(nmlName)//' namelist was found.')
+      ! positive values indicate some sort of i/o error, other than
+      ! reaching the end-file before finding the namselist
+      case(1:)
+         write(scratchMessage,'(a,i0,a)')
+     &      'Could not read '//trim(nmlName)//
+     &     ' namelist. The Fortran i/o error code was ',ios,'.'
+         call allMessage(ERROR,scratchMessage)
+         write(scratchMessage, '(a,a)') "Error Message: ", trim(msg)
+         call allMessage(ERROR,scratchMessage)
+      end select
+
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      end subroutine logNamelistReadStatus
+C-----------------------------------------------------------------------
+
+
+
 C     ------------------------------------------------------------------
 C     ------------------------------------------------------------------
       END MODULE GLOBAL

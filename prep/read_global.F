@@ -860,14 +860,14 @@ c..
       endif
       rewind(15)  !Return to the top of the fort.15 file
 
-      read(unit=15,nml=nws8Control,iostat=ios)
+      read(unit=15,nml=nws08Control,iostat=ios)
       if ( ios.ge.0) then
          FOUND_NWS8_NML = .true.
          call logMessage(INFO,
-     &         'The NWS8 control namelist was found.')
+     &         'The NWS08 control namelist was found.')
       else
          call logMessage(INFO,
-     &         'The NWS8 control namelist was not found.')
+     &         'The NWS08 control namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
 

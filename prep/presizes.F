@@ -320,7 +320,7 @@ c.... !wjp added for warnElev namelist
       REAL(8) :: w_cool = 2d0 ! mm/s
       LOGICAL :: CkCd_calc = .FALSE.
       REAL(8) :: CkCd = 1d0
-      NAMELIST /nws8Control/ 
+      NAMELIST /nws08Control/
      &   vortexModel,           ! Holland or CLE15
      &   backgroundWindModel,   ! None or LC12
      &   BCalc,                 ! exact or limited
@@ -846,10 +846,10 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          found_density_nml = .true.  
       ENDIF
       REWIND(15)
-      ! nws8Control
-      READ(UNIT=15,NML=nws8Control,IOSTAT=IOS)
+      ! nws08Control
+      READ(UNIT=15,NML=nws08Control,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
-         write(*,*) "INFO: The nws8 Control namelist was not found."
+         write(*,*) "INFO: The nws08 Control namelist was not found."
       ELSE
          found_nws8_nml = .true.  
       ENDIF

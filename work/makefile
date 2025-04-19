@@ -372,6 +372,7 @@ NCE_MSRC   =  netcdf_error.F90
 GIO_MSRC   =  globalio.F
 WRIT_MSRC  =  write_output.F
 WRITER_MSRC = writer.F 
+NWS08_MSRC = nws08.F90
 #Casey 090302: Add file for coupling to unstructured SWAN.
 COUP_MSRC  =  couple2swan.F
 #tcm v49.48.01 Adding File for kdtree2 fast search algorithm
@@ -407,6 +408,7 @@ HARM_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(HARM_MSRC)  )
 VORT_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VORT_MSRC)  )
 VW1D_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VW1D_MSRC)  )
 WIND_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WIND_MSRC)  )
+NWS08_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NWS08_MSRC) )
 NA_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NA_MSRC)  )
 SG_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(SG_MSRC)  )
 NC_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NC_MSRC)  )
@@ -583,10 +585,10 @@ else
    adccmp:  $(O_DIR)
 
 ifeq ($(NETCDF),enable)
-   adcprep ::  $(METIS_OBJ) $(NCE_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(NC_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ) $(HASH_MOBJ)
+   adcprep ::  $(METIS_OBJ) $(NCE_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(NC_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ) $(HASH_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 else
-   adcprep ::  $(METIS_OBJ) $(NCE_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ) $(HASH_MOBJ)
+   adcprep ::  $(METIS_OBJ) $(NCE_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ) $(HASH_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
 ifeq ($(NETCDF),enable)
@@ -599,8 +601,8 @@ endif
    adcpost ::  $(POST_OBJ) $(HARM_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-ADCIRC_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
-ADCSWAN_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+ADCIRC_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+ADCSWAN_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 ifeq ($(NETCDF),enable)
    ADCIRC_DEP := $(ADCIRC_DEP) $(NC_MOBJ)
    ADCSWAN_DEP := $(ADCSWAN_DEP) $(NC_MOBJ)
@@ -613,23 +615,23 @@ endif
    adcirc ::  $(ADCIRC_DEP)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-   $(PARALLEL_ADCIRC) :: $(ADC_MOBJ) $(HASH_MOBJ) $(MSG_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+   $(PARALLEL_ADCIRC) :: $(ADC_MOBJ) $(HASH_MOBJ) $(MSG_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
 ifeq ($(NETCDF),enable)
    $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(MSG_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) \
-	        $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
+	        $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
 	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(TIDE_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) \
 	         $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
-                 $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
+                 $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
                  $(WRITER_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ) 
 	ar -ts $@
 else
    $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(MSG_MOBJ) \
-	        $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
+	        $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
 	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) \
 	         $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
-                 $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
+                 $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
                  $(WRITER_MOBJ) $(SUBD_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ) 
 	ar -ts $@
 endif
@@ -641,7 +643,7 @@ endif
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
    padcswan :: $(O_DIR)
-   padcswan :: $(NA_MOBJ) $(ADC_MOBJ) $(HASH_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+   padcswan :: $(NA_MOBJ) $(ADC_MOBJ) $(HASH_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS) $(LDFLAGS)
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
@@ -680,7 +682,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -728,7 +730,7 @@ help:
 #  adcprep modules
 
 $(O_DIR)version.o     :  version.F
-$(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ) $(O_DIR)global.o
+$(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(O_DIR)global.o
 $(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
 $(O_DIR)mesh.o        :  mesh.F $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)hashtable.o
 $(O_DIR)pre_global.o  :  pre_global.F  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ) $(O_DIR)global_3dvs.o
@@ -739,11 +741,11 @@ $(O_DIR)subprep.o     :  subprep.F $(O_DIR)subprep.o $(O_DIR)global.o
 
 $(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ) $(ADC_MOBJ) $(SUBP_MOBJ)
 $(O_DIR)decomp.o      :  decomp.F   $(PGLO_MOBJ)
-$(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ) $(KDTREE_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
+$(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ) $(KDTREE_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ)
 ifeq ($(NETCDF),enable)
 $(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ) $(NC_MOBJ) $(HARM_MOBJ) $(NA_MOBJ)
 else
-$(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NA_MOBJ)
+$(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(NA_MOBJ)
 endif
 $(O_DIR)interp.o      :  interp.F
 $(O_DIR)machdep.o     :  machdep.F
@@ -796,7 +798,7 @@ endif
 $(O_DIR)writer.o      : $(WRITER_DEP)
 $(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o $(O_DIR)global_3dvs.o
 $(O_DIR)harm.o        :  harm.F $(O_DIR)mesh.o
-$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOBJ) $(WIND_MOBJ)
+$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ)
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ)
 $(O_DIR)owiwind_netcdf.o : owiwind_netcdf.F
 $(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ)
@@ -806,7 +808,7 @@ $(O_DIR)itpackv.o     :  itpackv.F $(O_DIR)sizes.o $(O_DIR)messenger.o
 else
 $(O_DIR)itpackv.o     :  itpackv.F $(O_DIR)sizes.o
 endif
-$(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(GWCE_MOBJ) $(O_DIR)global_3dvs.o
+$(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(GWCE_MOBJ) $(O_DIR)global_3dvs.o
 
 #Casey 090302: Added the next line.
 $(O_DIR)couple2swan.o :  couple2swan.F $(O_DIR)write_output.o
@@ -851,9 +853,9 @@ $(O_DIR)cstart.o      : cstart.F
 $(O_DIR)hstart.o      : hstart.F
 $(O_DIR)timestep.o    : timestep.F
 ifeq ($(NETCDF),enable)
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ)  $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
 else
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
 endif
 $(O_DIR)driver.o      : driver.F $(O_DIR)adcirc.o
 
