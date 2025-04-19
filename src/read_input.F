@@ -85,7 +85,7 @@ C-----------------------------------------------------------------------
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
      &   WarnVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
-     &   Pfile_inset, Wfile_inset, InsetControlFile 
+     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus
 
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
@@ -118,10 +118,11 @@ C-----------------------------------------------------------------------
       USE WEIR
       USE TIME_VARYING_WEIR_BOUNDARY
       USE OWIWIND,ONLY: nPowellSearchDomains
+      USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist, getVortexModelStringNws8 => getVortexModelString
       USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
      &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
-     &   BLADJ, STORMNUMBER, WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
-     &   NWSok, WINDREFTIME, Allowable_NWS, PUREBACKGROUND, TimeConv, 
+     &   WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
+     &   NWSok, Allowable_NWS, PUREBACKGROUND,
      &   DragLawString, dynamicWaterLevelCorrectionFileName, WTIMINC_12,
      &   dynamicWaterLevelCorrectionMethod,
      &   dynamicWaterLevelCorrectionMassAdjust,
@@ -130,8 +131,6 @@ C-----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionSkipSnaps,
      &   dynamicWaterLevelCorrectionRampReferenceTime,
      &   dynamicWaterLevelCorrectionMultiplier,
-     &   vortexModel, backgroundWindModel, BCalc, thetaLatDep,
-     &   windspeed_averaging_minute, useInflow, w_cool, CkCd_calc, CkCd,
      &   read_NWS14_NetCdf_using_core_0
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
@@ -184,6 +183,8 @@ Casey 180318: Added NWS=13
       INTEGER IDUM80
       INTEGER IMDig1,IMDig2,IMDig3,IMDig4,IMDig5,IMDig6
       REAL(8) RampVal
+      REAL(8) :: WindRefTime, BLAdj
+      INTEGER :: StormNumber
       CHARACTER(len=80) :: CDUM80
       LOGICAL fileFound
       INTEGER :: I, J, JKI, JJ, NP2, IDENsign
@@ -193,6 +194,8 @@ C
       character(len=100) :: densityRunType ! diagnostic or prognostic
       character(len=100) :: densityDimensions ! 2DDI or 3D
       character(len=100) :: densityForcingType ! sigmaT, salinity, etc
+
+      character(len=20) :: vortexModelString
 
       ! I/O variables for tide potential namelist
       logical :: UseFullTIPFormula = .false.
@@ -247,19 +250,6 @@ C.... DMW
 !JLW: adding subgrid namelist
       NAMELIST /subgridControl/ subgridFilename, level0, level1,
      &    phi_time_derivative
-
-!CPB: adding nws8Control namelist
-      NAMELIST /nws8Control/ 
-     &   vortexModel,           ! Holland or CLE15
-     &   backgroundWindModel,   ! radialVelocityWeighted or LC12
-     &   BCalc,                 ! exact or limited
-     &   thetaLatDep,           ! true or false
-     &   useInflow,             ! true or false
-     &   windspeed_averaging_minute, ! 1- or 10-min
-     &   w_cool,                ! ~1-3 (mm/s)
-     &   CkCd_calc,             ! true or false
-     &   CkCd                   ! value used. if CdCd_calc = true,
-                                ! this value will not be used
 
       NAMELIST /WindGrib2NetCdf/ read_NWS14_NetCdf_using_core_0
 !Aman Tejaswi
@@ -365,7 +355,7 @@ C...
 #endif
       WRITE(16,*) '      - dmw202401 THIS CODE USES A VELCHECKER'
       WRITE(16,*) '      - dmw202401 THIS CODE USES THE FIX FOR SUBGRID BARRIERS'
-	  WRITE(16,*) '      - dmw202401 adcirc-noaa e8aef69945a44c50fbc51350eddf26d8f559348c'
+	    WRITE(16,*) '      - dmw202401 adcirc-noaa e8aef69945a44c50fbc51350eddf26d8f559348c'
       write(16,1112)
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
@@ -497,6 +487,7 @@ c     a non-default value we can determine this was the case.
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
+      call readNws08Namelist(15)
 
 !Aman Tejaswi
       namelistSpecifier = 'InterpInset'
@@ -867,64 +858,10 @@ C     WJP add namelist
       elseif (trim(densityForcingType).eq.'BuoyancyFrequenciesonGrid') then
          IDEN = 9         
       endif
+
 !     Make sure to include the sign
       IDEN = IDEN*IDENsign
       if (IDEN.ne.0) CBaroclinic = .true.
-
-C...
-
-!     CPB: add nws8Control namelist
-!     defaults
-      vortexModel = 'Holland'
-      backgroundWindModel = 'radialVelocityWeighted'
-      BCalc = 'limited'
-      thetaLatDep = .false.
-      useInflow = .false.
-      windspeed_averaging_minute = 1
-      w_cool = 2d0
-      CkCd_calc = .false.
-      CkCd = 1d0 
-!     read the namelist
-      namelistSpecifier = 'nws8Control'
-      read(unit=15,nml=nws8Control,iostat=IOS,iomsg=ios_nml_error_msg)
-      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
-      write(scratchMessage,'(a,a)') "vortexModel = ",
-     &      trim(vortexModel)
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,a)') "backgroundWindModel = ",
-     &      trim(backgroundWindModel)
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,a)') "BCalc = ",      
-     &      trim(BCalc)
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,l)') "thetaLatDep = ",
-     &      thetaLatDep
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,l)') "useInflow = ",
-     &      useInflow
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,'(a,i0)') "windspeed_averaging_minute = ",
-     &      windspeed_averaging_minute
-      call logMessage(ECHO,trim(scratchMessage))
-      ! only print these next lines if we are using the CLE15 vortex
-      ! model since they are not used in regular Holland
-      IF (vortexModel.EQ."CLE15") THEN
-         write(scratchMessage,'(a,f6.2,a)') "w_cool  =",
-     &      w_cool," mm s^-1"
-         call logMessage(ECHO,trim(scratchMessage))
-         IF (CkCd_calc.EQV..true.) THEN
-            write(scratchMessage,'(a,a)') "CkCd will be calculated",
-     & " using the relationship: CkCd = 0.00055*V^2 - 0.02590*V + 0.763"
-            call logMessage(ECHO,trim(scratchMessage))
-         ELSE
-            write(scratchMessage,'(a,f6.2)') "CkCd  =",
-     &      CkCd
-            call logMessage(ECHO,trim(scratchMessage))
-         ENDIF
-      ENDIF
-      rewind(15)
-      ! convert w_cool from mm per second to m per second
-      w_cool = w_cool/1000
 
 C...  tidal potential control namelist
       namelistSpecifier = 'TidalPotentialControl'
@@ -2058,7 +1995,8 @@ C     in NWS=6)
       ENDIF
 C     jgf46.03 Added NWS=8 (Holland wind model).
       IF(NWS.EQ.8) THEN
-         WRITE(16,1237) NWS, vortexModel
+         vortexModelString = getVortexModelStringNws8()
+         WRITE(16,1237) NWS, vortexModelString
  1237    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE ',A,' WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
@@ -2068,7 +2006,8 @@ C     jgf46.03 Added NWS=8 (Holland wind model).
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
       IF(NWS.EQ.-8) THEN
-         WRITE(16,1238) NWS, vortexModel
+         vortexModelString = getVortexModelStringNws8()
+         WRITE(16,1238) NWS, vortexModelString
  1238    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE ',A,' WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
@@ -2721,8 +2660,7 @@ C...
          WRITE(16,1116) IREFMO,IREFDAY,IREFYR,IREFHR,IREFMIN,REFSEC
  1116    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &        I2,'/',I2,'/',I4,'  ',I2,':',I2,':',f7.4,/)
-         CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,REFSEC,
-     &        WREFTIM)
+         WREFTIM = TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,REFSEC)
 C...     TCM V49.64.01 CHANGES FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) NWLAT,NWLON,WLATMAX,
      &        WLONMIN,WLATINC,WLONINC,WTIMINC
@@ -2785,8 +2723,8 @@ C...     WHERE NRS=2, NRS=4 WERE NOT BEING INCLUDED
          WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
  6111    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &           I2,'/',I2,'/',I4,'  ',I2,'H',/)
-         CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
-     &        WindRefTime)
+         WindRefTime = TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0)
+         CALL setNws08f15Parameters(WindRefTime, BLAdj, StormNumber, g)
       ENDIF
 C     jgf46.16 Merged:
 C     cf & cm added nws = 9: asymmetric hurricane winds
@@ -6693,57 +6631,6 @@ C
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE ComputeInterpolatingFactors
-C-----------------------------------------------------------------------
-
-C-----------------------------------------------------------------------
-C                    S U B R O U T I N E
-C          L O G   N A M E L I S T   R E A D   S T A T U S
-C-----------------------------------------------------------------------
-C     jgf52.08.02: Record the i/o status associated with reading the
-C     namelist using the negative, zero, or positive value of ios.
-C-----------------------------------------------------------------------
-      subroutine logNamelistReadStatus(nmlname, ios, msg)
-      use global, only : logMessage, scratchMessage, DEBUG, ECHO, INFO,
-     &   WARNING, ERROR, setMessageSource, unsetMessageSource,
-     &   allMessage
-      implicit none
-      character(len=*), intent(in) :: nmlname
-      character(len=*), intent(in) :: msg
-      integer, intent(in) :: ios
-
-      call setMessageSource("logNameListReadStatus")
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      select case(ios)
-      ! negative value indicates that we reached the end of the file
-      ! before reading the namelist (not an error, since namelists
-      ! are generally used for optional input)
-      case(:-1)
-         call logMessage(INFO,
-     &      'End-of-file when searching for '//trim(nmlName)//'.')
-      ! zero indicates success
-      case(0)
-         call logMessage(INFO,
-     &      'The '//trim(nmlName)//' namelist was found.')
-      ! positive values indicate some sort of i/o error, other than
-      ! reaching the end-file before finding the namselist
-      case(1:)
-         write(scratchMessage,'(a,i0,a)')
-     &      'Could not read '//trim(nmlName)//
-     &     ' namelist. The Fortran i/o error code was ',ios,'.'
-         call allMessage(ERROR,scratchMessage)
-         write(scratchMessage, '(a,a)') "Error Message: ", trim(msg)
-         call allMessage(ERROR,scratchMessage)
-      end select
-
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C-----------------------------------------------------------------------
-      end subroutine logNamelistReadStatus
 C-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
