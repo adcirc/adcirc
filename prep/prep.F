@@ -2441,8 +2441,8 @@ c...     wjp additions for density Control Namelist
          ENDIF
          ! CPB Feb. 2024. Adding nws8 control namelist
          IF (FOUND_NWS8_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
-            write(15,*) '! -- Begin nws8 Control NameList --'
-            write(15,'(A)') '&nws8Control'
+            write(15,*) '! -- Begin nws08 Control NameList --'
+            write(15,'(A)') '&nws08Control'
             write(15,'(3A)') 'vortexModel = "',trim(vortexModel),'",'
             write(15,'(3A)') 'backgroundWindModel = "',
      &                          trim(backgroundWindModel),'",'
