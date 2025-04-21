@@ -2439,7 +2439,7 @@ c...     wjp additions for density Control Namelist
             write(15,'(3A)') '  densityForcingType="',TRIM(densityForcingType),'"   /'
             write(15,*) '! -- End  Control NameList --'
          ENDIF
-         ! CPB Feb. 2024. Adding nws8 control namelist
+         ! CPB Feb. 2024. Adding nws08 control namelist
          IF (FOUND_NWS8_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
             write(15,*) '! -- Begin nws08 Control NameList --'
             write(15,'(A)') '&nws08Control'
@@ -2454,6 +2454,7 @@ c...     wjp additions for density Control Namelist
             write(15,'(A,F6.2,A)') 'w_cool = ',w_cool,','
             write(15,'(A,L,A)') 'CkCd_calc = ',CkCd_calc,','
             write(15,'(A,F6.2,A)') 'CkCd = ',CkCd,','
+            write(15,'(A,F6.2,A)') 'WindMultiplier = ',WindMultiplier,','
             write(15,'(A)') '/'
             write(15,*) '! -- End nws8 Control NameList --'
          ENDIF

@@ -31,6 +31,22 @@
 !> read from an input file, typically the fort.15. Second, the additional parameters
 !> that are set in the fort.15 file must be supplied. Lastly, the NWS08INIT function
 !> is called.
+!>
+!> The namelist used for initialization is formatted as follows:
+!> @code
+!> &nws08Control
+!>     vortexModel = "Holland" ! Holland or CLE15
+!>     backgroundWindModel = "radialVelocityWeighted" ! radialVelocityWeighted or LC12
+!>     BCalc = "limited" ! limited or exact
+!>     thetaLatDep = .false. ! theta used in calculation of radius dependent upon latitude
+!>     useInflow = .false. ! whether to use inflow angle in translation speed calc
+!>     windspeed_averaging_minute = 1 ! 1 or 10
+!>     w_cool = 2.0 ! magnitude of the radiative-subsidence rate in the free troposphere (Chavas and Lin, 2016)
+!>     CkCd_calc = .false. ! use constant (false) or best fit (true) for CkCd
+!>     CkCd = 1.0 ! ratio of exchange coefficients of enthalpy (Ck) and momentum
+!>     WindMultiplier = 1.0 ! wind multiplier applied to wind speed (default = 1.0, Holland model only)
+!> /
+!> @endcode
 module mod_nws08
 
    use global, only: allMessage, DEBUG, ERROR, ECHO, setMessageSource, unsetMessageSource
@@ -106,15 +122,14 @@ module mod_nws08
    real(8), allocatable, private :: RAD(:), DX(:), DY(:), V_r(:), &
                                     THETA(:), XCOOR(:), YCOOR(:)
 
-   !> Used to determine Holland Wind Model wind multiplier.
-   !> TODO: This behavior should not be in the code and needs to be changed
-   integer :: StormNumber
-
    !> Seconds since beginning of the year corresponding to time=0 of the simulation
    real(8) :: WindRefTime
 
    !> Density of water multiplied by g
    real(8) :: RhoWat0g
+
+   !> Wind multiplier applied to wind speed
+   real(8) :: WindMultiplier = 1.0d0
 
    private
 
@@ -274,8 +289,9 @@ contains
    !> @param iounit The unit number to read from
    !----------------------------------------------------------------
    subroutine readNws08Namelist(iounit)
-      use global, only: scratchMessage, logMessage, toLowercase, logNamelistReadStatus
+      use global, only: WARNING, screenMessage, scratchMessage, logMessage, toLowercase, logNamelistReadStatus
       implicit none
+      real(8), parameter :: eps = epsilon(1.0d0)
       integer, intent(in) :: iounit
       integer :: ios, io_stat
       character(len=256) :: vortexModel
@@ -293,7 +309,8 @@ contains
          windspeed_averaging_minute, &
          w_cool, &
          CkCd_calc, &
-         CkCd
+         CkCd, &
+         WindMultiplier
 
       ! Check if the specified unit is open for read
       inquire (UNIT=iounit, IOSTAT=io_stat)
@@ -312,6 +329,7 @@ contains
       w_cool = 2d0
       CkCd_calc = .false.
       CkCd = 1d0
+      WindMultiplier = 1.0d0
 
       ! read the namelist
       namelistSpecifier = 'nws08Control'
@@ -330,10 +348,17 @@ contains
       call logMessage(ECHO, trim(scratchMessage))
       write (scratchMessage, '(a,i0)') "windspeed_averaging_minute = ", windspeed_averaging_minute
       call logMessage(ECHO, trim(scratchMessage))
+      write (scratchMessage, '(a,f6.2)') "WindMultiplier = ", WindMultiplier
+      call logMessage(ECHO, trim(scratchMessage))
 
       vortexModelId = getVortexModelId(vortexModel)
       backgroundWindModelId = getBackgroundWindModelId(backgroundWindModel)
       bCalcId = getBCalcId(BCalc)
+
+      if (WindMultiplier - 1.0d0 > eps .and. vortexModelId == VORTEX_MODEL_CLE15) then
+         write (scratchMessage, '(a)') "WindMultiplier is only used with the Holland vortex model."
+         call screenMessage(WARNING, trim(scratchMessage))
+      end if
 
       ! only print these next lines if we are using the CLE15 vortex
       ! model since they are not used in regular Holland
@@ -361,21 +386,18 @@ contains
    !> @brief Set the NWS8 parameters
    !> @param WindRefTime_in The reference time for the wind
    !> @param BLAdj_in The boundary layer adjustment factor
-   !> @param StormNumber_in The storm number
    !> @param g The acceleration due to gravity
    !----------------------------------------------------------------
-   subroutine setNws08f15Parameters(WindRefTime_in, BLAdj_in, StormNumber_in, g)
+   subroutine setNws08f15Parameters(WindRefTime_in, BLAdj_in, g)
       use ADC_CONSTANTS, only: rhowat0
       implicit none
       real(8), intent(in) :: WindRefTime_in
       real(8), intent(in) :: BLAdj_in
       real(8), intent(in) :: g
-      integer, intent(in) :: StormNumber_in
 
       ! Set up input variables
       WindRefTime = WindRefTime_in
       BLAdj = BLAdj_in
-      StormNumber = StormNumber_in
       RhoWat0g = rhowat0*g
 
    end subroutine setNws08f15Parameters
@@ -536,7 +558,6 @@ contains
       real(8) :: TransSpdX, TransSpdY
       real(8) :: cpress, lon, lat, spd, rrad, alpha
       real(8) :: ts ! storm translation speed, m/s
-      real(8) :: WindMultiplier ! for storm 2 in LPFS ensemble
       real(8) :: centralPressureDeficit ! difference btw ambient and cpress
       real(8) :: inflowAngle
       real(8) :: non_cyclostrophic_part
@@ -605,16 +626,6 @@ contains
       ! WJP convert RMW to meters
       RMW = RMW*1000d0
 
-      ! jgf46.28 If we are running storm 2 in the Lake Pontchartrain
-      ! Forecast System ensemble, the final wind speeds should be
-      ! multiplied by 1.2.
-      ! TODO: Remove this behavior and add it to the namelist
-      if (StormNumber == 2) then
-         WindMultiplier = 1.2d0
-      else
-         WindMultiplier = 1.0d0
-      end if
-
       ! Calculate wind velocity and pressure at each node.
       do I = 1, NP
          DX(I) = (XCOOR(I) - lon)*DEG2RAD
@@ -647,7 +658,7 @@ contains
                        ) - &
                   0.5d0*RAD(I)*abs(CORIF(I))
 
-         ! Apply mutliplier for Storm2 in LPFS ensemble.
+         ! Apply wind speed mutliplier
          V_r(I) = V_r(I)*WindMultiplier
 
          ! Convert wind velocity from top of atmospheric boundary layer to
@@ -771,7 +782,6 @@ contains
       call unsetMessageSource()
 
    end subroutine calcTranslationSpeed
-
 
 !-----------------------------------------------------------------------
 !> @brief Calculate the inflow angle based on the radial distance
@@ -1314,15 +1324,15 @@ contains
 
    end subroutine CLE15GET
 
- !----------------------------------------------------------------
- !> @brief Get the CLE15 wind profile
- !>
- !> @param[in] Vm The maximum wind speed
- !> @param[in] rm The radius of maximum wind
- !> @param[in] lat0 The latitude of the storm center
- !> @param[out] Vout The wind profile
- !> @param[out] r0out The radius of diminishing winds
- !-----------------------------------------------------------------
+   !----------------------------------------------------------------
+   !> @brief Get the CLE15 wind profile
+   !>
+   !> @param[in] Vm The maximum wind speed
+   !> @param[in] rm The radius of maximum wind
+   !> @param[in] lat0 The latitude of the storm center
+   !> @param[out] Vout The wind profile
+   !> @param[out] r0out The radius of diminishing winds
+   !-----------------------------------------------------------------
    subroutine get_CLE15_profile(Vm, rm, lat0, Vout, r0out)
       use adc_constants, only: omega, DEG2RAD
       implicit none
