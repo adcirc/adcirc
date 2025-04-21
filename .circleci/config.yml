@@ -19,7 +19,7 @@ version: 2.1
 parameters:
   ci-version:
     type: string
-    default: "v56.0.3"
+    default: "v57.0.0"
 
 # #############################
 # Executor Definitions
@@ -303,6 +303,12 @@ workflows:
                         - adcirc_swan_apes_irene-parallel
                         - adcirc_global-tide-2d-full-tip-JPL-emphemerides-parallel
                         - adcirc_global-tide-2d-full-tip-analytical-serial
+                        - adcirc_irene_cle15-parallel
+                        - adcirc_irene_holland_lc12
+                        - adcirc_irene_holland_new
+                        - adcirc_irene_cle15
+                        - adcirc_irene_cle15_lc12-parallel
+                        - adcirc_irene_holland_legacy-parallel
       - test_grib2:
             requires:
                 - build_cmake_with_netcdf_and_xdmf_grib
@@ -332,3 +338,6 @@ workflows:
                         - adcirc_global-tide-2d-full-tip-JPL-emphemerides-serial
                         - adcirc_global-tide-2d-full-tip-analytical-parallel
                         - adcirc_global-nws14-inset-parallel
+                        - adcirc_irene_cle15_lc12
+                        - adcirc_irene_holland_legacy
+                        - adcirc_irene_holland_new-parallel
