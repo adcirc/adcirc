@@ -30,6 +30,9 @@ module mod_nws08
    integer, parameter :: BCALC_LIMITED = 11130
    integer, parameter :: BCALC_EXACT = 11131
 
+   !> Weight Ratio for the time interpolation of storm track data
+   real(8) :: WTRATIO = 1.0d0
+
    !> Boundary layer adjustment factor (from user input)
    real(8) :: BLAdj = 1.0d0
 
@@ -297,7 +300,7 @@ contains
 
       ! read the namelist
       namelistSpecifier = 'nws08Control'
-      read (unit=15, nml=nws08Control, iostat=IOS, iomsg=ios_nml_error_msg)
+      read (unit=iounit, nml=nws08Control, iostat=IOS, iomsg=ios_nml_error_msg)
       call logNameListReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
 
       write (scratchMessage, '(a,a)') "vortexModel = ", trim(vortexModel)
@@ -306,9 +309,9 @@ contains
       call logMessage(ECHO, trim(scratchMessage))
       write (scratchMessage, '(a,a)') "BCalc = ", trim(BCalc)
       call logMessage(ECHO, trim(scratchMessage))
-      write (scratchMessage, '(a,l)') "thetaLatDep = ", thetaLatDep
+      write (scratchMessage, '(a,l1)') "thetaLatDep = ", thetaLatDep
       call logMessage(ECHO, trim(scratchMessage))
-      write (scratchMessage, '(a,l)') "useInflow = ", useInflow
+      write (scratchMessage, '(a,l1)') "useInflow = ", useInflow
       call logMessage(ECHO, trim(scratchMessage))
       write (scratchMessage, '(a,i0)') "windspeed_averaging_minute = ", windspeed_averaging_minute
       call logMessage(ECHO, trim(scratchMessage))
@@ -332,7 +335,7 @@ contains
          end if
       end if
 
-      rewind (15)
+      rewind (iounit)
 
       ! convert w_cool from mm per second to m per second
       w_cool = w_cool/1000d0
@@ -368,8 +371,8 @@ contains
 ! Initializes the NWS8 module
 ! ----------------------------------------------------------------
    subroutine NWS08INIT(timeloc)
-      use MESH, only: SLAM, SFEA, NP, ICS
-      use ADC_CONSTANTS, only: RAD2DEG, DEG2RAD
+      use MESH, only: SLAM, SFEA, NP
+      use ADC_CONSTANTS, only: RAD2DEG
 
       implicit none
 
@@ -394,7 +397,7 @@ contains
       ! the fort.22 file.
       i = 2
       do
-         if (ceiling(TIMELOC) >= CastTime(i - 1) .and. floor(TIMELOC) < CastTime(i)) then
+         if (dble(ceiling(TIMELOC)) >= CastTime(i - 1) .and. dble(floor(TIMELOC)) < CastTime(i)) then
             bestTrackCounter = i
             exit
          else
@@ -496,8 +499,7 @@ contains
 !
 ! ----------------------------------------------------------------
    subroutine HollandGet(WVNX, WVNY, PRESS, TIMELOC, FoundEye, EyeLon, EyeLat)
-      use SIZES, only: MyProc, LOCALDIR
-      use MESH, only: X, Y, SLAM, SFEA, NP, ICS
+      use MESH, only: NP
       use ADC_CONSTANTS, only: RHOWAT0, G, mb2pa, DEG2RAD, prbckgrnd, one2ten, e, rhoAir
       use GLOBAL, only: CORIF, sphericalDistance
       implicit none
@@ -506,10 +508,10 @@ contains
       real(8), intent(out), dimension(NP) :: PRESS
       real(8), intent(inout), dimension(3) :: EyeLon, EyeLat
       logical, intent(inout) :: FoundEye
-      integer I, J
-      real(8) :: TVX, TVY, RRP, RMW, A, B, WTRATIO
+      integer :: I
+      real(8) :: TVX, TVY, RRP, RMW, B
       real(8) :: TransSpdX, TransSpdY
-      real(8) :: TM, cpress, lon, lat, spd, rrad, alpha
+      real(8) :: cpress, lon, lat, spd, rrad, alpha
       real(8) :: ts ! storm translation speed, m/s
       real(8) :: WindMultiplier ! for storm 2 in LPFS ensemble
       real(8) :: centralPressureDeficit ! difference btw ambient and cpress
@@ -546,15 +548,7 @@ contains
 
       ! jgf50.32: If we are using sector-based wind drag, record the location
       ! of the center of the storm.
-      if ((lat /= EyeLat(3)) .or. (lon /= EyeLon(3))) then
-         EyeLat(1) = EyeLat(2)
-         EyeLon(1) = EyeLon(2)
-         EyeLat(2) = EyeLat(3)
-         EyeLon(2) = EyeLon(3)
-         EyeLat(3) = lat
-         EyeLon(3) = lon
-         FoundEye = .true.
-      end if
+      call update_storm_eye_position(lon, lat, EyeLon, EyeLat, FoundEye)
 
       ! Calculate and limit central pressure deficit; some track files
       ! (e.g., Charley 2004) may have a central pressure greater than the
@@ -795,16 +789,12 @@ contains
 ! ----------------------------------------------------------------
    subroutine GetHollandStormData(LatOut, LonOut, CPressOut, SpdOut, &
                                   RRPOut, RMWOut, TVXOut, TVYOut, TIMELOC)
-      use SIZES, only: MyProc, GBLINPUTDIR
-      use GLOBAL, only: RNDAY
       use VORTEX, only: uvtrans
       implicit none
       real(8), intent(in) :: TIMELOC
       real(8), intent(out) :: LatOut, LonOut, CPressOut
       real(8), intent(out) :: SpdOut, RRPOut, RMWOut, TVXOut, TVYOut
 
-      real(8), save :: WTRATIO !time ratio used for interpolation
-      logical, save :: FIRSTCALL = .true.
       integer :: i ! Current array counter for fort.22 file
       call setMessageSource("getHollandStormData")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -867,14 +857,14 @@ contains
 ! NWS = 8.
 !
 ! This code used to be within the GetHollandStormData subroutine but
-! I moved it here to facilitate the creation of a NWS8INIT
+! I moved it here to facilitate the creation of a NWS08INIT
 ! subroutine.
 !
 ! CPB Feb. 2024
 !
 ! ----------------------------------------------------------------
    subroutine readBestTrackData()
-      use SIZES, only: MyProc, GBLINPUTDIR
+      use SIZES, only: GBLINPUTDIR
       use GLOBAL, only: RNDAY, openFileForRead, timeconv
       use VORTEX, only: uvtrans
       implicit none
@@ -888,7 +878,6 @@ contains
       integer :: i ! Current array counter for fort.22 file
       integer :: nl ! Number of lines in the fort.22 file
       integer :: pl ! populated length of Holland Data array
-      integer :: j ! loop counter
       integer :: ios ! return code for an i/o operation
       call setMessageSource("Read_Best_Track_Data")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -967,7 +956,7 @@ contains
 
             ! Determine the CastTime in seconds since the beginning of the simulation.
             CastTime(i) = CastTime(i) - WindRefTime
-            FcstInc(i) = iFcstInc(i)
+            FcstInc(i) = dble(iFcstInc(i))
 
          case ("OFCL") ! forecast
             !  Check to see if this is a repeated line (i.e., a forecast that
@@ -981,7 +970,7 @@ contains
                      .and. iHr(i) == iHr(i - 1))) &
                    .or. (iFcstInc(i) /= 0 .and. iFcstInc(i) == iFcstInc(i - 1))) cycle
             end if
-            FcstInc(i) = iFcstInc(i)
+            FcstInc(i) = dble(iFcstInc(i))
 
             ! Determine the time of this forecast in seconds since the beginning
             ! of the year.
@@ -1014,7 +1003,7 @@ contains
                                             .and. iDay(i) == iDay(i - 1) .and. iHr(i) == iHr(i - 1))) .or. &
                    (iFcstInc(i) /= 0 .and. iFcstInc(i) == iFcstInc(i - 1))) cycle
             end if
-            FcstInc(i) = iFcstInc(i)
+            FcstInc(i) = dble(iFcstInc(i))
 
             if (iFcstInc(i) == 0) then
                CastTime(i) = TimeConv(iYear(i), iMth(i), iDay(i), iHr(i), 0, 0.d0)
@@ -1032,12 +1021,12 @@ contains
          end select
 
          ! Convert integers to reals.
-         Lat(i) = iLat(i)
-         Lon(i) = iLon(i)
-         Spd(i) = iSpd(i)
-         CPress(i) = iCPress(i)
-         RRP(i) = iRRP(i)
-         RMW(i) = iRMW(i)
+         Lat(i) = dble(iLat(i))
+         Lon(i) = dble(iLon(i))
+         Spd(i) = dble(iSpd(i))
+         CPress(i) = dble(iCPress(i))
+         RRP(i) = dble(iRRP(i))
+         RMW(i) = dble(iRMW(i))
 
          ! Convert units.
          Lat(i) = Lat(i)/10.d0 ! convert 10ths of degs to degs
@@ -1053,19 +1042,6 @@ contains
          RMW(i) = RMW(i)*1.852000003180799d0 ! convert nm to km
          Spd(i) = Spd(i)*0.51444444d0 ! convert kts to m/s
 
-#ifdef DEBUG_HOLLAND
-         write (16, 1244) CastTime(i), Lat(i), Lon(i), Spd(i), CPress(i), RRP(i), RMW(i), WindRefTime
-         if (i > 1) then
-            write (scratchMessage, 2355) FcstInc(i - 1)
-            call logMessage(DEBUG, scratchMessage)
-         end if
-1244     format('DEBUG HOLLAND: CastTime ', &
-                e16.8, ' Lat ', f6.2, ' Lon ', f6.2, &
-                /, 'Spd ', f8.2, ' CPress ', f10.2, ' RRP ', f12.2, &
-                ' RMW ', f8.2, ' WindRefTime ', e16.8)
-2355     format('FcstInc(i-1) ', e16.8)
-#endif
-
          ! Save the number of non-repeated lines from the fort.22 file, this
          ! is the populated length of the array.
          pl = i
@@ -1079,8 +1055,8 @@ contains
       ! Calculate storm translation velocities based on change in position, then
       ! convert degrees/time to m/s
       ! initialize storm translation speeds
-      TVX = 0.0
-      TVY = 0.0
+      TVX = 0.0d0
+      TVY = 0.0d0
       do i = 2, pl
          ! Calculate storm translation velocities based on change in position,
          ! approximate u and v translation velocities
@@ -1103,10 +1079,6 @@ contains
          call allMessage(ERROR, 'The fort.22 file ends before RNDAY.')
          call nws08terminate()
       end if
-
-10    format(8x, i4, i2, i2, i2, 6x, a4, 7x, i3, 4x, i3, 3x, i3, 2x, i4, 52x, i3)
-12    format(8x, i4, i2, i2, i2, 6x, a4, 2x, i3, 2x, i3, 4x, i3, 3x, i3, 2x, i4, 52x, i3)
-14    format(8x, i4, i2, i2, i2, 6x, a4, 2x, i3, 1x, i4, 3x, i4, 3x, i3, 2x, i4, 47x, i3, 2x, i3)
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Return.")
@@ -1164,8 +1136,7 @@ contains
 !
 ! ----------------------------------------------------------------
    subroutine CLE15GET(WVNX, WVNY, PRESS, TIMELOC, FoundEye, EyeLon, EyeLat)
-      use SIZES, only: MyProc, LOCALDIR
-      use MESH, only: X, Y, SLAM, SFEA, NP, ICS
+      use MESH, only: NP
       use ADC_CONSTANTS, only: RHOWAT0, G, mb2pa, deg2rad, e, one2ten, prbckgrnd, rhoAir
       use GLOBAL, only: CORIF, sphericalDistance
 
@@ -1176,12 +1147,11 @@ contains
       real(8), intent(out), dimension(NP) :: PRESS
       real(8), intent(inout), dimension(3) :: EyeLon, EyeLat
       logical, intent(inout) :: FoundEye
-      integer I, J
-      real(8) :: TVX, TVY, RRP, RMW, A, B, WTRATIO
+      integer :: I
+      real(8) :: TVX, TVY, RRP, RMW, B
       real(8) :: TransSpdX, TransSpdY
-      real(8) :: TM, cpress, lon, lat, spd, rrad
+      real(8) :: cpress, lon, lat, spd, rrad
       real(8) :: ts ! storm translation speed, m/s
-      real(8) :: WindMultiplier ! for storm 2 in LPFS ensemble
       real(8) :: centralPressureDeficit ! difference btw ambient and cpress
       real(8) :: inflowAngle
       real(8), allocatable, dimension(:) :: V_cle15
@@ -1217,15 +1187,7 @@ contains
 
       ! jgf50.32: If we are using sector-based wind drag, record the location
       ! of the center of the storm.
-      if ((lat /= EyeLat(3)) .or. (lon /= EyeLon(3))) then
-         EyeLat(1) = EyeLat(2)
-         EyeLon(1) = EyeLon(2)
-         EyeLat(2) = EyeLat(3)
-         EyeLon(2) = EyeLon(3)
-         EyeLat(3) = lat
-         EyeLon(3) = lon
-         FoundEye = .true.
-      end if
+      call update_storm_eye_position(lat, lon, EyeLat, EyeLon, FoundEye)
 
       ! Calculate and limit central pressure deficit; some track files
       ! (e.g., Charley 2004) may have a central pressure greater than the
@@ -1346,9 +1308,9 @@ contains
       ! diminishing winds
       ! (m)
       ! local variables
-      integer        :: I, J, K, L, r_N, num_its, rmerge1, rmerge2, rmerge, rclose
-      real(8)       :: r0, r0_out_bound, r0_in_bound, r0_mid_bound, tmp, Vdiff
-      logical        :: NEED_INTERATION
+      integer :: I, r_N, num_its, rmerge1, rmerge2, rmerge, rclose
+      real(8) :: r0, r0_out_bound, r0_in_bound, r0_mid_bound, tmp, Vdiff
+      logical :: NEED_INTERATION
       real(8), dimension(:), allocatable :: r, Vinner, Vouter
       real(8) :: f
 
@@ -1366,7 +1328,7 @@ contains
          num_its = num_its + 1
 
          Vinner = get_inner_wind(Vm, rm, f, r0_mid_bound)
-         Vouter = get_outer_wind(Vm, rm, f, r0_mid_bound)
+         Vouter = get_outer_wind(f, r0_mid_bound)
 
          r_N = int(r0_mid_bound/1000d0) + 1
          rmerge1 = -1
@@ -1398,7 +1360,7 @@ contains
                end if
             end do
 
-            if (abs(Vinner(rclose) - Vouter(rclose)) < .1) then
+            if (abs(Vinner(rclose) - Vouter(rclose)) < 0.1d0) then
                ! condition to quit while:
                ! 1. wind speed at the closest point < .5
                NEED_INTERATION = .false.
@@ -1462,11 +1424,11 @@ contains
       allocate (Vout(r_N))
 
       do I = 1, rmerge
-         r(I) = (I - 1)*1000
+         r(I) = dble((I - 1)*1000)
          Vout(I) = Vinner(I)
       end do
       do I = rmerge + 1, r_N
-         r(I) = (I - 1)*1000
+         r(I) = dble((I - 1)*1000)
          Vout(I) = Vouter(I)
       end do
 
@@ -1478,61 +1440,59 @@ contains
          end if
       end do
 
-#ifdef DEBUG_HOLLAND
-      if (Vout(2) > 50.d0) then
-         write (16, *) 'Rmerge', rmerge, rmerge1, rmerge2
-         write (16, '(A)') 'R,Vout,Vinner,Vouter'
-         do I = 1, r_N, 1
-            write (16, '(F10.0,A,F10.5,A,F10.5,A,F10.5)'), &
-               r(I), ',', Vout(I), ',', Vinner(I), ',', Vouter(I)
-         end do
-         call nws08terminate()
-      end if
-#endif
-
    contains
 
-      function get_inner_wind(Vm, rm, f, r0) result(res)
+      real(8) pure function compute_ckcd(Vm) result(CkCd_computed)
+         implicit none
+         real(8), intent(in) :: Vm
+         CkCd_computed = min(max(0.00055d0*Vm**2d0 - 0.0259d0*Vm + 0.763d0, 0.4d0), 1.4d0)
+      end function compute_ckcd
 
-         integer                :: I, J, K, L, r_N
+      pure function get_inner_wind(Vm, rm, f, r0) result(res)
+         implicit none
          real(8), intent(in)   :: Vm, rm, f, r0
-         real(8), dimension(:), allocatable :: r, res
+         real(8), dimension(:), allocatable :: res
+         real(8), dimension(:), allocatable :: r
+         ! local
+         real(8) :: CkCd_this
+         integer :: I, r_N
 
          r_N = int(r0/1000d0) + 1
 
          allocate (r(r_N))
          allocate (res(r_N))
+
          ! if desired calculated CkCd from the best fit relationship
          ! found in
-         if (CkCd_calc .eqv. .true.) then
-            CkCd = 0.00055*Vm**2 - 0.0259*Vm + 0.763
-            CkCd = max(CkCd, 0.4)
-            CkCd = min(CkCd, 1.4)
+         if (CkCd_calc) then
+            CkCd_this = compute_ckcd(Vm)
+         else
+            CkCd_this = CkCd
          end if
 
-         r = (/(I, I=0, int(r0), 1000)/)
-         res = (2d0*(r/rm)**2/(2d0 - CkCd + CkCd*(r/rm)**2))**(1d0/(2d0 - CkCd))* &
-               (rm*Vm + 0.5d0*f*rm**2)
-         res = (res - 0.5d0*f*r**2)/r
+         r = dble((/(I, I=0, int(r0), 1000)/))
+         res = (2d0*(r/rm)**2/(2d0 - CkCd_this + CkCd_this*(r/rm)**2))**(1d0/(2d0 - CkCd_this))* &
+               (rm*Vm + 0.5d0*f*rm**2d0)
+         res = (res - 0.5d0*f*r**2d0)/r
          res(1) = 0d0
 
       end function
 
-      function get_outer_wind(Vm, rm, f, r0) result(res)
-
-         integer                :: I, J, K, L, r_N
-         real(8)               :: dr
-         real(8), intent(in)   :: Vm, rm, f, r0
+      pure function get_outer_wind(f, r0) result(res)
+         implicit none
+         real(8), intent(in)   :: f, r0
          real(8), dimension(:), allocatable :: r, res
          ! local
          real(8) :: Cd
+         integer :: I, J, r_N
+         real(8) :: dr
 
          r_N = int(r0/1d3) + 1
 
          allocate (r(r_N))
          allocate (res(r_N))
 
-         r = (/(I, I=0, int(r0), 1000)/)
+         r = dble((/(I, I=0, int(r0), 1000)/))
          dr = r(2) - r(1)
          res(:) = 0d0
 
@@ -1565,6 +1525,38 @@ contains
 
    end subroutine get_CLE15_profile
 
+   !----------------------------------------------------------------------
+   !> @brief Update the storm eye position
+   !>
+   !> @param lat Latitude of the storm center
+   !> @param lon Longitude of the storm center
+   !> @param EyeLon Array of longitudes of the storm eye
+   !> @param EyeLat Array of latitudes of the storm eye
+   !> @param FoundEye Logical flag indicating if the eye has been found
+   !>
+   !> This subroutine updates the position of the storm eye if the current
+   !> latitude and longitude differ from the last recorded position. It
+   !> shifts the previous positions in the arrays and updates the current
+   !> position.
+   !-----------------------------------------------------------------------
+   subroutine update_storm_eye_position(lat, lon, EyeLon, EyeLat, FoundEye)
+      implicit none
+      real(8), parameter :: eps = epsilon(1.d0)
+      real(8), intent(in) :: lat, lon
+      real(8), intent(inout), dimension(3) :: EyeLon, EyeLat
+      logical, intent(inout) :: FoundEye
+
+      if ((abs(lat - EyeLat(3)) > eps) .or. (abs(lon - EyeLon(3)) > eps)) then
+         EyeLat(1) = EyeLat(2)
+         EyeLon(1) = EyeLon(2)
+         EyeLat(2) = EyeLat(3)
+         EyeLon(2) = EyeLon(3)
+         EyeLat(3) = lat
+         EyeLon(3) = lon
+         FoundEye = .true.
+      end if
+   end subroutine update_storm_eye_position
+
 !----------------------------------------------------------------------
 !...  Terminate routine that can be used locally until this function
 !...  is generalized across all modules in the code
@@ -1574,7 +1566,6 @@ contains
       use MESSENGER, only: MSG_FINI
 #endif
       implicit none
-      integer, allocatable :: dmy(:)
       call setMessageSource("nws08terminate")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Enter.")
