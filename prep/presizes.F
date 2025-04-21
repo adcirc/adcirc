@@ -320,6 +320,7 @@ c.... !wjp added for warnElev namelist
       REAL(8) :: w_cool = 2d0 ! mm/s
       LOGICAL :: CkCd_calc = .FALSE.
       REAL(8) :: CkCd = 1d0
+      REAL(8) :: WindMultiplier = 1.0d0
       NAMELIST /nws08Control/
      &   vortexModel,           ! Holland or CLE15
      &   backgroundWindModel,   ! None or LC12
@@ -329,8 +330,9 @@ c.... !wjp added for warnElev namelist
      &   windspeed_averaging_minute, ! 1- or 10-min
      &   w_cool,                ! ~1-3 (mm/s)
      &   CkCd_calc,             ! true or false
-     &   CkCd                   ! value used. if CdCd_calc = true,
+     &   CkCd,                  ! value used. if CdCd_calc = true,
                                 ! this value will not be used
+     &   WindMultiplier
       ! end CPB
 
 C---------------------end of data declarations--------------------------------C

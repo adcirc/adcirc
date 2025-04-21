@@ -2724,7 +2724,7 @@ C...     WHERE NRS=2, NRS=4 WERE NOT BEING INCLUDED
  6111    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
      &           I2,'/',I2,'/',I4,'  ',I2,'H',/)
          WindRefTime = TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0)
-         CALL setNws08f15Parameters(WindRefTime, BLAdj, StormNumber, g)
+         CALL setNws08f15Parameters(WindRefTime, BLAdj, g)
       ENDIF
 C     jgf46.16 Merged:
 C     cf & cm added nws = 9: asymmetric hurricane winds
