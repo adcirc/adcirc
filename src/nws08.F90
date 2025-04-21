@@ -17,12 +17,27 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+!> @brief This module handles the NWS8 forcing, which consists of a traditional
+!> Holland vortex model and the CLE15 vortex model (Chavas et. al, 2015).
+!>
+!> @author Zachary Cobell
+!> @author Coleman Blakely
+!>
+!> @date 2025-04-21
+!>
+!> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
+!>
+!> This module is initialized in three steps. First, the namelist data must be
+!> read from an input file, typically the fort.15. Second, the additional parameters
+!> that are set in the fort.15 file must be supplied. Lastly, the NWS08INIT function
+!> is called.
 module mod_nws08
 
    use global, only: allMessage, DEBUG, ERROR, ECHO, setMessageSource, unsetMessageSource
 
    implicit none
 
+   ! Parameters used at runtime to control the vortex model
    integer, parameter :: VORTEX_MODEL_HOLLAND = 11110
    integer, parameter :: VORTEX_MODEL_CLE15 = 11111
    integer, parameter :: BACKGROUND_MODEL_RADIALVELOCITYWEIGHTED = 11120
@@ -343,7 +358,7 @@ contains
    end subroutine readNws08Namelist
 
    !----------------------------------------------------------------
-   !> Set the NWS8 parameters
+   !> @brief Set the NWS8 parameters
    !> @param WindRefTime_in The reference time for the wind
    !> @param BLAdj_in The boundary layer adjustment factor
    !> @param StormNumber_in The storm number
@@ -366,9 +381,8 @@ contains
    end subroutine setNws08f15Parameters
 
 ! ----------------------------------------------------------------
-!  S U B R O U T I N E   N W S 0 8 I N I T
-! ----------------------------------------------------------------
-! Initializes the NWS8 module
+!> @brief Initializes the NWS08 module
+!> @param timeloc The current time of the simulation
 ! ----------------------------------------------------------------
    subroutine NWS08INIT(timeloc)
       use MESH, only: SLAM, SFEA, NP
@@ -425,30 +439,37 @@ contains
       call allMessage(DEBUG, "Return.")
 #endif
       call unsetMessageSource()
-!----------------------------------------------------------------
+
    end subroutine NWS08INIT
-!----------------------------------------------------------------
 
 ! ----------------------------------------------------------------
-!  S U B R O U T I N E   N W S 0 8 G E T
-! ----------------------------------------------------------------
-!
-! Calls the appropriate subroutines to calculate winds using
-! vortex models that take as input track data in ATCF Best
-! Track/Objective Aid/Wind Radii format. Also applies the
-! appropriate background wind field. Options are controlled by the
-! nws8Control namelist. Current options are:
-!
-! Vortex models:
-!    - Holland Model
-!    - CLE15 Model (Chavas et. al., 2015)
-!
-! Background wind models:
-!    - None (standard Holland)
-!    - LC12 (Lin and Chavas, 2012)
-!
-! CPB Feb. 2024
-!
+!> @brief Computes the wind velocity and pressure at each node using
+!> the Holland or CLE15 vortex models
+!> @author Coleman Blakely
+!> @date 2024-02-01
+!>
+!> @param[inout] WVNX The x-component of thewind velocity at each node
+!> @param[inout] WVNY The y-component of the wind velocity ateach node
+!> @param[inout] PRESS The pressure ateach node
+!> @param[in] TIMELOC The current time of the simulation
+!> @param[inout] FoundEye A logical variable indicating if the eye was found
+!> @param[inout] EyeLon The longitude of the storm eye
+!> @param[inout] EyeLat The latitude of the storm eye
+!>
+!> Calls the appropriate subroutines to calculate winds using
+!> vortex models that take as input track data in ATCF Best
+!> Track/Objective Aid/Wind Radii format. Also applies the
+!> appropriate background wind field. Options are controlled by the
+!> nws8Control namelist. Current options are:
+!>
+!> Vortex models:
+!>    - Holland Model
+!>    - CLE15 Model (Chavas et. al., 2015)
+!>
+!> Background wind models:
+!>    - None (standard Holland)
+!>    - LC12 (Lin and Chavas, 2012)
+!>
 ! ----------------------------------------------------------------
    subroutine NWS08GET(WVNX, WVNY, PRESS, TIMELOC, FoundEye, EyeLon, EyeLat)
       use MESH, only: NP
@@ -474,29 +495,31 @@ contains
       call allMessage(DEBUG, "Return.")
 #endif
       call unsetMessageSource()
-!   ----------------------------------------------------------------
    end subroutine NWS08GET
-!   ----------------------------------------------------------------
 
-! ----------------------------------------------------------------
-!  S U B R O U T I N E   H O L L A N D  G E T
-! ----------------------------------------------------------------
-!
-! jgf46.05 Subroutine to calculate wind velocity at nodes from
-! the Holland Wind model.
-!
-! The format statement takes into account whether the track data is
-! hindcast/nowcast (BEST) or forecast (OFCL).
-!
-! The first line in the file MUST be a hindcast, since the central
-! pressure and the RMW are carried forward from hindcasts into
-! forecasts. So there needs to be at least one hindcast to carry the data
-! forward.
-!
-! Assumes spherical coordinates (ICS=2 in fort.15 file).
-!
-! Based on bob's NWS67GET (See below).
-!
+!-----------------------------------------------------------------
+!> @brief Calculate wind velocity at nodes from the Holland model
+!>
+!> @param[inout] WVNX The x-component of thewind velocity at each node
+!> @param[inout] WVNY The y-component of the windvelocity ateach node
+!> @param[in] PRESS The pressureateach node
+!> @param[inout] TIMELOC The current time of the simulation
+!> @param[inout] FoundEye A logical variable indicatingif the eye was found
+!> @param[inout] EyeLon Thelongitude of the storm eye
+!> @param[inout] EyeLat The latitude of thestorm eye
+!>
+!> Subroutine to calculate wind velocity at nodes from
+!> the Holland Wind model.
+!>
+!> The format statement takes into account whether the track data is
+!> hindcast/nowcast (BEST) or forecast (OFCL).
+!>
+!> The first line in the file MUST be a hindcast, since the central
+!> pressure and the RMW are carried forward from hindcasts into
+!> forecasts. So there needs to be at least one hindcast to carry the data
+!> forward.
+!>
+!> Assumes spherical coordinates (ICS=2 in fort.15 file).
 ! ----------------------------------------------------------------
    subroutine HollandGet(WVNX, WVNY, PRESS, TIMELOC, FoundEye, EyeLon, EyeLat)
       use MESH, only: NP
@@ -633,7 +656,8 @@ contains
 
          ! Find the velocity components.
          rrad = RAD(I)/RMW
-         call calcInflowAngle(rrad, inflowAngle)
+         inflowAngle = calcInflowAngle(rrad)
+
          !P.V 11/04/2022 to account for Southern Hemisphere
          WVNX(I) = sign(1.0d0, -lat)*V_r(I)*sin(THETA(I) + sign(1.0d0, lat)*inflowangle)
          WVNY(I) = sign(1.0d0, lat)*V_r(I)*cos(THETA(I) + sign(1.0d0, lat)*inflowangle)
@@ -672,19 +696,29 @@ contains
       call allMessage(DEBUG, "Return.")
 #endif
       call unsetMessageSource()
-!----------------------------------------------------------------
    end subroutine HollandGet
-!----------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-!     S U B R O U T I N E   C A L C T R A N S L A T I O N S P E E D
+!> @brief Calculate the translation speed of the storm
+!>
+!> @param[in] Wind velocity at the specified radius
+!> @param[in] Storm speed
+!> @param[in] TVX X-component of the storm translation velocity
+!> @param[in] TVY Y-component of the storm translation velocity
+!> @param[in] Latitude of the storm center
+!> @param[in] rrad Current radius divided by the radius to max wind speed
+!> @param[out] TransSpdX X-component of the translation speed at the specified radius
+!> @param[out] TransSpdY Y-component of the translation speed at the specified radius
 !-----------------------------------------------------------------------
    subroutine calcTranslationSpeed(V_r, spd, TVX, TVY, lat, rrad, TransSpdX, TransSpdY)
       use ADC_CONSTANTS, only: deg2rad
+
       implicit none
+
       real(8), intent(IN) :: V_r, spd, TVX, TVY, lat, rrad
       real(8), intent(OUT) :: TransSpdX, TransSpdY
       real(8) :: beta, alpha
+
       call setMessageSource("calcTranslationSpeed")
 #ifdef ALL_TRACE
       call allMessage(DEBUG, "Enter.")
@@ -735,20 +769,19 @@ contains
       call allMessage(DEBUG, "Return.")
 #endif
       call unsetMessageSource()
-!-----------------------------------------------------------------------
+
    end subroutine calcTranslationSpeed
+
+
 !-----------------------------------------------------------------------
+!> @brief Calculate the inflow angle based on the radial distance
+!> @param[in] RRAD Relative radial distance (fraction of RMW)
+!> @return inflowAngle The inflow angle
 !-----------------------------------------------------------------------
-!     S U B R O U T I N E   C A L C I N F L O W A N G L E
-!-----------------------------------------------------------------------
-   subroutine calcInflowAngle(RRAD, inflowAngle)
+   real(8) pure function calcInflowAngle(RRAD) result(inflowAngle)
       implicit none
       real(8), intent(IN) :: RRAD ! relative radial distance (fraction of RMW)
-      real(8), intent(OUT) :: inflowAngle
-      call setMessageSource("calcInflowAngle")
-#ifdef ALL_TRACE
-      call allMessage(DEBUG, "Enter.")
-#endif
+
       if (useInflow .eqv. .true.) then
          ! Adjustment to account for the inflow toward the center
          ! Bretschneider, 1972. New by Ning
@@ -763,29 +796,22 @@ contains
       else
          inflowAngle = 0d0
       end if
-#ifdef ALL_TRACE
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-!-----------------------------------------------------------------------
-   end subroutine calcInflowAngle
-!-----------------------------------------------------------------------
+
+   end function calcInflowAngle
 
 ! ----------------------------------------------------------------
-!  S U B R O U T I N E   G E T  H O L L A N D  S T O R M  D A T A
-! ----------------------------------------------------------------
-!
-! jgf46.08 Subroutine to support HollandGet. Gets the next line from
-! the file, skipping lines that are time repeats. Interpolates in
-! time if we are between wind data points. Does conversions to the
-! proper units. Uses old values of central pressure and RMW if the
-! line is a forecast, since forecasts do not have that data in them.
-! Assumes longitude is WEST longitude, latitude is NORTH latitude.
-!
-! CPB Feb. 2024: Moved the reading in of the fort.22 file to
-! readBestTrackData(). This subroutine now only interpolates in
-! time.
-!
+!> @brief Returns the storm data by interpolating in time from the data
+!> read in from the best track file (fort.22) previously in readBestTrackData
+!>
+!> @param[out] LatOut The latitude of the storm center
+!> @param[out] LonOut The longitude of the storm center
+!> @param[out] CPressOut The central pressure of the storm
+!> @param[out] SpdOut The maximum wind speed of the storm
+!> @param[out] RRPOut The radius of the last closed isobar
+!> @param[out] RMWOut The radius of maximum wind speed
+!> @param[out] TVXOut The x-component of thestorm translation velocity
+!> @param[out] TVYOut The y-component of thestorm translation velocity
+!> @param[in] TIMELOC Thecurrent time of the simulation
 ! ----------------------------------------------------------------
    subroutine GetHollandStormData(LatOut, LonOut, CPressOut, SpdOut, &
                                   RRPOut, RMWOut, TVXOut, TVYOut, TIMELOC)
@@ -844,25 +870,13 @@ contains
       call unsetMessageSource()
 
       return
-! ----------------------------------------------------------------
-   end subroutine GetHollandStormData
-! ----------------------------------------------------------------
 
-! ----------------------------------------------------------------
-!  S U B R O U T I N E   R E A D B E S T T R A C K D A T A
-! ----------------------------------------------------------------
-!
-! Reads fort.22 data formatted as ATCF Best Track/Objective Aid/Wind
-! Radii Format and puts it in units/format that ADCIRC can use with
-! NWS = 8.
-!
-! This code used to be within the GetHollandStormData subroutine but
-! I moved it here to facilitate the creation of a NWS08INIT
-! subroutine.
-!
-! CPB Feb. 2024
-!
-! ----------------------------------------------------------------
+   end subroutine GetHollandStormData
+
+!----------------------------------------------------------------
+!> @brief Reads the best trackdata from the fort.22 file as
+!> ATCF Best Track/Objective Aid/Wind Radii Format
+!----------------------------------------------------------------
    subroutine readBestTrackData()
       use SIZES, only: GBLINPUTDIR
       use GLOBAL, only: RNDAY, openFileForRead, timeconv
@@ -931,9 +945,7 @@ contains
 228      format(8x, i4, i2, i2, i2, 6x, a4, 2x, i3, 1x, i4, a1, 2x, i4, a1, 2x, i3, 2x, i4, 47x, i3, 2x, i3)
 
          select case (trim(CastType(i)))
-            !        ------------
          case ("BEST") ! nowcast/hindcast
-            !        ------------
             !     Check to see if this is a repeated line. If so, go directly to the
             !     next line without any processing.
             if (i > 1) then
@@ -1086,54 +1098,61 @@ contains
       call unsetMessageSource()
 
       return
-! ----------------------------------------------------------------
    end subroutine readBestTrackData
+
 ! ----------------------------------------------------------------
-! ----------------------------------------------------------------
-!  S U B R O U T I N E   C L E 1 5 _ G E T
-! ----------------------------------------------------------------
-!
-! CPB Feb. 2024:
-!
-! Calculates wind velocity at nodes based on the wind model
-! described in Chavas et. al., 2015. This model consists of an
-! inner vortex model described by:
-!
-!   (M_i/M_m)^(2-(C_k/C_d)) =
-!      (2(r/r_m)^2)/(2-(C_k/C_d)+(C_k/C_d)(r/r_m)^2)        (1)
-!
-!   M_m = (r_m)*(V_m) + (1/2)*(f)*(r_m)^2                   (2)
-! Where,
-!   M_i = angular momentum at radius r
-!   M_m = angular momentum at radius of max winds
-!   C_k/C_d = ratio of exchange coefficients of enthalpy and
-!             momentum
-!   r = radius
-!   r_m = radius of max winds
-!   V_m = max wind speed
-!
-! As well as an outer vortex model described by:
-!
-!   (dM_o/dr) = gamma*((r*V)^2)(r_0^2-r^2)                  (3)
-!
-!   gamma = (2*C_d)/w_cool                                  (4)
-! Where,
-!   M_o = angular momentum at radius r
-!   C_d = surface drag coefficient
-!   w_cool = free-tropospheric air subsidence rate
-!   r_0 = radius of diminishing winds (@r=r_0, V=0)
-!
-! Note that angular momentum is calculated as M = r*V+(1/2)*f*r^2
-!
-! To find the complete wind profile a radius r_a is found where the
-! angular momentum of the inner model and outer model as well as
-! their derivatives match. Rather than solve for the angular
-! momentum, this subroutine instead iteratively solves for V in both
-! the inner and outer models with given r_m, V_m and estimates of
-! r_0 until M_o(r_m,V_m,r_0,r_a) = M_i(r_m,V_m,r_0,r_a) = M_a.
-!
-! Chavas et. al., 2015: https://doi.org/10.1175/JAS-D-15-0014.1
-!
+!> @brief Calculate the wind velocity ateach node based on the CLE15 wind model
+!>
+!> @author Coleman Blakely
+!> @date Feb. 2024
+!>
+!> @param[in] WVNX The x-component of the wind velocity
+!> @param[in] WVNY The y-component of thewind velocity
+!> @param[in] PRESS Theatmospheric pressure
+!> @param[in] TIMELOC The current time ofthe simulation
+!> @param[in] FoundEye Flag indicating if the eye of the stormwas found
+!> @param[in] EyeLon The longitude of thestorm center
+!> @param[in] EyeLat The latitudeof thestorm center
+!>
+!> Calculates wind velocity at nodes based on the wind model
+!> described in Chavas et. al., 2015. This model consists of an
+!> inner vortex model described by:
+!>
+!>   (M_i/M_m)^(2-(C_k/C_d)) =
+!>      (2(r/r_m)^2)/(2-(C_k/C_d)+(C_k/C_d)(r/r_m)^2)        (1)
+!>
+!>   M_m = (r_m)*(V_m) + (1/2)*(f)*(r_m)^2                   (2)
+!> Where,
+!>   M_i = angular momentum at radius r
+!>   M_m = angular momentum at radius of max winds
+!>   C_k/C_d = ratio of exchange coefficients of enthalpy and
+!>             momentum
+!>   r = radius
+!>   r_m = radius of max winds
+!>   V_m = max wind speed
+!>
+!> As well as an outer vortex model described by:
+!>
+!>   (dM_o/dr) = gamma*((r*V)^2)(r_0^2-r^2)                  (3)
+!>
+!>   gamma = (2*C_d)/w_cool                                  (4)
+!> Where,
+!>   M_o = angular momentum at radius r
+!>   C_d = surface drag coefficient
+!>   w_cool = free-tropospheric air subsidence rate
+!>   r_0 = radius of diminishing winds (@r=r_0, V=0)
+!>
+!> Note that angular momentum is calculated as M = r*V+(1/2)*f*r^2
+!>
+!> To find the complete wind profile a radius r_a is found where the
+!> angular momentum of the inner model and outer model as well as
+!> their derivatives match. Rather than solve for the angular
+!> momentum, this subroutine instead iteratively solves for V in both
+!> the inner and outer models with given r_m, V_m and estimates of
+!> r_0 until M_o(r_m,V_m,r_0,r_a) = M_i(r_m,V_m,r_0,r_a) = M_a.
+!>
+!> Chavas et. al., 2015: https://doi.org/10.1175/JAS-D-15-0014.1
+!>
 ! ----------------------------------------------------------------
    subroutine CLE15GET(WVNX, WVNY, PRESS, TIMELOC, FoundEye, EyeLon, EyeLat)
       use MESH, only: NP
@@ -1165,7 +1184,7 @@ contains
       ! Get data for this time step.
       call GetHollandStormData(lat, lon, cpress, spd, rrp, rmw, tvx, tvy, TIMELOC)
 
-      ! @jasonfleming: If this is a "CALM" period, set winds to zero
+      ! If this is a "CALM" period, set winds to zero
       ! velocity and pressure equal to the background pressure and return.
       if (cpress < 0.d0) then
          press(:) = PRBCKGRND*mb2pa/rhoWat0g ! convert mb to mH2O
@@ -1185,16 +1204,14 @@ contains
          return
       end if
 
-      ! jgf50.32: If we are using sector-based wind drag, record the location
+      ! If we are using sector-based wind drag, record the location
       ! of the center of the storm.
       call update_storm_eye_position(lat, lon, EyeLat, EyeLon, FoundEye)
 
       ! Calculate and limit central pressure deficit; some track files
       ! (e.g., Charley 2004) may have a central pressure greater than the
       ! ambient pressure that this subroutine assumes
-
-      ! jgf51.14: Apply a factor of 100.0 to convert PRBCKGRND from
-      ! mb to pa for use in this subroutine.
+      ! Apply a factor of 100.0 to convert PRBCKGRND from mb to pa for use in this subroutine.
       centralPressureDeficit = PRBCKGRND*100.d0 - cpress
       if (centralPressureDeficit < 100.d0) then
          centralPressureDeficit = 100.d0
@@ -1266,7 +1283,7 @@ contains
 
          ! Find the velocity components.
          rrad = RAD(I)/RMW
-         call calcInflowAngle(rrad, inflowAngle)
+         inflowAngle = calcInflowAngle(rrad)
 
          !P.V 11/04/2022 to account for Southern Hemisphere
          WVNX(I) = sign(1.0d0, -lat)*V_r(I)*sin(THETA(I) + sign(1.0d0, lat)*inflowangle)
@@ -1294,9 +1311,18 @@ contains
       call allMessage(DEBUG, "Return.")
 #endif
       call unsetMessageSource()
-! ----------------------------------------------------------------
+
    end subroutine CLE15GET
-! ----------------------------------------------------------------
+
+ !----------------------------------------------------------------
+ !> @brief Get the CLE15 wind profile
+ !>
+ !> @param[in] Vm The maximum wind speed
+ !> @param[in] rm The radius of maximum wind
+ !> @param[in] lat0 The latitude of the storm center
+ !> @param[out] Vout The wind profile
+ !> @param[out] r0out The radius of diminishing winds
+ !-----------------------------------------------------------------
    subroutine get_CLE15_profile(Vm, rm, lat0, Vout, r0out)
       use adc_constants, only: omega, DEG2RAD
       implicit none
@@ -1304,9 +1330,7 @@ contains
       real(8), intent(IN) :: rm ! radius of max wind (m)
       real(8), intent(IN) :: lat0 ! center of storm (deg)
       real(8), allocatable, intent(OUT) :: Vout(:) ! cle15 wind profile (m/s)
-      real(8), intent(OUT) :: r0out ! radius of
-      ! diminishing winds
-      ! (m)
+      real(8), intent(OUT) :: r0out ! radius of diminishing winds (m)
       ! local variables
       integer :: I, r_N, num_its, rmerge1, rmerge2, rmerge, rclose
       real(8) :: r0, r0_out_bound, r0_in_bound, r0_mid_bound, tmp, Vdiff
@@ -1439,91 +1463,110 @@ contains
             Vout(I) = Vout(I)*(r(I)/rm)**0.25d0
          end if
       end do
-
-   contains
-
-      real(8) pure function compute_ckcd(Vm) result(CkCd_computed)
-         implicit none
-         real(8), intent(in) :: Vm
-         CkCd_computed = min(max(0.00055d0*Vm**2d0 - 0.0259d0*Vm + 0.763d0, 0.4d0), 1.4d0)
-      end function compute_ckcd
-
-      pure function get_inner_wind(Vm, rm, f, r0) result(res)
-         implicit none
-         real(8), intent(in)   :: Vm, rm, f, r0
-         real(8), dimension(:), allocatable :: res
-         real(8), dimension(:), allocatable :: r
-         ! local
-         real(8) :: CkCd_this
-         integer :: I, r_N
-
-         r_N = int(r0/1000d0) + 1
-
-         allocate (r(r_N))
-         allocate (res(r_N))
-
-         ! if desired calculated CkCd from the best fit relationship
-         ! found in
-         if (CkCd_calc) then
-            CkCd_this = compute_ckcd(Vm)
-         else
-            CkCd_this = CkCd
-         end if
-
-         r = dble((/(I, I=0, int(r0), 1000)/))
-         res = (2d0*(r/rm)**2/(2d0 - CkCd_this + CkCd_this*(r/rm)**2))**(1d0/(2d0 - CkCd_this))* &
-               (rm*Vm + 0.5d0*f*rm**2d0)
-         res = (res - 0.5d0*f*r**2d0)/r
-         res(1) = 0d0
-
-      end function
-
-      pure function get_outer_wind(f, r0) result(res)
-         implicit none
-         real(8), intent(in)   :: f, r0
-         real(8), dimension(:), allocatable :: r, res
-         ! local
-         real(8) :: Cd
-         integer :: I, J, r_N
-         real(8) :: dr
-
-         r_N = int(r0/1d3) + 1
-
-         allocate (r(r_N))
-         allocate (res(r_N))
-
-         r = dble((/(I, I=0, int(r0), 1000)/))
-         dr = r(2) - r(1)
-         res(:) = 0d0
-
-         J = 1
-         do I = r_N - 1, 2, -1
-
-            if (res(I) <= 6d0) then
-               Cd = 6.16d-4
-            else if (res(I) >= 35.4d0) then
-               Cd = 2.4d-3
-            else
-               Cd = 5.19d-5*res(I) + 2.614d-4
-            end if
-
-            res(I - 1) = res(I) - (2*Cd/w_cool*r(I)*res(I)**2/(r0**2 - r(I)**2) - res(I)/r(I) - f)*dr
-
-            if (res(I - 1) > 300d0) then
-               res(I - 1) = 300d0
-               J = I - 1
-               exit
-            end if
-
-         end do
-
-         if (J > 1) then
-            res(:J) = 300d0
-         end if
-
-      end function get_outer_wind
-
    end subroutine get_CLE15_profile
+
+   !----------------------------------------------------------------------
+   !> @brief Compute the CkCd value based on the maximum wind speed
+   !>
+   !> @param Vm The maximum wind speed
+   !> @return CkCd_computed The computed CkCd value
+   !-----------------------------------------------------------------------
+   real(8) pure function compute_ckcd(Vm) result(CkCd_computed)
+      implicit none
+      real(8), intent(in) :: Vm
+      CkCd_computed = min(max(0.00055d0*Vm**2d0 - 0.0259d0*Vm + 0.763d0, 0.4d0), 1.4d0)
+   end function compute_ckcd
+
+   !----------------------------------------------------------------------
+   !> @brief Get the inner wind profile
+   !>
+   !> @param Vm The maximum wind speed
+   !> @param rm The radius of maximum wind
+   !> @param f The Coriolis parameter
+   !> @param r0 The radius of diminishing winds
+   !> @return res The inner wind profile
+   !-----------------------------------------------------------------------
+   pure function get_inner_wind(Vm, rm, f, r0) result(res)
+      implicit none
+      real(8), intent(in)   :: Vm, rm, f, r0
+      real(8), dimension(:), allocatable :: res
+      real(8), dimension(:), allocatable :: r
+      ! local
+      real(8) :: CkCd_this
+      integer :: I, r_N
+
+      r_N = int(r0/1000d0) + 1
+
+      allocate (r(r_N))
+      allocate (res(r_N))
+
+      ! if desired calculated CkCd from the best fit relationship
+      ! found in
+      if (CkCd_calc) then
+         CkCd_this = compute_ckcd(Vm)
+      else
+         CkCd_this = CkCd
+      end if
+
+      r = dble((/(I, I=0, int(r0), 1000)/))
+      res = (2d0*(r/rm)**2/(2d0 - CkCd_this + CkCd_this*(r/rm)**2))**(1d0/(2d0 - CkCd_this))* &
+            (rm*Vm + 0.5d0*f*rm**2d0)
+      res = (res - 0.5d0*f*r**2d0)/r
+      res(1) = 0d0
+
+   end function
+
+   !----------------------------------------------------------------------
+   !> @brief Get the outer wind profile
+   !>
+   !> @param f The Coriolis parameter
+   !> @param r0 The radius of diminishing winds
+   !> @return res The outer wind profile
+   !-----------------------------------------------------------------------
+   pure function get_outer_wind(f, r0) result(res)
+      implicit none
+      real(8), intent(in)   :: f, r0
+      real(8), dimension(:), allocatable :: r, res
+      ! local
+      real(8) :: Cd
+      integer :: I, J, r_N
+      real(8) :: dr
+
+      r_N = int(r0/1d3) + 1
+
+      allocate (r(r_N))
+      allocate (res(r_N))
+
+      r = dble((/(I, I=0, int(r0), 1000)/))
+      dr = r(2) - r(1)
+      res(:) = 0d0
+
+      J = 1
+      do I = r_N - 1, 2, -1
+
+         if (res(I) <= 6d0) then
+            Cd = 6.16d-4
+         else if (res(I) >= 35.4d0) then
+            Cd = 2.4d-3
+         else
+            Cd = 5.19d-5*res(I) + 2.614d-4
+         end if
+
+         res(I - 1) = res(I) - (2*Cd/w_cool*r(I)*res(I)**2/(r0**2 - r(I)**2) - res(I)/r(I) - f)*dr
+
+         if (res(I - 1) > 300d0) then
+            res(I - 1) = 300d0
+            J = I - 1
+            exit
+         end if
+
+      end do
+
+      if (J > 1) then
+         res(:J) = 300d0
+      end if
+
+   end function get_outer_wind
 
    !----------------------------------------------------------------------
    !> @brief Update the storm eye position
