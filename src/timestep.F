@@ -69,22 +69,24 @@ C
      &    CME_New_NC, CPRECOR, CTiP, DRAMP, DRampElev, DRampExtFlux, 
      &    DRampIntFlux, DRampMete, DRampTip, DRampWRad, DTDP, DTDPHS,
      &    DUnRampMete, ENDWAVE, ErrorElev, Flag_ElevError, FluxSettlingIT,
-     &    FluxSettlingTime, FTIMINC, IFNLFA, H0, IHOT, IM, INFO, WARNING,
-     &    ERROR, logMessage, allMessage, setMessageSource, unsetMessageSource,
+     &    FluxSettlingTime, FTIMINC, IFNLFA, H0, IHOT, IM,
      &    inundationOutput, ITHS, METONLY, NCICE, NDDT, NFFR, NHSINC,
-     &    NHSTAR, NOLIFA, NRamp, NRS, NSCREEN, NTIF, QTIME1, QTIME2, Ramp,
+     &    NHSTAR, NOLIFA, NRamp, NRS, NTIF, QTIME1, QTIME2, Ramp,
      &    RampElev, RampExtFlux, RampMete, RampTip, RampWRad, RBCRATIO,
      &    RBCTIME1, RBCTIME2, RBCTIMEINC, REFTIM, RES_BC_FLAG, 
-     &    RSTIME1, RSTIME2, NWS, RSTIMINC, SCREENUNIT, STATIM, TK,
+     &    RSTIME1, RSTIME2, NWS, RSTIMINC, STATIM, TK,
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
-     &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
+     &    SALTAMP, NODECODE, TPK, NOFF, DASigT, FFF,
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
-     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
+     &    WarnElevDump, nodes_lg, NT, NM, NB, NHOUTONCE,
      &    Limit_WaveStressGrad,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
      &    dynamicWaterLevelCorrectionDelta
+      use mod_logging, only: INFO, WARNING, ERROR, DEBUG, logMessage, allMessage,
+     &         setMessageSource, unsetMessageSource, nscreen, screenUnit, scratchMessage,
+     &         screenunit
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
      &                         WaveStressGrad_Cap 
      
@@ -1678,9 +1680,9 @@ C
       SUBROUTINE SCALAR_TRANS_2D (IT,TimeLoc)
 
       USE GLOBAL, only: ch1, trans_lv_b, nodecode, noff, lumpt, dtdp,
-     &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
-     &    setmessagesource, unsetmessagesource, DEBUG,
-     &    allMessage, H1
+     &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk, h1
+      use mod_logging, only: setmessagesource, unsetmessagesource, DEBUG,
+     &    allMessage
 
       USE ADC_CONSTANTS, ONLY: rhowat0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
@@ -1989,6 +1991,7 @@ C
       SUBROUTINE CALC_SIGMAT_2D ()
 
       USE GLOBAL
+      use mod_logging, only: setMessageSource, unsetMessageSource, allMessage, DEBUG
 
       INTEGER NH
 
@@ -2190,11 +2193,10 @@ c******************************************************************************
 
 Casey: Added the following variable declarations from GLOBAL.
 C
-      USE GLOBAL, ONLY: IFNLFA, IFNLCT,
-     &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
-     &      setMessageSource, unsetMessageSource, allMessage,
-     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &      ETA2, H0, DTDP, H2
+      USE GLOBAL, ONLY: IFNLFA, IFNLCT, NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
+     &          ETA2, H0, DTDP, H2
+      use mod_logging, only: setMessageSource, unsetMessageSource, allMessage,
+     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       USE ADC_CONSTANTS, ONLY: SigT0
       USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, SFAC

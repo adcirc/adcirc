@@ -75,7 +75,7 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
       module momentum
-      use global, only : DEBUG, INFO, WARNING, ERROR, setMessageSource,
+      use mod_logging, only : DEBUG, INFO, WARNING, ERROR, setMessageSource,
      &   allMessage, logMessage, unsetMessageSource
       implicit none
 

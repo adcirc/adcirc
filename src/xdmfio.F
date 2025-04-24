@@ -40,6 +40,7 @@ C     Writes the ADCIRC mesh to the XDMF output file.
 C-----------------------------------------------------------------------
       subroutine initOutputXDMF(descript)
       use global
+      use mod_logging, only: screenMessage, allMessage, ERROR
       use mesh
       use sizes,only:XDMF
       implicit none
@@ -105,8 +106,8 @@ C-----------------------------------------------------------------------
       ! Writes an array to an existing XDMF file. 
       !----------------------------------------------------------------
       subroutine writeOutArrayXDMF(timeLoc, it, descript)
-      use global, only: OutputDataDescript_t, scratchmessage, error, nt,
-     &            allMessage
+      use global, only: OutputDataDescript_t, nt
+      use mod_logging, only: allMessage, screenMessage, error, scratchMessage
       use mesh, only: NM, NE, agrid, dp, ics, np, x, y, terminate
       use sizes,only: mnproc
       implicit none

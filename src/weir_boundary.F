@@ -76,7 +76,7 @@ C  THE TIME VARYING ELEVATIONS TO THEIR FORT.14 ELEVATIONS AT TWO TIME
 C  LEVELS
 C-----------------------------------------------------------------------
             SUBROUTINE ALLOCATE_WEIRS()
-                USE GLOBAL,ONLY:allMessage,setMessageSource,
+                USE mod_logging,ONLY:allMessage,setMessageSource,
      &              unsetMessageSource,DEBUG
                 USE BOUNDARIES,ONLY: NVEL,BARINHT,BARLANHT
                 IMPLICIT NONE
@@ -129,7 +129,7 @@ C-----------------------------------------------------------------------
         MODULE TIME_VARYING_WEIR_BOUNDARY
             USE SIZES, ONLY: MYPROC,LOCALDIR,GLOBALDIR
             USE ADCIRC_MOD, ONLY: ADCIRC_TERMINATE
-            USE GLOBAL, ONLY: SCREENUNIT,logMessage,allMessage,
+            USE mod_logging, ONLY: SCREENUNIT,logMessage,allMessage,
      &          setMessageSource,unsetMessageSource,ERROR,INFO,ECHO,
      &          DEBUG,WARNING,ScratchMessage,ScreenMessage
             USE KDTREE2_MODULE
@@ -606,7 +606,8 @@ C-----------------------------------------------------------------------
             SUBROUTINE COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,
      &          TIMELOC,BAR_HEIGHT_CURRENT,BAR_HEIGHT,BARHT_START)
 
-                USE GLOBAL,ONLY: DT,SCREENUNIT
+                USE GLOBAL,ONLY: DT
+                USE mod_logging, only: SCREENUNIT
                 USE MESH,ONLY: DP
                 USE BOUNDARIES, ONLY: BARINHT,BARLANHT,LBCODEI,
      &                                NBV,IBCONN
@@ -743,7 +744,8 @@ C-----------------------------------------------------------------------
             SUBROUTINE COMPUTE_BARRIER_HEIGHT_ETAMAX(MYIDX,TIMELOC,
      &              BAR_HEIGHT_CURRENT,BAR_HEIGHT)
 
-                USE GLOBAL,ONLY: DT,SCREENUNIT,ETA2,NNODECODE
+                USE GLOBAL,ONLY: DT,ETA2,NNODECODE
+                USE mod_logging, only: SCREENUNIT
                 USE MESH,ONLY: DP
                 USE BOUNDARIES, ONLY: BARINHT, BARLANHT, LBCODEI,NBV,IBCONN
 
@@ -1872,8 +1874,8 @@ C   CALCULATIONS FOR INTERNAL AND EXTERNAL WEIR TYPE BOUNDARIES.
 C-----------------------------------------------------------------------
         MODULE WEIR_FLUX
             USE ADC_CONSTANTS, ONLY: G
-            USE GLOBAL,ONLY:ETA2,RAMPINTFLUX,
-     &          setMessageSource,unsetMessageSource,DEBUG,allMessage    
+            USE GLOBAL,ONLY:ETA2,RAMPINTFLUX
+            USE mod_logging, only: setMessageSource,unsetMessageSource,DEBUG,allMessage
             USE BOUNDARIES,ONLY: LBCODEI,NBV
             USE TIME_VARYING_WEIR_BOUNDARY,ONLY:COMPUTE_BARRIER_HEIGHT,
      &              BAR_DEG

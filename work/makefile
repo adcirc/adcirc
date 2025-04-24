@@ -353,6 +353,7 @@ PREP_MSRC  =  presizes.F
 PGLO_MSRC  =  pre_global.F
 3D_MSRC    =  global_3dvs.F
 ADC_MSRC   =  version.F sizes.F constants.F global.F
+LOG_MSRC   =  logging.F90
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
@@ -403,6 +404,7 @@ POST_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(POST_MSRC) )
 PGLO_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PGLO_MSRC) )
 SOLV_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SOLV_MSRC) )
 ADC_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(ADC_MSRC)  )
+LOG_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(LOG_MSRC)  )
 HARM_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(HARM_MSRC)  )
 VORT_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VORT_MSRC)  )
 VW1D_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VW1D_MSRC)  )
@@ -680,7 +682,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -770,7 +772,8 @@ $(O_DIR)aswip.o      :  aswip.F $(VORT_MOBJ) $(NA_MOBJ)
 
 $(O_DIR)version.o     :  version.F
 $(O_DIR)sizes.o       :  sizes.F
-$(O_DIR)constants.o   :  constants.F $(O_DIR)sizes.o
+$(O_DIR)logging.o     :  logging.F90 $(O_DIR)sizes.o	
+$(O_DIR)constants.o   :  constants.F $(O_DIR)logging.o $(O_DIR)sizes.o
 $(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)constants.o $(O_DIR)kdtree2.o
 $(O_DIR)internaltide.o : internaltide.F $(O_DIR)sizes.o $(O_DIR)global.o
 $(O_DIR)gl2loc_mapping.o : gl2loc_mapping.F $(O_DIR)sizes.o $(O_DIR)global.o

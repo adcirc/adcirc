@@ -76,8 +76,9 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C******************************************************************************
 
       module gwce
-      use global, only : DEBUG, INFO, WARNING, ERROR, logMessage, 
-     &   setMessageSource, unsetMessageSource, allMessage
+      use mod_logging, only : DEBUG, INFO, WARNING, ERROR, logMessage,
+     &   setMessageSource, unsetMessageSource, allMessage, scratchMessage,
+     &   nscreen, screenunit
       implicit none
 
       real(8),allocatable :: lsxx(:),lsxy(:),lsyx(:),lsyy(:)
@@ -243,8 +244,8 @@ C
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
      &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, IFNLCAT,
-     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NSCREEN, NCCHANGE, IDEN,
-     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG, screenUnit,
+     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NCCHANGE, IDEN,
+     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG,
      &   SMAG_LOWER_LIM, SMAG_UPPER_LIM, TK, NOFF, UU1, VV1, QX1, QY1,
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
@@ -2156,8 +2157,8 @@ C
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
      &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, IFNLCAT,
-     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NSCREEN, NCCHANGE, IDEN,
-     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG, screenUnit,
+     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NCCHANGE, IDEN,
+     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG,
      &   SMAG_LOWER_LIM, SMAG_UPPER_LIM, TK, NOFF, UU1, VV1, QX1, QY1,
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
@@ -3157,10 +3158,7 @@ C     jgf53.dev: Moved to GWCE module.
 C*************************************************************************
       subroutine check_slopes(it,TimeLoc)
       USE SIZES, ONLY : mnproc, myproc
-      use global, only : eta2,nodecode,NOFF,ESLCOUNT,screenUnit,
-     &      setMessageSource, unsetMessageSource, scratchMessage,
-     &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &      nodes_lg, IFSFM
+      use global, only : eta2,nodecode,NOFF,ESLCOUNT,nodes_lg,IFSFM
       use mesh, only : nm, ne, areas, FDXE, FDYE, 
      &      SFacEle, SFMYEle, SFMXEle
       use NodalAttributes, ONLY : LoadEleSlopeLim,
@@ -3311,9 +3309,7 @@ C     jgf53.dev: Moved to GWCE module.
 C***********************************************************************
 C
       SUBROUTINE APPLY_SLOPE_LIMITS(ETA2Lim,LocNP)
-      use global, only : nodecode,NOFF,IFNLFA,
-     &      setMessageSource, unsetMessageSource, allMessage,
-     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
+      use global, only : nodecode,NOFF,IFNLFA
       use mesh, only : ne, nm, areas, totalArea
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active

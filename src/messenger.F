@@ -26,10 +26,11 @@ C
       USE GLOBAL, ONLY: C3D, COMM,
      &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
      &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, 
-     &    SIG_TERM, FLOAT_TYPE, REALTYPE, DBLETYPE,
-     &    DEBUG, ECHO, INFO, WARNING, ERROR, CPL2STWAVE,Flag_ElevError,
+     &    SIG_TERM, FLOAT_TYPE, REALTYPE, DBLETYPE, CPL2STWAVE,Flag_ElevError,
+     &    Flag_VelError
+      use mod_logging, only: DEBUG, ECHO, INFO, WARNING, ERROR,
      &    screenMessage, logMessage, allMessage, setMessageSource,
-     &    unsetMessageSource, scratchMessage,Flag_VelError
+     &    unsetMessageSource, scratchMessage
      
       USE MPI
       IMPLICIT NONE

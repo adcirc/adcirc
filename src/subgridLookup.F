@@ -161,8 +161,9 @@
       subroutine readSubgridLookup
 #ifdef ADCNETCDF          
       use netcdf
-      ! use global, only: imap_el_lg, nodes_lg, allMessage, ERROR
-      use global, only: nodes_lg, allMessage, ERROR
+
+      use global, only: nodes_lg
+      use mod_logging, only: allMessage, ERROR
       
       implicit none
 
@@ -494,7 +495,7 @@
 #ifdef CMPI
       USE MESSENGER
 #endif
-      USE GLOBAL, ONLY: INFO,DEBUG,allMessage,
+      USE mod_logging, ONLY: INFO,DEBUG,allMessage,
      &                  setMessageSource,unsetMessageSource
       IMPLICIT NONE
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE

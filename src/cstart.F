@@ -41,8 +41,8 @@ C
      &    cice_time2, cice_timinc, ctip, tip2, nscoue, nstae_g,
      &    nstae, rdes4, rid4, rdes8, rid8, aid8, esbin1, vv2, nolifa,
      &    uu2, inundationoutput, esbin2, nspoolv, nscouc, icstp, nstac,
-     &    nstac_g, ntrspc, nspoolc, nscoum, bchgtiminc, nscreen,
-     &    screenunit, h0, ntrspe, dt, nspoole, nscouv, np_g,
+     &    nstac_g, ntrspc, nspoolc, nscoum, bchgtiminc,
+     &    h0, ntrspe, dt, nspoole, nscouv, np_g,
      &    outputsponge, ne_g, usingDynamicWaterLevelCorrection, ndsetse,
      &    nspoolge,
      &    nscougv, ndsetsv, nspoolgv, use_tvw, nscou_tvw,
@@ -70,6 +70,7 @@ C
      &    initInundationOutput
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
       USE GWCE, ONLY : etime1, etime2, etiminc
+      use mod_logging, only: nscreen, screenUnit
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
@@ -729,8 +730,8 @@ c******************************************************************************
      &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2, 
      &                   LNM_BC, LNM_BC1, LNM_BC2, RIVBCTIMINC,
      &                   RIVBCTIME1, RIVBCTIME2, 
-     &                   RIVBCSTATIM, DEBUG, setMessageSource,
-     &                   unsetMessageSource, allMessage, NP_G
+     &                   RIVBCSTATIM, NP_G
+      USE mod_logging, only: DEBUG, setMessageSource, unsetMessageSource, allMessage, NScreen
       USE MESH, ONLY : NP, AGRID
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD,
      &  totalbcrivernodes, bndbcriver
@@ -1136,10 +1137,10 @@ C----------------------------------------------------------------------
       use ADCIRC_MOD, only : ADCIRC_Terminate
       use mesh, only : dp, np, mju, ne, nm
       use boundaries, only : nvel, lbcodei, nbv
-      use global, only : eta2, nnodecode, noff, logMessage, allMessage,
-     &   scratchMessage, INFO, h0, setMessageSource, unsetMessageSource,
-     &   DEBUG, WARNING, INFO, ERROR, scratchMessage, eta1, nolifa,
-     &   EtaDisc, River_above_MSL
+      use global, only : eta2, nnodecode, noff, h0, eta1, nolifa, EtaDisc, River_above_MSL
+      use mod_logging, only: setMessageSource, unsetMessageSource,
+     &   DEBUG, WARNING, INFO, ERROR, scratchMessage, logMessage, allMessage,
+     &   scratchMessage
       use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE,
      &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,

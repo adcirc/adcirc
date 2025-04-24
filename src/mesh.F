@@ -37,10 +37,10 @@
       use hashtable
       use sizes, only: meshFileName, mne, mnp, mnope, mneta, myproc,
      &   mnbou, mnvel, nprec, meshtype, ascii, xdmf, mnei, GBLINPUTDIR
-      use global, only: DEBUG, INFO, ECHO, WARNING, ERROR,
+      use global, only: openFileForRead
+      use mod_logging, only: DEBUG, INFO, ECHO, WARNING, ERROR,
      &   scratchMessage, logMessage, screenMessage, allMessage,
-     &   setMessageSource, openFileForRead, unsetMessageSource,
-     &   scratchFormat
+     &   setMessageSource, unsetMessageSource, scratchFormat, nabout
       USE ADC_CONSTANTS, only: deg2rad, rad2deg, pi, omega, rearth
 
       implicit none
@@ -166,7 +166,6 @@
 !     jgf51.21.11: Read the ADCIRC mesh in various formats
 !     ------------------------------------------------------------------
       subroutine read14_findDims ()
-      use global, only : nabout
       use boundaries
       implicit none
       integer :: ios ! i/o status
@@ -325,7 +324,7 @@
       !-----+---------+---------+---------+---------+---------+---------+
       subroutine read14 ()
       use boundaries
-      use global, only : openFileForRead, nabout, nperseg, nnperbc,
+      use global, only : openFileForRead, nperseg, nnperbc,
      &                   iperconn
 
       implicit none
@@ -608,7 +607,7 @@
       !      (optional) nodeLael - node label
       !-----+---------+---------+---------+---------+---------+---------+
       subroutine read14femesh( meshfileName, nn, vx, etov, bxy, nodeLabel )
-      use global, only : openFileForRead, nabout
+      use global, only : openFileForRead
 
       implicit none
 
@@ -757,7 +756,6 @@
 !     data structures.
 !----------------------------------------------------------------------
       subroutine readMeshXDMF()
-      use global, only : nabout
       use boundaries
       implicit none
 

@@ -24,10 +24,11 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
       USE SIZES,  ONLY: MNEI
-      USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
+      USE mod_logging, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          setMessageSource, unsetMessageSource, allMessage,
-     &          scratchMessage, logMessage, NB, NM, MLD, SigTS,
-     &          VIDBCPDXOH, VIDBCPDYOH, VIDISPDXOH, VIDISPDYOH, IDEN
+     &          scratchMessage, logMessage
+      USE GLOBAL, only: NB, NM, MLD, SigTS, VIDBCPDXOH, VIDBCPDYOH,
+     &          VIDISPDXOH, VIDISPDYOH, IDEN
       USE ADC_CONSTANTS, ONLY: SigT0
 #ifdef DATETIME
       use datetime_module, only: datetime, timedelta, strptime

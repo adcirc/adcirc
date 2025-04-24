@@ -38,7 +38,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE READ_INPUT()
       USE SIZES          
       USE GLOBAL, only: toutsge, toutfge, nspoolge, im, ff, bountag, 
-     &   noutge, use_tvw, nscreen, nabout, nfover, warnelev, ihot, hss,
+     &   noutge, use_tvw, nfover, warnelev, ihot, hss,
      &   smag_lower_lim, iwarnelevdump, warnelevdump, errorelev, c2ddi,
      &   usenetcdf, cgwce_new, cme_new_nc, cme_ls_ibpv, cgwce_ls_kgq,
      &   cgwce_advec_nc, cme_areaInt_corr, ilump, c2d_ptrans, c3ddss,
@@ -174,6 +174,7 @@ Casey 180318: Added NWS=13
 !JLW: add subgrid 
       USE subgrid, only: subgridFilename, level0, level1, phi_time_derivative
       use mod_tidepotential, only: tidePotential, t_tidePotential
+      use mod_logging, only: nabout, nscreen
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -349,7 +350,7 @@ C...
 #endif
       WRITE(16,*) '      - dmw202401 THIS CODE USES A VELCHECKER'
       WRITE(16,*) '      - dmw202401 THIS CODE USES THE FIX FOR SUBGRID BARRIERS'
-	  WRITE(16,*) '      - dmw202401 adcirc-noaa e8aef69945a44c50fbc51350eddf26d8f559348c'
+	    WRITE(16,*) '      - dmw202401 adcirc-noaa e8aef69945a44c50fbc51350eddf26d8f559348c'
       write(16,1112)
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
@@ -5334,10 +5335,10 @@ C    kmd48.33bc - added the variables from Global
      &                  TBCTIME2, RBCTIMEINC, SBCTIMEINC,
      &                  TBCTIMEINC, SBCSTATIM, TBCSTATIM,
      &                  BCFLAG_LNM, BCFLAG_TEMP, TTBCSTATIM,
-     &                  TTBCTIMEINC, SPONGEDIST, Sponge,
-     &                  scratchMessage, INFO, DEBUG, ERROR, allMessage,
+     &                  TTBCTIMEINC, SPONGEDIST, Sponge, OUTPUTSPONGE
+      use mod_logging, only: scratchMessage, INFO, DEBUG, ERROR, allMessage,
      &                  setMessageSource, logMessage, unsetMessageSource,
-     &                  OUTPUTSPONGE, screenMessage, ECHO
+     &                  screenMessage, ECHO, nscreen
       USE ADC_CONSTANTS, ONLY: sec2day
       USE MESH, ONLY : NP, DP, X, Y
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD
@@ -6090,9 +6091,10 @@ C-----------------------------------------------------------------------
       SUBROUTINE checkAndFillIOParameters(specifier, description,
      &   staTime, tsPeriod, startTime, endTime, startTS, endTS, nSets,
      &   tsCounter, recCounter)
-      USE GLOBAL, ONLY : scratchMessage, ECHO, INFO, WARNING, ERROR,
-     &   DTDP, NT, setMessageSource, logMessage, allMessage,
-     &   unsetMessageSource, DEBUG, screenMessage, useNetCDF
+      USE mod_logging, ONLY : scratchMessage, ECHO, INFO, WARNING, ERROR,
+     &   setMessageSource, logMessage, allMessage, unsetMessageSource,
+     &   DEBUG, screenMessage
+      USE GLOBAL, ONLY: useNetCDF, DTDP, NT
       USE ADC_CONSTANTS, ONLY: day2sec
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
@@ -6246,7 +6248,8 @@ C-----------------------------------------------------------------------
      &                        Description)
       USE ADC_CONSTANTS, ONLY: DEG2RAD, RAD2DEG
       USE GLOBAL, ONLY : parse, IFSPROTS,
-     &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
+     &   a2f
+      use mod_logging, only: DEBUG, allMessage, setMessageSource, unsetMessageSource
       USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
@@ -6333,9 +6336,9 @@ C-----------------------------------------------------------------------
       SUBROUTINE kdtsearch(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
       use sizes, only : MyProc
-      use global, only : NFOver, NScreen, ScreenUnit, srchdp, tree,
-     &   kdresults, DEBUG, screenMessage, allMessage, setMessageSource,
-     &   unsetMessageSource
+      use mod_logging, only: NScreen, ScreenUnit, DEBUG, screenMessage,
+     &      allMessage, setMessageSource, unsetMessageSource
+      use global, only : NFOver, srchdp, tree, kdresults
       use mesh, only : ne, nm, x, y, areas, rmax, bcxy
       use adcirc_mod, only : adcirc_terminate
       use kdtree2_module
@@ -6475,7 +6478,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE CoordinateToElement(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
       USE SIZES, ONLY : MyProc
-      USE GLOBAL, ONLY: NFOver, NScreen, screenMessage, allMessage,
+      USE GLOBAL, ONLY: NFOver
+      USE mod_logging, only: NScreen, screenMessage, allMessage,
      & DEBUG, ScreenUnit, setMessageSource, unsetMessageSource
       USE MESH, ONLY : NE, NM, X, Y, Areas
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
@@ -6585,7 +6589,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE ComputeInterpolatingFactors(InputXCoordinate,
      &     InputYCoordinate, InputElement, Factor1, Factor2, Factor3)
 
-      USE GLOBAL, ONLY : DEBUG, screenMessage,
+      USE mod_logging, ONLY : DEBUG, screenMessage,
      &    setMessageSource, unsetMessageSource, allMessage
       USE MESH, ONLY : NM, X, Y, Areas
       IMPLICIT NONE
@@ -6630,7 +6634,7 @@ C     jgf52.08.02: Record the i/o status associated with reading the
 C     namelist using the negative, zero, or positive value of ios.
 C-----------------------------------------------------------------------
       subroutine logNamelistReadStatus(nmlname, ios, msg)
-      use global, only : logMessage, scratchMessage, DEBUG, ECHO, INFO,
+      use mod_logging, only : logMessage, scratchMessage, DEBUG, ECHO, INFO,
      &   WARNING, ERROR, setMessageSource, unsetMessageSource,
      &   allMessage
       implicit none
@@ -6681,8 +6685,8 @@ C-----------------------------------------------------------------------
 !     is turned off
 !-----------------------------------------------------------------------
         USE GLOBAL, ONLY: SALTAMP, SALTPHA, NTIP, NTIF, DEG2RAD, 
-     &      openfileforread, allMessage, ERROR, scratchMessage,
-     &      tipotag, nodes_lg, np_global
+     &      openfileforread, tipotag, nodes_lg, np_global
+        USE mod_logging, only: allMessage, ERROR, scratchMessage
         USE MESH, ONLY: NP, node_dict
         USE SIZES, ONLY: INPUTDIR, GBLINPUTDIR, MYPROC
         USE HASHTABLE, ONLY: find

@@ -7728,14 +7728,14 @@ C---------------------------------------------------------------------------
      &    initNetCDFHotstartHarmonic,
      &    initNetCDFHotstartHarmonicMeansVariances,
      &    freeNetCDFCoord
+      use mod_logging, only: screenUnit
 #ifdef ADCSWAN
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit,
+      USE GLOBAL, ONLY : OutputDataDescript_t,
      &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
      &                   SWAN_OutputTMM10,NOUT_TVW,outputWindDrag
 #else
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit,
-     &                   NOUT_TVW,outputWindDrag
+      USE GLOBAL, ONLY : OutputDataDescript_t,NOUT_TVW,outputWindDrag
 #endif
 C
       IMPLICIT NONE

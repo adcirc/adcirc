@@ -87,10 +87,10 @@
 !-----------------------------------------------------------------------
 
         USE SIZES,ONLY : MYPROC
-        USE GLOBAL,ONLY : NSCREEN, ScreenUnit, DEBUG, ECHO, INFO,
+        USE GLOBAL,ONLY : openFileForRead, Flag_ElevError
+        use mod_logging, only: NSCREEN, ScreenUnit, DEBUG, ECHO, INFO,
      &     WARNING, ERROR, screenMessage, logMessage, allMessage,
-     &     setMessageSource, unsetMessageSource, scratchMessage,
-     &     openFileForRead, Flag_ElevError
+     &     setMessageSource, unsetMessageSource, scratchMessage
 #ifdef CMPI
         USE MESSENGER,ONLY : MSG_FINI
 #endif  

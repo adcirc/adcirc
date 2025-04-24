@@ -25,13 +25,13 @@ C***********************************************************************
 C
        MODULE WIND
        USE SIZES, ONLY : LOCALDIR
-       USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage,
+       USE mod_logging, ONLY : ScreenUnit, setMessageSource, allMessage,
      &    screenMessage, logMessage, unsetMessageSource,
-     &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
-     &    sphericalDistance, openFileForRead, RNDAY, cice_timinc, 
+     &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage, nabout
+       USE global, only: sphericalDistance, openFileForRead, RNDAY, cice_timinc,
      &    cice_time1, cice_time2, Found_InterpInset_Namelist,UseInterpInset
 #ifdef DATETIME
-     &   ,basedatetime
+       use global, only: basedatetime
 #endif
        USE ADC_CONSTANTS, ONLY: pi, deg2rad, rad2deg, e, PRBCKGRND, g, 
      &                      rhoWat0, Rearth, rhoAir, one2ten,
@@ -6994,7 +6994,7 @@ C     verifies that input files are all present, etc.
 C     ----------------------------------------------------------------
       subroutine NWS15INIT(timeloc)
       use sizes, only : globaldir, mnp
-      use global, only : ihot, nws, openFileForRead, nabout
+      use global, only : ihot, nws, openFileForRead
       implicit none
 C
       real(8), intent(in) :: timeloc ! adcirc time in seconds since coldstart
@@ -7447,7 +7447,7 @@ C     from a single HWind file.
 C
 C     ----------------------------------------------------------------
       subroutine loadHWindFile(cn)
-      use global, only : openFileForRead, nabout
+      use global, only : openFileForRead
       USE ADC_CONSTANTS, only: m2nm
       implicit none
       integer, intent(in) :: cn ! cycle number of file to load
@@ -7722,10 +7722,7 @@ C
 
        subroutine init_gfdl(timeloc)
        use sizes, only : globaldir 
-       use global, only : ihot, nws, nabout, openFileForRead,
-     &                setMessageSource,unsetMessageSource,allMessage,
-     &                logMessage,scratchMessage,DEBUG,ECHO,INFO,
-     &                ERROR,WARNING
+       use global, only : ihot, nws
       USE ADC_CONSTANTS, only: PRBCKGRND,RHOWAT0
       use mesh, only : np, x, y, slam0, sfea0
       implicit none
@@ -7973,9 +7970,7 @@ C
        USE SIZES
        USE MESH, ONLY: ICS, DRVSPCOORSROTS, CYLINDERMAP
        USE ADC_CONSTANTS, ONLY: DEG2RAD,PRBCKGRND,G,RHOWAT0
-       USE GLOBAL, ONLY: IFSPROTS,
-     &        setMessageSource,unsetMessageSource,allMessage,
-     &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR
+       USE GLOBAL, ONLY: IFSPROTS
        USE KDTREE2_MODULE     ! USED FOR FAST SEARCHING
 
        IMPLICIT NONE
@@ -8214,9 +8209,6 @@ C ---------------------------------------------------------------------
 C
       subroutine nws16get(timeloc,wvnx,wvny,press)
       use mesh, only : x,y,np,slam0,sfea0
-      use global, only : setMessageSource,unsetMessageSource,allMessage,
-     &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR,
-     &        WARNING
       USE ADC_CONSTANTS, only: PRBCKGRND,RHOWAT0,G
 
       implicit none
@@ -8320,7 +8312,6 @@ C     jgf52.19: Added error checking and reporting as well as
 C     execution tracing.
 C***********************************************************************
       subroutine rsget(rsnx,rsny)
-      use global, only : nabout
       use mesh, only : np
       implicit none
       real(8), intent(out), dimension(np) :: rsnx
@@ -8424,7 +8415,7 @@ C
 C----------------------------------------------------------------------
       subroutine initDynamicWaterLevelCorrection(timesec)
       use sizes, only : globaldir
-      use global, only : nabout, np_g
+      use global, only : np_g
       use mesh, only : np
       implicit none
       real(8), intent(in) :: timesec ! adcirc model time (s)
@@ -8669,7 +8660,7 @@ C----------------------------------------------------------------------
 C     jgf: Reads a water level correction dataset from file.
 C----------------------------------------------------------------------
       subroutine readDynamicWaterLevelCorrectionDataSet()
-      use global, only : nabout, np_g, nodes_lg
+      use global, only : np_g, nodes_lg
       use mesh, only : np
       implicit none
       integer :: numCorrectionValues
@@ -9604,7 +9595,7 @@ C----------------------------------------------------------------------
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
-      USE GLOBAL, ONLY: scratchMessage, allMessage, ERROR
+      USE mod_logging, ONLY: scratchMessage, allMessage, ERROR
       
       IMPLICIT NONE
 
