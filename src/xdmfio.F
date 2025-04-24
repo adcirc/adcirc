@@ -42,7 +42,7 @@ C-----------------------------------------------------------------------
       use global
       use mod_logging, only: screenMessage, allMessage, ERROR
       use mesh
-      use sizes,only:XDMF
+      use sizes,only:XDMF, myproc
       implicit none
       include 'adcirc_Xdmf.f'
       type(OutputDataDescript_t) :: descript
@@ -57,7 +57,7 @@ C-----------------------------------------------------------------------
 #ifndef ADCXDMF
       call allMessage(ERROR,'XDMF output was specified.')
       call allMessage(ERROR,'This executable was not compiled with XDMF support.')
-      call terminate()
+      call terminate(myproc)
 #else
       !jgfdebug
       write(6,'(a)') 'fn='//trim(descript % file_name)
@@ -107,9 +107,10 @@ C-----------------------------------------------------------------------
       !----------------------------------------------------------------
       subroutine writeOutArrayXDMF(timeLoc, it, descript)
       use global, only: OutputDataDescript_t, nt
+      use mod_terminate, only: terminate
       use mod_logging, only: allMessage, screenMessage, error, scratchMessage
-      use mesh, only: NM, NE, agrid, dp, ics, np, x, y, terminate
-      use sizes,only: mnproc
+      use mesh, only: NM, NE, agrid, dp, ics, np, x, y
+      use sizes,only: mnproc, myproc
       implicit none
 #ifdef ADCXDMF
       include 'adcirc_Xdmf.f'
@@ -139,7 +140,7 @@ C-----------------------------------------------------------------------
       call allMessage(ERROR,'XDMF output was specified.')
       call allMessage(ERROR,
      &    'This executable was not compiled with XDMF support.')
-      call terminate()
+      call terminate(myproc)
 #else
       !jgfdebug
       write(6,'(a)') 'call to write '//trim(descript % file_name)
@@ -257,7 +258,7 @@ C-----------------------------------------------------------------------
       case default
          write(scratchMessage,'("Cannot write unit ",i0," files.")') descript % lun 
          call allMessage(ERROR, scratchMessage)
-         call terminate()
+         call terminate(myproc)
       end select
       !
       ! set the time of this dataset in the XDMF file
@@ -316,7 +317,7 @@ C-----------------------------------------------------------------------
      &     '("Cannot write data with ",i0," components.")') 
      &      descript % num_items_per_record
          call allMessage(ERROR,scratchMessage)
-         call terminate()
+         call terminate(myproc)
       end select
       !
       ! set the time step of this dataset in the XDMF file

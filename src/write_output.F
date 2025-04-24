@@ -35,6 +35,7 @@ C----------------------------------------------------------------------
       use mod_logging, only: setMessageSource, unsetMessageSource,
      &        INFO, DEBUG, allMessage, screenMessage, ERROR, screenUnit,
      &        scratchMessage
+      use mod_terminate, only: terminate
       USE boundaries, only: freeFluxBoundaryArrayTemporaries
 
       !
@@ -1610,7 +1611,7 @@ C      IF (mnproc.gt.1) THEN
                   if (nerr.eqv..true.) then
                      call allMessage(ERROR,
      &             'There was an issue with NetCDF file initialization.')
-                     call terminate()
+                     call terminate(myproc)
                   endif
                   ptr(i) % descript2D % initialized = .true.
 #endif
@@ -1695,7 +1696,7 @@ C                      ! initialize it if it wasn't initialized above
                               call allMessage(ERROR,
      &                        "Failed to initialize "//
      &                        trim(ptr(i)%descript2D%file_name)//".")
-                              call terminate()
+                              call terminate(myproc)
                            endif
                         endif
                      endif
@@ -4177,7 +4178,7 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
             call allMessage(ERROR, 'NetCDF was specified.')
             call allMessage(ERROR,
      &      'This executable was not compiled with NetCDF support.')
-            call terminate()
+            call terminate(myproc)
 #endif
 
         CASE(XDMF)
@@ -4189,7 +4190,7 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
             call allMessage(ERROR, 'XDMF was specified.')
             call allMessage(ERROR,
      &      'This executable was not compiled with XDMF support.')
-            call terminate()
+            call terminate(myproc)
 #endif
         CASE DEFAULT
             write(scratchMessage,'(a,i0)') 'Invalid output specifier: ',
@@ -4622,19 +4623,19 @@ C              jgf49.35 TODO: Allocate arrays to write 3D data
                CALL initNetCDFHotstart(hss%lun, Elev1Descript,
      &         Elev2Descript, HotstartVelDescript, CH1Descript,
      &         EtaDiscDescript, NodeCodeDescript, NOFFDescript, ncerror)
-               IF ( ncerror.eqv..true. ) CALL terminate()
+               IF ( ncerror.eqv..true. ) call terminate(myproc)
                IF (IHARIND.eq.1) THEN
                   CALL initNetCDFHotstartHarmonic(hss%lun,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
      &            HarmUVelFDLVDescript, HarmVVelFDLVDescript,
      &            HarmUVelSLVDescript, HarmVVelSLVDescript, ncerror)
-                  IF ( ncerror.eqv..true. ) CALL terminate()
+                  IF ( ncerror.eqv..true. ) call terminate(myproc)
                   IF (CHARMV.eqv..true.) THEN
                      CALL initNetCDFHotstartHarmonicMeansVariances(
      &                  hss%lun, ELAVDescript, ELVADescript,
      &                  XVELAVDescript, YVELAVDescript, XVELVADescript,
      &                  YVELVADescript,ncerror)
-                     IF ( ncerror.eqv..true. ) CALL terminate()
+                     IF ( ncerror.eqv..true. ) call terminate(myproc)
                   ENDIF
                ENDIF
                ! Determine if we need to init both hotstart files, i.e., if the
@@ -4651,19 +4652,19 @@ C              jgf49.35 TODO: Allocate arrays to write 3D data
      &            Elev2Descript, HotstartVelDescript, CH1Descript,
      &            EtaDiscDescript, NodeCodeDescript, NOFFDescript,
      &            ncerror)
-                  IF ( ncerror.eqv..true. ) CALL terminate()
+                  IF ( ncerror.eqv..true. ) call terminate(myproc)
                   IF (IHARIND.eq.1) THEN
                      CALL initNetCDFHotstartHarmonic(nextLun,
      &               HarmElevFDLVDescript, HarmElevSLVDescript,
      &               HarmUVelFDLVDescript, HarmVVelFDLVDescript,
      &               HarmUVelSLVDescript, HarmVVelSLVDescript, ncerror)
-                     IF ( ncerror.eqv..true. ) CALL terminate()
+                     IF ( ncerror.eqv..true. ) call terminate(myproc)
                      IF (CHARMV.eqv..true.) THEN
                         CALL initNetCDFHotstartHarmonicMeansVariances(
      &                     nextLun, ELAVDescript, ELVADescript,
      &                     XVELAVDescript, YVELAVDescript,
      &                     XVELVADescript, YVELVADescript, ncerror)
-                        IF ( ncerror.eqv..true. ) CALL terminate()
+                        IF ( ncerror.eqv..true. ) call terminate(myproc)
                      ENDIF
                   ENDIF
                ENDIF
@@ -4700,7 +4701,7 @@ C     collect up the data from subdomains if running in parallel
             if (any(NOFF_G.gt.1)) then
                call allMessage(ERROR,
      &            'Some values of NOFF are greater than 1.')
-               call terminate()
+               call terminate(myproc)
             endif
          endif
 C
@@ -5440,36 +5441,6 @@ C-----------------------------------------------------------------------
       END SUBROUTINE WriteWarnElev
 C-----------------------------------------------------------------------
 
-      SUBROUTINE terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      IMPLICIT NONE
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("terminate")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1)
-C
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE terminate
-
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  i n i t S w a n O u t p u t
 C-----------------------------------------------------------------------
@@ -6008,7 +5979,7 @@ C-----------------------------------------------------------------------
                call allMessage(ERROR,
      &      'There was an issue with NetCDF file initialization for "'//
      &        trim(InitiallyDryDescript%file_name)//'".')
-               call terminate()
+               call terminate(myproc)
             endif
          endif
          InitiallyDryDescript % initialized = .true.

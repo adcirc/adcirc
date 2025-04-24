@@ -100,7 +100,8 @@ C      CondensedNodes        "condensed_nodes"
 C
 C-----------------------------------------------------------------------
       MODULE NodalAttributes
-      USE SIZES
+      USE SIZES, ONLY: myproc, inputdir, XDMF, natype
+      use mod_terminate, only: terminate
       USE mod_logging, ONLY : scratchMessage, allMessage, logMessage,
      &                    DEBUG, ECHO, INFO, WARNING, ERROR
 
@@ -554,7 +555,7 @@ C     ----------------------------------------------------------------
      & 'An XDMF formatted nodal attributes (fort.13) file was specified.')
       call allMessage(ERROR,
      & 'This ADCIRC executable was not compiled with XDMF support.')
-      call na_terminate()
+      call terminate(myproc)
 #else
       include 'adcirc_Xdmf.f'
       integer*8 :: xdmfFortranObj ! object that receives the data
@@ -603,7 +604,7 @@ C
          write(scratchMessage,'(a)') 'The XDMF nodal attributes file' //
      &       trim(naFileName)//'was not found.'
          call allMessage(ERROR, scratchMessage)
-         call na_terminate()
+         call terminate(myproc)
       ENDIF
 
       write(6,'(a)') 'INFO: Reading data from the "' 
@@ -917,7 +918,7 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
      &        'not contain all the attributes listed in the '
      &        'model parameter file (unit 15).')
          call allMessage(ERROR, scratchMessage)
-         call na_terminate()
+         call terminate(myproc)
       ENDIF
 C     ----------------------------------------------------------------
       end subroutine checkForMissingNodalAttributes
@@ -1021,7 +1022,7 @@ C     Check to make sure that NWP is a valid number.
          WRITE(16,9973)
  9728    FORMAT(/,1X,'Your selection of NWP (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-         CALL EXIT(1)          ! We're toast.
+         CALL terminate(myproc)
       ENDIF
 C
 C     Check to see if there are nodal attributes to be read in. If not,
@@ -1128,7 +1129,7 @@ C
             WRITE(ScreenUnit,1011)
             WRITE(ScreenUnit,9973)      ! execution terminated
          ENDIF
-         CALL EXIT(1)
+         CALL terminate(myproc)
       ENDIF
 C
 C     Now open the nodal attributes (unit 13) file.
@@ -1146,7 +1147,7 @@ C     Now open the nodal attributes (unit 13) file.
             WRITE(ScreenUnit,1005)
             WRITE(ScreenUnit,9973)
          ENDIF
-         CALL EXIT(1)                 ! We're toast.
+         CALL terminate(myproc)
       ENDIF
 C
 C     Read each attribute name, units, number of values, and default value
@@ -1165,7 +1166,7 @@ C     file for this mesh.
       if ( (nwp.ne.0).and.(numOfNodes.ne.np) ) then
          write(scratchMessage,9901) np, numOfNodes
          call allMessage(ERROR,scratchMessage)
-         call na_terminate()
+         call terminate(myproc)
  9901   format('The number of nodes in the mesh file (unit 14) is ',i0,
      &  'while the number of nodes listed on the 2nd line of the '//
      &  'nodal attributes file (unit 13) is ',i0,'.'//
@@ -1794,7 +1795,7 @@ C     same as the number of nodes in the grid file.
      &        //,1X,'The number of nodes in the grid file (unit 14) and'
      &        /,1X,'the nodal attributes file (unit 13) must match.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         CALL EXIT(1)                 ! We're toast.
+         CALL terminate(myproc)
       ENDIF
 C
 C     ERROR CHECK: If Chezy, Manning's or Quadratic friction was loaded
@@ -1809,7 +1810,7 @@ C     from the nodal attributes file, NOLIBF must be 1.
      &        /,1X,'NoLiBF must be set to 1. It is set to ',i2,' in',
      &        /,1X,'the model parameter (unit 15) file.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         CALL EXIT(1)                 ! We're toast.
+         CALL terminate(myproc)
       ENDIF
 C
 C     ERROR CHECK: If Tau0=-3.x or -6.x in fort.15, then tau0 MUST be loaded
@@ -1826,7 +1827,7 @@ C     from nodal attributes file.
      &        /,1X,'load the base value using',
      &        /,1X,'primitive_weighting_in_continuity_equation.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         CALL EXIT(1)                 ! We're toast.
+         CALL terminate(myproc)
       ENDIF
 C
 C     ERROR CHECK: The canopy coefficient value should be either 0 or 1;
@@ -3011,7 +3012,7 @@ C      IF((NE2.NE.NE).OR.(NP2.NE.NP)) THEN
      &        //,1X,'THE PARAMETER NE2 AND NP2 MUST MATCH NE AND NP ',
      &        /,1X,'USER MUST CHECK FORT.12 INPUT FILE ',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         CALL EXIT(1)
+         CALL terminate(myproc)
       ENDIF
 C
 C...  READ IN STARTDRY CODE VALUES
@@ -3072,7 +3073,7 @@ C     ----------------------------------------------------------------
      &           'YOUR NODAL FRICTION NUMBERING IS NOT SEQUENTIAL ',
      &           /,1X,'CHECK YOUR UNIT 21 INPUT FILE CAREFULLY',//,1X,
      &           '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-            CALL EXIT(1)
+            CALL terminate(myproc)
          ENDIF
       END DO
       WRITE(16,3601) AFRIC
@@ -3094,47 +3095,6 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE ReadLegacyBottomFrictionFile
 C     ----------------------------------------------------------------
-
-
-C     ----------------------------------------------------------------
-C        S U B R O U T I N E   N A _ T E R M I N A T E
-C     ----------------------------------------------------------------
-C     Provide clean termination when an error occurs.
-C     ----------------------------------------------------------------
-      SUBROUTINE na_terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      use mod_logging, only: setMessageSource, unsetMessageSource,
-     &       allMessage, INFO, DEBUG
-      IMPLICIT NONE 
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("terminate")
-#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1) 
-C
-#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-C     ----------------------------------------------------------------
-      END SUBROUTINE na_terminate
-C     ----------------------------------------------------------------
-
 
 C     ----------------------------------------------------------------
 C        S U B R O U T I N E   P R E P  C O N D E N S E D   N O D E S

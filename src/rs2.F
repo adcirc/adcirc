@@ -36,6 +36,7 @@ C
       USE SIZES
 
       USE mod_logging,ONLY : NSCREEN, ScreenUnit
+      use mod_terminate, only: terminate
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
@@ -103,7 +104,7 @@ C        call rs2init_type1(rsnx,rsny,np)
         call rs2init_type2(rsnx,rsny,np)
       else
          write(*,'(a)') 'RS2 TYPE IS NEITHER 1 NOR 2.  TERMINATED.'
-         CALL EXIT(1)
+         CALL terminate(myproc)
       endif
 
       return
@@ -721,10 +722,7 @@ C***********************************************************************
           write(16,*) 'FORT.23 SEEMS INCONSISTENT WITH .RAD FILES'
           write(16,*) 'PROGRAM WILL BE TERMINATED'
           write(16,*) ''
-#ifdef CMPI
-          call msg_fini()
-#endif
-          CALL EXIT(1)
+          call terminate(myproc)
         endif
       enddo
 
@@ -783,199 +781,12 @@ C        call rs2get_type1(rsnx,rsny,np)
         call rs2get_type2(rsnx,rsny,np)
       else
          write(*,'(a)') 'RS2 TYPE IS NEITHER 1 NOR 2.  TERMINATED.'
-         CALL EXIT(1) 
+         CALL terminate(myproc)
       endif
 
       return
 
       end subroutine
-
-c$$$C***********************************************************************
-c$$$C   SUBROUTINE RS2GET_TYPE1
-c$$$C***********************************************************************
-c$$$
-c$$$      subroutine rs2get_type1(rsnx,rsny,np)
-c$$$      use sizes
-c$$$#ifdef CMPI     
-c$$$      use messenger, only: msg_fini, msg_ibcast, msg_cbcast, msg_rbcast
-c$$$#endif 
-c$$$      implicit none
-c$$$      integer,intent(in) :: np
-c$$$      real(8),intent(out) :: rsnx(:),rsny(:)
-c$$$      integer :: i,j,k,s,n,ni,nj,fid,ios(1)
-c$$$      integer :: isActive(1)
-c$$$      character(100) dummyc, spectrum_id(1)
-c$$$      real(8), dimension(:,:,:), allocatable :: rsxy
-c$$$      real(8) :: rsx,rsy,rsx1,rsx2,rsx3,rsy1,rsy2,rsy3,cnf1,cnf2,cnf3
-c$$$      real(8) :: angle_st,pi
-c$$$
-c$$$      write(*,'(a)') 'RS2GET_TYPE1: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
-c$$$      CALL EXIT(1)
-c$$$
-c$$$      if(myproc.eq.0) then
-c$$$        write(screenunit,*)
-c$$$        write(screenunit,*) 'READING IN RADIATION STRESS'
-c$$$      endif
-c$$$      write(16,*)
-c$$$      write(16,*) 'READING IN RADIATION STRESS'
-c$$$
-c$$$      pi = 4.d0*atan(1.d0)
-c$$$
-c$$$      !increment counter
-c$$$      cntSnaps = cntSnaps+1
-c$$$
-c$$$      !initialize
-c$$$      do i=1,np
-c$$$        rsnx(I)=0.d0
-c$$$        rsny(I)=0.d0
-c$$$      enddo
-c$$$
-c$$$
-c$$$      fid = 23
-c$$$#ifdef CMPI
-c$$$      if(myproc.eq.0) read(fid,'(A)',iostat=ios(1)) dummyc
-c$$$      call msg_ibcast(ios,1)
-c$$$      call msg_cbcast(dummyc,100)
-c$$$#else
-c$$$      read(fid,'(A)',iostat=ios(1)) dummyc
-c$$$#endif
-c$$$      write(16,*) 'READING RADIATION STRESS SNAP.  '//
-c$$$     &              'SNAP ID = ', trim(dummyc)
-c$$$      !if fort.23 had reached EOF or got any read error,
-c$$$      ! stop reading fort.23 and use insert blank snaps from now on.
-c$$$      if(ios(1) < 0) then
-c$$$        if(myproc.eq.0) then
-c$$$          write(screenunit,*)
-c$$$          write(screenunit,*) 'UNIT23 FILE RUN OUT.'
-c$$$          write(screenunit,*) 'BLANK SNAP INSERTED FROM NOW ON.'
-c$$$        endif
-c$$$        write(16,*)
-c$$$        write(16,*) 'UNIT23 FILE RUN OUT.'
-c$$$        write(16,*) 'BLANK SNAP WILL BE INSERTED FROM NOW ON.'
-c$$$        do s=1,ns
-c$$$          endoffile(s) = 1
-c$$$        enddo
-c$$$        return
-c$$$      endif
-c$$$
-c$$$!-----------
-c$$$! S-Loop
-c$$$!-----------
-c$$$
-c$$$      do s=1,ns   ! put a blank snap for the first nbs(s) snaps
-c$$$        if(cntsnaps.le.nbs(s)) then
-c$$$          if(abs(nscreen) >= 1) then
-c$$$            if(myproc.eq.0) then
-c$$$              write(screenunit,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
-c$$$     &                   ', COUNT = ',cntsnaps
-c$$$            endif
-c$$$            write(16,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
-c$$$     &                  ', COUNT = ',cntsnaps
-c$$$          endif
-c$$$          cycle    
-c$$$        endif
-c$$$
-c$$$        ni = nis(s)
-c$$$        nj = njs(s)
-c$$$
-c$$$        allocate(rsxy(2,nis(s),njs(s)))
-c$$$
-c$$$        fid = 23
-c$$$        if (myproc.eq.0) read(fid,*,iostat=ios(1)) ! skip a line
-c$$$#ifdef CMPI     
-c$$$        call msg_ibcast(ios,1)
-c$$$#endif
-c$$$        if (ios(1) > 0) g.oto 9999
-c$$$
-c$$$        if(myproc.eq.0) read(fid,*,iostat=ios(1)) isActive(1) ! active flag
-c$$$
-c$$$#ifdef CMPI        
-c$$$        call msg_ibcast(ios,1)
-c$$$        call msg_ibcast(isActive,1)
-c$$$#endif
-c$$$
-c$$$        if(ios(1) > 0)       g.oto 9999
-c$$$        if(isActive(1).eq.0) g.oto 100
-c$$$
-c$$$        if(myproc.eq.0) then
-c$$$          do j = nj, 1, -1
-c$$$            read (fid,'(5E15.7)',iostat=ios(1))
-c$$$     &           ((rsxy(k,i,j),k=1,2),i=1,ni)
-c$$$          enddo
-c$$$        endif
-c$$$
-c$$$#ifdef CMPI      
-c$$$        call msg_ibcast(ios,1)
-c$$$        call msg_rbcast(rsxy,2*ni*nj)
-c$$$#endif
-c$$$        if(ios(1) > 0)       g.oto 9999
-c$$$
-c$$$C--------------------------------------------------------------------------
-c$$$C   Interpolate RS Snap onto local ADCIRC mesh
-c$$$C--------------------------------------------------------------------------
-c$$$
-c$$$        do n=1,np
-c$$$          if(rsij(1,n).ne.s) cycle !node n does not reside in STWAVE grid s
-c$$$            
-c$$$          i = rsij(3,n)
-c$$$          j = rsij(4,n)
-c$$$
-c$$$          if(rsij(2,n).eq.1) then !node n resides in triangle 1 in cell (i,j).
-c$$$            rsx1 = rsxy(1,i,j)
-c$$$            rsy1 = rsxy(2,i,j)
-c$$$            rsx2 = rsxy(1,i+1,j)
-c$$$            rsy2 = rsxy(2,i+1,j)
-c$$$            rsx3 = rsxy(1,i+1,j+1)
-c$$$            rsy3 = rsxy(2,i+1,j+1)
-c$$$          else                    !node n resides in triangle 2 in cell (i,j).
-c$$$            rsx1 = rsxy(1,i+1,j+1)
-c$$$            rsy1 = rsxy(2,i+1,j+1)
-c$$$            rsx2 = rsxy(1,i,j+1)
-c$$$            rsy2 = rsxy(2,i,j+1)
-c$$$            rsx3 = rsxy(1,i,j)
-c$$$            rsy3 = rsxy(2,i,j)
-c$$$          endif
-c$$$
-c$$$          !interpolation
-c$$$          rsx= rscnf(1,n)*rsx1 + rscnf(2,n)*rsx2 + rscnf(3,n)*rsx3
-c$$$          rsy= rscnf(1,n)*rsy1 + rscnf(2,n)*rsy2 + rscnf(3,n)*rsy3
-c$$$
-c$$$          !need to rotate
-c$$$          angle_st = (azimuths(s)*pi)/180.d0
-c$$$          rsnx(n) = cos(angle_st)*rsx-sin(angle_st)*rsy
-c$$$          rsny(n) = sin(angle_st)*rsx+cos(angle_st)*rsy
-c$$$        enddo
-c$$$
-c$$$ 100    continue
-c$$$        deallocate(rsxy)
-c$$$
-c$$$      enddo       ! end s-loop
-c$$$
-c$$$      
-c$$$      if(myproc.eq.0) then
-c$$$        write(screenunit,*) 'RADIATION STRESS IS LOADED'
-c$$$        write(screenunit,*)
-c$$$      endif
-c$$$      write(16,*) 'RADIATION STRESS IS LOADED'
-c$$$      write(16,*)
-c$$$
-c$$$      return
-c$$$
-c$$$ 9999 continue
-c$$$      if(myproc.eq.0) then
-c$$$        write(screenunit,*) trim(radfiles(s)),' IS NOT COMPLETE.'
-c$$$        write(screenunit,*) 'PROGRAM WILL BE TERMINATED.'
-c$$$      endif
-c$$$      write(16,*) trim(radfiles(s)),' IS NOT COMPLETE.'
-c$$$      write(16,*) 'PROGRAM WILL BE TERMINATED.'
-c$$$      close(16)
-c$$$
-c$$$#ifdef CMPI
-c$$$      call msg_fini()
-c$$$#endif
-c$$$      CALL EXIT(1)
-c$$$
-c$$$      end subroutine
 
 C***********************************************************************
 C   SUBROUTINE RS2GET_TYPE2
@@ -1168,11 +979,7 @@ C--------------------------------------------------------------------------
         endif
         write(16,*) trim(filename),' IS NOT COMPLETE.'
         write(16,*) 'PROGRAM WILL BE TERMINATED.'
-        close(16)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        CALL EXIT(1)
+        call terminate(myproc)
       end subroutine rs2get_type2_terminate
 
     

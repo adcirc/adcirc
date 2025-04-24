@@ -62,7 +62,7 @@ C
      &    header74, header93, header91, header61, header62, header71,
      &    header72, header81, writedomainheader, open_gbl_file, nddt2get
       USE SUBDOMAIN, ONLY : subdomainOn, readFort015
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, only: terminate
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NODALATTRIBUTES, ONLY : outputTau0
@@ -128,7 +128,7 @@ C...    read in the second depth dp2 for btime2
          IOS = 0
          CALL openFileForRead(141,TRIM(INPUTDIR)//'/'//'fort.141',IOS)
          IF (IOS.GT.0) THEN
-            CALL ADCIRC_Terminate()
+            CALL terminate(myproc)
          ENDIF
 
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
@@ -735,7 +735,7 @@ c******************************************************************************
       USE MESH, ONLY : NP, AGRID
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD,
      &  totalbcrivernodes, bndbcriver
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, only: terminate
       IMPLICIT NONE
 
       INTEGER :: IRType
@@ -771,7 +771,7 @@ C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
      &           "ERROR: 2DDI baroclinic runs not ", 
      &           "currently supported."
          ENDIF
-         CALL ADCIRC_Terminate()
+         CALL terminate(myproc)
       ENDIF
 C
       IF(CBaroclinic .and. C3DVS) THEN
@@ -791,7 +791,7 @@ C
      &           /,2X,'***** NVN = ',I4,' MUST MATCH NFEN = ',I4,
      &           ' *****',
      &           /,10X,'****** RUN TERMINATED ******')
-            CALL ADCIRC_Terminate()
+            CALL terminate(myproc)
          ENDIF
          DO IHN=1,NP
             DO IVN=1,NFEN
@@ -1133,8 +1133,8 @@ C     the hotstart wet/dry state and water surface elevation ends up
 C     overwriting the values computed here. 
 C----------------------------------------------------------------------
       subroutine setColdWetDryStateAndWaterSurfaceElevation()
-      use sizes, only : inputdir
-      use ADCIRC_MOD, only : ADCIRC_Terminate
+      use sizes, only : inputdir, myproc
+      use mod_terminate, only: terminate
       use mesh, only : dp, np, mju, ne, nm
       use boundaries, only : nvel, lbcodei, nbv
       use global, only : eta2, nnodecode, noff, h0, eta1, nolifa, EtaDisc, River_above_MSL
@@ -1360,7 +1360,7 @@ C----------------------------------------------------------------------
 #else
          call allMessage(ERROR, "Subgrid calculation requires building"
      &                          //"with netcdf enabled")
-         call ADCIRC_Terminate()
+         call terminate(myproc)
 #endif
       ELSE
       !

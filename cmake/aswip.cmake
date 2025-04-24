@@ -18,6 +18,7 @@ if(BUILD_ASWIP)
   set(ASWIP_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F

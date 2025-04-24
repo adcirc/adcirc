@@ -163,6 +163,8 @@
       use netcdf
 
       use global, only: nodes_lg
+      use sizes, only: myproc
+      use mod_terminate, only: terminate
       use mod_logging, only: allMessage, ERROR
       
       implicit none
@@ -185,8 +187,7 @@
       INQUIRE(FILE=TRIM(subgridFilename), EXIST=file_exists)
       IF(.NOT.file_exists)THEN
           call allMessage(ERROR, "subgrid lookup file does not exist")
-          call terminate()
-          call exit(1) 
+          call terminate(myproc)
       ENDIF
 
 !JLW: adding subgrid lookup table read in
@@ -481,45 +482,4 @@
       end subroutine getVertLookup
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
-
-
-!---------------------------------------------------------------------
-!---------------------------------------------------------------------
-!
-!                 READ NETCDF UTILITY
-!
-!---------------------------------------------------------------------
-!---------------------------------------------------------------------
-
-      SUBROUTINE terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      USE mod_logging, ONLY: INFO,DEBUG,allMessage,
-     &                  setMessageSource,unsetMessageSource
-      IMPLICIT NONE
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-      call setMessageSource("terminate")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1)
-C
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE terminate
-
       end module subgrid

@@ -33,6 +33,7 @@ C
 C
       USE SIZES,ONLY : MYPROC
       USE mod_logging,ONLY : NSCREEN, ScreenUnit
+      USE mod_terminate, only: terminate
 #ifdef CMPI
       USE MESSENGER,ONLY : MSG_FINI
 #endif         
@@ -111,10 +112,7 @@ C***********************************************************************
       if(numSets.NE.1.AND.numSets.NE.2) then
         if (myproc == 0) write(screenunit,1004)
         write(16,1004)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        CALL EXIT(1)
+        CALL terminate(myproc)
       endif
 
       ! Read the number of blank snaps to be inserted before OWI ice fields start
@@ -205,11 +203,8 @@ C***********************************************************************
 
 99999 CONTINUE
 
-#ifdef CMPI
-      call msg_fini()
-#endif
       write(*,'(a)') 'OWI_ICE READ ERROR (1)'
-      CALL EXIT(1)
+      call terminate(myproc)
 
       END SUBROUTINE
 
@@ -323,10 +318,7 @@ C***********************************************************************
           WRITE(16,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
           WRITE(16,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
           WRITE(16,*) 'EXECUTION WILL BE TERMINATED'
-#ifdef CMPI
-          call msg_fini()
-#endif
-          CALL EXIT(1)
+          call terminate(myproc)
         endif
 
         ! Update coordinate mapping coefficients if necessary
@@ -468,10 +460,7 @@ c      end if
       WRITE(16,*) ' EITHER UNIT 225 or 227 COULD NOT BE READ'
       WRITE(16,*) ' EXECUTION WILL BE TERMINATED'
       WRITE(16,*) ''
-#ifdef CMPI
-      call msg_fini()
-#endif
-      CALL EXIT(1)
+      call terminate(myproc)
 
 10000 continue
 
@@ -508,11 +497,8 @@ c      end if
       
 99999 CONTINUE
 
-#ifdef CMPI
-      call msg_fini()
-#endif
       write(*,'(a)') 'OWI_ICE READ ERROR (2)'
-      CALL EXIT(1)
+      CALL terminate(myproc)
 
       END SUBROUTINE
 
