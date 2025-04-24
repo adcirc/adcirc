@@ -101,7 +101,7 @@ C
 C-----------------------------------------------------------------------
       MODULE NodalAttributes
       USE SIZES
-      USE GLOBAL, ONLY : scratchMessage, allMessage, logMessage,
+      USE mod_logging, ONLY : scratchMessage, allMessage, logMessage,
      &                    DEBUG, ECHO, INFO, WARNING, ERROR
 
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
@@ -3105,8 +3105,8 @@ C     ----------------------------------------------------------------
 #ifdef CMPI
       USE MESSENGER
 #endif
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, allMessage,
-     &   DEBUG, ECHO, INFO, WARNING, ERROR  
+      use mod_logging, only: setMessageSource, unsetMessageSource,
+     &       allMessage, INFO, DEBUG
       IMPLICIT NONE 
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 C
@@ -3144,10 +3144,10 @@ C     ----------------------------------------------------------------
       SUBROUTINE PrepCondensedNodes()
 C     ----------------------------------------------------------------
       USE SIZES,ONLY : MNVEL
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, allMessage,
-     &   DEBUG, ECHO, INFO, WARNING, ERROR  
       USE MESH,ONLY : NP,LBArray_Pointer,X,Y
       USE BOUNDARIES,ONLY : CSIICN,SIIICN
+      use mod_logging, only: setMessageSource, unsetMessageSource,
+     &    allMessage, DEBUG
       IMPLICIT NONE
       INTEGER :: I,J,K,II,I1,I2,J1,J2
       INTEGER :: JMAX

@@ -111,7 +111,7 @@ C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
-      USE GLOBAL, ONLY : screenUnit, initLogging
+      USE mod_logging, ONLY : screenUnit
       USE ADC_CONSTANTS, ONLY: Rearth, deg2rad, rad2deg
       USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType,
      &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
@@ -129,8 +129,6 @@ C
       INTEGER :: I        ! loop counter for command line arguments
       CHARACTER(2048) :: CMDLINEARG ! content of cmd line arg
 C
-      ! set the names of the log levels for use in log messages
-      call initLogging()
       ! set the present working directory as the directory containing
       ! the fulldomain input files as the
       globaldir = '.'
@@ -391,7 +389,7 @@ C
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
-      use global, only : logMessage, INFO, setMessageSource,
+      use mod_logging, only : logMessage, INFO, setMessageSource,
      &   unsetMessageSource, DEBUG, allMessage
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,

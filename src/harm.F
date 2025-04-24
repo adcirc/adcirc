@@ -112,9 +112,10 @@ c***********************************************************************
 
       USE SIZES, ONLY : MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
      &                   WRITE_LOCAL_HARM_FILES
-      USE GLOBAL, ONLY : screenMessage, logMessage, DEBUG, ECHO, INFO,
-     &                   WARNING, ERROR, setMessageSource, IFSPROTS,
-     &                   unsetMessageSource, allMessage, scratchMessage
+      USE mod_logging, ONLY : screenMessage, logMessage, DEBUG, ECHO, INFO,
+     &                   WARNING, ERROR, setMessageSource, unsetMessageSource,
+     &                   allMessage, scratchMessage
+      use global, only: IFSPROTS
       USE ADC_CONSTANTS, ONLY: pi
 
 
@@ -1998,8 +1999,8 @@ C     Based on HAHOTS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE checkHAHotstart()
       USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MYPROC
-      USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, NSTAE, NSTAV,
-     &                   NSCREEN, SCREENUNIT, NP_G
+      USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, NSTAE, NSTAV, NP_G
+      use mod_logging, only: NSCREEN, SCREENUNIT
       USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER :: i    ! loop counter
@@ -2212,10 +2213,7 @@ C     jgf49.44: Same as binaryRead2D except it reads data with
 C     both horizontal and vertical lengths. Also used for reading
 C     harmonic analysis arrays from binary hotstart file.
 C--------------------------------------------------------------------
-      SUBROUTINE binaryRead3D(array, iLength, jLength, lun,
-     &                        counter)
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
-     &                    allMessage, DEBUG
+      SUBROUTINE binaryRead3D(array, iLength, jLength, lun, counter)
       IMPLICIT NONE
       REAL(8), intent(out), dimension(ilength,jlength) :: array ! data to read from the hotstart file
       INTEGER, intent(in) :: iLength  ! the number of horiz values to read

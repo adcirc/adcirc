@@ -35,7 +35,7 @@ C    ========================================================================
 
       module subdomain
       use sizes, only : globaldir
-      use global, only : DEBUG, ECHO, INFO, WARNING, ERROR, logMessage,
+      use mod_logging, only : DEBUG, ECHO, INFO, WARNING, ERROR, logMessage,
      &                    allMessage, scratchMessage, setMessageSource,
      &                    unsetMessageSource 
 

@@ -174,7 +174,7 @@
 !-----------------------------------------------------------------------
       MODULE OWIWIND_NETCDF
 !-----------------------------------------------------------------------
-      USE GLOBAL,ONLY : DEBUG, allMessage, setMessageSource, unsetMessageSource
+      USE mod_logging,ONLY : DEBUG, allMessage, setMessageSource, unsetMessageSource
       USE NETCDF_ERROR, ONLY: CHECK_ERR
 
       CHARACTER(LEN=15)  :: NWS13ColdStartString = "99999999.999999"

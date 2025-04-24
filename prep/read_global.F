@@ -497,10 +497,10 @@ C---------------------------------------------------------------------
       USE PRE_GLOBAL
       USE SIZES, ONLY : MNHARF
       USE MESH, ONLY : CYLINDERMAP
-      USE GLOBAL, ONLY : parse, a2f, hss, screenUnit, STATNAME,
-     &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
-     &                   allMessage, setMessageSource, deg2rad,
-     &                   unsetMessageSource, INFO, logMessage,
+      USE GLOBAL, ONLY : parse, a2f, hss, STATNAME, STATNAMEV,
+     &                   STATNAMEM, STATNAMEC, deg2rad
+      use mod_logging, only: ERROR, DEBUG, allMessage, setMessageSource,
+     &                   unsetMessageSource, INFO, logMessage, screenUnit,
      &                   scratchMessage, screenMessage
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,

@@ -119,13 +119,12 @@ C******************************************************************************
      &   get_numwriters, mnstae
       USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
      &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, 
-     &   dynamicWaterLevelCorrectionSta, DEBUG, INFO, allMessage, itime, dtdp, statim,
-     &   CHotHS, dtdpHS, FileFmtVersion, ifnlcat, nabout, ncchange,
+     &   dynamicWaterLevelCorrectionSta, itime, dtdp, statim,
+     &   CHotHS, dtdpHS, FileFmtVersion, ifnlcat, ncchange,
      &   ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im, iths,
-     &   nolica, nolicat, nolifa, nscreen, nstae, nt, screenunit,
-     &   version_number, initLogging, setMessageSource, screenMessage,
-     &   openLogFile, unsetMessageSource, np_global, rnp_global,
-     &   scratchMessage, CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta
+     &   nolica, nolicat, nolifa, nstae, nt, version_number,
+     &   np_global, rnp_global, CTIP, L_N, writer_id,
+     &   dynamicWaterLevelCorrectionDelta
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
      &   initVEW1DChannelWetPerimeter
       USE ADC_CONSTANTS, ONLY: g, rhowat0
@@ -139,6 +138,9 @@ C******************************************************************************
       USE WRITE_OUTPUT, ONLY : initOutput2D
       USE WIND, ONLY : initWindModule, initDynamicWaterLevelCorrection,
      &                 getDynamicWaterLevelCorrections
+      use mod_logging, only: openLogFile, nscreen, screenUnit,
+     &                 setMessageSource, unsetMessageSource, DEBUG,
+     &                 allMessage, screenMessage
 #ifdef CMPI
       USE MESSENGER, ONLY : mnwproh, msg_init, msg_table, msg_start,
      &   allnodes
@@ -186,12 +188,7 @@ C
             end select
          end do
       endif
-      !
-      call initLogging()
-      nabout = 0 !jgf52.08.01: Initialize log level to ECHO.
-#ifdef EBUG
-      nabout = -1 !jgf52.08.01: Initialize log level to DEBUG if so compiled
-#endif
+
       call setMessageSource("ADCIRC_Init")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call screenMessage(DEBUG,"Enter.") ! log to screen; don't have log dirname
@@ -419,8 +416,9 @@ C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
-      USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
-     &   unsetMessageSource, statim, dtdp, screenunit, logMessage, earlyterminate
+      USE GLOBAL, ONLY : iTime, statim, dtdp, earlyterminate
+      use mod_logging, only: DEBUG, INFO, setMessageSource, unsetMessageSource,
+     &                       allMessage, screenUnit, logMessage
 #ifdef CMPI
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
@@ -527,7 +525,8 @@ C******************************************************************************
 C*    ADCIRC finalize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Final(NO_MPI_FINALIZE)
-      USE GLOBAL, ONLY : iTime, DEBUG, setMessageSource, allMessage,
+      USE GLOBAL, ONLY : iTime
+      use mod_logging, only: DEBUG, setMessageSource, allMessage,
      &   unsetMessageSource
       USE HARM, ONLY : solveHarmonicAnalysis
       USE WRITE_OUTPUT, ONLY : writeHarmonicAnalysisOutput
@@ -581,7 +580,7 @@ C*    jgf50.44: Mostly just needed so that we can clean up mpi when
 C*    bombing out.
 C******************************************************************************
       SUBROUTINE ADCIRC_Terminate(NO_MPI_FINALIZE)
-      USE GLOBAL, ONLY : DEBUG, INFO, setMessageSource, allMessage, 
+      USE mod_logging, ONLY : DEBUG, INFO, setMessageSource, allMessage,
      &   unsetMessageSource
 #ifdef CMPI
       USE MESSENGER, ONLY : subdomainFatalError, msg_fini
@@ -629,7 +628,8 @@ C*****************************************************************************
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE ADCIRC_LocalTerminate()
-        USE GLOBAL,ONLY: terminate_localproc, screenUnit
+        USE GLOBAL,ONLY: terminate_localproc
+        USE mod_logging, only: screenUnit
         IMPLICIT NONE
         !...Set the local terminator and then go wait for the rest of
         !   the compute processors to check in
@@ -644,7 +644,8 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE ADCIRC_CheckLocalTerminate()
         USE MESSENGER
-        USE GLOBAL,ONLY: terminate_localproc, screenUnit
+        USE GLOBAL,ONLY: terminate_localproc
+        USE mod_logging, only: screenUnit
         USE MPI
         IMPLICIT NONE
         INTEGER :: TERM_LOCAL(2)

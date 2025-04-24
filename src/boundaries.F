@@ -321,7 +321,7 @@ C     ---------
       !------------------------------------------------------------------
       subroutine allocateBoundaryArrays()
       use sizes, only : mnope
-      use global, only : nabout
+      use mod_logging, only : nabout
       implicit none
       integer :: i
       !

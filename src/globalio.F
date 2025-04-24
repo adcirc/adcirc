@@ -29,9 +29,13 @@
       use VERSION
       use GLOBAL
       use MESH, ONLY : NP, AGRID
+      use mod_logging, only: INFO, DEBUG, ERROR, WARNING, allMessage, scratchMessage,
+     &                       setMessageSource, unsetMessageSource, screenUnit
+
 #ifdef CMPI
       use mpi
 #endif
+
       contains
 
 C--------------------------------------------------------------------
@@ -1575,6 +1579,7 @@ C     in compact format.
 C
 C----------------------------------------------------------------------
       subroutine readMinMax(descript, timeloc)
+      use mod_logging, only: logMessage
       IMPLICIT NONE
       type(OutputDataDescript_t), intent(inout) :: descript
       real(8), intent(in) :: timeloc  ! adcirc time in seconds
@@ -1715,8 +1720,7 @@ C----------------------------------------------------------------------
       endif
 
  3990 CONTINUE ! jump to here if end of file is reached
-      WRITE(scratchMessage,450) numLinesInMinMaxFile, 
-     &   trim(descript % file_name)
+      WRITE(scratchMessage, 450) numLinesInMinMaxFile, trim(descript % file_name)
       CALL logMessage(INFO,scratchMessage)
       IF (numLinesInMinMaxFile.lt.(descript % num_fd_records)) THEN
           call allMessage(ERROR,'Not enough data in "'
@@ -1798,7 +1802,7 @@ C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomainMaxMin(descript, timeloc, fileFound)     
 #ifdef CMPI      
       use messenger,only:mapToSubdomainIntMPI,mapToSubdomainRealMPI
-#endif      
+#endif
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
       real(8), intent(in) :: timeloc ! adcirc time in seconds since cold start
@@ -1876,8 +1880,6 @@ C
 #ifdef CMPI
       USE MESSENGER
 #endif
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
-     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR  
       IMPLICIT NONE 
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 C

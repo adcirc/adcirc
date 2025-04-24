@@ -31,9 +31,10 @@ C dry.
 C----------------------------------------------------------------------
       MODULE WRITE_OUTPUT
 C----------------------------------------------------------------------
-      USE GLOBAL, ONLY : OutputDataDescript_t, setMessageSource,
-     &  unsetMessageSource, DEBUG, allMessage, screenMessage, ERROR,
-     &  netcdf_avail
+      USE GLOBAL, ONLY : OutputDataDescript_t, netcdf_avail
+      use mod_logging, only: setMessageSource, unsetMessageSource,
+     &        INFO, DEBUG, allMessage, screenMessage, ERROR, screenUnit,
+     &        scratchMessage
       USE boundaries, only: freeFluxBoundaryArrayTemporaries
 
       !
@@ -364,14 +365,14 @@ C----------------------------------------------------------------------
      &   noutm, nstam, ntcyfgv, ntcysm, ntcyfm, nspoolm, nws,
      &   noutgw, ntcysgw, ntcyfgw, nspoolgw, nddt, ncice, nrs,
      &   noutc, nstac_g, nstac, im, noutgc, ntcyfgc, ntcysgc,
-     &   nspoolgc, INFO, scratchMessage, allMessage, nscougi, nscougp,
+     &   nspoolgc, nscougi, nscougp,
      &   nscours, nscoub, nscougb, nscoui, nscoup,
      &   use_tvw, nout_tvw, ntcys_tvw, ntcyf_tvw, tvw,
      &   nspool_tvw, nscou_tvw,
      &   nodeCodeOutSpoolCounter, noffOutSpoolCounter,
      &   NE_G, IMAP_EL_LG, nodecode, noff,
      &   initiallyDrySpoolCounter,
-     &   inundationOutput, ihot, logMessage,
+     &   inundationOutput, ihot,
      &   windDragOut, windDragSpoolCounter, outputWindDrag,
      &   dynamicWaterLevelCorrectionSpoolCounter,
      &   dynamicWaterLevelCorrection2, usingDynamicWaterLevelCorrection,
@@ -379,6 +380,7 @@ C----------------------------------------------------------------------
      &   usingdynamicWaterLevelCorrection, dynamicWaterLevelCorrectionStaSpoolCounter, 
      &   dynamicWaterLevelCorrectionSta
       USE ADC_CONSTANTS, ONLY: PRBCKGRND
+      use mod_logging, only: logMessage
 
       USE MESH, ONLY : NP, NE, DP, NM, ICS, labels
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
@@ -2006,7 +2008,6 @@ C     jgf51.21.24: Performs station interpolations on a single array.
 C-----------------------------------------------------------------------
       subroutine stationArrayInterp(descript, fromArray, toArray)
       use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2, NOFF,
-     &                   allMessage, DEBUG, setMessageSource, unsetMessageSource,
      &                   StatPartWetFix,How2FixStatPartWet, h0
       use mesh, only : dp, nm
       implicit none
@@ -2148,9 +2149,7 @@ C removed from global  myProc, MNPROC,
      &                   NOUTE, NSTAE, IMAP_STAE_LG, SLEL,
      &                   XEL, SFEL, YEL, NSTAV_G, NSTAV,
      &                   IMAP_STAV_LG, SLEV, XEV, SFEV,
-     &                   YEV, screenMessage, DEBUG,
-     &                   setMessageSource, unsetMessageSource,
-     &                   NE_G, NP_G, NODES_LG
+     &                   YEV, NE_G, NP_G, NODES_LG
       USE MESH, ONLY : NP, NE, ICS
       USE GLOBAL_IO, ONLY:
      &    open_gbl_file, collectFullDomainArray,
@@ -2710,9 +2709,7 @@ C-----------------------------------------------------------------------
      & MYPROC, HARMDIR, WRITE_LOCAL_HARM_FILES
       USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
       USE MESH, ONLY : labels
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenMessage, ERROR,
-     &                   DEBUG, setMessageSource, unsetMessageSource,
-     &                   allMessage, scratchMessage, labels_g
+      USE GLOBAL, ONLY : OutputDataDescript_t, labels_g
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY: writeOutArrayNetCDF
 #endif
@@ -2833,10 +2830,10 @@ C----------------------------------------------------------------------
 C RJW added myproc
 C MYPROC,
       USE GLOBAL, ONLY : RUNDES, RUNID, RDES4, RID4,
-     &   RDES8, RID8, DTDP, IHOT, DEBUG, scratchMessage,
-     &   logMessage, ERROR, allMessage
+     &   RDES8, RID8, DTDP, IHOT
       USE GLOBAL_3DVS, ONLY : NFEN
       USE MESH, ONLY : AGRID, AID4, AID8
+      use mod_logging, only: logMessage
 
       IMPLICIT NONE
 C
@@ -2977,10 +2974,7 @@ C-----------------------------------------------------------------------
       USE SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC,
      &    WRITE_LOCAL_FILES, MNPROC, GLOBALDIR, MYPROC
 C RJW added MYPROC
-      USE GLOBAL, ONLY : ScreenUnit, BCFLAG_TEMP, scratchMessage,
-     &    DEBUG, INFO, WARNING, ERROR, screenMessage, setMessageSource,
-     &    unsetMessageSource, allMessage, OutputDataDescript_t, NP_G,
-     &    NODES_LG
+      USE GLOBAL, ONLY : BCFLAG_TEMP, OutputDataDescript_t, NP_G, NODES_LG
       USE MESH, ONLY : NP, ICS, NM
       USE GLOBAL_3DVS
       USE GLOBAL_IO, ONLY: packNPbyM, unpackNPbyM,
@@ -4233,6 +4227,7 @@ C-----------------------------------------------------------------------
       USE MESH, ONLY : NP, labels
       USE GLOBAL_IO, ONLY : collectFullDomainArray, HEADER_MAX,
      &                      open_minmax_file
+      use mod_logging, only: logmessage
 #ifdef ADCNETCDF
       USE NetCDFIO, ONLY :  initNetCDFOutputFile, writeOutArrayNetCDF
 #endif
@@ -5449,8 +5444,6 @@ C-----------------------------------------------------------------------
 #ifdef CMPI
       USE MESSENGER
 #endif
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
-     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       IMPLICIT NONE
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 C

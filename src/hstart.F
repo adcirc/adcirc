@@ -98,6 +98,7 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &   inundationTime, inundationTime_onset, maxInunDepth, 
      &   maxInunDepth_time, outputNodeCode, outputNOFF
       USE GWCE, ONLY : etime1, etime2, etiminc
+      use mod_logging, only: nscreen, logMessage
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
@@ -2116,11 +2117,10 @@ C   kmd48.33bc - variable information needed from the global.F file
      &                   BCFLAG_LNM, BCFLAG_TEMP, TTBCTIME1,
      &                   TTBCTIME2, TTBCSTATIM, TTBCTIMEINC,
      &                   q_heat1, q_heat2, HFLUX, TTBCRATIO,
-     &                   setMessageSource, unsetMessageSource,
-     &                   DEBUG, ECHO, INFO, WARNING, ERROR, 
-     &                   allMessage, screenMessage,
      &                   RIVBCTIMINC, RIVBCTIME1,RIVBCTIME2,
-     &                   BCRivRATIO, RIVBCSTATIM, NP_G     
+     &                   BCRivRATIO, RIVBCSTATIM, NP_G
+      use mod_logging, only: DEBUG, ECHO, INFO, WARNING, ERROR,
+     &       allMessage, screenMessage, setMessageSource, unsetMessageSource
       IMPLICIT NONE
       INTEGER :: IRType                  !number of fields in output file
       INTEGER :: NH, N                   !horizontal & vertical loop counters
@@ -2611,8 +2611,9 @@ C     the hotstart file may have had a different time step than this run.
 C-----------------------------------------------------------------------
       SUBROUTINE setOutputTiming(tsCounter, recCounter,
      &   startTS, endTS, tsPeriod, nSets, iths, dtdphs)
-      USE GLOBAL, ONLY : DTDP, setMessageSource, unsetMessageSource,
-     &   screenMessage, DEBUG, allMessage, CHOTHS
+      USE GLOBAL, ONLY : DTDP, CHOTHS
+      USE mod_logging, only: setMessageSource, unsetMessageSource,
+     &   screenMessage, DEBUG, allMessage
       IMPLICIT NONE
       INTEGER, intent(out) :: tsCounter  ! time step counter btw outputs
       INTEGER, intent(out) :: recCounter ! counts lines in the output file
@@ -2663,9 +2664,9 @@ C-----------------------------------------------------------------------
       SUBROUTINE recalculateStartingAndEndingTimestepsForOutput(
      &   outputStartDay, outputEndDay, 
      &   outputStartTimeStep, OutputEndTimeStep )
-      USE GLOBAL, ONLY : DTDPHS, ITHS, STATIM, setMessageSource, 
-     &    unsetMessageSource, screenMessage, DEBUG, allMessage, INFO,
-     &    logMessage
+      USE GLOBAL, ONLY : DTDPHS, ITHS, STATIM
+      use mod_logging, only: setMessageSource, unsetMessageSource,
+     &   screenMessage, DEBUG, allMessage, INFO, logMessage
       IMPLICIT NONE
       REAL(8), intent(in) :: outputStartDay 
       REAL(8), intent(in) :: outputEndDay 
@@ -2707,8 +2708,8 @@ C     or output should occur.
 C
 C     ----------------------------------------------------------------
       SUBROUTINE calcTS(elapsed, outputtime, ts)
-      USE GLOBAL, ONLY: iths, dtdp, setMessageSource, allMessage,
-     &   DEBUG, unsetMessageSource
+      USE GLOBAL, ONLY: iths, dtdp
+      use mod_logging, only: setMessageSource, allMessage, DEBUG, unsetMessageSource
 C
       REAL(8), intent(in) :: elapsed    ! time (sec) that has elapsed so far
       REAL(8), intent(in) :: outputtime ! time (sec) at which output should start or end   
@@ -2751,7 +2752,7 @@ C     a 1D fortran array because the array represents a 2D physical
 C     quantity in an unstructured mesh.
 C--------------------------------------------------------------------
       SUBROUTINE binaryRead2D(array, length, lun, counter)
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
       IMPLICIT NONE
       INTEGER, intent(in) :: length
@@ -2787,7 +2788,7 @@ C     same format as the binary version but does not require the
 C     file counter.
 C--------------------------------------------------------------------
       SUBROUTINE realRead2D(array, length, lun )
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
       IMPLICIT NONE
       REAL(8), intent(out), dimension(length) :: array ! the data to read from the hotstart file
@@ -2818,7 +2819,7 @@ C--------------------------------------------------------------------
 C     jgf49.44: Same as binaryRead2D except it reads an integer.
 C--------------------------------------------------------------------
       SUBROUTINE binaryIntRead2D(array, length, lun, counter)
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
       IMPLICIT NONE
       INTEGER, intent(out), dimension(length) :: array ! the data to read from the hotstart file
@@ -2852,7 +2853,7 @@ C--------------------------------------------------------------------
 C     kmd: Same as realRead2D except it reads an integer.
 C--------------------------------------------------------------------
       SUBROUTINE realIntRead2D(array, length, lun)
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
       IMPLICIT NONE
       INTEGER, intent(out), dimension(length) :: array ! the data to read from the hotstart file
@@ -2886,7 +2887,7 @@ C     kmd: Same as realRead2D except it reads data with
 C     both horizontal and vertical lengths.
 C--------------------------------------------------------------------
       SUBROUTINE realRead3D(array, iLength, jLength, lun)
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
       IMPLICIT NONE
       REAL(8), intent(out), dimension(ilength,jlength) :: array ! data to read from the hotstart file
@@ -2924,8 +2925,9 @@ C     kmd: Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomain2D(sd_array, lun, counter, method)
       USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : ERROR, setMessageSource, allMessage,
-     &                    unsetMessageSource, DEBUG, NP_G, NODES_LG
+      USE mod_logging, ONLY : ERROR, setMessageSource, allMessage,
+     &                    unsetMessageSource, DEBUG
+      USE GLOBAL, only: NP_G, NODES_LG
       USE MESH, ONLY : NP
       IMPLICIT NONE
 C
@@ -3004,8 +3006,9 @@ C     kmd: Updated to include real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter, method)
       USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
-     &                    allMessage, DEBUG, NP_G, NODES_LG
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
+     &                    allMessage, DEBUG
+      use global, only: NP_G, NODES_LG
       USE MESH, ONLY : NP
       IMPLICIT NONE
 C
@@ -3086,8 +3089,9 @@ C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapEleToSubdomainInt2D(sd_array, lun, counter,method)
       USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
-     &                    allMessage, DEBUG, NE_G, IMAP_EL_LG
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
+     &                    allMessage, DEBUG
+      use global, only: NE_G, IMAP_EL_LG
       USE MESH, ONLY : NE
       IMPLICIT NONE
 C
@@ -3167,8 +3171,9 @@ C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter,method)
       USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
-     &                    allMessage, DEBUG, NP_G, NODES_LG
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
+     &                    allMessage, DEBUG
+      USE GLOBAL, ONLY: NP_G, NODES_LG
       USE MESH, ONLY : NP
       USE HARM, ONLY : binaryRead3D
       IMPLICIT NONE

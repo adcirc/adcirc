@@ -54,8 +54,6 @@ C...
 Corbitt 120328: Apply Advection Locally
      &       IFNLCTE,        !Global nonlinear advection flag (1=yes, 0=no)
      &       IFNLFA,         !nonlinear finite amplitude flag (1=yes,0=no) (jgf45.11)
-     &       NScreen,        !flag to suppress or allow screen output
-     &       ScreenUnit,     !i/o for screen output
      &       IHOT,           !flag to specify if coldstart (=0) or hotstart file to read from (63 or 64)
      &       IHOTSTP,        !hotstart file record counter
      &       NWS,
@@ -65,8 +63,10 @@ Corbitt 120328: Apply Advection Locally
      &       CBaroclinic,
      &       C3DVS,
      &       DTDP,           !DTDP = timestep declared as real(8)
-     &       allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &       setMessageSource, unsetMessageSource, mom_lv_x
+     &       mom_lv_x
+      use mod_logging, only: allMessage, logMessage, DEBUG, ECHO, INFO,
+     &                       WARNING, ERROR, setMessageSource, screenUnit,
+     &                       unsetMessageSource
 
       USE BOUNDARIES,ONLY:NETA,NVEL
       IMPLICIT NONE
@@ -475,8 +475,6 @@ c                           6/16/2005                                  *
 c***********************************************************************
 c
       SUBROUTINE FEGRIDS(IGC,H)
-      USE GLOBAL, ONLY : ScreenUnit
-
       IMPLICIT NONE
       INTEGER :: IGC,N,NFEN2,IANS,NUM,I,NH
       REAL(8) :: H,DETA,SSTAR,DENOM,SIG0,SS,SB,RP,AVAL,EPS

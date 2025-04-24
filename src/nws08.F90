@@ -49,7 +49,8 @@
 !> @endcode
 module mod_nws08
 
-   use global, only: allMessage, DEBUG, ERROR, ECHO, setMessageSource, unsetMessageSource
+   use mod_logging, only: allMessage, WARNING, DEBUG, ERROR, ECHO, setMessageSource, unsetMessageSource, &
+                          scratchMessage 
 
    implicit none
 
@@ -143,7 +144,7 @@ contains
    !> @return The vortex model ID
    !----------------------------------------------------------------
    integer function getVortexModelId(vortexModelStr) result(id)
-      use global, only: toLowercase, scratchMessage, allMessage, ERROR
+      use global, only: toLowercase
       implicit none
       character(*), intent(in) :: vortexModelStr
 
@@ -170,7 +171,6 @@ contains
    !> @return The vortex model string
    !----------------------------------------------------------------
    character(256) function getVortexModelString()
-      use global, only: scratchMessage, allMessage, ERROR
       implicit none
 
       select case (vortexModelId)
@@ -192,7 +192,7 @@ contains
    !> @return The background wind model ID
    !----------------------------------------------------------------
    integer function getBackgroundWindModelId(backgroundWindModelStr) result(id)
-      use global, only: toLowercase, scratchMessage, allMessage, ERROR
+      use global, only: toLowercase
       implicit none
       character(*), intent(in) :: backgroundWindModelStr
 
@@ -219,7 +219,6 @@ contains
    !> @return The background wind model string
    !----------------------------------------------------------------
    character(256) function getBackgroundWindModelString()
-      use global, only: scratchMessage, allMessage, ERROR
       implicit none
 
       select case (backgroundWindModelId)
@@ -241,7 +240,7 @@ contains
    !> @return The BCalc ID
    !----------------------------------------------------------------
    integer function getBCalcId(BCalcStr) result(id)
-      use global, only: toLowercase, scratchMessage, allMessage, ERROR
+      use global, only: toLowercase
       implicit none
       character(*), intent(in) :: BCalcStr
 
@@ -268,7 +267,6 @@ contains
    !> @return The BCalc string
    !----------------------------------------------------------------
    character(256) function getBCalcString()
-      use global, only: scratchMessage, logMessage, ERROR
       implicit none
 
       select case (BCalcId)
@@ -289,7 +287,8 @@ contains
    !> @param iounit The unit number to read from
    !----------------------------------------------------------------
    subroutine readNws08Namelist(iounit)
-      use global, only: WARNING, screenMessage, scratchMessage, logMessage, toLowercase, logNamelistReadStatus
+      use global, only: logNamelistReadStatus
+      use mod_logging, only: screenMessage, logMessage
       implicit none
       real(8), parameter :: eps = epsilon(1.0d0)
       integer, intent(in) :: iounit

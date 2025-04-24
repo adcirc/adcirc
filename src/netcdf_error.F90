@@ -1,11 +1,11 @@
 #ifdef ADCNETCDF
 module netcdf_error
-      
-    USE NETCDF
 
-    implicit none
+   use NETCDF
 
-    contains
+   implicit none
+
+contains
 
 !-----------------------------------------------------------------------
 !     S U B R O U T I N E   C H E C K  _  E R R
@@ -14,82 +14,88 @@ module netcdf_error
 !     was an error, it writes the error message to the screen and to the
 !     fort.16 file.
 !-----------------------------------------------------------------------
-    subroutine check_err(iret)
-      USE GLOBAL, ONLY : ERROR, allMessage, &
-          setMessageSource, unsetMessageSource
+   subroutine check_err(iret)
+      use mod_logging, only: ERROR, allMessage, &
+                             setMessageSource, unsetMessageSource
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      USE GLOBAL, ONLY : DEBUG
+      use mod_logging, only: DEBUG
 #endif
 #ifdef CMPI
-      USE MESSENGER, ONLY : MSG_FINI
+      use MESSENGER, only: MSG_FINI
 #endif
-      IMPLICIT NONE
-      INTEGER, intent(in) :: iret
+      implicit none
+      integer, intent(in) :: iret
 
       call setMessageSource("check_err")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
+      call allMessage(DEBUG, "Enter.")
 #endif
-      if (iret .ne. NF90_NOERR) then
-         call allMessage(ERROR,nf90_strerror(iret))
+      if (iret /= NF90_NOERR) then
+         call allMessage(ERROR, nf90_strerror(iret))
          call netcdfTerminate()
-      endif
+      end if
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
+      call allMessage(DEBUG, "Return.")
 #endif
       call unsetMessageSource()
 !-----------------------------------------------------------------------
-    end subroutine check_err
+   end subroutine check_err
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
 !     S U B R O U T I N E   N E T C D F   T E R M I N A T E
 !-----------------------------------------------------------------------
-      subroutine netcdfTerminate(NO_MPI_FINALIZE)
 #ifdef CMPI
-      USE MESSENGER
+   subroutine netcdfTerminate(NO_MPI_FINALIZE)
+      use MESSENGER
+#else
+      subroutine netcdfTerminate()
 #endif
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,&
-         allMessage, DEBUG, ECHO, INFO, WARNING, ERROR, allMessage
-      IMPLICIT NONE
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+         use mod_logging, only: INFO, allMessage, setMessageSource, unsetMessageSource
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      REAL(8), ALLOCATABLE :: dummy(:)
+         use mod_logging, only: DEBUG, ECHO, INFO, WARNING, ERROR
+#endif
+         implicit none
+#ifdef CMPI
+         logical, optional :: NO_MPI_FINALIZE
+#endif
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+         real(8), allocatable :: dummy(:)
 #endif
 
-      call setMessageSource("netcdfTerminate")
+         call setMessageSource("netcdfTerminate")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
+         call allMessage(DEBUG, "Enter.")
 #endif
 
-      call allMessage(INFO,"ADCIRC Terminating.")
+         call allMessage(INFO, "ADCIRC Terminating.")
 
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
          ! intentionally create a segmentation fault so that we can get
          ! a stack trace to determine the line number of the netcdf call
          ! that went bad ... this assumes that the code was compiled with
          ! debugging symbols, bounds checking, and stack trace turned on.
-         allocate(dummy(1)) ! Allocating (too small) so that -Wuninitialized doesn't complain
+         allocate (dummy(1)) ! Allocating (too small) so that -Wuninitialized doesn't complain
          dummy(2) = 99.9d0
 #endif
 
 #ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
+         subdomainFatalError = .true.
+         if (present(NO_MPI_FINALIZE)) then
+            call MSG_FINI(NO_MPI_FINALIZE)
+         else
+            call MSG_FINI()
+         end if
 #endif
-      CALL EXIT(1) 
+         call exit(1)
 
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
+         call allMessage(DEBUG, "Return.") ! should be unreachable
 #endif
-      call unsetMessageSource()
+         call unsetMessageSource()
 !-----------------------------------------------------------------------
       end subroutine netcdfTerminate
 !-----------------------------------------------------------------------
 
-end module netcdf_error
+      end module netcdf_error
 #endif
