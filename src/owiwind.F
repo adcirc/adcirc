@@ -1238,9 +1238,7 @@
 !-----------------------------------------------------------------------
       subroutine check_owi_err(iret, errorVar, filename, unitnumber)
 !-----------------------------------------------------------------------
-#ifdef CMPI
-      USE MESSENGER, ONLY : MSG_FINI
-#endif
+      use mod_terminate, only: terminate
       IMPLICIT NONE
       INTEGER,INTENT(IN)               :: iret
       CHARACTER(*),INTENT(IN)          :: errorVar
@@ -1261,12 +1259,7 @@
             call allMessage(ERROR,trim(scratchMessage))
             write(6,*) 'iostat =',iret
          endif
-         call allMessage(ERROR,"ADCIRC execution terminated.")
-#ifdef CMPI
-         Flag_ElevError = .true.  !overloading this flag to help kill all mpi proc
-         call msg_fini()
-#endif
-         stop
+         call terminate(myproc)
       endif
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

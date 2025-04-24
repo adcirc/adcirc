@@ -25,10 +25,7 @@ C
       USE GLOBAL, ONLY: STATIM, IFNLFA, ETA2, UU2, VV2, QX2, QY2
       USE ADC_CONSTANTS, ONLY: G
       USE MESH, ONLY: NP, NM, NE, DP, X
-!      USE WIND
-!      USE ITPACKV
-!      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
-      USE NodalAttributes, ONLY: LoadAbsLayerSigma, 
+      USE NodalAttributes, ONLY: LoadAbsLayerSigma,
      &     SSIGMA_ETA => absorblayer_sigma_eta,
      &     SSIGMA_MNX => absorblayer_sigma_mnx,
      &     SSIGMA_MNY => absorblayer_sigma_mny,

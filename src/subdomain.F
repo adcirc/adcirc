@@ -35,6 +35,7 @@ C    ========================================================================
 
       module subdomain
       use sizes, only : globaldir
+      use mod_terminate, only: terminate
       use mod_logging, only : DEBUG, ECHO, INFO, WARNING, ERROR, logMessage,
      &                    allMessage, scratchMessage, setMessageSource,
      &                    unsetMessageSource 
@@ -105,7 +106,7 @@ C    ========================================================================
             call allMessage(ERROR,
      &       'Subdomain modeling was activated but the fort.015 file '
      &       // ' was not found in "' // trim(globaldir) // '".')
-            call subdomainTerminate()
+            call terminate(myproc)
          endif
 
          if (myproc.eq.0) print *, "Subdomain Active"
@@ -138,7 +139,7 @@ C    ========================================================================
             enddo
          case default        
             call allMessage(ERROR,'The NOUTGS value is invalid.')
-            call subdomainTerminate()
+            call terminate(myproc)
          end select
 #ifdef CMPI
          ! localize global record-node arrays:
@@ -194,7 +195,7 @@ C    ========================================================================
             enddo
          case default
             call allMessage(ERROR,'The NOUTGS value is invalid.')
-            call subdomainTerminate()
+            call terminate(myproc)
          end select
 #endif
 
@@ -428,7 +429,7 @@ C     | finds the proper place in the b.c. file.
          if (abs(ncbn-neta).gt.1) then
              print *, "WARNING: ncbn=!neta"
              print *,  ncbn,neta,myproc
-             CALL subdomainTerminate()
+             call terminate(myproc)
          endif
          allocate(ecbn1(ncbn),ucbn1(ncbn),vcbn1(ncbn),wdcbn1(ncbn))
          allocate(ecbn2(ncbn),ucbn2(ncbn),vcbn2(ncbn),wdcbn2(ncbn))
@@ -480,7 +481,7 @@ C     | This subroutine opens fort.019 for a cold-started model
          if (abs(ncbn-neta).gt.1) then
             print *, "WARNING: ncbn=!neta"
             print *,  ncbn,neta,myproc
-            CALL subdomainTerminate()
+            call terminate(myproc)
          endif
          allocate(ecbn1(ncbn),ucbn1(ncbn),vcbn1(ncbn),wdcbn1(ncbn))
          allocate(ecbn2(ncbn),ucbn2(ncbn),vcbn2(ncbn),wdcbn2(ncbn))
@@ -845,41 +846,5 @@ C     | to recalculate COEF of outer-inner boundary nodes
 #endif
 
       END SUBROUTINE checkChange
-
-
-      !jgf: Added this subroutine to eliminate dependence on adcirc_mod
-      ! module, which should be built last to simplify the build system.
-      SUBROUTINE subdomainTerminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-         Use MESSENGER         
-#endif
-      implicit none
-c
-      logical, optional :: no_mpi_finalize
-C
-      call setMessageSource("subdomainTerminate")
-#if defined(SUBDOMAIN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1) 
-C
-#if defined(SUBDOMAIN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE subdomainTerminate
-
-
 
       end module subdomain

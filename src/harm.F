@@ -110,7 +110,7 @@ c***********************************************************************
 
       MODULE HARM
 
-      USE SIZES, ONLY : MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
+      USE SIZES, ONLY : MYPROC, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
      &                   WRITE_LOCAL_HARM_FILES
       USE mod_logging, ONLY : screenMessage, logMessage, DEBUG, ECHO, INFO,
      &                   WARNING, ERROR, setMessageSource, unsetMessageSource,
@@ -420,6 +420,7 @@ C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C--------------------------------------------------------------------
       SUBROUTINE checkHarmonicParameters()
       USE GLOBAL, ONLY :  NFOVER, useNetCDF, useNetCDFOutput
+      use mod_terminate, only: terminate
       IMPLICIT NONE
 C
       call setMessageSource("checkHarmonicParameters")
@@ -432,7 +433,7 @@ C
          IF (NFOVER.EQ.1) THEN
             CALL allMessage(WARNING,"NHASE will be set to zero.")
          ELSE
-            CALL harmonicTerminate()
+            CALL terminate(myproc)
          ENDIF
       ELSE IF (NHASE.EQ.1) THEN
          CALL logMessage(INFO,
@@ -451,7 +452,7 @@ C
          IF (NFOVER.EQ.1) THEN
             CALL allMessage(WARNING,"NHASV will be set to zero.")
          ELSE
-            CALL harmonicTerminate()
+            CALL terminate(myproc)
          ENDIF
       ELSE IF (NHASV.EQ.1) THEN
          CALL logMessage(INFO,
@@ -470,7 +471,7 @@ C
          IF (NFOVER.EQ.1) THEN
             CALL allMessage(WARNING,"NHAGE will be set to zero.")
          ELSE
-            CALL harmonicTerminate()
+            CALL terminate(myproc)
          ENDIF
       ELSE IF (NHAGE.EQ.1) THEN
          CALL logMessage(INFO,
@@ -489,7 +490,7 @@ C
          IF (NFOVER.EQ.1) THEN
             CALL allMessage(WARNING,"NHAGV will be set to zero.")
          ELSE
-            CALL harmonicTerminate()
+            CALL terminate(myproc)
          ENDIF
       ELSE IF (NHAGV.EQ.1) THEN
          CALL logMessage(INFO,
@@ -523,6 +524,7 @@ C--------------------------------------------------------------------
       USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MNPROC, myProc,
      &                   WRITE_LOCAL_HARM_FILES, 
      &                   WRITE_LOCAL_HOT_START_FILES
+      use mod_terminate, only: terminate
       USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, NHSTAR
       USE MESH, ONLY : NP
       IMPLICIT NONE
@@ -560,7 +562,7 @@ C
      &       // 'for each subdomain; this is required for the writing '
      &       // 'of harmonic analysis output (fort.51 etc) '
      &       // ' to subdomains.') 
-             call harmonicTerminate()
+             call terminate(myproc)
          endif
          if ( (NHSTAR.ne.0).and. 
      &        (write_local_hot_start_files.eqv..true.) ) then
@@ -1999,6 +2001,7 @@ C     Based on HAHOTS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE checkHAHotstart()
       USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MYPROC
+      use mod_terminate, only: terminate
       USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, NSTAE, NSTAV, NP_G
       use mod_logging, only: NSCREEN, SCREENUNIT
       USE MESH, ONLY : NP
@@ -2164,7 +2167,7 @@ c
      +              ', FACE READ IN FROM HOT START FILE = ',F10.5)
             endif
          end do
-         call harmonicTerminate()
+         call terminate(myproc)
       endif
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -2174,37 +2177,6 @@ c
 C--------------------------------------------------------------------
       end subroutine checkHAHotstart
 C--------------------------------------------------------------------
-
-C----------------------------------------------------------------------
-C...  jgf50.41: Subroutine to terminate the run cleanly.
-C...
-C----------------------------------------------------------------------
-      SUBROUTINE harmonicTerminate()
-#ifdef CMPI
-      USE MESSENGER, ONLY : MSG_FINI
-#endif
-      IMPLICIT NONE
-C
-      call setMessageSource("harmonicTerminate")
-#if defined(HARM_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-C
-      call allMessage(ERROR,"ADCIRC terminating.")
-#ifdef CMPI
-      call msg_fini()
-#endif
-      CALL EXIT(1)
-C
-
-#if defined(HARM_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      RETURN
-C----------------------------------------------------------------------
-      END SUBROUTINE harmonicTerminate
-C----------------------------------------------------------------------
 
 C--------------------------------------------------------------------
 C     S U B R O U T I N E      B I N A R Y   R E A D   3 D

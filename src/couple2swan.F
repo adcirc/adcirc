@@ -22,8 +22,6 @@ C-----------------------------------------------------------------------
       MODULE Couple2Swan
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
-
-      USE WRITE_OUTPUT, ONLY : terminate
       USE mod_logging, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &          setMessageSource, unsetMessageSource, allMessage,
      &          scratchMessage

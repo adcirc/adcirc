@@ -76,7 +76,7 @@ C
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
      &                 checkHAHotstart
       USE WETDRY, ONLY : initializeWettingAndDrying
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, ONLY : terminate
       USE WIND, ONLY : hotstartMeteorologicalForcing, rsget
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
@@ -264,7 +264,7 @@ C
                WRITE(ScreenUnit,1711)
                WRITE(16,9773)      ! execution terminated
             ENDIF
-            CALL ADCIRC_Terminate()
+            CALL terminate(myproc)
          ENDIF
 C        start reading ascii initial conditions file
          WRITE(16,1740)
@@ -719,7 +719,7 @@ C
          write(scratchMessage,'(A,I3,A)') "IHOT was set to '",IHOT,
      &    "' but this value of IHOT is not valid."
          call allMessage(ERROR, scratchMessage)
-         call ADCIRC_Terminate()
+         call terminate(myproc)
       END SELECT
 C
 C     Compare the harmonic analysis data read in from the hotstart file

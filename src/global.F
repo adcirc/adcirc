@@ -84,7 +84,6 @@ C     jgf46.10 user-controlled warning, dump and error levels on elevations
       INTEGER WarnElevDumpLimit ! max dumps; ADCIRC terminates if exceeded
       INTEGER WarnElevDumpCounter ! counter for number of elev dumps to fort.69
       REAL(8) ErrorElev      ! ADCIRC terminates if this elev is exceeded
-      INTEGER :: Terminate_LocalProc = 0 ! zc - allow a single processor to initiate code shutdown
 C     DMW 202401 Check for velocity exceeding error level as well as NaNs
       REAL(8) WarnVel      ! ADCIRC issues a warning if this vel is exceeded
       INTEGER :: earlyterminate = 0

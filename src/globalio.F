@@ -1580,6 +1580,7 @@ C
 C----------------------------------------------------------------------
       subroutine readMinMax(descript, timeloc)
       use mod_logging, only: logMessage
+      use mod_terminate, only: terminate
       IMPLICIT NONE
       type(OutputDataDescript_t), intent(inout) :: descript
       real(8), intent(in) :: timeloc  ! adcirc time in seconds
@@ -1634,7 +1635,7 @@ C----------------------------------------------------------------------
             call allMessage(ERROR,
      &       'Execution terminated due to invalid '//
      &        trim(descript % file_name)//' file.')
-             call globalioTerminate()
+             call terminate(myproc)
          else
             call allMessage(INFO,'The record for '//
      &        trim(descript%file_name)//
@@ -1872,41 +1873,6 @@ C
       !----------------------------------------------------------------
       end subroutine readAndMapToSubdomainMaxMin
       !----------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-!     S U B R O U T I N E   G L O B A L I O   T E R M I N A T E
-!-----------------------------------------------------------------------
-      SUBROUTINE globalioTerminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      IMPLICIT NONE 
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("globalioTerminate")
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1) 
-C
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-!-----------------------------------------------------------------------
-      END SUBROUTINE globalioTerminate
-!-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
       end module global_io

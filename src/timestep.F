@@ -110,7 +110,7 @@ C
      &    dynamicWaterLevelCorrectionMassAdjust,
      &    CLOSE_MET_FILES
 
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, only: terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
 C.....sb46.28sb03 added 09/xx/2006
@@ -1177,7 +1177,7 @@ C...  Compute new water surface elevation
 #else
          call allMessage(ERROR, "Subgrid calculation requires building"
      &                          //"with netcdf enabled")
-         call ADCIRC_Terminate()
+         call terminate(myproc)
 #endif         
       ELSE
 !--------------------WETTING AND DRYING--------------------------------
@@ -1490,7 +1490,7 @@ C     output the global node number to debug the local PE fort.14s
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev, '
      &           'ADCIRC stopping. **')
-            CALL ADCIRC_Terminate()
+            call terminate(myproc)
          ENDIF
 #ifdef VELCHECK
          IF (IT .EQ. ITIME_BGN) THEN

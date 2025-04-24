@@ -76,6 +76,7 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C******************************************************************************
 
       module gwce
+      use mod_terminate, only: terminate
       use mod_logging, only : DEBUG, INFO, WARNING, ERROR, logMessage,
      &   setMessageSource, unsetMessageSource, allMessage, scratchMessage,
      &   nscreen, screenunit
@@ -703,7 +704,7 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                   enddo
                close(899)
                ! end jgfdebug
-               CALL gwceTerminate()
+               CALL terminate(myproc)
             ENDIF
 
          ELSE  ! jgf48.4619: include Seizo's changes for lumped LHS
@@ -736,7 +737,7 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
                   DIE = .TRUE.
                ENDIF
             ENDDO
-            IF (DIE) CALL gwceTerminate()
+            IF (DIE) CALL terminate(myproc)
          ENDIF
       ENDIF NCIFBLCK                    !End of GWCE matrix setup
 C...
@@ -3389,47 +3390,6 @@ C... Will apply the updating outside the subroutine
       END SUBROUTINE APPLY_SLOPE_LIMITS
 
 C***********************************************************************
-
-
-!-----------------------------------------------------------------------
-!      S U B R O U T I N E   G  W  C  E   T E R M I N A T E 
-!-----------------------------------------------------------------------
-!     jgf: Placed this subroutine here to eliminate dependency of this
-!     module on adcirc_mod module. Bombs out of mpi gracefully when
-!     there is an issue. 
-!-----------------------------------------------------------------------
-      subroutine gwceTerminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      use messenger
-#endif
-      implicit none
-      logical, optional :: no_mpi_finalize
-C
-      call setMessageSource("gwceTerminate")
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      if (present(no_mpi_finalize)) then
-        call msg_fini(no_mpi_finalize)
-      else
-        call msg_fini()
-      endif
-#endif
-      CALL EXIT(1)
-C
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-!-----------------------------------------------------------------------
-      end subroutine gwceTerminate
-!-----------------------------------------------------------------------
-
-
 
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------

@@ -128,7 +128,7 @@ C  CALCULATE THE ELEVATIONS THROUGHOUT THE SIMULATION
 C-----------------------------------------------------------------------
         MODULE TIME_VARYING_WEIR_BOUNDARY
             USE SIZES, ONLY: MYPROC,LOCALDIR,GLOBALDIR
-            USE ADCIRC_MOD, ONLY: ADCIRC_TERMINATE
+            USE mod_terminate, only: terminate
             USE mod_logging, ONLY: SCREENUNIT,logMessage,allMessage,
      &          setMessageSource,unsetMessageSource,ERROR,INFO,ECHO,
      &          DEBUG,WARNING,ScratchMessage,ScreenMessage
@@ -439,7 +439,7 @@ C               THAT A NODE HAS TWO BOUNDARY CONDITIONS BESIDES MAKING IT A FATA
                     CALL allMessage(ERROR,
      &                  "MULTIPLE LOCATIONS FOUND FOR TIME VARYING "//
      &                  "BOUNDARY NODES")
-                    CALL ADCIRC_TERMINATE()
+                    call terminate(myproc)
                 ENDIF
 
                 IF(ABS(KDRESULTS(1)%DIS).GT.EPS)THEN
@@ -456,7 +456,7 @@ C.......................THIS IS NOT A GHOST NODE EITHER.
      &                      LAT," Y=",LON,
      &                      " NOT FOUND IN LIST OF BOUNDARY NODES."
                         CALL allMessage(ERROR,ScratchMessage)
-                        CALL ADCIRC_TERMINATE()
+                        call terminate(myproc)
                     ELSE
                         IDX=-1
 #if defined(TVW_TRACE) || defined(ALL_TRACE) 
@@ -472,7 +472,7 @@ C.......................THIS IS NOT A GHOST NODE EITHER.
      &                  LAT," Y=",LON,
      &                  " NOT FOUND IN LIST OF BOUNDARY NODES."
                     CALL allMessage(ERROR,ScratchMessage)
-                    CALL ADCIRC_TERMINATE()
+                    call terminate(myproc)
 
 #endif                    
                 ENDIF
@@ -539,7 +539,7 @@ C               ALTERS THE HEIGHT OF THE BARRIER BASED UPON THAT.
                     CASE DEFAULT
                         CALL allMessage(ERROR,"Invalid Barrier "
      &                       //"Variation")
-                        CALL ADCIRC_TERMINATE()
+                        call terminate(myproc)
                 END SELECT
 
 C...............WRITE SCREEN/UNIT 16 INFORMATION AT START/END
@@ -1198,7 +1198,7 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
      &                       " HOT START VALUE SPECIFIED. HOT=1 OR "//
      &                       "HOT=0 FOR HOT START RELATIVE TIME "//
      &                       "VARYING WEIRS.")
-                             CALL ADCIRC_TERMINATE()
+                             call terminate(myproc)
                         ENDIF
                     CASE DEFAULT
                         HOTADD = 0D0
@@ -1208,7 +1208,7 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
      &                    "YOU MUST "//
      &                    "SPECIFY VARYTYPE= IN THE FORT.15 INPUT "//
      &                    "FILE.")
-                        CALL ADCIRC_TERMINATE()
+                        call terminate(myproc)
                     ENDIF
                     SELECT CASE(VARYTYPE)
                     CASE(1,2,3)
@@ -1218,7 +1218,7 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
                                 CALL allMessage(ERROR,
      &                              "YOU MUST SPECIFY X1=, Y1=, and "//
      &                              "ZF= ")
-                                CALL ADCIRC_TERMINATE()
+                                call terminate(myproc)
                             ENDIF    
                             IF(ISNULL(TimeStartday).AND.
      &                          ISNULL(TimeStartHour).AND.
@@ -1226,7 +1226,7 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
                                 CALL allMessage(ERROR,
      &                            "TIME VARYING BOUNDARY START TIME"//
      &                            " MUST BE SPECIFIED.")
-                                CALL ADCIRC_TERMINATE()
+                                call terminate(myproc)
                             ENDIF
                             IF(ISNULL(TimeEndday).AND.
      &                          ISNULL(TimeEndHour).AND.
@@ -1234,7 +1234,7 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
                                 CALL allMessage(ERROR,
      &                              "TIME VARYING BOUNDARY END TIME"//
      &                              " MUST BE SPECIFIED.")
-                                CALL ADCIRC_TERMINATE()
+                                call terminate(myproc)
                             ENDIF
                             IF(ISNULL(TimeStartDay))TimeStartDay=0D0
                             IF(ISNULL(TimeStartHour))TimeStartHour=0D0
@@ -1250,7 +1250,7 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
                                 CALL allMessage(ERROR,
      &                              "YOU MUST SPECIFY X1=, Y1=, "//
      &                              "and ZF= ")
-                                CALL ADCIRC_TERMINATE()
+                                call terminate(myproc)
                             ENDIF    
                             IF((ISNULL(FAILUREDURATIONDAY).AND.
      &                          ISNULL(FAILUREDURATIONHOUR).AND.
@@ -1262,7 +1262,7 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
      &                              " DURATION AND MAXIMUM WATER"//
      &                              " SURFACE BEFORE ELEVATION"//
      &                              " CHANGE.")
-                                CALL ADCIRC_TERMINATE()
+                                call terminate(myproc)
                             ENDIF   
                             IF(ISNULL(FAILUREDURATIONDAY))
      &                          FAILUREDURATIONDAY=0D0
@@ -1276,13 +1276,13 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
                             IF(ISNULL(X1).OR.ISNULL(Y1))THEN
                                 CALL allMessage(ERROR,
      &                          "YOU MUST SPECIFY X1= and Y1=")
-                                CALL ADCIRC_TERMINATE()
+                                call terminate(myproc)
                             ENDIF    
                             IF(ISNULL(S=SCHEDULEFILE))THEN
                                 CALL allMessage(ERROR,
      &                              "YOU MUST SPECIFY SCHEDULEFILE= "//
      &                              "FOR VARYTYPE=3.")
-                                CALL ADCIRC_TERMINATE()
+                                call terminate(myproc)
                             ENDIF
                             IF(ISNULL(TimeStartDay))TimeStartDay=0D0
                             IF(ISNULL(TimeStartHour))TimeStartHour=0D0
@@ -1309,14 +1309,14 @@ C...........................A ONE SIDED STYLE WEIR, WE DONT NEED X2 AND Y2
      &                                  "TIME VARYING BOUNDARY END "//
      &                                  "TIME MUST BE GREATER THAN "//
      &                                  "ZERO.")
-                                    CALL ADCIRC_TERMINATE()
+                                    call terminate(myproc)
                                 ENDIF
                             ELSEIF(VARYTYPE.EQ.2)THEN
                                 IF(BAR_FAILURE_DURATION(IDX).LE.0D0)THEN
                                     CALL allMessage(ERROR, 
      &                                  "FAILURE_DURATION MUST BE "//
      &                                  "GREATER THAN ZERO")
-                                    CALL ADCIRC_TERMINATE()
+                                    call terminate(myproc)
                                 ENDIF
                             ELSEIF(VARYTYPE.EQ.3)THEN
                                 BAR_SCHEDULE(IDX)%OFFSET = OFFSET   
@@ -1328,7 +1328,7 @@ C...........................A TWO SIDED STYLE WEIR, WE NEED X2 AND Y2
                             IF(IDX2.EQ.-1)THEN
                                 CALL allMessage(ERROR,"BOUNDARY CONDITION IMPROPERLY "//
      &                                          "SPLIT INTO GHOST NODE SPACE!")
-                                CALL ADCIRC_TERMINATE()
+                                call terminate(myproc)
                             ENDIF
                             INT_TVW = .TRUE.
 
@@ -1350,7 +1350,7 @@ C...............................THIS IS NOT THE CONNECTIVITY WE EXPECTED, GOOD N
      &                              " X2= ",X2,
      &                              " Y2=",Y2," LOCAL NODE=",NBV(IDX2)
                                 CALL allMessage(ERROR,ScratchMessage)
-                                CALL ADCIRC_TERMINATE()
+                                call terminate(myproc)
                             ENDIF
                             CALL ASSIGN_TVW_TIMING(VARYTYPE,IDX,IDX2)
                             IF(VARYTYPE.EQ.1)THEN
@@ -1359,7 +1359,7 @@ C...............................THIS IS NOT THE CONNECTIVITY WE EXPECTED, GOOD N
                                     CALL allMessage(ERROR, 
      &                                  "INVALID BARRIER DEGREDATION"//
      &                                  "TIME.")
-                                    CALL ADCIRC_TERMINATE()
+                                    call terminate(myproc)
                                 ENDIF
                             ELSEIF(VARYTYPE.EQ.2)THEN
                                 IF((BAR_FAILURE_DURATION(IDX).LE.0D0)
@@ -1368,7 +1368,7 @@ C...............................THIS IS NOT THE CONNECTIVITY WE EXPECTED, GOOD N
                                     CALL allMessage(ERROR,
      &                                 "FAILURE_DURATION MUST BE "//
      &                                 "GREATER THAN ZERO.")
-                                    CALL ADCIRC_TERMINATE()
+                                    call terminate(myproc)
                                 ENDIF
                             ELSEIF(VARYTYPE.EQ.3)THEN
                                 BAR_SCHEDULE(IDX)%OFFSET = OFFSET
@@ -1378,13 +1378,13 @@ C...............................THIS IS NOT THE CONNECTIVITY WE EXPECTED, GOOD N
 C...........................WE SHOULD NOT BE HERE?
                             CALL allMessage(ERROR,
      &                          "INVALID BOUNDARY CONDITION DETECTED.")
-                            CALL ADCIRC_TERMINATE()
+                            call terminate(myproc)
                         END SELECT
 
                     CASE DEFAULT
                         CALL allMessage(ERROR,"INVALID WEIR VARIATION"//
      &                      "SPECIFIED.")
-                        CALL ADCIRC_TERMINATE()
+                        call terminate(myproc)
                     END SELECT
                 
                 ENDDO
@@ -1404,7 +1404,7 @@ C...............FREE THE MEMORY USED FOR THE KDTREE2
                 RETURN
   200           CALL allMessage(ERROR,"PROBLEM READING TIME 
      &              VARYING WEIR FILE.")
-                CALL ADCIRC_TERMINATE()
+                call terminate(myproc)
 
 C...............GENERAL MESSAGES FOR TIME VARYING WEIRS
   101           FORMAT("Time varying weir file was not found. All weirs"
@@ -1516,20 +1516,20 @@ C-----------------------------------------------------------------------
                             CALL allMessage(ERROR,
      &                         "You must specify start and end for "//
      &                         "each point in barrier schedule.")
-                            CALL ADCIRC_Terminate()
+                            call terminate(myproc)
                         ENDIF
                         IF(ISNULL(ZF))THEN
                             CALL allMessage(ERROR,"You must specicy"//
      &                      " a flag or final elevation for "//
      &                      "BARHT_FINAL")
-                            CALL ADCIRC_Terminate()
+                            call terminate(myproc)
                         ELSEIF((ZF.EQ.-99991).OR.
      &                         (ZF.EQ.-99992))THEN
                             IF(ISNULL(DELTA))THEN
                                 CALL allMessage(ERROR,"If specifying a "
      &                              //"relative value for ZF, you must "
      &                              //"specify DELTA = ")
-                                CALL ADCIRC_Terminate()
+                                call terminate(myproc)
                             ENDIF    
                         ENDIF    
                     ENDDO
@@ -1638,7 +1638,7 @@ C-----------------------------------------------------------------------
                         ENDIF
                         IF(I.EQ.NSCHEDULES)THEN
                             CALL allMessage(ERROR,"Schedule not found.")
-                            CALL ADCIRC_Terminate()
+                            call terminate(myproc)
                         ENDIF    
                     ENDDO
                 ENDIF
@@ -1692,7 +1692,7 @@ C-----------------------------------------------------------------------
                 ELSE
                     CALL allMessage(ERROR,"No check specified for 
      &                   null.")
-                    CALL ADCIRC_TERMINATE()
+                    call terminate(myproc)
                 ENDIF
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")

@@ -167,6 +167,7 @@
 !     ------------------------------------------------------------------
       subroutine read14_findDims ()
       use boundaries
+      use mod_terminate, only: terminate
       implicit none
       integer :: ios ! i/o status
       integer :: lineNum ! line number currently being read
@@ -269,7 +270,7 @@
 1030        format('The boundary type ',i0,
      &           ' was found in the file but is not valid.')
              call allMessage(ERROR, scratchMessage)
-             call terminate()
+             call terminate(myproc)
          end select
       enddo
       if ( nvel_count.ne.nvel) then
@@ -309,12 +310,12 @@
      &   i0,'.')
       call allMessage(ERROR, scratchMessage)
       close(iunit)
-      call terminate()
+      call terminate(myproc)
  20   write(scratchMessage,1080) lineNum
 1080  format('Reached premature end of file on line ',i0,'.')
       call allMessage(ERROR,scratchMessage)
       close(iunit)
-      call terminate()
+      call terminate(myproc)
       !-----+---------+---------+---------+---------+---------+---------+
       end subroutine read14_findDims
       !-----+---------+---------+---------+---------+---------+---------+
@@ -324,6 +325,7 @@
       !-----+---------+---------+---------+---------+---------+---------+
       subroutine read14 ()
       use boundaries
+      use mod_terminate, only: terminate
       use global, only : openFileForRead, nperseg, nnperbc,
      &                   iperconn
 
@@ -557,7 +559,7 @@
             scratchFormat = '("IBTYPE ",i0," is not allowed.")'
             write(scratchMessage, scratchFormat) ibtype_orig(k)
             call allMessage(ERROR,scratchFormat)
-            call terminate()
+            call terminate(myproc)
          end select
       end do
       close(14)
@@ -579,7 +581,7 @@
 140   format('Reading line ',i0,' gave the following error code: ',i0,'.')
       call allMessage(ERROR,scratchMessage)
       close(iunit)
-      call terminate()
+      call terminate(myproc)
       !
       ! jump to here on end condition during read
 20    write(scratchMessage,150) lineNum
@@ -587,7 +589,7 @@
       call allMessage(ERROR,scratchMessage)
       close(iunit)
       call close_dict( node_dict )
-      call terminate()
+      call terminate(myproc)
 
       !----------------------------------------------------------------
       end subroutine read14
@@ -608,6 +610,7 @@
       !-----+---------+---------+---------+---------+---------+---------+
       subroutine read14femesh( meshfileName, nn, vx, etov, bxy, nodeLabel )
       use global, only : openFileForRead
+      use mod_terminate, only: terminate
 
       implicit none
 
@@ -729,7 +732,7 @@
 140   format('Reading line ',i0,' gave the following error code: ', i0, '.')
       call allMessage(ERROR,scratchMessage)
       close(iunit)
-      call terminate()
+      call terminate(myproc)
       !
       ! jump to here on end condition during read
 120    write(scratchMessage,150) lineNum
@@ -741,7 +744,7 @@
       deallocate( labelstmp )
 
       call close_dict( node_dict_tmp )
-      call terminate()
+      call terminate(myproc)
 
       !----------------------------------------------------------------
       end subroutine read14femesh
@@ -757,13 +760,14 @@
 !----------------------------------------------------------------------
       subroutine readMeshXDMF()
       use boundaries
+      use mod_terminate, only: terminate
       implicit none
 
 #ifndef ADCXDMF
       call allMessage(ERROR,'An XMDF mesh file was specified.')
       call allMessage(ERROR,'This ADCIRC executable was not compiled '
      & // 'with XDMF support.')
-      call terminate()
+      call terminate(myproc)
 #else
       include 'adcirc_Xdmf.f'
       integer*8 :: xdmfFortranObj
@@ -850,7 +854,7 @@
       inquire(file=trim(adjustl(meshFileName)),exist=fileFound)
       if (fileFound.eqv..false.) then
          call allMessage(ERROR,"The file " // trim(adjustl(meshFileName)) // " was not found.")
-         call terminate()
+         call terminate(myproc)
       endif
       call logMessage(INFO,'Reading mesh data from the ' //
      &  trim(adjustl(meshFileName)) // ' XDMF file.')
@@ -1067,7 +1071,7 @@
      &               // 'which is not a valid flux boundary type.")'
                   write(scratchMessage,scratchFormat) boundaryTypes(setIndex)
                   call allMessage(ERROR,scratchMessage)
-                  call terminate()
+                  call terminate(myproc)
                end select
             case("Node")
                ! do nothing, this property simply indicates that the boundaries
@@ -1325,7 +1329,7 @@
      &                 // 'was found in the files but is not valid.")'
                 write(scratchMessage,scratchFormat) ibtype_orig(fluxCount)
                 call allMessage(ERROR,scratchMessage)
-                call terminate()
+                call terminate(myproc)
             end select
             fluxCount = fluxCount + 1
          endif
@@ -1490,6 +1494,7 @@
       subroutine initializeMesh()
       use global, only : h0, nolifa, nbfr, ncor, 
      &                   ntip, ifsprots
+      use mod_terminate, only: terminate
       use boundaries
 
       implicit none
@@ -1779,7 +1784,7 @@
      &      ' ELEMENT ',I0,' MUST BE SPECIFIED IN COUNTERCLOCKWISE ORDER',
      &      ' - CHECK INPUT ',
      &      '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
-            call terminate()
+            call terminate(myproc)
          endif
       end do
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -1800,6 +1805,8 @@
 !     ------------------------------------------------------------------
       subroutine initializeBoundaries()
       use global, only : nbfr, c2ddi, ifsprots
+      use sizes, only: myproc
+      use mod_terminate, only: terminate
       USE ADC_CONSTANTS, only: pi
       use boundaries
 #ifdef CMPI
@@ -2632,7 +2639,7 @@
      &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
      &           ' AND DEPTHS')
                      call allMessage(ERROR, trim(exeTerm9973))
-                     CALL terminate()
+                     CALL terminate(myproc)
                   ENDIF
                ENDIF
 !...........   CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
@@ -2652,7 +2659,7 @@
      &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
      &           ' AND DEPTHS')
                      call allMessage(ERROR, trim(exeTerm9973))
-                     CALL terminate()
+                     CALL terminate(myproc)
                   ENDIF
                ENDIF
 
@@ -2672,7 +2679,7 @@
      &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
      &           ' AND DEPTHS')
                      call allMessage(ERROR, trim(exeTerm9973))
-                     CALL terminate()
+                     CALL terminate(myproc)
                   ENDIF
                ENDIF
 !...           CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
@@ -2691,7 +2698,7 @@
      &           'USER MUST SPECIFY CONSISTENT PIPE HEIGHTS',
      &           ' AND DEPTHS')
                      call allMessage(ERROR, trim(exeTerm9973))
-                     CALL terminate()
+                     CALL terminate(myproc)
                   ENDIF
                ENDIF
 
@@ -2722,7 +2729,7 @@
      &               'NO NORMAL FLOW EXTERNAL BOUNDARIES',
      &               '(I.E. IBTYPE=0,10,20)')
                            call allMessage(ERROR, trim(exeTerm9973))
-                           call terminate()
+                           call terminate(myproc)
                         ENDIF
 !...  CHECK FOR OVERLAPS WHICH REQUIRE ADJUSTMENTS OF BOUNDARY
 !...  CODE ON THE EXTERNAL BOUNDARY
@@ -2798,7 +2805,7 @@ Csb...
      &       'THE TOTAL NUMBER OF FLOW BOUNDARY NODES',
      &       'FROM ALL THE SPECIFIED FLOW SEGMENTS COMBINED')
          call allMessage(ERROR, exeTerm9973)
-         CALL terminate()
+         CALL terminate(myproc)
       ENDIF
 
       NVEL=JGW
@@ -3369,6 +3376,7 @@ Csb...
 !     ------------------------------------------------------------------
 
       subroutine neighb_terminateDimensioning()
+          use mod_terminate, only: terminate
           implicit none
         ! TERMINATE PROGRAM IF MAXIMUM NUMBER OF NEIGHBORS SET TOO SMALL
           write(scratchMessage,99311)
@@ -3377,10 +3385,11 @@ Csb...
      &        'THE DIMENSIONING PARAMETER MNEI IS TOO SMALL. ',
      &        'THERE IS A PROBLEM WITH THE DYNAMIC MEMORY ALLOCATION. ',
      &        '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
-        call terminate()
+        call terminate(myproc)
       end subroutine neighb_terminateDimensioning
  
       subroutine neighb_terminateDuplicateNode(i,j)
+        use mod_terminate, only : terminate
         implicit none
         integer,intent(in) :: i, j
         write(scratchMessage,99312) I,J
@@ -3388,7 +3397,7 @@ Csb...
 99312   FORMAT('!!!!!!!!!!  FATAL ERROR !!!!!!!!! ',
      &       'NODES ',i0,' AND ',i0,' HAVE THE SAME COORDINATES.'
      &       '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
-        call terminate()
+        call terminate(myproc)
       end subroutine neighb_terminateDuplicateNode
 
 
@@ -4442,36 +4451,6 @@ Csb...
 
       end function calcarea
 !-----------------------------------------------------------------------
-      SUBROUTINE terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      IMPLICIT NONE
-C
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("terminate")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1)
-C
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE terminate
 
 !*********************************************************************************C
 !                                                                                 C
