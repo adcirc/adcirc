@@ -847,7 +847,7 @@ C-----------------------------------------------------------------------
       case default
          write(info,'(a,i0,a)') 'ERROR: The value of nws is ',nws,
      &     ' but this is not a valid value.'
-         call exit(1)
+         call terminate(myproc)
       end select
       if (nrs.gt.0) then
           wtimincComment = trim(wtimincComment) // ',rstiminc'
@@ -908,7 +908,7 @@ C-----------------------------------------------------------------------
      &              'drampelev,dramptip,drampmete,drampwrad,dunrampmete'
       case default
          write(info,'("ERROR: The value of nramp is ",i2," but this is not a valid value.")') nramp
-         call exit(1)
+         call terminate(myproc)
       end select
       informationID = XdmfAddInformation(xdmfFortranObj,trim(drampComment)//char(0),  
      &    trim(adjustl(info))//char(0))
@@ -947,7 +947,7 @@ C-----------------------------------------------------------------------
       case default
          write(info,'(a,i0,a)') 'ERROR: The value of nolibf is ',nolibf,
      &     ' but this is not a valid value.'
-         call exit(1)
+         call terminate(myproc)
       end select
       if (im.eq.10) then
          write(info,fmt='(2f15.7)') eslm,eslc

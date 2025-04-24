@@ -60,7 +60,7 @@
       MODULE NETCDFIO
       USE SIZES, ONLY : OFF, ASCII, SPARSE_ASCII, NETCDF3,
      &   NETCDF4, XDMF
-      USE NETCDF_ERROR, ONLY: CHECK_ERR, NETCDFTERMINATE
+      USE NETCDF_ERROR, ONLY: CHECK_ERR
       USE mod_logging, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &   screenMessage, logMessage, allMessage, setMessageSource,
      &   unsetMessageSource, scratchMessage, nabout, nscreen, screenunit,
@@ -7964,6 +7964,7 @@ C     jgf49.17.02 Reads data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstart(lun, timeLoc)
       USE VERSION, ONLY : FileFmtRev, FileFmtMinor, FileFmtMajor
+      use mod_terminate, only: terminate
       USE SIZES, ONLY : globaldir, mnproc, myproc
       USE GLOBAL, ONLY : OutputDataDescript_t, imhs, iths,  nscoue,
      &                   nscouv, nscouc, nscoum, nscouge,  nscougv, nscougc,
@@ -8022,7 +8023,7 @@ C     Open fulldomain file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-         CALL EXIT(1)
+         CALL terminate(myproc)
       ELSE
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          CALL check_err(iret)
@@ -8260,6 +8261,7 @@ C-----------------------------------------------------------------------
       use sizes, only : mnproc,myproc
       use mesh, only: np
       use global, only : OutputDataDescript_t, nfover, np_g
+      use mod_terminate, only: terminate
 #ifdef CMPI
       use messenger, only: mapToSubdomainRealMPI,mapToSubdomainIntMPI,msg_lbcast
 #endif      
@@ -8416,7 +8418,7 @@ C-----------------------------------------------------------------------
               call allMessage(ERROR,
      &         'Execution terminated due to invalid '//
      &          trim(dat%myFile%filename)//' file.')
-               call netcdfTerminate()
+               call terminate(myproc)
            else
               call allMessage(INFO,'The record for '//
      &          trim(dat%myFile%filename)//
@@ -8830,6 +8832,7 @@ C     jgf49.44.11 Reads harmonic analysis data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstartHarmonic(lun)
       USE SIZES, ONLY : MNPROC, globaldir, myproc
+      USE mod_terminate, only: terminate
       USE GLOBAL, ONLY : OutputDataDescript_t, NODES_LG,
      &                   IMAP_STAE_LG, NSTAE, IMAP_STAV_LG, NSTAV
       USE HARM, ONLY : GLOELV, STAELV, GLOULV, GLOVLV, STAULV, STAVLV,
@@ -8877,7 +8880,7 @@ C     Open fulldomain file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-         CALL EXIT(1)
+         CALL terminate(myproc)
       ELSE
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          CALL check_err(iret)
@@ -9159,7 +9162,8 @@ C-----------------------------------------------------------------------
 C     jgf49.44.11 Reads harmonic analysis data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstartHarmonicMeansVariances(lun)
-      USE SIZES, ONLY : MNPROC, globaldir
+      USE SIZES, ONLY : MNPROC, globaldir, MYPROC
+      USE mod_terminate, only: terminate
       USE GLOBAL, ONLY : OutputDataDescript_t, NODES_LG
       USE HARM, ONLY : ELAV, ELVA, XVELAV, YVELAV, XVELVA, YVELVA,
      &                 NTSTEPS, NHAGE, NHAGV
@@ -9200,7 +9204,7 @@ C     Open fulldomain file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-         CALL EXIT(1)
+         CALL terminate(myproc)
       ELSE
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          CALL check_err(iret)
@@ -9295,7 +9299,8 @@ C-----------------------------------------------------------------------
 C     jgf49.48.03 Reads 3D data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstart3D(lun)
-      USE SIZES, ONLY : MNPROC, globaldir
+      USE SIZES, ONLY : MNPROC, globaldir, MYPROC
+      USE mod_terminate, only: terminate
       USE GLOBAL, ONLY : OutputDataDescript_t, IDEN,
      &   duu1, duv1, dvv1, uu2, vv2, bsx1, bsy1, NP_G
       USE GLOBAL_3DVS, ONLY : q, iy, nfen, sigt, sal, temp, wz, q20,
@@ -9342,7 +9347,7 @@ C     Open fulldomain file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-         CALL EXIT(1)
+         CALL terminate(myproc)
       ELSE
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          CALL check_err(iret)

@@ -1073,7 +1073,7 @@ C...  Main loop
       ENDDO
 !tcm v49.52.01 commented out next two lines
 !      CALL MSG_FINI()
-!      CALL EXIT(1)
+!      CALL terminate(myproc)
 
       call  unsetMessageSource()
       
@@ -1114,7 +1114,8 @@ C      ******* THIS SUBROUTINE DOES NOT DEAL WITH NETCDF
 C-----------------------------------------------------------------------
       SUBROUTINE writeHotstart_through_HSwriter(TimeLoc, IT)
 
-      USE SIZES
+      USE SIZES, only: myproc
+      USE mod_terminate, only: terminate
       USE GLOBAL
       USE MESH, ONLY : NE, NP
       USE mod_logging, only: NSCREEN, ScreenUnit, setMessageSource, unsetMessageSource, DEBUG
@@ -1238,7 +1239,7 @@ C-----------------------------------------------------------------------
 
       IF (WRITE_LOCAL_HOT_START_FILES) THEN
          write(6,*) 'HSWriter can not treat Local HOT START FILES'
-         CALL EXIT(1)
+         CALL terminate(myproc)
       ENDIF
 !
       WRITE(16,*) "***********WRITE HOTSTART*********************"

@@ -17,17 +17,17 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
-      !
-      !----------------------------------------------------------------
-      !----------------------------------------------------------------
-      !  M O D U L E   C O N T R O L
-      !----------------------------------------------------------------
-      !----------------------------------------------------------------
-      ! Provide routines for reading, storing, and writing adcirc
-      ! fort.15 data. In ADCIRC v51 this is only used by XDMF to write
-      ! metadata, but could be expanded slightly to provide fort.15
-      ! reading/writing for adcirc as well as adcprep in future versions.
-      !----------------------------------------------------------------
+!
+!----------------------------------------------------------------
+!----------------------------------------------------------------
+!  M O D U L E   C O N T R O L
+!----------------------------------------------------------------
+!----------------------------------------------------------------
+! Provide routines for reading, storing, and writing adcirc
+! fort.15 data. In ADCIRC v51 this is only used by XDMF to write
+! metadata, but could be expanded slightly to provide fort.15
+! reading/writing for adcirc as well as adcprep in future versions.
+!----------------------------------------------------------------
       module control
       use wind,only: nwlon,nwlat,wlatmax,wlonmin,wlatinc,wloninc
       implicit none
@@ -217,6 +217,8 @@
       ! S U B R O U T I N E     R E A D   C O N T R O L  F I L E
       !---------------------------------------------------------------------
       subroutine readControlFile(controlFileName, verbose)
+      use mod_terminate, only: terminate
+      use sizes, only: myproc
       use boundaries, only : neta, nfluxf, nvel, lbcodei
       use mesh, only : slam0, sfea0
       use global, only : openfileforread
@@ -350,7 +352,7 @@ c     arc add nws13 190110
          numFields = 9
       case default
          write(6,'("ERROR: The value of nws is ",i6," but this is not a valid value.")') nws
-         CALL EXIT(1)
+         CALL terminate(myproc)
       end select
       if ((nrs.ne.0).or.(ncice.ne.0)) then
          call parseWaveAndIceTimeIncrements(wtimincLine,numFields)
@@ -387,7 +389,7 @@ c     arc add nws13 190110
       case default
          write(6,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
      &    ' but this is not a valid value.'
-         CALL EXIT(1)
+         CALL terminate(myproc)
       end select
       linenum = linenum + 1
       read(15,*,err=10,end=20,iostat=ios) a00,b00,c00
@@ -410,7 +412,7 @@ c     arc add nws13 190110
       case default
          write(6,'(a,i0,a)') 'ERROR: The value of nolibf is ',nolibf,
      &       ' but this is not a valid value.'
-         CALL EXIT(1)
+         CALL terminate(myproc)
       end select
       linenum = linenum + 1
       if (im.eq.10) then
@@ -610,12 +612,12 @@ c     arc add nws13 190110
      &    ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
       close(15)
-      CALL EXIT(1)
+      CALL terminate(myproc)
  20   write(6,'(a,i0,a)') 'ERROR: Reached premature end of file on line ',
      &    lineNum,'.'
       call echoControlFile(6)
       close(15)
-      CALL EXIT(1)
+      CALL terminate(myproc)
       !---------------------------------------------------------------------
       end subroutine readControlFile
       !---------------------------------------------------------------------
@@ -624,6 +626,8 @@ c     arc add nws13 190110
       ! S U B R O U T I N E    R E A D   S T A T I O N S
       !---------------------------------------------------------------------
       subroutine readStations(nsta, stax, stay)
+      use mod_terminate, only: terminate
+      use sizes, only: myproc
       implicit none
       integer, intent(in) :: nsta
       real(8), allocatable, intent(out) :: stax(:)
@@ -642,11 +646,11 @@ c     arc add nws13 190110
  10   write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
      &   ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
-      CALL EXIT(1)
+      CALL terminate(myproc)
  20   write(6,'(a,i0,a)')
      &   'ERROR: Reached premature end of file on line ',lineNum,'.'
       call echoControlFile(6)
-      CALL EXIT(1)
+      CALL terminate(myproc)
       !---------------------------------------------------------------------
       end subroutine readStations
       !---------------------------------------------------------------------
@@ -662,6 +666,8 @@ c     arc add nws13 190110
       ! is unknown. These uncertainties make this line hard to parse.
       !---------------------------------------------------------------------
       subroutine parseWaveAndIceTimeIncrements(wtimincLine,numFields)
+      use mod_terminate, only: terminate
+      use sizes, only: myproc
       implicit none
       character(len=80), intent(in) :: wtimincLine ! line of data from fort.15
       integer, intent(inout) :: numFields ! number of fields that have already been read
@@ -720,11 +726,11 @@ c     arc add nws13 190110
   10  write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
      &  ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
-      CALL EXIT(1)
+      CALL terminate(myproc)
  20   write(6,'(a,i0,a)') 'ERROR: Reached premature end of file on line '
      & ,lineNum,'.'
       call echoControlFile(6)
-      CALL EXIT(1)
+      CALL terminate(myproc)
       !---------------------------------------------------------------------
       end subroutine parseWaveAndIceTimeIncrements
       !---------------------------------------------------------------------
@@ -735,6 +741,8 @@ c     arc add nws13 190110
       subroutine echoControlFile(echoUnit)
       use boundaries, only : neta, nfluxf, nvel, lbcodei
       use mesh, only : slam0, sfea0
+      use mod_terminate, only: terminate
+      use sizes, only: myproc
       implicit none
       integer, intent(in) :: echoUnit ! fortran i/o unit number for output
       character(len=80) :: wtimincLine
@@ -848,7 +856,7 @@ c     arc add nws13 190110
       case default
          write(echoUnit,'(a,i0,a)') 'ERROR: The value of nws is ',nws,
      &    ' but this is not a valid value.'
-         CALL EXIT(1)
+         CALL terminate(myproc)
       end select
       if (nrs.gt.0) then
           write(rstimincLine,*) rstiminc
@@ -908,7 +916,7 @@ c     arc add nws13 190110
       case default
          write(echoUnit,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
      &    ' but this is not a valid value.'
-         CALL EXIT(1)
+         CALL terminate(myproc)
       end select
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       write(echoUnit,fmt='(3f6.3, 10x, "! a00, b00, c00")') a00,b00,c00
@@ -934,7 +942,7 @@ c     arc add nws13 190110
       case default
          write(echoUnit,'(a,i0,a)') 'ERROR: the value of nolibf is ',nolibf,
      &    ' but this is not a valid value.'
-         CALL EXIT(1)
+         CALL terminate(myproc)
       end select
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (im.eq.10) then

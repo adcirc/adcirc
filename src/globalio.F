@@ -1385,6 +1385,7 @@ C
       !--------------------------------------------------------------
       subroutine writeStationHeader(lun, filename, numSta_g, numSta, typeStr)
       USE SIZES, only : globaldir, localdir, write_local_files, myproc
+      use mod_terminate, only: terminate
       USE GLOBAL, only : rundes, runid
       use mesh, only : agrid
       use global_3dvs, only:
@@ -1433,7 +1434,7 @@ C
       case("Dens2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D density station output not implemented.'
-          CALL EXIT(1)
+          CALL terminate(myproc)
       case("Dens3D")
           write(lun, 1020) ndset3dsd, nstations, dtdp*nspo3dsd,
      &         nspo3dsd, nfen, 3, FileFmtVersion
@@ -1446,11 +1447,11 @@ C
       case("Conc3D")
           write(ScreenUnit,*)
      &         'ERROR: 3D conc. station output not implemented.'
-          CALL EXIT(1)
+          CALL terminate(myproc)
       case default
           write(ScreenUnit,*)
      &         'ERROR: Station header type unrecongnized.'
-          CALL EXIT(1)
+          CALL terminate(myproc)
       end select
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1473,7 +1474,8 @@ C
       !--------------------------------------------------------------
       subroutine writeDomainHeader(lun, filename, numNodes_g,
      &            numNodes, typeStr)
-      USE SIZES
+      USE SIZES, ONLY: myproc
+      use mod_terminate, only: terminate
       USE GLOBAL
       use global_3dvs, only:
      &   ndset3dgv, nspo3dgv, nfen,
@@ -1520,7 +1522,7 @@ C     Open the file
       case("Dens2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D density output not implemented.'
-          CALL EXIT(1)
+          CALL terminate(myproc)
       case("Dens3D")
           write(lun, 1020) ndset3dgd, nodes, dtdp*nspo3dgd,
      &                     nspo3dgd, nfen, 3, FileFmtVersion
@@ -1530,11 +1532,11 @@ C     Open the file
       case("Conc2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D conc. output not implemented.'
-          CALL EXIT(1)
+          CALL terminate(myproc)
       case("Conc3D")
           write(ScreenUnit,*)
      &         'ERROR: 3D conc. output not implemented.'
-          CALL EXIT(1)
+          CALL terminate(myproc)
       case("Tau0")
           write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion

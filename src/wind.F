@@ -391,7 +391,7 @@ C.... convert background pressure from millibars to meters of water
 #ifdef CMPI
             call msg_fini()
 #endif
-            CALL EXIT(1)
+            CALL terminate(myproc)
 C
       END SELECT
 
@@ -458,7 +458,7 @@ C----------------------------------------------------------------------
 #ifdef CMPI
               call msg_fini()
 #endif
-              CALL EXIT(1)
+              CALL terminate(myproc)
           END SELECT
 #endif
 !     ----------------------------------------------------------------
@@ -789,7 +789,7 @@ C....... Joyce et al. (2019), OM: doi:10.1016/j.ocemod.2019.101421
 #ifdef CMPI
          call msg_fini()
 #endif
-         CALL EXIT(1)
+         CALL terminate(myproc)
 C
       END SELECT
       IF(WindIceDrag.gt.WindDragLimit) WindIceDrag=WindDragLimit

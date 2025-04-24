@@ -475,6 +475,8 @@ c                           6/16/2005                                  *
 c***********************************************************************
 c
       SUBROUTINE FEGRIDS(IGC,H)
+      use mod_terminate, only: terminate
+      use sizes, only: myproc
       IMPLICIT NONE
       INTEGER :: IGC,N,NFEN2,IANS,NUM,I,NH
       REAL(8) :: H,DETA,SSTAR,DENOM,SIG0,SS,SB,RP,AVAL,EPS
@@ -591,7 +593,7 @@ c
      &           '  0=Terminate/1=continue. ****'
             write(screenunit,*) '  '
             read(*,*) ians
-            if(ians.ne.1) CALL EXIT(1)
+            if(ians.ne.1) CALL terminate(myproc)
             num = nfen/2
          else
             num=(nfen-1)/2
@@ -645,7 +647,7 @@ c
      &   /,'choices for specifying the vertical grid spacing in 3D.',
      &   /,'Please specify a value for igc from 0 to 6.',
      &   /,'**ADCIRC run terminated due to bad value for igc.**')
-         CALL EXIT(1)
+         CALL terminate(myproc)
 
       end select
 
