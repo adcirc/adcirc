@@ -283,7 +283,9 @@ C     update QX
         RETURN ; 
       END SUBROUTINE ComputeSpongeMsElmMat
 
-      SUBROUTINE SpongeLayerRelatedPrep( ) 
+      SUBROUTINE SpongeLayerRelatedPrep( )
+        use mod_terminate, only: terminate
+        use sizes, only: myproc
         IMPLICIT NONE
 
         INTEGER:: I, J, K, IE, NODEID
@@ -353,7 +355,7 @@ C     update QX
            IMIN = MINLOC(abs(SSDUM)) ;
            IF ( abs(SSDUM(IMIN(1))) > 0 ) THEN
               PRINT*, "Error: Unknown sponge-layer type" ; 
-              CALL EXIT(1)
+              CALL terminate(myproc)
            ELSE
               AbsLayerType = allowabstype(IMIN(1)) ;
            END IF
@@ -397,6 +399,8 @@ C     update QX
       !  have the same format as fort.53 and fort.54, respectively.
       !
       SUBROUTINE READFORT53001()
+        use mod_terminate, only: terminate
+        use sizes, only: myproc
         IMPLICIT NONE
          
         INTEGER:: FUNIT, IOS
@@ -443,7 +447,7 @@ C     update QX
         READ(FUNIT,*) NPTMP
         IF ( NPTMP /= NumNodesAbsLayer(1) ) THEN
            PRINT*, "Error in READFORT53001(): 1" ; 
-           CALL EXIT(1)
+           CALL terminate(myproc)
         END IF
         
         IF ( .NOT. ALLOCATED(AbsLayerEtaEMO) ) THEN
@@ -459,7 +463,7 @@ C     update QX
            ! PRINT*, KTMP, AbsLayer_Eta_NodesID(KK)
            IF ( KTMP /= AbsLayer_Eta_NodesID(KK) ) THEN
              PRINT*, "Error in READFORT53001(): 2" ; 
-             CALL EXIT(1)
+             CALL terminate(myproc)
            END IF
            
            DO JJ = 1, AbsLayerNBF
@@ -480,6 +484,8 @@ C     update QX
       END SUBROUTINE READFORT53001
 
       SUBROUTINE READFORT54001()
+        use mod_terminate, only: terminate
+        use sizes, only: myproc
         IMPLICIT NONE
          
         INTEGER:: FUNIT, IOS
@@ -499,7 +505,7 @@ C     update QX
         READ(FUNIT,*) NBF ;
         IF ( NBF /= AbsLayerNBF ) THEN
            PRINT*, "Error: READFORT54001, inconsistant o. of freq" ;
-           CALL EXIT(1)
+           CALL terminate(myproc)
         END IF
 
         IF ( .NOT. ALLOCATED(AbsLayerQAMIG) ) THEN
@@ -535,7 +541,7 @@ C     update QX
         IF ( NPTMP /= NumNodesAbsLayer(2) .AND. 
      &                NPTMP /= NumNodesAbsLayer(3) ) THEN
            PRINT*, "Error in READFORT54001(): 1" ; 
-           CALL EXIT(1)
+           CALL terminate(myproc)
         END IF
         
         IF ( .NOT. ALLOCATED(AbsLayerQxEMO) ) THEN
@@ -556,7 +562,7 @@ C     update QX
            
            IF ( KTMP /= AbsLayer_MnX_NodesID(KK) ) THEN
              PRINT*, "Error in READFORT53001(): 2" ; 
-             CALL EXIT(1)
+             CALL terminate(myproc)
            END IF
 
            DO JJ = 1, AbsLayerNBF

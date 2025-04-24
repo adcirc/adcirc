@@ -3903,6 +3903,8 @@ Csb...
       SUBROUTINE PERBCSETUP( ETAB )
 
       use global, only: nperseg, perbc_idn_map, iperconn, nnperbc
+      use mod_terminate, only: terminate
+      use sizes, only: myproc
       IMPLICIT NONE
       
 !      dummy variables
@@ -4021,7 +4023,7 @@ Csb...
                IF ( ia1 == N1 ) THEN
                   WRITE(16,*) "Fatal error in PREBCSETUP(): the primary 
      &            and slave node label are identical for the node ", ID1
-                  CALL EXIT(1)
+                  CALL terminate(myproc)
                END IF
             ELSE                              
                WRITE(16,*) "Error in PREBCSETUP(): No. neighbors = ", 
@@ -4459,7 +4461,9 @@ Csb...
 !   Use data declared in the module                                               C
 !                                                                                 C
 !*********************************************************************************C
-      SUBROUTINE READFORTROTS( ) 
+      SUBROUTINE READFORTROTS( )
+        use mod_terminate, only: terminate
+        use sizes, only: myproc
         IMPLICIT NONE
 
         !
@@ -4549,7 +4553,7 @@ Csb...
            call allMessage(DEBUG,"Return.") 
 #endif
            call unsetMessageSource()
-           CALL EXIT(1)          
+           CALL terminate(myproc)          
         END SELECT
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)

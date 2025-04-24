@@ -97,7 +97,7 @@ contains
 #ifdef CMPI
     call msg_fini()
 #endif
-    call exit(1)
+    call terminate(myproc)
 #else
     integer :: j, ii
     real(8) :: julian_datetime_2000, seconds_between
@@ -176,7 +176,9 @@ contains
 
   integer function recache_data(self, seconds_between, UniformRankSearch) result(ierr)
 #ifdef ADCNETCDF
-    use netcdf
+    use netcdf, only: nf90_open, nf90_close, nf90_get_var, nf90_inq_varid, &
+         nf90_inquire_variable, nf90_inquire_dimension, nf90_max_dims, &
+         nf90_nowrite, nf90_strerror
     use netcdf_error, only: check_err
 #endif
     implicit none

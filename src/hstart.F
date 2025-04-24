@@ -294,7 +294,7 @@ C        start reading ascii initial conditions file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-            CALL EXIT(1)                 ! We're toast.
+            CALL terminate(myproc)                 ! We're toast.
          ENDIF
 C
  1701    FORMAT('ERROR: The initial condition or ascii hot start file')
@@ -477,7 +477,7 @@ C
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-            CALL EXIT(1)
+            CALL terminate(myproc)
          ENDIF
 C        start reading binary hot start file
          WRITE(16,240)
@@ -506,7 +506,7 @@ C        start reading binary hot start file
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
-            CALL EXIT(1)                 ! We're toast.
+            CALL terminate(myproc)                 ! We're toast.
          ENDIF
 C
  1001    FORMAT('ERROR: The hot start file')
@@ -532,7 +532,7 @@ C        Now read the non-portable binary hot start file.
 #ifdef CMPI
             call msg_fini()
 #endif
-            CALL EXIT(1)
+            CALL terminate(myproc)
          endif
          READ(IHOT,REC=IHOTSTP) IMHS         ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) TimeLoc         ; IHOTSTP = IHOTSTP + 1
@@ -2924,7 +2924,8 @@ C     to a subdomain array.
 C     kmd: Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomain2D(sd_array, lun, counter, method)
-      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
+      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES, MYPROC
+      use mod_terminate, only: terminate
       USE mod_logging, ONLY : ERROR, setMessageSource, allMessage,
      &                    unsetMessageSource, DEBUG
       USE GLOBAL, only: NP_G, NODES_LG
@@ -2953,7 +2954,7 @@ C
          ELSE
             call allMessage(ERROR,
      &          "Passing of binary or real information incorrect")
-            CALL EXIT(1)
+            CALL terminate(myproc)
          END IF
       ! parallel
       ELSE
@@ -2984,7 +2985,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            CALL EXIT(1)
+            CALL terminate(myproc)
          END IF
       ENDIF
 C
@@ -3005,9 +3006,10 @@ C     to a subdomain array.
 C     kmd: Updated to include real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter, method)
-      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
+      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES, MYPROC
       USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
+      use mod_terminate, only: terminate
       use global, only: NP_G, NODES_LG
       USE MESH, ONLY : NP
       IMPLICIT NONE
@@ -3034,7 +3036,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            CALL EXIT(1)
+            CALL terminate(myproc)
          END IF
       ! parallel
       ELSE
@@ -3065,7 +3067,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            CALL EXIT(1)
+            CALL terminate(myproc)
          END IF
       ENDIF
 C
@@ -3088,9 +3090,10 @@ C     mapping).
 C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapEleToSubdomainInt2D(sd_array, lun, counter,method)
-      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
+      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES, MYPROC
       USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
+      use mod_terminate, only: terminate
       use global, only: NE_G, IMAP_EL_LG
       USE MESH, ONLY : NE
       IMPLICIT NONE
@@ -3117,7 +3120,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            CALL EXIT(1)
+            CALL terminate(myproc)
          END IF
       ! parallel
       ELSE
@@ -3148,7 +3151,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            CALL EXIT(1)
+            CALL terminate(myproc)
          END IF
       ENDIF
 C
@@ -3170,12 +3173,13 @@ C     to a subdomain array.
 C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter,method)
-      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
+      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES, MYPROC
       USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
      &                    allMessage, DEBUG
       USE GLOBAL, ONLY: NP_G, NODES_LG
       USE MESH, ONLY : NP
       USE HARM, ONLY : binaryRead3D
+      use mod_terminate, only: terminate
       IMPLICIT NONE
 C
       REAL(8), intent(out), dimension(np,nfen) :: sd_array ! subdomain array
@@ -3201,7 +3205,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            CALL EXIT(1)
+            CALL terminate(myproc)
          END IF
       ! parallel
       ELSE
@@ -3232,7 +3236,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            CALL EXIT(1)
+            CALL terminate(myproc)
          END IF
       ENDIF
 C

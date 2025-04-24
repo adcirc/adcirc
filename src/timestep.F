@@ -1427,7 +1427,7 @@ C     output the global node number to debug the local PE fort.14s
          IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
            Flag_ElevError = .true. 
            CALL MSG_FINI()                    !  if there are Error Elvation nodes.
-           CALL EXIT(1)                             !
+           CALL terminate(myproc)                             !
          ENDIF                                !st3
 
 #ifdef VELCHECK
@@ -3030,6 +3030,8 @@ C**********************************************************************
        Use Global,      Only : H2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B
+       use mod_terminate, only: terminate
+       use sizes, only: myproc
 
        Implicit none
        Integer :: I, J, K
@@ -3092,7 +3094,7 @@ C**********************************************************************
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
              Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             CALL EXIT(1)
+             CALL terminate(myproc)
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug

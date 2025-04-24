@@ -2257,6 +2257,8 @@ C***********************************************************************
 C
 C  kmd48.33bc changed to use Implicit None
       SUBROUTINE TRIDIAG(A,B,C,R,U,nfen)
+      use mod_terminate, only: terminate
+      use sizes, only: myproc
       USE mod_logging, ONLY : ScreenUnit, setMessageSource,
      &   unsetMessageSource, logMessage, allMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
@@ -2276,7 +2278,7 @@ C
             write(screenunit,*) '*********** Fatal error *************'
             write(1,*) 'Diagonal term in the VS matrix is zero'
             write(1,*) '*********** Fatal error *************'
-            CALL EXIT(1)
+            CALL terminate(myproc)
          endif
          P1=C(J)/B(J+1)
          B(J)=B(J)-A(J+1)*P1
@@ -2288,7 +2290,7 @@ C
          write(screenunit,*) '*********** Fatal error *************'
          write(1,*) 'B1 term in the VS matrix is zero'
          write(1,*) '*********** Fatal error *************'
-         CALL EXIT(1)
+         CALL terminate(myproc)
       endif
 
       U(1)=R(1)/B(1)
@@ -3293,9 +3295,10 @@ C    Adapted from Numerical Recipes chapter 2                          *
 C***********************************************************************
 c
       SUBROUTINE ADC_TRIDAG(A,B,C,R,U,N)
-      USE mod_logging, ONLY : ScreenUnit
-      USE mod_logging, ONLY : setMessageSource,
+      USE mod_logging, ONLY : setMessageSource, ScreenUnit,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
+      use mod_terminate, only: terminate
+      use sizes, only: myproc
       IMPLICIT NONE
       INTEGER :: J, N
 
@@ -3313,7 +3316,7 @@ c
          if(B(j).EQ.0.) then
             write(screenunit,*) 'Problem in Tridag Solver.  ',
      +           'B array value in row ',j,' = 0'
-            CALL EXIT(1)
+            CALL terminate(myproc)
          endif
       end do
       BET = B(1)
@@ -3324,7 +3327,7 @@ c
          if (BET.EQ.0) then
             write(screenunit,*) ' Problem in Tridag Solver.  ',
      +           ' BET  = 0.  Solver failed.'
-            CALL EXIT(1)
+            CALL terminate(myproc)
          endif
          U(J)=(R(J)-A(J)*U(J-1))/BET
       END DO
@@ -4336,6 +4339,8 @@ C*****************************************************************************
        Use Global,      Only : IFNLFA, ETA2, nodecode
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
+       Use mod_terminate, Only: terminate
+       Use sizes, Only: Myproc
 
        Implicit none
        Integer :: I, J, K
@@ -4497,7 +4502,7 @@ C*****************************************************************************
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
              Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             call exit(1)
+             call terminate(myproc)
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug
@@ -4541,6 +4546,8 @@ C*****************************************************************************
        Use Global,      Only : IFNLFA, ETA2
        USE Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
+       Use mod_terminate, Only: terminate
+       Use sizes, only: myproc
 
        Implicit none
        Integer :: I, J, K
@@ -4646,7 +4653,7 @@ C*****************************************************************************
              End Do
              If ( sum_Weights(K) < 1.0d-6 ) Then
                 Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-                call exit(1)
+                call terminate(myproc)
              End If
             Weights (:,K) = Weights (:,K) / sum_Weights(K)
          End Do
@@ -4859,6 +4866,8 @@ C**********************************************************************
        Use Global,      Only : IFNLFA, ETA2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, qkp1, Biharmonic_viscosity_modified_Leith
+       Use mod_terminate, only: terminate
+       Use sizes, only: myproc
 
        Implicit none
        Integer :: I, J, K
@@ -4975,7 +4984,7 @@ C**********************************************************************
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
              Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             call exit(1)
+             call terminate(myproc)
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug

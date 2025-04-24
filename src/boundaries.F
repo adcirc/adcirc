@@ -320,8 +320,9 @@ C     ---------
       ! Allocate space for boundary-related variables
       !------------------------------------------------------------------
       subroutine allocateBoundaryArrays()
-      use sizes, only : mnope
+      use sizes, only : mnope, myproc
       use mod_logging, only : nabout
+      use mod_terminate, only: terminate
       implicit none
       integer :: i
       !
@@ -378,7 +379,7 @@ C     ---------
          case default
              write(6,'(a,i0,a)') "ERROR: The boundary type ",ibtype_orig(i),
      &        " was found in the file but is not valid."
-             CALL EXIT(1)
+             CALL terminate(myproc)
          end select
       end do
       ! initialize to something troublesome to make it easy to spot issues
@@ -483,6 +484,8 @@ C     ------------------------------------------------------------------
       !-----------------------------------------------------------------
       subroutine getBoundarySizesForPrep(p_nbou, p_nvel, 
      &   p_neta, p_nope, nweir, exist_flux)
+      use mod_terminate, only: terminate
+      use sizes, only: myproc
       implicit none
 
       integer, intent(out) :: p_nbou, p_nope, p_nvel, p_neta,  
@@ -516,7 +519,7 @@ C     ------------------------------------------------------------------
             nweir = nweir + nvell(k)
          case(5,25)
             print *, 'error: ibtype 5 and 25 not supported by adcprep.'
-            CALL EXIT(1)
+            CALL terminate(myproc)
          case default
             ! no action required for other boundary types
          end select
@@ -541,6 +544,8 @@ C     ------------------------------------------------------------------
       subroutine getBoundariesForPrep(p_nvdll, p_nvell, p_ibtypee, p_nbdv, lbcode, 
      &   p_ibtype, p_nbvv, p_ibconnr, bar1, bar2, bar3, weir, 
      &   weird, iden, nfover, exist_flux, flux14_ary)
+      use mod_terminate, only: terminate
+      use sizes, only: myproc
       implicit none
       integer, intent(out) :: p_nvdll(:)
       integer, intent(out) :: p_nvell(:)
@@ -607,7 +612,7 @@ C     ------------------------------------------------------------------
             enddo
          case(5,25)
             print *, 'error: ibtype 5 and 25 not supported by adcprep.'
-            CALL EXIT(1)
+            CALL terminate(myproc)
          case default
             write(6,'(a,i0,a)') 'ERROR: ibtype ',ibtype(k),
      &          ' not supported by adcprep.'

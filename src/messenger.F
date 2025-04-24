@@ -309,6 +309,7 @@ C  tcm v50.21 20110610 -- Changed I8 to I12 formats
 C---------------------------------------------------------------------
       SUBROUTINE MSG_TABLE ()
       USE GLOBAL
+      USE mod_terminate, only: terminate
       USE GLOBAL_3DVS, ONLY : NSTA3DD, NSTA3DV, NSTA3DT,
      &                        NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
      &  IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG
@@ -329,7 +330,7 @@ C
      &      TRIM(INPUTDIR)//'/'//'fort.18 was not found.'
          WRITE(*,9973)      ! execution terminated
          CALL MSG_FINI()
-         CALL EXIT(1)
+         CALL terminate(myproc)
       ENDIF
 C
       OPEN(18,FILE=TRIM(INPUTDIR)//'/'//'fort.18',STATUS='OLD')
@@ -338,7 +339,7 @@ C
       if (Trim(BlkName) /= 'FileFmt' .and.
      $  .not. CMP_VERSION_NUMBERS(FileFmtVersion, inputFileFmtVn)) then
         write(16,*) 'File Format of Fort.18 does not match aborting'
-        call exit(1)
+        call terminate(myproc)
       end if
 
 C Read Global number of elements and Local-to_Global element map ( used by module global_io )
@@ -369,7 +370,7 @@ C Read Global indexes of Elevation Station nodes ( used by module global_io )
       IF (NSTAE .ne. jdumy_loc ) then
          call allMessage(ERROR,"Elevation Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
-         CALL EXIT(1)
+         CALL terminate(myproc)
       ENDIF
       IF (NSTAE > 0) THEN
         ALLOCATE ( IMAP_STAE_LG(NSTAE) )
@@ -383,7 +384,7 @@ C Read Global indexes of Velocity  Station nodes ( used by module global_io )
       IF (NSTAV .ne. jdumy_loc ) then
          call allMessage(ERROR,"Velocity Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
-         CALL EXIT(1)
+         CALL terminate(myproc)
       ENDIF
       IF (NSTAV > 0) THEN
         ALLOCATE ( IMAP_STAV_LG(NSTAV) )
@@ -397,7 +398,7 @@ C Read Global indexes of Meteorlogical Station nodes ( used by module global_io 
       IF (NSTAM .ne. jdumy_loc ) then
          call allMessage(ERROR,"Met. Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
-         CALL EXIT(1)
+         CALL terminate(myproc)
       ENDIF
       IF (NSTAM > 0) THEN
         ALLOCATE ( IMAP_STAM_LG(NSTAM) )
@@ -411,7 +412,7 @@ C Read Global indexes of Concentration Station nodes ( used by module global_io 
       IF (NSTAC .ne. jdumy_loc ) then
          call allMessage(ERROR,"Conc. Station Dimensioning Error in fort.18")
          CALL MSG_FINI()
-         CALL EXIT(1)
+         CALL terminate(myproc)
       ENDIF
       IF (NSTAC > 0) THEN
         ALLOCATE ( IMAP_STAC_LG(NSTAC) )

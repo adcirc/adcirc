@@ -1318,6 +1318,8 @@ C***********************************************************************
 c
       SUBROUTINE ADC_TRIDAG2(A,B,C,R,U,N)
       USE mod_logging, ONLY: ScreenUnit
+      use mod_terminate, only: terminate
+      use sizes, only: myproc
       IMPLICIT NONE
       INTEGER :: J, N
 
@@ -1331,7 +1333,7 @@ c
          if(B(j).EQ.0.) then
             write(screenunit,*) 'Problem in Tridag Solver.  ',
      +           'B array value in row ',j,' = 0'
-            CALL EXIT(1)
+            CALL terminate(myproc)
          endif
       end do
       BET = B(1)
@@ -1342,7 +1344,7 @@ c
          if (BET.EQ.0) then
             write(screenunit,*) ' Problem in Tridag Solver.  ',
      +           ' BET  = 0.  Solver failed.'
-            CALL EXIT(1)
+            CALL terminate(myproc)
          endif
          U(J)=(R(J)-A(J)*U(J-1))/BET
       END DO
