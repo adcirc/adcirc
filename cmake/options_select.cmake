@@ -22,6 +22,12 @@ if(ENABLE_OUTPUT_NETCDF)
 endif(ENABLE_OUTPUT_NETCDF)
 # ######################################################################################################################
 
+option(ADCIRC_DEVELOPER_MODE "Enable developer mode" OFF)
+mark_as_advanced(ADCIRC_DEVELOPER_MODE)
+if(ADCIRC_DEVELOPER_MODE)
+  message(STATUS "Developer mode is ENABLED")
+endif()
+
 # ######################################################################################################################
 # ...Executables
 option(BUILD_ADCIRC "Build the serial ADCIRC executable" OFF)

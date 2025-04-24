@@ -549,6 +549,7 @@ C     jgf51.21.24: Read the nodal attributes in XDMF format.
 C     ----------------------------------------------------------------
       SUBROUTINE readNodalAttrXDMF()
       USE MESH, ONLY : replaceNullsWithSpaces
+      USE SIZES, ONLY: NAFILENAME
       IMPLICIT NONE
 #ifndef ADCXDMF
       call allMessage(ERROR,

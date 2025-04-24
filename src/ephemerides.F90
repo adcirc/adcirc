@@ -38,9 +38,11 @@ module mod_ephemerides
     ! HAVENLY_OBJS_COORDS_FROM_TABLE is called multiple
     ! times in a single program
   contains
+#ifdef ADCNETCDF
     procedure, pass(self) :: HEAVENLY_OBJS_COORDS_FROM_TABLE
     procedure, pass(self), private :: reallocate_arrays
     procedure, pass(self), private :: recache_data
+#endif
     procedure, pass(self), private :: init => initialize_ephemerides
   end type t_ephemerides
 
@@ -50,7 +52,11 @@ module mod_ephemerides
 
   private
 
-  public :: t_ephemerides, heavenly_objs_coords_from_table
+  public :: t_ephemerides
+
+#ifdef ADCNETCDF
+  public :: heavenly_objs_coords_from_table
+#endif
 
 contains
 
@@ -79,11 +85,9 @@ contains
 
   end function createEphemerides
 
+#ifdef ADCNETCDF
   subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE(self, MoonSunCoor, julian_date_loc, ierr, UniformDT)
     use mod_astronomic, only: km2AU
-#ifdef CMPI
-    use messenger, only: msg_fini
-#endif
     implicit none
     class(t_ephemerides), intent(inout) :: self
     real(8), intent(in) :: julian_date_loc
@@ -91,14 +95,6 @@ contains
     integer, intent(out) :: ierr
     logical, optional :: UniformDT
 
-#ifndef ADCNETCDF
-    ierr = 1
-    write (*, '(A)') "ERROR: Must compile with netCDF support enabled"
-#ifdef CMPI
-    call msg_fini()
-#endif
-    call terminate(myproc)
-#else
     integer :: j, ii
     real(8) :: julian_datetime_2000, seconds_between
     logical :: UniformRankSearch = .false.
@@ -170,23 +166,20 @@ contains
 
     ! Convert solar distance to AU
     ! MoonSunCoor(3,2) = MoonSunCoor(3,2) * 6.6845871226706E-9
-    MoonSunCoor(3, 2) = MoonSunCoor(3, 2)*km2AU; 
-#endif
+    MoonSunCoor(3, 2) = MoonSunCoor(3, 2)*km2AU;
   end subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE
 
   integer function recache_data(self, seconds_between, UniformRankSearch) result(ierr)
-#ifdef ADCNETCDF
     use netcdf, only: nf90_open, nf90_close, nf90_get_var, nf90_inq_varid, &
          nf90_inquire_variable, nf90_inquire_dimension, nf90_max_dims, &
          nf90_nowrite, nf90_strerror
     use netcdf_error, only: check_err
-#endif
+
     implicit none
     class(t_ephemerides), intent(inout) :: self
     real(8), intent(in) :: seconds_between
     logical, intent(in) :: UniformRankSearch
 
-#ifdef ADCNETCDF
     integer :: ndimsp, dimlen
     integer :: ncid, time_varid, lunar_distance_varid, solar_distance_varid
     integer :: lunar_ra_varid, solar_ra_varid, lunar_dec_varid, solar_dec_varid
@@ -254,9 +247,7 @@ contains
     call check_err(nf90_close(ncid))
     deallocate (tmparr)
     self%first = .false.
-#else
-    ierr = 1
-#endif
+
   end function recache_data
 
   subroutine reallocate_arrays(self)
@@ -443,5 +434,5 @@ contains
     end do
 
   end function GET_RANK_BINARY_SEARCH
-
+#endif
 end module mod_ephemerides

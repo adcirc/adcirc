@@ -349,11 +349,17 @@ contains
 
    function compute_full_tip(self, TimeLoc, NP, SLAM) result(tip)
       use ADC_CONSTANTS, only: sec2day, DEG2RAD
-      use mod_logging, only: setMessageSource, unsetMessageSource, allMessage
+      use mod_logging, only: setMessageSource, unsetMessageSource
+#ifdef ADCNETCDF
       use mod_ephemerides, only: HEAVENLY_OBJS_COORDS_FROM_TABLE
+#else
+      use mod_terminate, only: terminate
+      use mod_logging, only: error, allMessage
+      use sizes, only: myproc
+#endif
 
 #ifdef ALL_TRACE
-      use mod_logging, only: DEBUG
+      use mod_logging, only: allMessage, DEBUG
 #endif
 
       implicit none
@@ -367,7 +373,7 @@ contains
       ! local !
       real(8) :: JDELoc, tocgmst
       real(8) :: MoonSunCoor(3, 2)
-      integer :: IERR
+      integer :: IERR = 0
 
       call setMessageSource("comp_full_tip")
 #if defined(ALL_TRACE)
@@ -383,7 +389,12 @@ contains
          call self%m_moon_sun_position%HEAVENLY_OBJS_COORDS_JM(MoonSunCoor(:, 1), MoonSunCoor(:, 2), JDELoc, IERR)
       elseif (self%m_MoonSunPositionComputeMethod == ComputeMethod_External) then
          ! interpolate from an external look up table !
+#ifdef ADCNETCDF
          call self%m_ephemerides%HEAVENLY_OBJS_COORDS_FROM_TABLE(MoonSunCoor, JDELoc, IERR, self%m_UniformResMoonSunTimeData)
+#else
+         call allMessage(ERROR, "External table tide potential compute method requires building with NetCDF")
+         call terminate(myproc)
+#endif
       else
          IERR = 1
       end if
