@@ -27,6 +27,9 @@ C     write output module.
 C----------------------------------------------------------------------
       module xdmfio
 C----------------------------------------------------------------------
+      use mod_terminate, only: terminate
+      use sizes, only: myproc
+
       logical :: release = .true.  ! .true. to release memory after writing data to HDF5
       logical :: writeToHDF5 = .true. ! .true. if XdmfAddGrid should immediately write mesh
       integer :: lightDataLimit = 10 ! max values to save as light data (xml)
@@ -107,7 +110,6 @@ C-----------------------------------------------------------------------
       !----------------------------------------------------------------
       subroutine writeOutArrayXDMF(timeLoc, it, descript)
       use global, only: OutputDataDescript_t, nt
-      use mod_terminate, only: terminate
       use mod_logging, only: allMessage, screenMessage, error, scratchMessage
       use mesh, only: NM, NE, agrid, dp, ics, np, x, y
       use sizes,only: mnproc, myproc

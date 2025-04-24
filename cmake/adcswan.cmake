@@ -161,6 +161,11 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
     set(ADCSWAN1_SOURCES ${ADCSWAN1_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
   endif()
 
+  if(ADCIRC_DEVELOPER_MODE)
+    enable_developer_mode(${ADCSWAN1_SOURCES})
+    enable_developer_mode(${ADCSWAN_SOURCES})
+  endif()
+
   # ...SWAN Configuration
   swanconfigureadcswan()
 

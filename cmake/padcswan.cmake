@@ -160,6 +160,11 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
+  if(ADCIRC_DEVELOPER_MODE)
+    enable_developer_mode(${PADCSWAN1_SOURCES})
+    enable_developer_mode(${PADCSWAN_SOURCES})
+  endif()
+
   if(XDMF_WORKING)
     set(PADCSWAN1_SOURCES ${PADCSWAN1_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
   endif()

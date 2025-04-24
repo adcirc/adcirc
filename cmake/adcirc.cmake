@@ -77,6 +77,10 @@ if(BUILD_ADCIRC)
     set(ADCIRC_SOURCES ${ADCIRC_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
   endif()
 
+  if(ADCIRC_DEVELOPER_MODE)
+    enable_developer_mode(${ADCIRC_SOURCES})
+  endif()
+
   add_executable(adcirc ${ADCIRC_SOURCES})
   set(ADCIRC_COMPILER_FLAGS "${ADDITIONAL_FLAGS_ADCIRC} ${ADCIRC_OPTION_FLAGS}")
   addcompilerflags(adcirc ${ADDITIONAL_FLAGS_ADCIRC})

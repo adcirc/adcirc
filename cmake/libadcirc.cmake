@@ -77,6 +77,10 @@ if(XDMF_WORKING)
   set(LIBADC_SOURCES ${LIBADC_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
 endif()
 
+if(ADCIRC_DEVELOPER_MODE)
+  enable_developer_mode(${LIBADC_SOURCES})
+endif()
+
 if(BUILD_LIBADCIRC_STATIC)
 
   add_library(libadcirc_static STATIC ${LIBADC_SOURCES})

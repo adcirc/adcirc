@@ -65,6 +65,10 @@ if(BUILD_ADCPREP)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
+  if(ADCIRC_DEVELOPER_MODE)
+    enable_developer_mode(${ADCPREP_SOURCES})
+  endif()
+
   add_executable(adcprep ${ADCPREP_SOURCES})
 
   addcompilerflags(adcprep ${ADDITIONAL_FLAGS_ADCPREP})

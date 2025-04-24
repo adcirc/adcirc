@@ -83,6 +83,7 @@ set(ADCIRC_VERSION_STRING ${ADCIRC_VERSION_MAJOR}.${ADCIRC_VERSION_MINOR}.${ADCI
 
 # ...Include Macros to build components
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/developer.cmake)
 
 # ...Determine architecture specific parameters
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/architecture.cmake)

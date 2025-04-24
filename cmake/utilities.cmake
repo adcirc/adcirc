@@ -39,6 +39,10 @@ if(BUILD_UTILITIES)
   addnetcdflibraries(hstime)
   addnetcdflibraries(adcircResultsComparison)
 
+  if(ADCIRC_DEVELOPER_MODE)
+    enable_developer_mode(util/adcircResultsComparison.F90)
+  endif()
+
   # Some of these utilities are very old and no longer updated. We will
   # pass some compiler flags to suppress warnings. If this happened in the
   # main code, we would fix the code instead of suppressing the warning.

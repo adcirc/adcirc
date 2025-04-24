@@ -75,6 +75,10 @@ if(BUILD_PADCIRC)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
+  if(ADCIRC_DEVELOPER_MODE)
+    enable_developer_mode(${PADCIRC_SOURCES})
+  endif()
+
   if(XDMF_WORKING)
     set(PADCIRC_SOURCES ${PADCIRC_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
   endif()

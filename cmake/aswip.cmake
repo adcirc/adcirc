@@ -41,6 +41,10 @@ if(BUILD_ASWIP)
                       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
+  if(ADCIRC_DEVELOPER_MODE)
+    enable_developer_mode(${ASWIP_SOURCES})
+  endif()
+
   add_executable(aswip ${ASWIP_SOURCES})
 
   addcompilerflags(aswip ${ADDITIONAL_FLAGS_ASWIP})
