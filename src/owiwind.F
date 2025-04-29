@@ -773,12 +773,17 @@
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
             call allMessage(DEBUG,"Enter.")
 #endif
-            IF((SIZE(this%p,1).NE.this%iLon).OR.(SIZE(this%p,2).NE.this%iLat))THEN
-                CALL owi_deallocate(this)
-                ALLOCATE(this%p(this%ilon,this%ilat))
-                ALLOCATE(this%u(this%ilon,this%ilat))
-                ALLOCATE(this%v(this%ilon,this%ilat))
-            ENDIF
+              IF(.not.allocated(this%p))then
+                  ALLOCATE(this%p(this%ilon,this%ilat))
+                  ALLOCATE(this%u(this%ilon,this%ilat))
+                  ALLOCATE(this%v(this%ilon,this%ilat))
+              ELSEIF(SIZE(this%p,1).NE.this%iLon.OR.
+     &               SIZE(this%p,2).NE.this%iLat)THEN
+                  CALL owi_deallocate(this)
+                  ALLOCATE(this%p(this%ilon,this%ilat))
+                  ALLOCATE(this%u(this%ilon,this%ilat))
+                  ALLOCATE(this%v(this%ilon,this%ilat))
+              ENDIF
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
             call allMessage(DEBUG,"Return.")
 #endif

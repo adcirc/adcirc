@@ -31,18 +31,16 @@ C
       use mod_logging, only: DEBUG, ECHO, INFO, WARNING, ERROR,
      &    screenMessage, logMessage, allMessage, setMessageSource,
      &    unsetMessageSource, scratchMessage
+      use mod_adcirc_mpi_types, only: s_TimestepStatusData,
+     &    MPI_Op_TimestepDataMax, MPI_TimestepStatusData
      
-      USE MPI
       IMPLICIT NONE
-      SAVE
-
 
 C--------------------------------------------------------------------------
 C  This module supplies the MPI Message-Passing Interface for PADCIRC.
 C  Uses asynchronous communication with buffer packing as performance
 C  enhancement for "cluster" architectures.
 C--------------------------------------------------------------------------
-
 
 C  Message-Passing Array space
 
@@ -51,7 +49,7 @@ C  Message-Passing Array space
       INTEGER :: RDIM  ! total send/recieve requests when passing info 
                         ! between subdomain neighbors, =2*neighproc
       INTEGER :: IERR  ! error status of mpi subroutine call
-      INTEGER :: TAG = 100
+      INTEGER,PARAMETER :: TAG = 100
       INTEGER :: COMM_COMP                           ! COMMUNICATOR FOR COMPUTATION
       INTEGER :: GROUP_WORLD, GROUP_COMP, GROUP_WRITER_ONLY
       INTEGER, ALLOCATABLE ::  GROUP_WRITER(:)        ! GROUPS FOR GLOBAL FILE WRITING
@@ -77,8 +75,6 @@ C  Message-Passing Array space
       LOGICAL :: writers_active = .false.
       LOGICAL :: hs_writers_active = .false.
 
-C
-C
       CONTAINS
 
 C---------------------end of data declarations--------------------------------C
@@ -95,9 +91,11 @@ C   (4)  get MPI rank of processor
 C   (5)  initialize adcirc COMM communicator MPI_COMM_WORLD
 C  vjp  10/3/2006
 C----------------------------------------------------------------------
-      SUBROUTINE MSG_INIT (MPI_COMM)
+      SUBROUTINE MSG_INIT (MPI_COMM_ROOT)
+      USE MPI, ONLY: MPI_DOUBLE_PRECISION, MPI_COMM_WORLD
+      USE mod_adcirc_mpi_types, only: create_mpi_types
       IMPLICIT NONE
-      INTEGER, OPTIONAL :: MPI_COMM
+      INTEGER, INTENT(IN), OPTIONAL :: MPI_COMM_ROOT
       INTEGER :: I
       INTEGER, ALLOCATABLE :: RANKS(:)  ! array of mpi ranks for compute processors
       INTEGER :: SENDBUF, RECVBUF
@@ -112,9 +110,9 @@ C
       REALTYPE = MPI_DOUBLE_PRECISION
       DBLETYPE = MPI_DOUBLE_PRECISION
       float_type = REALTYPE                    ! used in globalio
-      IF (PRESENT(MPI_COMM)) THEN
+      IF (PRESENT(MPI_COMM_ROOT)) THEN
 C.......Duplicate communicator passed from outside
-        CALL MPI_COMM_DUP (MPI_COMM,MPI_COMM_ADCIRC,IERR)
+        CALL MPI_COMM_DUP (MPI_COMM_ROOT,MPI_COMM_ADCIRC,IERR)
       ELSE
 C.......Initialize MPI
         CALL MPI_INIT (IERR)
@@ -199,6 +197,8 @@ C...     Create communicators for global file writings
       DEALLOCATE(RANKS)
       COMM = COMM_COMP
 
+      CALL create_mpi_types(myproc)
+
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -208,7 +208,6 @@ C---------------------------------------------------------------------
       END SUBROUTINE MSG_INIT
 C---------------------------------------------------------------------
 
-
 C---------------------------------------------------------------------
 C      S U B R O U T I N E   M S G _ F I N I 
 C---------------------------------------------------------------------
@@ -216,15 +215,17 @@ C  Delete MPI resources and Shutdown MPI library.
 C  vjp  8/29/1999
 C---------------------------------------------------------------------
       SUBROUTINE MSG_FINI (NO_MPI_FINALIZE)
+      use mod_terminate, only: terminate
+      use mpi, only: MPI_INTEGER 
       IMPLICIT NONE
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+      LOGICAL, INTENT(IN), OPTIONAL :: NO_MPI_FINALIZE
       INTEGER I
 C
       call setMessageSource("msg_fini")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.") 
 #endif
-C
+
       IF(MNWPROC > 0.and.writers_active) THEN
         IF(MYPROC.eq.0) THEN
           DO I=1,MNWPROC
@@ -261,11 +262,11 @@ C
       ! Note: mpi_comm_world is defined in mpich.f
       IF (CPL2STWAVE.eqv..true.) then
          IF (Flag_ElevError.eqv..true.) then
-            call mpi_abort(mpi_comm_world,myproc,ierr)
+            call terminate(myproc)
          endif
 !        DMW 202401 Check for velocity exceeding error level
          IF (Flag_VelError.eqv..true.) then
-            call mpi_abort(mpi_comm_world,myproc,ierr)
+            call terminate(myproc)
          endif
       endif
 
@@ -313,6 +314,7 @@ C---------------------------------------------------------------------
       USE GLOBAL_3DVS, ONLY : NSTA3DD, NSTA3DV, NSTA3DT,
      &                        NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
      &  IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG
+      IMPLICIT NONE
       INTEGER :: IDPROC, NLOCAL, I, J, jdumy_loc
       INTEGER :: jdumy,jdumy_G,jdumy_max, inputFileFmtVn
       CHARACTER(10) :: BlkName
@@ -514,6 +516,8 @@ C  Routine allocates message-passing space
 C  vjp  10/01/2006
 C---------------------------------------------------------------------
       SUBROUTINE MSG_START ()
+      USE MPI, ONLY: MPI_STATUS_SIZE  
+      IMPLICIT NONE  
       INTEGER :: J
 C
       call setMessageSource("msg_start")
@@ -563,6 +567,8 @@ C
 C  vjp  8/06/1999
 C---------------------------------------------------------------------
       SUBROUTINE UPDATEI( IVEC1, IVEC2, NMSG )
+      USE MPI, ONLY: MPI_INTEGER  
+      IMPLICIT NONE  
       INTEGER,   INTENT(IN) :: NMSG
       INTEGER,   INTENT(INOUT) :: IVEC1(*),IVEC2(*)
       INTEGER :: N,I,J,NCOUNT,NFINI,TOT
@@ -669,6 +675,7 @@ C
 C  vjp  8/06/1999
 C---------------------------------------------------------------------
       SUBROUTINE UPDATER( VEC1, VEC2, VEC3, NMSG )
+      IMPLICIT NONE  
       INTEGER,  INTENT(IN) ::  NMSG ! number of arrays to pass
       REAL(8), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
       integer :: j  ! loop counter for neighboring subdomains
@@ -839,6 +846,7 @@ C
 C  sb  10/13/2022
 C---------------------------------------------------------------------
       SUBROUTINE UPDATEM4R( M4R )
+      IMPLICIT NONE  
       REAL(8), INTENT(INOUT) ::  M4R(:,:)
       integer :: j  ! loop counter for neighboring subdomains
       integer :: i  ! loop counter for nodes shared with a neighboring subdomain
@@ -936,7 +944,6 @@ C          3. Restore the residual of slave nodes
 
       IMPLICIT NONE
 
-
       INTEGER,  INTENT(IN) ::  NMSG
       REAL(8), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
 
@@ -983,6 +990,7 @@ C
 C  tjc  6/24/2002
 C---------------------------------------------------------------------
       SUBROUTINE UPDATER3D( VEC )
+      IMPLICIT NONE  
       REAL(8), INTENT(INOUT) ::  VEC(MNP,MNFEN)
       INTEGER :: N,I,J,K,NCOUNT,NFINI,TOT
 C
@@ -1049,6 +1057,7 @@ C  and persistent message-passing.
 C  tjc  6/24/2002
 C---------------------------------------------------------------------
       SUBROUTINE UPDATEC3D( VEC )
+      IMPLICIT NONE  
       COMPLEX(8), INTENT(INOUT) ::  VEC(MNP,MNFEN)
       INTEGER :: N,I,J,K,NCOUNT,NFINI,TOT
 C
@@ -1124,6 +1133,8 @@ C---------------------------------------------------------------------
 C  Find a maximum integer value
 C---------------------------------------------------------------------
       function msg_imax( v ) result(vmax)
+      use mpi, only: mpi_max, mpi_integer
+      implicit none
       integer n, i
       integer kount
       integer v, vmax
@@ -1152,6 +1163,8 @@ C---------------------------------------------------------------------
 C  Parallel version of SDOT for ITPACKV module
 C---------------------------------------------------------------------
       function psdot( n, sx, sy ) result(gsum)
+      use mpi, only: mpi_sum  
+      implicit none
       integer n, i
       real(8) lsum,gsum
       real(8) sx(*),sy(*)
@@ -1198,6 +1211,7 @@ C  jbr  6/17/00
 C  zc   5/01/12 performance enhancements
 C---------------------------------------------------------------------
       subroutine ps2dots( n, sd, sdt ,dot3rray)
+      use mpi, only: mpi_sum  
       implicit none
       integer,intent(in) :: n
       real(8),intent(in) :: sd(n),sdt(n)
@@ -1252,6 +1266,7 @@ C     jbr  6/17/00
 C     zc   5/01/12 performance enhancements
 C---------------------------------------------------------------------
       subroutine ps3dots( n, sd, sdt ,su, dot3rray)
+      use mpi, only: mpi_sum  
       implicit none
       integer,intent(in)     :: n
       real(8),intent(in)    :: sd(n),sdt(n),su(n)
@@ -1304,6 +1319,8 @@ C---------------------------------------------------------------------
 C  Compute Number of nodes in entire domain.
 C---------------------------------------------------------------------
       SUBROUTINE ALLNODES( TOTNODES )
+      USE MPI, ONLY: MPI_INTEGER, MPI_SUM  
+      IMPLICIT NONE  
       INTEGER I
       INTEGER LNODES,TOTNODES
       INTEGER kount !jgf46.00 added
@@ -1374,6 +1391,7 @@ C---------------------------------------------------------------------
 ! Mapping to a subdomain for parallel code to avoid all processors
 ! reading the same file at the same time
 !---------------------------------------------------------------------
+        use mpi, only: mpi_integer
         implicit none
         integer,intent(in)  :: global_array(*)
         integer,intent(in)  :: mapping(*) 
@@ -1420,6 +1438,8 @@ C     preventing desynchronization of MPI communications.
 C------------------------------------------------------------------------------
 C
       SUBROUTINE WetDrySum( NCCHANGE )
+      USE MPI, ONLY: MPI_INTEGER, MPI_SUM  
+      IMPLICIT NONE  
       INTEGER NCCHANGE    !input flag,=1 if this subdomain has wetted or dried
       INTEGER SumNCChange !sum total of all flags from all subdomains
       INTEGER kount       !jgf46.00 to avoid compiler bug on certain platforms
@@ -1445,36 +1465,81 @@ C---------------------------------------------------------------------
 C---------------------------------------------------------------------
 
 
-C------------------------------------------------------------------------------
-C               S U B R O U T I N E   W A R N  E L E V  S U M
-C------------------------------------------------------------------------------
-C     jgf46.11 If the warning elevation was exceeded in one subdomain,
-C     that information is propagated to the other subdomains so that the
-C     velocities can be dumped to a file for debugging.
-C------------------------------------------------------------------------------
-      SUBROUTINE WarnElevSum( WarnElevExceeded )
-      INTEGER WarnElevExceeded !=1 if this subdomain has exceeded warning elev
-      INTEGER SumWarnElevExceeded !sum total of all flags from all subdomains
-      INTEGER kount       ! to avoid compiler bug on certain platforms
-C
-      call setMessageSource("warnelevsum")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
-#endif
-C 
-      SumWarnElevExceeded = 0
-      kount=1
-      call MPI_ALLREDUCE( WarnElevExceeded, SumWarnElevExceeded, kount,
-     &     MPI_INTEGER, MPI_SUM, COMM, ierr)
-      WarnElevExceeded = SumWarnElevExceeded
-C
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C------------------------------------------------------------------------------
-      END SUBROUTINE WarnElevSum
-C------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+!               S U B R O U T I N E   C H E C K W A R N I N G V A L U E
+!------------------------------------------------------------------------------
+!     If the warning elevation was exceeded in one subdomain,
+!     that information is propagated to the other subdomains so that the
+!     information can be dumped to a file for debugging.
+!------------------------------------------------------------------------------
+      SUBROUTINE check_model_status(WarningElevation, ErrorElevation,
+     &                              WarningVelocity, ErrorVelocity,
+     &                              MaxElevation, MaxElevationNodeID,
+     &                              MaxVelocity,  MaxVelocityNodeID,
+     &                              MaxElevationRank, MaxVelocityRank,
+     &                              WarningElevationExceeded, ErrorElevationExceeded,
+     &                              WarningVelocityExceeded, ErrorVelocityExceeded)
+      IMPLICIT NONE  
+      REAL(8), INTENT(IN) :: WarningElevation
+      REAL(8), INTENT(IN) :: ErrorElevation
+      REAL(8), INTENT(IN) :: WarningVelocity
+      REAL(8), INTENT(IN) :: ErrorVelocity
+      REAL(8), INTENT(INOUT) :: MaxElevation
+      INTEGER, INTENT(INOUT) :: MaxElevationNodeID
+      REAL(8), INTENT(INOUT) :: MaxVelocity
+      INTEGER, INTENT(INOUT) :: MaxVelocityNodeID
+      INTEGER, INTENT(OUT) :: MaxElevationRank
+      LOGICAL, INTENT(OUT) :: WarningElevationExceeded
+      LOGICAL, INTENT(OUT) :: ErrorElevationExceeded
+      INTEGER, INTENT(OUT) :: MaxVelocityRank
+      LOGICAL, INTENT(OUT) :: WarningVelocityExceeded
+      LOGICAL, INTENT(OUT) :: ErrorVelocityExceeded
+      INTEGER, PARAMETER :: kount = 1 ! to avoid compiler bug on certain platforms
+      TYPE(s_TimestepStatusData) :: data_holder_in
+      TYPE(s_TimestepStatusData) :: data_holder_out
+
+      data_holder_in%max_elevation = MaxElevation
+      data_holder_in%max_elevation_node = MaxElevationNodeID
+      data_holder_in%max_elevation_rank = myproc
+      data_holder_in%max_velocity = MaxVelocity
+      data_holder_in%max_velocity_node = MaxVelocityNodeID
+      data_holder_in%max_velocity_rank = myproc
+
+      call MPI_ALLREDUCE( data_holder_in, data_holder_out, kount,
+     &     MPI_TimestepStatusData, MPI_Op_TimestepDataMax, COMM, ierr)
+
+      MaxElevation = data_holder_out%max_elevation
+      MaxElevationNodeID = data_holder_out%max_elevation_node
+      MaxElevationRank = data_holder_out%max_elevation_rank
+      MaxVelocity = data_holder_out%max_velocity
+      MaxVelocityNodeID = data_holder_out%max_velocity_node
+      MaxVelocityRank = data_holder_out%max_velocity_rank
+
+      IF(MaxElevation >= ErrorElevation) THEN
+         WarningElevationExceeded = .true.
+         ErrorElevationExceeded = .true.
+      ELSEIF(MaxElevation >= WarningElevation) THEN
+         WarningElevationExceeded = .true.
+         ErrorElevationExceeded = .false.
+      ELSE
+         WarningElevationExceeded = .false.
+         ErrorElevationExceeded = .false.
+      ENDIF
+
+      IF(MaxVelocity >= WarningVelocity) THEN
+         WarningVelocityExceeded = .true.
+         ErrorVelocityExceeded = .true.
+      ELSEIF(MaxVelocity >= WarningVelocity) THEN
+          WarningVelocityExceeded = .true.
+          ErrorVelocityExceeded = .false.
+      ELSE
+          WarningVelocityExceeded = .false.
+          ErrorVelocityExceeded = .false.
+      ENDIF
+
+!------------------------------------------------------------------------------
+      END SUBROUTINE check_model_status
+!------------------------------------------------------------------------------
 
 !------------------------------------------------------------------------------
 !               S U B R O U T I N E   E A R L Y T E R M S U M
@@ -1484,6 +1549,8 @@ C------------------------------------------------------------------------------
 !     solns can be output for debugging before exiting the model.
 !------------------------------------------------------------------------------
       SUBROUTINE EarlyTermSum( earlyterminate )
+      USE MPI, ONLY: MPI_INTEGER, MPI_SUM  
+      IMPLICIT NONE  
       INTEGER earlyterminate !=1 if this subdomain has detected a NaN in the velocity soln and 20 timesteps have passed since then
       INTEGER SumEarlyterminate !sum total of all flags from all subdomains
       INTEGER kount       ! to avoid compiler bug on certain platforms
@@ -1515,6 +1582,8 @@ C  Broadcast integer array from processor 0.
 C  vjp  9/26/2006
 C---------------------------------------------------------------------
       SUBROUTINE MSG_IBCAST( array, n)
+      USE MPI, ONLY: MPI_INTEGER  
+      IMPLICIT NONE
       INTEGER :: n, array(:)
 C
       call setMessageSource("msg_ibcast")
@@ -1539,6 +1608,8 @@ C     S U B R O U T I N E   M S G _ L B C A S T
 C---------------------------------------------------------------------
 C---------------------------------------------------------------------
       SUBROUTINE MSG_LBCAST(array, n)
+      USE MPI, ONLY: MPI_LOGICAL  
+      IMPLICIT NONE  
       INTEGER :: n
       LOGICAL :: array(:)
 C
@@ -1566,6 +1637,8 @@ C  Broadcast integer array from processor 0.
 C  vjp  9/26/2006
 C---------------------------------------------------------------------
       SUBROUTINE MSG_CBCAST( msg, n)
+      USE MPI, ONLY: mpi_character
+      IMPLICIT NONE  
       INTEGER n
       CHARACTER(*) :: msg
 C
@@ -1593,8 +1666,9 @@ C  Broadcast integer array from processor 0.
 C  vjp  9/26/2006
 C---------------------------------------------------------------------
       SUBROUTINE MSG_RBCAST( array, n)
-      INTEGER n
-      REAL(8) array(:,:,:)
+      IMPLICIT NONE  
+      INTEGER, INTENT(IN) :: n
+      REAL(8), INTENT(INOUT) :: array(:,:,:)
 C
       call setMessageSource("msg_rbcast")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -1620,6 +1694,7 @@ Casey 090327: Implement Seizo's buffering of radiation stress broadcasts.
 !=====Seizo Dividing Messenger
 C---------------------------------------------------------------------
       SUBROUTINE MSG_RBCASTD( array, in, jn, kn)
+      IMPLICIT NONE  
       INTEGER, INTENT(IN) :: in, jn, kn
       REAL(8), INTENT(INOUT) :: array(in,jn,kn)
       INTEGER i, j, k, icount, ntimes, nlast
@@ -1681,76 +1756,11 @@ C---------------------------------------------------------------------
 C---------------------------------------------------------------------
 
 C---------------------------------------------------------------------
-C---------------------------------------------------------------------
-C---------------------------------------------------------------------
       subroutine MSG_BARRIER()
-      integer myerr
+      IMPLICIT NONE  
+      integer :: myerr
       call mpi_barrier(comm,myerr)
-      
-C---------------------------------------------------------------------      
       end subroutine MSG_BARRIER
 C---------------------------------------------------------------------      
-!=============================================================================
-
-!=============================================================================
-C--------------------------------------------------------------------- 
-C DW, 2024   
-      SUBROUTINE MSG_RScalar_Reduce( OP, vali, valo, loco )
-       IMPLICIT NONE
-
-       character (LEN=*):: OP
-       REAL (8):: vali, valo 
-       REAL (8), intent(inout), optional:: loco !/ in - rank, out - max/min rank
-
-       REAL (8):: tempi(2), tempo(2)
-C      
-       call setMessageSource("msg_rvecreduce")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-       call allMessage(DEBUG,"Enter.") 
-#endif
-C       
-       SELECT CASE(OP)
-       CASE ('max','MAX')
-         IF ( present(loco) ) THEN
-           tempi  = (/ vali, loco /) 
-           CALL MPI_Reduce( tempi, tempo, 1, MPI_2DOUBLE_PRECISION,
-     &         MPI_MAXLOC, 0, comm, ierr ) 
-           valo = tempo(1)  
-           loco = tempo(2)  
-         ELSE      
-           CALL MPI_Reduce( vali, valo, 1, DBLETYPE, MPI_MAX, 0, 
-     &         comm, ierr )
-         END IF
-       CASE ('min','MIN')
-         IF ( present(loco) ) THEN  
-           tempi  = (/ vali, loco /) 
-           CALL MPI_Reduce( tempi, tempo, 1, MPI_2DOUBLE_PRECISION,
-     &         MPI_MINLOC, 0, comm, ierr ) 
-           valo = tempo(1)  
-           loco = tempo(2)  
-         ELSE
-           CALL MPI_Reduce( vali, valo, 1, DBLETYPE, MPI_MIN, 0, 
-     &        comm, ierr )
-         END IF
-       CASE ('sum','SUM')
-         CALL MPI_Reduce( vali, valo, 1, DBLETYPE, MPI_SUM, 0, 
-     &      comm, ierr ) 
-       END SELECT    
-C
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-       call allMessage(DEBUG,"Return.")
-#endif
-       call unsetMessageSource() 
-
-       RETURN       
-      END SUBROUTINE MSG_RScalar_Reduce        
-C---------------------------------------------------------------------
-!=============================================================================
 
       END MODULE MESSENGER
-
-      subroutine MSG_ABORT()
-      integer myerr, myerrcode
-      call mpi_abort(comm,myerrcode,myerr)
-      end subroutine MSG_ABORT
-

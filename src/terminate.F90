@@ -19,9 +19,9 @@
 !-------------------------------------------------------------------------------!
 module mod_terminate
 
-  implicit none
+   implicit none
 
-  public :: terminate
+   public :: terminate
 
 contains
 
@@ -29,21 +29,35 @@ contains
    ! ADCIRC terminate routine
    ! Needed so that we can clean up mpi when bombing out.
    !-----------------------------------------------------------------------
-   subroutine terminate(myproc)
+   subroutine terminate(myproc, error_code_in)
+#ifdef CMPI
+      use mpi, only: mpi_comm_world, mpi_abort
+#endif
       implicit none
       integer, intent(in) :: myproc
+      integer, optional, intent(in) :: error_code_in
+      integer :: error_code
+#ifdef CMPI
+      integer :: ierr
+#endif
+
+      if (present(error_code_in)) then
+         error_code = error_code_in
+      else
+         error_code = 1
+      end if
 
       if (myproc == 0) then
          write (*, '(A)') "INFO: ADCIRC Terminating"
       end if
       write (16, '(A)') "INFO: ADCIRC Terminating"
-      call flush(16)
+      call flush (16)
 
 #ifdef CMPI
-      call msg_abort()
+      call mpi_abort(MPI_COMM_WORLD, error_code, ierr)
 #endif
 
-      call exit(1)
+      call exit(error_code)
 
    end subroutine terminate
    !-----------------------------------------------------------------------

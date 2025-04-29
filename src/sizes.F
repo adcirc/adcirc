@@ -122,6 +122,7 @@ C-----------------------------------------------------------------------
       USE IFPORT
 #endif
 #endif
+      use mod_terminate, only: terminate
       IMPLICIT NONE
       INTEGER :: LNAME, IARGC, ARGCOUNT, I, iprefix, res
       CHARACTER(2048) :: CMDLINEARG
@@ -336,7 +337,7 @@ C.....Default root working directory
      &         "/fort.14' was not found."
 
             print *, "ERROR: ADCIRC stopping."
-            call msg_abort()
+            call terminate(myproc)
          end if
       end do
 C

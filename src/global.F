@@ -39,9 +39,7 @@ C
       MODULE GLOBAL
       USE ADC_CONSTANTS, ONLY: DEG2RAD
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
-#ifdef DATETIME
       use datetime_module, only: datetime
-#endif
       IMPLICIT NONE
       SAVE
 C     jgf46.21 Added support for IBTYPE=52.
@@ -86,6 +84,7 @@ C     jgf46.10 user-controlled warning, dump and error levels on elevations
       REAL(8) ErrorElev      ! ADCIRC terminates if this elev is exceeded
 C     DMW 202401 Check for velocity exceeding error level as well as NaNs
       REAL(8) WarnVel      ! ADCIRC issues a warning if this vel is exceeded
+      REAL(8) ErrorVel     ! ADCIRC terminates if this vel is exceeded
       INTEGER :: earlyterminate = 0
       INTEGER :: IT_foundNaN = 0
 C
@@ -613,9 +612,7 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       CHARACTER(80) :: source      ! method of production of the original data
       CHARACTER(80) :: history     ! provides an audit trail for modifications to the original data
       CHARACTER(80) :: base_date
-#ifdef DATETIME
       type(datetime) :: basedatetime
-#endif
       CHARACTER(80) :: comments    ! miscellaneous information about the data
       CHARACTER(80) :: host
       CHARACTER(80) :: convention
@@ -1843,41 +1840,34 @@ C     available to different parts of ADCIRC.
             IF(idx.GT.0)uppercase(I:I)=cap(IDX:IDX)
           ENDDO
       END FUNCTION toUppercase
-
 C***********************************************************************
 C                                                                      *
 C   Convert time from year,month,day,hour,min,sec into seconds since   *
-C   the beginning of the year.                                         *
+C   the epoch.                                                         *
 C                                                                      *
 C***********************************************************************
-      REAL(8) FUNCTION TIMECONV(IYR,IMO,IDAY,IHR,IMIN,SEC) RESULT(TIMESEC)
-      USE mod_logging, only: allMessage, ERROR  
+      real(8) function TIMECONV(IYR,IMO,IDAY,IHR,IMIN,SEC) result(timesec)
+      use datetime_module, only: datetime
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: IYR,IMO,IDAY,IHR,IMIN
       REAL(8), INTENT(IN) :: SEC
-      INTEGER :: ILEAP
+      integer :: isec
+      integer :: iyr_4dig
+      integer :: msec
+      type(datetime) :: date
 
-      TIMESEC = (IDAY-1)*86400 + IHR*3600 + IMIN*60 + SEC
-      IF(IMO.GE.2)  TIMESEC = TIMESEC + 31*86400
-      ILEAP = (IYR/4)*4
-      IF((ILEAP.EQ.IYR).AND.(IMO.GE.3)) TIMESEC = TIMESEC + 29*86400
-      IF((ILEAP.NE.IYR).AND.(IMO.GE.3)) TIMESEC = TIMESEC + 28*86400
-      IF(IMO.GE.4)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.5)  TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GE.6)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.7)  TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GE.8)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.9)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.10) TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GE.11) TIMESEC = TIMESEC + 31*86400
-      IF(IMO.EQ.12) TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GT.12) THEN
-         call allMessage(ERROR,'Error in function timeconv: month > 12.')
-         TIMESEC = TIMESEC + 30*86400
-      ENDIF
+      if (IYR < 1000) then
+         iyr_4dig = 2000 + IYR
+      else
+         iyr_4dig = IYR
+      end if
 
+      isec = int(floor(sec))
+      msec = int(floor((sec - dble(isec)) * 1000.0d0))
+      date = datetime(iyr_4dig,imo,iday,ihr,imin,isec,0)
+      timesec = dble(date%secondsSinceEpoch()) + msec
 C-----------------------------------------------------------------------
-      END FUNCTION TIMECONV
+      END function TIMECONV
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------

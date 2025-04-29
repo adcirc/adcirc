@@ -99,13 +99,17 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
   set(MSGLIB_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/date_util.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/status.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
       ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F)
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/mpitypes.F90
+  )
 
   add_library(templib_punmsglib ${MSGLIB_SOURCES})
   add_library(templib_punswan1 ${SWANONLY1_PARALLEL_SOURCES})
@@ -120,6 +124,7 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
   addmpi(templib_punmsglib)
   addmpi(templib_punswan1)
   addmpi(punswan)
+  adddatetimelibraries(templib_punmsglib)
 
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
                                       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source)

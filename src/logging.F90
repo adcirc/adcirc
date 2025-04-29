@@ -18,6 +18,9 @@
 !
 !-------------------------------------------------------------------------------!
 module mod_logging
+   use datetime_module, only: datetime, timedelta
+
+   implicit none
 
    ! Log levels, in order from largest amount of log messages
    ! written (DEBUG) to fewest log messages written (ERROR). Compared
@@ -38,6 +41,7 @@ module mod_logging
    integer :: sourceNumber = 0 ! index into messageSources for current sub
    integer :: nscreen
    integer :: screenUnit = 6
+   real(8) :: model_start_wallclock
 
 #ifndef EBUG
    integer :: nabout = 0 ! ECHO
@@ -48,7 +52,7 @@ module mod_logging
    public :: openLogFile, screenMessage, logMessage, &
              allMessage, setMessageSource, unsetMessageSource, &
              DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage, &
-             scratchFormat, screenUnit, nscreen, nabout
+             scratchFormat, screenUnit, nscreen, nabout, model_start_wallclock
 
    private
 
@@ -67,6 +71,9 @@ contains
 #endif
 
       implicit none
+      integer :: model_start_wallclock_int
+      integer :: system_clock_rate
+      integer :: system_clock_max
       !...
       !...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
       !...
@@ -80,6 +87,9 @@ contains
       open (logUnit, FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
       open (33, FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
 #endif
+
+      call system_clock(model_start_wallclock_int, system_clock_rate, system_clock_max)
+      model_start_wallclock = dble(model_start_wallclock_int)/dble(system_clock_rate)
 
    end subroutine openLogFile
    !--------------------------------------------------------------------

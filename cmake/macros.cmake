@@ -20,6 +20,13 @@ macro(addCompilerFlags TARGET)
 
   string(STRIP ${LOCAL_COMPILER_FLAGS} LOCAL_COMPILER_FLAGS)
   separate_arguments(LOCAL_COMPILER_DEFINITIONS)
+  
+  # Include the GNU warning flags for MPI and netCDF versions that cause errors/warnings
+  if(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
+    if(${CMAKE_Fortran_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_Fortran_COMPILER_VERSION} VERSION_EQUAL 10)
+      set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -fallow-argument-mismatch -Wno-argument-mismatch -w")
+    endif()
+  endif()
 
   set_target_properties(${TARGET} PROPERTIES Fortran_MODULE_DIRECTORY
                                              ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/${TARGET})
@@ -45,7 +52,7 @@ macro(addCompilerFlagsSwan TARGET)
   # SWAN is not under our control, so to get a warning-free build, we need to suppress warning generated in their code
   if(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
     if(${CMAKE_Fortran_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_Fortran_COMPILER_VERSION} VERSION_EQUAL 10)
-      set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -fallow-argument-mismatch -w")
+      set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -fallow-argument-mismatch -Wno-argument-mismatch -w")
     endif()
   elseif(${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel" OR ${CMAKE_Fortran_COMPILER_ID} MATCHES "IntelLLVM")
     set(LOCAL_COMPILER_FLAGS "${LOCAL_COMPILER_FLAGS} -diag-disable 6843 -diag-disable 8291")
@@ -91,17 +98,18 @@ macro(addGrib2Libraries TARGET)
 endmacro()
 
 macro(addDatetimeDefinitions TARGET)
-  if(ENABLE_DATETIME)
-    target_compile_definitions(${TARGET} PRIVATE DATETIME)
-    target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/datetime_fortran)
-    add_dependencies(${TARGET} datetime)
+  target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/datetime_fortran)
+  add_dependencies(${TARGET} datetime)
+  # Create a false target for the Ninja build system. The generated sources don't give it a full
+  # picture of where it can parallelize and this helps it make the correct determinations
+  if (${CMAKE_GENERATOR} STREQUAL "Ninja")
+    add_custom_target(templib_${TARGET}_stub BYPRODUCTS templib_${TARGET}_stublib COMMAND "" DEPENDS datetime)
+    add_dependencies(${TARGET} templib_${TARGET}_stub)
   endif()
 endmacro()
 
 macro(addDatetimeLibraries TARGET)
-  if(ENABLE_DATETIME)
-    target_link_libraries(${TARGET} datetime)
-  endif()
+  target_link_libraries(${TARGET} datetime)
 endmacro()
 
 macro(addNetCDFDefinitions TARGET)

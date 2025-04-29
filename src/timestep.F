@@ -82,13 +82,15 @@ C
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
      &    WarnElevDump, nodes_lg, NT, NM, NB, NHOUTONCE,
      &    Limit_WaveStressGrad,
-     &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
-     &    dynamicWaterLevelCorrectionDelta
+     &    earlyterminate, IT_foundNaN, WarnVel, ErrorVel, Flag_VelError,
+     &    dynamicWaterLevelCorrectionDelta,
+     &    basedatetime
       use mod_logging, only: INFO, WARNING, ERROR, DEBUG, logMessage, allMessage,
      &         setMessageSource, unsetMessageSource, nscreen, screenUnit, scratchMessage,
-     &         screenunit
+     &         screenunit, model_start_wallclock
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
-     &                         WaveStressGrad_Cap 
+     &                         WaveStressGrad_Cap
+      use mod_adcirc_status, only: print_model_status
      
       USE GWCE, ONLY : solveGWCE, numitr
       USE MOMENTUM, ONLY : solveMomentumEq
@@ -174,9 +176,14 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) :: velabs
       REAL(8) :: vel
       REAL(8) :: velmax
-      INTEGER :: errorElevExceeded
-      INTEGER :: warnVelExceeded
-      INTEGER :: warnElevExceeded
+      LOGICAL :: errorElevExceeded
+      LOGICAL :: warnVelExceeded
+      LOGICAL :: warnElevExceeded
+      LOGICAL :: errorVelExceeded
+      INTEGER :: max_eta_pos
+      INTEGER :: max_vel_pos
+      INTEGER :: max_eta_rank
+      INTEGER :: max_vel_rank
       logical, save ::  EtaDisc_Fill = .TRUE.
 
       REAL(8) CCSFEA
@@ -1288,8 +1295,6 @@ C.... ANALYSIS IS DONE IN DOUBLE PRECISION (64 BITS) ON WORKSTATIONS.
 C...
       ITEST=(IT/NHSINC)*NHSINC
 
-!     IF(myproc.eq.0) PRINT *, " ITEST **********", ITEST
-
       if ((ABS(NHSTAR) > 0 .and. ITEST == IT) .or. (-IHOT == IT)) then  !tcm v51.26 added abs(nhstar) to handle when nhstar = -1
          if( (MNWPROH > 0) ) then   !Writer for HSfile
             if( (.not.C3D) ) then                     !Writer for HSfile
@@ -1342,173 +1347,85 @@ C
          KEMAX = 0
          KVMAX = 0
          DO I=1,NP
-            IF((NODECODE(I).EQ.1).AND.(ABS(ETA2(I)).GT.ELMAX))THEN
-               ELMAX=ABS(ETA2(I))
-               KEMAX=I
-            ENDIF
-            VELABS=UU2(I)*UU2(I)+VV2(I)*VV2(I)
-            IF (VELABS.GT.VELMAX) THEN
-               VELMAX=VELABS
-               KVMAX=I
+            IF(NODECODE(I)==1)THEN
+              IF(ABS(ETA2(I))>ELMAX)THEN
+                 ELMAX=ABS(ETA2(I))
+                 KEMAX=I
+              ENDIF
+              VELABS=SQRT(UU2(I)*UU2(I)+VV2(I)*VV2(I))
+              IF (VELABS>VELMAX) THEN
+                 VELMAX=VELABS
+                 KVMAX=I
+              ENDIF
             ENDIF
          END DO
-         VELMAX=VELMAX**0.5d0
-         ITEST=(IT/NSCREEN)*NSCREEN
 
 C     jgf46.10 Added the ability to for the user to control the warning
 C     and error elevations. Also added the ability for the user to write
 C     a fort.69 (global elevation debug) file.
-
-C     jgf46.12 Removed the dependence on KEMAX for producing output to
-C     the screen.
-
          runperccomplete=REAL(IT-ITHS)/REAL(NT-ITHS)*100d0    !percentage of time steps completed
+         WarnElevExceeded = .false.
+         ErrorElevExceeded = .false.
+         WarnVelExceeded = .false.
+         ErrorVelExceeded = .false.
+         max_eta_pos = 0
+         max_vel_pos = 0
+         max_eta_rank = 0
+         max_vel_rank = 0
+
 #ifdef CMPI
-         IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
-            IF (KEMAX.GT.0) THEN
-               WRITE(ScreenUnit,1991)
-     &            IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
-     &            VELMAX,KVMAX,MYPROC
-            ELSE
-               WRITE(ScreenUnit,1991)
-     &            IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
-     &            KVMAX,MYPROC
-
-            ENDIF
- 1991       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
-     &           5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
-     &           2X,'ON MYPROC = ',I4)
-         ENDIF
-         WarnElevExceeded = 0
-         IF(ELMAX.GT.WarnElev) THEN
-C     WJP 03.27.2018 with the addition of the hash table we now need to
-C     output the global node number to debug the local PE fort.14s
-            WRITE(ScreenUnit,1993)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
- 1993       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
-     &           2X,'ON MYPROC = ',I4,
-     &           3X,'** WARNING: Elevation.gt.WarnElev **')
-            IF (WarnElevDump) WarnElevExceeded=1
-         ENDIF
-
-         IF(WarnElevDump)THEN
-             call WarnElevSum(WarnElevExceeded)
-             IF (WarnElevExceeded.ne.0) THEN
-                CALL WriteWarnElev(TimeLoc, IT)
-             ENDIF
-         ENDIF
-         ErrorElevExceeded = 0                ! Clint's Zombie Slyaer
-         IF(ELMAX.GT.ErrorElev) THEN
-
-            WRITE(ScreenUnit,1995)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
- 1995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
-     &           2X,'ON MYPROC = ',I4,/,
-     &           2X,'** ERROR: Elevation.gt.ErrorElev,',
-     &           ' ADCIRC stopping. **')
-         ErrorElevExceeded = 1                ! Clint's Zombie Slayer
-         ENDIF
-         call WarnElevSum(ErrorElevExceeded)  ! Clint's Zombie Slayer 2010.08.07
-         IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
-           Flag_ElevError = .true. 
-           CALL MSG_FINI()                    !  if there are Error Elvation nodes.
-           CALL terminate(myproc)                             !
-         ENDIF                                !st3
-
-#ifdef VELCHECK
-         WarnVelExceeded = 0                
-         IF (IT .EQ. ITIME_BGN) THEN
-            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST CHECK FOR WARNING VELS'
-         ENDIF
-         IF(VELMAX.GT.WarnVel) THEN
-         
-            WRITE(ScreenUnit,3995)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,3995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
- 3995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
-     &           2X,'ON MYPROC = ',I4,/,
-     &           2X,'** WARNING: Velocity.gt.WarnVel **')
-            WarnVelExceeded = 1                
-         ENDIF   
-#endif
-		 
+         if(kemax/=0) max_eta_pos = nodes_lg(kemax)
+         if(kvmax/=0) max_vel_pos = nodes_lg(kvmax)
+         call check_model_status(WarnElev,ErrorElev, WarnVel, ErrorVel,
+     &                           elmax, max_eta_pos, velmax, max_vel_pos,
+     &                           max_eta_rank, max_vel_rank, WarnElevExceeded,
+     &                           ErrorElevExceeded, WarnVelExceeded,
+     &                           ErrorVelExceeded)
 #else
-         IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
-            IF (KEMAX.GT.0) THEN
-               WRITE(ScreenUnit,1992)
-     &              IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            ELSE
-               WRITE(ScreenUnit,1992)
-     &              IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
-            ENDIF
- 1992       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
-     &           5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9)
-         ENDIF
-         IF(ELMAX.GT.WarnElev) THEN
-            WRITE(ScreenUnit,1994)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
- 1994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
-     &           2X,'** WARNING: Elevation.gt.WarnElev **')
-            IF (WarnElevDump) CALL WriteWarnElev(TimeLoc, IT)
-         ENDIF
-         IF(ELMAX.GT.ErrorElev) THEN
-            write(6,*) 'elmax, errorelev',elmax, errorelev !jgf
-            Flag_ElevError = .true.
-            WRITE(ScreenUnit,1996)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
- 1996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
-     &           2X,'** ERROR: Elevation.gt.ErrorElev, '
-     &           'ADCIRC stopping. **')
-            call terminate(myproc)
-         ENDIF
-#ifdef VELCHECK
-         IF (IT .EQ. ITIME_BGN) THEN
-            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST CHECK FOR ERROR VELS'
-         ENDIF
-         IF(VELMAX.GT.WarnVel) THEN
-            WRITE(ScreenUnit,3996)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,3996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
- 3996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
-     &           2X,'** WARNING: Velocity.gt.WarnVel **')
-         ENDIF
+         max_eta_pos = kemax
+         max_vel_pos = kvmax
+         if(elmax>=WarnElev)then
+           WarnElevExceeded = .true.
+           if(elmax>=ErrorElev)then
+             ErrorElevExceeded = .true.
+           endif
+         endif
+         if(velmax>=WarnVel)then
+           WarnVelExceeded = .true.
+           if(velmax>=ErrorVel)then
+             ErrorVelExceeded = .true.
+           endif
+         endif
 #endif
 
-#endif
+         call print_model_status(myproc, nscreen, screenUnit,
+     &              model_start_wallclock, it, runperccomplete, numitr,
+     &              basedatetime, timeloc, ELMAX, max_eta_pos,
+     &              max_eta_rank, velmax, max_vel_pos, max_vel_rank,
+     &              warnelev, errorelev, warnvel,
+     &              errorVel)
+
+         IF(WarnElevExceeded) THEN
+            IF(WarnElevDump) CALL WriteWarnElev(TimeLoc, IT)
+            IF(ErrorElevExceeded)THEN
+                Flag_ElevError = .true.
+#ifdef CMPI                
+                CALL msg_fini()
+                CALL EXIT(1)
+#else
+                CALL terminate(myproc)
+#endif                
+            ENDIF
+         ENDIF
+         IF(ErrorVelExceeded)THEN
+            Flag_VelError  = .true.
+#ifdef CMPI                
+                CALL msg_fini()
+                CALL EXIT(1)
+#else
+                CALL terminate(myproc)
+#endif                
+         ENDIF
 
       ENDIF
 
@@ -1516,9 +1433,6 @@ C     output the global node number to debug the local PE fort.14s
 !....DMW 20240109 - WARNING FOR NaNs IN VELOCITY SOLN
       foundNaN = .false.
       DO I = 1,NP
-         IF ((I.EQ.1).AND.(IT.EQ.ITIME_BGN)) THEN
-            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST CHECK FOR NAN VELS'
-         ENDIF
          IF(ISNAN(UU2(I)).OR.ISNAN(VV2(I))) THEN
             foundNaN = .true.
             IF(NSCREEN.NE.0) THEN
@@ -2207,10 +2121,12 @@ C
 
 #ifdef CMPI
       USE MESSENGER
+#endif
+
       IMPLICIT NONE
+
+#ifdef CMPI
       REAL(8) :: DUMV1(1),DUMV2(1)
-#else
-      IMPLICIT NONE
 #endif
 
 Casey: Added the following local variable declarations.

@@ -33,7 +33,7 @@
      &                       setMessageSource, unsetMessageSource, screenUnit
 
 #ifdef CMPI
-      use mpi
+      use mpi, only: MPI_SUM, MPI_STATUS_SIZE, MPI_INTEGER
 #endif
 
       contains
@@ -699,7 +699,7 @@ C
    
            call write_cmd(descript%lun, descript, istart, iend)
            if(descript%isInteger)then
-               call mpi_reduce(integerbuffer, integerresultBuffer, bufsize, mpi_int, MPI_SUM, 0,
+               call mpi_reduce(integerbuffer, integerresultBuffer, bufsize, MPI_INTEGER, MPI_SUM, 0,
      &       COMM, ierr)
            else
                call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM, 0,

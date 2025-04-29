@@ -18,6 +18,8 @@ if(BUILD_ASWIP)
   set(ASWIP_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/date_util.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/status.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F

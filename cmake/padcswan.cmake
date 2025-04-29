@@ -99,6 +99,8 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   set(PADCSWAN1_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/date_util.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/status.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
       ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
@@ -106,6 +108,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/mpitypes.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F

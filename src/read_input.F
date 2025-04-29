@@ -84,18 +84,15 @@ C-----------------------------------------------------------------------
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
-     &   WarnVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
-     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus
+     &   WarnVel, ErrorVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
+     &   Pfile_inset, Wfile_inset, InsetControlFile, basedatetime,
+     &   NUOPC4WAV, NUOPC4MET, TimeConv, logNamelistReadStatus
 
 #if defined CSWAN || defined ADCSWAN
-     &   , SWAN_OutputHS, SWAN_OutputDIR,
+      use global, only: SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
-#ifdef DATETIME
-     &   ,basedatetime
-#endif
-     &   ,NUOPC4WAV, NUOPC4MET
       USE ADC_CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
      &                     waveWindMultiplier,deg2rad,rhoAir,
      &                     rad2deg,omega,WaveStressGrad_Cap
@@ -119,8 +116,8 @@ C-----------------------------------------------------------------------
       USE TIME_VARYING_WEIR_BOUNDARY
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist, getVortexModelStringNws8 => getVortexModelString
-      USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
-     &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
+      USE WIND, only: WTIMINC, NWLAT, NWLON, WREFTIM, 
+     &   WLATMAX, WLONMIN, WindDragLimit, 
      &   WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
      &   NWSok, Allowable_NWS, PUREBACKGROUND,
      &   DragLawString, dynamicWaterLevelCorrectionFileName, WTIMINC_12,
@@ -163,9 +160,7 @@ C ... END DW
 Casey 100205: Enable hot-start file generation by SWAN.
       USE Couple2Swan, ONLY: SwanHotStartUnit
 #endif
-#ifdef DATETIME
-      use datetime_module, only: strptime
-#endif
+      use datetime_module, only: strptime, datetime
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
@@ -183,6 +178,7 @@ Casey 180318: Added NWS=13
       INTEGER NTimeVaryingWeir
       INTEGER IDUM80
       INTEGER IMDig1,IMDig2,IMDig3,IMDig4,IMDig5,IMDig6
+      INTEGER irefyr, irefmo, irefday, irefhr, irefmin, irefsec
       REAL(8) RampVal
       REAL(8) :: WindRefTime, BLAdj
       INTEGER :: StormNumber
@@ -519,8 +515,6 @@ Casey 180318: Added NWS=13
       rewind(15)
 #endif
 
-
-#ifdef DATETIME
       namelistSpecifier = 'WindGrib2NetCdf' 
       read( unit = 15, nml=WindGrib2NetCdf,iostat=ios,iomsg=ios_nml_error_msg)
       call logNamelistReadStatus(namelistSpecifier, ios,ios_nml_error_msg)
@@ -529,7 +523,6 @@ Casey 180318: Added NWS=13
      &   read_NWS14_NetCdf_using_core_0 
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
-#endif
 
       !...Read in time varying weir control from fort.15
       NOUT_TVW = -99999
@@ -746,6 +739,7 @@ C     for elevations. Initialize default values.
       ErrorElev = 1000.0      ! default
 C     DMW 202401 Add check for velocity warning level
       WarnVel = 100.d0
+      ErrorVel = 1000.d0
 C     WJP add namelist
       namelistSpecifier = 'WarnElevControl'
       read(unit=15,nml=WarnElevControl,iostat=IOS,IOMSG=ios_nml_error_msg)
@@ -757,6 +751,10 @@ C     WJP add namelist
       write(scratchMessage,'(a,i0)') "WarnElevDumpLimit=",WarnElevDumpLimit
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,f15.7)') "ErrorElev=",ErrorElev
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "WarnVel=",WarnVel
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "ErrorVel=",ErrorVel
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
@@ -5029,7 +5027,7 @@ C
          call terminate(myproc)
       endif
 
-
+      basedatetime = datetime(0)
       IF (useNetCDF.eqv..true.) THEN
          CALL logMessage(INFO,"Now reading metadata from fort.15 file"
      &     //" for use in NetCDF files.")
@@ -5055,7 +5053,6 @@ C
          CALL logMessage(ECHO,"metadata, contact: "//trim(contact))
          READ(15,'(A80)',err=99999,end=99998,iostat=ios) base_date
          CALL logMessage(ECHO,"metadata, base_date: "//trim(base_date))
-#ifdef DATETIME
          ! Convert base_date to datetime WJP
          basedatetime = strptime(adjustl(trim(base_date)),
      &                           "%Y-%m-%d %H:%M:%S")
@@ -5066,7 +5063,6 @@ C
      &           //'. Must be formatted as yyyy-MM-dd HH:mm:ss')
             call terminate(myproc)
          endif
-#endif
       ENDIF
 
       ! Check if we have been provided a base date for the tide potential calculations

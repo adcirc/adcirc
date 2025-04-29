@@ -16,6 +16,8 @@
 set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/date_util.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/status.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
@@ -23,6 +25,7 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mpitypes.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
@@ -103,10 +106,9 @@ endif(BUILD_LIBADCIRC_STATIC)
 
 if(BUILD_LIBADCIRC_SHARED)
   set(LIBMKDIR2_SOURCES prep/mkdir.c)
-  set(LIBADC_SHARED_SOURCES ${LIBADC_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F)
 
   add_library(mkdir2 STATIC ${LIBMKDIR2_SOURCES})
-  add_library(libadcirc_shared SHARED ${LIBADC_SHARED_SOURCES})
+  add_library(libadcirc_shared SHARED ${LIBADC_SOURCES})
 
   addcompilerflags(libadcirc_shared)
   addmpi(libadcirc_shared)

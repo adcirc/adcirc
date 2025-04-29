@@ -53,7 +53,6 @@ endif(MPI_FOUND)
 option(BUILD_ASWIP "Build ASWIP (ASymmetric Wind Input Preprocessor)")
 option(BUILD_UTILITIES "Build the ADCIRC utility programs" OFF)
 option(ENABLE_GRIB2 "Use GRIB2API static libraries." OFF)
-option(ENABLE_DATETIME "Use DATETIME static libraries." OFF)
 # ######################################################################################################################
 
 # ######################################################################################################################
