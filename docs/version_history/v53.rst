@@ -1,0 +1,94 @@
+:orphan:
+
+V53 Changes
+===========
+
+Version 53 introduced several important enhancements and bugfixes over the previous release. This page documents the major changes and improvements implemented in this version.
+
+Wet-Dry Algorithm
+-----------------
+
+* Fixed issues in the wet-dry algorithm to properly update the TKM array values (William Pringle)
+* Improvements to how wetting and drying handles the turbulent kinetic energy values (William Pringle)
+
+Wind and Meteorological Forcing
+-------------------------------
+
+* Enhanced meteorological forcing options with the ability to blend multiple meteorological fields (Jason Fleming)
+* Fixed the Holland model for winds in the southern hemisphere (Jason Fleming)
+* Corrected Powell wind drag initialization when using the -DPOWELL compiler option (Jason Fleming)
+* Added support for CALM line type in meteorological input files (fort.22) (Jason Fleming)
+* Improvements to NWS29 and NWS30 blended meteorology configurations (Jason Fleming)
+
+Boundary Conditions
+-------------------
+
+* Improved handling of flux/radiation boundary conditions (ibtype=52) (Jason Fleming)
+* Fixed handling of EtaDisc initialization for type 52 flux boundaries (Jason Fleming)
+* Memory allocation and processing fixes for weir boundaries with cross barrier pipes (ibtypes 5 and 25) (Zach Cobell)
+* Added water level offset capabilities for elevation specified boundaries (Jason Fleming)
+* Fixed time-varying weir (eta_max) boundary logic (Zach Cobell)
+* Enhanced weir boundary logging and error handling (Zach Cobell)
+
+Tidal Potential Forcing
+-----------------------
+
+* Improved tidal potential forcing formula to use a general formula for 0, 1, and 2 species numbers (William Pringle)
+* Initialization of L_N tidal potential multiple for each species in adcirc.F (William Pringle)
+
+NetCDF Improvements
+-------------------
+
+* Made NBVV and NBDV boundary matrices into vectors when outputting to NetCDF files to reduce file sizes (Zach Cobell)
+* Added capabilities for harmonic analysis outputs to fort.51-54.nc (Jason Fleming)
+* Fixed NetCDF references for various output files (Zach Cobell)
+* Fixed vector quantities handling in sparse output (Zach Cobell)
+
+Parallel Processing and Meshing
+-------------------------------
+
+* Improved partitioning logic with new --strict-boundaries command line option for adcprep (Jason Fleming)
+* Fixed issues with subdomain generation for specific subdomain counts (Jason Fleming)
+* Fixed hashtable implementation for parallel simulations (Jason Fleming)
+* Enhanced tensor type internal tide friction support (William Pringle)
+
+SWAN Integration
+----------------
+
+* Updated to SWAN release version 41.10 (Casey Dietrich)
+* Improved SWAN compilation process and build system (Casey Dietrich, Zach Cobell)
+* Enhanced SWAN integration and parallel processing support (Casey Dietrich)
+
+Output Processing
+-----------------
+
+* Fixed issues with writing maximum elevation (maxele.63) and velocity (maxvel.63) files (Jason Fleming)
+* Improved handling of sparse vs. full format output files (Zach Cobell)
+* Fixed writing of hotstart velocity data (Jason Fleming)
+* Fixed format specifiers for various output files (Jason Fleming)
+* Enhanced warning elevation reporting with global node numbers (William Pringle)
+
+Build System and Compilation
+----------------------------
+
+* Added CMake build configuration for better cross-platform support (Zach Cobell)
+* Added compiler flags for gfortran on x86_64 systems (Zach Cobell)
+* Updated compiler flags for Intel compilers, including heap-arrays option (Zach Cobell)
+* Added compiler flags for Stampede2 at TACC (Zach Cobell)
+
+Testing and CI/CD
+-----------------
+
+* Implemented CircleCI 2.0 with Docker for improved continuous integration (Zach Cobell)
+* Added Docker environment for testing (zcobell/adcirc_20170924) (Zach Cobell)
+
+Bugfixes
+--------
+
+* Fixed numerous memory allocation and handling issues (Jason Fleming, Zach Cobell)
+* Fixed 3D issues with division by zero and boundary initialization (Jason Fleming)
+* Fixed negative values of Holland B parameter from aswip for GAHM (Jason Fleming)
+* Fixed echo of element table when NABOUT.gt.1 (Jason Fleming)
+* Improved OWI wind module error reporting (Jason Fleming)
+* Fixed ASCII file appending and binary file headers (Jason Fleming)
+* Replaced problematic where constructs with loops in collectInundationData and collectMinMax (William Pringle) 
