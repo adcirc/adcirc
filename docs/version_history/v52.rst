@@ -1,0 +1,77 @@
+:orphan:
+
+V52 Changes
+===========
+
+Version 52 introduced several important enhancements and bugfixes over the previous release. This page documents the major changes and improvements implemented in this version.
+
+NetCDF Improvements
+-------------------
+
+* Fixed issues with large netCDF arrays (Zach Cobell)
+* Improved handling of harmonic analysis data in parallel netCDF hotstart files (Jason Fleming)
+* Enhanced metadata handling for velocity units in various output files (Jason Fleming)
+* Fixed netCDF writer processor initialization and metadata updates (Zach Cobell)
+* Improved station coordinate handling in serial ADCIRC (Zach Cobell)
+
+Meteorological Forcing
+----------------------
+
+* Fixed handling of storms with centers in degrees east longitude for vortex models (NWS=8,19,20) (Jason Fleming)
+* Improved GFS (NWS10) meteorological input functionality in both serial and parallel modes (Jason Fleming)
+* Enhanced initial parameter guessing for GFS input processing (Jason Fleming, Yuley Cardona)
+* Fixed issues with SWAN coupling and vortex meteorological models (Jason Fleming)
+
+Boundary Conditions
+-------------------
+
+* Fixed issues with weir boundaries and cross barrier pipes (types 5 and 25) (Zach Cobell)
+* Enabled inverted barometer modification of elevation specified boundaries (Jason Fleming)
+* Improved handling of levee boundaries with cross barrier pipes (Jason Fleming)
+* Enhanced flux/periodic river boundary condition handling (Jason Fleming)
+* Fixed time varying weir list processing in adcprep (Jason Fleming)
+* Added enhanced weir boundary logging (Zach Cobell)
+
+Parallel Processing
+-------------------
+
+* Fixed issues with parallel execution and I/O unit number handling (Jason Fleming)
+* Improved subdomain file handling and processing (Jason Fleming)
+* Enhanced wet/dry state array output capabilities (Jason Fleming)
+* Fixed memory allocation issues for harmonic analysis I/O in parallel (Jason Fleming)
+
+Build System and Compilation
+----------------------------
+
+* Added compiler flags for various HPC systems:
+  * Lonestar5 at TACC (Jason Fleming)
+  * Spirit at AFRL (Jason Fleming)
+  * Stampede at TACC (Jason Fleming)
+  * Cray XC30/XC40 systems (T.C. Massey)
+* Improved XDMF library compilation support (T.C. Massey)
+* Enhanced makefile support for building ASWIP (T.C. Massey)
+
+Output Processing
+-----------------
+
+* Fixed sparse ASCII output functionality (Zach Cobell)
+* Improved handling of min/max files in parallel netCDF (Jason Fleming)
+* Enhanced ADCPOST capabilities for processing integer and element-based output (Jason Fleming)
+* Added support for nodecode and wet/dry state array outputs (Jason Fleming)
+
+SWAN Integration
+----------------
+
+* Fixed SWAN coupling issues with I/O unit numbers (Jason Fleming)
+* Improved SWAN output file handling in serial mode (Zach Cobell)
+* Enhanced SWAN-ADCIRC coupling for vortex models (Jason Fleming)
+
+Bugfixes
+--------
+
+* Fixed issues with time varying bathymetry implementation (T.C. Massey)
+* Corrected serial execution issues with WRITE_LOCAL_FILES settings (Jason Fleming)
+* Improved error checking and messaging (Jason Fleming)
+* Fixed memory allocation and array handling issues (Jason Fleming)
+* Enhanced error handling for mesh and fort.13 node count comparisons (Jason Fleming)
+* Fixed issues with coupled simulations message handling (T.C. Massey) 

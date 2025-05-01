@@ -1,0 +1,89 @@
+:orphan:
+
+V50 Changes
+===========
+
+Version 50 introduced several important enhancements and bugfixes over the previous release. This page documents the major changes and improvements implemented in this version.
+
+NetCDF Support and Output
+-------------------------
+
+* Fixed station coordinate handling in netCDF files for 2D and 3D outputs (Jason Fleming)
+* Enhanced 3D netCDF hotstart functionality in parallel execution (Jason Fleming)
+* Improved metadata handling and initialization (Jason Fleming)
+* Fixed issues with harmonic analysis data in hotstart files (Jason Fleming)
+* Added support for netCDF hotstart files in utilities (Jason Fleming)
+
+Meteorological Forcing
+----------------------
+
+* Implemented Powell's sector-based wind drag scheme (Casey Dietrich)
+* Fixed HWind (NWS15) wind speed conversion (Jason Fleming)
+* Corrected NWS8 (symmetric Holland) pressure unit handling (Jason Fleming)
+* Enhanced wind drag formulation handling (Zach Cobell)
+* Improved meteorological data timing and processing (Jason Fleming)
+
+River and Boundary Conditions
+-----------------------------
+
+* Added support for river initialization above mean sea level (Kendra Dresback)
+* Enhanced river boundary condition timing options (Kendra Dresback)
+* Improved river flux handling and initialization (Kendra Dresback)
+* Fixed issues with boundary node processing (Jason Fleming)
+* Enhanced boundary condition handling in parallel execution (Jason Fleming)
+
+SWAN Coupling
+-------------
+
+* Improved SWAN command file handling in subdomain preparation (Jason Fleming)
+* Enhanced kdtree2 module integration (T.C. Massey, Casey Dietrich)
+* Fixed compilation issues for SWAN coupling (Jason Fleming)
+* Improved parallel processing support for coupled simulations (R.J. Weaver)
+
+Parallel Processing
+-------------------
+
+* Enhanced adcprep capabilities:
+  * Added command-line interface (Jason Fleming)
+  * Improved fort.88 and fort.20 file processing (Jason Fleming)
+  * Enhanced subdomain handling (Jason Fleming)
+* Fixed parallel execution issues with various data types (Jason Fleming)
+* Improved memory handling in parallel simulations (R.J. Weaver)
+
+Build System and Compilation
+----------------------------
+
+* Added Windows support for:
+  * METIS compilation (T.C. Massey)
+  * Adcprep execution (T.C. Massey)
+  * Various system-specific adaptations (T.C. Massey)
+* Enhanced compiler support for multiple platforms (Jason Fleming)
+* Improved format handling for different compilers (T.C. Massey)
+* Fixed various compilation issues on different systems (Jason Fleming)
+
+Output Processing
+-----------------
+
+* Enhanced min/max file handling (Jason Fleming)
+* Improved output formatting for numerical precision (T.C. Massey)
+* Added conditional output file generation based on forcing types (Jason Fleming)
+* Enhanced station output processing (Jason Fleming)
+* Improved format specifications for large numbers (T.C. Massey)
+
+3D Model Components
+-------------------
+
+* Fixed 3D hotstart functionality in turbulence module (R.J. Weaver)
+* Enhanced variable initialization and access (R.J. Weaver)
+* Improved 3D output handling and formatting (Jason Fleming)
+* Fixed various 3D model initialization issues (Jason Fleming)
+
+Bugfixes
+--------
+
+* Fixed initialization issues in various components (Jason Fleming)
+* Corrected memory handling and allocation (Jason Fleming)
+* Enhanced error checking and messaging (Jason Fleming)
+* Improved format handling for large numbers (T.C. Massey)
+* Fixed elemental slope limiter handling (Zach Cobell)
+* Corrected issues with quadrant angle initialization (Jason Fleming) 
