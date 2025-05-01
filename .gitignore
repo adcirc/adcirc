@@ -30,6 +30,7 @@ build/
 build13
 build12
 config.h
+_build
 
 # thirdparty files
 *.sw*
