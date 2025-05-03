@@ -27,7 +27,7 @@ parameters:
 executors:
   intel_executor:
     docker:
-      - image: adcircorg/adcirc-ci:2025.0.1-intel
+      - image: adcircorg/adcirc-ci:2025.0.2-intel
   gcc_executor:
     docker:
       - image: adcircorg/adcirc-ci:2025.0.1-gcc
