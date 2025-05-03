@@ -1,4 +1,4 @@
-FROM adcircorg/adcirc-base:2025.0.1 AS builder
+FROM adcircorg/adcirc-base:2025.0.2 AS builder
 
 ARG TARGETARCH
 ARG TARGETPLATFORM
@@ -72,7 +72,7 @@ RUN cd /home/adcirc/adcirc-build/build && \
     ninja && \
     ninja install 
 
-FROM adcircorg/adcirc-base:2025.0.1 AS adcirc
+FROM adcircorg/adcirc-base:2025.0.2 AS adcirc
 
 USER root 
 COPY --from=builder /opt/adcirc /opt/adcirc 
