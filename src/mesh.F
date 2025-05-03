@@ -4282,7 +4282,7 @@ Csb...
      &                              kdtree2_n_nearest
           implicit none
           integer, intent(in) :: xp, yp           
-          real, dimension(xp,yp), intent(in) :: x_mat, y_mat
+          real(4), dimension(xp,yp), intent(in) :: x_mat, y_mat
           real(8), intent(in) :: x,y
           real(8), intent(out) :: w(4)
           integer, intent(out) :: ii(4)

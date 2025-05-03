@@ -8942,7 +8942,7 @@ C----------------------------------------------------------------------
         IMPLICIT NONE 
           
         integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi,cc,ncid_p
-        real,allocatable,dimension(:,:) :: lat, lon
+        real(4),allocatable,dimension(:,:) :: lat, lon
         real(8), allocatable ::  lonv(:), latv(:), XY(:,:)
         real(8) :: xx, yy, wt(4) 
         logical :: regular_grid
@@ -8953,9 +8953,7 @@ C----------------------------------------------------------------------
               
         CALL READ_INSET_LatLon(Pfile_inset,NCID_p,lat,InsetLatDim,InsetLat,lon,InsetLonDim,InsetLon,nxp,nyp)
         nxp = ubound(lon,1); nyp = ubound(lat,2)
-        
-        
-          
+
         if (nxp.NE.ubound(lon,1).OR.nyp.NE.ubound(lat,2)) then
            ! if we don't match both lat and lon then we need to store two
            ! sets of interpolation indices/weights
@@ -8965,8 +8963,8 @@ C----------------------------------------------------------------------
         endif
         
         IF ( .NOT.allocated(inset_indp) .and. .not.allocated(inset_weight)) then 
-        ! Allocate the indices and weights
-        allocate(inset_indp(ub,4,np),inset_weight(ub,4,np))
+          ! Allocate the indices and weights
+          allocate(inset_indp(ub,4,np),inset_weight(ub,4,np))
         endif
         ! Make the interpolant weights. If w 
         do ii = 1,ub
@@ -9019,7 +9017,7 @@ C----------------------------------------------------------------------
 
             if (associated(tree)) then
               call kdtree2_destroy(tree)
-            nullify(tree)
+              nullify(tree)
             endif
 
         enddo
@@ -9076,71 +9074,67 @@ C-------------------------------------------------------------------------------
 C-----------------------------------------------------------------------------------
 
 
-      SUBROUTINE READ_INSET_LATLON(ncfile,NCIDf,lat_ins,
-     &                  InsetLatDim,InsetLat,lon_ins,InsetLonDim,InsetLon,nxp,nyp)
+      SUBROUTINE READ_INSET_LATLON(ncfile, NCIDf, lat_ins,
+     &                             InsetLatDim, InsetLat, lon_ins,
+     &                             InsetLonDim, InsetLon, nxp, nyp)
             
 #ifdef ADCNETCDF
-      use netcdf
-      use netcdf_error, only: check_err
+        use netcdf
+        use netcdf_error, only: check_err
 #endif
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
-     &                           BcastToLocal_Int
-      USE SIZES, ONLY : MYPROC, GBLINPUTDIR
+        USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
+     &                             BcastToLocal_Int
+        USE SIZES, ONLY : MYPROC, GBLINPUTDIR
 
-     
-      IMPLICIT NONE 
+        IMPLICIT NONE
 
-      CHARACTER(len=*), INTENT(IN) :: ncfile  ! NetCDF file name
-      REAL, ALLOCATABLE, DIMENSION(:,:), INTENT(OUT) :: lat_ins,lon_ins
-    
-      CHARACTER(LEN=80), INTENT(IN)  :: InsetLat, InsetLon, InsetLatDim,InsetLonDim
-      INTEGER, INTENT(OUT) :: NXP, NYP
-      INTEGER              :: NCIDf    
-      
-      INTEGER :: i, Temp_ID, Lat_ID, Lon_ID, ndims
+        CHARACTER(len=*), INTENT(IN) :: InsetLat, InsetLon, InsetLatDim, InsetLonDim
+        CHARACTER(len=*), INTENT(IN) :: ncfile  ! NetCDF file name
+        REAL(4), ALLOCATABLE, DIMENSION(:,:), INTENT(OUT) :: lat_ins, lon_ins
+        INTEGER, INTENT(OUT) :: NXP, NYP
+
+        INTEGER :: NCIDf
+        INTEGER :: i, Temp_ID, Lat_ID, Lon_ID, ndims
         
-         CALL setMessageSource("READ_INSET_LATLON")
+        CALL setMessageSource("READ_INSET_LATLON")
 #ifdef ADCNETCDF
-        
-      
+
         CALL Check_err(NF90_OPEN(ncfile,nf90_nowrite,NCIDf))
         
-         call Check_err(NF90_INQ_DIMID(ncidf,InsetLatDim,Temp_ID))
-         call Check_err(NF90_INQUIRE_DIMENSION(ncidf,Temp_ID,
+        call Check_err(NF90_INQ_DIMID(ncidf,InsetLatDim,Temp_ID))
+        call Check_err(NF90_INQUIRE_DIMENSION(ncidf,Temp_ID,
      &                                         len=NYP))
-         call Check_err(NF90_INQ_DIMID(ncidf,InsetLonDim,Temp_ID))
-         call Check_err(NF90_INQUIRE_DIMENSION(ncidf,Temp_ID,
+        call Check_err(NF90_INQ_DIMID(ncidf,InsetLonDim,Temp_ID))
+        call Check_err(NF90_INQUIRE_DIMENSION(ncidf,Temp_ID,
      &                                         len=NXP))
-         
-         allocate(lon_ins(NXP,NYP),lat_ins(NXP,NYP))
 
-        
-         call Check_err(NF90_INQ_VARID(ncidf,InsetLat,Lat_ID))
-         call Check_err(nf90_inquire_variable(ncidf,Lat_ID,ndims=ndims))
-         call Check_err(NF90_INQ_VARID(ncidf,InsetLon,Lon_ID))
+        allocate(lon_ins(NXP,NYP),lat_ins(NXP,NYP))
+
+
+        call Check_err(NF90_INQ_VARID(ncidf,InsetLat,Lat_ID))
+        call Check_err(nf90_inquire_variable(ncidf,Lat_ID,ndims=ndims))
+        call Check_err(NF90_INQ_VARID(ncidf,InsetLon,Lon_ID))
          
-         if (ndims.eq.2) then
-            call Check_err(NF90_GET_VAR(ncidf,Lat_ID,lat_ins))
-            call Check_err(NF90_GET_VAR(ncidf,Lon_ID,lon_ins))
-         else
-            call Check_err(NF90_GET_VAR(ncidf,Lat_ID,lat_ins(1,:)))
-            call Check_err(NF90_GET_VAR(ncidf,Lon_ID,lon_ins(:,1)))
-            do i = 2,NXP
-               lat_ins(i,:) = lat_ins(1,:)
-            enddo
-            do i = 2,NYP
-               lon_ins(:,i) = lon_ins(:,1)
-            enddo
-         endif
-          
-    
+        if (ndims.eq.2) then
+           call Check_err(NF90_GET_VAR(ncidf,Lat_ID,lat_ins))
+           call Check_err(NF90_GET_VAR(ncidf,Lon_ID,lon_ins))
+        else
+           call Check_err(NF90_GET_VAR(ncidf,Lat_ID,lat_ins(1,:)))
+           call Check_err(NF90_GET_VAR(ncidf,Lon_ID,lon_ins(:,1)))
+           do i = 2,NXP
+              lat_ins(i,:) = lat_ins(1,:)
+           enddo
+           do i = 2,NYP
+              lon_ins(:,i) = lon_ins(:,1)
+           enddo
+        endif
+
         CALL Check_err(NF90_CLOSE(NCIDf))
-        
-      
+#else
+        NXP = 0
+        NYP = 0
 #endif
         CALL unsetMessageSource()
-      RETURN
-C----------------------------------------------------------------------
       END SUBROUTINE READ_INSET_LATLON
 
 
