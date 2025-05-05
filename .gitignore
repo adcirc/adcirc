@@ -22,7 +22,7 @@ odir*
 actualflags.txt
 .swanlastcompile
 changelog
-version.F
+version.F90
 adcircResultsComparison
 lib/
 work/libadc.a

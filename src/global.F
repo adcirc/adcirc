@@ -222,9 +222,7 @@ C     jgf48.03 Variables shared between messenger and writer modules
       !----------------------------------------------------------------
 C     End of variables shared between messenger and other modules
       !----------------------------------------------------------------
-C     
-      INTEGER             :: FileFmtVersion      ! File format version.
-
+C
 c..RJW merged 09/02/2008 Casey 071219: Added the following variable declaration for 3D mass balance.
 C             RESELEM is the number of processors on which each element appears.
       INTEGER, ALLOCATABLE :: RESELEM(:)
@@ -1333,33 +1331,6 @@ C...
       !----------------------------------------------------------------------
       end subroutine getFormatInteger
       !----------------------------------------------------------------------
-
-
-C-------------------------------------------------------------------
-
-      function VERSION_NUMBER(Major, Minor, Rev) result(vn)
-
-      implicit none
-      integer   :: vn, major, minor, rev
-
-      vn = ior(ior(ishft(major,20),ishft(minor,10)),rev)
-
-      return
-      end function VERSION_NUMBER
-
-C-------------------------------------------------------------------
-
-      function CMP_VERSION_NUMBERS(a,b) result(match)
-
-      implicit none
-      integer  a,b
-      logical  :: match
-
-      match = ishft(a,-10) == ishft(b,-10)
-
-      return
-      end function CMP_VERSION_NUMBERS
-C-------------------------------------------------------------------
 
       !=================================================================
       !=================================================================

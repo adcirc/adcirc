@@ -118,7 +118,6 @@ C
      &  controlType, controlFileNameSpecified, globaldir, myproc
       USE SUBPREP, ONLY : readFort015prep
       USE PRE_GLOBAL
-      USE VERSION
       use memory_usage
 
       IMPLICIT NONE
@@ -135,12 +134,6 @@ C
 
       !jgf51.42: NCSU Subdomain Modeling
       call readFort015prep()
-
-C  Define File Format Version
-
-      FileFmtVersion = VERSION_NUMBER(FileFmtMajor,
-     &                                FileFmtMinor,
-     &                                FileFmtRev)
 
 C
 C     Initialize flags.

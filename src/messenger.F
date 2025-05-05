@@ -310,6 +310,8 @@ C  tcm v50.21 20110610 -- Changed I8 to I12 formats
 C---------------------------------------------------------------------
       SUBROUTINE MSG_TABLE ()
       USE GLOBAL
+      USE mod_adcirc_version, only: cmp_version_numbers, version_number,
+     &                              AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       USE mod_terminate, only: terminate
       USE GLOBAL_3DVS, ONLY : NSTA3DD, NSTA3DV, NSTA3DT,
      &                        NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
@@ -339,7 +341,8 @@ C
 C
       READ(18,3020) BlkName, inputFileFmtVn
       if (Trim(BlkName) /= 'FileFmt' .and.
-     $  .not. CMP_VERSION_NUMBERS(FileFmtVersion, inputFileFmtVn)) then
+     &  .not. CMP_VERSION_NUMBERS(VERSION_NUMBER(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev),
+     &                            inputFileFmtVn)) then
         write(16,*) 'File Format of Fort.18 does not match aborting'
         call terminate(myproc)
       end if

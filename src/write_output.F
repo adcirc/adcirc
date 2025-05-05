@@ -4366,6 +4366,7 @@ C-----------------------------------------------------------------------
 
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: VERSION_NUMBER, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       USE HARM
       USE GLOBAL_IO, ONLY: packOne, unpackOne,
      &    packTwo, unpackTwo, packMbyNP, unpackMbyNP, HEADER_MAX,
@@ -4776,7 +4777,7 @@ C        program to exit immediately after writing the hotstart file.
             OPEN(hss % lun ,FILE=TRIM(LOCALDIR)//'/'//trim(hss % filename),
      $      ACCESS='DIRECT',STATUS='REPLACE',RECL=8)
             IHOTSTP=1
-            WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion
+            WRITE(hss % lun,REC=IHOTSTP) VERSION_NUMBER(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
             IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) TimeLoc ; IHOTSTP = IHOTSTP + 1
@@ -5122,7 +5123,7 @@ C        (i.e., to check the values written to hotstart files in other
 C        formats) anyway.
          OPEN(hss%lun,FILE=TRIM(INPUTDIR)//'/'//trim(hss % filename),
      &      STATUS='REPLACE')
-         WRITE(hss%lun,*) "FileFmtVersion = ",FileFmtVersion
+         WRITE(hss%lun,*) "FileFmtVersion = ",VERSION_NUMBER(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
          WRITE(hss%lun,*) "IM = ",IM
          WRITE(hss%lun,*) "TIME = ",TimeLoc
          WRITE(hss%lun,*) "IT = ",IT
@@ -5176,7 +5177,7 @@ C
          IF ((MNPROC.gt.1).and.(MYPROC.eq.0)) THEN
             OPEN(hss%lun,FILE=TRIM(GBLINPUTDIR)//'/'//trim(hss % filename),
      &         STATUS='REPLACE')
-            WRITE(hss%lun,*) "FileFmtVersion = ",FileFmtVersion
+            WRITE(hss%lun,*) "FileFmtVersion = ",VERSION_NUMBER(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
             WRITE(hss%lun,*) "IM = ",IM
             WRITE(hss%lun,*) "TIME = ",TimeLoc
             WRITE(hss%lun,*) "IT = ",IT

@@ -112,17 +112,16 @@ C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
-      USE VERSION, ONLY : adc_version, adc_hash, fileFmtMajor, fileFmtMinor, 
-     &   FileFmtRev
+      use mod_adcirc_version, ONLY : AdcircVersionStr, AdcircHashStr
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
      &   get_numwriters, mnstae
       USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
      &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, 
      &   dynamicWaterLevelCorrectionSta, itime, dtdp, statim,
-     &   CHotHS, dtdpHS, FileFmtVersion, ifnlcat, ncchange,
+     &   CHotHS, dtdpHS, ifnlcat, ncchange,
      &   ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im, iths,
-     &   nolica, nolicat, nolifa, nstae, nt, version_number,
+     &   nolica, nolicat, nolifa, nstae, nt,
      &   np_global, rnp_global, CTIP, L_N, writer_id,
      &   dynamicWaterLevelCorrectionDelta
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
@@ -178,10 +177,10 @@ C
                ! write the version number string ... actually it is
                ! a series of two or three numbers with two digits 
                ! separated by dots, e.g., 51.02 or 51.52.07
-               write(6,'(a)') trim(adc_version)                 
+               write(6,'(a)') trim(AdcircVersionStr)
                CALL EXIT(0) 
             case("--hash")
-               write(6,'(a)') trim(adc_hash) 
+               write(6,'(a)') trim(AdcircHashStr)
                CALL EXIT(0) 
             case default
                ! do nothing, this is some other command line argument
@@ -230,15 +229,11 @@ C
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
 #endif
 
-      ! File Fmt Version  must match Major and Minor numbers.
-      FileFmtVersion =
-     &   VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
       IF ((NSCREEN.NE.0).AND.(MYPROC.EQ.0)) THEN
-         WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
-         WRITE(ScreenUnit,'(a)')"ADCIRC Commit hash is "//ADC_HASH
+         WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//TRIM(AdcircVersionStr)
+         WRITE(ScreenUnit,'(a)')"ADCIRC Commit hash is "//TRIM(AdcircHashStr)
       ENDIF
 
-      
       !jgf49.44: Allocate memory for reading and writing full domain arrays
       IF ( (MNPROC.gt.1).and.
      &        ( (myProc.eq.0)

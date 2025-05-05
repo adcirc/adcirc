@@ -1117,6 +1117,7 @@ C-----------------------------------------------------------------------
       USE SIZES, only: myproc
       USE mod_terminate, only: terminate
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       USE MESH, ONLY : NE, NP
       USE mod_logging, only: NSCREEN, ScreenUnit, setMessageSource, unsetMessageSource, DEBUG
       USE GLOBAL_IO, ONLY: packOne, unpackOne, 
@@ -1172,7 +1173,7 @@ C-----------------------------------------------------------------------
         ipack( 4) = NP_G
         ipack( 5) = NE_G
         ipack( 6) = hss%lun
-        ipack( 7) = FileFmtVersion
+        ipack( 7) = VERSION_NUMBER(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
         ipack( 8) = 0
         ipack( 9) = NSCOUE
         ipack(10) = 0
@@ -1218,7 +1219,6 @@ C-----------------------------------------------------------------------
         NP_G           = ipack( 4)
         NE_G           = ipack( 5)
         hss%lun        = ipack( 6)
-        FileFmtVersion = ipack( 7)
         NSCOUE         = ipack( 9)
         NSCOUV         = ipack(11)
         NSCOUC         = ipack(13)
@@ -1419,7 +1419,7 @@ C     collect up the data from subdomains if running in parallel
             OPEN(hss % lun ,FILE=TRIM(adjustl(GLOBALDIR))//'/'//trim(adjustl(hss%filename)),
      $      ACCESS='DIRECT',RECL=8)
             IHOTSTP=1
-            WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion
+            WRITE(hss % lun,REC=IHOTSTP) VERSION_NUMBER(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
             IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) ttime; IHOTSTP = IHOTSTP + 1 !st3

@@ -26,7 +26,7 @@
 
       module global_io
       use SIZES
-      use VERSION
+      use mod_adcirc_version
       use GLOBAL
       use MESH, ONLY : NP, AGRID
       use mod_logging, only: INFO, DEBUG, ERROR, WARNING, allMessage, scratchMessage,
@@ -1071,12 +1071,13 @@ C
       subroutine header61(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ntrspe, size_this, dtdp*nspoole, nspoole, 1,
-     &                 FileFmtVersion
+     &                 version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
@@ -1093,12 +1094,13 @@ C
       subroutine header62(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ntrspv, size_this, dtdp*nspoolv, nspoolv, 2,
-     &     FileFmtVersion
+     &     version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
@@ -1115,12 +1117,13 @@ C
       subroutine header63(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetse, size_this, dtdp*nspoolge, nspoolge, 1,
-     &                 FileFmtVersion
+     &                 version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
@@ -1136,13 +1139,15 @@ C
       subroutine header_max(lun, size_this,nrecs_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
       integer :: nrecs_this  !tcm v51.20.06
 
       write(lun, 1000) rundes, runid, agrid
       !tcm v51.20.06 Changed number of records from 1 to nrecs_this (1 or 2)
-      write(lun, 1010) nrecs_this, size_this, 1.d0, 1, 1, FileFmtVersion
+      write(lun, 1010) nrecs_this, size_this, 1.d0, 1, 1,
+     &     version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1159,12 +1164,13 @@ C
       subroutine header64(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetsv, size_this, dtdp*nspoolgv, nspoolgv, 2,
-     &                 FileFmtVersion
+     &                 version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1181,12 +1187,13 @@ C
       subroutine header71(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
-     &                 FileFmtVersion
+     &                 version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1203,12 +1210,13 @@ C
       subroutine header72(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 2,
-     &                  FileFmtVersion
+     &                  version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1225,12 +1233,13 @@ C
       subroutine header73(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
-     &                 FileFmtVersion
+     &                 version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1247,12 +1256,13 @@ C
       subroutine header74(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 2,
-     &                 FileFmtVersion
+     &                 version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1269,12 +1279,13 @@ C
       subroutine header77(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsets_tvw, size_this, dtdp*nspool_tvw,
-     &                 nspool_tvw, 1, FileFmtVersion
+     &                 nspool_tvw, 1, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1292,12 +1303,13 @@ C
       subroutine header91(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
-     &                 FileFmtVersion
+     &                 version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1315,12 +1327,13 @@ C
       subroutine header93(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
-     &                 FileFmtVersion
+     &                 version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1338,12 +1351,13 @@ C
       subroutine header81(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ntrspc, size_this, dtdp*nspoolc, nspoolc, 1,
-     &                  FileFmtVersion
+     &                 version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1360,11 +1374,12 @@ C
       subroutine header83(lun, size_this)
       USE SIZES
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       implicit none
       integer :: lun, size_this
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetsc, size_this, dtdp*nspoolgc, nspoolgc, 1,
-     &                 FileFmtVersion
+     &                 version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
 
 1000  FORMAT(1X,A32,2X,A24,2X,A24)
 1010  FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1388,6 +1403,7 @@ C
       use mod_terminate, only: terminate
       USE GLOBAL, only : rundes, runid
       use mesh, only : agrid
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       use global_3dvs, only:
      &     ndset3dsv, nspo3dsv, nfen,
      &     ndset3dst, nspo3dst,
@@ -1418,32 +1434,32 @@ C
       select case(trim(typeStr))
       case("Elev")
           write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
-     &         FileFmtVersion
+     &         version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("offset")
           write(lun, 1010) ntrspe, nstations, dtdp*nspoole, nspoole, 1,
-     &         FileFmtVersion
+     &         version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Vel2D")
           write(lun, 1010) ntrspv, nstations, dtdp*nspoolv, nspoolv, 2,
-     &         FileFmtVersion
+     &         version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Vel3D")
           write(lun, 1020) ndset3dsv, nstations, dtdp*nspo3dsv,
-     &         nspo3dsv, nfen, 3, FileFmtVersion
+     &         nspo3dsv, nfen, 3, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Turb3D")
           write(lun, 1020) ndset3dst, nstations, dtdp*nspo3dst,
-     &         nspo3dst, nfen, 3, FileFmtVersion
+     &         nspo3dst, nfen, 3, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Dens2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D density station output not implemented.'
           CALL terminate(myproc)
       case("Dens3D")
           write(lun, 1020) ndset3dsd, nstations, dtdp*nspo3dsd,
-     &         nspo3dsd, nfen, 3, FileFmtVersion
+     &         nspo3dsd, nfen, 3, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Press","Wind")
           write(lun, 1010) ntrspm, nstations, dtdp*nspoolm, nspoolm, 1,
-     &                 FileFmtVersion
+     &                 version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Conc2D")
           write(lun, 1010) ntrspc, nstations, dtdp*nspoolc, nspoolc, 1,
-     &                  FileFmtVersion
+     &                  version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Conc3D")
           write(ScreenUnit,*)
      &         'ERROR: 3D conc. station output not implemented.'
@@ -1477,6 +1493,7 @@ C
       USE SIZES, ONLY: myproc
       use mod_terminate, only: terminate
       USE GLOBAL
+      USE mod_adcirc_version, only: version_number, AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
       use global_3dvs, only:
      &   ndset3dgv, nspo3dgv, nfen,
      &   ndset3dgt, nspo3dgt,
@@ -1507,28 +1524,28 @@ C     Open the file
       select case(trim(typeStr))
       case("Elev")
           write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
-     &                 nspoolge, 1, FileFmtVersion
+     &                 nspoolge, 1, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("ElevMax")
-          write(lun, 1010) 1, numNodes, 1.d0, 1, 1, FileFmtVersion
+          write(lun, 1010) 1, numNodes, 1.d0, 1, 1, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Vel2D")
           write(lun, 1010) ndsetsv, nodes, dtdp*nspoolgv,
-     &                     nspoolgv, 2, FileFmtVersion
+     &                     nspoolgv, 2, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Vel3D")
           write(lun, 1020) ndset3dgv, nodes, dtdp*nspo3dgv,
-     &                     nspo3dgv, nfen, 3, FileFmtVersion
+     &                     nspo3dgv, nfen, 3, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Turb3D")
           write(lun, 1020) ndset3dgt, nodes, dtdp*nspo3dgt,
-     &                     nspo3dgt, nfen, 3, FileFmtVersion
+     &                     nspo3dgt, nfen, 3, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Dens2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D density output not implemented.'
           CALL terminate(myproc)
       case("Dens3D")
           write(lun, 1020) ndset3dgd, nodes, dtdp*nspo3dgd,
-     &                     nspo3dgd, nfen, 3, FileFmtVersion
+     &                     nspo3dgd, nfen, 3, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Press","Wind")
           write(lun, 1010) ndsetsw, nodes, dtdp*nspoolgw,
-     &                     nspoolgw, 1, FileFmtVersion
+     &                     nspoolgw, 1, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("Conc2D")
           write(ScreenUnit,*)
      &         'ERROR: 2D conc. output not implemented.'
@@ -1539,21 +1556,21 @@ C     Open the file
           CALL terminate(myproc)
       case("Tau0")
           write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
-     &                 nspoolge, 1, FileFmtVersion
+     &                 nspoolge, 1, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("sponge")
           write(lun, 1010) 1, nodes, dtdp*nspoolge,
-     &                 nspoolge, 1, FileFmtVersion
+     &                 nspoolge, 1, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("noff")
           write(lun, 1010) 1, nodes, dtdp*nspoolge,
-     &                 nspoolge, 1, FileFmtVersion
+     &                 nspoolge, 1, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("nodecode")
           write(lun, 1010) 1, nodes, dtdp*nspoolge,
-     &                 nspoolge, 1, FileFmtVersion
+     &                 nspoolge, 1, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("initDry")
-          write(lun, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
+          write(lun, 1010) 1, nodes, 0.d0, 0, 1, version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case("dynamicWaterlevelCorrection")
           write(lun, 1010) 1, nodes, dtdp*nspoolge, nspoolge, 1, 
-     &    FileFmtVersion
+     &    version_number(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)
       case default
           write(ScreenUnit,*)
      &         'ERROR: Full domain header type unrecongnized.'

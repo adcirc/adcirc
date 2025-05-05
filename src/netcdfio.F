@@ -315,9 +315,6 @@ C
       TYPE, PRIVATE :: hotstartData
          INTEGER lun               ! ADCIRC's logical unit number
          INTEGER ncid              ! the id of its netcdf file
-         INTEGER :: FileFmtMajorFile !
-         INTEGER :: FileFmtMinorFile
-         INTEGER :: FileFmtRevFile
          type(fileData) :: myFile
          type(timeData) :: myTime
          type(meshStructure), pointer :: myMesh
@@ -7963,7 +7960,6 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Reads data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstart(lun, timeLoc)
-      USE VERSION, ONLY : FileFmtRev, FileFmtMinor, FileFmtMajor
       use mod_terminate, only: terminate
       USE SIZES, ONLY : globaldir, mnproc, myproc
       USE GLOBAL, ONLY : OutputDataDescript_t, imhs, iths,  nscoue,
@@ -9607,7 +9603,7 @@ C-----------------------------------------------------------------------
       USE MESH, ONLY : SLAM0, SFEA0, AGRID
       USE GLOBAL_3DVS, ONLY : NFEN
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
-      USE VERSION
+      use mod_adcirc_version
       IMPLICIT NONE
       INTEGER iret   ! Error status return
       type(meshStructure) :: myMesh
@@ -10122,7 +10118,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : C3D
       USE GLOBAL_3DVS, ONLY : SIGMA
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
-      USE VERSION
+      use mod_adcirc_version
       IMPLICIT NONE
       INTEGER, intent(in) :: ncid
       type(meshStructure), intent(inout) :: myMesh
@@ -10246,7 +10242,7 @@ C     jgf49.17.02 Writes data that are common to all netCDF files
 C     to the specified file.
 C-----------------------------------------------------------------------
       subroutine defineMetaData(ncid)
-      USE VERSION
+      use mod_adcirc_version
       USE MESH, ONLY : ICS, AGRID, SLAM0, SFEA0
       USE ADC_CONSTANTS, ONLY: RAD2DEG
       USE GLOBAL, ONLY : RUNDES, title, institution, source,
@@ -10291,9 +10287,9 @@ C     back to degrees to write them back out
 !     -----------------
       iret = nf90_put_att(ncid, NF90_GLOBAL, 'model', 'ADCIRC')
       CALL check_err(iret)
-      iret = nf90_put_att(ncid, NF90_GLOBAL, 'version', ADC_VERSION)
+      iret = nf90_put_att(ncid, NF90_GLOBAL, 'version', AdcircVersionStr)
       CALL check_err(iret)
-      iret = nf90_put_att(ncid, NF90_GLOBAL, 'git_hash', ADC_HASH)
+      iret = nf90_put_att(ncid, NF90_GLOBAL, 'git_hash', AdcircHashStr)
       CALL check_err(iret)
       iret = nf90_put_att(ncid, NF90_GLOBAL, 'grid_type', 'Triangular')
       CALL check_err(iret)
@@ -10504,7 +10500,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : ihot, nramp, rnday, dramp, h0, rundes, runid
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
       USE GWCE, ONLY : a00, b00, c00
-      USE VERSION
+      use mod_adcirc_version
       IMPLICIT NONE
       INTEGER :: ncid
       type(fileData), intent(inout) :: myFile
@@ -10584,7 +10580,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
         USE GLOBAL,ONLY:ihot,nramp,rnday,dramp,h0,np_g,ne_g,rundes,runid
         USE NodalAttributes,ONLY:nwp,nolibf,tau0,cf,eslm
-        USE VERSION
+        use mod_adcirc_version
         USE GWCE, ONLY : a00,b00,c00
         IMPLICIT NONE
         INTEGER :: NCID,dimid_node,dimid_nele
@@ -10681,8 +10677,7 @@ C-----------------------------------------------------------------------
      &   NBOU_p, NVEL_p, NOPE_p, NP_G_p, SLAM0_p, SFEA0_p, NBVV_p,
      &   NVDLL_p, NBDV_p, NVELL_p, X_p, Y_p,
      &   IBTYPE_p, IBTYPEE_p, SLAM_p, SFEA_p,
-     &   NODECODE_p, G_p, FileFmtRev_p, FileFmtMinor_p,
-     &   FileFmtMajor_p, im_p, nscoue_p, nscouv_p,
+     &   NODECODE_p, G_p, im_p, nscoue_p, nscouv_p,
      &   nscouc_p, nscoum_p, nscouge_p, nscougv_p, nscougc_p,
      &   nscougw_p, NM_p, DP_p, RUNDES_p, AGRID_p, title_p,
      &   institution_p, source_p, history_p, references_p, comments_p,
@@ -10700,7 +10695,6 @@ C-----------------------------------------------------------------------
      &   SLAM0, SFEA0, AGRID
       USE BOUNDARIES, ONLY : NBOU, NVEL, NOPE, NBVV, NVDLL, NBDV, NVELL,
      &   IBTYPE, IBTYPEE, NETA
-      USE VERSION, ONLY : FileFmtRev, FileFmtMinor, FileFmtMajor
       USE ADC_CONSTANTS, ONLY: G, RAD2DEG
       USE GLOBAL, ONLY : base_date, SNAMLEN, NODECODE,
      &   NP_G, NE_G, im, nscoue, nscouv,
@@ -10742,9 +10736,6 @@ C-----------------------------------------------------------------------
       REAL(8), intent(in) :: SFEA_p(:)
       INTEGER, intent(in) :: NODECODE_p(:)
       REAL(8), intent(in) :: G_p
-      INTEGER, intent(in) :: FileFmtRev_p
-      INTEGER, intent(in) :: FileFmtMinor_p
-      INTEGER, intent(in) :: FileFmtMajor_p
       INTEGER, intent(in) :: im_p
       INTEGER, intent(in) :: nscoue_p
       INTEGER, intent(in) :: nscouv_p
@@ -10861,9 +10852,6 @@ C-----------------------------------------------------------------------
       ALLOCATE(NODECODE(NP_G_p))
       NODECODE = NODECODE_p
       G = G_p
-      FileFmtRev = FileFmtRev_p
-      FileFmtMinor = FileFmtMinor_p
-      FileFmtMajor = FileFmtMajor_p
       im = im_p
       nscoue = nscoue_p
       nscouv = nscouv_p

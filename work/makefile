@@ -343,7 +343,7 @@ BND_MSRC   =  boundaries.F
 PREP_MSRC  =  presizes.F
 PGLO_MSRC  =  pre_global.F
 3D_MSRC    =  global_3dvs.F
-ADC_MSRC   =  version.F sizes.F constants.F global.F
+ADC_MSRC   =  $(O_DIR)version.o sizes.F constants.F global.F
 STATUS_MSRC = date_util.F90 status.F90 logging.F90 
 TERM_MSRC  =  terminate.F90
 POST_MSRC  =  post_global.F
@@ -731,7 +731,7 @@ help:
 
 #  adcprep modules
 
-$(O_DIR)version.o     :  version.F
+$(O_DIR)version.o     :  version.F90
 $(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(O_DIR)global.o
 $(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
 $(O_DIR)mesh.o        :  mesh.F $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)hashtable.o
@@ -772,7 +772,7 @@ $(O_DIR)aswip.o      :  aswip.F $(VORT_MOBJ) $(NA_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC) modules
 
-$(O_DIR)version.o     :  version.F
+$(O_DIR)version.o     :  version.F90
 $(O_DIR)sizes.o       :  sizes.F $(O_DIR)terminate.o
 $(O_DIR)terminate.o   :  terminate.F90
 $(O_DIR)logging.o     :  logging.F90 $(O_DIR)sizes.o $(O_DIR)terminate.o 
@@ -782,9 +782,9 @@ $(O_DIR)internaltide.o : internaltide.F $(O_DIR)sizes.o $(O_DIR)global.o
 $(O_DIR)gl2loc_mapping.o : gl2loc_mapping.F $(O_DIR)sizes.o $(O_DIR)global.o
 
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
-$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)messenger.o $(O_DIR)netcdf_error.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)messenger.o $(O_DIR)internaltide.o $(O_DIR)subgridLookup.o
+$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)version.o $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)messenger.o $(O_DIR)netcdf_error.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)messenger.o $(O_DIR)internaltide.o $(O_DIR)subgridLookup.o
 else
-$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)netcdf_error.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)internaltide.o $(O_DIR)subgridLookup.o
+$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)version.o $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)netcdf_error.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)internaltide.o $(O_DIR)subgridLookup.o
 endif
 
 $(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o

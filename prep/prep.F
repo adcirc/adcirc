@@ -2665,6 +2665,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE PREP18()
       USE PRE_GLOBAL
       use memory_usage
+      use mod_adcirc_version, only: AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
 C
 C---------------------------------------------------------------------------C
 C                     (  Serial Version  6/10/2011  )                       C
@@ -2699,7 +2700,7 @@ C
          CALL IWRITE(LOCFN,3,6,I-1)
          OPEN (18,FILE=LOCFN)
 
-         write(18,3050) FileFmtVersion, 0, 0
+         write(18,3050) VERSION_NUMBER(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev), 0, 0
 
 !vjp 9/17/06
 C--Write the Global indexes of all local elements in local element order
@@ -4972,9 +4973,9 @@ C
 
 
       SUBROUTINE HOTLOCALIZE()
-      USE VERSION
       USE PRE_GLOBAL
       use presizes; use memory_usage
+      use mod_adcirc_version, only: AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev
 C
 C---------------------------------------------------------------------------C
 C                     written 10/11/01 by RL                                C
@@ -5061,7 +5062,8 @@ C--   Read in info from global hot start files
       IHOTSTP=1
       READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
 
-      if (.not. CMP_VERSION_NUMBERS(InputFileFmtVn, FileFmtVersion))then
+      if (.not. CMP_VERSION_NUMBERS(InputFileFmtVn,
+     &          VERSION_NUMBER(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)))then
         write(*, 1001)
         write(*, 1012)
         write(*, 9973)
@@ -7713,7 +7715,6 @@ C---------------------------------------------------------------------------
       use sizes, only : ASCII, XDMF, myproc
       USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP
       USE HARM, ONLY : IHARIND, CHARMV, NHASE, NHASV, NHAGE, NHAGV
-      USE VERSION
       USE PRE_GLOBAL, ONLY: NSTAE, NOUTE, RUNDES, RUNID, AGRID,
      &    DTDP, TAU0, STATIM, REFTIM, RNDAY, DRAMP, A00, B00, C00,
      &    H0, SL0, SF0, CF, ESLM, CORI, DP, NBDV, NBVV,
@@ -8962,8 +8963,7 @@ C     we collected in read_global.F and stored in pre_global.F.
       CALL setADCIRCParameters(
      &   base_date, MNE, NBOU,
      &   NVEL, NOPE, MNP, SL0, SF0, NBVV, NVDLL, NBDV, NVELL, X, Y,
-     &   IBTYPE, IBTYPEE, SL1, SF1, NODECODE, G, FileFmtRev,
-     &   FileFmtMinor, FileFmtMajor, im, nscoue, nscouv,
+     &   IBTYPE, IBTYPEE, SL1, SF1, NODECODE, G, im, nscoue, nscouv,
      &   nscouc, nscoum, nscouge, nscougv, nscougc, nscougw, NM,
      &   DP, RUNDES, AGRID, title, institution, source, history,
      &   references, comments, host, convention, contact, DT, ihot,

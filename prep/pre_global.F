@@ -32,7 +32,6 @@ C----------------------------------------------------------------------------
       USE ADC_CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
-      USE VERSION
       USE HASHTABLE
       IMPLICIT NONE
 
@@ -454,8 +453,6 @@ C     MSGTAB section
       INTEGER,ALLOCATABLE  ::   NUM_COMM_PE(:), COMM_PE_NUM(:,:)
       INTEGER,ALLOCATABLE  ::   IRECV_TOT(:,:),IRECV(:)
       INTEGER,ALLOCATABLE  ::   ISEND_TOT(:,:),ISEND(:)
-
-      integer, save       :: FileFmtVersion      ! File format version.
 
 C...tcm v49.48.01 -- Added for new point in element searches
 C-- KDTREE2 ENABLED SEARCH ALGORITHM VARIABLES

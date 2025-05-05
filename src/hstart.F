@@ -520,7 +520,8 @@ C        Now read the non-portable binary hot start file.
          IHOTSTP=1
          READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
          if (.not.
-     &     CMP_VERSION_NUMBERS(InputFileFmtVn,FileFmtVersion))then
+     &     CMP_VERSION_NUMBERS(InputFileFmtVn,
+     &                         VERSION_NUMBER(AdcircVersionMajor, AdcircVersionMinor, AdcircVersionRev)))then
             WRITE(16, 1001)
             write(16, 1012)
             write(16, 9973)

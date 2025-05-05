@@ -135,7 +135,7 @@ C-----------------------------------------------------------------------
       USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,
      &   invertedBarometerOnElevationBoundary
       USE mod_terminate, only: terminate
-      USE VERSION
+      use mod_adcirc_version
 !     jgf46.00
       USE NodalAttributes, ONLY :
      &     NoLiBF, NWP, Tau0, HBreak, FTheta, FGamma, Tau, CF,
@@ -312,7 +312,7 @@ C...PRINT OUT HEADER FOR OUTPUT INCLUDING VERSION NUMBER AND COPYRIGHT
 C...
       WRITE(16,1112)
       WRITE(16,1112)
-      WRITE(16,1114) TRIM(ADC_VERSION)
+      WRITE(16,1114) TRIM(AdcircVersionStr)
       WRITE(16,1112)
 
  1114 FORMAT(//,19X,'PROGRAM ADCIRC   VERSION ',A,
@@ -987,7 +987,7 @@ C
 
       IF (MYPROC.EQ.0.and.NScreen.ne.0) THEN
          WRITE(ScreenUnit,1112)
-         WRITE(ScreenUnit,1114) TRIM(ADC_VERSION)
+         WRITE(ScreenUnit,1114) TRIM(AdcircVersionStr)
          WRITE(ScreenUnit,1112)
       ENDIF
 C...
