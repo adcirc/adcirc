@@ -287,14 +287,16 @@ Casey 180318: Added NWS=13
       logical :: meshHasWeir
       ! Warn Elev control namelist
 c.... !wjp added for warnElev namelist
-      REAL(8) :: WarnElev = 20.0  !
-      REAL(8) :: ErrorElev = 1000.0  !
+      REAL(8) :: WarnElev = 20.0d0
+      REAL(8) :: ErrorElev = 1000.0d0
       LOGICAL :: WarnElevDump = .FALSE.  
-      INTEGER :: WarnElevDumpLimit = 50  !
+      INTEGER :: WarnElevDumpLimit = 50
+      REAL(8) :: WarnVel =  100.0d0
+      REAL(8) :: ErrorVel = 1000.0d0
       LOGICAL :: WARN_ELEV_FLAG = .FALSE.   
-      LOGICAL :: FOUND_WARNELEV_NML = .false.  !
+      LOGICAL :: FOUND_WARNELEV_NML = .false.
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
-     &  WarnElevDumpLimit, ErrorElev
+     &  WarnElevDumpLimit, ErrorElev, WarnVel, ErrorVel
       ! Ali Dispersion control namelist
       LOGICAL :: CAliDisp= .false.  !
       LOGICAL :: FOUND_ALIDISP_NML = .false.  !

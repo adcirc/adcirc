@@ -29,6 +29,9 @@ module mod_astronomic
 
   implicit none
 
+  integer, parameter :: CALENDAR_TYPE_GREGORIAN = 0
+  integer, parameter :: CALENDAR_TYPE_JULIAN = 1
+
   real(8), parameter :: SEC2DEG = 2.777777777777778d-4, &
                         MIN2DEG = 0.01666666666666d0
 
@@ -109,21 +112,16 @@ contains
 
     real(8), intent(IN) :: DD
     integer :: MM, YYYY
-    character(LEN=*), optional :: CALENDAR_TYPE
+    integer, intent(in), optional :: CALENDAR_TYPE
 
     integer :: A, B
     real(8) :: D, M, Y
-    character(LEN=9) :: CTYPE = 'Gregorian'
+    integer :: CTYPE = CALENDAR_TYPE_GREGORIAN
     D = dble(DD)
     M = dble(MM)
     Y = dble(YYYY)
 
-    if (present(CALENDAR_TYPE)) then
-      select case (trim(CALENDAR_TYPE))
-      case ('Julian', 'JULIAN', 'julian')
-        CTYPE = 'Julian'
-      end select
-    end if
+    if (present(CALENDAR_TYPE)) CTYPE = CALENDAR_TYPE
 
     if (M <= 2) then
       Y = Y - 1
@@ -131,10 +129,11 @@ contains
     end if
 
     A = floor(Y/100.d0)
-    B = 2 - A + floor(dble(A)/4.d0)
-    select case (trim(CTYPE))
-    case ('Julian')
+    select case (CTYPE)
+    case (CALENDAR_TYPE_JULIAN)
       B = 0
+    case(CALENDAR_TYPE_GREGORIAN)
+      B = 2 - A + floor(dble(A)/4.d0)
     end select
 
     JD = dble(floor(365.25d0*(Y + 4716d0))) + dble(floor(30.6001d0*(M + 1d0))) + dble(D) + dble(B) - 1524.50d0

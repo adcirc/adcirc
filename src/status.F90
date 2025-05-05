@@ -52,11 +52,10 @@ contains
    !> @param error_elev The elevation error threshold
    !--------------------------------------------------------------------
    subroutine print_model_status(myproc, nscreen, screenUnit, &
-                                 model_start_wallclock, &
-                                 iteration, percent_complete, &
-                                 num_solver_it, reference_time, &
-                                 current_time, max_elev, max_elev_pos, &
-                                 max_elev_rank, max_vel, max_vel_pos, &
+                                 model_start_wallclock, num_solver_it, &
+                                 iteration, num_hotstart_it, total_it, &
+                                 reference_time, current_time, max_elev, &
+                                 max_elev_pos, max_elev_rank, max_vel, max_vel_pos, &
                                  max_vel_rank, warning_elev, error_elev, &
                                  warning_vel, error_vel)
       use datetime_module, only: datetime, timedelta
@@ -68,7 +67,8 @@ contains
       real(8), intent(in) :: model_start_wallclock
       integer, intent(in) :: iteration
       integer, intent(in) :: num_solver_it
-      real(8), intent(in) :: percent_complete
+      integer, intent(in) :: num_hotstart_it
+      integer, intent(in) :: total_it
       real(8), intent(in) :: current_time
       real(8), intent(in) :: max_elev
       integer, intent(in) :: max_elev_pos
@@ -81,6 +81,7 @@ contains
       real(8), intent(in) :: warning_vel
       real(8), intent(in) :: error_vel
       type(datetime), intent(in) :: reference_time
+      real(8)             :: percent_complete
       character(1024)     :: append_message
       character(2048)     :: message1, message2, message3, message4, message5
       character(22)       :: date_str
@@ -95,7 +96,9 @@ contains
       logical, parameter :: use_legacy_time_format = .false.
 #endif
 
-      if (modulo(iteration, nscreen) /= 0 .and. max_elev < warning_elev) return
+      if (modulo(iteration, nscreen) /= 0 .and. max_elev < warning_elev .and. max_vel < warning_vel) return
+
+      percent_complete = dble(iteration - num_hotstart_it)/dble(total_it - num_hotstart_it)*100d0
 
       if (max_elev >= error_elev) then
          append_message = "** ERROR: Elevation.gt.ErrorElev, ADCIRC stopping. **"
@@ -143,7 +146,7 @@ contains
          write (screenUnit, '(A,",",1X,A)') trim(elapsed_dt_str), trim(remaining_dt_str)
          if (len_trim(append_message) > 0) then
             write (screenUnit, '(A)') trim(append_message)
-         endif   
+         end if
       end if
 
       if (max_elev >= warning_elev) then

@@ -1469,13 +1469,13 @@ C---------------------------------------------------------------------
 
 
 !------------------------------------------------------------------------------
-!               S U B R O U T I N E   C H E C K W A R N I N G V A L U E
+!  S U B R O U T I N E   C H EC K _ P A R A L L E L _ M O D E L _ S T A T U S
 !------------------------------------------------------------------------------
-!     If the warning elevation was exceeded in one subdomain,
+!     If the warning elevation/velocity was exceeded in one subdomain,
 !     that information is propagated to the other subdomains so that the
 !     information can be dumped to a file for debugging.
 !------------------------------------------------------------------------------
-      SUBROUTINE check_model_status(WarningElevation, ErrorElevation,
+      SUBROUTINE check_parallel_model_status(WarningElevation, ErrorElevation,
      &                              WarningVelocity, ErrorVelocity,
      &                              MaxElevation, MaxElevationNodeID,
      &                              MaxVelocity,  MaxVelocityNodeID,
@@ -1541,7 +1541,7 @@ C---------------------------------------------------------------------
       ENDIF
 
 !------------------------------------------------------------------------------
-      END SUBROUTINE check_model_status
+      END SUBROUTINE check_parallel_model_status
 !------------------------------------------------------------------------------
 
 !------------------------------------------------------------------------------

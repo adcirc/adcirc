@@ -28,10 +28,58 @@ module mod_date_util
 
    private
 
-   public :: get_dt_string, get_dt_components
+   public :: get_dt_string, get_dt_components, parse_date_string
 
 contains
 
+   !--------------------------------------------------------------------
+   !> @brief Parse a date string. Check multiple formats before returning
+   !> an error
+   !>
+   !> Valid formats:
+   !> - YYYY-MM-DDTHH:MM:SS (ISO 8601)
+   !> - YYYY-MM-DD HH:MM:SS
+   !> - YYYY-MM-DD HH:MM
+   !> - YYYY-MM-DD HH
+   !> - YYYY-MM-DD
+   !>
+   !> @param date_string The date string to parse
+   !> @return A datetime object representing the parsed date
+   !---------------------------------------------------------------------
+   type(datetime) function parse_date_string(date_string) result(parsed_date)
+      use datetime_module, only: datetime, strptime
+      use mod_terminate, only: terminate
+      use mod_logging, only: allMessage, ERROR
+      use sizes, only: myproc
+      implicit none
+      character(len=*), intent(in)    :: date_string
+      character(len=len(date_string)) :: date_string_local
+
+      date_string_local = trim(adjustl(date_string))
+
+      parsed_date = strptime(date_string_local, "%Y-%m-%dT%H:%M:%S") ! ISO 8601 format
+      if (parsed_date%isValid()) return
+      parsed_date = strptime(date_string_local, "%Y-%m-%d %H:%M:%S")
+      if (parsed_date%isValid()) return
+      parsed_date = strptime(date_string_local, "%Y-%m-%d %H:%M")
+      if (parsed_date%isValid()) return
+      parsed_date = strptime(date_string_local, "%Y-%m-%d %H")
+      if (parsed_date%isValid()) return
+      parsed_date = strptime(date_string_local, "%Y-%m-%d")
+
+      if (.not. parsed_date%isValid()) then
+         call allMessage(ERROR, "Could not parse date string: "//date_string)
+         call terminate(myproc)
+      end if
+
+   end function parse_date_string
+
+   !--------------------------------------------------------------------
+   !> @brief Get a string representation of a timedelta object
+   !>
+   !> @param[in] dt The timedelta object to convert to a string
+   !> @return A string representation of the timedelta object
+   !---------------------------------------------------------------------
    character(128) pure function get_dt_string(dt) result(dt_str)
       use datetime_module, only: timedelta
       implicit none
@@ -54,6 +102,13 @@ contains
 
    end function get_dt_string
 
+   !--------------------------------------------------------------------
+   !> @brief Get the components of a datetime object
+   !>
+   !> @param current_time_in The current time in seconds since the start
+   !> @return A timedelta object representing the components of the datetime
+   !> object
+   !---------------------------------------------------------------------
    type(timedelta) pure function get_dt_components(current_time_in) result(dt)
       use datetime_module, only: timedelta
       implicit none

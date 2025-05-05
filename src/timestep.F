@@ -170,10 +170,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       INTEGER NC1, NC2, NC3, NCEle
       INTEGER NCyc
       INTEGER :: itest
-      INTEGER :: kemax
-      INTEGER :: kvmax
       INTEGER :: nnbb
-      REAL(8) :: velabs
       REAL(8) :: vel
       REAL(8) :: velmax
       LOGICAL :: errorElevExceeded
@@ -204,7 +201,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8),intent(out) :: TimeLoc
       REAL(8) TimeLocFluxSettling
       REAL(8) TimeH
-      REAL(8) runperccomplete
 C   kmd48.33bc - added in the heat flux variables
       CHARACTER(80) :: CDUM80
       INTEGER :: NumofBCNode
@@ -1329,167 +1325,18 @@ C...  SAVE THE CURRENT TIME LEVEL OF BARRIER INTO THE PREVIOUS TIME LEVEL
         BARLANHT1(:)=BARLANHT2(:)
       ENDIF  
 
-C...
-c...  find and print to unit 6, the maximum elevation, the maximum
-c...  velocity and the node numbers at which they occur on myproc=0 if
-c...  elmax exceeds threshold, print information on all processors where
-c...  this occurs
-C...
-C
-C     jgf46.00 Added option to output data to the screen every NSCREEN
-C     time steps, rather than on every time step, as long as there are
-C     no high elevations. In the case of high elevations, the warning
-C     messages are sent to the screen each time they are generated.
-C
-      IF(NSCREEN.NE.0) THEN
-         ELMAX=0.0d0
-         VELMAX=0.0d0
-         KEMAX = 0
-         KVMAX = 0
-         DO I=1,NP
-            IF(NODECODE(I)==1)THEN
-              IF(ABS(ETA2(I))>ELMAX)THEN
-                 ELMAX=ABS(ETA2(I))
-                 KEMAX=I
-              ENDIF
-              VELABS=SQRT(UU2(I)*UU2(I)+VV2(I)*VV2(I))
-              IF (VELABS>VELMAX) THEN
-                 VELMAX=VELABS
-                 KVMAX=I
-              ENDIF
-            ENDIF
-         END DO
+      call check_model_status(TimeLoc, IT, elmax, velmax, max_eta_pos, max_vel_pos,
+     &                        max_eta_rank, max_vel_rank, WarnElevExceeded,
+     &                        ErrorElevExceeded, WarnVelExceeded, ErrorVelExceeded)
 
-C     jgf46.10 Added the ability to for the user to control the warning
-C     and error elevations. Also added the ability for the user to write
-C     a fort.69 (global elevation debug) file.
-         runperccomplete=REAL(IT-ITHS)/REAL(NT-ITHS)*100d0    !percentage of time steps completed
-         WarnElevExceeded = .false.
-         ErrorElevExceeded = .false.
-         WarnVelExceeded = .false.
-         ErrorVelExceeded = .false.
-         max_eta_pos = 0
-         max_vel_pos = 0
-         max_eta_rank = 0
-         max_vel_rank = 0
-
-#ifdef CMPI
-         if(kemax/=0) max_eta_pos = nodes_lg(kemax)
-         if(kvmax/=0) max_vel_pos = nodes_lg(kvmax)
-         call check_model_status(WarnElev,ErrorElev, WarnVel, ErrorVel,
-     &                           elmax, max_eta_pos, velmax, max_vel_pos,
-     &                           max_eta_rank, max_vel_rank, WarnElevExceeded,
-     &                           ErrorElevExceeded, WarnVelExceeded,
-     &                           ErrorVelExceeded)
-#else
-         max_eta_pos = kemax
-         max_vel_pos = kvmax
-         if(elmax>=WarnElev)then
-           WarnElevExceeded = .true.
-           if(elmax>=ErrorElev)then
-             ErrorElevExceeded = .true.
-           endif
-         endif
-         if(velmax>=WarnVel)then
-           WarnVelExceeded = .true.
-           if(velmax>=ErrorVel)then
-             ErrorVelExceeded = .true.
-           endif
-         endif
-#endif
-
+      IF(NSCREEN/=0)THEN
          call print_model_status(myproc, nscreen, screenUnit,
-     &              model_start_wallclock, it, runperccomplete, numitr,
-     &              basedatetime, timeloc, ELMAX, max_eta_pos,
-     &              max_eta_rank, velmax, max_vel_pos, max_vel_rank,
-     &              warnelev, errorelev, warnvel,
-     &              errorVel)
-
-         IF(WarnElevExceeded) THEN
-            IF(WarnElevDump) CALL WriteWarnElev(TimeLoc, IT)
-            IF(ErrorElevExceeded)THEN
-                Flag_ElevError = .true.
-#ifdef CMPI                
-                CALL msg_fini()
-                CALL EXIT(1)
-#else
-                CALL terminate(myproc)
-#endif                
-            ENDIF
-         ENDIF
-         IF(ErrorVelExceeded)THEN
-            Flag_VelError  = .true.
-#ifdef CMPI                
-                CALL msg_fini()
-                CALL EXIT(1)
-#else
-                CALL terminate(myproc)
-#endif                
-         ENDIF
-
+     &             model_start_wallclock, numitr, it, iths, nt,
+     &             basedatetime, timeloc, ELMAX, max_eta_pos,
+     &             max_eta_rank, velmax, max_vel_pos, max_vel_rank,
+     &             warnelev, errorelev, warnvel,
+     &             errorVel)
       ENDIF
-
-#ifdef VELCHECK
-!....DMW 20240109 - WARNING FOR NaNs IN VELOCITY SOLN
-      foundNaN = .false.
-      DO I = 1,NP
-         IF(ISNAN(UU2(I)).OR.ISNAN(VV2(I))) THEN
-            foundNaN = .true.
-            IF(NSCREEN.NE.0) THEN
-               WRITE(ScreenUnit,2993)
-     &              IT,NUMITR,TimeLoc,NODES_LG(I),
-     &              ETA2(I),DP(I),MYPROC
-               WRITE(16,2993) IT,NUMITR,TimeLoc,
-     &              NODES_LG(I),ETA2(I),DP(I),MYPROC
- 2993          FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &              5X,'TIME = ',E15.8,
-     &              2X,'SPEED IS NaN AT NODE I =',I9,
-     &              /,2X,'ETA2(I) = ', 1pE12.4E3,
-     &              2X,'DP(I) = ', 1pE12.4E3,
-     &              2X,'ON MYPROC = ',I4)
-               DO J = 2,NNeigh(I)
-                  JJ = NeiTab(I,J)
-                  WRITE(ScreenUnit,2995) NODES_LG(JJ),ETA2(JJ),DP(JJ),               
-     &                 UU2(JJ),VV2(JJ),MYPROC
-              
-                  WRITE(16,2995) NODES_LG(JJ),ETA2(JJ),DP(JJ),
-     &                 UU2(JJ),VV2(JJ),MYPROC
- 2995             FORMAT(1X,'AT NEIGHBOR NODE I =',I9,
-     &                 /,2X,'ETA2(I) = ', 1pE12.4E3,
-     &                 2X,'DP(I) = ', 1pE12.4E3,
-     &                 2X,'UU2(I) = ', 1pE12.4E3,
-     &                 2X,'VV2(I) = ', 1pE12.4E3,
-     &                 2X,'ON MYPROC = ',I4)
-               ENDDO
-            ENDIF
-         ENDIF
-      ENDDO
-      IF (foundNaN) THEN
-         IF(NSCREEN.NE.0) THEN
-            WRITE(ScreenUnit,2994)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,2994) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
- 2994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
-     &           2X,'ON MYPROC = ',I4,
-     &           3X,'** WARNING: Velocity is NaN **')
-         ENDIF
-      ENDIF
-      IF ((foundNaN).AND.(IT_foundNaN.EQ.0)) THEN
-         IT_foundNaN = IT
-      ELSEIF ((IT.EQ.IT_foundNaN + 20).AND.(IT_foundNaN.NE.0)) THEN
-         earlyterminate = 1
-      ENDIF
-#ifdef CMPI
-      call EarlyTermSum( earlyterminate )
-#endif
-
-#endif
-
 
 C...
 C...  ****************** TIME STEPPING LOOP ENDS HERE ********************
@@ -1516,6 +1363,127 @@ C******************************************************************************
       END SUBROUTINE TIMESTEP
 C******************************************************************************
 
+!------------------------------------------------------------------------------
+!> @brief Check the latest model solution to see if it has exceeded the thresholds
+!> set either by default or by the user.
+!>
+!> @param[in] TimeLoc Current time in seconds
+!> @param[in] IT Current time step
+!> @param[out] elmax Maximum elevation
+!> @param[out] velmax Maximum velocity
+!> @param[out] max_eta_pos Node that contains the maximum elevation
+!> @param[out] max_vel_pos Node that contains the maximum velocity
+!> @param[out] max_eta_rank Rank of the node that contains the maximum elevation (parallel)
+!> @param[out] max_vel_rank Rank of the node that contains the maximum velocity (parallel)
+!> @param[out] WarnElevExceeded Flag indicating if the elevation exceeded the warning threshold
+!> @param[out] ErrorElevExceeded Flag indicating if the elevation exceeded the error threshold
+!> @param[out] WarnVelExceeded Flag indicating if the velocity exceeded the warning threshold
+!> @param[out] ErrorVelExceeded Flag indicating if the velocity exceeded the error threshold
+!-----------------------------------------------------------------------------
+      subroutine check_model_status(TimeLoc, IT, elmax, velmax, max_eta_pos, max_vel_pos,
+     &                              max_eta_rank, max_vel_rank, WarnElevExceeded,
+     &                              ErrorElevExceeded, WarnVelExceeded, ErrorVelExceeded)
+        use global, only: UU2, VV2, ETA2, WarnElev, ErrorElev, WarnVel, ErrorVel,
+     &                    Flag_ElevError, Flag_VelError,
+     &                    nodes_lg, nodecode, WarnElevDump
+        use sizes, only: myproc
+        use mesh, only: NP
+        use mod_terminate, only: terminate
+        use write_output, only: WriteWarnElev
+#ifdef CMPI
+        use messenger, only: msg_fini, check_parallel_model_status
+#endif
+        implicit none
+        real(8), intent(in)  :: TimeLoc
+        integer, intent(in)  :: IT
+        real(8), intent(out) :: elmax, velmax
+        integer, intent(out) :: max_eta_pos, max_vel_pos
+        integer, intent(out) :: max_eta_rank, max_vel_rank
+        logical, intent(out) :: WarnElevExceeded, ErrorElevExceeded
+        logical, intent(out) :: WarnVelExceeded, ErrorVelExceeded
+
+        integer :: I
+        real(8) :: VELABS
+
+        elmax=0.0d0
+        velmax=0.0d0
+        max_eta_pos = 0
+        max_vel_pos = 0
+        max_eta_rank = 0
+        max_vel_rank = 0
+
+        do I=1,NP
+          if(nodecode(I)==1)then
+            if(abs(eta2(I))>elmax)then
+#ifdef CMPI
+              if (nodes_lg(I) > 0) then
+                elmax=abs(eta2(I))
+                max_eta_pos = nodes_lg(I)
+              endif
+#else
+              elmax=abs(eta2(I))
+              max_eta_pos = I
+#endif
+            endif
+            velabs=sqrt(uu2(I)*uu2(I)+vv2(I)*vv2(I))
+            if (velabs>velmax) then
+#ifdef CMPI
+              if (nodes_lg(I) > 0) then
+                velmax=abs(velabs)
+                max_vel_pos = nodes_lg(I)
+              endif
+#else
+              velmax=velabs
+              max_vel_pos = I
+#endif
+            endif
+          endif
+        end do
+
+        WarnElevExceeded = .false.
+        ErrorElevExceeded = .false.
+        WarnVelExceeded = .false.
+        ErrorVelExceeded = .false.
+
+#ifdef CMPI
+        call check_parallel_model_status(WarnElev,ErrorElev, WarnVel, ErrorVel,
+     &                        elmax, max_eta_pos, velmax, max_vel_pos,
+     &                        max_eta_rank, max_vel_rank, WarnElevExceeded,
+     &                        ErrorElevExceeded, WarnVelExceeded,
+     &                        ErrorVelExceeded)
+#else
+        if(elmax>=WarnElev)then
+          WarnElevExceeded = .true.
+          if(elmax>=ErrorElev) ErrorElevExceeded = .true.
+        endif
+        if(velmax>=WarnVel)then
+          WarnVelExceeded = .true.
+          if(velmax>=ErrorVel) ErrorVelExceeded = .true.
+        endif
+#endif
+        if(WarnElevExceeded) then
+          if(WarnElevDump) call WriteWarnElev(TimeLoc, IT)
+          if(ErrorElevExceeded)then
+            Flag_ElevError = .true.
+#ifdef CMPI
+            call msg_fini()
+            call exit(1)
+#else
+            call terminate(myproc)
+#endif
+          endif
+        endif
+        if(ErrorVelExceeded)then
+          Flag_VelError = .true.
+#ifdef CMPI
+          call msg_fini()
+          call exit(1)
+#else
+          call terminate(myproc)
+#endif
+        endif
+
+      end subroutine check_model_status
 
 !****************************************************************************************
 ! Subroutine to compute tide potential at the nodes                                     

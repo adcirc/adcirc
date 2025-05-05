@@ -35,6 +35,7 @@ module mod_tidepotential
    use mod_astronomic, only: MassRatioSunEarth, MassRatioMoonEarth, EarthRadiusAU, EarthRadiuskm
    use mod_moon_sun_coors, only: t_moon_sun
    use mod_ephemerides, only: t_ephemerides
+   use datetime_module, only: datetime
 
    implicit none
    !
@@ -71,7 +72,7 @@ module mod_tidepotential
       private
       logical :: m_UseFullTIPFormula = .false.
       integer :: m_TIPOrder = 2
-      character(LEN=24) :: m_TIPStartDate = 'Basedate'
+      type(datetime) :: m_TIPStartDate
       integer :: m_MoonSunPositionComputeMethod = ComputeMethod_JM
       logical :: m_UniformResMoonSunTimeData = .false.
       logical :: m_IncludeNutation = .true.
@@ -104,7 +105,7 @@ module mod_tidepotential
    type(t_tidePotential), public :: tidePotential
 
    private :: AINTPOWER, COMP_FULL_TIP_SUB0, compute_full_tip, &
-              INIT_FULL_TIP, StringUpper, tidalPotentialConstructor, &
+              INIT_FULL_TIP, tidalPotentialConstructor, &
               useFullTIPFormula
 
 contains
@@ -135,6 +136,8 @@ contains
                                         in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
                                         in_IncludeNutation, in_k2value, in_h2value)
       use mod_logging, only: allMessage, WARNING
+      use mod_date_util, only: parse_date_string
+      use global, only: toUppercase
       implicit none
 
       class(t_tidePotential), intent(INOUT) :: self
@@ -154,12 +157,12 @@ contains
       if (.not. self%m_UseFullTIPFormula) return
 
       self%m_TIPOrder = in_TIPOrder
-      self%m_TIPStartDate = in_TIPStartDate
+      self%m_TIPStartDate = parse_date_string(in_TIPStartDate)
       self%m_IncludeNutation = in_IncludeNutation
       self%m_k2value = in_k2value
       self%m_h2value = in_h2value
 
-      moonSunPositionString = StringUpper(in_MoonSunPositionComputeMethod)
+      moonSunPositionString = toUppercase(in_MoonSunPositionComputeMethod)
       if (trim(adjustl(moonSunPositionString)) == 'JM') then
          self%m_MoonSunPositionComputeMethod = ComputeMethod_JM
       elseif (trim(adjustl(MoonSunPositionString)) == 'EXTERNAL') then
@@ -435,24 +438,6 @@ contains
 
    end subroutine check_tip_err
 
-   function StringUpper(string) result(outString)
-      implicit none
-
-      character(LEN=*), intent(IN) :: string
-      character(LEN=len_trim(string)) :: outString
-
-      integer :: I, asciinum
-
-      outString = string; 
-      do I = 1, len(string)
-         asciinum = iachar(string(I:I))
-         select case (asciinum)
-         case (97:122)
-            outString(I:I) = char(asciinum - 32)
-         end select
-      end do
-   end function StringUpper
-
    ! A^{N}
    elemental function AINTPOWER(A, N) result(AP)
       implicit none
@@ -473,37 +458,19 @@ contains
    subroutine INIT_FULL_TIP(self, NP)
       use ADC_CONSTANTS, only: sec2day, hour2day, min2day
       use mod_astronomic, only: JULIANDAY
+      use datetime_module, only: datetime
       use mesh, only: SFEA
       implicit none
 
       class(t_tidePotential), intent(INOUT) :: self
       integer, intent(IN) :: NP
-
       real(8) :: DDD
-      integer :: YYYY, MM, DD, HH, MMM, SS
 
-      character(LEN=80) :: tmparr
-      character :: delimter(2) = (/'-', ':'/)
+      DDD = dble(self%m_TIPStartDate%getDay()) + dble(self%m_TIPStartDate%getHour())*hour2day + &
+            dble(self%m_TIPStartDate%getMinute())*min2day + dble(self%m_TIPStartDate%getSecond())*sec2day
 
-      ! Extract date from base_date
-      tmparr = adjustl(self%m_TIPStartDate)
-
-      ! Default J2000 epoch !
-      YYYY = 2000
-      MM = 1
-      DD = 1
-
-      HH = 0
-      MMM = 0
-      SS = 0
-
-      call extractvalues(YYYY, MM, DD, delimter(1))
-      call extractvalues(HH, MMM, SS, delimter(2))
-
-      DDD = dble(DD) + dble(HH)*hour2day + dble(MMM)*min2day + dble(SS)*sec2day
-
-      ! Get  correspond Julian days !
-      self%m_JDE_BEG = JULIANDAY(DDD, MM, YYYY)
+      ! Get correspond Julian days !
+      self%m_JDE_BEG = JULIANDAY(DDD, self%m_TIPStartDate%getMonth(), self%m_TIPStartDate%getYear())
       self%m_JDE_CURRENT = self%m_JDE_BEG
 
       if (self%m_MoonSunPositionComputeMethod == ComputeMethod_JM) then
@@ -547,51 +514,6 @@ contains
 
          return
       end subroutine ALLOCATEWORKARR
-
-      subroutine extractvalues(a1, a2, a3, delimc)
-         implicit none
-
-         character :: delimc
-         integer:: a1, a2, a3
-
-         integer :: arg(3)
-
-         logical :: earlystop
-         integer :: ii, cpos(3), ivec(3)
-
-         earlystop = .false.
-         arg = (/a1, a2, a3/); 
-         ivec = 0
-         cpos(1) = 1
-         do ii = 1, 3
-            if (len(trim(tmparr(cpos(1):))) == 0) exit
-
-            cpos(2) = index(tmparr, delimc)
-
-            if (cpos(2) == 0) then
-               cpos(2) = index(tmparr, ' ')
-
-               earlystop = .true.
-            end if
-
-            if (cpos(2) > 0) then
-               read (tmparr(cpos(1):cpos(2) - 1), *) ivec(ii)
-
-               tmparr = adjustl(tmparr(cpos(2) + 1:))
-            else
-               if (len(trim(tmparr(cpos(1):))) > 0) then
-                  read (tmparr(cpos(1):), *) ivec(ii)
-               end if
-            end if
-
-            arg(ii) = ivec(ii)
-            if (earlystop) exit
-         end do
-
-         a1 = arg(1); 
-         a2 = arg(2); 
-         a3 = arg(3); 
-      end subroutine extractvalues
 
    end subroutine INIT_FULL_TIP
 

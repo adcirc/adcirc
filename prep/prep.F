@@ -2419,7 +2419,13 @@ C....    SB VEW1D channel control namelist
 C...     wjp additions for WarnElev Namelist
          IF (FOUND_WARNELEV_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
             write(15,*) '! -- Begin WarnElev Control NameList --'
-            write(15,WarnElevControl)
+            write(15,'(A)') '&WarnElevControl'
+            write(15,'(A,F0.2,A)') '  WarnElev = ',WarnElev,','
+            write(15,'(A,F0.2,A)') '  ErrorElev = ',ErrorElev,','
+            write(15,'(A,F0.2,A)') '  WarnVel = ',WarnVel,','
+            write(15,'(A,F0.2,A)') '  ErrorVel = ',ErrorVel,','
+            write(15,'(A,L1,A)')   '  WarnElevDump = ',WarnElevDump,','
+            write(15,'(A,I0,A)')   '  WarnElevDumpLimit = ',WarnElevDumpLimit,'  /'
             write(15,*) '! -- End WarnElev Control NameList --'
          ENDIF
 

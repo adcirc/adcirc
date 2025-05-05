@@ -114,6 +114,7 @@ C-----------------------------------------------------------------------
       USE HARM
       USE WEIR
       USE TIME_VARYING_WEIR_BOUNDARY
+      USE mod_date_util, only: parse_date_string
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist, getVortexModelStringNws8 => getVortexModelString
       USE WIND, only: WTIMINC, NWLAT, NWLON, WREFTIM, 
@@ -236,7 +237,7 @@ C.... DMW
      &  dynamicWaterLevelCorrectionRampEnd,
      &  dynamicWaterLevelCorrectionRampReferenceTime
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
-     &  WarnElevDumpLimit, ErrorElev
+     &  WarnElevDumpLimit, ErrorElev, WarnVel, ErrorVel
       NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
       NAMELIST /densityControl/ densityRunType, densityFileName, 
      &  densityTimeIterator, densityForcingType
@@ -5027,7 +5028,6 @@ C
          call terminate(myproc)
       endif
 
-      basedatetime = datetime(0)
       IF (useNetCDF.eqv..true.) THEN
          CALL logMessage(INFO,"Now reading metadata from fort.15 file"
      &     //" for use in NetCDF files.")
@@ -5054,8 +5054,7 @@ C
          READ(15,'(A80)',err=99999,end=99998,iostat=ios) base_date
          CALL logMessage(ECHO,"metadata, base_date: "//trim(base_date))
          ! Convert base_date to datetime WJP
-         basedatetime = strptime(adjustl(trim(base_date)),
-     &                           "%Y-%m-%d %H:%M:%S")
+         basedatetime = parse_date_string(base_date)
          ! Check this a valid time
          if (.not.basedatetime%isvalid()) then
             call allMessage(ERROR,'Invalid base datetime: '

@@ -343,9 +343,8 @@ BND_MSRC   =  boundaries.F
 PREP_MSRC  =  presizes.F
 PGLO_MSRC  =  pre_global.F
 3D_MSRC    =  global_3dvs.F
-ADC_MSRC   =  $(O_DIR)version.o sizes.F constants.F global.F
-STATUS_MSRC = date_util.F90 status.F90 logging.F90 
-TERM_MSRC  =  terminate.F90
+ADC_MSRC   =  constants.F global.F
+STATUS_MSRC = $(O_DIR)terminate.o $(O_DIR)sizes.o $(O_DIR)logging.o date_util.F90 status.F90
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
@@ -399,7 +398,6 @@ PGLO_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PGLO_MSRC) )
 SOLV_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SOLV_MSRC) )
 ADC_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(ADC_MSRC)  )
 STATUS_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(STATUS_MSRC)  )
-TERM_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(TERM_MSRC)  )
 HARM_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(HARM_MSRC)  )
 VORT_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VORT_MSRC)  )
 VW1D_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VW1D_MSRC)  )
@@ -684,7 +682,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(DATE_MOBJ) $(STATUS_MOBJ) $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(TERM_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(DATE_MOBJ) $(STATUS_MOBJ) $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -776,7 +774,7 @@ $(O_DIR)version.o     :  version.F90
 $(O_DIR)sizes.o       :  sizes.F $(O_DIR)terminate.o
 $(O_DIR)terminate.o   :  terminate.F90
 $(O_DIR)logging.o     :  logging.F90 $(O_DIR)sizes.o $(O_DIR)terminate.o 
-$(O_DIR)constants.o   :  constants.F $(O_DIR)sizes.o
+$(O_DIR)constants.o   :  constants.F
 $(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)terminate.o $(O_DIR)constants.o $(O_DIR)kdtree2.o $(DATE_MOBJ) $(STATUS_MOBJ)
 $(O_DIR)internaltide.o : internaltide.F $(O_DIR)sizes.o $(O_DIR)global.o
 $(O_DIR)gl2loc_mapping.o : gl2loc_mapping.F $(O_DIR)sizes.o $(O_DIR)global.o
@@ -791,7 +789,7 @@ $(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)ve
 $(O_DIR)momentum.o    :  momentum.F $(O_DIR)vew1d.o $(O_DIR)subdomain.o
 $(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
 $(O_DIR)mpitypes.o    :  mpitypes.F90 
-$(O_DIR)messenger.o   :  messenger.F  $(O_DIR)mpitypes.o $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)global_3dvs.o
+$(O_DIR)messenger.o   :  messenger.F  $(O_DIR)mpitypes.o $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)global_3dvs.o $(O_DIR)version.o
 #!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
 WRITER_DEP := writer.F  $(O_DIR)messenger.o $(O_DIR)globalio.o
 ifeq ($(NETCDF),enable)
