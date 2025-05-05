@@ -4,13 +4,11 @@ on:
   push:
     branches:
       - main
-      - shinbunya/docs
     paths:
       - 'docs/**'
   pull_request:
     branches:
       - main
-      - shinbunya/docs
     paths:
       - 'docs/**'
   
@@ -46,3 +44,4 @@ jobs:
           publish_dir: ./docs/_build/html
           publish_branch: gh-pages
           force_orphan: true  # This creates a clean gh-pages branch
+          commit_message: "[ci skip] docs: ${{ github.event.head_commit.message }}"
