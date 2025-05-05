@@ -1,0 +1,1682 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fort.22: Meteorological Forcing Data &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Fort.200: Multiple File Meteorological Forcing Input" href="fort200.html" />
+    <link rel="prev" title="Fort.20: Non-periodic Normal Flow Boundary Condition File" href="fort20.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/index.html">Introduction to ADCIRC</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#what-is-adcirc">What is ADCIRC?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#model-features">Model Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#adcirc-programs">ADCIRC Programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#system-requirements">System Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#adcirc-files">ADCIRC Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#contributors">Contributors</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/index.html">Getting Started with ADCIRC</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/index.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/index.html#building-adcirc">Building ADCIRC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../getting_started/index.html#traditional-build-method">Traditional Build Method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../getting_started/index.html#cmake-build-method">CMake Build Method</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/index.html#running-adcirc">Running ADCIRC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../getting_started/index.html#example-run">Example Run</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../theory/index.html">Theory and Formulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../theory/governing_equations.html">Governing Equations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/governing_equations.html#continuity-equation">Continuity Equation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/governing_equations.html#momentum-equations">Momentum Equations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/governing_equations.html#bottom-stress-formulation">Bottom Stress Formulation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/numerical_implementation.html">Numerical Implementation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/numerical_implementation.html#finite-element-spatial-discretization">Finite Element Spatial Discretization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/numerical_implementation.html#weak-formulation-and-assembly">Weak Formulation and Assembly</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/numerical_implementation.html#time-discretization">Time Discretization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/numerical_implementation.html#lumped-mass-matrix">Lumped Mass Matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/numerical_implementation.html#stabilization-techniques">Stabilization Techniques</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/boundary_conditions.html">Boundary Conditions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/boundary_conditions.html#external-boundary-conditions">External Boundary Conditions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#elevation-boundary-condition">Elevation Boundary Condition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#flow-boundary-condition">Flow Boundary Condition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#radiation-boundary-condition">Radiation Boundary Condition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#combined-radiation-flow-boundary-condition">Combined Radiation-Flow Boundary Condition</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/boundary_conditions.html#internal-boundary-conditions">Internal Boundary Conditions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#no-flow-boundary-condition">No-Flow Boundary Condition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#cross-barrier-boundary-condition">Cross-Barrier Boundary Condition</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/boundary_conditions.html#surface-boundary-conditions">Surface Boundary Conditions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#wind-stress">Wind Stress</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#atmospheric-pressure">Atmospheric Pressure</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/wave_continuity.html">Wave Continuity Formulation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wave_continuity.html#derivation-of-the-gwce">Derivation of the GWCE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wave_continuity.html#advantages-of-the-gwce">Advantages of the GWCE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wave_continuity.html#role-of-the-tau-parameter">Role of the Tau Parameter</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/coordinate_systems.html">Coordinate Systems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/coordinate_systems.html#spherical-coordinates">Spherical Coordinates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/coordinate_systems.html#cartesian-coordinates">Cartesian Coordinates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/coordinate_systems.html#coordinate-transformations">Coordinate Transformations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/coordinate_systems.html#cpp-coordinate-system">CPP Coordinate System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/coordinate_systems.html#vertical-coordinate-systems">Vertical Coordinate Systems</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/wetting_drying.html">Wetting and Drying</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wetting_drying.html#conceptual-approach">Conceptual Approach</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wetting_drying.html#basic-algorithm">Basic Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wetting_drying.html#numerical-techniques">Numerical Techniques</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wetting_drying.html#implementation-details">Implementation Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/baroclinic_terms.html">Baroclinic Terms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/baroclinic_terms.html#density-variation">Density Variation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/baroclinic_terms.html#baroclinic-pressure-gradient">Baroclinic Pressure Gradient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/baroclinic_terms.html#transport-equations">Transport Equations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/baroclinic_terms.html#three-dimensional-formulation">Three-Dimensional Formulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/baroclinic_terms.html#surface-heat-flux">Surface Heat Flux</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/baroclinic_terms.html#numerical-considerations-for-baroclinic-simulations">Numerical Considerations for Baroclinic Simulations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../running_adcirc/index.html">Running ADCIRC</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../running_adcirc/command_line_options.html">Command Line Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../running_adcirc/command_line_options.html#adcirc-command-line-options">ADCIRC Command Line Options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../running_adcirc/command_line_options.html#version-51-additions">Version 51 Additions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../running_adcirc/command_line_options.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../running_adcirc/command_line_options.html#adcprep-command-line-options">ADCPREP Command Line Options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../running_adcirc/command_line_options.html#id1">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../running_adcirc/command_line_options.html#notes-on-parallel-execution">Notes on Parallel Execution</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Input Files</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#grid-and-boundaries">Grid and Boundaries</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort14.html">Fort.14: Grid and Boundary Information File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort14.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort14.html#normal-flux-boundary-types">Normal Flux Boundary Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort14.html#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#model-parameters-and-periodic-bcs">Model Parameters and Periodic BCs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort15.html">Fort.15: Model Parameter and Periodic Boundary Condition File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort15.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort15.html#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#nodal-attributes">Nodal Attributes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort13.html">Fort.13: Nodal Attributes File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort13.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort13.html#nodal-attributes">Nodal Attributes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort13.html#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#hot-start">Hot Start</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort6768.html">Fort.67, Fort.68: Hot Start Files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort6768.html#parameter-changes-during-hot-start">Parameter Changes During Hot Start</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort6768.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort6768.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#boundary-conditions">Boundary Conditions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort19.html">Fort.19: Non-periodic Elevation Boundary Condition File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort19.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort19.html#notes">Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort19.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort20.html">Fort.20: Non-periodic Normal Flow Boundary Condition File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort20.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort20.html#notes">Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort20.html#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#meteorological-forcing">Meteorological Forcing</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Fort.22: Meteorological Forcing Data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#general-notes">General Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-parameter-index">NWS Parameter Index</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-1-or-101">NWS = 1 or 101</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-2-2-102-or-102">NWS = 2, -2, 102, or -102</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-3-or-103">NWS = 3 or 103</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-4-4-104-or-104">NWS = 4, -4, 104, or -104</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-5-5-105-or-105">NWS = 5, -5, 105, or -105</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-6-or-106">NWS = 6 or 106</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-7-or-7">NWS = 7 or -7</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-8-or-108">NWS = 8 or 108</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-10">NWS = 10</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-11">NWS = 11</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-12-or-12">NWS = 12 or -12</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-15">NWS = 15</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-16">NWS = 16</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-19">NWS = 19</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nws-20">NWS = 20</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#additional-nws-formats">Additional NWS Formats</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort200.html">Fort.200: Multiple File Meteorological Forcing Input</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort200.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort200.html#gfs-nws-10-notes">GFS (NWS=10) Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort200.html#eta-29-nws-11-notes">Eta-29 (NWS=11) Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort200.html#general-notes">General Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#wave-forcing">Wave Forcing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort23.html">Fort.23: Wave Radiation Stress Forcing File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort23.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort23.html#notes">Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort23.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort26.html">Fort.26: SWAN Runtime Parameters and Coupling File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort26.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort26.html#specifying-input">Specifying Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort26.html#specifying-output">Specifying Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort26.html#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#self-attraction-earth-load-tide-forcing">Self Attraction/Earth Load Tide Forcing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort24.html">Fort.24: Self Attraction/Earth Load Tide Forcing File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort24.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort24.html#notes">Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort24.html#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#ice-coverage">Ice Coverage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort25.html">Fort.25, 255/277: Ice Coverage Input Files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort25.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort25.html#method-for-specifying-the-coefficient-of-drag">Method for Specifying the Coefficient of Drag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort25.html#references">References</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#d-baroclinic-simulation">3D Baroclinic Simulation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort11.html">Fort.11: Density Initial Condition Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort11.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort11.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort35.html">Fort.35: Level of No Motion Boundary Condition Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort35.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort35.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort36.html">Fort.36: Salinity Boundary Condition Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort36.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort36.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort37.html">Fort.37: Temperature Boundary Condition Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort37.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort37.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort38.html">Fort.38: Surface Temperature Boundary Values Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort38.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort38.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort39.html">Fort.39: Salinity and Temperature River Boundary Values Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort39.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort39.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#station-locations">Station Locations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="elev_stat151.html">Elev_stat.151: Elevation Station Location Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="elev_stat151.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="elev_stat151.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="vel_stat151.html">Vel_stat.151: Velocity Station Location Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="vel_stat151.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="vel_stat151.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="met_stat151.html">Met_stat.151: Meteorological Recording Station Location Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="met_stat151.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="met_stat151.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="conc_stat151.html">Conc_stat.151: Concentration Station Location Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="conc_stat151.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conc_stat151.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#time-varying-topography-bathymetry">Time-varying Topography/Bathymetry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="time_varying_bathymetry.html">Fort.141: Time Varying Bathymetry Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_bathymetry.html#full-domain-bathymetry-change">Full Domain Bathymetry Change</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_bathymetry.html#limited-area-bathymetry-change">Limited Area Bathymetry Change</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_bathymetry.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="time_varying_weirs.html">Fort.142: Time Varying Weirs Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#required-variables">Required Variables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#elevation-change-types">Elevation Change Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#varytype-1-parameters">VARYTYPE=1 Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#varytype-2-parameters">VARYTYPE=2 Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#varytype-3-parameters">VARYTYPE=3 Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="time_varying_weirs_schedule.html">Time Varying Weirs Schedule File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs_schedule.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs_schedule.html#time-parameters">Time Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs_schedule.html#weir-height-parameters">Weir Height Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs_schedule.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#passive-scalar-transport">Passive Scalar Transport</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort10.html">Fort.10: Passive Scalar Transport Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort10.html#file-structure">File Structure</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../output_files/index.html">Output Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#runtime-logs">Runtime Logs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort6.html">Screen Output</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort16.html">Fort.16: General Diagnostic Output</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort16.html#notes-for-fort-16-file">Notes for fort.16 file:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort16.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort33.html">Fort.33: Iterative Solver ITPACKV 2D Diagnostic Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#water-surface-elevation-time-series">Water Surface Elevation Time Series</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort61.html">Fort.61: Elevation Time Series at Specified Elevation Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort61.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort61.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort63.html">Fort.63: Elevation Time Series at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort63.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#velocity-time-series">Velocity Time Series</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort62.html">Fort.62: Depth-averaged Velocity Time Series at Specified Velocity Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort62.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort62.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort64.html">Fort.64: Depth-averaged Velocity Time Series at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort64.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort64.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#meteorological-time-series">Meteorological Time Series</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort71.html">Fort.71: Atmospheric Pressure Time Series at Specified Meteorological Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort71.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort71.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort72.html">Fort.72: Wind Velocity Time Series at Specified Meteorological Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort72.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort72.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort73.html">Fort.73: Atmospheric Pressure Time Series at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort73.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort73.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort74.html">Fort.74: Wind Stress or VelocityTime Series at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort74.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort74.html#note">Note</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#maximum-and-minimum-values">Maximum and Minimum Values</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/maxele63.html">Maxele.63: Maximum Water Surface Elevation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/maxvel63.html">Maxvel.63: Maximum Depth-averaged Velocity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/maxwvel63.html">Maxwvel.63: Maximum Wind Speed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/maxrs63.html">Maxrs.63: Maximum Wave Radiation Stress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/minpr63.html">Minpr.63: Minimum Barometric Pressure</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#hot-start">Hot Start</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort6768.html">Fort.67, Fort.68: Hot Start Files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort6768.html#parameter-changes-during-hot-start">Parameter Changes During Hot Start</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort6768.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort6768.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#harmonic-analysis">Harmonic Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort51.html">Fort.51: Elevation Harmonic Constituents at Specified Elevation Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort51.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort51.html#note">Note</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort52.html">Fort.52: Depth-averaged Velocity Harmonic Constituents at Specified Velocity Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort52.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort52.html#note">Note</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort53.html">Fort.53: Elevation Harmonic Constituents at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort53.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort53.html#note">Note</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort54.html">Fort.54: Depth-averaged Velocity Harmonic Constituents at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort54.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort54.html#note">Note</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort55.html">Fort.55: Harmonic Constituent Diagnostic Output at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort55.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort55.html#note">Note</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#wet-dry-state-and-inundation">Wet/Dry State and Inundation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/initiallydry63.html">Initiallydry.63: Inundation Data Output File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/initiallydry63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/initiallydry63.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/everdried63.html">Everdried.63: Dry Node Flagging File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/everdried63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/everdried63.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/nodecode63.html">Nodecode.63: Wet/Dry State of Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/nodecode63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/nodecode63.html#note">Note</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/noff100.html">Noff.100: Wet/Dry Elemental State File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/noff100.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/noff100.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/maxinundepth63.html">Maxinundepth.63: Maximum Inundation Depth File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/maxinundepth63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/maxinundepth63.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/inundationtime63.html">Inundationtime.63: Inundation Time File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/inundationtime63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/inundationtime63.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/endrisinginun63.html">Endrisinginun.63: Inundation Rising at the End of the Run Flag File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/endrisinginun63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/endrisinginun63.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#ice-coverage">Ice Coverage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort91.html">Fort.91: Ice Coverage Fields at Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort91.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort91.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort93.html">Fort.93: Ice Coverage Fields at All Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort93.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort93.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#d-variables">3D Variables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort41.html">Fort.41: 3D Density, Temperature and/or Salinity at Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort41.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort41.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort42.html">Fort.42: 3D Velocity at Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort42.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort42.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort43.html">Fort.43: 3D Turbulence at Specified Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort43.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort43.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort44.html">Fort.44: 3D Density, Temperature and/or Salinity at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort44.html#file-structure">File Structure</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort45.html">Fort.45: 3D Velocity at All Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort45.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort45.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort46.html">Fort.46: 3D Turbulence at All Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort46.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort46.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort47.html">Fort.47: Temperature Values at the Surface Layer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort47.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#mode-parameters">Mode Parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort90.html">Fort.90: Primitive Weighting in Continuity Equation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort90.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort90.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#time-varying-topography-bathymetry">Time-varying Topography/Bathymetry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort75.html">Fort.75: Bathymetry Time Series at Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort75.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort75.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort76.html">Fort.76: Bathymetry Time Series at All Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort76.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort76.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort77.html">Fort.77: Time-varying Weir Output</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort77.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort77.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#passive-scalar-transport">Passive Scalar Transport</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort81.html">Fort.81: Scalar Concentration Time Series at Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort81.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort81.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort83.html">Fort.83: Scalar Concentration Time Series at All Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort83.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort83.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../parameter_definitions/index.html">Parameter Definitions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../parameter_definitions/index.html#input-files">Input Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-14-fort-15">fort.14, fort.15</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-12">fort.12</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-10">fort.10</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-11">fort.11</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-13">fort.13</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-19">fort.19</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-20">fort.20</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-22">fort.22</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-23">fort.23</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-24">fort.24</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../parameter_definitions/index.html#output-files">Output Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-51-52-53-54">fort.51,52,53,54</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-55">fort.55</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-61-62-63-64-71-72-73-74-75-81-83">fort.61,62,63,64,71,72,73,74,75,81,83</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-67-68">fort.67, 68</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-41-fort-42-fort-43-fort-44-fort-45-fort-46">fort.41, fort.42, fort.43, fort.44, fort.45, fort.46</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../special_features/index.html">Special Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../special_features/bridge_piers.html">Bridge Piers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/bridge_piers.html#theory">Theory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/bridge_piers.html#determination-of-drag-coefficient">Determination of Drag Coefficient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/bridge_piers.html#implementation-in-adcirc">Implementation in ADCIRC</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/bridge_piers.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../special_features/ice_modifications.html">Ice Modifications</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/ice_modifications.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/ice_modifications.html#implementation">Implementation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/ice_modifications.html#usage">Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/ice_modifications.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../special_features/vertical_element_walls.html">Vertical Element Walls (VEWs)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/vertical_element_walls.html#what-are-vertical-element-walls">What are Vertical Element Walls?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/vertical_element_walls.html#example-usages">Example Usages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../special_features/vertical_element_walls.html#modeling-channels-with-vertical-element-walls">Modeling Channels with Vertical Element Walls</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../special_features/vertical_element_walls.html#modeling-one-sided-steep-slopes-with-vertical-element-walls">Modeling One-sided Steep Slopes with Vertical Element Walls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/vertical_element_walls.html#special-features-for-vew-channels-with-condensed-nodes">Special Features for VEW Channels with Condensed Nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/vertical_element_walls.html#defining-vews-in-adcirc-input-files">Defining VEWs in ADCIRC Input Files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../special_features/vertical_element_walls.html#example-fort-14-with-vertical-element-walls">Example Fort.14 with Vertical Element Walls</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../special_features/vertical_element_walls.html#example-fort-13-with-condensed-nodes">Example Fort.13 with Condensed Nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/vertical_element_walls.html#available-tools">Available Tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/vertical_element_walls.html#references">References</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../support_tools/index.html">Support Tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../support_tools/index.html#comprehensive-modeling-and-visualization-tools">Comprehensive Modeling and Visualization Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../support_tools/index.html#pre-processing-and-mesh-generation">Pre-processing and Mesh Generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../support_tools/index.html#forcing-data-acquisition">Forcing Data Acquisition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../support_tools/index.html#model-setup-and-control">Model Setup and Control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../support_tools/index.html#post-processing-and-visualization">Post-processing and Visualization</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../version_history/index.html">Version History</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../version_history/index.html#version-53">Version 53</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../version_history/index.html#version-52">Version 52</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../version_history/index.html#version-51">Version 51</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../version_history/index.html#version-50">Version 50</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../version_history/index.html#older-versions">Older Versions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Input Files</a></li>
+      <li class="breadcrumb-item active">Fort.22: Meteorological Forcing Data</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/input_files/fort22.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fort-22-meteorological-forcing-data">
+<h1>Fort.22: Meteorological Forcing Data<a class="headerlink" href="#fort-22-meteorological-forcing-data" title="Link to this heading"></a></h1>
+<p>The fort.22 file contains meteorological forcing data (wind velocity and atmospheric pressure) for the ADCIRC model. This file is read when meteorological forcing has been indicated by the NWS parameter in the <a class="reference internal" href="fort15.html"><span class="doc">Model Parameter and Periodic Boundary Condition File</span></a>.</p>
+<section id="general-notes">
+<h2>General Notes<a class="headerlink" href="#general-notes" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>The spatial extents of the meteorological data must be consistent with the ADCIRC model domain. For example, if ADCIRC uses negative longitude values to indicate locations W of the Greenwich meridian, the meteorological file must be similarly organized.</p></li>
+<li><p>Any grid that crosses the Greenwich Meridian should be organized so that the seam occurs &#64; 180 deg longitude.</p></li>
+<li><p>Meteorological data in formats other than OWI (NWS=12) and GFDL (NWS=16) must be provided for the entire model run, otherwise the run will crash!</p></li>
+<li><p>The specific data formats and timing requirements vary significantly based on the NWS parameter value.</p></li>
+<li><p>Wind stress and pressure units must be carefully adhered to, according to the requirements of each format.</p></li>
+</ul>
+</section>
+<section id="nws-parameter-index">
+<h2>NWS Parameter Index<a class="headerlink" href="#nws-parameter-index" title="Link to this heading"></a></h2>
+<table class="wrap-table tight-table docutils align-default" id="id43" style="width: 100%">
+<caption><span class="caption-text">NWS Parameter Index</span><a class="headerlink" href="#id43" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 65.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>NWS Value</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="#nws-1-101"><span class="std std-ref">NWS = 1 or 101</span></a></p></td>
+<td><p>Meteorological data input directly to all nodes in the ADCIRC grid</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nws-2-102"><span class="std std-ref">NWS = 2, -2, 102, or -102</span></a></p></td>
+<td><p>Similar to NWS=1/101, but with different timing options for data input</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#nws-3-103"><span class="std std-ref">NWS = 3 or 103</span></a></p></td>
+<td><p>Meteorological data input on a longitude-latitude grid and interpolated onto the ADCIRC grid</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nws-4-104"><span class="std std-ref">NWS = 4, -4, 104, or -104</span></a></p></td>
+<td><p>Meteorological data from the PBL Hurricane Model input directly to a subset of nodes</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#nws-5-105"><span class="std std-ref">NWS = 5, -5, 105, or -105</span></a></p></td>
+<td><p>Wind velocity and atmospheric pressure at all grid nodes</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nws-6-106"><span class="std std-ref">NWS = 6 or 106</span></a></p></td>
+<td><p>Wind velocity and atmospheric pressure are read in for a rectangular grid</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#nws-7"><span class="std std-ref">NWS = 7 or -7</span></a></p></td>
+<td><p>Surface stress and pressure values on a regular grid</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nws-8-108"><span class="std std-ref">NWS = 8 or 108</span></a></p></td>
+<td><p>Hurricane parameters for the Dynamic Holland model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#nws-10"><span class="std std-ref">NWS = 10</span></a></p></td>
+<td><p>Wind velocity (10 m) and atmospheric pressure from a sequence of National Weather Service (NWS) Aviation (AVN) model output files.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nws-11"><span class="std std-ref">NWS = 11</span></a></p></td>
+<td><p>Wind velocity (10 m) and atmospheric pressure from a sequence of stripped down National Weather Service (NWS) ETA 29km model output files.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#nws-12"><span class="std std-ref">NWS = 12 or -12</span></a></p></td>
+<td><p>Meteorological data uses the OWI (Oceanweather Inc.) format with nested meteorological grids</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nws-15"><span class="std std-ref">NWS = 15</span></a></p></td>
+<td><p>HWind files produced by the NOAA Hurricane Research Division (HRD)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#nws-16"><span class="std std-ref">NWS = 16</span></a></p></td>
+<td><p>GFDL model output files produced by the Geophysical Fluid Dynamics Laboratory at NOAA</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#nws-19"><span class="std std-ref">NWS = 19</span></a></p></td>
+<td><p>Asymmetric hurricane vortex formulation with customizable radius and Holland B parameters</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#nws-20"><span class="std std-ref">NWS = 20</span></a></p></td>
+<td><p>Generalized Asymmetric Holland Model (GAHM) with theoretical and practical improvements over previous models</p></td>
+</tr>
+</tbody>
+</table>
+<style>
+.wrap-table th, .wrap-table td {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+  hyphens: auto !important;
+  vertical-align: top !important;
+}
+</style></section>
+<section id="nws-1-or-101">
+<span id="nws-1-101"></span><h2>NWS = 1 or 101<a class="headerlink" href="#nws-1-or-101" title="Link to this heading"></a></h2>
+<p>In this format, meteorological data is input directly to all nodes in the ADCIRC grid.</p>
+<section id="file-structure">
+<h3>File Structure<a class="headerlink" href="#file-structure" title="Link to this heading"></a></h3>
+<pre class="literal-block">for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#np"><span class="std std-ref">NP</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#jn"><span class="std std-ref">JN</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#wsx"><span class="std std-ref">WSX(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#wsy"><span class="std std-ref">WSY(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#prn"><span class="std std-ref">PRN(k,j)</span></a>
+end k loop
+
+Repeat the block above for each time step until the end of the simulation.</pre>
+</section>
+<section id="format-specifics">
+<h3>Format Specifics<a class="headerlink" href="#format-specifics" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Meteorological data is input directly to all nodes in the ADCIRC grid.</p></li>
+<li><p>The units for pressure are meters of H₂O.</p></li>
+<li><p>The first set of met. data corresponds to TIME=STATIM+DTDP. Additional sets of met data must be provided at every time step, (WTIMINC = DTDP).</p></li>
+<li><p>Wind stress must be input in units of velocity squared (consistent with the units of gravity) and surface atmospheric pressure must be input in units of equivalent height of water (e.g., meters of water, feet of water that are consistent with the units of gravity).</p></li>
+<li><p>Stress in these units is obtained by dividing stress in units of force/area by the reference density of water.</p></li>
+<li><p>Pressure in these units is obtained by dividing pressure in units of force/area by the gravitational constant and the reference density of water.</p></li>
+<li><p>For example, 10^5Pa =10^5 N/m^2 =10^5 kg m/(s m)^2 divided by 9.81 m/s^2 and 10^3 kg/m^3 equals 10.2 meters of water.</p></li>
+</ul>
+</section>
+<section id="example">
+<h3>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h3>
+<p>The following is a simple example of a fort.22 file with NWS=1 format (3 nodes, 2 time steps):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>1 10.0 5.0 10.2
+2 12.0 6.0 10.1
+3 14.0 7.0 10.0
+1 15.0 7.5 10.1
+2 16.0 8.0 10.0
+3 17.0 8.5 9.9
+</pre></div>
+</div>
+<p>This example shows:</p>
+<ul class="simple">
+<li><p>Three nodes with wind velocity and pressure data (nodes 1, 2, and 3)</p></li>
+<li><p>Two time steps of data</p></li>
+<li><p>Wind velocity components (WSX, WSY) in m/s and pressure (PRN) in meters of H₂O</p></li>
+<li><p>For NWS=1, these wind velocities would be converted to stress using the quadratic drag law</p></li>
+</ul>
+</section>
+</section>
+<section id="nws-2-2-102-or-102">
+<span id="nws-2-102"></span><h2>NWS = 2, -2, 102, or -102<a class="headerlink" href="#nws-2-2-102-or-102" title="Link to this heading"></a></h2>
+<p>This format is similar to NWS=1/101, but with different timing options for data input.</p>
+<section id="id1">
+<h3>File Structure<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<pre class="literal-block"><a class="reference internal" href="../parameter_definitions/index.html#wtiminc"><span class="std std-ref">WTIMINC</span></a>
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#np"><span class="std std-ref">NP</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#jn"><span class="std std-ref">JN</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#wsx"><span class="std std-ref">WSX(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#wsy"><span class="std std-ref">WSY(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#prn"><span class="std std-ref">PRN(k,j)</span></a>
+end k loop
+
+Repeat the block above for each time step until the end of the simulation.</pre>
+</section>
+<section id="id2">
+<h3>Format Specifics<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Meteorological data is input directly to all nodes in the ADCIRC grid.</p></li>
+<li><p>The units for pressure are meters of H₂O.</p></li>
+<li><p>If NWS = 2 or 102, the first set of met. data corresponds to TIME=STATIM.</p></li>
+<li><p>If NWS = -2 or -102, the first set of met data corresponds to TIME=HOT START TIME.</p></li>
+<li><p>Additional sets of met. data must be provided every WTIMINC, where WTIMINC is the met. data time interval and is specified in the Model Parameter and Periodic Boundary Condition File.</p></li>
+<li><p>Met data is interpolated in time to the ADCIRC time step.</p></li>
+<li><p>Wind stress must be input in units of velocity squared (consistent with the units of gravity).</p></li>
+<li><p>Surface atmospheric pressure must be input in units of equivalent height of water (e.g., meters of water, feet of water that are consistent with the units of gravity).</p></li>
+<li><p>Stress in these units is obtained by dividing stress in units of force/area by the reference density of water.</p></li>
+<li><p>Pressure in these units is obtained by dividing pressure in units of force/area by the gravitational constant and the reference density of water.</p></li>
+<li><p>For example, 10^5Pa =10^5 N/m^2 =10^5 kg m/(s m)^2 divided by 9.81 m/s^2 and 10^3 kg/m^3 equals 10.2 meters of water.</p></li>
+</ul>
+</section>
+<section id="id3">
+<h3>Example<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<p>The following is a simple example of a fort.22 file with NWS=2 format (3 nodes, 2 time steps):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>3600.0
+1 10.0 5.0 10.2
+2 12.0 6.0 10.1
+3 14.0 7.0 10.0
+1 15.0 7.5 10.1
+2 16.0 8.0 10.0
+3 17.0 8.5 9.9
+</pre></div>
+</div>
+<p>This example shows:</p>
+<ul class="simple">
+<li><p>A time increment (WTIMINC) of 3600.0 seconds (1 hour)</p></li>
+<li><p>Three nodes with wind velocity and pressure data</p></li>
+<li><p>Two time steps of data</p></li>
+<li><p>Wind velocity components (WSX, WSY) in m/s and pressure (PRN) in meters of H₂O</p></li>
+<li><p>For NWS=2, these wind velocities would be converted to stress</p></li>
+<li><p>For NWS=102, these would be interpreted as wind stress values directly</p></li>
+</ul>
+</section>
+</section>
+<section id="nws-3-or-103">
+<span id="nws-3-103"></span><h2>NWS = 3 or 103<a class="headerlink" href="#nws-3-or-103" title="Link to this heading"></a></h2>
+<p>In this format, meteorological data is input on a longitude-latitude grid and interpolated onto the ADCIRC grid.</p>
+<section id="id4">
+<h3>File Structure<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<pre class="literal-block"><a class="reference internal" href="../parameter_definitions/index.html#iwtime"><span class="std std-ref">IWTIME</span></a>
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nwlat"><span class="std std-ref">NWLAT</span></a>
+   for j=1 to <a class="reference internal" href="../parameter_definitions/index.html#nwlon"><span class="std std-ref">NWLON</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#wspeed"><span class="std std-ref">WSPEED(k,j)</span></a>
+   end j loop
+end k loop
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nwlat"><span class="std std-ref">NWLAT</span></a>
+   for j=1 to <a class="reference internal" href="../parameter_definitions/index.html#nwlon"><span class="std std-ref">NWLON</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#wdir"><span class="std std-ref">WDIR(k,j)</span></a>
+   end j loop
+end k loop
+
+Repeat the block above for each time step until the end of the simulation.</pre>
+</section>
+<section id="id5">
+<h3>Format Specifics<a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Meteorological data is input to a longitude, latitude grid and interpolated in space onto the ADCIRC grid. The ADCIRC grid must be in lon, lat coordinates.</p></li>
+<li><p>The first set of met. data must be at or before the date and time listed in the Model Parameter and Periodic Boundary Condition File as the beginning time of the simulation.</p></li>
+<li><p>Additional sets of met. data must be provided every WTIMINC, where WTIMINC is the met. data time interval.</p></li>
+<li><p>Values for NWLAT, NWLON, WTIMINC, and several other parameters must be set in the Model Parameter and Periodic Boundary Condition File.</p></li>
+<li><p>Met data is interpolated in time to the ADCIRC time step.</p></li>
+<li><p>Wind velocity (&#64; 10 m above the water surface) must be input in units of m/s (regardless of the units of gravity).</p></li>
+<li><dl class="simple">
+<dt>The following relations are used to compute wind stress from the input wind velocity</dt><dd><ul>
+<li><p>WIND_SPEED = magnitude of WIND_VEL</p></li>
+<li><p>DRAG_COEFF = 0.001*(0.75+0.067*WIND_SPEED)</p></li>
+<li><p>If (DRAG_COEFF.gt.0.003) DRAG_COEFF=0.003</p></li>
+<li><p>WIND_STRESS = DRAG_COEFF*0.001293*WIND_VEL*WIND_SPEED</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="id6">
+<h3>Example<a class="headerlink" href="#id6" title="Link to this heading"></a></h3>
+<p>The following is a simplified example of a fort.22 file with NWS=3 format (2x3 grid, 1 time step):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>2015083106
+8.2 9.1 8.7
+7.8 8.5 8.2
+270.0 265.0 275.0
+268.0 272.0 270.0
+</pre></div>
+</div>
+<p>This example shows:</p>
+<ul class="simple">
+<li><p>Timestamp for the data (IWTIME): August 31, 2015, 06:00 UTC</p></li>
+<li><p>Wind speed (m/s) for a 2x3 (NWLAT x NWLON) grid</p></li>
+<li><p>Wind direction (degrees) for the same grid</p></li>
+<li><p>Values would be interpolated to the ADCIRC mesh points</p></li>
+</ul>
+</section>
+</section>
+<section id="nws-4-4-104-or-104">
+<span id="nws-4-104"></span><h2>NWS = 4, -4, 104, or -104<a class="headerlink" href="#nws-4-4-104-or-104" title="Link to this heading"></a></h2>
+<p>In this format, meteorological data from the PBL Hurricane Model is input directly to a subset of nodes in the ADCIRC grid.</p>
+<section id="id7">
+<h3>File Structure<a class="headerlink" href="#id7" title="Link to this heading"></a></h3>
+<pre class="literal-block">for k=1 to specified nodes
+   <a class="reference internal" href="../parameter_definitions/index.html#jn"><span class="std std-ref">JN</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#wvnx"><span class="std std-ref">WVNX(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#wvny"><span class="std std-ref">WVNY(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#prn"><span class="std std-ref">PRN(k)</span></a>
+end k loop
+#
+for k=1 to specified nodes
+   <a class="reference internal" href="../parameter_definitions/index.html#jn"><span class="std std-ref">JN</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#wvnx"><span class="std std-ref">WVNX(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#wvny"><span class="std std-ref">WVNY(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#prn"><span class="std std-ref">PRN(k)</span></a>
+end k loop
+#
+
+Repeat the block above for each time step until the end of the simulation.</pre>
+</section>
+<section id="id8">
+<h3>Format Specifics<a class="headerlink" href="#id8" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Meteorological data is input directly to a subset of nodes in the ADCIRC grid (as specified by the node number JN). The ADCIRC grid must be either in lon, lat coordinates or in meter-based Cartesian coordinates.</p></li>
+<li><p>If NWS = 4 or 104, the first set of met. data corresponds to TIME=STATIM.</p></li>
+<li><p>If NWS = -4 or -104, the first set of met data corresponds to TIME=HOT START TIME.</p></li>
+<li><p>Additional sets of met. data must be provided every WTIMINC, where WTIMINC is the met. data time interval and is specified in the Model Parameter and Periodic Boundary Condition File.</p></li>
+<li><p>Met data is interpolated in time to the ADCIRC time step.</p></li>
+<li><p>Each data line must have the format I8, 3E13.5. Data input lines are repeated for as many nodes as desired.</p></li>
+<li><p>A line containing the # symbol in column 2 indicates met data at the next time increment begins on the following line.</p></li>
+<li><p>At each new time, any node that is not specified in the input file is assumed to have zero wind velocity and pressure = 1013.</p></li>
+<li><p>Wind velocity (assumed to be 10m 10 minute averaged value) must be input in knots and surface atmospheric pressure must be input in hundredths of a millibar.</p></li>
+<li><dl class="simple">
+<dt>The following relations are used to compute wind stress from wind velocity</dt><dd><ul>
+<li><p>WIND_VEL{m/s &#64; 10m} = WIND_VEL{knots &#64; bl average}*0.5144 (In prior ADCIRC versions, an additional factor of 1.04 was included in the formulation to convert from 30 minute avg winds to 10 minute avg winds. This factor was removed and it is currently assumed that the input wind data uses a 10 minute averaging period. Note, this is unrelated to the value of WTIMINC).</p></li>
+<li><p>WIND_SPEED = magnitude of WIND_VEL</p></li>
+<li><p>DRAG_COEFF = 0.001*(0.75+0.067*WIND_SPEED)</p></li>
+<li><p>if(DRAG_COEFF.gt.0.003) DRAG_COEFF=0.003</p></li>
+<li><p>WIND_STRESS = DRAG_COEFF*0.001293*WIND_VEL*WIND_SPEED</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>The following relationship is used in ADCIRC to convert to pressure in meters of water from pressure in hundredths of a millibar</dt><dd><ul>
+<li><p>PRESSURE{m H2O}=PRESSURE{Pa/100}*100/(GRAVITY*DENSITY H2O).</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="id9">
+<h3>Example<a class="headerlink" href="#id9" title="Link to this heading"></a></h3>
+<p>The following is a simplified example of a fort.22 file with NWS=4 format (sparse node selection, 2 time steps):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>   123     10.50     15.75    1010.25
+   456     12.25     14.50    1009.75
+   789      9.75     16.25    1011.50
+#
+   123     11.00     16.50    1009.50
+   456     13.00     15.25    1008.75
+   789     10.25     17.00    1010.75
+#
+</pre></div>
+</div>
+<p>This example shows:</p>
+<ul class="simple">
+<li><p>Three selected nodes (123, 456, and 789) with wind and pressure data</p></li>
+<li><p>Two time steps separated by the # symbol</p></li>
+<li><p>Wind velocity components (WVNX, WVNY) in knots</p></li>
+<li><p>Pressure (PRNP) in hundredths of a millibar</p></li>
+<li><p>The specified format I8, 3E13.5 for each data line</p></li>
+</ul>
+</section>
+</section>
+<section id="nws-5-5-105-or-105">
+<span id="nws-5-105"></span><h2>NWS = 5, -5, 105, or -105<a class="headerlink" href="#nws-5-5-105-or-105" title="Link to this heading"></a></h2>
+<p>In this format, meteorological data from a tropical cyclone model (Holland formulation) is input directly to all nodes in the ADCIRC grid.</p>
+<section id="id10">
+<h3>File Structure<a class="headerlink" href="#id10" title="Link to this heading"></a></h3>
+<pre class="literal-block">for k=1 to NP
+   <a class="reference internal" href="../parameter_definitions/index.html#jn"><span class="std std-ref">JN</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#wvx"><span class="std std-ref">WVX(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#wvy"><span class="std std-ref">WVY(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#prn"><span class="std std-ref">PRN(k,j)</span></a>
+end k loop
+
+Repeat the block above for each time step until the end of the simulation.</pre>
+</section>
+<section id="id11">
+<h3>Format Specifics<a class="headerlink" href="#id11" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Meteorological data is input directly to all nodes in the ADCIRC grid. The ADCIRC grid must be either in lon, lat coordinates or in meter-based Cartesian coordinates.</p></li>
+<li><p>If NWS = 5 or 105, the first set of met. data corresponds to TIME=STATIM.</p></li>
+<li><p>If NWS = -5 or -105, the first set of met data corresponds to TIME=HOT START TIME.</p></li>
+<li><p>Additional sets of met. data must be provided every WTIMINC, where WTIMINC is the met. data time interval and is specified in the Model Parameter and Periodic Boundary Condition File.</p></li>
+<li><p>Met data is interpolated in time to the ADCIRC time step.</p></li>
+<li><p>Wind velocity (&#64; 10 m above the water surface) must be input in m/s and surface atmospheric pressure must be input in meters of water.</p></li>
+<li><dl class="simple">
+<dt>The following relations are used to compute wind stress from wind velocity:</dt><dd><ul>
+<li><p>WIND_SPEED = magnitude of WIND_VEL</p></li>
+<li><p>DRAG_COEFF = 0.001*(0.75+0.067*WIND_SPEED)</p></li>
+<li><p>if(DRAG_COEFF.gt.0.003) DRAG_COEFF=0.003</p></li>
+<li><p>WIND_STRESS = DRAG_COEFF*0.001293*WIND_VEL*WIND_SPEED</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="id12">
+<h3>Example<a class="headerlink" href="#id12" title="Link to this heading"></a></h3>
+<p>The following is a simplified example of a fort.22 file with NWS=5 format (3 nodes, 2 time steps):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>1 10.0 5.0 10.2
+2 12.0 6.0 10.1
+3 14.0 7.0 10.0
+1 15.0 7.5 10.1
+2 16.0 8.0 10.0
+3 17.0 8.5 9.9
+</pre></div>
+</div>
+<p>This example shows:</p>
+<ul class="simple">
+<li><p>Three nodes with wind velocity and pressure data (nodes 1, 2, and 3)</p></li>
+<li><p>Two time steps of data</p></li>
+<li><p>Wind velocity components (WVX, WVY) in m/s and pressure (PRN) in meters of H₂O</p></li>
+<li><p>For NWS=5/-5, these wind velocities would be converted to stress using the formula provided in Format Specifics</p></li>
+</ul>
+</section>
+</section>
+<section id="nws-6-or-106">
+<span id="nws-6-106"></span><h2>NWS = 6 or 106<a class="headerlink" href="#nws-6-or-106" title="Link to this heading"></a></h2>
+<p>In this format, meteorological data using a generalized asymmetric Holland formulation is input on a rectangular grid.</p>
+<section id="id13">
+<h3>File Structure<a class="headerlink" href="#id13" title="Link to this heading"></a></h3>
+<pre class="literal-block">IMDAY, IMMONTH, IMYEAR, IMHOUR, IMMIN, IMSEC
+for k=1 to NWLAT
+   for j=1 to NWLON
+      <a class="reference internal" href="../parameter_definitions/index.html#wvxfn"><span class="std std-ref">WVXFN(k,j)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#wvyfn"><span class="std std-ref">WVYFN(k,j)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#prn"><span class="std std-ref">PRN(k,j)</span></a>
+   end j loop
+end k loop
+
+Repeat the block above for each time step until the end of the simulation.</pre>
+</section>
+<section id="id14">
+<h3>Format Specifics<a class="headerlink" href="#id14" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>In versions 43 and earlier the format of input was P, U, V. The input has now changed to U, V, P to be consistent with other NWS formats.</p></li>
+<li><p>Meteorological data is input on a rectangular grid (either in Longitude, Latitude or Cartesian coordinates, consistent with the grid coordinates) and interpolated in space onto the ADCIRC grid.</p></li>
+<li><p>In setting up the meteorological grid it is assumed that y (e.g., latitude) varies from north (k=1) to south (k=NWLAT) and x (e.g., longitude) varies from west (j=1) to east (j=NWLON).</p></li>
+<li><p>The spatial extents of the meteorological grid must be consistent with the ADCIRC model domain. For example, if ADCIRC uses negative longitude values to indicate locations W of the Greenwich meridian, the meteorological file must be similarly organized.</p></li>
+<li><p>Any grid that crosses the Greenwich Meridian should be organized so that the seam occurs &#64; 180 deg longitude. Therefore, the meteorological and ADCIRC grids should use negative longitudes W of the Greenwich Meridian and positive longitudes to the E.</p></li>
+<li><p>The meteorological grid MUST cover the entire ADCIRC mesh; that is, the ADCIRC mesh must be ENTIRELY within the meteorological grid or an error will result.</p></li>
+<li><dl class="simple">
+<dt>The first set of met. data corresponds to the beginning time of the current simulation.</dt><dd><ul>
+<li><p>If the model is cold started this corresponds to TIME=STATIM.</p></li>
+<li><p>If the model is hot started, this corresponds to TIME=HOT START TIME.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Additional sets of met. data must be provided every WTIMINC, where WTIMINC is the met. data time interval.</p></li>
+<li><p>Values for NWLAT, NWLON, WTIMINC, and several other parameters must be set in the Model Parameter and Periodic Boundary Condition File.</p></li>
+<li><p>Met data is interpolated in time to the ADCIRC time step.</p></li>
+<li><p>Wind velocity (&#64; 10 m above the water surface) must be input in units of m/s and surface atmospheric pressure must be input in units of Pascals = Newtons/square meter.</p></li>
+<li><dl class="simple">
+<dt>The following relations are used to compute wind stress from the input wind velocity:</dt><dd><ul>
+<li><p>WIND_SPEED = magnitude of WIND_VEL</p></li>
+<li><p>DRAG_COEFF = 0.001*(0.75+0.067*WIND_SPEED)</p></li>
+<li><p>If (DRAG_COEFF.gt.0.003) DRAG_COEFF=0.003</p></li>
+<li><p>WIND_STRESS = DRAG_COEFF*0.001293*WIND_VEL*WIND_SPEED</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>The following relationship is used in ADCIRC to convert to pressure in meters of water from pressure in Pascal:</dt><dd><ul>
+<li><p>PRESSURE{m H2O}=PRESSURE{Pascal}/(GRAVITY*DENSITY H2O).</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="id15">
+<h3>Example<a class="headerlink" href="#id15" title="Link to this heading"></a></h3>
+<p>The following is a simplified example of a fort.22 file with NWS=6 format (2x3 grid, 1 time step):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>28 09 2022 12 00 00
+10.2 -5.1 101300
+10.8 -5.4 101250
+11.2 -5.8 101200
+9.8 -4.9 101320
+10.5 -5.2 101270
+11.0 -5.6 101220
+</pre></div>
+</div>
+<p>This example shows:</p>
+<ul class="simple">
+<li><p>Timestamp for the data: September 28, 2022, 12:00:00</p></li>
+<li><p>Wind velocity components (WVXFN, WVYFN) in m/s and pressure (PRN) in Pascals for a 2x3 (NWLAT x NWLON) grid</p></li>
+<li><p>Each line contains the U-component, V-component, and pressure for a single grid point</p></li>
+<li><p>Values would be interpolated to the ADCIRC mesh points</p></li>
+</ul>
+</section>
+</section>
+<section id="nws-7-or-7">
+<span id="nws-7"></span><h2>NWS = 7 or -7<a class="headerlink" href="#nws-7-or-7" title="Link to this heading"></a></h2>
+<section id="id16">
+<h3>File Structure<a class="headerlink" href="#id16" title="Link to this heading"></a></h3>
+<pre class="literal-block">for k=1 to NWLAT
+   for j=1 to NWLON
+      <a class="reference internal" href="../parameter_definitions/index.html#wvxfn"><span class="std std-ref">WVXFN(k,j)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#wvyfn"><span class="std std-ref">WVYFN(k,j)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#prn"><span class="std std-ref">PRN(k,j)</span></a>
+   end j loop
+end k loop
+
+Repeat the block above for each time step until the end of the simulation.</pre>
+</section>
+</section>
+<section id="nws-8-or-108">
+<span id="nws-8-108"></span><h2>NWS = 8 or 108<a class="headerlink" href="#nws-8-or-108" title="Link to this heading"></a></h2>
+<p>In this format, a single tropical cyclone model using the Generalized asymmetric Holland formulation with a moving reference frame and a background wind field is used.</p>
+<section id="id17">
+<h3>File Structure<a class="headerlink" href="#id17" title="Link to this heading"></a></h3>
+<p>The file uses the <a class="reference external" href="https://science.nrlmry.navy.mil/atcf/docs/database/new/abrdeck.html">ATCF Best Track/Objective Aid/Wind Radii Format</a>. Below is a simplified representation of the format structure:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>AL, ##, YYYY, MM/DD/HH24, TECH, TAU, LatN/S, LongE/W, VMAX, MSLP, TY, ...
+</pre></div>
+</div>
+</section>
+<section id="id18">
+<h3>Format Specifics<a class="headerlink" href="#id18" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Hurricane parameters are read in from the Single File Meteorological Forcing Input File.</p></li>
+<li><p>Wind velocity and atmospheric pressure are calculated at every node on the fly by ADCIRC internally using the Dynamic Holland model.</p></li>
+<li><p>The input file is fixed width (not comma separated values or csv) and is assumed to correspond to the ATCF Best Track/Objective Aid/Wind Radii Format.</p></li>
+<li><p>Historical tracks, real-time hindcast tracks and real-time forecast tracks may be found in this format.</p></li>
+<li><p>Selecting NWS = 8 also requires the specification of the cold start time, storm number, and boundary layer adjustment (see YYYY MM DD HH24 StormNumber BLAdj).</p></li>
+<li><p>Garret’s formula is used to compute wind stress from the wind velocity.</p></li>
+<li><p>The symmetric vortex model (NWS=8) in ADCIRC assumes that the longitudes in the fort.22 are west longitude, so it multiplies the longitude values by -1. It ignores the ‘E’ or ‘W’ in the longitude column of the fort.22.</p></li>
+<li><p>The symmetric vortex model (NWS=8) does not use any of the isotach wind speeds or wind radii data.</p></li>
+<li><p>When reading lines labeled “BEST” from the fort.22, it obtains timing information from the year, month, day, and hour in column 3.</p></li>
+<li><p>When reading lines labeled “OFCL” from the fort.22, it uses the forecast increment (a.k.a. TAU) from column 6.</p></li>
+<li><p>The use of these two different columns by ADCIRC NWS=8 is to maintain consistency with the official file structure for the ATCF file format.</p></li>
+<li><p>For NWS=8, ADCIRC knows the current time because the user provides the year, month, day, and hour of cold start on the WTIMINC line in the fort.15 file.</p></li>
+<li><p>It also has the time that has elapsed since cold start, because that is provided in the hotstart file, if any.</p></li>
+<li><p>It then compares the current time with the date/times in the fort.22 to automatically find the right place to begin reading data from the fort.22.</p></li>
+<li><p>If the whole fort.22 consists of “BEST” lines, the symmetric vortex model (NWS=8) only looks at column 3 for time information.</p></li>
+<li><p>It automatically knows where to start reading cyclone data, based on the coldstart date/time the user provides in the fort.15 file.</p></li>
+</ul>
+</section>
+<section id="id19">
+<h3>Example<a class="headerlink" href="#id19" title="Link to this heading"></a></h3>
+<p>The following is a simplified example of a fort.22 file with NWS=8 format:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>3600.0 2017 09 05 00 09 1.0
+AL, 09, 2017090500, 03, BEST, 000, 167N, 0369W, 125, 948, XX,  34, NEQ,  150,  150,  090,  150,
+AL, 09, 2017090506, 03, BEST, 000, 171N, 0378W, 130, 943, XX,  34, NEQ,  150,  150,  090,  150,
+AL, 09, 2017090512, 03, BEST, 000, 175N, 0386W, 140, 938, XX,  34, NEQ,  160,  160,  090,  160,
+AL, 09, 2017090518, 03, BEST, 000, 180N, 0395W, 155, 925, XX,  34, NEQ,  170,  170,  100,  170,
+AL, 09, 2017090600, 03, BEST, 000, 186N, 0404W, 155, 920, XX,  34, NEQ,  180,  180,  110,  180,
+</pre></div>
+</div>
+<p>This example shows:</p>
+<ul class="simple">
+<li><p>First line with WTIMINC (time increment) set to 3600.0 seconds (1 hour)</p></li>
+<li><p>First line also includes coldstart date (2017-09-05 00:00), storm number (09), and boundary layer adjustment (1.0)</p></li>
+<li><p>ATCF format data for Hurricane Irma (AL09 of 2017) at different time steps</p></li>
+<li><dl class="simple">
+<dt>Each line includes:</dt><dd><ul>
+<li><p>Basin code (AL for Atlantic)</p></li>
+<li><p>Storm number (09)</p></li>
+<li><p>Date/time (YYYYMMDDHH)</p></li>
+<li><p>Forecast source (BEST for best track)</p></li>
+<li><p>Forecast hour (000 for analysis)</p></li>
+<li><p>Position (latN/S, longW/E)</p></li>
+<li><p>Maximum sustained wind (VMAX in knots)</p></li>
+<li><p>Minimum sea level pressure (MSLP in millibars)</p></li>
+<li><p>Storm type (XX)</p></li>
+<li><p>Wind radii information (not used by ADCIRC NWS=8)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+</section>
+<section id="nws-10">
+<span id="id20"></span><h2>NWS = 10<a class="headerlink" href="#nws-10" title="Link to this heading"></a></h2>
+<p>In this format, meteorological data is processed in a specified manner.</p>
+<section id="id21">
+<h3>File Structure<a class="headerlink" href="#id21" title="Link to this heading"></a></h3>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>for k=1, LONB*LATB
+
+PG(k), UG(k), VG(k)
+
+end j loop
+</pre></div>
+</div>
+</section>
+</section>
+<section id="nws-11">
+<span id="id22"></span><h2>NWS = 11<a class="headerlink" href="#nws-11" title="Link to this heading"></a></h2>
+<p>In this format, meteorological data is processed in a specified manner.</p>
+<section id="id23">
+<h3>File Structure<a class="headerlink" href="#id23" title="Link to this heading"></a></h3>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>for k=1, LONB*LATB
+
+PG(k), UG(k), VG(k)
+
+end j loop
+</pre></div>
+</div>
+</section>
+</section>
+<section id="nws-12-or-12">
+<span id="nws-12"></span><h2>NWS = 12 or -12<a class="headerlink" href="#nws-12-or-12" title="Link to this heading"></a></h2>
+<p>In this format, meteorological data uses the OWI (Oceanweather Inc.) format with the ability to use nested meteorological grids.</p>
+<section id="id24">
+<h3>File Structure<a class="headerlink" href="#id24" title="Link to this heading"></a></h3>
+<p>Unlike other NWS values, the OWI format uses multiple files:</p>
+<pre class="literal-block">fort.22 (control file):
+<a class="reference internal" href="../parameter_definitions/index.html#nwset"><span class="std std-ref">NWSET</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nwbs"><span class="std std-ref">NWBS</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#dwm"><span class="std std-ref">DWM</span></a>
+
+fort.221 (basin scale pressure):
+Header line with timing information
+Grid information line
+Pressure data for entire grid
+
+fort.222 (basin scale wind):
+Header line with timing information
+Grid information line
+U-component data for entire grid
+V-component data for entire grid
+
+fort.223 (optional regional scale pressure):
+Same format as fort.221
+
+fort.224 (optional regional scale wind):
+Same format as fort.222</pre>
+</section>
+<section id="id25">
+<h3>Format Specifics<a class="headerlink" href="#id25" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Most types of meteorological input data for ADCIRC use the fort.22 exclusively; however, the OWI format (activated by setting NWS=12 or -12 in the fort.15) only uses that file for a few control parameters.</p></li>
+<li><p>This is because the OWI format is capable of using nested meteorological grids (a large, coarse, basin-scale grid and a smaller, finer region-scale grid), and further specifies that wind and pressure information be stored in separate files, along with information about the size, shape and location of the structured grid(s).</p></li>
+<li><p>The basin scale pressure field must be placed in a file called “fort.221”, and the basin scale wind field must be placed in a file called “fort.222”.</p></li>
+<li><p>If regional scale meteorological fields are also used, they must be placed in files called “fort.223” and “fort.224”.</p></li>
+<li><p>The wind velocity data must be in m/s (10 minute averaged, at 10m) and pressure data must be in millibars.</p></li>
+<li><p>The data files are fixed width, meaning that ADCIRC interprets the data according to the exact text column in which it appears.</p></li>
+<li><p>The first line in each of the files (fort.221, fort.222, fort.223, fort.224) must be a header line that indicates the type of meteorological data in the file and the starting and ending dates of the meteorological data.</p></li>
+<li><dl class="simple">
+<dt>Each data set starts with a header line with the following information:</dt><dd><ul>
+<li><p>iLat: number of parallels</p></li>
+<li><p>iLong: number of meridians</p></li>
+<li><p>DX: grid spacing in degrees longitude</p></li>
+<li><p>DY: grid spacing in degrees latitude</p></li>
+<li><p>SWLat: latitude of the South West corner</p></li>
+<li><p>SWLon: longitude of the South West corner</p></li>
+<li><p>Dt: starting time of the wind data, in YYYYMMDDHH24mm format</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Although the data files contain timing information, ADCIRC does not use it. Instead, the user must set WTIMINC in the fort.15 file to the time step of the two gridded meteorological data fields.</p></li>
+<li><p>As a result, ADCIRC requires that this time step be of a constant size and that all the OWI meteorological data fields be synchronized to it.</p></li>
+<li><p>When the basin and region scale grids are both used in ADCIRC, data from the region scale grid takes precedence over data from the basin scale grid in the areas where the two grids overlap.</p></li>
+<li><p>ADCIRC also has the ability to insert “blank” meteorological data if it is started before the beginning of the wind data (for a tidal spinup run, for example).</p></li>
+<li><p>Blank data is characterized by zero wind speed and 1013 mb of atmospheric pressure.</p></li>
+<li><p>This capability is activated via the NWBS parameter in the fort.22 file and it interacts with the sign of the NWS value in order to provide full control over the relationship between the ADCIRC start time (either hot start or cold start) and the beginning of the meteorological data.</p></li>
+<li><p>If NWBS is set to a positive number, NWBS specifies the number of blank snaps to be inserted before any information is read from fort.22[1-4].</p></li>
+<li><p>If NWBS is set to a negative number, then NWBS determines how many snaps in the fort.22[1-4] should be skipped before the values in the files are used.</p></li>
+<li><p>If the fort.22[1-4] files are shorter in time than the duration of an ADCIRC run, the fort.22[1-4] will run out of data. However, the file reading error should be safely caught in ADCIRC and the computation will continue with blank snaps.</p></li>
+</ul>
+</section>
+<section id="id26">
+<h3>Example<a class="headerlink" href="#id26" title="Link to this heading"></a></h3>
+<p>The following is a simplified example of the fort.22 file with NWS=12 format:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>192
+</pre></div>
+</div>
+<p>Example of fort.221 (basin scale pressure):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>OWI WWS Pressure Output in mb        Start:1995060600 End:1995060621
+iLat= 67iLong= 67DX= 1.250DY= .833SWLat= 22.500SWlon= -82.500Dt=199506060000
+1013.0 1013.0 1013.0 1013.0 1013.0 1013.0 1012.9 1012.9 ...
+... (pressure data for entire grid) ...
+</pre></div>
+</div>
+<p>Example of fort.222 (basin scale wind):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>OWI WWS Wind Output Ucomp,Vcomp in m/s Start:1995060600 End:1995060621
+iLat= 67iLong= 67DX= 1.250DY= .833SWLat= 22.500SWlon= -82.500Dt=199506060000
+0.0 0.0 0.0 0.0 0.1 0.1 0.2 0.2 ...
+... (U-component for entire grid) ...
+0.0 0.0 0.0 0.0 0.1 0.1 0.2 0.2 ...
+... (V-component for entire grid) ...
+</pre></div>
+</div>
+<p>This example shows:</p>
+<ul class="simple">
+<li><p>fort.22 with NWBS = 192 (indicating 192 blank snaps before reading meteorological data)</p></li>
+<li><p>Header lines in fort.221 and fort.222 indicating data type, start time, and end time</p></li>
+<li><p>Grid specification lines indicating a 67×67 grid with specific spacing and location</p></li>
+<li><p>Actual data values for pressure (in millibars) and wind components (in m/s)</p></li>
+<li><p>Regional scale files (fort.223 and fort.224) would follow the same format if used</p></li>
+</ul>
+</section>
+</section>
+<section id="nws-15">
+<span id="id27"></span><h2>NWS = 15<a class="headerlink" href="#nws-15" title="Link to this heading"></a></h2>
+<p>In this format, ADCIRC uses HWind files produced by the NOAA Hurricane Research Division (HRD).</p>
+<section id="id28">
+<h3>File Structure<a class="headerlink" href="#id28" title="Link to this heading"></a></h3>
+<p>The goal of the implementation of the HWind capability within ADCIRC was to allow HWind files to be used as-is, without resorting to an intermediate format. As a result, the fort.22 file consists of a header line to provide some configuration parameters, and then a list of the filenames of the HWind files to be used in the ADCIRC run. Specifically, the file format is as follows:</p>
+<pre class="literal-block"><a class="reference internal" href="../parameter_definitions/index.html#comment-line"><span class="std std-ref">comment line</span></a>
+hWindMultiplier
+<a class="reference internal" href="../parameter_definitions/index.html#pressurewindrelationship"><span class="std std-ref">pressureWindRelationship</span></a>
+for i=1 to numHWindFiles
+   <a class="reference internal" href="../parameter_definitions/index.html#hours"><span class="std std-ref">hours(i)</span></a> <a class="reference internal" href="../parameter_definitions/index.html#centralpressure"><span class="std std-ref">centralPressure(i)</span></a> <a class="reference internal" href="../parameter_definitions/index.html#rampmult"><span class="std std-ref">rampMult(i)</span></a> <a class="reference internal" href="../parameter_definitions/index.html#filename"><span class="std std-ref">filename(i)</span></a>
+end i loop</pre>
+</section>
+<section id="id29">
+<h3>Format Specifics<a class="headerlink" href="#id29" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><dl class="simple">
+<dt>HWind files are data assimilated snapshots of the wind velocity fields of tropical cyclones that are produced by the NOAA Hurricane Research Division (HRD). The files have the following characteristics:</dt><dd><ul>
+<li><p>the format explicitly indicates the center of the storm</p></li>
+<li><p>the (u,v) data are on a regular grid</p></li>
+<li><p>the regular grid is a mercator projection with origin at storm center</p></li>
+<li><p>the mercator grid spacing is in meters and is uniform in x and y (dx=dy)</p></li>
+<li><p>the dimensions (nx,ny) of the mercator grid are equal (nx=ny)</p></li>
+<li><p>the grid dimensions change from snapshot to snapshot; for example, the first shapshot may be 161×161 while the 2nd snapshot may be 121×121 (etc)</p></li>
+<li><p>sequential hwind snapshots will not be evenly spaced in time for a particular storm</p></li>
+<li><p>hwind data do not contain barometric pressure information</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>For the dvorak, knaffzehr, and specifiedPc options, the barometric pressure field is computed by determining the radius to maximum winds Rmax (i.e., the distance of Vmax from the center of the storm), calculating the Holland B parameter, and then using the Holland formulation to calculate barometric pressure as a function of the distance from the center of the storm.</p></li>
+</ul>
+</section>
+<section id="id30">
+<h3>Example<a class="headerlink" href="#id30" title="Link to this heading"></a></h3>
+<p>The following is an example of a fort.22 file with NWS=15 format:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>! first line is a comment line, max length 1024 characters
+1.0 ! 2nd line is a velocity magnitude multiplier
+dvorak ! 3rd line: one word for the pressure-wind relationship
+0.0 -1 0.0 &quot;/home/jason/hwind/al092011_0828_1330&quot; ! time (hours), Pc (mb), ramp mult, filename
+6.0 -1 0.5 &quot;/home/jason/hwind/al092011_0828_1930&quot;
+12.0 -1 1.0 &quot;/home/jason/hwind/al092011_0829_0130&quot;
+</pre></div>
+</div>
+<p>This example shows:</p>
+<ul class="simple">
+<li><p>A comment line (first line)</p></li>
+<li><p>A velocity magnitude multiplier of 1.0 (second line)</p></li>
+<li><p>The “dvorak” pressure-wind relationship (third line)</p></li>
+<li><dl class="simple">
+<dt>Three HWind files at different times:</dt><dd><ul>
+<li><p>The first at 0.0 hours with central pressure automatically calculated (-1), no ramping (0.0)</p></li>
+<li><p>The second at 6.0 hours with central pressure automatically calculated (-1), half ramping (0.5)</p></li>
+<li><p>The third at 12.0 hours with central pressure automatically calculated (-1), full ramping (1.0)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Each file represents a snapshot of Hurricane Irene (AL09 of 2011) at different times</p></li>
+<li><p>The -1 for centralPressure indicates that ADCIRC should calculate the central pressure based on the specified pressure-wind relationship</p></li>
+</ul>
+</section>
+</section>
+<section id="nws-16">
+<span id="id31"></span><h2>NWS = 16<a class="headerlink" href="#nws-16" title="Link to this heading"></a></h2>
+<p>In this format, ADCIRC uses GFDL model output files produced by the Geophysical Fluid Dynamics Laboratory at NOAA.</p>
+<section id="id32">
+<h3>File Structure<a class="headerlink" href="#id32" title="Link to this heading"></a></h3>
+<p>The GFDL input capability uses GFDL model output files as-is; as a result, the fort.22 file consists of a list of GFDL model output files to be used in ADCIRC. The file format is as follows:</p>
+<pre class="literal-block">comment line
+GFDLWindMultiplier
+MaxExtrapolationDistance
+for i=1 to numGFDLFiles
+   <a class="reference internal" href="../parameter_definitions/index.html#hours"><span class="std std-ref">hours(i)</span></a> <a class="reference internal" href="../parameter_definitions/index.html#rampmult"><span class="std std-ref">rampMult(i)</span></a> <a class="reference internal" href="../parameter_definitions/index.html#filename"><span class="std std-ref">filename(i)</span></a>
+end i loop</pre>
+</section>
+<section id="id33">
+<h3>Format Specifics<a class="headerlink" href="#id33" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>GFDL model output files are produced by the Geophysical Fluid Dynamics Laboratory at NOAA.</p></li>
+<li><p>Each ASCII GFDL model output file contains one or more nested grid dataset where the nested grids are allowed to change in time.</p></li>
+<li><p>Coarse grid data is not stored where finer nest data is given.</p></li>
+<li><dl class="simple">
+<dt>The files are formatted as follows:</dt><dd><ul>
+<li><p>Line 1: Number of grid cells (f10.4) NCELLS</p></li>
+<li><dl class="simple">
+<dt>Lines 2 through NCELLS+1: Ten columns of data formatted as 10f10.4 as follows:</dt><dd><ul>
+<li><p>column 1: u (m/s)</p></li>
+<li><p>column 2: v (m/s)</p></li>
+<li><p>column 3: Temperature (K)</p></li>
+<li><p>column 4: mixing ratio(kg/kg)</p></li>
+<li><p>column 5: storm accum precipitation (cm)</p></li>
+<li><p>column 6: sea level pressure (hPa)</p></li>
+<li><p>column 7: longitude (decimal deg)</p></li>
+<li><p>column 8: latitude (decimal deg)</p></li>
+<li><p>column 9: hurricane hour</p></li>
+<li><p>column 10: nest number (this is not always present)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>If the ADCIRC time falls outside the interval of time covered by the GFDL model output files, ADCIRC will insert “blank snaps”, i.e., it will set the wind velocity at all mesh vertices to 0.0 m/s and the barometric pressure to a uniform background pressure of 1013mb.</p></li>
+</ul>
+</section>
+<section id="id34">
+<h3>Example<a class="headerlink" href="#id34" title="Link to this heading"></a></h3>
+<p>The following is an example of a fort.22 file with NWS=16 format:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>! first line is a comment line, max length 1024 characters
+1.0 ! 2nd line is a velocity magnitude multiplier
+100.0 ! 3rd line: maximum extrapolation distance (m)
+0.0 -1 0.0 &quot;/home/jason/hwind/al092011_0828_1330&quot; ! time (hours), Pc (mb), ramp mult, filename
+6.0 -1 0.5 &quot;/home/jason/hwind/al092011_0828_1930&quot;
+</pre></div>
+</div>
+<p>This example shows:</p>
+<ul class="simple">
+<li><p>A comment line (first line)</p></li>
+<li><p>A velocity magnitude multiplier of 1.0 (second line)</p></li>
+<li><p>A maximum extrapolation distance of 100.0 meters (third line)</p></li>
+<li><dl class="simple">
+<dt>Two GFDL model output files at different times:</dt><dd><ul>
+<li><p>The first at 0.0 hours with no ramping (0.0)</p></li>
+<li><p>The second at 6.0 hours with half ramping (0.5)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Each file represents a snapshot of GFDL model output at the specified time</p></li>
+<li><p>The timestamp value corresponds to hours after the cold start time</p></li>
+</ul>
+</section>
+</section>
+<section id="nws-19">
+<span id="id35"></span><h2>NWS = 19<a class="headerlink" href="#nws-19" title="Link to this heading"></a></h2>
+<p>In this format, ADCIRC uses an asymmetric hurricane vortex formulation with customizable radius and Holland B parameters.</p>
+<section id="id36">
+<h3>File Structure<a class="headerlink" href="#id36" title="Link to this heading"></a></h3>
+<p>The file needs to be in best track format, see notes below for more information.</p>
+</section>
+<section id="id37">
+<h3>Format Specifics<a class="headerlink" href="#id37" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>User has the ability to select which Isotach to use in each of the 4 quadrants.</p></li>
+<li><p>User also has ability to modify RMAX and Holland’s B parameter using the ASWIP program.</p></li>
+<li><p>The auxiliary preprocessing program ASWIP.F (located in the /wind directory and executable is created by typing, make aswip, in the work folder after adcirc executable has been generated), will generate the fort.22 input file for NWS=19 from a NWS=9 formatted input file.</p></li>
+<li><p>Hurricane parameters are read in from the Single File Meteorological Forcing Input File.</p></li>
+<li><p>It is assumed that the line in the fort.22 file with a zero as the forecast increment (i.e., column 6) corresponds to the start of the current simulation run, whether it is a hotstart or cold start.</p></li>
+<li><p>In other words, there is no option to set the NWS value negative to indicate that the file starts at the ADCIRC hotstart time. Rather, the forecast increment in hours (column 6) is used to indicate the relationship between the ADCIRC time and the data in the fort.22 file.</p></li>
+<li><p>Wind velocity and atmospheric pressure are calculated at exact finite element mesh node locations and directly coupled to ADCIRC at every time step using the asymmetric hurricane vortex formulation (Mattocks et al, 2006; Mattocks and Forbes, 2008) based on the Holland gradient wind model.</p></li>
+<li><p>The input file is assumed to correspond to the ATCF Best Track/Objective Aid/Wind Radii Format.</p></li>
+<li><p>Historical tracks, real-time hindcast tracks and real-time forecast tracks may be found in this format.</p></li>
+<li><p>This option uses the radii at specific wind speeds (34, 50, 64, 100 knots) reported in the four quadrants (NE, SE, SW, NW) of the storm to calculate the radius of maximum winds as a function of the azimuthal angle.</p></li>
+<li><p>Garret’s formula is used to compute wind stress from the wind velocity.</p></li>
+<li><p>The NWS=19 option allows the user to set a value for Rmax and Holland B Parameter.</p></li>
+<li><p>Additionally the user can select the isotachs to be used for each of the 4 quadrants.</p></li>
+<li><p>The utility program aswip_1.0.3.F located in the /wind folder will generate the NWS=19 formatted file from a NWS=9 formatted fort.22 input file.</p></li>
+<li><p>In order to use the NWS=19 option, the file needs to be in best track format.</p></li>
+<li><p>The forecast period (column #6) needs to be edited to reflect the time of the forecast/nowcast for each track location (each line) in hours from the start of the simulation (0, 6, 12, 18, etc).</p></li>
+<li><p>The original data in that column depends on what type of best track format data is being used. The original data might have 0 or other numbers in that column.</p></li>
+<li><p>It is suggested that users change the “BEST” tech type to “ASYM” in column 5 in the fort.22 file to denote that the file has been modified to accommodate the asymmetric wind formulation (the simulation time in hours in the 6th column has been added, etc.) so it will not get confused in the future with a best track file.</p></li>
+<li><dl class="simple">
+<dt>The NWS=19 option requires the following variables in the fort.22 file in a best track format:</dt><dd><ul>
+<li><p>Forecast time in hours (column 6); enter the time in hours in each record starting at 0</p></li>
+<li><p>Latitude of the eye (column 7)</p></li>
+<li><p>Longitude of the eye (column 8)</p></li>
+<li><p>Maximum sustained wind speed in knots (column 9)</p></li>
+<li><p>Minimum sea level pressure in MB (column 10)</p></li>
+<li><p>Wind intensity in knots of the radii defined in the record (34, 50, 64 or 100 knots) (column 12)</p></li>
+<li><p>Radius of specified wind intensity for quadrants 1, 2, 3, 4 in NM (columns 14, 15, 16, 17); ≥ 0</p></li>
+<li><p>Background pressure in MB (column 18); a standard value of 1013 can be used</p></li>
+<li><p>Rmax as reported in the ATCF BEST TRACK file in column 20</p></li>
+<li><p>Storm Name in Column 28 ATCF file format</p></li>
+<li><p>Time Record number in column 29. There can be multiple lines for a given time record depending on the number of isotachs reported in the ATCF File</p></li>
+<li><p>Number of isotachs reported in the ATCF file for the corresponding Time record.</p></li>
+<li><p>Columns 31-34 indicate the selection of radii for that particular isotach. 0 indicates do not use this radius, and 1 indicates use this radius and corresponding wind speed.</p></li>
+<li><p>Columns 35-38 are the designated Rmax values computed for each of the quadrants selected for each particular isotach.</p></li>
+<li><p>Column 39 is the Holland B parameter computed using the formulas outlined in the Holland paper, and implemented using the aswip program.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>The format of the file is fixed and users will want to use the aswip program to be sure that the input fort.22 file is properly formatted.</p></li>
+<li><p>The command line for NWS=19 is <code class="docutils literal notranslate"><span class="pre">./aswip</span> <span class="pre">-n</span> <span class="pre">19</span> <span class="pre">-m</span> <span class="pre">2</span> <span class="pre">-z</span> <span class="pre">1</span></code></p></li>
+</ul>
+</section>
+<section id="id38">
+<h3>Example<a class="headerlink" href="#id38" title="Link to this heading"></a></h3>
+<p>The following is a simplified example of a fort.22 file with NWS=19 format:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>AL, 09, 2017090500, 03, ASYM, 000, 167N, 0369W, 125, 948, XX, 34, NEQ, 150, 150, 090, 150, 1013, 027, , , , , , , , , IRMA, 1, 4, 0, 0, 1, 0, 000, 000, 025, 000, 1.25, 1.28, 1.26, 1.24, 1.30, 132, 129, 120, 133
+AL, 09, 2017090500, 03, ASYM, 000, 167N, 0369W, 125, 948, XX, 50, NEQ, 075, 075, 050, 075, 1013, 027, , , , , , , , , IRMA, 1, 4, 0, 1, 0, 0, 000, 027, 000, 000, 1.25, 1.28, 1.26, 1.24, 1.30, 132, 129, 120, 133
+AL, 09, 2017090500, 03, ASYM, 000, 167N, 0369W, 125, 948, XX, 64, NEQ, 035, 035, 025, 035, 1013, 027, , , , , , , , , IRMA, 1, 4, 1, 0, 0, 0, 027, 000, 000, 000, 1.25, 1.28, 1.26, 1.24, 1.30, 132, 129, 120, 133
+AL, 09, 2017090500, 03, ASYM, 000, 167N, 0369W, 125, 948, XX, 100, NEQ, 010, 010, 005, 010, 1013, 027, , , , , , , , , IRMA, 1, 4, 0, 0, 0, 1, 000, 000, 000, 027, 1.25, 1.28, 1.26, 1.24, 1.30, 132, 129, 120, 133
+AL, 09, 2017090506, 03, ASYM, 006, 171N, 0378W, 130, 943, XX, 34, NEQ, 160, 160, 100, 160, 1013, 025, , , , , , , , , IRMA, 2, 4, 0, 0, 1, 0, 000, 000, 025, 000, 1.30, 1.32, 1.29, 1.28, 1.33, 138, 135, 128, 140
+AL, 09, 2017090506, 03, ASYM, 006, 171N, 0378W, 130, 943, XX, 50, NEQ, 080, 080, 060, 080, 1013, 025, , , , , , , , , IRMA, 2, 4, 0, 1, 0, 0, 000, 025, 000, 000, 1.30, 1.32, 1.29, 1.28, 1.33, 138, 135, 128, 140
+AL, 09, 2017090506, 03, ASYM, 006, 171N, 0378W, 130, 943, XX, 64, NEQ, 040, 040, 030, 040, 1013, 025, , , , , , , , , IRMA, 2, 4, 1, 0, 0, 0, 025, 000, 000, 000, 1.30, 1.32, 1.29, 1.28, 1.33, 138, 135, 128, 140
+AL, 09, 2017090506, 03, ASYM, 006, 171N, 0378W, 130, 943, XX, 100, NEQ, 012, 012, 008, 012, 1013, 025, , , , , , , , , IRMA, 2, 4, 0, 0, 0, 1, 000, 000, 000, 025, 1.30, 1.32, 1.29, 1.28, 1.33, 138, 135, 128, 140
+</pre></div>
+</div>
+<p>This example shows:</p>
+<ul class="simple">
+<li><p>Hurricane Irma (AL09 of 2017) with ASYM tech type (modified best track)</p></li>
+<li><p>Two time steps (0 and 6 hours) with 4 isotachs (34, 50, 64, 100 knots) at each time</p></li>
+<li><p>Radius values in NM for each quadrant (NE, SE, SW, NW) for each isotach</p></li>
+<li><dl class="simple">
+<dt>For each isotach at each time step, different quadrants are selected:</dt><dd><ul>
+<li><p>34kt isotach: using SW quadrant (column 33 = 1)</p></li>
+<li><p>50kt isotach: using SE quadrant (column 32 = 1)</p></li>
+<li><p>64kt isotach: using NE quadrant (column 31 = 1)</p></li>
+<li><p>100kt isotach: using NW quadrant (column 34 = 1)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Rmax values computed for each quadrant based on selected isotachs</p></li>
+<li><p>Holland B parameter of 1.25-1.30 computed using aswip program</p></li>
+</ul>
+</section>
+</section>
+<section id="nws-20">
+<span id="id39"></span><h2>NWS = 20<a class="headerlink" href="#nws-20" title="Link to this heading"></a></h2>
+<p>In this format, ADCIRC uses the Generalized Asymmetric Holland Model (GAHM), which provides theoretical and practical improvements over previous parametric vortex models.</p>
+<section id="id40">
+<h3>File Structure<a class="headerlink" href="#id40" title="Link to this heading"></a></h3>
+<p>The file format is similar to the NWS = 19 format with 8 additional columns of data, see notes below for more information.</p>
+</section>
+<section id="id41">
+<h3>Format Specifics<a class="headerlink" href="#id41" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>The Generalized Asymmetric Holland Model (GAHM) provides a set of theoretical and practical improvements over previous parametric meteorological vortex models in ADCIRC. The theory and implementation of the GAHM was initially described at the 2013 ADCIRC Users Group Meeting.</p></li>
+<li><dl class="simple">
+<dt>The NWS=20 option requires the following variables in the fort.22 file in a best track format, which includes the same variables as NWS=19 plus additional columns:</dt><dd><ul>
+<li><p>Forecast time in hours (column 6); enter the time in hours in each record starting at 0</p></li>
+<li><p>Latitude of the eye (column 7)</p></li>
+<li><p>Longitude of the eye (column 8)</p></li>
+<li><p>Maximum sustained wind speed in knots (column 9)</p></li>
+<li><p>Minimum sea level pressure in MB (column 10)</p></li>
+<li><p>Wind intensity in knots of the radii defined in the record (34, 50, 64 or 100 knots) (column 12)</p></li>
+<li><p>Radius of specified wind intensity for quadrants 1, 2, 3, 4 in NM (columns 14, 15, 16, 17); ≥ 0</p></li>
+<li><p>Background pressure in MB (column 18); a standard value of 1013 can be used</p></li>
+<li><p>Rmax as reported in the ATCF BEST TRACK file in column 20</p></li>
+<li><p>Storm Name in Column 28 ATCF file format</p></li>
+<li><p>Time Record number in column 29. There can be multiple lines for a given time record depending on the number of isotachs reported in the ATCF File</p></li>
+<li><p>Number of isotachs reported in the ATCF file for the corresponding Time record.</p></li>
+<li><p>Columns 31-34 indicate the selection of radii for that particular isotach. 0 indicates do not use this radius, and 1 indicates use this radius and corresponding wind speed.</p></li>
+<li><p>Columns 35-38 are the designated Rmax values computed for each of the quadrants selected for each particular isotach.</p></li>
+<li><p>Column 39 is the Holland B parameter computed using the formulas outlined in the Holland paper, and implemented using the aswip program.</p></li>
+<li><p>Column 40-43 is the quadrant-varying Holland B parameter</p></li>
+<li><p>Column 44-47 are the quadrant-varying Vmax calculated at the top of the planetary boundary (a wind reduction factor is applied to reduce the wind speed at the boundary to the 10-m surface)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>The format of the file is fixed and users will want to use the aswip program to be sure that the input fort.22 file is properly formatted.</p></li>
+<li><dl class="simple">
+<dt>Options for the aswip program using NWS = 20 are the following:</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">./aswip</span> <span class="pre">-n</span> <span class="pre">#</span> <span class="pre">-m</span> <span class="pre">#</span> <span class="pre">-z</span> <span class="pre">#</span></code></p></li>
+<li><p>-n = nws option</p></li>
+<li><p>-m = methods of selecting isotachs for use in computation of radius/radii to maximum winds
+* 1: always use the 34kt isotach
+* 2: use the highest available isotach in any quadrant each time
+* 3: use the 50kt isotach if it is available; otherwise use the 34kt isotach
+* 4: use all available isotachs (must choose this for GAHM/NWS=20)</p></li>
+<li><p>-z = approaches solving for Rmax, 1 = only rotate wind vectors afterward, 2 = rotate wind vectors before and afterwards (use this for NWS=20)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>The command line for NWS=20 is: <code class="docutils literal notranslate"><span class="pre">./aswip</span> <span class="pre">-n</span> <span class="pre">20</span> <span class="pre">-m</span> <span class="pre">4</span> <span class="pre">-z</span> <span class="pre">2</span></code></p></li>
+</ul>
+</section>
+<section id="id42">
+<h3>Example<a class="headerlink" href="#id42" title="Link to this heading"></a></h3>
+<p>The following is a simplified example of a fort.22 file with NWS=20 format:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>AL, 09, 2017090500, 03, GAHM, 000, 167N, 0369W, 125, 948, XX, 34, NEQ, 150, 150, 090, 150, 1013, 027, , , , , , , , , IRMA, 1, 4, 0, 0, 1, 0, 000, 000, 025, 000, 1.25, 1.28, 1.26, 1.24, 1.30, 132, 129, 120, 133
+AL, 09, 2017090500, 03, GAHM, 000, 167N, 0369W, 125, 948, XX, 50, NEQ, 075, 075, 050, 075, 1013, 027, , , , , , , , , IRMA, 1, 4, 0, 1, 0, 0, 000, 027, 000, 000, 1.25, 1.28, 1.26, 1.24, 1.30, 132, 129, 120, 133
+AL, 09, 2017090500, 03, GAHM, 000, 167N, 0369W, 125, 948, XX, 64, NEQ, 035, 035, 025, 035, 1013, 027, , , , , , , , , IRMA, 1, 4, 1, 0, 0, 0, 027, 000, 000, 000, 1.25, 1.28, 1.26, 1.24, 1.30, 132, 129, 120, 133
+AL, 09, 2017090500, 03, GAHM, 000, 167N, 0369W, 125, 948, XX, 100, NEQ, 010, 010, 005, 010, 1013, 027, , , , , , , , , IRMA, 1, 4, 0, 0, 0, 1, 000, 000, 000, 027, 1.25, 1.28, 1.26, 1.24, 1.30, 132, 129, 120, 133
+AL, 09, 2017090506, 03, GAHM, 006, 171N, 0378W, 130, 943, XX, 34, NEQ, 160, 160, 100, 160, 1013, 025, , , , , , , , , IRMA, 2, 4, 0, 0, 1, 0, 000, 000, 025, 000, 1.30, 1.32, 1.29, 1.28, 1.33, 138, 135, 128, 140
+AL, 09, 2017090506, 03, GAHM, 006, 171N, 0378W, 130, 943, XX, 50, NEQ, 080, 080, 060, 080, 1013, 025, , , , , , , , , IRMA, 2, 4, 0, 1, 0, 0, 000, 025, 000, 000, 1.30, 1.32, 1.29, 1.28, 1.33, 138, 135, 128, 140
+AL, 09, 2017090506, 03, GAHM, 006, 171N, 0378W, 130, 943, XX, 64, NEQ, 040, 040, 030, 040, 1013, 025, , , , , , , , , IRMA, 2, 4, 1, 0, 0, 0, 025, 000, 000, 000, 1.30, 1.32, 1.29, 1.28, 1.33, 138, 135, 128, 140
+AL, 09, 2017090506, 03, GAHM, 006, 171N, 0378W, 130, 943, XX, 100, NEQ, 012, 012, 008, 012, 1013, 025, , , , , , , , , IRMA, 2, 4, 0, 0, 0, 1, 000, 000, 000, 025, 1.30, 1.32, 1.29, 1.28, 1.33, 138, 135, 128, 140
+</pre></div>
+</div>
+<p>This example shows:</p>
+<ul class="simple">
+<li><p>Hurricane Irma (AL09 of 2017) with GAHM tech type (modified best track)</p></li>
+<li><p>Two time steps (0 and 6 hours) with 4 isotachs (34, 50, 64, 100 knots) at each time</p></li>
+<li><p>Radius values in NM for each quadrant (NE, SE, SW, NW) for each isotach</p></li>
+<li><dl class="simple">
+<dt>For each isotach at each time step, different quadrants are selected:</dt><dd><ul>
+<li><p>34kt isotach: using SW quadrant (column 33 = 1)</p></li>
+<li><p>50kt isotach: using SE quadrant (column 32 = 1)</p></li>
+<li><p>64kt isotach: using NE quadrant (column 31 = 1)</p></li>
+<li><p>100kt isotach: using NW quadrant (column 34 = 1)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Average Holland B parameter (column 39)</p></li>
+<li><p>Quadrant-varying Holland B parameters (columns 40-43)</p></li>
+<li><p>Quadrant-varying Vmax values (columns 44-47) at the top of the planetary boundary</p></li>
+</ul>
+</section>
+</section>
+<section id="additional-nws-formats">
+<h2>Additional NWS Formats<a class="headerlink" href="#additional-nws-formats" title="Link to this heading"></a></h2>
+<p>ADCIRC supports many other meteorological input formats, including:</p>
+<ul class="simple">
+<li><p>NWS = 7, 107: Tropical cyclone model - Generalized asymmetric Holland formulation with a moving reference frame</p></li>
+<li><p>NWS = 9, 109: Multiple tropical cyclone model - Generalized asymmetric Holland formulation</p></li>
+<li><p>NWS = 15: HWind format</p></li>
+<li><p>NWS = 16: GFDL format</p></li>
+</ul>
+<p>These additional formats will be documented in future updates.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fort20.html" class="btn btn-neutral float-left" title="Fort.20: Non-periodic Normal Flow Boundary Condition File" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fort200.html" class="btn btn-neutral float-right" title="Fort.200: Multiple File Meteorological Forcing Input" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, ADCIRC Developers and Users Community.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

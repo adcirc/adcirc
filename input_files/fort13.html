@@ -1,0 +1,960 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fort.13: Nodal Attributes File &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Fort.67, Fort.68: Hot Start Files" href="fort6768.html" />
+    <link rel="prev" title="Fort.15: Model Parameter and Periodic Boundary Condition File" href="fort15.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction/index.html">Introduction to ADCIRC</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#what-is-adcirc">What is ADCIRC?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#model-features">Model Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#adcirc-programs">ADCIRC Programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#system-requirements">System Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#adcirc-files">ADCIRC Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../introduction/index.html#contributors">Contributors</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/index.html">Getting Started with ADCIRC</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/index.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/index.html#building-adcirc">Building ADCIRC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../getting_started/index.html#traditional-build-method">Traditional Build Method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../getting_started/index.html#cmake-build-method">CMake Build Method</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started/index.html#running-adcirc">Running ADCIRC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../getting_started/index.html#example-run">Example Run</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../theory/index.html">Theory and Formulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../theory/governing_equations.html">Governing Equations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/governing_equations.html#continuity-equation">Continuity Equation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/governing_equations.html#momentum-equations">Momentum Equations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/governing_equations.html#bottom-stress-formulation">Bottom Stress Formulation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/numerical_implementation.html">Numerical Implementation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/numerical_implementation.html#finite-element-spatial-discretization">Finite Element Spatial Discretization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/numerical_implementation.html#weak-formulation-and-assembly">Weak Formulation and Assembly</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/numerical_implementation.html#time-discretization">Time Discretization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/numerical_implementation.html#lumped-mass-matrix">Lumped Mass Matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/numerical_implementation.html#stabilization-techniques">Stabilization Techniques</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/boundary_conditions.html">Boundary Conditions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/boundary_conditions.html#external-boundary-conditions">External Boundary Conditions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#elevation-boundary-condition">Elevation Boundary Condition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#flow-boundary-condition">Flow Boundary Condition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#radiation-boundary-condition">Radiation Boundary Condition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#combined-radiation-flow-boundary-condition">Combined Radiation-Flow Boundary Condition</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/boundary_conditions.html#internal-boundary-conditions">Internal Boundary Conditions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#no-flow-boundary-condition">No-Flow Boundary Condition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#cross-barrier-boundary-condition">Cross-Barrier Boundary Condition</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/boundary_conditions.html#surface-boundary-conditions">Surface Boundary Conditions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#wind-stress">Wind Stress</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../theory/boundary_conditions.html#atmospheric-pressure">Atmospheric Pressure</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/wave_continuity.html">Wave Continuity Formulation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wave_continuity.html#derivation-of-the-gwce">Derivation of the GWCE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wave_continuity.html#advantages-of-the-gwce">Advantages of the GWCE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wave_continuity.html#role-of-the-tau-parameter">Role of the Tau Parameter</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/coordinate_systems.html">Coordinate Systems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/coordinate_systems.html#spherical-coordinates">Spherical Coordinates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/coordinate_systems.html#cartesian-coordinates">Cartesian Coordinates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/coordinate_systems.html#coordinate-transformations">Coordinate Transformations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/coordinate_systems.html#cpp-coordinate-system">CPP Coordinate System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/coordinate_systems.html#vertical-coordinate-systems">Vertical Coordinate Systems</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/wetting_drying.html">Wetting and Drying</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wetting_drying.html#conceptual-approach">Conceptual Approach</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wetting_drying.html#basic-algorithm">Basic Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wetting_drying.html#numerical-techniques">Numerical Techniques</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/wetting_drying.html#implementation-details">Implementation Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/baroclinic_terms.html">Baroclinic Terms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/baroclinic_terms.html#density-variation">Density Variation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/baroclinic_terms.html#baroclinic-pressure-gradient">Baroclinic Pressure Gradient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/baroclinic_terms.html#transport-equations">Transport Equations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/baroclinic_terms.html#three-dimensional-formulation">Three-Dimensional Formulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/baroclinic_terms.html#surface-heat-flux">Surface Heat Flux</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../theory/baroclinic_terms.html#numerical-considerations-for-baroclinic-simulations">Numerical Considerations for Baroclinic Simulations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../running_adcirc/index.html">Running ADCIRC</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../running_adcirc/command_line_options.html">Command Line Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../running_adcirc/command_line_options.html#adcirc-command-line-options">ADCIRC Command Line Options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../running_adcirc/command_line_options.html#version-51-additions">Version 51 Additions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../running_adcirc/command_line_options.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../running_adcirc/command_line_options.html#adcprep-command-line-options">ADCPREP Command Line Options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../running_adcirc/command_line_options.html#id1">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../running_adcirc/command_line_options.html#notes-on-parallel-execution">Notes on Parallel Execution</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Input Files</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#grid-and-boundaries">Grid and Boundaries</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort14.html">Fort.14: Grid and Boundary Information File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort14.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort14.html#normal-flux-boundary-types">Normal Flux Boundary Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort14.html#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#model-parameters-and-periodic-bcs">Model Parameters and Periodic BCs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort15.html">Fort.15: Model Parameter and Periodic Boundary Condition File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort15.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort15.html#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#nodal-attributes">Nodal Attributes</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Fort.13: Nodal Attributes File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nodal-attributes">Nodal Attributes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#hot-start">Hot Start</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort6768.html">Fort.67, Fort.68: Hot Start Files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort6768.html#parameter-changes-during-hot-start">Parameter Changes During Hot Start</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort6768.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort6768.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#boundary-conditions">Boundary Conditions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort19.html">Fort.19: Non-periodic Elevation Boundary Condition File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort19.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort19.html#notes">Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort19.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort20.html">Fort.20: Non-periodic Normal Flow Boundary Condition File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort20.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort20.html#notes">Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort20.html#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#meteorological-forcing">Meteorological Forcing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort22.html">Fort.22: Meteorological Forcing Data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#general-notes">General Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-parameter-index">NWS Parameter Index</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-1-or-101">NWS = 1 or 101</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-2-2-102-or-102">NWS = 2, -2, 102, or -102</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-3-or-103">NWS = 3 or 103</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-4-4-104-or-104">NWS = 4, -4, 104, or -104</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-5-5-105-or-105">NWS = 5, -5, 105, or -105</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-6-or-106">NWS = 6 or 106</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-7-or-7">NWS = 7 or -7</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-8-or-108">NWS = 8 or 108</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-10">NWS = 10</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-11">NWS = 11</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-12-or-12">NWS = 12 or -12</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-15">NWS = 15</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-16">NWS = 16</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-19">NWS = 19</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#nws-20">NWS = 20</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort22.html#additional-nws-formats">Additional NWS Formats</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort200.html">Fort.200: Multiple File Meteorological Forcing Input</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort200.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort200.html#gfs-nws-10-notes">GFS (NWS=10) Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort200.html#eta-29-nws-11-notes">Eta-29 (NWS=11) Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort200.html#general-notes">General Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#wave-forcing">Wave Forcing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort23.html">Fort.23: Wave Radiation Stress Forcing File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort23.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort23.html#notes">Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort23.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort26.html">Fort.26: SWAN Runtime Parameters and Coupling File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort26.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort26.html#specifying-input">Specifying Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort26.html#specifying-output">Specifying Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort26.html#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#self-attraction-earth-load-tide-forcing">Self Attraction/Earth Load Tide Forcing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort24.html">Fort.24: Self Attraction/Earth Load Tide Forcing File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort24.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort24.html#notes">Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort24.html#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#ice-coverage">Ice Coverage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort25.html">Fort.25, 255/277: Ice Coverage Input Files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort25.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort25.html#method-for-specifying-the-coefficient-of-drag">Method for Specifying the Coefficient of Drag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort25.html#references">References</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#d-baroclinic-simulation">3D Baroclinic Simulation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort11.html">Fort.11: Density Initial Condition Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort11.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort11.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort35.html">Fort.35: Level of No Motion Boundary Condition Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort35.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort35.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort36.html">Fort.36: Salinity Boundary Condition Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort36.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort36.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort37.html">Fort.37: Temperature Boundary Condition Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort37.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort37.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort38.html">Fort.38: Surface Temperature Boundary Values Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort38.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort38.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fort39.html">Fort.39: Salinity and Temperature River Boundary Values Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort39.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort39.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#station-locations">Station Locations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="elev_stat151.html">Elev_stat.151: Elevation Station Location Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="elev_stat151.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="elev_stat151.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="vel_stat151.html">Vel_stat.151: Velocity Station Location Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="vel_stat151.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="vel_stat151.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="met_stat151.html">Met_stat.151: Meteorological Recording Station Location Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="met_stat151.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="met_stat151.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="conc_stat151.html">Conc_stat.151: Concentration Station Location Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="conc_stat151.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="conc_stat151.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#time-varying-topography-bathymetry">Time-varying Topography/Bathymetry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="time_varying_bathymetry.html">Fort.141: Time Varying Bathymetry Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_bathymetry.html#full-domain-bathymetry-change">Full Domain Bathymetry Change</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_bathymetry.html#limited-area-bathymetry-change">Limited Area Bathymetry Change</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_bathymetry.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="time_varying_weirs.html">Fort.142: Time Varying Weirs Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#required-variables">Required Variables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#elevation-change-types">Elevation Change Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#varytype-1-parameters">VARYTYPE=1 Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#varytype-2-parameters">VARYTYPE=2 Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#varytype-3-parameters">VARYTYPE=3 Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="time_varying_weirs_schedule.html">Time Varying Weirs Schedule File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs_schedule.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs_schedule.html#time-parameters">Time Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs_schedule.html#weir-height-parameters">Weir Height Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="time_varying_weirs_schedule.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#passive-scalar-transport">Passive Scalar Transport</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort10.html">Fort.10: Passive Scalar Transport Input File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort10.html#file-structure">File Structure</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../output_files/index.html">Output Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#runtime-logs">Runtime Logs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort6.html">Screen Output</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort16.html">Fort.16: General Diagnostic Output</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort16.html#notes-for-fort-16-file">Notes for fort.16 file:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort16.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort33.html">Fort.33: Iterative Solver ITPACKV 2D Diagnostic Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#water-surface-elevation-time-series">Water Surface Elevation Time Series</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort61.html">Fort.61: Elevation Time Series at Specified Elevation Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort61.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort61.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort63.html">Fort.63: Elevation Time Series at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort63.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#velocity-time-series">Velocity Time Series</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort62.html">Fort.62: Depth-averaged Velocity Time Series at Specified Velocity Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort62.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort62.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort64.html">Fort.64: Depth-averaged Velocity Time Series at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort64.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort64.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#meteorological-time-series">Meteorological Time Series</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort71.html">Fort.71: Atmospheric Pressure Time Series at Specified Meteorological Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort71.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort71.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort72.html">Fort.72: Wind Velocity Time Series at Specified Meteorological Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort72.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort72.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort73.html">Fort.73: Atmospheric Pressure Time Series at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort73.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort73.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort74.html">Fort.74: Wind Stress or VelocityTime Series at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort74.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort74.html#note">Note</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#maximum-and-minimum-values">Maximum and Minimum Values</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/maxele63.html">Maxele.63: Maximum Water Surface Elevation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/maxvel63.html">Maxvel.63: Maximum Depth-averaged Velocity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/maxwvel63.html">Maxwvel.63: Maximum Wind Speed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/maxrs63.html">Maxrs.63: Maximum Wave Radiation Stress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/minpr63.html">Minpr.63: Minimum Barometric Pressure</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#hot-start">Hot Start</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fort6768.html">Fort.67, Fort.68: Hot Start Files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="fort6768.html#parameter-changes-during-hot-start">Parameter Changes During Hot Start</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort6768.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fort6768.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#harmonic-analysis">Harmonic Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort51.html">Fort.51: Elevation Harmonic Constituents at Specified Elevation Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort51.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort51.html#note">Note</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort52.html">Fort.52: Depth-averaged Velocity Harmonic Constituents at Specified Velocity Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort52.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort52.html#note">Note</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort53.html">Fort.53: Elevation Harmonic Constituents at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort53.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort53.html#note">Note</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort54.html">Fort.54: Depth-averaged Velocity Harmonic Constituents at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort54.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort54.html#note">Note</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort55.html">Fort.55: Harmonic Constituent Diagnostic Output at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort55.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort55.html#note">Note</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#wet-dry-state-and-inundation">Wet/Dry State and Inundation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/initiallydry63.html">Initiallydry.63: Inundation Data Output File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/initiallydry63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/initiallydry63.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/everdried63.html">Everdried.63: Dry Node Flagging File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/everdried63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/everdried63.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/nodecode63.html">Nodecode.63: Wet/Dry State of Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/nodecode63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/nodecode63.html#note">Note</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/noff100.html">Noff.100: Wet/Dry Elemental State File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/noff100.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/noff100.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/maxinundepth63.html">Maxinundepth.63: Maximum Inundation Depth File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/maxinundepth63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/maxinundepth63.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/inundationtime63.html">Inundationtime.63: Inundation Time File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/inundationtime63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/inundationtime63.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/endrisinginun63.html">Endrisinginun.63: Inundation Rising at the End of the Run Flag File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/endrisinginun63.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/endrisinginun63.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#ice-coverage">Ice Coverage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort91.html">Fort.91: Ice Coverage Fields at Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort91.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort91.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort93.html">Fort.93: Ice Coverage Fields at All Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort93.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort93.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#d-variables">3D Variables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort41.html">Fort.41: 3D Density, Temperature and/or Salinity at Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort41.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort41.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort42.html">Fort.42: 3D Velocity at Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort42.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort42.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort43.html">Fort.43: 3D Turbulence at Specified Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort43.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort43.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort44.html">Fort.44: 3D Density, Temperature and/or Salinity at All Nodes in the Model Grid</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort44.html#file-structure">File Structure</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort45.html">Fort.45: 3D Velocity at All Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort45.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort45.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort46.html">Fort.46: 3D Turbulence at All Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort46.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort46.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort47.html">Fort.47: Temperature Values at the Surface Layer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort47.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#mode-parameters">Mode Parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort90.html">Fort.90: Primitive Weighting in Continuity Equation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort90.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort90.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#time-varying-topography-bathymetry">Time-varying Topography/Bathymetry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort75.html">Fort.75: Bathymetry Time Series at Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort75.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort75.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort76.html">Fort.76: Bathymetry Time Series at All Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort76.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort76.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort77.html">Fort.77: Time-varying Weir Output</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort77.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort77.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#passive-scalar-transport">Passive Scalar Transport</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort81.html">Fort.81: Scalar Concentration Time Series at Recording Stations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort81.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort81.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../output_files/fort83.html">Fort.83: Scalar Concentration Time Series at All Nodes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort83.html#file-structure">File Structure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../output_files/fort83.html#notes">Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../parameter_definitions/index.html">Parameter Definitions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../parameter_definitions/index.html#input-files">Input Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-14-fort-15">fort.14, fort.15</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-12">fort.12</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-10">fort.10</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-11">fort.11</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-13">fort.13</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-19">fort.19</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-20">fort.20</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-22">fort.22</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-23">fort.23</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-24">fort.24</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../parameter_definitions/index.html#output-files">Output Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-51-52-53-54">fort.51,52,53,54</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-55">fort.55</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-61-62-63-64-71-72-73-74-75-81-83">fort.61,62,63,64,71,72,73,74,75,81,83</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-67-68">fort.67, 68</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../parameter_definitions/index.html#fort-41-fort-42-fort-43-fort-44-fort-45-fort-46">fort.41, fort.42, fort.43, fort.44, fort.45, fort.46</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../special_features/index.html">Special Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../special_features/bridge_piers.html">Bridge Piers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/bridge_piers.html#theory">Theory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/bridge_piers.html#determination-of-drag-coefficient">Determination of Drag Coefficient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/bridge_piers.html#implementation-in-adcirc">Implementation in ADCIRC</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/bridge_piers.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../special_features/ice_modifications.html">Ice Modifications</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/ice_modifications.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/ice_modifications.html#implementation">Implementation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/ice_modifications.html#usage">Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/ice_modifications.html#references">References</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../special_features/vertical_element_walls.html">Vertical Element Walls (VEWs)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/vertical_element_walls.html#what-are-vertical-element-walls">What are Vertical Element Walls?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/vertical_element_walls.html#example-usages">Example Usages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../special_features/vertical_element_walls.html#modeling-channels-with-vertical-element-walls">Modeling Channels with Vertical Element Walls</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../special_features/vertical_element_walls.html#modeling-one-sided-steep-slopes-with-vertical-element-walls">Modeling One-sided Steep Slopes with Vertical Element Walls</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/vertical_element_walls.html#special-features-for-vew-channels-with-condensed-nodes">Special Features for VEW Channels with Condensed Nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/vertical_element_walls.html#defining-vews-in-adcirc-input-files">Defining VEWs in ADCIRC Input Files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../special_features/vertical_element_walls.html#example-fort-14-with-vertical-element-walls">Example Fort.14 with Vertical Element Walls</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../special_features/vertical_element_walls.html#example-fort-13-with-condensed-nodes">Example Fort.13 with Condensed Nodes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/vertical_element_walls.html#available-tools">Available Tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../special_features/vertical_element_walls.html#references">References</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../support_tools/index.html">Support Tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../support_tools/index.html#comprehensive-modeling-and-visualization-tools">Comprehensive Modeling and Visualization Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../support_tools/index.html#pre-processing-and-mesh-generation">Pre-processing and Mesh Generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../support_tools/index.html#forcing-data-acquisition">Forcing Data Acquisition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../support_tools/index.html#model-setup-and-control">Model Setup and Control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../support_tools/index.html#post-processing-and-visualization">Post-processing and Visualization</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../version_history/index.html">Version History</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../version_history/index.html#version-53">Version 53</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../version_history/index.html#version-52">Version 52</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../version_history/index.html#version-51">Version 51</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../version_history/index.html#version-50">Version 50</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../version_history/index.html#older-versions">Older Versions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Input Files</a></li>
+      <li class="breadcrumb-item active">Fort.13: Nodal Attributes File</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/input_files/fort13.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fort-13-nodal-attributes-file">
+<h1>Fort.13: Nodal Attributes File<a class="headerlink" href="#fort-13-nodal-attributes-file" title="Link to this heading"></a></h1>
+<p>The fort.13 file contains nodal attributes that are constant in time but spatially variable. This file is only read when <cite>NWP &gt; 0</cite> in the <cite>Model Parameter and Periodic Boundary Condition File</cite>.</p>
+<section id="file-structure">
+<h2>File Structure<a class="headerlink" href="#file-structure" title="Link to this heading"></a></h2>
+<p>The basic file structure is shown below. Each line of input data is represented by a line containing the input variable name(s). Loops indicate multiple lines of input.</p>
+<pre class="literal-block"><a class="reference internal" href="../parameter_definitions/index.html#agrid"><span class="std std-ref">AGRID</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#numofnodes"><span class="std std-ref">NumOfNodes</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nattr"><span class="std std-ref">NAttr</span></a>
+for i=1 to <a class="reference internal" href="../parameter_definitions/index.html#nattr"><span class="std std-ref">NAttr</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#attrname"><span class="std std-ref">AttrName(i)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#units"><span class="std std-ref">Units(i)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#valuespernode"><span class="std std-ref">ValuesPerNode(i)</span></a>
+   for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#valuespernode"><span class="std std-ref">ValuesPerNode(i)</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#defaultattrval"><span class="std std-ref">DefaultAttrVal(i,k)</span></a>
+   end k loop
+end i loop
+for i=1 to <a class="reference internal" href="../parameter_definitions/index.html#nattr"><span class="std std-ref">NAttr</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#attrname"><span class="std std-ref">AttrName(i)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#numnodesnotdefaultval"><span class="std std-ref">NumNodesNotDefaultVal(i)</span></a>
+   for j=1 to <a class="reference internal" href="../parameter_definitions/index.html#numnodesnotdefaultval"><span class="std std-ref">NumNodesNotDefaultVal(i)</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#n"><span class="std std-ref">n</span></a> <a class="reference internal" href="../parameter_definitions/index.html#attrval"><span class="std std-ref">AttrVal(n,k)</span></a> for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#valuespernode"><span class="std std-ref">ValuesPerNode(i)</span></a>
+      end k loop
+   end j loop
+end i loop</pre>
+</section>
+<section id="nodal-attributes">
+<h2>Nodal Attributes<a class="headerlink" href="#nodal-attributes" title="Link to this heading"></a></h2>
+<p>The following nodal attributes are available in ADCIRC:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#primitive-weighting-in-continuity-equation"><span class="std std-ref">primitive_weighting_in_continuity_equation – Tau0</span></a></p></li>
+<li><p><a class="reference internal" href="#surface-submergence-state"><span class="std std-ref">surface_submergence_state – StartDry</span></a></p></li>
+<li><p><a class="reference internal" href="#quadratic-friction-coefficient-at-sea-floor"><span class="std std-ref">quadratic_friction_coefficient_at_sea_floor – Fric</span></a></p></li>
+<li><p><a class="reference internal" href="#surface-directional-effective-roughness-length"><span class="std std-ref">surface_directional_effective_roughness_length – z0Land</span></a></p></li>
+<li><p><a class="reference internal" href="#surface-canopy-coefficient"><span class="std std-ref">surface_canopy_coefficient – VCanopy</span></a></p></li>
+<li><p><a class="reference internal" href="#bottom-roughness-length"><span class="std std-ref">bottom_roughness_length – Z0b_var</span></a></p></li>
+<li><p><a class="reference internal" href="#average-horizontal-eddy-viscosity-in-sea-water-wrt-depth"><span class="std std-ref">average_horizontal_eddy_viscosity_in_sea_water_wrt_depth – EVC</span></a></p></li>
+<li><p><a class="reference internal" href="#elemental-slope-limiter"><span class="std std-ref">elemental_slope_limiter</span></a></p></li>
+<li><p><a class="reference internal" href="#advection-state"><span class="std std-ref">advection_state – AdvectionState</span></a></p></li>
+<li><p><a class="reference internal" href="#initial-river-elevation"><span class="std std-ref">initial_river_elevation</span></a></p></li>
+<li><p><a class="reference internal" href="#condensed-nodes"><span class="std std-ref">condensed_nodes</span></a></p></li>
+</ul>
+<p>The following sections describe each available nodal attribute and its properties.</p>
+<section id="primitive-weighting-in-continuity-equation-tau0">
+<span id="primitive-weighting-in-continuity-equation"></span><h3>primitive_weighting_in_continuity_equation – Tau0<a class="headerlink" href="#primitive-weighting-in-continuity-equation-tau0" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Same as existing TAU0.</p>
+<p><strong>Requirement</strong>: Required, but not necessarily in the fort.13 file as there is a choice of specification methods. Can be specified in the Model Parameter and Periodic Boundary Condition File as a positive constant, in which case it is spatially uniform; or a negative constant, in which case it is spatially varying according to a hardcoded scheme based on depth. Can also be specified as a nodal attribute in the Nodal Attributes File (fort.13), in which case any value specified in the Model Parameter and Periodic Boundary Condition File is ignored (nodal attributes take precedence).</p>
+<p><strong>Units</strong>: Unitless. (Units for nodal attributes are specified by the user).</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Suggested range specified in description of TAU0.</p>
+</div></blockquote>
+</section>
+<section id="surface-submergence-state-startdry">
+<span id="surface-submergence-state"></span><h3>surface_submergence_state – StartDry<a class="headerlink" href="#surface-submergence-state-startdry" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: This attribute can force a node to be categorized as dry at the start of the simulation, even if it is below the geoid. This is important for simulating places like New Orleans that are below sea level but are not underwater.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Unitless.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: If set to 1, the node is categorized as dry at the cold start of the simulation. If set to zero, the node is categorized as wet or dry depending on whether its depth is below or above the geoid.</p>
+</div></blockquote>
+</section>
+<section id="quadratic-friction-coefficient-at-sea-floor-fric">
+<span id="quadratic-friction-coefficient-at-sea-floor"></span><h3>quadratic_friction_coefficient_at_sea_floor – Fric<a class="headerlink" href="#quadratic-friction-coefficient-at-sea-floor-fric" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: See the description of CF in the Model Parameter and Periodic Boundary Condition File. If the user elects to load this from the fort.13 file, NOLIBF must be set to 1 or the run will terminate.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Unitless.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Same as CF.</p>
+</div></blockquote>
+</section>
+<section id="surface-directional-effective-roughness-length-z0land">
+<span id="surface-directional-effective-roughness-length"></span><h3>surface_directional_effective_roughness_length – z0Land<a class="headerlink" href="#surface-directional-effective-roughness-length-z0land" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: A measure of the “roughness” of the land that can impede wind flow and reduce the surface stress that the wind applies. The ocean would be considered very smooth, and skyscrapers would be considered very rough. This attribute is directional, and the twelve values represent the roughness lengths “seen” by winds blowing from twelve different compass directions at each node. The orientation of the twelve values follows the trigonometric convention, that is, zero degrees represents due east, and the values proceed counter clockwise. In other words, the first value at a node is applied to winds blowing from west to east, the second value applies to winds blowing East-Northeast, etc.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Specified by the user, as is the case for all nodal attributes. The data we use is provided in meters.</p>
+<p><strong>Number of values per node</strong>: 12.</p>
+<p><strong>Values</strong>: Greater than or equal to zero.</p>
+</div></blockquote>
+</section>
+<section id="surface-canopy-coefficient-vcanopy">
+<span id="surface-canopy-coefficient"></span><h3>surface_canopy_coefficient – VCanopy<a class="headerlink" href="#surface-canopy-coefficient-vcanopy" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: This attribute allows the user to turn off wind stress in heavily forested areas that have been flooded, like a swamp. The canopy shields the water from the effect of the wind.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Unitless.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Zero if the wind stress should be zero because of a canopy. One otherwise.</p>
+</div></blockquote>
+</section>
+<section id="bridge-pilings-friction-paramenters-bk-balpha-bdelx-poan">
+<span id="bridge-pilings-friction-paramenters"></span><h3>bridge_pilings_friction_paramenters – BK, BAlpha, BDelX, POAN<a class="headerlink" href="#bridge-pilings-friction-paramenters-bk-balpha-bdelx-poan" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Extra friction from bridge pilings. See Note below.</p>
+<p><strong>Requirement</strong>: Very optional.</p>
+<p><strong>Units</strong>: Vary, see note below and BK, BALPHA, BDELX and POAN.</p>
+<p><strong>Number of values per node</strong>: 4.</p>
+<p><strong>Values</strong>: Vary, see note below and BK, BALPHA, BDELX and POAN.</p>
+<p><strong>Note</strong>: Special considerations must be used when designing a grid for an ADCIRC application that includes the effects of bridge pilings. Specifically, it is necessary to build the grid to provide at least three rows of nodes that parallel the bridge span. One row of nodes (centerline nodes) should lie along the approximate centerline of the bridge while the second and third rows of nodes (adjacent nodes) should lie on either side of the centerline nodes in the along steam direction. An initial implementation of obstruction drag in ADCIRC placed this drag entirely at the row of centerline nodes. However, tests showed that this arrangement led to significant oscillations in the numerical solution. The oscillations abated when the obstruction drag was distributed in the along stream direction so that 25 percent was located at each row of adjacent nodes and 50 percent was located at the row of centerline nodes. Node numbers and coefficient values at all nodes on the centerline and two adjacent rows must be entered in this input file. It is not necessary for centerline nodes to correspond to actual piling positions, (i.e., in the cross stream direction), since the overall effect of the pilings on the large scale circulation is all that is being represented. It is important, however, to construct a grid that is as uniform as possible in the vicinity of the bridge.</p>
+</div></blockquote>
+</section>
+<section id="mannings-n-at-sea-floor-manningsn">
+<span id="mannings-n-at-sea-floor"></span><h3>mannings_n_at_sea_floor – ManningsN<a class="headerlink" href="#mannings-n-at-sea-floor-manningsn" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Manning’s n. If the user elects to use this nodal attribute, NOLIBF must be set to 1 or the run will terminate. During execution, the Manning’s n value specified here is converted to an equivalent quadratic friction coefficient before the bottom stress is calculated. The equivalent quadratic friction coefficient is calculated according to the following formula at each node at each time step: Cd(t)=(g*n^2)/cuberoot(depth[+eta(t)]) where depth is the bathymetric depth and [eta(t)] is the water surface elevation. The addition of the water surface elevation is conditional upon the setting of NOLIFA: eta(t) is treated as zero if NOLIFA is set to zero in the fort.15 file. Finally, the value of CF in the fort.15 is used to set a lower limit on the resulting equivalent quadratic friction coefficient, since the Cd calculated from this formula tends to become small in deep water.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Specified by user.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Greater than zero.</p>
+</div></blockquote>
+</section>
+<section id="chezy-friction-coefficient-at-sea-floor-chezyfric">
+<span id="chezy-friction-coefficient-at-sea-floor"></span><h3>chezy_friction_coefficient_at_sea_floor – ChezyFric<a class="headerlink" href="#chezy-friction-coefficient-at-sea-floor-chezyfric" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Chezy friction coefficient. If the user elects to use this nodal attribute, NOLIBF must be set to 1 or the run will terminate.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Specified by user.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Greater than zero.</p>
+</div></blockquote>
+</section>
+<section id="sea-surface-height-above-geoid-geoidoffset">
+<span id="sea-surface-height-above-geoid"></span><h3>sea_surface_height_above_geoid – GeoidOffset<a class="headerlink" href="#sea-surface-height-above-geoid-geoidoffset" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Creates an initial offset of the sea surface from the geoid. If the offset is also specified at the boundaries, it will remain throughout the simulation. This has been used to simulate a steric effect, where water levels are higher in warm seasons because of thermal expansion.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Specified by the user (length).</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Any.</p>
+</div></blockquote>
+</section>
+<section id="wave-refraction-in-swan-swanwaverefrac">
+<span id="wave-refraction-in-swan"></span><h3>wave_refraction_in_swan – SwanWaveRefrac<a class="headerlink" href="#wave-refraction-in-swan-swanwaverefrac" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: To turn wave refraction on or off in the SWAN calculations during a coupled ADCIRC+SWAN run. In an ADCIRC-only run, this nodal attribute is ignored.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Unitless.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: If set to 1 at a node, wave refraction will be active at that node in the SWAN calculations during a coupled ADCIRC+SWAN run. If set to 0, wave refraction will be deactivated at that node in a coupled ADCIRC+SWAN run.</p>
+</div></blockquote>
+</section>
+<section id="bottom-roughness-length-z0b-var">
+<span id="bottom-roughness-length"></span><h3>bottom_roughness_length – Z0b_var<a class="headerlink" href="#bottom-roughness-length-z0b-var" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Roughness length for 3D bottom friction calculations. Has no effect on a 2DDI ADCIRC run.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Length (m)</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Greater than zero. A reasonable range for the bottom_roughness_length would be 0.001m -0.2m , (densely vegetated overland values would have an upper limit of about 0.2-0.5m and smooth muddy bottoms could have values as low as 0.0001 m).</p>
+</div></blockquote>
+</section>
+<section id="average-horizontal-eddy-viscosity-in-sea-water-wrt-depth-evc">
+<span id="average-horizontal-eddy-viscosity-in-sea-water-wrt-depth"></span><h3>average_horizontal_eddy_viscosity_in_sea_water_wrt_depth – EVC<a class="headerlink" href="#average-horizontal-eddy-viscosity-in-sea-water-wrt-depth-evc" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: See description of ESLC in the Model Parameter and Periodic Boundary Condition File.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Specified by the user. ((length**2)/time).</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Greater than or equal to zero.</p>
+</div></blockquote>
+</section>
+<section id="elemental-slope-limiter">
+<span id="id1"></span><h3>elemental_slope_limiter<a class="headerlink" href="#elemental-slope-limiter" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: This nodal attribute is used to selectively limit the maximum elevation gradient that can occur across an element, thus improving numerical stability. Alternatively, it is also capable of merely logging individual elements where a specified elemental slope is exceeded at some point during the simulation. When this nodal attribute is loaded, warning messages will be written to the screen and to the fort.16 log file whenever the elevation gradient meets or exceeds the threshold value for the first time at a particular node. Once the elevation gradient is met or exceeded at a node, the elemental slope limiter remains active at that node for the remainder of the ADCIRC run. When the elemental slope limiter is active at a node, the water surface elevation at that node is reset to the average of the water surface elevations of the surrounding nodes. At the end of the run, a file called ESLNodes.63 will be written to indicate the nodes where the threshold elevation gradient was met or exceeded. Furthermore, If there is an ESLNodes.63 file in the input directory when ADCIRC starts, ADCIRC will load the existing ESLNodes.63 file along with the hotstart file so that the simulation can pick up where it left off, in terms of the elements where the slope is actively limited. When such a simulation finishes, it will overwrite the existing ESLNodes.63 file with a new one that reflects the updated state of limited elemental slopes.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: length/length or unitless.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Zero indicates that slope limiting is always active at that node, because a zero elevation gradient will always be met or exceeded; a positive value indicates the maximum gradient to be allowed at that node, at or beyond which the slope limiter is activated; a negative number indicates that the elevation gradients should be compared to the absolute value of the nodal attribute at this node. In the case of a negative number, ADCIRC will log a warning to the screen and to the fort.16 file the first time the elemental slope is exceeded, but ESLNodes.63 file will not be affected, and the elemental slope limiting will not actually occur at the node. A suggested value for this nodal attribute is 0.001.</p>
+<p><strong>ADCIRC Variable</strong>: elemental_slope_limiter_grad_max</p>
+</div></blockquote>
+</section>
+<section id="advection-state-advectionstate">
+<span id="advection-state"></span><h3>advection_state – AdvectionState<a class="headerlink" href="#advection-state-advectionstate" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: The advection_state nodal attribute is used to provide fine grained control over the NOLICA and NOLICAT parameters, so that they can be set on an element-by-element basis. The bathymetric depth at the three nodes of an element are compared to the corresponding nodal attribute values, and if the bathymetric depth at all three nodes is greater than or equal to the corresponding nodal attribute value, the values of NOLICA and NOLICAT will be set to the value indicated in the Model Parameter and Periodic Boundary Condition (fort.15) file. If the bathymetric depth at any of the three nodes of a particular element is less than the corresponding nodal attribute value, the values of NOLICA and NOLICAT will be set to zero on that element.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Length.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Any.</p>
+<p><strong>ADCIRC Variable</strong>: AdvectionState</p>
+</div></blockquote>
+</section>
+<section id="initial-river-elevation">
+<span id="id2"></span><h3>initial_river_elevation<a class="headerlink" href="#initial-river-elevation" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: The initial_river_elevation nodal attribute is used to set the initial water surface elevation in inland rivers that have some portion of the river bed above mean sea level as well as an upstream flux boundary condition. ADCIRC assumes by default that vertices that are above mean sea level (i.e., with negative depths) will be dry when the simulation starts. This assumption is violated when the elevation of a river bed is above mean sea level, and there is an upstream flux boundary. This nodal attribute is used in those cases to provide the initial water surface elevation of the river at cold start.</p>
+<p><strong>Requirement</strong>: Required only if the domain contains a river with an upstream flux boundary condition and a bed elevation above mean sea level.</p>
+<p><strong>Units</strong>: Length.</p>
+<p><strong>Values</strong>: Any.</p>
+<p><strong>ADCIRC Variable</strong>: Eta2.</p>
+</div></blockquote>
+</section>
+<section id="condensed-nodes">
+<span id="id3"></span><h3>condensed_nodes<a class="headerlink" href="#condensed-nodes" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: The condensed_nodes nodal attribute is used to specify a group of nodes, the nodal equations of which are to be condensed, and thus the solutions of which become identical. This condensation technique is useful when two or more nodes are within a close proximity and thus the model violates the CFL condition unless a smaller time step is used. The condensation is conducted at the level of nodal equations, which effectively extends the stencil of the nodes to relax the CFL condition. One typical use of the condensation is to relax the CFL condition along very narrow channels. The node pairs on the sides of a channel are specified as the condensed_nodes nodal attributes so that the model becomes insensitive to the width of the channel.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Unitless.</p>
+<p><strong>Number of values per node</strong>: Maximum number of nodes in a condensed node group. See <a class="reference internal" href="../special_features/vertical_element_walls.html#example-fort13-condensed-nodes"><span class="std std-ref">Example Fort.13 with Condensed Nodes</span></a> for more information.</p>
+<p><strong>Values</strong>: Node numbers.</p>
+<p><strong>ADCIRC Variable</strong>: CondensedNodes.</p>
+</div></blockquote>
+</section>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
+<p>The following is a simple example of a fort.13 file with two attributes:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Example ADCIRC Grid
+800    ! Total number of nodes in the grid
+2      ! Number of attributes
+primitive_weighting_in_continuity_equation
+unitless
+1      ! Number of values per node
+0.05   ! Default value for primitive_weighting_in_continuity_equation
+surface_submergence_state
+unitless
+1      ! Number of values per node
+0      ! Default value for surface_submergence_state
+primitive_weighting_in_continuity_equation
+2      ! Number of nodes with non-default values
+1 0.01 ! Node 1 has a value of 0.01
+3 0.02 ! Node 3 has a value of 0.02
+surface_submergence_state
+1      ! Number of nodes with non-default values
+4 1    ! Node 4 has a value of 1
+</pre></div>
+</div>
+<p>This example demonstrates how to specify two attributes with different default values and how to override the default values for specific nodes.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fort15.html" class="btn btn-neutral float-left" title="Fort.15: Model Parameter and Periodic Boundary Condition File" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fort6768.html" class="btn btn-neutral float-right" title="Fort.67, Fort.68: Hot Start Files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, ADCIRC Developers and Users Community.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
