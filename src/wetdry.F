@@ -1508,7 +1508,7 @@ c.....
          real(8) :: detadxa, detadya, dpdxa, dpdya
          real(8) :: fdx1, fdx2, fdx3, fdy1, fdy2, fdy3
          real(8) :: etaN1, etaN2, etaN3
-         
+         real(8) :: DDTMP  !tcm 20250503
          
          ALPHAL(:) = 1.D0
          
@@ -1560,12 +1560,22 @@ c.....
                   DETADXA = ETAN1*FDX1 + ETAN2*FDX2 + ETAN3*FDX3
                   DETADYA = ETAN1*FDY1 + ETAN2*FDY2 + ETAN3*FDY3
                   DPM = SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/AREAS(I)
+
                   IF (DPM .GT. 1D-5) THEN
-                     ALPHAL(I) = SLIM*(SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/
-     &                   ((1.D0/AREAS(I))*(DETADXA*(-DPDXA) + DETADYA*(-DPDYA))))
+                     DDTMP = DETADXA*(-DPDXA) + DETADYA*(-DPDYA)  !tcm 20250503
+                     IF (ABS(DDTMP) .GT. 1D-12) THEN   !tcm 20250503 added test and else condition
+                        ALPHAL(I) = SLIM*(SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/
+     &                     ((1.D0/AREAS(I))*( DDTMP )))  !tcm changed to DDTMP
+                      ELSE
+                         ALPHAL(I) = 1.D0
+                      ENDIF
                   ELSE
                      DETAM = SQRT(DETADXA*DETADXA + DETADYA*DETADYA)/AREAS(I)
-                     ALPHAL(I) = SLIM/DETAM
+                     IF (ABS(DETAM) .GT. 1D-12) THEN   !tcm 20250503 added test and else condition
+                        ALPHAL(I) = SLIM/DETAM
+                     ELSE
+                        ALPHAL(I) = 1.D0
+                     ENDIF
                   ENDIF
                   
                   IF (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
