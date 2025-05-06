@@ -50,7 +50,6 @@ C                        and momentum equations (package deal)                *
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
-C
       SUBROUTINE TIMESTEP(IT,TimeLoc)
 C
 #ifdef IEEE_DEBUG
@@ -171,20 +170,9 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       INTEGER NCyc
       INTEGER :: itest
       INTEGER :: nnbb
-      REAL(8) :: vel
-      REAL(8) :: velmax
-      LOGICAL :: errorElevExceeded
-      LOGICAL :: warnVelExceeded
-      LOGICAL :: warnElevExceeded
-      LOGICAL :: errorVelExceeded
-      INTEGER :: max_eta_pos
-      INTEGER :: max_vel_pos
-      INTEGER :: max_eta_rank
-      INTEGER :: max_vel_rank
       logical, save ::  EtaDisc_Fill = .TRUE.
 
       REAL(8) CCSFEA
-      REAL(8) ElMax
       REAL(8) PIPE_FLUX
       REAL(8) H2N1, H2N2, H2N3
       REAL(8) EtaN1,EtaN2,EtaN3
@@ -1323,20 +1311,26 @@ C...  SAVE THE CURRENT TIME LEVEL OF BARRIER INTO THE PREVIOUS TIME LEVEL
       ENDIF
       IF(NFLUXB.EQ.1)THEN
         BARLANHT1(:)=BARLANHT2(:)
-      ENDIF  
-
-      call check_model_status(TimeLoc, IT, elmax, velmax, max_eta_pos, max_vel_pos,
-     &                        max_eta_rank, max_vel_rank, WarnElevExceeded,
-     &                        ErrorElevExceeded, WarnVelExceeded, ErrorVelExceeded)
-
-      IF(NSCREEN/=0)THEN
-         call print_model_status(myproc, nscreen, screenUnit,
-     &             model_start_wallclock, numitr, it, iths, nt,
-     &             basedatetime, timeloc, ELMAX, max_eta_pos,
-     &             max_eta_rank, velmax, max_vel_pos, max_vel_rank,
-     &             warnelev, errorelev, warnvel,
-     &             errorVel)
       ENDIF
+
+      if(NSCREEN/=0)then
+         if(modulo(it,nscreen)==0)then
+            call timestep_status_full(myproc, screenUnit, TimeLoc, IT, numitr,
+     &                                ITHS, NT, model_start_wallclock, basedatetime,
+     &                                warnelevdump, warnelev, errorelev, warnvel, errorvel,
+     &                                Flag_ElevError, Flag_VelError)
+         else
+            call timestep_status_short(myproc, screenUnit, TimeLoc, IT, numitr,
+     &                                 ITHS, NT, model_start_wallclock, basedatetime,
+     &                                 warnelevdump, warnelev, errorelev, warnvel, errorvel,
+     &                                 Flag_ElevError, Flag_VelError)
+         endif
+      else
+         call timestep_status_short(myproc, screenUnit, TimeLoc, IT, numitr,
+     &                              ITHS, NT, model_start_wallclock, basedatetime,
+     &                              warnelevdump, warnelev, errorelev, warnvel, errorvel,
+     &                              Flag_ElevError, Flag_VelError)
+      endif
 
 C...
 C...  ****************** TIME STEPPING LOOP ENDS HERE ********************
@@ -1363,6 +1357,202 @@ C******************************************************************************
       END SUBROUTINE TIMESTEP
 C******************************************************************************
 
+
+      subroutine timestep_handle_error_elev(myproc, TimeLoc, IT, WarnElevDump,
+     &                                      WarnElevExceeded, ErrorElevExceeded,
+     &                                      WarnVelExceeded, ErrorVelExceeded,
+     &                                      Flag_ElevError, Flag_VelError)
+        use mod_terminate, only: terminate
+        use write_output, only: WriteWarnElev
+#ifdef CMPI
+        use messenger, only: msg_fini
+#endif
+        implicit none
+        integer, intent(in) :: myproc
+        real(8), intent(in) :: TimeLoc
+        integer, intent(in) :: IT
+        logical, intent(in) :: WarnElevDump
+        logical, intent(in) :: WarnElevExceeded
+        logical, intent(in) :: ErrorElevExceeded
+        logical, intent(in) :: WarnVelExceeded
+        logical, intent(in) :: ErrorVelExceeded
+        logical, intent(out) :: Flag_ElevError
+        logical, intent(out) :: Flag_VelError
+
+        if(WarnElevExceeded) then
+          if(WarnElevDump) call WriteWarnElev(TimeLoc, IT)
+          if(ErrorElevExceeded)then
+            Flag_ElevError = .true.
+#ifdef CMPI
+            call msg_fini()
+            call exit(1)
+#else
+            call terminate(myproc)
+#endif
+          endif
+        endif
+
+        if(ErrorVelExceeded)then
+          Flag_VelError = .true.
+#ifdef CMPI
+          call msg_fini()
+          call exit(1)
+#else
+          call terminate(myproc)
+#endif
+        endif
+
+      end subroutine timestep_handle_error_elev
+
+      subroutine timestep_status_short(myproc, screenUnit, TimeLoc, IT, numitr,
+     &                                ITHS, NT, model_start_wallclock, base_date,
+     &                                WarnElevDump, WarningElevation, ErrorElevation,
+     &                                WarningVelocity, ErrorVelocity, Flag_ElevError,
+     &                                Flag_VelError)
+        use datetime_module, only: datetime
+        implicit none
+
+        integer, intent(in) :: myproc
+        integer, intent(in) :: screenUnit
+        real(8), intent(in) :: TimeLoc
+        integer, intent(in) :: IT
+        integer, intent(in) :: ITHS
+        integer, intent(in) :: NT
+        integer, intent(in) :: numitr
+        real(8), intent(in) :: model_start_wallclock
+        logical, intent(in) :: WarnElevDump
+        type(datetime), intent(in) :: base_date
+        real(8), intent(in) :: WarningElevation
+        real(8), intent(in) :: ErrorElevation
+        real(8), intent(in) :: WarningVelocity
+        real(8), intent(in) :: ErrorVelocity
+        logical, intent(out) :: Flag_ElevError
+        logical, intent(out) :: Flag_VelError
+        real(8) :: elmax, velmax
+        logical :: WarnElevExceeded, ErrorElevExceeded
+        logical :: WarnVelExceeded, ErrorVelExceeded
+
+        call check_model_status_short(elmax, velmax, WarnElevExceeded, WarnVelExceeded)
+        if (WarnElevExceeded .or. WarnVelExceeded) then
+          call timestep_status_full(myproc, screenUnit, TimeLoc, IT, numitr,
+     &                              ITHS, NT, model_start_wallclock, base_date,
+     &                              WarnElevDump, WarningElevation, ErrorElevation,
+     &                              WarningVelocity, ErrorVelocity, Flag_ElevError,
+     &                              Flag_VelError)
+
+        endif
+
+      end subroutine timestep_status_short
+
+
+      subroutine timestep_status_full(myproc, screenUnit, TimeLoc, IT, numitr,
+     &                                ITHS, NT, model_start_wallclock, base_date,
+     &                                WarnElevDump, WarningElevation, ErrorElevation,
+     &                                WarningVelocity, ErrorVelocity, Flag_ElevError,
+     &                                Flag_VelError)
+        use datetime_module, only: datetime
+        use mod_adcirc_status, only: print_model_status
+        implicit none
+
+        integer, intent(in) :: myproc
+        integer, intent(in) :: screenUnit
+        real(8), intent(in) :: TimeLoc
+        integer, intent(in) :: IT
+        integer, intent(in) :: ITHS
+        integer, intent(in) :: NT
+        integer, intent(in) :: numitr
+        real(8), intent(in) :: model_start_wallclock
+        type(datetime), intent(in) :: base_date
+        logical, intent(in) :: WarnElevDump
+        real(8), intent(in) :: WarningElevation
+        real(8), intent(in) :: ErrorElevation
+        real(8), intent(in) :: WarningVelocity
+        real(8), intent(in) :: ErrorVelocity
+        logical, intent(out) :: Flag_ElevError
+        logical, intent(out) :: Flag_VelError
+
+        real(8) :: elmax, velmax
+        integer :: max_eta_pos, max_vel_pos
+        integer :: max_eta_rank, max_vel_rank
+        logical :: WarnElevExceeded, ErrorElevExceeded
+        logical :: WarnVelExceeded, ErrorVelExceeded
+
+        call check_model_status_full(TimeLoc, IT, elmax, velmax,
+     &             max_eta_pos, max_vel_pos, max_eta_rank, max_vel_rank,
+     &             WarnElevExceeded, ErrorElevExceeded, WarnVelExceeded,
+     &             ErrorVelExceeded)
+        call print_model_status(myproc, screenUnit,
+     &             model_start_wallclock, numitr, it, iths, nt,
+     &             base_date, timeloc, ELMAX, max_eta_pos,
+     &             max_eta_rank, velmax, max_vel_pos, max_vel_rank,
+     &             WarningElevation, ErrorElevation, WarningVelocity,
+     &             ErrorVelocity)
+        call timestep_handle_error_elev(myproc, TimeLoc, IT, WarnElevDump,
+     &                                  WarnElevExceeded, ErrorElevExceeded,
+     &                                  WarnVelExceeded, ErrorVelExceeded,
+     &                                  Flag_ElevError, Flag_VelError)
+
+      end subroutine timestep_status_full
+
+
+!------------------------------------------------------------------------------
+!> @brief Check the latest model solution to see if it has exceeded the thresholds
+!> set either by default or by the user. This is a short version that does not
+!> check for positions of max elevation and velocity, only that the model is operating
+!> within the specified limits.
+!>
+!> @param[out] elmax Maximum elevation
+!> @param[out] velmax Maximum velocity
+!> @param[out] WarnElevExceeded Flag indicating if the elevation exceeded the warning threshold
+!> @param[out] WarnVelExceeded Flag indicating if the velocity exceeded the warning threshold
+!-----------------------------------------------------------------------------
+      subroutine check_model_status_short(elmax, velmax, WarnElevExceeded, WarnVelExceeded)
+        use global, only: UU2, VV2, ETA2, WarnElev, WarnVel, nodecode
+        use mesh, only: NP
+#ifdef CMPI
+        use messenger, only: check_parallel_model_status_short
+#endif
+        implicit none
+        real(8), intent(out) :: elmax, velmax
+        logical, intent(out) :: WarnElevExceeded, WarnVelExceeded
+        integer :: I
+        real(8) :: VELABS
+
+        elmax=0.0d0
+        velmax=0.0d0
+        WarnElevExceeded = .false.
+        WarnVelExceeded = .false.
+
+        do I=1,NP
+          if(nodecode(I)==1)then
+
+            if(abs(eta2(I))>elmax)then
+              elmax=abs(eta2(I))
+            endif
+
+            velabs=uu2(I)*uu2(I)+vv2(I)*vv2(I)
+            if (velabs>velmax) then
+              velmax=velabs
+            endif
+
+          endif
+        end do
+
+        velmax = sqrt(velmax)
+
+#ifdef CMPI
+        call check_parallel_model_status_short(WarnElev, WarnVel,
+     &                                         elmax, velmax, WarnElevExceeded,
+     &                                         WarnVelExceeded)
+#else
+        if(elmax>=WarnElev) WarnElevExceeded = .true.
+        if(velmax>=WarnVel) WarnVelExceeded = .true.
+#endif
+
+
+      end subroutine check_model_status_short
+
+
 !------------------------------------------------------------------------------
 !> @brief Check the latest model solution to see if it has exceeded the thresholds
 !> set either by default or by the user.
@@ -1380,18 +1570,17 @@ C******************************************************************************
 !> @param[out] WarnVelExceeded Flag indicating if the velocity exceeded the warning threshold
 !> @param[out] ErrorVelExceeded Flag indicating if the velocity exceeded the error threshold
 !-----------------------------------------------------------------------------
-      subroutine check_model_status(TimeLoc, IT, elmax, velmax, max_eta_pos, max_vel_pos,
+      subroutine check_model_status_full(TimeLoc, IT, elmax, velmax, max_eta_pos, max_vel_pos,
      &                              max_eta_rank, max_vel_rank, WarnElevExceeded,
      &                              ErrorElevExceeded, WarnVelExceeded, ErrorVelExceeded)
         use global, only: UU2, VV2, ETA2, WarnElev, ErrorElev, WarnVel, ErrorVel,
-     &                    Flag_ElevError, Flag_VelError,
      &                    nodes_lg, nodecode, WarnElevDump
         use sizes, only: myproc
         use mesh, only: NP
         use mod_terminate, only: terminate
         use write_output, only: WriteWarnElev
 #ifdef CMPI
-        use messenger, only: msg_fini, check_parallel_model_status
+        use messenger, only: msg_fini, check_parallel_model_status_full
 #endif
         implicit none
         real(8), intent(in)  :: TimeLoc
@@ -1425,7 +1614,7 @@ C******************************************************************************
               max_eta_pos = I
 #endif
             endif
-            velabs=sqrt(uu2(I)*uu2(I)+vv2(I)*vv2(I))
+            velabs=uu2(I)*uu2(I)+vv2(I)*vv2(I)
             if (velabs>velmax) then
 #ifdef CMPI
               if (nodes_lg(I) > 0) then
@@ -1440,13 +1629,15 @@ C******************************************************************************
           endif
         end do
 
+        velmax = sqrt(velmax)
+
         WarnElevExceeded = .false.
         ErrorElevExceeded = .false.
         WarnVelExceeded = .false.
         ErrorVelExceeded = .false.
 
 #ifdef CMPI
-        call check_parallel_model_status(WarnElev,ErrorElev, WarnVel, ErrorVel,
+        call check_parallel_model_status_full(WarnElev,ErrorElev, WarnVel, ErrorVel,
      &                        elmax, max_eta_pos, velmax, max_vel_pos,
      &                        max_eta_rank, max_vel_rank, WarnElevExceeded,
      &                        ErrorElevExceeded, WarnVelExceeded,
@@ -1461,29 +1652,8 @@ C******************************************************************************
           if(velmax>=ErrorVel) ErrorVelExceeded = .true.
         endif
 #endif
-        if(WarnElevExceeded) then
-          if(WarnElevDump) call WriteWarnElev(TimeLoc, IT)
-          if(ErrorElevExceeded)then
-            Flag_ElevError = .true.
-#ifdef CMPI
-            call msg_fini()
-            call exit(1)
-#else
-            call terminate(myproc)
-#endif
-          endif
-        endif
-        if(ErrorVelExceeded)then
-          Flag_VelError = .true.
-#ifdef CMPI
-          call msg_fini()
-          call exit(1)
-#else
-          call terminate(myproc)
-#endif
-        endif
 
-      end subroutine check_model_status
+      end subroutine check_model_status_full
 
 !****************************************************************************************
 ! Subroutine to compute tide potential at the nodes                                     
@@ -1873,6 +2043,7 @@ C
       SUBROUTINE CALC_SIGMAT_2D ()
 
       USE GLOBAL
+      use mesh, only: np
       use mod_logging, only: setMessageSource, unsetMessageSource, allMessage, DEBUG
 
       INTEGER NH

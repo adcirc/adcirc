@@ -51,7 +51,7 @@ contains
    !> @param warning_elev The elevation warning threshold
    !> @param error_elev The elevation error threshold
    !--------------------------------------------------------------------
-   subroutine print_model_status(myproc, nscreen, screenUnit, &
+   subroutine print_model_status(myproc, screenUnit, &
                                  model_start_wallclock, num_solver_it, &
                                  iteration, num_hotstart_it, total_it, &
                                  reference_time, current_time, max_elev, &
@@ -62,7 +62,6 @@ contains
       use mod_date_util, only: get_dt_components, get_dt_string
       implicit none
       integer, intent(in) :: myproc
-      integer, intent(in) :: nscreen
       integer, intent(in) :: screenUnit
       real(8), intent(in) :: model_start_wallclock
       integer, intent(in) :: iteration
@@ -82,11 +81,12 @@ contains
       real(8), intent(in) :: error_vel
       type(datetime), intent(in) :: reference_time
       real(8)             :: percent_complete
-      character(1024)     :: append_message
+      character(1024)     :: elev_message, vel_message
       character(2048)     :: message1, message2, message3, message4, message5
       character(22)       :: date_str
       character(128)      :: dt_str
       character(256)      :: elapsed_dt_str, remaining_dt_str
+      logical             :: write_elev_message, write_vel_message
       type(datetime)      :: current_date
       type(timedelta)     :: model_dt, elapsed_dt, remaining_dt
 
@@ -96,22 +96,26 @@ contains
       logical, parameter :: use_legacy_time_format = .false.
 #endif
 
-      if (modulo(iteration, nscreen) /= 0 .and. max_elev < warning_elev .and. max_vel < warning_vel) return
-
       percent_complete = dble(iteration - num_hotstart_it)/dble(total_it - num_hotstart_it)*100d0
 
       if (max_elev >= error_elev) then
-         append_message = "** ERROR: Elevation.gt.ErrorElev, ADCIRC stopping. **"
+         elev_message = "** ERROR: Elevation.gt.ErrorElev, ADCIRC stopping. **"
+         write_elev_message = .true.
       elseif (max_elev >= warning_elev) then
-         append_message = "** WARNING: Elevation.gt.WarnElev **"
+         elev_message = "** WARNING: Elevation.gt.WarnElev **"
+         write_elev_message = .true.
       else
-         append_message = ""
+         write_elev_message = .false.
       end if
 
       if (max_vel >= error_vel) then
-         append_message = trim(append_message)//"** ERROR: Velocity.gt.ErrorVel, ADCIRC stopping. **"
+         vel_message = "** ERROR: Velocity.gt.ErrorVel, ADCIRC stopping. **"
+         write_vel_message = .true.
       elseif (max_vel >= warning_vel) then
-         append_message = trim(append_message)//"** WARNING: Velocity.gt.WarnVel **"
+         vel_message = "** WARNING: Velocity.gt.WarnVel **"
+         write_vel_message = .true.
+      else
+         write_vel_message = .false.
       end if
 
       if (reference_time%isValid() .or. use_legacy_time_format) then
@@ -144,18 +148,16 @@ contains
          write (screenUnit, '(A)') trim(message2)
          write (screenUnit, '(A)') trim(message3)
          write (screenUnit, '(A,",",1X,A)') trim(elapsed_dt_str), trim(remaining_dt_str)
-         if (len_trim(append_message) > 0) then
-            write (screenUnit, '(A)') trim(append_message)
-         end if
+         if (write_elev_message) write (screenUnit, '(A)') trim(elev_message)
+         if (write_vel_message) write (screenUnit, '(A)') trim(vel_message)
       end if
 
       if (max_elev >= warning_elev) then
          write (16, '(A)') trim(message1)
          write (16, '(A)') trim(message2)
          write (16, '(A)') trim(message3)
-         if (len_trim(append_message) > 0) then
-            write (16, '(A)') trim(append_message)
-         end if
+         if (write_elev_message) write (16, '(A)') trim(elev_message)
+         if (write_vel_message) write (16, '(A)') trim(vel_message)
       end if
 
 1992  format(1x, 'TIME STEP =', I8, 1x, F6.2, '% COMPLETE', 2x, 'ITERATIONS =', I5, 2x, 'TIME = ', E15.8)

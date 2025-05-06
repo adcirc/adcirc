@@ -49,11 +49,11 @@ contains
    type(datetime) function parse_date_string(date_string) result(parsed_date)
       use datetime_module, only: datetime, strptime
       use mod_terminate, only: terminate
-      use mod_logging, only: allMessage, ERROR
+      use mod_logging, only: allMessage, ERROR, scratchMessage
       use sizes, only: myproc
       implicit none
       character(len=*), intent(in)    :: date_string
-      character(len=len(date_string)) :: date_string_local
+      character(len=len_trim(adjustl(date_string))) :: date_string_local
 
       date_string_local = trim(adjustl(date_string))
 
@@ -68,7 +68,8 @@ contains
       parsed_date = strptime(date_string_local, "%Y-%m-%d")
 
       if (.not. parsed_date%isValid()) then
-         call allMessage(ERROR, "Could not parse date string: "//date_string)
+         write (scratchMessage, '(3A)') "Could not parse date string: '", trim(adjustl(date_string)), "'"
+         call allMessage(ERROR, scratchMessage)
          call terminate(myproc)
       end if
 

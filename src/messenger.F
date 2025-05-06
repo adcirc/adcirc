@@ -1469,13 +1469,69 @@ C---------------------------------------------------------------------
 
 
 !------------------------------------------------------------------------------
-!  S U B R O U T I N E   C H EC K _ P A R A L L E L _ M O D E L _ S T A T U S
+!  S U B R O U T I N E   C H EC K _ P A R A L L E L _ M O D E L _ S T A T U S _ S H O R T
 !------------------------------------------------------------------------------
-!     If the warning elevation/velocity was exceeded in one subdomain,
-!     that information is propagated to the other subdomains so that the
-!     information can be dumped to a file for debugging.
+!>  @brief Performs the short version of the parallel model status check. This is done
+!>  when we don't plan to echo information to the screen, so some of the extra
+!>  communication can be avoided
+!>  @param[in] WarningElevation The warning elevation threshold
+!>  @param[in] WarningVelocity The warning velocity threshold
+!>  @param[in] MaxElevation The maximum elevation in the subdomain
+!>  @param[in] MaxVelocity The maximum velocity in the subdomain
+!>  @param[out] WarningElevationExceeded Flag indicating if the warning elevation was exceeded
+!>  @param[out] WarningVelocityExceeded Flag indicating if the warning velocity was exceeded
 !------------------------------------------------------------------------------
-      SUBROUTINE check_parallel_model_status(WarningElevation, ErrorElevation,
+      SUBROUTINE check_parallel_model_status_short(WarningElevation, WarningVelocity,
+     &                                             MaxElevation, MaxVelocity,
+     &                                             WarningElevationExceeded, WarningVelocityExceeded)
+      USE MPI, ONLY: MPI_INTEGER, MPI_SUM
+      IMPLICIT NONE
+
+      REAL(8), INTENT(IN) :: WarningElevation
+      REAL(8), INTENT(IN) :: WarningVelocity
+      REAL(8), INTENT(IN) :: MaxElevation
+      REAL(8), INTENT(IN) :: MaxVelocity
+      LOGICAL, INTENT(OUT) :: WarningElevationExceeded
+      LOGICAL, INTENT(OUT) :: WarningVelocityExceeded
+      INTEGER, PARAMETER :: kount = 2
+      INTEGER :: flags(kount), flags_out(kount)
+      INTEGER :: ierr
+
+      flags = 0
+
+      if(MaxElevation >= WarningElevation) flags(1) = 1
+      if(MaxVelocity >= WarningVelocity) flags(2) = 1
+
+      call MPI_ALLREDUCE(flags, flags_out, kount, MPI_INTEGER, MPI_SUM, COMM, ierr)
+
+      WarningElevationExceeded = flags_out(1) > 0
+      WarningVelocityExceeded = flags_out(2) > 0
+
+      END SUBROUTINE check_parallel_model_status_short
+
+!------------------------------------------------------------------------------
+!  S U B R O U T I N E   C H E C K _ P A R A L L E L _ M O D E L _ S T A T U S _ F U L L
+!------------------------------------------------------------------------------
+!> @brief If the warning elevation/velocity was exceeded in one subdomain,
+!> that information is propagated to the other subdomains so that the
+!> information can be dumped to a file for debugging.
+!>
+!> @param[in] WarningElevation The warning elevation threshold
+!> @param[in] ErrorElevation The error elevation threshold
+!> @param[in] WarningVelocity The warning velocity threshold
+!> @param[in] ErrorVelocity The error velocity threshold
+!> @param[inout] MaxElevation The maximum elevation in the subdomain
+!> @param[inout] MaxElevationNodeID The node ID of the maximum elevation in the subdomain
+!> @param[inout] MaxVelocity The maximum velocity in the subdomain
+!> @param[inout] MaxVelocityNodeID The node ID of the maximum velocity in the subdomain
+!> @param[out] MaxElevationRank The rank of the subdomain with the maximum elevation
+!> @param[out] MaxVelocityRank The rank of the subdomain with the maximum velocity
+!> @param[out] WarningElevationExceeded Flag indicating if the warning elevation was exceeded
+!> @param[out] ErrorElevationExceeded Flag indicating if the error elevation was exceeded
+!> @param[out] WarningVelocityExceeded Flag indicating if the warning velocity was exceeded
+!> @param[out] ErrorVelocityExceeded Flag indicating if the error velocity was exceeded
+!------------------------------------------------------------------------------
+      SUBROUTINE check_parallel_model_status_full(WarningElevation, ErrorElevation,
      &                              WarningVelocity, ErrorVelocity,
      &                              MaxElevation, MaxElevationNodeID,
      &                              MaxVelocity,  MaxVelocityNodeID,
@@ -1541,7 +1597,7 @@ C---------------------------------------------------------------------
       ENDIF
 
 !------------------------------------------------------------------------------
-      END SUBROUTINE check_parallel_model_status
+      END SUBROUTINE check_parallel_model_status_full
 !------------------------------------------------------------------------------
 
 !------------------------------------------------------------------------------
