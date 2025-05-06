@@ -90,11 +90,11 @@ contains
       integer, intent(in) :: myproc
       integer :: IERR
       integer, parameter :: TS_COUNT = 6
-      integer, parameter :: TS_BLOCKLENS(TS_COUNT) = (/1, 1, 1, 1, 1, 1/)
-      integer(8), parameter :: TS_OFFSETS(TS_COUNT) = (/0,8,16,20,24,28/)
+      integer, parameter :: TS_BLOCKLENS(TS_COUNT) = [1, 1, 1, 1, 1, 1]
+      integer(8), parameter :: TS_OFFSETS(TS_COUNT) = [0, 8, 16, 20, 24, 28]
       integer, parameter :: TS_TYPES(TS_COUNT) = &
-                            (/MPI_DOUBLE_PRECISION, MPI_DOUBLE_PRECISION, &
-                              MPI_INTEGER, MPI_INTEGER, MPI_INTEGER, MPI_INTEGER/)
+                            [MPI_DOUBLE_PRECISION, MPI_DOUBLE_PRECISION, &
+                             MPI_INTEGER, MPI_INTEGER, MPI_INTEGER, MPI_INTEGER]
       integer(8) :: LowerBound, Extent
       integer :: TempType
 
@@ -129,8 +129,8 @@ contains
    subroutine MPITimestepDataReduce(invec, inoutvec, len, datatype)
       use mpi, only: MPI_SUCCESS
       implicit none
-      type(s_TimestepStatusData), intent(in) :: invec(*)
-      type(s_TimestepStatusData), intent(inout) :: inoutvec(*)
+      type(s_TimestepStatusData), intent(in) :: invec(len)
+      type(s_TimestepStatusData), intent(inout) :: inoutvec(len)
       integer, intent(IN) :: len
       integer, intent(IN) :: datatype
       integer :: i

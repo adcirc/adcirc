@@ -60,9 +60,10 @@ module mod_tidepotential
    !  k2value = Love number
    !  h2value = Love number
    !
-   real(8), private, parameter :: massratio(2) = (/MassRatioMoonEarth, MassRatioSunEarth/)
-   real(8), private, parameter :: significant_radiusearth(2) = (/EarthRadiuskm(1), EarthRadiusAu(1)/)
-   real(8), private, parameter :: exponent_radiusearth(2) = (/EarthRadiuskm(2), EarthRadiusAu(2)/)
+
+   real(8), private, parameter :: massratio(2) = [MassRatioMoonEarth, MassRatioSunEarth]
+   real(8), private, parameter :: significant_radiusearth(2) = [EarthRadiuskm(1), EarthRadiusAu(1)]
+   real(8), private, parameter :: exponent_radiusearth(2) = [EarthRadiuskm(2), EarthRadiusAu(2)]
 
    integer, private, parameter :: ComputeMethod_FT = 0
    integer, private, parameter :: ComputeMethod_JM = 1
@@ -104,9 +105,9 @@ module mod_tidepotential
 
    type(t_tidePotential), public :: tidePotential
 
-   private :: AINTPOWER, COMP_FULL_TIP_SUB0, compute_full_tip, &
-              INIT_FULL_TIP, tidalPotentialConstructor, &
-              useFullTIPFormula
+   private
+
+   public :: t_tidePotential
 
 contains
 
@@ -376,7 +377,9 @@ contains
       ! local !
       real(8) :: JDELoc, tocgmst
       real(8) :: MoonSunCoor(3, 2)
-      integer :: IERR = 0
+      integer :: IERR
+
+      ierr = 0
 
       call setMessageSource("comp_full_tip")
 #if defined(ALL_TRACE)
@@ -503,8 +506,8 @@ contains
       subroutine ALLOCATEWORKARR(arr, N)
          implicit none
 
-         integer :: N
-         real(8), allocatable :: arr(:)
+         integer, intent(in) :: N
+         real(8), allocatable, intent(inout) :: arr(:)
 
          if (allocated(arr)) then
             deallocate (arr)
@@ -518,4 +521,3 @@ contains
    end subroutine INIT_FULL_TIP
 
 end module mod_tidepotential
-

@@ -21,6 +21,8 @@ module mod_terminate
 
    implicit none
 
+   private
+
    public :: terminate
 
 contains

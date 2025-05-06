@@ -5,6 +5,10 @@ module netcdf_error
 
    implicit none
 
+   private
+
+   public :: check_err
+
 contains
 
 !-----------------------------------------------------------------------
@@ -44,5 +48,5 @@ contains
    end subroutine check_err
 !-----------------------------------------------------------------------
 
-      end module netcdf_error
+end module netcdf_error
 #endif

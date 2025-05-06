@@ -50,7 +50,7 @@
 module mod_nws08
 
    use mod_logging, only: allMessage, WARNING, DEBUG, ERROR, ECHO, setMessageSource, unsetMessageSource, &
-                          scratchMessage 
+                          scratchMessage
 
    implicit none
 
@@ -1537,13 +1537,13 @@ contains
          CkCd_this = CkCd
       end if
 
-      r = dble((/(I, I=0, int(r0), 1000)/))
+      r = dble([(I, I=0, int(r0), 1000)])
       res = (2d0*(r/rm)**2/(2d0 - CkCd_this + CkCd_this*(r/rm)**2))**(1d0/(2d0 - CkCd_this))* &
             (rm*Vm + 0.5d0*f*rm**2d0)
       res = (res - 0.5d0*f*r**2d0)/r
       res(1) = 0d0
 
-   end function
+   end function get_inner_wind
 
    !----------------------------------------------------------------------
    !> @brief Get the outer wind profile
@@ -1566,7 +1566,7 @@ contains
       allocate (r(r_N))
       allocate (res(r_N))
 
-      r = dble((/(I, I=0, int(r0), 1000)/))
+      r = dble([(I, I=0, int(r0), 1000)])
       dr = r(2) - r(1)
       res(:) = 0d0
 

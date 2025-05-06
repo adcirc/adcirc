@@ -108,8 +108,7 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/mpitypes.F90
-  )
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/mpitypes.F90)
 
   add_library(templib_punmsglib ${MSGLIB_SOURCES})
   add_library(templib_punswan1 ${SWANONLY1_PARALLEL_SOURCES})
@@ -121,12 +120,12 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
   addcompilerflags(templib_punmsglib)
   addcompilerflagsswan(templib_punswan1 ${ADDITIONAL_FLAGS_SWAN})
   addcompilerflagsswan(punswan ${ADDITIONAL_FLAGS_SWAN})
-  addVersionDefinitions(templib_punmsglib)
+  addversiondefinitions(templib_punmsglib)
   addmpi(templib_punmsglib)
   addmpi(templib_punswan1)
   addmpi(punswan)
   adddatetimelibraries(templib_punmsglib)
-  addVersionLibrary(templib_punmsglib)
+  addversionlibrary(templib_punmsglib)
 
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
                                       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source)

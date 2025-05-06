@@ -33,7 +33,7 @@ module mod_logging
    integer, parameter :: ERROR = 3 ! don't echo input; only fatal msgs
    integer, parameter :: logUnit = 16
    character(len=10), dimension(5), parameter :: logLevelNames = &
-                                                 (/"DEBUG  ", "ECHO   ", "INFO   ", "WARNING", "ERROR  "/)
+                                                 ["DEBUG  ", "ECHO   ", "INFO   ", "WARNING", "ERROR  "]
 
    character(len=50), dimension(50) :: messageSources ! subroutine names
    character(len=1024) :: scratchMessage ! used for formatted messages

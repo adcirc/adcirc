@@ -20,7 +20,7 @@ macro(addCompilerFlags TARGET)
 
   string(STRIP ${LOCAL_COMPILER_FLAGS} LOCAL_COMPILER_FLAGS)
   separate_arguments(LOCAL_COMPILER_DEFINITIONS)
-  
+
   # Include the GNU warning flags for MPI and netCDF versions that cause errors/warnings
   if(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
     if(${CMAKE_Fortran_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_Fortran_COMPILER_VERSION} VERSION_EQUAL 10)
@@ -100,10 +100,14 @@ endmacro()
 macro(addDatetimeDefinitions TARGET)
   target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/datetime_fortran)
   add_dependencies(${TARGET} datetime)
-  # Create a false target for the Ninja build system. The generated sources don't give it a full
-  # picture of where it can parallelize and this helps it make the correct determinations
-  if (${CMAKE_GENERATOR} STREQUAL "Ninja")
-    add_custom_target(templib_${TARGET}_stub BYPRODUCTS templib_${TARGET}_stublib COMMAND "" DEPENDS datetime)
+  # Create a false target for the Ninja build system. The generated sources don't give it a full picture of where it can
+  # parallelize and this helps it make the correct determinations
+  if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+    add_custom_target(
+      templib_${TARGET}_stub
+      BYPRODUCTS templib_${TARGET}_stublib
+      COMMAND ""
+      DEPENDS datetime)
     add_dependencies(${TARGET} templib_${TARGET}_stub)
   endif()
 endmacro()

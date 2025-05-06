@@ -18,22 +18,24 @@
 !-----------------------------------------------------------------------
 
 module adcircCompare_module
+
 #ifdef ADCNETCDF
    use NETCDF, only: NF90_NOERR, NF90_OPEN, NF90_CLOSE, NF90_INQUIRE, &
                      NF90_INQ_DIMID, NF90_INQUIRE_DIMENSION, NF90_GET_VAR, &
                      NF90_INQ_VARID, NF90_STRERROR, NF90_INQUIRE_VARIABLE, NF90_NOWRITE
+#endif
+   implicit none
 
+#ifdef ADCNETCDF
    integer, parameter   :: nNetCDFVariables = 40
    character(200), save :: netcdf_types(nNetCDFVariables)
    character(200), save :: nc_longname(nNetCDFVariables)
    character(200), save :: nc_stdname(nNetCDFVariables)
-
 #endif
+
    real(8), parameter   :: eps = epsilon(1d0)
 
-#ifdef ADCNETCDF
-   private :: initializeNetcdf, nNetCDFVariables, netcdf_types, nc_longname
-#endif
+   public
 
 contains
 
@@ -290,7 +292,7 @@ contains
       integer, intent(OUT) :: VARID1
       integer, intent(OUT) :: VARID2
       integer, intent(OUT) :: NCOLS
-      character(*), intent(OUT), optional :: VarName1, VarName2
+      character(256), intent(OUT), optional :: VarName1, VarName2
       integer             :: I
       integer             :: J
       integer             :: VARPOS2
@@ -348,7 +350,7 @@ contains
    subroutine processCommandLineArgs(file1, file2, tolerance, wetdry, minmax, verbose, cont)
       implicit none
 
-      character(*), intent(OUT)   :: file1, file2
+      character(256), intent(OUT)   :: file1, file2
       real(8), intent(OUT)        :: tolerance
       logical, intent(OUT)        :: wetdry
       logical, intent(OUT)        :: minmax !.true. if this is a min or max file (like maxvel.63)
@@ -704,9 +706,9 @@ contains
       integer, intent(IN)    :: snap
       real(8), intent(INOUT) :: nodaldata(:, :)
 
-      call CHECK(NF90_GET_VAR(io_unit, varid1, nodaldata(:, 1), START=(/1, snap/), COUNT=(/nnodes, 1/)))
+      call CHECK(NF90_GET_VAR(io_unit, varid1, nodaldata(:, 1), START=[1, snap], COUNT=[nnodes, 1]))
       if (nvalues == 2) then
-         call CHECK(NF90_GET_VAR(io_unit, varid2, nodaldata(:, 2), START=(/1, snap/), COUNT=(/nnodes, 1/)))
+         call CHECK(NF90_GET_VAR(io_unit, varid2, nodaldata(:, 2), START=[1, snap], COUNT=[nnodes, 1]))
       end if
 
       return
