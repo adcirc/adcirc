@@ -56,22 +56,12 @@ option(ENABLE_GRIB2 "Use GRIB2API static libraries." OFF)
 # ######################################################################################################################
 
 # ######################################################################################################################
-# ...No need to show CXX compilers on main screen
-mark_as_advanced(
-  CLEAR
-  CMAKE_CXX_COMPILER
-  CMAKE_C_COMPILER
-  CMAKE_Fortran_COMPILER)
-mark_as_advanced(
-  CLEAR
-  CMAKE_CXX_FLAGS_RELEASE
-  CMAKE_C_FLAGS_RELEASE
-  CMAKE_Fortran_FLAGS_RELEASE)
-mark_as_advanced(
-  CLEAR
-  CMAKE_CXX_FLAGS_DEBUG
-  CMAKE_C_FLAGS_DEBUG
-  CMAKE_Fortran_FLAGS_DEBUG)
+# ...No need to show compilers on main screen
+mark_as_advanced(CLEAR CMAKE_C_COMPILER CMAKE_Fortran_COMPILER)
+mark_as_advanced(CLEAR CMAKE_C_FLAGS_RELEASE CMAKE_Fortran_FLAGS_RELEASE)
+mark_as_advanced(CLEAR CMAKE_C_FLAGS_DEBUG CMAKE_Fortran_FLAGS_DEBUG)
+mark_as_advanced(CLEAR CMAKE_C_FLAGS_RELWITHDEBINFO CMAKE_Fortran_FLAGS_RELWITHDEBINFO)
+mark_as_advanced(CLEAR CMAKE_C_FLAGS_MINSIZEREL CMAKE_Fortran_FLAGS_MINSIZEREL)
 # ######################################################################################################################
 
 # ######################################################################################################################
@@ -173,6 +163,10 @@ option(DEBUG_ADCIRC_TRACE "Write the tracing debug information for the main ADCI
 option(DEBUG_HOLLAND "Write the debugging information for the symmetric Holland model" OFF)
 option(DEBUG_NWS14 "Write the debugging information for NWS=14 interpolation" OFF)
 mark_as_advanced(
+  DEBUG_ALL_TRACE
+  DEBUG_FLUSH_MESSAGES
+  DEBUG_LOG_LEVEL
+  DEBUG_FULL_STACK
   DEBUG_GLOBALIO_TRACE
   DEBUG_WRITER_TRACE
   DEBUG_WRITE_OUTPUT_TRACE

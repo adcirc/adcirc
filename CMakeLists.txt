@@ -46,6 +46,13 @@ cmake_minimum_required(VERSION 3.12)
 project(adcirc)
 
 # ######################################################################################################################
+# CMAKE Policies
+# ######################################################################################################################
+if(POLICY CMP0077)
+  cmake_policy(SET CMP0077 NEW)
+endif()
+
+# ######################################################################################################################
 
 # ######################################################################################################################
 # COMPILERS/LANGUAGE
@@ -76,7 +83,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles)
 # ######################################################################################################################
 
 # ...Set the version string (used for libraries)
-set(ADCIRC_VERSION_MAJOR 56)
+set(ADCIRC_VERSION_MAJOR 57)
 set(ADCIRC_VERSION_MINOR 0)
 set(ADCIRC_VERSION_PATCH 0)
 set(ADCIRC_VERSION_STRING ${ADCIRC_VERSION_MAJOR}.${ADCIRC_VERSION_MINOR}.${ADCIRC_VERSION_PATCH})
