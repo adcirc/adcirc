@@ -2,6 +2,7 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/adcirc/adcirc/tree/main.svg?style=shield&circle-token=468312e3a9341f3a519bbdfb4df0cda07c98bd91)](https://dl.circleci.com/status-badge/redirect/gh/adcirc/adcirc/tree/main)
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Docker Image Version (tag)](https://img.shields.io/docker/v/adcircorg/adcirc/v56.0.3?logo=docker&label=adcircorg%2Fadcirc)](https://hub.docker.com/r/adcircorg/adcirc)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://adcirc.github.io/adcirc/)
 
 
 ADCIRC is a system of computer programs for solving time dependent, free surface circulation and transport problems in
@@ -50,8 +51,11 @@ versioning scheme, though it approximately mirrors semantic versioning.
 
 Documentation is presently undergoing upgrades, however, the main documentation locations for users are:
 
-1. [ADCIRC website](https://adcirc.org)
-2. [ADCIRC Wiki](https://wiki.adcirc.org/Main_Page)
+1. [ADCIRC documentation](https://adcirc.github.io/adcirc)
+2. [ADCIRC website](https://adcirc.org)
+3. [ADCIRC Wiki](https://wiki.adcirc.org/Main_Page)
+
+Contributors are actively consolidating information from [ADCIRC website](https://adcirc.org) and [ADCIRC Wiki](https://wiki.adcirc.org/Main_Page) into [ADCIRC documentation](https://adcirc.github.io/adcirc) to provide comprehensive, up-to-date information about ADCIRC.
 
 # Docker Containers
 
