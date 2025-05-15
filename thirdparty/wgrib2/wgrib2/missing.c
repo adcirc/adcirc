@@ -50,7 +50,9 @@ unsigned int missing_points(unsigned char *bitmap, unsigned int n) {
     j = n >> 3;
     rem = n & 7;
     count = 0;
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i) reduction(+:count)
+#endif
     for (i = 0; i < j; i++) {
 	  count += bitsum[bitmap[i]];
     }

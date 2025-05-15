@@ -1,4 +1,7 @@
-/* wgrib2 main module:  public domain 2005 w. ebisuzaki
+/* wgrib2:  public domain 2005 w. ebisuzaki
+ *          originally the main of the wgrib2 utility
+ *          later became main or routine depending on CALLABLE_WGRIB2
+ *          finally wgrib2 utility became a wrapper that calls the wgrib2 routine
  *
  * CHECK code is now duplicated
  *  if (decode) -- check before decoding
@@ -7,6 +10,8 @@
  * 1/2007 mods M. Schwarb: unsigned int ndata
  * 2/2008 WNE add -if support
  * 2/2008 WNE fixed bug in processing of submessages
+ * 2/2025 WNE previously could be main() or wgrib2().  Now only wgrib2()
+ *            the main() version became wgrib2_main.c
  */
 
 #include <stdio.h>
@@ -17,17 +22,16 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-#ifdef CALLABLE_WGRIB2
+
 #include <setjmp.h>
 jmp_buf fatal_err;
-#endif
 
 #include "grb2.h"
 #include "wgrib2.h"
 #include "fnlist.h"
 
-#ifdef USE_G2CLIB
-#include "grib2.h"
+#ifdef USE_G2CLIB_HIGH
+#include <grib2.h>
 gribfield *grib_data;
 int free_gribfield;			// flag for allocated gribfield
 #endif
@@ -35,7 +39,6 @@ int free_gribfield;			// flag for allocated gribfield
 int initial_call = 1;
 
 /* #define DEBUG */
-// #define DEBUG
 #define CHECK
 
 /* global variables .. can be modified by funtions */
@@ -53,21 +56,22 @@ int use_proj4;		/* use Proj4 for geolocation */
 int fix_ncep_2_flag;	
 int fix_ncep_3_flag;	
 int fix_ncep_4_flag;
+int fix_undef_flag;
 
 int for_mode, for_start, for_end, for_step;
 int for_n_mode, for_n_start, for_n_end, for_n_step;
 
 int match, match_fs;
-int match_flag;
+extern int run_flag;
 
-int last_message;	/* last message to process if set */
+unsigned int last_message;	/* last message to process if set > 0 */
 
 struct seq_file inv_file;
 struct seq_file rd_inventory_input;
 
-
 enum input_type input;
 enum output_order_type output_order, output_order_wanted;
+enum geolocation_type geolocation;
 
 extern char *inv_out;			/* all functions write to this buffer */
 
@@ -79,6 +83,7 @@ int only_submsg;    /* if only_submsg > 0 .. only process submsg number (only_su
 
 int file_append;
 int dump_msg, dump_submsg;
+size_t dump_offset;
 int ieee_little_endian;
 
 int decode;		/* decode grib file flag */
@@ -106,6 +111,7 @@ int use_scale, input_scale, dec_scale, bin_scale,  max_bits, wanted_bits;
 enum output_grib_type grib_type;
 int user_gribtable_enabled = 0;		/* potential user gribtable has been enabled */
 int use_bitmap;		/* use bitmap when doing complex packing */
+int version_if;		/* 0-old stype 1-modern if */
 
 /*
  * wgrib2
@@ -113,18 +119,9 @@ int use_bitmap;		/* use bitmap when doing complex packing */
  * simple wgrib for GRIB2 files
  *
  */
-#ifndef CALLABLE_WGRIB2
 
-int main(int argc, char **argv) {
+int wgrib2(int argc, const char **argv) {
 
-#else
-
-int wgrib2(int argc, char **argv) {
-
-#endif
-
-
-//WNE    FILE *in;
     struct seq_file in_file;
     unsigned char *msg, *sec[10];	/* sec[9] = last valid bitmap */
     long int last_pos;
@@ -137,7 +134,7 @@ int wgrib2(int argc, char **argv) {
     double ref;
 //    double *ddata, ref;
 
-#ifdef USE_G2CLIB
+#ifdef USE_G2CLIB_HIGH
     float missing_c_val_1, missing_c_val_2;
     g2int *bitmap, has_bitmap;
     g2float *g2_data;
@@ -158,39 +155,39 @@ int wgrib2(int argc, char **argv) {
 
     if (initial_call) {		/* only done 1st time */
 	setup_user_gribtable();
-//      jas_init();
 //      gctpc initialiation
-        init(-1,-1,"gctpc_error,txt", "gctpc_param.txt");
+        init(-1,-1,"gctpc_error.txt", "gctpc_param.txt");
         initial_call = 0;
     }
 
     narglist = 0;
     dscale[0] = dscale[1] = 0;
     mode = 0;
+    in_file.file_type = NOT_OPEN;
 
     if (fopen_file(&(rd_inventory_input), "-", "r")) fatal_error("opening stdin for rd_inventory","");
     data = NULL;
 //    ddata = NULL;
 
-#ifdef CALLABLE_WGRIB2
+
     if (setjmp(fatal_err)) {
-	fprintf(stderr,"*** arg list to wgrib2:");
+	fprintf(stderr,"*** arg list to wgrib2(..):");
 	for (i=0; i < argc; i++) {
 	    fprintf(stderr," %s", argv[i]);
 	}
 	fprintf(stderr,"\n\n");
 	if (ndata && data != NULL) free(data);
 	ndata=0;
-        return 1;
+	if (in_file.file_type != NOT_OPEN) fclose_file(&in_file);
+	return 8;
     }
-#endif
+
 
     /* no arguments .. help screen */
     if (argc == 1) {
 	mode = -1;
 	inv_out[0] = 0;
 	f_h(call_ARG0(inv_out,NULL));
-	// fprintf(inv_file, "%s\n", inv_out);
 	i = strlen(inv_out);
 	inv_out[i++] = '\n';
 	inv_out[i] = '\0';
@@ -201,19 +198,22 @@ int wgrib2(int argc, char **argv) {
 
     /* copy argv */
 
+
+#ifdef IS_OPENMP_4_0
+#pragma omp simd
+#endif
     for (i = 0; i < argc; i++) {
 	new_argv[i] = argv[i];
     }
 
     has_inv_option = 0;
     file_arg = 0;
-    in_file.file_type = NOT_OPEN;
 
     /* "compile" options */
 #ifdef DEBUG
     fprintf(stderr,"going to compile phase\n");
 #endif
-
+    init_check_v1_v2();			// check if old or modern if blocks
     for (i = 1; i < argc; i++) {
 
 	/* filename: either - or string that does not start with - */
@@ -237,11 +237,17 @@ int wgrib2(int argc, char **argv) {
 	arglist[narglist].i_argc = i+1;
 
 	if (functions[j].type == inv) has_inv_option = 1;
+	check_v1_v2 (functions[j].type,&(new_argv[i][1]));		// check for old or modern if blocks
 
 	i += functions[j].nargs;
 	if (i >= argc) fatal_error("missing arguments option=%s",functions[j].name);
 	narglist++;
+	if (narglist == N_ARGLIST) fatal_error_i("too many arguments on command line %d", argc-1);
+
     }
+
+    /* old or modern if blocks */
+    version_if = is_v1_v2();
 
     /* if no inv option, add -s */
     if (has_inv_option == 0) {
@@ -260,67 +266,58 @@ int wgrib2(int argc, char **argv) {
 
     /* initialize options,  mode = -1 */
 
-#ifdef DEBUG
-    fprintf(stderr,"going to init options,  narglist %d\n",narglist);
-#endif
-
-    for (j = 0; j < narglist; j++) {
-	new_inv_out();	/* inv_out[0] = 0; */
-	n_arg = functions[arglist[j].fn].nargs;
-        err = 0;
-    }
-
-    /* initialize options,  mode = -1 */
+    /* initialize options,  execute with mode = -1 */
 
 #ifdef DEBUG
     fprintf(stderr,"going to init options,  narglist %d\n",narglist);
 #endif
-
     for (j = 0; j < narglist; j++) {
 	new_inv_out();	/* inv_out[0] = 0; */
 	n_arg = functions[arglist[j].fn].nargs;
         err = 0;
 #ifdef DEBUG
-    fprintf(stderr,"going to init option %s\n", functions[arglist[j].fn].name);
+    fprintf(stderr,"going to init option %s %d\n", functions[arglist[j].fn].name, n_arg);
 #endif
-        if (n_arg == 0) err = functions[arglist[j].fn].fn(-1,NULL,NULL,0, inv_out,local+j);
-	else if (n_arg == 1) err = functions[arglist[j].fn].fn(-1,NULL,NULL,0, inv_out,local+j,
-		new_argv[arglist[j].i_argc]);
-	else if (n_arg == 2) err = functions[arglist[j].fn].fn(-1,NULL,NULL,0, inv_out,local+j,
-		new_argv[arglist[j].i_argc],new_argv[arglist[j].i_argc+1]);
-	else if (n_arg == 3) err = functions[arglist[j].fn].fn(-1,NULL,NULL,0, inv_out,local+j,
-		new_argv[arglist[j].i_argc],new_argv[arglist[j].i_argc+1],new_argv[arglist[j].i_argc+2]);
-	else if (n_arg == 4) err = functions[arglist[j].fn].fn(-1,NULL,NULL,0, inv_out,local+j,
-		new_argv[arglist[j].i_argc],new_argv[arglist[j].i_argc+1],
-		new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3]);
-	else if (n_arg == 5) err = functions[arglist[j].fn].fn(-1,NULL,NULL,0, inv_out,local+j,
-		new_argv[arglist[j].i_argc],new_argv[arglist[j].i_argc+1],
+        if (n_arg == 0) err = functions[arglist[j].fn].fn(init_ARG0(inv_out,local+j));
+	else if (n_arg == 1) err = functions[arglist[j].fn].fn(init_ARG1(inv_out,local+j,
+                new_argv[arglist[j].i_argc  ]));
+	else if (n_arg == 2) err = functions[arglist[j].fn].fn(init_ARG2(inv_out,local+j,
+		new_argv[arglist[j].i_argc  ], new_argv[arglist[j].i_argc+1]));
+	else if (n_arg == 3) err = functions[arglist[j].fn].fn(init_ARG3(inv_out,local+j,
+		new_argv[arglist[j].i_argc  ], new_argv[arglist[j].i_argc+1],
+                new_argv[arglist[j].i_argc+2]));
+	else if (n_arg == 4) err = functions[arglist[j].fn].fn(init_ARG4(inv_out,local+j,
+		new_argv[arglist[j].i_argc  ], new_argv[arglist[j].i_argc+1],
+                new_argv[arglist[j].i_argc+2] ,new_argv[arglist[j].i_argc+3]));
+	else if (n_arg == 5) err = functions[arglist[j].fn].fn(init_ARG5(inv_out,local+j,
+		new_argv[arglist[j].i_argc  ], new_argv[arglist[j].i_argc+1],
+                new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3], 
+                new_argv[arglist[j].i_argc+4]));
+	else if (n_arg == 6) err = functions[arglist[j].fn].fn(init_ARG6(inv_out,local+j,
+		new_argv[arglist[j].i_argc  ], new_argv[arglist[j].i_argc+1],
 		new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
-		new_argv[arglist[j].i_argc+4]);
-	else if (n_arg == 6) err = functions[arglist[j].fn].fn(-1,NULL,NULL,0, inv_out,local+j,
-		new_argv[arglist[j].i_argc],new_argv[arglist[j].i_argc+1],
-		new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
-		new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5]);
-	else if (n_arg == 7) err = functions[arglist[j].fn].fn(-1,NULL,NULL,0, inv_out,local+j,
-		new_argv[arglist[j].i_argc],new_argv[arglist[j].i_argc+1],
-		new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
-		new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5],
-		new_argv[arglist[j].i_argc+6]);
-	else if (n_arg == 8) err = functions[arglist[j].fn].fn(-1,NULL,NULL,0, inv_out,local+j,
-		new_argv[arglist[j].i_argc],new_argv[arglist[j].i_argc+1],
+		new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5]));
+	else if (n_arg == 7) err = functions[arglist[j].fn].fn(init_ARG7(inv_out,local+j,
+		new_argv[arglist[j].i_argc  ], new_argv[arglist[j].i_argc+1],
 		new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
 		new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5],
-		new_argv[arglist[j].i_argc+6], new_argv[arglist[j].i_argc+7]);
+		new_argv[arglist[j].i_argc+6]));
+	else if (n_arg == 8) err = functions[arglist[j].fn].fn(init_ARG8(inv_out,local+j,
+		new_argv[arglist[j].i_argc  ], new_argv[arglist[j].i_argc+1],
+		new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
+		new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5],
+		new_argv[arglist[j].i_argc+6], new_argv[arglist[j].i_argc+7]));
 
-        // if(inv_out[0] != 0)  fprintf(inv_file, "%s", inv_out);
-        if(inv_out[0] != 0) fwrite_file(inv_out, 1, strnlen(inv_out,INV_BUFFER), &inv_file);
-
+        if(inv_out[0] != 0) {
+	    fwrite_file(inv_out, 1, strnlen(inv_out,INV_BUFFER), &inv_file);
+	}
         if (err) {
 	    err_bin(1); err_string(1);
 	    // cleanup
             return 8;
 	}
     }
+    fflush_file(&inv_file);
 
     /* error and EOF handlers have been initialized */
 #ifdef DEBUG
@@ -334,10 +331,10 @@ int wgrib2(int argc, char **argv) {
     }
 
     if (latlon == 1 && output_order_wanted != wesn) 
-           fatal_error("latitude-longitude information is only available with -order we:sn","");
+           fatal_error("latitude-longitude information is only available with -order we:sn for file %s",in_file.filename);
 
     if (input == inv_mode && (in_file.file_type != DISK && in_file.file_type != MEM)) 
-	fatal_error("wgrib2 cannot random access grib input file","");
+	fatal_error("wgrib2 cannot random access grib input file %s",in_file.filename);
 
 #ifdef DEBUG
     fprintf(stderr,"going to process data\n");
@@ -354,17 +351,20 @@ int wgrib2(int argc, char **argv) {
 
     /* if dump mode .. position io stream */
     if (input == dump_mode) {
-        while (msg_no < dump_msg) {
-// //	    if (in_file.file_type == PIPE) msg = rd_grib2_msg_seq(sec, in, &pos, &len, &num_submsgs);
-//	    if (in_file.file_type == PIPE) msg = rd_grib2_msg_seq_file(sec, &in_file, &pos, &len, &num_submsgs);
-//	    else if (in_file.file_type == DISK) msg = rd_grib2_msg(sec, in, &pos, &len, &num_submsgs);
-
-	    msg = rd_grib2_msg_seq_file(sec, &in_file, &pos, &len, &num_submsgs);
-            if (msg == NULL) fatal_error_i("record %d not found", dump_msg);
-            last_pos = pos;
-            pos += len;
-            msg_no++;
-        }
+	if (dump_offset > 0) {
+	    /* dump_offset > 0 .. use offset of dump_offset-1 */
+            if (fseek_file(&in_file, dump_offset-1, SEEK_SET) != 0) fatal_error("fseek_file: failed for %s",in_file.filename);
+            msg_no = dump_msg;
+	}
+	else {
+            while (msg_no < dump_msg) {
+	        msg = rd_grib2_msg_seq_file(sec, &in_file, &pos, &len, &num_submsgs);
+                if (msg == NULL) fatal_error("record %d not found for %s", dump_msg,in_file.filename);
+                last_pos = pos;
+                pos += len;
+                msg_no++;
+            }
+	}
 #ifdef DEBUG
         printf("dump mode msg=%d\n", msg_no);
 #endif
@@ -384,7 +384,7 @@ int wgrib2(int argc, char **argv) {
         if (input == inv_mode || input == dump_mode) {
             if (input == inv_mode) {
                 if (rd_inventory(&msg_no,&submsg, &pos, &rd_inventory_input)) break;
-		if (fseek_file(&in_file, pos,SEEK_SET) != 0) fatal_error("fseek_file failed","");
+		if (fseek_file(&in_file, pos,SEEK_SET) != 0) fatal_error("fseek_file failed for %s",in_file.filename);
             }
             else if (input == dump_mode) {
                 if (dump_msg == -1) break;
@@ -393,12 +393,9 @@ int wgrib2(int argc, char **argv) {
 	    }
 
             if (pos != last_pos) {
-// //	        if (in_file.file_type == PIPE) msg = rd_grib2_msg_seq(sec, in, &pos, &len, &num_submsgs);
-//	        if (in_file.file_type == PIPE) msg = rd_grib2_msg_seq_file(sec, &in_file, &pos, &len, &num_submsgs);
-//		else if (in_file.file_type == DISK) msg = rd_grib2_msg(sec, in, &pos, &len, &num_submsgs);
 	        msg = rd_grib2_msg_seq_file(sec, &in_file, &pos, &len, &num_submsgs);
 	        if (msg == NULL) {
-                    fatal_error_i("grib message #%d not found", msg_no);
+                    fatal_error_i("grib message #%d not found for %s", msg_no,in_file.filename);
                     break;
                 }
                 last_pos = pos;
@@ -408,19 +405,19 @@ int wgrib2(int argc, char **argv) {
             if (pos == last_pos && submsg == last_submsg + 1) {
                 /* read previous submessage */
 		if (parse_next_msg(sec) != 0) {
-                    fprintf(stderr,"\n*** grib message #%d.%d not found ***\n\n", msg_no, submsg);
+                    fprintf(stderr,"\n*** grib message #%d.%d not found for %s ***\n\n", msg_no, submsg, in_file.filename);
                     break;
 		}
             }
             else {
                 /* need to get desired submessage into sec */
 		if (parse_1st_msg(sec) != 0) {
-                    fprintf(stderr,"\n*** grib message #%d.1 not found ***\n\n", msg_no);
+                    fprintf(stderr,"\n*** grib message #%d.1 not found for %s***\n\n", msg_no, in_file.filename);
                     break;
 		}
                 for (i = 2; i <= submsg; i++) {
 		    if (parse_next_msg(sec) != 0) {
-                        fprintf(stderr,"\n*** grib message #%d.%d not found ***\n\n", msg_no, i);
+                        fprintf(stderr,"\n*** grib message #%d.%d not found for %s***\n\n", msg_no, i,in_file.filename);
                         break;
                     }
 		}
@@ -429,9 +426,6 @@ int wgrib2(int argc, char **argv) {
 	}
         else if (input == all_mode) {
 	    if (submsg == 0) {
-// //	        if (in_file.file_type == PIPE) msg = rd_grib2_msg_seq(sec, in, &pos, &len, &num_submsgs);
-//	        if (in_file.file_type == PIPE) msg = rd_grib2_msg_seq_file(sec, &in_file, &pos, &len, &num_submsgs);
-//		else if (in_file.file_type == DISK) msg = rd_grib2_msg(sec, in, &pos, &len, &num_submsgs);
 	        msg = rd_grib2_msg_seq_file(sec, &in_file, &pos, &len, &num_submsgs);
 		if (msg == NULL) break;
                 submsg = 1;
@@ -439,21 +433,18 @@ int wgrib2(int argc, char **argv) {
 	    else if (submsg > num_submsgs) {
 		pos += len;
                 msg_no++;
-// //	        if (in_file.file_type == PIPE) msg = rd_grib2_msg_seq(sec, in, &pos, &len, &num_submsgs);
-//	        if (in_file.file_type == PIPE) msg = rd_grib2_msg_seq_file(sec, &in_file, &pos, &len, &num_submsgs);
-//		else if (in_file.file_type == DISK) msg = rd_grib2_msg(sec, in, &pos, &len, &num_submsgs);
 	        msg = rd_grib2_msg_seq_file(sec, &in_file, &pos, &len, &num_submsgs);
 		if (msg == NULL) break;
                 submsg = 1;
 	    }
             if (submsg == 1) {
 		if (parse_1st_msg(sec) != 0) {
-		    fprintf(stderr,"illegal format: parsing 1st submessage\n");
+		    fprintf(stderr,"illegal format: parsing 1st submessage for %s\n",in_file.filename);
 		}
             }
             else {
 		if (parse_next_msg(sec) != 0) {
-                    fprintf(stderr,"illegal format: parsing submessages\n");
+                    fprintf(stderr,"illegal format: parsing submessages for %s\n",in_file.filename );
                 }
 	    }
 	}
@@ -464,15 +455,35 @@ int wgrib2(int argc, char **argv) {
 
 	if (for_mode) {
 	    if (msg_no < for_start || msg_no > for_end || ((msg_no - for_start) % for_step) != 0) {
-	        if (msg_no > for_end && input != inv_mode) last_message = 1;
+	        if (msg_no > for_end && input != inv_mode) {
+		   if (last_message == 0) last_message = 1;
+		}
 		submsg++;
 		continue;
 	    }
 	}
 
+#ifdef CHECK
+        /* check if local table is needed and defined */
+        if (GB2_LocalTable(sec) == 255) {
+            if ( (GB2_MasterTable(sec) == 255) ||
+                        (GB2_ParmNum(sec) >= 192 && GB2_ParmNum(sec) <= 254) ||
+                        (GB2_ParmCat(sec) >= 192 && GB2_ParmCat(sec) <= 254) ||
+                        (GB2_Discipline(sec) >= 192 && GB2_Discipline(sec) <= 255) ) {
+		fprintf(stderr,"\n*** DELATED FATAL ERROR, local grib table=255, replaced by 1 in %s\n", in_file.filename);
+		GB2_LocalTable(sec) = 1;
+		last_message |= DELAYED_LOCAL_GRIBTABLE_ERR;
+	    }
+	}
+
+	/* check the PDT size */
+	if (check_pdt_size(sec) == 0) {
+	    // delayed error
+	    last_message |= DELAYED_PDT_SIZE_ERR;
+	}
+#endif
 	/* move inv_no++ before match_inv is made */
 	inv_no++;
-
         if (match || match_fs) {
 	   inv_out[0] = 0;
 	   if (num_submsgs > 1) {
@@ -499,7 +510,7 @@ int wgrib2(int argc, char **argv) {
 #endif
 
         }
-	match_flag = 0;
+	run_flag = 1;
 
         if (for_n_mode) {
             if (inv_no < for_n_start || inv_no > for_n_end || ((inv_no - for_n_start) % for_n_step) != 0) {
@@ -517,18 +528,22 @@ int wgrib2(int argc, char **argv) {
 	else {
 	    new_GDS = 0;
 	    for (j = 0; j < i; j++) {
-		if (old_gds[j] != sec[3][j]) new_GDS = 1;
+		if (old_gds[j] != sec[3][j]) { new_GDS = 1; break; }
 	    }
 	}
 	if (new_GDS) {
+	    geolocation = not_used;
 	    GDS_change_no++;
 	    if (i > GDS_max_size) {
 		if (GDS_max_size) free(old_gds);
 		GDS_max_size = i + 100;		/* add 100 just to avoid excessive memory allocations */
     		if ((old_gds = (unsigned char *) malloc(GDS_max_size) ) == NULL) {
-			fatal_error("memory allocation problem old_gds in wgrib2.main","");
+			fatal_error("memory allocation problem old_gds in wgrib2(..) for %s",in_file.filename);
 		}
 	    }
+#ifdef IS_OPENMP_4_0
+#pragma omp simd
+#endif
 	    for (j = 0; j < i; j++) {
 		old_gds[j] = sec[3][j];
             }
@@ -542,42 +557,51 @@ int wgrib2(int argc, char **argv) {
             if (latlon) {
 		i = 1;
 
+		if (use_gctpc && i != 0) {				/* use gctpc to get lat lon values */
+		    i = gctpc_get_latlon(sec, &lon, &lat);
+		    if (i == 0) geolocation = gctpc;
+		}
+
 #ifdef USE_PROJ4
 		if (use_proj4 && i != 0) {				/* use Proj4 to get lat lon values */
 		    i = proj4_get_latlon(sec, &lon, &lat);
-//		    if (i == 0) fprintf(stderr,"proj4_get_lat used\n");
+		    if (i == 0) geolocation = proj4;
 		}
 #endif
 
-		if (use_gctpc && i != 0) {				/* use gctpc to get lat lon values */
-		    i = gctpc_get_latlon(sec, &lon, &lat);
-//		    if (i == 0) fprintf(stderr,"gctpc_get_lat used\n");
+		if (i != 0) {
+		    i = get_latlon(sec, &lon, &lat);		 /* get lat lon of grid points using built-in code */
+		    if (i == 0) geolocation = internal;
 		}
-
-		if (i != 0) get_latlon(sec, &lon, &lat);		 /* get lat lon of grid points using built-in code */
 	    }
 	}
 
 	/* Decode NDFD WxText */
 	if (WxText) mk_WxKeys(sec);
 
+	// some operatonal files need to be fixed
 	// any fixes to raw grib message before decode need to be placed here
 	if (fix_ncep_2_flag) fix_ncep_2(sec);
 	if (fix_ncep_3_flag) fix_ncep_3(sec);
 	if (fix_ncep_4_flag) fix_ncep_4(sec);
+	if (fix_undef_flag) fix_undef(sec);
 
 #ifdef CHECK
 	j = code_table_5_0(sec);		// type of compression
 
 	/* yes this can be simplified but want to split it up in case other decoders have problems */
 	if (j == 0 && sec[5][19] == 0 && int2(sec[5] + 17) != 0 && ieee2flt(sec[5]+11) != 0.0) 
-		fprintf(stderr,"Warning: g2lib/g2clib/grib-api simple encode/decode may differ from WMO standard, use -g2clib 0 for WMO standard\n");
+		fprintf(stderr,"Warning: g2lib/g2clib/grib-api simple encode/decode may differ from WMO standard, use -g2clib 0 for WMO standard for %s\n",
+				   in_file.filename);
 	if ((j == 2 || j == 3) && int2(sec[5]+17) != 0 && int4(sec[5] + 31) == 0 && ieee2flt(sec[5]+11) != 0.0) 
-		fprintf(stderr,"Warning: g2lib/g2clib complex encode/decode may differ from WMO standard, use -g2clib 0 for WMO standard\n");
+		fprintf(stderr,"Warning: g2lib/g2clib complex encode/decode may differ from WMO standard, use -g2clib 0 for WMO standard for %s\n",
+				   in_file.filename);
 	if (j == 40 && sec[5][19] == 0 && int2(sec[5] + 17) != 0 && ieee2flt(sec[5]+11) != 0.0) 
-		fprintf(stderr,"Warning: g2lib/g2clib jpeg encode/deocde may differ from WMO standard, use -g2clib 0 for WMO standard\n");
+		fprintf(stderr,"Warning: g2lib/g2clib jpeg encode/decode may differ from WMO standard, use -g2clib 0 for WMO standard for %s\n",
+				   in_file.filename);
 	if (j == 41 && sec[5][19] == 0 && int2(sec[5] + 17) != 0 && ieee2flt(sec[5]+11) != 0.0) 
-		fprintf(stderr,"Warning: g2lib/g2clib/grib-api png encode/decode may differ from WMO standard, use -g2clib 0 for WMO standard\n");
+		fprintf(stderr,"Warning: g2lib/g2clib/grib-api png encode/decode may differ from WMO standard, use -g2clib 0 for WMO standard for %s\n",
+				   in_file.filename);
 
 	/* check the size of Section 7 */
 	/* code to check the other sizes needs to be placed in decode routines */
@@ -591,14 +615,16 @@ int wgrib2(int argc, char **argv) {
 
 	    if (k != GB2_Sec7_size(sec)) {
 		fprintf(stderr,"Detected a size mismatch, Section 7, wanted %d found %d\n", k, GB2_Sec7_size(sec));
-		if (decode) fatal_error("Section 7 size, mismatch, simple packing","");
+		last_message |= DELAYED_GRID_SIZE_ERR;
+		if (decode) fatal_error("Section 7 size, mismatch, simple packing for %s",in_file.filename);
 	    }
 	}
 	else if (j == 4) {		/* IEEE */
 	    k = GB2_Sec5_nval(sec) * 4 + 5;
 	    if (k != GB2_Sec7_size(sec)) {
 		fprintf(stderr,"Detected a size mismatch, Section 7, wanted %d found %d\n", k, GB2_Sec7_size(sec));
-		if (decode) fatal_error("Section 7 size, mismatch, IEEE packing","");
+		last_message |= DELAYED_GRID_SIZE_ERR;
+		if (decode) fatal_error("Section 7 size, mismatch, IEEE packing for %s",in_file.filename);
 	    }
 	}
 
@@ -606,7 +632,7 @@ int wgrib2(int argc, char **argv) {
 
 	if (err_4_3_count < 2) {
 	    if (code_table_4_3(sec) == 255) {
-		fprintf(stderr,"** WARNING input Code Table 4.3 = 255 (undefined) **\n");
+		fprintf(stderr,"** WARNING input Code Table 4.3 = 255 (undefined) for %s **\n",in_file.filename);
 		err_4_3_count++;
 	    }
         }
@@ -617,14 +643,18 @@ int wgrib2(int argc, char **argv) {
 #ifdef CHECK
             if (code_table_6_0(sec) == 0) {                         // has bitmap
                 k = GB2_Sec3_npts(sec) -  GB2_Sec5_nval(sec);
-                if (k != missing_points(sec[6]+6, GB2_Sec3_npts(sec)))
-                    fatal_error_uu("inconsistent number of bitmap points sec3-sec5: %u sec6: %u",
-			k, missing_points(sec[6]+6, GB2_Sec3_npts(sec)));
+                if (k != missing_points(sec[6]+6, GB2_Sec3_npts(sec))) {
+		    last_message |= DELAYED_GRID_SIZE_ERR;
+                    if (decode) fatal_error("inconsistent number of bitmap points sec3-sec5: %u sec6: %u for %s",
+			k, missing_points(sec[6]+6, GB2_Sec3_npts(sec)),in_file.filename);
+		}
             }
             else if (code_table_6_0(sec) == 255) {                  // no bitmap
-                if (GB2_Sec3_npts(sec) != GB2_Sec5_nval(sec))
-                    fatal_error_uu("inconsistent number of data points sec3: %u sec5: %u",
-                        GB2_Sec3_npts(sec), GB2_Sec5_nval(sec));
+                if (GB2_Sec3_npts(sec) != GB2_Sec5_nval(sec)) {
+		    last_message |= DELAYED_GRID_SIZE_ERR;
+                    if (decode) fatal_error_uu("inconsistent number of data points sec3: %u sec5: %u for %s",
+                        GB2_Sec3_npts(sec), GB2_Sec5_nval(sec),in_file.filename);
+		}
             }
 #endif
 
@@ -636,7 +666,7 @@ int wgrib2(int argc, char **argv) {
                     data = (float *) malloc(sizeof(float) * (size_t) ndata);
                     if (data == NULL) {
 			ndata = 0;
-			fatal_error("main: memory allocation failed data","");
+			fatal_error("wgrib2(..): memory allocation failed data","");
 		    }
 		}
                 else { data = NULL; }
@@ -646,10 +676,10 @@ int wgrib2(int argc, char **argv) {
 
             /* USE G2CLIB */
 
-#ifdef USE_G2CLIB
+#ifdef USE_G2CLIB_HIGH
             if (use_g2clib == 2) {
                 err = g2_getfld(msg,submsg,1,1,&grib_data);
-                if (err != 0) fatal_error_ii("Fatal g2clib decode err=%d msg=%d", err, msg_no);
+                if (err != 0) fatal_error("Fatal g2clib decode err=%d msg=%d for %s", err, msg_no,in_file.filename);
                 free_gribfield = 1;
 
                 has_bitmap = grib_data->ibmap;
@@ -699,7 +729,7 @@ int wgrib2(int argc, char **argv) {
 		}
 
 		err = unpk_grib(sec, data);
-                if (err != 0) fatal_error_i("Fatal decode packing type %d",err);
+                if (err != 0) fatal_error_i("Fatal decode packing type %d for %s",err,in_file.filename);
 
 		if (use_g2clib == 1) {  // fix up data 
 		    /* restore decimal scaling */
@@ -739,62 +769,86 @@ int wgrib2(int argc, char **argv) {
         // fprintf(inv_file, "%s", inv_out);
         fwrite_file(inv_out, 1, strnlen(inv_out,INV_BUFFER), &inv_file);
 
+#ifdef DEBUG
+    fprintf(stderr,"inv_out = %s\n", inv_out);
+#endif
+
 	for (j = 0; j < narglist; j++) {
 
-	    /* skip execution if match_flag == 1 */
-	    /* an output option acts as endif for match_flag */
-	    if (match_flag == 1) {
-                if (functions[arglist[j].fn].type == output)  match_flag = 0;
-		continue;
+	    /* skip execution if run_flag == 0 */
+	    /* an output option acts as endif for run_flag */
+	    if (version_if == 0) {	/* -if .. -output-type */
+		if (functions[arglist[j].fn].type == output && run_flag == 0)  {
+		    run_flag = 1;
+		    continue;
+		}
 	    }
+	    else {	/* version 1 if-blocks */
+		if (functions[arglist[j].fn].type == If) {
+		    v1_if();
+		}
+		else if (functions[arglist[j].fn].type == Else) {
+		    v1_else();
+		}
+		else if (functions[arglist[j].fn].type == Endif) {
+		    v1_endif();
+		}
+		else if (functions[arglist[j].fn].type == Elseif) {
+		    v1_elseif();
+		}
+	    }
+	    if (run_flag == 0) continue;
 
 
             // if (functions[arglist[j].fn].type == inv) fprintf(inv_file, "%s", item_deliminator);
             if (functions[arglist[j].fn].type == inv) fwrite_file(item_deliminator, 1, strlen(item_deliminator), &inv_file);
             if (functions[arglist[j].fn].type != setup) {
-		new_inv_out();	// inv_out[0] = 0;
+                new_inv_out();   // inv_out[0] = 0;
 	        n_arg = functions[arglist[j].fn].nargs;
-		if (n_arg == 0) 
-                    functions[arglist[j].fn].fn(mode, sec, data, ndata, inv_out, local+j);
-		else if (n_arg == 1)
-		    functions[arglist[j].fn].fn(mode, sec, data, ndata, inv_out, local+j,
-			 new_argv[arglist[j].i_argc]);
-		else if (n_arg == 2)
-		    functions[arglist[j].fn].fn(mode, sec, data, ndata, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1]);
-		else if (n_arg == 3)
-		    functions[arglist[j].fn].fn(mode, sec, data, ndata, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1],
-			new_argv[arglist[j].i_argc+2]);
-		else if (n_arg == 4)
-		    functions[arglist[j].fn].fn(mode, sec, data, ndata, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1],
-			new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3]);
-		else if (n_arg == 5)
-		    functions[arglist[j].fn].fn(mode, sec, data, ndata, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1],
-			new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
-			new_argv[arglist[j].i_argc+4]);
-		else if (n_arg == 6)
-		    functions[arglist[j].fn].fn(mode, sec, data, ndata, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1],
-			new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
-			new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5]);
-		else if (n_arg == 7)
-		    functions[arglist[j].fn].fn(mode, sec, data, ndata, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1],
-			new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
-			new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5],
-			new_argv[arglist[j].i_argc+6]);
-		else if (n_arg == 8)
-		    functions[arglist[j].fn].fn(mode, sec, data, ndata, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1],
-			new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
-			new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5],
-			new_argv[arglist[j].i_argc+6], new_argv[arglist[j].i_argc+7]);
+                if (n_arg == 0) functions[arglist[j].fn].fn(call_ARG0(inv_out,local+j));
+
+                else if (n_arg == 1) functions[arglist[j].fn].fn(call_ARG1(inv_out,local+j,
+                    new_argv[arglist[j].i_argc  ]));
+
+                else if (n_arg == 2) functions[arglist[j].fn].fn(call_ARG2(inv_out,local+j,
+                    new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1]));
+
+                else if (n_arg == 3) functions[arglist[j].fn].fn(call_ARG3(inv_out,local+j,
+                    new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
+                    new_argv[arglist[j].i_argc+2]));
+
+                else if (n_arg == 4) functions[arglist[j].fn].fn(call_ARG4(inv_out,local+j,
+                    new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
+                    new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3]));
+
+                else if (n_arg == 5) functions[arglist[j].fn].fn(call_ARG5(inv_out,local+j,
+                    new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
+                    new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
+                    new_argv[arglist[j].i_argc+4]));
+
+                else if (n_arg == 6) functions[arglist[j].fn].fn(call_ARG6(inv_out,local+j,
+                    new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
+                    new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
+                    new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5]));
+
+                else if (n_arg == 7) functions[arglist[j].fn].fn(call_ARG7(inv_out,local+j,
+                    new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
+                    new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
+                    new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5],
+                    new_argv[arglist[j].i_argc+6]));
+
+                else if (n_arg == 8) functions[arglist[j].fn].fn(call_ARG8(inv_out,local+j,
+                    new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
+                    new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
+                    new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5],
+                    new_argv[arglist[j].i_argc+6], new_argv[arglist[j].i_argc+7]));
+
 
         	// if(inv_out[0] != 0)  fprintf(inv_file, "%s", inv_out);
-        	if(inv_out[0] != 0) fwrite_file(inv_out, 1, strnlen(inv_out,INV_BUFFER), &inv_file);
+        	if(inv_out[0] != 0) {
+		    fwrite_file(inv_out, 1, strnlen(inv_out,INV_BUFFER), &inv_file);
+		    fflush_file(&inv_file);
+		}
            }
 	}
 
@@ -803,27 +857,27 @@ int wgrib2(int argc, char **argv) {
             if (code_table_6_0(sec) == 0) {                         // has bitmap
                 k = GB2_Sec3_npts(sec) -  GB2_Sec5_nval(sec);
                 if (k != missing_points(sec[6]+6, GB2_Sec3_npts(sec)))
-                    fatal_error_uu("inconsistent number of bitmap points sec3-sec5: %u sec6: %u",
-			k, missing_points(sec[6]+6, GB2_Sec3_npts(sec)));
+                    fatal_error("inconsistent number of bitmap points sec3-sec5: %u sec6: %u for %s",
+			k, missing_points(sec[6]+6, GB2_Sec3_npts(sec)),in_file.filename);
             }
             else if (code_table_6_0(sec) == 255) {                  // no bitmap
                 if (GB2_Sec3_npts(sec) != GB2_Sec5_nval(sec))
-                    fatal_error_ii("inconsistent number of data points sec3: %d sec5: %d",
-                        (int) GB2_Sec3_npts(sec), (int) GB2_Sec5_nval(sec));
+                    fatal_error("inconsistent number of data points sec3: %d sec5: %d for %s",
+                        (int) GB2_Sec3_npts(sec), (int) GB2_Sec5_nval(sec),in_file.filename);
             }
 	}
 #endif
 
 	submsg++;
 
-#ifdef USE_G2CLIB
+#ifdef USE_G2CLIB_HIGH
 	if (free_gribfield) { g2_free(grib_data); free_gribfield = 0;}
 #endif
 
 	// fprintf(inv_file, "%s",end_inv);
         fwrite_file(end_inv, 1, strlen(end_inv), &inv_file);
 
-	if (flush_mode) fflush_file(&inv_file);
+	fflush_file(&inv_file);
 	if (dump_msg > 0) break;
     }
 
@@ -833,51 +887,71 @@ int wgrib2(int argc, char **argv) {
     /* finalize all functions, call with mode = -2 */
 
     err = 0;
+    if (ndata != 0) {
+	ndata = 0;
+	free(data);
+	data = NULL;
+    }
+
     for (j = 0; j < narglist; j++) {
-//        if (functions[arglist[j].fn].type != setup) {
+        mode = -2;
 	    n_arg = functions[arglist[j].fn].nargs;
 	    new_inv_out();	// inv_out[0] = 0;
-	    if (n_arg == 0) 
-                err |= functions[arglist[j].fn].fn(-2, NULL, NULL, 0, inv_out, local+j);
-	    else if (n_arg == 1)
-		err |= functions[arglist[j].fn].fn(-2, NULL, NULL, 0, inv_out, local+j,
-			new_argv[arglist[j].i_argc]);
-	    else if (n_arg == 2)
-		err |= functions[arglist[j].fn].fn(-2, NULL, NULL, 0, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1]);
-	    else if (n_arg == 3)
-		err |= functions[arglist[j].fn].fn(-2, NULL, NULL, 0, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1],
-			new_argv[arglist[j].i_argc+2]);
-	    else if (n_arg == 4)
-		err |= functions[arglist[j].fn].fn(-2, NULL, NULL, 0, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1],
-			new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3]);
-	    else if (n_arg == 5)
-		err |= functions[arglist[j].fn].fn(-2, NULL, NULL, 0, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1],
-			new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
-			new_argv[arglist[j].i_argc+4]);
-	    else if (n_arg == 6)
-		err |= functions[arglist[j].fn].fn(-2, NULL, NULL, 0, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1],
-			new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
-			new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5]);
-	    else if (n_arg == 7)
-		err |= functions[arglist[j].fn].fn(-2, NULL, NULL, 0, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1],
-			new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
-			new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5],
-			new_argv[arglist[j].i_argc+6]);
-	    else if (n_arg == 8)
-		err |= functions[arglist[j].fn].fn(-2, NULL, NULL, 0, inv_out, local+j,
-			new_argv[arglist[j].i_argc], new_argv[arglist[j].i_argc+1],
-			new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
-			new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5],
-			new_argv[arglist[j].i_argc+6], new_argv[arglist[j].i_argc+7]);
-            // if (inv_out[0]) fprintf(stderr, "%s\n", inv_out);
+
+            if (n_arg == 0) err |= functions[arglist[j].fn].fn(fin_ARG0(inv_out,local+j));
+
+            else if (n_arg == 1) err |= functions[arglist[j].fn].fn(fin_ARG1(inv_out,local+j,
+                new_argv[arglist[j].i_argc  ]));
+
+            else if (n_arg == 2) err |= functions[arglist[j].fn].fn(fin_ARG2(inv_out,local+j,
+                new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1]));
+
+            else if (n_arg == 3) err |= functions[arglist[j].fn].fn(fin_ARG3(inv_out,local+j,
+                new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
+                new_argv[arglist[j].i_argc+2]));
+
+            else if (n_arg == 4) err |= functions[arglist[j].fn].fn(fin_ARG4(inv_out,local+j,
+                new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
+                new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3]));
+			
+            else if (n_arg == 5) err |= functions[arglist[j].fn].fn(fin_ARG5(inv_out,local+j,
+                new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
+                new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
+                new_argv[arglist[j].i_argc+4]));
+
+            else if (n_arg == 6) err |= functions[arglist[j].fn].fn(fin_ARG6(inv_out,local+j,
+                new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
+                new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
+                new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5]));
+
+            else if (n_arg == 7) err |= functions[arglist[j].fn].fn(fin_ARG7(inv_out,local+j,
+                new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
+                new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
+                new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5],
+                new_argv[arglist[j].i_argc+6]));
+            
+            else if (n_arg == 8) err |= functions[arglist[j].fn].fn(fin_ARG8(inv_out,local+j,
+                new_argv[arglist[j].i_argc  ],new_argv[arglist[j].i_argc+1],
+                new_argv[arglist[j].i_argc+2], new_argv[arglist[j].i_argc+3],
+                new_argv[arglist[j].i_argc+4], new_argv[arglist[j].i_argc+5],
+                new_argv[arglist[j].i_argc+6], new_argv[arglist[j].i_argc+7]));
+
             if (inv_out[0]) fprintf(stderr, "%s%s", inv_out, end_inv);
 //        }
+    }
+    if (last_message > 1) {
+        fclose_file(&in_file);
+        if (ndata) {
+	    ndata = 0;
+	    free(data);
+        }
+	if (last_message & DELAYED_PDT_SIZE_ERR) fprintf(stderr,"\n*** FATAL ERROR (delayed): PDT size error for %s\n", in_file.filename);
+       	if (last_message & DELAYED_LOCAL_GRIBTABLE_ERR) fprintf(stderr,"\n*** FATAL ERROR (delayed): local grib table undefined (255) for %s\n",
+			in_file.filename);
+	if (last_message & DELAYED_GRID_SIZE_ERR) fprintf(stderr,"\n*** FATAL ERROR (delayed): grid size mismatch for %s\n",in_file.filename);
+	if (last_message & DELAYED_FTIME_ERR) fprintf(stderr,"\n*** FATAL ERROR (delayed): forecast time for %s\n",in_file.filename);
+	if (last_message & DELAYED_MISC) fprintf(stderr,"\n*** FATAL ERROR (delayed): for %s see stderr\n",in_file.filename);
+	err=1;
     }
     err_bin(0); err_string(0);
     fclose_file(&in_file);
@@ -885,7 +959,6 @@ int wgrib2(int argc, char **argv) {
 	ndata = 0;
 	free(data);
     }
-    // return 0;
     return err;
 }
 

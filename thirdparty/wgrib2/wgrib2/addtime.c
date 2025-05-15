@@ -6,6 +6,8 @@
 #include "wgrib2.h"
 #include "CodeTable4_4.h"
 
+/* addtime.c   10/2024 Public Domain   Wesley Ebisuzaki */
+
 #define  FEB29   (31+29)
 static int monthjday[13] = {
         0,31,59,90,120,151,181,212,243,273,304,334,365};
@@ -30,6 +32,16 @@ int check_datecode(int year, int month, int day) {
    }
    if (day <= days_in_month) return 0;
    return 3;
+}
+
+/* see if time is reasonable */
+
+int check_time(int year, int month, int day, int hour, int minute, int second) {
+
+    if (hour < 0 || hour > 23) return 4;
+    if (minute < 0 || minute > 59) return 5;
+    if (second < 0 || second > 59) return 6;
+    return check_datecode(year, month, day);
 }
 
 /*
