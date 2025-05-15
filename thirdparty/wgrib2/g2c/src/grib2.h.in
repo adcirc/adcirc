@@ -1,0 +1,515 @@
+/** @file
+ * @brief Header file for NCEPLIBS-g2c library.
+ *
+ * ### Program History Log
+ * Date | Programmer | Comments
+ * -----|------------|---------
+ * 2002-10-25 | Gilbert | Initial
+ * 2009-01-14 | Vuong | Changed struct template to gtemplate
+ * 2021-11-9 | Ed Hartnett | Moved many prototypes to new internal header grib2_int.h.
+ * 2022-04-15 | Ed Hartnett | Added error codes related to JPEG.
+ * 2022-08-15 | Ed Hartnett | Added compression functions for double.
+ * 2023-09-10 | Eric Engle | Added AEC compression.
+ *
+ * @author Stephen Gilbert @date 2002-10-25
+ * @author Ed Hartnett
+ */
+
+#ifndef _grib2_H
+#define _grib2_H
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+
+#define G2C_VERSION "@pVersion@" /**< Current version of NCEPLIBS-g2c library. */
+
+#cmakedefine G2_PNG_ENABLED 1      /**< Decoding/encoding PNG is enabled */
+#cmakedefine G2_JPEG2000_ENABLED 1 /**< Decoding/encoding JPEG2000 is enabled */
+#cmakedefine G2_AEC_ENABLED 1      /**< Decoding/encoding AEC/CCSDS is enabled */
+
+/** Long integer type. */
+typedef int64_t g2int;
+
+/** Unsigned long integer type. This typedef is provided for backward
+ * compatibility and is not used by the library any more. */
+typedef uint64_t g2intu;
+
+/** Float type. This typedef is provided for backward compatibility
+ * and is not used by the library any more. Use float in new code. */
+typedef float g2float;
+
+/**
+ * Struct for GRIB2 field.
+ */
+struct gribfield
+{
+    /** GRIB edition number (2). */
+    g2int version;
+
+    /** Message Discipline (see [Table
+     * 0.0](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table0-0.shtml)). */
+    g2int discipline;
+
+    /** Contains the entries in the [Identification Section (Section
+     * 1)](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_sect1.shtml).
+     *
+     * - idsect[0] Identification of originating Centre (see [Table
+     * 0](https://www.nco.ncep.noaa.gov/pmb/docs/on388/table0.html)). 7
+     * is the identification for the US National Weather Service.
+     * - idsect[1] Identification of originating Sub-centre. (See
+     * [Table
+     * C](https://www.nco.ncep.noaa.gov/pmb/docs/on388/tablec.html)).
+     * - idsect[2] GRIB Master Tables Version Number (see [Table
+     * 1.0](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table1-0.shtml)).
+     *   - 0 Experimental
+     *   - 1 Initial operational version number
+     * - idsect[3] GRIB Local Tables Version Number (see [Table
+     * 1.1](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table1-1.shtml)).
+     *   - 0 Local tables not used
+     *   - 1-254 Number of local tables version used
+     * - idsect[4] Significance of Reference Time (See [Table
+     * 1.2](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table1-2.shtml)).
+     *   - 0 Analysis
+     *   - 1 Start of forecast
+     *   - 2 Verifying time of forecast
+     *   - 3 Observation time
+     * - idsect[5] Year (4 digits)
+     * - idsect[6] Month
+     * - idsect[7) Day
+     * - idsect[8] Hour
+     * - idsect[9] Minute
+     * - idsect[10] Second
+     * - idsect[11] Production status of processed data (see [Table
+     * 1.3](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table1-3.shtml)).
+     *   - 0 Operational products
+     *   - 1 Operational test products
+     *   - 2 Research products
+     *   - 3 Re-analysis products
+     * - idsect[12] Type of processed data (see [Table
+     * 1.4](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table1-4.shtml)).
+     *   - 0 Analysis products
+     *   - 1 Forecast products
+     *   - 2 Analysis and forecast products
+     *   - 3 Control forecast products
+     *   - 4 Perturbed forecast products
+     *   - 5 Control and perturbed forecast products
+     *   - 6 Processed satellite observations
+     *   - 7 Processed radar observations
+     */
+    g2int *idsect;
+
+    /** Number of elements in idsect. */
+    g2int idsectlen;
+
+    /** Pointer to character array containing contents of Local
+     * Section 2, if included. */
+    unsigned char *local;
+
+    /** Length of array local. */
+    g2int locallen;
+
+    /** Field number within GRIB message. */
+    g2int ifldnum;
+
+    /** Source of grid definition (see [Table
+     * 3.0](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table3-0.shtml)).
+     * - 0 Specified in [Table
+     3.1](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table3-1.shtml).
+     *  - 1 Predetermined grid Defined by originating centre. */
+    g2int griddef;
+
+    /** Number of grid points in the defined grid. */
+    g2int ngrdpts;
+
+    /** Number of octets needed for each additional grid points
+     * definition. Used to define number of points in each row (or
+     * column) for non-regular grids. = 0, if using regular grid. */
+    g2int numoct_opt;
+
+    /** Interpretation of list for optional points definition. (See
+     * [Table
+     * 3.11](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table3-11.shtml)). */
+    g2int interp_opt;
+
+    /** (Used if numoct_opt .ne. 0) The number of entries in array
+     * ideflist - i.e. number of rows (or columns) for which optional
+     * grid points are defined. This value is set to zero, if
+     * numoct_opt=0. */
+    g2int num_opt;
+
+    /**  (Used if numoct_opt .ne. 0) This array contains the
+     *  number of grid points contained in each row (or column) (part
+     *  of Section 3). NULL if numoct_opt = 0. */
+    g2int *list_opt;
+
+    /** Grid Definition Template Number (See [Table
+     * 3.1](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table3-1.shtml)). */
+    g2int igdtnum;
+
+    /** Number of elements in igdtmpl - i.e. number of entries
+     * in Grid Defintion Template. */
+    g2int igdtlen;
+
+    /** Contains the data values for the Grid Definition Template
+     * specified by igdtnum. */
+    g2int *igdtmpl;
+
+    /** Product Definition Template Number (see
+     * [Table 4.0](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table4-0.shtml)). */
+    g2int ipdtnum;
+
+    /** Number of elements in ipdtmpl - i.e. number of entries in
+     * Product Defintion Template. */
+    g2int ipdtlen;
+
+    /** Contains the data values for the Product Definition Template
+     * specified by ipdtnum. */
+    g2int *ipdtmpl;
+
+    /** Number of values in array coord_list. */
+    g2int num_coord;
+
+    /** Array containing floating point values intended to document
+     * the vertical discretisation associated to model data on hybrid
+     * coordinate vertical levels (part of Section 4). */
+    float *coord_list;
+
+    /** Number of data points unpacked and returned. */
+    g2int ndpts;
+
+    /** Data Representation Template Number (see [Table
+     * 5.0](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table5-0.shtml)). */
+    g2int idrtnum;
+
+    /** Number of elements in idrtmpl. */
+    g2int idrtlen;
+
+    /** Contains the data values for the Data Representation Template
+     * specified by idrtnum. */
+    g2int *idrtmpl;
+
+    /** Logical value indicating whether the bitmap and data values
+     * were unpacked. If false, bmap and fld pointers are NULL. */
+    g2int unpacked;
+
+    /** Logical value indicating whether the data field was expanded
+     * to the grid in the case where a bit-map is present. If true,
+     * the data points in fld match the grid points and zeros were
+     * inserted at grid points where data was bit-mapped out. If
+     * false, the data values in ld were not expanded to the grid and
+     * are just a consecutive array of data points corresponding to
+     * each value of "1" in bmap. */
+    g2int expanded;
+
+    /** Bitmap indicator (see [Table
+     * 6.0](https://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/grib2_table6-0.shtml)).
+     * - 0 bitmap applies and is included in Section 6.
+     * - 1-253 = Predefined bitmap applies
+     * - 254 = Previously defined bitmap applies to this field
+     * - 255 = Bit map does not apply to this product. */
+    g2int ibmap;
+
+    /** Integer array containing decoded bitmap, if ibmap=0 or
+     * ibap=254. Otherwise NULL. */
+    g2int *bmap;
+
+    /** Array of ndpts unpacked data points. */
+    float *fld;
+};
+
+typedef struct gribfield gribfield; /**< Struct for GRIB field. */
+
+/*  Prototypes for unpacking sections API  */
+g2int g2_unpack1(unsigned char *cgrib, g2int *iofst, g2int **ids, g2int *idslen);
+g2int g2_unpack2(unsigned char *cgrib, g2int *iofst, g2int *lencsec2,
+                 unsigned char **csec2);
+g2int g2_unpack3(unsigned char *cgrib, g2int *iofst, g2int **igds, g2int **igdstmpl,
+                 g2int *mapgridlen, g2int **ideflist, g2int *idefnum);
+g2int g2_unpack4(unsigned char *cgrib, g2int *iofst, g2int *ipdsnum, g2int **ipdstmpl,
+                 g2int *mappdslen, float **coordlist, g2int *numcoord);
+g2int g2_unpack5(unsigned char *cgrib, g2int *iofst, g2int *ndpts, g2int *idrsnum,
+                 g2int **idrstmpl, g2int *mapdrslen);
+g2int g2_unpack6(unsigned char *cgrib, g2int *iofst, g2int ngpts, g2int *ibmap,
+                 g2int **bmap);
+g2int g2_unpack7(unsigned char *cgrib, g2int *iofst, g2int igdsnum, g2int *igdstmpl,
+                 g2int idrsnum, g2int *idrstmpl, g2int ndpts, float **fld);
+
+/*  Prototypes for unpacking API  */
+void seekgb(FILE *lugb, g2int iseek, g2int mseek, g2int *lskip,
+            g2int *lgrib);
+g2int g2_info(unsigned char *cgrib, g2int *listsec0, g2int *listsec1,
+              g2int *numfields, g2int *numlocal);
+g2int g2_getfld(unsigned char *cgrib, g2int ifldnum, g2int unpack, g2int expand,
+                gribfield **gfld);
+void g2_free(gribfield *gfld);
+
+/*  Prototypes for packing API  */
+g2int g2_create(unsigned char *cgrib, g2int *listsec0, g2int *listsec1);
+g2int g2_addlocal(unsigned char *cgrib, unsigned char *csec2, g2int lcsec2);
+g2int g2_addgrid(unsigned char *cgrib, g2int *igds, g2int *igdstmpl, g2int *ideflist,
+                 g2int idefnum);
+g2int g2_addfield(unsigned char *cgrib, g2int ipdsnum, g2int *ipdstmpl,
+                  float *coordlist, g2int numcoord, g2int idrsnum, g2int *idrstmpl,
+                  float *fld, g2int ngrdpts, g2int ibmap, g2int *bmap);
+g2int g2_gribend(unsigned char *cgrib);
+
+/* The file-based g2c API was introduced in version 2.0.0 of the library. */
+
+/* Data types. */
+#define G2C_BYTE 1    /**< signed 1 byte integer */
+#define G2C_CHAR 2    /**< ISO/ASCII character */
+#define G2C_SHORT 3   /**< signed 2 byte integer */
+#define G2C_INT 4     /**< signed 4 byte integer */
+#define G2C_FLOAT 5   /**< single precision floating point number */
+#define G2C_DOUBLE 6  /**< double precision floating point number */
+#define G2C_UBYTE 7   /**< unsigned 1 byte int */
+#define G2C_USHORT 8  /**< unsigned 2-byte int */
+#define G2C_UINT 9    /**< unsigned 4-byte int */
+#define G2C_INT64 10  /**< signed 8-byte int */
+#define G2C_UINT64 11 /**< unsigned 8-byte int */
+
+/* Defines for file handling. */
+#define G2C_MAX_FILES 3             /**< Maximum number of open files. */
+#define G2C_MAX_NAME 1024           /**< Maximum length of a name. */
+#define G2C_NOWRITE 0x0000          /**< Set read-only access for g2c_open(). */
+#define G2C_WRITE 0x0001            /**< Set read-write access for g2c_open(). */
+#define G2C_CLOBBER 0x0000          /**< Destroy existing file. Mode flag for g2c_create(). */
+#define G2C_NOCLOBBER 0x0004        /**< Don't destroy existing file. Mode flag for g2c_create(). */
+#define G2C_LARGE_FILE_INDEX 0x0008 /**< Create a large file index. Mode flag for g2c_write_index(). */
+
+/* Useful constants. */
+#define G2C_SECTION0_BYTES 16 /**< Number of bytes in section 0. */
+
+/** Number of bytes in section 1 (not including reserved, optional
+ * data at the end of the section). */
+#define G2C_SECTION1_BYTES 21
+
+#define G2C_SECTION0_LEN 3  /**< Length of section 0 array. */
+#define G2C_SECTION1_LEN 13 /**< Length of section 1 array. */
+
+/* Constants to help with templates. */
+#define G2C_MAX_GDS_TEMPLATE 38        /**< Maximum number of grid templates. */
+#define G2C_MAX_GDS_TEMPLATE_MAPLEN 28 /**< Maximum grid template map length. */
+#define G2C_MAX_PDS_TEMPLATE 102        /**< Maximum number of PDS templates. */
+#define G2C_MAX_PDS_TEMPLATE_MAPLEN 50 /**< Maximum template map length. */
+#define G2C_MAX_DRS_TEMPLATE 11        /**< Maximum number of DRS templates. */
+#define G2C_MAX_DRS_TEMPLATE_MAPLEN 18 /**< Maximum DRS template map length. */
+
+/* File handling functions. */
+int g2c_open(const char *path, int mode, int *g2cid);
+int g2c_open_index(const char *data_file, const char *index_file, int mode, int *g2cid);
+int g2c_close(int g2cid);
+int g2c_write_index(int g2cid, int mode, const char *index_file);
+
+/* GRIB1 file functions. */
+int g2c_open_index1(const char *index_file);
+
+/* Inquiry functions. */
+int g2c_inq(int g2cid, int *num_msg);
+int g2c_inq_msg(int g2cid, int msg_num, unsigned char *discipline, int *num_fields,
+                int *num_local, short *center, short *subcenter, unsigned char *master_version,
+                unsigned char *local_version);
+int g2c_inq_msg_time(int g2cid, int msg_num, unsigned char *sig_ref_time, short *year,
+                     unsigned char *month, unsigned char *day, unsigned char *hour,
+                     unsigned char *minute, unsigned char *second);
+int g2c_inq_prod(int g2cid, int msg_num, int prod_num, int *pds_template_len,
+                 long long int *pds_template, int *gds_template_len, long long int *gds_template,
+                 int *drs_template_len, long long int *drs_template);
+int g2c_inq_dim(int g2cid, int msg_num, int prod_num, int dim_num, size_t *len,
+                char *name, float *val);
+int g2c_inq_dim_info(int g2cid, int msg_num, int prod_num, int dim_num, size_t *len,
+		     char *name);
+
+/* Getting data. */
+int g2c_get_prod(int g2cid, int msg_num, int prod_num, int *num_data_points,
+                 float *data);
+
+/* Templates. */
+int g2c_get_grid_template(int grid_template_num, int *maplen, int *map, int *needext);
+int g2c_get_grid_template_extension(int grid_template_num, int *g2c_template,
+                                    int *extlen, int *ext);
+int g2c_get_pds_template_extension(int pds_template_num, int *g2c_template,
+                                   int *extlen, int *ext);
+int g2c_get_gdt_len(int grid_template_num, int *maplen);
+int g2c_get_pds_template(int pds_template_num, int *maplen, int *map, int *needext);
+int g2c_get_pdt_len(int pds_template_num, int *maplen);
+int g2c_get_drs_template(int drs_template_num, int *maplen, int *map, int *needext);
+
+/* Internal functions. */
+int g2c_get_msg(int g2cid, size_t skip_bytes, size_t max_bytes, size_t *bytes_to_msg,
+                size_t *bytes_in_msg, unsigned char **cbuf);
+int g2c_find_msg2(int g2cid, size_t skip_bytes, size_t max_bytes, size_t *bytes_to_msg,
+                  size_t *bytes_in_msg);
+int g2c_csv_init();
+int g2c_find_desc_str(char *title, char *code, char *desc);
+int g2c_find_desc(char *title, int code, char *desc);
+void g2c_free_tables();
+void g2c_gbit_int(unsigned char *in, int *iout, int iskip, int nbits);
+int g2c_gbits_int(unsigned char *in, int *iout, int iskip, int nbits,
+                  int nskip, int n);
+int g2c_seekmsg(int g2cid, size_t skip, size_t *offset, size_t *msglen);
+
+/* Logging, for debugging purposes. */
+int g2c_set_log_level(int new_level);
+int g2c_log_file(int g2cid);
+
+/* Error handling. */
+const char *g2c_strerror(int g2cerr);
+
+/* Compression. */
+int g2c_unpack7(unsigned char *cgrib, int igdsnum, int gds_tmpl_len, long long int *gdstmpl,
+                int idrsnum, int drs_tmpl_len, long long int *drstmpl, int ndpts, float *fld);
+int g2c_pngpackf(float *fld, size_t width, size_t height, int *idrstmpl,
+                 unsigned char *cpack, int *lcpack);
+int g2c_pngpackd(double *fld, size_t width, size_t height, int *idrstmpl,
+                 unsigned char *cpack, int *lcpack);
+int g2c_pngunpackf(unsigned char *cpack, size_t len, int *idrstmpl, size_t ndpts,
+                   float *fld);
+int g2c_pngunpackd(unsigned char *cpack, size_t len, int *idrstmpl, size_t ndpts,
+                   double *fld);
+int g2c_jpcpackf(float *fld, size_t width, size_t height, int *idrstmpl,
+                 unsigned char *cpack, size_t *lcpack);
+int g2c_jpcpackd(double *fld, size_t width, size_t height, int *idrstmpl,
+                 unsigned char *cpack, size_t *lcpack);
+int g2c_jpcunpackf(unsigned char *cpack, size_t len, int *idrstmpl, size_t ndpts,
+                   float *fld);
+int g2c_jpcunpackd(unsigned char *cpack, size_t len, int *idrstmpl, size_t ndpts,
+                   double *fld);
+int g2c_enc_jpeg2000(unsigned char *cin, int width, int height, int nbits,
+                     int ltype, int ratio, int retry, char *outjpc,
+                     size_t jpclen);
+int g2c_dec_jpeg2000(char *injpc, size_t bufsize, int *outfld);
+int g2c_enc_png(unsigned char *data, int width, int height, int nbits,
+                unsigned char *pngbuf);
+int g2c_dec_png(unsigned char *pngbuf, int *width, int *height,
+                unsigned char *cout);
+int g2c_aecpackf(float *fld, size_t width, size_t height, int *idrstmpl,
+                 unsigned char *cpack, size_t *lcpack);
+int g2c_aecpackd(double *fld, size_t width, size_t height, int *idrstmpl,
+                 unsigned char *cpack, size_t *lcpack);
+int g2c_aecunpackf(unsigned char *cpack, size_t len, int *idrstmpl, size_t ndpts,
+                   float *fld);
+int g2c_aecunpackd(unsigned char *cpack, size_t len, int *idrstmpl, size_t ndpts,
+                   double *fld);
+
+/* Testing. */
+int g2c_compare(int g2cid1, int g2cid2);
+
+/* Output. */
+int g2c_degrib2(int g2cid, const char *fileout);
+
+/* Parameters. */
+int g2c_param_g1tog2(int g1val, int g1ver, int *g2disc, int *g2cat, int *g2num);
+int g2c_param_abbrev(int g2disc, int g2cat, int g2num, char *abbrev);
+int g2c_param_g2tog1(int g2disc, int g2cat, int g2num, int *g1val, int *g1ver);
+int g2c_param_all(int param_idx, int *g1ver, int *g1val, int *g2disc, int *g2cat,
+                  int *g2num, char *abbdrev);
+
+/* Useful constants. */
+#define G2C_SECTION0_ARRAY_LEN 3  /**< Length of section 0 array. */
+#define G2C_SECTION1_ARRAY_LEN 13 /**< Length of section 1 array. */
+
+#define G2C_JPEG_DRS_TEMPLATE_LEN 7 /**< Length of the idrstmpl array for JPEG packing. */
+#define G2C_PNG_DRS_TEMPLATE_LEN 5  /**< Length of the idrstmpl array for PNG packing. */
+#define G2C_AEC_DRS_TEMPLATE_LEN 8  /**< Length of the idrstmpl array for AEC packing. */
+
+#define G2C_MAX_GRIB_DESC_LEN 512      /**< Maximum length of code description. */
+#define G2C_MAX_GRIB_STATUS_LEN 40     /**< Maximum length of code status. */
+#define G2C_MAX_GRIB_LEVEL_DESC_LEN 40 /**< Maximum length of level description. */
+#define G2C_MAX_GRIB_CODE_LEN 20       /**< Maximum length of code. */
+#define G2C_MAX_GRIB_TITLE_LEN 200     /**< Maximum length of code table title. */
+#define G2C_MAX_NUM_SECTIONS 1024      /**< Maximum number of sections that can be handled in one message. */
+
+#define G2C_MAX_NOAA_PARAMS 2000        /**< Maximum number of known parameters with NOAA abbreviations. */
+#define G2C_MAX_NOAA_ABBREV_LEN 8       /**< Maximum length of a NOAA abbreviation of a parameter. */
+#define G2C_MAX_NOAA_PARAM_LINE_LEN 120 /**< Maximum length of a line in the NOAA abbreviation CSV file. */
+
+#define G2C_JASPER_MAX_MEM @JASPER_MAX_MEM@ /**< Maximum size for the Jasper memory buffer. */
+
+#define G2C_PNG_WIDTH_MAX @PNG_WIDTH_MAX@ /**< Maximum width of PNG grid */
+#define G2C_PNG_HEIGHT_MAX @PNG_HEIGHT_MAX@ /**< Maximum height of PNG grid */
+/* Error codes for G2 API. */
+#define G2_NO_ERROR 0             /**< Function succeeded. */
+#define G2_CREATE_GRIB_VERSION -1 /**< Wrong GRIB version for g2_create(), must be 2. */
+#define G2_INFO_NO_GRIB 1         /**< g2_info() can't find beginning characters "GRIB". */
+#define G2_INFO_GRIB_VERSION 2    /**< Wrong GRIB version for g2_info(), must be 2. */
+#define G2_INFO_NO_SEC1 3         /**< g2_info() can't find section 1. */
+#define G2_INFO_WRONG_END 4       /**< g2_info() found "7777" not where expected. */
+#define G2_INFO_BAD_END 5         /**< g2_info() didn't find "7777" at end of message. */
+#define G2_INFO_INVAL_SEC 6       /**< g2_info() found invalid section number. */
+#define G2_GETFLD_NO_GRIB 1       /**< g2_getfld() can't find beginning characters "GRIB". */
+#define G2_GETFLD_GRIB_VERSION 2  /**< Wrong GRIB version for g2_getfld(), must be 2. */
+#define G2_GETFLD_INVAL 3         /**< g2_getfld() data field request number was not positive. */
+#define G2_GETFLD_WRONG_END 4     /**< g2_info() found "7777" not where expected. */
+#define G2_GETFLD_WRONG_NFLDS 6   /**< In g2_getfld() message did not contain the requested number of data fields. */
+#define G2_GETFLD_BAD_END 7       /**< g2_getfld() didn't find "7777" at end of message. */
+#define G2_GETFLD_INVAL_SEC 8     /**< g2_getfld() encountered unrecognized section. */
+#define G2_GETFLD_NO_DRT 9        /**< In g2_getfld(), Data Representation Template not implemented.*/
+#define G2_GETFLD_BAD_SEC1 15     /**< Error in g2_getfld() unpacking section 1. */
+#define G2_GETFLD_BAD_SEC2 16     /**< Error in g2_getfld() unpacking section 2. */
+#define G2_GETFLD_BAD_SEC3 10     /**< Error in g2_getfld() unpacking section 3. */
+#define G2_GETFLD_BAD_SEC4 11     /**< Error in g2_getfld() unpacking section 4. */
+#define G2_GETFLD_BAD_SEC5 12     /**< Error in g2_getfld() unpacking section 5. */
+#define G2_GETFLD_BAD_SEC6 13     /**< Error in g2_getfld() unpacking section 6. */
+#define G2_GETFLD_BAD_SEC7 14     /**< Error in g2_getfld() unpacking section 7. */
+#define G2_GETFLD_NO_BITMAP 17    /**< In g2_getfld() previous bitmap specified, yet none exists. */
+#define G2_GRIBEND_MSG_INIT -1    /**< In g2_gribend() GRIB message was not initialized - call g2_create() first. */
+#define G2_BAD_SEC -4             /**< Previous Section was unexpected. */
+#define G2_UNPACK_BAD_SEC 2       /**< Bad section number in unpacking function. */
+#define G2_UNPACK_NO_MEM 6        /**< Error allocating memory in unpack function. */
+#define G2_UNPACK3_BAD_GDT 5      /**< In g2_unpack3(), undefined Grid Definition Template. */
+#define G2_UNPACK4_BAD_PDT 5      /**< In g2_unpack4(), undefined Product Definition Template. */
+#define G2_UNPACK5_BAD_DRT 7      /**< In g2_unpack5(), undefined Data Representation Template. */
+#define G2_UNPACK6_BAD_BITMAP 4   /**< In g2_unpack6(), unrecognized pre-defined bit-map. */
+#define G2_UNPACK7_CORRUPT_SEC 7  /**< In g2_unpack7(), corrupt section 7. */
+#define G2_UNPACK7_WRONG_GDT 5    /**< In g2_unpack7(), need one of GDT 3.50 through 3.53 to decode DRT 5.51. */
+#define G2_UNPACK7_BAD_DRT 4      /**< In g2_unpack7(), unrecognized Data Representation Template. */
+#define G2_ADD_MSG_INIT -1        /**< GRIB message was not initialized - call g2_create() first. */
+#define G2_ADD_MSG_COMPLETE -2    /**< GRIB message already complete. Cannot add new section. */
+#define G2_BAD_SEC_COUNTS -3      /**< Sum of Section byte counts doesn't add to total byte count. */
+#define G2_ADDFIELD_BAD_PDT -5    /**< In g2_addfield() could not find requested Product Definition Template. */
+#define G2_ADDFIELD_BAD_GDS -6    /**< In g2_addfield() section 3 (GDS) not previously defined in message. */
+#define G2_ADDFIELD_BAD_DRT -7    /**< In g2_addfield() unsupported Data Representationi Template. */
+#define G2_ADDFIELD_BAD_BITMAP -8 /**< In g2_addfield() no bitmap in the GRIB message. */
+#define G2_ADDFIELD_BAD_GDT -9    /**< In g2_addfield() GDT of one of 5.50 through 5.53 required when using DRT 5.51. */
+#define G2_ADDFIELD_ERR -10       /**< In g2_addfield() error packing data field. */
+#define G2_ADDGRID_BAD_GDT -5     /**< In g2_addgrid() Could not find requested Grid Definition Template. */
+#define G2_JPCUNPACK_MEM 1        /**< In jpcunpack() or other unpack function: out of memory. */
+#define G2_SPECUNPACK_TYPE -3     /**< In specunpack() Can't handle 64 or 128 bit floats. */
+#define G2_JASPER_INIT -2         /**< In enc_jpeg2000()/dec_jpeg2000() error initializing jasper library. */
+#define G2_JASPER_ENCODE -3       /**< In enc_jpeg2000() error encoding image with jasper. */
+#define G2_JASPER_DECODE -3       /**< In dec_jpeg2000() error decoding image with jasper. */
+#define G2_JASPER_DECODE_COLOR -5 /**< In dec_jpeg2000() decoded image had multiple color components. */
+
+/* These are the new error codes. */
+#define G2C_NOERROR 0           /**< No error. */
+#define G2C_ERROR 1             /**< General error code, returned for some test errors. */
+#define G2C_ENOTGRIB (-50)      /**< GRIB header not found. */
+#define G2C_EMSGCOMPLETE (-51)  /**< GRIB message already complete. */
+#define G2C_ENAMETOOLONG (-52)  /**< Name too long. */
+#define G2C_EINVAL (-53)        /**< Invalid input. */
+#define G2C_EFILE (-54)         /**< File I/O error. */
+#define G2C_EBADID (-55)        /**< Bad ID. */
+#define G2C_ETOOMANYFILES (-56) /**< Trying to open too many files. */
+#define G2C_ENOMEM (-57)        /**< Out of memory. */
+#define G2C_EMSG (-58)          /**< Error decoding GRIB message. */
+#define G2C_ENOMSG (-59)        /**< No GRIB message found. */
+#define G2C_EXML (-60)          /**< XML error. */
+#define G2C_ENOTFOUND (-61)     /**< Table or entry not found. */
+#define G2C_ENOTGRIB2 (-62)     /**< Not GRIB 2. */
+#define G2C_ENOSECTION (-63)    /**< Cannot find section. */
+#define G2C_ENOEND (-64)        /**< Cannot find end of GRIB message. */
+#define G2C_EBADEND (-65)       /**< End of message in wrong place. */
+#define G2C_EBADSECTION (-66)   /**< Invalid section number. */
+#define G2C_EJPEG (-67)         /**< Error encoding/decoding JPEG data. */
+#define G2C_EPNG (-68)          /**< Error encoding/decoding PNG data. */
+#define G2C_ENOTEMPLATE (-69)   /**< Template not found. */
+#define G2C_EBADTEMPLATE (-70)  /**< Template problem. */
+#define G2C_ENOPARAM (-71)      /**< Parameter not found. */
+#define G2C_ENOPRODUCT (-72)    /**< Product not found. */
+#define G2C_EBADTYPE (-73)      /**< Type not found. */
+#define G2C_EAEC (-74)          /**< Error encoding/decoding AEC data. */
+#define G2C_ECSV (-75)          /**< CSV error. */
+
+#endif /*  _grib2_H  */

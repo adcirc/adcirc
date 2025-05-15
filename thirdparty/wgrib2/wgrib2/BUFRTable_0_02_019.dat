@@ -1,3 +1,21 @@
+case 7:
+      agency="DoD";
+      instype="Infrared radiometer";
+      shortname="SSH";
+      longname="Special Sensor H";
+      break;
+case 8:
+      agency="DoD";
+      instype="Radiometer";
+      shortname="SSM/T";
+      longname="Special Sensor Microwave-Temperature";
+      break;
+case 9:
+      agency="DoD";
+      instype="Radiometer";
+      shortname="SSM/T2";
+      longname="Special Sensor Microwave-Humidity";
+      break;
 case 10:
       agency="BNSC";
       instype="Radiometer";
@@ -22,17 +40,29 @@ case 13:
       shortname="MWR";
       longname="Microwave radiometer";
       break;
+case 14:
+      agency="UKSA";
+      instype="Radiometer";
+      shortname="PMR";
+      longname="Pressure modulator radiometer";
+      break;
+case 15:
+      agency="UKSA";
+      instype="Radiometer";
+      shortname="SCR";
+      longname="Selective Chopper Radiometer";
+      break;
 case 30:
       agency="CNES";
       instype="Communications";
       shortname="ARGOS";
-      longname="CNES ARGOS Communications";
+      longname="";
       break;
 case 40:
       agency="CNES";
       instype="Lidar";
       shortname="Laser reflectors";
-      longname="CNES Laser reflectors Lidar";
+      longname="";
       break;
 case 41:
       agency="CNES";
@@ -50,7 +80,7 @@ case 47:
       agency="CNES";
       instype="Radar altimeter";
       shortname="POSEIDON-1 (SSALT1)";
-      longname="Positioning ocean, solid Earth, ice dynamics orbiting navigator (single frequency solid stateradar altimeter)";
+      longname="Positioning ocean, solid Earth, ice dynamics orbiting navigator (single frequency solid state radar altimeter)";
       break;
 case 48:
       agency="CNES";
@@ -62,7 +92,7 @@ case 49:
       agency="CNES";
       instype="Radar altimeter";
       shortname="POSEIDON-3 (SSALT3)";
-      longname="Positioning ocean, solid Earth, ice dynamics orbiting navigator (double frequency solidstate radar altimeter)";
+      longname="Positioning ocean, solid Earth, ice dynamics orbiting navigator (double frequency solid state radar altimeter)";
       break;
 case 50:
       agency="CNES";
@@ -74,7 +104,7 @@ case 51:
       agency="CNES";
       instype="High-resolution optical imager";
       shortname="HRG";
-      longname="CNES HRG High-resolution optical imager";
+      longname="";
       break;
 case 52:
       agency="CNES";
@@ -106,6 +136,12 @@ case 56:
       shortname="IIR";
       longname="Imaging Infrared Radiometer";
       break;
+case 57:
+      agency="ESA/EUMETSAT";
+      instype="Radar altimeter";
+      shortname="POSEIDON-4";
+      longname="High precision altimetry, dual frequency (C- and Ku-band) pulse-width limited radar altimeter, synthetic-aperture processing, interleaved Low Rate and High Rate";
+      break;
 case 60:
       agency="CNES";
       instype="Spectrometer";
@@ -124,17 +160,23 @@ case 62:
       shortname="AltiKa";
       longname="Ka band Radar Altimeter";
       break;
+case 63:
+      agency="CNES";
+      instype="Rotating multi-beam altimeter";
+      shortname="SWIM";
+      longname="Surface Waves Investigation and Monitoring";
+      break;
 case 80:
       agency="CSA";
       instype="Communications";
       shortname="RADARSAT DTT";
-      longname="CSA RADARSAT DTT Communications";
+      longname="";
       break;
 case 81:
       agency="CSA";
       instype="Communications";
       shortname="RADARSAT TTC";
-      longname="CSA RADARSAT TTC Communications";
+      longname="";
       break;
 case 85:
       agency="CSA";
@@ -152,19 +194,25 @@ case 91:
       agency="CSA";
       instype="Atmospheric chemistry instrument";
       shortname="OSIRIS";
-      longname="Optical spectrograph and Infrared imagingsystem";
+      longname="Optical spectrograph and Infrared imaging system";
+      break;
+case 92:
+      agency="CSA";
+      instype="Limb-scanning sounder";
+      shortname="ACE-FTS";
+      longname="Atmospheric Chemistry Experiment - Fourier Transform Spectrometer";
       break;
 case 97:
       agency="CSIRO";
       instype="Radiometer";
       shortname="Panchromatic imager";
-      longname="CSIRO Panchromatic imager Radiometer";
+      longname="";
       break;
 case 98:
       agency="CRCSS";
       instype="Atmospheric temperature and humidity sounder";
       shortname="GPS receiver";
-      longname="CRCSS GPS receiver Atmospheric temperature and humidity sounder";
+      longname="";
       break;
 case 102:
       agency="DLR";
@@ -178,17 +226,23 @@ case 103:
       shortname="IGOR";
       longname="Integrated GPS and Occultation Receiver";
       break;
+case 104:
+      agency="NASA";
+      instype="GNSS occultation sounder";
+      shortname="Tri-G";
+      longname="Triple-G (GPS, Galileo, GLONASS)";
+      break;
 case 116:
       agency="DLR";
       instype="Magnetometer";
-      shortname="CHAMP gravity package";
+      shortname="CHAMP gravity package (Accelerometer+GPS)";
       longname="STAR accelerometer";
       break;
 case 117:
       agency="DLR";
       instype="Magnetometer";
-      shortname="CHAMP magnetometry2";
-      longname="Overhauser magnetometer (OVM) and";
+      shortname="CHAMP magnetometry package (1 scalar+2 vector magnetometer)";
+      longname="Overhauser magnetometer (OVM) and fluxgate magnetometer (FGM)";
       break;
 case 120:
       agency="ESA";
@@ -242,7 +296,7 @@ case 144:
       agency="ESA";
       instype="Imaging microwave";
       shortname="ASAR";
-      longname="Advanced synthetic aperture radar(image mode)";
+      longname="Advanced synthetic aperture radar (image mode)";
       break;
 case 145:
       agency="ESA";
@@ -252,7 +306,7 @@ case 145:
       break;
 case 146:
       agency="ESA";
-      instype="Cloud profile andrain radar";
+      instype="Cloud profile and rain radar";
       shortname="CPR";
       longname="Cloud radar";
       break;
@@ -274,15 +328,27 @@ case 150:
       shortname="SCATTEROMETER";
       longname="Scatterometer";
       break;
+case 151:
+      agency="ESA";
+      instype="Imaging radar";
+      shortname="SAR-C";
+      longname="Synthetic Aperture Radar (C-band)";
+      break;
+case 152:
+      agency="ESA";
+      instype="Cross-nadir scanning";
+      shortname="SW";
+      longname="Sounder TROPOMI Tropospheric Monitoring Instrument";
+      break;
 case 161:
       agency="ESA";
       instype="Radiometer";
       shortname="MIPAS";
-      longname="Michelson interferometric passive atmospheresounder";
+      longname="Michelson interferometric passive atmosphere sounder";
       break;
 case 162:
       agency="ESA";
-      instype="Imaging multi-spectral radiometer(passive microwave)";
+      instype="Imaging multi-spectral radiometer (passive microwave)";
       shortname="MWR-2";
       longname="Microwave radiometer-2";
       break;
@@ -290,7 +356,7 @@ case 163:
       agency="ESA";
       instype="Atmospheric chemistry instrument";
       shortname="SOPRANO";
-      longname="Sub-milimetre observation of processes in theabsorption noteworthy for ozone";
+      longname="Sub-millimetre observation of processes in the absorption noteworthy for ozone";
       break;
 case 170:
       agency="ESA";
@@ -304,6 +370,12 @@ case 172:
       shortname="GOMOS";
       longname="Global ozone monitoring by occultation of stars";
       break;
+case 173:
+      agency="ESA";
+      instype="Spectrometer";
+      shortname="ALTIUS";
+      longname="Atmospheric Limb Tracker for Investigation of the Upcoming Stratosphere";
+      break;
 case 174:
       agency="ESA";
       instype="Spectrometer";
@@ -314,7 +386,7 @@ case 175:
       agency="ESA";
       instype="Spectrometer";
       shortname="SCIAMACHY";
-      longname="Scanning imaging absorption spectrometer foratmospheric cartography";
+      longname="Scanning imaging absorption spectrometer for atmospheric cartography";
       break;
 case 176:
       agency="ESA";
@@ -400,6 +472,36 @@ case 208:
       shortname="VIRI";
       longname="VIRI";
       break;
+case 209:
+      agency="ESA";
+      instype="Radiometer";
+      shortname="MWR";
+      longname="EPS Sterna Radiometer";
+      break;
+case 210:
+      agency="ESA/EUMETSAT/Thales Alenia Space";
+      instype="Imager";
+      shortname="FCI";
+      longname="Flexible Combined Imager";
+      break;
+case 211:
+      agency="ESA/EUMETSAT/Leonardo";
+      instype="Imager";
+      shortname="LI";
+      longname="Lightning imager";
+      break;
+case 212:
+      agency="ESA/EUMETSAT/OHB";
+      instype="Interferometer";
+      shortname="IRS";
+      longname="Infrared sounder";
+      break;
+case 213:
+      agency="ESA/EUMETSAT/Copernicus - Airbus";
+      instype="Spectrometer";
+      shortname="S4";
+      longname="Ultraviolet and Near-Infrared Multispectral Spectrometer (S4 UVN)";
+      break;
 case 220:
       agency="ESA/EUMETSAT";
       instype="Spectrometer";
@@ -411,6 +513,60 @@ case 221:
       instype="Atmospheric temperature and humidity sounder";
       shortname="IASI";
       longname="Infrared atmospheric sounding interferometer";
+      break;
+case 230:
+      agency="ESA/EUMETSAT";
+      instype="Radiometer";
+      shortname="3MI";
+      longname="Multi-viewing Multi-channel Multi-polarisation Imaging";
+      break;
+case 231:
+      agency="CNES/EUMETSAT";
+      instype="Sounder - interferometer";
+      shortname="IASI-NG";
+      longname="Infrared Atmospheric Sounding Interferometer - New Generation";
+      break;
+case 232:
+      agency="DLR/EUMETSAT";
+      instype="Radiometer";
+      shortname="METimage";
+      longname="Meteorological Imager";
+      break;
+case 233:
+      agency="ESA/EUMETSAT";
+      instype="Radiometer";
+      shortname="MWS";
+      longname="Microwave Sounder";
+      break;
+case 234:
+      agency="ESA/EUMETSAT";
+      instype="Radio Occultation";
+      shortname="RO";
+      longname="Radio Occultation";
+      break;
+case 235:
+      agency="ESA/EUMETSAT/EU";
+      instype="Spectrometer";
+      shortname="S5/UVNS";
+      longname="Copernicus Sentinel-5 Ultraviolet Visible Near-infrared and Shortwave-infrared Spectrometer";
+      break;
+case 236:
+      agency="ESA/EUMETSAT";
+      instype="Radiometer";
+      shortname="ICI";
+      longname="Ice Cloud Imager";
+      break;
+case 237:
+      agency="ESA/EUMETSAT";
+      instype="Radiometer";
+      shortname="MWI";
+      longname="Microwave Imager";
+      break;
+case 238:
+      agency="ESA/EUMETSAT";
+      instype="Radar";
+      shortname="SCA";
+      longname="Scatterometer";
       break;
 case 240:
       agency="CAST";
@@ -452,13 +608,13 @@ case 260:
       agency="ISRO";
       instype="Precision orbit";
       shortname="BSS & FSS transponders";
-      longname="ISRO BSS & FSS transponders Precision orbit";
+      longname="";
       break;
 case 261:
       agency="ISRO";
       instype="Precision orbit";
       shortname="DRT-S&R";
-      longname="ISRO DRT-S&R Precision orbit";
+      longname="";
       break;
 case 262:
       agency="ISRO";
@@ -475,8 +631,8 @@ case 268:
 case 269:
       agency="ISRO";
       instype="Imaging multi-spectral radiometer (passive microwave)";
-      shortname="MSMR ";
-      longname="Multi-frequency scanning microwave radiometer";
+      shortname="MSMR";
+      longname="Multifrequency scanning microwave radiometer";
       break;
 case 270:
       agency="ISRO";
@@ -534,15 +690,27 @@ case 285:
       break;
 case 286:
       agency="ISRO";
-      instype="Ocean colour Instrument";
+      instype="Ocean colour instrument";
       shortname="OCM";
       longname="Ocean colour monitor";
+      break;
+case 287:
+      agency="ASI";
+      instype="";
+      shortname="ROSA";
+      longname="Radio Occultation Sounder of the Atmosphere";
       break;
 case 288:
       agency="ISRO";
       instype="Scatterometer";
       shortname="SCAT";
       longname="Scatterometer";
+      break;
+case 289:
+      agency="ISRO";
+      instype="Optical imager";
+      shortname="IMG";
+      longname="Imager";
       break;
 case 290:
       agency="JMA";
@@ -606,8 +774,8 @@ case 303:
       break;
 case 309:
       agency="NASA";
-      instype="Cloud profile andrain radar";
-      shortname="Cloudsat CPR";
+      instype="Cloud profile and rain radar";
+      shortname="CPR (Cloudsat)";
       longname="Cloud profiling radar";
       break;
 case 312:
@@ -620,7 +788,7 @@ case 313:
       agency="NASA";
       instype="Radar";
       shortname="SeaWinds";
-      longname="ADEOS II – NASA scatterometer";
+      longname="ADEOS II - NASA scatterometer";
       break;
 case 314:
       agency="NASA";
@@ -636,7 +804,7 @@ case 330:
       break;
 case 334:
       agency="NASA";
-      instype="Total and profileozone";
+      instype="Total and profile ozone";
       shortname="BUV";
       longname="Backscatter ultraviolet instrument";
       break;
@@ -650,7 +818,7 @@ case 347:
       agency="NASA";
       instype="High-resolution optical imager";
       shortname="ASTER";
-      longname="Advanced spaceborne thermal emission andreflection radiometer";
+      longname="Advanced spaceborne thermal emission and reflection radiometer";
       break;
 case 348:
       agency="NASA";
@@ -724,21 +892,27 @@ case 367:
       shortname="AMR";
       longname="Advanced microwave radiometer";
       break;
+case 368:
+      agency="NASA";
+      instype="Radiometer";
+      shortname="MW radiometer";
+      longname="Microwave radiometer";
+      break;
 case 369:
       agency="NASA";
-      instype="Total and profileozone";
+      instype="Total and profile ozone";
       shortname="LIMS";
       longname="Limb infrared monitor of the stratosphere";
       break;
 case 370:
       agency="NASA";
-      instype="Total and profileozone";
+      instype="Total and profile ozone";
       shortname="LRIR";
       longname="Limb radiance inversion radiometer instrument";
       break;
 case 371:
       agency="NASA";
-      instype="Total and profileozone";
+      instype="Total and profile ozone";
       shortname="EPIC";
       longname="Earth polychromatic imaging camera";
       break;
@@ -750,9 +924,9 @@ case 372:
       break;
 case 373:
       agency="NASA";
-      instype="Magnetic field, auroal imagery, scintillation boundary";
+      instype="Magnetic field, auroal imagery scintillation boundary";
       shortname="Plasma-Mag";
-      longname="NASA Plasma-Mag Magnetic field, auroal imagery, scintillation boundary";
+      longname="";
       break;
 case 374:
       agency="NASA";
@@ -834,7 +1008,7 @@ case 393:
       break;
 case 394:
       agency="NASA";
-      instype="Total and profileozone";
+      instype="Total and profile ozone";
       shortname="OMI";
       longname="Ozone measuring instrument";
       break;
@@ -849,6 +1023,18 @@ case 396:
       instype="Radiometer";
       shortname="Hyperion";
       longname="Hyperspectral imager";
+      break;
+case 397:
+      agency="NASA";
+      instype="Radiometer";
+      shortname="HRIR";
+      longname="High-resolution infrared radiometer";
+      break;
+case 398:
+      agency="NASA";
+      instype="Radiometer";
+      shortname="MRIR";
+      longname="Medium resolution infrared radiometer";
       break;
 case 399:
       agency="NASA";
@@ -898,6 +1084,18 @@ case 420:
       shortname="AIRS";
       longname="Atmospheric Infrared sounder";
       break;
+case 421:
+      agency="NASA";
+      instype="Spectrometer";
+      shortname="SIRS-A";
+      longname="Satellite infrared spectrometer-A";
+      break;
+case 422:
+      agency="NASA";
+      instype="Spectrometer";
+      shortname="SIRS-B";
+      longname="Satellite infrared spectrometer-B";
+      break;
 case 426:
       agency="NASA";
       instype="Spectrometer";
@@ -922,6 +1120,24 @@ case 432:
       shortname="OCO";
       longname="Orbiting carbon observatory";
       break;
+case 433:
+      agency="NASA";
+      instype="Spectrometer";
+      shortname="TMS";
+      longname="TROPICS Millimeter-wave Sounder";
+      break;
+case 434:
+      agency="NASA";
+      instype="MW radiometer";
+      shortname="SMAP";
+      longname="Soil Moisture Active-Passive";
+      break;
+case 435:
+      agency="NASA";
+      instype="Spectrometer";
+      shortname="TEMPO";
+      longname="Tropospheric Emissions: Monitoring of Pollution";
+      break;
 case 450:
       agency="JAXA";
       instype="Communications";
@@ -931,7 +1147,7 @@ case 450:
 case 451:
       agency="JAXA";
       instype="Communications";
-      shortname="JAXA DCS";
+      shortname="DCS (JAXA)";
       longname="Data-collection system (JAXA)";
       break;
 case 453:
@@ -970,6 +1186,12 @@ case 470:
       shortname="PALSAR";
       longname="Phased array type L-band synthetic aperture radar";
       break;
+case 477:
+      agency="JAXA";
+      instype="Imaging multi spectral radiometer (passive microwave)";
+      shortname="AMSR3";
+      longname="Advanced Microwave Scanning Radiometer 3";
+      break;
 case 478:
       agency="JAXA";
       instype="Imaging multi-spectral radiometer (passive microwave)";
@@ -980,7 +1202,7 @@ case 479:
       agency="JAXA";
       instype="Imaging multi-spectral radiometer (passive microwave)";
       shortname="AMSR-E";
-      longname="Advanced microwave scanning radiometer –EOS";
+      longname="Advanced microwave scanning radiometer - EOS";
       break;
 case 480:
       agency="JAXA";
@@ -992,7 +1214,7 @@ case 481:
       agency="JAXA";
       instype="Radiometer";
       shortname="AMSR";
-      longname="Advanced microwave scanning ";
+      longname="Advanced microwave scanning radiometer";
       break;
 case 482:
       agency="NASDA";
@@ -1004,7 +1226,7 @@ case 483:
       agency="JAXA";
       instype="High-resolution optical imager";
       shortname="AVNIR-2";
-      longname="Advanced visible and near infrared radiometertype 2";
+      longname="Advanced visible and near infrared radiometer type 2";
       break;
 case 484:
       agency="JAXA";
@@ -1040,7 +1262,7 @@ case 489:
       agency="NASDA";
       instype="Radiometer";
       shortname="VISSR (GMS-5)";
-      longname="Visible and infrared spin scan radiometer(GMS-5)";
+      longname="Visible and infrared spin scan radiometer (GMS-5)";
       break;
 case 490:
       agency="NASDA";
@@ -1074,7 +1296,7 @@ case 514:
       break;
 case 515:
       agency="JAXA";
-      instype="Total and profileozone";
+      instype="Total and profile ozone";
       shortname="SOFIS";
       longname="Solar occultation Fourier transform spectrometer for inclined orbit satellite";
       break;
@@ -1092,15 +1314,99 @@ case 517:
       break;
 case 518:
       agency="JAXA";
-      instype="Cloud and precipi-tation radar";
+      instype="Cloud and precipitation radar";
       shortname="DPR";
       longname="Dual-frequency precipitation radar";
       break;
 case 519:
       agency="NASA";
-      instype="MW imaging/sound- ing radiometer, conical scanning";
+      instype="MW imaging/sounding radiometer, conical scanning";
       shortname="GMI";
       longname="GPM microwave imager";
+      break;
+case 520:
+      agency="NASA";
+      instype="Imaging radiometer";
+      shortname="SMMR";
+      longname="Scanning Multichannel Microwave Radiometer";
+      break;
+case 521:
+      agency="JAXA";
+      instype="Spectrometer";
+      shortname="TANSO-FTS2";
+      longname="Thermal and Near infrared Sensor for carbon Observations (TANSO) - Fourier Transform Spectrometer / 2";
+      break;
+case 526:
+      agency="GeoOptics";
+      instype="GNSS occultation sounder";
+      shortname="Cion-A";
+      longname="GeoOptics Cion GNSS occultation receiver A";
+      break;
+case 527:
+      agency="GeoOptics";
+      instype="GNSS occultation sounder";
+      shortname="Cion-B";
+      longname="GeoOptics Cion GNSS occultation receiver B";
+      break;
+case 528:
+      agency="GeoOptics";
+      instype="GNSS occultation sounder";
+      shortname="Cion-C";
+      longname="GeoOptics Cion GNSS occultation receiver C";
+      break;
+case 529:
+      agency="GeoOptics";
+      instype="GNSS occultation sounder";
+      shortname="Cion-D";
+      longname="GeoOptics Cion GNSS occultation receiver D";
+      break;
+case 530:
+      agency="Spire";
+      instype="GNSS occultation sounder";
+      shortname="SGNOS-A";
+      longname="Spire global navigation satellite system occultation sounder A";
+      break;
+case 531:
+      agency="Spire";
+      instype="GNSS occultation sounder";
+      shortname="SGNOS-B";
+      longname="Spire global navigation satellite system occultation sounder B";
+      break;
+case 532:
+      agency="Spire";
+      instype="GNSS occultation sounder";
+      shortname="SGNOS-C";
+      longname="Spire global navigation satellite system occultation sounder C";
+      break;
+case 533:
+      agency="Spire";
+      instype="GNSS occultation sounder";
+      shortname="SGNOS-D";
+      longname="Spire global navigation satellite system occultation sounder D";
+      break;
+case 534:
+      agency="PlanetiQ";
+      instype="GNSS occultation sounder";
+      shortname="Pyxis-A";
+      longname="PlanetiQ Pyxis GNSS occultation receiver A";
+      break;
+case 535:
+      agency="PlanetiQ";
+      instype="GNSS occultation sounder";
+      shortname="Pyxis-B";
+      longname="PlanetiQ Pyxis GNSS occultation receiver B";
+      break;
+case 536:
+      agency="tomorrow.io";
+      instype="Radiometer";
+      shortname="MWS";
+      longname="Microwave sounder";
+      break;
+case 537:
+      agency="tomorrow.io";
+      instype="Radar";
+      shortname="KAPR";
+      longname="Ka band precipitation radar";
       break;
 case 540:
       agency="NOAA";
@@ -1189,7 +1495,7 @@ case 574:
 case 580:
       agency="NOAA";
       instype="Radiometer";
-      shortname="ATOVS";
+      shortname="ATOVS (HIRS/3 + AMSU + AVHRR/3)";
       longname="Advanced TIROS operational vertical sounder";
       break;
 case 590:
@@ -1222,6 +1528,12 @@ case 601:
       shortname="ETM+";
       longname="Enhanced thematic mapper";
       break;
+case 604:
+      agency="NOAA";
+      instype="Radiometer";
+      shortname="HIRS/1";
+      longname="High-resolution infrared sounder/1";
+      break;
 case 605:
       agency="NOAA";
       instype="Radiometer";
@@ -1252,10 +1564,22 @@ case 616:
       shortname="VIIRS";
       longname="Visible/infrared imager radiometer suite";
       break;
+case 617:
+      agency="NOAA";
+      instype="Imaging multi-spectral radiometer";
+      shortname="ABI";
+      longname="Advanced baseline imager";
+      break;
+case 618:
+      agency="NOAA";
+      instype="High-resolution optical imager";
+      shortname="GLM";
+      longname="Geostationary lightning mapper";
+      break;
 case 620:
       agency="NOAA";
       instype="Atmospheric temperature and humidity sounder";
-      shortname="CrIRS/NP";
+      shortname="CrIS/NP";
       longname="Cross-track infrared sounder/NPOESS";
       break;
 case 621:
@@ -1309,8 +1633,8 @@ case 628:
 case 629:
       agency="NOAA";
       instype="Radiometer";
-      shortname="TOVS (HIRS/2 + ";
-      longname="TIROS operational vertical sounder (MSU + SSU)";
+      shortname="TOVS (HIRS/2 + MSU + SSU)";
+      longname="TIROS operational vertical sounder";
       break;
 case 630:
       agency="NOAA";
@@ -1322,7 +1646,7 @@ case 631:
       agency="NOAA";
       instype="Radiometer";
       shortname="SSZ";
-      longname="NOAA SSZ Radiometer";
+      longname="";
       break;
 case 645:
       agency="NOAA";
@@ -1358,11 +1682,11 @@ case 680:
       agency="NSAU";
       instype="High-resolution optical imager";
       shortname="MSU-EU";
-      longname="Multispectral radiometer with high resolution";
+      longname="Multispectral radiometer with high-resolution";
       break;
 case 681:
       agency="NSAU";
-      instype="Imaging multi-spectral radio-meter (vis/IR)";
+      instype="Imaging multi-spectral radiometer (vis/IR)";
       shortname="MSU-UM";
       longname="Visible multispectral radiometer";
       break;
@@ -1376,19 +1700,19 @@ case 683:
       agency="NSAU";
       instype="High-resolution optical imager";
       shortname="SU-UMS";
-      longname="Stereo radiometer with high resolution";
+      longname="Stereo radiometer with high-resolution";
       break;
 case 684:
       agency="NSAU";
       instype="High-resolution optical imager";
       shortname="SU-VR";
-      longname="Visible radiometer with high resolution";
+      longname="Visible radiometer with high-resolution";
       break;
 case 685:
       agency="NSAU";
       instype="Radiometer";
       shortname="TRASSER";
-      longname="NSAU TRASSER Radiometer";
+      longname="";
       break;
 case 686:
       agency="SOA";
@@ -1406,7 +1730,13 @@ case 688:
       agency="SOA";
       instype="Microwave radiometer";
       shortname="MWI";
-      longname="Microwave radiometer ";
+      longname="Microwave radiometer";
+      break;
+case 689:
+      agency="ME(NIER)";
+      instype="Spectrometer";
+      shortname="GEMS";
+      longname="Geostationary Environmental Monitoring Spectrometer";
       break;
 case 700:
       agency="ROSCOSMOS";
@@ -1418,7 +1748,7 @@ case 701:
       agency="ROSCOSMOS";
       instype="Communications";
       shortname="BRK";
-      longname="ROSCOSMOS BRK Communications";
+      longname="";
       break;
 case 710:
       agency="ROSCOSMOS";
@@ -1430,19 +1760,19 @@ case 712:
       agency="ROSCOSMOS";
       instype="Lidar";
       shortname="Balkan-2 lidar";
-      longname="ROSCOSMOS Balkan-2 lidar Lidar";
+      longname="";
       break;
 case 715:
       agency="ROSCOSMOS";
       instype="Lidar";
       shortname="MK-4";
-      longname="ROSCOSMOS MK-4 Lidar";
+      longname="";
       break;
 case 716:
       agency="ROSCOSMOS";
       instype="Lidar";
       shortname="MK-4M";
-      longname="ROSCOSMOS MK-4M Lidar";
+      longname="";
       break;
 case 730:
       agency="ROSCOSMOS";
@@ -1478,7 +1808,7 @@ case 745:
       agency="ROSCOSMOS";
       instype="Radar";
       shortname="Travers SAR";
-      longname="ROSCOSMOS Travers SAR Radar";
+      longname="";
       break;
 case 750:
       agency="ROSCOSMOS";
@@ -1526,7 +1856,7 @@ case 760:
       agency="ROSCOSMOS";
       instype="Radiometer";
       shortname="ISP";
-      longname="ROSCOSMOS ISP Radiometer";
+      longname="";
       break;
 case 761:
       agency="ROSCOSMOS";
@@ -1562,13 +1892,13 @@ case 775:
       agency="ROSCOSMOS";
       instype="Radiometer";
       shortname="MIRAS";
-      longname="ROSCOSMOS MIRAS Radiometer";
+      longname="";
       break;
 case 776:
       agency="ROSCOSMOS";
       instype="Radiometer";
       shortname="MIVZA";
-      longname="ROSCOSMOS MIVZA Radiometer";
+      longname="";
       break;
 case 777:
       agency="ROSCOSMOS";
@@ -1580,13 +1910,13 @@ case 780:
       agency="ROSCOSMOS";
       instype="Radiometer";
       shortname="MR-2000";
-      longname="ROSCOSMOS MR-2000 Radiometer";
+      longname="";
       break;
 case 781:
       agency="ROSCOSMOS";
       instype="Radiometer";
       shortname="MR-2000M";
-      longname="ROSCOSMOS MR-2000M Radiometer";
+      longname="";
       break;
 case 785:
       agency="ROSCOSMOS";
@@ -1622,7 +1952,7 @@ case 793:
       agency="ROSCOSMOS";
       instype="Radiometer";
       shortname="MSU-M";
-      longname="ROSCOSMOS MSU-M Radiometer";
+      longname="";
       break;
 case 794:
       agency="ROSCOSMOS";
@@ -1664,7 +1994,7 @@ case 821:
       agency="ROSCOSMOS";
       instype="Radiometer";
       shortname="R-400";
-      longname="ROSCOSMOS R-400 Radiometer";
+      longname="";
       break;
 case 822:
       agency="ROSCOSMOS";
@@ -1682,13 +2012,13 @@ case 835:
       agency="ROSCOSMOS";
       instype="Radiometer";
       shortname="TV camera";
-      longname="ROSCOSMOS TV camera Radiometer";
+      longname="";
       break;
 case 836:
       agency="ROSCOSMOS";
       instype="Radiometer";
       shortname="SILVA";
-      longname="ROSCOSMOS SILVA Radiometer";
+      longname="";
       break;
 case 840:
       agency="ROSCOSMOS";
@@ -1724,25 +2054,37 @@ case 857:
       agency="ROSCOSMOS";
       instype="Spectrometer";
       shortname="DOPI";
-      longname="ROSCOSMOS DOPI Spectrometer";
+      longname="";
       break;
 case 858:
       agency="ROSCOSMOS";
       instype="Spectrometer";
       shortname="KGI-4";
-      longname="ROSCOSMOS KGI-4 Spectrometer";
+      longname="";
       break;
 case 859:
       agency="ROSCOSMOS";
       instype="Spectrometer";
       shortname="Ozon-M";
-      longname="ROSCOSMOS Ozon-M Spectrometer";
+      longname="";
       break;
 case 860:
       agency="ROSCOSMOS";
       instype="Spectrometer";
       shortname="RMK-2";
-      longname="ROSCOSMOS RMK-2 Spectrometer";
+      longname="";
+      break;
+case 861:
+      agency="ROSCOSMOS";
+      instype="Atmospheric temperature and humidity sounder";
+      shortname="MTVZA-GY";
+      longname="Module for temperature and humidity sounding in the atmosphere";
+      break;
+case 862:
+      agency="ROSCOSMOS";
+      instype="Spectrometer";
+      shortname="IKFS-2";
+      longname="Infrared Fourier spectrometer";
       break;
 case 900:
       agency="NOAA";
@@ -1780,6 +2122,12 @@ case 908:
       shortname="SSMIS";
       longname="Special sensor microwave imager sounder";
       break;
+case 909:
+      agency="NOAA";
+      instype="Radiometer";
+      shortname="VTPR";
+      longname="Vertical temperature profile radiometer";
+      break;
 case 910:
       agency="NOAA";
       instype="Radiometer";
@@ -1796,13 +2144,13 @@ case 931:
       agency="NOAA";
       instype="Spectrometer";
       shortname="X-ray astronomy payload";
-      longname="NOAA X-ray astronomy payload Spectrometer";
+      longname="";
       break;
 case 932:
       agency="NRSCC";
       instype="Imaging multi-spectral radiometer (vis/IR)";
       shortname="IVISSR (FY-2)";
-      longname="Improved multispectral visible and Infraredscan radiometer (5 channels)";
+      longname="Improved multispectral visible and Infrared scan radiometer (5 channels)";
       break;
 case 933:
       agency="NRSCC";
@@ -1850,13 +2198,19 @@ case 941:
       agency="CNES";
       instype="Atmospheric temperature and humidity sounder";
       shortname="SAPHIR";
-      longname="CNES SAPHIR Atmospheric temperature and humidity sounder";
+      longname="";
       break;
 case 942:
       agency="CNES";
       instype="Microwave imager";
       shortname="MADRAS";
       longname="Microwave Analysis and Detection of Rain and Atmospheric Structures";
+      break;
+case 943:
+      agency="CNSA";
+      instype="Scatterometer";
+      shortname="SCAT (on CFOSAT)";
+      longname="Scatterometer";
       break;
 case 944:
       agency="NOAA";
@@ -1878,8 +2232,8 @@ case 946:
       break;
 case 947:
       agency="NOAA";
-      instype="Total and profile";
-      shortname="OMPS";
+      instype="Total and profile ozone";
+      shortname="OMPS-nadir";
       longname="Ozone mapping and profiler suite";
       break;
 case 948:
@@ -1890,7 +2244,7 @@ case 948:
       break;
 case 949:
       agency="NOAA";
-      instype="Magnetic field,auroal imagery scintillation boundary";
+      instype="Magnetic field, auroal imagery scintillation boundary";
       shortname="SESS";
       longname="Space environmental sensor suite";
       break;
@@ -1898,17 +2252,17 @@ case 950:
       agency="NRSCC";
       instype="Imaging multi-spectral radiometer (vis/IR)";
       shortname="VIRR";
-      longname="Multispectral visible and infrared scanradiometer (10 channels)";
+      longname="Multispectral visible and infrared scan radiometer (10 channels)";
       break;
 case 951:
       agency="NRSCC";
-      instype="Total and profileozone";
+      instype="Total and profile ozone";
       shortname="TOM";
       longname="Total ozone mapper";
       break;
 case 952:
       agency="NRSCC";
-      instype="Total and profileozone";
+      instype="Total and profile ozone";
       shortname="OP";
       longname="Ozone profiler";
       break;
@@ -1944,20 +2298,223 @@ case 957:
       break;
 case 958:
       agency="CMA";
-      instype="GNSSoccultationsounder";
+      instype="GNSS occultation sounder";
       shortname="GNOS";
       longname="Global navigation satellite system occultation sounder";
       break;
-case 2047:
-      agency="Missing or invalid instrument agency.";
+case 959:
+      agency="SNSB";
+      instype="Limb-scanning sounder";
+      shortname="SMR";
+      longname="Sub-millimetre radiometer";
+      break;
+case 960:
+      agency="NASA";
+      instype="Total and profile ozone";
+      shortname="OMPS-limb";
+      longname="Ozone Mapping and Profiler Suite";
+      break;
+case 961:
+      agency="CMA";
+      instype="Visible/NIR/TIR imager, E-W continuous, S-N stepping scanning";
+      shortname="AGRI-1";
+      longname="Advanced Geostationary Radiation Imager-1";
+      break;
+case 962:
+      agency="CMA";
+      instype="Hyperspectral infrared sounding radiometer, step-stare scanning";
+      shortname="GIIRS-1";
+      longname="Geostationary Interferometric Infrared Sounder-1";
+      break;
+case 963:
+      agency="CMA";
+      instype="High-resolution optical imager";
+      shortname="LMI";
+      longname="Lightning Mapping Imager";
+      break;
+case 964:
+      agency="CMA";
+      instype="Space environment";
+      shortname="SEP";
+      longname="Space Environment Package";
+      break;
+case 965:
+      agency="CMA";
+      instype="GNSS occultation";
+      shortname="GNOS-2";
+      longname="GNSS radio occultation sounder-2";
+      break;
+case 966:
+      agency="CMA";
+      instype="Microwave sounding radiometer";
+      shortname="cross-track scanning";
+      longname="MWTS-3";
+      break;
+case 967:
+      agency="CMA";
+      instype="Hyperspectral infrared sounding radiometer, step-stare scanning";
+      shortname="GIIRS-2";
+      longname="Geostationary Interferometric Infrared Sounder-2";
+      break;
+case 968:
+      agency="CMA";
+      instype="Hyperspectral infrared sounding radiometer, step-stare scanning";
+      shortname="GIIRS-3";
+      longname="Geostationary Interferometric Infrared Sounder-3";
+      break;
+case 969:
+      agency="CMA";
+      instype="Hyperspectral infrared sounding radiometer, step-stare scanning";
+      shortname="GIIRS-4";
+      longname="Geostationary Interferometric Infrared Sounder-4";
+      break;
+case 970:
+      agency="CMA";
+      instype="Hyperspectral infrared sounding radiometer, step-stare scanning";
+      shortname="GIIRS-5";
+      longname="Geostationary Interferometric Infrared Sounder-5";
+      break;
+case 971:
+      agency="CMA";
+      instype="Hyperspectral infrared sounding radiometer, step-stare scanning";
+      shortname="GIIRS-6";
+      longname="Geostationary Interferometric Infrared Sounder-6";
+      break;
+case 972:
+      agency="CMA";
+      instype="Visible/NIR/TIR imager, E-W continuous, S-N stepping scanning";
+      shortname="AGRI-2";
+      longname="Advanced Geostationary Radiation Imager-2";
+      break;
+case 973:
+      agency="CMA";
+      instype="Visible/NIR/TIR imager, E-W continuous, S-N stepping scanning";
+      shortname="AGRI-3";
+      longname="Advanced Geostationary Radiation Imager-3";
+      break;
+case 974:
+      agency="CMA";
+      instype="Visible/NIR/TIR imager, E-W continuous, S-N stepping scanning";
+      shortname="AGRI-4";
+      longname="Advanced Geostationary Radiation Imager-4";
+      break;
+case 975:
+      agency="CMA";
+      instype="Visible/NIR/TIR imager, E-W continuous, S-N stepping scanning";
+      shortname="AGRI-5";
+      longname="Advanced Geostationary Radiation Imager-5";
+      break;
+case 976:
+      agency="CMA";
+      instype="Visible/NIR/TIR imager, E-W continuous, S-N stepping scanning";
+      shortname="AGRI-6";
+      longname="Advanced Geostationary Radiation Imager-6";
+      break;
+case 977:
+      agency="CMA";
+      instype="Visible/NIR/TIR imager, E-W continuous, S-N stepping scanning";
+      shortname="GHI";
+      longname="Geostationary High-speed Imager";
+      break;
+case 980:
+      agency="KMA";
+      instype="Imager";
+      shortname="AMI";
+      longname="Advanced Meteorological Imager";
+      break;
+case 981:
+      agency="KMA";
+      instype="Imager";
+      shortname="MI";
+      longname="Meteorological Imager";
+      break;
+case 982:
+      agency="KMA";
+      instype="Space environment";
+      shortname="KSEM";
+      longname="Korea Space wEather Monitor";
+      break;
+case 983:
+      agency="CMA";
+      instype="Cross-track scanning, IR Hyperspectral sounder";
+      shortname="HIRAS-2";
+      longname="Hyperspectral Infrared Atmospheric Sounder-2";
+      break;
+case 984:
+      agency="CMA";
+      instype="Cross-track scanning, IR Hyperspectral sounder";
+      shortname="HIRAS-3";
+      longname="Hyperspectral Infrared Atmospheric Sounder-3";
+      break;
+case 985:
+      agency="CMA";
+      instype="Conical scanning microwave imager";
+      shortname="MWRI-1";
+      longname="Microwave radiation imager-1";
+      break;
+case 986:
+      agency="CMA";
+      instype="Conical scanning microwave imager";
+      shortname="MWRI-2";
+      longname="Microwave radiation imager-2";
+      break;
+case 987:
+      agency="CMA";
+      instype="Conical scanning microwave imager";
+      shortname="MWRI-RM";
+      longname="Microwave radiation imager-Rain Mission";
+      break;
+case 988:
+      agency="CMA";
+      instype="Conical scanning dual-frequency scatterometer";
+      shortname="WindRAD";
+      longname="Wind Radar";
+      break;
+case 989:
+      agency="Reserved";
       instype="";
       shortname="";
-      longname="Missing or invalid instrument type.";
+      longname="";
+      break;
+case 990:
+      agency="NASA";
+      instype="Radiometer";
+      shortname="SMMR";
+      longname="Scanning multichannel microwave radiometer";
+      break;
+case 991:
+      agency="NASA";
+      instype="Radiometer";
+      shortname="THIR";
+      longname="Temperature-humidity infrared radiometer";
+      break;
+case 992:
+      agency="NASA";
+      instype="Radiometer";
+      shortname="NEMS";
+      longname="Nimbus-E Microwave Sounder";
+      break;
+case 993:
+      agency="NASA";
+      instype="Radiometer";
+      shortname="SCAMS";
+      longname="Scanning Microwave Spectrometer";
+      break;
+case 994:
+      agency="NASA";
+      instype="Radiometer";
+      shortname="ESMR";
+      longname="Electrically Scanning Microwave Radiometer";
+      break;
+case 2047:
+      agency="Missing value";
+      instype="";
+      shortname="";
+      longname="";
       break;
 default:
-      agency="Unknown.";
+      agency="Unknown";
       instype="Unknown";
       shortname="Unknown";
       longname="Unknown";
       break;
-

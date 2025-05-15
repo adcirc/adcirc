@@ -42,6 +42,10 @@
  * HEADER:000:ave:output:2:average X=time step Y=output v2
  */
 int f_ave(ARG2) {
+    if (mode == -1) 
+        return f_time_processing(init_ARG4(inv_out,local,"0","1",arg1,arg2));
+    if (mode == -2) 
+        return f_time_processing(fin_ARG4(inv_out,local,"0","1",arg1,arg2));
     return f_time_processing(call_ARG4(inv_out,local,"0","1",arg1,arg2));
 }
 
@@ -49,6 +53,10 @@ int f_ave(ARG2) {
  * HEADER:000:fcst_ave:output:2:average X=time step Y=output v2
  */
 int f_fcst_ave(ARG2) {
+    if (mode == -1) 
+        return f_time_processing(init_ARG4(inv_out,local,"0","2",arg1,arg2));
+    if (mode == -1) 
+        return f_time_processing(call_ARG4(inv_out,local,"0","2",arg1,arg2));
     return f_time_processing(call_ARG4(inv_out,local,"0","2",arg1,arg2));
 }
 
@@ -184,7 +192,9 @@ static int add_to_ave_struct(struct ave_struct *save, unsigned char **sec, float
        do it now, translation[] may be different if called from finalized phase */
 
     if (save->code_table_4_10 == AVE) {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i,ii)
+#endif
         for (i = 0; i < ndata; i++) {
             if (DEFINED_VAL(data[i])) {
 		ii = translation == NULL ? i : translation[i];
@@ -194,7 +204,9 @@ static int add_to_ave_struct(struct ave_struct *save, unsigned char **sec, float
 	}
     }
     else if (save->code_table_4_10 == MAX) {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i,ii)
+#endif
         for (i = 0; i < ndata; i++) {
             if (DEFINED_VAL(data[i])) {
 		ii = translation == NULL ? i : translation[i];
@@ -208,7 +220,9 @@ static int add_to_ave_struct(struct ave_struct *save, unsigned char **sec, float
 	}
     }
     else if (save->code_table_4_10 == MIN) {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i,ii)
+#endif
         for (i = 0; i < ndata; i++) {
             if (DEFINED_VAL(data[i])) {
 		ii = translation == NULL ? i : translation[i];
@@ -222,7 +236,9 @@ static int add_to_ave_struct(struct ave_struct *save, unsigned char **sec, float
 	}
     }
     else if (save->code_table_4_10 == RMS) {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i,ii)
+#endif
         for (i = 0; i < ndata; i++) {
             if (DEFINED_VAL(data[i])) {
 		ii = translation == NULL ? i : translation[i];
@@ -232,7 +248,9 @@ static int add_to_ave_struct(struct ave_struct *save, unsigned char **sec, float
 	}
     }
     else if (save->code_table_4_10 == STD_DEV) {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i,ii,x,oldM)
+#endif
         for (i = 0; i < ndata; i++) {
             if (DEFINED_VAL(data[i])) {
 		ii = translation == NULL ? i : translation[i];
@@ -246,13 +264,17 @@ static int add_to_ave_struct(struct ave_struct *save, unsigned char **sec, float
     }
     else if (save->code_table_4_10 == DIFF1 || save->code_table_4_10 == DIFF2) {
 	if (save->n_fields == 0) {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i,ii)
+#endif
             for (i = 0; i < ndata; i++) {
 		ii = translation == NULL ? i : translation[i];
 		save->first[ii] = data[i];
 	    }
 	}
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i,ii)
+#endif
         for (i = 0; i < ndata; i++) {
 	    ii = translation == NULL ? i : translation[i];
 	    save->last[ii] = data[i];
@@ -307,21 +329,27 @@ static int do_ave(struct ave_struct *save) {
 
     if (save->code_table_4_10 == AVE) {
         factor = 1.0 / save->n_fields;
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i)
+#endif
         for (i = 0; i < ndata; i++) {
     	    data[i] = (save->n[i] == save->n_fields) ? factor * save->sum[i] : UNDEFINED;
         }
     }
     else if (save->code_table_4_10 == RMS) {
         factor = 1.0 / save->n_fields;
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i)
+#endif
         for (i = 0; i < ndata; i++) {
     	    data[i] = (save->n[i] == save->n_fields) ? sqrt(factor * save->sum[i]) : UNDEFINED;
         }
     }
     else if (save->code_table_4_10 == STD_DEV) {
 	if (save->n_fields > 1) {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i)
+#endif
             for (i = 0; i < ndata; i++) {
                 data[i] = (save->n[i] == save->n_fields) ?  sqrt(save->S[i]/(save->n_fields - 1)) 
 			: UNDEFINED;
@@ -334,7 +362,9 @@ static int do_ave(struct ave_struct *save) {
 	}
     }
     else if (save->code_table_4_10 == DIFF1) {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i)
+#endif
 	for (i = 0; i < ndata; i++) {
             if (DEFINED_VAL(save->first[i]) && DEFINED_VAL(save->last[i])) {
 		data[i] = save->last[i] - save->first[i];
@@ -343,7 +373,9 @@ static int do_ave(struct ave_struct *save) {
 	}
     }
     else if (save->code_table_4_10 == DIFF2) {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i)
+#endif
 	for (i = 0; i < ndata; i++) {
             if (DEFINED_VAL(save->first[i]) && DEFINED_VAL(save->last[i])) {
 		data[i] = save->first[i] - save->last[i];
@@ -352,7 +384,9 @@ static int do_ave(struct ave_struct *save) {
 	}
     }
     else {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i)
+#endif
         for (i = 0; i < ndata; i++) {
     	    data[i] = (save->n[i] != save->n_fields) ? UNDEFINED : save->sum[i];
         }
@@ -361,7 +395,7 @@ static int do_ave(struct ave_struct *save) {
     pdt = GB2_ProdDefTemplateNo(save->first_sec);
     for (i = 0; i < 9; i++) sec[i] = save->first_sec[i];
     sec[4] = sec4;
-//fprintf(stderr,"doave 0: pdt=%d\n", pdt);
+//fprintf(stderr,"do_ave 0: pdt=%d\n", pdt);
 
     // average of an analysis or forecast
 
@@ -384,7 +418,7 @@ static int do_ave(struct ave_struct *save) {
 
     if (ave_pdt >= PDT_MIN && ave_pdt <= PDT_MAX) {
 	// sec4 = new pdt with statistical processing
-	i = new_pdt(save->first_sec, sec4, ave_pdt, -1, 1);
+	i = new_pdt(save->first_sec, sec4, ave_pdt, -1, 1, NULL);
 
 	/* save verf time */
 	p = stat_proc_verf_time_location(sec);
@@ -409,7 +443,7 @@ static int do_ave(struct ave_struct *save) {
     else if (ave_pdt >= PDT_TYPE2 + PDT_MIN && ave_pdt <= PDT_TYPE2 + PDT_MAX) {
 
 	ave_len = GB2_Sec4_size(save->first_sec) + 12;
-	i = new_pdt(save->first_sec, sec4, ave_pdt, ave_len, 1);
+	i = new_pdt(save->first_sec, sec4, ave_pdt, ave_len, 1, NULL);
 
 	/* update verfification time */
 	p = stat_proc_verf_time_location(sec);
@@ -493,16 +527,12 @@ int f_time_processing(ARG4) {
 	i = atoi(arg2);
 	if (strncmp(arg2,"analyses",4) == 0 || i == 1) save->code_table_4_11 = 1;
 	else if (strncmp(arg2,"forecast",4) == 0 || i == 2) save->code_table_4_11 = 2;
-	else fatal_error("time_processing: code_table_4.11 must be 1/2 or analyses/forecast not $s", arg2);
+	else fatal_error("time_processing: code_table_4.11 must be 1/2 or analyses/forecast not %s", arg2);
 
 	i = sscanf(arg3, "%d%2s", &save->dt,string);
 	if (i != 2) fatal_error("time_processing: delta-time: (int)(2 characters) %s", arg3);
-	save->dt_unit = -1;
-	if (strcmp(string,"hr") == 0) save->dt_unit = 1;
-	else if (strcmp(string,"dy") == 0) save->dt_unit = 2;
-	else if (strcmp(string,"mo") == 0) save->dt_unit = 3;
-	else if (strcmp(string,"yr") == 0) save->dt_unit = 4;
-	else if (strcmp(string,"mn") == 0) save->dt_unit = 0;
+
+	save->dt_unit = string2time_unit(string);
 	if (save->dt_unit == -1) fatal_error("time_processing: unsupported time unit %s", string);
 
         if (fopen_file(&(save->out), arg4, file_append ? "ab" : "wb") != 0) {
@@ -614,7 +644,7 @@ if (mode == 98) fprintf(stderr, "time_processing: code 4.11 %d compare ref time 
 	    new_type = 1;
             if (mode == 98) fprintf(stderr, "time_processing: testsec same_sec0=%d same_sec1_not_time=%d same_sec3=%d\n", 
                 same_sec0(sec,save->first_sec),
-                same_sec1_not_time(0,sec,save->first_sec),
+                same_sec1_not_time(1,sec,save->first_sec),
                 same_sec3(sec,save->first_sec));
 	}
     }

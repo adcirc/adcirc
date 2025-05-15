@@ -82,9 +82,11 @@ int f_box_ave(ARG3) {
     xwt = (int *) malloc(sizeof(int) * (size_t) ndata);
     if (xsum == NULL || xwt == NULL) fatal_error("box_ave: memory allocation","");
 
+#ifdef USE_OPENMP
 #pragma omp parallel
     {
 #pragma omp for private(i,j,k,tmpwt,tmpsum,m) schedule(static)
+#endif
         for (j = 0; j < ny_; j++) {
 
 	    /* do ix == 0 */
@@ -159,7 +161,9 @@ int f_box_ave(ARG3) {
 
            To avoid 1 and 2, make j the outer loop variable */
 
+#ifdef USE_OPENMP
 #pragma omp for private(i,j,j0,j1,k,tmpwt,tmpsum) schedule(static)
+#endif
         for (j = 0; j < ny_; j++) {
 	    j0 = j > nyy ? j-nyy : 0;
 	    j1 = j < ny_ - nyy ? j + nyy : ny_-1;
@@ -180,7 +184,9 @@ int f_box_ave(ARG3) {
 		}
 	    }
 	}
+#ifdef USE_OPENMP
     }
+#endif
     free(xsum);
     free(xwt);
     return 0;

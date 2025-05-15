@@ -103,7 +103,9 @@ int to_we_sn_scan(float *data, int scan, unsigned int npnts, int nx, int ny, int
 	}
 	free(data2);
 	if (save_translation) {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(iy, ix)
+#endif
 	    for (iy = 0; iy < ny; iy++) {
 		for (ix = 0; ix < nx; ix++) {
 		   translation[ix + iy*((size_t) nx)] = ix + (ny-1-iy)*((size_t) nx);

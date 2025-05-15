@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "grb2.h"
 #include "wgrib2.h"
-#include "proj.h"
+#include "cproj.h"
 #include "fnlist.h"
 
 /*

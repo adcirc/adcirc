@@ -10,7 +10,7 @@
 
 #ifdef USE_PROJ4
 
-#include "proj_api.h"
+#include <proj_api.h>
 #include "proj4_wgrib2.h"
 
 
@@ -21,7 +21,9 @@ int proj4_ll2xy(struct proj4_struct *projection, int n, double *lon, double *lat
 
 
     if (projection->proj_is_nop == 1) {				// lat-lon
+#ifdef USE_OPENMP
 #pragma omp parallel for schedule(static) private(i,rlon,rlat)
+#endif
         for (i = 0; i < n; i++) {
             rlon = lon[i];
             rlat = lat[i];
@@ -31,7 +33,9 @@ int proj4_ll2xy(struct proj4_struct *projection, int n, double *lon, double *lat
         return 0;
     }
 
+#ifdef USE_OPENMP
 #pragma omp parallel for schedule(static) private(i,rlon,rlat)
+#endif
     for (i = 0; i < n; i++) {
         rlon = lon[i] * DEG_TO_RAD;
         rlat = lat[i] * DEG_TO_RAD;
@@ -53,7 +57,9 @@ int proj4_xy2ll(struct proj4_struct *projection, int n, double *x, double *y, do
     double rlon, rlat;
 
     if (projection->proj_is_nop == 1) {				// lat-lon relative to x_0, y_0
+#ifdef USE_OPENMP
 #pragma omp parallel for schedule(static) private(i,rlon,rlat)
+#endif
         for (i = 0; i < n; i++) {
             rlon = x[i] + projection->x_0;
             rlat = y[i] + projection->y_0;
@@ -65,7 +71,9 @@ int proj4_xy2ll(struct proj4_struct *projection, int n, double *x, double *y, do
 	}
         return 0;
     }
+#ifdef USE_OPENMP
 #pragma omp parallel for schedule(static) private(i,rlon,rlat)
+#endif
     for (i = 0; i < n; i++) {
         rlon = x[i] + projection->x_0;
         rlat = y[i] + projection->y_0;

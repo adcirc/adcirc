@@ -14,7 +14,9 @@ int swap_buffer(unsigned char *buffer, unsigned int n) {
     unsigned int ii;
     unsigned char i, j;
 
+#ifdef USE_OPENMP
 #pragma omp parallel for private(ii, i, j)
+#endif
     for (ii = 0; ii < n; ii += 4) {
 	i = buffer[ii];
 	j = buffer[ii+1];

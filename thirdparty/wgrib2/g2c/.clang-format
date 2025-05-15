@@ -1,0 +1,21 @@
+---
+Language:        Cpp
+AlignAfterOpenBracket: Align
+AlwaysBreakAfterDefinitionReturnType: true
+BraceWrapping:
+  AfterControlStatement: true
+  AfterFunction:         true
+  AfterStruct:           true
+  AfterUnion:            true
+  BeforeElse:            true
+  IndentBraces:          false
+BreakBeforeBraces:   Custom
+BreakStringLiterals: false
+ColumnLimit:         0
+IndentWidth:         4
+ReflowComments:      false
+TabWidth:            4
+UseCRLF:             false
+UseTab:              Never
+...
+

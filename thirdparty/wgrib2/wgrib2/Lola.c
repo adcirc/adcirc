@@ -132,7 +132,9 @@ int f_lola(ARG4) {
 
         /* find the nearest points for the grid */
         closest_init(sec);
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i,j,k,latitude,longitude)
+#endif
         for (j = 0; j < ny; j++) {
             k = j*nx;
             latitude = save->lat0 + j*save->dlat;

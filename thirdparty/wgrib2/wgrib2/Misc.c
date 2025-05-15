@@ -4,6 +4,10 @@
 #include "wgrib2.h"
 #include "fnlist.h"
 
+/* Misc.c            10/2024 Public Domain  Wesley Ebisuzaki
+ *
+ * misc options
+ */
 extern enum input_type input;
 extern int header, dump_rec, dump_submsg;
 extern int mode;
@@ -274,7 +278,7 @@ int f_big_endian(ARG0) {
 int f_g2clib(ARG1) {
     use_g2clib = atoi(arg1);
     if (use_g2clib == 0 || use_g2clib == 1) return 0;
-#ifdef USE_G2CLIB
+#ifdef USE_G2CLIB_HIGH
     if (use_g2clib == 2) return 0;
 #endif
     if (use_g2clib == 2) fatal_error("g2clib not installed","");

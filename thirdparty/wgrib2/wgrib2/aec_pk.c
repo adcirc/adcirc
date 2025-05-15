@@ -96,7 +96,9 @@ int aec_grib_out(unsigned char ** sec, float *data, unsigned int ndata, int use_
 			dec_factor = Int_Power(10.0, -dec_scale);
 			min_val *= dec_factor;
 			max_val *= dec_factor;
+#ifdef USE_OPENMP
 #pragma omp parallel for private(j)
+#endif
 			for (j = 0; j < n_defined; j++) {
 				data[j] *= dec_factor;
 			}
@@ -116,13 +118,17 @@ int aec_grib_out(unsigned char ** sec, float *data, unsigned int ndata, int use_
 
 	if (bin_scale) {
 		scale = ldexp(1.0, -bin_scale);
+#ifdef USE_OPENMP
 #pragma omp parallel for private(j)
+#endif
 		for (j = 0; j < n_defined; j++) {
 			data[j] = (data[j] - ref)*scale;
 		}
 	}
 	else {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(j)
+#endif
 		for (j = 0; j < n_defined; j++) {
 			data[j] = data[j] - ref;
 		}
@@ -136,8 +142,9 @@ int aec_grib_out(unsigned char ** sec, float *data, unsigned int ndata, int use_
 		if (inbuffer == NULL) fatal_error("aes_pk: memory allocation","");
 
 		unsigned long unsigned_val;
-
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i, unsigned_val, j)
+#endif
 		for (i=0; i < n_defined; i++){
 			unsigned_val = (unsigned long) floor(data[i]+0.5);
 			unsigned_val = unsigned_val > 0 ? unsigned_val : 0;   // should not be necessary but ..
@@ -148,6 +155,11 @@ int aec_grib_out(unsigned char ** sec, float *data, unsigned int ndata, int use_
 		}
 
 		size_t outbuflen = 10240 + nbytes * (size_t) n_defined;
+
+		/* bug fix ECMWF Shahram Najm */
+		outbuflen += outbuflen/20 + 256;
+
+
 		sec7 = (unsigned char *) malloc(outbuflen + 5);
 		if (sec7 == NULL) fatal_error("aes_pk: memory allocation","");
 

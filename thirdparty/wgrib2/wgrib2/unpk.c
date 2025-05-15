@@ -12,17 +12,12 @@
 #include "wgrib2.h"
 #include "grb2.h"
 
-#ifdef USE_PNG
-   #include <png.h>
-   int dec_png_clone(unsigned char *,int *,int *,char *);
-   int i;
-#endif
-#ifdef USE_JASPER
-   #include <jasper/jasper.h>
+#ifdef USE_G2CLIB_LOW
+    #include <grib2.h>
 #endif
 
 #ifdef USE_AEC
-	#include <libaec.h>
+   #include <libaec.h>
 #endif
 
 /*
@@ -46,20 +41,16 @@ int unpk_grib(unsigned char **sec, float *data) {
     double reference;
     double bin_scale, dec_scale, b;
 
-#ifdef USE_PNG
-    int width, height;
+#if G2_PNG_ENABLED == 1
+    int i, width, height;
 #endif
 
-#ifdef USE_JASPER
-    jas_image_t *image;
-    char *opts;
-    jas_stream_t *jpcstream;
-    jas_image_cmpt_t *pcmpt;
-    jas_matrix_t *jas_data;
-    int j, k;
+#if G2_JPEG2000_ENABLED == 1
+    int *ifld, err;
+    unsigned int kk;
 #endif
 
-#if (defined USE_PNG || defined USE_AEC)
+#if (G2_PNG_ENABLED == 1 || defined USE_AEC)
     unsigned char *c;
 #endif
 
@@ -71,7 +62,6 @@ int unpk_grib(unsigned char **sec, float *data) {
 #endif
 
     packing = code_table_5_0(sec);
-    // ndata = (int) GB2_Sec3_npts(sec);
     ndata = GB2_Sec3_npts(sec);
     bitmap_flag = code_table_6_0(sec);
 
@@ -84,6 +74,9 @@ int unpk_grib(unsigned char **sec, float *data) {
 
         // ieee depacking -- simple no bitmap
         if (bitmap_flag == 255) {
+#ifdef USE_OPENMP
+#pragma omp parallel for private(ii) schedule(static)
+#endif
             for (ii = 0; ii < ndata; ii++) {
                 data[ii] = ieee2flt_nan(sec[7]+5+ii*4);
             }
@@ -125,6 +118,9 @@ int unpk_grib(unsigned char **sec, float *data) {
             tmp = reference*dec_scale;
 	    if (packing == 61) tmp = exp(tmp) - b;		// remove log prescaling
             if (bitmap_flag == 255) {
+#ifdef USE_OPENMP
+#pragma omp parallel for private(ii) schedule(static)
+#endif
                 for (ii = 0; ii < ndata; ii++) {
                     data[ii] = tmp;
                 }
@@ -148,7 +144,9 @@ int unpk_grib(unsigned char **sec, float *data) {
 		bin_scale,dec_scale);
 
 	if (packing == 61) {		// remove log prescaling
-// #pragma omp parallel for private(ii) schedule(static)
+#ifdef USE_OPENMP
+#pragma omp parallel for private(ii) schedule(static)
+#endif
             for (ii = 0; ii < ndata; ii++) {
                 if (DEFINED_VAL(data[ii])) data[ii] = exp(data[ii]) - b;
             }
@@ -162,7 +160,8 @@ int unpk_grib(unsigned char **sec, float *data) {
     else if (packing == 200) {				// run length
 	return unpk_run_length(sec, data, ndata);
     }
-#ifdef USE_JASPER
+
+#if G2_JPEG2000_ENABLED == 1
     else if (packing == 40 ||  packing == 40000) {		// jpeg2000
 	p = sec[5];
 	reference = ieee2flt(p+11);
@@ -173,6 +172,9 @@ int unpk_grib(unsigned char **sec, float *data) {
 	if (nbits == 0) {
 	    tmp = reference*dec_scale;
             if (bitmap_flag == 255) {
+#ifdef USE_OPENMP
+#pragma omp parallel for private(ii) schedule(static)
+#endif
 		for (ii = 0; ii < ndata; ii++) {
 		    data[ii] = tmp;
 		}
@@ -194,50 +196,38 @@ int unpk_grib(unsigned char **sec, float *data) {
 
 	// decode jpeg2000
 
-        image = NULL;
-	opts = NULL;
-        jpcstream=jas_stream_memopen((char *) sec[7]+5, (int) GB2_Sec7_size(sec)-5);
-	image = jpc_decode(jpcstream, opts);
-	if (image == NULL) fatal_error("jpeg2000 decoding", "");
-	pcmpt = image->cmpts_[0];
-        if (image->numcmpts_ != 1 ) 
-		fatal_error("unpk: Found color image.  Grayscale expected","");
+    ifld = (int *) malloc(ndata * sizeof(int));
+	if (ifld == 0) fatal_error("unpk: memory allocation error","");
+	err = g2c_dec_jpeg2000((char *) sec[7]+5, (size_t) GB2_Sec7_size(sec)-5, ifld);
+	if (err != 0) fatal_error_i("dec_jpeg2000, error %d",err);
 
-        jas_data=jas_matrix_create(jas_image_height(image), jas_image_width(image));
-        jas_image_readcmpt(image,0,0,0,jas_image_width(image), jas_image_height(image),jas_data);
-
-	// transfer data
-
-	k = ndata - pcmpt->height_ * pcmpt->width_;
-
-// #pragma omp parallel for private(ii,j)
-        for (ii=0;ii<pcmpt->height_;ii++) {
-            for (j=0;j<pcmpt->width_;j++) {
-//		data[k++] = (((jas_data->rows_[ii][j])*bin_scale)+reference)*dec_scale;
-		data[k+j+ii*pcmpt->width_] = (((jas_data->rows_[ii][j])*bin_scale)+reference)*dec_scale;
-	    }
-	}
-
-        if (bitmap_flag == 0 || bitmap_flag == 254) {
-	    k = ndata - pcmpt->height_ * pcmpt->width_;
-            mask_pointer = sec[6] + 6;
-            mask = 0;
-            for (ii = 0; ii < ndata; ii++) {
-                 if ((ii & 7) == 0) mask = *mask_pointer++;
-                 data[ii] = (mask & 128) ? data[k++] : UNDEFINED;
-                 mask <<= 1;
-            }
+    if (bitmap_flag == 255) {
+#ifdef USE_OPENMP
+#pragma omp parallel for private(ii)
+#endif
+        for (ii = 0; ii < ndata; ii++) {
+            data[ii] = ((ifld[ii]*bin_scale)+reference)*dec_scale;
         }
-	else if (bitmap_flag != 255) {
-            fatal_error_i("unknown bitmap: %d", bitmap_flag);
-	}
-	jas_matrix_destroy(jas_data);
-	jas_stream_close(jpcstream);
-	jas_image_destroy(image);
+            }
+    else if (bitmap_flag == 0 || bitmap_flag == 254) {
+        mask_pointer = sec[6] + 6;
+        mask = 0;
+	    kk = 0;
+            for (ii = 0; ii < ndata; ii++) {
+                if ((ii & 7) == 0) mask = *mask_pointer++;
+                data[ii] = (mask & 128) ? ((ifld[kk++]*bin_scale)+reference)*dec_scale : UNDEFINED;
+                mask <<= 1;
+            }
+    } else {
+        fatal_error_i("unknown bitmap: %d", bitmap_flag);
+    }
+
+    free(ifld);
 	return 0;
     }
 #endif
-#ifdef USE_PNG
+
+#if G2_PNG_ENABLED == 1
     else if (packing == 41) {		// png
 	p = sec[5];
 	reference = ieee2flt(p+11);
@@ -248,6 +238,9 @@ int unpk_grib(unsigned char **sec, float *data) {
         if (nbits == 0) {
             tmp = reference*dec_scale;
             if (bitmap_flag == 255) {
+#ifdef USE_OPENMP
+#pragma omp parallel for private(ii) schedule(static)
+#endif
                 for (ii = 0; ii < ndata; ii++) {
                     data[ii] = tmp;
                 }
@@ -267,11 +260,11 @@ int unpk_grib(unsigned char **sec, float *data) {
             fatal_error("unknown bitmap", "");
         }
 
-
+	/* allocate max size of buffer needed */
 	if ((c = (unsigned char *) malloc(4*sizeof(char) * (size_t) ndata)) == NULL)
-            fatal_error("unpk: allocation error", "");
+            fatal_error("unpk: png decode allocation error", "");
 
-	i = (int) dec_png_clone(sec[7]+5, &width, &height, (char *) c);
+    i = g2c_dec_png(sec[7]+5, &width, &height, (unsigned char *) c);
 	if (i) fatal_error_i("unpk: png decode error %d",i);
 	mask_pointer = (bitmap_flag == 255) ? NULL : sec[6] + 6;
 
@@ -304,6 +297,9 @@ int unpk_grib(unsigned char **sec, float *data) {
     	if (nbits == 0) {
     	    tmp = reference*dec_scale;
     	    if (bitmap_flag == 255) {
+#ifdef USE_OPENMP
+#pragma omp parallel for private(ii) schedule(static)
+#endif
     		for (ii = 0; ii < ndata; ii++) {
     		    data[ii] = tmp;
     		}

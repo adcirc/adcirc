@@ -44,6 +44,8 @@ int grb2_get_data(float *data, int ndata);
 int grb2_get_lonlat(float *lon, float *lat, int ndata);
 int grb2_size_meta(void);
 int grb2_size_gridmeta(void);
+int grb2_get_meta(unsigned char *meta, int nbytes) ;
+int grb2_get_gridmeta(unsigned char *meta, int nbytes);
 
 void wgrib2_init_cmds(void);
 int wgrib2_add_cmd(const char *string);
