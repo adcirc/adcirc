@@ -1,0 +1,9 @@
+build/
+install/
+.vscode/
+
+*.mod
+*.so
+*.swp
+
+**.DS_Store

@@ -4,26 +4,43 @@
  *               5/2016 G. Schnee
  */
 
+#ifndef _WGRIB2_H_
+#define _WGRIB2_H_
+
 #include <stdio.h>
+
+#ifndef _CONFIG_H
 #include "config.h"
+#define _CONFIG_H
+#endif
+
 #include "wgrib2_api.h"
 
-#ifdef USE_NETCDF4
-#define USE_NETCDF
-#endif
-#ifdef USE_NETCDF3
-#define USE_NETCDF
-#endif
-
-#ifndef WGRIB2_VERSION
-#define WGRIB2_VERSION "v0.2.0.8 2/2019  Wesley Ebisuzaki, Reinoud Bokhorst, John Howard, Jaakko Hyvätti, Dusan Jovic, \
-Daniel Lee, Kristian Nilssen, Karl Pfeiffer, Pablo Romero, Manfred Schwarb, Gregor Schee, Arlindo da Silva, \
-Niklas Sondell, Sam Trahan, Sergey Varlamov"
-#endif
-
 #ifndef BUILD_COMMENTS
-#define BUILD_COMMENTS ""
+#define BUILD_COMMENTS "unknown build"
 #endif
+
+/* define level of OpenMP support minimum level is v3.1 */
+
+#ifdef USE_OPENMP
+#if _OPENMP >= 201307
+  #define IS_OPENMP_3_1
+#endif
+#if _OPENMP >= 201307
+  #define IS_OPENMP_4_0
+#endif
+#if _OPENMP >= 201511
+  #define IS_OPENMP_4_5
+#endif
+#if _OPENMP >= 201811
+  #define IS_OPENMP_5_0
+#endif
+#endif
+
+/* parameters to PNG encode routine */
+#define PNG_WIDTH_MAX  100000000
+#define PNG_HEIGHT_MAX 100000
+
 
 /*  1/2007 M. Schwarb unsigned int ndata */
 
@@ -32,6 +49,9 @@ Niklas Sondell, Sam Trahan, Sergey Varlamov"
 #define GREP_MAX 200
 /* maximum number of inv functions that can be added to match_inv */
 #define MATCH_EXTRA_FN 10
+
+/* max number of nested if blocks */
+#define MAX_IF  10
 
 #define UNDEFINED       9.999e20
 #define UNDEFINED_LOW   9.9989e20
@@ -55,43 +75,75 @@ struct ARGLIST {int fn; int i_argc;};
 #define DEFAULT_G2CLIB	1		/* use g2clib emulation by default */
 // #define DEFAULT_GCTPC	0		/* use gctpc for geolocation */
 #define DEFAULT_GCTPC	1		/* use gctpc for geolocation */
-#define DEFAULT_PROJ4	0		/* use Proj4 for geolocation */
+#define DEFAULT_PROJ4	1		/* use Proj4 for geolocation */
 
 #define CACHE_LINE_BITS	1024		/* size of cache line in bits for openmp, needs to be a multiple of 8 */
+					/* want to prevent false sharing.  Note: x86 cache line = 64 bytes = 512 bits */
+					/* but no harm if double this value.  */
+					/* if not right but multiple of 8, may be slower */
 
 /* calling arguments for function API */
 
-#define ARG0	int mode, unsigned char **sec, float *data, unsigned int ndata, char *inv_out, void **local
-#define ARG1	ARG0, const char *arg1
-#define ARG2	ARG0, const char *arg1, const char *arg2
-#define ARG3	ARG0, const char *arg1, const char *arg2, const char *arg3
-#define ARG4	ARG0, const char *arg1, const char *arg2, const char *arg3, const char *arg4
-#define ARG5	ARG0, const char *arg1, const char *arg2, const char *arg3, const char *arg4, const char *arg5
-#define ARG6	ARG0, const char *arg1, const char *arg2, const char *arg3, const char *arg4, const char *arg5, const char *arg6
-#define ARG7	ARG0, const char *arg1, const char *arg2, const char *arg3, const char *arg4, const char *arg5, const char *arg6, const char *arg7
-#define ARG8	ARG0, const char *arg1, const char *arg2, const char *arg3, const char *arg4, const char *arg5, const char *arg6, const char *arg7, const char *arg8
+#define ARG     int mode, unsigned char **sec, float *data, unsigned int ndata, char *inv_out, void **local
+#define ARG0	ARG, const char *dum1, const char *dum2, const char *dum3, const char *dum4, const char *dum5, const char *dum6, const char *dum7, const char *dum8
+#define ARG1	ARG, const char *arg1, const char *dum2, const char *dum3, const char *dum4, const char *dum5, const char *dum6, const char *dum7, const char *dum8
+#define ARG2	ARG, const char *arg1, const char *arg2, const char *dum3, const char *dum4, const char *dum5, const char *dum6, const char *dum7, const char *dum8
+#define ARG3	ARG, const char *arg1, const char *arg2, const char *arg3, const char *dum4, const char *dum5, const char *dum6, const char *dum7, const char *dum8
+#define ARG4	ARG, const char *arg1, const char *arg2, const char *arg3, const char *arg4, const char *dum5, const char *dum6, const char *dum7, const char *dum8
+#define ARG5	ARG, const char *arg1, const char *arg2, const char *arg3, const char *arg4, const char *arg5, const char *dum6, const char *dum7, const char *dum8
+#define ARG6	ARG, const char *arg1, const char *arg2, const char *arg3, const char *arg4, const char *arg5, const char *arg6, const char *dum7, const char *dum8
+#define ARG7	ARG, const char *arg1, const char *arg2, const char *arg3, const char *arg4, const char *arg5, const char *arg6, const char *arg7, const char *dum8
+#define ARG8	ARG, const char *arg1, const char *arg2, const char *arg3, const char *arg4, const char *arg5, const char *arg6, const char *arg7, const char *arg8
 
-/* old convention, to be discontinued */
-
-#define CALL_ARG0		mode, sec, data,  ndata, inv_out, local
-#define CALL_ARG1		mode, sec, data,  ndata, inv_out, local, arg1
-#define CALL_ARG2		mode, sec, data,  ndata, inv_out, local, arg1, arg2
-#define CALL_ARG3		mode, sec, data,  ndata, inv_out, local, arg1, arg2, arg3
 
 /* buf = buffer our text out from function */
 /* void **local, pointer for static data */
 
-#define call_ARG0(inv_out,local)	mode, sec, data, ndata, inv_out, local
-#define call_ARG1(inv_out,local,arg1)	mode, sec, data, ndata, inv_out, local, arg1
-#define call_ARG2(inv_out,local,arg1,arg2)	mode, sec, data, ndata, inv_out, local, arg1, arg2
-#define call_ARG3(inv_out,local,arg1,arg2,arg3)	mode, sec, data, ndata, inv_out, local, arg1, arg2, arg3
-#define call_ARG4(inv_out,local,arg1,arg2,arg3,arg4)	mode, sec, data, ndata, inv_out, local, arg1, arg2, arg3, arg4
-#define call_ARG5(inv_out,local,arg1,arg2,arg3,arg4,arg5) mode, sec, data, ndata, inv_out, local, arg1, arg2, arg3, arg4, arg5
+#define call_ARG0(inv_out,local)	        mode, sec, data, ndata, inv_out, local, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+#define call_ARG1(inv_out,local,arg1)	        mode, sec, data, ndata, inv_out, local, arg1, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+#define call_ARG2(inv_out,local,arg1,arg2)	mode, sec, data, ndata, inv_out, local, arg1, arg2, NULL, NULL, NULL, NULL, NULL, NULL
+#define call_ARG3(inv_out,local,arg1,arg2,arg3)	mode, sec, data, ndata, inv_out, local, arg1, arg2, arg3, NULL, NULL, NULL, NULL, NULL
+#define call_ARG4(inv_out,local,arg1,arg2,arg3,arg4)	mode, sec, data, ndata, inv_out, local, arg1, arg2, arg3, arg4, NULL, NULL, NULL, NULL
+#define call_ARG5(inv_out,local,arg1,arg2,arg3,arg4,arg5) mode, sec, data, ndata, inv_out, local, arg1, arg2, arg3, arg4, arg5, NULL, NULL, NULL
+#define call_ARG6(inv_out,local,arg1,arg2,arg3,arg4,arg5,arg6) mode, sec, data, ndata, inv_out, local, arg1, arg2, arg3, arg4, arg5, arg6, NULL, NULL
+#define call_ARG7(inv_out,local,arg1,arg2,arg3,arg4,arg5,arg6,arg7) mode, sec, data, ndata, inv_out, local, arg1, arg2, arg3, arg4, arg5, arg6, arg7, NULL
+#define call_ARG8(inv_out,local,arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8) mode, sec, data, ndata, inv_out, local, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8
+
+#define init_ARG0(inv_out,local)	        -1, NULL, NULL, 0, inv_out, local, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+#define init_ARG1(inv_out,local,arg1)	        -1, NULL, NULL, 0, inv_out, local, arg1, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+#define init_ARG2(inv_out,local,arg1,arg2)	-1, NULL, NULL, 0, inv_out, local, arg1, arg2, NULL, NULL, NULL, NULL, NULL, NULL
+#define init_ARG3(inv_out,local,arg1,arg2,arg3)	-1, NULL, NULL, 0, inv_out, local, arg1, arg2, arg3, NULL, NULL, NULL, NULL, NULL
+#define init_ARG4(inv_out,local,arg1,arg2,arg3,arg4)	-1, NULL, NULL, 0, inv_out, local, arg1, arg2, arg3, arg4, NULL, NULL, NULL, NULL
+#define init_ARG5(inv_out,local,arg1,arg2,arg3,arg4,arg5) -1, NULL, NULL, 0, inv_out, local, arg1, arg2, arg3, arg4, arg5, NULL, NULL, NULL
+#define init_ARG6(inv_out,local,arg1,arg2,arg3,arg4,arg5,arg6) -1, NULL, NULL, 0, inv_out, local, arg1, arg2, arg3, arg4, arg5, arg6, NULL, NULL
+#define init_ARG7(inv_out,local,arg1,arg2,arg3,arg4,arg5,arg6,arg7) -1, NULL, NULL, 0, inv_out, local, arg1, arg2, arg3, arg4, arg5, arg6, arg7, NULL
+#define init_ARG8(inv_out,local,arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8) -1, NULL, NULL, 0, inv_out, local, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8
+
+#define fin_ARG0(inv_out,local)	        -2, NULL, NULL, 0, inv_out, local, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+#define fin_ARG1(inv_out,local,arg1)	        -2, NULL, NULL, 0, inv_out, local, arg1, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+#define fin_ARG2(inv_out,local,arg1,arg2)	-2, NULL, NULL, 0, inv_out, local, arg1, arg2, NULL, NULL, NULL, NULL, NULL, NULL
+#define fin_ARG3(inv_out,local,arg1,arg2,arg3)	-2, NULL, NULL, 0, inv_out, local, arg1, arg2, arg3, NULL, NULL, NULL, NULL, NULL
+#define fin_ARG4(inv_out,local,arg1,arg2,arg3,arg4)	-2, NULL, NULL, 0, inv_out, local, arg1, arg2, arg3, arg4, NULL, NULL, NULL, NULL
+#define fin_ARG5(inv_out,local,arg1,arg2,arg3,arg4,arg5) -2, NULL, NULL, 0, inv_out, local, arg1, arg2, arg3, arg4, arg5, NULL, NULL, NULL
+#define fin_ARG6(inv_out,local,arg1,arg2,arg3,arg4,arg5,arg6) -2, NULL, NULL, 0, inv_out, local, arg1, arg2, arg3, arg4, arg5, arg6, NULL, NULL
+#define fin_ARG7(inv_out,local,arg1,arg2,arg3,arg4,arg5,arg6,arg7) -2, NULL, NULL, 0, inv_out, local, arg1, arg2, arg3, arg4, arg5, arg6, arg7, NULL
+#define fin_ARG8(inv_out,local,arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8) -2, NULL, NULL, 0, inv_out, local, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8
+
+/* delayed errors */
+#define DELAYED_NONERROR_END		1
+#define DELAYED_PDT_SIZE_ERR		2
+#define DELAYED_LOCAL_GRIBTABLE_ERR	4
+#define DELAYED_GRID_SIZE_ERR		8
+#define DELAYED_FTIME_ERR		16
+#define DELAYED_MISC			32
 
 enum input_dev_type {DISK, PIPE, MEM, NOT_OPEN};
 enum input_type {inv_mode, dump_mode, all_mode};
 enum output_order_type {raw,wesn,wens};
 enum output_grib_type {jpeg,ieee_packing,simple,complex1,complex2,complex3,aec};
+enum wind_rotation_type {grid, earth, undefined};
+enum geolocation_type {proj4, gctpc, internal, external, not_used};
+enum new_grid_format_type {bin, ieee, grib};
 
 struct seq_file {
     enum input_dev_type file_type;
@@ -102,6 +154,7 @@ struct seq_file {
     int unget_cnt;
     long int buffer_size;
     unsigned char *buffer;
+    char filename[STRING_SIZE];
     long pos;
 };
 
@@ -110,13 +163,14 @@ struct seq_file {
 const char *output_order_name(void);			/* returns text string of output order */
 
 /* maximum length of an inventory line */
-#define INV_BUFFER	30000
+#define INV_BUFFER	100000
 /* maximum length of a name */
 #define NAMELEN		50
 
 /* maximum size of PDT in update_pdt.c */
-#define SET_PDT_SIZE  500
-#define SET_GDT_SIZE  200
+#define SET_PDT_SIZE  3000
+#define SET_GDT_SIZE  3000
+int update_sec3(unsigned char **sec, unsigned char *sec3);
 int update_sec4(unsigned char **sec, unsigned char *sec4);
 
 #define ONES	(~ (int) 0)
@@ -164,15 +218,20 @@ unsigned long int uint8(unsigned const char *);
 float scaled2flt(int scale_factor, int scale_value);
 double scaled2dbl(int scale_factor, int scale_value);
 int flt2scaled(int scale_factor, float value);
+void scaled_char(int scale_factor, int scale_value, unsigned char *p);
 int best_scaled_value(double val, int *scale_factor, int *scale_value);
 void uint8_char(unsigned long int i, unsigned char *p);
 void uint_char(unsigned int i, unsigned char *p);
 void int_char(int i, unsigned char *p);
 void uint2_char(unsigned int i, unsigned char *p);
 void int2_char(int i, unsigned char *p);
+void int1_char(int i, unsigned char *p);
 void itoshort_a(char *string, int i);
 char *nx_str(unsigned int nx);
 char *ny_str(unsigned int ny);
+int string2time_unit(char *string);
+int sub_angle(unsigned const char *p);
+int is_uint(const char *p);
 
 float ieee2flt(unsigned char *ieee);
 float ieee2flt_nan(unsigned char *ieee);
@@ -182,7 +241,6 @@ FILE *ffopen(const char *filename, const char *mode);
 int ffclose(FILE *file);
 int mk_file_persistent(const char *filename);
 int mk_file_transient(const char *filename);
-int wgrib2_free_file(const char *filename);
 int rewind_file(const char *filename);
 int ffclose_finished(void);
 void status_ffopen(void);
@@ -218,6 +276,7 @@ void BDS_unpack(float *flt, unsigned char *bits, unsigned char *bitmap,
 
 void setup_user_gribtable(void);
 int getName(unsigned char **sec, int mode, char *inv_out, char *name, char *desc, char *unit);
+int getName_all(unsigned char **sec, int mode, char *inv_out, char *name, char *desc, char *unit, int *mset, int *mlow, int *mhigh);
 
 int rd_inventory(int *rec_num, int *submsg, long int *pos, struct seq_file *);
 int get_nxny(unsigned char **sec, int *nx, int *ny, unsigned int *npnts, int *res, int *scan);
@@ -227,6 +286,7 @@ int wrtieee(float *array, unsigned int n, int header, struct seq_file *out);
 int flt2ieee(float x, unsigned char *ieee);
 int flt2ieee_nan(float x, unsigned char *ieee);
 int check_datecode(int year, int month, int day);
+int check_time(int year, int month, int day, int hour, int minute, int second);
 int add_time(int *year, int *month, int *day, int *hour, int *minute, int *second, int dtime, int unit);
 int Add_time(struct full_date *date, int dtime, int unit);
 int add_dt(int *year, int *month, int *day, int *hour, int *minute, int *second, int dtime, int unit);
@@ -252,8 +312,9 @@ const char *nc_strstr(const char *s, const char *t);
 int match_inv(int type_datecode, ARG0);
 
 int code_table_0_0(unsigned char **sec);
-
+unsigned char *code_table_0_0_location(unsigned char **sec);
 int code_table_1_0(unsigned char **sec);
+unsigned char *code_table_1_0_location(unsigned char **sec);
 int code_table_1_1(unsigned char **sec);
 unsigned char *code_table_1_1_location(unsigned char **sec);
 int code_table_1_2(unsigned char **sec);
@@ -277,6 +338,7 @@ int code_table_3_7(unsigned char **sec);
 int code_table_3_8(unsigned char **sec);
 int code_table_3_11(unsigned char **sec);
 int code_table_3_15(unsigned char **sec);
+unsigned char *code_table_3_15_location(unsigned char **sec);
 int code_table_3_20(unsigned char **sec);
 unsigned char *code_table_3_20_location(unsigned char **sec);
 int code_table_3_21(unsigned char **sec);
@@ -309,6 +371,8 @@ int code_table_4_11(unsigned char **sec);
 unsigned char *code_table_4_11_location(unsigned char **sec);
 int code_table_4_15(unsigned char **sec);
 unsigned char *code_table_4_15_location(unsigned char **sec);
+int code_table_4_16(unsigned char **sec);
+unsigned char *code_table_4_16_location(unsigned char **sec);
 int code_table_4_57(unsigned char **sec);
 unsigned char *code_table_4_57_location(unsigned char **sec);
 int code_table_4_91(unsigned char **sec);
@@ -316,6 +380,7 @@ unsigned char *code_table_4_91_location(unsigned char **sec);
 int code_table_4_91b(unsigned char **sec);
 unsigned char *code_table_4_91b_location(unsigned char **sec);
 int prt_code_table_4_91(int type_of_intervale, double val1, double val2, char *inv_out);
+int scan_code_table_4_91(int *type_of_interval, double *val1, double *val2, const char *string);
 
 int code_table_4_230(unsigned char **sec);
 unsigned char *code_table_4_230_location(unsigned char **sec);
@@ -327,6 +392,11 @@ int code_table_4_235(unsigned char **sec);
 unsigned char *code_table_4_235_location(unsigned char **sec);
 int code_table_4_240(unsigned char **sec);
 unsigned char *code_table_4_240_location(unsigned char **sec);
+int code_table_4_241(unsigned char **sec);
+unsigned char *code_table_4_241_location(unsigned char **sec);
+int code_table_4_242(unsigned char **sec);
+unsigned char *code_table_4_242_location(unsigned char **sec);
+
 
 int code_table_5_0(unsigned char **sec);
 int code_table_5_1(unsigned char **sec);
@@ -335,6 +405,7 @@ int code_table_5_5(unsigned char **sec);
 int code_table_5_6(unsigned char **sec);
 int code_table_5_7(unsigned char **sec);
 int code_table_6_0(unsigned char **sec);
+int number_of_coordinate_values_after_template(unsigned char **sec);
 int number_of_forecasts_in_the_ensemble(unsigned char **sec);
 unsigned char *number_of_forecasts_in_the_ensemble_location(unsigned char **sec);
 int perturbation_number(unsigned char **sec);
@@ -362,8 +433,25 @@ int percentile_value(unsigned char **sec);
 unsigned char *percentile_value_location(unsigned char **sec);
 int number_of_mode(unsigned char **sec);
 int mode_number(unsigned char **sec);
-int smallest_pdt_len(int pdt);
+int number_of_following_distribution_parameters_np(unsigned char **sec);
+unsigned char *number_of_following_distribution_parameters_np_location(unsigned char **sec);
 
+int smallest_pdt_len(int pdt);
+int pdt_len(unsigned char **sec, int pdt);
+int type_of_post_processing(unsigned char **sec);
+int cluster_identifier(unsigned char **sec);
+unsigned char *cluster_identifier_location(unsigned char **sec);
+int number_of_clusters(unsigned char **sec);
+unsigned char *number_of_clusters_location(unsigned char **sec);
+int number_of_forecasts_in_the_cluster(unsigned char **sec);
+unsigned char *number_of_forecasts_in_the_cluster_location(unsigned char **sec);
+unsigned char *list_of_nc_ensemble_forecast_numbers_location(unsigned char **sec);
+int number_of_contributing_spectral_bands(unsigned char **sec);
+unsigned char *number_of_contributing_spectral_bands_location(unsigned char **sec);
+int number_of_categories(unsigned char **sec);
+unsigned char *number_of_categories_location(unsigned char **sec);
+int number_of_partitions(unsigned char **sec);
+unsigned char *number_of_partitions_location(unsigned char **sec);
 
 int flag_table_3_3(unsigned char **sec);
 int set_flag_table_3_3(unsigned char **sec, unsigned int flag);
@@ -376,19 +464,20 @@ int flag_table_3_5(unsigned char **sec);
 unsigned char *flag_table_3_5_location(unsigned char **sec);
 int flag_table_3_9(unsigned char **sec);
 int flag_table_3_10(unsigned char **sec);
-int set_metadata_string(ARG0, const char *string);
 
 unsigned int pds_fcst_time(unsigned char **sec);
 float *ij2p(unsigned int i, unsigned j, int scan_mode, unsigned int nx, unsigned int ny, float *data);
 int to_we_ns_scan(float *data, int scan, unsigned int npnts, int nx, int ny, int save_translation);
 int to_we_sn_scan(float *data, int scan, unsigned int npnts, int nx, int ny, int save_translation);
 int get_latlon(unsigned char **sec, double **lon, double **lat);
-void fatal_error(const char *fmt, const char *string);
-void fatal_error_ss(const char *fmt, const char *string1, const char *string2);
-void fatal_error_i(const char *fmt, const int i);
-void fatal_error_u(const char *fmt, const unsigned int i);
-void fatal_error_ii(const char *fmt, const int i, const int j);
-void fatal_error_uu(const char *fmt, const unsigned int i, const unsigned int j);
+void fatal_error(const char *fmt, ...);
+#define fatal_error_i  fatal_error
+#define fatal_error_ii  fatal_error
+#define fatal_error_u fatal_error
+#define fatal_error_lu fatal_error
+#define fatal_error_li fatal_error
+#define fatal_error_uu fatal_error
+#define fatal_error_ss fatal_error
 void set_mode(int new_mode);
 int latlon_0(unsigned char **sec);
 int new_gds(unsigned char **sec);
@@ -406,6 +495,7 @@ int gauss2ll(unsigned char **sec, double **lat, double **lon);
 int lambert2ll(unsigned char **sec, double **lat, double **lon);
 int mercator2ll(unsigned char **sec, double **lat, double **lon);
 int space_view2ll(unsigned char **sec, double **lat, double **lon);
+int cubed_sphere2ll(unsigned char **sec, double **lat, double **lon);
 int irr_grid2ll(unsigned char **sec, double **lat, double **lon);
 int stagger(unsigned char **sec, unsigned int assumed_npnts, double *x, double *y);
 
@@ -417,7 +507,7 @@ void flist2bitstream(float *list, unsigned char *bitstream, unsigned int ndata, 
 
 
 double radius_earth(unsigned char **sec);
-int axes_earth(unsigned char **sec, double *major , double *minor);
+int axes_earth(unsigned char **sec, double *major , double *minor, int *is_spherical);
 
 int unpk_grib(unsigned char **sec, float *data);
 int set_order(unsigned char **sec, enum output_order_type order);
@@ -428,9 +518,7 @@ int wrt_sec(unsigned const char *sec0, unsigned const char *sec1, unsigned const
 int scaling(unsigned char **sec, double *base, int *decimal, int *binary, int *nbits);
 unsigned char *mk_bms(float *data, unsigned int *ndata);
 
-int dec_png_clone(unsigned char *pngbuf,int *width,int *height,char *cout);
-int enc_jpeg2000_clone(unsigned char *cin,int width,int height,int nbits, int ltype, 
-	int ratio, int retry, char *outjpc, int jpclen);
+int g2c_dec_png(unsigned char *pngbuf, int *width, int *height, unsigned char *cout);
 int ieee_grib_out(unsigned char **sec, float *data, unsigned int ndata, struct seq_file *out);
 int jpeg_grib_out(unsigned char **sec, float *data, unsigned int ndata, 
     int nx, int ny, int use_scale, int dec_scale, int bin_scale, FILE *out);
@@ -442,7 +530,7 @@ int grib_out(unsigned char **sec, float *data, unsigned int ndata, FILE *out);
 int complex_grib_out(unsigned char **sec, float *data, unsigned int ndata,
  int use_scale, int dec_scale, int bin_scale, int wanted_bits, int max_bits,
 int packing_mode, int use_bitmap, struct seq_file *out);
-int new_pdt(unsigned char **sec, unsigned char *new_sec4, int pdt, int len, int copy_metadata);
+int new_pdt(unsigned char **sec, unsigned char *new_sec4, int pdt, int len, int copy_metadata, char *misc_arg);
 
 int grib_wrt(unsigned char **sec, float *data, unsigned int ndata, unsigned int nx, unsigned int ny, int use_scale, int dec_scale,
         int bin_scale, int wanted_bits, int max_bits, enum output_grib_type grib_type, struct seq_file *out);
@@ -482,8 +570,10 @@ int copy_data(float *data, unsigned int ndata, float **clone_data);
 int free_data(float *clone_data);
 
 int same_sec0(unsigned char **sec_a, unsigned char **sec_b);
+int same_sec0_not_var(int mode, unsigned char **sec_a, unsigned char **sec_b);
 int same_sec1(unsigned char **sec_a, unsigned char **sec_b);
 int same_sec1_not_time(int mode, unsigned char **sec_a, unsigned char **sec_b);
+int same_sec1_not_var(int mode, unsigned char **sec_a, unsigned char **sec_b);
 int same_sec2(unsigned char **sec_a, unsigned char **sec_b);
 int same_sec3(unsigned char **sec_a, unsigned char **sec_b);
 int same_sec4(unsigned char **sec_a, unsigned char **sec_b);
@@ -491,14 +581,20 @@ int same_sec4_not_time(int mode, unsigned char **sec_a, unsigned char **sec_b);
 int same_sec4_diff_ave_period(unsigned char **sec_a, unsigned char **sec_b);
 int same_sec4_for_merge(int mode, unsigned char **sec_a, unsigned char **sec_b);
 int same_sec4_but_ensemble(int mode, unsigned char **sec_a, unsigned char **sec_b);
+int same_sec4_not_var(int mode, unsigned char **sec_a, unsigned char **sec_b);
+int same_sec4_unmerge_fcst(int mode, unsigned char **sec_a, unsigned char **sec_b);
 
 
 void unpk_0(float *flt, unsigned char *bits0, unsigned char *bitmap0,
-        int n_bits, unsigned int n, double ref, double scale, double dec_scale);
+        int n_bits, unsigned int n, double ref0, double bin_scale, double dec_scale);
 
 int fix_ncep_2(unsigned char **sec);
 int fix_ncep_3(unsigned char **sec);
 int fix_ncep_4(unsigned char **sec);
+int fix_undef(unsigned char **sec);
+
+int check_pdt_size(unsigned char **sec);
+
 const char *wgrib2api_info(void);
 
 // units.c
@@ -510,12 +606,11 @@ int a2code_4_10(const char *string);
 const char *code_4_10_name(int code_4_10);
 int a2anl_fcst(const char *string);
 
-int prod_def_temp_size(unsigned char **sec);
 unsigned int cksum(unsigned char const *buf, size_t length);
-void rd_bitstream(unsigned char *p, int offset, int *u, int n_bits, int n);
-void rd_bitstream_flt(unsigned char *p, int offset, float *u, int n_bits, int n);
+void rd_bitstream(unsigned char *p, int offset, int *u, int n_bits, unsigned int n);
+void rd_bitstream_flt(unsigned char *p, int offset, float *u, int n_bits, unsigned int n);
 void add_bitstream(int t, int n_bits);
-void add_many_bitstream(int *t, int n, int n_bits);
+void add_many_bitstream(int *t, unsigned int n, int n_bits);
 void init_bitstream(unsigned char *new_bitstream);
 void finish_bitstream(void);
 
@@ -524,6 +619,8 @@ int unpk_run_length(unsigned char **sec, float *data, unsigned int ndata);
 
 int latlon_init(unsigned char **sec, unsigned int nx, unsigned int ny);
 long int latlon_closest(unsigned char **sec, double plat, double plon);
+int gaussian_init(unsigned char **sec, unsigned int nx, unsigned int ny);
+long int gaussian_closest(unsigned char **sec, double plat, double plon);
 int space_view_init(unsigned char **sec);
 long int space_view_closest(unsigned char **sec, double plat, double plon);
 
@@ -532,7 +629,7 @@ int mk_gdt(unsigned char **sec, int *igdtnum, int *igdttmpl, int *igdtleni);
 void ncep_grids(const char **arg1, const char **arg2, const char **arg3);
 
 int parse_loop(const char *string, int *start, int *end, int *step);
-int getExtName(unsigned char **sec, int mode, char *inv_out, char *name, char *desc, char *unit, const char *delim, const char *space);
+int getExtName(unsigned char **sec, int mode, char *inv_out, char *name, char *desc, char *unit);
 
 int mk_WxKeys(unsigned char **sec);
 const char *WxLabel(float f);
@@ -540,8 +637,9 @@ const char *WxLabel(float f);
 int min_max_array(float *data, unsigned int n, float *min, float *max);
 int min_max_array_all_defined(float *data, unsigned int n, float *min, float *max);
 int int_min_max_array(int *data, unsigned int n, int *min, int *max);
+int int_min_array(int *data, unsigned int n);
+int int_max_array(int *data, unsigned int n);
 int delta(int *data, unsigned int n, int *min, int *max, int *first_val);
-int delta_delta(int *data, unsigned int n, int *min, int *max, int *first_val, int *second_val);
 
 int new_grid_lambertc(int nx, int ny, double ref_lon, double ref_lat,
     double true_lat1, double true_lat2, double stand_lon, double stand_lat,
@@ -576,7 +674,44 @@ char *save_string(char *string);
 /* manage_inv_buffer */
 void init_inv_out(void);
 void new_inv_out(void);
+void repeat_inv_out(void);
+char *base_inv_out(void);
 
 int parse_level1(unsigned char **sec, const char *string, int *table_4_5, int *scale_factor, int *scale_value);
 
+/* old or modern if blocks */
+enum fntype {inv, output, inv_output, misc, setup, If, Else, Elseif, Endif, Null};
+int init_check_v1_v2(void);
+int check_v1_v2(enum fntype type, const char *name);
+int is_v1_v2(void);
+void v1_if(void);
+void v1_else(void);
+void v1_elseif(void);
+void v1_endif(void);
+unsigned int read_latlon(const char *arg, double **lon, double **lat);
 
+int check_pdt_size(unsigned char **sec);
+double get_unixtime(int year, int month, int day, int hour, int minute, int second, int * err_code);
+
+int JMA_Nb(unsigned char **sec);
+int JMA_Nr(unsigned char **sec);
+
+int set_metadata_string(ARG1);
+#ifdef USE_IPOLATES
+void ipolates_grib2_single_field(int *interpol, int *ipopt, int *gdt_in, int *gdttmpl_in, int *gdttmpl_size_in,
+  int *gdt_out, int *gdttmpl_out, int *gdttmpl_size_out, int *mi, int *mo, int *km,
+  int *ibi, unsigned char *bitmap, double *data_in, int *n_out, double *rlat, double *rlon,
+   int *ibo, unsigned char *bitmap_out, double *data_out, int *iret);
+
+void ipolatev_grib2_single_field(int *interpol, int *ipopt, int *gdt_in, int *gdttmpl_in, int *gdttmpl_size_in,
+  int *gdt_out, int *gdttmpl_out, int *gdttmpl_size_out, int *mi, int *mo, int *km,
+  int *ibi, unsigned char *bitmap, double *u_in, double *v_in, int *n_out, double *rlat, double *rlon,
+   double *crot, double *srot, int *ibo, unsigned char *bitmap_out,
+   double *u_out, double *v_out, int *iret);
+
+void use_ncep_post_arakawa(void);
+#endif /* USE_IPOLATES */
+
+
+
+#endif /* _WGRIB2_H_ */

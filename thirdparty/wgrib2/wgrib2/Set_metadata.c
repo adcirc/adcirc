@@ -44,7 +44,6 @@ int f_set_metadata(ARG1) {
     else if (mode >= 0) {
         save = *local;
 	if (fgets_file(line, STRING_SIZE+1, save) == NULL) return 1;
-        // i = set_metadata_string(CALL_ARG0, line);
         i = set_metadata_string(call_ARG1(inv_out,local,line));
 	if (i) fatal_error("set_metadata: processing %s", line);
     }
@@ -58,7 +57,6 @@ int f_set_metadata(ARG1) {
 int f_set_metadata_str(ARG1) {
    int i;
    if (mode  < 0) return 0;
-   // i = set_metadata_string(CALL_ARG0, arg1);
    i = set_metadata_string(call_ARG1(inv_out,local,arg1));
    if (i != 0) fatal_error("set_metadata_str: %s", arg1);
    return 0;
@@ -75,7 +73,7 @@ int set_metadata_string(ARG1) {
     char string[STRING_SIZE];
     char ftime[STRING_SIZE];
 
-    char field[8][100], str1[100], str2[100], str3[100];
+    char field[8][STRING_SIZE], str1[STRING_SIZE], str2[STRING_SIZE], str3[STRING_SIZE+6];
     double value1, value2;
   
     /* clear fields */
@@ -84,13 +82,16 @@ int set_metadata_string(ARG1) {
     n = sizeof(field) / i;
     for (j = 0; j < n; j++) field[j][i-1] = 0;
 
-//    i = sscanf(line, "%*[^:]:%*[^:]:d=%99[^:]:%[^:]:%[^:]:%[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]", 
-//    i = sscanf(line, 
-//      "%*[^:]:%*[^:]:d=%99[^:]:%[^:]:%[^:]:%[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]", 
-//	date, var, lev, ftime,field[0],field[1],field[2],field[3],field[4],field[5],field[6],field[7]);
-    i = sscanf(arg1, 
-      "%*[^:]:%*[^:]:%*[dD]=%99[^:]:%[^:]:%[^:]:%[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]", 
-	date, var, lev, ftime,field[0],field[1],field[2],field[3],field[4],field[5],field[6],field[7]);
+    if (*arg1 == 'd' || *arg1 == 'D') {
+        i = sscanf(arg1+1, 
+         "=%99[^:]:%[^:]:%[^:]:%[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]", 
+	  date, var, lev, ftime,field[0],field[1],field[2],field[3],field[4],field[5],field[6],field[7]);
+    }
+    else {
+        i = sscanf(arg1, 
+         "%*[^:]:%*[^:]:%*[dD]=%99[^:]:%[^:]:%[^:]:%[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]", 
+	  date, var, lev, ftime,field[0],field[1],field[2],field[3],field[4],field[5],field[6],field[7]);
+    }
 
     if (i < 4) {
 	return 8;
@@ -189,31 +190,49 @@ int set_metadata_string(ARG1) {
 	j = sscanf(p,"prob <%lf",&value1);
 	if (j == 1) {
 	    sprintf(str1,"%lg", value1);
-	    f_set_prob(call_ARG5(inv_out,NULL,"255","255","0", str1, str1));
+	    f_set_prob(call_ARG5(inv_out,NULL,"","","0", str1, str1));
 	    continue;
 	}
-
 	j = sscanf(p,"prob >%lf",&value1);
 	if (j == 1) {
 	    sprintf(str1,"%lg", value1);
-	    f_set_prob(call_ARG5(inv_out,NULL,"255","255","1", str1, str1));
+	    f_set_prob(call_ARG5(inv_out,NULL,"","","1", str1, str1));
 	    continue;
 	}
-
-	j = sscanf(p,"prob =%lf",&value1);
-	if (j == 1) {
-	    sprintf(str1,"%lg", value1);
-	    f_set_prob(call_ARG5(inv_out,NULL,"255","255","2", str1, str1));
-	    continue;
-	}
-
 	j = sscanf(p,"prob >=%lf <%lf",&value1, &value2);
 	if (j == 2) {
 	    sprintf(str1,"%lg", value1);
 	    sprintf(str2,"%lg", value2);
-	    f_set_prob(call_ARG5(inv_out,NULL,"255","255","2", str1, str2));
+	    f_set_prob(call_ARG5(inv_out,NULL,"","","2", str1, str2));
 	    continue;
 	}
+	j = sscanf(p,"prob =%lf",&value1);
+	if (j == 1) {
+	    sprintf(str1,"%lg", value1);
+	    f_set_prob(call_ARG5(inv_out,NULL,"","","5", str1, str1));
+	    continue;
+	}
+
+        if (strcmp(p,"prob above normal") == 0) {
+	    f_set_prob(call_ARG5(inv_out,NULL,"","","6", "0", "0"));
+	    continue;
+	}
+        if (strcmp(p,"prob near normal") == 0) {
+	    f_set_prob(call_ARG5(inv_out,NULL,"","","7", "0", "0"));
+	    continue;
+	}
+        if (strcmp(p,"prob below normal") == 0) {
+	    f_set_prob(call_ARG5(inv_out,NULL,"","","8", "0", "0"));
+	    continue;
+	}
+
+	j = sscanf(p,"prob fcst %d/%d", &i0, &i1);
+        if (j == 2) {
+	    sprintf(str1,"%d", i0);
+	    sprintf(str2,"%d", i1);
+	    f_set_prob(call_ARG5(inv_out,NULL,str1,str2,"", "", ""));
+	    continue;
+        }
 
 	// ensemble mean,  .. should put this into a table
 
@@ -320,10 +339,34 @@ int set_metadata_string(ARG1) {
 	    if (f_set(call_ARG2(inv_out,NULL,str3,str2)) == 0) continue;
 	}
 
+	// lvl1=
+	j = sscanf(p,"lvl1=%s",str1);
+	if (j == 1) {
+	    f_set_lvl1(call_ARG1(inv_out,NULL,str1));
+	    continue;
+	}
+
+	// lvl2=
+	j = sscanf(p,"lvl2=%s",str1);
+	if (j == 1) {
+	    f_set_lvl2(call_ARG1(inv_out,NULL,str1));
+	    continue;
+	}
+
+
+	// X=T
 	// see if -set X T will work
-	j = sscanf(p,"%[^=]=%[^:]",str1, str2);
+	j = sscanf(p,"%[^ =]=%[^:]",str1, str2);
 	if (j == 2) {
-	    if (mode == 99 && j==2) fprintf(stderr,"metadata_str -set (%s) (%s)\n", str1, str2);
+	    if (mode == 99 && j==2) fprintf(stderr,"metadata_str (x=y) (%s) -set (%s) (%s)\n", p, str1, str2);
+	    if (f_set(call_ARG2(inv_out,NULL,str1,str2)) == 0) continue;
+	}
+
+	// X T
+	// see if -set X T will work
+	j = sscanf(p,"%s %[^:]",str1, str2);
+	if (j == 2) {
+	    if (mode == 99 && j==2) fprintf(stderr,"metadata_str (x y) (%s) -set (%s) (%s)\n", p, str1, str2);
 	    if (f_set(call_ARG2(inv_out,NULL,str1,str2)) == 0) continue;
 	}
 

@@ -5,9 +5,14 @@
 #include "wgrib2.h"
 #include "fnlist.h"
 
+/* proj4_initialize.c       10/2024 Public Domain  Dusan Jovic, Wesley Ebisuzaki
+ *
+ * initialize using Proj
+ */
+
 #ifdef USE_PROJ4
 
-#include "proj_api.h"
+#include <proj_api.h>
 #include "proj4_wgrib2.h"
 
 int proj4_initialize(unsigned char **sec, struct proj4_struct *projection) {
@@ -23,8 +28,8 @@ int proj4_initialize(unsigned char **sec, struct proj4_struct *projection) {
     gds = sec[3];
     center = GB2_Center(sec);
 
-    axes_earth(sec, &r_maj, &r_min);
-    projection->radius_minor = r_min;
+    axes_earth(sec, &r_maj, &r_min, NULL);
+    projection->radius_major = r_maj;
     projection->radius_minor = r_min;
 
     if (gdt == 0) {

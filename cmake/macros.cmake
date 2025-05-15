@@ -75,7 +75,7 @@ macro(addGrib2Definitions TARGET)
     add_dependencies(
       ${TARGET}
       grib2
-      ipolates
+      g2c
       geo)
   endif()
 endmacro(addGrib2Definitions)
@@ -85,7 +85,7 @@ macro(addGrib2Libraries TARGET)
     target_link_libraries(
       ${TARGET}
       grib2
-      ipolates
+      g2c
       geo)
   endif()
 endmacro()

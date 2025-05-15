@@ -120,7 +120,9 @@ static int update_ave_var_struct(struct ave_var_struct *save, unsigned char **se
        do it now, translation[] may be different if called from finalized phase */
 
     save->n_fields += 1;
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i,ii,x,oldM)
+#endif
     for (i = 0; i < ndata; i++) {
 	ii = translation == NULL ? i : translation[i];
         if (DEFINED_VAL(data[i]) && DEFINED_VAL(save->M[ii])) {
@@ -141,7 +143,9 @@ static int update_ave_var_struct(struct ave_var_struct *save, unsigned char **se
 	}
     }
     else {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i,ii)
+#endif
 	for (i = 0; i < ndata; i++) {
 	    ii = translation == NULL ? i : translation[i];
             if (DEFINED_VAL(data[i]) && DEFINED_VAL(save->M[ii])) {
@@ -186,7 +190,9 @@ static int write_ave_var(struct ave_var_struct *save) {
     if ((data = (float *) malloc(sizeof(float) * ((size_t) ndata))) == NULL) fatal_error("ave_var: memory allocation","");
 
     /* mean value */
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i)
+#endif
     for (i = 0; i < ndata; i++) {
 	data[i] = (UNDEFINED_VAL(save->M[i])) ? UNDEFINED : save->M[i];
     }
@@ -349,7 +355,9 @@ static int write_ave_var(struct ave_var_struct *save) {
 
     /* Sample Standard Deviation */
     if (save->n_fields > 1) {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i)
+#endif
         for (i = 0; i < ndata; i++) {
 	    data[i] = (UNDEFINED_VAL(save->M[i])) ? UNDEFINED : sqrt(save->S[i]/(save->n_fields - 1));
         }

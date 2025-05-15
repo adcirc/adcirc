@@ -46,7 +46,7 @@ int f_reduced_gaussian_grid(ARG3) {
         struct seq_file out;
         int conversion;
         unsigned char sec3[72];
-	enum interpol {linear, linear_extrapolate, neighbor, neighbor_extrapolate} interpolation;
+	enum interpol interpolation;
     };
     struct local_struct *save;
 
@@ -209,7 +209,9 @@ static void interpolate(float *in, int n_in, float *out, int n_out, enum interpo
 	}
     }
     else {
+#ifdef USE_OPENMP
 #pragma omp parallel for private(i,r,j,jp1, def_j, def_jp1)
+#endif
 	for (i = 0; i < n_out; i++) {
 	    r = i * (double) n_in / (double) (n_out);
 	    j = floor(r);
