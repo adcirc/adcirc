@@ -175,6 +175,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   addcompilerflagsswan(templib_swan2serial ${ADDITIONAL_FLAGS_SWAN})
   addcompilerflags(templib_adcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
   addcompilerflags(adcswan ${ADDITIONAL_FLAGS_ADCIRC})
+  addDatetimeDefinitions(templib_swan2serial)
 
   addnetcdflibraries(adcswan)
   addgrib2libraries(templib_adcswan1)
