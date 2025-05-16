@@ -185,6 +185,8 @@ elseif(${CMAKE_C_COMPILER_ID} MATCHES "IntelLLVM")
 	set_target_properties(libjasper PROPERTIES COMPILE_FLAGS ${ADDITIONAL_JASPER_COMPILER_FLAGS})
 elseif(${CMAKE_C_COMPILER_ID} MATCHES "Intel")
 	# Empty
-elseif(${CMAKE_C_COMPILER_ID} MATCHES "NVIDIA")
-	# Empty
+elseif(${CMAKE_C_COMPILER_ID} MATCHES "NVHPC")
+	set(ADDITIONAL_JASPER_COMPILER_FLAGS "--diag_suppress set_but_not_used,unrecognized_attribute,code_is_unreachable,declared_but_not_referenced,unsigned_compare_with_zero")
+	message(STATUS "Adding additional compiler flags to libjasper: ${ADDITIONAL_JASPER_COMPILER_FLAGS}")
+	set_target_properties(libjasper PROPERTIES COMPILE_FLAGS ${ADDITIONAL_JASPER_COMPILER_FLAGS})
 endif()
