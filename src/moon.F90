@@ -341,8 +341,13 @@ module mod_moon_position
 
 !  REAL(8), private, parameter:: LATARG(NPER,4) = transpose( LATARGTMP ) ;  
  
+! This addresses a bug in the nvidia fortran compiler
+! See: https://forums.developer.nvidia.com/t/nvfortran-constant-array-initialization-bug/323012
+! Instead of of this being a compile time constant, we generate it later
+#ifndef __NVCOMPILER
   integer, private, parameter :: LATMEU(NPER) = int(abs(LATARG(:, 2)))
   integer, private, parameter :: LONMEU(NPER) = int(abs(LONARG(:, 2)))
+#endif  
  
   private :: CAL_EPMUL, E_MUL_COEF, A1_DEG, A2_DEG, A3_DEG, &
              MOON_COORDINATES_SUB0, MOON_COORDINATES_SUB1
@@ -523,6 +528,16 @@ contains
 
     real(8) :: suml, sumr, sumb
     real(8) :: vec(4), argval(NPER), epmul(NPER)
+  
+! This addresses a bug in the nvidia fortran compiler
+! See: https://forums.developer.nvidia.com/t/nvfortran-constant-array-initialization-bug/323012
+! Instead of of this being a compile time constant generated above, we generate it here on the fly
+#ifdef __NVCOMPILER    
+    integer :: LATMEU(NPER) 
+    integer :: LONMEU(NPER)
+    LATMEU(1:NPER) = int(abs(LATARG(1:NPER, 2)))
+    LONMEU(1:NPER) = int(abs(LONARG(1:NPER, 2)))
+#endif    
 
     ! Convert from degree to radian
     vec = DEG2RAD*(/D, M, MP, F/)
