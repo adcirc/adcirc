@@ -1,4 +1,4 @@
-VPATH = $(top_srcdir)/autotools/lib/libswan_serial_source
+VPATH = $(top_srcdir)/work/lib/libswan_serial_source
 
 AM_FFLAGS = -I../libswan_serial1 -I../libadcswan
 AM_FCFLAGS = -I../libswan_serial1 -I../libadcswan
@@ -22,7 +22,7 @@ libswan_serial2_a_SOURCES = \
       SwanInterpolateAc.f90 SwanInterpolateOutput.f90 SwanConvAccur.f90 SwanConvStopc.f90 \
       SwanFindObstacles.f90 SwanCrossObstacle.f90 SwanComputeForce.f90 SwanIntgratSpc.f90 \
       SwanBndStruc.f90 SwanReadfort18.f90 SwanPunCollect.f90 SwanSumOverNodes.f90 \
-	  SwanMinOverNodes.f90 SwanMaxOverNodes.f90 SwanVTKWriteHeader.f90 SwanVTKWriteData.f90 \
+	    SwanMinOverNodes.f90 SwanMaxOverNodes.f90 SwanVTKWriteHeader.f90 SwanVTKWriteData.f90 \
       SwanVTKPDataSets.f90 ocpids.f ocpcre.f ocpmix.f fftpack51.f90
 
 endif

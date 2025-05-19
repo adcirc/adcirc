@@ -11,15 +11,15 @@ if BUILD_MPI
 bin_PROGRAMS = adcprep
 
 adcprep_SOURCES = \
-      mkdir.c version.F sizes.F constants.F kdtree2.F global.F boundaries.F hashtable.F \
-      mesh.F netcdf_error.F90 subgridLookup.F internaltide.F nodalattr.F vew1d.F \
-	  global_3dvs.F vortex.F owiwind.F rs2.F owi_ice.F owiwind_netcdf.F wind.F \
-      presizes.F pre_global.F metis.F subprep.F adcprep.F decomp.F prep_weir.F \
-      itpackv.F harm.F read_global.F subdomain.F quadrature.F sponge_layer.F \
+    mkdir.c version.F sizes.F constants.F kdtree2.F global.F boundaries.F hashtable.F \
+    mesh.F netcdf_error.F90 subgridLookup.F internaltide.F nodalattr.F vew1d.F \
+	  global_3dvs.F vortex.F owiwind.F rs2.F owi_ice.F owiwind_netcdf.F nws08.F90 wind.F \
+    presizes.F pre_global.F metis.F subprep.F adcprep.F decomp.F prep_weir.F \
+    itpackv.F harm.F read_global.F subdomain.F quadrature.F sponge_layer.F \
 	  momentum.F gwce.F wetdry.F netcdfio.F prep.F interp.F machdep.F \
 	  couple2baroclinic3D.F gl2loc_mapping.F 
 
-adcprep_LDADD = $(top_builddir)/autotools/lib/metis/libmetis.a
+adcprep_LDADD = $(top_builddir)/work/lib/metis/libmetis.a
 
 ARCH_FLAGS = -DLINUX -DCSCA
 

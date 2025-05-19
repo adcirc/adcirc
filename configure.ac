@@ -20,6 +20,19 @@ AC_PROG_FC
 AC_PROG_F77($FC) 
 AC_FC_LINE_LENGTH([132])
 
+dnl gfortran-10 errors out if argument mismatch (SWAN)
+dnl See if Fotran compiler supports -fallow-argument-mismatch for legacy code
+AC_LANG_PUSH([Fortran])
+AX_CHECK_COMPILE_FLAG([-fallow-argument-mismatch],
+                      [FFLAGS="${FFLAGS} -fallow-argument-mismatch" FCFLAGS="${FCFLAGS} -fallow-argument-mismatch"],
+                      [])
+AC_LANG_POP([Fortran])
+AC_LANG_PUSH([C])
+AX_CHECK_COMPILE_FLAG([-Wno-incompatble-pointer-types],
+                      [CFLAGS="${CFLAGS} -Wno-incompatible-pointer-types"],
+                      [])
+AC_LANG_POP([C])
+
 dnl Add option for --enable-swan
 ac_enable_swan=no
 AC_ARG_ENABLE(swan, AS_HELP_STRING([--enable-swan],[Build coupled ADCIRC+SWAN]),[
@@ -97,8 +110,8 @@ AS_IF([test x$ac_enable_swan = "xyes"],
      AC_CONFIG_COMMANDS([adcswan], 
         [
          perl thirdparty/swan/switch.pl -unix -adcirc thirdparty/swan/*.ftn thirdparty/swan/*.ftn90
-         mkdir -p autotools/lib/libswan_serial_source
-         mv thirdparty/swan/*.f thirdparty/swan/*.f90 autotools/lib/libswan_serial_source/.
+         mkdir -p work/lib/libswan_serial_source
+         mv thirdparty/swan/*.f thirdparty/swan/*.f90 work/lib/libswan_serial_source/.
         ]
      )
     ],[]
@@ -108,13 +121,14 @@ AS_IF([test x$ac_enable_swan = "xyes" && test x$ac_have_mpi = xyes],
      AC_CONFIG_COMMANDS([padcswan], 
         [
          perl thirdparty/swan/switch.pl -unix -adcirc -pun thirdparty/swan/*.ftn thirdparty/swan/*.ftn90
-         mkdir -p autotools/lib/libswan_parallel_source
-         mv thirdparty/swan/*.f thirdparty/swan/*.f90 autotools/lib/libswan_parallel_source/.
+         mkdir -p work/lib/libswan_parallel_source
+         mv thirdparty/swan/*.f thirdparty/swan/*.f90 work/lib/libswan_parallel_source/.
         ]
      )
     ],[]
 )
 
+dnl Create the adcirc version source file
 AC_CONFIG_COMMANDS([version],
   [scripts/adcirc_version.py --create-version-file --directory $ac_top_srcdir]
 )
@@ -122,17 +136,17 @@ AC_CONFIG_COMMANDS([version],
 dnl Set the Makefiles to be created
 AC_CONFIG_FILES([
   Makefile
-  autotools/Makefile
-  autotools/lib/Makefile
-  autotools/lib/metis/Makefile
-  autotools/lib/libswan_serial1/Makefile
-  autotools/lib/libadcswan/Makefile
-  autotools/lib/libswan_serial2/Makefile
-  autotools/bin/Makefile
-  autotools/bin/adcirc/Makefile
-  autotools/bin/adcswan/Makefile
-  autotools/bin/adcprep/Makefile
-  autotools/bin/padcirc/Makefile
+  work/Makefile
+  work/lib/Makefile
+  work/lib/metis/Makefile
+  work/lib/libswan_serial1/Makefile
+  work/lib/libadcswan/Makefile
+  work/lib/libswan_serial2/Makefile
+  work/bin/Makefile
+  work/bin/adcirc/Makefile
+  work/bin/adcswan/Makefile
+  work/bin/adcprep/Makefile
+  work/bin/padcirc/Makefile
 ])
 
 dnl Write the output

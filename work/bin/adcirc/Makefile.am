@@ -13,9 +13,10 @@ adcirc_SOURCES = \
 	version.F sizes.F constants.F kdtree2.F global.F netcdf_error.F90 hashtable.F \
 	boundaries.F mesh.F subgridLookup.F internaltide.F nodalattr.F global_3dvs.F \
 	itpackv.F quadrature.F sponge_layer.F subdomain.F owi_ice.F owiwind.F \
-	owiwind_netcdf.F vortex.F wind.F vew1d.F momentum.F gwce.F harm.F netcdfio.F \
+	owiwind_netcdf.F vortex.F nws08.F90 wind.F vew1d.F momentum.F gwce.F harm.F netcdfio.F \
 	globalio.F write_output.F wetdry.F rs2.F adcirc.F weir_boundary.F couple2baroclinic3D.F \
-	transport.F vsmy.F timestep.F cstart.F hstart.F read_input.F control.F driver.F 		
+	transport.F vsmy.F astronomic.F90 sun.F90 moon.F90 sun_moon_system.F90 ephemerides.F90 \
+	tidalpotential.F90 timestep.F cstart.F hstart.F read_input.F control.F driver.F 		
 
 if BUILD_NETCDF
 adcirc_LDADD = -lnetcdf -lnetcdff 
