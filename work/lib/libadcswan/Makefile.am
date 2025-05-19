@@ -23,7 +23,7 @@ libadcswan_a_SOURCES = \
 	  owiwind_netcdf.F nws08.F90 wind.F owiwind.F rs2.F owi_ice.F itpackv.F \
 	  globalio.F subdomain.F quadrature.F sponge_layer.F momentum.F \
 	  gwce.F wetdry.F control.F netcdfio.F write_output.F couple2swan.F \
-	  couple2baroclinic3D.F gl2loc_mapping.F couple2baroclinic3D.F
+	  gl2loc_mapping.F couple2baroclinic3D.F
 
 endif
 

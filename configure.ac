@@ -142,11 +142,15 @@ AC_CONFIG_FILES([
   work/lib/libswan_serial1/Makefile
   work/lib/libadcswan/Makefile
   work/lib/libswan_serial2/Makefile
+  work/lib/libswan_parallel1/Makefile
+  work/lib/libpadcswan/Makefile
+  work/lib/libswan_parallel2/Makefile
   work/bin/Makefile
   work/bin/adcirc/Makefile
   work/bin/adcswan/Makefile
   work/bin/adcprep/Makefile
   work/bin/padcirc/Makefile
+  work/bin/padcswan/Makefile
 ])
 
 dnl Write the output

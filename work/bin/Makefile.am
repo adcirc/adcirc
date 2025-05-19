@@ -1,1 +1,1 @@
-SUBDIRS = adcirc adcprep padcirc adcswan
+SUBDIRS = adcirc adcprep padcirc adcswan padcswan

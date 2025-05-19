@@ -16,6 +16,12 @@ build13
 build12
 config.h
 _build
+*.a
+adcirc
+padcirc
+adcprep
+adcswan
+padcswan
 
 # thirdparty files
 *.sw*
@@ -45,3 +51,10 @@ missing
 ltmain.sh
 depcomp
 aclocal.m4
+config.status
+install-sh
+libtool
+*.m4
+stamp-h1
+**/.deps
+work/lib/libswan_*_source
