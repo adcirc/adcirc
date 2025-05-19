@@ -151,6 +151,7 @@ AC_CONFIG_FILES([
   work/bin/adcprep/Makefile
   work/bin/padcirc/Makefile
   work/bin/padcswan/Makefile
+  work/bin/aswip/Makefile
 ])
 
 dnl Write the output
