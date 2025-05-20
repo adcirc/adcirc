@@ -361,11 +361,12 @@ C    inline Self Attraction and Loading
       INTEGER:: nSHOrder = 64 
       INTEGER:: nCellBlock = 500  
       INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
+      INTEGER:: salExtrapVal = 0  
 
       NAMELIST /InlineSALControl/ use_inline_sal,
      &     sal_use_direct_sh,
      &     sal_use_cache_blocking,
-     &     nSHOrder, nCellBlock, salinc
+     &     nSHOrder, nCellBlock, salinc, salExtrapVal
 C    
 
 C     SOLVER  section

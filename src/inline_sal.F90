@@ -7,7 +7,9 @@ MODULE MOD_INLINE_SAL
     !
 #ifndef NONADC    
     USE ADC_CONSTANTS, only: rhoW => RhoSeaWat0, RhoE => RhoEarth, Rearth, deg2rad, rad2deg
-    USE global, only: resident_elemask => imap_el_lg, H0, DTDP, wdnodecode => nodecode, ifsprots   
+    USE global, only: resident_elemask => imap_el_lg, H0, dtdp, wdnodecode => nodecode, ifsprots, &
+       setmessagesource, unsetmessagesource, salcontrol => CSAL 
+
     USE mesh, only: etov => nm, nele => ne, nnode => np, depth => dp, gridics => ICS, &
             slam, sfea, slamr, sfear   
 #endif
@@ -86,6 +88,15 @@ MODULE MOD_INLINE_SAL
     real(kind=RKIND), private, parameter:: pii = acos(-1.0_RKIND) 
     real(kind=RKIND), private, parameter:: SqrtInv4Pi = sqrt(1.0_RKIND/(4.0_RKIND*pii))
 
+#ifndef NONADC
+    real(8), private, dimension(:), allocatable:: sshsal(:,:) 
+    ! sshsal @ saltime, saltime - saltiminc, saltime - 2*saltime
+    real(8), private :: sshsaltime ! time associated with previous met dataset
+    real(8), private :: sshsaltiminc
+
+    integer, private :: extrapolationOrder  = 0 
+#endif
+
 CONTAINS
   
     subroutine sal_param_init( this, useinlinesal, usedirectsh, usecacheblocking, shorder, ncellblock, salinc )
@@ -110,13 +121,172 @@ CONTAINS
       endif
 
       this%saldtinc = salinc*dtdp ;  
-
       this%sal_init = .true. ;
+
+
+      print*, "this%use_inline_sal = ", this%use_inline_sal, " this%saldtinc = ", this%saldtinc ; 
 
       return      
     end subroutine sal_param_init
 
 #ifndef NONADC
+    
+    !
+    subroutine initSALModule( useinlinesal, usedirectsh, usecacheblocking, &
+                                         & shorder, ncellblock, salinc, extrapval, saltime0, sshsal0 )
+      implicit none
+      
+      logical:: useinlinesal, usedirectsh, usecacheblocking
+      integer:: shorder, ncellblock, salinc, extrapval
+
+      REAL(8), optional:: saltime0
+      REAL(8), optional, dimension(:,:):: sshsal0
+
+      call ssh_inline_sal%sal_param_init( useinlinesal, usedirectsh, & 
+                  usecacheblocking, shorder, ncellblock, salinc ) ;
+
+      !
+      if ( ssh_inline_sal%use_inline_sal ) then
+         call ssh_inline_sal%sal_privatedata_init() ;
+
+         sshsaltiminc = ssh_inline_sal%saldtinc ;
+
+         sshsaltime = 0.D0 ; 
+         allocate( sshsal(nnode,3) ) ; sshsal = 0.D0 ; 
+
+         !
+         salcontrol = ssh_inline_sal%use_inline_sal ; 
+
+         extrapolationOrder = extrapval ;
+         extrapolationOrder = merge( 2, extrapolationOrder, extrapolationOrder > 2 ) ;
+         extrapolationOrder = merge( 0, extrapolationOrder, extrapolationOrder < 0 ) ;
+       
+         ! Intended for hot start !
+         if ( present(saltime0) ) then
+            sshsaltime = saltime0 ;
+         endif     
+         if ( present(sshsal0) ) then
+            sshsal = sshsal0 ; 
+         endif   
+      endif
+      !
+
+      return       
+    end subroutine initSALModule
+    !    
+
+
+    !
+    subroutine coldstartSAL( eta )
+       implicit none
+
+       real (8), intent(in):: eta(:) 
+
+       call direct_spht_self_attraction_loading_sub( ssh_inline_sal, sshsal(:,1), eta ) ;
+       
+       sshsal(:,2) = sshsal(:,1) ; 
+       sshsal(:,3) = sshsal(:,2) ;
+
+       return ;     
+    end subroutine coldstartSAL        
+    !      
+
+
+    !
+    subroutine hotstartSAL( etasal2, etasal1, etasal0, saltimeloc ) 
+      implicit none
+
+      real (8):: saltimeloc
+      real (8), intent(in), dimension(:):: etasal2, etasal1, etasal0
+
+      sshsaltime = saltimeloc ;
+      sshsal(:,1) = etasal2 ;
+      sshsal(:,2) = etasal1 ;
+      sshsal(:,3) = etasal0 ;  
+
+      return ; 
+    end subroutine hotstartSAL
+    !
+
+    ! 
+    subroutine getSelfAttractionLoading( etasal, eta, timeloc )
+      implicit none
+
+      real(8), intent(out) :: etasal(:)
+      real(8), intent(inout) :: eta(:)
+      real(8), intent(in) :: timeloc ! ADCICR pass timeloc = t^{n+1}
+      
+      !
+      real (8):: saltimeloc, ts(3), num, den, tn
+
+
+      call setMessageSource("getSelfAttractionLoading")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      tn = timeloc - dtdp ; 
+      saltimeloc = sshsaltime + sshsaltiminc ;
+      if ( abs(tn - saltimeloc) < 1.0D-6*dtdp ) then
+         ! compute sal at every sshsaltiminc step !
+         sshsal(:,3) = sshsal(:,2) ; 
+         sshsal(:,2) = sshsal(:,1) ; 
+         !     
+         call direct_spht_self_attraction_loading_sub( ssh_inline_sal, sshsal(:,1), eta ) ;
+        
+         sshsaltime = tn ;     
+
+        !if ( myproc == 0 ) then
+        !    WRITE(*,'(A,F,A,F)') "INFO: Compute SAL at t = ", timeloc, " saltime = ", sshsaltime ;
+        !endif    
+      endif   
+            
+
+      !c extrapolation c!
+      ts(1) = sshsaltime ; 
+      ts(2) = sshsaltime - sshsaltiminc ;
+      ts(3) = sshsaltime - 2.D0*sshsaltiminc ; 
+
+      select case( extrapolationOrder )
+      case (2)
+         ! quadratic extrapolation     
+         etasal = 0.D0 ;
+   
+         num = (timeloc - ts(2))*(timeloc - ts(3)) ;
+         den = (  ts(1) - ts(2))*(ts(1)   - ts(3)) ;
+         etasal = (num/den)*sshsal(:,1) ;
+   
+         num = (timeloc - ts(1))*(timeloc - ts(3)) ;
+         den = (  ts(2) - ts(1))*(  ts(2) - ts(3)) ;
+         etasal = etasal + (num/den)*sshsal(:,2) ;
+   
+         num = (timeloc - ts(1))*(timeloc - ts(2)) ;
+         den = (  ts(3) - ts(1))*(  ts(3) - ts(2)) ;
+         etasal = etasal + (num/den)*sshsal(:,3) ;
+      case (1)
+         ! linear extrapolation
+         etasal = 0.D0 ;
+         num = (timeloc - ts(2))  ;
+         den = (  ts(1) - ts(2))  ;
+         etasal = (num/den)*sshsal(:,1) ;
+
+         num = (timeloc - ts(1)) ; 
+         den = ( ts(2) - ts(1)) ; 
+         etasal = etasal + (num/den)*sshsal(:,2) ; 
+      case (0)
+         ! constant extrapolation
+         etasal = sshsal(:,1) ;      
+      end select
+
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
+      return 
+    end subroutine getSelfAttractionLoading 
+    !
+
     ! 
     subroutine direct_spht_self_attraction_loading_sub( this, ssh_sal, ssh )
       implicit none 
@@ -138,11 +308,11 @@ CONTAINS
           if ( depth(ii) < 0.0D0 ) then
              ! sshSmoothed(ii) = 0.D0 ;
              !  might need to add node code:     
-             IF (  sshSmoothed(ii) + depth(ii) > H0 ) THEN
+             if (  sshSmoothed(ii) + depth(ii) > H0 ) then
                 sshSmoothed(ii) = sshSmoothed(ii) + DEPTH(ii) - H0 ;       
-             ELSE
+             else
                 sshSmoothed(ii) = 0.D0 
-             ENDIF
+             endif
 
              sshSmoothed(ii) = wdnodecode(ii)*sshSmoothed(ii) ;        
           end if
@@ -157,7 +327,6 @@ CONTAINS
       return ;
     end subroutine direct_spht_self_attraction_loading_sub
     
-
     !
     ! 
     function direct_spht_self_attraction_loading_fn( this, ssh ) result( ssh_sal ) 
@@ -181,12 +350,12 @@ CONTAINS
           !
           if ( depth(ii) < 0.0D0 ) then
              !  might need to add node code:     
-             IF (  sshSmoothed(ii) + depth(ii) > H0 ) THEN
+             if (  sshSmoothed(ii) + depth(ii) > H0 ) then
                 sshSmoothed(ii) = sshSmoothed(ii) + DEPTH(ii) - H0 ;       
-             ELSE
+             else
                 sshSmoothed(ii) = 0.D0 
-             ENDIF
-
+             endif
+             !
              sshSmoothed(ii) = wdnodecode(ii)*sshSmoothed(ii) ;        
           end if
           !
@@ -221,7 +390,6 @@ CONTAINS
       call allMessage(DEBUG, "Enter.")
 #endif
  
-  
       INITSALPRIVATE: if ( this%use_inline_sal ) then
          use_direct_shtns_self_attraction_loading = this%use_direct_shtns_self_attraction_loading ;       
          nCellBlock = this%nCellBlock 
@@ -375,7 +543,8 @@ CONTAINS
     end subroutine sal_privatedata_init
 
 
-#endif
+#endif  ! NONADC
+
 
     !  
     subroutine self_attraction_loading_parallel_fem( ssh_sal, ssh, elements, nCells, elemask  )

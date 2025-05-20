@@ -158,7 +158,7 @@ C
       INTEGER :: i        ! command line argument counter
 
       !
-      REAL (8):: start_time = 0.D0, end_time = 0.D0
+      ! REAL (8):: start_time = 0.D0, end_time = 0.D0
 
       !
       ! jgf51.52.07: Added command line option to just write out
@@ -474,6 +474,12 @@ C
       endif
 #endif
 
+#ifdef CMPI
+      IF ( myproc == 0 ) then
+         start_time = MPI_Wtime() ;
+      ENDIF   
+#endif
+
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_END = ITIME_BGN+NTIME_STP-1
       ENDIF
@@ -511,6 +517,15 @@ C
 #ifdef CMPI
       IF (MYPROC == 0 .and. MNWPROC > 0) CALL WRITER_PAUSE()
       IF (MYPROC == 0 .and. MNWPROH > 0) CALL HSWRITER_PAUSE()
+#endif
+
+
+#ifdef CMPI
+      IF ( myproc == 0 ) then
+         end_time = MPI_Wtime() ;
+
+         write(ScreenUnit,*) "Runtime = ", end_time - start_time ; 
+      ENDIF   
 #endif
 
 

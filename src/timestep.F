@@ -84,7 +84,9 @@ C
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
      &    Limit_WaveStressGrad,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
-     &    dynamicWaterLevelCorrectionDelta
+     &    dynamicWaterLevelCorrectionDelta,
+     &    SAL1, SAL2, CSAL
+
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
      &                         WaveStressGrad_Cap 
      
@@ -156,7 +158,7 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
       USE mod_tidepotential, only: tidePotential
 
       ! inline sal
-      USE MOD_INLINE_SAL, only: ssh_inline_sal
+      USE MOD_INLINE_SAL, only: ssh_inline_sal, getSelfAttractionLoading
 
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
@@ -418,6 +420,10 @@ C     TIP..Tidal potential forcing
             TIP2(I)=0.D0
          endif
 
+         if ( ssh_inline_sal%use_inline_sal ) then
+            SAL1(I)=SAL2(I) ;
+            SAL2(I)=0.D0 ;
+         endif
       END DO
       !
       ! jgf: shift water level offset values
@@ -864,6 +870,11 @@ Casey 140701: Ending the IF statement.
 ! Apply the tide potential forcing subroutine      
       call applyTidePotentialForcing(TimeLoc, TimeH)
 
+! If use, apply insline SAL
+      ! TimeLoc = t^{n+1}        
+      CALL applyInlineSelfAttractionLoading( TimeLoc  )
+
+
 C...
 C...  Depth Averaged Baroclinic Forcing needed by GWCE and 2DDI Momentum
 C...  Compute this (divided by H, i.e., Bx/H, By/H) as a nodally averaged
@@ -1138,6 +1149,7 @@ C...     MOM_LV_X gets renamed as BTP in global_3dvs.f
            MOM_LV_X(I)=ETA1(I)+ETA2(I)
            IF(NWS.NE.0) MOM_LV_X(I)=MOM_LV_X(I)+PR1(I)+PR2(I) !atmospheric pressure
            IF (CTIP) MOM_LV_X(I)=MOM_LV_X(I)-TIP1(I)-TIP2(I) !tidal potential
+           IF (CSAL) MOM_LV_X(I)=MOM_LV_X(I)-SAL2(I)-SAL2(I) 
            MOM_LV_X(I)=G*MOM_LV_X(I)/2.d0
         ENDDO
 
@@ -1513,6 +1525,7 @@ C******************************************************************************
 C******************************************************************************
 
 
+
 !****************************************************************************************
 ! Subroutine to compute tide potential at the nodes                                     
 !                                                                                       
@@ -1542,16 +1555,14 @@ C******************************************************************************
             ! use the full formula 
             IF ( tidePotential%active() ) THEN
                TIP2 = tidePotential%compute(TimeLoc, NP, SLAM)*RampTip
-
             ENDIF  
 
-            ! use inline sal
-            IF ( ssh_inline_sal%use_inline_sal ) THEN
-               TIP2 = TIP2 + ssh_inline_sal%sal_compute( ETA2 )*RampTip
-               ! ssh_sal( eta^{n} )
-            END IF
-           
-
+            !! use inline sal
+            ! IF ( ssh_inline_sal%use_inline_sal ) THEN
+            !   TIP2 = TIP2 + ssh_inline_sal%sal_compute( ETA2 )*RampTip
+            !   ! ssh_sal( eta^{n} )
+            ! END IF
+            
             !
             NOTEXACTSALTIP: IF ( .not. tidepotential%active() .or. 
      &                           .not. ssh_inline_sal%use_inline_sal ) THEN
@@ -1607,6 +1618,7 @@ C******************************************************************************
             ENDIF NOTEXACTSALTIP 
             !
 
+!            
 !            ! The traditional approach: a sum of different constituents
 !            ! TIP & SAL - for tidePotential%active() = .TRUE.  
 !            ! SAL       - for tidePotential%active() = .FALSE.     
@@ -1650,11 +1662,32 @@ C******************************************************************************
 !               ENDIF
 !
 !            ENDIF
-
+!
 
 
          ENDIF
       end subroutine applyTidePotentialForcing
+
+
+C****************************************************************************************
+C   Inline self attraction 
+C   - Compute SAL at every saltiminc step
+C   - Quadratic extrapolation at other steps (i.e. at mod( TimeLoc, saltimeinc ) /= 0 )
+C****************************************************************************************
+      SUBROUTINE applyInlineSelfAttractionLoading( TimeLoc )
+        USE global, only: SAL2, ETA2, RampTip
+        use MOD_INLINE_SAL, only: getSelfAttractionLoading
+
+        IMPLICIT NONE
+
+        REAL (8):: TimeLoc
+
+        ! TimeLoc = t^{n + 1}
+        CALL getSelfAttractionLoading( sal2, eta2, timeloc )
+        sal2 = RampTip*sal2 ;
+
+        RETURN ;
+      END subroutine applyInLineSelfAttractionLoading        
 
 
 C****************************************************************************************

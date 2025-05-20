@@ -50,7 +50,9 @@ C
      &    igep, ndsetsw, nspoolgw, igrads, nscougc, igcp, c2ddi, iden, 
      &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge, 
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, ipstp, nstav_g, nstav,
-     &    ntrspv, iicestp, nstam_g, nstam, openfileforread, cbaroclinic
+     &    ntrspv, iicestp, nstam_g, nstam, openfileforread, cbaroclinic,
+     &    csal, sal1, sal2
+
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
      &    agrid 
@@ -349,10 +351,14 @@ C...LINES TO USE TIDAL POTENTIAL FORCING
 C...
       if (CTIP) then
          DO I=1,NP
-            TIP2(I)=0.0
+            TIP2(I)=0.0D0
          END DO
       endif
 
+      if ( CSAL ) then
+        SAL2 = 0.0D0 ;
+        SAL1 = 0.0D0 ; 
+      endif        
 C....INITIALIZE ELEVATION STATION SPOOL COUNTER
 C....OPEN ELEVATION STATION OUTPUT FILE
 C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPE (NO. OF DATA PTS. AT EACH

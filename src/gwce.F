@@ -253,7 +253,8 @@ C
      &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, ALPHAL, windlim,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1,
      &   dynamicWaterLevelCorrectionDelta, 
-     &   COEFDTemp, COEFDTempMem  ! Added for VED1D  08-11-2022 SB
+     &   COEFDTemp, COEFDTempMem,  ! Added for VED1D  08-11-2022 SB
+     &   SAL1, CSAL
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -294,6 +295,9 @@ C... SB
      &   , gridDepthVertETA1, gridDepthVertETA2
      &   , wetFracVertETA1, wetFracVertETA2
      &   , cadvVertETA2
+
+      ! inline sal
+      ! USE MOD_INLINE_SAL, only: ssh_inline_sal
 
       IMPLICIT NONE
 
@@ -1178,6 +1182,14 @@ C
             TiPN2=TiP1(NM2)
             TiPN3=TiP1(NM3)
          ENDIF
+
+         ! DW -- if use inline SAL, picky back it on tidal potential c!
+         ! IF ( ssh_inline_sal%use_inline_sal ) THEN
+         IF ( CSAL ) THEN
+            TiPN1 = TipN1 + SAL1(NM1) ;
+            TiPN2 = TipN2 + SAL1(NM2) ; 
+            TipN3 = TipN3 + SAL1(NM3) ;
+         ENDIF   
          IF (C2DDI) THEN                       !2D bottom friction
             !WJP taking into account the symmetrical friction matrix
             ! CPB: added resynthesized tidal velocity option
@@ -2159,7 +2171,8 @@ C
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2, 
-     &   QX2, QY2, UU2, VV2, windlim
+     &   QX2, QY2, UU2, VV2, windlim,
+     &   SAL1, CSAL
 #ifdef CMPI
      &   , dumy1, dumy2
 #endif
@@ -2175,6 +2188,10 @@ C
       USE MESSENGER
 #endif
       USE WIND, ONLY: windLimiter
+
+      ! DW inline sal
+      ! USE MOD_INLINE_SAL, only: ssh_inline_sal
+
 
       IMPLICIT NONE
 
@@ -2617,6 +2634,14 @@ C........DMW202401 Use saved H1 and H2
             TiPN2=TiP1(NM2)
             TiPN3=TiP1(NM3)
          ENDIF
+         ! DW -- if use inline SAL, picky back it on tidal potential c!
+         ! IF ( ssh_inline_sal%use_inline_sal ) THEN
+         IF ( CSAL ) THEN
+            TiPN1 = TipN1 + SAL1(NM1) ;
+            TiPN2 = TipN2 + SAL1(NM2) ; 
+            TipN3 = TipN3 + SAL1(NM3) ;
+         ENDIF   
+
          IF (C2DDI) THEN                       !2D bottom friction
             BSX0N1=TK0(NM1)*QX0N1
             BSY0N1=TK0(NM1)*QY0N1

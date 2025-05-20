@@ -382,6 +382,7 @@ C- DMW
       REAL(8),ALLOCATABLE,TARGET ::   DUU1(:),DUV1(:),DVV1(:)
       REAL(8),ALLOCATABLE,TARGET ::   BSX1(:),BSY1(:)
       REAL(8),ALLOCATABLE ::   TIP1(:),TIP2(:)
+      REAL(8),ALLOCATABLE ::   SAL1(:),SAL2(:) ! for inline sal
       REAL(8),ALLOCATABLE ::   L_N(:,:)    ! WJP The array for TIP multiplier
       REAL(8),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
       REAL(8),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
@@ -490,6 +491,7 @@ C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: CME_AreaInt_Corr    = .FALSE.
       LOGICAL :: CTIP                = .FALSE.
       LOGICAL :: CAliDisp            = .FALSE.
+      LOGICAL :: CSAL                = .FALSE. 
 C    kmd48.33bc  - logical statement for hot start using different time step
       ! This is .true. if the time step size of the current run is
       ! different from the time step size in the hotstart file; also
@@ -1017,7 +1019,7 @@ C     jgf49.44: Sets the name of the subroutine that is writing
 C     log and/or screen messages. Must use at the start of any subroutine
 C     that calls screen, logMessage, or allMessage.
 C--------------------------------------------------------------------
-      SUBROUTINE setMessageSource(source)
+      subroutine setmessagesource(source)
       IMPLICIT NONE
       CHARACTER(*), intent(in) :: source
 C
@@ -1310,6 +1312,17 @@ C
       RETURN
       END SUBROUTINE ALLOC_MAIN4a
 
+      SUBROUTINE ALLOC_MAIN4c()
+      USE SIZES, ONLY :  MNP
+      IMPLICIT NONE
+C
+
+      IF ( CSAL ) THEN
+         ALLOCATE( SAL1(MNP), SAL2(MNP) )
+      ENDIF
+C
+      RETURN
+      END SUBROUTINE ALLOC_MAIN4c
 
 C...
 C...Allocate space for Earth load/self-attraction tide

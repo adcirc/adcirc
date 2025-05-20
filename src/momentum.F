@@ -172,7 +172,8 @@ C*******************************************************************************
      &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, adcirc_norm2, CAliDisp,
      &  usingDynamicWaterLevelCorrection, windlim,
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0,
-     &  flgNodesMultipliedByTotalArea, ilump, H1, H2
+     &  flgNodesMultipliedByTotalArea, ilump, H1, H2, 
+     &  SAL2, SAL1, CSAL
 #ifdef CMPI
      &  , dumy1
 #endif
@@ -203,6 +204,10 @@ C... SB
      &     ROTATEBACK_AT_CONDENSEDNODES_ALL,
      &     REMOVE_NORMAL_AT_CONDENSEDNODES
 C... SB
+
+      ! DW
+      ! inline sal
+      ! USE MOD_INLINE_SAL, only: ssh_inline_sal
 
       IMPLICIT NONE
 
@@ -442,6 +447,17 @@ C.......If using tidal potential terms, add these into the barotropic pressure
             BTP2N2=BTP2N2-TiP2(NM2)
             BTP1N3=BTP1N3-TiP1(NM3)
             BTP2N3=BTP2N3-TiP2(NM3)
+         ENDIF
+
+C...... if use inline SAL, add these into the barotrpoic pressure 
+         ! IF ( ssh_inline_sal%use_inline_sal ) THEN        
+         IF ( CSAL ) THEN
+            BTP1N1=BTP1N1-SAL1(NM1)
+            BTP2N1=BTP2N1-SAL2(NM1)
+            BTP1N2=BTP1N2-SAL1(NM2)
+            BTP2N2=BTP2N2-SAL2(NM2)
+            BTP1N3=BTP1N3-SAL1(NM3)
+            BTP2N3=BTP2N3-SAL2(NM3)
          ENDIF
 
 C...  Compute the barotropic pressure gradient x area for the element
@@ -1272,7 +1288,9 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, VIDISPDXOH, VIDISPDYOH, IFSFM, 
-     & CBaroclinic, CAliDisp, windlim, H1, H2
+     & CBaroclinic, CAliDisp, windlim, H1, H2,
+     & SAL2, SAL1, CSAL
+
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
      &   SFacEle, SFMYEle, SFMXEle, TANPHI   
@@ -1287,7 +1305,12 @@ C
      &   , gridDepthVertETA2
      &   , gridDepthVertETA1
      &   , cadvVertETA2
-       
+     
+      ! DW 
+      ! inline sal
+      ! USE MOD_INLINE_SAL, only: ssh_inline_sal
+
+
       IMPLICIT NONE
 
       INTEGER IE, I, J, N                           !local loop counters
@@ -1470,6 +1493,17 @@ C.......If using tidal potential terms, add these into the barotropic pressure
             BTP2N2=BTP2N2-TIP2(NM2)
             BTP1N3=BTP1N3-TIP1(NM3)
             BTP2N3=BTP2N3-TIP2(NM3)
+         ENDIF
+
+C...... if use inline SAL, add these into the barotrpoic pressure         
+        ! IF ( ssh_inline_sal%use_inline_sal ) THEN
+        IF ( CSAL ) THEN
+            BTP1N1=BTP1N1-SAL1(NM1)
+            BTP2N1=BTP2N1-SAL2(NM1)
+            BTP1N2=BTP1N2-SAL1(NM2)
+            BTP2N2=BTP2N2-SAL2(NM2)
+            BTP1N3=BTP1N3-SAL1(NM3)
+            BTP2N3=BTP2N3-SAL2(NM3)
          ENDIF
 
          GH1Avg = GO2*H1Avg
@@ -2092,7 +2126,9 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, UU0, VV0, QX0, QY0, TK2, CBaroclinic,
-     & windlim, H1, H2
+     & windlim, H1, H2,
+     & SAL2, SAL1
+
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &                  NEITAB, NEITABELE, NNEIGH, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,

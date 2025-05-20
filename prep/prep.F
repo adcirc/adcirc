@@ -2348,7 +2348,8 @@ Casey 180318: Added NWS=13
              write(15,'(a,I10,a)') " nSHOrder = ", nSHORder, ","
              write(15,'(a,L4,a)') " sal_use_cache_blocking = ", sal_use_cache_blocking, ","
              write(15,'(a,I10,a)') " nCellBlock = ", nCellBlock, ","
-             write(15,'(a,I10,a)') " salinc = ", salinc," /"
+             write(15,'(a,I10,a)') " salinc = ", salinc, ","
+             write(15,'(a,I10,a)') " salExtrapVal = ", salExtrapVal, " /" 
          END IF
 
 

@@ -78,7 +78,7 @@ C-----------------------------------------------------------------------
      &   bchgtiminc, base_date, contact, convention, host, comments,
      &   nhstar, nhsinc, ndsetsw, ntcysgw, ntcyfgw, cpl2stwave, c3d,
      &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a, 
-     &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8, 
+     &   alloc_main4b, alloc_main4c, alloc_main5, alloc_main7, alloc_main8, 
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
      &   alloc_main6, openfileforread, nhoutonce, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
@@ -173,7 +173,10 @@ Casey 180318: Added NWS=13
 !JLW: add subgrid 
       USE subgrid, only: subgridFilename, level0, level1
       use mod_tidepotential, only: tidePotential, t_tidePotential
-      use MOD_INLINE_SAL, only: salmethod, ssh_inline_sal
+      ! use MOD_INLINE_SAL, only: salmethod, ssh_inline_sal
+      use MOD_INLINE_SAL, only: initSALModule
+
+
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -210,7 +213,8 @@ C
       INTEGER:: nSHOrder = 64 
       INTEGER:: nCellBlock = 500  
       INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
-      
+      INTEGER:: salExtrapVal = 0 
+
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
@@ -277,7 +281,7 @@ C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data
       NAMELIST /InlineSALControl/ use_inline_sal,
      &     sal_use_direct_sh,
      &     sal_use_cache_blocking,
-     &     nSHOrder, nCellBlock, salinc
+     &     nSHOrder, nCellBlock, salinc, salExtrapVal
 
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -887,6 +891,8 @@ C...
       write(scratchMessage,*) "nCellBlock=", nCellBlock
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "salinc", salinc
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "salExtrapVal", salExtrapVal
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
@@ -5137,14 +5143,22 @@ C
      &                                MoonSunCoordFile, IncludeNutation, 
      &                                k2Value, h2Value)
 
-      if ( ntip .EQ. 2  ) then
-         call ssh_inline_sal%sal_param_init( useinlinesal = use_inline_sal,
-     &         usedirectsh =  sal_use_direct_sh,
-     &         usecacheblocking = sal_use_cache_blocking,
-     &         shorder = nSHOrder, 
-     &         ncellblock = nCellBlock,
-     &         salinc = salinc ) ;        
-      endif
+!!      if ( ntip .EQ. 2  ) then
+!!         call ssh_inline_sal%sal_param_init( useinlinesal = use_inline_sal,
+!!     &         usedirectsh =  sal_use_direct_sh,
+!!     &         usecacheblocking = sal_use_cache_blocking,
+!!     &         shorder = nSHOrder, 
+!!     &         ncellblock = nCellBlock,
+!!     &         salinc = salinc ) ;  
+      call  initSALModule( useinlinesal = use_inline_sal, 
+     &                     usedirectsh = sal_use_direct_sh, 
+     &                     usecacheblocking = sal_use_cache_blocking, 
+     &                     shorder = nSHOrder, 
+     &                     ncellblock = nCellBlock, 
+     &                     salinc = salinc, 
+     &                     extrapval = salExtrapVal )
+      call alloc_Main4c() ; 
+!!      endif
 
 C...
 C...  CLOSE FORT.15
@@ -6706,7 +6720,6 @@ C-----------------------------------------------------------------------
         USE NETCDF_ERROR, ONLY: check_err
         USE NETCDF
 #endif       
-
         use MOD_INLINE_SAL, only: salmethod, ssh_inline_sal
 
         IMPLICIT NONE
@@ -6739,11 +6752,12 @@ C-----------------------------------------------------------------------
            SALTAMP = 0.0D0
            SALTPHA = 0.0D0
 
-           IFINLINESAL: IF ( ssh_inline_sal%use_inline_sal ) THEN
-              !      
-              CALL ssh_inline_sal%sal_privatedata_init() ; 
-
-           ELSE       
+           !
+           ! IFINLINESAL: IF ( ssh_inline_sal%use_inline_sal ) THEN
+           !   !      
+           !   ! CALL ssh_inline_sal%sal_privatedata_init() ; 
+           !
+           IFINLINESAL: IF ( .NOT. ssh_inline_sal%use_inline_sal ) THEN       
               filename_netcdf = TRIM(GBLINPUTDIR)//'/'//"fort.24.nc"
   
 #ifdef CMPI
