@@ -78,11 +78,11 @@ elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "PGI" OR ${CMAKE_Fortran_COMPILER_I
         CACHE STRING "Compiler specific flags")
   endif()
 
-elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "LLVMFlang")  
+elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "LLVMFlang")
   # flang
-  set(Fortran_LINELENGTH_FLAG 
-    "-ffixed-line-length=132"
-    CACHE STRING "Compiler specific flag to enable extended Fortran line length")
+  set(Fortran_LINELENGTH_FLAG
+      "-ffixed-line-length=132"
+      CACHE STRING "Compiler specific flag to enable extended Fortran line length")
 
 else()
   message(WARNING "Unknown Fortran Compiler. Fortran Compiler ID detected as ${CMAKE_Fortran_COMPILER_ID}")

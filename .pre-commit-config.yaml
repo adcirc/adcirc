@@ -1,0 +1,42 @@
+exclude: '^(thirdparty|docs)/'
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+    -   id: end-of-file-fixer
+        files: '\.(F90|cmake|py|cpp)$'
+    -   id: mixed-line-ending
+        files: '\.(F90|cmake|py|cpp)$'
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.8
+    hooks:
+    - id: ruff
+      name: ruff python linter
+      args: ["--show-fixes", "--fix"]
+      files: '\.py$'
+    - id: ruff-format
+      name: ruff python format
+-   repo: https://github.com/PlasmaFAIR/fortitude-pre-commit
+    rev: v0.7.2
+    hooks:
+    -   id: fortitude
+        name: fortitude fortran linter
+        files: '\.F90$'
+        args: ["--fix"]
+-   repo: https://github.com/fortran-lang/fprettify
+    rev: v0.3.7
+    hooks:
+      -   id: fprettify
+          name: fprettify fortran formatter
+          files: '\.F90$'
+          language: python
+          args: ["--strip-comments", "--c-relations", "--enable-replacement", "--case", "1", "1", "1", "1"]
+-   repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: v0.6.13
+    hooks:
+      -   id: cmake-format
+          name: cmake-format
+          files: '(CMakeLists\.txt|\.cmake)$'
+          args: [--in-place]
+          additional_dependencies:
+            - pyyaml
