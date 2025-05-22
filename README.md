@@ -57,6 +57,35 @@ Documentation is presently undergoing upgrades, however, the main documentation 
 
 Contributors are actively consolidating information from [ADCIRC website](https://adcirc.org) and [ADCIRC Wiki](https://wiki.adcirc.org/Main_Page) into [ADCIRC documentation](https://adcirc.github.io/adcirc) to provide comprehensive, up-to-date information about ADCIRC.
 
+# Contributing
+
+ADCIRC is an open source project and contributions are welcome. 
+Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information 
+on how to contribute to the project.
+
+The high-level summary is:
+1. Run `pre-commit install` to install pre-commit hooks in your development environment. Pre-commit can be installed using `pip install pre-commit`.
+2. New source files should have a "*.F90" extension
+3. All new code should contain Doxygen-style comments
+4. Developers are encouraged to compile their code using the GCC compilers (even if this is not their typical development environment) with `-DADCIRC_DEVELOPER_MODE=ON` to ensure that the code will build in the CI environment with strict checks
+5. Developers should avoid adding new variables to the `GLOBAL` module unless absolutely necessary
+
+# Requirements
+ADCIRC minimally requires a C and Fortran compiler that minimally meet the following specifications:
+* C compiler: C11 standard
+* Fortran compiler: Fortran 2008 standard
+
+ADCIRC has been tested with the following compilers:
+* GNU Compiler Collection (GCC)
+* Intel Classic Compilers
+* Intel OneAPI Compilers/IntelLLVM
+* NVIDIA HPC Compilers (nvc/nvfortran)
+* LLVM (clang/flang)
+
+Additional features, including MPI parallelism and netCDF output require additional libraries:
+* MPI (Message Passing Interface) - OpenMPI, MVAPICH2, Intel MPI, or other MPI implementations
+* netCDF - netCDF C and Fortran libraries
+
 # Docker Containers
 
 To help new users get spun up quickly with the ADCIRC model, ADCIRC is provided as Linux Docker containers and pushed to DockerHub.
