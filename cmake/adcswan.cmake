@@ -175,7 +175,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   addcompilerflagsswan(templib_swan2serial ${ADDITIONAL_FLAGS_SWAN})
   addcompilerflags(templib_adcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
   addcompilerflags(adcswan ${ADDITIONAL_FLAGS_ADCIRC})
-  addDatetimeDefinitions(templib_swan2serial)
+  adddatetimedefinitions(templib_swan2serial)
 
   addnetcdflibraries(adcswan)
   addgrib2libraries(templib_adcswan1)
@@ -211,10 +211,14 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   add_dependencies(templib_swan2serial templib_adcswan1 templib_swan1serial)
   add_dependencies(templib_adcswan1 templib_swan1serial)
 
-  # Create a false target for the Ninja build system. The generated sources don't give it a full
-  # picture of where it can parallelize and this helps it make the correct determinations
-  if (${CMAKE_GENERATOR} STREQUAL "Ninja")
-    add_custom_target(templib_adcswan1-stub BYPRODUCTS templib_adcswan1-stublib COMMAND "" DEPENDS templib_adcswan1)
+  # Create a false target for the Ninja build system. The generated sources don't give it a full picture of where it can
+  # parallelize and this helps it make the correct determinations
+  if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+    add_custom_target(
+      templib_adcswan1-stub
+      BYPRODUCTS templib_adcswan1-stublib
+      COMMAND ""
+      DEPENDS templib_adcswan1)
     add_dependencies(templib_swan2serial templib_adcswan1-stub)
   endif()
 
