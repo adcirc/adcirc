@@ -83,4 +83,7 @@ if(BUILD_ADCPREP)
 
   install(TARGETS adcprep RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+  # Conditionally enable strict compiler flags for developers
+  enable_developer_mode(${ADCPREP_SOURCES})
+
 endif(BUILD_ADCPREP)

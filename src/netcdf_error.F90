@@ -17,11 +17,10 @@ contains
 !     fort.16 file.
 !-----------------------------------------------------------------------
    subroutine check_err(iret)
-      use sizes, only: myproc
       use netcdf, only: NF90_NOERR, nf90_strerror
       use global, only: ERROR, allMessage, setMessageSource, unsetMessageSource
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      use mod_logging, only: DEBUG
+      use global, only: DEBUG
 #endif
 #ifdef CMPI
       use MESSENGER, only: MSG_FINI
@@ -53,7 +52,10 @@ contains
       use MESSENGER, only: msg_fini, subdomainFatalError
 #endif
       use GLOBAL, only: setMessageSource, unsetMessageSource, &
-                        allMessage, DEBUG, ECHO, INFO, WARNING, ERROR, allMessage
+                        allMessage, INFO, allMessage
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+      use global, only: DEBUG
+#endif
       implicit none
       logical, intent(in), optional :: NO_MPI_FINALIZE
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -76,15 +78,19 @@ contains
       dummy(2) = 99.9d0
 #endif
 
-#ifdef CMPI
-      subdomainFatalError = .true.
       if (present(NO_MPI_FINALIZE)) then
+#ifdef CMPI
+         subdomainFatalError = .true.
          call MSG_FINI(NO_MPI_FINALIZE)
-      else
-         call MSG_FINI()
-      end if
 #endif
-      call exit(1)
+         call exit(1)
+      else
+#ifdef CMPI
+         subdomainFatalError = .true.
+         call MSG_FINI()
+#endif
+         call exit(1)
+      end if
 
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Return.") ! should be unreachable

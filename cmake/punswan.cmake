@@ -141,4 +141,7 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
 
   install(TARGETS punswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+  # Conditionally enable strict compiler flags for developers
+  enable_developer_mode(${MSGLIB_SOURCES})
+
 endif(BUILD_PUNSWAN AND PERL_FOUND)
