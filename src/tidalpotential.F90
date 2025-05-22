@@ -350,7 +350,14 @@ contains
    function compute_full_tip(self, TimeLoc, NP, SLAM) result(tip)
       use ADC_CONSTANTS, only: sec2day, DEG2RAD
       use global, only: setMessageSource, unsetMessageSource, allMessage
+#ifdef ADCNETCDF
       use mod_ephemerides, only: HEAVENLY_OBJS_COORDS_FROM_TABLE
+#else
+      use global, only: ERROR
+#ifdef CMPI
+      use messenger, only: msg_fini
+#endif
+#endif
 
 #ifdef ALL_TRACE
       use global, only: DEBUG
@@ -383,7 +390,15 @@ contains
          call self%m_moon_sun_position%HEAVENLY_OBJS_COORDS_JM(MoonSunCoor(:, 1), MoonSunCoor(:, 2), JDELoc, IERR)
       elseif (self%m_MoonSunPositionComputeMethod == ComputeMethod_External) then
          ! interpolate from an external look up table !
+#ifdef ADCNETCDF
          call self%m_ephemerides%HEAVENLY_OBJS_COORDS_FROM_TABLE(MoonSunCoor, JDELoc, IERR, self%m_UniformResMoonSunTimeData)
+#else
+         call allMessage(ERROR, "Must compile with netCDF to use TIP from table")
+#ifdef CMPI
+         call msg_fini()
+#endif
+         call exit(1)
+#endif
       else
          IERR = 1
       end if
