@@ -910,6 +910,8 @@ contains
       call allMessage(DEBUG, "Enter.")
 #endif
 
+      pl = huge(1)
+
       ! Determine the number of lines in the file.
       nl = 0
       call openFileForRead(22, trim(GBLINPUTDIR)//'/'//'fort.22', ios)
@@ -1357,6 +1359,7 @@ contains
       r0_in_bound = 2d0*rm
       r0_mid_bound = 0.5d0*(r0_out_bound + r0_in_bound)
       rclose = huge(1)
+
       NEED_INTERATION = .true.
       ! calculate latitude dependent coriolis w.r.t center of storm
       f = 2.0d0*omega*sin(abs(lat0)*DEG2RAD)
@@ -1366,8 +1369,14 @@ contains
 
          num_its = num_its + 1
 
-         Vinner = get_inner_wind(Vm, rm, f, r0_mid_bound)
-         Vouter = get_outer_wind(f, r0_mid_bound)
+         ! Note that we switched these to subroutine calls.
+         ! gfortran < 15 struggles with properly handling the
+         ! allocate-on-assign without triggering some warnings
+         ! The result is that the compiler ends up inlining
+         ! the subroutines instead and the assembly ends up
+         ! a bit nicer anyway .. ZC
+         call get_inner_wind(Vm, rm, f, r0_mid_bound, Vinner)
+         call get_outer_wind(f, r0_mid_bound, Vouter)
 
          r_N = int(r0_mid_bound/1000d0) + 1
          rmerge1 = -1
@@ -1501,10 +1510,10 @@ contains
    !> @param r0 The radius of diminishing winds
    !> @return res The inner wind profile
    !-----------------------------------------------------------------------
-   pure function get_inner_wind(Vm, rm, f, r0) result(res)
+   subroutine get_inner_wind(Vm, rm, f, r0, res)
       implicit none
       real(8), intent(in)   :: Vm, rm, f, r0
-      real(8), dimension(:), allocatable :: res
+      real(8), dimension(:), allocatable, intent(out) :: res
       real(8), dimension(:), allocatable :: r
       ! local
       real(8) :: CkCd_this
@@ -1529,7 +1538,7 @@ contains
       res = (res - 0.5d0*f*r**2d0)/r
       res(1) = 0d0
 
-   end function get_inner_wind
+   end subroutine get_inner_wind
 
    !----------------------------------------------------------------------
    !> @brief Get the outer wind profile
@@ -1538,10 +1547,11 @@ contains
    !> @param r0 The radius of diminishing winds
    !> @return res The outer wind profile
    !-----------------------------------------------------------------------
-   pure function get_outer_wind(f, r0) result(res)
+   subroutine get_outer_wind(f, r0, res)
       implicit none
       real(8), intent(in)   :: f, r0
-      real(8), dimension(:), allocatable :: r, res
+      real(8), dimension(:), allocatable, intent(out) :: res
+      real(8), dimension(:), allocatable :: r
       ! local
       real(8) :: Cd
       integer :: I, J, r_N
@@ -1581,7 +1591,7 @@ contains
          res(:J) = 300d0
       end if
 
-   end function get_outer_wind
+   end subroutine get_outer_wind
 
    !----------------------------------------------------------------------
    !> @brief Update the storm eye position
