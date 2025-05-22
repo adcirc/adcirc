@@ -1,0 +1,151 @@
+Fort.67, Fort.68: Hot Start Files
+=================================
+
+These files are used to hot start the model. Hot start output is written to fort.67 and fort.68 on an alternating basis so that if the computer crashes in the process of writing one of these files, the other will be unaffected and can be used to hot start the model. Normally, the most current (in time) of the fort.67 or fort.68 files is used to hot start the model.
+
+On certain computers, the write buffer may not be emptied on a crash and other output files (e.g., time series output files fort.63, fort.64) may not be caught up to the time when the latest hot start file was written. In this case it would be necessary to restart the model using the earlier of the hot start files. Which (if either) hot start file is read in is determined by the parameter :ref:`IHOT <IHOT>` in the :doc:`Model Parameter and Periodic Boundary Condition File <fort15>`.
+
+Parameter Changes During Hot Start
+----------------------------------
+
+It is often convenient to change parameter values in the Model Parameter and Periodic Boundary Condition File during the course of an ADCIRC run. (For example the duration of the run may be extended, nonlinear terms may be turned on or off, the value of the horizontal viscosity may be changed, etc.) A convenient way to accomplish this is via the hot start feature.
+
+**Limitations:**
+* Cannot change the model time step (:ref:`DTDP <DTDP>`)
+* Cannot change parameters related to time series or harmonic output
+
+**Exception:** The ending time of a time series output file may be changed (e.g., if the length of the run is increased). However, this has one undesirable consequence since the number of output data sets contained in the file is written at the beginning of the file. After a hot start, it is not possible to change this value in the time series output file, and therefore it may not match the actual number of output data sets in the file. In this case it would be necessary to edit this number by hand in any affected time series output file before using the file in analysis or display software.
+
+Writing hot start output files is controlled by the parameters :ref:`NHSTAR <NHSTAR>` and :ref:`NHSINC <NHSINC>` in the :doc:`Model Parameter and Periodic Boundary Condition File <fort15>`.
+
+File Structure
+--------------
+
+Hot start files are written in binary with record length of 8 bytes. The basic file structure is shown below. Each line represents a data value or set of values. Conditional data are indicated by conditions following the variable name.
+
+.. parsed-literal::
+
+   :ref:`IM <IM>`
+   :ref:`TIME <TIME>`
+   :ref:`IT <IT>`
+   for k=1, :ref:`NP <NP>`
+      :ref:`ETA1(k) <ETA1>`
+      :ref:`ETA2(k) <ETA2>`
+      :ref:`UU2(k) <UU>`
+      :ref:`VV2(k) <VV>`
+      :ref:`CH1(k) <CH1>` if IM = 10
+      :ref:`NODECODE(k) <NODECODE>`
+   end k loop
+
+   for k=1, :ref:`NE <NE>`
+      :ref:`NOFF(k) <NOFF>`
+   end k loop
+
+   :ref:`EP <EP>`, :ref:`IESTP <IESTP>`, :ref:`NSCOUE <NSCOUE>`
+   :ref:`IVSTP <IVSTP>`, :ref:`NSCOUV <NSCOUV>`
+   :ref:`ICSTP <ICSTP>`, :ref:`NSCOUC <NSCOUC>`
+   :ref:`IPSTP <IPSTP>`, :ref:`IWSTP <IWSTP>`, :ref:`NSCOUM <NSCOUM>`
+   :ref:`IGEP <IGEP>`, :ref:`NSCOUGE <NSCOUGE>`
+   :ref:`IGVP <IGVP>`, :ref:`NSCOUGV <NSCOUGV>`
+   :ref:`IGCP <IGCP>`, :ref:`NSCOUGC <NSCOUGC>`
+   :ref:`IGPP <IGPP>`, :ref:`IGWP <IGWP>`, :ref:`NSCOUGW <NSCOUGW>`
+
+   if IM in [1, 2, 11, 21, 31]:
+      :ref:`IDEN <IDEN>`
+      :ref:`N3DSD <N3DSD>`, :ref:`I3DSDRec <I3DSDRec>`
+      :ref:`N3DSV <N3DSV>`, :ref:`I3DSVRec <I3DSVRec>`
+      :ref:`N3DST <N3DST>`, :ref:`I3DSTRec <I3DSTRec>`
+      :ref:`N3DGD <N3DGD>`, :ref:`I3DGDRec <I3DGDRec>`
+      :ref:`N3DGV <N3DGV>`, :ref:`I3DGVRec <I3DGVRec>`
+      :ref:`N3DGT <N3DGT>`, :ref:`I3DGTRec <I3DGTRec>`
+
+      for k=1, :ref:`NP <NP>`
+         :ref:`DUU(k) <DUU>`, :ref:`DUV(k) <DUV>`, :ref:`DVV(k) <DVV>`
+         :ref:`UU(k) <UU>`, :ref:`VV(k) <VV>`
+         :ref:`BSX(k) <BSX>`, :ref:`BSY(k) <BSY>`
+      end k loop
+
+      for k=1, :ref:`NP <NP>`
+         for j=1, :ref:`NFEN <NFEN>`
+            :ref:`REAL(Q(k,j)) <REAL(Q(k,j))>`
+            :ref:`AIMAG(Q(k,j)) <AIMAG(Q(k,j))>`
+            :ref:`WZ(k,j) <WZ(k,j)>`
+            :ref:`q20(k,j) <q20(k,j)>`
+            l(k,j)
+            if IDEN = 1:
+               :ref:`SIGT(k,j) <SIGT>`
+            if IDEN = 2:
+               :ref:`SAL(k,j) <SAL>`
+            if IDEN = 3:
+               :ref:`TEMP(k,j) <TEMP>`
+            if IDEN = 4:
+               :ref:`SAL(k,j) <SAL>`, :ref:`TEMP(k,j) <TEMP>`
+         end j loop
+      end k loop
+
+   if :ref:`IHARIND <IHARIND>` = 1:
+      :ref:`ICHA <ICHA>`, :ref:`NZ <NZ>`, :ref:`NF <NF>`, :ref:`MM <MM>`
+      :ref:`NP <NP>`, :ref:`NSTAE <NSTAE>`, :ref:`NSTAV <NSTAV>`
+      :ref:`NHASE <NHASE>`, :ref:`NHASV <NHASV>`
+      :ref:`NHAGE <NHAGE>`, :ref:`NHAGV <NHAGV>`
+      :ref:`ICALL <ICALL>`, :ref:`NFREQ <NFREQ>`
+
+      for k=1, :ref:`NFREQ <NFREQ>` + :ref:`NF <NF>`
+         :ref:`FNAM8(1) <FNAM8(1)>`, :ref:`FNAM8(2) <FNAM8(1)>`
+         :ref:`HAFREQ(k) <HAFREQ>`, :ref:`HAFF(k) <HAFF>`, :ref:`HAFACE(k) <HAFACE>`
+      end k loop
+
+      :ref:`TIMEUD <TIMEUD>`, :ref:`ITUD <ITUD>`
+
+      for k=1, :ref:`MM <MM>`
+         for j=1, :ref:`MM <MM>`
+            :ref:`HA(k,j) <HA>`
+         end j loop
+      end k loop
+
+      if :ref:`NOUTE <NOUTE>` = 1:
+         for k=1, :ref:`NSTAE <NSTAE>`
+            for j=1, :ref:`MM <MM>`
+               :ref:`STAELV(j,k) <STAELV>`
+            end j loop
+         end k loop
+
+      if :ref:`NOUTV <NOUTV>` = 1:
+         for k=1, :ref:`NSTAV <NSTAV>`
+            for j=1, :ref:`MM <MM>`
+               :ref:`STAULV(j,k) <STAULV>`, :ref:`STAVLV(j,k) <STAVLV>`
+            end j loop
+         end k loop
+
+      if :ref:`NOUTGE <NOUTGE>` = 1:
+         for k=1, :ref:`NP <NP>`
+            for j=1, :ref:`MM <MM>`
+               :ref:`GLOELV(j,k) <GLOELV>`
+            end j loop
+         end k loop
+
+      if :ref:`NOUTGV <NOUTGV>` = 1:
+         for k=1, :ref:`NP <NP>`
+            for j=1, :ref:`MM <MM>`
+               :ref:`GLOULV(j,k) <GLOULV>`, :ref:`GLOVLV(j,k) <GLOVLV>`
+            end j loop
+         end k loop
+
+      if :ref:`FMV <FMV>` > 0:
+         :ref:`NTSTEPS <NTSTEPS>`
+         for k=1, :ref:`NP <NP>`
+            :ref:`ELAV(k) <ELAV>`, :ref:`ELVA(k) <ELVA>`
+         end k loop
+         for k=1, :ref:`NP <NP>`
+            :ref:`XVELAV(k) <XVELAV>`, :ref:`YVELAV(k) <YVELAV>`
+            :ref:`XVELVA(k) <XVELVA>`, :ref:`YVELVA(k) <YVELVA>`
+         end k loop
+
+Notes
+-----
+
+* Files are written in binary format with 8-byte record length
+* Files are written alternately to provide crash protection
+* Use the most current file for hot start unless write buffer issues are suspected
+* Parameter changes during hot start are limited (no time step or output parameter changes)
+* When changing the ending time of an output time series during hot start, manual editing of the file header may be required to correct the number of output data sets 
