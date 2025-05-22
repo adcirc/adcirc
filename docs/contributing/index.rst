@@ -78,11 +78,12 @@ contributed code such that over time we can move in the direction of a preferred
 
 File Naming
 ^^^^^^^^^^^
-All new files should be named using a ".F90" extension where historically we have used a "*.F" extension.
-There are multiple reasons for this. First, the code style in the older portions of the code are a mix of fixed and free form Fortran and don't adhere to
-any specific standard. To move toward a more modern Fortran style and clearly communicate the
-expectations, contributors should use the ".F90" extension. Second, this allows us to use the extension
-as a marker for new code which can be subject to additional linting and compiler checks.
+All new files should be named using a ``.F90`` extension where historically we have used a ``*.F`` extension.
+There are multiple reasons for this. First, the code style in the older portions of the code are a mix of
+fixed and free form Fortran and don't adhere to any specific standard. To move toward a more modern Fortran
+style and clearly communicate the expectations, contributors should use the ``.F90`` extension. Second,
+this allows us to use the extension as a marker for new code which can be subject to additional linting
+and compiler checks.
 
 Fortran Standards
 ^^^^^^^^^^^^^^^^^
@@ -123,7 +124,7 @@ Fortitude
 """""""""
 We have developed a set of Fortran linting rules using the ``fortitude`` package. Fortitude is a Fortran linter
 based on the Python Ruff linter. The rules can be enforced and some can be automatically fixed. Note that because
-there are large amounts of legacy code, the linter will only run for "*.F90" files.
+there are large amounts of legacy code, the linter will only run for ``*.F90`` files.
 
 Some of the basic guidelines that Fortitude enforces are:
 
@@ -178,7 +179,7 @@ adding the following to your CMake command line:
    -DADCIRC_DEVELOPER_MODE=ON
 
 Note that because there are many legacy portions of the code, these warnings are only enforced for
-new "*.F90" files. The goal is that over time, we will slowly have more of the codebase passing these
+new ``*.F90`` files. The goal is that over time, we will slowly have more of the codebase passing these
 strict warning checks.
 
 Maintainability
