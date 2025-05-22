@@ -224,4 +224,8 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
 
   install(TARGETS adcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+  # Conditionally enable strict compiler flags for developers
+  enable_developer_mode(${ADCSWAN1_SOURCES})
+  enable_developer_mode(${ADCSWAN_SOURCES})
+
 endif(BUILD_ADCSWAN AND PERL_FOUND)

@@ -111,6 +111,9 @@ if(ENABLE_DATETIME)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/datetime_fortran EXCLUDE_FROM_ALL)
 endif()
 
+# ...Include the macros for developer mode
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/developer.cmake)
+
 # ...Ensure that the XDMF libraries are working
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/xdmf_check.cmake)
 

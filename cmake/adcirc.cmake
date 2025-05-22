@@ -87,4 +87,7 @@ if(BUILD_ADCIRC)
   addmkdirlibrary(adcirc)
   install(TARGETS adcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+  # Conditionally enable strict compiler flags for developers
+  enable_developer_mode(${ADCIRC_SOURCES})
+
 endif(BUILD_ADCIRC)

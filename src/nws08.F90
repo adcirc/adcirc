@@ -567,6 +567,8 @@ contains
       call allMessage(DEBUG, "Enter.")
 #endif
 
+      b = huge(1.0d0)
+
       ! Get data for this time step.
       call GetHollandStormData(lat, lon, cpress, spd, rrp, rmw, tvx, tvy, TIMELOC)
       !
@@ -1191,6 +1193,8 @@ contains
       call allMessage(DEBUG, "Enter.")
 #endif
 
+      b = huge(1d0)
+
       ! Get data for this time step.
       call GetHollandStormData(lat, lon, cpress, spd, rrp, rmw, tvx, tvy, TIMELOC)
 
@@ -1352,6 +1356,7 @@ contains
       r0_out_bound = max(2000d3, 30d0*rm)
       r0_in_bound = 2d0*rm
       r0_mid_bound = 0.5d0*(r0_out_bound + r0_in_bound)
+      rclose = huge(1)
       NEED_INTERATION = .true.
       ! calculate latitude dependent coriolis w.r.t center of storm
       f = 2.0d0*omega*sin(abs(lat0)*DEG2RAD)

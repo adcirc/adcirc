@@ -93,4 +93,7 @@ if(BUILD_PADCIRC)
 
   install(TARGETS padcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+  # Conditionally enable strict compiler flags for developers
+  enable_developer_mode(${PADCIRC_SOURCES})
+
 endif(BUILD_PADCIRC)

@@ -23,6 +23,16 @@ endif(ENABLE_OUTPUT_NETCDF)
 # ######################################################################################################################
 
 # ######################################################################################################################
+# Developer Mode
+# ######################################################################################################################
+option(ADCIRC_DEVELOPER_MODE "Enable developer mode" OFF)
+mark_as_advanced(ADCIRC_DEVELOPER_MODE)
+if(ADCIRC_DEVELOPER_MODE)
+  message(STATUS "ADCIRC Developer mode is ENABLED")
+endif()
+# ######################################################################################################################
+
+# ######################################################################################################################
 # ...Executables
 option(BUILD_ADCIRC "Build the serial ADCIRC executable" OFF)
 
@@ -67,6 +77,16 @@ mark_as_advanced(
   CMAKE_CXX_FLAGS_DEBUG
   CMAKE_C_FLAGS_DEBUG
   CMAKE_Fortran_FLAGS_DEBUG)
+mark_as_advanced(
+  CLEAR
+  CMAKE_CXX_FLAGS_MINSIZEREL
+  CMAKE_C_FLAGS_MINSIZEREL
+  CMAKE_Fortran_FLAGS_MINSIZEREL)
+mark_as_advanced(
+  CLEAR
+  CMAKE_CXX_FLAGS_RELWITHDEBINFO
+  CMAKE_C_FLAGS_RELWITHDEBINFO
+  CMAKE_Fortran_FLAGS_RELWITHDEBINFO)
 # ######################################################################################################################
 
 # ######################################################################################################################
@@ -127,15 +147,6 @@ set(ADDITIONAL_FLAGS_UTLIITIES
 # ######################################################################################################################
 
 # ######################################################################################################################
-# ...Options enabled via compiler flags within the code
-option(ENABLE_WARN_ELEV_DEBUG "Enable writing of the fort.69 debug file" OFF)
-if(ENABLE_WARN_ELEV_DEBUG)
-  message(
-    WARNING
-      "The compile time enabled fort.69 file is deprecated and the user should use the &warnElevControl namelist instead. This option will be removed in a future release."
-  )
-endif()
-
 option(IBM "Format code for IBM based architectures" OFF)
 option(SGI "Format code for SGI based architectures" OFF)
 option(SUN "Format code for SUN based architectures" OFF)
