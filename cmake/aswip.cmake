@@ -52,4 +52,7 @@ if(BUILD_ASWIP)
 
   install(TARGETS aswip RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+  # Conditionally enable strict compiler flags for developers
+  enable_developer_mode(${ASWIP_SOURCES})
+
 endif(BUILD_ASWIP)

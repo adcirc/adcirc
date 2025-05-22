@@ -147,4 +147,7 @@ if(BUILD_LIBADCIRC_SHARED)
     )
   endif()
 
+  # Conditionally enable strict compiler flags for developers
+  enable_developer_mode(${LIBADC_SOURCES})
+
 endif(BUILD_LIBADCIRC_SHARED)

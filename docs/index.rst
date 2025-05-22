@@ -14,6 +14,7 @@ Welcome to the ADCIRC (ADvanced CIRCulation) model documentation. The ADCIRC mod
    
    introduction/index
    getting_started/index
+   contributing/index
    theory/index
    running_adcirc/index
    input_files/index
