@@ -1,0 +1,178 @@
+body {
+    font-size: 0.95em; /* Making the base font size smaller */
+}
+
+.wy-side-nav-search .wy-dropdown > a img.logo, 
+.wy-side-nav-search > a img.logo {
+    width: 50%;
+    height: 50%;
+} 
+
+/* Set search box width to match sidebar */
+.wy-side-nav-search {
+    width: 230px;
+    box-sizing: border-box;
+}
+
+/* Set menu pane width */
+.wy-nav-side {
+    width: 230px;
+    box-sizing: border-box;
+}
+
+/* Adjust main content area to account for wider menu */
+.wy-nav-content-wrap {
+    margin-left: 230px;
+    box-sizing: border-box;
+}
+
+/* Ensure menu width is maintained when collapsed */
+@media screen and (max-width: 768px) {
+    .wy-nav-side {
+        left: -230px;
+    }
+    .wy-nav-side.shift {
+        width: 230px;
+        left: 0;
+    }
+    .wy-nav-content-wrap {
+        margin-left: 0;
+    }
+    .wy-nav-content-wrap.shift {
+        position: fixed;
+        min-width: 100%;
+        left: 230px;
+        top: 0;
+        height: 100%;
+        overflow: hidden;
+    }
+}
+
+
+/* Adjusting equation numbering appearance */
+.math {
+    text-align: left;
+}
+.eqno {
+    float: right;
+}
+
+/* Reduce text size inside table cells */
+.wy-table-responsive table.small-table td p,
+.wy-table-responsive table.small-table th p { 
+    font-size: 0.9em !important;
+    margin: 2px; /* Remove extra spacing */
+}
+
+/* Reduce font size of table headers */
+.wy-table-responsive table.small-table th {
+    font-size: 0.9em !important;
+    font-weight: normal; /* Optional: Reduce boldness */
+    margin: 0; /* Remove extra spacing */
+}
+
+/* Remove padding from small-table cells */
+.wy-table-responsive table.small-table td,
+.wy-table-responsive table.small-table th {
+    padding: 2px !important;
+}
+
+/* Remove mergine from tighter table */
+.wy-table-responsive table.tighter-table th {
+    margin: 5px; /* Remove extra spacing */
+}
+
+/* Remove padding from tighter table cells */
+.wy-table-responsive table.tighter-table td,
+.wy-table-responsive table.tighter-table th {
+    padding: 5px !important;
+}
+
+/* Table with wrapped text content */
+.wrap-table th, .wrap-table td {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+    hyphens: auto !important;
+}
+
+/* Ensure tables with wrapped content don't get too wide */
+.wy-table-responsive table.wrap-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* Table with sticky headers */
+.sticky-table div {
+    overflow: auto; /* Enable scrolling */
+    width: 500px; /* Or any desired width */
+    height: 200px; /* Or any desired height */
+  }
+  
+  .sticky-table table {
+    border-collapse: collapse;
+    width: 100%; /* Take full width of the container */
+  }
+  
+  .sticky-table th, .sticky-table td {
+    padding: 8px;
+  }
+  
+  /* Make the first column sticky */
+  .sticky-table td:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #ffffff; /* Solid white background */
+    z-index: 1; /* Ensure it stays on top */
+  }
+  
+  /* Ensure sticky cell doesn't overlap */
+  .sticky-table th:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #ffffff; /* Solid white background */
+    z-index: 2; /* Make it higher than body cells */
+  }
+
+/* Version information styling */
+.version-info {
+    display: inline-block;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin: 0 4px;
+    font-size: 90%;
+    color: #555;
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+/* Code block and parsed-literal styling */
+.highlight,
+.highlight-default,
+.parsed-literal {
+    background-color: lightcyan !important;  /* Light blue color */
+}
+
+.rst-content div[class^="highlight"],
+.rst-content pre.literal-block {
+    background-color: ivory !important;  /* Light green color */
+    border: 1px solid gold;
+}
+
+/* replace the copyright to eliminate the copyright symbol enforced by
+   the ReadTheDocs */
+div[role=contentinfo] {
+	visibility: hidden;
+	position: relative;
+}
+
+div[role=contentinfo]:after {
+	visibility: hidden;
+	position: absolute;
+	top: 0;
+	left: 0;
+	content: "";
+}

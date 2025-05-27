@@ -12,7 +12,7 @@ Maintainer
 * Zach Cobell, <zcobell@thewaterinstitute.org>
 
 Development Strategy
-====================
+""""""""""""""""""""
 
 The ADCIRC development strategy consists of the maintenance of two separate versions at any given time:
 the stable version and the development version. The stable version only receives bug fixes, while the
@@ -121,7 +121,7 @@ When a pull request is submitted, all pre-commit hooks will run and the pull req
 until all hooks pass.
 
 Fortitude
-"""""""""
+^^^^^^^^^
 We have developed a set of Fortran linting rules using the ``fortitude`` package. Fortitude is a Fortran linter
 based on the Python Ruff linter. The rules can be enforced and some can be automatically fixed. Note that because
 there are large amounts of legacy code, the linter will only run for ``*.F90`` files.
@@ -133,7 +133,7 @@ Some of the basic guidelines that Fortitude enforces are:
 * Required module default access specifier. Note that our own guideline is that ALL modules should be ``private`` by default.
 
 Additional pre-commit hooks
-"""""""""""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We also run additional hook on the code base such as:
 
@@ -214,7 +214,7 @@ other pieces of functionality as well.
 Please follow the good boy scouts rule and leave the code cleaner than you found it.
 
 Testing
--------
+""""""""
 
 ADCIRC has a long history of development and was developed long before modern coding practices of unit testing.
 As a result, the code was not necessarily developed to be unit-testable. Therefore, ADCIRC uses a test method
