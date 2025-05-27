@@ -30,9 +30,7 @@ C
      &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
      &    sphericalDistance, openFileForRead, RNDAY, cice_timinc, 
      &    cice_time1, cice_time2, Found_InterpInset_Namelist,UseInterpInset
-#ifdef DATETIME
      &   ,basedatetime
-#endif
        USE ADC_CONSTANTS, ONLY: pi, deg2rad, rad2deg, e, PRBCKGRND, g, 
      &                      rhoWat0, Rearth, rhoAir, one2ten,
      &                      windReduction,omega
@@ -40,17 +38,13 @@ C
       use mpi
       use messenger, only : msg_fini, msg_Rscalar_Reduce
 #endif
-#ifdef DATETIME
       use datetime_module, only: datetime, timedelta, strptime
-#endif
-#if defined(DATETIME) && (defined(GRIB2API) || defined(ADCNETCDF))
+
+#if defined(GRIB2API) || defined(ADCNETCDF)
       integer, parameter :: allowable_nws(21)
      &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,19,20,29,30/)
-#elif defined(ADCNETCDF)
-      integer, parameter :: allowable_nws(20)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,13,15,16,17,19,20,29,30/)
-#else
 C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data
+#else
       integer, parameter :: allowable_nws(19)
      &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,17,19,20,29,30/)
 #endif
@@ -255,7 +249,7 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       real(8) :: dynamicWaterLevelCorrectionDefaultValue = 0.d0 ! for otherwise unspecified nodes (m)
       integer :: dynamicWaterLevelCorrectionCurrentLine ! used in error messages
       logical :: dynamicWaterLevelCorrectionFileEnded = .false. ! true when all data have been read
-#ifdef DATETIME
+
       integer :: ub, ubc ! size of weightsp and indp interpolant weights
       real(8),allocatable :: weightsp(:,:,:)
       real(8),allocatable :: inset_weight(:,:,:) 
@@ -272,7 +266,7 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       type(datetime) :: CurDT, refdate, stepdate
       logical :: grb2flag
       integer :: NT, NTC
-#endif
+
 
       logical:: read_NWS14_NetCdf_using_core_0 = .true. ! read NWS14 (grib2,netcdf) from a computed core 0
  
@@ -1328,7 +1322,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
             END DO
             IF (ABS(NWS).eq.12) then
                CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND)
-#ifdef DATETIME
+
 #if defined(GRIB2API) || defined(ADCNETCDF)
             ELSE
                IF ((NCICE.eq.14.or.NCICE.eq.13).and.
@@ -1341,7 +1335,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
                   CALL NWS14GET(WVNX2,WVNY2,PRN2) 
                ENDIF
 #endif
-#endif
+
             ENDIF
             if (draglawtype.EQ.draglaw_powell) then
                call findStormCenter(eyeLat, eyeLon, foundEye)
@@ -1790,9 +1784,9 @@ C----------------------------------------------------------------------
 Casey 180318: Added for NWS=13
       USE OWIWIND_NETCDF, ONLY: NWS13INIT,NWS13GET
 #endif
-#ifdef DATETIME
+
       use datetime_module, only: datetime
-#endif
+
       implicit none
       integer, intent(in) :: nws
       real(8) :: windx ! wind vel (m/s) in x-dir
@@ -2006,7 +2000,7 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
       ENDIF
       !
       ! 
-#ifdef DATETIME
+
 #if defined(GRIB2API) || defined(ADCNETCDF)
       IF (ABS(NWS).eq.14) THEN
          WTIME1 = STATIM*86400.D0
@@ -2045,8 +2039,6 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
         
         ENDIF
 #endif
-#endif
-   
 
 #ifdef ADCNETCDF
 Casey 180318: Added for NWS=13, ARC modified 190108
@@ -2950,7 +2942,7 @@ C     from NAM data
          ENDDO
       ENDIF
       !
-#ifdef DATETIME
+
 #if defined(GRIB2API) || defined(ADCNETCDF)
 !     WJP Feb27-2019: Added for NWS=14 for grib2
       IF (ABS(NWS).eq.14) THEN
@@ -3045,7 +3037,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
           END DO
       ENDIF
 #endif
-#endif
+
 #ifdef ADCNETCDF
 Casey 180318: Added for NWS=13
       IF(ABS(NWS).EQ.13)THEN
@@ -8165,7 +8157,7 @@ C
 C----------------------------------------------------------------------
       END SUBROUTINE windTerminate
 C----------------------------------------------------------------------
-#ifdef DATETIME
+
 C----------------------------------------------------------------------
       SUBROUTINE NWS14INIT(NWS)
 C----------------------------------------------------------------------
@@ -9386,7 +9378,6 @@ C----------------------------------------------------------------------
 #endif
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_Int
       USE SIZES, ONLY : MYPROC
-      USE NETCDF_ERROR, ONLY: CHECK_ERR
       implicit none
       integer :: iret, iter
       INTEGER,INTENT(INOUT) :: NC_ID
@@ -9500,7 +9491,6 @@ C----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C.....END WJP (NWS = 14) ..............................................
-#endif
 
 C--------------------------------------------------------------------- 
       SUBROUTINE CLOSE_MET_FILES()
@@ -9514,7 +9504,6 @@ C---------------------------------------------------------------------
 
         IMPLICIT NONE
 
-#ifdef DATETIME        
 #ifdef ADCNETCDF
         IF ( NWS == 14 ) THEN
           IF ( (.not. grb2flag) .AND. read_NWS14_NetCdf_using_core_0 )  THEN   
@@ -9530,7 +9519,6 @@ C---------------------------------------------------------------------
           END IF 
         END IF
 #endif
-#endif        
 
         RETURN ;
       END SUBROUTINE CLOSE_MET_FILES        

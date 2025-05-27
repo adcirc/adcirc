@@ -39,9 +39,7 @@ C
       MODULE GLOBAL
       USE ADC_CONSTANTS, ONLY: DEG2RAD
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
-#ifdef DATETIME
       use datetime_module, only: datetime
-#endif
       IMPLICIT NONE
       SAVE
 C     jgf46.21 Added support for IBTYPE=52.
@@ -617,9 +615,7 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       CHARACTER(80) :: source      ! method of production of the original data
       CHARACTER(80) :: history     ! provides an audit trail for modifications to the original data
       CHARACTER(80) :: base_date
-#ifdef DATETIME
       type(datetime) :: basedatetime
-#endif
       CHARACTER(80) :: comments    ! miscellaneous information about the data
       CHARACTER(80) :: host
       CHARACTER(80) :: convention
