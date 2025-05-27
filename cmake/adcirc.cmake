@@ -87,6 +87,9 @@ if(BUILD_ADCIRC)
   addmkdirlibrary(adcirc)
   install(TARGETS adcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+  # Set the linker language to Fortran
+  set_target_properties(adcirc PROPERTIES LINKER_LANGUAGE Fortran)
+
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${ADCIRC_SOURCES})
 

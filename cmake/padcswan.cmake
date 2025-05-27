@@ -232,6 +232,9 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
 
   install(TARGETS padcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+  # Set the linker language to Fortran
+  set_target_properties(padcswan PROPERTIES LINKER_LANGUAGE Fortran)
+
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${PADCSWAN1_SOURCES})
   enable_developer_mode(${PADCSWAN_SOURCES})

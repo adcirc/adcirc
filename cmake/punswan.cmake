@@ -141,6 +141,9 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
 
   install(TARGETS punswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+  # Set the linker language to Fortran
+  set_target_properties(punswan PROPERTIES LINKER_LANGUAGE Fortran)
+
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${MSGLIB_SOURCES})
 

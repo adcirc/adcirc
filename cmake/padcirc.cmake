@@ -93,6 +93,9 @@ if(BUILD_PADCIRC)
 
   install(TARGETS padcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+  # Set the linker language to Fortran
+  set_target_properties(padcirc PROPERTIES LINKER_LANGUAGE Fortran)
+
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${PADCIRC_SOURCES})
 

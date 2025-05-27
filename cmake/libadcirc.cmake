@@ -150,4 +150,7 @@ if(BUILD_LIBADCIRC_SHARED)
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${LIBADC_SOURCES})
 
+  # Set the linker language to Fortran
+  set_target_properties(libadcirc_shared PROPERTIES LINKER_LANGUAGE Fortran)
+
 endif(BUILD_LIBADCIRC_SHARED)

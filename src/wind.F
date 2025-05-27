@@ -38,7 +38,7 @@ C
       use mpi
       use messenger, only : msg_fini, msg_Rscalar_Reduce
 #endif
-      use datetime_module, only: datetime, timedelta, strptime
+      use mod_datetime, only: t_datetime, t_timedelta
 
 #if defined(GRIB2API) || defined(ADCNETCDF)
       integer, parameter :: allowable_nws(21)
@@ -263,7 +263,7 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
 
       CHARACTER(LEN=80)  :: InsetLon, InsetLat, InsetLonDim, InsetLatDim
       CHARACTER(LEN=256) :: InsetPvar, InsetUVar, InsetVVar
-      type(datetime) :: CurDT, refdate, stepdate
+      type(t_datetime) :: CurDT, refdate, stepdate
       logical :: grb2flag
       integer :: NT, NTC
 
@@ -1785,7 +1785,7 @@ Casey 180318: Added for NWS=13
       USE OWIWIND_NETCDF, ONLY: NWS13INIT,NWS13GET
 #endif
 
-      use datetime_module, only: datetime
+      use mod_datetime, only: t_datetime
 
       implicit none
       integer, intent(in) :: nws
@@ -8167,11 +8167,12 @@ C....
 C.... CPB 10/2023: reorganized this subroutine to make it more readable
 C.... as well as to improve input for TACC
 C----------------------------------------------------------------------
+      use mod_datetime, only: operator(+)
       implicit none
       INTEGER,INTENT(IN) :: NWS
       
       ! Initialise the datetime
-      CurDT = basedatetime + timedelta(minutes=floor(WTIME1/60d0))
+      CurDT = basedatetime + t_timedelta(minutes=floor(WTIME1/60d0))
       NT = 0; NTC = 0;
 
       ! check if we are using grib2 or netcdf input files:
@@ -8582,6 +8583,7 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       use mesh, only: NP
+      use mod_datetime, only: operator(+)
       implicit none
 
       real(8),intent(out) :: PRN2(NP), WVNX2(NP), WVNY2(NP)
@@ -8651,7 +8653,7 @@ C----------------------------------------------------------------------
      &                          Namelist if you want to use inset files')
        ENDIF     
 !      ! Add WTIMINC on CurDT for next WTIME  
-      CurDT = CurDT + timedelta(minutes=nint(WTIMINC/60d0))
+      CurDT = CurDT + t_timedelta(minutes=nint(WTIMINC/60d0))
       ! Next time index for the netcdf reading
       NT = NT + 1
       
@@ -8721,7 +8723,7 @@ C----------------------------------------------------------------------
       CALL setMessageSource("READNWS14_grib2")
       IF (MYPROC.EQ.0) THEN
          ! Getting the date in str_date format
-         str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
+         write(str_date,'(3A)') ':start_FT=',trim(CurDT%strftime("%Y%m%d%H")),'0000:'
          iret = -1; iter = 0
          do while (iret.le.0.and.iter < 10) 
             if (iter > 0) then
@@ -9250,7 +9252,7 @@ C----------------------------------------------------------------------
       character(len=200) :: str_date
       CALL setMessageSource("READNWS14LatLon_grib2")
       ! Getting the date in str_date format
-      str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
+      write(str_date,'(3A)') ':start_FT=',trim(CurDT%strftime("%Y%m%d%H")),'0000:'
       ! read in on core 0
       IF (MYPROC.EQ.0) THEN
          iret = -1; iter = 0
@@ -9376,6 +9378,7 @@ C----------------------------------------------------------------------
       use netcdf
       use netcdf_error, only: check_err
 #endif
+      use mod_datetime, only: operator(+), operator(==)
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_Int
       USE SIZES, ONLY : MYPROC
       implicit none
@@ -9410,7 +9413,7 @@ C----------------------------------------------------------------------
             call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
             call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
             ! Determine the first timestep index
-            str_date = CurDT%strftime(trim(Tformat)) 
+            str_date = CurDT%strftime(trim(Tformat))
             do NT = 1,TL
                if (trim(str_date).eq.TimeStr(NT)) exit
             enddo
@@ -9424,13 +9427,12 @@ C----------------------------------------------------------------------
             CALL logMessage(ECHO,"fort.22 provides a reference "
      &          //"date. Starting time index will be calculated.")
             ALLOCATE( NCTIMES(TL) )
-            refdate = strptime(trim(Tformat),
-     &                         "%Y-%m-%dT%H:%M:%S")
+            refdate = t_datetime(trim(Tformat))
             CALL CHECK_ERR(NF90_INQ_VARID(NC_ID,TDIM,TEMP_ID))
             call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,NCTIMES))
             DO NT = 1,TL
                stepdate = refdate +
-     &                    timedelta(seconds=INT(NCTIMES(NT)))
+     &                    t_timedelta(seconds=INT(NCTIMES(NT)))
                IF (stepdate.EQ.curDT) THEN
                   EXIT
                ENDIF

@@ -224,6 +224,9 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
 
   install(TARGETS adcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+  # Set the linker language to Fortran
+  set_target_properties(adcswan PROPERTIES LINKER_LANGUAGE Fortran)
+
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${ADCSWAN1_SOURCES})
   enable_developer_mode(${ADCSWAN_SOURCES})

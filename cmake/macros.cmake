@@ -99,12 +99,12 @@ macro(addGrib2Libraries TARGET)
 endmacro()
 
 macro(addDatetimeDefinitions TARGET)
-  target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/datetime_fortran)
-  add_dependencies(${TARGET} datetime)
+  target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/mod)
+  add_dependencies(${TARGET} fdate)
 endmacro()
 
 macro(addDatetimeLibraries TARGET)
-  target_link_libraries(${TARGET} datetime)
+  target_link_libraries(${TARGET} fdate)
 endmacro()
 
 macro(addNetCDFDefinitions TARGET)

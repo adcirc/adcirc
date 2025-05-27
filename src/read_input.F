@@ -161,7 +161,7 @@ C ... END DW
 Casey 100205: Enable hot-start file generation by SWAN.
       USE Couple2Swan, ONLY: SwanHotStartUnit
 #endif
-      use datetime_module, only: strptime
+      use mod_datetime, only: t_datetime
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
@@ -5086,12 +5086,11 @@ C
          READ(15,'(A80)',err=99999,end=99998,iostat=ios) base_date
          CALL logMessage(ECHO,"metadata, base_date: "//trim(base_date))
          ! Convert base_date to datetime WJP
-         basedatetime = strptime(adjustl(trim(base_date)),
-     &                           "%Y-%m-%d %H:%M:%S")
+         basedatetime = t_datetime(adjustl(trim(base_date)))
          ! Check this a valid time
-         if (.not.basedatetime%isvalid()) then
+         if (.not.basedatetime%valid()) then
             call allMessage(ERROR,'Invalid base datetime: '
-     &           //basedatetime%isoformat(' ')
+     &           //adjustl(trim(base_date))
      &           //'. Must be formatted as yyyy-MM-dd HH:mm:ss')
             call adcirc_terminate()
          endif
