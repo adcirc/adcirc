@@ -1,5 +1,5 @@
-Getting Started with ADCIRC
-===========================
+Getting Started
+===============
 
 This guide will help you get ADCIRC up and running on your system.
 
@@ -154,4 +154,5 @@ The simulation will create several output files in the netcdf format including:
 * fort.63.nc - elevation time series at all nodes
 * fort.64.nc - velocity time series at all nodes
 
-For more detailed information on the input and output files, refer to the :doc:`Input Files <../input_files/index>` and :doc:`Output Files <../output_files/index>` sections. 
+For more detailed information on the input and output files, refer to the :doc:`Input Files <../technical_reference/input_files/index>` and :doc:`Output Files <../technical_reference/output_files/index>` sections. 
+
