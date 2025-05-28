@@ -1,0 +1,305 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fort.67, Fort.68: Hot Start Files &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Fort.19: Non-periodic Elevation Boundary Condition File" href="fort19.html" />
+    <link rel="prev" title="Fort.13: Nodal Attributes File" href="fort13.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Input Files</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../output_files/index.html">Output Files</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#runtime-logs">Runtime Logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#water-surface-elevation-time-series">Water Surface Elevation Time Series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#velocity-time-series">Velocity Time Series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#meteorological-time-series">Meteorological Time Series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#maximum-and-minimum-values">Maximum and Minimum Values</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../output_files/index.html#hot-start">Hot Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#harmonic-analysis">Harmonic Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#wet-dry-state-and-inundation">Wet/Dry State and Inundation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#ice-coverage">Ice Coverage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#d-variables">3D Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#mode-parameters">Mode Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#time-varying-topography-bathymetry">Time-varying Topography/Bathymetry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../output_files/index.html#passive-scalar-transport">Passive Scalar Transport</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Input Files</a></li>
+      <li class="breadcrumb-item active">Fort.67, Fort.68: Hot Start Files</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/technical_reference/input_files/fort6768.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fort-67-fort-68-hot-start-files">
+<span id="fort6768"></span><h1>Fort.67, Fort.68: Hot Start Files<a class="headerlink" href="#fort-67-fort-68-hot-start-files" title="Link to this heading"></a></h1>
+<p>These files are used to hot start the model. Hot start output is written to fort.67 and fort.68 on an alternating basis so that if the computer crashes in the process of writing one of these files, the other will be unaffected and can be used to hot start the model. Normally, the most current (in time) of the fort.67 or fort.68 files is used to hot start the model.</p>
+<p>On certain computers, the write buffer may not be emptied on a crash and other output files (e.g., time series output files fort.63, fort.64) may not be caught up to the time when the latest hot start file was written. In this case it would be necessary to restart the model using the earlier of the hot start files. Which (if either) hot start file is read in is determined by the parameter <a class="reference internal" href="../parameter_definitions/index.html#ihot"><span class="std std-ref">IHOT</span></a> in the <a class="reference internal" href="fort15.html"><span class="doc">Model Parameter and Periodic Boundary Condition File</span></a>.</p>
+<section id="parameter-changes-during-hot-start">
+<h2>Parameter Changes During Hot Start<a class="headerlink" href="#parameter-changes-during-hot-start" title="Link to this heading"></a></h2>
+<p>It is often convenient to change parameter values in the Model Parameter and Periodic Boundary Condition File during the course of an ADCIRC run. (For example the duration of the run may be extended, nonlinear terms may be turned on or off, the value of the horizontal viscosity may be changed, etc.) A convenient way to accomplish this is via the hot start feature.</p>
+<p><strong>Limitations:</strong>
+* Cannot change the model time step (<a class="reference internal" href="../parameter_definitions/index.html#dtdp"><span class="std std-ref">DTDP</span></a>)
+* Cannot change parameters related to time series or harmonic output</p>
+<p><strong>Exception:</strong> The ending time of a time series output file may be changed (e.g., if the length of the run is increased). However, this has one undesirable consequence since the number of output data sets contained in the file is written at the beginning of the file. After a hot start, it is not possible to change this value in the time series output file, and therefore it may not match the actual number of output data sets in the file. In this case it would be necessary to edit this number by hand in any affected time series output file before using the file in analysis or display software.</p>
+<p>Writing hot start output files is controlled by the parameters <a class="reference internal" href="../parameter_definitions/index.html#nhstar"><span class="std std-ref">NHSTAR</span></a> and <a class="reference internal" href="../parameter_definitions/index.html#nhsinc"><span class="std std-ref">NHSINC</span></a> in the <a class="reference internal" href="fort15.html"><span class="doc">Model Parameter and Periodic Boundary Condition File</span></a>.</p>
+</section>
+<section id="file-structure">
+<h2>File Structure<a class="headerlink" href="#file-structure" title="Link to this heading"></a></h2>
+<p>Hot start files are written in binary with record length of 8 bytes. The basic file structure is shown below. Each line represents a data value or set of values. Conditional data are indicated by conditions following the variable name.</p>
+<pre class="literal-block"><a class="reference internal" href="../parameter_definitions/index.html#im"><span class="std std-ref">IM</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#time"><span class="std std-ref">TIME</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#it"><span class="std std-ref">IT</span></a>
+for k=1, <a class="reference internal" href="../parameter_definitions/index.html#np"><span class="std std-ref">NP</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#eta1"><span class="std std-ref">ETA1(k)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#eta2"><span class="std std-ref">ETA2(k)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#uu"><span class="std std-ref">UU2(k)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#vv"><span class="std std-ref">VV2(k)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#ch1"><span class="std std-ref">CH1(k)</span></a> if IM = 10
+   <a class="reference internal" href="../parameter_definitions/index.html#nodecode"><span class="std std-ref">NODECODE(k)</span></a>
+end k loop
+
+for k=1, <a class="reference internal" href="../parameter_definitions/index.html#ne"><span class="std std-ref">NE</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#noff"><span class="std std-ref">NOFF(k)</span></a>
+end k loop
+
+<a class="reference internal" href="../parameter_definitions/index.html#ep"><span class="std std-ref">EP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#iestp"><span class="std std-ref">IESTP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nscoue"><span class="std std-ref">NSCOUE</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#ivstp"><span class="std std-ref">IVSTP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nscouv"><span class="std std-ref">NSCOUV</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#icstp"><span class="std std-ref">ICSTP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nscouc"><span class="std std-ref">NSCOUC</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#ipstp"><span class="std std-ref">IPSTP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#iwstp"><span class="std std-ref">IWSTP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nscoum"><span class="std std-ref">NSCOUM</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#igep"><span class="std std-ref">IGEP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nscouge"><span class="std std-ref">NSCOUGE</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#igvp"><span class="std std-ref">IGVP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nscougv"><span class="std std-ref">NSCOUGV</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#igcp"><span class="std std-ref">IGCP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nscougc"><span class="std std-ref">NSCOUGC</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#igpp"><span class="std std-ref">IGPP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#igwp"><span class="std std-ref">IGWP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nscougw"><span class="std std-ref">NSCOUGW</span></a>
+
+if IM in [1, 2, 11, 21, 31]:
+   <a class="reference internal" href="../parameter_definitions/index.html#iden"><span class="std std-ref">IDEN</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#n3dsd"><span class="std std-ref">N3DSD</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#i3dsdrec"><span class="std std-ref">I3DSDRec</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#n3dsv"><span class="std std-ref">N3DSV</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#i3dsvrec"><span class="std std-ref">I3DSVRec</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#n3dst"><span class="std std-ref">N3DST</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#i3dstrec"><span class="std std-ref">I3DSTRec</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#n3dgd"><span class="std std-ref">N3DGD</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#i3dgdrec"><span class="std std-ref">I3DGDRec</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#n3dgv"><span class="std std-ref">N3DGV</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#i3dgvrec"><span class="std std-ref">I3DGVRec</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#n3dgt"><span class="std std-ref">N3DGT</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#i3dgtrec"><span class="std std-ref">I3DGTRec</span></a>
+
+   for k=1, <a class="reference internal" href="../parameter_definitions/index.html#np"><span class="std std-ref">NP</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#duu"><span class="std std-ref">DUU(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#duv"><span class="std std-ref">DUV(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#dvv"><span class="std std-ref">DVV(k)</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#uu"><span class="std std-ref">UU(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#vv"><span class="std std-ref">VV(k)</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#bsx"><span class="std std-ref">BSX(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#bsy"><span class="std std-ref">BSY(k)</span></a>
+   end k loop
+
+   for k=1, <a class="reference internal" href="../parameter_definitions/index.html#np"><span class="std std-ref">NP</span></a>
+      for j=1, <a class="reference internal" href="../parameter_definitions/index.html#nfen"><span class="std std-ref">NFEN</span></a>
+         <a class="reference internal" href="../parameter_definitions/index.html#real-q-k-j"><span class="std std-ref">REAL(Q(k,j))</span></a>
+         <a class="reference internal" href="../parameter_definitions/index.html#aimag-q-k-j"><span class="std std-ref">AIMAG(Q(k,j))</span></a>
+         <a class="reference internal" href="../parameter_definitions/index.html#wz-k-j"><span class="std std-ref">WZ(k,j)</span></a>
+         <a class="reference internal" href="../parameter_definitions/index.html#q20-k-j"><span class="std std-ref">q20(k,j)</span></a>
+         l(k,j)
+         if IDEN = 1:
+            <a class="reference internal" href="../parameter_definitions/index.html#sigt"><span class="std std-ref">SIGT(k,j)</span></a>
+         if IDEN = 2:
+            <a class="reference internal" href="../parameter_definitions/index.html#sal"><span class="std std-ref">SAL(k,j)</span></a>
+         if IDEN = 3:
+            <a class="reference internal" href="../parameter_definitions/index.html#temp"><span class="std std-ref">TEMP(k,j)</span></a>
+         if IDEN = 4:
+            <a class="reference internal" href="../parameter_definitions/index.html#sal"><span class="std std-ref">SAL(k,j)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#temp"><span class="std std-ref">TEMP(k,j)</span></a>
+      end j loop
+   end k loop
+
+if <a class="reference internal" href="../parameter_definitions/index.html#iharind"><span class="std std-ref">IHARIND</span></a> = 1:
+   <a class="reference internal" href="../parameter_definitions/index.html#icha"><span class="std std-ref">ICHA</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nz"><span class="std std-ref">NZ</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nf"><span class="std std-ref">NF</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#mm"><span class="std std-ref">MM</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#np"><span class="std std-ref">NP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nstae"><span class="std std-ref">NSTAE</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nstav"><span class="std std-ref">NSTAV</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#nhase"><span class="std std-ref">NHASE</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nhasv"><span class="std std-ref">NHASV</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#nhage"><span class="std std-ref">NHAGE</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nhagv"><span class="std std-ref">NHAGV</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#icall"><span class="std std-ref">ICALL</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nfreq"><span class="std std-ref">NFREQ</span></a>
+
+   for k=1, <a class="reference internal" href="../parameter_definitions/index.html#nfreq"><span class="std std-ref">NFREQ</span></a> + <a class="reference internal" href="../parameter_definitions/index.html#nf"><span class="std std-ref">NF</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#fnam8-1"><span class="std std-ref">FNAM8(1)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fnam8-1"><span class="std std-ref">FNAM8(2)</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#hafreq"><span class="std std-ref">HAFREQ(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#haff"><span class="std std-ref">HAFF(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#haface"><span class="std std-ref">HAFACE(k)</span></a>
+   end k loop
+
+   <a class="reference internal" href="../parameter_definitions/index.html#timeud"><span class="std std-ref">TIMEUD</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#itud"><span class="std std-ref">ITUD</span></a>
+
+   for k=1, <a class="reference internal" href="../parameter_definitions/index.html#mm"><span class="std std-ref">MM</span></a>
+      for j=1, <a class="reference internal" href="../parameter_definitions/index.html#mm"><span class="std std-ref">MM</span></a>
+         <a class="reference internal" href="../parameter_definitions/index.html#ha"><span class="std std-ref">HA(k,j)</span></a>
+      end j loop
+   end k loop
+
+   if <a class="reference internal" href="../parameter_definitions/index.html#noute"><span class="std std-ref">NOUTE</span></a> = 1:
+      for k=1, <a class="reference internal" href="../parameter_definitions/index.html#nstae"><span class="std std-ref">NSTAE</span></a>
+         for j=1, <a class="reference internal" href="../parameter_definitions/index.html#mm"><span class="std std-ref">MM</span></a>
+            <a class="reference internal" href="../parameter_definitions/index.html#staelv"><span class="std std-ref">STAELV(j,k)</span></a>
+         end j loop
+      end k loop
+
+   if <a class="reference internal" href="../parameter_definitions/index.html#noutv"><span class="std std-ref">NOUTV</span></a> = 1:
+      for k=1, <a class="reference internal" href="../parameter_definitions/index.html#nstav"><span class="std std-ref">NSTAV</span></a>
+         for j=1, <a class="reference internal" href="../parameter_definitions/index.html#mm"><span class="std std-ref">MM</span></a>
+            <a class="reference internal" href="../parameter_definitions/index.html#staulv"><span class="std std-ref">STAULV(j,k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#stavlv"><span class="std std-ref">STAVLV(j,k)</span></a>
+         end j loop
+      end k loop
+
+   if <a class="reference internal" href="../parameter_definitions/index.html#noutge"><span class="std std-ref">NOUTGE</span></a> = 1:
+      for k=1, <a class="reference internal" href="../parameter_definitions/index.html#np"><span class="std std-ref">NP</span></a>
+         for j=1, <a class="reference internal" href="../parameter_definitions/index.html#mm"><span class="std std-ref">MM</span></a>
+            <a class="reference internal" href="../parameter_definitions/index.html#gloelv"><span class="std std-ref">GLOELV(j,k)</span></a>
+         end j loop
+      end k loop
+
+   if <a class="reference internal" href="../parameter_definitions/index.html#noutgv"><span class="std std-ref">NOUTGV</span></a> = 1:
+      for k=1, <a class="reference internal" href="../parameter_definitions/index.html#np"><span class="std std-ref">NP</span></a>
+         for j=1, <a class="reference internal" href="../parameter_definitions/index.html#mm"><span class="std std-ref">MM</span></a>
+            <a class="reference internal" href="../parameter_definitions/index.html#gloulv"><span class="std std-ref">GLOULV(j,k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#glovlv"><span class="std std-ref">GLOVLV(j,k)</span></a>
+         end j loop
+      end k loop
+
+   if <a class="reference internal" href="../parameter_definitions/index.html#fmv"><span class="std std-ref">FMV</span></a> &gt; 0:
+      <a class="reference internal" href="../parameter_definitions/index.html#ntsteps"><span class="std std-ref">NTSTEPS</span></a>
+      for k=1, <a class="reference internal" href="../parameter_definitions/index.html#np"><span class="std std-ref">NP</span></a>
+         <a class="reference internal" href="../parameter_definitions/index.html#elav"><span class="std std-ref">ELAV(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#elva"><span class="std std-ref">ELVA(k)</span></a>
+      end k loop
+      for k=1, <a class="reference internal" href="../parameter_definitions/index.html#np"><span class="std std-ref">NP</span></a>
+         <a class="reference internal" href="../parameter_definitions/index.html#xvelav"><span class="std std-ref">XVELAV(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#yvelav"><span class="std std-ref">YVELAV(k)</span></a>
+         <a class="reference internal" href="../parameter_definitions/index.html#xvelva"><span class="std std-ref">XVELVA(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#yvelva"><span class="std std-ref">YVELVA(k)</span></a>
+      end k loop</pre>
+</section>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Files are written in binary format with 8-byte record length</p></li>
+<li><p>Files are written alternately to provide crash protection</p></li>
+<li><p>Use the most current file for hot start unless write buffer issues are suspected</p></li>
+<li><p>Parameter changes during hot start are limited (no time step or output parameter changes)</p></li>
+<li><p>When changing the ending time of an output time series during hot start, manual editing of the file header may be required to correct the number of output data sets</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fort13.html" class="btn btn-neutral float-left" title="Fort.13: Nodal Attributes File" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fort19.html" class="btn btn-neutral float-right" title="Fort.19: Non-periodic Elevation Boundary Condition File" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

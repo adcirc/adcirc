@@ -1,0 +1,564 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NWS Parameter &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="WTIMINC Supplemental" href="wtiminc.html" />
+    <link rel="prev" title="Wind Stress" href="wind_stress.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Model Configuration</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../model_parameters/index.html">Model Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../physics_parameters/index.html">Physics Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../initial_conditions/index.html">Initial Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../boundary_conditions/index.html">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tides/index.html">Astronomical Tides</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../typical_configurations/typical_parameter_selections.html">Typical Parameter Selections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Model Configuration</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Meteorological Forcing</a></li>
+      <li class="breadcrumb-item active">NWS Parameter</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/model_configuration/meteorological_forcing/nws_parameters.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="nws-parameter">
+<span id="id1"></span><h1>NWS Parameter<a class="headerlink" href="#nws-parameter" title="Link to this heading"></a></h1>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#introduction" id="id4">Introduction</a></p></li>
+<li><p><a class="reference internal" href="#parameter-summary" id="id5">Parameter Summary</a></p></li>
+<li><p><a class="reference internal" href="#extended-nws-with-ice-waves" id="id6">Extended NWS with Ice + Waves</a></p></li>
+<li><p><a class="reference internal" href="#detailed-nws-parameter-descriptions" id="id7">Detailed NWS Parameter Descriptions</a></p></li>
+</ul>
+</nav>
+<section id="introduction">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Introduction</a><a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p><strong>NWS</strong> is a parameter in the fort.15 file that selects the meteorological forcing input type. The value on the “NWS line” of the fort.15 file also implicitly includes other parameters affecting wave coupling and ice inputs. The NWS parameter controls not just the file type and handling of meteorological data, but also changes what the meteorological parameter line (informally, the <code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> line) looks like in the fort.15 file.</p>
+<p>ADCIRC supports a wide range of meteorological input formats, including moving/fixed gridded data in several file formats, tropical cyclone track and parameter data that can be turned into wind/pressure fields via one of several internal vortex models, and direct specification of wind speeds or stresses on nodes.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>For combined parameters, the NWS parameter represents:</dt><dd><ul class="simple">
+<li><p>NCICE value: first two digits (ice coverage data format)</p></li>
+<li><p>NRS value: third digit (wave coupling mode)</p></li>
+<li><p>NWS value: last two digits with sign (meteorological forcing mode)</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+</section>
+<section id="parameter-summary">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">Parameter Summary</a><a class="headerlink" href="#parameter-summary" title="Link to this heading"></a></h2>
+<p>The following table is a summary of possible <code class="docutils literal notranslate"><span class="pre">NWS</span></code> values, their descriptions, and associated meteorological input files (required and optional).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Use of the Dynamic Asymmetric Holland Model (NWS=19) is discouraged. The Generalized Asymmetric Holland Model (NWS=20) provides improved functionality.</p>
+</div>
+<table class="wrap-table tight-table docutils align-default" id="id2" style="width: 100%">
+<caption><span class="caption-text">NWS Parameter Summary</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 15.0%" />
+<col style="width: 30.0%" />
+<col style="width: 40.0%" />
+<col style="width: 15.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>NWS Value</p></th>
+<th class="head"><p>Short-name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Required Input Files</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>No meteorological forcing</p></td>
+<td><p>No wind, radiation stress or atmospheric pressure forcings are used.</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>Wind stress, every node, every timestep</p></td>
+<td><p>Wind stress and atmospheric pressure are read in at all grid nodes at every model time step from the fort.22 file</p></td>
+<td><p>fort.22</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>Wind stress, every node, every WTIMINC</p></td>
+<td><p>Wind stress and atmospheric pressure are read in at all grid nodes at a time interval that does not equal the model time step from the fort.22 file. Interpolation in time is used to synchronize the wind and pressure information with the model time step.</p></td>
+<td><p>fort.22</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>US Navy Fleet Numeric</p></td>
+<td><p>Wind velocity is read in from a wind file from the fort.22 file in US Navy Fleet Numeric format. This information is interpolated in space onto the ADCIRC grid and in time to synchronize the wind and pressure information with the model time step.</p></td>
+<td><p>fort.22</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>PBL/JAG</p></td>
+<td><p>Wind velocity and atmospheric pressure are read in (PBL/JAG format) at selected ADCIRC grid nodes from the fort.22 file. Interpolation in time is used to synchronize the wind and pressure information with the model time step.</p></td>
+<td><p>fort.22</p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p>Wind velocity, every node, every WTIMINC</p></td>
+<td><p>Wind velocity and atmospheric pressure are read in at all grid nodes from the fort.22 File. Interpolation in time is used to synchronize the wind and pressure information with the model time step.</p></td>
+<td><p>fort.22</p></td>
+</tr>
+<tr class="row-even"><td><p>6</p></td>
+<td><p>Wind velocity, rectangular grid, every WTIMINC</p></td>
+<td><p>Meteorological data (U,V,P) is input on a rectangular grid and interpolated in space onto the ADCIRC grid. The meteorological grid MUST cover the entire ADCIRC mesh.</p></td>
+<td><p>fort.22</p></td>
+</tr>
+<tr class="row-odd"><td><p>7</p></td>
+<td><p>Wind stress, regular grid, every WTIMINC</p></td>
+<td><p>Surface stress and pressure values are read in on a regular grid from the fort.22 file. Interpolation in time is used to synchronize the wind and pressure information with the model time step.</p></td>
+<td><p>fort.22</p></td>
+</tr>
+<tr class="row-even"><td><p>8</p></td>
+<td><p>Symmetric vortex model</p></td>
+<td><p>Hurricane parameters are read in from the fort.22 file. Wind velocity and atmospheric pressure are calculated at every node on the fly by ADCIRC internally using the Dynamic Holland model.</p></td>
+<td><p>fort.22</p></td>
+</tr>
+<tr class="row-odd"><td><p>10</p></td>
+<td><p>National Weather Service AVN</p></td>
+<td><p>Wind velocity (10 m) and atmospheric pressure are read in from a sequence of National Weather Service (NWS) Aviation (AVN) model output files.</p></td>
+<td><p>fort.200+</p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>National Weather Service ETA 29km</p></td>
+<td><p>Wind velocity (10 m) and atmospheric pressure are read in from a sequence of stripped down National Weather Service (NWS) ETA 29km model output files.</p></td>
+<td><p>fort.200+</p></td>
+</tr>
+<tr class="row-odd"><td><p>12</p></td>
+<td><p>Oceanweather Inc (OWI)</p></td>
+<td><p>Wind velocity (10 minute averaged winds at 10m) and atmospheric pressure are provided in the OWI format on one or two rectangular (lat/lon) grid(s).</p></td>
+<td><p>fort.22, fort.221-224</p></td>
+</tr>
+<tr class="row-even"><td><p>13, -13</p></td>
+<td><p>Ramped meteorological forcing</p></td>
+<td><p>Similar to NWS=5/-5, but applies a ramping function to the meteorological inputs over a user-specified time period</p></td>
+<td><p>fort.22</p></td>
+</tr>
+<tr class="row-odd"><td><p>14, -14</p></td>
+<td><p>GRIB2/NetCDF</p></td>
+<td><p>Wind velocity and atmospheric pressure are read from standardized meteorological formats (GRIB2 or NetCDF)</p></td>
+<td><p>NetCDF/GRIB2 files</p></td>
+</tr>
+<tr class="row-even"><td><p>15</p></td>
+<td><p>HWind</p></td>
+<td><p>HWind files are data assimilated snapshots of the wind velocity fields of tropical cyclones that are produced by the NOAA Hurricane Research Division (HRD).</p></td>
+<td><p>fort.22 + HWind files</p></td>
+</tr>
+<tr class="row-odd"><td><p>19</p></td>
+<td><p>Dynamic Asymmetric Model (deprecated)</p></td>
+<td><p>Wind velocity and atmospheric pressure are calculated directly coupled to ADCIRC at every time step using the asymmetric hurricane vortex formulation based on the Holland gradient wind model.</p></td>
+<td><p>fort.22</p></td>
+</tr>
+<tr class="row-even"><td><p>20</p></td>
+<td><p>Generalized Asymmetric Holland Model (GAHM)</p></td>
+<td><p>The GAHM provides a set of theoretical and practical improvements over previous parametric meteorological vortex models in ADCIRC.</p></td>
+<td><p>fort.22</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="extended-nws-with-ice-waves">
+<h2><a class="toc-backref" href="#id6" role="doc-backlink">Extended NWS with Ice + Waves</a><a class="headerlink" href="#extended-nws-with-ice-waves" title="Link to this heading"></a></h2>
+<p>The following table presents a summary of the extended <code class="docutils literal notranslate"><span class="pre">NWS</span></code> values to include ice-coverage and/or wind wave-coupling</p>
+<table class="wrap-table tight-table docutils align-default" id="id3">
+<caption><span class="caption-text">Extended NWS Values with Ice and Waves</span><a class="headerlink" href="#id3" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 10.0%" />
+<col style="width: 15.0%" />
+<col style="width: 15.0%" />
+<col style="width: 15.0%" />
+<col style="width: 15.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Meteorological Data Format</p></th>
+<th class="head"><p>Met. Only</p></th>
+<th class="head"><p>Met. plus Waves from fort.23</p></th>
+<th class="head"><p>Met. plus Waves SWAN</p></th>
+<th class="head"><p>Met. plus Ice Coverage, Waves off</p></th>
+<th class="head"><p>Met. plus Ice Coverage OWI-like format plus Waves from SWAN</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>none</p></td>
+<td><p>0</p></td>
+<td><p>n/a</p></td>
+<td><p>n/a</p></td>
+<td><p>n/a</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p>wind stress, every node, every timestep</p></td>
+<td><p>1</p></td>
+<td><p>101</p></td>
+<td><p>301</p></td>
+<td><p>n/a</p></td>
+<td><p>12301</p></td>
+</tr>
+<tr class="row-even"><td><p>wind stress, every node, every WTIMINC</p></td>
+<td><p>2</p></td>
+<td><p>102</p></td>
+<td><p>302</p></td>
+<td><p>n/a</p></td>
+<td><p>12302</p></td>
+</tr>
+<tr class="row-odd"><td><p>US Navy Fleet Numeric</p></td>
+<td><p>3</p></td>
+<td><p>103</p></td>
+<td><p>303</p></td>
+<td><p>n/a</p></td>
+<td><p>12303</p></td>
+</tr>
+<tr class="row-even"><td><p>PBL/JAG</p></td>
+<td><p>4</p></td>
+<td><p>104</p></td>
+<td><p>304</p></td>
+<td><p>n/a</p></td>
+<td><p>12304</p></td>
+</tr>
+<tr class="row-odd"><td><p>wind velocity, every node, every WTIMINC</p></td>
+<td><p>5</p></td>
+<td><p>105</p></td>
+<td><p>305</p></td>
+<td><p>n/a</p></td>
+<td><p>12305</p></td>
+</tr>
+<tr class="row-even"><td><p>wind velocity, rectangular grid, every WTIMINC</p></td>
+<td><p>6</p></td>
+<td><p>106</p></td>
+<td><p>306</p></td>
+<td><p>n/a</p></td>
+<td><p>12306</p></td>
+</tr>
+<tr class="row-odd"><td><p>wind stress, regular grid, every WTIMINC</p></td>
+<td><p>7</p></td>
+<td><p>107</p></td>
+<td><p>307</p></td>
+<td><p>n/a</p></td>
+<td><p>12307</p></td>
+</tr>
+<tr class="row-even"><td><p>symmetrc vortex model</p></td>
+<td><p>8</p></td>
+<td><p>108</p></td>
+<td><p>308</p></td>
+<td><p>n/a</p></td>
+<td><p>12308</p></td>
+</tr>
+<tr class="row-odd"><td><p>asymmetric vortex model (no longer available)</p></td>
+<td><p>n/a</p></td>
+<td><p>n/a</p></td>
+<td><p>n/a</p></td>
+<td><p>n/a</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p>National Weather Service AVN</p></td>
+<td><p>10</p></td>
+<td><p>110</p></td>
+<td><p>310</p></td>
+<td><p>10010</p></td>
+<td><p>12310</p></td>
+</tr>
+<tr class="row-odd"><td><p>National Weather Service ETA 29km</p></td>
+<td><p>11</p></td>
+<td><p>111</p></td>
+<td><p>311</p></td>
+<td><p>n/a</p></td>
+<td><p>12311</p></td>
+</tr>
+<tr class="row-even"><td><p>Oceanweather Inc (OWI)</p></td>
+<td><p>12</p></td>
+<td><p>112</p></td>
+<td><p>312</p></td>
+<td><p>n/a</p></td>
+<td><p>12312</p></td>
+</tr>
+<tr class="row-odd"><td><p>GRIB2/NetCDF</p></td>
+<td><p>14</p></td>
+<td><p>114</p></td>
+<td><p>314</p></td>
+<td><p>14014</p></td>
+<td><p>14314</p></td>
+</tr>
+<tr class="row-even"><td><p>H*Wind</p></td>
+<td><p>15</p></td>
+<td><p>115</p></td>
+<td><p>315</p></td>
+<td><p>n/a</p></td>
+<td><p>12315</p></td>
+</tr>
+<tr class="row-odd"><td><p>Dynamic Asymmetric Holland Model (deprecated)</p></td>
+<td><p>19</p></td>
+<td><p>119</p></td>
+<td><p>319</p></td>
+<td><p>n/a</p></td>
+<td><p>12319</p></td>
+</tr>
+<tr class="row-even"><td><p>Generalized Asymmetric Holland Model</p></td>
+<td><p>20</p></td>
+<td><p>120</p></td>
+<td><p>320</p></td>
+<td><p>n/a</p></td>
+<td><p>12320</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="detailed-nws-parameter-descriptions">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink">Detailed NWS Parameter Descriptions</a><a class="headerlink" href="#detailed-nws-parameter-descriptions" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>NWS = 0</strong></dt><dd><p>No wind, radiation stress or atmospheric pressure forcings are used.</p>
+</dd>
+<dt><strong>NWS = 1</strong></dt><dd><p>Wind stress and atmospheric pressure are read in at all grid nodes at every model time step from the Single File Meteorological Forcing Input File.</p>
+</dd>
+<dt><strong>NWS = 2</strong></dt><dd><p>Wind stress and atmospheric pressure are read in at all grid nodes at a time interval that does not equal the model time step from the Single File Meteorological Forcing Input File. Interpolation in time is used to synchronize the wind and pressure information with the model time step. The wind time interval (WTIMINC) is specified below.</p>
+</dd>
+<dt><strong>NWS = -2</strong></dt><dd><p>Wind stress and atmospheric pressure are read in at all grid nodes at a time interval that does not equal the model time step from the Single File Meteorological Forcing Input File. It is assumed that the first entry in the Single File Meteorological Forcing Input File corresponds to the time that the current model run is started. Specifically, if the model is hot started, it is assumed that first entry in the Single File Meteorological Forcing Input File corresponds to the model hot start time. Succeeding entries in the Single File Meteorological Forcing Input File occur at the time interval (WTIMINC) specified below. Interpolation in time is used to synchronize the wind and pressure information with the model time step.</p>
+</dd>
+<dt><strong>NWS = 3</strong></dt><dd><p>Wind velocity is read in from a wind file from the Single File Meteorological Forcing Input File in US Navy Fleet Numeric format. This information is interpolated in space onto the ADCIRC grid and in time to synchronize the wind and pressure information with the model time step. Garret’s formula is used to compute wind stress from the wind velocity. Several parameters (IREFYR, IREFMO, IREFDAY, IREFHR, IREFMIN, REFSEC, NWLAT, NWLON, WLATMAX, WLONMIN, WLATINC, WLONINC, WTIMINC) describing the Fleet Numeric wind file must be specified below.</p>
+</dd>
+<dt><strong>NWS = 4</strong></dt><dd><p>Wind velocity and atmospheric pressure are read in (PBL/JAG format) at selected ADCIRC grid nodes from the Single File Meteorological Forcing Input File. It is assumed that the first entry in the Single File Meteorological Forcing Input File corresponds to the beginning of the model run (e.g., the cold start time). Succeeding entries occur at the time interval (WTIMINC) specified below. Thus, if the model is hot started wind data must exist in the fort.22 file dating back to the beginning of the model run so that the model can find its appropriate place in the file. Interpolation in time is used to synchronize the wind and pressure information with the model time step. Garret’s formula is used to compute wind stress from wind velocity.</p>
+</dd>
+<dt><strong>NWS = -4</strong></dt><dd><p>Wind velocity and atmospheric pressure are read in (PBL/JAG format) at selected ADCIRC grid nodes from the Single File Meteorological Forcing Input File. It is assumed that the first entry in the Single File Meteorological Forcing Input File corresponds to the time that the current model run is started. Specifically, if the model is hot started, it is assumed that first entry in the Single File Meteorological Forcing Input File corresponds to the model hot start time. Succeeding entries in the Single File Meteorological Forcing Input File occur at the time interval (WTIMINC) specified below. Interpolation in time is used to synchronize the wind and pressure information with the model time step. Garret’s formula is used to compute wind stress from wind velocity.</p>
+</dd>
+<dt><strong>NWS = 5</strong></dt><dd><p>Wind velocity and atmospheric pressure are read in at all grid nodes from the Single File Meteorological Forcing Input File. It is assumed that the first entry in the Single File Meteorological Forcing Input File corresponds to the beginning of the model run (e.g., the cold start time). Succeeding entries occur at the time interval (WTIMINC) specified below. Thus, if the model is hot started wind data must exist in the Single File Meteorological Forcing Input File dating back to the beginning of the model run so that the model can find its appropriate place in the file. Interpolation in time is used to synchronize the wind and pressure information with the model time step. Garret’s formula is used to compute wind stress from wind velocity.</p>
+</dd>
+<dt><strong>NWS = -5</strong></dt><dd><p>Wind velocity and atmospheric pressure are read in at all grid nodes from the Single File Meteorological Forcing Input File. It is assumed that the first entry in the Single File Meteorological Forcing Input File corresponds to the time that the current model run is started. Specifically, if the model is hot started, it is assumed that first entry in the fort.22 file corresponds to the model hot start time. Succeeding entries in the Single File Meteorological Forcing Input File occur at the time interval (WTIMINC) specified below. Interpolation in time is used to synchronize the wind and pressure information with the model time step. Garret’s formula is used to compute wind stress from wind velocity.</p>
+</dd>
+<dt><strong>NWS = 6</strong></dt><dd><p>Wind velocity and atmospheric pressure are read in for a rectangular grid (either in Longitude, Latitude or Cartesian coordinates, consistent with the grid coordinates) from the Single File Meteorological Forcing Input File. This information is interpolated in space onto the ADCIRC grid and in time to synchronize the wind and pressure information with the model time step. Garret’s formula is used to compute wind stress from the wind velocity. Several parameters describing the rectangular grid and time increment (NWLAT, NWLON, WLATMAX, WLONMIN, WLATINC, WLONINC, WTIMINC) must be specified below. The meterological grid MUST cover the entire ADCIRC mesh; that is, the ADCIRC mesh must be ENTIRELY within the meteorological grid or an error will result.</p>
+</dd>
+<dt><strong>NWS = 7</strong></dt><dd><p>Surface stress and pressure values are read in on a regular grid from the Single File Meteorological Forcing Input File. It is assumed that the first entry in the Single File Meteorological Forcing Input File corresponds to the beginning of the model run (e.g., the cold start time). Succeeding entries occur at the time interval (WTIMINC) specified below. Thus, if the model is hot started wind data must exist in the Single File Meteorological Forcing Input File dating back to the beginning of the model run so that the model can find its appropriate place in the file. Interpolation in time is used to synchronize the wind and pressure information with the model time step.</p>
+</dd>
+<dt><strong>NWS = -7</strong></dt><dd><p>Surface stress and pressure values are read in on a regular grid from the Single File Meteorological Forcing Input File. It is assumed that the first entry in the Single File Meteorological Forcing Input File corresponds to the time that the current model run is started. Specifically, if the model is hot started, it is assumed that first entry in the fort.22 file corresponds to the model hot start time. Succeeding entries in the Single File Meteorological Forcing Input File occur at the time interval (WTIMINC) specified below. Interpolation in time is used to synchronize the wind and pressure information with the model time step.</p>
+</dd>
+<dt><strong>NWS = 8</strong></dt><dd><p>Hurricane parameters are read in from the Single File Meteorological Forcing Input File. Wind velocity and atmospheric pressure are calculated at every node on the fly by ADCIRC internally using the Dynamic Holland model. The input file is assumed to correspond to the ATCF Best Track/Objective Aid/Wind Radii Format. Historical tracks, real-time hindcast tracks and real-time forecast tracks may be found in this format. Selecting NWS = 8 also requires the specification of the cold start time, storm number, and boundary layer adjustment (see YYYY MM DD HH24 StormNumber BLAdj below). Garret’s formula is used to compute wind stress from the wind velocity.</p>
+</dd>
+<dt><strong>NWS = 9</strong></dt><dd><p>Asymmetric hurricane model, no longer supported</p>
+</dd>
+<dt><strong>NWS = 10</strong></dt><dd><p>Wind velocity (10 m) and atmospheric pressure are read in from a sequence of National Weather Service (NWS) Aviation (AVN) model output files. Each AVN file is assumed to contain data on a Gaussian longitude, latitude grid at a single time. Consecutive files in the sequence are separated by N hours in time (where N=WTIMINC/3600 and WTIMINC is read in below). The files are named using the convention:</p>
+<ul class="simple">
+<li><p>fort.200 – wind &amp; pressure at the time of a model hot start (this file is not used for a cold start)</p></li>
+<li><p>fort.XX1 (where XX1=200+1*N) – wind &amp; pressure N hours after a cold or hot start</p></li>
+<li><p>fort.XX2 (where XX2=200+2*N) – wind &amp; pressure 2N hours after a cold or hot start</p></li>
+<li><p>fort.XX3 (where XX3=200+3*N) – wind &amp; pressure 3N hours after a cold or hot start and so on for all meteorological files</p></li>
+</ul>
+<p>Prior to ADCIRC version 34.05 these files were in binary and created from a larger Grib form file using the program UNPKGRB1. Starting with ADCIRC version 34.05, the files are in ASCII tabular format. If ADCIRC is hot started, it must be done at an even N hour interval so that the hot start time corresponds to the time of a meteorological file. Enough meteorological files must be present to extend through the ending time of the model run. Garret’s formula is used to compute wind stress from the wind velocity.</p>
+</dd>
+<dt><strong>NWS = 11</strong></dt><dd><p>Wind velocity (10 m) and atmospheric pressure are read in from a sequence of stripped down National Weather Service (NWS) ETA 29km model output files. Each ETA file is assumed to contain data on an E grid for a single day (8 data sets, one every 3 hours, beginning &#64; 03:00 and continuing through 24:00 of the given day). The files are named using the convention:</p>
+<ul class="simple">
+<li><p>fort.200 – wind &amp; pressure the day before a model run is hot started. The final data in this file are used as the initial met condition for the hot start. This file is not used for a cold start.</p></li>
+<li><p>fort.201 – wind &amp; pressure during the first day after a cold or hot start.</p></li>
+<li><p>fort.202 – wind &amp; pressure during the second day after a cold or hot start</p></li>
+<li><p>fort.203 – wind &amp; pressure during the third day after a cold or hot start</p></li>
+</ul>
+<p>This sequence continues for all meteorological files. These files are in binary and have the format described below. The wind data is converted to an east-west, north-south coordinate system inside ADCIRC. If the model is hot started, it must be done at an even day interval so that the hot start time corresponds to the time of a meteorological file. Enough meteorological files must be present to extend through the ending time of the model run. Garret’s formula is used to compute wind stress from the wind velocity.</p>
+</dd>
+<dt><strong>NWS = 12</strong></dt><dd><p>Wind velocity (10 minute averaged winds at 10m) and atmospheric pressure are provided in the OWI format on one or two rectangular (lat/lon) grid(s). If two grids are used, the first is designated as the large (“basin”) scale grid, and the second is designated as the small (“region”) scale grid. The Single File Meteorological Forcing Input File (fort.22) is only used to specify a few configuration parameters, while the actual wind fields are recorded in files named:</p>
+<ul class="simple">
+<li><p>fort.221</p></li>
+<li><p>fort.222</p></li>
+<li><p>fort.223 (optional)</p></li>
+<li><p>fort.224 (optional)</p></li>
+</ul>
+<p>The time increment of the meteorological forcing is specified through WTIMINC in the fort.15 file. The wind and pressure fields are interpolated in space onto the ADCIRC grid and in time to synchronize the wind and pressure information with the model time step. Garret’s formula is used to compute wind stress from wind velocity.</p>
+</dd>
+<dt><strong>NWS = 13, -13</strong></dt><dd><p>Similar to NWS = 5/-5, but applies a ramping function to the meteorological inputs. Wind velocity and atmospheric pressure are read in at all grid nodes from the Single File Meteorological Forcing Input File. The positive/negative convention for time reference is the same as with NWS = 5/-5. The meteorological forcing is ramped up over a user-specified time period using the WRAMP parameter.</p>
+</dd>
+<dt><strong>NWS = 14, -14</strong></dt><dd><p>Wind velocity and atmospheric pressure are read in from NetCDF or GRIB2 format files. This option allows ADCIRC to directly read standardized meteorological formats. If NWS = 14, ADCIRC assumes data from the cold start time; if NWS = -14, ADCIRC assumes data from the hot start time. The files must include wind velocity components and sea level pressure on a regular grid with proper metadata.</p>
+</dd>
+<dt><strong>NWS = 15, -15</strong></dt><dd><p>HWind files are data assimilated snapshots of the wind velocity fields of tropical cyclones that are produced by the NOAA Hurricane Research Division (HRD).</p>
+<ul class="simple">
+<li><p>If the NWS value is set to +15, the hours column in the associated meterological forcing input file (fort.22) is relative to the cold start time.</p></li>
+<li><p>If NWS is set to -15, that hours column is relative to the hot start time.</p></li>
+</ul>
+<p>Please see the documentation of the Single File Meteorological Forcing Input File for complete details.</p>
+</dd>
+<dt><strong>NWS = 19</strong></dt><dd><p>User has the ability to select which Isotach to use in each of the 4 quadrants. User also has ability to modify RMAX and Holland’s B parameter using the ASWIP program. The auxiliary preprocessing program ASWIP.F (located in the /wind directory and executable is created by typing, make aswip, in the work folder after adcirc executable has been generated), will generate the fort.22 input file for NWS=19 from a NWS=9 formatted input file.</p>
+<p>Hurricane parameters are read in from the Single File Meteorological Forcing Input File. It is assumed that the line in the Single File Meteorological Forcing Input File with a zero as the forecast increment (i.e., column 6) corresponds to the start of the current simulation run, whether it is a hotstart or cold start. In other words, there is no option to set the NWS value negative to indicate that the file starts at the ADCIRC hotstart time. Rather, the forecast increment in hours (column 6) is used to indicate the relationship between the ADCIRC time and the data in the fort.22 file.</p>
+<p>Wind velocity and atmospheric pressure are calculated at exact finite element mesh node locations and directly coupled to ADCIRC at every time step using the asymmetric hurricane vortex formulation (Mattocks et al, 2006; Mattocks and Forbes, 2008) based on the Holland gradient wind model. The input file is assumed to correspond to the ATCF Best Track/Objective Aid/Wind Radii Format. Historical tracks, real-time hindcast tracks and real-time forecast tracks may be found in this format. This option uses the radii at specific wind speeds (34, 50, 64, 100 knots) reported in the four quadrants (NE, SE, SW, NW) of the storm to calculate the radius of maximum winds as a function of the azimuthal angle. Garret’s formula is used to compute wind stress from the wind velocity.</p>
+<p>The NWS=19 option allows the user to set a value for Rmax and Holland B Parameter. Additionally the user can select the isotachs to be used for each of the 4 quadrants. The utility program aswip_1.0.3.F located in the /wind folder will generate the NWS=19 fomatted file from a NWS=9 formatted fort.22 input file.</p>
+<p>In order to use the NWS=19 option, the file needs to be in best track format. The forecast period (column #6) needs to be edited to reflect the time of the forecast/nowcast for each track location (each line) in hours from the start of the simulation (0, 6, 12, 18, etc). There is no -19 option to indicate that the hours in column 6 are relative to the hotstart time. For the dynamic asymmetric model (NWS=19), ADCIRC always assumes that hour 0 corresponds to when the model is started, whether that is a cold start or a hot start. Therefore, ADCIRC analysts should not attempt to set NWS to -19.  The original data in that column depends on what type of best track format data is being used. The original data might have 0 or other numbers in that column. See: <a class="reference external" href="http://www.nrlmry.navy.mil/atcf_web/docs/database/new/abrdeck.html">http://www.nrlmry.navy.mil/atcf_web/docs/database/new/abrdeck.html</a></p>
+<p>It is suggested that users change the “BEST” tech type to “ASYM” in column 5 in the fort.22 file to denote that the file has been modified to accommodate the asymmetric wind formulation (the simulation time in hours in the 6th column has been added, etc.) so it will not get confused in the future with a best track file.</p>
+<p>The NWS=19 option requires the following variables in the fort.22 file in a best track format:</p>
+<ol class="arabic simple">
+<li><p>Forecast time in hours (column 6); enter the time in hours in each record starting at 0</p></li>
+<li><p>Latitude of the eye (column 7)</p></li>
+<li><p>Longitude of the eye (column 8)</p></li>
+<li><p>Maximum sustained wind speed in knots (column 9)</p></li>
+<li><p>Minimum sea level pressure in MB (column 10)</p></li>
+<li><p>Wind intensity in knots of the radii defined in the record (34, 50, 64 or 100 knots) (column 12)</p></li>
+<li><p>Radius of specified wind intensity for quadrants 1, 2, 3, 4 in NM (columns 14, 15, 16, 17); ? 0</p></li>
+<li><p>Background pressure in MB (column 18); a standard value of 1013 can be used</p></li>
+<li><p>Rmax as reported in the ATCF BEST TRACK file in column 20</p></li>
+<li><p>Storm Name in Column 28 ATCF file format</p></li>
+<li><p>Time Record number in column 29. There can be multiple lines for a given time record depending on the number of isotachs reported in the ATCF File</p></li>
+<li><p>Number of isotachs reported in the ATCF file for the corresponding Time record</p></li>
+<li><p>Columns 31-34 indicate the selection of radii for that particular isotach. 0 indicates do not use this radius, and 1 indicates use this radius and corresponding wind speed</p></li>
+<li><p>Columns 35-38 are the designated Rmax values computed for each of the quadrants selected for each particular isotach</p></li>
+<li><p>Column 39 is the Holland B parameter computed using the formulas outlines in the Holland paper, and implemented using the aswip program</p></li>
+</ol>
+<p>The format of the file is fixed and users will want to use the aswip program to be sure that the input fort.22 file is properly formatted.</p>
+</dd>
+<dt><strong>NWS = 20</strong></dt><dd><p>Generalized Asymmetric Holland Model (GAHM) Format. The track file format is similar to that of the older Dynamic Asymmetric Model (NWS = 19) but with 8 additional columns of data. See notes in the fort.22 file for more information. The theory and implementation of the GAHM was initially described at the 2013 ADCIRC Users Group Meeting.</p>
+</dd>
+<dt><strong>NWS = 100, 101, 102, -102, 103, 104, -104, 105, -105, 106, 110, 111</strong></dt><dd><p>Wave radiation stress is applied in addition to meteorological forcing. The meteorological input is specified by: SIGN(NWS)*(ABS(NWS)-100). For example:</p>
+<ul class="simple">
+<li><p>NWS=100 means include wave radiation stress with no meteorological forcing (NWS=0)</p></li>
+<li><p>NWS=101 means include wave radiation stress plus meteorological forcing corresponding to NWS=1</p></li>
+<li><p>NWS=-104 means include wave radiation stress plus meteorological forcing corresponding to NWS=-4, etc.</p></li>
+</ul>
+<p>Wave radiation stress is read from a Wave Radiation Stress Forcing File. The format of this file is similar to the generic meteorological forcing file when NWS=-4 with the exception that no pressure values are read in. The time increment between consecutive radiation stress fields (RSTIMINC) is specified below.</p>
+</dd>
+<dt><strong>NWS = 300, 301, 302, -302, 303, 304, -304, 305, -305, 306, 310, 311, 312, -312</strong></dt><dd><p>NWS values in the 300’s indicate a SWAN+ADCIRC run. Note: padcswan or adcswan must be precompiled to use this option.</p>
+<p>The SWAN wave model is dynamically coupled to the ADCIRC model. Radiation stresses and currents from the SWAN model are applied in addition to meteorological forcing. The meteorological input is specified by: SIGN(NWS)*(ABS(NWS)-300). For example:</p>
+<ul class="simple">
+<li><p>NWS=300 means include wave radiation stress with no meteorological forcing (NWS=0)</p></li>
+<li><p>NWS=301 means include wave radiation stress plus meteorological forcing corresponding to NWS=1</p></li>
+<li><p>NWS=-304 means include wave radiation stress plus meteorological forcing corresponding to NWS=-4, etc.</p></li>
+</ul>
+<p>Wave radiation stress are computed by the SWAN model every RSTIMINC seconds and passed into ADCIRC. In addition to assigning RSTIMINC the user must have a SWAN input and control file (fort.26) in the same working directory as the fort.15 ADCIRC control file.</p>
+</dd>
+</dl>
+<style>
+.wrap-table th, .wrap-table td {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+  hyphens: auto !important;
+}
+</style></section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="wind_stress.html" class="btn btn-neutral float-left" title="Wind Stress" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="wtiminc.html" class="btn btn-neutral float-right" title="WTIMINC Supplemental" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

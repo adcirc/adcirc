@@ -1,0 +1,925 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Generalized Asymmetric Holland Model in ADCIRC" name="description" />
+<meta content="adcirc, generalized asymmetric holland model" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generalized Asymmetric Holland Model &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="NWS12" href="nws12.html" />
+    <link rel="prev" title="Supplemental meteorological/wave/ice parameters" href="moteorological_parameter_line.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Model Configuration</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../special_features/index.html">Special Features</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../special_features/adcirc2d_plus.html">ADCIRC2D+</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../special_features/bridge_piers.html">Bridge Piers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../special_features/dynamic_water_level_correction.html">Dynamic water level correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../special_features/ice_modifications.html">Ice Modifications</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Generalized Asymmetric Holland Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../special_features/vertical_element_walls.html">Vertical Element Walls (VEWs)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Model Configuration</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Meteorological Forcing</a></li>
+      <li class="breadcrumb-item active">Generalized Asymmetric Holland Model</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/model_configuration/meteorological_forcing/generalized_asymmetric_holland_model.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="generalized-asymmetric-holland-model">
+<span id="gahm"></span><h1>Generalized Asymmetric Holland Model<a class="headerlink" href="#generalized-asymmetric-holland-model" title="Link to this heading"></a></h1>
+<p>The Generalized Asymmetric Holland Model (hereinafter, GAHM) is a parametric
+hurricane vortex model developed in ADCIRC for operational forecasting purpose,
+based on the classic Holland Model  <a class="footnote-reference brackets" href="#id12" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> (hereinafter, HM). The original HM was
+developed to render an ideal symmetric hurricane (a.k.a., annular hurricane). To
+represent hurricanes that may exhibit asymmetric structures, the Asymmetric
+Holland Model (hereinafter, AHM) was developed and implemented in ADCIRC for
+more practical usages <a class="footnote-reference brackets" href="#id13" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>, which has the same set of equations as of the HM,
+but takes azimuthally-varying radius to the maximum wind to reconstruct its
+spatial pressure and wind fields. Both the HM and AHM suffer from flaws that
+make rendering large but weak storms difficult. As a result, efforts were made
+to develop a more generalized model to fulfill the purpose. Compared to the HM
+and the AHM, the GAHM removes the assumption of cyclostrophic balance at the
+radius of maximum wind during derivation of its equations, and allows for a
+better representation of a wide range of hurricanes. Another important feature
+of the GAHM is the introduction of a composite wind method, which when activated
+enables the usage of multiple storm isotaches. It makes representing complex
+hurricane structures possible.</p>
+<section id="the-classic-holland-model">
+<span id="id3"></span><h2>The Classic Holland Model<a class="headerlink" href="#the-classic-holland-model" title="Link to this heading"></a></h2>
+<p>The HM is an analytic model that describes the radial pressure and wind profiles
+of a standard hurricane. To begin with, Holland found that the normalized
+pressure profiles of a number of hurricanes resemble a family of rectangular
+hyperbolas and may be approximated by a hyperbolic equation, which after
+antilogarithms and rearranging yields the radial pressure equation:</p>
+<center><p><span class="math notranslate nohighlight">\(P(r) = P_c + (P_n - P_c)e^{-A/r^B} \quad\)</span> (1)</p>
+</center><p>where <span class="math notranslate nohighlight">\(P_c\)</span> is the central pressure, <span class="math notranslate nohighlight">\(P_c\)</span> is the ambient pressure
+(theoretically at infinite radius), <span class="math notranslate nohighlight">\(P(r)\)</span> is the pressure at radius
+<span class="math notranslate nohighlight">\(r\)</span> from the center of the hurricane, and <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span> are
+shape parameters that may be empirically estimated from observations in a
+hurricane.</p>
+<p>Substituting (1) into the gradient wind equation, which describes a steady flow
+balanced by the horizontal pressure gradient force, the centripetal
+acceleration, and the Coriolis acceleration for a vortex above the influence of
+the planetary boundary layer where the atmospheric flow decouples from surface
+friction  <a class="footnote-reference brackets" href="#id14" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>, gives the radial wind equation of a hurricane:</p>
+<center><div class="math notranslate nohighlight">
+\[V_g(r) = \sqrt{AB(P_n - P_c)e^{-A/r^B}/\rho r^B + (\frac{rf}{2})^2} - \frac{rf}{2} \quad (2)\]</div>
+</center><p>where <span class="math notranslate nohighlight">\(V_g(r)\)</span> is the gradient wind at radius <span class="math notranslate nohighlight">\(r\)</span>, <span class="math notranslate nohighlight">\(\rho\)</span> is
+the density of air, <span class="math notranslate nohighlight">\(f\)</span> is the Coriolis parameter. In the region of the
+maximum winds, if we assume that the Coriolis force is negligible in comparison
+to the pressure gradient and centripetal force, then the air is in cyclostrophic
+balance. By removing the Coriolis term in (2) we get the cyclostrophic wind</p>
+<center><div class="math notranslate nohighlight">
+\[V_c(r) = \sqrt{AB(P_n - P_c)e^{-A/r^B}/\rho r^B} \quad (3)\]</div>
+</center><p>By setting <span class="math notranslate nohighlight">\(dV_c/dr = 0\)</span> at radius to the maximum wind
+<span class="math notranslate nohighlight">\(r = R_{max}\)</span>, it is obtained that</p>
+<center><div class="math notranslate nohighlight">
+\[A = (R_{max})^B \quad (4)\]</div>
+</center><p>Thus the (<span class="math notranslate nohighlight">\(R_{max}\)</span>) is irrelevant to the relative value of ambient and
+central pressures, and is solely defined by the shape parameters <span class="math notranslate nohighlight">\(A\)</span> and
+<span class="math notranslate nohighlight">\(B\)</span>. Substituting (4) back into (3) to get rid of <span class="math notranslate nohighlight">\(A\)</span>, we get an
+estimate of <span class="math notranslate nohighlight">\(B\)</span> as a function of the maximum wind speed</p>
+<center><div class="math notranslate nohighlight">
+\[B = (V_{max})^2\rho e/(P_n - P_c) \quad (5)\]</div>
+</center><p>It was notable that the maximum wind speed is proportional to the square root of
+<span class="math notranslate nohighlight">\(B\)</span> and irrespective of the (<span class="math notranslate nohighlight">\(R_{max}\)</span>), given a constant pressure
+drop. It was also reasoned by Holland that a plausible range of <span class="math notranslate nohighlight">\(B\)</span> would
+be between 1 and 2.5 for realistic hurricanes. Substituting (4) and (5) back
+into (1) and (2) yields the final radial pressure and wind profiles for the HM</p>
+<center><div class="math notranslate nohighlight">
+\[P(r) = P_c + (P_n - P_c)e^{-(R_{max}/r)^B} \quad (6)\]</div>
+</center><center><div class="math notranslate nohighlight">
+\[V_g(r) = \sqrt{(V_{max})^2e^{1-(R_{max}/r)^B}(R_{max}/r)^B + (\frac{rf}{2})^2} - \frac{rf}{2} \quad (7)\]</div>
+</center><p>When sparse observations of a hurricane are given, estimates of the
+<span class="math notranslate nohighlight">\(R_{max}\)</span> and shape parameter <span class="math notranslate nohighlight">\(B\)</span> can be estimated by fitting data
+into the radial wind equation, which in turn allow us to compute <span class="math notranslate nohighlight">\(P(r)\)</span>
+and <span class="math notranslate nohighlight">\(V_g(r)\)</span> along the radius <span class="math notranslate nohighlight">\(r\)</span> of the hurricane. However,
+discrepancies between wind observations and computed winds were sometimes found,
+and were negatively correlated to the Rossby number at <span class="math notranslate nohighlight">\(r = R_{max}\)</span>,
+defined as</p>
+<center><div class="math notranslate nohighlight">
+\[R_o = \frac{Nonlinear Acceleration}{Coriolis force} \approx \frac{V_{max}^2/R_{max}}{V_{max}f} = \frac{V_{max}}{R_{max}f} \quad (8)\]</div>
+</center><p>By definition, a large <span class="math notranslate nohighlight">\(R_o (\approx 10^3)\)</span> describes a system in
+cyclostrophic balance that is dominated by the inertial and centrifugal force
+with negligible Coriolis force, such as a tornado or the inner core of an
+intense hurricane, whereas a small value <span class="math notranslate nohighlight">\((\approx 10^{-2} \sim 10^2)\)</span>
+signifies a system in geostrophic balance where the Coriolis force plays an
+important role, such as the outer region of a hurricane. As a result, the
+assumption of cyclostrophic balance at <span class="math notranslate nohighlight">\(R_{max}\)</span> made in HM is mostly
+valid for describing an intense and narrow (small <span class="math notranslate nohighlight">\(R_{max}\)</span>) hurricane
+with a large <span class="math notranslate nohighlight">\(R_o\)</span>, but not applicable for a weak and broad hurricane with
+a small <span class="math notranslate nohighlight">\(R_o\)</span>. This intrinsic problem with the HM calls our intention to
+develop a generalized model that will work consistently for a wide range of
+hurricanes, which theoretically can be accomplished by removing the above
+cyclostrophic balance assumption and re-derive the radial pressure and wind
+equations (6)&amp;(7).</p>
+</section>
+<section id="derivation-of-the-gahm">
+<span id="id5"></span><h2>Derivation of the GAHM<a class="headerlink" href="#derivation-of-the-gahm" title="Link to this heading"></a></h2>
+<p>The GAHM also starts with the same radial pressure and wind equations (1)&amp;(2)
+with shape parameters <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span>, as in the HM. Without assuming
+cyclostrophic balance at <span class="math notranslate nohighlight">\(R_{max}\)</span>, we take <span class="math notranslate nohighlight">\(dV_g/dr = 0\)</span> at
+<span class="math notranslate nohighlight">\(r = R_{max}\)</span> to get the adjusted shape parameter <span class="math notranslate nohighlight">\(B_g\)</span> as</p>
+<center><div class="math notranslate nohighlight">
+\[B_g = \frac{(V_{max}^2 + V_{max}R_{max}f)\rho e^\varphi}{\varphi(P_n - P_c)} = B \frac{(1+1/R_o)e^{\varphi - 1}}{\varphi} \quad (9)\]</div>
+</center><p>where <span class="math notranslate nohighlight">\({\varphi}\)</span> is a scaling parameter introduced to simplify the
+derivation process, defined as</p>
+<center><div class="math notranslate nohighlight">
+\[\varphi = \frac{A}{R_{max}^B} \quad \text{or} \quad A = \varphi R_{max}^B \quad (10)\]</div>
+</center><p>and later derived as</p>
+<center><div class="math notranslate nohighlight">
+\[\varphi = 1 + \frac{V_{max}R_{max}f}{B_g(V_{max}^2+V_{max}R_{max}f)} = 1 + \frac{1/R_o}{B_g(1+1/R_o)}  \quad (11)\]</div>
+</center><p>Thus, the <span class="math notranslate nohighlight">\(R_{max}\)</span> in the GAHM is not entirely defined by the shape
+parameters <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span> as in the HM, but also by the scaling factor
+<span class="math notranslate nohighlight">\({\varphi}\)</span>, as Equation (11) indicates that <span class="math notranslate nohighlight">\({\varphi} \ge 1\)</span>.
+Numerical solutions for <span class="math notranslate nohighlight">\(B_g\)</span> and <span class="math notranslate nohighlight">\({\varphi}\)</span> can be solved
+iteratively in the model using Equation (9)&amp;(11). Figure 1 illustrates how
+<span class="math notranslate nohighlight">\(B_g/B\)</span> and <span class="math notranslate nohighlight">\(\varphi\)</span> vary with <span class="math notranslate nohighlight">\(\log_{10}R_o\)</span> given different
+<span class="math notranslate nohighlight">\(B\)</span> values. It is evident that values of both <span class="math notranslate nohighlight">\(B_g/B\)</span> and
+<span class="math notranslate nohighlight">\(\varphi\)</span> remain close to 1 when <span class="math notranslate nohighlight">\(\log_{10}R_o\)</span> is within the range
+of [1,2], but increase noticeably as <span class="math notranslate nohighlight">\(\log_{10}R_o\)</span> decreases below 1, and
+the smaller the value of <span class="math notranslate nohighlight">\(B\)</span>, the bigger the changes.</p>
+<figure class="align-default">
+<img alt="Profiles of Bg⁄B (left panel) and φ (right panel)" src="../../../_images/Fig_1._GAHM.png" />
+</figure>
+<center><p>Figure 1. Profiles of <span class="math notranslate nohighlight">\(B_g/B\)</span> (left panel) and <span class="math notranslate nohighlight">\(\varphi\)</span> (right
+panel) with respect to <span class="math notranslate nohighlight">\(\log_{10}R_o\)</span>, given different <span class="math notranslate nohighlight">\(B\)</span> values as
+shown in different colors.</p>
+</center><p>Substituting (9)&amp;(11) back into (1)&amp;(2) yields the final radial pressure and
+wind equations for the GAHM</p>
+<center><div class="math notranslate nohighlight">
+\[P(r) = P_c + (P_n - P_c)e^{-\varphi(R_{max}/r)^{B_g}} \quad (12)\]</div>
+</center><center><div class="math notranslate nohighlight">
+\[V_g(r) = \sqrt{V_{max}^2(1+1/R_o)e^{\varphi(1-(R_{max}/r)^{B_g})}(R_{max}/r)^{B_g} + (\frac{rf}{2})^2} - \frac{rf}{2} \quad (13)\]</div>
+</center><p>Influence of the Coriolis force on the radial pressure and wind profiles are
+evidenced by the presence of <span class="math notranslate nohighlight">\(R_o\)</span> and <span class="math notranslate nohighlight">\(\varphi\)</span> in (12)&amp;(13). A
+special case scenario is when we set <span class="math notranslate nohighlight">\(f=0\)</span>, which corresponds to an
+infinitely large <span class="math notranslate nohighlight">\(R_o\)</span>, then (12)&amp;(13) in the GAHM reduce to (6)&amp;(7) in
+the HM. However，for a hurricane with a relatively small <span class="math notranslate nohighlight">\(R_o\)</span>, the
+influence of the Coriolis force can only be addressed by the GAHM. It meets our
+expectation that the GAHM’s solution approaches to that of the HM’s when the
+influence of Coriolis force is small, but departs from it when the Coriolis
+force plays an important role in the wind system.</p>
+<p>The above reasoning can be demonstrated by the 3D plots in Figure 2, which show
+the normalized gradient winds of the HM (left panel) and the GAHM (right panel)
+as functions of the normalized radial distances <span class="math notranslate nohighlight">\(r/R_{max}\)</span>, the Holland
+<span class="math notranslate nohighlight">\(B\)</span> parameter, and <span class="math notranslate nohighlight">\(R_o\)</span>. In both panels, each colored surface
+represents the normalized gradient winds corresponding to a unique Holland B
+value. By definition, we get <span class="math notranslate nohighlight">\(V_g = V_{max}\)</span> at <span class="math notranslate nohighlight">\(r = R_{max}\)</span>, which
+means all the surfaces in each panel should intersect with the plane of
+<span class="math notranslate nohighlight">\(r/R_{max} = 1\)</span> on the plane of <span class="math notranslate nohighlight">\(V_g/V_{max} = 1\)</span>, no matter what
+values of <span class="math notranslate nohighlight">\(R_o\)</span>. However, the line of intersection (shown by the black
+line) shown in the left panel deviates from the plane of <span class="math notranslate nohighlight">\(V_g/V_{max} =1\)</span>
+as <span class="math notranslate nohighlight">\(\log_{10}R_o\)</span> decreases from 2 to close to 0 (<span class="math notranslate nohighlight">\(R_o\)</span> decreases
+from 100 to 1), while remains on the plane regardless of how <span class="math notranslate nohighlight">\(R_o\)</span> changes
+in the right panel, demonstrating that the GAHM is mathematically more coherent
+than the HM.</p>
+<figure class="align-default">
+<img alt="Comparison of the normalized gradient winds" src="../../../_images/Fig_2._GAHM.png" />
+</figure>
+<center><p>Figure 2. The normalized gradient wind profiles of the HM (left panel) and the
+GAHM (right panel) as functions of the normalized radial distances and
+<span class="math notranslate nohighlight">\(\log_{10}R_o\)</span>, given different Holland <span class="math notranslate nohighlight">\(B\)</span> values.</p>
+</center><p>To have a dissective look of the surface plots in Figure 2, we draw slices
+perpendicular to the axis of <span class="math notranslate nohighlight">\(\log_{10}R_o\)</span> at three different values 0,
+1, 2, and plot the lines of intersection with each surface in Figure 3. It is
+evident that we get <span class="math notranslate nohighlight">\(V_g = V_{max}\)</span> at <span class="math notranslate nohighlight">\(r = R_{max}\)</span> consistently in
+the right panel for the GAHM regardless of the value of <span class="math notranslate nohighlight">\(R_o\)</span>. The HM in
+the left panel, however, generates distorted wind profiles with underestimated
+maximum winds skewed inward towards the storm center, espeically when
+<span class="math notranslate nohighlight">\(\log_{10}R_o &lt; 1\)</span>. As a results, when both models being applied to real
+hurricane cases, the GAHM will perform more consistently than the HM.</p>
+<figure class="align-default">
+<img alt="Normalized gradient wind profiles" src="../../../_images/Fig_3._GAHM.png" />
+</figure>
+<center><p>Fig 3. Slices of the normalized gradient wind profiles (as shown in Figure 2) at
+<span class="math notranslate nohighlight">\(\log_{10}R_o =0, 1, 2\)</span> (or correspondingly <span class="math notranslate nohighlight">\(R_o =1, 10, 100\)</span>).</p>
+</center></section>
+<section id="calculation-of-the-radius-to-the-maximum-wind">
+<span id="id6"></span><h2>Calculation of the Radius to the Maximum Wind<a class="headerlink" href="#calculation-of-the-radius-to-the-maximum-wind" title="Link to this heading"></a></h2>
+<p>Same with the HM and AHM, the GAHM also uses processed forecast advisories
+(during active hurricanes) or best track advisories (post-hurricanes) from the
+National Hurricane Center (NHC) in ATCF format as input files, which contain a
+time series of storm parameters (usually at 6-hour intervals) such as storm
+location, storm movement, central pressure, 1 minute averaged maximum wind,
+radii to the 34-, 50-, and/or 64-kt storm isotaches in 4 storm quadrants (NE,
+SE, SW, NW), etc. See meteorological input file with NWS = 20 for more details.
+As a standard procedure, the <span class="math notranslate nohighlight">\(B_g\)</span> and <span class="math notranslate nohighlight">\(R_{max}\)</span> are pre-computed in
+4 storm quadrants for all available isotaches in the ASWIP program  <a class="footnote-reference brackets" href="#id15" id="id7" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a> and
+appended to the input file prior to running an ADCIRC simulation. The following
+describes the procedures to prepare the input file for the GAHM.</p>
+<p>First, the influence of the boundary layer effect must be removed to bring the
+maximum sustained wind and the 34-, 50-, and/or 64-kt isotaches from 10 meter
+height to the gradient wind level. Practically, the maximum gradient wind can be
+directly calculated as</p>
+<center><div class="math notranslate nohighlight">
+\[V_{max} = \vert \frac{\overrightarrow{V_M} - \gamma\overrightarrow{V_T}}{W_{rf}} \vert = \frac{V_M - \gamma V_T}{W_{rf}} \quad (14)\]</div>
+</center><p>where <span class="math notranslate nohighlight">\(\overrightarrow{V_M}\)</span> is the reported maximum sustained wind at 10
+meter height assuming in the same direction as <span class="math notranslate nohighlight">\(\overrightarrow{V_T}\)</span>,
+<span class="math notranslate nohighlight">\(\overrightarrow{V_T}\)</span> is the storm translational speed calculated from
+successive storm center locations, <span class="math notranslate nohighlight">\(W_{rf} = 0.9\)</span> is the wind reduction
+factor for reducing wind speed from the gradient wind level to the surface at 10
+meter height (Powell et al., 2003), and <span class="math notranslate nohighlight">\(\gamma\)</span> is the damp factor for
+<span class="math notranslate nohighlight">\(V_T\)</span>. The following formula of <span class="math notranslate nohighlight">\(\gamma\)</span> is employed in the ASWIP
+program:</p>
+<center><div class="math notranslate nohighlight">
+\[\gamma = \frac{V_g}{V_{max}} \quad (15)\]</div>
+</center><p>which is the ratio of gradient wind speed to the maximum wind speed along a
+radial wind profile. Thus, <span class="math notranslate nohighlight">\(\gamma\)</span> is zero at storm center, and increases
+with <span class="math notranslate nohighlight">\(r\)</span> until reaches a maximum value of 1 at <span class="math notranslate nohighlight">\(R_{max}\)</span>, then
+gradually decreases outward to zero.</p>
+<p>In addition to the scalar reduction in wind speed, surface friction and
+continuity also cause the vortex wind to flow inward across isobars, with an
+inward rotation angle <span class="math notranslate nohighlight">\(\beta\)</span> according to the Queensland Government’s
+Ocean Hazards Assessment (2001)  <a class="footnote-reference brackets" href="#id16" id="id8" role="doc-noteref"><span class="fn-bracket">[</span>5<span class="fn-bracket">]</span></a>:</p>
+<center><div class="math notranslate nohighlight">
+\[\begin{split}\beta = \begin{cases}
+10^{\circ}, &amp; r&lt;R_{max} \\
+10^{\circ} + 75(r-R_{max})/R_{max}, &amp; R_{max} \le r&lt;1.2R_{max} \\
+25^{\circ}, &amp; r \ge 1.2R_{max}
+\end{cases} \quad   (16)\end{split}\]</div>
+</center><p>Thus, the gradient wind at the radii to specified storm isotaches in 4 storm
+quadrants can be obtained from the observed isotaches as</p>
+<center><div class="math notranslate nohighlight">
+\[\begin{split}\begin{align}
+V_r &amp; = \vert \overrightarrow{V_r}\vert = \vert \overrightarrow{V_{inflow}}\vert \\
+&amp; = \frac{\vert\overrightarrow{V_{isot}} - \gamma\overrightarrow{V_T}  \vert}{W_{rf}}
+\end{align} \quad (17)\end{split}\]</div>
+</center><p>where <span class="math notranslate nohighlight">\(\overrightarrow{V_{isot}}\)</span> is the observed isotach wind speed with
+an unknown angle <span class="math notranslate nohighlight">\(\varepsilon\)</span>, and <span class="math notranslate nohighlight">\(\overrightarrow{V_{inflow}}\)</span> is
+the wind speed at radius to specified isotach before the inward rotation angle
+<span class="math notranslate nohighlight">\(\beta\)</span> is removed.</p>
+<p>Rewriting (17) in x- and y-components yields:</p>
+<center><div class="math notranslate nohighlight">
+\[V_r\cos(quad(i)+90+\beta)=V_{isot}\cos(\varepsilon)-\gamma {\mu}_T \quad (18)\]</div>
+</center><center><div class="math notranslate nohighlight">
+\[V_r\sin(quad(i)+90+\beta)=V_{isot}\sin(\varepsilon)-\gamma {\nu}_T \quad (19)\]</div>
+</center><p>where <span class="math notranslate nohighlight">\(quad(i)\)</span> is the azimuth angle of the <span class="math notranslate nohighlight">\(i-th\)</span> storm quadrant
+(NE, SE, SW, NW at <span class="math notranslate nohighlight">\(45^\circ, 135^\circ, 225^\circ, 315^\circ\)</span>,
+respectively), <span class="math notranslate nohighlight">\(V_{isot}\cos(\varepsilon)\)</span> and
+<span class="math notranslate nohighlight">\(V_{isot}\sin(\varepsilon)\)</span> are the zonal and meridional components of
+<span class="math notranslate nohighlight">\(\overrightarrow{V_{isot}}\)</span>, <span class="math notranslate nohighlight">\({\mu}_T\)</span> and <span class="math notranslate nohighlight">\({\nu}_T\)</span> are the
+zonal and meridional components of <span class="math notranslate nohighlight">\(\overrightarrow{V_T}\)</span>.</p>
+<p>Given an initial guess of <span class="math notranslate nohighlight">\(R_{max}\)</span>, values of <span class="math notranslate nohighlight">\(B_g\)</span> and
+<span class="math notranslate nohighlight">\(\varphi\)</span> can be solved iteratively from (9) and (11) until both converge,
+and <span class="math notranslate nohighlight">\(V_r\)</span> can be estimated by combining (15), (17), (18), and (19).
+Plugging <span class="math notranslate nohighlight">\(V_{max}\)</span> from (14), the above calculated
+<span class="math notranslate nohighlight">\(B_g, \varphi, V_{max}, V_r\)</span> and the observed radius <span class="math notranslate nohighlight">\(R_r\)</span> to
+<span class="math notranslate nohighlight">\(V_r\)</span> back into (13), a new <span class="math notranslate nohighlight">\(R_{max}\)</span> can be inversely solved by a
+root-finding algorithm. Since the above calculations are carried out based on an
+initial guess of <span class="math notranslate nohighlight">\(R_{max}\)</span>, wWe need to repeat the entire process until
+<span class="math notranslate nohighlight">\(R_{max}\)</span> converges.</p>
+<p>In case where multiple isotaches are given in the forecast/best track
+advisories, the <span class="math notranslate nohighlight">\(R_{max}\)</span> for the highest isotach will be calculated using
+the above procedure, and used as the pseudo <span class="math notranslate nohighlight">\(R_{max}\)</span> for the entire storm
+(physically, there is only one <span class="math notranslate nohighlight">\(R_{max}\)</span> found along a radial wind profile
+). For each lower isotach, <span class="math notranslate nohighlight">\(R_{max}\)</span> will be calculated with the pseudo
+<span class="math notranslate nohighlight">\(R_{max}\)</span> set as its initial value to determine the inward rotation angle
+<span class="math notranslate nohighlight">\(\beta\)</span> following the above process only once. The use of the pseudo
+<span class="math notranslate nohighlight">\(R_{max}\)</span> across all storm isotaches ensures that the cross-isobar
+frictional inflow angle changes smoothly along the radius according to (17).</p>
+<p>Occasionally, we have to deal with situations where <span class="math notranslate nohighlight">\(V_{max} &lt; V_r\)</span>, which
+violate (13) so <span class="math notranslate nohighlight">\(R_{max}\)</span> couldn’t be calculated. These situations mostly
+happen in the right hand quadrants (in the Northern Atmosphere) of a weak storm
+with a relatively high translational speed. For cases like this, we assign
+<span class="math notranslate nohighlight">\(V_{max} = V_r\)</span>, which is equivalent to assigning <span class="math notranslate nohighlight">\(R_{max} = R_r\)</span>.</p>
+<p>After the ASWIP program finishes processing the input file, it can be readily
+used by the GAHM to construct spatial pressure and wind fields in ADCIRC for
+storm surge forecast.</p>
+</section>
+<section id="composite-wind-generation">
+<span id="id9"></span><h2>Composite Wind Generation<a class="headerlink" href="#composite-wind-generation" title="Link to this heading"></a></h2>
+<p>Since storm parameters are only given in 4 storm quadrants (assuming at
+<span class="math notranslate nohighlight">\(45^\circ, 135^\circ, 225^\circ, 315^\circ\)</span> azimuthal angles,
+respectively) at 3 available isotaches in the input file, spatial interpolation
+of storm parameters must take place first at each ADCIRC grid node.
+Traditionally, the single-isotach approach is used by the AHM, in which storm
+parameters will be interpolated azimuthally from the highest isotach only. To
+take advantage of the availability of multiple isotaches, a new composite wind
+method is introduced in the GAHM, the multiple-isotach approach, in which storm
+parameters will be interpolated both azimuthally and radially from all available
+isotaches.</p>
+<p>To begin, the relative location of a node to the storm center at given time
+<span class="math notranslate nohighlight">\(t\)</span> is calculated, specified by the azimuth angle <span class="math notranslate nohighlight">\(\theta\)</span> and
+distance <span class="math notranslate nohighlight">\(d\)</span>. The angle <span class="math notranslate nohighlight">\(\theta\)</span> places the node between two
+adjacent quadrants <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(i+1\)</span>, where
+<span class="math notranslate nohighlight">\(quad(i) &lt; \theta \le quad(i+1)\)</span>. For each storm parameter <span class="math notranslate nohighlight">\(P\)</span> to be
+interpolated, its value at <span class="math notranslate nohighlight">\((\theta,d)\)</span> are weighted between its values at
+two pseudo nodes <span class="math notranslate nohighlight">\((quad(i),d)\)</span> and <span class="math notranslate nohighlight">\((quad(i+1),d)\)</span>:</p>
+<center><div class="math notranslate nohighlight">
+\[P(\theta,d)=\frac{P(quad(i),d)(90-\theta)^2+P(quad(i+1),d)\theta^2}{(90-\theta)^2+\theta^2} \quad (20)\]</div>
+</center><p>The distance <span class="math notranslate nohighlight">\(d\)</span> then places each pseudo node between the radii of two
+adjacent isotaches in its quadrant, and the value at the pseudo node is
+interpolated using the inverse distance weighting (IDW) method:</p>
+<center><div class="math notranslate nohighlight">
+\[P(quad,d) = f_{34}P_{34}+f_{50}P_{50}+f_{64}P_{64} \quad (21)\]</div>
+</center><p>where <span class="math notranslate nohighlight">\(P_{34}, P_{50}, P_{64}\)</span> are parameter values computed from the 34-,
+50-, and 64-isotach, <span class="math notranslate nohighlight">\(f_{34}, f_{50}, f_{64}\)</span> are distance weighting
+factors for each isotach, calculated as</p>
+<center><div class="math notranslate nohighlight">
+\[\begin{split}\begin{array}{lll}
+\mathrm{I}.  &amp;  r&lt;R_{64}&amp;  f_{64}=1,f_{50}=0,f_{34}=0 \\
+\mathrm{II}. &amp; R_{64}\le r&lt;R_{50} &amp;  f_{64}=(r-R_{64})/(R_{50}-R_{64}),f_{50}=(R_{50}-r)/(R_{50}-R_{64}), f_{34}=0 \\
+\mathrm{III}. &amp; R_{50}\le r&lt;R_{34} &amp;  f_{64}=0,f_{50}=(r-R_{50}/(R_{34}-R_{50})),f_{34}=(R_{34}-r/(R_{34}-R_{50})) \\
+\mathrm{IV}. &amp; r \le R_{34} &amp; f_{64}=0,f_{50}=0,f_{34}=1
+\end{array} \quad (22)\end{split}\]</div>
+</center><p>and <span class="math notranslate nohighlight">\(f_{34}+f_{50}+f_{64}=1\)</span>.</p>
+<p>The above procedure is performed at each node of an ADCIRC grid. After all storm
+parameters are interpolated, the pressure and gradient winds can be calculated
+using (12)&amp;(13). To bring the gradient wind down to the standard 10 meter
+reference level, the same wind reduction factor <span class="math notranslate nohighlight">\(W_{rf}\)</span> is applied, and
+the tangential winds are rotated by an inward flow angle β according to (16).
+Then, the storm translational speed is added back to the vortex winds. Last but
+not least, a wind averaging factor is applied to convert resulted wind field
+from 1-min to 10-min averaged winds in order to be used by ADCIRC. This new
+composite wind method is simple and efficient, and more importantly, it assures
+that the constructed surface winds match all observed storm isotaches provided
+in NHC’s forecast or “best track” advisories.</p>
+</section>
+<section id="case-studies">
+<span id="id10"></span><h2>Case Studies<a class="headerlink" href="#case-studies" title="Link to this heading"></a></h2>
+<p>Preliminary evaluation of the GAHM was carried out based on seven hurricanes
+that struck the Gulf of Mexico and the Eastern United States: Katrina (2005),
+Rita (2005), Gustav (2008), Ike (2008), Irene (2011), Isaac (2012), and Sandy
+(2012), see Table 1. Ranging from category 1 to 5 on the Saffir-Simpson
+Hurricane Wind Scale, these storms vary in storm track, forward motion, size,
+intensity, and duration, but all caused severe damages to coastal states due to
+destructive winds, wind-induced storm surges, and ocean waves. Their “best
+track” advisories were retrieved from NHC’s ftp site
+(<a class="reference external" href="ftp://ftp.nhc.noaa.gov/atcf">ftp://ftp.nhc.noaa.gov/atcf</a>; previous years’ data are located in the archive
+directory) and pre-processed using the ASWIP program. The “best track” file
+contains an estimate of the radius to the maximum wind for each data entry, but
+will solely be used for model validation purpose as both the GAHM and AHM
+calculate their own spatially-varying <span class="math notranslate nohighlight">\(R_{max}\)</span>.</p>
+<table class="wrap-table scroll-table docutils align-default" id="id17">
+<caption><span class="caption-text">Table 1. Seven selected hurricanes used for preliminary evaluation of the GAHM</span><a class="headerlink" href="#id17" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 18.2%" />
+<col style="width: 18.2%" />
+<col style="width: 18.2%" />
+<col style="width: 18.2%" />
+<col style="width: 27.3%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Hurricane</p></th>
+<th class="head"><p>Saffir-Simpson Wind Scale</p></th>
+<th class="head"><p>Maximum Sustained Wind (knot)</p></th>
+<th class="head"><p>Minimum Central Pressure (mbar)</p></th>
+<th class="head"><p>Period from Formation to Dissipation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Katrina</strong></p></td>
+<td><p>5</p></td>
+<td><p>150</p></td>
+<td><p>902</p></td>
+<td><p>08/23-08/30, 2005</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Rita</strong></p></td>
+<td><p>5</p></td>
+<td><p>150</p></td>
+<td><p>902</p></td>
+<td><p>09/18-09/26, 2005</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Gustav</strong></p></td>
+<td><p>4</p></td>
+<td><p>135</p></td>
+<td><p>941</p></td>
+<td><p>08/23-09/04, 2008</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Ike</strong></p></td>
+<td><p>4</p></td>
+<td><p>125</p></td>
+<td><p>935</p></td>
+<td><p>09/01-09/14, 2008</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Irene</strong></p></td>
+<td><p>3</p></td>
+<td><p>105</p></td>
+<td><p>942</p></td>
+<td><p>08/21-08/30, 2011</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Isaac</strong></p></td>
+<td><p>1</p></td>
+<td><p>70</p></td>
+<td><p>965</p></td>
+<td><p>08/21-09/03, 2012</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Sandy</strong></p></td>
+<td><p>3</p></td>
+<td><p>95</p></td>
+<td><p>940</p></td>
+<td><p>10/22-10/01, 2012</p></td>
+</tr>
+</tbody>
+</table>
+<p>Besides the maximum wind speed, both Holland <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(R_o\)</span> can be
+used as key storm characteristics to characterize the development of the storm.
+Figure 4 depicts the change of <span class="math notranslate nohighlight">\(V_M\)</span>, <span class="math notranslate nohighlight">\(B\)</span>, and <span class="math notranslate nohighlight">\(\log_{10}R_o\)</span>
+during different stages of the hurricanes along their best tracks. Typically,
+both <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(R_o\)</span> increase as hurricane strengthens, and decrease
+as hurricane dissipates, within the range of (0, 2.5). Previous analytical
+evaluation has demonstrated that the GAHM behaves consistently better than the
+HM, especially under situations where <span class="math notranslate nohighlight">\(\log_{10}R_o &lt; 1\)</span>. Here, evaluation
+of model performance will be carried out by comparing the modeled winds with the
+observed winds in the “best track” data, as well as the AHM, the SLOSH (Sea,
+Lake, and Overland Surges from Hurricanes) winds, re-analysis H*Wind and
+hindcast OWI modeled winds. The OWI winds and H*Winds are considered more mature
+wind products that are able to resolve more complex structures of a hurricane
+than the simple vortex models do.</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><figure class="align-default">
+<img alt="../../../_images/Fig_4._GAHM.png" src="../../../_images/Fig_4._GAHM.png" />
+</figure>
+</td>
+<td><figure class="align-default">
+<img alt="../../../_images/Fig_5._GAHM.png" src="../../../_images/Fig_5._GAHM.png" />
+</figure>
+</td>
+<td><figure class="align-default">
+<img alt="../../../_images/Fig_6._GAHM.png" src="../../../_images/Fig_6._GAHM.png" />
+</figure>
+</td>
+</tr>
+</tbody>
+</table>
+<center><p>Figure 4. The development of (a) The Maximum Wind Speed, (b) Holland MATH 0 ,
+and (c) MATH 1 along the best tracks of 7 selected hurricanes</p>
+</center></section>
+<section id="the-ahm-vs-the-gahm">
+<span id="id11"></span><h2>The AHM vs. The GAHM<a class="headerlink" href="#the-ahm-vs-the-gahm" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Comparison of Radial Wind Profiles using the Single-Isotach Approach</strong></p></li>
+</ul>
+<p>Since the AHM is an advanced version of the HM, here we only use model results
+from the AHM for comparisons with the GAHM. First, the single-isotach approach
+was evaluated using Hurricane Irene (2011) as an example. Figure 5 gives the
+comparison of radial wind profiles of Hurricane Irene (2011) between the AHM and
+the GAHM using the single-isotach approach at three snapshots, each representing
+the developing (top panels), mature (middle panels), and dissipating (bottom
+panels) stages of the hurricane.</p>
+<figure class="align-default">
+<img alt="Radial wind profiles of Irene (2011) at three different stages." src="../../../_images/Fig_7._GAHM.png" />
+</figure>
+<center><p>Figure 5. Comparison of radial wind profiles of Irene (2011) at three different
+stages between the AHM and the GAHM.</p>
+</center><p>The cross-section radial winds from SW to NE are given in the left panels, and
+NW to SE in the right panels. The observed isotaches at radii to specified
+isotaches given in the “best track” file are also plotted as vertical line
+segments for reference (highest isotach in black and lower isotaches in gray).
+For a perfect match between the modeled winds and the isotaches, the radial
+profiles should meet the tip of the line segments at the exact same height. The
+<span class="math notranslate nohighlight">\(B\)</span>, <span class="math notranslate nohighlight">\(B_g\)</span> and <span class="math notranslate nohighlight">\(\log_{10}R_o\)</span> are also computed at the same
+snapshots in all 4 quadrants, given by Table 2.</p>
+<table class="wrap-table scroll-table tight-table small-table docutils align-default" id="id18" style="width: 100%">
+<caption><span class="caption-text">Table 2. Key storm characteristics <span class="math notranslate nohighlight">\(B\)</span>, <span class="math notranslate nohighlight">\(B_g\)</span> and <span class="math notranslate nohighlight">\(\log_{10}R_o\)</span> at three snapshots of Irene (2011)</span><a class="headerlink" href="#id18" title="Link to this table"></a></caption>
+<tbody>
+<tr class="row-odd"><td></td>
+<td colspan="4"><p>2011-Aug-21 18:00</p></td>
+<td colspan="4"><p>2011-Aug-25 00:00</p></td>
+<td colspan="4"><p>2011-Aug-28 06:00</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Quadrant</strong></p></td>
+<td><p>NE</p></td>
+<td><p>SE</p></td>
+<td><p>SE</p></td>
+<td><p>NW</p></td>
+<td><p>NE</p></td>
+<td><p>SE</p></td>
+<td><p>SW</p></td>
+<td><p>NW</p></td>
+<td><p>NE</p></td>
+<td><p>SE</p></td>
+<td><p>SW</p></td>
+<td><p>NW</p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\boldsymbol{B}\)</span></p></td>
+<td><p>1.00</p></td>
+<td><p>1.00</p></td>
+<td><p>1.00</p></td>
+<td><p>1.00</p></td>
+<td><p>1.62</p></td>
+<td><p>1.62</p></td>
+<td><p>1.62</p></td>
+<td><p>1.62</p></td>
+<td><p>0.60</p></td>
+<td><p>0.60</p></td>
+<td><p>0.60</p></td>
+<td><p>0.60</p></td>
+</tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\boldsymbol{B_g}\)</span></p></td>
+<td><p>1.24</p></td>
+<td><p>1.03</p></td>
+<td><p>1.05</p></td>
+<td><p>1.19</p></td>
+<td><p>1.69</p></td>
+<td><p>1.69</p></td>
+<td><p>1.65</p></td>
+<td><p>1.68</p></td>
+<td><p>1.11</p></td>
+<td><p>0.92</p></td>
+<td><p>0.72</p></td>
+<td><p>0.73</p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\boldsymbol{log_{10}R_o}\)</span></p></td>
+<td><p>0.64</p></td>
+<td><p>1.44</p></td>
+<td><p>1.26</p></td>
+<td><p>0.74</p></td>
+<td><p>1.37</p></td>
+<td><p>1.36</p></td>
+<td><p>1.70</p></td>
+<td><p>1.41</p></td>
+<td><p>0.28</p></td>
+<td><p>0.33</p></td>
+<td><p>0.74</p></td>
+<td><p>0.82</p></td>
+</tr>
+</tbody>
+</table>
+<p>It is evident that the radial wind profiles generated by the GAHM consistently
+match the highest isotaches in all quadrants at different stages of Irene, no
+matter how <span class="math notranslate nohighlight">\(B\)</span> and <span class="math notranslate nohighlight">\(\log_{10}R_o\)</span> vary. The AHM did a similarly good
+job when the hurricane is strong (see middle panels), but failed to match the
+highest isotaches when <span class="math notranslate nohighlight">\(\log_{10}R_o &lt; 1\)</span>. Both the AHM and the GAHM winds
+died off too quickly away from the storm center, thus failed to match any lower
+isotaches.</p>
+<ul class="simple">
+<li><p><strong>Evaluation of the Maximum Winds and Radius to Maximum Winds</strong></p></li>
+</ul>
+<p>Comparisons of the modeled maximum winds and radius to maximum winds to the
+observed values in the input file were also carried out based on all 7 selected
+hurricanes, given by the scatter plots in Figure 6. Evaluations of the maximum
+winds are given in the upper panels, while the radius to maximum winds given in
+lower panels, both color-coded by <span class="math notranslate nohighlight">\(\log_{10}R_o\)</span>, with a simple linear
+correlation given in each panel. Examination of the upper panels reveals that
+the GAHM did an excellent job in estimating the maximum winds, with a few
+overestimations near the lower bound of the dataset. Careful examinations of
+these over estimated values revealed that they were from those “bad” dada
+entries in the “best track” file that violate certain criteria in the GAHM when
+solving for the <span class="math notranslate nohighlight">\(R_{max}\)</span>. This phenomenon was particular common during
+the dissipating stage of a hurricane. The AHM had larger discrepancies in
+estimating the maximum wind compared to the GAHM, especially when
+<span class="math notranslate nohighlight">\(\log_{10}R_o &lt; 1\)</span>, which was a direct consequence of the cyclostrophic
+balance assumption made during the derivation of HM’s equations. Examination of
+the lower panels reveals that the maximum value of the modeled
+azimuthally-varying <span class="math notranslate nohighlight">\(R_{max}\)</span> failed to match the observed <span class="math notranslate nohighlight">\(R_{max}\)</span>
+values given in the input file, but the trend of the GAHM was significantly
+better.</p>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../../../_images/Fig_8.1._GAHM.png"><img alt="../../../_images/Fig_8.1._GAHM.png" src="../../../_images/Fig_8.1._GAHM.png" style="width: 800px;" />
+</a>
+</figure>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../../../_images/Fig_8.2._GAHM.png"><img alt="../../../_images/Fig_8.2._GAHM.png" src="../../../_images/Fig_8.2._GAHM.png" style="width: 800px;" />
+</a>
+</figure>
+<center><p>Figure 6. Comparison of the modeled and “Best Track” maximum winds (upper two
+panels), and the modeled and “Best Track” MATH 0 (lower two panels) between the
+AHM and the GAHM based on all seven hurricanes.</p>
+</center><ul class="simple">
+<li><p><strong>Demonstration of the Multiple-Isotach Approach</strong></p></li>
+</ul>
+<p>Earlier we have shown that a radial wind profile constructed by the GAHM using
+the single-isotach approach would only match the highest isotach, due to
+limitations of this single-fitting method. In fact, underestimations of modeled
+winds at distances to isotachs other than the highest one were common, as the
+radial wind profile tends to die off too quickly away from the storm center due
+to the nature of GAHM’s formulas. In an effort to minimize the combined errors
+mentioned above, and to improve the overall accuracy of the estimated wind
+field, the multiple-isotach approach should be used whenever there is more than
+one isotach present in the best track file.</p>
+<p>The 3D plots of Irene’s radial wind profiles (left) and interpolated spatial
+wind fields (right) by the GAHM using the single-isotach approach (upper panels)
+versus the multiple-isotach approach (lower panels) were given by Figure 7. For
+easier visualization, all available isotaches were plotted at radii to specified
+isotaches in the left two panels, and as contour lines (after azimuthal
+interpolation) in the right two panels. It is evident that winds generated by
+the multiple-isotach approach were able to match all given isotaches in all 4
+quadrants, while only the highest isotach was matched by the single-isotach
+approach. Comparison of the spatial wind fields also indicated that the
+multiple-isotach approach allowed the wind to die off more gradually away from
+the storm center than the single-isotach approach did, demonstrated by the
+smaller gradient of the contour lines in the lower panel. It is believed that
+the multiple-isotach approach improves the overall accuracy and performance of
+the GAHM.</p>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../../../_images/Fig_9._GAHM.png"><img alt="../../../_images/Fig_9._GAHM.png" src="../../../_images/Fig_9._GAHM.png" style="width: 800px;" />
+</a>
+</figure>
+<center><p>Figure 7. 3D plot of Irene’s radial wind profiles (left) and interpolated
+spatial wind fields (right) by the single-isotach approach (upper panels) and
+the multiple-isotach approach (lower panels).</p>
+</center></section>
+<section id="evaluation-of-gahm-s-composite-wind-field">
+<span id="evaluation-of-gahms-composite-wind-field"></span><h2>Evaluation of GAHM’s Composite Wind Field<a class="headerlink" href="#evaluation-of-gahm-s-composite-wind-field" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Comparison of Radial Wind Profiles</strong></p></li>
+</ul>
+<p>Using the multiple-isotach approach, radial wind profiles generated from the
+GAHM were compared to those from the AHM, the SLOSH, H*Winds, and OWI winds,
+shown in Figure 8 at three different stages of Irene (2011), with the left
+panels showing the SW to NE cross-section winds, and the right showing the NW to
+SE cross-section winds (same as in Figure 5). It is evident that the GAHM’s
+composite radial wind profiles matched all available storm isotachs at all time,
+while the rest of the models failed most of the time. The SLOSH model, which is
+also a parametric wind model, does not take the isotach information to construct
+its wind field, so generally did a bad job matching any given isotaches. More
+detailed wind structures can be observed from the radial profiles extracted from
+the H*Wind and OWI winds than those from the parametric wind profiles, as
+expected. However, profiles from different models in general did not match each
+other due to different mechanisms involved in each model.</p>
+<figure class="align-default">
+<img alt="Comparison of radial wind profiles of Irene (2011)" src="../../../_images/Picture12_GAHM.png" />
+</figure>
+<center><p>Figure 8. Comparison of radial wind profiles of Irene (2011) at three different
+stages among the AHM, the GAHM, SLOSH, H*Wind and OWI winds.</p>
+</center><ul class="simple">
+<li><p><strong>Evaluation of Model Results at Radii to Given Isotaches</strong></p></li>
+</ul>
+<figure class="align-default">
+<img alt="Comparison of specified isotachs and modeled winds" src="../../../_images/Picture13_GAHM.png" />
+</figure>
+<center><p>Figure 9. Evaluation of modeled wind at radii to given isotaches based on all
+seven selected storms.</p>
+</center><p>Quantitative evaluation of the GAHM’s performance at radii to given isotaches
+were given in Figure 9, with statistics given in Table 3, based on all seven
+selected hurricanes. The GAHM had almost perfect match to each of the 34-, 50-,
+and 64-kt isotaches, with a standard deviation around 0.1 kt, which was very
+impressive. The AHM matched the 64-kt isotach reasonably well with a mean of
+63.3 kts, but failed at the lower isotaches. The SLOSH did not take any isotach
+information to construct its wind fields, thus behaved poorly in matching any
+given isotaches. Its data also had the largest spread compared to other models,
+with standard deviation ranging from 11 to 16 kts. For the H*Wind and the OWI
+winds, the means of modeled winds were close to each specified isotach,
+generally within ±3 kts, but the spreads of data were also large compared to
+that of the AHM and the GAHM, with a standard deviation greater than 7 kts.</p>
+<table class="wrap-table scroll-table docutils align-default" id="id19">
+<caption><span class="caption-text">Table 3. Statistical analysis of modeled winds at radii to
+specified isotaches based on all seven storms</span><a class="headerlink" href="#id19" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 18.2%" />
+<col style="width: 13.6%" />
+<col style="width: 13.6%" />
+<col style="width: 13.6%" />
+<col style="width: 13.6%" />
+<col style="width: 13.6%" />
+<col style="width: 13.6%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head" rowspan="2"></th>
+<th class="head" colspan="4"><p>MEAN (kt)</p></th>
+<th class="head" colspan="2"><p>Standard Deviation (kt)</p></th>
+</tr>
+<tr class="row-even"><th class="head"><p>Iso-34</p></th>
+<th class="head"><p>Iso-50</p></th>
+<th class="head"><p>Iso-64</p></th>
+<th class="head"><p>Iso-34</p></th>
+<th class="head"><p>Iso-50</p></th>
+<th class="head"><p>Iso-64</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p><strong>AHM</strong></p></td>
+<td><p>26.9</p></td>
+<td><p>44.7</p></td>
+<td><p>63.3</p></td>
+<td><p>7.96</p></td>
+<td><p>7.09</p></td>
+<td><p>2.55</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>GAHM</strong></p></td>
+<td><p>34.0</p></td>
+<td><p>50.0</p></td>
+<td><p>64.0</p></td>
+<td><p>0.10</p></td>
+<td><p>0.12</p></td>
+<td><p>0.10</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>SLOSH</strong></p></td>
+<td><p>30.0</p></td>
+<td><p>48.9</p></td>
+<td><p>69.5</p></td>
+<td><p>11.00</p></td>
+<td><p>14.11</p></td>
+<td><p>16.08</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>OWI</strong></p></td>
+<td><p>33.1</p></td>
+<td><p>48.3</p></td>
+<td><p>61.3</p></td>
+<td><p>7.65</p></td>
+<td><p>8.71</p></td>
+<td><p>9.42</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>H*Wind</strong></p></td>
+<td><p>34.9</p></td>
+<td><p>49.2</p></td>
+<td><p>61.2</p></td>
+<td><p>7.55</p></td>
+<td><p>8.88</p></td>
+<td><p>8.89</p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p><strong>Comparison of Spatial Wind fields</strong></p></li>
+</ul>
+<p>Comparisons of spatial wind fields among the AHM, the GAHM using the
+multiple-isotach approach, the SLOSH, H*Wind and OWI winds (in rows) were given
+by Figure 10 at the same snapshots (in columns) as in Figure 8. The 34-, 50-,
+and 64-kt contour lines were shown in each wind snapshot. In general, the AHM
+and GAHM winds shared a lot of similarities. During weaker periods of Irene, the
+differences between the AHM and the GAHM’s spatial wind fields were mostly
+observed in the inner region of the hurricane due to differences in calculated
+<span class="math notranslate nohighlight">\(R_{max}\)</span>. More specifically, the calculated <span class="math notranslate nohighlight">\(R_{max}\)</span> in the AHM
+was under-predicted (thus is closer to the storm center) than that in the GAHM,
+resulted from the faulty cyclostrophic balance assumption made in the HM and
+AHM. During stronger periods of Irene, however, the differences were mostly
+observed in the outer region of the hurricane due to the usage of the
+multiple-isotach approach in the GAHM. Without taking into account storm
+information from lower isotaches, the AHM winds tended to die off too quickly
+away from the storm center. The SLOSH winds did not show much similarity to the
+AHM and GAHM winds. It used an azimuthally constant <span class="math notranslate nohighlight">\(R_{max}\)</span> from the
+“best track” file to generate its vortex winds, and a distance-weighted
+translational speed to account for storm asymmetry, which was not rendered
+properly when the storm was strong. The winds fields of H*Wind and OWI winds
+were much more complex than those of the simple parametric models, but the GAHM
+did a relatively good job matching the spatial patterns of the hurricane.
+Although it is unlikely that the parametric winds constructed over a minimum set
+of data would match the level of details and complexity in the re-analysis
+H*Wind and the numerical OWI winds, the ability of a the GAHM to produce
+reasonable estimates of surface wind fields in a timely manner was highly
+desirable for real-time forecasting.</p>
+<figure class="align-default">
+<img alt="Three snapshots (in columns) of Irene’s two-dimensional wind fields by the AHM, GAHM, SLOSH, H*Wind and OWI winds" src="../../../_images/Fig_10._GAHM.png" />
+</figure>
+<center><p>Figure 10. Comparison of Irene’s spatial wind fields by the AHM, GAHM, SLOSH,
+H*Wind and OWI winds at three different stages</p>
+</center></section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id12" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>Holland, G. J., 1980: An analytic model of the wind and pressure profiles in
+hurricanes. <em>Monthly Weather Review</em>, 108, 1212-1218.</p>
+</aside>
+<aside class="footnote brackets" id="id13" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">2</a><span class="fn-bracket">]</span></span>
+<p>Mattocks, C., C. Forbes, and L. Ran, 2006: Design and implementation of a
+real-time storm surge and flood forecasting capability for the State of North
+Carolina. UNC-CEP Technical Report, University of North Carolina, 103pp.</p>
+</aside>
+<aside class="footnote brackets" id="id14" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">3</a><span class="fn-bracket">]</span></span>
+<p>Powell, Mark &amp; Uhlhorn, E. &amp; Kepert, Jeffrey. (2009). Estimating Maximum
+Surface Winds from Hurricane Reconnaissance Measurements. <em>Weather and
+Forecasting</em>. 24. 10.1175/2008WAF2007087.1.</p>
+</aside>
+<aside class="footnote brackets" id="id15" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">4</a><span class="fn-bracket">]</span></span>
+<p>The auxiliary preprocessing program ASWIP.F (located in the /wind directory)
+was further developed here to accommodate the GAHM.</p>
+</aside>
+<aside class="footnote brackets" id="id16" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">5</a><span class="fn-bracket">]</span></span>
+<p>Queensland Government, 2011: Queensland Climate Change and Community
+Vulnerability to Tropical Cyclone, <em>Ocean Hazards Assessment – Stage 1</em>.</p>
+</aside>
+</aside>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="moteorological_parameter_line.html" class="btn btn-neutral float-left" title="Supplemental meteorological/wave/ice parameters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="nws12.html" class="btn btn-neutral float-right" title="NWS12" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

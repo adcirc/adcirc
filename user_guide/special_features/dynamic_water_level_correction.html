@@ -1,0 +1,396 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Dynamic water level correction in ADCIRC" name="description" />
+<meta content="adcirc, dynamic water level correction" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dynamic water level correction &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Ice Modifications" href="ice_modifications.html" />
+    <link rel="prev" title="Bridge Piers" href="bridge_piers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Special Features</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="adcirc2d_plus.html">ADCIRC2D+</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bridge_piers.html">Bridge Piers</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Dynamic water level correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ice_modifications.html">Ice Modifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../model_configuration/meteorological_forcing/generalized_asymmetric_holland_model.html">Generalized Asymmetric Holland Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vertical_element_walls.html">Vertical Element Walls (VEWs)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Special Features</a></li>
+      <li class="breadcrumb-item active">Dynamic water level correction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/user_guide/special_features/dynamic_water_level_correction.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="dynamic-water-level-correction">
+<span id="id1"></span><h1>Dynamic water level correction<a class="headerlink" href="#dynamic-water-level-correction" title="Link to this heading"></a></h1>
+<p><strong>Dynamic Water Level Correction</strong> is a process by which modeled water levels
+are dynamically adjusted by use of a forcing term. The correction can be applied
+as constant or varying in space and/or time. The correction is applied as a
+forcing term in the momentum equations whose mathematical form is equivalent to
+that of an atmospheric pressure term. This means that, for gradually-varying
+corrections, corrected water levels should closely follow the input correction,
+though these may deviate if a correction is applied very quickly or to an area
+that has a very weak connection to an open boundary through which water can
+flow. Further discussion is below in the <a class="reference internal" href="#dwlc-frequently-asked-questions"><span class="std std-ref">FAQ</span></a>.</p>
+<p>Overviews and examples of this capability have been provided in multiple
+presentations (Luettich et al. 2017 <a class="footnote-reference brackets" href="#id11" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>, Asher et al. 2018 <a class="footnote-reference brackets" href="#id12" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>) and a journal
+article (Asher et al. 2019 <a class="footnote-reference brackets" href="#id13" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>) with details and an application to Hurricane
+Matthew. Users looking for ways to generate water level correction surfaces can
+look to that same article and this digital publication/data repository <a class="footnote-reference brackets" href="#id14" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a>,
+which holds the code base used in the aforementioned paper.</p>
+<section id="version">
+<h2>Version<a class="headerlink" href="#version" title="Link to this heading"></a></h2>
+<p>Early versions of this feature were implemented in v53, however important bug
+fixes and a renaming of related variables <a class="reference internal" href="#note1" id="id6"><span>[Note1]</span></a> were done later, so users are
+strongly encouraged to not use these earlier versions.</p>
+</section>
+<section id="controlling-water-level-correction">
+<span id="id7"></span><h2>Controlling Water Level Correction<a class="headerlink" href="#controlling-water-level-correction" title="Link to this heading"></a></h2>
+<div class="line-block">
+<div class="line">The water level correction feature is triggered by the presence of the
+<a class="reference internal" href="../../technical_reference/input_files/fort15.html#fort15"><span class="std std-ref">&amp;dynamicWaterLevelCorrectionControl</span></a> namelist at the bottom of the <a class="reference internal" href="../../technical_reference/input_files/fort15.html#fort15"><span class="std std-ref">fort.15
+file</span></a>. Here is an example of how this line is used:</div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>&amp;dynamicWaterLevelCorrectionControl dynamicWaterLevelCorrectionFileName=&quot;hsofs_offset_test_ft.dat&quot; dynamicWaterLevelCorrectionMultiplier=0.3048, dynamicWaterLevelCorrectionRampStart=0.0, dynamicWaterLevelCorrectionRampEnd=259200.0 dynamicWaterLevelCorrectionRampReferenceTime=&quot;hotstart&quot;, dynamicWaterLevelCorrectionSkipSnaps=0 /
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../technical_reference/input_files/fort15.html#fort15"><span class="std std-ref">dynamicWaterLevelCorrectionMultiplier</span></a> allows one to easily change the
+entire dataset by a single factor, e.g. if the data were provided in feet;
+ADCIRC requires meters.</p></li>
+<li><p><a class="reference internal" href="../../technical_reference/input_files/fort15.html#fort15"><span class="std std-ref">dynamicWaterLevelCorrectionRampStart</span></a> and
+<a class="reference internal" href="../../technical_reference/input_files/fort15.html#fort15"><span class="std std-ref">dynamicWaterLevelCorrectionRampEnd</span></a> are the time in seconds for a linear
+ramp up period.</p></li>
+<li><p><a class="reference internal" href="../../technical_reference/input_files/fort15.html#fort15"><span class="std std-ref">dynamicWaterLevelCorrectionRampReferenceTime</span></a> controls whether the ramp
+times are relative to the hotstart time or the coldstart time. Prior to the
+start of the ramp, the correction values are multiplied by 0.0, eliminating
+the correction until the ramp period starts.</p></li>
+<li><p><a class="reference internal" href="../../technical_reference/input_files/fort15.html#fort15"><span class="std std-ref">dynamicWaterLevelCorrectionSkipSnaps</span></a> is used to skip the specified number
+of initial data sets in the corrections data file. It can also be used to
+insert blank snaps at the beginning of the run if it is negative.</p></li>
+</ul>
+<section id="water-level-correction-input-file">
+<span id="id8"></span><h3>Water Level Correction Input File<a class="headerlink" href="#water-level-correction-input-file" title="Link to this heading"></a></h3>
+<p>ADCIRC will begin reading this input file when the run starts, so time snaps are
+needed from the start of the run. ADCIRC looks for the water level correction
+input file in the same directory as the other full-domain files, both in serial
+and in parallel. In parallel, each subdomain does domain decomposition of the
+correction data on the fly, so the only change to adcprep is the read/write of
+the new namelist to the subdomain fort.15 files. The water level correction
+input file starts with the following three header lines:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span># test file for 1ft correction on hsofs mesh during matthew
+14400.0        # time increment between datasets, must be positive -- read but ignored if constant correction
+0.0            # default correction value
+</pre></div>
+</div>
+<p>The first line is a comment line. The second line is the time interval in
+seconds between successive datasets. The third line is the default correction
+value; this allows us to create correction input files in a “sparse” format
+where only the non-default values are provided.If there is only one dataset in
+the correction file, then the values are treated as temporally constant. If
+there is more than one dataset, ADCIRC linearly interpolates between them in
+time. If ADCIRC runs out of correction data, it continues with the last dataset
+as a set of constant values for the remainder of the run.</p>
+<p>Because each correction dataset may have a different number of values, the #
+(hash, pound, or number) symbol is used as a separator. Specifically, users
+should place a line containing # in the first and second columns, i.e. <code class="docutils literal notranslate"><span class="pre">##</span></code>,
+of the file after the end of the current time snap of data. When ADCIRC sees
+this, it understands the next line is the start of the next time snap of data.</p>
+</section>
+<section id="output">
+<h3>Output<a class="headerlink" href="#output" title="Link to this heading"></a></h3>
+<p>If a water level correction input file is specified, then the time interpolated
+water level correction values will be written to a file called
+<a class="reference external" href="offset.63">offset.63</a> on the same schedule as output to the
+<a class="reference external" href="fort.63">fort.63</a>. This file can then be used as a diagnostic to check that
+the correction values have been applied as expected.</p>
+</section>
+</section>
+<section id="compatibility">
+<h2>Compatibility<a class="headerlink" href="#compatibility" title="Link to this heading"></a></h2>
+<p>Although the correction is implemented as a pseudo barometric pressure, it is
+entirely independent of any/all meteorological forcing and meteorological data.
+The values do not show up in the fort.71 (barometric pressure stations) or
+fort.73 (fulldomain barometric pressure field) output files. The correction can
+be used with any meteorological forcing data, or with no meteorological forcing
+data at all.</p>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
+<p>An ADCIRC model is coldstarted with a tide only run that uses a 10 day ramp, and
+runs for 15 days. How should the water level correction be configured?</p>
+<p>In this case, I suggest that you apply your bias correction after reaching full
+strength tidal forcing (i.e., after the 10 day tidal ramp). So to have your bias
+correction ramp completed at the end of the 15 day tidal spinup, start the ramp
+period at 10.0 days and end it at 13.0 days. This should ensure you clearly see
+the correction occurring when you look at the output data, while avoiding
+applying the correction too rapidly. In summary, set your ramp period in the
+fort.15 file to
+<code class="docutils literal notranslate"><span class="pre">dynamicWaterLevelCorrectionRampStart</span> <span class="pre">=864000.0,</span> <span class="pre">dynamicWaterLevelCorrectionRampEnd</span> <span class="pre">=</span> <span class="pre">1036800.0</span></code></p>
+<p>Since this is the model spin-up period, using a time-constant correction is
+likely sufficient. That means a single time snap of correction data can be
+supplied, for example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span># bias correction values test for GFS 20161002 cycle 00Z
+99999.9        # time increment in seconds; not used in this case
+0.0            # default nodal value applied to any node not specified below
+234    0.5
+1223  0.6
+1789  -0.2
+4000  0.1
+##
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">After the spinup, in preparation for a forecast run, when you want to migrate
+from one set of bias correction values to another over a 6 hour time period,
+the fort.15 file’s <code class="docutils literal notranslate"><span class="pre">dynamicWaterLevelCorrectionControl</span></code> line would be
+something like this:</div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>&amp;dynamicWaterLevelCorrectionControl dynamicWaterLevelCorrectionFileName= &quot;offset_migration_from_00Z_to_06Z.dat&quot;, dynamicWaterLevelCorrectionMultiplier = 1.0, dynamicWaterLevelCorrectionRampStart = 1252800.0, dynamicWaterLevelCorrectionRampEnd = 1296000.0, dynamicWaterLevelCorrectionRampReferenceTime = &quot;coldstart&quot;, dynamicWaterLevelCorrectionSkipSnaps = 0 /
+</pre></div>
+</div>
+<p>and the corresponding file would look like something like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span># bias correction values for GFS 20161002 from cycle 00Z to cycle 06Z
+21600.0        # 6 hour time increment in seconds
+0.0            # default nodal value applied to any node not specified below
+234    0.5
+1223  0.6
+1789  -0.2
+4000  0.1
+##
+512   0.3
+1001  -0.5
+2346  0.74
+4000  -0.1
+##
+</pre></div>
+</div>
+<p>At the end of the 15.0 day tidal spinup in this example the bias correction at
+node 234 would be 0.5. Three hours later (after the hotstart) it would be 0.25.
+Six hours after the hotstart it would be zero.</p>
+<p>At the end of the 15.0 day tidal spinup in this example the bias correction at
+node 1001 would be 0.0. Three hours later (after the hotstart) it would be
+-0.25. Six hours after the hotstart it would be -0.5.</p>
+<p>At the end of the 15.0 day tidal spinup in this example the bias correction at
+node 4000 would be 0.1. Three hours later (after the hotstart) it would be 0.0.
+Six hours after the hotstart it would be -0.1.</p>
+</section>
+<section id="frequently-asked-questions">
+<span id="dwlc-frequently-asked-questions"></span><h2>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>Question:</dt><dd><p>When writing the &amp;dynamicWaterLevelCorrectionControl namelist,
+should I write the parameters on a single line, comma separated?</p>
+</dd>
+<dt>Answer:</dt><dd><p>I always put fortran namelist parameters on a single line and
+separate the assignments with commas, but other formatting may be possible
+depending on the compiler you are using. Commas has always worked for me, but
+I’ve not tried any other way.</p>
+</dd>
+<dt>Question:</dt><dd><p>Do I need to ramp the correction, i.e., is it wise to do so for
+some reason?</p>
+</dd>
+<dt>Answer:</dt><dd><p>It should behave the same as a sudden application of atmospheric
+pressure forcing, which could lead to (presumably spurious) waves. Our shortest
+ramp up period is 12 hours but you might get away with 6 hours or even less. We
+have seen that rapidly ramping in the correction can lead to two outcomes that
+may be undesirable. One is a strong geostrophic current response. The other is
+that the water level response can lag behind the correction. This is most common
+for large water bodies with narrow connections to the open ocean, such as
+Pamlico Sound in North Carolina. Further details are in Asher et al. 2019 <a class="footnote-reference brackets" href="#id13" id="id9" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>.</p>
+</dd>
+<dt>Question:</dt><dd><p>Does the application of a dynamic water level correction surface
+affect the velocity solution (not just the elevation solution as it is primarily
+intended)?</p>
+</dd>
+<dt>Answer:</dt><dd><p>Yes, hopefully in a physically realistic manner. As an example,
+when applying a water level correction to a back bay area with a nearby tidal
+inlet, the water level change in the back bay must be reflected in the velocity
+in the inlet in order to maintain continuity (conservation of mass). In the case
+of an initial application of a temporally steady water level correction, this
+velocity effect should be a one-time occurrence. On the other hand, for a time
+varying water level correction surface, the continuous adjustments to the water
+level will be continuously reflected in the velocity solution. This should be
+physically realistic when the water <em>should have</em> come from offshore, but if the
+elevated water level is due to rainfall, then the model is directing flow in the
+wrong direction. Further details are in Asher et al. 2019 <a class="footnote-reference brackets" href="#id13" id="id10" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>.</p>
+</dd>
+</dl>
+</section>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading"></a></h2>
+<div role="list" class="citation-list">
+<div class="citation" id="note1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">Note1</a><span class="fn-bracket">]</span></span>
+<p>If using an older version, note that in the fort.15 file, instances of
+“dynamicWaterLevelCorrection” should be changed to “offset” in the namelist
+parameter names, e.g. “offsetControl”.</p>
+</div>
+</div>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<references /><aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id11" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">1</a><span class="fn-bracket">]</span></span>
+<p>Luettich, R.L., T.G. Asher, B.O. Blanton, J.G. Fleming. Representing Low
+Frequency, Spatially Varying Water Level Anomalies in Storm Surge
+Computations. 2017 American Meteorological Society Annual Meeting. <a class="reference external" href="https://ams.confex.com/ams/97Annual/webprogram/Paper316033.html">Link to
+talk</a></p>
+</aside>
+<aside class="footnote brackets" id="id12" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">2</a><span class="fn-bracket">]</span></span>
+<p>Asher, T.G., R.L. Luettich, J.G. Fleming, B.O.Blanton. Assimilation of
+Observed Water Levels into Storm Surge Model Predictions. 2018 American
+Meteorological Society Annual Meeting. <a class="reference external" href="https://ams.confex.com/ams/98Annual/webprogram/Paper334044.html">Link to
+talk</a></p>
+</aside>
+<aside class="footnote brackets" id="id13" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id4">1</a>,<a role="doc-backlink" href="#id9">2</a>,<a role="doc-backlink" href="#id10">3</a>)</span>
+<p>Asher, T.G., Luettich Jr., R.A., Fleming, J.G., Blanton, B.O., 2019. Low
+frequency water level correction in storm surge models using data
+assimilation. Ocean Modelling 144, 101483.
+<a class="reference external" href="https://doi.org/10.1016/j.ocemod.2019.101483">https://doi.org/10.1016/j.ocemod.2019.101483</a></p>
+</aside>
+<aside class="footnote brackets" id="id14" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">4</a><span class="fn-bracket">]</span></span>
+<p>Asher, T., 2019. Hurricane Matthew (2016) Storm Surge and Wave Simulations
+with Data Assimilation. <a class="reference external" href="https://doi.org/10.17603/2Z8H-7K90">https://doi.org/10.17603/2Z8H-7K90</a></p>
+</aside>
+</aside>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="bridge_piers.html" class="btn btn-neutral float-left" title="Bridge Piers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ice_modifications.html" class="btn btn-neutral float-right" title="Ice Modifications" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

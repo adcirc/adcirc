@@ -1,0 +1,659 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Flux specified boundaries in ADCIRC" name="description" />
+<meta content="adcirc, flux specified boundaries" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flux Specified Boundaries &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Astronomical Tides" href="../tides/index.html" />
+    <link rel="prev" title="Open Boundaries" href="open_boundaries.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Model Configuration</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../model_parameters/index.html">Model Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../physics_parameters/index.html">Physics Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../initial_conditions/index.html">Initial Conditions</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tides/index.html">Astronomical Tides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../meteorological_forcing/index.html">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../typical_configurations/typical_parameter_selections.html">Typical Parameter Selections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Model Configuration</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Boundary Conditions</a></li>
+      <li class="breadcrumb-item active">Flux Specified Boundaries</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/model_configuration/boundary_conditions/flux_specified_boundaries.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="flux-specified-boundaries">
+<span id="id1"></span><h1>Flux Specified Boundaries<a class="headerlink" href="#flux-specified-boundaries" title="Link to this heading"></a></h1>
+<p>The table below describes the valid IBTYPE values and their corresponding boundary condition types. See also <a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#ibtype"><span class="std std-ref">IBTYPE</span></a> for full details of each boundary type.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Boundary types 0-5 and 102 above can introduce instabilities into the ADCIRC solution; types 20-25 and 122 are therefore preferred.</p></li>
+<li><p>Avoid boundary types 10-13 and 112 unless very high mesh resolution is provided to allow resolution of the lateral boundary layer.</p></li>
+<li><p>Boundary types 20-25 and 122 are preferred over the corresponding essential boundary conditions (types 0-5 and 102).</p></li>
+</ul>
+</div>
+<table class="wrap-table tighter-table docutils align-default" id="id6" style="width: 100%">
+<caption><span class="caption-text">Normal Flux Boundary Type Values (IBTYPE)</span><a class="headerlink" href="#id6" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 12.5%" />
+<col style="width: 37.5%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>IBTYPE</p></th>
+<th class="head"><p>Location</p></th>
+<th class="head"><p>Flux Type</p></th>
+<th class="head"><p>Num. Impl.</p></th>
+<th class="head"><p>Tang. Slip</p></th>
+<th class="head"><p>Typical Use</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>External</p></td>
+<td><p>Zero</p></td>
+<td><p>Essential</p></td>
+<td><p>Free</p></td>
+<td><p>Mainland boundaries</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>Internal</p></td>
+<td><p>Zero</p></td>
+<td><p>Essential</p></td>
+<td><p>Free</p></td>
+<td><p>Island boundaries</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>External</p></td>
+<td><p>Nonzero inflow</p></td>
+<td><p>Essential</p></td>
+<td><p>Free</p></td>
+<td><p>River or ocean inflow boundaries;
+if flux is periodic it is specified in fort.15;
+if it is time varying and aperiodic, it must be
+specified in fort.20 file</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>External</p></td>
+<td><p>Outflow</p></td>
+<td><p>Essential</p></td>
+<td><p>Free</p></td>
+<td><p>Flow over a weir out of the domain;
+must specify levee height;
+ADCIRC calculates the fluxes</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>Internal</p></td>
+<td><p>Zero or nonzero</p></td>
+<td><p>Essential</p></td>
+<td><p>Free</p></td>
+<td><p>Interior levees; must specify levee height;
+ADCIRC calculates the fluxes using weir formula</p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p>Internal</p></td>
+<td><p>Zero or nonzero</p></td>
+<td><p>Essential</p></td>
+<td><p>Free</p></td>
+<td><p>Interior levees with cross-barrier pipes (like a culvert);
+must specify levee height and other parameters;
+ADCIRC calculates the fluxes</p></td>
+</tr>
+<tr class="row-even"><td><p>10</p></td>
+<td><p>External</p></td>
+<td><p>Zero</p></td>
+<td><p>Essential</p></td>
+<td><p>No slip</p></td>
+<td><p>As ibtype 0 above but no slip</p></td>
+</tr>
+<tr class="row-odd"><td><p>11</p></td>
+<td><p>Internal</p></td>
+<td><p>Zero</p></td>
+<td><p>Essential</p></td>
+<td><p>No slip</p></td>
+<td><p>As ibtype 1 above but no slip</p></td>
+</tr>
+<tr class="row-even"><td><p>12</p></td>
+<td><p>External</p></td>
+<td><p>Nonzero</p></td>
+<td><p>Essential</p></td>
+<td><p>No slip</p></td>
+<td><p>As ibtype 2 above but no slip</p></td>
+</tr>
+<tr class="row-odd"><td><p>13</p></td>
+<td><p>External</p></td>
+<td><p>Outflow</p></td>
+<td><p>Essential</p></td>
+<td><p>No slip</p></td>
+<td><p>As ibtype 3 above but no slip</p></td>
+</tr>
+<tr class="row-even"><td><p>20</p></td>
+<td><p>External</p></td>
+<td><p>Zero (weak)</p></td>
+<td><p>Natural</p></td>
+<td><p>Free</p></td>
+<td><p>As ibtype 0 but natural boundary;
+preferred over ibtype 0 or 10</p></td>
+</tr>
+<tr class="row-odd"><td><p>21</p></td>
+<td><p>Internal</p></td>
+<td><p>Zero (weak)</p></td>
+<td><p>Natural</p></td>
+<td><p>Free</p></td>
+<td><p>As ibtype 1 but natural boundary;
+preferred over ibtype 1 or 11</p></td>
+</tr>
+<tr class="row-even"><td><p>22</p></td>
+<td><p>External</p></td>
+<td><p>Nonzero (weak)</p></td>
+<td><p>Natural</p></td>
+<td><p>Free</p></td>
+<td><p>As ibtype 2 but natural boundary;
+preferred over ibtype 2 or 12</p></td>
+</tr>
+<tr class="row-odd"><td><p>23</p></td>
+<td><p>External</p></td>
+<td><p>Outflow (weak)</p></td>
+<td><p>Natural</p></td>
+<td><p>Free</p></td>
+<td><p>As ibtype 3 but natural boundary;
+preferred over ibtype 3 or 13</p></td>
+</tr>
+<tr class="row-even"><td><p>24</p></td>
+<td><p>Internal</p></td>
+<td><p>Zero or nonzero (weak)</p></td>
+<td><p>Natural</p></td>
+<td><p>Free</p></td>
+<td><p>As ibtype 4 but natural boundary;
+preferred over ibtype 4</p></td>
+</tr>
+<tr class="row-odd"><td><p>25</p></td>
+<td><p>Internal</p></td>
+<td><p>Zero or nonzero (weak)</p></td>
+<td><p>Natural</p></td>
+<td><p>Free</p></td>
+<td><p>As ibtype 5 but natural boundary;
+preferred over ibtype 5</p></td>
+</tr>
+<tr class="row-even"><td><p>64</p></td>
+<td><p>Internal</p></td>
+<td><p>Zero or nonzero (weak)</p></td>
+<td><p>Natural or condensed</p></td>
+<td><p>Free</p></td>
+<td><p>Defines vertical element walls</p></td>
+</tr>
+<tr class="row-odd"><td><p>102</p></td>
+<td><p>External</p></td>
+<td><p>Nonzero inflow</p></td>
+<td><p>Essential</p></td>
+<td><p>Free</p></td>
+<td><p>As ibtype 2 but baroclinic instead of barotropic;
+also requires density-related boundary conditions
+in fort.39 input file</p></td>
+</tr>
+<tr class="row-even"><td><p>112</p></td>
+<td><p>External</p></td>
+<td><p>Nonzero</p></td>
+<td><p>Essential</p></td>
+<td><p>No slip</p></td>
+<td><p>As ibtype 12 but baroclinic instead of barotropic;
+also requires density-related boundary conditions
+in fort.39 input file</p></td>
+</tr>
+<tr class="row-odd"><td><p>122</p></td>
+<td><p>External</p></td>
+<td><p>Nonzero (weak)</p></td>
+<td><p>Natural</p></td>
+<td><p>Free</p></td>
+<td><p>As ibtype 22 but baroclinic instead of barotropic;
+also requires density-related boundary conditions
+in fort.39 input file</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Abbreviations in column headers:</p>
+<ul class="simple">
+<li><p><strong>Num. Impl.</strong> - Numerical Implementation</p></li>
+<li><p><strong>Tang. Slip</strong> - Tangential Slip</p></li>
+</ul>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Different boundary types require different parameters to be specified in the fort.14 file:</p>
+<ul class="simple">
+<li><p>Basic boundaries (IBTYPE = 0, 1, 2, 10, 11, 12, 20, 21, 22, 102, 112, 122): Node numbers only</p></li>
+<li><p>Weir boundaries (IBTYPE = 3, 13, 23): Node numbers plus barrier height and flow coefficients</p></li>
+<li><p>Interior barrier boundaries (IBTYPE = 4, 24): Node numbers, connected nodes, barrier height, and flow coefficients</p></li>
+<li><p>Pipe boundaries (IBTYPE = 5, 25): Node numbers, connected nodes, barrier parameters, and pipe specifications (height, coefficient, diameter)</p></li>
+</ul>
+</div>
+<p><strong>Essential boundaries with free slip</strong> are applied by specifying the
+contribution (zero or non-zero) to the normal boundary flux integral in the
+continuity equation and by specifying the (zero or non-zero) normal velocity in
+the momentum equations. This boundary condition should satisfy the flux balance
+in a global sense and the normal flux at each boundary node.</p>
+<p><strong>Essential boundaries with no slip</strong> are applied by specifying the contribution
+(zero or non-zero) to the normal boundary flux integral in the continuity
+equation and by setting the (zero or non-zero) normal velocity and zero
+tangential velocity rather than solving momentum equations along the boundary.
+This boundary condition should correctly satisfy the normal flux balance in a
+global sense and zero tangential velocity at each boundary node.</p>
+<p><strong>Natural boundaries</strong> are applied by specifying the zero or non-zero
+contribution to the normal boundary flux integral in the continuity equation.
+There is no constraint on velocity (normal or tangential) in the momentum
+equations. This boundary condition should correctly satisfy the flux balance in
+a global sense but will only satisfy the normal flow at each boundary node in
+the limit of infinite resolution.</p>
+<section id="general-notes-for-normal-flow-boundary-conditions">
+<span id="id2"></span><h2>General Notes for Normal Flow Boundary Conditions<a class="headerlink" href="#general-notes-for-normal-flow-boundary-conditions" title="Link to this heading"></a></h2>
+<p>All external (external no normal flow, external with specified normal flow and
+external barrier) boundaries should be listed in consecutive order around the
+outside of the entire domain before any internal (island with no normal flow or
+internal barrier) boundary segments are listed. Internal barrier boundaries that
+intersect an external boundary should be specified separately, even though this
+will result in some nodes being specified in both boundaries, (see below).</p>
+<p>An external no normal flow or specified normal flow boundary that completely
+surrounds the domain (e.g., a lake) should be closed by repeating the first node
+as the last node.</p>
+<p>All no normal flow internal boundaries (e.g., islands) should be closed by
+repeating the first node as the last node.</p>
+<p>Unless the boundary segment is closed, always start listing the boundary nodes
+where two boundaries connect.</p>
+<p>When an external specified normal flow or external barrier boundary connects to
+an external no normal flow boundary, the initial leg of the external specified
+normal flow boundary or external barrier boundary is used to determine the
+normal and tangential direction at the node common to both boundaries.</p>
+<p>External boundaries with specified (non-zero) normal flow boundary conditions
+and external barrier boundaries can not connect. They must be separated by an
+external no normal flow boundary or an elevation specified boundary.</p>
+<p>An internal barrier boundary can intersect an external no normal flow boundary.
+(For example a levee may project out of an external no normal flow boundary in
+which case 2 nodes, the front and back node on the internal barrier boundary,
+would be common to the external boundary.) However, the common external nodes
+must be treated in the weak sense. ADCIRC will automatically accommodate this as
+follows:</p>
+<ul class="simple">
+<li><p>If the external no flow boundary is specified as essential with slip
+(IBTYPE(k)=0) and the internal barrier boundary is specified as essential
+with slip (IBTYPE(k)=4), the common external boundary nodes are automatically
+changed to natural no flow boundary nodes (IBTYPE(k)=20).</p></li>
+<li><p>If the external no flow boundary is specified as essential with no slip
+(IBTYPE(k)=10) and the internal barrier boundary is specified as essential
+with slip (IBTYPE(k)=4), the common external boundary nodes are automatically
+changed to natural no flow boundary nodes (IBTYPE(k)=20).</p></li>
+<li><p>If the external no flow boundary is specified as natural with slip
+(IBTYPE(k)=20) and the internal barrier boundary is specified as essential
+with slip (IBTYPE(k)=4), no changes are made.</p></li>
+<li><p>If the external no flow boundary is specified as essential with slip
+(IBTYPE(k)=0) and the internal barrier boundary is specified as natural with
+slip (IBTYPE(k)=24), no changes are made.</p></li>
+<li><p>If the external no flow boundary is specified as essential with no slip
+(IBTYPE(k)=10) and the internal barrier boundary is specified as natural with
+slip (IBTYPE(k)=24), the common external boundary nodes are automatically
+changed to essential no flow with slip boundary nodes (IBTYPE(k)=0).</p></li>
+<li><p>If the external no flow boundary is specified as natural with slip
+(IBTYPE(k)=20) and the internal barrier boundary is specified as natural with
+slip (IBTYPE(k)=24), no changes are made.</p></li>
+</ul>
+<p>Internal barrier boundaries can not intersect external specified flow boundary
+segments, external barrier boundary segments or internal no normal flow
+boundaries.</p>
+<p>For all normal flow boundaries (i.e. IBTYPE(k) = 0,1,2,3,
+4,10,11,12,13,20,21,22,23,24,30), the boundary flux integral in the continuity
+equation is evaluated with the appropriate (zero, specified or computed) flux.
+This is a natural boundary condition. For natural normal flow boundaries
+(IBTYPE(k) = 20,21,22,23,24), this is the only lateral boundary condition that
+is used.</p>
+<p>For essential normal flow boundaries with tangential slip (IBTYPE(k) =
+0,1,2,3,4,10,11,12,13), the normal direction momentum equation (obtained by
+re-orienting the x/y momentum equations into normal/tangential directions) is
+eliminated and the normal velocity is set by dividing the normal flux per unit
+width (zero, specified, or computed) by the total water column height.</p>
+<p>For essential normal flow boundaries with no tangential slip (IBTYPE(k) = 10,11,
+12,13), both momentum equations are eliminated. The tangential velocity is set
+equal to zero and the normal velocity is set by dividing the normal flux per
+unit width (zero, specified, or computed) by the total water column height. Use
+of this boundary condition requires considerable care since strictly speaking
+this type of no slip boundary condition is only mathematically justifiable if
+lateral viscous terms are used in the simulation and only physically justifiable
+if the lateral boundary layers are sufficiently resolved.</p>
+</section>
+<section id="external-barrier-boundary-note">
+<span id="id3"></span><h2>External Barrier Boundary Note<a class="headerlink" href="#external-barrier-boundary-note" title="Link to this heading"></a></h2>
+<p><strong>(IBTYPE(k) = 3, 13, 23)</strong></p>
+<p>Outward flow per unit width, QN2(k,j), normal to and over an external barrier
+boundary is computed as:</p>
+<blockquote>
+<div><p><strong>Case 1</strong> water level below or equal to the barrier height</p>
+<blockquote>
+<div><p>QN2(k,j) = 0</p>
+</div></blockquote>
+<p><strong>Case 2</strong> water level above the barrier height</p>
+<blockquote>
+<div><p>QN2(k,j) = -(2/3)*BARLANCFSP(k,j)*RBARWL*((2/3)*RBARWL*G)**0.5</p>
+<p>where, RBARWL = ETA1(NBVV(k,j))-BARLANHT(k,j) = water height above the
+barrier
+ETA1(NBVV(k,j)) = water level computed at the previous time step at node
+NBVV(k,j)
+This formula is given by Leendertse (Aspects of SIMSYS2D ? A System for
+Two-Dimensional Flow Computation, Rand/R-3572-USGS, 1987) and is simply
+the formula for a broad crested weir (e.g., see Henderson, Open Channel
+Flow, section 6.6).
+See also General Notes for Normal Flow Boundary Conditions</p>
+</div></blockquote>
+</div></blockquote>
+</section>
+<section id="internal-barrier-boundary-note">
+<span id="id4"></span><h2>Internal Barrier Boundary Note<a class="headerlink" href="#internal-barrier-boundary-note" title="Link to this heading"></a></h2>
+<p><strong>(IBTYPE(k) = 4, 24)</strong></p>
+<p>An internal barrier boundary consists of a long thin island with parallel front
+and back faces. Pairs of nodes are placed on either side of the boundary so as
+to provide a one to one correspondence between the nodes on the front face and
+back faces. Flow is assumed to go across the boundary from one node to its
+paired node on the opposite side. The normal flow is equal in magnitude and
+opposite in sign on the two sides of the boundary (e.g., outflow on the front
+face = inflow on the back face). Normal flow per unit width, QN2(k,j), at
+internal barrier boundary node NBVV(k,j) and its paired node IBCONN(k,j) is
+computed as:</p>
+<blockquote>
+<div><p><strong>Case 1</strong> water level below or equal to the barrier height on both sides of
+the barrier</p>
+<blockquote>
+<div><p>QN2(k,j) = 0</p>
+</div></blockquote>
+<p><strong>Case 2</strong> water level above the barrier height but equal on both sides of
+the barrier</p>
+<blockquote>
+<div><p>QN2(k,j) = 0</p>
+</div></blockquote>
+<p><em>‘ Case 3</em>’ water level above the barrier height but greater on the front
+side than on the back with subcritical flow across the barrier. Subcritical
+flow from front to back across the barrier occurs if the water level height
+above the barrier on the back side is greater than 2/3 the water level height
+above the barrier on the front side (i.e., RBARWL2 &gt; 0.667*RBARWL1).</p>
+<blockquote>
+<div><p>QN2(k,j) = -RAMP*BARINCFSB(k,j)*RBARWL2*(2*G*(RBARWL1-RBARWL2))**0.5</p>
+</div></blockquote>
+<p><strong>Case 4</strong> water level above the barrier height but greater on the front side
+than on the back with supercritical flow across the barrier. Supercritical
+flow from front to back across the barrier occurs if the water level height
+above the barrier on the back side is less than or equal to 2/3 the water
+level height above the barrier on the front side (i.e., RBARWL2 &lt;
+0.667*RBARWL1).</p>
+<blockquote>
+<div><p>QN2(k,j) = -(2/3)*RAMP*BARINCFSP(k,j)*RBARWL1*((2/3)*RBARWL1*G)**0.5</p>
+</div></blockquote>
+<p><strong>Case 5</strong> water level above the barrier height but greater on the back side
+than on the front with subcritical flow across the barrier. Subcritical flow
+from back to front across the barrier occurs if the water level height above
+the barrier on the front side is greater than 2/3 the water level height
+above the barrier on the back side (i.e., RBARWL1 &gt; 0.667*RBARWL2).</p>
+<blockquote>
+<div><p>QN2(k,j) = RAMP*BARINCFSB(k,j)*RBARWL1*(2*G*(RBARWL2-RBARWL1))**0.5</p>
+</div></blockquote>
+<p><strong>Case 6</strong> water level above the barrier height but greater on the back side
+than on the front with supercritical flow across the barrier. Supercritical
+flow from back to front across the barrier occurs if the water level height
+above the barrier on the front side is less than or equal to 2/3 the water
+level height above the barrier on the back side (i.e., RBARWL1 &lt;
+0.667*RBARWL2).</p>
+<blockquote>
+<div><p>QN2(k,j) = (2/3)*RAMP*BARINCFSP(k,j)*RBARWL2*((2/3)*RBARWL2*G)**0.5</p>
+<blockquote>
+<div><p>where</p>
+<blockquote>
+<div><p>RBARWL1 = ETA1(NBVV(k,j))-BARINHT(k,j) = water height above the
+barrier on the front side of the barrier
+RBARWL2 = ETA1(IBCONN(k,j))- BARINHT(k,j) = water height above the
+barrier on the back side of the barrier
+ETA1(NBVV(k,j)) = water level computed at the previous time step on
+the front side of the barrier
+ETA1(IBCONN(k,j)) = water level computed at the previous time step
+on the back side of the barrier</p>
+</div></blockquote>
+</div></blockquote>
+</div></blockquote>
+<p>These formulae are given by Leendertse (Aspects of SIMSYS2D ? A System for
+Two-Dimensional Flow Computation, Rand/R-3572-USGS, 1987) and are simply the
+formulae for a broad crested weir (e.g., see Henderson, Open Channel Flow,
+section 6.6).
+See also General Notes for Normal Flow Boundary Conditions</p>
+</div></blockquote>
+</section>
+<section id="vertical-element-walls-note">
+<span id="internal-barrier-boundary-with-cross-barrier-pipes-note"></span><h2>Vertical Element Walls Note<a class="headerlink" href="#vertical-element-walls-note" title="Link to this heading"></a></h2>
+<p><strong>(IBTYPE(k) = 64)</strong></p>
+<p>For IBTYPE(k) = 64, the barrier is a vertical element wall. See <a class="reference internal" href="../../special_features/vertical_element_walls.html#special-features-vertical-element-walls"><span class="std std-ref">vertical element walls</span></a> for details.</p>
+</section>
+<section id="id5">
+<h2>Internal Barrier Boundary with Cross Barrier Pipes Note<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
+<p><strong>(IBTYPE(k) = 5,25)</strong></p>
+<p>This type differs from IBTYPE(k)=5 or 25 This type differs from IBTYPE(k)=4 and
+24 in that the barrier contains a cross barrier pipe with a specified height,
+pipe coefficient, and pipe diameter. The formulation of this boundary type is
+described in detail in the Technical Publication “Leaky Internal-Barrier
+Normal-Flow Boundaries in the ADCIRC Coastal Hydrodynamics Code“.</p>
+<p>Because this boundary type has so much in common with IBTYPE(k)=4 or 24, only
+the differences will be described here. Normal flow per unit width, QN2(k,j), at
+internal barrier boundary with cross barrier pipes node NBVV(k,j) and its paired
+node IBCONN(k,j) is computed as:</p>
+<blockquote>
+<div><p><strong>Case 1</strong>: Water level on both sides of the internal barrier below the
+height of the crown of the cross barrier pipe</p>
+<blockquote>
+<div><p>QN2(k,j) = 0</p>
+</div></blockquote>
+<p><strong>Case 2</strong>: Water level on both sides of the internal barrier equal</p>
+<blockquote>
+<div><p>QN2(k,j) = 0</p>
+</div></blockquote>
+<p><strong>Case 3:</strong> Water elevation on the front side of the internal barrier greater
+than water elevation on the back side; water elevation on the front side
+greater than the crown height of the cross-barrier pipe; and water elevation
+on the back side below crown height of the pipe</p>
+<blockquote>
+<div><p>QN2(k,j) = -RAMP*(0.25*pi*D^2)*(2*G*RBARWL1/(1+PIPECOEFR(k,j)))^0.5</p>
+<blockquote>
+<div><p>where</p>
+<blockquote>
+<div><p>RBARWL1 = ETA2(NBVV(k,j))-PIPEHTR(k,j)</p>
+</div></blockquote>
+</div></blockquote>
+</div></blockquote>
+<p><strong>Case 4:</strong> Water elevation on the front side of the internal barrier greater
+than water elevation on the back side; water elevation on the front side
+greater than the crown height of the cross barrier pipe; and water elevation
+on the back side above the crown height of the pipe.</p>
+<blockquote>
+<div><p>QN2(k,j) =
+-RAMP*0.25*pi*PIPEDIAMR^2*(2*G*(RBARWL1-RBARWL2)/PIPECOEF(k,j))^0.5</p>
+<blockquote>
+<div><p>where</p>
+<blockquote>
+<div><p>RBARWL1 = ETA2(NBVV(k,j))-PIPEHTR(k,j)
+RBARWL2 = ETA2(IBCONN(k,j))-PIPEHTR(k,j)</p>
+</div></blockquote>
+</div></blockquote>
+</div></blockquote>
+<p><strong>Case 5:</strong> Water elevation on the back side of the internal barrier greater
+than water elevation on the front side; water elevation on the back side
+greater than the crown height of the cross-barrier pipe; and water elevation
+on the front side below the crown height of the pipe.</p>
+<blockquote>
+<div><p>QN2(I)= RAMP*0.25*pi*(PIPEDIAMR)^2 * (2*G*RBARWL2 / (1
++/PIPECOEF(k,j)))^0.5</p>
+<blockquote>
+<div><p>where</p>
+<blockquote>
+<div><p>RBARWL2 = ETA2(IBCONN(k,j))-PIPEHTR(k,j)</p>
+</div></blockquote>
+</div></blockquote>
+</div></blockquote>
+<p><strong>Case 6:</strong> Water elevation on the back side of the internal barrier greater
+than water elevation on the front side; water elevation on the back side
+greater than the crown height of the cross-barrier pipe; and water elevation
+on the front side above the crown height of the pipe.</p>
+<blockquote>
+<div><p>QN2(I)=
+RAMP**0.25*pi*(PIPEDIAMR(k,j))^2*(2*G*(RBARWL2-RBARWL1)/PIPECOEFR(k,j))^0.5</p>
+<blockquote>
+<div><p>where</p>
+<blockquote>
+<div><p>RBARWL1 = ETA2(NBVV(k,j))-PIPEHTR(k,j)
+RBARWL2 = ETA2(IBCONN(k,j))-PIPEHTR(k,j)</p>
+</div></blockquote>
+</div></blockquote>
+</div></blockquote>
+<p>Details of the rationale and implementation of this boundary type can be
+found in the following reference:</p>
+<blockquote>
+<div><p>Westerink, J.J., R.A. Luettich and A. Militello, 2001, Leaky
+internal-barrier normal-flow boundaries in the ADCIRC coastal
+hydrodynamics code, Coastal and Hydraulic Engineering Technical Note
+ERDC/CHL CHETN-IV-32, U.S. Army Engineer Research and Development Center,
+Vicksburg, MS., February 2001, 28p.</p>
+</div></blockquote>
+</div></blockquote>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="open_boundaries.html" class="btn btn-neutral float-left" title="Open Boundaries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../tides/index.html" class="btn btn-neutral float-right" title="Astronomical Tides" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

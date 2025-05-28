@@ -1,0 +1,354 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Tips and Tricks in ADCIRC" name="description" />
+<meta content="adcirc, tips and tricks" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ADCIRC+SWAN Tips and Tricks &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Grid Development and Editing" href="grid_dev_edit.html" />
+    <link rel="prev" title="Tips and Tricks" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Tips and Tricks</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#pre-processing-tips">Pre-Processing Tips</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#adcirc-only-tips">ADCIRC-Only Tips</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#adcirc-swan-tips">ADCIRC+SWAN Tips</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#post-processing-tips">Post-Processing Tips</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Tips and Tricks</a></li>
+      <li class="breadcrumb-item active">ADCIRC+SWAN Tips and Tricks</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/user_guide/tips_and_tricks/coupled_adcirc_swan.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="adcirc-swan-tips-and-tricks">
+<h1>ADCIRC+SWAN Tips and Tricks<a class="headerlink" href="#adcirc-swan-tips-and-tricks" title="Link to this heading"></a></h1>
+<section id="writing-alternative-station-swan-output">
+<span id="id1"></span><h2>Writing Alternative Station SWAN Output<a class="headerlink" href="#writing-alternative-station-swan-output" title="Link to this heading"></a></h2>
+<div class="line-block">
+<div class="line">SWAN has expansive outputting capabilities, documented in <a class="reference external" href="https://swanmodel.sourceforge.io/online_doc/swanuse/swanuse.html">its
+manual</a>,
+but figuring out how can be a bit difficult. Here’s a simple summary of how to
+output various parameters at a user-specified set of locations. Add two lines
+to your <a class="reference internal" href="../../technical_reference/input_files/fort26.html#fort26"><span class="std std-ref">fort.26</span></a> (SWAN control) file. I put these lines after the
+<code class="docutils literal notranslate"><span class="pre">NUM</span></code> line in the fort.26 file. The first line declares the existence and
+name of a set of points at which you want outputs:</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">POINTS</span> <span class="pre">'aStringIdForPointsFile'</span> <span class="pre">FILE</span> <span class="pre">'theFileNameOfYourPointsFile'</span></code></div>
+<div class="line">where <code class="docutils literal notranslate"><span class="pre">'aStringIdForPointsFile</span></code> is the name you’re giving the list of
+locations, and <code class="docutils literal notranslate"><span class="pre">'theFileNameOfYourPointsFile</span></code> is the actual file name. This
+file should be placed in your base run directory. The file format is ASCII x-y
+coordinate pairs, no header line, space-delimited, and one point per line,
+e.g.</div>
+<div class="line">x1 y1</div>
+<div class="line">x2 y2</div>
+<div class="line">x3 y3</div>
+<div class="line">…</div>
+</div>
+<div class="line-block">
+<div class="line">The second line describes the outputs you want:</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">TABLE</span> <span class="pre">'aStringIdForPointsFile'</span> <span class="pre">HEADER</span> <span class="pre">'outputFile'</span> <span class="pre">HSIGN</span> <span class="pre">HSWELL</span> <span class="pre">DIR</span> <span class="pre">PDIR</span> <span class="pre">TDIR</span> <span class="pre">TM02</span> <span class="pre">STEEPNESS</span> <span class="pre">OUT</span> <span class="pre">20010101.000000</span> <span class="pre">15</span> <span class="pre">MIN</span></code></div>
+<div class="line">where <code class="docutils literal notranslate"><span class="pre">HEADER</span></code> (or <code class="docutils literal notranslate"><span class="pre">NOHEADER</span></code>) indicates whether you want a header,
+<code class="docutils literal notranslate"><span class="pre">'outputFile'</span></code> is the output file name that SWAN writes to,
+<code class="docutils literal notranslate"><span class="pre">HSIGN</span> <span class="pre">HSWELL...STEEPNESS</span></code> are a list of the parameters to-be-output,
+<code class="docutils literal notranslate"><span class="pre">OUT</span></code> denotes the termination of the list of parameters, <code class="docutils literal notranslate"><span class="pre">20010101.000000</span></code>
+indicates when outputting should start in YYYYMMDD.hhmmss format, and
+<code class="docutils literal notranslate"><span class="pre">15</span> <span class="pre">MIN</span></code> indicates a 15-minute output interval. Some notes:</div>
+</div>
+<ul class="simple">
+<li><p>The header can be nice but it can also sometimes cause format problems if the
+numeric values being output are too large to fit in the fixed-width columns.
+If you do <code class="docutils literal notranslate"><span class="pre">NOHEADER</span></code>, the file won’t have this issue, though it can be
+harder to inspect visually…it’ll be just as easy to read it with a computer
+program or something like Excel.</p></li>
+<li><p>The list of parameters you can output is long, and the definitions are even
+longer. The list is currently on the SWAN website
+<a class="reference external" href="https://swanmodel.sourceforge.io/online_doc/swanuse/node32.html">here</a>
+under the description of the <code class="docutils literal notranslate"><span class="pre">BLOCK</span></code> output command, and has <a class="reference external" href="https://swanmodel.sourceforge.io/online_doc/swanuse/node35.html#app:defvar">a
+link</a>
+to the parameter definitions. If that link doesn’t work, maybe go to the SWAN
+user manual <a class="reference external" href="https://swanmodel.sourceforge.io/online_doc/swanuse/swanuse.html">base
+page</a>,
+then click on “Write or plot computed quantities”.</p></li>
+<li><p>In a parallel run, for model versions later than roughly ADCIRC version v52,
+the output should be a single file in the main run directory. In earlier
+versions, the output was written individually by each subdomain to its PE*
+folder.</p></li>
+</ul>
+<p>Note that you can add multiple <code class="docutils literal notranslate"><span class="pre">POINTS</span></code> and/or <code class="docutils literal notranslate"><span class="pre">TABLE</span></code> lines for different
+list of coordinates and/or different outputs.</p>
+</section>
+<section id="writing-alternative-global-swan-output">
+<span id="id2"></span><h2>Writing Alternative Global SWAN Output<a class="headerlink" href="#writing-alternative-global-swan-output" title="Link to this heading"></a></h2>
+<p>Have you ever wanted to write different SWAN parameters to output in a coupled
+ADCIRC+SWAN simulation? If so, these tips and tricks are for you! The current
+implementations of the dynamically coupled version of ADCIRC+SWAN only write a
+few SWAN parameters to global time-series output files. Those output parameters
+and files include:</p>
+<ul class="simple">
+<li><p>spectrally significant wave height (filename: swan_HS.63)</p></li>
+<li><p>“smoothed” peak wave period (filename: swan_TPS.63)</p></li>
+<li><p>mean absolute wave period (filename: swan_TMM10.63)</p></li>
+<li><p>mean wave direction (filename: swan_DIR.63)</p></li>
+<li><p>and perhaps others like TM01, TM02, and WIND</p></li>
+</ul>
+<p>The SWAN model has many other potentially useful output parameters and, in some
+cases, they may be more appropriate for your needs than these default outputs.
+For example, what if you preferred seeing the peak wave direction instead of the
+mean wave direction? Or maybe you need the swell wave height instead of, or in
+addition to, the significant wave height? The two methods below will allow you
+to accomplish just this. Granted, this does require that you modify some files
+within the SWAN and ADCIRC source codes, and that you recompile the source code
+into your desired executables. We hope the instructions below make the task of
+modifying the source code a little less daunting. There is one major caveat to
+the two methods outlined below: it will not allow you to ‘define’ your desired
+SWAN output in either the fort.26 file OR in namelist form at the bottom of
+fort.15. In other words, you will receive whatever outputs you hardwire into
+your source code and you cannot easily turn them on or off without again
+modifying the source code.</p>
+<section id="method-1-very-easy">
+<span id="id3"></span><h3>Method 1 - Very Easy<a class="headerlink" href="#method-1-very-easy" title="Link to this heading"></a></h3>
+<p>Use the approach described in the <a class="reference external" href="Tips_and_Tricks#Writing_Alternative_Station_SWAN_Output">last
+section</a> and use the
+coordinates of all nodes as your list of stations. It’s possible this may not
+exactly match what you’d get with other methods, e.g. if SWAN interpolates the
+station value even when a point exactly matches a node location then it would be
+subject to floating point errors and to effects of wetting/drying at the other
+nodes in the triangle.</p>
+</section>
+<section id="method-2-easy-but-limited">
+<span id="id4"></span><h3>Method 2 - Easy but Limited<a class="headerlink" href="#method-2-easy-but-limited" title="Link to this heading"></a></h3>
+<p>This is by far the simplest method for modifying SWAN output in a coupled
+ADCIRC+SWAN simulation. By following the instructions below, you will be able to
+write any SWAN output you desire… but only to the existing SWAN output files.
+Existing SWAN output files include swan_HS.63, swan_TPS.63, swan_TMM10.63,
+swan_DIR.63, etc. This method will not produce NEW or ADDITIONAL SWAN output
+files. Rather, it will simply write the user-specified output to these existing
+filenames.</p>
+<p>Go to the swan/ folder in your adcirc source code directory tree and open the
+file swanout1.f</p>
+<p>You are looking for a variable assignment named IVTYPE in the subroutine named
+SWOEXA. The IVTYPE value is linked to SWAN output variables. For example, this
+is what the first IVTYPE definition looks like in my version of SWAN…</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>!
+!       significant wave height
+!
+IVTYPE = 10
+</pre></div>
+</div>
+<p>Keep searching and note the IVTYPE values corresponding to your desired SWAN
+output variable(s). I have included a few below for reference.</p>
+<div class="line-block">
+<div class="line"><strong>IVTYPE value / variable name</strong></div>
+<div class="line">10 / significant wave height</div>
+<div class="line">44 / swell wave height</div>
+<div class="line">12 / peak wave period</div>
+<div class="line">14 / peak wave direction</div>
+<div class="line">13 / mean wave direction</div>
+<div class="line">16 / directional spread</div>
+<div class="line">15 / energy transport direction</div>
+<div class="line">17 / average wave length</div>
+<div class="line">18 / steepness</div>
+<div class="line">With the IVTYPE value(s) noted, proceed to the src/ directory and open the
+file couple2swan.F</div>
+</div>
+<p>Search for the variable IVTYPE. Reassign the IVTYPE values using the values of
+your desired output. For example, if you want to write the peak wave direction
+to the “swan_DIR.63” file instead of the mean wave direction, you’d want to
+change IVTYPE = 13 to IVTYPE = 14. Note that you’ll need to make this change in
+approximately five places within the couple2swan.F file. The embedded images
+below show comparisons between the original and modified files for this example
+(substituting IVTYPE=14 (PDIR) for IVTYPE=13 (DIR)). The change areas appear in
+the following subroutines of couple2swan.F:</p>
+<ul class="simple">
+<li><p>ComputeWaveFrictionProperties</p></li>
+<li><p>SwanOutput</p></li>
+</ul>
+<p>You would of course want to make these IVTYPE reassignments for any and all
+existing SWAN output that you’d like to modify. Keep in mind that you only have
+four existing files to work with here, so that is ultimately your limit on
+output parameters as well. You may want to consider renaming your output files
+so that you do not misinterpret your results. The output filenames are found in
+src/write_output.F. Using the example IVTYPE reassignment above, you might
+consider renaming swan_DIR.63 to swan_PDIR.63. If you need more than four output
+parameters and also want to change the filenames, see Method 2 below.</p>
+<p>method1_1.png|Change area 1 of 5 (click to enlarge) method1_2.png|Change area 2
+of 5 (click to enlarge) method1_3.png|Change area 3 of 5 (click to enlarge)
+method1_4.png|Change area 4 of 5 (click to enlarge) method1_5.png|Change area 5
+of 5 (click to enlarge)</p>
+</section>
+<section id="method-3-moderately-difficult-but-limitless">
+<span id="id5"></span><h3>Method 3 - Moderately Difficult but Limitless<a class="headerlink" href="#method-3-moderately-difficult-but-limitless" title="Link to this heading"></a></h3>
+<p>This method is more complex but it will allow you to name and create any number
+of original SWAN output files. For example, say I wanted to keep the existing
+default SWAN output files (referenced above in Method 1) but also write the peak
+wave direction output to a brand new file named swan_PDIR.63. You can do that if
+you follow the steps below. Note that the example below will also generate a
+corresponding swan_PDIR_max.63 file in a manner similar to swan_HS_max.63,
+swan_TPS_max.63, etc.</p>
+<p>In this more complicated (really just more work) method you will need to perform
+four general tasks:</p>
+<ol class="arabic simple">
+<li><p>Increment an output counter in multiple places (in my example, from 7 to 8
+because I am only adding the PDIR output)</p></li>
+<li><p>Insert new sections of code pertaining to your desired output</p></li>
+<li><p>Create and insert new variable names in GLOBAL and OUTPUT blocks</p></li>
+<li><p>Add new code to direct your parameters to output files</p></li>
+</ol>
+<p>I honestly did this somewhat blindly the first time and it worked just fine (for
+me). You do need to be very careful and take your time going through the
+couple2swan.F file and all internal subroutines to make sure you are making all
+appropriate additions. Like method 1 above, your only modifications will be in
+couple2swan.F, but you will need to refer to the IVTYPE values found in
+swan/swanout1.f as described above.</p>
+<p>As was done above, I am providing screenshots of a “diff” comparison between the
+original and modified couple2swan.F files for this simple example of adding the
+PDIR output as a new output file. For consistency purposes I do specify PDIR as
+an output variable in my fort.26 file, but as Casey and others have mentioned in
+the past I don’t think that makes any difference whatsoever. If you follow my
+example below you would get the PDIR outputs even if you omitted PDIR from the
+fort.26 file. The change areas appear in the following subroutines of
+couple2swan.F:</p>
+<ul class="simple">
+<li><p>ComputeWaveFrictionProperties</p></li>
+<li><p>SwanOutput</p></li>
+</ul>
+<p>method2_1.png|Change area 1 of 7 (click to enlarge) method2_2.png|Change area 2
+of 7 (click to enlarge) method2_3.png|Change area 3 of 7 (click to enlarge)
+method2_4.png|Change area 4 of 7 (click to enlarge) method2_5.png|Change area 5
+of 7 (click to enlarge) method2_6.png|Change area 6 of 7 (click to enlarge)
+method2_7.png|Change area 7 of 7 (click to enlarge)</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Tips and Tricks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="grid_dev_edit.html" class="btn btn-neutral float-right" title="Grid Development and Editing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

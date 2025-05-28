@@ -1,0 +1,447 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Compiling in ADCIRC" name="description" />
+<meta content="adcirc, compiling" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compiling ADCIRC &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Running ADCIRC" href="running_adcirc/index.html" />
+    <link rel="prev" title="Theory and Formulation" href="../theory/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Compiling ADCIRC</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cmake-build-system">CMake Build System</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Compiling ADCIRC</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/user_guide/compiling.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="compiling-adcirc">
+<h1>Compiling ADCIRC<a class="headerlink" href="#compiling-adcirc" title="Link to this heading"></a></h1>
+<p>Compiling is the act of turning the ADCIRC source code into an executable that
+can be run. ADCIRC is written in Fortran and C, so Fortran and C compilers are
+needed, as a minimum.</p>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<p>The ADCIRC model is minimally dependent on external libraries, though they may
+be included at the user’s option and enable many important features of the model
+code.</p>
+<table class="wrap-table tighter-table docutils align-default" id="id8">
+<caption><span class="caption-text">List of dependencies</span><a class="headerlink" href="#id8" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 14.3%" />
+<col style="width: 14.3%" />
+<col style="width: 14.3%" />
+<col style="width: 14.3%" />
+<col style="width: 42.9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Component</p></th>
+<th class="head"><p>Availability</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Source</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Fortran</p></td>
+<td><p>All versions</p></td>
+<td><p>Required</p></td>
+<td><p>–</p></td>
+<td><p>ADCIRC is mostly written in Fortran, which excels at large matrix operations and numeric operations. Various Fortran compilers have been tested with ADCIRC including the GNU, Intel, and PGI Fortran compilers. The Fortran compiler should support at least Fortran90 standards, though Fortran2008 is recommended.</p></td>
+</tr>
+<tr class="row-odd"><td><p>C</p></td>
+<td><p>All versions</p></td>
+<td><p>Required</p></td>
+<td><p>–</p></td>
+<td><p>ADCIRC uses C code to access both the Metis library and some low-level system functions. As with Fortran, various compilers have been tested. The C compiler should support at least C98 standards.</p></td>
+</tr>
+<tr class="row-even"><td><p>GNU Make</p></td>
+<td><p>All versions</p></td>
+<td><p>Required</p></td>
+<td><p>–</p></td>
+<td><p>GNU Make is a program used to build source code. It can be used by both CMake and the legacy Makefile, though CMake will allow alternate build programs to be used, such as Ninja. It is natively available on nearly all Linux based systems.</p></td>
+</tr>
+<tr class="row-odd"><td><p>CMake</p></td>
+<td><p>v53.00</p></td>
+<td><p>Required to use CMake build system</p></td>
+<td><p><a class="reference external" href="https://cmake.org/download/">Source</a></p></td>
+<td><p>CMake is an open-source, cross-platform family of tools designed to build, test and package software. CMake is used to control the software compilation process using simple platform and compiler independent configuration files, and generate native makefiles and workspaces that can be used in the compiler environment of your choice. The suite of CMake tools were created by Kitware in response to the need for a powerful, cross-platform build environment for open-source projects such as ITK and VTK.</p></td>
+</tr>
+<tr class="row-even"><td><p>MPI</p></td>
+<td><p>All versions</p></td>
+<td><p>Required for all parallel codes</p></td>
+<td><p><a class="reference external" href="https://www.mpich.org/">MPICH</a>, <a class="reference external" href="https://www.open-mpi.org/">OpenMPI</a>, <a class="reference external" href="https://mvapich.cse.ohio-state.edu/">MVAPICH2</a></p></td>
+<td><p>Message Passing Interface (MPI) is a standardized and portable message-passing standard designed by a group of researchers from academia and industry to function on a wide variety of parallel computing architectures. The standard defines the syntax and semantics of a core of library routines useful to a wide range of users writing portable message-passing programs in C, C++, and Fortran. Different MPI libraries will provide better performance or usability on different systems. As a general rule, OpenMPI is the easiest implementation for beginners to set up on their own and is provided as a package in many common Linux distributions. MVAPICH2 has many performance enhancements that make it ideal for running at very large scales over InfiniBand.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Perl</p></td>
+<td><p>v49.00</p></td>
+<td><p>Required for building the included SWAN model</p></td>
+<td><p>–</p></td>
+<td><p>Perl is a text manipulation language. The SWAN model uses Perl to perform source code preprocessing.</p></td>
+</tr>
+<tr class="row-even"><td><p>netCDF</p></td>
+<td><p>v51.00</p></td>
+<td><p>Required to write netCDF format outputs, for example, NOUTGE=3,5</p></td>
+<td><p><a class="reference external" href="https://www.unidata.ucar.edu/software/netcdf/">Source</a></p></td>
+<td><p>NetCDF (Network Common Data Form) is a set of software libraries and self-describing, machine-independent data formats that support the creation, access, and sharing of array-oriented scientific data. ADCIRC will require both the C and Fortran APIs are installed on the target system. netCDF4, which uses HDF5 as the underlying library for data access and compression, is highly recommended. This will allow the user to write compressed output formats which will save disk space.</p></td>
+</tr>
+<tr class="row-odd"><td><p>XDMF</p></td>
+<td><p>v52.00</p></td>
+<td><p>Required to write XDMF formatted outputs, for example, NOUTGE=7</p></td>
+<td><p><a class="reference external" href="http://www.xdmf.org/index.php/Main_Page">Source</a></p></td>
+<td><p>XDMF (eXtensible Data Model and Format) is a library providing a standard way to access data produced by HPC codes. Data format refers to the raw data to be manipulated, the description of the data is separate from the values themselves. It distinguishes the metadata (Light data) and the values themselves (Heavy data). Light data is stored using XML, Heavy data is typically stored using HDF5, so some information is stored redundantly in both XML and HDF5. A Python interface exists for manipulating both Light and Heavy data. ParaView, VisIt and EnSight visualization programs are able to read XDMF.</p></td>
+</tr>
+<tr class="row-even"><td><p>Grib2</p></td>
+<td><p>v55.00</p></td>
+<td><p>Required for NWS=14 Grib file processing</p></td>
+<td><p><a class="reference external" href="https://www.cpc.ncep.noaa.gov/products/wesley/wgrib2/">Source</a></p></td>
+<td><p>GRIB (GRIdded Binary or General Regularly-distributed Information in Binary form[1]) is a concise data format commonly used in meteorology to store historical and forecast weather data. Beginning with ADCIRC v55.00, this data can be directly read and used as forcing for ADCIRC. Using the CMake build system, described below, will automatically build this dependency if selected.</p></td>
+</tr>
+<tr class="row-odd"><td><p>DateTime</p></td>
+<td><p>v55.00</p></td>
+<td><p>Required for NWS=14 Grib file processing</p></td>
+<td><p><a class="reference external" href="https://github.com/wavebitscientific/datetime-fortran">Source</a></p></td>
+<td><p>The DateTime library is a Fortran library that provides date manipulation and arithmetic operations. Using the CMake build system, described below, will automatically build this dependency if selected.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="cmake-build-system">
+<span id="id1"></span><h2>CMake Build System<a class="headerlink" href="#cmake-build-system" title="Link to this heading"></a></h2>
+<p>The CMake build system provides users with a cross-platform (Linux, MacOSX,
+Windows) interface for building the ADCIRC model. CMake can be used as either a
+command-line utility, a terminal GUI with the Curses library, or a Qt GUI on
+Windows. CMake is available on most Linux distributions as either a package or
+in the case of shared clusters, as a module. The source code and compiled
+executables are available <a class="reference external" href="https://cmake.org/download/">here</a>.</p>
+<section id="cmake-environment-variables">
+<span id="id2"></span><h3>CMake Environment Variables<a class="headerlink" href="#cmake-environment-variables" title="Link to this heading"></a></h3>
+<p>The ADCIRC CMake build system will search for specific environment variables to
+help it find packages in nonstandard locations, as is often the case on shared
+systems.</p>
+<table class="wrap-table tight-table docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 80.0%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>Variable</p></td>
+<td><p>Description</p></td>
+</tr>
+<tr class="row-even"><td><p>NETCDFHOME</p></td>
+<td><p>Sets the home path for netCDF C and Fortran libraries. This assumes that the libraries are installed to the same location. This folder should contain the folders “lib” and “include”</p></td>
+</tr>
+<tr class="row-odd"><td><p>XDMFHOME</p></td>
+<td><p>Sets the home path for the XDMF libraries. This folder should contain the folders “lib” and “include”</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="general-usage">
+<span id="id3"></span><h3>General Usage<a class="headerlink" href="#general-usage" title="Link to this heading"></a></h3>
+<p>CMake is generally used to create a shadow build, that is the build files are
+wholely separated from the source code. The simplest way to do this is to create
+a folder within the source code folder called something like “build”. For the
+instructions below, we’ll assume that you are inside this directory during the
+command examples.</p>
+</section>
+<section id="parallel-builds">
+<span id="id4"></span><h3>Parallel Builds<a class="headerlink" href="#parallel-builds" title="Link to this heading"></a></h3>
+<p>CMake can build the ADCIRC model source code using multiple processors. Add the
+flag “-j#” where “#” is the number of processors to use to your make command.
+This will allow each component of the code to be built separately and may not
+provide benefits above 6-7 processors. This cannot be done using the legacy
+makefile as it does not contain the appropriate logic.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>-j4
+</pre></div>
+</div>
+</section>
+<section id="cmake-command-line-usage">
+<span id="id5"></span><h3>CMake Command-Line Usage<a class="headerlink" href="#cmake-command-line-usage" title="Link to this heading"></a></h3>
+<p>The command-line interface allows the CMake build system to run with minimal
+user interaction and can be scripted. CMake building happens in two steps.
+First, there is a configuration step where the environment is sensed, tested,
+and a Makefile is generated. Second, a build step is triggered which executes
+the generated build files. Variables are specified for CMake using the
+“-DVARIABLE=VALUE” syntax.</p>
+<p>By default, CMake will always select the system default compilers. This can
+easily be overridden by specifying the desired compilers on the command line.
+For example, to use the Intel compilers:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ccmake<span class="w"> </span>..<span class="w"> </span>-DCMAKE_C_COMPILER<span class="o">=</span>icc<span class="w"> </span>-DCMAKE_CXX_COMPILER<span class="o">=</span>icpc<span class="w"> </span>-DCMAKE_Fortran_COMPILER<span class="o">=</span>ifort
+</pre></div>
+</div>
+<p>Note that when specifying the compilers, the MPI library will need to match the
+specified compilers (i.e. the mpif90 found in your PATH variable should
+correspond to ifort) or parallel code will not be enabled.</p>
+<p>When the above command is run, CMake will perform a series of checks, however,
+it will not know which programs in the ADCIRC source code suite you want to
+build. The following table shows the build options that can be enabled.</p>
+<table class="wrap-table tight-table docutils align-default">
+<colgroup>
+<col style="width: 33.3%" />
+<col style="width: 22.2%" />
+<col style="width: 44.4%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>Variable</p></td>
+<td><p>Conditional</p></td>
+<td><p>Description</p></td>
+</tr>
+<tr class="row-even"><td><p>BUILD_ADCIRC</p></td>
+<td><p>–</p></td>
+<td><p>Builds the serial ADCIRC executable</p></td>
+</tr>
+<tr class="row-odd"><td><p>BUILD_ADCPREP</p></td>
+<td><p>adcprep</p></td>
+<td><p>Builds the ADCIRC parallel preprocessor</p></td>
+</tr>
+<tr class="row-even"><td><p>BUILD_ADCSWAN</p></td>
+<td><p>SWAN code is enabled</p></td>
+<td><p>Builds the serial coupled ADCIRC+SWAN executable</p></td>
+</tr>
+<tr class="row-odd"><td><p>BUILD_ASWIP</p></td>
+<td><p>–</p></td>
+<td><p>Builds the ADCIRC asymmetric wind input preprocessor</p></td>
+</tr>
+<tr class="row-even"><td><p>BUILD_LIBADCIRC_SHARED</p></td>
+<td><p>–</p></td>
+<td><p>Builds ADCIRC as a shared object library</p></td>
+</tr>
+<tr class="row-odd"><td><p>BUILD_LIBADCIRC_STATIC</p></td>
+<td><p>–</p></td>
+<td><p>Builds ADCIRC as a static library</p></td>
+</tr>
+<tr class="row-even"><td><p>BUILD_PADCIRC</p></td>
+<td><p>MPI code is enabled</p></td>
+<td><p>Builds the parallel ADCIRC executable</p></td>
+</tr>
+<tr class="row-odd"><td><p>BUILD_PADCSWAN</p></td>
+<td><p>MPI code is enabled, SWAN code is enabled</p></td>
+<td><p>Builds the parallel coupled ADCIRC+SWAN executable</p></td>
+</tr>
+<tr class="row-even"><td><p>BUILD_UTILITIES</p></td>
+<td><p>–</p></td>
+<td><p>Builds the utility codes in the ADCIRC source code</p></td>
+</tr>
+<tr class="row-odd"><td><p>BUILD_ADCRUN</p></td>
+<td><p>–</p></td>
+<td><p>Builds the ADCIRC executable</p></td>
+</tr>
+<tr class="row-even"><td><p>BUILD_ADCRUN</p></td>
+<td><p>–</p></td>
+<td><p>Builds the ADCIRC executable</p></td>
+</tr>
+<tr class="row-odd"><td><p>BUILD_ADCRUN</p></td>
+<td><p>–</p></td>
+<td><p>Builds the ADCIRC executable</p></td>
+</tr>
+<tr class="row-even"><td><p>BUILD_ADCRUN</p></td>
+<td><p>–</p></td>
+<td><p>Builds the ADCIRC executable</p></td>
+</tr>
+<tr class="row-odd"><td><p>BUILD_ADCRUN</p></td>
+<td><p>–</p></td>
+<td><p>Builds the ADCIRC executable</p></td>
+</tr>
+<tr class="row-even"><td><p>BUILD_ADCRUN</p></td>
+<td><p>–</p></td>
+<td><p>Builds the ADCIRC executable</p></td>
+</tr>
+</tbody>
+</table>
+<p>An example to build adcprep, adcirc, and padcirc might look like:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ccmake<span class="w"> </span>..<span class="w"> </span>-DBUILD_ADCIRC<span class="o">=</span>ON<span class="w"> </span>-DBUILD_PADCIRC<span class="o">=</span>ON<span class="w"> </span>-DBUILD_ADCPREP<span class="o">=</span>ON
+</pre></div>
+</div>
+<p>When CMake runs successfully, you can then simply type “make” to build the
+executables.</p>
+<section id="other-influential-variables">
+<span id="id6"></span><h4>Other Influential Variables<a class="headerlink" href="#other-influential-variables" title="Link to this heading"></a></h4>
+<p>The following shows additional variables that can be specified in the command
+line which can enable features or optimizations. They are used with the same
+syntax as above.</p>
+<table class="wrap-table tighter-table docutils align-default">
+<colgroup>
+<col style="width: 32.5%" />
+<col style="width: 28.6%" />
+<col style="width: 39.0%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>Variable</p></td>
+<td><p>Description</p></td>
+<td><p>Sample</p></td>
+</tr>
+<tr class="row-even"><td><p>ENABLE_OUTPUT_NETCDF</p></td>
+<td><p>Enables netCDF formatted output</p></td>
+<td><p>-DENABLE_OUTPUT_NETCDF=ON</p></td>
+</tr>
+<tr class="row-odd"><td><p>ENABLE_OUTPUT_XDMF</p></td>
+<td><p>Enables XDMF formatted output</p></td>
+<td><p>-DENABLE_OUTPUT_XDMF=ON</p></td>
+</tr>
+<tr class="row-even"><td><p>CMAK</p></td>
+<td><p>Optimization flags</p></td>
+<td><p>-DCMAKE_Fortran_FLAGS_RELEASE=”-O3 -funroll-loops –param max-unroll-times=4 -march=native”</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="cmake-curses-gui">
+<span id="id7"></span><h3>CMake Curses GUI<a class="headerlink" href="#cmake-curses-gui" title="Link to this heading"></a></h3>
+<p>The Curses GUI available with cmake allows the user to explore and set variables
+in a more user-friendly way. It is still recommended to set the compilers on the
+command line during the first call of cmake. The executable to use the GUI is
+“ccmake” rather than “cmake”.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ccmake<span class="w"> </span>..<span class="w"> </span>-DCMAKE_C_COMPILER<span class="o">=</span>icc<span class="w"> </span>-DCMAKE_CXX_COMPILER<span class="o">=</span>icpc<span class="w"> </span>-DCMAKE_Fortran_COMPILER<span class="o">=</span>ifort
+</pre></div>
+</div>
+<p>The user will be presented with an interface that looks like:</p>
+<figure class="align-default">
+<img alt="Adcirc_cmake.JPG" src="../_images/Adcirc_cmake.JPG.jpg" />
+</figure>
+<p>The options on the screen can be toggled through and edited interactively using
+the keyboard. When you are happy with the specified options, press “c” to
+configure. If there are no errors, you will be given the option to press “g” to
+generate makefiles. After generating, ccmake will close and you can type “make”.</p>
+<figure class="align-default">
+<img alt="Adcirc_cmake_build.JPG" src="../_images/Adcirc_cmake_build.JPG.jpg" />
+</figure>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../theory/index.html" class="btn btn-neutral float-left" title="Theory and Formulation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="running_adcirc/index.html" class="btn btn-neutral float-right" title="Running ADCIRC" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,1159 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Supplemental meteorological/wave/ice parameters in ADCIRC" name="description" />
+<meta content="adcirc, supplemental meteorological/wave/ice parameters" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supplemental meteorological/wave/ice parameters &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Generalized Asymmetric Holland Model" href="generalized_asymmetric_holland_model.html" />
+    <link rel="prev" title="WTIMINC Supplemental" href="wtiminc.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Model Configuration</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../model_parameters/index.html">Model Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../physics_parameters/index.html">Physics Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../initial_conditions/index.html">Initial Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../boundary_conditions/index.html">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tides/index.html">Astronomical Tides</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../typical_configurations/typical_parameter_selections.html">Typical Parameter Selections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Model Configuration</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Meteorological Forcing</a></li>
+      <li class="breadcrumb-item active">Supplemental meteorological/wave/ice parameters</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/model_configuration/meteorological_forcing/moteorological_parameter_line.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="supplemental-meteorological-wave-ice-parameters">
+<span id="id1"></span><h1>Supplemental meteorological/wave/ice parameters<a class="headerlink" href="#supplemental-meteorological-wave-ice-parameters" title="Link to this heading"></a></h1>
+<p>This table is helpful for understanding file requirements and how the
+meteorological parameter line (informally, the
+<a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#wtiminc"><span class="std std-ref">WTIMINC</span></a> line) should look in the <a class="reference internal" href="../../../technical_reference/input_files/fort15.html#fort15"><span class="std std-ref">fort.15
+file</span></a>. These are principally determined by the value of the
+<a class="reference internal" href="nws_parameters.html#nws-parameter"><span class="std std-ref">NWS</span></a> line (also in the fort.15 file), though note that the “NWS”
+values below are for the full-length value
+in the fort.15 file. Useful information is also contained in the <a class="reference internal" href="../../../technical_reference/input_files/fort22.html#fort22"><span class="std std-ref">fort.22 file
+format</span></a> and <a class="reference internal" href="wind_stress.html#wind-stress"><span class="std std-ref">wind stress</span></a> pages.</p>
+<table class="wrap-table docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 13.3%" />
+<col style="width: 13.3%" />
+<col style="width: 24.0%" />
+<col style="width: 18.7%" />
+<col style="width: 10.7%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Meteorological Data Format</p></th>
+<th class="head"><p><a class="reference internal" href="#supp-forcing-abbreviations"><span class="std std-ref">Forcing</span></a></p></th>
+<th class="head"><p><a class="reference internal" href="nws_parameters.html#nws-parameter"><span class="std std-ref">NWS</span></a> Value</p></th>
+<th class="head"><p><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#wtiminc"><span class="std std-ref">WTIMINC</span></a> Line</p></th>
+<th class="head"><p><a class="reference internal" href="#supp-forcing-requirements"><span class="std std-ref">Requirements</span></a></p></th>
+<th class="head"><p><a class="reference internal" href="#supp-forcing-notes"><span class="std std-ref">Notes</span></a></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>none</strong></p></td>
+<td><p>nonexistent</p></td>
+<td><p>0</p></td>
+<td><p>nonexistent</p></td>
+<td><p>none</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>wind stress, every node, every timestep</strong></p></td>
+<td><p>m</p></td>
+<td><p>1</p></td>
+<td><p>nonexistent</p></td>
+<td><p>f22</p></td>
+<td><p><a class="footnote-reference brackets" href="#id98" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs</p></td>
+<td><p>101</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw</p></td>
+<td><p>301</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st</p></td>
+<td><p>401</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>wind stress, every node, every ``WTIMINC``</strong></p></td>
+<td><p>m</p></td>
+<td><p>2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code></p></td>
+<td><p>f22</p></td>
+<td><p><a class="footnote-reference brackets" href="#id98" id="id6" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs</p></td>
+<td><p>102</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id7" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw</p></td>
+<td><p>302</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id8" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st</p></td>
+<td><p>402</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id9" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>US Navy Fleet Numeric</strong></p></td>
+<td><p>m</p></td>
+<td><p>3</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">irefyr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmo</span></code> <code class="docutils literal notranslate"><span class="pre">irefday</span></code> <code class="docutils literal notranslate"><span class="pre">irefhr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmin</span></code> <code class="docutils literal notranslate"><span class="pre">refsec</span></code></p></td>
+<td><p>f22</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs</p></td>
+<td><p>103</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">irefyr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmo</span></code> <code class="docutils literal notranslate"><span class="pre">irefday</span></code> <code class="docutils literal notranslate"><span class="pre">irefhr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmin</span></code> <code class="docutils literal notranslate"><span class="pre">refsec</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id10" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw</p></td>
+<td><p>303</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">irefyr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmo</span></code> <code class="docutils literal notranslate"><span class="pre">irefday</span></code> <code class="docutils literal notranslate"><span class="pre">irefhr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmin</span></code> <code class="docutils literal notranslate"><span class="pre">refsec</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id11" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st</p></td>
+<td><p>403</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">irefyr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmo</span></code> <code class="docutils literal notranslate"><span class="pre">irefday</span></code> <code class="docutils literal notranslate"><span class="pre">irefhr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmin</span></code> <code class="docutils literal notranslate"><span class="pre">refsec</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id12" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12003</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">irefyr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmo</span></code> <code class="docutils literal notranslate"><span class="pre">irefday</span></code> <code class="docutils literal notranslate"><span class="pre">irefhr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmin</span></code> <code class="docutils literal notranslate"><span class="pre">refsec</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12103</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">irefyr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmo</span></code> <code class="docutils literal notranslate"><span class="pre">irefday</span></code> <code class="docutils literal notranslate"><span class="pre">irefhr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmin</span></code> <code class="docutils literal notranslate"><span class="pre">refsec</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id13" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12303</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">irefyr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmo</span></code> <code class="docutils literal notranslate"><span class="pre">irefday</span></code> <code class="docutils literal notranslate"><span class="pre">irefhr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmin</span></code> <code class="docutils literal notranslate"><span class="pre">refsec</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id14" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12403</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">irefyr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmo</span></code> <code class="docutils literal notranslate"><span class="pre">irefday</span></code> <code class="docutils literal notranslate"><span class="pre">irefhr</span></code> <code class="docutils literal notranslate"><span class="pre">irefmin</span></code> <code class="docutils literal notranslate"><span class="pre">refsec</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id15" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>PBL/JAG</strong></p></td>
+<td><p>m</p></td>
+<td><p>4</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code></p></td>
+<td><p>f22</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs</p></td>
+<td><p>104</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id16" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw</p></td>
+<td><p>304</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id17" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st</p></td>
+<td><p>404</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id18" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12004</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12104</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id19" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12304</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id20" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12404</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id21" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>wind velocity, every node, every ``WTIMINC``</strong></p></td>
+<td><p>m</p></td>
+<td><p>5</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code></p></td>
+<td><p>f22</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs</p></td>
+<td><p>105</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id22" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw</p></td>
+<td><p>305</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id23" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st</p></td>
+<td><p>405</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id24" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12005</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12105</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id25" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12305</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id26" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12405</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id27" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>wind velocity, rectangular grid, every ``WTIMINC``</strong></p></td>
+<td><p>m</p></td>
+<td><p>6</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NWLAT</span> <span class="pre">NWLON</span> <span class="pre">WLATMAX</span> <span class="pre">WLONMIN</span> <span class="pre">WLATINC</span> <span class="pre">WLONINC</span> <span class="pre">WTIMINC</span></code></p></td>
+<td><p>f22</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs</p></td>
+<td><p>106</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NWLAT</span> <span class="pre">NWLON</span> <span class="pre">WLATMAX</span> <span class="pre">WLONMIN</span> <span class="pre">WLATINC</span> <span class="pre">WLONINC</span> <span class="pre">WTIMINC</span> <span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id28" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw</p></td>
+<td><p>306</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NWLAT</span> <span class="pre">NWLON</span> <span class="pre">WLATMAX</span> <span class="pre">WLONMIN</span> <span class="pre">WLATINC</span> <span class="pre">WLONINC</span> <span class="pre">WTIMINC</span> <span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id29" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st</p></td>
+<td><p>406</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NWLAT</span> <span class="pre">NWLON</span> <span class="pre">WLATMAX</span> <span class="pre">WLONMIN</span> <span class="pre">WLATINC</span> <span class="pre">WLONINC</span> <span class="pre">WTIMINC</span> <span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id30" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12006</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NWLAT</span> <span class="pre">NWLON</span> <span class="pre">WLATMAX</span> <span class="pre">WLONMIN</span> <span class="pre">WLATINC</span> <span class="pre">WLONINC</span> <span class="pre">WTIMINC</span> <span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12106</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NWLAT</span> <span class="pre">NWLON</span> <span class="pre">WLATMAX</span> <span class="pre">WLONMIN</span> <span class="pre">WLATINC</span> <span class="pre">WLONINC</span> <span class="pre">WTIMINC</span> <span class="pre">RSTIMINC</span> <span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id31" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12306</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NWLAT</span> <span class="pre">NWLON</span> <span class="pre">WLATMAX</span> <span class="pre">WLONMIN</span> <span class="pre">WLATINC</span> <span class="pre">WLONINC</span> <span class="pre">WTIMINC</span> <span class="pre">RSTIMINC</span> <span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id32" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st ,ic</p></td>
+<td><p>12406</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NWLAT</span> <span class="pre">NWLON</span> <span class="pre">WLATMAX</span> <span class="pre">WLONMIN</span> <span class="pre">WLATINC</span> <span class="pre">WLONINC</span> <span class="pre">WTIMINC</span> <span class="pre">RSTIMINC</span> <span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id33" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>wind stress, regular grid, every ``WTIMINC``</strong></p></td>
+<td><p>m</p></td>
+<td><p>7</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code></p></td>
+<td><p>f22</p></td>
+<td><p><a class="footnote-reference brackets" href="#id98" id="id34" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs</p></td>
+<td><p>107</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id35" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw</p></td>
+<td><p>307</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id36" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st</p></td>
+<td><p>407</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id37" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>symmetric vortex model</strong></p></td>
+<td><p>m</p></td>
+<td><p>8</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code></p></td>
+<td><p>f22</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs</p></td>
+<td><p>108</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id38" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw</p></td>
+<td><p>308</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id39" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st</p></td>
+<td><p>408</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id40" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12008</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12108</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id41" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12308</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id42" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12408</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id43" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>asymmetric vortex model (no longer available)</strong></p></td>
+<td><p>n/a</p></td>
+<td><p>9</p></td>
+<td><p>n/a</p></td>
+<td><p>n/a</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>National Climatic Data Center GFS</strong></p></td>
+<td><p>m</p></td>
+<td><p>10</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code></p></td>
+<td><p>f2xx+</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs</p></td>
+<td><p>110</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f2xx+, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id44" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw</p></td>
+<td><p>310</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f2xx+, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id45" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st</p></td>
+<td><p>410</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f2xx+, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id46" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12010</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f2xx+, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12110</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f2xx+, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id47" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12310</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f2xx+, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id48" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12410</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f2xx+, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id49" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>National Weather Service ETA 29km</strong></p></td>
+<td><p>m</p></td>
+<td><p>11</p></td>
+<td><p>nonexistent</p></td>
+<td><p>f22</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs</p></td>
+<td><p>111</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id50" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw</p></td>
+<td><p>311</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id51" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st</p></td>
+<td><p>411</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id52" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m,ic</p></td>
+<td><p>12011</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12111</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id53" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12311</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id54" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12411</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id55" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Oceanweather Inc (OWI)</strong></p></td>
+<td><p>m</p></td>
+<td><p>12</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code></p></td>
+<td><p>f22x</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs</p></td>
+<td><p>112</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22x, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id56" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw</p></td>
+<td><p>312</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22x, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id57" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st</p></td>
+<td><p>412</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22x, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id58" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12012</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22x, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12112</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22x, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id59" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12312</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22x, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id60" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12412</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22x, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id61" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Oceanweather Inc (OWI) NetCDF</strong></p></td>
+<td><p>m</p></td>
+<td><p>13</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code></p></td>
+<td><p>f22nc</p></td>
+<td><p><a class="reference external" href="NWS13">NWS13</a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs</p></td>
+<td><p>113</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22nc, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id62" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw</p></td>
+<td><p>313</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22nc, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id63" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st</p></td>
+<td><p>413</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>f22nc, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id64" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12013</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22nc, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12113</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22nc, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id65" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12313</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22nc, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id66" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12413</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>f22nc, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id67" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>H*Wind</strong></p></td>
+<td><p>m</p></td>
+<td><p>15</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code></p></td>
+<td><p>hwind+,f22</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs</p></td>
+<td><p>115</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>hwind+,f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id68" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw</p></td>
+<td><p>315</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>hwind+,f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id69" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st</p></td>
+<td><p>415</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>hwind+,f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id70" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12015</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>hwind+,f22, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12115</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>hwind+,f22, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id71" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12315</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>hwind+,f22, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id72" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12415</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>hwind+,f22, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id73" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Geophysical Fluid Dynamics Laboratory (GFDL) Model</strong></p></td>
+<td><p>m</p></td>
+<td><p>16</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code></p></td>
+<td><p>gfdl+,f22</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs</p></td>
+<td><p>116</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>gfdl+,f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id74" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw</p></td>
+<td><p>316</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>gfdl+,f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id75" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st</p></td>
+<td><p>416</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>gfdl+,f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id76" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12016</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>gfdl+,f22, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12116</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>gfdl+,f22, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id77" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12316</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>gfdl+,f22, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id78" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12416</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>gfdl+,f22, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id79" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Dynamic Asymmetric Model</strong></p></td>
+<td><p>m</p></td>
+<td><p>19</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code></p></td>
+<td><p>pp,f22</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs</p></td>
+<td><p>119</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>pp, f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id80" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw</p></td>
+<td><p>319</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>pp, f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id81" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st</p></td>
+<td><p>419</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>pp, f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id82" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12019</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>pp, f22, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12119</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>pp, f22, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id83" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12319</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>pp, f22, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id84" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12419</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>pp, f22, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id85" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Generalized Asymmetric Holland Model (GAHM)</strong></p></td>
+<td><p>m</p></td>
+<td><p>20</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code></p></td>
+<td><p>pp, f22</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs</p></td>
+<td><p>120</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>pp, f22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id86" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw</p></td>
+<td><p>320</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>pp, f22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id87" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st</p></td>
+<td><p>420</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code></p></td>
+<td><p>pp, f22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id88" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12020</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>pp, f22, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12120</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>pp, f22, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id89" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12320</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>pp, f22, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id90" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12420</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code></p></td>
+<td><p>pp, f22, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id91" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Blended GAHM and OWI</strong></p></td>
+<td><p>m</p></td>
+<td><p>30</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">pureVortex</span></code> <code class="docutils literal notranslate"><span class="pre">pureBackground</span></code></p></td>
+<td><p>pp, f22, nwsf22</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs</p></td>
+<td><p>130</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">pureVortex</span></code> <code class="docutils literal notranslate"><span class="pre">pureBackground</span></code></p></td>
+<td><p>pp, f22, nwsf22, f23</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id92" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw</p></td>
+<td><p>330</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">pureVortex</span></code> <code class="docutils literal notranslate"><span class="pre">pureBackground</span></code></p></td>
+<td><p>pp, f22, nwsf22, A+S</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id93" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st</p></td>
+<td><p>430</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">pureVortex</span></code> <code class="docutils literal notranslate"><span class="pre">pureBackground</span></code></p></td>
+<td><p>pp, f22, nwsf22, STW</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id94" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, ic</p></td>
+<td><p>12030</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code> <code class="docutils literal notranslate"><span class="pre">pureVortex</span></code> <code class="docutils literal notranslate"><span class="pre">pureBackground</span></code></p></td>
+<td><p>pp, f22, nwsf22, f25</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, rs, ic</p></td>
+<td><p>12130</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code> <code class="docutils literal notranslate"><span class="pre">pureVortex</span></code> <code class="docutils literal notranslate"><span class="pre">pureBackground</span></code></p></td>
+<td><p>pp, f22, nwsf22, f23, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id99" id="id95" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>m, sw, ic</p></td>
+<td><p>12330</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code> <code class="docutils literal notranslate"><span class="pre">pureVortex</span></code> <code class="docutils literal notranslate"><span class="pre">pureBackground</span></code></p></td>
+<td><p>pp, f22, nwsf22, A+S, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id96" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>m, st, ic</p></td>
+<td><p>12430</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">MM</span></code> <code class="docutils literal notranslate"><span class="pre">DD</span></code> <code class="docutils literal notranslate"><span class="pre">HH24</span></code> <code class="docutils literal notranslate"><span class="pre">StormNumber</span></code> <code class="docutils literal notranslate"><span class="pre">BLAdj</span></code> <code class="docutils literal notranslate"><span class="pre">geofactor</span></code> <code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> <code class="docutils literal notranslate"><span class="pre">cice_timinc</span></code> <code class="docutils literal notranslate"><span class="pre">pureVortex</span></code> <code class="docutils literal notranslate"><span class="pre">pureBackground</span></code></p></td>
+<td><p>pp, f22, nwsf22, STW, f25</p></td>
+<td><p><a class="footnote-reference brackets" href="#id100" id="id97" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+</tr>
+</tbody>
+</table>
+<section id="forcing-abbreviations">
+<span id="supp-forcing-abbreviations"></span><h2>Forcing Abbreviations<a class="headerlink" href="#forcing-abbreviations" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>m</strong> - meteorology</p></li>
+<li><p><strong>rs</strong> - Wave radiation stress in an analyst-supplied <cite>fort.23 &lt;fort23&gt;</cite> input file</p></li>
+<li><p><strong>sw</strong> - Wave coupling using a simultaneously executing coupled SWAN model</p></li>
+<li><p><strong>st</strong> - Wave coupling using a simultaneously executing ESMF coupled STWAVE model</p></li>
+<li><p><strong>ic</strong> - Ice coverage using an analyst-supplied ice coverage data files</p></li>
+</ul>
+</section>
+<section id="requirements">
+<span id="supp-forcing-requirements"></span><h2>Requirements<a class="headerlink" href="#requirements" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>f22</strong> - Requires analyst-supplied <a class="reference internal" href="../../../technical_reference/input_files/fort22.html#fort22"><span class="std std-ref">fort.22</span></a> meteorological forcing file.</p></li>
+<li><dl class="simple">
+<dt><strong>f2xx+</strong> - Requires at least two fort.2xx meteorological forcing files from</dt><dd><p>the GFS model. See fort.22 documentation for file naming and formatting
+details.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>f22x</strong> - Requires datasets of pressure and wind data in OWI formatted</dt><dd><p><a class="reference internal" href="../../../technical_reference/input_files/fort22.html#fort22"><span class="std std-ref">fort.221</span></a> and <a class="reference internal" href="../../../technical_reference/input_files/fort22.html#fort22"><span class="std std-ref">fort.222</span></a> files respectively,
+optionally including nested wind and pressure in <a class="reference internal" href="../../../technical_reference/input_files/fort22.html#fort22"><span class="std std-ref">fort.223</span></a> and
+<a class="reference internal" href="../../../technical_reference/input_files/fort22.html#fort22"><span class="std std-ref">fort.224</span></a> files. See <a class="reference internal" href="../../../technical_reference/input_files/fort22.html#fort22"><span class="std std-ref">fort.22</span></a> documentation for details.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>hwind+</strong> - Requires two or more meteorological forcing files from the</dt><dd><p>H*Wind model. See <a class="reference internal" href="../../../technical_reference/input_files/fort22.html#fort22"><span class="std std-ref">fort.22</span></a> documentation for details.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>gfdl+</strong> - Requires two or more meteorological forcing files from the GFDL</dt><dd><p>model. See <a class="reference internal" href="../../../technical_reference/input_files/fort22.html#fort22"><span class="std std-ref">fort.22</span></a> documentation for details.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>nwsf22</strong> - Requires analyst-supplied <code class="docutils literal notranslate"><span class="pre">NWS_20_fort.22</span></code></dt><dd><p>meteorological forcing file. See <a class="reference internal" href="../../../technical_reference/input_files/fort22.html#nws-20"><span class="std std-ref">NWS = 20: Generalized Asymmetric Holland Vortex Model (GAHM)</span></a> for information on the use of <code class="docutils literal notranslate"><span class="pre">aswip</span></code> program to generate the <code class="docutils literal notranslate"><span class="pre">NWS_20_fort.22</span></code> file.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>pp</strong> - Requires preprocessing of the ATCF formatted track file using the</dt><dd><p>ASymmetric Wind Input Preprocessor (<code class="docutils literal notranslate"><span class="pre">aswip</span></code>) program (distributed with ADCIRC; see <a class="reference internal" href="../../../technical_reference/input_files/fort22.html#nws-20"><span class="std std-ref">NWS = 20: Generalized Asymmetric Holland Vortex Model (GAHM)</span></a>)
+prior to use as input for this parametric vortex model.</p>
+</dd>
+</dl>
+</li>
+<li><p><strong>f23</strong> - Requires analyst-supplied fort.23 wave radiation stress input file.</p></li>
+<li><dl class="simple">
+<dt><strong>A+S</strong> - Requires ADCIRC+SWAN executable and input files for the coupled</dt><dd><p>version of SWAN.</p>
+</dd>
+</dl>
+</li>
+<li><p><strong>STW</strong> - Requires ESMF-coupled ADCIRC and STWAVE and input files for STWAVE.</p></li>
+<li><dl class="simple">
+<dt><strong>f25</strong> - Requires analyst-supplied <a class="reference internal" href="../../../technical_reference/input_files/fort25.html#fort25"><span class="std std-ref">fort.25</span></a> ice coverage input</dt><dd><p>file as well as a <a class="reference internal" href="../../../technical_reference/input_files/fort25.html#fort25"><span class="std std-ref">fort.225</span></a> basin scale ice coverage file and
+possibly an optional <a class="reference internal" href="../../../technical_reference/input_files/fort25.html#fort25"><span class="std std-ref">fort.227</span></a> region scale ice coverage file.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="notes">
+<span id="supp-forcing-notes"></span><h2>Notes<a class="headerlink" href="#notes" title="Link to this heading"></a></h2>
+<references group="note" /><aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id98" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id2">1</a>,<a role="doc-backlink" href="#id6">2</a>,<a role="doc-backlink" href="#id34">3</a>)</span>
+<p><code class="docutils literal notranslate"><span class="pre">NWS</span></code> formats 1, 2, and 7 do not support the use of ice coverage (fort.25)
+files.</p>
+</aside>
+<aside class="footnote brackets" id="id99" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id3">1</a>,<a role="doc-backlink" href="#id7">2</a>,<a role="doc-backlink" href="#id10">3</a>,<a role="doc-backlink" href="#id13">4</a>,<a role="doc-backlink" href="#id16">5</a>,<a role="doc-backlink" href="#id19">6</a>,<a role="doc-backlink" href="#id22">7</a>,<a role="doc-backlink" href="#id25">8</a>,<a role="doc-backlink" href="#id28">9</a>,<a role="doc-backlink" href="#id31">10</a>,<a role="doc-backlink" href="#id35">11</a>,<a role="doc-backlink" href="#id38">12</a>,<a role="doc-backlink" href="#id41">13</a>,<a role="doc-backlink" href="#id44">14</a>,<a role="doc-backlink" href="#id47">15</a>,<a role="doc-backlink" href="#id50">16</a>,<a role="doc-backlink" href="#id53">17</a>,<a role="doc-backlink" href="#id56">18</a>,<a role="doc-backlink" href="#id59">19</a>,<a role="doc-backlink" href="#id62">20</a>,<a role="doc-backlink" href="#id65">21</a>,<a role="doc-backlink" href="#id68">22</a>,<a role="doc-backlink" href="#id71">23</a>,<a role="doc-backlink" href="#id74">24</a>,<a role="doc-backlink" href="#id77">25</a>,<a role="doc-backlink" href="#id80">26</a>,<a role="doc-backlink" href="#id83">27</a>,<a role="doc-backlink" href="#id86">28</a>,<a role="doc-backlink" href="#id89">29</a>,<a role="doc-backlink" href="#id92">30</a>,<a role="doc-backlink" href="#id95">31</a>)</span>
+<p>Radiation stress time increment (<code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code>) represents the time increment
+between the datasets in the fort.23 file (in seconds).</p>
+</aside>
+<aside class="footnote brackets" id="id100" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id4">1</a>,<a role="doc-backlink" href="#id5">2</a>,<a role="doc-backlink" href="#id8">3</a>,<a role="doc-backlink" href="#id9">4</a>,<a role="doc-backlink" href="#id11">5</a>,<a role="doc-backlink" href="#id12">6</a>,<a role="doc-backlink" href="#id14">7</a>,<a role="doc-backlink" href="#id15">8</a>,<a role="doc-backlink" href="#id17">9</a>,<a role="doc-backlink" href="#id18">10</a>,<a role="doc-backlink" href="#id20">11</a>,<a role="doc-backlink" href="#id21">12</a>,<a role="doc-backlink" href="#id23">13</a>,<a role="doc-backlink" href="#id24">14</a>,<a role="doc-backlink" href="#id26">15</a>,<a role="doc-backlink" href="#id27">16</a>,<a role="doc-backlink" href="#id29">17</a>,<a role="doc-backlink" href="#id30">18</a>,<a role="doc-backlink" href="#id32">19</a>,<a role="doc-backlink" href="#id33">20</a>,<a role="doc-backlink" href="#id36">21</a>,<a role="doc-backlink" href="#id37">22</a>,<a role="doc-backlink" href="#id39">23</a>,<a role="doc-backlink" href="#id40">24</a>,<a role="doc-backlink" href="#id42">25</a>,<a role="doc-backlink" href="#id43">26</a>,<a role="doc-backlink" href="#id45">27</a>,<a role="doc-backlink" href="#id46">28</a>,<a role="doc-backlink" href="#id48">29</a>,<a role="doc-backlink" href="#id49">30</a>,<a role="doc-backlink" href="#id51">31</a>,<a role="doc-backlink" href="#id52">32</a>,<a role="doc-backlink" href="#id54">33</a>,<a role="doc-backlink" href="#id55">34</a>,<a role="doc-backlink" href="#id57">35</a>,<a role="doc-backlink" href="#id58">36</a>,<a role="doc-backlink" href="#id60">37</a>,<a role="doc-backlink" href="#id61">38</a>,<a role="doc-backlink" href="#id63">39</a>,<a role="doc-backlink" href="#id64">40</a>,<a role="doc-backlink" href="#id66">41</a>,<a role="doc-backlink" href="#id67">42</a>,<a role="doc-backlink" href="#id69">43</a>,<a role="doc-backlink" href="#id70">44</a>,<a role="doc-backlink" href="#id72">45</a>,<a role="doc-backlink" href="#id73">46</a>,<a role="doc-backlink" href="#id75">47</a>,<a role="doc-backlink" href="#id76">48</a>,<a role="doc-backlink" href="#id78">49</a>,<a role="doc-backlink" href="#id79">50</a>,<a role="doc-backlink" href="#id81">51</a>,<a role="doc-backlink" href="#id82">52</a>,<a role="doc-backlink" href="#id84">53</a>,<a role="doc-backlink" href="#id85">54</a>,<a role="doc-backlink" href="#id87">55</a>,<a role="doc-backlink" href="#id88">56</a>,<a role="doc-backlink" href="#id90">57</a>,<a role="doc-backlink" href="#id91">58</a>,<a role="doc-backlink" href="#id93">59</a>,<a role="doc-backlink" href="#id94">60</a>,<a role="doc-backlink" href="#id96">61</a>,<a role="doc-backlink" href="#id97">62</a>)</span>
+<p><code class="docutils literal notranslate"><span class="pre">RSTIMINC</span></code> represents the span of ADCIRC simulation time that passes
+between calls to the coupled wave model.</p>
+</aside>
+</aside>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="wtiminc.html" class="btn btn-neutral float-left" title="WTIMINC Supplemental" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="generalized_asymmetric_holland_model.html" class="btn btn-neutral float-right" title="Generalized Asymmetric Holland Model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

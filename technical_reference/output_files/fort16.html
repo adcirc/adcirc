@@ -1,0 +1,216 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fort.16: General Diagnostic Output &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Fort.33: Iterative Solver ITPACKV 2D Diagnostic Output" href="fort33.html" />
+    <link rel="prev" title="Fort.6: Screen Output" href="fort6.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../input_files/index.html">Input Files</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Output Files</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#runtime-logs">Runtime Logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#water-surface-elevation-time-series">Water Surface Elevation Time Series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#velocity-time-series">Velocity Time Series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#meteorological-time-series">Meteorological Time Series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#maximum-and-minimum-values">Maximum and Minimum Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#hot-start">Hot Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#harmonic-analysis">Harmonic Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#wet-dry-state-and-inundation">Wet/Dry State and Inundation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#ice-coverage">Ice Coverage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#d-variables">3D Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#mode-parameters">Mode Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#time-varying-topography-bathymetry">Time-varying Topography/Bathymetry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#passive-scalar-transport">Passive Scalar Transport</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Output Files</a></li>
+      <li class="breadcrumb-item active">Fort.16: General Diagnostic Output</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/technical_reference/output_files/fort16.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fort-16-general-diagnostic-output">
+<span id="fort16"></span><h1>Fort.16: General Diagnostic Output<a class="headerlink" href="#fort-16-general-diagnostic-output" title="Link to this heading"></a></h1>
+<p>Output file which echo prints information from:</p>
+<ul class="simple">
+<li><p>The Grid and Boundary Information File</p></li>
+<li><p>The Model Parameter and Periodic Boundary Condition File</p></li>
+</ul>
+<p>Additionally, this file:</p>
+<ul class="simple">
+<li><p>Provides some processed information</p></li>
+<li><p>Prints out error messages from ADCIRC</p></li>
+</ul>
+<section id="notes-for-fort-16-file">
+<h2>Notes for fort.16 file:<a class="headerlink" href="#notes-for-fort-16-file" title="Link to this heading"></a></h2>
+<p>The Geophysical Fluid Dynamics Laboratory (GFDL) file format was developed to support the output from atmospheric models. The files have the following characteristics:</p>
+<ul class="simple">
+<li><p>Each ASCII GFDL met file contains one or more nested grid data where the nested grids are allowed to change in time.</p></li>
+<li><p>Coarse grid data is not stored where finer nest data is given.</p></li>
+</ul>
+<p>The file format of the ADCIRC fort.22 for GFDL is as follows:</p>
+<p>Line 1 — ASCII Text Header
+Line 2 — Windmultiplier Value (real number)
+Line 3 — Maximum Extrapolation distance (m)
+Lines 4-end — cycleTime rampValue filename</p>
+<p>The file format for each of the actual GFDL files is as follows:</p>
+<p>Line 1: Number of grid cells (f10.4) NCELLS
+Lines 2-NCELLS+1: Have ten columns of data formatted as 10f10.4</p>
+<ol class="arabic simple">
+<li><p>u (m/sec)</p></li>
+<li><p>v (m/sec)</p></li>
+<li><p>Temperature (K)</p></li>
+<li><p>mixing ratio(kg/kg)</p></li>
+<li><p>storm accum precipitation (cm)</p></li>
+<li><p>sea level pressure (hPa)</p></li>
+<li><p>longitude (decimal deg)</p></li>
+<li><p>latitude (decimal deg)</p></li>
+<li><p>hurricane hour</p></li>
+<li><p>nest number (this is not always present)</p></li>
+</ol>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
+<p>To illustrate the definitions and descriptions provided, a concrete example of an ADCIRC fort.22 file for GFDL is provided as follows:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>! 1st line is a comment line, max length 1024 characters
+1.0     ! 2nd line is a velocity magnitude multiplier
+10000.0 ! 3rd line: maximum extrapolation distance (m)
+0.0 0.0 &quot;/home/jason/isaac/gfdl/isaac_gfdl_file1&quot; ! time (hours), ramp mult, filename
+6.0 0.5 &quot;/home/jason/isaac/gfdl/isaac_gfdl_file2&quot;
+12.0 1.0 &quot;/home/jason/isaac/gfdl/isaac_gfdl_file3&quot;
+</pre></div>
+</div>
+<p>Note: When including the path to the data files, if the full path includes forward slashes (as it would if ADCIRC is executing on Unix or Linux), be sure to surround the full path file name with double quotes as shown in the example above. This is required because Fortran treats a bare forward slash in an input file as an end-of-record character.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fort6.html" class="btn btn-neutral float-left" title="Fort.6: Screen Output" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fort33.html" class="btn btn-neutral float-right" title="Fort.33: Iterative Solver ITPACKV 2D Diagnostic Output" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

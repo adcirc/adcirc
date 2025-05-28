@@ -1,0 +1,298 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Input Files &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Fort.14: Grid and Boundary Information File" href="fort14.html" />
+    <link rel="prev" title="All Files" href="../all_files.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../all_files.html">All Files</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Input Files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#grid-and-boundaries">Grid and Boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#model-parameters-and-periodic-bcs">Model Parameters and Periodic BCs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nodal-attributes">Nodal Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#hot-start">Hot Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#boundary-conditions">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#meteorological-forcing">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#wave-forcing">Wave Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#self-attraction-earth-load-tide-forcing">Self Attraction/Earth Load Tide Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ice-coverage">Ice Coverage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#d-baroclinic-simulation">3D Baroclinic Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#station-locations">Station Locations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#time-varying-topography-bathymetry">Time-varying Topography/Bathymetry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#passive-scalar-transport">Passive Scalar Transport</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parallel-execution">Parallel Execution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Input Files</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/technical_reference/input_files/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="input-files">
+<h1>Input Files<a class="headerlink" href="#input-files" title="Link to this heading"></a></h1>
+<p>ADCIRC requires several input files that define the model domain, boundary conditions, and various parameters. This section describes the structure and contents of these files.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="fort14.html"><span class="doc">Fort.14: Grid and Boundary Information File</span></a> and <a class="reference internal" href="fort15.html"><span class="doc">Fort.15: Model Parameter and Periodic Boundary Condition File</span></a> are required. Other files are conditional.</p>
+</div>
+<section id="grid-and-boundaries">
+<h2>Grid and Boundaries<a class="headerlink" href="#grid-and-boundaries" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fort14.html">Fort.14: Grid and Boundary Information File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fortrotm.html">Fort.rotm: Rotation of the geographical coordinates</a></li>
+</ul>
+</div>
+</section>
+<section id="model-parameters-and-periodic-bcs">
+<h2>Model Parameters and Periodic BCs<a class="headerlink" href="#model-parameters-and-periodic-bcs" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fort15.html">Fort.15: Model Parameter and Periodic Boundary Condition File</a></li>
+</ul>
+</div>
+</section>
+<section id="nodal-attributes">
+<h2>Nodal Attributes<a class="headerlink" href="#nodal-attributes" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fort13.html">Fort.13: Nodal Attributes File</a></li>
+</ul>
+</div>
+</section>
+<section id="hot-start">
+<h2>Hot Start<a class="headerlink" href="#hot-start" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fort6768.html">Fort.67, Fort.68: Hot Start Files</a></li>
+</ul>
+</div>
+</section>
+<section id="boundary-conditions">
+<h2>Boundary Conditions<a class="headerlink" href="#boundary-conditions" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fort19.html">Fort.19: Non-periodic Elevation Boundary Condition File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fort20.html">Fort.20: Non-periodic Normal Flow Boundary Condition File</a></li>
+</ul>
+</div>
+</section>
+<section id="meteorological-forcing">
+<h2>Meteorological Forcing<a class="headerlink" href="#meteorological-forcing" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="meteorological_forcing_overview.html">Meteorological Forcing Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fort22.html">Fort.22: Meteorological Forcing Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fort22x_grb2.html">Fort.22x.grb2: Meteorological Inputs in GRIB2 Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fort200.html">Fort.200: Multiple File Meteorological Forcing Input</a></li>
+</ul>
+</div>
+</section>
+<section id="wave-forcing">
+<h2>Wave Forcing<a class="headerlink" href="#wave-forcing" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fort23.html">Fort.23: Wave Radiation Stress Forcing File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fort26.html">Fort.26: SWAN Runtime Parameters and Coupling File</a></li>
+</ul>
+</div>
+</section>
+<section id="self-attraction-earth-load-tide-forcing">
+<h2>Self Attraction/Earth Load Tide Forcing<a class="headerlink" href="#self-attraction-earth-load-tide-forcing" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fort24.html">Fort.24: Self Attraction/Earth Load Tide Forcing File</a></li>
+</ul>
+</div>
+</section>
+<section id="ice-coverage">
+<h2>Ice Coverage<a class="headerlink" href="#ice-coverage" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fort25.html">Fort.25, 255/277: Ice Coverage Input Files</a></li>
+</ul>
+</div>
+</section>
+<section id="d-baroclinic-simulation">
+<h2>3D Baroclinic Simulation<a class="headerlink" href="#d-baroclinic-simulation" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fort11.html">Fort.11: Density Initial Condition Input File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fort35.html">Fort.35: Level of No Motion Boundary Condition Input File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fort36.html">Fort.36: Salinity Boundary Condition Input File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fort37.html">Fort.37: Temperature Boundary Condition Input File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fort38.html">Fort.38: Surface Temperature Boundary Values Input File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fort39.html">Fort.39: Salinity and Temperature River Boundary Values Input File</a></li>
+</ul>
+</div>
+</section>
+<section id="station-locations">
+<h2>Station Locations<a class="headerlink" href="#station-locations" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="elev_stat151.html">Elev_stat.151: Elevation Station Location Input File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vel_stat151.html">Vel_stat.151: Velocity Station Location Input File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="met_stat151.html">Met_stat.151: Meteorological Recording Station Location Input File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conc_stat151.html">Conc_stat.151: Concentration Station Location Input File</a></li>
+</ul>
+</div>
+</section>
+<section id="time-varying-topography-bathymetry">
+<h2>Time-varying Topography/Bathymetry<a class="headerlink" href="#time-varying-topography-bathymetry" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="time_varying_bathymetry.html">Fort.141: Time Varying Bathymetry Input File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="time_varying_weirs.html">Fort.142: Time Varying Weirs Input File</a></li>
+</ul>
+</div>
+</section>
+<section id="passive-scalar-transport">
+<h2>Passive Scalar Transport<a class="headerlink" href="#passive-scalar-transport" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fort10.html">Fort.10: Passive Scalar Transport Input File</a></li>
+</ul>
+</div>
+</section>
+<section id="parallel-execution">
+<h2>Parallel Execution<a class="headerlink" href="#parallel-execution" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fort18.html">Fort.18: Domain Decomposition Data</a></li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../all_files.html" class="btn btn-neutral float-left" title="All Files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fort14.html" class="btn btn-neutral float-right" title="Fort.14: Grid and Boundary Information File" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

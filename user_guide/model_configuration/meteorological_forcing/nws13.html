@@ -1,0 +1,436 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="NWS13 in ADCIRC" name="description" />
+<meta content="adcirc, nws13" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NWS13 &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Typical Parameter Selections" href="../typical_configurations/typical_parameter_selections.html" />
+    <link rel="prev" title="NWS12" href="nws12.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Model Configuration</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../model_parameters/index.html">Model Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../physics_parameters/index.html">Physics Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../initial_conditions/index.html">Initial Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../boundary_conditions/index.html">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tides/index.html">Astronomical Tides</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../typical_configurations/typical_parameter_selections.html">Typical Parameter Selections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Model Configuration</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Meteorological Forcing</a></li>
+      <li class="breadcrumb-item active">NWS13</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/model_configuration/meteorological_forcing/nws13.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="nws13">
+<span id="id1"></span><h1>NWS13<a class="headerlink" href="#nws13" title="Link to this heading"></a></h1>
+<p>Oceanweather Inc. (OWI) NetCDF Meteorological Input Files</p>
+<section id="motivation">
+<h2>Motivation<a class="headerlink" href="#motivation" title="Link to this heading"></a></h2>
+<p>A major source of error in ADCIRC can come from the accuracy and representation
+of the wind and pressure fields. In order to allow ADCIRC access to high quality
+and efficiently stored inputs the following features were added to the existing
+<a class="reference internal" href="nws12.html#nws12"><span class="std std-ref">NWS12</span></a> functionality for the newer NetCDF version
+<a class="reference internal" href="#nws13"><span class="std std-ref">NWS13</span></a>.</p>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../../../_images/overlay_domains.png"><img alt="../../../_images/overlay_domains.png" src="../../../_images/overlay_domains.png" style="width: 400px;" />
+</a>
+</figure>
+<ul class="simple">
+<li><p>Moving storm-centered grids</p></li>
+<li><p>Grids that can change size</p></li>
+<li><p>Curvilinear grids</p></li>
+<li><p>Arbitrary # of grid overlays</p></li>
+<li><p>New ADCIRC moving interpolation code</p></li>
+<li><p>Arbitrary &amp; irregular timesteps</p></li>
+</ul>
+<p>Some future-proofing attempts:</p>
+<ul class="simple">
+<li><p>Multi-resolution representation of tropical cyclone wind fields</p></li>
+<li><p>Be able to introduce additional meteorological parameters using the same
+format/NWS input</p>
+<ul>
+<li><p>Possibility to include wind stresses?</p></li>
+<li><p>Alternative reference heights?</p></li>
+<li><p>Ice information?</p></li>
+<li><p>Rainfall?</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="netcdf-file-schema">
+<span id="id2"></span><h2>NetCDF File Schema<a class="headerlink" href="#netcdf-file-schema" title="Link to this heading"></a></h2>
+<p>This description assumes some familiarity with NetCDF, HDF or other similar
+self-describing binary file formats, and in particular features like “groups”
+available in HDF5 and NetCDF4. Understanding of NetCDF conventions like Climate
+Forecast (CF) may also be helpful. For more information about NetCDF please
+visit the links below.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.unidata.ucar.edu/software/netcdf/">https://www.unidata.ucar.edu/software/netcdf/</a></p></li>
+<li><p><a class="reference external" href="https://www.hdfgroup.org/">https://www.hdfgroup.org/</a></p></li>
+<li><p><a class="reference external" href="https://cfconventions.org/">https://cfconventions.org/</a></p></li>
+<li><p><a class="reference external" href="https://github.com/Unidata/netcdf4-python">https://github.com/Unidata/netcdf4-python</a></p></li>
+<li><p><a class="reference external" href="https://github.com/pydata/xarray">https://github.com/pydata/xarray</a></p></li>
+</ul>
+<section id="owi-nws13-convention">
+<span id="id3"></span><h3>OWI-NWS13 Convention<a class="headerlink" href="#owi-nws13-convention" title="Link to this heading"></a></h3>
+<p><strong>NetCDF4 File</strong> contents:</p>
+<ul class="simple">
+<li><p>Group(s) – 1 group per grid or overlay</p></li>
+<li><p>Variables – U10/V10, PSFC</p></li>
+<li><p>Dimensions – time, yi, xi</p></li>
+<li><p>Attributes – grid rank/priority</p></li>
+</ul>
+<p><strong>Global Attributes</strong>:</p>
+<ul class="simple">
+<li><p><em>group_order</em>: space separated list of group names reflecting their
+appropriate rank/order</p></li>
+<li><p><em>conventions</em>: should include “OWI-NWS13“ (Climate Forecast conventions (CF)
+seemingly don’t support NC groups)</p></li>
+</ul>
+<p><strong>Group Attributes</strong>:</p>
+<ul class="simple">
+<li><p><em>rank</em>: integer representing the order of overlay/precedence in application
+to nodes</p></li>
+</ul>
+<p><strong>Group Dimensions</strong>:</p>
+<ul class="simple">
+<li><p><em>time</em> – length of time dimension</p></li>
+<li><p><em>yi</em> – number of rows in spatial grid description</p></li>
+<li><p><em>xi</em> – number of columns in spatial grid description</p></li>
+</ul>
+<p><strong>Group Variables</strong>:</p>
+<ul class="simple">
+<li><p><em>U10</em> (time, yi, xi), U-component of 10m WS (m/s)</p></li>
+<li><p><em>V10</em> (time, yi, xi), V-component of 10m WS (m/s)</p></li>
+<li><p><em>PSFC</em> (time, yi, xi), Surface Pressure (mb)</p></li>
+<li><p><em>lon</em> (yi, xi) or (time, yi, xi), Longitude in Decimal Degrees</p></li>
+<li><p><em>lat</em> (yi, xi) or (time, yi, xi), Latitude in Decimal Degrees</p></li>
+<li><p><em>time</em> (time), Datetime-number with units of “minutes from YYYY-mm-dd
+HH:MM:SS”</p></li>
+<li><p><em>clon</em> and <em>clat</em> (time), optional storm center coordinates for Powell drag</p></li>
+</ul>
+</section>
+<section id="example">
+<h3>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h3>
+<div class="line-block">
+<div class="line">netcdf fort.22 {</div>
+<div class="line">    // global attributes:</div>
+<div class="line">    :group_order = “Main JPM0135” ;</div>
+<div class="line">    :institution = “Oceanweather Inc. (OWI)” ;</div>
+<div class="line">    :conventions = “CF-1.6 OWI-NWS13” ;</div>
+</div>
+<div class="line-block">
+<div class="line"> group: Main {</div>
+<div class="line">     dimensions:</div>
+<div class="line">         yi = 211 ;</div>
+<div class="line">         xi = 221 ;</div>
+<div class="line">         time = 133 ;</div>
+<div class="line">     variables:</div>
+<div class="line">         float lon(yi, xi) ;</div>
+<div class="line">             lon:_FillValue = NaNf ;</div>
+<div class="line">             lon:units = “degrees_east” ;</div>
+<div class="line">             lon:standard_name = “longitude” ;</div>
+<div class="line">             lon:axis = “X” ;</div>
+<div class="line">             lon:coordinates = “time lat lon” ;</div>
+<div class="line">         float lat(yi, xi) ;</div>
+<div class="line">             lat:_FillValue = NaNf ;</div>
+<div class="line">             lat:units = “degrees_north” ;</div>
+<div class="line">             lat:standard_name = “latitude” ;</div>
+<div class="line">             lat:axis = “Y” ;</div>
+<div class="line">             lat:coordinates = “time lat lon” ;</div>
+<div class="line">         int64 time(time) ;</div>
+<div class="line">             time:units = “minutes since 1990-01-01T01:00:00” ;</div>
+<div class="line">             time:calendar = “proleptic_gregorian” ;</div>
+<div class="line">         float U10(time, yi, xi) ;</div>
+<div class="line">             U10:_FillValue = NaNf ;</div>
+<div class="line">             U10:units = “m s-1” ;</div>
+<div class="line">             U10:coordinates = “time lat lon” ;</div>
+<div class="line">         float V10(time, yi, xi) ;</div>
+<div class="line">             V10:_FillValue = NaNf ;</div>
+<div class="line">             V10:units = “m s-1” ;</div>
+<div class="line">             V10:coordinates = “time lat lon” ;</div>
+<div class="line">         float PSFC(time, yi, xi) ;</div>
+<div class="line">             PSFC:_FillValue = NaNf ;</div>
+<div class="line">             PSFC:units = “mb” ;</div>
+<div class="line">             PSFC:coordinates = “time lat lon” ;</div>
+<div class="line"> // group attributes:</div>
+<div class="line">     :rank = 1 ;</div>
+<div class="line"> } // group Main</div>
+</div>
+<div class="line-block">
+<div class="line"> group: JPM0135 {</div>
+<div class="line">     dimensions:</div>
+<div class="line">         time = 133 ;</div>
+<div class="line">         yi = 501 ;</div>
+<div class="line">         xi = 501 ;</div>
+<div class="line">     variables:</div>
+<div class="line">         int64 time(time) ;</div>
+<div class="line">             time:units = “minutes since 1990-01-01T01:00:00” ;</div>
+<div class="line">             time:calendar = “proleptic_gregorian” ;</div>
+<div class="line">         float lat(time, yi, xi) ;</div>
+<div class="line">             lat:_FillValue = NaNf ;</div>
+<div class="line">             lat:units = “degrees_north” ;</div>
+<div class="line">             lat:standard_name = “latitude” ;</div>
+<div class="line">             lat:axis = “Y” ;</div>
+<div class="line">             lat:coordinates = “time lat lon” ;</div>
+<div class="line">         float lon(time, yi, xi) ;</div>
+<div class="line">             lon:_FillValue = NaNf ;</div>
+<div class="line">             lon:units = “degrees_east” ;</div>
+<div class="line">             lon:standard_name = “longitude” ;</div>
+<div class="line">             lon:axis = “X” ;</div>
+<div class="line">             lon:coordinates = “time lat lon” ;</div>
+<div class="line">         float U10(time, yi, xi) ;</div>
+<div class="line">             U10:_FillValue = NaNf ;</div>
+<div class="line">             U10:units = “m s-1” ;</div>
+<div class="line">             U10:coordinates = “time lat lon” ;</div>
+<div class="line">         float V10(time, yi, xi) ;</div>
+<div class="line">             V10:_FillValue = NaNf ;</div>
+<div class="line">             V10:units = “m s-1” ;</div>
+<div class="line">             V10:coordinates = “time lat lon” ;</div>
+<div class="line">         float PSFC(time, yi, xi) ;</div>
+<div class="line">             PSFC:_FillValue = NaNf ;</div>
+<div class="line">             PSFC:units = “mb” ;</div>
+<div class="line">             PSFC:coordinates = “time lat lon” ;</div>
+<div class="line"> // group attributes:</div>
+<div class="line">     :rank = 2 ;</div>
+<div class="line"> } // group JPM0135</div>
+<div class="line">}</div>
+</div>
+</section>
+<section id="notes">
+<h3>Notes<a class="headerlink" href="#notes" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Decoupling the yi/xi dimensions from lat/lon allows lat and lon to be 2-d
+arrays by depending on both dimensions</p></li>
+<li><p>Regular grids and Curvilinear grids</p></li>
+<li><p>Non-evenly spaced grids as long as they can be expressed in a 2-d “mesh-grid”</p></li>
+<li><p>Grids that change spatial resolution or position in time (but have consistent
+yi/xi array size)</p></li>
+<li><p>Each group/sub-grid can define the timesteps independently, including start
+and stop times</p></li>
+<li><p>Fill Value (and NetCDF packing/compression), and ieee nan floats supported</p></li>
+</ul>
+</section>
+</section>
+<section id="fort-15-configuration">
+<span id="id4"></span><h2>fort.15 Configuration<a class="headerlink" href="#fort-15-configuration" title="Link to this heading"></a></h2>
+<p><strong>WTIMINC</strong>: configurable grid-to-mesh interpolation timestep in seconds,
+separate from the input data timesteps. If the file contains storm-following
+grids, there may be some utility in setting this finer than the input
+timestep(s).</p>
+<p><em>&amp;owiWindNetcdf</em> fort.15 namelist with all inputs quoted as strings</p>
+<ul class="simple">
+<li><p><em>NWS13ColdStartString</em>: required cold start time of simulation formatted as
+‘YYYYMMDD.HHMMSS’</p></li>
+<li><p><em>NWS13WindMultiplier</em>: optional wind speed multiplier (<strong>DWM</strong> from
+<a class="reference external" href="NWS12">NWS12</a>)</p></li>
+<li><p><em>NWS13File</em>: optional file name for netCDF file ( <em>fort.22.nc</em> default )</p></li>
+<li><p><em>NWS13GroupForPowell</em>: optional group # to use for Powell drag</p></li>
+</ul>
+<p><em>example</em>:</p>
+<p> &amp;owiWindNetcdf NWS13File=’fort.22.nc’ NWS13ColdStartString=’20000706.000000’ /</p>
+</section>
+<section id="suggestions">
+<h2>Suggestions<a class="headerlink" href="#suggestions" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Keep the spatial and temporal resolutions to only what is required</p></li>
+<li><p>Add sub-grids, more complex time dimensions, and complex lat/lon grid
+definitions only as necessary by sub-grid/group</p></li>
+<li><p>In most cases 1-hourly specified–if you have a moving-grid overlay and can
+rely on the built-in moving-aware interpolation</p></li>
+<li><p>Avoid discontinuities between overlays/grids</p></li>
+<li><p>Best case: the lowest rank grid should just be a less resolved version of
+exact same higher resolution fields that will be overlaid</p></li>
+<li><p>Lowest rank grid should probably cover the entire domain/mesh, and the entire
+model run time period</p></li>
+</ul>
+</section>
+<section id="interpolation-details">
+<span id="id5"></span><h2>Interpolation Details<a class="headerlink" href="#interpolation-details" title="Link to this heading"></a></h2>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../../../_images/Ch_maxmin_interp_timeseries.png"><img alt="../../../_images/Ch_maxmin_interp_timeseries.png" src="../../../_images/Ch_maxmin_interp_timeseries.png" style="width: 300px;" />
+</a>
+</figure>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../../../_images/Ch_movegrid_interp_spatial.png"><img alt="../../../_images/Ch_movegrid_interp_spatial.png" src="../../../_images/Ch_movegrid_interp_spatial.png" style="width: 300px;" />
+</a>
+</figure>
+<p>The NWS13 met module implements a multi-step interpolation
+procedure, primarily to minimize aliasing of the wind and pressure fields in
+time and space.</p>
+<p>The process occurs as follows:</p>
+<section id="step-1-time-space-on-input-grid-s">
+<span id="step-1-timespace-on-input-grids"></span><h3>Step 1: Time/space on input grid(s)<a class="headerlink" href="#step-1-time-space-on-input-grid-s" title="Link to this heading"></a></h3>
+<p>Input fields are interpolated on the input grid (in time, and space if
+necessary) to the intermediate timesteps specified in the <em>fort.15</em> parameter
+<strong>WTIMINC</strong>.</p>
+</section>
+<section id="step-2-apply-intermediate-input-grid-to-mesh">
+<span id="id6"></span><h3>Step 2: Apply intermediate input grid to mesh<a class="headerlink" href="#step-2-apply-intermediate-input-grid-to-mesh" title="Link to this heading"></a></h3>
+<p>The gridded intermediate timesteps are interpolated in space on to the ADCIRC
+mesh, appropriately overlaying multiple input grids by rank as supplied. At this
+point the inputs are represented on the mesh at <strong>WTIMINC</strong> timesteps.</p>
+<p><strong>NB:</strong> For the lowest ranked overlay, the grid-to-mesh interpolation weights
+are pre-computed, which means that this grid cannot be a storm-following moving
+grid. For all additional overlays, the weights are dynamically updated.</p>
+</section>
+<section id="step-3-time-interpolation-to-model-timestep">
+<span id="id7"></span><h3>Step 3: Time interpolation to model timestep<a class="headerlink" href="#step-3-time-interpolation-to-model-timestep" title="Link to this heading"></a></h3>
+<p>At each model computational timestep (<strong>DTDP</strong>) the inputs at intermediate
+timesteps as represented on the mesh are interpolated in time to the appropriate
+model timestep node-by-node.</p>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../../../_images/nws13_interp1.png"><img alt="../../../_images/nws13_interp1.png" src="../../../_images/nws13_interp1.png" style="width: 800px;" />
+</a>
+</figure>
+<figure class="align-default">
+<a class="reference internal image-reference" href="../../../_images/nws13_interp2.png"><img alt="../../../_images/nws13_interp2.png" src="../../../_images/nws13_interp2.png" style="width: 800px;" />
+</a>
+</figure>
+<style>
+.wrap-table th, .wrap-table td {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+  hyphens: auto !important;
+}
+</style></section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="nws12.html" class="btn btn-neutral float-left" title="NWS12" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../typical_configurations/typical_parameter_selections.html" class="btn btn-neutral float-right" title="Typical Parameter Selections" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,487 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="TAU0 in ADCIRC" name="description" />
+<meta content="adcirc, tau0" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAU0 &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Ramping" href="ramping.html" />
+    <link rel="prev" title="A00, B00, C00" href="a00_b00_c00.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Model Configuration</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Model Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../physics_parameters/index.html">Physics Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../initial_conditions/index.html">Initial Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../boundary_conditions/index.html">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tides/index.html">Astronomical Tides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../meteorological_forcing/index.html">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../typical_configurations/typical_parameter_selections.html">Typical Parameter Selections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Model Configuration</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Model Parameters</a></li>
+      <li class="breadcrumb-item active">TAU0</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/model_configuration/model_parameters/tau0.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tau0">
+<span id="tau0-parameter"></span><h1>TAU0<a class="headerlink" href="#tau0" title="Link to this heading"></a></h1>
+<p><strong>TAU0</strong> is an input in the <a class="reference external" href="fort.15_file">fort.15 file</a> that influences
+the degree of numerical diffusion in ADCIRC’s governing equations. Specifically,
+it influences the weighting factor that determines the relative contribution of
+the primitive and wave portions of the the Generalized Wave-Continuity Equation
+(GWCE). The weighting factor, <span class="math notranslate nohighlight">\(\tau_0\)</span>, is affected by values in both the
+<a class="reference external" href="fort.15_file">fort.15 file</a> and the <a class="reference external" href="fort.13_file">fort.13 file</a>, if the
+<a class="reference external" href="primitive_weighting_in_continuity_equation">primitive weighting in continuity
+equation</a> or <a class="reference external" href="min_and_max_primitive_weighting_in_continuity_equation">min and max
+primitive weighting in continuity
+equation</a> nodal
+attributes are specified. This page addresses both the <code class="docutils literal notranslate"><span class="pre">TAU0</span></code> value in the
+fort.15 file and the <span class="math notranslate nohighlight">\(\tau_0\)</span> parameter more generally.</p>
+<section id="parameter-summary">
+<span id="tau0-parameter-summary"></span><h2>Parameter Summary<a class="headerlink" href="#parameter-summary" title="Link to this heading"></a></h2>
+<p>Because the <a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#tau0"><span class="std std-ref">TAU0</span></a> value specified in the fort.15 file can be either a flag
+(indicating how ADCIRC should operate) or the actual <span class="math notranslate nohighlight">\(\tau_0\)</span> value used
+in solving the GWCE, it is important to distinguish between the two. All
+negative <a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#tau0"><span class="std std-ref">TAU0</span></a> are flags, all positive <a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#tau0"><span class="std std-ref">TAU0</span></a> are <span class="math notranslate nohighlight">\(\tau_0\)</span>.
+Furthermore, some values are overridden by the <a class="reference internal" href="../../../technical_reference/input_files/fort13.html#primitive-weighting-in-continuity-equation"><span class="std std-ref">primitive weighting in
+continuity equation</span></a> nodal
+attribute. The following table is a summary of possible <code class="docutils literal notranslate"><span class="pre">TAU0</span></code> values and
+their meaning. Note that for <code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-x.1</span></code> (where <code class="docutils literal notranslate"><span class="pre">x</span></code> is an integer),
+behavior is the same as <code class="docutils literal notranslate"><span class="pre">-x</span></code>, but the <span class="math notranslate nohighlight">\(\tau_0\)</span> values are written to the
+<a class="reference internal" href="../../../technical_reference/output_files/fort90.html#fort90"><span class="std std-ref">fort.90 file</span></a>. More on this below in
+<a class="reference internal" href="#tau0-outputting"><span class="std std-ref">Outputting</span></a>.</p>
+<table class="wrap-table tighter-table docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>fort.15 <code class="docutils literal notranslate"><span class="pre">TAU0</span></code></p></th>
+<th class="head"><p>&gt;= 0</p></th>
+<th class="head"><p>-1</p></th>
+<th class="head"><p>-2</p></th>
+<th class="head"><p>-3</p></th>
+<th class="head"><p>-5</p></th>
+<th class="head"><p>-6</p></th>
+<th class="head"><p>-7</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Varies in space</p></td>
+<td><p>no (mostly)</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+</tr>
+<tr class="row-odd"><td><p>Varies in time</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+</tr>
+<tr class="row-even"><td><p>Space-averaged</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+</tr>
+<tr class="row-odd"><td><p>Time-averaged</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+</tr>
+<tr class="row-even"><td><p>primitive weighting in continuity equation</p></td>
+<td><p>yes</p></td>
+<td><p>discouraged</p></td>
+<td><p>discouraged</p></td>
+<td><p>yes</p></td>
+<td><p>discouraged</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+</tr>
+<tr class="row-odd"><td><p>min and max primitive weighting in continuity equation</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-even"><td><p>Minimum</p></td>
+<td><p>N/A</p></td>
+<td><p>0.002</p></td>
+<td><p>0.002</p></td>
+<td><p>N/A</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tau0FullDomainMin</span></code></p></td>
+<td><p>N/A</p></td>
+<td><p>N/A</p></td>
+</tr>
+<tr class="row-odd"><td><p>Maximum</p></td>
+<td><p>N/A</p></td>
+<td><p>0.005</p></td>
+<td><p>1</p></td>
+<td><p>0.2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Tau0FullDomainMax</span></code></p></td>
+<td><p>0.2</p></td>
+<td><p>0.2</p></td>
+</tr>
+<tr class="row-even"><td><p>Code Flags</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">HighResTimeVaryingTau0</span></code></p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.TRUE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.TRUE.</p></td>
+<td><p>.TRUE.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FullDomainTimeVaryingTau0</span></code></p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.TRUE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TimeAveragedTau0</span></code></p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.TRUE.</p></td>
+<td><p>.FALSE.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BackLoadedTimeAveragedTau0</span></code></p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.FALSE.</p></td>
+<td><p>.TRUE.</p></td>
+</tr>
+</tbody>
+</table>
+<section id="nodal-attributes">
+<h3>Nodal Attributes<a class="headerlink" href="#nodal-attributes" title="Link to this heading"></a></h3>
+<p>The <a class="reference internal" href="../../../technical_reference/input_files/fort13.html#primitive-weighting-in-continuity-equation"><span class="std std-ref">primitive weighting in continuity
+equation</span></a> nodal attribute permits
+a spatially variable <span class="math notranslate nohighlight">\(\tau_0\)</span> that is (at least initially) set equal to
+the nodal attribute values.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">&gt;=</span> <span class="pre">0</span></code>, <span class="math notranslate nohighlight">\(\tau_0\)</span> is constant in time and equal to <a class="reference internal" href="../../../technical_reference/input_files/fort13.html#primitive-weighting-in-continuity-equation"><span class="std std-ref">primitive
+weighting in continuity
+equation</span></a> values</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-3,</span> <span class="pre">-6,</span> <span class="pre">or</span> <span class="pre">-7</span></code>, <span class="math notranslate nohighlight">\(\tau_0\)</span> varies in time and based on
+<a class="reference internal" href="../../../technical_reference/input_files/fort13.html#primitive-weighting-in-continuity-equation"><span class="std std-ref">primitive weighting in continuity
+equation</span></a> values</p></li>
+</ul>
+<p>The <a class="reference internal" href="../../../technical_reference/input_files/fort13.html#min-and-max-primitive-weighting-in-continuity-equation"><span class="std std-ref">min and max primitive weighting in continuity
+equation</span></a> only works
+with <code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-5</span></code>, details on it are below.</p>
+</section>
+<section id="positive-tau0">
+<span id="id1"></span><h3>Positive TAU0<a class="headerlink" href="#positive-tau0" title="Link to this heading"></a></h3>
+<p>A positive value is ignored if the <a class="reference internal" href="../../../technical_reference/input_files/fort13.html#primitive-weighting-in-continuity-equation"><span class="std std-ref">primitive weighting in continuity
+equation</span></a> nodal attribute is
+specified in the fort.15 file. For all positive values, the value specified in
+the fort.15 file is spatially and temporally constant and applied directly, i.e.
+<code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span></code><span class="math notranslate nohighlight">\(\tau_0\)</span>. Practical guidance on setting a constant <code class="docutils literal notranslate"><span class="pre">TAU0</span></code> is
+provided below in <a class="reference internal" href="#selecting-values"><span class="std std-ref">Selecting Values</span></a>. Mathematically, the
+GWCE is a pure wave equation for <span class="math notranslate nohighlight">\(\tau_0=0\)</span>, and approaches a pure
+primitive equation as <span class="math notranslate nohighlight">\(\tau_0\rightarrow\infty\)</span>, however in practice, it
+behaves like a pure primitive equation once <span class="math notranslate nohighlight">\(\tau_0\)</span> reaches 1 or so.</p>
+</section>
+<section id="negative-tau0">
+<span id="id2"></span><h3>Negative TAU0<a class="headerlink" href="#negative-tau0" title="Link to this heading"></a></h3>
+<div class="line-block">
+<div class="line">Unexpected behavior may arise if a mismatching nodal attribute is specified
+alongside one of these values, and this is discouraged.</div>
+<div class="line"><em>Spatially varying, temporally constant</em></div>
+<div class="line">*<code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-1</span></code>, <span class="math notranslate nohighlight">\(\tau_0\)</span> is computed as follows:</div>
+</div>
+<ul class="simple">
+<li><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">If</span> <span class="pre">depth</span> <span class="pre">&gt;=</span> <span class="pre">10;</span> <span class="pre">then</span></code><span class="math notranslate nohighlight">\(\tau_0\)</span><code class="docutils literal notranslate"><span class="pre">=</span> <span class="pre">0.005</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">If</span> <span class="pre">depth</span> <span class="pre">&lt;</span> <span class="pre">10;</span> <span class="pre">then</span></code><span class="math notranslate nohighlight">\(\tau_0\)</span><code class="docutils literal notranslate"><span class="pre">=</span> <span class="pre">0.020</span></code></p></li>
+<li><p>This value is ignored if <a class="reference external" href="primitive_weighting_in_continuity_equation">primitive weighting in continuity
+equation</a> is specified in
+the fort.15 file.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-2</span></code>, <span class="math notranslate nohighlight">\(\tau_0\)</span> is is computed according to depth as follows:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">If</span> <span class="pre">depth</span> <span class="pre">&gt;=</span> <span class="pre">200;</span> <span class="pre">then</span></code><span class="math notranslate nohighlight">\(\tau_0\)</span><code class="docutils literal notranslate"><span class="pre">=</span> <span class="pre">0.005</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">If</span> <span class="pre">1</span> <span class="pre">&lt;</span> <span class="pre">depth</span> <span class="pre">&lt;</span> <span class="pre">200;</span> <span class="pre">then</span></code><span class="math notranslate nohighlight">\(\tau_0\)</span><code class="docutils literal notranslate"><span class="pre">=</span> <span class="pre">1/depth</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">If</span> <span class="pre">depth</span> <span class="pre">&lt;</span> <span class="pre">1;</span> <span class="pre">then</span></code><span class="math notranslate nohighlight">\(\tau_0 = 1\)</span></p></li>
+<li><p>This value is ignored if <a class="reference external" href="primitive_weighting_in_continuity_equation">primitive weighting in continuity
+equation</a> is specified in
+the fort.15 file.</p></li>
+</ul>
+</li>
+</ul>
+<div class="line-block">
+<div class="line"><em>Spatially and temporally varying</em></div>
+<div class="line">In the unlikely event that one of the below options not paired with its
+corresponding nodal attribute (the code will exit if this is done for some
+<code class="docutils literal notranslate"><span class="pre">TAU0</span></code>), then default values are set using the <code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-1</span></code> logic.</div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-3</span></code>, <span class="math notranslate nohighlight">\(\tau_0\)</span> is computed from <code class="docutils literal notranslate"><span class="pre">TAU0Base</span></code> (read in from the
+<a class="reference external" href="primitive_weighting_in_continuity_equation">nodal attribute</a>) as follows:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">If</span> <span class="pre">TAU0Base</span> <span class="pre">&lt;</span> <span class="pre">0.025;</span> <span class="pre">then</span></code><span class="math notranslate nohighlight">\(\tau_0\)</span><code class="docutils literal notranslate"><span class="pre">=</span> <span class="pre">TAU0Base</span></code> (constant in
+time)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">If</span> <span class="pre">TAU0Base</span> <span class="pre">&gt;=</span> <span class="pre">0.025;</span> <span class="pre">then</span></code><span class="math notranslate nohighlight">\(\tau_0\)</span><code class="docutils literal notranslate"><span class="pre">=</span> <span class="pre">TAU0Base+1.5*TK</span></code>
+where <code class="docutils literal notranslate"><span class="pre">TK=speed*Cd/depth</span></code></p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-5</span></code>, <span class="math notranslate nohighlight">\(\tau_0\)</span> is computed similar to <code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-3</span></code> as
+follows:</p>
+<ul>
+<li><p><span class="math notranslate nohighlight">\(\tau_0\)</span><code class="docutils literal notranslate"><span class="pre">=</span> <span class="pre">Tau0Min+1.5*TK</span></code></p></li>
+<li><p>It is limited by
+<code class="docutils literal notranslate"><span class="pre">`Tau0FullDomainMin</span></code> &lt;Tau0FullDomainMin&gt;`__<code class="docutils literal notranslate"><span class="pre">&lt;=</span></code><span class="math notranslate nohighlight">\(\tau_0\)</span><code class="docutils literal notranslate"><span class="pre">&lt;=</span></code><code class="docutils literal notranslate"><span class="pre">`Tau0FullDomainMax</span></code> &lt;Tau0FullDomainMax&gt;`__,
+which are specified on the line following <code class="docutils literal notranslate"><span class="pre">TAU0</span></code> in the fort.15 file
+(only when <code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-5</span></code>)</p></li>
+<li><p>If the <a class="reference external" href="min_and_max_primitive_weighting_in_continuity_equation">min and max primitive weighting in continuity
+equation</a> nodal
+attribute is used, then the nodal minimum and maximum values replace the
+full-domain values in the above calculation.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-6</span></code>, <span class="math notranslate nohighlight">\(\tau_0\)</span> is defined using the rules for <code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-3</span></code>,
+and then is set equal to the time-average of the current and previous
+(time-averaged) values.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-7</span></code>, <span class="math notranslate nohighlight">\(\tau_0\)</span> is defined using the rules for <code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-3</span></code>,
+and then is set equal to the weighted time-average of the current and
+previous (time-averaged) values as follows:</p>
+<ul>
+<li><p><span class="math notranslate nohighlight">\(\tau_0\)</span><code class="docutils literal notranslate"><span class="pre">=</span> <span class="pre">AlphaTau0*TAU0VAR</span> <span class="pre">+</span> <span class="pre">(1.0-AlphaTau0)*LastTau0</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">TAU0VAR</span></code> is <code class="docutils literal notranslate"><span class="pre">Tau0Base</span></code> after spatial averaging, and
+<code class="docutils literal notranslate"><span class="pre">AlphaTau0</span> <span class="pre">=</span> <span class="pre">0.25</span></code> is hard-coded into the model. This means that
+<span class="math notranslate nohighlight">\(\tau_0\)</span> is weighted 75% toward older values.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="spatial-and-temporal-updating">
+<span id="id3"></span><h2>Spatial and Temporal Updating<a class="headerlink" href="#spatial-and-temporal-updating" title="Link to this heading"></a></h2>
+<p>For <code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-3,</span> <span class="pre">-5,</span> <span class="pre">-6,</span> <span class="pre">or</span> <span class="pre">-7</span></code>, <span class="math notranslate nohighlight">\(\tau_0\)</span> is updated (via the
+<code class="docutils literal notranslate"><span class="pre">CalculateTimeVaryingTau0</span></code> subroutine) in space and in time. An initial
+“update” is done when the model starts. After this, updates are done only after
+a time step in which there is a change in wet/dry state somewhere in the model
+domain. For use cases that contain large number of nodes near the wet/dry
+boundary, this can be the equivalent of updating every time step. However, for
+use cases that have little or no wet/dry changes, <strong>there may be little or no
+updating</strong>. The rules listed above in <a class="reference external" href="TAU0#TAU0_Values">TAU0 Values</a> are
+applied during the update. Each node’s <span class="math notranslate nohighlight">\(\tau_0\)</span> is then spatially averaged
+with all immediate neighbors. Time-averaging (for <code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-6</span> <span class="pre">or</span> <span class="pre">-7</span></code>) is
+applied last.</p>
+</section>
+<section id="selecting-values">
+<span id="id4"></span><h2>Selecting Values<a class="headerlink" href="#selecting-values" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-3</span></code>, paired with the <a class="reference external" href="primitive_weighting_in_continuity_equation">primitive weighting in continuity
+equation</a> nodal attribute is
+generally the most popular formulation. In this case, <code class="docutils literal notranslate"><span class="pre">TAU0Base</span></code> nodal
+attribute values can be generated with the ADCIRC utility program tau0_gen.f.
+The program bases generation on the following logic applied to each node
+individually:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">If</span> <span class="pre">the</span> <span class="pre">avg.</span> <span class="pre">dist.</span> <span class="pre">to</span> <span class="pre">neighboring</span> <span class="pre">nodes</span> <span class="pre">&lt;</span> <span class="pre">1750</span> <span class="pre">m;</span> <span class="pre">then</span> <span class="pre">TAU0Base</span> <span class="pre">=</span> <span class="pre">0.03</span></code></p></li>
+<li><p>Otherwise</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">If</span> <span class="pre">depth</span> <span class="pre">&lt;</span> <span class="pre">10m;</span> <span class="pre">then</span> <span class="pre">TAU0Base</span> <span class="pre">=</span> <span class="pre">0.02</span></code> (<code class="docutils literal notranslate"><span class="pre">TAU0</span></code> is constant in time)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">If</span> <span class="pre">depth</span> <span class="pre">&gt;</span> <span class="pre">10m;</span> <span class="pre">then</span> <span class="pre">TAU0Base</span> <span class="pre">=</span> <span class="pre">0.005</span></code> (<code class="docutils literal notranslate"><span class="pre">TAU0</span></code> is constant in time)</p></li>
+</ul>
+</li>
+</ul>
+<p><span class="math notranslate nohighlight">\(\tau_0\)</span> needs to be smaller in deeper water where there is little
+dissipation, and can also be sensitive to mesh resolution. The spatial
+variation, spatial smoothing, and physics-driven time-updating typically allow
+for a good balance between stability and conservation.</p>
+<p>For manually-specified positive values (<code class="docutils literal notranslate"><span class="pre">TAU0=</span></code><span class="math notranslate nohighlight">\(\tau_0\)</span>), a good rule
+of thumb for setting <code class="docutils literal notranslate"><span class="pre">TAU0</span></code> is to set it equal to the largest value of an
+equivalent linear friction factor: for linear friction
+<code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span></code><code class="docutils literal notranslate"><span class="pre">`TAU</span></code> &lt;TAU&gt;`__; for quadratic friction
+<code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">max(speed*Cd/depth)</span></code>. Typical values for <code class="docutils literal notranslate"><span class="pre">TAU0</span></code> are in the range of
+0.005 – 0.1.</p>
+</section>
+<section id="outputting">
+<span id="tau0-outputting"></span><h2>Outputting<a class="headerlink" href="#outputting" title="Link to this heading"></a></h2>
+<p>For <code class="docutils literal notranslate"><span class="pre">TAU0</span></code> formulations that vary spatially or temporally, ADCIRC can output
+the internally-calculated nodal <span class="math notranslate nohighlight">\(\tau_0\)</span> values. They are written to the
+<a class="reference internal" href="../../../technical_reference/output_files/fort90.html#fort90"><span class="std std-ref">fort.90 file</span></a>, which has the same format and output frequency
+as the water surface elevation output file (<a class="reference internal" href="../../../technical_reference/output_files/fort63.html#fort63"><span class="std std-ref">fort.63</span></a>). fort.90
+output is activated by placing a 1 in the tenths place of <code class="docutils literal notranslate"><span class="pre">TAU0</span></code> in the
+fort.15 file. For example, if <code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-3.1</span></code>, the calculation of <span class="math notranslate nohighlight">\(\tau_0\)</span>
+is still carried out according to the description of <code class="docutils literal notranslate"><span class="pre">TAU0</span> <span class="pre">=</span> <span class="pre">-3</span></code> above, and
+the fort.90 output file will also be produced.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="a00_b00_c00.html" class="btn btn-neutral float-left" title="A00, B00, C00" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ramping.html" class="btn btn-neutral float-right" title="Ramping" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

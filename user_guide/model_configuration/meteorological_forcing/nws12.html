@@ -1,0 +1,327 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="NWS12 in ADCIRC" name="description" />
+<meta content="adcirc, nws12" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NWS12 &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="NWS13" href="nws13.html" />
+    <link rel="prev" title="Generalized Asymmetric Holland Model" href="generalized_asymmetric_holland_model.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Model Configuration</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../model_parameters/index.html">Model Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../physics_parameters/index.html">Physics Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../initial_conditions/index.html">Initial Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../boundary_conditions/index.html">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tides/index.html">Astronomical Tides</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../typical_configurations/typical_parameter_selections.html">Typical Parameter Selections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Model Configuration</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Meteorological Forcing</a></li>
+      <li class="breadcrumb-item active">NWS12</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/model_configuration/meteorological_forcing/nws12.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="nws12">
+<span id="id1"></span><h1>NWS12<a class="headerlink" href="#nws12" title="Link to this heading"></a></h1>
+<p>Oceanweather Inc. (OWI) “WIN” and “PRE” file formats as supported in ADCIRC</p>
+<section id="fort-22">
+<h2>fort.22<a class="headerlink" href="#fort-22" title="Link to this heading"></a></h2>
+<p>NWS12 uses the <strong>fort.22</strong> file as a control file because the OWI format
+supports individual files for wind and pressure inputs as well as multiple grid
+overlays of varying resolutions.</p>
+<p><em>fort.22 layout</em>:</p>
+<div class="line-block">
+<div class="line"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#nwset"><span class="std std-ref">NWSET</span></a></div>
+<div class="line"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#nwbs"><span class="std std-ref">NWBS</span></a></div>
+<div class="line"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#dwm"><span class="std std-ref">DWM</span></a></div>
+<div class="line"><cite>&lt;…to be expanded in new verions&gt;</cite></div>
+</div>
+<p>Where:</p>
+<ul class="simple">
+<li><p><strong>NWSET</strong> is the number of nested grid overlays</p></li>
+<li><p><strong>NWBS</strong> is the number of “blank” (constant 0 m/s wind speed and 1013mb
+pressure) timesteps to insert</p></li>
+<li><p><strong>DWM</strong> is a wind multiplier to modify the wind speed magnitudes. Generally
+this should be set to 1 if using inputs sourced from OWI or if winds can be
+considered “marine exposure”, with an averaging period between 10-min and
+3-hrs at a height of 10 meters.</p></li>
+</ul>
+<p>NWS12 WIN/PRE text files containing wind and pressure data should be named
+fort.22[1-4], as follows in order of increasing precedence in application to the
+ADCIRC mesh:</p>
+<ul class="simple">
+<li><p><em>fort.221</em>: Largest scale pressure (mb) fields</p></li>
+<li><p><em>fort.222</em>: Largest scale wind vector (m/s) fields</p></li>
+<li><p><em>fort.223</em>: Finer scale pressure (mb) fields</p></li>
+<li><p><em>fort.224</em>: Finer scale wind vector (m/s) fields</p></li>
+<li><p>…to be expanded in new versions</p></li>
+</ul>
+<section id="nwbs-details">
+<span id="id2"></span><h3>NWBS Details<a class="headerlink" href="#nwbs-details" title="Link to this heading"></a></h3>
+<p>ADCIRC also has the ability to insert “blank” meteorological data if it is
+started before the beginning of the wind data (for a tidal spinup run, for
+example). Blank data is characterized by zero wind speed and 1013 mb of
+atmospheric pressure. This capability is activated via the NWBS parameter in the
+fort.22 file, as mentioned above, and it interacts with the sign of the NWS
+value in order to provide full control over the relationship between the ADCIRC
+start time (either hot start or cold start) and the beginning of the
+meteorological data. This capability and the interaction with the sign of NWS is
+described below.</p>
+<p>If a NWBS is set to a positive number, NWBS specifies the number of blank snaps
+to be inserted before any information is read from fort.22[1-4]. This is useful
+when the duration of fort.22[1-4] files does not cover an entire ADCIRC run. Two
+examples are as follows:</p>
+<ol class="arabic simple">
+<li><p>If NWS=+12, and if a hot start run is attempted from the 86400th time step,
+and if the first set, fort.221 and fort.222 files, starts at the 172800th
+time step, and if WTIMINC is set to 900 in UNIT 15, then you should set NWBS
+to (172800-0)/900 = 192. If the start times of the two sets are different,
+use the earlier start time, i.e., the start time of the first set.</p></li>
+<li><p>If NWS=-12, and if a hot start run is attempted from the 86400th time step,
+and if the first set, fort.221 and fort.222 files, starts at the 172800th
+time step, and if WTIMINC is set to 900 in the fort.15, then you should set
+NWBS to (172800 – 86400)/900 = 96. If the start times of the two sets are
+different, use the earlier start time, i.e., the start time of the first set.</p></li>
+</ol>
+<p>If NWBS is set to a negative number, then NWBS determines how many snaps in the
+fort.22[1-4] should be skipped before the values in the files are used. This is
+useful when the fort.22[1-4] starts earlier than an ADCIRC run.</p>
+<ol class="arabic simple">
+<li><p>If NWS=+12, and if a hot start run is attempted from the 86400th time step,
+and if the first set, fort.221 and fort.222 files, starts at the -86400th
+time step, and if WTIMINC is set to 900 in the fort.15, then you should set
+NWBS to (-86400-0)/900 = -96. If the start times of the two sets are
+different, use the earlier start time, i.e., the start time of the first set.</p></li>
+<li><p>If NWS=-12, and if a hot start run is attempted from the 86400th time step,
+and if the first set, fort.221 and fort.222 files, starts at the -86400th
+time step, and if WTIMINC is set to 900 in the fort.15, then you should set
+NWBS to (-86400-86400)/900 = -192. If the start times of the two sets are
+different, use the earlier start time, i.e., the start time of the first set.</p></li>
+</ol>
+</section>
+<section id="notes">
+<h3>Notes<a class="headerlink" href="#notes" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>When the basin and region scale grids are both used in ADCIRC, data from the
+region scale grid takes precedence over data from the basin scale grid in the
+areas where the two grids overlap.</p></li>
+<li><p>If the fort.22[1-4] files are shorter in time than the duration of an ADCIRC
+run, the fort.22[1-4] will run out of data. However, the file reading error
+should be safely caught in ADCIRC and the computation will continue with
+blank snaps.</p></li>
+</ol>
+</section>
+</section>
+<section id="wtiminc-in-fort-15">
+<span id="id3"></span><h2>WTIMINC in fort.15<a class="headerlink" href="#wtiminc-in-fort-15" title="Link to this heading"></a></h2>
+<p>Although the WIN/PRE files contain datetime and timestepping information for the
+input data, <em>WTIMINC</em> must be set to the timestep of the input files (in
+seconds). This limitation locks all nested grid inputs to the same input
+timesteps, and requires that the input timesteps are constant for the duration
+of the input files, although the start and end times of the nested input overlay
+sets may differ.</p>
+</section>
+<section id="file-formatting">
+<span id="id4"></span><h2>File Formatting<a class="headerlink" href="#file-formatting" title="Link to this heading"></a></h2>
+<p>Winds and pressure data formats are similar. The header format is the same, but
+in the wind file the header is followed by U then V components while in the
+pressure file the header is followed by just pressures.</p>
+<p>The file begins with a header indicating the starting and ending dates and is
+followed by a grid/date header for each time step and the u and v components of
+the wind in meters/second or pressures in millibars. Starting/Ending dates are
+in YYYYMMDDHH format where:</p>
+<div class="line-block">
+<div class="line">   YYYY    4-character Year</div>
+<div class="line">   MM      2-character Month</div>
+<div class="line">   DD      2-character Day</div>
+<div class="line">   HH      2-character Hour</div>
+</div>
+<p><em>example WIN</em>:</p>
+<div class="line-block">
+<div class="line">OWI WWS Wind Output Ucomp,Vcomp in m/s           Start:1995060600 End:1995060600</div>
+<div class="line">iLat=  67iLong=  67DX= 1.250DY=  .833SWLat=  22.500SWlon= -82.500Dt=199506060000</div>
+<div class="line">-1.16856  -1.06439   -.84875  -1.03460  -1.50047  -2.09462  -2.80243  -3.55863</div>
+<div class="line">-4.24125  -4.84273  -5.59486  -5.37088  -5.30224  -5.12534  -4.89537  -4.67412</div>
+<div class="line">-4.49203  -4.35772  -4.26612  -4.20260  -4.14746  -4.08396  -4.00686  -3.92213</div>
+<div class="line">-3.83615  -3.74765  -3.65182  -3.54998  -3.45299  -3.37660  -3.32959  -3.28037</div>
+<div class="line">-3.10631  -2.67723  -2.08363  -1.53773  -1.12623   -.83526   -.62870   -.47371</div>
+<div class="line">[rest deleted]</div>
+</div>
+<ul class="simple">
+<li><p>iLat is the number of parallels</p></li>
+<li><p>iLong is the number of meridians</p></li>
+<li><p>DX is the grid spacing in degrees of longitude</p></li>
+<li><p>DY is the grid spacing in degrees of latitude</p></li>
+<li><p>SWLat is the latitude of the South West corner</p></li>
+<li><p>SWlon is the longitude of the South West corner</p></li>
+<li><p>Dt is the date/time in YYYYMMDDHHmm (same as master header date format but
+with mm Minutes as well)</p></li>
+</ul>
+<p>The number of grid points is iLat*iLong, the u component of the winds in
+meters/second is followed by the v component.</p>
+<section id="sample-code">
+<h3>Sample code<a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
+<p>Sample fortran to read a win file (first time step only):</p>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="n">c</span><span class="w">     </span><span class="k">Read </span><span class="n">in</span><span class="w"> </span><span class="n">beginning</span><span class="o">/</span><span class="n">ending</span><span class="w"> </span><span class="n">dates</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">win</span><span class="w"> </span><span class="k">file</span>
+<span class="mi">10</span><span class="w">    </span><span class="k">format</span><span class="w"> </span><span class="p">(</span><span class="n">t56</span><span class="p">,</span><span class="n">i10</span><span class="p">,</span><span class="n">t71</span><span class="p">,</span><span class="n">i10</span><span class="p">)</span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="n">date1</span><span class="p">,</span><span class="n">date2</span>
+
+<span class="n">c</span><span class="w">     </span><span class="k">Read </span><span class="n">Grid</span><span class="w"> </span><span class="n">Specifications</span><span class="o">/</span><span class="n">Date</span>
+<span class="mi">11</span><span class="w">    </span><span class="k">format</span><span class="w"> </span><span class="p">(</span><span class="n">t6</span><span class="p">,</span><span class="n">i4</span><span class="p">,</span><span class="n">t16</span><span class="p">,</span><span class="n">i4</span><span class="p">,</span><span class="n">t23</span><span class="p">,</span><span class="n">f6</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span><span class="n">t32</span><span class="p">,</span><span class="n">f6</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span><span class="n">t44</span><span class="p">,</span><span class="n">f8</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span><span class="n">t58</span><span class="p">,</span><span class="n">f8</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span><span class="n">t69</span><span class="p">,</span><span class="n">i10</span><span class="p">,</span><span class="n">i2</span><span class="p">)</span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">11</span><span class="p">)</span><span class="w"> </span><span class="n">iLat</span><span class="p">,</span><span class="w"> </span><span class="n">iLong</span><span class="p">,</span><span class="w"> </span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">dy</span><span class="p">,</span><span class="w"> </span><span class="n">swlat</span><span class="p">,</span><span class="w"> </span><span class="n">swlong</span><span class="p">,</span><span class="w"> </span><span class="n">lCYMDH</span><span class="p">,</span><span class="w"> </span><span class="n">iMin</span>
+
+<span class="n">c</span><span class="w">     </span><span class="k">Read </span><span class="n">U</span><span class="o">/</span><span class="n">V</span><span class="w"> </span><span class="n">Components</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">wind</span>
+<span class="mi">12</span><span class="w">    </span><span class="k">format</span><span class="w"> </span><span class="p">(</span><span class="mi">8</span><span class="n">f10</span><span class="p">.</span><span class="mi">0</span><span class="p">)</span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">12</span><span class="p">)</span><span class="w"> </span><span class="p">((</span><span class="n">uu</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">),</span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">ilong</span><span class="p">),</span><span class="n">j</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">ilat</span><span class="p">)</span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">12</span><span class="p">)</span><span class="w"> </span><span class="p">((</span><span class="n">vv</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">),</span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">ilong</span><span class="p">),</span><span class="n">j</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">ilat</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Latitude and Longitude for each point can be calculated as follows:</p>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="w">      </span><span class="k">do </span><span class="mi">20</span><span class="w"> </span><span class="n">icnt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="n">iLat</span>
+<span class="w">         </span><span class="n">slat</span><span class="p">(</span><span class="n">icnt</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SWlat</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">icnt</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">DY</span>
+<span class="mi">20</span><span class="w">    </span><span class="k">continue</span>
+
+<span class="k">      do </span><span class="mi">30</span><span class="w"> </span><span class="n">jcnt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="n">iLong</span>
+<span class="w">         </span><span class="n">slon</span><span class="p">(</span><span class="n">jcnt</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SWlong</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">jcnt</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">DX</span>
+<span class="mi">30</span><span class="w">    </span><span class="k">continue</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="generalized_asymmetric_holland_model.html" class="btn btn-neutral float-left" title="Generalized Asymmetric Holland Model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="nws13.html" class="btn btn-neutral float-right" title="NWS13" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

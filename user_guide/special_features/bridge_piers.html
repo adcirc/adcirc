@@ -1,0 +1,238 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bridge Piers &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Dynamic water level correction" href="dynamic_water_level_correction.html" />
+    <link rel="prev" title="ADCIRC2D+" href="adcirc2d_plus.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Special Features</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="adcirc2d_plus.html">ADCIRC2D+</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Bridge Piers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamic_water_level_correction.html">Dynamic water level correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ice_modifications.html">Ice Modifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../model_configuration/meteorological_forcing/generalized_asymmetric_holland_model.html">Generalized Asymmetric Holland Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vertical_element_walls.html">Vertical Element Walls (VEWs)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Special Features</a></li>
+      <li class="breadcrumb-item active">Bridge Piers</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/user_guide/special_features/bridge_piers.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="bridge-piers">
+<h1>Bridge Piers<a class="headerlink" href="#bridge-piers" title="Link to this heading"></a></h1>
+<p>Given the typical resolution of coastal circulation models, (e.g., in nearshore applications resolved scales are usually 10s to 100s of meters and larger), it is rarely practical to solve explicitly for the small scale flow around obstructions such as bridge pilings (diameters of meters). However, in some situations it may be desirable to include the effects of these subgrid scale obstructions on the resolved scale flow. To accomplish this, a subgrid scale obstruction parameterization has been developed and implemented in ADCIRC. Since the cross-sectional area of these obstructions is usually quite small compared to the cross-sectional area of the flow field (and thus the effect on flow continuity is quite small), their primary effect is to impart additional drag on the resolved scale flow. This section describes the theory behind the obstruction parameterization implemented in ADCIRC.</p>
+<p>The bridge pier option is turned on by setting the parameter <code class="docutils literal notranslate"><span class="pre">NWP</span></code> to add for an additional Nodal Attribute in the Model Parameter and Periodic Boundary Condition File. Required input coefficients are read in at specified nodes from the Nodal Attributes file (fort.13). Additional information can be found in Luettich and Westerink (1999).</p>
+<section id="theory">
+<h2>Theory<a class="headerlink" href="#theory" title="Link to this heading"></a></h2>
+<p>The two-dimensional, vertically integrated momentum equations used in ADCIRC contain bottom friction (drag) terms. To represent the extra drag caused by subgrid scale obstructions such as bridge piers, a second contribution has been added to the bottom friction terms:</p>
+<ul class="simple">
+<li><p>Bottom friction x + obstruction drag x</p></li>
+<li><p>Bottom friction y + obstruction drag y</p></li>
+</ul>
+<p>Options in ADCIRC exist to express the bottom friction terms as linear, quadratic or hybrid quadratic/Manning’s n functions of flow velocity. The obstruction drag is assumed to be due primarily to form drag and therefore is represented as quadratic in velocity:</p>
+<ul class="simple">
+<li><p>obstruction drag x = <span class="math notranslate nohighlight">\(C_D \frac{U\sqrt{U^2+V^2}}{H}\)</span></p></li>
+<li><p>obstruction drag y = <span class="math notranslate nohighlight">\(C_D \frac{V\sqrt{U^2+V^2}}{H}\)</span></p></li>
+</ul>
+<p>where <span class="math notranslate nohighlight">\(C_D\)</span> is an obstruction (piling) drag coefficient.</p>
+</section>
+<section id="determination-of-drag-coefficient">
+<h2>Determination of Drag Coefficient<a class="headerlink" href="#determination-of-drag-coefficient" title="Link to this heading"></a></h2>
+<p>To determine <span class="math notranslate nohighlight">\(C_D\)</span> for a series of bridge pilings, we have utilized the extensive body of research conducted in the early to mid 1900s on flow around pilings. Yarnell (1934a,b), as summarized by Henderson (1966), fit the change in water level <span class="math notranslate nohighlight">\(\Delta H\)</span> for steady, unidirectional flow past a piling to the following relation:</p>
+<p><span class="math notranslate nohighlight">\(\frac{\Delta H}{H} = K \left( \alpha + 5\alpha^2 - 0.6 \right) F_r^2\)</span></p>
+<p>where:</p>
+<ul class="simple">
+<li><p>H is the total water depth</p></li>
+<li><p>K is a pier shape factor (see table below)</p></li>
+<li><p><span class="math notranslate nohighlight">\(F_r^2\)</span> is the square of the Froude number</p></li>
+<li><p><span class="math notranslate nohighlight">\(\alpha\)</span> is the fraction of the cross section obstructed by the piling</p></li>
+<li><p><span class="math notranslate nohighlight">\(U_s\)</span> is the velocity in the along stream (s) direction</p></li>
+<li><p>g is the acceleration of gravity</p></li>
+</ul>
+<p>This equation is considered to be valid so long as <span class="math notranslate nohighlight">\(\alpha &lt; 0.5\)</span>.</p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Recommended Pier Shape Factors</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 70.0%" />
+<col style="width: 30.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Pier Shape</p></th>
+<th class="head"><p>K</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Semicircular nose and tail</p></td>
+<td><p>0.9</p></td>
+</tr>
+<tr class="row-odd"><td><p>Lens-shaped nose and tail</p></td>
+<td><p>0.9</p></td>
+</tr>
+<tr class="row-even"><td><p>Twin-cylinder piers with connecting diaphragm</p></td>
+<td><p>0.95</p></td>
+</tr>
+<tr class="row-odd"><td><p>Twin-cylinder piers without diaphragm</p></td>
+<td><p>1.05</p></td>
+</tr>
+<tr class="row-even"><td><p>90 deg triangular nose and tail</p></td>
+<td><p>1.05</p></td>
+</tr>
+<tr class="row-odd"><td><p>Square nose and tail</p></td>
+<td><p>1.25</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="implementation-in-adcirc">
+<h2>Implementation in ADCIRC<a class="headerlink" href="#implementation-in-adcirc" title="Link to this heading"></a></h2>
+<p>For steady, unidirectional flow in the vicinity of pilings, the corresponding ADCIRC momentum equations simplify to:</p>
+<p><span class="math notranslate nohighlight">\(g \frac{\partial \zeta}{\partial s} + \tau_{bf} + \tau_{bp} = 0\)</span></p>
+<p>where <span class="math notranslate nohighlight">\(\frac{\partial \zeta}{\partial s}\)</span> is the free surface gradient in the along stream direction. Approximating this gradient as <span class="math notranslate nohighlight">\(\frac{\Delta H}{L}\)</span>, Yarnell’s equation and the simplified momentum equation can be combined to obtain an expression for <span class="math notranslate nohighlight">\(C_D\)</span>:</p>
+<p><span class="math notranslate nohighlight">\(C_D = \frac{gH}{U_s^2} K \left( \alpha + 5\alpha^2 - 0.6 \right) F_r^2\)</span></p>
+<p>This equation is used at each time step in ADCIRC, to compute <span class="math notranslate nohighlight">\(C_D\)</span> at all nodes associated with bridge pilings. This allows the obstruction drag to be computed and added to the bottom friction terms as discussed above.</p>
+<p>Note that Yarnell’s equation is based on H and <span class="math notranslate nohighlight">\(U_s\)</span> values measured at a point downstream of the pilings. ADCIRC uses H and <span class="math notranslate nohighlight">\(U_s\)</span> at the effective piling location to minimize complications due to changing flow direction, e.g., due to reversal of the tide. Typical elevation and velocity changes that result are small enough that the overall results are not compromised by this approximation.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<p>Henderson, F.M., 1966, Open Channel Flow, MacMillan Publishing Co., New York, pp 265-267.</p>
+<p>Luettich, R.A., Jr. and J.J. Westerink, 1999, Implementation of Bridge Pilings in the ADCIRC Hydrodynamic Model: Upgrade and Documentation for ADCIRC Version 34.19, Contractors Report, department of the Army, US Army Corps of Engineers, Waterways Experiment Station, Vicksburg, MS, November 19, 1999, 8 p.</p>
+<p>Yarnell, D.L., 1934a, Pile trestles as channel obstructions, U.S. Dept of Agriculture, Tech. Bull. 429.</p>
+<p>Yarnell, D.L., 1934b, Bridge piers as channel obstructions, U.S. Dept of Agriculture, Tech. Bull. 442.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="adcirc2d_plus.html" class="btn btn-neutral float-left" title="ADCIRC2D+" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dynamic_water_level_correction.html" class="btn btn-neutral float-right" title="Dynamic water level correction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

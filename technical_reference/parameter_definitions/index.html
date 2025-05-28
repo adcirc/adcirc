@@ -1,0 +1,2369 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parameter Definitions &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Executables" href="../executables.html" />
+    <link rel="prev" title="Fort.83: Scalar Concentration Time Series at All Nodes" href="../output_files/fort83.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../output_files/index.html">Output Files</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Parameter Definitions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#input-files">Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#output-files">Output Files</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Parameter Definitions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/technical_reference/parameter_definitions/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="parameter-definitions">
+<h1>Parameter Definitions<a class="headerlink" href="#parameter-definitions" title="Link to this heading"></a></h1>
+<section id="input-files">
+<h2>Input Files<a class="headerlink" href="#input-files" title="Link to this heading"></a></h2>
+<section id="fort-14-fort-15">
+<h3>fort.14, fort.15<a class="headerlink" href="#fort-14-fort-15" title="Link to this heading"></a></h3>
+<dl class="simple" id="agrid">
+<dt>AGRID</dt><dd><p>Alpha-numeric grid identification (&lt;=24 characters).</p>
+</dd>
+</dl>
+<dl class="simple" id="barincfsb">
+<dt>BARINCFSB(k,j)</dt><dd><p>Coefficient of free surface subcritical flow at internal barrier node NBVV(k,j) and the paired node IBCONN(k,j). A typical value is BARINCFSB(k,j) = 1.0.</p>
+</dd>
+</dl>
+<dl class="simple" id="barincfsp">
+<dt>BARINCFSP(k,j)</dt><dd><p>Coefficient of free surface supercritical flow at internal barrier node NBVV(k,j) and the paired node IBCONN(k,j). A typical value is BARINCFSP(k,j) = 1.0.</p>
+</dd>
+</dl>
+<dl class="simple" id="barinht">
+<dt>BARINHT(k,j)</dt><dd><p>Internal barrier height (positive above the geoid and negative below the geoid) at node NBVV(k,j) and the paired node IBCONN(k,j)). The barrier height must be greater than the bathymetric depth at these nodes, i.e., recalling the different sign convention between the bathymetric depth and the barrier height, BARINHT(k,j) &gt; –DP(NBVV(k,j) and &lt;b &gt;BARINHT(k,j) &gt; –DP(IBCONN(k,j)). If this is not satisfied, the run will terminate.</p>
+</dd>
+</dl>
+<dl class="simple" id="barlancfsp">
+<dt>BARLANCFSP(k,j)</dt><dd><p>Coefficient of free surface supercritical flow at external barrier node NBVV(k,j). A typical value is BARLANCFSP(k,j)= 1.0.</p>
+</dd>
+</dl>
+<dl class="simple" id="barlanht">
+<dt>BARLANHT(k,j)</dt><dd><p>External barrier height (positive above the geoid and negative below the geoid) at node NBVV(k,j). The barrier height must be greater than the bathymetric depth at this node, i.e., recalling the different sign convention between the bathymetric depth and the barrier height, BARLANHT(k,j) &gt; –DP(NBVV(k,j). If this is not satisfied, the run will terminate.</p>
+</dd>
+</dl>
+<dl class="simple" id="bk">
+<dt>BK(k)</dt><dd><p>Bridge pier shape factor (K – see Table 1 in the section on Bridge Piers)</p>
+</dd>
+</dl>
+<dl class="simple" id="balpha">
+<dt>BALPHA(k)</dt><dd><p>Fraction of the cross section occupied by all of the piers in the bridge = sum of bridge pier widths/width of cross section (corresponds to in the section on Bridge Piers)</p>
+</dd>
+</dl>
+<dl class="simple" id="bdelx">
+<dt>BDELX(k)</dt><dd><p>Approximate nodal spacing at the location of a bridge in the upstream/downstream direction in meters or feet depending on the grid coordinate system (for lon,lat coordinates, use meters for BDELX). (Note that 2*BDELX if the bridge pier effects are distributed across 3 nodes in the alongstream direction)</p>
+</dd>
+</dl>
+<dl class="simple" id="dp">
+<dt>DP(JN)</dt><dd><p>Bathymetric depth with respect to the geoid, positive below the geoid and negative above the geoid. Bathymetric depths above the geoid or sufficiently small that nodes will dry, require that the wetting/drying option is enabled (NOLIFA=2 in the Model Parameter and Periodic Boundary Condition File.)</p>
+</dd>
+</dl>
+<dl class="simple" id="ibconn">
+<dt>IBCONN(k,j)</dt><dd><p>Back face node paired with the front face node, NBVV(k,j), on an internal barrier boundary</p>
+</dd>
+</dl>
+<dl id="ibtype">
+<dt>IBTYPE(k)</dt><dd><dl>
+<dt>Boundary type</dt><dd><p>= 0 external boundary with no normal flow as an essential boundary condition and no constraint on tangential flow. This is applied by zeroing the normal boundary flux integral in the continuity equation and by zeroing the normal velocity in the momentum equations. This boundary condition should satisfy no normal flow in a global sense and no normal flow at each boundary node. This type of boundary represents a mainland boundary with a strong no normal flow condition and free tangential slip.</p>
+<p>= 1 internal boundary with no normal flow treated as an essential boundary condition and no constraint on the tangential flow. This is applied by zeroing the normal boundary flux integral in the continuity equation and by zeroing the normal velocity in the momentum equations. This boundary condition should satisfy no normal flow in a global sense and no normal flow at each boundary node. This type of boundary represents an island boundary with a strong normal flow condition and free tangential slip.</p>
+<p>= 2 external boundary with non-zero normal flow as an essential boundary condition and no constraint on the tangential flow. This is applied by specifying the non-zero contribution to the normal boundary flux integral in the continuity equation and by specifying the non-zero normal velocity in the momentum equations. This boundary condition should correctly satisfy the flux balance in a global sense and the normal flux at each boundary node. This type of boundary represents a river inflow or open ocean boundary with a strong specified normal flow condition and free tangential slip. Discharges are specified either in the Model Parameter and Periodic Boundary Condition File for harmonic discharge forcing or in the Non-periodic, Normal Flux Boundary Condition File for time series discharge forcing.</p>
+<p>= 3 external barrier boundary with either zero or non-zero normal outflow from the domain as an essential boundary condition and no constraint on the tangential flow. This is applied by specifying the contribution (zero or non-zero) to the normal boundary flux integral in the continuity equation and by specifying the (zero or non-zero) normal velocity in the momentum equations. Non-zero normal flow is computed using a supercritical, free surface weir formula if the barrier is overtopped. Zero normal flow is assumed if the barrier is not overtopped. This boundary condition should correctly satisfy the flux balance in a global sense and the normal flux at each boundary node. This type of boundary represents a mainland boundary comprised of a dike or levee with strong specified normal flow condition and free tangential slip. See External Barrier Boundary Note below for further information on exterior barrier boundaries.</p>
+<p>= 4 internal barrier boundary with either zero or non-zero normal flow across the barrier as an essential boundary condition and no constraint on the tangential flow. This is applied by specifying the contribution (zero or non-zero) to the normal boundary flux integral in the continuity equation and by specifying the normal velocity (zero or non-zero) in the momentum equations. Non-zero normal flow is compute using either subcritical or supercritical, free surface weir formula (based on the water level on both sides of the barrier) if the barrier is overtopped. Zero normal flow is assumed if the barrier is not overtopped. This type of boundary represents a dike or levee that lies inside the computational domain with a strong specified normal flow condition and free tangential slip. See Internal Barrier Boundary Note for further information on exterior barrier boundaries.</p>
+<p>= 5 internal barrier boundary with additional cross barrier pipes located under the crown. Cross barrier flow is treated as an essential normal flow boundary condition which leaves/enters the domain on one side of the barrier and enters/leaves the domain on the corresponding opposite side of the barrier flow rate and direction are based on barrier height, surface water elevation on both sides of the barrier, barrier coefficient and the appropriate barrier flow formula. In addition cross barrier pipe flow rate and direction are based on pipe crown height, surface water elevation on both sides of the barrier, pipe friction coefficient, pipe diameter and the appropriate pipe flow formula. Free tangential slip is allowed</p>
+<p>= 10 external boundary with no normal and no tangential flow as essential boundary conditions. This is applied by zeroing the normal boundary flux integral in the continuity equation and by setting the velocity = 0 rather than solving momentum equations along the boundary. This boundary condition should satisfy no normal flow in a global sense and zero velocity at each boundary node. This type of boundary represents a mainland boundary with strong no normal flow and no tangential slip conditions.</p>
+<p>= 11 internal boundary with no normal and no tangential flow as essential boundary conditions. This is applied by zeroing the normal boundary flux integral in the continuity equation and by setting the velocity = 0 rather than solving momentum equations along the boundary. This boundary condition should correctly satisfy no normal flow in a global sense and zero velocity at each boundary node. This type of boundary represents an island boundary with strong no normal flow and no tangential slip conditions.</p>
+<p>= 12 external boundary with non-zero normal and zero tangential flow as an essential boundary condition. This is applied by specifying the non-zero contribution to the normal boundary flux integral in the continuity equation and by setting the non-zero normal velocity and zero tangential velocity rather than solving momentum equations along the boundary. This boundary condition should correctly satisfy the flux balance in a global sense and the specified normal/zero tangential velocity at each boundary node. This type of boundary represents a river inflow or open ocean boundary in which strong normal flow is specified with no tangential slip. Discharges are specified either in the Model Parameter and Periodic Boundary Condition File for harmonic forcing or in the Non-periodic, Normal Flux Boundary Condition File for time series forcing.</p>
+<p>= 13 external barrier boundary with either zero or non-zero normal outflow from the domain and zero tangential flow as essential boundary conditions. This is applied by specifying the contribution (zero or non-zero) to the normal boundary flux integral in the continuity equation and by setting the (zero or non-zero) normal velocity and zero tangential velocity rather than solving momentum equations along the boundary. Non-zero normal flow is computed using a supercritical, free surface weir formula if the barrier is overtopped. Zero normal flow is assumed if the barrier is not overtopped. This boundary condition should correctly satisfy the flux balance in a global sense and the normal velocity/zero tangential velocity at each boundary node. This type of boundary represents a mainland boundary comprised of a dike or levee with strong specified normal flow and no tangential slip conditions. See External Barrier Boundary Note below for further information on exterior barrier boundaries.</p>
+<p>= 20 external boundary with no normal flow as a natural boundary condition and no constraint on tangential flow. This is applied by zeroing the normal boundary flux integral in the continuity equation. There is no constraint on velocity (normal or tangential) applied in the momentum equations. This boundary condition should satisfy no normal flow in a global sense, but will only satisfy no normal flow at each boundary node in the limit of infinite resolution. This type of boundary represents a mainland boundary with a weak no normal flow condition and free tangential slip.</p>
+<p>= 21 internal boundary with no normal flow as a natural boundary condition and no constraint on the tangential flow. This is applied by zeroing the normal boundary flux integral in the continuity equation. There is no constraint on velocity (normal or tangential) in the momentum equations. This boundary condition should satisfy no normal flow in a global sense but will only satisfy no normal flow at each boundary node in the limit of infinite resolution. This type of boundary represents an island boundary with a weak no normal flow condition and free tangential slip.</p>
+<p>= 22 external boundary with non-zero normal flow as a natural boundary condition and no constraint on the tangential flow. This is applied by specifying the non-zero contribution to the normal boundary flux integral in the continuity equation. There is no constraint on velocity (normal or tangential) in the momentum equations. This boundary condition should correctly satisfy the flux balance in a global sense but will only satisfy the normal flow at each boundary node in the limit of infinite resolution. This type of boundary represents a river inflow or open ocean boundary with a weak specified normal flow condition and free tangential slip. Discharges are specified either in the Model Parameter and Periodic Boundary Condition File for harmonic discharge forcing or in the Non-periodic, Normal Flux Boundary Condition File for time series discharge forcing.</p>
+<p>= 23 external barrier boundary with either zero or non-zero normal outflow from the domain as a natural boundary condition and no constraint on the tangential flow. This is applied by specifying the contribution (zero or non-zero) to the normal boundary flux integral in the continuity equation. There is no constraint on velocity (normal or tangential) in the momentum equations. Non-zero normal flow is computed using a supercritical, free surface weir formula if the barrier is overtopped. Zero normal flow is assumed if the barrier is not overtopped. This boundary condition should correctly satisfy the flux balance in a global sense but will only satisfy the normal flow at each boundary node in the limit of infinite resolution. This type of boundary represents a mainland boundary comprised of a dike or levee with a weak specified normal flow condition and free tangential slip. See External Barrier Boundary Note below for further information on exterior barrier boundaries.</p>
+<p>= 24 internal barrier boundary with either zero or non-zero normal flow across the barrier as a natural boundary condition and no constraint on the tangential flow. This is applied by specifying the contribution (zero or non-zero) to the normal boundary flux integral in the continuity equation. There is no constraint on velocity (normal or tangential) in the momentum equations. Non-zero normal flow is compute using either subcritical or supercritical, free surface weir formula (based on the water level on both sides of the barrier) if the barrier is overtopped. Zero normal flow is assumed if the barrier is not overtopped. This boundary condition should correctly satisfy the flux balance in a global sense but will only satisfy the normal flow at each boundary node in the limit of infinite resolution. This type of boundary represents a dike or levee that lies inside the computational domain with a weak specified normal flow condition and free tangential slip. See Internal Barrier Boundary Note below for further information on exterior barrier boundaries.</p>
+<p>= 25 internal barrier boundary with additional cross barrier pipes located under the crown. Cross barrier flow is treated as a natural normal flow boundary condition which leaves/enters the domain on one side of the barrier and enters/leaves the domain on the corresponding opposite side of the barrier. Flow rate and direction are based on barrier height, surface water elevation on both sides of the barrier, barrier coefficient and the appropriate barrier flow formula. In addition cross barrier pipe flow rate and direction are based on pipe crown height, surface water elevation on both sides of the barrier, pipe friction coefficient, pipe diameter and the appropriate pipe flow formula. Free tangential slip is allowed.</p>
+<p>= 30 wave radiation normal to the boundary as a natural boundary condition. This is applied by specifying the contribution to the normal boundary flux integral in the continuity equation. There is no constraint on velocity (normal or tangential) in the momentum equations. The normal flow is computed using a Sommerfield radiation condition. This boundary condition should correctly satisfy the flux balance in a global sense but will only satisfy the normal flow at each boundary node in the limit of infinite resolution. This type of boundary represents an open boundary where waves are allowed to propagate freely out of the domain.</p>
+<p>= 32 a combined specified normal flux and outward radiating boundary. The GWCE is forced with the total normal flux computed by adding the specified normal flux and the flux associated with the outward radiating wave. The latter is determine from a Sommerfeld type condition, flux=celerity*wave elevation. The momentum equations are used to compute the velocity field the same as for a nonboundary node.</p>
+<p>= 40 a zero normal velocity gradient boundary. The GWCE is forced with normal flux, the momentum eqs are sacrificed in favor of setting the velocity at a boundary node equal to the value at a fictitious point inside the domain. The fictitious point lies on the inward directed normal to the boundary a distance equal to the distance from the boundary node to its farthest ‘neighbor. This should ensure that the fictitious point does not fall into an element that contains the boundary node. The velocity at the fictitious point is determined by interpolation.</p>
+<p>= 41 a zero normal velocity gradient boundary. The GWCE is forced with normal flux. The momentum eqs are sacrificed in favor of eqs that set the velocity gradient normal to the boundary equal to zero in the Galerkin sense.</p>
+<p>= 52 external boundary with periodic non-zero normal flow combined with wave radiation normal to the boundary as natural boundary conditions and no constraint on the tangential flow. This is applied by specifying the non-zero contribution to the normal boundary flux integral in the continuity equation. There is no constraint on velocity (normal or tangential) in the momentum equations. This boundary condition should correctly satisfy the flux balance in a global sense but will only satisfy the normal flow at each boundary node in the limit of infinite resolution. This type of boundary represents a periodic river inflow or open ocean boundary with a weak specified normal flow condition and free tangential slip where waves are allowed to propagate freely out of the domain. Discharges are specified in the Model Parameter and Periodic Boundary Condition File as harmonic discharge forcing. Additional parameters, including DRampExtFlux and FluxSettlingTime must also be set in the Model Parameter and Periodic Boundary Condition File in order to use this boundary type.</p>
+<p>= 64 vertical element wall boundary that allows the mesh to have two nodes at the same horizontal location with different depths and allows water to seemlessly flow over the boundary, by primarily consolidating the nodal equations and occasionally using the weir formula. This boundary type is useful to have steep-sided channels or other vertical features represented in the mesh while, unlike barrier boundaries that entirely depend on the weir formula, solutions along this boundary are primarily computed based on the governing equations. See <a class="reference internal" href="../../user_guide/special_features/vertical_element_walls.html"><span class="doc">Vertical Element Walls (VEWs)</span></a> for more information.</p>
+<p>= 102, 112, or 122 flux specified baroclinic. In order to designate a river boundary as baroclinic, 100 should be added to the IBTYPE that would be appropriate in the barotropic case. For example, to convert a barotropic river boundary (IBTYPE of 22) to a baroclinic river boundary with freshwater inflow, change the IBTYPE to 122. If there is a 1 in the 100s place of the IBTYPE, ADCIRC will then try to read an input file (fort.39) for the salinity and/or temperature boundary condition. The format of the fort.39 file depends on the value of IDEN; see the documentation of the fort.39 file for more details.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="simple" id="ibtypee">
+<dt>IBTYPEE</dt><dd><p>Elevation boundary type, (At present the only allowable value for IBTYPEE is 0). Elevations are specified either in the Model Parameter and Periodic Boundary Condition File for harmonic forcing or in the Non-periodic Elevation Boundary Condition File for time series forcing.</p>
+</dd>
+</dl>
+<dl class="simple" id="pipeht">
+<dt>PIPEHT(k,j)</dt><dd><p>The height of the pipe above the geoid (m) at the j-th node in the k-th normal flow specified boundary segment. Only used with IBTYPE 5 or 25.</p>
+</dd>
+</dl>
+<dl class="simple" id="pipecoef">
+<dt>PIPECOEF(k,j)</dt><dd><p>The bulk pipe friction factor for the internal barrier boundary cross-barrier pipe boundary node pair. This bulk friction factor is defined as: PIPECOEFR = fL/D where f is the classical pipe friction coefficient, L is the length of the pipe through the barrier (in consistent units) and D is the diameter of the cross barrier pipe (in consistent units).</p>
+</dd>
+</dl>
+<dl class="simple" id="pipediam">
+<dt>PIPEDIAM(k,j)</dt><dd><p>Cross barrier pipe diameter in internal barrier with cross barrier pipes (diameter in units consistent with the mesh).</p>
+</dd>
+</dl>
+<dl class="simple" id="je">
+<dt>JE</dt><dd><p>Element number. The elements must be input in ascending order.</p>
+</dd>
+</dl>
+<dl class="simple" id="jn">
+<dt>JN</dt><dd><p>Node number. The nodes must be input in ascending order.</p>
+</dd>
+</dl>
+<dl class="simple" id="nbdv">
+<dt>NBDV(k,j)</dt><dd><p>Node numbers on elevation specified boundary segment k. The node numbers must be entered in order as one moves along the boundary segment, however the direction (counter clockwise or clockwise around the domain) does not matter.</p>
+</dd>
+</dl>
+<dl class="simple" id="nbpnodes">
+<dt>NBPNODES</dt><dd><p>Total number of nodes (centerline and adjacent) in ADCIRC grid used to represent the effects of bridge piers</p>
+</dd>
+</dl>
+<dl class="simple" id="nbnnum">
+<dt>NBNNUM(k)</dt><dd><p>Node number in the ADCIRC grid of node k used to represent the frictional effects of bridge piers</p>
+</dd>
+</dl>
+<dl class="simple" id="nbou">
+<dt>NBOU</dt><dd><p>Number of normal flow (discharge) specified boundary segments. These include zero normal flow (land) boundaries, non-zero normal flow (river) boundaries, potentially overflowing external barrier boundaries, potentially overtopping internal barrier boundaries and radiation boundaries. See also General Notes for Normal Flow Boundary Conditions.</p>
+</dd>
+</dl>
+<dl class="simple" id="nbvv">
+<dt>NBVV(k,j)</dt><dd><p>Node numbers on normal flow boundary segment k. The node numbers must be entered in order as one moves along the boundary segment with land always on the right, i.e., in a counter clockwise direction for external (e.g., mainland, external barrier) boundaries and a clockwise direction for internal (e.g., island, internal barrier) boundaries. For an internal barrier boundary (IBTYPE(k) = 4, 24) only the nodes on the front face of the boundary are specified in NBVV(k,j). The paired nodes on the back face of the boundary are specified in IBCONN(k,j).</p>
+</dd>
+</dl>
+<dl class="simple" id="ne">
+<dt>NE</dt><dd><p>Number of elements in the horizontal grid</p>
+</dd>
+</dl>
+<dl class="simple" id="neta">
+<dt>NETA</dt><dd><p>Total number of elevation specified boundary nodes</p>
+</dd>
+</dl>
+<dl class="simple" id="nhy">
+<dt>NHY</dt><dd><p>Number of nodes per element. At present the only allowable value for the number of nodes per element is 3 indicating a triangular element with linear basis functions.</p>
+</dd>
+</dl>
+<dl class="simple" id="nm">
+<dt>NM(JE,1), NM(JE,2), NM(JE,3)</dt><dd><p>Node numbers comprising element JE. These must be specified in a counter clockwise direction moving around the element.</p>
+</dd>
+</dl>
+<dl class="simple" id="nope">
+<dt>NOPE</dt><dd><p>Number of elevation specified boundary forcing segments.</p>
+</dd>
+</dl>
+<dl class="simple" id="np">
+<dt>NP</dt><dd><p>Number of nodes in the horizontal grid</p>
+</dd>
+</dl>
+<dl class="simple" id="nvdll">
+<dt>NVDLL(k)</dt><dd><p>Number of nodes in elevation boundary segment k</p>
+</dd>
+</dl>
+<dl class="simple" id="nvel">
+<dt>NVEL</dt><dd><p>Total number of normal flow specified boundary nodes including both the front and back nodes on internal barrier boundaries.</p>
+</dd>
+</dl>
+<dl class="simple" id="nvell">
+<dt>NVELL(k)</dt><dd><p>Number of nodes in normal flow specified boundary segment k. For an internal barrier boundary (IBTYPE 4 or 24), NVELL(k) includes only the nodes on the front face of the boundary as specified in NBVV(k,j) and not the paired nodes on the back face of the boundary specified in IBCONN(k,j).</p>
+</dd>
+</dl>
+<dl class="simple" id="x">
+<dt>X(JN), Y(JN)</dt><dd><p>X and Y coordinates. If ICS=1 in the Model Parameter and Periodic Boundary Condition File then X(JN), Y(JN) are Cartesian coordinates with units of length (e.g., feet or meters) that are consistent with the definition of gravity in the Model Parameter and Periodic Boundary Condition File. If ICS=2 in the Model Parameter and Periodic Boundary Condition File then X(JN), Y(JN) are spherical coordinates in degrees of longitude (east of Greenwich is positive and west of Greenwich is negative) and degrees of latitude (north of the equator is positive and south of the equator is negative)</p>
+</dd>
+</dl>
+<dl class="simple" id="y">
+<dt>Y(JN)</dt><dd><p>See X(JN) above.</p>
+</dd>
+</dl>
+<dl class="simple" id="rundes">
+<dt>RUNDES</dt><dd><p>Alpha-numeric run description 1 (&lt;=32 characters)</p>
+</dd>
+</dl>
+<dl class="simple" id="runid">
+<dt>RUNID</dt><dd><p>Alphanumeric run description 2 (&lt;= 24 characters)</p>
+</dd>
+</dl>
+<span id="warnelevdumplimit"></span><span id="warnelevdump"></span><span id="warnelev"></span><span id="nfover"></span><dl id="errorelev">
+<dt>NFOVER</dt><dd><p>Non-fatal error override option;</p>
+<p>= 0, inconsistent input parameters will cause program termination.</p>
+<p>= 1, inconsistent input parameters will, (when possible), be automatically corrected to a default or consistent value and execution continued. Be sure to read the nonfatal warning messages to see whether any parameters have been modified. Note that not all inconsistent parameters can be corrected automatically and therefore fatal error messages and program termination may still result.</p>
+<p>Note for NFOVER:</p>
+<p>Occasionally, the elevation solution becomes unphysically large due to improper numerical parameter settings, time step stability criteria violation. It can be useful for ADCIRC to terminate based on a user-specific limit to the computed water elevation. To enable this feature, ADCIRC must be compiled with the DEBUG_WARN_ELEV compiler directive. This is set in the cmplrflags.mk file. For example, for the serial model,</p>
+<p>DA := -DREAL8 -DLINUX -DCSCA –DDEBUG_WARN_ELEV</p>
+<p>and for the parallel model:</p>
+<p>DP := -DREAL8 -DLINUX -DCSCA -DCMPI -DDEBUG_WARN_ELEV</p>
+<p>This enables extra parameters in the fort.15 file, specified on the NFOVER line:</p>
+<p>NFOVER, WarnElev, iWarnElevDump, WarnElevDumpLimit, ErrorElev</p>
+<p>ADCIRC then monitors the maximum water elevation and behaves as follows:</p>
+<p>A warning is issued if the elevation exceeds WarnElev.</p>
+<p>A global elevation file (written to fort.69) will be written if WarnElev is exceeded AND iWarnElevDump == 1</p>
+<p>Execution will be terminated if WarnElevDumpLimit global elevation files have been written due to the above warning limits.</p>
+<p>Execution will be terminated if elevation exceeds ErrorElev.</p>
+<p>The default values are:</p>
+<p>WarnElev = 20.0 ! Warn at 20 meters</p>
+<p>iWarnElevDump = 0 ! Do not write global elevation files</p>
+<p>WarnElevDumpLimit = 50 ! Terminate execution if the warning level is reached 50 times</p>
+<p>ErrorElev = 1000.0 ! Terminate execution of the water elevation exceeds 1000 meters</p>
+<p>Example: to override the defaults, recompile ADCIRC as above, and modify the NFOVER line in the fort.15 file:</p>
+<p>1 10. 0 100 30.</p>
+<p>This will cause ADCIRC to warn when the water elevation exceeds 10 meters, no global elevation files will be written, and ADCIRC will terminate if 100 warnings are generated OR the elevation exceeds 30 meters.</p>
+</dd>
+</dl>
+<dl id="nabout">
+<dt>NABOUT</dt><dd><p>Logging level for output from ADCIRC to the screen or console as well as the ADCIRC log file (fort.16). ADCIRC writes log messages at 5 levels of severity: DEBUG, ECHO, INFO, WARNING, and ERROR (from lowest or least important to highest or most important). Selection of a logging level indicates that messages of that level and higher should be logged. Setting the logging level to WARNING or ERROR will reduce the size (and clutter) in the log files, but important information could be missed. ERROR messages generally result from problems that also cause the run to stop.</p>
+<p>NABOUT=-1:: DEBUG-level log messages and higher. This may consume a lot of disk space and slow ADCIRC down, perhaps dramatically. Generally only useful for ADCIRC developers.</p>
+<p>NABOUT=0:: ECHO-level log messages and higher. ECHO-level log messages include echo printing of most input files including the fort.13, fort.14 and fort.22 files.</p>
+<p>NABOUT=1:: INFO-level log messages and higher. These messages inform the user about something that ADCIRC has done that is important but is not the result of a problem or issue.</p>
+<p>NABOUT=2:: WARNING-level log messages and higher. These messages indicate a potential problem that is generally not fatal to the run.</p>
+<p>NABOUT=3:: ERROR-level log messages only. These messages indicate a severe problem that usually causes the run to stop.</p>
+<p>Prior to ADCIRC version 49, 0 (ECHO) and 1 (INFO) were the only available options. NABOUT originally stood for “Abbreviated Output” (to log files).</p>
+</dd>
+</dl>
+<dl id="nscreen">
+<dt>NSCREEN</dt><dd><p>Controls log message output to the screen (i.e., to standard output). Timestep logging will be written every abs(NSCREEN) timesteps. Output to the screen consists mainly of timestep logging.</p>
+<p>NSCREEN&lt;0:: Log messages that would normally be wrtten to the screen are written to a file called adcirc.log instead.</p>
+<p>NSCREEN=0:: Log messages will not be written to the screen.</p>
+<p>NSCREEN&gt;0:: Log messages are written to the screen (a.k.a. standard out).</p>
+</dd>
+</dl>
+<dl id="ihot">
+<dt>IHOT</dt><dd><p>Parameter controlling whether the model is hot started. The hotstart facility is available for 2D and 3D runs. The hotstart file will also contain harmonic analysis data if harmonic analysis was underway, so that the harmonic analysis can be hotstarted as well.</p>
+<p>= 0 cold start the model</p>
+<p>= 17 hot start from ascii file fort.17</p>
+<p>= 67 hot start model using input information in hot start file fort.67</p>
+<p>= 68 hot start model using input information in hot start file fort.68</p>
+<p>= 367 hot start model using input information in netCDF hot start file fort.67.nc</p>
+<p>= 368 hot start model using input information in netCDF hot start file fort.68.nc</p>
+<p>= 567 hot start model using input information in netCDF4 hot start file fort.67.nc</p>
+<p>= 568 hot start model using input information in netCDF4 hot start file fort.68.nc</p>
+</dd>
+</dl>
+<dl id="ics">
+<dt>ICS</dt><dd><p>Parameter controlling whether the model is run in spherical or Cartesian coordinates.</p>
+<p>= 1 ADCIRC governing equations are in standard Cartesian coordinates. Coordinates in the grid file (fort.14) are assumed to have units of length that are consistent with the units of gravity (as specified below). In the unlikely case that tidal potential forcing (NTIP=1 or 2) and/or a spatially variable Coriolis coefficient (NCOR=1) are desired for this type of run, an inverse map projection (Carte Parallelo-grammatique) is used to obtain longitude and latitude values for the grid. However, we strongly recommend that if the model domain is large enough for either spatially variable Coriolis or tidal potential forcing to be considered important, the model should be run with spherical governing equations (ICS=2) using a longitude, latitude grid.</p>
+<p>= 2 ADCIRC governing equations are in spherical coordinates transformed into Cartesian coordinates prior to discretization using a map projection (Carte Parallelo-grammatique – CPP). Coordinates in the grid file (fort.14) are in decimal degrees longitude and latitude.</p>
+</dd>
+</dl>
+<dl id="im">
+<dt>IM</dt><dd><p>Model type</p>
+<p>= 0 Barotropic 2DDI run using New GWCE and Momentum equation formulations</p>
+<p>= 1 Barotropic 3D run using New GWCE and velocity based Momentum equations</p>
+<p>= 21 Baroclinic 3D run using New GWCE and velocity based Momentum equations</p>
+<p>= 111112 Barotropic 2DDI run using the lumped GWCE (instead of the default fully consistent GWCE). This option is needed to run ADCIRC in lumped + explicit mode, thereby bypassing the iterative solver. Explicit mode also requires specifying coefficients A00, B00, C00 (= 0, 1, 0) in this file. (see below)</p>
+<p>= 611112 Barotropic 3D run using the lumped GWCE (instead of the default fully consistent GWCE). This option is needed to run ADCIRC in lumped + explicit mode, thereby bypassing the iterative solver. Explicit mode also requires specifying coefficients A00, B00, C00 (= 0, 1, 0) in this file. (see below)</p>
+</dd>
+</dl>
+<dl id="iden">
+<dt>IDEN</dt><dd><p>Form of density forcing in a 3D run (for all Baroclinic model runs, the initial density, temperature and/or salinity field is read in from UNIT 11); ADCIRC does not support 2D baroclinic model runs.</p>
+<p>=-4 Diagnostic Baroclinic ADCIRC run with Salinity and Temperature forcing</p>
+<p>=-3 Diagnostic Baroclinic ADCIRC run with Temperature forcing</p>
+<p>=-2 Diagnostic Baroclinic ADCIRC run with Salinity forcing</p>
+<p>=-1 Diagnostic Baroclinic ADCIRC run with Sigma T forcing</p>
+<p>=0 Barotropic model run</p>
+<p>=1 Prognostic Baroclinic ADCIRC run with Sigma T forcing</p>
+<p>=2  Prognostic Baroclinic ADCIRC run with Salinity forcing</p>
+<p>=3 Prognostic Baroclinic ADCIRC run with Temperature forcing</p>
+<p>=4 Prognostic Baroclinic ADCIRC run with Salinity and Temperature forcing</p>
+</dd>
+</dl>
+<dl id="nolibf">
+<dt>NOLIBF</dt><dd><p>Parameter controlling the type of bottom stress parameterization used in a 2DDI ADCIRC run. This parameter must be specified but is ignored in a 3D run. Note: In the NWP section, if the user selects quadratic_friction_coefficient_at_sea_floor, mannings_n_at_sea_floor, or chezy_friction_coefficient_at_sea_floor, then NOLIBF must be 1 (nonlinear friction formulation) since all those formulations are nonlinear. If the NOLIBF were anything other than 1, it is an error that will cause ADCIRC to stop.</p>
+<p>= 0 linear bottom friction law. The friction coefficient (FFACTOR) is specified below.</p>
+<p>= 1 quadratic bottom friction law. The friction coefficient (FFACTOR) is specified below.</p>
+<p>= 2 hybrid nonlinear bottom friction law. In deep water, the friction coefficient is constant and a quadratic bottom friction law results. In shallow water the friction coefficient increases as the depth decreases (e.g. as in a Manning-type friction law). The friction coefficient is determined as: FFACTOR=FFACTORMIN*[1+(HBREAK/H)**FTHETA]**(FGAMMA/FTHETA). The required parameters (FFACTORMIN, HBREAK, FTHETA, FGAMMA) are specified below.</p>
+<p>For 3D ADCIRC runs, spatially varying bottom friction should be specified using the bottom_roughness_length nodal attribute.</p>
+</dd>
+</dl>
+<dl id="nolifa">
+<dt>NOLIFA</dt><dd><p>Parameter controlling the finite amplitude terms in ADCIRC. The value of NOLIFA effects the meaning of the minimum water depth parameter(H0) and requires the specification of additional parameters together with H0, (see below). When the finite amplitude terms are turned on, the time derivative portion of the advective terms should also be turned on for proper mass conservation and consistency (i.e. when NOLIFA&gt;0, then NOLICAT=1).</p>
+<p>= 0 finite amplitude terms ARE NOT included in the model run (i.e., the depth is linearized by using the bathymetric depth, rather than the total depth, in all terms except the transient term in the continuity equation) and wetting and drying of elements is disabled. Initial water depths are assumed equal to the bathymetric water depth specified in the grid file (fort.14).</p>
+<p>= 1 finite amplitude terms ARE included in the model run and wetting and drying of elements is disabled. Initial water depths are assumed equal to the bathymetric water depth specified in the grid file (fort.14).</p>
+<p>= 2 finite amplitude terms ARE included in the model run and wetting and drying of elements is enabled. Initial water depths are assumed equal to the bathymetric water depth specified in the grid file (fort.14).</p>
+</dd>
+</dl>
+<dl id="nolica">
+<dt>NOLICA</dt><dd><p>Parameter controlling the advective terms in ADCIRC (with the exception of a time derivative portion that occurs in the GWCE form of the continuity equation and is controlled by NOLICAT). When these (spatial derivative) portions of the advective terms are included, the time derivative portion of the advective terms in the GWCE should also be included (i.e. when NOLICA=1, NOLICAT=1).</p>
+<p>= 0 advective terms ARE NOT included in the computations</p>
+<p>= 1 advective terms ARE included in the computations</p>
+<p>The NOLICA and NOLICAT parameters by themselves will activate or deactivate the advective terms over the full domain; however, these terms can also be activated or deactivated on an element-by-element basis. Please see the definition of the advection_state nodal attribute in the documentation for the Nodal Attributes File (fort.13) for details.</p>
+</dd>
+</dl>
+<dl id="nolicat">
+<dt>NOLICAT</dt><dd><p>Parameter controlling the time derivative portion of the advective terms that occurs in the GWCE form of the continuity equation in ADCIRC. The remainder of the advective terms in the GWCE and the entire advective terms in the momentum equation are controlled by NOLICA. These terms should be included if either the finite amplitude or the remainder of the advective terms are included to maintain mass conservation and solution consistency.</p>
+<p>= 0 the time derivative portion of the advective terms that occur in the GWCE continuity equation ARE NOT included in the computations.</p>
+<p>= 1 the time derivative portion of the advective terms that occur in the GWCE continuity equation ARE included in the computations.</p>
+<p>The NOLICA and NOLICAT parameters by themselves will activate or deactivate the advective terms over the full domain; however, these terms can also be activated or deactivated on an element-by-element basis. Please see the definition of the advection_state nodal attribute in the documentation for the Nodal Attributes File (fort.13) for details.</p>
+</dd>
+</dl>
+<dl id="nwp">
+<dt>NWP</dt><dd><p>Number of nodal attributes used in the run. Nodal attributes are properties of each node in the grid and are spatially varying but constant in time. See AttrName for examples. The nodal attribute data itself must be provided by the user in the Nodal Attributes File (fort.13). If NWP is not zero, then the names of the nodal attributes appear on the following lines, one per line:</p>
+<p>FOR j=1 to NWP</p>
+<p>AttrName(j)</p>
+<p>end j loop</p>
+</dd>
+</dl>
+<dl id="ncor">
+<dt>NCOR</dt><dd><p>Parameter controlling whether the Coriolis parameter is constant in space and read in below or spatially varying as computed from the y-coordinates of the nodes in the grid (assumed to be in degrees Latitude). The grid coordinate system is specified by the ICS parameter (see above).</p>
+<p>= 0, to read in a spatially constant Coriolis parameter</p>
+<p>= 1, to compute a spatially variable Coriolis parameter</p>
+</dd>
+</dl>
+<dl id="ntip">
+<dt>NTIP</dt><dd><p>Parameter controlling whether tidal potential and self attraction/load tide forcings will be used to force ADCIRC.</p>
+<p>= 0, tidal potential &amp; self attraction/load tide forcings are not used</p>
+<p>= 1, tidal potential forcing is used</p>
+<p>= 2, tidal potential &amp; self attraction/load tide forcings are used. In this case the self attraction/load tide information is read in for each constituent at each node in the grid from the Self Attraction/Earth Load Tide Forcing File.</p>
+</dd>
+</dl>
+<dl class="simple" id="nws">
+<dt>NWS</dt><dd><p>Parameter controlling whether wind velocity or stress, wave radiation stress and atmospheric pressure are used to force ADCIRC. Due to its complexity, this parameter has a dedicated documentation page: <a class="reference internal" href="../../user_guide/model_configuration/meteorological_forcing/nws_parameters.html#nws-parameter"><span class="std std-ref">NWS Parameter</span></a>.</p>
+</dd>
+</dl>
+<dl id="nramp">
+<dt>NRAMP</dt><dd><p>Ramp option parameter controlling whether a ramp is applied to ADCIRC forcing functions.</p>
+<p>= 0 No ramp function is used with forcing functions; full strength forcing is applied immediately upon cold start.</p>
+<p>= 1 A single hyperbolic tangent ramp function of specified duration (DRAMP, in days relative to the cold start time) will be applied to all forcing. See description of the DRAMP line for further information on the ramp function.</p>
+<p>= 2 Same as NRAMP=1, except that a second, separate hyperbolic tangent ramp of specified duration (DRAMPExtFlux, in days relative to cold start time plus FluxSettlingTime) specifically for external flux forcing (e.g., river boundary conditions) will also be read on the DRAMP line. In addition, the FluxSettlingTime parameter for IBTYPE=52 river boundaries will also be specified on the DRAMP line. If there are no IBTYPE=52 boundaries in the mesh (fort.14) file, the FluxSettlingTime will be read but ignored. See description of DRAMP for further information.</p>
+<p>= 3 Same as NRAMP=2, except that a third, separate hyperbolic tangent ramp of specified duration (DRAMPIntFlux, in days relative to cold start time plus FluxSettlingTime) specifically for internal flux forcing (e.g., flows over levees and under culverts) will also be read on the DRAMP line. See the description of the DRAMP line for further information.</p>
+<p>= 4 Same as NRAMP=3, except that a fourth, separate hyperbolic tangent ramp of specified duration (DRAMPElev, in days relative to cold start time plus FluxSettlingTime) specifically for elevation specified boundary forcing (e.g., tidal boundaries) will also be read on the DRAMP line. See the description of the DRAMP line for further information.</p>
+<p>= 5 Same as NRAMP=4, except that a fifth, separate hyperbolic tangent ramp of specified duration (DRAMPTip, in days relative to cold start time plus FluxSettlingTime) specifically for tidal potential forcing will also be read on the DRAMP line. See the description of the DRAMP line for further information.</p>
+<p>= 6 Same as NRAMP=5, except that a sixth, separate hyperbolic tangent ramp of specified duration (DRAMPMete, in days relative to cold start time plus FluxSettlingTime) specifically for meteorological forcing (i.e., wind and atmospheric pressure) will also be read on the DRAMP line. See the description of the DRAMP line for further information.</p>
+<p>= 7 Same as NRAMP=6, except that a seventh, separate hyperbolic tangent ramp of specified duration (DRAMPWRad, in days relative to cold start time plus FluxSettlingTime) specifically for wave radiation stress forcing will also be read on the DRAMP line. See the description of the DRAMP line for further information.</p>
+<p>= 8 Same as NRAMP=7, except that a delay parameter (DUnRampMete, in days relative to cold start time plus FluxSettlingTime) will also be read from the DRAMP line. The meteorological ramp delay parameter DUnRampMete is useful in cases where a meteorologically-forced run will be hotstarted from a long term meteorologically-free tidal spinup from cold start. The meteorological ramp delay parameter delays the start of the application of the meteorological ramp for the specified length of time, relative to the ADCIRC cold start time. See the description of the DRAMP line for further information.</p>
+</dd>
+</dl>
+<dl class="simple" id="g">
+<dt>G</dt><dd><p>Gravitational constant. The units of this constant determine the distance units that ADCIRC operates with. (ADCIRC always operates in seconds and therefore the time units for G must be seconds.) When ICS = 2, it is required that G = 9.81 m/sec2. Regardless of ICS, when either NTIP = 1 or NCOR = 1, it is required that G = 9.81 m/sec2.</p>
+</dd>
+</dl>
+<dl id="tau0">
+<dt>TAU0</dt><dd><p>Generalized Wave-Continuity Equation (GWCE) weighting factor that weights the relative contribution of the primitive and wave portions of the GWCE. If “primitive_weighting_in_continuity_equation” is specified as a nodal attribute in the fort.15 file above, this line will be read in but ignored. If a nodal attribute file is not used or “primitive_weighting_in_continuity_equation” is in the nodal attribute (fort.13) file, but not specified in the fort.15 file this TAU0 parameter will be used.</p>
+<p>= 0 the GWCE is a pure wave equation.</p>
+<p>&lt; 1 the GWCE behaves like a pure primitive continuity equation. A good rule of thumb for setting TAU0 is to set it equal to the largest value of an equivalent linear friction factor (e.g, for linear friction TAU0 = TAU; for quadratic friction TAU0 = maximum (speed*CF/depth). Typical values for TAU0 are in the range of 0.005 – 0.1.</p>
+<p>= -1 the TAU0 is spatially varying but constant in time; it is calculated according to depth as follows: If the depth is &gt;=10 TAU0 is set to 0.005, if the depth is &lt; 10, TAU0 is set to 0.020.</p>
+<p>= -2 the TAU0 is spatially varying but constant in time; it is calculated according to depth as follows: if the depth is &gt;=200 TAU0 is set to 0.005, if the depth is &lt; 200 but &gt; 1, then TAU0 is set to 1/depth, and if depth &lt; 1, TAU0 is set to 1.0.</p>
+<p>= -3 the TAU0 varies spatially and in time. TAU0 is computed from TAU0Base read in from nodal attribute file.</p>
+<blockquote>
+<div><p>if TAU0Base &lt; 0.025; TAU0 = TAU0Base (constant in time)</p>
+<p>if TAU0Base &gt;= 0.025; TAU0 = TAU0Base + 1.5 TK(i) where TK(i)=Cd|U|/H</p>
+<p>TAU0Base values can be generated with the ADCIRC utitlity program tau0_gen.f. The program bases generation on the following logic:</p>
+<blockquote>
+<div><p>If the avg. distance between a node and its neighbors &lt; 1750 m TAU0Base = 0.03</p>
+<p>If the avg. distance between a node and its neighbors &gt; 1750 m AND depth &lt; 10m; TAU0Base = 0.02</p>
+<p>If the avg. distance between a node and its neighbors &gt; 1750 m AND depth &gt; 10m; TAU0Base = 0.005</p>
+</div></blockquote>
+</div></blockquote>
+<p>= -5, FullDomainTimeVaryingTau0 = .True. the TAU0 varies spatially and in time, and is dependent on the local friction; it is limited to a range specified by Tau0FullDomainMin and Tau0FullDomainMax.</p>
+<blockquote>
+<div><p>Tau0=Tau0Min+1.5*TK(i)</p>
+</div></blockquote>
+<p>For tau0 formulations that vary spatially and temporally, ADCIRC is capable of writing out the tau0 values that it calculates internally. These values are written to a fort.90 file, which has the same format and output frequency as the water surface elevation output file (fort.63). The production of a fort.90 file is specified by placing a 1 in the tenths place of the tau0 input valuie in the fort.15 file. For example, if tau0=-3.1, the calculation of tau0 is still carried out according to the description of tau0=-3 above, and the fort.90 output file will also be produced.</p>
+</dd>
+</dl>
+<span id="tau0fulldomainmin"></span><dl class="simple" id="tau0fulldomainmax">
+<dt>Tau0FullDomainMin, Tau0FullDomainMax</dt><dd><p>Include this line only if TAU0= -5. Specified values that the spatially and time varying TAU0 scheme must stay between. Suggested values are Tau0FullDomainMin = 0.005 and Tau0FullDomainMax = 0.2.</p>
+</dd>
+</dl>
+<dl id="dtdp">
+<dt>DTDP</dt><dd><p>ADCIRC time step (in seconds). Note: time in the model is computed as: TIME = STATIM*86400.+DTDP*IT.</p>
+<blockquote>
+<div><p>&gt; 0 = The predictor-corrector algorithm is not used.</p>
+<p>&lt; 0 = The predictor-corrector algorithm is used.</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="simple" id="statim">
+<dt>STATIM</dt><dd><p>Starting simulation time (in days). The first time step computes results at: TIME = STATIM*86400+DTDP. A nonzero value may be useful, for example, to align model output times with a specific time reference.</p>
+</dd>
+</dl>
+<dl class="simple" id="reftim">
+<dt>REFTIM</dt><dd><p>Reference time (in days). This is used only to compute time for the harmonic forcing and analysis terms. A nonzero value allows equilibrium arguments to be used that have been calculated for a time other than TIME0 = STATIM*86400. The time used for harmonic terms is compute as: TIMEH = (STATIM–REFTIM)*86400.+DTDP*IT.</p>
+</dd>
+</dl>
+<dl id="poan">
+<dt>POAN(k)</dt><dd><p>Parameter that weights bridge pier drag between adjacent and centerline nodes.</p>
+<p>= 2 if node represents a centerline node</p>
+<p>= 1 if node represents an adjacent node</p>
+</dd>
+</dl>
+<dl class="simple" id="wtiminc">
+<dt>WTIMINC</dt><dd><p>Time increment between meteorological forcing data sets (in seconds). This parameter and the line on which it appears depends on the value of the NWS parameter. See <a class="reference internal" href="../../user_guide/model_configuration/meteorological_forcing/wtiminc.html#wtiminc-supplemental"><span class="std std-ref">WTIMINC Supplemental</span></a> and <a class="reference internal" href="../../user_guide/model_configuration/meteorological_forcing/nws_parameters.html#nws-parameter"><span class="std std-ref">NWS Parameter</span></a> for details.</p>
+</dd>
+</dl>
+<dl class="simple" id="yyyy">
+<dt>YYYY,MM,DD,HH24,StormNumber,BLAdj</dt><dd><p>For the Dynamic Holland model (NWS=8) and the Dynamic Asymetric Model (NWS=19), this is the coldstart datetime, the number of the storm in forecast ensemble, and the boundary layer adjustment factor. The datetime tells ADCIRC what time corresponds to t=0. For example, if the datetime is specified as 2005 08 29 06 on a cold start, then ADCIRC will find that time in the Single File Meteorological Forcing Input File, linearly interpolating if necessary, to get its initial wind state. For a hotstart, the time in the hotstart file will be added to this datetime before seeking the proper place in the Single File Meteorological Forcing Input File. For example, if the coldstart datetime is still specified as 2005 08 29 06, and the time in the hotstart file is 86400 seconds, ADCIRC will start up and interpolate in the Single File Meteorological Forcing Input File for the conditions at 6:00 am on August 30, 2005 to get its hotstart wind state. One limitation is that an ADCIRC run cannot cross the boundary of the calendar year, i.e. start in December and end in January. StormNumber is an integer and should be set to 1. BLAdj is the adjustment factor between wind speed at 10m and the wind speed at the top of the atmospheric boundary layer (winds at top of atm. b.l.)=(winds at 10m)/BLAdj. Reasonable range is 0.7 to 0.9.</p>
+</dd>
+</dl>
+<dl id="geofactor">
+<dt>Geofactor</dt><dd><p>Integer that controls the form of the equation in the Generalized Asymmetric Holland Model (GAHM): (geofactor =1) the full gradient wind equation is used; (geofactor=0) a simplifying cyclostrophic balance is assumed at radius of maximum wind as done in the original Holland (1980) model derivation.</p>
+<p>The full gradient wind equation (geofactor = 1) is preferred, particularly for large or weak storms. Using the GAHM with geofactor = 0 should give results that are similar to the older NWS=19 parametric vortex(dynamic asymmetric vortex model) which is based on the original Holland model derivation.</p>
+</dd>
+</dl>
+<dl class="simple" id="rstiminc">
+<dt>RSTIMINC</dt><dd><p>Time interval (in seconds) between successive wave radiation stress values in the Wave Radiation Stress Forcing File. This value must be specified in the Model Parameter and Periodic Boundary Condition File if the absolute value of NWS &gt;=100.</p>
+</dd>
+</dl>
+<dl id="irefyr">
+<dt>IREFYR, IREFMO, IREFDAY, IREFHR, IREFMIN, REFSEC</dt><dd><p>Starting time parameters for a Single File Meteorological Forcing Input File in US Navy Fleet Numeric format (NWS = 3, 103). These values are used in ADCIRC to compute WREFTIM which is the start time of the simulation in seconds since the beginning of the calendar year. ADCIRC is configured to accept only 1 calendar year’s data, i.e., it is not possible to combine Fleet Numeric met data from two different years into a single file and then run.</p>
+<p>IREFYR = Year of the start of the simulation</p>
+<p>IREFMO = Month of the start of the simulation</p>
+<p>IREFDAY = Day of the start of the simulation</p>
+<p>IREFHR = Hour of the start of the simulation</p>
+<p>IREFMIN = Minute of the start of the simulation</p>
+<dl class="simple">
+<dt>REFSEC</dt><dd><p>Second of the start of the simulation.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<span id="wlatinc"></span><span id="wlonmin"></span><span id="wlatmax"></span><span id="nwlon"></span><span id="nwlat"></span><dl id="wloninc">
+<dt>NWLAT, NWLON, WLATMAX, WLONMIN, WLATINC, WLONINC</dt><dd><p>Parameters describing the spatial structure of a Single File Meteorological Forcing Input File where met data is set up on a simple rectangular grid (NWS = 3, 6, 103, 106).</p>
+<p>NWLAT = Number of latitude values in the met file.</p>
+<p>NWLON = Number of longitude values in met file.</p>
+<p>WLATMAX = Maximum latitude (decimal deg) of data in met file (&lt; 0 south of the equator).</p>
+<p>WLONMIN = Minimum longitude (decimal deg) of data in the met file (&lt; 0 west of Greenwich meridian).</p>
+<p>WLATINC = Latitude increment (decimal deg) of data in the met file (must be &gt; 0).</p>
+<p>WLONINC = Longitude increment (decimal deg) of data in the met file (must be &gt; 0).</p>
+</dd>
+</dl>
+<dl class="simple" id="rnday">
+<dt>RNDAY</dt><dd><p>Length of the ADCIRC run (in decimal days)</p>
+</dd>
+</dl>
+<dl class="simple" id="dramp">
+<dt>DRAMP</dt><dd><p>Value (in decimal days) used to compute the ramp function that ramps up ADCIRC forcings from zero (if NRAMP=1). The ramp function is computed as RAMP=tanh(2.0*IT*DTDP/(86400.*DRAMP)) where IT = the time step number since the beginning of the model run. DRAMP is equal to the number of days when RAMP=0.96.</p>
+</dd>
+</dl>
+<dl class="simple" id="drampextflux">
+<dt>DRAMPExtFlux</dt><dd><p>Value (in decimal days) used to compute the ramp function that ramps up the nonzero external flux boundary condition.</p>
+</dd>
+</dl>
+<dl id="fluxsettlingtime">
+<dt>FluxSettlingTime</dt><dd><p>Time in days that it takes for the river flux boundary condition and the river bottom friction to equilibrate so the water surface elevation can find its steady state.</p>
+<p>From the start of the simulation until FluxSettlingTime has passed, the only forcing that is active is the external boundary flux forcing. All other forcings are set to zero.</p>
+<p>Once the FluxSettlingTime has passed, the other forcing functions begin their ramp up.</p>
+<p>The new IBTYPE=52 only works with periodic flux boundary conditions. Non-periodic flux boundary conditions cannot be specified for IBTYPE=52 boundaries.</p>
+</dd>
+</dl>
+<dl class="simple" id="drampintflux">
+<dt>DRAMPIntFlux</dt><dd><p>Value (in decimal days) used to compute the ramp function that ramps up the nonzero internal flux boundary condition.</p>
+</dd>
+</dl>
+<dl class="simple" id="drampelev">
+<dt>DRAMPElev</dt><dd><p>Value (in decimal days) used to compute the ramp function that ramps up the elevation-specified boundary condition.</p>
+</dd>
+</dl>
+<dl class="simple" id="dramptip">
+<dt>DRAMPTip</dt><dd><p>Value (in decimal days) used to compute the ramp function that ramps up the tidal potential.</p>
+</dd>
+</dl>
+<dl class="simple" id="drampmete">
+<dt>DRAMPMete</dt><dd><p>Value (in decimal days) used to compute the ramp function that ramps up the wind and atmospheric pressure.</p>
+</dd>
+</dl>
+<dl class="simple" id="drampwrad">
+<dt>DRAMPWRad</dt><dd><p>Value (in decimal days) used to compute the ramp function that ramps up the wave radiation stress.</p>
+</dd>
+</dl>
+<dl class="simple" id="dunrampmete">
+<dt>DUnRampMete</dt><dd><p>The meteorological ramp delay parameter with units of decimal days. It simply delays the application of the meteorological ramp for the specified length of time, relative to the ADCIRC cold start time.</p>
+</dd>
+</dl>
+<span id="b00"></span><span id="a00"></span><dl class="simple" id="c00">
+<dt>A00, B00,C00</dt><dd><p>Time weighting factors (at time levels k+1, k, k-1, respectively) in the GWCE</p>
+</dd>
+</dl>
+<dl id="h0">
+<dt>H0</dt><dd><p>Minimum water depth</p>
+<p>If NOLIFA = 0, 1, H0 = minimum bathymetric depth. All bathymetric depths in the Grid and Boundary Information File less than H0 are changed to be equal to H0.</p>
+<p>If NOLIFA = 2, H0 = nominal water depth for a node (and the accompanying elements) to be considered dry (typical value 0.01 – 0.1 m).</p>
+</dd>
+</dl>
+<dl class="simple" id="integer">
+<dt>INTEGER</dt><dd><p>In the past, the wetting and drying algorithm required two additional integers as input. These extra parameters are no longer needed by the code, but they are still present to maintain backward compatibility. Their values will be ignored.</p>
+</dd>
+</dl>
+<dl class="simple" id="velmin">
+<dt>VELMIN</dt><dd><p>Minimum velocity for wetting. A dry node wets if a water surface slope exists that would drive water from a currently wet node to the dry node and the steady-state current velocity that resulted would have a velocity &gt; VELMIN. This parameter helps to keep nodes/elements from repeatedly turning on and off during the wetting process. A typical value might be 0.05 m/s.</p>
+</dd>
+</dl>
+<span id="slam0"></span><dl class="simple" id="sfea0">
+<dt>SLAM0,SFEA0</dt><dd><p>Longitude and latitude on which the CPP coordinate projection is centered (in degrees) if ICS = 2.</p>
+</dd>
+</dl>
+<dl class="simple" id="tau">
+<dt>TAU</dt><dd><p>Bottom friction is a linear function of depth-averaged velocity and TAU is the corresponding linear friction coefficient (units of 1/sec). In this case it is strongly recommended that TAU0 = TAU (Used with NOLIBF = 0). If some type of spatially varying bottom friction is specified in the NWP section, this input is ignored, and the friction coefficients will be read in from the nodal attributes file.</p>
+</dd>
+</dl>
+<dl id="cf">
+<dt>CF</dt><dd><p>Quadratic bottom friction coefficient (dimensionless) with the following specific meanings (note, for clarity, the quadratic friction coefficient name in the ADCIRC source code is FFACTOR):</p>
+<p>If NOLIBF = 1, By default, FFACTOR = CF and is spatially constant at each node in the domain. Spatially varying quadratic friction coefficients, Manning’s n or Chezy coefficients may be specified using nodal attributes in the fort.13 file, (see the NWP section). In these cases the friction coefficient values specified in the nodal attribute file are converted to equivalent FFACTOR values at each node in the domain and at every timestep (e.g., see the documentation on the Manning’s n nodal attribute for the formula used to convert Manning’s n to an equivalent quadratic friction coefficient). If a Manning’s n formulation is specified using nodal attributes, then CF is read in and used as the minimum equivalent quadratic friction coefficient (i.e., FFACTOR minimum = CF). If another bottom friction factor is specified via nodal attributes, CF is read in but ignored.</p>
+<p>If NOLIBF = 2, the hybrid bottom friction formulation is used FFACTOR = CF*[1+(HBREAK/H)**FTHETA]**(FGAMMA/FTHETA and CF is as specified in this expression. Note, that FFACTOR approaches CF in deep water (H &gt; HBREAK) and the hybrid friction formulation reverts to a standard quadratic formulation. This option is not available for friction coefficients specified using nodal attributes.</p>
+</dd>
+</dl>
+<dl class="simple" id="hbreak">
+<dt>HBREAK</dt><dd><p>Break depth (units of length) utilized for NOLIBF = 2. If the water depth (H) is greater than HBREAK, bottom friction approaches a quadratic function of depth-averaged velocity with FFACTOR = CF. If the water depth is less than HBREAK, the friction factor increases as the depth decreases (e.g. as in a Manning-type friction law). (HBREAK = 1 m is recommended).</p>
+</dd>
+</dl>
+<dl class="simple" id="ftheta">
+<dt>FTHETA</dt><dd><p>Parameter (dimensionless) utilized in the hybrid bottom friction relationship (NOLIBF = 2) that determines how rapidly the hybrid bottom friction relationship approaches its deep water and shallow water limits when the water depth is greater than or less than HBREAK. (FTHETA = 10 is recommended).</p>
+</dd>
+</dl>
+<dl class="simple" id="fgamma">
+<dt>FGAMMA</dt><dd><p>Parameter (dimensionless) utilized in the hybrid bottom friction relationship (NOLIBF = 2) that determines how the friction factor increases as the water depth decreases. Setting this to 1/3 gives a manning friction law type of behavior (FGAMMA = 1/3 is recommended).</p>
+</dd>
+</dl>
+<dl class="simple" id="eslm">
+<dt>ESLM</dt><dd><p>A positive ESLM indicates a spatially constant horizontal eddy viscosity with dimensions [L²/T]. A negative value of ESLM invokes the Smagorinsky-type turbulence closure model using a spatially constant coefficient equal to the absolute value of ESLM.
+Users should refer to the <a class="reference internal" href="../../user_guide/model_configuration/physics_parameters/horizontal_eddy_viscosity.html#horizontal-eddy-viscosity"><span class="std std-ref">horizontal eddy viscosity section</span></a> for more information.</p>
+</dd>
+</dl>
+<dl class="simple" id="eslc">
+<dt>ESLC</dt><dd><p>Spatially constant horizontal eddy diffusivity for the transport equation (units of length2/time). This is only specified if IM = 10.</p>
+</dd>
+</dl>
+<dl class="simple" id="cori">
+<dt>CORI</dt><dd><p>Constant Coriolis coefficient. This value is always read in, however it is only used in the computations when NCOR = 0.</p>
+</dd>
+</dl>
+<dl class="simple" id="ntif">
+<dt>NTIF</dt><dd><p>Number of tidal potential constituents</p>
+</dd>
+</dl>
+<dl class="simple" id="tipotag">
+<dt>TIPOTAG(I)</dt><dd><p>See description of TPK(I),AMIGT(I),ETRF(I),FFT(I) and FACET(I)</p>
+</dd>
+</dl>
+<span id="fft"></span><span id="etrf"></span><span id="amigt"></span><span id="tpk"></span><dl class="simple" id="facet">
+<dt>TPK(I),AMIGT(I),ETRF(I),FFT(I),FACET(I), I=1,NTIF</dt><dd><p>Tidal potential amplitude, frequency, earth tide potential reduction factor (generally taken to be 0.690 for all constituents (Hendershott) but for more precise calculations can take on slightly different values (e.g. see Wahr, 1981)), nodal factor and equilibrium argument in degrees. These values are preceded by TIPOTAG(I) which is an alphanumeric descriptor (i.e. the constituent name)</p>
+</dd>
+</dl>
+<dl class="simple" id="nbfr">
+<dt>NBFR</dt><dd><p>Number of periodic forcing frequencies on elevation specified boundaries. if NBFR=0 and a nonzero number of elevation specified boundary segments are included in the Grid and Boundary Information File, the elevation boundary condition is assumed to be non-periodic and will be read in from the Non-periodic Elevation Boundary Condition File. For reasons of backward compatability, NBFR is included in the Model Parameter and Periodic Boundary Condition File regardless of whether any elevation specified boundaries (IBTYPE=0) are defined in the fort.14 input.</p>
+</dd>
+</dl>
+<dl class="simple" id="bountag">
+<dt>BOUNTAG(k)</dt><dd><p>See description of AMIG(k),FF(k),FACE(k)</p>
+</dd>
+</dl>
+<span id="ff"></span><span id="amig"></span><dl class="simple" id="face">
+<dt>AMIG(k),FF(k),FACE(k) k=1,NBFR</dt><dd><p>Forcing frequency, nodal factor, equilibrium argument in degrees for tidal forcing on elevation specified boundaries. These values are preceded by BOUNTAG(k), an alphanumeric descriptor (i.e. the constituent name)</p>
+</dd>
+</dl>
+<dl class="simple" id="alphae">
+<dt>ALPHAE</dt><dd><p>See description of EMO(k,j), EFA(k,j) (&lt;= 10 characters)</p>
+</dd>
+</dl>
+<span id="emo"></span><dl class="simple" id="efa">
+<dt>EMO(k,j),EFA(k,j) k=1,NBFR , j=1,NETA</dt><dd><p>Amplitude and phase (in degrees) of the harmonic forcing function at the elevation specified boundaries for frequency k and elevation specified boundary forcing node j. NOTE that the parameter NETA is defined and read in from Grid and Boundary Information File: the forcing values are preceded by an alphanumeric descriptor EALPHA to facilitate verifying that the correct data matches a given frequency.</p>
+</dd>
+</dl>
+<dl class="simple" id="anginn">
+<dt>ANGINN</dt><dd><p>Flow boundary nodes which are set up to have a normal flow essential boundary condition and have an inner angle less than ANGINN (specified in degrees) will have the tangential velocity zeroed. In either case, the normal velocity will be determined from the essential boundary condition.</p>
+</dd>
+</dl>
+<dl class="simple" id="nffr">
+<dt>NFFR</dt><dd><p>Number of frequencies in the specified normal flow external boundary condition. If NFFR=0 or NFFR=-1, the normal flow boundary condition is assumed to be non-periodic and will be read in from the Non-periodic, Normal Flux Boundary Condition File. If NFFR=0, ADCIRC assumes that the flux data in that file start at the cold start time; but if NFFR=-1, ADCIRC assumes that the flux data in that file start at the hot start time. On the other hand, positive integer values of NFFR indicate the number of frequency components that make up the periodic flux boundaries.</p>
+</dd>
+</dl>
+<dl class="simple" id="fbountag">
+<dt>FBOUNTAG(k)</dt><dd><p>See description of FAMIGT(k),FFF(k),FFACE(k)</p>
+</dd>
+</dl>
+<span id="fff"></span><span id="famigt"></span><dl class="simple" id="fface">
+<dt>FAMIGT(k),FFF(k),FFACE(k) k=1,NFFR</dt><dd><p>Forcing frequency, nodal factor, equilibrium argument in degrees for periodic normal flow forcing on flow boundaries. These values are preceded by FBOUNTAG(k), an alphanumeric descriptor (i.e. the constituent name)</p>
+</dd>
+</dl>
+<dl class="simple" id="alphaq">
+<dt>ALPHAQ</dt><dd><p>See description of QNAM(k,j),QNPH(k,j) (&lt;=10 characters)</p>
+</dd>
+</dl>
+<span id="qnam"></span><dl class="simple" id="qnph">
+<dt>QNAM(k,j) ,QNPH(k,j) k=1,NFFR, j=1,NFLBN</dt><dd><p>Amplitude and phase (in degrees) of the periodic normal flow/unit width (e.g. m2/s) for frequency I and “specified normal flow” boundary node j. A positive flow/unit width is into the domain and a negative flow/unit width is out of the domain. Note: the forcing values are preceded by an alphanumeric descriptor ALPHA to facilitate verifying that the correct data matches a given frequency.</p>
+</dd>
+</dl>
+<span id="enam"></span><dl class="simple" id="enph">
+<dt>ENAM(k,j) ,ENPH(k,j) k=1,NFFR, j=1,NFLBN</dt><dd><p>Amplitude and phase of outgoing wave in IBTYPE=32 boundary condition (in degrees).</p>
+</dd>
+</dl>
+<span id="toutfe"></span><span id="toutse"></span><span id="noute"></span><dl id="nspoole">
+<dt>NOUTE, TOUTSE, TOUTFE, NSPOOLE</dt><dd><p>NOUTE = Number of elevation recording stations.</p>
+<blockquote>
+<div><p>NOUTE =-3 Output is provided at the selected elevation recording stations in netCDF format. Following a hot start, a new fort.61.nc file is created.</p>
+<p>NOUTE =-2 Output is provided at the selected elevation recording stations in binary format. Following a hot start, a new fort.61 file is created.</p>
+<p>NOUTE =-1 Output is provided at the selected elevation recording stations in standard ascii format. Following a hot start, a new fort.61 file is created.</p>
+<p>NOUTE = 0 No output is provided at the selected elevation recording stations.</p>
+<p>NOUTE = 1 Output is provided at the selected elevation recording stations in standard ascii format. Following a hot start, continued output is merged into the existing fort.61 file.</p>
+<p>NOUTE = 2 Output is provided at the selected elevation recording stations in binary format. Following a hot start, continued output is merged into the existing fort.61 file.</p>
+<p>NOUTE = 3 Output is provided at the selected elevation recording stations in netCDF format. Following a hot start, continued output is merged into the existing fort.61.nc file.</p>
+</div></blockquote>
+<p>TOUTSE = the number of days after which elevation station data is recorded to fort.61 (TOUTSE is relative to STATIM)</p>
+<p>TOUTFE = the number of days after which elevation station data ceases to be recorded to fort.61 (TOUTFE is relative to STATIM)</p>
+<p>NSPOOLE = the number of time steps at which information is written to fort.61; i.e. the output is written to fort.61 every NSPOOLE time steps after TOUTSE</p>
+</dd>
+</dl>
+<dl class="simple" id="nstae">
+<dt>NSTAE</dt><dd><p>The number of elevation recording stations (this is always read in regardless of the value of NOUTE)</p>
+</dd>
+</dl>
+<span id="xel"></span><dl id="yel">
+<dt>XEL(k), YEL(k) k=1,NSTAE</dt><dd><p>The coordinates of the elevation recording station k, for all NSTAE stations.</p>
+<p>If ICS = 1, coordinates are input as standard cartesian</p>
+<p>If ICS = 2, coordinates are input as degrees longitude and latitude</p>
+<p>If an elevation recording station is input which does not lie within the computational domain, a non-fatal error message will appear. If NFOVER has been set equal to 1, the code will estimate the nearest element and use that as the basis of interpolation. A proximity index is also printed out, which indicates how close or far the station coordinates are from the nearest element. This index may be interpreted as the number of elements that the station lies from the nearest element</p>
+</dd>
+</dl>
+<span id="toutfv"></span><span id="toutsv"></span><span id="noutv"></span><dl id="nspoolv">
+<dt>NOUTV, TOUTSV,TOUTFV, NSPOOLV</dt><dd><p>NOUTV = Output parameters which control the time series output provided for velocity solutions at selected velocity recording stations (fort.62 output)</p>
+<blockquote>
+<div><p>NOUTV =-3 Output is provided at the selected velocity recording stations in netCDF format. Following a hot start, a new fort.62.nc file is created.</p>
+<p>NOUTV =-2 Output is provided at the selected velocity recording stations in binary format. Following a hot start, a new fort.62 file is created.</p>
+<p>NOUTV =-1 Output is provided at the selected velocity recording stations in standard ascii format. Following a hot start, a new fort.62 file is created.</p>
+<p>NOUTV = 0 No output is provided at the selected velocity recording stations</p>
+<p>NOUTV = 1 Output is provided at the selected velocity recording stations in standard ascii format. Following a hot start, continued output is merged into the existing fort.62 file.</p>
+<p>NOUTV = 2 Output is provided at the selected velocity recording stations in binary format. Following a hot start, continued output is merged into the existing fort.62 file.</p>
+<p>NOUTV = 3 Output is provided at the selected velocity recording stations in netCDF format. Following a hot start, continued output is merged into the existing fort.62.nc file.</p>
+</div></blockquote>
+<p>TOUTSV = The number of days after which velocity station data is recorded to fort.62 (TOUTSV is relative to STATIM)</p>
+<p>TOUTFV = The number of days after which velocity station data ceases to be recorded to fort.62 (TOUTFV is relative to STATIM)</p>
+<p>NSPOOLV = The number of time step at which information is written to fort.62; i.e. the output is written to fort.62 every NSPOOLV time steps after TOUTSV</p>
+</dd>
+</dl>
+<dl class="simple" id="nstav">
+<dt>NSTAV</dt><dd><p>The number of velocity recording stations (this is always read in regardless of the value of NOUTV)</p>
+</dd>
+</dl>
+<span id="xev"></span><dl id="yev">
+<dt>XEV(k), YEV(k) k=1,NSTAV</dt><dd><p>The coordinates of the velocity recording station k, for all NSTAV stations</p>
+<p>If ICS = 1, coordinates are input as standard cartesian</p>
+<p>If ICS = 2, coordinates are input as degrees longitude and latitude</p>
+<p>If a velocity recording station is input which does not lie within the computational domain, a non-fatal error message will appear. If NFOVER has been set equal to 1, the code will estimate the nearest element and use that as the basis of interpolation. A proximity index is also printed out, which indicates how close or far the station coordinates are from the nearest element. This index may be interpreted as the number of elements that the station lies from the nearest element</p>
+</dd>
+</dl>
+<span id="toutfc"></span><span id="toutsc"></span><span id="noutc"></span><dl id="nspoolc">
+<dt>NOUTC, TOUTSC, TOUTFC, NSPOOLC</dt><dd><p>NOUTC = Output parameters which control the time series output provided for concentration solutions at selected concentration recording stations (fort.81 output)</p>
+<blockquote>
+<div><p>NOUTC =-2 Output is provided at the selected concentration recording stations in binary format. Following a hot start, a new fort.91 file is created.</p>
+<p>NOUTC =-1 Output is provided at the selected concentration recording stations in standard ascii format. Following a hot start, a new fort.91 file is created.</p>
+<p>NOUTC = 0 no output is provided at the selected concentration recording stations</p>
+<p>NOUTC = 1 output is provided at the selected concentration recording stations in standard ascii format. Following a hot start, continued output is merged into the existing fort.91 file.</p>
+<p>NOUTC = 2 output is provided at the selected concentration recording stations in binary format. Following a hot start, continued output is merged into the existing fort.91 file.</p>
+</div></blockquote>
+<p>TOUTSC = The number of days after which concentration station data is recorded to fort.91 (TOUTSC is relative to STATIM)</p>
+<p>TOUTFC = The number of days after which concentration station data ceases to be recorded to fort.91 (TOUTFC is relative to STATIM)</p>
+<p>NSPOOLC = The number of time steps at which information is written to fort.81; i.e. the output is written to fort.81 every NSPOOLC time steps after TOUTSC</p>
+<p>This line is only read in if transport is included in the model run (i.e. IM=10)</p>
+</dd>
+</dl>
+<dl class="simple" id="nstac">
+<dt>NSTAC</dt><dd><p>The number of concentration recording stations Note: this line is only read in if transport is included in the model run (i.e. IM=10) Note: this is read in even if NOUTC=0</p>
+</dd>
+</dl>
+<span id="xec"></span><dl id="yec">
+<dt>XEC(k),YEC(k) k=1,NSTAC</dt><dd><p>The coordinates of the concentration recording station k, for all NSTAC stations.</p>
+<p>This line is only read in if transport is included in the model run (i.e. IM=10)</p>
+<p>The coordinates must be consistent (i.e. cartesian or spherical) with the Grid and Boundary Information File and the coordinate designation parameter, ICS, in the Model Parameter and Periodic Boundary Condition File.</p>
+<p>If a concentration recording station is input which does not lie within the computational domain, a non-fatal error message will appear. If NFOVER has been set equal to 1, the code will estimate the nearest element and use that as the basis of interpolation. A proximity index is printed out in the fort.16 file that indicates how close or far the station coordinates are from the nearest element. This index may be interpreted as the number of elements that the station lies from the nearest element.</p>
+</dd>
+</dl>
+<span id="toutfm"></span><span id="toutsm"></span><span id="noutm"></span><dl id="nspoolm">
+<dt>NOUTM, TOUTSM, TOUTFM, NSPOOLM</dt><dd><p>NOUTM = Output parameters which control the time series output provided for met data at selected met recording stations (units 71&amp;72 output)</p>
+<blockquote>
+<div><p>NOUTM =-3 Output is provided at the selected met recording stations in netCDF format. Following a hot start, new fort.71.nc&amp;72.nc files are created.</p>
+<p>NOUTM =-2 Output is provided at the selected met recording stations in binary format. Following a hot start, new fort.71&amp;72 files are created.</p>
+<p>NOUTM =-1 Output is provided at the selected met recording stations in standard ascii format. Following a hot start, new fort.71&amp;72 files are created.</p>
+<p>NOUTM = 0 No output is provided at the selected met recording stations.</p>
+<p>NOUTM = 1 Output is provided at the selected met recording stations in standard ascii format. Following a hot start, continued output is merged into the existing fort.71&amp;72 files.</p>
+<p>NOUTM = 2 Output is provided at the selected met recording stations in binary format. Following a hot start, continued output is merged into the existing fort.71&amp;72 files.</p>
+<p>NOUTM = 3 Output is provided at the selected met recording stations in netCDF format. Following a hot start, continued output is merged into the existing fort.71.nc&amp;72.nc files.</p>
+</div></blockquote>
+<p>TOUTSM = The number of days after which met station data is recorded to units 71&amp;72 (TOUTSM is relative to STATIM)</p>
+<p>TOUTFM = The number of days after which met station data ceases to be recorded to units 71&amp;72 (is relative to STATIM)</p>
+<p>NSPOOLM = The number of time steps at which information is written to units 71&amp;72; i.e., output is written to units 71&amp;72 every NSPOOLM time steps after TOUTSM. Note: this line is only read in if meteorological forcing is included in the model run (i.e. NWS&lt;&gt;0 and NWS&lt;&gt;100)</p>
+</dd>
+</dl>
+<dl class="simple" id="nstam">
+<dt>NSTAM</dt><dd><p>The number of meteorological recording stations. Note: this line is only read in if met forcing is included in the model run (i.e. NWS&lt;&gt;0 and NWS&lt;&gt;100). This is read in even if NOUTM=0.</p>
+</dd>
+</dl>
+<span id="xem"></span><dl id="yem">
+<dt>XEM(k),YEM(k) k=1,NSTAM</dt><dd><p>The coordinates of the meteorological recording station I, for all NSTAM stations.</p>
+<p>This line is only read in if met forcing is included in the model run (i.e. NWS&lt;&gt;0 and NWS&lt;&gt;100)</p>
+<p>The coordinates must be consistent (i.e. cartesian or spherical) with the Grid and Boundary Information File and the coordinate designation parameter, ICS, in the Model Parameter and Periodic Boundary Condition File.</p>
+<p>If a meteorological recording station is input which does not lie within the computational domain, a non-fatal error message will appear. If NFOVER has been set equal to 1, the code will estimate the nearest element and use that as the basis of interpolation. A proximity index is printed out in the fort.16 file that indicates how close or far the station coordinates are from the nearest element. This index may be interpreted as the number of elements that the station lies from the nearest element</p>
+</dd>
+</dl>
+<span id="toutfge"></span><span id="toutsge"></span><span id="noutge"></span><dl id="nspoolge">
+<dt>NOUTGE, TOUTSGE, TOUTFGE, NSPOOLGE</dt><dd><p>NOUTGE = Output parameters which control the time series output provided for global elevation solutions at all nodes within the domain (fort.63 output)</p>
+<blockquote>
+<div><p>NOUTGE =-3 Global elevation output is provided in netCDF format. Following a hot start, a new fort.63.nc file is created.</p>
+<p>NOUTGE =-2 Global elevation output is provided in binary format. Following a hot start, a new fort.63 file is created.</p>
+<p>NOUTGE =-1 Global elevation output is provided in standard ascii format. Following a hot start, a new fort.63 file is created.</p>
+<p>NOUTGE = 0 No global elevation output is provided</p>
+<p>NOUTGE = 1 Global elevation output is provided in standard ascii format. Following a hot start, continued output is merged into the existing fort.63 file.</p>
+<p>NOUTGE = 2 Global elevation output is provided in binary format. Following a hot start, continued output is merged into the existing fort.63 file.</p>
+<p>NOUTGE = 3 Global elevation output is provided in netCDF format. Following a hot start, continued output is merged into the existing fort.63.nc file.</p>
+<p>NOUTGE = 4 Global elevation output is provided in sparse ascii format. Following a hot start, continued output is merged into the existing fort.63 file.</p>
+</div></blockquote>
+<p>TOUTSGE = The number of days after which global elevation data is recorded to fort.63 (TOUTSGE is relative to STATIM)</p>
+<p>TOUTFGE = The number of days after which global elevation data ceases to be recorded to fort.63 (TOUTFGE is relative to STATIM)</p>
+<p>NSPOOLGE = The number of time steps at which information is written to fort.63; i.e. the output is written to fort.63 every NSPOOLGE time steps after TOUTSGE.</p>
+</dd>
+</dl>
+<span id="toutfgv"></span><span id="toutsgv"></span><span id="noutgv"></span><dl id="nspoolgv">
+<dt>NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV</dt><dd><p>Output parameters which control the time series output provided for global velocity solutions at all nodes within the domain (fort.64 output)</p>
+<blockquote>
+<div><p>NOUTGV =-3 Global velocity output is provided in netCDF format. Following a hot start, a new fort.64.nc file is created.</p>
+<p>NOUTGV =-2 Global velocity output is provided in binary format. Following a hot start, a new fort.64 file is created.</p>
+<p>NOUTGV =-1 Global velocity output is provided in standard ascii format. Following a hot start, a new fort.64 file is created.</p>
+<p>NOUTGV = 0 No global velocity output is provided</p>
+<p>NOUTGV = 1 Global velocity output is provided in standard ascii format. Following a hot start, continued output is merged into the existing fort.64 file.</p>
+<p>NOUTGV = 2 Global velocity output is provided in binary format. Following a hot start, continued output is merged into the existing fort.64 file.</p>
+<p>NOUTGV = 3 Global velocity output is provided in netCDF format. Following a hot start, continued output is merged into the existing fort.64.nc file.</p>
+<p>NOUTGV = 4 Global velocity output is provided in sparse ascii format. Following a hot start, continued output is merged into the existing fort.64 file.</p>
+</div></blockquote>
+<p>TOUTSGV = The number of days after which global velocity data is recorded to fort.64 (TOUTSGV is relative to STATIM)</p>
+<p>TOUTFGV = The number of days after which global velocity data ceases to be recorded to fort.64 (TOUTFGV is relative to STATIM)</p>
+<p>NSPOOLGV = The number of time steps at which information is written to fort.64; i.e. the output is written to fort.64 every NSPOOLGV time steps after TOUTSGV</p>
+</dd>
+</dl>
+<span id="toutfgc"></span><span id="toutsgc"></span><span id="noutgc"></span><dl id="nspoolgc">
+<dt>NOUTGC, TOUTSGC, TOUTFGC, NSPOOLGC</dt><dd><p>NOUTGC = Output parameters which control the time series output provided for global concentration solutions at all nodes within the domain (fort.93 output)</p>
+<blockquote>
+<div><p>NOUTGC =-2 Global concentration output is provided in binary format. Following a hot start, a new fort.93 file is created.</p>
+<p>NOUTGC =-1 Global concentration output is provided in standard ascii format. Following a hot start, a new fort.93 file is created.</p>
+<p>NOUTGC = 0 No global concentration output is provided</p>
+<p>NOUTGC = 1 Global concentration output is provided in standard ascii format. Following a hot start, continued output is merged into the existing fort.93 file.</p>
+<p>NOUTGC = 2 Global concentration output is provided in binary format. Following a hot start, continued output is merged into the existing fort. 93 file.</p>
+<p>NOUTGC = 3 Global concentration output is provided in sparse ascii format. Following a hot start, continued output is merged into the existing fort.93 file.</p>
+</div></blockquote>
+<p>TOUTSGC = The number of days after which global concentration data is recorded to fort.93 (TOUTSGC is relative to STATIM)</p>
+<p>TOUTFGC = The number of days after which global concentration data ceases to be recorded to fort.93 (TOUTFGC is relative to STATIM)</p>
+<p>NSPOOLGC = The number of time steps at which information is written to fort.93; i.e. the output is written to fort.93 every NSPOOLGC time steps after TOUTSGC</p>
+<p>This line is only read in if transport is included in the model run (i.e. IM=10)</p>
+</dd>
+</dl>
+<span id="toutfgw"></span><span id="toutsgw"></span><span id="noutgw"></span><dl id="nspoolgw">
+<dt>NOUTGW, TOUTSGW, TOUTFGW, NSPOOLGW</dt><dd><p>NOUTGW = Output parameters which control the time series output provided for wind stress or velocity and atmospheric pressure at all nodes within the domain (fort.73 and 74 output)</p>
+<blockquote>
+<div><p>NOUTGW =-3 Global wind stress/velocity and atmospheric pressure outputs are provided in netCDF format. Following a hot start, new fort.73.nc and 74.nc files are created.</p>
+<p>NOUTGW =-2 Global wind stress/velocity and atmospheric pressure outputs are provided in binary format. Following a hot start, new fort.73 and 74 files are created.</p>
+<p>NOUTGW =-1 Global wind stress/velocity and atmospheric pressure outputs are provided in standard ascii format. Following a hot start, new fort.73 and 74 files. are created.</p>
+<p>NOUTGW = 0 no global wind stress/velocity or atmospheric pressure output is provided</p>
+<p>NOUTGW = 1 Global wind stress/velocity and atmospheric pressure output are provided in standard ascii format. Following a hot start, continued output is merged into the existing fort.73 and 74 files.</p>
+<p>NOUTGW = 2 Global wind stress/velocity and atmospheric pressure output are provided in binary format. Following a hot start, continued output is merged into the existing fort.73 and 74 files.</p>
+<p>NOUTGW = 3 Global wind stress/velocity and atmospheric pressure output are provided in netCDF format. Following a hot start, continued output is merged into the existing fort.73.nc and 74.nc files.</p>
+<p>NOUTGW = 4 Global wind stress/velocity and atmospheric pressure output are provided in sparse ascii format. Following a hot start, continued output is merged into the existing fort.73 and 74 files.</p>
+</div></blockquote>
+<p>TOUTSGW = The number of days after which global wind stress/velocity and atmospheric pressure data are recorded to units 73,74 (TOUTSGW is relative to STATIM)</p>
+<p>TOUTFGW = The number of days after which global wind stress/velocity and atmospheric pressure data cease to be recorded to units 73,74 (TOUTFGW is relative to STATIM)</p>
+<p>NSPOOLGW = The number of time steps at which information is written to units 73,74; i.e. the output is written to units 73,74 every NSPOOLGW time steps after TOUTSGW</p>
+<p>This line is only read in if meteorological forcing is included in the model run (i.e. NWS&lt;&gt;0 and NWS&lt;&gt;100)</p>
+</dd>
+</dl>
+<dl class="simple" id="nfreq">
+<dt>NFREQ</dt><dd><p>Number of frequencies included in harmonic analysis of model results. Note: harmonic output is only available for 2DDI elevation and velocity</p>
+</dd>
+</dl>
+<dl class="simple" id="namefr">
+<dt>NAMEFR(k)</dt><dd><p>An alphanumeric descriptor (i.e. the constituent name) whose length must be &lt;= 10 characters</p>
+</dd>
+</dl>
+<span id="haff"></span><span id="hafreq"></span><dl id="haface">
+<dt>HAFREQ(k), HAFF(k), HAFACE(k) k=1,NFREQ</dt><dd><p>Parameters describing the constituents to be included in the harmonic analysis of model results</p>
+<p>HAFREQ(k) = frequency (rad/s)</p>
+<p>HAFF(k) = nodal factor</p>
+<p>HAFACE(k) = equilibrium argument (degrees)</p>
+<p>If a steady component will be included in the harmonic analysis, this must be the first constituent listed (i.e., the constituent corresponding to k=1)</p>
+</dd>
+</dl>
+<span id="nhainc"></span><span id="thaf"></span><span id="thas"></span><dl id="fmv">
+<dt>THAS, THAF, NHAINC, FMV</dt><dd><p>Parameters that control the calculation of harmonic constituents both at stations and globally</p>
+<p>THAS = The number of days after which data starts to be harmonically analysed (THAS is relative to STATIM)</p>
+<p>THAF = The number of days after which data ceases to be harmonically analysed (THAF is relative to STATIM)</p>
+<p>NHAINC = The number of time steps at which information is harmonically analysed (information every NHAINC time steps after THAS is used in harmonic analysis)</p>
+<p>FMV = Fraction of the harmonic analysis period (extending back from the end of the harmonic analysis period) to use for comparing the water elevation and velocity means and variances from the raw model time series with corresponding means and variances of a time series resynthesized from the harmonic constituents. This comparison is helpful for identifying numerical instabilities and for determining how complete the harmonic analysis was. Examples:</p>
+<blockquote>
+<div><p>FMV = 0. Do not compute any means and vars.</p>
+<p>FMV = 0.1 Compute means and vars. over final 10% of period used in harmonic analysis</p>
+<p>FMV = 1.0 Compute means and vars. over entire period used in harmonic analysis</p>
+<p>Note: the means and variance calculations are only done if global harmonic calculations are performed. Results are written out to fort.55. A summary of the poorest comparisons throughout the domain and the node numbers where these occurred is given at the end of the fort.16 output file.</p>
+<p>Note: the time series resysthesis from the harmonic constituents can use up a lot of CPU time since this is done for every time step during the specified part of the harmonic analysis period. If the harmonic analysis period extends for only a few days, it is practical to set FMV=1. Otherwise, it becomes unreasonably time consuming to compute means and variances for more than 10-20 days. Ultimately, the practical limit to these calculations depends on the number of nodes, the number of constituents in the harmonic analysis, and the size of the time step.</p>
+</div></blockquote>
+</dd>
+</dl>
+<span id="nhage"></span><span id="nhasv"></span><span id="nhase"></span><dl id="nhagv">
+<dt>NHASE, NHASV, NHAGE, NHAGV</dt><dd><p>Parameters that control the spatial locations where harmonic analysis is performed</p>
+<p>NHASE = 0 no harmonic analysis is performed at the selected elevation recording stations</p>
+<p>NHASE = 1 harmonic analysis is performed at the selected elevation recording stations (output on fort.51) Note: the stations are as specified in the section on time series station elevation output</p>
+<p>NHASV = 0 no harmonic analysis is performed at the selected velocity recording stations</p>
+<p>NHASV = 1 harmonic analysis is performed at the selected velocity recording stations (output on fort.52) Note: the stations are as specified in the section on time series station velocity output</p>
+<p>NHAGE = 0 no harmonic analysis is performed for global elevations</p>
+<p>NHAGE = 1 harmonic analysis is performed for global elevations (output on fort.53)</p>
+<p>NHAGV = 0 no harmonic analysis is performed for global velocities</p>
+<p>NHAGV = 1 harmonic analysis is performed for global velocities (output on fort.54)</p>
+</dd>
+</dl>
+<span id="nhstar"></span><dl id="nhsinc">
+<dt>NHSTAR, NHSINC</dt><dd><p>NHSTAR = Parameters that control the generation of hot start output.</p>
+<blockquote>
+<div><p>NHSTAR = 0 no hot start output files generated</p>
+<p>NHSTAR = 1 hot start output files generated in binary format</p>
+<p>NHSTAR = 3 hot start output files generated in netCDF format</p>
+<p>NHSTAR = 5 hot start output files generated in netCDF4 format</p>
+</div></blockquote>
+<p>NHSINC = The number of time steps at which hot start output file is generated (hot start file is generated every NHSINC time steps). The time step increments are always counted starting from the cold start time.</p>
+</dd>
+</dl>
+<span id="convcr"></span><span id="isldia"></span><span id="ititer"></span><dl id="itmax">
+<dt>ITITER, ISLDIA, CONVCR, ITMAX</dt><dd><p>ITITER = Parameters that provide information about the solver that will be used for the GWCE.</p>
+<blockquote>
+<div><p>ITITER = -1 only for lumped, explicit GWCE, matrix is diagonal and no external solver is needed</p>
+<p>ITITER = 1 use iterative JCG solver (from ITPACKV 2D)</p>
+</div></blockquote>
+<p>ISLDIA = Parameters that provide information about the solver that will be used for the GWCE.</p>
+<blockquote>
+<div><p>ISLDIA = 0 fatal error messgs only from ITPACKV 2D(fort.33)</p>
+<p>ISLDIA = 1 warning messgs and minimum output from ITPACKV 2D (fort.33)</p>
+<p>ISLDIA = 2 reasonable summary of algorithm progress from ITPACKV 2D (fort.33)</p>
+<p>ISLDIA = 3 parameter values and informative comments from ITPACKV 2D (fort.33)</p>
+<p>ISLDIA = 4 approximate solution after each iteration from ITPACKV 2D (fort.33)</p>
+<p>ISLDIA = 5 original system from ITPACKV 2D (fort.33)</p>
+</div></blockquote>
+<p>CONVCR = Absolute convergence criteria (should be no smaller than 500 times the machine precision)</p>
+<p>ITMAX = Maximum number of iterations each time step</p>
+<blockquote>
+<div><p>Note: all of the parameters must be input regardless of whether a diagonal or iterative solver is selected. However, ISLDIA, CONVCR and ITMAX are only used with the iterative solvers</p>
+<p>CONVCR and ITMAX are only used with the iterative solvers</p>
+<p>Note: we typically use CONVCR=1E-10. After the first few time steps, the solutions usually converge within 5-10 iterations.</p>
+</div></blockquote>
+</dd>
+</dl>
+<p id="islip">ISLIP = 3D bottom friction code</p>
+<blockquote>
+<div><p>ISLIP = 0, no slip bottom b.c.</p>
+<p>ISLIP = 1, linear slip bottom b.c.</p>
+<p>ISLIP = 2, quadratic slip bottom b.c. where the quadratic slip coefficient is computed using Log Layer formula
+.. image:: ../../_static/log_layer_formula_islip_2.avif</p>
+<p>ISLIP = 3, quadratic slip b.c.</p>
+</div></blockquote>
+<dl id="kp">
+<dt>KP</dt><dd><p>3D bottom friction coefficient used in ADCIRC</p>
+<p>If ISLIP = 0 the bottom friction coefficient is ignored</p>
+<p>If ISLIP = 1 the bottom friction is a linear function of bottom velocity and KP is the corresponding linear friction coefficient (units of velocity)</p>
+<p>If ISLIP = 2 bottom friction is is computed using the log layer formula and KP is the minimum quadratic bottom friction coefficient (dimensionless)</p>
+<p>If ISLIP = 3 bottom friction is a quadratic function of bottom velocity and KP is the corresponding quadratic friction coefficient (dimensionless)</p>
+</dd>
+</dl>
+<span id="z0s"></span><dl id="z0b">
+<dt>Z0S, Z0B</dt><dd><p>Free surface &amp; bottom roughnesses</p>
+<p>For IEVC=50, Z0S is the spatially constant value. For IEVC=51, the surface roughness length is computed dynamically (seeIEVC=51), and Z0S is the minimum surface roughness length.</p>
+<p>For nodal attributes bottom_roughness_length and mannings_n_at_the_sea_floor, the bottom roughness length is read in from the nodal attribute file either directly or as a Manning’s n roughness. Currently Z0B is not used for either of these two cases.</p>
+<p>If a Manning’s n roughness is read in, the roughness length is expressed in terms of the water depth H and the Manning’s n:</p>
+<img alt="../../_images/z0s_z0b_eqn.avif" src="../../_images/z0s_z0b_eqn.avif" />
+<p>where K = 0.4 is the von Karman constant, and g is the gravitational acceleration (Bretschneider et al., 1986). New roughness lengths are computed at each time step, based on the computed water depth and Manning’s n value at each mesh vertex.</p>
+</dd>
+</dl>
+<span id="alp2"></span><span id="alp1"></span><dl id="alp3">
+<dt>ALP1, ALP2, ALP3</dt><dd><p>Time weighting coefficients for the 3D velocity solution.</p>
+<p>0.= fully explicit, 0.5=time centered, 1.= fully implicit</p>
+<p>ALP1 weights the Coriolis term</p>
+<p>ALP2 weights the bottom friction terms</p>
+<p>ALP3 weights the vertical diffusion terms</p>
+</dd>
+</dl>
+<span id="igc"></span><dl id="nfen">
+<dt>IGC, NFEN</dt><dd><p>Vertical grid code, # nodes in the vertical grid</p>
+<p>IGC = 0, vertical grid read in</p>
+<p>IGC = 1, uniform vertical grid generated</p>
+<p>IGC = 2, log vertical grid generated</p>
+<p>IGC = 3, log linear vertical grid generated</p>
+<p>IGC = 4, double log vertical grid generated</p>
+<p>IGC = 5, P-grid generated</p>
+<p>IGC = 6, sine grid generated</p>
+</dd>
+</dl>
+<span id="evmin"></span><span id="ievc"></span><dl id="evcon">
+<dt>IEVC, EVMIN, EVCON</dt><dd><p>Vertical eddy viscosity code, vertical eddy viscosity minimum value and vertical eddy viscosity constant</p>
+<p>NOTE: EVCON is only used for some of the vertical eddy viscosity formulations as discussed below.</p>
+<p>NOTE: In cases where vertical eddy viscosity is specified to vary linearly over the lower 20% of the water column, it actually varies linearly with a constant slope up to the vertical FE grid node that is less than or equal to the 20% location. The value is constant as specified at all FE grid nodes above the 20% location. The vertical eddy viscosity above and below the 20% level is joined by one additional linearly varying segment.</p>
+<p>NOTE: The vertical eddy viscosity is constrained to always be greater than or equal to EVMIN.</p>
+<p>IEVC = 0-9, EV constant in time &amp; horizontal space</p>
+<blockquote>
+<div><p>0 – vertical eddy viscosity read in – EVCON is not used</p>
+<p>1 – EV = EVCON</p>
+</div></blockquote>
+<p>IEVC =10-19, Vertical eddy viscosity proportional to omega*h*h (Lynch and Officer (1986) Lynch and Werner (1987, 1991))</p>
+<blockquote>
+<div><p>10 – EV = omega*h*h/10 over the entire water column</p>
+<p>11 – EV = omega*h*h/1000 at bottom varies linear over lower 20% of water column</p>
+<blockquote>
+<div><p>= omega*h*h/10 in upper 80% of water column</p>
+</div></blockquote>
+<p>NOTE:For this vertical eddy viscosity formulation, EVCON is not used and omega is hardwired for a 12.42 hour tide.</p>
+</div></blockquote>
+<p>IEVC =20-29, EV proportional to kappa U* z</p>
+<blockquote>
+<div><p>20 – EV = 0.41U*Zo at bottom</p>
+<blockquote>
+<div><p>= 0.41U*Z over entire water column</p>
+</div></blockquote>
+<p>21 – EV = 0.41U*Zo at bottom</p>
+<blockquote>
+<div><p>= 0.41U*Z in lower 20% of water column</p>
+<p>= 0.082U*h in upper 80% of water column</p>
+</div></blockquote>
+<p>WHERE: U* is the friction velocity</p>
+<p>NOTE: For this EV formulation, EVCON is not used.</p>
+</div></blockquote>
+<p>IEVC =30-39, EV proportional to Uh (Davies 1990)</p>
+<blockquote>
+<div><p>30 – EV = 0.025|U|h/9.001 over entire water column</p>
+</div></blockquote>
+<p>31 – EV = EVCON |U|h over entire water column</p>
+<p>32 – EV = 0.025|U|h/9.001 in upper 80% of water column</p>
+<blockquote>
+<div><p>= 0.000025h|U|/9.001 at bottom varies linear over lower 20% of water column</p>
+</div></blockquote>
+<p>33 – EV = EVCON |U|h in upper 80% of water column</p>
+<blockquote>
+<div><blockquote>
+<div><p>= EVCON |U|h/1000. at bottom varies linear over lower 20% of water column</p>
+</div></blockquote>
+<p>WHERE: U is depth averaged velocity</p>
+<p>NOTE: For this vertical eddy viscosity formulation, EVCON is used only for IEVC =31,33</p>
+</div></blockquote>
+<p>IEVC = 40-49, EV proportional to U*U (Davies 1990)</p>
+<blockquote>
+<div><p>40 – EV = 2|UU|/9.001 over entire water column</p>
+<p>41 – EV = EVCON |UU| over entire water column</p>
+<p>42 – EV = 2|UU|/9.001 in upper 80% of water column</p>
+<blockquote>
+<div><p>= 0.002|UU|/9.001 at bottom varies linear over lower 20% of water column</p>
+</div></blockquote>
+<p>43 – EV = EVCON |UU| in upper 80% of water column</p>
+<blockquote>
+<div><p>= EVCON |UU|/1000. at bottom varies linear over lower 20% of water column</p>
+</div></blockquote>
+<p>WHERE: U is depth averaged velocity</p>
+<p>NOTE: For this EV formulation, EVCON is used only for IEVC=41,43</p>
+</div></blockquote>
+<p>IEVC =50, EV computed from Mellor-Yamada L2.5 closure. NOTE: For this EV formulation EVCON is not used.</p>
+<blockquote>
+<div><p>NOTE: For this EV formulation, EVCON is not used.</p>
+</div></blockquote>
+<p>IEVC =51, EV computed from Mellor-Yamada L2.5 closure with parameterizations to include enhanced mixing in the surface layer.</p>
+<blockquote>
+<div><img alt="../../_images/ievc_51_note.avif" src="../../_images/ievc_51_note.avif" />
+<img alt="../../_images/ievc_51_eqns.avif" src="../../_images/ievc_51_eqns.avif" />
+</div></blockquote>
+</dd>
+</dl>
+<dl class="simple" id="evtot">
+<dt>EVTOT(K)</dt><dd><p>Eddy viscosity associated with vertical grid node K</p>
+</dd>
+</dl>
+<span id="theta1"></span><dl id="theta2">
+<dt>THETA1, THETA2</dt><dd><p>Time weighting coefficients for the MY2.5 turbulence soln. (include this line only if IEVC = 50)</p>
+<p>0.= fully explicit, 0.5=time centered, 1.= fully implicit</p>
+<p>THETA1 weights the dissipation term</p>
+<p>THETA2 weights the vertical diffusion term</p>
+</dd>
+</dl>
+<dl id="i3dsd">
+<dt>I3DSD</dt><dd><p>I3DSD = 0 no station 3D temperature, salinity and/or density info is output to unit 41</p>
+<p>I3DSD = 1 station 3D temperature, salinity and/or density info is output in ascii format</p>
+<p>I3DSD = 2 station 3D temperature, salinity and/or density info is output in binary format</p>
+</dd>
+</dl>
+<dl class="simple" id="to3dsds">
+<dt>TO3DSDS</dt><dd><p>The number of days after which station 3D temperature, salinity and/or density are written to unit 41.</p>
+</dd>
+</dl>
+<dl class="simple" id="to3dsdf">
+<dt>TO3DSDF</dt><dd><p>The number of days after which station 3D temperature, salinity and/or density cease to be written to unit 41.</p>
+</dd>
+</dl>
+<dl class="simple" id="nspo3dsd">
+<dt>NSPO3DSD</dt><dd><p>The number of time steps at which data is written to unit 41. (i.e., data is output to unit 41 every NSPO3DSD time steps after TO3DSSD.)</p>
+</dd>
+</dl>
+<dl class="simple" id="nsta3dd">
+<dt>NSTA3DD</dt><dd><p>Number of 3D density stations</p>
+</dd>
+</dl>
+<span id="x3ds"></span><dl class="simple" id="y3ds">
+<dt>X3DS(k), Y3DS(k)</dt><dd><p>The coordinates of the 3D temperature, salinity, and/or density recording station k, for all NSTA3DD, NSTA3DV or NSTA3DT stations (only include this line if I3DSD, I3DSV or I3DST is not = 0)</p>
+</dd>
+</dl>
+<dl id="i3dsv">
+<dt>I3DSV</dt><dd><p>I3DSV = 0 no station 3D velocities are output to unit 42</p>
+<p>I3DSV = 1 station 3D velocities are output in ascii forma</p>
+<p>I3DSV = 2 station 3D velocities are output in binary format</p>
+</dd>
+</dl>
+<dl class="simple" id="to3dsvs">
+<dt>TO3DSVS</dt><dd><p>The number of days after which station 3 D velocities are written to unit 42.</p>
+</dd>
+</dl>
+<dl class="simple" id="to3dfvf">
+<dt>TO3DFVF</dt><dd><p>The number of days after which station 3 D velocities cease to be written to unit 42.</p>
+</dd>
+</dl>
+<dl class="simple" id="nspo3dsv">
+<dt>NSPO3DSV</dt><dd><p>The number of time steps at which data is written to unit 42. (i.e., data is output to unit 42 every NSPO3DSV time steps after TO3DSSV.)</p>
+</dd>
+</dl>
+<dl class="simple" id="nsta3dv">
+<dt>NSTA3DV</dt><dd><p>Number of 3D velocity stations</p>
+</dd>
+</dl>
+<dl id="i3dst">
+<dt>I3DST</dt><dd><p>I3DST = 0 no station 3D turbulence variables output to unit 43</p>
+<p>I3DST = 1 station 3D turbulence variables output in ascii format</p>
+<p>I3DST = 2 station 3D turbulence variables output in binary format</p>
+</dd>
+</dl>
+<dl class="simple" id="to3dsts">
+<dt>TO3DSTS</dt><dd><p>The number of days after which station 3D turbulence variables are written to unit 43.</p>
+</dd>
+</dl>
+<dl class="simple" id="to3dstf">
+<dt>TO3DSTF</dt><dd><p>The number of days after which station 3D turbulence variables cease to be written to unit 43.</p>
+</dd>
+</dl>
+<dl class="simple" id="nspo3dst">
+<dt>NSPO3DST</dt><dd><p>The number of time steps at which data is written to unit 43. (i.e., data is output to unit 43 every NSPO3DSV time steps after TO3DSSV.)</p>
+</dd>
+</dl>
+<dl class="simple" id="nsta3dt">
+<dt>NSTA3DT</dt><dd><p>Number of 3D turbulence stations</p>
+</dd>
+</dl>
+<dl id="i3dgd">
+<dt>I3DGD</dt><dd><p>I3DGD = 0 no global 3D temperature, salinity, and/or density info is output to unit 44</p>
+<p>I3DGD = 1 global 3D temperature, salinity, and/or density info is output in ascii format</p>
+<p>I3DGD = 2 global 3D temperature, salinity, and/or density info is output in binary format</p>
+</dd>
+</dl>
+<dl class="simple" id="to3dgds">
+<dt>TO3DGDS</dt><dd><p>The number of days after which global 3D temperature, salinity, and/or density are written to unit 44.</p>
+</dd>
+</dl>
+<dl class="simple" id="to3dgdf">
+<dt>TO3DGDF</dt><dd><p>The number of days after which global 3D temperature, salinity, and/or density cease to be written to unit 44.</p>
+</dd>
+</dl>
+<dl class="simple" id="nspo3dgd">
+<dt>NSPO3DGD</dt><dd><p>The number of time steps at which data is written to unit 44. (i.e., data is output to unit 44 every NSPO3DGD time steps after TO3DSGD.)</p>
+</dd>
+</dl>
+<dl id="i3dgv">
+<dt>I3DGV</dt><dd><p>I3DGV = 0 no global 3D velocities are output to unit 45</p>
+<p>I3DGV = 1 global 3D velocities are output in ascii format</p>
+<p>I3DGV = 2 global 3D velocities are output in binary format</p>
+</dd>
+</dl>
+<dl class="simple" id="to3dgvs">
+<dt>TO3DGVS</dt><dd><p>The number of days after which global 3D velocity data is written to unit 45.</p>
+</dd>
+</dl>
+<dl class="simple" id="to3dgvf">
+<dt>TO3DGVF</dt><dd><p>The number of days after which global 3D velocity data ceases to be written to unit 45.</p>
+</dd>
+</dl>
+<dl class="simple" id="nspo3dgv">
+<dt>NSPO3DGV</dt><dd><p>The number of time steps at which data is written to unit 45. (i.e., data is output to unit 45 every NSPO3DGV time steps after TO3DSGV.)</p>
+</dd>
+</dl>
+<dl id="i3dgt">
+<dt>I3DGT</dt><dd><p>I3DGT = 0 no global 3D turbulence variables output to unit 46</p>
+<p>I3DGT = 1 global 3D turbulence variables output in ascii format</p>
+<p>I3DGT = 2 global 3D turbulence variables output in binary format</p>
+</dd>
+</dl>
+<dl class="simple" id="to3dgts">
+<dt>TO3DGTS</dt><dd><p>The number of days after which global 3D turbulence variables are written to unit 46.</p>
+</dd>
+</dl>
+<dl class="simple" id="to3dgtf">
+<dt>TO3DGTF</dt><dd><p>The number of days after which global 3D turbulence variables cease to be written to unit 46.</p>
+</dd>
+</dl>
+<dl class="simple" id="nspo3dgt">
+<dt>NSPO3DGT</dt><dd><p>The number of time steps at which data is written to unit 46. (i.e., data is output to unit 46 every NSPO3DGT time steps after TO3DSGT.)</p>
+</dd>
+</dl>
+<dl id="res-bc-flag">
+<dt>RES_BC_FLAG</dt><dd><p>Controls the type of boundary conditions used in the 3D baroclinic simulations. Must be the same as IDEN.</p>
+<p>RES_BC_FLAG &lt; 0 Diagnostic simulations, so the only boundary condition utilized is the levels of no motion (steric adjustments to the elevations – fort.35). In these cases, RBCTIMEINC (levels of no motion boundary time interval) and BCSTATIM (starting time for the level of no motion boundary condition information) are needed.</p>
+<p>RES_BC_FLAG = 1 Not implemented (not a valid value).</p>
+<p>RES_BC_FLAG = 2 Prognostic simulation using salinity field, so the boundary conditions utilize both the levels of no motion (steric adjustments to the elevations found in fort.35) and the salinity field of the outside ocean (found in fort.36). In this case, RBCTIMEINC, SBCTIMEINC (levels of no motion and salinity boundary time interval), BCSTATIM and SBCSTATIM (starting time for the level of no motion and salinity boundary condition information) are needed.</p>
+<p>RES_BC_FLAG = 3 Prognostic simulation using temperature field, so the boundary conditions utilize both the levels of no motion (steric adjustments to the elevations found in fort.35) and the temperature field of the outside ocean (found in fort.37). In this case, RBCTIMEINC, TBCTIMEINC (levels of no motion and temperature boundary time interval), BCSTATIM and TBCSTATIM (starting time for the level of no motion and temperature boundary condition information) are needed.</p>
+<p>RES_BC_FLAG = 4 Prognostic simulation using both salinity and temperature fields, so the boundary conditions utilize the levels of no motion (steric adjustments to the elevations found in fort.35), and the salinity field and the temperature field of the outside ocean (found in fort.36 and fort.37, respectively). In this case, RBCTIMEINC, SBCTIMEINC, TBCTIMEINC, BCSTATIM, SBCSTATIM and TBCSTATIMare needed.</p>
+</dd>
+</dl>
+<dl id="bcflag-lnm">
+<dt>BCFLAG_LNM</dt><dd><p>Flag to control the levels of no motion parameterization used in the 3D ADCIRC run.</p>
+<p>BCFLAG_LNM = 1 Levels of no motion are elevations provided from a file (fort.35) and that file is accessed based on RBCTIMEINC.</p>
+<p>BCFLAG_LNM = 2 Not a valid value.</p>
+<p>BCFLAG_LNM = 3 Levels of no motion are elevations provided from the initial values of the elevations. These values can be obtained from either the initial condition file (fort.17) or the hotstart file (fort.67 or fort.68). This option should be used more for a diagnostic simulation than for the prognostic simulation.</p>
+</dd>
+</dl>
+<dl class="simple" id="rbctimeinc">
+<dt>RBCTIMEINC</dt><dd><p>Time interval between data sets for the level of no motion boundary condition data, in seconds.</p>
+</dd>
+</dl>
+<dl class="simple" id="bcstatim">
+<dt>BCSTATIM</dt><dd><p>Starting time (in seconds since ADCIRC cold start) for boundary condition data for the level of no motion boundary condition.</p>
+</dd>
+</dl>
+<dl class="simple" id="sbctimeinc">
+<dt>SBCTIMEINC</dt><dd><p>Time interval between data sets for the salinity boundary condition data, in seconds.</p>
+</dd>
+</dl>
+<dl class="simple" id="sbcstatim">
+<dt>SBCSTATIM</dt><dd><p>Starting time (in seconds since ADCIRC cold start) for boundary condition data for the salinity boundary condition.</p>
+</dd>
+</dl>
+<dl class="simple" id="tbctimeinc">
+<dt>TBCTIMEINC</dt><dd><p>Time interval between data sets for the temperature boundary condition data, in seconds.</p>
+</dd>
+</dl>
+<dl class="simple" id="tbcstatim">
+<dt>TBCSTATIM</dt><dd><p>Starting time (in seconds since ADCIRC cold start) for boundary condition data for the temperature boundary condition.</p>
+</dd>
+</dl>
+<dl class="simple" id="ttbctimeinc">
+<dt>TTBCTIMEINC</dt><dd><p>Time interval between data sets for the surface heat flux boundary condition data, in seconds.</p>
+</dd>
+</dl>
+<dl class="simple" id="ttbcstatim">
+<dt>TTBCSTATIM</dt><dd><p>Starting time (in seconds since ADCIRC cold start) for boundary condition data for the surface heat flux boundary condition.</p>
+</dd>
+</dl>
+<dl id="bcflag-temp">
+<dt>BCFLAG_TEMP</dt><dd><p>Controls the surface heat flux parameterization used in the 3D ADCIRC simulation with temperature. ADCIRC ignores this parameter unless RES_BC_FLAG is 3 or 4. Currently, there are three options for the surface heat flux boundary (all surface heat flux values are read in from a fort.38 file).</p>
+<p>BCFLAG_TEMP = 1 Surface heat flux values are directly provided from a file (fort.38), and that file is accessed based on TTBCTIMEINC (surface heat flux boundary time interval) and starts reading the values based on TTBCSTATIM (starting time for the surface heat flux boundary condition information).</p>
+<p>BCFLAG_TEMP = 2 Surface heat flux values are calculated from information obtained from a file (fort.38), and that file is accessed based on TTBCTIMEINC and starts reading the values based on TTBCSTATIM. This option looks for 6 values (sensible heat flux, latent heat flux, downward shortwave radiation, downward longwave radiation, upward shortwave radiation, upward longwave radiation) to use in calculating the surface heat flux from the following equation (Mellor, 1996): qh = qs + ql + (Sraddown – Sradup) + (lraddown – lradup) where qs = sensible heat flux, ql = latent heat flux, sraddown=downward shortwave radiation, sradup=upward shortwave radiation, lraddown=downward longwave radiation, lradup=upward longwave radiation.</p>
+<p>BCFLAG_TEMP = 3 Surface heat flux values are calculated from information obtained from a file (fort.38), and that file is accessed based on TTBCTIMEINC and starts reading the values based on TTBCSTATIM. This option looks for 4 values (net shortwave radiation, net longwave radiation, latent heat flux, sensible heat flux,) to use in calculating the surface heat flux from the following equation (Mellor, 1996): qh = qs + ql + Sradnet + lradnet where qs = sensible heat flux, ql = latent heat flux, sradnet=net shortwave radiation, lradnet=net longwave radiation.</p>
+</dd>
+</dl>
+<dl class="simple" id="spongedist">
+<dt>SPONGEDIST</dt><dd><p>Controls the sponge layer that allows for a spatial ramp to occur on the wind and advection terms, but it does not vary in time. It starts at zero on the boundary and linearly increases to one over a user-defined distance into the domain. The distance must be given in either m or ft, depending on the units on gravity. The sponge layer is utilized for both the diagnostic and prognostic simulations for the wind terms and all advective terms (momentum and transport equations, if applicable). If SPONGEDIST is not equal to zero, and NOUTGE is not equal to zero, ADCIRC will produce a fulldomain output file that shows the extent of the sponge layer (similar in format to the maxele.63 file) called fort.92.</p>
+</dd>
+</dl>
+<dl id="eqnstate">
+<dt>EQNSTATE</dt><dd><p>Indicates the equation of state used to convert the salinity and temperature values into density values.</p>
+<p>EQNSTATE = 1 Use the equation of state given in Cushman-Roisin, B., Introduction to Geophysical Fluid Dynamics, Prentice-Hall, 1994, 320 pp. (1994): rho = rho0 (1 – alpha(T-T0)+beta(S-S0)) where rho0=1028 kg/m3 is the reference density of seawater, alpha=0.00017/degC is the coefficient of thermal expansion, and beta=0.00076 is the coefficient of saline concentration. The reference values for temperature and salinity are: T0=10 degC and S0=35 psu. This option can be used for IDEN=2, -2, 3, -3, 4 or -4.</p>
+<p>EQNSTATE = 2 Use the equation of state given in McDougall, T. J., D.G. Wright, D. R. Jackett and R. Feistel, “Accurate and computationally efficient algorithms for potential temperature and density of seawater”, Journal of Atmospheric and Oceanic Technology, 20 (5), 2003, pp. 730-741. This uses the temperature, salinity and pressure in determining the density field. This option can be used when IDEN = 4 or -4. The equation used with this option can be found in the theory manual.</p>
+<p>EQNSTATE = 3 Use the equation of state is the UNESCO equation and is given in Gill, A.E., Atmosphere-Ocean Dynamics, Academic Press, 1982, 662 pp. and Mellor, G.L., Introduction to Physical Oceanography, American Institute of Physics, 1996, 284 pp. It uses the temperature, salinity and pressure in determining the density field.</p>
+<p>This option can be used when IDEN = 4 or -4. The equation used with this option can be found in the theory manual.</p>
+</dd>
+</dl>
+<dl class="simple" id="nlsd">
+<dt>NLSD</dt><dd><p>Lateral salinity diffusion coefficient.</p>
+</dd>
+</dl>
+<dl class="simple" id="nvsd">
+<dt>NVSD</dt><dd><p>Vertical salinity diffusion coefficient. If IEVC=50, this coefficient is calculated by the Mellor-Yamada equations and this value is ignored.</p>
+</dd>
+</dl>
+<dl class="simple" id="nltd">
+<dt>NLTD</dt><dd><p>Lateral temperature diffusion coefficient.</p>
+</dd>
+</dl>
+<dl class="simple" id="nvtd">
+<dt>NVTD</dt><dd><p>Vertical temperature diffusion coefficient. If IEVC=50, this coefficient is calculated by the Mellor-Yamada equations and this value is ignored.</p>
+</dd>
+</dl>
+<dl class="simple" id="alp4">
+<dt>ALP4</dt><dd><p>Time stepping coefficient associated with the transport equation terms.</p>
+</dd>
+</dl>
+</section>
+<section id="fort-12">
+<h3>fort.12<a class="headerlink" href="#fort-12" title="Link to this heading"></a></h3>
+<dl class="simple" id="agrid2">
+<dt>AGRID2</dt><dd><p>Alphanumeric file identification (&lt;=24 characters). To facilitate organization of files for individual model runs, it is suggested that AGRID2 match AGRID in the Grid and Boundary Information File.</p>
+</dd>
+</dl>
+<dl class="simple" id="startdry">
+<dt>STARTDRY(JN)</dt><dd><p>Start dry code; STARTDRY = -88888 at nodes which will be initialized as dry. It can have any value at other nodes.</p>
+</dd>
+</dl>
+<span id="dum1"></span><dl class="simple" id="dum2">
+<dt>DUM1, DUM2</dt><dd><p>Dummy variables</p>
+</dd>
+</dl>
+</section>
+<section id="fort-10">
+<span id="id1"></span><h3>fort.10<a class="headerlink" href="#fort-10" title="Link to this heading"></a></h3>
+<dl class="simple" id="daconc">
+<dt>DACONC</dt><dd><p>Generic passive scalar 2D depth-averaged concentration field</p>
+</dd>
+</dl>
+<dl class="simple" id="conc">
+<dt>CONC</dt><dd><p>Generic passive scalar 3D concentration field</p>
+</dd>
+</dl>
+</section>
+<section id="fort-11">
+<h3>fort.11<a class="headerlink" href="#fort-11" title="Link to this heading"></a></h3>
+<dl class="simple" id="nvn">
+<dt>NVN</dt><dd><p>Number of nodes in vertical, must match NFEN</p>
+</dd>
+</dl>
+<dl class="simple" id="nvp">
+<dt>NVP</dt><dd><p>Number of nodes in the horizontal grid, must match NP</p>
+</dd>
+</dl>
+<dl class="simple" id="jki">
+<dt>jki</dt><dd><p>Node number</p>
+</dd>
+</dl>
+<dl class="simple" id="nhnn">
+<dt>NHNN</dt><dd><p>Horizontal node number</p>
+</dd>
+</dl>
+<dl class="simple" id="nvnn">
+<dt>NVNN</dt><dd><p>Vertical node number</p>
+</dd>
+</dl>
+<dl class="simple" id="dasigt">
+<dt>DASIGT</dt><dd><p>Sigma T value (kg/m^3) (=density-1000) for a 2DDI run</p>
+</dd>
+</dl>
+<dl class="simple" id="datemp">
+<dt>DATEMP</dt><dd><p>Temperature (DEG C) for a 2DDI run</p>
+</dd>
+</dl>
+<dl class="simple" id="dasalt">
+<dt>DASALT</dt><dd><p>Salinity (PSU) for a 2DDI run</p>
+</dd>
+</dl>
+<dl class="simple" id="sigt">
+<dt>SIGT(NHNN,NVNN)</dt><dd><p>Sigma T value (kg/m^3) (=density-1000)</p>
+</dd>
+</dl>
+<dl class="simple" id="temp">
+<dt>TEMP(NHNN,NVNN)</dt><dd><p>Temperature (DEG C)</p>
+</dd>
+</dl>
+<dl class="simple" id="sal">
+<dt>SAL(NHNN,NVNN)</dt><dd><p>Salinity (PSU)</p>
+</dd>
+</dl>
+<dl class="simple" id="sigma">
+<dt>SIGMA(K)</dt><dd><p>Dimensionless level of the vertical grid node K from -1 (bottom) to +1 (surface)</p>
+</dd>
+</dl>
+</section>
+<section id="fort-13">
+<h3>fort.13<a class="headerlink" href="#fort-13" title="Link to this heading"></a></h3>
+<dl class="simple" id="numofnodes">
+<dt>NumOfNodes</dt><dd><p>Number of nodes, must match NP from grid file</p>
+</dd>
+</dl>
+<dl class="simple" id="nattr">
+<dt>NAttr</dt><dd><p>Number of attributes contained in the fort.13 file, must be equal to or greater than NWP from fort.15 file</p>
+</dd>
+</dl>
+<dl id="attrname">
+<dt>AttrName(i)</dt><dd><p>Nodal attribute name, the fort.13 file must contain data for all AttrNames that appear in the fort.15 file. Valid names followed by the ADCIRC variable are:</p>
+<p>primitive_weighting_in_continuity_equation – Tau0</p>
+<p>surface_submergence_state – StartDry</p>
+<p>quadratic_friction_coefficient_at_sea_floor – Fric</p>
+<p>surface_directional_effective_roughness_length – z0Land (Note: this attribute has ValuesPerNode = 12)</p>
+<p>surface_canopy_coefficient – VCanopy</p>
+<p>bridge_pilings_friction_paramenters – BK, BAlpha, BDelX, POAN (Note: this attribute has ValuesPerNode = 4)</p>
+<p>mannings_n_at_sea_floor – ManningsN</p>
+<p>chezy_friction_coefficient_at_sea_floor – ChezyFric</p>
+<p>sea_surface_height_above_geoid – GeoidOffset</p>
+<p>bottom_roughness_length – Z0b_var</p>
+<p>wave_refraction_in_swan – SwanWaveRefrac</p>
+<p>average_horizontal_eddy_viscosity_in_sea_water_wrt_depth – ESLM</p>
+<p>elemental_slope_limiter – elemental_slope_limiter_grad_max</p>
+<p>advection_state – AdvectionState</p>
+<p>initial_river_elevation – Eta2</p>
+<p>Note: if the user selects quadratic_friction_coefficient_at_sea_floor, mannings_n_at_sea_floor, or chezy_friction_coefficient_at_sea_floor, then NOLIBF must be 1 (nonlinear friction formulation) since all those formulations are nonlinear. If the NOLIBF were anything other than 1, it is an error that will cause ADCIRC to stop.</p>
+</dd>
+</dl>
+<dl class="simple" id="units">
+<dt>Units(i)</dt><dd><p>Physical units (ft, m/s, 1 = unitless)</p>
+</dd>
+</dl>
+<dl class="simple" id="valuespernode">
+<dt>ValuesPerNode(i)</dt><dd><p>Number of values at each node for a particular attribute</p>
+</dd>
+</dl>
+<dl class="simple" id="defaultattrval">
+<dt>DefaultAttrVal(i,k)</dt><dd><p>Default value(s) for the nodal attribute</p>
+</dd>
+</dl>
+<dl class="simple" id="numnodesnotdefaultval">
+<dt>NumNodesNotDefaultVal(i)</dt><dd><p>Number of nodes with non-default values</p>
+</dd>
+</dl>
+<dl class="simple" id="n">
+<dt>n</dt><dd><p>Node number</p>
+</dd>
+</dl>
+<dl class="simple" id="attrval">
+<dt>AttrVal(n,k)</dt><dd><p>Nodal attribute value(s)</p>
+</dd>
+</dl>
+</section>
+<section id="fort-19">
+<h3>fort.19<a class="headerlink" href="#fort-19" title="Link to this heading"></a></h3>
+<dl class="simple" id="esbin">
+<dt>ESBIN(k)</dt><dd><p>Elevation (referenced to the geoid) at specified elevation node k. The sequencing is assumed to match what is defined in the elevation specified boundary condition part of the Grid and Boundary Information File.</p>
+</dd>
+</dl>
+<dl class="simple" id="etiminc">
+<dt>ETIMINC</dt><dd><p>Time increment (secs) between consecutive sets of elevation specified boundary condition values contained in this file.</p>
+</dd>
+</dl>
+</section>
+<section id="fort-20">
+<h3>fort.20<a class="headerlink" href="#fort-20" title="Link to this heading"></a></h3>
+<dl class="simple" id="ftiminc">
+<dt>FTIMINC</dt><dd><p>Time increment (secs) between consecutive sets of normal flow boundary condition values contained in this file.</p>
+</dd>
+</dl>
+<dl class="simple" id="nflbn">
+<dt>NFLBN</dt><dd><p>Total number of flow boundary nodes</p>
+</dd>
+</dl>
+<dl class="simple" id="qnin">
+<dt>QNIN(k)</dt><dd><p>Normal flow/unit width (e.g., m2/s) at specified normal flow node k. A positive flow/unit width is into the domain and a negative flow/unit width is out of the domain. The sequencing is assumed to match what is defined in the part of the Grid and Boundary Information File specifying non zero normal flow boundaries.</p>
+</dd>
+</dl>
+<dl class="simple" id="fric">
+<dt>FRIC(k)</dt><dd><p>Nodal bottom friction coefficient.</p>
+</dd>
+</dl>
+</section>
+<section id="fort-22">
+<h3>fort.22<a class="headerlink" href="#fort-22" title="Link to this heading"></a></h3>
+<dl class="simple" id="iwtime">
+<dt>IWTIME</dt><dd><p>Time of the wind field in the following integer format: YEAR*1000000 + MONTH*10000 + DAY*100 + HR</p>
+</dd>
+</dl>
+<dl class="simple" id="prn">
+<dt>PRN</dt><dd><p>Applied atmospheric pressure at the free surface. Units depend on the specific type of wind input file.</p>
+</dd>
+</dl>
+<dl class="simple" id="wdir">
+<dt>WDIR</dt><dd><p>(If NWS = 3, 103) direction wind blows from in deg cw from north</p>
+</dd>
+</dl>
+<dl class="simple" id="wspeed">
+<dt>WSPEED</dt><dd><p>(If NWS =3, 103) wind speed in m/s</p>
+</dd>
+</dl>
+<dl class="simple" id="wsx">
+<dt>WSX</dt><dd><p>Applied horizontal wind stress in the x,y directions divided by the reference density of water (should be units (length/time)2). An oceanographic convention is used where velocity is positive when it is blowing toward positive coordinate directions.</p>
+</dd>
+</dl>
+<dl class="simple" id="wsy">
+<dt>WSY</dt><dd><p>Applied horizontal wind stress in the x,y directions divided by the reference density of water (should be units (length/time)2). An oceanographic convention is used where velocity is positive when it is blowing toward positive coordinate directions.</p>
+</dd>
+</dl>
+<span id="wvx"></span><dl class="simple" id="wvy">
+<dt>WVX, WVY</dt><dd><p>Applied horizontal wind velocity in the x,y directions. An oceanographic convention is used where velocity is positive when it is blowing toward positive coordinate directions. Units depend on the specific type of wind input file.</p>
+</dd>
+</dl>
+<span id="wvnx"></span><dl class="simple" id="wvny">
+<dt>WVNX, WVNY</dt><dd><p>(If NWS = 4, -4, 104, -104) applied horizontal wind velocity in the x,y directions. An oceanographic convention is used where velocity is positive when it is blowing toward positive coordinate directions. Units are knots.</p>
+</dd>
+</dl>
+<span id="wvxfn"></span><dl class="simple" id="wvyfn">
+<dt>WVXFN, WVYFN</dt><dd><p>(If NWS = 6, 106, 7, -7) applied horizontal wind velocity in the x,y directions. An oceanographic convention is used where velocity is positive when it is blowing toward positive coordinate directions. Units are assumed to be m/s</p>
+</dd>
+</dl>
+<span id="lonb"></span><dl class="simple" id="latb">
+<dt>LONB, LATB</dt><dd><p>(If NWS = 10) number of longitude and latitudes in a global Gaussian Lon/Lat grid (NWS = 10) or ETA-29 grid (NWS = 11), these are specified in the ADCIRC program.</p>
+</dd>
+</dl>
+<dl class="simple" id="pg">
+<dt>PG</dt><dd><p>(If NWS = 10) surface pressure in m H20.</p>
+</dd>
+</dl>
+<dl class="simple" id="ug">
+<dt>UG</dt><dd><p>(If NWS = 10) 10 meter U velocity in m/s.</p>
+</dd>
+</dl>
+<dl class="simple" id="vg">
+<dt>VG</dt><dd><p>(If NWS = 10) 10 meter V velocity in m/s.</p>
+</dd>
+</dl>
+<dl class="simple" id="pe">
+<dt>PE</dt><dd><p>(If NWS = 11) surface pressure in mbars.</p>
+</dd>
+</dl>
+<dl class="simple" id="ue">
+<dt>UE</dt><dd><p>(If NWS = 11) 10 meter U velocity in m/s.</p>
+</dd>
+</dl>
+<dl class="simple" id="ve">
+<dt>VE</dt><dd><p>(If NWS = 11) 10 meter V velocity in m/s</p>
+</dd>
+</dl>
+<dl class="simple" id="nwset">
+<dt>NWSET</dt><dd><p>(If NWS = 12) the number of wind/pressure fields to be used; 1 indicates that only the basin scale meteorological field should be used; and 2 indicates that two fields be used (both the basin scale meteorological field and the regional scale meteorological field).</p>
+</dd>
+</dl>
+<dl class="simple" id="nwbs">
+<dt>NWBS</dt><dd><p>(If NWS = 12) is useful in cases where the start time of the met data does not coincide with the start time of an ADCIRC run. NWBS represents the time delay between the start of an ADCIRC run and the start of the gridded wind field data, in units of wind time increments. Examples are provided in the notes section for this met file format.</p>
+</dd>
+</dl>
+<dl class="simple" id="dwm">
+<dt>DWM</dt><dd><p>(If NWS = 12) specifies a multiplication factor for the wind velocities. If the velocities should be used as-is, set this factor to 1.0.</p>
+</dd>
+</dl>
+<dl class="simple" id="comment-line">
+<dt>comment line</dt><dd><p>Provenance information, max 1024 characters</p>
+</dd>
+</dl>
+<dl class="simple" id="pressurewindrelationship">
+<dt>pressureWindRelationship</dt><dd><p>This character string specifies the method for assigning the barometric pressure, since it is not provided in HWind data. Allowable values are dvorak, knaffzehr, specifiedPc, and background.</p>
+</dd>
+</dl>
+<dl class="simple" id="hours">
+<dt>hours(i)</dt><dd><p>Specifies the model time corresponding to the data in file i, in hours since cold start if NWS=15, or in hours since hot start if NWS=-15</p>
+</dd>
+</dl>
+<dl class="simple" id="centralpressure">
+<dt>centralPressure(i)</dt><dd><p>If the pressure-wind relationship was set to specifiedPc, this column specifies the central pressure corresponding to the wind velocity field in file i. Otherwise it is ignored and can be set to -1 to emphasize this.</p>
+</dd>
+</dl>
+<dl class="simple" id="rampmult">
+<dt>rampMult(i)</dt><dd><p>Multiplier that will be applied to the wind velocities in file i; can be used to provide a meteorological ramp if the hwind data are to be applied long after coldstart when the usual ADCIRC ramp functions are unavailable. Normally set to 1.0.</p>
+</dd>
+</dl>
+<dl class="simple" id="filename">
+<dt>filename(i)</dt><dd><p>The filename of the HWind file i, as downloaded from NOAA HRD. The filename should be enclosed in quotes; this prevents the Fortran library from interpreting embedded “/” characters in full path filenames as record separators.</p>
+</dd>
+</dl>
+<dl class="simple" id="dvorak">
+<dt>dvorak</dt><dd><p>The central pressure will be assigned by searching the wind field for the maximum wind speed and then plugging it into the formula pc=1015-(Vmax/3.92)**(1/0.644).</p>
+</dd>
+</dl>
+<dl class="simple" id="knaffzehr">
+<dt>knaffzehr</dt><dd><p>Same as dvorak except the formula is pc=1010-(Vmax/3.92)**(1/0.76).</p>
+</dd>
+</dl>
+<dl class="simple" id="specifiedpc">
+<dt>specifiedPc</dt><dd><p>The central pressure will be linearly interpolated in time from the values provided in the centralPressure(i) column. This allows the use of the BEST track central pressures with the HWind velocities.</p>
+</dd>
+</dl>
+<dl class="simple" id="background">
+<dt>background</dt><dd><p>This value will cause the entire barometric pressure field to the background pressure.</p>
+</dd>
+</dl>
+</section>
+<section id="fort-23">
+<h3>fort.23<a class="headerlink" href="#fort-23" title="Link to this heading"></a></h3>
+<span id="rsx"></span><dl class="simple" id="rsy">
+<dt>RSX, RSY</dt><dd><p>Applied wave radiation stress in the x,y directions divided by the reference density of water (should be units (length/time)2). An oceanographic convention is used where stress is positive when it is pointed in positive coordinate directions.</p>
+</dd>
+</dl>
+</section>
+<section id="fort-24">
+<h3>fort.24<a class="headerlink" href="#fort-24" title="Link to this heading"></a></h3>
+<dl class="simple" id="saltamp">
+<dt>SALTAMP(k,JN)</dt><dd><p>Amplitude of the self attraction/earth tide loading forcing for constituent k and node number JN. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, amplitude is in m, if gravity is in ft/s2, amplitude is in ft.). If ICS=2, gravity must be specified in m/s2 and the amplitude is in m.</p>
+</dd>
+</dl>
+<dl class="simple" id="saltpha">
+<dt>SALTPHA(k,JN)</dt><dd><p>Phase (degrees) of the self attraction/earth tide loading forcing for constituent k and node number JN.</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="output-files">
+<h2>Output Files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<section id="fort-51-52-53-54">
+<h3>fort.51,52,53,54<a class="headerlink" href="#fort-51-52-53-54" title="Link to this heading"></a></h3>
+<dl class="simple" id="emag">
+<dt>EMAG(j,k)</dt><dd><p>Elevation amplitude for constituent k at station j. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, amplitude is in m, if gravity is in ft/s2, amplitude is in ft.). If ICS=2, gravity must be specified in m/s2 and the amplitude is in m. This quantity is computed by the harmonic analysis routines in ADCIRC.</p>
+</dd>
+</dl>
+<dl class="simple" id="phasede">
+<dt>PHASEDE(j,k)</dt><dd><p>Elevation phase (in deg) for constituent k at node or station j. This quantity is computed by the harmonic analysis routines in ADCIRC.</p>
+</dd>
+</dl>
+<dl class="simple" id="emagt">
+<dt>EMAGT(j,k)</dt><dd><p>Elevation amplitude for constituent k at node j. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, amplitude is in m, if gravity is in ft/s2, amplitude is in ft.). If ICS=2, gravity must be specified in m/s2 and the amplitude is in m. This quantity is computed by the harmonic analysis routines in ADCIRC.</p>
+</dd>
+</dl>
+<dl class="simple" id="umag">
+<dt>UMAG(j,k)</dt><dd><p>X direction velocity amplitude for constituent k at station j. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, amplitude is in m, if gravity is in ft/s2, amplitude is in ft.). If ICS=2, gravity must be specified in m/s2 and the amplitude is in m. This quantity is computed by the harmonic analysis routines in ADCIRC.</p>
+</dd>
+</dl>
+<dl class="simple" id="phasedu">
+<dt>PHASEDU(j,k)</dt><dd><p>X – direction velocity phase (in deg) for constituent k at node or station j. This quantity is computed by the harmonic analysis routines in ADCIRC.</p>
+</dd>
+</dl>
+<dl class="simple" id="vmag">
+<dt>VMAG(j,k)</dt><dd><p>Y direction velocity amplitude for constituent k at station j. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, amplitude is in m, if gravity is in ft/s2, amplitude is in ft.). If ICS=2, gravity must be specified in m/s2 and the amplitude is in m. This quantity is computed by the harmonic analysis routines in ADCIRC.</p>
+</dd>
+</dl>
+<dl class="simple" id="phasedv">
+<dt>PHASEDV(j,k)</dt><dd><p>Y – direction velocity phase (in deg) for constituent k at node or station j. This quantity is computed by the harmonic analysis routines in ADCIRC.</p>
+</dd>
+</dl>
+<dl class="simple" id="umagt">
+<dt>UMAGT(j,k)</dt><dd><p>X direction velocity amplitude for constituent k at node or station j. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, amplitude is in m, if gravity is in ft/s2, amplitude is in ft.). If ICS=2, gravity must be specified in m/s2 and the amplitude is in m. This quantity is computed by the harmonic analysis routines in ADCIRC.</p>
+</dd>
+</dl>
+<dl class="simple" id="vmagt">
+<dt>VMAGT(j,k)</dt><dd><p>Y direction velocity amplitude (in units of distance consistent with gravity) for constituent k at node or station j. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, amplitude is in m, if gravity is in ft/s2, amplitude is in ft.). If ICS=2, gravity must be specified in m/s2 and the amplitude is in m. This quantity is computed by the harmonic analysis routines in ADCIRC.</p>
+</dd>
+</dl>
+</section>
+<section id="fort-55">
+<span id="id2"></span><h3>fort.55<a class="headerlink" href="#fort-55" title="Link to this heading"></a></h3>
+<dl class="simple" id="eav">
+<dt>EAV(J)</dt><dd><p>Mean elevation in the resynthesized time series</p>
+</dd>
+</dl>
+<dl class="simple" id="eavdif">
+<dt>EAVDIF(J)</dt><dd><p>Elevation variance in the resynthesized time series</p>
+</dd>
+</dl>
+<dl class="simple" id="esq">
+<dt>ESQ(J)</dt><dd><p>Elevation variance in the resynthesized time series</p>
+</dd>
+</dl>
+<dl class="simple" id="evadif">
+<dt>EVADIF(J)</dt><dd><p>Elevation variance in the resynthesized time series</p>
+</dd>
+</dl>
+<dl class="simple" id="uav">
+<dt>UAV(J)</dt><dd><p>Mean x-velocity in the resynthesized time series</p>
+</dd>
+</dl>
+<p id="uavdif">UAVDIF(J)</p>
+<dl class="simple" id="usq">
+<dt>USQ(J)</dt><dd><p>X-velocity variance in the resynthesized time series</p>
+</dd>
+</dl>
+<p id="uvadif">UVADIF(J)</p>
+<dl class="simple" id="vav">
+<dt>VAV(J)</dt><dd><p>Mean y-velocity in the resynthesized time series</p>
+</dd>
+</dl>
+<p id="vavdif">VAVDIF(J)</p>
+<dl class="simple" id="vsq">
+<dt>VSQ(J)</dt><dd><p>y-velocity variance in the resynthesized time series</p>
+</dd>
+</dl>
+<p id="vvadif">VVADIF(J)</p>
+</section>
+<section id="fort-61-62-63-64-71-72-73-74-75-81-83">
+<h3>fort.61,62,63,64,71,72,73,74,75,81,83<a class="headerlink" href="#fort-61-62-63-64-71-72-73-74-75-81-83" title="Link to this heading"></a></h3>
+<dl class="simple" id="time">
+<dt>TIME</dt><dd><p>Model time (in seconds) (TIME = STATIM*86400 + IT*DT)</p>
+</dd>
+</dl>
+<dl class="simple" id="irtype">
+<dt>IRTYPE</dt><dd><p>The record type (= 1 for elevation files, = 2 for velocity files, and = 3 for 3D velocity file)</p>
+</dd>
+</dl>
+<dl class="simple" id="ndsetse">
+<dt>NDSETSE</dt><dd><p>The number of data sets to be written to fort.63</p>
+</dd>
+</dl>
+<dl class="simple" id="ndsetsv">
+<dt>NDSETSV</dt><dd><p>The number of data sets to be written to fort.64</p>
+</dd>
+</dl>
+<dl class="simple" id="ndsetsw">
+<dt>NDSETSW</dt><dd><p>The number of data sets to be spooled to fort.73 &amp; 74</p>
+</dd>
+</dl>
+<dl class="simple" id="ndsetsc">
+<dt>NDSETSC</dt><dd><p>The number of data sets to be spooled to fort.83</p>
+</dd>
+</dl>
+<dl class="simple" id="ntrspe">
+<dt>NTRSPE</dt><dd><p>The number of data sets to be written to fort.61</p>
+</dd>
+</dl>
+<dl class="simple" id="ntrspv">
+<dt>NTRSPV</dt><dd><p>The number of data sets to be written to fort.62</p>
+</dd>
+</dl>
+<dl class="simple" id="ntrspm">
+<dt>NTRSPM</dt><dd><p>The number of data sets to be spooled to fort.71 or fort.72</p>
+</dd>
+</dl>
+<dl class="simple" id="ntrspc">
+<dt>NTRSPC</dt><dd><p>The number of data sets to be spooled to fort.81</p>
+</dd>
+</dl>
+<dl class="simple" id="et00">
+<dt>ET00(k)</dt><dd><p>Surface elevation at NSTAE elevation recording stations. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, elevation is in m, if gravity is in ft/s2, elevation is in ft.). If ICS=2, gravity must be specified in m/s2 and the elevation is in m.</p>
+</dd>
+</dl>
+<dl class="simple" id="eta2">
+<dt>ETA2(k)</dt><dd><p>Surface elevation at node k at the current time step. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, elevation is in m, if gravity is in ft/s2, elevation is in ft.). If ICS=2, gravity must be specified in m/s2 and the elevation is in m.</p>
+</dd>
+</dl>
+<dl class="simple" id="etamax">
+<dt>ETAMAX(k)</dt><dd><p>Maximum surface elevation over the entire run at node k. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, elevation is in m, if gravity is in ft/s2, elevation is in ft.). If ICS=2, gravity must be specified in m/s2 and the elevation is in m.</p>
+</dd>
+</dl>
+<dl class="simple" id="uu00">
+<dt>UU00(k)</dt><dd><p>x, y velocity at NSTAV velocity recording stations. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, velocity is m/s, if gravity is in ft/s2, velocity is in ft/s). If ICS=2, gravity must be specified in m/s2 and the velocity units are m/s.</p>
+</dd>
+</dl>
+<span id="uu"></span><dl class="simple" id="vv">
+<dt>UU(k), VV(k)</dt><dd><p>Depth-averaged velocity in the x,y -coordinate direction at node k at the current time step. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, velocity is m/s, if gravity is in ft/s2, velocity is in ft/s). If ICS=2, gravity must be specified in m/s2 and the velocity units are m/s.</p>
+</dd>
+</dl>
+<dl class="simple" id="rmp00">
+<dt>RMP00(k)</dt><dd><p>Atmospheric surface pressure (m of water) output at NSTAM meteorological recording stations.</p>
+</dd>
+</dl>
+<span id="rmu00"></span><dl class="simple" id="rmv00">
+<dt>RMU00, RMV00(k)</dt><dd><p>x,y wind stress (NWS =1, 2, -2) or velocity (NWS = 3, 4, -4, 5, -5, 6, 10, 11) at NSTAM meteorological recording stations. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, velocity is m/s, if gravity is in ft/s2, velocity is in ft/s). If ICS=2, gravity must be specified in m/s2 and the velocity units are m/s.</p>
+</dd>
+</dl>
+<dl class="simple" id="cc00">
+<dt>CC00(k)</dt><dd><p>Scalar concentration at NSTAC concentration recording stations.</p>
+</dd>
+</dl>
+<dl class="simple" id="pr2">
+<dt>PR2(k)</dt><dd><p>Atmospheric surface pressure (m of water) output for all nodes in the domain.</p>
+</dd>
+</dl>
+<span id="wvnxout"></span><dl class="simple" id="wvnyout">
+<dt>WVNXOUT(k), WVNYOUT(k)</dt><dd><p>x,y wind stress (NWS =1, 2, -2) or velocity (NWS = 3, 4, -4, 5, -5, 6, 10, 11) or converted from 1-min average wind to 10-min average wind velocity (one2ten=0.8928) multiplied by the wind ramp in m/s (NWS = 8, 19, 20) for all nodes in the domain. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, velocity is m/s, if gravity is in ft/s2, velocity is in ft/s). If ICS=2, gravity must be specified in m/s2 and the velocity units are m/s.</p>
+</dd>
+</dl>
+<dl class="simple" id="c1">
+<dt>C1(k)</dt><dd><p>Scalar concentration output for all nodes in domain</p>
+</dd>
+</dl>
+</section>
+<section id="fort-67-68">
+<h3>fort.67, 68<a class="headerlink" href="#fort-67-68" title="Link to this heading"></a></h3>
+<dl class="simple" id="it">
+<dt>IT</dt><dd><p>Model time step number since the beginning of the model run.</p>
+</dd>
+</dl>
+<dl class="simple" id="eta1">
+<dt>ETA1(k)</dt><dd><p>Surface elevation at node k at the previous time step</p>
+</dd>
+</dl>
+<dl class="simple" id="icstp">
+<dt>ICSTP</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the Scalar Concentration Time Series at Specified Concentration Recording Stations output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="iestp">
+<dt>IESTP</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the Elevation Time Series at Specified Elevation Recording Stations output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="ipstp">
+<dt>IPSTP</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the Atmospheric Pressure Time Series at Specified Meteorological Recording Stations output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="ivstp">
+<dt>IVSTP</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the Depth-averaged Velocity Time Series at Specified Velocity Recording Stations output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="iwstp">
+<dt>IWSTP</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the Wind Velocity Time Series at Specified Meteorological Recording Stations output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="igcp">
+<dt>IGCP</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the Scalar Concentration Time Series at All Nodes in the Model Grid output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="igep">
+<dt>IGEP</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the Elevation Time Series at All Nodes in the Model Grid output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="igpp">
+<dt>IGPP</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the Atmospheric Pressure Time Series at All Nodes in the Model Grid output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="igvp">
+<dt>IGVP</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the Depth-averaged Velocity Time Series at All Nodes in the Model Grid output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="igwp">
+<dt>IGWP</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the Wind Stress or Velocity Time Series at All Nodes in the Model Grid output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="noff">
+<dt>noff(i)</dt><dd><p>The wet/dry state of element i where 1 indicates an element is categorized as wet on the timestep that the dataset was written while a value of 0 indicates that an element is categorized as dry.</p>
+</dd>
+</dl>
+<dl class="simple" id="ep">
+<dt>EP</dt><dd><p>Scaling parameter that is used to maximize the diagonal dominance of the GWCE system matrix. It is computed within ADCIRC at a cold start or when the GWCE matrix changes (e.g., wetting and drying has occurred).</p>
+</dd>
+</dl>
+<dl class="simple" id="nscouc">
+<dt>NSCOUC</dt><dd><p>Time step counter to determine when the next entry will be written to the Scalar Concentration Time Series at Specified Concentration Recording Stations output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="nscoue">
+<dt>NSCOUE</dt><dd><p>Time step counter to determine when the next entry will be written to the Elevation Time Series at Specified Elevation Recording Stations output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="nscoum">
+<dt>NSCOUM</dt><dd><p>Time step counter to determine when the next entry will be written to the Atmospheric Pressure Time Series at Specified
+Meteorological Recording Stations and Wind Velocity Time Series at Specified Meteorological Recording Stations output files.</p>
+</dd>
+</dl>
+<dl class="simple" id="nscouv">
+<dt>NSCOUV</dt><dd><p>Time step counter to determine when the next entry will be written to the Depth-averaged Velocity Time Series at Specified Velocity Recording Stations output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="nscougc">
+<dt>NSCOUGC</dt><dd><p>Time step counter to determine when the next entry will be written to the Scalar Concentration Time Series at All Nodes in the Model Grid output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="nscouge">
+<dt>NSCOUGE</dt><dd><p>Time step counter to determine when the next entry will be written to the Elevation Time Series at All Nodes in the Model Grid output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="nscougw">
+<dt>NSCOUGW</dt><dd><p>Time step counter to determine when the next entry will be written to the Atmospheric Pressure Time Series at All Nodes in the Model Grid and Wind Stress or Velocity Time Series at All Nodes in the Model Grid output files.</p>
+</dd>
+</dl>
+<dl class="simple" id="nscougv">
+<dt>NSCOUGV</dt><dd><p>Time step counter to determine when the next entry will be written to the Depth-averaged Velocity Time Series at All Nodes in the Model Grid output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="n3dsd">
+<dt>N3DSD</dt><dd><p>Time step counter to determine when the next entry will be written to the 3D Density, Temperature and/or Salinity at Specified Recording Stations (fort.41) output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="i3dsdrec">
+<dt>I3DSDRec</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the 3D Density, Temperature and/or Salinity at Specified Recording Stations (fort.41) output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="n3dsv">
+<dt>N3DSV</dt><dd><p>Time step counter to determine when the next entry will be written to the 3D Velocity at Specified Recording Stations (fort.42) output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="i3dsvrec">
+<dt>I3DSVRec</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the 3D Velocity at Specified Recording Stations (fort.42) output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="n3dst">
+<dt>N3DST</dt><dd><p>Time step counter to determine when the next entry will be written to the 3D Turbulence at Specified Recording Stations (fort.43) output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="i3dstrec">
+<dt>I3DSTRec</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the 3D Turbulence at Specified Recording Stations (fort.43) output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="n3dgd">
+<dt>N3DGD</dt><dd><p>Time step counter to determine when the next entry will be written to the 3D Density, Temperature and/or Salinity at All Nodes in the Model Grid (fort.44) output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="i3dgdrec">
+<dt>I3DGDRec</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the 3D Density, Temperature and/or Salinity at All Nodes in the Model Grid (fort.44) output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="n3dgv">
+<dt>N3DGV</dt><dd><p>Time step counter to determine when the next entry will be written to the 3D Velocity at All Nodes in the Model Grid (fort.45) output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="i3dgvrec">
+<dt>I3DGVRec</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the 3D Velocity at All Nodes in the Model Grid (fort.45) output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="n3dgt">
+<dt>N3DGT</dt><dd><p>Time step counter to determine when the next entry will be written to the 3D Turbulence at All Nodes in the Model Grid (fort.46) output file.</p>
+</dd>
+</dl>
+<dl class="simple" id="i3dgtrec">
+<dt>I3DGTRec</dt><dd><p>Line number (for ASCII output) or record number (for binary output) of the most recent entry in the 3D Turbulence at All Nodes in the Model Grid (fort.46) output file.</p>
+</dd>
+</dl>
+<span id="duv"></span><span id="duu"></span><dl class="simple" id="dvv">
+<dt>DUU(k), DUV(k), DVV(k)</dt><dd><p>Dispersion terms</p>
+</dd>
+</dl>
+<dl class="simple" id="uu-vv">
+<dt>UU(k), VV(k)</dt><dd><p>Depth-averaged horizontal velocity</p>
+</dd>
+</dl>
+<span id="bsx"></span><dl class="simple" id="bsy">
+<dt>BSX(k), BSY(k)</dt><dd><p>x, y bottom stresses</p>
+</dd>
+</dl>
+<span id="vidbcpdx"></span><dl class="simple" id="vidbcpdy">
+<dt>VIDBCPDX(k), VIDBCPDY(k)</dt><dd><p>Vertically integrated Baroclinic pressure</p>
+</dd>
+</dl>
+<dl class="simple" id="real-q-k-j">
+<dt>REAL(Q(k,j))</dt><dd><p>u velocity component</p>
+</dd>
+</dl>
+<dl class="simple" id="aimag-q-k-j">
+<dt>AIMAG(Q(k,j))</dt><dd><p>v velocity component</p>
+</dd>
+</dl>
+<dl class="simple" id="wz-k-j">
+<dt>WZ(k,j)</dt><dd><p>Vertical velocity</p>
+</dd>
+</dl>
+<dl class="simple" id="q20-k-j">
+<dt>Q20(k,j)</dt><dd><p>Previous time step value of Q2</p>
+</dd>
+</dl>
+<dl class="simple" id="ha">
+<dt>HA(k,j)</dt><dd><p>Coefficients in the least squares matrix used for the harmonic analysis</p>
+</dd>
+</dl>
+<dl class="simple" id="ch1">
+<dt>CH1(k)</dt><dd><p>Depth-averaged scalar concentration value at node k at the current time step</p>
+</dd>
+</dl>
+<dl class="simple" id="elav">
+<dt>ELAV(k)</dt><dd><p>Sum of elevations computed by ADCIRC, at every node k in the model grid, over all time steps since harmonic analysis means and variance checking has begun</p>
+</dd>
+</dl>
+<dl class="simple" id="elva">
+<dt>ELVA(k)</dt><dd><p>Sum of squares of elevations computed by ADCIRC, at every node k in the model grid, over all time steps since harmonic analysis means and variance checking has begun</p>
+</dd>
+</dl>
+<dl class="simple" id="fnam8-1">
+<dt>FNAM8(1)</dt><dd><p>The first 8 characters of FNAME(k)</p>
+</dd>
+</dl>
+<dl class="simple" id="fnam8-2">
+<dt>FNAM8(2)</dt><dd><p>The second 8 characters of FNAME(k)</p>
+</dd>
+</dl>
+<dl class="simple" id="gloelv">
+<dt>GLOELV(k,j)</dt><dd><p>Harmonic analysis load vectors for elevation at all nodes in the model grid</p>
+</dd>
+</dl>
+<dl class="simple" id="gloulv">
+<dt>GLOULV(k,j)</dt><dd><p>Harmonic analysis load vectors for depth-averaged u velocity at all nodes in the model grid</p>
+</dd>
+</dl>
+<dl class="simple" id="glovlv">
+<dt>GLOVLV(k,j)</dt><dd><p>Harmonic analysis load vectors for depth-averaged v velocity at all nodes in the model grid</p>
+</dd>
+</dl>
+<dl class="simple" id="icall">
+<dt>ICALL</dt><dd><p>Number of times the harmonic analysis has been updated</p>
+</dd>
+</dl>
+<dl class="simple" id="icha">
+<dt>ICHA</dt><dd><p>Time step counter to determine when the next update will be made to the harmonic analysis.</p>
+</dd>
+</dl>
+<dl class="simple" id="iharind">
+<dt>IHARIND</dt><dd><p>Indicator of whether any harmonic analysis will be performed during the model run.</p>
+</dd>
+</dl>
+<dl class="simple" id="itud">
+<dt>ITUD</dt><dd><p>Model time step when the harmonic analysis was last updated</p>
+</dd>
+</dl>
+<dl class="simple" id="mm">
+<dt>MM</dt><dd><p>2*NFREQ – NF</p>
+</dd>
+</dl>
+<dl class="simple" id="nf">
+<dt>NF</dt><dd><p>Indicator of whether the steady frequency is included in the harmonic analysis (NF = 1, steady is included; NF = 0, steady is not included).</p>
+</dd>
+</dl>
+<dl class="simple" id="ntsteps">
+<dt>NTSTEPS</dt><dd><p>Number of time steps since harmonic analysis means and variance checking has begun</p>
+</dd>
+</dl>
+<dl class="simple" id="nz">
+<dt>NZ</dt><dd><p>Indicator of whether the steady frequency is included in the harmonic analysis (NZ = 0, steady is included; NZ = 1, steady is not included).</p>
+</dd>
+</dl>
+<dl class="simple" id="staelv">
+<dt>STAELV(j,k)</dt><dd><p>Harmonic analysis load vectors for elevation at elevation recording stations</p>
+</dd>
+</dl>
+<dl class="simple" id="staulv">
+<dt>STAULV(j,k)</dt><dd><p>Harmonic analysis load vectors for depth-averaged u velocity at velocity recording stations</p>
+</dd>
+</dl>
+<dl class="simple" id="stavlv">
+<dt>STAVLV(j,k)</dt><dd><p>Harmonic analysis load vectors for depth-averaged v velocity at velocity recording stations</p>
+</dd>
+</dl>
+<dl class="simple" id="timeud">
+<dt>TIMEUD</dt><dd><p>Model time when the harmonic analysis was last updated</p>
+</dd>
+</dl>
+<dl class="simple" id="xvelav">
+<dt>XVELAV(k)</dt><dd><p>Sum of depth-averaged u velocities computed by ADCIRC, at every node k in the model grid, over all time steps since harmonic analysis means and variance checking has begun</p>
+</dd>
+</dl>
+<dl class="simple" id="xvelva">
+<dt>XVELVA(k)</dt><dd><p>Sum of squares of depth-averaged u velocities computed by ADCIRC, at every node k in the model grid, over all time steps since harmonic analysis means and variance checking has begun</p>
+</dd>
+</dl>
+<dl class="simple" id="yvelav">
+<dt>YVELAV(k)</dt><dd><p>Sum of depth-averaged v velocities computed by ADCIRC, at every node k in the model grid, over all time steps since harmonic analysis means and variance checking has begun</p>
+</dd>
+</dl>
+<dl class="simple" id="yvelva">
+<dt>YVELVA(k)</dt><dd><p>Sum of squares of depth-averaged v velocities computed by ADCIRC, at every node k in the model grid, over all time steps since harmonic analysis means and variance checking has begun</p>
+</dd>
+</dl>
+</section>
+<section id="fort-41-fort-42-fort-43-fort-44-fort-45-fort-46">
+<h3>fort.41, fort.42, fort.43, fort.44, fort.45, fort.46<a class="headerlink" href="#fort-41-fort-42-fort-43-fort-44-fort-45-fort-46" title="Link to this heading"></a></h3>
+<dl class="simple" id="ndset3dsd">
+<dt>NDSET3DSD</dt><dd><p>Number of data sets to be written to fort.41</p>
+</dd>
+</dl>
+<dl class="simple" id="sigtsta">
+<dt>SIGTSTA</dt><dd><p>Sigma T value (kg/m^3) (=density-1000) at a specified recording station</p>
+</dd>
+</dl>
+<dl class="simple" id="salsta">
+<dt>SALSTA</dt><dd><p>Salinity (PSU) at a specified recording station</p>
+</dd>
+</dl>
+<dl class="simple" id="tempsta">
+<dt>TEMPSTA</dt><dd><p>Temperature (DEG C) at a specified recording station</p>
+</dd>
+</dl>
+<dl class="simple" id="ndset3dsv">
+<dt>NDSET3DSV</dt><dd><p>Number of data sets to be written to fort.42</p>
+</dd>
+</dl>
+<dl class="simple" id="real-qsta-k-j">
+<dt>REAL(QSTA(k,j))</dt><dd><p>u velocity component for station output</p>
+</dd>
+</dl>
+<dl class="simple" id="aimag-qsta-k-j">
+<dt>AIMAG(QSTA(k,j))</dt><dd><p>v velocity component for station output</p>
+</dd>
+</dl>
+<dl class="simple" id="wzsta">
+<dt>WZSTA(k,j)</dt><dd><p>Vertical velocity for station output. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, velocity is m/s, if gravity is in ft/s2, velocity is in ft/s). If ICS=2, gravity must be specified in m/s2 and the velocity units are m/s.</p>
+</dd>
+</dl>
+<dl class="simple" id="ndset3dst">
+<dt>NDSET3DST</dt><dd><p>Number of data sets to be written to fort.43</p>
+</dd>
+</dl>
+<dl class="simple" id="q20sta">
+<dt>q20STA(M)</dt><dd><p>Turbulent kinetic energy for station output</p>
+</dd>
+</dl>
+<dl class="simple" id="ista">
+<dt>ISTA(M)</dt><dd><p>Mixing length for station output</p>
+</dd>
+</dl>
+<dl class="simple" id="evsta">
+<dt>EVSTA(M)</dt><dd><p>Spatially constant horizontal eddy viscosity for the momentum equations (units of length2/time) for station output</p>
+</dd>
+</dl>
+<dl class="simple" id="real-q-j-m">
+<dt>REAL(Q(j,M))</dt><dd><p>u velocity component for global output</p>
+</dd>
+</dl>
+<dl class="simple" id="aimag-q-j-m">
+<dt>AIMAG(Q(j,M))</dt><dd><p>v velocity component for global output</p>
+</dd>
+</dl>
+<dl class="simple" id="wz-j-m">
+<dt>WZ(j,M)</dt><dd><p>Vertical velocity for global output. If ICS=1, units are determined by the units of gravity (G) specified in the fort.15 file (eg. if G is in m/s2, velocity is m/s, if gravity is in ft/s2, velocity is in ft/s). If ICS=2, gravity must be specified in m/s2 and the velocity units are m/s.</p>
+</dd>
+</dl>
+<dl class="simple" id="q20-j-m">
+<dt>q20(j,M)</dt><dd><p>Turbulent kinetic energy</p>
+</dd>
+</dl>
+<dl class="simple" id="l-j-m">
+<dt>l(j,M)</dt><dd><p>Mixing length</p>
+</dd>
+</dl>
+<dl class="simple" id="ev-j-m">
+<dt>EV(j,M)</dt><dd><p>Horizontal eddy viscosity for the momentum equations (units of length2/time) for global output</p>
+</dd>
+</dl>
+<dl class="simple" id="ndset3dgd">
+<dt>NDSET3DGD</dt><dd><p>The number of data sets to be written to fort.44</p>
+</dd>
+</dl>
+<dl class="simple" id="ndset3dgv">
+<dt>NDSET3DGV</dt><dd><p>The number of data sets to be written to fort.45</p>
+</dd>
+</dl>
+<dl class="simple" id="ndset3dgt">
+<dt>NDSET3DGT</dt><dd><p>The number of data sets to be written to fort.46</p>
+</dd>
+</dl>
+<dl class="simple" id="ntf">
+<dt>NTF</dt><dd><p>Temperature boundary condition file type (this file is not supported yet).</p>
+</dd>
+</dl>
+<dl class="simple" id="ncproj">
+<dt>NCPROJ</dt><dd><p>Project Title (what is in the file).</p>
+</dd>
+</dl>
+<dl class="simple" id="ncinst">
+<dt>NCINST</dt><dd><p>Project Institution (where file was produced).</p>
+</dd>
+</dl>
+<dl class="simple" id="ncsour">
+<dt>NCSOUR</dt><dd><p>Project Source (how it was produced, eg. instrument type).</p>
+</dd>
+</dl>
+<dl class="simple" id="nchist">
+<dt>NCHIST</dt><dd><p>Project History (audit trail of processing operations).</p>
+</dd>
+</dl>
+<dl class="simple" id="ncref">
+<dt>NCREF</dt><dd><p>Project References (pointers to publications, web documentation).</p>
+</dd>
+</dl>
+<dl class="simple" id="nccom">
+<dt>NCCOM</dt><dd><p>Project Comments (any other comments about the file).</p>
+</dd>
+</dl>
+<dl class="simple" id="nchost">
+<dt>NCHOST</dt><dd><p>Project Host.</p>
+</dd>
+</dl>
+<dl class="simple" id="ncconv">
+<dt>NCCONV</dt><dd><p>Conventions.</p>
+</dd>
+</dl>
+<dl class="simple" id="nccont">
+<dt>NCCONT</dt><dd><p>Contact Information.</p>
+</dd>
+</dl>
+<dl class="simple" id="ncdate">
+<dt>NCDATE</dt><dd><p>The format of NCDATE must be as follows so that ADCIRC can create netcdf files that comply with the CF standard: yyyy-MM-dd hh:mm:ss tz. For example, if the cold start date/time of the run is midnight UTC on 1 May 2010, the NCDATE parameter should be set to 2010-05-01 00:00:00 UTC.</p>
+</dd>
+</dl>
+<dl class="simple" id="winddraglimit">
+<dt>WindDragLimit</dt><dd><p>This parameter controls the ceiling on the wind drag coefficient. The default value is 0.0035. Another commonly used value is 0.002.</p>
+</dd>
+</dl>
+<dl class="simple" id="draglawstring">
+<dt>DragLawString</dt><dd><p>This character string controls the formulation used to calculate the nodal wind drag coefficients on the water surface from the nodal wind speed. The default value “Garratt” specifies the formula WindDragCoefficient = 0.001d0 * (0.75d0 + 0.067d0 * WindSpeed). Alternatively, for tropical cyclones, setting the ‘DragLawString’ equal to “Powell” causes a more complex formulation to be used, where different formulas apply to different storm quadrants. If ice coverage data have been specified via appropriate specification of the NWS parameter, the wind drag coefficient formulation can also be set to IceCube (the default) or RaysIce. Complete details are available in the documentation of the Ice Coverage Input Files (fort.25, fort.225, fort.227).</p>
+</dd>
+</dl>
+<dl class="simple" id="rhoair">
+<dt>rhoAir</dt><dd><p>Used to set the density of air; the default value is 1.15 kg/m^3.</p>
+</dd>
+</dl>
+<dl class="simple" id="wavecoupling">
+<dt>waveCoupling</dt><dd><p>Fortran namelist that can be used to control the magnitude of the winds that are passed to coupled wave models.</p>
+</dd>
+</dl>
+<dl class="simple" id="swanoutputcontrol">
+<dt>swanoutputcontrol</dt><dd><p>Fortran namelist that can be used to control the SWAN model related output control.</p>
+</dd>
+</dl>
+<dl class="simple" id="metcontrol">
+<dt>metControl</dt><dd><p>Fortran namelist that can be used to control the meteorological forcing related parameters.</p>
+</dd>
+</dl>
+<dl class="simple" id="windwavemultiplier">
+<dt>WindWaveMultiplier</dt><dd><p>This multiplier is applied after the winds have been read in by ADCIRC and time interpolated (if necessary) but without ADCIRC’s ramp function. Since ADCIRC normally requires 10 minute averaged winds, many of ADCIRC’s meteorological reading subroutines also include a conversion from the time averaging period of the source data (if such time averaging is a standard for that data type) to a 10 minute average. In these cases, the multiplier is applied to the derived 10 minute averaged wind velocity values, rather than the raw values from the original meteorological forcing file.</p>
+</dd>
+</dl>
+<dl class="simple" id="timebathycontrol">
+<dt>timeBathyControl</dt><dd><p>Fortran namelist used to specify parameters related to simulations that have time varying bathymetry.</p>
+</dd>
+</dl>
+<dl id="nddt">
+<dt>NDDT</dt><dd><p>Controls whether time varying bathymetry will be used, and if- so, the spatial extent and time reference of the data in the- time varying bathymetry input file (fort.141). See description below for more details.</p>
+<p>NDDT=0 Time varying bathymetry should not be used.</p>
+<p>NDDT&gt;0 Time varying bathymetry should be used, and the beginning of the data in the time varying bathymetry file (fort.141) corresponds to the cold start time.</p>
+<p>NDDT&lt;0 Time varying bathymetry should be used, and the beginning of the data in the time varying bathymetry file (fort.141) corresponds to the hotstart time.</p>
+<p>NDDT=1 or NDDT=-1 The time varying bathymetry file (fort.141) is a fulldomain file, that is, all nodes in the mesh are specified at each time increment in the file.</p>
+<p>NDDT=2 or NDDT=-2 The time varying bathymetry file (fort.141) contains nodal values over a limited area or subsection of the fulldomain mesh.</p>
+</dd>
+</dl>
+<dl class="simple" id="btiminc">
+<dt>BTIMINC</dt><dd><p>Time increment (in seconds) between time varying bathymetry datasets in the time varying bathymetry (fort.141) file.</p>
+</dd>
+</dl>
+<dl class="simple" id="bchgtiminc">
+<dt>BCHGTIMINC</dt><dd><p>Time increment (seconds) over which bathymetry changes during a BTIMINC interval.</p>
+</dd>
+</dl>
+<dl class="simple" id="tau0var">
+<dt>tau0var</dt><dd><p>tau0 value written out at every node in the fort.90 file</p>
+</dd>
+</dl>
+<dl class="simple" id="subdomainmodeling">
+<dt>subdomainModeling</dt><dd><p>Fortran namelist used to activate subdomain modeling, which gives analysts the capability to define a small subdomain nested within a much larger domain. The fulldomain can thenbe run once, generating boundary conditions for the nested subdomain. These boundary conditions can then be used over and over for different internal configurations of the subdomain without having to run the larger domain again. Please see the ADCIRC documentation on subdomain modeling for further details.</p>
+</dd>
+</dl>
+<dl class="simple" id="subdomainon">
+<dt>subdomainOn</dt><dd><p>This logical variable activates subdomain modeling when set to ‘.true.’. The default value of ‘.false.’ will be used if the subdomainModeling namelist is not found in the fort.15 file.</p>
+</dd>
+</dl>
+<dl class="simple" id="wetdrycontrol">
+<dt>wetDryControl</dt><dd><p>Fortran namelist that can be used to turn on output of (1) the nodal wet/dry state to the nodecode.63 file and/or (2) the elemental wet/dry state to the noff.100 file. It can also be used to deactivate the use of elemental wet/dry state in the continuity and momentum equations by forcing all elements of the NOFF array to be 1.</p>
+</dd>
+</dl>
+<dl class="simple" id="inundationoutputcontrol">
+<dt>inundationOutputControl</dt><dd><p>Fortran namelist that can be used to activate the production of a set of inundation-related output files, including initiallydry.63, everdried.63, inundationtime.63, maxinundepth.63, and endrisinginun.63. It is also used to set the inunThresh variable, i.e., the threshold of water depth above local ground level at which normally dry land is considered inundated (to eliminate trivial inundation levels from consideration).</p>
+</dd>
+</dl>
+<dl class="simple" id="tvwcontrol">
+<dt>TVWControl</dt><dd><p>Fortran namelist that can be used to activate the time varying weirs feature (with use_TVW), specify the name of the input file that specifies the behavior of the time varying weir(s) (TVW_file), and the schedule for output of weir height to the fort.77 file (nout_TVW, touts_TVW, toutf_TVW, and nspool_TVW).</p>
+</dd>
+</dl>
+<dl class="simple" id="outputnodecode">
+<dt>outputNodeCode</dt><dd><p>Logical variable activates the production of the nodecode.63 file for nodal wet/dry state when set to ‘.true.’. The default value is ‘.false.’. The nodecode.63 output file is produced in ASCII format with the same structure as the fort.63 file (with the exception that the node code value is an integer) and on the same schedule as the fort.63 file. A nodal value of 1 in the nodecode.63 file indicates that the node is wet on the timestep that the data set was written, while a value of 0 indicates that the node is dry on the timestep that the data set was written. In order to be included in the computations of water surface elevation and velocity, a node must be wet.</p>
+</dd>
+</dl>
+<dl class="simple" id="outputnoff">
+<dt>outputNOFF</dt><dd><p>Logical variable activates the production of the noff.100 file for elemental wet/dry state when set to ‘.true.’. The default value is ‘.false.’. The noff.100 output file is produced in ASCII format with a structure similar to the fort.63 file, with the following exceptions: (a) the noff value is an integer; and (b) the noff array is elementally based, so the number of values for each time snap is equal to the number of elements, rather than the number of nodes. When outputNOFF is set to .true., the noff.100 file will be produced on the same schedule as the fort.63 file. An elemental value of 1 in the noff.100 file indicates that the element is wet on the timestep that the data set was written, while a value of 0 indicates that the element is dry on the timestep that the data set was written. In order to be included in the computations of water surface elevation and velocity, an element and all three of its nodes must be wet.</p>
+</dd>
+</dl>
+<dl class="simple" id="noffactive">
+<dt>noffActive</dt><dd><p>NOFF is the name of elemental array in ADCIRC that holds the elemental wet/dry state. The noffActive logical variable can be used to completely disable the elemental wet dry state by setting NOFF to 1 (wet), always and everywhere, when set to ‘.false.’. The default value is ‘.true.’.</p>
+</dd>
+</dl>
+<dl class="simple" id="inundationoutput">
+<dt>inundationOutput</dt><dd><p>Logical variable activates the production of the the inundation output files (consisting of initiallydry.63, everdried.63, inundationtime.63, maxinundepth.63, and endrisinginun.63) when set to ‘.true.’. The default value is ‘.false.’.</p>
+</dd>
+</dl>
+<dl class="simple" id="inunthresh">
+<dt>inunThresh</dt><dd><p>Numerical value of water surface elevation above local ground level that marks the threshold at which normally dry land is considered inundated. The default value is 0.6m.</p>
+</dd>
+</dl>
+<dl class="simple" id="use-tvw">
+<dt>use_TVW</dt><dd><p>Logical variable that activates the time varying weirs capability when set to ‘.true.’. The default value is ‘.false.’.</p>
+</dd>
+</dl>
+<dl class="simple" id="tvw-file">
+<dt>TVW_file</dt><dd><p>Character string used to specify the name of the time varying weirs input file. The default name is ‘fort.tvw’. This file defines the location(s) and schedule(s) or trigger(s) for weir elevation changes. If the TVW_file is not found, ADCIRC writes an informational message to the screen and to the fort.16 (log) file that the file was not found. The run will then continue, but all weirs will be static.</p>
+</dd>
+</dl>
+<dl class="simple" id="nout-tvw">
+<dt>nout_TVW</dt><dd><p>Integer that activates the production of the fort.77 output file as well as specifying its format; setting nout_TVW to zero turns off the production of the fort.77 output file while setting it to positive or negative 1, 3, 4, or 5 produce files in ASCII, netCDF3, sparse ASCII, or netCDF4, respectively. Due to the sparse nature of the weir height output data, sparse ASCII format (nout_TVW=4) is recommended. If use_TVW is set to .true. but this parameter nout_TVW is not set at all, then nout_TVW is set to the same value as the file format specifier for the fort.63 file (NOUTGE). The data stored in the fort.77 file represent the change in the weir height (in meters, positive upward) compared to the weir height specified in the ADCIRC mesh file, rather than the absolute height of the weir at a particular time.</p>
+</dd>
+</dl>
+<dl class="simple" id="touts-tvw">
+<dt>touts_TVW</dt><dd><p>Time in days since cold start after which output to the fort.77 file will start.</p>
+</dd>
+</dl>
+<dl class="simple" id="toutf-tvw">
+<dt>toutf_TVW</dt><dd><p>Time in days since cold start when output to the fort.77 file will end.</p>
+</dd>
+</dl>
+<dl class="simple" id="nspool-tvw">
+<dt>nspool_TVW</dt><dd><p>Time step increment at which output will be written to the fort.77 file when the ADCIRC model time is between touts_TVW and toutf_TVW (in days since cold start).</p>
+</dd>
+</dl>
+<dl class="simple" id="tvw">
+<dt>TVW</dt><dd><p>Nodal array that contains the difference between the current weir elevations and their canonical elevations as specified in the ADCIRC mesh file (fort.14).</p>
+</dd>
+</dl>
+<dl class="simple" id="nstae2">
+<dt>NSTAE2</dt><dd><p>Number of stations specified in the Elevation Station location file (elev_sta.151)</p>
+</dd>
+</dl>
+<dl class="simple" id="nstav2">
+<dt>NSTAV2</dt><dd><p>Number of stations specified in the Velocity Station location file (vel_sta.151)</p>
+</dd>
+</dl>
+<dl class="simple" id="nstac2">
+<dt>NSTAC2</dt><dd><p>Number of stations specified in the Concentration Station location file (conc_sta.151)</p>
+</dd>
+</dl>
+<dl class="simple" id="nstam2">
+<dt>NSTAM2</dt><dd><p>Number of stations specified in the Meteorological Station location file (met_sta.151)</p>
+</dd>
+</dl>
+<dl class="simple" id="initiallydry">
+<dt>initiallydry(k)</dt><dd><p>A value given to node k at cold start based on whether the node was dry or wet. If it is dry the value is 1, if it is wet, the value is 0.</p>
+</dd>
+</dl>
+<dl class="simple" id="everdried">
+<dt>everdried(k)</dt><dd><p>A value at node k of -99999.0 if node k is dried at any time during the simulations, and 1 if it remains wet.</p>
+</dd>
+</dl>
+<dl class="simple" id="driedtime">
+<dt>driedtime(k)</dt><dd><p>Total time in seconds that node k was dry during the simulation (0 if it remains wet)</p>
+</dd>
+</dl>
+<dl class="simple" id="endrisinginun">
+<dt>endrisinginun(k)</dt><dd><p>If node k had rising inundation levels at the end of a simulation it is flagged with an integer value of 1, otherwise it is given an integer value of 0</p>
+</dd>
+</dl>
+<dl class="simple" id="maxinundepth">
+<dt>maxinundepth(k)</dt><dd><p>The peak inundation depth at node k (in meters) above ground that occurred during the simulation</p>
+</dd>
+</dl>
+<dl class="simple" id="maxinundepth-time">
+<dt>maxinundepth_time(k)</dt><dd><p>The time of the the peak inundation depth at the node in seconds since the cold start</p>
+</dd>
+</dl>
+<dl class="simple" id="inundationtime">
+<dt>inundationtime(k)</dt><dd><p>The total accumulated time in seconds that node k was inundated beyond the threshold. Periods of inundation are counted toward the total time, even if they are not contiguous.</p>
+</dd>
+</dl>
+<dl class="simple" id="inundationtime-onset">
+<dt>inundationtime_onset(k)</dt><dd><p>The time of onset of inundation beyond the threshold at node k in seconds since cold start. The time of onset data are useful in the context of real time model guidance for decision making.</p>
+</dd>
+</dl>
+<dl class="simple" id="nodecode">
+<dt>nodecode(k)</dt><dd><p>The wet/dry state of node k where 1 indicates a node is categorized as wet on the timestep that the dataset was written while a value of 0 indicates that a node is categorized as dry.</p>
+</dd>
+</dl>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../output_files/fort83.html" class="btn btn-neutral float-left" title="Fort.83: Scalar Concentration Time Series at All Nodes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../executables.html" class="btn btn-neutral float-right" title="Executables" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

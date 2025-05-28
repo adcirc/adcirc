@@ -1,0 +1,330 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="A00, B00, C00 in ADCIRC" name="description" />
+<meta content="adcirc, a00, b00, c00" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A00, B00, C00 &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="TAU0" href="tau0.html" />
+    <link rel="prev" title="NTIP" href="ntip.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Model Configuration</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Model Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../physics_parameters/index.html">Physics Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../initial_conditions/index.html">Initial Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../boundary_conditions/index.html">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tides/index.html">Astronomical Tides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../meteorological_forcing/index.html">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../typical_configurations/typical_parameter_selections.html">Typical Parameter Selections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Model Configuration</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Model Parameters</a></li>
+      <li class="breadcrumb-item active">A00, B00, C00</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/model_configuration/model_parameters/a00_b00_c00.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="a00-b00-c00">
+<h1>A00, B00, C00<a class="headerlink" href="#a00-b00-c00" title="Link to this heading"></a></h1>
+<p><strong>A00, B00, C00</strong> are the weighting factors (at time levels k+1, k, k-1,
+respectively) for the free surface and boundary fluxes in the GWCE,
+and must sum to 1. Most critically, the weighting factors are used in the
+discretization of the linear gravity wave (pressure gradient) term and are
+responsible for determining the inherent implicity (impacting solution
+stability), in addition to order of accuracy and dispersive characteristics of
+the numerical method.</p>
+<section id="typical-values">
+<span id="id1"></span><h2>Typical Values<a class="headerlink" href="#typical-values" title="Link to this heading"></a></h2>
+<div class="line-block">
+<div class="line">If the consistent mass-matrix solver is chosen (see <a class="reference external" href="IM">IM</a> parameter)
+then a semi-implicit method is possible and encouraged. In this case the most
+common choice for the weighting factors are:</div>
+<div class="line"><span class="math notranslate nohighlight">\(\mathrm{A00} = \mathrm{C00} = 0.35, \quad \mathrm{B00} = 0.30\)</span></div>
+</div>
+<div class="line-block">
+<div class="line">If the lumped mass-matrix solver is chosen then only an explicit method is
+possible (the weighting A00 must be zero as no matrix solve is conducted), and
+the weighting factors that are typically chosen become simply:</div>
+<div class="line"><span class="math notranslate nohighlight">\(\mathrm{A00} = \mathrm{C00} = 0, \quad \mathrm{B00} = 1\)</span></div>
+</div>
+</section>
+<section id="theory">
+<h2>Theory<a class="headerlink" href="#theory" title="Link to this heading"></a></h2>
+<section id="wave-continuity-equation">
+<span id="id2"></span><h3>Wave Continuity Equation<a class="headerlink" href="#wave-continuity-equation" title="Link to this heading"></a></h3>
+<p>Theory is dominated by analysis of the Wave Continuity Equation (WCE), a special
+case of the Generalized Wave Continuity Equation (GWCE) where the
+<a class="reference external" href="TAU0">TAU0</a> parameter is equal to the linear friction coefficient. In what
+has been determined to be a third-order accurate method centered in time <a class="footnote-reference brackets" href="#id18" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>,
+which was first introduced by Lynch and Gray (1979) <a class="footnote-reference brackets" href="#id19" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>, the choice of A00,
+B00, C00 is reduced to depend on a single parameter, <span class="math notranslate nohighlight">\(\theta\)</span>:</p>
+<p><span class="math notranslate nohighlight">\(\mathrm{A00} = \mathrm{C00} = 0.5\theta, \quad \mathrm{B00} = 1-\theta\)</span></p>
+<p>In other words, k+1 and k-1 weightings are chosen to be equal. It would however
+not appear that any restriction other than the requirement that A00, B00, C00
+must sum to 1 is necessary to obtain second-order accuracy <a class="footnote-reference brackets" href="#id18" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>. Unconditional
+stability is achieved with the prescription of
+<span class="math notranslate nohighlight">\(\theta \geq 0.5\)</span> <a class="footnote-reference brackets" href="#id18" id="id6" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> <a class="footnote-reference brackets" href="#id19" id="id7" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>. Likely because of this fact, the typical
+choice for ADCIRC has become <span class="math notranslate nohighlight">\(\theta = 0.7\)</span>, i.e.,
+<span class="math notranslate nohighlight">\(\mathrm{A00} = \mathrm{C00} = 0.35, \mathrm{B00} = 0.30\)</span> as noted above.
+Different values of <span class="math notranslate nohighlight">\(\theta\)</span> may be motivated by the following expression
+for optimal dispersive accuracy for the consistent mass-matrix solver <a class="footnote-reference brackets" href="#id18" id="id8" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>:</p>
+<p><span class="math notranslate nohighlight">\(\theta = \frac{1}{6}\left(1 + \frac{1}{Cr^2}\right)\)</span></p>
+<p>where <span class="math notranslate nohighlight">\(Cr = \sqrt{gh}\Delta t/\Delta x\)</span> is the Courant number based on the
+linear gravity wave speed.</p>
+<p>A purely explicit method (<span class="math notranslate nohighlight">\(\theta = 0\)</span>) for the WCE is found to be stable
+under the following conditions <a class="footnote-reference brackets" href="#id20" id="id9" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a> <a class="footnote-reference brackets" href="#id21" id="id10" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a>:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(Cr &lt; 1\)</span> : lumped mass-matrix solved in 1-D</p></li>
+<li><p><span class="math notranslate nohighlight">\(Cr &lt; \sqrt{3}/3\)</span>: consistent mass-matrix solved in 1-D</p></li>
+<li><p><span class="math notranslate nohighlight">\(Cr &lt; \sqrt{2}/2\)</span>: lumped mass-matrix solved in 2-D</p></li>
+<li><p><span class="math notranslate nohighlight">\(Cr &lt; \sqrt{6}/6\)</span>: consistent mass-matrix solved in 2-D</p></li>
+</ul>
+<p>These conditions are for linear finite-elements (ADCIRC uses these) with even
+node spacings and constant bathymetry. Other conditions for quadratic
+finite-elements, uneven node spacings, and non-constant bathymetry are shown in
+Kinnmark and Gray (1985) <a class="footnote-reference brackets" href="#id20" id="id11" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>.</p>
+<p>In the explicit method case, stability (and optimal dispersive accuracy <a class="footnote-reference brackets" href="#id18" id="id12" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>)
+is superior for the lumped mass-matrix solver versus the consistent mass-matrix
+solver, hence the lumped solver should always be chosen when employing an
+explicit method (see <a class="reference external" href="IM">IM</a> parameter for setting the solver type).</p>
+</section>
+<section id="generalized-wave-continuity-equation">
+<span id="id13"></span><h3>Generalized Wave Continuity Equation<a class="headerlink" href="#generalized-wave-continuity-equation" title="Link to this heading"></a></h3>
+<p>For the theory based on the WCE, stability is shown to be independent of the
+choice of <a class="reference external" href="TAU0">TAU0</a> (<span class="math notranslate nohighlight">\(\tau_0\)</span>). However, experience tell us that in
+the GWCE a larger value of <span class="math notranslate nohighlight">\(\tau_0\)</span> tends to be more unstable than a
+smaller value. This makes sense since the behavior of the equations will become
+more and more similar to the Primitive Continuity Equation with greater
+<span class="math notranslate nohighlight">\(\tau_0\)</span>, which is responsible for 2Δx instabilities - the motive for
+using the GWCE in the finite-element method.</p>
+<p>Kinnmark’s 1986 monograph <a class="footnote-reference brackets" href="#id22" id="id14" role="doc-noteref"><span class="fn-bracket">[</span>5<span class="fn-bracket">]</span></a> does offer some analysis that backs up this
+empirical experience. For the consistent mass-matrix solver employing the
+centered <span class="math notranslate nohighlight">\(\theta\)</span> scheme it can be shown that unconditional stability is
+only possible if <span class="math notranslate nohighlight">\(\theta \geq 0.5\)</span> and,</p>
+<p><span class="math notranslate nohighlight">\(\tau_0 \leq \tau\)</span></p>
+<p>where <span class="math notranslate nohighlight">\(\tau\)</span> is the linear friction coefficient. In the deep ocean when
+employing a quadratic drag law this could be a very restrictive requirement on
+<span class="math notranslate nohighlight">\(\tau_0\)</span> (e.g., <span class="math notranslate nohighlight">\(\tau = C_d|u|/H \sim 10^{-7}\)</span> assuming
+<span class="math notranslate nohighlight">\(C_d \sim 0.001\)</span>, <span class="math notranslate nohighlight">\(|u| \sim 0.1\)</span> m/s, <span class="math notranslate nohighlight">\(H \sim 1000\)</span> m). In
+addition, it is in opposition to our desire to choose the recommended value,
+<span class="math notranslate nohighlight">\(\tau_0 \sim 1-10\tau_{max}\)</span>, for good mass conservation and dispersive
+properties <a class="footnote-reference brackets" href="#id23" id="id15" role="doc-noteref"><span class="fn-bracket">[</span>6<span class="fn-bracket">]</span></a>. An alternative way to view the criteria is to look for a
+Courant number which eliminates the restriction on the choice of <span class="math notranslate nohighlight">\(\tau_0\)</span>.
+It can be shown that this is the case in 1-D when,</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(Cr &lt; 2\sqrt{3}/3\)</span>, when <span class="math notranslate nohighlight">\(\theta \geq 0.5\)</span> (consistent
+mass-matrix)</p></li>
+<li><p><span class="math notranslate nohighlight">\(Cr &lt; \sqrt{3}/3\)</span>, when <span class="math notranslate nohighlight">\(\theta = 0\)</span> (consistent mass-matrix)</p></li>
+<li><p><span class="math notranslate nohighlight">\(Cr &lt; 2\)</span>, when <span class="math notranslate nohighlight">\(\theta \geq 0.5\)</span> (lumped mass-matrix)</p></li>
+<li><p><span class="math notranslate nohighlight">\(Cr &lt; 1\)</span>, when <span class="math notranslate nohighlight">\(\theta = 0\)</span> (lumped mass-matrix)</p></li>
+</ul>
+<p>Assuming the same relationship between 1-D and 2-D as in the WCE, the conditions
+for 2-D can be recovered by multiplying by <span class="math notranslate nohighlight">\(\sqrt{2}/2\)</span>. This means that
+the stability requirement for the semi-implicit scheme (<span class="math notranslate nohighlight">\(\theta \geq 0.5\)</span>)
+is two-fold less restrictive than the explicit scheme (<span class="math notranslate nohighlight">\(\theta = 0\)</span>), in
+which the latter has identical stability requirements as the WCE. Again, the
+only way to circumvent this stability requirement for the semi-implicit scheme
+in the GWCE is to choose a sufficiently small <span class="math notranslate nohighlight">\(\tau_0 \leq \tau\)</span>.</p>
+</section>
+<section id="critique">
+<h3>Critique<a class="headerlink" href="#critique" title="Link to this heading"></a></h3>
+<p>One aspect missing from the theory above are different weighting schemes which
+are possibly non-centered, i.e., <span class="math notranslate nohighlight">\(\mathrm{A00} \neq \mathrm{C00}\)</span>. Pringle
+et al. <a class="footnote-reference brackets" href="#id24" id="id16" role="doc-noteref"><span class="fn-bracket">[</span>7<span class="fn-bracket">]</span></a> shows that stability of the GWCE is improved if,</p>
+<p><span class="math notranslate nohighlight">\(\mathrm{A00} = \mathrm{B00} = 0.5\theta, \quad \mathrm{C00} = 1-\theta\)</span></p>
+<p>which is unconditionally stable under the following conditions for the
+consistent mass-matrix solver,</p>
+<p><span class="math notranslate nohighlight">\(2/3 \leq \theta \leq 1, \quad \tau_0\Delta t \leq (16/3)(3\theta/2-1)\)</span></p>
+<p>thus removing the restrictive condition in the centered-scheme
+(<span class="math notranslate nohighlight">\(\tau_0 \leq \Delta t\)</span>), instead requiring only that <span class="math notranslate nohighlight">\(\tau_0\)</span> is
+small enough for the given time step <span class="math notranslate nohighlight">\(\Delta t\)</span>.</p>
+<p>Moreover, the equations analyzed are always linearized (a requirement of the
+<a class="reference external" href="https://en.wikipedia.org/wiki/Von_Neumann_stability_analysis">von Neumann stability
+analysis</a>),
+thus stability may be more restricting in real-world problems, especially those
+with fine grid sizes and where nonlinearities are non-trivial. In such cases
+where it is not possible to achieve time steps more than twice that possible
+with an explicit method it becomes preferable to employ the explicit lumped
+mass-matrix solver since it is computationally twice as fast per time step
+solve <a class="footnote-reference brackets" href="#id25" id="id17" role="doc-noteref"><span class="fn-bracket">[</span>8<span class="fn-bracket">]</span></a>.</p>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<references /><aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id18" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id3">1</a>,<a role="doc-backlink" href="#id5">2</a>,<a role="doc-backlink" href="#id6">3</a>,<a role="doc-backlink" href="#id8">4</a>,<a role="doc-backlink" href="#id12">5</a>)</span>
+<p>M.G.G. Foreman, An Analysis of the “Wave Equation” Model for Finite Element
+Tidal Computations, J. Comput. Phys. 52 (1983) 290–312.</p>
+</aside>
+<aside class="footnote brackets" id="id19" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id4">1</a>,<a role="doc-backlink" href="#id7">2</a>)</span>
+<p>D.R. Lynch, W.G. Gray, A Wave Equation Model for Finite Element Tidal
+Computations, Computers &amp; Fluids. 7 (1979) 207–228.</p>
+</aside>
+<aside class="footnote brackets" id="id20" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id9">1</a>,<a role="doc-backlink" href="#id11">2</a>)</span>
+<p>I.P.E. Kinnmark, W.G. Gray, Stability and accuracy of spatial approximations for wave equation tidal models, J. Comput. Phys. 60 (1985) 447–466. doi:10.1016/0021-9991(85)90030-0.</p>
+</aside>
+<aside class="footnote brackets" id="id21" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">4</a><span class="fn-bracket">]</span></span>
+<p>Kinnmark, I.P.E., Gray, W.G., 1984. A Two-Dimensional Analysis of the Wave Equation Model for Finite Element Tidal Computations. Int. J. Numer. Methods Eng. 20, 369–383.</p>
+</aside>
+<aside class="footnote brackets" id="id22" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id14">5</a><span class="fn-bracket">]</span></span>
+<p>Kinnmark, I., 1986. The Shallow Water Wave Equations: Formulation, Analysis and Application, Lecture Notes in Engineering. Springer Berlin Heidelberg, Berlin, Heidelberg. doi:10.1007/978-3-642-82646-7.</p>
+</aside>
+<aside class="footnote brackets" id="id23" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id15">6</a><span class="fn-bracket">]</span></span>
+<p>Kolar, R.L., Westerink, J.J., Cantekin, M.E., Blain, C.A., 1994. Aspects of Nonlinear Simulations using Shallow-water Models based on the Wave Continuity Equation. Comput. Fluids 23, 523–538.</p>
+</aside>
+<aside class="footnote brackets" id="id24" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id16">7</a><span class="fn-bracket">]</span></span>
+<p>Pringle et al., Global Ocean-to-Coastal Storm Tide Modeling in ADCIRC v55: Unstructured Mesh Design, in preparation (2020).</p>
+</aside>
+<aside class="footnote brackets" id="id25" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id17">8</a><span class="fn-bracket">]</span></span>
+<ol class="upperalpha simple" start="19">
+<li><p>Tanaka, S. Bunya, J.J. Westerink, C. Dawson, R.A. Luettich, Scalability of an Unstructured Grid Continuous Galerkin Based Hurricane Storm Surge Model, J. Sci. Comput. 46 (2011) 329–358. doi:10.1007/s10915-010-9402-1.</p></li>
+</ol>
+</aside>
+</aside>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ntip.html" class="btn btn-neutral float-left" title="NTIP" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tau0.html" class="btn btn-neutral float-right" title="TAU0" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

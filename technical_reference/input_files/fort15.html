@@ -1,0 +1,400 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fort.15: Model Parameter and Periodic Boundary Condition File &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Fort.13: Nodal Attributes File" href="fort13.html" />
+    <link rel="prev" title="Fort.rotm: Rotation of the geographical coordinates" href="fortrotm.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../all_files.html">All Files</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Input Files</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#grid-and-boundaries">Grid and Boundaries</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#model-parameters-and-periodic-bcs">Model Parameters and Periodic BCs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#nodal-attributes">Nodal Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#hot-start">Hot Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#boundary-conditions">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#meteorological-forcing">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#wave-forcing">Wave Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#self-attraction-earth-load-tide-forcing">Self Attraction/Earth Load Tide Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#ice-coverage">Ice Coverage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#d-baroclinic-simulation">3D Baroclinic Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#station-locations">Station Locations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#time-varying-topography-bathymetry">Time-varying Topography/Bathymetry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#passive-scalar-transport">Passive Scalar Transport</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#parallel-execution">Parallel Execution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Input Files</a></li>
+      <li class="breadcrumb-item active">Fort.15: Model Parameter and Periodic Boundary Condition File</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/technical_reference/input_files/fort15.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fort-15-model-parameter-and-periodic-boundary-condition-file">
+<span id="fort15"></span><h1>Fort.15: Model Parameter and Periodic Boundary Condition File<a class="headerlink" href="#fort-15-model-parameter-and-periodic-boundary-condition-file" title="Link to this heading"></a></h1>
+<p>The fort.15 file contains the majority of the parameters required to run both the 2DDI and 3D versions of ADCIRC and the information to drive the model with harmonic boundary conditions (either elevation or flux). This file is required to run the ADCIRC model.</p>
+<section id="file-structure">
+<h2>File Structure<a class="headerlink" href="#file-structure" title="Link to this heading"></a></h2>
+<p>The basic file structure is shown below. Each line of input data is represented by a line containing the input variable name(s). Loops indicate multiple lines of input. Conditional input is indicated by a clause following the variable name(s).</p>
+<pre class="literal-block"><a class="reference internal" href="../parameter_definitions/index.html#rundes"><span class="std std-ref">RUNDES</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#runid"><span class="std std-ref">RUNID</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nfover"><span class="std std-ref">NFOVER</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nabout"><span class="std std-ref">NABOUT</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nscreen"><span class="std std-ref">NSCREEN</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#ihot"><span class="std std-ref">IHOT</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#ics"><span class="std std-ref">ICS</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#im"><span class="std std-ref">IM</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#iden"><span class="std std-ref">IDEN</span></a>      if IM = 21
+<a class="reference internal" href="../parameter_definitions/index.html#nolibf"><span class="std std-ref">NOLIBF</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nolifa"><span class="std std-ref">NOLIFA</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nolica"><span class="std std-ref">NOLICA</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nolicat"><span class="std std-ref">NOLICAT</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nwp"><span class="std std-ref">NWP</span></a>
+for j=1 to <a class="reference internal" href="../parameter_definitions/index.html#nwp"><span class="std std-ref">NWP</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#attrname"><span class="std std-ref">AttrName(j)</span></a>
+end j loop
+<a class="reference internal" href="../parameter_definitions/index.html#ncor"><span class="std std-ref">NCOR</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#ntip"><span class="std std-ref">NTIP</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nws"><span class="std std-ref">NWS</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nramp"><span class="std std-ref">NRAMP</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#g"><span class="std std-ref">G</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#tau0"><span class="std std-ref">TAU0</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#tau0fulldomainmin"><span class="std std-ref">Tau0FullDomainMin</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#tau0fulldomainmax"><span class="std std-ref">Tau0FullDomainMax</span></a>      if TAU0 = -5.0
+<a class="reference internal" href="../parameter_definitions/index.html#dtdp"><span class="std std-ref">DTDP</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#statim"><span class="std std-ref">STATIM</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#reftim"><span class="std std-ref">REFTIM</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#wtiminc"><span class="std std-ref">WTIMINC</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#rnday"><span class="std std-ref">RNDAY</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#dramp"><span class="std std-ref">DRAMP</span></a>      if NRAMP = 0 or 1
+<a class="reference internal" href="../parameter_definitions/index.html#dramp"><span class="std std-ref">DRAMP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampextflux"><span class="std std-ref">DRAMPExtFlux</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fluxsettlingtime"><span class="std std-ref">FluxSettlingTime</span></a>      if NRAMP = 2
+<a class="reference internal" href="../parameter_definitions/index.html#dramp"><span class="std std-ref">DRAMP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampextflux"><span class="std std-ref">DRAMPExtFlux</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fluxsettlingtime"><span class="std std-ref">FluxSettlingTime</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampintflux"><span class="std std-ref">DRAMPIntFlux</span></a>      if NRAMP = 3
+<a class="reference internal" href="../parameter_definitions/index.html#dramp"><span class="std std-ref">DRAMP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampextflux"><span class="std std-ref">DRAMPExtFlux</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fluxsettlingtime"><span class="std std-ref">FluxSettlingTime</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampintflux"><span class="std std-ref">DRAMPIntFlux</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampelev"><span class="std std-ref">DRAMPElev</span></a>      if NRAMP = 4
+<a class="reference internal" href="../parameter_definitions/index.html#dramp"><span class="std std-ref">DRAMP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampextflux"><span class="std std-ref">DRAMPExtFlux</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fluxsettlingtime"><span class="std std-ref">FluxSettlingTime</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampintflux"><span class="std std-ref">DRAMPIntFlux</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampelev"><span class="std std-ref">DRAMPElev</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#dramptip"><span class="std std-ref">DRAMPTip</span></a>      if NRAMP = 5
+<a class="reference internal" href="../parameter_definitions/index.html#dramp"><span class="std std-ref">DRAMP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampextflux"><span class="std std-ref">DRAMPExtFlux</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fluxsettlingtime"><span class="std std-ref">FluxSettlingTime</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampintflux"><span class="std std-ref">DRAMPIntFlux</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampelev"><span class="std std-ref">DRAMPElev</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#dramptip"><span class="std std-ref">DRAMPTip</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampmete"><span class="std std-ref">DRAMPMete</span></a>      if NRAMP = 6
+<a class="reference internal" href="../parameter_definitions/index.html#dramp"><span class="std std-ref">DRAMP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampextflux"><span class="std std-ref">DRAMPExtFlux</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fluxsettlingtime"><span class="std std-ref">FluxSettlingTime</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampintflux"><span class="std std-ref">DRAMPIntFlux</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampelev"><span class="std std-ref">DRAMPElev</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#dramptip"><span class="std std-ref">DRAMPTip</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampmete"><span class="std std-ref">DRAMPMete</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampwrad"><span class="std std-ref">DRAMPWRad</span></a>      if NRAMP = 7
+<a class="reference internal" href="../parameter_definitions/index.html#dramp"><span class="std std-ref">DRAMP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampextflux"><span class="std std-ref">DRAMPExtFlux</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fluxsettlingtime"><span class="std std-ref">FluxSettlingTime</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampintflux"><span class="std std-ref">DRAMPIntFlux</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampelev"><span class="std std-ref">DRAMPElev</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#dramptip"><span class="std std-ref">DRAMPTip</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampmete"><span class="std std-ref">DRAMPMete</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#drampwrad"><span class="std std-ref">DRAMPWRad</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#dunrampmete"><span class="std std-ref">DUnRampMete</span></a>      if NRAMP = 8
+<a class="reference internal" href="../parameter_definitions/index.html#a00"><span class="std std-ref">A00</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#b00"><span class="std std-ref">B00</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#c00"><span class="std std-ref">C00</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#h0"><span class="std std-ref">H0</span></a>      if NOLIFA = 0, 1
+<a class="reference internal" href="../parameter_definitions/index.html#h0"><span class="std std-ref">H0</span></a> <a class="reference internal" href="../parameter_definitions/index.html#integer"><span class="std std-ref">INTEGER</span></a> <a class="reference internal" href="../parameter_definitions/index.html#integer"><span class="std std-ref">INTEGER</span></a> <a class="reference internal" href="../parameter_definitions/index.html#velmin"><span class="std std-ref">VELMIN</span></a>      if NOLIFA = 2 or 3
+<a class="reference internal" href="../parameter_definitions/index.html#slam0"><span class="std std-ref">SLAM0</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#sfea0"><span class="std std-ref">SFEA0</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#tau"><span class="std std-ref">TAU</span></a>      if NOLIBF = 0
+<a class="reference internal" href="../parameter_definitions/index.html#cf"><span class="std std-ref">CF</span></a>      if NOLIBF = 1
+<a class="reference internal" href="../parameter_definitions/index.html#cf"><span class="std std-ref">CF</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#hbreak"><span class="std std-ref">HBREAK</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#ftheta"><span class="std std-ref">FTHETA</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fgamma"><span class="std std-ref">FGAMMA</span></a>      if NOLIBF = 2
+<a class="reference internal" href="../parameter_definitions/index.html#eslm"><span class="std std-ref">ESLM</span></a>      if IM = 0, 1, 2
+<a class="reference internal" href="../parameter_definitions/index.html#eslm"><span class="std std-ref">ESLM</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#eslc"><span class="std std-ref">ESLC</span></a>      if IM = 10
+<a class="reference internal" href="../parameter_definitions/index.html#cori"><span class="std std-ref">CORI</span></a>      if NCOR = 1
+<a class="reference internal" href="../parameter_definitions/index.html#ntif"><span class="std std-ref">NTIF</span></a>
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#ntif"><span class="std std-ref">NTIF</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#tipotag"><span class="std std-ref">TIPOTAG(k)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#tpk"><span class="std std-ref">TPK(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#amigt"><span class="std std-ref">AMIGT(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#etrf"><span class="std std-ref">ETRF(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fft"><span class="std std-ref">FFT(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#facet"><span class="std std-ref">FACET(k)</span></a>
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#nbfr"><span class="std std-ref">NBFR</span></a>
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nbfr"><span class="std std-ref">NBFR</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#bountag"><span class="std std-ref">BOUNTAG(k)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#amig"><span class="std std-ref">AMIG(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#ff"><span class="std std-ref">FF(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#face"><span class="std std-ref">FACE(k)</span></a>
+end k loop
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nbfr"><span class="std std-ref">NBFR</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#alphae"><span class="std std-ref">ALPHAE(k)</span></a>
+   for j=1 to <a class="reference internal" href="../parameter_definitions/index.html#neta"><span class="std std-ref">NETA</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#emo"><span class="std std-ref">EMO(k,j)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#efa"><span class="std std-ref">EFA(k,j)</span></a>
+   end j loop
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#anginn"><span class="std std-ref">ANGINN</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nffr"><span class="std std-ref">NFFR</span></a>      include this line only if IBTYPE = 2, 12, 22, 32 or 52 in the Grid and Boundary Information File
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nffr"><span class="std std-ref">NFFR</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#fbountag"><span class="std std-ref">FBOUNTAG(k)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#famigt"><span class="std std-ref">FAMIGT(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fff"><span class="std std-ref">FFF(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fface"><span class="std std-ref">FFACE(k)</span></a>
+end k loop
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nffr"><span class="std std-ref">NFFR</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#alphaq"><span class="std std-ref">ALPHAQ(k)</span></a>
+   for j=1 to <a class="reference internal" href="../parameter_definitions/index.html#nvel"><span class="std std-ref">NVEL</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#qnam"><span class="std std-ref">QNAM(k,j)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#qnph"><span class="std std-ref">QNPH(k,j)</span></a>      use this line if IBTYPE = 2, 12, 22 in the Grid and Boundary Information File
+      <a class="reference internal" href="../parameter_definitions/index.html#qnam"><span class="std std-ref">QNAM(k,j)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#qnph"><span class="std std-ref">QNPH(k,j)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#enam"><span class="std std-ref">ENAM(k,j)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#enph"><span class="std std-ref">ENPH(k,j)</span></a>      use this line if IBTYPE = 32 in the Grid and Boundary Information File
+   end j loop
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#noute"><span class="std std-ref">NOUTE</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutse"><span class="std std-ref">TOUTSE</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutfe"><span class="std std-ref">TOUTFE</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspoole"><span class="std std-ref">NSPOOLE</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nstae"><span class="std std-ref">NSTAE</span></a>
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nstae"><span class="std std-ref">NSTAE</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#xel"><span class="std std-ref">XEL(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#yel"><span class="std std-ref">YEL(k)</span></a>
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#noutv"><span class="std std-ref">NOUTV</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutsv"><span class="std std-ref">TOUTSV</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutfv"><span class="std std-ref">TOUTFV</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspoolv"><span class="std std-ref">NSPOOLV</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nstav"><span class="std std-ref">NSTAV</span></a>
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nstav"><span class="std std-ref">NSTAV</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#xev"><span class="std std-ref">XEV(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#yev"><span class="std std-ref">YEV(k)</span></a>
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#noutc"><span class="std std-ref">NOUTC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutsc"><span class="std std-ref">TOUTSC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutfc"><span class="std std-ref">TOUTFC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspoolc"><span class="std std-ref">NSPOOLC</span></a>      include this line only if IM =10
+<a class="reference internal" href="../parameter_definitions/index.html#nstac"><span class="std std-ref">NSTAC</span></a>      include this line only if IM =10
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nstac"><span class="std std-ref">NSTAC</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#xec"><span class="std std-ref">XEC(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#yec"><span class="std std-ref">YEC(k)</span></a>
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#noutm"><span class="std std-ref">NOUTM</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutsm"><span class="std std-ref">TOUTSM</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutfm"><span class="std std-ref">TOUTFM</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspoolm"><span class="std std-ref">NSPOOLM</span></a>      include this line only if NWS is not equal to zero
+<a class="reference internal" href="../parameter_definitions/index.html#nstam"><span class="std std-ref">NSTAM</span></a>      include this line only if NWS is not equal to zero
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nstam"><span class="std std-ref">NSTAM</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#xem"><span class="std std-ref">XEM(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#yem"><span class="std std-ref">YEM(k)</span></a>
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#noutge"><span class="std std-ref">NOUTGE</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutsge"><span class="std std-ref">TOUTSGE</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutfge"><span class="std std-ref">TOUTFGE</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspoolge"><span class="std std-ref">NSPOOLGE</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#noutgv"><span class="std std-ref">NOUTGV</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutsgv"><span class="std std-ref">TOUTSGV</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutfgv"><span class="std std-ref">TOUTFGV</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspoolgv"><span class="std std-ref">NSPOOLGV</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#noutgc"><span class="std std-ref">NOUTGC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutsgc"><span class="std std-ref">TOUTSGC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutfgc"><span class="std std-ref">TOUTFGC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspoolgc"><span class="std std-ref">NSPOOLGC</span></a>      include this line only if IM =10
+<a class="reference internal" href="../parameter_definitions/index.html#noutgw"><span class="std std-ref">NOUTGW</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutsgw"><span class="std std-ref">TOUTSGW</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutfgw"><span class="std std-ref">TOUTFGW</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspoolgw"><span class="std std-ref">NSPOOLGW</span></a>      include this line only if NWS is not equal to zero
+<a class="reference internal" href="../parameter_definitions/index.html#nfreq"><span class="std std-ref">NFREQ</span></a>
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nfreq"><span class="std std-ref">NFREQ</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#namefr"><span class="std std-ref">NAMEFR(k)</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#hafreq"><span class="std std-ref">HAFREQ(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#haff"><span class="std std-ref">HAFF(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#haface"><span class="std std-ref">HAFACE(k)</span></a>
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#thas"><span class="std std-ref">THAS</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#thaf"><span class="std std-ref">THAF</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nhainc"><span class="std std-ref">NHAINC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#fmv"><span class="std std-ref">FMV</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nhase"><span class="std std-ref">NHASE</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nhasv"><span class="std std-ref">NHASV</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nhage"><span class="std std-ref">NHAGE</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nhagv"><span class="std std-ref">NHAGV</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nhstar"><span class="std std-ref">NHSTAR</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nhsinc"><span class="std std-ref">NHSINC</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#ititer"><span class="std std-ref">ITITER</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#isldia"><span class="std std-ref">ISLDIA</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#convcr"><span class="std std-ref">CONVCR</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#itmax"><span class="std std-ref">ITMAX</span></a>
+<strong>[For a 2DDI ADCIRC run that does not use NetCDF, the file ends here. For any ADCIRC run that uses NetCDF, the lines NCPROJ through NCDATE (described at the end of this file format) are required metadata and must be added at the end of the fort.15 file.]</strong>
+<strong>[The following information is only included for a 3D run:]</strong>
+<a class="reference internal" href="../parameter_definitions/index.html#iden"><span class="std std-ref">IDEN</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#islip"><span class="std std-ref">ISLIP</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#kp"><span class="std std-ref">KP</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#z0s"><span class="std std-ref">Z0S</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#z0b"><span class="std std-ref">Z0B</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#alp1"><span class="std std-ref">ALP1</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#alp2"><span class="std std-ref">ALP2</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#alp3"><span class="std std-ref">ALP3</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#igc"><span class="std std-ref">IGC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nfen"><span class="std std-ref">NFEN</span></a>
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nfen"><span class="std std-ref">NFEN</span></a>      include this loop only if IGC = 0, k=1 at bottom, k= NFEN at surface
+   <a class="reference internal" href="../parameter_definitions/index.html#sigma"><span class="std std-ref">SIGMA(k)</span></a>
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#ievc"><span class="std std-ref">IEVC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#evmin"><span class="std std-ref">EVMIN</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#evcon"><span class="std std-ref">EVCON</span></a>
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nfen"><span class="std std-ref">NFEN</span></a>      include this loop only if IEVC = 0, k=1 at bottom, k= NFEN at surface
+   <a class="reference internal" href="../parameter_definitions/index.html#evtot"><span class="std std-ref">EVTOT(k)</span></a>
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#theta1"><span class="std std-ref">THETA1</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#theta2"><span class="std std-ref">THETA2</span></a>      include this line only if IEVC = 50 or 51
+<a class="reference internal" href="../parameter_definitions/index.html#i3dsd"><span class="std std-ref">I3DSD</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#to3dsds"><span class="std std-ref">TO3DSDS</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#to3dsdf"><span class="std std-ref">TO3DSDF</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspo3dsd"><span class="std std-ref">NSPO3DSD</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nsta3dd"><span class="std std-ref">NSTA3DD</span></a>
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nsta3dd"><span class="std std-ref">NSTA3DD</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#x3ds"><span class="std std-ref">X3DS(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#y3ds"><span class="std std-ref">Y3DS(k)</span></a>
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#i3dsv"><span class="std std-ref">I3DSV</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#to3dsvs"><span class="std std-ref">TO3DSVS</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#to3dfvf"><span class="std std-ref">TO3DFVF</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspo3dsv"><span class="std std-ref">NSPO3DSV</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nsta3dv"><span class="std std-ref">NSTA3DV</span></a>
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nsta3dv"><span class="std std-ref">NSTA3DV</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#x3ds"><span class="std std-ref">X3DS(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#y3ds"><span class="std std-ref">Y3DS(k)</span></a>
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#i3dst"><span class="std std-ref">I3DST</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#to3dsts"><span class="std std-ref">TO3DSTS</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#to3dstf"><span class="std std-ref">TO3DSTF</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspo3dst"><span class="std std-ref">NSPO3DST</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nsta3dt"><span class="std std-ref">NSTA3DT</span></a>
+for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#nsta3dt"><span class="std std-ref">NSTA3DT</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#x3ds"><span class="std std-ref">X3DS(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#y3ds"><span class="std std-ref">Y3DS(k)</span></a>
+end k loop
+<a class="reference internal" href="../parameter_definitions/index.html#i3dgd"><span class="std std-ref">I3DGD</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#to3dgds"><span class="std std-ref">TO3DGDS</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#to3dgdf"><span class="std std-ref">TO3DGDF</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspo3dgd"><span class="std std-ref">NSPO3DGD</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#i3dgv"><span class="std std-ref">I3DGV</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#to3dgvs"><span class="std std-ref">TO3DGVS</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#to3dgvf"><span class="std std-ref">TO3DGVF</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspo3dgv"><span class="std std-ref">NSPO3DGV</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#i3dgt"><span class="std std-ref">I3DGT</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#to3dgts"><span class="std std-ref">TO3DGTS</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#to3dgtf"><span class="std std-ref">TO3DGTF</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspo3dgt"><span class="std std-ref">NSPO3DGT</span></a>
+<strong>[The following line will be read in if IM is 21 or 31.]</strong>
+<a class="reference internal" href="../parameter_definitions/index.html#res-bc-flag"><span class="std std-ref">RES_BC_FLAG</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#bcflag-lnm"><span class="std std-ref">BCFLAG_LNM</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#bcflag-temp"><span class="std std-ref">BCFLAG_TEMP</span></a>
+<strong>[The following two lines will be read in if RES_BC_FLAG is negative.]</strong>
+<a class="reference internal" href="../parameter_definitions/index.html#rbctimeinc"><span class="std std-ref">RBCTIMEINC</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#bcstatim"><span class="std std-ref">BCSTATIM</span></a>
+<strong>[The following two lines will be read in if RES_BC_FLAG = 2.]</strong>
+<a class="reference internal" href="../parameter_definitions/index.html#rbctimeinc"><span class="std std-ref">RBCTIMEINC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#sbctimeinc"><span class="std std-ref">SBCTIMEINC</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#bcstatim"><span class="std std-ref">BCSTATIM</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#sbcstatim"><span class="std std-ref">SBCSTATIM</span></a>
+<strong>[The following two lines will be read in if RES_BC_FLAG = 3.]</strong>
+<a class="reference internal" href="../parameter_definitions/index.html#rbctimeinc"><span class="std std-ref">RBCTIMEINC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#tbctimeinc"><span class="std std-ref">TBCTIMEINC</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#bcstatim"><span class="std std-ref">BCSTATIM</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#tbcstatim"><span class="std std-ref">TBCSTATIM</span></a>
+<strong>[The following two lines will be read in if RES_BC_FLAG = 4.]</strong>
+<a class="reference internal" href="../parameter_definitions/index.html#rbctimeinc"><span class="std std-ref">RBCTIMEINC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#sbctimeinc"><span class="std std-ref">SBCTIMEINC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#tbctimeinc"><span class="std std-ref">TBCTIMEINC</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#bcstatim"><span class="std std-ref">BCSTATIM</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#sbcstatim"><span class="std std-ref">SBCSTATIM</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#tbcstatim"><span class="std std-ref">TBCSTATIM</span></a>
+<strong>[The following two lines will be read in if RES_BC_FLAG = 3 or 4 and BCFLAG_TEMP is not equal to 0.]</strong>
+<a class="reference internal" href="../parameter_definitions/index.html#ttbctimeinc"><span class="std std-ref">TTBCTIMEINC</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#ttbcstatim"><span class="std std-ref">TTBCSTATIM</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#ttbctimeinc"><span class="std std-ref">TTBCTIMEINC</span></a>
+<strong>[The following two lines will be read in only if IM is 21 or 31.]</strong>
+<a class="reference internal" href="../parameter_definitions/index.html#spongedist"><span class="std std-ref">SPONGEDIST</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#eqnstate"><span class="std std-ref">EQNSTATE</span></a>
+<strong>[The following lines will be read in only if IDEN is &gt; 0.]</strong>
+<a class="reference internal" href="../parameter_definitions/index.html#nlsd"><span class="std std-ref">NLSD</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nvsd"><span class="std std-ref">NVSD</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nltd"><span class="std std-ref">NLTD</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nvtd"><span class="std std-ref">NVTD</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#alp4"><span class="std std-ref">ALP4</span></a>
+<strong>[The following line will be read in only if IDEN = 3 or 4.]</strong>
+<a class="reference internal" href="../parameter_definitions/index.html#ntf"><span class="std std-ref">NTF</span></a>
+<strong>[The following lines will be read in only if the NetCDF output or hotstart format is chosen]</strong>
+<a class="reference internal" href="../parameter_definitions/index.html#ncproj"><span class="std std-ref">NCPROJ</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#ncinst"><span class="std std-ref">NCINST</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#ncsour"><span class="std std-ref">NCSOUR</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nchist"><span class="std std-ref">NCHIST</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#ncref"><span class="std std-ref">NCREF</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nccom"><span class="std std-ref">NCCOM</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nchost"><span class="std std-ref">NCHOST</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#ncconv"><span class="std std-ref">NCCONV</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nccont"><span class="std std-ref">NCCONT</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#ncdate"><span class="std std-ref">NCDATE</span></a>
+<strong>[The following Fortran namelist lines are optional, but if they appear, they must appear at the very end of the fort.15 file.]</strong>
+<a class="reference internal" href="../../user_guide/model_configuration/tides/ali_dispersion_conrtol.html#controlling-dispersive-behavior"><span class="std std-ref">&amp;AliDispersionControl</span></a> <a class="reference internal" href="../../user_guide/model_configuration/tides/ali_dispersion_conrtol.html#controlling-dispersive-behavior"><span class="std std-ref">CAliDisp=logicalValue</span></a>, <a class="reference internal" href="../../user_guide/model_configuration/tides/ali_dispersion_conrtol.html#controlling-dispersive-behavior"><span class="std std-ref">Cs=floatValue</span></a>, <a class="reference internal" href="../../user_guide/model_configuration/tides/ali_dispersion_conrtol.html#controlling-dispersive-behavior"><span class="std std-ref">Ad=floatValue</span></a>, <a class="reference internal" href="../../user_guide/model_configuration/tides/ali_dispersion_conrtol.html#controlling-dispersive-behavior"><span class="std std-ref">Bd=floatValue</span></a> /
+<a class="reference internal" href="../../user_guide/special_features/adcirc2d_plus.html#densitycontrol-namelist"><span class="std std-ref">&amp;densityControl</span></a> <a class="reference internal" href="../../user_guide/special_features/adcirc2d_plus.html#densitycontrol-namelist"><span class="std std-ref">densityRunType='stringValue'</span></a>, <a class="reference internal" href="../../user_guide/special_features/adcirc2d_plus.html#densitycontrol-namelist"><span class="std std-ref">densityFileName='stringValue'</span></a>, <a class="reference internal" href="../../user_guide/special_features/adcirc2d_plus.html#densitycontrol-namelist"><span class="std std-ref">densityTimeIterator=integerValue</span></a>, <a class="reference internal" href="../../user_guide/special_features/adcirc2d_plus.html#densitycontrol-namelist"><span class="std std-ref">densityForcingType='stringValue'</span></a> /
+<a class="reference internal" href="../../user_guide/special_features/dynamic_water_level_correction.html#dynamic-water-level-correction"><span class="std std-ref">&amp;dynamicWaterLevelCorrectionControl</span></a> <a class="reference internal" href="../../user_guide/special_features/dynamic_water_level_correction.html#dynamic-water-level-correction"><span class="std std-ref">dynamicWaterLevelCorrectionFileName='stringValue'</span></a>, <a class="reference internal" href="../../user_guide/special_features/dynamic_water_level_correction.html#dynamic-water-level-correction"><span class="std std-ref">dynamicWaterLevelCorrectionMultiplier=floatValue</span></a>, <a class="reference internal" href="../../user_guide/special_features/dynamic_water_level_correction.html#dynamic-water-level-correction"><span class="std std-ref">dynamicWaterLevelCorrectionRampStart=floatValue</span></a>, <a class="reference internal" href="../../user_guide/special_features/dynamic_water_level_correction.html#dynamic-water-level-correction"><span class="std std-ref">dynamicWaterLevelCorrectionRampEnd=floatValue</span></a>, <a class="reference internal" href="../../user_guide/special_features/dynamic_water_level_correction.html#dynamic-water-level-correction"><span class="std std-ref">dynamicWaterLevelCorrectionRampReferenceTime='stringValue'</span></a>, <a class="reference internal" href="../../user_guide/special_features/dynamic_water_level_correction.html#dynamic-water-level-correction"><span class="std std-ref">dynamicWaterLevelCorrectionSkipSnaps=integerValue</span></a> /
+<a class="reference internal" href="../../user_guide/model_configuration/physics_parameters/horizontal_eddy_viscosity.html#smagorinsky-eddy-viscosity"><span class="std std-ref">&amp;Smag_Control</span></a> <a class="reference internal" href="../../user_guide/model_configuration/physics_parameters/horizontal_eddy_viscosity.html#smagorinsky-eddy-viscosity"><span class="std std-ref">SMAG_LOWER_LIM=floatValue</span></a>, <a class="reference internal" href="../../user_guide/model_configuration/physics_parameters/horizontal_eddy_viscosity.html#smagorinsky-eddy-viscosity"><span class="std std-ref">SMAG_UPPER_LIM=floatValue</span></a> /
+<a class="reference internal" href="../parameter_definitions/index.html#inundationoutputcontrol"><span class="std std-ref">&amp;inundationOutputControl</span></a> <a class="reference internal" href="../parameter_definitions/index.html#inundationoutput"><span class="std std-ref">inundationOutput=logicalValue0</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#inunthresh"><span class="std std-ref">inunThresh =floatValue</span></a> /
+<a class="reference internal" href="../../user_guide/model_configuration/meteorological_forcing/wind_stress.html#metcontrol-namelist"><span class="std std-ref">&amp;metControl</span></a> <a class="reference internal" href="../parameter_definitions/index.html#winddraglimit"><span class="std std-ref">WindDragLimit=floatValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#draglawstring"><span class="std std-ref">DragLawString='stringValue'</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#rhoair"><span class="std std-ref">rhoAir=floatValue</span></a>, <a class="reference internal" href="../../user_guide/model_configuration/meteorological_forcing/wind_stress.html#metcontrol-namelist"><span class="std std-ref">outputWindDrag=logicalValue</span></a> /
+<a class="reference internal" href="../parameter_definitions/index.html#subdomainmodeling"><span class="std std-ref">&amp;subdomainModeling</span></a> <a class="reference internal" href="../parameter_definitions/index.html#subdomainon"><span class="std std-ref">subdomainOn=logicalValue</span></a> /
+<a class="reference internal" href="../parameter_definitions/index.html#swanoutputcontrol"><span class="std std-ref">&amp;SWANOutputControl</span></a> <a class="reference internal" href="../parameter_definitions/index.html#swanoutputcontrol"><span class="std std-ref">SWAN_OutputHS=logicalValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#swanoutputcontrol"><span class="std std-ref">SWAN_OutputDIR=logicalValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#swanoutputcontrol"><span class="std std-ref">SWAN_OutputTM01=logicalValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#swanoutputcontrol"><span class="std std-ref">SWAN_OutputTPS=logicalValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#swanoutputcontrol"><span class="std std-ref">SWAN_OutputWIND=logicalValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#swanoutputcontrol"><span class="std std-ref">SWAN_OutputTM02=logicalValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#swanoutputcontrol"><span class="std std-ref">SWAN_OutputTMM10=logicalValue</span></a> /
+<a class="reference internal" href="../parameter_definitions/index.html#timebathycontrol"><span class="std std-ref">&amp;timeBathyControl</span></a> <a class="reference internal" href="../parameter_definitions/index.html#nddt"><span class="std std-ref">NDDT=integerValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#btiminc"><span class="std std-ref">BTIMINC=floatValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#bchgtiminc"><span class="std std-ref">BCHGTIMINC=floatValue</span></a>, invertedBarometerOnElevationBoundary=logicalValue /
+<a class="reference internal" href="../parameter_definitions/index.html#tvwcontrol"><span class="std std-ref">&amp;TVWControl</span></a> <a class="reference internal" href="../parameter_definitions/index.html#use-tvw"><span class="std std-ref">use_TVW=logicalValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#tvw-file"><span class="std std-ref">TVW_file='stringValue'</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nout-tvw"><span class="std std-ref">nout_TVW =integerValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#touts-tvw"><span class="std std-ref">touts_TVW =floatValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#toutf-tvw"><span class="std std-ref">toutf_TVW=floatValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#nspool-tvw"><span class="std std-ref">nspool_TVW =integerValue</span></a> /
+&amp;WarnElevControl <a class="reference internal" href="../parameter_definitions/index.html#warnelev"><span class="std std-ref">WarnElev=floatValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#errorelev"><span class="std std-ref">ErrorElev=floatValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#warnelevdump"><span class="std std-ref">WarnElevDump=logicalValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#warnelevdumplimit"><span class="std std-ref">WarnElevDumpLimit=integerValue</span></a> /
+<a class="reference internal" href="../parameter_definitions/index.html#wavecoupling"><span class="std std-ref">&amp;waveCoupling</span></a> <a class="reference internal" href="../parameter_definitions/index.html#windwavemultiplier"><span class="std std-ref">WindWaveMultiplier=floatValue</span></a> /
+<a class="reference internal" href="../parameter_definitions/index.html#wetdrycontrol"><span class="std std-ref">&amp;wetDryControl</span></a> <a class="reference internal" href="../parameter_definitions/index.html#outputnodecode"><span class="std std-ref">outputNodeCode=logicalValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#outputnoff"><span class="std std-ref">outputNOFF=logicalValue</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#noffactive"><span class="std std-ref">noffActive=logicalValue</span></a> /</pre>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
+<p>The following is a simple example of a fort.15 file:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Sample ADCIRC Run
+Sample Run ID
+1                ! NFOVER
+0                ! NABOUT
+1                ! NSCREEN
+0                ! IHOT
+2                ! ICS
+1                ! IM
+1                ! NOLIBF
+1                ! NOLIFA
+1                ! NOLICA
+1                ! NOLICAT
+3                ! NWP
+mannings_n_at_sea_floor
+surface_directional_effective_roughness_length
+average_horizontal_eddy_viscosity_in_sea_water_wrt_depth
+1                ! NCOR
+1                ! NTIP
+0                ! NWS
+1                ! NRAMP
+9.81             ! G
+0.0001           ! TAU0
+600.0            ! DTDP
+0.0              ! STATIM
+0.0              ! REFTIM
+60.0 30.0 3      ! WTIMINC
+5.0              ! RNDAY
+43200.0          ! DRAMP
+0.0 0.0 0.0      ! A00, B00, C00
+0.1              ! H0
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fortrotm.html" class="btn btn-neutral float-left" title="Fort.rotm: Rotation of the geographical coordinates" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fort13.html" class="btn btn-neutral float-right" title="Fort.13: Nodal Attributes File" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

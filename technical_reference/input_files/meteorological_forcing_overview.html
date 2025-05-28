@@ -1,0 +1,292 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meteorological Forcing Overview &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Fort.22: Meteorological Forcing Data" href="fort22.html" />
+    <link rel="prev" title="Fort.20: Non-periodic Normal Flow Boundary Condition File" href="fort20.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../all_files.html">All Files</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Input Files</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#grid-and-boundaries">Grid and Boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#model-parameters-and-periodic-bcs">Model Parameters and Periodic BCs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#nodal-attributes">Nodal Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#hot-start">Hot Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#boundary-conditions">Boundary Conditions</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#meteorological-forcing">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#wave-forcing">Wave Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#self-attraction-earth-load-tide-forcing">Self Attraction/Earth Load Tide Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#ice-coverage">Ice Coverage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#d-baroclinic-simulation">3D Baroclinic Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#station-locations">Station Locations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#time-varying-topography-bathymetry">Time-varying Topography/Bathymetry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#passive-scalar-transport">Passive Scalar Transport</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#parallel-execution">Parallel Execution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Input Files</a></li>
+      <li class="breadcrumb-item active">Meteorological Forcing Overview</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/technical_reference/input_files/meteorological_forcing_overview.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="meteorological-forcing-overview">
+<span id="id1"></span><h1>Meteorological Forcing Overview<a class="headerlink" href="#meteorological-forcing-overview" title="Link to this heading"></a></h1>
+<p>ADCIRC supports various meteorological forcing options through the <a class="reference internal" href="../parameter_definitions/index.html#nws"><span class="std std-ref">NWS</span></a> parameter. This overview helps you understand the different meteorological forcing options and their characteristics.</p>
+<section id="input-files-for-meteorological-forcing">
+<h2>Input Files for Meteorological Forcing<a class="headerlink" href="#input-files-for-meteorological-forcing" title="Link to this heading"></a></h2>
+<p>Depending on the NWS value selected, ADCIRC uses different input files:</p>
+<ul class="simple">
+<li><p><strong>fort.22</strong>: Primary meteorological forcing file for most NWS options</p></li>
+<li><p><strong>fort.200</strong>: Used for NWS=10 (AVN model) and NWS=11 (ETA model)</p></li>
+<li><p><strong>fort.221-224</strong>: Used for NWS=12 (OWI format)</p></li>
+</ul>
+</section>
+<section id="meteorological-forcing-types">
+<h2>Meteorological Forcing Types<a class="headerlink" href="#meteorological-forcing-types" title="Link to this heading"></a></h2>
+<p>ADCIRC meteorological forcing can be categorized into several types:</p>
+<ol class="arabic simple">
+<li><p><strong>Direct Meteorological Input</strong>
+- NWS=1,2,-2: Wind stress and pressure specified directly
+- NWS=5,-5: Wind velocity and pressure at all nodes
+- NWS=4,-4: Wind velocity and pressure at selected nodes</p></li>
+<li><p><strong>Gridded Meteorological Data</strong>
+- NWS=3: US Navy Fleet Numeric format
+- NWS=6: Rectangular grid of wind/pressure
+- NWS=7,-7: Regular grid of stress/pressure
+- NWS=10: NWS Aviation (AVN) model
+- NWS=11: NWS ETA 29km model
+- NWS=12: OWI format (nested grids)</p></li>
+<li><p><strong>Parametric Hurricane Models</strong>
+- NWS=8: Dynamic Holland model
+- NWS=19: Asymmetric hurricane vortex
+- NWS=20: Generalized Asymmetric Holland Model (GAHM)</p></li>
+<li><p><strong>Data-Assimilated Hurricane Models</strong>
+- NWS=15,-15: HWind files from NOAA HRD</p></li>
+<li><p><strong>Coupled Model Systems</strong>
+- NWS=100-199: Wave radiation stress with meteorological forcing
+- NWS=300-399: SWAN+ADCIRC coupled model</p></li>
+</ol>
+</section>
+<section id="format-comparison">
+<h2>Format Comparison<a class="headerlink" href="#format-comparison" title="Link to this heading"></a></h2>
+<table class="tight-table docutils align-default" id="id2">
+<caption><span class="caption-text">Format Comparison</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 15.0%" />
+<col style="width: 15.0%" />
+<col style="width: 15.0%" />
+<col style="width: 15.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Format Type</p></th>
+<th class="head"><p>Input Unit</p></th>
+<th class="head"><p>Interpolation</p></th>
+<th class="head"><p>Coverage</p></th>
+<th class="head"><p>Advantages</p></th>
+<th class="head"><p>Limitations</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Direct Input</p></td>
+<td><p>Grid nodes</p></td>
+<td><p>Temporal only</p></td>
+<td><p>Full domain</p></td>
+<td><p>Precise control</p></td>
+<td><p>Large file sizes</p></td>
+</tr>
+<tr class="row-odd"><td><p>Gridded Data</p></td>
+<td><p>Regular grid</p></td>
+<td><p>Spatial &amp; temporal</p></td>
+<td><p>Must cover domain</p></td>
+<td><p>Standard formats</p></td>
+<td><p>Interpolation errors</p></td>
+</tr>
+<tr class="row-even"><td><p>Parametric Models</p></td>
+<td><p>Track data</p></td>
+<td><p>Generated on-the-fly</p></td>
+<td><p>Full domain</p></td>
+<td><p>Small input files</p></td>
+<td><p>Idealized storm structure</p></td>
+</tr>
+<tr class="row-odd"><td><p>Data-Assimilated</p></td>
+<td><p>Snapshots</p></td>
+<td><p>Temporal between snapshots</p></td>
+<td><p>Storm area only</p></td>
+<td><p>Real observations</p></td>
+<td><p>Limited spatial coverage</p></td>
+</tr>
+<tr class="row-even"><td><p>Coupled Models</p></td>
+<td><p>Multiple sources</p></td>
+<td><p>Model-dependent</p></td>
+<td><p>Full domain</p></td>
+<td><p>Physical consistency</p></td>
+<td><p>Computational cost</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="selecting-the-appropriate-forcing">
+<h2>Selecting the Appropriate Forcing<a class="headerlink" href="#selecting-the-appropriate-forcing" title="Link to this heading"></a></h2>
+<p>When choosing a meteorological forcing option:</p>
+<ol class="arabic simple">
+<li><p><strong>Consider data availability</strong>:
+- Historical simulations often use reanalysis or observation-based options
+- Forecasts typically use forecast model output or parametric models
+- Research applications may use idealized forcing</p></li>
+<li><p><strong>Consider model domain</strong>:
+- Large domains benefit from gridded data or parametric models
+- Small, high-resolution domains may benefit from direct input
+- Hurricane simulations typically use parametric or data-assimilated models</p></li>
+<li><p><strong>Consider computational resources</strong>:
+- Parametric models reduce I/O and storage requirements
+- Direct input may require large storage for forcing files
+- Coupled models incur additional computational cost</p></li>
+</ol>
+</section>
+<section id="common-challenges">
+<h2>Common Challenges<a class="headerlink" href="#common-challenges" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Ensuring proper coverage</strong>: Gridded meteorological data must completely cover the ADCIRC domain</p></li>
+<li><p><strong>Time synchronization</strong>: Pay careful attention to start times and time intervals</p></li>
+<li><p><strong>Format consistency</strong>: Follow exact format specifications for each NWS option</p></li>
+<li><p><strong>Unit compatibility</strong>: Ensure units are consistent with ADCIRC expectations</p></li>
+<li><p><strong>Hot start considerations</strong>: Some NWS options have specific requirements for hot starts</p></li>
+</ol>
+<p>For detailed descriptions of each NWS option, see the <a class="reference internal" href="../parameter_definitions/index.html#nws"><span class="std std-ref">NWS</span></a> parameter documentation.
+For file format details, see <a class="reference internal" href="fort22.html"><span class="doc">Fort.22: Meteorological Forcing Data</span></a> and <a class="reference internal" href="fort200.html"><span class="doc">Fort.200: Multiple File Meteorological Forcing Input</span></a> documentation.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fort20.html" class="btn btn-neutral float-left" title="Fort.20: Non-periodic Normal Flow Boundary Condition File" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fort22.html" class="btn btn-neutral float-right" title="Fort.22: Meteorological Forcing Data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

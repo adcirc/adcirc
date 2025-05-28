@@ -1,0 +1,188 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ice Modifications &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Vertical Element Walls (VEWs)" href="vertical_element_walls.html" />
+    <link rel="prev" title="Dynamic water level correction" href="dynamic_water_level_correction.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Special Features</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="adcirc2d_plus.html">ADCIRC2D+</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bridge_piers.html">Bridge Piers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamic_water_level_correction.html">Dynamic water level correction</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Ice Modifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../model_configuration/meteorological_forcing/generalized_asymmetric_holland_model.html">Generalized Asymmetric Holland Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vertical_element_walls.html">Vertical Element Walls (VEWs)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Special Features</a></li>
+      <li class="breadcrumb-item active">Ice Modifications</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/user_guide/special_features/ice_modifications.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ice-modifications">
+<h1>Ice Modifications<a class="headerlink" href="#ice-modifications" title="Link to this heading"></a></h1>
+<p>ADCIRC has been modified to incorporate the effects of ice coverage on hydrodynamic processes. These modifications allow for more accurate simulations in polar and sub-polar regions where ice coverage significantly affects water circulation patterns.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The ADCIRC ice modifications enable the model to account for:</p>
+<ol class="arabic simple">
+<li><p>Ice coverage effects on surface wind stress</p></li>
+<li><p>Ice friction effects on water flow</p></li>
+<li><p>Changes in momentum exchange due to ice-water interaction</p></li>
+<li><p>Modifications to mass conservation equations to account for ice presence</p></li>
+</ol>
+</section>
+<section id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h2>
+<p>The implementation of ice modifications in ADCIRC involves several components:</p>
+<ul class="simple">
+<li><p>Modification of the governing equations to include ice effects</p></li>
+<li><p>Addition of ice-specific parameters in input files</p></li>
+<li><p>New output options for ice-related variables</p></li>
+<li><p>Special numerical treatments for partially and fully ice-covered regions</p></li>
+</ul>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<p>To enable ice modifications in ADCIRC, specific parameters must be set in the fort.15 file. Additionally, ice coverage data may be provided through dedicated input files.</p>
+<p>Detailed documentation on the implementation and usage of ice modifications can be found in the ADCIRC documentation: “Modifications to ADCIRC for ICE Coverage” (available at <a class="reference external" href="https://adcirc.org/wp-content/uploads/sites/2255/2016/01/adcirc_modifications_for_ice.pdf">https://adcirc.org/wp-content/uploads/sites/2255/2016/01/adcirc_modifications_for_ice.pdf</a>).</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<p>For complete details on the theoretical foundation, implementation, and usage of ice modifications in ADCIRC, please refer to the official documentation at the ADCIRC website: <a class="reference external" href="https://adcirc.org/wp-content/uploads/sites/2255/2016/01/adcirc_modifications_for_ice.pdf">https://adcirc.org/wp-content/uploads/sites/2255/2016/01/adcirc_modifications_for_ice.pdf</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dynamic_water_level_correction.html" class="btn btn-neutral float-left" title="Dynamic water level correction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vertical_element_walls.html" class="btn btn-neutral float-right" title="Vertical Element Walls (VEWs)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

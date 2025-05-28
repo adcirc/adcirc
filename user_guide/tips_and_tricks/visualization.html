@@ -1,0 +1,374 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Visualization in ADCIRC" name="description" />
+<meta content="adcirc, visualization" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualization &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Examples" href="../examples/index.html" />
+    <link rel="prev" title="Ramping Meteorological Forcing at Hotstart" href="ramping_met_forcing_at_hotstart.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Tips and Tricks</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#pre-processing-tips">Pre-Processing Tips</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#adcirc-only-tips">ADCIRC-Only Tips</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#adcirc-swan-tips">ADCIRC+SWAN Tips</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#post-processing-tips">Post-Processing Tips</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Tips and Tricks</a></li>
+      <li class="breadcrumb-item active">Visualization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/user_guide/tips_and_tricks/visualization.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="visualization">
+<h1>Visualization<a class="headerlink" href="#visualization" title="Link to this heading"></a></h1>
+<p>For more general tools and utilities, see <a class="reference internal" href="../../tools/index.html#tools"><span class="std std-ref">Tools</span></a>. In the course of
+running ADCIRC you may wish to visualize or plot data pertaining to your model.
+Visualizing data can help you fine tune the mesh design, conduct QA/QC on
+results, and communicate key facets of the modeling to others. Examples of
+datasets you might plot include mesh elevation; <a class="reference internal" href="../../technical_reference/input_files/fort13.html#nodal-attributes"><span class="std std-ref">nodal
+attributes</span></a> such as <a class="reference internal" href="../../technical_reference/input_files/fort13.html#mannings-n-at-sea-floor"><span class="std std-ref">Manning’s
+n</span></a>; or modeled results such as water surface
+elevation. For visualizing on a 2D flexible mesh, ADCIRC users often choose to
+plot them as color contours that follow the mesh triangulation.</p>
+<section id="plotting-considerations">
+<span id="id1"></span><h2>Plotting Considerations<a class="headerlink" href="#plotting-considerations" title="Link to this heading"></a></h2>
+<p>Options abound for generating plots, and the best tool for the job depends on
+project goals and available resources/software. Some factors to consider in
+choosing a visualization tool include:</p>
+<ul class="simple">
+<li><p>Interactive vs. static image – do you intend to zoom and pan around your
+visualized data and/or change contour intervals on the fly, or would you
+prefer to batch process image files at fixed zoom extents and contour limits?</p></li>
+<li><p>Data transfer – do you intend to run simulations on the same computer you
+visualize results?</p></li>
+<li><p>Desired processing speed – does the speed of plotting matter to you? This can
+be important, e.g. when making videos.</p></li>
+<li><p>NetCDF vs. ASCII data – while ADCIRC mesh and nodal attributes input files
+must take ASCII form, outputs can be ASCII or NetCDF. Consider this since
+some plotting tools only work with one or the other. A few considerations:</p>
+<ul>
+<li><p>Multiple applications can read a NetCDF4 file simultaneously, which could
+save considerable time if you can run your plotting tool concurrently on
+multiple processors within one compute node.</p></li>
+<li><p>NetCDF ADCIRC output files self-contain mesh node, connectivity, and
+boundary information.</p></li>
+<li><p>The learning curve to coding with netCDF files can be much steeper than
+ASCII.</p></li>
+</ul>
+</li>
+<li><p>Projection – ADCIRC is often run in geographic coordinate system, which
+references a spherical object; do you need the plotting tool to accurately
+project geographic coordinates, or is distortion acceptable?</p></li>
+<li><p>Which files do you need to visualize? Do you need to plot nodal attribute
+(fort.13) data, or just ADCIRC output?</p></li>
+<li><p>Effort – do you prefer a DIY, high customization approach or a ready-to-run
+program? Somewhat related question: do you want to buy software or leverage
+open source libraries? Common items:</p>
+<ul>
+<li><p>Overlaying a vector field showing wind magnitude and direction or wave
+direction</p></li>
+<li><p>Adding background aerial imagery</p></li>
+<li><p>Auto-calculating contour bounds within the specified zoom extents</p></li>
+<li><p>Overlaying shapefiles showing county boundaries, inshore waterways, storm
+track, etc.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="sms-surface-water-modeling-system">
+<span id="id2"></span><h2>SMS (Surface-water Modeling System)<a class="headerlink" href="#sms-surface-water-modeling-system" title="Link to this heading"></a></h2>
+<p>Aquaveo’s SMS software features a suite of many GUI-based pre- and
+post-processing tools that allow for interactive visualization. SMS requires a
+license, but out of the box you can easily open and view an ADCIRC mesh and any
+associated data, including nodal attributes files. SMS plots mesh data as a
+triangulated irregular network (TIN) surface, allowing the user to change
+contour intervals as desired. You will need to download files from the HPC you
+run ADCIRC onto your desktop to plot them with SMS. A few notes about SMS:</p>
+<ul class="simple">
+<li><p>ADCIRC output NetCDF support is “coming soon” as of version 12.1. SMS
+supports other types of NetCDF data but cannot open a *.63.nc file.</p></li>
+<li><p>When ADCIRC output files are opened, SMS automatically converts them from
+ASCII to binary HDF5 format. This format allows data to load quickly –
+anecdotal reports estimate this speed to be faster than the same data
+displayed as a TIN in ArcMap.</p></li>
+<li><p>SMS can…</p>
+<ul>
+<li><p>project data in geographic coordinates properly.</p></li>
+<li><p>download zoom-specific aerial imagery to display as a background layer.</p></li>
+<li><p>supports vector overlays for fort.74-style ADCIRC data (u v format only,
+so you need to reformat swan_DIR.63 before displaying as vector field).</p></li>
+<li><p>display shapefiles, but with limited options for changing their symbology.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="figuregen">
+<h2>FigureGen<a class="headerlink" href="#figuregen" title="Link to this heading"></a></h2>
+<p><a class="reference external" href="https://ccht.ccee.ncsu.edu/figuregen-v-49/">FigureGen</a> (by Casey Dietrich of
+NC State) batch produces images of model data. FigureGen is a Fortran program
+that uses the Generic Mapping Tools (GMT) library. To use FigureGen, you must
+first install GMT and any of its auxiliary programs that don’t already exist on
+your system. These may already be installed if on a supercomputer. When you
+compile FigureGen, you can use flags to enable Google Earth output, NetCDF
+support, and parallel processing. You’ll then edit a text file of input
+parameters, including zoom extent and required output snaps (for time-varying
+ADCIRC output file), and FigureGen will generate the series of requested images.
+A few notes about FigureGen:</p>
+<ul class="simple">
+<li><p>FigureGen is a triple threat – it’s fast, easy to use, and free (but please
+cite as appropriate!)</p></li>
+<li><p>You can typically run FigureGen on the same machine you run ADCIRC, no need
+to download large output files.</p></li>
+<li><p>GMT supports map projections so FigureGen plots geographic coordinates
+correctly.</p></li>
+<li><p>Features options for overlaying a vector field
+(<a class="reference external" href="fort.74_file">fort.74</a>-style data) including automatically finding the
+maximum vector magnitude present within the zoom extent.</p>
+<ul>
+<li><p>Can automatically find the maximum data value present within the zoom
+extent to set the contour maximum.</p></li>
+<li><p>Can overlay a GSHHS shoreline. If your mesh includes detailed inshore
+waterways, this shoreline may not include sufficient resolution.</p></li>
+<li><p>Can add a time bar.</p></li>
+<li><p>Can plot the difference between two (scalar?) files.</p></li>
+<li><p>Can plot nodal attribute data (except for <em>elemental_slope_limiter</em>, but
+that is easy to add yourself)</p></li>
+<li><p>Can produce several types of image files, and the user can set resolution
+to control file size.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="kalpana">
+<h2>Kalpana<a class="headerlink" href="#kalpana" title="Link to this heading"></a></h2>
+<p><a class="reference external" href="https://ccht.ccee.ncsu.edu/kalpana/">Kalpana</a> (by Rosemary Cyriac) produces
+either a shapefile or a Google Earth kml file of ADCIRC netCDF output or mesh
+bathymetry. Kalpana is a Python script that generates color contours using the
+mesh triangulation via the 2D plotting library Matplotlib, then converts the
+contours to either shapefile via the Fiona/Shapely libraries, or to kmz via the
+Simplekml library. Both the shapefile option and kml option produce polygons
+that enclose areas with data values that fall into one contour bin.</p>
+<ul class="simple">
+<li><p>How-to instructions can be found
+<a class="reference external" href="https://ccht.ccee.ncsu.edu/how-to-run-kalpana/">here</a></p></li>
+<li><p>Kalpana is free (but cite as appropriate!)</p></li>
+<li><p>No support for plotting nodal attributes parameters yet.</p></li>
+<li><p>Shapely/Fiona and Simplekml support map projections and thus properly plot
+geographic coordinates.</p></li>
+<li><p>Like many Python scripts, Kalpana should be run in a virtual environment.
+Setting up this virtual environment can be simple or frustrating depending on
+existing system installations on your HPC. Jason Fleming wrote a <a class="reference external" href="https://ccht.ccee.ncsu.edu/installing-python-modules-for-kalpana/">great post
+on his
+experience</a>
+in installing the various Python libraries within a virtual environment.</p></li>
+<li><p>Kalpana runs on an HPC, so you don’t need to download data to your desktop to
+plot.</p></li>
+<li><p>There exists a file size and speed trade-off to the two file format options –
+the kml option is slower to generate, but the file size is relatively small;
+the shapefile option generates very quickly (nearly as fast as FigureGen) but
+the file size is on the order of the size of the file it’s plotting. Also
+note that the speed of the kml generation depends on the number of lat/long
+bins you set up in the command line, and the number of bins depends on mesh
+extent and resolution.</p></li>
+<li><p>The shapefiles and kml files produced allow the user to zoom and pan around,
+but not to dynamically change contour intervals on the fly – the polygons
+represent an instance or a snapshot of the data.</p></li>
+<li><p>Both shapefile and kml are popular file formats with the outside world, so
+they’re good choices for communicating your model results to others.</p></li>
+<li><p>Neither file format supports vector fields. If you want vector fields, you
+should edit the Kalpana script to skip the Shapely/Fiona or Simplekml parts
+and use Matplotlib directly to add the vector field and save the Matplotlib
+plot as a png.</p></li>
+</ul>
+</section>
+<section id="arcgis">
+<h2>ArcGIS<a class="headerlink" href="#arcgis" title="Link to this heading"></a></h2>
+<p>Esri’s classic software contains no canned tools to read or write ADCIRC data.
+The user must develop scripts to read ADCIRC files via ArcMap’s integrated
+Python package (ArcPy). Once you’ve imported ADCIRC mesh geometry, nodal
+attributes, and model results data into a geodatabase, you can easily create a
+TIN using the mesh triangulation as hard breaklines to view your data in a
+similar fashion to SMS. Note that the license for ArcMap costs significantly
+more than an SMS license. So why the heck would you ever consider using ArcStuff
+for your visualization needs?</p>
+<ul class="simple">
+<li><p>Esri is everywhere – you might already have access to a network license or to
+colleagues with advanced GIS knowledge.</p></li>
+<li><p>While ArcMap doesn’t feature canned tools to read ADCIRC data, it does
+feature canned geoprocessing tools that can aid greatly in assigning nodal
+attribute data or interpolating mesh node elevations. For example, you can
+map data showing land use/land cover in raster or polygon format onto your
+nodes to assign Manning’s <em>n</em>, or you can create custom schemes for
+interpolating DEM data onto your mesh nodes.</p></li>
+<li><p>As of version 10.3, ArcPy includes the netCDF4 library.</p></li>
+<li><p>ArcMap allows for a very high level of customization in your image layout.
+North arrows, scales, legends, infinite symbology and overlays – wow!</p></li>
+<li><p>But, you must download ADCIRC output data from your HPC to wherever your
+ArcGIS license exists.</p></li>
+</ul>
+</section>
+<section id="python">
+<h2>Python<a class="headerlink" href="#python" title="Link to this heading"></a></h2>
+<p>See <a class="reference internal" href="../../tools/index.html"><span class="doc">Tools</span></a>.</p>
+</section>
+<section id="matlab">
+<h2>Matlab<a class="headerlink" href="#matlab" title="Link to this heading"></a></h2>
+<p>See <a class="reference internal" href="../../tools/index.html"><span class="doc">Tools</span></a>.</p>
+</section>
+<section id="paraview">
+<h2>Paraview<a class="headerlink" href="#paraview" title="Link to this heading"></a></h2>
+<p>Super powerful, but can be a pain. Tough to generalize here, email the listserv
+if interested.</p>
+</section>
+<section id="external-links">
+<h2>External Links<a class="headerlink" href="#external-links" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.aquaveo.com/software/sms-surface-water-modeling-system-introduction">SMS by
+Aquaveo</a></p></li>
+<li><p><a class="reference external" href="https://ccht.ccee.ncsu.edu/figuregen-v-49/">FigureGen v49</a> NC State
+Coastal &amp; Computational Hydraulics Team</p></li>
+<li><p><a class="reference external" href="https://ccht.ccee.ncsu.edu/kalpana/">Kalpana</a> NC State Coastal &amp;
+Computational Hydraulics Team</p></li>
+<li><p><a class="reference external" href="http://www.adcirc.io/">ADCIRC.io</a></p></li>
+<li><p><a class="reference external" href="http://desktop.arcgis.com/en/arcmap/">ArcMap</a></p></li>
+<li><p><a class="reference external" href="https://www.mathworks.com/products/matlab.html">Matlab</a></p></li>
+<li><p><a class="reference external" href="https://www.paraview.org/">Paraview</a></p></li>
+<li><p><a class="reference external" href="https://github.com/GenericMappingTools/gmt">Generic Mapping Tools (GMT)</a></p></li>
+<li><p><a class="reference external" href="https://matplotlib.org/">Matplotlib</a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ramping_met_forcing_at_hotstart.html" class="btn btn-neutral float-left" title="Ramping Meteorological Forcing at Hotstart" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../examples/index.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

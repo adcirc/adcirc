@@ -1,0 +1,329 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Wind Stress in ADCIRC" name="description" />
+<meta content="adcirc, wind stress" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wind Stress &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="NWS Parameter" href="nws_parameters.html" />
+    <link rel="prev" title="Meteorological Forcing" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Model Configuration</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../model_parameters/index.html">Model Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../physics_parameters/index.html">Physics Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../initial_conditions/index.html">Initial Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../boundary_conditions/index.html">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tides/index.html">Astronomical Tides</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../typical_configurations/typical_parameter_selections.html">Typical Parameter Selections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Model Configuration</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Meteorological Forcing</a></li>
+      <li class="breadcrumb-item active">Wind Stress</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/model_configuration/meteorological_forcing/wind_stress.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="wind-stress">
+<span id="id1"></span><h1>Wind Stress<a class="headerlink" href="#wind-stress" title="Link to this heading"></a></h1>
+<p>When wind blows over the water, it exerts a shear stress at the water surface
+that transfers horizontal momentum vertically downward across the air–sea
+interface, driving circulation. In ADCIRC, wind stress is an input forcing term,
+with several different formats provided. See the <a class="reference internal" href="nws_parameters.html#nws-parameter"><span class="std std-ref">NWS Parameter</span></a>
+for available formats. In most cases, the exact wind stress to be applied to the
+model is not provided, therefore ADCIRC must determine how to convert a given
+wind speed to the actual stress applied at the ocean surface. This page covers
+the various aspects of this process, as well as the options available to the
+user.</p>
+<section id="definition-of-winds">
+<span id="id2"></span><h2>Definition of Winds<a class="headerlink" href="#definition-of-winds" title="Link to this heading"></a></h2>
+<p>The characteristics of wind forcing are often broken down in three ways:</p>
+<ol class="arabic simple">
+<li><p>Whether the winds are considered to be over-water (termed “marine exposure”)
+or over-land</p></li>
+<li><p>The elevation above the sea (or ground) surface of the winds</p></li>
+<li><p>The time-averaging (if any) that has been applied</p></li>
+</ol>
+<p>ADCIRC generally expects 10-meter, 10-minute winds at their actual exposure,
+although the exact expectations vary depending on the input type. For instance,
+when Holland-type wind inputs are provided (e.g. <code class="docutils literal notranslate"><span class="pre">NWS=8</span></code> or <code class="docutils literal notranslate"><span class="pre">NWS=20</span></code>), the
+wind speed is expected to be the <strong>1-minute</strong> <a class="reference external" href="https://en.wikipedia.org/wiki/Maximum_sustained_wind">maximum sustained
+wind</a> at 10 meters
+elevation. If marine-exposure winds are provided, then <a class="reference internal" href="../../../technical_reference/input_files/fort13.html#surface-directional-effective-roughness-length"><span class="std std-ref">surface
+roughness</span></a> reductions may be needed  <a class="footnote-reference brackets" href="#id19" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>
+<a class="footnote-reference brackets" href="#id20" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a> . If winds are provided with a different averaging time, then an
+appropriate correction may be needed, though winds with averaging times of 10 to
+60 minutes are generally considered to be quite similar; this is the so-called
+mesoscale gap. For recommendations on wind time-scale conversions not handled
+internally by ADCIRC, for tropical cyclones, see the WMO guidelines of Harper et
+al.  <a class="footnote-reference brackets" href="#id21" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p>
+</section>
+<section id="roughness-reductions">
+<span id="id6"></span><h2>Roughness Reductions<a class="headerlink" href="#roughness-reductions" title="Link to this heading"></a></h2>
+<p>Reductions in wind speed to convert to the appropriate exposure come from a
+logarithmic boundary layer formulation (see, e.g.  <a class="footnote-reference brackets" href="#id19" id="id7" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>  <a class="footnote-reference brackets" href="#id20" id="id8" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>) to determine a
+fraction <span class="math notranslate nohighlight">\(f\)</span> to reduce the winds,</p>
+<div class="math notranslate nohighlight">
+\[f=\left ( \frac{z_{0l}}{z_{0m}}\right ) ^{0.0706} \left ( \frac{\ln \frac{10}{z_{0l}}}{\ln \frac{10}{z_{0m}}} \right )\]</div>
+<p>for marine roughness length <span class="math notranslate nohighlight">\(z_{0m}\)</span> and reduced (“land”) roughness length
+<span class="math notranslate nohighlight">\(z_{0l}\)</span>. Wind speed is then reduced as,</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{w}'=f\mathbf{w}=f [u,v]\]</div>
+<p>for x- and y- wind vector components <span class="math notranslate nohighlight">\(u\)</span> and <span class="math notranslate nohighlight">\(v\)</span>. The marine
+roughness length is,</p>
+<div class="math notranslate nohighlight">
+\[z_{0m}=\frac{0.018}{g} c_d \left \Vert \mathbf{w} \right \|\]</div>
+<p>for Charnock parameter <span class="math notranslate nohighlight">\(0.018\)</span>, drag coefficient <span class="math notranslate nohighlight">\(c_d\)</span> and
+acceleration due to gravity <span class="math notranslate nohighlight">\(g\)</span>. The wind drag coefficient is addressed
+below in <a class="reference external" href="#Converting_Wind_Velocity_to_Wind_Stress">this section</a>. As
+previously noted, the reduced (“land”) roughness length <span class="math notranslate nohighlight">\(z_{0l}\)</span> is
+specified by the user via the <a class="reference external" href="Fort.13_file#Surface_Roughness">surface
+roughness</a> nodal attribute. The fraction
+<span class="math notranslate nohighlight">\(f\)</span> is bounded on <span class="math notranslate nohighlight">\([0,1]\)</span>, meaning the winds cannot be increased,
+nor change direction.</p>
+<section id="older-behavior">
+<span id="id9"></span><h3>Older Behavior<a class="headerlink" href="#older-behavior" title="Link to this heading"></a></h3>
+<section id="interpolating-roughness-lengths-before-v55">
+<span id="id10"></span><h4>Interpolating Roughness Lengths Before v55<a class="headerlink" href="#interpolating-roughness-lengths-before-v55" title="Link to this heading"></a></h4>
+<figure class="align-center">
+<a class="reference internal image-reference" href="../../../_images/WindTraceV2.png"><img alt="Comparison of output wind velocities using old and new methods." src="../../../_images/WindTraceV2.png" style="width: 500px;" />
+</a>
+</figure>
+<div class="line-block">
+<div class="line">Before version 55, the directional wind reductions were applied by determining
+which of the 12 directional bins the wind velocity (at each time step) fell
+into, and using that roughness reduction, i.e. nearest neighbor interpolation.
+Starting in version 55, the roughness length is linearly (in angle space)
+interpolated between directional bins. In testing, this has been found to
+generally have a very small effect on water levels, but a notable effect on
+wind speeds, since time evolution of winds is smoother. It can have large
+localized effects on water levels in cases where there are large changes in
+neighboring roughness length bins coinciding with well-aligned winds, as in
+<a class="reference external" href=":File:MaxeleDiffRun13MinusRun12View1.png">this test case</a> with Hurricane
+Isaac.</div>
+</div>
+<blockquote>
+<div><p><a class="reference internal" href="../../../_images/Run03masterVsRun05interp_trimmedAndAnnotatedTry7-min.gif"><img alt="Video of wind speeds before (left) and after (right) adding linear interpolation of surface roughness." src="../../../_images/Run03masterVsRun05interp_trimmedAndAnnotatedTry7-min.gif" style="width: 500px;" /></a></p>
+</div></blockquote>
+</section>
+<section id="roughness-reduction-bug-before-v54">
+<span id="id11"></span><h4>Roughness Reduction Bug Before v54<a class="headerlink" href="#roughness-reduction-bug-before-v54" title="Link to this heading"></a></h4>
+<p>Before version 54, there was a bug in this calculation. The mistake and its
+effects are addressed in this PDF document: <strong>ADD A LINK TO A PDF HERE</strong>.</p>
+</section>
+</section>
+</section>
+<section id="metcontrol-namelist">
+<span id="converting-wind-velocity-to-wind-stress"></span><span id="id12"></span><h2>Converting Wind Velocity to Wind Stress<a class="headerlink" href="#metcontrol-namelist" title="Link to this heading"></a></h2>
+<p>In ADCIRC, four formulations are available to convert wind velocities to the
+wind stresses applied in the momentum equations. Although there are several ways
+to control this, users are generally encouraged to use the
+<a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#metcontrol"><span class="std std-ref">metControl</span></a> namelist in the <a class="reference internal" href="../../../technical_reference/input_files/fort15.html#fort15"><span class="std std-ref">fort.15</span></a> file. The
+default drag formulation is the Garratt  <a class="footnote-reference brackets" href="#id22" id="id13" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a> linear formula. An alternative for
+use with tropical cyclones is the Powell formulation,  <a class="footnote-reference brackets" href="#id23" id="id14" role="doc-noteref"><span class="fn-bracket">[</span>5<span class="fn-bracket">]</span></a> which varies drag by
+the sector of the tropical cyclone. When ice coverage is included in the model,
+a wind drag formulation that accounts for this effect should be used. By
+default, if ice coverage input data are supplied, ADCIRC uses a cubic function
+of ice coverage, termed the “IceCube” drag formulation. Lastly, the “swell” drag
+law option allows users to utilize SWAN’s drag formulation when employing the
+coupled model.</p>
+<p>In all cases, the actual wind drag coefficients determined by ADCIRC can be
+output to a <a class="reference internal" href="../../../technical_reference/output_files/fort63.html#fort63"><span class="std std-ref">fort.63</span></a>-type file named
+<code class="docutils literal notranslate"><span class="pre">winddrag.173</span></code>. Output settings (file format, output start/end
+times, and output interval) match those of either the fort.63 or fort.73/74
+files. Outputting of this file is enabled by setting
+<code class="docutils literal notranslate"><span class="pre">outputWindDrag=.TRUE.</span></code> in the <code class="docutils literal notranslate"><span class="pre">&amp;metControl</span></code> namelist of the <a class="reference internal" href="../../../technical_reference/input_files/fort15.html#fort15"><span class="std std-ref">fort.15 file’s
+namelist section</span></a>.</p>
+<section id="garratt-drag-formulation">
+<span id="id15"></span><h3>Garratt Drag Formulation<a class="headerlink" href="#garratt-drag-formulation" title="Link to this heading"></a></h3>
+<p>This is the default wind drag formulation in ADCIRC. From Garratt (1977) <a class="footnote-reference brackets" href="#id22" id="id16" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a>,
+the formula is,</p>
+<div class="math notranslate nohighlight">
+\[c_d=0.001 \left ( 0.75+0.067 \left \Vert \mathbf{w} \right \| \right )\]</div>
+<p>By default, ADCIRC puts an upper bound on the drag coefficient of
+<span class="math notranslate nohighlight">\(c_d\le0.0035\)</span>. This upper bound <code class="docutils literal notranslate"><span class="pre">WindDragLimit</span></code> can be changed via the
+<a class="reference external" href="metControl">metControl</a> fort.15 namelist.</p>
+</section>
+<section id="powell-drag-formulation">
+<span id="id17"></span><h3>Powell Drag Formulation<a class="headerlink" href="#powell-drag-formulation" title="Link to this heading"></a></h3>
+<p>CONTRIBUTOR NEEDED Note that the code for the Powell drag law has not been
+configured to reverse orientation in the southern hemisphere, and so will
+produce the wrong results. For details on Powell, see <a class="reference external" href="https://ccht.ccee.ncsu.edu/wind-drag-based-on-storm-sectors/">this
+post</a>.</p>
+</section>
+<section id="icecube-drag-formulation">
+<span id="id18"></span><h3>IceCube Drag Formulation<a class="headerlink" href="#icecube-drag-formulation" title="Link to this heading"></a></h3>
+<p>CONTRIBUTOR NEEDED</p>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<references /><aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id19" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id3">1</a>,<a role="doc-backlink" href="#id7">2</a>)</span>
+<p>Simiu, E., Scanlan, R.H., 1996. Wind effects on structures: fundamentals and
+applications to design, 3rd ed. ed. John Wiley, New York.</p>
+</aside>
+<aside class="footnote brackets" id="id20" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id4">1</a>,<a role="doc-backlink" href="#id8">2</a>)</span>
+<p>Simiu, E., Yeo, D., 2018. Wind effects on structures: modern structural
+design for wind, Fourth edition. ed. John Wiley &amp; Sons, Hoboken, NJ.</p>
+</aside>
+<aside class="footnote brackets" id="id21" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">3</a><span class="fn-bracket">]</span></span>
+<p>Harper, B., Kepert, J., Ginger, J., 2010. Guidelines for converting between
+various wind averaging periods in tropical cyclone conditions (No. WMO/TD-No.
+1555). WMO, Geneva, Switzerland.</p>
+</aside>
+<aside class="footnote brackets" id="id22" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id13">1</a>,<a role="doc-backlink" href="#id16">2</a>)</span>
+<p>Garratt, J.R., 1977. Review of Drag Coefficients over Oceans and Continents.
+Mon. Wea. Rev. 105, 915–929.
+<a class="reference external" href="https://doi.org/10.1175/1520-0493(1977)105">https://doi.org/10.1175/1520-0493(1977)105</a>&lt;0915:RODCOO&gt;2.0.CO;2</p>
+</aside>
+<aside class="footnote brackets" id="id23" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id14">5</a><span class="fn-bracket">]</span></span>
+<p>Powell, M.D., Vickery, P.J., Reinhold, T.A., 2003. Reduced drag coefficient
+for high wind speeds in tropical cyclones. Nature 422, 279–283.
+<a class="reference external" href="https://doi.org/10.1038/nature01481">https://doi.org/10.1038/nature01481</a></p>
+</aside>
+</aside>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Meteorological Forcing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="nws_parameters.html" class="btn btn-neutral float-right" title="NWS Parameter" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,210 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Fort.rotm in ADCIRC" name="description" />
+<meta content="adcirc, fort.rotm" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fort.rotm: Rotation of the geographical coordinates &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Fort.15: Model Parameter and Periodic Boundary Condition File" href="fort15.html" />
+    <link rel="prev" title="Fort.14: Grid and Boundary Information File" href="fort14.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../all_files.html">All Files</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Input Files</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#grid-and-boundaries">Grid and Boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#model-parameters-and-periodic-bcs">Model Parameters and Periodic BCs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#nodal-attributes">Nodal Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#hot-start">Hot Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#boundary-conditions">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#meteorological-forcing">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#wave-forcing">Wave Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#self-attraction-earth-load-tide-forcing">Self Attraction/Earth Load Tide Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#ice-coverage">Ice Coverage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#d-baroclinic-simulation">3D Baroclinic Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#station-locations">Station Locations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#time-varying-topography-bathymetry">Time-varying Topography/Bathymetry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#passive-scalar-transport">Passive Scalar Transport</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#parallel-execution">Parallel Execution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Input Files</a></li>
+      <li class="breadcrumb-item active">Fort.rotm: Rotation of the geographical coordinates</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/technical_reference/input_files/fortrotm.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fort-rotm-rotation-of-the-geographical-coordinates">
+<span id="fortrotm"></span><h1>Fort.rotm: Rotation of the geographical coordinates<a class="headerlink" href="#fort-rotm-rotation-of-the-geographical-coordinates" title="Link to this heading"></a></h1>
+<p>The fort.rotm file is used to rotate the geographical
+coordinates on the Spherical Earth (see <a class="reference internal" href="../../user_guide/model_configuration/model_parameters/ics.html#ics-parameter"><span class="std std-ref">ICS</span></a> for details on how to
+specify that rotation is desired). Rotation is typically desired in order to
+move the North Pole from the ocean onto land (and keep the South Pole on land)
+so that the singularity in the Spherical coordinate form of the governing
+equations is removed (see the File Format Examples section below for examples of
+valid rotations that achieve this goal).</p>
+<section id="file-format">
+<h2>File Format<a class="headerlink" href="#file-format" title="Link to this heading"></a></h2>
+<p>File format is short but there are three variants. General format is: first line
+is a string indicating format type, following lines are the values.</p>
+<ol class="arabic">
+<li><p>znorth_in_spherical_coors</p>
+<p>lon0 lat0 ! Comment: lon0 lat0 is the center of the new north pole</p>
+</li>
+<li><p>z-x-z</p>
+<p>alpha beta gamma ! Comment: intrinsic rotation of alpha, beta, gamma</p>
+</li>
+<li><p>rotation_matrix</p>
+<p>rot11 rot12 rot13
+rot21 rot22 rot23
+rot31 rot32 rot33
+! Comment: a rotation matrix R: x-&gt; x’ is given</p>
+</li>
+</ol>
+</section>
+<section id="file-format-examples">
+<h2>File Format Examples<a class="headerlink" href="#file-format-examples" title="Link to this heading"></a></h2>
+<p>The following examples ensure that both poles are rotated onto land. The results
+should stay effectively the same no matter the choice.</p>
+<ul>
+<li><p>znorth_in_spherical_coors</p>
+<p>-42.8906 72.3200 ! Greenland-Antarctica</p>
+</li>
+<li><p>znorth_in_spherical_coors</p>
+<p>112.8516 40.3289 ! China-Argentina</p>
+</li>
+<li><p>znorth_in_spherical_coors</p>
+<p>114.16991 0.77432 ! Borneo-Brazil</p>
+</li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fort14.html" class="btn btn-neutral float-left" title="Fort.14: Grid and Boundary Information File" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fort15.html" class="btn btn-neutral float-right" title="Fort.15: Model Parameter and Periodic Boundary Condition File" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

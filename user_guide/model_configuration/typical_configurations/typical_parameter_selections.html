@@ -1,0 +1,435 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Typical Adcirc Parameter Selections in ADCIRC" name="description" />
+<meta content="adcirc, typical, adcirc, parameter, selections" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Typical Parameter Selections &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Special Features" href="../../special_features/index.html" />
+    <link rel="prev" title="NWS13" href="../meteorological_forcing/nws13.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Model Configuration</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../model_parameters/index.html">Model Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../physics_parameters/index.html">Physics Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../initial_conditions/index.html">Initial Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../boundary_conditions/index.html">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tides/index.html">Astronomical Tides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../meteorological_forcing/index.html">Meteorological Forcing</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Typical Parameter Selections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Model Configuration</a></li>
+      <li class="breadcrumb-item active">Typical Parameter Selections</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/model_configuration/typical_configurations/typical_parameter_selections.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="typical-parameter-selections">
+<span id="typical-adcirc-parameter-selections"></span><h1>Typical Parameter Selections<a class="headerlink" href="#typical-parameter-selections" title="Link to this heading"></a></h1>
+<p><strong>Parameter selections</strong> concern the model parameter choices one must make when setting up and running simulations. ADCIRC and the coupled ADCRC+SWAN model have a large number of user-controllable parameters. Some parameters represent a balance in model accuracy vs. stability, like enabling vs. disabling advection via <a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#nolica"><span class="std std-ref">NOLICA</span></a> and <a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#nolicat"><span class="std std-ref">NOLICAT</span></a>. Others balance accuracy vs. run time, like the implicit vs. lumped explicit GWCE formulation via <a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#im"><span class="std std-ref">IM</span></a> (this also affects stability). Meanwhile some parameters represent values for which the true “best” choice is case-dependent or the subject of ongoing research, like controls affecting drag formulations at the sea surface and sea floor. This page is meant to provide users with example model formulations used by experienced ADCIRCers, and to provide a venue for discussion of parameter selection.</p>
+<section id="in-storm-surge">
+<h2>In Storm Surge<a class="headerlink" href="#in-storm-surge" title="Link to this heading"></a></h2>
+<p>The following table presents a variety of parameters as used in storm surge modeling by various groups. Parameters in this table cover a range of model setup choices, and include parameterizations built for forecasting-focused simulations, storm hazard-focused simulations, and hindcast-focused simulations. Note that in all cases, nodal attributes <a class="reference external" href="/Manning%27s_n_at_sea_floor&quot;Manning'snatseafloor&quot;">Manning’s n at sea floor</a> and <a class="reference external" href="/Surface_directional_effective_roughness_length&quot;Surfacedirectionaleffectiveroughnesslength&quot;">surface directional effective roughness length</a> are in use.</p>
+<table class="sticky-table docutils align-default" id="id1">
+<caption><span class="caption-text">Storm Surge Parameter Selections</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 5.8%" />
+<col style="width: 8.7%" />
+<col style="width: 4.6%" />
+<col style="width: 5.8%" />
+<col style="width: 4.6%" />
+<col style="width: 5.8%" />
+<col style="width: 5.8%" />
+<col style="width: 4.6%" />
+<col style="width: 4.6%" />
+<col style="width: 4.6%" />
+<col style="width: 2.9%" />
+<col style="width: 4.6%" />
+<col style="width: 4.6%" />
+<col style="width: 2.9%" />
+<col style="width: 2.9%" />
+<col style="width: 8.7%" />
+<col style="width: 4.6%" />
+<col style="width: 4.6%" />
+<col style="width: 4.6%" />
+<col style="width: 4.6%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head stub"><p>Region</p></th>
+<th class="head"><p>Mesh</p></th>
+<th class="head"><p>np</p></th>
+<th class="head"><p>GWCE Formulation</p></th>
+<th class="head"><p>Wind Drag Law</p></th>
+<th class="head"><p>Upper Wind Drag Limit</p></th>
+<th class="head"><p>Min Bottom Drag Coef</p></th>
+<th class="head"><p>Advective Terms</p></th>
+<th class="head"><p>Steric</p></th>
+<th class="head"><p>Vert. Datum</p></th>
+<th class="head"><p>ESL</p></th>
+<th class="head"><p>ESL Node Count</p></th>
+<th class="head"><p>time step</p></th>
+<th class="head"><p>h0</p></th>
+<th class="head"><p>velmin</p></th>
+<th class="head"><p>tidal constituents</p></th>
+<th class="head"><p>convcr</p></th>
+<th class="head"><p>SWAN time step</p></th>
+<th class="head"><p>SWAN MXITNS</p></th>
+<th class="head"><p>SWAN NPNTS</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><th class="stub"><p>Louisiana</p></th>
+<td><p>LA_v17a-WithUpperAtch_chk.grd</p></td>
+<td><p>1593521</p></td>
+<td><p>implicit</p></td>
+<td><p>Powell</p></td>
+<td><p>0.002</p></td>
+<td><p>0.0</p></td>
+<td><p>off</p></td>
+<td><p>0.228184</p></td>
+<td><p>navd</p></td>
+<td><p>0.05</p></td>
+<td><p>all</p></td>
+<td><p>1.0</p></td>
+<td><p>0.1</p></td>
+<td><p>0.01</p></td>
+<td><p>m2,s2,n2,k1,k2,o1,p1,q1</p></td>
+<td><p>1.00E-07</p></td>
+<td><p>1200</p></td>
+<td><p>20</p></td>
+<td><p>95</p></td>
+</tr>
+<tr class="row-odd"><th class="stub"><p>Texas</p></th>
+<td><p>tx2008_r35h.grd</p></td>
+<td><p>3352598</p></td>
+<td><p>implicit</p></td>
+<td><p>Garratt</p></td>
+<td><p>0.002</p></td>
+<td><p>0.0</p></td>
+<td><p>off</p></td>
+<td><p>0.276300</p></td>
+<td><p>navd?</p></td>
+<td><p>none</p></td>
+<td><p>none</p></td>
+<td><p>1.0</p></td>
+<td><p>0.1</p></td>
+<td><p>0.01</p></td>
+<td><p>m2,s2,n2,k1,k2,o1,q1</p></td>
+<td><p>1.00E-07</p></td>
+<td><p>1200</p></td>
+<td><p>20</p></td>
+<td><p>95</p></td>
+</tr>
+<tr class="row-even"><th class="stub"><p>National</p></th>
+<td><p>hsofs.14</p></td>
+<td><p>1813443</p></td>
+<td><p>implicit or explicit</p></td>
+<td><p>Garratt</p></td>
+<td><p>0.0028</p></td>
+<td><p>0.0025</p></td>
+<td><p>off</p></td>
+<td><p>none</p></td>
+<td><p>msl</p></td>
+<td><p>none</p></td>
+<td><p>none</p></td>
+<td><p>2.0</p></td>
+<td><p>0.05</p></td>
+<td><p>0.05</p></td>
+<td><p>m2,s2,n2,k1,k2,o1,p1,q1</p></td>
+<td><p>1.00E-07</p></td>
+<td><p>1200</p></td>
+<td><p>20</p></td>
+<td><p>95</p></td>
+</tr>
+<tr class="row-odd"><th class="stub"><p>National (Drag Experiment)</p></th>
+<td><p>hsofs.14</p></td>
+<td><p>1813443</p></td>
+<td><p>explicit</p></td>
+<td><p>Garratt</p></td>
+<td><p>0.002</p></td>
+<td><p>0.0</p></td>
+<td><p>off</p></td>
+<td><p>none</p></td>
+<td><p>msl</p></td>
+<td><p>none</p></td>
+<td><p>none</p></td>
+<td><p>2.0</p></td>
+<td><p>0.05</p></td>
+<td><p>0.05</p></td>
+<td><p>m2,s2,n2,k1,k2,o1,p1,q1</p></td>
+<td><p>1.00E-07</p></td>
+<td><p>1200</p></td>
+<td><p>20</p></td>
+<td><p>95</p></td>
+</tr>
+<tr class="row-even"><th class="stub"><p>MS/AL and FL Panhandle</p></th>
+<td><p>NGOM_RT_v18j_chk.grd</p></td>
+<td><p>2051346</p></td>
+<td><p>implicit</p></td>
+<td><p>Powell</p></td>
+<td><p>0.002</p></td>
+<td><p>0.0</p></td>
+<td><p>off</p></td>
+<td><p>0.230000</p></td>
+<td><p>navd</p></td>
+<td><p>0.02</p></td>
+<td><p>all</p></td>
+<td><p>1.0</p></td>
+<td><p>0.1</p></td>
+<td><p>0.01</p></td>
+<td><p>m2,s2,n2,k1,k2,o1,p1,q1</p></td>
+<td><p>1.00E-07</p></td>
+<td><p>1200</p></td>
+<td><p>20</p></td>
+<td><p>95</p></td>
+</tr>
+<tr class="row-odd"><th class="stub"><p>North Carolina (low res)</p></th>
+<td><p>nc_inundation_v6d_rivers_msl.grd</p></td>
+<td><p>295328</p></td>
+<td><p>explicit</p></td>
+<td><p>Garratt</p></td>
+<td><p>0.0035</p></td>
+<td><p>0.003</p></td>
+<td><p>on</p></td>
+<td><p>none</p></td>
+<td><p>msl</p></td>
+<td><p>none</p></td>
+<td><p>none</p></td>
+<td><p>0.5</p></td>
+<td><p>0.02</p></td>
+<td><p>0.02</p></td>
+<td><p>m2,s2,n2,k1,k2,o1,p1,q1</p></td>
+<td><p>1.00E-10</p></td>
+<td><p>1200</p></td>
+<td><p>20</p></td>
+<td><p>95</p></td>
+</tr>
+<tr class="row-even"><th class="stub"><p>North Carolina (high res)</p></th>
+<td><p>nc_inundation_v9.99a_w_rivers.grd</p></td>
+<td><p>624782</p></td>
+<td><p>explicit</p></td>
+<td><p>Garratt</p></td>
+<td><p>0.0028</p></td>
+<td><p>0.003</p></td>
+<td><p>on</p></td>
+<td><p>0.0</p></td>
+<td><p>msl</p></td>
+<td><p>none</p></td>
+<td><p>none</p></td>
+<td><p>0.5</p></td>
+<td><p>0.1</p></td>
+<td><p>0.01</p></td>
+<td><p>m2,s2,n2,k1,k2,o1,p1,q1</p></td>
+<td><p>1.00E-10</p></td>
+<td><p>1200</p></td>
+<td><p>20</p></td>
+<td><p>95</p></td>
+</tr>
+<tr class="row-odd"><th class="stub"><p>Delmarva</p></th>
+<td><p>FEMA_R3_20110303_MSL.grd</p></td>
+<td><p>1875689</p></td>
+<td><p>explicit</p></td>
+<td><p>Garratt</p></td>
+<td><p>0.0035</p></td>
+<td><p>0.003</p></td>
+<td><p>on</p></td>
+<td><p>none</p></td>
+<td><p>msl</p></td>
+<td><p>none</p></td>
+<td><p>none</p></td>
+<td><p>1.0</p></td>
+<td><p>0.1</p></td>
+<td><p>0.01</p></td>
+<td><p>m2,s2,n2,k1,k2,o1,p1,q1</p></td>
+<td><p>1.00E-07</p></td>
+<td><p>1200</p></td>
+<td><p>20</p></td>
+<td><p>95</p></td>
+</tr>
+<tr class="row-even"><th class="stub"><p>NY/NJ</p></th>
+<td><p>FEMA_R2_norivers_gcs_mNAVD.grd</p></td>
+<td><p>604790</p></td>
+<td><p>implicit</p></td>
+<td><p>Garratt</p></td>
+<td><p>0.0035</p></td>
+<td><p>0.003</p></td>
+<td><p>on</p></td>
+<td><p>none</p></td>
+<td><p>msl</p></td>
+<td><p>none</p></td>
+<td><p>none</p></td>
+<td><p>1.0</p></td>
+<td><p>0.1</p></td>
+<td><p>0.01</p></td>
+<td><p>m2,s2,n2,k1,k2,o1,q1</p></td>
+<td><p>1.00E-08</p></td>
+<td><p>1200</p></td>
+<td><p>10</p></td>
+<td><p>95</p></td>
+</tr>
+<tr class="row-odd"><th class="stub"><p>New England</p></th>
+<td><p>NAC2014_R01_ClosedRivers.grd</p></td>
+<td><p>3110470</p></td>
+<td><p>implicit</p></td>
+<td><p>Powell</p></td>
+<td><p>0.002</p></td>
+<td><p>0.0</p></td>
+<td><p>off</p></td>
+<td><p>0.10900</p></td>
+<td><p>msl</p></td>
+<td><p>none</p></td>
+<td><p>none</p></td>
+<td><p>?</p></td>
+<td><p>0.1</p></td>
+<td><p>0.01</p></td>
+<td><p>m2,s2,n2,k1,k2,o1,p1,q1</p></td>
+<td><p>1.00E-07</p></td>
+<td><p>n/a</p></td>
+<td><p>n/a</p></td>
+<td><p>n/a</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="in-tides">
+<h2>In Tides<a class="headerlink" href="#in-tides" title="Link to this heading"></a></h2>
+<p>Many tide models are configured the same as the above surge models, although some users have reported poor tide performance if the minimum bottom drag coefficient is set to zero. One explanation of this difference in behavior is that the bottom drag differs between tidal and wind-driven flows. The vertical variation in horizontal flow is not known in a 2D model, making prescription of bottom drag ambiguous because the near-bottom velocity is unknown.</p>
+</section>
+<section id="discouraged-parameter-selections">
+<h2>Discouraged Parameter Selections<a class="headerlink" href="#discouraged-parameter-selections" title="Link to this heading"></a></h2>
+<p>As ADCIRC has grown, some features have been improved upon, making others obsolete. This section addresses such parameters and values.</p>
+<p><cite>NWS=19</cite> should not be used, as <cite>NWS=20</cite> has the same input requirements but is considered to produce a better, more physically representative wind field. See <a class="reference internal" href="../meteorological_forcing/nws_parameters.html#nws-parameter"><span class="std std-ref">NWS Parameter</span></a> and <a class="reference internal" href="../meteorological_forcing/generalized_asymmetric_holland_model.html#gahm"><span class="std std-ref">Generalized Asymmetric Holland Model</span></a> for more details.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../meteorological_forcing/nws13.html" class="btn btn-neutral float-left" title="NWS13" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../special_features/index.html" class="btn btn-neutral float-right" title="Special Features" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

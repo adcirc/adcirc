@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Command Line Options &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Model Configuration" href="../model_configuration/index.html" />
+    <link rel="prev" title="Running ADCIRC" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Running ADCIRC</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Command Line Options</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Running ADCIRC</a></li>
+      <li class="breadcrumb-item active">Command Line Options</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/user_guide/running_adcirc/command_line_options.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="command-line-options">
+<h1>Command Line Options<a class="headerlink" href="#command-line-options" title="Link to this heading"></a></h1>
+<p>ADCIRC and its related tools accept various command line options that control their behavior. This page documents these options to help users automate and customize their ADCIRC runs.</p>
+<section id="adcirc-command-line-options">
+<h2>ADCIRC Command Line Options<a class="headerlink" href="#adcirc-command-line-options" title="Link to this heading"></a></h2>
+<p>ADCIRC has several command line options that control file locations, I/O behavior, and more. These options can be combined as needed.</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">-I</span> <span class="pre">INPUTDIR</span></code></dt><dd><p>Look for input files in the directory ‘INPUTDIR’ instead of looking in the directory where the ADCIRC command was issued.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">-O</span> <span class="pre">GLOBALDIR</span></code></dt><dd><p>Write fulldomain output files to the directory ‘GLOBALDIR’ instead of writing them to the directory where the ADCIRC command was issued.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">-L</span></code></dt><dd><p>When running in parallel, write subdomain output and binaryhotstart files to the PE* subdirectories instead of writing fulldomain output and binary hotstart files. This option does not affect the writing of NetCDF hotstart files, which are always written for the full domain.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">-S</span></code></dt><dd><p>When running in parallel, write subdomain binary hotstart files to the PE* subdirectories instead of writing fulldomain binary hotstart files. This option does not affect the writing of NetCDF hotstart file, which are always written for the full domain.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">-R</span></code></dt><dd><p>When running in parallel, read subdomain binary hotstart files instead of a fulldomain binary hotstart file. This option does not affect the reading of NetCDF hotstart files, which always reflect the fulldomain solution.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">-W</span> <span class="pre">NUM_WRITERS</span></code></dt><dd><p>When running in parallel, dedicate NUM_WRITERS MPI processes solely to the task of writing ascii output files (either sparse or dense ascii formats). Must be a positive integer. This option only affects the writing of the ascii formatted fort.63, fort.64, fort.73, and fort.74 files.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">-Ws</span> <span class="pre">NUM_SPLIT_WRITERS</span></code></dt><dd><p>Same as -W option above, but a new file is created each time the data are written; the integer part of the simulation time is appended to the file name.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">-H</span> <span class="pre">NUM_HOTSTART_WRITERS</span></code></dt><dd><p>Same as -W option above, except that NUM_HOTSTART_WRITERS MPI processes will be dedicated to writing binary hotstart files. This option does not affect the writing of NetCDF hotstart files. The binary hotstart files that are written using this option are only suitable for 2DDI runs without harmonic analysis.</p>
+</dd>
+</dl>
+<section id="version-51-additions">
+<h3>Version 51 Additions<a class="headerlink" href="#version-51-additions" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">-M</span></code></dt><dd><p>When running in parallel, write subdomain harmonic analysis files. This option is useful for tidal analyses with many constituents (e.g., more than approximately 30) because writing fulldomain harmonic analysis output files with this many constituents can exhaust the physical memory of the host computer.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">-Mft</span> <span class="pre">MESH_FILE_TYPE</span></code></dt><dd><p>The MESH_FILE_TYPE can be specified as ascii (the default) or xdmf (introduced in ADCIRC v51).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">-Mfn</span> <span class="pre">MESH_FILE_NAME</span></code></dt><dd><p>Search for a full domain mesh file named MESH_FILE_NAME rather than the default mesh file name fort.14.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">-Nft</span> <span class="pre">NODAL_ATTRIBUTES_FILE_TYPE</span></code></dt><dd><p>The NODAL_ATTRIBUTES_FILE_TYPE can be specified as ascii (the default) or xdmf (introduced in ADCIRC v51).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">-Nfn</span> <span class="pre">NODAL_ATTRIBUTES_FILE_NAME</span></code></dt><dd><p>Search for a full domain nodal attributes file named NODAL_ATTRIBUTES_FILE_NAME rather than the default nodal attributes file name fort.13.</p>
+</dd>
+</dl>
+</section>
+<section id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h3>
+<p>Run ADCIRC with input files in a different directory:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">adcirc</span> <span class="o">-</span><span class="n">I</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="nb">input</span><span class="o">/</span><span class="n">files</span>
+</pre></div>
+</div>
+<p>Run parallel ADCIRC with input in one directory and output in another:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mpirun</span> <span class="o">-</span><span class="n">np</span> <span class="mi">16</span> <span class="o">./</span><span class="n">padcirc</span> <span class="o">-</span><span class="n">I</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="nb">input</span><span class="o">/</span><span class="n">files</span> <span class="o">-</span><span class="n">O</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">output</span><span class="o">/</span><span class="n">files</span>
+</pre></div>
+</div>
+<p>Run parallel ADCIRC with subdomain output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mpirun</span> <span class="o">-</span><span class="n">np</span> <span class="mi">16</span> <span class="o">./</span><span class="n">padcirc</span> <span class="o">-</span><span class="n">L</span>
+</pre></div>
+</div>
+<p>Run parallel ADCIRC with dedicated writers:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mpirun</span> <span class="o">-</span><span class="n">np</span> <span class="mi">16</span> <span class="o">./</span><span class="n">padcirc</span> <span class="o">-</span><span class="n">W</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<p>Run parallel ADCIRC with a custom mesh file name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mpirun</span> <span class="o">-</span><span class="n">np</span> <span class="mi">16</span> <span class="o">./</span><span class="n">padcirc</span> <span class="o">-</span><span class="n">Mfn</span> <span class="n">my_custom_mesh</span><span class="o">.</span><span class="n">grd</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="adcprep-command-line-options">
+<h2>ADCPREP Command Line Options<a class="headerlink" href="#adcprep-command-line-options" title="Link to this heading"></a></h2>
+<p>ADCPREP is used to partition the ADCIRC domain for parallel execution. If ADCPREP is run without command line options, it presents an interactive menu. Using command line options allows for automation.</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">--np</span> <span class="pre">NUM_SUBDOMAINS</span></code></dt><dd><p>Decompose the domain into NUM_SUBDOMAINS subdomains. The number of subdomains should be equal to the number of compute processors that will be used in the parallel computation. This command line option is required for all other ADCPREP operations.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">--partmesh</span></code></dt><dd><p>Partition the mesh only; that is, decide which subdomain each of the nodes should fall into. This should be done first. The result is a file called partmesh.txt, which consists of a list of integers, one line per node in the fulldomain mesh. Each integer in the list represents the subdomain number that each node will fall into. As a result, the range of values in the file represents the range of subdomain numbers.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">--prepall</span></code></dt><dd><p>Use the partmesh.txt file to decompose all the ADCIRC input files into subdirectories numbered ‘PExxxx’ where ‘xxxx’ is the zero indexed, zero padded subdomain number. Expects all input files to have the default names, e.g., the mesh file must be named fort.14 instead of something like myMeshFile.grd in order for this option to work. This option requires that adcprep has already been executed with the partmesh option, and that the partmesh.txt file was written successfully.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">--prep13</span></code></dt><dd><p>Only redecompose the nodal attributes (fort.13) input file. Requires that prepall step has already been performed.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">--prep15</span></code></dt><dd><p>Only redecompose the control model parameter and periodic boundary conditions file (fort.15) input file. Requires that prepall step has already been performed.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">--prep20</span></code></dt><dd><p>Only redecompose the non-periodic, normal flux boundary condition file (fort.20). Requires that prepall step has already been performed.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">--prep88</span></code></dt><dd><p>Only redecompose the upland river initialization file (fort.88). Requires that prepall step has already been performed.</p>
+</dd>
+</dl>
+<section id="id1">
+<h3>Examples<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>Complete parallel preparation for 16 processors:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Step 1: Partition the mesh</span>
+<span class="n">adcprep</span> <span class="o">--</span><span class="n">np</span> <span class="mi">16</span> <span class="o">--</span><span class="n">partmesh</span>
+
+<span class="c1"># Step 2: Prepare all input files</span>
+<span class="n">adcprep</span> <span class="o">--</span><span class="n">np</span> <span class="mi">16</span> <span class="o">--</span><span class="n">prepall</span>
+</pre></div>
+</div>
+<p>Re-decompose just the nodal attributes file after making changes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">adcprep</span> <span class="o">--</span><span class="n">np</span> <span class="mi">16</span> <span class="o">--</span><span class="n">prep13</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="notes-on-parallel-execution">
+<h2>Notes on Parallel Execution<a class="headerlink" href="#notes-on-parallel-execution" title="Link to this heading"></a></h2>
+<p>When running ADCIRC in parallel, it’s important to understand the workflow:</p>
+<ol class="arabic simple">
+<li><p>First run ADCPREP to partition the domain</p></li>
+<li><p>Then run padcirc with the appropriate options</p></li>
+<li><p>Post-processing may be needed to combine subdomain outputs</p></li>
+</ol>
+<p>Performance considerations:</p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">-W</span></code>, <code class="docutils literal notranslate"><span class="pre">-Ws</span></code>, and <code class="docutils literal notranslate"><span class="pre">-H</span></code> options can improve performance by dedicating specific processes to I/O operations</p></li>
+<li><p>Using the <code class="docutils literal notranslate"><span class="pre">-L</span></code> option reduces memory requirements but requires post-processing to combine outputs</p></li>
+<li><p>For large domains with many tidal constituents, the <code class="docutils literal notranslate"><span class="pre">-M</span></code> option can prevent memory exhaustion</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Running ADCIRC" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../model_configuration/index.html" class="btn btn-neutral float-right" title="Model Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

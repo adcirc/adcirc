@@ -1,0 +1,332 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Internal Tide Energy Conversion in ADCIRC" name="description" />
+<meta content="adcirc, internal tide energy conversion" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Internal Tide Energy Conversion &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Ali’s Dispersion Control" href="ali_dispersion_conrtol.html" />
+    <link rel="prev" title="Astronomical Tides" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Model Configuration</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../model_parameters/index.html">Model Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../physics_parameters/index.html">Physics Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../initial_conditions/index.html">Initial Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../boundary_conditions/index.html">Boundary Conditions</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Astronomical Tides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../meteorological_forcing/index.html">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../typical_configurations/typical_parameter_selections.html">Typical Parameter Selections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Model Configuration</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Astronomical Tides</a></li>
+      <li class="breadcrumb-item active">Internal Tide Energy Conversion</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/model_configuration/tides/internal_tide_energy_conversion.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="internal-tide-energy-conversion">
+<span id="id1"></span><h1>Internal Tide Energy Conversion<a class="headerlink" href="#internal-tide-energy-conversion" title="Link to this heading"></a></h1>
+<p>Internal tide energy conversion refers to the energy conversion from barotropic
+to baroclinic modes as surface tides flow over steep and rough topography in the
+deep ocean generating internal tides. The “lost” barotropic tidal energy is
+often accounted for through a linear friction term in large-scale numerical
+models that are barotropic or not fine-scaled enough to resolve the energy
+conversion. It is implemented in ADCIRC through a spatially varying nodal
+attribute called
+<a class="reference internal" href="../../../technical_reference/input_files/fort13.html#internal-tide-friction"><span class="std std-ref">internal_tide_friction</span></a>, in
+the <a class="reference internal" href="../../../technical_reference/input_files/fort13.html#fort13"><span class="std std-ref">fort.13 file</span></a>.</p>
+<section id="background-and-theory">
+<h2>Background and Theory<a class="headerlink" href="#background-and-theory" title="Link to this heading"></a></h2>
+<p>The basic theory for generation of internal tides in the deep ocean was
+established several decades ago. <a class="footnote-reference brackets" href="#id26" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> However, it was not thought to be
+incredibly important to the global energy balance of the surface tides until the
+modern satellite era when it was discovered that internal tides are responsible
+for approximately 30% of the global barotropic tidal dissipation. <a class="footnote-reference brackets" href="#id27" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a> <a class="footnote-reference brackets" href="#id28" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a> <a class="footnote-reference brackets" href="#id29" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a></p>
+<p>Following this revelation, the past two decades have been subject to a number of
+theoretical  <a class="footnote-reference brackets" href="#id30" id="id6" role="doc-noteref"><span class="fn-bracket">[</span>5<span class="fn-bracket">]</span></a>  <a class="footnote-reference brackets" href="#id31" id="id7" role="doc-noteref"><span class="fn-bracket">[</span>6<span class="fn-bracket">]</span></a>  <a class="footnote-reference brackets" href="#id32" id="id8" role="doc-noteref"><span class="fn-bracket">[</span>7<span class="fn-bracket">]</span></a>  <a class="footnote-reference brackets" href="#id33" id="id9" role="doc-noteref"><span class="fn-bracket">[</span>8<span class="fn-bracket">]</span></a> and numerical  <a class="footnote-reference brackets" href="#id34" id="id10" role="doc-noteref"><span class="fn-bracket">[</span>9<span class="fn-bracket">]</span></a>  <a class="footnote-reference brackets" href="#id35" id="id11" role="doc-noteref"><span class="fn-bracket">[</span>10<span class="fn-bracket">]</span></a>  <a class="footnote-reference brackets" href="#id36" id="id12" role="doc-noteref"><span class="fn-bracket">[</span>11<span class="fn-bracket">]</span></a>
+investigations into internal tide generation and their effects on the surface
+tides through parameterization of the energy conversion in large-scale numerical
+tidal models.  <a class="footnote-reference brackets" href="#id37" id="id13" role="doc-noteref"><span class="fn-bracket">[</span>12<span class="fn-bracket">]</span></a>  <a class="footnote-reference brackets" href="#id38" id="id14" role="doc-noteref"><span class="fn-bracket">[</span>13<span class="fn-bracket">]</span></a>  <a class="footnote-reference brackets" href="#id39" id="id15" role="doc-noteref"><span class="fn-bracket">[</span>14<span class="fn-bracket">]</span></a>  <a class="footnote-reference brackets" href="#id40" id="id16" role="doc-noteref"><span class="fn-bracket">[</span>15<span class="fn-bracket">]</span></a>  <a class="footnote-reference brackets" href="#id41" id="id17" role="doc-noteref"><span class="fn-bracket">[</span>16<span class="fn-bracket">]</span></a>  <a class="footnote-reference brackets" href="#id42" id="id18" role="doc-noteref"><span class="fn-bracket">[</span>17<span class="fn-bracket">]</span></a>  <a class="footnote-reference brackets" href="#id43" id="id19" role="doc-noteref"><span class="fn-bracket">[</span>18<span class="fn-bracket">]</span></a></p>
+</section>
+<section id="attribute-summary">
+<h2>Attribute Summary<a class="headerlink" href="#attribute-summary" title="Link to this heading"></a></h2>
+<p>In a computational domain covering a large portion of the deep ocean, the effect
+of internal tide energy conversion may be needed to obtain more accurate tidal
+solutions. The user should only elect to use the internal_tide_friction nodal
+attribute when tides are included in the simulation through tidal boundary
+conditions and tidal potential functions. The attribute may not be important for
+domains that are small in size and/or do not cover a significant portion of the
+“deep ocean” (the portion of the ocean excluding the continental shelf).</p>
+<p>ADCIRC reads the internal_tide_friction attribute in as the <em>IT_Fric</em> variable,
+which can have 1 (scalar) or 3 (tensor) dimensions. The attribute has dimensions
+of [1/time], meaning that it is a linear friction term which is multiplied by
+the velocity in the governing equations, and is normalized by the ocean depth
+prior to simulation. Hence, it ignores the water surface elevation portion of
+the total water depth, which is reasonable since the term and theory it is based
+on is only applicable to deep ocean. Typically, it is only applied to ocean
+depths greater than 100-500 m. <a class="footnote-reference brackets" href="#id39" id="id20" role="doc-noteref"><span class="fn-bracket">[</span>14<span class="fn-bracket">]</span></a> <a class="footnote-reference brackets" href="#id41" id="id21" role="doc-noteref"><span class="fn-bracket">[</span>16<span class="fn-bracket">]</span></a></p>
+</section>
+<section id="specifying-it-fric-values">
+<h2>Specifying <em>IT_Fric</em> Values<a class="headerlink" href="#specifying-it-fric-values" title="Link to this heading"></a></h2>
+<p><em>IT_Fric</em> values are determined through analytical formulations based on Bell’s
+linear theory <a class="footnote-reference brackets" href="#id26" id="id22" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>, valid in what is called sub-critical topography. <a class="footnote-reference brackets" href="#id27" id="id23" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p>
+<p>Recent publications using ADCIRC <a class="footnote-reference brackets" href="#id39" id="id24" role="doc-noteref"><span class="fn-bracket">[</span>14<span class="fn-bracket">]</span></a> <a class="footnote-reference brackets" href="#id40" id="id25" role="doc-noteref"><span class="fn-bracket">[</span>15<span class="fn-bracket">]</span></a> provide relevant formulation and
+implementation details.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<references /><aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id26" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id2">1</a>,<a role="doc-backlink" href="#id22">2</a>)</span>
+<p>T.H. Bell, Topographically generated internal waves in the open ocean, J.
+Geophys. Res. 80 (1975) 320–327. doi:10.1029/JC080i003p00320.</p>
+</aside>
+<aside class="footnote brackets" id="id27" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id3">1</a>,<a role="doc-backlink" href="#id23">2</a>)</span>
+<p>C. Garrett, E. Kunze, Internal Tide Generation in the Deep Ocean, Annu. Rev.
+Fluid Mech. 39 (2007) 57–87. doi:10.1146/annurev.fluid.39.050905.110227.</p>
+</aside>
+<aside class="footnote brackets" id="id28" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">3</a><span class="fn-bracket">]</span></span>
+<p>G.D. Egbert, R.D. Ray, Significant dissipation of tidal energy in the deep
+ocean inferred from satellite altimeter data, Nature. 405 (2000) 775–778.
+doi:10.1038/35015531</p>
+</aside>
+<aside class="footnote brackets" id="id29" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">4</a><span class="fn-bracket">]</span></span>
+<p>G.D. Egbert, R.D. Ray, Estimates of M2 tidal energy dissipation from
+TOPEX/Poseidon altimeter data, J. Geophys. Res. Ocean. 106 (2001)
+22475–22502. doi:10.1029/2000JC000699.</p>
+</aside>
+<aside class="footnote brackets" id="id30" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">5</a><span class="fn-bracket">]</span></span>
+<p>A. Melet, M. Nikurashin, C. Muller, S. Falahat, J. Nycander, P.G. Timko, B.K.
+Arbic, J.A. Goff, Internal tide generation by abyssal hills using analytical
+theory, J. Geophys. Res. Ocean. 118 (2013) 6303–6318.
+doi:10.1002/2013JC009212.</p>
+</aside>
+<aside class="footnote brackets" id="id31" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">6</a><span class="fn-bracket">]</span></span>
+<p>F. Pétrélis, S.L. Smith, W.R. Young, F. Pétrélis, S.L. Smith, W.R. Young,
+Tidal Conversion at a Submarine Ridge, J. Phys. Oceanogr. 36 (2006)
+1053–1071. doi:10.1175/JPO2879.1.</p>
+</aside>
+<aside class="footnote brackets" id="id32" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">7</a><span class="fn-bracket">]</span></span>
+<p>L. St. Laurent, C. Garrett, The Role of Internal Tides in Mixing the Deep
+Ocean, J. Phys. Oceanogr. 32 (2002) 2882–2899.
+doi:10.1175/1520-0485(2002)032&lt;2882:TROITI&gt;2.0.CO;2.</p>
+</aside>
+<aside class="footnote brackets" id="id33" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id9">8</a><span class="fn-bracket">]</span></span>
+<p>L. St. Laurent, S. Stringer, C. Garrett, D. Perrault-Joncas, The generation
+of internal tides at abrupt topography, Deep Sea Res. Part I Oceanogr. Res.
+Pap. 50 (2003) 987–1003. doi:10.1016/S0967-0637(03)00096-7.</p>
+</aside>
+<aside class="footnote brackets" id="id34" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">9</a><span class="fn-bracket">]</span></span>
+<p>J. Nycander, Generation of internal waves in the deep ocean by tides, J.
+Geophys. Res. 110 (2005) C10028. doi:10.1029/2004JC002487.</p>
+</aside>
+<aside class="footnote brackets" id="id35" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id11">10</a><span class="fn-bracket">]</span></span>
+<p>A. Lefauve, C. Muller, A. Melet, A three-dimensional map of tidal dissipation
+over abyssal hills, J. Geophys. Res. C Ocean. 120 (2015) 4760–4777.
+doi:10.1002/2014JC010598.</p>
+</aside>
+<aside class="footnote brackets" id="id36" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id12">11</a><span class="fn-bracket">]</span></span>
+<p>M.H. Alford, T. Peacock, J. a MacKinnon, J.D. Nash, M.C. Buijsman, L.R.
+Centuroni, S.-Y. Chao, M.-H. Chang, D.M. Farmer, O.B. Fringer, K.-H. Fu, P.C.
+Gallacher, H.C. Graber, K.R. Helfrich, S.M. Jachec, C.R. Jackson, J.M.
+Klymak, D.S. Ko, S. Jan, T.M.S. Johnston, S. Legg, I.-H. Lee, R.-C. Lien,
+M.J. Mercier, J.N. Moum, R. Musgrave, J.-H. Park, A.I. Pickering, R. Pinkel,
+L. Rainville, S.R. Ramp, D.L. Rudnick, S. Sarkar, A. Scotti, H.L. Simmons,
+L.C. St Laurent, S.K. Venayagamoorthy, Y.-H. Wang, J. Wang, Y.J. Yang, T.
+Paluszkiewicz, T.-Y.D. Tang, The formation and fate of internal waves in the
+South China Sea., Nature. 521 (2015) 65–9. doi:10.1038/nature14399.</p>
+</aside>
+<aside class="footnote brackets" id="id37" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id13">12</a><span class="fn-bracket">]</span></span>
+<p>S.R. Jayne, L.C. St. Laurent, Parameterizing tidal dissipation over rough
+topography, Geophys. Res. Lett. 28 (2001) 811–814. doi:10.1029/2000GL012044.</p>
+</aside>
+<aside class="footnote brackets" id="id38" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id14">13</a><span class="fn-bracket">]</span></span>
+<p>M.C. Buijsman, B.K. Arbic, J.A.M. Green, R.W. Helber, J.G. Richman, J.F.
+Shriver, P.G. Timko, A. Wallcraft, Optimizing internal wave drag in a forward
+barotropic model with semidiurnal tides, Ocean Model. 85 (2015) 42–55.
+doi:10.1016/j.ocemod.2014.11.003.</p>
+</aside>
+<aside class="footnote brackets" id="id39" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>14<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id15">1</a>,<a role="doc-backlink" href="#id20">2</a>,<a role="doc-backlink" href="#id24">3</a>)</span>
+<p>W.J. Pringle, D. Wirasaet, A. Suhardjo, J. Meixner, J.J. Westerink, A.B.
+Kennedy, S. Nong, Finite-Element Barotropic Model for the Indian and Western
+Pacific Oceans: Tidal Model-Data Comparisons and Sensitivities, Ocean Model.
+129 (2018) 13–38. doi:10.1016/j.ocemod.2018.07.003.</p>
+</aside>
+<aside class="footnote brackets" id="id40" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>15<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id16">1</a>,<a role="doc-backlink" href="#id25">2</a>)</span>
+<p>W.J. Pringle, D. Wirasaet, J.J. Westerink, Modifications to Internal Tide
+Conversion Parameterizations and Implementation into Barotropic Ocean Models,
+EarthArXiv. (2018) 9. doi:10.31223/osf.io/84w53.</p>
+</aside>
+<aside class="footnote brackets" id="id41" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>16<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id17">1</a>,<a role="doc-backlink" href="#id21">2</a>)</span>
+<p>B.K. Arbic, A.J. Wallcraft, E.J. Metzger, Concurrent simulation of the
+eddying general circulation and tides in a global ocean model, Ocean Model.
+32 (2010) 175–187. doi:10.1016/j.ocemod.2010.01.007.</p>
+</aside>
+<aside class="footnote brackets" id="id42" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id18">17</a><span class="fn-bracket">]</span></span>
+<p>A. Schmittner, G.D. Egbert, An improved parameterization of tidal mixing for
+ocean models, Geosci. Model Dev. 7 (2014) 211–224.
+doi:10.5194/gmd-7-211-2014.</p>
+</aside>
+<aside class="footnote brackets" id="id43" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id19">18</a><span class="fn-bracket">]</span></span>
+<p>J.A.M. Green, J. Nycander, A Comparison of Tidal Conversion Parameterizations
+for Tidal Models, J. Phys. Oceanogr. 43 (2013) 104–119.
+doi:10.1175/JPO-D-12-023.1.</p>
+</aside>
+</aside>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Astronomical Tides" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ali_dispersion_conrtol.html" class="btn btn-neutral float-right" title="Ali’s Dispersion Control" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

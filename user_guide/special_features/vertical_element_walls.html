@@ -1,0 +1,371 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vertical Element Walls (VEWs) &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Tips and Tricks" href="../tips_and_tricks/index.html" />
+    <link rel="prev" title="Ice Modifications" href="ice_modifications.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Special Features</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="adcirc2d_plus.html">ADCIRC2D+</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bridge_piers.html">Bridge Piers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dynamic_water_level_correction.html">Dynamic water level correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ice_modifications.html">Ice Modifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../model_configuration/meteorological_forcing/generalized_asymmetric_holland_model.html">Generalized Asymmetric Holland Model</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Vertical Element Walls (VEWs)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Special Features</a></li>
+      <li class="breadcrumb-item active">Vertical Element Walls (VEWs)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/user_guide/special_features/vertical_element_walls.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="vertical-element-walls-vews">
+<span id="special-features-vertical-element-walls"></span><h1>Vertical Element Walls (VEWs)<a class="headerlink" href="#vertical-element-walls-vews" title="Link to this heading"></a></h1>
+<section id="what-are-vertical-element-walls">
+<h2>What are Vertical Element Walls?<a class="headerlink" href="#what-are-vertical-element-walls" title="Link to this heading"></a></h2>
+<p>Vertical Element Walls (VEWs) are a special boundary condition in ADCIRC that allow for the representation of steep-sided channels or other vertical features within the mesh. Unlike traditional mesh elements that assume a gradually sloping bathymetry, VEWs provide a way to model abrupt vertical changes in the terrain, which is particularly useful for:</p>
+<ol class="arabic simple">
+<li><p>Modeling narrow channels with vertical walls where traditional mesh elements would require excessive refinement,</p></li>
+<li><p>Representing steep slopes or embankments without the need for complex mesh transitions, and thus,</p></li>
+<li><p>Simulating compound flooding scenarios involving river channels and floodplains</p></li>
+</ol>
+<p>VEWs effectively create internal boundaries that allow water to flow between adjacent elements with different bed elevations, providing a more effective representation of channelized flow while maintaining computational efficiency.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>VEWs and the <a class="reference internal" href="../../technical_reference/input_files/fort13.html#condensed-nodes"><span class="std std-ref">condensed_nodes</span></a> nodal attribute are implemented only for <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#im"><span class="std std-ref">IM</span></a> values that run ADCIRC in the lumped explicit mode.</p>
+</div>
+<figure class="align-default" id="id1">
+<a class="reference internal image-reference" href="../../_images/vertical_element_walls_schematic.png"><img alt="Comparison between conventional trapezoidal approach and vertical element walls" src="../../_images/vertical_element_walls_schematic.png" style="width: 600px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Schematic comparison of traditional trapezoidal channel representation (left) and vertical element wall approach (right).</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-default" id="id2">
+<a class="reference internal image-reference" href="../../_images/vertical_element_walls_schematic_3.png"><img alt="Water in a channel, on a floodplain, and their seemless interaction" src="../../_images/vertical_element_walls_schematic_3.png" style="width: 600px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Water in a channel and on a floodplain seamlessly interact through vertical element walls under various flow conditions, including normal flow, overtopping, and flooding scenarios.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="example-usages">
+<h2>Example Usages<a class="headerlink" href="#example-usages" title="Link to this heading"></a></h2>
+<section id="modeling-channels-with-vertical-element-walls">
+<h3>Modeling Channels with Vertical Element Walls<a class="headerlink" href="#modeling-channels-with-vertical-element-walls" title="Link to this heading"></a></h3>
+<p>VEWs are particularly useful for modeling narrow channels with floodplains modeled with a relatively large elements, not having a sufficient resolution to reprent channel side slopes properly. By using vertical walls to represent the channel sides:</p>
+<ul class="simple">
+<li><p>The channel can be represented at its true width without excessive mesh refinement</p></li>
+<li><p>Horizontal flow exchange between the channel and floodplain is accurately captured</p></li>
+<li><p>Computational efficiency is improved compared to traditional sloping-sided channel representations</p></li>
+</ul>
+<p>This approach is valuable in scenarios such as compound flooding and intracoastal waterways where interaction between channels and floodplains is important and/or channels’ side slopes are steep due to dredging.</p>
+</section>
+<section id="modeling-one-sided-steep-slopes-with-vertical-element-walls">
+<h3>Modeling One-sided Steep Slopes with Vertical Element Walls<a class="headerlink" href="#modeling-one-sided-steep-slopes-with-vertical-element-walls" title="Link to this heading"></a></h3>
+<p>For areas with significant elevation changes over short distances (such as sheet piles and dune fronts), VEWs provide an efficient alternative to dense mesh refinement:</p>
+<ul class="simple">
+<li><p>Sharp elevation transitions can be represented without mesh distortion</p></li>
+<li><p>Flow processes at these transitions (like overtopping) are more accurately modeled</p></li>
+<li><p>Computational requirements are reduced compared to fully-resolved sloping meshes</p></li>
+</ul>
+</section>
+</section>
+<section id="special-features-for-vew-channels-with-condensed-nodes">
+<h2>Special Features for VEW Channels with Condensed Nodes<a class="headerlink" href="#special-features-for-vew-channels-with-condensed-nodes" title="Link to this heading"></a></h2>
+<p>ADCIRC includes several special features for more accurate modeling of VEW channels:</p>
+<dl id="wet-perimeter-consideration">
+<dt>Wet Perimeter Consideration</dt><dd><p>For channels modeled with both vertical element walls and <a class="reference internal" href="../../technical_reference/input_files/fort13.html#condensed-nodes"><span class="std std-ref">condensed_nodes</span></a> nodal attribute, ADCIRC can account for the wet perimeter in calculating bottom friction. This is activated through the VEW1DChannelControl namelist:</p>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="p">&amp;</span><span class="n">VEW1DChannelControl</span>
+<span class="w">   </span><span class="n">activateVEW1DChannelWetPerimeter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="o">/</span>
+</pre></div>
+</div>
+<p>When enabled, this feature calculates the friction based on the rectangular cross-section of the channel, accounting for both the bed and the vertical walls in the total wetted perimeter. This provides more accurate representation of channel hydraulics, especially for narrow, deep channels.</p>
+</dd>
+</dl>
+<dl class="simple" id="d-channel">
+<dt>Quasi 1D Solution with Rotated Flow Along Flowline</dt><dd><p>For channels modeled with both vertical element walls and <a class="reference internal" href="../../technical_reference/input_files/fort13.html#condensed-nodes"><span class="std std-ref">condensed_nodes</span></a> nodal attribute, ADCIRC includes special handling of velocity components to ensure proper flow direction along the walls when they are not submerged. This prevents unrealistic cross-wall flow and maintains appropriate momentum balance in the system. This treatment gives</p>
+</dd>
+</dl>
+</section>
+<section id="defining-vews-in-adcirc-input-files">
+<h2>Defining VEWs in ADCIRC Input Files<a class="headerlink" href="#defining-vews-in-adcirc-input-files" title="Link to this heading"></a></h2>
+<p>Vertical Element Walls are implemented in ADCIRC as special internal barrier boundaries with an <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#ibtype"><span class="std std-ref">IBTYPE</span></a> value of 64.</p>
+<p>To define VEWs in the ADCIRC mesh file (fort.14):</p>
+<ol class="arabic simple">
+<li><p>Identify the node pairs that will form the vertical element walls</p></li>
+<li><p>Set the appropriate boundary condition flags</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#ibtype"><span class="std std-ref">IBTYPE</span></a> = 64 for the internal boundary</p></li>
+<li><p>Specify the nodal pairs that form the vertical wall segments</p></li>
+</ul>
+</li>
+</ol>
+<p>Additionally, a special nodal attribute called <a class="reference internal" href="../../technical_reference/input_files/fort13.html#condensed-nodes"><span class="std std-ref">condensed_nodes</span></a> can be used to identify nodes at the bottom of channels. ADCIRC yields quasi-1D solutions along the channel section with the specified condensed_nodes. Also, along the ‘1D’ channel section, the friction on the side walls can be considered in the momentum equations by turning on wet perimeter consideration. See <a class="reference internal" href="#wet-perimeter-consideration"><span class="std std-ref">Wet Perimeter Consideration</span></a> and <a class="reference internal" href="#d-channel"><span class="std std-ref">Quasi 1D Solution</span></a> for more information.</p>
+<section id="example-fort-14-with-vertical-element-walls">
+<h3>Example Fort.14 with Vertical Element Walls<a class="headerlink" href="#example-fort-14-with-vertical-element-walls" title="Link to this heading"></a></h3>
+<figure class="align-default" id="id3">
+<a class="reference internal image-reference" href="../../_images/vertical_element_walls_schematic_13.png"><img alt="Sloping beach test model" src="../../_images/vertical_element_walls_schematic_13.png" style="width: 600px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Example mesh from a sloping beach test model</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>Below is an example of <a class="reference internal" href="../../technical_reference/input_files/fort14.html#fort14"><span class="std std-ref">fort.14</span></a> file for a domain with a channel modeled using vertical element walls. This example is taken from the <a class="reference external" href="https://github.com/adcirc/adcirc-testsuite/tree/main/adcirc/adcirc_slopingbeach_vew1d-parallel">adcirc_slopingbeach_vew1d-parallel test case contained in adcirc-testsuite</a>. The mesh consists of a main floodplain area with a narrow channel running through it.</p>
+<pre class="literal-block">Sample domain with a VEW channel
+8700 4832                   ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#ne"><span class="std std-ref">NE</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#np"><span class="std std-ref">NP</span></a>
+1   -565.0  0.0  2.54       ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#jn"><span class="std std-ref">JN</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#x"><span class="std std-ref">X(JN), Y(JN)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#y"><span class="std std-ref">Y(JN)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#dp"><span class="std std-ref">DP(JN)</span></a>
+2   -525.0  0.0  2.56
+3   -485.0  0.0  2.59
+...
+4343  -5.0  2280.0  -1.007  ! Nodes on the floodplain with depth less than zero
+4344   5.0  2280.0  -1.007  ! Note: These nodes with negative <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#dp"><span class="std std-ref">DP(JN)</span></a> values are initially dry as <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#dp"><span class="std std-ref">DP(JN)</span></a> values are positive downward
+4345  -5.0  2320.0  -1.087
+...
+4588  -5.0  2280.0   1.44   ! Nodes on the channel bed wth larger <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#dp"><span class="std std-ref">DP(JN)</span></a> values
+4589  -5.0  2320.0   1.36
+4590  -5.0  2360.0   1.28
+...
+4830   5.0  80.0  5.84
+4831   5.0  40.0  5.92
+4832   5.0   0.0  6.00
+1 3 1397 1369 1370          ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#je"><span class="std std-ref">JE</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nhy"><span class="std std-ref">NHY</span></a> (3 for triangle), node1, node2, node3
+2 3 2765 2738 2766
+3 3 2512 2511 2484
+...
+8698 3 167 139 140
+8699 3 195 168 196
+8700 3 167 140 168
+3                           ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nope"><span class="std std-ref">NOPE</span></a> (open boundary nodes)
+32                          ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#neta"><span class="std std-ref">NETA</span></a>
+15                          ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nvdll"><span class="std std-ref">NVDLL(k)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#ibtypee"><span class="std std-ref">IBTYPEE</span></a>
+1                           ! Boundary nodes
+2
+3
+...
+4531
+4832
+5                           ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nbou"><span class="std std-ref">NBOU</span></a> (land boundaries)
+606                         ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nvel"><span class="std std-ref">NVEL</span></a>
+...
+151 64                      ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nvell"><span class="std std-ref">NVELL(k)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#ibtype"><span class="std std-ref">IBTYPE(k)</span></a> (64 = VEW boundary)
+4343 4588  1.007  1.0  1.0  ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nbvv"><span class="std std-ref">NBVV(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#ibconn"><span class="std std-ref">IBCONN(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barinht"><span class="std std-ref">BARINHT(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barincfsb"><span class="std std-ref">BARINCFSB(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barincfsp"><span class="std std-ref">BARINCFSP(k,j)</span></a>
+4345 4589  1.087  1.0  1.0  ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nbvv"><span class="std std-ref">NBVV(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#ibconn"><span class="std std-ref">IBCONN(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barinht"><span class="std std-ref">BARINHT(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barincfsb"><span class="std std-ref">BARINCFSB(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barincfsp"><span class="std std-ref">BARINCFSP(k,j)</span></a>
+4347 4590  1.167  1.0  1.0  ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nbvv"><span class="std std-ref">NBVV(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#ibconn"><span class="std std-ref">IBCONN(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barinht"><span class="std std-ref">BARINHT(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barincfsb"><span class="std std-ref">BARINCFSB(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barincfsp"><span class="std std-ref">BARINCFSP(k,j)</span></a>
+...</pre>
+<p>In this example:</p>
+<ul class="simple">
+<li><p>The vertical element walls are defined with <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#ibtype"><span class="std std-ref">IBTYPE</span></a> =64</p></li>
+<li><p>Each VEW boundary segment connects pairs of nodes, i.e., one on the floodplain (e.g., node 4343), one in the channel (e.g., node 4588)</p></li>
+<li><p>The parameters for each VEW node pair are:</p>
+<ul>
+<li><p><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nbvv"><span class="std std-ref">NBVV(k,j)</span></a>: Node number on one side of the wall</p></li>
+<li><p><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#ibconn"><span class="std std-ref">IBCONN(k,j)</span></a>: Connected node number on the other side of the wall</p></li>
+<li><p><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barinht"><span class="std std-ref">BARINHT(k,j)</span></a>: Height of the barrier, which must be equal to or greater than the minus nodal depth. Otherwise, ADCIRC execution will stop. (<a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barinht"><span class="std std-ref">BARINHT(k,j)</span></a> is positive upward)</p></li>
+<li><p><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barincfsb"><span class="std std-ref">BARINCFSB(k,j)</span></a>, <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barincfsp"><span class="std std-ref">BARINCFSP(k,j)</span></a>: Flow coefficients for the barrier in the supercritical and subcritical flow regimes, respectively (1.0 in this example, which is appropriate for most applications)</p></li>
+</ul>
+</li>
+</ul>
+<p>This configuration allows water to flow between the floodplain and the channel when the water level on the floodplain exceeds <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barinht"><span class="std std-ref">BARINHT(k,j)</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>The nodal elevation at node <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nbvv"><span class="std std-ref">NBVV(k,j)</span></a> must be greater than the one at node <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#ibconn"><span class="std std-ref">IBCONN(k,j)</span></a>. This is becuase ADCIRC assumes that the side of <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nbvv"><span class="std std-ref">NBVV(k,j)</span></a> is always the higher ground side (i.e., floodplain side) and the side of <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#ibconn"><span class="std std-ref">IBCONN(k,j)</span></a> is the lower ground side (i.e., channel side).</p></li>
+<li><p><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barinht"><span class="std std-ref">BARINHT(k,j)</span></a> should be set to the same as the elevation of the floodplain node or a slightly greater value, e.g., by 0.001 m. The slightly greater value can be needed due to an issue in the domain decomposition process. ADCPREP may write out the depths in decomposed fort.14 files and the <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barinht"><span class="std std-ref">BARINHT(k,j)</span></a> values in decomposed fort.13 files with different significant digits, which may trigger an error by a parallel ADCIRC run when the barrier crest height (<a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barinht"><span class="std std-ref">BARINHT(k,j)</span></a>) errorneously becomes lower than the nodal elevation due to the inconsistent truncation.</p></li>
+<li><p><a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barincfsb"><span class="std std-ref">BARINCFSB(k,j)</span></a> and <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#barincfsp"><span class="std std-ref">BARINCFSP(k,j)</span></a> should be 1.0 for most of the cases.</p></li>
+</ul>
+</div>
+</section>
+<section id="example-fort-13-with-condensed-nodes">
+<span id="example-fort13-condensed-nodes"></span><h3>Example Fort.13 with Condensed Nodes<a class="headerlink" href="#example-fort-13-with-condensed-nodes" title="Link to this heading"></a></h3>
+<p>Below is an example of a <a class="reference internal" href="../../technical_reference/input_files/fort13.html"><span class="doc">Fort.13: Nodal Attributes File</span></a> file section for the <a class="reference internal" href="../../technical_reference/input_files/fort13.html#condensed-nodes"><span class="std std-ref">condensed_nodes</span></a> nodal attribute, which is used with VEWs to relax the CFL condition and obtain a quasi-1D solution along narrow channels.</p>
+<pre class="literal-block">Nodal attribute file    ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#agrid"><span class="std std-ref">AGRID</span></a>
+4832                    ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#numofnodes"><span class="std std-ref">NumOfNodes</span></a>
+1                       ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#nattr"><span class="std std-ref">NAttr</span></a>
+condensed_nodes         ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#attrname"><span class="std std-ref">AttrName(i)</span></a>
+3                       ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#valuespernode"><span class="std std-ref">ValuesPerNode(i)</span></a>: Maximum number of nodes in a group minus 1
+0 0 0                   ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#defaultattrval"><span class="std std-ref">DefaultAttrVal(i,k)</span></a>: Three zero defaulf values for condensed node groups with less than 4 nodes
+condensed_nodes         ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#attrname"><span class="std std-ref">AttrName(i)</span></a>
+151                     ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#numnodesnotdefaultval"><span class="std std-ref">NumNodesNotDefaultVal(i)</span></a>: Number of nodes with non-default values
+4588 4775 0 0           ! <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#n"><span class="std std-ref">n</span></a> <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#attrval"><span class="std std-ref">AttrVal(n,k)</span></a> <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#attrval"><span class="std std-ref">AttrVal(n,k)</span></a> <a class="reference internal" href="../../technical_reference/parameter_definitions/index.html#attrval"><span class="std std-ref">AttrVal(n,k)</span></a>: Node 4588 is condensed with node 4775 (2-node group)
+4589 4774 0 0           ! Node 4589 is condensed with node 4774
+4590 4773 0 0           ! Node 4590 is condensed with node 4773
+...
+4635 4660 4685 0        ! Node 4635 is condensed with nodes 4660 and 4685 (3-node group)
+...
+4640 4665 4690 4715     ! Node 4640 is condensed with nodes 4665, 4690, and 4715 (4-node group)
+...</pre>
+<p>In this example:</p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">ValuesPerNode</span></code> is set to 3, which means the maximum number of nodes in any condensed group is 4 (the specified node plus up to 3 additional nodes).</p></li>
+<li><p>For channel sections, the number of condensed nodes in a group is two, one on a side of the channe and one on the other side.</p></li>
+<li><p>For channel confluences, the number of condensed nodes is greater than 2. For a confluence where three reaches merge, the number of nodes in a condensed node group is 3 (one node number and two other node numbers as nodal attribute values). For a confluence where $n$ reaches merge, the number of nodes in a condensed node group is $n$.</p></li>
+<li><p>In the defaulf value section of the fort.13 file, the default values for <a class="reference internal" href="../../technical_reference/input_files/fort13.html#condensed-nodes"><span class="std std-ref">condensed_nodes</span></a> are set to three zeros, in this example, for condensed node groups with less than 4 nodes.</p></li>
+<li><p>For each node in the non-default value section of the fort.13 file:
+- The first column is the node number (e.g., 4588)
+- The remaining columns contain the node numbers of other nodes in the same condensed node group
+- When a group has fewer than the maximum number of nodes, the remaining attribute values are filled with zeros
+- For example, node 4588 forms a 2-node group with node 4775, so the third and fourth values are zeros
+- Node 4635 forms a 3-node group with nodes 4660 and 4685, so the fourth value is zero
+- Node 4640 forms a 4-node group with nodes 4665, 4690, and 4715, using all attribute values</p></li>
+</ul>
+<p>The <a class="reference internal" href="../../technical_reference/input_files/fort13.html#condensed-nodes"><span class="std std-ref">condensed_nodes</span></a> attribute is a critical component when using Vertical Element Walls for narrow channels, as it enables ADCIRC to produce a quasi-1D solution along the channel section and relax the CFL condition that would otherwise require very small time steps due to the narrow channel width.</p>
+<figure class="align-default" id="id4">
+<a class="reference internal image-reference" href="../../_images/vertical_element_walls_schematic_4.png"><img alt="VEW channel with condensed nodes for relaxed CFL condition" src="../../_images/vertical_element_walls_schematic_4.png" style="width: 600px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">The CFL condition can be relaxed by pairing nodes on the sides of a channel in the <a class="reference internal" href="../../technical_reference/input_files/fort13.html#condensed-nodes"><span class="std std-ref">condensed_nodes</span></a> nodal attributes.</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+<section id="available-tools">
+<h2>Available Tools<a class="headerlink" href="#available-tools" title="Link to this heading"></a></h2>
+<p>The <a class="reference external" href="https://github.com/shinbunya/vewutils">VEW Utils package</a> provides several tools to help create and work with Vertical Element Wall features:</p>
+<ul class="simple">
+<li><p><strong>ChannelPaving</strong>: Tools to generate mesh representations of channels with vertical walls</p></li>
+<li><p><strong>VEW Processing</strong>: Utilities for setting up and validating VEW boundary conditions</p></li>
+<li><p><strong>Mesh Merging</strong>: Functions to merge channel meshes with existing terrain meshes while preserving VEW features</p></li>
+</ul>
+<p>These tools simplify the process of incorporating VEWs into ADCIRC models and ensure correct implementation of the necessary boundary conditions.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<p>Bunya, S., et al. (2023). Techniques to embed channels in finite element shallow water equation models. Advances in Engineering Software, 103516. <a class="reference external" href="https://doi.org/10.1016/j.advengsoft.2023.103516">https://doi.org/10.1016/j.advengsoft.2023.103516</a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ice_modifications.html" class="btn btn-neutral float-left" title="Ice Modifications" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../tips_and_tricks/index.html" class="btn btn-neutral float-right" title="Tips and Tricks" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

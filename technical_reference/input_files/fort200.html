@@ -1,0 +1,263 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fort.200: Multiple File Meteorological Forcing Input &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Fort.23: Wave Radiation Stress Forcing File" href="fort23.html" />
+    <link rel="prev" title="Fort.22x.grb2: Meteorological Inputs in GRIB2 Format" href="fort22x_grb2.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../all_files.html">All Files</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Input Files</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#grid-and-boundaries">Grid and Boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#model-parameters-and-periodic-bcs">Model Parameters and Periodic BCs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#nodal-attributes">Nodal Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#hot-start">Hot Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#boundary-conditions">Boundary Conditions</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#meteorological-forcing">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#wave-forcing">Wave Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#self-attraction-earth-load-tide-forcing">Self Attraction/Earth Load Tide Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#ice-coverage">Ice Coverage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#d-baroclinic-simulation">3D Baroclinic Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#station-locations">Station Locations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#time-varying-topography-bathymetry">Time-varying Topography/Bathymetry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#passive-scalar-transport">Passive Scalar Transport</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#parallel-execution">Parallel Execution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Input Files</a></li>
+      <li class="breadcrumb-item active">Fort.200: Multiple File Meteorological Forcing Input</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/technical_reference/input_files/fort200.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fort-200-multiple-file-meteorological-forcing-input">
+<span id="fort200"></span><h1>Fort.200: Multiple File Meteorological Forcing Input<a class="headerlink" href="#fort-200-multiple-file-meteorological-forcing-input" title="Link to this heading"></a></h1>
+<p>The Multiple File Meteorological Forcing Input is used when GFS (<a class="reference internal" href="../parameter_definitions/index.html#nws"><span class="std std-ref">NWS=10</span></a>) or Eta29 (<a class="reference internal" href="../parameter_definitions/index.html#nws"><span class="std std-ref">NWS=11</span></a>) is specified in the Model Parameter and Periodic Boundary Condition File. These files provide wind velocity and atmospheric pressure data for the simulation.</p>
+<section id="file-structure">
+<h2>File Structure<a class="headerlink" href="#file-structure" title="Link to this heading"></a></h2>
+<p>The basic file structure varies depending on the NWS value:</p>
+<p>For NWS = 10 or 110:</p>
+<pre class="literal-block">for k=1, <a class="reference internal" href="../parameter_definitions/index.html#lonb"><span class="std std-ref">LONB</span></a> * <a class="reference internal" href="../parameter_definitions/index.html#latb"><span class="std std-ref">LATB</span></a>
+    <a class="reference internal" href="../parameter_definitions/index.html#pg"><span class="std std-ref">PG(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#ug"><span class="std std-ref">UG(k)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#vg"><span class="std std-ref">VG(k)</span></a>
+end k loop</pre>
+<p>For NWS = 11 or 111:</p>
+<pre class="literal-block">for k=1, 8
+    IYEAR, IMONTH, IDAY, IHOUR
+    for j=1, <a class="reference internal" href="../parameter_definitions/index.html#lonb"><span class="std std-ref">LONB</span></a> * <a class="reference internal" href="../parameter_definitions/index.html#latb"><span class="std std-ref">LATB</span></a>
+        <a class="reference internal" href="../parameter_definitions/index.html#ue"><span class="std std-ref">UE(j)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#ve"><span class="std std-ref">VE(j)</span></a>, <a class="reference internal" href="../parameter_definitions/index.html#pe"><span class="std std-ref">PE(j)</span></a>
+    end j loop
+end k loop</pre>
+</section>
+<section id="gfs-nws-10-notes">
+<h2>GFS (NWS=10) Notes<a class="headerlink" href="#gfs-nws-10-notes" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Meteorological data is input to a T1534, Gaussian grid (NWLON*NWLAT = 3072*1536 = 4,718,592)</p></li>
+<li><p>Data is interpolated in space onto the ADCIRC mesh</p></li>
+<li><p>Data are ordered in these files the same way they are generated by the degribbing program</p></li>
+<li><p>Files are named sequentially: fort.200, fort.200+N, fort.200+2*N, etc.
+- N = WTIMINC/3600 (time interval in hours between data files)
+- WTIMINC must be evenly divisible by 3600</p></li>
+<li><p>For cold starts:
+- Winds are assumed at rest at TIME=STATIM
+- First data file (fort.200+N) corresponds to TIME=STATIM+WTIMINC</p></li>
+<li><p>For hot starts:
+- Initial file (fort.200) required at TIME=HOT START TIME</p></li>
+<li><p>Data is interpolated in time to the ADCIRC time step</p></li>
+<li><p>Units:
+- Wind velocity (&#64; 10m): m/s
+- Surface pressure: Pascals (N/m²)</p></li>
+</ul>
+<section id="wind-stress-calculation-nws-10">
+<h3>Wind Stress Calculation (NWS=10):<a class="headerlink" href="#wind-stress-calculation-nws-10" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WIND_SPEED</span> <span class="o">=</span> <span class="n">magnitude</span> <span class="n">of</span> <span class="n">WIND_VEL</span>
+<span class="n">DRAG_COEFF</span> <span class="o">=</span> <span class="mf">0.001</span><span class="o">*</span><span class="p">(</span><span class="mf">0.75</span><span class="o">+</span><span class="mf">0.067</span><span class="o">*</span><span class="n">WIND_SPEED</span><span class="p">)</span>
+<span class="n">If</span> <span class="p">(</span><span class="n">DRAG_COEFF</span><span class="o">.</span><span class="n">gt</span><span class="mf">.0.003</span><span class="p">)</span> <span class="n">DRAG_COEFF</span><span class="o">=</span><span class="mf">0.003</span>
+<span class="n">WIND_STRESS</span> <span class="o">=</span> <span class="n">DRAG_COEFF</span><span class="o">*</span><span class="mf">0.001293</span><span class="o">*</span><span class="n">WIND_VEL</span><span class="o">*</span><span class="n">WIND_SPEED</span>
+</pre></div>
+</div>
+</section>
+<section id="pressure-conversion">
+<h3>Pressure Conversion:<a class="headerlink" href="#pressure-conversion" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PRESSURE</span><span class="p">{</span><span class="n">m</span> <span class="n">H2O</span><span class="p">}</span> <span class="o">=</span> <span class="n">PRESSURE</span><span class="p">{</span><span class="n">Pascal</span><span class="p">}</span><span class="o">/</span><span class="p">(</span><span class="n">GRAVITY</span><span class="o">*</span><span class="n">DENSITY</span> <span class="n">of</span> <span class="n">H2O</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="eta-29-nws-11-notes">
+<h2>Eta-29 (NWS=11) Notes<a class="headerlink" href="#eta-29-nws-11-notes" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Meteorological data is input to the standard Eta-29 “E” grid (NWLON*NWLAT = 181*271 = 49,051)</p></li>
+<li><p>ADCIRC grid must be in lon, lat coordinates</p></li>
+<li><p>Files are named sequentially: fort.200, fort.201, fort.202, etc.</p></li>
+<li><p>Each file contains 8 data sets spaced 3 hours apart (WTIMINC = 10800 sec)</p></li>
+<li><p>Data sets correspond to 03:00 to 24:00 hours on the day of the file</p></li>
+<li><p>For cold starts:
+- Winds are assumed at rest at TIME=STATIM
+- First data set in fort.201 corresponds to TIME=STATIM+WTIMINC</p></li>
+<li><p>For hot starts:
+- Initial file (fort.200) required with last data set at TIME=HOT START TIME</p></li>
+<li><p>File type: binary (ACCESS=’sequential’, FORM=’unformatted’)</p></li>
+<li><p>Units:
+- Wind velocity (&#64; 10m): m/s (E grid coordinate directions)
+- Surface pressure: millibars</p></li>
+</ul>
+<section id="wind-stress-calculation-nws-11">
+<h3>Wind Stress Calculation (NWS=11):<a class="headerlink" href="#wind-stress-calculation-nws-11" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WIND_SPEED</span> <span class="o">=</span> <span class="n">magnitude</span> <span class="n">of</span> <span class="n">WIND_VEL</span>
+<span class="n">DRAG_COEFF</span> <span class="o">=</span> <span class="mf">0.001</span><span class="o">*</span><span class="p">(</span><span class="mf">0.75</span><span class="o">+</span><span class="mf">0.067</span><span class="o">*</span><span class="n">WIND_SPEED</span><span class="p">)</span>
+<span class="n">If</span> <span class="p">(</span><span class="n">DRAG_COEFF</span><span class="o">.</span><span class="n">gt</span><span class="mf">.0.003</span><span class="p">)</span> <span class="n">DRAG_COEFF</span><span class="o">=</span><span class="mf">0.003</span>
+<span class="n">WIND_STRESS</span> <span class="o">=</span> <span class="n">DRAG_COEFF</span><span class="o">*</span><span class="mf">0.001293</span><span class="o">*</span><span class="n">WIND_VEL</span><span class="o">*</span><span class="n">WIND_SPEED</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h3>Pressure Conversion:<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PRESSURE</span><span class="p">{</span><span class="n">m</span> <span class="n">H2O</span><span class="p">}</span> <span class="o">=</span> <span class="n">PRESSURE</span><span class="p">{</span><span class="n">millibars</span><span class="p">}</span><span class="o">/</span><span class="p">(</span><span class="mi">100</span><span class="o">*</span><span class="n">GRAVITY</span><span class="o">*</span><span class="n">DENSITY</span> <span class="n">of</span> <span class="n">H2O</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="general-notes">
+<h2>General Notes<a class="headerlink" href="#general-notes" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Meteorological data must be provided for the entire model run, otherwise the run will crash</p></li>
+<li><p>IYEAR, IMONTH, IDAY, IHOUR values are read but ignored by ADCIRC</p></li>
+<li><p>Data is interpolated in time to the ADCIRC time step</p></li>
+<li><p>For NWS=11, each file contains 8 data sets for a total of 1 day of data per file</p></li>
+<li><p>The first and last data sets in each NWS=11 file correspond to 03:00 hrs and 24:00 hrs, respectively</p></li>
+<li><p>For NWS=11, 8 sets of meteorological data must be provided every WTIMINC in each file</p></li>
+<li><p>For NWS=11, appropriately named files must be provided for each day of the model run</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fort22x_grb2.html" class="btn btn-neutral float-left" title="Fort.22x.grb2: Meteorological Inputs in GRIB2 Format" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fort23.html" class="btn btn-neutral float-right" title="Fort.23: Wave Radiation Stress Forcing File" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

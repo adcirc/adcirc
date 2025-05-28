@@ -1,0 +1,431 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fort.13: Nodal Attributes File &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Fort.67, Fort.68: Hot Start Files" href="fort6768.html" />
+    <link rel="prev" title="Fort.15: Model Parameter and Periodic Boundary Condition File" href="fort15.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/model_configuration/index.html">Model Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../all_files.html">All Files</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Input Files</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#grid-and-boundaries">Grid and Boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#model-parameters-and-periodic-bcs">Model Parameters and Periodic BCs</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#nodal-attributes">Nodal Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#hot-start">Hot Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#boundary-conditions">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#meteorological-forcing">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#wave-forcing">Wave Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#self-attraction-earth-load-tide-forcing">Self Attraction/Earth Load Tide Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#ice-coverage">Ice Coverage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#d-baroclinic-simulation">3D Baroclinic Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#station-locations">Station Locations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#time-varying-topography-bathymetry">Time-varying Topography/Bathymetry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#passive-scalar-transport">Passive Scalar Transport</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#parallel-execution">Parallel Execution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Input Files</a></li>
+      <li class="breadcrumb-item active">Fort.13: Nodal Attributes File</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/technical_reference/input_files/fort13.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fort-13-nodal-attributes-file">
+<span id="fort13"></span><h1>Fort.13: Nodal Attributes File<a class="headerlink" href="#fort-13-nodal-attributes-file" title="Link to this heading"></a></h1>
+<p>The fort.13 file contains nodal attributes that are constant in time but spatially variable. This file is only read when <cite>NWP &gt; 0</cite> in the <cite>Model Parameter and Periodic Boundary Condition File</cite>.</p>
+<section id="file-structure">
+<h2>File Structure<a class="headerlink" href="#file-structure" title="Link to this heading"></a></h2>
+<p>The basic file structure is shown below. Each line of input data is represented by a line containing the input variable name(s). Loops indicate multiple lines of input.</p>
+<pre class="literal-block"><a class="reference internal" href="../parameter_definitions/index.html#agrid"><span class="std std-ref">AGRID</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#numofnodes"><span class="std std-ref">NumOfNodes</span></a>
+<a class="reference internal" href="../parameter_definitions/index.html#nattr"><span class="std std-ref">NAttr</span></a>
+for i=1 to <a class="reference internal" href="../parameter_definitions/index.html#nattr"><span class="std std-ref">NAttr</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#attrname"><span class="std std-ref">AttrName(i)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#units"><span class="std std-ref">Units(i)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#valuespernode"><span class="std std-ref">ValuesPerNode(i)</span></a>
+   for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#valuespernode"><span class="std std-ref">ValuesPerNode(i)</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#defaultattrval"><span class="std std-ref">DefaultAttrVal(i,k)</span></a>
+   end k loop
+end i loop
+for i=1 to <a class="reference internal" href="../parameter_definitions/index.html#nattr"><span class="std std-ref">NAttr</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#attrname"><span class="std std-ref">AttrName(i)</span></a>
+   <a class="reference internal" href="../parameter_definitions/index.html#numnodesnotdefaultval"><span class="std std-ref">NumNodesNotDefaultVal(i)</span></a>
+   for j=1 to <a class="reference internal" href="../parameter_definitions/index.html#numnodesnotdefaultval"><span class="std std-ref">NumNodesNotDefaultVal(i)</span></a>
+      <a class="reference internal" href="../parameter_definitions/index.html#n"><span class="std std-ref">n</span></a> <a class="reference internal" href="../parameter_definitions/index.html#attrval"><span class="std std-ref">AttrVal(n,k)</span></a> for k=1 to <a class="reference internal" href="../parameter_definitions/index.html#valuespernode"><span class="std std-ref">ValuesPerNode(i)</span></a>
+      end k loop
+   end j loop
+end i loop</pre>
+</section>
+<section id="nodal-attributes">
+<span id="id1"></span><h2>Nodal Attributes<a class="headerlink" href="#nodal-attributes" title="Link to this heading"></a></h2>
+<p>The following nodal attributes are available in ADCIRC:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#primitive-weighting-in-continuity-equation"><span class="std std-ref">primitive_weighting_in_continuity_equation – Tau0</span></a></p></li>
+<li><p><a class="reference internal" href="#surface-submergence-state"><span class="std std-ref">surface_submergence_state – StartDry</span></a></p></li>
+<li><p><a class="reference internal" href="#quadratic-friction-coefficient-at-sea-floor"><span class="std std-ref">quadratic_friction_coefficient_at_sea_floor – Fric</span></a></p></li>
+<li><p><a class="reference internal" href="#surface-directional-effective-roughness-length"><span class="std std-ref">surface_directional_effective_roughness_length – z0Land</span></a></p></li>
+<li><p><a class="reference internal" href="#surface-canopy-coefficient"><span class="std std-ref">surface_canopy_coefficient – VCanopy</span></a></p></li>
+<li><p><a class="reference internal" href="#bottom-roughness-length"><span class="std std-ref">bottom_roughness_length – Z0b_var</span></a></p></li>
+<li><p><a class="reference internal" href="#average-horizontal-eddy-viscosity-in-sea-water-wrt-depth"><span class="std std-ref">average_horizontal_eddy_viscosity_in_sea_water_wrt_depth – EVC</span></a></p></li>
+<li><p><a class="reference internal" href="#elemental-slope-limiter"><span class="std std-ref">elemental_slope_limiter</span></a></p></li>
+<li><p><a class="reference internal" href="#advection-state"><span class="std std-ref">advection_state – AdvectionState</span></a></p></li>
+<li><p><a class="reference internal" href="#initial-river-elevation"><span class="std std-ref">initial_river_elevation</span></a></p></li>
+<li><p><a class="reference internal" href="#wave-refraction-in-swan"><span class="std std-ref">wave_refraction_in_swan – SwanWaveRefrac</span></a></p></li>
+<li><p><a class="reference internal" href="#condensed-nodes"><span class="std std-ref">condensed_nodes</span></a></p></li>
+</ul>
+<p>The following sections describe each available nodal attribute and its properties.</p>
+<section id="primitive-weighting-in-continuity-equation-tau0">
+<span id="primitive-weighting-in-continuity-equation"></span><h3>primitive_weighting_in_continuity_equation – Tau0<a class="headerlink" href="#primitive-weighting-in-continuity-equation-tau0" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Same as existing TAU0.</p>
+<p><strong>Requirement</strong>: Required, but not necessarily in the fort.13 file as there is a choice of specification methods. Can be specified in the Model Parameter and Periodic Boundary Condition File as a positive constant, in which case it is spatially uniform; or a negative constant, in which case it is spatially varying according to a hardcoded scheme based on depth. Can also be specified as a nodal attribute in the Nodal Attributes File (fort.13), in which case any value specified in the Model Parameter and Periodic Boundary Condition File is ignored (nodal attributes take precedence).</p>
+<p><strong>Units</strong>: Unitless. (Units for nodal attributes are specified by the user).</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Suggested range specified in description of TAU0.</p>
+</div></blockquote>
+</section>
+<section id="min-and-max-primitive-weighting-in-continuity-equation">
+<span id="id2"></span><h3>min_and_max_primitive_weighting_in_continuity_equation<a class="headerlink" href="#min-and-max-primitive-weighting-in-continuity-equation" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Controls upper and lower bounds on TAU0, which affects numerical damping and stability.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Specified by the user, 1/time.</p>
+<p><strong>Values</strong>: Information and suggested range supplied in description of TAU0.</p>
+<p><strong>ADCIRC Variable</strong>: Tau0MinMax</p>
+</div></blockquote>
+</section>
+<section id="surface-submergence-state-startdry">
+<span id="surface-submergence-state"></span><h3>surface_submergence_state – StartDry<a class="headerlink" href="#surface-submergence-state-startdry" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: This attribute can force a node to be categorized as dry at the start of the simulation, even if it is below the geoid. This is important for simulating places like New Orleans that are below sea level but are not underwater.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Unitless.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: If set to 1, the node is categorized as dry at the cold start of the simulation. If set to zero, the node is categorized as wet or dry depending on whether its depth is below or above the geoid.</p>
+</div></blockquote>
+</section>
+<section id="quadratic-friction-coefficient-at-sea-floor-fric">
+<span id="quadratic-friction-coefficient-at-sea-floor"></span><h3>quadratic_friction_coefficient_at_sea_floor – Fric<a class="headerlink" href="#quadratic-friction-coefficient-at-sea-floor-fric" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: See the description of CF in the Model Parameter and Periodic Boundary Condition File. If the user elects to load this from the fort.13 file, NOLIBF must be set to 1 or the run will terminate.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Unitless.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Same as CF.</p>
+</div></blockquote>
+</section>
+<section id="surface-directional-effective-roughness-length-z0land">
+<span id="surface-directional-effective-roughness-length"></span><h3>surface_directional_effective_roughness_length – z0Land<a class="headerlink" href="#surface-directional-effective-roughness-length-z0land" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: A measure of the “roughness” of the land that can impede wind flow and reduce the surface stress that the wind applies. The ocean would be considered very smooth, and skyscrapers would be considered very rough. This attribute is directional, and the twelve values represent the roughness lengths “seen” by winds blowing from twelve different compass directions at each node. The orientation of the twelve values follows the trigonometric convention, that is, zero degrees represents due east, and the values proceed counter clockwise. In other words, the first value at a node is applied to winds blowing from west to east, the second value applies to winds blowing East-Northeast, etc.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Specified by the user, as is the case for all nodal attributes. The data we use is provided in meters.</p>
+<p><strong>Number of values per node</strong>: 12.</p>
+<p><strong>Values</strong>: Greater than or equal to zero.</p>
+</div></blockquote>
+</section>
+<section id="surface-canopy-coefficient-vcanopy">
+<span id="surface-canopy-coefficient"></span><h3>surface_canopy_coefficient – VCanopy<a class="headerlink" href="#surface-canopy-coefficient-vcanopy" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: This attribute allows the user to turn off wind stress in heavily forested areas that have been flooded, like a swamp. The canopy shields the water from the effect of the wind.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Unitless.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Zero if the wind stress should be zero because of a canopy. One otherwise.</p>
+</div></blockquote>
+</section>
+<section id="bridge-pilings-friction-paramenters-bk-balpha-bdelx-poan">
+<span id="bridge-pilings-friction-paramenters"></span><h3>bridge_pilings_friction_paramenters – BK, BAlpha, BDelX, POAN<a class="headerlink" href="#bridge-pilings-friction-paramenters-bk-balpha-bdelx-poan" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Extra friction from bridge pilings. See Note below.</p>
+<p><strong>Requirement</strong>: Very optional.</p>
+<p><strong>Units</strong>: Vary, see note below and BK, BALPHA, BDELX and POAN.</p>
+<p><strong>Number of values per node</strong>: 4.</p>
+<p><strong>Values</strong>: Vary, see note below and BK, BALPHA, BDELX and POAN.</p>
+<p><strong>Note</strong>: Special considerations must be used when designing a grid for an ADCIRC application that includes the effects of bridge pilings. Specifically, it is necessary to build the grid to provide at least three rows of nodes that parallel the bridge span. One row of nodes (centerline nodes) should lie along the approximate centerline of the bridge while the second and third rows of nodes (adjacent nodes) should lie on either side of the centerline nodes in the along steam direction. An initial implementation of obstruction drag in ADCIRC placed this drag entirely at the row of centerline nodes. However, tests showed that this arrangement led to significant oscillations in the numerical solution. The oscillations abated when the obstruction drag was distributed in the along stream direction so that 25 percent was located at each row of adjacent nodes and 50 percent was located at the row of centerline nodes. Node numbers and coefficient values at all nodes on the centerline and two adjacent rows must be entered in this input file. It is not necessary for centerline nodes to correspond to actual piling positions, (i.e., in the cross stream direction), since the overall effect of the pilings on the large scale circulation is all that is being represented. It is important, however, to construct a grid that is as uniform as possible in the vicinity of the bridge.</p>
+</div></blockquote>
+</section>
+<section id="mannings-n-at-sea-floor-manningsn">
+<span id="mannings-n-at-sea-floor"></span><h3>mannings_n_at_sea_floor – ManningsN<a class="headerlink" href="#mannings-n-at-sea-floor-manningsn" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Manning’s n. If the user elects to use this nodal attribute, NOLIBF must be set to 1 or the run will terminate. During execution, the Manning’s n value specified here is converted to an equivalent quadratic friction coefficient before the bottom stress is calculated. The equivalent quadratic friction coefficient is calculated according to the following formula at each node at each time step: Cd(t)=(g*n^2)/cuberoot(depth[+eta(t)]) where depth is the bathymetric depth and [eta(t)] is the water surface elevation. The addition of the water surface elevation is conditional upon the setting of NOLIFA: eta(t) is treated as zero if NOLIFA is set to zero in the fort.15 file. Finally, the value of CF in the fort.15 is used to set a lower limit on the resulting equivalent quadratic friction coefficient, since the Cd calculated from this formula tends to become small in deep water.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Specified by user.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Greater than zero.</p>
+</div></blockquote>
+</section>
+<section id="chezy-friction-coefficient-at-sea-floor-chezyfric">
+<span id="chezy-friction-coefficient-at-sea-floor"></span><h3>chezy_friction_coefficient_at_sea_floor – ChezyFric<a class="headerlink" href="#chezy-friction-coefficient-at-sea-floor-chezyfric" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Chezy friction coefficient. If the user elects to use this nodal attribute, NOLIBF must be set to 1 or the run will terminate.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Specified by user.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Greater than zero.</p>
+</div></blockquote>
+</section>
+<section id="sea-surface-height-above-geoid-geoidoffset">
+<span id="sea-surface-height-above-geoid"></span><h3>sea_surface_height_above_geoid – GeoidOffset<a class="headerlink" href="#sea-surface-height-above-geoid-geoidoffset" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Creates an initial offset of the sea surface from the geoid. If the offset is also specified at the boundaries, it will remain throughout the simulation. This has been used to simulate a steric effect, where water levels are higher in warm seasons because of thermal expansion.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Specified by the user (length).</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Any.</p>
+</div></blockquote>
+</section>
+<section id="bottom-roughness-length-z0b-var">
+<span id="bottom-roughness-length"></span><h3>bottom_roughness_length – Z0b_var<a class="headerlink" href="#bottom-roughness-length-z0b-var" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Roughness length for 3D bottom friction calculations. Has no effect on a 2DDI ADCIRC run.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Length (m)</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Greater than zero. A reasonable range for the bottom_roughness_length would be 0.001m -0.2m , (densely vegetated overland values would have an upper limit of about 0.2-0.5m and smooth muddy bottoms could have values as low as 0.0001 m).</p>
+</div></blockquote>
+</section>
+<section id="average-horizontal-eddy-viscosity-in-sea-water-wrt-depth-evc">
+<span id="average-horizontal-eddy-viscosity-in-sea-water-wrt-depth"></span><h3>average_horizontal_eddy_viscosity_in_sea_water_wrt_depth – EVC<a class="headerlink" href="#average-horizontal-eddy-viscosity-in-sea-water-wrt-depth-evc" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: See description of ESLC in the Model Parameter and Periodic Boundary Condition File.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Specified by the user. ((length**2)/time).</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Greater than or equal to zero.</p>
+</div></blockquote>
+</section>
+<section id="elemental-slope-limiter">
+<span id="id3"></span><h3>elemental_slope_limiter<a class="headerlink" href="#elemental-slope-limiter" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: This nodal attribute is used to selectively limit the maximum elevation gradient that can occur across an element, thus improving numerical stability. Alternatively, it is also capable of merely logging individual elements where a specified elemental slope is exceeded at some point during the simulation. When this nodal attribute is loaded, warning messages will be written to the screen and to the fort.16 log file whenever the elevation gradient meets or exceeds the threshold value for the first time at a particular node. Once the elevation gradient is met or exceeded at a node, the elemental slope limiter remains active at that node for the remainder of the ADCIRC run. When the elemental slope limiter is active at a node, the water surface elevation at that node is reset to the average of the water surface elevations of the surrounding nodes. At the end of the run, a file called ESLNodes.63 will be written to indicate the nodes where the threshold elevation gradient was met or exceeded. Furthermore, If there is an ESLNodes.63 file in the input directory when ADCIRC starts, ADCIRC will load the existing ESLNodes.63 file along with the hotstart file so that the simulation can pick up where it left off, in terms of the elements where the slope is actively limited. When such a simulation finishes, it will overwrite the existing ESLNodes.63 file with a new one that reflects the updated state of limited elemental slopes.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: length/length or unitless.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Zero indicates that slope limiting is always active at that node, because a zero elevation gradient will always be met or exceeded; a positive value indicates the maximum gradient to be allowed at that node, at or beyond which the slope limiter is activated; a negative number indicates that the elevation gradients should be compared to the absolute value of the nodal attribute at this node. In the case of a negative number, ADCIRC will log a warning to the screen and to the fort.16 file the first time the elemental slope is exceeded, but ESLNodes.63 file will not be affected, and the elemental slope limiting will not actually occur at the node. A suggested value for this nodal attribute is 0.001.</p>
+<p><strong>ADCIRC Variable</strong>: elemental_slope_limiter_grad_max</p>
+</div></blockquote>
+</section>
+<section id="advection-state-advectionstate">
+<span id="advection-state"></span><h3>advection_state – AdvectionState<a class="headerlink" href="#advection-state-advectionstate" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: The advection_state nodal attribute is used to provide fine grained control over the NOLICA and NOLICAT parameters, so that they can be set on an element-by-element basis. The bathymetric depth at the three nodes of an element are compared to the corresponding nodal attribute values, and if the bathymetric depth at all three nodes is greater than or equal to the corresponding nodal attribute value, the values of NOLICA and NOLICAT will be set to the value indicated in the Model Parameter and Periodic Boundary Condition (fort.15) file. If the bathymetric depth at any of the three nodes of a particular element is less than the corresponding nodal attribute value, the values of NOLICA and NOLICAT will be set to zero on that element.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Length.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: Any.</p>
+<p><strong>ADCIRC Variable</strong>: AdvectionState</p>
+</div></blockquote>
+</section>
+<section id="initial-river-elevation">
+<span id="id4"></span><h3>initial_river_elevation<a class="headerlink" href="#initial-river-elevation" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: The initial_river_elevation nodal attribute is used to set the initial water surface elevation in inland rivers that have some portion of the river bed above mean sea level as well as an upstream flux boundary condition. ADCIRC assumes by default that vertices that are above mean sea level (i.e., with negative depths) will be dry when the simulation starts. This assumption is violated when the elevation of a river bed is above mean sea level, and there is an upstream flux boundary. This nodal attribute is used in those cases to provide the initial water surface elevation of the river at cold start. See also <a class="reference internal" href="../../user_guide/model_configuration/initial_conditions/initial_river_elevation.html#initial-river-elevation-description"><span class="std std-ref">Initial River Elevation</span></a>.</p>
+<p><strong>Requirement</strong>: Required only if the domain contains a river with an upstream flux boundary condition and a bed elevation above mean sea level.</p>
+<p><strong>Units</strong>: Length.</p>
+<p><strong>Values</strong>: Any.</p>
+<p><strong>ADCIRC Variable</strong>: Eta2.</p>
+</div></blockquote>
+</section>
+<section id="internal-tide-friction">
+<span id="id5"></span><h3>internal_tide_friction<a class="headerlink" href="#internal-tide-friction" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: Linear friction term that accounts for energy conversion from barotropic modes to baroclinic modes as surface tides flow over steep and rough topography in the deep ocean generating internal tides.</p>
+<p><strong>Requirement</strong>: Important when simulating tides in computational domains that cover large portions of the deep ocean.</p>
+<p><strong>Units</strong>: 1/sec.</p>
+<p><strong>Number of values per node</strong>: 1 (scalar) or 3 (tensor).</p>
+<p><strong>Values</strong>: Computed through analytical formulations that are spatially dependent on buoyancy frequencies and topographic gradients.</p>
+<p><strong>ADCIRC Variable</strong>: IT_Fric</p>
+<p><strong>Note</strong>: IT_Fric can have 1 (scalar) or 3 (tensor) dimensions. The scalar form dissipates equally in all flow directions. The tensor form dissipates asymmetrically to account for the fact that internal tides are generated as surface tides flow across topographic slopes but not along them.</p>
+<p><strong>ADCIRC Version</strong>: ≥ 53.01</p>
+</div></blockquote>
+</section>
+<section id="wave-refraction-in-swan-swanwaverefrac">
+<span id="wave-refraction-in-swan"></span><h3>wave_refraction_in_swan – SwanWaveRefrac<a class="headerlink" href="#wave-refraction-in-swan-swanwaverefrac" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: To turn wave refraction on or off in the SWAN calculations during a coupled ADCIRC+SWAN run. In an ADCIRC-only run, this nodal attribute is ignored.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Unitless.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>: If set to 1 at a node, wave refraction will be active at that node in the SWAN calculations during a coupled ADCIRC+SWAN run. If set to 0, wave refraction will be deactivated at that node in a coupled ADCIRC+SWAN run.</p>
+</div></blockquote>
+</section>
+<section id="sponge-generator-layer">
+<span id="id6"></span><h3>sponge_generator_layer<a class="headerlink" href="#sponge-generator-layer" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Unitless.</p>
+<p><strong>Number of values per node</strong>: 1.</p>
+<p><strong>Values</strong>:</p>
+</div></blockquote>
+</section>
+<section id="condensed-nodes">
+<span id="id7"></span><h3>condensed_nodes<a class="headerlink" href="#condensed-nodes" title="Link to this heading"></a></h3>
+<blockquote>
+<div><p><strong>Description</strong>: The condensed_nodes nodal attribute is used to specify a group of nodes, the nodal equations of which are to be condensed, and thus the solutions of which become identical. This condensation technique is useful when two or more nodes are within a close proximity and thus the model violates the CFL condition unless a smaller time step is used. The condensation is conducted at the level of nodal equations, which effectively extends the stencil of the nodes to relax the CFL condition. One typical use of the condensation is to relax the CFL condition along very narrow channels. The node pairs on the sides of a channel are specified as the condensed_nodes nodal attributes so that the model becomes insensitive to the width of the channel.</p>
+<p><strong>Requirement</strong>: Optional.</p>
+<p><strong>Units</strong>: Unitless.</p>
+<p><strong>Number of values per node</strong>: Maximum number of nodes in a condensed node group. See <a class="reference internal" href="../../user_guide/special_features/vertical_element_walls.html#example-fort13-condensed-nodes"><span class="std std-ref">Example Fort.13 with Condensed Nodes</span></a> for more information.</p>
+<p><strong>Values</strong>: Node numbers.</p>
+<p><strong>ADCIRC Variable</strong>: CondensedNodes.</p>
+<p><strong>ADCIRC Version</strong>: ≥ 56.00</p>
+</div></blockquote>
+</section>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
+<p>The following is a simple example of a fort.13 file with two attributes:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Example ADCIRC Grid
+800    ! Total number of nodes in the grid
+2      ! Number of attributes
+primitive_weighting_in_continuity_equation
+unitless
+1      ! Number of values per node
+0.05   ! Default value for primitive_weighting_in_continuity_equation
+surface_submergence_state
+unitless
+1      ! Number of values per node
+0      ! Default value for surface_submergence_state
+primitive_weighting_in_continuity_equation
+2      ! Number of nodes with non-default values
+1 0.01 ! Node 1 has a value of 0.01
+3 0.02 ! Node 3 has a value of 0.02
+surface_submergence_state
+1      ! Number of nodes with non-default values
+4 1    ! Node 4 has a value of 1
+</pre></div>
+</div>
+<p>This example demonstrates how to specify two attributes with different default values and how to override the default values for specific nodes.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fort15.html" class="btn btn-neutral float-left" title="Fort.15: Model Parameter and Periodic Boundary Condition File" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fort6768.html" class="btn btn-neutral float-right" title="Fort.67, Fort.68: Hot Start Files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

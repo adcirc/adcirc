@@ -1,0 +1,254 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Ramping in ADCIRC" name="description" />
+<meta content="adcirc, ramping" name="keywords" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ramping &mdash; ADCIRC  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=e1954242" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Physics Parameters" href="../physics_parameters/index.html" />
+    <link rel="prev" title="TAU0" href="tau0.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            ADCIRC
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction/what_is_adcirc.html">What is ADCIRC?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Getting Started:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/index.html">Getting Started</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing/index.html">Contributing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../theory/index.html">Theory and Formulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../compiling.html">Compiling ADCIRC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../running_adcirc/index.html">Running ADCIRC</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Model Configuration</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Model Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../physics_parameters/index.html">Physics Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../initial_conditions/index.html">Initial Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../boundary_conditions/index.html">Boundary Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tides/index.html">Astronomical Tides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../meteorological_forcing/index.html">Meteorological Forcing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../typical_configurations/typical_parameter_selections.html">Typical Parameter Selections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../special_features/index.html">Special Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tips_and_tricks/index.html">Tips and Tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/all_files.html">All Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/input_files/index.html">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/output_files/index.html">Output Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html">Parameter Definitions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/executables.html">Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../technical_reference/architecture/code_architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Support:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../questions_and_support/index.html">Questions and Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about/index.html">About This Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ADCIRC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Model Configuration</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Model Parameters</a></li>
+      <li class="breadcrumb-item active">Ramping</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/user_guide/model_configuration/model_parameters/ramping.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ramping">
+<h1>Ramping<a class="headerlink" href="#ramping" title="Link to this heading"></a></h1>
+<p>Ramping is a way by which terms can be steady increased over some period of time
+in a simulation. This is most often done for model forcing terms like tides or
+winds, in order to avoid applying a shock to the model.</p>
+<section id="conceptual-justification">
+<h2>Conceptual Justification<a class="headerlink" href="#conceptual-justification" title="Link to this heading"></a></h2>
+<p>To understand why ramping of forcing terms is needed, consider tides. Starting a
+model with the water surface and velocity as zero everywhere, but with full
+tidal forcing, is analogous to having a planet at rest, then instantly putting a
+moon and sun in place, in motion with each other. This large, instantaneous
+change in conditions (forcing) is what creates the shock, which tends to result
+in spurious waves being formed. Ideally, one would initialize a tidal simulation
+with the water surface and velocity at all points matching what it should be at
+the point in time the model is initiated, given the phase of the tides, however
+this is not generally achievable. Gradually scaling up forcing terms helps avoid
+this problem.</p>
+</section>
+<section id="ramping-method">
+<span id="id1"></span><h2>Ramping Method<a class="headerlink" href="#ramping-method" title="Link to this heading"></a></h2>
+<p><a class="reference external" href="NRAMP">NRAMP</a> controls whether ramping is enabled, as well as how many
+ramping terms there are. This is to permit users to apply different ramping
+times for different forcing terms. All ramps in ADCIRC are applied as
+(truncated) <a class="reference external" href="https://en.wikipedia.org/wiki/Hyperbolic_function">hyperbolic
+tangent</a> functions over a
+specified number of days. The various DRAMP* variables control the number of
+<strong>days</strong> over which the ramping is applied for individual forcing terms, they
+are:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#dramp"><span class="std std-ref">DRAMP</span></a> - any forcing terms not covered by the other DRAMP* terms</p></li>
+<li><p><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#drampextflux"><span class="std std-ref">DRAMPExtFlux</span></a> - external flux boundary condition (BC)</p></li>
+<li><p><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#drampintflux"><span class="std std-ref">DRAMPIntFlux</span></a> - internal flux BC</p></li>
+<li><p><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#drampelev"><span class="std std-ref">DRAMPElev</span></a> - elevation specified BC</p></li>
+<li><p><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#dramptip"><span class="std std-ref">DRAMPTip</span></a> - tidal potential forcing</p></li>
+<li><p><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#drampmete"><span class="std std-ref">DRAMPMete</span></a> - meteorological forcing</p></li>
+<li><p><a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#drampwrad"><span class="std std-ref">DRAMPWRad</span></a> - wave radiation stress forcing</p></li>
+</ul>
+<p>Two other variables, <a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#fluxsettlingtime"><span class="std std-ref">FluxSettlingTime</span></a> and
+<a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#dunrampmete"><span class="std std-ref">DUnRampMete</span></a> (also in days), affect the timing of the ramping
+terms.</p>
+<ul class="simple">
+<li><p>If NRAMP=1, then DRAMP is relative to coldstart time.</p></li>
+<li><p>If 1&lt;NRAMP&lt;8, then all DRAMP* terms are relative to coldstart time plus
+FluxSettlingTime</p></li>
+<li><p>If NRAMP=8, then all DRAMP* terms are as above, except DRAMPMete is relative
+to coldstart plus FluxSettlingTime plus DUnRampMete</p></li>
+</ul>
+<p>FluxSettlingTime is used because, for large river systems such as the
+Mississippi River, it can take several days to initialize them and equilibrate.
+It is a requirement when using the radiation flux boundary condition
+(<a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#ibtype"><span class="std std-ref">IBTYPE</span></a>=52) because instabilities can quickly form otherwise.
+DUnRampMete is useful because often a simulation is coldstarted without
+meteorological forcing (such as a tide-only simulation), and meteorological
+ramping is needed later when this forcing is added to a hotstarted simulation.</p>
+<p>There are also namelist controls for some ramping terms, such as water level
+offset forcing.</p>
+</section>
+<section id="typical-values">
+<h2>Typical Values<a class="headerlink" href="#typical-values" title="Link to this heading"></a></h2>
+<p>The following is a list of typical number of days for DRAMP* variables for
+different forcing terms.</p>
+<ul class="simple">
+<li><p>Flux: 0.5-5 days</p></li>
+<li><p>Tide: 5-30 days</p></li>
+<li><p>Meteorology: 0.5-2 days</p></li>
+</ul>
+</section>
+<section id="example-usage-case">
+<h2>Example Usage Case<a class="headerlink" href="#example-usage-case" title="Link to this heading"></a></h2>
+<p>Consider the following illustrative example of how one might use all of these.
+Let’s say someone by the name of Arturo wants to run a hindcast simulation of
+Hurricane Katrina impacting Louisiana and Mississippi with SWAN+ADCIRC, and
+needs to get an accurate sense of the surge traveling up the Mississippi River.
+Doing so requires specifying realistic flux boundary conditions at the upstream
+end of the river. Feeling ambitious, Arturo sets NRAMP=1 and (because he has
+just 5 days of met. forcing) sets DRAMP=1. His model goes unstable in the
+rivers. Now feeling cautious, he first does a 30-day simulation to ramp in the
+river and tide forcing, with NRAMP=3, DRAMP=15 days, DRAMPExtFlux=3 days, and
+FluxSettlingTime=10 days. This means the coldstart simulation runs with only
+river (external flux) forcing for the first 10 days, after which the tides are
+ramped in over 15 days, and then the model is left at full-strength forcing for
+another 5 days to equilibrate (10+15+5=30 days). A hotstart file is generated at
+the end of the run. Arturo uses this to hotstart his 5-day
+(<a class="reference internal" href="../../../technical_reference/parameter_definitions/index.html#rnday"><span class="std std-ref">RNDAY</span></a>=35) storm simulation, where DUnRAMPMete=30 ensures the
+meteorological forcing ramping starts at the 30-day mark, and DRAMPMete=0.5
+ensures a quick ramping of the meteorological forcing. Everything works great.
+He’s probably been overly cautious here, and might want to play around with
+shortening some of the ramping times, but hey, at least it works.</p>
+<p>Note that in the hotstart simulation, Arturo does not need to set any of the
+other values on the DRAMP line non-zero because 30-days has already passed, and
+so anything less than this is ignored by ADCIRC. Furthermore, note that
+DRAMPWRad has been left at zero since ramping in the meteorological forcing
+implies that the waves, and so the wave radiation stresses, should grow slowly.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="tau0.html" class="btn btn-neutral float-left" title="TAU0" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../physics_parameters/index.html" class="btn btn-neutral float-right" title="Physics Parameters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
