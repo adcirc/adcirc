@@ -8,6 +8,7 @@ on:
 
 jobs:
   push-build:
+    if: github.repository == 'adcirc/adcirc'
     uses: ./.github/workflows/build_container.yaml
     with:
       tag: latest 
