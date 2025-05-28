@@ -4,13 +4,14 @@
 
 ## Type of change
 
-<!--- Select the type of change -->
+<!--- Select the type of change, use [x] to select and [ ] to mark unselected -->
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] Bug fix with breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Update to existing feature to add new functionality
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (feature that would cause existing functionality to not work as expected)
+- [ ] Documentation update
 
 # Issue Number
 
@@ -25,6 +26,8 @@
 <!--- Please list any relevant publications that should be cited when using this feature -->
 
 # Checklist:
+
+<!--- Please fill out the checklist. Use [x] to mark selected and [ ] to mark unselected -->
 
 - [ ] My code follows the style guidelines of this project
 - [ ] I have performed a self-review of my code
