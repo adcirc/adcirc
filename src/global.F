@@ -2055,29 +2055,24 @@ C   the beginning of the year.                                         *
 C                                                                      *
 C***********************************************************************
       REAL(8) FUNCTION TIMECONV(IYR,IMO,IDAY,IHR,IMIN,SEC) RESULT(TIMESEC)
+      use mod_datetime, only: t_datetime
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: IYR,IMO,IDAY,IHR,IMIN
       REAL(8), INTENT(IN) :: SEC
-      INTEGER :: ILEAP
+      INTEGER :: ISEC, IYR_4dig, ITIMEMSEC, MSEC
+      TYPE(t_datetime) :: date
 
-      TIMESEC = (IDAY-1)*86400 + IHR*3600 + IMIN*60 + SEC
-      IF(IMO.GE.2)  TIMESEC = TIMESEC + 31*86400
-      ILEAP = (IYR/4)*4
-      IF((ILEAP.EQ.IYR).AND.(IMO.GE.3)) TIMESEC = TIMESEC + 29*86400
-      IF((ILEAP.NE.IYR).AND.(IMO.GE.3)) TIMESEC = TIMESEC + 28*86400
-      IF(IMO.GE.4)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.5)  TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GE.6)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.7)  TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GE.8)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.9)  TIMESEC = TIMESEC + 31*86400
-      IF(IMO.GE.10) TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GE.11) TIMESEC = TIMESEC + 31*86400
-      IF(IMO.EQ.12) TIMESEC = TIMESEC + 30*86400
-      IF(IMO.GT.12) THEN
-         call allMessage(ERROR,'Error in function timeconv: month > 12.')
-         TIMESEC = TIMESEC + 30*86400
-      ENDIF
+      if(iyr < 1000)then
+        iyr_4dig = 2000+iyr
+      else
+        iyr_4dig = iyr
+      end if
+
+      isec = int(floor(sec))
+      msec = int(floor(sec-dble(isec))*1000.0d0)
+      date = t_datetime(iyr_4dig,imo,iday,ihr,imin,isec,msec)
+      itimemsec = date%timestamp()
+      timesec = dble(itimemsec) / 1000.0d0
 
 C-----------------------------------------------------------------------
       END FUNCTION TIMECONV

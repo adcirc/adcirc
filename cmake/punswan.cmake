@@ -133,6 +133,8 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
     mkdir
     ${MPI_Fortran_LIBRARIES})
 
+  adddatetimelibraries(punswan)
+
   add_dependencies(templib_punmsglib templib_punswan1)
   add_dependencies(punswan templib_punswan1)
   add_dependencies(punswan templib_punmsglib)
