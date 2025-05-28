@@ -97,9 +97,9 @@ if(BUILD_SWAN AND PERL_FOUND)
   add_executable(swan ${SWANONLY_SERIAL_SOURCES})
 
   # ...SWAN Configuration
-  swanconfigureserial()
+  adcirc_swan_configure_serial()
 
-  addcompilerflagsswan(swan ${ADDITIONAL_FLAGS_SWAN})
+  adcirc_add_compiler_flags_swan(swan ${ADDITIONAL_FLAGS_SWAN})
 
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
                                       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_serial_source)

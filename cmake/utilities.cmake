@@ -25,19 +25,19 @@ if(BUILD_UTILITIES)
   add_executable(hstime util/hstime.F)
 
   add_executable(adcircResultsComparison util/adcircResultsComparison.F90)
-  addcompilerflags(adcircResultsComparison)
+  adcirc_add_compiler_flags(adcircResultsComparison)
 
-  addcompilerflags(adccmp)
-  addcompilerflags(p15)
-  addcompilerflags(owi22)
-  addcompilerflags(build13)
-  addcompilerflags(buildstwave23)
-  addcompilerflags(hot2asc)
-  addcompilerflags(inflate)
-  addcompilerflags(hstime)
+  adcirc_add_compiler_flags(adccmp)
+  adcirc_add_compiler_flags(p15)
+  adcirc_add_compiler_flags(owi22)
+  adcirc_add_compiler_flags(build13)
+  adcirc_add_compiler_flags(buildstwave23)
+  adcirc_add_compiler_flags(hot2asc)
+  adcirc_add_compiler_flags(inflate)
+  adcirc_add_compiler_flags(hstime)
 
-  addnetcdflibraries(hstime)
-  addnetcdflibraries(adcircResultsComparison)
+  adcirc_add_netcdf_libraries(hstime)
+  adcirc_add_netcdf_libraries(adcircResultsComparison)
 
   # Some of these utilities are very old and no longer updated. We will pass some compiler flags to suppress warnings.
   # If this happened in the main code, we would fix the code instead of suppressing the warning.

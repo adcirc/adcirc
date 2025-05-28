@@ -110,14 +110,14 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
   add_executable(punswan ${SWANONLY2_PARALLEL_SOURCES})
 
   # ...SWAN Configuration
-  swanconfigureparallel()
+  adcirc_swan_configure_parallel()
 
-  addcompilerflags(templib_punmsglib)
-  addcompilerflagsswan(templib_punswan1 ${ADDITIONAL_FLAGS_SWAN})
-  addcompilerflagsswan(punswan ${ADDITIONAL_FLAGS_SWAN})
-  addmpi(templib_punmsglib)
-  addmpi(templib_punswan1)
-  addmpi(punswan)
+  adcirc_add_compiler_flags(templib_punmsglib)
+  adcirc_add_compiler_flags_swan(templib_punswan1 ${ADDITIONAL_FLAGS_SWAN})
+  adcirc_add_compiler_flags_swan(punswan ${ADDITIONAL_FLAGS_SWAN})
+  adcirc_add_mpi(templib_punmsglib)
+  adcirc_add_mpi(templib_punswan1)
+  adcirc_add_mpi(punswan)
 
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
                                       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source)
