@@ -6,7 +6,7 @@
 ADCIRC Model Documentation
 ==========================
 
-Welcome to the ADCIRC model documentation. This documentation aims to provide a comprehensive, up-to-date resource for the ADCIRC users and developers. It is being developed and enhanced, consolidating and expanding upon content from the `ADCIRC website <https://adcirc.org>`_ and `ADCIRC Wiki <https://wiki.adcirc.org/Main_Page>`_.
+Welcome to the ADCIRC model documentation. This documentation aims to provide a comprehensive, up-to-date resource for the ADCIRC users and developers.
 
 
 Quick Links
