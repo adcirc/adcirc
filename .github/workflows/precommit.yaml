@@ -7,6 +7,7 @@ on:
 
 jobs:
   pre-commit:
+    if: github.repository == 'adcirc/adcirc'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
