@@ -4,6 +4,7 @@ on:
     types: [published]
 jobs:
   release-version-build-and-deploy:
+    if: github.repository == 'adcirc/adcirc'
     uses: ./.github/workflows/build_container.yaml
     with:
       tag: ${{ github.event.release.tag_name }}
