@@ -77,14 +77,8 @@ if(BUILD_ADCIRC)
   endif()
 
   add_executable(adcirc ${ADCIRC_SOURCES})
-  set(ADCIRC_COMPILER_FLAGS "${ADDITIONAL_FLAGS_ADCIRC} ${ADCIRC_OPTION_FLAGS}")
-  addcompilerflags(adcirc ${ADDITIONAL_FLAGS_ADCIRC})
-  addnetcdflibraries(adcirc)
-  addgrib2libraries(adcirc)
-  adddatetimelibraries(adcirc)
-  addxdmflibraries(adcirc)
-  addversionlibrary(adcirc)
-  addmkdirlibrary(adcirc)
+  adcirc_add_compiler_flags(adcirc ${ADDITIONAL_FLAGS_ADCIRC})
+  adcirc_add_libraries(adcirc)
   install(TARGETS adcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
   # Conditionally enable strict compiler flags for developers

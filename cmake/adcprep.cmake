@@ -66,14 +66,9 @@ if(BUILD_ADCPREP)
 
   add_executable(adcprep ${ADCPREP_SOURCES})
 
-  addcompilerflags(adcprep ${ADDITIONAL_FLAGS_ADCPREP})
-  addlibmetis(adcprep)
-  addnetcdflibraries(adcprep)
-  addgrib2libraries(adcprep)
-  addxdmflibraries(adcprep)
-  adddatetimelibraries(adcprep)
-  addversionlibrary(adcprep)
-  addmkdirlibrary(adcprep)
+  adcirc_add_compiler_flags(adcprep ${ADDITIONAL_FLAGS_ADCPREP})
+  adcirc_add_libraries(adcprep)
+  adcirc_add_metis_library(adcprep)
 
   if(BUILD_PADCSWAN OR BUILD_PUNSWAN)
     target_compile_definitions(adcprep PRIVATE ${PREP_SWAN_FLAG})
