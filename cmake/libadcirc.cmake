@@ -83,8 +83,8 @@ if(BUILD_LIBADCIRC_STATIC)
   add_dependencies(libadcirc_static version mkdir)
   target_link_libraries(libadcirc_static version mkdir)
   set_target_properties(libadcirc_static PROPERTIES OUTPUT_NAME "adcirc")
-  addcompilerflags(libadcirc_static)
-  addmpi(libadcirc_static)
+  adcirc_add_compiler_flags(libadcirc_static ${ADDITIONAL_FLAGS_ADCIRC})
+  adcirc_add_mpi(libadcirc_static)
   set_target_properties(libadcirc_static PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
   install(
@@ -102,14 +102,9 @@ if(BUILD_LIBADCIRC_SHARED)
   add_library(mkdir2 STATIC ${LIBMKDIR2_SOURCES})
   add_library(libadcirc_shared SHARED ${LIBADC_SHARED_SOURCES})
 
-  addcompilerflags(libadcirc_shared)
-  addmpi(libadcirc_shared)
-
-  addnetcdflibraries(libadcirc_shared)
-  addgrib2libraries(libadcirc_shared)
-  addxdmflibraries(libadcirc_shared)
-  adddatetimelibraries(libadcirc_shared)
-  addversionlibrary(libadcirc_shared)
+  adcirc_add_compiler_flags(libadcirc_shared ${ADDITIONAL_FLAGS_ADCIRC})
+  adcirc_add_libraries(libadcirc_shared)
+  adcirc_add_mpi(libadcirc_shared)
 
   add_dependencies(libadcirc_shared version mkdir2)
   target_link_libraries(libadcirc_shared mkdir2)

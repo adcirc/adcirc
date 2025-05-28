@@ -161,7 +161,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   endif()
 
   # ...SWAN Configuration
-  swanconfigureadcswan()
+  adcirc_swan_configure_adcswan()
 
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
                                       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source)
@@ -171,18 +171,13 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   add_library(templib_adcswan1 STATIC ${ADCSWAN1_SOURCES})
   add_executable(adcswan ${ADCSWAN_SOURCES})
 
-  addcompilerflagsswan(templib_swan1serial ${ADDITIONAL_FLAGS_SWAN})
-  addcompilerflagsswan(templib_swan2serial ${ADDITIONAL_FLAGS_SWAN})
-  addcompilerflags(templib_adcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
-  addcompilerflags(adcswan ${ADDITIONAL_FLAGS_ADCIRC})
-  adddatetimedefinitions(templib_swan2serial)
+  adcirc_add_compiler_flags_swan(templib_swan1serial ${ADDITIONAL_FLAGS_SWAN})
+  adcirc_add_compiler_flags_swan(templib_swan2serial ${ADDITIONAL_FLAGS_SWAN})
+  adcirc_add_compiler_flags(templib_adcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
+  adcirc_add_compiler_flags(adcswan ${ADDITIONAL_FLAGS_ADCIRC})
+  adcirc_add_datetime_definitions(templib_swan2serial)
 
-  addnetcdflibraries(adcswan)
-  addgrib2libraries(templib_adcswan1)
-  adddatetimelibraries(adcswan)
-  addxdmflibraries(adcswan)
-  addversionlibrary(adcswan)
-  addmkdirlibrary(adcswan)
+  adcirc_add_libraries(adcswan)
 
   add_dependencies(templib_adcswan1 version)
   target_include_directories(templib_adcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_mod)

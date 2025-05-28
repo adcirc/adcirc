@@ -164,7 +164,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   endif()
 
   # ...SWAN Configuration
-  swanconfigurepadcswan()
+  adcirc_swan_configure_padcswan()
 
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
                                       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source)
@@ -174,25 +174,25 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   add_library(templib_padcswan1 STATIC ${PADCSWAN1_SOURCES})
   add_executable(padcswan ${PADCSWAN_SOURCES})
 
-  addcompilerflags(templib_padcswan1)
-  addcompilerflags(padcswan)
-  addcompilerflagsswan(templib_swan1parallel ${ADDITIONAL_FLAGS_SWAN})
-  addcompilerflagsswan(templib_swan2parallel ${ADDITIONAL_FLAGS_SWAN})
+  adcirc_add_compiler_flags(templib_padcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
+  adcirc_add_compiler_flags(padcswan ${ADDITIONAL_FLAGS_ADCIRC})
+  adcirc_add_compiler_flags_swan(templib_swan1parallel ${ADDITIONAL_FLAGS_SWAN})
+  adcirc_add_compiler_flags_swan(templib_swan2parallel ${ADDITIONAL_FLAGS_SWAN})
 
   add_dependencies(templib_padcswan1 version)
   target_include_directories(templib_padcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_mod)
 
-  addmpi(templib_padcswan1)
-  addmpi(padcswan)
-  addmpi(templib_swan1parallel)
-  addmpi(templib_swan2parallel)
+  adcirc_add_mpi(templib_padcswan1)
+  adcirc_add_mpi(padcswan)
+  adcirc_add_mpi(templib_swan1parallel)
+  adcirc_add_mpi(templib_swan2parallel)
 
-  addnetcdflibraries(padcswan)
-  addgrib2libraries(templib_padcswan1)
-  adddatetimelibraries(padcswan)
-  addxdmflibraries(padcswan)
-  addversionlibrary(padcswan)
-  addmkdirlibrary(templib_padcswan1)
+  adcirc_add_netcdf_libraries(padcswan)
+  adcirc_add_grib2_libraries(templib_padcswan1)
+  adcirc_add_datetime_libraries(padcswan)
+  adcirc_add_xdmf_libraries(padcswan)
+  adcirc_add_version_library(padcswan)
+  adcirc_add_mkdir_library(templib_padcswan1)
 
   target_compile_definitions(templib_padcswan1 PRIVATE CSWAN)
   target_compile_definitions(padcswan PRIVATE CSWAN)
