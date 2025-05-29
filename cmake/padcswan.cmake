@@ -139,9 +139,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/control.F)
 
   set(PADCSWAN_SOURCES
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
@@ -169,9 +167,9 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
                                       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source)
 
-  add_library(templib_swan1parallel STATIC ${SWAN1PARALLEL_SOURCES})
-  add_library(templib_swan2parallel STATIC ${SWAN2PARALLEL_SOURCES})
-  add_library(templib_padcswan1 STATIC ${PADCSWAN1_SOURCES})
+  add_library(templib_swan1parallel OBJECT ${SWAN1PARALLEL_SOURCES})
+  add_library(templib_swan2parallel OBJECT ${SWAN2PARALLEL_SOURCES})
+  add_library(templib_padcswan1 OBJECT ${PADCSWAN1_SOURCES})
   add_executable(padcswan ${PADCSWAN_SOURCES})
 
   adcirc_add_compiler_flags(templib_padcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
@@ -192,7 +190,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   adcirc_add_datetime_libraries(padcswan)
   adcirc_add_xdmf_libraries(padcswan)
   adcirc_add_version_library(padcswan)
-  adcirc_add_mkdir_library(templib_padcswan1)
+  adcirc_add_mkdir_library(padcswan)
 
   target_compile_definitions(templib_padcswan1 PRIVATE CSWAN)
   target_compile_definitions(padcswan PRIVATE CSWAN)
