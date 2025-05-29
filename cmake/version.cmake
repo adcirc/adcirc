@@ -13,7 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-add_library(version ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F)
+add_library(version OBJECT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F)
 if(WIN32)
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/version.F)
     add_custom_command(

@@ -166,9 +166,9 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
                                       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source)
 
-  add_library(templib_swan1serial STATIC ${SWAN1SERIAL_SOURCES})
-  add_library(templib_swan2serial STATIC ${SWAN2SERIAL_SOURCES})
-  add_library(templib_adcswan1 STATIC ${ADCSWAN1_SOURCES})
+  add_library(templib_swan1serial OBJECT ${SWAN1SERIAL_SOURCES})
+  add_library(templib_swan2serial OBJECT ${SWAN2SERIAL_SOURCES})
+  add_library(templib_adcswan1 OBJECT ${ADCSWAN1_SOURCES})
   add_executable(adcswan ${ADCSWAN_SOURCES})
 
   adcirc_add_compiler_flags_swan(templib_swan1serial ${ADDITIONAL_FLAGS_SWAN})
