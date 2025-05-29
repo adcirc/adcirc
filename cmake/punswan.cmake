@@ -105,8 +105,8 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F)
 
-  add_library(templib_punmsglib ${MSGLIB_SOURCES})
-  add_library(templib_punswan1 ${SWANONLY1_PARALLEL_SOURCES})
+  add_library(templib_punmsglib OBJECT ${MSGLIB_SOURCES})
+  add_library(templib_punswan1 OBJECT ${SWANONLY1_PARALLEL_SOURCES})
   add_executable(punswan ${SWANONLY2_PARALLEL_SOURCES})
 
   # ...SWAN Configuration
