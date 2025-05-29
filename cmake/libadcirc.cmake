@@ -96,23 +96,16 @@ if(BUILD_LIBADCIRC_STATIC)
 endif(BUILD_LIBADCIRC_STATIC)
 
 if(BUILD_LIBADCIRC_SHARED)
-  set(LIBMKDIR2_SOURCES prep/mkdir.c)
-  set(LIBADC_SHARED_SOURCES ${LIBADC_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F)
-
-  add_library(mkdir2 STATIC ${LIBMKDIR2_SOURCES})
+  set(LIBADC_SHARED_SOURCES ${LIBADC_SOURCES})
   add_library(libadcirc_shared SHARED ${LIBADC_SHARED_SOURCES})
 
   adcirc_add_compiler_flags(libadcirc_shared ${ADDITIONAL_FLAGS_ADCIRC})
   adcirc_add_libraries(libadcirc_shared)
   adcirc_add_mpi(libadcirc_shared)
 
-  add_dependencies(libadcirc_shared version mkdir2)
-  target_link_libraries(libadcirc_shared mkdir2)
-
   set_target_properties(libadcirc_shared PROPERTIES OUTPUT_NAME "adcirc")
 
   set_property(TARGET libadcirc_shared PROPERTY POSITION_INDEPENDENT_CODE ON)
-  set_property(TARGET mkdir2 PROPERTY POSITION_INDEPENDENT_CODE ON)
 
   if(APPLE)
     set_property(TARGET libadcirc_shared PROPERTY MACOSX_RPATH ON)
