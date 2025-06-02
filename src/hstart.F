@@ -79,6 +79,7 @@ C
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE WIND, ONLY : hotstartMeteorologicalForcing, rsget
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
+      USE READ_RIVER, ONLY : CONVERT_QN, FORMULATE_QFORCE, INIT_RIVER
       USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
 C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #ifdef ADCNETCDF
@@ -995,6 +996,28 @@ C......FILE IF IT IS REQUIRED
          QTRATIO=(TimeLoc-QTIME1)/FTIMINC
          QN2=RampExtFlux2*(QNIN1+QTRATIO*(QNIN2-QNIN1))
          EN2=RampExtFlux2*(ENIN1+QTRATIO*(ENIN2-ENIN1))
+         IF((ICS.EQ.20).OR.(ICS.EQ.21).OR.(ICS.EQ.22)!Projection start here
+     &      .OR.(ICS.EQ.23).OR.(ICS.EQ.24)) THEN
+             WRITE(ScreenUnit,*) "River Boundary will account for projection"
+             CALL INIT_RIVER
+             CALL CONVERT_QN(QNIN1, QNIN2) !AT 2023
+             CALL FORMULATE_QFORCE(QN_R,QN2_R) !Correction for Rivers in projected coordinates
+             DO J=1,NVEL
+                 QNIN1(J) = 0.D0
+                 IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &             .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+                 QNIN1(J) = QN_R(J)
+                 ENDIF
+            END DO
+            DO J=1,NVEL
+                 QNIN2(J)=0.D0
+                 IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &             .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+                 QNIN2(J) = QN2_R(J)
+                 ENDIF
+           END DO
+         ENDIF !Projection End  Here
+     
 
       ENDIF
 
@@ -1049,6 +1072,28 @@ C......FILE IF IT IS REQUIRED
          QTRATIO=(TIMELOC-QTIME1)/FTIMINC
          QN2=RampExtFlux2*(QNIN1+QTRATIO*(QNIN2-QNIN1))
          EN2=RampExtFlux2*(ENIN1+QTRATIO*(ENIN2-ENIN1))
+         IF((ICS.EQ.20).OR.(ICS.EQ.21).OR.(ICS.EQ.22)!Projection start here
+     &      .OR.(ICS.EQ.23).OR.(ICS.EQ.24)) THEN
+             WRITE(ScreenUnit,*) "River Boundary will account for projection"
+             CALL INIT_RIVER
+             CALL CONVERT_QN(QNIN1, QNIN2) !AT 2023
+             CALL FORMULATE_QFORCE(QN_R,QN2_R) !Correction for Rivers in projected coordinates
+             DO J=1,NVEL
+                 QNIN1(J) = 0.D0
+                 IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &             .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+                 QNIN1(J) = QN_R(J)
+                 ENDIF
+            END DO
+            DO J=1,NVEL
+                 QNIN2(J)=0.D0
+                 IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &             .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+                 QNIN2(J) = QN2_R(J)
+                 ENDIF
+           END DO
+         ENDIF !Projection End  Here
+
       ENDIF
 
 C......RESTART THE PERIODIC NORMAL FLOW BOUNDARY CONDITION

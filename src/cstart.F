@@ -50,7 +50,8 @@ C
      &    nscougc, c2ddi, iden,
      &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge, 
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
-     &    ntrspv, iicestp, nstam_g, nstam, openfileforread, cbaroclinic
+     &    ntrspv, iicestp, nstam_g, nstam, openfileforread, cbaroclinic,
+     &    QN_R, QN2_R 
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
      &    agrid 
@@ -64,6 +65,9 @@ C
       USE SUBDOMAIN, ONLY : subdomainOn, readFort015
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
+      USE READ_RIVER, ONLY : CONVERT_QN, FORMULATE_QFORCE, INIT_RIVER !AT2025
+
+
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
@@ -246,6 +250,29 @@ C
          END DO
          QTIME1 = STATIM*86400.D0
          QTIME2 = QTIME1 + FTIMINC
+         IF((ICS.EQ.20).OR.(ICS.EQ.21).OR.(ICS.EQ.22)!Projection start here
+     &      .OR.(ICS.EQ.23).OR.(ICS.EQ.24)) THEN
+                  WRITE(ScreenUnit,*) "River Boundary will account for projection"
+                  CALL INIT_RIVER
+                  CALL CONVERT_QN(QNIN1, QNIN2) !AT 2023
+                  CALL FORMULATE_QFORCE(QN_R,QN2_R) !Correction for Rivers in projected coordinates
+                  DO J=1,NVEL
+                       QNIN1(J) = 0.D0
+                         IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &                    .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+                                      QNIN1(J) = QN_R(J)
+                         ENDIF
+                  END DO
+                  DO J=1,NVEL
+                         QNIN2(J)=0.D0
+                          IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &                  .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+ 
+                                       QNIN2(J) = QN2_R(J)
+                          ENDIF
+                  END DO
+          ENDIF !Projection End  Here
+
       ENDIF
 
 C...INPUT METEOROLOGICAL INFORMATION FROM UNIT 22 OR UNIT 200 SERIES

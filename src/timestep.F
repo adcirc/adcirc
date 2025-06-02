@@ -82,6 +82,7 @@ C
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
+     &    QN_R, QN2_R, 
      &    Limit_WaveStressGrad,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
      &    dynamicWaterLevelCorrectionDelta
@@ -111,6 +112,7 @@ C
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
+      USE READ_RIVER, ONLY: CONVERT_QN, FORMULATE_QFORCE 
 C.....sb46.28sb03 added 09/xx/2006
       USE RS2,ONLY : RS2INIT,RS2GET
       USE NodalAttributes, ONLY : 
@@ -924,6 +926,21 @@ C...
                      READ(20,*) QNIN2(J),ENIN2(J)
                   ENDIF
                END DO
+               IF((ICS.EQ.20).OR.(ICS.EQ.21).OR.(ICS.EQ.22) !Projection starts here
+     &              .OR.(ICS.EQ.23).OR.(ICS.EQ.24)) THEN
+                       CALL CONVERT_QN(QNIN1, QNIN2) !AT 2023
+                       CALL FORMULATE_QFORCE(QN_R,QN2_R) !Correction for Rivers
+
+                       DO J=1,NVEL
+                           QNIN2(J)=0.D0
+                       IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &                    .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+                          QNIN2(J) = QN2_R(J)
+                       ENDIF
+                       END DO
+               ENDIF !projection ends here        
+
+
             ENDIF
 
             QTRATIO=(TimeLoc-QTIME1)/FTIMINC
