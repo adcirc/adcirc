@@ -31,6 +31,7 @@ if(BUILD_ADCPREP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/presizes.F
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/pre_global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/metis.F

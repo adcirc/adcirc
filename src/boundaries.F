@@ -35,6 +35,7 @@ C     ------------------------------------------------------------------
       implicit none
       REAL(8),ALLOCATABLE ::   BNDLEN2O3(:)
       REAL(8),ALLOCATABLE ::   CSII(:),SIII(:)
+      REAL(8),ALLOCATABLE ::   CSII_OLD(:),SIII_OLD(:)
       REAL(8),ALLOCATABLE ::   CSIICN(:),SIIICN(:) ! normal direction at condensed nodes 09/22/2022 SB
       INTEGER,ALLOCATABLE ::    ME2GW(:)
       INTEGER,ALLOCATABLE ::    NBV(:),LBCODEI(:)
@@ -275,6 +276,7 @@ C     ---------
       implicit none
       allocate ( me2gw(mnvel))
       allocate ( csii(mnvel),siii(mnvel))
+      allocate ( csii_old(mnvel),siii_old(mnvel))
       allocate ( nbv(mnvel),lbcodei(mnvel))
       allocate ( barlanht(mnvel),barlancfsp(mnvel))
       allocate ( barinht(mnvel),barincfsb(mnvel),barincfsp(mnvel))

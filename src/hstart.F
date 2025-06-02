@@ -79,6 +79,9 @@ C
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE WIND, ONLY : hotstartMeteorologicalForcing, rsget
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
+      USE mod_normal_flow_boundary, ONLY : generate_rotated_normal_flow_boundary_data
+      USE mesh, only: SFCX, SFCY, YCSFAC, SFMX
+      USE boundaries, only: CSII, SIII
       USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
 C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #ifdef ADCNETCDF
@@ -995,7 +998,8 @@ C......FILE IF IT IS REQUIRED
          QTRATIO=(TimeLoc-QTIME1)/FTIMINC
          QN2=RampExtFlux2*(QNIN1+QTRATIO*(QNIN2-QNIN1))
          EN2=RampExtFlux2*(ENIN1+QTRATIO*(ENIN2-ENIN1))
-
+         call generate_rotated_normal_flow_boundary_data(QNIN1)
+         call generate_rotated_normal_flow_boundary_data(QNIN2)
       ENDIF
 
 ! kmd - added in a option to start the river information at the hot start time
@@ -1049,6 +1053,8 @@ C......FILE IF IT IS REQUIRED
          QTRATIO=(TIMELOC-QTIME1)/FTIMINC
          QN2=RampExtFlux2*(QNIN1+QTRATIO*(QNIN2-QNIN1))
          EN2=RampExtFlux2*(ENIN1+QTRATIO*(ENIN2-ENIN1))
+         call generate_rotated_normal_flow_boundary_data(QNIN1)
+         call generate_rotated_normal_flow_boundary_data(QNIN2)
       ENDIF
 
 C......RESTART THE PERIODIC NORMAL FLOW BOUNDARY CONDITION

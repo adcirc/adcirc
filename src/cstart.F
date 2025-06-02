@@ -51,6 +51,9 @@ C
      &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge, 
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
      &    ntrspv, iicestp, nstam_g, nstam, openfileforread, cbaroclinic
+      use boundaries, only: csii, siii, nbv
+      use mesh, only: sfcx, sfcy, ycsfac, sfmx
+      use mod_normal_flow_boundary, only: generate_rotated_normal_flow_boundary_data
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
      &    agrid 
@@ -64,6 +67,7 @@ C
       USE SUBDOMAIN, ONLY : subdomainOn, readFort015
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
+
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
@@ -246,6 +250,8 @@ C
          END DO
          QTIME1 = STATIM*86400.D0
          QTIME2 = QTIME1 + FTIMINC
+         call generate_rotated_normal_flow_boundary_data(QNIN1)
+         call generate_rotated_normal_flow_boundary_data(QNIN2)
       ENDIF
 
 C...INPUT METEOROLOGICAL INFORMATION FROM UNIT 22 OR UNIT 200 SERIES
