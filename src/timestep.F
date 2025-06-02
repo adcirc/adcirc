@@ -111,6 +111,9 @@ C
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
+      USE mod_normal_flow_boundary, ONLY: generate_rotated_normal_flow_boundary_data
+      use mesh, only: SFCX, SFCY, YCSFAC, SFMX
+      use boundaries, only: SIII, CSII
 C.....sb46.28sb03 added 09/xx/2006
       USE RS2,ONLY : RS2INIT,RS2GET
       USE NodalAttributes, ONLY : 
@@ -924,6 +927,7 @@ C...
                      READ(20,*) QNIN2(J),ENIN2(J)
                   ENDIF
                END DO
+               call generate_rotated_normal_flow_boundary_data(QNIN2)
             ENDIF
 
             QTRATIO=(TimeLoc-QTIME1)/FTIMINC

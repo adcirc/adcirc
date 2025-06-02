@@ -63,6 +63,8 @@
       real(8),allocatable :: x(:)   ! x cartesian node locations x(np)
       real(8),allocatable :: y(:)   ! y cartesian node locations y(np)
       real(8),allocatable :: slam(:) ! longitude node locations slam(np)
+      real(8),allocatable :: x_old(:)
+      real(8),allocatable :: y_old(:)      
       real(8),allocatable :: sfea(:) ! latitude node locations sfea(np)
       type(ipair), allocatable, target :: node_dict(:) ! map node labels to numbers
       integer, allocatable, target :: labels(:) ! map node numbers to labels
@@ -1560,6 +1562,13 @@
           
       END SELECT
 
+     
+      DO I = 1,NP
+         X_old(I) = X(I)
+         Y_old(I) = Y(I)
+      END DO
+
+
       IF ( IFSPROTS .EQ. 1 ) THEN
 !        Allocate arrays to be used in coordinate rotations
          CALL ALLOC_SPROTCOORS_MEM( ) ;
@@ -1814,8 +1823,10 @@
       character(len=80) :: exeTerm9973 ! execution terminated
       real(8) xli,xlj,xlk,yli,ylk,ylj
       real(8) xgi,xgj,xgk,ygi,ygk,ygj
+      real(8) xgi_old,xgj_old,xgk_old,ygi_old,ygk_old,ygj_old
+
       real(8) x1,x2,x3,x4,y1,y2,y3,y4
-      real(8) xl, lonJI, lonKJ, lonIK 
+      real(8) xl, lonJI, lonKJ, lonIK, xl_old 
       real(8) costheta,costheta1,cross,cross1
       real(8) theta,theta1
       real(8) dotvec
@@ -2318,11 +2329,19 @@
                   write(16,*) 'NBVI', NBVI, '> bounds of X',I
                ENDIF
                XGJ = X(NBVJ)
+               XGJ_OLD = X_OLD(NBVJ)
                XGI = X(NBVI)
+               XGI_OLD = X_OLD(NBVI)
                XGK = X(NBVK)
+               XGK_OLD = X_OLD(NBVK)
                YGJ = Y(NBVJ)
+               YGJ_OLD = Y_OLD(NBVJ)
                YGI = Y(NBVI)
+               YGI_OLD = Y_OLD(NBVI)
                YGK = Y(NBVK)
+               YGK_OLD = Y_OLD(NBVK)
+
+
                DELX = XGJ - XGI
                DELY = YGJ - YGI
                BNDLEN2O3(JGW) = 2.D0*(SQRT(DELX*DELX+DELY*DELY))/3.D0
@@ -2444,9 +2463,16 @@
                   YGJ = YGI
                ENDIF
                XL = SQRT((XGK-XGJ)**2+(YGK-YGJ)**2)
+
+               XL_OLD = SQRT((XGK_OLD-XGJ_OLD)**2+(YGK_OLD-YGJ_OLD)**2)
+
                CSII(JGW) = SFMX(NBVI)*(YGJ-YGK)/XL
+
+               CSII_OLD(JGW) = SFMX(NBVI)*(YGJ_OLD-YGK_OLD)/XL_OLD
+
                SIII(JGW) = (XGK-XGJ)/XL
 
+               SIII_OLD(JGW) = (XGK_OLD-XGJ_OLD)/XL_OLD
 !...           Compute the location of and the element containing the fictitious
 !...           node used for a zero normal velocity gradient boundary condition
 !...           (type 40)
@@ -2965,6 +2991,7 @@ Csb...
 #endif
 
       allocate ( slam(mnp),sfea(mnp),x(mnp),y(mnp),labels(mnp))
+      allocate ( x_old(mnp), y_old(mnp) )
       call dict(node_dict, mnp)
       allocate ( dp(mnp) )
       allocate ( dp_orig(mnp) )
@@ -5544,7 +5571,8 @@ C
         CALL SFAC_ELEAVG( TANPHIEle, TANPHI, NM, NE ) ;          
         
 !      Only need the  averages of these... 
-        DEALLOCATE( SFMY, SFCX, SFCY, YCSFAC )
+!        DEALLOCATE( SFMY, SFCX, SFCY, YCSFAC ) !Needed for read_river
+!        module AT2025
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.") 
