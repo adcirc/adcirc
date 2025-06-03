@@ -10,7 +10,7 @@ module read_river
    implicit none
 
    integer :: I, J, K
-   real(8), allocatable, save :: FORCENODES(:)
+   integer, allocatable, save :: FORCENODES(:)
    real(8), allocatable        :: Q(:), Q2(:)
    public
 
