@@ -19,47 +19,47 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
-C******************************************************************************
-C PADCIRC VERSION 56.00 xx/xx/2025   AMAN TEJASWI                             *
-C                                                                             *
-C                                                                             *
-C This module handles normal flux boundary for rivers. Initial conditions    
-C(first snap) are called in cold start subroutines and further values are 
-C handled in the timestep subroutine.                                         *
-C                                                                             *
-C******************************************************************************
+!******************************************************************************
+! PADCIRC VERSION 56.00 xx/xx/2025   AMAN TEJASWI                             *
+!                                                                             *
+!                                                                             *
+! This module handles normal flux boundary for rivers. Initial conditions    
+!(first snap) are called in cold start subroutines and further values are 
+! handled in the timestep subroutine.                                         *
+!                                                                             *
+!******************************************************************************
 
-C-----------------------------------------------------------------------
-C                M O D U L E     R E A D _ R I V E R
-C-----------------------------------------------------------------------
-C
-C     CORRECTS RIVER FLUX BOUNDARY CONDITION ACCOUNTING FOR PROJECTION
-C                            IN ROTATED CS
-C
-C.....Qx Qy IMPLEMENTATION TO CONSIDER PROJECTION IN ROTATED CS WHILE NORMAL FLOW
-C...... CBOUNDARY IS USED. THE FORMULATION IS LIKE THIS.
-C      QN = Qx.Nx + Qy.Ny
-C      0 = TAUx.Nx + TAUy.Ny
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!                M O D U L E     R E A D _ R I V E R
+!-----------------------------------------------------------------------
+!
+!     CORRECTS RIVER FLUX BOUNDARY CONDITION ACCOUNTING FOR PROJECTION
+!                            IN ROTATED CS
+!
+!.....Qx Qy IMPLEMENTATION TO CONSIDER PROJECTION IN ROTATED CS WHILE NORMAL FLOW
+!...... CBOUNDARY IS USED. THE FORMULATION IS LIKE THIS.
+!      QN = Qx.Nx + Qy.Ny
+!      0 = TAUx.Nx + TAUy.Ny
+!-----------------------------------------------------------------------
 
        MODULE READ_RIVER
 
       
-       USE GLOBAL, ONLY :QN1,QN2,QN0,QX1_R,QY1_R, QX2_R, QY2_R, QN_R, QN2_R,
-     &     ScreenUnit, setMessageSource, allMessage, NFFR,NX_R,
-     &     NY_R,TAUX_R,TAUY_R, QNIN1, QNIN2  
-       USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI, NPEBC,
-     &     CSII, SIII, NVELL, NBV
+       USE GLOBAL, ONLY :QN1,QN2,QN0,QX1_R,QY1_R, QX2_R, QY2_R, QN_R, QN2_R,&
+          ScreenUnit, setMessageSource, allMessage, NFFR,NX_R,&
+          NY_R,TAUX_R,TAUY_R, QNIN1, QNIN2  
+       USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI, NPEBC,&
+          CSII, SIII, NVELL, NBV
        USE SIZES, ONLY : MNPROC, GLOBALDIR, MNVEL
-       USE MESH, ONLY : SFac, SFMX, SFMY, SFCT,
-     &     SFCX, SFCY, YCSFAC, TANPHI  
+       USE MESH, ONLY : SFac, SFMX, SFMY, SFCT,&
+          SFCX, SFCY, YCSFAC, TANPHI  
        IMPLICIT NONE
 
        INTEGER I,J,K
        REAL(8),allocatable,save :: FORCENODES(:)
        REAL(8),allocatable :: Q(:), Q2(:)     
        PUBLIC 
-C-------------------END OF DATA DECLARATION-----C
+!-------------------END OF DATA DECLARATION-----C
        CONTAINS
 
        SUBROUTINE CONVERT_QN(QNIN1,QNIN2)
@@ -109,14 +109,14 @@ C-------------------END OF DATA DECLARATION-----C
 
 
 
-C********************************************************
-C             FORMULATE QFORCE
-C********************************************************
+!********************************************************
+!             FORMULATE QFORCE
+!********************************************************
        
        SUBROUTINE FORMULATE_QFORCE(QN_R,QN2_R)
 
-       USE MESH, ONLY : SFac, SFMX, SFMY, SFCT,
-     &    SFCX, SFCY, YCSFAC, TANPHI   
+       USE MESH, ONLY : SFac, SFMX, SFMY, SFCT,&
+         SFCX, SFCY, YCSFAC, TANPHI   
       
        USE BOUNDARIES, ONLY: NBOU, NVELL, NVEL, NBV, LBCODEI
        IMPLICIT NONE 
@@ -127,11 +127,11 @@ C********************************************************
         DO P = 1,NVEL
          IF ((LBCODEI(P).EQ.22).OR.(LBCODEI(P).EQ.32)) THEN 
 
-          QN_R(P) = SFCX(FORCENODES(P))*QX1_R(P)*CSII(P) +
-     &        SFCY(FORCENODES(P))*QY1_R(P)*SIII(P)*YCSFAC(FORCENODES(P))
+          QN_R(P) = SFCX(FORCENODES(P))*QX1_R(P)*CSII(P) +&
+             SFCY(FORCENODES(P))*QY1_R(P)*SIII(P)*YCSFAC(FORCENODES(P))
           
-          QN2_R(P) = SFCX(FORCENODES(P))*QX2_R(P)*CSII(P) +
-     &        SFCY(FORCENODES(P))*QY2_R(P)*SIII(P)*YCSFAC(FORCENODES(P))
+          QN2_R(P) = SFCX(FORCENODES(P))*QX2_R(P)*CSII(P) +&
+             SFCY(FORCENODES(P))*QY2_R(P)*SIII(P)*YCSFAC(FORCENODES(P))
          
 
         
@@ -143,14 +143,14 @@ C********************************************************
        END SUBROUTINE FORMULATE_QFORCE       
       
       
-C*********************************************************
-C              INITIALIZE RIVER
-C*********************************************************      
+!*********************************************************
+!              INITIALIZE RIVER
+!*********************************************************      
        
        SUBROUTINE INIT_RIVER()
        
-       USE MESH, ONLY : SFac, SFMX, SFMY, SFCT,
-     &    SFCX, SFCY, YCSFAC, TANPHI   
+       USE MESH, ONLY : SFac, SFMX, SFMY, SFCT,&
+         SFCX, SFCY, YCSFAC, TANPHI   
       
        USE BOUNDARIES, ONLY: NBOU, NVELL, NVEL, NBV
 
