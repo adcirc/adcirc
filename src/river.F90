@@ -54,8 +54,8 @@ contains
    end subroutine convert_qn
 
    subroutine formulate_qforce(QN_R, QN2_R)
-      use mesh, only: SFac, SFMX, SFMY, SFCT, SFCX, SFCY, YCSFAC, TANPHI
-      use boundaries, only: NBOU, NVELL, NVEL, NBV, LBCODEI
+      use mesh, only: SFCX, SFCY, YCSFAC
+      use boundaries, only: NVEL, LBCODEI
 
       implicit none
       real(8), intent(out) :: QN_R(NVEL), QN2_R(NVEL)
@@ -75,8 +75,7 @@ contains
    end subroutine formulate_qforce
 
    subroutine init_river()
-      use mesh, only: SFac, SFMX, SFMY, SFCT, SFCX, SFCY, YCSFAC, TANPHI
-      use boundaries, only: NBOU, NVELL, NVEL, NBV
+      use boundaries, only: NVEL, NBV
 
       implicit none
 
