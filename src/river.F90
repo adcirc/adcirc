@@ -1,3 +1,18 @@
+!===============================================================================
+!> \file river.F90
+!> \brief Module for converting and formulating river flux boundary conditions
+!>        in a rotated coordinate system. Only used when ICS=-20,-22 etc..
+!>
+!> This module provides routines to:
+!>   - Initialize river forcing nodes.
+!>   - Convert normal flow (QNIN1, QNIN2) into rotated coordinate flux components.
+!>   - Formulate the rotated flux forcing terms (QN_R, QN2_R) for the ADCIRC boundary.
+!>
+!> It uses global variables for boundary indices, rotated normals, and mesh scaling
+!> factors to compute the correct projected fluxes along river boundaries.
+!===============================================================================
+
+
 module read_river
    use global, only: QN1, QN2, QN0, QX1_R, QY1_R, QX2_R, QY2_R, QN_R, QN2_R, &
                      ScreenUnit, setMessageSource, allMessage, NFFR, NX_R, &
@@ -15,6 +30,24 @@ module read_river
    public
 
 contains
+
+
+!=====================================================================
+!> \brief Convert normal fluxes into rotated coordinate fluxes.
+!
+!  For each boundary node J where LBCODEI(J) == 22 or 32, this routine:
+!    - Reads the two normal flux arrays QNIN1(J) and QNIN2(J).
+!    - Computes the rotated normal vectors (NX_R(J), NY_R(J)).
+!    - Solves for rotated flux components QX1_R, QY1_R, QX2_R, QY2_R
+!      such that the flux is projected correctly onto the rotated axes.
+!
+!> \param[in]  QNIN1  Array of first normal flow rates at boundary nodes (size NVEL).
+!> \param[in]  QNIN2  Array of second normal flow rates at boundary nodes (size NVEL).
+!>
+!> \note Requires that Q and Q2 be previously allocated to size MNVEL.
+!>       If they are not allocated, the subroutine returns immediately.
+!=====================================================================
+
 
    subroutine convert_qn(QNIN1, QNIN2)
       implicit none
@@ -53,6 +86,25 @@ contains
       end do
    end subroutine convert_qn
 
+!=====================================================================
+!> \brief Formulate rotated flux forcing terms for boundary conditions.
+!
+!  Using the rotated flux components QX1_R, QY1_R, QX2_R, QY2_R and mesh
+!  scaling factors, this routine computes:
+!    - QN_R(P):   the rotated normal forcing term for the first flux.
+!    - QN2_R(P):  the rotated normal forcing term for the second flux.
+!
+!  These arrays are used directly by ADCIRC when applying boundary
+!  conditions on river inflows
+!
+!> \param[out] QN_R   Output array of rotated normal fluxes (size NVEL).
+!> \param[out] QN2_R  Output array of second rotated normal fluxes (size NVEL).
+!
+!> \note Requires that FORCENODES(P) contains the mesh node index for each P.
+!=====================================================================
+
+
+
    subroutine formulate_qforce(QN_R, QN2_R)
       use mesh, only: SFCX, SFCY, YCSFAC
       use boundaries, only: NVEL, LBCODEI
@@ -73,6 +125,20 @@ contains
          end if
       end do
    end subroutine formulate_qforce
+
+
+
+!=====================================================================
+!> \brief Initialize river forcing nodes and allocate arrays.
+!
+!  This routine allocates the temporary arrays Q, Q2, and FORCENODES
+!  (size MNVEL). It then iterates over all boundary indices,
+!  storing the node index NBV(J) into FORCENODES(J) for J where
+!  LBCODEI(J) == 22 or 32 (i.e., normal flow/radiation boundary).
+!
+!> \note Must be called once before convert_qn or formulate_qforce.
+!=====================================================================
+
 
    subroutine init_river()
       use boundaries, only: NVEL, NBV
