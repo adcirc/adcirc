@@ -12,7 +12,6 @@
 !> factors to compute the correct projected fluxes along river boundaries.
 !===============================================================================
 
-
 module read_river
    use global, only: QN1, QN2, QN0, QX1_R, QY1_R, QX2_R, QY2_R, QN_R, QN2_R, &
                      ScreenUnit, setMessageSource, allMessage, NFFR, NX_R, &
@@ -31,7 +30,6 @@ module read_river
 
 contains
 
-
 !=====================================================================
 !> \brief Convert normal fluxes into rotated coordinate fluxes.
 !
@@ -47,7 +45,6 @@ contains
 !> \note Requires that Q and Q2 be previously allocated to size MNVEL.
 !>       If they are not allocated, the subroutine returns immediately.
 !=====================================================================
-
 
    subroutine convert_qn(QNIN1, QNIN2)
       implicit none
@@ -103,8 +100,6 @@ contains
 !> \note Requires that FORCENODES(P) contains the mesh node index for each P.
 !=====================================================================
 
-
-
    subroutine formulate_qforce(QN_R, QN2_R)
       use mesh, only: SFCX, SFCY, YCSFAC
       use boundaries, only: NVEL, LBCODEI
@@ -126,8 +121,6 @@ contains
       end do
    end subroutine formulate_qforce
 
-
-
 !=====================================================================
 !> \brief Initialize river forcing nodes and allocate arrays.
 !
@@ -138,7 +131,6 @@ contains
 !
 !> \note Must be called once before convert_qn or formulate_qforce.
 !=====================================================================
-
 
    subroutine init_river()
       use boundaries, only: NVEL, NBV
