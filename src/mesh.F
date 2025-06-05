@@ -5544,7 +5544,8 @@ C
         CALL SFAC_ELEAVG( TANPHIEle, TANPHI, NM, NE ) ;          
         
 !      Only need the  averages of these... 
-        DEALLOCATE( SFMY, SFCX, SFCY, YCSFAC )
+!        DEALLOCATE( SFMY, SFCX, SFCY, YCSFAC ) !Needed for read_river
+!        module AT2025
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.") 
