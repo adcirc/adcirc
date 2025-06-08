@@ -8826,10 +8826,8 @@ C----------------------------------------------------------------------
 
       ! check if we are using grib2 or netcdf input files:
       CALL NWS14CHECK_FILETYPE()
-      print*,'CBOB Pvar=',trim(Pvar)
       ! set filenames appropriately
       CALL NWS14SET_FILENAMES()
-      print*,'CBOB Pvar=',trim(Pvar)
 
       ! make grib2 .inv files (returns if using netcdf)
       CALL NWS14GRB2_MAKE_INV()
@@ -9118,22 +9116,22 @@ C----------------------------------------------------------------------
       close(22)
       !call logNamelistReadStatus(namelistSpecifier, ios)
       !write(scratchMessage,*) "Tdim=",trim(adjustl(Tdim)),
-      write(*,*) "Tdim=",trim(adjustl(Tdim)),
-     &                        " Tvar=",trim(adjustl(Tvar)),
-     &                        " Tformat=",trim(adjustl(Tformat)),
-     &                        " Londim=",trim(adjustl(Londim)),
-     &                        " Lonvar=",trim(adjustl(Lonvar)),
-     &                        " Latdim=",trim(adjustl(Latdim)),
-     &                        " Latvar=",trim(adjustl(Latvar)),
-     &                        " Pvar=",trim(adjustl(Pvar)),
-     &                        " Punits=",trim(adjustl(Punits)),
-     &                        " Uvar=",trim(adjustl(Uvar)),
-     &                        " Vvar=",trim(adjustl(Vvar)),
-     &                        " Cvar=",trim(adjustl(Cvar)),
-     &                        " NWS14NC_WindMultiplier=",
-     &                          NWS14NC_WindMultiplier,
-     &                        " NWS14NC_PresMultiplier=",
-     &                          NWS14NC_PresMultiplier
+CBOB      write(*,*) "Tdim=",trim(adjustl(Tdim)),
+CBOB     &                        " Tvar=",trim(adjustl(Tvar)),
+CBOB     &                        " Tformat=",trim(adjustl(Tformat)),
+CBOB     &                        " Londim=",trim(adjustl(Londim)),
+CBOB     &                        " Lonvar=",trim(adjustl(Lonvar)),
+CBOB     &                        " Latdim=",trim(adjustl(Latdim)),
+CBOB     &                        " Latvar=",trim(adjustl(Latvar)),
+CBOB     &                        " Pvar=",trim(adjustl(Pvar)),
+CBOB     &                        " Punits=",trim(adjustl(Punits)),
+CBOB     &                        " Uvar=",trim(adjustl(Uvar)),
+CBOB     &                        " Vvar=",trim(adjustl(Vvar)),
+CBOB     &                        " Cvar=",trim(adjustl(Cvar)),
+CBOB     &                        " NWS14NC_WindMultiplier=",
+CBOB     &                          NWS14NC_WindMultiplier,
+CBOB     &                        " NWS14NC_PresMultiplier=",
+CBOB     &                          NWS14NC_PresMultiplier
       !call logMessage(ECHO,trim(scratchMessage))
 
       ! process pvar name for units spec.  Check for HPa first, then Pa

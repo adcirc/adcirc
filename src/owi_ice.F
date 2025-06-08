@@ -232,7 +232,6 @@ C***********************************************************************
 
       ! Increment counter (cntSnaps initialized to zero in ncice1_init)
       cntSnaps = cntSnaps+1
-
       ! Put a blank snap for the first 'numBlankSnaps' snaps
       if(cntSnaps.LE.numBlankSnaps) then
         do i=1,NP
@@ -247,14 +246,12 @@ C***********************************************************************
         return
       endif
 
-
       ! Increment counter
       isnapB = isnapB+1
 
       ! Read grid specifications/date in ice file
       read (225,11,end=10000,err=99999) 
      &      iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
-
 
       ! Check if header info has changed from the previous snapshot
       if(isnapB.gt.1) then
@@ -277,7 +274,6 @@ C***********************************************************************
       
       ! Read ice concentrations
       read(225,22,end=9999,err=99999) ((CiceB(i,j),i=1,iLongB),j=1,iLatB)
-
 ! Read region data  --------------------------------------------------------
 
       regionExists = .TRUE.
