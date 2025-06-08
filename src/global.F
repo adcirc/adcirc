@@ -258,19 +258,6 @@ c.
       real(8), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node 
 
       real(8),allocatable :: gwce_lv(:)
-
-
-      REAL(8), ALLOCATABLE :: QN_R(:)  
-      REAL(8), ALLOCATABLE :: QN2_R(:)
-      REAL(8), ALLOCATABLE :: NX_R(:)
-      REAL(8), ALLOCATABLE :: NY_R(:)
-      REAL(8), ALLOCATABLE :: QX1_R(:)
-      REAL(8), ALLOCATABLE :: QY1_R(:)
-      REAL(8), ALLOCATABLE :: QX2_R(:)
-      REAL(8), ALLOCATABLE :: QY2_R(:)
-      REAL(8), ALLOCATABLE :: TAUX_R(:)
-      REAL(8), ALLOCATABLE :: TAUY_R(:)
-
       
 #if defined CSWAN || defined ADCSWAN     
       !...Local SWAN Arrays
@@ -1275,13 +1262,6 @@ C
 C     jgf49.58 Explicitly initialize variables that would otherwise be
 C     used without initialization.
       EN2(:) = -99999.d0
-
-!---------------------------------------------------------------------
-      ALLOCATE(NX_R(MNVEL),NY_R(MNVEL),TAUX_R(MNVEL),TAUY_R(MNVEL))
-      ALLOCATE(QX1_R(MNVEL),QY1_R(MNVEL))        ! AT RIVER CORRECTION
-      ALLOCATE(QX2_R(MNVEL), QY2_R(MNVEL))
-      ALLOCATE(QN_R(MNVEL))
-      ALLOCATE(QN2_R(MNVEL))
 
 !---------------------------------------------------------------------
       END SUBROUTINE ALLOC_MAIN3
