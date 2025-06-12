@@ -203,6 +203,11 @@ C... SB
      &     ROTATEBACK_AT_CONDENSEDNODES_ALL,
      &     REMOVE_NORMAL_AT_CONDENSEDNODES
 C... SB
+!JLW: add subgrd additions
+      USE subgrid, ONLY: level0, level1
+     &   , wetFracVertETA2, subgridVertList
+     &   , gridDepthVertETA2
+     &   , gridDepthVertETA1
 
       IMPLICIT NONE
 
@@ -311,12 +316,22 @@ Corbitt 120322: Localized Advection
          V1N1=VV1(NM1)
          V1N2=VV1(NM2)
          V1N3=VV1(NM3)
-         H1N1=H1(NM1)
-         H1N2=H1(NM2)
-         H1N3=H1(NM3)
-         H2N1=H2(NM1)
-         H2N2=H2(NM2)
-         H2N3=H2(NM3)
+!JLW: adding subgrid corrections
+         IF(level0)THEN
+            H1N1 = gridDepthVertETA1(NM1)
+            H1N2 = gridDepthVertETA1(NM2)
+            H1N3 = gridDepthVertETA1(NM3)
+            H2N1 = gridDepthVertETA2(NM1)
+            H2N2 = gridDepthVertETA2(NM2)
+            H2N3 = gridDepthVertETA2(NM3)
+         ELSE
+            H1N1=H1(NM1)
+            H1N2=H1(NM2)
+            H1N3=H1(NM3)
+            H2N1=H2(NM1)
+            H2N2=H2(NM2)
+            H2N3=H2(NM3)
+         ENDIF
          QX1N1=QX1(NM1)
          QX1N2=QX1(NM2)
          QX1N3=QX1(NM3)
@@ -476,7 +491,9 @@ C...  WJP: Compute the baroclinic pressure gradient from a 3D ocean model
          ENDIF
 
 C...  Compute the advective term gradients x area for the element
-         
+!JLW: don't add corrections to advection here since we are setting to
+! 1 for the time being to make averaging easier. 
+
          U1AvgDU1DXA=U1Avg*DU1DXA
          V1AvgDU1DYA=V1Avg*DU1DYA
          U1AvgDV1DXA=U1Avg*DV1DXA
@@ -754,8 +771,16 @@ C      DispY=0.D0
             ENDIF
          ENDIF
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
-            WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
-            WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
+!JLW: add subgrid corrections 
+            IF(level0)THEN
+               WSX=DTO2*IFWIND*wetFracVertETA2(I)
+     &                *(WSX1(I)/gridDepthVertETA1(I)+WSX2(I)/gridDepthVertETA2(I))
+               WSY=DTO2*IFWIND*wetFracVertETA2(I)
+     &                *(WSY1(I)/gridDepthVertETA1(I)+WSY2(I)/gridDepthVertETA2(I))
+            ELSE
+               WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
+               WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
+            ENDIF
             
 !.....      DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
@@ -1208,8 +1233,13 @@ C...
 C...  Compute fluxes
 
       DO I=1,NP
-         QX2(I) = UU2(I)*H2(I)
-         QY2(I) = VV2(I)*H2(I)
+         IF(level0)THEN
+            QX2(I) = UU2(I)*gridDepthVertETA2(I)
+            QY2(I) = VV2(I)*gridDepthVertETA2(I)
+         ELSE
+            QX2(I) = UU2(I)*H2(I)
+            QY2(I) = VV2(I)*H2(I)
+         ENDIF
       ENDDO
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
