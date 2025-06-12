@@ -3225,7 +3225,11 @@ C
             EVStaDescript % y_coord           => SFET
          ENDIF
 
-         QSurfKp1Descript % specifier            =  I3DGD
+         IF(((IDEN.EQ.3).OR.(IDEN.EQ.4)).AND.(BCFLAG_TEMP.NE.0)) THEN
+            QSurfKp1Descript % specifier         =  I3DGD
+         ELSE
+            QSurfKp1Descript % specifier         =  0 
+         ENDIF   
          QSurfKp1Descript % lun                  =  47
          QSurfKp1Descript % initial_value        =  0.0
          QSurfKp1Descript % num_items_per_record =  1
@@ -3237,7 +3241,6 @@ C
          QSurfKp1Descript % considerWetDry       = .FALSE.
          QSurfKp1Descript % alternate_value      = -99999.0
          QSurfKp1Descript % field_name           = 'qsurfkp1'
-         ! Casey 220120
          QSurfKp1Descript % file_name            = 'fort.47'
 
          SigTDescript % specifier            =  I3DGD
@@ -3998,6 +4001,12 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                IF (myProc.eq.0) THEN
                   CALL writeOutArrayNetCDF(44, TimeLoc, it,
      &               SigTDescript,SalDescript,TempDescript)
+                  IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
+                     IF(BCFLAG_TEMP.NE.0) THEN
+                       call writeOutArrayNetCDF(47, TimeLoc, it,
+     &                    QSurfKp1Descript)
+                     ENDIF
+                  ENDIF   
                ENDIF
 #endif
             CASE DEFAULT
