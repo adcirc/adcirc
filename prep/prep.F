@@ -7746,7 +7746,7 @@ C---------------------------------------------------------------------------
       SUBROUTINE prepNetCDF()
 #ifdef ADCNETCDF
       use sizes, only : ASCII, XDMF, myproc
-      USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP
+      USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP, BCFLAG_TEMP
       USE HARM, ONLY : IHARIND, CHARMV, NHASE, NHASV, NHAGE, NHAGV
       USE VERSION
       USE PRE_GLOBAL, ONLY: NSTAE, NOUTE, RUNDES, RUNID, AGRID,
@@ -8887,7 +8887,11 @@ C     fort.46
       EVDescript % field_name           = 'EV'
 C
 C     fort.47
-      QSurfKp1Descript % specifier            =  I3DGD
+      IF(((IDEN.EQ.3).OR.(IDEN.EQ.4)).AND.(BCFLAG_TEMP.NE.0)) THEN
+         QSurfKp1Descript % specifier         =  I3DGD
+      ELSE
+         QSurfKp1Descript % specifier         =  0 
+      ENDIF   
       QSurfKp1Descript % lun                  =  47
       QSurfKp1Descript % initial_value        =  0.0
       QSurfKp1Descript % num_items_per_record =  1
@@ -8900,7 +8904,7 @@ C     fort.47
       call makeFileName(QSurfKp1Descript)
 C
 !Casey 221115 : Add output of internal variables in fort.48 file.
-C     fort.45
+C     fort.48
       RealBPGDescript % specifier            =  I3DGB
       RealBPGDescript % lun                  =  48
       RealBPGDescript % initial_value        =  0.0
