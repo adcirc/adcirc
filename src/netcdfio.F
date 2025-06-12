@@ -297,6 +297,7 @@ C++
       type(nodalData), private, save :: velocity3D   ! for fort.45
       type(nodalData), private, save :: turbulence3D ! for fort.46
       type(nodalData), private, save :: futureSurfaceTemperature ! for fort.47
+      type(nodalData), private, save :: internal3D ! fort.48 variables
       !WJP 02.20.2018: added fort.53-54 harmonic outputs
       type(nodalData), private, save :: HAelev     ! for fort.53
       type(nodalData), private, save :: HAvel      ! for fort.54
@@ -419,6 +420,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFOutputFile(descript1, reterr, descript2,
      &   descript3)
       USE GLOBAL, ONLY : OutputDataDescript_t
+      USE GLOBAL_3DVS, ONLY: outputFort48
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
@@ -475,6 +477,11 @@ C
          CASE(47)
             CALL initNodalDataFile(futureSurfaceTemperature,
      &           descript1, reterr)
+         CASE(48)   
+           IF(outputFort48)THEN
+              CALL initNodalDataFile(internal3D, descript1, 
+     &            reterr, descript2, descript3)
+           ENDIF   
          !WJP 02.20.2018: added fort.51-54 harmonic outputs
          CASE(51)
             CALL initStationFile(HAelevSta, descript1, reterr)
@@ -1845,6 +1852,40 @@ C
             iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
      &             '_FillValue', doubleval)
             CALL check_err(iret)
+
+         CASE(48)
+            dat%nodal_data_dims_3D(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims_3D(2) = dat%myMesh%num_v_nodes_dim_id
+            dat%nodal_data_dims_3D(3) = dat%myTime%timenc_dim_id
+            iret = nf90_def_var(dat%ncid, 'bpgx', NF90_DOUBLE,
+     &             dat%nodal_data_dims_3D, dat%u_nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_def_var(dat%ncid, 'bpgy', NF90_DOUBLE,
+     &             dat%nodal_data_dims_3D, dat%v_nodal_data_id)
+            CALL check_err(iret)
+            ! bpgx
+            att_text = "u-component of baroclinic pressure gradient"
+            iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
+     &            'long_name', trim(att_text))
+            CALL check_err(iret)
+            att_text = "u-component of baroclinic pressure gradient"
+            iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
+     &             'standard_name', trim(att_text))
+            CALL check_err(iret)
+            CALL putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
+     &             "n/a", "n/a")
+            ! bpgy
+            att_text = "v-component of baroclinic pressure gradient"
+            iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
+     &            'long_name',trim(att_text))
+            CALL check_err(iret)
+            att_text = "v-component of baroclinic pressure gradient"
+            iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
+     &            'standard_name', trim(att_text))
+            CALL check_err(iret)
+            CALL putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
+     &            "n/a", "n/a")
+
 C        WJP 02.20.2018: added fort.53-54 harmonic outputs
          CASE(53)
 C
@@ -3727,6 +3768,13 @@ C     netcdf4 file format.
             iret = nf90_def_var_deflate(dat%ncid, dat%nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
+         CASE(48)
+            iret = nf90_def_var_deflate(dat%ncid, dat%u_nodal_data_id,
+     &          1, 1, 2)
+            CALL check_err(iret)
+            iret = nf90_def_var_deflate(dat%ncid, dat%v_nodal_data_id,
+     &             1, 1, 2)
+            CALL check_err(iret) 
          !WJP 02.20.2018: added fort.53-54 harmonic outputs
          CASE(53)
             iret = nf90_def_var_deflate(dat%ncid, dat%ha_nodal_data_id,
@@ -4251,6 +4299,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeOutArrayNetCDF(lun, timesec, it, descript1,
      &   descript2, descript3, descript4 )
       USE GLOBAL, ONLY : OutputDataDescript_t, ScreenUnit
+      USE GLOBAL_3DVS, ONLY: outputFort48
 C
       IMPLICIT NONE
 C     args
@@ -4289,6 +4338,11 @@ C
          CASE(47)
             CALL writeNodalData(futureSurfaceTemperature, lun,
      &           descript1, timesec)
+         CASE(48)
+            IF(outputFort48)THEN
+              CALL writeNodalData(internal3D, lun, descript1, 
+     &           timesec, descript2, descript3)
+            ENDIF
          !WJP 02.20.2018: added fort.51-54 harmonic outputs
          CASE(51)
             CALL writeStationData(HAelevSta, lun, descript1, timesec,
@@ -4810,39 +4864,14 @@ C
       CASE(44)
          iret=nf90_inq_varid(dat%ncid, "sigmat", dat%u_nodal_data_id)
          CALL check_err(iret)
-         IF (MNPROC.eq.1) THEN
-            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,
-     &          descript1%array2D, start3D, kount3D)
-         ELSE
-            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,
-     &          descript1%array2D_g, start3D, kount3D)
-         ENDIF
-
-         CALL check_err(iret)
          IF ((iden.eq.2).or.(iden.eq.4)) THEN
             iret=nf90_inq_varid(dat%ncid, "salinity",
      &          dat%v_nodal_data_id)
-            CALL check_err(iret)
-            IF (MNPROC.eq.1) THEN
-               iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,
-     &             descript2%array2D, start3D, kount3D)
-            ELSE
-               iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,
-     &           descript2%array2D_g, start3D, kount3D)
-            ENDIF
             CALL check_err(iret)
          ENDIF
          IF ((iden.eq.3).or.(iden.eq.4)) THEN
             iret=nf90_inq_varid(dat%ncid, "temperature",
      &         dat%w_nodal_data_id)
-            CALL check_err(iret)
-            IF (MNPROC.eq.1) THEN
-               iret = nf90_put_var(dat%ncid, dat%w_nodal_data_id,
-     &            descript3%array2D, start3D, kount3D)
-            ELSE
-               iret = nf90_put_var(dat%ncid, dat%w_nodal_data_id,
-     &            descript3%array2D_g, start3D, kount3D)
-            ENDIF
             CALL check_err(iret)
          ENDIF
       CASE(45)
@@ -4861,6 +4890,11 @@ C
          CALL check_err(iret)
       CASE(47)
          iret=nf90_inq_varid(dat%ncid,"qsurfkp1",dat%nodal_data_id)
+         CALL check_err(iret)
+      CASE(48)
+         iret=nf90_inq_varid(dat%ncid, "bpgx", dat%u_nodal_data_id)
+         CALL check_err(iret)
+         iret=nf90_inq_varid(dat%ncid, "bpgy", dat%v_nodal_data_id)
          CALL check_err(iret)
       ! WJP 02.20.2018 Adding capabilities for fort.53-54.nc
       CASE(53)
@@ -5048,6 +5082,36 @@ C++
 C
 C     Write the array values
       SELECT CASE(lun)
+      CASE(44)
+         IF (MNPROC.eq.1) THEN
+            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,
+     &          descript1%array2D, start3D, kount3D)
+         ELSE
+            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,
+     &          descript1%array2D_g, start3D, kount3D)
+         ENDIF
+         CALL check_err(iret)
+
+         IF ((iden.eq.2).or.(iden.eq.4)) THEN
+            IF (MNPROC.eq.1) THEN
+               iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,
+     &             descript2%array2D, start3D, kount3D)
+            ELSE
+               iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,
+     &           descript2%array2D_g, start3D, kount3D)
+            ENDIF
+            CALL check_err(iret)
+         ENDIF
+         IF ((iden.eq.3).or.(iden.eq.4)) THEN
+            IF (MNPROC.eq.1) THEN
+               iret = nf90_put_var(dat%ncid, dat%w_nodal_data_id,
+     &            descript3%array2D, start3D, kount3D)
+            ELSE
+               iret = nf90_put_var(dat%ncid, dat%w_nodal_data_id,
+     &            descript3%array2D_g, start3D, kount3D)
+            ENDIF
+            CALL check_err(iret)
+         ENDIF
       CASE(45,46)
          IF (MNPROC.eq.1) THEN
             iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,
@@ -5070,6 +5134,22 @@ C     Write the array values
      &          descript3%array2D_g, start3D, kount3D)
             CALL check_err(iret)
          ENDIF
+      CASE(48)
+         IF (MNPROC.eq.1) THEN
+            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,
+     &          descript1%array2D, start3D, kount3D)
+            CALL check_err(iret)
+            iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,
+     &          descript2%array2D, start3D, kount3D)
+            CALL check_err(iret)
+         ELSE
+            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,
+     &          descript1%array2D_g, start3D, kount3D)
+            CALL check_err(iret)
+            iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,
+     &          descript2%array2D_g, start3D, kount3D)
+            CALL check_err(iret)
+         ENDIF   
       !WJP 02.20.2018 Adding capabilities for fort.53-54.nc
       CASE(53,54)
          IF (MNPROC.eq.1) THEN

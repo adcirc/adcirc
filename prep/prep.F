@@ -8900,7 +8900,7 @@ C     fort.47
       call makeFileName(QSurfKp1Descript)
 C
 !Casey 221115 : Add output of internal variables in fort.48 file.
-C     fort.45
+C     fort.48
       RealBPGDescript % specifier            =  I3DGB
       RealBPGDescript % lun                  =  48
       RealBPGDescript % initial_value        =  0.0
