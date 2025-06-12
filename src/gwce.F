@@ -1461,6 +1461,8 @@ C--- begin: DW, absorbing layer
 C--- end DW
 
 C...     Complete the JX, JY terms depending on the advection formulation
+!JLW: don't add advection corrections to nonconservative since we are 
+! setting to 1 for the time being to simplify the averaging.
          IF(CGWCE_Advec_NC) THEN        !nonconservative advection
            JXAvg = JXAvg - IFNLCT*(
      &              QX1Avg*(U1N1*FDX1+U1N2*FDX2+U1N3*FDX3)
