@@ -855,12 +855,16 @@ C........ END DW:
 
 
 !JLW: adding subgrid to velocity based lateral stress
-               IF(level0)THEN
-                  H2N = gridDepthVertETA2(I)
-               ELSE
+!JLW: removing below IF statement because we can
+! now just use H2 set in timestep.F
+!               IF(level0)THEN
+!                  H2N = gridDepthVertETA2(I)
+!               ELSE
+!C..............DMW202401 Use saved H2
+!                  H2N= H2(I)
+!               ENDIF
 C..............DMW202401 Use saved H2
-                  H2N= H2(I)
-               ENDIF
+               H2N = H2(I)
                H2OTotalArea=H2N/TotalArea(I)
 
                IF (CGWCE_LS_2PartV) THEN          !nonsymmetric
@@ -1005,7 +1009,9 @@ Corbitt 120322: Localized Advection
          NC3=NODECODE(NM3)
 !JLW: moving NCEle calulation further down. 
 !DW: uncomment line NCELE =  below to make the subgrid code run  
-         NCELE=NC1*NC2*NC3*NOFF(IE)
+!JLW: removing this since we call if further down and it is 
+! now moved out of the subgrid IF statement
+!         NCELE=NC1*NC2*NC3*NOFF(IE)
          E0N1=ETA1(NM1)
          E0N2=ETA1(NM2)
          E0N3=ETA1(NM3)
@@ -1033,13 +1039,15 @@ Corbitt 120322: Localized Advection
 
 !JLW: similar to the LHS, look up wet area fraction, grid averaged water
 !depth, and advection
-        IF(level0)THEN
-            H0N1 = gridDepthVertETA1(NM1)
-            H0N2 = gridDepthVertETA1(NM2)
-            H0N3 = gridDepthVertETA1(NM3)
-            H1N1 = gridDepthVertETA2(NM1)
-            H1N2 = gridDepthVertETA2(NM2)
-            H1N3 = gridDepthVertETA2(NM3)
+         IF(level0)THEN
+!JLW: removing this call for H since we can just 
+! use the saved values from timestep.F
+!            H0N1 = gridDepthVertETA1(NM1)
+!            H0N2 = gridDepthVertETA1(NM2)
+!            H0N3 = gridDepthVertETA1(NM3)
+!            H1N1 = gridDepthVertETA2(NM1)
+!            H1N2 = gridDepthVertETA2(NM2)
+!            H1N3 = gridDepthVertETA2(NM3)
             IF(level1)THEN
                CADV1 = cadvVertETA2(NM1)
                CADV2 = cadvVertETA2(NM2)
@@ -1053,19 +1061,22 @@ Corbitt 120322: Localized Advection
             PHI2N3 = wetFracVertETA2(NM3)
             PHIAVG1 = (PHI1N1+PHI1N2+PHI1N3)/3.d0
             PHIAVG2 = (PHI2N1+PHI2N2+PHI2N3)/3.d0
-         ELSE
+         ENDIF
 
 C...........DMW202401 Use saved H2, H1
-            H0N1=H1(NM1)
-            H0N2=H2(NM1)
-            H0N3=H1(NM3) 
+         H0N1=H1(NM1)
+!JLW: fixing bug here that called H2 instead of H1
+! didn't actually matter because this was not called
+! later in the code
+!         H0N2=H2(NM1)
+         H0N2=H1(NM1)
+         H0N3=H1(NM3) 
 
-C...........DMW202401 Use saved H2
-            H1N1=H2(NM1)
-            H1N2=H2(NM2)
-            H1N3=H2(NM3)
-            NCELE=NC1*NC2*NC3*NOFF(IE)
-         ENDIF
+C........DMW202401 Use saved H2
+         H1N1=H2(NM1)
+         H1N2=H2(NM2)
+         H1N3=H2(NM3)
+         NCELE=NC1*NC2*NC3*NOFF(IE)
          EVMN1=EVM(NM1)
          EVMN2=EVM(NM2)
          EVMN3=EVM(NM3)
@@ -1073,7 +1084,7 @@ C...........DMW202401 Use saved H2
          T0N2=Tau0Var(NM2)
          T0N3=Tau0Var(NM3)
 C..... SB 2022-09-14
-C        Rorate the velocity and flux vectors at the condensed nodes
+C        Rotate the velocity and flux vectors at the condensed nodes
 C        so that they align with the stream direction
          IF (LoadCondensedNodes) THEN
             CALL ROTATE_AT_CONDENSEDNODES_ALL
