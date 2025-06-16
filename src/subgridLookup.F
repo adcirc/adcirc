@@ -354,7 +354,9 @@
       use sizes, only : mne, mnp
       use mesh, only : ne, np, dp, mju, totalArea, nm, x, y, areas
      &   , NNeigh, NeiTab
-      use global, only : H0
+      use global, only : H0, ifnlfa 
+      use adc_constants, only: g
+      use nodalattributes, only: manningsn
 
       implicit none
       integer :: ie, i, j
@@ -396,12 +398,22 @@
      &            + (eta2(i) - wetFracVertTab(i,numPhi))
                wetDepthVertETA2(i) = wetDepthVertTab(i,numPhi)
      &            + (eta2(i) - wetFracVertTab(i,numPhi))
+!JLW 20250615: making it so if a node is fully wet, use traditional
+! manning's calculations with nodal attribute values
                IF(level1)THEN
                   cmfVertETA2(i) = cmfVertTab(i,numPhi)
                   cadvVertETA2(i) = cadvVertTab(i,numPhi)
                ELSE
                   cfVertETA2(i) = cfVertTab(i,numPhi)
                ENDIF
+!            IF(level1)THEN
+!               cmfVertETA2(i) = g*ManningsN(i)**2.d0 
+!     &               /((dp(i)+IFNLFA*eta2(i))**(1.d0/3.d0))
+!               cadvVertETA2(i) = cadvVertTab(i,numPhi)
+!            ELSE
+!               cfVertETA2(i) = g*ManningsN(i)**2.d0 
+!     &               /((dp(i)+IFNLFA*eta2(i))**(1.d0/3.d0))
+!            ENDIF
             ELSEIF(wetFracVertTab(i,numPhi-numGreater).NE.
 !JLW: as long as the depth we are indexing is not equal to the minimum
 !depth that we used to calculate the subgrid lookup table we interpolate
