@@ -1063,15 +1063,9 @@ Corbitt 120322: Localized Advection
             PHIAVG2 = (PHI2N1+PHI2N2+PHI2N3)/3.d0
          ENDIF
 
-C...........DMW202401 Use saved H2, H1
+C........DMW202401 Use saved H2, H1
          H0N1=H1(NM1)
-!JLW: fixing bug here that called H2 instead of H1
-! didn't actually matter because this was not called
-! later in the code
-!         H0N2=H2(NM1)
-!JLW: fix bug in previous H1 call
-!         H0N2=H1(NM1)
-         H0N2 = H1(NM2)
+         H0N2=H1(NM2)
          H0N3=H1(NM3) 
 
 C........DMW202401 Use saved H2
