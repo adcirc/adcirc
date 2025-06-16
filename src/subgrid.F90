@@ -38,9 +38,10 @@ module mod_subgrid
       logical :: subgrid_enabled = .false. !> true if subgrid model is active
       logical :: phi_time_derivative_enabled = .false. !> flag for subgrid phi time derivative
       integer :: subgrid_level = SUBGRID_DISABLED !> subgrid level
-      integer :: numPhi = 1 !> number of possible phi values
-      real(8) :: dphidt !> used to 0 out the phi time derivative term
-      character(len=256) :: subgridFilename !> path to the subgrid lookup file
+      integer :: numPhi = 0 !> number of possible phi values
+      real(8) :: dphidt = 0d0 !> used to 0 out the phi time derivative term
+      character(len=256) :: filename = "null" !> path to the subgrid lookup file
+
       integer, allocatable :: subgridVertList(:) !> array of vertex numbers in the subgrid area
       real(8), allocatable :: setPhi(:) !> array of phi values from 0 to 1
       real(8), allocatable :: cfVertTab(:, :) !> averaged bottom friction coefficient without level 1 correction
@@ -65,11 +66,16 @@ module mod_subgrid
       procedure, pass(self) :: active => subgrid_active
       procedure, pass(self) :: level => subgrid_level
       procedure, pass(self) :: compute => compute_subgrid_quantities
-      procedure, pass(self) :: levels_greater  => subgrid_levels_greater
+      procedure, pass(self) :: levels_greater => subgrid_levels_greater
+
+      ! Interpolation routines for subgrid data
+      procedure, private, pass(self) :: subgrid_interpolate_2d
+      procedure, private, pass(self) :: subgrid_interpolate_1d
+      generic :: interpolate => subgrid_interpolate_2d, subgrid_interpolate_1d
+
 #ifdef ADCNETCDF
       procedure, pass(self) :: read => read_subgrid_lookup_table
 #endif
-!      procedure, pass(self) :: interpolate
 
    end type t_subgrid
 
@@ -106,10 +112,10 @@ contains
          instance%subgrid_level = SUBGRID_DISABLED
       end if
 
-      if(instance%subgrid_enabled)then
+      if (instance%subgrid_enabled) then
 
          instance%phi_time_derivative_enabled = phi_time_derivative_active
-         instance%subgridFilename = subgrid_filename
+         instance%filename = subgrid_filename
 
          if (instance%phi_time_derivative_enabled) then
             instance%dphidt = 1.d0
@@ -140,8 +146,74 @@ contains
       class(t_subgrid), intent(in) :: self
       integer, intent(in) :: node_index !> index of the node to check
       real(8), intent(in) :: water_level !> current water level
-      numGreater = count(water_level < self%wetFracVertTab(node_index, 1:self%numPhi))
+      integer :: first_greater_idx(1)
+
+      if (water_level >= self%wetFracVertTab(node_index, self%numPhi)) then
+         numGreater = 0
+      else if (water_level < self%wetFracVertTab(node_index, 1)) then
+         numGreater = self%numPhi
+      else
+         ! Find the first index where value > water_level
+         ! minloc returns the index of the minimum value that satisfies the mask
+         first_greater_idx = minloc(self%wetFracVertTab(node_index, 1:self%numPhi), &
+                                    mask=self%wetFracVertTab(node_index, 1:self%numPhi) > water_level)
+         numGreater = self%numPhi - first_greater_idx(1) + 1
+      end if
    end function subgrid_levels_greater
+
+   pure real(8) function subgrid_interpolate_2d(self, node_index, water_level, n_greater, x, y) result(sg)
+      implicit none
+      class(t_subgrid), intent(in) :: self
+      integer, intent(in) :: node_index !> index of the node to interpolate
+      real(8), intent(in) :: water_level !> current water level
+      integer, intent(in) :: n_greater !> number of phi values greater than the current water level
+      real(8), intent(in) :: x(:, :) !> array of quantities to interpolate
+      real(8), intent(in) :: y(:, :) !> array of quantities to interpolate
+      real(8) :: y0, y1, x0, x1
+
+      if (n_greater == self%numPhi) then
+         ! if all phi values are greater than the water level, return the first value
+         sg = y(node_index, 1)
+      else if (n_greater == 0) then
+         ! if no phi values are greater than the water level, return the last value
+         sg = y(node_index, self%numPhi)
+      else
+         ! Otherwise, interpolate
+         y0 = y(node_index, self%numPhi - n_greater)
+         y1 = y(node_index, self%numPhi - n_greater + 1)
+         x0 = x(node_index, self%numPhi - n_greater)
+         x1 = x(node_index, self%numPhi - n_greater + 1)
+         sg = ((water_level - x0)/(x1 - x0))*(y1 - y0) + y0
+      end if
+
+   end function subgrid_interpolate_2d
+
+   pure real(8) function subgrid_interpolate_1d(self, node_index, water_level, n_greater, x, y) result(sg)
+      implicit none
+      class(t_subgrid), intent(in) :: self
+      integer, intent(in) :: node_index !> index of the node to interpolate
+      real(8), intent(in) :: water_level !> current water level
+      integer, intent(in) :: n_greater !> number of phi values greater than the current water level
+      real(8), intent(in) :: x(:, :) !> array of quantities to interpolate
+      real(8), intent(in) :: y(:) !> array of quantities to interpolate
+      real(8) :: y0, y1, x0, x1
+
+      if (n_greater == self%numPhi) then
+         ! if all phi values are greater than the water level, return the first value
+         sg = y(1)
+      else if (n_greater == 0) then
+         ! if no phi values are greater than the water level, return the last value
+         sg = y(self%numPhi)
+      else
+         ! Otherwise, interpolate
+         y0 = y(self%numPhi - n_greater)
+         y1 = y(self%numPhi - n_greater + 1)
+         x0 = x(node_index, self%numPhi - n_greater)
+         x1 = x(node_index, self%numPhi - n_greater + 1)
+         sg = ((water_level - x0)/(x1 - x0))*(y1 - y0) + y0
+      end if
+
+   end function subgrid_interpolate_1d
 
    !----------------------------------------------------------------------
    !----------------------------------------------------------------------
@@ -158,28 +230,17 @@ contains
       class(t_subgrid), intent(inout) :: self
       integer, intent(in) :: np
 
-      !JLW: initialize local arrays for subgrid variables
-      allocate (self%wetFracVertETA1(NP))
-      allocate (self%gridDepthVertETA1(NP))
-      allocate (self%wetFracVertETA2(NP))
-      allocate (self%gridDepthVertETA2(NP))
-      allocate (self%wetDepthVertETA2(NP))
-
-      !JLW: set intial value of all arrays to 0
-      self%wetFracVertETA1(:) = 0.d0
-      self%wetFracVertETA2(:) = 0.d0
-      self%gridDepthVertETA1(:) = 0.d0
-      self%gridDepthVertETA2(:) = 0.d0
-      self%wetDepthVertETA2(:) = 0.d0
+      allocate (self%wetFracVertETA1(NP), source=0d0)
+      allocate (self%gridDepthVertETA1(NP), source=0d0)
+      allocate (self%wetFracVertETA2(NP), source=0d0)
+      allocate (self%gridDepthVertETA2(NP), source=0d0)
+      allocate (self%wetDepthVertETA2(NP), source=0d0)
 
       if (self%subgrid_level == SUBGRID_LEVEL_1) then
-         allocate (self%cmfVertETA2(NP))
-         allocate (self%cadvVertETA2(NP))
-         self%cmfVertETA2(:) = 0.d0
-         self%cadvVertETA2(:) = 1.d0
+         allocate (self%cmfVertETA2(NP), source=0d0)
+         allocate (self%cadvVertETA2(NP), source=1d0)
       else
-         allocate (self%cfVertETA2(NP))
-         self%cfVertETA2(:) = 0.d0
+         allocate (self%cfVertETA2(NP), source=0d0)
       end if
 
    end subroutine allocate_subgrid_variables
@@ -223,7 +284,7 @@ contains
       integer :: I
       logical :: file_exists
 
-      inquire (FILE=trim(self%subgridFilename), EXIST=file_exists)
+      inquire (FILE=trim(self%filename), EXIST=file_exists)
       if (.not. file_exists) then
          call allMessage(ERROR, "subgrid lookup file does not exist")
          call terminate()
@@ -232,7 +293,7 @@ contains
 
 !JLW: adding subgrid lookup table read in
 !JLW: first open subgrid lookup table and read in dimensions
-      call CHECK_ERR(NF90_OPEN(trim(self%subgridFilename), NF90_NOWRITE, NC_ID))
+      call CHECK_ERR(NF90_OPEN(trim(self%filename), NF90_NOWRITE, NC_ID))
 
       call CHECK_ERR(NF90_INQ_DIMID(NC_ID, "numNode", NC_VAR))
       call CHECK_ERR(NF90_INQUIRE_DIMENSION(NC_ID, NC_VAR, len=numVerts))
@@ -348,7 +409,6 @@ contains
 !JLW: close netcdf lookup table file
       NC_ERR = NF90_CLOSE(NC_ID)
 
-
    end subroutine read_subgrid_lookup_table
 #endif
    !----------------------------------------------------------------------
@@ -365,7 +425,6 @@ contains
 
    subroutine compute_subgrid_quantities(self, np, h0, dp, eta2)
       implicit none
-      real(8), parameter :: eps = epsilon(1.d0)
       class(t_subgrid), intent(inout) :: self
       integer, intent(in) :: np !> number of vertices
       real(8), intent(in) :: h0 !> minimum water depth
@@ -383,102 +442,18 @@ contains
       !JLW: now loop through the vertices and lookup vertex averages
       do I = 1, NP
          if (self%subgridVertList(I) == 1) then
-            !JLW: find how many of the depths are greater than the current wet area
-            !fraction
             numGreater = self%levels_greater(I, eta2(I))
-            if (numGreater == self%numPhi) then
-               !JLW: this means that none of the depths in the array are greater than
-               !the current depth and this node is dry
-               self%wetFracVertETA2(i) = self%setPhi(1)
-               self%gridDepthVertETA2(i) = self%gridDepthVertTab(i, 1)
-               self%wetDepthVertETA2(i) = self%wetDepthVertTab(i, 1)
-               if (self%level() == SUBGRID_LEVEL_1) then
-                  self%cmfVertETA2(i) = self%cmfVertTab(i, 1)
-                  self%cadvVertETA2(i) = self%cadvVertTab(i, 1)
-               else
-                  self%cfVertETA2(i) = self%cfVertTab(i, 1)
-               end if
-            elseif (numGreater == 0) then
-               !JLW: this means that none of the depths in the array are greater than
-               !the current depth and this node is always wet
-               self%wetFracVertETA2(i) = self%setPhi(self%numPhi)
-               self%gridDepthVertETA2(i) = self%gridDepthVertTab(i, self%numPhi) &
-                                           + (eta2(i) - self%wetFracVertTab(i, self%numPhi))
-               self%wetDepthVertETA2(i) = self%wetDepthVertTab(i, self%numPhi) &
-                                          + (eta2(i) - self%wetFracVertTab(i, self%numPhi))
-               !JLW 20250615: making it so if a node is fully wet, use traditional
-               ! manning's calculations with nodal attribute values
-               if (self%level() == SUBGRID_LEVEL_1) then
-                  self%cmfVertETA2(i) = self%cmfVertTab(i, self%numPhi)
-                  self%cadvVertETA2(i) = self%cadvVertTab(i, self%numPhi)
-               else
-                  self%cfVertETA2(i) = self%cfVertTab(i, self%numPhi)
-               end if
-
-            elseif (abs(self%wetFracVertTab(i, self%numPhi - numGreater)) > eps) then
-               self%wetFracVertETA2(i) = ((eta2(i) &
-                                           - self%wetFracVertTab(i, self%numPhi - numGreater)) &
-                                          /(self%wetFracVertTab(i, self%numPhi - numGreater + 1) &
-                                            - self%wetFracVertTab(i, self%numPhi - numGreater)) &
-                                          *(self%setPhi(self%numPhi - numGreater + 1) &
-                                            - self%setPhi(self%numPhi - numGreater)) &
-                                          + self%setPhi(self%numPhi - numGreater))
-               self%gridDepthVertETA2(i) = ((eta2(i) &
-                                             - self%wetFracVertTab(i, self%numPhi - numGreater)) &
-                                            /(self%wetFracVertTab(i, self%numPhi - numGreater + 1) &
-                                              - self%wetFracVertTab(i, self%numPhi - numGreater)) &
-                                            *(self%gridDepthVertTab(i, self%numPhi - numGreater + 1) &
-                                              - self%gridDepthVertTab(i, self%numPhi - numGreater)) &
-                                            + self%gridDepthVertTab(i, self%numPhi - numGreater))
-               self%wetDepthVertETA2(i) = ((eta2(i) &
-                                            - self%wetFracVertTab(i, self%numPhi - numGreater)) &
-                                           /(self%wetFracVertTab(i, self%numPhi - numGreater + 1) &
-                                             - self%wetFracVertTab(i, self%numPhi - numGreater)) &
-                                           *(self%wetDepthVertTab(i, self%numPhi - numGreater + 1) &
-                                             - self%wetDepthVertTab(i, self%numPhi - numGreater)) &
-                                           + self%wetDepthVertTab(i, self%numPhi - numGreater))
-               if (self%level() == SUBGRID_LEVEL_1) then
-                  self%cmfVertETA2(i) = ((eta2(i) &
-                                          - self%wetFracVertTab(i, self%numPhi - numGreater)) &
-                                         /(self%wetFracVertTab(i, self%numPhi - numGreater + 1) &
-                                           - self%wetFracVertTab(i, self%numPhi - numGreater)) &
-                                         *(self%cmfVertTab(i, self%numPhi - numGreater + 1) &
-                                           - self%cmfVertTab(i, self%numPhi - numGreater)) &
-                                         + self%cmfVertTab(i, self%numPhi - numGreater))
-                  self%cadvVertETA2(i) = ((eta2(i) &
-                                           - self%wetFracVertTab(i, self%numPhi - numGreater)) &
-                                          /(self%wetFracVertTab(i, self%numPhi - numGreater + 1) &
-                                            - self%wetFracVertTab(i, self%numPhi - numGreater)) &
-                                          *(self%cadvVertTab(i, self%numPhi - numGreater + 1) &
-                                            - self%cadvVertTab(i, self%numPhi - numGreater)) &
-                                          + self%cadvVertTab(i, self%numPhi - numGreater))
-               else
-                  self%cfVertETA2(i) = ((eta2(i) &
-                                         - self%wetFracVertTab(i, self%numPhi - numGreater)) &
-                                        /(self%wetFracVertTab(i, self%numPhi - numGreater + 1) &
-                                          - self%wetFracVertTab(i, self%numPhi - numGreater)) &
-                                        *(self%cfVertTab(i, self%numPhi - numGreater + 1) &
-                                          - self%cfVertTab(i, self%numPhi - numGreater)) &
-                                        + self%cfVertTab(i, self%numPhi - numGreater))
-               end if
+            self%wetFracVertETA2(I) = self%interpolate(I, eta2(I), numGreater, self%wetFracVertTab, self%setPhi)
+            self%gridDepthVertETA2(I) = self%interpolate(I, eta2(I), numGreater, self%wetFracVertTab, self%gridDepthVertTab)
+            self%wetDepthVertETA2(I) = self%interpolate(I, eta2(I), numGreater, self%wetFracVertTab, self%wetDepthVertTab)
+            if (self%level() == SUBGRID_LEVEL_1) then
+               self%cmfVertETA2(I) = self%interpolate(I, eta2(I), numGreater, self%wetFracVertTab, self%cmfVertTab)
+               self%cadvVertETA2(I) = self%interpolate(I, eta2(I), numGreater, self%wetFracVertTab, self%cadvVertTab)
             else
-               !JLW: if the current water level is equal to the first depth of the
-               !array wet set our averaged variables to fully wet
-               self%wetFracVertETA2(i) = self%setPhi(self%numPhi - numGreater + 1)
-               self%gridDepthVertETA2(i) = &
-                  self%gridDepthVertTab(i, self%numPhi - numGreater + 1)
-               self%wetDepthVertETA2(i) = &
-                  self%wetDepthVertTab(i, self%numPhi - numGreater + 1)
-               if (self%level() == SUBGRID_LEVEL_1) then
-                  self%cmfVertETA2(i) = self%cmfVertTab(i, self%numPhi - numGreater + 1)
-                  self%cadvVertETA2(i) = self%cadvVertTab(i, self%numPhi - numGreater + 1)
-               else
-                  self%cfVertETA2(i) = self%cfVertTab(i, self%numPhi - numGreater + 1)
-               end if
+               self%cfVertETA2(I) = self%interpolate(I, eta2(I), numGreater, self%wetFracVertTab, self%cfVertTab)
             end if
          else
-            !JLW: if not in subgrid area set grid total depth (this was a
-            !bug)
+            !JLW: if not in subgrid area set grid total depth (this was a bug)
             self%gridDepthVertETA2(i) = eta2(i) + dp(i)
             self%wetDepthVertETA2(i) = eta2(i) + dp(i)
             self%wetFracVertETA2(i) = 1.d0

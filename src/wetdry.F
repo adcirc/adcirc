@@ -238,13 +238,7 @@ CWET...
                         subgrid_data%gridDepthVertETA2(i) = HABSMIN
                         subgrid_data%wetDepthVertETA2(i) = HABSMIN
                         IF(subgrid_data%subgridVertList(i).EQ.1)THEN
-                           numGreater = 0
-                           DO j=1,subgrid_data%numPhi
-                              IF(subgrid_Data%gridDepthVertETA2(i).LT.
-     &                           subgrid_data%gridDepthVertTab(i,j))THEN
-                                 numGreater = numGreater + 1
-                              ENDIF
-                           ENDDO
+                           numGreater = subgrid_data%levels_greater(i, subgrid_data%gridDepthVertETA2(i))
                            IF(numGreater.EQ.subgrid_data%numPhi)THEN
                               eta2(i) = subgrid_data%wetFracVertTab(i,1)
                            ELSEIF(numGreater.EQ.0)THEN
@@ -269,9 +263,9 @@ CWET...
                      NCCHANGE = NCCHANGE + 1
                   ELSE
                      IF(HTOT.LT.HABSMIN) ETA2(I)=HABSMIN-DP(I)
-                        NNODECODE(I)=0
-                        NODECODE(I)=0
-                        NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
+                     NNODECODE(I)=0
+                     NODECODE(I)=0
+                     NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
                   ENDIF
                ENDIF
             ENDIF
