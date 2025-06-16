@@ -69,8 +69,7 @@ C
      &    q20_g, l_g, SigT_g, Sal_g, Temp_g, iy
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, 
      &                       openFort019h
-      USE SUBGRID, ONLY: level0, phi_time_derivative, dphidt,
-     &    readSubgridLookup, initVar, getVertLookup
+      USE mod_subgrid, ONLY: subgrid_data
 #ifdef CMPI
       USE MESSENGER,ONLY: COMM, IERR, UPDATER, MSG_FINI
 #endif      
@@ -724,17 +723,11 @@ C
       END SELECT
 
 !     Check if we need to initialize the subgrid input file
-      IF(level0.EQV..true.)THEN
+      IF(subgrid_data%active())THEN
 #ifdef ADCNETCDF
-         if(phi_time_derivative)then
-            dphidt = 1
-         else
-            dphidt = 0
-         endif
-         call readSubgridLookup()
+         call subgrid_data%read()
          if(nolifa.eq.2)then
-            call initVar()
-            call getVertLookup()
+            call subgrid_data%compute(np, h0, dp, eta2)
          endif
 #else
          call allMessage(ERROR, "Subgrid calculation requires building"

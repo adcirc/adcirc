@@ -161,9 +161,7 @@ CWET...
       USE BOUNDARIES, ONLY : IBCONN, ISSUBMERGED64, NFLUXIB64_GBL
       use global_3dvs, only : a, b, islip, kp, z0b, sigma, evtot, q
       use subdomain, only : subdomainOn, enforceBN, enforceWDcb, enforceWDob
-      use subgrid, only: level0, subgridVertList, gridDepthVertETA2,
-     &   level1, cmfVertETA2, cfVertETA2, wetDepthVertETA2,
-     &   wetFracVertTab,gridDepthVertTab, numPhi
+      use mod_subgrid, only: subgrid_data, SUBGRID_LEVEL_1
       implicit none
       integer, intent(in) :: it ! time step number
       complex(8) :: duds 
@@ -228,39 +226,39 @@ CWET...
 CWET...
          DO I=1,NP
             IF(NODECODE(I).EQ.1) THEN
-               IF(level0)THEN
-                  HTOT = gridDepthVertETA2(i)
+               IF(subgrid_data%active())THEN
+                  HTOT = subgrid_data%gridDepthVertETA2(i)
                ELSE
                   HTOT=DP(I)+ETA2(I)
                ENDIF
                IF(HTOT.LE.H0) THEN
-                  IF(level0)THEN
+                  IF(subgrid_data%active())THEN
                      !JLW: need to interpolate here to set eta2
                      IF(HTOT.LT.HABSMIN)THEN
-                        gridDepthVertETA2(i) = HABSMIN
-                        wetDepthVertETA2(i) = HABSMIN
-                        IF(subgridVertList(i).EQ.1)THEN
+                        subgrid_data%gridDepthVertETA2(i) = HABSMIN
+                        subgrid_data%wetDepthVertETA2(i) = HABSMIN
+                        IF(subgrid_data%subgridVertList(i).EQ.1)THEN
                            numGreater = 0
-                           DO j=1,numPhi
-                              IF(gridDepthVertETA2(i).LT.
-     &                           gridDepthVertTab(i,j))THEN
+                           DO j=1,subgrid_data%numPhi
+                              IF(subgrid_Data%gridDepthVertETA2(i).LT.
+     &                           subgrid_data%gridDepthVertTab(i,j))THEN
                                  numGreater = numGreater + 1
                               ENDIF
                            ENDDO
-                           IF(numGreater.EQ.numPhi)THEN
-                              eta2(i) = wetFracVertTab(i,1)
+                           IF(numGreater.EQ.subgrid_data%numPhi)THEN
+                              eta2(i) = subgrid_data%wetFracVertTab(i,1)
                            ELSEIF(numGreater.EQ.0)THEN
-                              eta2(i) = wetFracVertTab(i,numPhi)
-     &                           + (HABSMIN-gridDepthVertTab(i,numPhi))
+                              eta2(i) = subgrid_data%wetFracVertTab(i,subgrid_data%numPhi)
+     &                           + (HABSMIN-subgrid_data%gridDepthVertTab(i,subgrid_data%numPhi))
                            ELSE
                !JLW: now back calculate eta2 based on this change
-                              eta2(i) = ((gridDepthVertETA2(i)
-     &                        - gridDepthVertTab(i,numPhi-numGreater))
-     &                        / (gridDepthVertTab(i,numPhi-numGreater+1)
-     &                        - gridDepthVertTab(i,numPhi-numGreater))
-     &                        * (wetFracVertTab(i,numPhi-numGreater+1)
-     &                        - wetFracVertTab(i,numPhi-numGreater))
-     &                        + wetFracVertTab(i,numPhi-numGreater))
+                              eta2(i) = ((subgrid_data%gridDepthVertETA2(i)
+     &                        - subgrid_data%gridDepthVertTab(i,subgrid_data%numPhi-numGreater))
+     &                        / (subgrid_data%gridDepthVertTab(i,subgrid_data%numPhi-numGreater+1)
+     &                        - subgrid_data%gridDepthVertTab(i,subgrid_data%numPhi-numGreater))
+     &                        * (subgrid_data%wetFracVertTab(i,subgrid_data%numPhi-numGreater+1)
+     &                        - subgrid_data%wetFracVertTab(i,subgrid_data%numPhi-numGreater))
+     &                        + subgrid_data%wetFracVertTab(i,subgrid_data%numPhi-numGreater))
                            ENDIF
                         ELSE
                            eta2(i) = HABSMIN - DP(I)
@@ -342,10 +340,10 @@ CWET...
                ETAN1=ETA2(NM1)
                ETAN2=ETA2(NM2)
                ETAN3=ETA2(NM3)
-               IF(level0)THEN
-                  HTOTN1 = gridDepthVertETA2(NM1)
-                  HTOTN2 = gridDepthVertETA2(NM2)
-                  HTOTN3 = gridDepthVertETA2(NM3)
+               IF(subgrid_data%active())THEN
+                  HTOTN1 = subgrid_data%gridDepthVertETA2(NM1)
+                  HTOTN2 = subgrid_data%gridDepthVertETA2(NM2)
+                  HTOTN3 = subgrid_data%gridDepthVertETA2(NM3)
                ELSE
                   HTOTN1=DP(NM1)+ETA2(NM1)
                   HTOTN2=DP(NM2)+ETA2(NM2)
@@ -360,8 +358,8 @@ CWET...
                      DELETA=ETA2(NM123)-ETA2(NM3)
                      ! jgf50.60.18: Prevent numerical problems if DELETA is negative
                      IF (DELETA.lt.0.d0) DELETA = 0.d0
-                     IF(level0)THEN
-                         H1 = wetDepthVertETA2(NM123)
+                     IF(subgrid_data%active())THEN
+                         H1 = subgrid_data%wetDepthVertETA2(NM123)
                       ELSE
                          H1=ETA2(NM123)+DP(NM123)
                       ENDIF
@@ -371,12 +369,12 @@ c. RJW modified the following for 3D friction
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
                         IF (LoadManningsN) THEN
-                           IF(level0)THEN
-                             IF(subgridVertList(NM123).EQ.1)THEN
-                                IF(level1)THEN
-                                   FRIC(NM123) = cmfVertETA2(NM123)
+                           IF(subgrid_data%active())THEN
+                             IF(subgrid_data%subgridVertList(NM123).EQ.1)THEN
+                                IF(subgrid_data%level()==SUBGRID_LEVEL_1)THEN
+                                   FRIC(NM123) = subgrid_data%cmfVertETA2(NM123)
                                 ELSE
-                                   FRIC(NM123) = cfVertETA2(NM123)
+                                   FRIC(NM123) = subgrid_data%cfVertETA2(NM123)
                                 ENDIF
                              ELSE
                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
@@ -499,8 +497,8 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                      DELETA=ETA2(NM123)-ETA2(NM1)
                      ! jgf50.60.18: Prevent numerical problems if DELETA is negative
                      IF (DELETA.lt.0.d0) DELETA = 0.d0
-                     IF(level0)THEN
-                        H1 = wetDepthVertETA2(NM123)
+                     IF(subgrid_data%active())THEN
+                        H1 = subgrid_data%wetDepthVertETA2(NM123)
                      ELSE
                         H1=ETA2(NM123)+DP(NM123)
                      ENDIF
@@ -509,12 +507,12 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
                         IF (LoadManningsN) THEN
-                          IF(level0)THEN
-                              IF(subgridVertList(NM123).EQ.1)THEN
-                                IF(level1)THEN
-                                   FRIC(NM123) = cmfVertETA2(NM123)
+                          IF(subgrid_data%active())THEN
+                              IF(subgrid_data%subgridVertList(NM123).EQ.1)THEN
+                                IF(subgrid_data%level()==SUBGRID_LEVEL_1)THEN
+                                   FRIC(NM123) = subgrid_data%cmfVertETA2(NM123)
                                 ELSE
-                                   FRIC(NM123) = cfVertETA2(NM123)
+                                   FRIC(NM123) = subgrid_data%cfVertETA2(NM123)
                                 ENDIF
                              ELSE
                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
@@ -638,8 +636,8 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                      DELETA=ETA2(NM123)-ETA2(NM2)
                      ! jgf50.60.18: Prevent numerical problems if DELETA is negative
                      IF (DELETA.lt.0.d0) DELETA = 0.d0
-                     IF(level0)THEN
-                        H1 = wetDepthVertETA2(NM123)
+                     IF(subgrid_data%active())THEN
+                        H1 = subgrid_data%wetDepthVertETA2(NM123)
                      ELSE
                         H1=ETA2(NM123)+DP(NM123)
                      ENDIF
@@ -648,12 +646,12 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction
 Csb46.28sb02
 C<<                     Convert Manning's N to Cd, if necessary.
                         IF (LoadManningsN) THEN
-                          IF(level0)THEN
-                             IF(subgridVertList(NM123).EQ.1)THEN
-                                IF(level1)THEN
-                                   FRIC(NM123) = cmfVertETA2(NM123)
+                          IF(subgrid_data%active())THEN
+                             IF(subgrid_data%subgridVertList(NM123).EQ.1)THEN
+                                IF(subgrid_data%level()==SUBGRID_LEVEL_1)THEN
+                                   FRIC(NM123) = subgrid_data%cmfVertETA2(NM123)
                                 ELSE
-                                   FRIC(NM123) = cfVertETA2(NM123)
+                                   FRIC(NM123) = subgrid_data%cfVertETA2(NM123)
                                 ENDIF
                              ELSE
                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
@@ -1056,10 +1054,10 @@ CWET...
                ETAN1=ETA2(NM1)
                ETAN2=ETA2(NM2)
                ETAN3=ETA2(NM3)
-               IF(level0)THEN
-                  HTOTN1 = gridDepthVertETA2(NM1)
-                  HTOTN2 = gridDepthVertETA2(NM2)
-                  HTOTN3 = gridDepthVertETA2(NM3)
+               IF(subgrid_data%active())THEN
+                  HTOTN1 = subgrid_data%gridDepthVertETA2(NM1)
+                  HTOTN2 = subgrid_data%gridDepthVertETA2(NM2)
+                  HTOTN3 = subgrid_data%gridDepthVertETA2(NM3)
                ELSE
                   HTOTN1=DP(NM1)+ETA2(NM1)
                   HTOTN2=DP(NM2)+ETA2(NM2)
@@ -1503,7 +1501,7 @@ c.....
          USE MESH,ONLY: DP,NM,NE,sfac,SFacEle,SFMYEle,SFMXEle,FDXE,FDYE,
      &    areas         
          use global, only : eta2, noff, nodecode, alphal, IFSFM, slim
-         use subgrid, only : level0, gridDepthVertETA2
+         use mod_subgrid, only : subgrid_data
          IMPLICIT NONE
          INTEGER  :: I,NM1,NM2,NM3,NC1,NC2,NC3,NCELE
          real(8) :: sfacavg, SFmxAvg, SFmyAvg, DPN1, DPN2, DPN3
@@ -1525,10 +1523,10 @@ c.....
             NCEle=NC1*NC2*NC3*NOFF(I)
             IF (NCEle.EQ.1) THEN               
 
-               IF(level0)THEN
-                 HN1 = gridDepthVertETA2(NM1)
-                 HN2 = gridDepthVertETA2(NM2)
-                 HN3 = gridDepthVertETA2(NM3)
+               IF(subgrid_data%active())THEN
+                 HN1 = subgrid_data%gridDepthVertETA2(NM1)
+                 HN2 = subgrid_data%gridDepthVertETA2(NM2)
+                 HN3 = subgrid_data%gridDepthVertETA2(NM3)
                ELSE
                  HN1 = ETA2(NM1) + DP(NM1)
                  HN2 = ETA2(NM2) + DP(NM2)

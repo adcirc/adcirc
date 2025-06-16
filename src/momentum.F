@@ -204,10 +204,7 @@ C... SB
      &     REMOVE_NORMAL_AT_CONDENSEDNODES
 C... SB
 !JLW: add subgrd additions
-      USE subgrid, ONLY: level0, level1
-     &   , wetFracVertETA2, subgridVertList
-     &   , gridDepthVertETA2
-     &   , gridDepthVertETA1
+      USE mod_subgrid, ONLY: subgrid_Data
 
       IMPLICIT NONE
 
@@ -316,24 +313,6 @@ Corbitt 120322: Localized Advection
          V1N1=VV1(NM1)
          V1N2=VV1(NM2)
          V1N3=VV1(NM3)
-!JLW: adding subgrid corrections
-!JLW: removing if statement since we can use H saved in
-! timestep.F
-!         IF(level0)THEN
-!            H1N1 = gridDepthVertETA1(NM1)
-!            H1N2 = gridDepthVertETA1(NM2)
-!            H1N3 = gridDepthVertETA1(NM3)
-!            H2N1 = gridDepthVertETA2(NM1)
-!            H2N2 = gridDepthVertETA2(NM2)
-!            H2N3 = gridDepthVertETA2(NM3)
-!         ELSE
-!            H1N1=H1(NM1)
-!            H1N2=H1(NM2)
-!            H1N3=H1(NM3)
-!            H2N1=H2(NM1)
-!            H2N2=H2(NM2)
-!            H2N3=H2(NM3)
-!         ENDIF
          H1N1=H1(NM1)
          H1N2=H1(NM2)
          H1N3=H1(NM3)
@@ -779,22 +758,11 @@ C      DispY=0.D0
             ENDIF
          ENDIF
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
-!JLW: add subgrid corrections 
-!JLW: simplifying this a bit to use H saved in timestep.F
-!            IF(level0)THEN
-!               WSX=DTO2*IFWIND*wetFracVertETA2(I)
-!     &                *(WSX1(I)/gridDepthVertETA1(I)+WSX2(I)/gridDepthVertETA2(I))
-!               WSY=DTO2*IFWIND*wetFracVertETA2(I)
-!     &                *(WSY1(I)/gridDepthVertETA1(I)+WSY2(I)/gridDepthVertETA2(I))
-!            ELSE
-!               WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
-!               WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
-!            ENDIF
              WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
              WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
-             IF(level0)THEN
-                WSX = WSX*wetFracVertETA2(I)
-                WSY = WSY*wetFracVertETA2(I)
+             IF(subgrid_data%active())THEN
+                WSX = WSX*subgrid_data%wetFracVertETA2(I)
+                WSY = WSY*subgrid_data%wetFracVertETA2(I)
              ENDIF
             
 !.....      DMW 202207 tail off wind forcing in very shallow water
@@ -1331,11 +1299,7 @@ C
       USE WIND, ONLY: windLimiter 
       USE ADC_CONSTANTS, ONLY: Cs2, Ad, Bd, G
 !JLW: add subgrd additions
-      USE subgrid, ONLY: level0, level1
-     &   , wetFracVertETA2, subgridVertList
-     &   , gridDepthVertETA2
-     &   , gridDepthVertETA1
-     &   , cadvVertETA2
+      USE mod_subgrid, ONLY: subgrid_data, SUBGRID_LEVEL_1
        
       IMPLICIT NONE
 
@@ -1438,10 +1402,10 @@ Corbitt 120322: Localized Advection
 !            H2N2=H2(NM2)
 !            H2N3=H2(NM3)
 !         ENDIF
-         IF(level1)THEN
-            CADV1 = cadvVertETA2(NM1)
-            CADV2 = cadvVertETA2(NM2)
-            CADV3 = cadvVertETA2(NM3)
+         IF(subgrid_data%level()==SUBGRID_LEVEL_1)THEN
+            CADV1 = subgrid_data%cadvVertETA2(NM1)
+            CADV2 = subgrid_data%cadvVertETA2(NM2)
+            CADV3 = subgrid_data%cadvVertETA2(NM3)
          ENDIF
          H1N1=H1(NM1)
          H1N2=H1(NM2)
@@ -1558,7 +1522,7 @@ C...  Compute the advective term gradients for the element version 1
 
          IF (CME_New_C1) THEN
 !JLW: add correction to advection
-            IF(level1)THEN
+            IF(subgrid_data%level()==SUBGRID_LEVEL_1)THEN
                DU1QX1DXA=(CADV1*U1N1*QX1N1*FDX1+CADV2*U1N2*QX1N2*FDX2
      &            +CADV3*U1N3*QX1N3*FDX3)*0.5d0
                DV1QX1DYA=(CADV1*V1N1*QX1N1*FDY1+CADV2*V1N2*QX1N2*FDY2
@@ -1861,9 +1825,9 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
             WSX=DTO2*IFWIND*(WSX1(I)+WSX2(I))
             WSY=DTO2*IFWIND*(WSY1(I)+WSY2(I))
 !JLW: add subgrid correction
-            IF(level0)THEN
-               WSX = WSX*wetFracVertETA2(I)
-               WSY = WSY*wetFracVertETA2(I)
+            IF(subgrid_data%active())THEN
+               WSX = WSX*subgrid_data%wetFracVertETA2(I)
+               WSY = WSY*subgrid_data%wetFracVertETA2(I)
             ENDIF
             
 C...........DMW 202207 tail off wind forcing in very shallow water
@@ -2070,44 +2034,6 @@ C...  Compute velocities
 !JLW: can remove this IF statement since we are using 
 ! H saved in timestep.F
       DO I=1,NP
-!         IF(level0)THEN
-!            H2s = gridDepthVertETA2(I)
-!            IF(H2s.NE.0D0)THEN
-!              UU2(I)=QX2(I)/H2s
-!              VV2(I)=QY2(I)/H2s
-!            ELSE
-!               WRITE(16,*) ''
-!               WRITE(16,*) ''
-!               WRITE(16,*) '*******************************************'
-!               WRITE(16,*) '*******************************************'
-!               WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
-!               WRITE(16,*) '         Velocities set = -999.'
-!               WRITE(16,*) '*******************************************'
-!               WRITE(16,*) '*******************************************'
-!               WRITE(16,*) ''
-!               WRITE(16,*) ''
-!               UU2(I)=-999.
-!               VV2(I)=-999.
-!            ENDIF
-!         ELSE
-!            IF(H2(I).NE.0.) THEN
-!               UU2(I)=QX2(I)/H2(I)
-!               VV2(I)=QY2(I)/H2(I)
-!               ELSE
-!               WRITE(16,*) ''
-!               WRITE(16,*) ''
-!               WRITE(16,*) '*******************************************'
-!               WRITE(16,*) '*******************************************'
-!               WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
-!               WRITE(16,*) '         Velocities set = -999.'
-!               WRITE(16,*) '*******************************************'
-!               WRITE(16,*) '*******************************************'
-!               WRITE(16,*) ''
-!               WRITE(16,*) ''
-!               UU2(I)=-999.
-!               VV2(I)=-999.
-!            ENDIF
-!         ENDIF
          IF(H2(I).NE.0.) THEN
             UU2(I)=QX2(I)/H2(I)
             VV2(I)=QY2(I)/H2(I)

@@ -174,7 +174,7 @@ Casey 180318: Added NWS=13
      &                          NWS13WindMultiplier
 #endif
 !JLW: add subgrid 
-      USE subgrid, only: subgridFilename, level0, level1, phi_time_derivative
+      USE mod_subgrid, only: subgrid_data, t_subgrid
       use mod_tidepotential, only: tidePotential, t_tidePotential
 
       IMPLICIT NONE
@@ -248,6 +248,10 @@ C.... DMW
      &    NWS13WindMultiplier,NWS13GroupForPowell
 #endif
 !JLW: adding subgrid namelist
+      character(256) :: subgridFilename = 'null'
+      logical :: level0 = .false.
+      logical :: level1 = .false.
+      logical :: phi_time_derivative = .false.
       NAMELIST /subgridControl/ subgridFilename, level0, level1,
      &    phi_time_derivative
 
@@ -631,6 +635,7 @@ C.... DMW
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "phi_time_derivative=",phi_time_derivative
       call logMessage(ECHO,trim(scratchMessage))
+      subgrid_data = t_subgrid(np, subgridFilename, level0, level1, phi_time_derivative)
       rewind(15)
 
 c...  tcm v52.30.01 Addtions for Using Smagorinsky Namelist Options

@@ -152,7 +152,7 @@ Casey 100205: Add a variable for writing of SWAN hot-start files.
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
      &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
 
-      USE subgrid, ONLY: level0, getVertLookup, gridDepthVertETA2
+      USE mod_subgrid, ONLY: subgrid_data
 
       ! full luni-solar tidal potential !
       USE mod_tidepotential, only: tidePotential
@@ -226,8 +226,8 @@ C.......
 !.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
         DO I = 1,NP
 !JLW: add subgrid here to eliminate IF statements in gwce.F and momentum.F
-           IF(level0)THEN
-              H2(I) = gridDepthVertETA2(I)
+           IF(subgrid_data%active())THEN
+              H2(I) = subgrid_data%gridDepthVertETA2(I)
            ELSE
               H2(I) = DP(I)+IFNLFA*ETA2(I)
            ENDIF
@@ -1171,10 +1171,10 @@ C...  Compute new water surface elevation
 !---------------------END SOLVE GWCE------------------------------------
 
 !JLW: adding subgrid
-      IF(level0)THEN
+      IF(subgrid_data%active())THEN
 #ifdef ADCNETCDF
          !JLW: update vertex arrays
-         call getVertLookup()
+         call subgrid_data%compute(np, h0, dp, eta2)
          !JLW: update nodecode, ncele, etc
          call computeWettingAndDrying(it)
 #else
@@ -1197,8 +1197,8 @@ C...  Compute new water surface elevation
       DO I = 1,NP
 !JLW: add subgrid capability here to remove IF statements and look up 
 ! from GWCE and MOMENTUM
-         IF(level0)THEN
-            H2(I) = gridDepthVertETA2(I) 
+         IF(subgrid_data%active())THEN
+            H2(I) = subgrid_data%gridDepthVertETA2(I)
          ELSE
             H2(I) = DP(I)+IFNLFA*ETA2(I)
          ENDIF

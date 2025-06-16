@@ -1145,16 +1145,7 @@ C----------------------------------------------------------------------
      &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,
      &   loadManningsN, iflinbf, ifnlbf, ifhybf
 !JLW: adding subgrid
-      use subgrid, only: level0, readsubgridlookup
-     &                   , getvertlookup
-     &                   , initVar
-     &                   , gridDepthVertETA2
-     &                   , subgridVertList
-     &                   , wetFracVertTab
-     &                   , numPhi
-     &                   , wetDepthVertETA2
-     &                   , gridDepthVertTab
-     &                   , phi_time_derivative, dphidt
+      use mod_subgrid, only: subgrid_data
       implicit none
       integer :: nm1, nm2, nm3  ! node numbers around the element
       integer :: nc1, nc2, nc3  ! nodecodes around the element
@@ -1224,32 +1215,26 @@ C----------------------------------------------------------------------
       END DO
 
 !JLW: adding subgrid lookup table read in
-      IF(level0.EQV..true.)THEN
+      IF(subgrid_data%active())THEN
 #ifdef ADCNETCDF
          ! Set all nodes to wet by default.
          nnodecode(:)=1
          ! set all elements to wet by default.
          noff(:)=1
-!JLW: set dphidt term
-         if(phi_time_derivative)then
-            dphidt = 1
-         else
-            dphidt = 0
-         endif
+
 !JLW: call subgrid lookup table read in
-         call readSubgridLookup()
+         call subgrid_data%read()
          if(nolifa.eq.2)then
-!JLW: initialize subgrid variables
-            call initVar()
-!JLW: call the vertex lookup subroutine
-            call getVertLookup()
+            ! Compute the subgrid vertex information
+            call subgrid_data%compute(np, h0, dp, eta2)
+
             ! jgf52.08.23: Collect, store, and report the reasons why each
             ! node was dried.
             allocate(dryReason(np))
             allocate(dryReasonInitialized(np))
             dryReasonInitialized = .false.
             do i=1,np
-               H1 = gridDepthVertETA2(i)
+               H1 = subgrid_data%gridDepthVertETA2(i)
                if (H1.le.h0) then
                   nnodecode(i) = 0
                   write(dryReason(i),'("node=",i0)') i
@@ -1323,31 +1308,31 @@ C----------------------------------------------------------------------
             ! Finish initializing water surface elevation (eta2 and eta1)
             do i=1,np
                if(nnodecode(i).eq.0)then
-                  if(gridDepthVertETA2(i).lt.HABSMIN)then
-                     gridDepthVertETA2(i) = HABSMIN
-                     wetDepthVertETA2(i) = HABSMIN
-                     if(subgridVertList(i).eq.1)then
+                  if(subgrid_data%gridDepthVertETA2(i).lt.HABSMIN)then
+                     subgrid_data%gridDepthVertETA2(i) = HABSMIN
+                     subgrid_data%wetDepthVertETA2(i) = HABSMIN
+                     if(subgrid_data%subgridVertList(i).eq.1)then
                         numGreater = 0
-                        do j=1,numPhi
-                           if(gridDepthVertETA2(i).lt.
-     &                        gridDepthVertTab(i,j))then
+                        do j=1,subgrid_data%numPhi
+                           if(subgrid_data%gridDepthVertETA2(i).lt.
+     &                        subgrid_data%gridDepthVertTab(i,j))then
                               numGreater = numGreater + 1
                            endif
                         enddo
-                        if(numGreater.eq.numPhi)then
-                           eta2(i) = wetFracVertTab(i,1)
+                        if(numGreater.eq.subgrid_data%numPhi)then
+                           eta2(i) = subgrid_data%wetFracVertTab(i,1)
                         elseif(numGreater.eq.0)then
-                           eta2(i) = wetFracVertTab(i,numPhi)
-     &                        + (HABSMIN-gridDepthVertTab(i,numPhi))
+                           eta2(i) = subgrid_data%wetFracVertTab(i,subgrid_data%numPhi)
+     &                        + (HABSMIN-subgrid_data%gridDepthVertTab(i,subgrid_data%numPhi))
                         else
                         !JLW: now back calculate eta2 based on this change
-                           eta2(i) = ((gridDepthVertETA2(i)
-     &                     - gridDepthVertTab(i,numPhi-numGreater))
-     &                     / (gridDepthVertTab(i,numPhi-numGreater+1)
-     &                     - gridDepthVertTab(i,numPhi-numGreater))
-     &                     * (wetFracVertTab(i,numPhi-numGreater+1)
-     &                     - wetFracVertTab(i,numPhi-numGreater))
-     &                     + wetFracVertTab(i,numPhi-numGreater))
+                           eta2(i) = ((subgrid_data%gridDepthVertETA2(i)
+     &                     - subgrid_data%gridDepthVertTab(i,subgrid_data%numPhi-numGreater))
+     &                     / (subgrid_data%gridDepthVertTab(i,subgrid_data%numPhi-numGreater+1)
+     &                     - subgrid_data%gridDepthVertTab(i,subgrid_data%numPhi-numGreater))
+     &                     * (subgrid_data%wetFracVertTab(i,subgrid_data%numPhi-numGreater+1)
+     &                     - subgrid_data%wetFracVertTab(i,subgrid_data%numPhi-numGreater))
+     &                     + subgrid_data%wetFracVertTab(i,subgrid_data%numPhi-numGreater))
                         endif
                      else
                            eta2(i)=HABSMIN-dp(i)

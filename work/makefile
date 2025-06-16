@@ -366,7 +366,7 @@ endif
 
 SOLV_MSRC  =  itpackv.F
 NA_MSRC    =  nodalattr.F
-SG_MSRC    =  subgridLookup.F
+SG_MSRC    =  subgrid.F90
 NC_MSRC    =  netcdfio.F
 NCE_MSRC   =  netcdf_error.F90
 GIO_MSRC   =  globalio.F
@@ -410,7 +410,7 @@ VW1D_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VW1D_MSRC)  )
 WIND_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WIND_MSRC)  )
 NWS08_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NWS08_MSRC) )
 NA_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NA_MSRC)  )
-SG_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(SG_MSRC)  )
+SG_MOBJ  := $(patsubst %.F90, $(O_DIR)%.o, $(SG_MSRC)  )
 NC_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NC_MSRC)  )
 GIO_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(GIO_MSRC)  )
 #Casey 090302: Add rules for coupling to unstructured SWAN.
@@ -778,9 +778,9 @@ $(O_DIR)internaltide.o : internaltide.F $(O_DIR)sizes.o $(O_DIR)global.o
 $(O_DIR)gl2loc_mapping.o : gl2loc_mapping.F $(O_DIR)sizes.o $(O_DIR)global.o
 
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
-$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)messenger.o $(O_DIR)netcdf_error.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)messenger.o $(O_DIR)internaltide.o $(O_DIR)subgridLookup.o
+$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)messenger.o $(O_DIR)netcdf_error.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)messenger.o $(O_DIR)internaltide.o $(O_DIR)subgrid.o
 else
-$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)netcdf_error.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)internaltide.o $(O_DIR)subgridLookup.o
+$(O_DIR)nodalattr.o   :  nodalattr.F  $(O_DIR)sizes.o $(O_DIR)global.o $(O_DIR)netcdf_error.o $(O_DIR)mesh.o $(O_DIR)hashtable.o $(O_DIR)internaltide.o $(O_DIR)subgrid.o
 endif
 
 $(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o

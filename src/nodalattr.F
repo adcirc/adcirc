@@ -2277,10 +2277,8 @@ C     ----------------------------------------------------------------
      &     IFNLFA, NP, TK)
       USE GLOBAL, ONLY: MLD, DTDP
 !JLW: incorporate subgrid
-      USE subgrid, ONLY: level0, level1
-     &   , cmfVertETA2, cfVertETA2, subgridVertList
-     &   , wetDepthVertETA2
-C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
+      USE mod_subgrid, ONLY: subgrid_data, SUBGRID_LEVEL_1
+
       IMPLICIT NONE
       INTEGER, intent(in) :: NP                   ! number of nodes in grid
       REAL(8), intent(in), dimension(NP) :: UU1  ! x-dir velocities
@@ -2290,7 +2288,7 @@ C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       REAL(8), intent(in) :: G                   ! gravitational constant
       INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag
       REAL(8), intent(inout), dimension(NP) :: TK! depth avg. fric.
-C
+
       REAL(8) UV1   ! velocity magnitude (speed)
       REAL(8) H1    ! total depth
       REAL(8) Fr
@@ -2300,7 +2298,6 @@ C
       REAL(8) BDELX ! BDELX(3) is effective delx
       REAL(8) MLDrat ! MLD ratio to depth
       REAL(8) HT, WCH, HCH, WPFac
-
 
       !...Reset the friction to original values
       !   when subgrid barriers might be used
@@ -2321,12 +2318,12 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
       IF (LoadManningsN) THEN
          DO I=1, NP
 !JLW: adding subgrid
-            IF(level0)THEN
-               IF(subgridVertList(I).EQ.1)THEN
-                  IF(level1)THEN
-                     FRIC(I) = cmfVertETA2(I)
+            IF(subgrid_data%active())THEN
+               IF(subgrid_data%subgridVertList(I).EQ.1)THEN
+                  IF(subgrid_data%level()==SUBGRID_LEVEL_1)THEN
+                     FRIC(I) = subgrid_data%cmfVertETA2(I)
                   ELSE
-                     FRIC(I) = cfVertETA2(I)
+                     FRIC(I) = subgrid_data%cfVertETA2(I)
                   ENDIF
                ELSE
                   FRIC(I) = g*ManningsN(I)**2.d0
@@ -2405,8 +2402,8 @@ C     .. Step 1. Apply friction arising from turbulent viscous interaction
 C        with the sea floor.
          DO I=1, NP
             UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
-            IF(level0)THEN
-               H1 = wetDepthVertETA2(I)
+            IF(subgrid_data%active())THEN
+               H1 = subgrid_data%wetDepthVertETA2(I)
             ELSE
                H1  = DP(I) + IFNLFA*ETA2(I)
             ENDIF
