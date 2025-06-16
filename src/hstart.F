@@ -735,12 +735,12 @@ C
          if(nolifa.eq.2)then
             call initVar()
             call getVertLookup()
+         endif
 #else
          call allMessage(ERROR, "Subgrid calculation requires building"
      &                          //"with netcdf enabled")
          call ADCIRC_Terminate()
 #endif
-         endif
       endif
 C
 C     Compare the harmonic analysis data read in from the hotstart file
