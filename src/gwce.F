@@ -1069,7 +1069,9 @@ C...........DMW202401 Use saved H2, H1
 ! didn't actually matter because this was not called
 ! later in the code
 !         H0N2=H2(NM1)
-         H0N2=H1(NM1)
+!JLW: fix bug in previous H1 call
+!         H0N2=H1(NM1)
+         H0N2 = H1(NM2)
          H0N3=H1(NM3) 
 
 C........DMW202401 Use saved H2
