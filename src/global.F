@@ -1091,7 +1091,7 @@ C     ----------------------------------------------------------------
 C     jgf49.1001 Function to get the distance along the surface of
 C     a sphere (the earth's surface in this case).
 C     ----------------------------------------------------------------
-      REAL(8) FUNCTION sphericalDistance(dx, dy, y1, y2)
+      PURE REAL(8) FUNCTION sphericalDistance(dx, dy, y1, y2)
       USE ADC_CONSTANTS,only: deg2rad, rearth
       IMPLICIT NONE
       REAL(8), intent(in) :: DX    ! longitude distance in radians
