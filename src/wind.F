@@ -97,19 +97,19 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       ! jgf49.1001 Variables for use in NWS=29, for embedding an asymmetric
       ! vortex from NWS19 into an OWI basin scale met field from NAM
       ! using NWS12
-      REAL(8) vortexRMW  ! Rmax of vortex data, nautical miles
-      REAL(8) vortexLat  ! @center of vortex, degrees west latitude
-      REAL(8) vortexLon  ! @center of vortex, degrees north longitude
+      REAL(8) :: vortexRMW = 0.0d0  ! Rmax of vortex data, nautical miles
+      REAL(8) :: vortexLat = 0.0d0  ! @center of vortex, degrees west latitude
+      REAL(8) :: vortexLon = 0.0d0  ! @center of vortex, degrees north longitude
       REAL(8), ALLOCATABLE :: vortexWVNX2(:) ! u wind vel from vortex model
       REAL(8), ALLOCATABLE :: vortexWVNY2(:) ! v wind vel from vortex model
       REAL(8), ALLOCATABLE :: vortexPRN2(:)  ! bar. press. from vortex model
       !
       ! radial extent of unblended vortex winds, normalized to current Rmax
-      REAL(8) pureVortex
+      REAL(8) :: pureVortex = 0.0d0
       !
       ! radial distance to point where vortex effects insignificant,
       ! normalized to current Rmax
-      REAL(8) pureBackground
+      REAL(8) :: pureBackground = 0.0d0
       !
       ! jgf50.32: The wind drag limit was originally set to 0.002d0
       ! in v46 ... the higher value of 0.0035d0 was used in ~v48 and
@@ -804,19 +804,23 @@ C     ----------------------------------------------------------------
 C     jgf49.1001 Subroutine to get the blending factor for combining
 C     NWS19 and NWS12 (from NAM) met data.
 C     ----------------------------------------------------------------
-      SUBROUTINE getBlendFactor(i, bf)
+      pure real(8) function getBlendFactor(i, vortex_rmw, 
+     &                                     vortex_distance, 
+     &                                     background_distance) result(bf)
       USE MESH, ONLY : SLAM, SFEA
       IMPLICIT NONE
       INTEGER, intent(in) :: i  ! node number
-      REAL(8), intent(out):: bf       ! blend factor, 0 to 1
-      REAL(8) XCOOR ! longitude of node in degrees
-      REAL(8) YCOOR ! latitude of node in degrees
+      REAL(8), intent(in) :: vortex_rmw
+      REAL(8), intent(in) :: vortex_distance
+      REAL(8), intent(in) :: background_distance
+      REAL(8) :: XCOOR ! longitude of node in degrees
+      REAL(8) :: YCOOR ! latitude of node in degrees
 C     distance from center of vortex to mesh node:
-      REAL(8) DX    ! longitude distance in radians
-      REAL(8) DY    ! latitude distance in radians
-      REAL(8) rad   ! point-to-point distance over a sphere, in meters
-      REAL(8) vortexOnly ! radial distance to edge of pure vortex, meters
-      REAL(8) backgroundOnly ! radial dist to undisturbed background, meters
+      REAL(8) :: DX    ! longitude distance in radians
+      REAL(8) :: DY    ! latitude distance in radians
+      REAL(8) :: rad   ! point-to-point distance over a sphere, in meters
+      REAL(8) :: vortexOnly ! radial distance to edge of pure vortex, meters
+      REAL(8) :: backgroundOnly ! radial dist to undisturbed background, meters
 C
       XCOOR=SLAM(I)*RAD2DEG
       YCOOR=SFEA(I)*RAD2DEG
@@ -829,25 +833,24 @@ C     node along a sphere
       rad = sphericalDistance(DX, DY, vortexLat, YCOOR)
 C
 C     compute the radial distances to the various regions, in meters
-      vortexOnly = pureVortex * vortexRMW
+      vortexOnly = vortex_distance * vortex_rmw
      &           * 1.852000003180799d0 * 1000.0d0
-      backgroundOnly = pureBackground * vortexRMW
+      backgroundOnly = background_distance * vortex_rmw
      &           * 1.852000003180799d0 * 1000.0d0
 C     determine which interpolation region this mesh node falls in
-      IF ( rad.le.vortexOnly ) bf = 1.0d0
-      IF ( rad.ge.backgroundOnly ) bf = 0.0d0
-C     interpolate linearly based on radial distance in the blended region
-      IF ( (rad.gt.vortexOnly).and.(rad.lt.backgroundOnly) ) THEN
+      IF ( rad.le.vortexOnly ) THEN
+        bf = 1.0d0
+      ELSEIF ( rad.ge.backgroundOnly )THEN 
+        bf = 0.0d0
+      ELSE
+C        interpolate linearly based on radial distance in the blended region
          bf = (backgroundOnly-rad)/(backgroundOnly-vortexOnly)
-Cjgfdebug         WRITE(16,*) "bf is ", bf
          IF ( (bf.gt.1.0d0).or.(bf.lt.0.0d0) ) THEN
             bf = 0.0d0
          ENDIF
       ENDIF
-Cjgfdebug      WRITE(16,*) vortexLat, vortexLon, vortexRMW, rad, bf
-      RETURN
 C     ----------------------------------------------------------------
-      END SUBROUTINE getBlendFactor
+      END FUNCTION getBlendFactor
 C     ----------------------------------------------------------------
 
 C----------------------------------------------------------------------
@@ -1591,7 +1594,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            CALL getBlendFactor(I, bf)
+            bf = getBlendFactor(I,vortexRMW, pureVortex, pureBackground)
             ! blend the wind stresses and barometric pressures
             WSX2(I) = bf*RampMete*airwaterdensityrat*WDragCo*WindX*WindMag
      &               +(1.0d0-bf)*WSX2(I)
@@ -2936,7 +2939,7 @@ C     from NAM data
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            CALL getBlendFactor(I, bf)
+            bf = getBlendFactor(I,vortexRMW, pureVortex, pureBackground)
             WSX2(I) = bf*RampMete2*airwaterdensityrat*WDragCo*WindX*WindMag
      &               +(1.0d0-bf)*WSX2(I)
             WSY2(I) = bf*RampMete2*airwaterdensityrat*WDragCo*WindY*WindMag
@@ -5802,8 +5805,8 @@ C***********************************************************************
       INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
 
       REAL(8) :: rndaySeconds ! end time of the run in seconds
-      real(8) :: newVortexRMW ! average Rmax at icyc   (next fort.22 time value)
-      real(8) :: oldVortexRMW ! average Rmax at icyc-1 (previous fort.22 time value)
+      real(8) :: newVortexRMW = 0.0d0 ! average Rmax at icyc   (next fort.22 time value)
+      real(8) :: oldVortexRMW = 0.0d0 ! average Rmax at icyc-1 (previous fort.22 time value)
 
       call setMessageSource("nws20get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
