@@ -1,5 +1,7 @@
 macro(enable_developer_mode)
-  add_strict_compiler_flags(${ARGN})
+  if(ADCIRC_DEVELOPER_MODE)
+    add_strict_compiler_flags(${ARGN})
+  endif()
 endmacro()
 
 macro(add_strict_compiler_flags)
@@ -10,7 +12,7 @@ macro(add_strict_compiler_flags)
         "-Werror -Wall -Wextra -Wconversion -pedantic -fimplicit-none -Wuninitialized -Wsurprising -Wuse-without-only -Wimplicit-procedure -Winteger-division -Wconversion-extra"
     )
   else()
-    message(STATUS "No strict compiler flags defined for ${CMAKE_Fortran_COMPILER_ID}. No action taken.")
+    message(WARNING "No developer compiler flags defined for ${CMAKE_Fortran_COMPILER_ID}. No action taken.")
   endif()
 
   foreach(SOURCE_FILE ${ARGN})
