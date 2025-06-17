@@ -356,7 +356,6 @@
      &   , NNeigh, NeiTab
       use global, only : H0, ifnlfa 
       use adc_constants, only: g
-      use nodalattributes, only: manningsn
 
       implicit none
       integer :: ie, i, j
