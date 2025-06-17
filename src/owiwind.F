@@ -769,16 +769,26 @@
 !-----------------------------------------------------------------------
             IMPLICIT NONE
             TYPE(OCEANWEATHER),INTENT(INOUT) :: this
+            LOGICAL :: do_allocate
             call setMessageSource("owi_allocate")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
             call allMessage(DEBUG,"Enter.")
 #endif
-            IF((SIZE(this%p,1).NE.this%iLon).OR.(SIZE(this%p,2).NE.this%iLat))THEN
+            do_allocate = .false. 
+
+            IF(.not.allocated(this%p))then
+                do_allocate = .true.
+            ELSEIF((SIZE(this%p,1).NE.this%iLon).OR.(SIZE(this%p,2).NE.this%iLat))THEN
+                do_allocate = .true.
+            ENDIF
+
+            IF(do_allocate)THEN
                 CALL owi_deallocate(this)
                 ALLOCATE(this%p(this%ilon,this%ilat))
                 ALLOCATE(this%u(this%ilon,this%ilat))
                 ALLOCATE(this%v(this%ilon,this%ilat))
             ENDIF
+
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
             call allMessage(DEBUG,"Return.")
 #endif
