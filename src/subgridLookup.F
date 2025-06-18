@@ -40,9 +40,9 @@
       implicit none
       CHARACTER(200) :: subgridFilename = 'null'
       ! Flag for subgrid corrections to wetting and drying
-      LOGICAL :: level0
+      LOGICAL :: level0 = .true.
       ! Flag for subgrid corrections to bottom friction and advection
-      LOGICAL :: level1
+      LOGICAL :: level1 = .false.
 !JLW: adding logical for dphidt to be turned off - set default to off
       LOGICAL :: phi_time_derivative = .false.
       INTEGER :: dphidt ! used to 0 out the term
@@ -91,6 +91,8 @@
       REAL(8) :: minDepth
       ! Maximum depth in depth array used to preprocess lookup table 
       REAL(8) :: maxDepth
+      ! Grid averaged Manning's for use when node is fully wet
+      REAL(8), DIMENSION(:), ALLOCATABLE :: manningAvg
 
       contains
 
@@ -117,6 +119,8 @@
       ALLOCATE(gridDepthVertETA2(NP))
       IF(ALLOCATED(wetDepthVertETA2))DEALLOCATE(wetDepthVertETA2)
       ALLOCATE(wetDepthVertETA2(NP))
+      IF(ALLOCATED(manningAvg))DEALLOCATE(manningAvg)
+      ALLOCATE(manningAvg(NP))
 
 !JLW: set intial value of all arrays to 0
       wetFracVertETA1(:) = 0.d0
@@ -124,6 +128,7 @@
       gridDepthVertETA1(:) = 0.d0
       gridDepthVertETA2(:) = 0.d0
       wetDepthVertETA2(:) = 0.d0
+      manningAvg(:) = 0.d0
 
       IF(level1)THEN
          IF(ALLOCATED(cmfVertETA2))DEALLOCATE(cmfVertETA2)
@@ -176,6 +181,7 @@
       ! Arrays for holding global variables
       REAL(8), DIMENSION(:,:), ALLOCATABLE :: globalVertLookup
       INTEGER, DIMENSION(:), ALLOCATABLE :: globalSubVertList
+      REAL(8), DIMENSION(:), ALLOCATABLE :: globalVertList
       ! variables needed to read in main NETCDF lookup table
       INTEGER :: NC_ERR, IS, NC_ID, NC_VAR 
       INTEGER :: I
@@ -223,6 +229,8 @@
       ALLOCATE(wetFracVertTab(NP,numPhi))
       IF(ALLOCATED(subgridVertList))DEALLOCATE(subgridVertList)
       ALLOCATE(subgridVertList(NP))
+      IF(ALLOCATED(manningAvg))DEALLOCATE(manningAvg)
+      ALLOCATE(manningAvg(NP))
 
 !!!!!!!!!!!!!!!!!! bottom friction coefficient !!!!!!!!!!!!!!!!!!!!!!
       IF(ALLOCATED(globalVertLookup))DEALLOCATE(globalVertLookup)
@@ -326,10 +334,29 @@
       ENDDO
       IF(ALLOCATED(globalSubVertList))DEALLOCATE(globalSubVertList)
 
+!!!!!!!!!!!!!!!!!!!!!!!!grid average Manning's n!!!!!!!!!!!!!!!!!!!
+
+      IF(ALLOCATED(globalVertList))DEALLOCATE(globalVertList)
+      ALLOCATE(globalVertList(numVerts))
+
+      CALL check_err(NF90_INQ_VARID(NC_ID,"manningAvg",NC_VAR))
+      CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,globalVertList))
+
+      DO I = 1,NP
+#ifdef CMPI
+         currNode = abs(nodes_lg(I))
+#else
+         currNode = I
+#endif
+         manningAvg(I) = globalVertList(currNode)
+      ENDDO
+      IF(ALLOCATED(globalVertList))DEALLOCATE(globalVertList)
+
 !JLW: close netcdf lookup table file
       NC_ERR = NF90_CLOSE(NC_ID)
 
 #endif
+
 
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
@@ -399,20 +426,20 @@
      &            + (eta2(i) - wetFracVertTab(i,numPhi))
 !JLW 20250615: making it so if a node is fully wet, use traditional
 ! manning's calculations with nodal attribute values
-               IF(level1)THEN
-                  cmfVertETA2(i) = cmfVertTab(i,numPhi)
-                  cadvVertETA2(i) = cadvVertTab(i,numPhi)
-               ELSE
-                  cfVertETA2(i) = cfVertTab(i,numPhi)
-               ENDIF
-!            IF(level1)THEN
-!               cmfVertETA2(i) = g*ManningsN(i)**2.d0 
-!     &               /((dp(i)+IFNLFA*eta2(i))**(1.d0/3.d0))
-!               cadvVertETA2(i) = cadvVertTab(i,numPhi)
-!            ELSE
-!               cfVertETA2(i) = g*ManningsN(i)**2.d0 
-!     &               /((dp(i)+IFNLFA*eta2(i))**(1.d0/3.d0))
-!            ENDIF
+!               IF(level1)THEN
+!                  cmfVertETA2(i) = cmfVertTab(i,numPhi)
+!                  cadvVertETA2(i) = cadvVertTab(i,numPhi)
+!               ELSE
+!                  cfVertETA2(i) = cfVertTab(i,numPhi)
+!               ENDIF
+            IF(level1)THEN
+               cmfVertETA2(i) = g*manningAvg(i)**2.d0 
+     &               /((gridDepthVertETA2(i))**(1.d0/3.d0))
+               cadvVertETA2(i) = cadvVertTab(i,numPhi)
+            ELSE
+               cfVertETA2(i) = g*manningAvg(i)**2.d0 
+     &               /((gridDepthVertETA2(i))**(1.d0/3.d0))
+            ENDIF
             ELSEIF(wetFracVertTab(i,numPhi-numGreater).NE.
 !JLW: as long as the depth we are indexing is not equal to the minimum
 !depth that we used to calculate the subgrid lookup table we interpolate
