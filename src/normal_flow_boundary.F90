@@ -37,7 +37,7 @@ module mod_normal_flow_boundary
 
    private
 
-   public :: generate_rotated_normal_flow_boundary_data
+   public :: rotate_normal_flux
 
 contains
 
@@ -56,49 +56,51 @@ contains
    !> \note Requires that Q and Q2 be previously allocated to size MNVEL.
    !>       If they are not allocated, the subroutine returns immediately.
    !=====================================================================
-   subroutine generate_rotated_normal_flow_boundary_data(QN)
-      use boundaries, only: LBCODEI, NVEL, NBV, CSII, SIII, CSII_OLD, SIII_OLD
+   real(8) function rotate_normal_flux(ICS, IDX, Q) result(QROT)
+      use boundaries, only: NBV, CSII, SIII, CSII_OLD, SIII_OLD
       use mesh, only: SFMX, SFCX, SFCY, YCSFAC, RVELF
       use global, only: IFSPROTS
 
       implicit none
 
-      real(8), intent(inout) :: QN(NVEL)
+      integer, intent(in) :: ICS
+      integer, intent(in) :: IDX
+      real(8), intent(in) :: Q
+
       real(8) :: QX_R, QY_R, TAUX_R, TAUY_R
       real(8) :: QX_ROT, QY_ROT
       real(8) :: VO(2), VR(2)
       real(8) :: NX_R, NY_R
-      integer :: J
 
-      do J = 1, NVEL
-         select case (LBCODEI(J))
-         case (2, 12, 22, 32, 52)
-            ! Compute rotated‐coordinate normals
-            NX_R = CSII_OLD(J)/SFMX(NBV(J))
-            NY_R = SIII_OLD(J)
+      select case (ICS)
+      case (20:24)
+         ! Compute rotated‐coordinate normals
+         NX_R = CSII_OLD(IDX)/SFMX(NBV(IDX))
+         NY_R = SIII_OLD(IDX)
 
-            TAUX_R = -1.0d0*NY_R
-            TAUY_R = NX_R
+         TAUX_R = -1.0d0*NY_R
+         TAUY_R = NX_R
 
-            ! Solve for QX1_R and QY1_R
-            QY_R = QN(J)/(((-1.0d0*TAUY_R)/TAUX_R)*NX_R + NY_R)
-            QX_R = -TAUY_R*QY_R/TAUX_R
+         ! Solve for QX1_R and QY1_R
+         QY_R = Q/(((-1.0d0*TAUY_R)/TAUX_R)*NX_R + NY_R)
+         QX_R = -TAUY_R*QY_R/TAUX_R
 
-            if (IFSPROTS == 1) then
-               VO = [QX_R, QY_R]
-               VR = matmul(RVELF(1:2, 1:2, J), VO)
-               QX_ROT = VR(1); 
-               QY_ROT = VR(2); 
-            else
-               QX_ROT = QX_R
-               QY_ROT = QY_R
-            end if
+         if (IFSPROTS == 1) then
+            VO = [QX_R, QY_R]
+            VR = matmul(RVELF(1:2, 1:2, IDX), VO)
+            QX_ROT = VR(1)
+            QY_ROT = VR(2)
+         else
+            QX_ROT = QX_R
+            QY_ROT = QY_R
+         end if
 
-            ! Generate the new flux forcing terms
-            QN(J) = SFCX(NBV(J))*QX_ROT*CSII(J) + SFCY(NBV(J))*QY_ROT*SIII(J)*YCSFAC(NBV(J))
-         end select
-      end do
+         ! Generate the new flux forcing terms
+         QROT = SFCX(NBV(IDX))*QX_ROT*CSII(IDX) + SFCY(NBV(IDX))*QY_ROT*SIII(IDX)*YCSFAC(NBV(IDX))
+      case default
+         QROT = Q
+      end select
 
-   end subroutine generate_rotated_normal_flow_boundary_data
+   end function rotate_normal_flux
 
 end module mod_normal_flow_boundary

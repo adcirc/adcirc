@@ -111,7 +111,7 @@ C
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
-      USE mod_normal_flow_boundary, ONLY: generate_rotated_normal_flow_boundary_data
+      USE mod_normal_flow_boundary, ONLY: rotate_normal_flux
       use mesh, only: SFCX, SFCY, YCSFAC, SFMX
       use boundaries, only: SIII, CSII
 C.....sb46.28sb03 added 09/xx/2006
@@ -191,6 +191,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) SAltMul, S2SFEA
       REAL(8) TPMul
       REAL(8) UN1
+      REAL(8) QNIN_TMP
 
       REAL(8) AreaIE2,AreaEle
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
@@ -903,7 +904,7 @@ C...
             RFF=FFF(J)*RampExtFlux  !jgf46.02 use river ramp for Katrina
             DO I=1,NVEL
                ARG=ARGJ-QNPH(J,I)
-               QN2(I)=QN2(I)+QNAM(J,I)*RFF*COS(ARG)
+               QN2(I)=QN2(I)+rotate_normal_flux(ICS, I, QNAM(J,I)*RFF*COS(ARG))
                IF (LBCODEI(I).EQ.32) THEN
                   ARG=ARGJ-ENPH(J,I)
                   EN2(I)=EN2(I)+ENAM(J,I)*RFF*COS(ARG)
@@ -920,14 +921,15 @@ C...
                   IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &                 .OR.(LBCODEI(J).EQ.22)) THEN
                      QNIN1(J)=QNIN2(J)
-                     READ(20,*) QNIN2(J)
+                     READ(20,*) QNIN_TMP
+                     QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
                   ELSEIF(LBCODEI(J).EQ.32) THEN
                      QNIN1(J)=QNIN2(J)
                      ENIN1(J)=ENIN2(J)
-                     READ(20,*) QNIN2(J),ENIN2(J)
+                     READ(20,*) QNIN_TMP,ENIN2(J)
+                     QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
                   ENDIF
                END DO
-               call generate_rotated_normal_flow_boundary_data(QNIN2)
             ENDIF
 
             QTRATIO=(TimeLoc-QTIME1)/FTIMINC
