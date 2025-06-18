@@ -329,6 +329,7 @@ workflows:
                         - adcirc_internal_overflow-parallel
                         - adcirc_rivers
                         - adcirc_rivers-parallel
+                        - adcirc_rivers-rotated-parallel
                         - adcirc_shinnecock_inlet
                         - adcirc_shinnecock_inlet-parallel
                         - adcirc_timevaryingweirs-parallel
