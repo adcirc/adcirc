@@ -87,10 +87,11 @@
       ! Array to hold vertex corrected advection for
       ! zeta at k+1
       REAL(8), DIMENSION(:), ALLOCATABLE :: cadvVertETA2
-      ! Minimum depth in depth array used to preprocess lookup table 
-      REAL(8) :: minDepth
-      ! Maximum depth in depth array used to preprocess lookup table 
-      REAL(8) :: maxDepth
+!JLW: elmininate minimum and maximum depths 
+!      ! Minimum depth in depth array used to preprocess lookup table 
+!      REAL(8) :: minDepth
+!      ! Maximum depth in depth array used to preprocess lookup table 
+!      REAL(8) :: maxDepth
       ! Grid averaged Manning's for use when node is fully wet
       REAL(8), DIMENSION(:), ALLOCATABLE :: manningAvg
 
@@ -383,6 +384,7 @@
      &   , NNeigh, NeiTab
       use global, only : H0, ifnlfa 
       use adc_constants, only: g
+!      use nodalattributes, only: ManningsN
 
       implicit none
       integer :: ie, i, j
@@ -404,9 +406,10 @@
                   numGreater = numGreater + 1
                ENDIF
             ENDDO
+!JLW 20250619: redoing the lookup table logic
             IF(numGreater.EQ.numPhi)THEN
-!JLW: this means that none of the depths in the array are greater than
-!the current depth and this node is dry
+!JLW: this means that all of the depths in the lookup area greater than
+! current depth and this node is dry 
                wetFracVertETA2(i) = setPhi(1)
                gridDepthVertETA2(i) = gridDepthVertTab(i,1)
                wetDepthVertETA2(i) = wetDepthVertTab(i,1)
@@ -417,34 +420,23 @@
                   cfVertETA2(i) = cfVertTab(i,1)
                ENDIF
             ELSEIF(numGreater.EQ.0)THEN
-!JLW: this means that none of the depths in the array are greater than
-!the current depth and this node is always wet
                wetFracVertETA2(i) = setPhi(numPhi)
                gridDepthVertETA2(i) = gridDepthVertTab(i,numPhi)
      &            + (eta2(i) - wetFracVertTab(i,numPhi))
                wetDepthVertETA2(i) = wetDepthVertTab(i,numPhi)
      &            + (eta2(i) - wetFracVertTab(i,numPhi))
-!JLW 20250615: making it so if a node is fully wet, use traditional
-! manning's calculations with nodal attribute values
-!               IF(level1)THEN
-!                  cmfVertETA2(i) = cmfVertTab(i,numPhi)
-!                  cadvVertETA2(i) = cadvVertTab(i,numPhi)
-!               ELSE
-!                  cfVertETA2(i) = cfVertTab(i,numPhi)
-!               ENDIF
-            IF(level1)THEN
-               cmfVertETA2(i) = g*manningAvg(i)**2.d0 
-     &               /((gridDepthVertETA2(i))**(1.d0/3.d0))
-               cadvVertETA2(i) = cadvVertTab(i,numPhi)
+               IF(level1)THEN
+!JLW: not sure if we can use straight Manning's for the level 1 
+! friction correction so better off just running with level 0 
+! especially for the non-conservative formulation. 
+                  cmfVertETA2(i) = g*manningAvg(i)**2.d0 
+     &                  /((gridDepthVertETA2(i))**(1.d0/3.d0))
+                  cadvVertETA2(i) = cadvVertTab(i,numPhi)
+               ELSE
+                  cfVertETA2(i) = g*manningAvg(i)**2.d0 
+     &                  /((gridDepthVertETA2(i))**(1.d0/3.d0))
+               ENDIF
             ELSE
-               cfVertETA2(i) = g*manningAvg(i)**2.d0 
-     &               /((gridDepthVertETA2(i))**(1.d0/3.d0))
-            ENDIF
-            ELSEIF(wetFracVertTab(i,numPhi-numGreater).NE.
-!JLW: as long as the depth we are indexing is not equal to the minimum
-!depth that we used to calculate the subgrid lookup table we interpolate
-!between depths to find subgrid values
-     &         minDepth)THEN
                wetFracVertETA2(i) = ((eta2(i)
      &            - wetFracVertTab(i,numPhi-numGreater))
      &            /(wetFracVertTab(i,numPhi-numGreater+1)
@@ -490,27 +482,19 @@
      &               - cfVertTab(i,numPhi-numGreater))
      &               + cfVertTab(i,numPhi-numGreater))
                ENDIF
-            ELSE
-!JLW: if the current water level is equal to the first depth of the
-!array wet set our averaged variables to fully wet
-               wetFracVertETA2(i) = setPhi(numPhi-numGreater+1)
-               gridDepthVertETA2(i) = 
-     &            gridDepthVertTab(i,numPhi-numGreater+1)
-               wetDepthVertETA2(i) = 
-     &            wetDepthVertTab(i,numPhi-numGreater+1)
-               IF(level1)THEN
-                  cmfVertETA2(i) = cmfVertTab(i,numPhi-numGreater+1)
-                  cadvVertETA2(i) = cadvVertTab(i,numPhi-numGreater+1)
-               ELSE
-                  cfVertETA2(i) = cfVertTab(i,numPhi-numGreater+1)
-               ENDIF
             ENDIF
          ELSE
-         !JLW: if not in subgrid area set grid total depth (this was a
-         !bug)
+         !JLW: if not in subgrid area set grid total depth
             gridDepthVertETA2(i) = eta2(i) + dp(i)
             wetDepthVertETA2(i) = eta2(i) + dp(i)
             wetFracVertETA2(i) = 1.d0
+!JLW: for now keep this calc in the nodalattributes.F code
+!         !JLW: also set cf to normal calculation and take out of 
+!         ! nodal attribute code.
+!            cfVertETA2(i) = g*ManningsN(i)**2.d0
+!     &            /((dp(i)+IFNLFA*eta2(i))**(1.d0/3.d0))
+!            cmfVertETA2(i) = g*ManningsN(i)**2.d0
+!     &            /((dp(i)+IFNLFA*eta2(i))**(1.d0/3.d0))
          ENDIF
       ENDDO
 !----------------------------------------------------------------------
