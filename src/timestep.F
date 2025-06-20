@@ -894,26 +894,21 @@ C...
             IF(FPER(J).EQ.0.D0) THEN
                NCYC=0
             ELSE
-#ifdef IBM
-               NCYC=INT(timeh/FPER(J),KIND(0.0d0))
-#else
                NCYC=INT(timeh/FPER(J))
-#endif
             ENDIF
             ARGJ=FAMIG(J)*(timeh-NCYC*FPER(J))+FFACE(J)
-            RFF=FFF(J)*RampExtFlux  !jgf46.02 use river ramp for Katrina
+            RFF=FFF(J)*RampExtFlux  
             DO I=1,NVEL
-               ARG=ARGJ-QNPH(J,I)
-               QN2(I)=QN2(I)+rotate_normal_flux(ICS, I, QNAM(J,I)*RFF*COS(ARG))
-               IF (LBCODEI(I).EQ.32) THEN
-                  ARG=ARGJ-ENPH(J,I)
-                  EN2(I)=EN2(I)+ENAM(J,I)*RFF*COS(ARG)
-               ENDIF
+               SELECT CASE(LBCODEI(I))
+               CASE(2,12,22,52)
+                QN2(I)=QN2(I)+rotate_normal_flux(ICS, I, QNAM(J,I)*RFF*COS(ARGJ-QNPH(J,I)))
+               CASE(32) 
+                QN2(I)=QN2(I)+rotate_normal_flux(ICS, I, QNAM(J,I)*RFF*COS(ARGJ-QNPH(J,I)))
+                EN2(I)=EN2(I)+ENAM(J,I)*RFF*COS(ARGJ-ENPH(J,I))
+               END SELECT 
             END DO
           END DO
-         END IF
-
-         IF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
+         ELSEIF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
             IF(TimeLoc.GT.QTIME2) THEN
                QTIME1=QTIME2
                QTIME2=QTIME2+FTIMINC
