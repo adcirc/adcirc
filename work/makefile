@@ -433,7 +433,7 @@ NCE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NCE_MSRC) )
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F machdep.F
-ADC_SRC    =  adcirc.F weir_boundary.F wetdry.F read_input.F cstart.F hstart.F gwce.F momentum.F vew1d.F timestep.F vsmy.F transport.F
+ADC_SRC    =  adcirc.F weir_boundary.F wetdry.F read_input.F normal_flow_boundary.F90 cstart.F hstart.F gwce.F momentum.F vew1d.F timestep.F vsmy.F transport.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F machdep.F
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
@@ -450,6 +450,7 @@ METIS_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(METIS_SRC) )
 PREP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PREP_SRC) ) $(O_DIR)mkdir.o
 POST_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(POST_SRC) )
 ADC_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(ADC_SRC) ) $(O_DIR)mkdir.o
+ADC_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(ADC_OBJ) )
 P15_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(P15_SRC) )
 OWI_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(OWI_SRC) )
 B13_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(B13_SRC) )
@@ -849,8 +850,6 @@ $(O_DIR)couple2baroclinic3D.o : couple2baroclinic3D.F $(ADC_MOBJ) $(SPG_MOBJ)
 
 $(O_DIR)read_input.o  : read_input.F $(SUBD_MOBJ)
 $(O_DIR)transport.o   : transport.F
-$(O_DIR)cstart.o      : cstart.F
-$(O_DIR)hstart.o      : hstart.F
 $(O_DIR)timestep.o    : timestep.F
 ifeq ($(NETCDF),enable)
 $(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)

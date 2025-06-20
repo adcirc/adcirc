@@ -258,8 +258,6 @@ c.
       real(8), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node 
 
       real(8),allocatable :: gwce_lv(:)
-
-
       
 #if defined CSWAN || defined ADCSWAN     
       !...Local SWAN Arrays
@@ -1265,6 +1263,7 @@ C     jgf49.58 Explicitly initialize variables that would otherwise be
 C     used without initialization.
       EN2(:) = -99999.d0
 
+!---------------------------------------------------------------------
       END SUBROUTINE ALLOC_MAIN3
 
 C...
