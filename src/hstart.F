@@ -79,6 +79,9 @@ C
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE WIND, ONLY : hotstartMeteorologicalForcing, rsget
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
+      USE mod_normal_flow_boundary, ONLY : rotate_normal_flux
+      USE mesh, only: SFCX, SFCY, YCSFAC, SFMX
+      USE boundaries, only: CSII, SIII
       USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
 C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #ifdef ADCNETCDF
@@ -127,6 +130,7 @@ C   kmd48.33bc - add variable for timestep change
       REAL(8) WTRatio, WindX, WindY, WindMag, WDragCo
       REAL(8) TimeLoc
       REAL(8) ETRATIO
+      REAL(8) QNIN_TMP
       REAL(8) PRDIFF,PRBCKGRND_MH2O     ! tcm v49.16 20100617 added
       REAL(8) ARG1, ARG2, ARGJ1, ARGJ2  ! tides
 C     jgf46.08 Fine grained ramp functions
@@ -959,8 +963,7 @@ C......FILE IF IT IS REQUIRED
                QTIME1=QTIME2
                QTIME2=QTIME2+FTIMINC
                DO J=1,NVEL
-                  IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &                 .OR.(LBCODEI(J).EQ.22))THEN
+                  IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12).OR.(LBCODEI(J).EQ.22))THEN
                      QNIN1(J)=QNIN2(J)
                      READ(20,*) QNIN2(J)
                   ELSEIF(LBCODEI(J).EQ.32)THEN
@@ -980,14 +983,15 @@ C......FILE IF IT IS REQUIRED
             QTIME1=QTIME2
             QTIME2=QTIME1+FTIMINC
             DO J=1,NVEL
-               IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &              .OR.(LBCODEI(J).EQ.22))THEN
+               IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12).OR.(LBCODEI(J).EQ.22))THEN
                   QNIN1(J)=QNIN2(J)
-                  READ(20,*) QNIN2(J)
+                  READ(20,*) QNIN_TMP
+                  QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
                ELSEIF(LBCODEI(J).EQ.32)THEN
                   QNIN1(J)=QNIN2(J)
                   ENIN1(J)=ENIN2(J)
-                  READ(20,*) QNIN2(J), ENIN2(J)
+                  READ(20,*) QNIN_TMP, ENIN2(J)
+                  QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
                ENDIF
             END DO
          ENDIF
@@ -995,7 +999,6 @@ C......FILE IF IT IS REQUIRED
          QTRATIO=(TimeLoc-QTIME1)/FTIMINC
          QN2=RampExtFlux2*(QNIN1+QTRATIO*(QNIN2-QNIN1))
          EN2=RampExtFlux2*(ENIN1+QTRATIO*(ENIN2-ENIN1))
-
       ENDIF
 
 ! kmd - added in a option to start the river information at the hot start time
@@ -1038,11 +1041,13 @@ C......FILE IF IT IS REQUIRED
                IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &              .OR.(LBCODEI(J).EQ.22))THEN
                   QNIN1(J)=QNIN2(J)
-                  READ(20,*) QNIN2(J)
+                  READ(20,*) QNIN_TMP
+                  QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
                ELSEIF(LBCODEI(J).EQ.32)THEN
                   QNIN1(J)=QNIN2(J)
                   ENIN1(J)=ENIN2(J)
-                  READ(20,*) QNIN2(J),ENIN2(J)
+                  READ(20,*) QNIN_TMP,ENIN2(J)
+                  QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
                ENDIF
             END DO
          ENDIF
@@ -1071,8 +1076,8 @@ C......RESTART THE PERIODIC NORMAL FLOW BOUNDARY CONDITION
             DO I=1,NVEL
                ARG1=ARGJ1-QNPH(J,I)
                ARG2=ARGJ2-QNPH(J,I)
-               QN1(I)=QN1(I)+QNAM(J,I)*RFF1*COS(ARG1)
-               QN2(I)=QN2(I)+QNAM(J,I)*RFF2*COS(ARG2)
+               QN1(I)=QN1(I)+rotate_normal_flux(ICS, I, QNAM(J,I)*RFF1*COS(ARG1))
+               QN2(I)=QN2(I)+rotate_normal_flux(ICS, I, QNAM(J,I)*RFF2*COS(ARG2))
             END DO
          END DO
       ENDIF

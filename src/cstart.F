@@ -51,6 +51,9 @@ C
      &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge, 
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
      &    ntrspv, iicestp, nstam_g, nstam, openfileforread, cbaroclinic
+      use boundaries, only: csii, siii, nbv
+      use mesh, only: sfcx, sfcy, ycsfac, sfmx
+      use mod_normal_flow_boundary, only: rotate_normal_flux
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
      &    agrid 
@@ -64,6 +67,7 @@ C
       USE SUBDOMAIN, ONLY : subdomainOn, readFort015
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
+
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
@@ -79,7 +83,8 @@ C
       INTEGER NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCELE
 
-      REAL(8) HTOT
+      REAL(8) :: HTOT
+      REAL(8) :: QNIN_TMP
 !kmd - Evan's updates for rivers above MSL
 !      REAL(8),ALLOCATABLE :: et_WSE(:)
       LOGICAL FOUND
@@ -211,11 +216,9 @@ C...
 C
 C....INITIALIZE THE NORMAL FLOW BOUNDARY CONDITION
 C
-      DO I=1,NVEL
-         QN2(I)=0.D0
-         QN1(I)=0.D0
-         QN0(I)=0.D0
-      END DO
+      QN2=0.D0
+      QN1=0.D0
+      QN0=0.D0
 
       IF(NFLUXF.EQ.1.AND.NFFR.LE.0)THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
@@ -226,22 +229,24 @@ C
          OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
          READ(20,*) FTIMINC
 
+         QNIN1 = 0D0
+         QNIN2 = 0D0
          DO J=1,NVEL
-            QNIN1(J)=0.D0
-            IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &          .OR.(LBCODEI(J).EQ.22)) THEN
-               READ(20,*) QNIN1(J)
+            IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12).OR.(LBCODEI(J).EQ.22)) THEN
+               READ(20,*) QNIN_TMP
+               QNIN1(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
             ELSEIF (LBCODEI(J).EQ.32) THEN
-               READ(20,*) QNIN1(J),ENIN1(J)
+               READ(20,*) QNIN_TMP,ENIN1(J)
+               QNIN1(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
             ENDIF
          END DO
          DO J=1,NVEL
-            QNIN2(J)=0.D0
-            IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22)) THEN
-               READ(20,*) QNIN2(J)
+            IF ((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12).OR.(LBCODEI(J).EQ.22)) THEN
+               READ(20,*) QNIN_TMP
+               QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
             ELSEIF (LBCODEI(J).EQ.32) THEN
-               READ(20,*) QNIN2(J),ENIN2(J)
+               READ(20,*) QNIN_TMP,ENIN2(J)
+               QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
             ENDIF
          END DO
          QTIME1 = STATIM*86400.D0
