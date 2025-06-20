@@ -3022,6 +3022,7 @@ Csb...
      &          SFCX(MNP), SFCY(MNP), YCSFAC(MNP),
      &          SFCT(MNP), TANPHI(MNP) )
 
+      SFAC = 1.0D0 ;
       SFCT = 1.0D0 ; 
       SFCX = 1.0D0 ; 
       SFCY = 1.0D0 ;
