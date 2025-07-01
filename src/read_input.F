@@ -617,20 +617,26 @@ C.... DMW
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
-!JLW: adding subgrid namelist variable
       !JLW: adding subgrid name list variable
       namelistSpecifier = 'subgridControl'
       read(unit=15,nml=subgridControl,iostat=IOS,iomsg=ios_nml_error_msg)
       call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
-      write(scratchMessage,*)
-     &   "subgridFilename=",TRIM(ADJUSTL(subgridFilename))
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*) "level0=",level0
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*) "level1=",level1
-      call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*) "phi_time_derivative=",phi_time_derivative
-      call logMessage(ECHO,trim(scratchMessage))
+      if(ios/=0)then
+        level0 = .false.
+        level1 = .false.
+        phi_time_derivative = .false.
+        subgridFilename = "null"
+      else
+        write(scratchMessage,*)
+     &    "subgridFilename=",TRIM(ADJUSTL(subgridFilename))
+        call logMessage(ECHO,trim(scratchMessage))
+        write(scratchMessage,*) "level0=",level0
+        call logMessage(ECHO,trim(scratchMessage))
+        write(scratchMessage,*) "level1=",level1
+        call logMessage(ECHO,trim(scratchMessage))
+        write(scratchMessage,*) "phi_time_derivative=",phi_time_derivative
+        call logMessage(ECHO,trim(scratchMessage))
+      endif
       rewind(15)
 
 c...  tcm v52.30.01 Addtions for Using Smagorinsky Namelist Options

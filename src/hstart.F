@@ -69,6 +69,8 @@ C
      &    q20_g, l_g, SigT_g, Sal_g, Temp_g, iy
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, 
      &                       openFort019h
+      USE SUBGRID, ONLY: level0, phi_time_derivative, dphidt,
+     &    readSubgridLookup, initVar, getVertLookup
 #ifdef CMPI
       USE MESSENGER,ONLY: COMM, IERR, UPDATER, MSG_FINI
 #endif      
@@ -724,6 +726,26 @@ C
          call allMessage(ERROR, scratchMessage)
          call ADCIRC_Terminate()
       END SELECT
+
+!     Check if we need to initialize the subgrid input file
+      IF(level0.EQV..true.)THEN
+#ifdef ADCNETCDF
+         if(phi_time_derivative)then
+            dphidt = 1
+         else
+            dphidt = 0
+         endif
+         call readSubgridLookup()
+         if(nolifa.eq.2)then
+            call initVar()
+            call getVertLookup()
+         endif
+#else
+         call allMessage(ERROR, "Subgrid calculation requires building"
+     &                          //"with netcdf enabled")
+         call ADCIRC_Terminate()
+#endif
+      endif
 C
 C     Compare the harmonic analysis data read in from the hotstart file
 C     with data from the fort.15 file to be sure that they are consistent.
