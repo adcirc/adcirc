@@ -1319,6 +1319,9 @@ C
 
       IF ( CSAL ) THEN
          ALLOCATE( SAL1(MNP), SAL2(MNP) )
+
+         SAL1 = 0.D0 ; 
+         SAL2 = 0.D0 ; 
       ENDIF
 C
       RETURN

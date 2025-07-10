@@ -208,12 +208,14 @@ C
 
       ! I/O Self-attraction-loading 
       LOGICAL:: use_inline_sal = .FALSE. 
+      character(len=80):: inlineSalMethod = "SH"  ! SH - spherical harmonics, or AP - Accad & Perkeris's scalar approximation    
       LOGICAL:: sal_use_direct_sh = .TRUE.
       LOGICAL:: sal_use_cache_blocking = .TRUE.     
       INTEGER:: nSHOrder = 64 
       INTEGER:: nCellBlock = 500  
       INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
       INTEGER:: salExtrapVal = 0 
+      REAL (8):: salAPBeta = 0.01D0
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
 #if defined CSWAN || defined ADCSWAN
@@ -281,7 +283,8 @@ C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data
       NAMELIST /InlineSALControl/ use_inline_sal,
      &     sal_use_direct_sh,
      &     sal_use_cache_blocking,
-     &     nSHOrder, nCellBlock, salinc, salExtrapVal
+     &     nSHOrder, nCellBlock, salinc, salExtrapVal,
+     &     inlineSalMethod, salAPBeta
 
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -882,6 +885,8 @@ C...
       call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,*) "use_inline_sal=", use_inline_sal
       call logMessage(ECHO,trim(scratchMessage)) 
+      write(scratchMessage,*) "inlineSALmethod=", inlineSALMethod ;
+      call logMessage(ECHO,trim(scratchMessage)) 
       write(scratchMessage,*) "sal_use_direct_sh=", sal_use_direct_sh
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*),"sal_use_cache_blocking=", sal_use_cache_blocking
@@ -890,10 +895,12 @@ C...
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "nCellBlock=", nCellBlock
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*) "salinc", salinc
+      write(scratchMessage,*) "salinc=", salinc
       call logMessage(ECHO,trim(scratchMessage))
-      write(scratchMessage,*) "salExtrapVal", salExtrapVal
+      write(scratchMessage,*) "salExtrapVal=", salExtrapVal
       call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "salAPBeta=", salAPBeta 
+      call logMessage(ECHO,trim(scratchMessage)) 
       rewind(15)
 
 C...
@@ -5150,13 +5157,15 @@ C
 !!     &         shorder = nSHOrder, 
 !!     &         ncellblock = nCellBlock,
 !!     &         salinc = salinc ) ;  
-      call  initSALModule( useinlinesal = use_inline_sal, 
+      call  initSALModule( useinlinesal = use_inline_sal,
+     &                     inlinesalmethod = inlineSALMethod, 
      &                     usedirectsh = sal_use_direct_sh, 
      &                     usecacheblocking = sal_use_cache_blocking, 
      &                     shorder = nSHOrder, 
      &                     ncellblock = nCellBlock, 
      &                     salinc = salinc, 
-     &                     extrapval = salExtrapVal )
+     &                     extrapval = salExtrapVal,
+     &                     salAPBeta = salAPBeta  )
       call alloc_Main4c() ; 
 !!      endif
 

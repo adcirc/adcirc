@@ -28,10 +28,11 @@ MODULE MOD_INLINE_SAL
 !#endif
 
     type salmethod
-        LOGICAL:: use_inline_sal = .FALSE. 
-        LOGICAL:: use_direct_shtns_self_attraction_loading = .TRUE.
-        LOGICAL:: use_blocking_scheme = .TRUE.
-        LOGICAL:: use_direct_shtns_self_attraction_loading_bfb = .FALSE. 
+        LOGICAL:: use_inline_sal = .false.
+        character (len=24):: inlineSALMethod = 'SH'  ! SH or AP
+        LOGICAL:: use_direct_shtns_self_attraction_loading = .true.
+        LOGICAL:: use_blocking_scheme = .true.
+        LOGICAL:: use_direct_shtns_self_attraction_loading_bfb = .false. 
       
         INTEGER:: nOrder = 64 
         INTEGER:: nCellBlock = 500  
@@ -39,13 +40,15 @@ MODULE MOD_INLINE_SAL
                                  ! dtdp = time step size, current not used  
         REAL (8):: saldtinc = -9999.D0  ! currently not used
 
-        LOGICAL:: sal_init = .FALSE. 
+        LOGICAL:: sal_init = .false. 
+        REAL (8):: salAPBeta = 0.00D0 ;
     contains 
         procedure, pass(this), public:: sal_param_init
 #ifndef NONADC        
         procedure, pass(this), public:: sal_privatedata_init
         procedure, pass(this), public:: sal_compute => direct_spht_self_attraction_loading_fn
         procedure, pass(this), public:: sal_compute_sub => direct_spht_self_attraction_loading_sub
+        procedure, pass(this), public:: salAP_reduce_factor
 #endif    
     end type salmethod        
 
@@ -60,6 +63,9 @@ MODULE MOD_INLINE_SAL
 
     LOGICAL, private::  use_blocking_scheme = .TRUE.
     LOGICAL, private::  use_direct_shtns_self_attraction_loading_bfb = .FALSE. 
+
+    LOGICAL, private::  use_AP_approximation = .FALSE. 
+    LOGICAL, private::  use_SH_approximation = .TRUE. 
 
     real(kind=RKIND), private, dimension(:,:), allocatable :: aRecurrenceCoeff, bRecurrenceCoeff 
     real(kind=RKIND), private, dimension(:), allocatable :: pmnm2, pmnm1, pmn                 
@@ -99,13 +105,16 @@ MODULE MOD_INLINE_SAL
 
 CONTAINS
   
-    subroutine sal_param_init( this, useinlinesal, usedirectsh, usecacheblocking, shorder, ncellblock, salinc )
+    subroutine sal_param_init( this, useinlinesal, inlineSalMethod, usedirectsh, &
+                               & usecacheblocking, shorder, ncellblock, salinc, salAPBeta )
       implicit none
 
       class (salmethod), intent(inout):: this
       logical:: useinlinesal, usedirectsh, usecacheblocking
       integer:: shorder, ncellblock
       integer:: salinc
+      character (len=*):: inlineSalMethod
+      REAL (8):: salAPBeta
 
       this%use_inline_sal = useinlinesal   
       this%use_direct_shtns_self_attraction_loading = usedirectsh
@@ -115,16 +124,36 @@ CONTAINS
       this%nCellBlock = ncellblock 
       this%salinc = salinc 
 
-      if ( this%use_direct_shtns_self_attraction_loading == .FALSE.  &
-                                     .AND. this%use_inline_sal == .TRUE. ) then
-           this%use_inline_sal = .FALSE. ; ! other methods are not implemetned yet 
-      endif
+      this%inlineSALMethod = trim(inlineSALMethod) 
+      this%salAPBeta = salAPBeta ; 
+
+      if ( this%use_inline_sal ) then
+        select case( this%inlineSALMethod )
+        case ('SH','sh')
+          if ( this%use_direct_shtns_self_attraction_loading == .FALSE. ) then
+             this%use_inline_sal = .FALSE. ; ! other methods are not implemetned yet 
+          endif
+
+          this%salAPBeta = 0.D0 ; !
+
+          use_SH_approximation = .true. 
+          use_AP_approximation = .false.
+        case  ('AP','ap') 
+          use_SH_approximation = .false. 
+          use_AP_approximation = .true. 
+        end select  
+      endif 
 
       this%saldtinc = salinc*dtdp ;  
       this%sal_init = .true. ;
 
-
-      print*, "this%use_inline_sal = ", this%use_inline_sal, " this%saldtinc = ", this%saldtinc ; 
+#ifdef CMPI        
+      if ( myproc ==  0 ) then
+        write(*,*) "use_inline_sal = ", this%use_inline_sal
+        write(*,*) "saldtinc = ", this%saldtinc ; 
+        write(*,*) "use_SH_approximation = ", use_SH_approximation ;
+      endif
+#endif      
 
       return      
     end subroutine sal_param_init
@@ -132,42 +161,50 @@ CONTAINS
 #ifndef NONADC
     
     !
-    subroutine initSALModule( useinlinesal, usedirectsh, usecacheblocking, &
-                                         & shorder, ncellblock, salinc, extrapval, saltime0, sshsal0 )
+    subroutine initSALModule( useinlinesal, inlineSALMethod, usedirectsh, usecacheblocking, &
+                                 &  shorder, ncellblock, salinc, extrapval, salAPBeta, saltime0, sshsal0 )
       implicit none
       
       logical:: useinlinesal, usedirectsh, usecacheblocking
       integer:: shorder, ncellblock, salinc, extrapval
+      character (len=*):: inlineSALMethod
+      real (8):: salAPBeta 
 
       REAL(8), optional:: saltime0
       REAL(8), optional, dimension(:,:):: sshsal0
 
-      call ssh_inline_sal%sal_param_init( useinlinesal, usedirectsh, & 
-                  usecacheblocking, shorder, ncellblock, salinc ) ;
-
+      call ssh_inline_sal%sal_param_init( useinlinesal, inlineSALMethod, &
+                & usedirectsh, usecacheblocking, shorder, ncellblock, salinc, salAPBeta ) ;
+  
       !
       if ( ssh_inline_sal%use_inline_sal ) then
-         call ssh_inline_sal%sal_privatedata_init() ;
-
-         sshsaltiminc = ssh_inline_sal%saldtinc ;
-
-         sshsaltime = 0.D0 ; 
-         allocate( sshsal(nnode,3) ) ; sshsal = 0.D0 ; 
+         !
+         salcontrol = ssh_inline_sal%use_inline_sal ;
 
          !
-         salcontrol = ssh_inline_sal%use_inline_sal ; 
+         select case ( trim(inlineSALMethod) )
+         case ('SH','sh','Sh','sH') 
+           call ssh_inline_sal%sal_privatedata_init() ;
 
-         extrapolationOrder = extrapval ;
-         extrapolationOrder = merge( 2, extrapolationOrder, extrapolationOrder > 2 ) ;
-         extrapolationOrder = merge( 0, extrapolationOrder, extrapolationOrder < 0 ) ;
+           sshsaltiminc = ssh_inline_sal%saldtinc ;
+
+           sshsaltime = 0.D0 ; 
+           allocate( sshsal(nnode,3) ) ; sshsal = 0.D0 ; 
+
+           extrapolationOrder = extrapval ;
+           extrapolationOrder = merge( 2, extrapolationOrder, extrapolationOrder > 2 ) ;
+           extrapolationOrder = merge( 0, extrapolationOrder, extrapolationOrder < 0 ) ;
        
-         ! Intended for hot start !
-         if ( present(saltime0) ) then
-            sshsaltime = saltime0 ;
-         endif     
-         if ( present(sshsal0) ) then
-            sshsal = sshsal0 ; 
-         endif   
+           ! Intended for hot start !
+           if ( present(saltime0) ) then
+              sshsaltime = saltime0 ;
+           endif     
+           if ( present(sshsal0) ) then
+              sshsal = sshsal0 ; 
+           endif
+           !        
+         end select
+         !
       endif
       !
 
@@ -182,11 +219,13 @@ CONTAINS
 
        real (8), intent(in):: eta(:) 
 
+       if ( .NOT. use_SH_approximation ) return ; 
+
        call direct_spht_self_attraction_loading_sub( ssh_inline_sal, sshsal(:,1), eta ) ;
        
        sshsal(:,2) = sshsal(:,1) ; 
        sshsal(:,3) = sshsal(:,2) ;
-
+     
        return ;     
     end subroutine coldstartSAL        
     !      
@@ -199,10 +238,13 @@ CONTAINS
       real (8):: saltimeloc
       real (8), intent(in), dimension(:):: etasal2, etasal1, etasal0
 
+      if ( .NOT. use_SH_approximation ) return ;
+
       sshsaltime = saltimeloc ;
       sshsal(:,1) = etasal2 ;
       sshsal(:,2) = etasal1 ;
       sshsal(:,3) = etasal0 ;  
+      
 
       return ; 
     end subroutine hotstartSAL
@@ -225,6 +267,14 @@ CONTAINS
       call allMessage(DEBUG,"Enter.")
 #endif
 
+      if ( .not. use_SH_approximation ) then
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+        call allMessage(DEBUG,"Return.")
+#endif
+        call unsetMessageSource()
+        return ; 
+      endif
+
       tn = timeloc - dtdp ; 
       saltimeloc = sshsaltime + sshsaltiminc ;
       if ( abs(tn - saltimeloc) < 1.0D-6*dtdp ) then
@@ -234,11 +284,7 @@ CONTAINS
          !     
          call direct_spht_self_attraction_loading_sub( ssh_inline_sal, sshsal(:,1), eta ) ;
         
-         sshsaltime = tn ;     
-
-        !if ( myproc == 0 ) then
-        !    WRITE(*,'(A,F,A,F)') "INFO: Compute SAL at t = ", timeloc, " saltime = ", sshsaltime ;
-        !endif    
+         sshsaltime = tn ;       
       endif   
             
 
@@ -369,6 +415,17 @@ CONTAINS
       !
     end function direct_spht_self_attraction_loading_fn 
     !
+
+    ! for scalar approximation SAL
+    function salAP_reduce_factor( this ) result ( salfac )
+        implicit none
+
+        class (salmethod), intent(in):: this
+        real (kind=RKIND):: salfac
+
+        salfac =  1.D0 - this%salAPBeta ;
+
+    end function salAP_reduce_factor        
 
     !
     ! initalize private data in this module !

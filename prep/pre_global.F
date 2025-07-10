@@ -355,18 +355,21 @@ C     Full luni-solar tidal potential namelist: 2024
 C    inline Self Attraction and Loading
       ! I/O Self-attraction-loading
       LOGICAL:: foundInlineSALControlNamelist = .false. 
-      LOGICAL:: use_inline_sal = .FALSE. 
+      LOGICAL:: use_inline_sal = .FALSE.
       LOGICAL:: sal_use_direct_sh = .TRUE.
       LOGICAL:: sal_use_cache_blocking = .TRUE.     
       INTEGER:: nSHOrder = 64 
       INTEGER:: nCellBlock = 500  
       INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
       INTEGER:: salExtrapVal = 0  
+      character(len=80):: inlineSalMethod = "SH"  ! SH - spherical harmonics, or AP - Accad & Perkeris's scalar approximation    
+      REAL (8):: salAPBeta = 0.01D0
 
       NAMELIST /InlineSALControl/ use_inline_sal,
      &     sal_use_direct_sh,
      &     sal_use_cache_blocking,
-     &     nSHOrder, nCellBlock, salinc, salExtrapVal
+     &     nSHOrder, nCellBlock, salinc, salExtrapVal,
+     &     inlineSalMethod, salAPBeta
 C    
 
 C     SOLVER  section

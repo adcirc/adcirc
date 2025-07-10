@@ -297,7 +297,7 @@ C... SB
      &   , cadvVertETA2
 
       ! inline sal
-      ! USE MOD_INLINE_SAL, only: ssh_inline_sal
+      USE MOD_INLINE_SAL, only: ssh_inline_sal
 
       IMPLICIT NONE
 
@@ -393,6 +393,8 @@ C...... DW
       REAL(8) :: PHI1N1, PHI1N2, PHI1N3
       REAL(8) :: PHI2N1, PHI2N2, PHI2N3
 
+      REAL(8) :: CSalAPBeta = 1.D0 ;
+
       IF ( LoadAbsLayerSigma ) THEN
          IF (NumNodesAbsLayer(1) > 0 ) ETA_SPONGE = .true.
          IF (SUM(NumNodesAbsLayer) > 0 ) GWCE_SPONGE = .true.
@@ -410,6 +412,12 @@ C     Switch to the element table to the primary node
 C.....
 
       if (subdomainOn.and.enforceBN.eq.2) call checkChange()    ! NCSU Subdomain
+
+      !
+      IF ( ssh_inline_sal%use_inline_sal ) THEN
+         CSalAPBeta = ssh_inline_sal%salAP_reduce_factor() ; 
+      ENDIF   
+
 
 C     jgf45.11 Bug fix: calculate the integers OnDiag and OffDiag here
 C     instead of inside the GWCE lhs (system matrix) setup, since they
@@ -450,6 +458,7 @@ C              WJP 02.24.2018 Get the infinity norm of the matrix
      &   THEN
             CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
          ENDIF
+
 
          !jgf48.4619: Added Seizo's handling of Lumping vs non-Lumping
          COEFASSYM : IF ( ILump.eq.0 ) THEN ! default case: fully consistent LHS
@@ -516,7 +525,7 @@ C              Ali et al. formula
                   Cfac = (1.0D0 - 0.25D0*Ma2 - Ad*DPavg**Bd)**2
                endif
                ! DMW 2022/06 Apply slope limiting to gravity
-               GA00DPAvgOAreaIE4 = ALPHAL(IE)*A00*G*DPAvg*Cfac/AreaIE4
+               GA00DPAvgOAreaIE4 = ALPHAL(IE)*A00*G*DPAvg*Cfac*CSalAPBeta/AreaIE4
                Tau0Avg = (Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
 
 C........... DW, Absorbing layer
@@ -1335,10 +1344,11 @@ C        Ali et al. formula
             Ma2    = G*DPavg/Cs2
             CfacS0 = (1.0D0 - 0.25D0*Ma2 - Ad*DPavgS0**Bd)**2D0
          endif
+
          ! DMW 202206 Apply slope limiting to gravity
-         GDPAvgOAreaIE4 = ALPHAL(IE)*G*DPAvg*Cfac/AreaIE4
+         GDPAvgOAreaIE4 = ALPHAL(IE)*G*DPAvg*Cfac*CSalAPBeta/AreaIE4
          ! DMW 202206 Apply slope limiting to gravity
-         GDPAvgOAreaIE4_S0 = ALPHAL(IE)*G*DPAvgS0*CfacS0/AreaIE4
+         GDPAvgOAreaIE4_S0 = ALPHAL(IE)*G*DPAvgS0*CfacS0*CSalAPBeta/AreaIE4
 C....  END DW & WJP
          HAvg=(H1N1+H1N2+H1N3)/3.d0
          ! DMW 202206 Apply slope limiting to gravity
@@ -2190,7 +2200,7 @@ C
       USE WIND, ONLY: windLimiter
 
       ! DW inline sal
-      ! USE MOD_INLINE_SAL, only: ssh_inline_sal
+      USE MOD_INLINE_SAL, only: ssh_inline_sal
 
 
       IMPLICIT NONE

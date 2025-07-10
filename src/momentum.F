@@ -207,7 +207,7 @@ C... SB
 
       ! DW
       ! inline sal
-      ! USE MOD_INLINE_SAL, only: ssh_inline_sal
+      USE MOD_INLINE_SAL, only: ssh_inline_sal
 
       IMPLICIT NONE
 
@@ -252,6 +252,8 @@ C... SB
       REAL(8) :: VCOEFXX, VCOEFYY, VCOEFXY, VCOEFYX
       REAL(8) :: Ma2, Cfac1 = 1.0D0, Cfac2 = 1.0D0
       REAL(8), PARAMETER :: THIRD = 1.0D0/3.0D0
+
+      REAL(8):: CfacAPBeta = 1.D0 ! for SAL !
 C..... DW
       LOGICAL :: MOM_SPONGE = .false.
       REAL(8) :: SPNGCOEF_X, SPNGCOEF_Y
@@ -294,6 +296,11 @@ C..... DW
 C     WJP: initialize baroclinic pressure gradients to zero
       DBCPDX1A = 0d0; DBCPDX2A = 0d0; DBCPDX3A = 0d0;
       DBCPDY1A = 0d0; DBCPDY2A = 0d0; DBCPDY3A = 0d0;
+
+      CFacAPBeta = 1.D0 ;
+      if ( ssh_inline_sal%use_inline_sal ) then
+         CFacAPBeta = ssh_inline_sal%salAP_reduce_factor() ;
+      endif 
 
       DO IE=1,NE
 
@@ -383,13 +390,14 @@ C...  Compute element averaged quantities
          ENDIF         
 
 !...  Compute terms associated with the barotropic pressure
-!- DMW 2022/06 Apply slope limiting for elevation gradient, if needed. The slope limiting factor ALPHAL is determined in the wetting/drying routine.         
-         BTP1N1=ALPHAL(IE)*ETA1(NM1)
-         BTP2N1=ALPHAL(IE)*ETA2(NM1)
-         BTP1N2=ALPHAL(IE)*ETA1(NM2)
-         BTP2N2=ALPHAL(IE)*ETA2(NM2)
-         BTP1N3=ALPHAL(IE)*ETA1(NM3)
-         BTP2N3=ALPHAL(IE)*ETA2(NM3)
+!- DMW 2022/06 Apply slope limiting for elevation gradient, if needed. The slope limiting factor ALPHAL is determined in the wetting/drying routine.   
+!  DW - CFacAPBeta implement inline SAL using the scalar approximation         
+         BTP1N1=CFacAPBeta*ALPHAL(IE)*ETA1(NM1)
+         BTP2N1=CFacAPBeta*ALPHAL(IE)*ETA2(NM1)
+         BTP1N2=CFacAPBeta*ALPHAL(IE)*ETA1(NM2)
+         BTP2N2=CFacAPBeta*ALPHAL(IE)*ETA2(NM2)
+         BTP1N3=CFacAPBeta*ALPHAL(IE)*ETA1(NM3)
+         BTP2N3=CFacAPBeta*ALPHAL(IE)*ETA2(NM3)
 
 C.....If using atm pressure add it into the barotropic pressure
 C....... DW
