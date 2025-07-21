@@ -235,4 +235,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   enable_developer_mode(${PADCSWAN1_SOURCES})
   enable_developer_mode(${PADCSWAN_SOURCES})
 
+  # Set the linker language to Fortran for the executable
+  set_target_properties(padcswan PROPERTIES LINKER_LANGUAGE Fortran)
+
 endif(BUILD_PADCSWAN AND PERL_FOUND)

@@ -106,8 +106,6 @@ if(BUILD_LIBADCIRC_SHARED)
 
   set_target_properties(libadcirc_shared PROPERTIES OUTPUT_NAME "adcirc")
 
-  set_property(TARGET libadcirc_shared PROPERTY POSITION_INDEPENDENT_CODE ON)
-
   if(APPLE)
     set_property(TARGET libadcirc_shared PROPERTY MACOSX_RPATH ON)
   endif()
@@ -138,5 +136,8 @@ if(BUILD_LIBADCIRC_SHARED)
 
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${LIBADC_SOURCES})
+
+  # Set the linker language to Fortran for the executable
+  set_target_properties(libadcirc_shared PROPERTIES LINKER_LANGUAGE Fortran)
 
 endif(BUILD_LIBADCIRC_SHARED)

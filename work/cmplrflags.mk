@@ -42,6 +42,9 @@ ifeq ($(compiler),gnu)
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
+  CXX		:= g++
+  CXXFLAGS	:= -O3 -std=c++17 -mcmodel=medium -m64
+  CXXLIBS	:= -lstdc++
   CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX -m64
   CLIBS	:=
   LIBS		:=
@@ -146,6 +149,9 @@ ifeq ($(compiler),gfortran)
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
+  CXX		:= g++
+  CXXFLAGS	:= -O3 -std=c++17
+  CXXLIBS	:= -lstdc++
   CFLAGS	:= $(INCDIRS) -O2 -DLINUX
   ifeq ($(DEBUG),full)
      CFLAGS     := $(INCDIRS) -g -O0 -DLINUX
@@ -173,6 +179,9 @@ ifeq ($(compiler),g95)
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
+  CXX		:= g++
+  CXXFLAGS	:= -O3 -std=c++17 -mcmodel=medium
+  CXXLIBS	:= -lstdc++
   CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX
   CLIBS	:=
   FLIBS		:=
@@ -271,6 +280,9 @@ ifeq ($(compiler),intel)
   IMODS         :=  -I
   CC            := icc
   CCBE		:= $(CC)
+  CXX		:= icpx
+  CXXFLAGS	:= -O2 -xSSE4.2 -m64 -mcmodel=medium -std=c++17
+  CXXLIBS	:= -lstdc++
   CLIBS         :=
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
@@ -384,12 +396,11 @@ ifeq ($(compiler),intel-ND)
   IMODS         :=  -I
   CC            := icc
   CCBE          := $(CC)
+  CXX		:= icpx
+  CXXFLAGS	:= -O3 -m64 -mcmodel=medium -std=c++17
+  CXXLIBS	:= -lstdc++
   CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
   FLIBS         := 
-  ifeq ($(DATETIME),enable)
-     DATETIMEHOME  := /asclepius/cblakely/libs/OC-GTSM_utility/libs/datetime-fortran/build/
-     FLIBS         := -ldatetime -L$(DATETIMEHOME)lib/
-  endif
   ifeq ($(GRIB2),enable)
      WGRIB2HOME    := /asclepius/cblakely/libs/grib2/lib/
      FLIBS         := $(FLIBS) -lwgrib2_api -lwgrib2 -ljasper -L$(WGRIB2HOME)
@@ -429,6 +440,9 @@ ifeq ($(compiler),intel-sgi)
   PFC           ?=  mpif90
   CC            :=  icc -O2 -no-ipo
   CCBE          :=  icc -O2 -no-ipo
+  CXX		:= icpx -O2 -no-ipo
+  CXXFLAGS	:= -O2 -finline-limit=1000 -std=c++17
+  CXXLIBS	:= -lstdc++
   FFLAGS1       :=  $(INCDIRS) -fixed -extend-source 132 -O2 -finline-limit=1000 -real-size 64 -no-ipo -assume buffered_io
 #  FFLAGS1      :=  $(INCDIRS) -Mextend -g -O0 -traceback
   FFLAGS2       :=  $(FFLAGS1)
@@ -505,6 +519,9 @@ ifeq ($(compiler),cray_xt4)
   PFC	        :=  ftn
   CC		:=  pgcc
   CCBE		:=  cc
+  CXX		:=  pgc++
+  CXXFLAGS	:=  -O2 -fastsse -std=c++17
+  CXXLIBS	:=  -lstdc++
   FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
   ifeq ($(DEBUG),full)
      FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
@@ -551,6 +568,9 @@ ifeq ($(compiler),cray_xt5)
   PFC	        :=  ftn
   CC		:=  cc
   CCBE		:=  cc
+  CXX		:=  CC
+  CXXFLAGS	:=  -O2 -fastsse -std=c++17
+  CXXLIBS	:=  -lstdc++
   FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
 #  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback
   FFLAGS2	:=  $(FFLAGS1)
@@ -585,6 +605,9 @@ ifeq ($(compiler),xtintel)
   PFC           :=  ftn
   CC            :=  cc -O2 -no-ipo
   CCBE          :=  cc -O2 -no-ipo
+  CXX           :=  CC -O2 -no-ipo
+  CXXFLAGS      :=  -O2 -finline-limit=1000 -std=c++17
+  CXXLIBS       :=  -lstdc++
   FFLAGS1       :=  $(INCDIRS) -fixed -extend-source 132 -O2 -default64 -finline-limit=1000 -real-size 64 -no-ipo -assume buffered_io
 #  FFLAGS1      :=  $(INCDIRS) -Mextend -g -O0 -traceback
   FFLAGS2       :=  $(FFLAGS1)
@@ -626,6 +649,9 @@ ifeq ($(compiler),pgi)
   IMODS		:=  -I
   CC		:= gcc
   CCBE          := $(CC)
+  CXX		:= g++
+  CXXFLAGS	:= -O3 -std=c++17 -mcmodel=medium
+  CXXLIBS	:= -lstdc++
   CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX
   CLIBS		:=
   FLIBS  	:=
@@ -645,6 +671,9 @@ ifeq ($(compiler),utils)
   PFC           :=  mpif90
   CC            :=  pgcc
   CCBE          :=  pgcc
+  CXX           :=  pgc++
+  CXXFLAGS      :=  -O2 -fastsse -std=c++17
+  CXXLIBS       :=  -lstdc++
   FFLAGS1       :=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
   ifeq ($(DEBUG),full)
      FFLAGS1    :=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
@@ -700,6 +729,9 @@ ifeq ($(compiler),pgi-ranger)
   IMODS         :=  -I
   CC            := gcc
   CCBE          := $(CC)
+  CXX		:= g++
+  CXXFLAGS	:= -O3 -std=c++17
+  CXXLIBS	:= -lstdc++
   CFLAGS        := $(INCDIRS) -DLINUX
   CLIBS         :=
   LIBS          :=
@@ -733,6 +765,9 @@ ifeq ($(compiler),diamond)
   IMODS         :=  -I
   CC            := icc
   CCBE          := $(CC)
+  CXX		:= icpx
+  CXXFLAGS	:= -O3 -xSSSE3 -std=c++17
+  CXXLIBS	:= -lstdc++
 #  CFLAGS        := $(INCDIRS) -O3 -xT
   CFLAGS        := $(INCDIRS) -O3 -xSSSE3
   ifeq ($(DEBUG),full)
@@ -768,6 +803,9 @@ ifeq ($(compiler),garnet)
   PFC	        :=  ftn
   CC		:=  pgcc
   CCBE		:=  cc
+  CXX		:=  pgc++
+  CXXFLAGS	:=  -tp=shanghai-64 -fast -std=c++17
+  CXXLIBS	:=  -lstdc++
   FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -tp=shanghai-64 -fast
   ifeq ($(DEBUG),full)
      FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -tp=shanghai-64
@@ -819,6 +857,9 @@ ifeq ($(compiler),kraken)
   IMODS         :=  -I
   CC            := cc
   CCBE          := $(CC)
+  CXX           := CC
+  CXXFLAGS      := -O3 -static -std=c++17
+  CXXLIBS       := -lstdc++
   CFLAGS        := $(INCDIRS)  -DLINUX
   CLIBS         :=
   LIBS          :=
@@ -846,6 +887,9 @@ ifeq ($(compiler),circleci)
   IMODS 	:=  -I
   CC		:= icx
   CCBE		:= $(CC)
+  CXX		:= icpx
+  CXXFLAGS	:= -O0 -mcmodel=medium -m64 -std=c++17
+  CXXLIBS	:= -lstdc++
   CFLAGS	:= $(INCDIRS) -O0 -mcmodel=medium -DLINUX -m64
   CLIBS	:=
   LIBS		:=
@@ -895,6 +939,9 @@ ifeq ($(compiler),pgi)
   IMODS 	:=  -I
   CC            := pgcc
   CCBE          := $(CC)
+  CXX            := pgc++
+  CXXFLAGS      := -O3 -std=c++17
+  CXXLIBS       := -lstdc++
   CFLAGS       := $(INCDIRS) -O2 -DLINUX
   CLIBS         :=
   FLIBS  	:=
@@ -925,6 +972,9 @@ ifeq ($(compiler),intel)
   IMODS 	:=  -I
   CC            := icc
   CCBE          := $(CC)
+  CXX           := icpx
+  CXXFLAGS      := $(OPTLVL) -std=c++17
+  CXXLIBS       := -lstdc++
   CFLAGS        := $(INCDIRS) $(OPTLVL) -DLINUX
   CLIBS         :=
   FLIBS  	:=
@@ -970,6 +1020,9 @@ ifeq ($(compiler),gnu)
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
+  CXX		:= g++
+  CXXFLAGS	:= -O2 -std=c++17
+  CXXLIBS	:= -lstdc++
   CFLAGS	:= $(INCDIRS) -O2 -DLINUX
   ifeq ($(DEBUG),full)
      CFLAGS     := $(INCDIRS) -g -O0 -DLINUX
@@ -1082,6 +1135,9 @@ ifeq ($(arch),pc)
   IMODS         :=  -I
   CC            :=  gcc
   CCBE          :=  $(CC)
+  CXX           :=  g++
+  CXXFLAGS      :=  -O2 -std=c++17
+  CXXLIBS       :=  -lstdc++
   CFLAGS        :=  $(INCDIRS) -DLINUX -O2
   CLIBS         :=
   FLIBS          :=
@@ -1108,6 +1164,9 @@ ifeq ($(arch),altix)
   IMODS   	  :=  -I
   CC              :=  gcc
   CCBE            :=  $(CC)
+  CXX             :=  g++
+  CXXFLAGS        :=  -O2 -std=c++17
+  CXXLIBS         :=  -lstdc++
   CFLAGS          :=  $(INCDIRS) -DLINUX -O2
   FLIBS		  :=
   MSGLIBS	  := -lmpi
@@ -1136,6 +1195,9 @@ ifneq (,$(findstring rs6000-aix,$(MACHINE)-$(OS)))
    IMODS         := -I
    CC            := mpcc_r
    CCBE          :=  $(CC)
+   CXX           := mpCC_r
+   CXXFLAGS      := -q64 -O2 -std=c++17
+   CXXLIBS       := -lstdc++
    CFLAGS        := -q64 -I. -O2 -DIBM
    LDFLAGS       := -q64
    FLIBS          :=
@@ -1169,6 +1231,9 @@ ifeq ($(IBM),p5)
   PFC           := mpxlf90_r -q64
   CC            := mpcc_r  -q64
   CCBE          :=  $(CC)
+  CXX           := mpCC_r -q64
+  CXXFLAGS      := -O2 -std=c++17
+  CXXLIBS       := -lstdc++
   FFLAGS0       := $(INCDIRS) -w -qfixed=132 -qarch=auto -qcache=auto
   FFLAGS1       := $(FFLAGS0) -O2
   FFLAGS2       := $(FFLAGS0) -qhot -qstrict
@@ -1209,6 +1274,9 @@ ifeq ($(IBM),p6)
    IMODS         := -I
    CC            := mpcc_r
    CCBE          :=  $(CC)
+   CXX           := mpCC_r
+   CXXFLAGS      := -q64 -O2 -std=c++17
+   CXXLIBS       := -lstdc++
    CFLAGS        := -q64 -I. -O2 -DIBM
    LDFLAGS       := -q64
    FLIBS          :=
@@ -1246,6 +1314,9 @@ ifeq ($(MACHINE)-$(OS),ppc64-unknown-linux-gnu)
    IMODS         := -I
    CC            := blrts_xlc
    CCBE          :=  $(CC)
+   CXX           := blrts_xlC
+   CXXFLAGS      := -O5 -std=c++17
+   CXXLIBS       := -lstdc++
    CFLAGS        := -I. -I../Lib -O5
    LDFLAGS       := -q64 -L/bgl/BlueLight/ppcfloor/bglsys/lib -lmsglayer.rts -lrts.rts -ldevices.rts
    FLIBS          :=
@@ -1302,6 +1373,9 @@ ifneq (,$(findstring sparc-solaris,$(MACHINE)-$(OS)))
   IMODS		:= -M
   CC       	:= tmcc
   CCBE          :=  $(CC)
+  CXX           := tmCC
+  CXXFLAGS      := -fast -xO4 -xarch=$(ARCH) -std=c++17
+  CXXLIBS       := -lstdc++
   CFLAGS   	:= $(INCDIRS)
   FLIBS     	:=
   MSGLIBS  	:= -lmpi
@@ -1330,6 +1404,9 @@ ifneq (,$(findstring alphaev6-linux,$(MACHINE)-$(OS)))
   IMODS 	:=  -I
   CC            := ccc
   CCBE          :=  $(CC)
+  CXX           := cxx
+  CXXFLAGS      := -O2 -std=c++17
+  CXXLIBS       := -lstdc++
   CFLAGS        := $(INCDIRS) -O2 -DLINUX
   CLIBS         :=
   FLIBS  	:=
@@ -1358,6 +1435,9 @@ ifneq (,$(findstring alphaev6-osf,$(MACHINE)-$(OS)))
   IMODS		:=  -I
   CC		:= cc
   CCBE          :=  $(CC)
+  CXX		:= cxx
+  CXXFLAGS	:= -O2 -std=c++17
+  CXXLIBS	:= -lstdc++
   CFLAGS	:= $(INCDIRS) -DLINUX -O2
   CLIBS		:=
   FLIBS		:=
@@ -1387,6 +1467,9 @@ ifneq (,$(findstring alphaev6-dec-osf5.1,$(MACHINE)-$(VENDOR)-$(OS)))
   IMODS         := -I
   CC            := cc
   CCBE          :=  $(CC)
+  CXX           := cxx
+  CXXFLAGS      := -O2 -std=c++17
+  CXXLIBS       := -lstdc++
   CFLAGS        := $(INCDIRS) -O2
   FLIBS          :=
   MSGLIBS       := -lmpi -lelan
@@ -1501,6 +1584,9 @@ ifneq (,$(findstring powerpc-darwin,$(MACHINE)-$(OS)))
   IMODS  	:=  -p
   CC            :=  gcc
   CCBE          :=  $(CC)
+  CXX           :=  g++
+  CXXFLAGS      :=  -m64 -mpowerpc64 -O2 -std=c++17
+  CXXLIBS       :=  -lc++
   CFLAGS        :=  $(INCDIRS) -m64 -mpowerpc64 -O2 -DLINUX
   LDFLAGS	:=
   FLIBS	        :=  -lU77
@@ -1532,6 +1618,40 @@ ifneq (,$(findstring i386-darwin,$(MACHINE)-$(OS)))
   IMODS  	:=  -I
   CC            :=  gcc
   CCBE          :=  $(CC)
+  CXX           :=  g++
+  CXXFLAGS      :=  -O3 -std=c++17
+  CXXLIBS       :=  -lc++
+  CFLAGS        :=  $(INCDIRS) -O3 -DLINUX
+  LDFLAGS	:=
+  FLIBS	        :=
+  MSGLIBS	:=
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+endif
+
+########################################################################
+# arm64-apple-darwin using gcc (Apple Silicon [M1/M2/M3/M4] Macs)
+
+ifneq (,$(findstring arm-apple-darwin,$(MACHINE)-$(VENDOR)-$(OS)))
+  PPFC	        := gfortran
+  FC	        := gfortran
+  PFC	        := mpif90
+  FFLAGS1	:=  $(INCDIRS) -fallow-argument-mismatch -ffixed-line-length-none -O3
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA  	   	:=  -DREAL8 -DCSCA -DLINUX
+  DP  	   	:=  -DREAL8 -DCSCA -DLINUX -DCMPI
+  DPRE	   	:=  -DREAL8 -DLINUX
+  IMODS  	:=  -I
+  CC            :=  gcc
+  CCBE          :=  $(CC)
+  CXX           :=  g++
+  CXXFLAGS      :=  -O3 -std=c++17
+  CXXLIBS       :=  -lc++
   CFLAGS        :=  $(INCDIRS) -O3 -DLINUX
   LDFLAGS	:=
   FLIBS	        :=
@@ -1557,6 +1677,9 @@ ifneq ($(FOUND), TRUE)
   DPRE	   	:=  -DREAL8 -DLINUX
   IMODS  	:=  -I
   CC            :=  cc
+  CXX           :=  c++
+  CXXFLAGS      := -std=c++17
+  CXXLIBS       := -lstdc++
   CCBE          :=  $(CC)
   CFLAGS        :=  $(INCDIRS) -DLINUX
   LDFLAGS	:=
