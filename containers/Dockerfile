@@ -35,7 +35,6 @@ RUN cd /home/adcirc/adcirc-build/build && \
           -DBUILD_ASWIP=ON \
           -DENABLE_OUTPUT_NETCDF=ON \
           -DENABLE_OUTPUT_XDMF=ON \
-          -DENABLE_DATETIME=ON \
           -DENABLE_GRIB2=ON \
           -DCMAKE_Fortran_FLAGS_RELEASE="-O2 -fp-model=precise" \
           -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG -fp-model=precise" \
@@ -59,7 +58,6 @@ RUN cd /home/adcirc/adcirc-build/build && \
           -DBUILD_ASWIP=ON \
           -DENABLE_OUTPUT_NETCDF=ON \
           -DENABLE_OUTPUT_XDMF=ON \
-          -DENABLE_DATETIME=ON \
           -DENABLE_GRIB2=ON \
           -DCMAKE_Fortran_FLAGS_RELEASE="-O2" \
           -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG" \
