@@ -85,6 +85,9 @@ endif()
 
 target_include_directories(adcprep PRIVATE prep)
 
+# fdate contains C++ objects; keep the Fortran compiler as the linker driver
+set_target_properties(adcprep PROPERTIES LINKER_LANGUAGE Fortran)
+
 install(TARGETS adcprep RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Conditionally enable strict compiler flags for developers

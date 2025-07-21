@@ -130,6 +130,9 @@ if(BUILD_LIBADCIRC_SHARED AND MPI_FOUND)
 
   set_target_properties(libadcirc_shared PROPERTIES OUTPUT_NAME "adcirc")
 
+  # fdate contains C++ objects; keep the Fortran compiler as the linker driver
+  set_target_properties(libadcirc_shared PROPERTIES LINKER_LANGUAGE Fortran)
+
   set_property(TARGET libadcirc_shared PROPERTY POSITION_INDEPENDENT_CODE ON)
 
   if(APPLE)

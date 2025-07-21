@@ -238,6 +238,9 @@ target_link_libraries(templib_swan2parallel PRIVATE templib_swan1parallel templi
 target_link_libraries(templib_padcswan1 PRIVATE templib_swan1parallel)
 target_link_libraries(padcswan PRIVATE templib_swan2parallel templib_padcswan1 templib_swan1parallel)
 
+# fdate contains C++ objects; keep the Fortran compiler as the linker driver
+set_target_properties(padcswan PROPERTIES LINKER_LANGUAGE Fortran)
+
 install(TARGETS padcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Conditionally enable strict compiler flags for developers

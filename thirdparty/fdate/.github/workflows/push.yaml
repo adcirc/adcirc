@@ -1,0 +1,15 @@
+name: CI
+on:
+  pull_request:
+    types: [ opened, synchronize ]
+  push:
+    branches:
+      - main
+
+jobs:
+  unit_testing:
+    name: Build library
+    uses: ./.github/workflows/unit_testing.yaml
+  pre_commit:
+    name: Pre-commit checks
+    uses: ./.github/workflows/precommit.yaml

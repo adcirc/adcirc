@@ -100,12 +100,9 @@ function(adcirc_create_interface_libraries)
     target_link_libraries(adcirc_link_libraries INTERFACE GRIB2::grib2 GRIB2::g2c GRIB2::geo)
   endif()
 
-  if(ENABLE_DATETIME)
-    target_compile_definitions(adcirc_link_libraries INTERFACE DATETIME)
-    target_include_directories(adcirc_link_libraries
-                               INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/datetime_fortran)
-    target_link_libraries(adcirc_link_libraries INTERFACE datetime)
-  endif()
+  # fdate is always required. Its Fortran modules are written to ${CMAKE_BINARY_DIR}/mod by the fdate subproject.
+  target_include_directories(adcirc_link_libraries INTERFACE ${CMAKE_BINARY_DIR}/mod)
+  target_link_libraries(adcirc_link_libraries INTERFACE fdate::fdate)
 
   if(MPI_FOUND)
     add_library(adcirc_mpi_interface INTERFACE)

@@ -54,4 +54,7 @@ if(ADDITIONAL_FLAGS_ASWIP)
   target_compile_options(aswip PRIVATE ${ADDITIONAL_FLAGS_ASWIP})
 endif()
 
+# fdate contains C++ objects; keep the Fortran compiler as the linker driver
+set_target_properties(aswip PROPERTIES LINKER_LANGUAGE Fortran)
+
 install(TARGETS aswip RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

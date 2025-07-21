@@ -102,6 +102,9 @@ if(ADDITIONAL_FLAGS_ADCIRC)
   target_compile_options(padcirc PRIVATE ${ADDITIONAL_FLAGS_ADCIRC})
 endif()
 
+# fdate contains C++ objects; keep the Fortran compiler as the linker driver
+set_target_properties(padcirc PROPERTIES LINKER_LANGUAGE Fortran)
+
 install(TARGETS padcirc RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Conditionally enable strict compiler flags for developers
