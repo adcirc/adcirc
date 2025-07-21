@@ -309,6 +309,7 @@ workflows:
                         - adcirc_irene_cle15
                         - adcirc_irene_cle15_lc12-parallel
                         - adcirc_irene_holland_legacy-parallel
+                        - adcirc_basin-3d-parallel
       - test_grib2:
             requires:
                 - build_cmake_with_netcdf_and_xdmf_grib
