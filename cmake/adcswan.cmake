@@ -224,4 +224,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   enable_developer_mode(${ADCSWAN1_SOURCES})
   enable_developer_mode(${ADCSWAN_SOURCES})
 
+  # Set the linker language to Fortran for the executable
+  set_target_properties(adcswan PROPERTIES LINKER_LANGUAGE Fortran)
+
 endif(BUILD_ADCSWAN AND PERL_FOUND)
