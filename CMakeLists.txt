@@ -66,6 +66,7 @@ endif()
 # ...Language Specifications
 enable_language(Fortran)
 enable_language(C)
+enable_language(CXX)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 # ######################################################################################################################
@@ -106,6 +107,9 @@ list(
   2
   ADCIRC_VERSION_PATCH)
 
+# ...Set position independent code 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # ...Include Macros to build components
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros.cmake)
 
@@ -126,15 +130,10 @@ if(ENABLE_GRIB2)
   set(JAS_ENABLE_SHARED
       FALSE
       CACHE BOOL "Enable shared JAS")
-  set(ENABLE_DATETIME
-      TRUE
-      CACHE BOOL "Enable datetime library")
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/wgrib2 EXCLUDE_FROM_ALL)
 endif()
 
-if(ENABLE_DATETIME)
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/datetime_fortran EXCLUDE_FROM_ALL)
-endif()
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/fdate EXCLUDE_FROM_ALL)
 
 # ...Include the macros for developer mode
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/developer.cmake)
