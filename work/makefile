@@ -101,15 +101,6 @@ ifeq ($(GRIB2),enable)
      FFLAGS4 := $(FFLAGS4) -DGRIB2API
      FFLAGSGSW := $(FFLAGSGSW) -I$(WGRIB2HOME)
 endif
-ifeq ($(DATETIME),enable) 
-     PPFC    := $(PPFC) -DDATETIME
-     PFC     := $(PFC) -DDATETIME
-     FFLAGS1 := $(FFLAGS1) -DDATETIME
-     FFLAGS2 := $(FFLAGS2) -DDATETIME
-     FFLAGS3 := $(FFLAGS3) -DDATETIME
-     FFLAGS4 := $(FFLAGS4) -DDATETIME
-     FFLAGSGSW := $(FFLAGSGSW) -I$(DATETIMEHOME)include
-endif
 ####################### Target Specific Rules ###################################
 
 #                                      adcprep
@@ -117,7 +108,7 @@ ifeq ($(BUILDTYPE),adcprep)
   CF:= $(PPFC)
   O_DIR:=$(SRCDIR)/work/odir1/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -126,6 +117,7 @@ ifeq ($(BUILDTYPE),adcprep)
   else
     LIBS  := -Lodir_metis -lmetis $(FLIBS)
   endif
+  LIBS += $(CXXLIBS)
   PMSG_OBJ:=
 endif
 #                                      adcprep_be
@@ -133,7 +125,7 @@ ifeq ($(BUILDTYPE),adcprep_be)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir2/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR)
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -142,6 +134,7 @@ ifeq ($(BUILDTYPE),adcprep_be)
   else
     LIBS  := -Lodir_metis_be -lmetis_be $(FLIBS)
   endif
+  LIBS += $(CXXLIBS)
   PMSG_OBJ:=
 endif
 #                                      adcirc
@@ -149,7 +142,7 @@ ifeq ($(BUILDTYPE),adcirc)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir3/
   FFLAGS:= $(FFLAGS2) $(DA) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -158,6 +151,7 @@ ifeq ($(BUILDTYPE),adcirc)
   endif
   #MSG_MOBJ:= $(O_DIR)globalio.o
   MSG_MOBJ:=
+  LIBS += $(CXXLIBS)
 endif
 #Casey 090302: Add rules for the serial SWAN+ADCIRC.
 #                                      adcswan
@@ -165,7 +159,7 @@ ifeq ($(BUILDTYPE),adcswan)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir33/
   FFLAGS:= $(FFLAGS2) -DCSWAN $(DA) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan
+  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -180,6 +174,7 @@ ifeq ($(BUILDTYPE),adcswan)
         $(shell rm -f ../thirdparty/swan/*.f90 ../thirdparty/swan/*.f ../thirdparty/swan/*.for)
     endif
   endif
+  LIBS += $(CXXLIBS)
   $(shell echo "SWANLASTCOMPILE := serial" > $(SRCDIR)/work/.swanlastcompile)
   $(shell perl ../thirdparty/swan/switch.pl $(swch) -adcirc ../thirdparty/swan/*.ftn ../thirdparty/swan/*.ftn90)
 endif
@@ -188,7 +183,7 @@ ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odir4/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -197,6 +192,7 @@ ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   endif
   #MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
   MSG_MOBJ:= $(O_DIR)messenger.o
+  LIBS += $(CXXLIBS)
 endif
 #Casey 090302: Add rules for the parallel SWAN+ADCIRC.
 #                                      padcswan
@@ -204,7 +200,7 @@ ifeq ($(BUILDTYPE),padcswan)
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odir44/
   FFLAGS:= $(FFLAGS3) -DCSWAN $(DP) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan
+  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -220,6 +216,7 @@ ifeq ($(BUILDTYPE),padcswan)
         $(shell rm -f ../thirdparty/swan/*.f90 ../thirdparty/swan/*.f ../thirdparty/swan/*.for)
     endif
   endif
+  LIBS += $(CXXLIBS)
   $(shell echo "SWANLASTCOMPILE := parallel" > $(SRCDIR)/work/.swanlastcompile)
   $(shell perl ../thirdparty/swan/switch.pl $(swch) -pun -adcirc ../thirdparty/swan/*.ftn ../thirdparty/swan/*.ftn90)
 endif
@@ -228,7 +225,7 @@ ifeq ($(BUILDTYPE),$(LIBADC))
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odircp/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
-  VPATH := $(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+  VPATH := $(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -236,6 +233,7 @@ ifeq ($(BUILDTYPE),$(LIBADC))
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   endif
   MSG_MOBJ:= $(O_DIR)messenger.o
+  LIBS += $(CXXLIBS)
 endif
 #                                      p15
 ifeq ($(BUILDTYPE),p15)
@@ -316,7 +314,7 @@ ifeq ($(BUILDTYPE),aswip)
   CF:= $(PPFC)
   O_DIR:=$(SRCDIR)/work/odir14/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
-  VPATH := $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+  VPATH := $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -324,6 +322,7 @@ ifeq ($(BUILDTYPE),aswip)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff $(FLIBS)
   endif
   MSG_MOBJ:= $(O_DIR)globalio.o
+  LIBS += $(CXXLIBS)
 endif
 #                                      adccmp
 ifeq ($(BUILDTYPE),adccmp)
@@ -386,6 +385,7 @@ BC3D_MSRC = couple2baroclinic3D.F
 GL2LOC_MSRC = gl2loc_mapping.F
 TIDE_MSRC = astronomic.F90 sun.F90 moon.F90 sun_moon_system.F90 ephemerides.F90 tidalpotential.F90
 ITTIDE_MSRC = internaltide.F
+DATE_MSRC = datetime.F90 datetime_wrapper.cpp
 
 HASH_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HASH_MSRC) )
 WD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WD_MSRC) )
@@ -427,6 +427,8 @@ GL2LOC_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(GL2LOC_MSRC) )
 ITTIDE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(ITTIDE_MSRC) )
 TIDE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(TIDE_MSRC) )
 NCE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NCE_MSRC) )
+DATE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(DATE_MSRC) )
+DATE_MOBJ := $(patsubst %.cpp, $(O_DIR)%.o, $(DATE_MOBJ) )
 
 ############################# Source & Object Files ######################
 #meb 04/20/2004 - added machdep.F onto POST_SRC
@@ -503,6 +505,8 @@ $(O_DIR)%.o  : %.F
 $(O_DIR)%.o  : %.F90
 	$(CF) -c $(FFLAGS) -o $@  $<
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
+$(O_DIR)%.o  : %.cpp
+	$(CXX) -c $(CXXFLAGS) -I$(SRCDIR)/thirdparty/fdate/src -I$(SRCDIR)/thirdparty/fdate/thirdparty/date_hh $< -o $@
 
 # Casey 080106: Added the following rules for the unstructured SWAN.
 $(O_DIR)%.o  : %.f
@@ -586,10 +590,10 @@ else
    adccmp:  $(O_DIR)
 
 ifeq ($(NETCDF),enable)
-   adcprep ::  $(METIS_OBJ) $(NCE_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(NC_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ) $(HASH_MOBJ)
+   adcprep ::  $(DATE_MOBJ) $(METIS_OBJ) $(NCE_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(NC_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ) $(HASH_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 else
-   adcprep ::  $(METIS_OBJ) $(NCE_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ) $(HASH_MOBJ)
+   adcprep ::  $(DATE_MOBJ) $(METIS_OBJ) $(NCE_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ) $(HASH_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
 ifeq ($(NETCDF),enable)
@@ -602,8 +606,8 @@ endif
    adcpost ::  $(POST_OBJ) $(HARM_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-ADCIRC_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
-ADCSWAN_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+ADCIRC_DEP := $(DATE_MOBJ) $(ADC_MOBJ) $(HAS_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+ADCSWAN_DEP := $(DATE_MOBJ) $(ADC_MOBJ) $(HAS_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 ifeq ($(NETCDF),enable)
    ADCIRC_DEP := $(ADCIRC_DEP) $(NC_MOBJ)
    ADCSWAN_DEP := $(ADCSWAN_DEP) $(NC_MOBJ)
@@ -616,11 +620,11 @@ endif
    adcirc ::  $(ADCIRC_DEP)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-   $(PARALLEL_ADCIRC) :: $(ADC_MOBJ) $(HASH_MOBJ) $(MSG_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+   $(PARALLEL_ADCIRC) :: $(DATE_MOBJ) $(ADC_MOBJ) $(HASH_MOBJ) $(MSG_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
 ifeq ($(NETCDF),enable)
-   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(MSG_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) \
+   $(LIBADC) :: $(O_DIR) $(DATE_MOBJ) $(ADC_MOBJ) $(HASH_MOBJ) $(MSG_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) \
 	        $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
 	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(TIDE_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) \
 	         $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
@@ -628,7 +632,7 @@ ifeq ($(NETCDF),enable)
                  $(WRITER_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ) 
 	ar -ts $@
 else
-   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(MSG_MOBJ) \
+   $(LIBADC) :: $(O_DIR) $(DATE_MOBJ) $(ADC_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(MSG_MOBJ) \
 	        $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
 	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) \
 	         $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
@@ -644,7 +648,7 @@ endif
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
    padcswan :: $(O_DIR)
-   padcswan :: $(NA_MOBJ) $(ADC_MOBJ) $(HASH_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+   padcswan :: $(DATE_MOBJ) $(NA_MOBJ) $(ADC_MOBJ) $(HASH_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS) $(LDFLAGS)
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
@@ -683,7 +687,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(DATE_MOBJ) $(ADC_MOBJ) $(HAS_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(NCE_MOBJ) $(NA_MOBJ) $(SG_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(HASH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -731,7 +735,7 @@ help:
 #  adcprep modules
 
 $(O_DIR)version.o     :  version.F
-$(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(O_DIR)global.o $(O_DIR)global_3dvs.o
+$(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(GL2LOC_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(O_DIR)global.o $(O_DIR)global_3dvs.o
 $(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
 $(O_DIR)mesh.o        :  mesh.F $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)hashtable.o
 $(O_DIR)pre_global.o  :  pre_global.F  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ) $(O_DIR)global_3dvs.o

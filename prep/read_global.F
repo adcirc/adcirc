@@ -716,7 +716,6 @@ Casey 180318: Added NWS=13
       REWIND(15)
 #endif
 
-#ifdef DATETIME
       READ(UNIT=15,NML=WindGrib2NetCdf,IOSTAT=IOS_NWS14Grib2NC)
       IF(IOS_NWS14Grib2NC .EQ. 0)THEN
          found_NWS14Grib2NetCdf_Namelist= .TRUE.
@@ -727,7 +726,6 @@ Casey 180318: Added NWS=13
      &         'The WindGrib2NetCdf namelist was not found.')
       ENDIF
       REWIND(15)
-#endif
 
       READ(UNIT = 15, NML = wetDryControl,IOSTAT = ios_wetDry)
       if ( ios_wetDry.ge.0) then

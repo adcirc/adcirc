@@ -85,17 +85,13 @@ C-----------------------------------------------------------------------
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
      &   WarnVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
-     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus
-
+     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus,
+     &   basedatetime, NUOPC4WAV, NUOPC4MET
 #if defined CSWAN || defined ADCSWAN
-     &   , SWAN_OutputHS, SWAN_OutputDIR,
-     &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
-     &    SWAN_OutputTM02, SWAN_OutputTMM10
+      USE GLOBAL, ONLY: SWAN_OutputHS, SWAN_OutputDIR, SWAN_OutputTM01,
+     &                  SWAN_OutputTPS, SWAN_OutputWIND, SWAN_OutputTM02,
+     &                  SWAN_OutputTMM10
 #endif
-#ifdef DATETIME
-     &   ,basedatetime
-#endif
-     &   ,NUOPC4WAV, NUOPC4MET
       USE ADC_CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
      &                     waveWindMultiplier,deg2rad,rhoAir,
      &                     rad2deg,omega,WaveStressGrad_Cap
@@ -177,9 +173,7 @@ C ... END DW
 Casey 100205: Enable hot-start file generation by SWAN.
       USE Couple2Swan, ONLY: SwanHotStartUnit
 #endif
-#ifdef DATETIME
-      use datetime_module, only: strptime
-#endif
+      use mod_datetime, only: t_datetime
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
@@ -534,8 +528,6 @@ Casey 180318: Added NWS=13
       rewind(15)
 #endif
 
-
-#ifdef DATETIME
       namelistSpecifier = 'WindGrib2NetCdf' 
       read( unit = 15, nml=WindGrib2NetCdf,iostat=ios,iomsg=ios_nml_error_msg)
       call logNamelistReadStatus(namelistSpecifier, ios,ios_nml_error_msg)
@@ -544,7 +536,6 @@ Casey 180318: Added NWS=13
      &   read_NWS14_NetCdf_using_core_0 
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
-#endif
 
       !...Read in time varying weir control from fort.15
       NOUT_TVW = -99999
@@ -5154,24 +5145,31 @@ C
          CALL logMessage(ECHO,"metadata, contact: "//trim(contact))
          READ(15,'(A80)',err=99999,end=99998,iostat=ios) base_date
          CALL logMessage(ECHO,"metadata, base_date: "//trim(base_date))
-#ifdef DATETIME
-         ! Convert base_date to datetime WJP
-         basedatetime = strptime(adjustl(trim(base_date)),
-     &                           "%Y-%m-%d %H:%M:%S")
+         base_date = trim(adjustl(base_date)) 
+         base_date = base_date(1:19)
+         basedatetime = t_datetime(trim(adjustl(base_date)), 
+     &                                ["%Y-%m-%d %H:%M:%S",
+     &                                 "%Y-%m-%dT%H:%M:%S",
+     &                                 "%Y/%m/%d %H:%M:%S",
+     &                                 "%Y-%m-%dT%H:%M   ",
+     &                                 "%Y/%m/%d %H:%M   ",
+     &                                 "%Y-%m-%d %H:%M   ",
+     &                                 "%Y%m%d%H%M%S     ",
+     &                                 "%Y/%m/%d         ",
+     &                                 "%Y-%m-%d         "])
          ! Check this a valid time
-         if (.not.basedatetime%isvalid()) then
+         if (.not.basedatetime%valid()) then
             call allMessage(ERROR,'Invalid base datetime: '
-     &           //basedatetime%isoformat(' ')
+     &           //trim(base_date)
      &           //'. Must be formatted as yyyy-MM-dd HH:mm:ss')
             call adcirc_terminate()
          endif
-#endif
       ENDIF
 
       ! Check if we have been provided a base date for the tide potential calculations
-      if(UseFullTIPFormula.and.trim(TipStartDate)=="none")then
+      if(UseFullTIPFormula.and.trim(adjustl(TipStartDate))=="none")then
          if(useNetCDF)then
-            TipStartDate = trim(base_date)
+            TipStartDate = trim(adjustl(base_date))
             WRITE(scratchMessage,'(2A)') "The TipStartDate parameter was not set in the TidalPotentialControl namelist."//
      &                                   " Using the base_date netCDF metadata value instead: ", TipStartDate
             call allMessage(WARNING,scratchMessage)

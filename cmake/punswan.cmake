@@ -109,6 +109,9 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
   add_library(templib_punswan1 OBJECT ${SWANONLY1_PARALLEL_SOURCES})
   add_executable(punswan ${SWANONLY2_PARALLEL_SOURCES})
 
+  # Set the linker language to Fortran for the executable
+  set_target_properties(punswan PROPERTIES LINKER_LANGUAGE Fortran)
+
   # ...SWAN Configuration
   adcirc_swan_configure_parallel()
 
@@ -118,6 +121,10 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
   adcirc_add_mpi(templib_punmsglib)
   adcirc_add_mpi(templib_punswan1)
   adcirc_add_mpi(punswan)
+  adcirc_add_datetime_definitions(templib_punmsglib)
+  adcirc_add_datetime_definitions(templib_punswan1)
+  adcirc_add_datetime_definitions(punswan)
+  adcirc_add_datetime_libraries(punswan)
 
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
                                       ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swanonly_parallel_source)

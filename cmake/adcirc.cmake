@@ -85,4 +85,7 @@ if(BUILD_ADCIRC)
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${ADCIRC_SOURCES})
 
+  # Set the linker language to Fortran for the executable
+  set_target_properties(adcirc PROPERTIES LINKER_LANGUAGE Fortran)
+
 endif(BUILD_ADCIRC)

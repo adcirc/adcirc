@@ -92,4 +92,7 @@ if(BUILD_PADCIRC)
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${PADCIRC_SOURCES})
 
+  # Set the linker language to Fortran for the executable
+  set_target_properties(padcirc PROPERTIES LINKER_LANGUAGE Fortran)
+
 endif(BUILD_PADCIRC)
