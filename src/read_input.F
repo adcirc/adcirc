@@ -598,7 +598,6 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ! outputFort48
 #ifndef ADCNETCDF
       outputFort48 = .FALSE.
-#else
       call allMessage(WARNING, "outputFort48 parameter is not supported without NetCDF output enabled.")
 #endif
       WRITE(scratchMessage,*) "outputFort48=",outputFort48
