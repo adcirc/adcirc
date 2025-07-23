@@ -40,7 +40,7 @@ set(ASWIP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/wind/aswip.F)
 
 if(NETCDF_WORKING)
-  set(ASWIP_SOURCES ${ASWIP_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+  set(ASWIP_SOURCES ${ASWIP_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/nws13.F90
                     ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
 endif()
 

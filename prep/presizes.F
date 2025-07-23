@@ -155,7 +155,7 @@ Casey 251212: Adding time control.
       USE OWIWIND, ONLY: nPowellSearchDomains
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
-      USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
+      USE mod_nws13, ONLY: NWS13ColdStartString,
      &                          NWS13File,
      &                          NWS13GroupForPowell,
      &                          NWS13WindMultiplier

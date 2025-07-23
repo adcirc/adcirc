@@ -864,7 +864,7 @@ C----------------------------------------------------------------------
       use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
       use mod_nws08, only: nws08get
 #ifdef ADCNETCDF
-      USE OWIWIND_NETCDF, ONLY: NWS13GET
+      USE mod_nws13, ONLY: NWS13GET
 #endif
       implicit none
       integer, intent(in) :: nws
@@ -1773,7 +1773,7 @@ C----------------------------------------------------------------------
       use mod_nws08, only: nws08init, nws08get
 #ifdef ADCNETCDF
 Casey 180318: Added for NWS=13
-      USE OWIWIND_NETCDF, ONLY: NWS13INIT,NWS13GET
+      USE mod_nws13, ONLY: NWS13INIT,NWS13GET
 #endif
 
       use mod_datetime, only: t_datetime
@@ -1784,6 +1784,7 @@ Casey 180318: Added for NWS=13
       real(8) :: windx ! wind vel (m/s) in x-dir
       real(8) :: windy ! wind vel (m/s) in y-dir
       real(8) :: wtratio ! used to time interpolated between met datasets
+      real(8) :: wtime2out
       integer :: nhg ! node number temp
       real(8) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
@@ -2036,11 +2037,12 @@ Casey 180318: Added for NWS=13, ARC modified 190108
          WTIME2=WTIME1+WTIMINC
          WTIME2I=WTIME2
          WTIME1I=WTIME1
-        CALL NWS13INIT(0.D0,W)
+        CALL NWS13INIT(W)
         CALL NWS13GET(WTIME1,WVNX1,WVNY1,PRN1,
      &      WTIME2,EyeLon,EyeLat,FoundEye,W)
         CALL NWS13GET(WTIME2,WVNX2,WVNY2,PRN2,
-     &      WTIME2,EyeLon,EyeLat,FoundEye,W)
+     &      WTIME2OUT,EyeLon,EyeLat,FoundEye,W)
+        WTIME2 = WTIME2OUT
       ENDIF
 #endif
 
@@ -2091,7 +2093,7 @@ C----------------------------------------------------------------------
       use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
       use mod_nws08, only: nws08init, nws08get
 #ifdef ADCNETCDF
-      USE OWIWIND_NETCDF, ONLY: NWS13INIT,NWS13GET
+      USE mod_nws13, ONLY: NWS13INIT,NWS13GET
 #endif
       implicit none
       integer, intent(in) :: nws
@@ -2113,6 +2115,7 @@ C----------------------------------------------------------------------
       integer :: nhg ! node number temp
       real(8) :: bf ! blend factor for multiple sets of wind data
       real(8) :: vortexPRDIFF
+      real(8) :: wtime2out
       integer :: it
       integer :: i ! node loop counter
       integer :: j
@@ -2848,11 +2851,12 @@ Casey 180318: Added for NWS=13, ARC modified 190108
          WTIME2 = WTIME1 + WTIMINC
          WTIME2I = WTIME2
          WTIME1I = WTIME1
-        CALL NWS13INIT(TIMELOC,W)
+        CALL NWS13INIT(W)
         CALL NWS13GET(WTIME1,WVNX1,WVNY1,PRN1,
      &      WTIME2,EyeLon,EyeLat,FoundEye,W)
         CALL NWS13GET(WTIME2,WVNX2,WVNY2,PRN2,
-     &      WTIME2,EyeLon,EyeLat,FoundEye,W)
+     &                WTIME2OUT,EyeLon,EyeLat,FoundEye,W)
+        WTIME2 = WTIME2OUT
         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
         DO I=1,NP
           WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
@@ -3026,7 +3030,7 @@ Casey 180318: Added for NWS=13
       IF(ABS(NWS).EQ.13)THEN
         WTIME1 = TIMELOC
         WTIME2 = TIMELOC
-        CALL NWS13INIT(TIMELOC,W)
+        CALL NWS13INIT(W)
         CALL NWS13GET(TIMELOC,WVNX2,WVNY2,PRN2,
      &         WTIME2,EyeLon,EyeLat,FoundEye,W)
 !       IF(TRIM(DragLawString).EQ."Powell".OR.

@@ -178,10 +178,10 @@ Casey 100205: Enable hot-start file generation by SWAN.
       use mod_datetime, only: t_datetime
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
-      USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
-     &                          NWS13File,
-     &                          NWS13GroupForPowell,
-     &                          NWS13WindMultiplier
+      USE mod_nws13, ONLY: NWS13ColdStartString,
+     &                     NWS13File,
+     &                     NWS13GroupForPowell,
+     &                     NWS13WindMultiplier
 #endif
 !JLW: add subgrid
       use iso_fortran_env, only: output_unit
