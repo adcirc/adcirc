@@ -153,13 +153,6 @@ Casey 251212: Adding time control.
      &                  initWindModule, 
      &                  read_NWS14_NetCdf_using_core_0
       USE OWIWIND, ONLY: nPowellSearchDomains
-#ifdef ADCNETCDF
-Casey 180318: Added NWS=13
-      USE mod_nws13, ONLY: NWS13ColdStartString,
-     &                          NWS13File,
-     &                          NWS13GroupForPowell,
-     &                          NWS13WindMultiplier
-#endif
 !Casey 221103 : Use the baroclinic3D namelist from global_3dvs
       USE GLOBAL_3DVS, ONLY : baroclinic3D,
      &                        iterateEqnState2,
@@ -287,6 +280,10 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &          Limit_WaveStressGrad, WaveStressGrad_Cap  !tcm v56 2024: added 
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
+      character(200) :: NWS13File = "fort.22.nc"
+      character(200) :: NWS13ColdStartString
+      REAL(8) :: NWS13WindMultiplier = 1.0d0
+      INTEGER :: NWS13GroupForPowell = 0
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
      &    NWS13WindMultiplier,NWS13GroupForPowell
 #endif
@@ -790,8 +787,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 Casey 180318: Added NWS=13
       NWS13ColdStartString = "99999999.999999"
       NWS13File = "fort.22.nc"
-      NWS13GroupForPowell = "0"
-      NWS13WindMultiplier = "1.0"
+      NWS13GroupForPowell = 0
+      NWS13WindMultiplier = 1.0d0
       READ(UNIT=15,NML=owiWindNetcdf,IOSTAT=IOS)
       IF(IOS.GT.0)THEN
          WRITE(*,*) "INFO: The owiWindNetcdf namelist was not found."
