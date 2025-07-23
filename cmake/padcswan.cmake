@@ -153,7 +153,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   if(NETCDF_WORKING)
     set(PADCSWAN1_SOURCES
         ${PADCSWAN1_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/nws13.F90
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()

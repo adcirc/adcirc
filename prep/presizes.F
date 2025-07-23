@@ -156,7 +156,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       USE OWIWIND, ONLY: nPowellSearchDomains
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
-      USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
+      USE mod_nws13, ONLY: NWS13ColdStartString,
      &                          NWS13File,
      &                          NWS13GroupForPowell,
      &                          NWS13WindMultiplier
