@@ -170,21 +170,24 @@
 !> timestep where getMeteorologicalForcing (wind.F) is called, temporal
 !> interpolation is performed between on-mesh representations of the inputs.
 !>
-#ifdef ADCNETCDF
+
 !-----------------------------------------------------------------------
 module mod_nws13
 !-----------------------------------------------------------------------
-   use GLOBAL, only: DEBUG, allMessage, setMessageSource, unsetMessageSource
+   use GLOBAL, only: INFO, DEBUG, screenMessage, allMessage, setMessageSource, unsetMessageSource
+   use mod_datetime, only: t_datetime, t_timedelta, operator(+), operator(-), &
+                           operator(<), operator(>), operator(==), operator(>=), &
+                           operator(<=), null_datetime
 
-   character(LEN=15)  :: NWS13ColdStartString = "99999999.999999"
-   character(LEN=1000)  :: NWS13File = "fort.22.nc"
-   character(LEN=3)   :: NWS13GroupForPowell = "0"
-   character(LEN=10)  :: NWS13WindMultiplier = "1.0"
-   character(LEN=100) :: GroupNames(30)
+   implicit none
 
-   integer :: ColdStartInMinutesSinceWindRefDateTime
+   real(8), parameter  :: null_flag_value = -99999999.0d0
+
+   character(LEN=1000) :: NWS13File = "fort.22.nc"
+   character(LEN=100)  :: GroupNames(30)
+
    integer :: NumGroup
-   integer :: NWS13GroupForPowellInt
+   integer :: NWS13GroupForPowell = 0
 
    integer :: NC_DIM
    integer :: NC_ERR
@@ -195,24 +198,45 @@ module mod_nws13
    integer :: PowellGroup = 0
    integer :: PowellGroupTemp = 0
 
-   real(8) :: NWS13WindMultiplierReal
+   real(8) :: NWS13WindMultiplier = 1.0d0
+
+   type(t_datetime) :: NWS13ColdStart
+   type(t_datetime) :: WindRefDatetime
 
    type NWS13Type
       integer :: InclSnap
       integer :: NextSnap
       integer :: NumSnap
       integer :: PrevSnap
-      real(8) :: NextTime
-      real(8) :: PrevTime
+      type(t_datetime) :: NextTime
+      type(t_datetime) :: PrevTime
    end type NWS13Type
    type(NWS13Type), allocatable :: NWS13(:)
 
    private
 
-   public :: NWS13INIT, NWS13GET, NWS13ColdStartString, NWS13File, &
-             NWS13GroupForPowell, NWS13WindMultiplier
+   public :: NWS13INIT, NWS13GET, nws13_set_namelist_parameters
 
 contains
+
+  subroutine nws13_set_namelist_parameters(NWS13Filename_in, &
+                                           NWS13ColdStart_in, &
+                                           NWS13WindMultiplier_in, &
+                                           NWS13GroupForPowell_in)
+      implicit none
+
+      character(len=*), intent(IN) :: NWS13Filename_in
+      character(len=*), intent(IN) :: NWS13ColdStart_in
+      real(8), intent(IN) :: NWS13WindMultiplier_in
+      integer, intent(IN) :: NWS13GroupForPowell_in
+
+      ! Set the parameters from the namelist.
+      NWS13File = trim(adjustl(NWS13Filename_in))
+      NWS13ColdStart = t_datetime(NWS13ColdStart_in)
+      NWS13WindMultiplier = NWS13WindMultiplier_in
+      NWS13GroupForPowell = NWS13GroupForPowell_in
+
+  end subroutine nws13_set_namelist_parameters
 
 !-----------------------------------------------------------------------
 !> Initializes reading data from the Oceanweather (OWI) NetCDF wind/pre fields
@@ -226,6 +250,11 @@ contains
                         NF90_GLOBAL
       use netcdf_error, only: check_err
       use MESH, only: NP
+      use global, only: ERROR
+
+#ifdef CMPI
+      use messenger, only: msg_fini
+#endif
 
       implicit none
 
@@ -233,12 +262,10 @@ contains
 
       character(LEN=3100) :: GroupOrder
       character(LEN=100) :: TimeUnits
+      character(LEN=100) :: TimeString
 
       real(8), allocatable :: Lat(:, :)
       real(8), allocatable :: Lon(:, :)
-
-      real(8) :: ColdStartDateTimeInJulianDays
-      real(8) :: WindRefDateTimeInJulianDays
 
       integer :: ILat(NP)
       integer :: ILon(NP)
@@ -250,21 +277,12 @@ contains
       integer :: NumLat
       integer :: NumLon
 
-      integer :: Day
-      integer :: Hour
-      integer :: Minute
-      integer :: Month
-      integer :: Second
-      integer :: Year
       integer :: IG
 
       call setMessageSource("nws13init")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Enter.")
 #endif
-
-      read (NWS13WindMultiplier, *) NWS13WindMultiplierReal
-      read (NWS13GroupForPowell, *) NWS13GroupForPowellInt
 
 ! Open the NetCDF file.
       call check_err(NF90_OPEN(trim(adjustl(NWS13File)), NF90_NOWRITE, NC_ID))
@@ -311,25 +329,31 @@ contains
 ! and convert it into Julian format.
       call check_err(NF90_INQ_VARID(NC_IDG, "time", NC_VAR))
       call check_err(NF90_GET_ATT(NC_IDG, NC_VAR, "units", TimeUnits))
-      read (UNIT=TimeUnits, FMT='(14X,I4,1X,I2,1X,I2,1X,I2,1X,I2,1X,I2)') &
-         Year, Month, Day, Hour, Minute, Second
-      WindRefDateTimeInJulianDays = dble(JULIAN(Year, Month, Day)) &
-                                    + FRACTIONTIME(Hour, Minute, Second)
-! Convert the user-specified cold-start time into Julian format.
-      read (UNIT=NWS13ColdStartString, FMT='(I4,I2,I2,1X,I2,I2,I2)') &
-         Year, Month, Day, Hour, Minute, Second
-      ColdStartDateTimeInJulianDays = dble(JULIAN(Year, Month, Day)) &
-                                      + FRACTIONTIME(Hour, Minute, Second)
-! Convert the cold-start time into minutes since the starting
-! date/time specified in the NetCDF file.
-      ColdStartInMinutesSinceWindRefDateTime &
-         = nint(ColdStartDateTimeInJulianDays*1440 &
-                - WindRefDateTimeInJulianDays*1440)
+      TimeString = trim(adjustl(TimeUnits))
+      TimeString = TimeUnits(15:len_trim(TimeUnits))
 
-! Find the times associated with the first two time snaps in each
-! group.  We will use these to build the first time snap.
+      TimeUnits = TimeUnits(1:14)
+      if (TimeUnits /= "minutes since ") then
+        call allMessage(ERROR, "NWS13: Invalid time units in NWS13INIT.")
+#ifdef CMPI
+        call msg_fini()
+#endif
+        call exit(1)
+      end if
+
+      WindRefDatetime = t_datetime(TimeString, "%Y-%m-%dT%H:%M:%S")
+      if(.not.WindRefDatetime%valid())then
+        call allMessage(ERROR, "NWS13: Invalid WindRefDatetime in NWS13INIT.")
+#ifdef CMPI
+        call msg_fini()
+#endif
+        call exit(1)
+      end if
+
+      ! Find the times associated with the first two time snaps in each
+      ! group.  We will use these to build the first time snap.
       do IG = 1, NumGroup
-! Connect to the group and its time variable.
+         ! Connect to the group and its time variable.
 #ifdef HAVE_NETCDF4
          call check_err(NF90_INQ_NCID(NC_ID, trim(adjustl(GroupNames(IG))), &
                                       NC_IDG))
@@ -340,29 +364,27 @@ contains
          call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, &
                                                LEN=NWS13(IG)%NumSnap))
          call check_err(NF90_INQ_VARID(NC_IDG, "time", NC_VAR))
-! Pull the time for the first snap ...
+         ! Pull the time for the first snap ...
          call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, TempI(:), &
                                      START=[1], COUNT=[1]))
-! ... and load it into our array.
-         NWS13(IG)%PrevTime = dble(TempI(1) &
-                                   - ColdStartInMinutesSinceWindRefDateTime)*60.d0
+         ! ... and load it into our array.
+         NWS13(IG)%PrevTime = WindRefDatetime + t_timedelta(minutes=TempI(1))
          NWS13(IG)%PrevSnap = 1
-! Pull the time for the second snap ...
+         ! Pull the time for the second snap ...
          call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, TempI(:), &
                                      START=[2], COUNT=[1]))
-! ... and also load it into our array.
-         NWS13(IG)%NextTime = dble(TempI(1) &
-                                   - ColdStartInMinutesSinceWindRefDateTime)*60.d0
+         ! ... and also load it into our array.
+         NWS13(IG)%NextTime = WindRefDatetime + t_timedelta(minutes=TempI(1))
          NWS13(IG)%NextSnap = 2
 
          if (IG == 1) then
-! Read number of cells in longitude, latitude.
+            ! Read number of cells in longitude, latitude.
             call check_err(NF90_INQ_DIMID(NC_IDG, "xi", NC_DIM))
             call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NumLon))
             call check_err(NF90_INQ_DIMID(NC_IDG, "yi", NC_DIM))
             call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NumLat))
 
-! Initialize arrays.
+            ! Initialize arrays.
             if (allocated(Lon)) deallocate (Lon)
             allocate (Lon(1:NumLon, 1:NumLat))
             if (allocated(Lat)) deallocate (Lat)
@@ -370,14 +392,15 @@ contains
             if (allocated(W)) deallocate (W)
             allocate (W(1:NP, 1:6))
 
-! Read mesh.
+            ! Read mesh.
             call check_err(NF90_INQ_VARID(NC_IDG, "lon", NC_VAR))
             call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lon(:, :), &
                                         START=[1, 1, 1], COUNT=[NumLon, NumLat, 1]))
             call check_err(NF90_INQ_VARID(NC_IDG, "lat", NC_VAR))
             call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lat(:, :), &
                                         START=[1, 1, 1], COUNT=[NumLon, NumLat, 1]))
-! get reusable weights for main group
+
+            ! get reusable weights for main group
             call NWS13INTERP(NumLon, NumLat, Lon, Lat, ILon, ILat, W)
             W(:, 5) = dble(ILon)
             W(:, 6) = dble(ILat)
@@ -385,7 +408,7 @@ contains
 
       end do
 
-! Close the NetCDF file.
+      ! Close the NetCDF file.
       call check_err(NF90_CLOSE(NC_ID))
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -419,7 +442,6 @@ contains
       use netcdf, only: NF90_GET_VAR, NF90_INQ_VARID, NF90_INQ_NCID, &
                         NF90_INQUIRE_DIMENSION, NF90_GET_ATT, NF90_OPEN, NF90_NOWRITE, &
                         NF90_CLOSE, NF90_INQ_DIMID, NF90_NOERR
-      use SIZES, only: MYPROC
       use netcdf_error, only: check_err
 
       implicit none
@@ -436,7 +458,6 @@ contains
       real(8), intent(OUT)   :: WTIME2
       real(8), intent(IN)    :: W(NP, 6)
 
-      character(LEN=200) :: JunkC
       character(LEN=200) :: Line
 
       integer :: CurrSnap
@@ -445,8 +466,6 @@ contains
       integer :: ILon(NP)
       integer :: IS
       integer :: IV
-      integer :: ILT
-      integer :: ILN
       integer :: NumLat
       integer :: NumLon
       integer :: TempI(1)
@@ -487,44 +506,52 @@ contains
       real(8) :: W2(NP, 4)
       real(8) :: var_scale_attr
       real(8) :: var_offset_attr
-      real(8) :: D_QNAN, ZERO
+      real(8) :: var_fillval
+
+      real(8) :: ws_this(4)
+      real(8) :: p_this(4)
+
+      type(t_datetime)  :: CurrentTime
+      type(t_datetime)  :: wtime2_dt
+      type(t_timedelta) :: dt
+      type(t_timedelta) :: TimeInterpNumerator, TimeInterpDenominator
 
       call setMessageSource("nws13get")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Enter.")
 #endif
 
-      ZERO = 0.d0
-      D_QNAN = ZERO/ZERO
       PrevCLon(1) = 0d0
       PrevCLat(1) = 0d0
       NextCLon(1) = 0d0
       NextCLat(1) = 0d0
 
-! First, fill the ADCIRC wind fields with background values.
+      ! First, fill the ADCIRC wind fields with background values.
       WVNX2 = 0.d0
       WVNY2 = 0.d0
       PRN2 = 101300.d0/RHOWAT0/G
 
-! Open a connection to the wind file.
+      ! Open a connection to the wind file.
       call check_err(NF90_OPEN(trim(adjustl(NWS13File)), NF90_NOWRITE, NC_ID))
 
-! We need to determine how many groups are active at the current
-! time in the simulation.  Loop over the groups and find which
-! groups to include.
+     ! We need to determine how many groups are active at the current
+     ! time in the simulation.  Loop over the groups and find which
+     ! groups to include.
       NWS13(:)%InclSnap = 0
-!     !WTIME1 = WTIME2
       WTIME2 = -1.d0
+      WTIME2_dt = null_datetime
+      CurrentTime = NWS13Coldstart + t_timedelta(milliseconds=int(TimeLoc*1000d0))
+
       do IG = 1, NumGroup
-         if (TimeLoc < NWS13(IG)%PrevTime) then
-! Then we still haven't reached the start of this group,
-! so we at least need to consider this as the end of the current
-! interval.  If we don't find any other groups with a closer
-! time, then this current interval will be zero winds.
-            if (WTIME2 < 0.d0) then
-               WTIME2 = NWS13(IG)%PrevTime
-            elseif (NWS13(IG)%PrevTime < WTIME2) then
-               WTIME2 = NWS13(IG)%PrevTime
+         if (CurrentTime < NWS13(IG)%PrevTime) then
+            ! Then we still haven't reached the start of this group,
+            ! so we at least need to consider this as the end of the current
+            ! interval.  If we don't find any other groups with a closer
+            ! time, then this current interval will be zero winds.
+            if (WTIME2_dt == null_datetime .or. NWS13(IG)%PrevTime < WTIME2_dt) then
+               WTIME2_dt = NWS13(IG)%PrevTime
+               dt = NWS13(IG)%PrevTime - WindRefDatetime
+               WTIME2 = dble(dt%total_milliseconds()) / 1000.0d0
             end if
             cycle
          end if
@@ -536,68 +563,59 @@ contains
          NC_IDG = IG
 #endif
          call check_err(NF90_INQ_VARID(NC_IDG, "time", NC_VAR))
-! Check whether we have progressed past the end of the current
-! wind snap, and if so, then shift to the next wind snap.
-         do while (TimeLoc >= NWS13(IG)%NextTime)
+         ! Check whether we have progressed past the end of the current
+         ! wind snap, and if so, then shift to the next wind snap.
+         do while (CurrentTime >= NWS13(IG)%NextTime)
             if (NWS13(IG)%NextSnap == NWS13(IG)%NumSnap) then
-! Then we have reached the end of the wind snaps for this
-! group, and it will be excluded below.
+               ! Then we have reached the end of the wind snaps for this
+               ! group, and it will be excluded below.
                exit
             end if
             NWS13(IG)%PrevSnap = NWS13(IG)%NextSnap
             NWS13(IG)%PrevTime = NWS13(IG)%NextTime
             NWS13(IG)%NextSnap = NWS13(IG)%NextSnap + 1
-! Get the next time from the file.
+            ! Get the next time from the file.
             call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, TempI(:), &
                                         START=[NWS13(IG)%NextSnap], COUNT=[1]))
-            NWS13(IG)%NextTime = dble(TempI(1) &
-                                      - ColdStartInMinutesSinceWindRefDateTime)*60.d0
+            NWS13(IG)%NextTime = WindRefDateTime + t_timedelta(minutes=TempI(1))
          end do
-! Then check whether we are within the current wind snap.
-         if (NWS13(IG)%PrevTime <= TimeLoc .and. &
-             TimeLoc <= NWS13(IG)%NextTime) then
+         ! Then check whether we are within the current wind snap.
+         if (NWS13(IG)%PrevTime <= CurrentTime .and. &
+             CurrentTime <= NWS13(IG)%NextTime) then
             NWS13(IG)%InclSnap = 1
-! Update our end time if this is the first snap we found ...
-            if (WTIME2 < 0.d0) then
-               WTIME2 = NWS13(IG)%NextTime
-! ... or if it is earlier than what we have found already.
-            elseif (NWS13(IG)%NextTime < WTIME2) then
-               WTIME2 = NWS13(IG)%NextTime
+            ! Update our end time if this is the first snap we found ...
+            ! ... or if it is earlier than what we have found already.
+            if (WTIME2_dt == null_datetime .or. (NWS13(IG)%NextTime < WTIME2_dt))then
+               dt = NWS13(IG)%NextTime - WindRefDatetime
+               WTIME2 = dble(dt%total_milliseconds()) / 1000.0d0
             end if
          end if
       end do
-! The only way we would not find a next snap is for the scenario
-! when the simulation has progressed past the end of the wind
-! file.  In that case, we can use the simulation length as the end
-! of this next snap.
-      if (WTIME2 < 0.d0) then
+      ! The only way we would not find a next snap is for the scenario
+      ! when the simulation has progressed past the end of the wind
+      ! file.  In that case, we can use the simulation length as the end
+      ! of this next snap.
+      if (WTIME2_dt < null_datetime) then
          WTIME2 = RNDAY*86400.d0
       end if
-!     !WTIMINCX = WTIME2 - WTIME1
 
-! If we don't need to include winds from any group (because the
-! simulation has started before or extended after the information
-! in the wind file), then we can return.
+      ! If we don't need to include winds from any group (because the
+      ! simulation has started before or extended after the information
+      ! in the wind file), then we can return.
       if (sum(NWS13(:)%InclSnap) > 0) then
 
-         if (MYPROC == 0) then
-            do ig = 1, NumGroup
-               if (NWS13(IG)%InclSnap == 0) then
-                  cycle
-               end if
-               write (Line, '(A,I1,A,A)') &
-                  "Using group", ig, " to ", &
-                  "interpolate pressure and wind fields from time"
-               write (JunkC, '(F20.2)') nws13(ig)%PrevTime
-               write (Line, '(A,A,A,A)') trim(Line), " ", trim(adjustl(JunkC)), &
-                  " to time"
-               write (JunkC, '(F20.2)') nws13(ig)%NextTime
-               write (Line, '(A,A,A,A)') trim(Line), " ", trim(adjustl(JunkC)), "."
-               write (*, '(A)') trim(Line)
-            end do
-         end if
+          do ig = 1, NumGroup
+             if (NWS13(IG)%InclSnap == 0) cycle
 
-! Increment the storm centers.
+             write (Line, '(A,I1,6A)') "Using group", ig, " to ", &
+                "interpolate pressure and wind fields from time ", &
+                trim(nws13(IG)%PrevTime%to_iso_string()), " to time ", &
+                trim(nws13(IG)%NextTime%to_iso_string()), "."
+
+             call screenMessage(INFO, line)
+          end do
+
+         ! Increment the storm centers.
          EyeLonR(1) = EyeLonR(2)
          EyeLatR(1) = EyeLatR(2)
          EyeLonR(2) = EyeLonR(3)
@@ -606,63 +624,52 @@ contains
          EyeLatR(3) = 0.d0
          FoundEye = .false.
 
-! Loop over the groups.
+         ! Loop over the groups.
          do IG = 1, NumGroup
-            if (NWS13(IG)%InclSnap == 0) then
-               cycle
-            end if
-#ifdef   HAVE_NETCDF4
-! Connect to this group.
+            if (NWS13(IG)%InclSnap == 0) cycle
+#ifdef HAVE_NETCDF4
+            ! Connect to this group.
             call check_err(NF90_INQ_NCID(NC_ID, trim(adjustl(GroupNames(IG))), &
                                          NC_IDG))
 #else
             NC_IDG = IG
 #endif
-! Read number of cells in longitude, latitude.
+            ! Read number of cells in longitude, latitude.
             call check_err(NF90_INQ_DIMID(NC_IDG, "xi", NC_DIM))
             call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NumLon))
             call check_err(NF90_INQ_DIMID(NC_IDG, "yi", NC_DIM))
             call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NumLat))
 
-! Initialize arrays.
+            ! Initialize arrays.
 
-! These are temporary.
-            if (allocated(Lon)) deallocate (Lon)
+            ! These are temporary.
+            if (allocated(Lon))then
+              deallocate (Lon,Lat,U,V,P, &
+                          NextLon,NextLat,NextU,NextV,NextP, &
+                          PrevLon,PrevLat,PrevU,PrevV,PrevP)
+            end if
+
             allocate (Lon(1:NumLon, 1:NumLat))
-            if (allocated(Lat)) deallocate (Lat)
             allocate (Lat(1:NumLon, 1:NumLat))
-            if (allocated(U)) deallocate (U)
             allocate (U(1:NumLon, 1:NumLat))
-            if (allocated(V)) deallocate (V)
             allocate (V(1:NumLon, 1:NumLat))
-            if (allocated(P)) deallocate (P)
             allocate (P(1:NumLon, 1:NumLat))
 
-! These have information from the previous snap.
-            if (allocated(PrevLon)) deallocate (PrevLon)
+            ! These have information from the previous snap.
             allocate (PrevLon(1:NumLon, 1:NumLat))
-            if (allocated(PrevLat)) deallocate (PrevLat)
             allocate (PrevLat(1:NumLon, 1:NumLat))
-            if (allocated(PrevU)) deallocate (PrevU)
             allocate (PrevU(1:NumLon, 1:NumLat))
-            if (allocated(PrevV)) deallocate (PrevV)
             allocate (PrevV(1:NumLon, 1:NumLat))
-            if (allocated(PrevP)) deallocate (PrevP)
             allocate (PrevP(1:NumLon, 1:NumLat))
 
-! These have information from the next snap.
-            if (allocated(NextLon)) deallocate (NextLon)
+            ! These have information from the next snap.
             allocate (NextLon(1:NumLon, 1:NumLat))
-            if (allocated(NextLat)) deallocate (NextLat)
             allocate (NextLat(1:NumLon, 1:NumLat))
-            if (allocated(NextU)) deallocate (NextU)
             allocate (NextU(1:NumLon, 1:NumLat))
-            if (allocated(NextV)) deallocate (NextV)
             allocate (NextV(1:NumLon, 1:NumLat))
-            if (allocated(NextP)) deallocate (NextP)
             allocate (NextP(1:NumLon, 1:NumLat))
 
-! Loop over the snaps.
+            ! Loop over the snaps.
             do IS = 1, 2
                if (IS == 1) then
                   CurrSnap = NWS13(IG)%PrevSnap
@@ -670,83 +677,67 @@ contains
                   CurrSnap = NWS13(IG)%NextSnap
                end if
 
-! 1. Read this snap from the wind file.
+               ! 1. Read this snap from the wind file.
 
-! Read mesh.
+               ! Read mesh.
                call check_err(NF90_INQ_VARID(NC_IDG, "lon", NC_VAR))
                call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lon(:, :), &
-                                           START=[1, 1, CurrSnap], COUNT=[NumLon, NumLat, 1]))
+                                           START=[1, 1, CurrSnap], &
+                                           COUNT=[NumLon, NumLat, 1]))
                call check_err(NF90_INQ_VARID(NC_IDG, "lat", NC_VAR))
                call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lat(:, :), &
-                                           START=[1, 1, CurrSnap], COUNT=[NumLon, NumLat, 1]))
+                                           START=[1, 1, CurrSnap], &
+                                           COUNT=[NumLon, NumLat, 1]))
 
-! Read winds and pressures.
-! U-wind component
+               ! Read winds and pressures.
+               ! U-wind component
                call check_err(NF90_INQ_VARID(NC_IDG, "U10", NC_VAR))
                call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, U(:, :), &
                                            START=[1, 1, CurrSnap], COUNT=[NumLon, NumLat, 1]))
-! Apply scale/offset if attributes are present
-               NC_ERR = NF90_GET_ATT(NC_IDG, NC_VAR, "_FillValue", var_scale_attr)
-               if (NC_ERR == 0) then
-                  do ILN = 1, NumLon
-                     do ILT = 1, NumLat
-                        if (abs(U(ILN, ILT) - var_scale_attr) <= EPS) then
-                           U(ILN, ILT) = D_QNAN
-                        end if
-                     end do
-                  end do
-               end if
+               ! Apply scale/offset if attributes are present
+               NC_ERR = NF90_GET_ATT(NC_IDG, NC_VAR, "_FillValue", var_fillval)
+               if (NC_ERR == NF90_NOERR) where (abs(U - var_fillval) <= eps) U = null_flag_value
+
                NC_ERR = NF90_GET_ATT(NC_IDG, NC_VAR, "scale_factor", var_scale_attr)
-               if (NC_ERR == 0) U = U*var_scale_attr
+               if (NC_ERR == NF90_NOERR) U = U * var_scale_attr
                NC_ERR = NF90_GET_ATT(NC_IDG, NC_VAR, "add_offset", var_offset_attr)
-               if (NC_ERR == 0) U = U + var_offset_attr
-! V-wind component
+               if (NC_ERR == NF90_NOERR) U = U + var_offset_attr
+
+               ! V-wind component
                call check_err(NF90_INQ_VARID(NC_IDG, "V10", NC_VAR))
                call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, V(:, :), &
                                            START=[1, 1, CurrSnap], COUNT=[NumLon, NumLat, 1]))
-! Apply scale/offset if attributes are present
-               NC_ERR = NF90_GET_ATT(NC_IDG, NC_VAR, "_FillValue", var_scale_attr)
-               if (NC_ERR == 0) then
-                  do ILN = 1, NumLon
-                     do ILT = 1, NumLat
-                        if (abs(V(ILN, ILT) - var_scale_attr) <= eps) then
-                           V(ILN, ILT) = D_QNAN
-                        end if
-                     end do
-                  end do
-               end if
+               ! Apply scale/offset if attributes are present
+               NC_ERR = NF90_GET_ATT(NC_IDG, NC_VAR, "_FillValue", var_fillval)
+               if (NC_ERR == NF90_NOERR) where (abs(V - var_fillval) <= eps) V = null_flag_value
+
                NC_ERR = NF90_GET_ATT(NC_IDG, NC_VAR, "scale_factor", var_scale_attr)
-               if (NC_ERR == 0) V = V*var_scale_attr
+               if (NC_ERR == NF90_NOERR) V = V * var_scale_attr
                NC_ERR = NF90_GET_ATT(NC_IDG, NC_VAR, "add_offset", var_offset_attr)
-               if (NC_ERR == 0) V = V + var_offset_attr
-! Pressure
+               if (NC_ERR == NF90_NOERR) V = V + var_offset_attr
+
+               ! Pressure
                call check_err(NF90_INQ_VARID(NC_IDG, "PSFC", NC_VAR))
                call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, P(:, :), &
                                            START=[1, 1, CurrSnap], COUNT=[NumLon, NumLat, 1]))
-! Apply scale/offset if attributes are present
-               NC_ERR = NF90_GET_ATT(NC_IDG, NC_VAR, "_FillValue", var_scale_attr)
-               if (NC_ERR == 0) then
-                  do ILN = 1, NumLon
-                     do ILT = 1, NumLat
-                        if (abs(P(ILN, ILT) - var_scale_attr) < eps) then
-                           P(ILN, ILT) = D_QNAN
-                        end if
-                     end do
-                  end do
-               end if
+               
+               ! Apply scale/offset if attributes are present
+               NC_ERR = NF90_GET_ATT(NC_IDG, NC_VAR, "_FillValue", var_fillval)
+               if (NC_ERR == NF90_NOERR) where (abs(P - var_fillval) <= eps) P = null_flag_value
+
                NC_ERR = NF90_GET_ATT(NC_IDG, NC_VAR, "scale_factor", var_scale_attr)
-               if (NC_ERR == 0) P = P*var_scale_attr
+               if (NC_ERR == NF90_NOERR) P = P * var_scale_attr
                NC_ERR = NF90_GET_ATT(NC_IDG, NC_VAR, "add_offset", var_offset_attr)
-               if (NC_ERR == 0) P = P + var_offset_attr
+               if (NC_ERR == NF90_NOERR) P = P + var_offset_attr
 
-! Adjust the wind velocity.
-               U = U*NWS13WindMultiplierReal
-               V = V*NWS13WindMultiplierReal
+               ! Adjust the wind velocity.
+               U = U*NWS13WindMultiplier
+               V = V*NWS13WindMultiplier
 
-! Convert the pressures into meters of water.
+               ! Convert the pressures into meters of water.
                P = P*100.d0/RHOWAT0/G
 
-! Try to read the storm center.
+               ! Try to read the storm center.
                NC_ERR = NF90_INQ_VARID(NC_IDG, "clon", NC_VAR)
                if (NC_ERR == NF90_NOERR) then
                   NC_ERR = NF90_GET_VAR(NC_IDG, NC_VAR, CLon(:), &
@@ -760,7 +751,7 @@ contains
                   FoundEye = .true.
                end if
 
-! Save the snaps.
+               ! Save the snaps.
                if (IS == 1) then
                   PrevLon = Lon
                   PrevLat = Lat
@@ -784,20 +775,19 @@ contains
                end if
             end do
 
-! 2. Interpolate the wind snaps to start/end of current interval.
+            ! 2. Interpolate the wind snaps to start/end of current interval.
+            TimeInterpNumerator = CurrentTime - NWS13(IG)%PrevTime
+            TimeInterpDenominator = NWS13(IG)%NextTime - NWS13(IG)%PrevTime
+            TimeInterpFactor = dble(TimeInterpNumerator%total_milliseconds()) / &
+                               dble(TimeInterpDenominator%total_milliseconds())
 
-            TimeInterpFactor = (TimeLoc - NWS13(IG)%PrevTime) &
-                               /(NWS13(IG)%NextTime - NWS13(IG)%PrevTime)
-!          IF(MYPROC.EQ.0)THEN
-!            write(6,*) TimeInterpFactor,TimeLoc,NWS13(IG)%PrevTime,
-!       &               NWS13(IG)%NextTime
-!          ENDIF
             Lon = PrevLon + (NextLon - PrevLon)*TimeInterpFactor
             Lat = PrevLat + (NextLat - PrevLat)*TimeInterpFactor
             U = PrevU + (NextU - PrevU)*TimeInterpFactor
             V = PrevV + (NextV - PrevV)*TimeInterpFactor
             P = PrevP + (NextP - PrevP)*TimeInterpFactor
-! Time Interpolate scalar wind
+
+            ! Time Interpolate scalar wind
             PrevWs = sqrt(PrevU**2 + PrevV**2)
             NextWs = sqrt(NextU**2 + NextV**2)
             Ws = PrevWs + (NextWs - PrevWs)*TimeInterpFactor
@@ -806,8 +796,9 @@ contains
                CLat = PrevCLat + (NextCLat - PrevCLat)*TimeInterpFactor
             end if
 
-! 3. Interpolate the wind snaps onto the ADCIRC mesh.
+            ! 3. Interpolate the wind snaps onto the ADCIRC mesh.
             if (IG > 1) then
+
                call NWS13INTERP(NumLon, NumLat, Lon, Lat, ILon, ILat, W2)
             else
                W2 = W(:, 1:4)
@@ -816,15 +807,18 @@ contains
             end if
             do IV = 1, NP
                if (ILon(IV) > 0) then
-! do not apply if we pick up a nan
-                  if (abs((Ws(ILon(IV), ILat(IV)) &
-                           + Ws(ILon(IV) + 1, ILat(IV)) &
-                           + Ws(ILon(IV) + 1, ILat(IV) + 1) &
-                           + Ws(ILon(IV), ILat(IV) + 1)) - &
-                          (Ws(ILon(IV), ILat(IV)) &
-                           + Ws(ILon(IV) + 1, ILat(IV)) &
-                           + Ws(ILon(IV) + 1, ILat(IV) + 1) &
-                           + Ws(ILon(IV), ILat(IV) + 1))) < eps) then
+
+                  ws_this(1) = Ws(ILon(IV), ILat(IV))
+                  ws_this(2) = Ws(ILon(IV) + 1, ILat(IV))
+                  ws_this(3) = Ws(ILon(IV) + 1, ILat(IV) + 1)
+                  ws_this(4) = Ws(ILon(IV), ILat(IV) + 1)
+                  p_this(1) = P(ILon(IV), ILat(IV))
+                  p_this(2) = P(ILon(IV) + 1, ILat(IV))
+                  p_this(3) = P(ILon(IV) + 1, ILat(IV) + 1)
+                  p_this(4) = P(ILon(IV), ILat(IV) + 1)
+
+                  ! do not apply if we pick up a a flag value
+                  if (any(abs(ws_this - null_flag_value) > eps))then
                      UU(IV) = W2(IV, 1)*U(ILon(IV), ILat(IV)) &
                               + W2(IV, 2)*U(ILon(IV) + 1, ILat(IV)) &
                               + W2(IV, 3)*U(ILon(IV) + 1, ILat(IV) + 1) &
@@ -838,21 +832,16 @@ contains
                                 + W2(IV, 3)*Ws(ILon(IV) + 1, ILat(IV) + 1) &
                                 + W2(IV, 4)*Ws(ILon(IV), ILat(IV) + 1)
                   end if
-! do not apply if we pick up a nan
-                  if (abs((P(ILon(IV), ILat(IV)) &
-                           + P(ILon(IV) + 1, ILat(IV)) &
-                           + P(ILon(IV) + 1, ILat(IV) + 1) &
-                           + P(ILon(IV), ILat(IV) + 1)) - &
-                          (P(ILon(IV), ILat(IV)) &
-                           + P(ILon(IV) + 1, ILat(IV)) &
-                           + P(ILon(IV) + 1, ILat(IV) + 1) &
-                           + P(ILon(IV), ILat(IV) + 1))) <= eps) then
+
+                  ! do not apply if we pick up a flag value
+                  if (any(abs(p_this - null_flag_value) > eps))then
                      PP(IV) = W2(IV, 1)*P(ILon(IV), ILat(IV)) &
                               + W2(IV, 2)*P(ILon(IV) + 1, ILat(IV)) &
                               + W2(IV, 3)*P(ILon(IV) + 1, ILat(IV) + 1) &
                               + W2(IV, 4)*P(ILon(IV), ILat(IV) + 1)
                   end if
-! Adjust U/V Based on scalar wind magnitude
+
+                  ! Adjust U/V Based on scalar wind magnitude
                   if (abs(UU(iV)) <= eps .and. abs(VV(iV)) <= eps) then
                      sWdir = 0d0
                   else
@@ -860,27 +849,23 @@ contains
                      UU(IV) = Wind(IV)*sin(sWDir)
                      VV(IV) = Wind(IV)*cos(sWDir)
                   end if
-! Casey 200528
+
                   PRN2(IV) = PP(IV)
                   WVNX2(IV) = UU(IV)
                   WVNY2(IV) = VV(IV)
                end if
             end do
 
-! Casey 200528
-!       PRN2 = PP
-!       WVNX2 = UU
-!       WVNY2 = VV
-
             if (FoundEye) then
-               if ((NWS13GroupForPowellInt == 0) &
-                   .or. (NWS13GroupForPowellInt == IG)) then
-! Assign the storm center to the next spot in the array.
+               if ((NWS13GroupForPowell == 0) &
+                   .or. (NWS13GroupForPowell == IG)) then
+                  ! Assign the storm center to the next spot in the array.
                   EyeLonR(3) = CLon(1)
                   EyeLatR(3) = CLat(1)
                   PowellGroupTemp = IG
                end if
             end if
+
 
          end do ! IG=1,NumGroup
 
@@ -980,7 +965,6 @@ contains
       NumResult = (NumLon - 1)*(NumLat - 1)
       NumResult = min(NumResult, 1000)
 
-      if (allocated(ElemCenter)) deallocate (ElemCenter)
       allocate (ElemCenter(1:2, 1:(NumLon - 1)*(NumLat - 1)))
       Counter = 0
       do IO = 1, NumLon - 1
@@ -994,9 +978,8 @@ contains
                                      Lat(IO + 1, IA + 1) + Lat(IO, IA + 1))
          end do
       end do
-      kdTree => kdtree2_create(ElemCenter, rearrange=.true., &
-                               sort=.true.)
-      if (allocated(kdResult)) deallocate (kdResult)
+
+      kdTree => kdtree2_create(ElemCenter, rearrange=.true., sort=.true.)
       allocate (kdResult(1:NumResult))
 
       ILon = 0
@@ -1091,6 +1074,8 @@ contains
       end do
 
       call kdtree2_destroy(tp=kdTree)
+      deallocate (kdResult)
+      deallocate (ElemCenter)
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Return.")
@@ -1101,35 +1086,5 @@ contains
    end subroutine NWS13INTERP
 !-----------------------------------------------------------------------
 
-   integer function JULIAN(YEAR, MONTH, DAY)
-      implicit none
-      integer, intent(IN) :: YEAR, MONTH, DAY
-      call setMessageSource("julian")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
-      JULIAN = DAY - 32075 + 1461*(YEAR + 4800 + (MONTH - 14)/12)/4 + 367 &
-               *(MONTH - 2 - (MONTH - 14)/12*12)/12 &
-               - 3*((YEAR + 4900 + (MONTH - 14)/12)/100)/4
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-   end function JULIAN
-
-   real(8) function FRACTIONTIME(HOUR, MINUTE, SECOND)
-      implicit none
-      integer, intent(IN) :: HOUR, MINUTE, SECOND
-      call setMessageSource("fractiontime")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
-      FRACTIONTIME = (dble(HOUR) + (dble(MINUTE) + dble(SECOND)/60.d0)/60.d0)/24.d0
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-   end function FRACTIONTIME
-
 end module mod_nws13
-#endif
+
