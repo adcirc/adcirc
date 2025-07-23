@@ -106,6 +106,9 @@ module mod_datetime
       procedure :: valid => datetime_is_valid
    end type t_datetime
 
+   ! Create a null datetime object
+   type(t_datetime), parameter :: null_datetime = t_datetime(0_c_int64_t)
+
    ! Interface blocks for constructors
    !> @brief Constructor interface for timedelta
    interface t_timedelta
