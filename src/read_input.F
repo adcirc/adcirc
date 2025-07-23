@@ -176,10 +176,7 @@ Casey 100205: Enable hot-start file generation by SWAN.
       use mod_datetime, only: t_datetime
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
-      USE mod_nws13, ONLY: NWS13ColdStartString,
-     &                     NWS13File,
-     &                     NWS13GroupForPowell,
-     &                     NWS13WindMultiplier
+      USE mod_nws13, ONLY: nws13_set_namelist_parameters
 #endif
 !JLW: add subgrid 
       USE subgrid, only: subgridFilename, level0, level1, phi_time_derivative
@@ -204,6 +201,11 @@ C
       character(len=100) :: densityForcingType ! sigmaT, salinity, etc
 
       character(len=20) :: vortexModelString
+
+      ! nws 13 namelist parameters
+      character(len=200) :: NWS13File, NWS13ColdStartString
+      real(8) :: NWS13WindMultiplier
+      integer :: NWS13GroupForPowell
 
       ! I/O variables for tide potential namelist
       logical :: UseFullTIPFormula = .false.
@@ -518,13 +520,18 @@ c     a non-default value we can determine this was the case.
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       namelistSpecifier = 'owiWindNetcdf'
+      NWS13File = 'fort.22.nc'
+      NWS13WindMultiplier = 1.0D0
+      NWS13GroupForPowell = 0
       read(unit=15,nml=owiWindNetcdf,iostat=ios,iomsg=ios_nml_error_msg)
       call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
       write(scratchMessage,*) "NWS13File=",trim(adjustl(NWS13File)),
      & " NWS13ColdStartString=",trim(adjustl(NWS13ColdStartString)),
-     & " NWS13WindMultiplier=",trim(adjustl(NWS13WindMultiplier)),
-     & " NWS13GroupForPowell=",trim(adjustl(NWS13GroupForPowell))
+     & " NWS13WindMultiplier=",NWS13WindMultiplier,
+     & " NWS13GroupForPowell=",NWS13GroupForPowell
       call logMessage(ECHO,trim(scratchMessage))
+      call nws13_set_namelist_parameters(NWS13File, NWS13ColdStartString,
+     &                                   NWS13WindMultiplier, NWS13GroupForPowell)
       rewind(15)
 #endif
 
