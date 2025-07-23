@@ -2339,11 +2339,14 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
          if(FOUND_OWINC_NML)then
-            write(15,'(a,a,a,f0.4,a,i0,a)')
-     &         "&owiWindNetcdf NWS13File='",TRIM(ADJUSTL(NWS13File)),
-     &         "' NWS13ColdStartString='",TRIM(ADJUSTL(NWS13ColdStartString)),
-     &         "' NWS13WindMultiplier=", NWS13WindMultiplier,
-     &         "  NWS13GroupForPowell=", NWS13GroupForPowell," /"
+            write(15, '(a)') '! -- Begin OWI Wind NetCDF Namelist --'
+            write(15,'(a,/,6a,/,a,f0.4,/a,i0,a)')
+     &         "&owiWindNetcdf ",
+     &         " NWS13File='",TRIM(ADJUSTL(NWS13File)),"'",
+     &         " NWS13ColdStartString='",TRIM(ADJUSTL(NWS13ColdStartString)),"'",
+     &         " NWS13WindMultiplier=", NWS13WindMultiplier,
+     &         " NWS13GroupForPowell=", NWS13GroupForPowell," /"
+            write(15, '(a)') '! -- End OWI Wind NetCDF Namelist --'
          endif
 #endif
 
