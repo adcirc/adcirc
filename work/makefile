@@ -108,7 +108,7 @@ ifeq ($(BUILDTYPE),adcprep)
   CF:= $(PPFC)
   O_DIR:=$(SRCDIR)/work/odir1/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR)/thirdparty/fdate/src
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/src/wind_modules:$(SRCDIR)/wind:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -125,7 +125,7 @@ ifeq ($(BUILDTYPE),adcprep_be)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir2/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR)
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind:$(SRCDIR)/thirdparty/fdate/src
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/src:$(SRCDIR)/src/wind_modules:$(SRCDIR):$(SRCDIR)/wind:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -142,7 +142,7 @@ ifeq ($(BUILDTYPE),adcirc)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir3/
   FFLAGS:= $(FFLAGS2) $(DA) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/fdate/src
+  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/src/wind_modules:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -159,7 +159,7 @@ ifeq ($(BUILDTYPE),adcswan)
   CF:= $(FC)
   O_DIR:=$(SRCDIR)/work/odir33/
   FFLAGS:= $(FFLAGS2) -DCSWAN $(DA) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan:$(SRCDIR)/thirdparty/fdate/src
+  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/src/wind_modules:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -183,7 +183,7 @@ ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odir4/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/fdate/src
+  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/src/wind_modules:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -200,7 +200,7 @@ ifeq ($(BUILDTYPE),padcswan)
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odir44/
   FFLAGS:= $(FFLAGS3) -DCSWAN $(DP) $(IMODS) $(O_DIR) $(FFLAGSGSW)
-  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan:$(SRCDIR)/thirdparty/fdate/src
+  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/src/wind_modules:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/swan:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -225,7 +225,7 @@ ifeq ($(BUILDTYPE),$(LIBADC))
   CF:= $(PFC)
   O_DIR:=$(SRCDIR)/work/odircp/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
-  VPATH := $(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/fdate/src
+  VPATH := $(SRCDIR):$(SRCDIR)/src/wind_modules:$(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -314,7 +314,7 @@ ifeq ($(BUILDTYPE),aswip)
   CF:= $(PPFC)
   O_DIR:=$(SRCDIR)/work/odir14/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
-  VPATH := $(SRCDIR)/src:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/fdate/src
+  VPATH := $(SRCDIR)/src:$(SRCDIR)/src/wind_modules:$(SRCDIR)/thirdparty/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/thirdparty/fdate/src
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
@@ -741,7 +741,7 @@ $(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
 $(O_DIR)mesh.o        :  mesh.F $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)hashtable.o
 $(O_DIR)pre_global.o  :  pre_global.F  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ) $(O_DIR)global_3dvs.o
 $(O_DIR)boundaries.o  :  boundaries.F $(O_DIR)sizes.o
-$(O_DIR)subprep.o     :  subprep.F $(O_DIR)subprep.o $(O_DIR)global.o
+$(O_DIR)subprep.o     :  subprep.F $(O_DIR)global.o
 
 #  adcprep
 
@@ -760,7 +760,7 @@ $(O_DIR)mkdir.o       :  mkdir.c cfi.h
 
 #  adcpost modules
 
-$(O_DIR)post_global.o :  post_global.F $(POST_MOBJ)
+$(O_DIR)post_global.o :  post_global.F
 
 #  adcpost
 
@@ -804,7 +804,11 @@ endif
 $(O_DIR)writer.o      : $(WRITER_DEP)
 $(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o $(O_DIR)global_3dvs.o
 $(O_DIR)harm.o        :  harm.F $(O_DIR)mesh.o
-$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ)
+ifeq ($(NETCDF),enable)
+$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOBJ) $(NWS08_MOBJ) $(O_DIR)owiwind.o $(O_DIR)rs2.o $(O_DIR)owi_ice.o $(O_DIR)nws13.o
+else
+$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOBJ) $(NWS08_MOBJ) $(O_DIR)owiwind.o $(O_DIR)rs2.o $(O_DIR)owi_ice.o
+endif
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ)
 $(O_DIR)nws13.o       :  nws13.F90
 $(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ)
