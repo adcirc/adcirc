@@ -220,6 +220,7 @@ contains
                                             NWS13ColdStart_in, &
                                             NWS13WindMultiplier_in, &
                                             NWS13GroupForPowell_in)
+      use global, only: logMessage, INFO, scratchMessage
       implicit none
 
       character(len=*), intent(IN) :: NWS13Filename_in
@@ -229,9 +230,14 @@ contains
 
       ! Set the parameters from the namelist.
       NWS13File = trim(adjustl(NWS13Filename_in))
-      NWS13ColdStart = t_datetime(NWS13ColdStart_in)
+      NWS13ColdStart = t_datetime(NWS13ColdStart_in, "%Y%m%d.%H%M%S")
       NWS13WindMultiplier = NWS13WindMultiplier_in
       NWS13GroupForPowell = NWS13GroupForPowell_in
+
+      call logMessage(INFO, "Using NWS13 file: "//trim(adjustl(NWS13File)))
+      call logMessage(INFO, "NWS13 Cold Start Date: "//trim(NWS13ColdStart%to_iso_string()))
+      write (scratchMessage, '(A,F0.4)') "NWS13 Wind Multiplier: ", NWS13WindMultiplier
+      call logMessage(INFO, scratchMessage)
 
    end subroutine nws13_set_namelist_parameters
 
