@@ -35,7 +35,7 @@ set(ADCPREP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws08.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/prep/presizes.F
     ${CMAKE_CURRENT_SOURCE_DIR}/prep/pre_global.F
     ${CMAKE_CURRENT_SOURCE_DIR}/prep/metis.F
@@ -63,7 +63,7 @@ set(ADCPREP_SOURCES
 if(NETCDF_WORKING)
   set(ADCPREP_SOURCES
       ${ADCPREP_SOURCES}
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nws13.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
 endif()
