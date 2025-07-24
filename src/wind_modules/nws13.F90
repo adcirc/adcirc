@@ -1022,7 +1022,6 @@ contains
 #endif
       call unsetMessageSource()
 
-!-----------------------------------------------------------------------
    end subroutine NWS13INTERP
 !-----------------------------------------------------------------------
 
@@ -1062,17 +1061,15 @@ contains
       val = w(1)*arr(i, j) + w(2)*arr(i + 1, j) + w(3)*arr(i + 1, j + 1) + w(4)*arr(i, j + 1)
    end function interpolate_bilinear
 
-   !-----------------------------------------------------------------------
-   !> @brief Reads a NetCDF variable and applies fill value, scale, and offset
-   !> @param[in]  ncid      NetCDF group ID
-   !> @param[in]  varname   Name of the variable
-   !> @param[in]  currsnap  Time index to read
-   !> @param[in]  numlon    X-dimension size
-   !> @param[in]  numlat    Y-dimension size
-   !> @param[out] arr       Output array
-   !> @param[in]  eps       Tolerance for fill value
-   !> @param[in]  null_flag Null value to use for fill
-   !-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!> @brief Reads a NetCDF variable and applies fill value, scale, and offset
+!> @param[in]  ncid      NetCDF group ID
+!> @param[in]  varname   Name of the variable
+!> @param[in]  currsnap  Time index to read
+!> @param[in]  numlon    X-dimension size
+!> @param[in]  numlat    Y-dimension size
+!> @param[out] arr       Output array
+!-----------------------------------------------------------------------
    subroutine read_netcdf_var_with_attrs(ncid, varname, currsnap, numlon, numlat, arr)
       use netcdf, only: NF90_INQ_VARID, NF90_GET_VAR, NF90_GET_ATT, NF90_NOERR
       use netcdf_error, only: check_err
