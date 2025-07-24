@@ -223,18 +223,25 @@ contains
                                             NWS13ColdStart_in, &
                                             NWS13WindMultiplier_in, &
                                             NWS13GroupForPowell_in)
+      use mod_logging, only: logMessage
       implicit none
 
       character(len=*), intent(IN) :: NWS13Filename_in
       character(len=*), intent(IN) :: NWS13ColdStart_in
       real(8), intent(IN) :: NWS13WindMultiplier_in
       integer, intent(IN) :: NWS13GroupForPowell_in
+      character(len=256) :: message
 
       ! Set the parameters from the namelist.
       NWS13File = trim(adjustl(NWS13Filename_in))
-      NWS13ColdStart = t_datetime(NWS13ColdStart_in)
+      NWS13ColdStart = t_datetime(NWS13ColdStart_in, "%Y%m%d.%H%M%S")
       NWS13WindMultiplier = NWS13WindMultiplier_in
       NWS13GroupForPowell = NWS13GroupForPowell_in
+
+      call logMessage(INFO, "Using NWS13 file: "//trim(adjustl(NWS13File)))
+      call logMessage(INFO, "NWS13 Cold Start Date: "//trim(NWS13ColdStart%to_iso_string()))
+      write (message, '(A,F0.4)') "NWS13 Wind Multiplier: ", NWS13WindMultiplier
+      call logMessage(INFO, trim(message))
 
    end subroutine nws13_set_namelist_parameters
 
@@ -423,7 +430,6 @@ contains
 
       ! Close the NetCDF file.
       call check_err(NF90_CLOSE(NC_ID))
-
 
 !-----------------------------------------------------------------------
    end subroutine NWS13INIT
@@ -862,7 +868,6 @@ contains
          PowellGroup = PowellGroupTemp
       end if
 
-
 !-----------------------------------------------------------------------
    end subroutine NWS13GET
 !-----------------------------------------------------------------------
@@ -1004,7 +1009,6 @@ contains
       call kdtree2_destroy(tp=kdTree)
       deallocate (kdResult)
       deallocate (ElemCenter)
-
 
    end subroutine NWS13INTERP
 !-----------------------------------------------------------------------
