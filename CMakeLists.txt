@@ -107,7 +107,7 @@ list(
   2
   ADCIRC_VERSION_PATCH)
 
-# ...Set position independent code 
+# ...Set position independent code
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # ...Include Macros to build components
