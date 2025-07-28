@@ -148,24 +148,15 @@ contains
       logical, intent(IN) :: in_IncludeNutation
       real(8), intent(IN) :: in_k2value, in_h2value
       character(len=len_trim(in_MoonSunPositionComputeMethod)) :: moonSunPositionString
+      character(len=len(in_TIPStartDate)) :: tmp_start_date
 
       self%m_UseFullTIPFormula = in_UseFullTIPFormula
 
       if (.not. self%m_UseFullTIPFormula) return
 
       self%m_TIPOrder = in_TIPOrder
-      self%m_TIPStartDate = t_datetime(in_TIPStartDate, &
-                                      ["%Y-%m-%d %H:%M:%S    ", &
-                                       "%Y-%m-%dT%H:%M:%S    ", &
-                                       "%Y-%m-%d %H:%M:%S UTC", &
-                                       "%Y-%m-%dT%H:%M:%SZ   ", &
-                                       "%Y-%m-%dT%H:%M       ", &
-                                       "%Y/%m/%d %H:%M:%S    ", &
-                                       "%Y/%m/%d %H:%M       ", &
-                                       "%Y%m%d%H%M%S         ", &
-                                       "%Y/%m/%d             ", &
-                                       "%Y-%m-%d             "] &
-                                  )
+      tmp_start_date = trim(adjustl(in_TIPStartDate))
+      self%m_TIPStartDate = t_datetime(tmp_start_date(1:19), ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M   "])
       self%m_IncludeNutation = in_IncludeNutation
       self%m_k2value = in_k2value
       self%m_h2value = in_h2value
