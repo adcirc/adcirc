@@ -5145,18 +5145,12 @@ C
          CALL logMessage(ECHO,"metadata, contact: "//trim(contact))
          READ(15,'(A80)',err=99999,end=99998,iostat=ios) base_date
          CALL logMessage(ECHO,"metadata, base_date: "//trim(base_date))
+
+         ! Sanitiz the date and then parse using the prescribed format
          base_date = trim(adjustl(base_date)) 
          base_date = base_date(1:19)
-         basedatetime = t_datetime(trim(adjustl(base_date)), 
-     &                                ["%Y-%m-%d %H:%M:%S",
-     &                                 "%Y-%m-%dT%H:%M:%S",
-     &                                 "%Y/%m/%d %H:%M:%S",
-     &                                 "%Y-%m-%dT%H:%M   ",
-     &                                 "%Y/%m/%d %H:%M   ",
-     &                                 "%Y-%m-%d %H:%M   ",
-     &                                 "%Y%m%d%H%M%S     ",
-     &                                 "%Y/%m/%d         ",
-     &                                 "%Y-%m-%d         "])
+         basedatetime = t_datetime(trim(adjustl(base_date)),["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M   "])
+
          ! Check this a valid time
          if (.not.basedatetime%valid()) then
             call allMessage(ERROR,'Invalid base datetime: '
