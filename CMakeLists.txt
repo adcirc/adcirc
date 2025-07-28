@@ -82,7 +82,7 @@ set(ADCIRC_VERSION_MINOR 0)
 set(ADCIRC_VERSION_PATCH 0)
 set(ADCIRC_VERSION_STRING ${ADCIRC_VERSION_MAJOR}.${ADCIRC_VERSION_MINOR}.${ADCIRC_VERSION_PATCH})
 
-# ...Set position independent code 
+# ...Set position independent code
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # ...Include Macros to build components
