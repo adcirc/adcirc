@@ -50,4 +50,7 @@ if(BUILD_ASWIP)
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${ASWIP_SOURCES})
 
+  # Set the linker language to Fortran for the executable
+  set_target_properties(aswip PROPERTIES LINKER_LANGUAGE Fortran)
+
 endif(BUILD_ASWIP)

@@ -82,4 +82,7 @@ if(BUILD_ADCPREP)
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${ADCPREP_SOURCES})
 
+  # Set the linker language to Fortran for the executable
+  set_target_properties(adcprep PROPERTIES LINKER_LANGUAGE Fortran)
+
 endif(BUILD_ADCPREP)
