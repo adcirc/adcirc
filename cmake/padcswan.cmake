@@ -109,7 +109,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
       ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws08.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
@@ -153,7 +153,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   if(NETCDF_WORKING)
     set(PADCSWAN1_SOURCES
         ${PADCSWAN1_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
@@ -234,5 +234,8 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${PADCSWAN1_SOURCES})
   enable_developer_mode(${PADCSWAN_SOURCES})
+
+  # Set the linker language to Fortran for the executable
+  set_target_properties(padcswan PROPERTIES LINKER_LANGUAGE Fortran)
 
 endif(BUILD_PADCSWAN AND PERL_FOUND)

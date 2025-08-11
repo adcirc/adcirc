@@ -1,0 +1,84 @@
+name: Pre-commit Checks
+
+on:
+  workflow_call:
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu)
+        if : matrix.os == 'ubuntu-latest'
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y cmake gcc g++ gfortran build-essential ninja-build clang-tidy cppcheck 
+
+      - name: Install dependencies (Windows)
+        if : matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: >-
+            base-devel
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-gcc-fortran
+
+      - name: Configure (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cmake -B build \
+            -DFDATE_ENABLE_TESTING=ON \
+            -DFDATE_BUILD_SHARED=OFF \
+            -DFDATE_DEVELOPER_MODE=ON \
+            -G Ninja 
+
+      - name: Configure (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          cmake -B build -DFDATE_ENABLE_TESTING=ON -DFDATE_BUILD_SHARED=OFF -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_Fortran_COMPILER=gfortran
+
+      - name: Configure (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          cmake -B build \
+            -DCMAKE_C_COMPILER=/opt/homebrew/bin/gcc-14 \
+            -DCMAKE_CXX_COMPILER=/opt/homebrew/bin/g++-14 \
+            -DCMAKE_Fortran_COMPILER=/opt/homebrew/bin/gfortran-14 \
+            -DFDATE_ENABLE_TESTING=ON \
+            -DFDATE_BUILD_SHARED=OFF \
+            -G Ninja
+
+      - name: Build (Ubuntu/MacOS)
+        if : matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+        run: cmake --build build --parallel
+
+      - name: Build (Windows)
+        if : matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: cmake --build build --parallel
+
+      - name: Test (Ubuntu/MacOS)
+        if : matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+        working-directory: build
+        run: |
+          ctest --output-on-failure
+
+      - name: Test (Windows)
+        if : matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        working-directory: build
+        run: |
+          ctest --output-on-failure
+          

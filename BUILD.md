@@ -11,9 +11,34 @@ There are two build systems available:
 1. CMake
 2. Traditional GNU Make
 
-The GNU Make suite of tools has been used with ADCIRC for many years and those who have built ADCIRC from its source code in the past will already be familiar with it.
+GNU Make has been used with ADCIRC for many years. It has fewer features than CMake, but it is familiar to many users. 
 
-CMake is a new build option and is geared at making building the ADCIRC source code from scratch mode user friendly across many platforms. While the GNU Make approach might work well for seasoned veterns, those unfamiliar with it might struggle, making CMake an attractive option. CMake can also be used in combination with the MinGW suite of tools to build ADCIRC in a Windows environment.
+CMake is the default build option and is recommended for most users. It provides a more modern interface and is able 
+to build both the serial and parallel versions of ADCIRC and SWAN. CMake also provides a more flexible build system 
+that can be used on many different platforms, including Windows, Linux, and MacOS.
+
+## Compilers
+ADCIRC requires a C, C++, and Fortran compiler to build the code. In general, the recommended versions for your target
+system, defined by system administrators, should be used, provided that they meet the following minimum requirements.
+The compiler requirements are relatively low, and most modern compilers should be able to build ADCIRC without issue.
+
+A set of compilers should meet the minimum following requirements:
+* Fortran 2008 support
+* C11 support
+* C++17 support
+
+### Minimum Compiler Requirements
+
+| Compiler                      | Minimum Version | Recommended Version |
+|-------------------------------|-----------------|---------------------|
+| GCC (GNU Compiler Collection) | 7.1             | 8.3+                |
+| Intel Classic Compilers       | 19.0            | 19.1+               |
+| Intel OneAPI Compilers        | 2021.1          | 2022.1+             |
+
+ADCIRC has also been built and tested with the NVIDIA HPC compilers (NVHPC) and 
+LLVM project compilers (`clang`, `clang++`, and `flang`). These compilers are 
+less well tested in the ADCIRC community, but in principle they should be 
+suitable for building ADCIRC.
 
 ## Building with CMake
 
@@ -35,6 +60,7 @@ Make sure that the following commands are available at your command prompt windo
 perl
 gfortran
 gcc
+g++
 mingw32-make
 ```
 
