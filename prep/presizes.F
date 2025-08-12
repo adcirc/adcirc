@@ -151,8 +151,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &    SWAN_OutputTMM10
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
-     &                  initWindModule, 
-     &                  read_NWS14_NetCdf_using_core_0
+     &                  initWindModule
+      use mod_nws14, only: read_NWS14_NetCdf_using_core_0
       USE mod_nws12, ONLY: nPowellSearchDomains
 !Casey 221103 : Use the baroclinic3D namelist from global_3dvs
       USE GLOBAL_3DVS, ONLY : baroclinic3D,

@@ -105,8 +105,8 @@ C
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
      &    getdynamicWaterLevelCorrections,
-     &    dynamicWaterLevelCorrectionMassAdjust,
-     &    CLOSE_MET_FILES
+     &    dynamicWaterLevelCorrectionMassAdjust
+      use mod_nws14, only: CLOSE_NWS14_FILES
 
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.... TCM V49.64.01 ADDITIONS FOR ICE
@@ -1587,7 +1587,7 @@ C      ENDIF
 
       IF ( IT == NT ) THEN
         ! close NWS14 NetCdf files !
-        CALL CLOSE_MET_FILES() ; 
+        CALL CLOSE_NWS14_FILES()
       END IF        
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)

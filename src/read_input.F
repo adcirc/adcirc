@@ -138,8 +138,8 @@ C-----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionRampEnd,
      &   dynamicWaterLevelCorrectionSkipSnaps,
      &   dynamicWaterLevelCorrectionRampReferenceTime,
-     &   dynamicWaterLevelCorrectionMultiplier,
-     &   read_NWS14_NetCdf_using_core_0
+     &   dynamicWaterLevelCorrectionMultiplier
+      use mod_nws14, only: read_NWS14_NetCdf_using_core_0
       USE mod_nws12,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
