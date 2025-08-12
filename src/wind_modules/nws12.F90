@@ -90,6 +90,7 @@ module mod_nws12
                      WARNING, ERROR, screenMessage, logMessage, allMessage, &
                      setMessageSource, unsetMessageSource, scratchMessage, &
                      openFileForRead, Flag_ElevError
+   use mod_datetime, only: t_datetime
 #ifdef CMPI
    use MESSENGER, only: MSG_FINI
 #endif
@@ -106,10 +107,9 @@ module mod_nws12
    type OCEANWEATHER !< Container for Oceanweather domains. Represents a wind and pressure field
       character(1024) :: pressure_file !< filename used for the pressure field
       character(1024) :: wind_file !< filename used for the wind velocity field
-      integer(8) :: startDate !< start date in the domain
-      integer(8) :: endDate !< end date in the domain
-      integer(8) :: date !< current date in domain for data read
-      integer :: minute !< current minute in domain for data read
+      type(t_datetime) :: startDate !< start date in the domain
+      type(t_datetime) :: endDate !< end date in the domain
+      type(t_datetime) :: date !< current date in domain for data read
       integer :: iLat !< number of points in latitude direction
       integer :: iLon !< number of points in longitude direction
       integer :: iounit_pressure !< fortran unit number for pressure file
@@ -120,8 +120,6 @@ module mod_nws12
       real(8) :: dLon !< spacing in longitude direction
       real(8) :: swLon !< southwest longitude
       real(8) :: swLat !< southwest latitude
-      real(8) :: adcircStartTime !< start time of adcirc simulation
-      real(8) :: windTimeElapsed !< time that has elapsed in the wind fields
       logical :: hasData !< set to false when fields are no longer have data
       logical :: atEnd !< set to false when the fields are at the end of file
       real(8), allocatable :: p(:, :) !< pressure field
@@ -267,6 +265,7 @@ contains
    subroutine NWS12GET(WVNX, WVNY, PRN, NP, PRdeflt, HasData)
       use GLOBAL, only: NWS
       use ADC_CONSTANTS, only: RHOWAT0, G
+      use mod_datetime, only: operator(<), operator(==), operator(>)
       implicit none
       integer, intent(in) :: NP
       real(8), intent(out) :: WVNX(:), WVNY(:), PRN(:)
@@ -312,7 +311,7 @@ contains
 
          if (s > 1) then
             if ((owi(1)%date < owi(s)%startDate) .or. &
-                (owi(1)%date == owi(s)%endDate .and. owi(s)%minute /= 0) .or. &
+                (owi(1)%date == owi(s)%endDate .and. owi(s)%date%minute() /= 0) .or. &
                 (owi(1)%date > owi(s)%endDate)) then
                owi(s)%hasData = .false.
                cycle
@@ -469,6 +468,7 @@ contains
    !> @param[in] prbk background pressure
    !-----------------------------------------------------------------------
    subroutine owi_readNextSnap(idx, np, prbk)
+      use mod_datetime, only: operator(/=)
       implicit none
       integer, intent(in) :: idx
       integer, intent(in) :: np
@@ -478,11 +478,11 @@ contains
       integer :: i, j
       integer :: iounit, errorIO
       integer :: iLatw, iLongw, iLatp, iLongp
-      integer(8) :: iCYMDHw, iCYMDHp
-      integer :: iMinw, iMinp
+      character(20) :: iCYMDHMw, iCYMDHMp
       real(8) :: dxw, dyw, swlatw, swlongw
       real(8) :: dxp, dyp, swlatp, swlongp
       real(8), parameter :: eps = epsilon(1d0)
+      type(t_datetime) :: current_date_wind, current_date_press
 
       call setMessageSource("owi_readNextSnap")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -496,16 +496,17 @@ contains
       iounit = owi(idx)%iounit_pressure
       write (errorVar, '(A,I0)') "read grid specifications/date in Oceanweather pressure file, domain ", idx
       read (owi(idx)%iounit_pressure, 11, end=10000, err=9999, iostat=errorIO) &
-         iLatp, iLongp, dxp, dyp, swlatp, swlongp, iCYMDHp, iMinp
+         iLatp, iLongp, dxp, dyp, swlatp, swlongp, iCYMDHMp
       call check_owi_err(errorIO, errorVar, filename, iounit)
+      current_date_press = t_datetime(iCYMDHMp, "%Y%m%d%H%M")
 
       if (idx == 1) then
          if (numSets > 1) then
             write (scratchMessage, '("Processing Oceanweather wind data for domain ",I0," through "'// &
-                   ',I0," for time stamp ",I12," ",I2)') idx, numSets, iCYMDHp, iMinp
+                   ',I0," for time stamp ",A)') idx, numSets, trim(current_date_press%to_iso_string())
          else
-            write (scratchMessage, '("Processing Oceanweather wind data for time stamp ",I12," ",I2)') &
-               iCYMDHp, iMinp
+            write (scratchMessage, '("Processing Oceanweather wind data for time stamp ",A)') &
+               trim(current_date_press%to_iso_string())
          end if
          call allmessage(INFO, scratchMessage)
       end if
@@ -515,8 +516,9 @@ contains
       iounit = owi(idx)%iounit_wind
       write (errorVar, '(A,I0)') "read grid specifications/date in Oceanweather wind file, domain ", idx
       read (owi(idx)%iounit_wind, 11, end=10000, err=9999, iostat=errorIO) &
-         iLatw, iLongw, dxw, dyw, swlatw, swlongw, iCYMDHw, iMinw
+         iLatw, iLongw, dxw, dyw, swlatw, swlongw, iCYMDHMw
       call check_owi_err(errorIO, errorVar, filename, iounit)
+      current_date_wind = t_datetime(iCYMDHMw, "%Y%m%d%H%M")
 
       ! Check consistency
       if (iLatp /= iLatw .or. &
@@ -525,8 +527,7 @@ contains
           abs(dyp - dyw) > eps .or. &
           abs(swlatp - swlatw) > eps .or. &
           abs(swlongp - swlongw) > eps .or. &
-          iCYMDHp /= iCYMDHw .or. &
-          iMinp /= iMinw) then
+          current_date_press /= current_date_wind) then
          call allMessage(ERROR, &
                          "Grid specifications/date in OWI win and pre files must match.")
          errorVar = ""
@@ -545,8 +546,7 @@ contains
          end if
       end if
 
-      owi(idx)%date = iCYMDHp
-      owi(idx)%minute = iMinp
+      owi(idx)%date = current_date_press
 
       ! Update coordinate mapping coefficients if necessary
       if (owi(idx)%iupdate == 1 .or. moving_grid) then
@@ -595,8 +595,7 @@ contains
       return
 
       ! Oceanweather read formats
-11    format(t6, i4, t16, i4, t23, f6.0, t32, f6.0, &
-             t44, f8.0, t58, f8.0, t69, i10, i2)
+11    format(t6, i4, t16, i4, t23, f6.0, t32, f6.0, t44, f8.0, t58, f8.0, t69, a12)
 22    format(8f10.0)
 
       ! Error IO
@@ -637,9 +636,9 @@ contains
    subroutine owi_setEndOfFileBlankSnap(filename, prbk, obj)
       !-----------------------------------------------------------------------
       implicit none
-      character(*), intent(IN) :: filename
-      real(8), intent(IN) :: prbk
-      type(OCEANWEATHER), intent(INOUT) :: obj
+      character(*), intent(in) :: filename
+      real(8), intent(in) :: prbk
+      type(OCEANWEATHER), intent(inout) :: obj
 
       call setMessageSource("owi_setEndOfFileBlankSnap")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -746,7 +745,7 @@ contains
    !-----------------------------------------------------------------------
    subroutine owi_allocate(this)
       implicit none
-      type(OCEANWEATHER), intent(INOUT) :: this
+      type(OCEANWEATHER), intent(inout) :: this
       logical :: do_allocate
       call setMessageSource("owi_allocate")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -780,7 +779,7 @@ contains
    !-----------------------------------------------------------------------
    subroutine owi_deallocate(this)
       implicit none
-      type(OCEANWEATHER), intent(INOUT) :: this
+      type(OCEANWEATHER), intent(inout) :: this
       call setMessageSource("owi_deallocate")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Enter.")
@@ -804,9 +803,9 @@ contains
    !-----------------------------------------------------------------------
    subroutine owi_generateCoordinates(this, lat, lon)
       implicit none
-      type(OCEANWEATHER), intent(IN) :: this
-      real(8), allocatable, intent(OUT) :: lat(:)
-      real(8), allocatable, intent(OUT) :: lon(:)
+      type(OCEANWEATHER), intent(in) :: this
+      real(8), allocatable, intent(out) :: lat(:)
+      real(8), allocatable, intent(out) :: lon(:)
       integer :: I
 
       call setMessageSource("owi_generateCoordinates")
@@ -977,11 +976,12 @@ contains
    !> @param[inout] this array of oceanweather objects
    !-----------------------------------------------------------------------
    subroutine owi_initializeFileHeaders(this)
+      use mod_datetime, only: operator(/=)
       implicit none
       type(oceanweather), intent(inout) :: this(numSets)
       integer :: i
-      integer(8) :: date1pressure, date2pressure
-      integer(8) :: date1wind, date2wind
+      type(t_datetime) :: date1pressure, date2pressure
+      type(t_datetime) :: date1wind, date2wind
       character(1024) :: errorVar
 
       call setMessageSource("owi_initializeFileHeaders")
@@ -1060,8 +1060,8 @@ contains
 
       implicit none
 
-      integer, intent(IN) :: idx
-      integer, intent(IN) :: NP
+      integer, intent(in) :: idx
+      integer, intent(in) :: NP
       integer :: I, J, K, XI, YI
       real(8) :: adcLat, adcLong
       real(8) :: w, w1, w2, w3, w4
@@ -1143,10 +1143,11 @@ contains
    !-----------------------------------------------------------------------
    subroutine readHeader(filename, lun, date1, date2)
       implicit none
-      integer, intent(IN) :: lun
-      character(*), intent(IN) :: filename
-      integer(8), intent(OUT) :: date1
-      integer(8), intent(OUT) :: date2
+      integer, intent(in) :: lun
+      character(*), intent(in) :: filename
+      character(10) :: date1str, date2str
+      type(t_datetime), intent(out) :: date1
+      type(t_datetime), intent(out) :: date2
       character(80) :: owiheader
       character(1024) :: errorVar
       integer :: errorIO
@@ -1162,23 +1163,22 @@ contains
       ! Read begining/ending dates of pre file
       owiheader(:) = ' ' !set owiheader to blanks before read
       errorVar = "reading Oceanweather header line"
-      read (lun, fmt='(a80)', &
-            end=99998, err=99999, iostat=errorIO) owiheader
+      read (lun, fmt='(a80)', end=99998, err=99999, iostat=errorIO) owiheader
       call check_owi_err(errorIO, errorVar, filename, lun)
 
       errorVar = "reading Oceanweather start date"
-      read (owiheader(56:65), '(I10)', &
-            end=99998, err=99999, iostat=errorIO) date1
+      read (owiheader(56:65), '(A10)', end=99998, err=99999, iostat=errorIO) date1str
       call check_owi_err(errorIO, errorVar, filename, lun)
-      write (scratchMessage, 31) trim(errorVar), trim(filename), date1
-31    format("'", A, "' in  '", A, "' is '", I10, "'.")
+      date1 = t_datetime(date1str, "%Y%m%d%H")
+      write (scratchMessage, 31) trim(errorVar), trim(filename), trim(date1%to_iso_string())
+31    format("'", A, "' in  '", A, "' is '", A, "'.")
       call allMessage(INFO, scratchMessage)
 
       errorVar = "reading Oceanweather end date"
-      read (owiheader(71:80), '(I10)', &
-            end=99998, err=99999, iostat=errorIO) date2
+      read (owiheader(71:80), '(A10)', end=99998, err=99999, iostat=errorIO) date2str
       call check_owi_err(errorIO, errorVar, filename, lun)
-      write (scratchMessage, 31) trim(errorVar), trim(filename), date2
+      date2 = t_datetime(date2str, "%Y%m%d%H")
+      write (scratchMessage, 31) trim(errorVar), trim(filename), trim(date2%to_iso_string())
       call allMessage(INFO, scratchMessage)
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -1206,10 +1206,10 @@ contains
       use MESSENGER, only: MSG_FINI
 #endif
       implicit none
-      integer, intent(IN) :: iret
-      character(*), intent(IN) :: errorVar
-      character(*), intent(IN) :: filename
-      integer, intent(IN), optional :: unitnumber
+      integer, intent(in) :: iret
+      character(*), intent(in) :: errorVar
+      character(*), intent(in) :: filename
+      integer, intent(in), optional :: unitnumber
 
       call setMessageSource("check_owi_err")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
