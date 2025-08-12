@@ -125,7 +125,7 @@ C-----------------------------------------------------------------------
       USE HARM
       USE WEIR
       USE TIME_VARYING_WEIR_BOUNDARY
-      USE OWIWIND,ONLY: nPowellSearchDomains
+      USE mod_nws12,ONLY: nPowellSearchDomains
       USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist, getVortexModelStringNws8 => getVortexModelString
       USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
      &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
@@ -140,7 +140,7 @@ C-----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionRampReferenceTime,
      &   dynamicWaterLevelCorrectionMultiplier,
      &   read_NWS14_NetCdf_using_core_0
-      USE OWIWIND,ONLY: nPowellSearchDomains
+      USE mod_nws12,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
       USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,

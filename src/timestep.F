@@ -141,7 +141,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       
 #ifdef CSWAN
 Casey 090302: We need these values from other places.
-      USE OWIWIND,     ONLY: WindMultiplier
+      USE mod_nws12,   ONLY: WindMultiplier
       USE Couple2Swan, ONLY: ComputeWaveDrivenForces,
      &                       CouplingInterval,
      &                       COUPWIND,

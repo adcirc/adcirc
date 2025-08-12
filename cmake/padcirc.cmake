@@ -30,7 +30,7 @@ if(BUILD_PADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws08.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws12.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F

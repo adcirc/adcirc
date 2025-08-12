@@ -1093,7 +1093,7 @@ C-----------------------------------------------------------------------
      &  cycleTime, rlat, rlon, quadrantAngles, cycle_num, h_dir,
      &  cycleSecs, cycleLats, cycleLons, cycleDirs, num_cycles,
      &  num_entry, icyc, ient
-      use owiwind, only : nws12init, nws12get, moving_grid ! Jie 09/2013 added OWI
+      use mod_nws12, only : nws12init, nws12get, moving_grid ! Jie 09/2013 added OWI
       CHARACTER(2048) :: meshFileName ! name of file containing node locations
       LOGICAL :: nodesFromMesh ! .true. if we are supposed to load a fort.14
       LOGICAL :: nodesFromFile ! .true. if we are supposed to load a list of nodes     
@@ -1164,7 +1164,7 @@ C     Variables for recording domain extents
       !-------------------------------------------------------------
       subroutine initializeDiagnosticOutput()
       use wind, only : numFiles, eyeLat, eyeLon, foundEye
-      use owiwind, only : findStormCenter
+      use mod_nws12, only : findStormCenter
       implicit none
       integer :: i
       integer :: errorio
@@ -1363,7 +1363,7 @@ C
       subroutine fullCircleRmaxes()
       use sizes, only : gblinputdir
       use wind, only : draglawstring, eyeLat, eyeLon, foundEye
-      use owiwind, only : findStormCenter
+      use mod_nws12, only : findStormCenter
       implicit none
       integer :: i, j, npp
       real(8) :: vmax
@@ -1566,7 +1566,7 @@ C
       subroutine radialVandP()
       use sizes, only : gblinputdir
       use wind, only : angleNow, draglawstring, eyeLat, eyeLon, foundEye
-      use owiwind, only : findStormCenter
+      use mod_nws12, only : findStormCenter
       use mesh, only: np
       implicit none
       integer :: i, j
@@ -1761,7 +1761,7 @@ C
       !-------------------------------------------------------------
       subroutine spatialVandP()
       use mesh, only : nm, ne, slam0, sfea0
-      use owiwind, only : findStormCenter
+      use mod_nws12, only : findStormCenter
       implicit none
       integer :: i,j
       integer :: errorio
@@ -2059,7 +2059,7 @@ C
       use sizes, only : gblinputdir
       use mesh, only : nm, ne, slam0, sfea0
       use wind, only : draglawstring, eyeLat, eyeLon, foundEye
-      use owiwind, only : findStormCenter
+      use mod_nws12, only : findStormCenter
       implicit none
       integer :: i,j
       integer :: errorio
@@ -2429,7 +2429,7 @@ C
       use sizes, only : gblinputdir
       use mesh, only : nm, ne, slam0, sfea0
       use wind, only : draglawstring, eyeLat, eyeLon, foundEye
-      use owiwind, only : findStormCenter
+      use mod_nws12, only : findStormCenter
       implicit none
       integer :: i,j
       integer :: errorio

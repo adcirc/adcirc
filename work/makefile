@@ -358,9 +358,9 @@ VORT_MSRC  =  vortex.F
 VW1D_MSRC  =  vew1d.F
 
 ifeq ($(NETCDF),enable)
-WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F nws13.F90
+WIND_MSRC  =  wind.F nws12.F90 rs2.F owi_ice.F nws13.F90
 else
-WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F
+WIND_MSRC  =  wind.F nws12.F90 rs2.F owi_ice.F
 endif
 
 SOLV_MSRC  =  itpackv.F
@@ -805,11 +805,11 @@ $(O_DIR)writer.o      : $(WRITER_DEP)
 $(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o $(O_DIR)global_3dvs.o
 $(O_DIR)harm.o        :  harm.F $(O_DIR)mesh.o
 ifeq ($(NETCDF),enable)
-$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOBJ) $(NWS08_MOBJ) $(O_DIR)owiwind.o $(O_DIR)rs2.o $(O_DIR)owi_ice.o $(O_DIR)nws13.o
+$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOBJ) $(NWS08_MOBJ) $(O_DIR)nws12.o $(O_DIR)rs2.o $(O_DIR)owi_ice.o $(O_DIR)nws13.o
 else
-$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOBJ) $(NWS08_MOBJ) $(O_DIR)owiwind.o $(O_DIR)rs2.o $(O_DIR)owi_ice.o
+$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOBJ) $(NWS08_MOBJ) $(O_DIR)nws12.o $(O_DIR)rs2.o $(O_DIR)owi_ice.o
 endif
-$(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ)
+$(O_DIR)nws12.o       :  nws12.F90  $(VORT_MOBJ)
 $(O_DIR)nws13.o       :  nws13.F90
 $(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ)
 $(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ)

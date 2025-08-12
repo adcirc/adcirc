@@ -862,7 +862,7 @@ C     particular point in time.
 C----------------------------------------------------------------------
       subroutine getMeteorologicalForcing(nws, wsx2, wsy2, pr2,
      &   wvnxout, wvnyout, timeloc)
-      use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006     
+      use mod_nws12,only : nws12get, findStormCenter    ! sb added 09/xx/2006
       use global, only : ciceout, h0, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, IDEN, SigTS, cice1, cice2, IFSPROTS
       USE ADC_CONSTANTS, only: g
@@ -1781,7 +1781,7 @@ C----------------------------------------------------------------------
       use global, only : ciceout, h0, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2, pr1,
      &   cice1, cice2
-      use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006          
+      use mod_nws12,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np
@@ -2108,7 +2108,7 @@ C----------------------------------------------------------------------
       use global, only : ciceout, h0, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, statim, dtdp, dtdphs, iths,
      &   IDEN, SigTS, cice1, cice2, IFSPROTS
-      use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006
+      use mod_nws12,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
