@@ -29,7 +29,7 @@ if(BUILD_ASWIP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws08.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws12.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws14.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws14.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
       ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
