@@ -1,12 +1,12 @@
 # ADCIRC
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/adcirc/adcirc/tree/main.svg?style=shield&circle-token=468312e3a9341f3a519bbdfb4df0cda07c98bd91)](https://dl.circleci.com/status-badge/redirect/gh/adcirc/adcirc/tree/main)
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
-[![Docker Image Version (tag)](https://img.shields.io/docker/v/adcircorg/adcirc/v56.0.3?logo=docker&label=adcircorg%2Fadcirc)](https://hub.docker.com/r/adcircorg/adcirc)
+[![Docker Image Version (tag)](https://img.shields.io/docker/v/adcircorg/adcirc/v56.1.0?logo=docker&label=adcircorg%2Fadcirc)](https://hub.docker.com/r/adcircorg/adcirc)
 [![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://adcirc.github.io/adcirc/)
 
 
-ADCIRC is a system of computer programs for solving time dependent, free surface circulation and transport problems in
-two and three dimensions. These programs utilize the finite element method in space allowing the use of highly flexible,
+ADCIRC is a system of computer programs for solving time-dependent, free surface circulation and transport problems in
+two and three dimensions. These programs use the finite element method in space allowing the use of highly flexible,
 unstructured grids. Typical ADCIRC applications have included:
 
 * Prediction of storm surge and flooding
@@ -83,8 +83,8 @@ ADCIRC has been tested with the following compilers:
 * LLVM (clang/flang)
 
 Additional features, including MPI parallelism and netCDF output require additional libraries:
-* MPI (Message Passing Interface) - OpenMPI, MVAPICH2, Intel MPI, or other MPI implementations
-* netCDF - netCDF C and Fortran libraries
+* MPI (Message Passing Interface)—OpenMPI, MVAPICH2, Intel MPI, or other MPI implementations
+* netCDF—netCDF C and Fortran libraries
 
 # Docker Containers
 
@@ -98,7 +98,7 @@ By default, a release tag should be used and only use latest to try the newest v
 distributed under the same license and conditions as this repository. 
 
 Images built for x86 systems use the IntelLLVM compiler while images build for ARM CPUs use the GCC compiler, version 14.2. The 
-x86 base image is the same that is used to build ADCIRC during continuous integration testing. 
+x86 base image is the same used to build ADCIRC during continuous integration testing. 
 
 # Examples
 
