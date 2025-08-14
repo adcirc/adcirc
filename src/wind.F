@@ -849,7 +849,7 @@ C----------------------------------------------------------------------
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
       use mod_nws08, only: nws08get
-      use mod_nws14, only: get_change_14, set_change_14, nws14init, nws14get
+      use mod_nws14, only: nws14init, nws14get
 #ifdef ADCNETCDF
       USE mod_nws13, ONLY: NWS13GET
 #endif
@@ -874,7 +874,7 @@ C----------------------------------------------------------------------
       real(8) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
       real(8) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
-
+      logical :: nws14_data_changed ! true when the NWS = 14 data has been updated
 
       call setMessageSource("getMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -1298,7 +1298,7 @@ C...  sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
 C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
       IF (ABS(NWS).EQ.12.or.ABS(NWS).eq.14) THEN
          IF (TimeLoc.GT.WTIME2) THEN
-            call set_change_14(.true.)
+            nws14_data_changed = .true.
             WTIME1 = WTIME2
             WTIME2 = WTIME2 + WTIMINC
             DO I = 1,NP
@@ -1327,7 +1327,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
                call findStormCenter(eyeLat, eyeLon, foundEye)
             endif
          ELSE
-            call set_change_14(.false.)
+            nws14_data_changed = .false.
          ENDIF
          WTRATIO = (TimeLoc-WTIME1)/WTIMINC
          IF(NCICE.NE.0)THEN
@@ -1341,7 +1341,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
                WTIME2_12 = WTIME2_12 + WTIMINC_12
                ! Don't do this is we have already for NWS = 14 data
                ! on same time snap
-               IF (.not.get_change_14()) THEN
+               IF (.not.nws14_data_changed) THEN
                   DO I = 1,NP
                      IF (.not.HasData(I)) cycle
                      WVNX1(I) = WVNX2(I)

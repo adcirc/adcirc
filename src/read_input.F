@@ -84,8 +84,7 @@ C-----------------------------------------------------------------------
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
-     &   WarnVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
-     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus,
+     &   WarnVel, toLowercase, TimeConv, logNamelistReadStatus,
      &   basedatetime, NUOPC4WAV, NUOPC4MET
 #if defined CSWAN || defined ADCSWAN
       USE GLOBAL, ONLY: SWAN_OutputHS, SWAN_OutputDIR, SWAN_OutputTM01,
@@ -127,6 +126,8 @@ C-----------------------------------------------------------------------
       USE TIME_VARYING_WEIR_BOUNDARY
       USE mod_nws12,ONLY: nPowellSearchDomains
       USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist, getVortexModelStringNws8 => getVortexModelString
+      use mod_nws14, only: read_NWS14_NetCdf_using_core_0, UseInterpInset,found_InterpInset_Namelist,
+     &   Pfile_inset, Wfile_inset, InsetControlFile
       USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
      &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
      &   WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
@@ -139,8 +140,6 @@ C-----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionSkipSnaps,
      &   dynamicWaterLevelCorrectionRampReferenceTime,
      &   dynamicWaterLevelCorrectionMultiplier
-      use mod_nws14, only: read_NWS14_NetCdf_using_core_0
-      USE mod_nws12,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
       USE GWCE, ONLY : a00, b00, c00, convcr, isldia, itmax,

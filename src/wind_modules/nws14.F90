@@ -18,58 +18,53 @@
 !
 !-------------------------------------------------------------------------------!
 module mod_nws14
-   use mod_datetime, only: t_datetime, t_timedelta
+   use mod_datetime, only: t_datetime
    use adc_constants, only: rad2deg, g, PRBCKGRND, rhoWat0
    use global, only: setMessageSource, unsetMessageSource, &
                      allMessage, logMessage, ERROR, WARNING, ECHO, DEBUG, &
-                     scratchMessage, found_InterpInset_namelist, useInterpInset, &
-                     basedatetime
+                     scratchMessage, basedatetime
 
    implicit none
 
-   integer :: ub, ubc ! size of weightsp and indp interpolant weights
    real(8), allocatable :: weightsp(:, :, :)
-
    integer, allocatable  :: indp(:, :, :)
-   character(len=200) :: Pvar, Uvar, Vvar, Cvar
-   character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
-   character(len=200) :: Wfile1
+
+   character(256) :: Pfile_inset
+   character(256) :: Wfile_inset
+   character(256) :: InsetControlFile
+   character(200) :: Pvar, Uvar, Vvar, Cvar
+   character(200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
+   character(200) :: Wfile1
+
+   integer :: NT, NTC
+   integer :: ub, ubc ! size of weightsp and indp interpolant weights
    integer :: PfileNCID, WfileNCID, CfileNCID, Wfile1NCID
 
-   type(t_datetime) :: CurDT
-   logical :: grb2flag
-   integer :: NT, NTC
    real(8) :: rhoWat0g, PRBCKGRND_MH2O
 
-   logical  :: read_NWS14_NetCdf_using_core_0 = .true. ! read NWS14 (grib2,netcdf) from a computed core 0
-   logical  :: change_14 ! true when the NWS = 14 data has been updated
+   type(t_datetime) :: CurDT
+
+   logical :: grb2flag
+   logical :: read_NWS14_NetCdf_using_core_0 = .true. ! read NWS14 (grib2,netcdf) from a computed core 0
+   logical :: found_InterpInset_namelist = .false.
+   logical :: useInterpInset = .false.
 
 #ifdef ADCNETCDF
    type(t_datetime) :: refdate, stepdate
-   character(len=200) :: Lonvar, Latvar, Tvar
-   character(len=200) :: Tdim, Londim, Latdim, Tformat
-   character(LEN=80)  :: InsetLon, InsetLat, InsetLonDim, InsetLatDim
-   character(LEN=256) :: InsetPvar, InsetUVar, InsetVVar
+   character(200) :: Lonvar, Latvar, Tvar
+   character(200) :: Tdim, Londim, Latdim, Tformat
+   character(80)  :: InsetLon, InsetLat, InsetLonDim, InsetLatDim
+   character(256) :: InsetPvar, InsetUVar, InsetVVar
    integer, allocatable :: inset_indp(:, :, :)
    real(8), allocatable :: inset_weight(:, :, :)
 #endif
 
    private
 
-   public :: NWS14INIT, NWS14GET, CLOSE_NWS14_FILES, set_change_14, get_change_14, read_NWS14_NetCdf_using_core_0
+   public :: NWS14INIT, NWS14GET, CLOSE_NWS14_FILES, read_NWS14_NetCdf_using_core_0, useInterpInset, &
+             found_InterpInset_namelist, Pfile_inset, Wfile_inset, InsetControlFile
 
 contains
-
-   subroutine set_change_14(val)
-      implicit none
-      logical, intent(in) :: val
-      change_14 = val
-   end subroutine set_change_14
-
-   logical function get_change_14()
-      implicit none
-      get_change_14 = change_14
-   end function get_change_14
 
 !----------------------------------------------------------------------
    subroutine NWS14INIT(NWS, WTIME1)
@@ -80,7 +75,8 @@ contains
 !.... CPB 10/2023: reorganized this subroutine to make it more readable
 !.... as well as to improve input for TACC
 !----------------------------------------------------------------------
-      use mod_datetime, only: operator(+)
+      use mod_datetime, only: t_timedelta, operator(+)
+
       implicit none
       integer, intent(in) :: NWS
       real(8), intent(in) :: WTIME1
@@ -147,7 +143,7 @@ contains
    subroutine NWS14GET(WTIMINC, WVNX2, WVNY2, PRN2, CICE2)
 !----------------------------------------------------------------------
       use mesh, only: NP
-      use mod_datetime, only: operator(+)
+      use mod_datetime, only: t_timedelta, operator(+)
       implicit none
 
       real(8), intent(in) :: WTIMINC
@@ -161,8 +157,7 @@ contains
 
       call setMessageSource('NWS14GET')
       ! Show the date in str_date format
-      call logMessage(ECHO, 'CurDT strng: '// &
-                      CurDT%strftime("%Y-%m-%d %H:%M"))
+      call logMessage(ECHO, 'CurDT string: '//CurDT%strftime("%Y-%m-%d %H:%M"))
 
       ! Get the Pressure
       !':PRMSL:mean sea level:'
@@ -193,6 +188,7 @@ contains
                        dble(Pmsl(indp(1, 3, i), indp(1, 4, i)))*weightsp(1, 4, i)) &
                       /rhoWat0g
          end if
+
          if (indp(ub, 1, i) < 0) then
             WVNX2(i) = 0d0
             WVNY2(i) = 0d0
@@ -206,6 +202,7 @@ contains
                        dble(V10(indp(ub, 1, i), indp(ub, 4, i)))*weightsp(ub, 3, i) + &
                        dble(V10(indp(ub, 3, i), indp(ub, 4, i)))*weightsp(ub, 4, i)
          end if
+
       end do
       deallocate (Pmsl, U10, V10)
 
@@ -225,6 +222,7 @@ contains
 
       ! Add WTIMINC on CurDT for next WTIME
       CurDT = CurDT + t_timedelta(minutes=nint(WTIMINC/60d0))
+
       ! Next time index for the netcdf reading
       NT = NT + 1
 
@@ -265,7 +263,7 @@ contains
 #endif
 
    end subroutine NWS14GET
-!----------------------------------------------------------------------
+   !----------------------------------------------------------------------
 
    !----------------------------------------------------------------------
    subroutine NWS14CHECK_FILETYPE()
@@ -683,7 +681,7 @@ contains
 !----------------------------------------------------------------------
       implicit none
       character(LEN=200), intent(in) :: fileN
-      real, allocatable, intent(inout) :: data2(:, :)
+      real, allocatable, intent(out) :: data2(:, :)
       character(LEN=200), intent(in) :: invN, var
       integer, intent(inout) :: ncid
 
@@ -787,7 +785,7 @@ contains
 
       character(len=*), intent(in):: fileN
       character(len=200), intent(in) :: var
-      real(4), allocatable, intent(inout) :: data2(:, :)
+      real(4), allocatable, intent(out) :: data2(:, :)
       integer, intent(inout) :: NC_ID
       integer :: Temp_ID, NX, NY
 
@@ -865,7 +863,6 @@ contains
 !     wind/pressure data in a particular (OWI) format as sometimes it
 !     becomes tedious if running decadal simulations.
 !----------------------------------------------------------------------
-      use GLOBAL, only: PFile_inset, Wfile_inset
 
       implicit none
 
@@ -897,7 +894,6 @@ contains
    subroutine INIT_INSET_NC()
 
       use SIZES, only: GBLINPUTDIR
-      use GLOBAL, only: InsetControlFile
 
       implicit none
 
@@ -1001,7 +997,6 @@ contains
 
       use mesh, only: NP, SLAM, SFEA, bl_interp, bl_interp2
       use kdtree2_module, only: kdtree2, kdtree2_create, kdtree2_destroy
-      use GLOBAL, only: Pfile_inset
       implicit none
 
       integer :: i, ii, nxp, nyp, indt(4), xi, yi, cc, ncid_p
@@ -1387,6 +1382,7 @@ contains
       use netcdf, only: NF90_OPEN, NF90_NOWRITE, NF90_CLOSE, &
                         NF90_INQ_DIMID, NF90_INQUIRE_DIMENSION, &
                         NF90_INQ_VARID, NF90_GET_VAR
+      use mod_datetime, only: t_timedelta
       use netcdf_error, only: check_err
       use GL2LOC_MAPPING, only: BcastToLocal_Int
       use SIZES, only: MYPROC
@@ -1526,7 +1522,6 @@ contains
          end if
       end if
 #endif
-      return
    end subroutine CLOSE_NWS14_FILES
 !---------------------------------------------------------------------
 
@@ -1555,7 +1550,6 @@ contains
       call allMessage(DEBUG, "Return.")
 #endif
       call unsetMessageSource()
-      return
 !----------------------------------------------------------------------
    end subroutine nws14Terminate
 !----------------------------------------------------------------------
