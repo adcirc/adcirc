@@ -716,6 +716,10 @@ contains
 !       CPB 10/2023: Reads in grib2 format met forcing for NWS = 14.
 !       NOTE: reads in on Proc 0 and broadcasts.
 !----------------------------------------------------------------------
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
+      use ifport, only: sleep
+#endif
+
       use wgrib2api, only: grb2_inq
       use GL2LOC_MAPPING, only: BcastToLocal_2DRealArray, &
                                 BcastToLocal_Int
@@ -1238,6 +1242,9 @@ contains
 !     CPB 10/2023: Reads in the lat and lon from a grib2 format
 !     meteorological file. NOTE: reads in on Proc 0 and broadcasts
 !----------------------------------------------------------------------
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
+      use ifport, only: sleep
+#endif
       use wgrib2api, only: grb2_inq
       use GL2LOC_MAPPING, only: BcastToLocal_2DRealArray, &
                                 BcastToLocal_Int
