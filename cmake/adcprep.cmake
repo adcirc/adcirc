@@ -30,6 +30,7 @@ if(BUILD_ADCPREP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_drag.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/presizes.F

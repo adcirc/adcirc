@@ -1362,7 +1362,7 @@ C
       !-------------------------------------------------------------
       subroutine fullCircleRmaxes()
       use sizes, only : gblinputdir
-      use wind, only : draglawstring, eyeLat, eyeLon, foundEye
+      use mod_wind_drag, only : draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       implicit none
       integer :: i, j, npp
@@ -1565,7 +1565,8 @@ C
       !-------------------------------------------------------------
       subroutine radialVandP()
       use sizes, only : gblinputdir
-      use wind, only : angleNow, draglawstring, eyeLat, eyeLon, foundEye
+      use wind, only : angleNow
+      use mod_wind_drag, only: draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       use mesh, only: np
       implicit none
@@ -2058,7 +2059,7 @@ C
       subroutine spatialuvp()
       use sizes, only : gblinputdir
       use mesh, only : nm, ne, slam0, sfea0
-      use wind, only : draglawstring, eyeLat, eyeLon, foundEye
+      use mod_wind_drag, only : draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       implicit none
       integer :: i,j
@@ -2428,7 +2429,7 @@ C
       subroutine nodaluvp()
       use sizes, only : gblinputdir
       use mesh, only : nm, ne, slam0, sfea0
-      use wind, only : draglawstring, eyeLat, eyeLon, foundEye
+      use mod_wind_drag, only : draglawstring, eyeLat, eyeLon, foundEye
       use owiwind, only : findStormCenter
       implicit none
       integer :: i,j

@@ -36,6 +36,9 @@ C
        USE ADC_CONSTANTS, ONLY: pi, deg2rad, rad2deg, e, PRBCKGRND, g, 
      &                      rhoWat0, Rearth, rhoAir, one2ten,
      &                      windReduction,omega
+       USE mod_wind_drag, ONLY: WindDrag, WindIceDrag, FoundEye, EyeLon, EyeLat, dragLawType,
+     &                          DragLaw_Powell, DragLaw_Garratt, DragLaw_Swell
+
 #ifdef CMPI
       use mpi
       use messenger, only : msg_fini, msg_Rscalar_Reduce
@@ -72,13 +75,6 @@ C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data
       real(8) :: wtimed ! time in seconds associated with a dataset
       real(8) :: wreftim ! met reference time
 
-Casey 110518: Added for Mark Powell's sectorial wind drag.
-      REAL(8)  :: EyeLat(3) = 0.D0
-      REAL(8)  :: EyeLon(3) = 0.D0
-      LOGICAL  :: FoundEye
-      REAL(8),allocatable :: PWeight(:,:)
-      Logical,allocatable :: foundSector(:)
-
       ! related to NWS=11
       integer :: IDSETFLG
       integer :: IWTIME
@@ -111,31 +107,6 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       ! normalized to current Rmax
       REAL(8) :: pureBackground = 0.0d0
       !
-      ! jgf50.32: The wind drag limit was originally set to 0.002d0
-      ! in v46 ... the higher value of 0.0035d0 was used in ~v48 and
-      ! is now the default.
-      REAL(8) :: WindDragLimit = 0.0035d0   ! maximum wind drag value
-
-      ! jgf50.32: If DragLawString is not set in the fort.15 input file,
-      ! it will remain 'default'; this will cause 'Garratt' to be used
-      ! in FUNCTION WindDrag, and 'IceCube' to be used in
-      ! FUNCTION WindIceDrag.
-      INTEGER,PARAMETER :: DRAGLAW_GARRATT = 99990
-      INTEGER,PARAMETER :: DRAGLAW_POWELL  = 99991
-      INTEGER,PARAMETER :: DRAGLAW_SWELL   = 99992
-#ifndef POWELL
-      CHARACTER(len=10) :: DragLawString = 'default' ! controls wind drag formulation
-      INTEGER :: dragLawType = DRAGLAW_GARRATT
-#else
-      ! jgf50.32 Provide backward compatibility with hardcoded POWELL
-      ! support.
-#warning The flag -DPOWELL is deprecated and will be removed in a future release. Please use the &metcontrol name list functionality to avoid issues
-      
-      CHARACTER(len=10) :: DragLawString = 'Powell'
-      INTEGER :: dragLawType = DRAGLAW_POWELL
-#endif
-      logical :: garatt, swell, powell
-      !
       ! used for vis/diagnostics on nws19 and nws20
       LOGICAL :: writeFullCircleRmaxes = .false.
       LOGICAL :: writeRadialVandP = .false.
@@ -152,23 +123,23 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       ! jgf50.38.05: used to keep track of HWind files and data
       type hWindData_t
          ! input data from fort.22
-         character(1024)   :: file_name    ! full path to HWind file
+         character(1024)  :: file_name    ! full path to HWind file
          real(8)          :: cycleTime    ! time (sec) relative to ADCIRC cold start or REFTIM
          real(8)          :: Pc           ! storm central pressure (mb) or -1 when using p-w rel
          real(8)          :: rampVal      ! ramping multiplier for this dataset
          ! input data from hwind files themselves
          real(8)          :: dh           ! grid spacing (m) (assumed uniform)
-         integer           :: nh           ! number of grid points (assumed same x and y dirs)
+         integer          :: nh           ! number of grid points (assumed same x and y dirs)
          real(8)          :: cLon         ! longitude of center of storm (deg)
          real(8)          :: cLat         ! latitude of center of storm (deg)
          real(8), allocatable :: u(:,:)   ! east wind velocity (m/s)
          real(8), allocatable :: v(:,:)   ! north wind velocity (m/s)
          ! derived data
-         integer           :: indexLimit   ! data extent in index space (-indexLimit:indexLimit)
+         integer          :: indexLimit   ! data extent in index space (-indexLimit:indexLimit)
          real(8)          :: vmax         ! maximum wind speed in the dataset (m/s)
          real(8)          :: rmax         ! distance from storm center to vmax (nm)
          real(8)          :: rmaxAngle    ! +CCW from east (deg) angle to rmax
-         logical           :: loaded       ! .true. if we have loaded the data from file
+         logical          :: loaded       ! .true. if we have loaded the data from file
       end type hWindData_t
       type(hWindData_t), allocatable, target :: hWindFiles(:) ! array of info about HWind files
       ! jgf50.38.05: Added the following for processing HWind data
@@ -183,12 +154,12 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       real(8), allocatable :: w3(:)        ! interp. weight for q22
       real(8), allocatable :: w4(:)        ! interp. weight for q12
       real(8), allocatable :: windSpeeds(:) ! u,v magnitude (m/s); used to find Vmax and Rmax
-      logical, allocatable  :: inside(:)    ! true if a node is in the hwind bounding box
-      integer               :: numFiles     ! number of hwind files listed in fort.22
-      character(1024)       :: metComment   ! comment line at top of fort.22
+      logical, allocatable :: inside(:)    ! true if a node is in the hwind bounding box
+      integer              :: numFiles     ! number of hwind files listed in fort.22
+      character(1024)      :: metComment   ! comment line at top of fort.22
       real(8)              :: hWindMultiplier ! all hwind u,v multiplied by this
-      character(32)         :: pressureWindRelationship ! dvorak, etc
-      integer               :: currentCycle ! number of most recent
+      character(32)        :: pressureWindRelationship ! dvorak, etc
+      integer              :: currentCycle ! number of most recent
                                             ! applicable hwind file
       real(8)              :: angleNow     ! +CCW from east (degrees) from storm center rmaxNow
                                             ! (deg) used by aswip to analyze radial vel
@@ -281,19 +252,6 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       real(8) :: wtiminc_12 ! time increment between met datasets (seconds)
       logical  :: change_14 ! true when the NWS = 14 data has been updated
       logical,allocatable :: hasdata(:) ! if OWI data exists at this vertex       
-      !...Function interface for wind drag
-      !   Used so that the selection of wind drag
-      !   is only performed once. Each wind drag
-      !   function has the same function signiture
-      ABSTRACT INTERFACE
-        FUNCTION p_computeWindDrag(WindSpeed,NodeNumber) RESULT(Drag)
-            REAL(8),INTENT(IN)  :: WindSpeed
-            INTEGER,INTENT(IN)  :: NodeNumber
-            REAL(8)             :: Drag
-        END FUNCTION p_computeWindDrag
-      END INTERFACE
-      PROCEDURE(p_computeWindDrag),POINTER :: f_computeWindDrag => null()
-
 
       ! for record time  
       REAL(8), private:: io_elapsed_time = 0.0D0, nws_elapsed_time = 0.0D0
@@ -327,6 +285,7 @@ C     ----------------------------------------------------------------
       subroutine initWindModule()
       use mesh, only : np
       use global, only: NWS
+      use mod_wind_drag, only: checkWindDragType
       implicit none
       
       call setMessageSource("initWindModule")
@@ -357,42 +316,40 @@ C.... convert background pressure from millibars to meters of water
       wvny2 = 0.0
 
       CALL checkWindDragType()
-      CALL mapWindDragFunctionPointer()
 
       if (NWS.eq.0) return
 
-      ! Make logicals here if NWS is not 0 
-      garatt = .false.; swell = .false.; powell = .false.
-      SELECT CASE(TRIM(DragLawString))
-         CASE("Garratt","GARRATT","garratt","default")
-             garatt = .true.
-             write(16,*) 'Garratt drag law used' 
-#ifdef CSWAN
-         CASE("Swell","SWELL","swell")
-             swell   = .true.
-             write(16,*) 'Swell drag law used' 
-#endif
-         CASE("Powell","POWELL","powell")
-             if (NWS.eq.12.or.NWS.eq.29.or.NWS.eq.30) then
-                powell  = .true.
-                allocate(Pweight(3,np)); Pweight = 0d0
-                allocate(foundSector(np)); foundSector = .false.
-                write(16,*) 'Powell drag law used'
-             else
-                garatt = .true.
-                write(16,*) 'Garratt drag law used because NWS ', 
-     &                      'incompatible with Powell'
-             endif
-         CASE DEFAULT
-            WRITE(16,*) 'ERROR: Wind drag law not recognized:'
-            WRITE(16,'(A10)') DragLawString
-            WRITE(16,*) 'Execution will now be terminated.'
-#ifdef CMPI
-            call msg_fini()
-#endif
-            CALL EXIT(1)
-C
-      END SELECT
+!     ! Make logicals here if NWS is not 0
+!     garatt = .false.; swell = .false.; powell = .false.
+!     SELECT CASE(TRIM(DragLawString))
+!        CASE("Garratt","GARRATT","garratt","default")
+!            garatt = .true.
+!            write(16,*) 'Garratt drag law used'
+!ifdef CSWAN
+!        CASE("Swell","SWELL","swell")
+!            swell   = .true.
+!            write(16,*) 'Swell drag law used'
+!endif
+!        CASE("Powell","POWELL","powell")
+!            if (NWS.eq.12.or.NWS.eq.29.or.NWS.eq.30) then
+!               powell  = .true.
+!               allocate(foundSector(np)); foundSector = .false.
+!               write(16,*) 'Powell drag law used'
+!            else
+!               garatt = .true.
+!               write(16,*) 'Garratt drag law used because NWS ',
+!    &                      'incompatible with Powell'
+!            endif
+!        CASE DEFAULT
+!           WRITE(16,*) 'ERROR: Wind drag law not recognized:'
+!           WRITE(16,'(A10)') DragLawString
+!           WRITE(16,*) 'Execution will now be terminated.'
+!ifdef CMPI
+!           call msg_fini()
+!endif
+!           CALL EXIT(1)
+!
+!     END SELECT
 
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -403,400 +360,6 @@ C
 !     ----------------------------------------------------------------
       END SUBROUTINE initWindModule
 !     ----------------------------------------------------------------
-
-C----------------------------------------------------------------------
-C     Sets an integer for the drag law to be used later in checks
-C     This is simpler than checking a string
-C----------------------------------------------------------------------
-      SUBROUTINE checkWindDragType()
-C----------------------------------------------------------------------
-          USE GLOBAL,ONLY: toLowercase
-          IMPLICIT NONE
-          CHARACTER(LEN(dragLawString)) :: dragLawLowercase
-          draglawlowercase = toLowercase(dragLawString)
-          SELECT CASE(TRIM(draglawlowercase))
-          CASE("default","garratt")
-            draglawtype = DRAGLAW_GARRATT
-          CASE("powell")
-            draglawtype = DRAGLAW_POWELL
-          CASE("swell")
-            draglawtype = DRAGLAW_SWELL
-          CASE DEFAULT
-            draglawtype = DRAGLAW_GARRATT
-          END SELECT
-C----------------------------------------------------------------------
-      END SUBROUTINE checkWindDragType
-C----------------------------------------------------------------------
-
-!     ----------------------------------------------------------------
-!>    @brief Maps the function pointer used in the calculation of
-!>    wind drag. This is used so that the logical statements required
-!>    to select the wind drag are only executed once at startup
-!     ----------------------------------------------------------------
-      SUBROUTINE mapWindDragFunctionPointer()
-!     ----------------------------------------------------------------
-          IMPLICIT NONE
-#ifdef POWELL
-          f_computeWindDrag => PowellWindDrag
-#else
-          SELECT CASE(DragLawType)
-          CASE(DRAGLAW_GARRATT)
-              f_computeWindDrag => CappedGarrattWindDrag
-          CASE(DRAGLAW_POWELL)
-              f_computeWindDrag => PowellWindDrag
-          CASE(DRAGLAW_SWELL)
-#ifndef CSWAN
-              call allMessage(WARNING,"SWAN Model not enabled."//
-     &              "Drag formulation will be Garratt.")
-              f_computeWindDrag => CappedGarrattWindDrag
-#else
-              f_computeWindDrag => SwanWindDrag
-#endif
-          CASE DEFAULT
-              call allMessage(ERROR,"Wind drag law not recognized"//TRIM(DragLawString))
-#ifdef CMPI
-              call msg_fini()
-#endif
-              CALL EXIT(1)
-          END SELECT
-#endif
-!     ----------------------------------------------------------------
-      END SUBROUTINE mapWindDragFunctionPointer
-!     ----------------------------------------------------------------
-
-!     ---------------------------------------------------------------
-!>    @brief Computes wind drag using a function with the signiture:
-!>    result = function(windSpeed,nodeNumber)
-!>    @param[in] WindSpeed wind magnitude
-!>    @param[in] NodeNumber adcirc mesh node index
-!>    @result wind drag coefficient
-!     ----------------------------------------------------------------
-      REAL(8) FUNCTION WindDrag(WindSpeed, NodeNumber)
-        USE GLOBAL,ONLY: windDragOut
-        IMPLICIT NONE
-        REAL(8) :: WindSpeed
-        INTEGER  :: NodeNumber
-        WindDrag = f_computeWindDrag(windSpeed,NodeNumber)
-        windDragOut(nodeNumber) = windDrag
-        RETURN
-!     ----------------------------------------------------------------
-      END FUNCTION WindDrag
-!     ----------------------------------------------------------------
-
-#ifdef CSWAN
-!     ----------------------------------------------------------------
-!>    @brief Use the wind drag coefficients calculated inside SWAN
-!>    for wind drag inside of adcirc
-!>    @param[in] WindSpeed wind magnitude
-!>    @param[in] NodeNumber adcirc mesh node index
-!>    @result wind drag coefficient
-!     ----------------------------------------------------------------
-       FUNCTION SwanWindDrag(WindSpeed,NodeNumber) RESULT(Drag)
-!     ----------------------------------------------------------------
-           USE GLOBAL,ONLY: Swan_WDragCo
-           IMPLICIT NONE
-           REAL(8),INTENT(IN)  :: WindSpeed
-           INTEGER,INTENT(IN)  :: NodeNumber
-           REAL(8)             :: Drag
-           Drag = SWAN_WDragCo(NodeNumber)
-!     ----------------------------------------------------------------
-       END FUNCTION SwanWindDrag
-!     ----------------------------------------------------------------
-#endif
-
-!     ----------------------------------------------------------------
-!>    @brief Function applying the Garratt wind drag formulation.
-!>
-!>    Wind drag is calculated using Garratt, 1977 by:
-!>    \f[
-!>       d = \frac{\left( 0.75 + 0.067 \left| \vec{w} \right| \right)}{1000}
-!>    \f]
-!>
-!>    @param[in] WindSpeed wind magnitude
-!>    @param[in] NodeNumber adcirc mesh node index
-!>    @result wind drag coefficient
-!     ----------------------------------------------------------------
-       FUNCTION GarrattWindDrag(WindSpeed,NodeNumber) RESULT(Drag)
-!     ----------------------------------------------------------------
-           IMPLICIT NONE
-           REAL(8),INTENT(IN)  :: WindSpeed
-           INTEGER,INTENT(IN)  :: NodeNumber
-           REAL(8)             :: Drag
-           Drag = 0.001d0*(0.75d0+0.067d0*WindSpeed)
-       END FUNCTION GarrattWindDrag
-
-!     ----------------------------------------------------------------
-!>    @brief Applies the Garratt Wind Drag capped at WindDragLimit.
-!>    By default the cap applied is 0.0035, however this can be adjusted
-!>    using the metControl namelist parameter WindDragLimit
-!>    @param[in] WindSpeed wind magnitude
-!>    @param[in] NodeNumber adcirc mesh node index
-!>    @result wind drag coefficient
-!     ----------------------------------------------------------------
-       FUNCTION CappedGarrattWindDrag(WindSpeed,NodeNumber) RESULT(WindDrag)
-!     ----------------------------------------------------------------
-           IMPLICIT NONE
-           REAL(8),INTENT(IN)  :: WindSpeed
-           INTEGER,INTENT(IN)  :: NodeNumber
-           REAL(8)             :: WindDrag
-           WindDrag = MIN(GarrattWindDrag(WindSpeed,NodeNumber),WindDragLimit)
-!     ----------------------------------------------------------------
-       END FUNCTION CappedGarrattWindDrag
-!     ----------------------------------------------------------------
-
-!     ----------------------------------------------------------------
-!>    @brief Applies Mark Powell's sector-based wind drag. This
-!>    applies different wind drag values based upon the sector of the
-!>    storm a node lies within. The is done to account for the direction
-!>    of wave travel and the coincident direction of the wind vector
-!>    @param[in] WindSpeed wind magnitude
-!>    @param[in] NodeNumber adcirc mesh node index
-!>    @result wind drag coefficient
-!     ----------------------------------------------------------------
-      FUNCTION PowellWindDrag(WindSpeed,NodeNumber) RESULT(PowellDrag)
-!     ----------------------------------------------------------------
-          USE GLOBAL, ONLY: DEG2RAD
-          USE MESH, ONLY : SFEA, SLAM
-          IMPLICIT NONE
-          INTRINSIC           :: ATAN2
-          INTRINSIC           :: MOD
-          REAL(8),INTENT(IN)  :: WindSpeed
-          INTEGER,INTENT(IN)  :: NodeNumber
-          INTEGER             :: IS
-          INTEGER             :: IW1,IW2,IW3
-          LOGICAL             :: FoundSector
-          REAL(8)             :: Dir1
-          REAL(8)             :: Dir2
-          REAL(8)             :: Drag(3)
-          REAL(8)             :: NodeDirection
-          REAL(8)             :: NodeLat
-          REAL(8)             :: NodeLon
-          REAL(8)             :: StormDirection
-          REAL(8)             :: Weight(3)
-          REAL(8)             :: PowellDrag
-          REAL(8)             :: rawGarrattWindDrag
-
-!.. Check whether we have previously found the eye.
-         IF((EyeLat(1).EQ.0.D0).OR.(EyeLon(1).EQ.0.D0).OR.
-     &      (EyeLat(2).EQ.0.D0).OR.(EyeLon(2).EQ.0.D0).OR.
-     &      (EyeLat(3).EQ.0.D0).OR.(EyeLon(3).EQ.0.D0))THEN
-            FoundEye = .FALSE.
-         ENDIF
-!.. If the eye has not been found then apply Garratt.
-         IF(.NOT.FoundEye)THEN
-            PowellDrag = CappedGarrattWindDrag(WindSpeed,NodeNumber)
-            FoundSector = .FALSE.
-            Weight = 0.D0
-         ELSE
-!.. We have found the eye!
-!.. Compute the storm's direction.  We use the convention of northward
-!.. being zero degrees, and then cycling clockwise.
-            Dir1 = ATAN2(EyeLat(2)-EyeLat(1),EyeLon(2)-EyeLon(1))
-            Dir2 = ATAN2(EyeLat(3)-EyeLat(2),EyeLon(3)-EyeLon(2))
-            StormDirection = ATAN2(SIN(Dir1)+SIN(Dir2),COS(Dir1)+COS(Dir2))
-            StormDirection = StormDirection/DEG2RAD
-            StormDirection = 90.D0 - StormDirection
-            IF(StormDirection.LT.0.D0)THEN
-               StormDirection = StormDirection + 360.D0
-            ENDIF
-!.. Compute the direction of node relative to the eye.
-            NodeLon = SLAM(NodeNumber)/DEG2RAD
-            NodeLat = SFEA(NodeNumber)/DEG2RAD
-            NodeDirection = ATAN2(NodeLat-EyeLat(3),NodeLon-EyeLon(3))
-            NodeDirection = NodeDirection/DEG2RAD
-            NodeDirection = 90.D0 - NodeDirection
-            IF(NodeDirection.LT.0.D0)THEN
-               NodeDirection = NodeDirection + 360.D0
-            ENDIF
-!.. Compute the weights for the sector in which the node is located.
-!..     0- 40 : Transition from left (3) to right (1).
-!..    40-130 : Right (1).
-!..   130-170 : Transition from right (1) to rear (2).
-!..   170-220 : Rear (2).
-!..   220-260 : Transition from rear (2) to left (3).
-!..   260-  0 : Left (3).
-            FoundSector = .FALSE.
-            DO IS=1,6
-               IF(IS.EQ.1)THEN
-                  Dir1 = MOD(StormDirection+  0.D0,360.D0)
-                  Dir2 = MOD(StormDirection+ 40.D0,360.D0)
-               ELSEIF(IS.EQ.2)THEN
-                  Dir1 = MOD(StormDirection+ 40.D0,360.D0)
-                  Dir2 = MOD(StormDirection+130.D0,360.D0)
-               ELSEIF(IS.EQ.3)THEN
-                  Dir1 = MOD(StormDirection+130.D0,360.D0)
-                  Dir2 = MOD(StormDirection+170.D0,360.D0)
-               ELSEIF(IS.EQ.4)THEN
-                  Dir1 = MOD(StormDirection+170.D0,360.D0)
-                  Dir2 = MOD(StormDirection+220.D0,360.D0)
-               ELSEIF(IS.EQ.5)THEN
-                  Dir1 = MOD(StormDirection+220.D0,360.D0)
-                  Dir2 = MOD(StormDirection+260.D0,360.D0)
-               ELSEIF(IS.EQ.6)THEN
-                  Dir1 = MOD(StormDirection+260.D0,360.D0)
-                  Dir2 = MOD(StormDirection+  0.D0,360.D0)
-               ENDIF
-               IF(Dir1.GT.Dir2)THEN
-                  IF((Dir1.LE.NodeDirection).AND.(NodeDirection.LE.360.D0))THEN
-                     Dir2 = Dir2 + 360.D0
-                  ELSEIF((0.D0.LE.NodeDirection).AND.(NodeDirection.LE.Dir2))THEN
-                     Dir1 = Dir1 - 360.D0
-                  ENDIF
-               ENDIF
-               IF((Dir1.LE.NodeDirection).AND.(NodeDirection.LE.Dir2))THEN
-                  IF(MOD(IS,2).EQ.0)THEN
-                     FoundSector = .TRUE.
-                     Weight = 0.D0
-                     Weight(IS/2) = 1.D0
-                  ELSE
-                     FoundSector = .TRUE.
-                     Weight = 0.D0
-                     IF(IS.EQ.1)THEN
-                        IW1 = 3
-                        IW2 = 1
-                     ELSEIF(IS.EQ.3)THEN
-                        IW1 = 1
-                        IW2 = 2
-                     ELSEIF(IS.EQ.5)THEN
-                        IW1 = 2
-                        IW2 = 3
-                     ENDIF
-                     Weight(IW1) = 1.D0 + (0.D0-1.D0)/(Dir2-Dir1)*(NodeDirection-Dir1)
-                     Weight(IW2) = 0.D0 + (1.D0-0.D0)/(Dir2-Dir1)*(NodeDirection-Dir1)
-                  ENDIF
-               ENDIF
-            ENDDO
-
-
-!.. Apply garratt wind drag in case of emergency
-            IF(.NOT.FoundSector)THEN
-               PowellDrag = CappedGarrattWindDrag(WindSpeed,NodeNumber)
-               Weight = 0.D0
-               RETURN
-            ELSE
-               rawGarrattWindDrag = GarrattWindDrag(WindSpeed,NodeNumber)
-!.. Determine the wind drag for sector 1 (right).
-               Drag(1) = rawGarrattWindDrag
-               IF(WindSpeed.LE.35.0D0)THEN
-                  IF(Drag(1).GT.0.0020D0)THEN
-                     Drag(1) = 0.0020D0
-                  ENDIF
-               ELSEIF(WindSpeed.LE.45.0D0)THEN
-                  Drag(1) = 0.0020D0 + (0.0030D0-0.0020D0)/(45.0D0-35.0D0)*(WindSpeed-35.0D0)
-               ELSE
-                  Drag(1) = 0.0030D0
-               ENDIF
-!.. Determine the wind drag for sector 2 (rear).
-               Drag(2) = rawGarrattWindDrag
-               IF(WindSpeed.LE.35.0D0)THEN
-                  IF(Drag(2).GT.0.0020D0)THEN
-                     Drag(2) = 0.0020D0
-                  ENDIF
-               ELSEIF(WindSpeed.LE.45.0D0)THEN
-                  Drag(2) = 0.0020D0 + (0.0010D0-0.0020D0)/(45.0D0-35.0D0)*(WindSpeed-35.0D0)
-               ELSE
-                  Drag(2) = 0.0010D0
-               ENDIF
-!.. Determine the wind drag for sector 3 (left).
-               Drag(3) = rawGarrattWindDrag
-               IF(Drag(3).GT.0.0018D0)THEN
-                  IF(WindSpeed.LE.25.0D0)THEN
-                     Drag(3) = 0.0018D0
-                  ELSEIF(WindSpeed.LE.30.0D0)THEN
-                     Drag(3) = 0.0018D0 + (0.0045D0-0.0018D0)/(30.0D0-25.0D0)*(WindSpeed-25.0D0)
-                  ELSEIF(WindSpeed.LE.45.0D0)THEN
-                     Drag(3) = 0.0045D0 + (0.0010D0-0.0045D0)/(45.0D0-30.0D0)*(WindSpeed-30.0D0)
-                  ELSE
-                     Drag(3) = 0.0010D0
-                  ENDIF
-               ENDIF
-!.. Apply a weighted average.
-               PowellDrag = Weight(1)*Drag(1) + Weight(2)*Drag(2) + Weight(3)*Drag(3)
-            ENDIF
-         ENDIF
-!     ----------------------------------------------------------------
-      END FUNCTION PowellWindDrag
-!     ----------------------------------------------------------------
-
-C     ----------------------------------------------------------------
-C      F U N C T I O N   W I N D  I C E  D R A G
-C     ----------------------------------------------------------------
-C
-C     tcm v49.64.01 -- Added a function to modify wind drag coefficents
-C          based on ice effects from a percentage of ice coverage
-C          value (ice concentration limits 0.0 to 100.0)
-C          If the percentage of ice is less than 1.0% then no
-C          modifications are done to the incoming wind drag
-C          coefficient values.
-C
-C     ----------------------------------------------------------------
-      REAL(8) FUNCTION WindIceDrag(WindDrag,PercentIce)
-      implicit none
-      REAL(8) :: PercentIce
-      REAL(8) :: pic, WindDrag, IceDrag, Cform
-      REAL(8) :: Cskin = 1.5d-3, Cform_max = 3.67d-3, beta = 0.6d0
-C
-      SELECT CASE(TRIM(DragLawString))
-C
-      CASE("RaysIce")
-C........If there is virtually no ice, then
-C........just use the non-ice drag values
-         if (PercentIce .lt. 1.d0) then
-            WindIceDrag = WindDrag
-         else
-            pic = PercentIce*0.01d0
-            IceDrag = (0.125d0 + 0.5d0*pic*(1.0d0-pic))*0.01d0
-            WindIceDrag = max(IceDrag,WindDrag)
-         endif
-
-      CASE("IceCube")
-C........This formula is a cubic function such that
-C....... When pic = 0 the drag coefficient is equal to
-C....... the minimum value for Garratt (.000075), when pic = 50
-C....... it has a value of 0.0025 and a zero gradient, and
-C....... when pic = 100 it has a value of 0.00125.
-C....... This represents a smoother transition between Garratt
-C....... and Ray's Ice for low ice values and low winds
-
-         IF (PercentIce.lt.0.d0) then
-            WindIceDrag = WindDrag
-         ELSE
-            pic = PercentIce*0.01d0
-            IceDrag = (0.075d0 + 0.75d0*pic - 0.9d0*pic*pic
-     &              + 0.2d0*pic*pic*pic)*0.01d0
-            WindIceDrag = max(IceDrag,WindDrag)
-         ENDIF
-      
-      CASE("Lupkes","default","Powell")
-C........This formula is a function that explicitly
-C....... combines air-sea drag (Garratt) with sea-ice skin drag and
-C....... sea-ice form drag components with area fraction weights 
-C....... see: Lüpkes, et al. (2012), JGR: doi:10.1029/2012JD017630. &
-C....... Joyce et al. (2019), OM: doi:10.1016/j.ocemod.2019.101421
-         IF (PercentIce.lt.0.d0) then
-            WindIceDrag = WindDrag
-         ELSE
-            pic = min(PercentIce*0.01d0,1d0)
-            Cform = Cform_max*(1d0-pic)**beta
-            WindIceDrag = WindDrag*(1d0 - pic) + (Cskin + Cform)*pic
-         ENDIF
-
-      CASE DEFAULT
-         WRITE(16,*) 'ERROR: Ice drag law not recognized:'
-         WRITE(16,'(A10)') DragLawString
-         WRITE(16,*) 'Execution will now be terminated.'
-#ifdef CMPI
-         call msg_fini()
-#endif
-         CALL EXIT(1)
-C
-      END SELECT
-      IF(WindIceDrag.gt.WindDragLimit) WindIceDrag=WindDragLimit
-C
-      RETURN
-C     ----------------------------------------------------------------
-      END FUNCTION WindIceDrag
-C     ----------------------------------------------------------------
 
 C     ----------------------------------------------------------------
 C     S U B R O U T I N E   G E T   B L E N D   F A C T O R

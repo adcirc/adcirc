@@ -132,10 +132,10 @@ C-----------------------------------------------------------------------
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist, getVortexModelStringNws8 => getVortexModelString
       USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
-     &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
+     &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN,
      &   WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
      &   NWSok, Allowable_NWS, PUREBACKGROUND,
-     &   DragLawString, dynamicWaterLevelCorrectionFileName, WTIMINC_12,
+     &   dynamicWaterLevelCorrectionFileName, WTIMINC_12,
      &   dynamicWaterLevelCorrectionMethod,
      &   dynamicWaterLevelCorrectionMassAdjust,
      &   dynamicWaterLevelCorrectionRampStart,
@@ -144,6 +144,7 @@ C-----------------------------------------------------------------------
      &   dynamicWaterLevelCorrectionRampReferenceTime,
      &   dynamicWaterLevelCorrectionMultiplier,
      &   read_NWS14_NetCdf_using_core_0
+      USE mod_wind_drag, only: WindDragLimit, DragLawString
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE WETDRY, ONLY : noffActive, velmin
       USE ITPACKV
