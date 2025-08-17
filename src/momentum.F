@@ -203,6 +203,11 @@ C... SB
      &     ROTATEBACK_AT_CONDENSEDNODES_ALL,
      &     REMOVE_NORMAL_AT_CONDENSEDNODES
 C... SB
+!JLW: add subgrd additions
+      USE subgrid, ONLY: level0, level1
+     &   , wetFracVertETA2, subgridVertList
+     &   , gridDepthVertETA2
+     &   , gridDepthVertETA1
 
       IMPLICIT NONE
 
@@ -311,6 +316,24 @@ Corbitt 120322: Localized Advection
          V1N1=VV1(NM1)
          V1N2=VV1(NM2)
          V1N3=VV1(NM3)
+!JLW: adding subgrid corrections
+!JLW: removing if statement since we can use H saved in
+! timestep.F
+!         IF(level0)THEN
+!            H1N1 = gridDepthVertETA1(NM1)
+!            H1N2 = gridDepthVertETA1(NM2)
+!            H1N3 = gridDepthVertETA1(NM3)
+!            H2N1 = gridDepthVertETA2(NM1)
+!            H2N2 = gridDepthVertETA2(NM2)
+!            H2N3 = gridDepthVertETA2(NM3)
+!         ELSE
+!            H1N1=H1(NM1)
+!            H1N2=H1(NM2)
+!            H1N3=H1(NM3)
+!            H2N1=H2(NM1)
+!            H2N2=H2(NM2)
+!            H2N3=H2(NM3)
+!         ENDIF
          H1N1=H1(NM1)
          H1N2=H1(NM2)
          H1N3=H1(NM3)
@@ -476,7 +499,9 @@ C...  WJP: Compute the baroclinic pressure gradient from a 3D ocean model
          ENDIF
 
 C...  Compute the advective term gradients x area for the element
-         
+!JLW: don't add corrections to advection here since we are setting to
+! 1 for the time being to make averaging easier. 
+
          U1AvgDU1DXA=U1Avg*DU1DXA
          V1AvgDU1DYA=V1Avg*DU1DYA
          U1AvgDV1DXA=U1Avg*DV1DXA
@@ -754,8 +779,23 @@ C      DispY=0.D0
             ENDIF
          ENDIF
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
-            WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
-            WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
+!JLW: add subgrid corrections 
+!JLW: simplifying this a bit to use H saved in timestep.F
+!            IF(level0)THEN
+!               WSX=DTO2*IFWIND*wetFracVertETA2(I)
+!     &                *(WSX1(I)/gridDepthVertETA1(I)+WSX2(I)/gridDepthVertETA2(I))
+!               WSY=DTO2*IFWIND*wetFracVertETA2(I)
+!     &                *(WSY1(I)/gridDepthVertETA1(I)+WSY2(I)/gridDepthVertETA2(I))
+!            ELSE
+!               WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
+!               WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
+!            ENDIF
+             WSX=DTO2*IFWIND*(WSX1(I)/H1(I)+WSX2(I)/H2(I))
+             WSY=DTO2*IFWIND*(WSY1(I)/H1(I)+WSY2(I)/H2(I))
+             IF(level0)THEN
+                WSX = WSX*wetFracVertETA2(I)
+                WSY = WSY*wetFracVertETA2(I)
+             ENDIF
             
 !.....      DMW 202207 tail off wind forcing in very shallow water
             IF (WINDLIM.eqv..true.) THEN
@@ -1208,8 +1248,17 @@ C...
 C...  Compute fluxes
 
       DO I=1,NP
-         QX2(I) = UU2(I)*H2(I)
-         QY2(I) = VV2(I)*H2(I)
+!JLW: eliminating subgrid IF here to use H2 that was set
+! in the timestep.F code.
+!         IF(level0)THEN
+!            QX2(I) = UU2(I)*gridDepthVertETA2(I)
+!            QY2(I) = VV2(I)*gridDepthVertETA2(I)
+!         ELSE
+!            QX2(I) = UU2(I)*H2(I)
+!            QY2(I) = VV2(I)*H2(I)
+!         ENDIF
+          QX2(I) = UU2(I)*H2(I)
+          QY2(I) = VV2(I)*H2(I)
       ENDDO
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -1367,27 +1416,39 @@ Corbitt 120322: Localized Advection
          V1N3=VV1(NM3)
 
 !JLW: add subgrid lookup
-         IF(level0)THEN
-            H1N1 = gridDepthVertETA1(NM1)
-            H1N2 = gridDepthVertETA1(NM2)
-            H1N3 = gridDepthVertETA1(NM3)
-            H2N1 = gridDepthVertETA2(NM1)
-            H2N2 = gridDepthVertETA2(NM2)
-            H2N3 = gridDepthVertETA2(NM3)
-            IF(level1)THEN
-               CADV1 = cadvVertETA2(NM1)
-               CADV2 = cadvVertETA2(NM2)
-               CADV3 = cadvVertETA2(NM3)
-            ENDIF
-         ELSE
-            NCELE=NC1*NC2*NC3*NOFF(IE)
-            H1N1=H1(NM1)
-            H1N2=H1(NM2)
-            H1N3=H1(NM3)
-            H2N1=H2(NM1)
-            H2N2=H2(NM2)
-            H2N3=H2(NM3)
+!JLW: removing call for H to use H set in timestep.F
+!         IF(level0)THEN
+!            H1N1 = gridDepthVertETA1(NM1)
+!            H1N2 = gridDepthVertETA1(NM2)
+!            H1N3 = gridDepthVertETA1(NM3)
+!            H2N1 = gridDepthVertETA2(NM1)
+!            H2N2 = gridDepthVertETA2(NM2)
+!            H2N3 = gridDepthVertETA2(NM3)
+!            IF(level1)THEN
+!               CADV1 = cadvVertETA2(NM1)
+!               CADV2 = cadvVertETA2(NM2)
+!               CADV3 = cadvVertETA2(NM3)
+!            ENDIF
+!         ELSE
+!            NCELE=NC1*NC2*NC3*NOFF(IE)
+!            H1N1=H1(NM1)
+!            H1N2=H1(NM2)
+!            H1N3=H1(NM3)
+!            H2N1=H2(NM1)
+!            H2N2=H2(NM2)
+!            H2N3=H2(NM3)
+!         ENDIF
+         IF(level1)THEN
+            CADV1 = cadvVertETA2(NM1)
+            CADV2 = cadvVertETA2(NM2)
+            CADV3 = cadvVertETA2(NM3)
          ENDIF
+         H1N1=H1(NM1)
+         H1N2=H1(NM2)
+         H1N3=H1(NM3)
+         H2N1=H2(NM1)
+         H2N2=H2(NM2)
+         H2N3=H2(NM3)
          QX1N1=QX1(NM1)
          QX1N2=QX1(NM2)
          QX1N3=QX1(NM3)
@@ -2006,45 +2067,63 @@ C...
       ENDIF
 
 C...  Compute velocities
-
+!JLW: can remove this IF statement since we are using 
+! H saved in timestep.F
       DO I=1,NP
-         IF(level0)THEN
-            H2s = gridDepthVertETA2(I)
-            IF(H2s.NE.0D0)THEN
-              UU2(I)=QX2(I)/H2s
-              VV2(I)=QY2(I)/H2s
-            ELSE
-               WRITE(16,*) ''
-               WRITE(16,*) ''
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
-               WRITE(16,*) '         Velocities set = -999.'
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) ''
-               WRITE(16,*) ''
-               UU2(I)=-999.
-               VV2(I)=-999.
-            ENDIF
+!         IF(level0)THEN
+!            H2s = gridDepthVertETA2(I)
+!            IF(H2s.NE.0D0)THEN
+!              UU2(I)=QX2(I)/H2s
+!              VV2(I)=QY2(I)/H2s
+!            ELSE
+!               WRITE(16,*) ''
+!               WRITE(16,*) ''
+!               WRITE(16,*) '*******************************************'
+!               WRITE(16,*) '*******************************************'
+!               WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
+!               WRITE(16,*) '         Velocities set = -999.'
+!               WRITE(16,*) '*******************************************'
+!               WRITE(16,*) '*******************************************'
+!               WRITE(16,*) ''
+!               WRITE(16,*) ''
+!               UU2(I)=-999.
+!               VV2(I)=-999.
+!            ENDIF
+!         ELSE
+!            IF(H2(I).NE.0.) THEN
+!               UU2(I)=QX2(I)/H2(I)
+!               VV2(I)=QY2(I)/H2(I)
+!               ELSE
+!               WRITE(16,*) ''
+!               WRITE(16,*) ''
+!               WRITE(16,*) '*******************************************'
+!               WRITE(16,*) '*******************************************'
+!               WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
+!               WRITE(16,*) '         Velocities set = -999.'
+!               WRITE(16,*) '*******************************************'
+!               WRITE(16,*) '*******************************************'
+!               WRITE(16,*) ''
+!               WRITE(16,*) ''
+!               UU2(I)=-999.
+!               VV2(I)=-999.
+!            ENDIF
+!         ENDIF
+         IF(H2(I).NE.0.) THEN
+            UU2(I)=QX2(I)/H2(I)
+            VV2(I)=QY2(I)/H2(I)
          ELSE
-            IF(H2(I).NE.0.) THEN
-               UU2(I)=QX2(I)/H2(I)
-               VV2(I)=QY2(I)/H2(I)
-               ELSE
-               WRITE(16,*) ''
-               WRITE(16,*) ''
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
-               WRITE(16,*) '         Velocities set = -999.'
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) '*******************************************'
-               WRITE(16,*) ''
-               WRITE(16,*) ''
-               UU2(I)=-999.
-               VV2(I)=-999.
-            ENDIF
+            WRITE(16,*) ''
+            WRITE(16,*) ''
+            WRITE(16,*) '*******************************************'
+            WRITE(16,*) '*******************************************'
+            WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
+            WRITE(16,*) '         Velocities set = -999.'
+            WRITE(16,*) '*******************************************'
+            WRITE(16,*) '*******************************************'
+            WRITE(16,*) ''
+            WRITE(16,*) ''
+            UU2(I)=-999.
+            VV2(I)=-999.
          ENDIF
       ENDDO
 
