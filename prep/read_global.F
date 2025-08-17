@@ -2612,6 +2612,7 @@ C----------------------------------------------------------------------
       tree => kdtree2_create(bcxy,rearrange=.true.,sort=.true.)
 
 !     allocate space for the search results from the tree
+      IF(ALLOCATED(KDRESULTS)) DEALLOCATE(KDRESULTS)
       allocate(KDRESULTS(srchdp))
 
 
@@ -2687,7 +2688,8 @@ C----------------------------------------------------------------------
          ENDIF
       enddo !loop over station points
 
-!     Deallocate the tree
+!     Deallocate the tree and results 
+      IF(ALLOCATED(KDRESULTS)) DEALLOCATE(KDRESULTS)
       call kdtree2_destroy(tp=tree)
 
  1234 format(A30,1x,I4,1x,'does not lie in the grid.')
