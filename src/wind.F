@@ -59,7 +59,6 @@ C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data
       real(8), allocatable :: wvny2(:) ! wind velocity in y-dir at each node at new ts
       real(8), allocatable :: prn1(:) ! barometric presssure at each node at prev ts
       real(8), allocatable :: prn2(:) ! barometric pressure at each node at new ts
-      real(8), allocatable :: w(:,:)  ! static weights for main nws13 grid
 
       real(8) :: wtime1 ! time associated with previous met dataset
       real(8) :: wtime2 ! time associated with new met dataset
@@ -1441,9 +1440,7 @@ Casey 180318: Added for NWS=13, ARC modified 190108
               PRN1(I)=PRN2(I)
             END DO
             CALL NWS13GET(WTIME2I,WVNX2,WVNY2,PRN2,
-     &          WTIME2,EyeLon,EyeLat,FoundEye,W)
-!            write(6,*) "timeloc", timeloc, "wtiminc", wtiminc, "inside",
-!     &        wtime1i, wtime2i, wtime1, wtime2
+     &          WTIME2,EyeLon,EyeLat,FoundEye)
           ENDIF
           WTRATIO=(TimeLoc-WTIME1I)/WTIMINC
           DO I=1,NP
@@ -2054,11 +2051,11 @@ Casey 180318: Added for NWS=13, ARC modified 190108
          WTIME2=WTIME1+WTIMINC
          WTIME2I=WTIME2
          WTIME1I=WTIME1
-        CALL NWS13INIT(W)
+        CALL NWS13INIT()
         CALL NWS13GET(WTIME1,WVNX1,WVNY1,PRN1,
-     &      WTIME2,EyeLon,EyeLat,FoundEye,W)
+     &      WTIME2,EyeLon,EyeLat,FoundEye)
         CALL NWS13GET(WTIME2,WVNX2,WVNY2,PRN2,
-     &      WTIME2OUT,EyeLon,EyeLat,FoundEye,W)
+     &      WTIME2OUT,EyeLon,EyeLat,FoundEye)
         WTIME2 = WTIME2OUT
       ENDIF
 #endif
@@ -2874,11 +2871,11 @@ Casey 180318: Added for NWS=13, ARC modified 190108
          WTIME2 = WTIME1 + WTIMINC
          WTIME2I = WTIME2
          WTIME1I = WTIME1
-        CALL NWS13INIT(W)
+        CALL NWS13INIT()
         CALL NWS13GET(WTIME1,WVNX1,WVNY1,PRN1,
-     &      WTIME2,EyeLon,EyeLat,FoundEye,W)
+     &      WTIME2,EyeLon,EyeLat,FoundEye)
         CALL NWS13GET(WTIME2,WVNX2,WVNY2,PRN2,
-     &                WTIME2OUT,EyeLon,EyeLat,FoundEye,W)
+     &                WTIME2OUT,EyeLon,EyeLat,FoundEye)
         WTIME2 = WTIME2OUT
         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
         DO I=1,NP
@@ -3053,9 +3050,9 @@ Casey 180318: Added for NWS=13
       IF(ABS(NWS).EQ.13)THEN
         WTIME1 = TIMELOC
         WTIME2 = TIMELOC
-        CALL NWS13INIT(W)
+        CALL NWS13INIT()
         CALL NWS13GET(TIMELOC,WVNX2,WVNY2,PRN2,
-     &         WTIME2,EyeLon,EyeLat,FoundEye,W)
+     &         WTIME2,EyeLon,EyeLat,FoundEye)
 !       IF(TRIM(DragLawString).EQ."Powell".OR.
 !    &      TRIM(DragLawString).EQ."POWELL".OR.
 !    &      TRIM(DragLawString).EQ."powell")THEN

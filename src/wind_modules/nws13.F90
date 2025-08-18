@@ -196,6 +196,7 @@ module mod_nws13
    integer :: PowellGroupTemp = 0
 
    real(8) :: NWS13WindMultiplier = 1.0d0
+   real(8), allocatable :: W(:, :)
 
    type(t_datetime) :: NWS13ColdStart
    type(t_datetime) :: WindRefDatetime
@@ -247,7 +248,7 @@ contains
 !> @param[in]    timeloc model time
 !> @param[inout] w       static weights for stationary "Main" grid
 !-----------------------------------------------------------------------
-   subroutine NWS13INIT(W)
+   subroutine NWS13INIT()
 !-----------------------------------------------------------------------
       use netcdf, only: NF90_GET_ATT, NF90_OPEN, NF90_NOWRITE, NF90_INQ_NCID, &
                         NF90_INQUIRE_DIMENSION, NF90_INQ_VARID, NF90_GET_VAR, NF90_CLOSE, NF90_INQ_DIMID, &
@@ -266,8 +267,6 @@ contains
 #endif
 
       implicit none
-
-      real(8), intent(INOUT), allocatable :: W(:, :)
 
       character(LEN=3100) :: GroupOrder
       character(LEN=100) :: TimeUnits
@@ -437,7 +436,7 @@ contains
 !> @param[in]    w        static weights for stationary "Main" grid
 !-----------------------------------------------------------------------
    subroutine NWS13GET(TimeLoc, WVNX2, WVNY2, PRN2, &
-                       WTIME2, EyeLonR, EyeLatR, FoundEye, W)
+                       WTIME2, EyeLonR, EyeLatR, FoundEye)
 !-----------------------------------------------------------------------
       use ADC_CONSTANTS, only: G, RHOWAT0
       use GLOBAL, only: RNDAY
@@ -465,7 +464,6 @@ contains
       real(8), intent(INOUT) :: WVNX2(NP)
       real(8), intent(INOUT) :: WVNY2(NP)
       real(8), intent(OUT)   :: WTIME2
-      real(8), intent(IN)    :: W(NP, 6)
 
       character(LEN=200) :: Line
 
