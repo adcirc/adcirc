@@ -207,6 +207,7 @@ module mod_nws13
       integer :: PrevSnap
       type(t_datetime) :: NextTime
       type(t_datetime) :: PrevTime
+      type(t_datetime), allocatable :: SnapTimes(:)
    end type NWS13Type
    type(NWS13Type), allocatable :: NWS13(:)
 
@@ -277,7 +278,7 @@ contains
 
       integer :: ILat(NP)
       integer :: ILon(NP)
-      integer :: TempI(1)
+      integer, allocatable :: TempI(:)
 
       integer :: GroupNameStart
       integer :: GroupNameEnd
@@ -285,7 +286,7 @@ contains
       integer :: NumLat
       integer :: NumLon
 
-      integer :: IG
+      integer :: IG, IGS
 
       call setMessageSource("nws13init")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -326,12 +327,8 @@ contains
       if (allocated(NWS13)) deallocate (NWS13)
       allocate (NWS13(1:NumGroup))
 
-#ifdef HAVE_NETCDF4
-! Connect to the first group.
+      ! Connect to the first group.
       call check_err(NF90_INQ_NCID(NC_ID, trim(adjustl(GroupNames(1))), NC_IDG))
-#else
-      NC_IDG = 1
-#endif
 
       ! Find the starting date/time in YYYY-MM-DDTHH:MM:SS format,
       ! and convert it into Julian format.
@@ -351,7 +348,7 @@ contains
 
       WindRefDatetime = t_datetime(TimeString, "%Y-%m-%dT%H:%M:%S")
       if (.not. WindRefDatetime%valid()) then
-         call allMessage(ERROR, "NWS13: Invalid WindRefDatetime in NWS13INIT.")
+         call allMessage(ERROR, "NWS13: Invalid WindRefDatetime in NWS13INIT: '"//trim(TimeString)//"'")
 #ifdef CMPI
          call msg_fini()
 #endif
@@ -362,27 +359,27 @@ contains
       ! group.  We will use these to build the first time snap.
       do IG = 1, NumGroup
          ! Connect to the group and its time variable.
-#ifdef HAVE_NETCDF4
-         call check_err(NF90_INQ_NCID(NC_ID, trim(adjustl(GroupNames(IG))), &
-                                      NC_IDG))
-#else
-         NC_IDG = IG
-#endif
+         call check_err(NF90_INQ_NCID(NC_ID, trim(adjustl(GroupNames(IG))), NC_IDG))
+
          call check_err(NF90_INQ_DIMID(NC_IDG, "time", NC_DIM))
-         call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, &
-                                               LEN=NWS13(IG)%NumSnap))
+         call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NWS13(IG)%NumSnap))
          call check_err(NF90_INQ_VARID(NC_IDG, "time", NC_VAR))
+
+         allocate (NWS13(IG)%SnapTimes(1:NWS13(IG)%NumSnap))
+         allocate (TempI(1:NWS13(IG)%NumSnap))
          ! Pull the time for the first snap ...
-         call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, TempI(:), &
-                                     START=[1], COUNT=[1]))
+         call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, TempI(:), START=[1], COUNT=[NWS13(IG)%NumSnap]))
          ! ... and load it into our array.
-         NWS13(IG)%PrevTime = WindRefDatetime + t_timedelta(minutes=TempI(1))
+         do IGS = 1, NWS13(IG)%NumSnap
+            NWS13(IG)%SnapTimes(IGS) = WindRefDatetime + t_timedelta(minutes=TempI(IGS))
+         end do
+         deallocate (TempI)
+
+         NWS13(IG)%PrevTime = NWS13(IG)%SnapTimes(1)
          NWS13(IG)%PrevSnap = 1
          ! Pull the time for the second snap ...
-         call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, TempI(:), &
-                                     START=[2], COUNT=[1]))
          ! ... and also load it into our array.
-         NWS13(IG)%NextTime = WindRefDatetime + t_timedelta(minutes=TempI(1))
+         NWS13(IG)%NextTime = NWS13(IG)%SnapTimes(2)
          NWS13(IG)%NextSnap = 2
 
          if (IG == 1) then
@@ -402,11 +399,9 @@ contains
 
             ! Read mesh.
             call check_err(NF90_INQ_VARID(NC_IDG, "lon", NC_VAR))
-            call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lon(:, :), &
-                                        START=[1, 1, 1], COUNT=[NumLon, NumLat, 1]))
+            call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lon(:, :), START=[1, 1, 1], COUNT=[NumLon, NumLat, 1]))
             call check_err(NF90_INQ_VARID(NC_IDG, "lat", NC_VAR))
-            call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lat(:, :), &
-                                        START=[1, 1, 1], COUNT=[NumLon, NumLat, 1]))
+            call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lat(:, :), START=[1, 1, 1], COUNT=[NumLon, NumLat, 1]))
 
             ! get reusable weights for main group
             call NWS13INTERP(NumLon, NumLat, Lon, Lat, ILon, ILat, W)
@@ -454,7 +449,7 @@ contains
       use mod_datetime, only: t_timedelta, null_datetime, operator(+), operator(-), operator(<), operator(==), &
                               operator(>=), operator(<=)
       use global, only: screenMessage, setMessageSource, unsetMessageSource, &
-                        INFO
+                        INFO, WARNING
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       use global, only: allMessage, DEBUG
 #endif
@@ -566,14 +561,7 @@ contains
             end if
             cycle
          end if
-#ifdef HAVE_NETCDF4
-! Find the current group and time variable in the file.
-         call check_err(NF90_INQ_NCID(NC_ID, &
-                                      trim(adjustl(GroupNames(IG))), NC_IDG))
-#else
-         NC_IDG = IG
-#endif
-         call check_err(NF90_INQ_VARID(NC_IDG, "time", NC_VAR))
+
          ! Check whether we have progressed past the end of the current
          ! wind snap, and if so, then shift to the next wind snap.
          do while (CurrentTime >= NWS13(IG)%NextTime)
@@ -585,19 +573,16 @@ contains
             NWS13(IG)%PrevSnap = NWS13(IG)%NextSnap
             NWS13(IG)%PrevTime = NWS13(IG)%NextTime
             NWS13(IG)%NextSnap = NWS13(IG)%NextSnap + 1
-            ! Get the next time from the file.
-            call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, TempI(:), &
-                                        START=[NWS13(IG)%NextSnap], COUNT=[1]))
-            NWS13(IG)%NextTime = WindRefDateTime + t_timedelta(minutes=TempI(1))
+            NWS13(IG)%NextTime = NWS13(IG)%SnapTimes(NWS13(IG)%NextSnap)
          end do
          ! Then check whether we are within the current wind snap.
-         if (NWS13(IG)%PrevTime <= CurrentTime .and. &
-             CurrentTime <= NWS13(IG)%NextTime) then
+         if (NWS13(IG)%PrevTime <= CurrentTime .and. CurrentTime <= NWS13(IG)%NextTime) then
             NWS13(IG)%InclSnap = 1
             ! Update our end time if this is the first snap we found ...
             ! ... or if it is earlier than what we have found already.
             if (WTIME2_dt == null_datetime() .or. (NWS13(IG)%NextTime < WTIME2_dt)) then
-               dt = NWS13(IG)%NextTime - WindRefDatetime
+               dt = NWS13(IG)%NextTime - NWS13ColdStart
+               WTIME2_dt = NWS13(IG)%NextTime
                WTIME2 = dble(dt%total_milliseconds())/1000.0d0
             end if
          end if
@@ -608,6 +593,7 @@ contains
       ! of this next snap.
       if (WTIME2_dt == null_datetime()) then
          WTIME2 = RNDAY*86400.d0
+     call screenMessage(WARNING, "Simulation time has progressed past the end of the wind file.  No further winds will be applied.")
       end if
 
       ! If we don't need to include winds from any group (because the
@@ -638,13 +624,10 @@ contains
          ! Loop over the groups.
          do IG = 1, NumGroup
             if (NWS13(IG)%InclSnap == 0) cycle
-#ifdef HAVE_NETCDF4
             ! Connect to this group.
             call check_err(NF90_INQ_NCID(NC_ID, trim(adjustl(GroupNames(IG))), &
                                          NC_IDG))
-#else
-            NC_IDG = IG
-#endif
+
             ! Read number of cells in longitude, latitude.
             call check_err(NF90_INQ_DIMID(NC_IDG, "xi", NC_DIM))
             call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NumLon))
@@ -794,7 +777,6 @@ contains
 
             ! 3. Interpolate the wind snaps onto the ADCIRC mesh.
             if (IG > 1) then
-
                call NWS13INTERP(NumLon, NumLat, Lon, Lat, ILon, ILat, W2)
             else
                W2 = W(:, 1:4)
