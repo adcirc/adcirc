@@ -85,7 +85,7 @@ mark_as_advanced(
   CLEAR
   CMAKE_CXX_FLAGS_RELWITHDEBINFO
   CMAKE_C_FLAGS_RELWITHDEBINFO
-  CMAKE_Fortran_FLAGS_RELWITHDEB)
+  CMAKE_Fortran_FLAGS_RELWITHDEBINFO)
 # ######################################################################################################################
 
 # ######################################################################################################################
