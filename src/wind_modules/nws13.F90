@@ -181,48 +181,38 @@ module mod_nws13
    real(8), parameter  :: null_flag_value = -99999999.0d0
 
    character(LEN=1000) :: NWS13File = "fort.22.nc"
-
-   integer :: NumGroup
    integer :: NWS13GroupForPowell = 0
-
-   integer :: NC_DIM
-   integer :: NC_ERR
-   integer :: NC_ID
-   integer :: NC_IDG
-   integer :: NC_VAR
-
    integer :: PowellGroup = 0
    integer :: PowellGroupTemp = 0
-
    real(8) :: NWS13WindMultiplier = 1.0d0
 
    type(t_datetime) :: NWS13ColdStart
 
    !> @brief Stores bilinear interpolation data for grid-to-mesh mapping
-   type InterpolationData
+   type t_interpolationData
       integer, allocatable :: ilon(:) !< Grid x-indices for each mesh node
       integer, allocatable :: ilat(:) !< Grid y-indices for each mesh node
       real(8), allocatable :: weights(:, :) !< Bilinear interpolation weights (NP, 4)
       logical :: initialized = .false. !< Flag indicating if interpolation is computed
       logical :: is_moving = .false. !< Flag indicating if grid moves with time
-   end type InterpolationData
+   end type t_interpolationData
 
-   type NWS13Type
+   type t_nws13
       integer :: InclSnap
       integer :: NextSnap
       integer :: NumSnap
       integer :: PrevSnap
-      integer :: rank !< Grid rank (priority: lower=coarser, higher=finer)
-      integer :: group_id !< NetCDF group ID for this group
-      character(len=100) :: group_name !< Name of this group
+      integer :: rank
+      integer :: group_id
+      character(len=100) :: group_name
       type(t_datetime) :: NextTime
       type(t_datetime) :: PrevTime
       type(t_datetime), allocatable :: SnapTimes(:)
-      type(InterpolationData) :: interp !< Cached interpolation data for this grid
-   end type NWS13Type
-   type(NWS13Type), allocatable :: NWS13(:)
+      type(t_interpolationData) :: interp
+   end type t_nws13
+   type(t_nws13), allocatable :: NWS13(:)
 
-   integer, allocatable :: sorted_group_indices(:) !< Groups sorted by rank (computed once in INIT)
+   integer, allocatable :: sorted_group_indices(:)
 
    private
 
@@ -234,7 +224,7 @@ contains
                                             NWS13ColdStart_in, &
                                             NWS13WindMultiplier_in, &
                                             NWS13GroupForPowell_in)
-      use global, only: logMessage, INFO, WARNING, scratchMessage
+      use global, only: logMessage, INFO, scratchMessage
       implicit none
 
       character(len=*), intent(IN) :: NWS13Filename_in
@@ -262,12 +252,10 @@ contains
 !-----------------------------------------------------------------------
       use netcdf, only: NF90_GET_ATT, NF90_OPEN, NF90_NOWRITE, NF90_INQ_NCID, &
                         NF90_INQUIRE_DIMENSION, NF90_INQ_VARID, NF90_GET_VAR, NF90_CLOSE, NF90_INQ_DIMID, &
-                        NF90_GLOBAL, NF90_INQUIRE_VARIABLE, NF90_NOERR, &
-                        NF90_INQ_GRPS, NF90_INQ_GRPNAME
+                        NF90_INQUIRE_VARIABLE, NF90_INQ_GRPS, NF90_INQ_GRPNAME
       use netcdf_error, only: check_err
-      use MESH, only: NP
       use global, only: allMessage, screenMessage, setMessageSource, unsetMessageSource, &
-                        logMessage, INFO, ERROR, WARNING, scratchMessage
+                        logMessage, INFO, ERROR, scratchMessage
       use mod_datetime, only: t_datetime, t_timedelta, operator(+), operator(-)
 #if defined(OWIWIND_TRACE)    || defined(ALL_TRACE)
       use global, only: DEBUG
@@ -279,23 +267,11 @@ contains
 
       implicit none
 
-      character(LEN=100) :: TimeUnits
-      character(LEN=100) :: TimeString
-
-      integer, allocatable :: TempI(:)
-      integer, allocatable :: group_ids(:)
-
-      integer :: NumLat
-      integer :: NumLon
-      integer :: ndims
-      integer, allocatable :: dimids(:)
-
-      real(8), allocatable :: Lat(:, :)
-      real(8), allocatable :: Lon(:, :)
-
+      integer, parameter :: max_groups = 1000
+      integer :: NumGroup
+      integer :: nc_id
       integer :: IG, IGS
-
-      type(t_datetime) :: WindRefDatetime
+      integer, allocatable :: group_ids(:)
 
       call setMessageSource("nws13init")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -306,10 +282,8 @@ contains
       call check_err(NF90_OPEN(trim(adjustl(NWS13File)), NF90_NOWRITE, NC_ID))
 
       ! Discover groups in the NetCDF file
-      allocate(group_ids(100))
+      allocate (group_ids(max_groups))
       call check_err(NF90_INQ_GRPS(NC_ID, NumGroup, group_ids))
-      deallocate(group_ids)
-
       if (NumGroup == 0) then
          call allMessage(ERROR, "NWS13: No groups found in NetCDF file.")
 #ifdef CMPI
@@ -319,25 +293,132 @@ contains
       end if
 
       ! Allocate group_ids array and get the IDs
-      allocate (group_ids(NumGroup))
-      call check_err(NF90_INQ_GRPS(NC_ID, NumGroup, group_ids))
-
       allocate (NWS13(1:NumGroup))
-
-      ! Store group IDs and names
       do IG = 1, NumGroup
-         NWS13(IG)%group_id = group_ids(IG)
-         call check_err(NF90_INQ_GRPNAME(group_ids(IG), NWS13(IG)%group_name))
+         NWS13(IG) = initialize_nws13_obj(group_ids(IG))
+      end do
+      deallocate (group_ids)
+
+      allocate (sorted_group_indices(NumGroup))
+      sorted_group_indices = sort_groups_by_rank(NWS13)
+
+      call logMessage(INFO, "Groups will be processed in rank order (highest priority first):")
+      do IGS = 1, NumGroup
+         IG = sorted_group_indices(IGS)
+         write (scratchMessage, '(A,I0,A,A,A,I0,A)') "  Priority ", IGS, ": '", &
+            trim(NWS13(IG)%group_name), "' (rank ", NWS13(IG)%rank, ")"
+         call logMessage(INFO, scratchMessage)
       end do
 
-      ! Deallocate sorted indices if previously allocated
-      if (allocated(sorted_group_indices)) deallocate (sorted_group_indices)
+      call check_err(NF90_CLOSE(NC_ID))
 
-      ! Connect to the first group.
-      NC_IDG = group_ids(1)
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG, "Return.")
+#endif
+      call unsetMessageSource()
 
-      ! Find the starting date/time in YYYY-MM-DDTHH:MM:SS format,
-      ! and convert it into Julian format.
+!-----------------------------------------------------------------------
+   end subroutine NWS13INIT
+!-----------------------------------------------------------------------
+
+   type(t_nws13) function initialize_nws13_obj(NC_IDG) result(grp)
+
+      use netcdf, only: nf90_inq_dimid, nf90_inq_varid, nf90_inquire_dimension, &
+                        nf90_get_var, nf90_inquire_variable, NF90_GLOBAL, nf90_get_att, &
+                        nf90_noerr, nf90_inq_grpname
+      use netcdf_error, only: check_err
+      use global, only: ERROR, allMessage
+      use mod_datetime, only: t_timedelta, operator(+)
+#ifdef CMPI
+      use messenger, only: msg_fini
+#endif
+
+      implicit none
+
+      integer, intent(in) :: NC_IDG
+      integer :: NC_DIM
+      integer :: NC_VAR
+      integer :: NC_ERR
+      integer :: ndims
+      integer :: IGS
+      integer, allocatable :: dimids(:)
+      integer, allocatable :: TempI(:)
+      type(t_datetime) :: WindRefDatetime
+
+      grp%group_id = NC_IDG
+      call check_err(NF90_INQ_GRPNAME(NC_IDG, grp%group_name))
+      call check_err(NF90_INQ_DIMID(NC_IDG, "time", NC_DIM))
+      call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=grp%NumSnap))
+      call check_err(NF90_INQ_VARID(NC_IDG, "time", NC_VAR))
+
+      WindRefDatetime = read_dataset_reference_time(NC_IDG)
+
+      allocate (grp%SnapTimes(1:grp%NumSnap))
+      allocate (TempI(1:grp%NumSnap))
+      ! Pull the time for the first snap ...
+      call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, TempI(:), START=[1], COUNT=[grp%NumSnap]))
+      ! ... and load it into our array.
+      do IGS = 1, grp%NumSnap
+         grp%SnapTimes(IGS) = WindRefDatetime + t_timedelta(minutes=TempI(IGS))
+      end do
+      deallocate (TempI)
+
+      grp%PrevTime = grp%SnapTimes(1)
+      grp%PrevSnap = 1
+      ! Pull the time for the second snap ...
+      ! ... and also load it into our array.
+      grp%NextTime = grp%SnapTimes(2)
+      grp%NextSnap = 2
+
+      ! Read the rank attribute for this group (priority for overlapping grids)
+      NC_ERR = NF90_GET_ATT(NC_IDG, NF90_GLOBAL, "rank", grp%rank)
+      if (NC_ERR /= NF90_NOERR) then
+         call allMessage(ERROR, "Rank attribute not found in nws13 group")
+#ifdef CMPI
+         call msg_fini()
+#endif
+         call exit(1)
+      end if
+
+      ! Check if this grid moves by examining the dimensionality of lon/lat
+      ! Moving grids have 3D arrays (time, yi, xi), stationary have 2D (yi, xi)
+      call check_err(NF90_INQ_VARID(NC_IDG, "lon", NC_VAR))
+      allocate (dimids(10))
+      NC_ERR = NF90_INQUIRE_VARIABLE(NC_IDG, NC_VAR, ndims=ndims, dimids=dimids)
+      deallocate (dimids)
+
+      if (ndims == 3) then
+         grp%interp%is_moving = .true.
+         grp%interp%initialized = .false.
+      elseif (ndims == 2) then
+         grp%interp = read_2d_grid(NC_IDG)
+      else
+         call allMessage(ERROR, "Invalid grid dimension for NWS13")
+#ifdef CMPI
+         call msg_fini()
+#endif
+         call exit(1)
+      end if
+
+   end function initialize_nws13_obj
+
+   type(t_datetime) function read_dataset_reference_time(NC_IDG) result(reftime)
+      use netcdf, only: nf90_inq_varid, nf90_get_att
+      use netcdf_error, only: check_err
+      use global, only: ERROR, allMessage
+
+#ifdef CMPI
+      use messenger, only: msg_fini
+#endif
+
+      implicit none
+
+      integer, intent(in) :: NC_IDG
+      integer :: nc_var
+      character(LEN=100) :: TimeUnits
+      character(LEN=100) :: TimeString
+
+      ! Find the starting date/time in YYYY-MM-DDTHH:MM:SS format
       call check_err(NF90_INQ_VARID(NC_IDG, "time", NC_VAR))
       call check_err(NF90_GET_ATT(NC_IDG, NC_VAR, "units", TimeUnits))
       TimeString = trim(adjustl(TimeUnits))
@@ -352,113 +433,53 @@ contains
          call exit(1)
       end if
 
-      WindRefDatetime = t_datetime(TimeString, "%Y-%m-%dT%H:%M:%S")
-      if (.not. WindRefDatetime%valid()) then
-         call allMessage(ERROR, "NWS13: Invalid WindRefDatetime in NWS13INIT: '"//trim(TimeString)//"'")
+      reftime = t_datetime(TimeString, ["%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"])
+      if (.not. reftime%valid()) then
+         call allMessage(ERROR, "NWS13: Invalid reference time in NWS13INIT: '"//trim(TimeString)//"'")
 #ifdef CMPI
          call msg_fini()
 #endif
          call exit(1)
       end if
 
-      ! Find the times associated with the first two time snaps in each
-      ! group.  We will use these to build the first time snap.
-      do IG = 1, NumGroup
-         ! Connect to the group and its time variable.
-         NC_IDG = group_ids(IG)
+   end function read_dataset_reference_time
 
-         call check_err(NF90_INQ_DIMID(NC_IDG, "time", NC_DIM))
-         call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NWS13(IG)%NumSnap))
-         call check_err(NF90_INQ_VARID(NC_IDG, "time", NC_VAR))
+   type(t_interpolationData) function read_2d_grid(NC_IDG) result(interp_data)
+      use netcdf, only: NF90_INQ_DIMID, NF90_INQUIRE_DIMENSION, NF90_INQ_VARID, &
+                        NF90_GET_VAR
+      use netcdf_error, only: check_err
 
-         allocate (NWS13(IG)%SnapTimes(1:NWS13(IG)%NumSnap))
-         allocate (TempI(1:NWS13(IG)%NumSnap))
-         ! Pull the time for the first snap ...
-         call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, TempI(:), START=[1], COUNT=[NWS13(IG)%NumSnap]))
-         ! ... and load it into our array.
-         do IGS = 1, NWS13(IG)%NumSnap
-            NWS13(IG)%SnapTimes(IGS) = WindRefDatetime + t_timedelta(minutes=TempI(IGS))
-         end do
-         deallocate (TempI)
+      implicit none
 
-         NWS13(IG)%PrevTime = NWS13(IG)%SnapTimes(1)
-         NWS13(IG)%PrevSnap = 1
-         ! Pull the time for the second snap ...
-         ! ... and also load it into our array.
-         NWS13(IG)%NextTime = NWS13(IG)%SnapTimes(2)
-         NWS13(IG)%NextSnap = 2
+      integer, intent(in) :: NC_IDG
+      integer :: NC_DIM
+      integer :: NC_VAR
+      integer :: NumLon
+      integer :: Numlat
+      real(8), allocatable :: Lon(:, :)
+      real(8), allocatable :: Lat(:, :)
 
-         ! Read the rank attribute for this group (priority for overlapping grids)
-         NC_ERR = NF90_GET_ATT(NC_IDG, NF90_GLOBAL, "rank", NWS13(IG)%rank)
-         if (NC_ERR /= NF90_NOERR) then
-            NWS13(IG)%rank = IG
-            call screenMessage(WARNING, "No rank attribute found for group "//trim(NWS13(IG)%group_name)//", using group order")
-         end if
+      call check_err(NF90_INQ_DIMID(NC_IDG, "xi", NC_DIM))
+      call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NumLon))
+      call check_err(NF90_INQ_DIMID(NC_IDG, "yi", NC_DIM))
+      call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NumLat))
 
-         ! Check if this grid moves by examining the dimensionality of lon/lat
-         ! Moving grids have 3D arrays (time, yi, xi), stationary have 2D (yi, xi)
-         call check_err(NF90_INQ_VARID(NC_IDG, "lon", NC_VAR))
-         allocate (dimids(10))
-         NC_ERR = NF90_INQUIRE_VARIABLE(NC_IDG, NC_VAR, ndims=ndims, dimids=dimids)
-         deallocate (dimids)
+      allocate (Lon(1:NumLon, 1:NumLat))
+      allocate (Lat(1:NumLon, 1:NumLat))
 
-         if (ndims == 3) then
-            NWS13(IG)%interp%is_moving = .true.
-            NWS13(IG)%interp%initialized = .false.
-         else
-            NWS13(IG)%interp%is_moving = .false.
-            call check_err(NF90_INQ_DIMID(NC_IDG, "xi", NC_DIM))
-            call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NumLon))
-            call check_err(NF90_INQ_DIMID(NC_IDG, "yi", NC_DIM))
-            call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NumLat))
+      call check_err(NF90_INQ_VARID(NC_IDG, "lon", NC_VAR))
+      call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lon(:, :), &
+                                  START=[1, 1], COUNT=[NumLon, NumLat]))
+      call check_err(NF90_INQ_VARID(NC_IDG, "lat", NC_VAR))
+      call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lat(:, :), &
+                                  START=[1, 1], COUNT=[NumLon, NumLat]))
 
-            ! Allocate and read stationary grid
-            allocate (Lon(1:NumLon, 1:NumLat))
-            allocate (Lat(1:NumLon, 1:NumLat))
+      interp_data = NWS13INTERP(NumLon, NumLat, Lon, Lat)
+      interp_data%is_moving = .false.
 
-            call check_err(NF90_INQ_VARID(NC_IDG, "lon", NC_VAR))
-            call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lon(:, :), &
-                                        START=[1, 1], COUNT=[NumLon, NumLat]))
-            call check_err(NF90_INQ_VARID(NC_IDG, "lat", NC_VAR))
-            call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lat(:, :), &
-                                        START=[1, 1], COUNT=[NumLon, NumLat]))
+      deallocate (Lon, Lat)
 
-            ! Compute and cache interpolation for stationary grid
-            NWS13(IG)%interp = NWS13INTERP(NumLon, NumLat, Lon, Lat)
-            NWS13(IG)%interp%is_moving = .false.
-
-            deallocate (Lon, Lat)
-         end if
-
-      end do
-
-      ! Clean up temporary group_ids array
-      deallocate (group_ids)
-
-      ! Sort groups by rank once (will be used in every NWS13GET call)
-      allocate (sorted_group_indices(NumGroup))
-      sorted_group_indices = sort_groups_by_rank(NWS13)
-
-      ! Log the processing order
-      call logMessage(INFO, "Groups will be processed in rank order (highest priority first):")
-      do IGS = 1, NumGroup
-         IG = sorted_group_indices(IGS)
-         write (scratchMessage, '(A,I0,A,A,A,I0,A)') "  Priority ", IGS, ": '", &
-            trim(NWS13(IG)%group_name), "' (rank ", NWS13(IG)%rank, ")"
-         call logMessage(INFO, scratchMessage)
-      end do
-
-      ! Close the NetCDF file.
-      call check_err(NF90_CLOSE(NC_ID))
-
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-
-!-----------------------------------------------------------------------
-   end subroutine NWS13INIT
-!-----------------------------------------------------------------------
+   end function read_2d_grid
 
 !-----------------------------------------------------------------------
 !> @brief Reads multi-grid wind and pressure fields from the NetCDF file and
@@ -476,7 +497,6 @@ contains
                        WTIME2, EyeLonR, EyeLatR, FoundEye)
 !-----------------------------------------------------------------------
       use ADC_CONSTANTS, only: G, RHOWAT0, PRBCKGRND
-      use GLOBAL, only: RNDAY
       use MESH, only: NP
       use netcdf, only: NF90_GET_VAR, NF90_INQ_VARID, NF90_INQ_NCID, &
                         NF90_INQUIRE_DIMENSION, NF90_GET_ATT, NF90_OPEN, NF90_NOWRITE, &
@@ -485,7 +505,7 @@ contains
       use mod_datetime, only: t_timedelta, null_datetime, operator(+), operator(-), operator(<), operator(==), &
                               operator(>=), operator(<=)
       use global, only: screenMessage, setMessageSource, unsetMessageSource, &
-                        INFO, WARNING
+                        INFO, RNDAY
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       use global, only: allMessage, DEBUG
 #endif
@@ -510,7 +530,11 @@ contains
       integer :: IV
       integer :: NumLat
       integer :: NumLon
-      integer :: TempI(1)
+      integer :: NC_DIM
+      integer :: NC_VAR
+      integer :: NC_ID
+      integer :: NC_IDG
+      integer :: NC_ERR
 
       real(8), allocatable :: Lat(:, :)
       real(8), allocatable :: Lon(:, :)
@@ -549,7 +573,7 @@ contains
       real(8) :: ws_this(4)
       real(8) :: p_this(4)
 
-      type(InterpolationData) :: current_interp
+      type(t_interpolationData) :: current_interp
 
       type(t_datetime)  :: CurrentTime
       type(t_datetime)  :: wtime2_dt
@@ -583,7 +607,7 @@ contains
       WTIME2_dt = null_datetime()
       CurrentTime = NWS13Coldstart + t_timedelta(milliseconds=int(TimeLoc*1000d0))
 
-      do IG = 1, NumGroup
+      do IG = 1, size(NWS13)
          if (CurrentTime < NWS13(IG)%PrevTime) then
             ! Then we still haven't reached the start of this group,
             ! so we at least need to consider this as the end of the current
@@ -645,7 +669,7 @@ contains
          FoundEye = .false.
 
          ! Loop over the groups in pre-computed rank order (fine to coarse)
-         do IG_sorted = 1, NumGroup
+         do IG_sorted = 1, size(NWS13)
             IG = sorted_group_indices(IG_sorted)
             if (NWS13(IG)%InclSnap == 0) cycle
 
@@ -804,7 +828,7 @@ contains
 
             do IV = 1, NP
                ! Skip if this node was already assigned by a higher priority (finer) grid
-               if (PRN2(IV) /= null_flag_value) cycle
+               if (abs(PRN2(IV) - null_flag_value) > eps) cycle
 
                if (current_interp%ilon(IV) > 0) then
 
@@ -859,8 +883,8 @@ contains
       end if
 
       ! Replace any remaining flag values with default background values
-      where (PRN2 == null_flag_value)
-         PRN2 = 101300d0/RHOWAT0/G
+      where (abs(PRN2 - null_flag_value) < eps)
+         PRN2 = PRBCKGRND*100d0/RHOWAT0/G
          WVNX2 = 0.d0
          WVNY2 = 0.d0
       end where
@@ -902,7 +926,7 @@ contains
 !> @param[in]    lat    grid latitudes (2D)
 !> @return       interpData Structure containing interpolation indices and weights
 !-----------------------------------------------------------------------
-   function NWS13INTERP(NumLon, NumLat, Lon, Lat) result(interpData)
+   type(t_interpolationData) function NWS13INTERP(NumLon, NumLat, Lon, Lat) result(interpData)
 !-----------------------------------------------------------------------
       use ADC_CONSTANTS, only: RAD2DEG
       use kdtree2_module, only: KDTREE2, KDTREE2_RESULT, kdtree2_create, &
@@ -919,8 +943,6 @@ contains
       integer, intent(IN)  :: NumLon
       real(8), intent(IN)  :: Lon(NumLon, NumLat)
       real(8), intent(IN)  :: Lat(NumLon, NumLat)
-
-      type(InterpolationData) :: interpData
 
       integer :: Counter
       integer :: ElemNumber
@@ -1055,7 +1077,7 @@ contains
 !> @return indices Array of group indices sorted by rank (fine to coarse)
 !-----------------------------------------------------------------------
    pure function sort_groups_by_rank(groups) result(indices)
-      type(NWS13Type), intent(in) :: groups(:)
+      type(t_nws13), intent(in) :: groups(:)
       integer :: indices(size(groups))
       integer :: n, i, j, temp_idx, temp_rank
       integer :: sorted_ranks(size(groups))
