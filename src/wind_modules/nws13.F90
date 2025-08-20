@@ -22,7 +22,7 @@
 !-----------------------------------------------------------------------
 !> @author JC Detrich, NC State University
 !> @author Alexander Crosby, Oceanweather Inc., alexc@oceanweather.com
-!> @author Zach Cobell, The Water Institute, zcobell@gmail.com
+!> @author Zach Cobell, The Water Institute, zcobell@thewaterinstitute.org
 !>
 !> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
 !>
@@ -175,8 +175,18 @@ module mod_nws13
 
    implicit none
 
+   private
+
    !> @brief Flag value indicating missing or invalid data
    real(8), parameter  :: null_flag_value = -99999999.0d0
+
+   !> @brief Variable names used in the NetCDF file
+   character(3), parameter :: var_name_u_wind = "U10" !< Variable name for U wind component
+   character(3), parameter :: var_name_v_wind = "V10" !< Variable name for V wind component
+   character(4), parameter :: var_name_pressure = "PSFC" !< Variable name for pressure
+   character(2), parameter :: var_name_lon = "xi" !< Variable name for longitude
+   character(2), parameter :: var_name_lat = "yi" !< Variable name for latitude
+   character(4), parameter :: var_name_time = "time" !< Variable name for time
 
    !> @brief Container for meteorological data from NetCDF wind grid
    type t_windData
@@ -186,6 +196,7 @@ module mod_nws13
       real(8), allocatable :: v(:, :) !< Wind velocity, y-direction (m/s)
       real(8), allocatable :: p(:, :) !< Atmospheric pressure (converted to m water)
       real(8), allocatable :: ws(:, :) !< Wind speed magnitude (m/s)
+      real(8) :: storm_pos(2) = [0.0d0, 0.0d0] !< Storm center position [lon, lat]
    contains
       final :: wind_data_destructor
    end type t_windData
@@ -207,6 +218,14 @@ module mod_nws13
       logical :: loaded = .false. !< Flag indicating if data has been loaded into memory
       real(8), allocatable :: position(:, :) !< Storm center longitude for each time snapshot
    end type t_stormCenterData
+
+   !> @brief Container for interpolated node values
+   type t_nodeInterpolationResult
+      real(8) :: u = 0.0d0 !< Wind velocity U component
+      real(8) :: v = 0.0d0 !< Wind velocity V component
+      real(8) :: p = 0.0d0 !< Atmospheric pressure
+      logical :: valid = .false. !< Flag indicating if interpolation was successful
+   end type t_nodeInterpolationResult
 
    !> @brief NetCDF wind group metadata and temporal information
    type t_nws13
@@ -247,9 +266,6 @@ module mod_nws13
    !> @brief Currently active group for Powell wind drag scheme
    integer :: PowellGroup = 0
 
-   !> @brief Temporary group for Powell wind drag scheme validation
-   integer :: PowellGroupTemp = 0
-
    !> @brief Multiplier applied to wind velocities for sensitivity analysis
    real(8) :: NWS13WindMultiplier = 1.0d0
 
@@ -261,8 +277,6 @@ module mod_nws13
 
    !> @brief Group indices sorted by priority rank
    integer, allocatable :: sorted_group_indices(:)
-
-   private
 
    public :: NWS13INIT, NWS13GET, nws13_set_namelist_parameters
 
@@ -516,14 +530,14 @@ contains
 
       grp%group_id = NC_IDG
       call check_err(NF90_INQ_GRPNAME(NC_IDG, grp%group_name))
-      call check_err(NF90_INQ_DIMID(NC_IDG, "time", NC_DIM))
+      call check_err(NF90_INQ_DIMID(NC_IDG, var_name_time, NC_DIM))
       call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=grp%NumSnap))
-      call check_err(NF90_INQ_VARID(NC_IDG, "time", NC_VAR))
+      call check_err(NF90_INQ_VARID(NC_IDG, var_name_time, NC_VAR))
 
       ! Read and store grid dimensions
-      call check_err(NF90_INQ_DIMID(NC_IDG, "xi", NC_DIM))
+      call check_err(NF90_INQ_DIMID(NC_IDG, var_name_lon, NC_DIM))
       call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=grp%NumLon))
-      call check_err(NF90_INQ_DIMID(NC_IDG, "yi", NC_DIM))
+      call check_err(NF90_INQ_DIMID(NC_IDG, var_name_lat, NC_DIM))
       call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=grp%NumLat))
 
       WindRefDatetime = read_dataset_reference_time(NC_IDG)
@@ -602,7 +616,7 @@ contains
       character(LEN=100) :: TimeString
 
       ! Find the starting date/time in YYYY-MM-DDTHH:MM:SS format
-      call check_err(NF90_INQ_VARID(NC_IDG, "time", NC_VAR))
+      call check_err(NF90_INQ_VARID(NC_IDG, var_name_time, NC_VAR))
       call check_err(NF90_GET_ATT(NC_IDG, NC_VAR, "units", TimeUnits))
       TimeString = trim(adjustl(TimeUnits))
       TimeString = TimeUnits(15:len_trim(TimeUnits))
@@ -723,30 +737,346 @@ contains
 !> @param[inout] grp       NWS13 group structure to update
 !> @param[inout] data      Wind data structure to populate with grid coordinates
 !-----------------------------------------------------------------------
-   subroutine read_moving_grid(nc_idg, currsnap, grp, data)
+   subroutine read_moving_grid(currsnap, grp, data)
       use netcdf, only: NF90_INQ_VARID, NF90_GET_VAR
       use netcdf_error, only: check_err
 
       implicit none
 
-      integer, intent(in) :: nc_idg, currsnap
+      integer, intent(in) :: currsnap
       type(t_nws13), intent(inout) :: grp
       type(t_windData), intent(inout) :: data
 
       integer :: nc_var
 
       ! Read lon/lat coordinates for this time snapshot
-      call check_err(NF90_INQ_VARID(nc_idg, "lon", nc_var))
-      call check_err(NF90_GET_VAR(nc_idg, nc_var, data%lon(:, :), &
+      call check_err(NF90_INQ_VARID(grp%group_id, "lon", nc_var))
+      call check_err(NF90_GET_VAR(grp%group_id, nc_var, data%lon(:, :), &
                                   START=[1, 1, currsnap], &
                                   COUNT=[grp%NumLon, grp%NumLat, 1]))
-      call check_err(NF90_INQ_VARID(nc_idg, "lat", nc_var))
-      call check_err(NF90_GET_VAR(nc_idg, nc_var, data%lat(:, :), &
+      call check_err(NF90_INQ_VARID(grp%group_id, "lat", nc_var))
+      call check_err(NF90_GET_VAR(grp%group_id, nc_var, data%lat(:, :), &
                                   START=[1, 1, currsnap], &
                                   COUNT=[grp%NumLon, grp%NumLat, 1]))
       call update_moving_grid_interpolation(grp%interp, grp%NumLon, &
                                             grp%NumLat, data%lon, data%lat)
    end subroutine read_moving_grid
+
+!-----------------------------------------------------------------------
+!> @brief Reads a single wind snapshot from NetCDF file
+!> @param[in]    snap_idx  Snapshot index to read
+!> @param[in]    grid_info NWS13 grid information
+!> @return       t_windData object with read snapshot data
+!-----------------------------------------------------------------------
+   type(t_windData) function read_wind_snapshot(snap_idx, grid_info) result(wind_data)
+      use, intrinsic :: iso_c_binding, only: c_int
+      use ADC_CONSTANTS, only: G, RHOWAT0
+      implicit none
+      integer, intent(in) :: snap_idx
+      type(t_nws13), intent(inout) :: grid_info
+
+      ! Initialize wind data object
+      wind_data = t_windData(grid_info%NumLon, grid_info%NumLat, grid_info%interp%is_moving)
+
+      ! Read moving grid coordinates if applicable
+      if (grid_info%interp%is_moving) then
+         call read_moving_grid(snap_idx, grid_info, wind_data)
+      end if
+
+      ! Read wind and pressure fields
+      call read_netcdf_var_with_attrs(grid_info%group_id, &
+                                      var_name_u_wind, snap_idx, grid_info%NumLon, grid_info%NumLat, wind_data%U)
+      call read_netcdf_var_with_attrs(grid_info%group_id, &
+                                      var_name_v_wind, snap_idx, grid_info%NumLon, grid_info%NumLat, wind_data%V)
+      call read_netcdf_var_with_attrs(grid_info%group_id, &
+                                      var_name_pressure, snap_idx, grid_info%NumLon, grid_info%NumLat, wind_data%P)
+
+      ! Apply wind multiplier
+      wind_data%U = wind_data%U*NWS13WindMultiplier
+      wind_data%V = wind_data%V*NWS13WindMultiplier
+
+      ! Convert pressure to meters of water
+      wind_data%P = wind_data%P*100.d0/RHOWAT0/G
+
+      ! Get storm center position if available
+      if (grid_info%storm_center%available .and. grid_info%storm_center%loaded) then
+         wind_data%storm_pos = grid_info%storm_center%position(snap_idx, 1:2)
+      else
+         wind_data%storm_pos = [0.0d0, 0d0]
+      end if
+
+   end function read_wind_snapshot
+
+!-----------------------------------------------------------------------
+!> @brief Advances group to the snapshot containing current_time
+!> @param[inout] group NWS13 group to advance
+!> @param[in] current_time Target time
+!-----------------------------------------------------------------------
+   subroutine advance_to_current_snapshot(group, current_time)
+      use mod_datetime, only: t_datetime, operator(>=)
+      implicit none
+      type(t_nws13), intent(inout) :: group
+      type(t_datetime), intent(in) :: current_time
+
+      do while (current_time >= group%NextTime .and. group%NextSnap < group%NumSnap)
+         group%PrevSnap = group%NextSnap
+         group%PrevTime = group%NextTime
+         group%NextSnap = group%NextSnap + 1
+         group%NextTime = group%SnapTimes(group%NextSnap)
+      end do
+   end subroutine advance_to_current_snapshot
+
+!-----------------------------------------------------------------------
+!> @brief Determines the next wind field time for groups not yet started
+!> @param[in] current_time Current simulation time
+!> @param[in] groups Array of NWS13 groups
+!> @return Next wind field time as t_datetime
+!-----------------------------------------------------------------------
+   type(t_datetime) function find_next_wind_time_for_inactive_groups(current_time, groups) result(next_time)
+      use mod_datetime, only: t_datetime, null_datetime, operator(<), operator(==)
+      implicit none
+      type(t_datetime), intent(in) :: current_time
+      type(t_nws13), intent(in) :: groups(:)
+      integer :: ig
+
+      next_time = null_datetime()
+
+      do ig = 1, size(groups)
+         if (current_time < groups(ig)%PrevTime) then
+            if (next_time == null_datetime() .or. groups(ig)%PrevTime < next_time) then
+               next_time = groups(ig)%PrevTime
+            end if
+         end if
+      end do
+   end function find_next_wind_time_for_inactive_groups
+
+!-----------------------------------------------------------------------
+!> @brief Updates group snapshots and marks active groups
+!> @param[in] current_time Current simulation time
+!> @param[inout] groups Array of NWS13 groups to update
+!> @return Next wind field time as t_datetime
+!-----------------------------------------------------------------------
+   type(t_datetime) function update_active_groups(current_time, groups) result(next_time)
+      use mod_datetime, only: t_datetime, null_datetime, operator(<=), operator(<), operator(==)
+      implicit none
+      type(t_datetime), intent(in) :: current_time
+      type(t_nws13), intent(inout) :: groups(:)
+      integer :: ig
+
+      next_time = null_datetime()
+      groups(:)%InclSnap = 0
+
+      do ig = 1, size(groups)
+         ! Skip groups that haven't started
+         if (current_time < groups(ig)%PrevTime) cycle
+
+         ! Advance to correct snapshot
+         call advance_to_current_snapshot(groups(ig), current_time)
+
+         ! Mark active groups and update next time
+         if (groups(ig)%PrevTime <= current_time .and. &
+             current_time <= groups(ig)%NextTime) then
+            groups(ig)%InclSnap = 1
+            if (next_time == null_datetime() .or. groups(ig)%NextTime < next_time) then
+               next_time = groups(ig)%NextTime
+            end if
+         end if
+      end do
+   end function update_active_groups
+
+!-----------------------------------------------------------------------
+!> @brief Interpolates wind data between two time snapshots
+!> @param[in] prev_data Previous snapshot data
+!> @param[in] next_data Next snapshot data
+!> @param[in] prev_time Previous snapshot time
+!> @param[in] next_time Next snapshot time
+!> @param[in] current_time Current simulation time
+!> @param[in] grid_info Grid information for dimensions
+!> @return Interpolated wind data at current time
+!-----------------------------------------------------------------------
+   type(t_windData) pure function interpolate_wind_in_time(prev_data, next_data, prev_time, next_time, &
+                                                           current_time, grid_info) result(current_data)
+      use mod_datetime, only: t_datetime, t_timedelta, operator(-)
+      implicit none
+      type(t_windData), intent(in) :: prev_data, next_data
+      type(t_datetime), intent(in) :: prev_time, next_time, current_time
+      type(t_nws13), intent(in) :: grid_info
+      type(t_timedelta) :: time_interp_numerator, time_interp_denominator
+      real(8) :: time_interp_factor
+
+      ! Initialize current data structure
+      current_data = t_windData(grid_info%NumLon, grid_info%NumLat, grid_info%interp%is_moving)
+
+      ! Calculate time interpolation factor
+      time_interp_numerator = current_time - prev_time
+      time_interp_denominator = next_time - prev_time
+      time_interp_factor = dble(time_interp_numerator%total_milliseconds())/ &
+                           dble(time_interp_denominator%total_milliseconds())
+
+      ! Interpolate grid coordinates if moving
+      if (grid_info%interp%is_moving) then
+         current_data%Lon = prev_data%Lon + (next_data%Lon - prev_data%Lon)*time_interp_factor
+         current_data%Lat = prev_data%Lat + (next_data%Lat - prev_data%Lat)*time_interp_factor
+      end if
+
+      ! Interpolate wind and pressure fields
+      current_data%U = prev_data%U + (next_data%U - prev_data%U)*time_interp_factor
+      current_data%V = prev_data%V + (next_data%V - prev_data%V)*time_interp_factor
+      current_data%P = prev_data%P + (next_data%P - prev_data%P)*time_interp_factor
+
+      ! Calculate and interpolate scalar wind speed
+      current_data%Ws = sqrt(prev_data%U**2d0 + prev_data%V**2d0) + &
+                        (sqrt(next_data%U**2d0 + next_data%V**2d0) - &
+                         sqrt(prev_data%U**2d0 + prev_data%V**2d0))*time_interp_factor
+
+      ! Interpolate storm center position
+      current_data%storm_pos = prev_data%storm_pos + (next_data%storm_pos - prev_data%storm_pos)*time_interp_factor
+
+   end function interpolate_wind_in_time
+
+!-----------------------------------------------------------------------
+!> @brief Interpolates wind data to a single mesh node
+!> @param[in] node_idx Node index
+!> @param[in] wind_data Wind data on grid
+!> @param[in] interp Interpolation weights and indices
+!> @return t_nodeInterpolationResult containing interpolated values and validity flag
+!-----------------------------------------------------------------------
+   type(t_nodeInterpolationResult) pure function interpolate_to_node(node_idx, wind_data, interp) result(node_result)
+      implicit none
+      integer, intent(in) :: node_idx
+      type(t_windData), intent(in) :: wind_data
+      type(t_interpolationData), intent(in) :: interp
+      real(8) :: ws_corners(4), p_corners(4), wind_speed, wind_dir
+      real(8), parameter :: eps = epsilon(1d0)
+      integer :: ilon, ilat
+
+      ! Initialize result as invalid
+      node_result%valid = .false.
+      node_result%u = 0.0d0
+      node_result%v = 0.0d0
+      node_result%p = 0.0d0
+
+      ! Check if this node has valid interpolation data
+      if (interp%ilon(node_idx) <= 0) return
+
+      ilon = interp%ilon(node_idx)
+      ilat = interp%ilat(node_idx)
+
+      ! Get corner values for validation
+      ws_corners(1) = wind_data%Ws(ilon, ilat)
+      ws_corners(2) = wind_data%Ws(ilon + 1, ilat)
+      ws_corners(3) = wind_data%Ws(ilon + 1, ilat + 1)
+      ws_corners(4) = wind_data%Ws(ilon, ilat + 1)
+
+      p_corners(1) = wind_data%P(ilon, ilat)
+      p_corners(2) = wind_data%P(ilon + 1, ilat)
+      p_corners(3) = wind_data%P(ilon + 1, ilat + 1)
+      p_corners(4) = wind_data%P(ilon, ilat + 1)
+
+      ! Skip if any corner has flag values
+      if (.not. (all(abs(ws_corners - null_flag_value) > eps) .or. &
+                 all(abs(p_corners - null_flag_value) > eps))) return
+
+      ! Perform bilinear interpolation
+      node_result%u = interpolate_bilinear(wind_data%U, interp%weights(node_idx, :), ilon, ilat)
+      node_result%v = interpolate_bilinear(wind_data%V, interp%weights(node_idx, :), ilon, ilat)
+      wind_speed = interpolate_bilinear(wind_data%Ws, interp%weights(node_idx, :), ilon, ilat)
+      node_result%p = interpolate_bilinear(wind_data%P, interp%weights(node_idx, :), ilon, ilat)
+
+      ! Adjust U/V based on scalar wind magnitude
+      if (abs(node_result%u) <= eps .and. abs(node_result%v) <= eps) then
+         wind_dir = 0d0
+      else
+         wind_dir = atan2(node_result%u, node_result%v)
+         node_result%u = wind_speed*sin(wind_dir)
+         node_result%v = wind_speed*cos(wind_dir)
+      end if
+
+      node_result%valid = .true.
+
+   end function interpolate_to_node
+
+!-----------------------------------------------------------------------
+!> @brief Processes a single wind group and applies it to the mesh
+!> @param[in] group_idx Group index in sorted order
+!> @param[in] current_time Current simulation time
+!> @param[inout] wvnx2 Wind X-component array
+!> @param[inout] wvny2 Wind Y-component array
+!> @param[inout] prn2 Pressure array
+!> @param[inout] eye_lon Storm center longitude array
+!> @param[inout] eye_lat Storm center latitude array
+!> @param[out] found_eye Whether storm eye was found
+!-----------------------------------------------------------------------
+   subroutine process_wind_group(group_idx, current_time, wvnx2, wvny2, prn2, &
+                                 PowellGroupTemp, eye_lon, eye_lat, found_eye)
+      use MESH, only: NP
+      use global, only: screenMessage, INFO
+      use mod_datetime, only: t_datetime, t_timedelta, operator(-), operator(==)
+      implicit none
+      integer, intent(in) :: group_idx
+      type(t_datetime), intent(in) :: current_time
+      real(8), intent(inout) :: wvnx2(NP), wvny2(NP), prn2(NP)
+      integer, intent(inout) :: PowellGroupTemp
+      real(8), intent(inout) :: eye_lon(3), eye_lat(3)
+      logical, intent(out) :: found_eye
+
+      character(len=200) :: message
+      integer :: ig, iv
+      real(8), parameter :: eps = epsilon(1d0)
+      type(t_windData) :: prev_data, next_data, current_data
+      type(t_interpolationData) :: current_interp
+      type(t_nodeInterpolationResult) :: node_result
+
+      ! Get actual group index
+      ig = sorted_group_indices(group_idx)
+
+      ! Skip inactive groups
+      if (NWS13(ig)%InclSnap == 0) return
+
+      ! Log processing message
+      write (message, '(A,A,A,I0,2A)') "Processing group '", trim(NWS13(ig)%group_name), &
+         "' with rank ", NWS13(ig)%rank, " for wind/pressure with time ", &
+         trim(NWS13(ig)%NextTime%to_iso_string())
+      call screenMessage(INFO, message)
+
+      ! Read snapshots (storm position is now included in wind data)
+      prev_data = read_wind_snapshot(NWS13(ig)%PrevSnap, NWS13(ig))
+      next_data = read_wind_snapshot(NWS13(ig)%NextSnap, NWS13(ig))
+
+      ! Check for storm eye data
+      found_eye = NWS13(ig)%storm_center%available .and. NWS13(ig)%storm_center%loaded
+
+      ! Time interpolation (includes storm center interpolation)
+      current_data = interpolate_wind_in_time(prev_data, next_data, &
+                                              NWS13(ig)%PrevTime, NWS13(ig)%NextTime, &
+                                              current_time, NWS13(ig))
+
+      ! Get interpolation data
+      current_interp = NWS13(ig)%interp
+
+      ! Spatial interpolation to mesh nodes
+      do iv = 1, NP
+         ! Only process nodes not yet assigned
+         if (abs(prn2(iv) - null_flag_value) > eps) cycle
+
+         node_result = interpolate_to_node(iv, current_data, current_interp)
+         if (node_result%valid) then
+            wvnx2(iv) = node_result%u
+            wvny2(iv) = node_result%v
+            prn2(iv) = node_result%p
+         end if
+      end do
+
+      ! Update storm eye position for Powell drag
+      if (found_eye) then
+         if ((NWS13GroupForPowell == 0) .or. (NWS13GroupForPowell == ig)) then
+            eye_lon(3) = current_data%storm_pos(1)
+            eye_lat(3) = current_data%storm_pos(2)
+            PowellGroupTemp = ig
+         end if
+      end if
+
+   end subroutine process_wind_group
 
 !-----------------------------------------------------------------------
 !> @brief Reads multi-grid wind and pressure fields from the NetCDF file and
@@ -770,9 +1100,9 @@ contains
                         NF90_CLOSE, NF90_INQ_DIMID
       use netcdf_error, only: check_err
       use mod_datetime, only: t_timedelta, null_datetime, operator(+), operator(-), operator(<), operator(==), &
-                              operator(>=), operator(<=)
+                              operator(>=), operator(<=), operator(/=)
       use global, only: screenMessage, setMessageSource, unsetMessageSource, &
-                        INFO, RNDAY
+                        RNDAY
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       use global, only: allMessage, DEBUG
 #endif
@@ -782,43 +1112,21 @@ contains
 
       real(8), intent(inout) :: EyeLatR(3)
       real(8), intent(inout) :: EyeLonR(3)
-      logical, intent(out)   :: FoundEye
       real(8), intent(out)   :: PRN2(NP)
       real(8), intent(in)    :: TimeLoc
       real(8), intent(inout) :: WVNX2(NP)
       real(8), intent(inout) :: WVNY2(NP)
       real(8), intent(out)   :: WTIME2
 
-      character(LEN=200) :: Line
+      logical, intent(out)   :: FoundEye
 
-      integer :: CurrSnap
-      integer :: IG, IG_sorted
-      integer :: IS
-      integer :: IV
+      integer :: IG_sorted
       integer :: NC_ID
-      integer :: NC_IDG
-
-      real(8) :: TimeInterpFactor
-      real(8) :: sWdir
-
-      real(8) :: CurrentStormCenterPos(2)
-      real(8) :: NextStormCenterPos(2)
-      real(8) :: PrevStormCenterPos(2)
-      real(8) :: ws_this(4)
-      real(8) :: p_this(4)
-
-      real(8) :: PP(NP)
-      real(8) :: UU(NP)
-      real(8) :: VV(NP)
-      real(8) :: Wind(NP)
-
-      type(t_windData) :: CurrentData, PrevData, NextData
-      type(t_interpolationData) :: current_interp
+      integer :: PowellGroupTemp
 
       type(t_datetime)  :: CurrentTime
-      type(t_datetime)  :: wtime2_dt
+      type(t_datetime)  :: wtime2_dt, wtime2_dt_active
       type(t_timedelta) :: dt
-      type(t_timedelta) :: TimeInterpNumerator, TimeInterpDenominator
 
       call setMessageSource("nws13get")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -834,71 +1142,38 @@ contains
          return
       end if
 
-      PrevStormCenterPos = [0d0, 0d0]
-      NextStormCenterPos = [0d0, 0d0]
-
       ! First, initialize the ADCIRC wind fields with flag values.
       ! These will be replaced with actual values or defaults after processing all groups.
       WVNX2 = null_flag_value
       WVNY2 = null_flag_value
       PRN2 = null_flag_value
+      PowellGroupTemp = PowellGroup
 
       ! Open a connection to the wind file.
       call check_err(NF90_OPEN(trim(adjustl(NWS13File)), NF90_NOWRITE, NC_ID))
 
-      ! We need to determine how many groups are active at the current
-      ! time in the simulation.  Loop over the groups and find which
-      ! groups to include.
-      NWS13(:)%InclSnap = 0
-      WTIME2 = -1.d0
-      WTIME2_dt = null_datetime()
+      ! Determine active groups and next wind field time
       CurrentTime = NWS13Coldstart + t_timedelta(milliseconds=int(TimeLoc*1000d0))
 
-      do IG = 1, size(NWS13)
-         if (CurrentTime < NWS13(IG)%PrevTime) then
-            ! Then we still haven't reached the start of this group,
-            ! so we at least need to consider this as the end of the current
-            ! interval.  If we don't find any other groups with a closer
-            ! time, then this current interval will be zero winds.
-            if (WTIME2_dt == null_datetime() .or. NWS13(IG)%PrevTime < WTIME2_dt) then
-               WTIME2_dt = NWS13(IG)%PrevTime
-               dt = NWS13(IG)%PrevTime - NWS13ColdStart
-               WTIME2 = dble(dt%total_milliseconds())/1000.0d0
-            end if
-            cycle
-         end if
+      ! First check for groups not yet started
+      WTIME2_dt = find_next_wind_time_for_inactive_groups(CurrentTime, NWS13)
 
-         ! Check whether we have progressed past the end of the current
-         ! wind snap, and if so, then shift to the next wind snap.
-         do while (CurrentTime >= NWS13(IG)%NextTime)
-            if (NWS13(IG)%NextSnap == NWS13(IG)%NumSnap) then
-               ! Then we have reached the end of the wind snaps for this
-               ! group, and it will be excluded below.
-               exit
-            end if
-            NWS13(IG)%PrevSnap = NWS13(IG)%NextSnap
-            NWS13(IG)%PrevTime = NWS13(IG)%NextTime
-            NWS13(IG)%NextSnap = NWS13(IG)%NextSnap + 1
-            NWS13(IG)%NextTime = NWS13(IG)%SnapTimes(NWS13(IG)%NextSnap)
-         end do
-         ! Then check whether we are within the current wind snap.
-         if (NWS13(IG)%PrevTime <= CurrentTime .and. CurrentTime <= NWS13(IG)%NextTime) then
-            NWS13(IG)%InclSnap = 1
-            ! Update our end time if this is the first snap we found ...
-            ! ... or if it is earlier than what we have found already.
-            if (WTIME2_dt == null_datetime() .or. (NWS13(IG)%NextTime < WTIME2_dt)) then
-               dt = NWS13(IG)%NextTime - NWS13ColdStart
-               WTIME2_dt = NWS13(IG)%NextTime
-               WTIME2 = dble(dt%total_milliseconds())/1000.0d0
-            end if
+      ! Update active groups and get next time from active groups
+      wtime2_dt_active = update_active_groups(CurrentTime, NWS13)
+
+      ! Use the earlier of the two times
+      if (wtime2_dt_active /= null_datetime()) then
+         if (WTIME2_dt == null_datetime() .or. wtime2_dt_active < WTIME2_dt) then
+            WTIME2_dt = wtime2_dt_active
          end if
-      end do
-      ! The only way we would not find a next snap is for the scenario
-      ! when the simulation has progressed past the end of the wind
-      ! file.  In that case, we can use the simulation length as the end
-      ! of this next snap.
+      end if
+
+      ! Convert to seconds or use simulation end time
       if (WTIME2_dt == null_datetime()) then
          WTIME2 = RNDAY*86400.d0
+      else
+         dt = WTIME2_dt - NWS13ColdStart
+         WTIME2 = dble(dt%total_milliseconds())/1000.0d0
       end if
 
       ! If we don't need to include winds from any group (because the
@@ -915,154 +1190,16 @@ contains
          EyeLatR(3) = 0.d0
          FoundEye = .false.
 
-         ! Loop over the groups in pre-computed rank order
+         ! Process each wind group in rank order
          do IG_sorted = 1, size(NWS13)
-            IG = sorted_group_indices(IG_sorted)
-            if (NWS13(IG)%InclSnap == 0) cycle
-
-            write (Line, '(A,A,A,I0,2A)') "Processing group '", trim(NWS13(IG)%group_name), &
-               "' with rank ", NWS13(IG)%rank, " for wind/pressure interpolation with time ", &
-               trim(NWS13(IG)%NextTime%to_iso_string())
-            call screenMessage(INFO, Line)
-
-            ! Connect to this group.
-            NC_IDG = NWS13(IG)%group_id
-
-            ! Create wind data objects for this group's dimensions
-            CurrentData = t_windData(NWS13(IG)%NumLon, NWS13(IG)%NumLat, NWS13(IG)%interp%is_moving)
-            PrevData = t_windData(NWS13(IG)%NumLon, NWS13(IG)%NumLat, NWS13(IG)%interp%is_moving)
-            NextData = t_windData(NWS13(IG)%NumLon, NWS13(IG)%NumLat, NWS13(IG)%interp%is_moving)
-
-            ! Loop over the snaps.
-            do IS = 1, 2
-               if (IS == 1) then
-                  CurrSnap = NWS13(IG)%PrevSnap
-               elseif (IS == 2) then
-                  CurrSnap = NWS13(IG)%NextSnap
-               end if
-
-               ! 1. Read this snap from the wind file if it is a moving grid
-               if (NWS13(IG)%interp%is_moving) then
-                  call read_moving_grid(NC_IDG, CurrSnap, NWS13(IG), CurrentData)
-               end if
-
-               ! Read winds and pressures.
-               call read_netcdf_var_with_attrs(NC_IDG, "U10", CurrSnap, NWS13(IG)%NumLon, NWS13(IG)%NumLat, CurrentData%U)
-               call read_netcdf_var_with_attrs(NC_IDG, "V10", CurrSnap, NWS13(IG)%NumLon, NWS13(IG)%NumLat, CurrentData%V)
-               call read_netcdf_var_with_attrs(NC_IDG, "PSFC", CurrSnap, NWS13(IG)%NumLon, NWS13(IG)%NumLat, CurrentData%P)
-
-               ! Adjust the wind velocity.
-               CurrentData%U = CurrentData%U*NWS13WindMultiplier
-               CurrentData%V = CurrentData%V*NWS13WindMultiplier
-
-               ! Convert the pressures into meters of water.
-               CurrentData%P = CurrentData%P*100.d0/RHOWAT0/G
-               FoundEye = NWS13(IG)%storm_center%available .and. NWS13(IG)%storm_center%loaded
-
-               ! Save the snaps.
-               if (IS == 1) then
-                  if (NWS13(IG)%interp%is_moving) then
-                     PrevData%Lon = CurrentData%Lon
-                     PrevData%Lat = CurrentData%Lat
-                  end if
-                  PrevData%U = CurrentData%U
-                  PrevData%V = CurrentData%V
-                  PrevData%P = CurrentData%P
-                  if (FoundEye) PrevStormCenterPos = NWS13(IG)%storm_center%position(CurrSnap, 1:2)
-               elseif (IS == 2) then
-                  if (NWS13(IG)%interp%is_moving) then
-                     NextData%Lon = CurrentData%Lon
-                     NextData%Lat = CurrentData%Lat
-                  end if
-                  NextData%U = CurrentData%U
-                  NextData%V = CurrentData%V
-                  NextData%P = CurrentData%P
-                  if (FoundEye) NextStormCenterPos = NWS13(IG)%storm_center%position(CurrSnap, 1:2)
-               end if
-            end do
-
-            ! 2. Interpolate the wind snaps to start/end of current interval.
-            TimeInterpNumerator = CurrentTime - NWS13(IG)%PrevTime
-            TimeInterpDenominator = NWS13(IG)%NextTime - NWS13(IG)%PrevTime
-            TimeInterpFactor = dble(TimeInterpNumerator%total_milliseconds())/dble(TimeInterpDenominator%total_milliseconds())
-
-            if (NWS13(IG)%interp%is_moving) then
-               CurrentData%Lon = PrevData%Lon + (NextData%Lon - PrevData%Lon)*TimeInterpFactor
-               CurrentData%Lat = PrevData%Lat + (NextData%Lat - PrevData%Lat)*TimeInterpFactor
-            end if
-            CurrentData%U = PrevData%U + (NextData%U - PrevData%U)*TimeInterpFactor
-            CurrentData%V = PrevData%V + (NextData%V - PrevData%V)*TimeInterpFactor
-            CurrentData%P = PrevData%P + (NextData%P - PrevData%P)*TimeInterpFactor
-
-            ! Time Interpolate scalar wind
-            PrevData%Ws = sqrt(PrevData%U**2d0 + PrevData%V**2d0)
-            NextData%Ws = sqrt(NextData%U**2d0 + NextData%V**2d0)
-            CurrentData%Ws = PrevData%Ws + (NextData%Ws - PrevData%Ws)*TimeInterpFactor
-
-            if (FoundEye) CurrentStormCenterPos = PrevStormCenterPos + &
-                                                  (NextStormCenterPos - PrevStormCenterPos)*TimeInterpFactor
-
-            ! 3. Use pre-computed interpolation data (updated when grid is read for moving grids)
-            current_interp = NWS13(IG)%interp
-
-            do IV = 1, NP
-               ! Skip if this node was already assigned by a higher priority grid
-               if (abs(PRN2(IV) - null_flag_value) > eps) cycle
-
-               if (current_interp%ilon(IV) > 0) then
-
-                  ws_this(1) = CurrentData%Ws(current_interp%ilon(IV), current_interp%ilat(IV))
-                  ws_this(2) = CurrentData%Ws(current_interp%ilon(IV) + 1, current_interp%ilat(IV))
-                  ws_this(3) = CurrentData%Ws(current_interp%ilon(IV) + 1, current_interp%ilat(IV) + 1)
-                  ws_this(4) = CurrentData%Ws(current_interp%ilon(IV), current_interp%ilat(IV) + 1)
-                  p_this(1) = CurrentData%P(current_interp%ilon(IV), current_interp%ilat(IV))
-                  p_this(2) = CurrentData%P(current_interp%ilon(IV) + 1, current_interp%ilat(IV))
-                  p_this(3) = CurrentData%P(current_interp%ilon(IV) + 1, current_interp%ilat(IV) + 1)
-                  p_this(4) = CurrentData%P(current_interp%ilon(IV), current_interp%ilat(IV) + 1)
-
-                  ! do not apply if we pick up a a flag value
-                  if (any(abs(ws_this - null_flag_value) > eps) .or. &
-                      any(abs(p_this - null_flag_value) > eps)) then
-                     UU(IV) = interpolate_bilinear(CurrentData%U, current_interp%weights(IV, :), &
-                                                   current_interp%ilon(IV), current_interp%ilat(IV))
-                     VV(IV) = interpolate_bilinear(CurrentData%V, current_interp%weights(IV, :), &
-                                                   current_interp%ilon(IV), current_interp%ilat(IV))
-                     Wind(IV) = interpolate_bilinear(CurrentData%Ws, current_interp%weights(IV, :), &
-                                                     current_interp%ilon(IV), current_interp%ilat(IV))
-                     PP(IV) = interpolate_bilinear(CurrentData%P, current_interp%weights(IV, :), &
-                                                   current_interp%ilon(IV), current_interp%ilat(IV))
-                  end if
-
-                  ! Adjust U/V Based on scalar wind magnitude
-                  if (abs(UU(IV)) <= eps .and. abs(VV(IV)) <= eps) then
-                     sWdir = 0d0
-                  else
-                     sWdir = atan2(UU(IV), VV(IV))
-                     UU(IV) = Wind(IV)*sin(sWDir)
-                     VV(IV) = Wind(IV)*cos(sWDir)
-                  end if
-
-                  PRN2(IV) = PP(IV)
-                  WVNX2(IV) = UU(IV)
-                  WVNY2(IV) = VV(IV)
-               end if
-            end do
-
-            if (FoundEye) then
-               if ((NWS13GroupForPowell == 0) .or. (NWS13GroupForPowell == IG)) then
-                  ! Assign the storm center to the next spot in the array.
-                  EyeLonR(3) = CurrentStormCenterPos(1)
-                  EyeLatR(3) = CurrentStormCenterPos(2)
-                  PowellGroupTemp = IG
-               end if
-            end if
-
+            call process_wind_group(IG_sorted, CurrentTime, WVNX2, WVNY2, PRN2, &
+                                    PowellGroupTemp, EyeLonR, EyeLatR, FoundEye)
          end do
 
       end if
 
       ! Replace any remaining flag values with default background values
-      where (abs(PRN2 - null_flag_value) < eps)
+      where (abs(PRN2 - null_flag_value) <= eps)
          PRN2 = PRBCKGRND*100d0/RHOWAT0/G
          WVNX2 = 0.d0
          WVNY2 = 0.d0
