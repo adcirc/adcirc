@@ -205,8 +205,7 @@ module mod_nws13
    type t_stormCenterData
       logical :: available = .false. !< Flag indicating if storm center data exists in file
       logical :: loaded = .false. !< Flag indicating if data has been loaded into memory
-      real(8), allocatable :: clon(:) !< Storm center longitude for each time snapshot
-      real(8), allocatable :: clat(:) !< Storm center latitude for each time snapshot
+      real(8), allocatable :: position(:, :) !< Storm center longitude for each time snapshot
    end type t_stormCenterData
 
    !> @brief NetCDF wind group metadata and temporal information
@@ -338,29 +337,27 @@ contains
 !> @param[in] num_snaps Number of time snapshots
 !> @return storm_center Initialized storm center data structure with cached data
 !-----------------------------------------------------------------------
-   function storm_center_constructor(nc_idg, num_snaps) result(storm_center)
+   type(t_stormCenterData) function storm_center_constructor(nc_idg, num_snaps) result(storm_center)
       use netcdf, only: NF90_INQ_VARID, NF90_GET_VAR, NF90_NOERR
       use netcdf_error, only: check_err
       implicit none
       integer, intent(in) :: nc_idg, num_snaps
-      type(t_stormCenterData) :: storm_center
       integer :: nc_var, nc_err
 
       ! Allocate arrays
-      allocate (storm_center%clon(num_snaps))
-      allocate (storm_center%clat(num_snaps))
+      allocate (storm_center%position(num_snaps, 2))
 
       ! Check if storm center longitude data exists
       nc_err = NF90_INQ_VARID(nc_idg, "clon", nc_var)
       if (nc_err == NF90_NOERR) then
          storm_center%available = .true.
-         call check_err(NF90_GET_VAR(nc_idg, nc_var, storm_center%clon(:), &
+         call check_err(NF90_GET_VAR(nc_idg, nc_var, storm_center%position(:, 1), &
                                      START=[1], COUNT=[num_snaps]))
 
          ! Check if storm center latitude data exists
          nc_err = NF90_INQ_VARID(nc_idg, "clat", nc_var)
          if (nc_err == NF90_NOERR) then
-            call check_err(NF90_GET_VAR(nc_idg, nc_var, storm_center%clat(:), &
+            call check_err(NF90_GET_VAR(nc_idg, nc_var, storm_center%position(:, 2), &
                                         START=[1], COUNT=[num_snaps]))
             storm_center%loaded = .true.
          else
@@ -801,24 +798,21 @@ contains
       integer :: NC_ID
       integer :: NC_IDG
 
-      type(t_windData) :: CurrentData, PrevData, NextData
-
-      real(8) :: CLat
-      real(8) :: CLon
-      real(8) :: NextCLat
-      real(8) :: NextCLon
-      real(8) :: PP(NP)
-      real(8) :: PrevCLat
-      real(8) :: PrevCLon
       real(8) :: TimeInterpFactor
-      real(8) :: UU(NP)
-      real(8) :: VV(NP)
-      real(8) :: Wind(NP)
       real(8) :: sWdir
 
+      real(8) :: CurrentStormCenterPos(2)
+      real(8) :: NextStormCenterPos(2)
+      real(8) :: PrevStormCenterPos(2)
       real(8) :: ws_this(4)
       real(8) :: p_this(4)
 
+      real(8) :: PP(NP)
+      real(8) :: UU(NP)
+      real(8) :: VV(NP)
+      real(8) :: Wind(NP)
+
+      type(t_windData) :: CurrentData, PrevData, NextData
       type(t_interpolationData) :: current_interp
 
       type(t_datetime)  :: CurrentTime
@@ -840,10 +834,8 @@ contains
          return
       end if
 
-      PrevCLon = 0d0
-      PrevCLat = 0d0
-      NextCLon = 0d0
-      NextCLat = 0d0
+      PrevStormCenterPos = [0d0, 0d0]
+      NextStormCenterPos = [0d0, 0d0]
 
       ! First, initialize the ADCIRC wind fields with flag values.
       ! These will be replaced with actual values or defaults after processing all groups.
@@ -976,10 +968,7 @@ contains
                   PrevData%U = CurrentData%U
                   PrevData%V = CurrentData%V
                   PrevData%P = CurrentData%P
-                  if (FoundEye) then
-                     PrevCLon = NWS13(IG)%storm_center%clon(CurrSnap)
-                     PrevCLat = NWS13(IG)%storm_center%clat(CurrSnap)
-                  end if
+                  if (FoundEye) PrevStormCenterPos = NWS13(IG)%storm_center%position(CurrSnap, 1:2)
                elseif (IS == 2) then
                   if (NWS13(IG)%interp%is_moving) then
                      NextData%Lon = CurrentData%Lon
@@ -988,10 +977,7 @@ contains
                   NextData%U = CurrentData%U
                   NextData%V = CurrentData%V
                   NextData%P = CurrentData%P
-                  if (FoundEye) then
-                     NextCLon = NWS13(IG)%storm_center%clon(CurrSnap)
-                     NextCLat = NWS13(IG)%storm_center%clat(CurrSnap)
-                  end if
+                  if (FoundEye) NextStormCenterPos = NWS13(IG)%storm_center%position(CurrSnap, 1:2)
                end if
             end do
 
@@ -1012,10 +998,9 @@ contains
             PrevData%Ws = sqrt(PrevData%U**2d0 + PrevData%V**2d0)
             NextData%Ws = sqrt(NextData%U**2d0 + NextData%V**2d0)
             CurrentData%Ws = PrevData%Ws + (NextData%Ws - PrevData%Ws)*TimeInterpFactor
-            if (FoundEye) then
-               CLon = PrevCLon + (NextCLon - PrevCLon)*TimeInterpFactor
-               CLat = PrevCLat + (NextCLat - PrevCLat)*TimeInterpFactor
-            end if
+
+            if (FoundEye) CurrentStormCenterPos = PrevStormCenterPos + &
+                                                  (NextStormCenterPos - PrevStormCenterPos)*TimeInterpFactor
 
             ! 3. Use pre-computed interpolation data (updated when grid is read for moving grids)
             current_interp = NWS13(IG)%interp
@@ -1066,8 +1051,8 @@ contains
             if (FoundEye) then
                if ((NWS13GroupForPowell == 0) .or. (NWS13GroupForPowell == IG)) then
                   ! Assign the storm center to the next spot in the array.
-                  EyeLonR(3) = CLon
-                  EyeLatR(3) = CLat
+                  EyeLonR(3) = CurrentStormCenterPos(1)
+                  EyeLatR(3) = CurrentStormCenterPos(2)
                   PowellGroupTemp = IG
                end if
             end if
