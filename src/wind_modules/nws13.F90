@@ -208,8 +208,6 @@ module mod_nws13
       real(8), allocatable :: weights(:, :) !< Bilinear interpolation weights (NP, 4)
       logical :: initialized = .false. !< Flag indicating if interpolation is computed
       logical :: is_moving = .false. !< Flag indicating if grid moves with time
-      real(8) :: corner_lon(4) = 0.0d0 !< Grid corner longitudes [SW, SE, NE, NW]
-      real(8) :: corner_lat(4) = 0.0d0 !< Grid corner latitudes [SW, SE, NE, NW]
    end type t_interpolationData
 
    !> @brief Stores storm center data for a group to avoid repeated NetCDF reads
@@ -684,53 +682,6 @@ contains
    end function read_2d_grid
 
 !-----------------------------------------------------------------------
-!> @brief Updates interpolation data if grid has moved. The grid is assumed
-!>        not to have moved if the corners are static
-!> @param[inout] interp_data  Interpolation structure to update
-!> @param[in]    numlon       X-dimension size of grid
-!> @param[in]    numlat       Y-dimension size of grid
-!> @param[in]    lon          Grid longitudes (2D)
-!> @param[in]    lat          Grid latitudes (2D)
-!-----------------------------------------------------------------------
-   subroutine update_moving_grid_interpolation(interp_data, numlon, numlat, lon, lat)
-      implicit none
-      type(t_interpolationData), intent(inout) :: interp_data
-      integer, intent(in) :: numlon, numlat
-      real(8), intent(in) :: lon(numlon, numlat), lat(numlon, numlat)
-
-      real(8) :: new_corners_lon(4), new_corners_lat(4)
-      real(8), parameter :: eps = epsilon(1d0)
-      logical :: grid_moved
-
-      ! Extract corner coordinates: [SW, SE, NE, NW]
-      new_corners_lon(1) = lon(1, 1) ! SW
-      new_corners_lon(2) = lon(numlon, 1) ! SE
-      new_corners_lon(3) = lon(numlon, numlat) ! NE
-      new_corners_lon(4) = lon(1, numlat) ! NW
-
-      new_corners_lat(1) = lat(1, 1) ! SW
-      new_corners_lat(2) = lat(numlon, 1) ! SE
-      new_corners_lat(3) = lat(numlon, numlat) ! NE
-      new_corners_lat(4) = lat(1, numlat) ! NW
-
-      ! Check if any corner has moved significantly
-      grid_moved = .false.
-      if (interp_data%initialized) then
-         grid_moved = any(abs(new_corners_lon - interp_data%corner_lon) > eps) .or. &
-                      any(abs(new_corners_lat - interp_data%corner_lat) > eps)
-      end if
-
-      ! Update interpolation if grid moved or not initialized
-      if (.not. interp_data%initialized .or. grid_moved) then
-         interp_data = NWS13INTERP(numlon, numlat, lon, lat)
-         interp_data%is_moving = .true.
-         interp_data%corner_lon = new_corners_lon
-         interp_data%corner_lat = new_corners_lat
-      end if
-
-   end subroutine update_moving_grid_interpolation
-
-!-----------------------------------------------------------------------
 !> @brief Reads lon/lat coordinates for moving grids and updates interpolation
 !> @param[in]    nc_idg    NetCDF group ID
 !> @param[in]    currsnap  Current time snapshot index
@@ -758,8 +709,6 @@ contains
       call check_err(NF90_GET_VAR(grp%group_id, nc_var, data%lat(:, :), &
                                   START=[1, 1, currsnap], &
                                   COUNT=[grp%NumLon, grp%NumLat, 1]))
-      call update_moving_grid_interpolation(grp%interp, grp%NumLon, &
-                                            grp%NumLat, data%lon, data%lat)
    end subroutine read_moving_grid
 
 !-----------------------------------------------------------------------
@@ -1052,7 +1001,12 @@ contains
                                               current_time, NWS13(ig))
 
       ! Get interpolation data
-      current_interp = NWS13(ig)%interp
+      if (NWS13(ig)%interp%is_moving) then
+         current_interp = NWS13INTERP(NWS13(ig)%NumLon, NWS13(ig)%Numlat, &
+                                      current_data%lon, current_data%lat)
+      else
+         current_interp = NWS13(ig)%interp
+      end if
 
       ! Spatial interpolation to mesh nodes
       do iv = 1, NP
