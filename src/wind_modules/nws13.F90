@@ -18,7 +18,7 @@
 !
 !-------------------------------------------------------------------------------!
 !-----------------------------------------------------------------------
-!  MODULE OWIWIND_NETCDF
+!  MODULE mod_nws13
 !-----------------------------------------------------------------------
 !> @author JC Detrich, NC State University
 !> @author Alexander Crosby, Oceanweather Inc., alexc@oceanweather.com
@@ -200,6 +200,26 @@ module mod_nws13
    contains
       final :: wind_data_destructor
    end type t_windData
+
+   !> @brief Spatial hash acceleration structure for grid cell location
+   type t_spatial_hash
+      integer :: nx_hash !< Number of hash cells in x-direction
+      integer :: ny_hash !< Number of hash cells in y-direction
+      real(8) :: min_lon !< Minimum longitude of grid
+      real(8) :: max_lon !< Maximum longitude of grid
+      real(8) :: min_lat !< Minimum latitude of grid
+      real(8) :: max_lat !< Maximum latitude of grid
+      real(8) :: dx_hash !< Hash cell width
+      real(8) :: dy_hash !< Hash cell height
+      type(t_cell_list), allocatable :: hash_cells(:, :) !< Hash cells containing grid cell lists
+   end type t_spatial_hash
+
+   !> @brief List of grid cells overlapping a hash cell
+   type t_cell_list
+      integer :: n_cells = 0 !< Number of grid cells in list
+      integer, allocatable :: i_indices(:) !< Grid i-indices
+      integer, allocatable :: j_indices(:) !< Grid j-indices
+   end type t_cell_list
 
    !> @brief Stores bilinear interpolation data for grid-to-mesh mapping
    type t_interpolationData
@@ -1199,8 +1219,6 @@ contains
    type(t_interpolationData) function NWS13INTERP(NumLon, NumLat, Lon, Lat) result(interpData)
 !-----------------------------------------------------------------------
       use ADC_CONSTANTS, only: RAD2DEG
-      use kdtree2_module, only: KDTREE2, KDTREE2_RESULT, kdtree2_create, &
-                                kdtree2_n_nearest, kdtree2_destroy
       use MESH, only: NP, SLAM, SFEA
       use GLOBAL, only: setMessageSource, unsetMessageSource
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -1214,17 +1232,11 @@ contains
       real(8), intent(in)  :: Lon(NumLon, NumLat)
       real(8), intent(in)  :: Lat(NumLon, NumLat)
 
-      integer :: Counter
-      integer :: ElemNumber
       integer :: IA
-      integer :: IE
       integer :: IO
       integer :: IV
-      integer :: NumResult
+      integer, dimension(2) :: cell_indices
 
-      logical :: ElemFound
-
-      real(8), allocatable :: ElemCenter(:, :)
       real(8) :: AdcLat
       real(8) :: AdcLon
       real(8) :: MaxLat
@@ -1237,32 +1249,15 @@ contains
       real(8) :: W3
       real(8) :: W4
 
-      type(KDTREE2), pointer :: kdTree
-      type(KDTREE2_RESULT), allocatable :: kdResult(:)
+      type(t_spatial_hash) :: hash_accel
 
       call setMessageSource("nws13interp")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Enter.")
 #endif
 
-      NumResult = (NumLon - 1)*(NumLat - 1)
-      NumResult = min(NumResult, 20)
-
-      allocate (ElemCenter(1:2, 1:(NumLon - 1)*(NumLat - 1)))
-      Counter = 0
-      do IO = 1, NumLon - 1
-         do IA = 1, NumLat - 1
-            Counter = Counter + 1
-            ElemCenter(:, Counter) = quad_center_x_y( &
-                                     Lon(IO, IA), Lat(IO, IA), &
-                                     Lon(IO + 1, IA), Lat(IO + 1, IA), &
-                                     Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), &
-                                     Lon(IO, IA + 1), Lat(IO, IA + 1))
-         end do
-      end do
-
-      kdTree => kdtree2_create(ElemCenter, rearrange=.true., sort=.true.)
-      allocate (kdResult(1:NumResult))
+      ! Build spatial hash acceleration structure
+      hash_accel = build_spatial_hash(NumLon, NumLat, Lon, Lat)
 
       ! Allocate output arrays
       allocate (interpData%ilon(1:NP))
@@ -1279,6 +1274,7 @@ contains
       MaxLon = maxval(Lon)
       MinLat = minval(Lat)
       MinLon = minval(Lon)
+
       do IV = 1, NP
          AdcLat = RAD2DEG*SFEA(IV)
          AdcLon = RAD2DEG*SLAM(IV)
@@ -1286,21 +1282,16 @@ contains
          if (AdcLon > MaxLon) cycle
          if (AdcLat < MinLat) cycle
          if (AdcLat > MaxLat) cycle
-         ElemFound = .false.
-         call kdtree2_n_nearest(tp=kdTree, &
-                                qv=[AdcLon, AdcLat], &
-                                nn=NumResult, results=kdResult)
-         IE = 1
-         do while ((.not. ElemFound) .and. (IE <= NumResult))
-            ElemNumber = kdResult(IE)%idx
-            if (mod(ElemNumber, NumLat - 1) == 0) then
-               IO = ElemNumber/(NumLat - 1)
-               IA = NumLat - 1
-            else
-               IO = floor(real(ElemNumber)/real(NumLat - 1)) + 1
-               IA = mod(ElemNumber, NumLat - 1)
-            end if
 
+         ! Find containing cell using spatial hash + walking
+         cell_indices = find_containing_cell(hash_accel, AdcLon, AdcLat, &
+                                             NumLon, NumLat, Lon, Lat)
+
+         if (cell_indices(1) > 0) then
+            IO = cell_indices(1)
+            IA = cell_indices(2)
+
+            ! Compute bilinear interpolation weights
             W0 = compute_weight(Lon(IO, IA), Lat(IO, IA), Lon(IO + 1, IA), Lat(IO + 1, IA), &
                                 Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), Lon(IO, IA + 1), Lat(IO, IA + 1))
             W1 = compute_weight(AdcLon, AdcLat, Lon(IO + 1, IA), Lat(IO + 1, IA), &
@@ -1312,13 +1303,6 @@ contains
             W4 = compute_weight(Lon(IO, IA), Lat(IO, IA), Lon(IO + 1, IA), Lat(IO + 1, IA), &
                                 Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), AdcLon, AdcLat)
 
-            if ((W1 + W2 + W3 + W4) <= (W0*2.001d0)) then
-               ElemFound = .true.
-               exit
-            end if
-            IE = IE + 1
-         end do
-         if (ElemFound) then
             interpData%ilon(IV) = IO
             interpData%ilat(IV) = IA
             interpData%weights(IV, 1) = W1/(W0*2.d0)
@@ -1329,9 +1313,8 @@ contains
 
       end do
 
-      call kdtree2_destroy(tp=kdTree)
-      deallocate (kdResult)
-      deallocate (ElemCenter)
+      ! Clean up spatial hash
+      call destroy_spatial_hash(hash_accel)
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Return.")
@@ -1388,18 +1371,6 @@ contains
    end function compute_weight
 
 !-----------------------------------------------------------------------
-!> @brief Computes the center of a quadrilateral given its corner coordinates
-!> @param[in] x1, y1, x2, y2, x3, y3, x4, y4 coordinates of the quadrilateral
-!> @return center the coordinates of the center of the quadrilateral
-!-----------------------------------------------------------------------
-   pure function quad_center_x_y(x1, y1, x2, y2, x3, y3, x4, y4) result(center)
-      real(8), intent(in) :: x1, y1, x2, y2, x3, y3, x4, y4
-      real(8) :: center(2)
-      center(1) = 0.25d0*(x1 + x2 + x3 + x4)
-      center(2) = 0.25d0*(y1 + y2 + y3 + y4)
-   end function quad_center_x_y
-
-!-----------------------------------------------------------------------
 !> @brief Bilinear interpolation of a 2D array using weights
 !> @param[in] arr 2D array to interpolate
 !> @param[in] w   weights for the bilinear interpolation
@@ -1445,5 +1416,293 @@ contains
       nc_err = NF90_GET_ATT(ncid, nc_var, "add_offset", var_offset_attr)
       if (nc_err == NF90_NOERR) arr = arr + var_offset_attr
    end subroutine read_netcdf_var_with_attrs
+
+!-----------------------------------------------------------------------
+!> @brief Builds spatial hash acceleration structure for grid cell location
+!> @param[in] nx Grid x-dimension
+!> @param[in] ny Grid y-dimension
+!> @param[in] lon Grid longitudes
+!> @param[in] lat Grid latitudes
+!> @return hash_struct Initialized spatial hash structure
+!-----------------------------------------------------------------------
+   type(t_spatial_hash) function build_spatial_hash(nx, ny, lon, lat) result(hash_struct)
+      implicit none
+      integer, intent(in) :: nx, ny
+      real(8), intent(in) :: lon(nx, ny), lat(nx, ny)
+      integer :: i, j, ih, jh, ih_min, ih_max, jh_min, jh_max
+      real(8) :: avg_dx, avg_dy, cell_min_lon, cell_max_lon, cell_min_lat, cell_max_lat
+
+      ! Compute grid bounds
+      hash_struct%min_lon = minval(lon)
+      hash_struct%max_lon = maxval(lon)
+      hash_struct%min_lat = minval(lat)
+      hash_struct%max_lat = maxval(lat)
+
+      ! Estimate average grid spacing
+      avg_dx = (hash_struct%max_lon - hash_struct%min_lon)/real(nx - 1, 8)
+      avg_dy = (hash_struct%max_lat - hash_struct%min_lat)/real(ny - 1, 8)
+
+      ! Set hash cell size to ~2.5x average grid spacing for overlap
+      hash_struct%dx_hash = avg_dx*2.5d0
+      hash_struct%dy_hash = avg_dy*2.5d0
+
+      ! Compute hash grid dimensions
+      hash_struct%nx_hash = ceiling((hash_struct%max_lon - hash_struct%min_lon)/hash_struct%dx_hash) + 1
+      hash_struct%ny_hash = ceiling((hash_struct%max_lat - hash_struct%min_lat)/hash_struct%dy_hash) + 1
+
+      ! Allocate hash grid
+      allocate (hash_struct%hash_cells(hash_struct%nx_hash, hash_struct%ny_hash))
+
+      ! Initialize cell lists with estimated capacity
+      do ih = 1, hash_struct%nx_hash
+         do jh = 1, hash_struct%ny_hash
+            hash_struct%hash_cells(ih, jh)%n_cells = 0
+            allocate (hash_struct%hash_cells(ih, jh)%i_indices(16))
+            allocate (hash_struct%hash_cells(ih, jh)%j_indices(16))
+         end do
+      end do
+
+      ! Map grid cells to hash cells
+      do i = 1, nx - 1
+         do j = 1, ny - 1
+            ! Get bounding box of this grid cell
+            cell_min_lon = min(lon(i, j), lon(i + 1, j), lon(i + 1, j + 1), lon(i, j + 1))
+            cell_max_lon = max(lon(i, j), lon(i + 1, j), lon(i + 1, j + 1), lon(i, j + 1))
+            cell_min_lat = min(lat(i, j), lat(i + 1, j), lat(i + 1, j + 1), lat(i, j + 1))
+            cell_max_lat = max(lat(i, j), lat(i + 1, j), lat(i + 1, j + 1), lat(i, j + 1))
+
+            ! Find overlapping hash cells
+            ih_min = max(1, floor((cell_min_lon - hash_struct%min_lon)/hash_struct%dx_hash) + 1)
+            ih_max = min(hash_struct%nx_hash, ceiling((cell_max_lon - hash_struct%min_lon)/hash_struct%dx_hash) + 1)
+            jh_min = max(1, floor((cell_min_lat - hash_struct%min_lat)/hash_struct%dy_hash) + 1)
+            jh_max = min(hash_struct%ny_hash, ceiling((cell_max_lat - hash_struct%min_lat)/hash_struct%dy_hash) + 1)
+
+            ! Add to all overlapping hash cells
+            do ih = ih_min, ih_max
+               do jh = jh_min, jh_max
+                  call add_to_cell_list(hash_struct%hash_cells(ih, jh), i, j)
+               end do
+            end do
+         end do
+      end do
+
+   end function build_spatial_hash
+
+!-----------------------------------------------------------------------
+!> @brief Adds a grid cell to a hash cell's list
+!> @param[inout] cell_list Hash cell to add to
+!> @param[in] i Grid i-index
+!> @param[in] j Grid j-index
+!-----------------------------------------------------------------------
+   subroutine add_to_cell_list(cell_list, i, j)
+      implicit none
+      type(t_cell_list), intent(inout) :: cell_list
+      integer, intent(in) :: i, j
+      integer, allocatable :: temp_i(:), temp_j(:)
+      integer :: new_size
+
+      cell_list%n_cells = cell_list%n_cells + 1
+
+      ! Resize arrays if needed
+      if (cell_list%n_cells > size(cell_list%i_indices)) then
+         new_size = size(cell_list%i_indices)*2
+         allocate (temp_i(new_size), temp_j(new_size))
+         temp_i(1:cell_list%n_cells - 1) = cell_list%i_indices(1:cell_list%n_cells - 1)
+         temp_j(1:cell_list%n_cells - 1) = cell_list%j_indices(1:cell_list%n_cells - 1)
+         deallocate (cell_list%i_indices, cell_list%j_indices)
+         cell_list%i_indices = temp_i
+         cell_list%j_indices = temp_j
+      end if
+
+      cell_list%i_indices(cell_list%n_cells) = i
+      cell_list%j_indices(cell_list%n_cells) = j
+
+   end subroutine add_to_cell_list
+
+!-----------------------------------------------------------------------
+!> @brief Destroys spatial hash structure and frees memory
+!> @param[inout] hash_struct Spatial hash to destroy
+!-----------------------------------------------------------------------
+   subroutine destroy_spatial_hash(hash_struct)
+      implicit none
+      type(t_spatial_hash), intent(inout) :: hash_struct
+      integer :: i, j
+
+      if (allocated(hash_struct%hash_cells)) then
+         do i = 1, hash_struct%nx_hash
+            do j = 1, hash_struct%ny_hash
+               if (allocated(hash_struct%hash_cells(i, j)%i_indices)) then
+                  deallocate (hash_struct%hash_cells(i, j)%i_indices)
+                  deallocate (hash_struct%hash_cells(i, j)%j_indices)
+               end if
+            end do
+         end do
+         deallocate (hash_struct%hash_cells)
+      end if
+
+   end subroutine destroy_spatial_hash
+
+!-----------------------------------------------------------------------
+!> @brief Finds grid cell containing query point using spatial hash + walking
+!> @param[in] hash_struct Spatial hash structure
+!> @param[in] query_lon Query point longitude
+!> @param[in] query_lat Query point latitude
+!> @param[in] nx Grid x-dimension
+!> @param[in] ny Grid y-dimension
+!> @param[in] lon Grid longitudes
+!> @param[in] lat Grid latitudes
+!> @return indices [i,j] indices of containing cell, or [-1,-1] if not found
+!-----------------------------------------------------------------------
+   function find_containing_cell(hash_struct, query_lon, query_lat, nx, ny, lon, lat) result(indices)
+      implicit none
+      type(t_spatial_hash), intent(in) :: hash_struct
+      real(8), intent(in) :: query_lon, query_lat
+      integer, intent(in) :: nx, ny
+      real(8), intent(in) :: lon(nx, ny), lat(nx, ny)
+      integer :: indices(2)
+      integer :: ih, jh, ic, i, j, best_i, best_j
+      real(8) :: dist, min_dist, w0, w1, w2, w3, w4
+      logical :: found
+
+      indices = [-1, -1]
+
+      ! Get hash cell for query point
+      ih = min(max(1, floor((query_lon - hash_struct%min_lon)/hash_struct%dx_hash) + 1), hash_struct%nx_hash)
+      jh = min(max(1, floor((query_lat - hash_struct%min_lat)/hash_struct%dy_hash) + 1), hash_struct%ny_hash)
+
+      ! Check candidate cells from hash
+      found = .false.
+      min_dist = huge(1.0d0)
+      best_i = -1
+      best_j = -1
+
+      do ic = 1, hash_struct%hash_cells(ih, jh)%n_cells
+         i = hash_struct%hash_cells(ih, jh)%i_indices(ic)
+         j = hash_struct%hash_cells(ih, jh)%j_indices(ic)
+
+         ! Quick point-in-quad test using weights
+         w0 = compute_weight(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
+                             lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
+         w1 = compute_weight(query_lon, query_lat, lon(i + 1, j), lat(i + 1, j), &
+                             lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
+         w2 = compute_weight(lon(i, j), lat(i, j), query_lon, query_lat, &
+                             lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
+         w3 = compute_weight(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
+                             query_lon, query_lat, lon(i, j + 1), lat(i, j + 1))
+         w4 = compute_weight(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
+                             lon(i + 1, j + 1), lat(i + 1, j + 1), query_lon, query_lat)
+
+         if ((w1 + w2 + w3 + w4) <= (w0*2.001d0)) then
+            indices = [i, j]
+            found = .true.
+            exit
+         end if
+
+         ! Track closest cell for walking fallback
+         dist = (query_lon - 0.25d0*(lon(i, j) + lon(i + 1, j) + lon(i + 1, j + 1) + lon(i, j + 1)))**2 + &
+                (query_lat - 0.25d0*(lat(i, j) + lat(i + 1, j) + lat(i + 1, j + 1) + lat(i, j + 1)))**2
+         if (dist < min_dist) then
+            min_dist = dist
+            best_i = i
+            best_j = j
+         end if
+      end do
+
+      ! If not found in hash, try walking from closest candidate
+      if (.not. found .and. best_i > 0) then
+         indices = walk_to_containing_cell(best_i, best_j, query_lon, query_lat, nx, ny, lon, lat)
+      end if
+
+   end function find_containing_cell
+
+!-----------------------------------------------------------------------
+!> @brief Walks grid to find cell containing query point
+!> @param[in] start_i Starting i-index
+!> @param[in] start_j Starting j-index
+!> @param[in] query_lon Query longitude
+!> @param[in] query_lat Query latitude
+!> @param[in] nx Grid x-dimension
+!> @param[in] ny Grid y-dimension
+!> @param[in] lon Grid longitudes
+!> @param[in] lat Grid latitudes
+!> @return indices [i,j] of containing cell or [-1,-1]
+!-----------------------------------------------------------------------
+   function walk_to_containing_cell(start_i, start_j, query_lon, query_lat, nx, ny, lon, lat) result(indices)
+      implicit none
+      integer, intent(in) :: start_i, start_j, nx, ny
+      real(8), intent(in) :: query_lon, query_lat
+      real(8), intent(in) :: lon(nx, ny), lat(nx, ny)
+      integer :: indices(2)
+      integer :: i, j, di, dj, iter
+      real(8) :: w0, w1, w2, w3, w4
+      real(8) :: center_lon, center_lat, dx, dy
+      logical :: found
+      integer, parameter :: max_iter = 20
+
+      i = start_i
+      j = start_j
+      indices = [-1, -1]
+      found = .false.
+
+      do iter = 1, max_iter
+         ! Check bounds
+         if (i < 1 .or. i >= nx .or. j < 1 .or. j >= ny) exit
+
+         ! Test current cell
+         w0 = compute_weight(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
+                             lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
+         w1 = compute_weight(query_lon, query_lat, lon(i + 1, j), lat(i + 1, j), &
+                             lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
+         w2 = compute_weight(lon(i, j), lat(i, j), query_lon, query_lat, &
+                             lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
+         w3 = compute_weight(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
+                             query_lon, query_lat, lon(i, j + 1), lat(i, j + 1))
+         w4 = compute_weight(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
+                             lon(i + 1, j + 1), lat(i + 1, j + 1), query_lon, query_lat)
+
+         if ((w1 + w2 + w3 + w4) <= (w0*2.001d0)) then
+            indices = [i, j]
+            found = .true.
+            exit
+         end if
+
+         ! Determine walk direction based on cell center
+         center_lon = 0.25d0*(lon(i, j) + lon(i + 1, j) + lon(i + 1, j + 1) + lon(i, j + 1))
+         center_lat = 0.25d0*(lat(i, j) + lat(i + 1, j) + lat(i + 1, j + 1) + lat(i, j + 1))
+         dx = query_lon - center_lon
+         dy = query_lat - center_lat
+
+         ! Walk in the direction of the query point
+         di = 0
+         dj = 0
+         if (abs(dx) > abs(dy)) then
+            if (dx > 0 .and. i < nx - 1) di = 1
+            if (dx < 0 .and. i > 1) di = -1
+         else
+            if (dy > 0 .and. j < ny - 1) dj = 1
+            if (dy < 0 .and. j > 1) dj = -1
+         end if
+
+         ! If no progress possible, try other direction
+         if (di == 0 .and. dj == 0) then
+            if (abs(dy) > 1d-10) then
+               if (dy > 0 .and. j < ny - 1) dj = 1
+               if (dy < 0 .and. j > 1) dj = -1
+            elseif (abs(dx) > 1d-10) then
+               if (dx > 0 .and. i < nx - 1) di = 1
+               if (dx < 0 .and. i > 1) di = -1
+            else
+               exit
+            end if
+         end if
+
+         i = i + di
+         j = j + dj
+
+         ! No movement possible
+         if (di == 0 .and. dj == 0) exit
+      end do
+
+   end function walk_to_containing_cell
 
 end module mod_nws13
