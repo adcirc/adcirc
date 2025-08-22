@@ -180,13 +180,17 @@ module mod_nws13
    !> @brief Flag value indicating missing or invalid data
    real(8), parameter  :: null_flag_value = -99999999.0d0
 
-   !> @brief Variable names used in the NetCDF file
+   !> @brief Variable names used in the NetCDF file. Maybe at some point we make these dynamic
+   character(2), parameter :: dim_name_lon = "xi" !< Dimension name for longitude
+   character(2), parameter :: dim_name_lat = "yi" !< Dimension name for latitude
+   character(3), parameter :: var_name_lon = "lon" !< Variable name for longitude
+   character(3), parameter :: var_name_lat = "lat" !< Variable name for latitude
    character(3), parameter :: var_name_u_wind = "U10" !< Variable name for U wind component
    character(3), parameter :: var_name_v_wind = "V10" !< Variable name for V wind component
    character(4), parameter :: var_name_pressure = "PSFC" !< Variable name for pressure
-   character(2), parameter :: var_name_lon = "xi" !< Variable name for longitude
-   character(2), parameter :: var_name_lat = "yi" !< Variable name for latitude
    character(4), parameter :: var_name_time = "time" !< Variable name for time
+   character(4), parameter :: var_name_storm_center_lon = "clon" !< Variable name for storm track longitude
+   character(4), parameter :: var_name_storm_center_lat = "clat" !< Variable name for storm track latitude
 
    !> @brief Container for meteorological data from NetCDF wind grid
    type t_windData
@@ -380,14 +384,14 @@ contains
       allocate (storm_center%position(num_snaps, 2))
 
       ! Check if storm center longitude data exists
-      nc_err = NF90_INQ_VARID(nc_idg, "clon", nc_var)
+      nc_err = NF90_INQ_VARID(nc_idg, var_name_storm_center_lon, nc_var)
       if (nc_err == NF90_NOERR) then
          storm_center%available = .true.
          call check_err(NF90_GET_VAR(nc_idg, nc_var, storm_center%position(:, 1), &
                                      START=[1], COUNT=[num_snaps]))
 
          ! Check if storm center latitude data exists
-         nc_err = NF90_INQ_VARID(nc_idg, "clat", nc_var)
+         nc_err = NF90_INQ_VARID(nc_idg, var_name_storm_center_lat, nc_var)
          if (nc_err == NF90_NOERR) then
             call check_err(NF90_GET_VAR(nc_idg, nc_var, storm_center%position(:, 2), &
                                         START=[1], COUNT=[num_snaps]))
@@ -526,7 +530,7 @@ contains
 
       use netcdf, only: nf90_inq_dimid, nf90_inq_varid, nf90_inquire_dimension, &
                         nf90_get_var, nf90_inquire_variable, NF90_GLOBAL, nf90_get_att, &
-                        nf90_noerr, nf90_inq_grpname
+                        nf90_noerr, nf90_inq_grpname, NF90_MAX_DIMS
       use netcdf_error, only: check_err
       use global, only: ERROR, allMessage
       use mod_datetime, only: t_timedelta, operator(+)
@@ -553,9 +557,9 @@ contains
       call check_err(NF90_INQ_VARID(NC_IDG, var_name_time, NC_VAR))
 
       ! Read and store grid dimensions
-      call check_err(NF90_INQ_DIMID(NC_IDG, var_name_lon, NC_DIM))
+      call check_err(NF90_INQ_DIMID(NC_IDG, dim_name_lon, NC_DIM))
       call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=grp%NumLon))
-      call check_err(NF90_INQ_DIMID(NC_IDG, var_name_lat, NC_DIM))
+      call check_err(NF90_INQ_DIMID(NC_IDG, dim_name_lat, NC_DIM))
       call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=grp%NumLat))
 
       WindRefDatetime = read_dataset_reference_time(NC_IDG)
@@ -589,8 +593,8 @@ contains
 
       ! Check if this grid moves by examining the dimensionality of lon/lat
       ! Moving grids have 3D arrays (time, yi, xi), stationary have 2D (yi, xi)
-      call check_err(NF90_INQ_VARID(NC_IDG, "lon", NC_VAR))
-      allocate (dimids(10))
+      call check_err(NF90_INQ_VARID(NC_IDG, var_name_lon, NC_VAR))
+      allocate (dimids(NF90_MAX_DIMS))
       NC_ERR = NF90_INQUIRE_VARIABLE(NC_IDG, NC_VAR, ndims=ndims, dimids=dimids)
       deallocate (dimids)
 
@@ -679,18 +683,18 @@ contains
       real(8), allocatable :: Lon(:, :)
       real(8), allocatable :: Lat(:, :)
 
-      call check_err(NF90_INQ_DIMID(NC_IDG, "xi", NC_DIM))
+      call check_err(NF90_INQ_DIMID(NC_IDG, dim_name_lon, NC_DIM))
       call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NumLon))
-      call check_err(NF90_INQ_DIMID(NC_IDG, "yi", NC_DIM))
+      call check_err(NF90_INQ_DIMID(NC_IDG, dim_name_lat, NC_DIM))
       call check_err(NF90_INQUIRE_DIMENSION(NC_IDG, NC_DIM, LEN=NumLat))
 
       allocate (Lon(1:NumLon, 1:NumLat))
       allocate (Lat(1:NumLon, 1:NumLat))
 
-      call check_err(NF90_INQ_VARID(NC_IDG, "lon", NC_VAR))
+      call check_err(NF90_INQ_VARID(NC_IDG, var_name_lon, NC_VAR))
       call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lon(:, :), &
                                   START=[1, 1], COUNT=[NumLon, NumLat]))
-      call check_err(NF90_INQ_VARID(NC_IDG, "lat", NC_VAR))
+      call check_err(NF90_INQ_VARID(NC_IDG, var_name_lat, NC_VAR))
       call check_err(NF90_GET_VAR(NC_IDG, NC_VAR, Lat(:, :), &
                                   START=[1, 1], COUNT=[NumLon, NumLat]))
 
@@ -721,11 +725,11 @@ contains
       integer :: nc_var
 
       ! Read lon/lat coordinates for this time snapshot
-      call check_err(NF90_INQ_VARID(grp%group_id, "lon", nc_var))
+      call check_err(NF90_INQ_VARID(grp%group_id, var_name_lon, nc_var))
       call check_err(NF90_GET_VAR(grp%group_id, nc_var, data%lon(:, :), &
                                   START=[1, 1, currsnap], &
                                   COUNT=[grp%NumLon, grp%NumLat, 1]))
-      call check_err(NF90_INQ_VARID(grp%group_id, "lat", nc_var))
+      call check_err(NF90_INQ_VARID(grp%group_id, var_name_lat, nc_var))
       call check_err(NF90_GET_VAR(grp%group_id, nc_var, data%lat(:, :), &
                                   START=[1, 1, currsnap], &
                                   COUNT=[grp%NumLon, grp%NumLat, 1]))
