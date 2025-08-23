@@ -201,6 +201,7 @@ module mod_nws13
       real(8), allocatable :: p(:, :) !< Atmospheric pressure (converted to m water)
       real(8), allocatable :: ws(:, :) !< Wind speed magnitude (m/s)
       real(8) :: storm_pos(2) = [0.0d0, 0.0d0] !< Storm center position [lon, lat]
+      integer :: file_snap = -1 !< File snap that this data corresponds to (-1 = uninitialized)
    contains
       final :: wind_data_destructor
    end type t_windData
@@ -265,6 +266,8 @@ module mod_nws13
       type(t_datetime), allocatable :: SnapTimes(:) !< Array of all snapshot times
       type(t_interpolationData) :: interp !< Grid-to-mesh interpolation data
       type(t_stormCenterData) :: storm_center !< Cached storm center data
+      type(t_windData) :: PrevData !< Data corresponding to PrevSnap
+      type(t_windData) :: NextData !< Data corresponding to NextSnap
    end type t_nws13
 
    interface t_nws13
@@ -719,8 +722,8 @@ contains
       implicit none
 
       integer, intent(in) :: currsnap
-      type(t_nws13), intent(inout) :: grp
-      type(t_windData), intent(inout) :: data
+      type(t_nws13), intent(in) :: grp
+      type(t_windData), intent(out) :: data
 
       integer :: nc_var
 
@@ -743,10 +746,18 @@ contains
 !-----------------------------------------------------------------------
    type(t_windData) function read_wind_snapshot(snap_idx, grid_info) result(wind_data)
       use, intrinsic :: iso_c_binding, only: c_int
+      use global, only: screenMessage, INFO
       use ADC_CONSTANTS, only: G, RHOWAT0
       implicit none
       integer, intent(in) :: snap_idx
-      type(t_nws13), intent(inout) :: grid_info
+      type(t_nws13), intent(in) :: grid_info
+      character(256) :: message
+
+      ! Log processing message
+      write (message, '(A,A,A,I0,2A)') "Processing group '", trim(grid_info%group_name), &
+         "' with rank ", grid_info%rank, " for wind/pressure with time ", &
+         trim(grid_info%SnapTimes(snap_idx)%to_iso_string())
+      call screenMessage(INFO, message)
 
       ! Initialize wind data object
       wind_data = t_windData(grid_info%NumLon, grid_info%NumLat, grid_info%interp%is_moving)
@@ -778,6 +789,9 @@ contains
          wind_data%storm_pos = [0.0d0, 0d0]
       end if
 
+      ! Store the snapshot index this data corresponds to
+      wind_data%file_snap = snap_idx
+
    end function read_wind_snapshot
 
 !-----------------------------------------------------------------------
@@ -786,12 +800,12 @@ contains
 !> @param[in] current_time Target time
 !-----------------------------------------------------------------------
    subroutine advance_to_current_snapshot(group, current_time)
-      use mod_datetime, only: t_datetime, operator(>=)
+      use mod_datetime, only: t_datetime, operator(>)
       implicit none
       type(t_nws13), intent(inout) :: group
       type(t_datetime), intent(in) :: current_time
 
-      do while (current_time >= group%NextTime .and. group%NextSnap < group%NumSnap)
+      do while (current_time > group%NextTime .and. group%NextSnap < group%NumSnap)
          group%PrevSnap = group%NextSnap
          group%PrevTime = group%NextTime
          group%NextSnap = group%NextSnap + 1
@@ -859,21 +873,15 @@ contains
 
 !-----------------------------------------------------------------------
 !> @brief Interpolates wind data between two time snapshots
-!> @param[in] prev_data Previous snapshot data
-!> @param[in] next_data Next snapshot data
-!> @param[in] prev_time Previous snapshot time
-!> @param[in] next_time Next snapshot time
+!> @param[in] grid_info Grid information containing snapshots and timing
 !> @param[in] current_time Current simulation time
-!> @param[in] grid_info Grid information for dimensions
 !> @return Interpolated wind data at current time
 !-----------------------------------------------------------------------
-   type(t_windData) pure function interpolate_wind_in_time(prev_data, next_data, prev_time, next_time, &
-                                                           current_time, grid_info) result(current_data)
+   type(t_windData) pure function interpolate_wind_in_time(grid_info, current_time) result(current_data)
       use mod_datetime, only: t_datetime, t_timedelta, operator(-)
       implicit none
-      type(t_windData), intent(in) :: prev_data, next_data
-      type(t_datetime), intent(in) :: prev_time, next_time, current_time
       type(t_nws13), intent(in) :: grid_info
+      type(t_datetime), intent(in) :: current_time
       type(t_timedelta) :: time_interp_numerator, time_interp_denominator
       real(8) :: time_interp_factor
 
@@ -881,29 +889,30 @@ contains
       current_data = t_windData(grid_info%NumLon, grid_info%NumLat, grid_info%interp%is_moving)
 
       ! Calculate time interpolation factor
-      time_interp_numerator = current_time - prev_time
-      time_interp_denominator = next_time - prev_time
+      time_interp_numerator = current_time - grid_info%PrevTime
+      time_interp_denominator = grid_info%NextTime - grid_info%PrevTime
       time_interp_factor = dble(time_interp_numerator%total_milliseconds())/ &
                            dble(time_interp_denominator%total_milliseconds())
 
       ! Interpolate grid coordinates if moving
       if (grid_info%interp%is_moving) then
-         current_data%Lon = prev_data%Lon + (next_data%Lon - prev_data%Lon)*time_interp_factor
-         current_data%Lat = prev_data%Lat + (next_data%Lat - prev_data%Lat)*time_interp_factor
+         current_data%Lon = grid_info%PrevData%Lon + (grid_info%NextData%Lon - grid_info%PrevData%Lon)*time_interp_factor
+         current_data%Lat = grid_info%PrevData%Lat + (grid_info%NextData%Lat - grid_info%PrevData%Lat)*time_interp_factor
       end if
 
       ! Interpolate wind and pressure fields
-      current_data%U = prev_data%U + (next_data%U - prev_data%U)*time_interp_factor
-      current_data%V = prev_data%V + (next_data%V - prev_data%V)*time_interp_factor
-      current_data%P = prev_data%P + (next_data%P - prev_data%P)*time_interp_factor
+      current_data%U = grid_info%PrevData%U + (grid_info%NextData%U - grid_info%PrevData%U)*time_interp_factor
+      current_data%V = grid_info%PrevData%V + (grid_info%NextData%V - grid_info%PrevData%V)*time_interp_factor
+      current_data%P = grid_info%PrevData%P + (grid_info%NextData%P - grid_info%PrevData%P)*time_interp_factor
 
       ! Calculate and interpolate scalar wind speed
-      current_data%Ws = sqrt(prev_data%U**2d0 + prev_data%V**2d0) + &
-                        (sqrt(next_data%U**2d0 + next_data%V**2d0) - &
-                         sqrt(prev_data%U**2d0 + prev_data%V**2d0))*time_interp_factor
+      current_data%Ws = sqrt(grid_info%PrevData%U**2d0 + grid_info%PrevData%V**2d0) + &
+                        (sqrt(grid_info%NextData%U**2d0 + grid_info%NextData%V**2d0) - &
+                         sqrt(grid_info%PrevData%U**2d0 + grid_info%PrevData%V**2d0))*time_interp_factor
 
       ! Interpolate storm center position
-      current_data%storm_pos = prev_data%storm_pos + (next_data%storm_pos - prev_data%storm_pos)*time_interp_factor
+      current_data%storm_pos = grid_info%PrevData%storm_pos + &
+                               (grid_info%NextData%storm_pos - grid_info%PrevData%storm_pos)*time_interp_factor
 
    end function interpolate_wind_in_time
 
@@ -983,7 +992,6 @@ contains
    subroutine process_wind_group(group_idx, current_time, wvnx2, wvny2, prn2, &
                                  PowellGroupTemp, eye_lon, eye_lat, found_eye)
       use MESH, only: NP
-      use global, only: screenMessage, INFO
       use mod_datetime, only: t_datetime, t_timedelta, operator(-), operator(==)
       implicit none
       integer, intent(in) :: group_idx
@@ -993,7 +1001,6 @@ contains
       real(8), intent(inout) :: eye_lon(3), eye_lat(3)
       logical, intent(out) :: found_eye
 
-      character(len=200) :: message
       integer :: ig, iv
       real(8), parameter :: eps = epsilon(1d0)
       type(t_windData) :: prev_data, next_data, current_data
@@ -1006,23 +1013,22 @@ contains
       ! Skip inactive groups
       if (NWS13(ig)%InclSnap == 0) return
 
-      ! Log processing message
-      write (message, '(A,A,A,I0,2A)') "Processing group '", trim(NWS13(ig)%group_name), &
-         "' with rank ", NWS13(ig)%rank, " for wind/pressure with time ", &
-         trim(NWS13(ig)%NextTime%to_iso_string())
-      call screenMessage(INFO, message)
-
       ! Read snapshots (storm position is now included in wind data)
-      prev_data = read_wind_snapshot(NWS13(ig)%PrevSnap, NWS13(ig))
-      next_data = read_wind_snapshot(NWS13(ig)%NextSnap, NWS13(ig))
+      if (NWS13(ig)%NextData%file_snap /= -1 .and. NWS13(ig)%PrevSnap == NWS13(ig)%NextData%file_snap) then
+         NWS13(ig)%PrevData = NWS13(ig)%NextData
+      else if (NWS13(ig)%PrevData%file_snap == -1 .or. NWS13(ig)%PrevSnap /= NWS13(ig)%PrevData%file_snap) then
+         NWS13(ig)%PrevData = read_wind_snapshot(NWS13(ig)%PrevSnap, NWS13(ig))
+      end if
+
+      if (NWS13(ig)%NextData%file_snap == -1 .or. NWS13(ig)%NextData%file_snap /= NWS13(ig)%NextSnap) then
+         NWS13(ig)%NextData = read_wind_snapshot(NWS13(ig)%NextSnap, NWS13(ig))
+      end if
 
       ! Check for storm eye data
       found_eye = NWS13(ig)%storm_center%available .and. NWS13(ig)%storm_center%loaded
 
       ! Time interpolation (includes storm center interpolation)
-      current_data = interpolate_wind_in_time(prev_data, next_data, &
-                                              NWS13(ig)%PrevTime, NWS13(ig)%NextTime, &
-                                              current_time, NWS13(ig))
+      current_data = interpolate_wind_in_time(NWS13(ig), current_time)
 
       ! Get interpolation data
       if (NWS13(ig)%interp%is_moving) then
