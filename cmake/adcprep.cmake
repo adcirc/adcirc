@@ -61,6 +61,7 @@ if(BUILD_ADCPREP)
     set(ADCPREP_SOURCES
         ${ADCPREP_SOURCES}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13data.F90
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()

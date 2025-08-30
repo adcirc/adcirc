@@ -358,7 +358,7 @@ VORT_MSRC  =  vortex.F
 VW1D_MSRC  =  vew1d.F
 
 ifeq ($(NETCDF),enable)
-WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F nws13.F90
+WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F nws13.F90 nws13data.F90
 else
 WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F
 endif
@@ -811,6 +811,7 @@ $(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ) $(HASH_MOBJ) $(NA_MOB
 endif
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ)
 $(O_DIR)nws13.o       :  nws13.F90
+$(O_DIR)nws13data.o   :  nws13data.F90
 $(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ)
 $(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ)
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
