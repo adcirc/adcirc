@@ -155,6 +155,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
         ${PADCSWAN1_SOURCES}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
         ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13data.F90
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 

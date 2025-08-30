@@ -36,8 +36,11 @@ if(BUILD_ASWIP)
       ${CMAKE_CURRENT_SOURCE_DIR}/wind/aswip.F)
 
   if(NETCDF_WORKING)
-    set(ASWIP_SOURCES ${ASWIP_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
-                      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
+    set(ASWIP_SOURCES
+        ${ASWIP_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13data.F90
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
   add_executable(aswip ${ASWIP_SOURCES})
