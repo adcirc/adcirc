@@ -1429,23 +1429,11 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
       ENDIF
 
 #ifdef ADCNETCDF
-Casey 180318: Added for NWS=13, ARC modified 190108
         IF(ABS(NWS).EQ.13) THEN
-          IF(TimeLoc.GT.WTIME2I) THEN
-            WTIME1I=WTIME2I
-            WTIME2I=WTIME2I+WTIMINC
-            DO I=1,NP
-              WVNX1(I)=WVNX2(I)
-              WVNY1(I)=WVNY2(I)
-              PRN1(I)=PRN2(I)
-            END DO
-            CALL NWS13GET(WTIME2I,WVNX2,WVNY2,PRN2,
-     &          WTIME2,EyeLon,EyeLat,FoundEye)
-          ENDIF
-          WTRATIO=(TimeLoc-WTIME1I)/WTIMINC
+          CALL NWS13GET(TimeLoc,WVNX2,WVNY2,PRN2,EyeLon,EyeLat,FoundEye)
           DO I=1,NP
-            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDX = WVNX2(I)
+            WINDY = WVNY2(I)
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
@@ -1461,8 +1449,7 @@ Casey 180318: Added for NWS=13, ARC modified 190108
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &                          -PRBCKGRND_MH2O)
+            PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
             WVNXOUT(I)=RampMete*WINDX
             WVNYOUT(I)=RampMete*WINDY
@@ -2047,16 +2034,7 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
 #ifdef ADCNETCDF
 Casey 180318: Added for NWS=13, ARC modified 190108
       IF(ABS(NWS).EQ.13)THEN
-         WTIME1=STATIM*86400.D0
-         WTIME2=WTIME1+WTIMINC
-         WTIME2I=WTIME2
-         WTIME1I=WTIME1
         CALL NWS13INIT()
-        CALL NWS13GET(WTIME1,WVNX1,WVNY1,PRN1,
-     &      WTIME2,EyeLon,EyeLat,FoundEye)
-        CALL NWS13GET(WTIME2,WVNX2,WVNY2,PRN2,
-     &      WTIME2OUT,EyeLon,EyeLat,FoundEye)
-        WTIME2 = WTIME2OUT
       ENDIF
 #endif
 
@@ -2865,22 +2843,12 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
       ENDIF
 
 #ifdef ADCNETCDF
-Casey 180318: Added for NWS=13, ARC modified 190108
       IF(ABS(NWS).EQ.13)THEN
-         WTIME1 = TimeLoc
-         WTIME2 = WTIME1 + WTIMINC
-         WTIME2I = WTIME2
-         WTIME1I = WTIME1
         CALL NWS13INIT()
-        CALL NWS13GET(WTIME1,WVNX1,WVNY1,PRN1,
-     &      WTIME2,EyeLon,EyeLat,FoundEye)
-        CALL NWS13GET(WTIME2,WVNX2,WVNY2,PRN2,
-     &                WTIME2OUT,EyeLon,EyeLat,FoundEye)
-        WTIME2 = WTIME2OUT
-        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        CALL NWS13GET(TimeLoc,WVNX2,WVNY2,PRN2,EyeLon,EyeLat,FoundEye)
         DO I=1,NP
-          WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-          WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+          WINDX = WVNX2(I)
+          WINDY = WVNY2(I)
           WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
           WDragCo = WindDrag(WindMag, I)
           IF(LoadDirEffRLen)THEN
@@ -2895,8 +2863,7 @@ Casey 180318: Added for NWS=13, ARC modified 190108
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
           WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
           WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-          PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &        -PRBCKGRND_MH2O)
+          PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
           PR2(I) = PRBCKGRND_MH2O + PRDIFF
           WVNXOUT(I)=RampMete2*WINDX
           WVNYOUT(I)=RampMete2*WINDY
@@ -3046,22 +3013,12 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 #endif
 
 #ifdef ADCNETCDF
-Casey 180318: Added for NWS=13
       IF(ABS(NWS).EQ.13)THEN
-        WTIME1 = TIMELOC
-        WTIME2 = TIMELOC
         CALL NWS13INIT()
-        CALL NWS13GET(TIMELOC,WVNX2,WVNY2,PRN2,
-     &         WTIME2,EyeLon,EyeLat,FoundEye)
-!       IF(TRIM(DragLawString).EQ."Powell".OR.
-!    &      TRIM(DragLawString).EQ."POWELL".OR.
-!    &      TRIM(DragLawString).EQ."powell")THEN
-!         CALL findStormCenter(eyeLatR,eyeLonR,foundEye)
-!       ENDIF
-        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        CALL NWS13GET(TIMELOC,WVNX2,WVNY2,PRN2,EyeLon,EyeLat,FoundEye)
         DO I=1,NP
-          WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
-          WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+          WINDX = WVNX2(I)
+          WINDY = WVNY2(I)
           WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
           WDragCo = WindDrag(WindMag, I)
           IF(LoadDirEffRLen)THEN
@@ -3076,8 +3033,7 @@ Casey 180318: Added for NWS=13
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
           WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
           WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-          PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
-     &        -PRBCKGRND_MH2O)
+          PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
           PR2(I) = PRBCKGRND_MH2O + PRDIFF
           WVNXOUT(I)=RampMete2*WINDX
           WVNYOUT(I)=RampMete2*WINDY

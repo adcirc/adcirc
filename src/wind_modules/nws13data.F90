@@ -104,7 +104,7 @@ module mod_nws13_data
    end type t_nodeInterpolationResult
 
    !> @brief NetCDF wind group metadata and temporal information
-   type t_nws13
+   type t_nws13_group
       integer :: InclSnap !< Flag indicating if group is active for current time step
       integer :: NextSnap !< Index of next time snapshot in group
       integer :: NumSnap !< Total number of time snapshots in group
@@ -115,8 +115,8 @@ module mod_nws13_data
       integer :: NumLon !< Grid x-dimension size
       integer :: NumLat !< Grid y-dimension size
       character(len=100) :: group_name !< NetCDF group name from file
-      type(t_datetime) :: NextTime !< Date/time of next snapshot
-      type(t_datetime) :: PrevTime !< Date/time of previous snapshot
+      type(t_datetime) :: NextFileTime !< Date/time of next snapshot
+      type(t_datetime) :: PrevFileTime !< Date/time of previous snapshot
       type(t_datetime), allocatable :: SnapTimes(:) !< Array of all snapshot times
       type(t_interpolationData) :: interp !< Grid-to-mesh interpolation data
       type(t_stormCenterData) :: storm_center !< Cached storm center data
@@ -131,7 +131,7 @@ module mod_nws13_data
       procedure, private, pass(self) :: read_moving_grid => t_nws13_read_moving_grid
       procedure, private, pass(self) :: read_variable => t_nws13_read_netcdf_var_with_attrs
       procedure, private, pass(self) :: time_interpolate => t_nws13_interpolate_wind_in_time
-   end type t_nws13
+   end type t_nws13_group
 
    interface t_cell_list
       module procedure t_cell_list_constructor
@@ -141,17 +141,17 @@ module mod_nws13_data
       module procedure t_spatial_hash_constructor
    end interface t_spatial_hash
 
-   interface t_nws13
+   interface t_nws13_group
       module procedure :: nws13_constructor
-   end interface
+   end interface t_nws13_group
 
    interface t_stormCenterData
       module procedure :: storm_center_constructor
-   end interface
+   end interface t_stormCenterData
 
    interface t_windData
       module procedure :: wind_data_constructor
-   end interface
+   end interface t_windData
 
    interface t_interoplationData
       module procedure :: t_interpolationData_constructor
@@ -159,7 +159,7 @@ module mod_nws13_data
 
    private
 
-   public :: t_nws13, null_flag_value
+   public :: t_nws13_group, null_flag_value
 
 contains
 
@@ -528,11 +528,11 @@ contains
    end function storm_center_constructor
 
    !-----------------------------------------------------------------------
-   !> @brief Constructs a new t_nws13 object from a NetCDF group
+   !> @brief Constructs a new t_nws13_group object from a NetCDF group
    !> @param[in]    nc_idg  NetCDF group ID to initialize from
-   !> @return       grp     Initialized t_nws13 structure
+   !> @return       grp     Initialized t_nws13_group structure
    !-----------------------------------------------------------------------
-   type(t_nws13) function nws13_constructor(NC_IDG, file_index) result(grp)
+   type(t_nws13_group) function nws13_constructor(NC_IDG, file_index) result(grp)
 
       use netcdf, only: nf90_inq_dimid, nf90_inq_varid, nf90_inquire_dimension, &
                         nf90_get_var, nf90_inquire_variable, NF90_GLOBAL, nf90_get_att, &
@@ -580,9 +580,9 @@ contains
       end do
       deallocate (TempI)
 
-      grp%PrevTime = grp%SnapTimes(1)
+      grp%PrevFileTime = grp%SnapTimes(1)
       grp%PrevSnap = 1
-      grp%NextTime = grp%SnapTimes(2)
+      grp%NextFileTime = grp%SnapTimes(2)
       grp%NextSnap = 2
 
       ! Read the rank attribute for this group (priority for overlapping grids)
@@ -722,7 +722,7 @@ contains
 
       implicit none
 
-      class(t_nws13), intent(in) :: self
+      class(t_nws13_group), intent(in) :: self
       integer, intent(in) :: current_snap
 
       integer :: nc_var
@@ -753,7 +753,7 @@ contains
       use ADC_CONSTANTS, only: G, RHOWAT0
       implicit none
 
-      class(t_nws13), intent(in) :: self
+      class(t_nws13_group), intent(in) :: self
       integer, intent(in) :: snap_idx
       real(8), intent(in) :: wind_multiplier
 
@@ -793,36 +793,32 @@ contains
    !> @param[inout] group NWS13 group to advance
    !> @param[in] current_time Target time
    !-----------------------------------------------------------------------
-   subroutine t_nws13_advance_to_time(self, current_time, next_time)
+   subroutine t_nws13_advance_to_time(self, current_time)
       use mod_datetime, only: t_datetime, operator(>), operator(<=), operator(<), operator(==), null_datetime
       implicit none
-      class(t_nws13), intent(inout) :: self
+      class(t_nws13_group), intent(inout) :: self
       type(t_datetime), intent(in) :: current_time
-      type(t_datetime), intent(inout) :: next_time
 
       ! Skip if this group has not started
-      if (current_time < self%PrevTime) return
+      if (current_time < self%PrevFileTime) return
 
-      do while (current_time > self%NextTime .and. self%NextSnap < self%NumSnap)
+      do while (current_time > self%NextFileTime .and. self%NextSnap < self%NumSnap)
          self%PrevSnap = self%NextSnap
-         self%PrevTime = self%NextTime
+         self%PrevFileTime = self%NextFileTime
          self%NextSnap = self%NextSnap + 1
-         self%NextTime = self%SnapTimes(self%NextSnap)
+         self%NextFileTime = self%SnapTimes(self%NextSnap)
       end do
 
       self%InclSnap = 0
 
       ! Mark active and update next time
-      if (self%PrevTime <= current_time .and. current_time <= self%NextTime) then
+      if (self%PrevFileTime <= current_time .and. current_time <= self%NextFileTime) then
          self%InclSnap = 1
-         if (next_time == null_datetime() .or. self%NextTime < next_time) then
-            next_time = self%NextTime
-         end if
       end if
    end subroutine t_nws13_advance_to_time
 
    subroutine t_nws13_read(self, wind_multiplier)
-      class(t_nws13), intent(inout) :: self
+      class(t_nws13_group), intent(inout) :: self
       real(8), intent(in) :: wind_multiplier
 
       if (self%InclSnap /= 0) then
@@ -854,7 +850,7 @@ contains
       implicit none
       real(8), parameter :: eps = epsilon(1d0)
 
-      class(t_nws13), intent(in) :: self
+      class(t_nws13_group), intent(in) :: self
       integer, intent(in) :: snap_index
       character(len=*), intent(in) :: varname
       real(8) :: arr(self%numlon, self%numlat)
@@ -890,7 +886,7 @@ contains
       use MESH, only: NP
       use mod_datetime, only: t_datetime, t_timedelta, operator(-), operator(==)
       implicit none
-      class(t_nws13), intent(inout) :: self
+      class(t_nws13_group), intent(inout) :: self
       type(t_datetime), intent(in) :: current_time
       real(8), intent(in) :: wind_multiplier
       real(8), intent(inout) :: wvnx2(NP), wvny2(NP), prn2(NP)
@@ -953,7 +949,7 @@ contains
    type(t_windData) pure function t_nws13_interpolate_wind_in_time(self, current_time) result(current_data)
       use mod_datetime, only: t_datetime, t_timedelta, operator(-)
       implicit none
-      class(t_nws13), intent(in) :: self
+      class(t_nws13_group), intent(in) :: self
       type(t_datetime), intent(in) :: current_time
       type(t_timedelta) :: time_interp_numerator, time_interp_denominator
       real(8) :: time_interp_factor
@@ -962,8 +958,8 @@ contains
       current_data = t_windData(self%NumLon, self%NumLat, self%interp%is_moving)
 
       ! Calculate time interpolation factor
-      time_interp_numerator = current_time - self%PrevTime
-      time_interp_denominator = self%NextTime - self%PrevTime
+      time_interp_numerator = current_time - self%PrevFileTime
+      time_interp_denominator = self%NextFileTime - self%PrevFileTime
       time_interp_factor = dble(time_interp_numerator%total_milliseconds())/ &
                            dble(time_interp_denominator%total_milliseconds())
 
