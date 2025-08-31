@@ -377,7 +377,7 @@ contains
 
       dt_now = NextInterpTime - CurrentTime
       dt_interp = NextInterpTime - PrevInterpTime
-      wtratio = dble(dt_now%total_seconds())/dble(dt_interp%total_seconds())
+      wtratio = dble(dt_now%total_milliseconds())/dble(dt_interp%total_milliseconds())
 
       WXOUT = (1.0d0 - wtratio)*WX1 + wtratio*WX2
       WYOUT = (1.0d0 - wtratio)*WY1 + wtratio*WY2
