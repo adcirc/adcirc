@@ -29,9 +29,10 @@
 !> @brief This module handles the I/O and interpolation to the mesh for Oceanweather
 !> NetCDF format wind and pressure fields.
 !>
-!> The module is initialized by calling nws13init and subsequently calling
-!> nws13get. The code will place data into the WVNX, WVNY, and PRN arrays, as
-!> well as EyeLonR and EyeLatR for Powell drag if FoundEye is True.
+!> @details The module is initialized by creating a t_nws13 object using the constructor,
+!> then calling the get() method at each time step. The code interpolates wind and
+!> pressure data to mesh nodes, and provides storm center positions for Powell drag
+!> calculations when available.
 !>
 !> The fort.22.nc file is a NetCDF file containing groups, each with u/v wind
 !> and pressure inputs. Can be named differently if specified in the namelist
@@ -166,7 +167,7 @@
 !>
 !> Wind fields are interpolated onto each node using a bilinear interpolation
 !> scheme. If the mesh lies outside of all wind fields, it is set to
-!> PRDEFLT (usually 1013mb) and 0.0 m/s velocity.
+!> PRBCKGRND (usually 1013mb) and 0.0 m/s velocity.
 
 !-----------------------------------------------------------------------
 module mod_nws13
@@ -188,13 +189,13 @@ module mod_nws13
       integer :: n_groups = 0
       integer, allocatable :: sorted_group_indices(:) !> Group indices sorted by priority rank
       real(8) :: wind_multiplier = 1.0d0 !> Multiplier applied to wind velocities for sensitivity analysis
-      real(8), allocatable :: wx1(:), wx2(:) !> Two levels worth of wind (x)
-      real(8), allocatable :: wy1(:), wy2(:) !> Two levels worth of wind (y)
-      real(8), allocatable :: pr1(:), pr2(:) !> Two levels worth of pressure (pr)
+      real(8), allocatable :: wx1(:), wx2(:) !> Wind x-component at previous/next time (m/s)
+      real(8), allocatable :: wy1(:), wy2(:) !> Wind y-component at previous/next time (m/s)
+      real(8), allocatable :: pr1(:), pr2(:) !> Pressure at previous/next time (m of water)
       type(t_datetime) :: coldstart !> Reference time for cold start initialization from namelist
-      type(t_datetime) :: previous_interp_time !< Date/time of the prev time we interpolated
-      type(t_datetime) :: next_interp_time !< Date/time of the next time we will interpolate
-      type(t_nws13_group), allocatable :: wind_groups(:) !> Array of NWS13 wind groups from NetCDF file
+      type(t_datetime) :: previous_interp_time !> Previous interpolation time
+      type(t_datetime) :: next_interp_time !> Next interpolation time
+      type(t_nws13_group), allocatable :: wind_groups(:) !> Array of wind groups from NetCDF file
       logical :: is_initialized = .false.
 
    contains
@@ -205,20 +206,22 @@ module mod_nws13
       procedure, pass(self), private :: update_wind_data => t_nws13_update_wind_data
    end type t_nws13
 
+   !> @brief Container for namelist parameters from fort.15
+   !> @details Stores NWS13 configuration before object initialization
    type t_nws13_namelist_info
-      character(1000) :: filename
-      integer :: powell_group
-      real(8) :: wind_multiplier
-      type(t_datetime) :: coldstart
-      logical :: initialized = .false.
+      character(1000) :: filename !> Path to NetCDF wind file
+      integer :: powell_group !> Group index for Powell drag (0=auto)
+      real(8) :: wind_multiplier !> Wind velocity scaling factor
+      type(t_datetime) :: coldstart !> Cold start reference time
+      logical :: initialized = .false. !> Flag indicating parameters are set
    end type t_nws13_namelist_info
 
    interface t_nws13
       module procedure t_nws13_constructor
    end interface t_nws13
 
-   !> A single source for all user input.
-   !> We use this since the nws object isn't available yet when we read the input file
+   !> @brief Single source for all user input parameters
+   !> @details Stores namelist parameters before NWS13 object creation
    type(t_nws13_namelist_info) :: user_input
 
    public :: nws13_set_namelist_parameters, t_nws13
@@ -227,10 +230,15 @@ contains
 
 !-----------------------------------------------------------------------
 !> @brief Sets NWS13 module parameters from namelist input values
-!> @param[in] NWS13Filename_in        Input wind file path
-!> @param[in] NWS13ColdStart_in       Cold start reference time string
-!> @param[in] NWS13WindMultiplier_in  Wind velocity multiplier factor
-!> @param[in] NWS13GroupForPowell_in  Group ID for Powell wind drag scheme
+!>
+!> @details Stores user-specified parameters from the fort.15 namelist for later
+!> use during NWS13 initialization. Validates and parses the cold start time string
+!> into a datetime object. Logs configuration parameters for debugging.
+!>
+!> @param[in] NWS13Filename_in        Path to NetCDF wind file (default: fort.22.nc)
+!> @param[in] NWS13ColdStart_in       Cold start time string (YYYYMMDD.HHMMSS or ISO format)
+!> @param[in] NWS13WindMultiplier_in  Wind velocity scaling factor (typically 1.0)
+!> @param[in] NWS13GroupForPowell_in  Group index for Powell drag (0=auto-select)
 !-----------------------------------------------------------------------
    subroutine nws13_set_namelist_parameters(NWS13Filename_in, &
                                             NWS13ColdStart_in, &
@@ -260,7 +268,15 @@ contains
    end subroutine nws13_set_namelist_parameters
 
 !-----------------------------------------------------------------------
-!> Initializes reading data from the Oceanweather (OWI) NetCDF wind/pre fields
+!> @brief Initializes reading data from the Oceanweather (OWI) NetCDF wind/pre fields
+!>
+!> @details Creates and initializes a new t_nws13 object by reading NetCDF
+!> wind group metadata from the specified file. Discovers all groups within
+!> the file, sorts them by priority rank, and allocates arrays for wind
+!> and pressure data interpolation. Sets up initial values using background
+!> pressure and zero wind speeds.
+!>
+!> @return nws Fully initialized t_nws13 object ready for wind forcing calculations
 !-----------------------------------------------------------------------
    type(t_nws13) function t_nws13_constructor() result(nws)
 !-----------------------------------------------------------------------
@@ -364,9 +380,14 @@ contains
 
 !-----------------------------------------------------------------------
 !> @brief Updates group snapshots and marks active groups
+!>
+!> @details Advances all wind groups to the current simulation time by
+!> updating their time snapshots. Sets the previous and next interpolation
+!> times based on the earliest group times. This ensures all groups are
+!> synchronized for the current time step.
+!>
+!> @param[inout] self    NWS13 object containing wind groups
 !> @param[in] current_time Current simulation time
-!> @param[inout] groups Array of NWS13 groups to update
-!> @return Next wind field time as t_datetime
 !-----------------------------------------------------------------------
    subroutine t_nws13_update_active_groups(self, current_time)
       use mod_datetime, only: t_timedelta, operator(+), operator(-), operator(<), operator(==)
@@ -385,6 +406,17 @@ contains
       end do
    end subroutine t_nws13_update_active_groups
 
+!-----------------------------------------------------------------------
+!> @brief Checks if wind data has started for current simulation time
+!>
+!> @details Determines whether any wind group has data available at the
+!> current simulation time. Used to avoid processing wind fields before
+!> the first available data snapshot.
+!>
+!> @param[in] self         NWS13 object containing wind groups
+!> @param[in] current_time Current simulation time to check
+!> @return    is_started   True if wind data is available, false otherwise
+!-----------------------------------------------------------------------
    logical pure function t_nws13_check_data_started(self, current_time) result(is_started)
       use mod_datetime, only: operator(>)
       implicit none
@@ -398,6 +430,19 @@ contains
       end do
    end function t_nws13_check_data_started
 
+!-----------------------------------------------------------------------
+!> @brief Performs temporal interpolation of wind and pressure fields
+!>
+!> @details Interpolates wind velocity components and pressure between
+!> two time snapshots based on the current simulation time. Uses linear
+!> interpolation weighted by the time ratio between snapshots.
+!>
+!> @param[in]  self        NWS13 object containing wind field data
+!> @param[in]  CurrentTime Current simulation time
+!> @param[out] WXOUT       Interpolated wind x-component at mesh nodes (m/s)
+!> @param[out] WYOUT       Interpolated wind y-component at mesh nodes (m/s)
+!> @param[out] PROUT       Interpolated pressure at mesh nodes (m of water)
+!-----------------------------------------------------------------------
    subroutine t_nws13_time_interpolate_wind(self, CurrentTime, WXOUT, WYOUT, PROUT)
       use mod_datetime, only: t_timedelta, operator(-)
       use mesh, only: np
@@ -418,6 +463,21 @@ contains
 
    end subroutine t_nws13_time_interpolate_wind
 
+!-----------------------------------------------------------------------
+!> @brief Updates wind field data for the current time step
+!>
+!> @details Reads new wind and pressure snapshots from all active groups,
+!> processes them in priority order, and updates storm center positions
+!> for Powell wind drag calculations. Replaces flag values with background
+!> conditions for nodes outside all wind grids.
+!>
+!> @param[inout] self              NWS13 object to update
+!> @param[in]    CurrentTime       Current simulation time
+!> @param[inout] EyeLonR           Storm center longitude array (degrees)
+!> @param[inout] EyeLatR           Storm center latitude array (degrees)
+!> @param[inout] FoundEye          Flag indicating if storm eye was located
+!> @param[inout] PowellGroupTemp   Group index used for Powell drag scheme
+!-----------------------------------------------------------------------
    subroutine t_nws13_update_wind_data(self, CurrentTime, EyeLonR, EyeLatR, FoundEye, PowellGroupTemp)
       use ADC_CONSTANTS, only: G, RHOWAT0, PRBCKGRND
       use netcdf, only: NF90_GET_VAR, NF90_INQ_VARID, NF90_INQ_NCID, &
@@ -485,15 +545,22 @@ contains
 
 !-----------------------------------------------------------------------
 !> @brief Reads multi-grid wind and pressure fields from the NetCDF file and
-!>        interpolates them to the adcirc mesh
-!> @param[in]    timeloc  model time
-!> @param[inout] wx       wind speed, x-direction
-!> @param[inout] wy       wind speed, y-direction
-!> @param[inout] p        atmospheric pressure
-!> @param[inout] wtime2   time of next new field
-!> @param[inout] eyelonr  storm center longitude
-!> @param[inout] eyelatr  storm center latitude
-!> @param[out]   foundeye boolean identifying if file provides storm center
+!>        interpolates them to the ADCIRC mesh
+!>
+!> @details Main interface for obtaining wind forcing at each time step. Manages
+!> temporal interpolation between snapshots and updates wind data when needed.
+!> Handles storm center tracking for Powell wind drag scheme, including logic
+!> to reset tracking when switching between groups where storm centers may
+!> jump large distances or if there is more than one vortex in the basin.
+!>
+!> @param[inout] self     NWS13 object containing wind field data
+!> @param[in]    TimeLoc  Model time in seconds since cold start
+!> @param[out]   WXOUT    Wind velocity x-component at mesh nodes (m/s)
+!> @param[out]   WYOUT    Wind velocity y-component at mesh nodes (m/s)
+!> @param[out]   PROUT    Atmospheric pressure at mesh nodes (m of water)
+!> @param[inout] EyeLonR  Storm center longitude history array (degrees)
+!> @param[inout] EyeLatR  Storm center latitude history array (degrees)
+!> @param[inout] FoundEye Boolean flag indicating if storm center was found
 !-----------------------------------------------------------------------
    subroutine t_nws13_get_wind_forcing(self, TimeLoc, WXOUT, WYOUT, PROUT, EyeLonR, EyeLatR, FoundEye)
 !-----------------------------------------------------------------------
@@ -550,8 +617,13 @@ contains
 
 !-----------------------------------------------------------------------
 !> @brief Sorts group indices by their rank values (descending order)
-!> @param[in] groups Array of NWS13Type structures containing rank information
-!> @return indices Array of group indices sorted by rank
+!>
+!> @details Implements bubble sort to order wind groups by priority rank.
+!> Higher rank values indicate higher priority for overlapping grids.
+!> The sorted indices are used to process groups in the correct order.
+!>
+!> @param[in] groups Array of t_nws13_group structures containing rank information
+!> @return    indices Array of group indices sorted by rank (highest to lowest)
 !-----------------------------------------------------------------------
    pure function sort_groups_by_rank(groups) result(indices)
       type(t_nws13_group), intent(in) :: groups(:)

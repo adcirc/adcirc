@@ -163,7 +163,16 @@ module mod_nws13_data
 
 contains
 
-   type(t_cell_list) function t_cell_list_constructor() result(cell_list)
+!-----------------------------------------------------------------------
+!> @brief Constructs a new t_cell_list object for spatial hash cells
+!>
+!> @details Creates an empty cell list with initial capacity for storing
+!> grid cell indices. Used internally by the spatial hash acceleration
+!> structure to track which grid cells overlap each hash cell.
+!>
+!> @return cell_list Initialized cell list with pre-allocated arrays
+!-----------------------------------------------------------------------
+   pure type(t_cell_list) function t_cell_list_constructor() result(cell_list)
       implicit none
       cell_list%n_cells = 0
       allocate (cell_list%i_indices(16))
@@ -172,11 +181,17 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Builds spatial hash acceleration structure for grid cell location
-   !> @param[in] nx Grid x-dimension
-   !> @param[in] ny Grid y-dimension
-   !> @param[in] lon Grid longitudes
-   !> @param[in] lat Grid latitudes
-   !> @return hash_struct Initialized spatial hash structure
+   !>
+   !> @details Creates a spatial hash structure to accelerate point-in-grid
+   !> searches. Divides the spatial domain into hash cells and maps each
+   !> grid cell to overlapping hash cells. Hash cell size is set to ~2.5x
+   !> the average grid spacing to ensure adequate overlap.
+   !>
+   !> @param[in] nx         Grid x-dimension
+   !> @param[in] ny         Grid y-dimension
+   !> @param[in] lon        Grid longitudes (degrees)
+   !> @param[in] lat        Grid latitudes (degrees)
+   !> @return    hash_struct Initialized spatial hash structure
    !-----------------------------------------------------------------------
    type(t_spatial_hash) function t_spatial_hash_constructor(nx, ny, lon, lat) result(hash_struct)
       implicit none
@@ -241,9 +256,14 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Adds a grid cell to a hash cell's list
-   !> @param[inout] cell_list Hash cell to add to
-   !> @param[in] i Grid i-index
-   !> @param[in] j Grid j-index
+   !>
+   !> @details Appends a grid cell (i,j) index pair to the cell list.
+   !> Automatically resizes the internal arrays when capacity is exceeded
+   !> by doubling the array size for efficient growth.
+   !>
+   !> @param[inout] self Hash cell list to add to
+   !> @param[in]    i    Grid i-index
+   !> @param[in]    j    Grid j-index
    !-----------------------------------------------------------------------
    subroutine add_to_cell_list(self, i, j)
       implicit none
@@ -272,6 +292,11 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Destroys spatial hash structure and frees memory
+   !>
+   !> @details Deallocates all arrays associated with the spatial hash
+   !> structure including the hash grid and all cell lists. Called
+   !> automatically when the hash structure goes out of scope.
+   !>
    !> @param[inout] hash_struct Spatial hash to destroy
    !-----------------------------------------------------------------------
    subroutine destroy_spatial_hash(hash_struct)
@@ -295,14 +320,20 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Finds grid cell containing query point using spatial hash + walking
-   !> @param[in] hash_struct Spatial hash structure
-   !> @param[in] query_lon Query point longitude
-   !> @param[in] query_lat Query point latitude
-   !> @param[in] nx Grid x-dimension
-   !> @param[in] ny Grid y-dimension
-   !> @param[in] lon Grid longitudes
-   !> @param[in] lat Grid latitudes
-   !> @return indices [i,j] indices of containing cell, or [-1,-1] if not found
+   !>
+   !> @details Uses a two-stage search algorithm: first checks candidate cells
+   !> from the spatial hash, then performs grid walking from the closest
+   !> candidate if the initial search fails. Uses area-based containment
+   !> test for quadrilateral cells.
+   !>
+   !> @param[in] self      Spatial hash structure
+   !> @param[in] query_lon Query point longitude (degrees)
+   !> @param[in] query_lat Query point latitude (degrees)
+   !> @param[in] nx        Grid x-dimension
+   !> @param[in] ny        Grid y-dimension
+   !> @param[in] lon       Grid longitudes (degrees)
+   !> @param[in] lat       Grid latitudes (degrees)
+   !> @return    indices   [i,j] indices of containing cell, or [-1,-1] if not found
    !-----------------------------------------------------------------------
    function find_containing_cell(self, query_lon, query_lat, nx, ny, lon, lat) result(indices)
       implicit none
@@ -331,17 +362,17 @@ contains
          i = self%hash_cells(ih, jh)%i_indices(ic)
          j = self%hash_cells(ih, jh)%j_indices(ic)
 
-         ! Quick point-in-quad test using weights
-         w0 = compute_weight(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
-                             lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
-         w1 = compute_weight(query_lon, query_lat, lon(i + 1, j), lat(i + 1, j), &
-                             lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
-         w2 = compute_weight(lon(i, j), lat(i, j), query_lon, query_lat, &
-                             lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
-         w3 = compute_weight(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
-                             query_lon, query_lat, lon(i, j + 1), lat(i, j + 1))
-         w4 = compute_weight(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
-                             lon(i + 1, j + 1), lat(i + 1, j + 1), query_lon, query_lat)
+         ! Quick point-in-quad test using areas
+         w0 = compute_quadrilateral_area(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
+                                         lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
+         w1 = compute_quadrilateral_area(query_lon, query_lat, lon(i + 1, j), lat(i + 1, j), &
+                                         lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
+         w2 = compute_quadrilateral_area(lon(i, j), lat(i, j), query_lon, query_lat, &
+                                         lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
+         w3 = compute_quadrilateral_area(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
+                                         query_lon, query_lat, lon(i, j + 1), lat(i, j + 1))
+         w4 = compute_quadrilateral_area(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
+                                         lon(i + 1, j + 1), lat(i + 1, j + 1), query_lon, query_lat)
 
          if ((w1 + w2 + w3 + w4) <= (w0*2.001d0)) then
             indices = [i, j]
@@ -368,17 +399,23 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Walks grid to find cell containing query point
-   !> @param[in] start_i Starting i-index
-   !> @param[in] start_j Starting j-index
-   !> @param[in] query_lon Query longitude
-   !> @param[in] query_lat Query latitude
-   !> @param[in] nx Grid x-dimension
-   !> @param[in] ny Grid y-dimension
-   !> @param[in] lon Grid longitudes
-   !> @param[in] lat Grid latitudes
-   !> @return indices [i,j] of containing cell or [-1,-1]
+   !>
+   !> @details Performs a directed walk through the grid starting from an
+   !> initial cell. At each step, moves toward the query point based on
+   !> the relative position to the current cell center. Limited to a maximum
+   !> number of iterations to prevent infinite loops.
+   !>
+   !> @param[in] start_i   Starting i-index
+   !> @param[in] start_j   Starting j-index
+   !> @param[in] query_lon Query longitude (degrees)
+   !> @param[in] query_lat Query latitude (degrees)
+   !> @param[in] nx        Grid x-dimension
+   !> @param[in] ny        Grid y-dimension
+   !> @param[in] lon       Grid longitudes (degrees)
+   !> @param[in] lat       Grid latitudes (degrees)
+   !> @return    indices   [i,j] of containing cell or [-1,-1]
    !-----------------------------------------------------------------------
-   function walk_to_containing_cell(start_i, start_j, query_lon, query_lat, nx, ny, lon, lat) result(indices)
+   pure function walk_to_containing_cell(start_i, start_j, query_lon, query_lat, nx, ny, lon, lat) result(indices)
       implicit none
       integer, intent(in) :: start_i, start_j, nx, ny
       real(8), intent(in) :: query_lon, query_lat
@@ -400,16 +437,16 @@ contains
          if (i < 1 .or. i >= nx .or. j < 1 .or. j >= ny) exit
 
          ! Test current cell
-         w0 = compute_weight(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
-                             lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
-         w1 = compute_weight(query_lon, query_lat, lon(i + 1, j), lat(i + 1, j), &
-                             lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
-         w2 = compute_weight(lon(i, j), lat(i, j), query_lon, query_lat, &
-                             lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
-         w3 = compute_weight(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
-                             query_lon, query_lat, lon(i, j + 1), lat(i, j + 1))
-         w4 = compute_weight(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
-                             lon(i + 1, j + 1), lat(i + 1, j + 1), query_lon, query_lat)
+         w0 = compute_quadrilateral_area(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
+                                         lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
+         w1 = compute_quadrilateral_area(query_lon, query_lat, lon(i + 1, j), lat(i + 1, j), &
+                                         lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
+         w2 = compute_quadrilateral_area(lon(i, j), lat(i, j), query_lon, query_lat, &
+                                         lon(i + 1, j + 1), lat(i + 1, j + 1), lon(i, j + 1), lat(i, j + 1))
+         w3 = compute_quadrilateral_area(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
+                                         query_lon, query_lat, lon(i, j + 1), lat(i, j + 1))
+         w4 = compute_quadrilateral_area(lon(i, j), lat(i, j), lon(i + 1, j), lat(i + 1, j), &
+                                         lon(i + 1, j + 1), lat(i + 1, j + 1), query_lon, query_lat)
 
          if ((w1 + w2 + w3 + w4) <= (w0*2.001d0)) then
             indices = [i, j]
@@ -457,20 +494,33 @@ contains
    end function walk_to_containing_cell
 
    !-----------------------------------------------------------------------
-   !> @brief Computes the weight for a point in a quadrilateral
-   !> @param[in] x1, y1, x2, y2, x3, y3, x4, y4 coordinates of the quadrilateral
-   !> @return w the weight of the point in the quadrilateral
+   !> @brief Computes the area of a quadrilateral using the shoelace formula
+   !>
+   !> @details Calculates the area of a quadrilateral using the shoelace
+   !> (surveyor's) formula. Used for point-in-polygon tests and bilinear
+   !> interpolation weight calculations. Returns the absolute value of the area.
+   !>
+   !> @param[in] x1,y1 First vertex coordinates
+   !> @param[in] x2,y2 Second vertex coordinates
+   !> @param[in] x3,y3 Third vertex coordinates
+   !> @param[in] x4,y4 Fourth vertex coordinates
+   !> @return    area  Absolute area of the quadrilateral
    !-----------------------------------------------------------------------
-   real(8) pure function compute_weight(x1, y1, x2, y2, x3, y3, x4, y4) result(w)
+   real(8) pure function compute_quadrilateral_area(x1, y1, x2, y2, x3, y3, x4, y4) result(area)
       real(8), intent(in) :: x1, y1, x2, y2, x3, y3, x4, y4
-      w = abs((x1*y2 - x2*y1) + (x2*y3 - x3*y2) + (x3*y4 - x4*y3) + (x4*y1 - x1*y4))
-   end function compute_weight
+      area = abs((x1*y2 - x2*y1) + (x2*y3 - x3*y2) + (x3*y4 - x4*y3) + (x4*y1 - x1*y4))
+   end function compute_quadrilateral_area
 
    !-----------------------------------------------------------------------
    !> @brief Constructor for t_windData structure with optional lon/lat allocation
+   !>
+   !> @details Creates a wind data structure with allocated arrays for wind
+   !> components, pressure, and wind speed. Optionally allocates longitude
+   !> and latitude arrays for moving grids.
+   !>
    !> @param[in] ni           Grid x-dimension size
    !> @param[in] nj           Grid y-dimension size
-   !> @param[in] use_lat_lon  Optional flag to allocate lon/lat arrays
+   !> @param[in] use_lat_lon  Optional flag to allocate lon/lat arrays (for moving grids)
    !> @return    wind_data    Initialized wind data structure
    !-----------------------------------------------------------------------
    pure function wind_data_constructor(ni, nj, use_lat_lon) result(wind_data)
@@ -491,9 +541,14 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Constructor for t_stormCenterData structure that reads storm center data if available
-   !> @param[in] nc_idg NetCDF group ID to read from
-   !> @param[in] num_snaps Number of time snapshots
-   !> @return storm_center Initialized storm center data structure with cached data
+   !>
+   !> @details Attempts to read storm center longitude and latitude data from the
+   !> NetCDF file. If both 'clon' and 'clat' variables exist, loads all storm
+   !> positions into memory for efficient access during simulation.
+   !>
+   !> @param[in] nc_idg       NetCDF group ID to read from
+   !> @param[in] num_snaps    Number of time snapshots
+   !> @return    storm_center Initialized storm center data structure with cached data
    !-----------------------------------------------------------------------
    type(t_stormCenterData) function storm_center_constructor(nc_idg, num_snaps) result(storm_center)
       use netcdf, only: NF90_INQ_VARID, NF90_GET_VAR, NF90_NOERR
@@ -529,8 +584,15 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Constructs a new t_nws13_group object from a NetCDF group
-   !> @param[in]    nc_idg  NetCDF group ID to initialize from
-   !> @return       grp     Initialized t_nws13_group structure
+   !>
+   !> @details Reads all metadata from a NetCDF wind group including dimensions,
+   !> time stamps, rank attribute, and grid type (moving or stationary). For
+   !> stationary grids, pre-computes interpolation weights. Caches storm center
+   !> data if available.
+   !>
+   !> @param[in] NC_IDG      NetCDF group ID to initialize from
+   !> @param[in] file_index  Index of this group in the file
+   !> @return    grp         Initialized t_nws13_group structure
    !-----------------------------------------------------------------------
    type(t_nws13_group) function nws13_constructor(NC_IDG, file_index) result(grp)
 
@@ -622,8 +684,13 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Reads the reference date/time from a NetCDF dataset time variable
-   !> @param[in]    nc_idg  NetCDF group ID
-   !> @return       reftime Reference date/time as t_datetime object
+   !>
+   !> @details Extracts the reference time from the 'units' attribute of the
+   !> time variable. Expects format "minutes since YYYY-MM-DDTHH:MM:SS".
+   !> Validates the time format and creates a t_datetime object.
+   !>
+   !> @param[in] NC_IDG  NetCDF group ID
+   !> @return    reftime Reference date/time as t_datetime object
    !-----------------------------------------------------------------------
    type(t_datetime) function read_dataset_reference_time(NC_IDG) result(reftime)
       use netcdf, only: nf90_inq_varid, nf90_get_att
@@ -669,8 +736,13 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Reads static 2D grid coordinates and computes interpolation weights
-   !> @param[in]    nc_idg      NetCDF group ID
-   !> @return       interp_data Structure containing interpolation indices and weights
+   !>
+   !> @details Reads longitude and latitude arrays for a stationary grid and
+   !> pre-computes bilinear interpolation weights for all mesh nodes. Used
+   !> for grids that don't move with time.
+   !>
+   !> @param[in] NC_IDG      NetCDF group ID
+   !> @return    interp_data Structure containing interpolation indices and weights
    !-----------------------------------------------------------------------
    type(t_interpolationData) function read_2d_grid(NC_IDG) result(interp_data)
       use netcdf, only: NF90_INQ_DIMID, NF90_INQUIRE_DIMENSION, NF90_INQ_VARID, &
@@ -710,11 +782,15 @@ contains
    end function read_2d_grid
 
    !-----------------------------------------------------------------------
-   !> @brief Reads lon/lat coordinates for moving grids and updates interpolation
-   !> @param[in]    nc_idg    NetCDF group ID
-   !> @param[in]    currsnap  Current time snapshot index
-   !> @param[inout] grp       NWS13 group structure to update
-   !> @param[inout] data      Wind data structure to populate with grid coordinates
+   !> @brief Reads lon/lat coordinates for moving grids
+   !>
+   !> @details Reads time-varying grid coordinates for a specific snapshot.
+   !> Used for storm-following or other moving grid systems where the
+   !> coordinate system changes with each time step.
+   !>
+   !> @param[in] self         NWS13 group object
+   !> @param[in] current_snap Current time snapshot index
+   !> @return    grid_data    Wind data structure with grid coordinates
    !-----------------------------------------------------------------------
    type(t_windData) function t_nws13_read_moving_grid(self, current_snap) result(grid_data)
       use netcdf, only: NF90_INQ_VARID, NF90_GET_VAR
@@ -744,9 +820,16 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Reads a single wind snapshot from NetCDF file
-   !> @param[in]    snap_idx  Snapshot index to read
-   !> @param[in]    grid_info NWS13 grid information
-   !> @return       t_windData object with read snapshot data
+   !>
+   !> @details Reads wind velocity components (U10, V10) and surface pressure
+   !> (PSFC) for a specific time snapshot. Applies wind multiplier and
+   !> converts pressure to meters of water. Also retrieves storm center
+   !> position if available.
+   !>
+   !> @param[in] self            NWS13 group object
+   !> @param[in] snap_idx        Snapshot index to read
+   !> @param[in] wind_multiplier Wind velocity scaling factor
+   !> @return    wind_data       Wind data object with snapshot data
    !-----------------------------------------------------------------------
    type(t_windData) function t_nws13_read_wind_snapshot(self, snap_idx, wind_multiplier) result(wind_data)
       use global, only: screenMessage, INFO
@@ -790,8 +873,13 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Advances group to the snapshot containing current_time
-   !> @param[inout] group NWS13 group to advance
-   !> @param[in] current_time Target time
+   !>
+   !> @details Updates the previous and next snapshot indices to bracket
+   !> the current simulation time. Marks the group as active if the
+   !> current time falls within available data range.
+   !>
+   !> @param[inout] self         NWS13 group to advance
+   !> @param[in]    current_time Target simulation time
    !-----------------------------------------------------------------------
    subroutine t_nws13_advance_to_time(self, current_time)
       use mod_datetime, only: t_datetime, operator(>), operator(<=), operator(<), operator(==), null_datetime
@@ -817,6 +905,16 @@ contains
       end if
    end subroutine t_nws13_advance_to_time
 
+!-----------------------------------------------------------------------
+!> @brief Reads wind data snapshots for active time window
+!>
+!> @details Manages reading of previous and next snapshots for temporal
+!> interpolation. Implements caching to avoid redundant reads when
+!> snapshots are reused between time steps.
+!>
+!> @param[inout] self            NWS13 group object
+!> @param[in]    wind_multiplier Wind velocity scaling factor
+!-----------------------------------------------------------------------
    subroutine t_nws13_read(self, wind_multiplier)
       class(t_nws13_group), intent(inout) :: self
       real(8), intent(in) :: wind_multiplier
@@ -837,12 +935,15 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Reads a NetCDF variable and applies fill value, scale, and offset
-   !> @param[in]  ncid      NetCDF group ID
-   !> @param[in]  varname   Name of the variable
-   !> @param[in]  currsnap  Time index to read
-   !> @param[in]  numlon    X-dimension size
-   !> @param[in]  numlat    Y-dimension size
-   !> @param[out] arr       Output array
+   !>
+   !> @details Reads a 3D NetCDF variable slice and applies CF convention
+   !> attributes including _FillValue, scale_factor, and add_offset.
+   !> Missing values are replaced with null_flag_value.
+   !>
+   !> @param[in] self       NWS13 group object
+   !> @param[in] snap_index Time index to read
+   !> @param[in] varname    Name of the variable
+   !> @return    arr        Processed 2D array with attributes applied
    !-----------------------------------------------------------------------
    function t_nws13_read_netcdf_var_with_attrs(self, snap_index, varname) result(arr)
       use netcdf, only: NF90_INQ_VARID, NF90_GET_VAR, NF90_GET_ATT, NF90_NOERR
@@ -872,14 +973,23 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Processes a single wind group and applies it to the mesh
-   !> @param[in] group_idx Group index in sorted order
-   !> @param[in] current_time Current simulation time
-   !> @param[inout] wvnx2 Wind X-component array
-   !> @param[inout] wvny2 Wind Y-component array
-   !> @param[inout] prn2 Pressure array
-   !> @param[inout] eye_lon Storm center longitude array
-   !> @param[inout] eye_lat Storm center latitude array
-   !> @param[out] found_eye Whether storm eye was found
+   !>
+   !> @details Reads wind data, performs temporal and spatial interpolation,
+   !> and applies results to mesh nodes. Only updates nodes not already
+   !> assigned by higher-priority groups. Updates storm center position
+   !> for Powell wind drag calculations if applicable.
+   !>
+   !> @param[inout] self                 NWS13 group object
+   !> @param[in]    current_time         Current simulation time
+   !> @param[inout] wvnx2                Wind X-component at mesh nodes (m/s)
+   !> @param[inout] wvny2                Wind Y-component at mesh nodes (m/s)
+   !> @param[inout] prn2                 Pressure at mesh nodes (m of water)
+   !> @param[in]    PowellGroupIndex     Requested group for Powell drag (0=auto)
+   !> @param[inout] PowellGroupTempIndex Active group for Powell drag
+   !> @param[inout] eye_lon              Storm center longitude array (degrees)
+   !> @param[inout] eye_lat              Storm center latitude array (degrees)
+   !> @param[out]   found_eye            Whether storm eye was located
+   !> @param[in]    wind_multiplier      Wind velocity scaling factor
    !-----------------------------------------------------------------------
    subroutine t_nws13_process_group(self, current_time, wvnx2, wvny2, prn2, &
                                     PowellGroupIndex, PowellGroupTempIndex, eye_lon, eye_lat, found_eye, wind_multiplier)
@@ -942,9 +1052,15 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Interpolates wind data between two time snapshots
-   !> @param[in] grid_info Grid information containing snapshots and timing
+   !>
+   !> @details Performs linear interpolation in time between previous and
+   !> next snapshots. Interpolates grid coordinates (for moving grids),
+   !> wind components, pressure, and storm center position. Only interpolates
+   !> where both snapshots have valid data.
+   !>
+   !> @param[in] self         NWS13 group object
    !> @param[in] current_time Current simulation time
-   !> @return Interpolated wind data at current time
+   !> @return    current_data Interpolated wind data at current time
    !-----------------------------------------------------------------------
    type(t_windData) pure function t_nws13_interpolate_wind_in_time(self, current_time) result(current_data)
       use mod_datetime, only: t_datetime, t_timedelta, operator(-)
@@ -1000,11 +1116,17 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Computes interpolation weights for mapping grid data to mesh nodes
-   !> @param[in]    numlon x-dimension size of grid
-   !> @param[in]    numlat y-dimension size of grid
-   !> @param[in]    lon    grid longitudes (2D)
-   !> @param[in]    lat    grid latitudes (2D)
-   !> @return       interpData Structure containing interpolation indices and weights
+   !>
+   !> @details Pre-computes bilinear interpolation weights for all mesh nodes
+   !> within the wind grid domain. Uses spatial hash acceleration to efficiently
+   !> locate containing grid cells. Nodes outside the domain are marked as
+   !> invalid (ilon=0).
+   !>
+   !> @param[in] NumLon     X-dimension size of grid
+   !> @param[in] NumLat     Y-dimension size of grid
+   !> @param[in] Lon        Grid longitudes (degrees)
+   !> @param[in] Lat        Grid latitudes (degrees)
+   !> @return    interpData Structure containing interpolation indices and weights
    !-----------------------------------------------------------------------
    type(t_interpolationData) function t_interpolationData_constructor(NumLon, NumLat, Lon, Lat) result(interpData)
       !-----------------------------------------------------------------------
@@ -1072,16 +1194,16 @@ contains
             IA = cell_indices(2)
 
             ! Compute bilinear interpolation weights
-            W0 = compute_weight(Lon(IO, IA), Lat(IO, IA), Lon(IO + 1, IA), Lat(IO + 1, IA), &
-                                Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), Lon(IO, IA + 1), Lat(IO, IA + 1))
-            W1 = compute_weight(AdcLon, AdcLat, Lon(IO + 1, IA), Lat(IO + 1, IA), &
-                                Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), Lon(IO, IA + 1), Lat(IO, IA + 1))
-            W2 = compute_weight(Lon(IO, IA), Lat(IO, IA), AdcLon, AdcLat, &
-                                Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), Lon(IO, IA + 1), Lat(IO, IA + 1))
-            W3 = compute_weight(Lon(IO, IA), Lat(IO, IA), Lon(IO + 1, IA), Lat(IO + 1, IA), &
-                                AdcLon, AdcLat, Lon(IO, IA + 1), Lat(IO, IA + 1))
-            W4 = compute_weight(Lon(IO, IA), Lat(IO, IA), Lon(IO + 1, IA), Lat(IO + 1, IA), &
-                                Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), AdcLon, AdcLat)
+            W0 = compute_quadrilateral_area(Lon(IO, IA), Lat(IO, IA), Lon(IO + 1, IA), Lat(IO + 1, IA), &
+                                            Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), Lon(IO, IA + 1), Lat(IO, IA + 1))
+            W1 = compute_quadrilateral_area(AdcLon, AdcLat, Lon(IO + 1, IA), Lat(IO + 1, IA), &
+                                            Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), Lon(IO, IA + 1), Lat(IO, IA + 1))
+            W2 = compute_quadrilateral_area(Lon(IO, IA), Lat(IO, IA), AdcLon, AdcLat, &
+                                            Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), Lon(IO, IA + 1), Lat(IO, IA + 1))
+            W3 = compute_quadrilateral_area(Lon(IO, IA), Lat(IO, IA), Lon(IO + 1, IA), Lat(IO + 1, IA), &
+                                            AdcLon, AdcLat, Lon(IO, IA + 1), Lat(IO, IA + 1))
+            W4 = compute_quadrilateral_area(Lon(IO, IA), Lat(IO, IA), Lon(IO + 1, IA), Lat(IO + 1, IA), &
+                                            Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), AdcLon, AdcLat)
 
             interpData%ilon(IV) = IO
             interpData%ilat(IV) = IA
@@ -1097,10 +1219,15 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Interpolates wind data to a single mesh node
-   !> @param[in] node_idx Node index
+   !>
+   !> @details Applies bilinear interpolation using pre-computed weights.
+   !> Validates that all corner values are valid before interpolating.
+   !> Adjusts U/V components to match scalar wind magnitude for consistency.
+   !>
+   !> @param[in] self      Interpolation data structure
+   !> @param[in] node_idx  Mesh node index
    !> @param[in] wind_data Wind data on grid
-   !> @param[in] interp Interpolation weights and indices
-   !> @return t_nodeInterpolationResult containing interpolated values and validity flag
+   !> @return    node_result Interpolated values and validity flag
    !-----------------------------------------------------------------------
    type(t_nodeInterpolationResult) pure function interpolate_to_node(self, node_idx, wind_data) result(node_result)
       implicit none
@@ -1140,7 +1267,7 @@ contains
                  all(abs(p_corners - null_flag_value) > eps))) return
 
       ! Perform bilinear interpolation
-      this_weight = self%weights(node_idx,:)
+      this_weight = self%weights(node_idx, :)
       node_result%u = interpolate_bilinear(wind_data%U, this_weight, ilon, ilat)
       node_result%v = interpolate_bilinear(wind_data%V, this_weight, ilon, ilat)
       wind_speed = interpolate_bilinear(wind_data%Ws, this_weight, ilon, ilat)
@@ -1161,10 +1288,16 @@ contains
 
    !-----------------------------------------------------------------------
    !> @brief Bilinear interpolation of a 2D array using weights
-   !> @param[in] arr 2D array to interpolate
-   !> @param[in] w   weights for the bilinear interpolation
-   !> @param[in] i, j indices of the top-left corner of the interpolation
-   !> @return val the interpolated value
+   !>
+   !> @details Computes weighted average of four corner values using
+   !> pre-computed bilinear weights. Corner ordering: (i,j), (i+1,j),
+   !> (i+1,j+1), (i,j+1).
+   !>
+   !> @param[in] arr 2D array to interpolate from
+   !> @param[in] w   Bilinear weights for four corners
+   !> @param[in] i   Grid i-index of top-left corner
+   !> @param[in] j   Grid j-index of top-left corner
+   !> @return    val Interpolated value
    !-----------------------------------------------------------------------
    real(8) pure function interpolate_bilinear(arr, w, i, j) result(val)
       real(8), intent(in) :: arr(:, :)
