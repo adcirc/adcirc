@@ -983,7 +983,7 @@ contains
              abs(self%NextData%V - null_flag_value) > eps .and. &
              abs(self%PrevData%P - null_flag_value) > eps .and. &
              abs(self%NextData%P - null_flag_value) > eps)
-         
+
          current_data%U = self%PrevData%U + (self%NextData%U - self%PrevData%U)*time_interp_factor
          current_data%V = self%PrevData%V + (self%NextData%V - self%PrevData%V)*time_interp_factor
          current_data%P = self%PrevData%P + (self%NextData%P - self%PrevData%P)*time_interp_factor
@@ -1107,7 +1107,8 @@ contains
       class(t_interpolationData), intent(in) :: self
       integer, intent(in) :: node_idx
       type(t_windData), intent(in) :: wind_data
-      real(8) :: ws_corners(4), p_corners(4), wind_speed, wind_dir
+      real(8) :: ws_corners(4), p_corners(4), this_weight(4)
+      real(8) :: wind_speed, wind_dir
       real(8), parameter :: eps = epsilon(1d0)
       integer :: ilon, ilat
 
@@ -1139,10 +1140,11 @@ contains
                  all(abs(p_corners - null_flag_value) > eps))) return
 
       ! Perform bilinear interpolation
-      node_result%u = interpolate_bilinear(wind_data%U, self%weights(node_idx, :), ilon, ilat)
-      node_result%v = interpolate_bilinear(wind_data%V, self%weights(node_idx, :), ilon, ilat)
-      wind_speed = interpolate_bilinear(wind_data%Ws, self%weights(node_idx, :), ilon, ilat)
-      node_result%p = interpolate_bilinear(wind_data%P, self%weights(node_idx, :), ilon, ilat)
+      this_weight = self%weights(node_idx,:)
+      node_result%u = interpolate_bilinear(wind_data%U, this_weight, ilon, ilat)
+      node_result%v = interpolate_bilinear(wind_data%V, this_weight, ilon, ilat)
+      wind_speed = interpolate_bilinear(wind_data%Ws, this_weight, ilon, ilat)
+      node_result%p = interpolate_bilinear(wind_data%P, this_weight, ilon, ilat)
 
       ! Adjust U/V based on scalar wind magnitude
       if (abs(node_result%u) <= eps .and. abs(node_result%v) <= eps) then

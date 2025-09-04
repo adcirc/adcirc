@@ -35,6 +35,7 @@ C
        USE ADC_CONSTANTS, ONLY: pi, deg2rad, rad2deg, e, PRBCKGRND, g, 
      &                      rhoWat0, Rearth, rhoAir, one2ten,
      &                      windReduction,omega
+       use mod_nws13, only: t_nws13
 #ifdef CMPI
       use mpi
       use messenger, only : msg_fini, msg_Rscalar_Reduce
@@ -62,8 +63,6 @@ C... v50.xx sm -- nws=17 for NUOPC coupling hwrf data
 
       real(8) :: wtime1 ! time associated with previous met dataset
       real(8) :: wtime2 ! time associated with new met dataset
-      real(8) :: wtime1i ! intermediate NWS13 interpolation timestep
-      real(8) :: wtime2i ! intermediate NWS13 interpolation timestep
       real(8) :: wtiminc ! time increment between met datasets (seconds)
       real(8) :: wtimed ! time in seconds associated with a dataset
       real(8) :: wreftim ! met reference time
@@ -290,6 +289,8 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       END INTERFACE
       PROCEDURE(p_computeWindDrag),POINTER :: f_computeWindDrag => null()
 
+      ! Container for NWS13 behavior/data
+      type(t_nws13), private :: nws13data
 
       ! for record time  
       REAL(8), private:: io_elapsed_time = 0.0D0, nws_elapsed_time = 0.0D0
@@ -329,10 +330,9 @@ C     ----------------------------------------------------------------
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      allocate ( wvnx1(np),wvny1(np) )
-      allocate ( wvnx2(np),wvny2(np) )
-      allocate ( prn1(np) )
-      allocate ( prn2(np) )
+      ! NWS=13 tracks these internally
+      if(abs(nws)/=13) allocate ( wvnx1(np), wvny1(np), prn1(np) )
+      allocate(wvnx2(np), wvny2(np), prn2(np))
 
       if (NWS.eq.-14) allocate ( HasData(np) )
 C     WJP: this is the value used in the surface stress computation  
@@ -343,12 +343,12 @@ C.... tcm v49.16 20100617 added
 C.... convert background pressure from millibars to meters of water
       rhoWat0g = rhoWat0 * g
       PRBCKGRND_MH2O = 100.0D0 * PRBCKGRND / rhoWat0g
-      prn1 = PRBCKGRND_MH2O
+      if(abs(nws)/=13)then
+        prn1 = PRBCKGRND_MH2O
+        wvnx1 = 0.0
+        wvny1 = 0.0
+      endif
       prn2 = PRBCKGRND_MH2O
-
-      ! dw
-      wvnx1 = 0.0
-      wvny1 = 0.0
       wvnx2 = 0.0
       wvny2 = 0.0
 
@@ -869,9 +869,7 @@ C----------------------------------------------------------------------
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
       use mod_nws08, only: nws08get
-#ifdef ADCNETCDF
-      USE mod_nws13, ONLY: NWS13GET
-#endif
+
       implicit none
       integer, intent(in) :: nws
       real(8), intent(out) :: wsx2(:)
@@ -1430,7 +1428,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 
 #ifdef ADCNETCDF
         IF(ABS(NWS).EQ.13) THEN
-          CALL NWS13GET(TimeLoc,WVNX2,WVNY2,PRN2,EyeLon,EyeLat,FoundEye)
+          CALL nws13data%get(TimeLoc,WVNX2,WVNY2,PRN2,EyeLon,EyeLat,FoundEye)
           DO I=1,NP
             WINDX = WVNX2(I)
             WINDY = WVNY2(I)
@@ -1770,11 +1768,6 @@ C----------------------------------------------------------------------
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np
       use mod_nws08, only: nws08init, nws08get
-#ifdef ADCNETCDF
-Casey 180318: Added for NWS=13
-      USE mod_nws13, ONLY: NWS13INIT,NWS13GET
-#endif
-
       use mod_datetime, only: t_datetime
 
       implicit none
@@ -2034,7 +2027,7 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
 #ifdef ADCNETCDF
 Casey 180318: Added for NWS=13, ARC modified 190108
       IF(ABS(NWS).EQ.13)THEN
-        CALL NWS13INIT()
+        nws13data = t_nws13()
       ENDIF
 #endif
 
@@ -2088,9 +2081,7 @@ C----------------------------------------------------------------------
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np, uvectmp, vvectmp, DRVMAP2DSPVEC
       use mod_nws08, only: nws08init, nws08get
-#ifdef ADCNETCDF
-      USE mod_nws13, ONLY: NWS13INIT,NWS13GET
-#endif
+
       implicit none
       integer, intent(in) :: nws
       real(8), intent(out) :: wsx2(:)
@@ -2844,8 +2835,8 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 
 #ifdef ADCNETCDF
       IF(ABS(NWS).EQ.13)THEN
-        CALL NWS13INIT()
-        CALL NWS13GET(TimeLoc,WVNX2,WVNY2,PRN2,EyeLon,EyeLat,FoundEye)
+        nws13data = t_nws13()
+        CALL nws13data%get(TimeLoc,WVNX2,WVNY2,PRN2,EyeLon,EyeLat,FoundEye)
         DO I=1,NP
           WINDX = WVNX2(I)
           WINDY = WVNY2(I)
@@ -3014,7 +3005,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
 
 #ifdef ADCNETCDF
       IF(ABS(NWS).EQ.13)THEN
-        CALL NWS13GET(TIMELOC,WVNX2,WVNY2,PRN2,EyeLon,EyeLat,FoundEye)
+        CALL nws13data%get(TIMELOC,WVNX2,WVNY2,PRN2,EyeLon,EyeLat,FoundEye)
         DO I=1,NP
           WINDX = WVNX2(I)
           WINDY = WVNY2(I)
