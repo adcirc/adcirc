@@ -953,6 +953,7 @@ contains
       type(t_datetime), intent(in) :: current_time
       type(t_timedelta) :: time_interp_numerator, time_interp_denominator
       real(8) :: time_interp_factor
+      real(8), parameter :: eps = epsilon(1d0)
 
       ! Initialize current data structure
       current_data = t_windData(self%NumLon, self%NumLat, self%interp%is_moving)
@@ -969,15 +970,27 @@ contains
          current_data%Lat = self%PrevData%Lat + (self%NextData%Lat - self%PrevData%Lat)*time_interp_factor
       end if
 
-      ! Interpolate wind and pressure fields
-      current_data%U = self%PrevData%U + (self%NextData%U - self%PrevData%U)*time_interp_factor
-      current_data%V = self%PrevData%V + (self%NextData%V - self%PrevData%V)*time_interp_factor
-      current_data%P = self%PrevData%P + (self%NextData%P - self%PrevData%P)*time_interp_factor
+      ! Initialize fields with null values
+      current_data%U = null_flag_value
+      current_data%V = null_flag_value
+      current_data%P = null_flag_value
+      current_data%Ws = null_flag_value
 
-      ! Calculate and interpolate scalar wind speed
-      current_data%Ws = sqrt(self%PrevData%U**2d0 + self%PrevData%V**2d0) + &
-                        (sqrt(self%NextData%U**2d0 + self%NextData%V**2d0) - &
-                         sqrt(self%PrevData%U**2d0 + self%PrevData%V**2d0))*time_interp_factor
+      ! Interpolate all fields where both prev and next values are valid
+      where (abs(self%PrevData%U - null_flag_value) > eps .and. &
+             abs(self%NextData%U - null_flag_value) > eps .and. &
+             abs(self%PrevData%V - null_flag_value) > eps .and. &
+             abs(self%NextData%V - null_flag_value) > eps .and. &
+             abs(self%PrevData%P - null_flag_value) > eps .and. &
+             abs(self%NextData%P - null_flag_value) > eps)
+         
+         current_data%U = self%PrevData%U + (self%NextData%U - self%PrevData%U)*time_interp_factor
+         current_data%V = self%PrevData%V + (self%NextData%V - self%PrevData%V)*time_interp_factor
+         current_data%P = self%PrevData%P + (self%NextData%P - self%PrevData%P)*time_interp_factor
+         current_data%Ws = sqrt(self%PrevData%U**2d0 + self%PrevData%V**2d0) + &
+                           (sqrt(self%NextData%U**2d0 + self%NextData%V**2d0) - &
+                            sqrt(self%PrevData%U**2d0 + self%PrevData%V**2d0))*time_interp_factor
+      end where
 
       ! Interpolate storm center position
       current_data%storm_pos = self%PrevData%storm_pos + &
