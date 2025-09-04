@@ -178,34 +178,50 @@ module mod_nws13
 
    private
 
-   !> @brief Path to the NetCDF wind input file (default: fort.22.nc)
-   character(LEN=1000) :: NWS13File = "fort.22.nc"
+   type t_nws13
 
-   !> @brief Group number to use for Powell wind drag calculation (0 = auto-select)
-   integer :: NWS13GroupForPowell = 0
+      private
 
-   !> @brief Currently active group for Powell wind drag scheme
-   integer :: PowellGroup = 0
+      character(1000) :: filename !> Path to the NetCDF wind input file (default: fort.22.nc)
+      integer :: current_powell_group = 0 !> Currently active group for Powell wind drag scheme
+      integer :: requested_powell_group = 0 !> Group number to use for Powell wind drag calculation (0 = auto-select)
+      integer :: n_groups = 0
+      integer, allocatable :: sorted_group_indices(:) !> Group indices sorted by priority rank
+      real(8) :: wind_multiplier = 1.0d0 !> Multiplier applied to wind velocities for sensitivity analysis
+      real(8), allocatable :: wx1(:), wx2(:) !> Two levels worth of wind (x)
+      real(8), allocatable :: wy1(:), wy2(:) !> Two levels worth of wind (y)
+      real(8), allocatable :: pr1(:), pr2(:) !> Two levels worth of pressure (pr)
+      type(t_datetime) :: coldstart !> Reference time for cold start initialization from namelist
+      type(t_datetime) :: previous_interp_time !< Date/time of the prev time we interpolated
+      type(t_datetime) :: next_interp_time !< Date/time of the next time we will interpolate
+      type(t_nws13_group), allocatable :: wind_groups(:) !> Array of NWS13 wind groups from NetCDF file
+      logical :: is_initialized = .false.
 
-   !> @brief Multiplier applied to wind velocities for sensitivity analysis
-   real(8) :: NWS13WindMultiplier = 1.0d0
+   contains
+      procedure, pass(self), public  :: get => t_nws13_get_wind_forcing
+      procedure, pass(self), private :: update_active_groups => t_nws13_update_active_groups
+      procedure, pass(self), private :: check_data_started => t_nws13_check_data_started
+      procedure, pass(self), private :: time_interpolate_wind => t_nws13_time_interpolate_wind
+      procedure, pass(self), private :: update_wind_data => t_nws13_update_wind_data
+   end type t_nws13
 
-   real(8), allocatable :: WX1(:), WY1(:), PR1(:)
-   real(8), allocatable :: WX2(:), WY2(:), PR2(:)
+   type t_nws13_namelist_info
+      character(1000) :: filename
+      integer :: powell_group
+      real(8) :: wind_multiplier
+      type(t_datetime) :: coldstart
+      logical :: initialized = .false.
+   end type t_nws13_namelist_info
 
-   !> @brief Reference time for cold start initialization from namelist
-   type(t_datetime) :: NWS13ColdStart
+   interface t_nws13
+      module procedure t_nws13_constructor
+   end interface t_nws13
 
-   type(t_datetime) :: PrevInterpTime !< Date/time of the prev time we interpolated
-   type(t_datetime) :: NextInterpTime !< Date/time of the next time we will interpolate
+   !> A single source for all user input.
+   !> We use this since the nws object isn't available yet when we read the input file
+   type(t_nws13_namelist_info) :: user_input
 
-   !> @brief Array of NWS13 wind groups from NetCDF file
-   type(t_nws13_group), allocatable :: wind_groups(:)
-
-   !> @brief Group indices sorted by priority rank
-   integer, allocatable :: sorted_group_indices(:)
-
-   public :: NWS13INIT, NWS13GET, nws13_set_namelist_parameters
+   public :: nws13_set_namelist_parameters, t_nws13
 
 contains
 
@@ -229,15 +245,16 @@ contains
       integer, intent(in) :: NWS13GroupForPowell_in
 
       ! Set the parameters from the namelist.
-      NWS13File = trim(adjustl(NWS13Filename_in))
-      NWS13ColdStart = t_datetime(trim(adjustl(NWS13ColdStart_in)), &
-                                  ["%Y%m%d.%H%M%S    ", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"])
-      NWS13WindMultiplier = NWS13WindMultiplier_in
-      NWS13GroupForPowell = NWS13GroupForPowell_in
+      user_input%filename = trim(adjustl(NWS13Filename_in))
+      user_input%coldstart = t_datetime(trim(adjustl(NWS13ColdStart_in)), &
+                                        ["%Y%m%d.%H%M%S    ", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"])
+      user_input%wind_multiplier = NWS13WindMultiplier_in
+      user_input%powell_group = NWS13GroupForPowell_in
+      user_input%initialized = .true.
 
-      call logMessage(INFO, "Using NWS13 file: "//trim(adjustl(NWS13File)))
-      call logMessage(INFO, "NWS13 Cold Start Date: "//trim(NWS13ColdStart%to_iso_string()))
-      write (scratchMessage, '(A,F0.4)') "NWS13 Wind Multiplier: ", NWS13WindMultiplier
+      call logMessage(INFO, "Using NWS13 file: "//trim(adjustl(user_input%filename)))
+      call logMessage(INFO, "NWS13 Cold Start Date: "//trim(user_input%coldstart%to_iso_string()))
+      write (scratchMessage, '(A,F0.4)') "NWS13 Wind Multiplier: ", user_input%wind_multiplier
       call logMessage(INFO, scratchMessage)
 
    end subroutine nws13_set_namelist_parameters
@@ -245,7 +262,7 @@ contains
 !-----------------------------------------------------------------------
 !> Initializes reading data from the Oceanweather (OWI) NetCDF wind/pre fields
 !-----------------------------------------------------------------------
-   subroutine NWS13INIT()
+   type(t_nws13) function t_nws13_constructor() result(nws)
 !-----------------------------------------------------------------------
       use netcdf, only: NF90_GET_ATT, NF90_OPEN, NF90_NOWRITE, NF90_INQ_NCID, &
                         NF90_INQUIRE_DIMENSION, NF90_INQ_VARID, NF90_GET_VAR, NF90_CLOSE, NF90_INQ_DIMID, &
@@ -275,9 +292,21 @@ contains
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Enter.")
 #endif
+      if (.not. user_input%initialized) then
+         call allMessage(ERROR, "NWS13 Namelist information not initialized")
+#ifdef CMPI
+         call msg_fini()
+#endif
+         call exit(1)
+      end if
+
+      nws%filename = user_input%filename
+      nws%wind_multiplier = user_input%wind_multiplier
+      nws%requested_powell_group = user_input%powell_group
+      nws%coldstart = user_input%coldstart
 
       ! Open the NetCDF file.
-      call check_err(NF90_OPEN(trim(adjustl(NWS13File)), NF90_NOWRITE, NC_ID))
+      call check_err(NF90_OPEN(trim(adjustl(nws%filename)), NF90_NOWRITE, NC_ID))
 
       ! Discover groups in the NetCDF file
       allocate (group_ids(max_groups))
@@ -290,38 +319,39 @@ contains
          call exit(1)
       end if
 
-      PrevInterpTime = null_datetime()
-      NextInterpTime = null_datetime()
+      nws%n_groups = NumGroup
+      nws%previous_interp_time = null_datetime()
+      nws%next_interp_time = null_datetime()
 
       ! Allocate group_ids array and get the IDs
-      allocate (wind_groups(1:NumGroup))
+      allocate (nws%wind_groups(1:NumGroup))
       do IG = 1, NumGroup
-         wind_groups(IG) = t_nws13_group(group_ids(IG), IG)
+         nws%wind_groups(IG) = t_nws13_group(group_ids(IG), IG)
       end do
       deallocate (group_ids)
 
-      allocate (sorted_group_indices(NumGroup))
-      sorted_group_indices = sort_groups_by_rank(wind_groups)
+      allocate (nws%sorted_group_indices(NumGroup))
+      nws%sorted_group_indices = sort_groups_by_rank(nws%wind_groups)
 
       call logMessage(INFO, "Groups will be processed in rank order (highest priority first):")
       do IGS = 1, NumGroup
-         IG = sorted_group_indices(IGS)
+         IG = nws%sorted_group_indices(IGS)
          write (scratchMessage, '(A,I0,A,A,A,I0,A)') "  Priority ", IGS, ": '", &
-            trim(wind_groups(IG)%group_name), "' (rank ", wind_groups(IG)%rank, ")"
+            trim(nws%wind_groups(IG)%group_name), "' (rank ", nws%wind_groups(IG)%rank, ")"
          call logMessage(INFO, scratchMessage)
       end do
 
       call check_err(NF90_CLOSE(NC_ID))
 
-      allocate (wx1(np), wy1(np), pr1(np))
-      allocate (wx2(np), wy2(np), pr2(np))
+      allocate (nws%wx1(np), nws%wy1(np), nws%pr1(np))
+      allocate (nws%wx2(np), nws%wy2(np), nws%pr2(np))
 
-      wx1 = 0d0
-      wy1 = 0d0
-      pr1 = PRBCKGRND*100d0/RHOWAT0/G
-      wx2 = 0d0
-      wy2 = 0d0
-      pr2 = PRBCKGRND*100d0/RHOWAT0/G
+      nws%wx1 = 0d0
+      nws%wy1 = 0d0
+      nws%pr1 = PRBCKGRND*100d0/RHOWAT0/G
+      nws%wx2 = 0d0
+      nws%wy2 = 0d0
+      nws%pr2 = PRBCKGRND*100d0/RHOWAT0/G
 
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Return.")
@@ -329,7 +359,7 @@ contains
       call unsetMessageSource()
 
 !-----------------------------------------------------------------------
-   end subroutine NWS13INIT
+   end function t_nws13_constructor
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -338,54 +368,57 @@ contains
 !> @param[inout] groups Array of NWS13 groups to update
 !> @return Next wind field time as t_datetime
 !-----------------------------------------------------------------------
-   subroutine update_active_groups(current_time)
+   subroutine t_nws13_update_active_groups(self, current_time)
       use mod_datetime, only: t_timedelta, operator(+), operator(-), operator(<), operator(==)
       implicit none
+      class(t_nws13), intent(inout) :: self
       type(t_datetime), intent(in) :: current_time
       integer :: ig
 
-      do ig = 1, size(wind_groups)
-         call wind_groups(ig)%advance(current_time)
-         if(PrevInterpTime < wind_groups(ig)%PrevFileTime .or. PrevInterpTime == null_datetime())then
-             PrevInterpTime = wind_groups(ig)%PrevFileTime
-             NextInterpTime = wind_groups(ig)%PrevFileTime + t_timedelta(seconds=600)
+      do ig = 1, size(self%wind_groups)
+         call self%wind_groups(ig)%advance(current_time)
+         if (self%previous_interp_time < self%wind_groups(ig)%PrevFileTime .or. &
+             self%previous_interp_time == null_datetime()) then
+            self%previous_interp_time = self%wind_groups(ig)%PrevFileTime
+            self%next_interp_time = self%wind_groups(ig)%PrevFileTime + t_timedelta(seconds=600)
          end if
       end do
-   end subroutine update_active_groups
+   end subroutine t_nws13_update_active_groups
 
-   logical pure function nws13_data_started(current_time) result(is_started)
+   logical pure function t_nws13_check_data_started(self, current_time) result(is_started)
       use mod_datetime, only: operator(>)
       implicit none
+      class(t_nws13), intent(in) :: self
       type(t_datetime), intent(in) :: current_time
       integer :: i
 
       is_started = .false.
-
-      do i = 1, size(wind_groups)
-         if (current_time > wind_groups(i)%PrevFileTime) is_started = .true.
+      do i = 1, self%n_groups
+         if (current_time > self%wind_groups(i)%PrevFileTime) is_started = .true.
       end do
-   end function nws13_data_started
+   end function t_nws13_check_data_started
 
-   subroutine time_interpolate_wind(CurrentTime, NextInterpTime, WXOUT, WYOUT, PROUT)
+   subroutine t_nws13_time_interpolate_wind(self, CurrentTime, WXOUT, WYOUT, PROUT)
       use mod_datetime, only: t_timedelta, operator(-)
       use mesh, only: np
       implicit none
-      type(t_datetime), intent(in) :: CurrentTime, NextInterpTime
+      class(t_nws13), intent(in) :: self
+      type(t_datetime), intent(in) :: CurrentTime
       real(8), intent(out) :: WXOUT(NP), WYOUT(NP), PROUT(NP)
       real(8) :: wtratio
       type(t_timedelta) :: dt_now, dt_interp
 
-      dt_now = NextInterpTime - CurrentTime
-      dt_interp = NextInterpTime - PrevInterpTime
+      dt_now = self%next_interp_time - CurrentTime
+      dt_interp = self%next_interp_time - self%previous_interp_time
       wtratio = dble(dt_now%total_milliseconds())/dble(dt_interp%total_milliseconds())
 
-      WXOUT = (1.0d0 - wtratio)*WX1 + wtratio*WX2
-      WYOUT = (1.0d0 - wtratio)*WY1 + wtratio*WY2
-      PROUT = (1.0d0 - wtratio)*PR1 + wtratio*PR2
+      WXOUT = (1.0d0 - wtratio)*self%WX1 + wtratio*self%WX2
+      WYOUT = (1.0d0 - wtratio)*self%WY1 + wtratio*self%WY2
+      PROUT = (1.0d0 - wtratio)*self%PR1 + wtratio*self%PR2
 
-   end subroutine time_interpolate_wind
+   end subroutine t_nws13_time_interpolate_wind
 
-   subroutine update_wind_data(CurrentTime, EyeLonR, EyeLatR, FoundEye, PowellGroupTemp)
+   subroutine t_nws13_update_wind_data(self, CurrentTime, EyeLonR, EyeLatR, FoundEye, PowellGroupTemp)
       use ADC_CONSTANTS, only: G, RHOWAT0, PRBCKGRND
       use netcdf, only: NF90_GET_VAR, NF90_INQ_VARID, NF90_INQ_NCID, &
                         NF90_INQUIRE_DIMENSION, NF90_GET_ATT, NF90_OPEN, NF90_NOWRITE, &
@@ -397,6 +430,7 @@ contains
 
       real(8), parameter :: EPS = epsilon(1d0)
 
+      class(t_nws13), intent(inout) :: self
       type(t_datetime), intent(in) :: CurrentTime
       real(8), intent(inout) :: EyeLonR(3), EyeLatR(3)
       logical, intent(inout) :: FoundEye
@@ -406,19 +440,19 @@ contains
 
       ! First, initialize the ADCIRC wind fields with flag values.
       ! These will be replaced with actual values or defaults after processing all groups.
-      WX2 = null_flag_value
-      WY2 = null_flag_value
-      PR2 = null_flag_value
-      PrevInterpTime = NextInterpTime
+      self%WX2 = null_flag_value
+      self%WY2 = null_flag_value
+      self%PR2 = null_flag_value
+      self%previous_interp_time = self%next_interp_time
 
       ! Open a connection to the wind file.
-      call check_err(NF90_OPEN(trim(adjustl(NWS13File)), NF90_NOWRITE, NC_ID))
+      call check_err(NF90_OPEN(trim(adjustl(self%filename)), NF90_NOWRITE, NC_ID))
 
       ! Update active groups and get next time from active groups
-      call update_active_groups(CurrentTime)
+      call self%update_active_groups(CurrentTime)
 
-      NextInterpTime = PrevInterpTime + t_timedelta(seconds=600)
-      PowellGroupTemp = PowellGroup
+      self%next_interp_time = self%previous_interp_time + t_timedelta(seconds=600)
+      PowellGroupTemp = self%current_powell_group
 
       ! Increment the storm centers.
       EyeLonR(1) = EyeLonR(2)
@@ -430,24 +464,24 @@ contains
       FoundEye = .false.
 
       ! Process each wind group in rank order
-      do IG_sorted = 1, size(wind_groups)
-         ig = sorted_group_indices(ig_sorted)
-         call wind_groups(ig)%process(CurrentTime, WX2, WY2, PR2, &
-                                NWS13GroupForPowell, PowellGroupTemp, EyeLonR, &
-                                EyeLatR, FoundEye, NWS13WindMultiplier)
+      do IG_sorted = 1, self%n_groups
+         ig = self%sorted_group_indices(ig_sorted)
+         call self%wind_groups(ig)%process(CurrentTime, self%WX2, self%WY2, self%PR2, &
+                                           self%requested_powell_group, PowellGroupTemp, EyeLonR, &
+                                           EyeLatR, FoundEye, self%wind_multiplier)
       end do
 
       ! Replace any remaining flag values with default background values
-      where (abs(PR2 - null_flag_value) <= eps)
-         PR2 = PRBCKGRND*100d0/RHOWAT0/G
-         WX2 = 0.d0
-         WY2 = 0.d0
+      where (abs(self%PR2 - null_flag_value) <= eps)
+         self%PR2 = PRBCKGRND*100d0/RHOWAT0/G
+         self%WX2 = 0.d0
+         self%WY2 = 0.d0
       end where
 
       ! Close the file.
       call check_err(NF90_CLOSE(NC_ID))
 
-   end subroutine update_wind_data
+   end subroutine t_nws13_update_wind_data
 
 !-----------------------------------------------------------------------
 !> @brief Reads multi-grid wind and pressure fields from the NetCDF file and
@@ -461,7 +495,7 @@ contains
 !> @param[inout] eyelatr  storm center latitude
 !> @param[out]   foundeye boolean identifying if file provides storm center
 !-----------------------------------------------------------------------
-   subroutine NWS13GET(TimeLoc, WXOUT, WYOUT, PROUT, EyeLonR, EyeLatR, FoundEye)
+   subroutine t_nws13_get_wind_forcing(self, TimeLoc, WXOUT, WYOUT, PROUT, EyeLonR, EyeLatR, FoundEye)
 !-----------------------------------------------------------------------
       use MESH, only: NP
       use mod_datetime, only: t_timedelta, null_datetime, operator(+), operator(-), operator(<), operator(==), &
@@ -471,7 +505,7 @@ contains
       use global, only: allMessage, DEBUG
 #endif
       implicit none
-
+      class(t_nws13), intent(inout) :: self
       real(8), intent(in)    :: TimeLoc
       real(8), intent(inout) :: EyeLatR(3)
       real(8), intent(inout) :: EyeLonR(3)
@@ -482,16 +516,16 @@ contains
 
       type(t_datetime)  :: CurrentTime
 
-      CurrentTime = NWS13Coldstart + t_timedelta(milliseconds=int(TimeLoc*1000d0))
-      if (.not. nws13_data_started(CurrentTime)) then
+      CurrentTime = self%coldstart + t_timedelta(milliseconds=int(TimeLoc*1000d0))
+      if (.not. self%check_data_started(CurrentTime)) then
          return
-      elseif (CurrentTime < NextInterpTime) then
-         call time_interpolate_wind(CurrentTime, NextInterpTime, WXOUT, WYOUT, PROUT)
+      elseif (CurrentTime < self%next_interp_time) then
+         call self%time_interpolate_wind(CurrentTime, WXOUT, WYOUT, PROUT)
       else
-         call update_wind_data(CurrentTime, EyeLonR, EyeLatR, FoundEye, PowellGroupTemp)
-         call time_interpolate_wind(CurrentTime, NextInterpTime, WXOUT, WYOUT, PROUT)
+         call self%update_wind_data(CurrentTime, EyeLonR, EyeLatR, FoundEye, PowellGroupTemp)
+         call self%time_interpolate_wind(CurrentTime, WXOUT, WYOUT, PROUT)
 
-         if (PowellGroupTemp /= PowellGroup) then
+         if (PowellGroupTemp /= self%current_powell_group) then
             ! If this is a different group then we have been using
             ! for the Powell wind drag scheme, then check whether
             ! the storm center in this new group is "close enough"
@@ -505,13 +539,13 @@ contains
                EyeLonR(2) = 0.d0
                EyeLatR(2) = 0.d0
             end if
-            PowellGroup = PowellGroupTemp
+            self%current_powell_group = PowellGroupTemp
          end if
 
       end if
 
 !-----------------------------------------------------------------------
-   end subroutine NWS13GET
+   end subroutine t_nws13_get_wind_forcing
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
