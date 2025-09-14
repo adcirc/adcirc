@@ -284,8 +284,9 @@ Casey 180318: Added NWS=13
       character(200) :: NWS13ColdStartString
       REAL(8) :: NWS13WindMultiplier = 1.0d0
       INTEGER :: NWS13GroupForPowell = 0
+      character(200), allocatable :: NWS13EnabledGroups(:)
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
-     &    NWS13WindMultiplier,NWS13GroupForPowell
+     &    NWS13WindMultiplier,NWS13GroupForPowell,NWS13EnabledGroups
 #endif
       !
       ! @jasonfleming: reduce memory usage if there are no weir boundaries
@@ -777,6 +778,9 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
+      ! Allocate NWS13EnabledGroups array before namelist read
+      allocate(NWS13EnabledGroups(50))
+      NWS13EnabledGroups = ''
       READ(UNIT=15,NML=owiWindNetcdf,IOSTAT=IOS)
       IF(IOS.ne.0)THEN
          WRITE(*,*) "INFO: The owiWindNetcdf namelist was not found."

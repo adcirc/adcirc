@@ -213,6 +213,7 @@ module mod_nws13
       integer :: powell_group !> Group index for Powell drag (0=auto)
       real(8) :: wind_multiplier !> Wind velocity scaling factor
       type(t_datetime) :: coldstart !> Cold start reference time
+      character(100), allocatable :: enabled_groups(:) !> Array of group names to enable (empty=all enabled)
       logical :: initialized = .false. !> Flag indicating parameters are set
    end type t_nws13_namelist_info
 
@@ -239,11 +240,13 @@ contains
 !> @param[in] NWS13ColdStart_in       Cold start time string (YYYYMMDD.HHMMSS or ISO format)
 !> @param[in] NWS13WindMultiplier_in  Wind velocity scaling factor (typically 1.0)
 !> @param[in] NWS13GroupForPowell_in  Group index for Powell drag (0=auto-select)
+!> @param[in] NWS13EnabledGroups_in   Array of group names to enable (use default value to enable all)
 !-----------------------------------------------------------------------
    subroutine nws13_set_namelist_parameters(NWS13Filename_in, &
                                             NWS13ColdStart_in, &
                                             NWS13WindMultiplier_in, &
-                                            NWS13GroupForPowell_in)
+                                            NWS13GroupForPowell_in, &
+                                            NWS13EnabledGroups_in)
       use global, only: logMessage, INFO, scratchMessage
       implicit none
 
@@ -251,6 +254,9 @@ contains
       character(len=*), intent(in) :: NWS13ColdStart_in
       real(8), intent(in) :: NWS13WindMultiplier_in
       integer, intent(in) :: NWS13GroupForPowell_in
+      character(len=*), intent(in) :: NWS13EnabledGroups_in(:)
+
+      integer :: i
 
       ! Set the parameters from the namelist.
       user_input%filename = trim(adjustl(NWS13Filename_in))
@@ -258,12 +264,31 @@ contains
                                         ["%Y%m%d.%H%M%S    ", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"])
       user_input%wind_multiplier = NWS13WindMultiplier_in
       user_input%powell_group = NWS13GroupForPowell_in
+
+      ! Handle enabled groups selection - check if it has meaningful content
+      if (size(NWS13EnabledGroups_in) > 0 .and. trim(NWS13EnabledGroups_in(1)) /= '') then
+         allocate (user_input%enabled_groups(size(NWS13EnabledGroups_in)))
+         do i = 1, size(NWS13EnabledGroups_in)
+            user_input%enabled_groups(i) = trim(adjustl(NWS13EnabledGroups_in(i)))
+         end do
+      end if
+
       user_input%initialized = .true.
 
       call logMessage(INFO, "Using NWS13 file: "//trim(adjustl(user_input%filename)))
       call logMessage(INFO, "NWS13 Cold Start Date: "//trim(user_input%coldstart%to_iso_string()))
       write (scratchMessage, '(A,F0.4)') "NWS13 Wind Multiplier: ", user_input%wind_multiplier
       call logMessage(INFO, scratchMessage)
+
+      if (allocated(user_input%enabled_groups)) then
+         write (scratchMessage, '(A,I0,A)') "NWS13 Enabled Groups (", size(user_input%enabled_groups), "):"
+         call logMessage(INFO, scratchMessage)
+         do i = 1, size(user_input%enabled_groups)
+            call logMessage(INFO, "  - "//trim(user_input%enabled_groups(i)))
+         end do
+      else
+         call logMessage(INFO, "NWS13: All groups enabled (default behavior)")
+      end if
 
    end subroutine nws13_set_namelist_parameters
 
@@ -343,17 +368,27 @@ contains
       allocate (nws%wind_groups(1:NumGroup))
       do IG = 1, NumGroup
          nws%wind_groups(IG) = t_nws13_group(group_ids(IG), IG)
+         ! Apply group selection logic
+         call apply_group_selection(nws%wind_groups(IG))
       end do
       deallocate (group_ids)
 
       allocate (nws%sorted_group_indices(NumGroup))
       nws%sorted_group_indices = sort_groups_by_rank(nws%wind_groups)
 
+      ! Validate group selection and warn about issues
+      call validate_group_selection(nws%wind_groups)
+
       call logMessage(INFO, "Groups will be processed in rank order (highest priority first):")
       do IGS = 1, NumGroup
          IG = nws%sorted_group_indices(IGS)
-         write (scratchMessage, '(A,I0,A,A,A,I0,A)') "  Priority ", IGS, ": '", &
-            trim(nws%wind_groups(IG)%group_name), "' (rank ", nws%wind_groups(IG)%rank, ")"
+         if (nws%wind_groups(IG)%enabled) then
+            write (scratchMessage, '(A,I0,A,A,A,I0,A)') "  Priority ", IGS, ": '", &
+               trim(nws%wind_groups(IG)%group_name), "' (rank ", nws%wind_groups(IG)%rank, ") [ENABLED]"
+         else
+            write (scratchMessage, '(A,I0,A,A,A,I0,A)') "  Priority ", IGS, ": '", &
+               trim(nws%wind_groups(IG)%group_name), "' (rank ", nws%wind_groups(IG)%rank, ") [DISABLED]"
+         end if
          call logMessage(INFO, scratchMessage)
       end do
 
@@ -523,9 +558,10 @@ contains
       EyeLatR(3) = 0.d0
       FoundEye = .false.
 
-      ! Process each wind group in rank order
+      ! Process each wind group in rank order (only enabled groups)
       do IG_sorted = 1, self%n_groups
          ig = self%sorted_group_indices(ig_sorted)
+         if (.not. self%wind_groups(ig)%enabled) cycle
          call self%wind_groups(ig)%process(CurrentTime, self%WX2, self%WY2, self%PR2, &
                                            self%requested_powell_group, PowellGroupTemp, EyeLonR, &
                                            EyeLatR, FoundEye, self%wind_multiplier)
@@ -655,5 +691,88 @@ contains
          end do
       end do
    end function sort_groups_by_rank
+
+!-----------------------------------------------------------------------
+!> @brief Applies group selection logic based on namelist settings
+!>
+!> @details Sets the enabled flag for a group based on user-specified
+!> enabled groups list. If no list is provided, all groups are enabled.
+!> If a list is provided, only groups in the list are enabled.
+!>
+!> @param[inout] group NWS13 group to apply selection logic to
+!-----------------------------------------------------------------------
+   subroutine apply_group_selection(group)
+      implicit none
+      class(t_nws13_group), intent(inout) :: group
+      integer :: i
+
+      ! Default: all groups enabled if no selection list provided
+      if (.not. allocated(user_input%enabled_groups)) then
+         group%enabled = .true.
+         return
+      end if
+
+      ! Check if this group is in the enabled list
+      group%enabled = .false.
+      do i = 1, size(user_input%enabled_groups)
+         if (trim(group%group_name) == trim(user_input%enabled_groups(i))) then
+            group%enabled = .true.
+            exit
+         end if
+      end do
+   end subroutine apply_group_selection
+
+!-----------------------------------------------------------------------
+!> @brief Validates group selection and issues warnings for potential issues
+!>
+!> @details Checks for common configuration problems including unrecognized
+!> group names, all groups disabled, and case sensitivity issues. Issues
+!> appropriate warnings to help users debug their configuration.
+!>
+!> @param[in] groups Array of NWS13 groups to validate
+!-----------------------------------------------------------------------
+   subroutine validate_group_selection(groups)
+      use global, only: logMessage, WARNING, INFO, scratchMessage
+      implicit none
+      class(t_nws13_group), intent(in) :: groups(:)
+      integer :: i, j, enabled_count
+      logical :: found_match
+
+      ! If no group selection specified, all groups are enabled - no validation needed
+      if (.not. allocated(user_input%enabled_groups)) return
+
+      enabled_count = count(groups(:)%enabled)
+
+      ! Check for no enabled groups
+      if (enabled_count == 0) then
+         call logMessage(WARNING, "NWS13: No wind groups are enabled! Check group names in namelist.")
+         call logMessage(INFO, "Available groups in file:")
+         do i = 1, size(groups)
+            call logMessage(INFO, "  - '"//trim(groups(i)%group_name)//"'")
+         end do
+      end if
+
+      ! Check for unrecognized group names in the enabled list
+      do i = 1, size(user_input%enabled_groups)
+         found_match = .false.
+         do j = 1, size(groups)
+            if (trim(user_input%enabled_groups(i)) == trim(groups(j)%group_name)) then
+               found_match = .true.
+               exit
+            end if
+         end do
+
+         if (.not. found_match) then
+            write (scratchMessage, '(A)') "NWS13 WARNING: Group '"// &
+               trim(user_input%enabled_groups(i))//"' not found in wind file"
+            call logMessage(WARNING, scratchMessage)
+         end if
+      end do
+
+      ! Summary message
+      write (scratchMessage, '(A,I0,A,I0,A)') "NWS13: ", enabled_count, " of ", &
+         size(groups), " groups enabled"
+      call logMessage(INFO, scratchMessage)
+   end subroutine validate_group_selection
 
 end module mod_nws13

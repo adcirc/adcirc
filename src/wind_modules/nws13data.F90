@@ -115,6 +115,7 @@ module mod_nws13_data
       integer :: NumLon !< Grid x-dimension size
       integer :: NumLat !< Grid y-dimension size
       character(len=100) :: group_name !< NetCDF group name from file
+      logical :: enabled = .true. !< Flag indicating if group is enabled by user selection
       type(t_datetime) :: NextFileTime !< Date/time of next snapshot
       type(t_datetime) :: PrevFileTime !< Date/time of previous snapshot
       type(t_datetime), allocatable :: SnapTimes(:) !< Array of all snapshot times

@@ -206,6 +206,7 @@ C
       character(len=200) :: NWS13File, NWS13ColdStartString
       real(8) :: NWS13WindMultiplier
       integer :: NWS13GroupForPowell
+      character(len=100), allocatable :: NWS13EnabledGroups(:)
 
       ! I/O variables for tide potential namelist
       logical :: UseFullTIPFormula = .false.
@@ -257,7 +258,7 @@ C.... DMW
      &  densityTimeIterator, densityForcingType
 #ifdef ADCNETCDF
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
-     &    NWS13WindMultiplier,NWS13GroupForPowell
+     &    NWS13WindMultiplier,NWS13GroupForPowell,NWS13EnabledGroups
 #endif
 !JLW: adding subgrid namelist
       NAMELIST /subgridControl/ subgridFilename, level0, level1,
@@ -523,6 +524,9 @@ Casey 180318: Added NWS=13
       NWS13File = 'fort.22.nc'
       NWS13WindMultiplier = 1.0D0
       NWS13GroupForPowell = 0
+      ! Allocate NWS13EnabledGroups array before namelist read
+      allocate(NWS13EnabledGroups(50))
+      NWS13EnabledGroups = ''
       read(unit=15,nml=owiWindNetcdf,iostat=ios,iomsg=ios_nml_error_msg)
       call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
       write(scratchMessage,*) "NWS13File=",trim(adjustl(NWS13File)),
@@ -531,7 +535,8 @@ Casey 180318: Added NWS=13
      & " NWS13GroupForPowell=",NWS13GroupForPowell
       call logMessage(ECHO,trim(scratchMessage))
       call nws13_set_namelist_parameters(NWS13File, NWS13ColdStartString,
-     &                                   NWS13WindMultiplier, NWS13GroupForPowell)
+     &                                   NWS13WindMultiplier, NWS13GroupForPowell,
+     &                                   NWS13EnabledGroups)
       rewind(15)
 #endif
 

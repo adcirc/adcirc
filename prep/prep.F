@@ -1799,6 +1799,7 @@ C---------------------------------------------------------------------------C
       CHARACTER LOCFN*80,PE*6,LOCSTATFN*20
       INTEGER,ALLOCATABLE :: NTIMEVARYINGWEIRP(:)
       CHARACTER*80 OUTMSG
+      logical :: nws13_has_enabled_groups
 
       CHARACTER (LEN=20):: FMT
 C
@@ -2339,12 +2340,27 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 Casey 180318: Added NWS=13
          if(FOUND_OWINC_NML)then
             write(15, '(a)') '! -- Begin OWI Wind NetCDF Namelist --'
-            write(15,'(a,/,6a,/,a,f0.4,/a,i0,a)')
+            write(15,'(a,/,3a,/,3a,/,a,f0.4,/a,i0)')
      &         "&owiWindNetcdf ",
      &         " NWS13File='",TRIM(ADJUSTL(NWS13File)),"'",
      &         " NWS13ColdStartString='",TRIM(ADJUSTL(NWS13ColdStartString)),"'",
      &         " NWS13WindMultiplier=", NWS13WindMultiplier,
-     &         " NWS13GroupForPowell=", NWS13GroupForPowell," /"
+     &         " NWS13GroupForPowell=", NWS13GroupForPowell
+            nws13_has_enabled_groups = .false.
+            do i=1,size(NWS13EnabledGroups)
+                if(NWS13EnabledGroups(i)/="") nws13_has_enabled_groups=.true.
+            enddo
+            if(nws13_has_enabled_groups)then
+              write(15,'(a,$)') " NWS13EnabledGroups="
+              do i=1,size(NWS13EnabledGroups)
+                if(NWS13EnabledGroups(i)/="")then
+                    write(15,'(3a,$)') "'", trim(NWS13EnabledGroups(i)), "' "
+                endif
+              enddo
+              write(15,'(/a)') "/"
+            else
+              write(15,'(a)') "/"
+            endif
             write(15, '(a)') '! -- End OWI Wind NetCDF Namelist --'
          endif
 #endif
