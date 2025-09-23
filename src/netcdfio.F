@@ -3987,7 +3987,7 @@ C-----------------------------------------------------------------------
 C     jgf49.22 Creates a new netcdf output file if needed.
 C-----------------------------------------------------------------------
       SUBROUTINE createNetCDFOutputFile(ncid, myFile, myTime,
-     &                                  descript, ret_error)
+     &                                  descript, ret_error, static_time_length)
       USE SIZES, ONLY : globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t, IHOT, DEBUG, ERROR,
      &                   screenUnit, allMessage, scratchMessage
@@ -4000,6 +4000,7 @@ C-----------------------------------------------------------------------
       TYPE(timeData), intent(inout) :: myTime
       TYPE(OutputDataDescript_t), intent(inout) :: descript
       LOGICAL, intent(out) :: ret_error
+      INTEGER, intent(in), optional :: static_time_length
 C
       INTEGER iret
 C
@@ -4128,8 +4129,13 @@ C     be classic (netcdf3) in any case
          iret = nf90_create(myFile%FILENAME, myFile%ncformat, ncid)
          CALL check_err(iret)
          ! Define time
-         iret = nf90_def_dim(ncid, 'time', nf90_unlimited,
+         if(present(static_time_length))then
+           iret = nf90_def_dim(ncid, 'time', static_time_length,
      &       myTime%timenc_dim_id)
+         else  
+           iret = nf90_def_dim(ncid, 'time', nf90_unlimited,
+     &       myTime%timenc_dim_id)
+         endif 
          CALL check_err(iret)
          myTime%timenc_dims(1) = myTime%timenc_dim_id
          iret = nf90_def_var(ncid, 'time', NF90_DOUBLE,
@@ -5513,7 +5519,7 @@ C
 C     Initialize netCDF hotstart file, creating a new one
       Elev1Descript % lun = lun
       CALL createNetCDFOutputFile(hs%ncid, hs%myFile, hs%myTime,
-     &                            Elev1Descript, ncerror)
+     &                            Elev1Descript, ncerror, 1)
       ! return an error flag to the calling routine if something went
       ! wrong when we tried to create the netcdf file
       if ( ncerror.eqv..true. ) then
@@ -5534,9 +5540,8 @@ C
 C     Z E T A 1
       hs%zeta1%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
       hs%zeta1%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-      iret = nf90_def_var(hs%ncid, 'zeta1', NF90_DOUBLE,
-     &   hs%zeta1%nodal_data_dims, hs%zeta1%nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'zeta1', hs%zeta1%nodal_data_dims, NF90_DOUBLE,
+     &   hs%zeta1%nodal_data_id)
 
       iret = nf90_put_att(hs%ncid, hs%zeta1%nodal_data_id,
      &   'long_name', 'water surface elevation at previous time step')
@@ -5557,9 +5562,9 @@ C
 C     Z E T A 2
       hs%zeta2%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
       hs%zeta2%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-      iret = nf90_def_var(hs%ncid, 'zeta2', NF90_DOUBLE,
-     &       hs%zeta2%nodal_data_dims, hs%zeta2%nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'zeta2', hs%zeta2%nodal_data_dims, NF90_DOUBLE,
+     &   hs%zeta2%nodal_data_id)
+
       iret = nf90_put_att(hs%ncid, hs%zeta2%nodal_data_id,
      &      'long_name', 'water surface elevation at current time step')
       CALL check_err(iret)
@@ -5579,9 +5584,9 @@ C
 C     Z E T A D
       hs%zetad%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
       hs%zetad%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-      iret = nf90_def_var(hs%ncid, 'zetad', NF90_DOUBLE,
-     &       hs%zetad%nodal_data_dims, hs%zetad%nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'zetad', hs%zetad%nodal_data_dims, NF90_DOUBLE,
+     &   hs%zetad%nodal_data_id)
+
       iret = nf90_put_att(hs%ncid, hs%zetad%nodal_data_id,
      &      'long_name',
      &      'water elevation at flux specified boundary')
@@ -5603,9 +5608,8 @@ C
 C     H 1 : total water depth at the previous time step
       hs%htot1%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
       hs%htot1%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-      iret = nf90_def_var(hs%ncid, 'h1', NF90_DOUBLE,
-     &   hs%htot1%nodal_data_dims, hs%htot1%nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'h1', hs%htot1%nodal_data_dims, NF90_DOUBLE,
+     &   hs%htot1%nodal_data_id)
 
       iret = nf90_put_att(hs%ncid, hs%htot1%nodal_data_id,
      &   'long_name', 'total water depth at previous time step')
@@ -5624,9 +5628,9 @@ C
 C     H 2 : total water depth at the current time step
       hs%htot2%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
       hs%htot2%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-      iret = nf90_def_var(hs%ncid, 'h2', NF90_DOUBLE,
-     &       hs%htot2%nodal_data_dims, hs%htot2%nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'h2', hs%htot2%nodal_data_dims, NF90_DOUBLE,
+     &   hs%htot2%nodal_data_id)
+
       iret = nf90_put_att(hs%ncid, hs%htot2%nodal_data_id,
      &      'long_name', 'total water depth at current time step')
       CALL check_err(iret)
@@ -5645,9 +5649,9 @@ C
 C     U V E L
       hs%vel%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
       hs%vel%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-      iret = nf90_def_var(hs%ncid, 'u-vel', NF90_DOUBLE,
-     &       hs%vel%nodal_data_dims,  hs%vel%u_nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'u-vel', hs%vel%nodal_data_dims, NF90_DOUBLE,
+     &   hs%vel%u_nodal_data_id)
+
       if (ics.ne.1) then
          iret = nf90_put_att(hs%ncid, hs%vel%u_nodal_data_id,
      &          'long_name', 'vertically averaged water velocity u-component')
@@ -5676,9 +5680,9 @@ C     U V E L
       CALL check_err(iret)
 C
 C     V V E L
-      iret = nf90_def_var(hs%ncid, 'v-vel', NF90_DOUBLE,
-     &       hs%vel%nodal_data_dims, hs%vel%v_nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'v-vel', hs%vel%nodal_data_dims, NF90_DOUBLE,
+     &   hs%vel%v_nodal_data_id)
+
       if (ics.ne.1) then
          iret = nf90_put_att(hs%ncid, hs%vel%v_nodal_data_id,
      &           'long_name', 'vertically averaged water velocity v-component')
@@ -5710,9 +5714,8 @@ C     C H 1
       IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
          hs%ch1%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
          hs%ch1%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-         iret = nf90_def_var(hs%ncid, 'ch1', NF90_DOUBLE,
-     &       hs%ch1%nodal_data_dims, hs%ch1%nodal_data_id)
-         CALL check_err(iret)
+         call define_netcdf_hotstart_variable(hs, 'ch1', hs%ch1%nodal_data_dims, NF90_DOUBLE,
+     &      hs%ch1%nodal_data_id)
          iret = nf90_put_att(hs%ncid, hs%ch1%nodal_data_id,
      &      'long_name', 'concentration')
          CALL check_err(iret)
@@ -5727,9 +5730,8 @@ C
 C     N O D E C O D E
       hs%nodecodenc%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
       hs%nodecodenc%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-      iret = nf90_def_var(hs%ncid, 'nodecode', NF90_INT,
-     &    hs%nodecodenc%nodal_data_dims, hs%nodecodenc%nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'nodecode', hs%nodecodenc%nodal_data_dims, NF90_INT,
+     &   hs%nodecodenc%nodal_data_id)
       att_text = "wet or dry state of node where 1 indicates that the"
      &  //" node is wet and 0 indicates that the node is dry"
       iret = nf90_put_att(hs%ncid, hs%nodecodenc%nodal_data_id,
@@ -5743,9 +5745,8 @@ C
 C     N O F F
       hs%noffnc%nodal_data_dims(1) = hs%myMesh%num_elems_dim_id
       hs%noffnc%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-      iret = nf90_def_var(hs%ncid, 'noff', NF90_INT,
-     &    hs%noffnc%nodal_data_dims, hs%noffnc%nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'noff', hs%noffnc%nodal_data_dims, NF90_INT,
+     &   hs%noffnc%nodal_data_id)
       att_text = "wet or dry state of element where 1 indicates that"
      & //" the element is wet and 0 indicates that it is dry"
       iret = nf90_put_att(hs%ncid, hs%noffnc%nodal_data_id,
@@ -5755,26 +5756,23 @@ C     N O F F
       iret = nf90_put_att(hs%ncid, hs%noffnc%nodal_data_id,
      &      'standard_name', trim(att_text))
       CALL check_err(iret)
+
 C
 C     Radiation Stress
 C
       hs%rs1%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
       hs%rs1%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-      iret = nf90_def_var(hs%ncid, 'rsx1', NF90_DOUBLE,
-     &    hs%rs1%nodal_data_dims, hs%rs1%u_nodal_data_id)
-      CALL check_err(iret)
-      iret = nf90_def_var(hs%ncid, 'rsy1', NF90_DOUBLE,
-     &    hs%rs1%nodal_data_dims, hs%rs1%v_nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'rsx1', hs%rs1%nodal_data_dims, NF90_DOUBLE,
+     &   hs%rs1%u_nodal_data_id)
+      call define_netcdf_hotstart_variable(hs, 'rsy1', hs%rs1%nodal_data_dims, NF90_DOUBLE,
+     &   hs%rs1%v_nodal_data_id)
 
       hs%rs2%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
       hs%rs2%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-      iret = nf90_def_var(hs%ncid, 'rsx2', NF90_DOUBLE,
-     &    hs%rs2%nodal_data_dims, hs%rs2%u_nodal_data_id)
-      CALL check_err(iret)
-      iret = nf90_def_var(hs%ncid, 'rsy2', NF90_DOUBLE,
-     &    hs%rs2%nodal_data_dims, hs%rs2%v_nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'rsx2', hs%rs2%nodal_data_dims, NF90_DOUBLE,
+     &   hs%rs2%u_nodal_data_id)
+      call define_netcdf_hotstart_variable(hs, 'rsy2', hs%rs2%nodal_data_dims, NF90_DOUBLE,
+     &   hs%rs2%v_nodal_data_id)
 
       att_text = "radiation stress vector x component at previous time step"
       iret = nf90_put_att(hs%ncid, hs%rs1%u_nodal_data_id,
@@ -5815,21 +5813,17 @@ C     SWAN Radiation Stress
 C
       hs%swan_rs1%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
       hs%swan_rs1%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-      iret = nf90_def_var(hs%ncid, 'swan_rsx1', NF90_DOUBLE,
-     &    hs%swan_rs1%nodal_data_dims, hs%swan_rs1%u_nodal_data_id)
-      CALL check_err(iret)
-      iret = nf90_def_var(hs%ncid, 'swan_rsy1', NF90_DOUBLE,
-     &    hs%swan_rs1%nodal_data_dims, hs%swan_rs1%v_nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'swan_rsx1', hs%swan_rs1%nodal_data_dims, NF90_DOUBLE,
+     &   hs%swan_rs1%u_nodal_data_id)
+      call define_netcdf_hotstart_variable(hs, 'swan_rsy1', hs%swan_rs1%nodal_data_dims, NF90_DOUBLE,
+     &   hs%swan_rs1%v_nodal_data_id)
 
       hs%swan_rs2%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
       hs%swan_rs2%nodal_data_dims(2) = hs%myTime%timenc_dim_id
-      iret = nf90_def_var(hs%ncid, 'swan_rsx2', NF90_DOUBLE,
-     &    hs%swan_rs2%nodal_data_dims, hs%swan_rs2%u_nodal_data_id)
-      CALL check_err(iret)
-      iret = nf90_def_var(hs%ncid, 'swan_rsy2', NF90_DOUBLE,
-     &    hs%swan_rs2%nodal_data_dims, hs%swan_rs2%v_nodal_data_id)
-      CALL check_err(iret)
+      call define_netcdf_hotstart_variable(hs, 'swan_rsx2', hs%swan_rs2%nodal_data_dims, NF90_DOUBLE,
+     &   hs%swan_rs2%u_nodal_data_id)
+      call define_netcdf_hotstart_variable(hs, 'swan_rsy2', hs%swan_rs2%nodal_data_dims, NF90_DOUBLE,
+     &   hs%swan_rs2%v_nodal_data_id)
 
       att_text = "radiation stress vector x component at previous time step"
       iret = nf90_put_att(hs%ncid, hs%swan_rs1%u_nodal_data_id,
@@ -5891,42 +5885,6 @@ C
      &        '_FillValue', 0.0d0)
       CALL check_err(iret)
 
-C
-C     jgf50.44: Automatically turn on compression if we are using the
-C     netcdf4 file format.
-#ifdef NETCDF_CAN_DEFLATE
-      IF ( (Elev1Descript%specifier.eq.5).or.
-     &     (Elev1Descript%specifier.eq.567).or.
-     &     (Elev1Descript%specifier.eq.568) ) THEN
-         iret = nf90_def_var_deflate(hs%ncid, hs%zeta1%nodal_data_id,
-     &             1, 1, 2)
-         CALL check_err(iret)
-         iret = nf90_def_var_deflate(hs%ncid, hs%zeta2%nodal_data_id,
-     &             1, 1, 2)
-         CALL check_err(iret)
-         iret = nf90_def_var_deflate(hs%ncid, hs%zetad%nodal_data_id,
-     &             1, 1, 2)
-         CALL check_err(iret)
-         iret = nf90_def_var_deflate(hs%ncid, hs%vel%u_nodal_data_id,
-     &             1, 1, 2)
-         CALL check_err(iret)
-         iret = nf90_def_var_deflate(hs%ncid, hs%vel%v_nodal_data_id,
-     &             1, 1, 2)
-         CALL check_err(iret)
-         IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
-            iret = nf90_def_var_deflate(hs%ncid, hs%ch1%nodal_data_id,
-     &             1, 1, 2)
-            CALL check_err(iret)
-         ENDIF
-         iret = nf90_def_var_deflate(hs%ncid, hs%nodecodenc%nodal_data_id,
-     &             1, 1, 2)
-         CALL check_err(iret)
-         iret = nf90_def_var_deflate(hs%ncid, hs%noffnc%nodal_data_id,
-     &             1, 1, 2)
-         CALL check_err(iret)
-      ENDIF
-#endif
-!
 !     Define hotstart parameters
       CALL check_err(iret)
       iret = nf90_def_var(hs%ncid, 'imhs', NF90_INT, varid=tempid)
@@ -6069,6 +6027,38 @@ C
 C-----------------------------------------------------------------------
       END SUBROUTINE initNetCDFHotstart
 C-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+! @brief Define a netCDF variable for hotstart data with the appropriate storage format
+! @param hs Pointer to hotstartData structure
+! @param varname Name of the variable to define
+! @param nodal_data_dims Dimensions of the variable
+! @param nc_data_type NetCDF data type (e.g., NF90_DOUBLE, NF90_INT)
+! @param nodal_data_id Output variable ID
+!
+! This is a helper function to select contiguous storage for netCDF variables
+! when using netCDF4 output. Defining the storage as contiguous allows us to
+! avoid copy-on-write issues with hdf5 and continuously overwriting data
+! which causes the file to grow in size.
+!-----------------------------------------------------------------------
+      subroutine define_netcdf_hotstart_variable(hs, varname, nodal_data_dims, nc_data_type, nodal_data_id)
+        use netcdf_error, only: check_err
+        implicit none
+        type(hotstartData), pointer, intent(in) :: hs
+        character(len=*), intent(in) :: varname
+        integer, intent(in) :: nodal_data_dims(:)
+        integer, intent(in) :: nc_data_type
+        integer, intent(out) :: nodal_data_id
+
+        if(hs%myFile%ncformat==NF90_CLOBBER)then
+          call check_err(nf90_def_var(hs%ncid, varname, nc_data_type,
+     &       nodal_data_dims, nodal_data_id))
+        else
+          call check_err(nf90_def_var(hs%ncid, varname, nc_data_type,
+     &       nodal_data_dims, nodal_data_id, contiguous=.true.))
+        endif
+
+      end subroutine define_netcdf_hotstart_variable
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E
@@ -9114,9 +9104,6 @@ C-----------------------------------------------------------------------
       type(meshStructure) :: mesh_struct
 C
       integer :: iret ! success or failure of netcdf call
-      integer :: ndim      ! number of dimensions in the netcdf file
-      integer :: nvar      ! number of variables in the netcdf file
-      integer :: natt      ! number of attributes in the netcdf file
 C
       call setMessageSource("getDimensions")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -9125,7 +9112,7 @@ C
 !
 !     Inquire variables
       time_struct%timenc_dim_id = 0
-      iret=nf90_inquire(ncid,ndim,nvar,natt,time_struct%timenc_dim_id)
+      iret=nf90_inq_dimid(ncid,"time",time_struct%timenc_dim_id)
       CALL check_err(iret)
        iret=nf90_inquire_dimension(ncid, time_struct%timenc_dim_id,
      &        len=file_struct%record_counter)
