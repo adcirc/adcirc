@@ -2347,6 +2347,8 @@
                DELX = XGJ - XGI
                DELY = YGJ - YGI
                BNDLEN2O3(JGW) = 2.D0*(SQRT(DELX*DELX+DELY*DELY))/3.D0
+               call find_third_node_for_boundary_edge
+     &            (NBVI, NBVJ, BNDEDGE3RD(JGW), BNDEDGEELEM(JGW))
 
 !...           COMPUTE THE INCLUDED ANGLE AND TEST TO DETERMINE WHETHER TO ZERO
 !...           TANGENTIAL VELOCITIES
@@ -5649,6 +5651,68 @@ C
 
       !-----------------------------------------------------------------------
       end subroutine compute_csr_positions
+      !-----------------------------------------------------------------------
+
+      !-----------------------------------------------------------------------
+      ! Function to find third node using existing ADCIRC neighbor tables
+      !-----------------------------------------------------------------------
+      subroutine find_third_node_for_boundary_edge(node1, node2, node3, elem)
+      implicit none
+      integer, intent(in) :: node1, node2
+      integer, intent(inout) :: node3, elem
+      integer :: elem_idx, neighbor_elem, i
+      integer :: elem_node1, elem_node2, elem_node3
+      
+      ! Initialize node3 and elem to 0
+      node3 = 0
+      elem = 0
+      
+      ! Search through elements containing node1
+      do i = 1, NNeighEle(node1)
+          neighbor_elem = NeiTabEle(node1, i)
+          
+          ! Get the three nodes of this element
+          elem_node1 = nm(neighbor_elem, 1)
+          elem_node2 = nm(neighbor_elem, 2) 
+          elem_node3 = nm(neighbor_elem, 3)
+          
+          ! Check if this element contains both node1 and node2
+          if (contains_both_nodes(elem_node1, elem_node2, elem_node3, node1, node2)) then
+              ! Return the third node (the one that's neither node1 nor node2)
+              if (elem_node1 /= node1 .and. elem_node1 /= node2) then
+                  node3 = elem_node1
+                  elem = neighbor_elem
+              else if (elem_node2 /= node1 .and. elem_node2 /= node2) then
+                  node3 = elem_node2
+                  elem = neighbor_elem
+              else if (elem_node3 /= node1 .and. elem_node3 /= node2) then
+                  node3 = elem_node3
+                  elem = neighbor_elem
+              endif
+              return
+          endif
+      end do
+      
+      !-----------------------------------------------------------------------
+      end subroutine find_third_node_for_boundary_edge
+      !-----------------------------------------------------------------------
+  
+      !-----------------------------------------------------------------------
+      ! Helper function to check if element contains both specified nodes
+      !-----------------------------------------------------------------------
+      logical function contains_both_nodes(n1, n2, n3, target1, target2)
+      implicit none
+      integer, intent(in) :: n1, n2, n3, target1, target2
+      integer :: count
+      
+      count = 0
+      if (n1 == target1 .or. n1 == target2) count = count + 1
+      if (n2 == target1 .or. n2 == target2) count = count + 1  
+      if (n3 == target1 .or. n3 == target2) count = count + 1
+      
+      contains_both_nodes = (count == 2)
+      !-----------------------------------------------------------------------
+      end function contains_both_nodes
       !-----------------------------------------------------------------------
 
 !     ------------------------------------------------------------------
