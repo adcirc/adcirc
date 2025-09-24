@@ -127,7 +127,9 @@ C-----------------------------------------------------------------------
       USE SUBDOMAIN, ONLY : subdomainOn
       USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
-      USE WEIR
+      USE WEIR, ONLY: BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,
+     &   BARSLIM64_ELEM, BARSLIM64_EDGE
+
       USE TIME_VARYING_WEIR_BOUNDARY
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist, getVortexModelStringNws8 => getVortexModelString
@@ -238,7 +240,9 @@ C.... "new" formula for computing vel in wetting/drying routine
      &  slim, windlim, directvelWD, useHF
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
 C.... SB
-      NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter
+      NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
+     &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, 
+     &  BARSLIM64_ELEM, BARSLIM64_EDGE
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
@@ -770,6 +774,16 @@ C     Channel wet perimeter for bottom friction 11/06/2023 sb
       call logNamelistReadStatus(namelistSpecifier, ios,ios_nml_error_msg)
       write(scratchMessage,'(a,l1)') "activateVEW1DChannelWetPerimeter=",
      &   activateVEW1DChannelWetPerimeter
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "BARMIN64_SUBM=",BARMIN64_SUBM
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "BARMIN64_NOSUBM=",BARMIN64_NOSUBM
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "BARMIN64_SLIM=",BARMIN64_SLIM
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "BARSLIM64_ELEM=",BARSLIM64_ELEM
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7)') "BARSLIM64_EDGE=",BARSLIM64_EDGE
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 

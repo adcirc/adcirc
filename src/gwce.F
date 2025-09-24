@@ -1841,11 +1841,19 @@ C.................DMW202401 Use saved H1
 
             NCI=NodeCode(NBDI)
             NCJ=NodeCode(NBDJ)
-            BndLenO6NC=NCI*NCJ*BndLen2O3(J-1)/4.d0
-            GWCE_LV(NBDI)=GWCE_LV(NBDI)
+
+            IF(LBCODEI(J).EQ.64) THEN
+               ! Applying the flux at nodal basis to avoid imbalance between front and back side
+               BndLenO6NC=BndLen2O3(J-1)/4.d0
+               GWCE_LV(NBDI)=GWCE_LV(NBDI) + BndLenO6NC*3.d0*QForceI
+               GWCE_LV(NBDJ)=GWCE_LV(NBDJ) + BndLenO6NC*3.d0*QForceJ
+            ELSE
+               BndLenO6NC=NCI*NCJ*BndLen2O3(J-1)/4.d0
+               GWCE_LV(NBDI)=GWCE_LV(NBDI)
      &                              + BndLenO6NC*(2.d0*QForceI+QForceJ)
-            GWCE_LV(NBDJ)=GWCE_LV(NBDJ)
+               GWCE_LV(NBDJ)=GWCE_LV(NBDJ)
      &                              + BndLenO6NC*(2.d0*QForceJ+QForceI)
+            ENDIF
           ENDDO
         ENDIF
 

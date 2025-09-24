@@ -347,6 +347,11 @@ Casey 180318: Added NWS=13
 C     VEW1D channel namelist 11/06/2023 sb
       logical :: foundVEW1DChannelControlNamelist = .false. 
       logical :: activateVEW1DChannelWetPerimeter
+      REAL(8)                 :: BARMIN64_SUBM=0.04D0   !...Minimum water depth above weir to consider submerged when the weir is already submerged
+      REAL(8)                 :: BARMIN64_NOSUBM=0.04D0  !...Minimum water depth above weir to consider submerged when the weir is not submerged
+      REAL(8)                 :: BARMIN64_SLIM=0.5D0    !...Minimum water depth above weir to consider submerged no matter the slope
+      REAL(8)                 :: BARSLIM64_ELEM=4D-4   !...Water level elemental slope threhold. A weir is considered not submerged if the water level slope is greater than this value
+      REAL(8)                 :: BARSLIM64_EDGE=1D-4   !...Water level edge slope threhold. A weir is considered not submerged if the water level slope is greater than this value
 
 C     Full luni-solar tidal potential namelist: 2024
       logical:: foundTidalPotentialControlNamelist = .false. 
