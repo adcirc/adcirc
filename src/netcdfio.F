@@ -332,6 +332,7 @@ C        2D simulation state
 C--   
          type(nodalData) :: htot1, htot2
          type(nodalData) :: rs1, rs2
+         type(nodalData) :: swan_rs1, swan_rs2
 
 C        3D simulation state
          type(nodalData) :: duu
@@ -5810,6 +5811,87 @@ C
       CALL check_err(iret)
 
 C
+C     SWAN Radiation Stress
+C
+      hs%swan_rs1%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+      hs%swan_rs1%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+      iret = nf90_def_var(hs%ncid, 'swan_rsx1', NF90_DOUBLE,
+     &    hs%swan_rs1%nodal_data_dims, hs%swan_rs1%u_nodal_data_id)
+      CALL check_err(iret)
+      iret = nf90_def_var(hs%ncid, 'swan_rsy1', NF90_DOUBLE,
+     &    hs%swan_rs1%nodal_data_dims, hs%swan_rs1%v_nodal_data_id)
+      CALL check_err(iret)
+
+      hs%swan_rs2%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+      hs%swan_rs2%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+      iret = nf90_def_var(hs%ncid, 'swan_rsx2', NF90_DOUBLE,
+     &    hs%swan_rs2%nodal_data_dims, hs%swan_rs2%u_nodal_data_id)
+      CALL check_err(iret)
+      iret = nf90_def_var(hs%ncid, 'swan_rsy2', NF90_DOUBLE,
+     &    hs%swan_rs2%nodal_data_dims, hs%swan_rs2%v_nodal_data_id)
+      CALL check_err(iret)
+
+      att_text = "radiation stress vector x component at previous time step"
+      iret = nf90_put_att(hs%ncid, hs%swan_rs1%u_nodal_data_id,
+     &      'long_name', trim(att_text))
+      CALL check_err(iret)
+      att_text = "radiation stress vector y component at previous time step"
+      iret = nf90_put_att(hs%ncid, hs%swan_rs1%v_nodal_data_id,
+     &      'long_name', trim(att_text))
+      CALL check_err(iret)
+      att_text = "radiation stress vector x component at current time step"
+      iret = nf90_put_att(hs%ncid, hs%swan_rs2%u_nodal_data_id,
+     &      'long_name', trim(att_text))
+      CALL check_err(iret)
+            att_text = "radiation stress vector y component at current time step"
+      iret = nf90_put_att(hs%ncid, hs%swan_rs2%v_nodal_data_id,
+     &      'long_name', trim(att_text))
+      CALL check_err(iret)
+
+      att_text = "radiation_stress_x_component_at_previous_time_step"
+      iret = nf90_put_att(hs%ncid, hs%swan_rs1%u_nodal_data_id,
+     &      'standard_name', trim(att_text))
+      CALL check_err(iret)
+      att_text = "radiation_stress_y_component_at_previous_time_step"
+      iret = nf90_put_att(hs%ncid, hs%swan_rs1%v_nodal_data_id,
+     &      'standard_name', trim(att_text))
+      CALL check_err(iret)
+      att_text = "radiation_stress_x_component_at_current_time_step"
+      iret = nf90_put_att(hs%ncid, hs%swan_rs2%u_nodal_data_id,
+     &      'standard_name', trim(att_text))
+      CALL check_err(iret)
+      att_text = "radiation_stress_y_component_at_current_time_step"
+      iret = nf90_put_att(hs%ncid, hs%swan_rs2%v_nodal_data_id,
+     &      'standard_name', trim(att_text))
+      CALL check_err(iret)
+
+      ! Define the fill value to be 0.0
+      iret = nf90_put_att(hs%ncid, hs%rs1%u_nodal_data_id,
+     &        '_FillValue', 0.0d0)
+      CALL check_err(iret)
+      iret = nf90_put_att(hs%ncid, hs%rs1%v_nodal_data_id,
+     &        '_FillValue', 0.0d0)
+      CALL check_err(iret)
+      iret = nf90_put_att(hs%ncid, hs%rs2%u_nodal_data_id,
+     &        '_FillValue', 0.0d0)
+      CALL check_err(iret)
+      iret = nf90_put_att(hs%ncid, hs%rs2%v_nodal_data_id,
+     &        '_FillValue', 0.0d0)
+      CALL check_err(iret)
+      iret = nf90_put_att(hs%ncid, hs%swan_rs1%u_nodal_data_id,
+     &        '_FillValue', 0.0d0)
+      CALL check_err(iret)
+      iret = nf90_put_att(hs%ncid, hs%swan_rs1%v_nodal_data_id,
+     &        '_FillValue', 0.0d0)
+      CALL check_err(iret)
+      iret = nf90_put_att(hs%ncid, hs%swan_rs2%u_nodal_data_id,
+     &        '_FillValue', 0.0d0)
+      CALL check_err(iret)
+      iret = nf90_put_att(hs%ncid, hs%swan_rs2%v_nodal_data_id,
+     &        '_FillValue', 0.0d0)
+      CALL check_err(iret)
+
+C
 C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
 #ifdef NETCDF_CAN_DEFLATE
@@ -7042,7 +7124,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeNetCDFHotstart(lun, Elev1Descript,
      &        Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &        NodeCodeDescript, NOFFDescript, H1_HS_Descript,
-     &        H2_HS_Descript, RS1Descript, RS2Descript, timesec, it )
+     &        H2_HS_Descript, RS1Descript, RS2Descript, SWANRS1Descript,
+     &        SWANRS2Descript, timesec, it )
       USE SIZES, ONLY : globaldir, mnproc
       USE GLOBAL, ONLY : OutputDataDescript_t, im, nscoue, imhs,
      &                   nscouv, icstp, nscouc, nscoum,
@@ -7061,6 +7144,8 @@ C
       type(OutputDataDescript_t), intent(in) :: H2_HS_Descript
       type(OutputDataDescript_t), intent(in) :: RS1Descript
       type(OutputDataDescript_t), intent(in) :: RS2Descript
+      type(OutputDataDescript_t), intent(in) :: SWANRS1Descript
+      type(OutputDataDescript_t), intent(in) :: SWANRS2Descript
 
       REAL(8), intent(in) :: timesec
       INTEGER, intent(in) :: it   ! current ADCIRC time step
@@ -7153,6 +7238,16 @@ C     Get the NetCDF IDs of the relevant variables from the file
       CALL check_err(iret)
       iret=nf90_inq_varid(hs%ncid,"h2",hs%htot2%nodal_data_id)
       CALL check_err(iret)
+#ifdef CSWAN
+      iret=nf90_inq_varid(hs%ncid,"swan_rsx1",hs%swan_rs1%u_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid,"swan_rsy1",hs%swan_rs1%v_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid,"swan_rsx2",hs%swan_rs2%u_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid,"swan_rsy2",hs%swan_rs2%v_nodal_data_id)
+      CALL check_err(iret)
+#endif
  
 C
 C     Write the nodal data to the netcdf file
@@ -7189,6 +7284,20 @@ C     Write the nodal data to the netcdf file
            iret = nf90_put_var(hs%ncid, hs%rs2%v_nodal_data_id,
      &        rs2Descript%array2, start, kount)
            CALL check_err(iret)
+#ifdef CSWAN
+           iret = nf90_put_var(hs%ncid, hs%swan_rs1%u_nodal_data_id,
+     &        SwanRs1Descript%array, start, kount)
+           CALL check_err(iret)
+           iret = nf90_put_var(hs%ncid, hs%swan_rs1%v_nodal_data_id,
+     &        SwanRs1Descript%array2, start, kount)
+           CALL check_err(iret)
+           iret = nf90_put_var(hs%ncid, hs%swan_rs2%u_nodal_data_id,
+     &        SwanRs2Descript%array, start, kount)
+           CALL check_err(iret)
+           iret = nf90_put_var(hs%ncid, hs%swan_rs2%v_nodal_data_id,
+     &        SwanRs2Descript%array2, start, kount)
+           CALL check_err(iret)
+#endif
          endif
 
          !------ H1, H2
@@ -7237,6 +7346,20 @@ C     Write the nodal data to the netcdf file
            iret = nf90_put_var(hs%ncid, hs%rs2%v_nodal_data_id,
      &        rs2Descript%array2_g, start, kount)
            CALL check_err(iret)
+#ifdef CSWAN
+           iret = nf90_put_var(hs%ncid, hs%swan_rs1%u_nodal_data_id,
+     &        SwanRs1Descript%array_g, start, kount)
+           CALL check_err(iret)
+           iret = nf90_put_var(hs%ncid, hs%swan_rs1%v_nodal_data_id,
+     &        SwanRs1Descript%array2_g, start, kount)
+           CALL check_err(iret)
+           iret = nf90_put_var(hs%ncid, hs%swan_rs2%u_nodal_data_id,
+     &        SwanRs2Descript%array_g, start, kount)
+           CALL check_err(iret)
+           iret = nf90_put_var(hs%ncid, hs%swan_rs2%v_nodal_data_id,
+     &        SwanRs2Descript%array2_g, start, kount)
+           CALL check_err(iret)
+#endif
          endif
 
          ! H1, H2 
@@ -8134,7 +8257,8 @@ C-----------------------------------------------------------------------
      &                   UU2, VV2, NNODECODE, NOFF,
      &                   IM, NP_G, NE_G, NODES_LG, IMAP_EL_LG,
      &                   htot1 => H1, htot2 => H2,
-     &                   IFNLFA, nrs, rsnx1, rsnx2, rsny1, rsny2
+     &                   IFNLFA, nrs, rsnx1, rsnx2, rsny1, rsny2,
+     &                   swan_rsnx1, swan_rsnx2, swan_rsny1, swan_rsny2
       USE MESH, ONLY: DP 
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
@@ -8246,6 +8370,16 @@ C
       CALL check_err(iret)
       iret=nf90_inq_varid(hs%ncid, "rsy2", hs%rs2%v_nodal_data_id)
       CALL check_err(iret)
+#ifdef CSWAN
+      iret=nf90_inq_varid(hs%ncid, "swan_rsx1", hs%swan_rs1%u_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid, "swan_rsy1", hs%swan_rs1%v_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid, "swan_rsx2", hs%swan_rs2%u_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid, "swan_rsy2", hs%swan_rs2%v_nodal_data_id)
+      CALL check_err(iret)
+#endif
       iret=nf90_inq_varid(hs%ncid, "h1", hs%htot1%nodal_data_id)
       CALL check_err(iret)
       iret=nf90_inq_varid(hs%ncid, "h2", hs%htot2%nodal_data_id)
@@ -8290,6 +8424,20 @@ C        NodeCode
            iret = nf90_get_var(hs%ncid, hs%rs2%v_nodal_data_id,
      &         rsny2, start, kount)
            CALL check_err(iret)
+#ifdef CSWAN
+           iret = nf90_get_var(hs%ncid, hs%rs1%u_nodal_data_id,
+     &         swan_rsnx1, start, kount)
+           CALL check_err(iret)
+           iret = nf90_get_var(hs%ncid, hs%rs1%v_nodal_data_id,
+     &         swan_rsny1, start, kount)
+           CALL check_err(iret)
+           iret = nf90_get_var(hs%ncid, hs%rs2%u_nodal_data_id,
+     &         swan_rsnx2, start, kount)
+           CALL check_err(iret)
+           iret = nf90_get_var(hs%ncid, hs%rs2%v_nodal_data_id,
+     &         swan_rsny2, start, kount)
+           CALL check_err(iret)
+#endif
          end if
 
          ! hot start file contain the varible h1 and h2
@@ -8338,6 +8486,16 @@ C
      &         hs%rs2%u_nodal_data_id, subdomain_reals=rsnx2)
            call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
      &         hs%rs2%v_nodal_data_id, subdomain_reals=rsny2)
+#ifdef CSWAN
+           call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
+     &         hs%swan_rs1%u_nodal_data_id, subdomain_reals=swan_rsnx1)
+           call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
+     &         hs%swan_rs1%v_nodal_data_id, subdomain_reals=swan_rsny1)
+           call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
+     &         hs%swan_rs2%u_nodal_data_id, subdomain_reals=swan_rsnx2)
+           call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
+     &         hs%swan_rs2%v_nodal_data_id, subdomain_reals=swan_rsny2)
+#endif
          end if
 
          ! H 2

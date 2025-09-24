@@ -82,7 +82,7 @@ C
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
      &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
-     &    Limit_WaveStressGrad,
+     &    Limit_WaveStressGrad, SWAN_RSNX1, SWAN_RSNY1, SWAN_RSNX2, SWAN_RSNY2,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
      &    dynamicWaterLevelCorrectionDelta
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
@@ -147,8 +147,6 @@ Casey 090302: We need these values from other places.
      &                       COUPWIND,
      &                       InterpoWeight,
      &                       SWAN_WX2, SWAN_WY2,
-     &                       SWAN_RSNX1, SWAN_RSNX2,
-     &                       SWAN_RSNY1, SWAN_RSNY2,
      &                       WriteSwanHotStart
 #endif
       USE WEIR_FLUX

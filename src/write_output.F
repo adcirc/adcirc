@@ -241,6 +241,8 @@ C
       type(OutputDataDescript_t) :: YVELVADescript
       type(OutputDataDescript_t) :: HotstartRS1Descript
       type(OutputDataDescript_t) :: HotstartRS2Descript
+      type(OutputDataDescript_t) :: HotstartSwanRS1Descript
+      type(OutputDataDescript_t) :: HotstartSwanRS2Descript
 
       ! H1, H2
       type(OutputDataDescript_t) :: H1_HS_Descript
@@ -4585,9 +4587,9 @@ C
          HotstartRS1Descript % num_records_this     = NP
          HotstartRS1Descript % imap                 => NODES_LG
          HotstartRS1Descript % array                => RSNX1
-         HotstartRS1Descript % array2              => RSNY1
+         HotstartRS1Descript % array2               => RSNY1
          HotstartRS1Descript % array_g              => RSNX1_g
-         HotstartRS1Descript % array2_g            => RSNY1_g
+         HotstartRS1Descript % array2_g             => RSNY1_g
 
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.ne.0 ) THEN
@@ -4601,10 +4603,43 @@ C
          HotstartRS2Descript % num_records_this     = NP
          HotstartRS2Descript % imap                 => NODES_LG
          HotstartRS2Descript % array                => RSNX2
-         HotstartRS2Descript % array2              => RSNY2
+         HotstartRS2Descript % array2               => RSNY2
          HotstartRS2Descript % array_g              => RSNX2_g
-         HotstartRS2Descript % array2_g            => RSNY2_g
+         HotstartRS2Descript % array2_g             => RSNY2_g
 
+#ifdef CSWAN
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
+     &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.eq.3 ) THEN
+         CALL REAL_FIELD_ALLOCATE( NOUTGE, SWAN_RSNX1_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NOUTGE, SWAN_RSNY1_g, NP_G )
+      ENDIF
+         HotstartSwanRS1Descript % specifier            = NHSTAR
+         HotstartSwanRS1Descript % initial_value        = 0.0
+         HotstartSwanRS1Descript % num_items_per_record = 2
+         HotstartSwanRS1Descript % num_fd_records       = NP_G
+         HotstartSwanRS1Descript % num_records_this     = NP
+         HotstartSwanRS1Descript % imap                 => NODES_LG
+         HotstartSwanRS1Descript % array                => SWAN_RSNX1
+         HotstartSwanRS1Descript % array2               => SWAN_RSNY1
+         HotstartSwanRS1Descript % array_g              => SWAN_RSNX1_g
+         HotstartSwanRS1Descript % array2_g             => SWAN_RSNY1_g
+
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
+     &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.eq.3 ) THEN
+         CALL REAL_FIELD_ALLOCATE( NOUTGE, SWAN_RSNX2_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NOUTGE, SWAN_RSNY2_g, NP_G )
+      ENDIF
+         HotstartSwanRS2Descript % specifier            = NHSTAR
+         HotstartSwanRS2Descript % initial_value        = 0.0
+         HotstartSwanRS2Descript % num_items_per_record = 2
+         HotstartSwanRS2Descript % num_fd_records       = NP_G
+         HotstartSwanRS2Descript % num_records_this     = NP
+         HotstartSwanRS2Descript % imap                 => NODES_LG
+         HotstartSwanRS2Descript % array                => SWAN_RSNX2
+         HotstartSwanRS2Descript % array2               => SWAN_RSNY2
+         HotstartSwanRS2Descript % array_g              => SWAN_RSNX2_g
+         HotstartSwanRS2Descript % array2_g             => SWAN_RSNY2_g
+#endif
 
          H1_HS_Descript % specifier            = NHSTAR
          H1_HS_Descript % initial_value        = 0.0
@@ -4848,12 +4883,15 @@ C     collect up the data from subdomains if running in parallel
          if(nrs.ne.0)then
            call collectFullDomainArray(HotstartRS1Descript, packTwo, unpackTwo)
            call collectFullDomainArray(HotstartRS2Descript, packTwo, unpackTwo)
+#ifdef CSWAN
+           call collectFullDomainArray(HotstartSWANRS1Descript, packTwo, unpackTwo)
+           call collectFullDomainArray(HotstartSWANRS2Descript, packTwo, unpackTwo)
+#endif
          endif  
 
          ! H1, H2
          CALL collectFullDomainArray(H1_HS_Descript, packOne, unpackOne)
          CALL collectFullDomainArray(H2_HS_Descript, packOne, unpackOne)
-  
 
          CALL collectFullDomainArray(HotstartVelDescript, packTwo, unpackTwo)
          IF (IM.eq.10) THEN
@@ -5406,7 +5444,8 @@ C
             CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
      &         Elev2Descript, HotstartVelDescript, CH1Descript, EtaDiscDescript,
      &         NodeCodeDescript, NOFFDescript, H1_HS_Descript,
-     &         H2_HS_Descript, HotstartRS1Descript, HotstartRS2Descript, TimeLoc, it)
+     &         H2_HS_Descript, HotstartRS1Descript, HotstartRS2Descript, HotstartSwanRS1Descript,
+     &         HotstartSWANRS2Descript, TimeLoc, it)
             IF ((IHARIND.eq.1).and.(IT.gt.ITHAS)) THEN
                CALL writeNetCDFHotstartHarmonic(hss%lun,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
