@@ -149,6 +149,13 @@ C     for writing fulldomain hotstart files.
       REAL(8),ALLOCATABLE, TARGET  :: RSNX2_g(:)
       REAL(8),ALLOCATABLE, TARGET  :: RSNY2_g(:)
 
+#ifdef CSWAN
+      REAL(8),ALLOCATABLE, TARGET :: SWAN_RSNX1_g(:)
+      REAL(8),ALLOCATABLE, TARGET :: SWAN_RSNY1_g(:)
+      REAL(8),ALLOCATABLE, TARGET :: SWAN_RSNX2_g(:)
+      REAL(8),ALLOCATABLE, TARGET :: SWAN_RSNY2_g(:)
+#endif
+
       INTEGER, ALLOCATABLE, TARGET :: labels_g(:)
       INTEGER, ALLOCATABLE, TARGET :: NodeCode_g(:)
       INTEGER, ALLOCATABLE :: NNodeCode_g(:)
@@ -369,6 +376,7 @@ C- DMW
       REAL(8),ALLOCATABLE ::   PRN1(:)
       REAL(8),ALLOCATABLE ::   PRN2(:)
       REAL(8),ALLOCATABLE,TARGET :: RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
+      REAL(8),ALLOCATABLE,TARGET :: SWAN_RSNX1(:),SWAN_RSNY1(:),SWAN_RSNX2(:),SWAN_RSNY2(:)
       REAL(8),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added
                                                     !for ice concentration
       REAL(8),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
@@ -1461,6 +1469,14 @@ C
       RSNY1(:) = 0.d0 ! must be initialized to zero for SWAN
       RSNX2(:) = 0.d0
       RSNY2(:) = 0.d0
+
+#ifdef CSWAN
+      ALLOCATE( SWAN_RSNX1(MNP), SWAN_RSNY1(MNP), SWAN_RSNX2(MNP), SWAN_RSNY2(MNP) )
+      SWAN_RSNX1(:) = 0.d0
+      SWAN_RSNY1(:) = 0.d0
+      SWAN_RSNX2(:) = 0.d0
+      SWAN_RSNY2(:) = 0.d0
+#endif
 
       if (NCICE.NE.0) then
          ALLOCATE ( CICE1(MNP),CICE2(MNP),CICEOUT(MNP) ) !tcm v49.64.01 added

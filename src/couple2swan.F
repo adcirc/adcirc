@@ -55,10 +55,6 @@ Casey 090820: Be explicit about the size of these REAL variables.
       REAL(4) ,ALLOCATABLE :: ADCIRC_SXX(:,:)
       REAL(4) ,ALLOCATABLE :: ADCIRC_SXY(:,:)
       REAL(4) ,ALLOCATABLE :: ADCIRC_SYY(:,:)
-      REAL(8) ,ALLOCATABLE :: SWAN_RSNX1(:)
-      REAL(8) ,ALLOCATABLE :: SWAN_RSNY1(:)
-      REAL(8) ,ALLOCATABLE :: SWAN_RSNX2(:)
-      REAL(8) ,ALLOCATABLE :: SWAN_RSNY2(:)
 
 Casey 090302: The interpolation weight controls which value
 C             is taken when information is passed between ADCIRC
@@ -221,7 +217,8 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE ComputeWaveDrivenForces
 
-      USE GLOBAL, ONLY: NODECODE, NOFF, RSNX2, RSNY2, IFSFM
+      USE GLOBAL, ONLY: NODECODE, NOFF, RSNX2, RSNY2, IFSFM,
+     &  SWAN_RSNX1, SWAN_RSNY1, SWAN_RSNX2, SWAN_RSNY2
       USE MESH, ONLY : NE, NM, NP, AREAS, NODELE, NEITABELE,
      &    FDXE, FDYE, SFacEle, SFMYEle, SFMXEle
       USE BOUNDARIES, ONLY : NBDV, NBOU, NBVV, NOPE, NVDLL, NVELL
@@ -282,17 +279,6 @@ C-----------------------------------------------------------------------
          IF(.NOT.ALLOCATED(RSNY2))THEN
             ALLOCATE(RSNY2(1:NP))
             RSNY2(:) = 0.D0
-         ENDIF
-
-         IF(.NOT.ALLOCATED(SWAN_RSNX1))THEN
-            ALLOCATE(SWAN_RSNX1(1:NP))
-            ALLOCATE(SWAN_RSNY1(1:NP))
-            ALLOCATE(SWAN_RSNX2(1:NP))
-            ALLOCATE(SWAN_RSNY2(1:NP))
-            SWAN_RSNX1(:) = 0.D0
-            SWAN_RSNY1(:) = 0.D0
-            SWAN_RSNX2(:) = 0.D0
-            SWAN_RSNY2(:) = 0.D0
          ENDIF
 
 !... If so, then continue to compute wave-driven forces.
@@ -371,17 +357,6 @@ C..... END DW/WJP
 !... Allocate arrays for wave-driven forces.
          IF(.NOT.ALLOCATED(RSNX2)) ALLOCATE(RSNX2(1:NP))
          IF(.NOT.ALLOCATED(RSNY2)) ALLOCATE(RSNY2(1:NP))
-
-         IF(.NOT.ALLOCATED(SWAN_RSNX1))THEN
-            ALLOCATE(SWAN_RSNX1(1:NP))
-            ALLOCATE(SWAN_RSNY1(1:NP))
-            ALLOCATE(SWAN_RSNX2(1:NP))
-            ALLOCATE(SWAN_RSNY2(1:NP))
-            SWAN_RSNX1(:) = 0.D0
-            SWAN_RSNY1(:) = 0.D0
-            SWAN_RSNX2(:) = 0.D0
-            SWAN_RSNY2(:) = 0.D0
-         ENDIF
 
 !... Loop over all nodes and compute the wave-driven forces:
 !...
