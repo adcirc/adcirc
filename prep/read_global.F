@@ -582,8 +582,10 @@ C.....tcm v52.30.01 added for Smag_Control
      &  dynamicWaterLevelCorrectionRampReferenceTime
 
 C.....Control for VEW1D channels 11/06/2023 sb
-      NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter
-
+      NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
+     &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, 
+     &  BARSLIM64_ELEM, BARSLIM64_EDGE
+     
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15
 C..... file.

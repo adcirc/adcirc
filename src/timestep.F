@@ -100,7 +100,7 @@ C
      &    NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, NFLUXIBP, NFLUXRBC, CSII,
      &    NFLUXIB64,
      &    BARLANHT, BARLANCFSP, NVELL, IBCONN, BARINHT, BARINCFSP,
-     &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM, ISSUBMERGED64, ISSUBMERGED64P
+     &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM, ISSUBMERGED64
       USE GLOBAL_IO, ONLY : nddt2get
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
@@ -222,9 +222,6 @@ C....... DW
 C.......
       LOGICAL ISFRONT
       LOGICAL foundNaN
-      INTEGER NNBB1, NNBB2, NNBBNEI, NWETNEI
-      LOGICAL UNSUBMERGE
-      REAL(8) X1, X2, Y1, Y2, ET1, ET2, LEN, SLP, HTOT
       
       IF (IT .EQ. 1) THEN
 !.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
@@ -994,8 +991,9 @@ C...  COBELL - MOVED TO WEIR_BOUNDARY.F
           END DO
         ENDIF
 
+C...  SETTING ISSUBMERGED FLAG ALONG VERTICAL ELEMENT WALL BOUNDARIES
+C...
       IF(NFLUXIB64.EQ.1) THEN
-         ! Setting ISSUBMERGED64 flag
          I = 0                         
          DO K = 1, NBOU  
             SELECT CASE(LBCODEI(I+1))
@@ -1005,79 +1003,12 @@ C...  COBELL - MOVED TO WEIR_BOUNDARY.F
                   DO J = 1,NVELL(K)
                      I = I + 1
                      CALL SET_SUBMERGED64_AT(I,J,K,TIMELOC)
-                     ISSUBMERGED64P(I) = ISSUBMERGED64(I)
                   ENDDO
                   I = I + NVELL(K)
                CASE DEFAULT
                   I = I + NVELL(K)
             END SELECT    
          ENDDO
-         ! Cancelling ISSUBMERGED64 flag if any of the adjacent nodes along the boundary is not submerged. sb 8/9/2024
-         I = 0                         
-         DO K = 1, NBOU  
-            SELECT CASE(LBCODEI(I+1))
-               CASE(4,24,5,25)
-                  I = I + NVELL(K)*2
-               CASE(64)
-                  DO J = 1,NVELL(K)
-                     I = I + 1
-                     NNBB1 = NBV(I)
-                     HTOT = ETA2(NNBB1) + IFNLFA*DP(NNBB1)
-                     IF(ISSUBMERGED64(I).NE.0.AND.
-     &                  NODECODE(NNBB1).NE.0.AND.
-     &                  HTOT.LT.4.D0*H0) THEN
-                        UNSUBMERGE = .FALSE.
-                        X1 = X(NNBB1)
-                        Y1 = Y(NNBB1)
-                        ET1 = ETA2(NNBB1)
-                        IF(J>1) THEN
-                           NNBBNEI = NBV(I-1)
-                           X2 = X(NNBBNEI)
-                           Y2 = Y(NNBBNEI)
-                           ET2 = ETA2(NNBBNEI)
-                           LEN = SQRT((X1-X2)**2+(Y1-Y2)**2)
-                           SLP = ABS(ET1-ET2)/LEN
-                           IF(SLP.GT.0.0001) THEN
-                              UNSUBMERGE = .TRUE.
-                           ENDIF
-                        ENDIF
-                        IF(J<NVELL(K)) THEN
-                           NNBBNEI = NBV(I+1)
-                           X2 = X(NNBBNEI)
-                           Y2 = Y(NNBBNEI)
-                           ET2 = ETA2(NNBBNEI)
-                           LEN = SQRT((X1-X2)**2+(Y1-Y2)**2)
-                           SLP = ABS(ET1-ET2)/LEN
-                           IF(SLP.GT.0.0001) THEN
-                              UNSUBMERGE = .TRUE.
-                           ENDIF
-                        ENDIF
-                        IF(.NOT.UNSUBMERGE) THEN
-                           NWETNEI = 0
-                           DO JJ = 2,NNeigh(NNBB1)
-                              II = NeiTab(NNBB1,JJ)
-                              IF(NODECODE(II).NE.0) THEN
-                                 NWETNEI = NWETNEI + 1
-                              ENDIF
-                           ENDDO
-                           IF(NWETNEI.LT.3) THEN
-                              UNSUBMERGE = .TRUE.
-                           ENDIF
-                        ENDIF
-                        IF(UNSUBMERGE) THEN
-                           ISSUBMERGED64(I) = 0
-                           NNBB2 = IBCONN(I)
-                           IF(NNBB2>0) THEN
-                              ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 0
-                           ENDIF
-                        ENDIF
-                     ENDIF
-                  ENDDO
-                  I = I + NVELL(K)
-               CASE DEFAULT
-                  I = I + NVELL(K)
-            END SELECT    
-         ENDDO 
       ENDIF
 
 C...  COMPUTE INWARD/OUTWARD NORMAL FLOW OVER SPECIFIED INTERNAL BARRIER
