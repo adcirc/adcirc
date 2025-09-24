@@ -142,7 +142,12 @@ C     for writing fulldomain hotstart files.
       REAL(8), ALLOCATABLE, TARGET :: CH1_g(:)
 
       REAL(8), ALLOCATABLE, TARGET :: HTOT1_g(:) 
-      REAL(8), ALLOCATABLE, TARGET :: HTOT2_g(:) 
+      REAL(8), ALLOCATABLE, TARGET :: HTOT2_g(:)
+
+      REAL(8),ALLOCATABLE, TARGET  :: RSNX1_g(:)
+      REAL(8),ALLOCATABLE, TARGET  :: RSNY1_g(:)
+      REAL(8),ALLOCATABLE, TARGET  :: RSNX2_g(:)
+      REAL(8),ALLOCATABLE, TARGET  :: RSNY2_g(:)
 
       INTEGER, ALLOCATABLE, TARGET :: labels_g(:)
       INTEGER, ALLOCATABLE, TARGET :: NodeCode_g(:)
@@ -363,7 +368,7 @@ C- DMW
       REAL(8),ALLOCATABLE ::   WSX2(:),WSY2(:)
       REAL(8),ALLOCATABLE ::   PRN1(:)
       REAL(8),ALLOCATABLE ::   PRN2(:)
-      REAL(8),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
+      REAL(8),ALLOCATABLE,TARGET :: RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
       REAL(8),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added
                                                     !for ice concentration
       REAL(8),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006

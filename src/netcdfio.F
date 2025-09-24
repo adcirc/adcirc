@@ -330,8 +330,8 @@ C        2D simulation state
          type(nodalData) :: nodecodenc
          type(nodalData) :: noffnc
 C--   
-         type(nodalData) :: htot1, htot2 
-         LOGICAL:: have_htot1, have_htot2
+         type(nodalData) :: htot1, htot2
+         type(nodalData) :: rs1, rs2
 
 C        3D simulation state
          type(nodalData) :: duu
@@ -5755,6 +5755,61 @@ C     N O F F
      &      'standard_name', trim(att_text))
       CALL check_err(iret)
 C
+C     Radiation Stress
+C
+      hs%rs1%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+      hs%rs1%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+      iret = nf90_def_var(hs%ncid, 'rsx1', NF90_DOUBLE,
+     &    hs%rs1%nodal_data_dims, hs%rs1%u_nodal_data_id)
+      CALL check_err(iret)
+      iret = nf90_def_var(hs%ncid, 'rsy1', NF90_DOUBLE,
+     &    hs%rs1%nodal_data_dims, hs%rs1%v_nodal_data_id)
+      CALL check_err(iret)
+
+      hs%rs2%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+      hs%rs2%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+      iret = nf90_def_var(hs%ncid, 'rsx2', NF90_DOUBLE,
+     &    hs%rs2%nodal_data_dims, hs%rs2%u_nodal_data_id)
+      CALL check_err(iret)
+      iret = nf90_def_var(hs%ncid, 'rsy2', NF90_DOUBLE,
+     &    hs%rs2%nodal_data_dims, hs%rs2%v_nodal_data_id)
+      CALL check_err(iret)
+
+      att_text = "radiation stress vector x component at previous time step"
+      iret = nf90_put_att(hs%ncid, hs%rs1%u_nodal_data_id,
+     &      'long_name', trim(att_text))
+      CALL check_err(iret)
+      att_text = "radiation stress vector y component at previous time step"
+      iret = nf90_put_att(hs%ncid, hs%rs1%v_nodal_data_id,
+     &      'long_name', trim(att_text))
+      CALL check_err(iret)
+      att_text = "radiation stress vector x component at current time step"
+      iret = nf90_put_att(hs%ncid, hs%rs2%u_nodal_data_id,
+     &      'long_name', trim(att_text))
+      CALL check_err(iret)
+            att_text = "radiation stress vector y component at current time step"
+      iret = nf90_put_att(hs%ncid, hs%rs2%v_nodal_data_id,
+     &      'long_name', trim(att_text))
+      CALL check_err(iret)
+
+      att_text = "radiation_stress_x_component_at_previous_time_step"
+      iret = nf90_put_att(hs%ncid, hs%rs1%u_nodal_data_id,
+     &      'standard_name', trim(att_text))
+      CALL check_err(iret)
+      att_text = "radiation_stress_y_component_at_previous_time_step"
+      iret = nf90_put_att(hs%ncid, hs%rs1%v_nodal_data_id,
+     &      'standard_name', trim(att_text))
+      CALL check_err(iret)
+      att_text = "radiation_stress_x_component_at_current_time_step"
+      iret = nf90_put_att(hs%ncid, hs%rs2%u_nodal_data_id,
+     &      'standard_name', trim(att_text))
+      CALL check_err(iret)
+      att_text = "radiation_stress_y_component_at_current_time_step"
+      iret = nf90_put_att(hs%ncid, hs%rs2%v_nodal_data_id,
+     &      'standard_name', trim(att_text))
+      CALL check_err(iret)
+
+C
 C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
 #ifdef NETCDF_CAN_DEFLATE
@@ -6987,11 +7042,11 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeNetCDFHotstart(lun, Elev1Descript,
      &        Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &        NodeCodeDescript, NOFFDescript, H1_HS_Descript,
-     &        H2_HS_Descript, timesec, it )
+     &        H2_HS_Descript, RS1Descript, RS2Descript, timesec, it )
       USE SIZES, ONLY : globaldir, mnproc
       USE GLOBAL, ONLY : OutputDataDescript_t, im, nscoue, imhs,
      &                   nscouv, icstp, nscouc, nscoum,
-     &                   nscouge, nscougv, nscougc, nscougw
+     &                   nscouge, nscougv, nscougc, nscougw, nrs
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: lun
@@ -7002,9 +7057,10 @@ C
       type(OutputDataDescript_t), intent(in) :: EtaDiscDescript
       type(OutputDataDescript_t), intent(in) :: NodeCodeDescript
       type(OutputDataDescript_t), intent(in) :: NOFFDescript
-
       type(OutputDataDescript_t), intent(in) :: H1_HS_Descript
       type(OutputDataDescript_t), intent(in) :: H2_HS_Descript
+      type(OutputDataDescript_t), intent(in) :: RS1Descript
+      type(OutputDataDescript_t), intent(in) :: RS2Descript
 
       REAL(8), intent(in) :: timesec
       INTEGER, intent(in) :: it   ! current ADCIRC time step
@@ -7085,16 +7141,18 @@ C     Get the NetCDF IDs of the relevant variables from the file
       CALL check_err(iret)
       iret=nf90_inq_varid(hs%ncid,"noff",hs%noffnc%nodal_data_id)
       CALL check_err(iret)
-
-      hs%have_htot1 = .true. ;    
+      iret=nf90_inq_varid(hs%ncid,"rsx1",hs%rs1%u_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid,"rsy1",hs%rs1%v_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid,"rsx2",hs%rs2%u_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid,"rsy2",hs%rs2%v_nodal_data_id)
+      CALL check_err(iret)
       iret=nf90_inq_varid(hs%ncid,"h1",hs%htot1%nodal_data_id)
-      if ( iret /= NF90_NOERR ) hs%have_htot1 = .false. ;
-      ! CALL check_err(iret)
-
-      hs%have_htot2 = .true. ;  
+      CALL check_err(iret)
       iret=nf90_inq_varid(hs%ncid,"h2",hs%htot2%nodal_data_id)
-      if ( iret /= NF90_NOERR ) hs%have_htot2 = .false. ;
-      ! CALL check_err(iret)
+      CALL check_err(iret)
  
 C
 C     Write the nodal data to the netcdf file
@@ -7118,18 +7176,29 @@ C     Write the nodal data to the netcdf file
      &      NodeCodeDescript%iarray, start, kount)
          CALL check_err(iret)
 
-         !------ H1, H2 
-         if ( hs%have_htot2 ) then
-           iret = nf90_put_var(hs%ncid, hs%htot2%nodal_data_id,
-     &        H2_HS_Descript%array, start, kount)
+         if(nrs.ne.0)then
+           iret = nf90_put_var(hs%ncid, hs%rs1%u_nodal_data_id,
+     &        rs1Descript%array, start, kount)
+           CALL check_err(iret)
+           iret = nf90_put_var(hs%ncid, hs%rs1%v_nodal_data_id,
+     &        rs1Descript%array2, start, kount)
+           CALL check_err(iret)
+           iret = nf90_put_var(hs%ncid, hs%rs2%u_nodal_data_id,
+     &        rs2Descript%array, start, kount)
+           CALL check_err(iret)
+           iret = nf90_put_var(hs%ncid, hs%rs2%v_nodal_data_id,
+     &        rs2Descript%array2, start, kount)
            CALL check_err(iret)
          endif
 
-         if ( hs%have_htot1 ) then
-           iret = nf90_put_var(hs%ncid, hs%htot1%nodal_data_id,
+         !------ H1, H2
+         iret = nf90_put_var(hs%ncid, hs%htot2%nodal_data_id,
+     &        H2_HS_Descript%array, start, kount)
+         CALL check_err(iret)
+
+         iret = nf90_put_var(hs%ncid, hs%htot1%nodal_data_id,
      &        H1_HS_Descript%array, start, kount)
-           CALL check_err(iret)
-         endif
+         CALL check_err(iret)
 
          iret = nf90_put_var(hs%ncid, hs%noffnc%nodal_data_id,
      &       NOFFDescript%iarray, start, elekount)
@@ -7155,18 +7224,29 @@ C     Write the nodal data to the netcdf file
      &      NodeCodeDescript%iarray_g, start, kount)
          CALL check_err(iret)
 
-         ! H1, H2 
-         if ( hs%have_htot2 ) then  
-           iret = nf90_put_var(hs%ncid, hs%htot2%nodal_data_id,
-     &       H2_HS_Descript%array_g, start, kount)
+         if(nrs.ne.0)then
+           iret = nf90_put_var(hs%ncid, hs%rs1%u_nodal_data_id,
+     &        rs1Descript%array_g, start, kount)
+           CALL check_err(iret)
+           iret = nf90_put_var(hs%ncid, hs%rs1%v_nodal_data_id,
+     &        rs1Descript%array2_g, start, kount)
+           CALL check_err(iret)
+           iret = nf90_put_var(hs%ncid, hs%rs2%u_nodal_data_id,
+     &        rs2Descript%array_g, start, kount)
+           CALL check_err(iret)
+           iret = nf90_put_var(hs%ncid, hs%rs2%v_nodal_data_id,
+     &        rs2Descript%array2_g, start, kount)
            CALL check_err(iret)
          endif
 
-         if ( hs%have_htot1 ) then 
-           iret = nf90_put_var(hs%ncid, hs%htot1%nodal_data_id,
+         ! H1, H2 
+         iret = nf90_put_var(hs%ncid, hs%htot2%nodal_data_id,
+     &       H2_HS_Descript%array_g, start, kount)
+         CALL check_err(iret)
+
+         iret = nf90_put_var(hs%ncid, hs%htot1%nodal_data_id,
      &       H1_HS_Descript%array_g, start, kount)
-           CALL check_err(iret)
-         endif
+         CALL check_err(iret)
 
          iret = nf90_put_var(hs%ncid, hs%noffnc%nodal_data_id,
      &       NOFFDescript%iarray_g, start, elekount)
@@ -8054,7 +8134,7 @@ C-----------------------------------------------------------------------
      &                   UU2, VV2, NNODECODE, NOFF,
      &                   IM, NP_G, NE_G, NODES_LG, IMAP_EL_LG,
      &                   htot1 => H1, htot2 => H2,
-     &                   IFNLFA
+     &                   IFNLFA, nrs, rsnx1, rsnx2, rsny1, rsny2
       USE MESH, ONLY: DP 
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
@@ -8158,24 +8238,18 @@ C
       CALL check_err(iret)
       iret=nf90_inq_varid(hs%ncid, "noff", hs%noffnc%nodal_data_id)
       CALL check_err(iret)
-
-      !  hot start file contain the varible h1 and h2
-      hs%have_htot1 = .true. 
-      iret=nf90_inq_varid(hs%ncid, "h1", hs%htot1%nodal_data_id) 
-      if ( iret /= NF90_NOERR ) hs%have_htot1 = .false. ;
-      if ( .not. hs%have_htot1 ) then
-              WRITE(16,'(A)') " Warning: the hot start file does not 
-     &   contain the h1 variable. Proceed with h1 = dp + ifnlfa*eta1"
-      endif        
-
-      hs%have_htot2 = .true.            
+      iret=nf90_inq_varid(hs%ncid, "rsx1", hs%rs1%u_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid, "rsy1", hs%rs1%v_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid, "rsx2", hs%rs2%u_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid, "rsy2", hs%rs2%v_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf90_inq_varid(hs%ncid, "h1", hs%htot1%nodal_data_id)
+      CALL check_err(iret)
       iret=nf90_inq_varid(hs%ncid, "h2", hs%htot2%nodal_data_id)
-      if ( iret /= NF90_NOERR ) hs%have_htot2 = .false. ;
-      if ( .not. hs%have_htot2 ) then
-              WRITE(16,'(A)') " Warning: the hot start file does not  
-     &   contain the h2 variable. Proceed with h2 = dp + ifnlfa*eta2" ;
-      endif        
-
+      CALL check_err(iret)
 
       ! serial
       IF (MNPROC.eq.1) THEN
@@ -8203,18 +8277,29 @@ C        NodeCode
      &       nnodecode, start, kount)
          CALL check_err(iret)
 
+         if(nrs.ne.0)then
+           iret = nf90_get_var(hs%ncid, hs%rs1%u_nodal_data_id,
+     &         rsnx1, start, kount)
+           CALL check_err(iret)
+           iret = nf90_get_var(hs%ncid, hs%rs1%v_nodal_data_id,
+     &         rsny1, start, kount)
+           CALL check_err(iret)
+           iret = nf90_get_var(hs%ncid, hs%rs2%u_nodal_data_id,
+     &         rsnx2, start, kount)
+           CALL check_err(iret)
+           iret = nf90_get_var(hs%ncid, hs%rs2%v_nodal_data_id,
+     &         rsny2, start, kount)
+           CALL check_err(iret)
+         end if
+
          ! hot start file contain the varible h1 and h2
-         ! H 2 
-         if ( hs%have_htot2 ) then
-             CALL check_err(  nf90_get_var(hs%ncid, hs%htot2%nodal_data_id,
-     &                   htot2, start, kount ) )
-         endif
+         ! H 2
+         CALL check_err(  nf90_get_var(hs%ncid, hs%htot2%nodal_data_id,
+     &                    htot2, start, kount ) )
 
          ! H 1
-         if ( hs%have_htot1 ) then
-             CALL check_err(  nf90_get_var(hs%ncid, hs%htot1%nodal_data_id,
+         CALL check_err(  nf90_get_var(hs%ncid, hs%htot1%nodal_data_id,
      &                   htot1, start, kount ) )
-         endif
 
 C        NOFF
          start(1)=1
@@ -8244,27 +8329,30 @@ C
          call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
      &       hs%nodecodenc%nodal_data_id, subdomain_ints=nnodecode)
 
-         ! H 2
-         if ( hs%have_htot2 ) then
+         if(nrs.ne.0)then
            call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
+     &         hs%rs1%u_nodal_data_id, subdomain_reals=rsnx1)
+           call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
+     &         hs%rs1%v_nodal_data_id, subdomain_reals=rsny1)
+           call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
+     &         hs%rs2%u_nodal_data_id, subdomain_reals=rsnx2)
+           call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
+     &         hs%rs2%v_nodal_data_id, subdomain_reals=rsny2)
+         end if
+
+         ! H 2
+         call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
      &        hs%htot2%nodal_data_id, subdomain_reals=htot2)
-         end if  
 
          ! H 1
-         if ( hs%have_htot1 ) then
-           call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
+         call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes,
      &        hs%htot1%nodal_data_id, subdomain_reals=htot1)
-         end if
 
          fullDomainIndexList => fullDomainElementList
          call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_elems,
      &       hs%noffnc%nodal_data_id, subdomain_ints=noff)
 
       ENDIF
-
-      ! Use DP reading in from read_input()
-      IF ( .not. hs%have_htot2 ) htot2 = DP + IFNLFA*eta2  
-      IF ( .not. hs%have_htot1 ) htot1 = DP + IFNLFA*eta1 
 
 C
 C     Read in model parameters to ADCIRC variables
