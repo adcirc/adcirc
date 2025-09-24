@@ -415,6 +415,13 @@ C                                      ! Segment K on PE
 C                                      ! Boundary Node I on PE
       INTEGER,ALLOCATABLE::NFLUXFP(:)
       INTEGER,ALLOCATABLE::IBCONNRP(:,:)
+C
+      INTEGER            ::NNBVVGRP    ! NNBVVGRP Number of hanging nodes on
+C                                      ! removed land boundary segments
+      INTEGER,ALLOCATABLE::NBVVGRP(:,:)! NBVVGRP(2,I) List of global node numbers 
+                                       ! of hanging nodes on removed land boundary  
+                                       ! segments (1,I) and 
+                                       ! their processor numbers (2,I)
 
       INTEGER,ALLOCATABLE::NNSTA3DDP(:)! Number of 3D density stations on (PE)
       INTEGER,ALLOCATABLE::NNSTA3DVP(:)! Number of 3D velocity stations on (PE)

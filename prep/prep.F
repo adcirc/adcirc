@@ -1259,12 +1259,17 @@ C..... DW
       ! LBINDEX_LG(K,I,PE) = Global Index of I-th Node on Land Boundary Segment K on PE
 C
       ETYPE = 3   ! The only Element-Type supported by ADCIRC is 3.
+
+      ! Allocate an array to store hanging land boundary nodes. sb
+      ALLOCATE(NBVVGRP(2,NBOU))
 C
 C--------------------------------------------------------------------------
 C--MAIN LOOP:   Write a Local Grid File ( fort.14 ) for each PE
 C--------------------------------------------------------------------------
 C
       NETA_MAX = 0   ! max number of open boundary nodes on any subdomain
+C
+      NNBVVGRP = 0   ! number of hanging land boundary nodes
 C
       DO IPROC = 1,NPROC
 C
@@ -1502,6 +1507,9 @@ C  ghost nodes)
      &           'ERROR: The land boundary number ',k,
      &           ' is only one node long in subdomain ',iproc,'.'
                if ( strictBoundaries.eqv..false. ) then
+                  NNBVVGRP = NNBVVGRP + 1
+                  NBVVGRP(1,NNBVVGRP) = IPROC                         ! Store the PE number for later use in prep20. sb
+                  NBVVGRP(2,NNBVVGRP) = IMAP_NOD_LG(NBVVP(K,1),IPROC) ! Store the global node number for later use in prep20. sb
                   NVELLP(K) = 0
                   write(*,'(a)') 'INFO: Eliminating hanging boundary'
      &            //' node from this subdomain.'
@@ -3081,6 +3089,8 @@ C---------------------------------------------------------------------------
       INTEGER J     ! counter for subdomains that corrsp. to a single f.d. node
       INTEGER IPROC2! PE of a subdomain that matches a single full domain node
       INTEGER PROC_NO ! proc number is 20 unless specified 
+      INTEGER K, IPROCR, INDXR
+      LOGICAL REMOVED
 
       proc_no = 20;
       FLUX_NUM = EXIST_FLUX
@@ -3123,8 +3133,23 @@ C
                IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX) ! find next subdomain
                DO IPROC=1, NPROC
                   IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d.
-                     !WRITE(SDU(IPROC),50) FLUX_VAL
-                     WRITE(SDU(IPROC),'(A)') TRIM(FLUX_MSG)
+                     ! Checking if the node has been removed as a hanging land
+                     ! boundary node.
+                     REMOVED = .FALSE.
+                     DO K=1, NNBVVGRP
+                        IPROCR = NBVVGRP(1,K)
+                        INDXR  = NBVVGRP(2,K)
+                        IF (IPROC.EQ.IPROCR.AND.INDX.EQ.INDXR) THEN
+                           REMOVED = .TRUE.
+                           EXIT
+                        ENDIF
+                     END DO
+                     ! Write the flux value to the subdomain file
+                     ! if this node is not removed as a hanging land boundary node
+                     IF (.NOT.REMOVED) THEN 
+                        !WRITE(SDU(IPROC),50) FLUX_VAL
+                        WRITE(SDU(IPROC),'(A)') TRIM(FLUX_MSG)
+                     ENDIF
                   ENDIF
                END DO
             END DO
