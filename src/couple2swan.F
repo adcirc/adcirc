@@ -55,6 +55,10 @@ Casey 090820: Be explicit about the size of these REAL variables.
       REAL(4) ,ALLOCATABLE :: ADCIRC_SXX(:,:)
       REAL(4) ,ALLOCATABLE :: ADCIRC_SXY(:,:)
       REAL(4) ,ALLOCATABLE :: ADCIRC_SYY(:,:)
+      REAL(8) ,ALLOCATABLE :: SWAN_RSNX1(:)
+      REAL(8) ,ALLOCATABLE :: SWAN_RSNY1(:)
+      REAL(8) ,ALLOCATABLE :: SWAN_RSNX2(:)
+      REAL(8) ,ALLOCATABLE :: SWAN_RSNY2(:)
 
 Casey 090302: The interpolation weight controls which value
 C             is taken when information is passed between ADCIRC
@@ -273,15 +277,22 @@ C-----------------------------------------------------------------------
 
          IF(.NOT.ALLOCATED(RSNX2))THEN
             ALLOCATE(RSNX2(1:NP))
-            DO IP=1,NP
-               RSNX2(IP) = 0.D0
-            ENDDO
+            RSNX2(:) = 0.D0
          ENDIF
          IF(.NOT.ALLOCATED(RSNY2))THEN
             ALLOCATE(RSNY2(1:NP))
-            DO IP=1,NP
-               RSNY2(IP) = 0.D0
-            ENDDO
+            RSNY2(:) = 0.D0
+         ENDIF
+
+         IF(.NOT.ALLOCATED(SWAN_RSNX1))THEN
+            ALLOCATE(SWAN_RSNX1(1:NP))
+            ALLOCATE(SWAN_RSNY1(1:NP))
+            ALLOCATE(SWAN_RSNX2(1:NP))
+            ALLOCATE(SWAN_RSNY2(1:NP))
+            SWAN_RSNX1(:) = 0.D0
+            SWAN_RSNY1(:) = 0.D0
+            SWAN_RSNX2(:) = 0.D0
+            SWAN_RSNY2(:) = 0.D0
          ENDIF
 
 !... If so, then continue to compute wave-driven forces.
@@ -361,6 +372,17 @@ C..... END DW/WJP
          IF(.NOT.ALLOCATED(RSNX2)) ALLOCATE(RSNX2(1:NP))
          IF(.NOT.ALLOCATED(RSNY2)) ALLOCATE(RSNY2(1:NP))
 
+         IF(.NOT.ALLOCATED(SWAN_RSNX1))THEN
+            ALLOCATE(SWAN_RSNX1(1:NP))
+            ALLOCATE(SWAN_RSNY1(1:NP))
+            ALLOCATE(SWAN_RSNX2(1:NP))
+            ALLOCATE(SWAN_RSNY2(1:NP))
+            SWAN_RSNX1(:) = 0.D0
+            SWAN_RSNY1(:) = 0.D0
+            SWAN_RSNX2(:) = 0.D0
+            SWAN_RSNY2(:) = 0.D0
+         ENDIF
+
 !... Loop over all nodes and compute the wave-driven forces:
 !...
 !...       Fx = - DSxx/Dx - DSxy/Dy
@@ -372,8 +394,10 @@ C..... END DW/WJP
 !... to a node.
          outer: DO IP=1,NP
 
-           RSNX2(IP) = 0.D0
-           RSNY2(IP) = 0.D0
+           SWAN_RSNX1(IP) = SWAN_RSNX2(IP)
+           SWAN_RSNY1(IP) = SWAN_RSNY2(IP)
+           SWAN_RSNX2(IP) = 0.D0
+           SWAN_RSNY2(IP) = 0.D0
 
            TOTALAREA = 0.D0
 
@@ -409,10 +433,10 @@ C..... END DW/WJP
 
                  NUMFOUND = NUMFOUND + 1
 
-                 RSNX2(IP) = RSNX2(IP) + 0.5d0*AREAS(NEITABELE(IP,IE))
+                 SWAN_RSNX2(IP) = SWAN_RSNX2(IP) + 0.5d0*AREAS(NEITABELE(IP,IE))
      &                     * ( - DSXXDX(NEITABELE(IP,IE))
      &                         - DSXYDY(NEITABELE(IP,IE)) )
-                 RSNY2(IP) = RSNY2(IP) + 0.5d0*AREAS(NEITABELE(IP,IE))
+                 SWAN_RSNY2(IP) = SWAN_RSNY2(IP) + 0.5d0*AREAS(NEITABELE(IP,IE))
      &                     * ( - DSXYDX(NEITABELE(IP,IE))
      &                         - DSYYDY(NEITABELE(IP,IE)) )
 
@@ -431,13 +455,13 @@ C..... END DW/WJP
            ENDDO inner
 
 
-           RSNX2(IP) = RSNX2(IP) / TOTALAREA
-           RSNY2(IP) = RSNY2(IP) / TOTALAREA
+           SWAN_RSNX2(IP) = SWAN_RSNX2(IP) / TOTALAREA
+           SWAN_RSNY2(IP) = SWAN_RSNY2(IP) / TOTALAREA
 
 C    WJPs artifical limiter; UL is to a really large by default, user
 C    can change UL to be a strict value if they please
-           RSNX2(IP) = min(UL,max(-UL,RSNX2(IP)))
-           RSNY2(IP) = min(UL,max(-UL,RSNY2(IP)))
+           SWAN_RSNX2(IP) = min(UL,max(-UL,SWAN_RSNX2(IP)))
+           SWAN_RSNY2(IP) = min(UL,max(-UL,SWAN_RSNY2(IP)))
 
          ENDDO outer
 
@@ -445,14 +469,14 @@ C    can change UL to be a strict value if they please
          IF(Marcel)THEN
            DO K=1,NOPE
              DO I=1,NVDLL(K)
-               RSNX2(NBDV(K,I)) = 0.0d0
-               RSNY2(NBDV(K,I)) = 0.0d0
+               SWAN_RSNX2(NBDV(K,I)) = 0.0d0
+               SWAN_RSNY2(NBDV(K,I)) = 0.0d0
              ENDDO
            ENDDO
            DO K=1,NBOU
              DO I=1,NVELL(K)
-               RSNX2(NBVV(K,I)) = 0.0d0
-               RSNY2(NBVV(K,I)) = 0.0d0
+               SWAN_RSNX2(NBVV(K,I)) = 0.0d0
+               SWAN_RSNY2(NBVV(K,I)) = 0.0d0
              ENDDO
            ENDDO
          ENDIF

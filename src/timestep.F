@@ -146,10 +146,10 @@ Casey 090302: We need these values from other places.
      &                       CouplingInterval,
      &                       COUPWIND,
      &                       InterpoWeight,
-     &                       SWAN_WX2,
-     &                       SWAN_WY2
-Casey 100205: Add a variable for writing of SWAN hot-start files.
-     &                      ,WriteSwanHotStart
+     &                       SWAN_WX2, SWAN_WY2,
+     &                       SWAN_RSNX1, SWAN_RSNX2,
+     &                       SWAN_RSNY1, SWAN_RSNY2,
+     &                       WriteSwanHotStart
 #endif
       USE WEIR_FLUX
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
@@ -693,42 +693,28 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          end select
       endif
 #endif
-      IF(NRS.NE.0) THEN
-
-        if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3) .or. (nrs.eq.5)) then  !saeed added 5
-            IF(TimeLoc.GT.RSTIME2) THEN
+      IF(NRS/=0) THEN
+        if((NRS==1).or.(nrs==2).or.(nrs==3).or.(nrs==5)) then  !saeed added 5
+            IF(TimeLoc>RSTIME2) THEN
                RSTIME1=RSTIME2
                RSTIME2=RSTIME2+RSTIMINC
-               DO I=1,NP
-                  RSNX1(I)=RSNX2(I)
-                  RSNY1(I)=RSNY2(I)
-               END DO
-               IF(NRS.EQ.1) THEN
+               RSNX1=RSNX2
+               RSNY1=RSNY2
+               IF(NRS==1) THEN
                  CALL RSGET(RSNX2,RSNY2)
-               ENDIF
-               IF(NRS.EQ.2) THEN
+               ELSEIF(NRS==2) THEN
                  CALL RS2GET(RSNX2,RSNY2,NP)
-               ENDIF
 #ifdef CSWAN
 Casey 090302: Added for coupling to SWAN.
-               IF(NRS.EQ.3) THEN
+               ELSEIF(NRS==3) THEN
                  InterpoWeight = 1.0
-                 CALL ComputeWaveDrivenForces
-Casey 090707: We want to extrapolate forward in time.  Load the latest (current) forces
-C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2.
-                 DO I=1,NP
-                   RSX = RSNX1(I)
-                   RSY = RSNY1(I)
-                   RSNX1(I) = RSNX2(I)
-                   RSNY1(I) = RSNY2(I)
-                   RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX)
-                   RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
-                 ENDDO
-               ENDIF
+                 CALL ComputeWaveDrivenForces()
+                 ! Extrapolate forward in time
+                 RSNX2 = 2.0d0*SWAN_RSNX2 - SWAN_RSNX1
+                 RSNY2 = 2.0d0*SWAN_RSNY2 - SWAN_RSNY1
 #endif
 C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
-               NRS5: IF (NRS == 5) THEN    ! saeed
-
+               ELSEIF (NRS == 5) THEN    ! saeed
                  DO I=1,NP
                    RSX = RSNX1(I)
                    RSY = RSNY1(I)
@@ -737,8 +723,7 @@ C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
                    RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX) ! extrapolate: 2*Rc - Rp
                    RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
                  ENDDO
-               ENDIF NRS5 !(NRS = 5)
-
+               ENDIF
             ENDIF  !timeloc gt rstime2
 
             RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
