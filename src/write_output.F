@@ -239,6 +239,8 @@ C
       type(OutputDataDescript_t) :: YVELAVDescript
       type(OutputDataDescript_t) :: XVELVADescript
       type(OutputDataDescript_t) :: YVELVADescript
+      type(OutputDataDescript_t) :: HotstartRS1Descript
+      type(OutputDataDescript_t) :: HotstartRS2Descript
 
       ! H1, H2
       type(OutputDataDescript_t) :: H1_HS_Descript
@@ -1725,47 +1727,43 @@ C                      ! initialize it if it wasn't initialized above
 #endif
       call unsetMessageSource()
 C----------------------------------------------------------------------
-      contains
-
-         ! 
-         SUBROUTINE REAL_FIELD_ALLOCATE( OUTFLAG, VECVAR, NDIM, VALINIT )
-            INTEGER:: OUTFLAG, NDIM
-            REAL (8), allocatable:: VECVAR(:)
-            REAL (8), optional:: VALINIT 
-
-            IF ( OUTFLAG .NE. OFF ) THEN
-               IF ( .NOT. ALLOCATED(VECVAR) ) THEN
-                   ALLOCATE( VECVAR(NDIM) ) ;
-                   IF ( PRESENT(VALINIT) ) THEN
-                      VECVAR = VALINIT ; 
-                   ENDIF  
-               END IF 
-            ENDIF
-
-            RETURN ; 
-         END SUBROUTINE REAL_FIELD_ALLOCATE   
-
-         ! 
-         SUBROUTINE INT_FIELD_ALLOCATE( OUTFLAG, IVECVAR, NDIM, VALINIT )
-            INTEGER:: OUTFLAG, NDIM
-            INTEGER, allocatable:: IVECVAR(:)
-            INTEGER, optional:: VALINIT 
-
-            IF ( OUTFLAG .NE. OFF ) THEN
-               IF ( .NOT. ALLOCATED(IVECVAR) ) THEN
-                   ALLOCATE( IVECVAR(NDIM) ) ;
-                   IF ( PRESENT(VALINIT) ) THEN
-                      IVECVAR = VALINIT ; 
-                   ENDIF  
-               END IF 
-            ENDIF
-
-            RETURN ; 
-         END SUBROUTINE INT_FIELD_ALLOCATE   
- 
  
       end subroutine initOutput2D
 C----------------------------------------------------------------------
+
+      SUBROUTINE REAL_FIELD_ALLOCATE( OUTFLAG, VECVAR, NDIM, VALINIT )
+        USE SIZES, ONLY: OFF
+        IMPLICIT NONE
+        INTEGER :: OUTFLAG, NDIM
+        REAL (8), allocatable:: VECVAR(:)
+        REAL (8), optional:: VALINIT
+
+        IF ( OUTFLAG .NE. OFF ) THEN
+           IF ( .NOT. ALLOCATED(VECVAR) ) THEN
+               ALLOCATE( VECVAR(NDIM) ) ;
+               IF ( PRESENT(VALINIT) ) THEN
+                  VECVAR = VALINIT ;
+               ENDIF
+           END IF
+        ENDIF
+      END SUBROUTINE REAL_FIELD_ALLOCATE
+
+      SUBROUTINE INT_FIELD_ALLOCATE( OUTFLAG, IVECVAR, NDIM, VALINIT )
+        USE SIZES, ONLY: OFF
+        IMPLICIT NONE
+        INTEGER:: OUTFLAG, NDIM
+        INTEGER, allocatable:: IVECVAR(:)
+        INTEGER, optional:: VALINIT
+
+        IF ( OUTFLAG .NE. OFF ) THEN
+           IF ( .NOT. ALLOCATED(IVECVAR) ) THEN
+               ALLOCATE( IVECVAR(NDIM) ) ;
+               IF ( PRESENT(VALINIT) ) THEN
+                  IVECVAR = VALINIT ;
+               ENDIF
+           END IF
+        ENDIF
+      END SUBROUTINE INT_FIELD_ALLOCATE
 
 C----------------------------------------------------------------------
 C       S U B R O U T I N E   W R I T E   O U T P U T   2 D
@@ -4575,6 +4573,39 @@ C
          HotstartVelDescript % array_g              => UU2_g
          HotstartVelDescript % array2_g             => VV2_g
 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
+     &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.ne.0 ) THEN
+         CALL REAL_FIELD_ALLOCATE( NOUTGE, RSNX1_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NOUTGE, RSNY1_g, NP_G )
+      ENDIF
+         HotstartRS1Descript % specifier            = NHSTAR
+         HotstartRS1Descript % initial_value        = 0.0
+         HotstartRS1Descript % num_items_per_record = 2
+         HotstartRS1Descript % num_fd_records       = NP_G
+         HotstartRS1Descript % num_records_this     = NP
+         HotstartRS1Descript % imap                 => NODES_LG
+         HotstartRS1Descript % array                => RSNX1
+         HotstartRS1Descript % array2              => RSNY1
+         HotstartRS1Descript % array_g              => RSNX1_g
+         HotstartRS1Descript % array2_g            => RSNY1_g
+
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
+     &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.ne.0 ) THEN
+         CALL REAL_FIELD_ALLOCATE( NOUTGE, RSNX2_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NOUTGE, RSNY2_g, NP_G )
+      ENDIF
+         HotstartRS2Descript % specifier            = NHSTAR
+         HotstartRS2Descript % initial_value        = 0.0
+         HotstartRS2Descript % num_items_per_record = 2
+         HotstartRS2Descript % num_fd_records       = NP_G
+         HotstartRS2Descript % num_records_this     = NP
+         HotstartRS2Descript % imap                 => NODES_LG
+         HotstartRS2Descript % array                => RSNX2
+         HotstartRS2Descript % array2              => RSNY2
+         HotstartRS2Descript % array_g              => RSNX2_g
+         HotstartRS2Descript % array2_g            => RSNY2_g
+
+
          H1_HS_Descript % specifier            = NHSTAR
          H1_HS_Descript % initial_value        = 0.0
          H1_HS_Descript % num_items_per_record = 1
@@ -4813,6 +4844,11 @@ C     collect up the data from subdomains if running in parallel
       IF (WRITE_LOCAL_HOT_START_FILES.eqv..FALSE.) THEN
          CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
          CALL collectFullDomainArray(Elev2Descript, packOne, unpackOne)
+
+         if(nrs.ne.0)then
+           call collectFullDomainArray(HotstartRS1Descript, packTwo, unpackTwo)
+           call collectFullDomainArray(HotstartRS2Descript, packTwo, unpackTwo)
+         endif  
 
          ! H1, H2
          CALL collectFullDomainArray(H1_HS_Descript, packOne, unpackOne)
@@ -5370,7 +5406,7 @@ C
             CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
      &         Elev2Descript, HotstartVelDescript, CH1Descript, EtaDiscDescript,
      &         NodeCodeDescript, NOFFDescript, H1_HS_Descript,
-     &         H2_HS_Descript, TimeLoc, it)
+     &         H2_HS_Descript, HotstartRS1Descript, HotstartRS2Descript, TimeLoc, it)
             IF ((IHARIND.eq.1).and.(IT.gt.ITHAS)) THEN
                CALL writeNetCDFHotstartHarmonic(hss%lun,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
