@@ -7043,14 +7043,6 @@ contains
       call check_err(iret)
       iret = nf90_inq_varid(hs%ncid, "noff", hs%noffnc%nodal_data_id)
       call check_err(iret)
-      iret = nf90_inq_varid(hs%ncid, "rsx1", hs%rs1%u_nodal_data_id)
-      call check_err(iret)
-      iret = nf90_inq_varid(hs%ncid, "rsy1", hs%rs1%v_nodal_data_id)
-      call check_err(iret)
-      iret = nf90_inq_varid(hs%ncid, "rsx2", hs%rs2%u_nodal_data_id)
-      call check_err(iret)
-      iret = nf90_inq_varid(hs%ncid, "rsy2", hs%rs2%v_nodal_data_id)
-      call check_err(iret)
       iret = nf90_inq_varid(hs%ncid, "h1", hs%htot1%nodal_data_id)
       call check_err(iret)
       iret = nf90_inq_varid(hs%ncid, "h2", hs%htot2%nodal_data_id)
@@ -7059,17 +7051,28 @@ contains
          iret = nf90_inq_varid(hs%ncid, "ch1", hs%ch1%nodal_data_id)
          call check_err(iret)
       end if
-      if (nrs == 3) then
-         iret = nf90_inq_varid(hs%ncid, "swan_rsx1", hs%swan_rs1%u_nodal_data_id)
+      if (nrs /= 0) then
+         iret = nf90_inq_varid(hs%ncid, "rsx1", hs%rs1%u_nodal_data_id)
          call check_err(iret)
-         iret = nf90_inq_varid(hs%ncid, "swan_rsy1", hs%swan_rs1%v_nodal_data_id)
+         iret = nf90_inq_varid(hs%ncid, "rsy1", hs%rs1%v_nodal_data_id)
          call check_err(iret)
-         iret = nf90_inq_varid(hs%ncid, "swan_rsx2", hs%swan_rs2%u_nodal_data_id)
+         iret = nf90_inq_varid(hs%ncid, "rsx2", hs%rs2%u_nodal_data_id)
          call check_err(iret)
-         iret = nf90_inq_varid(hs%ncid, "swan_rsy2", hs%swan_rs2%v_nodal_data_id)
+         iret = nf90_inq_varid(hs%ncid, "rsy2", hs%rs2%v_nodal_data_id)
          call check_err(iret)
+#ifdef CSWAN
+         if (nrs == 3) then
+            iret = nf90_inq_varid(hs%ncid, "swan_rsx1", hs%swan_rs1%u_nodal_data_id)
+            call check_err(iret)
+            iret = nf90_inq_varid(hs%ncid, "swan_rsy1", hs%swan_rs1%v_nodal_data_id)
+            call check_err(iret)
+            iret = nf90_inq_varid(hs%ncid, "swan_rsx2", hs%swan_rs2%u_nodal_data_id)
+            call check_err(iret)
+            iret = nf90_inq_varid(hs%ncid, "swan_rsy2", hs%swan_rs2%v_nodal_data_id)
+            call check_err(iret)
+         end if
+#endif
       end if
-
 !     Write the nodal data to the netcdf file
       if (MNPROC == 1) then
          iret = nf90_put_var(hs%ncid, hs%zeta1%nodal_data_id, &
@@ -7172,6 +7175,7 @@ contains
             iret = nf90_put_var(hs%ncid, hs%rs2%v_nodal_data_id, &
                                 rs2Descript%array2_g, start, kount)
             call check_err(iret)
+#ifdef CSWAN
             if (nrs == 3) then
                iret = nf90_put_var(hs%ncid, hs%swan_rs1%u_nodal_data_id, &
                                    SwanRs1Descript%array_g, start, kount)
@@ -7186,6 +7190,7 @@ contains
                                    SwanRs2Descript%array2_g, start, kount)
                call check_err(iret)
             end if
+#endif
          end if
 
          ! H1, H2
@@ -8182,24 +8187,28 @@ contains
       call check_err(iret)
       iret = nf90_inq_varid(hs%ncid, "noff", hs%noffnc%nodal_data_id)
       call check_err(iret)
-      iret = nf90_inq_varid(hs%ncid, "rsx1", hs%rs1%u_nodal_data_id)
-      call check_err(iret)
-      iret = nf90_inq_varid(hs%ncid, "rsy1", hs%rs1%v_nodal_data_id)
-      call check_err(iret)
-      iret = nf90_inq_varid(hs%ncid, "rsx2", hs%rs2%u_nodal_data_id)
-      call check_err(iret)
-      iret = nf90_inq_varid(hs%ncid, "rsy2", hs%rs2%v_nodal_data_id)
-      call check_err(iret)
+      if (nrs /= 0) then
+         iret = nf90_inq_varid(hs%ncid, "rsx1", hs%rs1%u_nodal_data_id)
+         call check_err(iret)
+         iret = nf90_inq_varid(hs%ncid, "rsy1", hs%rs1%v_nodal_data_id)
+         call check_err(iret)
+         iret = nf90_inq_varid(hs%ncid, "rsx2", hs%rs2%u_nodal_data_id)
+         call check_err(iret)
+         iret = nf90_inq_varid(hs%ncid, "rsy2", hs%rs2%v_nodal_data_id)
+         call check_err(iret)
 #ifdef CSWAN
-      iret = nf90_inq_varid(hs%ncid, "swan_rsx1", hs%swan_rs1%u_nodal_data_id)
-      call check_err(iret)
-      iret = nf90_inq_varid(hs%ncid, "swan_rsy1", hs%swan_rs1%v_nodal_data_id)
-      call check_err(iret)
-      iret = nf90_inq_varid(hs%ncid, "swan_rsx2", hs%swan_rs2%u_nodal_data_id)
-      call check_err(iret)
-      iret = nf90_inq_varid(hs%ncid, "swan_rsy2", hs%swan_rs2%v_nodal_data_id)
-      call check_err(iret)
+         if (nrs == 3) then
+            iret = nf90_inq_varid(hs%ncid, "swan_rsx1", hs%swan_rs1%u_nodal_data_id)
+            call check_err(iret)
+            iret = nf90_inq_varid(hs%ncid, "swan_rsy1", hs%swan_rs1%v_nodal_data_id)
+            call check_err(iret)
+            iret = nf90_inq_varid(hs%ncid, "swan_rsx2", hs%swan_rs2%u_nodal_data_id)
+            call check_err(iret)
+            iret = nf90_inq_varid(hs%ncid, "swan_rsy2", hs%swan_rs2%v_nodal_data_id)
+            call check_err(iret)
+         end if
 #endif
+      end if
       iret = nf90_inq_varid(hs%ncid, "h1", hs%htot1%nodal_data_id)
       call check_err(iret)
       iret = nf90_inq_varid(hs%ncid, "h2", hs%htot2%nodal_data_id)
@@ -8245,18 +8254,20 @@ contains
                                 rsny2, start, kount)
             call check_err(iret)
 #ifdef CSWAN
-            iret = nf90_get_var(hs%ncid, hs%rs1%u_nodal_data_id, &
-                                swan_rsnx1, start, kount)
-            call check_err(iret)
-            iret = nf90_get_var(hs%ncid, hs%rs1%v_nodal_data_id, &
-                                swan_rsny1, start, kount)
-            call check_err(iret)
-            iret = nf90_get_var(hs%ncid, hs%rs2%u_nodal_data_id, &
-                                swan_rsnx2, start, kount)
-            call check_err(iret)
-            iret = nf90_get_var(hs%ncid, hs%rs2%v_nodal_data_id, &
-                                swan_rsny2, start, kount)
-            call check_err(iret)
+            if (nrs == 3) then
+               iret = nf90_get_var(hs%ncid, hs%rs1%u_nodal_data_id, &
+                                   swan_rsnx1, start, kount)
+               call check_err(iret)
+               iret = nf90_get_var(hs%ncid, hs%rs1%v_nodal_data_id, &
+                                   swan_rsny1, start, kount)
+               call check_err(iret)
+               iret = nf90_get_var(hs%ncid, hs%rs2%u_nodal_data_id, &
+                                   swan_rsnx2, start, kount)
+               call check_err(iret)
+               iret = nf90_get_var(hs%ncid, hs%rs2%v_nodal_data_id, &
+                                   swan_rsny2, start, kount)
+               call check_err(iret)
+            end if
 #endif
          end if
 
