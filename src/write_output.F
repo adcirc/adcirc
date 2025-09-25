@@ -2794,9 +2794,9 @@ C
 #ifdef ADCNETCDF
          IF (MyProc.eq.0) THEN
              IF (sets == 1) THEN
-                CALL writeOutArrayNetCDF(lun, 0d0, 1, mag1, ph1)
+                CALL writeOutArrayNetCDF(lun, 0d0, mag1, ph1)
              ELSE
-                CALL writeOutArrayNetCDF(lun, 0d0, 1, mag1, ph1,
+                CALL writeOutArrayNetCDF(lun, 0d0, mag1, ph1,
      &                                   mag2, ph2)
              ENDIF
          ENDIF
@@ -3413,23 +3413,15 @@ C
          ! jgf49.48.01: if netcdf is not required for a particular output file,
          ! the associated subroutine call will do nothing and just return
          IF (myProc.eq.0) THEN
-            CALL initNetCDFOutputFile(SigTStaDescript,
-     &           netcdf_error(1), SalStaDescript, TempStaDescript)
-            CALL initNetCDFOutputFile(RealQStaDescript,
-     &           netcdf_error(2), ImaginaryQStaDescript, WZStaDescript)
-            CALL initNetCDFOutputFile(Q20StaDescript,
-     &           netcdf_error(3), LStaDescript, EVStaDescript)
-            CALL initNetCDFOutputFile(SigTDescript,
-     &           netcdf_error(4), SalDescript, TempDescript)
-            CALL initNetCDFOutputFile(RealQDescript,
-     &           netcdf_error(5), ImaginaryQDescript, WZDescript)
-            CALL initNetCDFOutputFile(Q20Descript,
-     &           netcdf_error(6), LDescript, EVDescript)
-            CALL initNetCDFOutputFile(QSurfKp1Descript,
-     &           netcdf_error(7))
+            CALL initNetCDFOutputFile(SigTStaDescript, netcdf_error(1))
+            CALL initNetCDFOutputFile(RealQStaDescript, netcdf_error(2))
+            CALL initNetCDFOutputFile(Q20StaDescript, netcdf_error(3))
+            CALL initNetCDFOutputFile(SigTDescript, netcdf_error(4))
+            CALL initNetCDFOutputFile(RealQDescript, netcdf_error(5))
+            CALL initNetCDFOutputFile(Q20Descript, netcdf_error(6))
+            CALL initNetCDFOutputFile(QSurfKp1Descript, netcdf_error(7))
 !Casey 221115 : Add output of internal variables in fort.48 file.
-            CALL initNetCDFOutputFile(RealBPGDescript,
-     &           netcdf_error(8), ImaginaryBPGDescript)
+            CALL initNetCDFOutputFile(RealBPGDescript, netcdf_error(8))
          ENDIF
 #ifdef CMPI
 !Casey 221115 : Changed 7 to 8 through these lines.
@@ -3599,7 +3591,7 @@ C                 Write time header into file
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF(41, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(41, TimeLoc,
      &             SigTStaDescript, SalStaDescript, TempStaDescript)
                ENDIF
 #endif
@@ -3707,7 +3699,7 @@ C                 Write time header into file
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF(42, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(42, TimeLoc,
      &               RealQStaDescript,ImaginaryQStaDescript,
      &               WZStaDescript)
                ENDIF
@@ -3800,7 +3792,7 @@ C                 Write time header into file
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF(43, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(43, TimeLoc,
      &               Q20StaDescript,LStaDescript,EVStaDescript)
                ENDIF
 #endif
@@ -3999,11 +3991,11 @@ C        Check to see if it is time to generate 3D fulldomain density output.
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF(44, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(44, TimeLoc,
      &               SigTDescript,SalDescript,TempDescript)
                   IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
                      IF(BCFLAG_TEMP.NE.0) THEN
-                       call writeOutArrayNetCDF(47, TimeLoc, it,
+                       call writeOutArrayNetCDF(47, TimeLoc,
      &                    QSurfKp1Descript)
                      ENDIF
                   ENDIF   
@@ -4097,7 +4089,7 @@ C                 Write time header into file
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF(45, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(45, TimeLoc,
      &               RealQDescript,ImaginaryQDescript,WZDescript)
                ENDIF
 #endif
@@ -4169,7 +4161,7 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF(46, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(46, TimeLoc,
      &               Q20Descript,LDescript,EVDescript)
                ENDIF
 #endif
@@ -4212,7 +4204,7 @@ C
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF(48, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(48, TimeLoc,
      &               RealBPGDescript,ImaginaryBPGDescript)
                ENDIF
 #endif
@@ -4306,7 +4298,7 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
         CASE(NETCDF3, NETCDF4) ! (portable)
 #ifdef ADCNETCDF
             IF (MYPROC.EQ.0) THEN
-               CALL writeOutArrayNetCDF(descript % lun, TimeLoc, it, descript)
+               CALL writeOutArrayNetCDF(descript % lun, TimeLoc, descript)
             ENDIF
 #else
             call allMessage(ERROR, 'NetCDF was specified.')
@@ -4465,7 +4457,7 @@ Casey 120830: Reversed the next two lines.
                call initNetCDFOutputFile(descript, nerr)
                descript % initialized = .true.
             endif
-            CALL writeOutArrayNetCDF(lun, TimeLoc, it, descript)
+            CALL writeOutArrayNetCDF(lun, TimeLoc, descript)
          ENDIF
 #else
          call allMessage(ERROR,'NetCDF is not available.')
@@ -4819,21 +4811,16 @@ C
             ! created by adcprep.
             IF (MNPROC.eq.1) THEN  ! serial
 C              jgf49.35 TODO: Allocate arrays to write 3D data
-               CALL initNetCDFHotstart(hss%lun, Elev1Descript,
-     &         Elev2Descript, HotstartVelDescript, CH1Descript,
-     &         EtaDiscDescript, NodeCodeDescript, NOFFDescript, ncerror)
+               CALL initNetCDFHotstart(hss%lun, Elev1Descript, ncerror)
                IF ( ncerror.eqv..true. ) CALL terminate()
                IF (IHARIND.eq.1) THEN
                   CALL initNetCDFHotstartHarmonic(hss%lun,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
-     &            HarmUVelFDLVDescript, HarmVVelFDLVDescript,
-     &            HarmUVelSLVDescript, HarmVVelSLVDescript, ncerror)
+     &            HarmUVelSLVDescript, ncerror)
                   IF ( ncerror.eqv..true. ) CALL terminate()
                   IF (CHARMV.eqv..true.) THEN
                      CALL initNetCDFHotstartHarmonicMeansVariances(
-     &                  hss%lun, ELAVDescript, ELVADescript,
-     &                  XVELAVDescript, YVELAVDescript, XVELVADescript,
-     &                  YVELVADescript,ncerror)
+     &                  hss%lun, ELAVDescript, ncerror)
                      IF ( ncerror.eqv..true. ) CALL terminate()
                   ENDIF
                ENDIF
@@ -4847,22 +4834,16 @@ C              jgf49.35 TODO: Allocate arrays to write 3D data
                   ELSE
                      nextLun = 67
                   ENDIF
-                  CALL initNetCDFHotstart(nextLun, Elev1Descript,
-     &            Elev2Descript, HotstartVelDescript, CH1Descript,
-     &            EtaDiscDescript, NodeCodeDescript, NOFFDescript,
-     &            ncerror)
+                  CALL initNetCDFHotstart(nextLun, Elev1Descript, ncerror)
                   IF ( ncerror.eqv..true. ) CALL terminate()
                   IF (IHARIND.eq.1) THEN
                      CALL initNetCDFHotstartHarmonic(nextLun,
      &               HarmElevFDLVDescript, HarmElevSLVDescript,
-     &               HarmUVelFDLVDescript, HarmVVelFDLVDescript,
-     &               HarmUVelSLVDescript, HarmVVelSLVDescript, ncerror)
+     &               HarmUVelSLVDescript, ncerror)
                      IF ( ncerror.eqv..true. ) CALL terminate()
                      IF (CHARMV.eqv..true.) THEN
                         CALL initNetCDFHotstartHarmonicMeansVariances(
-     &                     nextLun, ELAVDescript, ELVADescript,
-     &                     XVELAVDescript, YVELAVDescript,
-     &                     XVELVADescript, YVELVADescript, ncerror)
+     &                     nextLun, ELAVDescript, ncerror)
                         IF ( ncerror.eqv..true. ) CALL terminate()
                      ENDIF
                   ENDIF

@@ -153,7 +153,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
     set(ADCSWAN1_SOURCES
         ${ADCSWAN1_SOURCES}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
