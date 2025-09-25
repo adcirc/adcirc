@@ -9067,8 +9067,7 @@ C     we collected in read_global.F and stored in pre_global.F.
      &   ics, nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
      &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
      &   myProc, screenUnit, nolibf, nwp, tau0, cf, eslm,
-     &   abs(nstae), abs(nstav), abs(nstam), neta, nabout, nscreen,
-     &   nfen, iden, islip, kp, z0s, z0b, theta1, theta2,
+     &   neta, nabout, nscreen, nfen, iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
      &   nvtd, alp4, C3D, runid)
 
@@ -9163,22 +9162,15 @@ C++
 #endif
 C
       IF (C3D.eqv..true.) THEN
-         CALL initNetCDFOutputFile(SigTStaDescript, reterr,
-     &       SalStaDescript, TempStaDescript)
-         CALL initNetCDFOutputFile(RealQStaDescript, reterr,
-     &      ImaginaryQStaDescript, WZStaDescript)
-         CALL initNetCDFOutputFile(Q20StaDescript, reterr,
-     &      LStaDescript, EVStaDescript)
-         CALL initNetCDFOutputFile(SigTDescript, reterr,
-     &      SalDescript, TempDescript)
-         CALL initNetCDFOutputFile(RealQDescript, reterr,
-     &      ImaginaryQDescript, WZDescript)
-         CALL initNetCDFOutputFile(Q20Descript, reterr,
-     &      LDescript, EVDescript)
+         CALL initNetCDFOutputFile(SigTStaDescript, reterr)
+         CALL initNetCDFOutputFile(RealQStaDescript, reterr)
+         CALL initNetCDFOutputFile(Q20StaDescript, reterr)
+         CALL initNetCDFOutputFile(SigTDescript, reterr)
+         CALL initNetCDFOutputFile(RealQDescript, reterr)
+         CALL initNetCDFOutputFile(Q20Descript, reterr)
          CALL initNetCDFOutputFile(QSurfKp1Descript, reterr)
 !Casey 221115 : Add output of internal variables in fort.48 file.
-         CALL initNetCDFOutputFile(RealBPGDescript, reterr,
-     &      ImaginaryBPGDescript)
+         CALL initNetCDFOutputFile(RealBPGDescript, reterr)
       ENDIF
 C
 C     Create NetCDF hotstart files if NetCDF was specified.
@@ -9188,18 +9180,14 @@ C     Create NetCDF hotstart files if NetCDF was specified.
          ! available to determine if they will both be needed
          IF ((IHOT.ne.367).and.(IHOT.ne.567)) THEN
             Elev1Descript % file_name = 'fort.67'
-            CALL initNetCDFHotstart(67, Elev1Descript,
-     &         Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
-     &         NodeCodeDescript, NOFFDescript, reterr)
+            CALL initNetCDFHotstart(67, Elev1Descript, reterr)
             IF (C3D.eqv..true.) THEN
                CALL initNetCDFHotstart3D(67,NHSTAR)
             ENDIF
          ENDIF
          IF ((IHOT.ne.368).and.(IHOT.ne.568)) THEN
             Elev1Descript % file_name = 'fort.68'
-            CALL initNetCDFHotstart(68, Elev1Descript,
-     &         Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
-     &         NodeCodeDescript, NOFFDescript, reterr)
+            CALL initNetCDFHotstart(68, Elev1Descript, reterr)
             IF (C3D.eqv..true.) THEN
                CALL initNetCDFHotstart3D(68,NHSTAR)
             ENDIF
@@ -9208,27 +9196,21 @@ C     Create NetCDF hotstart files if NetCDF was specified.
             IF ((IHOT.ne.367).and.(IHOT.ne.567)) THEN
                CALL initNetCDFHotstartHarmonic(67,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
-     &            HarmUVelFDLVDescript, HarmVVelFDLVDescript,
-     &            HarmUVelSLVDescript, HarmVVelSLVDescript, reterr)
+     &            HarmUVelSLVDescript, reterr)
             ENDIF
             IF ((IHOT.ne.368).and.(IHOT.ne.568)) THEN
                CALL initNetCDFHotstartHarmonic(68,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
-     &            HarmUVelFDLVDescript, HarmVVelFDLVDescript,
-     &            HarmUVelSLVDescript, HarmVVelSLVDescript, reterr)
+     &            HarmUVelSLVDescript, reterr)
             ENDIF
             IF (CHARMV.eqv..true.) THEN
                IF ((IHOT.ne.367).and.(IHOT.ne.567)) THEN
                   CALL initNetCDFHotstartHarmonicMeansVariances(
-     &               67, ELAVDescript, ELVADescript,
-     &               XVELAVDescript, YVELAVDescript, XVELVADescript,
-     &               YVELVADescript, reterr)
+     &               67, ELAVDescript, reterr)
                ENDIF
                IF ((IHOT.ne.368).and.(IHOT.ne.568)) THEN
                   CALL initNetCDFHotstartHarmonicMeansVariances(
-     &               68, ELAVDescript, ELVADescript,
-     &               XVELAVDescript, YVELAVDescript, XVELVADescript,
-     &               YVELVADescript, reterr)
+     &               68, ELAVDescript, reterr)
                ENDIF
             ENDIF
          ENDIF

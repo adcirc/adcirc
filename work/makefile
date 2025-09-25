@@ -367,7 +367,7 @@ endif
 SOLV_MSRC  =  itpackv.F
 NA_MSRC    =  nodalattr.F
 SG_MSRC    =  subgridLookup.F
-NC_MSRC    =  netcdfio.F
+NC_MSRC    =  netcdfio.F90
 NCE_MSRC   =  netcdf_error.F90
 GIO_MSRC   =  globalio.F
 WRIT_MSRC  =  write_output.F
@@ -411,7 +411,7 @@ WIND_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WIND_MSRC)  )
 NWS08_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NWS08_MSRC) )
 NA_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NA_MSRC)  )
 SG_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(SG_MSRC)  )
-NC_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NC_MSRC)  )
+NC_MOBJ  := $(patsubst %.F90, $(O_DIR)%.o, $(NC_MSRC)  )
 GIO_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(GIO_MSRC)  )
 #Casey 090302: Add rules for coupling to unstructured SWAN.
 COUP_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(COUP_MSRC)  )
@@ -809,7 +809,7 @@ $(O_DIR)itpackv.o     :  itpackv.F $(O_DIR)sizes.o $(O_DIR)messenger.o
 else
 $(O_DIR)itpackv.o     :  itpackv.F $(O_DIR)sizes.o
 endif
-$(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(GWCE_MOBJ) $(O_DIR)global_3dvs.o
+$(O_DIR)netcdfio.o    :  netcdfio.F90  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(GWCE_MOBJ) $(O_DIR)global_3dvs.o
 
 #Casey 090302: Added the next line.
 $(O_DIR)couple2swan.o :  couple2swan.F $(O_DIR)write_output.o
