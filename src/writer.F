@@ -737,7 +737,6 @@ C          required extra message passing steps.
             endif   
             call writeOutArrayNetCDF(writer_descripts(ibuf) % lun,
      &         writer_descripts(ibuf) % wMD % myTime,
-     &         writer_descripts(ibuf) % wMD % myTimeStep,
      &         writer_descripts(ibuf) ) 
 #else
             write(scratchMessage,'(a)') 
