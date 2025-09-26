@@ -290,7 +290,7 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       PROCEDURE(p_computeWindDrag),POINTER :: f_computeWindDrag => null()
 
       ! Container for NWS13 behavior/data
-      type(t_nws13), private :: nws13data
+      type(t_nws13) :: nws13data
 
       ! for record time  
       REAL(8), private:: io_elapsed_time = 0.0D0, nws_elapsed_time = 0.0D0

@@ -987,11 +987,13 @@ Casey 120305: Merging ice changes from Taylor Asher.
 CTGA 110912:  Full SWAN ice implementation.  Use global variables
      &                    NCICE,
      &                    CICE1,
-     &                    CICE2
+     &                    CICE2,
+     &                    NWS 
       USE WIND, ONLY :   WVNX1,
      &                    WVNX2,
      &                    WVNY1,
-     &                    WVNY2
+     &                    WVNY2,
+     &                    nws13data 
       USE MESH, ONLY : NP, DP
 CTGA 111003:  Adding ability to read in ice info from fort.26 file
       USE SWCOMM3,  ONLY: SWAN_WBICETH => WBICETH,
@@ -1039,12 +1041,21 @@ Casey 090302: Initialize the arrays.
       ENDDO
 
 Casey 090302: Need to pass correct first wind snaps to SWAN.
-      DO IN=1,NP
-         SWAN_WX2(IN,1) = WVNX1(IN)
-         SWAN_WY2(IN,1) = WVNY1(IN)
-         SWAN_WX2(IN,2) = WVNX2(IN)
-         SWAN_WY2(IN,2) = WVNY2(IN)
-      ENDDO
+      IF(abs(NWS).ne.13)THEN
+        DO IN=1,NP
+           SWAN_WX2(IN,1) = WVNX1(IN)
+           SWAN_WY2(IN,1) = WVNY1(IN)
+           SWAN_WX2(IN,2) = WVNX2(IN)
+           SWAN_WY2(IN,2) = WVNY2(IN)
+        ENDDO
+      ELSE
+        DO IN=1,NP
+           SWAN_WX2(IN,1) = nws13data%wx1(IN) 
+           SWAN_WY2(IN,1) = nws13data%wy1(IN) 
+           SWAN_WX2(IN,2) = nws13data%wx2(IN)
+           SWAN_WY2(IN,2) = nws13data%wy2(IN)
+        ENDDO
+      ENDIF        
 
 Casey 091216: Initialize arrays for friction coupling and compute first set of values.
       IF(COUPFRIC)THEN

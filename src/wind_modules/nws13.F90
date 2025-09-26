@@ -189,9 +189,9 @@ module mod_nws13
       integer :: n_groups = 0
       integer, allocatable :: sorted_group_indices(:) !> Group indices sorted by priority rank
       real(8) :: wind_multiplier = 1.0d0 !> Multiplier applied to wind velocities for sensitivity analysis
-      real(8), allocatable :: wx1(:), wx2(:) !> Wind x-component at previous/next time (m/s)
-      real(8), allocatable :: wy1(:), wy2(:) !> Wind y-component at previous/next time (m/s)
-      real(8), allocatable :: pr1(:), pr2(:) !> Pressure at previous/next time (m of water)
+      real(8), allocatable, public :: wx1(:), wx2(:) !> Wind x-component at previous/next time (m/s)
+      real(8), allocatable, public :: wy1(:), wy2(:) !> Wind y-component at previous/next time (m/s)
+      real(8), allocatable, public :: pr1(:), pr2(:) !> Pressure at previous/next time (m of water)
       type(t_datetime) :: coldstart !> Reference time for cold start initialization from namelist
       type(t_datetime) :: previous_interp_time !> Previous interpolation time
       type(t_datetime) :: next_interp_time !> Next interpolation time
