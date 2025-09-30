@@ -750,7 +750,7 @@ contains
       !-----------------------------------------------------------------------
       use ADC_CONSTANTS, only: RAD2DEG
       use MESH, only: NP, SLAM, SFEA
-      use mod_grid_search, only: compute_quadrilateral_area
+      use mod_grid_search, only: compute_bilinear_weights
 
       implicit none
 
@@ -759,9 +759,7 @@ contains
       real(8), intent(in)  :: Lon(NumLon, NumLat)
       real(8), intent(in)  :: Lat(NumLon, NumLat)
 
-      integer :: IA
-      integer :: IO
-      integer :: IV
+      integer :: I
       integer, dimension(2) :: cell_indices
 
       real(8) :: AdcLat
@@ -770,11 +768,6 @@ contains
       real(8) :: MaxLon
       real(8) :: MinLat
       real(8) :: MinLon
-      real(8) :: W0
-      real(8) :: W1
-      real(8) :: W2
-      real(8) :: W3
-      real(8) :: W4
 
       type(t_spatial_hash) :: hash_accel
 
@@ -797,39 +790,20 @@ contains
       MinLat = minval(Lat)
       MinLon = minval(Lon)
 
-      do IV = 1, NP
-         AdcLat = RAD2DEG*SFEA(IV)
-         AdcLon = RAD2DEG*SLAM(IV)
+      do I = 1, NP
+         AdcLat = RAD2DEG*SFEA(I)
+         AdcLon = RAD2DEG*SLAM(I)
          if (AdcLon < MinLon) cycle
          if (AdcLon > MaxLon) cycle
          if (AdcLat < MinLat) cycle
          if (AdcLat > MaxLat) cycle
 
-         ! Find containing cell using spatial hash + walking
          cell_indices = hash_accel%find(AdcLon, AdcLat, NumLon, NumLat, Lon, Lat)
-
          if (cell_indices(1) > 0) then
-            IO = cell_indices(1)
-            IA = cell_indices(2)
-
-            ! Compute bilinear interpolation weights
-            W0 = compute_quadrilateral_area(Lon(IO, IA), Lat(IO, IA), Lon(IO + 1, IA), Lat(IO + 1, IA), &
-                                            Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), Lon(IO, IA + 1), Lat(IO, IA + 1))
-            W1 = compute_quadrilateral_area(AdcLon, AdcLat, Lon(IO + 1, IA), Lat(IO + 1, IA), &
-                                            Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), Lon(IO, IA + 1), Lat(IO, IA + 1))
-            W2 = compute_quadrilateral_area(Lon(IO, IA), Lat(IO, IA), AdcLon, AdcLat, &
-                                            Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), Lon(IO, IA + 1), Lat(IO, IA + 1))
-            W3 = compute_quadrilateral_area(Lon(IO, IA), Lat(IO, IA), Lon(IO + 1, IA), Lat(IO + 1, IA), &
-                                            AdcLon, AdcLat, Lon(IO, IA + 1), Lat(IO, IA + 1))
-            W4 = compute_quadrilateral_area(Lon(IO, IA), Lat(IO, IA), Lon(IO + 1, IA), Lat(IO + 1, IA), &
-                                            Lon(IO + 1, IA + 1), Lat(IO + 1, IA + 1), AdcLon, AdcLat)
-
-            interpData%ilon(IV) = IO
-            interpData%ilat(IV) = IA
-            interpData%weights(IV, 1) = W1/(W0*2.d0)
-            interpData%weights(IV, 2) = W2/(W0*2.d0)
-            interpData%weights(IV, 3) = W3/(W0*2.d0)
-            interpData%weights(IV, 4) = W4/(W0*2.d0)
+            interpData%ilon(I) = cell_indices(1)
+            interpData%ilat(I) = cell_indices(2)
+            interpData%weights(I, 1:4) = &
+               compute_bilinear_weights(AdcLon, AdcLat, cell_indices(1), cell_indices(2), NumLon, NumLat, Lon, Lat)
          end if
 
       end do

@@ -61,7 +61,7 @@ module mod_grid_search
       module procedure t_spatial_hash_constructor
    end interface t_spatial_hash
 
-   public :: t_spatial_hash, compute_quadrilateral_area
+   public :: t_spatial_hash, compute_quadrilateral_area, compute_bilinear_weights
 
 contains
 
@@ -412,5 +412,60 @@ contains
       real(8), intent(in) :: x1, y1, x2, y2, x3, y3, x4, y4
       area = abs((x1*y2 - x2*y1) + (x2*y3 - x3*y2) + (x3*y4 - x4*y3) + (x4*y1 - x1*y4))
    end function compute_quadrilateral_area
+
+   !-----------------------------------------------------------------------
+   !> @brief Computes bilinear interpolation weights for a quadrilateral cell
+   !>
+   !> @param[in] query_lon Query point longitude
+   !> @param[in] query_lat Query point latitude
+   !> @param[in] i         Grid cell i-index
+   !> @param[in] j         Grid cell j-index
+   !> @param[in] nx        Grid x-dimension
+   !> @param[in] ny        Grid y-dimension
+   !> @param[in] lon       Grid longitudes (degrees)
+   !> @param[in] lat       Grid latitudes (degrees)
+   !> @return    weights   [w1,w2,w3,w4] for corners (i,j), (i+1,j), (i+1,j+1), (i,j+1)
+   !-----------------------------------------------------------------------
+   pure function compute_bilinear_weights(query_lon, query_lat, i, j, nx, ny, lon, lat) result(weights)
+      implicit none
+      real(8), parameter :: eps = epsilon(1d0)
+      real(8), intent(in) :: query_lon, query_lat
+      integer, intent(in) :: i, j, nx, ny
+      real(8), intent(in) :: lon(nx, ny), lat(nx, ny)
+      real(8) :: weights(4)
+      real(8) :: total_area
+
+      total_area = compute_quadrilateral_area(lon(i, j), lat(i, j), &
+                                              lon(i + 1, j), lat(i + 1, j), &
+                                              lon(i + 1, j + 1), lat(i + 1, j + 1), &
+                                              lon(i, j + 1), lat(i, j + 1))
+
+      if (total_area <= eps) then
+         weights = 0.25d0
+      else
+
+         weights(1) = compute_quadrilateral_area(query_lon, query_lat, &
+                                                 lon(i + 1, j), lat(i + 1, j), &
+                                                 lon(i + 1, j + 1), lat(i + 1, j + 1), &
+                                                 lon(i, j + 1), lat(i, j + 1))/(2d0*total_area)
+
+         weights(2) = compute_quadrilateral_area(lon(i, j), lat(i, j), &
+                                                 query_lon, query_lat, &
+                                                 lon(i + 1, j + 1), lat(i + 1, j + 1), &
+                                                 lon(i, j + 1), lat(i, j + 1))/(2d0*total_area)
+
+         weights(3) = compute_quadrilateral_area(lon(i, j), lat(i, j), &
+                                                 lon(i + 1, j), lat(i + 1, j), &
+                                                 query_lon, query_lat, &
+                                                 lon(i, j + 1), lat(i, j + 1))/(2d0*total_area)
+
+         weights(4) = compute_quadrilateral_area(lon(i, j), lat(i, j), &
+                                                 lon(i + 1, j), lat(i + 1, j), &
+                                                 lon(i + 1, j + 1), lat(i + 1, j + 1), &
+                                                 query_lon, query_lat)/(2d0*total_area)
+
+      end if
+
+   end function compute_bilinear_weights
 
 end module mod_grid_search
