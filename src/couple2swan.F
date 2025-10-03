@@ -1103,10 +1103,16 @@ Casey 090302: Allow SWAN to initialize.
 
 Casey 090302: Advance the wind speeds now so that they do not
 C             get written over during the time step loop.
-      DO IN=1,NP
-         SWAN_WX2(IN,1) = SWAN_WX2(IN,2)
-         SWAN_WY2(IN,1) = SWAN_WY2(IN,2)
-      ENDDO
+Csb   251003: Removing this copy of future winds to the arrays for past winds.
+C             SWAN_WX/Y2(:,1) is supposed to store the past wind speed, not the future wind speed.
+C             SWAN_WX/Y2(:,2) will be updated in timestep.F at each timestep. If this copy is kept,
+C             Interpolation of the wind speeds conducted using InterpoWeight in SWAN would  
+C             be between the future (SWAN_WX/Y2(:,1)) and the current (SWAN_WX/Y2(:,2)) wind speeds, 
+C             which is not correct.
+C      DO IN=1,NP
+C         SWAN_WX2(IN,1) = SWAN_WX2(IN,2)
+C         SWAN_WY2(IN,1) = SWAN_WY2(IN,2)
+C      ENDDO
 
 Casey 090302: Compute the coupling interval as equivalent
 C             to the SWAN time step.
