@@ -1058,12 +1058,11 @@ Casey 090302: Need to pass correct first wind snaps to SWAN.
       ENDIF        
 
 Casey 091216: Initialize arrays for friction coupling and compute first set of values.
-      IF(COUPFRIC)THEN
-         CALL Manning2Madsen
-         DO IN=1,NP
-            SWAN_Z0(IN,1) = SWAN_Z0(IN,2)
-         ENDDO
-      ENDIF
+Csb   251003: Remove IF(COUPFRIC) so that SWAN_Z0 is treated consistently with SWAN_ETA2, SWAN_UU2, and SWAN_VV2.
+      CALL Manning2Madsen
+      DO IN=1,NP
+         SWAN_Z0(IN,1) = SWAN_Z0(IN,2)
+      ENDDO
 
 Casey 120302: Merging ice changes from Taylor Asher.
 CTGA 110912:  Full SWAN ice implementation.  Applying ice coverage mask
@@ -1250,12 +1249,11 @@ C            ENDIF
 
 Casey 091216: Move the 'old' values into the first column,
 C             and then compute the 'new' values.
-      IF(COUPFRIC)THEN
-         DO IN=1,NP
-            SWAN_Z0(IN,1) = SWAN_Z0(IN,2)
-         ENDDO
-         CALL Manning2Madsen
-      ENDIF
+Csb   251003: Remove IF(COUPFRIC) so that SWAN_Z0 is always initialized. COUPFRIC is not initialized yet here.
+      DO IN=1,NP
+         SWAN_Z0(IN,1) = SWAN_Z0(IN,2)
+      ENDDO
+      CALL Manning2Madsen
 
       !jgf50.28: Removed DO ... when SWAN coupling was under development,
       ! this was a loop so that SWAN could do multiple time steps per coupling
