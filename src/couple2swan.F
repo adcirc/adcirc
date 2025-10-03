@@ -982,7 +982,7 @@ C-----------------------------------------------------------------------
 
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE GLOBAL,   ONLY: DT,
-     &                    ETA2,
+     &                    ETA2, UU2, VV2,
 Casey 120305: Merging ice changes from Taylor Asher.
 CTGA 110912:  Full SWAN ice implementation.  Use global variables
      &                    NCICE,
@@ -1032,10 +1032,10 @@ Casey 090302: Initialize the arrays.
       DO IN=1,NP
          SWAN_ETA2(IN,1) = ETA2(IN)
          SWAN_ETA2(IN,2) = ETA2(IN)
-         SWAN_UU2 (IN,1) = 0.D0
-         SWAN_UU2 (IN,2) = 0.D0
-         SWAN_VV2 (IN,1) = 0.D0
-         SWAN_VV2 (IN,2) = 0.D0
+         SWAN_UU2 (IN,1) = UU2(IN)  ! sb251003: Initialize velocity arrays
+         SWAN_UU2 (IN,2) = UU2(IN)  ! with current velocities, not zero.
+         SWAN_VV2 (IN,1) = VV2(IN)  ! This should improve transition at
+         SWAN_VV2 (IN,2) = VV2(IN)  ! hotstart.
       ENDDO
 
 Casey 090302: Need to pass correct first wind snaps to SWAN.
