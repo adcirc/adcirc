@@ -85,6 +85,7 @@
       real(8), allocatable :: csi(:),sii(:)
       real(8) :: slam0,sfea0 !center point of CPP spherical projection
       integer  :: neimin,neimax
+      logical :: use_neighb_neitab = .true. ! use topology-based (true) or angle-based (false) neighbor ordering
  
       real(8) :: theta ! rotation around y-axis
       real(8) :: beta  ! rotation around z-axis
@@ -3127,12 +3128,52 @@ Csb...
 !     ------------------------------------------------------------------
 !               S U B R O U T I N E    N E I G H B
 !     ------------------------------------------------------------------
+!     Wrapper subroutine that calls either NEIGHB_NEITAB (topology-based)
+!     or NEIGHB_ANGLE (angle-based) depending on the module variable
+!     use_neighb_neitab.
+!
+!     Default: use_neighb_neitab = .true. (topology-based, handles duplicate coords)
+!     To use angle-based: set use_neighb_neitab = .false. before calling
+!     ------------------------------------------------------------------
+      SUBROUTINE NEIGHB()
+      IMPLICIT NONE
+
+      call setMessageSource("neighb")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      IF (use_neighb_neitab) THEN
+         call allMessage(INFO,'Using topology-based neighbor ordering '
+     &      // '(NEIGHB_NEITAB).')
+         CALL NEIGHB_NEITAB()
+      ELSE
+         call allMessage(INFO,'Using angle-based neighbor ordering '
+     &      // '(NEIGHB_ANGLE).')
+         CALL NEIGHB_ANGLE()
+      ENDIF
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
+      RETURN
+
+!     ------------------------------------------------------------------
+      end subroutine neighb
+!     ------------------------------------------------------------------
+
+!     ------------------------------------------------------------------
+!               S U B R O U T I N E    N E I G H B _ A N G L E
+!     ------------------------------------------------------------------
+!      Original angle-based neighbor ordering.
 !      Subroutine to generate neighbor tables from a connectivity table.
 !
 !      NOTES
 !      a node neighbor table is generated with the node itself is listed as
 !         neighbor #1 and all other neighbors are sorted and placed in cw
-!         order from east
+!         order from east (angle-based sorting)
 !      a neighbor element table is generated with:
 !         entry 1 = element # defined by neighbors 1,2,3
 !         entry 2 = element # defined by neighbors 1,3,4
@@ -3141,6 +3182,7 @@ Csb...
 !         entry last = element # defined by neighbors 1,nneigh,2
 !         a zero area means that the defined triangle lies outside the domain
 !
+!      WARNING: This version fails when neighbor nodes have duplicate coordinates
 !
 !    v1.0   R.L.   6/29/99  used in 3D code
 !    v2.0   R.L.   5/23/02  adapted to provide neighbor el table
@@ -3163,7 +3205,7 @@ Csb...
 !       NEIMIN - 1+MINIMUM NUMBER OF NEIGHBORS FOR ANY NODE
 !       NEIMAX - 1+MAXIMUM NUMBER OF NEIGHBORS FOR ANY NODE
 !     ------------------------------------------------------------------
-      SUBROUTINE NEIGHB()
+      SUBROUTINE NEIGHB_ANGLE()
       IMPLICIT NONE
       INTEGER :: N,NN,I,J,JJ,K,JLOW
       INTEGER :: NN1,NN2,NN3,NE1,NE2,NE3
@@ -3176,7 +3218,7 @@ Csb...
       INTEGER:: EJ, IJ, II
       INTEGER, ALLOCATABLE::  NeiTabETMP(:,:)
 
-      call setMessageSource("neighb")
+      call setMessageSource("neighb_angle")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
@@ -3400,7 +3442,253 @@ Csb...
       RETURN
 
 !     ------------------------------------------------------------------
-      end subroutine neighb
+      end subroutine neighb_angle
+!     ------------------------------------------------------------------
+
+!     ------------------------------------------------------------------
+!               S U B R O U T I N E    N E I G H B _ N E I T A B
+!     ------------------------------------------------------------------
+!      Topology-based neighbor ordering using element connectivity.
+!      Subroutine to generate neighbor tables from a connectivity table.
+!
+!      NOTES
+!      a node neighbor table is generated with the node itself is listed as
+!         neighbor #1 and all other neighbors are sorted by topology
+!         (element connectivity) which handles duplicate coordinates correctly
+!      a neighbor element table is generated with:
+!         entry 1 = element # defined by neighbors 1,2,3
+!         entry 2 = element # defined by neighbors 1,3,4
+!         entry 3 = element # defined by neighbors 1,4,5
+!          .......
+!         entry last = element # defined by neighbors 1,nneigh,2
+!         a zero area means that the defined triangle lies outside the domain
+!
+!
+!    v1.0   R.L.   6/29/99  used in 3D code
+!    v2.0   R.L.   5/23/02  adapted to provide neighbor el table
+!    v3.0   S.B.  10/06/25  topology-based ordering (handles duplicate coords)
+!
+!     -  PARAMETERS WHICH MUST BE SET TO CONTROL THE DIMENSIONING OF ARRAYS
+!           ARE AS FOLLOWS:
+!
+!          MNP = MAXIMUM NUMBER OF NODAL POINTS
+!          MNE = MAXIMUM NUMBER OF ELEMENTS
+!          MNEI= 1+MAXIMUM NUMBER OF NODES CONNECTED TO ANY ONE NODE IN THE
+!                   FINITE ELEMENT GRID
+!
+!    VARIABLE DEFINITIONS:
+!       NE - NUMBER OF ELEMENTS
+!       NP - NUMBER OF NODES
+!       NM(MNE,3) - NODE NUMBERS ASSOCIATED WITH EACH ELEMENT
+!       NNeigh(MNP) NUMBER OF NEIGHBORS FOR EACH NODE
+!       NeiTab(MNP,NEIMAX) 2D ARRAY OF NEIGHBORS FOR EACH NODE
+!       NeiTabEle(MNP,NEIMAX) 2D ARRAY OF NEIGHBOR ELEMENTS FOR EACH NODE
+!       NEIMIN - 1+MINIMUM NUMBER OF NEIGHBORS FOR ANY NODE
+!       NEIMAX - 1+MAXIMUM NUMBER OF NEIGHBORS FOR ANY NODE
+!     ------------------------------------------------------------------
+      SUBROUTINE NEIGHB_NEITAB()
+      IMPLICIT NONE
+      INTEGER :: N,NN,I,J,JJ,K
+      INTEGER :: NN1,NN2,NN3,NE1,NE2,NE3
+      INTEGER, ALLOCATABLE :: NEITEM(:)
+      LOGICAL :: FOUND
+
+      INTEGER, ALLOCATABLE::  NeiTabETMP(:,:)
+
+      call setMessageSource("neighb")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      ALLOCATE ( NEITEM(MNP) )
+      IF ( .NOT. ALLOCATED(NNeighEle) ) THEN
+          ALLOCATE ( NNeighEle(MNP) )
+      END IF
+
+      ALLOCATE ( NeiTabETMP(MNP,MNEI) ) ;
+
+      DO N=1,NP
+         NNeigh(N)=0
+         NNeighEle(N)=0
+         DO NN=1,MNEI
+            NeiTab(N,NN)=0
+            NeiTabEle(N,NN)=0
+         END DO
+      END DO
+
+      DO N=1,NE
+         NN1 = NM(N,1)
+         NN2 = NM(N,2)
+         NN3 = NM(N,3)
+
+         NNeighEle(NN1)=NNeighEle(NN1)+1
+         NNeighEle(NN2)=NNeighEle(NN2)+1
+         NNeighEle(NN3)=NNeighEle(NN3)+1
+         NeiTabEle(NN1,NNeighEle(NN1))=N
+         NeiTabEle(NN2,NNeighEle(NN2))=N
+         NeiTabEle(NN3,NNeighEle(NN3))=N
+
+         FOUND = .FALSE.
+         DO J=1,NNeigh(NN1)
+            IF(NN2.EQ.NeiTab(NN1,J)) THEN
+               FOUND = .TRUE.
+               EXIT
+            ENDIF
+         END DO
+         IF (.NOT.FOUND) THEN
+            NNeigh(NN1)=NNeigh(NN1)+1
+            NNeigh(NN2)=NNeigh(NN2)+1
+            IF((NNeigh(NN1).GT.MNEI-1).OR.(NNeigh(NN2).GT.MNEI-1))THEN
+                call neighb_terminateDimensioning()
+            ENDIF
+            NeiTab(NN1,NNeigh(NN1))=NN2
+            NeiTab(NN2,NNeigh(NN2))=NN1
+
+            NeiTabETMP(NN1,NNeigh(NN1))=N ;
+            NeiTabETMP(NN2,NNeigh(NN2))=N ;
+         ENDIF
+
+         FOUND = .FALSE.
+         DO J=1,NNeigh(NN1)
+            IF(NN3.EQ.NeiTab(NN1,J)) THEN
+               FOUND = .TRUE.
+               EXIT
+            ENDIF
+         END DO
+         IF (.NOT.FOUND) THEN
+            NNeigh(NN1)=NNeigh(NN1)+1
+            NNeigh(NN3)=NNeigh(NN3)+1
+            IF((NNeigh(NN1).GT.MNEI-1).OR.(NNeigh(NN3).GT.MNEI-1))THEN
+                call neighb_terminateDimensioning()
+            ENDIF
+            NeiTab(NN1,NNeigh(NN1))=NN3
+            NeiTab(NN3,NNeigh(NN3))=NN1
+
+            NeiTabETMP(NN1,NNeigh(NN1))=N ;
+            NeiTabETMP(NN3,NNeigh(NN3))=N ;
+         ENDIF
+
+         FOUND = .FALSE.
+         DO J=1,NNeigh(NN2)
+            IF(NN3.EQ.NeiTab(NN2,J)) THEN
+               FOUND = .TRUE.
+               EXIT
+            ENDIF
+         END DO
+         IF (.NOT.FOUND) THEN
+            NNeigh(NN2)=NNeigh(NN2)+1
+            NNeigh(NN3)=NNeigh(NN3)+1
+            IF((NNeigh(NN2).GT.MNEI-1).OR.(NNeigh(NN3).GT.MNEI-1))THEN
+                call neighb_terminateDimensioning()
+            ENDIF
+            NeiTab(NN2,NNeigh(NN2))=NN3
+            NeiTab(NN3,NNeigh(NN3))=NN2
+
+            NeiTabETMP(NN2,NNeigh(NN2))=N ;
+            NeiTabETMP(NN3,NNeigh(NN3))=N ;
+         ENDIF
+      END DO
+!
+!     INSERT NODE ITSELF IN PLACE #1 and SORT other NEIGHBORS using
+!     topology-based traversal (element connectivity)
+!     This approach handles duplicate node coordinates correctly
+!
+      DO I=1,NP
+         ! Save original neighbor list
+         DO J=1,NNeigh(I)
+            NEITEM(J)=NeiTab(I,J)
+         END DO
+         
+         ! Use topology-based ordering via element connectivity
+         ! Start with first element and traverse around the node
+         IF (NNeigh(I).GT.0) THEN
+            CALL NEIGHB_OrderByTopology(I,NNeigh(I),NEITEM,
+     &           NeiTabETMP,NeiTab)
+         ENDIF
+         
+         ! Insert node itself in place #1
+         NeiTab(I,1)=I
+         NNeigh(I)=NNeigh(I)+1
+      ENDDO
+!
+!     MATCH EACH SET OF 3 NODES WITH CORRESPONDING ELEMENT AND REORDER
+!     ELEMENTS ACCORDINGLY
+!
+      DO I=1,NP
+         DO K=1,NNeighEle(I)
+            NEITEM(K)=NeiTabEle(I,K)
+            NeiTabEle(I,K)=0
+         END DO
+         NN = 0; 
+         DO J=2,NNeigh(I)
+            NN1=NeiTab(I,1)
+            NN3=NeiTab(I,J)
+            IF(J.NE.NNeigh(I)) NN2=NeiTab(I,J+1)
+            IF(J.EQ.NNeigh(I)) NN2=NeiTab(I,2)
+            KLP1: DO K=1,NNeighEle(I)
+               IF(NEITEM(K).NE.0) THEN
+                  IF(NM(NEITEM(K),1).EQ.NN1) THEN
+                     NE1=NM(NEITEM(K),1)
+                     NE2=NM(NEITEM(K),2)
+                     NE3=NM(NEITEM(K),3)
+                  ENDIF
+                  IF(NM(NEITEM(K),2).EQ.NN1) THEN
+                     NE1=NM(NEITEM(K),2)
+                     NE2=NM(NEITEM(K),3)
+                     NE3=NM(NEITEM(K),1)
+                  ENDIF
+                  IF(NM(NEITEM(K),3).EQ.NN1) THEN
+                     NE1=NM(NEITEM(K),3)
+                     NE2=NM(NEITEM(K),1)
+                     NE3=NM(NEITEM(K),2)
+                  ENDIF
+                  IF((NE2.EQ.NN2).AND.(NE3.EQ.NN3)) THEN
+                     NN = NN + 1;
+                     NeiTabEle(I,NN)=NEITEM(K)
+                     NEITEM(K)=0
+                     CYCLE KLP1;
+                  ENDIF
+               ENDIF
+            END DO KLP1
+         END DO
+      END DO
+
+!
+!  DETERMINE THE MAXIMUM AND MINIMUM NUMBER OF NEIGHBORS
+!
+      NEIMAX = 0
+      NEIMIN = 1000
+      DO N=1,NP
+         IF(NNeigh(N).LT.NEIMIN) NEIMIN=NNeigh(N)
+         IF(NNeigh(N).GT.NEIMAX) NEIMAX=NNeigh(N)
+      END DO
+
+!
+!  WRITE OUT DIAGNOSTIC OUTPUT
+!
+!     OPEN(333,file='fort.333')
+!     DO N=1,NP
+!       WRITE(333,331) (NEIGH(N,J),J=1,NNEIGH(N))
+!       WRITE(333,331) N,(NEIGHELE(N,J),J=1,NNEIGH(N)-1)
+!       WRITE(333,*) ' '
+!331    FORMAT(15(1X,I7))
+!       END DO
+!     CLOSE (333)
+
+!     Deallocate local work arrays
+      DEALLOCATE ( NEITEM )
+!      DEALLOCATE ( NNEIGHELE )
+      DEALLOCATE ( NeiTabETMP ) 
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
+      RETURN
+
+!     ------------------------------------------------------------------
+      end subroutine neighb_neitab
 !     ------------------------------------------------------------------
 
       subroutine neighb_terminateDimensioning()
@@ -3426,6 +3714,141 @@ Csb...
         call terminate()
       end subroutine neighb_terminateDuplicateNode
 
+!     ------------------------------------------------------------------
+!           S U B R O U T I N E   N E I G H B _ O r d e r B y T o p o l o g y
+!     ------------------------------------------------------------------
+!     Orders neighbor nodes around a central node using element connectivity
+!     (topology-based approach) instead of geometric angles.
+!     This handles duplicate node coordinates correctly.
+!
+!     Input:
+!       CenterNode - the central node whose neighbors are being ordered
+!       NNeighbors - number of neighbors
+!       NeighNodes - unsorted list of neighbor node indices
+!       NeighElems - elements connecting center node to each neighbor
+!     Output:
+!       OrderedNeiTab - ordered neighbor list (positions 2 onward)
+!     ------------------------------------------------------------------
+      subroutine NEIGHB_OrderByTopology(CenterNode, NNeighbors,
+     &     NeighNodes, NeighElems, OrderedNeiTab)
+      implicit none
+      integer, intent(in) :: CenterNode, NNeighbors
+      integer, intent(in) :: NeighNodes(MNP)
+      integer, intent(in) :: NeighElems(MNP,MNEI)
+      integer, intent(inout) :: OrderedNeiTab(MNP,MNEI)
+      
+      ! Local variables
+      logical :: Used(MNEI)
+      integer :: OrderedCount, StartIdx, CurrentElem
+      integer :: Node1, Node2, Node3, NextNode, K, J
+      integer :: PrevNode, CandidateElem
+      logical :: FoundNext
+      
+      ! Initialize
+      Used = .FALSE.
+      OrderedCount = 0
+      
+      ! Handle trivial cases
+      IF (NNeighbors.LE.0) RETURN
+      IF (NNeighbors.EQ.1) THEN
+         OrderedNeiTab(CenterNode,2) = NeighNodes(1)
+         RETURN
+      ENDIF
+      
+      ! Start with first neighbor in the unsorted list
+      StartIdx = 1
+      OrderedCount = 1
+      OrderedNeiTab(CenterNode, OrderedCount+1) = NeighNodes(StartIdx)
+      Used(StartIdx) = .TRUE.
+      PrevNode = NeighNodes(StartIdx)
+      
+      ! Traverse around the node using element connectivity
+      DO WHILE (OrderedCount .LT. NNeighbors)
+         FoundNext = .FALSE.
+         
+         ! Look for an element that contains both CenterNode and PrevNode
+         ! and also contains an unused neighbor
+         DO K=1,NNeighbors
+            IF (Used(K)) CYCLE
+            
+            CandidateElem = NeighElems(CenterNode,K)
+            IF (CandidateElem.EQ.0) CYCLE
+            
+            ! Check if this element contains CenterNode, PrevNode, and NeighNodes(K)
+            Node1 = NM(CandidateElem,1)
+            Node2 = NM(CandidateElem,2)
+            Node3 = NM(CandidateElem,3)
+            
+            ! Check if element contains both CenterNode and PrevNode
+            IF ( ((Node1.EQ.CenterNode).OR.(Node2.EQ.CenterNode).OR.
+     &            (Node3.EQ.CenterNode)) .AND.
+     &           ((Node1.EQ.PrevNode).OR.(Node2.EQ.PrevNode).OR.
+     &            (Node3.EQ.PrevNode)) ) THEN
+               
+               ! This element connects CenterNode and PrevNode
+               ! The third node should be NeighNodes(K)
+               IF ((Node1.NE.CenterNode).AND.(Node1.NE.PrevNode)) THEN
+                  NextNode = Node1
+               ELSEIF ((Node2.NE.CenterNode).AND.(Node2.NE.PrevNode)) THEN
+                  NextNode = Node2
+               ELSE
+                  NextNode = Node3
+               ENDIF
+               
+               IF (NextNode.EQ.NeighNodes(K)) THEN
+                  ! Found the next neighbor in order
+                  OrderedCount = OrderedCount + 1
+                  OrderedNeiTab(CenterNode, OrderedCount+1) = NextNode
+                  Used(K) = .TRUE.
+                  PrevNode = NextNode
+                  FoundNext = .TRUE.
+                  EXIT
+               ENDIF
+            ENDIF
+         END DO
+         
+         ! If we couldn't find a continuation, we may be at a boundary
+         ! Try to find any element that shares an edge with the last placed node
+         IF (.NOT.FoundNext) THEN
+            ! Search for any unused neighbor that shares an element with PrevNode
+            DO K=1,NNeighbors
+               IF (Used(K)) CYCLE
+               
+               CandidateElem = NeighElems(CenterNode,K)
+               IF (CandidateElem.EQ.0) CYCLE
+               
+               Node1 = NM(CandidateElem,1)
+               Node2 = NM(CandidateElem,2)
+               Node3 = NM(CandidateElem,3)
+               
+               ! Check if this element contains CenterNode
+               IF ((Node1.EQ.CenterNode).OR.(Node2.EQ.CenterNode).OR.
+     &             (Node3.EQ.CenterNode)) THEN
+                  OrderedCount = OrderedCount + 1
+                  OrderedNeiTab(CenterNode, OrderedCount+1) = NeighNodes(K)
+                  Used(K) = .TRUE.
+                  PrevNode = NeighNodes(K)
+                  FoundNext = .TRUE.
+                  EXIT
+               ENDIF
+            END DO
+         ENDIF
+         
+         ! If still no next node found, just add remaining nodes
+         ! (shouldn't happen in a well-formed mesh)
+         IF (.NOT.FoundNext) THEN
+            DO K=1,NNeighbors
+               IF (.NOT.Used(K)) THEN
+                  OrderedCount = OrderedCount + 1
+                  OrderedNeiTab(CenterNode, OrderedCount+1) = NeighNodes(K)
+                  Used(K) = .TRUE.
+                  EXIT
+               ENDIF
+            END DO
+         ENDIF
+      END DO
+      
+      end subroutine NEIGHB_OrderByTopology
 
 !     ------------------------------------------------------------------
 !           S U B R O U T I N E   T O T A L   A R E A   C A L C
@@ -5670,7 +6093,8 @@ C
       ! Search through elements containing node1
       do i = 1, NNeighEle(node1)
           neighbor_elem = NeiTabEle(node1, i)
-          
+          if (neighbor_elem == 0) cycle ! sb251003: Added this check to avoid out-of-bounds access.
+
           ! Get the three nodes of this element
           elem_node1 = nm(neighbor_elem, 1)
           elem_node2 = nm(neighbor_elem, 2) 
