@@ -386,6 +386,7 @@ C
       END FUNCTION CondensedNodePairFound
 
       FUNCTION FIND_IB2(N1,N2,N3)
+      USE SIZES,ONLY : MYPROC
       USE MESH,ONLY : NNEIGHELE,NEITABELE,NM
       IMPLICIT NONE
       INTEGER :: FIND_IB2,N1,N2,N3
@@ -398,6 +399,7 @@ C
 
       do i=1,nneighele(n1)
          ie = neitabele(n1,i)
+         if (ie == 0) cycle
          nnm1 = nm(ie,1)
          nnm2 = nm(ie,2)
          nnm3 = nm(ie,3)
@@ -414,7 +416,7 @@ C
             nnm3 = nnm2
             nnm2 = tmp
          else
-            STOP('Error')
+            STOP('Error in FIND_IB2')
          end if
          if ((nnm2.eq.n2.and.nnm3.eq.n3).or.
      &       (nnm2.eq.n3.and.nnm3.eq.n2)) cycle
