@@ -5670,7 +5670,8 @@ C
       ! Search through elements containing node1
       do i = 1, NNeighEle(node1)
           neighbor_elem = NeiTabEle(node1, i)
-          
+          if (neighbor_elem.le.0) cycle ! sb251003: Added this check to avoid out-of-bounds access.
+
           ! Get the three nodes of this element
           elem_node1 = nm(neighbor_elem, 1)
           elem_node2 = nm(neighbor_elem, 2) 
