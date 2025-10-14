@@ -398,6 +398,7 @@ C
 
       do i=1,nneighele(n1)
          ie = neitabele(n1,i)
+         if (ie.le.0) cycle ! sb251003: Added this check to avoid out-of-bounds access.
          nnm1 = nm(ie,1)
          nnm2 = nm(ie,2)
          nnm3 = nm(ie,3)
@@ -414,7 +415,7 @@ C
             nnm3 = nnm2
             nnm2 = tmp
          else
-            STOP('Error')
+            STOP('Error in FIND_IB2: node not found in neighbor element')
          end if
          if ((nnm2.eq.n2.and.nnm3.eq.n3).or.
      &       (nnm2.eq.n3.and.nnm3.eq.n2)) cycle
