@@ -6281,7 +6281,7 @@ C        is later than the start time for output.
             WRITE(scratchMessage,541) description, endTime
             CALL allMessage(WARNING,scratchMessage)
  541        FORMAT('End time for output of ',A,' data = ',E14.6,
-     &       ' which is before the start time for output of these data.'
+     &       ' which is before the start time for output of these data.',
      &       ' It has been reset to coincide with the start time.')
             endTime=startTime
             endTS=startTS
