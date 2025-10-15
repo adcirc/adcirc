@@ -379,7 +379,7 @@ COUP_MSRC  =  couple2swan.F
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 # DW sponge layer
-SPG_MSRC = quadrature.F sponge_layer.F
+SPG_MSRC = quadrature.F90 sponge_layer.F90
 # WJP 3D baroclinic coupling
 BC3D_MSRC = couple2baroclinic3D.F
 # CPB baroclinic internal tide updates
@@ -419,7 +419,7 @@ COUP_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(COUP_MSRC)  )
 # tcm v49.48.01 Adding rule for kdtree2 fast search algorithm
 KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 ## DW
-SPG_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(SPG_MSRC) )
+SPG_MOBJ :=  $(patsubst %.F90, $(O_DIR)%.o, $(SPG_MSRC) )
 WRITER_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WRITER_MSRC) )
 # WJP
 BC3D_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(BC3D_MSRC) )
@@ -842,8 +842,8 @@ $(O_DIR)control.o     : control.F
 $(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o 
 $(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o
 # DW
-$(O_DIR)sponge_layer.o : sponge_layer.F $(O_DIR)quadrature.o $(ADC_MOBJ)
-$(O_DIR)quadrature.o : quadrature.F
+$(O_DIR)sponge_layer.o : sponge_layer.F90 $(O_DIR)quadrature.o $(ADC_MOBJ)
+$(O_DIR)quadrature.o : quadrature.F90
 # WJP
 $(O_DIR)couple2baroclinic3D.o : couple2baroclinic3D.F $(ADC_MOBJ) $(SPG_MOBJ)
 

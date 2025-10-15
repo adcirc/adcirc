@@ -50,8 +50,8 @@ if(BUILD_ADCPREP)
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/prep.F
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/interp.F
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/machdep.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
