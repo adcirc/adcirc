@@ -718,11 +718,10 @@ C
       print *, "Writing Local UNIT 15 (Run Info) File for each PE"
       CALL PREP15()
 C
-C     jgf48.17 If compiling for ADCSWAN, need to copy UnSWAN file
-Casey 090304: Moved this call from earlier in this file.
-#ifdef ADCSWAN
-      CALL PREPUNSWAN()
-#endif
+      ! Prep the SWAN fort.26 file
+       if(nrs.eq.3)then
+        CALL PREPUNSWAN()
+      endif  
 C
 C-- Write Message-Passing File for each PE
 C
