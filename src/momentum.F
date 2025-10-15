@@ -118,7 +118,7 @@ C******************************************************************************
      &   CPRECOR, UU2, VV2, QX2, QY2
 #ifdef CMPI
      & , DUMY1
-      use messenger
+      use messenger, only: updater
 #endif
       IF (C2DDI) THEN
          IF (CME_New_NC) THEN
@@ -203,6 +203,9 @@ C... SB
      &     ROTATEBACK_AT_CONDENSEDNODES_ALL,
      &     REMOVE_NORMAL_AT_CONDENSEDNODES
 C... SB
+#ifdef CMPI
+      USE MESSENGER, ONLY: UPDATER, UPDATEM4R
+#endif
 
       IMPLICIT NONE
 

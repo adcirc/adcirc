@@ -434,8 +434,7 @@ C.............................DW, sponge layer ..................
          !
          IF ( .NOT. FIRST_ENTER ) THEN
             !c u_{ext}^{n + 1} -- > eta2, 
-            CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
-     &           GeoidOffset ) 
+            CALL GETABSLAYEREXT(TimeLoc, TimeH, RampElev, GeoidOffset )
          ELSE
 
             RampTMP = RampElev ;
@@ -446,16 +445,13 @@ C.............................DW, sponge layer ..................
                RampTMP = max(0.D0,RampTMP) ;                   
                
                !  u_{ext}^{n + 1 - istep} --> uu2
-               CALL GETABSLAYEREXT( IT - istep, TimeLoc - istep*DTDP,
-     &              TimeH - istep*DTDP, RampTMP,
-     &              GeoidOffset ) 
+               CALL GETABSLAYEREXT(TimeLoc - istep*DTDP, TimeH - istep*DTDP, RampTMP, GeoidOffset )
 
                CALL SPONGE_SHIFT_SOLN( ) ; 
                ! eta1 --> eta0, eta2 --> eta1, u2 --> u1          
             END DO
             !c u_{ext}^{n + 1} -- > eta2, 
-            CALL GETABSLAYEREXT( IT, TimeLoc, TimeH, RampElev,
-     &           GeoidOffset ) 
+            CALL GETABSLAYEREXT(TimeLoc, TimeH, RampElev, GeoidOffset )
             FIRST_ENTER = .FALSE. ;
          END IF
          !
@@ -1117,7 +1113,7 @@ C...
 
 C.....DW - ABS SPONGE LAYER     
       IF ( C2DDI .AND. LoadAbsLayerSigma .AND. (sponge_dis_mthd == 0) ) THEN
-         CALL SPONGE_OPSPLIT0( IT, DTDP/2, TimeLoc, TimeH)  
+         CALL SPONGE_OPSPLIT0(DTDP/2)
       END IF
 
       IF ( LoadAbsLayerSigma ) THEN
