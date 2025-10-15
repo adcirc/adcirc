@@ -43,7 +43,7 @@ C-----------------------------------------------------------------------
       use mesh
       use sizes,only:XDMF
       implicit none
-      include 'adcirc_Xdmf.f'
+      include 'Xdmf.f'
       type(OutputDataDescript_t) :: descript
       integer :: informationID
       integer :: i, j
@@ -111,7 +111,7 @@ C-----------------------------------------------------------------------
       use sizes,only: mnproc
       implicit none
 #ifdef ADCXDMF
-      include 'adcirc_Xdmf.f'
+      include 'Xdmf.f'
 #endif
       type(OutputDataDescript_t) :: descript
       real(8), intent(in) :: timeLoc
@@ -362,7 +362,7 @@ C-----------------------------------------------------------------------
       use global, only : OutputDataDescript_t
       implicit none
 #ifdef ADCXDMF      
-      include 'adcirc_Xdmf.f'
+      include 'Xdmf.f'
       type(OutputDataDescript_t) :: descript   
       !
       ! close this grid collection, writing it to the heavy data (HDF5) file
@@ -396,7 +396,7 @@ C-----------------------------------------------------------------------
       use global
       implicit none
 #ifdef ADCXDMF
-      include 'adcirc_Xdmf.f' 
+      include 'Xdmf.f' 
       !
       type(OutputDataDescript_t) :: descript 
       !
@@ -466,7 +466,7 @@ C-----------------------------------------------------------------------
       use global, only : OutputDataDescript_t
       implicit none
 #ifdef ADCXDMF
-      include 'adcirc_Xdmf.f' 
+      include 'Xdmf.f' 
       !
       type(OutputDataDescript_t) :: descript
       character(1024) :: fluxBoundaryType ! character represenation of IBTYPE
@@ -621,7 +621,7 @@ C-----------------------------------------------------------------------
       use global, only : OutputDataDescript_t
       implicit none
 #ifdef ADCXDMF      
-      include 'adcirc_Xdmf.f' 
+      include 'Xdmf.f' 
       !
       type(OutputDataDescript_t) :: descript
       character(len=256) :: fluxBoundaryType
@@ -712,7 +712,7 @@ C-----------------------------------------------------------------------
       use boundaries, only : neta, nvel, nfluxf, lbcodei
       use mesh, only : slam0, sfea0
       implicit none
-      include 'adcirc_Xdmf.f'
+      include 'Xdmf.f'
       integer*8, intent(in) :: xdmfFortranObj ! XDMF object to receive data
       character(len=80) :: wtimincLine
       character(len=80) :: rstimincLine
@@ -1167,7 +1167,7 @@ C-----------------------------------------------------------------------
       !---------------------------------------------------------------------
       subroutine writeStationsXDMF(nsta, stax, stay, stationType, xdmfFortranObj)
       implicit none
-      include 'adcirc_Xdmf.f'
+      include 'Xdmf.f'
       integer, intent(in) :: nsta
       real(8), intent(in) :: stax(:)
       real(8), intent(in) :: stay(:)

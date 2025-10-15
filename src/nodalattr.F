@@ -556,7 +556,7 @@ C     ----------------------------------------------------------------
      & 'This ADCIRC executable was not compiled with XDMF support.')
       call na_terminate()
 #else
-      include 'adcirc_Xdmf.f'
+      include 'Xdmf.f'
       integer*8 :: xdmfFortranObj ! object that receives the data
       !
       integer :: startIndex
