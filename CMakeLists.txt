@@ -76,10 +76,35 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles)
 # ######################################################################################################################
 
 # ...Set the version string (used for libraries)
-set(ADCIRC_VERSION_MAJOR 56)
-set(ADCIRC_VERSION_MINOR 0)
-set(ADCIRC_VERSION_PATCH 0)
-set(ADCIRC_VERSION_STRING ${ADCIRC_VERSION_MAJOR}.${ADCIRC_VERSION_MINOR}.${ADCIRC_VERSION_PATCH})
+set(ADCIRC_VERSION_STRING "v56.1.0")
+
+# Parse version string into components
+string(
+  REGEX
+  REPLACE "^v"
+          ""
+          ADCIRC_VERSION_NUMERIC
+          "${ADCIRC_VERSION_STRING}")
+string(
+  REPLACE "."
+          ";"
+          VERSION_LIST
+          ${ADCIRC_VERSION_NUMERIC})
+list(
+  GET
+  VERSION_LIST
+  0
+  ADCIRC_VERSION_MAJOR)
+list(
+  GET
+  VERSION_LIST
+  1
+  ADCIRC_VERSION_MINOR)
+list(
+  GET
+  VERSION_LIST
+  2
+  ADCIRC_VERSION_PATCH)
 
 # ...Include Macros to build components
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros.cmake)

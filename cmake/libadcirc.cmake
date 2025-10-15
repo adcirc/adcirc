@@ -112,10 +112,10 @@ if(BUILD_LIBADCIRC_SHARED)
     set_property(TARGET libadcirc_shared PROPERTY MACOSX_RPATH ON)
   endif()
 
-  set_target_properties(libadcirc_shared PROPERTIES VERSION ${ADCIRC_VERSION_STRING} SOVERSION ${ADCIRC_VERSION_MAJOR})
+  set_target_properties(libadcirc_shared PROPERTIES VERSION ${ADCIRC_VERSION_NUMERIC} SOVERSION ${ADCIRC_VERSION_MAJOR})
   write_basic_package_version_file(
     libadcircConfigVersion.cmake
-    VERSION ${ADCIRC_VERSION_STRING}
+    VERSION ${ADCIRC_VERSION_NUMERIC}
     COMPATIBILITY SameMajorVersion)
 
   install(
