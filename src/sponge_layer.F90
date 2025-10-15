@@ -1,7 +1,7 @@
 !-------------------------------------------------------------------------------!
 !
 ! ADCIRC - The ADvanced CIRCulation model
-! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
+! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
 !
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
