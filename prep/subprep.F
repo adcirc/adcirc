@@ -495,11 +495,7 @@ C
 C
       DO iproc = startProc, endProc
          sdu(iproc) = 105 + (iproc-1)
-         sdFileName(1:7) = 'PE0000/'
-         sdFileName(8:15) = DefaultName   !NCSU SUBDOMAIN
-#ifdef ADCSWAN
          sdFileName = 'PE0000/'//FileName
-#endif
          CALL IWRITE(sdFileName, 3, 6, iproc-1)
          OPEN (UNIT=SDU(iproc), FILE=sdFileName, IOSTAT=ErrorIO)
          Success = .true.

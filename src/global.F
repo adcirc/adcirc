@@ -177,8 +177,8 @@ C     for writing fulldomain hotstart files.
       REAL(8),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:)
       REAL(8),ALLOCATABLE, TARGET :: RSNMax_Time(:) 
       REAL(8),ALLOCATABLE, TARGET :: RSNMax_Time_G(:) 
-     
-#if defined CSWAN || defined ADCSWAN
+
+#if defined CSWAN
       !...Global SWAN Arrays
       REAL(8), ALLOCATABLE, TARGET      :: SWAN_HSOut_g(:)
       REAL(8), ALLOCATABLE, TARGET      :: SWAN_DIROut_g(:)
@@ -270,8 +270,8 @@ c.
       real(8), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node 
 
       real(8),allocatable :: gwce_lv(:)
-      
-#if defined CSWAN || defined ADCSWAN     
+
+#if defined CSWAN
       !...Local SWAN Arrays
       REAL(8), ALLOCATABLE, TARGET      :: SWAN_HSOut(:)
       REAL(8), ALLOCATABLE, TARGET      :: SWAN_DIROut(:)
@@ -288,7 +288,7 @@ c.
       REAL(8), ALLOCATABLE, TARGET      :: SWAN_WINDMaxOut(:)
       REAL(8), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut(:)
       REAL(8), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut(:)
-#endif      
+#endif
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN
@@ -297,7 +297,6 @@ Casey 090302: Added the following arrays for output of radiation stress gradient
 !#endif
       LOGICAL :: outputWindDrag = .false. ! true if wind drag data should be written to output file
 
-#if defined CSWAN || defined ADCSWAN      
 Cobell 20120510: Added logicals for turning on/off swan output files   
       LOGICAL                      :: SWAN_OutputHS = .FALSE.
       LOGICAL                      :: SWAN_OutputDIR = .FALSE.
@@ -307,7 +306,6 @@ Cobell 20120510: Added logicals for turning on/off swan output files
       LOGICAL                      :: SWAN_OutputTM02 = .FALSE.
       LOGICAL                      :: SWAN_OutputTMM10 = .FALSE.
       LOGICAL                      :: SWAN_OutputAgg(7)
-#endif
 
 Cobell - Added for Time Varying Weirs, Set to default values
       LOGICAL                      :: USE_TVW = .FALSE.     !..From namelist, used time varying weirs

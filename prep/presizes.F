@@ -142,14 +142,11 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
      &    outputWindDrag,slim,windlim,directvelWD,useHF,
      &    Limit_WaveStressGrad,  !tcm v56 2024: added
-
-     &    PFile_inset, Wfile_inset, InsetControlFile !aman added
-
-#if defined CSWAN || defined ADCSWAN
-     &   ,SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
+     &    PFile_inset, Wfile_inset, InsetControlFile, !aman added
+     &    SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &    SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
      &    SWAN_OutputTMM10
-#endif
+
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
      &                  initWindModule, 
      &                  read_NWS14_NetCdf_using_core_0
@@ -269,12 +266,11 @@ C Logicals added for adcprep paths
 ! DW
       INTEGER:: PARTITION_APPROACH = 1 ;
 
-#if defined CSWAN || defined ADCSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
       NAMELIST /SWANOutputControl/ SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
-#endif
+
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,rhoAir,
      &                       invertedBarometerOnElevationBoundary,nPowellSearchDomains
 
@@ -725,7 +721,6 @@ c....    a non-default value we can determine this was the case.
 C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
 
-#if defined CSWAN || defined ADCSWAN
       ! jgf50.60.08: Add a namelist for the user to turn SWAN output
       ! on and off. Similar to tcm's timevaryingbathy namelist.
       IOS = 0
@@ -737,7 +732,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          SWAN_OutputDIR=.TRUE.
       ENDIF
       REWIND(15)
-#endif
+
       ! jgf50.60.13: Add a namelist for the user to control met forcing.
       ! Similar to tcm's timevaryingbathy namelist.
       call initWindModule()

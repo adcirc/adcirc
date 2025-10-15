@@ -104,7 +104,7 @@ ifeq ($(compiler),gfortran)
   DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
   DPRE		:=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
+     DPRE               :=  -DREAL8 -DLINUX
   endif
   FLIBS         :=
   ifeq ($(NETCDF),enable)
@@ -266,7 +266,7 @@ ifeq ($(compiler),intel)
   DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
   DPRE          :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE          := $(DPRE) -DADCSWAN
+     DPRE          := $(DPRE)
   endif
   IMODS         :=  -I
   CC            := icc
@@ -377,9 +377,9 @@ ifeq ($(compiler),intel-ND)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
   DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD #-DNOFSBPG #-DNOIVB -DPOWELL
-  DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
+  DPRE          :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE       := $(DPRE) -DADCSWAN
+     DPRE       := $(DPRE)
   endif
   IMODS         :=  -I
   CC            := icc
@@ -515,7 +515,7 @@ ifeq ($(compiler),cray_xt4)
   DP  	        :=  -DREAL8 -DLINUX -DCMPI -DCSCA
   DPRE	        :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE	        :=  -DREAL8 -DLINUX -DADCSWAN
+     DPRE	        :=  -DREAL8 -DLINUX
   endif
   CFLAGS	:=  $(INCDIRS) -DLINUX
   ifeq ($(DEBUG),full)
@@ -655,7 +655,7 @@ ifeq ($(compiler),utils)
   DP            :=  -DREAL8 -DLINUX -DCMPI -DCSCA
   DPRE          :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
+     DPRE               :=  -DREAL8 -DLINUX
   endif
   CFLAGS        :=  -c89 $(INCDIRS) -DLINUX
   ifeq ($(DEBUG),full)
@@ -728,7 +728,7 @@ ifeq ($(compiler),diamond)
   DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI 
   DPRE          :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
+     DPRE          :=  -DREAL8 -DLINUX
   endif
   IMODS         :=  -I
   CC            := icc
@@ -778,7 +778,7 @@ ifeq ($(compiler),garnet)
   DP  	        :=  -DREAL8 -DLINUX -DCMPI -DCSCA
   DPRE	        :=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE	        :=  -DREAL8 -DLINUX -DADCSWAN
+     DPRE	        :=  -DREAL8 -DLINUX
   endif
   CFLAGS	:=  $(INCDIRS) -DLINUX
   ifeq ($(DEBUG),full)
@@ -815,7 +815,7 @@ ifeq ($(compiler),kraken)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA -DPOWELL
   DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DPOWELL
-  DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
+  DPRE          :=  -DREAL8 -DLINUX
   IMODS         :=  -I
   CC            := cc
   CCBE          := $(CC)
@@ -842,7 +842,7 @@ ifeq ($(compiler),circleci)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
   DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI 
-  DPRE		:=  -DREAL8 -DLINUX -DADCSWAN
+  DPRE		:=  -DREAL8 -DLINUX
   IMODS 	:=  -I
   CC		:= icx
   CCBE		:= $(CC)
@@ -965,7 +965,7 @@ ifeq ($(compiler),gnu)
   DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
   DPRE		:=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
+     DPRE               :=  -DREAL8 -DLINUX
   endif
   IMODS 	:=  -I
   CC		:= gcc
@@ -1029,7 +1029,7 @@ ifeq ($(compiler),gfortran)
   DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
   DPRE		:=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
+     DPRE               :=  -DREAL8 -DLINUX
   endif
   FLIBS         :=
   ifeq ($(NETCDF),enable)

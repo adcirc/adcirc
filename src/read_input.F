@@ -86,8 +86,7 @@ C-----------------------------------------------------------------------
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
      &   WarnVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
      &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus
-
-#if defined CSWAN || defined ADCSWAN
+#if defined CSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
@@ -223,7 +222,7 @@ C
       logical :: UniformResMoonSunTimeData = .false.
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
-#if defined CSWAN || defined ADCSWAN
+#if defined CSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
       NAMELIST /SWANOutputControl/ SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
@@ -456,7 +455,7 @@ c     a non-default value we can determine this was the case.
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
-#if defined CSWAN || defined ADCSWAN
+#if defined CSWAN
       ! jgf50.60.08: Add a namelist for the user to turn SWAN output
       ! on and off. Similar to tcm's timevaryingbathy namelist.
       namelistSpecifier = 'SWANOutputControl'
