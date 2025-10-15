@@ -334,6 +334,24 @@ C        jgf46.34 Added support for IBTYPE=52.
          ! jgf52.08.01: subroutine timestep() uses nodecode. Set it here.
          nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
+
+         if(nrs.ne.0)then
+           CALL readAndMapToSubdomain2d(RSNX1, IHOT, IHOTSTP, moderbin)
+           CALL readAndMapToSubdomain2d(RSNY1, IHOT, IHOTSTP, moderbin)
+           CALL readAndMapToSubdomain2d(RSNX2, IHOT, IHOTSTP, moderbin)
+           CALL readAndMapToSubdomain2d(RSNY2, IHOT, IHOTSTP, moderbin)
+           if(nrs.eq.3)then
+              CALL readAndMapToSubdomain2d(SWAN_RSNX1, IHOT, IHOTSTP, moderbin)
+              CALL readAndMapToSubdomain2d(SWAN_RSNY1, IHOT, IHOTSTP, moderbin)
+              CALL readAndMapToSubdomain2d(SWAN_RSNX2, IHOT, IHOTSTP, moderbin)
+              CALL readAndMapToSubdomain2d(SWAN_RSNY2, IHOT, IHOTSTP, moderbin)
+           else
+              IHOTSTP=IHOTSTP+4*np_g
+           endif
+         else
+           IHOTSTP=IHOTSTP+8*np_g
+         endif
+
 C
          READ(IHOT,*) IDMY
          READ(IHOT,*) NSCOUE

@@ -1401,7 +1401,7 @@ C     output the global node number to debug the local PE fort.14s
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
-     &           2X,'** ERROR: Elevation.gt.ErrorElev, '
+     &           2X,'** ERROR: Elevation.gt.ErrorElev, ',
      &           'ADCIRC stopping. **')
             CALL ADCIRC_Terminate()
          ENDIF
