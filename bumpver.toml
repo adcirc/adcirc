@@ -1,0 +1,15 @@
+[bumpver]
+current_version = "v56.1.0"
+version_pattern = "vMAJOR.MINOR.PATCH[-TAGNUM]"
+commit_message = "bump version {old_version} -> {new_version}"
+commit = true
+tag = true
+push = false
+
+[bumpver.file_patterns]
+"CMakelists.txt" = [
+  'set(ADCIRC_VERSION_STRING "{version}")',
+]
+"README.md" = [
+  "docker/v/adcircorg/adcirc/{version}?"
+]
