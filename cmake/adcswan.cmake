@@ -123,8 +123,8 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/control.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/write_output.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
