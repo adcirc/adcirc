@@ -105,7 +105,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
       ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
