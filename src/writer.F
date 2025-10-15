@@ -1515,7 +1515,7 @@ C...
       ELSE
          WRITE(16,24541) hss % lun,WRITER_ID,IT,TimeLoc
       ENDIF
-24541 FORMAT(1X,'HOT START OUTPUT WRITTEN TO UNIT ',I2,'  HSWriter:',i2
+24541 FORMAT(1X,'HOT START OUTPUT WRITTEN TO UNIT ',I2,'  HSWriter:',i2,
      &    ' AT TIME STEP = ',I9,' TIME = ',E15.8)
       IF(hss % lun.EQ.67) THEN
 C        jgf45.07 added option to stop ADCIRC after writing hot start file.

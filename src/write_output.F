@@ -5010,6 +5010,67 @@ C        program to exit immediately after writing the hotstart file.
                WRITE(hss % lun,REC=IHOTSTP) NOFFDescript % iarray_g(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
+            IF(NRS.ne.0)THEN
+              DO I=1, HotstartRS1Descript % num_fd_records
+                 WRITE(hss % lun,REC=IHOTSTP) HotstartRS1Descript % array_g(I)
+                 IHOTSTP=IHOTSTP+1
+              ENDDO
+              DO I=1, HotstartRS1Descript % num_fd_records
+                 WRITE(hss % lun,REC=IHOTSTP) HotstartRS1Descript % array2_g(I)
+                 IHOTSTP=IHOTSTP+1
+              ENDDO
+              DO I=1, HotstartRS2Descript % num_fd_records
+                 WRITE(hss % lun,REC=IHOTSTP) HotstartRS2Descript % array_g(I)
+                 IHOTSTP=IHOTSTP+1
+              ENDDO
+              DO I=1, HotstartRS2Descript % num_fd_records
+                 WRITE(hss % lun,REC=IHOTSTP) HotstartRS2Descript % array2_g(I)
+                 IHOTSTP=IHOTSTP+1
+              ENDDO
+            ELSE
+              ! Fill with zeros to pad the format
+              DO I=1, Elev1Descript % num_fd_records
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+              ENDDO
+            ENDIF
+
+            IF(NRS.eq.3)THEN
+              DO I=1, HotstartSwanRS1Descript % num_fd_records
+                  WRITE(hss % lun,REC=IHOTSTP) HotstartSwanRS1Descript % array_g(I)
+                  IHOTSTP=IHOTSTP+1
+              ENDDO
+              DO I=1, HotstartSwanRS1Descript % num_fd_records
+                  WRITE(hss % lun,REC=IHOTSTP) HotstartSwanRS1Descript % array2_g(I)
+                  IHOTSTP=IHOTSTP+1
+              ENDDO
+              DO I=1, HotstartSwanRS2Descript % num_fd_records
+                  WRITE(hss % lun,REC=IHOTSTP) HotstartSwanRS2Descript % array_g(I)
+                  IHOTSTP=IHOTSTP+1
+              ENDDO
+              DO I=1, HotstartSwanRS2Descript % num_fd_records
+                  WRITE(hss % lun,REC=IHOTSTP) HotstartSwanRS2Descript % array2_g(I)
+                  IHOTSTP=IHOTSTP+1
+              ENDDO
+            ELSE
+              ! Fill with zeros to pad the format
+              DO I=1, Elev1Descript % num_fd_records
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+              ENDDO
+            ENDIF
          ENDIF
          IF ((MNPROC.eq.1).or.
      &      (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN
@@ -5047,6 +5108,66 @@ C        program to exit immediately after writing the hotstart file.
                WRITE(hss % lun,REC=IHOTSTP) NOFFDescript % iarray(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
+            IF(NRS.ne.0)THEN
+              DO I=1, HotstartRS1Descript % num_records_this
+                 WRITE(hss % lun,REC=IHOTSTP) HotstartRS1Descript % array(I)
+                 IHOTSTP=IHOTSTP+1
+              ENDDO
+              DO I=1, HotstartRS1Descript % num_records_this
+                 WRITE(hss % lun,REC=IHOTSTP) HotstartRS1Descript % array2(I)
+                 IHOTSTP=IHOTSTP+1
+              ENDDO
+              DO I=1, HotstartRS2Descript % num_records_this
+                 WRITE(hss % lun,REC=IHOTSTP) HotstartRS2Descript % array(I)
+                 IHOTSTP=IHOTSTP+1
+              ENDDO
+              DO I=1, HotstartRS2Descript % num_records_this
+                 WRITE(hss % lun,REC=IHOTSTP) HotstartRS2Descript % array2(I)
+                 IHOTSTP=IHOTSTP+1
+              ENDDO
+            ELSE
+              ! Fill with zeros to pad the format
+              DO I=1, Elev1Descript % num_records_this
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+              ENDDO
+            ENDIF
+            IF(NRS.eq.3)THEN
+              DO I=1, HotstartSwanRS1Descript % num_records_this
+                  WRITE(hss % lun,REC=IHOTSTP) HotstartSwanRS1Descript % array(I)
+                  IHOTSTP=IHOTSTP+1
+              ENDDO
+              DO I=1, HotstartSwanRS1Descript % num_records_this
+                  WRITE(hss % lun,REC=IHOTSTP) HotstartSwanRS1Descript % array2(I)
+                  IHOTSTP=IHOTSTP+1
+              ENDDO
+              DO I=1, HotstartSwanRS2Descript % num_records_this
+                  WRITE(hss % lun,REC=IHOTSTP) HotstartSwanRS2Descript % array(I)
+                  IHOTSTP=IHOTSTP+1
+              ENDDO
+              DO I=1, HotstartSwanRS2Descript % num_records_this
+                  WRITE(hss % lun,REC=IHOTSTP) HotstartSwanRS2Descript % array2(I)
+                  IHOTSTP=IHOTSTP+1
+              ENDDO
+            ELSE
+              ! Fill with zeros to pad the format
+              DO I=1, Elev1Descript % num_records_this
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+                 WRITE(hss % lun,REC=IHOTSTP) 0.0
+                 IHOTSTP=IHOTSTP+1
+              ENDDO
+            ENDIF
          ENDIF
 C
          IF ((MYPROC.eq.0).or.

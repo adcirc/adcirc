@@ -2150,7 +2150,7 @@
             WRITE(16,6532)
  6532       FORMAT(5X,'This segment uses a specified periodic normal ',
      &          'flux as a natural b.c. combined with outward ',
-     &          7X,'radiating boundary. The GWCE is forced with the ,'
+     &          7X,'radiating boundary. The GWCE is forced with the ,',
      &          'total normal flux computed by adding the',/,
      &          7X,'specified normal flux and the flux associated ',
      &          'with the outward radiating wave.',/,
@@ -3421,7 +3421,7 @@ Csb...
         write(scratchMessage,99312) I,J
         call allMessage(ERROR,scratchMessage)
 99312   FORMAT('!!!!!!!!!!  FATAL ERROR !!!!!!!!! ',
-     &       'NODES ',i0,' AND ',i0,' HAVE THE SAME COORDINATES.'
+     &       'NODES ',i0,' AND ',i0,' HAVE THE SAME COORDINATES.',
      &       '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
         call terminate()
       end subroutine neighb_terminateDuplicateNode
