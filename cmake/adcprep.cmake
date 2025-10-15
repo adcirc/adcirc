@@ -71,10 +71,6 @@ if(BUILD_ADCPREP)
   adcirc_add_libraries(adcprep)
   adcirc_add_metis_library(adcprep)
 
-  if(BUILD_PADCSWAN OR BUILD_PUNSWAN)
-    target_compile_definitions(adcprep PRIVATE ${PREP_SWAN_FLAG})
-  endif(BUILD_PADCSWAN OR BUILD_PUNSWAN)
-
   target_include_directories(adcprep PRIVATE prep)
 
   install(TARGETS adcprep RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

@@ -276,7 +276,6 @@ module NETCDFIO
    type(nodalData), private :: rads ! for rads.64
    type(nodalData), private :: CICEAF ! for fort.93
 
-#if defined CSWAN || defined ADCSWAN
    type(nodalData), private :: sw_hs ! for swan_HS.63
    type(nodalData), private :: sw_dir ! for swan_DIR.63
    type(nodalData), private :: sw_tm01 ! for swan_TM01.63
@@ -291,7 +290,7 @@ module NETCDFIO
    type(nodalData), private :: sw_wind_max ! for swan_WIND_max.63
    type(nodalData), private :: sw_tm02_max ! for swan_TM02_max.63
    type(nodalData), private :: sw_tmm10_max ! for swan_TMM10_max.63
-#endif
+
    type(nodalData), private :: density3D ! for fort.44
    type(nodalData), private :: velocity3D ! for fort.45
    type(nodalData), private :: turbulence3D ! for fort.46
@@ -501,7 +500,6 @@ contains
          call initNodalDataFile(weirElev, descript1, reterr)
       case (164)
          call initNodalDataFile(rads, descript1, reterr)
-#if defined CSWAN || defined ADCSWAN
       case (301)
          call initNodalDataFile(sw_hs, descript1, reterr)
       case (302)
@@ -516,7 +514,6 @@ contains
          call initNodalDataFile(sw_tm02, descript1, reterr)
       case (307)
          call initNodalDataFile(sw_tmm10, descript1, reterr)
-#endif
       case (311)
          call initNodalDataFile(EtaMax, descript1, reterr)
       case (312)
@@ -527,7 +524,6 @@ contains
          call initNodalDataFile(WVMax, descript1, reterr)
       case (315)
          call initNodalDataFile(RSMax, descript1, reterr)
-#if defined CSWAN || defined ADCSWAN
       case (316)
          call initNodalDataFile(sw_hs_max, descript1, reterr)
       case (317)
@@ -542,7 +538,6 @@ contains
          call initNodalDataFile(sw_tm02_max, descript1, reterr)
       case (322)
          call initNodalDataFile(sw_tmm10_max, descript1, reterr)
-#endif
       case (400)
          call initNodalDataFile(inTime, descript1, reterr)
       case (401)
@@ -2828,9 +2823,7 @@ contains
          iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id, &
                              'mesh', 'adcirc_mesh')
          call check_err(iret)
-!
 
-#if defined CSWAN || defined ADCSWAN
       case (301)
          dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
          dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
@@ -3378,7 +3371,6 @@ contains
          iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id, &
                              'mesh', 'adcirc_mesh')
          call check_err(iret)
-#endif
 
       case (400)
          dat%varnames(1) = 'inun_time'
@@ -4284,7 +4276,6 @@ contains
          call writeNodalData(tau0nc, lun, descript1, timesec)
       case (164)
          call writeNodalData(rads, lun, descript1, timesec)
-#if defined CSWAN || defined ADCSWAN
       case (301)
          call writeNodalData(sw_hs, lun, descript1, timesec)
       case (302)
@@ -4299,7 +4290,6 @@ contains
          call writeNodalData(sw_tm02, lun, descript1, timesec)
       case (307)
          call writeNodalData(sw_tmm10, lun, descript1, timesec)
-#endif
       case (311)
          call writeNodalData(EtaMax, lun, descript1, timesec)
       case (312)
@@ -4310,7 +4300,6 @@ contains
          call writeNodalData(WVMax, lun, descript1, timesec)
       case (315)
          call writeNodalData(RSMax, lun, descript1, timesec)
-#if defined CSWAN || defined ADCSWAN
       case (316)
          call writeNodalData(sw_hs_max, lun, descript1, timesec)
       case (317)
@@ -4325,7 +4314,6 @@ contains
          call writeNodalData(sw_tm02_max, lun, descript1, timesec)
       case (322)
          call writeNodalData(sw_tmm10_max, lun, descript1, timesec)
-#endif
       case (400)
          call writeNodalData(inTime, lun, descript1, timesec)
       case (401)

@@ -1664,19 +1664,20 @@ C
          WRITE(14,80) OUTMSG
 C
          ITOT = 0
+
          DO K = 1,NOPE
             IF (NVDLLP(K).GT.0)THEN
                ITOT = ITOT + 1
 Casey 090304: Added the following section.  If we are coupling to SWAN,
 C             then we also want to give the global number of each
 C             boundary segment.
-#ifndef ADCSWAN
-               CALL NEWINDEX(NVDLLMSG(K),OUTMSG,NVDLLP(K))
-#else
-               NUMS(1) = NVDLLP(K)
-               NUMS(2) = K
-               CALL INSERT(NVDLLMSG(K),OUTMSG,NUMS,2)
-#endif
+               if(nrs.ne.3)then
+                CALL NEWINDEX(NVDLLMSG(K),OUTMSG,NVDLLP(K))
+               else
+                NUMS(1) = NVDLLP(K)
+                NUMS(2) = K
+                CALL INSERT(NVDLLMSG(K),OUTMSG,NUMS,2)
+               endif
                WRITE(14,80) OUTMSG
                DO I = 1,NVDLLP(K)
                   WRITE(14,*) LABELS(IMAP_NOD_LG(NBDVP(K,I),IPROC))
@@ -1700,12 +1701,12 @@ C
 Casey 090304: Added the following section.  If we are coupling to SWAN,
 C             then we also want to give the global number of each
 C             boundary segment.
-#ifndef ADCSWAN
-               CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,2)
-#else
-               NUMS(3) = NOPE + K
-               CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,3)
-#endif
+               if(nrs.ne.3)then
+                CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,2)
+               else
+                NUMS(3) = NOPE + K
+                CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,3)
+               endif
                WRITE(14,80) OUTMSG
 C
                select case(itype)
@@ -2273,11 +2274,11 @@ c...     tcm v50.66.02 additions for time varying bathymetry
             write(15,*) '! -- End Time Varying Bathymetry Inputs --'
          ENDIF
 C
-#if defined CSWAN || defined ADCSWAN
-         write(15,*) '! -- Begin SWAN Output Control Namelist --'
-         write(15,SWANOutputControl)
-         write(15,*) '! -- End SWAN Output Control Namelist --'
-#endif
+         if(nrs.eq.3)then
+           write(15,*) '! -- Begin SWAN Output Control Namelist --'
+           write(15,SWANOutputControl)
+           write(15,*) '! -- End SWAN Output Control Namelist --'
+         endif
 
 ! tcm v50.79 Changed so that metControl namelist is only written if it was found in the
 ! original fort.15 file.  Also changed the single line write, which is missing some commas
@@ -7229,12 +7230,7 @@ C     Open each of the subdomain files
       DO iproc = startProc, endProc
          sdFileName(:) = ' '
          sdu(iproc) = 505 + (iproc-1)  !tcm v51.31 changed 105 to 505 to avoid conflicts with fort.141 file
-         sdFileName(1:7) = 'PE0000/'
-c........tcm v50.66.03 increased unit number to 100's places
-         sdFileName(8:) = trim(DefaultName)     
-#ifdef ADCSWAN
          sdFileName = 'PE0000/'//FileName
-#endif
          CALL IWRITE(sdFileName, 3, 6, iproc-1)
          OPEN (UNIT=SDU(iproc), FILE=trim(sdFileName), IOSTAT=ErrorIO)
          Success = .true.
@@ -7617,8 +7613,7 @@ C                S U B R O U T I N E   P R E P   U N S W A N
 C---------------------------------------------------------------------------
 C
 C     jgf48.17 This subroutine just copies the UnSWAN input file to each
-C     subdomain. Currently, it is only called if the compiler directive
-C     ADCSWAN is defined.
+C     subdomain.
 C
 C     jgf50.15: After discussion with Casey, it was decided that changes
 C     should be made such that adcprep looks for the swaninit file and
@@ -7814,15 +7809,10 @@ C---------------------------------------------------------------------------
      &    initNetCDFHotstartHarmonic,
      &    initNetCDFHotstartHarmonicMeansVariances,
      &    freeNetCDFCoord
-#ifdef ADCSWAN
       USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit,
      &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
      &                   SWAN_OutputTMM10,NOUT_TVW,outputWindDrag
-#else
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit,
-     &                   NOUT_TVW,outputWindDrag
-#endif
 C
       IMPLICIT NONE
       LOGICAL reterr
@@ -7869,7 +7859,6 @@ C++
 !      nrs = 3 or nrs= 4 or nrs = 5
       type(OutputDataDescript_t), SAVE :: RSDescript
 
-#ifdef ADCSWAN
 Cobell 20120510: SWAN Output Data
       type(OutputDataDescript_t), SAVE :: SwanHSDescript
       type(OutputDataDescript_t), SAVE :: SwanDIRDescript
@@ -7886,7 +7875,7 @@ Cobell 20120510: SWAN Output Data
       type(OutputDataDescript_t), SAVE :: SwanWindMaxDescript
       type(OutputDataDescript_t), SAVE :: SwanTM02MaxDescript
       type(OutputDataDescript_t), SAVE :: SwanTMM10MaxDescript
-#endif
+
 C     3D output data
       type(OutputDataDescript_t), save :: SigTStaDescript    ! fort.41
       type(OutputDataDescript_t), save :: SalStaDescript
@@ -8325,7 +8314,6 @@ C     maxwvel.63
       call makeFileName(RSMaxDescript)
 
 !  tcm v50.75 removed ifdef adcswan to allow for use whenever nrs=3 or nrs=4 or nrs=5
-!#ifdef ADCSWAN
 Cobell 20120510: SWAN Output Data
 C........Radiation Stress
       RSDescript % specifier            = NOUTGW
@@ -8483,211 +8471,212 @@ C     dynamicWaterlevelCorrection.63
       call makeFileName(dynamicWaterlevelCorrectionDescript)
 
 ! tcm v50.75 moved the ifdef adcswan down past the RSDescript
-#ifdef ADCSWAN
+      if(nrs.eq.3)then
 C........Significant Wave Height (HS)
-      SwanHSDescript % specifier            = NOUTGW
-      SwanHSDescript % lun                  = 301
-      SwanHSDescript % initial_value        = 0.0
-      SwanHSDescript % num_items_per_record = 1
-      SwanHSDescript % num_fd_records       = MNP
-      SwanHSDescript % num_records_this     = MNP
-      SwanHSDescript % ConsiderWetDry       = .FALSE.
-      SwanHSDescript % alternate_value      = -99999.0
-      SwanHSDescript % field_name           = "swan_HS"
-      SwanHSDescript % file_name            = "swan_HS.63"
-      SwanHSDescript % file_extension       = 63
-      SwanHSDescript % file_basename        = 'swan_HS'
-      call makeFileName(SwanHSDescript)
+        SwanHSDescript % specifier            = NOUTGW
+        SwanHSDescript % lun                  = 301
+        SwanHSDescript % initial_value        = 0.0
+        SwanHSDescript % num_items_per_record = 1
+        SwanHSDescript % num_fd_records       = MNP
+        SwanHSDescript % num_records_this     = MNP
+        SwanHSDescript % ConsiderWetDry       = .FALSE.
+        SwanHSDescript % alternate_value      = -99999.0
+        SwanHSDescript % field_name           = "swan_HS"
+        SwanHSDescript % file_name            = "swan_HS.63"
+        SwanHSDescript % file_extension       = 63
+        SwanHSDescript % file_basename        = 'swan_HS'
+        call makeFileName(SwanHSDescript)
 
-      SwanHSMaxDescript % specifier            = NOUTGW
-      SwanHSMaxDescript % lun                  = 316
-      SwanHSMaxDescript % initial_value        = 0.0
-      SwanHSMaxDescript % num_items_per_record = 1
-      SwanHSMaxDescript % num_fd_records       = MNP
-      SwanHSMaxDescript % num_records_this     = MNP
-      SwanHSMaxDescript % ConsiderWetDry       = .FALSE.
-      SwanHSMaxDescript % alternate_value      = -99999.0
-      SwanHSMaxDescript % field_name           = "swan_HS_max"
-      SwanHSMaxDescript % file_name            = "swan_HS_max.63"
-      SwanHSMaxDescript % file_extension       = 63
-      SwanHSMaxDescript % file_basename        = 'swan_HS_max'
-      call makeFileName(SwanHSMaxDescript)
+        SwanHSMaxDescript % specifier            = NOUTGW
+        SwanHSMaxDescript % lun                  = 316
+        SwanHSMaxDescript % initial_value        = 0.0
+        SwanHSMaxDescript % num_items_per_record = 1
+        SwanHSMaxDescript % num_fd_records       = MNP
+        SwanHSMaxDescript % num_records_this     = MNP
+        SwanHSMaxDescript % ConsiderWetDry       = .FALSE.
+        SwanHSMaxDescript % alternate_value      = -99999.0
+        SwanHSMaxDescript % field_name           = "swan_HS_max"
+        SwanHSMaxDescript % file_name            = "swan_HS_max.63"
+        SwanHSMaxDescript % file_extension       = 63
+        SwanHSMaxDescript % file_basename        = 'swan_HS_max'
+        call makeFileName(SwanHSMaxDescript)
 
 C........Mean Wave Direction (DIR)
-      SwanDIRDescript % specifier            = NOUTGW
-      SwanDIRDescript % lun                  = 302
-      SwanDIRDescript % initial_value        = 0.0
-      SwanDIRDescript % num_items_per_record = 1
-      SwanDIRDescript % num_fd_records       = MNP
-      SwanDIRDescript % num_records_this     = MNP
-      SwanDIRDescript % ConsiderWetDry       = .FALSE.
-      SwanDIRDescript % alternate_value      = -99999.0
-      SwanDIRDescript % field_name           = "swan_DIR"
-      SwanDIRDescript % file_name            = "swan_DIR.63"
-      SwanDIRDescript % file_extension       = 63
-      SwanDIRDescript % file_basename        = 'swan_DIR'
-      call makeFileName(SwanDIRDescript)
+        SwanDIRDescript % specifier            = NOUTGW
+        SwanDIRDescript % lun                  = 302
+        SwanDIRDescript % initial_value        = 0.0
+        SwanDIRDescript % num_items_per_record = 1
+        SwanDIRDescript % num_fd_records       = MNP
+        SwanDIRDescript % num_records_this     = MNP
+        SwanDIRDescript % ConsiderWetDry       = .FALSE.
+        SwanDIRDescript % alternate_value      = -99999.0
+        SwanDIRDescript % field_name           = "swan_DIR"
+        SwanDIRDescript % file_name            = "swan_DIR.63"
+        SwanDIRDescript % file_extension       = 63
+        SwanDIRDescript % file_basename        = 'swan_DIR'
+        call makeFileName(SwanDIRDescript)
 
-      SwanDIRMaxDescript % specifier            = NOUTGW
-      SwanDIRMaxDescript % lun                  = 317
-      SwanDIRMaxDescript % initial_value        = 0.0
-      SwanDIRMaxDescript % num_items_per_record = 1
-      SwanDIRMaxDescript % num_fd_records       = MNP
-      SwanDIRMaxDescript % num_records_this     = MNP
-      SwanDIRMaxDescript % ConsiderWetDry       = .FALSE.
-      SwanDIRMaxDescript % alternate_value      = -99999.0
-      SwanDIRMaxDescript % field_name           = "swan_DIR_max"
-      SwanDIRMaxDescript % file_name            = "swan_DIR_max.63"
-      SwanDIRMaxDescript % file_extension       = 63
-      SwanDIRMaxDescript % file_basename        = 'swan_DIR_max'
-      call makeFileName(SwanDIRMaxDescript)
+        SwanDIRMaxDescript % specifier            = NOUTGW
+        SwanDIRMaxDescript % lun                  = 317
+        SwanDIRMaxDescript % initial_value        = 0.0
+        SwanDIRMaxDescript % num_items_per_record = 1
+        SwanDIRMaxDescript % num_fd_records       = MNP
+        SwanDIRMaxDescript % num_records_this     = MNP
+        SwanDIRMaxDescript % ConsiderWetDry       = .FALSE.
+        SwanDIRMaxDescript % alternate_value      = -99999.0
+        SwanDIRMaxDescript % field_name           = "swan_DIR_max"
+        SwanDIRMaxDescript % file_name            = "swan_DIR_max.63"
+        SwanDIRMaxDescript % file_extension       = 63
+        SwanDIRMaxDescript % file_basename        = 'swan_DIR_max'
+        call makeFileName(SwanDIRMaxDescript)
 
 C........Mean Wave Period (TM01)
-      SwanTM01Descript % specifier            = NOUTGW
-      SwanTM01Descript % lun                  = 303
-      SwanTM01Descript % initial_value        = 0.0
-      SwanTM01Descript % num_items_per_record = 1
-      SwanTM01Descript % num_fd_records       = MNP
-      SwanTM01Descript % num_records_this     = MNP
-      SwanTM01Descript % ConsiderWetDry       = .FALSE.
-      SwanTM01Descript % alternate_value      = -99999.0
-      SwanTM01Descript % field_name           = "swan_TM01"
-      SwanTM01Descript % file_name            = "swan_TM01.63"
-      SwanTM01Descript % file_extension       = 63
-      SwanTM01Descript % file_basename        = 'swan_TM01'
-      call makeFileName(SwanTM01Descript)
+        SwanTM01Descript % specifier            = NOUTGW
+        SwanTM01Descript % lun                  = 303
+        SwanTM01Descript % initial_value        = 0.0
+        SwanTM01Descript % num_items_per_record = 1
+        SwanTM01Descript % num_fd_records       = MNP
+        SwanTM01Descript % num_records_this     = MNP
+        SwanTM01Descript % ConsiderWetDry       = .FALSE.
+        SwanTM01Descript % alternate_value      = -99999.0
+        SwanTM01Descript % field_name           = "swan_TM01"
+        SwanTM01Descript % file_name            = "swan_TM01.63"
+        SwanTM01Descript % file_extension       = 63
+        SwanTM01Descript % file_basename        = 'swan_TM01'
+        call makeFileName(SwanTM01Descript)
 
-      SwanTM01MaxDescript % specifier            = NOUTGW
-      SwanTM01MaxDescript % lun                  = 318
-      SwanTM01MaxDescript % initial_value        = 0.0
-      SwanTM01MaxDescript % num_items_per_record = 1
-      SwanTM01MaxDescript % num_fd_records       = MNP
-      SwanTM01MaxDescript % num_records_this     = MNP
-      SwanTM01MaxDescript % ConsiderWetDry       = .FALSE.
-      SwanTM01MaxDescript % alternate_value      = -99999.0
-      SwanTM01MaxDescript % field_name           = "swan_TM01_max"
-      SwanTM01MaxDescript % file_name            = "swan_TM01_max.63"
-      SwanTM01MaxDescript % file_extension       = 63
-      SwanTM01MaxDescript % file_basename        = 'swan_TM01_max'
-      call makeFileName(SwanTM01MaxDescript)
+        SwanTM01MaxDescript % specifier            = NOUTGW
+        SwanTM01MaxDescript % lun                  = 318
+        SwanTM01MaxDescript % initial_value        = 0.0
+        SwanTM01MaxDescript % num_items_per_record = 1
+        SwanTM01MaxDescript % num_fd_records       = MNP
+        SwanTM01MaxDescript % num_records_this     = MNP
+        SwanTM01MaxDescript % ConsiderWetDry       = .FALSE.
+        SwanTM01MaxDescript % alternate_value      = -99999.0
+        SwanTM01MaxDescript % field_name           = "swan_TM01_max"
+        SwanTM01MaxDescript % file_name            = "swan_TM01_max.63"
+        SwanTM01MaxDescript % file_extension       = 63
+        SwanTM01MaxDescript % file_basename        = 'swan_TM01_max'
+        call makeFileName(SwanTM01MaxDescript)
 
 C........Peak Wave Period (TPS)
-      SwanTPSDescript % specifier            = NOUTGW
-      SwanTPSDescript % lun                  = 304
-      SwanTPSDescript % initial_value        = 0.0
-      SwanTPSDescript % num_items_per_record = 1
-      SwanTPSDescript % num_fd_records       = MNP
-      SwanTPSDescript % num_records_this     = MNP
-      SwanTPSDescript % ConsiderWetDry       = .FALSE.
-      SwanTPSDescript % alternate_value      = -99999.0
-      SwanTPSDescript % field_name           = "Swan_TPS"
-      SwanTPSDescript % file_name            = "swan_TPS.63"
-      SwanTPSDescript % file_extension       = 63
-      SwanTPSDescript % file_basename        = 'swan_TPS'
-      call makeFileName(SwanTPSDescript)
+        SwanTPSDescript % specifier            = NOUTGW
+        SwanTPSDescript % lun                  = 304
+        SwanTPSDescript % initial_value        = 0.0
+        SwanTPSDescript % num_items_per_record = 1
+        SwanTPSDescript % num_fd_records       = MNP
+        SwanTPSDescript % num_records_this     = MNP
+        SwanTPSDescript % ConsiderWetDry       = .FALSE.
+        SwanTPSDescript % alternate_value      = -99999.0
+        SwanTPSDescript % field_name           = "Swan_TPS"
+        SwanTPSDescript % file_name            = "swan_TPS.63"
+        SwanTPSDescript % file_extension       = 63
+        SwanTPSDescript % file_basename        = 'swan_TPS'
+        call makeFileName(SwanTPSDescript)
 
-      SwanTPSMaxDescript % specifier            = NOUTGW
-      SwanTPSMaxDescript % lun                  = 319
-      SwanTPSMaxDescript % initial_value        = 0.0
-      SwanTPSMaxDescript % num_items_per_record = 1
-      SwanTPSMaxDescript % num_fd_records       = MNP
-      SwanTPSMaxDescript % num_records_this     = MNP
-      SwanTPSMaxDescript % ConsiderWetDry       = .FALSE.
-      SwanTPSMaxDescript % alternate_value      = -99999.0
-      SwanTPSMaxDescript % field_name           = "Swan_TPS_max"
-      SwanTPSMaxDescript % file_name            = "swan_TPS_max.63"
-      SwanTPSMaxDescript % file_extension       = 63
-      SwanTPSMaxDescript % file_basename        = 'swan_TPS_max'
-      call makeFileName(SwanTPSMaxDescript)
+        SwanTPSMaxDescript % specifier            = NOUTGW
+        SwanTPSMaxDescript % lun                  = 319
+        SwanTPSMaxDescript % initial_value        = 0.0
+        SwanTPSMaxDescript % num_items_per_record = 1
+        SwanTPSMaxDescript % num_fd_records       = MNP
+        SwanTPSMaxDescript % num_records_this     = MNP
+        SwanTPSMaxDescript % ConsiderWetDry       = .FALSE.
+        SwanTPSMaxDescript % alternate_value      = -99999.0
+        SwanTPSMaxDescript % field_name           = "Swan_TPS_max"
+        SwanTPSMaxDescript % file_name            = "swan_TPS_max.63"
+        SwanTPSMaxDescript % file_extension       = 63
+        SwanTPSMaxDescript % file_basename        = 'swan_TPS_max'
+        call makeFileName(SwanTPSMaxDescript)
 
 C........SWAN Wind Values (WINDX,WINDY)
-      SwanWindDescript % specifier            = NOUTGW
-      SwanWindDescript % lun                  = 305
-      SwanWindDescript % initial_value        = 0.0
-      SwanWindDescript % num_items_per_record = 2
-      SwanWindDescript % num_fd_records       = MNP
-      SwanWindDescript % num_records_this     = MNP
-      SwanWindDescript % ConsiderWetDry       = .FALSE.
-      SwanWindDescript % alternate_value      = -99999.0
-      SwanWindDescript % field_name           = "swan_WIND"
-      SwanWindDescript % file_name            = "swan_WIND.64"
-      SwanWindDescript % file_extension       = 64
-      SwanWindDescript % file_basename        = 'swan_WIND'
-      call makeFileName(SwanWindDescript)
+        SwanWindDescript % specifier            = NOUTGW
+        SwanWindDescript % lun                  = 305
+        SwanWindDescript % initial_value        = 0.0
+        SwanWindDescript % num_items_per_record = 2
+        SwanWindDescript % num_fd_records       = MNP
+        SwanWindDescript % num_records_this     = MNP
+        SwanWindDescript % ConsiderWetDry       = .FALSE.
+        SwanWindDescript % alternate_value      = -99999.0
+        SwanWindDescript % field_name           = "swan_WIND"
+        SwanWindDescript % file_name            = "swan_WIND.64"
+        SwanWindDescript % file_extension       = 64
+        SwanWindDescript % file_basename        = 'swan_WIND'
+        call makeFileName(SwanWindDescript)
 
-      SwanWindMaxDescript % specifier            = NOUTGW
-      SwanWindMaxDescript % lun                  = 320
-      SwanWindMaxDescript % initial_value        = 0.0
-      SwanWindMaxDescript % num_items_per_record = 1
-      SwanWindMaxDescript % num_fd_records       = MNP
-      SwanWindMaxDescript % num_records_this     = MNP
-      SwanWindMaxDescript % ConsiderWetDry       = .FALSE.
-      SwanWindMaxDescript % alternate_value      = -99999.0
-      SwanWindMaxDescript % field_name           = "swan_WIND_max"
-      SwanWindMaxDescript % file_name            = "swan_WIND_max.63"
-      SwanWindMaxDescript % file_extension       = 63
-      SwanWindMaxDescript % file_basename        = 'swan_WIND_max'
-      call makeFileName(SwanWindMaxDescript)
+        SwanWindMaxDescript % specifier            = NOUTGW
+        SwanWindMaxDescript % lun                  = 320
+        SwanWindMaxDescript % initial_value        = 0.0
+        SwanWindMaxDescript % num_items_per_record = 1
+        SwanWindMaxDescript % num_fd_records       = MNP
+        SwanWindMaxDescript % num_records_this     = MNP
+        SwanWindMaxDescript % ConsiderWetDry       = .FALSE.
+        SwanWindMaxDescript % alternate_value      = -99999.0
+        SwanWindMaxDescript % field_name           = "swan_WIND_max"
+        SwanWindMaxDescript % file_name            = "swan_WIND_max.63"
+        SwanWindMaxDescript % file_extension       = 63
+        SwanWindMaxDescript % file_basename        = 'swan_WIND_max'
+        call makeFileName(SwanWindMaxDescript)
 
 C........Mean Wave Period (TM02)
-      SwanTM02Descript % specifier            = NOUTGW
-      SwanTM02Descript % lun                  = 306
-      SwanTM02Descript % initial_value        = 0.0
-      SwanTM02Descript % num_items_per_record = 1
-      SwanTM02Descript % num_fd_records       = MNP
-      SwanTM02Descript % num_records_this     = MNP
-      SwanTM02Descript % ConsiderWetDry       = .FALSE.
-      SwanTM02Descript % alternate_value      = -99999.0
-      SwanTM02Descript % field_name           = "swan_TM02"
-      SwanTM02Descript % file_name            = "swan_TM02.63"
-      SwanTM02Descript % file_extension       = 63
-      SwanTM02Descript % file_basename        = 'swan_TM02'
-      call makeFileName(SwanTM02Descript)
+        SwanTM02Descript % specifier            = NOUTGW
+        SwanTM02Descript % lun                  = 306
+        SwanTM02Descript % initial_value        = 0.0
+        SwanTM02Descript % num_items_per_record = 1
+        SwanTM02Descript % num_fd_records       = MNP
+        SwanTM02Descript % num_records_this     = MNP
+        SwanTM02Descript % ConsiderWetDry       = .FALSE.
+        SwanTM02Descript % alternate_value      = -99999.0
+        SwanTM02Descript % field_name           = "swan_TM02"
+        SwanTM02Descript % file_name            = "swan_TM02.63"
+        SwanTM02Descript % file_extension       = 63
+        SwanTM02Descript % file_basename        = 'swan_TM02'
+        call makeFileName(SwanTM02Descript)
 
-      SwanTM02MaxDescript % specifier            = NOUTGW
-      SwanTM02MaxDescript % lun                  = 321
-      SwanTM02MaxDescript % initial_value        = 0.0
-      SwanTM02MaxDescript % num_items_per_record = 1
-      SwanTM02MaxDescript % num_fd_records       = MNP
-      SwanTM02MaxDescript % num_records_this     = MNP
-      SwanTM02MaxDescript % ConsiderWetDry       = .FALSE.
-      SwanTM02MaxDescript % alternate_value      = -99999.0
-      SwanTM02MaxDescript % field_name           = "swan_TM02_max"
-      SwanTM02MaxDescript % file_name            = "swan_TM02_max.63"
-      SwanTM02MaxDescript % file_extension       = 63
-      SwanTM02MaxDescript % file_basename        = 'swan_TM02_max'
-      call makeFileName(SwanTM02MaxDescript)
+        SwanTM02MaxDescript % specifier            = NOUTGW
+        SwanTM02MaxDescript % lun                  = 321
+        SwanTM02MaxDescript % initial_value        = 0.0
+        SwanTM02MaxDescript % num_items_per_record = 1
+        SwanTM02MaxDescript % num_fd_records       = MNP
+        SwanTM02MaxDescript % num_records_this     = MNP
+        SwanTM02MaxDescript % ConsiderWetDry       = .FALSE.
+        SwanTM02MaxDescript % alternate_value      = -99999.0
+        SwanTM02MaxDescript % field_name           = "swan_TM02_max"
+        SwanTM02MaxDescript % file_name            = "swan_TM02_max.63"
+        SwanTM02MaxDescript % file_extension       = 63
+        SwanTM02MaxDescript % file_basename        = 'swan_TM02_max'
+        call makeFileName(SwanTM02MaxDescript)
 
 C........Mean Wave Period (TMM10)
-      SwanTMM10Descript % specifier            = NOUTGW
-      SwanTMM10Descript % lun                  = 307
-      SwanTMM10Descript % initial_value        = 0.0
-      SwanTMM10Descript % num_items_per_record = 1
-      SwanTMM10Descript % num_fd_records       = MNP
-      SwanTMM10Descript % num_records_this     = MNP
-      SwanTMM10Descript % ConsiderWetDry       = .FALSE.
-      SwanTMM10Descript % alternate_value      = -99999.0
-      SwanTMM10Descript % field_name           = "swan_TMM10"
-      SwanTMM10Descript % file_name            = "swan_TMM10.63"
-      SwanTMM10Descript % file_extension       = 63
-      SwanTMM10Descript % file_basename        = 'swan_TMM10'
-      call makeFileName(SwanTMM10Descript)
+        SwanTMM10Descript % specifier            = NOUTGW
+        SwanTMM10Descript % lun                  = 307
+        SwanTMM10Descript % initial_value        = 0.0
+        SwanTMM10Descript % num_items_per_record = 1
+        SwanTMM10Descript % num_fd_records       = MNP
+        SwanTMM10Descript % num_records_this     = MNP
+        SwanTMM10Descript % ConsiderWetDry       = .FALSE.
+        SwanTMM10Descript % alternate_value      = -99999.0
+        SwanTMM10Descript % field_name           = "swan_TMM10"
+        SwanTMM10Descript % file_name            = "swan_TMM10.63"
+        SwanTMM10Descript % file_extension       = 63
+        SwanTMM10Descript % file_basename        = 'swan_TMM10'
+        call makeFileName(SwanTMM10Descript)
 
-      SwanTMM10MaxDescript % specifier            = NOUTGW
-      SwanTMM10MaxDescript % lun                  = 322
-      SwanTMM10MaxDescript % initial_value        = 0.0
-      SwanTMM10MaxDescript % num_items_per_record = 1
-      SwanTMM10MaxDescript % num_fd_records       = MNP
-      SwanTMM10MaxDescript % num_records_this     = MNP
-      SwanTMM10MaxDescript % ConsiderWetDry       = .FALSE.
-      SwanTMM10MaxDescript % alternate_value      = -99999.0
-      SwanTMM10MaxDescript % field_name           = "swan_TMM10_max"
-      SwanTMM10MaxDescript % file_name          = "swan_TMM10_max.63"
-      SwanTMM10MaxDescript % file_extension       = 63
-      SwanTMM10MaxDescript % file_basename        = 'swan_TMM10_max'
-      call makeFileName(SwanTMM10MaxDescript)
+        SwanTMM10MaxDescript % specifier            = NOUTGW
+        SwanTMM10MaxDescript % lun                  = 322
+        SwanTMM10MaxDescript % initial_value        = 0.0
+        SwanTMM10MaxDescript % num_items_per_record = 1
+        SwanTMM10MaxDescript % num_fd_records       = MNP
+        SwanTMM10MaxDescript % num_records_this     = MNP
+        SwanTMM10MaxDescript % ConsiderWetDry       = .FALSE.
+        SwanTMM10MaxDescript % alternate_value      = -99999.0
+        SwanTMM10MaxDescript % field_name           = "swan_TMM10_max"
+        SwanTMM10MaxDescript % file_name          = "swan_TMM10_max.63"
+        SwanTMM10MaxDescript % file_extension       = 63
+        SwanTMM10MaxDescript % file_basename        = 'swan_TMM10_max'
+        call makeFileName(SwanTMM10MaxDescript)
 
-#endif
+      endif
+
 C     3D data
 C     fort.41
       SigTStaDescript % specifier            = I3DSD
@@ -9126,8 +9115,8 @@ C++
         CALL initNetCDFOutputFile(RSDescript,reterr)
         CALL initNetCDFOutputFile(RSMaxDescript,reterr)
       ENDIF
+
       ! tcm v50.75 moved ifdef adcswan to here
-#ifdef ADCSWAN
       ! Cobell 20120510: Added for SWAN NetCDF
       IF(NRS.EQ.3)THEN
         IF(SWAN_OutputHS)THEN
@@ -9159,8 +9148,7 @@ C++
             CALL initNetCDFOutputFile(SwanTMM10MaxDescript,reterr)
         ENDIF
       ENDIF
-#endif
-C
+
       IF (C3D.eqv..true.) THEN
          CALL initNetCDFOutputFile(SigTStaDescript, reterr)
          CALL initNetCDFOutputFile(RealQStaDescript, reterr)
