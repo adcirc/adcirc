@@ -43,7 +43,7 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/write_output.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F

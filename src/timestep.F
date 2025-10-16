@@ -84,9 +84,9 @@ C
      &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
      &    Limit_WaveStressGrad, SWAN_RSNX1, SWAN_RSNY1, SWAN_RSNX2, SWAN_RSNY2,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
-     &    dynamicWaterLevelCorrectionDelta
+     &    dynamicWaterLevelCorrectionDelta, RampIntFlux
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
-     &                         WaveStressGrad_Cap 
+     &                         WaveStressGrad_Cap, G
      
       USE GWCE, ONLY : solveGWCE, numitr
       USE MOMENTUM, ONLY : solveMomentumEq
@@ -150,6 +150,7 @@ Casey 090302: We need these values from other places.
      &                       WriteSwanHotStart
 #endif
       USE WEIR_FLUX
+      USE WEIR, ONLY: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
      &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
 
@@ -1041,7 +1042,7 @@ C                     ACROSS A WEIR
                            ISFRONT = .FALSE.
                         ENDIF
                         CALL COMPUTE_INTERNAL_BOUNDARY64_FLUX(I,J,K,
-     &                      TIMELOC,QN2(I),ISFRONT)
+     &                      TIMELOC,QN2(I))
                     ENDDO
                 CASE DEFAULT
                     I = I + NVELL(K)
@@ -1058,7 +1059,7 @@ C...
          DO I=1,NVEL
             IF((LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)) THEN
                 PIPE_FLUX = 0D0
-                CALL COMPUTE_CROSS_BARRIER_PIPE_FLUX(I,TIMELOC,PIPE_FLUX)
+                CALL COMPUTE_CROSS_BARRIER_PIPE_FLUX(I,PIPE_FLUX)
                 QN2(I) = QN2(I) + PIPE_FLUX
             ENDIF
          ENDDO
