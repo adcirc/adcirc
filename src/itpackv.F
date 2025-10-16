@@ -45,13 +45,15 @@ c                       austin, tx  78712
 c                       (512) 471-1242
 c-----------------------------------------------------------------------------
 c
-
 #ifdef CMPI
       USE MESSENGER                !   MPI interface for padcirc
 #else
       USE SIZES
 #endif
 
+      PRIVATE
+
+      PUBLIC :: jcg, itjcg, dfault
 
 c--------------------data declarations end here-------------------------------c
 
@@ -662,12 +664,12 @@ c
 c
 c     description of variables in common block in main routine
 c
-      digit1 = 0.0
-      digit2 = 0.0
+      digit1 = 0.0d0
+      digit2 = 0.0d0
       if (n.le.0) go to 70
 c
       digit1 = -log10(abs(srelpr))
-      if (stptst.gt.0.0) digit1 = -log10(abs(stptst))
+      if (stptst.gt.0.0d0) digit1 = -log10(abs(stptst))
       do 10 i = 1,n
          work(i) = rhs(i)/coef(i,1)
    10 continue
@@ -678,7 +680,7 @@ c
       bnrm = sdot(n,work,1,work,1)
 #endif
 
-      if (bnrm.eq.0.0) go to 30
+      if (bnrm.eq.0.0d0) go to 30
       call pmult (n,ndim,maxnz,jcoef,coef,u,work)
       do 20 i = 1,n
          work(i) = (rhs(i)-work(i))/coef(i,1)
@@ -692,7 +694,7 @@ c
 
 
       temp = rnrm/bnrm
-      if (temp.eq.0.0) go to 30
+      if (temp.eq.0.0d0) go to 30
       digit2 = -log10(abs(temp))/2.0d0
       go to 40
 c
@@ -782,7 +784,7 @@ c
       udnm = sdot(n,u,1,u,1)
 #endif
 
-      if (udnm.eq.0.0) udnm = 1.0d0
+      if (udnm.eq.0.0d0) udnm = 1.0d0
       if ((in.gt.5).and.(abs(udnm-uold).le.udnm*zeta)) q1 = .true.
 c
 c ... compute stopping test
@@ -1341,7 +1343,7 @@ c
 c ... specifications for arguments
 c
 c
-      eigvns = 0.0
+      eigvns = 0.0d0
 c
       d(1) = -tri(1,1)
       do 10 i = 2,n
@@ -1490,9 +1492,9 @@ c                                  srelpr = machine precision
 c                                  first executable statement
 c
       ier = 0
-      dlam = 0.0
-      err = 0.0
-      s = 0.0
+      dlam = 0.0d0
+      err = 0.0d0
+      s = 0.0d0
 c
 c                                  look for small sub-diagonal entries
 c                                  define initial shift from lower
@@ -1514,7 +1516,7 @@ c
          if (i.ne.n) q = sqrt(abs(e2(i+1)))
          tot = min(d(i)-p-q,tot)
    30 continue
-      if (isw.eq.1.and.tot.lt.0.0) go to 50
+      if (isw.eq.1.and.tot.lt.0.0d0) go to 50
       do 40 i = 1,n
          d(i) = d(i)-tot
    40 continue
@@ -1546,11 +1548,11 @@ c
    90    if (k.eq.n) go to 110
          k1 = k+1
          do 100 j = k1,n
-            if (e2(j).le.(srelpr*(d(j)+d(j-1)))**2) e2(j) = 0.0
+            if (e2(j).le.(srelpr*(d(j)+d(j-1)))**2) e2(j) = 0.0d0
   100    continue
   110    f = e2(n)/delta
          qp = delta+f
-         p = 1.0
+         p = 1.0d0
          if (k.eq.n) go to 140
          k1 = n-k
          do 130 ii = 1,k1
@@ -1574,7 +1576,7 @@ c
          s = qp/p
          if (tot+s.gt.tot) go to 70
          ier = 601
-         e2(1) = k
+         e2(1) = dble(k)
          if (level.ge.1) write (nout,150) k
   150    format (/1x,'*** w a r n i n g ************'//1x,
      *      '    in itpackv routine eqrt1s'/1x,
@@ -1584,7 +1586,7 @@ c
 c                                  set error -- irregular end
 c                                  deflate minimum diagonal element
 c
-         s = 0.0
+         s = 0.0d0
          i = ismin(n-k+1,d(k),1)
          delta = min(qp,d(i))
 c
@@ -2257,7 +2259,7 @@ c
 c ... find maximum off-diagonal elements in absolute value.
 c
       do 10 i = 1,n
-         work(i) = 0.0
+         work(i) = 0.0d0
    10 continue
       do 30 j = 2,maxnz
          do 20 i = 1,n
@@ -2273,7 +2275,7 @@ c
             jcol = jcoef(i,j)
             if (work(jcol).ge.tol) go to 50
             rhs(i) = rhs(i)-coef(i,j)*rhs(jcol)
-   40       coef(i,j) = 0.0
+   40       coef(i,j) = 0.0d0
             jcoef(i,j) = i
    50    continue
    60 continue
@@ -2399,7 +2401,7 @@ c
          u(i) = u(i)*work(i)
   160 continue
       do 170 i = 1,n
-         work(i) = 1.0/work(i)
+         work(i) = 1.0d0/work(i)
   170 continue
       call scopy (n,work,1,coef,1)
       do 180 i = 1,n
@@ -2451,7 +2453,7 @@ c
          u(i) = u(i)*work(i)
    10 continue
       do 20 i = 1,n
-         work(i) = 1.0/work(i)
+         work(i) = 1.0d0/work(i)
    20 continue
       do 30 i = 1,n
          rhs(i) = rhs(i)*work(i)
@@ -2831,7 +2833,7 @@ C
       implicit none
       integer i,n,incx,incy
       real(8) sx(*),sy(*)
-      REAL*8 ddot
+      real(8) ddot
 c
       ddot = 0.0D0
       sdot = ddot
