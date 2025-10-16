@@ -116,7 +116,7 @@ C******************************************************************************
      &   FileFmtRev
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
-     &   get_numwriters, mnstae
+     &   get_numwriters, mnstae, mnwproh, mnwproc
       USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
      &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, 
      &   dynamicWaterLevelCorrectionSta, DEBUG, INFO, allMessage, itime, dtdp, statim,
@@ -140,7 +140,7 @@ C******************************************************************************
       USE WIND, ONLY : initWindModule, initDynamicWaterLevelCorrection,
      &                 getDynamicWaterLevelCorrections
 #ifdef CMPI
-      USE MESSENGER, ONLY : mnwproh, msg_init, msg_table, msg_start,
+      USE MESSENGER, ONLY : msg_init, msg_table, msg_start,
      &   allnodes
       USE WRITER, ONLY : writer_init, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_init
@@ -644,11 +644,15 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE ADCIRC_CheckLocalTerminate()
         USE MESSENGER
-        USE GLOBAL,ONLY: terminate_localproc, screenUnit
+        USE GLOBAL,ONLY: terminate_localproc, screenUnit, comm
+        USE SIZES,ONLY: MYPROC
         USE MPI
         IMPLICIT NONE
+
         INTEGER :: TERM_LOCAL(2)
         INTEGER :: TERM_GLOBAL(2)
+        INTEGER :: ierr
+
         TERM_LOCAL(1) = TERMINATE_LOCALPROC
         TERM_LOCAL(2) = MYPROC
         CALL MPI_ALLREDUCE(TERM_LOCAL,TERM_GLOBAL,1,

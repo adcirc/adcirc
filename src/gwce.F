@@ -258,6 +258,7 @@ C
      &    , dumy1, dumy2, rnp_global
 #endif
       USE ADC_CONSTANTS, ONLY: G, RHOWAT0, Bd, Ad, Cs2
+      USE SIZES, ONLY: MNP, MNEI
       USE MESH, ONLY : NE, NP, NM, DP, NNeigh, NeiTab, TotalArea, FDXE,
      &   Areas, NEIMAX, SFAC, nneighele, neitabele, FDYE,
      &   SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, SFCXEle,
@@ -637,7 +638,7 @@ C...  boundary conditions while maintaining the symmetry of the system
 
          IF (ILump.eq.0) THEN
 #ifdef CMPI
-            EP = PSDOT(NP,Coef(1,1),Coef(1,1))
+            EP = PSDOT(NP,Coef(:,1),Coef(:,1))
             EP = SQRT(RNP_GLOBAL*EP)
 #else
             EP=0.0D0
@@ -1895,9 +1896,9 @@ C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
 C... DW, periodic bcs
          IF(NPERSEG.GT.0)THEN
-             CALL UPDATER_W_PERBC(GWCE_LV,COEF(1,1),DUMY1,2)
+             CALL UPDATER_W_PERBC(GWCE_LV,COEF(:,1),DUMY1,2)
          ELSE
-             CALL UPDATER(GWCE_LV,COEF(1,1),DUMY1,2)
+             CALL UPDATER(GWCE_LV,COEF(:,1),DUMY1,2)
          ENDIF
       ELSE  ! lumped LHS
          CALL UPDATER(GWCE_LV,COEFD,DUMY1,2)
@@ -3120,7 +3121,7 @@ C...  UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
 
 #ifdef CMPI
 C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
-      CALL UPDATER(GWCE_LV,COEF(1,1),DUMY1,2)
+      CALL UPDATER(GWCE_LV,COEF(:,1),DUMY1,2)
 #endif
 
 C...  JCG ITERATIVE MATRIX SOLVER

@@ -1580,15 +1580,10 @@ C-------------------------------------------------------------------
 
 C-------------------------------------------------------------------
 
-      function CMP_VERSION_NUMBERS(a,b) result(match)
-
+      pure logical function CMP_VERSION_NUMBERS(a,b) result(match)
       implicit none
-      integer  a,b
-      logical  :: match
-
+      integer, intent(in) ::  a,b
       match = ishft(a,-10) == ishft(b,-10)
-
-      return
       end function CMP_VERSION_NUMBERS
 C-------------------------------------------------------------------
 
