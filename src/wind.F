@@ -8358,8 +8358,8 @@ C----------------------------------------------------------------------
       USE GLOBAL, ONLY : NCICE
 #ifdef CMPI
       USE MESSENGER, ONLY: MSG_BARRIER
-#endif
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_Int
+#endif
       implicit none
       logical :: Fexists
       integer :: iret
@@ -8410,8 +8410,8 @@ C----------------------------------------------------------------------
          endif
 #ifdef CMPI
       ENDIF
-#endif
       CALL BcastToLocal_Int(iret)
+#endif
       if (iret.ne.0) then
          call windTerminate()
       endif
@@ -8720,8 +8720,10 @@ C----------------------------------------------------------------------
 #ifdef GRIB2API
       use wgrib2api
 #endif
+#ifdef CMPI
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
+#endif
       USE SIZES, ONLY : MYPROC
       implicit none
       integer :: iret, iter
@@ -8758,12 +8760,16 @@ C----------------------------------------------------------------------
          NX = UBOUND(data2,1)
          NY = UBOUND(data2,2)
       ENDIF
+#ifdef CMPI
       CALL BcastToLocal_Int(NX)
       CALL BcastToLocal_INT(NY)
+#endif
       IF (MYPROC.NE.0) THEN
          ALLOCATE( data2(NX,NY) )
       ENDIF
+#ifdef CMPI
       CALL BcastToLocal_2DRealArray(data2,NX,NY)
+#endif
       CALL unsetMessageSource()
       RETURN
 C----------------------------------------------------------------------
@@ -8779,8 +8785,10 @@ C----------------------------------------------------------------------
       use netcdf
       use netcdf_error, only: check_err
 #endif
+#ifdef CMPI
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
+#endif
       USE SIZES, ONLY : MYPROC
       implicit none
 
@@ -8801,16 +8809,20 @@ C----------------------------------------------------------------------
            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
            call Check_err(NF90_INQ_DIMID(NC_ID,Londim,Temp_ID))
            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NX))
-        ENDIF        
+        ENDIF
+#ifdef CMPI
         CALL BcastToLocal_Int(NX)
         CALL BcastToLocal_Int(NY)
+#endif
         allocate(data2(NX,NY))
         IF (MYPROC.EQ.0) THEN
            call Check_err(NF90_INQ_VARID(NC_ID,var,Temp_ID))
            call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,data2,
      &                  start=[1, 1, NT],count=[NX, NY, 1]))
         ENDIF
+#ifdef CMPI
         CALL BCastToLocal_2DRealArray(Data2,NX,NY)
+#endif
       ELSE 
         ! Each core read data
         call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID)) 
@@ -8958,9 +8970,10 @@ C----------------------------------------------------------------------
       use netcdf
       use netcdf_error, only: check_err
 #endif     
-      
+#ifdef CMPI
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
+#endif
       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
       USE GLOBAL, ONLY: scratchMessage, allMessage, ERROR
       
@@ -9157,8 +9170,10 @@ C-------------------------------------------------------------------------------
       use netcdf
       use netcdf_error, only: check_err
 #endif
+#ifdef CMPI
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
+#endif
       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
 
      
@@ -9250,8 +9265,10 @@ C----------------------------------------------------------------------
 #ifdef GRIB2API
       use wgrib2api
 #endif
+#ifdef CMPI
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
+#endif
       USE SIZES, ONLY : MYPROC
       implicit none
       integer :: iret, iter
@@ -9287,15 +9304,19 @@ C----------------------------------------------------------------------
          NX = UBOUND(lon,1)
          NY = UBOUND(lat,2)
       ENDIF
+#ifdef CMPI
       CALL BcastToLocaL_Int(NX)
       Call BcastToLocal_Int(NY)
+#endif
       IF (MYPROC.NE.0) THEN
          ALLOCATE( lat(NX,NY), lon(NX,NY) )
       ENDIF
+#ifdef CMPI
       ! latitude
       CALL BcastToLocal_2DRealArray(lat,NX,NY)
       ! longitude
       CALL BcastToLocal_2DRealArray(lon,NX,NY)
+#endif
       CALL unsetMessageSource()
       RETURN
 C----------------------------------------------------------------------
@@ -9312,8 +9333,10 @@ C----------------------------------------------------------------------
       use netcdf
       use netcdf_error, only: check_err
 #endif
+#ifdef CMPI
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
      &                           BcastToLocal_Int
+#endif
       USE SIZES, ONLY : MYPROC
       implicit none
       INTEGER,INTENT(INOUT) :: ncid ! already opened ncid tag
@@ -9363,13 +9386,17 @@ C----------------------------------------------------------------------
          END IF
 
       ENDIF
+#ifdef CMPI
       CALL BcastToLocal_Int(NX)
       CALL BcastToLocal_Int(NY)
+#endif
       IF (MYPROC.NE.0) THEN
          ALLOCATE( lon(NX,NY), lat(NX,NY) )
       ENDIF
+#ifdef CMPI
       CALL BcastToLocal_2DRealArray(lon,NX,NY)
       CALL BcastToLocal_2DRealArray(lat,NX,NY)
+#endif
 #endif
       CALL unsetMessageSource()
       RETURN
@@ -9387,7 +9414,9 @@ C----------------------------------------------------------------------
       use netcdf
       use netcdf_error, only: check_err
 #endif
+#ifdef CMPI
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_Int
+#endif
       USE SIZES, ONLY : MYPROC
       USE NETCDF_ERROR, ONLY: CHECK_ERR
       implicit none
@@ -9465,9 +9494,11 @@ C----------------------------------------------------------------------
 
 #ifdef CMPI
       endif
+
       CALL BcastToLocal_Int(NT)
       CALL BcastToLocal_Int(NTC)
 #endif
+
 #endif
       CALL unsetMessageSource()
       return
