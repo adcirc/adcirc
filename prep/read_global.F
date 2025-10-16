@@ -501,7 +501,7 @@ C---------------------------------------------------------------------
       USE PRE_GLOBAL
       USE SIZES, ONLY : MNHARF
       USE MESH, ONLY : CYLINDERMAP
-      USE GLOBAL, ONLY : parse, a2f, hss, screenUnit, STATNAME,
+      USE GLOBAL, ONLY : parse, hss, screenUnit, STATNAME,
      &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
      &                   allMessage, setMessageSource, deg2rad,
      &                   unsetMessageSource, INFO, logMessage,
@@ -517,7 +517,6 @@ C---------------------------------------------------------------------
 C    ===================================================================
 C      MCF ADDITION FOR READING AND WRITING STATION INFO IN NETCDF
 C
-C      REAL, EXTERNAL              :: a2f
       CHARACTER(132) STATLINE
       CHARACTER(50) LVAR(3)
 C
@@ -1547,8 +1546,8 @@ C
 !                READ(15,'(A132)') STATLINE
 !                call parse(STATLINE, LVAR)
                  call parse(STAELOC(I), LVAR)
-                 XEL(I)=a2f(LVAR(1))
-                 YEL(I)=a2f(LVAR(2))
+                 read(LVAR(1),*) XEL(I)
+                 read(LVAR(2),*) YEL(I)
                  STATNAME(I)=LVAR(3)
 C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
 #endif
@@ -1563,8 +1562,8 @@ C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
 !                 READ(15,'(A132)') STATLINE
 !                 call parse(STATLINE, LVAR)
                   call parse(STAELOC(I), LVAR)
-                  SLEL(I)=a2f(LVAR(1))
-                  SFEL(I)=a2f(LVAR(2))
+                  read(LVAR(1),*)SLEL(I)
+                  read(LVAR(2),*)SFEL(I)
                   STATNAME(I)=LVAR(3)
 !                 WRITE(6,*)"parsed stations"
 !                 WRITE(6,9911) SLEL(I),SFEL(I), STATNAME(I,SNAMLEN)
@@ -1654,8 +1653,8 @@ C
             ELSE
 #ifdef ADCNETCDF
                call parse(STAVLOC(I), LVAR)
-               XEV(I)=a2f(LVAR(1))
-               YEV(I)=a2f(LVAR(2))
+               read(LVAR(1),*) XEV(I)
+               read(LVAR(2),*) YEV(I)
                STATNAMEV(I)=LVAR(3)
 C              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I)
 #endif
@@ -1669,8 +1668,8 @@ C              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I)
             ELSE
 #ifdef ADCNETCDF
                call parse(STAVLOC(I), LVAR)
-               SLEV(I)=a2f(LVAR(1))
-               SFEV(I)=a2f(LVAR(2))
+               read(LVAR(1),*) SLEV(I)
+               read(LVAR(2),*) SFEV(I)
                STATNAMEV(I)=LVAR(3)
 !              WRITE(6,*)"parsed stations"
 !              WRITE(6,9911) SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
@@ -1836,8 +1835,8 @@ C
                ELSE
 #ifdef ADCNETCDF
                   call parse(STAMLOC(I), LVAR)
-                  XEM(I)=a2f(LVAR(1))
-                  YEM(I)=a2f(LVAR(2))
+                  read(LVAR(1),*) XEM(I)
+                  read(LVAR(2),*) YEM(I)
                   STATNAMEM(I)=LVAR(3)
 C                 WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I)
 #endif
@@ -1850,8 +1849,8 @@ C                 WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I)
                ELSE
 #ifdef ADCNETCDF
                   call parse(STAMLOC(I), LVAR)
-                  SLEM(I)=a2f(LVAR(1))
-                  SFEM(I)=a2f(LVAR(2))
+                  read(LVAR(1),*) SLEM(I)
+                  read(LVAR(2),*) SFEM(I)
                   STATNAMEM(I)=LVAR(3)
 !                 WRITE(6,9911) SLEM(I), SFEM(I), STATNAMEM(I,SNAMLEN)
 !                 WRITE(6,*)"STATION INFO STAMLOC",
@@ -2090,7 +2089,7 @@ C---------------------------------------------------------------------
       SUBROUTINE READ15_3DVS()
       USE PRE_GLOBAL
       USE ADC_CONSTANTS, ONLY: deg2rad, day2sec
-      USE GLOBAL, ONLY : parse, a2f, SNAMLEN
+      USE GLOBAL, ONLY : parse, SNAMLEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET, SIGMA,
      &    FEGRIDS, I3DGB
       USE MESH, only : CYLINDERMAP
@@ -2266,11 +2265,11 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
             call parse(STA3DDLOC(I), LVAR)
             STATNAMED(I)=LVAR(3)
             IF (ICS.EQ.1) THEN
-               X3DD(I)=a2f(LVAR(1))
-               Y3DD(I)=a2f(LVAR(2))
+               read(LVAR(1),*) X3DD(I)
+               read(LVAR(2),*) Y3DD(I)
             ELSE
-               SL3DD(I)=a2f(LVAR(1))
-               SF3DD(I)=a2f(LVAR(2))
+               read(LVAR(1),*) SL3DD(I)
+               read(LVAR(2),*) SF3DD(I)
                SL3DD(I)=DEG2RAD*SL3DD(I)
                SF3DD(I)=DEG2RAD*SF3DD(I)
                call CYLINDERMAP(x3dd(i),y3dd(i),sl3dd(i),sf3dd(i),
@@ -2328,11 +2327,11 @@ C  kmd48.33 changed to -2
             call parse(STA3DVLOC(I), LVAR)
             STATNAMEV3D(I)=LVAR(3)
             IF (ICS.EQ.1) THEN
-               X3DV(I)=a2f(LVAR(1))
-               Y3DV(I)=a2f(LVAR(2))
+               read(LVAR(1),*) X3DV(I)
+               read(LVAR(2),*) Y3DV(I)
             ELSE
-               SL3DV(I)=a2f(LVAR(1))
-               SF3DV(I)=a2f(LVAR(2))
+               read(LVAR(1),*) SL3DV(I)
+               read(LVAR(2),*) SF3DV(I)
                SL3DV(I)=DEG2RAD*SL3DV(I)
                SF3DV(I)=DEG2RAD*SF3DV(I)
                call CYLINDERMAP(x3dv(i),y3dv(i),sl3dv(i),sf3dv(i),
@@ -2383,11 +2382,11 @@ C  kmd48.33 changed to -2
             call parse(STA3DTLOC(I), LVAR)
             STATNAMET(I)=LVAR(3)
             IF (ICS.EQ.1) THEN
-               X3DT(I)=a2f(LVAR(1))
-               Y3DT(I)=a2f(LVAR(2))
+               read(LVAR(1),*) X3DT(I)
+               read(LVAR(2),*) Y3DT(I)
             ELSE
-               SL3DT(I)=a2f(LVAR(1))
-               SF3DT(I)=a2f(LVAR(2))
+               read(LVAR(1),*) SL3DT(I)
+               read(LVAR(2),*) SF3DT(I)
                SL3DT(I)=DEG2RAD*SL3DT(I)
                SF3DT(I)=DEG2RAD*SF3DT(I)
                call CYLINDERMAP(x3dt(i),y3dt(i),sl3dt(i),sf3dt(i),
