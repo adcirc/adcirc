@@ -340,7 +340,7 @@ $(O_DIR):
 
 
 ################# Module Source, Object, & Mod Files ######################
-HASH_MSRC  =  hashtable.F
+HASH_MSRC  =  hashtable.F90
 WD_MSRC    =  wetdry.F
 MOM_MSRC   =  momentum.F
 GWCE_MSRC  =  gwce.F
@@ -387,7 +387,7 @@ GL2LOC_MSRC = gl2loc_mapping.F90
 TIDE_MSRC = astronomic.F90 sun.F90 moon.F90 sun_moon_system.F90 ephemerides.F90 tidalpotential.F90
 ITTIDE_MSRC = internaltide.F
 
-HASH_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HASH_MSRC) )
+HASH_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(HASH_MSRC) )
 WD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WD_MSRC) )
 MOM_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(MOM_MSRC) )
 GWCE_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(GWCE_MSRC) )
@@ -837,7 +837,7 @@ endif
 $(O_DIR)write_output.o : $(WRITE_OUTPUT_DEP)
 # jgf51.21.28: made xdmf support routines into a module
 $(O_DIR)xdmfio.o      : xdmfio.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)control.o
-$(O_DIR)hashtable.o   : hashtable.F
+$(O_DIR)hashtable.o   : hashtable.F90
 $(O_DIR)control.o     : control.F
 $(O_DIR)subdomain.o   : subdomain.F $(O_DIR)mesh.o 
 $(O_DIR)global_3dvs.o : global_3dvs.F $(O_DIR)global.o $(O_DIR)boundaries.o
