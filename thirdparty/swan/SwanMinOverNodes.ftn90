@@ -44,7 +44,6 @@ subroutine SwanMinOverNodes ( rval )
     use ocpcomm4
 !PUN    use SIZES, only: MNPROC
 !PUN    use GLOBAL, only: COMM
-!PUN    use MESSENGER, only: IERR
 !PUN    use mpi
 !
     implicit none
@@ -56,6 +55,7 @@ subroutine SwanMinOverNodes ( rval )
 !   Local variables
 !
     integer                 :: count    ! length of array to be collect
+!PUN   integer              :: ierr     
     integer, save           :: ient = 0 ! number of entries in this subroutine
     real                    :: minval   ! minimum of all input values from all subdomains
 !

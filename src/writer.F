@@ -976,7 +976,7 @@ C     subroutine is only called by processor 0.
 C-----------------------------------------------------------------------
       subroutine writer_pause()
       use global
-      use messenger, only: tag, comm_writeh, writers_active
+      use messenger, only: tag, writers_active
       use mpi
       implicit none
       integer i
@@ -1024,8 +1024,7 @@ C
       MODULE HSWRITER
         USE SIZES
         USE GLOBAL
-        USE MESSENGER, ONLY: TAG, COMM_WRITEH, COMM_HSLEEP, WRITER_ID,
-     &       SIG_TERM, MSG_FINI
+        USE MESSENGER, ONLY: TAG, MSG_FINI
         use mpi
       IMPLICIT NONE
       INTEGER :: WCOMMID, WCOMM
@@ -1084,7 +1083,7 @@ C...  Main loop
 !
       subroutine HSWRITER_PAUSE()
       use global
-      use messenger, only: tag, comm_writeh,hs_writers_active
+      use messenger, only: tag, hs_writers_active
       use mpi
       implicit none
       integer i
