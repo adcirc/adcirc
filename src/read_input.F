@@ -70,7 +70,7 @@ C-----------------------------------------------------------------------
      &   tvw, ntcys_tvw, ntcyf_tvw, noutgc, toutsgc, toutfgc, nspoolgc,
      &   warnelevdumplimit, toutse, toutfe, nspoole, staiv1, staiv2,
      &   staiv3, toutfc, noutgw, nspoolgw, toutfgw, toutsgw, noutgw,
-     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw,
+     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, screenunit,
      &   smag_comp_flag, np_g, nibnodecode, ititer,
      &   ne_g, nstae_g, nstav_g, nstam_g, nstac_g, netcdf_avail, title,
      &   nstac_g, nstam_g, institution, references, history, source,
@@ -129,6 +129,7 @@ C-----------------------------------------------------------------------
       USE WEIR, ONLY: BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,
      &   BARSLIM64_ELEM, BARSLIM64_EDGE
 
+      USE WEIR, ONLY: FOUND_TVW_NML
       USE TIME_VARYING_WEIR_BOUNDARY
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist, getVortexModelStringNws8 => getVortexModelString
