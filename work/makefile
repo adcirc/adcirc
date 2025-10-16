@@ -385,7 +385,7 @@ BC3D_MSRC = couple2baroclinic3D.F
 # CPB baroclinic internal tide updates
 GL2LOC_MSRC = gl2loc_mapping.F90
 TIDE_MSRC = astronomic.F90 sun.F90 moon.F90 sun_moon_system.F90 ephemerides.F90 tidalpotential.F90
-ITTIDE_MSRC = internaltide.F
+ITTIDE_MSRC = internaltide.F90
 
 HASH_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(HASH_MSRC) )
 WD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WD_MSRC) )
@@ -425,7 +425,7 @@ WRITER_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WRITER_MSRC) )
 BC3D_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(BC3D_MSRC) )
 # CPB
 GL2LOC_MOBJ :=  $(patsubst %.F90, $(O_DIR)%.o, $(GL2LOC_MSRC) )
-ITTIDE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(ITTIDE_MSRC) )
+ITTIDE_MOBJ :=  $(patsubst %.F90, $(O_DIR)%.o, $(ITTIDE_MSRC) )
 TIDE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(TIDE_MSRC) )
 NCE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NCE_MSRC) )
 
@@ -776,7 +776,7 @@ $(O_DIR)version.o     :  version.F
 $(O_DIR)sizes.o       :  sizes.F
 $(O_DIR)constants.o   :  constants.F90 $(O_DIR)sizes.o
 $(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)constants.o $(O_DIR)kdtree2.o
-$(O_DIR)internaltide.o : internaltide.F $(O_DIR)sizes.o $(O_DIR)global.o
+$(O_DIR)internaltide.o : internaltide.F90 $(O_DIR)sizes.o $(O_DIR)global.o
 $(O_DIR)gl2loc_mapping.o : gl2loc_mapping.F90 $(O_DIR)sizes.o $(O_DIR)global.o
 
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))

@@ -129,7 +129,7 @@ if(BUILD_PADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemerides.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/astronomic.F90
