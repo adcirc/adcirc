@@ -103,7 +103,7 @@ if(BUILD_PUNSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F)
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F90)
 
   add_library(templib_punmsglib OBJECT ${MSGLIB_SOURCES})
   add_library(templib_punswan1 OBJECT ${SWANONLY1_PARALLEL_SOURCES})

@@ -223,7 +223,7 @@ C-----------------------------------------------------------------------
      &    FDXE, FDYE, SFacEle, SFMYEle, SFMXEle
       USE BOUNDARIES, ONLY : NBDV, NBOU, NBVV, NOPE, NVDLL, NVELL
 #ifdef CMPI
-      USE MESSENGER,ONLY:MYPROC
+      USE SIZES,ONLY:MYPROC
 #endif
       IMPLICIT NONE
 

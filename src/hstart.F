@@ -70,7 +70,8 @@ C
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, 
      &                       openFort019h
 #ifdef CMPI
-      USE MESSENGER,ONLY: COMM, IERR, UPDATER, MSG_FINI
+      USE MESSENGER,ONLY: UPDATER, MSG_FINI
+      USE GLOBAL, ONLY: COMM
 #endif      
       USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
