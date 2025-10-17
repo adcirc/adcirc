@@ -109,7 +109,7 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
       ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws08.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
@@ -150,8 +150,8 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   if(NETCDF_WORKING)
     set(ADCSWAN1_SOURCES
         ${ADCSWAN1_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
@@ -221,5 +221,8 @@ if(BUILD_ADCSWAN AND PERL_FOUND)
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${ADCSWAN1_SOURCES})
   enable_developer_mode(${ADCSWAN_SOURCES})
+
+  # Set the linker language to Fortran for the executable
+  set_target_properties(adcswan PROPERTIES LINKER_LANGUAGE Fortran)
 
 endif(BUILD_ADCSWAN AND PERL_FOUND)

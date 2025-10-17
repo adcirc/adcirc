@@ -30,7 +30,7 @@ if(BUILD_ADCPREP)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws08.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/presizes.F
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/pre_global.F
@@ -59,8 +59,8 @@ if(BUILD_ADCPREP)
   if(NETCDF_WORKING)
     set(ADCPREP_SOURCES
         ${ADCPREP_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
@@ -76,5 +76,8 @@ if(BUILD_ADCPREP)
 
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${ADCPREP_SOURCES})
+
+  # Set the linker language to Fortran for the executable
+  set_target_properties(adcprep PROPERTIES LINKER_LANGUAGE Fortran)
 
 endif(BUILD_ADCPREP)

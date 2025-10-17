@@ -151,13 +151,6 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &                  initWindModule, 
      &                  read_NWS14_NetCdf_using_core_0
       USE OWIWIND, ONLY: nPowellSearchDomains
-#ifdef ADCNETCDF
-Casey 180318: Added NWS=13
-      USE OWIWIND_NETCDF, ONLY: NWS13ColdStartString,
-     &                          NWS13File,
-     &                          NWS13GroupForPowell,
-     &                          NWS13WindMultiplier
-#endif
 !Casey 221103 : Use the baroclinic3D namelist from global_3dvs
       USE GLOBAL_3DVS, ONLY : baroclinic3D,
      &                        iterateEqnState2,
@@ -283,6 +276,10 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &          Limit_WaveStressGrad, WaveStressGrad_Cap  !tcm v56 2024: added 
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
+      character(200) :: NWS13File = "fort.22.nc"
+      character(200) :: NWS13ColdStartString
+      REAL(8) :: NWS13WindMultiplier = 1.0d0
+      INTEGER :: NWS13GroupForPowell = 0
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
      &    NWS13WindMultiplier,NWS13GroupForPowell
 #endif
@@ -737,7 +734,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       ! Similar to tcm's timevaryingbathy namelist.
       call initWindModule()
       READ(UNIT=15,NML=metControl,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
+      IF (IOS.ne.0) THEN
          write(*,*) "INFO: The metControl namelist was not found."
       ELSE
          found_metCon_nml = .true.  !tcm v50.79 added
@@ -747,7 +744,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       ! zc: Add namelist for user to control time varying weirs
       IOS = 0
       READ(UNIT=15,NML=TVWControl,IOSTAT=IOS)
-      IF(IOS.GT.0)THEN
+      IF(IOS.ne.0)THEN
          IF(NOUT_TVW.NE.0)THEN
              WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
      &          " was found."
@@ -765,7 +762,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       IOS = 0
       READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS)
-      IF(IOS.GT.0)THEN
+      IF(IOS.ne.0)THEN
          WRITE(*,*) "INFO: The waveCoupling namelist was not found."
          FOUND_WC_NML = .FALSE.
       ELSE
@@ -776,7 +773,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       READ(UNIT=15,NML=owiWindNetcdf,IOSTAT=IOS)
-      IF(IOS.GT.0)THEN
+      IF(IOS.ne.0)THEN
          WRITE(*,*) "INFO: The owiWindNetcdf namelist was not found."
          FOUND_OWINC_NML = .FALSE.
       ELSE
@@ -824,7 +821,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
 
       READ(UNIT=15,NML=WarnElevControl,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
+      IF (IOS.ne.0) THEN
          write(*,*) "INFO: The WarnElevControl namelist was not found."
       ELSE
          found_WarnElev_nml = .true.  
@@ -832,7 +829,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
 
       READ(UNIT=15,NML=InterpInset,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
+      IF (IOS.ne.0) THEN
          write(*,*) "INFO: The WarnElevControl namelist was not found."
       ELSE
          found_InterpInset_namelist = .true.  
@@ -840,7 +837,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
 
       READ(UNIT=15,NML=AliDispersionControl,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
+      IF (IOS.ne.0) THEN
          write(*,*) "INFO: The AliDisp Control namelist was not found."
       ELSE
          found_AliDisp_nml = .true.  
@@ -848,7 +845,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
       
       READ(UNIT=15,NML=densityControl,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
+      IF (IOS.ne.0) THEN
          write(*,*) "INFO: The density Control namelist was not found."
       ELSE
          found_density_nml = .true.  
@@ -856,7 +853,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
       ! nws08Control
       READ(UNIT=15,NML=nws08Control,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
+      IF (IOS.ne.0) THEN
          write(*,*) "INFO: The nws08 Control namelist was not found."
       ELSE
          found_nws8_nml = .true.  
@@ -864,7 +861,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
 !Casey 221103 : Try to read the baroclinic3D namelist from fort.15
       READ(UNIT=15,NML=baroclinic3D,IOSTAT=IOS)
-      IF( IOS.GT.0 )THEN
+      IF( IOS.ne.0 )THEN
          WRITE(*,'(A)') "INFO: The baroclinic3D namelist was not found."
       ELSE
          found_baroclinic3D_NML = .TRUE.
