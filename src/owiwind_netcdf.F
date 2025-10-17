@@ -223,6 +223,7 @@
       REAL(8),INTENT(INOUT),ALLOCATABLE :: W(:,:)
 
       CHARACTER(LEN=3100) :: GroupOrder
+      CHARACTER(LEN=3100) :: TempOrder
       CHARACTER(LEN=100) :: TimeUnits
 
       REAL(8),ALLOCATABLE :: Lat(:,:)
@@ -237,6 +238,7 @@
 
       INTEGER :: GroupNameStart
       INTEGER :: GroupNameEnd
+      INTEGER :: GroupOrderLen
       INTEGER :: NextSpace
       INTEGER :: NumLat
       INTEGER :: NumLon
@@ -265,7 +267,14 @@
       DO
         DO
           IF(INDEX(TRIM(GroupOrder)," ").EQ.1)THEN
-            GroupOrder = GroupOrder(2:LEN_TRIM(GroupOrder))
+            GroupOrderLen = LEN_TRIM(GroupOrder)
+            IF(GroupOrderLen.GT.1)THEN
+              TempOrder = ' '
+              TempOrder(1:GroupOrderLen-1) = GroupOrder(2:GroupOrderLen)
+              GroupOrder = TempOrder
+            ELSE
+              GroupOrder = ' '
+            ENDIF
           ELSE
             EXIT
           ENDIF
@@ -283,7 +292,15 @@
         IF(NextSpace.LE.0)THEN
           EXIT
         ELSE
-          GroupOrder = GroupOrder(NextSpace+1:LEN_TRIM(GroupOrder))
+          GroupOrderLen = LEN_TRIM(GroupOrder)
+          IF(GroupOrderLen.GT.NextSpace)THEN
+            TempOrder = ' '
+            TempOrder(1:GroupOrderLen-NextSpace) =
+     &          GroupOrder(NextSpace+1:GroupOrderLen)
+            GroupOrder = TempOrder
+          ELSE
+            GroupOrder = ' '
+          ENDIF
         ENDIF
       ENDDO
 
