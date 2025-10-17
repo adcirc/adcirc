@@ -8,7 +8,7 @@
 #include <windows.h>
 #endif
 
-void f_makedir(char* path, int len)
+void f_makedir(char* path, size_t len)
 {
   char *dirnm;
 
@@ -29,24 +29,24 @@ void f_makedir(char* path, int len)
 
 void MAKEDIR(protoFSTRING(fpath) protoLenFSTRING(fpath))
 {
-  char *path  = FCD2CP(fpath);
-  int   len   = FCDLEN(fpath);
+  char   *path = FCD2CP(fpath);
+  size_t  len  = FCDLEN(fpath);
 
   f_makedir(path, len);
 }
 
 void makedir(protoFSTRING(fpath) protoLenFSTRING(fpath))
 {
-  char *path  = FCD2CP(fpath);
-  int   len   = FCDLEN(fpath);
+  char   *path = FCD2CP(fpath);
+  size_t  len  = FCDLEN(fpath);
 
   f_makedir(path, len);
 }
 
 void makedir_(protoFSTRING(fpath) protoLenFSTRING(fpath))
 {
-  char *path  = FCD2CP(fpath);
-  int   len   = FCDLEN(fpath);
+  char   *path = FCD2CP(fpath);
+  size_t  len  = FCDLEN(fpath);
 
   f_makedir(path, len);
 }

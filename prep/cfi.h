@@ -19,10 +19,10 @@
 #  define CP2FCD(cp,len,fcd) do{fcd = cp; PASTE2(fcd,_len)=len;}while(0)
 #  define FCD2CP(s) s
 #  define FCDLEN(s) PASTE2(s,_len)
-#  define FDESC(s) char * s; static int PASTE2(s,_len)
+#  define FDESC(s) char * s; static size_t PASTE2(s,_len)
 #  define FSTRING(a,comma) comma char * a
 #  define protoFSTRING(a)  char * a
-#  define protoLenFSTRING(a) , int PASTE2(a,_len)
+#  define protoLenFSTRING(a) , size_t PASTE2(a,_len)
 #  if (defined(NO_TRAILING_UNDERSCORE) || defined(_IBMR2))
 #    define FORTRAN_NAME(UN,ln) ln
 #  else
