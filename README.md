@@ -1,7 +1,7 @@
 # ADCIRC
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/adcirc/adcirc/tree/main.svg?style=shield&circle-token=468312e3a9341f3a519bbdfb4df0cda07c98bd91)](https://dl.circleci.com/status-badge/redirect/gh/adcirc/adcirc/tree/main)
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
-[![Docker Image Version (tag)](https://img.shields.io/docker/v/adcircorg/adcirc/v56.1.0?logo=docker&label=adcircorg%2Fadcirc)](https://hub.docker.com/r/adcircorg/adcirc)
+[![Docker Image Version (tag)](https://img.shields.io/docker/v/adcircorg/adcirc/v56.2.0-beta.1?logo=docker&label=adcircorg%2Fadcirc)](https://hub.docker.com/r/adcircorg/adcirc)
 [![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://adcirc.github.io/adcirc/)
 
 
