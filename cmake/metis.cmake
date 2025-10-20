@@ -66,7 +66,7 @@ set(METIS_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/metis/Lib/kwayvolrefine.c
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/metis/Lib/kwayvolfm.c
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/metis/Lib/subdomains.c)
-add_library(metis STATIC ${METIS_SOURCES})
+add_library(metis OBJECT ${METIS_SOURCES})
 target_include_directories(metis PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/metis/Lib)
 set_target_properties(metis PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
