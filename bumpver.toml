@@ -1,5 +1,5 @@
 [bumpver]
-current_version = "v56.2.0-beta.1"
+current_version = "v56.2.0"
 version_pattern = "vMAJOR.MINOR.PATCH[-TAG.NUM]"
 commit_message = "bump version {old_version} -> {new_version}"
 commit = true

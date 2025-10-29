@@ -76,7 +76,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles)
 # ######################################################################################################################
 
 # ...Set the version string (used for libraries)
-set(ADCIRC_VERSION_STRING "v56.2.0-beta.1")
+set(ADCIRC_VERSION_STRING "v56.2.0")
 
 # Parse version string into components
 string(
