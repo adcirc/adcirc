@@ -91,9 +91,6 @@
      &     WARNING, ERROR, screenMessage, logMessage, allMessage,
      &     setMessageSource, unsetMessageSource, scratchMessage,
      &     openFileForRead, Flag_ElevError
-#ifdef CMPI
-        USE MESSENGER,ONLY : MSG_FINI
-#endif  
         IMPLICIT NONE
 
         integer  :: nPowellSearchDomains = -1 !< Number of search domains for Powell wind drag
@@ -1248,9 +1245,7 @@
 !-----------------------------------------------------------------------
       subroutine check_owi_err(iret, errorVar, filename, unitnumber)
 !-----------------------------------------------------------------------
-#ifdef CMPI
-      USE MESSENGER, ONLY : MSG_FINI
-#endif
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       INTEGER,INTENT(IN)               :: iret
       CHARACTER(*),INTENT(IN)          :: errorVar
@@ -1268,15 +1263,19 @@
      &         trim(errorVar), trim(filename), unitnumber
  888        format("Failed to '",A,"' from '",A,
      &         "' (unit number ",I3,").")
-            call allMessage(ERROR,trim(scratchMessage))
             write(6,*) 'iostat =',iret
-         endif
-         call allMessage(ERROR,"ADCIRC execution terminated.")
 #ifdef CMPI
          Flag_ElevError = .true.  !overloading this flag to help kill all mpi proc
-         call msg_fini()
 #endif
-         stop
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message=trim(scratchMessage))
+         else
+#ifdef CMPI
+         Flag_ElevError = .true.  !overloading this flag to help kill all mpi proc
+#endif
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='ADCIRC execution terminated due to OWI error')
+         endif
       endif
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

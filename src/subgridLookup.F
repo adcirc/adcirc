@@ -161,6 +161,7 @@
       subroutine readSubgridLookup
 #ifdef ADCNETCDF          
       use netcdf
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       ! use global, only: imap_el_lg, nodes_lg, allMessage, ERROR
       use global, only: nodes_lg, allMessage, ERROR
       
@@ -183,9 +184,7 @@
 
       INQUIRE(FILE=TRIM(subgridFilename), EXIST=file_exists)
       IF(.NOT.file_exists)THEN
-          call allMessage(ERROR, "subgrid lookup file does not exist")
-          call terminate()
-          call exit(1) 
+          call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="subgrid lookup file does not exist")
       ENDIF
 
 !JLW: adding subgrid lookup table read in
@@ -480,45 +479,5 @@
       end subroutine getVertLookup
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
-
-
-!---------------------------------------------------------------------
-!---------------------------------------------------------------------
-!
-!                 READ NETCDF UTILITY
-!
-!---------------------------------------------------------------------
-!---------------------------------------------------------------------
-
-      SUBROUTINE terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      USE GLOBAL, ONLY: INFO,DEBUG,allMessage,
-     &                  setMessageSource,unsetMessageSource
-      IMPLICIT NONE
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-      call setMessageSource("terminate")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1)
-C
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE terminate
 
       end module subgrid

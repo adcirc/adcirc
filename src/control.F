@@ -220,21 +220,23 @@
       use boundaries, only : neta, nfluxf, nvel, lbcodei
       use mesh, only : slam0, sfea0
       use global, only : openfileforread
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       character(len=1024), intent(in) :: controlFileName
       logical, intent(in) :: verbose
       character(len=80) :: wtimincLine
+      character(len=80) :: scratchMessage
       integer :: numFields ! number of fields read from wtiminc line
       integer :: ios     ! i/o status from read 15; used in error messages
       integer :: i
       integer :: j
       integer :: k
-      !
+
       ! initialization
       lineNum = 1
-      !
+
       CALL openFileForRead(15,trim(controlFileName),ios)
-      !
+
       read(15,fmt='(a80)',err=10,end=20,iostat=ios) rundes
       linenum = linenum + 1
       read(15,fmt='(a80)',err=10,end=20,iostat=ios) runid
@@ -349,8 +351,8 @@ c     arc add nws13 190110
      &       irefyr,irefmo,irefday,irefhr,stormnumber,bladj,purevortex,purebackground,wtiminc
          numFields = 9
       case default
-         write(6,'("ERROR: The value of nws is ",i6," but this is not a valid value.")') nws
-         CALL EXIT(1)
+         write(scratchMessage,'("The value of nws is ",i6," but this is not a valid value.")') nws
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end select
       if ((nrs.ne.0).or.(ncice.ne.0)) then
          call parseWaveAndIceTimeIncrements(wtimincLine,numFields)
@@ -385,9 +387,9 @@ c     arc add nws13 190110
      &    fluxsettlingtime,drampintflux,drampelev,dramptip,drampmete,
      &    drampwrad,dunrampmete
       case default
-         write(6,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
+         write(scratchMessage,'(a,i0,a)') 'The value of nramp is ',nramp,
      &    ' but this is not a valid value.'
-         CALL EXIT(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end select
       linenum = linenum + 1
       read(15,*,err=10,end=20,iostat=ios) a00,b00,c00
@@ -408,9 +410,9 @@ c     arc add nws13 190110
       case(2)
          read(15,*,err=10,end=20,iostat=ios) cf,hbreak,ftheta,fgamma
       case default
-         write(6,'(a,i0,a)') 'ERROR: The value of nolibf is ',nolibf,
+         write(scratchMessage,'(a,i0,a)') 'ERROR: The value of nolibf is ',nolibf,
      &       ' but this is not a valid value.'
-         CALL EXIT(1)
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end select
       linenum = linenum + 1
       if (im.eq.10) then
@@ -606,16 +608,16 @@ c     arc add nws13 190110
       endif
       close(15)
       return
- 10   write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
+ 10   write(scratchMessage,'(a,i0,a,i0,a)') 'Reading line ',lineNum,
      &    ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
       close(15)
-      CALL EXIT(1)
- 20   write(6,'(a,i0,a)') 'ERROR: Reached premature end of file on line ',
+      CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
+ 20   write(scratchMessage,'(a,i0,a)') 'Reached premature end of file on line ',
      &    lineNum,'.'
       call echoControlFile(6)
       close(15)
-      CALL EXIT(1)
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       !---------------------------------------------------------------------
       end subroutine readControlFile
       !---------------------------------------------------------------------
@@ -624,12 +626,15 @@ c     arc add nws13 190110
       ! S U B R O U T I N E    R E A D   S T A T I O N S
       !---------------------------------------------------------------------
       subroutine readStations(nsta, stax, stay)
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       integer, intent(in) :: nsta
       real(8), allocatable, intent(out) :: stax(:)
       real(8), allocatable, intent(out) :: stay(:)
       integer :: i
       integer :: ios
+      character(len=80) :: scratchMessage
+
       if (nsta.ne.0) then
          allocate(stax(nsta))
          allocate(stay(nsta))
@@ -639,14 +644,14 @@ c     arc add nws13 190110
          end do
       endif
       return
- 10   write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
+ 10   write(scratchMessage,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
      &   ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
-      CALL EXIT(1)
- 20   write(6,'(a,i0,a)')
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
+ 20   write(scratchMessage,'(a,i0,a)')
      &   'ERROR: Reached premature end of file on line ',lineNum,'.'
       call echoControlFile(6)
-      CALL EXIT(1)
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       !---------------------------------------------------------------------
       end subroutine readStations
       !---------------------------------------------------------------------
@@ -662,12 +667,14 @@ c     arc add nws13 190110
       ! is unknown. These uncertainties make this line hard to parse.
       !---------------------------------------------------------------------
       subroutine parseWaveAndIceTimeIncrements(wtimincLine,numFields)
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       character(len=80), intent(in) :: wtimincLine ! line of data from fort.15
       integer, intent(inout) :: numFields ! number of fields that have already been read
       !
       character(len=80) :: rstimincField    ! character representation of rstiminc val
       character(len=80) :: cicetimeincField ! character representation of cicetimeinc val
+      character(len=80) :: scratchMessage
       logical :: foundField       ! .true. if a new data field was found
       integer :: fieldStarts(100) ! array of starting positions of data fields
       integer :: fieldEnds(100)   ! array of ending positions of data fields
@@ -717,14 +724,14 @@ c     arc add nws13 190110
          numFields = numFields + 1
       endif
       return
-  10  write(6,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
+  10  write(scratchMessage,'(a,i0,a,i0,a)') 'ERROR: Reading line ',lineNum,
      &  ' gave the following error code: ',ios,'.'
       call echoControlFile(6)
-      CALL EXIT(1)
- 20   write(6,'(a,i0,a)') 'ERROR: Reached premature end of file on line '
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
+ 20   write(scratchMessage,'(a,i0,a)') 'ERROR: Reached premature end of file on line '
      & ,lineNum,'.'
       call echoControlFile(6)
-      CALL EXIT(1)
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       !---------------------------------------------------------------------
       end subroutine parseWaveAndIceTimeIncrements
       !---------------------------------------------------------------------
@@ -735,12 +742,14 @@ c     arc add nws13 190110
       subroutine echoControlFile(echoUnit)
       use boundaries, only : neta, nfluxf, nvel, lbcodei
       use mesh, only : slam0, sfea0
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       integer, intent(in) :: echoUnit ! fortran i/o unit number for output
       character(len=80) :: wtimincLine
       character(len=80) :: rstimincLine
       character(len=80) :: cicetimincLine
       character(len=80) :: wtimincComment
+      character(len=80) :: scratchMessage
       integer :: controlnws ! nws as encoded with ncice and nrs parameters
       integer :: i
       integer :: j
@@ -846,9 +855,9 @@ c     arc add nws13 190110
      &    ' ! irefyr,irefmo,irefday,irefhr,stormnumber,bladj,wtiminc,'
      &   // ' purevortex, purebackground'
       case default
-         write(echoUnit,'(a,i0,a)') 'ERROR: The value of nws is ',nws,
+         write(scratchMessage,'(a,i0,a)') 'The value of nws is ',nws,
      &    ' but this is not a valid value.'
-         CALL EXIT(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end select
       if (nrs.gt.0) then
           write(rstimincLine,*) rstiminc
@@ -906,9 +915,9 @@ c     arc add nws13 190110
      &     dramp,drampextflux,fluxsettlingtime,drampintflux,
      &     drampelev,dramptip,drampmete,drampwrad,dunrampmete
       case default
-         write(echoUnit,'(a,i0,a)') 'ERROR: The value of nramp is ',nramp,
+         write(scratchMessage,'(a,i0,a)') 'The value of nramp is ',nramp,
      &    ' but this is not a valid value.'
-         CALL EXIT(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end select
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       write(echoUnit,fmt='(3f6.3, 10x, "! a00, b00, c00")') a00,b00,c00
@@ -932,9 +941,9 @@ c     arc add nws13 190110
          write(echoUnit,fmt='(4f15.7,10x,"! cf, hbreak, ftheta, fgamma")')
      &       cf,hbreak,ftheta,fgamma
       case default
-         write(echoUnit,'(a,i0,a)') 'ERROR: the value of nolibf is ',nolibf,
+         write(scratchMessage,'(a,i0,a)') 'ERROR: the value of nolibf is ',nolibf,
      &    ' but this is not a valid value.'
-         CALL EXIT(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end select
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       if (im.eq.10) then

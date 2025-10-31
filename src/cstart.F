@@ -65,7 +65,7 @@ C
      &    header74, header93, header91, header61, header62, header71,
      &    header72, header81, writedomainheader, open_gbl_file, nddt2get
       USE SUBDOMAIN, ONLY : subdomainOn, readFort015
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
 
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
@@ -132,7 +132,9 @@ C...    read in the second depth dp2 for btime2
          IOS = 0
          CALL openFileForRead(141,TRIM(INPUTDIR)//'/'//'fort.141',IOS)
          IF (IOS.GT.0) THEN
-            CALL ADCIRC_Terminate()
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Unable to open fort.141 for time '
+     &                //'varying bathymetry')
          ENDIF
 
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
@@ -739,7 +741,7 @@ c******************************************************************************
       USE MESH, ONLY : NP, AGRID
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD,
      &  totalbcrivernodes, bndbcriver
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
 
       INTEGER :: IRType
@@ -768,14 +770,11 @@ C...
 C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
 
       IF (CBaroclinic.and..not.C3DVS) THEN
-         IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-            WRITE(16,*) "CBaroclinic is ",CBaroclinic
-            WRITE(16,*) "CB3DVS is ",C3DVS
-            WRITE(16,*)
-     &           "ERROR: 2DDI baroclinic runs not ", 
-     &           "currently supported."
-         ENDIF
-         CALL ADCIRC_Terminate()
+         WRITE(16,*) "CBaroclinic is ",CBaroclinic
+         WRITE(16,*) "CB3DVS is ",C3DVS
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='2DDI baroclinic runs not currently '
+     &             //'supported.')
       ENDIF
 C
       IF(CBaroclinic .and. C3DVS) THEN
@@ -793,9 +792,10 @@ C
  351        FORMAT(/,2X,'***** INVALID INPUT IN THE DENSITY INITIAL ',
      &           'CONDITION FILE (UNIT 11) *****',
      &           /,2X,'***** NVN = ',I4,' MUST MATCH NFEN = ',I4,
-     &           ' *****',
-     &           /,10X,'****** RUN TERMINATED ******')
-            CALL ADCIRC_Terminate()
+     &           ' *****')
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Invalid input in density initial '
+     &                //'condition file (unit 11). NVN must match NFEN.')
          ENDIF
          DO IHN=1,NP
             DO IVN=1,NFEN
@@ -1116,7 +1116,7 @@ C     overwriting the values computed here.
 C----------------------------------------------------------------------
       subroutine setColdWetDryStateAndWaterSurfaceElevation()
       use sizes, only : inputdir
-      use ADCIRC_MOD, only : ADCIRC_Terminate
+      use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
       use mesh, only : dp, np, mju, ne, nm
       use boundaries, only : nvel, lbcodei, nbv
       use global, only : eta2, nnodecode, noff, logMessage, allMessage,
@@ -1338,11 +1338,11 @@ C----------------------------------------------------------------------
                   endif
                endif
             enddo
-         endif    
+         endif
 #else
-         call allMessage(ERROR, "Subgrid calculation requires building"
-     &                          //"with netcdf enabled")
-         call ADCIRC_Terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Subgrid calculation requires building '
+     &             //'with netcdf enabled')
 #endif
       ELSE
       !

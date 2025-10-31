@@ -35,7 +35,7 @@ C
      &     scratchMessage, dbletype, realtype, 
      &     sig_val, sig_write, sig_ini, sig_pause, comm_writer, 
      &     sig_term, sig_mesh, writer_id
-      use messenger, only: tag, msg_fini
+      use messenger, only: tag
       implicit none
       ! tcm v50.27 increased size from 3 to 4, cobell increase to 6,
       ! jgf51.21.27 decreased size of intbuf to 5
@@ -1024,7 +1024,7 @@ C
       MODULE HSWRITER
         USE SIZES
         USE GLOBAL
-        USE MESSENGER, ONLY: TAG, MSG_FINI
+        USE MESSENGER, ONLY: TAG
         use mpi
       IMPLICIT NONE
       INTEGER :: WCOMMID, WCOMM
@@ -1070,9 +1070,6 @@ C...  Main loop
           EXIT
         ENDIF
       ENDDO
-!tcm v49.52.01 commented out next two lines
-!      CALL MSG_FINI()
-!      CALL EXIT(1)
 
       call  unsetMessageSource()
       
@@ -1116,6 +1113,7 @@ C-----------------------------------------------------------------------
       USE SIZES
       USE GLOBAL
       USE MESH, ONLY : NE, NP
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE GLOBAL_IO, ONLY: packOne, unpackOne, 
      &    packTwo, unpackTwo, HEADER_MAX
 !
@@ -1235,8 +1233,7 @@ C-----------------------------------------------------------------------
       CALL MPI_BARRIER(WCOMM,IERR) !st3
 
       IF (WRITE_LOCAL_HOT_START_FILES) THEN
-         write(6,*) 'HSWriter can not treat Local HOT START FILES'
-         CALL EXIT(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="HSWriter can not handle Local HOT START FILES")
       ENDIF
 !
       WRITE(16,*) "***********WRITE HOTSTART*********************"

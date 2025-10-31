@@ -25,9 +25,6 @@ module SPONGELAYER
    use GLOBAL, only: STATIM, IFNLFA, ETA2, UU2, VV2, QX2, QY2
    use ADC_CONSTANTS, only: G
    use MESH, only: NP, NM, NE, DP, X
-   !      USE WIND
-   !      USE ITPACKV
-   !      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
    use NodalAttributes, only: LoadAbsLayerSigma, &
                               SSIGMA_ETA => absorblayer_sigma_eta, &
                               SSIGMA_MNX => absorblayer_sigma_mnx, &
@@ -290,6 +287,7 @@ contains
 
    subroutine SpongeLayerRelatedPrep()
       use SIZES, only: MNP
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
       integer :: I, J, K, NODEID
@@ -363,8 +361,8 @@ contains
 
          IMIN = minloc(abs(SSDUM))
          if (abs(SSDUM(IMIN(1))) > 0) then
-            print *, "Error: Unknown sponge-layer type"
-            call exit(1)
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                           message="Unknown sponge-layer type")
          else
             AbsLayerType = allowabstype(IMIN(1))
          end if
@@ -407,6 +405,7 @@ contains
    !
    subroutine READFORT53001()
       use SIZES, only: INPUTDIR
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
       integer :: FUNIT, IOS
@@ -452,8 +451,8 @@ contains
 
       read (FUNIT, *) NPTMP
       if (NPTMP /= NumNodesAbsLayer(1)) then
-         write (*, *) "Error in READFORT53001(): 1"
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="Error in READFORT53001(): 1")
       end if
 
       if (.not. allocated(AbsLayerEtaEMO)) then
@@ -468,8 +467,8 @@ contains
 
          ! PRINT*, KTMP, AbsLayer_Eta_NodesID(KK)
          if (KTMP /= AbsLayer_Eta_NodesID(KK)) then
-            print *, "Error in READFORT53001(): 2"
-            call exit(1)
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                           message="Error in READFORT53001(): 2")
          end if
 
          do JJ = 1, AbsLayerNBF
@@ -490,6 +489,7 @@ contains
 
    subroutine READFORT54001()
       use SIZES, only: INPUTDIR
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
       integer :: FUNIT, IOS
@@ -508,8 +508,8 @@ contains
 
       read (FUNIT, *) NBF
       if (NBF /= AbsLayerNBF) then
-         print *, "Error: READFORT54001, inconsistant o. of freq"
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="Error in READFORT54001(): 1")
       end if
 
       if (.not. allocated(AbsLayerQAMIG)) then
@@ -544,8 +544,8 @@ contains
       read (FUNIT, *) NPTMP
       if (NPTMP /= NumNodesAbsLayer(2) .and. &
           NPTMP /= NumNodesAbsLayer(3)) then
-         print *, "Error in READFORT54001(): 1"
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="Error in READFORT54001(): 1")
       end if
 
       if (.not. allocated(AbsLayerQxEMO)) then
@@ -565,8 +565,8 @@ contains
          read (FUNIT, *) KTMP
 
          if (KTMP /= AbsLayer_MnX_NodesID(KK)) then
-            print *, "Error in READFORT53001(): 2"
-            call exit(1)
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                           message="Error in READFORT54001(): 2")
          end if
 
          do JJ = 1, AbsLayerNBF

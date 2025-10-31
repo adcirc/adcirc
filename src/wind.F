@@ -38,7 +38,7 @@ C
      &                      windReduction,omega
 #ifdef CMPI
       use mpi
-      use messenger, only : msg_fini, msg_Rscalar_Reduce
+      use messenger, only : msg_Rscalar_Reduce
 #endif
 #ifdef DATETIME
       use datetime_module, only: datetime, timedelta, strptime
@@ -327,6 +327,7 @@ C     ----------------------------------------------------------------
       subroutine initWindModule()
       use mesh, only : np
       use global, only: NWS
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       
       call setMessageSource("initWindModule")
@@ -384,13 +385,10 @@ C.... convert background pressure from millibars to meters of water
      &                      'incompatible with Powell'
              endif
          CASE DEFAULT
-            WRITE(16,*) 'ERROR: Wind drag law not recognized:'
-            WRITE(16,'(A10)') DragLawString
-            WRITE(16,*) 'Execution will now be terminated.'
-#ifdef CMPI
-            call msg_fini()
-#endif
-            CALL EXIT(1)
+            write(scratchMessage,'(A,A10)')
+     &         'Wind drag law not recognized: ',DragLawString
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message=scratchMessage)
 C
       END SELECT
 
@@ -435,6 +433,7 @@ C----------------------------------------------------------------------
 !     ----------------------------------------------------------------
       SUBROUTINE mapWindDragFunctionPointer()
 !     ----------------------------------------------------------------
+          use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
           IMPLICIT NONE
 #ifdef POWELL
           f_computeWindDrag => PowellWindDrag
@@ -453,11 +452,8 @@ C----------------------------------------------------------------------
               f_computeWindDrag => SwanWindDrag
 #endif
           CASE DEFAULT
-              call allMessage(ERROR,"Wind drag law not recognized"//TRIM(DragLawString))
-#ifdef CMPI
-              call msg_fini()
-#endif
-              CALL EXIT(1)
+              call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &           message="Wind drag law not recognized"//TRIM(DragLawString))
           END SELECT
 #endif
 !     ----------------------------------------------------------------
@@ -731,6 +727,7 @@ C          coefficient values.
 C
 C     ----------------------------------------------------------------
       REAL(8) FUNCTION WindIceDrag(WindDrag,PercentIce)
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       REAL(8) :: PercentIce
       REAL(8) :: pic, WindDrag, IceDrag, Cform
@@ -782,13 +779,10 @@ C....... Joyce et al. (2019), OM: doi:10.1016/j.ocemod.2019.101421
          ENDIF
 
       CASE DEFAULT
-         WRITE(16,*) 'ERROR: Ice drag law not recognized:'
-         WRITE(16,'(A10)') DragLawString
-         WRITE(16,*) 'Execution will now be terminated.'
-#ifdef CMPI
-         call msg_fini()
-#endif
-         CALL EXIT(1)
+         write(scratchMessage,'(A,A10)')
+     &      'Ice drag law not recognized: ',DragLawString
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message=scratchMessage)
 C
       END SELECT
       IF(WindIceDrag.gt.WindDragLimit) WindIceDrag=WindDragLimit
@@ -3829,6 +3823,7 @@ C
 C***********************************************************************
       subroutine g2rini()
       use mesh, only : np, slam, sfea
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use adc_constants, only: twopi, hfpi
       implicit none
       integer :: N,I,LON,LONP1,LAT,LATP1
@@ -3858,12 +3853,12 @@ C......  Check that this value is reasonable.
          lonp1=lon+1
          if(lon.eq.lonb) lonp1=1 !circle condition
          if((lon.lt.1).or.(lon.gt.lonb)) then
-            call allMessage(ERROR,'Mesh node outside gaussian grid.')
             write(scratchMessage,
-     &       '("i=",i0," lon=",f15.8," dlon=",f15.8," flon(i)=",f15.8)')
+     &       '("Mesh node outside gaussian grid. i=",i0," lon=",f15.8,
+     &       " dlon=",f15.8," flon(i)=",f15.8)')
      &       i, lon, dlon, slam(i)
-            call allMessage(ERROR, scratchMessage)
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message=scratchMessage)
          endif
 
 C.....   Compute initial guess of which lat value FLAT(I) is in the Gaussian file
@@ -3873,12 +3868,12 @@ C....... Check that this value is reasonable.
          if(lat.eq.latb) lat=lat-1
          latp1=lat+1
          if((lat.lt.1).or.(lat.gt.latb)) then
-            call allMessage(ERROR,'Mesh node outside gaussian grid.')
             write(scratchMessage,
-     &       '("i=",i0," lat=",f15.8," dlat=",f15.8," flat(i)=",f15.8)')
+     &       '("Mesh node outside gaussian grid. i=",i0," lat=",f15.8,
+     &       " dlat=",f15.8," flat(i)=",f15.8)')
      &       i, lat, dlat, sfea(i)
-            call allMessage(ERROR, scratchMessage)
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message=scratchMessage)
          endif
 
          DO WHILE(.TRUE.)
@@ -3969,6 +3964,7 @@ C***********************************************************************
       subroutine nws10get(ull,vll,pll,ill)
       USE ADC_CONSTANTS, only : mb2pa
       use sizes, only : gblinputdir
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use mesh, only : np, slam, sfea
       implicit none
       real(8), intent(out) :: ull(:),vll(:),pll(:) ! mesh met values
@@ -3994,9 +3990,8 @@ C
       !
       ! Check to be sure that wtiminc is evenly divisible.
       if (modulo(int(wtiminc),3600).ne.0) then
-         call allMessage(ERROR,
-     &      'For NWS=10, WTIMINC must be evenly divisible by 3600.')
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='For NWS=10, WTIMINC must be evenly divisible by 3600.')
       endif
       !
       ! Form the data file name.
@@ -4007,7 +4002,8 @@ C
       ! parallel operation.
       call openFileForRead(iext,trim(gblinputdir)//'/'//trim(fname1),ios)
       if (ios.ne.0) then
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Failed to open '//trim(gblinputdir)//'/'//trim(fname1))
       endif
 C
 C...  Read the ASCII data file
@@ -4215,6 +4211,7 @@ C***********************************************************************
 
       SUBROUTINE NWS11GET()
       USE SIZES
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE ADC_CONSTANTS, ONLY : RHOWAT0, G
       USE MESH, ONLY : NP, SLAM, SFEA
       IMPLICIT NONE
@@ -4280,7 +4277,8 @@ C...  Figure out the met data file name
 C...  If appropriate, enter, locate and open the met data file
       call openFileForRead(IEXT,FNAME1,errorIO)
       if (errorIO.ne.0) then
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Failed to open '//trim(FNAME1))
       endif
 
 C...  Read the met data file
@@ -5170,6 +5168,7 @@ C     ----------------------------------------------------------------
       !=================================================================
       SUBROUTINE NWS19GET(wvnx,wvny,press,timeloc)
       USE ADC_CONSTANTS, ONLY: rhowat0, g, mb2pa
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE GLOBAL,ONLY: rnday
       USE MESH, ONLY : np, ics, slam, sfea
       USE VORTEX, ONLY : newVortex, setRmaxes, fitRmaxes, uvp,
@@ -5454,9 +5453,9 @@ C
          ! @jasonfleming: If there isn't enough data in the fort.22 to
          ! cover the whole run, bomb out immediately.
          if (cycleTime(num_cycles).lt.rndaySeconds) then
-            call allMessage(ERROR,"There aren't enough data in the "//
-     &      'fort.22 file to cover the entire run time.')
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message="There aren't enough data in the fort.22 file "//
+     &                 "to cover the entire run time.")
          endif
 
       END IF   ! (firstCall .EQ. 0)
@@ -5718,6 +5717,7 @@ C***********************************************************************
       USE VORTEX, ONLY : setVortex, fitRmaxes4,  uvpr, spInterp,
      &                   Rmaxes4, QuadFlag4, QuadIr4, Bs4, VmBL4  ! jgfdebug
       USE ADC_CONSTANTS, ONLY: kt2ms, nm2m, deg2rad, omega, Rearth, m2nm, mb2pa
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE GLOBAL, ONLY: rnday
       USE MESH, ONLY : slam, sfea, np, ics
       IMPLICIT NONE
@@ -5987,8 +5987,8 @@ C***********************************************************************
                   write(scratchMessage,'(a,a,i0,a)')
      &             'The GAHM fort.22 input file has more than 4 ',
      &             'isotachs in cycle ',cycle_num1(ient),'.'
-                  call allMessage(ERROR,scratchMessage)
-                  call windTerminate()
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &               message=scratchMessage)
                endif
             else
                isot=1 ! initialize isotach #
@@ -6062,9 +6062,9 @@ C***********************************************************************
      &      'file is at ', cycleTime(num_cycles), ' [sec]'
          CALL logMessage(INFO,scratchMessage)
          if (cycleTime(num_cycles).lt.rndaySeconds) then
-            call allMessage(ERROR,"There aren't enough data in the "//
-     &      'fort.22 file to cover the entire run time.')
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message="There aren't enough data in the fort.22 file "//
+     &                 "to cover the entire run time.")
          endif
 
       END IF   ! (firstCall .EQ. 0)
@@ -6352,6 +6352,7 @@ C     verifies that input files are all present, etc.
 C     ----------------------------------------------------------------
       subroutine NWS15INIT(timeloc)
       use sizes, only : globaldir, mnp
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use global, only : ihot, nws, openFileForRead, nabout
       implicit none
 C
@@ -6370,7 +6371,8 @@ C
 #endif
       errorio = 0
       call openFileForRead(22,trim(globaldir)//"/fort.22",errorio)
-      if (errorio.gt.0) call windTerminate()
+      if (errorio.gt.0) call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='Failed to open '//trim(globaldir)//'/fort.22')
       !
       ! read fort.22 to determine how many HWind files there are
       currentLine = 1
@@ -6427,10 +6429,9 @@ C
       ! need at least 2 files so we have something to interpolate between
       ! in time
       if (numFiles.lt.2) then
-         call allMessage(ERROR,"Only one HWind file was specified.")
-         call allMessage(ERROR,
-     &    "ADCIRC requires at least two HWind files for interpolation.")
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message="Only one HWind file was specified. ADCIRC "//
+     &              "requires at least two HWind files for interpolation.")
       endif
       !
       ! check to make sure that the cycleTimes are
@@ -6439,8 +6440,8 @@ C
          if (hWindFiles(i)%cycleTime.ge.hWindFiles(i+1)%cycleTime) then
             write(scratchMessage,
      &    '("Cycle time ",i0," must be less cycle time ",i0,".")')i,i+1
-            call allMessage(ERROR,scratchMessage)
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message=scratchMessage)
          endif
       end do
       !
@@ -6451,9 +6452,9 @@ C
          call logMessage(INFO,"ADCIRC will use the "//
      &   trim(pressureWindRelationship)//" pressure-wind relationship.")
       case default
-         call allMessage(ERROR,"The "//trim(pressureWindRelationship)//
-     &      " pressure-wind relationship is not supported by ADCIRC.")
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message="The "//trim(pressureWindRelationship)//
+     &              " pressure-wind relationship is not supported by ADCIRC.")
       end select
       !
       ! check to make sure that all the HWind files are actually there;
@@ -6464,9 +6465,9 @@ C
          fileFound = .false.
          inquire(file=hWindFiles(i)%file_name,exist=fileFound)
          if (fileFound.eqv..false.) then
-            call allMessage(ERROR,"The HWind file "//
-     &          trim(hWindFiles(i)%file_name)//" was not found.")
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message="The HWind file "//
+     &                 trim(hWindFiles(i)%file_name)//" was not found.")
          endif
       end do
       call logMessage(INFO,"All specified HWind files were found.")
@@ -6507,14 +6508,15 @@ C
       ! if we couldn't find a relevant time interval, game over
       if ( cycleTimeFound.eqv..false. ) then
          if ( timeloc.lt.hWindFiles(1)%cycleTime ) then
-            call allMessage(ERROR,
-     & "The current ADCIRC time is earlier than the first HWind file.")
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message="The current ADCIRC time is earlier than the "//
+     &                 "first HWind file.")
          endif
-      if ( timeloc.gt.hWindFiles(numFiles)%cycleTime ) then
-            call allMessage(ERROR,
-     &    "The current ADCIRC time is later than the last HWind file.")
+         if ( timeloc.gt.hWindFiles(numFiles)%cycleTime ) then
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message="The current ADCIRC time is later than the "//
+     &                 "last HWind file.")
          endif
-         call windTerminate()
       endif
       currentCycle = i
       !
@@ -6543,13 +6545,10 @@ C     We jump to this section if there was an error reading a file.
      &  //" will maximize the information written to the fort.16 file,"
      &  //" which may aid in troubleshooting this issue.")
       endif
-      write(scratchMessage,'("Could not read line ",I2," of fort.22.")')
-     &  currentLine
-      call allMessage(ERROR,scratchMessage)
-      write(scratchMessage,'(A,I3,A)')
-     &       'The value of the i/o error flag was ',errorio,'.'
-      call allMessage(ERROR,scratchMessage)
-      CALL windTerminate()
+      write(scratchMessage,'("Could not read line ",I2," of fort.22. "
+     &  //"I/O error flag: ",I3)') currentLine, errorio
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message=scratchMessage)
 C     ----------------------------------------------------------------
       END SUBROUTINE NWS15INIT
 C     ----------------------------------------------------------------
@@ -6586,6 +6585,7 @@ C         g. hwind data do not contain barometric pressure information
 C***********************************************************************
       subroutine NWS15GET(wvnx, wvny, press, timeloc)
       use sizes, only : mnp
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE ADC_CONSTANTS, only : mb2pa, m2nm, nm2m
       use mesh, only : slam, sfea, np, dp
       implicit none
@@ -6632,12 +6632,12 @@ C
          if ((currentCycle+1).le.numFiles) then
             call loadHWindFile(currentCycle+1)
          else
-            call allMessage(ERROR,
-     &  "The ADCIRC time has exceeded the time of the last HWind file.")
             write(scratchMessage,
-     &    '("ADCIRC time=",E15.3," (sec), last HWind time=",E15.3,".")')
+     &    '("The ADCIRC time has exceeded the time of the last HWind "
+     &    //"file. ADCIRC time=",E15.3," (sec), last HWind time=",E15.3)')
      &      timeloc, hWindFiles(numFiles)%cycleTime
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message=scratchMessage)
          endif
       endif
       !
@@ -6746,10 +6746,10 @@ C
             pc = 1013.d0
          case default
             ! should be unreachable; already quality checked in nws15init
-            call allMessage(ERROR,"The "
-     &          //trim(pressureWindRelationship)//
-     &        " pressure-wind relationship is not supported by ADCIRC.")
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message="The "//trim(pressureWindRelationship)//
+     &                 " pressure-wind relationship is not supported "//
+     &                 "by ADCIRC.")
       end select
       !
       ! use central pressure and max wind speed to estimate the Holland B value
@@ -6806,6 +6806,7 @@ C
 C     ----------------------------------------------------------------
       subroutine loadHWindFile(cn)
       use global, only : openFileForRead, nabout
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE ADC_CONSTANTS, only: m2nm
       implicit none
       integer, intent(in) :: cn ! cycle number of file to load
@@ -6833,7 +6834,8 @@ C
      &                     //trim(hWindFiles(cn)%file_name)//"'.")
       call openFileForRead(220,trim(hWindFiles(cn)%file_name), errorio)
       if (errorio.gt.0) then
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Failed to open '//trim(hWindFiles(cn)%file_name))
       endif
       currentLine = 1
       dataset = 0
@@ -6962,10 +6964,11 @@ C     We jump to this section if there was an error reading a file.
      &    dataset, trim(hWindFiles(cn)%file_name)
          call allMessage(ERROR,scratchMessage)
       endif
-      write(scratchMessage,'(A,i0,A)')
-     &       'The value of the i/o error flag was ',errorio,'.'
+      write(scratchMessage,'(A,i0)')
+     &       ' I/O error flag: ',errorio
       call allMessage(ERROR,scratchMessage)
-      CALL windTerminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='Failed to read HWind file')
 C
 C     ----------------------------------------------------------------
       end subroutine loadHWindFile
@@ -7079,7 +7082,8 @@ C          Lines 4-end -- cycleTime  rampValue  filename
 C
 
        subroutine init_gfdl(timeloc)
-       use sizes, only : globaldir 
+       use sizes, only : globaldir
+       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
        use global, only : ihot, nws, nabout, openFileForRead,
      &                setMessageSource,unsetMessageSource,allMessage,
      &                logMessage,scratchMessage,DEBUG,ECHO,INFO,
@@ -7104,7 +7108,8 @@ C
 #endif
       errorio = 0
       call openFileForRead(22,trim(globaldir)//"/fort.22",errorio)
-      if (errorio.gt.0) call windTerminate()
+      if (errorio.gt.0) call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='Failed to open '//trim(globaldir)//'/fort.22')
       !
       ! read fort.22 to determine how many GFDL files there are
       currentLine = 1
@@ -7164,10 +7169,9 @@ C
       ! need at least 2 files so we have something to interpolate between
       ! in time
       if (numFiles.lt.2) then
-         call allMessage(ERROR,"Only one GFDL Met file was specified.")
-         call allMessage(ERROR,
-     &    "ADCIRC requires at least two GFDL Met files for interpolation.")
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message="Only one GFDL Met file was specified. ADCIRC "//
+     &              "requires at least two GFDL Met files for interpolation.")
       endif
       !
       ! check to make sure that the cycleTimes are
@@ -7176,8 +7180,8 @@ C
          if (GFDL_Files(i)%cycleTime.ge.GFDL_Files(i+1)%cycleTime) then
             write(scratchMessage,
      &  '("Cycle time ",i0," must be less cycle time ",i0,".")')i,i+1
-            call allMessage(ERROR,scratchMessage)
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message=scratchMessage)
          endif
       end do
 
@@ -7190,9 +7194,9 @@ C
          fileFound = .false.
          inquire(file=GFDL_Files(i)%file_name,exist=fileFound)
          if (fileFound.eqv..false.) then
-            call allMessage(ERROR,"The GFDL Met file "//
-     &          trim(GFDL_Files(i)%file_name)//" was not found.")
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message="The GFDL Met file "//
+     &                 trim(GFDL_Files(i)%file_name)//" was not found.")
          endif
          GFDL_Files(i)%loaded = .false.
       end do
@@ -7287,13 +7291,10 @@ C     We jump to this section if there was an error reading a file.
      &  //" will maximize the information written to the fort.16 file,"
      &  //" which may aid in troubleshooting this issue.")
       endif
-      write(scratchMessage,'("Could not read line ",i0," of fort.22.")')
-     &  currentLine
-      call allMessage(ERROR,scratchMessage)
-      write(scratchMessage,'(A,i0,A)')
-     &       'The value of the i/o error flag was ',errorio,'.'
-      call allMessage(ERROR,scratchMessage)
-      CALL windTerminate()
+      write(scratchMessage,'("Could not read line ",i0," of fort.22. "
+     &  //"I/O error flag: ",i0)') currentLine, errorio
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message=scratchMessage)
       call unsetMessageSource()
 C ---------------------------------------------------------------------
       end subroutine init_gfdl
@@ -7330,6 +7331,7 @@ C
      &                     MAX_INTERP_DIST)
        USE SIZES
        USE MESH, ONLY: ICS, DRVSPCOORSROTS, CYLINDERMAP
+       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
        USE ADC_CONSTANTS, ONLY: DEG2RAD,PRBCKGRND,G,RHOWAT0
        USE GLOBAL, ONLY: IFSPROTS,
      &        setMessageSource,unsetMessageSource,allMessage,
@@ -7381,7 +7383,8 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
      &                     //trim(fname)//"'.")
        call openFileForRead(lun,trim(fname), errorio)
        if (errorio.gt.0) then
-          call windTerminate()
+          call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &       message='Failed to open '//trim(fname))
        endif
 
 !       OPEN(LUN,FILE=TRIM(FNAME),STATUS='OLD',ACTION='READ',
@@ -7680,6 +7683,7 @@ C***********************************************************************
       subroutine rsget(rsnx,rsny)
       use global, only : nabout
       use mesh, only : np
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       real(8), intent(out), dimension(np) :: rsnx
       real(8), intent(out), dimension(np) :: rsny
@@ -7700,8 +7704,8 @@ C
       do while(.true.)
          read(23,'(a80)',end=500,err=600,iostat=errorio) pbljagf
          if (pbljagf(1:1).eq.'#') then
-            call allMessage(ERROR,'Found "#" in column 1 of fort.23.')
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Found "#" in column 1 of fort.23.')
          endif
          if(pbljagf(2:2).ne.'#') exit
       enddo
@@ -7714,9 +7718,9 @@ C
          lineNum = lineNum + 1
          read(23,'(a80)') pbljagf
          if (pbljagf(1:1).eq.'#') then
-            call allMessage(ERROR,'Found "#" in column 1 of fort.23; '//
-     &         ' this character should only appear in column 2.')
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Found "#" in column 1 of fort.23; this '//
+     &                 'character should only appear in column 2.')
          endif
          if(pbljagf(2:2).eq.'#') exit
       enddo
@@ -7731,7 +7735,8 @@ C
 C     We jump to this section if there was an error reading a file.
 500   call allMessage(ERROR,'Unexpectedly reached end-of-file.') ! END jumps here
 600   call allMessage(ERROR,'I/O error during file access.') !  ERR jumps here
-      write(scratchMessage,'(a,i0,a)')'Failed to read line ',lineNum,'.'
+      write(scratchMessage,'(a,i0,a,i0)')
+     &   'Failed to read line ',lineNum,'. I/O error flag: ',errorio
       call allMessage(ERROR,scratchMessage)
       call allMessage(ERROR,
      &                  'Check the fort.16 file for more information.')
@@ -7740,10 +7745,8 @@ C     We jump to this section if there was an error reading a file.
      &  //' will maximize the information written to the fort.16 file,'
      &  //' which may aid in troubleshooting this issue.')
       endif
-      write(scratchMessage,'(a,i0,a)')
-     &       'The value of the i/o error flag was ',errorio,'.'
-      call allMessage(ERROR,scratchMessage)
-      CALL windTerminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='Failed to read fort.23 radiation stress data')
 C----------------------------------------------------------------------
       end subroutine rsget
 C----------------------------------------------------------------------
@@ -7784,6 +7787,7 @@ C----------------------------------------------------------------------
       use sizes, only : globaldir
       use global, only : nabout, np_g
       use mesh, only : np
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       real(8), intent(in) :: timesec ! adcirc model time (s)
       integer :: errorio ! i/o error condition code
@@ -7806,7 +7810,9 @@ C----------------------------------------------------------------------
       endif
       ! give up if the file was still not found
       if (errorio.gt.0) then
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Failed to open '//
+     &              trim(dynamicWaterLevelCorrectionFileName))
       endif
       ! file exists, allocate space to hold the data
 #ifdef CMPI
@@ -7831,9 +7837,10 @@ C----------------------------------------------------------------------
       ! tga20190628: this "if" is needed because it could lead to NaNs
       ! if dynamicWaterLevelCorrectionTimeIncrement is zero, plus no reason for negative.
       if (dynamicWaterLevelCorrectionTimeIncrement.le.0.d0) then
-         call allMessage(ERROR,'Water level correction time increment ' //
-     &       'dynamicWaterLevelCorrectionTimeIncrement must be greater than zero')
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Water level correction time increment '//
+     &              'dynamicWaterLevelCorrectionTimeIncrement must be '//
+     &              'greater than zero')
       endif
       ! 3nd line is default correction value
       read(dynamicWaterLevelCorrectionUn,fmt=*,end=256,err=258,iostat=errorio) dynamicWaterLevelCorrectionDefaultValue
@@ -7875,24 +7882,24 @@ C----------------------------------------------------------------------
          dynamicWaterLevelCorrectionRampEnd = timesec + dynamicWaterLevelCorrectionRampEnd
       case('coldstart','Coldstart','ColdStart','COLDSTART')
          if (dynamicWaterLevelCorrectionRampStart.lt.0.d0.or.dynamicWaterLevelCorrectionRampEnd.lt.0.d0) then
-            call allMessage(ERROR,'Water level correction ramp reference '//
-     &      'time was set to coldstart but negative ramp time(s) '//
-     &      'were found.')
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Water level correction ramp reference time was '//
+     &                 'set to coldstart but negative ramp time(s) were found.')
          endif
       case default
-         call allMessage(ERROR,'Water level correction ramp '//
-     &   'reference time was set to "'//trim(dynamicWaterLevelCorrectionRampReferenceTime)//
-     &   '" which is not a valid value. The dynamicWaterLevelCorrectionRampReferenceTime '//
-     &   'parameter must be set to "coldstart" or "hotstart".')
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Water level correction ramp reference time was set to "'//
+     &              trim(dynamicWaterLevelCorrectionRampReferenceTime)//
+     &              '" which is not a valid value. The '//
+     &              'dynamicWaterLevelCorrectionRampReferenceTime parameter '//
+     &              'must be set to "coldstart" or "hotstart".')
       end select
       !
       ! make sure start of ramp occurs before end of ramp
       if (dynamicWaterLevelCorrectionRampStart.gt.dynamicWaterLevelCorrectionRampEnd) then
-         call allMessage(ERROR,
-     &   'dynamicWaterLevelCorrectionRampStart is after dynamicWaterLevelCorrectionRampEnd.')
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='dynamicWaterLevelCorrectionRampStart is after '//
+     &              'dynamicWaterLevelCorrectionRampEnd.')
       endif
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -7911,13 +7918,12 @@ C----------------------------------------------------------------------
      &  //' will maximize the information written to the fort.16 file,'
      &  //' which may aid in troubleshooting this issue.')
       endif
-      write(scratchMessage,'("Could not read line ",i0," of ",a,".")')
-     &  dynamicWaterLevelCorrectionCurrentLine, trim(dynamicWaterLevelCorrectionFileName)
-      call allMessage(ERROR,scratchMessage)
-      write(scratchMessage,'(a,i0,a)')
-     &       'The value of the i/o error flag was ',errorio,'.'
-      call allMessage(ERROR,scratchMessage)
-      CALL windTerminate()
+      write(scratchMessage,'("Could not read line ",i0," of ",a,
+     &  ". I/O error flag: ",i0)')
+     &  dynamicWaterLevelCorrectionCurrentLine,
+     &  trim(dynamicWaterLevelCorrectionFileName), errorio
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message=scratchMessage)
 
 
 C----------------------------------------------------------------------
@@ -8029,6 +8035,7 @@ C----------------------------------------------------------------------
       subroutine readDynamicWaterLevelCorrectionDataSet()
       use global, only : nabout, np_g, nodes_lg
       use mesh, only : np
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       integer :: numCorrectionValues
       integer :: nhg ! fulldomain node number
@@ -8066,10 +8073,9 @@ C----------------------------------------------------------------------
          if ( (nhg.lt.1).or.(nhg.gt.numCorrectionValues) ) then
             write(scratchMessage,'(a,i0,a)')
      &        'The node number on line ',dynamicWaterLevelCorrectionCurrentLine,
-     &        ' of the water '//
-     &        ' correction file is out of range.'
-            call allMessage(ERROR,scratchMessage)
-            call windTerminate()
+     &        ' of the water correction file is out of range.'
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message=scratchMessage)
          endif
          ! set the correction value as specified
 #ifdef CMPI
@@ -8125,49 +8131,17 @@ C     We jump to this section if there was an error reading a file.
      &  //' will maximize the information written to the fort.16 file,'
      &  //' which may aid in troubleshooting this issue.')
       endif
-      write(scratchMessage,'("Could not read line ",i0," of ",a,".")')
-     &  dynamicWaterLevelCorrectionCurrentLine, trim(dynamicWaterLevelCorrectionFileName)
-      call allMessage(ERROR,scratchMessage)
-      write(scratchMessage,'(a,i0,a)')
-     &       'The value of the i/o error flag was ',errorio,'.'
-      call allMessage(ERROR,scratchMessage)
-      CALL windTerminate()
+      write(scratchMessage,'("Could not read line ",i0," of ",a,
+     &  ". I/O error flag: ",i0)')
+     &  dynamicWaterLevelCorrectionCurrentLine,
+     &  trim(dynamicWaterLevelCorrectionFileName), errorio
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message=scratchMessage)
 
 C----------------------------------------------------------------------
       end subroutine readDynamicWaterLevelCorrectionDataSet
 C----------------------------------------------------------------------
 
-C----------------------------------------------------------------------
-C...  jgf50.38.05: Subroutine to terminate the run cleanly.
-C...
-C----------------------------------------------------------------------
-      SUBROUTINE windTerminate()
-#ifdef CMPI
-      USE MESSENGER, ONLY : MSG_FINI
-#endif
-      IMPLICIT NONE
-      INTEGER,ALLOCATABLE :: dmy(:)
-C
-      call setMessageSource("windTerminate")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-C
-      call allMessage(ERROR,"ADCIRC terminating.")
-#ifdef CMPI
-      call msg_fini()
-#endif
-      CALL EXIT(1)
-C
-
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      RETURN
-C----------------------------------------------------------------------
-      END SUBROUTINE windTerminate
-C----------------------------------------------------------------------
 #ifdef DATETIME
 C----------------------------------------------------------------------
       SUBROUTINE NWS14INIT(NWS)
@@ -8201,8 +8175,6 @@ C----------------------------------------------------------------------
       ! Calculate the interpolant weights
       CALL NWS14_CALC_INTERP_WTS()
       
-
-      
       call allMessage(ECHO,'Finished init of NWS14')
       IF(Found_InterpInset_Namelist) THEN
       CALL allMessage(ECHO,'Requesting to use insets. If files found,
@@ -8228,6 +8200,7 @@ C           then it checks if the pressure netCDF file (fort.221.nc)
 C           exists.
 C        3. If neither exist we abort with an error message.
 C----------------------------------------------------------------------
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       logical :: Fexists
       Pfile = 'fort.221.grb2'
@@ -8245,10 +8218,9 @@ C----------------------------------------------------------------------
          grb2flag = .FALSE.
          RETURN
       ELSE
-         call allMessage(ERROR,
-     &       'Neither .grb2 nor .nc wind files exist. Or, if .grb2 '//
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &       message='Neither .grb2 nor .nc wind files exist. Or, if .grb2 '//
      &       'files exist, did you compile with GRIB2 compiler flags?')
-         call windTerminate()
       ENDIF
 
 C----------------------------------------------------------------------
@@ -8265,6 +8237,7 @@ C----------------------------------------------------------------------
 #ifdef ADCNETCDF
       use netcdf
       use netcdf_error, only: check_err
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #endif
 #ifdef CMPI
       USE MESSENGER, ONLY: MSG_BARRIER
@@ -8339,7 +8312,8 @@ C----------------------------------------------------------------------
          RETURN
       ELSE
          ! should be unreachable
-         CALL windTerminate()
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Invalid file format flag in NWS14SET_FILENAMES')
       ENDIF
 C----------------------------------------------------------------------
       END SUBROUTINE NWS14SET_FILENAMES
@@ -8360,6 +8334,7 @@ C----------------------------------------------------------------------
       USE MESSENGER, ONLY: MSG_BARRIER
       USE GL2LOC_MAPPING ,ONLY : BcastToLocal_Int
 #endif
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       logical :: Fexists
       integer :: iret
@@ -8413,7 +8388,8 @@ C----------------------------------------------------------------------
       CALL BcastToLocal_Int(iret)
 #endif
       if (iret.ne.0) then
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Error processing GRIB2 background wind file')
       endif
       RETURN
 #endif
@@ -8429,6 +8405,7 @@ C     in the met data. If we are using grib2 it just returns
 C----------------------------------------------------------------------
       USE SIZES, ONLY : MYPROC
       USE GLOBAL, ONLY : NCICE
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       INTEGER,INTENT(IN) :: NWS
       logical :: Fexists
@@ -8441,17 +8418,16 @@ C----------------------------------------------------------------------
       IF (NWS.EQ.-14) THEN
          ! For inset OWI winds with netcdf files something needs to be
          ! done but I haven't programmed it yet.
-         CALL allMessage(ERROR,"NWS = -14 has not yet been set up to "
-     &                   //"use netcdf files. Try again with grib2 "
-     &                   //"background wind files.")
-         CALL windTerminate()
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message="NWS = -14 has not yet been set up to use netcdf "//
+     &              "files. Try again with grib2 background wind files.")
       ENDIF
       ! open the fort.22
       OPEN(22,file='fort.22',ACTION='READ',IOSTAT=ierr)
       ! if we had trouble opening then abort
       IF (ierr.NE.0) THEN
-         call allMessage(ERROR,'Unable to open fort.22.')
-         call windTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Unable to open fort.22.')
       ENDIF
       read(22,*) Tdim    ! Time dimension name
       read(22,*) Tvar    ! Time variable name
@@ -8695,6 +8671,7 @@ C     CPB 10/2023: Added to make NWS = 14 more more readable. Simply
 C     calls the appropriate subroutine based on the filetype we are 
 C     using.
 C----------------------------------------------------------------------
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       CHARACTER(LEN=200),INTENT(IN) :: fileN
       REAL,ALLOCATABLE,INTENT(OUT) :: data2(:,:)
@@ -8706,7 +8683,8 @@ C----------------------------------------------------------------------
          CALL READNWS14_grib2(fileN, invN, var, data2)
       ELSE
          ! should be unreachable
-         CALL windterminate()
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Invalid file format flag in READNWS14')
       ENDIF
 C----------------------------------------------------------------------
       END SUBROUTINE READNWS14
@@ -8913,7 +8891,8 @@ C----------------------------------------------------------------------
       SUBROUTINE INIT_INSET_NC()
        
        USE SIZES, ONLY : MYPROC, GBLINPUTDIR
-       USE GLOBAL, ONLY : InsetControlFile 
+       USE GLOBAL, ONLY : InsetControlFile
+       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
  
        IMPLICIT NONE
        
@@ -8926,8 +8905,8 @@ C----------------------------------------------------------------------
        INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//TRIM(ADJUSTL(InsetControlFile)), EXIST=InsetFileExist)
        IF(.NOT.InsetFileExist) THEN
            write(scratchMessage,'(A)') "Unable to find InsetControlFile: "//TRIM(InsetControlFile)
-           call allMessage(ERROR, scratchMessage)
-           call windTerminate()
+           call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &        message=scratchMessage)
        ENDIF
 
        ! open the inset_netcdf.in file
@@ -8935,8 +8914,8 @@ C----------------------------------------------------------------------
        ! if we had trouble opening then abort
        IF (IERR.NE.0) THEN
           write(scratchMessage,'(A)') 'Unable to open insetControlFile: '//TRIM(InsetControlFile)
-          call allMessage(ERROR,scratchMessage)
-          call windTerminate()
+          call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &       message=scratchMessage)
        ENDIF
      
        READ(2200, '(A)', IOSTAT=IERR) InsetLonDim
@@ -8976,6 +8955,7 @@ C----------------------------------------------------------------------
 #endif
       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
       USE GLOBAL, ONLY: scratchMessage, allMessage, ERROR
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       
       IMPLICIT NONE
 
@@ -9000,23 +8980,18 @@ C----------------------------------------------------------------------
 
          IF (alloc_err /= 0) THEN
             WRITE(scratchMessage,'(A)') "Unable to allocate memory for InsetOUT"
-            call allMessage(ERROR, scratchMessage)
-            call windTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          ENDIF
 
-         
          CALL Check_err(NF90_INQ_VARID(InsetID,InsetVar,VarLoc))
          CALL Check_err(NF90_GET_VAR(InsetID,VarLoc,InsetOUT,
      &                  start=[1, 1, NT],count=[Inset_NX, Inset_NY, 1]))
-         
 
          CALL Check_err(NF90_CLOSE(InsetID))
         
 #endif        
          CALL unsetMessageSource()   
-        
-         RETURN
-        
+
        END SUBROUTINE READINSET_NC  
 
 !--------------------------------------------------------------------------
@@ -9240,6 +9215,7 @@ C     CPB 10/2023: Added to make NWS = 14 more more readable. Simply
 C     calls the appropriate subroutine based on the filetype we are 
 C     using.
 C----------------------------------------------------------------------
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       CHARACTER(len=200),INTENT(IN) :: fileN
       REAL,ALLOCATABLE,INTENT(OUT) :: lat(:,:),lon(:,:)
@@ -9251,7 +9227,8 @@ C----------------------------------------------------------------------
          CALL READNWS14LatLon_netCDF(fileN,ncid,lat,lon)
       ELSE
          ! should be unreachable
-         CALL windterminate()
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Invalid file format flag in READNWS14LatLon')
       ENDIF
 C----------------------------------------------------------------------
       END SUBROUTINE READNWS14LatLon
@@ -9511,24 +9488,25 @@ C----------------------------------------------------------------------
 #ifdef CMPI
       USE MESSENGER, ONLY : subdomainFatalError
 #endif
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       integer,intent(in) :: iret
       character(len=200),intent(in) :: var, fileN
-C
-      if (iret.eq.0) then
-         call allMessage(ERROR,'Cound not find message when reading '
-     &                         //trim(var)//' in '//trim(fileN)//'.')
-      elseif (iret.lt.0) then 
-         call allMessage(ERROR,'Fatal error when reading '
-     &                         //trim(var)//' in '//trim(fileN)//'.')
-      elseif (iret.gt.1) then
-         call allMessage(ERROR,'Found multiple messages when reading '
-     &                         //trim(var)//' in '//trim(fileN)//'.')
-      endif
+
 #ifdef CMPI
       subdomainFatalError = .true.
 #endif
-      call windTerminate()
+
+      if (iret.eq.0) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,message='Cound not find message when reading '
+     &                         //trim(var)//' in '//trim(fileN)//'.')
+      elseif (iret.lt.0) then 
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,message='Fatal error when reading '
+     &                         //trim(var)//' in '//trim(fileN)//'.')
+      elseif (iret.gt.1) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,message='Found multiple messages when reading '
+     &                         //trim(var)//' in '//trim(fileN)//'.')
+      endif
 C----------------------------------------------------------------------
       END SUBROUTINE ArnoldSchwarzenegger
 C-----------------------------------------------------------------------

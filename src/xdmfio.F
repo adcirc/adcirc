@@ -54,9 +54,8 @@ C-----------------------------------------------------------------------
          return
       endif
 #ifndef ADCXDMF
-      call allMessage(ERROR,'XDMF output was specified.')
-      call allMessage(ERROR,'This executable was not compiled with XDMF support.')
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &               message="XDMF output was specified but this executable is not compiled with XDMF support.")
 #else
       !jgfdebug
       write(6,'(a)') 'fn='//trim(descript % file_name)
@@ -107,8 +106,9 @@ C-----------------------------------------------------------------------
       subroutine writeOutArrayXDMF(timeLoc, it, descript)
       use global, only: OutputDataDescript_t, scratchmessage, error, nt,
      &            allMessage
-      use mesh, only: NM, NE, agrid, dp, ics, np, x, y, terminate
+      use mesh, only: NM, NE, agrid, dp, ics, np, x, y
       use sizes,only: mnproc
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 #ifdef ADCXDMF
       include 'Xdmf.f'
@@ -135,10 +135,8 @@ C-----------------------------------------------------------------------
       integer :: timeStepsRemaining
       integer :: i, j
 #ifndef ADCXDMF
-      call allMessage(ERROR,'XDMF output was specified.')
-      call allMessage(ERROR,
-     &    'This executable was not compiled with XDMF support.')
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &               message="XDMF output was specified but this executable is not compiled with XDMF support.")
 #else
       !jgfdebug
       write(6,'(a)') 'call to write '//trim(descript % file_name)
@@ -255,8 +253,7 @@ C-----------------------------------------------------------------------
          descript % xdmfMD % units = 'percent'
       case default
          write(scratchMessage,'("Cannot write unit ",i0," files.")') descript % lun 
-         call allMessage(ERROR, scratchMessage)
-         call terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end select
       !
       ! set the time of this dataset in the XDMF file
@@ -314,8 +311,7 @@ C-----------------------------------------------------------------------
          write(scratchMessage,
      &     '("Cannot write data with ",i0," components.")') 
      &      descript % num_items_per_record
-         call allMessage(ERROR,scratchMessage)
-         call terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end select
       !
       ! set the time step of this dataset in the XDMF file
@@ -711,6 +707,7 @@ C-----------------------------------------------------------------------
       use control
       use boundaries, only : neta, nvel, nfluxf, lbcodei
       use mesh, only : slam0, sfea0
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       include 'Xdmf.f'
       integer*8, intent(in) :: xdmfFortranObj ! XDMF object to receive data
@@ -845,7 +842,7 @@ C-----------------------------------------------------------------------
       case default
          write(info,'(a,i0,a)') 'ERROR: The value of nws is ',nws,
      &     ' but this is not a valid value.'
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=info)
       end select
       if (nrs.gt.0) then
           wtimincComment = trim(wtimincComment) // ',rstiminc'
@@ -906,7 +903,7 @@ C-----------------------------------------------------------------------
      &              'drampelev,dramptip,drampmete,drampwrad,dunrampmete'
       case default
          write(info,'("ERROR: The value of nramp is ",i2," but this is not a valid value.")') nramp
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=info)
       end select
       informationID = XdmfAddInformation(xdmfFortranObj,trim(drampComment)//char(0),  
      &    trim(adjustl(info))//char(0))
@@ -945,7 +942,7 @@ C-----------------------------------------------------------------------
       case default
          write(info,'(a,i0,a)') 'ERROR: The value of nolibf is ',nolibf,
      &     ' but this is not a valid value.'
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=info)
       end select
       if (im.eq.10) then
          write(info,fmt='(2f15.7)') eslm,eslc

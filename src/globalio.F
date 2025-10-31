@@ -1382,6 +1382,7 @@ C
       subroutine writeStationHeader(lun, filename, numSta_g, numSta, typeStr)
       USE SIZES, only : globaldir, localdir, write_local_files, myproc
       USE GLOBAL, only : rundes, runid
+      use mod_terminate, only: ADCIRC_EXIT_FAILURE, terminate
       use mesh, only : agrid
       use global_3dvs, only:
      &     ndset3dsv, nspo3dsv, nfen,
@@ -1427,9 +1428,9 @@ C
           write(lun, 1020) ndset3dst, nstations, dtdp*nspo3dst,
      &         nspo3dst, nfen, 3, FileFmtVersion
       case("Dens2D")
-          write(ScreenUnit,*)
-     &         'ERROR: 2D density station output not implemented.'
-          CALL EXIT(1)
+          write(scratchMessage,*)
+     &         '2D density station output not implemented.'
+          CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       case("Dens3D")
           write(lun, 1020) ndset3dsd, nstations, dtdp*nspo3dsd,
      &         nspo3dsd, nfen, 3, FileFmtVersion
@@ -1440,13 +1441,9 @@ C
           write(lun, 1010) ntrspc, nstations, dtdp*nspoolc, nspoolc, 1,
      &                  FileFmtVersion
       case("Conc3D")
-          write(ScreenUnit,*)
-     &         'ERROR: 3D conc. station output not implemented.'
-          CALL EXIT(1)
+          call terminate(exit_code=ADCIRC_EXIT_FAILURE, message='3D conc. station output not implemented.')
       case default
-          write(ScreenUnit,*)
-     &         'ERROR: Station header type unrecongnized.'
-          CALL EXIT(1)
+          call terminate(exit_code=ADCIRC_EXIT_FAILURE, message='Station header type unrecongnized.')
       end select
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1471,6 +1468,7 @@ C
      &            numNodes, typeStr)
       USE SIZES
       USE GLOBAL
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use global_3dvs, only:
      &   ndset3dgv, nspo3dgv, nfen,
      &   ndset3dgt, nspo3dgt,
@@ -1514,9 +1512,7 @@ C     Open the file
           write(lun, 1020) ndset3dgt, nodes, dtdp*nspo3dgt,
      &                     nspo3dgt, nfen, 3, FileFmtVersion
       case("Dens2D")
-          write(ScreenUnit,*)
-     &         'ERROR: 2D density output not implemented.'
-          CALL EXIT(1)
+          call terminate(exit_code=ADCIRC_EXIT_FAILURE, message='2D density output not implemented.')
       case("Dens3D")
           write(lun, 1020) ndset3dgd, nodes, dtdp*nspo3dgd,
      &                     nspo3dgd, nfen, 3, FileFmtVersion
@@ -1524,13 +1520,9 @@ C     Open the file
           write(lun, 1010) ndsetsw, nodes, dtdp*nspoolgw,
      &                     nspoolgw, 1, FileFmtVersion
       case("Conc2D")
-          write(ScreenUnit,*)
-     &         'ERROR: 2D conc. output not implemented.'
-          CALL EXIT(1)
+          call terminate(exit_code=ADCIRC_EXIT_FAILURE, message='2D conc. output not implemented.')
       case("Conc3D")
-          write(ScreenUnit,*)
-     &         'ERROR: 3D conc. output not implemented.'
-          CALL EXIT(1)
+          call terminate(exit_code=ADCIRC_EXIT_FAILURE, message='3D conc. output not implemented.')
       case("Tau0")
           write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
@@ -1575,6 +1567,7 @@ C     in compact format.
 C
 C----------------------------------------------------------------------
       subroutine readMinMax(descript, timeloc)
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       type(OutputDataDescript_t), intent(inout) :: descript
       real(8), intent(in) :: timeloc  ! adcirc time in seconds
@@ -1626,10 +1619,9 @@ C----------------------------------------------------------------------
      &     ' perhaps during a previously attempted hot start run. '//
      &     ' Its values will not be read.')
          if (nfover.eq.0) then
-            call allMessage(ERROR,
-     &       'Execution terminated due to invalid '//
-     &        trim(descript % file_name)//' file.')
-             call globalioTerminate()
+             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &          message='Execution terminated due to invalid '//
+     &                  trim(descript % file_name)//' file.')
          else
             call allMessage(INFO,'The record for '//
      &        trim(descript%file_name)//
@@ -1868,43 +1860,6 @@ C
       !----------------------------------------------------------------
       end subroutine readAndMapToSubdomainMaxMin
       !----------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-!     S U B R O U T I N E   G L O B A L I O   T E R M I N A T E
-!-----------------------------------------------------------------------
-      SUBROUTINE globalioTerminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
-     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR  
-      IMPLICIT NONE 
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("globalioTerminate")
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1) 
-C
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-!-----------------------------------------------------------------------
-      END SUBROUTINE globalioTerminate
-!-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
       end module global_io

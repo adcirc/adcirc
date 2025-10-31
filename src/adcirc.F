@@ -106,7 +106,6 @@ C******************************************************************************
 
       CONTAINS
 
-
 C******************************************************************************
 C*    ADCIRC initialize routine
 C******************************************************************************
@@ -128,8 +127,11 @@ C******************************************************************************
      &   scratchMessage, CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
      &   initVEW1DChannelWetPerimeter
+      use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
       USE ADC_CONSTANTS, ONLY: g, rhowat0
-      USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
+      USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB,
+     &   NSTA3DD, NSTA3DV, NSTA3DT, NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
+     &   IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG 
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
       USE GWCE, ONLY : initGWCE
       USE MOMENTUM, ONLY : initMomentumEq
@@ -146,7 +148,7 @@ C******************************************************************************
       USE HSWRITER, ONLY : hswriter_init
 #endif
       IMPLICIT NONE
-C
+
       INTEGER, OPTIONAL :: COMM
       CHARACTER(*), OPTIONAL :: ROOTD
       REAL(8) :: StaTimHS
@@ -157,10 +159,8 @@ C
       CHARACTER(2048) :: cmdlinearg ! a single command line argument
       INTEGER :: i        ! command line argument counter
 
-      !
       REAL (8):: start_time = 0.D0, end_time = 0.D0
 
-      !
       ! jgf51.52.07: Added command line option to just write out
       ! the ADCIRC version number and exit. This is to allow 
       ! external applications to query the version number so that
@@ -176,17 +176,17 @@ C
                ! write the version number string ... actually it is
                ! a series of two or three numbers with two digits 
                ! separated by dots, e.g., 51.02 or 51.52.07
-               write(6,'(a)') trim(adc_version)                 
-               CALL EXIT(0) 
+               write(*,'(a)') trim(adc_version)
+               call terminate(exit_code=ADCIRC_EXIT_SUCCESS)
             case("--hash")
-               write(6,'(a)') trim(adc_hash) 
-               CALL EXIT(0) 
+               write(*,'(a)') trim(adc_hash)
+               call terminate(exit_code=ADCIRC_EXIT_SUCCESS)
             case default
                ! do nothing, this is some other command line argument
             end select
          end do
       endif
-      !
+
       call initLogging()
       nabout = 0 !jgf52.08.01: Initialize log level to ECHO.
 #ifdef EBUG
@@ -201,7 +201,7 @@ C
       ELSE
         ROOTDIR = '.'
       ENDIF
-C
+
 #ifdef CMPI
       CALL GET_NUMWRITERS()  ! Get number of writer processors from command line arguments
       IF (PRESENT(COMM)) THEN
@@ -221,7 +221,9 @@ C
          return
       endif
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
-      CALL MSG_TABLE()       ! Read Message-Passing Tables
+      CALL MSG_TABLE(NSTA3DD, NSTA3DV, NSTA3DT,       ! Read Message-Passing Tables
+     &               NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
+     &               IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG)
       CALL MSG_START()       ! Startup message passing
 #else
       MNPROC = 1             ! Init number of compute procs for serial
@@ -260,7 +262,7 @@ C
 
       !jgf49.44: Initialize harmonic analysis parameters.
       CALL initHarmonicParameters()
-C
+
 C     jgf: Initialize default values in wind module and allocate
 C     memory for internal use.
       call initWindModule()
@@ -361,7 +363,7 @@ C...  attached to each node
          call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc) ! populate 
       endif
 
-C
+
 C     jgf51.21.24: Initialize output.
       call initOutput2D(timeloc)
 
@@ -400,9 +402,9 @@ Corbitt 1203022: Local Advection Flags
 17931 FORMAT(//,1X,'LIMITED RUNTIME INFORMATION SECTION ',//)
 
       NCChange=1 !jgf45.06 set flag to set up GWCE LHS on 1st iteration
-C
+
  1999 format(1X, a," ADCIRC Version: ",a)
-C
+
 
 
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
@@ -425,7 +427,7 @@ C******************************************************************************
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
 #endif
-C
+
 #ifdef CSWAN
 Casey 090302: We need the following information to couple to unstructured SWAN.
       USE Couple2Swan, ONLY: CouplingInterval,
@@ -436,10 +438,10 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
       USE MESSENGER, ONLY: writers_active, hs_writers_active
 #endif      
       IMPLICIT NONE
-C
+
       INTEGER, OPTIONAL :: NTIME_STP
       REAL(8) :: TimeLoc
-C
+
  
       REAL(8):: start_time, end_time
 
@@ -477,11 +479,11 @@ C
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_END = ITIME_BGN+NTIME_STP-1
       ENDIF
-C
+
       call allMessage(INFO,"Begin timestepping.")
       DO 100 ITIME=ITIME_BGN,ITIME_END
         CALL TIMESTEP(ITIME,TimeLoc)
-C
+
 #ifdef CSWAN
 Casey 090302: If it is time, then call the following subroutine
 C             to then call the SWAN time-stepping subroutine.
@@ -499,11 +501,11 @@ C             to then call the SWAN time-stepping subroutine.
             CALL writeOutput2D(ITIME,TimeLoc) ! =>see write_output.F
         endif
 100   CONTINUE
-C
+
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_BGN = ITIME_END+1
       ENDIF
-C
+
 
 !TCM v49.52.01 added the following ifdef to pause writer processors
 ! before exiting adcirc_run phase.  This is to allow them to be
@@ -512,7 +514,6 @@ C
       IF (MYPROC == 0 .and. MNWPROC > 0) CALL WRITER_PAUSE()
       IF (MYPROC == 0 .and. MNWPROH > 0) CALL HSWRITER_PAUSE()
 #endif
-
 
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -535,37 +536,37 @@ C******************************************************************************
       USE MESSENGER, ONLY : msg_fini
 #endif
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
+      use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
 
       IMPLICIT NONE
-C
+
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
+
       INTEGER :: I
 
       REAL (8):: start_time, end_time
-C
+
       call setMessageSource("ADCIRC_Final")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 
-
-C
 C...
 C...*************** SOLVE THE HARMONIC ANALYSIS PROBLEM ****************
 C...
       CALL solveHarmonicAnalysis(ITIME)
       CALL writeHarmonicAnalysisOutput(ITIME)
-C
 
-#ifdef CMPI
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
+        CALL terminate(exit_code=ADCIRC_EXIT_SUCCESS,
+     &                 do_finalize_mpi=.not.NO_MPI_FINALIZE,
+     &                 message="ADCIRC terminating normally")
       ELSE
-        CALL MSG_FINI()
+        CALL terminate(exit_code=ADCIRC_EXIT_SUCCESS,
+     &                 do_finalize_mpi=.true.,
+     &                 message="ADCIRC terminating normally")
       ENDIF
-#endif
-C
+
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -576,104 +577,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C******************************************************************************
-C*    ADCIRC terminate routine
-C*    jgf50.44: Mostly just needed so that we can clean up mpi when
-C*    bombing out.
 C******************************************************************************
-      SUBROUTINE ADCIRC_Terminate(NO_MPI_FINALIZE)
-      USE GLOBAL, ONLY : DEBUG, INFO, setMessageSource, allMessage, 
-     &   unsetMessageSource
-#ifdef CMPI
-      USE MESSENGER, ONLY : subdomainFatalError, msg_fini
-#endif
-
-      IMPLICIT NONE
-C
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("ADCIRC_Terminate")
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1) 
-C
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-C-----------------------------------------------------------------------
-      END SUBROUTINE ADCIRC_Terminate
-C-----------------------------------------------------------------------
-
-C*****************************************************************************
-C  ADCIRC Local Terminate Routine and corresponding collection routine
-C  zc50.81 In the case where there is an error on a single processor, allow
-C          everyone to check if we need to bomb out. For example, mesh errors
-C          might only occur on a single processor and hang the code. Care
-C          must be taken not to inadvertantly hang the code by allowing for
-C          cases where not all compute processors pass through the same call
-C          to this routine.
-C*****************************************************************************
-#ifdef CMPI
-C-----------------------------------------------------------------------
-C-----------------------------------------------------------------------
-      SUBROUTINE ADCIRC_LocalTerminate()
-        USE GLOBAL,ONLY: terminate_localproc, screenUnit
-        IMPLICIT NONE
-        !...Set the local terminator and then go wait for the rest of
-        !   the compute processors to check in
-        TERMINATE_LOCALPROC = 1
-        CALL ADCIRC_CheckLocalTerminate()
-C-----------------------------------------------------------------------
-      END SUBROUTINE ADCIRC_LocalTerminate
-C-----------------------------------------------------------------------
-
-
-C-----------------------------------------------------------------------
-C-----------------------------------------------------------------------
-      SUBROUTINE ADCIRC_CheckLocalTerminate()
-        USE MESSENGER
-        USE GLOBAL,ONLY: terminate_localproc, screenUnit, comm
-        USE SIZES,ONLY: MYPROC
-        USE MPI
-        IMPLICIT NONE
-
-        INTEGER :: TERM_LOCAL(2)
-        INTEGER :: TERM_GLOBAL(2)
-        INTEGER :: ierr
-
-        TERM_LOCAL(1) = TERMINATE_LOCALPROC
-        TERM_LOCAL(2) = MYPROC
-        CALL MPI_ALLREDUCE(TERM_LOCAL,TERM_GLOBAL,1,
-     &      MPI_2INTEGER,MPI_MAXLOC,COMM,IERR)
-        IF(TERM_GLOBAL(2).NE.0)THEN
-            IF(MYPROC.EQ.0)THEN
-                WRITE(ScreenUnit,'(A,I5)') "ERROR: ADCIRC Terminating "//
-     &          "from error originating from MYPROC = ",TERM_GLOBAL(2)
-                WRITE(ScreenUnit,'(A)')    "       Check the local PE "//
-     &          "fort.16 output file for details."
-            ENDIF
-            CALL ADCIRC_TERMINATE()
-        ENDIF
-C-----------------------------------------------------------------------
-      END SUBROUTINE ADCIRC_CheckLocalTerminate
-C-----------------------------------------------------------------------
-#endif
-
-C******************************************************************************
-C******************************************************************************
-
 
       END MODULE ADCIRC_Mod
 C******************************************************************************

@@ -353,10 +353,7 @@ contains
 #ifdef ADCNETCDF
       use mod_ephemerides, only: HEAVENLY_OBJS_COORDS_FROM_TABLE
 #else
-      use global, only: ERROR
-#ifdef CMPI
-      use messenger, only: msg_fini
-#endif
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #endif
 
 #ifdef ALL_TRACE
@@ -376,6 +373,8 @@ contains
       real(8) :: MoonSunCoor(3, 2)
       integer :: IERR
 
+      ierr = 0
+
       call setMessageSource("comp_full_tip")
 #if defined(ALL_TRACE)
       call allMessage(DEBUG, "Enter.")
@@ -393,11 +392,8 @@ contains
 #ifdef ADCNETCDF
          call self%m_ephemerides%HEAVENLY_OBJS_COORDS_FROM_TABLE(MoonSunCoor, JDELoc, IERR, self%m_UniformResMoonSunTimeData)
 #else
-         call allMessage(ERROR, "Must compile with netCDF to use TIP from table")
-#ifdef CMPI
-         call msg_fini()
-#endif
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="Must compile with netCDF to use TIP from table")
 #endif
       else
          IERR = 1
