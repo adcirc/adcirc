@@ -51,7 +51,6 @@ C     HOT START PROGRAM SETUP ROUTINE
 C
 C**************************************************************************
 C
-      !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE ADC_CONSTANTS, ONLY: G, PI
       USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
@@ -60,6 +59,7 @@ C
      &    IBCONN, BARINHT, BARINCFSP, BARINCFSB, PIPEHT, PIPECOEF,
      &    PIPEDIAM, NPEBC
       USE GLOBAL_IO
+      USE mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT,
      &    qsurf, NFEN, DUU, DUV, DVV, UU, VV, BSX, BSY, Q, WZ, q20, l,
      &    SigT, Sal, Temp, N3DSD, I3DSDRec, N3DSV, I3DSVRec, N3DST,
@@ -69,14 +69,13 @@ C
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, 
      &                       openFort019h
 #ifdef CMPI
-      USE MESSENGER,ONLY: UPDATER, MSG_FINI
       USE GLOBAL, ONLY: COMM
 #endif      
       USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
      &                 checkHAHotstart
       USE WETDRY, ONLY : initializeWettingAndDrying
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, ONLY : terminate
       USE WIND, ONLY : hotstartMeteorologicalForcing, rsget
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE mod_normal_flow_boundary, ONLY : rotate_normal_flux
@@ -101,6 +100,7 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &   inundationTime, inundationTime_onset, maxInunDepth, 
      &   maxInunDepth_time, outputNodeCode, outputNOFF
       USE GWCE, ONLY : etime1, etime2, etiminc
+      use mod_terminate, only: terminate
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
@@ -259,15 +259,9 @@ C        Determine if the hot start file exists.
          ENDIF
 C
          IF (fileFound.eqv..false.) THEN
-            WRITE(16,1701)         ! hot start file
-            WRITE(16,1711)         ! was not found.
-            WRITE(16,9773)         ! execution terminated
-            IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1701)
-               WRITE(ScreenUnit,1711)
-               WRITE(16,9773)      ! execution terminated
-            ENDIF
-            CALL ADCIRC_Terminate()
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='The initial condition or ascii hot start file '
+     &                //'was not found.')
          ENDIF
 C        start reading ascii initial conditions file
          WRITE(16,1740)
@@ -286,18 +280,9 @@ C        start reading ascii initial conditions file
          ENDIF
 
          IF (ErrorIO.GT.0) THEN
-            WRITE(16,1701)         ! hot start file
-            WRITE(16,1705)         ! exists but can't be opened
-            WRITE(16,9773)         ! execution terminated
-            IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1701)
-               WRITE(ScreenUnit,1705)
-               WRITE(ScreenUnit,9773)
-            ENDIF
-#ifdef CMPI
-            CALL MSG_FINI()
-#endif
-            CALL EXIT(1)                 ! We're toast.
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='The initial condition or ascii hot start file '
+     &                //'exists but cannot be opened.')
          ENDIF
 C
  1701    FORMAT('ERROR: The initial condition or ascii hot start file')
@@ -487,18 +472,8 @@ C        Determine if the hot start file exists.
          ENDIF
 C
          IF (fileFound.eqv..false.) THEN
-            WRITE(16,1001)         ! hot start file
-            WRITE(16,1011)         ! was not found.
-            WRITE(16,9973)         ! execution terminated
-            IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1001)
-               WRITE(ScreenUnit,1011)
-               WRITE(16,9973)      ! execution terminated
-            ENDIF
-#ifdef CMPI
-            CALL MSG_FINI()
-#endif
-            CALL EXIT(1)
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='The hot start file was not found.')
          ENDIF
 C        start reading binary hot start file
          WRITE(16,240)
@@ -516,18 +491,8 @@ C        start reading binary hot start file
          ENDIF
 
          IF (ErrorIO.GT.0) THEN
-            WRITE(16,1001)         ! hot start file
-            WRITE(16,1005)         ! exists but can't be opened
-            WRITE(16,9973)         ! execution terminated
-            IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1001)
-               WRITE(ScreenUnit,1005)
-               WRITE(ScreenUnit,9973)
-            ENDIF
-#ifdef CMPI
-            CALL MSG_FINI()
-#endif
-            CALL EXIT(1)                 ! We're toast.
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='The hot start file exists but cannot be opened.')
          ENDIF
 C
  1001    FORMAT('ERROR: The hot start file')
@@ -542,18 +507,8 @@ C        Now read the non-portable binary hot start file.
          READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
          if (.not.
      &     CMP_VERSION_NUMBERS(InputFileFmtVn,FileFmtVersion))then
-            WRITE(16, 1001)
-            write(16, 1012)
-            write(16, 9973)
-            if (NScreen /= 0 .and. myproc == 0) then
-               WRITE(ScreenUnit, 1001)
-               write(ScreenUnit, 1012)
-               write(ScreenUnit, 9973)
-            endif
-#ifdef CMPI
-            call msg_fini()
-#endif
-            CALL EXIT(1)
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='The hot start file was a nonmatching version')
          endif
          READ(IHOT,REC=IHOTSTP) IMHS         ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) TimeLoc         ; IHOTSTP = IHOTSTP + 1
@@ -739,8 +694,8 @@ C
          ! checked to be sure that it is valid.
          write(scratchMessage,'(A,I3,A)') "IHOT was set to '",IHOT,
      &    "' but this value of IHOT is not valid."
-         call allMessage(ERROR, scratchMessage)
-         call ADCIRC_Terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message=scratchMessage)
       END SELECT
 C
 C     Compare the harmonic analysis data read in from the hotstart file
@@ -2950,6 +2905,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : ERROR, setMessageSource, allMessage,
      &                    unsetMessageSource, DEBUG, NP_G, NODES_LG
       USE MESH, ONLY : NP
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
 C
       REAL(8), intent(out), dimension(np) :: sd_array ! subdomain array
@@ -2972,9 +2928,7 @@ C
          ELSE IF (method.EQ.2) THEN
             CALL realRead2D(sd_array, NP, lun)
          ELSE
-            call allMessage(ERROR,
-     &          "Passing of binary or real information incorrect")
-            CALL EXIT(1)
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Passing of binary or real information incorrect")
          END IF
       ! parallel
       ELSE
@@ -3003,9 +2957,7 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            CALL EXIT(1)
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Passing of binary or real information incorrect")
          END IF
       ENDIF
 C
@@ -3030,6 +2982,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
      &                    allMessage, DEBUG, NP_G, NODES_LG
       USE MESH, ONLY : NP
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
 C
       INTEGER, intent(out), dimension(np) :: sd_array ! subdomain array
@@ -3052,9 +3005,7 @@ C
          ELSE IF (method.EQ.2) THEN
            CALL realIntRead2D(sd_array, NP, lun)
          ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            CALL EXIT(1)
+           CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Passing of binary or real information incorrect")
          END IF
       ! parallel
       ELSE
@@ -3083,9 +3034,7 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            CALL EXIT(1)
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Passing of binary or real information incorrect")
          END IF
       ENDIF
 C
@@ -3112,6 +3061,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
      &                    allMessage, DEBUG, NE_G, IMAP_EL_LG
       USE MESH, ONLY : NE
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
 C
       INTEGER, intent(out), dimension(ne) :: sd_array ! subdomain array
@@ -3136,7 +3086,7 @@ C
          ELSE
             WRITE(16,*) "Passing of binary or real
      &         information incorrect"
-            CALL EXIT(1)
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Passing of binary or real information incorrect")
          END IF
       ! parallel
       ELSE
@@ -3165,9 +3115,7 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            CALL EXIT(1)
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Passing of binary or real information incorrect")
          END IF
       ENDIF
 C
@@ -3189,6 +3137,7 @@ C     to a subdomain array.
 C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter,method)
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
      &                    allMessage, DEBUG, NP_G, NODES_LG
@@ -3217,9 +3166,7 @@ C
          ELSE IF (method.EQ.2) THEN
             CALL realRead3D(sd_array, NP, NFEN, lun)
          ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            CALL EXIT(1)
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Passing of binary or real information incorrect")
          END IF
       ! parallel
       ELSE
@@ -3248,9 +3195,7 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            CALL EXIT(1)
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Passing of binary or real information incorrect")
          END IF
       ENDIF
 C

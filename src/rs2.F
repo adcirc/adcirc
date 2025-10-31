@@ -34,11 +34,7 @@ C******************************************************************************
 C 
       MODULE RS2
       USE SIZES
-
       USE GLOBAL,ONLY : NSCREEN, ScreenUnit
-#ifdef CMPI
-      use messenger, only : msg_fini
-#endif
       IMPLICIT NONE
 
       !variables for input file
@@ -70,11 +66,12 @@ C---------------------end of data declarations--------------------------------C
 
 
 C***********************************************************************
-C   SOBROUTINE RS2INIT
+C   SUBROUTINE RS2INIT
 C***********************************************************************
 
       subroutine rs2init(rsnx,rsny,np)
       use sizes
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       integer,intent(in) :: np
       real(8),intent(out) :: rsnx(:),rsny(:)
@@ -96,25 +93,22 @@ C***********************************************************************
       read(23,*,err=99999) type
 
       if(type.eq.1) then
-        write(*,'(a)') 'RS2INIT: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
-        CALL EXIT(1)
+        CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message="RS2INIT: TYPE-1 RS FILE NOT YET SUPPORTED.")
 C        call rs2init_type1(rsnx,rsny,np)
       else if(type.eq.2) then
         call rs2init_type2(rsnx,rsny,np)
       else
-         write(*,'(a)') 'RS2 TYPE IS NEITHER 1 NOR 2.  TERMINATED.'
-         CALL EXIT(1)
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message="RS2 TYPE IS NEITHER 1 NOR 2.")
       endif
 
       return
 
 99999 CONTINUE
 
-#ifdef CMPI
-      call msg_fini()
-#endif
-      WRITE(*,'(a)') 'RADIATION STRESS READ ERROR (RS2-0)'
-      CALL EXIT(1)
+      if(myproc.eq.0)WRITE(*,'(a)') 'RADIATION STRESS READ ERROR (RS2-0)'
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='Radiation stress read error in fort.23 '
+     &          //'initialization')
 
       END SUBROUTINE
 
@@ -146,17 +140,14 @@ c$$$      real(8) :: p1,p2,cmax,cmin,tol
 c$$$
 c$$$
 c$$$      write(*,'(a)') 'RS2INIT_TYPE1: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
-c$$$      CALL EXIT(1) 
+c$$$      call terminate()
 c$$$
 c$$$      read(23,*,err=99999) ns    !number of stwave grid files
 c$$$
 c$$$      if(ns.le.0) then
 c$$$        write(screenunit,1004)
 c$$$        write(16,1004)
-c$$$#ifdef CMPI
-c$$$        call msg_fini()
-c$$$#endif
-c$$$        CALL EXIT(1)
+c$$$        call terminate()
 c$$$      endif
 c$$$
 c$$$      allocate(fullplanes(ns),rfids(ns))
@@ -410,11 +401,8 @@ c$$$     &       ' IT MUST BE GREATER THAN 0.'//)
 c$$$
 c$$$99999 CONTINUE
 c$$$
-c$$$#ifdef CMPI
-c$$$      call msg_fini()
-c$$$#endif
 c$$$      write(*,'(a)') 'RADIATION STRESS READ ERROR (RS2-1)'
-c$$$      CALL EXIT(1) 
+c$$$      call terminate()
 c$$$
 c$$$      END SUBROUTINE
 
@@ -425,6 +413,7 @@ C***********************************************************************
 
       subroutine rs2init_type2(rsnx,rsny,np)
       use sizes
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE ADC_CONSTANTS,only : rad2deg
       use mesh, only : slam, sfea
       implicit none
@@ -449,12 +438,7 @@ C***********************************************************************
       read(23,*,err=99999) ns    !number of stwave grid files
 
       if(ns.le.0) then
-        write(screenunit,1004)
-        write(16,1004)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        CALL EXIT(1)
+        call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Number of sets was specified incorrectly in UNIT23.")
       endif
 
       allocate(fullplanes(ns),rfids(ns))
@@ -711,20 +695,7 @@ C***********************************************************************
         endif
         if((ni.ne.nis(s)).or.(nj.ne.njs(s)).or.
      &       (dxinc.ne.dxincs(s)).or.(dyinc.ne.dyincs(s))) then
-          if(myproc.eq.0) then
-            write(screenunit,*) ''
-            write(screenunit,*) 'FORT.23 INCONSISTENT WITH .RAD FILES'
-            write(screenunit,*) 'PROGRAM WILL BE TERMINATED'
-            write(screenunit,*) ''
-          endif
-          write(16,*) ''
-          write(16,*) 'FORT.23 SEEMS INCONSISTENT WITH .RAD FILES'
-          write(16,*) 'PROGRAM WILL BE TERMINATED'
-          write(16,*) ''
-#ifdef CMPI
-          call msg_fini()
-#endif
-          CALL EXIT(1)
+          call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="FORT.23 INCONSISTENT WITH .RAD FILES")
         endif
       enddo
 
@@ -750,17 +721,9 @@ C***********************************************************************
 
       return
 
- 1004 FORMAT(//,1X,' NUMBER OF SETS WAS SPECIFIED'//
-     &       'INCORRECTLY IN UNIT23.'/
-     &       ' IT MUST BE GREATER THAN 0.'//)
-
 99999 CONTINUE
 
-#ifdef CMPI
-      call msg_fini()
-#endif
-      WRITE(*,'(a)') 'RADIATION STRESS READ ERROR (RS2-1)'
-      CALL EXIT(1)
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="RADIATION STRESS READ ERROR (RS2-1)")
 
       END SUBROUTINE
 
@@ -770,20 +733,19 @@ C   SUBROUTINE RS2GET
 C***********************************************************************
 
       subroutine rs2get(rsnx,rsny,np)
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
       integer,intent(in) :: np
       real(8),intent(out) :: rsnx(:),rsny(:)
 
       if(type.eq.1) then
-        write(*,'(a)') 'RS2GET: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
-        CALL EXIT(1) 
+        CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message='RS2GET: TYPE-1 RS FILE NOT YET SUPPORTED.')
 C        call rs2get_type1(rsnx,rsny,np)
       else if(type.eq.2) then
         call rs2get_type2(rsnx,rsny,np)
       else
-         write(*,'(a)') 'RS2 TYPE IS NEITHER 1 NOR 2.  TERMINATED.'
-         CALL EXIT(1) 
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message='RS2GET: RS2 TYPE IS NEITHER 1 NOR 2.')
       endif
 
       return
@@ -797,7 +759,7 @@ c$$$
 c$$$      subroutine rs2get_type1(rsnx,rsny,np)
 c$$$      use sizes
 c$$$#ifdef CMPI     
-c$$$      use messenger, only: msg_fini, msg_ibcast, msg_cbcast, msg_rbcast
+c$$$      use messenger, only: msg_ibcast, msg_cbcast, msg_rbcast
 c$$$#endif 
 c$$$      implicit none
 c$$$      integer,intent(in) :: np
@@ -810,7 +772,7 @@ c$$$      real(8) :: rsx,rsy,rsx1,rsx2,rsx3,rsy1,rsy2,rsy3,cnf1,cnf2,cnf3
 c$$$      real(8) :: angle_st,pi
 c$$$
 c$$$      write(*,'(a)') 'RS2GET_TYPE1: SORRY! TYPE-1 RS FILE NOT YET SUPPORTED.'
-c$$$      CALL EXIT(1)
+c$$$      call terminate()
 c$$$
 c$$$      if(myproc.eq.0) then
 c$$$        write(screenunit,*)
@@ -970,10 +932,7 @@ c$$$      write(16,*) trim(radfiles(s)),' IS NOT COMPLETE.'
 c$$$      write(16,*) 'PROGRAM WILL BE TERMINATED.'
 c$$$      close(16)
 c$$$
-c$$$#ifdef CMPI
-c$$$      call msg_fini()
-c$$$#endif
-c$$$      CALL EXIT(1)
+c$$$      call terminate()
 c$$$
 c$$$      end subroutine
 
@@ -985,7 +944,7 @@ C***********************************************************************
       use sizes
 #ifdef CMPI
 Casey 090327: Implement Seizo's changes for buffering the radiation stress gradients.     
-      use messenger, only: msg_fini, msg_ibcast, msg_cbcast, msg_rbcastd
+      use messenger, only: msg_ibcast, msg_cbcast, msg_rbcastd
 #endif 
       implicit none
 
@@ -1160,19 +1119,11 @@ C--------------------------------------------------------------------------
       end subroutine rs2get_type2
 
       subroutine rs2get_type2_terminate(filename)
+        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
         implicit none
         character(*),intent(in) :: filename
-        if(myproc.eq.0) then
-          write(screenunit,*) trim(filename),' IS NOT COMPLETE.'
-          write(screenunit,*) 'PROGRAM WILL BE TERMINATED.'
-        endif
-        write(16,*) trim(filename),' IS NOT COMPLETE.'
-        write(16,*) 'PROGRAM WILL BE TERMINATED.'
-        close(16)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        CALL EXIT(1)
+        call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                 message=trim(filename)//' IS NOT COMPLETE. PROGRAM WILL BE TERMINATED.')
       end subroutine rs2get_type2_terminate
 
     

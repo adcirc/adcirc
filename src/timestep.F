@@ -108,7 +108,7 @@ C
      &    dynamicWaterLevelCorrectionMassAdjust,
      &    CLOSE_MET_FILES
 
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
       USE mod_normal_flow_boundary, ONLY: rotate_normal_flux
@@ -1085,9 +1085,9 @@ C...  Compute new water surface elevation
          !JLW: update nodecode, ncele, etc
          call computeWettingAndDrying(it)
 #else
-         call allMessage(ERROR, "Subgrid calculation requires building"
-     &                          //"with netcdf enabled")
-         call ADCIRC_Terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message="Subgrid calculation requires building "
+     &             //"with netcdf enabled")
 #endif         
       ELSE
 !--------------------WETTING AND DRYING--------------------------------
@@ -1335,9 +1335,9 @@ C     output the global node number to debug the local PE fort.14s
          ENDIF
          call WarnElevSum(ErrorElevExceeded)  ! Clint's Zombie Slayer 2010.08.07
          IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
-           Flag_ElevError = .true. 
-           CALL MSG_FINI()                    !  if there are Error Elvation nodes.
-           CALL EXIT(1)                             !
+           Flag_ElevError = .true.
+           call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &        message='Elevation exceeded ErrorElev threshold')
          ENDIF                                !st3
 
 #ifdef VELCHECK
@@ -1400,7 +1400,8 @@ C     output the global node number to debug the local PE fort.14s
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev, ',
      &           'ADCIRC stopping. **')
-            CALL ADCIRC_Terminate()
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Elevation exceeded ErrorElev threshold')
          ENDIF
 #ifdef VELCHECK
          IF (IT .EQ. ITIME_BGN) THEN
@@ -3012,6 +3013,7 @@ C**********************************************************************
        Use Global,      Only : H2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B
+       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
        Implicit none
        Integer :: I, J, K
@@ -3073,8 +3075,8 @@ C**********************************************************************
              sum_Weights = sum_Weights + Weights (J)
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
-             Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             CALL EXIT(1)
+             CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                      message="Possible error in Gaussian filter - error code = 1")
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug

@@ -419,6 +419,7 @@ C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C--------------------------------------------------------------------
       SUBROUTINE checkHarmonicParameters()
       USE GLOBAL, ONLY :  NFOVER, useNetCDF, useNetCDFOutput
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
 C
       call setMessageSource("checkHarmonicParameters")
@@ -427,11 +428,12 @@ C
 #endif
 
       IF((NHASE.LT.0).OR.(NHASE.GT.5)) THEN
-         CALL allMessage(WARNING,"Input value of NHASE is not valid.")
          IF (NFOVER.EQ.1) THEN
+            CALL allMessage(WARNING,"Input value of NHASE is not valid.")
             CALL allMessage(WARNING,"NHASE will be set to zero.")
          ELSE
-            CALL harmonicTerminate()
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Input value of NHASE is not valid')
          ENDIF
       ELSE IF (NHASE.EQ.1) THEN
          CALL logMessage(INFO,
@@ -446,11 +448,12 @@ C
       ENDIF
 
       IF((NHASV.LT.0).OR.(NHASV.GT.5)) THEN
-         CALL allMessage(WARNING,"Input value of NHASV is not valid.")
          IF (NFOVER.EQ.1) THEN
+            CALL allMessage(WARNING,"Input value of NHASV is not valid.")
             CALL allMessage(WARNING,"NHASV will be set to zero.")
          ELSE
-            CALL harmonicTerminate()
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Input value of NHASV is not valid')
          ENDIF
       ELSE IF (NHASV.EQ.1) THEN
          CALL logMessage(INFO,
@@ -465,11 +468,12 @@ C
       ENDIF
 
       IF((NHAGE.LT.0).OR.(NHAGE.GT.5)) THEN
-         CALL allMessage(WARNING,"Input value of NHAGE is not valid.")
          IF (NFOVER.EQ.1) THEN
+            CALL allMessage(WARNING,"Input value of NHAGE is not valid.")
             CALL allMessage(WARNING,"NHAGE will be set to zero.")
          ELSE
-            CALL harmonicTerminate()
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Input value of NHAGE is not valid')
          ENDIF
       ELSE IF (NHAGE.EQ.1) THEN
          CALL logMessage(INFO,
@@ -484,11 +488,12 @@ C
       ENDIF
 
       IF((NHAGV.LT.0).OR.(NHAGV.GT.5)) THEN
-         CALL allMessage(WARNING,"Input value of NHAGV is not valid.")
          IF (NFOVER.EQ.1) THEN
+            CALL allMessage(WARNING,"Input value of NHAGV is not valid.")
             CALL allMessage(WARNING,"NHAGV will be set to zero.")
          ELSE
-            CALL harmonicTerminate()
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Input value of NHAGV is not valid')
          ENDIF
       ELSE IF (NHAGV.EQ.1) THEN
          CALL logMessage(INFO,
@@ -524,9 +529,10 @@ C--------------------------------------------------------------------
      &                   WRITE_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, NHSTAR
       USE MESH, ONLY : NP
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       INTEGER :: i, j, n           ! loop counters
-C
+
       call setMessageSource("initHarmonicParameters")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -548,18 +554,16 @@ C
          call logMessage(INFO,'Subdomain harmonic analysis files '
      &                // 'were specified with -m on the command line.')
          if ( (NHSTAR.ne.0).and.
-     &        (write_local_hot_start_files.eqv..false.) ) then  
+     &        (write_local_hot_start_files.eqv..false.) ) then
             call logMessage(INFO,'Fulldomain hotstart files will be '
      &                            // 'created by default.')
-            call allMessage(ERROR,'Fulldomain hotstart output files '
-     &       // 'cannot be used in combination with subdomain harmonic '
-     &       // 'analysis output files. '
-     &       // 'The -s argument can be used on the ADCIRC command '
-     &       // 'line to specify that hotstart files should be written '
-     &       // 'for each subdomain; this is required for the writing '
-     &       // 'of harmonic analysis output (fort.51 etc) '
-     &       // ' to subdomains.') 
-             call harmonicTerminate()
+             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &          message='Fulldomain hotstart output files '
+     &                 //'cannot be used in combination with subdomain '
+     &                 //'harmonic analysis output files. '
+     &                 //'The -s argument can be used on the ADCIRC '
+     &                 //'command line to specify that hotstart files '
+     &                 //'should be written for each subdomain.')
          endif
          if ( (NHSTAR.ne.0).and. 
      &        (write_local_hot_start_files.eqv..true.) ) then
@@ -2001,6 +2005,7 @@ C--------------------------------------------------------------------
       USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, NSTAE, NSTAV,
      &                   NSCREEN, SCREENUNIT, NP_G
       USE MESH, ONLY : NP
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       INTEGER :: i    ! loop counter
       REAL(8) FDIFF  ! difference between frequencies btw hotstart and fort.15
@@ -2163,7 +2168,9 @@ c
      +              ', FACE READ IN FROM HOT START FILE = ',F10.5)
             endif
          end do
-         call harmonicTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Discrepancy in harmonic analysis '
+     &             //'hotstart file parameters')
       endif
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -2173,37 +2180,6 @@ c
 C--------------------------------------------------------------------
       end subroutine checkHAHotstart
 C--------------------------------------------------------------------
-
-C----------------------------------------------------------------------
-C...  jgf50.41: Subroutine to terminate the run cleanly.
-C...
-C----------------------------------------------------------------------
-      SUBROUTINE harmonicTerminate()
-#ifdef CMPI
-      USE MESSENGER, ONLY : MSG_FINI
-#endif
-      IMPLICIT NONE
-C
-      call setMessageSource("harmonicTerminate")
-#if defined(HARM_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-C
-      call allMessage(ERROR,"ADCIRC terminating.")
-#ifdef CMPI
-      call msg_fini()
-#endif
-      CALL EXIT(1)
-C
-
-#if defined(HARM_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      RETURN
-C----------------------------------------------------------------------
-      END SUBROUTINE harmonicTerminate
-C----------------------------------------------------------------------
 
 C--------------------------------------------------------------------
 C     S U B R O U T I N E      B I N A R Y   R E A D   3 D
