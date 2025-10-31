@@ -35,6 +35,7 @@ C----------------------------------------------------------------------
      &  unsetMessageSource, DEBUG, allMessage, screenMessage, ERROR,
      &  netcdf_avail
       USE boundaries, only: freeFluxBoundaryArrayTemporaries
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       !
       !    2 D   D A T A
@@ -1613,9 +1614,9 @@ C      IF (mnproc.gt.1) THEN
 #ifdef ADCNETCDF
                   call initNetCDFOutputFile(ptr(i) % descript2D, nerr)
                   if (nerr.eqv..true.) then
-                     call allMessage(ERROR,
-     &             'There was an issue with NetCDF file initialization.')
-                     call terminate()
+                     call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                  message='There was an issue with NetCDF file '//
+     &                          'initialization.')
                   endif
                   ptr(i) % descript2D % initialized = .true.
 #endif
@@ -1697,10 +1698,9 @@ C                      ! initialize it if it wasn't initialized above
                        if (ptr(i) % descript2D % initialized.eqv..false.) then
                            call initNetCDFOutputFile(ptr(i) % descript2D, nerr)
                            if (nerr.eqv..true.) then
-                              call allMessage(ERROR,
-     &                        "Failed to initialize "//
-     &                        trim(ptr(i)%descript2D%file_name)//".")
-                              call terminate()
+                              call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                           message="Failed to initialize "//
+     &                                   trim(ptr(i)%descript2D%file_name))
                            endif
                         endif
                      endif
@@ -2166,9 +2166,6 @@ C removed from global  myProc, MNPROC,
      &    charmv, fmv, eav, esq, eavdif, evadif, iharind, ITHAS,
      &    xvelva, usq, uvadif, yvelav, vav, vavdif, yvelva, vsq, vvadif
 
-#ifdef CMPI
-      USE MESSENGER, ONLY : msg_fini
-#endif
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : initNetCDFOutputFile
 #endif
@@ -2191,9 +2188,10 @@ C
       ! consistent with what is in solveHarmonicAnalysis
       IF ((IHARIND.eq.0).or.(ITIME.LE.ITHAS)) THEN
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
+        call allMessage(DEBUG,"Return.")
 #endif
-         RETURN
+        call unsetMessageSource()
+        RETURN
       ENDIF
 C
 C     This subroutine should only be called once, at the end of a run, so
@@ -2530,10 +2528,9 @@ C        ! as the full domain elevation harmonic analysis file (fort.53)
          ENDIF
          DO I=1,4
             IF (netcdf_error(I).eqv..true.) THEN
-#ifdef CMPI
-               CALL MSG_FINI()
-#endif
-               CALL EXIT(1)
+              call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &           message='NetCDF harmonic analysis file initialization '//
+     &                   'failed')
             ENDIF
          ENDDO
 #endif
@@ -2986,16 +2983,17 @@ C RJW added MYPROC
      &    NODES_LG
       USE MESH, ONLY : NP, ICS, NM
       USE GLOBAL_3DVS
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE GLOBAL_IO, ONLY: packNPbyM, unpackNPbyM,
      &    collectFullDomainArray, packOne, unpackOne
+#ifdef CMPI
+      use messenger, only: msg_lbcast
+#endif
 #ifdef ADCNETCDF
        USE NodalAttributes, ONLY :
      &     nolibf, nwp, tau0, cf, eslm
        USE NetCDFIO, ONLY : initNetCDFOutputFile,
      &     writeOutArrayNetCDF
-#endif
-#ifdef CMPI
-       USE MESSENGER, ONLY : msg_lbcast, msg_fini
 #endif
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
@@ -3428,8 +3426,8 @@ C
          CALL msg_lbcast(netcdf_error,8)
          DO i=1,8
             IF (netcdf_error(i).eqv..true.) THEN
-               CALL msg_fini()
-               CALL EXIT(1)
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='NetCDF file initialization failed')
             ENDIF
          ENDDO
 #endif
@@ -4301,10 +4299,9 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
                CALL writeOutArrayNetCDF(descript % lun, TimeLoc, descript)
             ENDIF
 #else
-            call allMessage(ERROR, 'NetCDF was specified.')
-            call allMessage(ERROR,
-     &      'This executable was not compiled with NetCDF support.')
-            call terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='NetCDF was specified but this executable was '//
+     &                 'not compiled with NetCDF support.')
 #endif
 
         CASE(XDMF)
@@ -4313,10 +4310,9 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
                CALL writeOutArrayXDMF(TimeLoc, it, descript)
             ENDIF
 #else            
-            call allMessage(ERROR, 'XDMF was specified.')
-            call allMessage(ERROR,
-     &      'This executable was not compiled with XDMF support.')
-            call terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='XDMF was specified but this executable was '//
+     &                 'not compiled with XDMF support.')
 #endif
         CASE DEFAULT
             write(scratchMessage,'(a,i0)') 'Invalid output specifier: ',
@@ -4812,16 +4808,25 @@ C
             IF (MNPROC.eq.1) THEN  ! serial
 C              jgf49.35 TODO: Allocate arrays to write 3D data
                CALL initNetCDFHotstart(hss%lun, Elev1Descript, ncerror)
-               IF ( ncerror.eqv..true. ) CALL terminate()
+               IF ( ncerror.eqv..true. ) THEN
+                CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                    message='Error initializing NetCDF hotstart file.')
+               ENDIF
                IF (IHARIND.eq.1) THEN
                   CALL initNetCDFHotstartHarmonic(hss%lun,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
      &            HarmUVelSLVDescript, ncerror)
-                  IF ( ncerror.eqv..true. ) CALL terminate()
+                  IF ( ncerror.eqv..true. ) THEN
+                    CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                    message='Error initializing NetCDF hotstart harmonic file.')
+                  ENDIF
                   IF (CHARMV.eqv..true.) THEN
                      CALL initNetCDFHotstartHarmonicMeansVariances(
      &                  hss%lun, ELAVDescript, ncerror)
-                     IF ( ncerror.eqv..true. ) CALL terminate()
+                     IF ( ncerror.eqv..true. ) THEN
+                      CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                    message='Error initializing NetCDF hotstart harmonic means/variances file.')
+                     ENDIF
                   ENDIF
                ENDIF
                ! Determine if we need to init both hotstart files, i.e., if the
@@ -4835,16 +4840,25 @@ C              jgf49.35 TODO: Allocate arrays to write 3D data
                      nextLun = 67
                   ENDIF
                   CALL initNetCDFHotstart(nextLun, Elev1Descript, ncerror)
-                  IF ( ncerror.eqv..true. ) CALL terminate()
+                  IF ( ncerror.eqv..true. ) THEN
+                    CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                    message='Error initializing NetCDF hotstart file.')
+                  ENDIF
                   IF (IHARIND.eq.1) THEN
                      CALL initNetCDFHotstartHarmonic(nextLun,
      &               HarmElevFDLVDescript, HarmElevSLVDescript,
      &               HarmUVelSLVDescript, ncerror)
-                     IF ( ncerror.eqv..true. ) CALL terminate()
+                     IF ( ncerror.eqv..true. ) THEN
+                      CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                    message='Error initializing NetCDF hotstart harmonic file.')
+                     ENDIF
                      IF (CHARMV.eqv..true.) THEN
                         CALL initNetCDFHotstartHarmonicMeansVariances(
      &                     nextLun, ELAVDescript, ncerror)
-                        IF ( ncerror.eqv..true. ) CALL terminate()
+                        IF ( ncerror.eqv..true. ) THEN
+                          CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                      message='Error initializing NetCDF hotstart harmonic means/variances file.')
+                        ENDIF
                      ENDIF
                   ENDIF
                ENDIF
@@ -4887,9 +4901,8 @@ C     collect up the data from subdomains if running in parallel
 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             if (any(NOFF_G.gt.1)) then
-               call allMessage(ERROR,
-     &            'Some values of NOFF are greater than 1.')
-               call terminate()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='Some values of NOFF are greater than 1.')
             endif
          endif
 C
@@ -5618,10 +5631,8 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          ENDIF
       ENDIF
       IF (TEST_HOTSTART.eqv..true.) THEN
-#ifdef CMPI
-          CALL MSG_FINI()
-#endif
-         CALL EXIT(1)
+        call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &     message='Test hotstart completed')
       ENDIF
 
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -5733,12 +5744,10 @@ C
 C     If we have exceeded the user's limit, terminate the run.
       IF (WarnElevDumpCounter.gt.WarnElevDumpLimit) THEN
          WRITE(16,*) 'ERROR: WarnElevDumpLimit Exceeded.'
-         WRITE(ScreenUnit,5000) MyProc
- 5000    FORMAT('ERROR: WarnElevDumpLimit Exceeded on MyPROC=',i4)
-#ifdef CMPI
-         CALL MSG_FINI()
-#endif
-         CALL EXIT(1)
+         write(scratchMessage,5000) MyProc
+ 5000    FORMAT('WarnElevDumpLimit Exceeded on MyPROC=',i4)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message=scratchMessage)
       ENDIF
 C
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -5750,38 +5759,6 @@ C
 C-----------------------------------------------------------------------
       END SUBROUTINE WriteWarnElev
 C-----------------------------------------------------------------------
-
-      SUBROUTINE terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
-     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
-      IMPLICIT NONE
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("terminate")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1)
-C
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE terminate
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  i n i t S w a n O u t p u t
@@ -6318,10 +6295,10 @@ C-----------------------------------------------------------------------
          if (myproc.eq.0) then
             call initNetCDFOutputFile(InitiallyDryDescript, nerr)
             if (nerr.eqv..true.) then
-               call allMessage(ERROR,
-     &      'There was an issue with NetCDF file initialization for "'//
-     &        trim(InitiallyDryDescript%file_name)//'".')
-               call terminate()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='There was an issue with NetCDF file '//
+     &                    'initialization for "'//
+     &                    trim(InitiallyDryDescript%file_name)//'".')
             endif
          endif
          InitiallyDryDescript % initialized = .true.

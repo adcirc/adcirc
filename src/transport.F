@@ -1229,20 +1229,22 @@ C***********************************************************************
 c
       SUBROUTINE ADC_TRIDAG2(A,B,C,R,U,N)
       USE GLOBAL, ONLY: ScreenUnit
+      USE mod_terminate, ONLY: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       INTEGER :: J, N
 
       REAL(8) :: A(N),B(N),C(N),R(N),U(N)
       REAL(8) :: BET,GAM(N)
+      CHARACTER(LEN=256) :: scratchMessage
 
 c     
 c     check for zero elements on diagonal
 c     
       DO J=1,N
          if(B(j).EQ.0.) then
-            write(screenunit,*) 'Problem in Tridag Solver.  ',
+            write(scratchMessage,*) 'Problem in Tridag Solver.  ',
      +           'B array value in row ',j,' = 0'
-            CALL EXIT(1)
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          endif
       end do
       BET = B(1)
@@ -1251,9 +1253,9 @@ c
          GAM(J) = C(J-1)/BET
          BET=B(J)-A(J)*GAM(J)
          if (BET.EQ.0) then
-            write(screenunit,*) ' Problem in Tridag Solver.  ',
+            write(scratchMessage,*) ' Problem in Tridag Solver.  ',
      +           ' BET  = 0.  Solver failed.'
-            CALL EXIT(1)
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          endif
          U(J)=(R(J)-A(J)*U(J-1))/BET
       END DO

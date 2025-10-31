@@ -171,6 +171,7 @@
       subroutine read14_findDims ()
       use global, only : nabout
       use boundaries
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       integer :: ios ! i/o status
       integer :: lineNum ! line number currently being read
@@ -272,8 +273,7 @@
              write(scratchMessage, 1030) ibtype_orig(k)
 1030        format('The boundary type ',i0,
      &           ' was found in the file but is not valid.')
-             call allMessage(ERROR, scratchMessage)
-             call terminate()
+             call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          end select
       enddo
       if ( nvel_count.ne.nvel) then
@@ -311,14 +311,12 @@
  10   write(scratchMessage,1070) lineNum, ios
 1070  format('Reading line ',i0,' gave the following error code: ',
      &   i0,'.')
-      call allMessage(ERROR, scratchMessage)
       close(iunit)
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
  20   write(scratchMessage,1080) lineNum
 1080  format('Reached premature end of file on line ',i0,'.')
-      call allMessage(ERROR,scratchMessage)
       close(iunit)
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       !-----+---------+---------+---------+---------+---------+---------+
       end subroutine read14_findDims
       !-----+---------+---------+---------+---------+---------+---------+
@@ -328,6 +326,7 @@
       !-----+---------+---------+---------+---------+---------+---------+
       subroutine read14 ()
       use boundaries
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use global, only : openFileForRead, nabout, nperseg, nnperbc,
      &                   iperconn
 
@@ -560,8 +559,7 @@
          case default
             scratchFormat = '("IBTYPE ",i0," is not allowed.")'
             write(scratchMessage, scratchFormat) ibtype_orig(k)
-            call allMessage(ERROR,scratchFormat)
-            call terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          end select
       end do
       close(14)
@@ -581,17 +579,15 @@
       ! jump to here on error condition during read
 10    write(scratchMessage,140) lineNum, ios
 140   format('Reading line ',i0,' gave the following error code: ',i0,'.')
-      call allMessage(ERROR,scratchMessage)
       close(iunit)
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       !
       ! jump to here on end condition during read
 20    write(scratchMessage,150) lineNum
 150   format('Reached premature end of file on line ',i0,'.')
-      call allMessage(ERROR,scratchMessage)
       close(iunit)
       call close_dict( node_dict )
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
 
       !----------------------------------------------------------------
       end subroutine read14
@@ -612,6 +608,7 @@
       !-----+---------+---------+---------+---------+---------+---------+
       subroutine read14femesh( meshfileName, nn, vx, etov, bxy, nodeLabel )
       use global, only : openFileForRead, nabout
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       implicit none
 
@@ -731,21 +728,19 @@
       ! jump to here on error condition during read
 110    write(scratchMessage,140) lineNum, ios
 140   format('Reading line ',i0,' gave the following error code: ', i0, '.')
-      call allMessage(ERROR,scratchMessage)
       close(iunit)
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       !
       ! jump to here on end condition during read
 120    write(scratchMessage,150) lineNum
 150   format('Reached premature end of file on line ',i0,'.')
-      call allMessage(ERROR,scratchMessage)
       close(iunit)
 
       ! free memory
       deallocate( labelstmp )
 
       call close_dict( node_dict_tmp )
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
 
       !----------------------------------------------------------------
       end subroutine read14femesh
@@ -762,13 +757,13 @@
       subroutine readMeshXDMF()
       use global, only : nabout
       use boundaries
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
 #ifndef ADCXDMF
       call allMessage(ERROR,'An XMDF mesh file was specified.')
-      call allMessage(ERROR,'This ADCIRC executable was not compiled '
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message='This ADCIRC executable was not compiled '
      & // 'with XDMF support.')
-      call terminate()
 #else
       include 'Xdmf.f'
       integer*8 :: xdmfFortranObj
@@ -854,8 +849,8 @@
       !
       inquire(file=trim(adjustl(meshFileName)),exist=fileFound)
       if (fileFound.eqv..false.) then
-         call allMessage(ERROR,"The file " // trim(adjustl(meshFileName)) // " was not found.")
-         call terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                  message="The file " // trim(adjustl(meshFileName)) // " was not found.")
       endif
       call logMessage(INFO,'Reading mesh data from the ' //
      &  trim(adjustl(meshFileName)) // ' XDMF file.')
@@ -1071,8 +1066,7 @@
                   scratchFormat = 'Mesh file contains IBTYPE=",i0," '
      &               // 'which is not a valid flux boundary type.")'
                   write(scratchMessage,scratchFormat) boundaryTypes(setIndex)
-                  call allMessage(ERROR,scratchMessage)
-                  call terminate()
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
                end select
             case("Node")
                ! do nothing, this property simply indicates that the boundaries
@@ -1329,8 +1323,7 @@
                 scratchFormat = '("The boundary type ",i0," '
      &                 // 'was found in the files but is not valid.")'
                 write(scratchMessage,scratchFormat) ibtype_orig(fluxCount)
-                call allMessage(ERROR,scratchMessage)
-                call terminate()
+                call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
             end select
             fluxCount = fluxCount + 1
          endif
@@ -1496,6 +1489,7 @@
       use global, only : h0, nolifa, nbfr, ncor, 
      &                   ntip, ifsprots
       use boundaries
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       implicit none
 
@@ -1785,13 +1779,12 @@
       do i=1,ne
          if (areas(i).lt.0.0d0) then
             write(scratchMessage,9899) I
-            call allMessage(ERROR,scratchMessage)
  9899      format('!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
      &      'IN THE CONNECTIVITY TABLE, THE NODES AROUND',
      &      ' ELEMENT ',I0,' MUST BE SPECIFIED IN COUNTERCLOCKWISE ORDER',
      &      ' - CHECK INPUT ',
      &      '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
-            call terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          endif
       end do
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -1814,6 +1807,7 @@
       use global, only : nbfr, c2ddi, ifsprots
       USE ADC_CONSTANTS, only: pi
       use boundaries
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_imax  !sb msg_imax added 10/13/2022
 #endif
@@ -2664,8 +2658,7 @@
      &           'THE ASSOCIATED GLOBAL NODE = ',E12.5,
      &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
      &           ' AND DEPTHS')
-                     call allMessage(ERROR, trim(exeTerm9973))
-                     CALL terminate()
+                     CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=exeTerm9973)
                   ENDIF
                ENDIF
 !...........   CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
@@ -2684,8 +2677,7 @@
      &           'THE ASSOCIATED GLOBAL NODE = ',E12.5,
      &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
      &           ' AND DEPTHS')
-                     call allMessage(ERROR, trim(exeTerm9973))
-                     CALL terminate()
+                     CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=exeTerm9973)
                   ENDIF
                ENDIF
 
@@ -2704,8 +2696,7 @@
      &           'THE ASSOCIATED GLOBAL NODE = ',E12.5,
      &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
      &           ' AND DEPTHS')
-                     call allMessage(ERROR, trim(exeTerm9973))
-                     CALL terminate()
+                     CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=exeTerm9973)
                   ENDIF
                ENDIF
 !...           CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
@@ -2723,8 +2714,7 @@
      &           'THE ASSOCIATED GLOBAL NODE = ',E12.5,
      &           'USER MUST SPECIFY CONSISTENT PIPE HEIGHTS',
      &           ' AND DEPTHS')
-                     call allMessage(ERROR, trim(exeTerm9973))
-                     CALL terminate()
+                     CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=exeTerm9973)
                   ENDIF
                ENDIF
 
@@ -2754,8 +2744,7 @@
      &               'BARRIER BOUNDARIES CAN ONLY OVERLAP WITH ',
      &               'NO NORMAL FLOW EXTERNAL BOUNDARIES',
      &               '(I.E. IBTYPE=0,10,20)')
-                           call allMessage(ERROR, trim(exeTerm9973))
-                           call terminate()
+                           call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=exeTerm9973)
                         ENDIF
 !...  CHECK FOR OVERLAPS WHICH REQUIRE ADJUSTMENTS OF BOUNDARY
 !...  CODE ON THE EXTERNAL BOUNDARY
@@ -2830,8 +2819,7 @@ Csb...
      &       'THE DIMENSION PARAMETER MNVEL IS LESS THAN ',
      &       'THE TOTAL NUMBER OF FLOW BOUNDARY NODES',
      &       'FROM ALL THE SPECIFIED FLOW SEGMENTS COMBINED')
-         call allMessage(ERROR, exeTerm9973)
-         CALL terminate()
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=exeTerm9973)
       ENDIF
 
       NVEL=JGW
@@ -3404,26 +3392,26 @@ Csb...
 !     ------------------------------------------------------------------
 
       subroutine neighb_terminateDimensioning()
+          use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
           implicit none
         ! TERMINATE PROGRAM IF MAXIMUM NUMBER OF NEIGHBORS SET TOO SMALL
           write(scratchMessage,99311)
-          call allMessage(ERROR,scratchMessage)
 99311     FORMAT('!!!!!!!!!!  FATAL ERROR !!!!!!!!! ',
      &        'THE DIMENSIONING PARAMETER MNEI IS TOO SMALL. ',
      &        'THERE IS A PROBLEM WITH THE DYNAMIC MEMORY ALLOCATION. ',
      &        '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
-        call terminate()
+        call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end subroutine neighb_terminateDimensioning
  
       subroutine neighb_terminateDuplicateNode(i,j)
+        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
         implicit none
         integer,intent(in) :: i, j
         write(scratchMessage,99312) I,J
-        call allMessage(ERROR,scratchMessage)
 99312   FORMAT('!!!!!!!!!!  FATAL ERROR !!!!!!!!! ',
      &       'NODES ',i0,' AND ',i0,' HAVE THE SAME COORDINATES.',
      &       '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
-        call terminate()
+        call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end subroutine neighb_terminateDuplicateNode
 
 
@@ -3929,6 +3917,7 @@ Csb...
       SUBROUTINE PERBCSETUP( ETAB )
 
       use global, only: nperseg, perbc_idn_map, iperconn, nnperbc
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       
 !      dummy variables
@@ -4045,9 +4034,10 @@ Csb...
                END IF
 
                IF ( ia1 == N1 ) THEN
-                  WRITE(16,*) "Fatal error in PREBCSETUP(): the primary 
+                  WRITE(scratchMessage,*) "Fatal error in PREBCSETUP(): the primary
      &            and slave node label are identical for the node ", ID1
-                  CALL EXIT(1)
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                  message=scratchMessage)
                END IF
             ELSE                              
                WRITE(16,*) "Error in PREBCSETUP(): No. neighbors = ", 
@@ -4477,36 +4467,6 @@ Csb...
 
       end function calcarea
 !-----------------------------------------------------------------------
-      SUBROUTINE terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      IMPLICIT NONE
-C
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("terminate")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1)
-C
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE terminate
 
 !*********************************************************************************C
 !                                                                                 C
@@ -4515,10 +4475,10 @@ C
 !   Use data declared in the module                                               C
 !                                                                                 C
 !*********************************************************************************C
-      SUBROUTINE READFORTROTS( ) 
+      SUBROUTINE READFORTROTS( )
+        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
         IMPLICIT NONE
 
-        !
         CHARACTER (LEN=1024):: FNAME           
         INTEGER:: FUNIT, errorIO
         CHARACTER (len=100) :: errorVar 
@@ -4597,15 +4557,12 @@ C
            WRITE(scratchMessage,'(A)') 
      &     "Error in readfortrots(): defining"// 
      &     " rotation matrix through "//adjustl(trim(inputtype))// 
-     &     " is either not valid or has not been implemented" 
-           CALL allMessage(ERROR,scratchMessage)
-           scratchMessage = "ADCIRC will stop"
-           CALL allMessage(ERROR,scratchMessage)
+     &     " is either not valid or has not been implemented"
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
            call allMessage(DEBUG,"Return.") 
 #endif
            call unsetMessageSource()
-           CALL EXIT(1)          
+           call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
         END SELECT
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)

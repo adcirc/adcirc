@@ -2116,6 +2116,7 @@ C  kmd48.33bc changed to use Implicit None
       SUBROUTINE TRIDIAG(A,B,C,R,U,nfen)
       USE GLOBAL, ONLY : ScreenUnit, setMessageSource,
      &   unsetMessageSource, logMessage, allMessage, DEBUG, ECHO, INFO
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       INTEGER :: J,nfen
 
@@ -2129,11 +2130,7 @@ C
 C
       DO J=nfen-1,1,-1
          IF(ABS(B(J+1)).EQ.0.) then
-            write(screenunit,*) 'Diagonal term in the VS matrix is zero'
-            write(screenunit,*) '*********** Fatal error *************'
-            write(1,*) 'Diagonal term in the VS matrix is zero'
-            write(1,*) '*********** Fatal error *************'
-            CALL EXIT(1)
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Diagonal term in the VS matrix is zero")
          endif
          P1=C(J)/B(J+1)
          B(J)=B(J)-A(J+1)*P1
@@ -2141,11 +2138,7 @@ C
       END DO
 
       IF(ABS(B(1)).EQ.0.) then
-         write(screenunit,*) 'B1 term in the VS matrix is zero'
-         write(screenunit,*) '*********** Fatal error *************'
-         write(1,*) 'B1 term in the VS matrix is zero'
-         write(1,*) '*********** Fatal error *************'
-         CALL EXIT(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="B1 term in the VS matrix is zero")
       endif
 
       U(1)=R(1)/B(1)
@@ -3194,6 +3187,7 @@ C***********************************************************************
 c
       SUBROUTINE ADC_TRIDAG(A,B,C,R,U,N)
       USE GLOBAL, ONLY : ScreenUnit
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE GLOBAL_3DVS, ONLY : setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
@@ -3201,6 +3195,7 @@ c
 
       REAL(8) :: A(N),B(N),C(N),R(N),U(N)
       REAL(8) :: BET,GAM(N)
+      CHARACTER(256) :: scratchMessage
 
       call setMessageSource("ADC_tridag")
 #if defined(VSMY_TRACE) || defined(ALL_TRACE)
@@ -3211,9 +3206,9 @@ c     check for zero elements on diagonal
 c
       DO J=1,N
          if(B(j).EQ.0.) then
-            write(screenunit,*) 'Problem in Tridag Solver.  ',
+            write(scratchMessage,*) 'Problem in Tridag Solver.  ',
      +           'B array value in row ',j,' = 0'
-            CALL EXIT(1)
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          endif
       end do
       BET = B(1)
@@ -3222,9 +3217,9 @@ c
          GAM(J) = C(J-1)/BET
          BET=B(J)-A(J)*GAM(J)
          if (BET.EQ.0) then
-            write(screenunit,*) ' Problem in Tridag Solver.  ',
+            write(scratchMessage,*) ' Problem in Tridag Solver.  ',
      +           ' BET  = 0.  Solver failed.'
-            CALL EXIT(1)
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          endif
          U(J)=(R(J)-A(J)*U(J-1))/BET
       END DO
@@ -4518,6 +4513,7 @@ C*****************************************************************************
        Use Global,      Only : IFNLFA, ETA2, nodecode
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
+       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
        Implicit none
        Integer :: I, J, K
@@ -4678,8 +4674,8 @@ C*****************************************************************************
              sum_Weights = sum_Weights + Weights (J)
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
-             Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             call exit(1)
+             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                      message="Possible error in Gaussian filter - error code = 1")
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug
@@ -4723,6 +4719,7 @@ C*****************************************************************************
        Use Global,      Only : IFNLFA, ETA2
        USE Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
+       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
        Implicit none
        Integer :: I, J, K
@@ -4827,8 +4824,8 @@ C*****************************************************************************
                 sum_Weights(K) = sum_Weights(K) + Weights (J,K)
              End Do
              If ( sum_Weights(K) < 1.0d-6 ) Then
-                Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-                call exit(1)
+                call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &           message="Possible error in Gaussian filter - error code = 1")
              End If
             Weights (:,K) = Weights (:,K) / sum_Weights(K)
          End Do
@@ -5041,6 +5038,7 @@ C**********************************************************************
        Use Global,      Only : IFNLFA, ETA2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, qkp1, Biharmonic_viscosity_modified_Leith
+       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
        Implicit none
        Integer :: I, J, K
@@ -5156,8 +5154,8 @@ C**********************************************************************
              sum_Weights = sum_Weights + Weights (J)
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
-             Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             call exit(1)
+             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                      message="Possible error in Gaussian filter - error code = 1")
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug

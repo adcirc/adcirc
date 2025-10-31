@@ -143,13 +143,16 @@ contains
    !> @return The vortex model ID
    !----------------------------------------------------------------
    integer function getVortexModelId(vortexModelStr) result(id)
-      use global, only: toLowercase, scratchMessage, allMessage, ERROR
+      use global, only: toLowercase, scratchMessage, allMessage
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       character(*), intent(in) :: vortexModelStr
 
       character(len=len(vortexModelStr)) :: vortexModelStrLower
 
       vortexModelStrLower = toLowercase(trim(vortexModelStr))
+
+      id = -1
 
       select case (trim(adjustl(vortexModelStrLower)))
       case ("holland")
@@ -159,8 +162,8 @@ contains
       case default
          write (scratchMessage, '(3a)') "Unrecognized vortex model: '", &
             trim(vortexModelStr), "'"
-         call allMessage(ERROR, trim(scratchMessage))
-         call nws08terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=trim(scratchMessage))
       end select
 
    end function getVortexModelId
@@ -170,7 +173,8 @@ contains
    !> @return The vortex model string
    !----------------------------------------------------------------
    character(256) function getVortexModelString()
-      use global, only: scratchMessage, allMessage, ERROR
+      use global, only: scratchMessage, allMessage
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
       select case (vortexModelId)
@@ -180,8 +184,8 @@ contains
          getVortexModelString = "CLE15"
       case default
          write (scratchMessage, '(a,i0)') "Unrecognized vortex model ID: ", vortexModelId
-         call allMessage(ERROR, trim(scratchMessage))
-         call nws08terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=trim(scratchMessage))
       end select
 
    end function getVortexModelString
@@ -192,13 +196,16 @@ contains
    !> @return The background wind model ID
    !----------------------------------------------------------------
    integer function getBackgroundWindModelId(backgroundWindModelStr) result(id)
-      use global, only: toLowercase, scratchMessage, allMessage, ERROR
+      use global, only: toLowercase, scratchMessage, allMessage
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       character(*), intent(in) :: backgroundWindModelStr
 
       character(len=len(backgroundWindModelStr)) :: backgroundWindModelStrLower
 
       backgroundWindModelStrLower = toLowercase(trim(backgroundWindModelStr))
+
+      id = -1
 
       select case (trim(adjustl(backgroundWindModelStrLower)))
       case ("radialvelocityweighted")
@@ -208,8 +215,8 @@ contains
       case default
          write (scratchMessage, '(3a)') "Unrecognized background wind model: '", &
             trim(backgroundWindModelStr), "'"
-         call allMessage(ERROR, trim(scratchMessage))
-         call nws08terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=trim(scratchMessage))
       end select
 
    end function getBackgroundWindModelId
@@ -219,7 +226,8 @@ contains
    !> @return The background wind model string
    !----------------------------------------------------------------
    character(256) function getBackgroundWindModelString()
-      use global, only: scratchMessage, allMessage, ERROR
+      use global, only: scratchMessage, allMessage
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
       select case (backgroundWindModelId)
@@ -229,8 +237,8 @@ contains
          getBackgroundWindModelString = "LC12"
       case default
          write (scratchMessage, '(a,i0)') "Unrecognized background wind model ID: ", backgroundWindModelId
-         call allMessage(ERROR, trim(scratchMessage))
-         call nws08terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=trim(scratchMessage))
       end select
 
    end function getBackgroundWindModelString
@@ -241,13 +249,16 @@ contains
    !> @return The BCalc ID
    !----------------------------------------------------------------
    integer function getBCalcId(BCalcStr) result(id)
-      use global, only: toLowercase, scratchMessage, allMessage, ERROR
+      use global, only: toLowercase, scratchMessage, allMessage
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       character(*), intent(in) :: BCalcStr
 
       character(len=len(BCalcStr)) :: BCalcStrLower
 
       BCalcStrLower = toLowercase(trim(BCalcStr))
+
+      id = -1
 
       select case (trim(adjustl(BCalcStrLower)))
       case ("exact")
@@ -257,8 +268,8 @@ contains
       case default
          write (scratchMessage, '(3a)') "Unrecognized BCalc: '", &
             trim(BCalcStr), "'"
-         call allMessage(ERROR, trim(scratchMessage))
-         call nws08terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=trim(scratchMessage))
       end select
 
    end function getBCalcId
@@ -268,7 +279,8 @@ contains
    !> @return The BCalc string
    !----------------------------------------------------------------
    character(256) function getBCalcString()
-      use global, only: scratchMessage, logMessage, ERROR
+      use global, only: scratchMessage, logMessage
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
       select case (BCalcId)
@@ -278,8 +290,8 @@ contains
          getBCalcString = "limited"
       case default
          write (scratchMessage, '(a,i0)') "Unrecognized BCalc ID: ", BCalcId
-         call allMessage(ERROR, trim(scratchMessage))
-         call nws08terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=trim(scratchMessage))
       end select
 
    end function getBCalcString
@@ -290,6 +302,7 @@ contains
    !----------------------------------------------------------------
    subroutine readNws08Namelist(iounit)
       use global, only: WARNING, screenMessage, scratchMessage, logMessage, toLowercase, logNamelistReadStatus
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       real(8), parameter :: eps = epsilon(1.0d0)
       integer, intent(in) :: iounit
@@ -315,8 +328,8 @@ contains
       ! Check if the specified unit is open for read
       inquire (UNIT=iounit, IOSTAT=io_stat)
       if (io_stat /= 0) then
-         call allMessage(ERROR, "fort.15 file is not open for read.")
-         call nws08terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="fort.15 file is not open for read.")
       end if
 
       ! CPB: add nws8Control namelist defaults
@@ -409,6 +422,7 @@ contains
    subroutine NWS08INIT(timeloc)
       use MESH, only: SLAM, SFEA, NP
       use ADC_CONSTANTS, only: RAD2DEG
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       implicit none
 
@@ -439,12 +453,11 @@ contains
          else
             i = i + 1
             if (i > size(CastTime)) then
-               call allMessage(ERROR, &
-                               "The Storm Hindcast/Forecast Input File (unit 22) " &
-                               //"does not contain times/dates that correspond " &
-                               //"to the ADCIRC current model time. " &
-                               //" ADCIRC terminating.")
-               call nws08terminate()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                              message="The Storm Hindcast/Forecast Input File (unit 22) " &
+                              //"does not contain times/dates that correspond " &
+                              //"to the ADCIRC current model time. " &
+                              //"ADCIRC terminating.")
             end if
          end if
       end do
@@ -828,6 +841,7 @@ contains
    subroutine GetHollandStormData(LatOut, LonOut, CPressOut, SpdOut, &
                                   RRPOut, RMWOut, TVXOut, TVYOut, TIMELOC)
       use VORTEX, only: uvtrans
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       real(8), intent(in) :: TIMELOC
       real(8), intent(out) :: LatOut, LonOut, CPressOut
@@ -847,9 +861,9 @@ contains
          ! jgf51.14: Check to see that we haven't gone off the end of
          ! meteorological data.
          if (i > size(CastTime)) then
-            call allMessage(ERROR, 'The simulation time has extended '// &
-                            'beyond the end of the meteorological dataset.')
-            call nws08terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                           message='The simulation time has extended beyond the end '// &
+                           'of the meteorological dataset.')
          end if
       end if
 
@@ -893,6 +907,7 @@ contains
       use SIZES, only: GBLINPUTDIR
       use GLOBAL, only: RNDAY, openFileForRead, timeconv
       use VORTEX, only: uvtrans
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       integer, allocatable :: iYear(:), iMth(:), iDay(:), iHr(:)
       integer, allocatable :: iLat(:), iLon(:)
@@ -916,10 +931,9 @@ contains
       nl = 0
       call openFileForRead(22, trim(GBLINPUTDIR)//'/'//'fort.22', ios)
       if (ios > 0) then
-         call allMessage(ERROR, &
-                         "The symmetric vortex parameter file was not found. " &
-                         //"ADCIRC terminating.")
-         call nws08terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="The symmetric vortex parameter file was not found. " &
+                        //"ADCIRC terminating.")
       end if
 
       do
@@ -1012,10 +1026,9 @@ contains
             ! zero (and they will be if unless the user has filled them in, because
             ! the NHC does not forecast these parameters), exit with a fatal error.
             if ((iCPress(i) == 0) .or. (iRMW(i) == 0)) then
-               call allMessage(ERROR, &
-                               'The storm hindcast/forecast input file (unit 22) '// &
-                               'contains invalid data for central pressure or Rmax.')
-               call nws08terminate()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                              message='The storm hindcast/forecast input file (unit 22) '// &
+                              'contains invalid data for central pressure or Rmax.')
             end if
 
             ! @jasonfleming: Adding a new type to allow the analyst to add lines
@@ -1040,10 +1053,9 @@ contains
             end if
 
          case DEFAULT ! unrecognized
-            call allMessage(ERROR, &
-                            'Only "BEST", "OFCL", or "CALM" are allowed '// &
-                            'in the 5th column of fort.22.')
-            call nws08terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                           message='Only "BEST", "OFCL", or "CALM" are allowed '// &
+                           'in the 5th column of fort.22.')
          end select
 
          ! Convert integers to reals.
@@ -1102,8 +1114,8 @@ contains
       ! @jasonfleming: Check to see if there is enough data to cover
       ! the whole run and bomb out immediately if there isn't.
       if (castTime(pl) < RNDAY*86400.d0) then
-         call allMessage(ERROR, 'The fort.22 file ends before RNDAY.')
-         call nws08terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message='The fort.22 file ends before RNDAY.')
       end if
 
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -1624,31 +1636,5 @@ contains
          FoundEye = .true.
       end if
    end subroutine update_storm_eye_position
-
-!----------------------------------------------------------------------
-!...  Terminate routine that can be used locally until this function
-!...  is generalized across all modules in the code
-!----------------------------------------------------------------------
-   subroutine nws08terminate()
-#ifdef CMPI
-      use MESSENGER, only: MSG_FINI
-#endif
-      implicit none
-      call setMessageSource("nws08terminate")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
-      call allMessage(ERROR, "ADCIRC terminating.")
-#ifdef CMPI
-      call msg_fini()
-#endif
-      call exit(1)
-
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
-   end subroutine nws08terminate
 
 end module mod_nws08

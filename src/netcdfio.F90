@@ -57,7 +57,7 @@
 !=================================================================
 module NETCDFIO
    use SIZES, only: OFF, ASCII, SPARSE_ASCII, NETCDF3, NETCDF4, XDMF
-   use NETCDF_ERROR, only: CHECK_ERR, NETCDFTERMINATE
+   use NETCDF_ERROR, only: CHECK_ERR
    use GLOBAL, only: DEBUG, ECHO, INFO, WARNING, ERROR, screenMessage, logMessage, allMessage, setMessageSource, &
                      unsetMessageSource, scratchMessage
 
@@ -414,9 +414,6 @@ contains
    subroutine initNetCDFOutputFile(descript1, reterr)
       use GLOBAL, only: OutputDataDescript_t
       use GLOBAL_3DVS, only: outputFort48
-#ifdef CMPI
-      use MESSENGER, only: msg_fini
-#endif
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript1
       logical, intent(out) :: reterr
@@ -580,9 +577,6 @@ contains
                         STATNAMEM, IDEN
       use GLOBAL_3DVS, only: STATNAMED, STATNAMEV3D, STATNAMET
       use MESH, only: ICS
-#ifdef CMPI
-      use MESSENGER, only: msg_fini
-#endif
       implicit none
 
       type(stationData), intent(inout) :: sta
@@ -3888,7 +3882,6 @@ contains
                         allMessage, scratchMessage
 #ifdef CMPI
       use global, only: debug
-      use MESSENGER, only: MSG_FINI
 #endif
       implicit none
       integer, intent(out) :: ncid
@@ -8076,10 +8069,7 @@ contains
 #ifdef CSWAN
       use GLOBAL, only: swan_rsnx1, swan_rsnx2, swan_rsny1, swan_rsny2
 #endif
-
-#ifdef CMPI
-      use MESSENGER, only: MSG_FINI
-#endif
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
       integer, intent(in) :: lun
@@ -8118,11 +8108,8 @@ contains
          write (scratchMessage, '(a,a,a)') 'The file ', &
             trim(adjustl(hs%myFile%FILENAME)), &
             ' was not found; ADCIRC terminating.'
-         call allMessage(ERROR, scratchMessage)
-#ifdef CMPI
-         call MSG_FINI()
-#endif
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=scratchMessage)
       else
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          call check_err(iret)
@@ -8403,6 +8390,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine readAndMapToSubdomainMaxMinNetCDF(descript, timeloc)
       use sizes, only: mnproc, myproc
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use global, only: OutputDataDescript_t, allMessage, logMessage, nfover
 #ifdef CMPI
       use mesh, only: np
@@ -8562,10 +8550,9 @@ contains
                             'perhaps during a previously attempted hot start run. '// &
                             ' Its values will not be read.')
             if (nfover == 0) then
-               call allMessage(ERROR, &
-                               'Execution terminated due to invalid '// &
-                               trim(dat%myFile%filename)//' file.')
-               call netcdfTerminate()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                              message='Execution terminated due to invalid '// &
+                              trim(dat%myFile%filename)//' file.')
             else
                call allMessage(INFO, 'The record for '// &
                                trim(dat%myFile%filename)// &
@@ -8974,6 +8961,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine readNetCDFHotstartHarmonic(lun)
       use SIZES, only: mnproc
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use GLOBAL, only: OutputDataDescript_t, &
                         IMAP_STAE_LG, NSTAE, IMAP_STAV_LG, NSTAV
       use HARM, only: GLOELV, STAELV, GLOULV, GLOVLV, STAULV, STAVLV, &
@@ -8981,9 +8969,7 @@ contains
                       INZ, INF, IMM, INSTAE, INSTAV, INHASE, INHASV, &
                       INHASE, INHAGE, INHAGV, ICALL, INFREQ, TIMEUD, &
                       ITUD, HA, INAMEFR, INP, IFF, IFACE, IFREQ
-#ifdef CMPI
-      use MESSENGER, only: MSG_FINI
-#endif
+
       implicit none
 
       integer, intent(in) :: lun
@@ -9013,12 +8999,10 @@ contains
 !     Open fulldomain file
       inquire (FILE=hs%myFile%FILENAME, EXIST=hs%myFile%fileFound)
       if (hs%myFile%fileFound .eqv. .false.) then
-         write (*, *) "ERROR: The file ", hs%myFile%FILENAME, &
-            " was not found; ADCIRC terminating."
-#ifdef CMPI
-         call MSG_FINI()
-#endif
-         call exit(1)
+         write (scratchMessage, '(a,a,a)') "The file ", &
+            trim(hs%myFile%FILENAME), " was not found; ADCIRC terminating."
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=scratchMessage)
       else
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          call check_err(iret)
@@ -9300,12 +9284,11 @@ contains
 !-----------------------------------------------------------------------
    subroutine readNetCDFHotstartHarmonicMeansVariances(lun)
       use SIZES, only: MNPROC
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use GLOBAL, only: OutputDataDescript_t
       use HARM, only: ELAV, ELVA, XVELAV, YVELAV, XVELVA, YVELVA, &
                       NTSTEPS, NHAGE, NHAGV
-#ifdef CMPI
-      use MESSENGER, only: MSG_FINI
-#endif
+
       implicit none
 
       integer, intent(in) :: lun
@@ -9332,12 +9315,10 @@ contains
 !     Open fulldomain file
       inquire (FILE=hs%myFile%FILENAME, EXIST=hs%myFile%fileFound)
       if (hs%myFile%fileFound .eqv. .false.) then
-         write (*, *) "ERROR: The file ", hs%myFile%FILENAME, &
-            " was not found; ADCIRC terminating."
-#ifdef CMPI
-         call MSG_FINI()
-#endif
-         call exit(1)
+         write (scratchMessage, '(a,a,a)') "The file ", &
+            trim(hs%myFile%FILENAME), " was not found; ADCIRC terminating."
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=scratchMessage)
       else
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          call check_err(iret)
@@ -9439,9 +9420,7 @@ contains
                              l, n3dsd, i3dsdrec, n3dsv, i3dsvrec, n3dst, i3dstrec, n3dgd, &
                              i3dgdrec, n3dgv, i3dgvrec, n3dgt, i3dgtrec
       use MESH, only: NP
-#ifdef CMPI
-      use MESSENGER, only: MSG_FINI
-#endif
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
       integer, intent(in) :: lun
@@ -9471,12 +9450,10 @@ contains
 !     Open fulldomain file
       inquire (FILE=hs%myFile%FILENAME, EXIST=hs%myFile%fileFound)
       if (hs%myFile%fileFound .eqv. .false.) then
-         write (*, *) "ERROR: The file ", hs%myFile%FILENAME, &
-            " was not found; ADCIRC terminating."
-#ifdef CMPI
-         call MSG_FINI()
-#endif
-         call exit(1)
+         write (scratchMessage, '(a,a,a)') "The file ", &
+            trim(hs%myFile%FILENAME), " was not found; ADCIRC terminating."
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=scratchMessage)
       else
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          call check_err(iret)

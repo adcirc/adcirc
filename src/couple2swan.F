@@ -635,8 +635,6 @@ C-----------------------------------------------------------------------
       USE WRITER,       ONLY: FLUSH_WRITERS,
      &                        NUM_BUF_MAX,  !st3 100708: check writer buffer
      &                        sendDataToWriter
-      USE MESSENGER,   ONLY : MSG_FINI,       !st3 100708: check writer buffer
-     &                        subDomainFatalError
 #endif
 
       USE WRITE_OUTPUT, ONLY : SwanHSDescript,SwanDIRDescript,SwanTM01Descript,

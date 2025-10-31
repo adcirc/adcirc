@@ -33,9 +33,6 @@ C
 C
       USE SIZES,ONLY : MYPROC
       USE GLOBAL,ONLY : NSCREEN, ScreenUnit
-#ifdef CMPI
-      USE MESSENGER,ONLY : MSG_FINI
-#endif         
       IMPLICIT NONE
       character*100 :: title
 
@@ -88,6 +85,7 @@ C***********************************************************************
       SUBROUTINE NCICE1_INIT(Ciceval,NP)
 
       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       IMPLICIT NONE
       INTEGER   NP,I
@@ -109,12 +107,9 @@ C***********************************************************************
       read(25,*,err=99999) numSets
 
       if(numSets.NE.1.AND.numSets.NE.2) then
-        if (myproc == 0) write(screenunit,1004)
-        write(16,1004)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        CALL EXIT(1)
+        call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &     message='Number of sets was specified incorrectly in '
+     &            //'unit 25. It must be either 1 or 2.')
       endif
 
       ! Read the number of blank snaps to be inserted before OWI ice fields start
@@ -205,11 +200,9 @@ C***********************************************************************
 
 99999 CONTINUE
 
-#ifdef CMPI
-      call msg_fini()
-#endif
-      write(*,'(a)') 'OWI_ICE READ ERROR (1)'
-      CALL EXIT(1)
+      if(myproc.eq.0)write(*,'(a)') 'OWI_ICE READ ERROR (1)'
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='OWI_ICE read error in fort.25 initialization')
 
       END SUBROUTINE
 
@@ -219,6 +212,7 @@ C***********************************************************************
 
       SUBROUTINE NCICE1_GET(Ciceval,NP)
       USE SIZES,ONLY : MYPROC,MNPROC
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       IMPLICIT NONE
 
@@ -313,20 +307,11 @@ C***********************************************************************
         iMinR = iMinc
 
         if(iCYMDHB.ne.iCYMDHR.or.iMinB.ne.iMinR) then
-          if (myproc == 0) then
-            WRITE(screenunit,*) 'SNAPSHOTS NOT SYNCRONIZED'
-            WRITE(screenunit,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-            WRITE(screenunit,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-            WRITE(screenunit,*) 'EXECUTION WILL BE TERMINATED'
-          endif
           WRITE(16,*) 'SNAPSHOTS NOT SYNCRONIZED'
           WRITE(16,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
           WRITE(16,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-          WRITE(16,*) 'EXECUTION WILL BE TERMINATED'
-#ifdef CMPI
-          call msg_fini()
-#endif
-          CALL EXIT(1)
+          call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &       message='OWI_ICE snapshots not synchronized')
         endif
 
         ! Update coordinate mapping coefficients if necessary
@@ -463,15 +448,8 @@ c      end if
       WRITE(screenunit,*)''
       endif
 
-      WRITE(16,*) ''
-      WRITE(16,*) ' !!!!!FATAL ERROR!!!!!'
-      WRITE(16,*) ' EITHER UNIT 225 or 227 COULD NOT BE READ'
-      WRITE(16,*) ' EXECUTION WILL BE TERMINATED'
-      WRITE(16,*) ''
-#ifdef CMPI
-      call msg_fini()
-#endif
-      CALL EXIT(1)
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='Either unit 225 or 227 could not be read')
 
 10000 continue
 
@@ -508,11 +486,9 @@ c      end if
       
 99999 CONTINUE
 
-#ifdef CMPI
-      call msg_fini()
-#endif
-      write(*,'(a)') 'OWI_ICE READ ERROR (2)'
-      CALL EXIT(1)
+      if(myproc.eq.0)write(*,'(a)') 'OWI_ICE READ ERROR (2)'
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='OWI_ICE read error in ice field data')
 
       END SUBROUTINE
 

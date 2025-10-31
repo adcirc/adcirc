@@ -548,13 +548,13 @@ C     jgf51.21.24: Read the nodal attributes in XDMF format.
 C     ----------------------------------------------------------------
       SUBROUTINE readNodalAttrXDMF()
       USE MESH, ONLY : replaceNullsWithSpaces
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
 #ifndef ADCXDMF
-      call allMessage(ERROR,
-     & 'An XDMF formatted nodal attributes (fort.13) file was specified.')
-      call allMessage(ERROR,
-     & 'This ADCIRC executable was not compiled with XDMF support.')
-      call na_terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='An XDMF formatted nodal attributes (fort.13) file '
+     &          //'was specified. This ADCIRC executable was not '
+     &          //'compiled with XDMF support.')
 #else
       include 'Xdmf.f'
       integer*8 :: xdmfFortranObj ! object that receives the data
@@ -600,10 +600,10 @@ C     Determine if the Nodal Attributes File exists.
       INQUIRE(FILE=TRIM(naFileName),EXIST=NAFound)
 C
       IF (.not.NAFound) THEN
-         write(scratchMessage,'(a)') 'The XDMF nodal attributes file' //
-     &       trim(naFileName)//'was not found.'
-         call allMessage(ERROR, scratchMessage)
-         call na_terminate()
+         write(scratchMessage,'(a)') 'The XDMF nodal attributes file '//
+     &       trim(naFileName)//' was not found.'
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message=scratchMessage)
       ENDIF
 
       write(6,'(a)') 'INFO: Reading data from the "' 
@@ -876,6 +876,7 @@ C     (fort.15) file, but is not present in the nodal attributes (fort.13)
 C     file, then we write out an error message and quit.
 C     ----------------------------------------------------------------
       subroutine checkForMissingNodalAttributes()
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 C
 C     Determine if there are any attributes required by the fort.15 file
@@ -916,8 +917,8 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
  1111   FORMAT('Nodal Attributes file (unit 13) does ',
      &        'not contain all the attributes listed in the ',
      &        'model parameter file (unit 15).')
-         call allMessage(ERROR, scratchMessage)
-         call na_terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message=scratchMessage)
       ENDIF
 C     ----------------------------------------------------------------
       end subroutine checkForMissingNodalAttributes
@@ -985,6 +986,7 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
       USE MESH, ONLY : NP
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
       INTEGER, intent(in) :: ScreenUnit ! i/o for screen
@@ -1017,11 +1019,11 @@ C     Check to make sure that NWP is a valid number.
          ENDIF
          WRITE(16,9972)
          WRITE(16,*) 'NWP =',NWP
-         WRITE(16,9728)
-         WRITE(16,9973)
  9728    FORMAT(/,1X,'Your selection of NWP (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-         CALL EXIT(1)          ! We're toast.
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Your selection of NWP (a UNIT 15 input '
+     &             //'parameter) is not an allowable value')
       ENDIF
 C
 C     Check to see if there are nodal attributes to be read in. If not,
@@ -1120,15 +1122,9 @@ C     Determine if the Nodal Attributes File exists.
       INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.13',EXIST=NAFound)
 C
       IF (.not.NAFound) THEN
-         WRITE(16,1001)         ! Nodal Attributes file
-         WRITE(16,1011)         ! was not found.
-         WRITE(16,9973)         ! execution terminated
-         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,1001)
-            WRITE(ScreenUnit,1011)
-            WRITE(ScreenUnit,9973)      ! execution terminated
-         ENDIF
-         CALL EXIT(1)
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='The Nodal Attributes File (unit 13) was not '
+     &             //'found.')
       ENDIF
 C
 C     Now open the nodal attributes (unit 13) file.
@@ -1138,15 +1134,9 @@ C     Now open the nodal attributes (unit 13) file.
       OPEN(UNIT=13, FILE=TRIM(INPUTDIR)//'/'//'fort.13',
      &     IOSTAT=ErrorIO)
       IF ( ErrorIO .GT. 0 ) THEN
-         WRITE(16,1001)         ! Nodal attribute file
-         WRITE(16,1005)         ! exists but can't be opened
-         WRITE(16,9973)         ! execution terminated
-         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,1001)
-            WRITE(ScreenUnit,1005)
-            WRITE(ScreenUnit,9973)
-         ENDIF
-         CALL EXIT(1)                 ! We're toast.
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='The Nodal Attributes File (unit 13) exists but '
+     &             //'cannot be opened.')
       ENDIF
 C
 C     Read each attribute name, units, number of values, and default value
@@ -1164,13 +1154,13 @@ C     be stopped immediately if this is not the right nodal attributes
 C     file for this mesh.
       if ( (nwp.ne.0).and.(numOfNodes.ne.np) ) then
          write(scratchMessage,9901) np, numOfNodes
-         call allMessage(ERROR,scratchMessage)
-         call na_terminate()
  9901   format('The number of nodes in the mesh file (unit 14) is ',i0,
      &  'while the number of nodes listed on the 2nd line of the '//
      &  'nodal attributes file (unit 13) is ',i0,'.'//
      &  'These numbers must match. '//
      &  'Is this the right nodal attributes file for this mesh file?')
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message=scratchMessage)
       endif
 C      
       READ(13,*) NAttr          ! number of attributes in the unit 13 file
@@ -1762,6 +1752,7 @@ C     ----------------------------------------------------------------
       SUBROUTINE InitNodalAttr(DP, NP, G, NScreen, ScreenUnit,
      &     MyProc, NAbOut, Z0B)
       USE GLOBAL, ONLY : C3D, C2DDI, CBaroclinic
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in the grid file
       REAL(8), intent(in), dimension(NP) :: DP ! array of bathymetric depths
@@ -1788,45 +1779,37 @@ C     ERROR CHECK: If a nodal attributes file is being used, check to
 C     see that the number of nodes in the nodal attribute file is the
 C     same as the number of nodes in the grid file.
       IF (NWP.NE.0.AND.NumOfNodes.NE.NP) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9900)
-         WRITE(16,9900)
- 9900    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
-     &        //,1X,'The number of nodes in the grid file (unit 14) and'
-     &        /,1X,'the nodal attributes file (unit 13) must match.',
-     &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         CALL EXIT(1)                 ! We're toast.
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='The number of nodes in the grid file (unit 14) '
+     &             //'and the nodal attributes file (unit 13) must '
+     &             //'match.')
       ENDIF
 C
 C     ERROR CHECK: If Chezy, Manning's or Quadratic friction was loaded
 C     from the nodal attributes file, NOLIBF must be 1.
       IF ((LoadChezy.or.LoadManningsN.or.LoadQuadraticFric).and.
      &     NoLiBF.ne.1.AND.NOLIBF.NE.3) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9800)
-         WRITE(16,9800)
- 9800    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
-     &        //,1X,'Nonlinear bottom friction coefficients were loaded'
-     &        /,1X,'from the nodal attributes file (unit 13), so ',
-     &        /,1X,'NoLiBF must be set to 1. It is set to ',i2,' in',
-     &        /,1X,'the model parameter (unit 15) file.',
-     &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         CALL EXIT(1)                 ! We're toast.
+         WRITE(16,9800) NoLiBF
+ 9800    FORMAT('NoLiBF is set to ',i2,' in the model parameter '//
+     &        '(unit 15) file.')
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Nonlinear bottom friction coefficients were '
+     &             //'loaded from the nodal attributes file (unit 13), '
+     &             //'so NoLiBF must be set to 1.')
       ENDIF
 C
 C     ERROR CHECK: If Tau0=-3.x or -6.x in fort.15, then tau0 MUST be loaded
 C     from nodal attributes file.
       IF ( ((Tau0Dig1.eq.-3).or.(Tau0Dig1.eq.-6))
      &          .and.(.not.LoadTau0) ) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9700) Tau0
-         WRITE(16,9700)
- 9700    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
-     &        //,1X,'Spatially and temporally varying tau0 was '
-     &        /,1X,'specified in the fort.15 file with Tau0=',E9.2,
-     &        /,1X,'but the base value was not specified in the '
-     &        /,1X,'nodal attributes file (unit 13). Please ',
-     &        /,1X,'load the base value using',
-     &        /,1X,'primitive_weighting_in_continuity_equation.',
-     &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         CALL EXIT(1)                 ! We're toast.
+         WRITE(16,9700) Tau0
+ 9700    FORMAT('Spatially and temporally varying tau0 was specified '//
+     &        'in the fort.15 file with Tau0=',E9.2)
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='The base tau0 value was not specified in the '
+     &             //'nodal attributes file (unit 13). Please load the '
+     &             //'base value using '
+     &             //'primitive_weighting_in_continuity_equation.')
       ENDIF
 C
 C     ERROR CHECK: The canopy coefficient value should be either 0 or 1;
@@ -2980,6 +2963,7 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE ReadLegacyStartDryFile(NP, NScreen, ScreenUnit,
      &     MyProc, NAbOut)
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in grid file
       INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
@@ -3005,13 +2989,9 @@ C
 C...  CHECK THAT NE2 AND NP2 MATCH WITH GRID FILE
 C      IF((NE2.NE.NE).OR.(NP2.NE.NP)) THEN
        IF(NP2.NE.NP) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9900)
-         WRITE(16,9900)
- 9900    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
-     &        //,1X,'THE PARAMETER NE2 AND NP2 MUST MATCH NE AND NP ',
-     &        /,1X,'USER MUST CHECK FORT.12 INPUT FILE ',
-     &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         CALL EXIT(1)
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='The parameter NE2 and NP2 must match NE and NP. '
+     &             //'User must check fort.12 input file.')
       ENDIF
 C
 C...  READ IN STARTDRY CODE VALUES
@@ -3050,6 +3030,7 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE ReadLegacyBottomFrictionFile(NP, NScreen, ScreenUnit,
      &     MyProc, NAbOut)
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in grid file
       INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
@@ -3065,14 +3046,10 @@ C     ----------------------------------------------------------------
       DO I=1,NP
          READ(21,*) NHG,FRIC(NHG)
          IF(NHG.NE.I) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99803)
-            WRITE(16,99803)
-99803       FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ',
-     &           'INPUT ERROR  !!!!!!!!!',//,1X,
-     &           'YOUR NODAL FRICTION NUMBERING IS NOT SEQUENTIAL ',
-     &           /,1X,'CHECK YOUR UNIT 21 INPUT FILE CAREFULLY',//,1X,
-     &           '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-            CALL EXIT(1)
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Your nodal friction numbering is not '
+     &                //'sequential. Check your unit 21 input file '
+     &                //'carefully.')
          ENDIF
       END DO
       WRITE(16,3601) AFRIC
@@ -3093,46 +3070,6 @@ C
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE ReadLegacyBottomFrictionFile
-C     ----------------------------------------------------------------
-
-
-C     ----------------------------------------------------------------
-C        S U B R O U T I N E   N A _ T E R M I N A T E
-C     ----------------------------------------------------------------
-C     Provide clean termination when an error occurs.
-C     ----------------------------------------------------------------
-      SUBROUTINE na_terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, allMessage,
-     &   DEBUG, ECHO, INFO, WARNING, ERROR  
-      IMPLICIT NONE 
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("terminate")
-#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1) 
-C
-#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-C     ----------------------------------------------------------------
-      END SUBROUTINE na_terminate
 C     ----------------------------------------------------------------
 
 

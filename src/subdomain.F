@@ -85,9 +85,11 @@ C    ========================================================================
 
 
          Use sizes, only : myproc
+         use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #ifdef CMPI
          use global, only : nodes_lg
          use mesh, only : np
+         use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
          Use MESSENGER 
 #endif
          implicit none
@@ -102,10 +104,10 @@ C    ========================================================================
          fileFound = .false.
          inquire(file=trim(globaldir)//'/'//'fort.015', Exist=fileFound)
          if (fileFound.eqv..false.) then
-            call allMessage(ERROR,
-     &       'Subdomain modeling was activated but the fort.015 file '
-     &       // ' was not found in "' // trim(globaldir) // '".')
-            call subdomainTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Subdomain modeling was activated but the '
+     &                //'fort.015 file was not found in "'
+     &                //trim(globaldir)//'".')
          endif
 
          if (myproc.eq.0) print *, "Subdomain Active"
@@ -137,8 +139,8 @@ C    ========================================================================
                read(1015,*) ibnr(i)
             enddo
          case default        
-            call allMessage(ERROR,'The NOUTGS value is invalid.')
-            call subdomainTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='The NOUTGS value is invalid.')
          end select
 #ifdef CMPI
          ! localize global record-node arrays:
@@ -193,8 +195,8 @@ C    ========================================================================
                endif
             enddo
          case default
-            call allMessage(ERROR,'The NOUTGS value is invalid.')
-            call subdomainTerminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='The NOUTGS value is invalid.')
          end select
 #endif
 
@@ -406,6 +408,7 @@ C     | finds the proper place in the b.c. file.
          Use SIZES, only : myproc
          Use GLOBAL, only : iths
          USE BOUNDARIES, ONLY : neta
+         use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #ifdef CMPI
          Use MESSENGER
 #endif
@@ -426,9 +429,11 @@ C     | finds the proper place in the b.c. file.
              read(1019,*) cbn(i)
          enddo
          if (abs(ncbn-neta).gt.1) then
-             print *, "WARNING: ncbn=!neta"
-             print *,  ncbn,neta,myproc
-             CALL subdomainTerminate()
+             write(scratchMessage,'(A,I0,A,I0,A,I0)')
+     &          'ncbn != neta: ncbn=',ncbn,', neta=',neta,
+     &          ', myproc=',myproc
+             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &          message=trim(scratchMessage))
          endif
          allocate(ecbn1(ncbn),ucbn1(ncbn),vcbn1(ncbn),wdcbn1(ncbn))
          allocate(ecbn2(ncbn),ucbn2(ncbn),vcbn2(ncbn),wdcbn2(ncbn))
@@ -458,6 +463,7 @@ C     | This subroutine opens fort.019 for a cold-started model
 
          Use SIZES, only : myproc
          USE BOUNDARIES, ONLY : neta
+         use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #ifdef CMPI
          Use MESSENGER
 #endif
@@ -478,9 +484,11 @@ C     | This subroutine opens fort.019 for a cold-started model
              read(1019,*) cbn(i)
          enddo
          if (abs(ncbn-neta).gt.1) then
-            print *, "WARNING: ncbn=!neta"
-            print *,  ncbn,neta,myproc
-            CALL subdomainTerminate()
+            write(scratchMessage,'(A,I0,A,I0,A,I0)')
+     &         'ncbn != neta: ncbn=',ncbn,', neta=',neta,
+     &         ', myproc=',myproc
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message=trim(scratchMessage))
          endif
          allocate(ecbn1(ncbn),ucbn1(ncbn),vcbn1(ncbn),wdcbn1(ncbn))
          allocate(ecbn2(ncbn),ucbn2(ncbn),vcbn2(ncbn),wdcbn2(ncbn))
@@ -845,41 +853,5 @@ C     | to recalculate COEF of outer-inner boundary nodes
 #endif
 
       END SUBROUTINE checkChange
-
-
-      !jgf: Added this subroutine to eliminate dependence on adcirc_mod
-      ! module, which should be built last to simplify the build system.
-      SUBROUTINE subdomainTerminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-         Use MESSENGER         
-#endif
-      implicit none
-c
-      logical, optional :: no_mpi_finalize
-C
-      call setMessageSource("subdomainTerminate")
-#if defined(SUBDOMAIN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1) 
-C
-#if defined(SUBDOMAIN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE subdomainTerminate
-
-
 
       end module subdomain

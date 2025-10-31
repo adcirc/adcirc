@@ -24,7 +24,7 @@ module netcdf_error
 
    private
 
-   public :: check_err, netcdfTerminate
+   public :: check_err
 
 contains
 
@@ -37,12 +37,10 @@ contains
 !-----------------------------------------------------------------------
    subroutine check_err(iret)
       use netcdf, only: NF90_NOERR, nf90_strerror
-      use global, only: ERROR, allMessage, setMessageSource, unsetMessageSource
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use global, only: allMessage, setMessageSource, unsetMessageSource
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       use global, only: DEBUG
-#endif
-#ifdef CMPI
-      use MESSENGER, only: MSG_FINI
 #endif
       implicit none
       integer, intent(in) :: iret
@@ -52,8 +50,8 @@ contains
       call allMessage(DEBUG, "Enter.")
 #endif
       if (iret /= NF90_NOERR) then
-         call allMessage(ERROR, nf90_strerror(iret))
-         call netcdfTerminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=nf90_strerror(iret))
       end if
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Return.")
@@ -61,62 +59,6 @@ contains
       call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine check_err
-!-----------------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-!     S U B R O U T I N E   N E T C D F   T E R M I N A T E
-!-----------------------------------------------------------------------
-   subroutine netcdfTerminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      use MESSENGER, only: msg_fini, subdomainFatalError
-#endif
-      use GLOBAL, only: setMessageSource, unsetMessageSource, &
-                        allMessage, INFO, allMessage
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      use global, only: DEBUG
-#endif
-      implicit none
-      logical, intent(in), optional :: NO_MPI_FINALIZE
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      real(8), allocatable :: dummy(:)
-#endif
-
-      call setMessageSource("netcdfTerminate")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
-
-      call allMessage(INFO, "ADCIRC Terminating.")
-
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      ! intentionally create a segmentation fault so that we can get
-      ! a stack trace to determine the line number of the netcdf call
-      ! that went bad ... this assumes that the code was compiled with
-      ! debugging symbols, bounds checking, and stack trace turned on.
-      allocate (dummy(1)) ! Allocating (too small) so that -Wuninitialized doesn't complain
-      dummy(2) = 99.9d0
-#endif
-
-      if (present(NO_MPI_FINALIZE)) then
-#ifdef CMPI
-         subdomainFatalError = .true.
-         call MSG_FINI(NO_MPI_FINALIZE)
-#endif
-         call exit(1)
-      else
-#ifdef CMPI
-         subdomainFatalError = .true.
-         call MSG_FINI()
-#endif
-         call exit(1)
-      end if
-
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-!-----------------------------------------------------------------------
-   end subroutine netcdfTerminate
 !-----------------------------------------------------------------------
 
 end module netcdf_error

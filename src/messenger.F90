@@ -67,7 +67,7 @@ module MESSENGER
    real(8), allocatable :: SENDBUF(:, :), RECVBUF(:, :)
    complex(8), allocatable :: SENDBUF_COMPLEX(:, :), RECVBUF_COMPLEX(:, :)
    !jgf50.82: Create a flag for unrecoverable issue on a subdomain
-   logical :: subdomainFatalError ! true if mpi_abort should be called
+   logical :: subdomainFatalError = .false. ! true if mpi_abort should be called
    logical :: writers_active = .false.
    logical :: hs_writers_active = .false.
 
@@ -214,7 +214,7 @@ contains
    !  Delete MPI resources and Shutdown MPI library.
    !  vjp  8/29/1999
    !---------------------------------------------------------------------
-   subroutine MSG_FINI(NO_MPI_FINALIZE)
+   subroutine MSG_FINI(DO_MPI_FINALIZE)
       use mpi_f08, only: MPI_Send, MPI_INTEGER, MPI_Barrier, MPI_Abort, MPI_Finalize, &
                          MPI_COMM_WORLD
 
@@ -226,7 +226,7 @@ contains
       use GLOBAL, only: DEBUG
 #endif
       implicit none
-      logical, optional, intent(in) :: NO_MPI_FINALIZE
+      logical, optional, intent(in) :: DO_MPI_FINALIZE
       integer :: I
 
       call setMessageSource("msg_fini")
@@ -258,8 +258,7 @@ contains
       end if
 
       if (subdomainFatalError .eqv. .true.) then
-         ! jgf50.82: Return the rank of the offending processor
-         ! as the error code
+         write (*, *) 'PROC ', MYPROC, ' IS ABORTING MPI_COMM_ADCIRC DUE TO FATAL ERROR'
          call MPI_ABORT(MPI_COMM_ADCIRC, MYPROC, IERR)
       end if
 
@@ -270,31 +269,32 @@ contains
       ! Note: mpi_comm_world is defined in mpich.f
       if (CPL2STWAVE .eqv. .true.) then
          if (Flag_ElevError .eqv. .true.) then
+            write (*, *) 'PROC ', MYPROC, &
+               ' IS ABORTING MPI_COMM_WORLD DUE TO ELEVATION ERROR'
             call mpi_abort(mpi_comm_world, myproc, ierr)
          end if
          ! DMW 202401 Check for velocity exceeding error level
          if (Flag_VelError .eqv. .true.) then
+            write (*, *) 'PROC ', MYPROC, &
+               ' IS ABORTING MPI_COMM_WORLD DUE TO VELOCITY ERROR'
             call mpi_abort(mpi_comm_world, myproc, ierr)
          end if
       end if
 
-      if (present(NO_MPI_FINALIZE)) then
-         if (.not. NO_MPI_FINALIZE) then
+      if (present(DO_MPI_FINALIZE)) then
+         if (DO_MPI_FINALIZE) then
             call MPI_FINALIZE(IERR)
-            if (MYPROC == 0) &
-               print *, "MPI terminated with Status = ", IERR
+            if (MYPROC == 0) write (*, '(A,I0)') "INFO: MPI terminated with status = ", IERR
          end if
       else
          call MPI_FINALIZE(IERR)
-         if (MYPROC == 0) &
-            print *, "MPI terminated with Status = ", IERR
+         if (MYPROC == 0) write (*, '(A,I0)') "INFO: MPI terminated with status = ", IERR
       end if
 
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Return.")
 #endif
       call unsetMessageSource()
-      return
       !---------------------------------------------------------------------
    end subroutine MSG_FINI
    !---------------------------------------------------------------------
@@ -316,7 +316,9 @@ contains
    !
    !  tcm v50.21 20110610 -- Changed I8 to I12 formats
    !---------------------------------------------------------------------
-   subroutine MSG_TABLE()
+   subroutine MSG_TABLE(NSTA3DD_IN, NSTA3DV_IN, NSTA3DT_IN, &
+                        NSTA3DD_G_OUT, NSTA3DV_G_OUT, NSTA3DT_G_OUT, &
+                        IMAP_STA3DD_LG_OUT, IMAP_STA3DV_LG_OUT, IMAP_STA3DT_LG_OUT)
       use SIZES, only: MNE, MNP, INPUTDIR, MYPROC
       use GLOBAL, only: IMAP_EL_LG, NODES_LG, FileFmtVersion, NP_G, NE_G, &
                         NSTAE, NSTAV, NSTAM, NSTAC, NSTAE_G, NSTAV_G, NSTAM_G, NSTAC_G, &
@@ -326,10 +328,12 @@ contains
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
 #endif
-      use GLOBAL_3DVS, only: NSTA3DD, NSTA3DV, NSTA3DT, &
-                             NSTA3DD_G, NSTA3DV_G, NSTA3DT_G, &
-                             IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG
       implicit none
+      integer, optional, intent(in) :: NSTA3DD_IN, NSTA3DV_IN, NSTA3DT_IN
+      integer, optional, intent(out) :: NSTA3DD_G_OUT, NSTA3DV_G_OUT, NSTA3DT_G_OUT
+      integer, allocatable, optional, intent(out) :: IMAP_STA3DD_LG_OUT(:)
+      integer, allocatable, optional, intent(out) :: IMAP_STA3DV_LG_OUT(:)
+      integer, allocatable, optional, intent(out) :: IMAP_STA3DT_LG_OUT(:)
       integer :: IDPROC, NLOCAL, I, J, jdumy_loc
       integer :: jdumy, jdumy_G, jdumy_max, inputFileFmtVn
       character(10) :: BlkName
@@ -482,28 +486,29 @@ contains
       end do
 
       !     jgf49.43.18: Add 3D station mappings if appropriate. Used by globalio.
-      if (C3D) then
-         read (18, 3015) NSTA3DD_G
-         if (NSTA3DD > 0) then
-            allocate (IMAP_STA3DD_LG(NSTA3DD))
-            do I = 1, NSTA3DD
-               read (18, '(I12)') IMAP_STA3DD_LG(I)
+      if (C3D .and. present(NSTA3DD_IN) .and. present(NSTA3DV_IN) .and. &
+          present(NSTA3DT_IN)) then
+         read (18, 3015) NSTA3DD_G_OUT
+         if (NSTA3DD_IN > 0) then
+            allocate (IMAP_STA3DD_LG_OUT(NSTA3DD_IN))
+            do I = 1, NSTA3DD_IN
+               read (18, '(I12)') IMAP_STA3DD_LG_OUT(I)
             end do
          end if
 
-         read (18, 3015) NSTA3DV_G
-         if (NSTA3DV > 0) then
-            allocate (IMAP_STA3DV_LG(NSTA3DV))
-            do I = 1, NSTA3DV
-               read (18, '(I12)') IMAP_STA3DV_LG(I)
+         read (18, 3015) NSTA3DV_G_OUT
+         if (NSTA3DV_IN > 0) then
+            allocate (IMAP_STA3DV_LG_OUT(NSTA3DV_IN))
+            do I = 1, NSTA3DV_IN
+               read (18, '(I12)') IMAP_STA3DV_LG_OUT(I)
             end do
          end if
 
-         read (18, 3015) NSTA3DT_G
-         if (NSTA3DT > 0) then
-            allocate (IMAP_STA3DT_LG(NSTA3DT))
-            do I = 1, NSTA3DT
-               read (18, '(I12)') IMAP_STA3DT_LG(I)
+         read (18, 3015) NSTA3DT_G_OUT
+         if (NSTA3DT_IN > 0) then
+            allocate (IMAP_STA3DT_LG_OUT(NSTA3DT_IN))
+            do I = 1, NSTA3DT_IN
+               read (18, '(I12)') IMAP_STA3DT_LG_OUT(I)
             end do
          end if
       end if
