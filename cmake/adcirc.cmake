@@ -61,14 +61,14 @@ if(BUILD_ADCIRC)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemerides.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws08.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
 
   if(NETCDF_WORKING)
     set(ADCIRC_SOURCES
         ${ADCIRC_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wind_modules/nws13.F90
         ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
   endif()
 
@@ -83,5 +83,8 @@ if(BUILD_ADCIRC)
 
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${ADCIRC_SOURCES})
+
+  # Set the linker language to Fortran for the executable
+  set_target_properties(adcirc PROPERTIES LINKER_LANGUAGE Fortran)
 
 endif(BUILD_ADCIRC)

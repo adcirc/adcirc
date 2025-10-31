@@ -2339,23 +2339,21 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
          if(FOUND_OWINC_NML)then
-            write(15,'(a,a,a,a,a,a,a)')
-     &         "&owiWindNetcdf NWS13File='",TRIM(ADJUSTL(NWS13File)),
-     &         "' NWS13ColdStartString='",
-     &         TRIM(ADJUSTL(NWS13ColdStartString)),
-     &         "' NWS13WindMultiplier='",
-     &         TRIM(ADJUSTL(NWS13WindMultiplier)),
-     &         "' NWS13GroupForPowell='",
-     &         TRIM(ADJUSTL(NWS13GroupForPowell)),"' /"
+            write(15, '(a)') '! -- Begin OWI Wind NetCDF Namelist --'
+            write(15,'(a,/,6a,/,a,f0.4,/a,i0,a)')
+     &         "&owiWindNetcdf ",
+     &         " NWS13File='",TRIM(ADJUSTL(NWS13File)),"'",
+     &         " NWS13ColdStartString='",TRIM(ADJUSTL(NWS13ColdStartString)),"'",
+     &         " NWS13WindMultiplier=", NWS13WindMultiplier,
+     &         " NWS13GroupForPowell=", NWS13GroupForPowell," /"
+            write(15, '(a)') '! -- End OWI Wind NetCDF Namelist --'
          endif
 #endif
 
-#ifdef DATETIME
          IF ( found_NWS14Grib2NetCdf_namelist ) THEN
              write(15,'(a,L3,a)') "&WindGrib2NetCdf"//
      &          " read_NWS14_NetCdf_using_core_0 = ", read_NWS14_NetCdf_using_core_0, "/"
          END IF
-#endif 
 
          ! Namelist of input variable for the full luni-Solar tidal potential function 
          IF ( foundTidalPotentialControlNamelist ) THEN
