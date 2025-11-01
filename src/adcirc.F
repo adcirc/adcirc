@@ -172,15 +172,18 @@ C******************************************************************************
             i = i + 1
             call GET_COMMAND_ARGUMENT(i, cmdlinearg)
             select case(trim(cmdlinearg))
-            case("-V","-v","--version") 
+            case("-h","--help")
+               call PRINT_HELP()
+               call exit(ADCIRC_EXIT_SUCCESS)
+            case("-V","-v","--version")
                ! write the version number string ... actually it is
-               ! a series of two or three numbers with two digits 
+               ! a series of two or three numbers with two digits
                ! separated by dots, e.g., 51.02 or 51.52.07
                write(*,'(a)') trim(adc_version)
-               call terminate(exit_code=ADCIRC_EXIT_SUCCESS)
+               call exit(ADCIRC_EXIT_SUCCESS)
             case("--hash")
                write(*,'(a)') trim(adc_hash)
-               call terminate(exit_code=ADCIRC_EXIT_SUCCESS)
+               call exit(ADCIRC_EXIT_SUCCESS)
             case default
                ! do nothing, this is some other command line argument
             end select
@@ -574,6 +577,53 @@ C...
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE ADCIRC_Final
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     SUBROUTINE PRINT_HELP
+C-----------------------------------------------------------------------
+C     Print detailed help information for adcirc/padcirc command-line
+C     options
+C-----------------------------------------------------------------------
+      SUBROUTINE PRINT_HELP()
+      USE VERSION, ONLY: adc_version
+      IMPLICIT NONE
+
+#ifdef CSWAN
+#ifdef CMPI
+      WRITE(*,'(A)') 'Usage: padcswan [OPTION]...'
+#else
+      WRITE(*,'(A)') 'Usage: adcswan [OPTION]...'
+#endif
+      WRITE(*,'(A)') 'ADvanced CIRCulation model coupled with SWAN for shelves, coastal seas, and estuaries.'
+#else
+#ifdef CMPI
+      WRITE(*,'(A)') 'Usage: padcirc [OPTION]...'
+#else
+      WRITE(*,'(A)') 'Usage: adcirc [OPTION]...'
+#endif
+      WRITE(*,'(A)') 'ADvanced CIRCulation model for shelves, coastal seas, and estuaries.'
+#endif
+
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'General options:'
+      WRITE(*,'(A)') '  -h, --help             display this help and exit'
+      WRITE(*,'(A)') '  -v, --version          output version information and exit'
+      WRITE(*,'(A)') '      --hash             output git commit hash and exit'
+      WRITE(*,'(A)') ''
+#ifdef CMPI
+      WRITE(*,'(A)') 'Parallel execution options:'
+      WRITE(*,'(A)') '  -W NUM                 number of dedicated writer processors for output files'
+      WRITE(*,'(A)') '  -Ws NUM                number of dedicated writer processors with split file output'
+      WRITE(*,'(A)') '  -H NUM                 number of dedicated writer processors for hotstart files'
+      WRITE(*,'(A)') ''
+#endif
+      WRITE(*,'(A)') 'Report bugs to <https://github.com/adcirc/adcirc/issues>.'
+      WRITE(*,'(A)') 'ADCIRC home page: <https://adcirc.org>.'
+      WRITE(*,'(A)') 'User documentation: <https://adcirc.github.io/adcirc/>.'
+
+      RETURN
+      END SUBROUTINE PRINT_HELP
 C-----------------------------------------------------------------------
 
 C******************************************************************************
