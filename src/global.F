@@ -691,10 +691,10 @@ C     kmd48.33bc - added variables for 3D boundary conditions
                                             ! 0 is use nearest neighbor if wet and H > 0.8H0
                                             ! 1 is use nearest neighbor if wet regardless if H > 0.8H0
 
-      ! 
+      !
       ! all info needed for self describing dataset in XDMF
       type xdmfMetaData_t
-         integer*8 :: xdmfFortranObj  ! object associated with the file
+         INTEGER(8) :: xdmfFortranObj  ! object associated with the file
          integer :: depthID    ! index of the depth attribute
          integer :: geometryID ! index of the Geometry data in the output file
          real(8), allocatable :: tempCoord(:,:) ! holds Geometry data

@@ -219,7 +219,7 @@ C***********************************************************************
       INTEGER   NP,I,J,XI,YI,K,ibar
       REAL(8)  Ciceval(*)
       REAL(8)  CV(4),CVbar
-      CHARACTER*80 PBLJAGF
+      CHARACTER(LEN=80) PBLJAGF
 
 
 ! Read basin data  ---------------------------------------------------------

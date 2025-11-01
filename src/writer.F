@@ -1133,7 +1133,7 @@ C-----------------------------------------------------------------------
 !
       type(OutputDataDescript_t) :: descript
       INTEGER npx, nex
-      CHARACTER*9 :: itstr  !tcm v51.26 added for time-stamped hot start file name adjustments
+      CHARACTER(LEN=9) :: itstr  !tcm v51.26 added for time-stamped hot start file name adjustments
 
       type(OutputDataDescript_t), SAVE :: Elev1Descript
       type(OutputDataDescript_t), SAVE :: Elev2Descript

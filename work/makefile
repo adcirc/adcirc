@@ -432,12 +432,11 @@ TIDE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(TIDE_MSRC) )
 NCE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NCE_MSRC) )
 
 ############################# Source & Object Files ######################
-#meb 04/20/2004 - added machdep.F onto POST_SRC
 
 METIS_SRC  =  metis.F
-PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F machdep.F
+PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F 
 ADC_SRC    =  adcirc.F weir_boundary.F90 wetdry.F read_input.F normal_flow_boundary.F90 cstart.F hstart.F gwce.F momentum.F vew1d.F timestep.F vsmy.F transport.F
-POST_SRC   =  adcpost.F post.F compare.F diffmerge.F machdep.F
+POST_SRC   =  adcpost.F post.F compare.F diffmerge.F 
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
 B13_SRC    =  build13.F
@@ -752,7 +751,6 @@ else
 $(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(NA_MOBJ)
 endif
 $(O_DIR)interp.o      :  interp.F
-$(O_DIR)machdep.o     :  machdep.F
 $(O_DIR)metis.o       :  metis.F $(PGLO_MOBJ)
 $(O_DIR)mkdir.o       :  mkdir.c cfi.h
 

@@ -44,7 +44,7 @@
 
       chunksOut = .false.
 
-      if(iargc().lt.2) then
+      if(COMMAND_ARGUMENT_COUNT().lt.2) then
          print *, 
      &   'Usage: inflate_xxxx <input file> <output file> chunkify'
          print *, "  <input file> can be 'STDIN'"
@@ -54,9 +54,9 @@
          stop
       endif
 
-      call getarg(1, filefrom)
-      call getarg(2, fileto)
-      if ( iargc().eq.3 ) call getarg(3,chunkify)
+      call GET_COMMAND_ARGUMENT(1, filefrom)
+      call GET_COMMAND_ARGUMENT(2, fileto)
+      if ( COMMAND_ARGUMENT_COUNT().eq.3 ) call GET_COMMAND_ARGUMENT(3,chunkify)
 
       if (chunkify.eq."chunkify") chunksOut = .true.
 

@@ -4513,7 +4513,7 @@ C-----------------------------------------------------------------------
       type(OutputDataDescript_t) :: descript
       LOGICAL TEST_HOTSTART     !jgf45.07 used for testing hot start capability
       INTEGER npx, nex
-      CHARACTER*9 :: itstr  !tcm v51.26 added for time-stamped hot start file name adjustments
+      CHARACTER(LEN=9) :: itstr  !tcm v51.26 added for time-stamped hot start file name adjustments
 C
       LOGICAL ncerror
       INTEGER numHotstartWrites ! number writes to hot start files

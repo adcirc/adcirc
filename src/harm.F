@@ -123,7 +123,7 @@ c***********************************************************************
       INTEGER :: IHARIND ! =1 if harmonic analysis was requested, 0 otherwise
       LOGICAL :: CHARMV=.false.  ! .true. for timeseries reconstruction
       INTEGER :: NFREQ                      ! number of frequencies
-      CHARACTER*10,ALLOCATABLE :: NAMEFR(:) ! "M2", "S2", etc
+      CHARACTER(LEN=10),ALLOCATABLE :: NAMEFR(:) ! "M2", "S2", etc
       REAL(8), ALLOCATABLE :: HAFREQ(:)    ! frequency (rad/s)
       REAL(8), ALLOCATABLE :: HAFF(:)      ! nodal factor
       REAL(8), ALLOCATABLE :: HAFACE(:)    ! equilibrium argument (deg)
@@ -205,11 +205,10 @@ C     match.
       INTEGER INHASE, INHASV, INHAGE, INHAGV, IFLAG
       INTEGER INFREQ, INSTAE, INSTAV, INP, INZ, INF, IMM, IICALL
       REAL(8),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
-      CHARACTER*10,ALLOCATABLE :: INAMEFR(:)
+      CHARACTER(LEN=10),ALLOCATABLE :: INAMEFR(:)
 C
-      CHARACTER*16 FNAME
-      CHARACTER*8 FNAM8(2)
-      EQUIVALENCE (FNAM8(1),FNAME)
+      CHARACTER(LEN=16) :: FNAME
+      CHARACTER(LEN=8) :: FNAM8(2)
 C
 C     jgf49.44: Raised output variables to module level and added
 C     full domain counterparts for globalio. These arrays represent
@@ -1839,6 +1838,7 @@ c
          READ(lun,REC=counter+1) FNAM8(1)
          READ(lun,REC=counter+2) FNAM8(2)
          counter = counter + 2
+         FNAME = FNAM8(1) // FNAM8(2)
          INAMEFR(I) = FNAME
          read(lun,REC=counter+1) ifreq(i)
          read(lun,REC=counter+2) iff(i)

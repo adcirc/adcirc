@@ -148,13 +148,11 @@ set(ADDITIONAL_FLAGS_UTLIITIES
 
 # ######################################################################################################################
 option(IBM "Format code for IBM based architectures" OFF)
-option(SGI "Format code for SGI based architectures" OFF)
 option(SUN "Format code for SUN based architectures" OFF)
 option(CRAY "Format code for CRAY based architectures" OFF)
 option(CRAYX1 "Format code for CRAYX1 based architectures" OFF)
 mark_as_advanced(
   IBM
-  SGI
   SUN
   CRAY
   CRAYX1)
