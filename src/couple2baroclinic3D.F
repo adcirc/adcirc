@@ -640,7 +640,7 @@ C-----------------------------------------------------------------------
       use global, only: basedatetime
 #endif
       implicit none
-      real*8,intent(in) :: TimeLoc
+      REAL(8),intent(in) :: TimeLoc
 C
       call setMessageSource("Initial_BC3D_NetCDF")
 #if defined(ALL_TRACE)

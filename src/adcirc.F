@@ -170,12 +170,12 @@ C******************************************************************************
       ! the ADCIRC version number and exit. This is to allow 
       ! external applications to query the version number so that
       ! they can behave in version-appropriate ways. 
-      argcount  = iargc()  ! get number of command line arguments
+      argcount  = COMMAND_ARGUMENT_COUNT()  ! get number of command line arguments
       if ((argcount.gt.0).and.(myproc.eq.0)) then
          i = 0
          do while (i.lt.argcount)
             i = i + 1
-            call getarg(i, cmdlinearg)
+            call GET_COMMAND_ARGUMENT(i, cmdlinearg)
             select case(trim(cmdlinearg))
             case("-V","-v","--version") 
                ! write the version number string ... actually it is
@@ -486,7 +486,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
       ENDIF
 
       call allMessage(INFO,"Begin timestepping.")
-      DO 100 ITIME=ITIME_BGN,ITIME_END
+      DO ITIME=ITIME_BGN,ITIME_END
         CALL TIMESTEP(ITIME,TimeLoc)
 
 #ifdef CSWAN
@@ -496,8 +496,8 @@ C             to then call the SWAN time-stepping subroutine.
           CALL PADCSWAN_RUN(ITIME)
         ENDIF
 #endif
-        if ( earlyterminate.ne.0 ) then 
-           call writeOutput2D(ITIME_END,TimeLoc) 
+        if ( earlyterminate.ne.0 ) then
+           call writeOutput2D(ITIME_END,TimeLoc)
            exit
         else
         !...WRITE OUTPUT
@@ -505,7 +505,7 @@ C             to then call the SWAN time-stepping subroutine.
         !        the SWAN time step has been completed.
             CALL writeOutput2D(ITIME,TimeLoc) ! =>see write_output.F
         endif
-100   CONTINUE
+      END DO
 
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_BGN = ITIME_END+1

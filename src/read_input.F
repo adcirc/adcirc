@@ -4550,12 +4550,12 @@ C     allocate harmonic analysis arrays
       IF(NFREQ.GT.0) WRITE(16,2330)
  2330 FORMAT(/,7X,'FREQUENCY',4X,'NODAL FACTOR',6X,'EQU.ARG(DEG)',
      +     1X,'CONSTITUENT',/)
-      DO 1201 I=1,NFREQ
+      DO I=1,NFREQ
          READ(15,'(A10)') NAMEFR(I)
          READ(15,*) HAFREQ(I),HAFF(I),HAFACE(I)
          WRITE(16,2331) HAFREQ(I),HAFF(I),HAFACE(I),NAMEFR(I)
  2331    FORMAT(4X,F15.12,2X,F10.7,5X,F10.3,7X,A10)
- 1201 CONTINUE
+      END DO
 
 C     read in interval information for harmonic analysis
 C     compute thas and thaf in terms of the number of time steps

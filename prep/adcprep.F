@@ -182,12 +182,12 @@ C
 C     jgf50.11: Parse command line arguments. This is needed initially
 C     so that fort.20 and fort.88 can be prepped individually (without
 C     having to do a prep all and without having to add menu items).
-      ARGCOUNT = IARGC() ! count up command line options
+      ARGCOUNT = COMMAND_ARGUMENT_COUNT() ! count up command line options
       IF (ARGCOUNT.gt.0) THEN
          I=0
          DO WHILE (I.lt.ARGCOUNT)
             I = I + 1
-            CALL GETARG(I, CMDLINEARG)
+            CALL GET_COMMAND_ARGUMENT(I, CMDLINEARG)
             WRITE(*,*) "INFO: Processing ",TRIM(CMDLINEARG)
             SELECT CASE(TRIM(CMDLINEARG))
             CASE("--partmesh")
@@ -210,12 +210,12 @@ C     having to do a prep all and without having to add menu items).
                strictBoundaries = .true.
             CASE("--np")
                I = I + 1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                READ(CMDLINEARG,*) MNPROC
             ! jgf51.21.27: Added options related to the mesh file
             case("-MFT","-mft","--MFT","--mft") ! mesh file type
                   i = i + 1
-                  call getarg(i, CMDLINEARG)
+                  call GET_COMMAND_ARGUMENT(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
                   case("ASCII","Ascii","ascii")
                      meshType = ASCII ! this is the default anyway
@@ -229,11 +229,11 @@ C     having to do a prep all and without having to add menu items).
             case("-MFN","-mfn","--MFN","--mfn") ! mesh file name
                meshFileNameSpecified = .true.
                i = i + 1
-               call getarg(i,meshFileName)
+               call GET_COMMAND_ARGUMENT(i,meshFileName)
             ! jgf51.21.27: Added options related to the nodal attributes file
             case("-NFT","-nft","--NFT","--nft") ! nodal attributes file type
                   i = i + 1
-                  call getarg(i, CMDLINEARG)
+                  call GET_COMMAND_ARGUMENT(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
                   case("ASCII","Ascii","ascii")
                      naType = ASCII ! this is the default anyway
@@ -248,7 +248,7 @@ C     having to do a prep all and without having to add menu items).
             case("--NFN","--nfn") ! nodal attributes file name
                   naFileNameSpecified = .true.
                   i = i + 1
-                  call getarg(i,naFileName)
+                  call GET_COMMAND_ARGUMENT(i,naFileName)
             case default
                   write(*,*) "WARNING: The command line option '",
      &                  trim(cmdlinearg),"' is not valid and will be ignored."
@@ -682,7 +682,7 @@ C-- Create MNPROC sub-directories of the working directory
 C
       DO PE=0, MNPROC-1
          PENUM  = 'PE0000'
-         CALL IWRITE(PENUM,3,6,PE)
+         WRITE(PENUM(3:6),'(I4.4)') PE
          !tcm 20110510 v50.05 adding support for windows
 #ifdef WINDOWS
          dir_result = makedirqq(PENUM) !tcm v50.85 added

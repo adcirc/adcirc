@@ -134,7 +134,7 @@
       usage = "Usage: adccmp gold_dir trial_dir varname1 "//
      &    "rel_err abs_err ..."
 
-      count = iargc()
+      count = COMMAND_ARGUMENT_COUNT()
       if (count < 5) then
         print *, usage
         stop
@@ -145,7 +145,7 @@
       iarg = 1
 
       reportFile = .FALSE.
-      call getarg(iarg, flag)
+      call GET_COMMAND_ARGUMENT(iarg, flag)
       if (flag(1:2) == "-r") then
         reportFile = .TRUE.
         iarg = iarg + 1
@@ -160,8 +160,8 @@
 
       call build_fileA(nfiles, fileA)
 
-      call getarg(iarg,gold_dir);  iarg = iarg + 1
-      call getarg(iarg,trial_dir); iarg = iarg + 1
+      call GET_COMMAND_ARGUMENT(iarg,gold_dir);  iarg = iarg + 1
+      call GET_COMMAND_ARGUMENT(iarg,trial_dir); iarg = iarg + 1
 
       if (mod((count - iarg + 1),3) /= 0) then
         print *, usage
@@ -170,9 +170,9 @@
 
       nvar = (count - iarg + 1)/3
       do ivar = 1,nvar
-        call getarg(iarg, varname);     iarg = iarg + 1
-        call getarg(iarg, str_rel_err); iarg = iarg + 1
-        call getarg(iarg, str_abs_err); iarg = iarg + 1
+        call GET_COMMAND_ARGUMENT(iarg, varname);     iarg = iarg + 1
+        call GET_COMMAND_ARGUMENT(iarg, str_rel_err); iarg = iarg + 1
+        call GET_COMMAND_ARGUMENT(iarg, str_abs_err); iarg = iarg + 1
 
         call fill_error_values(nfiles, fileA, varname,
      &    str_rel_err, str_abs_err)

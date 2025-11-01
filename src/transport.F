@@ -1338,8 +1338,7 @@ C*************************************************************************
       REAL(8) :: top, bot
       Integer  :: loop_situation = 0
 
-      REAL(8) :: inarray_vertical
-      Dimension  inarray_vertical ( NFEN )
+      REAL(8) :: inarray_vertical(NFEN)
 
       call setMessageSource("cubic_vertical_interpolation")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)

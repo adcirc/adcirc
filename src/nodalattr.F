@@ -557,7 +557,7 @@ C     ----------------------------------------------------------------
      &          //'compiled with XDMF support.')
 #else
       include 'Xdmf.f'
-      integer*8 :: xdmfFortranObj ! object that receives the data
+      INTEGER(8) :: xdmfFortranObj ! object that receives the data
       !
       integer :: startIndex
       integer :: arrayStride

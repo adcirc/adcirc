@@ -134,7 +134,7 @@ C-----------------------------------------------------------------------
       INPUTDIR  = ""
       GLOBALDIR = ""
       LOCALDIR  = ""
-      ARGCOUNT  = IARGC()
+      ARGCOUNT  = COMMAND_ARGUMENT_COUNT()
       WRITE_LOCAL_HOT_START_FILES = .FALSE.
       READ_LOCAL_HOT_START_FILES = .FALSE.
       WRITE_LOCAL_FILES = .FALSE.
@@ -172,7 +172,7 @@ Cobell 110518: Add compiler flag for local hot start.
          i=0
          wholeCommandLine(:) = ' '
          do while (i.lt.argcount) 
-            call getarg(i, cmdlinearg)
+            call GET_COMMAND_ARGUMENT(i, cmdlinearg)
             wholeCommandLine = ' ' // trim(adjustl(wholeCommandLine)) 
      &         // ' ' // trim(adjustl(cmdlinearg)) 
             i=i+1          
@@ -186,18 +186,18 @@ Cobell 110518: Add compiler flag for local hot start.
          i = 0
          do while (i < ARGCOUNT)
             i = i + 1
-            call getarg(i, CMDLINEARG)
+            call GET_COMMAND_ARGUMENT(i, CMDLINEARG)
             select case(cmdlinearg(1:2))
             case("-I","-i") 
                i = i + 1
-               call getarg(i,INPUTDIR)
+               call GET_COMMAND_ARGUMENT(i,INPUTDIR)
                if (myProc.eq.0) then
                   write(*,*) "INFO: Processing '",cmdlinearg(1:2)," ",
      &               trim(INPUTDIR),"'."
                endif
             case("-O","-o")
                i = i + 1
-               call getarg(i,GLOBALDIR)
+               call GET_COMMAND_ARGUMENT(i,GLOBALDIR)
                if (myProc.eq.0) then
                  write(*,*) "INFO: Processing '",cmdlinearg(1:2)," ",
      &              trim(GLOBALDIR),"'."
@@ -233,7 +233,7 @@ Cobell 110518: Add compiler flag for local hot start.
                select case(cmdlinearg(1:4))
                case("-MFT","-mft") ! mesh file type 
                   i = i + 1
-                  call getarg(i, CMDLINEARG)
+                  call GET_COMMAND_ARGUMENT(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
                   case("ASCII","Ascii","ascii")
                      meshType = ASCII ! this is the default anyway
@@ -249,7 +249,7 @@ Cobell 110518: Add compiler flag for local hot start.
                case("-MFN","-mfn") ! mesh file name
                   meshFileNameSpecified = .true.
                   i = i + 1
-                  call getarg(i,meshFileName)                                 
+                  call GET_COMMAND_ARGUMENT(i,meshFileName)                                 
                case default
                   ! jgf51.44: -m by itself triggers subdomain harmonic
                   ! analysis output files. 
@@ -270,7 +270,7 @@ Cobell 110518: Add compiler flag for local hot start.
                select case(cmdlinearg(1:4))
                case("-NFT","-nft") ! nodal attributes file type 
                   i = i + 1
-                  call getarg(i, CMDLINEARG)
+                  call GET_COMMAND_ARGUMENT(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
                   case("ASCII","Ascii","ascii")
                      naType = ASCII ! this is the default anyway
@@ -287,7 +287,7 @@ Cobell 110518: Add compiler flag for local hot start.
                case("-NFN","-nfn") ! nodal attributes file name
                   naFileNameSpecified = .true.
                   i = i + 1
-                  call getarg(i,naFileName)                                 
+                  call GET_COMMAND_ARGUMENT(i,naFileName)                                 
                case default
                   if (myProc.eq.0) then
                      write(*,*) "WARNING: The command line option '",
@@ -415,7 +415,7 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: IARGC, ARGCOUNT, I
       CHARACTER(2048) :: CMDLINEARG
-      ARGCOUNT  = IARGC()
+      ARGCOUNT  = COMMAND_ARGUMENT_COUNT()
       MNWPROC = 0
       isplit = .false. !st3 100708:split file
 
@@ -423,13 +423,13 @@ C-----------------------------------------------------------------------
          i = 0
          do while (i < ARGCOUNT)
             i = i + 1
-            call getarg(i, CMDLINEARG)
+            call GET_COMMAND_ARGUMENT(i, CMDLINEARG)
             if (cmdlinearg(1:2) == "-W") then
                if( cmdlinearg(1:3) == "-Ws" ) then  !st3 100708: split file
                   isplit = .true.                   !st3 100708: split file
                endif                                !st3 100708: split file
                i = i + 1
-               call getarg(i,cmdlinearg)
+               call GET_COMMAND_ARGUMENT(i,cmdlinearg)
                read(cmdlinearg,*) MNWPROC
             endif
          end do
@@ -440,10 +440,10 @@ C-----------------------------------------------------------------------
          i = 0
          do while (i < ARGCOUNT)
             i = i + 1
-            call getarg(i, CMDLINEARG)
+            call GET_COMMAND_ARGUMENT(i, CMDLINEARG)
             if (cmdlinearg(1:2) == "-H") then
                i = i + 1
-               call getarg(i,cmdlinearg)
+               call GET_COMMAND_ARGUMENT(i,cmdlinearg)
                read(cmdlinearg,*) MNWPROH
             endif
          end do
