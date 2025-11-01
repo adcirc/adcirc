@@ -2693,6 +2693,101 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 
+C-----------------------------------------------------------------------
+C     SUBROUTINE PRINT_HELP
+C-----------------------------------------------------------------------
+C     Print detailed help information for aswip command-line options
+C-----------------------------------------------------------------------
+      SUBROUTINE PRINT_HELP()
+      USE VERSION, ONLY: ADC_VERSION
+      IMPLICIT NONE
+
+      WRITE(*,'(A)') 'Usage: aswip [OPTION]...'
+      WRITE(*,'(A)') 'Process asymmetric hurricane track files and generate'
+      WRITE(*,'(A)') "input files for ADCIRC's parametric vortex models."
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'General options:'
+      WRITE(*,'(A)') '  -h, --help             display this help and exit'
+      WRITE(*,'(A)') '      --version          output version information and exit'
+      WRITE(*,'(A)') '      --hash             output git commit hash and exit'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'Wind model options:'
+      WRITE(*,'(A)') '  -N, -n NWS             NWS wind model type (19 or 20)'
+      WRITE(*,'(A)') '                         default: 20.'
+      WRITE(*,'(A)') '  -M, -m METHOD          method for selecting quadrant Rmax values'
+      WRITE(*,'(A)') '                         default: 4 (largest available isotach)'
+      WRITE(*,'(A)') '  -Z, -z APPROACH        approach for calculating quadrant Vr'
+      WRITE(*,'(A)') '                         default: 2 (tangential to azimuth)'
+      WRITE(*,'(A)') '  -G, -g FACTOR          geostrophic (1) or cyclostrophic (0) balance'
+      WRITE(*,'(A)') '                         default: 1'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'Input/output file options:'
+      WRITE(*,'(A)') '  -W, -w FILENAME        track file to read (default: fort.22)'
+      WRITE(*,'(A)') '  -I, -i FILENAME        fort.14 mesh file for spatial output'
+      WRITE(*,'(A)') '  -L, -l FILENAME        text file with station locations'
+      WRITE(*,'(A)') '  -E, -e FILENAME        element table file for spatial output'
+      WRITE(*,'(A)') '  -D, -d                 do not write NWS19 fort.22 output'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'Parameter adjustment options:'
+      WRITE(*,'(A)') '  -R, -r RMAX            constant forecast Rmax in nautical miles'
+      WRITE(*,'(A)') '                         default: calculated from isotach data'
+      WRITE(*,'(A)') '  -P, -p PERCENT         percent to add to calculated Rmax'
+      WRITE(*,'(A)') '                         (e.g., 10 = 10% increase, -10 = 10% decrease)'
+      WRITE(*,'(A)') '                         default: no modification'
+      WRITE(*,'(A)') '  -X, -x PERCENT         percent to add to Vmax'
+      WRITE(*,'(A)') '                         default: 0 (no modification)'
+      WRITE(*,'(A)') '  -T, -t TIME            time offset in seconds (for hotstart)'
+      WRITE(*,'(A)') '                         default: 0'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'Diagnostic output options:'
+      WRITE(*,'(A)') '  -A, -a                 write full circle Rmax values (360 deg)'
+      WRITE(*,'(A)') '  -V, -v                 write radial velocity and pressure'
+      WRITE(*,'(A)') '  -S, -s                 write spatial V and P on mesh'
+      WRITE(*,'(A)') '  -B, -b                 write uvp at node locations'
+      WRITE(*,'(A)') '  -C, -c                 write spatial xy & uvp on mesh'
+      WRITE(*,'(A)') '  -F, -f FRAME           select particular frame to render'
+      WRITE(*,'(A)') '  -O, -o SECONDS         time increment for output'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'Examples:'
+      WRITE(*,'(A)') '  Process ATCF track file for NWS20:'
+      WRITE(*,'(A)') '    aswip -w best_track.dat -n 20'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') '  Generate wind fields on mesh with spatial output:'
+      WRITE(*,'(A)') '    aswip -i fort.14 -s -n 20'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'Report bugs to <https://github.com/adcirc/adcirc/issues>.'
+      WRITE(*,'(A)') 'ADCIRC home page: <https://adcirc.org>.'
+      WRITE(*,'(A)') 'User documentation: <https://adcirc.github.io/adcirc/>.'
+      END SUBROUTINE PRINT_HELP
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     SUBROUTINE PRINT_VERSION
+C-----------------------------------------------------------------------
+C     Print version information
+C-----------------------------------------------------------------------
+      SUBROUTINE PRINT_VERSION()
+      USE VERSION, ONLY: ADC_VERSION
+      IMPLICIT NONE
+      WRITE(*,'(A)') trim(ADC_VERSION)
+      END SUBROUTINE PRINT_VERSION
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     SUBROUTINE PRINT_HASH
+C-----------------------------------------------------------------------
+C     Print git commit hash
+C-----------------------------------------------------------------------
+      SUBROUTINE PRINT_HASH()
+      USE VERSION, ONLY: ADC_HASH
+      IMPLICIT NONE
+      WRITE(*,'(A)') trim(ADC_HASH)
+      END SUBROUTINE PRINT_HASH
+C-----------------------------------------------------------------------
+
+
       !=================================================================
       !=================================================================
       !=================================================================
@@ -2705,6 +2800,7 @@ C-----------------------------------------------------------------------
       program aswip
       use asymmetricVortexProcessing
       use diagnosticOutput
+      use VERSION, ONLY: ADC_VERSION, ADC_HASH
       implicit none
 C
 C     jgf49.30: New variables to support command line options
@@ -2749,50 +2845,46 @@ C     jgf49.30 Initialize to reasonable defaults.
          DO WHILE (I.lt.ARGCOUNT)
             I=I+1
             CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
+            IF (TRIM(CMDLINEARG).EQ."--help") THEN
+               CALL PRINT_HELP()
+               CALL EXIT(0)
+            ELSE IF (TRIM(CMDLINEARG).EQ."--version") THEN
+               CALL PRINT_VERSION()
+               CALL EXIT(0)
+            ELSE IF (TRIM(CMDLINEARG).EQ."--hash") THEN
+               CALL PRINT_HASH()
+               CALL EXIT(0)
+            END IF
+
             CMDLINEOPTION = CMDLINEARG(1:2)
             SELECT CASE(CMDLINEOPTION)
+            CASE("-h") ! display help and exit
+               CALL PRINT_HELP()
+               CALL exit(0)
             CASE("-A","-a") ! Rmw and Azimuth vals req. (360 deg/1deg incr.)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            "'."
                writeFullCircleRmaxes=.true.
             CASE("-V","-v") ! radial V and P values requested
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            "'."
                writeRadialVandP=.true.
             CASE("-S","-s") ! spatial V and P unstructured mesh vals requested
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            "'."
                writeSpatialVandP=.true.
             CASE("-B","-b") ! uvp at given node location xy
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            "'."
                writeNodaluvp=.true.     
             CASE("-C","-c") ! spatial xy&uvp,unstructured mesh vals requested
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            "'."
                writeSpatialuvp=.true.               
             CASE("-D","-d") ! don't write NWS19 fort.22
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            "'."
                writeNWS19=.false.
             CASE("-E","-e")  ! providing an element table for spatial output
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &           "'."
                elementTableFileName = trim(CMDLINEARG)
                elementTableProvided=.true.
             CASE("-F","-f")  ! selecting a particular frame to render
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) frame
             CASE("-G","-g")  ! selecting geostrophic or cyclostrophic
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) geofactor
                IF ( geofactor.NE.1 ) THEN
                   geostrophic_switch = .false.
@@ -2801,47 +2893,33 @@ C     jgf49.30 Initialize to reasonable defaults.
             CASE("-I","-i")  ! input fort.14 file containing mesh locations
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            " ",trim(CMDLINEARG),"'."
                meshFileName = trim(CMDLINEARG)
                nodesFromMesh = .true.
             CASE("-L","-l")  ! input text file containing station locations
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            " ",trim(CMDLINEARG),"'."
                meshFileName = trim(CMDLINEARG)
                nodesFromFile = .true.               
             CASE("-M","-m")  ! method of selecting quadrant Rmax values
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) method
             CASE("-Z","-z")  ! approach of calculating quadrantVr
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) approach   
             CASE("-O","-o")  ! time increment for writing output (seconds)
                defaultOutputIncrement = .false.
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) output_increment
-            CASE("-N","-n")  ! nws parameter (12, 15 or 19, or 20)
+            CASE("-N","-n")  ! nws parameter (19, or 20)
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) nws
             CASE("-P","-p")  ! percent change of rmax relative to calculated val
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) rmax_percent
                IF ( rmax_percent.ne.100 ) THEN
                   percentSpecified = .true.
@@ -2849,22 +2927,16 @@ C     jgf49.30 Initialize to reasonable defaults.
             CASE("-X","-x")  ! percent change of vmax relative to given val
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) vmax_percent
             CASE("-T","-t")  ! time offset (like hotstart time)
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) timeOffset
                ihot = 1
             CASE("-R","-r")  ! constant forecastRmax
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                READ(CMDLINEARG,*) forecastRmax
-               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
-     &            " ",trim(CMDLINEARG),"'."
                IF ( forecastRmax.gt.0 ) THEN
                   constantRmax=.true.
                   write(screenunit,*)
@@ -2875,13 +2947,12 @@ C     jgf49.30 Initialize to reasonable defaults.
                             ! ("fort.22" is default)
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               write(scratchMessage,*) "Processing '",
-     &            trim(CMDLINEOPTION)," ",trim(CMDLINEARG),"'."
                call screenMessage(INFO,scratchMessage)
                infile = trim(CMDLINEARG)
             CASE DEFAULT
-               write(screenunit,*) "WARNING: The command line option '",
-     &             CMDLINEARG(1:2),"' is not valid and will be ignored."
+               write(screenunit,*) "ERROR: The command line option '",
+     &             CMDLINEARG(1:2),"' is not valid."
+               call exit(1)
             END SELECT
          END DO
       ENDIF
