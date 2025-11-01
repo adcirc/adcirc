@@ -996,7 +996,7 @@ C..... End DW
 
 C...  Assemble the GWCE RHS except for the boundary integral terms
 
-      DO 1037 IE=1,NE
+      DO IE=1,NE
 
 C...     Set nodal values for each element
 
@@ -1624,7 +1624,7 @@ C...     Put these partial products directly into nodal storage for a scalar (no
          GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A3*NCEle
 #endif
 
- 1037 CONTINUE                  !End of elemental loop
+      END DO                  !End of elemental loop
 
 C...  Put load vector elemental values into nodal storage for a vector computer
 #ifdef CVEC
@@ -2530,7 +2530,7 @@ C...       the corrector step
 C...  Assemble the GWCE RHS except for the boundary integral terms
 ckmd  Renumber the GWCE loop for the corrector step
 
-      DO 1038 IE=1,NE
+      DO IE=1,NE
 
 C...     Set nodal values for each element
 ckmd
@@ -2959,7 +2959,7 @@ c        WRITE(101,*) IE, ESN1, ESN2, ESN3
 c        WRITE(101,*) IE, TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
 
 ckmd  Change the number of the loop
- 1038 CONTINUE      !End of elemental loop
+      END DO      !End of elemental loop
 
 
 C...  Put load vector elemental values into nodal storage for a vector computer

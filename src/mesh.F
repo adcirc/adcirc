@@ -766,7 +766,7 @@
      & // 'with XDMF support.')
 #else
       include 'Xdmf.f'
-      integer*8 :: xdmfFortranObj
+      INTEGER(8) :: xdmfFortranObj
       integer, allocatable :: xdmf_nm(:,:)   ! 0-offset connectivity array
       integer, allocatable :: setSize(:)
       integer, parameter :: keyLength = 256
@@ -3489,7 +3489,7 @@ Csb...
       SUBROUTINE INVCP(XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0)
       USE ADC_CONSTANTS, ONLY : Rearth
       IMPLICIT NONE
-      REAL*8 XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0
+      REAL(8) XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0
 
       call setMessageSource("invcp")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -3518,7 +3518,7 @@ Csb...
       implicit none
       include 'Xdmf.f'
 #endif
-      integer*8, intent(in) :: xdmfFortranObj
+      INTEGER(8), intent(in) :: xdmfFortranObj
       integer, intent(in) :: attributeIndex
 #ifdef ADCXDMF
       !
@@ -5239,9 +5239,9 @@ Csb...
 !******************************************************************************
       SUBROUTINE CYLINDERMAP(X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0,MTYPE)
       IMPLICIT NONE
-      
+
       INTEGER, INTENT(IN):: MTYPE
-      REAL*8 X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0
+      REAL(8) X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0
 
       call setMessageSource("CYLINDERMAP")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)

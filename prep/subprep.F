@@ -496,7 +496,7 @@ C
       DO iproc = startProc, endProc
          sdu(iproc) = 105 + (iproc-1)
          sdFileName = 'PE0000/'//FileName
-         CALL IWRITE(sdFileName, 3, 6, iproc-1)
+         WRITE(sdFileName(3:6), '(I4.4)') iproc-1
          OPEN (UNIT=SDU(iproc), FILE=sdFileName, IOSTAT=ErrorIO)
          Success = .true.
          IF ( ErrorIO .GT. 0 ) THEN

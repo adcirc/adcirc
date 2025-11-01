@@ -499,7 +499,7 @@ C     ------------------------------------------------------------------
       integer, intent(out) :: p_nbou, p_nope, p_nvel, p_neta,  
      &    nweir
       integer, intent(out) :: exist_flux
-      integer :: i, j, k
+      integer :: j, k
       !
       p_nbou = nbou
       p_nvel = nvel
@@ -513,7 +513,7 @@ C     ------------------------------------------------------------------
       do k=1,nbou
          select case(ibtype(k))
          case(2,12,22,32,52)
-            exist_flux = exist_flux + size(simpleFluxBoundaries(i)%nodes)
+            exist_flux = exist_flux + size(simpleFluxBoundaries(k)%nodes)
          case default
             ! other boundary types don't count
          end select

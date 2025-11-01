@@ -558,7 +558,7 @@ C
 
       DO IPROC = 1,NPROC
          LOCFN(1:14) = 'PE0000/fort.18'
-         CALL IWRITE(LOCFN,3,6,IPROC-1)
+         WRITE(LOCFN(3:6),'(I4.4)') IPROC-1
          OPEN (LUNP(IPROC),FILE=LOCFN)
       ENDDO
 
@@ -1160,7 +1160,7 @@ C     Perform decomposition over range of subdomains.
          do iproc = startProc, endProc
             sdu(iproc) = 105 + (iproc-1)
             sdFileName = 'PE0000/fort.13'
-            call iwrite(sdFileName, 3, 6, iproc-1)
+            WRITE(sdFileName(3:6), '(I4.4)') iproc-1
             open(unit=sdu(iproc), file=sdFileName, iostat=ErrorIO)
             Success = .true.
             IF ( ErrorIO .GT. 0 ) THEN
@@ -1274,7 +1274,7 @@ C
       DO IPROC = 1,NPROC
 C
          LOCFN(1:14) = 'PE0000/fort.14'
-         CALL IWRITE(LOCFN,3,6,IPROC-1)
+         WRITE(LOCFN(3:6),'(I4.4)') IPROC-1
          OPEN (14,FILE=LOCFN)
 C
 C--------------------------------------------------------------------------
@@ -1760,7 +1760,7 @@ C
       WRITE(*,90)  "GLOBAL",NOPE, NETA, NBOU, NVEL, NWEIR
       DO IPROC=1, NPROC
          PE(1:6) = 'PE0000'
-         CALL IWRITE(PE,3,6,IPROC-1)
+         WRITE(PE(3:6),'(I4.4)') IPROC-1
          WRITE(*,90)  PE,NOPEP(IPROC),NETAP(IPROC),
      &                NBOUP(IPROC),NVELP(IPROC),NWEIRP(IPROC)
       ENDDO
@@ -1816,7 +1816,7 @@ C
 C
 
          LOCFN = 'PE0000/fort.15'
-         CALL IWRITE(LOCFN,3,6,IPROC-1)
+         WRITE(LOCFN(3:6),'(I4.4)') IPROC-1
          OPEN (15,FILE=TRIM(LOCFN))
 C
          WRITE(15,80) RUNDES
@@ -1976,7 +1976,7 @@ C
                 ENDIF
                 !...Open the local PE fort.tvw
                 LOCFN = 'PE0000/'//TRIM(tvw_file)
-                CALL IWRITE(LOCFN,3,6,IPROC-1)
+                WRITE(LOCFN(3:6),'(I4.4)') IPROC-1
                 OPEN(FILE=TRIM(LOCFN),UNIT=98,ACTION="WRITE")
                 IF(NTIMEVARYINGWEIRP(IPROC).GT.0)THEN
                     !...Write fort.tvw namelist file for the
@@ -2030,7 +2030,7 @@ C...     update the number of stations for this proc's domain
             write(15,80) OUTMSG
             CALL INSERT(NSTAEMSG,OUTMSG,NSTAEP(IPROC),1)
             LOCSTATFN(1:20) = 'PE0000/elev_stat.151'
-            CALL IWRITE(LOCstatFN,3,6,IPROC-1)
+            WRITE(LOCstatFN(3:6),'(I4.4)') IPROC-1
             ios_stations = 0
             open(unit=151,file=locstatfn,
      &                    status='unknown',iostat=ios_stations)
@@ -2078,7 +2078,7 @@ C
             write(15,80) OUTMSG
             CALL INSERT(NSTAVMSG,OUTMSG,NSTAVP(IPROC),1)
             LOCSTATFN(1:19) = 'PE0000/vel_stat.151'
-            CALL IWRITE(LOCstatFN,3,6,IPROC-1)
+            WRITE(LOCstatFN(3:6),'(I4.4)') IPROC-1
             ios_stations = 0
             open(unit=151,file=locstatfn(1:19),
      &                    status='unknown',iostat=ios_stations)
@@ -2130,7 +2130,7 @@ C...     update the number of stations for this proc's domain
             write(15,80) OUTMSG
             CALL INSERT(NSTACMSG,OUTMSG,NSTACP(IPROC),1)
             LOCSTATFN(1:20) = 'PE0000/conc_stat.151'
-            CALL IWRITE(LOCstatFN,3,6,IPROC-1)
+            WRITE(LOCstatFN(3:6),'(I4.4)') IPROC-1
             ios_stations = 0
             open(unit=151,file=locstatfn,
      &                    status='unknown',iostat=ios_stations)
@@ -2180,7 +2180,7 @@ C...        update the number of stations for this proc's domain
             write(15,80) OUTMSG
             CALL INSERT(NSTAMMSG,OUTMSG,NSTAMP(IPROC),1)
             LOCSTATFN(1:19) = 'PE0000/met_stat.151'
-            CALL IWRITE(LOCstatFN,3,6,IPROC-1)
+            WRITE(LOCstatFN(3:6),'(I4.4)') IPROC-1
             ios_stations = 0
             open(unit=151,file=locstatfn(1:19),
      &                    status='unknown',iostat=ios_stations)
@@ -2529,7 +2529,7 @@ C
      &                      abs(NSTAC),abs(NSTAM)
       DO IPROC=1, NPROC
          PE(1:6) = 'PE0000'
-         CALL IWRITE(PE,3,6,IPROC-1)
+         WRITE(PE(3:6),'(I4.4)') IPROC-1
          WRITE(*,92)  PE,NSTAEP(IPROC),NSTAVP(IPROC),
      .        NSTACP(IPROC),NSTAMP(IPROC)
       ENDDO
@@ -2746,7 +2746,7 @@ C
       DO 1000 I = 1,NPROC
 C
          LOCFN(1:14) = 'PE0000/fort.18'
-         CALL IWRITE(LOCFN,3,6,I-1)
+         WRITE(LOCFN(3:6),'(I4.4)') I-1
          OPEN (18,FILE=LOCFN)
 
          write(18,3050) FileFmtVersion, 0, 0
@@ -2949,7 +2949,7 @@ C
       print *, "------  -------  -----------"
       DO I=1, NPROC
          PE(1:6) = 'PE0000'
-         CALL IWRITE(PE,3,6,I-1)
+         WRITE(PE(3:6),'(I4.4)') I-1
          WRITE(6,92) PE, NUM_COMM_PE(I),PROC_SV(I)
       ENDDO
 
@@ -4908,7 +4908,7 @@ C
       DO IPROC = 1,NPROC
          LOC2(IPROC) = 105 + (IPROC-1)
          LOCFN(1:14) = 'PE0000/'//FNAME(1:7)
-         CALL IWRITE(LOCFN,3,6,IPROC-1)
+         WRITE(LOCFN(3:6),'(I4.4)') IPROC-1
          OPEN (LOC2(IPROC),FILE=LOCFN)
       ENDDO
 C
@@ -5378,7 +5378,7 @@ C
       DO IPROC = 1,NPROC
          LOC2(IPROC) = 105 + (IPROC-1)
          LOCFN(1:14) = 'PE0000/'//FNAME(1:7)
-         CALL IWRITE(LOCFN,3,6,IPROC-1)
+         WRITE(LOCFN(3:6),'(I4.4)') IPROC-1
          OPEN (LOC2(IPROC),FILE=LOCFN,ACCESS='DIRECT',RECL=8)
       ENDDO
 C
@@ -5660,7 +5660,7 @@ C
       DO IPROC = 1,NPROC
          LOC2(IPROC) = 105 + (IPROC-1)
          LOCFN(1:14) = 'PE0000/'//FNAME(1:7)
-         CALL IWRITE(LOCFN,3,6,IPROC-1)
+         WRITE(LOCFN(3:6),'(I4.4)') IPROC-1
          INQUIRE(FILE=LOCFN,EXIST=FOUND)
          IF (FOUND) THEN
            WRITE(*,1011) LOCFN
@@ -7119,7 +7119,7 @@ C     Open subdomain file
       sdu = 105 + (iproc-1)
       sdFileName(1:7) = 'PE0000/'
       sdFileName(8:14) = DefaultName
-      CALL IWRITE(sdFileName, 3, 6, iproc-1)
+      WRITE(sdFileName(3:6), '(I4.4)') iproc-1
       OPEN (UNIT=sdu, FILE=sdFileName, IOSTAT=ErrorIO)
       Success = .true.
       IF ( ErrorIO .GT. 0 ) THEN
@@ -7231,7 +7231,7 @@ C     Open each of the subdomain files
          sdFileName(:) = ' '
          sdu(iproc) = 505 + (iproc-1)  !tcm v51.31 changed 105 to 505 to avoid conflicts with fort.141 file
          sdFileName = 'PE0000/'//FileName
-         CALL IWRITE(sdFileName, 3, 6, iproc-1)
+         WRITE(sdFileName(3:6), '(I4.4)') iproc-1
          OPEN (UNIT=SDU(iproc), FILE=trim(sdFileName), IOSTAT=ErrorIO)
          Success = .true.
          IF ( ErrorIO .GT. 0 ) THEN
@@ -7725,7 +7725,7 @@ C     Open each of the subdomain files
       DO iproc = 1, nproc
          sdu(iproc) = 105 + (iproc-1)
          sdFileName = 'PE0000/'//swanComFile
-         CALL IWRITE(sdFileName, 3, 6, iproc-1)
+         WRITE(sdFileName(3:6), '(I4.4)') iproc-1
          OPEN (UNIT=SDU(iproc), FILE=TRIM(sdFileName), IOSTAT=ErrorIO)
          IF ( ErrorIO .GT. 0 ) THEN
             WRITE(*,*) "ERROR: Subdomain file '",TRIM(sdFileName),

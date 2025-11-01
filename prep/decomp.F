@@ -553,7 +553,7 @@ C
       WRITE(*,90) STRINGGLOBAL,NNODG,NELG
       DO I=1, NPROC
          PE(1:6) = 'PE0000'
-         CALL IWRITE(PE,3,6,I-1)
+         WRITE(PE(3:6),'(I4.4)') I-1
          WRITE(6,92) PE, NOD_RES_TOT(I),NNODP(I)-NOD_RES_TOT(I),
      &                   NNODP(I),NELP(I)
       ENDDO

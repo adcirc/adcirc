@@ -710,7 +710,7 @@ C-----------------------------------------------------------------------
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       include 'Xdmf.f'
-      integer*8, intent(in) :: xdmfFortranObj ! XDMF object to receive data
+      INTEGER(8), intent(in) :: xdmfFortranObj ! XDMF object to receive data
       character(len=80) :: wtimincLine
       character(len=80) :: rstimincLine
       character(len=80) :: cicetimincLine
@@ -1169,7 +1169,7 @@ C-----------------------------------------------------------------------
       real(8), intent(in) :: stax(:)
       real(8), intent(in) :: stay(:)
       character(len=80), intent(in) :: stationType
-      integer*8, intent(in) :: xdmfFortranObj ! XDMF object to receive data
+      INTEGER(8), intent(in) :: xdmfFortranObj ! XDMF object to receive data
       integer :: informationID ! information index, used as ID to insert array
       !
       ! add the station locations as an array related to the station information object

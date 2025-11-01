@@ -16,20 +16,15 @@
 
 if(SUN)
   set(MACHINE_FLAG "CMACHSUN")
-elseif(SGI)
-  set(MACHINE_FLAG "SGI")
 elseif(CRAY)
   set(MACHINE_FLAG "CRAY")
 elseif(CRAYX1)
   set(MACHINE_FLAG "CRAYX1")
-elseif(UNIX)
-  set(MACHINE_FLAG "LINUX")
-elseif(CYGWIN)
-  set(MACHINE_FLAG "LINUX")
 elseif(WIN32)
   set(MACHINE_FLAG "WINDOWS")
-elseif(APPLE)
-  set(MACHINE_FLAG "LINUX")
+else()
+  # No machine-specific flag needed for modern Unix/Linux/macOS systems
+  set(MACHINE_FLAG "")
 endif(SUN)
 
 if(SUN_MACHINE)

@@ -3302,7 +3302,7 @@ C***********************************************************************
       INTEGER, SAVE :: FIRSTCALL = 0
       INTEGER I,J
       INTEGER NScreen,ScreenUnit
-      REAL*8 XCOOR,YCOOR
+      REAL(8) XCOOR,YCOOR
       INTEGER  LATIND1,LATIND2,LONIND1,LONIND2
       REAL(8) WSPEED,WDIR
       REAL(8) WLATM,WLONM,XWRATIO,YWRATIO
@@ -3407,7 +3407,7 @@ C***********************************************************************
       IMPLICIT NONE
       INTEGER   I,NHG
       REAL(8)  RHOWATG
-      CHARACTER*80 PBLJAGF
+      CHARACTER(LEN=80) PBLJAGF
 
       call setMessageSource("nws4get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -4112,7 +4112,7 @@ C
       multiple = L2/(190+2)
       dradz = pi/(multiple*360.d0)
       RAD = 0.0
-      DO 1000 K=1,LGGHAF
+      DO K=1,LGGHAF
          ITER=0
          DRAD=DRADZ
          DO WHILE(.TRUE.)
@@ -4143,7 +4143,7 @@ C
          CALL POLY(L2,RAD,P1)
 C     PRINT 102,K,PHI,COLRAD(K),WGT(K),WGTCS(K),ITER,P1
 C     102  FORMAT(1H ,I2,2X,F6.2,2X,F10.7,2X,E13.7,2X,E13.7,2X,I4,2X,D13.7)
- 1000 CONTINUE
+      END DO
 c     PRINT 100,LGGHAF
 c     100  FORMAT(1H ,'SHALOM FROM 0.0 GLATS FOR ',I3)
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -4168,12 +4168,12 @@ C
       X = COS(RAD)
       Y1 = 1.0d0
       Y2=X
-      DO 1 I=2,N
+      DO I=2,N
          G=X*Y2
          Y3=G-Y1+G-(G-Y1)/REAL(I,KIND=8)
          Y1=Y2
          Y2=Y3
- 1    CONTINUE
+      END DO
       P=Y3
       RETURN
       END SUBROUTINE POLY
@@ -4217,16 +4217,14 @@ C***********************************************************************
       INTEGER,SAVE  ::  ICALL = 0
       INTEGER I,IEXT,IDIG1,IDIG2,IDIG3,KERR,N
       INTEGER IYEAR,IMONTH,IDAY,IHOUR
-      REAL*8 RHOWATG100,FLONDEG,FLATDEG
+      REAL(8) RHOWATG100,FLONDEG,FLATDEG
       REAL(8) P1,P2,P3,U1,U2,U3,V1,V2,V3,UE29,VE29,CBETAU,SBETAU
 C
       INTEGER,SAVE,ALLOCATABLE ::  N1(:),N2(:),N3(:)
       REAL(8),SAVE,ALLOCATABLE :: D1(:),D2(:),D3(:),BETAU(:)
       REAL(8),SAVE,ALLOCATABLE :: UE(:),VE(:),PE(:)
 C
-      CHARACTER*1 FNAME2(8)
-      CHARACTER*8 FNAME1
-      EQUIVALENCE (FNAME1,FNAME2)
+      CHARACTER(LEN=8) :: FNAME1
       integer :: errorio
 
       call setMessageSource("nws11get")
@@ -4264,14 +4262,8 @@ C...  between the Eta-29 grid and the ADCIRC grid.
 
 C...  Figure out the met data file name
 
-      FNAME1='fort.   '
       IEXT=200 + NWSEGWI
-      IDIG1=IEXT/100
-      IDIG2=(IEXT-100*IDIG1)/10
-      IDIG3=(IEXT-100*IDIG1-10*IDIG2)
-      FNAME2(6)=CHAR(IDIG1+48)
-      FNAME2(7)=CHAR(IDIG2+48)
-      FNAME2(8)=CHAR(IDIG3+48)
+      WRITE(FNAME1,'(A5,I3.3)') 'fort.',IEXT
 
 C...  If appropriate, enter, locate and open the met data file
       call openFileForRead(IEXT,FNAME1,errorIO)

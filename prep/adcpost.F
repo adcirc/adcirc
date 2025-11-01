@@ -101,16 +101,16 @@ C
       CALL POST_INIT()
       !
       ! parse command line option
-      argcount = iargc() ! count up command line options
+      argcount = COMMAND_ARGUMENT_COUNT() ! count up command line options
       if (argcount.gt.0) then
          i=0
          do while (i.lt.argcount)
             i = i + 1
-            call getarg(i, cmdlinearg)
+            call GET_COMMAND_ARGUMENT(i, cmdlinearg)
             select case(trim(cmdlinearg))
             case("--filename")
                i = i + 1
-               call getarg(i,filename)
+               call GET_COMMAND_ARGUMENT(i,filename)
                write(6,'(a)') 'INFO: Processing "'//trim(cmdlinearg)//
      &           ' '//trim(filename)//'".'
                call mergeSubdomainFiles(filename) 

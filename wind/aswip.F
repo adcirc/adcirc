@@ -2743,12 +2743,12 @@ C     jgf49.30 Initialize to reasonable defaults.
       nodesFromFile=.false.
       !
       ! jgf49.30: Process command line options, if any.
-      ARGCOUNT = IARGC()
+      ARGCOUNT = COMMAND_ARGUMENT_COUNT()
       IF (ARGCOUNT.ne.0) THEN
          I=0
          DO WHILE (I.lt.ARGCOUNT)
             I=I+1
-            CALL GETARG(I,CMDLINEARG)
+            CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
             CMDLINEOPTION = CMDLINEARG(1:2)
             SELECT CASE(CMDLINEOPTION)
             CASE("-A","-a") ! Rmw and Azimuth vals req. (360 deg/1deg incr.)
@@ -2777,20 +2777,20 @@ C     jgf49.30 Initialize to reasonable defaults.
                writeNWS19=.false.
             CASE("-E","-e")  ! providing an element table for spatial output
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &           "'."
                elementTableFileName = trim(CMDLINEARG)
                elementTableProvided=.true.
             CASE("-F","-f")  ! selecting a particular frame to render
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) frame
             CASE("-G","-g")  ! selecting geostrophic or cyclostrophic
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) geofactor
@@ -2800,46 +2800,46 @@ C     jgf49.30 Initialize to reasonable defaults.
                ENDIF
             CASE("-I","-i")  ! input fort.14 file containing mesh locations
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                meshFileName = trim(CMDLINEARG)
                nodesFromMesh = .true.
             CASE("-L","-l")  ! input text file containing station locations
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                meshFileName = trim(CMDLINEARG)
                nodesFromFile = .true.               
             CASE("-M","-m")  ! method of selecting quadrant Rmax values
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) method
             CASE("-Z","-z")  ! approach of calculating quadrantVr
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) approach   
             CASE("-O","-o")  ! time increment for writing output (seconds)
                defaultOutputIncrement = .false.
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) output_increment
             CASE("-N","-n")  ! nws parameter (12, 15 or 19, or 20)
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) nws
             CASE("-P","-p")  ! percent change of rmax relative to calculated val
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) rmax_percent
@@ -2848,20 +2848,20 @@ C     jgf49.30 Initialize to reasonable defaults.
                ENDIF
             CASE("-X","-x")  ! percent change of vmax relative to given val
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) vmax_percent
             CASE("-T","-t")  ! time offset (like hotstart time)
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) timeOffset
                ihot = 1
             CASE("-R","-r")  ! constant forecastRmax
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                READ(CMDLINEARG,*) forecastRmax
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
@@ -2874,7 +2874,7 @@ C     jgf49.30 Initialize to reasonable defaults.
             CASE("-W","-w") ! the name of the track file to read
                             ! ("fort.22" is default)
                I=I+1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                write(scratchMessage,*) "Processing '",
      &            trim(CMDLINEOPTION)," ",trim(CMDLINEARG),"'."
                call screenMessage(INFO,scratchMessage)

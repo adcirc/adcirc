@@ -67,11 +67,11 @@
       print *, "Version: v48.xx"
 
       i = 1
-      if (iargc() < i) then
+      if (COMMAND_ARGUMENT_COUNT() < i) then
          print *, 'Usage hot2asc hotstart_filename [harmonic] [resynth]'
          stop
       else
-        call getarg(i,arg) ! filename
+        call GET_COMMAND_ARGUMENT(i,arg) ! filename
       endif
 
       binfname = trim(arg)
@@ -110,8 +110,8 @@
       getReSynth = .false.
  
       i = i + 1
-      do j = i, iargc()
-         call getarg(j,arg)
+      do j = i, COMMAND_ARGUMENT_COUNT()
+         call GET_COMMAND_ARGUMENT(j,arg)
          select case (arg)
          case("harmonic","Harmonic","HARMONIC") 
             getHarmonic = .true.

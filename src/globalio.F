@@ -1752,7 +1752,7 @@ C----------------------------------------------------------------------
       REAL(8), intent(in) :: defval
       REAL(8),intent(inout) ::  rval(*)
       REAL(8) :: tmpval
-      CHARACTER*80 cdum80
+      CHARACTER(LEN=80) cdum80
 C
       call setMessageSource("nddt2get")
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
