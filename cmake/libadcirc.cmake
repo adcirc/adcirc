@@ -80,15 +80,24 @@ if(XDMF_WORKING)
   set(LIBADC_SOURCES ${LIBADC_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
 endif()
 
-if(BUILD_LIBADCIRC_STATIC)
+if(BUILD_LIBADCIRC_STATIC AND MPI_FOUND)
 
   add_library(libadcirc_static STATIC ${LIBADC_SOURCES})
   install(TARGETS libadcirc_static ARCHIVE DESTINATION lib)
-  add_dependencies(libadcirc_static version mkdir)
-  target_link_libraries(libadcirc_static version mkdir)
   set_target_properties(libadcirc_static PROPERTIES OUTPUT_NAME "adcirc")
-  adcirc_add_compiler_flags(libadcirc_static ${ADDITIONAL_FLAGS_ADCIRC})
-  adcirc_add_mpi(libadcirc_static)
+
+  # Configure compiler flags and link libraries
+  adcirc_set_module_directory(libadcirc_static)
+  target_link_libraries(
+    libadcirc_static
+    PRIVATE adcirc::compiler_flags
+            adcirc::option_flags
+            adcirc::link_libraries
+            adcirc_mpi_interface)
+
+  if(ADDITIONAL_FLAGS_ADCIRC)
+    target_compile_options(libadcirc_static PRIVATE ${ADDITIONAL_FLAGS_ADCIRC})
+  endif()
   set_target_properties(libadcirc_static PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
   install(
@@ -97,15 +106,24 @@ if(BUILD_LIBADCIRC_STATIC)
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-endif(BUILD_LIBADCIRC_STATIC)
+endif()
 
-if(BUILD_LIBADCIRC_SHARED)
+if(BUILD_LIBADCIRC_SHARED AND MPI_FOUND)
   set(LIBADC_SHARED_SOURCES ${LIBADC_SOURCES})
   add_library(libadcirc_shared SHARED ${LIBADC_SHARED_SOURCES})
 
-  adcirc_add_compiler_flags(libadcirc_shared ${ADDITIONAL_FLAGS_ADCIRC})
-  adcirc_add_libraries(libadcirc_shared)
-  adcirc_add_mpi(libadcirc_shared)
+  # Configure compiler flags and link libraries
+  adcirc_set_module_directory(libadcirc_shared)
+  target_link_libraries(
+    libadcirc_shared
+    PRIVATE adcirc::compiler_flags
+            adcirc::option_flags
+            adcirc::link_libraries
+            adcirc::mpi)
+
+  if(ADDITIONAL_FLAGS_ADCIRC)
+    target_compile_options(libadcirc_shared PRIVATE ${ADDITIONAL_FLAGS_ADCIRC})
+  endif()
 
   set_target_properties(libadcirc_shared PROPERTIES OUTPUT_NAME "adcirc")
 
@@ -142,4 +160,4 @@ if(BUILD_LIBADCIRC_SHARED)
   # Conditionally enable strict compiler flags for developers
   enable_developer_mode(${LIBADC_SOURCES})
 
-endif(BUILD_LIBADCIRC_SHARED)
+endif()

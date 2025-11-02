@@ -280,10 +280,6 @@ C     memory for internal use.
       call initGWCE()
       call initMomentumEq()
 
-#ifdef CMACHSUN
-      CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
-#endif
-
 C...Compute the reciprocal of the number of nodes in the entire domain
 
 #ifdef CMPI

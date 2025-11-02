@@ -13,63 +13,163 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(ENABLE_OUTPUT_XDMF)
 
-  find_package(HDF5 COMPONENTS C HL)
+if(NOT ENABLE_OUTPUT_XDMF)
+  return()
+endif()
 
-  set(xdmf_f90_code
-      "
-        PROGRAM XDMFCHECK
-            IMPLICIT NONE
-            INCLUDE 'Xdmf.f'
-            INTEGER :: xdmfunit
-            CALL xdmfInit(xdmfunit)
-        END PROGRAM
-")
+include(CheckFortranSourceCompiles)
 
-  find_library(
-    XDMF_LibXdmfCore
-    NAMES XdmfCore
-    HINTS "${XDMFHOME}/lib"
-    HINTS "${XDMFHOME}/lib/x86_64-linux-gnu")
-  find_library(
-    XDMF_LibXdmfUtils
-    NAMES XdmfUtils
-    HINTS "${XDMFHOME}/lib"
-    HINTS "${XDMFHOME}/lib/x86_64-linux-gnu")
-  find_library(
-    XDMF_LibXdmf
-    NAMES Xdmf
-    HINTS "${XDMFHOME}/lib"
-    HINTS "${XDMFHOME}/lib/x86_64-linux-gnu")
-  set(XDMF_AdditionalLibs
-      ""
-      CACHE STRING "Additional libraries that may be required for XDMF")
+# ######################################################################################################################
+# Find HDF5
+# ######################################################################################################################
 
-  if(${XDMFHOME} STREQUAL "XDMF-NOTFOUND")
-    message(SEND_ERROR "Specify the XDMF path on the following screen")
-  else(${XDMFHOME} STREQUAL "XDMF-NOTFOUND")
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/xdmfcheck.f90" "${xdmf_f90_code}")
+find_package(HDF5 COMPONENTS C HL)
 
-    try_compile(
-      XDMF_TEST "${CMAKE_CURRENT_BINARY_DIR}"
-      "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/xdmfcheck.f90"
-      CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${XDMFHOME}/include"
-      LINK_LIBRARIES ${XDMF_LibXdmfCore}
-      LINK_LIBRARIES ${XDMF_LibXdmfUtils}
-      LINK_LIBRARIES ${XDMF_LibXdmf}
-      LINK_LIBRARIES ${XDMF_AdditionalLibs}
-      LINK_LIBRARIES ${HDF5_LIBRARIES}
-      OUTPUT_VARIABLE XDMFLOG)
+if(NOT HDF5_FOUND)
+  message(
+    SEND_ERROR
+      "XDMF requires HDF5 but it was not found. Specify HDF5 location or disable XDMF (-DENABLE_OUTPUT_XDMF=OFF).")
+  return()
+endif()
 
-    if(XDMF_TEST)
-      set(XDMF_WORKING TRUE)
-    else(XDMF_TEST)
-      message(
-        SEND_ERROR
-          "The XDMF library specified is not compatible with the specified compilers. It will not be enabled. Specify a different path or disable XDMF. Ensure that you specify the same compilers to build ADCIRC as were used to build the XDMF library."
-      )
-      set(XDMF_WORKING FALSE)
-    endif(XDMF_TEST)
-  endif(${XDMFHOME} STREQUAL "XDMF-NOTFOUND")
-endif(ENABLE_OUTPUT_XDMF)
+message(STATUS "HDF5 found: ${HDF5_LIBRARIES}")
+
+# ######################################################################################################################
+# Find XDMF libraries
+# ######################################################################################################################
+
+set(_xdmf_hints "")
+if(XDMFHOME)
+  list(
+    APPEND
+    _xdmf_hints
+    "${XDMFHOME}/lib"
+    "${XDMFHOME}/lib/x86_64-linux-gnu"
+    "${XDMFHOME}/lib64")
+endif()
+
+find_library(
+  XDMF_LibXdmfCore
+  NAMES XdmfCore
+  HINTS ${_xdmf_hints}
+  DOC "XDMF Core library")
+
+find_library(
+  XDMF_LibXdmfUtils
+  NAMES XdmfUtils
+  HINTS ${_xdmf_hints}
+  DOC "XDMF Utils library")
+
+find_library(
+  XDMF_LibXdmf
+  NAMES Xdmf
+  HINTS ${_xdmf_hints}
+  DOC "XDMF library")
+
+set(_xdmf_include_hints "")
+if(XDMFHOME)
+  list(APPEND _xdmf_include_hints "${XDMFHOME}/include")
+endif()
+
+find_path(
+  XDMF_INCLUDE_DIR
+  NAMES Xdmf.f
+  HINTS ${_xdmf_include_hints}
+  DOC "XDMF include directory")
+
+set(XDMF_AdditionalLibs
+    ""
+    CACHE STRING "Additional libraries that may be required for XDMF")
+
+if(NOT XDMF_LibXdmfCore
+   OR NOT XDMF_LibXdmfUtils
+   OR NOT XDMF_LibXdmf
+   OR NOT XDMF_INCLUDE_DIR)
+  set(_missing_components "")
+  if(NOT XDMF_LibXdmfCore)
+    list(APPEND _missing_components "XdmfCore library")
+  endif()
+  if(NOT XDMF_LibXdmfUtils)
+    list(APPEND _missing_components "XdmfUtils library")
+  endif()
+  if(NOT XDMF_LibXdmf)
+    list(APPEND _missing_components "Xdmf library")
+  endif()
+  if(NOT XDMF_INCLUDE_DIR)
+    list(APPEND _missing_components "Xdmf.f include file")
+  endif()
+
+  set(_error_msg "XDMF components not found.\nMissing: ${_missing_components}")
+  if(XDMFHOME)
+    set(_error_msg "${_error_msg}\nSearched in: ${XDMFHOME}")
+  else()
+    set(_error_msg "${_error_msg}\nSpecify -DXDMFHOME=<path> to set XDMF location")
+  endif()
+  set(_error_msg "${_error_msg}\nOr disable XDMF (-DENABLE_OUTPUT_XDMF=OFF)")
+
+  message(SEND_ERROR "${_error_msg}")
+  return()
+endif()
+
+message(STATUS "XDMF include: ${XDMF_INCLUDE_DIR}")
+message(STATUS "XDMF Core library: ${XDMF_LibXdmfCore}")
+message(STATUS "XDMF Utils library: ${XDMF_LibXdmfUtils}")
+message(STATUS "XDMF library: ${XDMF_LibXdmf}")
+
+# ######################################################################################################################
+# Test that XDMF works
+# ######################################################################################################################
+
+set(_cmake_required_libraries_save ${CMAKE_REQUIRED_LIBRARIES})
+set(_cmake_required_includes_save ${CMAKE_REQUIRED_INCLUDES})
+
+set(CMAKE_REQUIRED_INCLUDES "${XDMF_INCLUDE_DIR}")
+set(CMAKE_REQUIRED_LIBRARIES
+    ${XDMF_LibXdmfCore}
+    ${XDMF_LibXdmfUtils}
+    ${XDMF_LibXdmf}
+    ${XDMF_AdditionalLibs}
+    ${HDF5_LIBRARIES})
+
+CHECK_Fortran_SOURCE_COMPILES(
+  "
+  PROGRAM XDMFCHECK
+    IMPLICIT NONE
+    INCLUDE 'Xdmf.f'
+    INTEGER :: xdmfunit
+    CALL xdmfInit(xdmfunit)
+  END PROGRAM
+  "
+  XDMF_FORTRAN_WORKS
+  SRC_EXT
+  F90)
+
+set(CMAKE_REQUIRED_LIBRARIES ${_cmake_required_libraries_save})
+set(CMAKE_REQUIRED_INCLUDES ${_cmake_required_includes_save})
+
+if(XDMF_FORTRAN_WORKS)
+  set(XDMF_WORKING TRUE)
+  message(STATUS "XDMF is compatible with the current compiler")
+else()
+  set(XDMF_WORKING FALSE)
+  message(
+    SEND_ERROR "XDMF library is not compatible with ${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION}.\n"
+               "Ensure the XDMF library was compiled with the same Fortran compiler.\n"
+               "Try a different XDMFHOME or disable XDMF output (-DENABLE_OUTPUT_XDMF=OFF).")
+  return()
+endif()
+
+if(XDMF_WORKING AND NOT TARGET XDMF::XDMF)
+  add_library(XDMF::XDMF INTERFACE IMPORTED)
+
+  set(_xdmf_all_libs ${XDMF_LibXdmfCore} ${XDMF_LibXdmfUtils} ${XDMF_LibXdmf})
+  if(XDMF_AdditionalLibs)
+    list(APPEND _xdmf_all_libs ${XDMF_AdditionalLibs})
+  endif()
+  list(APPEND _xdmf_all_libs ${HDF5_LIBRARIES})
+
+  set_target_properties(
+    XDMF::XDMF PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${XDMF_INCLUDE_DIR};${CMAKE_CURRENT_SOURCE_DIR}/src"
+                          INTERFACE_LINK_LIBRARIES "${_xdmf_all_libs}")
+endif()

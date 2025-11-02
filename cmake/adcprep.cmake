@@ -13,70 +13,79 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_ADCPREP)
+if(NOT BUILD_ADCPREP)
+  return()
+endif()
 
+set(ADCPREP_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/io.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/presizes.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/pre_global.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/metis.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/subprep.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/adcprep.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/decomp.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/prep_weir.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/read_global.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/prep.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/interp.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
+
+if(NETCDF_WORKING)
   set(ADCPREP_SOURCES
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/io.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/presizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/pre_global.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/metis.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/subprep.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/adcprep.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/decomp.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/prep_weir.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/read_global.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/prep.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/interp.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
+      ${ADCPREP_SOURCES}
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
+endif()
 
-  if(NETCDF_WORKING)
-    set(ADCPREP_SOURCES
-        ${ADCPREP_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
-  endif()
+add_executable(adcprep ${ADCPREP_SOURCES})
 
-  add_executable(adcprep ${ADCPREP_SOURCES})
+# Configure compiler flags and link libraries
+adcirc_set_module_directory(adcprep)
+target_link_libraries(
+  adcprep
+  PRIVATE adcirc::compiler_flags
+          adcirc::option_flags
+          adcirc::link_libraries
+          adcirc::metis)
 
-  adcirc_add_compiler_flags(adcprep ${ADDITIONAL_FLAGS_ADCPREP})
-  adcirc_add_libraries(adcprep)
-  adcirc_add_metis_library(adcprep)
+if(ADDITIONAL_FLAGS_ADCPREP)
+  target_compile_options(adcprep PRIVATE ${ADDITIONAL_FLAGS_ADCPREP})
+endif()
 
-  target_include_directories(adcprep PRIVATE prep)
+target_include_directories(adcprep PRIVATE prep)
 
-  install(TARGETS adcprep RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS adcprep RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-  # Conditionally enable strict compiler flags for developers
-  enable_developer_mode(${ADCPREP_SOURCES})
-
-endif(BUILD_ADCPREP)
+# Conditionally enable strict compiler flags for developers
+enable_developer_mode(${ADCPREP_SOURCES})

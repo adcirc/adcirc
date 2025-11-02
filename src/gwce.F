@@ -1610,34 +1610,12 @@ C..... DW: begin, absorbing layer
      &               OffDiag*(ABC00_EAN1*SPM1 + ABC00_EAN2*SPM2))*MsFacRS_ABC00
 C..... END DW
 
-C...     Put these partial products into further elemental storage for a vector computer
-C...     These will be put into nodal storage outside of the elemental loop
-#ifdef CVEC
-         Temp_LV_A(IE,1)=Temp_LV_A1*NCEle
-         Temp_LV_A(IE,2)=Temp_LV_A2*NCEle
-         Temp_LV_A(IE,3)=Temp_LV_A3*NCEle
-#endif
-
-C...     Put these partial products directly into nodal storage for a scalar (non-vector) computer
-#ifdef CSCA
+C...     Put these partial products directly into nodal storage
          GWCE_LV(NM1)=GWCE_LV(NM1)+Temp_LV_A1*NCEle
          GWCE_LV(NM2)=GWCE_LV(NM2)+Temp_LV_A2*NCEle
          GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A3*NCEle
-#endif
 
       END DO                  !End of elemental loop
-
-C...  Put load vector elemental values into nodal storage for a vector computer
-#ifdef CVEC
-      DO IE=1,NE
-         NM1=NM(IE,1)
-         NM2=NM(IE,2)
-         NM3=NM(IE,3)
-         GWCE_LV(NM1)=GWCE_LV(NM1)+Temp_LV_A(IE,1)
-         GWCE_LV(NM2)=GWCE_LV(NM2)+Temp_LV_A(IE,2)
-         GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A(IE,3)
-      END DO
-#endif
 
 C...  Save the elevation at the past time step into Eta1 and zero out Eta2
 ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
@@ -1666,11 +1644,7 @@ C...  For periodic elevation boundary conditions
          IF(PER(J).EQ.0.) THEN
             NCYC=0
          ELSE
-#ifdef IBM
-            NCYC=INT(timeh/PER(J),KIND(0.0d0))
-#else
             NCYC=INT(timeh/PER(J))
-#endif
          ENDIF
          ARGJ=AMIG(J)*(timeh-NCYC*PER(J))+FACE(J)
          RFF=FF(J)*RampElev
@@ -2937,20 +2911,10 @@ C...     Spatially varying Tau0 terms
      &                    +timewtgwce2*Tau0SpaVar2
 
 
-C...     Put these partial products into further elemental storage for a vector computer
-C...     These will be put into nodal storage outside of the elemental loop
-#ifdef CVEC
-         Temp_LV_A(IE,1)=Temp_LV_A1*NCEle
-         Temp_LV_A(IE,2)=Temp_LV_A2*NCEle
-         Temp_LV_A(IE,3)=Temp_LV_A3*NCEle
-#endif
-
-C...     Put these partial products directly into nodal storage for a scalar (non-vector) computer
-#ifdef CSCA
+C...     Put these partial products directly into nodal storage
          GWCE_LV(NM1)=GWCE_LV(NM1)+Temp_LV_A1*NCEle
          GWCE_LV(NM2)=GWCE_LV(NM2)+Temp_LV_A2*NCEle
          GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A3*NCEle
-#endif
 
 c        IF(IE.EQ.1) THEN
 c           WRITE(101,*) ' '
@@ -2962,19 +2926,6 @@ c        WRITE(101,*) IE, TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
 
 ckmd  Change the number of the loop
       END DO      !End of elemental loop
-
-
-C...  Put load vector elemental values into nodal storage for a vector computer
-#ifdef CVEC
-      DO IE=1,NE
-         NM1=NM(IE,1)
-         NM2=NM(IE,2)
-         NM3=NM(IE,3)
-         GWCE_LV(NM1)=GWCE_LV(NM1)+Temp_LV_A(IE,1)
-         GWCE_LV(NM2)=GWCE_LV(NM2)+Temp_LV_A(IE,2)
-         GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A(IE,3)
-      END DO
-#endif
 
 
 C...  Save the elevation at the past time step into Eta1 and zero out Eta2
@@ -2997,11 +2948,7 @@ C...  For periodic elevation boundary conditions
          IF(PER(J).EQ.0.) THEN
             NCYC=0
          ELSE
-#ifdef IBM
-            NCYC=INT(timeh/PER(J),KIND(0.0d0))
-#else
             NCYC=INT(timeh/PER(J))
-#endif
          ENDIF
          ARGJ=AMIG(J)*(timeh-NCYC*PER(J))+FACE(J)
          RFF=FF(J)*RampElev
