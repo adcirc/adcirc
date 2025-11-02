@@ -13,34 +13,51 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-add_library(version OBJECT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F)
+
 if(WIN32)
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/version.F)
-    add_custom_command(
-      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
+    add_custom_target(
+      generate_version_file
       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/version.F
               ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
+      BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
       COMMENT "Generating ADCIRC version...")
   elseif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/version_default.F)
-    add_custom_command(
-      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
+    add_custom_target(
+      generate_version_file
       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/version_default.F
               ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
+      BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
       COMMENT "Generating ADCIRC version...")
-  endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/version.F)
-else(WIN32)
-  add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
+  endif()
+else()
+  add_custom_target(
+    generate_version_file
     COMMAND ./adcirc_version.py --create-version-file --directory ${CMAKE_CURRENT_SOURCE_DIR} >/dev/null
-    COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/version.F ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/version.F
+            ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
+    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts
     COMMENT "Generating ADCIRC version...")
-  add_custom_target(
-    version_generate
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts
-    COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F)
-endif(WIN32)
-set_target_properties(version PROPERTIES Fortran_MODULE_DIRECTORY CMakeFiles/version_mod)
-set_target_properties(version PROPERTIES COMPILE_FLAGS "${Fortran_LINELENGTH_FLAG} ${Fortran_COMPILER_SPECIFIC_FLAG}")
-set_target_properties(version PROPERTIES EXCLUDE_FROM_ALL TRUE)
-add_dependencies(version version_generate)
+endif()
+
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F PROPERTIES GENERATED TRUE)
+
+add_library(adcirc_version STATIC ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_cmake.F)
+add_library(adcirc::version ALIAS adcirc_version)
+
+add_dependencies(adcirc_version generate_version_file)
+
+adcirc_set_module_directory(adcirc_version)
+set_target_properties(adcirc_version PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+if(Fortran_LINELENGTH_FLAG OR Fortran_COMPILER_SPECIFIC_FLAG)
+  set(_version_flags "")
+  if(Fortran_LINELENGTH_FLAG)
+    list(APPEND _version_flags ${Fortran_LINELENGTH_FLAG})
+  endif()
+  if(Fortran_COMPILER_SPECIFIC_FLAG)
+    list(APPEND _version_flags ${Fortran_COMPILER_SPECIFIC_FLAG})
+  endif()
+  target_compile_options(adcirc_version PRIVATE ${_version_flags})
+endif()

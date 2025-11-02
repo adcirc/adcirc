@@ -66,9 +66,9 @@ FIND_LIBRARY( JPEG TRUE )
 ###########################################################################
 
 ###########################################################################
-# libgeo
+# libgeo - Geographic projection library
 ###########################################################################
-ADD_LIBRARY( geo STATIC 
+add_library(geo STATIC
              ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/gctpc/source/alberfor.c
              ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/gctpc/source/alberinv.c
              ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/gctpc/source/alconfor.c
@@ -189,7 +189,7 @@ ADD_LIBRARY(g2c STATIC
 target_compile_definitions(g2c PRIVATE _LARGEFILE64_SOURCE JPEG USE_JPEG2000)
 target_link_libraries(g2c PUBLIC libjasper)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/grib2.h.in" "${CMAKE_CURRENT_BINARY_DIR}/grib2.h" @ONLY)
-target_include_directories(g2c PRIVATE ${CMAKE_CURRENT_BINARY_DIR} 
+target_include_directories(g2c PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
                                        ${CMAKE_CURRENT_SOURCE_DIR}/jasper/src/libjasper/include
                                        ${CMAKE_CURRENT_BINARY_DIR}/jasper/src/libjasper/include)
 add_dependencies(g2c libjasper)
@@ -425,11 +425,15 @@ ADD_LIBRARY( grib2 STATIC
              ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/ftn_api/wgrib2api.f90  
              ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/ftn_api/wgrib2lowapi.f90)
 
-ADD_DEPENDENCIES( grib2 geo libjasper g2c ) 
-TARGET_INCLUDE_DIRECTORIES( geo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/gctpc/source/include)
-TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+ADD_DEPENDENCIES( grib2 geo libjasper g2c )
+TARGET_INCLUDE_DIRECTORIES( geo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/gctpc/source/include)
+TARGET_INCLUDE_DIRECTORIES( grib2 PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
                                           ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/gctpc/source/include
-                                          ${CMAKE_CURRENT_SOURCE_DIR} )
+                                          ${CMAKE_CURRENT_SOURCE_DIR}
+                                          ${CMAKE_BINARY_DIR}/CMakeFiles/mod/grib2
+                                          ${JPEG_INCLUDE_DIR}
+                                          ${CMAKE_CURRENT_BINARY_DIR}/jasper/src/libjasper/include
+                                          ${CMAKE_CURRENT_SOURCE_DIR}/jasper/src/libjasper/include )
 SET_TARGET_PROPERTIES( grib2 PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles/mod/grib2 )
 TARGET_COMPILE_DEFINITIONS( grib2 PRIVATE CALLABLE_WGRIB2 G2_JPEG2000_ENABLED)
 IF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM")
@@ -437,10 +441,7 @@ IF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID}
 ELSEIF(${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU")
     TARGET_COMPILE_DEFINITIONS( grib2 PRIVATE "GFORTRAN" )
 ENDIF()
-TARGET_LINK_LIBRARIES( grib2 PRIVATE geo libjasper ${JPEG_LIBRARIES} )
-TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${JPEG_INCLUDE_DIR} )
-TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/jasper/src/libjasper/include )
-TARGET_INCLUDE_DIRECTORIES( grib2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/jasper/src/libjasper/include )
+TARGET_LINK_LIBRARIES( grib2 PUBLIC geo g2c libjasper ${JPEG_LIBRARIES} )
 IF(NETCDF_WORKING)
     TARGET_INCLUDE_DIRECTORIES(grib2 PRIVATE ${NETCDF_INCLUDE_DIRS})
     TARGET_LINK_LIBRARIES(grib2 PRIVATE ${NETCDF_LIBRARIES} ${NETCDF_AdditionalLibs})
@@ -480,3 +481,12 @@ elseif(${CMAKE_C_COMPILER_ID} MATCHES "Clang")
     target_compile_options(g2c PRIVATE $<$<COMPILE_LANGUAGE:C>:${ADDITIONAL_G2C_COMPILER_FLAGS}>)
     target_compile_options(geo PRIVATE $<$<COMPILE_LANGUAGE:C>:${ADDITIONAL_GCTPC_COMPILER_FLAGS}>)
 endif()
+
+###########################################################################
+# Modern ALIAS targets with namespacing
+###########################################################################
+# Create modern namespaced alias targets for external use
+add_library(GRIB2::grib2 ALIAS grib2)
+add_library(GRIB2::g2c ALIAS g2c)
+add_library(GRIB2::geo ALIAS geo)
+###########################################################################

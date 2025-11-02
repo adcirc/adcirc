@@ -13,43 +13,45 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_ASWIP)
+if(NOT BUILD_ASWIP)
+  return()
+endif()
 
-  set(ASWIP_SOURCES
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/io.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/wind/aswip.F)
+set(ASWIP_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/io.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/wind/aswip.F)
 
-  if(NETCDF_WORKING)
-    set(ASWIP_SOURCES ${ASWIP_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
-                      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
-  endif()
+if(NETCDF_WORKING)
+  set(ASWIP_SOURCES ${ASWIP_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
+endif()
 
-  add_executable(aswip ${ASWIP_SOURCES})
+add_executable(aswip ${ASWIP_SOURCES})
 
-  adcirc_add_compiler_flags(aswip ${ADDITIONAL_FLAGS_ASWIP})
-  adcirc_add_libraries(aswip)
+# Configure compiler flags and link libraries
+adcirc_set_module_directory(aswip)
+target_link_libraries(aswip PRIVATE adcirc::compiler_flags adcirc::option_flags adcirc::link_libraries)
 
-  install(TARGETS aswip RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+if(ADDITIONAL_FLAGS_ASWIP)
+  target_compile_options(aswip PRIVATE ${ADDITIONAL_FLAGS_ASWIP})
+endif()
 
-  # Conditionally enable strict compiler flags for developers
-  enable_developer_mode(${ASWIP_SOURCES})
-
-endif(BUILD_ASWIP)
+install(TARGETS aswip RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

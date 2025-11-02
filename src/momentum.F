@@ -687,50 +687,14 @@ C     Original (incorrect) area integration - for historical comparison
             TEMP_LV_B3=TEMP_LV_B3/AreaIE
          ENDIF
 
-C     LINES TO RUN ON A VECTOR COMPUTER
-#ifdef CVEC
-         TEMP_LV_A(IE,1)=TEMP_LV_A1
-         TEMP_LV_A(IE,2)=TEMP_LV_A2
-         TEMP_LV_A(IE,3)=TEMP_LV_A3
-         TEMP_LV_B(IE,1)=TEMP_LV_B1
-         TEMP_LV_B(IE,2)=TEMP_LV_B2
-         TEMP_LV_B(IE,3)=TEMP_LV_B3
-#endif
-
-C     LINES TO RUN ON A SCALAR COMPUTER
-C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
-C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
-#ifdef CSCA
          MOM_LV_X(NM1)=MOM_LV_X(NM1)+TEMP_LV_A1
          MOM_LV_X(NM2)=MOM_LV_X(NM2)+TEMP_LV_A2
          MOM_LV_X(NM3)=MOM_LV_X(NM3)+TEMP_LV_A3
          MOM_LV_Y(NM1)=MOM_LV_Y(NM1)+TEMP_LV_B1
          MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B2
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B3
-#endif
 
       ENDDO
-
-C     LINES TO RUN ON A VECTOR COMPUTER
-C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
-C           AND AUV
-#ifdef CVEC
-      DO IE=1,NE
-         NM1=NM(IE,1)
-         NM2=NM(IE,2)
-         NM3=NM(IE,3)
-         NC1=NODECODE(NM1)
-         NC2=NODECODE(NM2)
-         NC3=NODECODE(NM3)
-         NCEle=NC1*NC2*NC3*NOFF(IE)
-         MOM_LV_X(NM1)=MOM_LV_X(NM1)+TEMP_LV_A(IE,1)
-         MOM_LV_X(NM2)=MOM_LV_X(NM2)+TEMP_LV_A(IE,2)
-         MOM_LV_X(NM3)=MOM_LV_X(NM3)+TEMP_LV_A(IE,3)
-         MOM_LV_Y(NM1)=MOM_LV_Y(NM1)+TEMP_LV_B(IE,1)
-         MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B(IE,2)
-         MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B(IE,3)
-      END DO
-#endif
 
 C...  Update the momentum equation LHS coefficients and load vectors at each
 C...  node by dividing by the area of all active elements attached to the node
@@ -1730,52 +1694,14 @@ C     Original (incorrect) area integration - for historical comparison
             TEMP_LV_B3=TEMP_LV_B3/AreaIE
          ENDIF
 
-C     LINES TO RUN ON A VECTOR COMPUTER
-#ifdef CVEC
-         TEMP_LV_A(IE,1)=TEMP_LV_A1
-         TEMP_LV_A(IE,2)=TEMP_LV_A2
-         TEMP_LV_A(IE,3)=TEMP_LV_A3
-         TEMP_LV_B(IE,1)=TEMP_LV_B1
-         TEMP_LV_B(IE,2)=TEMP_LV_B2
-         TEMP_LV_B(IE,3)=TEMP_LV_B3
-#endif
-
-C     LINES TO RUN ON A SCALAR COMPUTER
-C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
-C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
-#ifdef CSCA
          MOM_LV_X(NM1)=MOM_LV_X(NM1)+TEMP_LV_A1
          MOM_LV_X(NM2)=MOM_LV_X(NM2)+TEMP_LV_A2
          MOM_LV_X(NM3)=MOM_LV_X(NM3)+TEMP_LV_A3
          MOM_LV_Y(NM1)=MOM_LV_Y(NM1)+TEMP_LV_B1
          MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B2
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B3
-#endif
 
       ENDDO ELE_LOOP
-
-
-
-C     LINES TO RUN ON A VECTOR COMPUTER
-C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
-C           AND AUV
-#ifdef CVEC
-      DO IE=1,NE
-         NM1=NM(IE,1)
-         NM2=NM(IE,2)
-         NM3=NM(IE,3)
-         NC1=NODECODE(NM1)
-         NC2=NODECODE(NM2)
-         NC3=NODECODE(NM3)
-         NCEle=NC1*NC2*NC3*NOFF(IE)
-         MOM_LV_X(NM1)=MOM_LV_X(NM1)+TEMP_LV_A(IE,1)
-         MOM_LV_X(NM2)=MOM_LV_X(NM2)+TEMP_LV_A(IE,2)
-         MOM_LV_X(NM3)=MOM_LV_X(NM3)+TEMP_LV_A(IE,3)
-         MOM_LV_Y(NM1)=MOM_LV_Y(NM1)+TEMP_LV_B(IE,1)
-         MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B(IE,2)
-         MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B(IE,3)
-      END DO
-#endif
 
 
 C...  Update the momentum equation LHS coefficients and load vectors at each
@@ -2537,51 +2463,14 @@ C     Original (incorrect) area integration - for historical comparison
             TEMP_LV_B3=TEMP_LV_B3/AreaIE
          ENDIF
 
-C     LINES TO RUN ON A VECTOR COMPUTER
-#ifdef CVEC
-         TEMP_LV_A(IE,1)=TEMP_LV_A1
-         TEMP_LV_A(IE,2)=TEMP_LV_A2
-         TEMP_LV_A(IE,3)=TEMP_LV_A3
-         TEMP_LV_B(IE,1)=TEMP_LV_B1
-         TEMP_LV_B(IE,2)=TEMP_LV_B2
-         TEMP_LV_B(IE,3)=TEMP_LV_B3
-#endif
-
-C     LINES TO RUN ON A SCALAR COMPUTER
-C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
-C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
-#ifdef CSCA
          MOM_LV_X(NM1)=MOM_LV_X(NM1)+TEMP_LV_A1
          MOM_LV_X(NM2)=MOM_LV_X(NM2)+TEMP_LV_A2
          MOM_LV_X(NM3)=MOM_LV_X(NM3)+TEMP_LV_A3
          MOM_LV_Y(NM1)=MOM_LV_Y(NM1)+TEMP_LV_B1
          MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B2
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B3
-#endif
 
          ENDDO
-
-
-C     LINES TO RUN ON A VECTOR COMPUTER
-C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
-C           AND AUV
-#ifdef CVEC
-      DO IE=1,NE
-         NM1=NM(IE,1)
-         NM2=NM(IE,2)
-         NM3=NM(IE,3)
-         NC1=NODECODE(NM1)
-         NC2=NODECODE(NM2)
-         NC3=NODECODE(NM3)
-         NCEle=NC1*NC2*NC3*NOFF(IE)
-         MOM_LV_X(NM1)=MOM_LV_X(NM1)+TEMP_LV_A(IE,1)
-         MOM_LV_X(NM2)=MOM_LV_X(NM2)+TEMP_LV_A(IE,2)
-         MOM_LV_X(NM3)=MOM_LV_X(NM3)+TEMP_LV_A(IE,3)
-         MOM_LV_Y(NM1)=MOM_LV_Y(NM1)+TEMP_LV_B(IE,1)
-         MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B(IE,2)
-         MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B(IE,3)
-         END DO
-#endif
 
 
 C...  Update the momentum equation LHS coefficients and load vectors at each
