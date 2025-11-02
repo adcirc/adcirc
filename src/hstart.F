@@ -787,13 +787,9 @@ C           times for output if time step size has changed
 Corbitt 1203022: Added Zach''s Fix for Assigning a Start Time to Mete Ramping
          RampMete2=TANH((2.D0*((ITHS)*DTDPHS/86400.D0-DUnRampMete))/DRampMete)
          RampWRad2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampWRad)
-         write(16,*) 'Initial RampMete2 is =',RampMete2 
+         write(16,*) 'Initial RampMete2 is =',RampMete2
       ENDIF
-#ifdef IBM
-      FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS,KIND(0.0D0))
-#else
       FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS)
-#endif
       IF(ITHS.LT.(FluxSettlingIT+10)) THEN
          RampIntFlux1=0.0d0
          RampIntFlux2=0.0d0
@@ -1036,11 +1032,7 @@ C......RESTART THE PERIODIC NORMAL FLOW BOUNDARY CONDITION
             IF(FPER(J).EQ.0.) THEN
                NCYC=0.
             ELSE
-#ifdef IBM
-               NCYC=INT(TimeLoc/FPER(J),KIND(0.0d0))
-#else
                NCYC=INT(TimeLoc/FPER(J))
-#endif
             ENDIF
             ARGJ1=FAMIG(J)*(TimeLoc-DTDPHS-NCYC*FPER(J))+FFACE(J) ! kmd48.33bc - changed from DTDP to DTDPHS
             ARGJ2=FAMIG(J)*(TimeLoc-NCYC*FPER(J))+FFACE(J)
@@ -1520,11 +1512,7 @@ Cjromo 11-01-00  Initialize TIP2 for HOTSTART
             IF (PERT(J).EQ.0.) THEN
                NCYC = 0
             ELSE
-#ifdef IBM
-               NCYC = INT(TimeLoc/PERT(J),KIND(0.0d0))
-#else
                NCYC = INT(TimeLoc/PERT(J))
-#endif
             ENDIF
 
             ARGT    = AMIGT(J)*(TimeLoc-NCYC*PERT(J))+FACET(J)
@@ -1532,11 +1520,7 @@ Cjromo 11-01-00  Initialize TIP2 for HOTSTART
             SALTMUL = RampTip2*FFT(J)
 C           WJP: We actually want to compare against diurnal and get 0,1,2
 C           or higher species (was opposite beforehand)
-#ifdef IBM
-            NA = MIN(NINT(AMIGT(J)/7d-5,KIND(0.0d0)),2)
-#else
             NA = MIN(NINT(AMIGT(J)/7d-5),2)
-#endif
 C           WJP: Rewritten so that we have a general formula for all
 C           species
             DO I = 1,NP
@@ -2701,15 +2685,10 @@ C
       call setMessageSource('calcTS')
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
-#endif           
-      
-#ifdef IBM
-      remainingTimeSteps = INT((outputtime - elapsed + 0.5d0) 
-     &                            / DTDP, KIND(0.0d0))
-#else
+#endif
+
       remainingTimeSteps = INT((outputtime - elapsed + 0.5d0)
      &                            / DTDP, KIND(0.0d0))
-#endif
       ts = ITHS + remainingTimeSteps
 C
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)

@@ -1386,11 +1386,7 @@ c
       eigvss = 0.0d0
 C      itmp = int(-log10(abs(zeta))) !jgf46.00 commented out
 cvjp 2/5/06 added kind parameter for ibm platform
-#ifdef IBM
-      itmp = int(-log10(abs(zeta)),KIND(0.0d0)) !jgf46.00 added
-#else
       itmp = int(-log10(abs(zeta))) !jgf46.16 added
-#endif
       nsig = max0(itmp,4)
       maxfn = max0(itmax,50)
       eps = 0.0d0

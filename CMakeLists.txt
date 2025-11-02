@@ -42,9 +42,26 @@ endif()
 # ######################################################################################################################
 # GENERAL OPTIONS
 # ######################################################################################################################
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.16)
 project(adcirc)
 
+# RPATH CONFIGURATION
+option(ADCIRC_USE_RPATH "Use RPATH to find shared libraries at runtime" ON)
+mark_as_advanced(ADCIRC_USE_RPATH)
+if(ADCIRC_USE_RPATH)
+  set(CMAKE_SKIP_BUILD_RPATH FALSE)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+  list(
+    FIND
+    CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
+    "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+    isSystemDir)
+  if("${isSystemDir}" STREQUAL "-1")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+  endif()
+endif()
 # ######################################################################################################################
 
 # ######################################################################################################################
@@ -52,14 +69,9 @@ project(adcirc)
 # ######################################################################################################################
 
 # ######################################################################################################################
-# ...Perl Perl is required to use SWAN since it generates the source files. All SWAN options will be disabled if perl
-# cannot be found. The user is given a chance to specify its location
-find_program(PERL perl)
-if(${PERL} STREQUAL "PERL-NOTFOUND")
-  set(PERL_FOUND FALSE)
-else()
-  set(PERL_FOUND TRUE)
-endif()
+# ...Perl is required to use SWAN since it generates the source files. All SWAN options will be disabled if perl cannot
+# be found.
+find_package(Perl)
 # ######################################################################################################################
 
 # ######################################################################################################################
@@ -107,77 +119,89 @@ list(
   2
   ADCIRC_VERSION_PATCH)
 
-# ...Include Macros to build components
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros.cmake)
+# Set module path for cleaner include() statements
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+# ...Include helper functions to build components
+include(helper_functions)
 
 # ...Determine architecture specific parameters
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/architecture.cmake)
+include(architecture)
 
 # ...Generate the selection list of options
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/options_select.cmake)
+include(options_select)
 
 # ...Translate the selected options list into compiler flags
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/options_flags.cmake)
+include(options_flags)
 
 # ...Ensure that the netCDF libraries are working
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/netcdf_check.cmake)
+include(netcdf_check)
 
-if(ENABLE_GRIB2)
-  set(JAS_ENABLE_SHARED
-      FALSE
-      CACHE BOOL "Enable shared JAS")
+# GRIB2 requires DATETIME, establish dependency
+if(ENABLE_GRIB2 AND NOT ENABLE_DATETIME)
+  message(STATUS "GRIB2 support requires datetime library, enabling ENABLE_DATETIME")
   set(ENABLE_DATETIME
       TRUE
-      CACHE BOOL "Enable datetime library")
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/wgrib2 EXCLUDE_FROM_ALL)
+      CACHE BOOL "Enable datetime library (required by GRIB2)" FORCE)
 endif()
 
+# Build datetime_fortran if enabled
 if(ENABLE_DATETIME)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/datetime_fortran EXCLUDE_FROM_ALL)
 endif()
 
+# Build wgrib2 if GRIB2 is enabled (depends on datetime)
+if(ENABLE_GRIB2)
+  set(JAS_ENABLE_SHARED
+      FALSE
+      CACHE BOOL "Enable shared JAS")
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/wgrib2 EXCLUDE_FROM_ALL)
+endif()
+
 # ...Include the macros for developer mode
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/developer.cmake)
+include(developer)
 
 # ...Ensure that the XDMF libraries are working
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/xdmf_check.cmake)
+include(xdmf_check)
 
 # ...Build the version module
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.cmake)
+include(version)
 
 # ...Build the mkdir library
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/mkdir.cmake)
+include(mkdir)
+
+# ...Create interface libraries for compiler flags and dependencies
+adcirc_create_interface_libraries()
 
 # ...Build ADCIRC
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adcirc.cmake)
+include(adcirc)
 
 # ...Build METIS
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/metis.cmake)
+include(metis)
 
 # ...Build ADCPREP
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adcprep.cmake)
+include(adcprep)
 
 # ...Build ADCSWAN (Serial ADCIRC+SWAN)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adcswan.cmake)
+include(adcswan)
 
 # ...Build SWAN (Serial structured SWAN)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/swan.cmake)
+include(swan)
 
 # ...Build PADCIRC (Parallel ADCIRC)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/padcirc.cmake)
+include(padcirc)
 
 # ...Build PADCSWAN (Parallel ADCIRC+SWAN)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/padcswan.cmake)
+include(padcswan)
 
 # ...Build PUNSWAN (Parallel Unstructured SWAN)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/punswan.cmake)
+include(punswan)
 
 # ...Build ASWIP
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/aswip.cmake)
+include(aswip)
 
 # ...Build ADCIRC Utility Codes
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/utilities.cmake)
+include(utilities)
 
 # ...Build LIBADC
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libadcirc.cmake)
+include(libadcirc)

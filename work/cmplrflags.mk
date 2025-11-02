@@ -36,9 +36,9 @@ ifeq ($(compiler),gnu)
   FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -m64
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI 
-  DPRE		:=  -DREAL8 -DLINUX
+  DA		:=  -DLINUX
+  DP		:=  -DLINUX -DCMPI 
+  DPRE		:=  -DLINUX
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
@@ -100,11 +100,11 @@ ifeq ($(compiler),gfortran)
 #  endif
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE		:=  -DREAL8 -DLINUX
+  DA		:=  -DLINUX
+  DP		:=  -DLINUX -DCMPI
+  DPRE		:=  -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE               :=  -DREAL8 -DLINUX
+     DPRE               :=  -DLINUX
   endif
   FLIBS         :=
   ifeq ($(NETCDF),enable)
@@ -167,9 +167,9 @@ ifeq ($(compiler),g95)
   FFLAGS1	:=  $(INCDIRS) -O3 -mcmodel=medium -fstatic -ffixed-line-length-132
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE		:=  -DREAL8 -DLINUX
+  DA		:=  -DLINUX
+  DP		:=  -DLINUX -DCMPI
+  DPRE		:=  -DLINUX
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
@@ -262,9 +262,9 @@ ifeq ($(compiler),intel)
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE          :=  -DREAL8 -DLINUX
+  DA            :=  -DLINUX
+  DP            :=  -DLINUX -DCMPI
+  DPRE          :=  -DLINUX
   ifeq ($(SWAN),enable)
      DPRE          := $(DPRE)
   endif
@@ -375,9 +375,9 @@ ifeq ($(compiler),intel-ND)
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD #-DNOFSBPG #-DNOIVB -DPOWELL
-  DPRE          :=  -DREAL8 -DLINUX
+  DA            :=  -DLINUX
+  DP            :=  -DLINUX -DCMPI -DHAVE_MPI_MOD #-DNOFSBPG #-DNOIVB -DPOWELL
+  DPRE          :=  -DLINUX
   ifeq ($(SWAN),enable)
      DPRE       := $(DPRE)
   endif
@@ -433,9 +433,9 @@ ifeq ($(compiler),intel-sgi)
 #  FFLAGS1      :=  $(INCDIRS) -Mextend -g -O0 -traceback
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1) -assume buffered_stdout
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCMPI -DCSCA
-  DPRE          :=  -DREAL8 -DLINUX
+  DA            :=  -DLINUX
+  DP            :=  -DLINUX -DCMPI
+  DPRE          :=  -DLINUX
   CFLAGS        :=  $(INCDIRS) -DLINUX
   IMODS         :=  -module
   FLIBS         :=
@@ -473,10 +473,9 @@ ifeq ($(compiler),cray_xt3)
   FFLAGS1	:=  $(INCDIRS) -fastsse -Mextend
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics
-  DA  	        :=  -DREAL8 -DLINUX -DCSCA
-  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DCSCA -DDEBUG_WARN_ELEV
-#  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DCSCA
-  DPRE	        :=  -DREAL8 -DLINUX
+  DA  	        :=  -DLINUX
+  DP  	        :=  -DLINUX -DCMPI -DDEBUG_WARN_ELEV
+#  DP  	        :=  -DLINUX -DCMPI  DPRE	        :=  -DLINUX
   CFLAGS	:=  -c89 $(INCDIRS) -DLINUX
   IMODS		:=  -module
   FLIBS  	:=
@@ -511,11 +510,11 @@ ifeq ($(compiler),cray_xt4)
   endif
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics
-  DA  	        :=  -DREAL8 -DLINUX -DCSCA
-  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DCSCA
-  DPRE	        :=  -DREAL8 -DLINUX
+  DA  	        :=  -DLINUX
+  DP  	        :=  -DLINUX -DCMPI
+  DPRE	        :=  -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE	        :=  -DREAL8 -DLINUX
+     DPRE	        :=  -DLINUX
   endif
   CFLAGS	:=  $(INCDIRS) -DLINUX
   ifeq ($(DEBUG),full)
@@ -555,9 +554,9 @@ ifeq ($(compiler),cray_xt5)
 #  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics
-  DA  	        :=  -DREAL8 -DLINUX -DCSCA
-  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DCSCA
-  DPRE	        :=  -DREAL8 -DLINUX
+  DA  	        :=  -DLINUX
+  DP  	        :=  -DLINUX -DCMPI
+  DPRE	        :=  -DLINUX
   CFLAGS	:=  -c89 $(INCDIRS) -DLINUX
   IMODS		:=  -module
   FLIBS  	:=
@@ -589,9 +588,9 @@ ifeq ($(compiler),xtintel)
 #  FFLAGS1      :=  $(INCDIRS) -Mextend -g -O0 -traceback
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1) -assume buffered_stdout
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCMPI -DCSCA
-  DPRE          :=  -DREAL8 -DLINUX
+  DA            :=  -DLINUX
+  DP            :=  -DLINUX -DCMPI
+  DPRE          :=  -DLINUX
   CFLAGS        :=  $(INCDIRS) -DLINUX
   IMODS         :=  -module
   FLIBS         :=
@@ -620,9 +619,9 @@ ifeq ($(compiler),pgi)
   FFLAGS1	:=  $(INCDIRS) -fastsse -mcmodel=medium -Mextend
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE		:=  -DREAL8 -DLINUX
+  DA		:=  -DLINUX
+  DP		:=  -DLINUX -DCMPI
+  DPRE		:=  -DLINUX
   IMODS		:=  -I
   CC		:= gcc
   CCBE          := $(CC)
@@ -651,11 +650,11 @@ ifeq ($(compiler),utils)
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCMPI -DCSCA
-  DPRE          :=  -DREAL8 -DLINUX
+  DA            :=  -DLINUX
+  DP            :=  -DLINUX -DCMPI
+  DPRE          :=  -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE               :=  -DREAL8 -DLINUX
+     DPRE               :=  -DLINUX
   endif
   CFLAGS        :=  -c89 $(INCDIRS) -DLINUX
   ifeq ($(DEBUG),full)
@@ -694,9 +693,9 @@ ifeq ($(compiler),pgi-ranger)
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE          :=  -DREAL8 -DLINUX
+  DA            :=  -DLINUX
+  DP            :=  -DLINUX -DCMPI
+  DPRE          :=  -DLINUX
   IMODS         :=  -I
   CC            := gcc
   CCBE          := $(CC)
@@ -724,11 +723,11 @@ ifeq ($(compiler),diamond)
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI 
-  DPRE          :=  -DREAL8 -DLINUX
+  DA            :=  -DLINUX
+  DP            :=  -DLINUX -DCMPI 
+  DPRE          :=  -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE          :=  -DREAL8 -DLINUX
+     DPRE          :=  -DLINUX
   endif
   IMODS         :=  -I
   CC            := icc
@@ -774,11 +773,11 @@ ifeq ($(compiler),garnet)
   endif
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1) #-r8 -Mr8 -Mr8intrinsics
-  DA  	        :=  -DREAL8 -DLINUX -DCSCA
-  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DCSCA
-  DPRE	        :=  -DREAL8 -DLINUX
+  DA  	        :=  -DLINUX
+  DP  	        :=  -DLINUX -DCMPI
+  DPRE	        :=  -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE	        :=  -DREAL8 -DLINUX
+     DPRE	        :=  -DLINUX
   endif
   CFLAGS	:=  $(INCDIRS) -DLINUX
   ifeq ($(DEBUG),full)
@@ -813,9 +812,9 @@ ifeq ($(compiler),kraken)
   FFLAGS1       :=  $(INCDIRS) -O3 -static  -132
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
-  DA            :=  -DREAL8 -DLINUX -DCSCA -DPOWELL
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DPOWELL
-  DPRE          :=  -DREAL8 -DLINUX
+  DA            :=  -DLINUX -DPOWELL
+  DP            :=  -DLINUX -DCMPI -DPOWELL
+  DPRE          :=  -DLINUX
   IMODS         :=  -I
   CC            := cc
   CCBE          := $(CC)
@@ -840,9 +839,9 @@ ifeq ($(compiler),circleci)
   FFLAGS1	:=  $(INCDIRS) -O0 -132
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI 
-  DPRE		:=  -DREAL8 -DLINUX
+  DA		:=  -DLINUX
+  DP		:=  -DLINUX -DCMPI 
+  DPRE		:=  -DLINUX
   IMODS 	:=  -I
   CC		:= icx
   CCBE		:= $(CC)
@@ -889,9 +888,9 @@ ifeq ($(compiler),pgi)
   FFLAGS1	:=  $(INCDIRS) -O2
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA  	        :=  -DREAL8 -DLINUX -DCSCA
-  DP  	        :=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE	        :=  -DREAL8 -DLINUX
+  DA  	        :=  -DLINUX
+  DP  	        :=  -DLINUX -DCMPI
+  DPRE	        :=  -DLINUX
   IMODS 	:=  -I
   CC            := pgcc
   CCBE          := $(CC)
@@ -919,9 +918,9 @@ ifeq ($(compiler),intel)
   FFLAGS1	:=  $(INCDIRS) $(OPTLVL) -extend_source -Vaxlib -assume byterecl
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA  	        :=  -DREAL8 -DLINUX -DCSCA
-  DP  	        :=  -DREAL8 -DLINUX -DCSCA -DCMPI 
-  DPRE	        :=  -DREAL8 -DLINUX
+  DA  	        :=  -DLINUX
+  DP  	        :=  -DLINUX -DCMPI 
+  DPRE	        :=  -DLINUX
   IMODS 	:=  -I
   CC            := icc
   CCBE          := $(CC)
@@ -961,11 +960,11 @@ ifeq ($(compiler),gnu)
   endif
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE		:=  -DREAL8 -DLINUX
+  DA		:=  -DLINUX
+  DP		:=  -DLINUX -DCMPI
+  DPRE		:=  -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE               :=  -DREAL8 -DLINUX
+     DPRE               :=  -DLINUX
   endif
   IMODS 	:=  -I
   CC		:= gcc
@@ -1025,11 +1024,11 @@ ifeq ($(compiler),gfortran)
   endif
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE		:=  -DREAL8 -DLINUX
+  DA		:=  -DLINUX
+  DP		:=  -DLINUX -DCMPI
+  DPRE		:=  -DLINUX
   ifeq ($(SWAN),enable)
-     DPRE               :=  -DREAL8 -DLINUX
+     DPRE               :=  -DLINUX
   endif
   FLIBS         :=
   ifeq ($(NETCDF),enable)
@@ -1076,9 +1075,8 @@ ifeq ($(arch),pc)
   FFLAGS1       := $(INCDIRS) -132 -IPF_fp_speculationfast -r8
   FFLAGS2       := $(FFLAGS1)
   FFLAGS3       := $(FFLAGS1)
-  DA            :=  -DREAL8 -DCSCA
-  DP            :=  -DREAL8 -DCSCA -DCMPI
-  DPRE          :=  -DREAL8 -DLINUX
+  DA            :=   DP            :=  -DCMPI
+  DPRE          :=  -DLINUX
   IMODS         :=  -I
   CC            :=  gcc
   CCBE          :=  $(CC)
@@ -1102,9 +1100,8 @@ ifeq ($(arch),altix)
   FFLAGS1	  := $(INCDIRS) -O3 -tpp2
   FFLAGS2	  := $(FFLAGS1)
   FFLAGS3	  := $(FFLAGS1)
-  DA	          :=  -DREAL8 -DCSCA
-  DP	          :=  -DREAL8 -DCSCA -DCMPI
-  DPRE	          :=  -DREAL8 -DLINUX
+  DA	          :=   DP	          :=  -DCMPI
+  DPRE	          :=  -DLINUX
   IMODS   	  :=  -I
   CC              :=  gcc
   CCBE            :=  $(CC)
@@ -1130,14 +1127,13 @@ ifneq (,$(findstring rs6000-aix,$(MACHINE)-$(OS)))
    FFLAGS1       := $(INCDIRS) -q64 -w -O2 -qfixed=132 -qarch=auto -qcache=auto
    FFLAGS2       := $(FFLAGS1)
    FFLAGS3       := $(FFLAGS1)
-   DA            := -WF,"-DREAL8,-DIBM,-DCSCA"
-   DP            := -tF -WF,"-DREAL8,-DIBM,-DCSCA,-DCMPI"
-   DPRE          := -tF -WF,"-DREAL8,-DIBM"
+   DA            := -WF,""
+   DP            := -tF -WF,"-DCMPI"
+   DPRE          := -tF -WF,""
    IMODS         := -I
    CC            := mpcc_r
    CCBE          :=  $(CC)
-   CFLAGS        := -q64 -I. -O2 -DIBM
-   LDFLAGS       := -q64
+   CFLAGS        := -q64 -I. -O2   LDFLAGS       := -q64
    FLIBS          :=
    MSGLIBS       := -lm
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -1173,12 +1169,11 @@ ifeq ($(IBM),p5)
   FFLAGS1       := $(FFLAGS0) -O2
   FFLAGS2       := $(FFLAGS0) -qhot -qstrict
   FFLAGS3       := $(FFLAGS0) -O3 -qinitauto
-  DA            := -WF,"-DREAL8,-DIBM,-DCSCA"
-  DP            := -tF -WF,"-DREAL8,-DIBM,-DCSCA,-DCMPI"
-  DPRE          := -tF -WF,"-DREAL8,-DIBM"
+  DA            := -WF,""
+  DP            := -tF -WF,"-DCMPI"
+  DPRE          := -tF -WF,""
   IMODS         := -I
-  CFLAGS        := $(INCDIRS) -O2 -DIBM
-  ARFLAGS	:= -X64 rv
+  CFLAGS        := $(INCDIRS) -O2  ARFLAGS	:= -X64 rv
   FLIBS          :=
   MSGLIBS       := -lm
 
@@ -1198,19 +1193,18 @@ ifeq ($(IBM),p6)
    FFLAGS2       := $(FFLAGS1)
    FFLAGS3       := $(FFLAGS1)
    ifeq ($(NETCDF),enable))
-      DA            := -WF,"-DREAL8,-DIBM,-DNETCDF,-DCSCA"
-      DP            := -tF -WF,"-DREAL8,-DIBM,-DNETCDF,-DCSCA,-DCMPI"
-      DPRE          := -tF -WF,"-DREAL8,-DIBM,-DNETCDF"
+      DA            := -WF,"-DNETCDF"
+      DP            := -tF -WF,"-DNETCDF,-DCMPI"
+      DPRE          := -tF -WF,"-DNETCDF"
    else
-      DA            := -WF,"-DREAL8,-DIBM,-DCSCA"
-      DP            := -tF -WF,"-DREAL8,-DIBM,-DCSCA,-DCMPI"
-      DPRE          := -tF -WF,"-DREAL8,-DIBM"
+      DA            := -WF,""
+      DP            := -tF -WF,"-DCMPI"
+      DPRE          := -tF -WF,""
    endif
    IMODS         := -I
    CC            := mpcc_r
    CCBE          :=  $(CC)
-   CFLAGS        := -q64 -I. -O2 -DIBM
-   LDFLAGS       := -q64
+   CFLAGS        := -q64 -I. -O2   LDFLAGS       := -q64
    FLIBS          :=
    MSGLIBS       := -lm
 # When compiling with netCDF support, the HDF5 libraries must also
@@ -1240,9 +1234,9 @@ ifeq ($(MACHINE)-$(OS),ppc64-unknown-linux-gnu)
    FFLAGS1       := $(INCDIRS) -qmaxmem=64000 -qfixed -I/bgl/BlueLight/ppcfloor/bglsys/include -O5 -qtune=440 -qcache=440 -qarch=440
    FFLAGS2       := $(FFLAGS1)
    FFLAGS3       := $(FFLAGS1)
-   DA            := -WF,"-DREAL8,-DIBM"
-   DP            := -tF -WF,"-DREAL8,-DIBM,-DCSCA,-DCMPI"
-   DPRE          := -tF -WF,"-DREAL8,-DIBM"
+   DA            := -WF,""
+   DP            := -tF -WF,"-DCMPI"
+   DPRE          := -tF -WF,""
    IMODS         := -I
    CC            := blrts_xlc
    CCBE          :=  $(CC)
@@ -1273,14 +1267,11 @@ endif
 #  FFLAGS1	:= -O2
 #  FFLAGS2	:= -O2
 #  FFLAGS3	:= -O2
-#  DA	        := -DREAL8 -DMACHSUN -DCSCA
-#  DP	        := -DREAL8 -DMACHSUN -DCSCA -DCMPI
-#  DPRE          := -DREAL8 -DMACHSUN
-#  IMODS		:= -M
+#  DA	        := -DMACHSUN#  DP	        := -DMACHSUN -DCSCA -DCMPI
+#  DPRE          := -DREAL8#  IMODS		:= -M
 #  CC       	:= cc
 #  CCBE          :=  $(CC)
-#  CFLAGS   	:= -I. -xO2 -DMACHSUN
-#  LIBS     	:=
+#  CFLAGS   	:= -I. -xO2#  LIBS     	:=
 #  MSGLIBS  	:= -lmpi
 #endif
 
@@ -1296,10 +1287,8 @@ ifneq (,$(findstring sparc-solaris,$(MACHINE)-$(OS)))
   FFLAGS1	:= $(INCDIRS) -fast -xO4 -xdepend -fsimple=1 -f -dalign -xtarget=ultra -xarch=$(ARCH)
   FFLAGS2	:= $(FFLAGS1)
   FFLAGS3	:= $(FFLAGS1)
-  DA	        := -DREAL8 -DMACHSUN -DCSCA
-  DP	        := -DREAL8 -DCMPI -DMACHSUN -DCSCA
-  DPRE          := -DREAL8 -DMACHSUN
-  IMODS		:= -M
+  DA	        :=  DP	        := -DCMPI
+  DPRE          :=  IMODS		:= -M
   CC       	:= tmcc
   CCBE          :=  $(CC)
   CFLAGS   	:= $(INCDIRS)
@@ -1324,9 +1313,9 @@ ifneq (,$(findstring alphaev6-linux,$(MACHINE)-$(OS)))
   FFLAGS1	:=  $(INCDIRS) -fixed -O2
   FFLAGS2	:=  -fixed -O2
   FFLAGS3	:=  -fixed -O2
-  DA  	        :=  -DREAL8 -DLINUX -DCSCA
-  DP  	        :=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE	        :=  -DREAL8 -DLINUX
+  DA  	        :=  -DLINUX
+  DP  	        :=  -DLINUX -DCMPI
+  DPRE	        :=  -DLINUX
   IMODS 	:=  -I
   CC            := ccc
   CCBE          :=  $(CC)
@@ -1352,9 +1341,9 @@ ifneq (,$(findstring alphaev6-osf,$(MACHINE)-$(OS)))
   FFLAGS1	:=  $(INCDIRS) -fixed -O2
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE		:=  -DREAL8 -DLINUX
+  DA		:=  -DLINUX
+  DP		:=  -DLINUX -DCMPI
+  DPRE		:=  -DLINUX
   IMODS		:=  -I
   CC		:= cc
   CCBE          :=  $(CC)
@@ -1381,10 +1370,8 @@ ifneq (,$(findstring alphaev6-dec-osf5.1,$(MACHINE)-$(VENDOR)-$(OS)))
   FFLAGS1       := $(INCDIRS) -O5 -fast -pipeline -align dcommons -assume byterecl
   FFLAGS2       := $(FFLAGS1)
   FFLAGS3       := $(FFLAGS1)
-  DA            := -DREAL8 -DCSCA
-  DP            := -DREAL8 -DCMPI -DIBM -DCSCA
-  DPRE          := -DREAL8 -DIBM
-  IMODS         := -I
+  DA            :=  DP            := -DCMPI
+  DPRE          :=  IMODS         := -I
   CC            := cc
   CCBE          :=  $(CC)
   CFLAGS        := $(INCDIRS) -O2
@@ -1410,11 +1397,9 @@ ifneq (,$(findstring sv1-unicos,$(MACHINE)-$(OS)))
   FFLAGS3	:=  $(INCDIRS) -dp -O2 -N 132
   FIXED         :=  -f fixed
   FREE          :=  -f free
-  DA  	        :=  -DREAL8 -DCRAY -DCSCA
-  DP  	        :=  -DREAL8 -DCRAY -DCSCA -DCMPI
-  DPRE	        :=  -DREAL8 -DCRAY
-  IMODS		:=  -p
-  CFLAGS	:=  $(INCDIRS) -I ../Lib -O2 -DCRAY
+  DA  	        :=   DP  	        :=  -DCMPI
+  DPRE	        :=   IMODS		:=  -p
+  CFLAGS	:=  $(INCDIRS) -I ../Lib -O2
   FLIBS  	:=
   MSGLIBS	:=  -lmpi
   C_LDFLAGS     :=
@@ -1439,13 +1424,12 @@ ifneq (,$(findstring x1-unicos,$(MACHINE)-$(OS)))
   FFLAGS3       :=  $(INCDIRS) -O2 -Oaggress
   FIXED         :=  -f fixed
   FREE          :=  -f free
-  DA  	        :=  -DREAL8 -DCRAYX1 -DCVEC
-  DP  	        :=  -DREAL8 -DCRAYX1 -DCVEC -DCMPI
-  DPRE	        :=  -DREAL8 -DCRAYX1 -UCRAY
+  DA  	        :=   DP  	        :=  -DCMPI
+  DPRE	        :=  -UCRAY
   IMODS		:=  -p
   CC            :=  cc
   CCBE          :=  $(CC)
-  CFLAGS	:=  $(INCDIRS) -I ../Lib -O2 -DCRAYX1 -UCRAY
+  CFLAGS	:=  $(INCDIRS) -I ../Lib -O2 -UCRAY
   FLIBS  	:=
   MSGLIBS	:=  -lmpi
   C_LDFLAGS     :=
@@ -1466,9 +1450,9 @@ ifneq (,$(findstring mips-irix,$(MACHINE)-$(OS)))
   FFLAGS1	  := $(INCDIRS) -O2 -OPT:Olimit=4257 -OPT:reorg_common=ON
   FFLAGS2	  := $(INCDIRS) -O2 -OPT:Olimit=4257 -OPT:reorg_common=ON
   FFLAGS3	  := $(INCDIRS) -O2 -OPT:Olimit=4257 -OPT:reorg_common=ON
-  DA	          :=  -DREAL8 -DSGI -DCSCA
-  DP	          :=  -DREAL8 -DSGI -DCSCA -DCMPI
-  DPRE	          :=  -DREAL8 -DSGI
+  DA	          :=  -DSGI
+  DP	          :=  -DSGI -DCMPI
+  DPRE	          :=  -DSGI
   IMODS   	  :=  -I
   CC              :=  cc
   CCBE            :=  $(CC)
@@ -1495,9 +1479,9 @@ ifneq (,$(findstring powerpc-darwin,$(MACHINE)-$(OS)))
   FFLAGS1	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -f fixed -W132 -I. -DLINUX
   FFLAGS2	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I.
   FFLAGS3	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I.
-  DA  	   	:=  -DREAL8 -DCSCA -DLINUX
-  DP  	   	:=  -DREAL8 -DCSCA -DCMPI -DLINUX
-  DPRE	   	:=  -DREAL8 -DLINUX
+  DA  	   	:=  -DLINUX
+  DP  	   	:=  -DCMPI -DLINUX
+  DPRE	   	:=  -DLINUX
   IMODS  	:=  -p
   CC            :=  gcc
   CCBE          :=  $(CC)
@@ -1526,9 +1510,9 @@ ifneq (,$(findstring i386-darwin,$(MACHINE)-$(OS)))
 # FFLAGS1	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -DIBM -I.
   FFLAGS2	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I.
   FFLAGS3	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I.
-  DA  	   	:=  -DREAL8 -DCSCA -DLINUX
-  DP  	   	:=  -DREAL8 -DCSCA -DLINUX -DCMPI -DNETCDF_DEBUG
-  DPRE	   	:=  -DREAL8 -DLINUX
+  DA  	   	:=  -DLINUX
+  DP  	   	:=  -DLINUX -DCMPI -DNETCDF_DEBUG
+  DPRE	   	:=  -DLINUX
   IMODS  	:=  -I
   CC            :=  gcc
   CCBE          :=  $(CC)
@@ -1552,9 +1536,9 @@ ifneq ($(FOUND), TRUE)
   FFLAGS1	:=  $(INCDIRS) -ffixed-line-length-none
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
-  DA  	   	:=  -DREAL8 -DCSCA -DLINUX
-  DP  	   	:=  -DREAL8 -DCSCA -DLINUX -DCMPI
-  DPRE	   	:=  -DREAL8 -DLINUX
+  DA  	   	:=  -DLINUX
+  DP  	   	:=  -DLINUX -DCMPI
+  DPRE	   	:=  -DLINUX
   IMODS  	:=  -I
   CC            :=  gcc
   CCBE          :=  $(CC)

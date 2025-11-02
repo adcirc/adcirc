@@ -13,229 +13,230 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_PADCSWAN AND PERL_FOUND)
+if(NOT BUILD_PADCSWAN
+   OR NOT MPI_FOUND
+   OR NOT PERL_FOUND)
+  return()
+endif()
 
-  set(SWAN1PARALLEL_SOURCES
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swmod1.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swmod2.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanSpectPart.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/m_constants.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/m_fileio.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/serv_xnl4v5.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/mod_xnl4v5.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGriddata.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGridobjects.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanCompdata.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/couple2adcirc.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SdsBabanin.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanIEM.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanBraggScat.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanQCM.f90)
+set(SWAN1PARALLEL_SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swmod1.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swmod2.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanSpectPart.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/m_constants.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/m_fileio.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/serv_xnl4v5.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/mod_xnl4v5.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGriddata.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGridobjects.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanCompdata.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/couple2adcirc.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SdsBabanin.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanIEM.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanBraggScat.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanQCM.f90)
 
-  set(SWAN2PARALLEL_SOURCES
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanmain.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanpre1.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanpre2.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swancom1.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swancom2.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swancom3.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swancom4.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swancom5.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanout1.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanout2.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanser.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanparll.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanReadGrid.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanReadADCGrid.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanReadTriangleGrid.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanReadEasymeshGrid.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanInitCompGrid.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanCheckGrid.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanCreateEdges.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGridTopology.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGridVert.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGridCell.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGridFace.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPrintGridInfo.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanFindPoint.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPointinMesh.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanBpntlist.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPrepComp.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanVertlist.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanCompUnstruc.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanDispParm.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPropvelX.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanSweepSel.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPropvelS.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanTranspAc.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanTranspX.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanDiffPar.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGSECorr.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGradDepthorK.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGradVel.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanInterpolatePoint.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanInterpolateAc.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanInterpolateOutput.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanConvAccur.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanConvStopc.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanFindObstacles.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanCrossObstacle.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanComputeForce.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanIntgratSpc.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanBndStruc.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanReadfort18.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPunCollect.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanSumOverNodes.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanMinOverNodes.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanMaxOverNodes.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanVTKWriteHeader.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanVTKWriteData.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanVTKPDataSets.f90
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpids.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpcre.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpmix.f
-      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/fftpack51.f90)
+set(SWAN2PARALLEL_SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanmain.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanpre1.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanpre2.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swancom1.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swancom2.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swancom3.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swancom4.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swancom5.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanout1.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanout2.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanser.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/swanparll.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanReadGrid.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanReadADCGrid.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanReadTriangleGrid.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanReadEasymeshGrid.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanInitCompGrid.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanCheckGrid.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanCreateEdges.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGridTopology.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGridVert.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGridCell.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGridFace.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPrintGridInfo.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanFindPoint.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPointinMesh.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanBpntlist.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPrepComp.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanVertlist.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanCompUnstruc.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanDispParm.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPropvelX.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanSweepSel.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPropvelS.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanTranspAc.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanTranspX.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanDiffPar.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGSECorr.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGradDepthorK.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanGradVel.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanInterpolatePoint.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanInterpolateAc.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanInterpolateOutput.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanConvAccur.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanConvStopc.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanFindObstacles.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanCrossObstacle.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanComputeForce.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanIntgratSpc.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanBndStruc.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanReadfort18.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanPunCollect.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanSumOverNodes.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanMinOverNodes.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanMaxOverNodes.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanVTKWriteHeader.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanVTKWriteData.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/SwanVTKPDataSets.f90
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpids.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpcre.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/ocpmix.f
+    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source/fftpack51.f90)
 
+set(PADCSWAN1_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/io.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/globalio.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/write_output.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/writer.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemerides.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/astronomic.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sun.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/moon.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/control.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90)
+
+set(PADCSWAN_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/timestep.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vsmy.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/driver.F)
+
+if(NETCDF_WORKING)
   set(PADCSWAN1_SOURCES
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/terminate.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/io.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/logging.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/globalio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/write_output.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/writer.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/gl2loc_mapping.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemerides.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/astronomic.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sun.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/moon.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/control.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90)
+      ${PADCSWAN1_SOURCES}
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
+endif()
 
-  set(PADCSWAN_SOURCES
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/timestep.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/vsmy.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/driver.F)
+if(XDMF_WORKING)
+  set(PADCSWAN1_SOURCES ${PADCSWAN1_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
+endif()
 
-  if(NETCDF_WORKING)
-    set(PADCSWAN1_SOURCES
-        ${PADCSWAN1_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
-  endif()
+# ...SWAN Configuration
+adcirc_swan_configure_padcswan()
 
-  if(XDMF_WORKING)
-    set(PADCSWAN1_SOURCES ${PADCSWAN1_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
-  endif()
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
+                                    ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source)
 
-  # ...SWAN Configuration
-  adcirc_swan_configure_padcswan()
+add_library(templib_swan1parallel OBJECT ${SWAN1PARALLEL_SOURCES})
+add_library(templib_swan2parallel OBJECT ${SWAN2PARALLEL_SOURCES})
+add_library(templib_padcswan1 OBJECT ${PADCSWAN1_SOURCES})
+add_executable(padcswan ${PADCSWAN_SOURCES})
 
-  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
-                                      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_parallel_source)
+add_dependencies(templib_swan1parallel generate_swan_parallel_sources)
+add_dependencies(templib_swan2parallel generate_swan_parallel_sources)
 
-  add_library(templib_swan1parallel OBJECT ${SWAN1PARALLEL_SOURCES})
-  add_library(templib_swan2parallel OBJECT ${SWAN2PARALLEL_SOURCES})
-  add_library(templib_padcswan1 OBJECT ${PADCSWAN1_SOURCES})
-  add_executable(padcswan ${PADCSWAN_SOURCES})
+# Configure SWAN object libraries
+adcirc_set_module_directory(templib_swan1parallel)
+adcirc_set_module_directory(templib_swan2parallel)
+target_link_libraries(templib_swan1parallel PRIVATE adcirc::swan_compiler_flags adcirc::mpi)
+target_link_libraries(templib_swan2parallel PRIVATE adcirc::swan_compiler_flags adcirc::mpi)
 
-  adcirc_add_compiler_flags(templib_padcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
-  adcirc_add_compiler_flags(padcswan ${ADDITIONAL_FLAGS_ADCIRC})
-  adcirc_add_compiler_flags_swan(templib_swan1parallel ${ADDITIONAL_FLAGS_SWAN})
-  adcirc_add_compiler_flags_swan(templib_swan2parallel ${ADDITIONAL_FLAGS_SWAN})
+if(ADDITIONAL_FLAGS_SWAN)
+  target_compile_options(templib_swan1parallel PRIVATE ${ADDITIONAL_FLAGS_SWAN})
+  target_compile_options(templib_swan2parallel PRIVATE ${ADDITIONAL_FLAGS_SWAN})
+endif()
 
-  add_dependencies(templib_padcswan1 version)
-  target_include_directories(templib_padcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_mod)
+# Configure ADCIRC+SWAN object library
+adcirc_set_module_directory(templib_padcswan1)
+target_link_libraries(
+  templib_padcswan1
+  PRIVATE adcirc::compiler_flags
+          adcirc::option_flags
+          adcirc::link_libraries
+          adcirc::mpi)
 
-  adcirc_add_mpi(templib_padcswan1)
-  adcirc_add_mpi(padcswan)
-  adcirc_add_mpi(templib_swan1parallel)
-  adcirc_add_mpi(templib_swan2parallel)
+if(ADDITIONAL_FLAGS_ADCIRC)
+  target_compile_options(templib_padcswan1 PRIVATE ${ADDITIONAL_FLAGS_ADCIRC})
+endif()
 
-  adcirc_add_netcdf_libraries(padcswan)
-  adcirc_add_grib2_libraries(templib_padcswan1)
-  adcirc_add_datetime_libraries(padcswan)
-  adcirc_add_xdmf_libraries(padcswan)
-  adcirc_add_version_library(padcswan)
-  adcirc_add_mkdir_library(padcswan)
+# Configure padcswan executable
+adcirc_set_module_directory(padcswan)
+target_link_libraries(
+  padcswan
+  PRIVATE adcirc::compiler_flags
+          adcirc::option_flags
+          adcirc::link_libraries
+          adcirc::mpi)
 
-  target_compile_definitions(templib_padcswan1 PRIVATE CSWAN)
-  target_compile_definitions(padcswan PRIVATE CSWAN)
+if(ADDITIONAL_FLAGS_ADCIRC)
+  target_compile_options(padcswan PRIVATE ${ADDITIONAL_FLAGS_ADCIRC})
+endif()
 
-  target_include_directories(templib_padcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
-  target_include_directories(templib_swan2parallel PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_padcswan1)
-  target_include_directories(templib_swan2parallel
-                             PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
-  target_include_directories(padcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_padcswan1)
-  target_include_directories(padcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
-  target_include_directories(padcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan2parallel)
+target_compile_definitions(templib_padcswan1 PRIVATE CSWAN)
+target_compile_definitions(padcswan PRIVATE CSWAN)
 
-  target_link_libraries(
-    padcswan
-    templib_swan2parallel
-    templib_padcswan1
-    templib_swan1parallel)
+target_include_directories(templib_padcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
+target_include_directories(templib_swan2parallel PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_padcswan1)
+target_include_directories(templib_swan2parallel
+                           PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
+target_include_directories(padcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_padcswan1)
+target_include_directories(padcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1parallel)
+target_include_directories(padcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan2parallel)
 
-  add_dependencies(padcswan templib_swan2parallel templib_padcswan1)
-  add_dependencies(templib_swan2parallel templib_padcswan1 templib_swan1parallel)
-  add_dependencies(
-    templib_padcswan1
-    mkdir
-    version
-    templib_swan1parallel)
+target_link_libraries(templib_swan2parallel PRIVATE templib_swan1parallel templib_padcswan1)
+target_link_libraries(templib_padcswan1 PRIVATE templib_swan1parallel)
+target_link_libraries(padcswan PRIVATE templib_swan2parallel templib_padcswan1 templib_swan1parallel)
 
-  # Create a false target for the Ninja build system. The generated sources don't give it a full picture of where it can
-  # parallelize and this helps it make the correct determinations
-  if(${CMAKE_GENERATOR} STREQUAL "Ninja")
-    add_custom_target(
-      templib_padcswan1-stub
-      BYPRODUCTS templib_padcswan1-stublib
-      COMMAND ""
-      DEPENDS templib_padcswan1)
-    add_dependencies(templib_swan2parallel templib_padcswan1-stub)
-  endif()
+install(TARGETS padcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-  install(TARGETS padcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-
-  # Conditionally enable strict compiler flags for developers
-  enable_developer_mode(${PADCSWAN1_SOURCES})
-  enable_developer_mode(${PADCSWAN_SOURCES})
-
-endif(BUILD_PADCSWAN AND PERL_FOUND)
+# Conditionally enable strict compiler flags for developers
+enable_developer_mode(${PADCSWAN1_SOURCES})
+enable_developer_mode(${PADCSWAN_SOURCES})

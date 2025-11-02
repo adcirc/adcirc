@@ -666,11 +666,7 @@ contains
                if (pert_eta_abslayer(J) <= eps) then
                   NCYC = 0
                else
-#ifdef IBM
-                  NCYC = int(timeh/PERT_ETA_ABSLAYER(J), kind(0.0d0))
-#else
                   NCYC = dble(int(timeh/PERT_ETA_ABSLAYER(J)))
-#endif
                end if
 
                ARGT = AbsLayerEtaAMIG(J)*(timeh - NCYC*pert_eta_abslayer(J)) + AbsLayerEtaFACE(J)
@@ -691,11 +687,7 @@ contains
                if (pert_vel_abslayer(J) <= eps) then
                   NCYC = 0
                else
-#ifdef IBM
-                  NCYC = int(timeh/pert_vel_abslayer(J), kind(0.0d0))
-#else
                   NCYC = dble(int(timeh/pert_vel_abslayer(J)))
-#endif
                end if
 
                ARGT = AbsLayerQAMIG(J)*(timeh - NCYC*pert_vel_abslayer(J)) + AbsLayerQFACE(J)

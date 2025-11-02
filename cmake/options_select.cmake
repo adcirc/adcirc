@@ -19,7 +19,7 @@
 option(ENABLE_OUTPUT_NETCDF "Turn on netCDF output options" OFF)
 if(ENABLE_OUTPUT_NETCDF)
   option(ENABLE_OUTPUT_XDMF "Turn on XDMF output options" OFF)
-endif(ENABLE_OUTPUT_NETCDF)
+endif()
 # ######################################################################################################################
 
 # ######################################################################################################################
@@ -40,7 +40,7 @@ if(PERL_FOUND)
   option(BUILD_ADCSWAN "Build the serial SWAN+ADCIRC executable" OFF)
   option(BUILD_SWAN "Build the serial SWAN executable" OFF)
   mark_as_advanced(BUILD_SWAN)
-endif(PERL_FOUND)
+endif()
 
 if(MPI_FOUND)
   option(BUILD_ADCPREP "Build the MPI parallel ADCIRC preprocessor" OFF)
@@ -51,13 +51,20 @@ if(MPI_FOUND)
     option(BUILD_PADCSWAN "Build the MPI parallel SWAN+ADCIRC executable" OFF)
     option(BUILD_PUNSWAN "Build the MPI parallel unstructured SWAN executable" OFF)
     mark_as_advanced(BUILD_PUNSWAN)
-  endif(PERL_FOUND)
-endif(MPI_FOUND)
+  endif()
+endif()
 
 option(BUILD_ASWIP "Build ASWIP (ASymmetric Wind Input Preprocessor)")
 option(BUILD_UTILITIES "Build the ADCIRC utility programs" OFF)
 option(ENABLE_GRIB2 "Use GRIB2API static libraries." OFF)
 option(ENABLE_DATETIME "Use DATETIME static libraries." OFF)
+
+# GRIB2 requires DATETIME
+if(ENABLE_GRIB2 AND NOT ENABLE_DATETIME)
+  set(ENABLE_DATETIME
+      ON
+      CACHE BOOL "Use DATETIME static libraries (required by GRIB2)" FORCE)
+endif()
 # ######################################################################################################################
 
 # ######################################################################################################################
@@ -122,7 +129,7 @@ if(ENABLE_OUTPUT_XDMF)
     "")
 else(ENABLE_OUTPUT_XDMF)
   unset(XDMFHOME CACHE)
-endif(ENABLE_OUTPUT_XDMF)
+endif()
 # ######################################################################################################################
 
 # ######################################################################################################################
@@ -134,7 +141,7 @@ if(PERL_FOUND)
   set(ADDITIONAL_FLAGS_SWAN
       ""
       CACHE STRING "Additional flags to compile SWAN with")
-endif(PERL_FOUND)
+endif()
 set(ADDITIONAL_FLAGS_ADCPREP
     ""
     CACHE STRING "Additional flags to compile ADCPREP with")
@@ -147,15 +154,6 @@ set(ADDITIONAL_FLAGS_UTLIITIES
 # ######################################################################################################################
 
 # ######################################################################################################################
-option(IBM "Format code for IBM based architectures" OFF)
-option(SUN "Format code for SUN based architectures" OFF)
-option(CRAY "Format code for CRAY based architectures" OFF)
-option(CRAYX1 "Format code for CRAYX1 based architectures" OFF)
-mark_as_advanced(
-  IBM
-  SUN
-  CRAY
-  CRAYX1)
 
 option(DEBUG_FULL_STACK "Write the detailed stack trace during debugging" OFF)
 option(DEBUG_FLUSH_MESSAGES "Do not allow caching of screen printed messages" OFF)
@@ -209,8 +207,7 @@ mark_as_advanced(
   DEBUG_COUPLE2SWAN_TRACE
   DEBUG_ADCIRC_TRACE
   DEBUG_HOLLAND
-  DEBUG_NWS14
-  IBM)
+  DEBUG_NWS14)
 
 option(ENABLE_POWELL
        "Force Powell wind drag to be enabled. Warning: Overrides any other options specified at run time." OFF)
@@ -221,9 +218,6 @@ if(ENABLE_POWELL)
       "The compile time enabled Powell wind drag forcing is deprecated and users should switch to the &metControl namelist. This feature will be removed in a future release"
   )
 endif()
-
-option(VECTOR_COMPUTER "Assume the system is a vector computer" OFF)
-mark_as_advanced(VECTOR_COMPUTER)
 
 option(ADCIRC_NOF2008 "The fortran compiler being used does not have F2008 intrinsics" OFF)
 mark_as_advanced(ADCIRC_NOF2008)
