@@ -1600,14 +1600,13 @@ C...     Terms from momentum eqs.
 
 C...     Spatially varying Tau0 terms
      &        +Tau0SpaVar
-C
+
 C..... DW: begin, absorbing layer
-     &        +(OnDiag*E0N3*SPM3 + OffDiag*(E0N1*SPM1+E0N2*SPM1))*MsFacR_S
+     &        +(OnDiag*E0N3*SPM3 + OffDiag*(E0N1*SPM1+E0N2*SPM2))*MsFacR_S
      &        +(OnDiag*ESAN3*SPM3 + OffDiag*(ESAN1*SPM1+ESAN2*SPM2))*MsFacRS_T
      &        +(OnDiag*ABC00_EAN3*SPM3 + 
      &               OffDiag*(ABC00_EAN1*SPM1 + ABC00_EAN2*SPM2))*MsFacRS_ABC00
 C..... END DW
-C
 
 C...     Put these partial products into further elemental storage for a vector computer
 C...     These will be put into nodal storage outside of the elemental loop
