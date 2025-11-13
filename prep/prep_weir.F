@@ -32,7 +32,7 @@ C
             USE PRE_GLOBAL,ONLY: NVELL,IBCONNR,LBCODE,NBOU,MNVEL,NBVV,X,
      &                           Y,NVEL,NPROC,NNODG 
             USE KDTREE2_MODULE
-            USE GLOBAL,ONLY: SCREENUNIT
+            USE mod_logging,ONLY: SCREENUNIT
 
             IMPLICIT NONE
             

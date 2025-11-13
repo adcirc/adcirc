@@ -75,8 +75,8 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
       module momentum
-      use global, only : DEBUG, INFO, WARNING, ERROR, setMessageSource,
-     &   allMessage, logMessage, unsetMessageSource
+      use mod_logging, only : setMessageSource, allMessage, logMessage,
+     &   unsetMessageSource, DEBUG, INFO, WARNING, ERROR
       implicit none
 
       real(8),allocatable :: auv(:,:) ! WJP allowing for the case auv11 ~= auv22

@@ -49,7 +49,7 @@
 !> @endcode
 module mod_nws08
 
-   use global, only: allMessage, DEBUG, ERROR, ECHO, setMessageSource, unsetMessageSource
+   use mod_logging, only: DEBUG, ERROR, ECHO, allMessage, setMessageSource, unsetMessageSource
 
    implicit none
 
@@ -143,12 +143,14 @@ contains
    !> @return The vortex model ID
    !----------------------------------------------------------------
    integer function getVortexModelId(vortexModelStr) result(id)
-      use global, only: toLowercase, scratchMessage, allMessage
+      use global, only: toLowercase
+      use mod_logging, only: allMessage
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       character(*), intent(in) :: vortexModelStr
 
       character(len=len(vortexModelStr)) :: vortexModelStrLower
+      character(1024) :: scratchMessage
 
       vortexModelStrLower = toLowercase(trim(vortexModelStr))
 
@@ -173,9 +175,11 @@ contains
    !> @return The vortex model string
    !----------------------------------------------------------------
    character(256) function getVortexModelString()
-      use global, only: scratchMessage, allMessage
+      use mod_logging, only: allMessage
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
+
+      character(1024) :: scratchMessage
 
       select case (vortexModelId)
       case (VORTEX_MODEL_HOLLAND)
@@ -196,12 +200,14 @@ contains
    !> @return The background wind model ID
    !----------------------------------------------------------------
    integer function getBackgroundWindModelId(backgroundWindModelStr) result(id)
-      use global, only: toLowercase, scratchMessage, allMessage
+      use global, only: toLowercase
+      use mod_logging, only: allMessage
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       character(*), intent(in) :: backgroundWindModelStr
 
       character(len=len(backgroundWindModelStr)) :: backgroundWindModelStrLower
+      character(1024) :: scratchMessage
 
       backgroundWindModelStrLower = toLowercase(trim(backgroundWindModelStr))
 
@@ -226,9 +232,11 @@ contains
    !> @return The background wind model string
    !----------------------------------------------------------------
    character(256) function getBackgroundWindModelString()
-      use global, only: scratchMessage, allMessage
+      use mod_logging, only: allMessage
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
+
+      character(1024) :: scratchMessage
 
       select case (backgroundWindModelId)
       case (BACKGROUND_MODEL_RADIALVELOCITYWEIGHTED)
@@ -249,12 +257,14 @@ contains
    !> @return The BCalc ID
    !----------------------------------------------------------------
    integer function getBCalcId(BCalcStr) result(id)
-      use global, only: toLowercase, scratchMessage, allMessage
+      use global, only: toLowercase
+      use mod_logging, only: allMessage
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       character(*), intent(in) :: BCalcStr
 
       character(len=len(BCalcStr)) :: BCalcStrLower
+      character(1024) :: scratchMessage
 
       BCalcStrLower = toLowercase(trim(BCalcStr))
 
@@ -279,9 +289,11 @@ contains
    !> @return The BCalc string
    !----------------------------------------------------------------
    character(256) function getBCalcString()
-      use global, only: scratchMessage, logMessage
+      use mod_logging, only: logMessage
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
+
+      character(1024) :: scratchMessage
 
       select case (BCalcId)
       case (BCALC_EXACT)
@@ -301,7 +313,8 @@ contains
    !> @param iounit The unit number to read from
    !----------------------------------------------------------------
    subroutine readNws08Namelist(iounit)
-      use global, only: WARNING, screenMessage, scratchMessage, logMessage, toLowercase, logNamelistReadStatus
+      use global, only: toLowercase, logNamelistReadStatus
+      use mod_logging, only: screenMessage, logMessage, WARNING
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       real(8), parameter :: eps = epsilon(1.0d0)
@@ -312,6 +325,7 @@ contains
       character(len=256) :: BCalc
       character(len=256) :: ios_nml_error_msg
       character(len=256) :: namelistSpecifier
+      character(1024) :: scratchMessage
 
       namelist /nws08Control/ &
          vortexModel, &
@@ -905,7 +919,8 @@ contains
 !----------------------------------------------------------------
    subroutine readBestTrackData()
       use SIZES, only: GBLINPUTDIR
-      use GLOBAL, only: RNDAY, openFileForRead, timeconv
+      use GLOBAL, only: RNDAY, timeconv
+      use mod_io, only: openFileForRead
       use VORTEX, only: uvtrans
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none

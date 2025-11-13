@@ -115,16 +115,18 @@ C******************************************************************************
      &   FileFmtRev
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
-     &   get_numwriters, mnstae, mnwproh, mnwproc
+     &   get_numwriters, mnstae, mnwproh, mnwproc, localdir
       USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
-     &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, 
-     &   dynamicWaterLevelCorrectionSta, DEBUG, INFO, allMessage, itime, dtdp, statim,
-     &   CHotHS, dtdpHS, FileFmtVersion, ifnlcat, nabout, ncchange,
+     &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2,
+     &   dynamicWaterLevelCorrectionSta, itime, dtdp, statim,
+     &   CHotHS, dtdpHS, FileFmtVersion, ifnlcat, ncchange,
      &   ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im, iths,
-     &   nolica, nolicat, nolifa, nscreen, nstae, nt, screenunit,
-     &   version_number, initLogging, setMessageSource, screenMessage,
-     &   openLogFile, unsetMessageSource, np_global, rnp_global,
-     &   scratchMessage, CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta
+     &   nolica, nolicat, nolifa, nstae, nt,
+     &   version_number, np_global, rnp_global,
+     &   CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta
+      USE mod_logging, ONLY : allMessage, setMessageSource, screenMessage,
+     &   openLogFile, unsetMessageSource, DEBUG, INFO, screenUnit,
+     &   nabout, nscreen, ECHO, t_log_level
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
      &   initVEW1DChannelWetPerimeter
       use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
@@ -162,9 +164,9 @@ C******************************************************************************
       INTEGER :: iargc    ! function to return the number of command line arguments
       INTEGER :: argcount ! number of command line arguments
       CHARACTER(2048) :: cmdlinearg ! a single command line argument
+      character(1024) :: scratchMessage
       INTEGER :: i        ! command line argument counter
-
-      REAL (8):: start_time = 0.D0, end_time = 0.D0
+      REAL (8) :: start_time = 0.D0, end_time = 0.D0
 
       ! jgf51.52.07: Added command line option to just write out
       ! the ADCIRC version number and exit. This is to allow 
@@ -195,10 +197,9 @@ C******************************************************************************
          end do
       endif
 
-      call initLogging()
-      nabout = 0 !jgf52.08.01: Initialize log level to ECHO.
+      nabout = ECHO
 #ifdef EBUG
-      nabout = -1 !jgf52.08.01: Initialize log level to DEBUG if so compiled
+      nabout = DEBUG
 #endif
       call setMessageSource("ADCIRC_Init")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
@@ -218,7 +219,7 @@ C******************************************************************************
         CALL MSG_INIT()      ! Init MPI and get MPI-rank of this cpu
       ENDIF
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
-      call openLogFile()     ! jgf50.65: open subdomain log files (fort.16)
+      call openLogFile(localdir)  ! jgf50.65: open subdomain log files (fort.16)
       CALL WRITER_INIT()     ! Initialize WRITER module
       CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
       if ( (mnwproh > 0.or.mnwproc > 0) .and. myProc >= mnproc) then
@@ -429,8 +430,10 @@ C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
-      USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource, allMessage,
-     &   unsetMessageSource, statim, dtdp, screenunit, logMessage, earlyterminate
+      USE GLOBAL, ONLY : iTime, statim, dtdp,
+     &   earlyterminate
+      USE mod_logging, ONLY : setMessageSource, allMessage,
+     &   unsetMessageSource, logMessage, DEBUG, INFO
 #ifdef CMPI
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
@@ -536,8 +539,9 @@ C******************************************************************************
 C*    ADCIRC finalize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Final(NO_MPI_FINALIZE)
-      USE GLOBAL, ONLY : iTime, DEBUG, setMessageSource, allMessage,
-     &   unsetMessageSource
+      USE GLOBAL, ONLY : iTime
+      USE mod_logging, ONLY : setMessageSource, allMessage,
+     &   unsetMessageSource, DEBUG
       USE HARM, ONLY : solveHarmonicAnalysis
       USE WRITE_OUTPUT, ONLY : writeHarmonicAnalysisOutput
 #ifdef CMPI

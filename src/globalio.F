@@ -28,6 +28,9 @@
       use SIZES
       use VERSION
       use GLOBAL
+      use mod_logging, only: DEBUG, ERROR, INFO, WARNING,
+     &     setMessageSource, unsetMessageSource, allMessage, logMessage
+      use mod_io, only: openFileForRead
       use MESH, ONLY : NP, AGRID
 #ifdef CMPI
       use mpi_f08, only: MPI_Reduce, MPI_INTEGER, MPI_SUM,
@@ -1399,9 +1402,10 @@ C
       integer, intent(in) :: lun               ! logical unit number to write to
       character(*), intent(in) :: filename     ! name of file to create
       integer, intent(in) :: numSta    ! number of stations in subdomain in parallel
-      integer, intent(in) :: numSta_g  ! number of fulldomain stations in parallel 
+      integer, intent(in) :: numSta_g  ! number of fulldomain stations in parallel
       character(len=*), intent(in) :: typeStr ! the type of header to write
       integer :: nstations
+      character(1024) :: scratchMessage
 
 C     Open the file
       open(lun, file=filename, status='UNKNOWN')
@@ -1475,6 +1479,7 @@ C
      &            numNodes, typeStr)
       USE SIZES
       USE GLOBAL
+      use mod_logging, only: screenUnit
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use global_3dvs, only:
      &   ndset3dgv, nspo3dgv, nfen,
@@ -1594,6 +1599,7 @@ C----------------------------------------------------------------------
       real(8), pointer :: rdata(:)
       real(8) :: TimeMM ! timestamp of the min/max data in seconds since cold start
       integer :: ITMM ! time step of the min/max data in seconds since cold start
+      character(1024) :: scratchMessage
 
       call setMessageSource("readMinMax")
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
@@ -1794,10 +1800,10 @@ C     jgf52.08.03: Reduced subroutine arguments to OutputDataDescript_t
 C     and an indicator of whether the file was found; removed hardwired
 C     variables. 
 C-----------------------------------------------------------------------
-      subroutine readAndMapToSubdomainMaxMin(descript, timeloc, fileFound)     
-#ifdef CMPI      
+      subroutine readAndMapToSubdomainMaxMin(descript, timeloc, fileFound)
+#ifdef CMPI
       use messenger,only:mapToSubdomainIntMPI,mapToSubdomainRealMPI
-#endif      
+#endif
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
       real(8), intent(in) :: timeloc ! adcirc time in seconds since cold start
@@ -1805,12 +1811,14 @@ C-----------------------------------------------------------------------
       integer :: ios  ! i/o status
       integer,allocatable :: itmp0(:),itmp1(:)
       real(8),allocatable :: tmp0(:),tmp1(:)
+      character(1024) :: scratchMessage
 C
       call setMessageSource("readAndMapToSubdomainMaxMin")
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      call openFileForRead(descript%lun,trim(descript%file_name), ios)
+      call openFileForRead(descript%lun,trim(descript%file_name), ios,
+     &   required=.FALSE.)
       if ( ios.ne.0 ) then
          fileFound = .false.
          write(scratchMessage,3333) trim(descript % file_name)

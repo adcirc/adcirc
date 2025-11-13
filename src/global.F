@@ -87,8 +87,8 @@ C     jgf46.10 user-controlled warning, dump and error levels on elevations
       INTEGER WarnElevDumpLimit ! max dumps; ADCIRC terminates if exceeded
       INTEGER WarnElevDumpCounter ! counter for number of elev dumps to fort.69
       REAL(8) ErrorElev      ! ADCIRC terminates if this elev is exceeded
-      INTEGER :: screenUnit = 6 ! jgf46.19 I/O unit where screen output is sent
       INTEGER :: Terminate_LocalProc = 0 ! zc - allow a single processor to initiate code shutdown
+C     Utility variables for formatting messages
 C     DMW 202401 Check for velocity exceeding error level as well as NaNs
       REAL(8) WarnVel      ! ADCIRC issues a warning if this vel is exceeded
       INTEGER :: earlyterminate = 0
@@ -434,7 +434,6 @@ C.....for VEW1D sb
       REAL(8) DT
 C                                
       INTEGER NOLICA,NOLIFA,IHOT,IDEN
-      INTEGER :: NSCREEN = 1
 C...
 C...DECLARE REAL(8) AND CHAR VARIABLES, EQUIVALENCES
 C...
@@ -536,7 +535,6 @@ C     size has changed after a hotstart.
       REAL(8),ALLOCATABLE ::   RPIPEWL1AVG(:),RPIPEWL2AVG(:)
       INTEGER  NODEDRYMIN,NODEWETMIN
       INTEGER  IM
-      INTEGER :: NABOUT = 0
       INTEGER  NFFR
       INTEGER  NFOVER,NOLICAT,NOUTC
       INTEGER  NOUTE,NSPOOLE,NOUTV,NSPOOLV
@@ -800,23 +798,6 @@ C....  Set these controls to off by default. (Large value on slim effectively as
       logical :: directvelWD = .false.,  useHF = .false.
 C.... DMW
 
-C
-C     jgf49.44: Log levels, in order from largest amount of log messages
-C     written (DEBUG) to fewest log messages written (ERROR). Compared
-C     to the value of NABOUT when determining which messages to write
-C     to the screen or to log files.
-      INTEGER, PARAMETER :: DEBUG = -1  ! write all messages and echo input
-      INTEGER, PARAMETER :: ECHO = 0    ! echo input, plus write all non-debug
-      INTEGER, PARAMETER :: INFO = 1    ! don't echo input; write all non-debug
-      INTEGER, PARAMETER :: WARNING = 2 ! don't echo input; write only warn/err
-      INTEGER, PARAMETER :: ERROR = 3   ! don't echo input; only fatal msgs
-C
-      CHARACTER(len=10), dimension(5) :: logLevelNames
-      CHARACTER(len=50), dimension(50) :: messageSources ! subroutine names
-      CHARACTER(len=1024) :: scratchMessage ! used for formatted messages
-      CHARACTER(len=1024) :: scratchFormat  ! used for Fortran format strings
-      INTEGER :: sourceNumber ! index into messageSources for current sub
-
 C     v49.48.01 tcm 20110126 Variables related to kdtree searches
       INTEGER :: SRCHDP=100
       TYPE(KDTREE2), POINTER :: TREE
@@ -837,264 +818,6 @@ C-------------------end of data declarations----------------------------------C
 
       CONTAINS
 
-C--------------------------------------------------------------------
-C     S U B R O U T I N E    I N I T   L O G G I N G
-C--------------------------------------------------------------------
-C     jgf49.44: Initialize the names for the logging levels and the counter
-C     for the current subroutine.
-C--------------------------------------------------------------------
-      SUBROUTINE initLogging()
-      IMPLICIT NONE
-C...
-C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
-C...
-      sourceNumber = 0
-      logLevelNames(1) = "DEBUG"
-      logLevelNames(2) = "ECHO"
-      logLevelNames(3) = "INFO"
-      logLevelNames(4) = "WARNING"
-      logLevelNames(5) = "ERROR"
-
-C--------------------------------------------------------------------
-      END SUBROUTINE initLogging
-C--------------------------------------------------------------------
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E    O P E N   L O G   F I L E
-C--------------------------------------------------------------------
-C     jgf50.65: Open the log file; this must be called after make dirname
-C     so that we know where to put this log file.
-C--------------------------------------------------------------------
-      SUBROUTINE openLogFile()
-      use sizes, only : localDir
-      IMPLICIT NONE
-C...
-C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
-C...
-C     cms51.06: moved fort.33 file from read_input.F to here
-#ifdef CMPI
-      OPEN(16,FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
-     &    STATUS='REPLACE')
-      OPEN(33,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
-     &    STATUS='REPLACE')
-      
-#else
-      OPEN(16,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
-      OPEN(33,FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
-#endif
-
-    
-C--------------------------------------------------------------------
-      END SUBROUTINE openLogFile
-C--------------------------------------------------------------------
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E    S C R E E N
-C--------------------------------------------------------------------
-C     jgf49.44: General purpose subroutine to write a message to
-C     the screen with a certain "logging level", and subject to the
-C     user's selection of where to write screen output. The logging
-C     level is controlled by NABOUT from the fort.15 file. The actual
-C     destination of messages written to the screen is controlled by
-C     NSCREEN from the fort.15 file.
-C
-C     In parallel, only the processor with rank 0 actually writes
-C     the message.
-C
-C     This subroutine assumes that the global variable "caller" has
-C     been set to the name of the subroutine calling it. Therefore,
-C     the setMessageSource subroutine must be called at the beginning
-C     of the subroutine that calls this one, and unsetMessageSource
-C     must be called at the end.
-C--------------------------------------------------------------------
-      SUBROUTINE screenMessage(level, message)
-      USE SIZES, ONLY : myProc
-      IMPLICIT NONE
-      INTEGER, intent(in) :: level
-      CHARACTER(*), intent(in) :: message
-      INTEGER j  ! loop counter for stack
-C
-      IF (myProc.eq.0) THEN
-         IF (NSCREEN.ne.0) THEN
-            IF (level.ge.NABOUT) THEN
-#ifdef FULL_STACK
-               write(screenUnit,331,advance="no")
-     &             trim(logLevelNames(level+2)),
-     &             (trim(messageSources(j)),j=1,sourceNumber)
-               write(screenUnit,332) trim(message)
-#else
-               write(screenUnit,333) trim(logLevelNames(level+2)),
-     &             trim(messageSources(sourceNumber)), trim(message)
-#endif
-!#ifdef FLUSH_MESSAGES
-               flush(screenUnit)
-!#endif
-            ENDIF
-         ENDIF
-      ENDIF
-331   FORMAT(A,": ",A,50(:,"->",A))
-332   FORMAT(": ",A)
-333   FORMAT(A,": ",A,": ",A)
-C--------------------------------------------------------------------
-      END SUBROUTINE screenMessage
-C--------------------------------------------------------------------
-
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E    L O G   M E S S A G E
-C--------------------------------------------------------------------
-C     jgf49.44: General purpose subroutine to write a message to
-C     the fort.16 file. In parallel, processors of all ranks will
-C     write the message to their own subdomain fort.16 files.
-C
-C     This subroutine assumes that the global variable "caller" has
-C     been set to the name of the subroutine calling it. Therefore,
-C     the setMessageSource subroutine must be called at the beginning
-C     of the subroutine that calls this one, and unsetMessageSource
-C     must be called at the end.
-C--------------------------------------------------------------------
-      SUBROUTINE logMessage(level, message)
-      IMPLICIT NONE
-      INTEGER, intent(in) :: level
-      CHARACTER(*), intent(in) :: message
-      INTEGER j  ! loop counter for stack
-C
-      IF (level.ge.NABOUT) THEN
-#ifdef FULL_STACK
-         write(16,331,advance="no") trim(logLevelNames(level+2)),
-     &       (trim(messageSources(j)),j=1,sourceNumber)
-         write(16,332) trim(message)
-#else
-         write(16,333) trim(logLevelNames(level+2)),
-     &       trim(messageSources(sourceNumber)), trim(message)
-#endif
-!#ifdef FLUSH_MESSAGES
-               flush(16)
-!#endif
-      ENDIF
-331   FORMAT(A,": ",A,50(:,"->",A))
-332   FORMAT(": ",A)
-333   FORMAT(A,": ",A,": ",A)
-C--------------------------------------------------------------------
-      END SUBROUTINE logMessage
-C--------------------------------------------------------------------
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E   A L L    M E S S A G E
-C--------------------------------------------------------------------
-C     jgf49.44: General purpose subroutine to write a message to
-C     both the screen and to the fort.16 log file.
-C--------------------------------------------------------------------
-      SUBROUTINE allMessage(level, message)
-      IMPLICIT NONE
-      INTEGER, intent(in) :: level
-      CHARACTER(*), intent(in) :: message
-C
-      call screenMessage(level, message)
-      call logMessage(level, message)
-
-C--------------------------------------------------------------------
-      END SUBROUTINE allMessage
-C--------------------------------------------------------------------
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E   S E T   M E S S A G E   S O U R C E
-C--------------------------------------------------------------------
-C     jgf49.44: Sets the name of the subroutine that is writing
-C     log and/or screen messages. Must use at the start of any subroutine
-C     that calls screen, logMessage, or allMessage.
-C--------------------------------------------------------------------
-      SUBROUTINE setMessageSource(source)
-      IMPLICIT NONE
-      CHARACTER(*), intent(in) :: source
-C
-      sourceNumber = sourceNumber + 1
-      messageSources(sourceNumber) = source
-C--------------------------------------------------------------------
-      END SUBROUTINE setMessageSource
-C--------------------------------------------------------------------
-
-C--------------------------------------------------------------------
-C     S U B R O U T I N E   U N S E T   M E S S A G E   S O U R C E
-C--------------------------------------------------------------------
-C     jgf49.44: Removes the name of the subroutine that is no longer
-C     writing log and/or screen messages. Must use at the end of
-C     any subroutine that calls screen, logMessage, or allMessage.
-C--------------------------------------------------------------------
-      SUBROUTINE unsetMessageSource()
-      IMPLICIT NONE
-C
-      sourceNumber = sourceNumber - 1
-C--------------------------------------------------------------------
-      END SUBROUTINE unsetMessageSource
-C--------------------------------------------------------------------
-
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E   O P E N  F I L E  F O R  R E A D
-C-----------------------------------------------------------------------
-C     jgf50.16 Added general subroutine for opening an existing input
-C     file for reading. Includes error checking.
-C-----------------------------------------------------------------------
-      SUBROUTINE openFileForRead(lun, filename, errorIO)
-      IMPLICIT NONE
-      INTEGER, intent(in) :: lun   ! fortran logical unit number
-      CHARACTER(*), intent(in) :: filename ! full pathname of file
-      INTEGER, intent(out) :: errorIO  ! zero if the file opened successfully
-      LOGICAL :: fileFound    ! .true. if the file is present
-C
-      call setMessageSource("openFileForRead")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-C
-      errorIO = 0
-C
-C     Check to see if file exists
-      write(scratchMessage,21) lun
-  21  format("Searching for file to open on unit ",i0,"...")
-      call logMessage(INFO,trim(scratchMessage))
-      inquire(FILE=trim(filename),EXIST=fileFound)
-      if (fileFound.eqv..false.) then
-         write(scratchMessage,23) trim(filename)
-  23     format("The file '",A,"' was not found.")
-         call allMessage(INFO,scratchMessage)
-         errorIO = 1
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()
-         return  ! file not found
-      else
-         write(scratchMessage,24) trim(filename)
-  24     format("The file '",A,"' was found. The file will be opened.")
-         call logMessage(INFO,trim(scratchMessage))
-      endif
-C
-C     Open existing file
-      OPEN(lun,FILE=trim(filename),STATUS='OLD',
-     & ACTION='READ',IOSTAT=errorIO)
-      if (errorIO.ne.0) then
-          write(scratchMessage,25) trim(filename)
-  25      format("Could not open the file '",A,"'.")
-          call allMessage(ERROR,trim(scratchMessage))
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-          call allMessage(DEBUG,"Return.")
-#endif
-          call unsetMessageSource()
-          return  ! file found but could not be opened
-      else
-         write(scratchMessage,26) trim(filename)
-  26     format("The file '",A,"' was opened successfully.")
-         call logMessage(INFO,trim(scratchMessage))
-      endif
-
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      return
-C-----------------------------------------------------------------------
-      END SUBROUTINE openFileForRead
 C-----------------------------------------------------------------------
 
 C     ----------------------------------------------------------------
@@ -1622,6 +1345,7 @@ C-------------------------------------------------------------------
       !                          and not just spaces.
       !=================================================================
       subroutine parse (line, lvar)
+      use mod_logging, only: allMessage, ERROR, setMessageSource, unsetMessageSource, DEBUG
       IMPLICIT NONE
       CHARACTER(132) LINE,L
       CHARACTER(50) LVAR(3)
@@ -1709,6 +1433,7 @@ C              SPACES; DELETES CONTROL CHARACTERS;REMOVES INITIAL SPACES.
 C              Adapted from stringmod.f90 from the website:
 C              http://www.gbenthien.net/strings/index.html
       !=================================================================
+       use mod_logging, only: DEBUG, setMessageSource, unsetMessageSource, allMessage
        IMPLICIT NONE
 
        INTEGER :: I,K,ISP,LENSTR,ICH
@@ -1845,6 +1570,7 @@ C   the beginning of the year.                                         *
 C                                                                      *
 C***********************************************************************
       REAL(8) FUNCTION TIMECONV(IYR,IMO,IDAY,IHR,IMIN,SEC) RESULT(TIMESEC)
+      use mod_logging, only: allMessage, ERROR
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: IYR,IMO,IDAY,IHR,IMIN
       REAL(8), INTENT(IN) :: SEC
@@ -1881,10 +1607,13 @@ C     jgf52.08.02: Record the i/o status associated with reading the
 C     namelist using the negative, zero, or positive value of ios.
 C-----------------------------------------------------------------------
       subroutine logNamelistReadStatus(nmlname, ios, msg)
+      use mod_logging, only: ERROR, INFO, DEBUG, logMessage,
+     &      setMessageSource, unsetMessageSource, allMessage
       implicit none
       character(len=*), intent(in) :: nmlname
       character(len=*), intent(in) :: msg
       integer, intent(in) :: ios
+      character(1024) :: scratchMessage
 
       call setMessageSource("logNameListReadStatus")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)

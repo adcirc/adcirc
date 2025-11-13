@@ -24,9 +24,9 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
       USE SIZES,  ONLY: MNEI
-      USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
-     &          setMessageSource, unsetMessageSource, allMessage,
-     &          scratchMessage, logMessage, NB, NM, MLD, SigTS,
+      USE mod_logging, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
+     &          setMessageSource, unsetMessageSource, allMessage, logMessage
+      USE GLOBAL, ONLY : NB, NM, MLD, SigTS,
      &          VIDBCPDXOH, VIDBCPDYOH, VIDISPDXOH, VIDISPDYOH, IDEN
       USE ADC_CONSTANTS, ONLY: SigT0
 #ifdef DATETIME

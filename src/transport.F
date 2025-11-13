@@ -1228,7 +1228,7 @@ C    Adapted from Numerical Recipes chapter 2                          *
 C***********************************************************************
 c
       SUBROUTINE ADC_TRIDAG2(A,B,C,R,U,N)
-      USE GLOBAL, ONLY: ScreenUnit
+      USE mod_logging, ONLY: ScreenUnit
       USE mod_terminate, ONLY: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       INTEGER :: J, N
@@ -1317,6 +1317,8 @@ C*************************************************************************
       Subroutine cubic_vertical_interpolation ( inarray_vertical, SigmaNN, transN2_z, NN, J )
 
       USE GLOBAL_3DVS
+      USE mod_logging, ONLY: DEBUG, allMessage, setMessageSource,
+     &                       unsetMessageSource
       IMPLICIT NONE
       REAL(8) :: transN2_z
       REAL(8) :: SigmaNN     !Sigma value of a neighbor node

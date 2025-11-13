@@ -85,11 +85,11 @@ contains
    !  LEVELS
    !-----------------------------------------------------------------------
    subroutine ALLOCATE_WEIRS()
-      use GLOBAL, only: allMessage, setMessageSource, &
-                        unsetMessageSource
+      use mod_logging, only: allMessage, setMessageSource, &
+                             unsetMessageSource
       use BOUNDARIES, only: NVEL, BARINHT, BARLANHT
 #if defined(WEIR_trACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: DEBUG
 #endif
       implicit none
 
@@ -138,9 +138,9 @@ end module WEIR
 module TIME_VARYING_WEIR_BOUNDARY
    use SIZES, only: MYPROC, LOCALDIR, GLOBALDIR
    use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-   use GLOBAL, only: SCREENUNIT, logMessage, allMessage, &
-                     setMessageSource, unsetMessageSource, ERROR, INFO, ECHO, &
-                     DEBUG, WARNING, ScratchMessage, ScreenMessage
+   use mod_logging, only: logMessage, allMessage, ScreenMessage, &
+                          setMessageSource, unsetMessageSource, ERROR, INFO, ECHO, &
+                          DEBUG, WARNING, screenUnit
    use KDTREE2_MODULE, only: KDTREE2, KDTREE2_CREATE, KDTREE2_N_NEAREST, KDTREE2_RESULT, KDTREE2_DESTROY
    use WEIR, only: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2, ALLOCATE_WEIRS, found_tvw_nml, &
                    BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARSLIM64_ELEM, BARSLIM64_EDGE, &
@@ -416,6 +416,7 @@ contains
       integer, intent(OUT) :: IDX
       integer, parameter :: SEARCHDEPTH = 2
       type(KDTREE2_RESULT) :: KDRESULTS(SEARCHDEPTH)
+      character(1024) :: ScratchMessage
 
       call setMessageSource("FIND_BOUNDARY_NODES")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -519,6 +520,7 @@ contains
       real(8), intent(IN) :: BAR_HEIGHT_CURRENT
       real(8), intent(OUT) :: BAR_HEIGHT
       real(8), parameter :: eps = epsilon(1d0)
+      character(1024) :: ScratchMessage
 
       call setMessageSource("COMPUTE_BARRIER_HEIGHT")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -630,6 +632,7 @@ contains
       real(8) :: BAR_START
       real(8) :: DEPTH
       real(8), parameter :: eps = epsilon(1d0)
+      character(1024) :: ScratchMessage
 
       call setMessageSource("COMPUTE_BARRIER_HEIGHT_LINEAR")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -831,6 +834,7 @@ contains
       integer :: MYSEC
       integer :: NNBB1, NNBB2
       real(8), parameter :: eps = epsilon(1d0)
+      character(1024) :: ScratchMessage
 
       call setMessageSource("COMPUTE_BARRIER_HEIGHT_SCHEDULE")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -1053,8 +1057,8 @@ contains
    !-----------------------------------------------------------------------
    subroutine PARSE_TIME_VARYING_WEIR_INFO()
 
-      use GLOBAL, only: ITHS, DTDP, IHOT, &
-                        tvw_file, openFileForRead
+      use GLOBAL, only: ITHS, DTDP, IHOT, tvw_file
+      use mod_io, only: openFileForRead
       use SIZES, only: INPUTDIR
       use BOUNDARIES, only: LBCODEI, NBV, IBCONN
 
@@ -1067,6 +1071,7 @@ contains
       integer :: I, IOS
       integer :: NTIMEVARYINGWEIRS
       integer :: NSCHEDULES_RAW
+      character(1024) :: ScratchMessage
 
       call setMessageSource("PARSE_TIME_VARYING_WEIR_INFO")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -1074,7 +1079,7 @@ contains
 #endif
 
       call openFileForRead(99, trim(INPUTDIR)//'/'// &
-                           trim(tvw_file), IOS)
+                           trim(tvw_file), IOS, required=.false.)
       if (IOS /= 0) then
          NTIMEVARYINGWEIRS = 0
 #ifdef CMPI
@@ -1803,8 +1808,8 @@ end module TIME_VARYING_WEIR_BOUNDARY
 !-----------------------------------------------------------------------
 module WEIR_FLUX
    use ADC_CONSTANTS, only: G
-   use GLOBAL, only: ETA2, RAMPINTFLUX, &
-                     setMessageSource, unsetMessageSource, DEBUG, allMessage
+   use GLOBAL, only: ETA2, RAMPINTFLUX
+   use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG, allMessage
    use BOUNDARIES, only: LBCODEI, NBV
    use TIME_VARYING_WEIR_BOUNDARY, only: COMPUTE_BARRIER_HEIGHT, &
                                          BAR_DEG

@@ -76,7 +76,7 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C******************************************************************************
 
       module gwce
-      use global, only : DEBUG, INFO, WARNING, ERROR, logMessage, 
+      use mod_logging, only : DEBUG, INFO, WARNING, ERROR, logMessage,
      &   setMessageSource, unsetMessageSource, allMessage
       implicit none
 
@@ -125,6 +125,7 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
       USE ADC_CONSTANTS, only: g
       use mesh, only : np
       use itpackv, only : dfault
+      use mod_logging, only: log_unit
       implicit none
 
       allocate(lsxx(mnp),lsxy(mnp),lsyx(mnp),lsyy(mnp))
@@ -144,7 +145,7 @@ C        initialize parameter arrays needed by iterative solver
          IPARM(1)=ITMAX
          IPARM(2)=ISLDIA
          !cms51.06: moved opening of fort.33 to openLogFile sub in global.F
-         IPARM(4)=33
+         IPARM(4)=log_unit
          RPARM(1)=CONVCR
          NW = 4*NP + 4*ITMAX
       ELSE ! lumped LHS
@@ -243,8 +244,8 @@ C
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
      &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, IFNLCAT,
-     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NSCREEN, NCCHANGE, IDEN,
-     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG, screenUnit,
+     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NCCHANGE, IDEN,
+     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG,
      &   SMAG_LOWER_LIM, SMAG_UPPER_LIM, TK, NOFF, UU1, VV1, QX1, QY1,
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
@@ -289,6 +290,7 @@ C... SB
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
      &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
+      use mod_logging, only: screenUnit, nscreen
 
 !JLW: add subgrid additions
       USE subgrid, ONLY: level0, level1
@@ -2165,8 +2167,8 @@ C
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
      &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, IFNLCAT,
-     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NSCREEN, NCCHANGE, IDEN,
-     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG, screenUnit,
+     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NCCHANGE, IDEN,
+     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG,
      &   SMAG_LOWER_LIM, SMAG_UPPER_LIM, TK, NOFF, UU1, VV1, QX1, QY1,
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
@@ -2188,6 +2190,7 @@ C
       USE MESSENGER
 #endif
       USE WIND, ONLY: windLimiter
+      use mod_logging, only: nscreen
 
       IMPLICIT NONE
 
@@ -3166,10 +3169,10 @@ C     jgf53.dev: Moved to GWCE module.
 C*************************************************************************
       subroutine check_slopes(it,TimeLoc)
       USE SIZES, ONLY : mnproc, myproc
-      use global, only : eta2,nodecode,NOFF,ESLCOUNT,screenUnit,
-     &      setMessageSource, unsetMessageSource, scratchMessage,
-     &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
+      use global, only : eta2,nodecode,NOFF,ESLCOUNT,
      &      nodes_lg, IFSFM
+      use mod_logging, only : setMessageSource, unsetMessageSource, screenUnit,
+     &      allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       use mesh, only : nm, ne, areas, FDXE, FDYE, 
      &      SFacEle, SFMYEle, SFMXEle
       use NodalAttributes, ONLY : LoadEleSlopeLim,
@@ -3189,6 +3192,7 @@ C*************************************************************************
       REAL(8) FDX1,FDX2,FDX3,FDY1,FDY2,FDY3
       REAL(8) :: AreaIE2
       integer nodeNumber ! fulldomain node number where wse slope is exceeded
+      character(1024) :: scratchMessage
       
 
       call setMessageSource("check_slopes")
@@ -3320,9 +3324,9 @@ C     jgf53.dev: Moved to GWCE module.
 C***********************************************************************
 C
       SUBROUTINE APPLY_SLOPE_LIMITS(ETA2Lim,LocNP)
-      use global, only : nodecode,NOFF,IFNLFA,
-     &      setMessageSource, unsetMessageSource, allMessage,
-     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
+      use global, only : nodecode,NOFF,IFNLFA
+      use mod_logging, only : setMessageSource, unsetMessageSource,
+     &      allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       use mesh, only : ne, nm, areas, totalArea
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active
