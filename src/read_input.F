@@ -38,7 +38,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE READ_INPUT()
       USE SIZES          
       USE GLOBAL, only: toutsge, toutfge, nspoolge, im, ff, bountag, 
-     &   noutge, use_tvw, nscreen, nabout, nfover, warnelev, ihot, hss,
+     &   noutge, use_tvw, nfover, warnelev, ihot, hss,
      &   smag_lower_lim, iwarnelevdump, warnelevdump, errorelev, c2ddi,
      &   usenetcdf, cgwce_new, cme_new_nc, cme_ls_ibpv, cgwce_ls_kgq,
      &   cgwce_advec_nc, cme_areaInt_corr, ilump, c2d_ptrans, c3ddss,
@@ -70,17 +70,17 @@ C-----------------------------------------------------------------------
      &   tvw, ntcys_tvw, ntcyf_tvw, noutgc, toutsgc, toutfgc, nspoolgc,
      &   warnelevdumplimit, toutse, toutfe, nspoole, staiv1, staiv2,
      &   staiv3, toutfc, noutgw, nspoolgw, toutfgw, toutsgw, noutgw,
-     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw, screenunit,
+     &   ndsetsc, ntcyfgc, ntcysgc, ndsets_tvw,
      &   smag_comp_flag, np_g, nibnodecode, ititer,
      &   ne_g, nstae_g, nstav_g, nstam_g, nstac_g, netcdf_avail, title,
      &   nstac_g, nstam_g, institution, references, history, source,
      &   nout_tvw, touts_tvw, toutf_tvw, nspool_tvw, btiminc,vidispdyoh,
      &   bchgtiminc, base_date, contact, convention, host, comments,
      &   nhstar, nhsinc, ndsetsw, ntcysgw, ntcyfgw, cpl2stwave, c3d,
-     &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a, 
-     &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8, 
+     &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a,
+     &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8,
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
-     &   alloc_main6, openfileforread, nhoutonce, IFSPROTS,
+     &   alloc_main6, nhoutonce, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
@@ -185,9 +185,14 @@ Casey 180318: Added NWS=13
      &                          NWS13GroupForPowell,
      &                          NWS13WindMultiplier
 #endif
-!JLW: add subgrid 
+!JLW: add subgrid
+      use iso_fortran_env, only: output_unit
       USE subgrid, only: subgridFilename, level0, level1, phi_time_derivative
       use mod_tidepotential, only: tidePotential, t_tidePotential
+      use mod_logging, only: allMessage, logMessage, ERROR, WARNING,
+     &   INFO, ECHO, screenUnit, nscreen, nabout, t_log_level,
+     &   operator(<=), operator(/=), operator(<), operator(>=)
+      use mod_io, only: openFileForRead
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -221,6 +226,7 @@ C
       logical :: UniformResMoonSunTimeData = .false.
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
+      CHARACTER(len=1024) :: scratchMessage ! message buffer
 #if defined CSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
       NAMELIST /SWANOutputControl/ SWAN_OutputHS, SWAN_OutputDIR,
@@ -294,6 +300,7 @@ C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data
       CHARACTER(len=256) :: ios_nml_error_msg
       INTEGER :: commentStart            ! location of fort.15 comment start
       INTEGER :: ios = 0                 ! i/o status of read operation
+      INTEGER :: NABOUT_TMP
 
       !tcm v51.20.04 Additions for External Station Location File
       INTEGER :: IOS_STATIONS = 0
@@ -994,14 +1001,15 @@ C
 C...
 C...  READ AND PROCESS NABOUT - ABBREVIATED UNIT 16 OUTPUT OPTION
 C...
-      READ(15,*) NABOUT
-      IF(NABOUT.EQ.1) THEN
-         WRITE(16,3501) NABOUT
+      READ(15,*) NABOUT_TMP
+      nabout = t_log_level(NABOUT_TMP)
+      IF(NABOUT.GE.ECHO) THEN
+         WRITE(16,3501) NABOUT_TMP
  3501    FORMAT(5X,'NABOUT = ',I2,
      &        /,9X,'ABREVIATED OUTPUT WILL BE PROVIDED TO UNIT 16',/,9X,
      &        'UNIT 14, 21, 22 INPUT DATA WILL NOT BE ECHO PRINTED',/)
       ELSE
-         WRITE(16,3502) NABOUT
+         WRITE(16,3502) NABOUT%level()
  3502    FORMAT(/,5X,'NABOUT = ',I3,
      &        /,9X,'DETAILED OUTPUT WILL BE PROVIDED TO UNIT 16',/,9X,
      &        'UNIT 14, 15, 21, 22 INPUT DATA WILL BE ECHO PRINTED',/)
@@ -1022,7 +1030,6 @@ C
       READ(15,*) NSCREEN
       ScreenUnit=0
       IF(NSCREEN.GT.0.AND.MYPROC.EQ.0) THEN
-         ScreenUnit=6
          WRITE(16,3561) NSCREEN
  3561    FORMAT(5X,'NSCREEN = ',I6,
      &        /,9X,'SCREEN OUTPUT WILL BE PROVIDED TO UNIT 6',
@@ -3208,7 +3215,7 @@ C
      &   ' CENTERED  SLAM0 = ',F9.4,' DEGREES',
      &   /,5X,'LATITUDE ABOUT WHICH CYLINDRICAL PROJECTION IS CENTERED',
      &   '  SFEA0 = ',F9.4,' DEGREES',/)
-      IF(NABOUT.LT.1) THEN
+      IF(NABOUT.LT.INFO) THEN
          WRITE(16,24)
  24      FORMAT(/,1X,'NODAL COORDINATES AND BATHYMETRY :')
          IF(ICS.EQ.1) THEN
@@ -3248,7 +3255,7 @@ C
 C...
 C...OUTPUT TO UNIT 16 THE GLOBAL CONNECTIVITY TABLE (NODE NUMBERS FOR ELEMENTS)
 C...
-      IF(NABOUT.LT.1) THEN
+      IF(NABOUT.LT.INFO) THEN
          WRITE(16,26)
  26      FORMAT(//,5X,'GLOBAL NODE NUMBERS FOR EACH ELEMENT :')
          WRITE(16,27)
@@ -3326,7 +3333,7 @@ C......DW
          WRITE(16,3604)
  3604    FORMAT(/,5X,'LATITUDES ARE USED TO COMPUTE VARIABLE CORIOLIS',
      &        /,7X,'AND ARE BASED ON INPUT NODAL COORDINATES',/)
-         IF(NABOUT.NE.1) THEN
+         IF(NABOUT.LE.INFO) THEN
             WRITE(16,2092)
  2092       FORMAT(/,10X,' NODE ',5X,'NODAL CORIOLIS CORIF',/)
             DO I=1,NP
@@ -5150,9 +5157,10 @@ C    kmd48.33bc - added the variables from Global
      &                  TBCTIMEINC, SBCSTATIM, TBCSTATIM,
      &                  BCFLAG_LNM, BCFLAG_TEMP, TTBCSTATIM,
      &                  TTBCTIMEINC, SPONGEDIST, Sponge,
-     &                  scratchMessage, INFO, DEBUG, ERROR, allMessage,
-     &                  setMessageSource, logMessage, unsetMessageSource,
-     &                  OUTPUTSPONGE, screenMessage, ECHO
+     &                  OUTPUTSPONGE
+      USE mod_logging, ONLY: INFO, DEBUG, ERROR,
+     &                  allMessage, setMessageSource, logMessage,
+     &                  unsetMessageSource, screenMessage, ECHO
       USE ADC_CONSTANTS, ONLY: sec2day
       USE MESH, ONLY : NP, DP, X, Y
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD
@@ -5170,6 +5178,7 @@ C
       INTEGER  :: N,K,NN,J         !loop counters
       INTEGER  :: NH               !horizontal node loop counter
       CHARACTER(len=80) :: CDUM80
+      character(len=1024) :: scratchMessage
 
 C    kmd48.33bc - additional variables for sponge layers
       REAL(8) :: Xloc1, Xloc2, Yloc1, Yloc2, Xloc, Yloc
@@ -5904,9 +5913,10 @@ C-----------------------------------------------------------------------
       SUBROUTINE checkAndFillIOParameters(specifier, description,
      &   staTime, tsPeriod, startTime, endTime, startTS, endTS, nSets,
      &   tsCounter, recCounter)
-      USE GLOBAL, ONLY : scratchMessage, ECHO, INFO, WARNING, ERROR,
-     &   DTDP, NT, setMessageSource, logMessage, allMessage,
-     &   unsetMessageSource, DEBUG, screenMessage, useNetCDF
+      USE GLOBAL, ONLY : DTDP, NT, useNetCDF
+      USE mod_logging, ONLY : ECHO, INFO, WARNING,
+     &   ERROR, setMessageSource, logMessage, allMessage,
+     &   unsetMessageSource, DEBUG, screenMessage
       USE ADC_CONSTANTS, ONLY: day2sec
       USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
 
@@ -5922,6 +5932,7 @@ C-----------------------------------------------------------------------
       INTEGER, intent(out) :: nSets      ! num data sets in output file
       INTEGER, intent(out) :: tsCounter  ! time step counter btw outputs
       INTEGER, intent(out) :: recCounter ! counts lines in the output file
+      character(1024) :: scratchMessage
 C
       call setMessageSource("checkAndFillIOParameters")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
@@ -6055,8 +6066,9 @@ C-----------------------------------------------------------------------
      &                        lat, lon, sta1, sta2, sta3, stat_lun,
      &                        Description)
       USE ADC_CONSTANTS, ONLY: DEG2RAD, RAD2DEG
-      USE GLOBAL, ONLY : parse, IFSPROTS,
-     &   DEBUG, allMessage, setMessageSource, unsetMessageSource
+      USE GLOBAL, ONLY : parse, IFSPROTS
+      USE mod_logging, ONLY : DEBUG, allMessage, setMessageSource,
+     &   unsetMessageSource
       USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
@@ -6147,9 +6159,10 @@ C-----------------------------------------------------------------------
       SUBROUTINE kdtsearch(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
       use sizes, only : MyProc
-      use global, only : NFOver, NScreen, ScreenUnit, srchdp, tree,
-     &   kdresults, DEBUG, screenMessage, allMessage, setMessageSource,
-     &   unsetMessageSource
+      use global, only : NFOver, srchdp, tree,
+     &   kdresults
+      use mod_logging, only : DEBUG, screenMessage, allMessage,
+     &   setMessageSource, unsetMessageSource, screenUnit, nscreen
       use mesh, only : ne, nm, x, y, areas, rmax, bcxy
       use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
       use kdtree2_module
@@ -6287,8 +6300,9 @@ C-----------------------------------------------------------------------
       SUBROUTINE CoordinateToElement(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
       USE SIZES, ONLY : MyProc
-      USE GLOBAL, ONLY: NFOver, NScreen, screenMessage, allMessage,
-     & DEBUG, ScreenUnit, setMessageSource, unsetMessageSource
+      USE GLOBAL, ONLY: NFOver
+      USE mod_logging, ONLY: screenMessage, allMessage, DEBUG,
+     &   setMessageSource, unsetMessageSource, screenUnit, nscreen
       USE MESH, ONLY : NE, NM, X, Y, Areas
       USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
 
@@ -6395,7 +6409,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE ComputeInterpolatingFactors(InputXCoordinate,
      &     InputYCoordinate, InputElement, Factor1, Factor2, Factor3)
 
-      USE GLOBAL, ONLY : DEBUG, screenMessage,
+      USE mod_logging, ONLY : DEBUG, screenMessage,
      &    setMessageSource, unsetMessageSource, allMessage
       USE MESH, ONLY : NM, X, Y, Areas
       IMPLICIT NONE
@@ -6439,13 +6453,14 @@ C-----------------------------------------------------------------------
 !     variables SALTPHA and SALTAMP. Set them to zero if the forcing
 !     is turned off
 !-----------------------------------------------------------------------
-        USE GLOBAL, ONLY: SALTAMP, SALTPHA, NTIP, NTIF, DEG2RAD, 
-     &      openfileforread, allMessage, ERROR, scratchMessage,
+        USE GLOBAL, ONLY: SALTAMP, SALTPHA, NTIP, NTIF, DEG2RAD,
      &      tipotag, nodes_lg, np_global
         USE MESH, ONLY: NP, node_dict
         USE SIZES, ONLY: INPUTDIR, GBLINPUTDIR, MYPROC
         USE HASHTABLE, ONLY: find
         USE mod_terminate, ONLY: terminate, ADCIRC_EXIT_FAILURE
+        USE mod_logging, ONLY: allMessage, ERROR
+        USE mod_io, ONLY: openFileForRead
 #ifdef CMPI
         USE MESSENGER, only: mapToSubdomainRealMPI, allnodes
 #endif
@@ -6476,6 +6491,7 @@ C-----------------------------------------------------------------------
         CHARACTER(200) :: filename_netcdf
         CHARACTER(20)  :: const_name
         CHARACTER(20)  :: dmy_char
+        CHARACTER(1024) :: scratchMessage
         CHARACTER,ALLOCATABLE :: sal_const(:,:)
 
         IF(NTIP.EQ.2) THEN

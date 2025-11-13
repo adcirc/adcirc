@@ -1800,7 +1800,8 @@ Cjgfdebug USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug  USE GLOBAL_3DVS, ONLY : LOCALDIR,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
 Cjgfdebug     &     NFEN,Z0B,Z0S,A,B,AMB,NSCREEN,NWS,DELT
       USE GLOBAL_3DVS, ONLY : IEVC,EVMIN,EVCON,EVTOT,SIGMA,
-     &     NFEN,Z0B,Z0S,A,B,AMB,setMessageSource, unsetMessageSource,
+     &     NFEN,Z0B,Z0S,A,B,AMB
+      use mod_logging, only: setMessageSource, unsetMessageSource,
      &     logMessage, allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
 Crjwdebug  USE NodalAttributes, ONLY : Z0B_var
       IMPLICIT NONE
@@ -2114,7 +2115,7 @@ C***********************************************************************
 C
 C  kmd48.33bc changed to use Implicit None
       SUBROUTINE TRIDIAG(A,B,C,R,U,nfen)
-      USE GLOBAL, ONLY : ScreenUnit, setMessageSource,
+      use mod_logging, only: setMessageSource, screenUnit,
      &   unsetMessageSource, logMessage, allMessage, DEBUG, ECHO, INFO
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
@@ -2171,11 +2172,11 @@ C                          R.L. 06/22/05                               *
 C***********************************************************************
 
       Subroutine VSDISP(it,node,H,UU,VV,Duu,Duv,Dvv)
-      USE GLOBAL, ONLY : ScreenUnit, allMessage, DEBUG, scratchMessage
+      use mod_logging, only: allMessage, DEBUG, screenUnit
 Cjgfdebug      USE GLOBAL_3DVS, ONLY : Qkp1,NFEN,SIGMA,GAMMA,AMB,I,NSCREEN
-      USE GLOBAL_3DVS, ONLY : Qkp1,NFEN,SIGMA,GAMMA,AMB,IY,
-     &    setMessageSource,
-     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
+      USE GLOBAL_3DVS, ONLY : Qkp1,NFEN,SIGMA,GAMMA,AMB,IY
+      use mod_logging, only: setMessageSource,
+     &    unsetMessageSource, logMessage, ECHO, INFO
       IMPLICIT NONE
 
       REAL(8) :: UU,VV,Duu,Duv,Dvv
@@ -2326,7 +2327,8 @@ c***********************************************************************
 
       subroutine InmINT()
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, INM, setMessageSource,
+      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, INM
+      use mod_logging, only: setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER k
@@ -2377,7 +2379,8 @@ c***********************************************************************
 
       subroutine LVnInt()
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, LVN, setMessageSource,
+      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, LVN
+      use mod_logging, only: setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER n
@@ -2412,7 +2415,8 @@ c***********************************************************************
 
       subroutine KQnmInt(KQnm,Kq)
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : SIGMA,NFEN,MNFEN, setMessageSource,
+      USE GLOBAL_3DVS, ONLY : SIGMA,NFEN,MNFEN
+      use mod_logging, only: setMessageSource,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       REAL(8) :: KQnm(MNFEN,3),Kq(MNFEN)
@@ -3186,9 +3190,8 @@ C    Adapted from Numerical Recipes chapter 2                          *
 C***********************************************************************
 c
       SUBROUTINE ADC_TRIDAG(A,B,C,R,U,N)
-      USE GLOBAL, ONLY : ScreenUnit
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-      USE GLOBAL_3DVS, ONLY : setMessageSource,
+      use mod_logging, only: setMessageSource, screenUnit,
      &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER :: J, N
@@ -3958,18 +3961,19 @@ C
 !        Fluid Dynamics". Later, we can update this to include more
 !        complex equations of state.
 C   kmd48.33bc need to add variables for new equation of state
-      USE GLOBAL_3DVS, ONLY : SAL, TEMP, SIGT, IDEN, NFEN, 
-     &                        SIGMA, EQNSTATE, A, B, setMessageSource,
-     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
+      USE GLOBAL_3DVS, ONLY : SAL, TEMP, SIGT, IDEN, NFEN,
+     &                        SIGMA, EQNSTATE, A, B,
 !Casey 230106 : Add to compute SigT at higher resolution.
-     &   ,NumIP,IIP
-     &   ,NumGQP,GQP
-     &   ,SIGTM
+     &   NumIP,IIP,
+     &   NumGQP,GQP,
+     &   SIGTM,
 !Casey 230110 : Add to allow user control.
-     &   ,iterateEqnState2
-     &   ,densityIntegrationID,
+     &   iterateEqnState2,
+     &   densityIntegrationID,
      &   DENSITY_INTEGRATION_TRAPEZOIDAL, DENSITY_INTEGRATION_SIMPSON,
      &   DENSITY_INTEGRATION_QUADRATURE
+      use mod_logging, only: setMessageSource,
+     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
 Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
       USE GLOBAL, ONLY : ETA2, IFNLFA
       USE ADC_CONSTANTS, ONLY: RHOWAT0, G
@@ -5361,7 +5365,7 @@ C     input argument and returns the new value of the file counter
 C     at the end of the write.
 C--------------------------------------------------------------------
       SUBROUTINE binaryWrite2D(array, length, lun, counter)
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, DEBUG,
+      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG,
      &                    allMessage
       IMPLICIT NONE
       REAL(8), intent(in), dimension(length) :: array ! data to write

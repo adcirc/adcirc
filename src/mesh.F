@@ -37,10 +37,10 @@
       use hashtable
       use sizes, only: meshFileName, mne, mnp, mnope, mneta, myproc,
      &   mnbou, mnvel, nprec, meshtype, ascii, xdmf, mnei, GBLINPUTDIR
-      use global, only: DEBUG, INFO, ECHO, WARNING, ERROR,
-     &   scratchMessage, logMessage, screenMessage, allMessage,
-     &   setMessageSource, openFileForRead, unsetMessageSource,
-     &   scratchFormat
+      use mod_logging, only: DEBUG, INFO, ECHO, WARNING, ERROR, operator(==),
+     &   logMessage, screenMessage, allMessage,
+     &   setMessageSource, unsetMessageSource
+      use mod_io, only: openFileForRead
       USE ADC_CONSTANTS, only: deg2rad, rad2deg, pi, omega, rearth
 
       implicit none
@@ -126,9 +126,13 @@
         MODULE PROCEDURE DRVSPCOORSROTS0, DRVSPCOORSROTS1
       END INTERFACE
 
-      INTERFACE GET_ROTMAT 
+      INTERFACE GET_ROTMAT
          MODULE PROCEDURE DRV_ROTMAT_ZNVEC, DRV_ROTMAT_ZXZROT
       END INTERFACE
+
+      ! Utility variables for formatting log messages
+      character(len=1024) :: scratchMessage
+      character(len=1024) :: scratchFormat
 
 !     ----------
       contains
@@ -169,7 +173,7 @@
 !     jgf51.21.11: Read the ADCIRC mesh in various formats
 !     ------------------------------------------------------------------
       subroutine read14_findDims ()
-      use global, only : nabout
+      use mod_logging, only : nabout
       use boundaries
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
@@ -179,6 +183,7 @@
       integer :: neta_count, nvel_count
       integer :: nvell_max, nvdll_max
       integer, parameter :: iunit = 14
+      character(len=1024) :: scratchMessage
 
       call setMessageSource("read14FindDims")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -287,7 +292,7 @@
 1050     format('NVEL (specified number of land boundary nodes) = ',
      &       i0,'. Counted number of land boundary nodes = ',i0,'.')
          call logMessage(DEBUG,scratchMessage)
-         if (nabout.eq.DEBUG) then
+         if (nabout==DEBUG) then
             do k=1,nbou
                write(scratchMessage,1060) k, ibtype_orig(k), k,
      &            nvell(k), sum(nvell(1:k))
@@ -327,14 +332,17 @@
       subroutine read14 ()
       use boundaries
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-      use global, only : openFileForRead, nabout, nperseg, nnperbc,
-     &                   iperconn
+      use global, only : nperseg, nnperbc, iperconn
+      use mod_io, only: openFileForRead
+      use mod_logging, only : nabout
 
       implicit none
       integer :: i, j, k, jn, je, nhy
       integer, parameter :: iunit = 14
       integer :: ios     ! i/o status
       integer :: lineNum ! line number currently being read
+      character(len=1024) :: scratchMessage
+      character(len=1024) :: scratchFormat
 
       call setMessageSource("read14")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -349,7 +357,7 @@
       !
       ! Write a summary of the different boundary types if the logging
       ! level is set to DEBUG.
-      if (nabout.eq.DEBUG) then
+      if (nabout==DEBUG) then
          !
          ! ocean boundaries
          scratchFormat = '("Number of elevation specified boundaries '
@@ -607,7 +615,8 @@
       !      (optional) nodeLael - node label
       !-----+---------+---------+---------+---------+---------+---------+
       subroutine read14femesh( meshfileName, nn, vx, etov, bxy, nodeLabel )
-      use global, only : openFileForRead, nabout
+      use mod_logging, only : nabout
+      use mod_io, only: openFileForRead
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       implicit none
@@ -632,6 +641,7 @@
 
       ! hash table
       type(ipair), allocatable, target :: node_dict_tmp(:) ! map node labels to numbers
+      character(len=1024) :: scratchMessage
 
       call setMessageSource( trim(meshfileName) )
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -755,7 +765,7 @@
 !     data structures.
 !----------------------------------------------------------------------
       subroutine readMeshXDMF()
-      use global, only : nabout
+      use mod_logging, only : nabout
       use boundaries
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
@@ -831,6 +841,8 @@
       integer i, j, k
       real(8), allocatable :: tempCoord(:,:)
       real(8),allocatable :: dmyrealarray(:)
+      character(len=1024) :: scratchMessage
+      character(len=1024) :: scratchFormat
       !
 
       call setMessageSource("readMeshXDMF")
@@ -3919,7 +3931,9 @@ Csb...
       use global, only: nperseg, perbc_idn_map, iperconn, nnperbc
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
-      
+      character(len=1024) :: scratchMessage
+      character(len=1024) :: scratchFormat
+
 !      dummy variables
       INTEGER:: ETAB(:,:)
       

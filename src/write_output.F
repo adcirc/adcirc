@@ -31,9 +31,9 @@ C dry.
 C----------------------------------------------------------------------
       MODULE WRITE_OUTPUT
 C----------------------------------------------------------------------
-      USE GLOBAL, ONLY : OutputDataDescript_t, setMessageSource,
-     &  unsetMessageSource, DEBUG, allMessage, screenMessage, ERROR,
-     &  netcdf_avail
+      USE GLOBAL, ONLY : OutputDataDescript_t, netcdf_avail
+      use mod_logging, only: setMessageSource, unsetMessageSource,
+     &  allMessage, screenMessage, DEBUG, ERROR
       USE boundaries, only: freeFluxBoundaryArrayTemporaries
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
@@ -350,6 +350,7 @@ C----------------------------------------------------------------------
      &                  GLOBALDIR, OFF, ASCII, NETCDF3, NETCDF4, XDMF,
      &                  numFormats, write_local_files, localdir,
      &                  controlFileName
+      use mod_logging, only: allMessage, INFO, logMessage
       USE GLOBAL, ONLY : imap_stae_lg, imap_stav_lg, et00, eta2,
      &   nscoue, nne, staie1, staie2, staie3, xel, yel,
      &   slel, sfel, uu00, vv00, uu2, vv2, nscouv, nnv,
@@ -372,14 +373,13 @@ C----------------------------------------------------------------------
      &   noutm, nstam, ntcyfgv, ntcysm, ntcyfm, nspoolm, nws,
      &   noutgw, ntcysgw, ntcyfgw, nspoolgw, nddt, ncice, nrs,
      &   noutc, nstac_g, nstac, im, noutgc, ntcyfgc, ntcysgc,
-     &   nspoolgc, INFO, scratchMessage, allMessage, nscougi, nscougp,
+     &   nspoolgc, nscougi, nscougp,
      &   nscours, nscoub, nscougb, nscoui, nscoup,
      &   use_tvw, nout_tvw, ntcys_tvw, ntcyf_tvw, tvw,
      &   nspool_tvw, nscou_tvw,
      &   nodeCodeOutSpoolCounter, noffOutSpoolCounter,
      &   NE_G, IMAP_EL_LG, nodecode, noff,
-     &   initiallyDrySpoolCounter,
-     &   inundationOutput, ihot, logMessage,
+     &   initiallyDrySpoolCounter,inundationOutput, ihot,
      &   windDragOut, windDragSpoolCounter, outputWindDrag,
      &   dynamicWaterLevelCorrectionSpoolCounter,
      &   dynamicWaterLevelCorrection2, usingDynamicWaterLevelCorrection,
@@ -411,6 +411,7 @@ C
       logical :: fileFound = .false. ! .true. if the file exists
       logical :: nerr
       integer :: i
+      character(1024) :: scratchMessage
 C
       call setMessageSource("initOutput2D")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -1976,7 +1977,9 @@ C     the interpolation on both components for output data that contains
 C     two components.
 C-----------------------------------------------------------------------
       subroutine stationDataInterp(descript)
-      use global
+      use global, only: OutputDataDescript_t
+      use mod_logging, only: setMessageSource, unsetMessageSource,
+     &  allMessage, DEBUG
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
 
@@ -2009,8 +2012,9 @@ C     jgf51.21.24: Performs station interpolations on a single array.
 C-----------------------------------------------------------------------
       subroutine stationArrayInterp(descript, fromArray, toArray)
       use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2, NOFF,
-     &                   allMessage, DEBUG, setMessageSource, unsetMessageSource,
      &                   StatPartWetFix,How2FixStatPartWet, h0
+      use mod_logging, only: allMessage, setMessageSource,
+     &  unsetMessageSource, DEBUG
       use mesh, only : dp, nm
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
@@ -2151,9 +2155,9 @@ C removed from global  myProc, MNPROC,
      &                   NOUTE, NSTAE, IMAP_STAE_LG, SLEL,
      &                   XEL, SFEL, YEL, NSTAV_G, NSTAV,
      &                   IMAP_STAV_LG, SLEV, XEV, SFEV,
-     &                   YEV, screenMessage, DEBUG,
-     &                   setMessageSource, unsetMessageSource,
-     &                   NE_G, NP_G, NODES_LG
+     &                   YEV, NE_G, NP_G, NODES_LG
+      use mod_logging, only: screenMessage, setMessageSource,
+     &  unsetMessageSource, DEBUG
       USE MESH, ONLY : NP, NE, ICS
       USE GLOBAL_IO, ONLY:
      &    open_gbl_file, collectFullDomainArray,
@@ -2710,9 +2714,9 @@ C-----------------------------------------------------------------------
      & MYPROC, HARMDIR, WRITE_LOCAL_HARM_FILES
       USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
       USE MESH, ONLY : labels
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenMessage, ERROR,
-     &                   DEBUG, setMessageSource, unsetMessageSource,
-     &                   allMessage, scratchMessage, labels_g
+      USE GLOBAL, ONLY : OutputDataDescript_t, labels_g
+      use mod_logging, only: screenMessage, setMessageSource,
+     &  unsetMessageSource, allMessage, ERROR, DEBUG
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY: writeOutArrayNetCDF
 #endif
@@ -2724,6 +2728,7 @@ C-----------------------------------------------------------------------
       ! jgf51.44: The following two arguments will be present if nsets=2
       type(OutputDataDescript_t), optional, intent(in) :: mag2
       type(OutputDataDescript_t), optional, intent(in) :: ph2
+      character(1024) :: scratchMessage
 C
       INTEGER :: i,j,n           ! loop counters
 C
@@ -2833,8 +2838,9 @@ C----------------------------------------------------------------------
 C RJW added myproc
 C MYPROC,
       USE GLOBAL, ONLY : RUNDES, RUNID, RDES4, RID4,
-     &   RDES8, RID8, DTDP, IHOT, DEBUG, scratchMessage,
-     &   logMessage, ERROR, allMessage
+     &   RDES8, RID8, DTDP, IHOT
+      use mod_logging, only: logMessage, allMessage,
+     &  DEBUG, ERROR
       USE GLOBAL_3DVS, ONLY : NFEN
       USE MESH, ONLY : AGRID, AID4, AID8
 
@@ -2850,6 +2856,7 @@ C
       INTEGER, intent(inout) :: recNum ! number of lines written to output file
 C
       CHARACTER(len=7) :: fn ! file name of 3D output file
+      character(len=1024) :: scratchMessage
       INTEGER :: N ! loop counter
       INTEGER :: ios ! i/o status, 0 indicates success
 C
@@ -2977,10 +2984,11 @@ C-----------------------------------------------------------------------
       USE SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC,
      &    WRITE_LOCAL_FILES, MNPROC, GLOBALDIR, MYPROC
 C RJW added MYPROC
-      USE GLOBAL, ONLY : ScreenUnit, BCFLAG_TEMP, scratchMessage,
-     &    DEBUG, INFO, WARNING, ERROR, screenMessage, setMessageSource,
-     &    unsetMessageSource, allMessage, OutputDataDescript_t, NP_G,
-     &    NODES_LG
+      USE GLOBAL, ONLY : BCFLAG_TEMP,
+     &    OutputDataDescript_t, NP_G, NODES_LG
+      use mod_logging, only: screenMessage, screenUnit,
+     &  setMessageSource, unsetMessageSource, allMessage, DEBUG, INFO,
+     &  WARNING, ERROR
       USE MESH, ONLY : NP, ICS, NM
       USE GLOBAL_3DVS
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
@@ -3009,6 +3017,7 @@ C RJW added MYPROC
       REAL(8) V11, V22, V33
       LOGICAL, SAVE :: FirstCall = .true.
       LOGICAL, dimension(14) :: netcdf_error
+      character(1024) :: scratchMessage
 C
 C
       call setMessageSource("writeOutput3D")
@@ -4243,7 +4252,9 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeOutArray(TimeLoc, it, descript, pack_cmd,
      &                         unpack_cmd)
       USE SIZES
-      USE GLOBAL
+      USE GLOBAL, ONLY: OutputDataDescript_t
+      use mod_logging, only: allMessage,
+     &  setMessageSource, unsetMessageSource, DEBUG, INFO, ERROR
       USE GLOBAL_IO, ONLY : collectFullDomainArray, storeOne, storeTwo,
      &                      writeSparse,writeFullFormat
       USE MESH, ONLY: labels
@@ -4261,6 +4272,7 @@ C     args
       EXTERNAL :: pack_cmd   ! subroutine used to pack data on subdomain
       EXTERNAL :: unpack_cmd ! subroutine used to unpack data on proc 0
       INTEGER :: I           ! loop counter
+      character(1024) :: scratchMessage
 
       call setMessageSource("writeOutArray")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -4346,7 +4358,10 @@ C-----------------------------------------------------------------------
      &                                descript, pack_cmd, unpack_cmd)
 
       USE SIZES
-      USE GLOBAL
+      USE GLOBAL, ONLY: OutputDataDescript_t, NP_G, labels_g
+      use mod_logging, only: setMessageSource, allMessage,
+     &  unsetMessageSource, logMessage, DEBUG, INFO,
+     &  ERROR
       USE MESH, ONLY : NP, labels
       USE GLOBAL_IO, ONLY : collectFullDomainArray, HEADER_MAX,
      &                      open_minmax_file
@@ -4366,6 +4381,7 @@ C     args
       CHARACTER(len=3) :: cmp ! comparison to make vs hotstart val ('min' or 'max')
       LOGICAL :: nerr       ! error code from netcdf initialization
       INTEGER :: I          ! loop counter
+      CHARACTER(1024) :: scratchMessage
 C
       call setMessageSource("writeOutArrayMinMax")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -4487,6 +4503,8 @@ C-----------------------------------------------------------------------
 
       USE SIZES
       USE GLOBAL
+      use mod_logging, only: setMessageSource, allMessage,
+     &  unsetMessageSource, logMessage, DEBUG, INFO, screenUnit
       USE HARM
       USE GLOBAL_IO, ONLY: packOne, unpackOne,
      &    packTwo, unpackTwo, packMbyNP, unpackMbyNP, HEADER_MAX,
@@ -4514,6 +4532,7 @@ C-----------------------------------------------------------------------
       LOGICAL TEST_HOTSTART     !jgf45.07 used for testing hot start capability
       INTEGER npx, nex
       CHARACTER(LEN=9) :: itstr  !tcm v51.26 added for time-stamped hot start file name adjustments
+      character(len=1024) :: scratchMessage
 C
       LOGICAL ncerror
       INTEGER numHotstartWrites ! number writes to hot start files
@@ -5657,6 +5676,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE WriteWarnElev(TimeLoc, it)
       USE SIZES
       USE GLOBAL
+      use mod_logging, only: setMessageSource, allMessage,
+     &  unsetMessageSource, DEBUG
       USE GLOBAL_IO, ONLY: collectFullDomainArray, unpackOne
       USE MESH, ONLY : NP
       USE GLOBAL_IO, ONLY: packOne, unpackOne
@@ -5666,6 +5687,7 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       REAL(8), intent(in) :: TimeLoc
       INTEGER, intent(in) :: it
+      character(1024) :: scratchMessage
 C
       INTEGER I ! node loop counter
       type(OutputDataDescript_t), SAVE :: DebugElevDescript

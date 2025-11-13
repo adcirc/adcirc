@@ -58,33 +58,35 @@ C
 #endif
       USE SIZES, ONLY : MNP, MNWPROH, MYPROC
       USE GLOBAL, ONLY : UU1, VV1, QX1, QY1, QX2, QY2, UU2, VV2, MOM_LV_X,
-     &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0, 
-     &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0, 
+     &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0,
+     &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0,
      &    EN0, EN1, EN2, CICE1, CICE2, CICEOUT, RSNX1, RSNX2, RSNY1, RSNY2,
      &    QX0, QN1, QN2, RSNXOUT, RSNYOUT, LNM_BC1, LNM_BC2, H1, H2,
      &    QNIN1, QNIN2, ENIN1, ENIN2, EtaDisc, NIBNODECODE,
      &    BCHGTIMINC, ETA2,ElevDisc, BTIME1, BTIME2, BTIME_END, C2D_PTrans,
      &    C2DDI, C3D, C3DVS, CBAROCLINIC, CGWCE_New, CHOTHS, CICE_TIME1,
-     &    CICE_TIME2, CICE_TIMINC, BTIMINC, CME_New_C1, CME_New_C2, 
-     &    CME_New_NC, CPRECOR, CTiP, DRAMP, DRampElev, DRampExtFlux, 
+     &    CICE_TIME2, CICE_TIMINC, BTIMINC, CME_New_C1, CME_New_C2,
+     &    CME_New_NC, CPRECOR, CTiP, DRAMP, DRampElev, DRampExtFlux,
      &    DRampIntFlux, DRampMete, DRampTip, DRampWRad, DTDP, DTDPHS,
      &    DUnRampMete, ENDWAVE, ErrorElev, Flag_ElevError, FluxSettlingIT,
-     &    FluxSettlingTime, FTIMINC, IFNLFA, H0, IHOT, IM, INFO, WARNING,
-     &    ERROR, logMessage, allMessage, setMessageSource, unsetMessageSource,
+     &    FluxSettlingTime, FTIMINC, IFNLFA, H0, IHOT, IM,
      &    inundationOutput, ITHS, METONLY, NCICE, NDDT, NFFR, NHSINC,
-     &    NHSTAR, NOLIFA, NRamp, NRS, NSCREEN, NTIF, QTIME1, QTIME2, Ramp,
+     &    NHSTAR, NOLIFA, NRamp, NRS, NTIF, QTIME1, QTIME2, Ramp,
      &    RampElev, RampExtFlux, RampMete, RampTip, RampWRad, RBCRATIO,
-     &    RBCTIME1, RBCTIME2, RBCTIMEINC, REFTIM, RES_BC_FLAG, 
-     &    RSTIME1, RSTIME2, NWS, RSTIMINC, SCREENUNIT, STATIM, TK,
+     &    RBCTIME1, RBCTIME2, RBCTIMEINC, REFTIM, RES_BC_FLAG,
+     &    RSTIME1, RSTIME2, NWS, RSTIMINC, STATIM, TK,
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
-     &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
+     &    SALTAMP, NODECODE, TPK, NOFF, DASigT, FFF,
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
-     &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
-     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
+     &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM,
+     &    WarnElevDump, nodes_lg, NT, NM, NB, NHOUTONCE,
      &    Limit_WaveStressGrad, SWAN_RSNX1, SWAN_RSNY1, SWAN_RSNX2, SWAN_RSNY2,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
      &    dynamicWaterLevelCorrectionDelta, RampIntFlux
+      USE mod_logging, ONLY: logMessage, allMessage, setMessageSource,
+     &    unsetMessageSource, DEBUG, INFO, WARNING, ERROR, screenUnit,
+     &    nscreen
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
      &                         WaveStressGrad_Cap, G
      
@@ -201,6 +203,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) runperccomplete
 C   kmd48.33bc - added in the heat flux variables
       CHARACTER(80) :: CDUM80
+      CHARACTER(1024) :: scratchMessage
       INTEGER :: NumofBCNode
       REAL(8), SAVE :: StaTimHS, RefTimHS
       INTEGER :: NOD
@@ -1592,8 +1595,9 @@ C
 
       USE GLOBAL, only: ch1, trans_lv_b, nodecode, noff, lumpt, dtdp,
      &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
-     &    setmessagesource, unsetmessagesource, DEBUG,
-     &    allMessage, H1
+     &    H1
+      USE mod_logging, ONLY: setMessageSource, unsetMessageSource,
+     &    allMessage, debug
 
       USE ADC_CONSTANTS, ONLY: rhowat0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
@@ -1902,6 +1906,10 @@ C
       SUBROUTINE CALC_SIGMAT_2D ()
 
       USE GLOBAL
+      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      use mod_logging, only: allMessage
+#endif
 
       INTEGER NH
 
@@ -2105,9 +2113,9 @@ Casey: Added the following variable declarations from GLOBAL.
 C
       USE GLOBAL, ONLY: IFNLFA, IFNLCT,
      &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
-     &      setMessageSource, unsetMessageSource, allMessage,
-     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &      ETA2, H0, DTDP, H2
+      USE mod_logging, ONLY: setMessageSource, unsetMessageSource,
+     &      allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       USE ADC_CONSTANTS, ONLY: SigT0
       USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, SFAC
@@ -2123,17 +2131,17 @@ C
      &      DENSITY_INTEGRATION_TRAPEZOIDAL, DENSITY_INTEGRATION_SIMPSON,
      &      VERTICAL_INTERPOLATION_LINEAR, VERTICAL_INTERPOLATION_CUBIC
 
-
 #ifdef CMPI
       USE MESSENGER
+#endif
+
       IMPLICIT NONE
+
+#ifdef CMPI
       REAL(8) :: DUMV1(1),DUMV2(1)
-#else
-      IMPLICIT NONE
 #endif
 
 Casey: Added the following local variable declarations.
-C
       INTEGER :: NCELE
       INTEGER :: TEMPNCELE
       INTEGER :: TEMPSTOP
@@ -2749,11 +2757,10 @@ C
      &            A, B,
      &            BCP,
      &            NFEN,
-     &            SIGMA,
-     &            allMessage,
-     &            setMessageSource,
-     &            unsetMessageSource
-      USE GLOBAL, ONLY : DEBUG
+     &            SIGMA
+      USE mod_logging, ONLY: allMessage, setMessageSource,
+     &    unsetMessageSource
+      USE mod_logging, ONLY : DEBUG
       USE SIZES, ONLY : 
       IMPLICIT NONE
       REAL(8) :: BCPressNN

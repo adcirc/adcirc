@@ -32,13 +32,13 @@ C
       MODULE OWI_ICE
 C
       USE SIZES,ONLY : MYPROC
-      USE GLOBAL,ONLY : NSCREEN, ScreenUnit
+      use mod_logging, only: screenUnit, nscreen
       IMPLICIT NONE
-      character*100 :: title
+      character(100) :: title
 
 !      tcm v48.4645 Changed the way the header line is read
 !      character :: part1*12,part2*7,part3*6
-      character :: owiheader*80
+      character :: owiheader(80)
 
       real(8), dimension(:,:), allocatable :: CiceR,CiceB
       real(8), dimension(:), allocatable :: latR,longR,latB,longB
@@ -66,7 +66,7 @@ C
       real(8),allocatable :: wR(:,:)
       real(8),allocatable :: wB(:,:)
 
-      CHARACTER FNAME*60
+      CHARACTER FNAME(60)
 
       integer :: numSets,numBlankSnaps,cntSnaps,numSkipSnaps
 

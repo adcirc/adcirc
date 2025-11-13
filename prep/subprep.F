@@ -34,9 +34,11 @@ C    |                                                                      |
 C    ========================================================================
 
       module subprep
-      use global, only : DEBUG, ECHO, INFO, WARNING, ERROR, 
-     &  openFileForRead, scratchMessage, logMessage, allMessage,
-     &  setMessageSource, unsetMessageSource
+      use mod_io, only: openFileForRead
+      use mod_logging, only : logMessage, allMessage,
+     &  setMessageSource, unsetMessageSource, DEBUG, ECHO, INFO, WARNING, ERROR
+
+      implicit none
 
 C   NCSU Subdomain Modeling variables:
        logical :: subdomainOn
@@ -57,6 +59,7 @@ C   NCSU Subdomain Modeling variables:
          implicit none
          integer :: dummy
          integer :: ioerror  ! zero if the fort.15 file was opened
+         character(1024) :: scratchMessage
          namelist /subdomainModeling/ subdomainOn
 
          FOUND_SM_NML = .false.

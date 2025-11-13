@@ -7809,7 +7809,8 @@ C---------------------------------------------------------------------------
      &    initNetCDFHotstartHarmonic,
      &    initNetCDFHotstartHarmonicMeansVariances,
      &    freeNetCDFCoord
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit,
+      use mod_logging, only: screenUnit
+      USE GLOBAL, ONLY : OutputDataDescript_t,
      &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
      &                   SWAN_OutputTMM10,NOUT_TVW,outputWindDrag
@@ -9055,7 +9056,7 @@ C     we collected in read_global.F and stored in pre_global.F.
      &   references, comments, host, convention, contact, DT, ihot,
      &   ics, nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
      &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
-     &   myProc, screenUnit, nolibf, nwp, tau0, cf, eslm,
+     &   myProc, nolibf, nwp, tau0, cf, eslm,
      &   neta, nabout, nscreen, nfen, iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
      &   nvtd, alp4, C3D, runid)

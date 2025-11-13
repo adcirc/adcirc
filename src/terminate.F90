@@ -54,7 +54,7 @@ contains
 #ifdef CMPI
       use MESSENGER, only: subdomainFatalError, msg_fini
 #endif
-      use global, only: allMessage, INFO, ERROR
+      use mod_logging, only: allMessage, INFO, ERROR
       implicit none
 
       integer, optional, intent(in) :: exit_code

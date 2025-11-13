@@ -54,8 +54,6 @@ C...
 Corbitt 120328: Apply Advection Locally
      &       IFNLCTE,        !Global nonlinear advection flag (1=yes, 0=no)
      &       IFNLFA,         !nonlinear finite amplitude flag (1=yes,0=no) (jgf45.11)
-     &       NScreen,        !flag to suppress or allow screen output
-     &       ScreenUnit,     !i/o for screen output
      &       IHOT,           !flag to specify if coldstart (=0) or hotstart file to read from (63 or 64)
      &       IHOTSTP,        !hotstart file record counter
      &       NWS,
@@ -65,8 +63,10 @@ Corbitt 120328: Apply Advection Locally
      &       CBaroclinic,
      &       C3DVS,
      &       DTDP,           !DTDP = timestep declared as real(8)
-     &       allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &       setMessageSource, unsetMessageSource, mom_lv_x
+     &       mom_lv_x
+
+      USE mod_logging, ONLY: allMessage, logMessage, DEBUG, ECHO, INFO, nscreen,
+     &       WARNING, ERROR, setMessageSource, unsetMessageSource, screenUnit
 
       USE BOUNDARIES,ONLY:NETA,NVEL
       IMPLICIT NONE
@@ -548,7 +548,7 @@ c***********************************************************************
 c
       SUBROUTINE FEGRIDS(IGC,H)
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-      USE GLOBAL, ONLY : ScreenUnit
+      USE mod_logging, ONLY : ScreenUnit
 
       IMPLICIT NONE
       INTEGER :: IGC,N,NFEN2,IANS,NUM,I,NH
@@ -736,7 +736,8 @@ c******************************************************************************
 c******************************************************************************
 
       subroutine initialize_baroclinic3d_namelist_options()
-          use global, only: toLowercase, allMessage, INFO, ERROR
+          use global, only: toLowercase
+          use mod_logging, only: allMessage, INFO, ERROR, logMessage
           use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
           implicit none
           character(len=len(viscosityOperator)) :: viscosityOperatorStringInternal

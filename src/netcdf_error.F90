@@ -38,9 +38,9 @@ contains
    subroutine check_err(iret)
       use netcdf, only: NF90_NOERR, nf90_strerror
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-      use global, only: allMessage, setMessageSource, unsetMessageSource
+      use mod_logging, only: allMessage, setMessageSource, unsetMessageSource
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      use global, only: DEBUG
+      use mod_logging, only: DEBUG
 #endif
       implicit none
       integer, intent(in) :: iret

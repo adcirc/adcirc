@@ -34,7 +34,7 @@ C******************************************************************************
 C 
       MODULE RS2
       USE SIZES
-      USE GLOBAL,ONLY : NSCREEN, ScreenUnit
+      use mod_logging, only: screenUnit, nscreen
       IMPLICIT NONE
 
       !variables for input file

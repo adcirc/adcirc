@@ -163,7 +163,8 @@
       use netcdf
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       ! use global, only: imap_el_lg, nodes_lg, allMessage, ERROR
-      use global, only: nodes_lg, allMessage, ERROR
+      use global, only: nodes_lg
+      use mod_logging, only: allMessage, ERROR
       
       implicit none
 

@@ -27,9 +27,9 @@ module INTERNALTIDE
    !     module to hopefully make it a little clearer what is happening in
    !     that subroutine.
    !---------------------------------------------------------------------
-   use GLOBAL, only: DEBUG, ECHO, INFO, WARNING, ERROR, &
-                     setMessageSource, unsetMessageSource, allMessage, &
-                     scratchMessage, logMessage
+   use mod_logging, only: DEBUG, ECHO, INFO, WARNING, ERROR, &
+                          setMessageSource, unsetMessageSource, allMessage, &
+                          logMessage
    implicit none
 
    private

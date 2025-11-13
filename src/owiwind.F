@@ -87,10 +87,12 @@
 !-----------------------------------------------------------------------
 
         USE SIZES,ONLY : MYPROC
-        USE GLOBAL,ONLY : NSCREEN, ScreenUnit, DEBUG, ECHO, INFO,
-     &     WARNING, ERROR, screenMessage, logMessage, allMessage,
-     &     setMessageSource, unsetMessageSource, scratchMessage,
-     &     openFileForRead, Flag_ElevError
+        USE mod_io, only: openFileForRead
+        use mod_logging, only: screenUnit, nscreen
+        USE GLOBAL,ONLY : Flag_ElevError
+        USE mod_logging,ONLY : screenMessage, logMessage, allMessage,
+     &     setMessageSource, unsetMessageSource, DEBUG, ECHO, INFO,
+     &     WARNING, ERROR
         IMPLICIT NONE
 
         integer  :: nPowellSearchDomains = -1 !< Number of search domains for Powell wind drag
@@ -280,7 +282,7 @@
         REAL(8),intent(in)    :: PRdeflt
         REAL(8)               :: RHOWATG,EyePressure
         INTEGER                :: I,J,S,XI,YI
-        CHARACTER(1024)        :: filename,errorVar
+        CHARACTER(1024)        :: filename,errorVar,scratchMessage
         INTEGER                :: iounit
         REAL(8)               :: uu,vv,pp
         REAL(8)               :: w1,w2,w3,w4
@@ -490,6 +492,7 @@
         real(8),intent(in) :: prbk 
         character(1024)     :: filename
         character(1024)     :: errorVar
+        character(1024)     :: scratchMessage
         integer             :: i,j
         integer             :: iounit,errorIO
         integer             :: iLatw,iLongw,iLatp,iLongp
@@ -652,8 +655,9 @@
 !-----------------------------------------------------------------------
         implicit none
         CHARACTER(*),INTENT(IN)          :: filename
-        REAL(8),INTENT(IN)              :: prbk
+        REAL(8),INTENT(IN)               :: prbk
         TYPE(OCEANWEATHER),INTENT(INOUT) :: obj
+        CHARACTER(1024)                  :: scratchMessage
 
         call setMessageSource("owi_setEndOfFileBlankSnap")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
@@ -943,10 +947,11 @@
       subroutine owi_skipSnaps(numSnaps,np,wx,wy,pr,prbk)
 !-----------------------------------------------------------------------
              implicit none
-             integer,intent(in)     :: numSnaps,np
+             integer,intent(in)    :: numSnaps,np
              real(8),intent(inout) :: wx(:),wy(:),pr(:)
              real(8),intent(in)    :: prbk
-             integer                :: i
+             integer               :: i
+             character(1024)       :: scratchMessage
             call setMessageSource("owi_skipSnaps")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
             call allMessage(DEBUG,"Enter.")
@@ -1189,6 +1194,7 @@
       INTEGER(8),INTENT(OUT)   :: date2
       CHARACTER(80)            :: owiheader
       CHARACTER(1024)          :: errorVar
+      character(1024)          :: scratchMessage
       INTEGER                  :: errorIO
 
       call setMessageSource("readHeader")
@@ -1251,6 +1257,7 @@
       CHARACTER(*),INTENT(IN)          :: errorVar
       CHARACTER(*),INTENT(IN)          :: filename
       INTEGER,INTENT(IN),OPTIONAL      :: unitnumber
+      CHARACTER(1024)                  :: scratchMessage
 
       call setMessageSource("check_owi_err")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
