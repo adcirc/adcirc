@@ -37,8 +37,6 @@
       real(8) :: warnElev
       integer :: iWarnElevDump
       real(8) :: warnElevDumpLimit
-      integer :: nabout
-      integer :: nscreen
       integer :: ihot
       integer :: ics
       integer :: im
@@ -219,8 +217,9 @@
       subroutine readControlFile(controlFileName, verbose)
       use boundaries, only : neta, nfluxf, nvel, lbcodei
       use mesh, only : slam0, sfea0
-      use global, only : openfileforread
+      use mod_io, only : openFileForRead
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use mod_logging, only: nscreen, nabout, t_log_level
       implicit none
       character(len=1024), intent(in) :: controlFileName
       logical, intent(in) :: verbose
@@ -231,6 +230,7 @@
       integer :: i
       integer :: j
       integer :: k
+      integer :: nabout_tmp
 
       ! initialization
       lineNum = 1
@@ -243,7 +243,8 @@
       linenum = linenum + 1
       read(15,*,err=10,end=20,iostat=ios) nfover
       linenum = linenum + 1
-      read(15,*,err=10,end=20,iostat=ios) nabout
+      read(15,*,err=10,end=20,iostat=ios) nabout_tmp
+      nabout = t_log_level(nabout_tmp)
       linenum = linenum + 1
       read(15,*,err=10,end=20,iostat=ios) nscreen
       linenum = linenum + 1
@@ -743,6 +744,7 @@ c     arc add nws13 190110
       use boundaries, only : neta, nfluxf, nvel, lbcodei
       use mesh, only : slam0, sfea0
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use mod_logging, only: nscreen, nabout
       implicit none
       integer, intent(in) :: echoUnit ! fortran i/o unit number for output
       character(len=80) :: wtimincLine
@@ -765,7 +767,7 @@ c     arc add nws13 190110
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       write(echoUnit,fmt='(i0,10x,"! nfover")') nfover
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
-      write(echoUnit,fmt='(i0,10x,"! nabout")') nabout
+      write(echoUnit,fmt='(i0,10x,"! nabout")') nabout%level()
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return
       write(echoUnit,fmt='(i0, 10x, "! nscreen")') nscreen
       echoLine = echoLine + 1 ; if (echoLine.gt.lineNum) return

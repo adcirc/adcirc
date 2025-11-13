@@ -24,9 +24,8 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
       USE WRITE_OUTPUT, ONLY : terminate
-      USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
-     &          setMessageSource, unsetMessageSource, allMessage,
-     &          scratchMessage
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
+     &          allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
 #ifdef CSWAN
 
       USE SWCOMM1, ONLY: NMOVAR

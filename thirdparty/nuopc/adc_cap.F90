@@ -196,7 +196,7 @@ module adc_cap
   USE GLOBAL,  ONLY: RSTIMINC            ! wave time interval
   use ADC_CONSTANTS,  ONLY: RhoWat0, g
   use GLOBAL,  only: NWS, ITHS, NT, DTDP, ITIME
-  use GLOBAL,  only: allMessage
+  use mod_logging, only: allMessage
 
   use SIZES  , only: ROOTDIR
   use couple2swan_modif, only: ADCIRC_SXX, ADCIRC_SXY, ADCIRC_SYY

@@ -25,11 +25,13 @@ C***********************************************************************
 C
        MODULE WIND
        USE SIZES, ONLY : LOCALDIR
-       USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage,
+       USE mod_logging, ONLY : setMessageSource, allMessage,
      &    screenMessage, logMessage, unsetMessageSource,
-     &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
-     &    sphericalDistance, openFileForRead, RNDAY, cice_timinc, 
-     &    cice_time1, cice_time2, Found_InterpInset_Namelist,UseInterpInset
+     &    DEBUG, ECHO, INFO, WARNING, ERROR, screenUnit
+       USE mod_io, ONLY : openFileForRead
+      USE GLOBAL, ONLY : sphericalDistance, RNDAY,
+     &    cice_timinc, cice_time1, cice_time2,
+     &    Found_InterpInset_Namelist,UseInterpInset
 #ifdef DATETIME
      &   ,basedatetime
 #endif
@@ -328,6 +330,7 @@ C     ----------------------------------------------------------------
       use global, only: NWS
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
+      character(1024) :: scratchMessage
       
       call setMessageSource("initWindModule")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -731,6 +734,7 @@ C     ----------------------------------------------------------------
       REAL(8) :: PercentIce
       REAL(8) :: pic, WindDrag, IceDrag, Cform
       REAL(8) :: Cskin = 1.5d-3, Cform_max = 3.67d-3, beta = 0.6d0
+      character(1024) :: scratchMessage
 C
       SELECT CASE(TRIM(DragLawString))
 C
@@ -1777,7 +1781,7 @@ C----------------------------------------------------------------------
       use global, only : ciceout, h0, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, statim, wsx1, wsy1, wsx2, wsy2, pr2, pr1,
      &   cice1, cice2
-      use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006          
+      use owiwind,only : nws12init, nws12get, findStormCenter    ! sb added 09/xx/2006
       use nodalAttributes, only : applyDirectionalWindReduction,
      &   loadCanopyCoef, loadDirEffRLen, applyCanopyCoefficient
       use mesh, only : dp, ics, np
@@ -1791,6 +1795,7 @@ Casey 180318: Added for NWS=13
 #endif
       implicit none
       integer, intent(in) :: nws
+      character(1024) :: scratchMessage
       real(8) :: windx ! wind vel (m/s) in x-dir
       real(8) :: windy ! wind vel (m/s) in y-dir
       real(8) :: wtratio ! used to time interpolated between met datasets
@@ -2137,6 +2142,7 @@ C----------------------------------------------------------------------
       integer :: j
       real(8) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
       integer :: TimeLoc_NM ! timeloc to the nearest minute
+      character(1024) :: scratchMessage
 
       call setMessageSource("hotStartMeteorologicalForcing")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -3301,7 +3307,7 @@ C***********************************************************************
       IMPLICIT NONE
       INTEGER, SAVE :: FIRSTCALL = 0
       INTEGER I,J
-      INTEGER NScreen,ScreenUnit
+      INTEGER NScreen
       REAL(8) XCOOR,YCOOR
       INTEGER  LATIND1,LATIND2,LONIND1,LONIND2
       REAL(8) WSPEED,WDIR
@@ -3828,6 +3834,7 @@ C***********************************************************************
       integer :: N,I,LON,LONP1,LAT,LATP1
       real(8) :: DLAT,DLON,FLONWORK,COLAT,DDLAT,XLAT,DFLAT,DFLAT1,
      &     DDLON,XLON,DFLON,DFLON1
+      character(1024) :: scratchMessage
 
       call setMessageSource("g2rini")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -5172,6 +5179,7 @@ C     ----------------------------------------------------------------
       REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
       REAL( 8) :: wvnx(np),wvny(np), press(np)
       REAL(8) :: RhoWatG
+      character(1024) :: scratchMessage
 
       REAL,DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
@@ -5794,6 +5802,7 @@ C***********************************************************************
       REAL(8) :: numRmaxes ! number of Rmax values selected by user
       CHARACTER(1) ew,ns
       INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
+      character(len=1024) :: scratchMessage
 
       REAL(8) :: rndaySeconds ! end time of the run in seconds
       real(8) :: newVortexRMW = 0.0d0 ! average Rmax at icyc   (next fort.22 time value)
@@ -6344,7 +6353,9 @@ C     ----------------------------------------------------------------
       subroutine NWS15INIT(timeloc)
       use sizes, only : globaldir, mnp
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-      use global, only : ihot, nws, openFileForRead, nabout
+      use mod_io, only : openFileForRead
+      use global, only : ihot, nws
+      use mod_logging, only: nabout, operator(>)
       implicit none
 C
       real(8), intent(in) :: timeloc ! adcirc time in seconds since coldstart
@@ -6355,6 +6366,7 @@ C
       logical :: cycleTimeFound ! true if the adcirc time falls into one
                                 ! of the hwind time intervals
       integer :: i           ! loop counter
+      character(1024) :: scratchMessage
 C
       call setMessageSource("nws15init")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -6530,7 +6542,7 @@ C     We jump to this section if there was an error reading a file.
 248   call allMessage(ERROR,"I/O error during file access.") !  ERR jumps here
       call allMessage(INFO,
      &   "Check the fort.16 file for more information.")
-      if (nabout.gt.0) then
+      if (nabout.gt.INFO) then
          call allMessage(INFO,
      &  "Reducing the value of NABOUT to 0"
      &  //" will maximize the information written to the fort.16 file,"
@@ -6603,6 +6615,7 @@ C
       real(8) :: maxSpeed ! (m/s) max wind speed on mesh (subdomain in parallel)
       integer  :: maxNode  ! mesh node on which maxSpeed occurs
       integer  :: i        ! loop counter
+      character(1024) :: scratchMessage
 C
       call setMessageSource("nws15get")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -6796,7 +6809,8 @@ C     from a single HWind file.
 C
 C     ----------------------------------------------------------------
       subroutine loadHWindFile(cn)
-      use global, only : openFileForRead, nabout
+      use mod_io, only : openFileForRead
+      use mod_logging, only : nabout, operator(>)
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE ADC_CONSTANTS, only: m2nm
       implicit none
@@ -6814,6 +6828,7 @@ C
       integer                  :: counter ! used to count uvWind array values
       integer                  :: i, j    ! loop counters
       character(1)             :: paren
+      character(1024) :: scratchMessage
       character(1)             :: comma
 C
       call setMessageSource("loadHWindFile")
@@ -6938,7 +6953,7 @@ C     We jump to this section if there was an error reading a file.
 248   call allMessage(ERROR,"I/O error during file access.") !  ERR jumps here
       call allMessage(ERROR,
      &   "Check the fort.16 file for more information.")
-           if (nabout.gt.0) then
+           if (nabout.gt.INFO) then
          call allMessage(INFO,
      &  "Reducing the value of NABOUT to 0"
      &  //" will maximize the information written to the fort.16 file,"
@@ -7075,15 +7090,17 @@ C
        subroutine init_gfdl(timeloc)
        use sizes, only : globaldir
        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
-       use global, only : ihot, nws, nabout, openFileForRead,
-     &                setMessageSource,unsetMessageSource,allMessage,
-     &                logMessage,scratchMessage,DEBUG,ECHO,INFO,
-     &                ERROR,WARNING
+       use mod_io, only : openFileForRead
+       use global, only : ihot, nws
+       use mod_logging, only: setMessageSource, unsetMessageSource,
+     &                allMessage, logMessage, DEBUG, ECHO, INFO,
+     &                ERROR, WARNING, nabout, operator(>)
       USE ADC_CONSTANTS, only: PRBCKGRND,RHOWAT0
       use mesh, only : np, x, y, slam0, sfea0
       implicit none
 
       real(8), intent(in) :: timeloc ! adcirc time in seconds since coldstart
+      character(len=1024) :: scratchMessage ! local variable for formatted messages
 C
       logical :: fileFound   ! true if the file could be found
       integer :: errorio     ! .gt. 1 if there was an i/o error
@@ -7276,7 +7293,7 @@ C     We jump to this section if there was an error reading a file.
 248   call allMessage(ERROR,"I/O error during file access.") !  ERR jumps here
       call allMessage(INFO,
      &   "Check the fort.16 file for more information.")
-      if (nabout.gt.0) then
+      if (nabout.gt.INFO) then
          call allMessage(INFO,
      &  "Reducing the value of NABOUT to 0"
      &  //" will maximize the information written to the fort.16 file,"
@@ -7324,12 +7341,13 @@ C
        USE MESH, ONLY: ICS, DRVSPCOORSROTS, CYLINDERMAP
        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
        USE ADC_CONSTANTS, ONLY: DEG2RAD,PRBCKGRND,G,RHOWAT0
-       USE GLOBAL, ONLY: IFSPROTS,
-     &        setMessageSource,unsetMessageSource,allMessage,
-     &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR
+       USE mod_logging, ONLY: setMessageSource,unsetMessageSource,
+     &        allMessage,logMessage,DEBUG,ECHO,INFO,ERROR
+      USE GLOBAL, ONLY: IFSPROTS
        USE KDTREE2_MODULE     ! USED FOR FAST SEARCHING
 
        IMPLICIT NONE
+       character(1024) :: scratchMessage
        REAL(8), ALLOCATABLE :: XY_GFDL(:,:),XLOC(:)
        REAL(8), ALLOCATABLE :: PRESS_GFDL(:)
        REAL(8), ALLOCATABLE :: U_WIND_GFDL(:),V_WIND_GFDL(:)
@@ -7566,14 +7584,14 @@ C ---------------------------------------------------------------------
 C
       subroutine nws16get(timeloc,wvnx,wvny,press)
       use mesh, only : x,y,np,slam0,sfea0
-      use global, only : setMessageSource,unsetMessageSource,allMessage,
-     &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR,
-     &        WARNING
+      use mod_logging, only: setMessageSource, unsetMessageSource,
+     &        allMessage, logMessage, DEBUG, ECHO, INFO, ERROR, WARNING
       USE ADC_CONSTANTS, only: PRBCKGRND,RHOWAT0,G
 
       implicit none
       integer :: i,numFiles,currentCycle
       logical :: cycleTimeFound
+      character(len=1024) :: scratchMessage ! local variable for formatted messages
       real(8), intent(in) :: timeloc   ! adcirc time, seconds since coldstart
       real(8), intent(out) :: wvnx(:)  ! wind u-velocity (m/s)
       real(8), intent(out) :: wvny(:)  ! wind v-velocity (m/s)
@@ -7672,7 +7690,7 @@ C     jgf52.19: Added error checking and reporting as well as
 C     execution tracing.
 C***********************************************************************
       subroutine rsget(rsnx,rsny)
-      use global, only : nabout
+      use mod_logging, only : nabout, INFO, operator(>)
       use mesh, only : np
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
@@ -7681,7 +7699,8 @@ C***********************************************************************
       integer :: nhg
       integer, save :: lineNum = 0
       real(8) :: rsnxRaw, rsnyRaw
-      character*80 pbljagf
+      character(80) pbljagf
+      character(1024) :: scratchMessage
       integer :: errorio
 C
       call setMessageSource("rsget")
@@ -7731,7 +7750,7 @@ C     We jump to this section if there was an error reading a file.
       call allMessage(ERROR,scratchMessage)
       call allMessage(ERROR,
      &                  'Check the fort.16 file for more information.')
-      if (nabout.gt.0) then
+      if (nabout.gt.INFO) then
          call allMessage(INFO,'Reducing the value of NABOUT to 0'
      &  //' will maximize the information written to the fort.16 file,'
      &  //' which may aid in troubleshooting this issue.')
@@ -7776,12 +7795,14 @@ C
 C----------------------------------------------------------------------
       subroutine initDynamicWaterLevelCorrection(timesec)
       use sizes, only : globaldir
-      use global, only : nabout, np_g
+      use global, only : np_g
+      use mod_logging, only: nabout, INFO, operator(>)
       use mesh, only : np
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       real(8), intent(in) :: timesec ! adcirc model time (s)
       integer :: errorio ! i/o error condition code
+      character(1024) :: scratchMessage
 
       call setMessageSource("initDynamicWaterLevelCorrection")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -7792,12 +7813,14 @@ C----------------------------------------------------------------------
       errorio = 0
       ! jgf: First try looking in the full domain input file directory
       call openFileForRead(dynamicWaterLevelCorrectionUn,
-     &   trim(globaldir)//"/"//trim(dynamicWaterLevelCorrectionFileName), errorio)
+     &   trim(globaldir)//"/"//trim(dynamicWaterLevelCorrectionFileName),
+     &   errorio, required=.FALSE.)
       ! If the file was not found, in the directory with the other
       ! full domain input files, perhaps it was provided with a full path?
       if (errorio.gt.0) then
          call openFileForRead(dynamicWaterLevelCorrectionUn,
-     &          trim(dynamicWaterLevelCorrectionFileName), errorio)
+     &          trim(dynamicWaterLevelCorrectionFileName), errorio,
+     &          required=.FALSE.)
       endif
       ! give up if the file was still not found
       if (errorio.gt.0) then
@@ -7903,7 +7926,7 @@ C----------------------------------------------------------------------
 258   call allMessage(ERROR,'I/O error during file access.') !  ERR jumps here
       call allMessage(INFO,
      &   'Check the fort.16 file for more information.')
-      if (nabout.gt.0) then
+      if (nabout.gt.INFO) then
          call allMessage(INFO,
      &  'Reducing the value of NABOUT to 0'
      &  //' will maximize the information written to the fort.16 file,'
@@ -8024,8 +8047,9 @@ C----------------------------------------------------------------------
 C     jgf: Reads a water level correction dataset from file.
 C----------------------------------------------------------------------
       subroutine readDynamicWaterLevelCorrectionDataSet()
-      use global, only : nabout, np_g, nodes_lg
+      use global, only : np_g, nodes_lg
       use mesh, only : np
+      use mod_logging, only: nabout, operator(>)
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       integer :: numCorrectionValues
@@ -8035,6 +8059,7 @@ C----------------------------------------------------------------------
       integer :: sd_node_number ! subdomain node number
       logical :: nextCorrectionDataSetFound ! true if a # is found in 2nd col
       integer :: errorio ! error message code
+      character(1024) :: scratchMessage
 
       call setMessageSource("readDynamicWaterLevelCorrectionDataSet")
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
@@ -8116,7 +8141,7 @@ C     We jump to this section if there was an error reading a file.
 258   call allMessage(ERROR,'I/O error during file access.') !  ERR jumps here
       call allMessage(INFO,
      &   'Check the fort.16 file for more information.')
-      if (nabout.gt.0) then
+      if (nabout.gt.INFO) then
          call allMessage(INFO,
      &  'Reducing the value of NABOUT to 0'
      &  //' will maximize the information written to the fort.16 file,'
@@ -8880,15 +8905,16 @@ C----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
       SUBROUTINE INIT_INSET_NC()
-       
+
        USE SIZES, ONLY : MYPROC, GBLINPUTDIR
        USE GLOBAL, ONLY : InsetControlFile
        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
- 
+
        IMPLICIT NONE
-       
+
        LOGICAL :: InsetFileExist
-       INTEGER :: IERR      
+       INTEGER :: IERR
+       character(1024) :: scratchMessage      
        
             
        CALL setMessageSource("INIT_INSET_NC")
@@ -8935,20 +8961,21 @@ C     advantage of using this is specific to GLOBAL MODEL (GSTOFS).
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       SUBROUTINE READINSET_NC(InsetFileN,InsetID,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetVar,InsetOUT)
-       
+
 #ifdef ADCNETCDF
       use netcdf
       use netcdf_error, only: check_err
-#endif     
+#endif
 #ifdef CMPI
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
 #endif
       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
-      USE GLOBAL, ONLY: scratchMessage, allMessage, ERROR
+      USE mod_logging, ONLY: allMessage, ERROR
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-      
+
       IMPLICIT NONE
+      character(1024) :: scratchMessage
 
       CHARACTER(LEN=*), INTENT(IN)      :: InsetFileN
       CHARACTER(LEN=*), INTENT(IN)      :: InsetVar, InsetLat, InsetLon,InsetLatDim, InsetLonDim  

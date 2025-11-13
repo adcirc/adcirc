@@ -35,9 +35,9 @@ C    ========================================================================
 
       module subdomain
       use sizes, only : globaldir
-      use global, only : DEBUG, ECHO, INFO, WARNING, ERROR, logMessage,
-     &                    allMessage, scratchMessage, setMessageSource,
-     &                    unsetMessageSource 
+      use mod_logging, only : DEBUG, ECHO, INFO, WARNING, ERROR,
+     &                         logMessage, allMessage, setMessageSource,
+     &                         unsetMessageSource 
 
       logical subdomainOn                                         
       integer :: NOUTGS, NSPOOLGS, enforceBN 
@@ -402,7 +402,7 @@ C     | within timestep.F
 
 
       SUBROUTINE openFort019H(TimeLoc)
-C     | This subroutine opens fort.019 for a hot-started model and 
+C     | This subroutine opens fort.019 for a hot-started model and
 C     | finds the proper place in the b.c. file.
 
          Use SIZES, only : myproc
@@ -412,10 +412,11 @@ C     | finds the proper place in the b.c. file.
 #ifdef CMPI
          Use MESSENGER
 #endif
-         implicit none       
+         implicit none
          character(6) :: procLoc
          integer :: i,j,n,it,itread
          REAL(8), intent(in) :: TimeLoc
+         character(1024) :: scratchMessage
 #ifdef CMPI
          write(procLoc,'(A2,I4.4)') "PE",myproc
          open(1019, file=procLoc//'/'//'fort.019')
@@ -470,6 +471,7 @@ C     | This subroutine opens fort.019 for a cold-started model
          implicit none
          character(6) :: procLoc
          integer :: i,n
+         character(1024) :: scratchMessage
 
 #ifdef CMPI
          write(procLoc,'(A2,I4.4)') "PE",myproc

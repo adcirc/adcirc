@@ -134,7 +134,7 @@ contains
    subroutine tidalPotentialConstructor(self, np, rnday, in_UseFullTIPFormula, in_TIPOrder, in_TIPStartDate, &
                                         in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
                                         in_IncludeNutation, in_k2value, in_h2value)
-      use global, only: allMessage, WARNING
+      use mod_logging, only: allMessage, WARNING
       implicit none
 
       class(t_tidePotential), intent(INOUT) :: self
@@ -349,7 +349,7 @@ contains
 
    function compute_full_tip(self, TimeLoc, NP, SLAM) result(tip)
       use ADC_CONSTANTS, only: sec2day, DEG2RAD
-      use global, only: setMessageSource, unsetMessageSource, allMessage
+      use mod_logging, only: setMessageSource, unsetMessageSource, allMessage
 #ifdef ADCNETCDF
       use mod_ephemerides, only: HEAVENLY_OBJS_COORDS_FROM_TABLE
 #else
@@ -357,7 +357,7 @@ contains
 #endif
 
 #ifdef ALL_TRACE
-      use global, only: DEBUG
+      use mod_logging, only: DEBUG
 #endif
 
       implicit none
@@ -416,7 +416,7 @@ contains
    end function compute_full_tip
 
    subroutine check_tip_err(IERR)
-      use global, only: screenMessage, ERROR
+      use mod_logging, only: screenMessage, ERROR
       implicit none
       integer, intent(IN) :: IERR
 

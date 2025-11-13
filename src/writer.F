@@ -31,10 +31,11 @@ C
      &     controlType, meshFileName_g, controlFileName_g
       use global, only: c3d, comm,
      &    bufsize_max, buf, resultbuf, outputdatadescript_t,
-     &     debug, echo, info, warning, error, logmessage, allmessage,
-     &     setmessagesource, unsetmessagesource, initLogging, nabout,
-     &     scratchMessage, sig_val, sig_write, sig_ini, sig_pause, comm_writer,
+     &     sig_val, sig_write, sig_ini, sig_pause, comm_writer,
      &     sig_term, sig_mesh, writer_id
+      use mod_logging, only: debug, echo, info, warning, error,
+     &     logmessage, allmessage, setmessagesource, unsetmessagesource,
+     &     nabout
       use messenger, only: tag
       implicit none
       ! tcm v50.27 increased size from 3 to 4, cobell increase to 6,
@@ -175,13 +176,14 @@ C     When it receives a signal, it performs the specified action,
 C     then goes back to waiting for another signal.
 C-----------------------------------------------------------------------
       subroutine writer_main ()
-      use global, only : ScreenUnit
+      use mod_logging, only : ScreenUnit
       use mpi_f08, only: MPI_Recv, MPI_INTEGER, MPI_Status
       use messenger, only: msg_barrier, mpi_comm_adcirc
       IMPLICIT NONE
       integer :: sig, ierr, waittime, nextProc, prevProc, sig_dummy
       type(MPI_Status) :: mpistat
       character(len=16) :: TimeIni
+      character(len=1024) :: scratchMessage
 C
       call setMessageSource("writer_main")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
@@ -250,6 +252,8 @@ C-----------------------------------------------------------------------
       subroutine sendDataToWriter(descript, TimeLoc, it, store_cmd)
       use sizes, only : myproc
       use global
+      use mod_logging, only: setmessagesource, allmessage, debug,
+     &     logmessage, unsetmessagesource
       use mpi_f08, only: MPI_Send, MPI_Reduce, MPI_INTEGER,
      &                   MPI_CHARACTER, MPI_SUM
       implicit none
@@ -262,6 +266,7 @@ C
       integer :: num
       integer :: bufsize
       integer :: istart, iend
+      character(1024) :: scratchMessage
 C
       call setMessageSource("sendDataToWriter")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
@@ -297,7 +302,7 @@ Cobell - Allow writer processors to output netcdf data
          INTBUF(4) = descript % lun
          INTBUF(5) = descript % outputTimeStepIncrement
          INTBUF(6) = it
-         INTBUF(7) = nabout ! jgf52.08.25: need logging level
+         INTBUF(7) = nabout%level()
          call mpi_send(intbuf, numIntMetaData, mpi_integer, mnproc, tag,
      &      comm_writer(wcommID),ierr)
          REBUF(1) = descript % alternate_value
@@ -364,6 +369,8 @@ C-----------------------------------------------------------------------
       subroutine writer_recv_values()
       use mpi_f08, only: MPI_Recv, MPI_Reduce, MPI_INTEGER,
      &                   MPI_CHARACTER, MPI_SUM, MPI_Status
+      use mod_logging, only: setmessagesource, allmessage, debug,
+     &     logmessage, unsetmessagesource, t_log_level
       implicit none
       integer :: num, i, j
       integer :: ierr
@@ -372,6 +379,7 @@ C-----------------------------------------------------------------------
       type(MPI_Status) :: mpistat
       logical :: descriptFound ! true if we found the particular buffer we need
       character(len=8) :: cdigit  !st3 100708: split file
+      character(len=1024) :: scratchMessage
 
       call setMessageSource("writer_recv_values")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
@@ -416,7 +424,7 @@ C-----------------------------------------------------------------------
       writer_descripts(bufid) % lun = intbuf(4)
       writer_descripts(bufid) % outputTimeStepIncrement = intbuf(5)
       writer_descripts(bufid) % wMD % myTimeStep = intbuf(6)
-      nabout = intbuf(7)
+      nabout = t_log_level(intbuf(7))
       !
       ! receive "dry" data value and current simulation time
       call mpi_recv(rebuf, numRealMetaData, MPI_DOUBLE_PRECISION, 0, tag, 
@@ -517,9 +525,12 @@ C-----------------------------------------------------------------------
       SUBROUTINE FLUSH_WRITERS()
       use sizes, only : myproc
       use global
+      use mod_logging, only: setmessagesource, allmessage, debug,
+     &     logmessage, unsetmessagesource
       use mpi_f08, only: MPI_Send, MPI_INTEGER
       implicit none
-      INTEGER I,IERR
+      INTEGER :: I, IERR
+      character(1024) :: scratchMessage
 
       call setMessageSource("flush_writers")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
@@ -574,6 +585,8 @@ C     descript % specifier integer instead of FULL_REC and W_NETCDF
 C-----------------------------------------------------------------------
       subroutine writer_write()
       use global
+      use mod_logging, only: setmessagesource, allmessage, debug, info,
+     &     error, logmessage, unsetmessagesource
 #ifdef ADCNETCDF
       use NETCDFIO, only : initNetCDFOutputFile, writeOutArrayNetCDF
 #endif      
@@ -591,6 +604,7 @@ C-----------------------------------------------------------------------
       integer, parameter :: fid = 100
       character(len=20) :: fpos  ! file position specifier on open statement
       character(len=20) :: fstat ! file status specifier on open statement
+      character(len=1024) :: scratchMessage
       logical :: nerr             ! netcdf error status indicator
 
       call setMessageSource("writer_write")
@@ -820,11 +834,15 @@ C-----------------------------------------------------------------------
       subroutine sendInitWriterXDMF(descript)
       use sizes, only : myproc
       use global
+      use mod_io, only: openFileForRead
+      use mod_logging, only: setmessagesource, allmessage, debug, info,
+     &     logmessage, unsetmessagesource
       use mpi_f08, only: MPI_Send, MPI_INTEGER, MPI_CHARACTER
       implicit none
       type (OutputDataDescript_t), intent(in) :: descript
       character(len=80) :: fileKeyword
       character(len=80) :: fileValue
+      character(len=1024) :: scratchMessage
       integer :: ierr
 C   
       call setMessageSource("sendInitWriterXDMF")
@@ -853,7 +871,8 @@ C
          ! so that the writer can load them up and use them (it only
          ! uses the control file for generating metadata) ... the 
          ! 'fulldomainInputFiles' file is created by adcprep
-         call openFileForRead(30,trim(globaldir)//'/fulldomainInputFiles', ierr)
+         call openFileForRead(30,trim(globaldir)//'/fulldomainInputFiles',
+     &      ierr, required=.FALSE.)
          do 
             read(30,fmt='(a80)',end=10) fileKeyword
             read(30,fmt='(a80)',end=10) fileValue
@@ -905,6 +924,8 @@ C     into XDMF output files.
 C-----------------------------------------------------------------------
       subroutine writerReadMesh()
       use global
+      use mod_logging, only: setmessagesource, allmessage, debug, info,
+     &     logmessage, unsetmessagesource
       use mesh, only : readMesh, x, y, slam, sfea
       use sizes, only: MESHFILENAME,CONTROLFILENAME
       use mpi_f08, only: MPI_Recv, MPI_INTEGER, MPI_CHARACTER, MPI_Status
@@ -916,6 +937,7 @@ C-----------------------------------------------------------------------
       integer      :: ierr
       type(MPI_Status) :: mpistat
       character(len=8) :: cdigit              !st3 100708: split file
+      character(len=1024) :: scratchMessage
 
       call setMessageSource("writerReadMesh")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
@@ -978,6 +1000,8 @@ C     subroutine is only called by processor 0.
 C-----------------------------------------------------------------------
       subroutine writer_pause()
       use global
+      use mod_logging, only: setmessagesource, allmessage, debug,
+     &     unsetmessagesource
       use messenger, only: tag, writers_active
       use mpi_f08, only: MPI_Send, MPI_INTEGER
       implicit none
@@ -1026,6 +1050,7 @@ C
       MODULE HSWRITER
         USE SIZES
         USE GLOBAL
+        USE mod_logging, only: setmessagesource, unsetmessagesource
         USE MESSENGER, ONLY: TAG
         use mpi_f08, only: MPI_Recv, MPI_Send, MPI_Barrier, MPI_Reduce,
      &                     MPI_INTEGER, MPI_DOUBLE_PRECISION, MPI_LOGICAL,
@@ -1044,7 +1069,7 @@ C
 !------------------------------------------------------------
 !
       SUBROUTINE HSWRITER_MAIN ()
-        USE GLOBAL,ONLY : ScreenUnit
+        USE mod_logging,ONLY : ScreenUnit
         IMPLICIT NONE
         INTEGER :: SIG,IERR
         type(MPI_Status) :: STAT
@@ -1118,6 +1143,7 @@ C-----------------------------------------------------------------------
       USE SIZES
       USE GLOBAL
       USE MESH, ONLY : NE, NP
+      use mod_logging, only: screenUnit, nscreen
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE GLOBAL_IO, ONLY: packOne, unpackOne,
      &    packTwo, unpackTwo, HEADER_MAX

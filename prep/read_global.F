@@ -501,11 +501,11 @@ C---------------------------------------------------------------------
       USE PRE_GLOBAL
       USE SIZES, ONLY : MNHARF
       USE MESH, ONLY : CYLINDERMAP
-      USE GLOBAL, ONLY : parse, hss, screenUnit, STATNAME,
-     &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
-     &                   allMessage, setMessageSource, deg2rad,
-     &                   unsetMessageSource, INFO, logMessage,
-     &                   scratchMessage, screenMessage
+      USE GLOBAL, ONLY : parse, hss, STATNAME,
+     &                   STATNAMEV, STATNAMEM, STATNAMEC, deg2rad
+      USE MOD_LOGGING, ONLY : allMessage, setMessageSource,
+     &                   unsetMessageSource, logMessage, screenMessage,
+     &                   ERROR, DEBUG, INFO, screenUnit
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
@@ -519,6 +519,7 @@ C      MCF ADDITION FOR READING AND WRITING STATION INFO IN NETCDF
 C
       CHARACTER(132) STATLINE
       CHARACTER(50) LVAR(3)
+      CHARACTER(1024) scratchMessage
 C
 C    ===================================================================
 

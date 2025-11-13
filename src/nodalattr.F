@@ -101,8 +101,8 @@ C
 C-----------------------------------------------------------------------
       MODULE NodalAttributes
       USE SIZES
-      USE GLOBAL, ONLY : scratchMessage, allMessage, logMessage,
-     &                    DEBUG, ECHO, INFO, WARNING, ERROR
+      use mod_logging, only: allMessage, logMessage, DEBUG, ECHO, INFO,
+     &                       WARNING, ERROR
 
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
 C             I've placed these changes outside the #ifdef CSWAN flags
@@ -550,6 +550,7 @@ C     ----------------------------------------------------------------
       USE MESH, ONLY : replaceNullsWithSpaces
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
+      character(1024) :: scratchMessage
 #ifndef ADCXDMF
       call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &   message='An XDMF formatted nodal attributes (fort.13) file '
@@ -878,6 +879,7 @@ C     ----------------------------------------------------------------
       subroutine checkForMissingNodalAttributes()
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
+      character(1024) :: scratchMessage
 C
 C     Determine if there are any attributes required by the fort.15 file
 C     that are not in the nodal attributes file.
@@ -987,11 +989,12 @@ C     ----------------------------------------------------------------
       SUBROUTINE ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
       USE MESH, ONLY : NP
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use mod_logging, only: t_log_level, INFO
       IMPLICIT NONE
       INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
       INTEGER, intent(in) :: ScreenUnit ! i/o for screen
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
-      INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
+      type(t_log_level), intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
 C
       LOGICAL NAFound  ! .true. if Nodal Attributes File (fort.13) exists
       INTEGER ErrorIO  ! zero if file opened successfully
@@ -1000,6 +1003,7 @@ C
       INTEGER NumNodesNotDefault ! number of individual nodes to specify
       LOGICAL SkipDataSet ! .true. if a data set in unit 13 is not needed
       CHARACTER(len=80) Skipped ! data in unit 13 we do not need
+      CHARACTER(len=1024) :: scratchMessage
       INTEGER L                 ! line counter
 C
       ! temp array; used to load a real from the file,
@@ -1575,29 +1579,30 @@ C     ----------------------------------------------------------------
       SUBROUTINE LoadAttrVec(AttributeData, Default, NumNodesNotDef,
      &     NScreen, MyProc, NAbOut)
       USE MESH,ONLY:node_dict,find
+      use mod_logging, only: t_log_level, INFO, operator(<=)
       IMPLICIT NONE
       REAL(8), intent(out), dimension(NumOfNodes) :: AttributeData
       REAL(8), intent(in):: Default ! default value for all nodes
       INTEGER, intent(in) :: NumNodesNotDef ! number of nodes specified in file
       INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
-      INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
+      type(t_log_level), intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
       REAL(8)            :: TempData 
       INTEGER             :: NodeNum ! node label listed in the file
       INTEGER             :: DictNode ! node position in array
 C
 C     Set all values to user-specified default values.
-      IF (NABOUT.EQ.0) WRITE(16,1001) Default
+      IF (NABOUT.LE.ECHO) WRITE(16,1001) Default
       DO i=1, NumOfNodes
          AttributeData(i) = Default
       END DO
 C
-      IF (NABOUT.EQ.0) WRITE(16,1005)
+      IF (NABOUT.LE.ECHO) WRITE(16,1005)
       DO i=1, NumNodesNotDef
          READ(13,*) NodeNum, TempData
          DictNode = find(node_dict,NodeNum)
          AttributeData(DictNode) = TempData
-         IF (NABOUT.EQ.0)
+         IF (NABOUT.LE.ECHO)
      &       WRITE(16,1010) NodeNum, TempData
       END DO
 C
@@ -1624,6 +1629,7 @@ C     ----------------------------------------------------------------
       SUBROUTINE LoadAttrMat(AttributeData, NumCol, Default,
      &     NumNodesNotDef, NScreen, MyProc, NAbOut, NodesNotDef )
       USE MESH,ONLY:node_dict,find
+      use mod_logging, only: t_log_level, operator(<=)
       IMPLICIT NONE
       INTEGER, intent(in) :: NumCol  ! number of columns in the matrix
       REAL(8), intent(out),
@@ -1632,7 +1638,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NumNodesNotDef  ! number of nodes spec. in file
       INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
-      INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
+      type(t_log_level), intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
       REAL(8)            :: TempAttData(NumCol) 
       INTEGER             :: NodeNum ! node label listed in the file
       INTEGER             :: DictNode ! node position in array
@@ -1641,15 +1647,15 @@ C------ DW
 C------
 C
 C     Set all nodes to user-specified default values.
-      IF (NABOUT.EQ.0) WRITE(16,1001)
+      IF (NABOUT.LE.ECHO) WRITE(16,1001)
       DO i=1, NumOfNodes
          DO j=1, NumCol
             AttributeData(i,j)=Default(j)
          END DO
       END DO
 C
-      IF (NABOUT.EQ.0) WRITE(16,1005)
-      IF (NABOUT.EQ.0) WRITE(16,*) NumCol,ubound(AttributeData),NumNodesNotDef
+      IF (NABOUT.LE.ECHO) WRITE(16,1005)
+      IF (NABOUT.LE.ECHO) WRITE(16,*) NumCol,ubound(AttributeData),NumNodesNotDef
       DO i=1, NumNodesNotDef
          READ(13,*) NodeNum, (TempAttData(j),j=1,NumCol)
          DictNode = find(node_dict,NodeNum)
@@ -1657,7 +1663,7 @@ C
             NodesNotDef(i) = DictNode 
          END IF
          AttributeData(DictNode,:) = TempAttData(:)
-         IF (NABOUT.EQ.0) WRITE(16,1010) NodeNum,
+         IF (NABOUT.LE.ECHO) WRITE(16,1010) NodeNum,
      &        (AttributeData(DictNode,j),j=1,NumCol)
       END DO
 C
@@ -1688,6 +1694,7 @@ C     ----------------------------------------------------------------
       SUBROUTINE LoadAttrMatNodeNo(AttributeData, NumCol, Default,
      &     NumNodesNotDef, NScreen, MyProc, NAbOut, NodesNotDef )
       USE MESH,ONLY:node_dict,find
+      use mod_logging, only: t_log_level, operator(<=)
       IMPLICIT NONE
       INTEGER, intent(in) :: NumCol  ! number of columns in the matrix
       INTEGER, intent(out),
@@ -1696,7 +1703,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NumNodesNotDef  ! number of nodes spec. in file
       INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
-      INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
+      type(t_log_level), intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
       INTEGER             :: TempAttData(NumCol) 
       INTEGER             :: NodeNum ! node label listed in the file
       INTEGER             :: DictNode ! node position in array
@@ -1705,15 +1712,15 @@ C------ DW
 C------
 C
 C     Set all nodes to user-specified default values.
-      IF (NABOUT.EQ.0) WRITE(16,1001)
+      IF (NABOUT.LE.ECHO) WRITE(16,1001)
       DO i=1, NumOfNodes
          DO j=1, NumCol
             AttributeData(i,j)=Default(j)
          END DO
       END DO
 C
-      IF (NABOUT.EQ.0) WRITE(16,1005)
-      IF (NABOUT.EQ.0) WRITE(16,*) NumCol,ubound(AttributeData),NumNodesNotDef
+      IF (NABOUT.LE.ECHO) WRITE(16,1005)
+      IF (NABOUT.LE.ECHO) WRITE(16,*) NumCol,ubound(AttributeData),NumNodesNotDef
       DO i=1, NumNodesNotDef
          READ(13,*) NodeNum, (TempAttData(j),j=1,NumCol)
          DictNode = find(node_dict,NodeNum)
@@ -1724,7 +1731,7 @@ C
             NodesNotDef(i) = DictNode 
          END IF
          AttributeData(DictNode,:) = TempAttData(:)
-         IF (NABOUT.EQ.0) WRITE(16,1010) NodeNum,
+         IF (NABOUT.LE.ECHO) WRITE(16,1010) NodeNum,
      &        (AttributeData(DictNode,j),j=1,NumCol)
       END DO
 C
@@ -1753,6 +1760,7 @@ C     ----------------------------------------------------------------
      &     MyProc, NAbOut, Z0B)
       USE GLOBAL, ONLY : C3D, C2DDI, CBaroclinic
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use mod_logging, only: t_log_level
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in the grid file
       REAL(8), intent(in), dimension(NP) :: DP ! array of bathymetric depths
@@ -1760,7 +1768,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
       INTEGER, intent(in) :: ScreenUnit ! i/o for debug info to screen
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
-      INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
+      type(t_log_level), intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
       REAL(8), intent(in) :: Z0B ! 3D bottom friction
       INTEGER Tau0Dig1  ! determines the tau0 scheme
       INTEGER Tau0Dig2  ! determines whether tau0 is being output
@@ -2182,6 +2190,7 @@ C     ----------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: ICN, I1, I2, IBND, NNBB1, NNBB2
       REAL(8) :: X1, Y1, X2, Y2, WIDTH, BE1, BE2
+      CHARACTER(1024) :: scratchMessage
 
       WetPerimWidth = 0.D0
       WetPerimBankElev = 0.D0
@@ -2964,12 +2973,13 @@ C     ----------------------------------------------------------------
       SUBROUTINE ReadLegacyStartDryFile(NP, NScreen, ScreenUnit,
      &     MyProc, NAbOut)
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use mod_logging, only: t_log_level
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in grid file
       INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
       INTEGER, intent(in) :: ScreenUnit ! i/o for debug info to screen
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
-      INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
+      type(t_log_level), intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
 
       INTEGER JKI          ! node number from file
       INTEGER NE2          ! number of elements, according to fort.12 file
@@ -3031,12 +3041,13 @@ C     ----------------------------------------------------------------
       SUBROUTINE ReadLegacyBottomFrictionFile(NP, NScreen, ScreenUnit,
      &     MyProc, NAbOut)
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use mod_logging, only: t_log_level, operator(<=)
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in grid file
       INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
       INTEGER, intent(in) :: ScreenUnit ! i/o for debug info to screen
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
-      INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
+      type(t_log_level), intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
 
       CHARACTER(len=80) AFRIC  ! user's comment/description line
       INTEGER NHG    ! node number from file
@@ -3054,7 +3065,7 @@ C     ----------------------------------------------------------------
       END DO
       WRITE(16,3601) AFRIC
  3601 FORMAT(/,5X,'FRICTION FILE IDENTIFICATN : ',A80,/)
-      IF(NABOUT.NE.1) THEN
+      IF(NABOUT.LE.INFO) THEN
          WRITE(16,2080)
  2080    FORMAT(/,10X,'NODE',5X,'BOTTOM FRICTION FRIC',5X,/)
          DO I=1,NP
@@ -3081,8 +3092,8 @@ C     ----------------------------------------------------------------
       SUBROUTINE PrepCondensedNodes()
 C     ----------------------------------------------------------------
       USE SIZES,ONLY : MNVEL
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, allMessage,
-     &   DEBUG, ECHO, INFO, WARNING, ERROR  
+      use mod_logging, only: setMessageSource, unsetMessageSource,
+     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       USE MESH,ONLY : NP,LBArray_Pointer,X,Y
       USE BOUNDARIES,ONLY : CSIICN,SIIICN
       IMPLICIT NONE

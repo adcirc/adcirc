@@ -25,11 +25,11 @@ C-----------------------------------------------------------------------
       module asymmetricVortexProcessing
          USE ADC_CONSTANTS, only: g, rhowat0, prbckgrnd, deg2rad,
      &                        rad2deg, ms2kt, ten2one, windReduction
-         use global, only : 
-     &                   nws, sphericalDistance,
-     &                   DEBUG, WARNING, ERROR, INFO, screenunit,
-     &                   setMessageSource, allMessage, openFileForRead,
-     &                   screenMessage, initLogging, scratchMessage
+         use global, only : nws, sphericalDistance
+         use mod_io, only: openFileForRead
+         use mod_logging, only: DEBUG, WARNING, ERROR, INFO,
+     &                   setMessageSource, allMessage,
+     &                   screenMessage, screenUnit
          ! Import asymmetric hurricane vortex class
          use mesh, only : np, ne, nm, slam, sfea, ics, slam0, sfea0
          USE vortex
@@ -137,6 +137,7 @@ C     ! S U B R O U T I N E
       subroutine processAsymmetricTrackFile(infile)
       implicit none
       character(1024), intent(in) :: infile
+      character(1024) :: scratchMessage
 
       integer :: errorIO = 0
       integer :: i,j,k
@@ -1099,8 +1100,8 @@ C-----------------------------------------------------------------------
       use sizes, only : globaldir, mnp
       USE ADC_CONSTANTS, only: deg2rad, rad2deg, ten2one, g, rhowat0, 
      &  prbckgrnd, m2nm
-      use global, only : nws, openFileForRead,
-     &   ihot,  sphericaldistance  ! Jie 09/2013
+      use mod_io, only: openFileForRead
+      use global, only : nws, ihot,  sphericaldistance  ! Jie 09/2013
       use mesh, only : slam, sfea, np, ics
       use wind, only : hWindData_t, hWindFiles, nws15init, nws19get,
      &   writeFullCircleRmaxes, writeRadialVandP, writeSpatialVandP,
@@ -2801,18 +2802,20 @@ C-----------------------------------------------------------------------
       use asymmetricVortexProcessing
       use diagnosticOutput
       use VERSION, ONLY: ADC_VERSION, ADC_HASH
+      use sizes, only : myproc, localdir
+      use mod_logging, only: nabout, nscreen
       implicit none
 C
 C     jgf49.30: New variables to support command line options
       INTEGER :: IARGC   ! function to return number of command line arguments
       INTEGER :: ARGCOUNT ! number of command line arguments
       CHARACTER(2048) :: CMDLINEARG
+      character(1024) :: scratchMessage
       CHARACTER(2048) :: infile ! name of input file, default is "fort.22"
 
       CHARACTER(2) :: CMDLINEOPTION ! the option flag itself
       integer :: i
 
-      call initLogging()
       call setMessageSource("aswip")
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -2821,7 +2824,7 @@ C
 C     jgf49.30 Initialize to reasonable defaults.
 
       screenunit=6
-      forecastRmax = 25.d0 ! default to a reasonable number, just in case
+      forecastRmax = 25.0d0 ! default to a reasonable number, just in case
       constantRmax=.false. ! forecastRmax normally calculated from isotach data
       percentSpecified=.false.
       method=4             ! calc rMaxes based on largest available isotach

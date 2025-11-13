@@ -58,8 +58,8 @@
 module NETCDFIO
    use SIZES, only: OFF, ASCII, SPARSE_ASCII, NETCDF3, NETCDF4, XDMF
    use NETCDF_ERROR, only: CHECK_ERR
-   use GLOBAL, only: DEBUG, ECHO, INFO, WARNING, ERROR, screenMessage, logMessage, allMessage, setMessageSource, &
-                     unsetMessageSource, scratchMessage
+   use mod_logging, only: DEBUG, ECHO, INFO, WARNING, ERROR, &
+                          screenMessage, logMessage, allMessage, setMessageSource, unsetMessageSource
 
    use NETCDF, only: NF90_NOERR, NF90_NOWRITE, NF90_WRITE, NF90_CLOBBER, &
                      NF90_NOCLOBBER, NF90_CHAR, NF90_DOUBLE, NF90_INT, &
@@ -417,6 +417,7 @@ contains
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript1
       logical, intent(out) :: reterr
+      character(1024) :: scratchMessage
 
       call setMessageSource("initNetCDFOutputFile")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -583,6 +584,7 @@ contains
       type(OutputDataDescript_t), intent(inout) :: descript1
       logical, intent(out) :: reterr
       integer :: iret ! success or failure of the netcdf call
+      character(1024) :: scratchMessage
 
 !     date_string variables for time attribute
       integer, parameter :: stationLuns3D(3) = [41, 42, 43]
@@ -1499,6 +1501,7 @@ contains
       integer, parameter :: nodalLunsHA(2) = [53, 54]
       real(8), allocatable :: defaultValue(:)
       character(len=1024) :: att_text ! metadata
+      character(len=1024) :: scratchMessage
 
       call setMessageSource("initNodalDataFile")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -3838,8 +3841,6 @@ contains
          call check_err(nf90_put_att(stationDat%ncid, dmy, 'units', 'deg'))
       end if
 
-      return
-
 !-----------------------------------------------------------------------
    end subroutine defineHarmonicAnalysisParametersInNetcdfFile
 !-----------------------------------------------------------------------
@@ -3878,10 +3879,10 @@ contains
    subroutine createNetCDFOutputFile(ncid, myFile, myTime, &
                                      descript, ret_error, static_time_length)
       use SIZES, only: globaldir
-      use GLOBAL, only: OutputDataDescript_t, IHOT, ERROR, &
-                        allMessage, scratchMessage
+      use GLOBAL, only: OutputDataDescript_t, IHOT
+      use mod_logging, only: allMessage
 #ifdef CMPI
-      use global, only: debug
+      use mod_logging, only: debug
 #endif
       implicit none
       integer, intent(out) :: ncid
@@ -3891,6 +3892,7 @@ contains
       logical, intent(out) :: ret_error
       integer, intent(in), optional :: static_time_length
       integer :: iret
+      character(1024) :: scratchMessage
 
       call setMessageSource("createNetCDFOutputFile")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -4196,6 +4198,7 @@ contains
       type(OutputDataDescript_t), intent(in), optional :: descript2 !describes output data
       type(OutputDataDescript_t), intent(in), optional :: descript3 !describes output data
       type(OutputDataDescript_t), intent(in), optional :: descript4 !describes output data
+      character(1024) :: scratchMessage
 
       call setMessageSource("writeOutArrayNetCDF")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -4343,8 +4346,7 @@ contains
    subroutine writeStationData(sta, lun, descript1, timesec, &
                                descript2, descript3, descript4)
       use SIZES, only: MNPROC
-      use GLOBAL, only: OutputDataDescript_t, scratchMessage, &
-                        IDEN
+      use GLOBAL, only: OutputDataDescript_t, IDEN
       implicit none
 
       type(stationData), intent(inout) :: sta
@@ -4358,6 +4360,7 @@ contains
       integer :: kount(2), start(2)
       integer :: kount3D(4), start3D(3)
       integer :: iret ! success or failure of netcdf call
+      character(1024) :: scratchMessage
 
       call setMessageSource("writeStationData")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -4673,8 +4676,7 @@ contains
    subroutine writeNodalData(dat, lun, descript1, timesec, &
                              descript2, descript3, descript4)
       use SIZES, only: MNPROC, MYPROC
-      use GLOBAL, only: OutputDataDescript_t, NODECODE, &
-                        scratchMessage, IDEN
+      use GLOBAL, only: OutputDataDescript_t, NODECODE, IDEN
 
       implicit none
 
@@ -4691,6 +4693,7 @@ contains
       integer :: iret ! success or failure of the netcdf call
       integer, allocatable  :: tempIntArray(:)
       real(8), allocatable :: tempArray(:)
+      character(1024) :: scratchMessage
 
       call setMessageSource("writeNodalData")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -5225,7 +5228,6 @@ contains
 !     delete data from files.
 !-----------------------------------------------------------------------
    subroutine setRecordCounterAndStoreTime(ncid, f, t)
-      use GLOBAL, only: scratchMessage, scratchFormat
       implicit none
 
       integer, intent(in) :: ncid
@@ -5240,6 +5242,7 @@ contains
       integer :: counti(1), starti(1)
       integer :: iret ! success or failure of netcdf call
       integer :: i ! loop counter
+      character(1024) :: scratchMessage, scratchFormat
 
       call setMessageSource("setRecordCounterAndStoreTime")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -8081,6 +8084,7 @@ contains
       integer :: tempid
 
       character(len=10) :: fext
+      character(len=1024) :: scratchMessage
 
       call setMessageSource("readNetCDFHotstart")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -8391,7 +8395,8 @@ contains
    subroutine readAndMapToSubdomainMaxMinNetCDF(descript, timeloc)
       use sizes, only: mnproc, myproc
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-      use global, only: OutputDataDescript_t, allMessage, logMessage, nfover
+      use global, only: OutputDataDescript_t, nfover
+      use mod_logging, only: allMessage, logMessage
 #ifdef CMPI
       use mesh, only: np
       use global, only: np_g
@@ -8409,6 +8414,7 @@ contains
       logical :: no_early_return
       character(len=1024) :: vn ! min/max variable name in netcdf file
       character(len=1025) :: tvn ! time of min/max occurrence variable name in netcdf
+      character(len=1024) :: scratchMessage
 
 #ifdef CMPI
       real(8), allocatable :: tmp0(:), tmp1(:)
@@ -8980,6 +8986,7 @@ contains
       integer :: iret ! success or failure of the netcdf call
       integer :: tempid
       integer :: i
+      character(1024) :: scratchMessage
 
       call setMessageSource("readNetCDFHotstartHarmonic")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -9296,6 +9303,7 @@ contains
       integer :: kount(2), start(2)
       integer :: iret ! success or failure of the netcdf call
       integer :: tempid
+      character(1024) :: scratchMessage
 
       call setMessageSource("readNetCDFHotstartHarmonicMeansVariances")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -9431,7 +9439,8 @@ contains
       real(8), allocatable :: ip(:, :) ! imag part of Q (subdomain), i.e. v-vel
       integer :: iret ! success or failure of the netcdf call
       integer :: tempid
-!
+      character(1024) :: scratchMessage
+
       call setMessageSource("readNetCDFHotstart3D")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Enter.")
@@ -10775,7 +10784,7 @@ contains
       host_p, convention_p, contact_p, dtdp_p, ihot_p, ics_p, &
       nolifa_p, nolica_p, nolicat_p, ncor_p, ntip_p, nws_p, nramp_p, &
       statim_p, reftim_p, rnday_p, dramp_p, a00_p, b00_p, c00_p, &
-      h0_p, cori_p, ntif_p, nbfr_p, myProc_p, screenUnit_p, nolibf_p, &
+      h0_p, cori_p, ntif_p, nbfr_p, myProc_p, nolibf_p, &
       nwp_p, tau0_p, cf_p, eslm_p, neta_p, &
       nabout_p, nscreen_p, &
       nfen_p, iden_p, islip_p, kp_p, z0s_p, z0b_p, theta1_p, theta2_p, &
@@ -10795,13 +10804,14 @@ contains
                         references, comments, host, convention, contact, dtdp, ihot, &
                         nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim, &
                         reftim, rnday, dramp, h0, cori, ntif, nbfr, &
-                        screenUnit, nabout, nscreen, C3D, runid
+                        C3D, runid
       use GLOBAL_3DVS, only: &
          nfen, iden, islip, kp, z0s, z0b, theta1, theta2, &
          ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd, &
          nvtd, alp4
       use GWCE, only: a00, b00, c00
       use NodalAttributes, only: nolibf, nwp, tau0, cf, eslm
+      use mod_logging, only: nscreen, nabout, t_log_level
       implicit none
 
 !     Declare the argument variables coming in from adcprep.
@@ -10873,7 +10883,6 @@ contains
       integer, intent(in) :: ntif_p
       integer, intent(in) :: nbfr_p
       integer, intent(in) :: myProc_p
-      integer, intent(in) :: screenUnit_p
       integer, intent(in) :: nolibf_p
       integer, intent(in) :: nwp_p
       real(8), intent(in) :: tau0_p
@@ -10991,16 +11000,14 @@ contains
       ntif = ntif_p
       nbfr = nbfr_p
       myProc = myProc_p
-      screenUnit = screenUnit_p
       nolibf = nolibf_p
       nwp = nwp_p
       tau0 = tau0_p
       cf = cf_p
       eslm = eslm_p
       neta = neta_p
-      nabout = nabout_p
+      nabout = t_log_level(nabout_p)
       nscreen = nscreen_p
-
       nfen = nfen_p
       iden = iden_p
       islip = islip_p
