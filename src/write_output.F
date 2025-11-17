@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C----------------------------------------------------------------------
 C      M O D U L E    W R I T E   O U T P U T
 C----------------------------------------------------------------------
@@ -32,7 +33,7 @@ C----------------------------------------------------------------------
       MODULE WRITE_OUTPUT
 C----------------------------------------------------------------------
       USE GLOBAL, ONLY : OutputDataDescript_t, netcdf_avail
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &  allMessage, screenMessage, DEBUG, ERROR
       USE boundaries, only: freeFluxBoundaryArrayTemporaries
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
@@ -413,10 +414,7 @@ C
       integer :: i
       character(1024) :: scratchMessage
 C
-      call setMessageSource("initOutput2D")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("initOutput2D", WRITE_OUTPUT_TRACING)
       !
       ! jgf52.21.24: Create an array of pointers to all the 2D output
       ! data structures, which enables us to iterate over them; this
@@ -1725,10 +1723,6 @@ C                      ! initialize it if it wasn't initialized above
       ! no longer needed
       call freeFluxBoundaryArrayTemporaries()
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C----------------------------------------------------------------------
  
       end subroutine initOutput2D
@@ -1797,10 +1791,7 @@ C----------------------------------------------------------------------
       REAL(8), intent(in) :: TimeLoc
       INTEGER :: i,j
 
-      call setMessageSource("writeOutput2D")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeOutput2D", WRITE_OUTPUT_TRACING)
 
       do i=1,numOutputDescript2D
          !
@@ -1955,10 +1946,6 @@ C        OUTPUT THE SWAN MAXIMUM FILES
 
       ENDIF
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
       RETURN
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
@@ -1978,15 +1965,12 @@ C     two components.
 C-----------------------------------------------------------------------
       subroutine stationDataInterp(descript)
       use global, only: OutputDataDescript_t
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &  allMessage, DEBUG
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
 
-      call setMessageSource("stationDataInterp")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("stationDataInterp", WRITE_OUTPUT_TRACING)
 
       call stationArrayInterp(descript, descript % interped_array,
      &       descript % array)
@@ -1995,10 +1979,6 @@ C-----------------------------------------------------------------------
      &         descript % array2)
       endif
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
 C-----------------------------------------------------------------------
       end subroutine stationDataInterp
@@ -2013,8 +1993,8 @@ C-----------------------------------------------------------------------
       subroutine stationArrayInterp(descript, fromArray, toArray)
       use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2, NOFF,
      &                   StatPartWetFix,How2FixStatPartWet, h0
-      use mod_logging, only: allMessage, setMessageSource,
-     &  unsetMessageSource, DEBUG
+      use mod_logging, only: allMessage, t_log_scope, init_log_scope,
+     &  DEBUG
       use mesh, only : dp, nm
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
@@ -2029,10 +2009,7 @@ C-----------------------------------------------------------------------
       integer :: ncele,ncsum
       integer :: i, j
 
-      call setMessageSource("stationArrayInterp")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("stationArrayInterp", WRITE_OUTPUT_TRACING)
 
       do j=1, descript % num_records_this
          e = descript % elements(j)
@@ -2127,10 +2104,6 @@ C-----------------------------------------------------------------------
 
       end do
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
 C----------------------------------------------------------------------
       end subroutine stationArrayInterp
@@ -2156,8 +2129,8 @@ C removed from global  myProc, MNPROC,
      &                   XEL, SFEL, YEL, NSTAV_G, NSTAV,
      &                   IMAP_STAV_LG, SLEV, XEV, SFEV,
      &                   YEV, NE_G, NP_G, NODES_LG
-      use mod_logging, only: screenMessage, setMessageSource,
-     &  unsetMessageSource, DEBUG
+      use mod_logging, only: screenMessage, t_log_scope, init_log_scope,
+     &  DEBUG
       USE MESH, ONLY : NP, NE, ICS
       USE GLOBAL_IO, ONLY:
      &    open_gbl_file, collectFullDomainArray,
@@ -2182,19 +2155,11 @@ C
       LOGICAL, SAVE :: FirstCall = .true.
       LOGICAL,DIMENSION(4) :: netcdf_error
 C
-      call setMessageSource("writeHarmonicAnalysisOutput")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-
-#endif
+      LOG_SCOPE_TRACED("writeHarmonicAnalysisOutput", WRITE_OUTPUT_TRACING)
       ! JUST RETURN if harmonic analysis was not specified
       ! tcm v49.64.02 -added itime le ithas to be
       ! consistent with what is in solveHarmonicAnalysis
       IF ((IHARIND.eq.0).or.(ITIME.LE.ITHAS)) THEN
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif
-        call unsetMessageSource()
         RETURN
       ENDIF
 C
@@ -2692,10 +2657,6 @@ C     Means and variance calculations, if specified (fort.55).
       ENDIF
 
  7637 format(2x,3(1pE16.8E3,1x),2x,3(1pE16.8E3,1x))
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE writeHarmonicAnalysisOutput
 C-----------------------------------------------------------------------
@@ -2715,8 +2676,8 @@ C-----------------------------------------------------------------------
       USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
       USE MESH, ONLY : labels
       USE GLOBAL, ONLY : OutputDataDescript_t, labels_g
-      use mod_logging, only: screenMessage, setMessageSource,
-     &  unsetMessageSource, allMessage, ERROR, DEBUG
+      use mod_logging, only: screenMessage, t_log_scope, init_log_scope,
+     &  allMessage, ERROR, DEBUG
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY: writeOutArrayNetCDF
 #endif
@@ -2732,11 +2693,7 @@ C-----------------------------------------------------------------------
 C
       INTEGER :: i,j,n           ! loop counters
 C
-      call setMessageSource("writeOutHarmonicArrays")
-
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeOutHarmonicArrays", WRITE_OUTPUT_TRACING)
 C
 C     write data according to format specifier from fort.15 (e.g., NHASE)
       SELECT CASE (mag1%specifier)
@@ -2817,10 +2774,6 @@ C
  6636 format(2x,1pE16.8E3,1x,0pf11.4,2x,1pE16.8E3,1x,0pf11.4)
  3679 format(1x,e20.10,1x,f10.7,1x,f12.8,1x,a10)
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE writeOutHarmonicArrays
 C-----------------------------------------------------------------------
@@ -2860,10 +2813,7 @@ C
       INTEGER :: N ! loop counter
       INTEGER :: ios ! i/o status, 0 indicates success
 C
-      call setMessageSource("initOutput3D")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("initOutput3D", WRITE_OUTPUT_TRACING)
 C
 
       ios=0
@@ -2949,10 +2899,6 @@ C
          ENDIF
       ENDIF
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
  499  FORMAT(1X,A32,2X,A24,2X,A24)
 C..RJW bug fix in 498 (kendra found this)
  498  FORMAT(1X,I10,1X,I10,1X,1pE15.7E3,1X,I10,1X,I10,1X,I3)
@@ -2987,7 +2933,7 @@ C RJW added MYPROC
       USE GLOBAL, ONLY : BCFLAG_TEMP,
      &    OutputDataDescript_t, NP_G, NODES_LG
       use mod_logging, only: screenMessage, screenUnit,
-     &  setMessageSource, unsetMessageSource, allMessage, DEBUG, INFO,
+     &  t_log_scope, allMessage, DEBUG, INFO,
      &  WARNING, ERROR
       USE MESH, ONLY : NP, ICS, NM
       USE GLOBAL_3DVS
@@ -3020,10 +2966,7 @@ C RJW added MYPROC
       character(1024) :: scratchMessage
 C
 C
-      call setMessageSource("writeOutput3D")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeOutput3D", WRITE_OUTPUT_TRACING)
 C
 1099  FORMAT(2X,1pE20.10E3,5X,I10)
 1100  FORMAT(1X,E17.10,1X,I10,32000(2X,E13.6))
@@ -4230,10 +4173,6 @@ C
 !Casey 221115 : End of code additions.
 
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       end subroutine writeOutput3D
@@ -4254,7 +4193,7 @@ C-----------------------------------------------------------------------
       USE SIZES
       USE GLOBAL, ONLY: OutputDataDescript_t
       use mod_logging, only: allMessage,
-     &  setMessageSource, unsetMessageSource, DEBUG, INFO, ERROR
+     &  t_log_scope, DEBUG, INFO, ERROR
       USE GLOBAL_IO, ONLY : collectFullDomainArray, storeOne, storeTwo,
      &                      writeSparse,writeFullFormat
       USE MESH, ONLY: labels
@@ -4274,9 +4213,8 @@ C     args
       INTEGER :: I           ! loop counter
       character(1024) :: scratchMessage
 
-      call setMessageSource("writeOutArray")
+      LOG_SCOPE_TRACED("writeOutArray", WRITE_OUTPUT_TRACING)
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
       call allMessage(DEBUG,TRIM(descript%file_name))
 #endif
 
@@ -4332,10 +4270,6 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
             call allMessage(ERROR, scratchMessage)
       END SELECT
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
  2    FORMAT(I2)
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
@@ -4359,8 +4293,8 @@ C-----------------------------------------------------------------------
 
       USE SIZES
       USE GLOBAL, ONLY: OutputDataDescript_t, NP_G, labels_g
-      use mod_logging, only: setMessageSource, allMessage,
-     &  unsetMessageSource, logMessage, DEBUG, INFO,
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage,
+     &  logMessage, DEBUG, INFO,
      &  ERROR
       USE MESH, ONLY : NP, labels
       USE GLOBAL_IO, ONLY : collectFullDomainArray, HEADER_MAX,
@@ -4383,10 +4317,7 @@ C     args
       INTEGER :: I          ! loop counter
       CHARACTER(1024) :: scratchMessage
 C
-      call setMessageSource("writeOutArrayMinMax")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeOutArrayMinMax", WRITE_OUTPUT_TRACING)
 C     collect up the data from subdomains if running in parallel
       IF ((MNPROC.gt.1).and.(.not.WRITE_LOCAL_FILES)) THEN
          CALL collectFullDomainArray(descript, pack_cmd, unpack_cmd)
@@ -4480,10 +4411,6 @@ Casey 120830: Reversed the next two lines.
          call allMessage(ERROR, scratchMessage)
       END SELECT
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
  2    FORMAT(I2)
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
  2452 FORMAT(2x, i8, 2x, i8, 2x, i8, 2x, i8)
@@ -4503,8 +4430,8 @@ C-----------------------------------------------------------------------
 
       USE SIZES
       USE GLOBAL
-      use mod_logging, only: setMessageSource, allMessage,
-     &  unsetMessageSource, logMessage, DEBUG, INFO, screenUnit
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage,
+     &  logMessage, DEBUG, INFO, screenUnit
       USE HARM
       USE GLOBAL_IO, ONLY: packOne, unpackOne,
      &    packTwo, unpackTwo, packMbyNP, unpackMbyNP, HEADER_MAX,
@@ -4545,10 +4472,7 @@ C     !jgf49.44: harmonic analysis vars
 C
       LOGICAL, SAVE :: FirstCall = .true.
 C
-      call setMessageSource("writeHotstart")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeHotstart", WRITE_OUTPUT_TRACING)
       ncerror = .false.
 C
       IF (FirstCall) THEN
@@ -5654,10 +5578,6 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
      &     message='Test hotstart completed')
       ENDIF
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE writeHotstart
 C-----------------------------------------------------------------------
@@ -5676,8 +5596,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE WriteWarnElev(TimeLoc, it)
       USE SIZES
       USE GLOBAL
-      use mod_logging, only: setMessageSource, allMessage,
-     &  unsetMessageSource, DEBUG
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage,
+     &  DEBUG
       USE GLOBAL_IO, ONLY: collectFullDomainArray, unpackOne
       USE MESH, ONLY : NP
       USE GLOBAL_IO, ONLY: packOne, unpackOne
@@ -5693,10 +5613,7 @@ C
       type(OutputDataDescript_t), SAVE :: DebugElevDescript
       REAL(8), SAVE, ALLOCATABLE, TARGET :: ETA_DEBUG_g(:)
 
-      call setMessageSource("writeWarnElev")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeWarnElev", WRITE_OUTPUT_TRACING)
 C
 C     Open the file and write the header on the first warning. Format
 C     the actual header data to make it look more or less like a fort.63
@@ -5772,10 +5689,6 @@ C     If we have exceeded the user's limit, terminate the run.
      &      message=scratchMessage)
       ENDIF
 C
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C
       RETURN
 C-----------------------------------------------------------------------
@@ -5796,10 +5709,7 @@ C-----------------------------------------------------------------------
           USE MESH
           IMPLICIT NONE
 
-      call setMessageSource("initSwanOutput")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("initSwanOutput", WRITE_OUTPUT_TRACING)
 
 C.....Allocate SWAN specific local/global arrays if that output is selected
       IF(SWAN_OutputHS)THEN
@@ -6190,10 +6100,6 @@ C.....Mean Wave Period (TMM10)
       SwanTMM10MaxDescript % writeFlag            = .false.
 
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE initSwanOutput
@@ -6225,10 +6131,7 @@ C-----------------------------------------------------------------------
 #endif
       implicit none
       logical :: nerr = .false. !.true. if there was an issue with netcdf init
-      call setMessageSource("initInundationOutput")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("initInundationOutput", WRITE_OUTPUT_TRACING)
 
       ! jgf52.08.01: Additions for detailed inundation output.
       allocate(initiallyDry(mnp))
@@ -6335,10 +6238,6 @@ C-----------------------------------------------------------------------
       call writeOutArray(0.d0, 1, InitiallyDryDescript,
      &     packOne, unpackOne)
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine initInundationOutput
 C-----------------------------------------------------------------------
@@ -6358,10 +6257,7 @@ C-----------------------------------------------------------------------
       integer, intent(in) :: it     ! timesteps since cold start
       integer :: i  ! vertex loop counter
 
-      call setMessageSource("collectInundationData")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("collectInundationData", WRITE_OUTPUT_TRACING)
       !
       ! Accumulate total time inundated in initally dry areas
       ! that are currently wet and have a total water depth greater
@@ -6431,10 +6327,6 @@ C-----------------------------------------------------------------------
          endif
       end do
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine collectInundationData
 C-----------------------------------------------------------------------
@@ -6459,10 +6351,7 @@ C-----------------------------------------------------------------------
       integer :: i
       real(8) :: u_tmp
 
-      call setMessageSource("collectMinMaxData")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("collectMinMaxData", WRITE_OUTPUT_TRACING)
 
 C...  jgf50.44: Collect time that min/max occurs as well.
       if (noutge.ne.0) then
@@ -6512,10 +6401,6 @@ C...  jgf50.44: Collect time that min/max occurs as well.
          end do
       endif
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine collectMinMaxData
 C-----------------------------------------------------------------------

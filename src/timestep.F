@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C#define SB_WETDRY
 C******************************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                            *
@@ -84,8 +85,8 @@ C
      &    Limit_WaveStressGrad, SWAN_RSNX1, SWAN_RSNY1, SWAN_RSNX2, SWAN_RSNY2,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
      &    dynamicWaterLevelCorrectionDelta, RampIntFlux
-      USE mod_logging, ONLY: logMessage, allMessage, setMessageSource,
-     &    unsetMessageSource, DEBUG, INFO, WARNING, ERROR, screenUnit,
+      USE mod_logging, ONLY: logMessage, allMessage, t_log_scope,
+     &    init_log_scope, DEBUG, INFO, WARNING, ERROR, screenUnit,
      &    nscreen
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
      &                         WaveStressGrad_Cap, G
@@ -224,7 +225,9 @@ C....... DW
 C.......
       LOGICAL ISFRONT
       LOGICAL foundNaN
-      
+
+      LOG_SCOPE_TRACED("timestep", TIMESTEP_TRACING)
+
       IF (IT .EQ. 1) THEN
 !.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
         DO I = 1,NP
@@ -232,11 +235,6 @@ C.......
            H1(I) = H2(I)
         ENDDO
       ENDIF
-
-      call setMessageSource("timestep")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
 
 
 C    kmd48.33bc - changed for timestep changes in the hot start files
@@ -1497,10 +1495,6 @@ C      ENDIF
         CALL CLOSE_MET_FILES() ; 
       END IF        
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 
 C******************************************************************************
@@ -1588,7 +1582,7 @@ C
       USE GLOBAL, only: ch1, trans_lv_b, nodecode, noff, lumpt, dtdp,
      &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
      &    H1
-      USE mod_logging, ONLY: setMessageSource, unsetMessageSource,
+      USE mod_logging, ONLY: t_log_scope, init_log_scope,
      &    allMessage, debug
 
       USE ADC_CONSTANTS, ONLY: rhowat0
@@ -1633,10 +1627,7 @@ C
       REAL(8) DYY11,DYY12,DYY13,DYY21,DYY22,DYY23,DYY31,DYY32,DYY33
       REAL(8) TimeLoc
 
-      call setMessageSource("scalar_trans_2D")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("scalar_trans_2D", TIMESTEP_TRACING)
 C...  NOTE: THE VARIABLE CH1(I) IS ACTUALLY C*H
 C.... COMPUTE SOURCE/SINK TERM AT THE NODES USING CLASSICAL COHESIVE
 C.... SEDIMENT TRANSPORT RELATIONS
@@ -1849,11 +1840,6 @@ C.... SOLVE FOR C*H NODE BY NODE
 C     IF(LBArray_Pointer(I).NE.0) CH1(I)=0.d0  !ESSENTIAL C=0 BOUNDARY CONDITION
       END DO
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
 C**********************************************************************
       END SUBROUTINE SCALAR_TRANS_2D
@@ -1869,17 +1855,11 @@ C
       SUBROUTINE CALC_SIGMAT_2D ()
 
       USE GLOBAL
-      use mod_logging, only: setMessageSource, unsetMessageSource, DEBUG
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      use mod_logging, only: allMessage
-#endif
+      use mod_logging, only: t_log_scope, init_log_scope, DEBUG
 
       INTEGER NH
 
-      call setMessageSource("calc_sigmat_2D")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("calc_sigmat_2D", TIMESTEP_TRACING)
 
 
       IF(ABS(IDEN).EQ.2) THEN
@@ -1892,10 +1872,6 @@ C
         DO NH=1,NP
         ENDDO
       ENDIF
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 c*********************************************************************
       END SUBROUTINE CALC_SIGMAT_2D
@@ -2077,7 +2053,7 @@ C
       USE GLOBAL, ONLY: IFNLFA, IFNLCT,
      &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
      &      ETA2, H0, DTDP, H2
-      USE mod_logging, ONLY: setMessageSource, unsetMessageSource,
+      USE mod_logging, ONLY: t_log_scope, init_log_scope,
      &      allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       USE ADC_CONSTANTS, ONLY: SigT0
       USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
@@ -2171,10 +2147,7 @@ Casey 140701: Debug.
       COMPLEX(8) :: BCPGM(NumGQP*(NFEN-1))
 
 C
-      call setMessageSource("bpg3D")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("bpg3D", TIMESTEP_TRACING)
 
 C     INCREMENT THE TIMESTEP SINCE START COUNTER
 C
@@ -2514,11 +2487,6 @@ C
       CALL UPDATER(VIDBCPDXOH,VIDBCPDYOH,DUMV1,2)
 #endif
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
 
 !----------------------------------------------------------------------------------------------------------------------------------------------------
 ! arash - print out a vertical slice of the BPG
@@ -2604,6 +2572,7 @@ C
       SUBROUTINE ZSURFBUOY(SigmaNN,BCPressNN,NN,J)
 
       USE GLOBAL_3DVS
+      use mod_logging, only: t_log_scope, init_log_scope
       IMPLICIT NONE
       REAL(8) :: BCPressNN
       REAL(8) :: SigmaNN     !Sigma value of a neighbor node
@@ -2618,10 +2587,7 @@ C     jgf46.00 Explicitly declared the following variables
       REAL(8) SigAbov
       REAL(8) SigTry
 
-      call setMessageSource("zsurfbuoy")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("zsurfbuoy", TIMESTEP_TRACING)
       IDiag=0
 
       IF(SigmaNN.LE.1.0001*b) THEN !if into ground then skip
@@ -2691,11 +2657,6 @@ C     jgf46.00 Explicitly declared the following variables
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
 C**********************************************************************
       END SUBROUTINE ZSURFBUOY
@@ -2721,10 +2682,9 @@ C
      &            BCP,
      &            NFEN,
      &            SIGMA
-      USE mod_logging, ONLY: allMessage, setMessageSource,
-     &    unsetMessageSource
+      USE mod_logging, ONLY: allMessage, t_log_scope, init_log_scope
       USE mod_logging, ONLY : DEBUG
-      USE SIZES, ONLY : 
+      USE SIZES, ONLY :
       IMPLICIT NONE
       REAL(8) :: BCPressNN
       REAL(8) :: SigmaNN     !Sigma value of a neighbor node
@@ -2746,10 +2706,7 @@ C     jgf46.00 Explicitly declared the following variables
       REAL(8) :: top, bot
       Integer  :: loop_situation = 0
 
-      call setMessageSource("zsurfbuoy_p3")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("zsurfbuoy_p3", TIMESTEP_TRACING)
       IDiag=0
 
 !Casey 221122 : Let's be more restrictive here.
@@ -2960,12 +2917,6 @@ C     jgf46.00 Explicitly declared the following variables
          WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
-
-!Casey 220126 : These lines are surprisingly important.
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
       RETURN
 C**********************************************************************

@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C******************************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                            *
 C  last changes in this file VERSION 45.07                                    *
@@ -99,7 +100,10 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &   inundationTime, inundationTime_onset, maxInunDepth, 
      &   maxInunDepth_time, outputNodeCode, outputNOFF
       USE GWCE, ONLY : etime1, etime2, etiminc
-      use mod_logging, only: screenUnit, nscreen
+      use mod_logging, only: screenUnit, nscreen, t_log_scope, init_log_scope, allMessage
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+      use mod_logging, only: DEBUG
+#endif
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
@@ -198,14 +202,12 @@ C     kmd -- Added variables for initial conditions
       INTEGER :: IDMY
 
 #ifdef ADCNETCDF
-      LOGICAL :: have_htot(2) 
+      LOGICAL :: have_htot(2)
 #endif
 
+      type(t_log_scope) :: log_scope
 
-      call setMessageSource("hotstart")
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("hotstart", HSTART_TRACING)
       !
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
@@ -2042,10 +2044,6 @@ C...
  3220 FORMAT(1X,A32,2X,A24,2X,A24)
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
 C
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
       END SUBROUTINE HOTSTART
 
@@ -2080,7 +2078,7 @@ C   kmd48.33bc - variable information needed from the global.F file
      &                   q_heat1, q_heat2, HFLUX, TTBCRATIO,
      &                   RIVBCTIMINC, RIVBCTIME1,RIVBCTIME2,
      &                   BCRivRATIO, RIVBCSTATIM, NP_G
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &                       DEBUG, ECHO, INFO, WARNING, ERROR,
      &                       allMessage, screenMessage
       IMPLICIT NONE
@@ -2100,10 +2098,9 @@ C  kmd48.33bc - new variables
 
       REAL(8) :: tempp, temp1, temp2
 
-      call setMessageSource("hotstart_3D")
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      type(t_log_scope) :: log_scope
+
+      LOG_SCOPE_TRACED("hotstart_3D", HSTART_TRACING)
 C...
 C...  Define format statements used to initialize 3D output files
 C...
@@ -2555,10 +2552,6 @@ C.... Set up a few final odds and ends for a 3D run
 
       CALL VSSTUP ()
 
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE HOTSTART_3D
@@ -2574,7 +2567,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE setOutputTiming(tsCounter, recCounter,
      &   startTS, endTS, tsPeriod, nSets, iths, dtdphs)
       USE GLOBAL, ONLY : DTDP, CHOTHS
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &                       screenMessage, DEBUG, allMessage
       IMPLICIT NONE
       INTEGER, intent(out) :: tsCounter  ! time step counter btw outputs
@@ -2585,11 +2578,9 @@ C-----------------------------------------------------------------------
       INTEGER, intent(out) :: nSets      ! num data sets in output file
       INTEGER, intent(in) :: iths
       REAL(8), intent(in) :: dtdphs
+      type(t_log_scope) :: log_scope
 C
-      call setMessageSource("setOutputTiming")
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("setOutputTiming", HSTART_TRACING)
       tsCounter=0
       recCounter=0
       IF ((startTS.LT.ITHS).AND.(tsPeriod.GT.0)) THEN
@@ -2603,10 +2594,6 @@ C
            nSets=(endTS-startTS)/tsPeriod
          END IF
       END IF
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C----------------------------------------------------------------------
       END SUBROUTINE setOutputTiming
 C----------------------------------------------------------------------
@@ -2624,40 +2611,32 @@ C     calculated in read_input.F, taking into account the different time
 C     step sizes.
 C-----------------------------------------------------------------------
       SUBROUTINE recalculateStartingAndEndingTimestepsForOutput(
-     &   outputStartDay, outputEndDay, 
+     &   outputStartDay, outputEndDay,
      &   outputStartTimeStep, OutputEndTimeStep )
       USE GLOBAL, ONLY : DTDPHS, ITHS, STATIM
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &                       screenMessage, DEBUG, allMessage, INFO,
      &                       logMessage
       IMPLICIT NONE
-      REAL(8), intent(in) :: outputStartDay 
-      REAL(8), intent(in) :: outputEndDay 
+      REAL(8), intent(in) :: outputStartDay
+      REAL(8), intent(in) :: outputEndDay
       INTEGER, intent(out) :: outputStartTimeStep
       INTEGER, intent(out) :: outputEndTimeStep
 C
       REAL(8) secElapsed           ! prior to hotstart
-      REAL(8) outputStartSec       
+      REAL(8) outputStartSec
       REAL(8) outputEndSec
 C
-      call setMessageSource(
-     &  'recalculateStartingAndEndingTimestepsForOutput')
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("recalcOutputTimesteps", HSTART_TRACING)
       secElapsed = DTDPHS * ITHS - STATIM * 86400.0d0
       outputStartSec = (outputStartDay - STATIM) * 86400.0d0     
       if (outputStartSec.gt.secElapsed) then
          call calcTS(secElapsed, outputStartSec, outputStartTimeStep)
       endif
       outputEndSec = (outputEndDay - STATIM) * 86400.0d0
-      if (outputEndSec.gt.secElapsed) then   
+      if (outputEndSec.gt.secElapsed) then
          call calcTS(secElapsed, outputEndSec, outputEndTimeStep)
       endif
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C----------------------------------------------------------------------
       END SUBROUTINE recalculateStartingAndEndingTimestepsForOutput
 C----------------------------------------------------------------------
@@ -2672,29 +2651,22 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE calcTS(elapsed, outputtime, ts)
       USE GLOBAL, ONLY: iths, dtdp
-      use mod_logging, only: setMessageSource, allMessage, DEBUG,
-     &                       unsetMessageSource
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage, DEBUG
 C
       REAL(8), intent(in) :: elapsed    ! time (sec) that has elapsed so far
-      REAL(8), intent(in) :: outputtime ! time (sec) at which output should start or end   
+      REAL(8), intent(in) :: outputtime ! time (sec) at which output should start or end
       INTEGER, intent(out) :: ts       ! new number of time steps
 C
-      INTEGER :: remainingTimeSteps ! number of steps to take at new 
+      INTEGER :: remainingTimeSteps ! number of steps to take at new
                                      ! time step size
+      type(t_log_scope) :: log_scope
 C
-      call setMessageSource('calcTS')
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("calcTS", HSTART_TRACING)
 
       remainingTimeSteps = INT((outputtime - elapsed + 0.5d0)
      &                            / DTDP, KIND(0.0d0))
       ts = ITHS + remainingTimeSteps
 C
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C----------------------------------------------------------------------
       END SUBROUTINE calcTS
 C----------------------------------------------------------------------
@@ -2711,7 +2683,7 @@ C     a 1D fortran array because the array represents a 2D physical
 C     quantity in an unstructured mesh.
 C--------------------------------------------------------------------
       SUBROUTINE binaryRead2D(array, length, lun, counter)
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &                       allMessage, DEBUG
       IMPLICIT NONE
       INTEGER, intent(in) :: length
@@ -2720,20 +2692,14 @@ C--------------------------------------------------------------------
       INTEGER, intent(inout) :: counter ! i/o position in the file
 C
       INTEGER i      ! array index
+      type(t_log_scope) :: log_scope
 C
-      call setMessageSource("binaryRead2D")
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("binaryRead2D", HSTART_TRACING)
        DO i=1, length
           READ(lun,REC=counter) array(i)
           counter = counter + 1
        END DO
 C
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C--------------------------------------------------------------------
       END SUBROUTINE binaryRead2D
 C--------------------------------------------------------------------
@@ -2747,7 +2713,7 @@ C     same format as the binary version but does not require the
 C     file counter.
 C--------------------------------------------------------------------
       SUBROUTINE realRead2D(array, length, lun )
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &                       allMessage, DEBUG
       IMPLICIT NONE
       REAL(8), intent(out), dimension(length) :: array ! the data to read from the hotstart file
@@ -2755,19 +2721,13 @@ C--------------------------------------------------------------------
       INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
 C
       INTEGER i      ! array index
+      type(t_log_scope) :: log_scope
 C
-      call setMessageSource("realRead2D")
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("realRead2D", HSTART_TRACING)
        DO i=1, length
           READ(lun,*) array(i)
        END DO
 C
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C--------------------------------------------------------------------
       END SUBROUTINE realRead2D
 C--------------------------------------------------------------------
@@ -2778,7 +2738,7 @@ C--------------------------------------------------------------------
 C     jgf49.44: Same as binaryRead2D except it reads an integer.
 C--------------------------------------------------------------------
       SUBROUTINE binaryIntRead2D(array, length, lun, counter)
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &                       allMessage, DEBUG
       IMPLICIT NONE
       INTEGER, intent(out), dimension(length) :: array ! the data to read from the hotstart file
@@ -2787,21 +2747,15 @@ C--------------------------------------------------------------------
       INTEGER, intent(inout) :: counter ! i/o position in the file
 C
       INTEGER i      ! array index
+      type(t_log_scope) :: log_scope
 C
-      call setMessageSource("binaryIntRead2D")
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("binaryIntRead2D", HSTART_TRACING)
 C
        DO i=1, length
           READ(lun,REC=counter) array(i)
           counter = counter + 1
        END DO
 C
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C--------------------------------------------------------------------
       END SUBROUTINE binaryIntRead2D
 C--------------------------------------------------------------------
@@ -2812,7 +2766,7 @@ C--------------------------------------------------------------------
 C     kmd: Same as realRead2D except it reads an integer.
 C--------------------------------------------------------------------
       SUBROUTINE realIntRead2D(array, length, lun)
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &                       allMessage, DEBUG
       IMPLICIT NONE
       INTEGER, intent(out), dimension(length) :: array ! the data to read from the hotstart file
@@ -2820,20 +2774,14 @@ C--------------------------------------------------------------------
       INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
 C
       INTEGER i      ! array index
+      type(t_log_scope) :: log_scope
 C
-      call setMessageSource("realIntRead2D")
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("realIntRead2D", HSTART_TRACING)
 C
        DO i=1, length
           READ(lun,*) array(i)
        END DO
 C
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C--------------------------------------------------------------------
       END SUBROUTINE realIntRead2D
 C--------------------------------------------------------------------
@@ -2846,7 +2794,7 @@ C     kmd: Same as realRead2D except it reads data with
 C     both horizontal and vertical lengths.
 C--------------------------------------------------------------------
       SUBROUTINE realRead3D(array, iLength, jLength, lun)
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &                       allMessage, DEBUG
       IMPLICIT NONE
       REAL(8), intent(out), dimension(ilength,jlength) :: array ! data to read from the hotstart file
@@ -2855,21 +2803,15 @@ C--------------------------------------------------------------------
       INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
 C
       INTEGER i,j      ! array indices
+      type(t_log_scope) :: log_scope
 C
-      call setMessageSource("realRead3D")
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("realRead3D", HSTART_TRACING)
        DO j=1, jLength
           DO i=1, iLength
             READ(lun,*) array(i,j)
           END DO
        END DO
 C
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C--------------------------------------------------------------------
       END SUBROUTINE realRead3D
 C--------------------------------------------------------------------
@@ -2886,8 +2828,8 @@ C-----------------------------------------------------------------------
       USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : NP_G, NODES_LG
       USE MESH, ONLY : NP
-      use mod_logging, only: ERROR, setMessageSource, allMessage,
-     &                       unsetMessageSource, DEBUG
+      use mod_logging, only: ERROR, t_log_scope, init_log_scope, allMessage,
+     &                       DEBUG
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
 C
@@ -2899,11 +2841,9 @@ C
       INTEGER :: fd_node_number
 C
       REAL(8), allocatable, dimension(:) :: fd_array ! full domain array
+      type(t_log_scope) :: log_scope
 C
-      call setMessageSource("readAndMapToSubdomain2D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("readAndMapToSubdomain2D", HSTART_TRACING)
       ! serial
       IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
          IF (method.EQ.1) THEN
@@ -2944,10 +2884,6 @@ C
          END IF
       ENDIF
 C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE readAndMapToSubdomain2D
 C-----------------------------------------------------------------------
@@ -2964,7 +2900,7 @@ C-----------------------------------------------------------------------
       USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : NP_G, NODES_LG
       USE MESH, ONLY : NP
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &                       allMessage, DEBUG
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
@@ -2977,11 +2913,9 @@ C
       INTEGER :: fd_node_number
 C
       INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
+      type(t_log_scope) :: log_scope
 C
-      call setMessageSource("readAndMapToSubdomainInt2D")
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("readAndMapToSubdomainInt2D", HSTART_TRACING)
       ! serial
       IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
          IF (method.EQ.1) THEN
@@ -3022,10 +2956,6 @@ C
          END IF
       ENDIF
 C
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE readAndMapToSubdomainInt2D
 C-----------------------------------------------------------------------
@@ -3044,7 +2974,7 @@ C-----------------------------------------------------------------------
       USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : NE_G, IMAP_EL_LG
       USE MESH, ONLY : NE
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &                       allMessage, DEBUG
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
@@ -3057,11 +2987,9 @@ C
       INTEGER :: fd_ele_number
 C
       INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
+      type(t_log_scope) :: log_scope
 C
-      call setMessageSource("readAndMapEleToSubdomainInt2D")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("readAndMapEleToSubdomainInt2D", HSTART_TRACING)
       ! serial
       IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
          IF (method.EQ.1) THEN
@@ -3104,10 +3032,6 @@ C
          END IF
       ENDIF
 C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE readAndMapEleToSubdomainInt2D
 C-----------------------------------------------------------------------
@@ -3127,7 +3051,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : NP_G, NODES_LG
       USE MESH, ONLY : NP
       USE HARM, ONLY : binaryRead3D
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &                       allMessage, DEBUG
       IMPLICIT NONE
 C
@@ -3140,11 +3064,9 @@ C
       INTEGER :: fd_node_number
 C
       REAL(8), allocatable, dimension(:,:) :: fd_array ! full domain array
+      type(t_log_scope) :: log_scope
 C
-      call setMessageSource("readAndMapToSubdomain3D")
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("readAndMapToSubdomain3D", HSTART_TRACING)
       ! serial
       IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
          IF (method.EQ.1) THEN
@@ -3185,11 +3107,6 @@ C
          END IF
       ENDIF
 C
-
-#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE readAndMapToSubdomain3D
 C-----------------------------------------------------------------------

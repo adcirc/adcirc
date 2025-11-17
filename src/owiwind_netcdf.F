@@ -171,11 +171,13 @@
 !> interpolation is performed between on-mesh representations of the inputs.
 !>
 #ifdef ADCNETCDF
+
+#include "logging_macros.h"
+
 !-----------------------------------------------------------------------
       MODULE OWIWIND_NETCDF
 !-----------------------------------------------------------------------
-      USE mod_logging,ONLY : allMessage, setMessageSource,
-     &     unsetMessageSource, DEBUG
+      USE mod_logging,ONLY : allMessage, DEBUG, t_log_scope, init_log_scope
       USE NETCDF_ERROR, ONLY: CHECK_ERR
 
       CHARACTER(LEN=15)  :: NWS13ColdStartString = "99999999.999999"
@@ -251,10 +253,7 @@
       INTEGER :: Second
       INTEGER :: Year
 
-      call setMessageSource("nws13init")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws13init", WIND_TRACING)
 
       READ(NWS13WindMultiplier,*) NWS13WindMultiplierReal
       READ(NWS13GroupForPowell,*) NWS13GroupForPowellInt
@@ -398,11 +397,6 @@
       ! Close the NetCDF file.
       call check_err(NF90_CLOSE(NC_ID))
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif
-        call unsetMessageSource()
-
 !-----------------------------------------------------------------------
       ENDSUBROUTINE NWS13INIT
 !-----------------------------------------------------------------------
@@ -500,10 +494,7 @@
       REAL(8) :: var_offset_attr
       REAL(8) :: D_QNAN, ZERO
 
-      call setMessageSource("nws13get")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws13get", WIND_TRACING)
 
       ZERO = 0.D0
       D_QNAN = ZERO / ZERO
@@ -916,11 +907,6 @@
         PowellGroup = PowellGroupTemp
       ENDIF
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif
-        call unsetMessageSource()
-
 !-----------------------------------------------------------------------
       ENDSUBROUTINE NWS13GET
 !-----------------------------------------------------------------------
@@ -981,10 +967,7 @@
       TYPE(KDTREE2),POINTER :: kdTree
       TYPE(KDTREE2_RESULT),ALLOCATABLE :: kdResult(:)
 
-      call setMessageSource("nws13interp")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws13interp", WIND_TRACING)
 
       NumResult = (NumLon-1)*(NumLat-1)
       NumResult = MIN(NumResult,1000)
@@ -1101,11 +1084,6 @@
 
       CALL kdtree2_destroy(tp=kdTree)
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif
-        call unsetMessageSource()
-
 !-----------------------------------------------------------------------
       ENDSUBROUTINE NWS13INTERP
 !-----------------------------------------------------------------------
@@ -1114,17 +1092,10 @@
       INTEGER FUNCTION JULIAN(YEAR,MONTH,DAY)
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: YEAR,MONTH,DAY
-      call setMessageSource("julian")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("julian", WIND_TRACING)
       JULIAN = DAY-32075+1461*(YEAR+4800+(MONTH-14)/12)/4+367
      &    *(MONTH-2-(MONTH-14)/12*12)/12
      &    -3*((YEAR+4900+(MONTH-14)/12)/100)/4
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       END FUNCTION
 
 
@@ -1132,15 +1103,8 @@
       REAL(8) FUNCTION FRACTIONTIME(HOUR,MINUTE,SECOND)
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: HOUR,MINUTE,SECOND
-      call setMessageSource("fractiontime")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("fractiontime", WIND_TRACING)
       FRACTIONTIME = (HOUR + (MINUTE + SECOND/60.D0)/60.D0)/24.D0
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       END FUNCTION FRACTIONTIME
 
       ENDMODULE OWIWIND_NETCDF

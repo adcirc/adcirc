@@ -34,6 +34,7 @@
 !>   - WARNING (2): Don't echo input, write only warnings and errors
 !>   - ERROR (3): Don't echo input, only fatal messages
 !-----------------------------------------------------------------------
+
 module mod_logging
    use iso_fortran_env, only: output_unit, error_unit
    implicit none
@@ -52,6 +53,31 @@ module mod_logging
       procedure, public, pass(self) :: name => t_log_level_name
    end type t_log_level
 
+!-----------------------------------------------------------------------
+!> @brief RAII scope guard for automatic message source management
+!>
+!> This type implements automatic cleanup of message sources using
+!> Fortran's FINAL procedure. When a t_log_scope object goes out of
+!> scope, the FINAL procedure is automatically called by the compiler,
+!> ensuring unsetMessageSource() is called even with early returns.
+!>
+!> Usage:
+!>   subroutine example()
+!>      type(t_log_scope) :: log_scope
+!>      log_scope = t_log_scope("example")
+!>      ! unsetMessageSource() called automatically on scope exit
+!>   end subroutine
+!-----------------------------------------------------------------------
+   integer, parameter :: SOURCE_NAME_LEN = 48 !< max length for source names (optimized for SIMD copy)
+
+   type :: t_log_scope
+      private
+      logical(kind=1) :: is_active = .false. !< whether this scope is active
+      logical(kind=1) :: trace_enabled = .false. !< whether to emit Enter/Exit messages
+   contains
+      final :: cleanup_log_scope
+   end type t_log_scope
+
    integer, parameter :: LOG_LEVEL_DEBUG = -1
    integer, parameter :: LOG_LEVEL_ECHO = 0
    integer, parameter :: LOG_LEVEL_INFO = 1
@@ -66,10 +92,11 @@ module mod_logging
 
    integer, parameter :: log_unit = 16 !< log file unit number
 
-   character(len=50), dimension(50) :: messageSources !< subroutine names
+   integer, parameter :: max_message_source_depth = 50
+   character(len=SOURCE_NAME_LEN), dimension(max_message_source_depth) :: messageSources !< subroutine names
    integer :: sourceNumber = 0 !< index into messageSources for current sub
 
-   type(t_log_level) :: nabout !< logging level from fort.15
+   type(t_log_level) :: nabout = t_log_level(0, output_unit, "INFO") !< logging level from fort.15
    integer :: nscreen = 1 !< screen output destination from fort.15
    integer :: screenUnit !< unit number for screen output
 
@@ -101,12 +128,17 @@ module mod_logging
       module procedure t_log_level_constructor
    end interface t_log_level
 
+   interface t_log_scope
+      module procedure create_log_scope
+      module procedure create_log_scope_traced
+   end interface t_log_scope
+
    public :: DEBUG, ECHO, INFO, WARNING, ERROR, &
              openLogFile, screenMessage, logMessage, allMessage, &
-             setMessageSource, unsetMessageSource, screenUnit, &
-             nabout, nscreen, log_unit, operator(<), operator(>), &
-             operator(<=), operator(>=), operator(==), operator(/=), &
-             t_log_level
+             screenUnit, nabout, nscreen, log_unit, t_log_level, t_log_scope, &
+             init_log_scope, &
+             operator(<), operator(>), operator(<=), operator(>=), &
+             operator(==), operator(/=)
 
 contains
 
@@ -389,8 +421,9 @@ contains
 !-----------------------------------------------------------------------
 !> @brief Set the name of the subroutine that is writing messages
 !>
-!> This must be used at the start of any subroutine that calls
-!> screenMessage, logMessage, or allMessage. Creates a call stack for message tracking.
+!> This is a private helper function used internally by t_log_scope.
+!> External code should use the LOG_SCOPE() macro instead.
+!> Creates a call stack for message tracking.
 !>
 !> @param[in] source name of the calling subroutine
 !-----------------------------------------------------------------------
@@ -405,13 +438,121 @@ contains
 !-----------------------------------------------------------------------
 !> @brief Remove the name of the subroutine from the message source stack
 !>
-!> This must be used at the end of any subroutine that calls
-!> screenMessage, logMessage, or allMessage. Pops the call stack for message tracking.
+!> This is a private helper function used internally by t_log_scope's FINAL procedure.
+!> External code should use the LOG_SCOPE() macro which handles cleanup automatically.
+!> Pops the call stack for message tracking.
 !-----------------------------------------------------------------------
    subroutine unsetMessageSource()
       implicit none
 
       sourceNumber = sourceNumber - 1
    end subroutine unsetMessageSource
+
+!-----------------------------------------------------------------------
+!> @brief Constructor for t_log_scope
+!>
+!> Creates a new log scope guard and automatically calls setMessageSource
+!> to push the source name onto the call stack.
+!>
+!> @param[in] source  name of the calling subroutine/function
+!> @return            initialized log scope object
+!-----------------------------------------------------------------------
+   type(t_log_scope) function create_log_scope(source) result(scope)
+      implicit none
+      character(*), intent(in) :: source
+
+      scope%is_active = .true.
+      scope%trace_enabled = .false.
+      call setMessageSource(source)
+   end function create_log_scope
+
+!-----------------------------------------------------------------------
+!> @brief Constructor for t_log_scope with tracing support
+!>
+!> Creates a new log scope guard with optional Enter/Exit debug messages.
+!> When trace_enabled is .true., automatically emits "Enter." message at
+!> DEBUG level upon construction and "Exit." message upon scope exit.
+!>
+!> @param[in] source        name of the calling subroutine/function
+!> @param[in] trace_enabled whether to emit Enter/Exit debug messages
+!> @return                  initialized log scope object
+!-----------------------------------------------------------------------
+   type(t_log_scope) function create_log_scope_traced(source, trace_enabled) result(scope)
+      implicit none
+      character(*), intent(in) :: source
+      logical, intent(in) :: trace_enabled
+
+      if (sourceNumber <= max_message_source_depth) then
+         scope%is_active = .true.
+         scope%trace_enabled = trace_enabled
+         call setMessageSource(source)
+         if (trace_enabled) then
+            call allMessage(DEBUG, "Enter.")
+         end if
+      end if
+   end function create_log_scope_traced
+
+!-----------------------------------------------------------------------
+!> @brief Initialize a log scope guard (Intel-compiler safe, optimized)
+!>
+!> This subroutine provides an alternative to function-based construction
+!> that avoids temporary object creation issues with Intel compilers.
+!> Intel compilers may prematurely finalize temporary objects returned
+!> from functions, causing incorrect behavior. This subroutine-based
+!> approach directly initializes the provided scope object.
+!>
+!> Performance optimizations:
+!>   - Uses intent(inout) to avoid automatic finalizer call on entry
+!>   - Source name stored only in messageSources array (not in scope object)
+!>   - Minimal branching in fast path
+!>
+!> @param[inout] scope         log scope object to initialize
+!> @param[in]    source        name of the calling subroutine/function
+!> @param[in]    trace_enabled (optional) emit Enter/Exit debug messages
+!-----------------------------------------------------------------------
+   subroutine init_log_scope(scope, source, trace_enabled)
+      implicit none
+      type(t_log_scope), intent(inout) :: scope
+      character(*), intent(in) :: source
+      logical, intent(in), optional :: trace_enabled
+
+      if (sourceNumber < max_message_source_depth) then
+         scope%is_active = .true.
+         if (present(trace_enabled)) then
+            scope%trace_enabled = trace_enabled
+         else
+            scope%trace_enabled = .false.
+         end if
+
+         call setMessageSource(source)
+
+         if (scope%trace_enabled) then
+            call allMessage(DEBUG, "Enter.")
+         end if
+      end if
+   end subroutine init_log_scope
+
+!-----------------------------------------------------------------------
+!> @brief Finalizer for t_log_scope (RAII cleanup)
+!>
+!> This procedure is automatically called by the compiler when a t_log_scope
+!> object goes out of scope. It ensures that unsetMessageSource() is called
+!> to properly maintain the call stack, even with early returns or exceptions.
+!> If tracing is enabled, emits an "Exit." message before cleanup.
+!>
+!> @param[inout] self  log scope object being finalized
+!-----------------------------------------------------------------------
+   subroutine cleanup_log_scope(self)
+      implicit none
+      type(t_log_scope), intent(inout) :: self
+
+      if (self%is_active) then
+         if (self%trace_enabled) then
+            call allMessage(DEBUG, "Exit.")
+         end if
+         call unsetMessageSource()
+         self%is_active = .false.
+      end if
+   end subroutine cleanup_log_scope
 
 end module mod_logging

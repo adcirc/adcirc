@@ -19,13 +19,14 @@
 !-------------------------------------------------------------------------------!
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
+#include "logging_macros.h"
       MODULE Couple2BC3D
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
       USE SIZES,  ONLY: MNEI
       USE mod_logging, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
-     &          setMessageSource, unsetMessageSource, allMessage, logMessage
+     &          allMessage, logMessage, t_log_scope, init_log_scope
       USE GLOBAL, ONLY : NB, NM, MLD, SigTS,
      &          VIDBCPDXOH, VIDBCPDYOH, VIDISPDXOH, VIDISPDYOH, IDEN
       USE ADC_CONSTANTS, ONLY: SigT0
@@ -110,16 +111,13 @@ C     S U B R O U T I N E  R E A D _ B C 3 D _ N E T C D F
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Read_BC3D_NetCDF()
-      use netcdf, only: nf90_open, nf90_close, nf90_nowrite 
+      use netcdf, only: nf90_open, nf90_close, nf90_nowrite
       use netcdf_error, only: check_err
       implicit none
       integer :: nc_id
- 
-      call setMessageSource("Read_BC3D_NetCDF")
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      ! Open NETCDF 
+
+      LOG_SCOPE_TRACED("Read_BC3D_NetCDF", COUPLE2BAROCLINIC3D_TRACING)
+      ! Open NETCDF
       call Check_err(nf90_open(densityFileName,nf90_nowrite,nc_id))
     
       ! On first call: 
@@ -131,10 +129,6 @@ C-----------------------------------------------------------------------
          CALL Read_BC3D_NetCDF_on_ADCIRC_Grid(nc_id)
          ! Close NETCDF
          call Check_err(nf90_close(nc_id))
-#ifdef ALL_TRACE
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()
          return
       ENDIF
       if (abs(iden).ne.7) then     
@@ -173,11 +167,6 @@ C-----------------------------------------------------------------------
       ! Close NETCDF
       call Check_err(nf90_close(nc_id))
 
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      
 C-----------------------------------------------------------------------
       END SUBROUTINE Read_BC3D_NetCDF
 C-----------------------------------------------------------------------
@@ -642,11 +631,7 @@ C-----------------------------------------------------------------------
       implicit none
       REAL(8),intent(in) :: TimeLoc
 C
-      call setMessageSource("Initial_BC3D_NetCDF")
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("Initial_BC3D_NetCDF", COUPLE2BAROCLINIC3D_TRACING)
 #ifndef DATETIME
       call allMessage(WARNING, 
      &    "DateTime library is not enabled. It is recommended "//
@@ -697,7 +682,6 @@ C
       endif
       ! Return if diagnostic
       if (IDEN.lt.0) then
-          call unsetMessageSource()
           return
       endif
       ! Read next value in time
@@ -716,13 +700,9 @@ C
      &                         //'timesnap'
 #ifdef DATETIME
      &                         //': '//CurDT%isoformat(' ')
-#endif               
-     &                         ) 
-C
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()
+     &                         )
+C
 C-----------------------------------------------------------------------
       END SUBROUTINE Initial_BC3D_NetCDF
 C

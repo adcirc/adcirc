@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C----------------------------------------------------------------------------
 C
 C                        ADCPREP Version 2.2 (  09/20/2006 )
@@ -397,8 +398,8 @@ C
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
-      use mod_logging, only : logMessage, setMessageSource,
-     &   unsetMessageSource, allMessage, INFO, DEBUG
+      use mod_logging, only : logMessage, t_log_scope,
+     &   init_log_scope, allMessage, INFO, DEBUG
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
      &   subPrep019
@@ -429,15 +430,7 @@ C     DW
       INTEGER:: JJ
       LOGICAL:: F5354R
 C
-      call setMessageSource("prepinput")
-#if defined (PREPINPUT_TRACE) || defined (ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      CALL setMessageSource("prepinput")
-#if defined(ALL_TRACE)
-      CALL allMessage(DEBUG,"Enter")
-#endif      
+      LOG_SCOPE_TRACED("prepinput", PREPINPUT_TRACING)
 
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -956,10 +949,6 @@ CC -- Finish Addition by CF
 9999  CONTINUE
       print *, ""
       print *, "INFO: Finished pre-processing input files."
-#if defined(PREPINPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
       END SUBROUTINE
 C---------------------------------------------------------------------------

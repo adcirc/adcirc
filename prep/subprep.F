@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C
 C                ADCIRC - SUBDOMAIN MODELING PREPROCESSING MODULE
 C       
@@ -36,7 +37,7 @@ C    ========================================================================
       module subprep
       use mod_io, only: openFileForRead
       use mod_logging, only : logMessage, allMessage,
-     &  setMessageSource, unsetMessageSource, DEBUG, ECHO, INFO, WARNING, ERROR
+     &  t_log_scope, init_log_scope, DEBUG, ECHO, INFO, WARNING, ERROR
 
       implicit none
 
@@ -62,12 +63,9 @@ C   NCSU Subdomain Modeling variables:
          character(1024) :: scratchMessage
          namelist /subdomainModeling/ subdomainOn
 
-         FOUND_SM_NML = .false.
+      LOG_SCOPE_TRACED("readFort015prep", SUBPREP_TRACING)
 
-      call setMessageSource("readFort015prep")
-#if defined(SUBPREP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+         FOUND_SM_NML = .false.
 
          ioerror = 0
          !
@@ -110,11 +108,6 @@ C   NCSU Subdomain Modeling variables:
                CALL EXIT(1)
             endif
          endif
-
-#if defined(SUBPREP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
       END SUBROUTINE readFort015prep
 

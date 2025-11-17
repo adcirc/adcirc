@@ -27,6 +27,8 @@ C The module also allocates the required arrays.                              *
 C                                                                             *
 C******************************************************************************
 C
+#include "logging_macros.h"
+
       MODULE GLOBAL_3DVS
 C...
 C...BRING IN NECESSARY VARIABLES FROM GLOBAL
@@ -66,7 +68,7 @@ Corbitt 120328: Apply Advection Locally
      &       mom_lv_x
 
       USE mod_logging, ONLY: allMessage, logMessage, DEBUG, ECHO, INFO, nscreen,
-     &       WARNING, ERROR, setMessageSource, unsetMessageSource, screenUnit
+     &       WARNING, ERROR, screenUnit, t_log_scope
 
       USE BOUNDARIES,ONLY:NETA,NVEL
       IMPLICIT NONE
@@ -548,17 +550,14 @@ c***********************************************************************
 c
       SUBROUTINE FEGRIDS(IGC,H)
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-      USE mod_logging, ONLY : ScreenUnit
+      use mod_logging, only: t_log_scope, init_log_scope
 
       IMPLICIT NONE
       INTEGER :: IGC,N,NFEN2,IANS,NUM,I,NH
       REAL(8) :: H,DETA,SSTAR,DENOM,SIG0,SS,SB,RP,AVAL,EPS
       character(len=256) :: scratchMessage
 C
-      call setMessageSource("fegrids")
-#if defined(GLOBAL_3DVS_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("fegrids", GLOBAL_3DVS_TRACING)
 
       select case(igc)
 c
@@ -725,10 +724,6 @@ c
 
       end select
 
-#if defined(GLOBAL_3DVS_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 
 c******************************************************************************

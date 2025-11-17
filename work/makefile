@@ -35,6 +35,15 @@ include cmplrflags.mk
 #Casey 090302: Include variables/flags from SWAN.
 include ../thirdparty/swan/macros.inc
 
+# Add src directory to include path for logging_macros.h
+PPFC    := $(PPFC) -I$(SRCDIR)/src
+PFC     := $(PFC) -I$(SRCDIR)/src
+FC      := $(FC) -I$(SRCDIR)/src
+FFLAGS1 := $(FFLAGS1) -I$(SRCDIR)/src
+FFLAGS2 := $(FFLAGS2) -I$(SRCDIR)/src
+FFLAGS3 := $(FFLAGS3) -I$(SRCDIR)/src
+FFLAGS4 := $(FFLAGS4) -I$(SRCDIR)/src
+
 ifneq ($(compiler),)
 $(warning (INFO) The compiler variable in cmplrflags.mk is set to $(compiler).)
 endif

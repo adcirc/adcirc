@@ -17,6 +17,9 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+
+#include "logging_macros.h"
+
 C***********************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                     *
 C last changes in this file VERSION 45.05                              *
@@ -25,9 +28,10 @@ C***********************************************************************
 C
        MODULE WIND
        USE SIZES, ONLY : LOCALDIR
-       USE mod_logging, ONLY : setMessageSource, allMessage,
-     &    screenMessage, logMessage, unsetMessageSource,
-     &    DEBUG, ECHO, INFO, WARNING, ERROR, screenUnit
+       USE mod_logging, ONLY : allMessage,
+     &    screenMessage, logMessage,
+     &    DEBUG, ECHO, INFO, WARNING, ERROR, screenUnit, t_log_scope,
+     &    init_log_scope
        USE mod_io, ONLY : openFileForRead
       USE GLOBAL, ONLY : sphericalDistance, RNDAY,
      &    cice_timinc, cice_time1, cice_time2,
@@ -331,11 +335,9 @@ C     ----------------------------------------------------------------
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       character(1024) :: scratchMessage
-      
-      call setMessageSource("initWindModule")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("initWindModule", WIND_TRACING)
+
       allocate ( wvnx1(np),wvny1(np) )
       allocate ( wvnx2(np),wvny2(np) )
       allocate ( prn1(np) )
@@ -394,11 +396,6 @@ C.... convert background pressure from millibars to meters of water
 C
       END SELECT
 
-
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
 !     ----------------------------------------------------------------
       END SUBROUTINE initWindModule
@@ -896,10 +893,7 @@ C----------------------------------------------------------------------
       real(8) :: wtratio_12, wtratio_14 ! used to time interpolated between met datasets
 
 
-      call setMessageSource("getMeteorologicalForcing")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("getMeteorologicalForcing", WIND_TRACING)
 
 C------------------------MET FORCING---------------------------------------
 C
@@ -1759,11 +1753,6 @@ C      DW/WJP: rotate wind stresses if coordinate transform
 C--------------------END MET FORCING---------------------------------------
  
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
 C----------------------------------------------------------------------
       end subroutine getMeteorologicalForcing
 C----------------------------------------------------------------------
@@ -1803,10 +1792,7 @@ Casey 180318: Added for NWS=13
       real(8) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
 
-      call setMessageSource("coldStartMeteorologicalForcing")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("coldStartMeteorologicalForcing", WIND_TRACING)
 
       WSX2(:) = 0.d0
       WSY2(:) = 0.D0
@@ -2086,10 +2072,6 @@ C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
          WVNY1 = WVNY2
       endif
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C----------------------------------------------------------------------
       end subroutine coldstartMeteorologicalForcing
 C----------------------------------------------------------------------
@@ -2144,10 +2126,7 @@ C----------------------------------------------------------------------
       integer :: TimeLoc_NM ! timeloc to the nearest minute
       character(1024) :: scratchMessage
 
-      call setMessageSource("hotStartMeteorologicalForcing")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("hotStartMeteorologicalForcing", WIND_TRACING)
 
 C
 C......RESTART WIND AND PRESSURE INFORMATION
@@ -3269,11 +3248,7 @@ C      DW/WJP: rotate wind stresses if coordinate transform
        ENDIF
 
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-       call allMessage(DEBUG,"Return.")
-#endif
-       call unsetMessageSource()
-      
+
 C--------------------END MET FORCING-----------------------------------
       end subroutine hotstartMeteorologicalForcing
 C--------------------END MET FORCING-----------------------------------
@@ -3315,10 +3290,7 @@ C***********************************************************************
       REAL(8),ALLOCATABLE,SAVE :: WVXFN(:,:),WVYFN(:,:)
       INTEGER :: IWYR, IWMO, IWDAY, IWHR
 
-      call setMessageSource("nws3get")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws3get", WIND_TRACING)
 
 
 C
@@ -3381,10 +3353,6 @@ C
       END DO
       PRN2 = PRBCKGRND_MH2O
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C
       RETURN
       END SUBROUTINE NWS3GET
@@ -3415,10 +3383,7 @@ C***********************************************************************
       REAL(8)  RHOWATG
       CHARACTER(LEN=80) PBLJAGF
 
-      call setMessageSource("nws4get")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws4get", WIND_TRACING)
 
 C
       RHOWATG=RHOWAT0*G
@@ -3448,10 +3413,6 @@ C        jgf46.02 Added the following two lines.
          READ(22,'(A80)') PBLJAGF
          IF(PBLJAGF(2:2).EQ.'#') EXIT
       ENDDO
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 
       END SUBROUTINE
@@ -3546,10 +3507,7 @@ C***********************************************************************
       REAL(8) :: XCOOR,YCOOR
       REAL(8),SAVE,ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
 
-      call setMessageSource("nws6get")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws6get", WIND_TRACING)
 
 C
       IF (FIRSTCALL.EQ.0) THEN
@@ -3604,10 +3562,6 @@ C
 
       END DO
 C
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE NWS6GET
@@ -3683,10 +3637,7 @@ C     ----------------------------------------------------------------
       REAL(8), SAVE, ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
       LOGICAL, SAVE :: MemoryAllocated = .False.
 
-      call setMessageSource("nws7get")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws7get", WIND_TRACING)
 
 C
       IF (.not.MemoryAllocated) THEN
@@ -3740,10 +3691,6 @@ C
          PRN2(I) = PRN2(I)/RHOWATG
       END DO
 C
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE NWS7GET
@@ -3765,10 +3712,7 @@ C     ----------------------------------------------------------------
       real(8) :: gdlon
       integer :: j, jj ! loop counters
 
-      call setMessageSource("nws10init")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws10init", WIND_TRACING)
       !
       ! gaussian met values
       allocate ( ug(latb*lonb),vg(latb*lonb),pg(latb*lonb) )
@@ -3802,11 +3746,6 @@ C     for the ADCIRC grid.
          nws10DatasetCounter = 0
       endif
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       !----------------------------------------------------------------
       end subroutine nws10Init
       !----------------------------------------------------------------
@@ -3836,10 +3775,7 @@ C***********************************************************************
      &     DDLON,XLON,DFLON,DFLON1
       character(1024) :: scratchMessage
 
-      call setMessageSource("g2rini")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("g2rini", WIND_TRACING)
 
 C
 C...Compute estimated DLAT, true DLON for Gaussian grid
@@ -3928,10 +3864,6 @@ C....... Check that this value is reasonable.
 
       END DO
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !----------------------------------------------------------------
       end subroutine g2rini
       !----------------------------------------------------------------
@@ -3986,10 +3918,7 @@ C***********************************************************************
       integer :: ios = 0     ! i/o status for opening the fort.xxx files
       integer :: i, n        ! loop counters
 
-      call setMessageSource("nws10get")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws10get", WIND_TRACING)
 
 C
       rhowatg=rhowat0*g
@@ -4066,10 +3995,6 @@ C.....Convert pressure from N/M^2 to M of H20
 C
       nws10DatasetCounter = nws10DatasetCounter + 1
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 !----------------------------------------------------------------
       end subroutine nws10get
 !----------------------------------------------------------------
@@ -4092,10 +4017,7 @@ C***********************************************************************
       real(8) :: dradz ! initial guess that represents a distance between gridpoints (radian)
       integer :: multiple ! yf51.52.25: reduce initial guess for DRAD for T1534 grid
 
-      call setMessageSource("glats")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("glats", WIND_TRACING)
 
 C
       EPS=1.d-6
@@ -4153,10 +4075,6 @@ C     102  FORMAT(1H ,I2,2X,F6.2,2X,F10.7,2X,E13.7,2X,E13.7,2X,I4,2X,D13.7)
       END DO
 c     PRINT 100,LGGHAF
 c     100  FORMAT(1H ,'SHALOM FROM 0.0 GLATS FOR ',I3)
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
       END SUBROUTINE GLATS
 
@@ -4234,10 +4152,7 @@ C
       CHARACTER(LEN=8) :: FNAME1
       integer :: errorio
 
-      call setMessageSource("nws11get")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws11get", WIND_TRACING)
 
 C
       IF (ICALL.EQ.0) THEN
@@ -4260,10 +4175,6 @@ C...  between the Eta-29 grid and the ADCIRC grid.
             CALL E29SEARCH(I,FLONDEG,FLATDEG,N1(I),N2(I),N3(I),
      &           D1(I),D2(I),D3(I),betau(i))
          END DO
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()
          RETURN
       ENDIF
 
@@ -4316,10 +4227,6 @@ C.....Convert pressure from millibars to N/M^2 to M of H20
          PRN2(N)=P1*D1(N)+P2*D2(N)+P3*D3(N)
          PRN2(N)=PRN2(N)/RHOWATG100
       END DO
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE NWS11GET
@@ -5237,10 +5144,7 @@ C     ----------------------------------------------------------------
       REAL(8) :: rndaySeconds ! end time of the run in seconds
 
 C
-      call setMessageSource("nws19get")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws19get", WIND_TRACING)
       timeNew = TIMELOC
       rhoWatG = rhoWat0 * g
       !----------------------------------------
@@ -5503,10 +5407,6 @@ C     we are running off the end of the data.
          EyeLat(3) = cLat
          EyeLon(3) = cLon
          FoundEye = .true.
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()
          return
       endif
       !
@@ -5604,10 +5504,6 @@ C     we are running off the end of the data.
       firstCall = 1
       told=TIMELOC
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 999   RETURN
 C***********************************************************************
       END SUBROUTINE NWS19GET
@@ -5808,10 +5704,7 @@ C***********************************************************************
       real(8) :: newVortexRMW = 0.0d0 ! average Rmax at icyc   (next fort.22 time value)
       real(8) :: oldVortexRMW = 0.0d0 ! average Rmax at icyc-1 (previous fort.22 time value)
 
-      call setMessageSource("nws20get")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws20get", WIND_TRACING)
       timeNew = TIMELOC
       rhoWatG = rhoWat0 * g
       !----------------------------------------
@@ -6114,10 +6007,6 @@ C     we are running off the end of the data.
          EyeLat(3) = cLat
          EyeLon(3) = cLon
          FoundEye = .true.
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()
          return
       endif
 
@@ -6334,10 +6223,6 @@ C     we are running off the end of the data.
       firstCall = 1
       told=TIMELOC
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C***********************************************************************
       END SUBROUTINE NWS20GET
 C***********************************************************************
@@ -6368,10 +6253,7 @@ C
       integer :: i           ! loop counter
       character(1024) :: scratchMessage
 C
-      call setMessageSource("nws15init")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws15init", WIND_TRACING)
       errorio = 0
       call openFileForRead(22,trim(globaldir)//"/fort.22",errorio)
       if (errorio.gt.0) call terminate(exit_code=ADCIRC_EXIT_FAILURE,
@@ -6531,10 +6413,6 @@ C
       EyeLat = 0.d0
       EyeLon = 0.d0
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
 C
 C     We jump to this section if there was an error reading a file.
@@ -6617,10 +6495,7 @@ C
       integer  :: i        ! loop counter
       character(1024) :: scratchMessage
 C
-      call setMessageSource("nws15get")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws15get", WIND_TRACING)
       !
       ! check to see if the current ADCIRC time is still in the interval of
       ! the HWind cycles we are currently accessing ... if the ADCIRC
@@ -6790,10 +6665,6 @@ C
       wvnx = wvnx * one2ten
       wvnx = wvnx * one2ten
 C
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C     ----------------------------------------------------------------
       END SUBROUTINE NWS15GET
 C     ----------------------------------------------------------------
@@ -6831,10 +6702,7 @@ C
       character(1024) :: scratchMessage
       character(1)             :: comma
 C
-      call setMessageSource("loadHWindFile")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("loadHWindFile", WIND_TRACING)
 C
       call logMessage(INFO,"Loading the HWind file '"
      &                     //trim(hWindFiles(cn)%file_name)//"'.")
@@ -6942,10 +6810,6 @@ C
       ! set the state variable
       hWindFiles(cn)%loaded = .true.
 C
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
 C
 C     We jump to this section if there was an error reading a file.
@@ -7006,10 +6870,7 @@ C
       real(8)              :: oneOverW2 ! 1/w**2 ; const in interp weights
       integer               :: i       ! loop counter
 C
-      call setMessageSource("hwindinterpolatevelocity")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("hwindinterpolatevelocity", WIND_TRACING)
 C
       dh = hWindFiles(cn)%dh
       hwu => hWindFiles(cn)%u
@@ -7065,11 +6926,6 @@ C
          wvny = wvny + ( wvny_work * rv * tw * hWindMultiplier )
       end where
 C
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C
 C     ----------------------------------------------------------------
       end subroutine hWindInterpolateVelocity
 C     ----------------------------------------------------------------
@@ -7092,7 +6948,7 @@ C
        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
        use mod_io, only : openFileForRead
        use global, only : ihot, nws
-       use mod_logging, only: setMessageSource, unsetMessageSource,
+       use mod_logging, only: t_log_scope, init_log_scope,
      &                allMessage, logMessage, DEBUG, ECHO, INFO,
      &                ERROR, WARNING, nabout, operator(>)
       USE ADC_CONSTANTS, only: PRBCKGRND,RHOWAT0
@@ -7110,10 +6966,7 @@ C
       integer :: i           ! loop counter
 
 C
-      call setMessageSource("gfdl_init")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("gfdl_init", WIND_TRACING)
       errorio = 0
       call openFileForRead(22,trim(globaldir)//"/fort.22",errorio)
       if (errorio.gt.0) call terminate(exit_code=ADCIRC_EXIT_FAILURE,
@@ -7279,12 +7132,6 @@ C
 
       !If no errors then return now
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      !cleans up the setMessageSource set at the beginning of the subroutine
-      call unsetMessageSource()
-
       return
 
 C
@@ -7303,7 +7150,6 @@ C     We jump to this section if there was an error reading a file.
      &  //"I/O error flag: ",i0)') currentLine, errorio
       call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &   message=scratchMessage)
-      call unsetMessageSource()
 C ---------------------------------------------------------------------
       end subroutine init_gfdl
 C ---------------------------------------------------------------------
@@ -7341,7 +7187,7 @@ C
        USE MESH, ONLY: ICS, DRVSPCOORSROTS, CYLINDERMAP
        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
        USE ADC_CONSTANTS, ONLY: DEG2RAD,PRBCKGRND,G,RHOWAT0
-       USE mod_logging, ONLY: setMessageSource,unsetMessageSource,
+       USE mod_logging, ONLY: t_log_scope,
      &        allMessage,logMessage,DEBUG,ECHO,INFO,ERROR
       USE GLOBAL, ONLY: IFSPROTS
        USE KDTREE2_MODULE     ! USED FOR FAST SEARCHING
@@ -7371,10 +7217,7 @@ C
        TYPE(KDTREE2), POINTER :: TREE
        TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
 
-      call setMessageSource("get_gfdl")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("get_gfdl", WIND_TRACING)
 
        SRCHDP = 6  !THE NUMBER OF NEAREST NEIGHBORS TO FIND
        TOL = 1.0D-6  !TOLERANCE FOR ESTIMATING ZERO DISTANCE BETWEEN POINTS
@@ -7567,12 +7410,6 @@ C...  THIS SPACE WILL BE DEALLOCATED LATER IN THE SUBROUTINE
       DEALLOCATE(WTS)
       DEALLOCATE(LOCS)
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-       !cleans up the setMessageSource set at the beginning of the subroutine
-       call unsetMessageSource()
-
        RETURN
 C ---------------------------------------------------------------------
        END SUBROUTINE GET_GFDL
@@ -7584,7 +7421,7 @@ C ---------------------------------------------------------------------
 C
       subroutine nws16get(timeloc,wvnx,wvny,press)
       use mesh, only : x,y,np,slam0,sfea0
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &        allMessage, logMessage, DEBUG, ECHO, INFO, ERROR, WARNING
       USE ADC_CONSTANTS, only: PRBCKGRND,RHOWAT0,G
 
@@ -7597,10 +7434,7 @@ C
       real(8), intent(out) :: wvny(:)  ! wind v-velocity (m/s)
       real(8), intent(out) :: press(:)  !barometric pressure (mH20)
 
-      call setMessageSource("nws16get")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws16get", WIND_TRACING)
 
       numFiles = GFDL_Files(1)%numFiles  !This is total number of files
 
@@ -7661,12 +7495,6 @@ C
          PRess(:) = PRBCKGRND*100.D0/(RHOWAT0*G)  !SET TO BACKGROUND PRESSURE 1013.0D0 ADJUSTED for ADCIRC units
       endif
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-        !cleans up the setMessageSource set at the beginning of the subroutine
-        call unsetMessageSource()
-
         return
         end subroutine nws16get
 C
@@ -7703,10 +7531,7 @@ C***********************************************************************
       character(1024) :: scratchMessage
       integer :: errorio
 C
-      call setMessageSource("rsget")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("rsget", WIND_TRACING)
       rsnx(1:np) = 0.d0
       rsny(1:np) = 0.d0
 C
@@ -7735,11 +7560,6 @@ C
          if(pbljagf(2:2).eq.'#') exit
       enddo
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      !cleans up the setMessageSource set at the beginning of the subroutine
-      call unsetMessageSource()
       return
 C
 C     We jump to this section if there was an error reading a file.
@@ -7804,10 +7624,7 @@ C----------------------------------------------------------------------
       integer :: errorio ! i/o error condition code
       character(1024) :: scratchMessage
 
-      call setMessageSource("initDynamicWaterLevelCorrection")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("initDynamicWaterLevelCorrection", WIND_TRACING)
       !
       ! Check to make sure the correction file actually exists and if so, open it
       errorio = 0
@@ -7916,10 +7733,6 @@ C----------------------------------------------------------------------
      &              'dynamicWaterLevelCorrectionRampEnd.')
       endif
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
 
 256   call allMessage(ERROR,'Unexpectedly reached end-of-file.') ! END jumps here
@@ -7967,10 +7780,7 @@ C----------------------------------------------------------------------
       real(8), intent(out) :: dynamicWaterLevelCorrectionsArray(np)
       real(8) :: dynamicWaterLevelCorrectionRamp ! linear time varying ramp value
       integer :: i ! jgfdebug
-      call setMessageSource("getDynamicWaterLevelCorrections")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("getDynamicWaterLevelCorrections", WIND_TRACING)
       !
       ! hold data constant after last snap
       if ( dynamicWaterLevelCorrectionIsConstant.eqv..false.) then
@@ -8028,10 +7838,6 @@ C----------------------------------------------------------------------
       dynamicWaterLevelCorrectionsArray(:) = dynamicWaterLevelCorrectionMultiplier *
      &  dynamicWaterLevelCorrectionsArray(:)
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
 
 C----------------------------------------------------------------------
@@ -8061,10 +7867,7 @@ C----------------------------------------------------------------------
       integer :: errorio ! error message code
       character(1024) :: scratchMessage
 
-      call setMessageSource("readDynamicWaterLevelCorrectionDataSet")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("readDynamicWaterLevelCorrectionDataSet", WIND_TRACING)
       !
       numCorrectionValues = np
 #ifdef CMPI
@@ -8129,10 +7932,6 @@ C----------------------------------------------------------------------
 #endif
 
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
 
 C
@@ -8426,11 +8225,13 @@ C----------------------------------------------------------------------
       INTEGER,INTENT(IN) :: NWS
       logical :: Fexists
       integer :: ierr, PvarInd
+      LOG_SCOPE_TRACED("NWS14NC_READ_F22", WIND_TRACING)
+
       ! return if we are using grib2
       IF (grb2flag) THEN
          RETURN
       ENDIF
-      CALL setMessageSource("NWS14NC_READ_F22")
+
       IF (NWS.EQ.-14) THEN
          ! For inset OWI winds with netcdf files something needs to be
          ! done but I haven't programmed it yet.
@@ -8467,7 +8268,6 @@ C----------------------------------------------------------------------
       endif
       ! get starting time index for netcdf file
       CALL READNWS14_NC_StaTime(Pfile, PfileNCID)
-      CALL unsetMessageSource()
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE NWS14NC_READ_F22
@@ -8593,7 +8393,7 @@ C----------------------------------------------------------------------
       real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice
 
       !
-      CALL setMessageSource('NWS14GET')
+      LOG_SCOPE_TRACED("NWS14GET", WIND_TRACING)
       ! Show the date in str_date format
       call logMessage(ECHO,'CurDT strng: '//
      &                CurDT%strftime("%Y-%m-%d %H:%M"))
@@ -8675,7 +8475,6 @@ C----------------------------------------------------------------------
          ! Next ice time index for the netcdf reading
          NTC = NTC + 1
       endif
-      CALL unsetMessageSource()
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE NWS14GET
@@ -8722,10 +8521,10 @@ C----------------------------------------------------------------------
       implicit none
       integer :: iret, iter
       character(len=200),intent(in) :: var, fileN, invN
-      real,allocatable,intent(out) :: data2(:,:) 
+      real,allocatable,intent(out) :: data2(:,:)
       character(len=200) :: str_date
       integer :: NX, NY
-      CALL setMessageSource("READNWS14_grib2")
+      LOG_SCOPE_TRACED("READNWS14_grib2", WIND_TRACING)
       IF (MYPROC.EQ.0) THEN
          ! Getting the date in str_date format
          str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
@@ -8764,7 +8563,6 @@ C----------------------------------------------------------------------
 #ifdef CMPI
       CALL BcastToLocal_2DRealArray(data2,NX,NY)
 #endif
-      CALL unsetMessageSource()
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE READNWS14_grib2
@@ -8788,11 +8586,11 @@ C----------------------------------------------------------------------
 
       character(len=*),intent(in):: fileN
       character(len=200),intent(in) :: var
-      real,allocatable,intent(out) :: data2(:,:) 
+      real,allocatable,intent(out) :: data2(:,:)
       INTEGER,INTENT(INOUT) :: NC_ID
       integer :: i, Temp_ID, Lat_ID, Lon_ID, NX, NY
 
-      CALL setMessageSource('READNWS14_netCDF')
+      LOG_SCOPE_TRACED("READNWS14_netCDF", WIND_TRACING)
 
 #ifdef ADCNETCDF
       IF ( read_NWS14_NetCdf_using_core_0 ) THEN
@@ -8834,7 +8632,6 @@ C----------------------------------------------------------------------
       ENDIF
 
 #endif
-      CALL unsetMessageSource()
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE READNWS14_netCDF
@@ -8880,8 +8677,8 @@ C----------------------------------------------------------------------
 
        REAL(8), ALLOCATABLE, DIMENSION(:,:) :: InsetPData
        REAL(8), ALLOCATABLE, DIMENSION(:,:) :: InsetUData, InsetVData
-       
-       CALL setMessageSource("INSET_NC_INPUT")   
+
+       LOG_SCOPE_TRACED("INSET_NC_INPUT", WIND_TRACING)
        Pfile_inset= TRIM(ADJUSTL(Pfile_inset))
        Wfile_inset= TRIM(ADJUSTL(Wfile_inset))
         
@@ -8897,9 +8694,7 @@ C----------------------------------------------------------------------
         
 
          CALL INTERP_INSET_GRID(InsetPData,InsetUData,InsetVData)
-      
-         CALL unsetMessageSource()
-     
+
 C----------------------------------------------------------------------
       END SUBROUTINE INSET_NC_INPUT
 
@@ -8914,10 +8709,9 @@ C----------------------------------------------------------------------
 
        LOGICAL :: InsetFileExist
        INTEGER :: IERR
-       character(1024) :: scratchMessage      
-       
-            
-       CALL setMessageSource("INIT_INSET_NC")
+       character(1024) :: scratchMessage
+
+       LOG_SCOPE_TRACED("INIT_INSET_NC", WIND_TRACING)
 
        INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//TRIM(ADJUSTL(InsetControlFile)), EXIST=InsetFileExist)
        IF(.NOT.InsetFileExist) THEN
@@ -8982,8 +8776,8 @@ C----------------------------------------------------------------------
       INTEGER                           :: InsetID
       REAL(8), ALLOCATABLE, INTENT(OUT) :: InsetOUT(:,:)
       INTEGER                           :: InsetLoc, INSET_NX, INSET_NY, VarLoc,alloc_err
-     
-         CALL setMessageSource('READINSET_NC')
+
+         LOG_SCOPE_TRACED("READINSET_NC", WIND_TRACING)
 #ifdef ADCNETCDF
       
          CALL Check_err(NF90_OPEN(InsetFileN,nf90_nowrite,InsetID))
@@ -9006,9 +8800,8 @@ C----------------------------------------------------------------------
      &                  start=[1, 1, NT],count=[Inset_NX, Inset_NY, 1]))
 
          CALL Check_err(NF90_CLOSE(InsetID))
-        
-#endif        
-         CALL unsetMessageSource()   
+
+#endif
 
        END SUBROUTINE READINSET_NC  
 
@@ -9177,11 +8970,11 @@ C-------------------------------------------------------------------------------
     
       CHARACTER(LEN=80), INTENT(IN)  :: InsetLat, InsetLon, InsetLatDim,InsetLonDim
       INTEGER, INTENT(OUT) :: NXP, NYP
-      INTEGER              :: NCIDf    
-      
+      INTEGER              :: NCIDf
+
       INTEGER :: i, Temp_ID, Lat_ID, Lon_ID, ndims
-        
-         CALL setMessageSource("READ_INSET_LATLON")
+
+         LOG_SCOPE_TRACED("READ_INSET_LATLON", WIND_TRACING)
 #ifdef ADCNETCDF
         
       
@@ -9217,10 +9010,9 @@ C-------------------------------------------------------------------------------
           
     
         CALL Check_err(NF90_CLOSE(NCIDf))
-        
-      
+
+
 #endif
-        CALL unsetMessageSource()
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE READ_INSET_LATLON
@@ -9271,7 +9063,7 @@ C----------------------------------------------------------------------
       real,allocatable,intent(out) :: lat(:,:), lon(:,: )
       integer :: NX, NY
       character(len=200) :: str_date
-      CALL setMessageSource("READNWS14LatLon_grib2")
+      LOG_SCOPE_TRACED("READNWS14LatLon_grib2", WIND_TRACING)
       ! Getting the date in str_date format
       str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
       ! read in on core 0
@@ -9312,7 +9104,6 @@ C----------------------------------------------------------------------
       ! longitude
       CALL BcastToLocal_2DRealArray(lon,NX,NY)
 #endif
-      CALL unsetMessageSource()
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE READNWS14LatLon_grib2
@@ -9338,7 +9129,9 @@ C----------------------------------------------------------------------
       character(len=200),intent(in) :: fileN
       real,allocatable,intent(out) :: lat(:,:), lon(:,:)
       integer :: i, Temp_ID, Lat_ID, Lon_ID, NX, NY, ndims
-      CALL setMessageSource("READNWS14LatLon_netCDF")
+
+      LOG_SCOPE_TRACED("READNWS14LatLon_netCDF", WIND_TRACING)
+
 #ifdef ADCNETCDF
       IF (MYPROC.EQ.0) THEN
               
@@ -9393,7 +9186,6 @@ C----------------------------------------------------------------------
       CALL BcastToLocal_2DRealArray(lat,NX,NY)
 #endif
 #endif
-      CALL unsetMessageSource()
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE READNWS14LatLon_netCDF
@@ -9423,7 +9215,9 @@ C----------------------------------------------------------------------
       integer :: i, Temp_ID, TL
       ! CPB 4/20/2023
       REAL(8),ALLOCATABLE :: NCTIMES(:)
-      CALL setMessageSource('READNWS14_NC_StaTime')
+
+      LOG_SCOPE_TRACED("READNWS14_NC_StaTime", WIND_TRACING)
+
 #ifdef ADCNETCDF
 #ifdef CMPI
       IF (MYPROC.EQ.0) THEN
@@ -9495,7 +9289,6 @@ C----------------------------------------------------------------------
 #endif
 
 #endif
-      CALL unsetMessageSource()
       return
 C----------------------------------------------------------------------
       END SUBROUTINE READNWS14_NC_StaTime
@@ -9583,10 +9376,7 @@ C.... as a function of water column height.
       REAL(8), intent(in) :: H
       REAL(8), intent(out) :: fwind
       
-      call setMessageSource("windLimiter")
-#ifdef ALL_TRACE
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("windLimiter", WIND_TRACING)
       fwind = 1.d0
       IF ((H .LE. 4.d0*H0) .AND. (H .GT. H0)) THEN
          fwind = .5d0*tanh(8.d0*(H-(2.5d0*H0))/(4.d0*H0))+.5d0
@@ -9594,10 +9384,6 @@ C.... as a function of water column height.
          fwind = 0.d0
       ENDIF
 
-#ifdef ALL_TRACE
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine WindLimiter
 C-----------------------------------------------------------------------

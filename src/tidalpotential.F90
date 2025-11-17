@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 !
 ! Fortran module for computing the full luna-solar equilibrium tides of
 ! different orders of approximation,
@@ -349,15 +350,11 @@ contains
 
    function compute_full_tip(self, TimeLoc, NP, SLAM) result(tip)
       use ADC_CONSTANTS, only: sec2day, DEG2RAD
-      use mod_logging, only: setMessageSource, unsetMessageSource, allMessage
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #ifdef ADCNETCDF
       use mod_ephemerides, only: HEAVENLY_OBJS_COORDS_FROM_TABLE
 #else
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-#endif
-
-#ifdef ALL_TRACE
-      use mod_logging, only: DEBUG
 #endif
 
       implicit none
@@ -373,12 +370,9 @@ contains
       real(8) :: MoonSunCoor(3, 2)
       integer :: IERR
 
-      ierr = 0
+      LOG_SCOPE_TRACED("comp_full_tip", TIDALPOTENTIAL_TRACING)
 
-      call setMessageSource("comp_full_tip")
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      ierr = 0
 
       ! Julian day
       JDELoc = self%m_JDE_BEG + TimeLoc*sec2day
@@ -407,11 +401,6 @@ contains
       tocgmst = self%m_moon_sun_position%GMST_DEG_FN(JDELoc)
 
       tip = self%COMP_FULL_TIP_SUB0(tocgmst, np, slam, MoonSunCoor)
-
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 
    end function compute_full_tip
 
