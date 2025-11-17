@@ -27,6 +27,9 @@
 !> file opening with error checking, file existence verification, and standardized
 !> error handling for file operations.
 !-----------------------------------------------------------------------
+
+#include "logging_macros.h"
+
 module mod_io
    implicit none
 
@@ -52,11 +55,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine openFileForRead(lun, filename, errorIO, required)
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-      use mod_logging, only: allMessage, logMessage, setMessageSource, &
-                             unsetMessageSource, INFO, ERROR
-#ifdef ALL_TRACE
-      use mod_logging, only: DEBUG
-#endif
+      use mod_logging, only: allMessage, logMessage, INFO, ERROR, t_log_scope, init_log_scope
       integer, intent(in) :: lun ! fortran logical unit number
       character(*), intent(in) :: filename ! full pathname of file
       integer, intent(out) :: errorIO ! zero if the file opened successfully
@@ -65,10 +64,7 @@ contains
       logical :: fileRequired ! local copy of required parameter
       character(len=256) :: scratchMessage ! message buffer
 
-      call setMessageSource("openFileForRead")
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("openFileForRead", ALL_TRACING)
 
       ! Set default for required parameter
       if (present(required)) then
@@ -93,10 +89,6 @@ contains
             call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
                            message='Required file not found: '//trim(filename))
          end if
-#if defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return ! file not found
       else
          write (scratchMessage, 24) trim(filename)
@@ -115,10 +107,6 @@ contains
             call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
                            message='Could not open required file: '//trim(filename))
          end if
-#if defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return ! file found but could not be opened
       else
          write (scratchMessage, 26) trim(filename)
@@ -126,10 +114,6 @@ contains
          call logMessage(INFO, trim(scratchMessage))
       end if
 
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine openFileForRead
 !-----------------------------------------------------------------------

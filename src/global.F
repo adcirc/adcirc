@@ -36,6 +36,8 @@ C
 #warning The flag -DREAL4 is deprecated. Please discontinue use. As of version 56, it has no effect
 #endif
 
+#include "logging_macros.h"
+
       MODULE GLOBAL
       USE ADC_CONSTANTS, ONLY: DEG2RAD
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
@@ -1341,7 +1343,7 @@ C-------------------------------------------------------------------
       !                          and not just spaces.
       !=================================================================
       subroutine parse (line, lvar)
-      use mod_logging, only: allMessage, ERROR, setMessageSource, unsetMessageSource, DEBUG
+      use mod_logging, only: allMessage, ERROR, DEBUG, t_log_scope, init_log_scope
       IMPLICIT NONE
       CHARACTER(132) LINE,L
       CHARACTER(50) LVAR(3)
@@ -1352,10 +1354,7 @@ C-------------------------------------------------------------------
       INTEGER BANGEND   ! location of terminating "!", if any
       CHARACTER(len=1) :: tab_character
 C
-      call setMessageSource("parse")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("parse", GLOBAL_TRACING)
       tab_character = achar(9)
       LS=1
       L=TRIM(ADJUSTL(LINE))
@@ -1414,10 +1413,6 @@ C     they are assumed to be a comment.
          NAMEND = BANGEND + (NAMSTART-2)
       ENDIF
       LVAR(3)=ADJUSTL(L(NAMSTART:NAMEND)) !jgf49.29: trim leading "!" and spaces
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !=================================================================
       END SUBROUTINE parse
       !=================================================================
@@ -1429,7 +1424,7 @@ C              SPACES; DELETES CONTROL CHARACTERS;REMOVES INITIAL SPACES.
 C              Adapted from stringmod.f90 from the website:
 C              http://www.gbenthien.net/strings/index.html
       !=================================================================
-       use mod_logging, only: DEBUG, setMessageSource, unsetMessageSource, allMessage
+       use mod_logging, only: DEBUG, allMessage, t_log_scope, init_log_scope
        IMPLICIT NONE
 
        INTEGER :: I,K,ISP,LENSTR,ICH
@@ -1437,10 +1432,7 @@ C              http://www.gbenthien.net/strings/index.html
        CHARACTER(LEN=1):: CH
        CHARACTER(LEN=LEN_TRIM(STR)):: OUTSTR
 
-      call setMessageSource("compact")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+       LOG_SCOPE_TRACED("compact", GLOBAL_TRACING)
        STR=ADJUSTL(STR)
        LENSTR=LEN_TRIM(STR)
        OUTSTR=' '
@@ -1471,10 +1463,6 @@ C              http://www.gbenthien.net/strings/index.html
 
        STR=ADJUSTL(OUTSTR)
 
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !=================================================================
        END SUBROUTINE COMPACT
       !=================================================================
@@ -1604,17 +1592,14 @@ C     namelist using the negative, zero, or positive value of ios.
 C-----------------------------------------------------------------------
       subroutine logNamelistReadStatus(nmlname, ios, msg)
       use mod_logging, only: ERROR, INFO, DEBUG, logMessage,
-     &      setMessageSource, unsetMessageSource, allMessage
+     &      allMessage, t_log_scope, init_log_scope
       implicit none
       character(len=*), intent(in) :: nmlname
       character(len=*), intent(in) :: msg
       integer, intent(in) :: ios
       character(1024) :: scratchMessage
 
-      call setMessageSource("logNameListReadStatus")
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("logNameListReadStatus", READ_INPUT_TRACING)
 
       select case(ios)
       ! negative value indicates that we reached the end of the file
@@ -1638,10 +1623,6 @@ C-----------------------------------------------------------------------
          call allMessage(ERROR,scratchMessage)
       end select
 
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine logNamelistReadStatus
 C-----------------------------------------------------------------------

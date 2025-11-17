@@ -47,9 +47,12 @@
 !>     WindMultiplier = 1.0 ! wind multiplier applied to wind speed (default = 1.0, Holland model only)
 !> /
 !> @endcode
+
+#include "logging_macros.h"
+
 module mod_nws08
 
-   use mod_logging, only: DEBUG, ERROR, ECHO, allMessage, setMessageSource, unsetMessageSource
+   use mod_logging, only: DEBUG, ERROR, ECHO, allMessage, t_log_scope, init_log_scope
 
    implicit none
 
@@ -443,10 +446,7 @@ contains
       real(8), intent(in) :: TIMELOC
       integer :: i
 
-      call setMessageSource("NWS08INIT")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("NWS08INIT", WIND_TRACING)
 
       ! Allocate necessary arrays
       allocate (RAD(NP), DX(NP), DY(NP), XCOOR(NP), YCOOR(NP))
@@ -483,11 +483,6 @@ contains
       case (BACKGROUND_MODEL_LC12)
          backgroundWindFac = 0.62d0
       end select
-
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 
    end subroutine NWS08INIT
 
@@ -529,10 +524,8 @@ contains
       logical, intent(INOUT) :: FoundEye
       real(8), intent(INOUT), dimension(3) :: EyeLon, EyeLat
 
-      call setMessageSource("NWS08GET")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("NWS08GET", WIND_TRACING)
+
       select case (vortexModelId)
       case (VORTEX_MODEL_HOLLAND)
          call HollandGet(WVNX, WVNY, PRESS, TIMELOC, FoundEye, EyeLon, EyeLat)
@@ -540,10 +533,6 @@ contains
          call CLE15GET(WVNX, WVNY, PRESS, TIMELOC, FoundEye, EyeLon, EyeLat)
       end select
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
    end subroutine NWS08GET
 
 !-----------------------------------------------------------------
@@ -589,10 +578,7 @@ contains
       real(8) :: inflowAngle
       real(8) :: non_cyclostrophic_part
 
-      call setMessageSource("HollandGet")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("HollandGet", WIND_TRACING)
 
       b = huge(1.0d0)
 
@@ -612,10 +598,6 @@ contains
          EyeLat(3) = lat
          EyeLon(3) = lon
          FoundEye = .true.
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -732,10 +714,6 @@ contains
          PRESS(I) = PRESS(I)/(RHOWAT0*G)
 
       end do
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
    end subroutine HollandGet
 
 !-----------------------------------------------------------------------
@@ -759,10 +737,8 @@ contains
       real(8), intent(OUT) :: TransSpdX, TransSpdY
       real(8) :: beta, alpha
 
-      call setMessageSource("calcTranslationSpeed")
-#ifdef ALL_TRACE
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("calcTranslationSpeed", WIND_TRACING)
+
       select case (backgroundWindModelId)
       case (BACKGROUND_MODEL_RADIALVELOCITYWEIGHTED)
          ! translation speed weighted by the relative radial velocity
@@ -805,10 +781,6 @@ contains
          TransSpdY = alpha*(TVY*cos(beta) &
                             + sign(1.0d0, lat)*TVX*sin(beta))
       end select
-#ifdef ALL_TRACE
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 
    end subroutine calcTranslationSpeed
 
@@ -862,10 +834,9 @@ contains
       real(8), intent(out) :: SpdOut, RRPOut, RMWOut, TVXOut, TVYOut
 
       integer :: i ! Current array counter for fort.22 file
-      call setMessageSource("getHollandStormData")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("getHollandStormData", WIND_TRACING)
+
       i = bestTrackCounter
 
       ! If time exceeds the next hindcast/nowcast/forecast time, increment the
@@ -904,13 +875,6 @@ contains
 
       bestTrackCounter = i
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-
-      return
-
    end subroutine GetHollandStormData
 
 !----------------------------------------------------------------
@@ -935,10 +899,8 @@ contains
       integer :: nl ! Number of lines in the fort.22 file
       integer :: pl ! populated length of Holland Data array
       integer :: ios ! return code for an i/o operation
-      call setMessageSource("Read_Best_Track_Data")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("Read_Best_Track_Data", WIND_TRACING)
 
       pl = huge(1)
 
@@ -1133,12 +1095,6 @@ contains
                         message='The fort.22 file ends before RNDAY.')
       end if
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-
-      return
    end subroutine readBestTrackData
 
 ! ----------------------------------------------------------------
@@ -1217,10 +1173,7 @@ contains
       real(8), allocatable, dimension(:) :: V_cle15
       real(8) :: r0
 
-      call setMessageSource("CLE15Get")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("CLE15Get", WIND_TRACING)
 
       b = huge(1d0)
 
@@ -1240,10 +1193,6 @@ contains
          EyeLat(3) = lat
          EyeLon(3) = lon
          FoundEye = .true.
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -1350,10 +1299,6 @@ contains
          end if
 
       end do
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 
    end subroutine CLE15GET
 

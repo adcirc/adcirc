@@ -2,21 +2,22 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C******************************************************************************
 C PADCIRC VERSION 46.00 xx/xx/2006                                            *
 C  last changes in this file VERSION 46.00                                    *
@@ -191,7 +192,8 @@ Casey 180318: Added NWS=13
       use mod_tidepotential, only: tidePotential, t_tidePotential
       use mod_logging, only: allMessage, logMessage, ERROR, WARNING,
      &   INFO, ECHO, screenUnit, nscreen, nabout, t_log_level,
-     &   operator(<=), operator(/=), operator(<), operator(>=)
+     &   operator(<=), operator(/=), operator(<), operator(>=),
+     &   t_log_scope, init_log_scope
       use mod_io, only: openFileForRead
 
       IMPLICIT NONE
@@ -327,10 +329,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       NAMELIST /waveCoupling/ WaveWindMultiplier,
      &         Limit_WaveStressGrad, WaveStressGrad_Cap
 
-      call setMessageSource("read_input")
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("read_input", READ_INPUT_TRACING)
 C...
 C...PRINT OUT HEADER FOR OUTPUT INCLUDING VERSION NUMBER AND COPYRIGHT
 C...
@@ -4857,10 +4856,6 @@ C      CALL COMPUTE_RESELEM
 C#endif
 c.
 C
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
       RETURN
 C
 C     jgf50.41: This section is where we jump if there was an error
@@ -5031,8 +5026,8 @@ C    kmd48.33bc - added the variables from Global
      &                  TTBCTIMEINC, SPONGEDIST, Sponge,
      &                  OUTPUTSPONGE
       USE mod_logging, ONLY: INFO, DEBUG, ERROR,
-     &                  allMessage, setMessageSource, logMessage,
-     &                  unsetMessageSource, screenMessage, ECHO
+     &                  allMessage, t_log_scope, init_log_scope,
+     &                  logMessage, screenMessage, ECHO
       USE ADC_CONSTANTS, ONLY: sec2day
       USE MESH, ONLY : NP, DP, X, Y
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD
@@ -5062,10 +5057,7 @@ C    kmd48.33bc - additional variables for sponge layers
       INTEGER :: IDen3D ! second instance of IDEN in the fort.15 file
       INTEGER :: ios   ! i/o status of read operation
 C
-      call setMessageSource("read_input_3D")
-#if defined(READ_INPUT_TRACE) || defined (ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("read_input_3D", READ_INPUT_TRACING)
 C
       ios = 0
       DelT => DTDP
@@ -5747,10 +5739,7 @@ C                new information being used.
 !         endif
 
       endif
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
+
       RETURN
 C
 C
@@ -5787,8 +5776,8 @@ C-----------------------------------------------------------------------
      &   tsCounter, recCounter)
       USE GLOBAL, ONLY : DTDP, NT, useNetCDF
       USE mod_logging, ONLY : ECHO, INFO, WARNING,
-     &   ERROR, setMessageSource, logMessage, allMessage,
-     &   unsetMessageSource, DEBUG, screenMessage
+     &   ERROR, t_log_scope, init_log_scope, logMessage, allMessage,
+     &   DEBUG, screenMessage
       USE ADC_CONSTANTS, ONLY: day2sec
       USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
 
@@ -5806,10 +5795,7 @@ C-----------------------------------------------------------------------
       INTEGER, intent(out) :: recCounter ! counts lines in the output file
       character(1024) :: scratchMessage
 C
-      call setMessageSource("checkAndFillIOParameters")
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("checkAndFillIOParameters", READ_INPUT_TRACING)
 C
       tsCounter = 0  ! init
       recCounter = 0 ! init
@@ -5905,10 +5891,6 @@ C        is later than the end of the simulation.
          ENDIF
          nSets = (endTS-startTS)/tsPeriod
       ENDIF
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call screenMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE checkAndFillIOParameters
@@ -5932,8 +5914,7 @@ C-----------------------------------------------------------------------
      &                        Description)
       USE ADC_CONSTANTS, ONLY: DEG2RAD, RAD2DEG
       USE GLOBAL, ONLY : parse, IFSPROTS
-      USE mod_logging, ONLY : DEBUG, allMessage, setMessageSource,
-     &   unsetMessageSource
+      USE mod_logging, ONLY : DEBUG, allMessage, t_log_scope, init_log_scope
       USE MESH, ONLY : ICS, SLAM0, SFEA0, DRVSPCOORSROTS, CYLINDERMAP
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
@@ -5952,10 +5933,7 @@ C-----------------------------------------------------------------------
       CHARACTER(30), INTENT(IN) :: Description
       real(8) :: lonR, latR
 C
-      call setMessageSource("readStations")
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("readStations", READ_INPUT_TRACING)
 C
       DO I=1,num_stations
          NNV(I)=0
@@ -6001,10 +5979,7 @@ C....PRE-COMPUTE INFORMATION REQUIRED TO INTERPOLATE AT VEL. RECORDING STATIONS
       END DO
 1880  FORMAT(8X,I3,6X,I7,2(2X,F14.2))
 1883  FORMAT(6X,I3,4X,I7,2(2X,F13.8),2X,2(1X,F13.2))
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
+
 C-----------------------------------------------------------------------
       END SUBROUTINE readStations
 C-----------------------------------------------------------------------
@@ -6027,7 +6002,7 @@ C-----------------------------------------------------------------------
       use global, only : NFOver, srchdp, tree,
      &   kdresults
       use mod_logging, only : DEBUG, screenMessage, allMessage,
-     &   setMessageSource, unsetMessageSource, screenUnit, nscreen
+     &   t_log_scope, init_log_scope, screenUnit, nscreen
       use mesh, only : ne, nm, x, y, areas, rmax, bcxy
       use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
       use kdtree2_module
@@ -6049,10 +6024,7 @@ C-----------------------------------------------------------------------
 
       REAL(8), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match
 C
-      call setMessageSource("kdtsearch")
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("kdtsearch", READ_INPUT_TRACING)
       ElementFound = .false.
 
       Xsta = InputXCoordinate
@@ -6147,10 +6119,7 @@ C...             the next element
      &     /,1X,'DISTANCE TO NEAREST ELEMENT IS ',E15.6,
      &     //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',
      &     //)
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
+
       END SUBROUTINE KDTSEARCH
 
 
@@ -6167,7 +6136,7 @@ C-----------------------------------------------------------------------
       USE SIZES, ONLY : MyProc
       USE GLOBAL, ONLY: NFOver
       USE mod_logging, ONLY: screenMessage, allMessage, DEBUG,
-     &   setMessageSource, unsetMessageSource, screenUnit, nscreen
+     &   t_log_scope, init_log_scope, screenUnit, nscreen
       USE MESH, ONLY : NE, NM, X, Y, Areas
       USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
 
@@ -6186,10 +6155,7 @@ C-----------------------------------------------------------------------
       LOGICAL ElementFound  ! .true. when a corresponding element is found
       REAL(8), PARAMETER :: Tolerance = 1.0E-5     ! area difference for match
 C
-      call setMessageSource("CoordinateToElement")
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("CoordinateToElement", READ_INPUT_TRACING)
 
       ElementFound = .false.
       AEMIN=1.0E+25
@@ -6253,10 +6219,7 @@ C
      &     /,1X,'PROXIMITY INDEX FOR THIS STATION EQUALS ',E15.6,
      &     //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',
      &     //)
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
+
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE CoordinateToElement
@@ -6275,7 +6238,7 @@ C-----------------------------------------------------------------------
      &     InputYCoordinate, InputElement, Factor1, Factor2, Factor3)
 
       USE mod_logging, ONLY : DEBUG, screenMessage,
-     &    setMessageSource, unsetMessageSource, allMessage
+     &    t_log_scope, init_log_scope, allMessage
       USE MESH, ONLY : NM, X, Y, Areas
       IMPLICIT NONE
       REAL(8), intent(in) :: InputXCoordinate                  ! cartesian
@@ -6285,10 +6248,7 @@ C-----------------------------------------------------------------------
 
       REAL(8) X1, X2, X3, X4, Y1, Y2, Y3, Y4                   ! geometry
 C
-      call setMessageSource("ComputeInterpolatingFactors")
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("ComputeInterpolatingFactors", READ_INPUT_TRACING)
       X1=X(NM(InputElement,1))
       X2=X(NM(InputElement,2))
       X3=X(NM(InputElement,3))
@@ -6302,10 +6262,7 @@ C
       Factor2=((X4-X1)*(Y3-Y1)-(Y4-Y1)*(X3-X1))/Areas(InputElement)
       Factor3=(-(X4-X1)*(Y2-Y1)+(Y4-Y1)*(X2-X1))/Areas(InputElement)
 C
-#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
+
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE ComputeInterpolatingFactors

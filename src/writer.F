@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C******************************************************************************
 C MODULE WRITER
 C  This module is for writer processors which receives values from compute
@@ -34,7 +35,7 @@ C
      &     sig_val, sig_write, sig_ini, sig_pause, comm_writer,
      &     sig_term, sig_mesh, writer_id
       use mod_logging, only: debug, echo, info, warning, error,
-     &     logmessage, allmessage, setmessagesource, unsetmessagesource,
+     &     logmessage, allmessage, t_log_scope, init_log_scope,
      &     nabout
       use messenger, only: tag
       implicit none
@@ -92,10 +93,7 @@ C-----------------------------------------------------------------------
       implicit none
       integer i
 
-      call setMessageSource("writer_init")
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writer_init", WRITER_TRACING)
       wcommID = 0
       bufID = 0
       allocate (nwloaded(1:mnwproc)) !st3 100708: allocate round robin chamber
@@ -115,10 +113,6 @@ C-----------------------------------------------------------------------
          writer_descripts(i) % wMD % myTime = 0.d0
       end do
       
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE WRITER_INIT
@@ -185,10 +179,7 @@ C-----------------------------------------------------------------------
       character(len=16) :: TimeIni
       character(len=1024) :: scratchMessage
 C
-      call setMessageSource("writer_main")
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writer_main", WRITER_TRACING)
       !
       ! infinite loop
 
@@ -235,10 +226,6 @@ C
          end select
       end do
 
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine writer_main
 C-----------------------------------------------------------------------
@@ -252,8 +239,8 @@ C-----------------------------------------------------------------------
       subroutine sendDataToWriter(descript, TimeLoc, it, store_cmd)
       use sizes, only : myproc
       use global
-      use mod_logging, only: setmessagesource, allmessage, debug,
-     &     logmessage, unsetmessagesource
+      use mod_logging, only: allmessage, debug,
+     &     logmessage, t_log_scope, init_log_scope
       use mpi_f08, only: MPI_Send, MPI_Reduce, MPI_INTEGER,
      &                   MPI_CHARACTER, MPI_SUM
       implicit none
@@ -261,17 +248,14 @@ C-----------------------------------------------------------------------
       real(8) :: TimeLoc  ! output time in seconds
       integer :: it      ! current time step
       external store_cmd ! command to pack the buffer for mpi transmission
-C   
+C
       integer :: ierr
       integer :: num
       integer :: bufsize
       integer :: istart, iend
       character(1024) :: scratchMessage
 C
-      call setMessageSource("sendDataToWriter")
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("sendDataToWriter", WRITER_TRACING)
       !
       ! jgf51.21.27: Figure out which mpi communicator to use with this
       ! writer processor.
@@ -347,10 +331,7 @@ C...     rank MNPROC of writer communicators is always the writer proc.
          num    = iend - istart + 1
       end do
 C
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
+C-----------------------------------------------------------------------
       end subroutine sendDataToWriter
 
 
@@ -366,8 +347,8 @@ C-----------------------------------------------------------------------
       subroutine writer_recv_values()
       use mpi_f08, only: MPI_Recv, MPI_Reduce, MPI_INTEGER,
      &                   MPI_CHARACTER, MPI_SUM, MPI_Status
-      use mod_logging, only: setmessagesource, allmessage, debug,
-     &     logmessage, unsetmessagesource, t_log_level
+      use mod_logging, only: allmessage, debug,
+     &     logmessage, t_log_level, t_log_scope, init_log_scope
       implicit none
       integer :: num, i, j
       integer :: ierr
@@ -378,10 +359,7 @@ C-----------------------------------------------------------------------
       character(len=8) :: cdigit  !st3 100708: split file
       character(len=1024) :: scratchMessage
 
-      call setMessageSource("writer_recv_values")
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writer_recv_values", WRITER_TRACING)
       !
       ! Receive minimal set of metadata required to write the file
       call mpi_recv(intbuf, numIntMetaData, mpi_integer, 0, tag,
@@ -500,10 +478,6 @@ C...     rank MNPROC of writer communicators is always a writer proc.
       end do
       writer_descripts(bufid) % wMD % bufferLoaded = .true.
 
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
 C-----------------------------------------------------------------------
       end subroutine writer_recv_values
@@ -522,25 +496,18 @@ C-----------------------------------------------------------------------
       SUBROUTINE FLUSH_WRITERS()
       use sizes, only : myproc
       use global
-      use mod_logging, only: setmessagesource, allmessage, debug,
-     &     logmessage, unsetmessagesource
+      use mod_logging, only: allmessage, debug,
+     &     logmessage, t_log_scope, init_log_scope
       use mpi_f08, only: MPI_Send, MPI_INTEGER
       implicit none
       INTEGER :: I, IERR
       character(1024) :: scratchMessage
 
-      call setMessageSource("flush_writers")
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("flush_writers", WRITER_TRACING)
       !
       ! return immediately if no writer processor has received data 
       ! since the last flush
       if ( .not.any(nwloaded).eqv..true. ) then
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()
          return
       endif
       !
@@ -561,10 +528,6 @@ C-----------------------------------------------------------------------
          enddo
       endif
 
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
 C-----------------------------------------------------------------------
       end subroutine flush_writers
@@ -582,11 +545,11 @@ C     descript % specifier integer instead of FULL_REC and W_NETCDF
 C-----------------------------------------------------------------------
       subroutine writer_write()
       use global
-      use mod_logging, only: setmessagesource, allmessage, debug, info,
-     &     error, logmessage, unsetmessagesource
+      use mod_logging, only: allmessage, debug, info,
+     &     error, logmessage, t_log_scope, init_log_scope
 #ifdef ADCNETCDF
       use NETCDFIO, only : initNetCDFOutputFile, writeOutArrayNetCDF
-#endif      
+#endif
 #ifdef ADCXDMF
       use XDMFIO, only : initOutputXDMF, writeOutArrayXDMF, writeControlXDMF
 #endif
@@ -604,10 +567,7 @@ C-----------------------------------------------------------------------
       character(len=1024) :: scratchMessage
       logical :: nerr             ! netcdf error status indicator
 
-      call setMessageSource("writer_write")
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writer_write", WRITER_TRACING)
       write(scratchMessage,'(a,i0,a)') 
      &    'Writer ',writer_id,' is writing...'
       call logMessage(INFO, scratchMessage)      
@@ -807,10 +767,6 @@ C          required extra message passing steps.
      &    ' finished writing.' 
       call allMessage(INFO, scratchMessage)
 
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C.... tcm v50.27 changed formats to match those in globalio.F
  1000 FORMAT(2X,I8, 2X, 1PE20.10E3) !format(i8, 1x, 1pE20.10)
@@ -832,8 +788,8 @@ C-----------------------------------------------------------------------
       use sizes, only : myproc
       use global
       use mod_io, only: openFileForRead
-      use mod_logging, only: setmessagesource, allmessage, debug, info,
-     &     logmessage, unsetmessagesource
+      use mod_logging, only: allmessage, debug, info,
+     &     logmessage, t_log_scope, init_log_scope
       use mpi_f08, only: MPI_Send, MPI_INTEGER, MPI_CHARACTER
       implicit none
       type (OutputDataDescript_t), intent(in) :: descript
@@ -841,11 +797,8 @@ C-----------------------------------------------------------------------
       character(len=80) :: fileValue
       character(len=1024) :: scratchMessage
       integer :: ierr
-C   
-      call setMessageSource("sendInitWriterXDMF")
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+C
+      LOG_SCOPE_TRACED("sendInitWriterXDMF", WRITER_TRACING)
       ! jgf51.21.27: Figure out which mpi communicator to use with this
       ! writer processor.
       if (wcommID.ge.mnwproc) then
@@ -902,10 +855,7 @@ C
      &      comm_writer(wcommID))
       endif
 C
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
+C-----------------------------------------------------------------------
       end subroutine sendInitWriterXDMF
 
 
@@ -918,8 +868,8 @@ C     into XDMF output files.
 C-----------------------------------------------------------------------
       subroutine writerReadMesh()
       use global
-      use mod_logging, only: setmessagesource, allmessage, debug, info,
-     &     logmessage, unsetmessagesource
+      use mod_logging, only: allmessage, debug, info,
+     &     logmessage, t_log_scope, init_log_scope
       use mesh, only : readMesh, x, y, slam, sfea
       use sizes, only: MESHFILENAME,CONTROLFILENAME
       use mpi_f08, only: MPI_Recv, MPI_INTEGER, MPI_CHARACTER, MPI_Status
@@ -933,10 +883,7 @@ C-----------------------------------------------------------------------
       character(len=8) :: cdigit              !st3 100708: split file
       character(len=1024) :: scratchMessage
 
-      call setMessageSource("writerReadMesh")
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writerReadMesh", WRITER_TRACING)
 
 #ifdef ADCXDMF
       ! 
@@ -975,10 +922,6 @@ C-----------------------------------------------------------------------
       call readControlFile(controlFileName_g,.false.)
 #endif
 
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
 C-----------------------------------------------------------------------
       end subroutine writerReadMesh
@@ -994,21 +937,18 @@ C     subroutine is only called by processor 0.
 C-----------------------------------------------------------------------
       subroutine writer_pause()
       use global
-      use mod_logging, only: setmessagesource, allmessage, debug,
-     &     unsetmessagesource
+      use mod_logging, only: allmessage, debug,
+     &     t_log_scope, init_log_scope
       use messenger, only: tag, writers_active
       use mpi_f08, only: MPI_Send, MPI_INTEGER
       implicit none
       integer i
       integer ierr
 
+      LOG_SCOPE_TRACED("writer_pause", WRITER_TRACING)
+
       if(.not.writers_active)return
       writers_active = .false.
-
-      call setMessageSource("writer_pause")
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
       !
       ! iterate over the writer processors and use their designated
       ! mpi communicator to signal them to pause
@@ -1018,10 +958,6 @@ C-----------------------------------------------------------------------
       enddo
 C
 C
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
 C-----------------------------------------------------------------------
       end subroutine writer_pause
@@ -1044,7 +980,7 @@ C
       MODULE HSWRITER
         USE SIZES
         USE GLOBAL
-        USE mod_logging, only: setmessagesource, unsetmessagesource
+        USE mod_logging, only: t_log_scope, init_log_scope
         USE MESSENGER, ONLY: TAG
         use mpi_f08, only: MPI_Recv, MPI_Send, MPI_Barrier, MPI_Reduce,
      &                     MPI_INTEGER, MPI_DOUBLE_PRECISION, MPI_LOGICAL,
@@ -1063,12 +999,12 @@ C
 !------------------------------------------------------------
 !
       SUBROUTINE HSWRITER_MAIN ()
-        USE mod_logging,ONLY : ScreenUnit
+        USE mod_logging,ONLY : ScreenUnit, t_log_scope, init_log_scope
         IMPLICIT NONE
         INTEGER :: SIG,IERR
         type(MPI_Status) :: STAT
 
-        call setMessageSource("HSWRITER_MAIN")
+        LOG_SCOPE_TRACED("HSWRITER_MAIN", WRITER_TRACING)
 !
         WCOMMID=WRITER_ID
         WCOMM=COMM_WRITEH(WCOMMID)
@@ -1096,8 +1032,6 @@ C...  Main loop
         ENDIF
       ENDDO
 
-      call  unsetMessageSource()
-      
       END SUBROUTINE HSWRITER_MAIN
 !
 !------------------------------------------------------------
@@ -1137,7 +1071,7 @@ C-----------------------------------------------------------------------
       USE SIZES
       USE GLOBAL
       USE MESH, ONLY : NE, NP
-      use mod_logging, only: screenUnit, nscreen
+      use mod_logging, only: screenUnit, nscreen, t_log_scope, init_log_scope
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE GLOBAL_IO, ONLY: packOne, unpackOne,
      &    packTwo, unpackTwo, HEADER_MAX
@@ -1174,7 +1108,7 @@ C-----------------------------------------------------------------------
       LOGICAL,  SAVE :: FirstCall = .true.
 !
 
-      call setMessageSource("writeHotstart_through_HSwriter")
+      LOG_SCOPE_TRACED("writeHotstart_through_HSwriter", WRITER_TRACING)
 
       if( myproc <= MNPROC-1 ) then
         CALL GET_NEXT_HSWRITER_COMM(WCOMM)
@@ -1578,9 +1512,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          ENDIF         
          
       ENDIF
-      
-      call unsetMessageSource()
-      
+
       END SUBROUTINE writeHotstart_through_HSwriter
 !
       SUBROUTINE GET_NEXT_HSWRITER_COMM(NEXT_WCOMM)

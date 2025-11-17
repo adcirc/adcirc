@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C-----------------------------------------------------------------------
 C
 C     M O D U L E    A S Y M M E T R I C  V O R T E X  P R O C E S S I N G
@@ -28,8 +29,7 @@ C-----------------------------------------------------------------------
          use global, only : nws, sphericalDistance
          use mod_io, only: openFileForRead
          use mod_logging, only: DEBUG, WARNING, ERROR, INFO,
-     &                   setMessageSource, allMessage,
-     &                   screenMessage, screenUnit
+     &                   allMessage, screenMessage, screenUnit
          ! Import asymmetric hurricane vortex class
          use mesh, only : np, ne, nm, slam, sfea, ics, slam0, sfea0
          USE vortex
@@ -2803,7 +2803,7 @@ C-----------------------------------------------------------------------
       use diagnosticOutput
       use VERSION, ONLY: ADC_VERSION, ADC_HASH
       use sizes, only : myproc, localdir
-      use mod_logging, only: nabout, nscreen
+      use mod_logging, only: nabout, nscreen, t_log_scope, init_log_scope
       implicit none
 C
 C     jgf49.30: New variables to support command line options
@@ -2816,11 +2816,7 @@ C     jgf49.30: New variables to support command line options
       CHARACTER(2) :: CMDLINEOPTION ! the option flag itself
       integer :: i
 
-      call setMessageSource("aswip")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-C
+      LOG_SCOPE_TRACED("aswip", GLOBAL_TRACING)
 C     jgf49.30 Initialize to reasonable defaults.
 
       screenunit=6

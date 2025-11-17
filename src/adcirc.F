@@ -91,6 +91,7 @@ C******************************************************************************
 
 C******************************************************************************
 C******************************************************************************
+#include "logging_macros.h"
       MODULE ADCIRC_Mod
 C******************************************************************************
 C******************************************************************************
@@ -124,9 +125,9 @@ C******************************************************************************
      &   nolica, nolicat, nolifa, nstae, nt,
      &   version_number, np_global, rnp_global,
      &   CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta
-      USE mod_logging, ONLY : allMessage, setMessageSource, screenMessage,
-     &   openLogFile, unsetMessageSource, DEBUG, INFO, screenUnit,
-     &   nabout, nscreen, ECHO, t_log_level
+      USE mod_logging, ONLY : allMessage, screenMessage,
+     &   openLogFile, DEBUG, INFO, screenUnit,
+     &   nabout, nscreen, ECHO, t_log_level, t_log_scope, init_log_scope
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
      &   initVEW1DChannelWetPerimeter
       use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
@@ -168,6 +169,8 @@ C******************************************************************************
       INTEGER :: i        ! command line argument counter
       REAL (8) :: start_time = 0.D0, end_time = 0.D0
 
+      LOG_SCOPE_TRACED("ADCIRC_Init", ADCIRC_TRACING)
+
       ! jgf51.52.07: Added command line option to just write out
       ! the ADCIRC version number and exit. This is to allow 
       ! external applications to query the version number so that
@@ -201,10 +204,6 @@ C******************************************************************************
 #ifdef EBUG
       nabout = DEBUG
 #endif
-      call setMessageSource("ADCIRC_Init")
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call screenMessage(DEBUG,"Enter.") ! log to screen; don't have log dirname
-#endif
       IF (PRESENT(ROOTD)) THEN
         ROOTDIR = TRIM(ROOTD)
       ELSE
@@ -223,10 +222,6 @@ C******************************************************************************
       CALL WRITER_INIT()     ! Initialize WRITER module
       CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
       if ( (mnwproh > 0.or.mnwproc > 0) .and. myProc >= mnproc) then
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()     
          return
       endif
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
@@ -412,11 +407,6 @@ Corbitt 1203022: Local Advection Flags
 
 
 
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      
       RETURN
       END SUBROUTINE ADCIRC_Init
 
@@ -428,8 +418,8 @@ C******************************************************************************
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
       USE GLOBAL, ONLY : iTime, statim, dtdp,
      &   earlyterminate
-      USE mod_logging, ONLY : setMessageSource, allMessage,
-     &   unsetMessageSource, logMessage, DEBUG, INFO
+      USE mod_logging, ONLY : allMessage,
+     &   logMessage, DEBUG, INFO, t_log_scope, init_log_scope
 #ifdef CMPI
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
@@ -449,14 +439,10 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
       INTEGER, OPTIONAL :: NTIME_STP
       REAL(8) :: TimeLoc
 
- 
+
       REAL(8):: start_time, end_time
 
-      call setMessageSource("ADCIRC_Run")
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("ADCIRC_Run", ADCIRC_TRACING)
 
 !TCM v49.52.01 added this ifdef (brought in from adcirc_init()
 #ifdef CMPI
@@ -465,11 +451,9 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
             !call sendLabelInfoToWriters()
             call logMessage(INFO,"Enter writer main.")
             call writer_main()
-            call unsetMessageSource()  !tcm 20150924 -- added
             return
          else
             call hswriter_main()
-            call unsetMessageSource()  !tcm 20150924 -- added
             return
          endif
       elseif ( (mnwproc > 0 .or. mnwproh > 0) .and. myproc == 0 ) then
@@ -522,11 +506,6 @@ C             to then call the SWAN time-stepping subroutine.
       IF (MYPROC == 0 .and. MNWPROH > 0) CALL HSWRITER_PAUSE()
 #endif
 
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      
       RETURN
       END SUBROUTINE ADCIRC_Run
 
@@ -536,8 +515,8 @@ C*    ADCIRC finalize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Final(NO_MPI_FINALIZE)
       USE GLOBAL, ONLY : iTime
-      USE mod_logging, ONLY : setMessageSource, allMessage,
-     &   unsetMessageSource, DEBUG
+      USE mod_logging, ONLY : allMessage,
+     &   DEBUG, t_log_scope, init_log_scope
       USE HARM, ONLY : solveHarmonicAnalysis
       USE WRITE_OUTPUT, ONLY : writeHarmonicAnalysisOutput
 #ifdef CMPI
@@ -554,11 +533,7 @@ C******************************************************************************
 
       REAL (8):: start_time, end_time
 
-      call setMessageSource("ADCIRC_Final")
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("ADCIRC_Final", ADCIRC_TRACING)
 C...
 C...*************** SOLVE THE HARMONIC ANALYSIS PROBLEM ****************
 C...
@@ -575,10 +550,6 @@ C...
      &                 message="ADCIRC terminating normally")
       ENDIF
 
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE ADCIRC_Final

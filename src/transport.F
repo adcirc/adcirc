@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 c******************************************************************************
 c PADCIRC RELEASE VERSION 45.12 03/17/2006                                    *
 C  last changes in this file VERSION 45.12                                    *
@@ -1317,8 +1318,7 @@ C*************************************************************************
       Subroutine cubic_vertical_interpolation ( inarray_vertical, SigmaNN, transN2_z, NN, J )
 
       USE GLOBAL_3DVS
-      USE mod_logging, ONLY: DEBUG, allMessage, setMessageSource,
-     &                       unsetMessageSource
+      USE mod_logging, ONLY: DEBUG, allMessage, t_log_scope, init_log_scope
       IMPLICIT NONE
       REAL(8) :: transN2_z
       REAL(8) :: SigmaNN     !Sigma value of a neighbor node
@@ -1342,10 +1342,7 @@ C*************************************************************************
 
       REAL(8) :: inarray_vertical(NFEN)
 
-      call setMessageSource("cubic_vertical_interpolation")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("cubic_vertical_interpolation", TRANSPORT_TRACING)
       IDiag=0
 
       IF(SigmaNN.LE.(1.00010d0*b)) THEN !if into ground then skip
@@ -1492,11 +1489,6 @@ C*************************************************************************
          WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,transN2_z
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
-
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
       RETURN
 C**********************************************************************

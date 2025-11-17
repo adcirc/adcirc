@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C******************************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                            *
 C  last changes in this file VERSION 45.12                                    *
@@ -55,7 +56,7 @@ C
       use boundaries, only: csii, siii, nbv
       use mesh, only: sfcx, sfcy, ycsfac, sfmx
       use mod_normal_flow_boundary, only: rotate_normal_flux
-      use mod_logging, only: setMessageSource, unsetMessageSource,
+      use mod_logging, only: t_log_scope, init_log_scope,
      &    allMessage, DEBUG, screenUnit, nscreen
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
@@ -101,10 +102,7 @@ c.... tcm v50.66.02 additions for time varying bathymetry
       CHARACTER(80) :: CDUM80
 C
 
-      call setMessageSource("coldstart")
-#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("coldstart", CSTART_TRACING)
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
       !
@@ -710,11 +708,6 @@ c       CALL DSSSTUP(DT,NT)
 c     endif
 C...
 
-#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
       END SUBROUTINE COLDSTART
 
@@ -740,8 +733,7 @@ c******************************************************************************
      &                   LNM_BC, LNM_BC1, LNM_BC2, RIVBCTIMINC,
      &                   RIVBCTIME1, RIVBCTIME2,
      &                   RIVBCSTATIM, NP_G
-      USE mod_logging, ONLY : setMessageSource,
-     &                   unsetMessageSource, allMessage, DEBUG
+      USE mod_logging, ONLY : t_log_scope, init_log_scope, allMessage, DEBUG
       USE MESH, ONLY : NP, AGRID
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD,
      &  totalbcrivernodes, bndbcriver
@@ -762,10 +754,7 @@ ckmd  additional variable for baroclinic boundary conditions
       INTEGER :: IINDX
       REAL(8), ALLOCATABLE :: TMP(:,:)
 C
-      call setMessageSource("coldstart_3D")
-#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("coldstart_3D", CSTART_TRACING)
 C...
 C...  Define format statements used to initialize 3D output files
 C...
@@ -1096,11 +1085,6 @@ C
 C.... Set up a few final odds and ends for a 3D run
       CALL VSSTUP ()
 
-#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE COLDSTART_3D
@@ -1125,8 +1109,8 @@ C----------------------------------------------------------------------
       use boundaries, only : nvel, lbcodei, nbv
       use global, only : eta2, nnodecode, noff, h0,
      &   eta1, nolifa, EtaDisc, River_above_MSL
-      use mod_logging, only : logMessage, allMessage, setMessageSource,
-     &   unsetMessageSource, DEBUG, WARNING, INFO, ERROR
+      use mod_logging, only : logMessage, allMessage, t_log_scope, init_log_scope,
+     &   DEBUG, WARNING, INFO, ERROR
       use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE,
      &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,
@@ -1159,11 +1143,7 @@ C----------------------------------------------------------------------
       logical :: found ! .true. if obsolete init river elevation file was found
       !
       
-      call setMessageSource(
-     &   "setColdWetDryStateAndWaterSurfaceElevation")
-#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("setColdWDSAndWSE", CSTART_TRACING)
 
       HABSMIN = h0*0.8d0
 
@@ -1443,12 +1423,8 @@ C----------------------------------------------------------------------
       endif
 !JLW: end subgrid if statement
       ENDIF
-      eta1(:) = eta2(:) 
+      eta1(:) = eta2(:)
 
-#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C----------------------------------------------------------------------
       end subroutine setColdWetDryStateAndWaterSurfaceElevation
 C----------------------------------------------------------------------
