@@ -11,7 +11,7 @@
 !> not be captured at the boundary.
 !>
 !> @version These source terms were originally added in v53 but not
-!>  merged into the main trunk until v5#.
+!>  merged into the main trunk until v56.
 !>
 !>  NOTE: Hydrology source terms are currently added only at "wet" ADCIRC
 !>  nodes since ADCIRC cannot route over dry land - read notes below.
@@ -41,7 +41,7 @@
 !>-----------------------------------------------------------------------
 !>  USAGE:
 !>  interiorHydrologyControl namelist at bottom of fort.15 activates
-!>  this feature starting at V##.
+!>  this feature starting at V56.
 !>
 !>  useInteriorHydrology (logical): default .false.
 !>  interiorHydrologyType (integer): default 0 (see options below)
@@ -327,8 +327,6 @@
       hydroCurr(1:mnp) = 0.D0
       hydroODT(1:mnp) = 0.D0
   
-      write(16,3010)
-
       ! Set file name for reading input based on Type
       select case (abs(interiorHydrologyType))
        case(1)
@@ -341,6 +339,7 @@
 
       ! Now arrays that require reading the hydrology input:
       ! May need to add more arrays with new types.
+      write(16,3010)
       call openFileForRead(psLun,trim(inputdir)//'/'//                  &
      &        trim(hFile),ioerr)
       if (ioerr.GT.0) call hydrologyTerminate()
@@ -357,24 +356,12 @@
       isActive(1:numHydro) = 0
 
       ! Subroutine call to read in actual locations
+      write(16,3011)
       call readInteriorHydrologyLocs(psLun)
       close(psLun)
 
-! DEBUG: 10/03/2025 Add printing to check hydrology status
-!#ifdef CMPI
-!      open(888,file=trim(localdir)//'/'//'fort.888', action='write',    &
-!     &     status='replace')
-!      write(888,*) 'Debugging hydrology sources:'
-!      write(888,'(2A)') 'time nearNode isActive divByTotalArea',        &
-!     &                  ' hydroX hydroCurr'
-!#else
-!      open(888,file='fort.888', action='write', status='replace')
-!      write(888,*) 'Debugging hydrology sources:'
-!      write(888,'(2A)') 'time nearNode isActive divByTotalArea',        &
-!     &                  ' hydroX hydroCurr'
-!#endif
-
- 3010 format(/," Interior Hydrology Sources")
+ 3010 format(/,"INTERIOR HYDROLOGY SOURCES",/)
+ 3011 format(" Checking locations ...")
  
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return")
@@ -460,13 +447,10 @@
               end if
            end do
       end select
-      write(16,3016)
 
 3013  format(/,"TYPE   FEATURE      NODE",/)
 3014  format(/,"TYPE   FEATURE      NODE         X             Y",/)
 3015  format(/,"TYPE   FEATURE      NODE      LON(deg)     LAT(deg)",/)
-3016  format(/,"Warning: if NODE=0, hydrology source is not in domain", &
-     &        /,"and will not be activated.",/)
 1880  format("Actual",1X,I9,4X,I9)
 1881  format("Near",2X,I9,4X,I9,2(4X,F14.2))
 1882  format("Near",2X,I9,4X,I9,2(4X,F9.4))
@@ -549,12 +533,7 @@
          hydroCurr(indXH) = hydroCurr(indXH) + hydroX(I)*isActive(I)
          hydroODT(indXH) = hydroODT(indXH) + isActive(I)*               &
      &                    (hydroX(I)-hydroOld(I))/dt
-! DEBUG: add write statements to track variables - OK since no accum
-! fort.888 opened from allocateInteriorHydrology() above
-!         write(888,fmt=8880) timeloc, indXH, isActive(I),               &
-!     &        divbyTotalArea0(indXH), hydroX(I), hydroCurr(indXH)
       end do
-!8880  format(F10.2,1X,I9,1X,I2,2X,F8.6,1X,F8.6,1X,F8.6)
 
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return")
@@ -719,10 +698,10 @@
       ! Now update time dependent arrays: need to consider that
       ! multiple discharges may be applied at the same location,
       ! must add not just assign. Also use isActive to make sure that
-      ! source shoudl be contributing within the gwce module.
-      ! 09/19/25: Do I need to update hydroODT in a hotstart? Have not
-      ! done in previous versions - is this a potential error? Read
-      ! notes from original implementation
+      ! source should be contributing within the gwce module.
+      ! NOTE: hydroOld is not currently saved in hotstart file - so for
+      ! the very first hot timestep hydroODT is just set to the
+      ! initial value of zero. May need to think about this more.
       hydroCurr(1:np) = 0.d0  ! reset to zero before accumulating
       do I=1,numHydro
          indXH = hydroNearNode(I)
@@ -739,14 +718,20 @@
 
 
 !------------------------------------------------------------------------
-!> Check for active hydrology locations: called at end of wetdry
+!> Check for active hydrology locations:
+!> Called before assigning hydroCurr and hydroODT within three hydrology
+!> subroutines: getInteriorHydrologyForcing, and 
+!> cold(hot)startInteriorHydrologyForcing - must be called after
+!> nodecode has been updated in wetdry.F
 !> Original implementation was to multiply each nodal hydroCurr value by
 !> the nodecode to handle dry nodes. However, that zeroed out all sources
 !> that terminate at the same nearNode. The use of isActive during the
 !> accumulation in getInteriorHydrology() removes this and lets each
 !> source be handled separately. This is only strictly necessary for
 !> dynamic locations, but is more flexible for all Types. 
-!> Note: totalArea and divByTotalArea are updated at wet/dry step4
+!> Note: totalArea and divByTotalArea are updated at wet/dry step4 each
+!> time step and initialized in c/hstart modules - both with calls to
+!> totalAreaCalc() in mesh.F
 !------------------------------------------------------------------------
       subroutine checkActiveHydrology()
 !------------------------------------------------------------------------
@@ -757,19 +742,8 @@
 
       integer :: I
 
-       ! totalArea and 1/totalArea are updated in wetdry.F
-       ! Part4 with a call to totalAreaCalc() during timestepping and
-       ! initialized from main cstart and hstart modules to begin.
 
-       ! Add other tests for other interiorHydrologyType values
-       ! and call this subroutine after the nodecode update occurs
-       ! in wetdry.F
-
-       ! May need an update similar to below for all "active" arrays
-       !#ifdef CMPI
-       !         CALL UPDATEI(NNODECODE,IDUMY,1)
-       !#endif
-
+      ! Add other options for new Types
       select case(abs(interiorHydrologyType))
         case (1,2) ! Static locations - just use nodecode
           do I = 1, numHydro
@@ -789,6 +763,10 @@
         !       END IF 
         !    END IF 
         ! END DO 
+        ! May need an update similar to below for all "active" arrays
+        !#ifdef CMPI
+        !         CALL UPDATEI(NNODECODE,IDUMY,1)
+        !#endif
 
       end select
 
@@ -827,7 +805,6 @@
       if (allocated(hydroODT)) deallocate(hydroODT)
       if (allocated(hydroNearNode)) deallocate(hydroNearNode)
       if (allocated(isActive)) deallocate(isActive)
-      close (888)
 
 #ifdef cmpi
       subdomainFatalError = .true.
@@ -853,10 +830,17 @@
 !> 
 !> Hydrology sources that were not found during preprocessing are 
 !> indicated by lon=lat=-999.0 which should return a "not found" result
-!> from kdtree. 
+!> from kdtree. However, these locations should be removed from the
+!> input file (fort.428/429) to avoid termination of ADCIRC. 
 !> 
 !> Returns the nearest node instead of the found element. 
 !>
+!> @todo: currently uses the already allocated global search tree
+!> need to modify to create own search tree (or check to see if global
+!> variables are still allocated)
+!> Also, for now calls hydrologyTerminate if a location is not found
+!> do we want to add capability to just set inactive for all time and
+!> set the found node to nearest node or is termination cleaner? 
 !------------------------------------------------------------------------
        subroutine kdtSearchHydrology(InputXCoordinate,InputYCoordinate, &
      &         OutputNode)
@@ -1016,18 +1000,14 @@
        end if ! end within search radius test
 
        if (.not. ElementFound) then 
-          OutputNode = 0
-          if (XSta.GT.0 .AND. YSta.GT.0) then
-             ! Negative coordinates indicate that we intentionally
-             ! deactivated this feature during preprocessing.
-             write(16,9893)
-          end if
+          write(16,9893) Xsta, Ysta
+          call hydrologyTerminate()
        end if 
 
- 9893  format(/,1X,'!!!!!  WARNING - NONFATAL INPUT ERROR  !!!!!',/,    &
-     &      1X,'Point Source does NOT lie within any element',          &
-     &      1X,'and will be deactivated.',/,                            &
-     &      1X,'Verify input coordinates for this source.')
+ 9893  format(/,1X,'!!!!!  WARNING - FATAL INPUT ERROR  !!!!!',/,       &
+     &      1X,'Point Source does NOT lie within any element.',/,       &
+     &      1X,'Verify input coordinates for this source.',/,           &
+     &      1X,'   X: ',F0.0,'   Y: ',F0.0)
 
 #if defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
