@@ -99,10 +99,13 @@ C      subgridBarrier        "subgrid_barrier"
 C      CondensedNodes        "condensed_nodes"
 C
 C-----------------------------------------------------------------------
+
+#include "logging_macros.h"
+
       MODULE NodalAttributes
       USE SIZES
       use mod_logging, only: allMessage, logMessage, DEBUG, ECHO, INFO,
-     &                       WARNING, ERROR
+     &                       WARNING, ERROR, t_log_scope, init_log_scope
 
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
 C             I've placed these changes outside the #ifdef CSWAN flags
@@ -3092,8 +3095,6 @@ C     ----------------------------------------------------------------
       SUBROUTINE PrepCondensedNodes()
 C     ----------------------------------------------------------------
       USE SIZES,ONLY : MNVEL
-      use mod_logging, only: setMessageSource, unsetMessageSource,
-     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       USE MESH,ONLY : NP,LBArray_Pointer,X,Y
       USE BOUNDARIES,ONLY : CSIICN,SIIICN
       IMPLICIT NONE
@@ -3102,16 +3103,9 @@ C     ----------------------------------------------------------------
       REAL(8) :: X1,Y1,X2,Y2,DX,DY,LEN
       LOGICAL :: ON_THE_SAME_BOUNDARY
 
-      call setMessageSource("prepcondensednodes")
-#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("prepcondensednodes", NODALATTR_TRACING)
 
       IF (.NOT.LoadCondensedNodes) THEN
-#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-         call unsetMessageSource()
          RETURN
       ENDIF
 
@@ -3188,10 +3182,6 @@ C     ----------------------------------------------------------------
          END IF
       END DO
 
-#if defined(NODALATTR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
       END SUBROUTINE PrepCondensedNodes
 C     ----------------------------------------------------------------
 

@@ -18,6 +18,9 @@
 !
 !-------------------------------------------------------------------------------!
 #ifdef ADCNETCDF
+
+#include "logging_macros.h"
+
 module netcdf_error
 
    implicit none
@@ -38,25 +41,16 @@ contains
    subroutine check_err(iret)
       use netcdf, only: NF90_NOERR, nf90_strerror
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-      use mod_logging, only: allMessage, setMessageSource, unsetMessageSource
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      use mod_logging, only: DEBUG
-#endif
+      use mod_logging, only: allMessage, t_log_scope, init_log_scope
       implicit none
       integer, intent(in) :: iret
 
-      call setMessageSource("check_err")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("check_err", NETCDF_TRACING)
+
       if (iret /= NF90_NOERR) then
          call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
                         message=nf90_strerror(iret))
       end if
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine check_err
 !-----------------------------------------------------------------------

@@ -59,6 +59,8 @@ function(adcirc_create_interface_libraries)
   if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
     if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 10)
       target_compile_options(adcirc_swan_compiler_flags INTERFACE "-fallow-argument-mismatch" "-w")
+    else()
+      target_compile_options(adcirc_swan_compiler_flags INTERFACE "-w")
     endif()
   elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel" OR CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
     target_compile_options(adcirc_swan_compiler_flags INTERFACE "-diag-disable=6843,8291")
@@ -76,8 +78,9 @@ function(adcirc_create_interface_libraries)
 
   target_sources(adcirc_link_libraries INTERFACE $<TARGET_OBJECTS:adcirc::version> $<TARGET_OBJECTS:adcirc::mkdir>)
 
-  target_include_directories(adcirc_link_libraries INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/adcirc_version
-                                                             ${CMAKE_CURRENT_SOURCE_DIR}/prep)
+  target_include_directories(
+    adcirc_link_libraries INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/adcirc_version
+                                    ${CMAKE_CURRENT_SOURCE_DIR}/prep ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   if(NETCDF_WORKING)
     target_compile_definitions(adcirc_link_libraries INTERFACE ADCNETCDF)

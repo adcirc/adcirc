@@ -17,8 +17,9 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C 
+C
 C                       M O D U L E   G W C E
 C
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
@@ -77,7 +78,7 @@ C******************************************************************************
 
       module gwce
       use mod_logging, only : DEBUG, INFO, WARNING, ERROR, logMessage,
-     &   setMessageSource, unsetMessageSource, allMessage
+     &   t_log_scope, allMessage
       implicit none
 
       real(8),allocatable :: lsxx(:),lsxy(:),lsyx(:),lsyy(:)
@@ -290,7 +291,7 @@ C... SB
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
      &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
-      use mod_logging, only: screenUnit, nscreen
+      use mod_logging, only: screenUnit, nscreen, t_log_scope, init_log_scope
 
 !JLW: add subgrid additions
       USE subgrid, ONLY: level0, level1
@@ -394,16 +395,14 @@ C...... DW
       REAL(8) :: PHI1N1, PHI1N2, PHI1N3
       REAL(8) :: PHI2N1, PHI2N2, PHI2N3
 
+      LOG_SCOPE_TRACED("gwce_new", GWCE_TRACING)
+
       IF ( LoadAbsLayerSigma ) THEN
          IF (NumNodesAbsLayer(1) > 0 ) ETA_SPONGE = .true.
          IF (SUM(NumNodesAbsLayer) > 0 ) GWCE_SPONGE = .true.
       ENDIF
 C..... DW
 
-      call setMessageSource("gwce_new")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
 C
 C....... DW
 C     Switch to the element table to the primary node
@@ -2034,12 +2033,7 @@ C......
 
 #ifdef CMPI
       CALL UPDATER(ETA2,DUMY1,DUMY2,1)
-#endif      
-     
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()
 
       RETURN
 
@@ -2164,7 +2158,7 @@ C
       USE MESSENGER
 #endif
       USE WIND, ONLY: windLimiter
-      use mod_logging, only: nscreen
+      use mod_logging, only: nscreen, t_log_scope, init_log_scope
 
       IMPLICIT NONE
 
@@ -2242,10 +2236,7 @@ ckmd   Added in parameters for the pc algorithm
       REAL(8):: fwsx1, fwsx2, fwsx3
       REAL(8):: fwsy1, fwsy2, fwsy3
 
-      call setMessageSource("gwce_new_pc")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("gwce_new_pc", GWCE_TRACING)
 
 ckmd    Must reset the result vector to zero before recomputing
 ckmd  the next time level.
@@ -3097,10 +3088,6 @@ C     UPDATE ELEVATIONS
 ckmd
 ckmd  Eta2 values are now corrected elevations at time level s+1.
 ckmd
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
       RETURN
 C**********************************************************************
@@ -3118,9 +3105,9 @@ C*************************************************************************
       USE SIZES, ONLY : mnproc, myproc
       use global, only : eta2,nodecode,NOFF,ESLCOUNT,
      &      nodes_lg, IFSFM
-      use mod_logging, only : setMessageSource, unsetMessageSource, screenUnit,
+      use mod_logging, only : t_log_scope, init_log_scope, screenUnit,
      &      allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
-      use mesh, only : nm, ne, areas, FDXE, FDYE, 
+      use mesh, only : nm, ne, areas, FDXE, FDYE,
      &      SFacEle, SFMYEle, SFMXEle
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active,
@@ -3140,12 +3127,9 @@ C*************************************************************************
       REAL(8) :: AreaIE2
       integer nodeNumber ! fulldomain node number where wse slope is exceeded
       character(1024) :: scratchMessage
-      
 
-      call setMessageSource("check_slopes")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("check_slopes", GWCE_TRACING)
       ! jgf51.47: Per Rick's specification, start off by deactivating
       ! any slope limitation triggered in the previous time step;
       ! we have a fresh start each time step in determining whether
@@ -3250,13 +3234,9 @@ C.... end WP
      &  ' where the elemental slope is ',1pE12.4E3,
      &  ' and the maximum elemental slope is ',1pE12.4E3,
      &  ' on time step ',i0,' and time = ',e15.8,'.')
-     
+
 C...  END CHECKING ELEMENT GRADIENTS
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !-----------------------------------------------------------------
       END SUBROUTINE CHECK_SLOPES
       !-----------------------------------------------------------------   
@@ -3272,7 +3252,7 @@ C***********************************************************************
 C
       SUBROUTINE APPLY_SLOPE_LIMITS(ETA2Lim,LocNP)
       use global, only : nodecode,NOFF,IFNLFA
-      use mod_logging, only : setMessageSource, unsetMessageSource,
+      use mod_logging, only : t_log_scope, init_log_scope,
      &      allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       use mesh, only : ne, nm, areas, totalArea
       use NodalAttributes, ONLY : LoadEleSlopeLim,
@@ -3286,11 +3266,7 @@ C
       REAL(8), ALLOCATABLE, SAVE :: elevSum(:) ! used if elemental slope limiter is active
       LOGICAL, SAVE :: firstCall = .true.
 
-
-      call setMessageSource("check_slopes")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("check_slopes", GWCE_TRACING)
 
       IF (LoadEleSlopeLim.eqv..true.) THEN
          IF (firstCall.eqv..true.) THEN
@@ -3340,12 +3316,6 @@ C... Will apply the updating outside the subroutine
 !#ifdef CMPI
 !      CALL UPDATER(ETA2Lim,DUMY1,DUMY2,1)
 !#endif
-
-
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
 
       RETURN

@@ -18,7 +18,9 @@
 !
 !-------------------------------------------------------------------------------!
 
-C 
+#include "logging_macros.h"
+
+C
 C                       M O D U L E   M O M E N T U M
 C
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
@@ -75,8 +77,8 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
       module momentum
-      use mod_logging, only : setMessageSource, allMessage, logMessage,
-     &   unsetMessageSource, DEBUG, INFO, WARNING, ERROR
+      use mod_logging, only : allMessage, logMessage,
+     &   DEBUG, INFO, WARNING, ERROR, t_log_scope
       implicit none
 
       real(8),allocatable :: auv(:,:) ! WJP allowing for the case auv11 ~= auv22
@@ -196,7 +198,8 @@ C----- END DW
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB, 
      &                       enforceUVCB
       USE SPONGELAYER
-      USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter 
+      USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
+      use mod_logging, only: t_log_scope, init_log_scope
 C... SB
       USE VEW1D, ONLY :
      &     ROTATE_AT_CONDENSEDNODES_ALL,
@@ -269,10 +272,9 @@ C.....
 C......SB For Elemental summation form
       REAL(8):: TotalArea1, TotalArea2
 C......
-      call setMessageSource("mom_eqs_new_nc")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("mom_eqs_new_nc", TIMESTEP_TRACING)
+
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
 C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF
@@ -1179,11 +1181,6 @@ C...  Compute fluxes
          QY2(I) = VV2(I)*H2(I)
       ENDDO
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
 C*******************************************************************************
       CONTAINS
@@ -1246,8 +1243,9 @@ C
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI, 
      &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
-      USE WIND, ONLY: windLimiter 
+      USE WIND, ONLY: windLimiter
       USE ADC_CONSTANTS, ONLY: Cs2, Ad, Bd, G
+      use mod_logging, only: t_log_scope, init_log_scope
 !JLW: add subgrd additions
       USE subgrid, ONLY: level0, level1
      &   , wetFracVertETA2, subgridVertList
@@ -1299,10 +1297,7 @@ C
 !JLW: adding a couple of variables needed
       REAL(8) :: HGAvg2, CADV1, CADV2, CADV3
 
-      call setMessageSource("mom_eqs_new_conserv")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("mom_eqs_new_conserv", TIMESTEP_TRACING)
 
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
@@ -1977,11 +1972,6 @@ C...  Compute velocities
          ENDIF
       ENDDO
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
 C**********************************************************************
       END SUBROUTINE MOM_EQS_NEW_CONSERV
@@ -2027,7 +2017,8 @@ C
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
      &   CSII, SIII, ME2GW, NBV, LBCODEI, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState,advectlocal
-      USE WIND, ONLY: windLimiter 
+      USE WIND, ONLY: windLimiter
+      use mod_logging, only: t_log_scope, init_log_scope
 
       IMPLICIT NONE
 
@@ -2088,10 +2079,8 @@ ckmd   Added in parameters for the pc algorithm
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       INTEGER :: nele
 C
-      call setMessageSource("mom_eqs_non_conserv_pc")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("mom_eqs_non_conserv_pc", TIMESTEP_TRACING)
+
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
 C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF
@@ -2683,11 +2672,6 @@ C...  Compute fluxes
          QX2(I)=UU2(I)*H2(I)
          QY2(I)=VV2(I)*H2(I)
          ENDDO
-
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
       RETURN
 C**********************************************************************

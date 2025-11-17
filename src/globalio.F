@@ -23,13 +23,14 @@
       !  This module exists to write out global output files on
       !  parallel machines and one file on uniproc machines.
       !--------------------------------------------------------------
+#include "logging_macros.h"
 
       module global_io
       use SIZES
       use VERSION
       use GLOBAL
       use mod_logging, only: DEBUG, ERROR, INFO, WARNING,
-     &     setMessageSource, unsetMessageSource, allMessage, logMessage
+     &     allMessage, logMessage, t_log_scope, init_log_scope
       use mod_io, only: openFileForRead
       use MESH, ONLY : NP, AGRID
 #ifdef CMPI
@@ -58,11 +59,9 @@ C
 C--------------------------------------------------------------------
       SUBROUTINE allocateFullDomainIOArrays()
       IMPLICIT NONE
-C
-      call setMessageSource("allocateFullDomainIOArrays")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("allocateFullDomainIOArrays", GLOBALIO_TRACING)
+
       ALLOCATE(labels_g(NP_G))
       ALLOCATE(ETA1_g(NP_G))
       ALLOCATE(ETA2_g(NP_G))
@@ -78,11 +77,7 @@ C
 
       ALLOCATE(HTOT1_g(NP_G)) 
       ALLOCATE(HTOT2_g(NP_G)) 
-C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
+
 C--------------------------------------------------------------------
       END SUBROUTINE allocateFullDomainIOArrays
 C--------------------------------------------------------------------
@@ -115,11 +110,9 @@ C--------------------------------------------------------------------
       ! number of vector tuples in the buffer
       integer      :: num
       integer      :: i, j, k
-C
-      call setMessageSource("collectFullDomainArray")
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("collectFullDomainArray", GLOBALIO_TRACING)
+
       bufsize = min(BUFSIZE_MAX,
      &    descript % num_items_per_record * descript % num_fd_records)
 C     num will be less than the number of full domain records if the
@@ -178,14 +171,9 @@ C        or to the end of the full domain array, whichever is less
          num    = iend - istart + 1
       end do
 #endif
-C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  1100 FORMAT(2x,1pE20.10E3,5X,I10)
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !--------------------------------------------------------------
       end subroutine collectFullDomainArray
       !--------------------------------------------------------------
@@ -205,10 +193,7 @@ C! CMPI
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
 
-      call setMessageSource("packOne")
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Enter")
-#endif
+      LOG_SCOPE_TRACED("packOne", GLOBALIO_TRACING)
 
       ! jgf51.21.24: Updated and generalized to take into account wet/dry
       ! if needed
@@ -247,12 +232,6 @@ C! CMPI
       endif
 #endif
 
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Return")
-#endif
-      call unsetMessageSource()
-
-      return
       !--------------------------------------------------------------
       end subroutine packOne
       !--------------------------------------------------------------
@@ -271,11 +250,8 @@ C! CMPI
       type (OutputDataDescript_t) :: descript
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
-      
-      call setMessageSource("unpackOne")
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Enter")
-#endif
+
+      LOG_SCOPE_TRACED("unpackOne", GLOBALIO_TRACING)
 
       j = 1
 
@@ -295,11 +271,6 @@ C! CMPI
 
       endif
 
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Return")
-#endif
-      call unsetMessageSource()
-
       !--------------------------------------------------------------
       end subroutine unpackOne
       !--------------------------------------------------------------
@@ -318,11 +289,8 @@ C! CMPI
       type (OutputDataDescript_t) :: descript
       integer :: i, istart, iend, iglobal
       integer :: ioffset, j
-      
-      call setMessageSource("packTwo")
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Enter")
-#endif
+
+      LOG_SCOPE_TRACED("packTwo", GLOBALIO_TRACING)
 
       ioffset = istart - 1
       do i = 1, descript % num_records_this
@@ -341,12 +309,6 @@ C! CMPI
         end if
       end do
 
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Return")
-#endif
-      call unsetMessageSource()
-
-      return
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
       !--------------------------------------------------------------
       end subroutine packTwo
@@ -365,11 +327,8 @@ C! CMPI
 
       type (OutputDataDescript_t) :: descript
       integer :: i, j, istart, iend
-      
-      call setMessageSource("unpackTwo")
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Enter")
-#endif
+
+      LOG_SCOPE_TRACED("unpackTwo", GLOBALIO_TRACING)
 
       j = 1
       do i = istart, iend
@@ -378,12 +337,6 @@ C! CMPI
          j = j + 2
       end do
 
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Return")
-#endif
-      call unsetMessageSource()
-      
-      return
       !--------------------------------------------------------------
       end subroutine unpackTwo
       !--------------------------------------------------------------
@@ -403,11 +356,9 @@ C! CMPI
       integer :: i, istart, iend, iglobal
       integer :: ioffset, j
       integer :: k ! frequency counter
-C
-      call setMessageSource("packMbyNP")
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("packMbyNP", GLOBALIO_TRACING)
+
       ioffset = istart - 1
       do i = 1, descript % num_records_this
          iglobal = descript % imap(i)
@@ -419,13 +370,9 @@ C
             end do
          end if
       end do
-C
+
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      return
+
       !--------------------------------------------------------------
       end subroutine packMbyNP
       !--------------------------------------------------------------
@@ -445,10 +392,8 @@ C
       integer :: i, j, istart, iend
       integer k ! frequency counter
 
-      call setMessageSource("unpackMbyNP")
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("unpackMbyNP", GLOBALIO_TRACING)
+
       j = 1
       do i = istart, iend
          do k = 1, descript % num_items_per_record
@@ -456,11 +401,7 @@ C
             j = j + 1
          end do
       end do
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      return
+
       !--------------------------------------------------------------
       end subroutine unpackMbyNP
       !--------------------------------------------------------------
@@ -480,11 +421,9 @@ C
       integer :: i, istart, iend, iglobal
       integer :: ioffset, j
       integer :: k ! frequency counter
-C
-      call setMessageSource("packNPbyM")
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("packNPbyM", GLOBALIO_TRACING)
+
       ioffset = istart - 1
       do i = 1, descript % num_records_this
          iglobal = descript % imap(i)
@@ -496,13 +435,9 @@ C
             end do
          end if
       end do
-C
+
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      return
+
       !--------------------------------------------------------------
       end subroutine packNPbyM
       !--------------------------------------------------------------
@@ -522,10 +457,8 @@ C
       integer :: i, j, istart, iend
       integer k ! frequency counter
 
-      call setMessageSource("unpackNPbyM")
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("unpackNPbyM", GLOBALIO_TRACING)
+
       j = 1
       do i = istart, iend
          do k = 1, descript % num_items_per_record
@@ -533,11 +466,7 @@ C
             j = j + 1
          end do
       end do
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      return
+
       !--------------------------------------------------------------
       end subroutine unpackNPbyM
       !--------------------------------------------------------------
@@ -558,10 +487,7 @@ C
       integer      :: lun, size_this, size_g, szz
       character(*) :: filename
 
-      call setMessageSource("open_gbl_file")
-#ifdef GLOBALIO_TRACE 
-      call allMessage(DEBUG,"Enter")
-#endif 
+      LOG_SCOPE_TRACED("open_gbl_file", GLOBALIO_TRACING)
 
       szz = size_g
       if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size_this
@@ -572,12 +498,6 @@ C
         close(lun)
       end if
 
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Return")
-#endif
-      call unsetMessageSource()
-
-      return
       !--------------------------------------------------------------
       end subroutine open_gbl_file
       !--------------------------------------------------------------
@@ -600,10 +520,7 @@ C
       integer      :: nrecs_this  !tcm v51.20.06
       character(*) :: filename
 
-      call setMessageSource("open_minmax_file")
-#ifdef GLOBALIO_TRACE 
-      call allMessage(DEBUG,"Enter")
-#endif
+      LOG_SCOPE_TRACED("open_minmax_file", GLOBALIO_TRACING)
 
       szz = size_g
       if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size_this
@@ -614,12 +531,6 @@ C
         close(lun)
       end if
 
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Return")
-#endif
-      call unsetMessageSource()
-
-      return
       !--------------------------------------------------------------
       end subroutine open_minmax_file
       !--------------------------------------------------------------
@@ -651,10 +562,7 @@ C
       integer      :: bufsize, ibucket
       integer      :: istart, iend, tag
 
-      call setMessageSource("writeFullFormat")
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Enter")
-#endif
+      LOG_SCOPE_TRACED("writeFullFormat", GLOBALIO_TRACING)
 
       ! serial or writing local files
       if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
@@ -663,10 +571,6 @@ C
          write(descript%lun, 1101) TimeLoc, it
          call write_cmd(descript % lun, descript, 1, descript % num_records_this)
          close(descript % lun)
-#ifdef GLOBALIO_TRACE
-         call allMessage(DEBUG,"Return")
-#endif
-         call unsetMessageSource()
          return
       else
 #ifdef CMPI
@@ -731,11 +635,6 @@ C
 #endif
       endif
 
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Return")
-#endif
-      call unsetMessageSource()
-
  1000 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  1001 FORMAT(2x, i8, 2x, i8, 2X, i8, 2X, i8, 2X, i8) 
  1100 FORMAT(2x,1pE20.10E3,5X,I10)
@@ -771,10 +670,7 @@ C
       integer      :: bufsize, ibucket
       integer      :: istart, iend, tag
 
-      call setMessageSource("writeSparse")
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Enter")
-#endif
+      LOG_SCOPE_TRACED("writeSparse", GLOBALIO_TRACING)
 
       ! serial or writing local files
       if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
@@ -802,10 +698,6 @@ C
          write(descript%lun, 1101) TimeLoc, it, nLWetNodes, descript%alternate_value
          call write_cmd(descript % lun, descript, 1, descript % num_records_this)
          close(descript % lun)
-#ifdef GLOBALIO_TRACE
-         call allMessage(DEBUG,"Return")
-#endif
-         call unsetMessageSource()
          return
       else
 #ifdef CMPI
@@ -891,11 +783,6 @@ C
 #endif
       endif
 
-#ifdef GLOBALIO_TRACE
-      call allMessage(DEBUG,"Return")
-#endif
-      call unsetMessageSource()
-
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  1100 FORMAT(2x,1pE20.10E3,5X,I10)
  1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
@@ -921,6 +808,8 @@ C
       type (OutputDataDescript_t) :: descript
       integer :: i, istart, iend, iglobal, lun
       integer :: ioffset
+
+      LOG_SCOPE_TRACED("storeOne", GLOBALIO_TRACING)
 
       if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
          do i = 1, descript % num_records_this
@@ -990,7 +879,6 @@ C
       end do
 #endif
 
-      return
  1000 format(2x, i8, 2x, 1pE20.10E3)
  1001 format(2x, i8, 2x, i10)
       !--------------------------------------------------------------
@@ -1015,6 +903,8 @@ C
       type (OutputDataDescript_t) :: descript
       integer :: i, istart, iend, iglobal, lun
       integer :: ioffset, j
+
+      LOG_SCOPE_TRACED("storeTwo", GLOBALIO_TRACING)
 
       if (mnproc.eq.1.or.WRITE_LOCAL_FILES) then
         do i = 1, descript % num_records_this
@@ -1051,7 +941,6 @@ C
         end if
       end do
 #endif
-      return
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
       !--------------------------------------------------------------
       end subroutine storeTwo
@@ -1077,6 +966,8 @@ C
       implicit none
       integer :: lun, size_this
 
+      LOG_SCOPE_TRACED("header61", GLOBALIO_TRACING)
+
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ntrspe, size_this, dtdp*nspoole, nspoole, 1,
      &                 FileFmtVersion
@@ -1098,6 +989,8 @@ C
       USE GLOBAL
       implicit none
       integer :: lun, size_this
+
+      LOG_SCOPE_TRACED("header62", GLOBALIO_TRACING)
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ntrspv, size_this, dtdp*nspoolv, nspoolv, 2,
@@ -1121,6 +1014,8 @@ C
       implicit none
       integer :: lun, size_this
 
+      LOG_SCOPE_TRACED("header63", GLOBALIO_TRACING)
+
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetse, size_this, dtdp*nspoolge, nspoolge, 1,
      &                 FileFmtVersion
@@ -1142,6 +1037,8 @@ C
       implicit none
       integer :: lun, size_this
       integer :: nrecs_this  !tcm v51.20.06
+
+      LOG_SCOPE_TRACED("header_max", GLOBALIO_TRACING)
 
       write(lun, 1000) rundes, runid, agrid
       !tcm v51.20.06 Changed number of records from 1 to nrecs_this (1 or 2)
@@ -1165,6 +1062,8 @@ C
       implicit none
       integer :: lun, size_this
 
+      LOG_SCOPE_TRACED("header64", GLOBALIO_TRACING)
+
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetsv, size_this, dtdp*nspoolgv, nspoolgv, 2,
      &                 FileFmtVersion
@@ -1186,6 +1085,8 @@ C
       USE GLOBAL
       implicit none
       integer :: lun, size_this
+
+      LOG_SCOPE_TRACED("header71", GLOBALIO_TRACING)
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
@@ -1209,6 +1110,8 @@ C
       implicit none
       integer :: lun, size_this
 
+      LOG_SCOPE_TRACED("header72", GLOBALIO_TRACING)
+
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 2,
      &                  FileFmtVersion
@@ -1230,6 +1133,8 @@ C
       USE GLOBAL
       implicit none
       integer :: lun, size_this
+
+      LOG_SCOPE_TRACED("header73", GLOBALIO_TRACING)
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
@@ -1253,6 +1158,8 @@ C
       implicit none
       integer :: lun, size_this
 
+      LOG_SCOPE_TRACED("header74", GLOBALIO_TRACING)
+
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 2,
      &                 FileFmtVersion
@@ -1274,6 +1181,8 @@ C
       USE GLOBAL
       implicit none
       integer :: lun, size_this
+
+      LOG_SCOPE_TRACED("header77", GLOBALIO_TRACING)
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsets_tvw, size_this, dtdp*nspool_tvw,
@@ -1298,6 +1207,8 @@ C
       implicit none
       integer :: lun, size_this
 
+      LOG_SCOPE_TRACED("header91", GLOBALIO_TRACING)
+
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
      &                 FileFmtVersion
@@ -1320,6 +1231,8 @@ C
       USE GLOBAL
       implicit none
       integer :: lun, size_this
+
+      LOG_SCOPE_TRACED("header93", GLOBALIO_TRACING)
 
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
@@ -1344,6 +1257,8 @@ C
       implicit none
       integer :: lun, size_this
 
+      LOG_SCOPE_TRACED("header81", GLOBALIO_TRACING)
+
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ntrspc, size_this, dtdp*nspoolc, nspoolc, 1,
      &                  FileFmtVersion
@@ -1365,6 +1280,9 @@ C
       USE GLOBAL
       implicit none
       integer :: lun, size_this
+
+      LOG_SCOPE_TRACED("header83", GLOBALIO_TRACING)
+
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetsc, size_this, dtdp*nspoolgc, nspoolgc, 1,
      &                 FileFmtVersion
@@ -1403,6 +1321,8 @@ C
       character(len=*), intent(in) :: typeStr ! the type of header to write
       integer :: nstations
       character(1024) :: scratchMessage
+
+      LOG_SCOPE_TRACED("writeStationHeader", GLOBALIO_TRACING)
 
 C     Open the file
       open(lun, file=filename, status='UNKNOWN')
@@ -1489,6 +1409,8 @@ C
       integer numNodes_g        ! number of nodes in the full domain
       character(len=*) typeStr ! the type of header to write
       integer nodes             ! number of nodes to write into header
+
+      LOG_SCOPE_TRACED("writeDomainHeader", GLOBALIO_TRACING)
 C
 C     Unless we are processor 0 or we are supposed to write local
 C     files, there is nothing to do but *** RETURN EARLY ***
@@ -1598,10 +1520,8 @@ C----------------------------------------------------------------------
       integer :: ITMM ! time step of the min/max data in seconds since cold start
       character(1024) :: scratchMessage
 
-      call setMessageSource("readMinMax")
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("readMinMax", GLOBALIO_TRACING)
+
       !
       ! Process Header Lines
       read(descript%lun,*,end=3990,err=3990) skipline   ! 1st header line
@@ -1635,11 +1555,7 @@ C----------------------------------------------------------------------
          else
             call allMessage(INFO,'The record for '//
      &        trim(descript%file_name)//
-     &        ' will be started anew and exection will continue.')       
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-             call allMessage(DEBUG,"Return.")
-#endif
-             call unsetMessageSource()
+     &        ' will be started anew and exection will continue.')
              CLOSE(descript%lun)  !close the max/min file
              return ! EARLY RETURN
          endif
@@ -1729,11 +1645,6 @@ C----------------------------------------------------------------------
 
  450  format('Finished reading ',i0,' lines from the "',a,'" file.')
 
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()      
-
 C-----------------------------------------------------------------------
       end subroutine readMinMax
 C-----------------------------------------------------------------------
@@ -1756,11 +1667,8 @@ C----------------------------------------------------------------------
       REAL(8),intent(inout) ::  rval(*)
       REAL(8) :: tmpval
       CHARACTER(LEN=80) cdum80
-C
-      call setMessageSource("nddt2get")
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("ndd2get", GLOBALIO_TRACING)
 
 C...  go get new record for only some nodes, all
 C...  other nodes keep their current value
@@ -1775,13 +1683,7 @@ C...  other nodes keep their current value
          IF(CDUM80(2:2).EQ.'#') EXIT
       ENDDO
  172  CONTINUE
- 
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()      
-      
-      RETURN
+
 C----------------------------------------------------------------------
       END SUBROUTINE NDDT2GET
 C----------------------------------------------------------------------
@@ -1809,11 +1711,9 @@ C-----------------------------------------------------------------------
       integer,allocatable :: itmp0(:),itmp1(:)
       real(8),allocatable :: tmp0(:),tmp1(:)
       character(1024) :: scratchMessage
-C
-      call setMessageSource("readAndMapToSubdomainMaxMin")
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("readAndMapToSubdomainMaxMin", GLOBALIO_TRACING)
+
       call openFileForRead(descript%lun,trim(descript%file_name), ios,
      &   required=.FALSE.)
       if ( ios.ne.0 ) then
@@ -1826,10 +1726,6 @@ C
             descript % array2(:) = -99999.d0  !tcm v51.20.06
          endif
          close(descript%lun)
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()
          return  ! early return
       else
          fileFound = .true.
@@ -1864,11 +1760,7 @@ C
           call mapToSubdomainRealMPI(np_g,np,tmp1,descript%imap,tmp0) 
         endif
       endif
-#endif      
-#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()
       !----------------------------------------------------------------
       end subroutine readAndMapToSubdomainMaxMin
       !----------------------------------------------------------------

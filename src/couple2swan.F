@@ -19,13 +19,14 @@
 !-------------------------------------------------------------------------------!
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
+#include "logging_macros.h"
       MODULE Couple2Swan
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
       USE WRITE_OUTPUT, ONLY : terminate
-      USE mod_logging, ONLY : setMessageSource, unsetMessageSource,
-     &          allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
+      USE mod_logging, ONLY : allMessage, DEBUG, ECHO, INFO,
+     &          WARNING, ERROR, t_log_scope, init_log_scope
 #ifdef CSWAN
 
       USE SWCOMM1, ONLY: NMOVAR
@@ -130,11 +131,7 @@ C-----------------------------------------------------------------------
       REAL(4) :: DEPLOC
       REAL(4) :: WK(MSC), CG(MSC), NE(MSC), NED(MSC)
 
-      call setMessageSource("ComputeRadiationStresses")
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("ComputeRadiationStresses", COUPLE2SWAN_TRACING)
 !... (Re)allocate the arrays.
       IF(.NOT.ALLOCATED(ADCIRC_SXX))THEN
          ALLOCATE(ADCIRC_SXX(1:nverts,1:2),STAT=IERR)
@@ -200,10 +197,6 @@ C-----------------------------------------------------------------------
 !... End loop over wet nodes.  The radiation stresses are ready for ADCIRC.
       ENDDO
 
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE ComputeRadiationStresses
@@ -258,15 +251,11 @@ C-----------------------------------------------------------------------
       REAL(8) :: SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
 
 !     Upper limit on Radiation stresses
-!     Default - don't limit (set to high value) but may want to use: UL = 0.1D0   
+!     Default - don't limit (set to high value) but may want to use: UL = 0.1D0
 !     (0.1 m^2/s^2 is equivalent to 175 m/s wind speeds!)
-      REAL(8),parameter :: UL = 999D0 
+      REAL(8),parameter :: UL = 999D0
 
-      call setMessageSource("ComputeWaveDrivenForces")
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("ComputeWaveDrivenForces", COUPLE2SWAN_TRACING)
 !... Check whether radiation stresses have already been computed.
 !... If not, then apply forces of zero.
       IF( .FALSE. )THEN
@@ -466,10 +455,6 @@ C    can change UL to be a strict value if they please
 
       ENDIF
 
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE ComputeWaveDrivenForces
@@ -513,11 +498,7 @@ C-----------------------------------------------------------------------
       REAL(8) :: N
       REAL(8) :: Z0
 
-      call setMessageSource("Manning2Madsen")
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("Manning2Madsen", COUPLE2SWAN_TRACING)
       DO IN=1,NP
 
          H  = SWAN_ETA2(IN,2) + DP(IN)
@@ -538,10 +519,6 @@ Casey 091216: If we get a junk number, then use the default value.
 
       ENDDO
 
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE Manning2Madsen
 C-----------------------------------------------------------------------
@@ -702,11 +679,7 @@ C      REAL(8),TARGET               :: SwanOut2_g(NP_G)
 
       TYPE(OutputDataDescript_t),POINTER :: SwanDescript,SwanDescriptMax
 
-      call setMessageSource("swanoutput")
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("SwanOutput", COUPLE2SWAN_TRACING)
 !... Initialize the Swan output variables.
       DO IO=1,NMOVAR
          SWAN_OQPROC(IO) = .FALSE.
@@ -962,10 +935,6 @@ C.....Arrange on/off for output into array
       IF(ALLOCATED(Names))    DEALLOCATE(Names)
       IF(ALLOCATED(SWAN_VOQ)) DEALLOCATE(SWAN_VOQ)
 
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE SwanOutput
@@ -1001,11 +970,7 @@ CTGA 111003:  Adding ability to read in ice info from fort.26 file
 
       INTEGER   :: IN  ! Node counter.
 
-      call setMessageSource("padcswan_init")
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("PADCSWAN_INIT", COUPLE2SWAN_TRACING)
 Casey 090302: Allocate memory for the ADCIRC values that may be
 C             passed to SWAN.
       IF(.NOT.ALLOCATED(SWAN_ETA2)) ALLOCATE(SWAN_ETA2(1:NP,1:2))
@@ -1115,10 +1080,6 @@ Casey 090302: Compute the coupling interval as equivalent
 C             to the SWAN time step.
       CouplingInterval = SWAN_DT / DT
 
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE PADCSWAN_INIT
 C-----------------------------------------------------------------------
@@ -1163,11 +1124,7 @@ CTGA 110912:  Full SWAN ice implementation.  Adding variables.
       REAL(8)             :: SWAN_PIC
       REAL(8)             :: ICETIMEFRAC
 
-      call setMessageSource("padcswan_run")
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("PADCSWAN_RUN", COUPLE2SWAN_TRACING)
       DO IN=1,NP
 Casey 090302: Move the 'old' values into the first columns.
          SWAN_ETA2(IN,1) = SWAN_ETA2(IN,2)
@@ -1267,10 +1224,6 @@ C             so that we do not lose them during the ADCIRC time stepping.
          SWAN_WY2(IN,1) = SWAN_WY2(IN,2)
       ENDDO
 
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE PADCSWAN_RUN
 C-----------------------------------------------------------------------
@@ -1283,11 +1236,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE PADCSWAN_FINAL
       IMPLICIT NONE
 
-      call setMessageSource("padcswan_final")
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("PADCSWAN_FINAL", COUPLE2SWAN_TRACING)
       CALL SWEXITMPI()
 
       IF(ALLOCATED(SWAN_ETA2)) DEALLOCATE(SWAN_ETA2)
@@ -1304,10 +1253,6 @@ CTGA 110912:
       IF(ALLOCATED(ICY)) DEALLOCATE(ICY)
       IF(ALLOCATED(SWAN_CICE2)) DEALLOCATE(SWAN_CICE2)
 
-#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE PADCSWAN_FINAL
 C-----------------------------------------------------------------------

@@ -33,11 +33,13 @@ C    |   2013                                                               |
 C    |                                                                      |
 C    ========================================================================
 
+#include "logging_macros.h"
+
       module subdomain
       use sizes, only : globaldir
       use mod_logging, only : DEBUG, ECHO, INFO, WARNING, ERROR,
-     &                         logMessage, allMessage, setMessageSource,
-     &                         unsetMessageSource 
+     &                         logMessage, allMessage, t_log_scope,
+     &                         init_log_scope
 
       logical subdomainOn                                         
       integer :: NOUTGS, NSPOOLGS, enforceBN 
@@ -96,11 +98,8 @@ C    ========================================================================
          integer :: i,j
          logical :: fileFound
 
-      call setMessageSource("readFort015")
-#if defined(SUBDOMAIN_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-        
+      LOG_SCOPE_TRACED("readFort015", SUBDOMAIN_TRACING)
+
          fileFound = .false.
          inquire(file=trim(globaldir)//'/'//'fort.015', Exist=fileFound)
          if (fileFound.eqv..false.) then
@@ -200,11 +199,6 @@ C    ========================================================================
          end select
 #endif
 
-#if defined(SUBPREP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      
       END SUBROUTINE readFort015
 
 
