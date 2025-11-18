@@ -60,15 +60,28 @@
 !>  interiorHydrologyType = 1:
 !>  Explicit coupling at each interiorHydrologyTimeInc
 !>     This option can be used for real-world simulations but was
-!>     primarily coded for use with small test cases. The user
+!>     primarily coded for use with ideal test cases. The user
 !>     must specify the ADCIRC node number(s) to apply forcing at
 !>     as well as the actual discharges at each location.
 !>
 !>     Requires two files as input:
 !>        fort.420 static location file read once: ADCIRC node#
+!>            header line: number of sources
+!>            adcirc node number (one per line)
 !>        fort.430 discharge values (m3/s) at each point in location
 !>            file for each interiorHydrologyTimeInc - discharges must
 !>            be given in same order as the locations in fort.420
+!>            and the format is similar to a fort.20 (no headers)
+!>
+!>      Locations are given in fort.420 and read in once during readinput
+!>      Only one location may be given for each hydrologic feature; it is
+!>      recommended that this be near the main stem where ADCIRC nodes
+!>      will be wet. Note that more than one feature may share the same
+!>      location to allow for tributaries. The discharges for each
+!>      feature are provided in fort.430 for each increment and must be
+!>      given in the same order as the fort.420 location file. Discharges
+!>      must be accumulated as they are read in since multiple sources
+!>      could contribute to the same ADCIRC node at junctions.
 !>
 !>  interiorHydrologyType = 2:
 !>  Static coupling at apriori specified geographic (lon,lat) locations
@@ -76,9 +89,12 @@
 !>             applied at the same location within ADCIRC
 !>     Requires two files as input:
 !>        fort.428 static location file read once: lon, lat
+!>            header line: number of sources
+!>            lon  lat  at each location (one line per location)
 !>        fort.430 discharge values (m3/s) at each point in location file
 !>            for each interiorHydrologyTimeInc - discharges must be
 !>            given in same order as the locations in fort.428
+!>            and the format is similar to a fort.20 (no headers)
 !>
 !>      Locations are given in fort.428 and read in once during readinput
 !>      Only one location may be given for each hydrologic feature; it is
@@ -99,6 +115,7 @@
 !>        fort.430 discharge values (m3/s) at each point in location file
 !>            for each interiorHydrologyTimeInc - discharges must be
 !>            given in same order as the locations in fort.429
+!>
 !>     Locations are given in fort.429 and read in once during readinput
 !>     Multiple locations may be given for each hydrologic feature.
 !>     In addition to the location, the connectivity (or network) is
@@ -110,7 +127,7 @@
 !>     stored separately, in contrast to the static coupling mode. More
 !>     than one feature may still share the same location to allow for
 !>     tributaries, but discharges for each feature will be stored in an
-!>     array and applied in a separate subroutine ___________.
+!>     array and applied based on active status.
 !>     The discharges for each feature are provided in fort.430 for each
 !>     increment and must be given in the same order as fort.429 file.
 !>
@@ -191,7 +208,7 @@
 !> The value of interiorHydrologyType is set during readinput for
 !> the interiorHydrologyControl namelist if present
 !>
-!> CMS: edit when change for dynamic unit numbers and filenames
+!> @todo: edit when change for dynamic unit numbers and filenames
 !-----------------------------------------------------------------------
       subroutine interiorHydrologyCheck()
 !-----------------------------------------------------------------------
@@ -210,7 +227,6 @@
       ! logged, otherwise errors may arise when not being used
       ! but namelist was found in read_input.
       if (.not. useInteriorHydrology) interiorHydrologyType=0
-      !if (useInteriorHydrology == .false.) interiorHydrologyType=0
       ! Log input messages related to implementation
       select case (interiorHydrologyType)
       case(0) ! no point sources
@@ -320,6 +336,8 @@
       call allMessage(DEBUG,"Enter")
 #endif
   
+      write(16,3010)
+
       ! First set of allocate statements are utilized by
       ! all the options for point source terms and do not require
       ! reading hydrology input
@@ -339,7 +357,6 @@
 
       ! Now arrays that require reading the hydrology input:
       ! May need to add more arrays with new types.
-      write(16,3010)
       call openFileForRead(psLun,trim(inputdir)//'/'//                  &
      &        trim(hFile),ioerr)
       if (ioerr.GT.0) call hydrologyTerminate()
@@ -379,8 +396,9 @@
 !> interior hydrology sources will be applied. Opens and reads the
 !> location file. Geographic locations require additional processing
 !> using kdtsearchHydrology()
-!> CMS: update documentation below
+!> 
 !> What is read in depends upon the value of ps_lun:   
+!>  420 -  adcirc node# to apply source at
 !>  428 -  standard lon, lat input (two columns) 
 !>  429 -  National Water Model (NWM) input (five columns) 
 !>         N designates endpoint for this feature (point source) 
@@ -493,7 +511,6 @@
 #endif
 
       ! Update interior hydrology(PS) ramp
-      ! CMS: Decide if we want to keep this feature
       if (useInteriorHydrologyRamp) then
          rampPS = tanh((2.d0*timeloc/86400.d0)/hydroRamp)
       else
@@ -570,7 +587,7 @@
       ! Interior hydrology ramp is independent of all other ramps and has
       ! a default value of 2 hrs (0.08333 days) in case the interior
       ! streamflows are very high at the beginning - testing indicated
-      ! that it may not be needed.
+      ! that it may not be needed in most cases.
       if(useInteriorHydrologyRamp) then
         rampPS = 0.d0
       else
