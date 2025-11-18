@@ -1,12 +1,12 @@
-!-------------------------------------------------------------------------------!
+!------------------------------------------------------------------------
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
 ! 
 ! This program is free software: you can redistribute it and/or modify
-! it under the terms of the GNU Lesser General Public License as published by
-! the Free Software Foundation, either version 3 of the License, or
-! (at your option) any later version.
+! it under the terms of the GNU Lesser General Public License as
+! published by the Free Software Foundation, either version 3 of the 
+! License, or (at your option) any later version.
 ! 
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,78 +16,92 @@
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
-!-------------------------------------------------------------------------------!
-C***********************************************************************
-C                     M O D U L E   W E T   D R Y      
-C***********************************************************************
-C     Executes wetting and drying algorithm.
-C***********************************************************************
-C Logical Variable List (default value .FALSE., set in global.f)       *
-C- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C     C2DDI            - 2D Depth Integrated model run                 *
-C     C3D              - 3D model run                                  *
-C     C3DDSS           - Stress form of the 3D momentum equations      *
-C     C3DVS            - Velocity form of the 3D momentum equations    *
-C- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C   See header.f for a summary history of code modifications.          *
-C***********************************************************************
-CWET...
-CWET...THE FOLLOWING LINES ARE FOR WETTING AND DRYING
-CWET...
-CWET...NOTE:NNODECODE is a working variable that can change more than once
-CWET...               during a time step
-CWET...     NNODECODE = 0 for a dry node
-CWET...     NNODECODE = 1 for a wet node
-CWET...     NODECODE  - is a more static version of NNODECODE that is reconciled
-CWET...                 once and for all at the end time step
-CWET...
-CWET...
-CWET...        (   DRYING CRITERIA   )
-CWET...
-CWET...A node should be dry under two conditions.
-CWET...D1.) If the total water depth falls below H0.
-CWET .......Note: if the total water depth falls below 0.8*H0, the surface elevation
-CWET........is lifted up so that the total water depth = 0.8*H0.
-CWET......
-CWET...D2.) If the node is connected to only nonfunctioning (dry) elements.  In
-CWET........this case the node is dried due to becoming landlocked.
-CWET........Note: this criteria is applied after all other wetting and drying criteria
-CWET...
-CWET...An element should be dry under the following conditions.
-CWET...DE3.) This is an elemental check section designed to avoid artificial wetting of
-CWET.........of control sections
-CWET.........All elements where downhill flow originates from a barely wet node
-CWET.........(defined as 1.2*H0) into wet nodes are forced inactive; the only exception
-CWET......... is receiving overtopped barrier nodes
-CWET...
-CWET...        (   WETTING CRITERIA   )
-CWET...
-CWET...A node should be wet under two conditions.
-CWET...W1.) If 2 nodes on an element are wet and one is dry, wet the dry node
-CWET........if the water level at one of the wet nodes is greater than the
-CWET........water level at the dry node and the steady state velocity that
-CWET........would result from a balance between the water level gradient and
-CWET........bottom friction would yield a velocity > VELMIN.
-CWET........Note that the criteria outlined in DE3 must also be satified before
-CWET........the node is allowed to wet
-CWET...
-CWET...W2.) If an element has a node lying on a receiving internal barrier boundary or
-CWET......specified discharge boundary that is actively discharging flow into the
-CWET......domain at that node, all nodes in this element must stay wet.
-CWET...
-CWET...
-CWET...        (  VELOCITY BOUNDARY CONDITION  )
-CWET...
-CWET...Either a natural or essential boundary condition can be used as a velocity
-CWET...boundary condition in the momentum equation solution along a wet/dry boudary
-CWET...To use a natural boundary condition, do nothing along the wet/dry interface.
-CWET...To use an essential, no velocity boundary condition, identify the nodes along
-CWET...the wet/dry interface and zero out the velocity at the nodes.  Interface nodes
-CWET...can easily be identified by comparing the number of active elements a node is
-CWET...connected to (MJU) to the total number of elements a node is connected to (NODELE).
-CWET...If MJU < NODELE for any node, it must lie along the wet/dry interface.  See
-CWET...further comments at the end of the momentum equation solution section.
-CWET...
+!------------------------------------------------------------------------
+!                     M O D U L E   W E T   D R Y      
+!------------------------------------------------------------------------
+!> @file wetdry.F
+!>
+!> @author Various
+!>
+!> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
+!>
+!> @brief This module executes wetting and drying algorithm.
+!>
+!> @details
+!>
+!> Logical Variable List (default value .FALSE., set in global.f)
+!>    C2DDI            - 2D Depth Integrated model run
+!>    C3D              - 3D model run
+!>    C3DDSS           - Stress form of the 3D momentum equations
+!>    C3DVS            - Velocity form of the 3D momentum equations
+!>
+!> -- Important Variable Notes --
+!>          NNODECODE is a working variable that can change more than once
+!>                    during a time step
+!>          NNODECODE = 0 for a dry node
+!>          NNODECODE = 1 for a wet node
+!>          NODECODE  is a more static version of NNODECODE that is 
+!>                      reconciled once and for all at the end time step
+!>     
+!> -- Algorithm Description --
+!>
+!>             (   DRYING CRITERIA   )
+!>     
+!>     A node should be dry under two conditions:
+!>     D1.) If the total water depth falls below H0.
+!>          Note: if the total water depth falls below 0.8*H0, the surface
+!>          elevation is lifted up so that the total water depth = 0.8*H0
+!>        
+!>     D2.) If the node is connected to only nonfunctioning (dry) elements
+!>          In this case the node is dried due to becoming landlocked.
+!>          Note: this criteria is applied after all other wetting and
+!>          drying criteria
+!>     
+!>     An element should be dry under the following conditions:
+!>     DE3.) This is an elemental check section designed to avoid
+!>           artificial wetting of control sections
+!>           All elements where downhill flow originates from a barely
+!>           wet node (defined as 1.2*H0) into wet nodes are forced
+!>           inactive; the only exception is receiving overtopped
+!>           barrier nodes
+!>     
+!>             (   WETTING CRITERIA   )
+!>     
+!>     A node should be wet under two conditions:
+!>     W1.) If 2 nodes on an element are wet and one is dry, wet the dry
+!>          node if the water level at one of the wet nodes is greater
+!>          than the water level at the dry node and the steady-state
+!>          velocity that would result from a balance between the water
+!>          level gradient and bottom friction would yield a velocity
+!>          > VELMIN.
+!>          Note that the criteria outlined in DE3 must also be satified
+!>          before the node is allowed to wet
+!>     
+!>     W2.) If an element has a node lying on a receiving internal barrier
+!>          boundary or specified discharge boundary that is actively
+!>          discharging flow into the domain at that node, all nodes in
+!>          this element must stay wet.
+!>     
+!>             (  VELOCITY BOUNDARY CONDITION  )
+!>     
+!>     Either a natural or essential boundary condition can be used as a
+!>     velocity boundary condition in the momentum equation solution
+!>     along a wet/dry boundary. 
+!>     To use a natural boundary condition, do nothing along the wet/dry
+!>     interface.
+!>     To use an essential, no velocity boundary condition, identify the
+!>     nodes along the wet/dry interface and zero out the velocity at
+!>     the nodes.  Interface nodes can easily be identified by comparing
+!>     the number of active elements a node is connected to (MJU) to the
+!>     total number of elements a node is connected to (NODELE). 
+!>     If MJU < NODELE for any node, it must lie along the wet/dry
+!>     interface.  See further comments at the end of the momentum
+!>     equation solution section.
+!>
+!> @todo Need to add documentation above for new features:
+!>       weir boundary (ibtype=64)
+!------------------------------------------------------------------------
+
       module wetdry
       
       real(8) :: habsmin
@@ -142,32 +156,33 @@ CWET...
       use nodalattributes,only: loadSubgridBarrier
       USE ADC_CONSTANTS, only: g
       use global, only : noff, nodecode, nnodecode, eta1, eta2, tk,
-     &    nolifa,
-     &    bsx1, bsy1, btime_end, C2DDI, C3D, h0, ifnlfa, nddt, dtdp,
-     &    nibnodecode, ilump, ncchange, tkm, directvelWD, useHF,
+     &    nolifa, bsx1, bsy1, btime_end, C2DDI, C3D, h0, ifnlfa, nddt,
+     &    dtdp, nibnodecode, ilump, ncchange, tkm, directvelWD, useHF,
      &    cbaroclinic, iden 
 #ifdef CMPI
      &    ,idumy,dumy1,dumy2
       use messenger
 #endif
-      use mesh, only : ne, np, nm, dp, mju, totalArea, nm, x, y, areas,
+      use mesh, only : ne, np, nm, dp, totalArea, nm, x, y,
      &   LBArray_Pointer, nneighele, neitabele, onIBTYP64Floodplain,
-     &   neitab, nneigh
+     &   neitab, nneigh, totalAreaCalc
       use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
      &   manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,
      &   loadZ0B_var, z0b_var, loadSubgridBarrier,
      &   loadCondensedNodes, NCondensedNodes,
      &   ListCondensedNodes, NListCondensedNodes,
      &   NNodesListCondensedNodes
-      USE BOUNDARIES, ONLY : IBCONN, ISSUBMERGED64, NFLUXIB64_GBL, BARINHT,
-     &   LBCODEI
+      USE BOUNDARIES, ONLY : IBCONN, ISSUBMERGED64, NFLUXIB64_GBL,
+     &    BARINHT, LBCODEI
       use global_3dvs, only : a, b, islip, kp, z0b, sigma, evtot, q
 !Casey 220207 from Rosemary
      &    , nfen, sal, temp
-      use subdomain, only : subdomainOn, enforceBN, enforceWDcb, enforceWDob
+      use subdomain, only : subdomainOn, enforceBN, enforceWDcb, 
+     &    enforceWDob
       use subgrid, only: level0, subgridVertList, gridDepthVertETA2,
      &   level1, cmfVertETA2, cfVertETA2, wetDepthVertETA2,
      &   wetFracVertTab,gridDepthVertTab, numPhi
+
       implicit none
       integer, intent(in) :: it ! time step number
       complex(8) :: duds 
@@ -205,9 +220,7 @@ CWET...
          return ! wetting and drying is not active 
       endif
 
-CWET...
-CWET...WET/DRY - INITIALIZATIONS FOR WET/DRY LOOP
-CWET...
+         ! WET/DRY - INITIALIZATIONS FOR WET/DRY LOOP
          TK_TMP(:) = 0.D0
          TK_CNT(:) = 0
          IF (directvelWD.AND.useHF) THEN
@@ -226,11 +239,9 @@ CWET...
 
          IF(loadSubgridBarrier)call applySubgridBarrier()
 
-CWET...
-CWET...WET/DRY - PART 1 - NODAL DRYING CRITERIA D1
-CWET....Drying Criteria D1: this depends on NODECODE and updates NODECODE
-CWET...
-CWET...
+
+         !  WET/DRY - PART 1 - NODAL DRYING CRITERIA D1
+         !Drying Criteria D1: depends on NODECODE and updates NODECODE
          DO I=1,NP
             IF(NODECODE(I).EQ.1) THEN
                IF(level0)THEN
@@ -278,20 +289,17 @@ CWET...
                      IF(HTOT.LT.HABSMIN) ETA2(I)=HABSMIN-DP(I)
                         NNODECODE(I)=0
                         NODECODE(I)=0
-                        NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
+                        NCCHANGE=NCCHANGE+1 ! set to 0 in gwce
                   ENDIF
                ENDIF
             ENDIF
          ENDDO
-CWET...
-CWET...END WET/DRY SECTION - PART 1
-CWET...
+         ! END WET/DRY SECTION - PART 1
 
-C.....
-C.....Nodal Wetting Criteria for the ibtype=64 weir boundary
-C.....Check the node if it is along the ibtype=64 weir boundary and if the weir is
-C.....submerged. If it is the case, set the nnodecode to 1.   SB
-C.....
+
+         ! Nodal Wetting Criteria for the ibtype=64 weir boundary
+         ! Check if node is along the ibtype=64 weir boundary and
+         ! if the weir is submerged. If true, set the nnodecode to 1. SB
          IF (NFLUXIB64_GBL.GT.0) THEN
             DO I=1,NP
                J = LBArray_Pointer(I)
@@ -299,20 +307,23 @@ C.....
                   IF((LBCODEI(J)).EQ.64.AND.(NODECODE(I).EQ.0)) THEN
                      IF((ISSUBMERGED64(J).GT.0)) THEN
                         NNBB2=IBCONN(J)
-                        IF(NNBB2.GT.0) THEN ! This check is needed ocasionally but not always when the barrier is splitted for paralell computation
+                        IF(NNBB2.GT.0) THEN ! This check is needed 
+                        !occasionally but not always when the barrier is
+                        ! split for parallel computation
                            ! ETA2(I) = ETA2(NNBB2)
-                           ! HTOT=DP(I)+ETA2(I)
+                           !HTOT=DP(I)+ETA2(I)
                            HTOT = DP(I) + MAX(ETA2(I), ETA2(NNBB2))
                            IF(HTOT.GT.HOFF) THEN
-                              ! ETA2(I) = MAX(ETA2(I), ETA2(NNBB2))
+                              !ETA2(I) = MAX(ETA2(I), ETA2(NNBB2))
                               TotArea1 = computeTotAreaAtNode(I)
                               TotArea2 = computeTotAreaAtNode(NNBB2)
-                              ETA2AVG = (ETA2(I)*TotArea1 + ETA2(NNBB2)*TotArea2)/(TotArea1 + TotArea2)
+                              ETA2AVG = (ETA2(I)*TotArea1 + ETA2(NNBB2)*
+     &                                  TotArea2)/(TotArea1 + TotArea2)
                               ETA2(I) = ETA2AVG
                               ETA2(NNBB2) = ETA2AVG
                               NNODECODE(I)=1
                               NODECODE(I)=1
-                              NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
+                              NCCHANGE=NCCHANGE+1 !set to 0 in gwce
                            ENDIF
                         ENDIF
                      ENDIF
@@ -321,22 +332,21 @@ C.....
             ENDDO
          ENDIF
 
-cjjwC     Use Message-Passing to update nodecode and nnodecode at ghost nodes
+        ! Use Message-Passing to update at ghost nodes
 cjjw#ifdef CMPI
 cjjw         CALL UPDATEI(NODECODE,NNODECODE,2)
 cjjw#endif
 
-CWET...
-CWET...WET/DRY SECTION PART 2 - NODAL WETTING LOOPS W1 AND W2
-CWET...
+
+        ! WET/DRY SECTION PART 2 - NODAL WETTING LOOPS W1 AND W2
          DO I=1,NE
             NM1=NM(I,1)
             NM2=NM(I,2)
             NM3=NM(I,3)
 
-CWET...
-CWET...Nodal Wetting Criteria W1: This depends on changes that occurred in D1
-CWET...
+        ! Nodal Wetting Criteria W1:
+        ! This depends on changes that occurred in D1
+       
             ! Count number of nodes along ibtype=64 boundary 10/16/2023 sb
             IF(NFLUXIB64_GBL.gt.0) THEN
                IBTYPE64FLOODPLAINCNT = 0
@@ -352,7 +362,10 @@ CWET...
             ENDIF
 
             NCTOT=NODECODE(NM1)+NODECODE(NM2)+NODECODE(NM3)
-            IF((NCTOT.EQ.2) .AND. (IBTYPE64FLOODPLAINCNT.NE.3)) THEN  ! (IBTYPE64FLOODPLAINCNT.NE.3) is added to avoid excessie wetting when all three nodes of an element on a floodplain are on a IBTYPE=64 boundary. 10/16/2023 sb
+            IF((NCTOT.EQ.2) .AND. (IBTYPE64FLOODPLAINCNT.NE.3)) THEN  
+            ! (IBTYPE64FLOODPLAINCNT.NE.3) is added to avoid excessive
+            !  wetting when all three nodes of an element on a floodplain
+            !  are on a IBTYPE=64 boundary. 10/16/2023 sb
                ETAN1=ETA2(NM1)
                ETAN2=ETA2(NM2)
                ETAN3=ETA2(NM3)
@@ -373,7 +386,7 @@ CWET...
                      DELDIST=SQRT((y(NM3)-y(NM123))**2.D0
      &                    +(X(NM3)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM3)
-                     ! jgf50.60.18: Prevent numerical problems if DELETA is negative
+                     ! jgf50.60.18: Prevent problems if DELETA is negative
                      IF (DELETA.lt.0.d0) DELETA = 0.d0
                      IF(level0)THEN
                          H1 = wetDepthVertETA2(NM123)
@@ -384,7 +397,7 @@ c. RJW merged from Casey 071219: Added the following logic for 3D friction.
 c. RJW modified the following for 3D friction
                      IF(C2DDI)THEN
 Csb46.28sb02
-C<<                     Convert Manning's N to Cd, if necessary.
+                        !Convert Manning's N to Cd, if necessary.
                         IF (LoadManningsN) THEN
                            IF(level0)THEN
                              IF(subgridVertList(NM123).EQ.1)THEN
@@ -415,8 +428,9 @@ C<<                     Convert Manning's N to Cd, if necessary.
                         ELSE
                            TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
      &                                  (IFNLBF+IFHYBF*
-     &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
-     &                          0.0001d0)
+     &                                  (1.D0+(HBREAK/H1)**FTHETA)**
+     &                                  (FGAMMA/FTHETA))),
+     &                                  0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
                         ENDIF   
                      ELSEIF(C3D)THEN
@@ -427,9 +441,10 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                        IF(LoadZ0B_var) THEN
                            Z0B1 = Z0B_var(NM123)
                         ELSEIF (LoadManningsN) THEN
-                     Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )* exp(-(1.0D0+
-     &               ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**(1.0D0/6.0D0) )/
-     &                                 (ManningsN(NM123)*sqrt(g)) ) ))
+                     Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )*
+     &                      exp(-(1.0D0+
+     &               ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**
+     &               (1.0D0/6.0D0) )/(ManningsN(NM123)*sqrt(g)) ) ))
                         ELSE
                            Z0B1 = Z0B
                        ENDIF
@@ -438,7 +453,7 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                     ENDIF
 
                      IF(VEL.GT.VELMIN) THEN
-C    ....         third node met criteria and is also wet
+                     ! third node met criteria and is also wet
                         NNODECODE(NM3)=1
                         NMI = NM3
 c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the correct friction.
@@ -511,7 +526,7 @@ c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the 
                         ENDIF
                      ENDIF
                   ENDIF
-C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
                ELSEIF((NODECODE(NM2).EQ.1).AND.(NODECODE(NM3).EQ.1))
      &          THEN
                   IF((HTOTN2.GE.HOFF).AND.(HTOTN3.GE.HOFF)) THEN
@@ -520,7 +535,7 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                      DELDIST=SQRT((Y(NM1)-Y(NM123))**2.D0
      &                    +(X(NM1)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM1)
-                     ! jgf50.60.18: Prevent numerical problems if DELETA is negative
+                     ! jgf50.60.18: Prevent problems if DELETA is neg
                      IF (DELETA.lt.0.d0) DELETA = 0.d0
                      IF(level0)THEN
                         H1 = wetDepthVertETA2(NM123)
@@ -530,7 +545,7 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction.
                      IF(C2DDI)THEN
 Csb46.28sb02
-C<<                     Convert Manning's N to Cd, if necessary.
+                        !Convert Manning's N to Cd, if necessary.
                         IF (LoadManningsN) THEN
                           IF(level0)THEN
                               IF(subgridVertList(NM123).EQ.1)THEN
@@ -562,8 +577,8 @@ C<<                     Convert Manning's N to Cd, if necessary.
                         ELSE
                            TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
      &                                  (IFNLBF+IFHYBF*
-     &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
-     &                          0.0001d0)
+     &                                  (1.D0+(HBREAK/H1)**FTHETA)**
+     &                                  (FGAMMA/FTHETA))),0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
                         ENDIF
 
@@ -575,9 +590,10 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         IF(LoadZ0B_var) THEN
                            Z0B1=Z0B_var(NM123)
                         ELSEIF (LoadManningsN) THEN
-                     Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )* exp(-(1.0D0+
-     &               ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**(1.0D0/6.0D0) )/
-     &                                 (ManningsN(NM123)*sqrt(g)) ) ))
+                     Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )*
+     &                      exp(-(1.0D0+
+     &                      ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**
+     &                      (1.0D0/6.0D0))/(ManningsN(NM123)*sqrt(g)))))
                         ELSE
                            Z0B1=Z0B
                         ENDIF
@@ -658,7 +674,7 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
 
                      ENDIF
                   ENDIF
-C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
                ELSEIF((NODECODE(NM3).EQ.1).AND.(NODECODE(NM1).EQ.1))
      &          THEN
                   IF((HTOTN3.GE.HOFF).AND.(HTOTN1.GE.HOFF)) THEN
@@ -667,7 +683,7 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                      DELDIST=SQRT((Y(NM2)-Y(NM123))**2.D0
      &                     +(X(NM2)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM2)
-                     ! jgf50.60.18: Prevent numerical problems if DELETA is negative
+                     ! jgf50.60.18: Prevent problems if DELETA is neg
                      IF (DELETA.lt.0.d0) DELETA = 0.d0
                      IF(level0)THEN
                         H1 = wetDepthVertETA2(NM123)
@@ -677,7 +693,7 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction.
                      IF(C2DDI)THEN
 Csb46.28sb02
-C<<                     Convert Manning's N to Cd, if necessary.
+                        !Convert Manning's N to Cd, if necessary.
                         IF (LoadManningsN) THEN
                           IF(level0)THEN
                              IF(subgridVertList(NM123).EQ.1)THEN
@@ -709,8 +725,8 @@ C<<                     Convert Manning's N to Cd, if necessary.
                         ELSE
                            TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
      &                                  (IFNLBF+IFHYBF*
-     &                                  (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA))),
-     &                          0.0001d0)
+     &                                  (1.D0+(HBREAK/H1)**FTHETA)**
+     &                                  (FGAMMA/FTHETA))),0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
                         ENDIF
                      ELSEIF(C3D)THEN
@@ -721,9 +737,10 @@ C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
                         IF(LoadZ0B_var) THEN
                            Z0B1 = Z0B_var(NM123)
                         ELSEIF (LoadManningsN) THEN
-                     Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )* exp(-(1.0D0+
-     &               ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**(1.0D0/6.0D0) )/
-     &                                 (ManningsN(NM123)*sqrt(g)) ) ))
+                     Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )*
+     &                       exp(-(1.0D0+
+     &                      ((0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**
+     &                      (1.0D0/6.0D0))/(ManningsN(NM123)*sqrt(g)))))
                         ELSE
                            Z0B1 = Z0B
                         ENDIF
@@ -807,9 +824,11 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
                   ENDIF
                ENDIF
             ENDIF
-CWET...
-CWET...Nodal Wetting Criteria W2a
-CWET...
+       
+       !---------------------------
+       ! Nodal Wetting Criteria W2a
+       !---------------------------
+       
             NBNCTOT=NIBNODECODE(NM1)+NIBNODECODE(NM2)+NIBNODECODE(NM3)
             NIBCNT(NM1) = NIBCNT(NM1) + NBNCTOT
             NIBCNT(NM2) = NIBCNT(NM2) + NBNCTOT
@@ -835,13 +854,10 @@ C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #endif
 
 
-Cwet...
-CWET... ELEMENTAL WETTING CRITERIA WETBATHYCHANGE
-C*******************************************************************************************
-C tcm v50.66.01 -- This is an additional test for wetting only when time varying 
-C                  bathymetry is used and is only performed during the period of 
-C                  bathymetry evolution.
-C
+        ! ELEMENTAL WETTING CRITERIA WETBATHYCHANGE
+        ! tcm v50.66.01 -- This is an additional test for wetting only
+        ! when time varying bathymetry is used and is only performed
+        ! during the period of bathymetry evolution. 
          IF ((NDDT.NE.0).AND.(IT.LE.BTIME_END+1) ) THEN
             DO I=1,NE
                NM1=NM(I,1)
@@ -850,7 +866,7 @@ C
                NCTOT=NODECODE(NM1)+NODECODE(NM2)+NODECODE(NM3)
                IF(NCTOT.lt.3) THEN   !If not wet from previous time step
                   NCTOT=NNODECODE(NM1)+NNODECODE(NM2)+NNODECODE(NM3)
-                  if(NCTOT.lt.3) then !if not alreay made wet for this time step
+                  if(NCTOT.lt.3) then !if not yet wetted this time step
                      ETAN1=ETA2(NM1)
                      ETAN2=ETA2(NM2)
                      ETAN3=ETA2(NM3)
@@ -858,8 +874,8 @@ C
                      HTOTN2=DP(NM2)+ETA2(NM2)
                      HTOTN3=DP(NM3)+ETA2(NM3)
 
-!                    if all nodes have a depth greater than or equal to 
-!                    hoff = 1.2*H0, then make the element wet
+                     ! if all nodes have a depth greater than or equal to 
+                     ! hoff = 1.2*H0, then make the element wet
                      IF( (HTOTN1.GE.HOFF).AND.(HTOTN2.GE.HOFF).AND.
      &                   (HTOTN3.GE.HOFF) ) THEN
                      !THE ELEMENT SHOULD BE WET, SO WET THE DRY NODES
@@ -868,7 +884,7 @@ C
                            NNODECODE(NM1)=1
                            NM123 = NM1
                            IF(C2DDI)THEN
-C<<                           Convert Manning's N to Cd, if necessary.
+                              !onvert Manning's N to Cd, if necessary.
                               IF (LoadManningsN) THEN
                                  FRIC(NM123)=g*ManningsN(NM123)**2.d0
      &                              /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
@@ -921,8 +937,10 @@ C<<                           Convert Manning's N to Cd, if necessary.
 !Casey 220207 from Rosemary : In ALL wetting criteria
                               IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
                                  DO k = 1,NFEN
-                                    SAL(NM3,k) =0.5D0*(SAL(NM1,k)+SAL(NM2,k))
-                                    TEMP(NM3,k)=0.5D0*(TEMP(NM1,k)+TEMP(NM2,k))
+                                    SAL(NM3,k)=0.5D0*(SAL(NM1,k)+
+     &                                         SAL(NM2,k))
+                                    TEMP(NM3,k)=0.5D0*(TEMP(NM1,k)+
+     &                                          TEMP(NM2,k))
                                  ENDDO
                            ENDIF
                            ENDIF
@@ -933,7 +951,7 @@ C<<                           Convert Manning's N to Cd, if necessary.
                            NNODECODE(NM2) = 1
                            NM123=NM2
                            IF(C2DDI)THEN
-C<<                        Convert Manning's N to Cd, if necessary.
+                           !Convert Manning's N to Cd, if necessary.
                               IF (LoadManningsN) THEN
                                  FRIC(NM123)=g*ManningsN(NM123)**2.d0
      &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
@@ -986,8 +1004,10 @@ C<<                        Convert Manning's N to Cd, if necessary.
 !Casey 220207 from Rosemary : And again in the next two wetting criteria
                               IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
                                  DO k = 1,NFEN
-                                    SAL(NM1,k) =0.5D0*(SAL(NM2,k)+SAL(NM3,k))
-                                    TEMP(NM1,k)=0.5D0*(TEMP(NM2,k)+TEMP(NM3,k))
+                                    SAL(NM1,k)=0.5D0*(SAL(NM2,k)+
+     &                                         SAL(NM3,k))
+                                    TEMP(NM1,k)=0.5D0*(TEMP(NM2,k)+
+     &                                          TEMP(NM3,k))
                                  ENDDO
                            ENDIF
                            ENDIF
@@ -998,7 +1018,7 @@ C<<                        Convert Manning's N to Cd, if necessary.
                            NNODECODE(NM3)=1
                            NM123 = NM3
                            IF(C2DDI)THEN
-C<<                         Convert Manning's N to Cd, if necessary.
+                            !Convert Manning's N to Cd, if necessary.
                               IF (LoadManningsN) THEN
                                  FRIC(NM123)=g*ManningsN(NM123)**2.d0
      &                           /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
@@ -1051,8 +1071,10 @@ C<<                         Convert Manning's N to Cd, if necessary.
 !Casey 220207 from Rosemary : In ALL wetting criteria
                               IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
                                  DO k = 1,NFEN
-                                    SAL(NM2,k) =0.5D0*(SAL(NM1,k)+SAL(NM3,k))
-                                    TEMP(NM2,k)=0.5D0*(TEMP(NM1,k)+TEMP(NM3,k))
+                                    SAL(NM2,k)=0.5D0*(SAL(NM1,k)+
+     &                                          SAL(NM3,k))
+                                    TEMP(NM2,k)=0.5D0*(TEMP(NM1,k)+
+     &                                          TEMP(NM3,k))
                                  ENDDO
                               ENDIF
                            ENDIF
@@ -1070,19 +1092,15 @@ C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #ifdef CMPI
             CALL UPDATEI(NNODECODE,NIBCNT,2)
 #endif
-C
-         ENDIF !IT TIME VARYING BATHYMETRY AND WITHIN CHANGE TIME
-C
-C.... END OF ADDITIONAL WETTING FOR TIME VARYING BATHYMETRY
-CWET..
-CWET... ELEMENTAL WETTING CRITERIA WETBATHYCHANGE
-C*******************************************************************************************
+ 
+         ENDIF !IF TIME VARYING BATHYMETRY AND WITHIN CHANGE TIME
+         !END OF ADDITIONAL WETTING FOR TIME VARYING BATHYMETRY
 
-CWET...
-CWET...Nodal Wetting Criteria W2b
-CWET...Check for adjacent nodes and force nodes wet when attached
-CWET...to receiving barrier nodes
-CWET...
+         !---------------------------
+         ! Nodal Wetting Criteria W2b
+         !---------------------------
+         ! Check for adjacent nodes and force nodes wet when attached
+         ! to receiving barrier nodes
          DO I=1,NP
             IF((NIBCNT(I).GT.0).AND.(NNODECODE(I).EQ.0)) THEN
                NNODECODE(I)=1
@@ -1094,19 +1112,16 @@ cjjw#ifdef CMPI
 cjjw         CALL UPDATEI(NNODECODE,IDUMY,1)
 cjjw#endif
 
-CWET...
-CWET...END WET/DRY SECTION - PART 2
-CWET...
+       ! END WET/DRY SECTION - PART 2
 
-CWET...
-CWET...START WET/DRY SECTION  - PART 3
-CWET...Elemental drying criteria DE1
-CWET...This is an elemental check section designed to avoid artificial wetting of
-CWET....of control sections
-CWET...All elements where downhill flow originates from a barely wet node
-CWET....into wet nodes are forced inactive; the only exception is receiving
-CWET....overtopped barrier nodes
-CWET...
+       ! START WET/DRY SECTION  - PART 3
+
+         ! Elemental drying criteria DE1
+         ! This is an elemental check section designed to avoid 
+         ! artificial wetting of control sections. All elements where
+         ! downhill flow originates from a barely wet node into wet nodes
+         ! are forced inactive; the only exception is receiving overtopped
+         ! barrier nodes
          DO I=1,NE
             NM1=NM(I,1)
             NM2=NM(I,2)
@@ -1206,15 +1221,14 @@ C...ACB pattern
 #endif
 
 #ifdef SB_WETDRY
-C...An element is set to be dry if it is determined to be a flooding type
-C...wetting element.  An element is a flooding type wetting element if
-C...the bed elevation at the node with the biggest water column height
-C...is lower than the heighest point on the bed in the element.
-C...sb v46.28.sb05.06 11/01/2006
-C...This is applied only when NOFF flag of the element at the previous time step
-C...is 0, which means that this logic works to prevent an element from
-C...re-wetting.
-C...sb v46.52.03
+!>An element is set to be dry if it is determined to be a flooding type
+!>wetting element.  An element is a flooding type wetting element if
+!>the bed elevation at the node with the biggest water column height
+!>is lower than the heighest point on the bed in the element.
+!>sb v46.28.sb05.06 11/01/2006
+!>This is applied only when NOFF flag of the element at the previous time
+!>step is 0, which means that this logic works to prevent an element from
+!>re-wetting. sb v46.52.03
                if (noffActive.eqv..true.) then 
                   IF(NOFFOLD(I).EQ.0) THEN
                      IF(HTOTN1.GE.HTOTN2.AND.HTOTN1.GE.HTOTN3) THEN
@@ -1233,19 +1247,19 @@ C...sb v46.52.03
          ENDDO
 
 #ifdef SB_WETDRY
-CWET......added by sb on 11/02/2006
-CWET...
-CWET...This section is added after we realize that it's not possible
-CWET...to compute a correct flow going through two elements if
-CWET...the elements are connected just by one node. i.e., elements need
-CWET...to share an edge to let the flow go through between the elements.
-CWET...Therefore, in this section, a node is determined to be dry
-CWET...if two elements are connected at one node, not sharing an edge.
-CWET...As it seemed this procedure needed NOFF information,
-CWET...although this section changes NNODECODE,
-CWET...I put this section here, rather than the end of PART 2.
-CWET...I tried setting NOFF(I) = 0, but it didn't shut down the flow.
-CWET...
+!>     ...added by sb on 11/02/2006
+!>     
+!>     This section is added after we realize that it's not possible
+!>     to compute a correct flow going through two elements if
+!>     the elements are connected just by one node. i.e., elements need
+!>     to share an edge to let the flow go through between the elements.
+!>     Therefore, in this section, a node is determined to be dry
+!>     if two elements are connected at one node, not sharing an edge.
+!>     As it seemed this procedure needed NOFF information,
+!>     although this section changes NNODECODE,
+!>     I put this section here, rather than the end of PART 2.
+!>     I tried setting NOFF(I) = 0, but it didn't shut down the flow.
+!>     
          DO I=1,NE
             NM1=NM(I,1)
             NM2=NM(I,2)
@@ -1292,16 +1306,13 @@ CWET...
          ENDDO
 #endif
 
-CWET...
-CWET...END WET/DRY SECTION  - PART 3
-CWET...
 
-C.....
-C.....Nodal Drying Criteria for the ibtype=64 weir boundary
-C.....Check the node if it is along the ibtype=64 weir boundary and if the weir is
-C.....submerged. If it is the case and the node does not belong to at least 
-C.....one wet element, set the nnodecode back to 0.   SB
-C.....
+       ! END WET/DRY SECTION  - PART 3
+
+       ! Nodal Drying Criteria for the ibtype=64 weir boundary
+       ! Check the node if it is along the ibtype=64 weir boundary and if 
+       ! the weir is submerged. If true and the node does not belong to
+       ! at least one wet element, set the nnodecode back to 0.  SB
          IF (NFLUXIB64_GBL.GT.0) THEN
             DO I=1,NP
                IF(LBArray_Pointer(I).GT.0) THEN
@@ -1325,10 +1336,8 @@ C.....
             ENDDO
          ENDIF
 
-C.....
-C..... Section for condensed nodes
-C..... Setting the same nodecode value at grouped condensed nodes   SB
-C.....
+      ! Section for condensed nodes
+      ! Setting the same nodecode value at grouped condensed nodes   SB
       IF(LoadCondensedNodes) THEN
          DO K=1,NListCondensedNodes
             I = ListCondensedNodes(K,1)
@@ -1352,88 +1361,62 @@ C.....
          ENDDO
       ENDIF
 
-CWET...
-CWET...START WET/DRY SECTION PART 4 - NODAL DRYING LOOP D2
-CWET...Update number of active elements (MJU) and the total area (TotalArea) connected
-CWET...to a node. If these are zero, the node is landlocked and should be dried.
-CWET...These depend on NNODECODE which varies during the time step
-CWET...
-         DO I=1,NP
-            MJU(I)=0
-            TotalArea(I)=0.d0
-         ENDDO
-         DO IE=1,NE
-            NM1=NM(IE,1)
-            NM2=NM(IE,2)
-            NM3=NM(IE,3)
-            NC1=NNODECODE(NM1)
-            NC2=NNODECODE(NM2)
-            NC3=NNODECODE(NM3)
 
-            NCEle=NC1*NC2*NC3*NOFF(IE)
-            AreaEle=NCEle*Areas(IE)/2.d0
-            MJU(NM1)=MJU(NM1)+NCEle
-            MJU(NM2)=MJU(NM2)+NCEle
-            MJU(NM3)=MJU(NM3)+NCEle
-            TotalArea(NM1)=TotalArea(NM1)+AreaEle
-            TotalArea(NM2)=TotalArea(NM2)+AreaEle
-            TotalArea(NM3)=TotalArea(NM3)+AreaEle
-         ENDDO
+!>       START WET/DRY SECTION PART 4 - NODAL DRYING LOOP D2
+!>
+!>       Update number of active elements (MJU) and the total area
+!>       (TotalArea) connected to a node. If these are zero, the node is
+!>       landlocked and should be dried. These depend on NNODECODE which
+!>       varies during the time step. Also add computation of total area
+!>       reciprocal used in various modules. This code was a repeat of
+!>       totalAreaCalc in the mesh module, so that subroutine was
+!>       modified to use nnodecode instead of nodecode and reused here.
+!>       See additional nodes in mesh module. 
+!>       Of special note, the necessity of having non-zero mju values is
+!>       only required when trying to match incorrect verions of adcirc
+!>       where mju was used in place of the totalarea in the momentum
+!>       equations; at some point this could be removed. CMS 11/18/25
 
-cjjwnote - looks like this is used later in momentum equations
-cjjwnote - this has implications on making this into a subroutine
-
-         DO I=1,NP
-            IF((NNODECODE(I).EQ.1).AND.(MJU(I).EQ.0)) THEN
-               NNODECODE(I)=0
-            ENDIF
-            IF(MJU(I).EQ.0) MJU(I)=1 !Because MJU is also used to solve Mom Eq. !Eliminate this?
-         ENDDO
-
-C     WET...
-C     WET...END WET/DRY SECTION - PART 4
-C     WET...
-
-cjjwnote - may have to pass TotalArea and mju as well
-
-         if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
-         if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
+         call totalAreaCalc()
 
 
-C     Use Message-Passing to update nnodecode at ghost nodes
+!>       Start update variables
+!>          jjwnote - may have to pass TotalArea and mju as well
+
+         !NCSU subdomain
+         if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb()
+         if (subdomainOn.and.enforceBN.eq.2) call enforceWDob()
+
+         ! Message-Passing to update nnodecode at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,IDUMY,1)
          CALL UPDATER(TotalArea,DUMY1,DUMY2,1)
 #endif
-CWET...
-CWET...WET/DRY SECTION - PART 5 - RESET NODECODE USING NNODECODE
-CWET...Check to see if any wetting occurred & update NODECODE
-CWET...Note, NCCHANGE=0 set near the beginning of GWCE subroutine
-CWET...
+
+
+!>     WET/DRY SECTION - PART 5 - RESET NODECODE USING NNODECODE
+!>     Check to see if any wetting occurred & update NODECODE
+!>     Note, NCCHANGE=0 set near the beginning of GWCE subroutine
          DO I=1,NP
             IF(NNODECODE(I).NE.NODECODE(I)) THEN
                NODECODE(I)=NNODECODE(I)
                NCCHANGE=NCCHANGE+1
             ENDIF
          ENDDO
-CWET...
-CWET...END WET/DRY SECTION - PART 5
-CWET...
 
-CWET...
-CWET...WET/DRY SECTION - PART 6
-CWET...Check to see if any NOFF changed requiring the matrix to be reset
-CWET...Note, NCCHANGE=0 set near the beginning of GWCE subroutine
-CWET...
+     
+!>     WET/DRY SECTION - PART 6
+!>     Check to see if any NOFF changed requiring the matrix to be reset
+!>     Note, NCCHANGE=0 set near the beginning of GWCE subroutine
+     
          DO I=1,NE
             IF(NOFF(I).NE.NOFFOLD(I)) NCCHANGE=NCCHANGE+1
          ENDDO
-CWET...
-CWET... jgf45.06 If there has been any wetting or drying in any
-CWET... of the subdomains, the NCCHANGE flag will be activated on all
-CWET... of the subdomains, to prevent them from getting out of sync
-CWET... with their MPI calls as some reset the GWCE and others do not.
-CWET...
+     
+        ! jgf45.06 If there has been any wetting or drying in any
+        ! of the subdomains, the NCCHANGE flag will be activated on all
+        ! of the subdomains, to prevent them from getting out of sync
+        ! with their MPI calls as some reset the GWCE and others do not.
 
          IF(LoadSubgridBarrier)THEN
              DO I=1,NE
@@ -1446,7 +1429,7 @@ CWET...
              ENDDO
          ENDIF
          
-!.....   DMW 202207 Compute a slope limiting factor if needed
+         ! DMW 202207 Compute a slope limiting factor if needed
          call computeAlpha()
          
 #ifdef CMPI
@@ -1461,11 +1444,10 @@ CWET...
             NCCHANGE=NCCHANGE ! jgf48.4619 do nothing
          ENDIF
 #endif
-CWET...
-CWET...END WET/DRY SECTION - PART 6
-CWET...
+     
+        ! END WET/DRY SECTION - PART 6
+     
 
-c.....
 !-----------------------------------------------------------------------
       end subroutine computeWettingAndDrying
 !-----------------------------------------------------------------------
