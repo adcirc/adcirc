@@ -11,13 +11,15 @@
 !> @brief This module handles the I/O and computations related to
 !> adding precipitation source terms to ADCIRC. 
 !>
-!>  Originally added in v51 but not merged into the main trunk until v5#.
+!>  Originally added in v51 but not merged into the main trunk until v56.
 !>  Precipitation source terms are only added to "wet" nodes since
 !>  ADCIRC cannot route rainfall over dry land. Two accumulation levels
 !>  are tracked globally: total rainfall that has fallen (totalRain) and
 !>  total rainfall that has been applied to the domain (totalRainApplied).
-!>  Rainfall is only applied if the element is wet at the current time
-!>  step and is accumulated by multiplying by the timestep.
+!>  Rainfall is only applied if the element is active at the current time
+!>  step and is accumulated by multiplying by the timestep. Active
+!>  status can be chosen by the user using activeRainType in the
+!>  namelist.
 !>
 !>  Precipitation is expected in units of rainfall rate [L/T], where
 !>  units must be consistent with the input in the fort.15 control
@@ -26,7 +28,7 @@
 !>----------------------------------------------------------------------
 !>  USAGE:
 !>  rainfallControl namelist at bottom of the fort.15 activates this
-!>  feature starting at v5#.
+!>  feature starting at v56.
 !>
 !>  useRain (logical): default .false.
 !>  rainType (integer): default 0 (see options below)
@@ -51,7 +53,7 @@
 !>
 !>     Units for rainfall rate: [m/s]
 !>     Requires one file as input:
-!>     fort.270 (for each rainTimeInc)
+!>     fort.270 (must contain enough snaps to cover each rainTimeInc)
 !>
 !>  rainType = 12:
 !>  OWI format file structure
@@ -60,7 +62,7 @@
 !>     Conversion to units of [m/s] occurs within owi_rain using a
 !>       predetermined multiplier. Use of an optional user defined
 !>       multiplier for other input units could be provided in the
-!>       fort.27 file but is not supported yet.
+!>       fort.27 file but is not supported yet in the code.
 !>
 !>     Requires two to three files as input:
 !>     fort.27 main rainfall control file:
@@ -84,7 +86,9 @@
 !> @todo after enough rainfall has accumulated (Hmin?), turn on
 !> the dry nodes and apply the accumulated rainfall. Would only want
 !> to do this on flat elements - not steep regions - since there is no
-!> internal routing. Add as rate, so think about accumulation.
+!> internal routing. Precipitation must be added as a rate, so will need
+!> to convert the accumulation somehow. Also, add code to support the
+!> use of an optional multiplier for every rainType.
 !-----------------------------------------------------------------------
       MODULE RAIN
 !-----------------------------------------------------------------------
@@ -105,7 +109,6 @@
         real(8), allocatable :: rain2(:) ! new rainfall dataset
 
         ! Precipitation array for tracking active status
-        !integer, allocatable :: activeRain(:)
         real(8), allocatable :: activeRain(:)
 
         ! namelist input from read_input.f
@@ -113,7 +116,6 @@
         integer :: rainType=0  ! default none
         real(8) :: rainTimeInc=3600.d0 ! rain input interval (sec)
         integer :: activeRainType=1  ! default current wet/dry state
-!        namelist /rainfallControl/ useRain, rainType, rainTimeInc
         namelist /rainfallControl/ useRain, rainType, rainTimeInc,      &
      &            activeRainType
   
@@ -284,13 +286,13 @@
         rainODT(1:mnp) = 0.d0
         totalRain(1:mnp) = 0.d0
         totalRainApplied(1:mnp) = 0.d0
-        !activeRain(1:mnp) = 0
         activeRain(1:mnp) = 0.d0
 
-        ! check if elevation station output requested
+        ! check if elevation station output requested - rain station
+        ! output tied to elevation station output
         if (mnstae .ge. 1) then
-           allocate ( rain00(mnstae) )  ! uncomment for station output
-           rain00(1:mnstae) = 0.d0  !uncomment for station output
+           allocate ( rain00(mnstae) )
+           rain00(1:mnstae) = 0.d0
         end if
 
 #if defined(ALL_TRACE)
@@ -425,19 +427,13 @@
         end select
 
         ! Assign temporal values
+        !   active status applied in gwce to reduce memory allocation
+        !   rainODT assumed to be zero at coldstart
         do i=1,np
-           !modV2 with application of active in gwce
            rainCurr(i) = rain1(i)
            rainAcc = rain1(i)*dt
            totalRain(i) = totalRain(i) + rainAcc
            totalRainApplied(i)=totalRainApplied(i)+rainAcc*activeRain(i)
-
-           !modV2 with extra arrays for rainX/rainOld
-           !rainX(i) = rain1(i)
-           !rainCurr(i) = rainX(i)*activeRain(i)
-           !rainAcc = rainX(i)*dt
-           !totalRain(i) = totalrain(i) + rainAcc
-           !totalRainApplied(i)=totalRainApplied(i)+rainAcc*activeRain(i)
         end do
 
 #if defined(ALL_TRACE)
@@ -548,19 +544,14 @@
       end select
 
       ! Assign temporal values
+      !   active status applied in gwce to reduce memory allocation
+      !   rainODT assumed to be zero at hotstart - old values not
+      !   saved in the hotstart files
       do i=1,np
-         !modV2 with application of active in gwce
          rainCurr(i) = rain1(i)
          rainAcc = rain1(i)*dt
          totalRain(i) = totalRain(i) + rainAcc
          totalRainApplied(i)=totalRainApplied(i)+rainAcc*activeRain(i)
-
-         !modV2 with extra arrays for rainX/rainOld
-         !rainX(i) = rain1(i)
-         !rainCurr(i) = rainX(i)*activeRain(i)
-         !rainAcc = rainX(i)*dt
-         !totalRain(i) = totalRain(i) + rainAcc
-         !totalRainApplied(i)=totalRainApplied(i)+rainAcc*activeRain(i)
       end do
   
 #if defined(ALL_TRACE)
@@ -581,19 +572,21 @@
 
 !------------------------------------------------------------------------
 !> Check for active rainfall locations: called near beginning of
-!> cold/hotstartRainForcing() and getRain() so that values passed to
-!> the gwce module have already been modified for active or not.
-!> NOTE: only apply rainfall on active nodes to prevent instabilities
-!> since ADCIRC cannot route water over dry land.
+!> cold/hotstartRainForcing() and getRain() 
+!> Unlike interior hydrology, the active status is applied directly in
+!> the gwce module to reduce the number of mnp arrays that are
+!> allocated. NOTE: rainfall that falls on grid in adcirc is only
+!> applied on active nodes to prevent instabilities, since ADCIRC
+!> cannot route water over dry land.
 !>
 !> Currently two options:
 !> activeRainType=1 (default)
-!>   Original implementation: multiply each nodal rainCurr and rainODT 
-!>   value by the nodecode to handle dry nodes.
+!>    Original implementation: multiply each nodal rainCurr and rainODT 
+!>    value by the nodecode to handle dry nodes.
 !> activeRainType=2  rain on "water" defined by bathymetry
-!>   Additional implementation from ND group to add test for
-!>   bathymetric value and only add rainfall for nodes that are 
-!>   defined as water: BP > 0.d0
+!>    Additional implementation from ND group to add test for
+!>    bathymetric value and only add rainfall for nodes that are 
+!>    active and defined as water: BP > 0.d0
 !>
 !> @todo: monitor accumulation vs H0 and add rain when there is enough
 !> probably only on "flat" portions of the domain.
@@ -638,7 +631,7 @@
 !------------------------------------------------------------------------
 
 
-!> cms: v5# Added this subroutine to eliminate dependence on 
+!> cms: Added this subroutine to eliminate dependence on 
 !  adcirc_mod, which should be built last.
 !------------------------------------------------------------------------
       subroutine rainTerminate(NO_MPI_FINALIZE)
