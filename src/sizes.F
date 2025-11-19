@@ -118,7 +118,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE MAKE_DIRNAME()
 !tcm v50.85 added for windows builds
 #ifdef CMPI
-      USE MPI, ONLY: mpi_abort, mpi_comm_world
+      use mpi_f08, only: MPI_Abort, MPI_COMM_WORLD
 #ifdef WINDOWS
       USE IFPORT
 #endif
