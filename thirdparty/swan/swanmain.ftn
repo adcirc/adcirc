@@ -164,8 +164,11 @@
       USE SwanBraggScat                                                   41.80
       USE SwanQCM                                                         41.90
       USE SwanGriddata                                                    40.80
-!PUN      USE SIZES, ONLY: MNPROC      
+!PUN      USE SIZES, ONLY: MNPROC
 !PUN      USE MESSENGER                                                       40.95
+!PUN      USE GLOBAL, ONLY: COMM
+!PUN      USE mpi_f08, ONLY: MPI_ALLREDUCE, MPI_IN_PLACE,
+!PUN     &                   MPI_INTEGER, MPI_MAX
 !ADC      USE Couple2Adcirc                                                   41.20
 !ADC      USE Couple2Swan, ONLY: ComputeRadiationStresses,                    41.20
 !ADC     &                       CouplingInterval,

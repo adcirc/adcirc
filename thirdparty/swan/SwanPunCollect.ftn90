@@ -110,10 +110,10 @@ subroutine SwanPunCollect ( blkndc )
 !PUN       endif
 !PUN    enddo
 !PUN    !
-!PUN    if ( IAMMASTER ) then
-!PUN       allocate(icount(0:MNPROC-1))
-!PUN       allocate(idsplc(0:MNPROC-1))
-!PUN    endif
+!PUN    allocate(icount(0:MNPROC-1))
+!PUN    allocate(idsplc(0:MNPROC-1))
+!PUN    icount = 0
+!PUN    idsplc = 0
 !PUN    !
 !PUN    ! gather the array sizes to the master
 !PUN    !
@@ -135,12 +135,10 @@ subroutine SwanPunCollect ( blkndc )
 !PUN    !
 !PUN    ! calculate starting address of each local array with respect to the global array
 !PUN    !
-!PUN    if ( IAMMASTER ) then
-!PUN       idsplc(0) = 0
-!PUN       do j = 1, MNPROC-1
-!PUN          idsplc(j) = icount(j-1) + idsplc(j-1)
-!PUN       enddo
-!PUN    endif
+!PUN    idsplc(0) = 0
+!PUN    do j = 1, MNPROC-1
+!PUN       idsplc(j) = icount(j-1) + idsplc(j-1)
+!PUN    enddo
 !PUN    !
 !PUN    if ( IAMMASTER ) then
 !PUN       allocate(    iarr(nvertsg))
@@ -193,6 +191,7 @@ subroutine SwanPunCollect ( blkndc )
 !PUN    !
 !PUN    deallocate(ivertp,blknd)
 !PUN    deallocate(xpl,ypl)
-!PUN    if ( IAMMASTER ) deallocate(icount,idsplc,iarr,arr)
+!PUN    deallocate(icount,idsplc)
+!PUN    if ( IAMMASTER ) deallocate(iarr,arr)
 !PUN    !
 end subroutine SwanPunCollect
