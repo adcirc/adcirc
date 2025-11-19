@@ -37,7 +37,6 @@ C
      &                      rhoWat0, Rearth, rhoAir, one2ten,
      &                      windReduction,omega
 #ifdef CMPI
-      use mpi
       use messenger, only : msg_fini, msg_Rscalar_Reduce
 #endif
 #ifdef DATETIME

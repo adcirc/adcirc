@@ -48,7 +48,7 @@ subroutine SwanPunCollect ( blkndc )
 !PUN!
 !PUN!   Modules used
 !PUN!
-!PUN    use mpi
+!PUN    use mpi_f08, only: MPI_Gather, MPI_Gatherv, MPI_INTEGER, MPI_REAL, MPI_SUCCESS
 !PUN    use ocpcomm4
 !PUN    use swcomm2, only: XOFFS, YOFFS
 !PUN    use m_parall, only: IAMMASTER

@@ -95,7 +95,7 @@ C******************************************************************************
 C******************************************************************************
 C******************************************************************************
 #ifdef CMPI
-      USE mpi
+      use mpi_f08, only: MPI_Comm
 #endif
 
       IMPLICIT NONE
@@ -146,8 +146,13 @@ C******************************************************************************
       USE HSWRITER, ONLY : hswriter_init
 #endif
       IMPLICIT NONE
-C
+
+#ifdef CMPI
+      type(MPI_Comm), OPTIONAL :: COMM
+#else
       INTEGER, OPTIONAL :: COMM
+#endif
+
       CHARACTER(*), OPTIONAL :: ROOTD
       REAL(8) :: StaTimHS
       REAL(8) :: RefTimHS
@@ -646,7 +651,7 @@ C-----------------------------------------------------------------------
         USE MESSENGER
         USE GLOBAL,ONLY: terminate_localproc, screenUnit, comm
         USE SIZES,ONLY: MYPROC
-        USE MPI
+        USE MPI_F08, ONLY: MPI_ALLREDUCE, MPI_2INTEGER, MPI_MAXLOC
         IMPLICIT NONE
 
         INTEGER :: TERM_LOCAL(2)

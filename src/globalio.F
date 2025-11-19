@@ -30,7 +30,8 @@
       use GLOBAL
       use MESH, ONLY : NP, AGRID
 #ifdef CMPI
-      use mpi
+      use mpi_f08, only: MPI_Reduce, MPI_INTEGER, MPI_SUM,
+     &                   MPI_Status, MPI_Request, MPI_DOUBLE_PRECISION
 #endif
       contains
 
@@ -98,7 +99,9 @@ C--------------------------------------------------------------------
       external unpack_cmd
 #ifdef CMPI
       ! the subroutine used to write the file
-      integer      :: ierr, status(MPI_STATUS_SIZE), request
+      integer      :: ierr
+      type(MPI_Status) :: status
+      type(MPI_Request) :: request
       integer, save:: tagbase = 6000
       integer      :: iproc
       integer      :: bufsize
@@ -157,7 +160,7 @@ C        now send data to processor 0
            call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
      &                 MPI_INTEGER, MPI_SUM, 0, COMM, ierr)
          else
-           call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
+           call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM,
      &                     0, COMM, ierr)
          endif
          if (myproc == 0) then
@@ -632,9 +635,11 @@ C
       type (OutputDataDescript_t) :: descript
       real(8), intent(in) :: TimeLoc
       integer, intent(in) :: it
-      external write_cmd   
+      external write_cmd
 #ifdef CMPI
-      integer      :: ierr, status(MPI_STATUS_SIZE), request
+      integer      :: ierr
+      type(MPI_Status) :: status
+      type(MPI_Request) :: request
       integer      :: nGWetNodes
       integer      :: iglobal
 #endif
@@ -695,10 +700,10 @@ C
    
            call write_cmd(descript%lun, descript, istart, iend)
            if(descript%isInteger)then
-               call mpi_reduce(integerbuffer, integerresultBuffer, bufsize, mpi_int, MPI_SUM, 0,
+               call mpi_reduce(integerbuffer, integerresultBuffer, bufsize, mpi_integer, MPI_SUM, 0,
      &       COMM, ierr)
            else
-               call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM, 0,
+               call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM, 0,
      &       COMM, ierr)
            endif
            if (myproc == 0) then
@@ -751,9 +756,11 @@ C
       type (OutputDataDescript_t) :: descript
       real(8), intent(in) :: TimeLoc
       integer, intent(in) :: it
-      external write_cmd   
+      external write_cmd
 #ifdef CMPI
-      integer      :: ierr, status(MPI_STATUS_SIZE), request
+      integer      :: ierr
+      type(MPI_Status) :: status
+      type(MPI_Request) :: request
       integer      :: nGWetNodes
       integer      :: iglobal
 #endif
@@ -855,7 +862,7 @@ C
            tag     = tagbase + mod(ibucket, 8)
    
            call write_cmd(descript%lun, descript, istart, iend)
-           call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM, 0,
+           call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM, 0,
      &       COMM, ierr)
            if (myproc == 0) then
              do i = istart, iend
