@@ -42,6 +42,9 @@ C
 #ifdef DATETIME
       use datetime_module, only: datetime
 #endif
+#ifdef CMPI
+      use mpi_f08, only: MPI_Comm, MPI_Datatype
+#endif
       IMPLICIT NONE
       SAVE
 C     jgf46.21 Added support for IBTYPE=52.
@@ -107,16 +110,18 @@ C     Variables related to hotstarting.
       real(8),allocatable ::   mom_lv_y(:)
 
       !-----------------------------------------------------------------
-      !        F U L L   D O M A I N   V A R I A B L E S   
-      !                  O N L Y   U S E D   
+      !        F U L L   D O M A I N   V A R I A B L E S
+      !                  O N L Y   U S E D
       !        I N   P A R A L L E L   E X E C U T I O N
       !-----------------------------------------------------------------
       ! jgf51.21.25: The variables in this section are only used in
       ! parallel execution but they are declared here (rather than in
-      ! the messenger module) because they are used in many different 
+      ! the messenger module) because they are used in many different
       ! modules, including harm.F, write_output.F, globalio.F et al.
       !-----------------------------------------------------------------
-      integer :: comm        ! MPI communicator.
+#ifdef CMPI
+      type(MPI_Comm) :: comm        ! MPI communicator.
+#endif
       integer :: np_g, ne_g  ! global (full domain) number of nodes, elements
 
 C     jgf48.03 Arrays for mapping subdomain nodes and elements to full
@@ -210,17 +215,14 @@ C     globalio and writer modules
       real(8) :: resultBuf(BUFSIZE_MAX)
       integer :: integerBuffer(BUFSIZE_MAX)
       integer :: integerResultBuffer(BUFSIZE_MAX)
-      integer                    :: float_type
-C
-C     jgf48.03 Variables shared between messenger and writer modules
-      integer ::  realtype, dbletype
-      !
+#ifdef CMPI
       ! there is a separate mpi communicator for each dedicated
-      ! writer processor; their communicator ids are stored in the 
+      ! writer processor; their communicator ids are stored in the
       ! following array
-      integer, allocatable ::  comm_writer(:)
+      type(MPI_Comm), allocatable ::  comm_writer(:)
       ! communicators for hotstart file writing !st3
-      integer, allocatable ::  comm_writeh(:), comm_hsleep(:)
+      type(MPI_Comm), allocatable ::  comm_writeh(:), comm_hsleep(:)
+#endif
       !
       ! = 0 if this is a compute proc; > 0 if this is a writer node
       integer :: writer_id

@@ -95,7 +95,7 @@ C******************************************************************************
 C******************************************************************************
 C******************************************************************************
 #ifdef CMPI
-      USE mpi
+      use mpi_f08, only: MPI_Comm
 #endif
 
       IMPLICIT NONE
@@ -151,7 +151,11 @@ C******************************************************************************
 #endif
       IMPLICIT NONE
 
+#ifdef CMPI
+      type(MPI_Comm), OPTIONAL :: COMM
+#else
       INTEGER, OPTIONAL :: COMM
+#endif
       CHARACTER(*), OPTIONAL :: ROOTD
       REAL(8) :: StaTimHS
       REAL(8) :: RefTimHS

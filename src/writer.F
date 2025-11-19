@@ -25,12 +25,12 @@ C                                                              05 Feb 2007, sb
 C******************************************************************************
 C
       module writer
+      use mpi_f08, only: MPI_DOUBLE_PRECISION, MPI_Comm
       use sizes, only : mnproc, mnwproc, OFF, ASCII, SPARSE_ASCII,
-     &     NETCDF3, NETCDF4, XDMF, iSplit, globalDir, meshType, 
+     &     NETCDF3, NETCDF4, XDMF, iSplit, globalDir, meshType,
      &     controlType, meshFileName_g, controlFileName_g
       use global, only: c3d, comm,
-     &     bufsize_max, buf, resultbuf, outputdatadescript_t, float_type,
-     &     dbletype, realtype,
+     &     bufsize_max, buf, resultbuf, outputdatadescript_t,
      &     sig_val, sig_write, sig_ini, sig_pause, comm_writer,
      &     sig_term, sig_mesh, writer_id
       use mod_logging, only: debug, echo, info, warning, error,
@@ -134,14 +134,14 @@ C     correctly
 C-----------------------------------------------------------------------
       SUBROUTINE sendLabelInfoToWriters()
 C-----------------------------------------------------------------------
-          use mpi
+          use mpi_f08, only: MPI_Send, MPI_Recv, MPI_INTEGER, MPI_Status
           use sizes,only: myproc, mnwproc, mnproc
           use messenger,only: mpi_comm_adcirc
           use global,only: labels_g, np_g
           implicit none
           INTEGER :: ierr
           INTEGER :: I,N
-          INTEGER :: mpistat(mpi_status_size)
+          type(MPI_Status) :: mpistat
 
           IF(myproc.EQ.0)THEN
               DO I = 0,MNWPROC-1
@@ -177,11 +177,11 @@ C     then goes back to waiting for another signal.
 C-----------------------------------------------------------------------
       subroutine writer_main ()
       use mod_logging, only : ScreenUnit
-      use mpi
+      use mpi_f08, only: MPI_Recv, MPI_INTEGER, MPI_Status
       use messenger, only: msg_barrier, mpi_comm_adcirc
       IMPLICIT NONE
       integer :: sig, ierr, waittime, nextProc, prevProc, sig_dummy
-      integer :: mpistat(mpi_status_size)
+      type(MPI_Status) :: mpistat
       character(len=16) :: TimeIni
       character(len=1024) :: scratchMessage
 C
@@ -254,7 +254,8 @@ C-----------------------------------------------------------------------
       use global
       use mod_logging, only: setmessagesource, allmessage, debug,
      &     logmessage, unsetmessagesource
-      use mpi
+      use mpi_f08, only: MPI_Send, MPI_Reduce, MPI_INTEGER,
+     &                   MPI_CHARACTER, MPI_SUM
       implicit none
       type (OutputDataDescript_t), intent(in) :: descript
       real(8) :: TimeLoc  ! output time in seconds
@@ -307,7 +308,7 @@ Cobell - Allow writer processors to output netcdf data
          REBUF(1) = descript % alternate_value
          REBUF(2) = timeLoc
          ! send dry value and time in seconds
-         call mpi_send(rebuf, numRealMetaData, realtype, mnproc, tag, 
+         call mpi_send(rebuf, numRealMetaData, MPI_DOUBLE_PRECISION, mnproc, tag, 
      &      comm_writer(wcommID),ierr)
          ! send file name
          call mpi_send(descript % file_name, 1024, mpi_character, 
@@ -339,7 +340,7 @@ C...     The following mpi_reduce sends array values to rank MNPROC,
 C...     which is the writer proc in the group.
 C...     Note that ranks from 0 to (MNPROC-1) are compute procs, and
 C...     rank MNPROC of writer communicators is always the writer proc.
-         call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
+         call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM,
      &      MNPROC, comm_writer(wcommID), ierr)
          istart = iend + 1
          iend   = min(istart + num - 1, descript % num_fd_records)
@@ -368,13 +369,14 @@ C-----------------------------------------------------------------------
       subroutine writer_recv_values()
       use mod_logging, only: setmessagesource, allmessage, debug,
      &     logmessage, unsetmessagesource, t_log_level
-      use mpi
+      use mpi_f08, only: MPI_Recv, MPI_Reduce, MPI_INTEGER,
+     &                   MPI_CHARACTER, MPI_SUM, MPI_Status
       implicit none
       integer :: num, i, j
       integer :: ierr
       integer :: bufsize
       integer :: istart, iend
-      integer :: mpistat(MPI_STATUS_SIZE)
+      type(MPI_Status) :: mpistat
       logical :: descriptFound ! true if we found the particular buffer we need
       character(len=8) :: cdigit  !st3 100708: split file
       character(len=1024) :: scratchMessage
@@ -425,7 +427,7 @@ C-----------------------------------------------------------------------
       nabout = t_log_level(intbuf(7))
       !
       ! receive "dry" data value and current simulation time
-      call mpi_recv(rebuf, numRealMetaData, realtype, 0, tag, 
+      call mpi_recv(rebuf, numRealMetaData, MPI_DOUBLE_PRECISION, 0, tag, 
      &   comm_writer(writer_id), mpistat, ierr)
       writer_descripts(bufid) % alternate_value = rebuf(1)
       writer_descripts(bufid) % wMD % myTime = rebuf(2)
@@ -480,7 +482,7 @@ C...     The following mpi_reduce sends array values to rank MNPROC,
 C...     which is a writer proc.
 C...     Note that ranks from 0 to (MNPROC-1) are compute procs, and
 C...     rank MNPROC of writer communicators is always a writer proc.
-         call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
+         call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM,
      &     MNPROC, comm_writer(writer_id), ierr)
 
          j = 1
@@ -525,7 +527,7 @@ C-----------------------------------------------------------------------
       use global
       use mod_logging, only: setmessagesource, allmessage, debug,
      &     logmessage, unsetmessagesource
-      use mpi
+      use mpi_f08, only: MPI_Send, MPI_INTEGER
       implicit none
       INTEGER :: I, IERR
       character(1024) :: scratchMessage
@@ -835,7 +837,7 @@ C-----------------------------------------------------------------------
       use mod_io, only: openFileForRead
       use mod_logging, only: setmessagesource, allmessage, debug, info,
      &     logmessage, unsetmessagesource
-      use mpi
+      use mpi_f08, only: MPI_Send, MPI_INTEGER, MPI_CHARACTER
       implicit none
       type (OutputDataDescript_t), intent(in) :: descript
       character(len=80) :: fileKeyword
@@ -926,14 +928,14 @@ C-----------------------------------------------------------------------
      &     logmessage, unsetmessagesource
       use mesh, only : readMesh, x, y, slam, sfea
       use sizes, only: MESHFILENAME,CONTROLFILENAME
-      use mpi
+      use mpi_f08, only: MPI_Recv, MPI_INTEGER, MPI_CHARACTER, MPI_Status
 #ifdef ADCXDMF
       use xdmfio, only : meshInitialized
       use control, only : readControlFile
 #endif
       implicit none
       integer      :: ierr
-      integer      :: mpistat(mpi_status_size)
+      type(MPI_Status) :: mpistat
       character(len=8) :: cdigit              !st3 100708: split file
       character(len=1024) :: scratchMessage
 
@@ -1001,7 +1003,7 @@ C-----------------------------------------------------------------------
       use mod_logging, only: setmessagesource, allmessage, debug,
      &     unsetmessagesource
       use messenger, only: tag, writers_active
-      use mpi
+      use mpi_f08, only: MPI_Send, MPI_INTEGER
       implicit none
       integer i
       integer ierr
@@ -1050,9 +1052,13 @@ C
         USE GLOBAL
         USE mod_logging, only: setmessagesource, unsetmessagesource
         USE MESSENGER, ONLY: TAG
-        use mpi
+        use mpi_f08, only: MPI_Recv, MPI_Send, MPI_Barrier, MPI_Reduce,
+     &                     MPI_INTEGER, MPI_DOUBLE_PRECISION, MPI_LOGICAL,
+     &                     MPI_CHARACTER, MPI_SUM, MPI_Status, MPI_Request,
+     &                     MPI_Comm
       IMPLICIT NONE
-      INTEGER :: WCOMMID, WCOMM
+      INTEGER :: WCOMMID
+      type(MPI_Comm) :: WCOMM
       CONTAINS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!?
 
 !------------------------------------------------------------
@@ -1066,7 +1072,7 @@ C
         USE mod_logging,ONLY : ScreenUnit
         IMPLICIT NONE
         INTEGER :: SIG,IERR
-        INTEGER :: STAT(MPI_STATUS_SIZE)
+        type(MPI_Status) :: STAT
 
         call setMessageSource("HSWRITER_MAIN")
 !
@@ -1106,7 +1112,6 @@ C...  Main loop
       subroutine HSWRITER_PAUSE()
       use global
       use messenger, only: tag, hs_writers_active
-      use mpi
       implicit none
       integer i
       integer ierr
@@ -1140,11 +1145,11 @@ C-----------------------------------------------------------------------
       USE MESH, ONLY : NE, NP
       use mod_logging, only: screenUnit, nscreen
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
-      USE GLOBAL_IO, ONLY: packOne, unpackOne, 
+      USE GLOBAL_IO, ONLY: packOne, unpackOne,
      &    packTwo, unpackTwo, HEADER_MAX
 !
       IMPLICIT NONE
-      INTEGER :: STAT(MPI_STATUS_SIZE)
+      type(MPI_Status) :: STAT
       integer :: i
       integer :: ierr
 
@@ -1585,7 +1590,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
       END SUBROUTINE writeHotstart_through_HSwriter
 !
       SUBROUTINE GET_NEXT_HSWRITER_COMM(NEXT_WCOMM)
-      INTEGER,intent(inout) :: NEXT_WCOMM
+      type(MPI_Comm), intent(inout) :: NEXT_WCOMM
       INTEGER :: NEXT_WCOMMID
 
         IF(WCOMMID >= MNWPROH) THEN
@@ -1607,7 +1612,9 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
       external unpack_cmd
 #ifdef CMPI
 !     ! the subroutine used to write the file
-      integer      :: ierr, status(MPI_STATUS_SIZE), request
+      integer      :: ierr
+      type(MPI_Status) :: status
+      type(MPI_Request) :: request
       integer, save:: tagbase = 6000
       integer      :: iproc
       integer      :: bufsize
@@ -1642,7 +1649,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          tag     = tagbase + mod(ibucket, 8)
 
          call pack_cmd(descript, istart, iend)
-         call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
+         call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM,
      &                   MNPROC, WCOMM, ierr)
 
          if (WRITER_ID /= 0) then
@@ -1667,7 +1674,9 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
       external unpack_cmd
 #ifdef CMPI
 !     ! the subroutine used to write the file
-      integer      :: ierr, status(MPI_STATUS_SIZE), request
+      integer      :: ierr
+      type(MPI_Status) :: status
+      type(MPI_Request) :: request
       integer, save:: tagbase = 6000
       integer      :: iproc
       integer      :: bufsize
