@@ -39,10 +39,18 @@
 !     ------------------------------------------------------------------
       use hashtable
       use sizes, only: meshFileName, mne, mnp, mnope, mneta, myproc,
+<<<<<<< HEAD
      &   mnbou, mnvel, nprec, meshtype, ascii, xdmf, mnei, GBLINPUTDIR
       use mod_logging, only: DEBUG, INFO, ECHO, WARNING, ERROR, operator(==),
      &   logMessage, screenMessage, allMessage, t_log_scope, init_log_scope
       use mod_io, only: openFileForRead
+=======
+     &   mnbou, mnvel, nprec, meshtype, ascii, xdmf, mnei, gblinputdir
+      use global, only: DEBUG, INFO, ECHO, WARNING, ERROR,
+     &   scratchMessage, logMessage, screenMessage, allMessage,
+     &   setMessageSource, openFileForRead, unsetMessageSource,
+     &   scratchFormat
+>>>>>>> Subject: updates to totalAreaCalc in mesh.F
       USE ADC_CONSTANTS, only: deg2rad, rad2deg, pi, omega, rearth
 
       implicit none
@@ -82,6 +90,13 @@
       integer, allocatable :: csr_position(:,:,:) !(MNE,3,2) positions of neighboring nodes in csr matrix space
       real(8), allocatable :: areas(:) !(MNE) = 2*Element Area
       real(8), allocatable :: totalarea(:)
+      real(8), allocatable :: divByTotalArea0(:)  !precompute 1/totalarea
+                              ! set to 0 when totalArea==0; used for
+                              ! hydrology and gwce lat stress gradients
+      !real(8), allocatable :: divByTotalArea1(:)  !precompute 1/totalarea
+                              ! set to 1 when totalArea==0; used for
+                              ! gwce elem slope limiter and timestep
+                              ! bpg2d - NOT USED YET
       real(8), allocatable :: bcxy(:,:)  ! element barycenters for kdtree
       real(8), allocatable :: rmax(:)    ! element radii for kdtree
       real(8), allocatable :: csi(:),sii(:)
@@ -3342,30 +3357,61 @@ Csb...
       end subroutine neighb_terminateDuplicateNode
 
 
-!     ------------------------------------------------------------------
-!           S U B R O U T I N E   T O T A L   A R E A   C A L C
-!     ------------------------------------------------------------------
-!     jgf51.21.10: Refactored and modularized out of the ADCIRC_Init
-!     subroutine in the ADCIRC module.
-!
-!     Determine the number of active elements (MJU), the total number of
-!     elements (NODELE) and the total area of elements (TotalArea)
-!     attached to each node.
-!
-!     The calculation of the number of active elements must wait until
-!     the model has initialized to the point that either cstart() or
-!     hstart() has already been called and nnodecode is already
-!     initialized.
-!     ------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!> @brief Computes the active elements and totalArea attached to nodes.
+!>
+!> @details Refactored and modularized out of the ADCIRC_Init subroutine
+!>          in the ADCIRC module. jgf51.21.10
+!>
+!>          Determine the number of active elements (MJU) and the total
+!>          area of active elements (totalArea) attached to each node
+!>          for each time step. Also determines the total number of
+!>          elements (NODELE) attached to each node at the first call.
+!>
+!>          Calculation of the number of active elements must wait until
+!>          the model has initialized to the point that nnodecode is
+!>          already initialized. Originally was called from adcirc_init
+!>          after cstart/hstart had been called. Use of interior
+!>          hydrology requires that it be set within ctstart/hstart, so
+!>          first call was moved from adcirc_init into the *start files
+!>          starting in v56.
+!>
+!>          Additional updates added in v56 (cmszpilka@ou.edu):
+!>          1) Moved update of nodecode=nnodecode into c(h)start so that
+!>             totalAreaCalc can be called from computeWettingAndDrying
+!>             in Part 4 for area updates.
+!>          2) pulled nodele computations out to a firstcall subsection
+!>             since they do not need recomputed every time step
+!>          3) Added total area reciprocal calculation (divByTotalArea#)
+!>             to allow for direct multiplication instead of IF testing.
+!>             Two new variables are defined:
+!>             divByTotalArea0: set to 0 when totalarea==0
+!>                              used in hydrology and gwce (lat stress)
+!>                              allocate: allocateNodalAndElementalArrays
+!>             divByTotalArea1: set to 1 when totalarea==0
+!>                              used in gwce (elem slope limiter)
+!>                              and timestep (bpg2d)
+!>                              CURRENTLY NOT USED
+!>
+!> @todo Add logical test to see if either divByTotalArea variable is
+!>       needed. Think about how to allocate and assign - may need
+!>       to add separate subroutines for totalAreaCalc instead.
+!>       NOTE: need to trace mju usage throughout code, does setting
+!>       mju=1 instead of 0 affect any of the logical tests that use mju
+!>       in other modules?
+!-----------------------------------------------------------------------
       subroutine totalAreaCalc()
-      use global, only : nodecode, nnodecode, noff
+!-----------------------------------------------------------------------
+      use global, only : nnodecode, noff
       implicit none
       real(8) :: areaEle
       integer nm1, nm2, nm3  ! node numbers around an element
       integer ncele          ! wet/dry indicator (zero if dry)
       integer :: i           ! node loop counter
       integer :: ie          ! element loop counter
+      logical :: firstcall=.true.
 
+<<<<<<< HEAD
       LOG_SCOPE_TRACED("totalAreaCalc", MESH_TRACING)
       !
       ! initialize values
@@ -3374,31 +3420,81 @@ Csb...
       totalarea(:)=0.d0
       nodecode(:)=nnodecode(:)
       !
+=======
+      call setMessageSource("totalAreaCalc")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      ! cms: for the first call only, compute number of elements
+      ! attached to each adcirc mesh node - does not change in time
+      if(firstcall) then
+         nodele(1:np)=0
+         do ie=1,ne
+            nm1=nm(ie,1)
+            nm2=nm(ie,2)
+            nm3=nm(ie,3)
+            nodele(nm1)=nodele(nm1)+1
+            nodele(nm2)=nodele(nm2)+1
+            nodele(nm3)=nodele(nm3)+1
+         end do
+         firstcall=.false.
+      end if
+
+      ! initialize values (cms 11/20/25: added explicit array bounds)
+      mju(1:np)=0
+      totalarea(1:np)=0.d0
+      divByTotalArea0(1:np)=0.d0
+      !divByTotalArea1(1:np)=0.d0  ! NOT USED YET
+      !nodecode(1:np)=nnodecode(1:np) !cms 11/20/25: mvd to c(h)start
+
+>>>>>>> Subject: updates to totalAreaCalc in mesh.F
       ! assemble by elements
+      !cms 11/20/25: changed to used nnodecode instead of nodecode
       do ie=1,ne
          nm1=nm(ie,1)
          nm2=nm(ie,2)
          nm3=nm(ie,3)
-         ncele=nodecode(nm1)*nodecode(nm2)*nodecode(nm3)*noff(ie)
+         ncele=nnodecode(nm1)*nnodecode(nm2)*nnodecode(nm3)*noff(ie)
          mju(nm1)=mju(nm1)+ncele
          mju(nm2)=mju(nm2)+ncele
          mju(nm3)=mju(nm3)+ncele
-         nodele(nm1)=nodele(nm1)+1
-         nodele(nm2)=nodele(nm2)+1
-         nodele(nm3)=nodele(nm3)+1
          areaele=ncele*areas(ie)/2.d0
          totalarea(nm1)=totalarea(nm1)+areaele
          totalarea(nm2)=totalarea(nm2)+areaele
          totalarea(nm3)=totalarea(nm3)+areaele
       end do
 
+      ! cms 11/20/25 updated this section:
+      ! compute the area reciprocal and update nodal values for
+      ! landlocked nodes so can use in wetdry Part4
+      ! Note: legacy code incorrectly divided by mju in momentum
+      ! (instead of totalarea), must make sure mju is non-zero after
+      ! areas are computed - does this impact any logic that uses mju
+      ! values in newer code??
       do i=1,np
-         if(mju(i).eq.0) mju(i)=1
+         if(mju(i).eq.0) then
+            mju(i)=1  ! may be used in momentum
+            nnodecode(i)=0  !dry landlocked node
+            ! if mju =0, then it is also true that totalArea=0
+            divByTotalArea0(i)=0.d0
+            !divByTotalArea1(i)=1.d0
+         else
+            divByTotalArea0(i)=1.d0/totalArea(i)
+            !divByTotalArea1(i)=divByTotalArea0(i)
       end do
 
+<<<<<<< HEAD
 !     ------------------------------------------------------------------
+=======
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+!-----------------------------------------------------------------------
+>>>>>>> Subject: updates to totalAreaCalc in mesh.F
       end subroutine totalAreaCalc
-!     ------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
 !     ------------------------------------------------------------------
 !                  S U B R O U T I N E   I N V C P
