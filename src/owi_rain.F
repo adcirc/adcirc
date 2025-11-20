@@ -122,7 +122,7 @@
       SUBROUTINE rain12init(rainval,NP)
 !-----------------------------------------------------------------------
 
-      use sizes, only : myproc, gblinputdir
+      use sizes, only : gblinputdir
 
       implicit none
 
@@ -248,8 +248,6 @@
 !-----------------------------------------------------------------------
       SUBROUTINE rain12get(rainval,NP)
 !-----------------------------------------------------------------------
-
-      use SIZES,only : MYPROC,MNPROC
 
       implicit none
 
@@ -571,7 +569,7 @@
 !-----------------------------------------------------------------------
       SUBROUTINE interpRainBasin(np)
 !-----------------------------------------------------------------------
-      use GLOBAL,only : RAD2DEG
+      use ADC_CONSTANTS,only : RAD2DEG
       use MESH, only : SLAM, SFEA
 
       implicit none
@@ -665,7 +663,7 @@
 !-----------------------------------------------------------------------
       SUBROUTINE interpRainRegion(np)
 !-----------------------------------------------------------------------
-      use GLOBAL,only : RAD2DEG
+      use ADC_CONSTANTS,only : RAD2DEG
       use MESH, only : SLAM, SFEA
       implicit none
 
