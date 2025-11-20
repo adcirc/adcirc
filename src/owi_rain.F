@@ -1,94 +1,153 @@
-C******************************************************************************
-C  MODULE OWI_RAIN
-C    Written by Kendra Dresback, University of Oklahoma 12/27/2013
-C    Modified from owiwind.F Written by s.b. 08/17/2006
-C
-C    The values read in from the fort.271/fort.272 contain rainfall  
-C    intensity values that has to be given in m/s. 
-C
-C****************************************************************************** 
-C 
-      MODULE OWI_RAIN
-C
-      USE SIZES,ONLY : SZ,MYPROC
-      USE GLOBAL,ONLY : NSCREEN, ScreenUnit
+!-----------------------------------------------------------------------
+!  MODULE owi_rain
+!-----------------------------------------------------------------------
+!> @file owi_rain.F
+!>
+!> @author Kendra Dresback, Univ. of Oklahoma, dresback@ou.edu
+!> @author Chris Szpilka, Univ. of Oklahoma, cmszpilka@ou.edu
+!>
+!> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
+!>
+!> @brief This modules handles I/O and interpolation related to
+!> Oceanweather format input files for precipitation.
+!>
+!> @details
+!> This file was modified from owi_ice.F by Kendra Dresback
+!> (12/27/2013), and owi_ice was modified from owiwind by TCM in 2010.
+!> Updates to commenting style, conversion to real(8), and data
+!> declarations (public/private) were made by Chris Szpilka in 2025.
+!> However, the module is still in need of being updated to match more
+!> recent updates to owiwind.
+!>
+!> Rainfall values are read in from fort.271 and fort.272, which must
+!> contain intensity values given in units of [mm/hr]. This module
+!> converts these values to units of [m/s] with hard-coded conversions.
+!>
+!> Expected input files:
+!>    fort.27:  control file (same format as wind fort.22 file)
+!>        numSets         <-- Number of sets of rain fields
+!>        numBlankSnaps   <-- Number of snaps to add/skip at beginning
+!>        rainMultiplier  <-- Rain intensity converion NOT USED YET
+!>    fort.271: basin precipitation values [mm/hr]
+!>    fort.272: regional precipitation values [mm/hr] (optional)
+!>
+!> Precipitation fields should be listed from coarse to fine in the
+!> control file, since the priority of field application is reversed
+!> relative to the order given in the control file, with the last
+!> field having the highest priority.
+!>
+!> Precipitation fields are interpolated onto each ADCIRC node using a
+!> bilinear interpolation scheme. All nodes located outside of the
+!> fields receive a default value of 0.0 mm/hr intensity.
+!>
+!> @todo Need to think how to merge all owi files into a single module
+!> since basic process is the same whether wind speed, pressure, ice or
+!> rainfall is being processed. The owiwind module has been updated
+!> extensively and the owi_rain and owi_ice files work but are out of
+!> date. Will have to decide if separate modules for 1 vs 2 variables
+!> or just call a single-variable module twice more than once with the
+!> correct file unit and variable information. Note that rain requires
+!> an additional averaging to account for negative values over land.
+!>
+!-----------------------------------------------------------------------
+      module owi_rain
+!-----------------------------------------------------------------------
+
+      use sizes, only : myproc
+      use global, only : nscreen, ScreenUnit
 #ifdef CMPI
-      USE MESSENGER,ONLY : MSG_FINI
+      use messenger, only : msg_fini
 #endif         
-      IMPLICIT NONE
-      character*100 :: title
 
-!      tcm v48.4645 Changed the way the header line is read
-!      character :: part1*12,part2*7,part3*6
-!      character :: owiheader*80
-      character(80) :: owiheader
+      implicit none
 
-      real(SZ), dimension(:,:), allocatable :: CRAINR,CRAINB
-      real(SZ), dimension(:), allocatable :: latR,longR,latB,longB
-      real(SZ) :: Along, Alat
-      real(SZ) :: ramp,rampfrac
-      real(SZ) :: RAIN1
-      real(SZ) :: CRAIN_env
-      integer(8):: date1R,date2R,date1B,date2B
-      integer :: date1rain,date2rain
+      integer(8):: date1R, date2R  ! used in init/get
+
+      ! Values read from control file: used in init and get
+      integer :: numSets, numBlankSnaps
+
+      ! Counters for tracking snaps: initialized in init
+      ! and incremented in get
+      integer :: cntSnaps, isnapR, isnapB
+
+      ! Basin/Regional header values: used to determine when
+      ! an interpolation update is required
+      ! compare to current in get, update in interp -- these can
+      ! be localized to interp if change how update happens
       integer :: iLatR,iLongR,iCYMDHR,iMinR
-      real(SZ)  :: dxR,dyR,swlatR,swlongR
+      real(8)  :: dxR,dyR,swlatR,swlongR
       integer :: iLatB,iLongB,iCYMDHB,iMinB
-      real(SZ)  :: dxB,dyB,swlatB,swlongB
+      real(8)  :: dxB,dyB,swlatB,swlongB
+
+      ! Current OWI header values: used for B and R
+      ! read in get, used to update B/R in interp
       integer,save :: iLatc,iLongc,iCYMDHc,iMinc
-      real(SZ)  :: dxc,dyc,swlatc,swlongc
-      integer :: isnapR,updateR
-      integer :: isnapB,updateB
+      real(8)  :: dxc,dyc,swlatc,swlongc
 
-      logical :: regionExists
-
+      ! allocated in init, updated in interp, used in get
       integer,allocatable :: swpointsR(:,:)
       integer,allocatable :: swpointsB(:,:)
+      real(8),allocatable :: wR(:,:)
+      real(8),allocatable :: wB(:,:)
 
-      real(SZ) :: w,w1,w2,w3,w4
-      real(SZ),allocatable :: wR(:,:)
-      real(SZ),allocatable :: wB(:,:)
+      PUBLIC rain12init, rain12get
+      PRIVATE interpRainBasin, interpRainRegion
+      !all variables are private
+      PRIVATE numSets,numBlankSnaps,cntSnaps,isnapR,isnapB
+      PRIVATE swpointsR,swpointsB,wR,wB
+      PRIVATE iLatc,iLongc,iCYMDHc,iMinc,dxc,dyc,swlatc,swlongc
+      PRIVATE iLatR,iLongR,iCYMDHR,iMinR,dxR,dyR,swlatR,swlongR 
+      PRIVATE iLatB,iLongB,iCYMDHB,iMinB,dxB,dyB,swlatB,swlongB 
 
-      CHARACTER FNAME*60
-
-      integer :: numSets,numBlankSnaps,cntSnaps,numSkipSnaps
-
-      PUBLIC
-
-C---------------------end of data declarations--------------------------------C
+!-----------------------------------------------------------------------
 
 
       CONTAINS
 
 
-C***********************************************************************
-C   SUBROUTINE rain12init
-C***********************************************************************
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+! P U B L I C   F U N C T I O N S
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
-      SUBROUTINE rain12init(Crainval,NP)
 
-      USE SIZES, ONLY : SZ,MYPROC, GBLINPUTDIR
+!-----------------------------------------------------------------------
+!> @brief Initializes reading data from Oceanweather format precip fields
+!> @param[out] rainval  precipitation rate
+!> @param[in]  np       number of nodes in adcirc mesh for processor
+!-----------------------------------------------------------------------
+      SUBROUTINE rain12init(rainval,NP)
+!-----------------------------------------------------------------------
 
-      IMPLICIT NONE
-      INTEGER   NP,I
-      REAL(SZ)  Crainval(*)
+      use sizes, only : myproc, gblinputdir
+
+      implicit none
+
+      integer, intent(in) :: np
+      real(8), intent(out) :: rainval(:)
+   
+      integer :: i
+      integer(8):: date1B,date2B
+      integer :: date1rain,date2rain
+      integer :: numSkipSnaps
+      character(80) :: owiheader
 
       allocate(swpointsB(NP,2),wB(NP,4))
       allocate(swpointsR(NP,2),wR(NP,4))
       
-! Read meta info -------------------------------------------------
+      ! Read meta info -- todo: edit to use openFileForRead
+      open(27,file=TRIM(GBLINPUTDIR)//'/'//'fort.27',status='old',
+     & action='read')
 
-      OPEN(27,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.27',STATUS='OLD',
-     & ACTION='READ')
-
-      ! Read the number of sets of .rain files.
+      ! Read the number of sets for rain files:
       ! If numSets = 1 then ADCIRC requires UNIT 271
       ! If numSets = 2 then ADCIRC requires UNIT 271 and 272.
-      !   UNIT 271 and 272 are rainfall intensity fields
-
       read(27,*,err=99999) numSets
 
-      if(numSets.NE.1.AND.numSets.NE.2) then
+      if(numSets.NE.1.and.numSets.NE.2) then
         if (myproc == 0) write(screenunit,1004)
         write(16,1004)
 #ifdef CMPI
@@ -97,46 +156,42 @@ C***********************************************************************
         stop
       endif
 
-      ! Read the number of blank snaps to be inserted before OWI rain fields start
+      ! Read the number of blank snaps to be inserted before start
       read(27,*,err=99999) numBlankSnaps
 
-      ! If numBlankSnaps < 0, ABS(numBlankSnaps) snaps in OWI rain files (UNIT225 and 227) will be skipped.
       if(numBlankSnaps.LT.0) then
         numSkipSnaps = ABS(numBlankSnaps)
         numBlankSnaps = 0
-
-      ! v48.4628 TCM 10/28/2009 -- Added else to initialize numSkipSnaps to be 0 
       else
         numSkipSnaps = 0 
       endif
 
+      ! If want to add unit multiplier - add read here
+      ! before closing the control file
       close(27)
 
-! Read basin rain file header ------------------------------------------------
+      ! Read basin rain file header -- todo: edit to use openFileForRead
+      open(271,file=trim(GBLINPUTDIR)//'/'//'fort.271', status='old')
 
-      OPEN(271,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.271', STATUS='OLD')
-
-      ! Read begining/ending dates of rainfall intensity file
+      ! Read begining/ending dates of rain file
       owiheader(:) = ' '  !set owiheader to blanks before read
       read(271,fmt='(a80)',err=99999) owiheader
       read(owiheader(56:65),'(I10)') date1rain
       read(owiheader(71:80),'(I10)') date2rain
 
       if (myproc == 0)then
-         write(screenunit,*)'date1 in basin rainfall intensity file = ',date1rain
-         write(screenunit,*)'date2 in basin rainfall intensity file = ',date2rain
+         write(screenunit,*)'date1 in basin rainfall file = ',date1rain
+         write(screenunit,*)'date2 in basin rainfall file = ',date2rain
       endif
 
       date1B = date1rain
       date2B = date2rain
 
-! Check if region scale data exist
-
+      ! Check if region scale data exist
       IF(numSets.eq.1) GOTO 100
 
-! Read region rain file header -----------------------------------------------
-
-      OPEN(272,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.272',STATUS='OLD')
+      ! Read region rain file header -- todo: edit to use openFileForRead
+      open(272,file=TRIM(GBLINPUTDIR)//'/'//'fort.272',status='old')
 
       ! Read begining/ending dates of rain file
       owiheader(:) = ' '  !set owiheader to blanks before read
@@ -145,82 +200,88 @@ C***********************************************************************
       read(owiheader(71:80),'(I10)') date2rain
 
       if (myproc == 0)then
-         write(screenunit,*)'date1 in region rainfall intensity file = ',date1rain
-         write(screenunit,*)'date2 in region rainfall intensity file = ',date2rain
+         write(screenunit,*)'date1 in region rainfall file = ',date1rain
+         write(screenunit,*)'date2 in region rainfall file = ',date2rain
       endif
 
       date1R = date1rain
       date2R = date2rain
 
- 100  CONTINUE
+ 100  continue
 
 
-! Initialize flags ----------------------------------------------------------
+      ! Initialize flags
       isnapB = 0
       isnapR = 0
-      updateB = 1
-      updateR = 1
       cntSnaps = 0
 
-! Skip snaps if necessary ---------------------------------------------------
+      ! Skip snaps if necessary
       do i = 1,numSkipSnaps
-        CALL rain12get(Crainval,NP)
+        call rain12get(rainval,NP)
       enddo
 
-      RETURN
+      return
 
 
  10   format(a51,i12,a5,i12)
- 1004 FORMAT(//,1X,' NUMBER OF SETS WAS SPECIFIED'//
-     &       'INCORRECTLY IN UNIT23.'/
-     &       ' IT MUST BE ETEHR OF 1 or 2'/
+ 1004 format(//,1X,' NUMBER OF SETS WAS SPECIFIED'//
+     &       'INCORRECTLY IN UNIT27.'/
+     &       ' IT MUST BE EITHER 1 or 2'/
      &       ' EXECUTION WILL BE TERMINATED.'//)
 
-99999 CONTINUE
+99999 continue
 
 #ifdef CMPI
       call msg_fini()
 #endif
-      STOP 'OWI_RAIN READ ERROR (1)'
+      stop 'OWI_RAIN read ERROR (1)'
 
-      END SUBROUTINE rain12init
+!-----------------------------------------------------------------------
+      end subroutine rain12init
+!-----------------------------------------------------------------------
 
-C***********************************************************************
-C   SUBROUTINE rain12get
-C***********************************************************************
+!-----------------------------------------------------------------------
+!> @brief Reads rainfall intensity from Oceanweather format file and
+!>        interpolates it to the ADCIRC mesh
+!> @param[out] rainval  rainfall intensity (assumed mm/hr)
+!> @param[in]  np       number of nodes in adcirc mesh for processor
+!-----------------------------------------------------------------------
+      SUBROUTINE rain12get(rainval,NP)
+!-----------------------------------------------------------------------
 
-      SUBROUTINE rain12get(Crainval,NP)
+      use SIZES,only : MYPROC,MNPROC
 
-      USE SIZES,ONLY : MYPROC,MNPROC
-      USE GLOBAL,ONLY : Screenunit
+      implicit none
 
-      IMPLICIT NONE
+      integer, intent(in) :: np
+      real(8), intent(out) :: rainval(:)
 
-      INTEGER   NP,I,J,XI,YI,K,ibar
-      REAL(SZ)  Crainval(*)
-      REAL(SZ)  CV(4),CVbar
-      CHARACTER*80 PBLJAGF
+      integer :: I,J,XI,YI,K,ibar
+      integer :: updateR, updateB !track if need to update interpolation
+      real(8) :: CV(4),CVbar
+      real(8) :: rain1  ! scalar placeholder during interpolation
+      real(8) :: w,w1,w2,w3,w4  !local weights
+      real(8), dimension(:,:), allocatable :: rainR, rainB
+      logical :: regionExists
+ 
+      ! Read basin data 
 
-
-! Read basin data  ---------------------------------------------------------
-
-      ! Increment counter (cntSnaps initialized to zero in ncrain1_init)
+      ! Increment counter (cntSnaps initialized to zero in rain12init)
       cntSnaps = cntSnaps+1
 
       ! Put a blank snap for the first 'numBlankSnaps' snaps
       if(cntSnaps.LE.numBlankSnaps) then
         do i=1,NP
-          Crainval(I)=0.d0
+          rainval(I)=0.d0
         enddo
         IF(NSCREEN.GE.1) THEN
           if(MYPROC.EQ.0) then
             WRITE(screenunit,16) cntSnaps
           endif
-          WRITE(16,16) cntSnaps    !TCMv48.4629 (Changed format number from 15 to 16)
-        ENDIF
+          WRITE(16,16) cntSnaps
+        endIF
         return
       endif
-
 
       ! Increment counter
       isnapB = isnapB+1
@@ -244,20 +305,23 @@ C***********************************************************************
       iMinB = iMinc
 
       IF (myproc == 0 ) THEN 
-        write(screenunit,'("Processing rain data for time ",I10," ",I2)') 
+        write(screenunit,'("Processing rain data for time ",I10," ",I2)')
      &              iCYMDHc,iMinc
-      END IF 
+      end IF 
       
-      ! Update coordinate mapping coefficients if necessary
+      ! Update coordinate mapping coefficients and reallocate
+      ! arrays with new dimensions
       if(updateB.eq.1) then
-        call ncrain1_interp_basin(np)
+        call interpRainBasin(np)
+        ! moved outside of interp_basin
+        if(allocated(rainB))  deallocate(rainB)
+        allocate(rainB(iLongB,iLatB))
       endif
       
       ! Read rain concentrations
-      read(271,22,end=9999,err=99999) ((CrainB(i,j),i=1,iLongB),j=1,iLatB)
+      read(271,22,end=9999,err=99999) ((rainB(i,j),i=1,iLongB),j=1,iLatB)
 
-! Read region data  --------------------------------------------------------
-
+      ! Read region data
       regionExists = .FALSE.
 
       IF(numSets.EQ.1) GOTO 100
@@ -283,9 +347,7 @@ C***********************************************************************
         else
           updateR = 0
         endif
-
       endif
-
 
       iCYMDHR = iCYMDHc
       iMinR = iMinc
@@ -293,7 +355,7 @@ C***********************************************************************
       IF (myproc == 0 ) THEN 
         write(screenunit,'("Processing 2nd rain set at",I10," ",I2)') 
      &              iCYMDHc,iMinc
-      END IF 
+      end IF 
 
       if(iCYMDHB.ne.iCYMDHR.or.iMinB.ne.iMinR) then
         if (myproc == 0) then
@@ -312,25 +374,22 @@ C***********************************************************************
         STOP
       endif
 
-      ! Update coordinate mapping coefficients if necessary
+      ! Update coordinate mapping coefficients and reallocate
+      ! arrays with new dimensions
       if(updateR.eq.1) then
-        call ncrain1_interp_region(np)
+        call interpRainRegion(np)
+        if(allocated(rainR))  deallocate(rainR)
+        allocate(rainR(iLongR,iLatR))
       endif
 
       ! Read rainfall intensity concentrations
-      read(272,22,end=9999,err=99999) ((CrainR(i,j),i=1,iLongR),j=1,iLatR)
+      read(272,22,end=9999,err=99999) ((rainR(i,j),i=1,iLongR),j=1,iLatR)
 
 
  100  CONTINUE
 
-! Interpolate onto ADCIRC grid and write to file -------------------------
+! Interpolate onto ADCIRC grid and write to file 
       
-      rampfrac = isnapB-1
-c      if (rampfrac<36) then
-c        ramp = tanh(18d0*rampfrac/36d0)
-c      end if
-      ramp = 1.0
-
       IF(NSCREEN.GE.1) THEN
         if(regionExists.EQV..TRUE.) then
           if(MYPROC.EQ.0) then
@@ -343,14 +402,13 @@ c      end if
           endif
           WRITE(16,14) iCYMDHB,iMinB
         endif
-      ENDIF
+      endIF
 
       do i=1,NP
 
         rain1=-9999.9D0
 
-        ! BASIN ---------------------------------------------------------
-
+        ! BASIN 
         if (swpointsB(i,1).gt.0) then
           xi = swpointsB(i,1)
           yi = swpointsB(i,2)
@@ -359,13 +417,13 @@ c      end if
           w2=wB(i,2)
           w3=wB(i,3)
           w4=wB(i,4)
-!         If an rainfall concentration value is less than zero (land flag)
-!         then set the value to the average non-zero value before
-!         interpolating
-          CV(1) = CrainB(xi,yi)
-          CV(2) = CrainB(xi+1,yi)
-          CV(3) = CrainB(xi+1,yi+1)
-          CV(4) = CrainB(xi,yi+1)
+
+         !If a rainfall value is less than zero (land flag) then set
+         !to the average non-zero value before interpolating
+          CV(1) = rainB(xi,yi)
+          CV(2) = rainB(xi+1,yi)
+          CV(3) = rainB(xi+1,yi+1)
+          CV(4) = rainB(xi,yi+1)
           CVbar = 0.d0
           ibar = 0
           do k=1,4
@@ -374,19 +432,17 @@ c      end if
                 ibar = ibar + 1
              endif
           enddo
-          if (ibar.gt.0) CVbar = CVbar/real(ibar,sz)
+          if (ibar.gt.0) CVbar = CVbar/ibar
           do k=1,4
              if (CV(k).lt.0.d0) CV(k) = CVbar
           enddo
 
-!         perform the interpolation
+          ! perform the interpolation
           rain1=w1*CV(1)+w2*CV(2)+w3*CV(3)+w4*CV(4)
-
         endif
 
-        ! REGION ---------------------------------------------------------
+        ! REGION 
         ! rain1 will be overwritten if region data exist.
-
         if ((regionExists).and.(swpointsR(i,1).gt.0)) then
           xi = swpointsR(i,1)
           yi = swpointsR(i,2)
@@ -398,10 +454,10 @@ c      end if
         ! If a rainfall value is less than zero (land flag)
         ! then set the value to the average non-zero value before
         ! interpolating
-          CV(1) = CrainR(xi,yi)
-          CV(2) = CrainR(xi+1,yi)
-          CV(3) = CrainR(xi+1,yi+1)
-          CV(4) = CrainR(xi,yi+1)
+          CV(1) = rainR(xi,yi)
+          CV(2) = rainR(xi+1,yi)
+          CV(3) = rainR(xi+1,yi+1)
+          CV(4) = rainR(xi,yi+1)
           CVbar = 0.d0
           ibar = 0
 
@@ -411,29 +467,25 @@ c      end if
                 ibar = ibar + 1
              endif
           enddo
-          if (ibar.gt.0) CVbar = CVbar/real(ibar,sz)
+          if (ibar.gt.0) CVbar = CVbar/ibar
           do k=1,4
              if (CV(k).lt.0.d0) CV(k) = CVbar
           enddo
 
-!         perform the interpolation
+          ! perform the interpolation
           rain1=w1*CV(1)+w2*CV(2)+w3*CV(3)+w4*CV(4)
-
         endif
 
-        ! COPY TO ARRAYS ----------------------------------------------------------
-
+        ! COPY TO ARRAYS 
         if(rain1.eq.-9999.9D0) then
-          Crainval(I)=0.d0
+          rainval(I)=0.d0
         else
-          if (rampfrac<36) then
-            rain1=Crain_env-(Crain_env-rain1)*ramp
-          endif
-          Crainval(i) = rain1
+          rainval(i) = rain1
         end if
 
 ! Convert the rainfall from mm/hr to m/s
-        Crainval(i)=Crainval(i)*0.00000027778d0
+! Can provide more flexibility by adding rainMultiplier in fort.27
+        rainval(i)=rainval(i)*0.00000027778d0
 
       enddo
 
@@ -445,14 +497,14 @@ c      end if
       WRITE(screenunit,*)''
       WRITE(screenunit,*)' !!!!!FATAL ERROR!!!!!'
       WRITE(screenunit,*)'EITHER UNIT 271 or 272',
-     & ' COULD NOT BE READ'
+     & ' COULD NOT BE read'
       WRITE(screenunit,*)' EXECUTION WILL BE TERMINATED'
       WRITE(screenunit,*)''
       endif
 
       WRITE(16,*) ''
       WRITE(16,*) ' !!!!!FATAL ERROR!!!!!'
-      WRITE(16,*) ' EITHER UNIT 271 or 272 COULD NOT BE READ'
+      WRITE(16,*) ' EITHER UNIT 271 or 272 COULD NOT BE read'
       WRITE(16,*) ' EXECUTION WILL BE TERMINATED'
       WRITE(16,*) ''
 #ifdef CMPI
@@ -468,7 +520,7 @@ c      end if
         WRITE(screenunit,*) ' EITHER UNIT 271 or 272 RAN OUT'
         WRITE(screenunit,*) ' EXECUTION WILL CONTINUE'
         WRITE(screenunit,*) ''
-      ENDIF
+      endIF
 
       WRITE(16,*) ''
       WRITE(16,*) ' !!! WARNING !!!'
@@ -477,7 +529,7 @@ c      end if
       WRITE(16,*) ''
 
       do i=1,NP
-        Crainval(I)=0.d0
+        rainval(I)=0.d0
       enddo
 
       RETURN
@@ -498,31 +550,43 @@ c      end if
 #ifdef CMPI
       call msg_fini()
 #endif
-      STOP 'OWI_RAIN READ ERROR (2)'
+      STOP 'OWI_RAIN read ERROR (2)'
 
-      END SUBROUTINE rain12get
+      end SUBROUTINE rain12get
 
-C***********************************************************************
-C   SUBROUTINE NCRAIN1_INTERP_BASIN
-C
-C   This generates and saves interpolation coefficients for mapping
-C   from a basin-scale OWI to a ADCIRC grid.
-C
-C***********************************************************************
 
-      SUBROUTINE NCRAIN1_INTERP_BASIN(NP)
-      USE GLOBAL,ONLY : RAD2DEG
-      USE MESH, ONLY : SLAM, SFEA
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+! P R I V A T E     F U N C T I O N S
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
-      IMPLICIT NONE
 
-      INTEGER   NP,I,J,K,XI,YI
-      REAL(SZ)  adcLat,adcLong
+!-----------------------------------------------------------------------
+!> @brief Generates interpolation coefficients for mapping from a
+!>        basin-scale Oceanweather formatted file to the ADCIRC mesh
+!> @param[in]  np       number of nodes in adcirc mesh for processor
+!-----------------------------------------------------------------------
+      SUBROUTINE interpRainBasin(np)
+!-----------------------------------------------------------------------
+      use GLOBAL,only : RAD2DEG
+      use MESH, only : SLAM, SFEA
+
+      implicit none
+
+      integer   NP,I,J,K,XI,YI
+      real(8)  adcLat,adcLong
+      real(8), dimension(:), allocatable :: latB, longB
+
+      real(8) :: w,w1,w2,w3,w4  !local weights
 
       WRITE(16,*) ''
       WRITE(16,*) 'BASIN-SCALE RAINFALL MAPPING UPDATED'
       WRITE(16,*) ''
-        
+
+      ! Update to current values 
       iLatB = iLatc
       iLongB = iLongc
       dxB = dxc
@@ -530,12 +594,9 @@ C***********************************************************************
       swlatB = swlatc
       swlongB = swlongc
         
-      ! Allocate and create matrices
-      if(allocated(CrainB))    deallocate(CrainB)
+      ! Allocate and create matrices -- moved rainB to rainget
       if(allocated(longB)) deallocate(longB)
       if(allocated(latB))  deallocate(latB)
-
-      allocate(CrainB(iLongB,iLatB))
       allocate(longB(iLongB),latB(iLatB))
         
       ! Generate long&lat on each grid point
@@ -591,29 +652,34 @@ C***********************************************************************
             
         endif
       enddo
-      END SUBROUTINE ncrain1_interp_basin
+
+!-----------------------------------------------------------------------
+      end SUBROUTINE interpRainBasin
+!-----------------------------------------------------------------------
 
 
-C***********************************************************************
-C   SUBROUTINE NCRAIN1_INTERP_REGION
-C
-C   This generates and saves interpolation coefficients for mapping
-C   from a region-scale OWI to a ADCIRC grid.
-C
-C***********************************************************************
+!-----------------------------------------------------------------------
+!> @brief Generates interpolation coefficients for mapping from a
+!>        region-scale Oceanweather formatted file to the ADCIRC mesh
+!> @param[in]  np       number of nodes in adcirc mesh for processor
+!-----------------------------------------------------------------------
+      SUBROUTINE interpRainRegion(np)
+!-----------------------------------------------------------------------
+      use GLOBAL,only : RAD2DEG
+      use MESH, only : SLAM, SFEA
+      implicit none
 
-      SUBROUTINE NCRAIN1_INTERP_REGION(NP)
-      USE GLOBAL,ONLY : RAD2DEG
-      USE MESH, ONLY : SLAM, SFEA
-      IMPLICIT NONE
+      integer   NP,I,J,K,XI,YI
+      real(8)  adcLat,adcLong
+      real(8), dimension(:), allocatable :: latR, longR
 
-      INTEGER   NP,I,J,K,XI,YI
-      REAL(SZ)  adcLat,adcLong
+      real(8) :: w,w1,w2,w3,w4  !local weights - put in each subroutine
 
       WRITE(16,*) ''
       WRITE(16,*) 'REGION-SCALE RAINFALL MAPPING UPDATED'
       WRITE(16,*) ''
         
+      ! Update to current values
       iLatR = iLatc
       iLongR = iLongc
       dxR = dxc
@@ -621,12 +687,9 @@ C***********************************************************************
       swlatR = swlatc
       swlongR = swlongc
  
-      ! Allocate and create matrices
-      if(allocated(CrainR))    deallocate(CrainR)
+      ! Allocate and create matrices (mvd rainR to rainget)
       if(allocated(longR)) deallocate(longR)
       if(allocated(latR))  deallocate(latR)
-
-      allocate(CrainR(iLongR,iLatR))
       allocate(longR(iLongR),latR(iLatR))
 
       ! Generate long&lat on each grid point
@@ -678,8 +741,10 @@ C***********************************************************************
           swpointsR(i,2) = 0
         endif
       enddo
-      END SUBROUTINE ncrain1_interp_region
+!-----------------------------------------------------------------------
+      end SUBROUTINE interpRainRegion
+!-----------------------------------------------------------------------
 
 
-      END MODULE OWI_RAIN
+      end MODULE OWI_RAIN
 
