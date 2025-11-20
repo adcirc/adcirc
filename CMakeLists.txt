@@ -80,6 +80,7 @@ enable_language(Fortran)
 enable_language(C)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ######################################################################################################################
 
 # ######################################################################################################################

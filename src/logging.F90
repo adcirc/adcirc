@@ -69,7 +69,7 @@ module mod_logging
    character(len=50), dimension(50) :: messageSources !< subroutine names
    integer :: sourceNumber = 0 !< index into messageSources for current sub
 
-   type(t_log_level) :: nabout = t_log_level(0, output_unit, "INFO") !< logging level from fort.15
+   type(t_log_level) :: nabout !< logging level from fort.15
    integer :: nscreen = 1 !< screen output destination from fort.15
    integer :: screenUnit !< unit number for screen output
 
