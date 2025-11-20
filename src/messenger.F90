@@ -40,7 +40,6 @@ module MESSENGER
    integer :: NEIGHPROC ! number of subdomains neighboring this one
    integer :: RDIM ! total send/recieve requests when passing info
    ! between subdomain neighbors, =2*neighproc
-   integer :: IERR ! error status of mpi subroutine call
    integer, parameter :: TAG = 100
    type(MPI_Comm) :: COMM_COMP ! COMMUNICATOR FOR COMPUTATION
    type(MPI_Group) :: GROUP_WORLD, GROUP_COMP !, GROUP_WRITER_ONLY
@@ -53,19 +52,24 @@ module MESSENGER
                            NNODRECV(:), IBELONGTO(:), ISENDLOC(:, :), IRECVLOC(:, :), &
                            ISENDBUF(:, :), IRECVBUF(:, :)
 
-   type(MPI_Request), allocatable :: REQ_I1(:), REQ_I2(:)
    type(MPI_Status), allocatable :: STAT_I1(:), STAT_I2(:)
-   type(MPI_Request), allocatable :: REQ_R1(:), REQ_R2(:), REQ_R3(:)
    type(MPI_Status), allocatable :: STAT_R1(:), STAT_R2(:), STAT_R3(:)
-   type(MPI_Request), allocatable :: REQ_M4R(:)
    type(MPI_Status), allocatable :: STAT_M4R(:) !sb 10/13/2022
-   type(MPI_Request), allocatable :: REQ_R3D(:)
    type(MPI_Status), allocatable :: STAT_R3D(:)
-   type(MPI_Request), allocatable :: REQ_C3D(:)
    type(MPI_Status), allocatable :: STAT_C3D(:)
    integer, allocatable :: INDX(:)
    real(8), allocatable :: SENDBUF(:, :), RECVBUF(:, :)
    complex(8), allocatable :: SENDBUF_COMPLEX(:, :), RECVBUF_COMPLEX(:, :)
+
+   ! Persistent communication request handles
+   ! These are initialized once and reused for all UPDATE* calls
+   type(MPI_Request), allocatable :: REQ_I1_PERSIST(:), REQ_I2_PERSIST(:)
+   type(MPI_Request), allocatable :: REQ_R1_PERSIST(:), REQ_R2_PERSIST(:), REQ_R3_PERSIST(:)
+   type(MPI_Request), allocatable :: REQ_M4R_PERSIST(:)
+   type(MPI_Request), allocatable :: REQ_R3D_PERSIST(:)
+   type(MPI_Request), allocatable :: REQ_C3D_PERSIST(:)
+   logical :: persistent_comms_initialized = .false.
+
    !jgf50.82: Create a flag for unrecoverable issue on a subdomain
    logical :: subdomainFatalError = .false. ! true if mpi_abort should be called
    logical :: writers_active = .false.
@@ -79,7 +83,6 @@ module MESSENGER
              updater3d, updatem4r, psdot, subdomainFatalError, tag, &
              mpi_comm_adcirc, writers_active, hs_writers_active, resnode, &
              msg_abort, neighproc, nnodrecv, irecvloc
-
 contains
 
    !---------------------end of data declarations--------------------------------C
@@ -111,6 +114,7 @@ contains
       integer :: I
       integer, allocatable :: RANKS(:) ! array of mpi ranks for compute processors
       integer :: IRANK_SLEEP(2) !st3 100711  for hsfile
+      integer :: IERR
 
       call setMessageSource("msg_init")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -212,6 +216,50 @@ contains
    !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
+   !  S U B R O U T I N E   MSG_FREE_PERSISTENT_COMMS
+   !---------------------------------------------------------------------
+   ! Free persistent communication requests
+   ! Must be called ONCE during MSG_FINI before MPI_Finalize
+   !---------------------------------------------------------------------
+   subroutine MSG_FREE_PERSISTENT_COMMS()
+      use mpi_f08, only: MPI_Request_free
+      use mod_logging, only: setMessageSource, allMessage, unsetMessageSource
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      use mod_logging, only: debug
+#endif
+      implicit none
+      integer :: i
+
+      if (.not. persistent_comms_initialized) return
+
+      ! Free all persistent request handles
+      do i = 1, RDIM
+         call MPI_Request_free(REQ_I1_PERSIST(i))
+         call MPI_Request_free(REQ_I2_PERSIST(i))
+         call MPI_Request_free(REQ_R1_PERSIST(i))
+         call MPI_Request_free(REQ_R2_PERSIST(i))
+         call MPI_Request_free(REQ_R3_PERSIST(i))
+         call MPI_Request_free(REQ_M4R_PERSIST(i))
+         call MPI_Request_free(REQ_R3D_PERSIST(i))
+         call MPI_Request_free(REQ_C3D_PERSIST(i))
+      end do
+
+      ! Deallocate arrays
+      deallocate (REQ_I1_PERSIST)
+      deallocate (REQ_I2_PERSIST)
+      deallocate (REQ_R1_PERSIST)
+      deallocate (REQ_R2_PERSIST)
+      deallocate (REQ_R3_PERSIST)
+      deallocate (REQ_M4R_PERSIST)
+      deallocate (REQ_R3D_PERSIST)
+      deallocate (REQ_C3D_PERSIST)
+
+      persistent_comms_initialized = .false.
+
+   end subroutine MSG_FREE_PERSISTENT_COMMS
+   !---------------------------------------------------------------------
+
+   !---------------------------------------------------------------------
    !      S U B R O U T I N E   M S G _ F I N I
    !---------------------------------------------------------------------
    !  Delete MPI resources and Shutdown MPI library.
@@ -231,6 +279,7 @@ contains
       implicit none
       logical, optional, intent(in) :: DO_MPI_FINALIZE
       integer :: I
+      integer :: IERR
 
       call setMessageSource("msg_fini")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -283,6 +332,9 @@ contains
             call mpi_abort(mpi_comm_world, myproc)
          end if
       end if
+
+      ! Free persistent communication requests before finalizing MPI
+      call MSG_FREE_PERSISTENT_COMMS()
 
       if (present(DO_MPI_FINALIZE)) then
          if (DO_MPI_FINALIZE) then
@@ -549,11 +601,8 @@ contains
 #endif
 
       allocate (ISENDBUF(MNP, NEIGHPROC), IRECVBUF(MNP, NEIGHPROC))
-      allocate (REQ_I1(RDIM), REQ_I2(RDIM))
-      allocate (REQ_R1(RDIM), REQ_R2(RDIM), REQ_R3(RDIM))
       allocate (STAT_I1(RDIM), STAT_I2(RDIM))
       allocate (STAT_R1(RDIM), STAT_R2(RDIM), STAT_R3(RDIM))
-      allocate (REQ_M4R(RDIM)) !sb 10/13/2022
       allocate (STAT_M4R(RDIM)) !sb 10/13/2022
 
       if (C3D) then
@@ -561,19 +610,126 @@ contains
          allocate (RECVBUF(2*MNP*MNFEN, NEIGHPROC))
          allocate (SENDBUF_COMPLEX(MNP*MNFEN, NEIGHPROC))
          allocate (RECVBUF_COMPLEX(MNP*MNFEN, NEIGHPROC))
-         allocate (REQ_R3D(RDIM))
          allocate (STAT_R3D(RDIM))
-         allocate (REQ_C3D(RDIM))
          allocate (STAT_C3D(RDIM))
       else
          allocate (SENDBUF(MNP, NEIGHPROC))
          allocate (RECVBUF(MNP, NEIGHPROC))
       end if
+
+      ! Initialize persistent communications now that buffers are allocated
+      call MSG_INIT_PERSISTENT_COMMS()
+
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG, "Return.")
 #endif
       call unsetMessageSource()
    end subroutine MSG_START
+
+   !---------------------------------------------------------------------
+   !  S U B R O U T I N E   MSG_INIT_PERSISTENT_COMMS
+   !---------------------------------------------------------------------
+   ! Initialize persistent communication requests for all UPDATE routines
+   ! Called automatically by MSG_START after communication buffers are allocated
+   !---------------------------------------------------------------------
+   subroutine MSG_INIT_PERSISTENT_COMMS()
+      use mpi_f08, only: MPI_Send_init, MPI_Recv_init, MPI_INTEGER, &
+                         MPI_DOUBLE_PRECISION, MPI_DOUBLE_COMPLEX
+      use GLOBAL, only: COMM
+      use SIZES, only: MNFEN
+      use mod_logging, only: setMessageSource, allMessage, unsetMessageSource
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      use mod_logging, only: debug, info
+#endif
+      implicit none
+      integer :: J
+
+      call setMessageSource("MSG_INIT_PERSISTENT_COMMS")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG, "Enter.")
+#endif
+
+      ! Allocate persistent request arrays
+      allocate (REQ_I1_PERSIST(RDIM))
+      allocate (REQ_I2_PERSIST(RDIM))
+      allocate (REQ_R1_PERSIST(RDIM))
+      allocate (REQ_R2_PERSIST(RDIM))
+      allocate (REQ_R3_PERSIST(RDIM))
+      allocate (REQ_M4R_PERSIST(RDIM))
+      allocate (REQ_R3D_PERSIST(RDIM))
+      allocate (REQ_C3D_PERSIST(RDIM))
+
+      ! Initialize persistent requests for UPDATEI (1 component)
+      do J = 1, NEIGHPROC
+         call MPI_Recv_init(IRECVBUF(1, J), NNODRECV(J), &
+                            MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I1_PERSIST(J))
+         call MPI_Send_init(ISENDBUF(1, J), NNODSEND(J), &
+                            MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I1_PERSIST(J + NEIGHPROC))
+      end do
+
+      ! Initialize persistent requests for UPDATEI (2 components)
+      do J = 1, NEIGHPROC
+         call MPI_Recv_init(IRECVBUF(1, J), 2*NNODRECV(J), &
+                            MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I2_PERSIST(J))
+         call MPI_Send_init(ISENDBUF(1, J), 2*NNODSEND(J), &
+                            MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I2_PERSIST(J + NEIGHPROC))
+      end do
+
+      ! Initialize persistent requests for UPDATER (1 component)
+      do J = 1, NEIGHPROC
+         call MPI_Recv_init(RECVBUF(1, J), NNODRECV(J), &
+                            MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R1_PERSIST(J))
+         call MPI_Send_init(SENDBUF(1, J), NNODSEND(J), &
+                            MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R1_PERSIST(J + NEIGHPROC))
+      end do
+
+      ! Initialize persistent requests for UPDATER (2 components)
+      do J = 1, NEIGHPROC
+         call MPI_Recv_init(RECVBUF(1, J), 2*NNODRECV(J), &
+                            MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R2_PERSIST(J))
+         call MPI_Send_init(SENDBUF(1, J), 2*NNODSEND(J), &
+                            MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R2_PERSIST(J + NEIGHPROC))
+      end do
+
+      ! Initialize persistent requests for UPDATER (3 components)
+      do J = 1, NEIGHPROC
+         call MPI_Recv_init(RECVBUF(1, J), 3*NNODRECV(J), &
+                            MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3_PERSIST(J))
+         call MPI_Send_init(SENDBUF(1, J), 3*NNODSEND(J), &
+                            MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3_PERSIST(J + NEIGHPROC))
+      end do
+
+      ! Initialize persistent requests for UPDATEM4R (4 components)
+      do J = 1, NEIGHPROC
+         call MPI_Recv_init(RECVBUF(1, J), 4*NNODRECV(J), &
+                            MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_M4R_PERSIST(J))
+         call MPI_Send_init(SENDBUF(1, J), 4*NNODSEND(J), &
+                            MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_M4R_PERSIST(J + NEIGHPROC))
+      end do
+
+      ! Initialize persistent requests for UPDATER3D (MNFEN layers)
+      do J = 1, NEIGHPROC
+         call MPI_Recv_init(RECVBUF(1, J), MNFEN*NNODRECV(J), &
+                            MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3D_PERSIST(J))
+         call MPI_Send_init(SENDBUF(1, J), MNFEN*NNODSEND(J), &
+                            MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3D_PERSIST(J + NEIGHPROC))
+      end do
+
+      ! Initialize persistent requests for UPDATEC3D (MNFEN layers, complex)
+      do J = 1, NEIGHPROC
+         call MPI_Recv_init(RECVBUF_COMPLEX(1, J), MNFEN*NNODRECV(J), &
+                            MPI_DOUBLE_COMPLEX, IPROC(J), TAG, COMM, REQ_C3D_PERSIST(J))
+         call MPI_Send_init(SENDBUF_COMPLEX(1, J), MNFEN*NNODSEND(J), &
+                            MPI_DOUBLE_COMPLEX, IPROC(J), TAG, COMM, REQ_C3D_PERSIST(J + NEIGHPROC))
+      end do
+
+      persistent_comms_initialized = .true.
+
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG, "Return.")
+#endif
+      call unsetMessageSource()
+   end subroutine MSG_INIT_PERSISTENT_COMMS
    !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
@@ -585,8 +741,7 @@ contains
    !  vjp  8/06/1999
    !---------------------------------------------------------------------
    subroutine UPDATEI(IVEC1, IVEC2, NMSG)
-      use mpi_f08, only: MPI_IRECV, MPI_ISEND, MPI_INTEGER, MPI_WAITSOME
-      use GLOBAL, only: COMM
+      use mpi_f08, only: MPI_STARTALL, MPI_WAITSOME
       use mod_logging, only: setMessageSource, allMessage, unsetMessageSource
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use mod_logging, only: debug
@@ -615,21 +770,11 @@ contains
             end do
          end if
       end do
-      ! Send/receive messages to/from all neighbors
+      ! Start all persistent communications
       if (NMSG == 1) then
-         do J = 1, NEIGHPROC
-            call MPI_IRECV(IRECVBUF(1, J), NNODRECV(J), &
-                           MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I1(J))
-            call MPI_ISEND(ISENDBUF(1, J), NNODSEND(J), &
-                           MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I1(J + NEIGHPROC))
-         end do
+         call MPI_STARTALL(RDIM, REQ_I1_PERSIST)
       else
-         do J = 1, NEIGHPROC
-            call MPI_IRECV(IRECVBUF(1, J), 2*NNODRECV(J), &
-                           MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I2(J))
-            call MPI_ISEND(ISENDBUF(1, J), 2*NNODSEND(J), &
-                           MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I2(J + NEIGHPROC))
-         end do
+         call MPI_STARTALL(RDIM, REQ_I2_PERSIST)
       end if
       !..Unpack Received messages as they arrive
       if (NMSG == 1) then
@@ -638,7 +783,7 @@ contains
             do N = 1, RDIM
                INDX(N) = 0
             end do
-            call MPI_WAITSOME(RDIM, REQ_I1, NFINI, INDX, STAT_I1)
+            call MPI_WAITSOME(RDIM, REQ_I1_PERSIST, NFINI, INDX, STAT_I1)
             TOT = TOT + NFINI
             do N = 1, NFINI
                if (INDX(N) > 0 .and. INDX(N) <= RDIM) then
@@ -659,7 +804,7 @@ contains
             do N = 1, RDIM
                INDX(N) = 0
             end do
-            call MPI_WAITSOME(RDIM, REQ_I2, NFINI, INDX, STAT_I2)
+            call MPI_WAITSOME(RDIM, REQ_I2_PERSIST, NFINI, INDX, STAT_I2)
             TOT = TOT + NFINI
             do N = 1, NFINI
                if (INDX(N) > 0 .and. INDX(N) <= RDIM) then
@@ -695,8 +840,7 @@ contains
    !  vjp  8/06/1999
    !---------------------------------------------------------------------
    subroutine UPDATER(VEC1, VEC2, VEC3, NMSG)
-      use mpi_f08, only: MPI_IRECV, MPI_ISEND, MPI_WAITSOME, MPI_DOUBLE_PRECISION
-      use GLOBAL, only: COMM
+      use mpi_f08, only: MPI_STARTALL, MPI_WAITSOME
       use mod_logging, only: setMessageSource, allMessage, unsetMessageSource
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use mod_logging, only: debug
@@ -716,7 +860,6 @@ contains
       call allMessage(DEBUG, "Enter.")
 #endif
 
-      !
       ! loop over neighboring subdomains
       do J = 1, NEIGHPROC
          NCOUNT = 0
@@ -740,30 +883,15 @@ contains
          end if
       end do
 
-      ! receive and send data to each neighboring subdomain, populating
-      ! the request handler array
-      if (NMSG == 1) then
-         do J = 1, NEIGHPROC
-            call MPI_IRECV(RECVBUF(1, J), NNODRECV(J), &
-                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R1(J))
-            call MPI_ISEND(SENDBUF(1, J), NNODSEND(J), &
-                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R1(J + NEIGHPROC))
-         end do
-      elseif (NMSG == 2) then
-         do J = 1, NEIGHPROC
-            call MPI_IRECV(RECVBUF(1, J), 2*NNODRECV(J), &
-                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R2(J))
-            call MPI_ISEND(SENDBUF(1, J), 2*NNODSEND(J), &
-                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R2(J + NEIGHPROC))
-         end do
-      else
-         do J = 1, NEIGHPROC
-            call MPI_IRECV(RECVBUF(1, J), 3*NNODRECV(J), &
-                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3(J))
-            call MPI_ISEND(SENDBUF(1, J), 3*NNODSEND(J), &
-                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3(J + NEIGHPROC))
-         end do
-      end if
+      ! Start all persistent communications
+      select case (NMSG)
+      case (1)
+         call MPI_STARTALL(RDIM, REQ_R1_PERSIST)
+      case (2)
+         call MPI_STARTALL(RDIM, REQ_R2_PERSIST)
+      case DEFAULT
+         call MPI_STARTALL(RDIM, REQ_R3_PERSIST)
+      end select
 
       select case (NMSG)
       case (1)
@@ -774,7 +902,7 @@ contains
             do N = 1, RDIM
                INDX(N) = 0 ! zero out the array of just-completed requests
             end do
-            call MPI_WAITSOME(RDIM, REQ_R1, NFINI, INDX, STAT_R1)
+            call MPI_WAITSOME(RDIM, REQ_R1_PERSIST, NFINI, INDX, STAT_R1)
             ! add the number of just-completed requests to the total
             TOT = TOT + NFINI
             ! loop over the just-completed requests
@@ -803,7 +931,7 @@ contains
             do N = 1, RDIM
                INDX(N) = 0
             end do
-            call MPI_WAITSOME(RDIM, REQ_R2, NFINI, INDX, STAT_R2)
+            call MPI_WAITSOME(RDIM, REQ_R2_PERSIST, NFINI, INDX, STAT_R2)
             TOT = TOT + NFINI
             do N = 1, NFINI
                if (INDX(N) > 0 .and. INDX(N) <= RDIM) then
@@ -828,7 +956,7 @@ contains
             do N = 1, RDIM
                INDX(N) = 0
             end do
-            call MPI_WAITSOME(RDIM, REQ_R3, NFINI, INDX, STAT_R3)
+            call MPI_WAITSOME(RDIM, REQ_R3_PERSIST, NFINI, INDX, STAT_R3)
             TOT = TOT + NFINI
             do N = 1, NFINI
                if (INDX(N) > 0 .and. INDX(N) <= RDIM) then
@@ -868,9 +996,8 @@ contains
    !  sb  10/13/2022
    !---------------------------------------------------------------------
    subroutine UPDATEM4R(M4R)
-      use mpi_f08, only: MPI_Irecv, MPI_Isend, MPI_Waitsome, MPI_DOUBLE_PRECISION
+      use mpi_f08, only: MPI_STARTALL, MPI_Waitsome
       use SIZES, only: MNP
-      use GLOBAL, only: COMM
       use mod_logging, only: setMessageSource, allMessage, unsetMessageSource
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use mod_logging, only: debug
@@ -911,14 +1038,8 @@ contains
          stop
       end if
 
-      ! receive and send data to each neighboring subdomain, populating
-      ! the request handler array
-      do J = 1, NEIGHPROC
-         call MPI_IRECV(RECVBUF(1, J), 4*NNODRECV(J), &
-                        MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_M4R(J))
-         call MPI_ISEND(SENDBUF(1, J), 4*NNODSEND(J), &
-                        MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_M4R(J + NEIGHPROC))
-      end do
+      ! Start all persistent communications
+      call MPI_STARTALL(RDIM, REQ_M4R_PERSIST)
 
       TOT = 0
       ! keep looping until the total number of completed communications
@@ -927,7 +1048,7 @@ contains
          do N = 1, RDIM
             INDX(N) = 0 ! zero out the array of just-completed requests
          end do
-         call MPI_WAITSOME(RDIM, REQ_M4R, NFINI, INDX, STAT_M4R)
+         call MPI_WAITSOME(RDIM, REQ_M4R_PERSIST, NFINI, INDX, STAT_M4R)
          ! add the number of just-completed requests to the total
          TOT = TOT + NFINI
          ! loop over the just-completed requests
@@ -1011,9 +1132,8 @@ contains
    !  tjc  6/24/2002
    !---------------------------------------------------------------------
    subroutine UPDATER3D(VEC)
-      use mpi_f08, only: MPI_Irecv, MPI_Isend, MPI_Waitsome, MPI_DOUBLE_PRECISION
+      use mpi_f08, only: MPI_STARTALL, MPI_Waitsome
       use SIZES, only: MNP, MNFEN
-      use GLOBAL, only: COMM
       use mod_logging, only: setMessageSource, allMessage, unsetMessageSource
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use mod_logging, only: debug
@@ -1038,13 +1158,8 @@ contains
          end do
       end do
 
-      ! Send/receive messages to/from all neighbors
-      do J = 1, NEIGHPROC
-         call MPI_IRECV(RECVBUF(1, J), MNFEN*NNODRECV(J), &
-                        MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3D(J))
-         call MPI_ISEND(SENDBUF(1, J), MNFEN*NNODSEND(J), &
-                        MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3D(J + NEIGHPROC))
-      end do
+      ! Start all persistent communications
+      call MPI_STARTALL(RDIM, REQ_R3D_PERSIST)
 
       !..Unpack Received messages as they arrive
       TOT = 0
@@ -1052,7 +1167,7 @@ contains
          do N = 1, RDIM
             INDX(N) = 0
          end do
-         call MPI_WAITSOME(RDIM, REQ_R3D, NFINI, INDX, STAT_R3D)
+         call MPI_WAITSOME(RDIM, REQ_R3D_PERSIST, NFINI, INDX, STAT_R3D)
          TOT = TOT + NFINI
          do N = 1, NFINI
             if (INDX(N) > 0 .and. INDX(N) <= RDIM) then
@@ -1083,9 +1198,8 @@ contains
    !  tjc  6/24/2002
    !---------------------------------------------------------------------
    subroutine UPDATEC3D(VEC)
-      use mpi_f08, only: MPI_Irecv, MPI_Isend, MPI_Waitsome, MPI_DOUBLE_COMPLEX
+      use mpi_f08, only: MPI_STARTALL, MPI_Waitsome
       use SIZES, only: MNP, MNFEN
-      use GLOBAL, only: COMM
       use mod_logging, only: setMessageSource, allMessage, unsetMessageSource
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use mod_logging, only: debug
@@ -1110,13 +1224,8 @@ contains
          end do
       end do
 
-      ! Send/receive messages to/from all neighbors
-      do J = 1, NEIGHPROC
-         call MPI_IRECV(RECVBUF_COMPLEX(1, J), MNFEN*NNODRECV(J), &
-                        MPI_DOUBLE_COMPLEX, IPROC(J), TAG, COMM, REQ_C3D(J))
-         call MPI_ISEND(SENDBUF_COMPLEX(1, J), MNFEN*NNODSEND(J), &
-                        MPI_DOUBLE_COMPLEX, IPROC(J), TAG, COMM, REQ_C3D(J + NEIGHPROC))
-      end do
+      ! Start all persistent communications
+      call MPI_STARTALL(RDIM, REQ_C3D_PERSIST)
 
       !..Unpack Received messages as they arrive
       TOT = 0
@@ -1124,7 +1233,7 @@ contains
          do N = 1, RDIM
             INDX(N) = 0
          end do
-         call MPI_WAITSOME(RDIM, REQ_C3D, NFINI, INDX, STAT_C3D)
+         call MPI_WAITSOME(RDIM, REQ_C3D_PERSIST, NFINI, INDX, STAT_C3D)
          TOT = TOT + NFINI
          do N = 1, NFINI
             if (INDX(N) > 0 .and. INDX(N) <= RDIM) then
