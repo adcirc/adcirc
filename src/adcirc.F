@@ -1,11 +1,11 @@
-!-------------------------------------------------------------------------------!
+!-------------------------------------------------------------------------!
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
 ! 
 ! This program is free software: you can redistribute it and/or modify
-! it under the terms of the GNU Lesser General Public License as published by
-! the Free Software Foundation, either version 3 of the License, or
+! it under the terms of the GNU Lesser General Public License as published
+! by the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
 ! 
 ! This program is distributed in the hope that it will be useful,
@@ -16,6 +16,7 @@
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
+<<<<<<< HEAD
 !-------------------------------------------------------------------------------!
 C******************************************************************************
 C (P)ADCIRC VERSION 45.12 03/17/2006                                          *
@@ -92,9 +93,82 @@ C******************************************************************************
 C******************************************************************************
 C******************************************************************************
 #include "logging_macros.h"
+=======
+!-----------------------------------------------------------------------
+! (P)ADCIRC VERSION 45.12 03/17/2006
+!  last changes in this file VERSION 45.12
+!
+!-----------------------------------------------------------------------
+!
+!                           (P)ADCIRC
+!
+!    A (PARALLEL) ADVANCED CIRCULATION MODEL FOR SHELVES, COASTAL SEAS
+!                         AND ESTUARIES
+!
+!
+!                          DEVELOPED BY:
+!
+!                      DR. R.A. LUETTICH, JR
+!
+!             UNIVERSITY OF NORTH CAROLINA AT CHAPEL HILL
+!                   INSTITUTE OF MARINE SCIENCES
+!                       3431 ARENDELL ST.
+!                   MOREHEAD CITY, NC, 28557
+!                         252-726-6841 EXT. 137
+!                   EMAIL  RICK_LUETTICH@UNC.EDU
+!
+!                        DR. J.J. WESTERINK
+!
+!          DEPARTMENT OF CIVIL ENGINEERING AND GEOLOGICAL SCIENCES
+!                     UNIVERSITY OF NOTRE DAME
+!                       NOTRE DAME, IN 46556
+!                         219-631-6475
+!                    EMAIL JJW@PHOTIUS.CE.ND.EDU
+!
+!
+!        MAJOR FUNDING FOR THE DEVELOPMENT OF ADCIRC WAS PROVIDED BY
+!
+!                       DEPARTMENT OF THE ARMY
+!                    WATERWAYS EXPERIMENT STATION
+!                 COASTAL ENGINEERING RESEARCH CENTER
+!                        3909 HALLS FERRY RD
+!                      VICKSBURG, MI 39180-6199
+!
+!-----------------------------------------------------------------------
+!
+!          THE ADCIRC SOURCE CODE IS COPYRIGHTED, 1994-2006 BY:
+!
+!                 R.A. LUETTICH, JR AND J.J. WESTERINK
+!
+!         NO PART OF THIS CODE MAY BE REPRODUCED OR REDISTRIBUTED
+!               WITHOUT THE WRITTEN PERMISSION OF THE AUTHORS
+!
+!-----------------------------------------------------------------------
+!
+!                  Parallelization of ADCIRC 2D was done by
+!                    the center for subsurface modeling
+!                         The University of Texas
+!                             Austin, TX 78712
+!                            03/06/98 - 5/19/99
+!
+!                   Translation of 2D code to Fortran90
+!                             Victor J. Parr
+!                              John B. Romo
+!                               8/31/99
+!
+!               Parallelization, consolidation of 2D & 3D codes,
+!             translation of 3D routines to Fortran 90 was done by
+!                               Tim Campbell
+!                   Naval Research Lab, Stennis Space Center
+!                             summer 2002
+!
+!-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       MODULE ADCIRC_Mod
-C******************************************************************************
-C******************************************************************************
+!-----------------------------------------------------------------------
 #ifdef CMPI
       use mpi_f08, only: MPI_Comm
 #endif
@@ -107,14 +181,23 @@ C******************************************************************************
 
       CONTAINS
 
+<<<<<<< HEAD
 C******************************************************************************
 C*    ADCIRC initialize routine
 C******************************************************************************
+=======
+
+!------------------------------------------------------------------------
+!> @brief ADCIRC initialization routine.
+!------------------------------------------------------------------------
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
+!------------------------------------------------------------------------
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
-      USE VERSION, ONLY : adc_version, adc_hash, fileFmtMajor, fileFmtMinor, 
-     &   FileFmtRev
+      USE VERSION, ONLY : adc_version, adc_hash, fileFmtMajor,
+     &   fileFmtMinor, FileFmtRev
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
+<<<<<<< HEAD
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
      &   get_numwriters, mnstae, mnwproh, mnwproc, localdir
       USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
@@ -128,14 +211,33 @@ C******************************************************************************
       USE mod_logging, ONLY : allMessage, screenMessage,
      &   openLogFile, DEBUG, INFO, screenUnit,
      &   nabout, nscreen, ECHO, t_log_level, t_log_scope, init_log_scope
+=======
+     &   read_local_hot_start_files, make_dirname, get_numwriters,
+     &   write_local_harm_files, mnstae, mnwproh, mnwproc
+      USE GLOBAL, ONLY : usingDynamicWaterLevelCorrection,
+     &   dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, 
+     &   dynamicWaterLevelCorrectionSta, DEBUG, INFO, allMessage, itime,
+     &   dtdp, statim, CHotHS, dtdpHS, FileFmtVersion, ifnlcat, nabout,
+     &   ncchange, ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im,
+     &   iths, nolica, nolicat, nolifa, nscreen, nstae, nt, screenunit,
+     &   version_number, initLogging, setMessageSource, screenMessage,
+     &   scratchMessage, openLogFile, unsetMessageSource, np_global,
+     &   rnp_global, CTIP, L_N, writer_id,
+     &   dynamicWaterLevelCorrectionDelta
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
      &   initVEW1DChannelWetPerimeter
       use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
       USE ADC_CONSTANTS, ONLY: g, rhowat0
+<<<<<<< HEAD
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB,
      &   NSTA3DD, NSTA3DV, NSTA3DT, NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
      &   IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG 
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
+=======
+      USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB 
+      USE MESH, ONLY : totalAreaCalc, ne, np, SFEA
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       USE GWCE, ONLY : initGWCE
       USE MOMENTUM, ONLY : initMomentumEq
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
@@ -152,9 +254,12 @@ C******************************************************************************
 #endif
       IMPLICIT NONE
 
+<<<<<<< HEAD
 #ifdef CMPI
       type(MPI_Comm), OPTIONAL :: COMM
 #else
+=======
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       INTEGER, OPTIONAL :: COMM
 #endif
 
@@ -162,7 +267,7 @@ C******************************************************************************
       REAL(8) :: StaTimHS
       REAL(8) :: RefTimHS
       REAL(8) :: TimeLoc
-      INTEGER :: iargc    ! function to return the number of command line arguments
+      INTEGER :: iargc    ! function to get number command line args
       INTEGER :: argcount ! number of command line arguments
       CHARACTER(2048) :: cmdlinearg ! a single command line argument
       character(1024) :: scratchMessage
@@ -199,10 +304,22 @@ C******************************************************************************
             end select
          end do
       endif
+<<<<<<< HEAD
 
       nabout = ECHO
 #ifdef EBUG
       nabout = DEBUG
+=======
+
+      call initLogging()
+      nabout = 0 !jgf52.08.01: Initialize log level to ECHO.
+#ifdef DEBUG
+      nabout = -1 !jgf52.08.01: Initialize log level to DEBUG
+#endif
+      call setMessageSource("ADCIRC_Init")
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call screenMessage(DEBUG,"Enter.") ! log to screen
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
 #endif
       IF (PRESENT(ROOTD)) THEN
         ROOTDIR = TRIM(ROOTD)
@@ -211,23 +328,32 @@ C******************************************************************************
       ENDIF
 
 #ifdef CMPI
-      CALL GET_NUMWRITERS()  ! Get number of writer processors from command line arguments
+      CALL GET_NUMWRITERS()  ! Get number of writer processors
       IF (PRESENT(COMM)) THEN
         CALL MSG_INIT(COMM)  ! Init MPI and get MPI-rank of this cpu
       ELSE
         CALL MSG_INIT()      ! Init MPI and get MPI-rank of this cpu
       ENDIF
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
+<<<<<<< HEAD
       call openLogFile(localdir)  ! jgf50.65: open subdomain log files (fort.16)
+=======
+      call openLogFile()     ! jgf50.65: open subdomain log (fort.16)
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       CALL WRITER_INIT()     ! Initialize WRITER module
-      CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
+      CALL HSWRITER_INIT()   ! Initialize HSWRITER module: hstart 100711
       if ( (mnwproh > 0.or.mnwproc > 0) .and. myProc >= mnproc) then
          return
       endif
+<<<<<<< HEAD
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
       CALL MSG_TABLE(NSTA3DD, NSTA3DV, NSTA3DT,       ! Read Message-Passing Tables
      &               NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
      &               IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG)
+=======
+      CALL READ_INPUT()      ! Establish sizes: read fort.14 and fort.15
+      CALL MSG_TABLE()       ! Read Message-Passing Tables
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       CALL MSG_START()       ! Startup message passing
 #else
       MNPROC = 1             ! Init number of compute procs for serial
@@ -236,7 +362,7 @@ C******************************************************************************
       MYPROC = 0             ! Init task id for serial
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       call openLogFile()     ! jgf50.65: open fort.16 file
-      CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
+      CALL READ_INPUT()      ! Establish sizes: read fort.14 and fort.15
 #endif
 
       ! File Fmt Version  must match Major and Minor numbers.
@@ -248,7 +374,7 @@ C******************************************************************************
       ENDIF
 
       
-      !jgf49.44: Allocate memory for reading and writing full domain arrays
+      !jgf49.44: Allocate memory for full domain array I/O operations
       IF ( (MNPROC.gt.1).and.
      &        ( (myProc.eq.0)
      &          .or.(READ_LOCAL_HOT_START_FILES.eqv..false.) ) ) THEN
@@ -259,7 +385,7 @@ C******************************************************************************
           CALL allocateFullDomainHAIOArrays()
       ENDIF
 
-      ! Initialize variables for bottom friction evaluation considering wet perimeter 11/06/2023
+      ! Initialize variables for bottom friction (wet perimeter) 11/06/23
       if ( activateVEW1DChannelWetPerimeter.eqv..true. ) THEN
             CALL initVEW1DChannelWetPerimeter()
       ENDIF
@@ -267,22 +393,35 @@ C******************************************************************************
       !jgf49.44: Initialize harmonic analysis parameters.
       CALL initHarmonicParameters()
 
+<<<<<<< HEAD
 C     jgf: Initialize default values in wind module and allocate
 C     memory for internal use.
+=======
+      !jgf: Initialize default values in wind module and allocate
+      ! memory for internal use.
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       call initWindModule()
 
       !jgf53.dev: allocate memory for continuity and momentum eqns
       call initGWCE()
       call initMomentumEq()
 
+<<<<<<< HEAD
 C...Compute the reciprocal of the number of nodes in the entire domain
 
+=======
+#ifdef CMACHSUN
+      CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
+#endif
+
+      ! Compute the reciprocal of the number of nodes in the mesh
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
 #ifdef CMPI
       CALL ALLNODES(NP_GLOBAL)
       RNP_GLOBAL = 1.0D0/NP_GLOBAL
 #endif
 
-C     jgf45.08 put this here so it can be used in hot start
+      !jgf45.08 put this here so it can be used in hot start
       IF(NOLIFA.EQ.0) THEN
          IFNLFA=0
       ELSE
@@ -292,33 +431,34 @@ C     jgf45.08 put this here so it can be used in hot start
       !...Read the self attraction and loading file (fort.24)
       call readSelfAttractionAndLoadingFile()
 
-C...************* Make the L_N Tidal potential multiple function *************
-C... WJP: Feb 21 2018; moved here before hstart Feb 27 2019
-C..  Corrected long term species (unfortunately there is a mistake in old ADCIRC 
-C..  theory report that also propagated into some subsequent publications)
+      !--------- Make the L_N Tidal potential multiple function ---------
+      !WJP: Feb 21 2018; moved here before hstart Feb 27 2019
+      ! Corrected long term species (unfortunately there is a mistake in
+      ! old ADCIRC theory report that also propagated into some
+      ! publications)
       IF (CTIP) THEN
 
          DO I = 1,NP
-C           LONG-TERM SPECIES
+            ! LONG-TERM SPECIES
             L_N(0,I) = 1.5d0*COS(SFEA(I))*COS(SFEA(I)) - 1d0
-C           DIURNAL SPECIES
+            ! DIURNAL SPECIES
             L_N(1,I) = SIN(2d0*SFEA(I))
-C           SEMIDIURNAL SPECIES
+            ! SEMIDIURNAL SPECIES
             L_N(2,I) = COS(SFEA(I))*COS(SFEA(I))
          END DO
 
       ENDIF
 
-C...
-C...******************** PROGRAM SETUP SECTION ************************
-C...
+      !-----------------------------------------------------------------
+      !                  PROGRAM SETUP SECTION
+      !-----------------------------------------------------------------
 
       SELECT CASE(IHOT)
          CASE(0)
             CALL COLDSTART()
-            ITHS = 0  !TCM20091029 v49.02 Initialized to zero for coldstarts
+            ITHS = 0  !TCM20091029 v49.02 Initialize to zero for cstart
          ! kmd : added in the initial condition read
-         CASE(17,67,68,367,368,567,568) ! non-portable binary or netcdf hotstart file
+         CASE(17,67,68,367,368,567,568) ! read the hotstart file
             CALL HOTSTART()
          CASE DEFAULT
             ! the IHOT value was vetted already, so this code should
@@ -328,23 +468,27 @@ C...
             ENDIF
       END SELECT
 
-C...Default beginning and ending time steps
-
+      ! Default beginning and ending time steps
       ITIME_BGN = ITHS+1
       ITIME_END = NT  !NT is set in read_input.F
 
-C...  Determine the number of active elements (MJU), the total number of
-C...  elements (NODELE) and the total area of elements (TotalArea) 
-C...  attached to each node
-      call totalAreaCalc()
+      ! Determine the number of active elements (MJU), the total number
+      ! of elements (NODELE) and the total area of elements (TotalArea)
+      ! attached to each node.
+      ! CMS 11/20/25: moved inside cstart/hstart modules after nnodecode
+      ! is updated, since it is needed for the hydrology initial setup.
+      ! Removed areas and totalarea from use mesh statement above.
+
+      ! call totalAreaCalc()
+ 
+      ! jgf52.08.20: Compute master time which is referenced to the
+      ! beginning time of the model run. This is needed here only
+      ! because we need to determine whether to load min/max files in
+      ! subroutine initOutput2D().
       !
-      !
-      ! jgf52.08.20: Compute master time which is referenced to the beginning 
-      ! time of the model run. This is needed here only because we need to 
-      ! determine whether to load min/max files in subroutine initOutput2D().
       ! If the time in the min/max file is later than the current time
-      ! in ADCIRC, we don't load the min/max files. TODO: This is computed
-      ! again in subroutine timestep().
+      ! in ADCIRC, we don't load the min/max files. TODO: This is
+      ! computed again in subroutine timestep().
       TimeLoc=ITIME_BGN*DTDP + StaTim*86400.D0
       IF (CHOTHS.eqv..true.) THEN
          StaTimHS=((ITIME_BGN-1)*DTDPHS)/86400.D0
@@ -353,26 +497,32 @@ C...  attached to each node
       END IF
 
       !jgf: Initialize water level offset if needed
-      allocate(dynamicWaterLevelCorrectionDelta(np)) !time difference in offset tgaContOffset
+      ! time difference in offset: tgaContOffset
+      allocate(dynamicWaterLevelCorrectionDelta(np))
       dynamicWaterLevelCorrectionDelta=0.D0
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          allocate(dynamicWaterLevelCorrection1(np))
-         allocate(dynamicWaterLevelCorrection2(np)) ! used in timestepping
+         allocate(dynamicWaterLevelCorrection2(np)) ! for timestepping
          allocate(dynamicWaterLevelCorrectionSta(mnstae))
-         call initDynamicWaterLevelCorrection(timeloc) ! initializes the i/o 
-         call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc) ! populate 
+         call initDynamicWaterLevelCorrection(timeloc) ! init the i/o
+         call getDynamicWaterLevelCorrections(
+     &        dynamicWaterLevelCorrection2, timeloc) ! populate
       endif
 
 
+<<<<<<< HEAD
 C     jgf51.21.24: Initialize output.
+=======
+      !jgf51.21.24: Initialize output.
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       call initOutput2D(timeloc)
 
-C...
-C...************* SET FLAGS AND COEFFICIENTS USED IN TIME STEPPING ***********
-C...
 
-C...Set flags for nonlinear terms
+      !-----------------------------------------------------------------
+      !        SET FLAGS AND COEFFICIENTS USED IN TIME STEPPING
+      !-----------------------------------------------------------------
 
+      ! Set flags for nonlinear terms
       IF(NOLICA.EQ.0) THEN
          IFNLCT=0
       ELSE
@@ -384,7 +534,7 @@ C...Set flags for nonlinear terms
          IFNLCAT=1
       ENDIF
 
-Corbitt 1203022: Local Advection Flags
+      ! Corbitt 1203022: Local Advection Flags
       IFNLCTE  = IFNLCT
       IFNLCATE = IFNLCAT
 
@@ -408,27 +558,36 @@ Corbitt 1203022: Local Advection Flags
 
 
       RETURN
+!------------------------------------------------------------------------
       END SUBROUTINE ADCIRC_Init
+!------------------------------------------------------------------------
 
 
-C******************************************************************************
-C*    ADCIRC run routine
-C******************************************************************************
+!------------------------------------------------------------------------
+!> @brief ADCIRC run routine.
+!------------------------------------------------------------------------
       SUBROUTINE ADCIRC_Run(NTIME_STP)
+!------------------------------------------------------------------------
       USE SIZES, ONLY : mnproc, mnwproc, mnwproh, myproc
+<<<<<<< HEAD
       USE GLOBAL, ONLY : iTime, statim, dtdp,
      &   earlyterminate
       USE mod_logging, ONLY : allMessage,
      &   logMessage, DEBUG, INFO, t_log_scope, init_log_scope
+=======
+      USE GLOBAL, ONLY : iTime, DEBUG, INFO, setMessageSource,
+     &    allMessage, unsetMessageSource, statim, dtdp, screenunit,
+     &    logMessage, earlyterminate
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
 #ifdef CMPI
-      USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
+      USE WRITER, ONLY : writer_main, writer_pause,
+     &    sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
 #endif
 
 #ifdef CSWAN
-Casey 090302: We need the following information to couple to unstructured SWAN.
-      USE Couple2Swan, ONLY: CouplingInterval,
-     &                       PADCSWAN_RUN
+      !Casey 090302: for coupling to unstructured SWAN
+      USE Couple2Swan, ONLY: CouplingInterval, PADCSWAN_RUN
 #endif
       USE WRITE_OUTPUT,ONLY: writeOutput2D
 #ifdef CMPI      
@@ -444,7 +603,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
 
       LOG_SCOPE_TRACED("ADCIRC_Run", ADCIRC_TRACING)
 
-!TCM v49.52.01 added this ifdef (brought in from adcirc_init()
+      !TCM v49.52.01 added #ifdef test from adcirc_init()
 #ifdef CMPI
       if (((mnwproh > 0).or.(mnwproc > 0)) .and. myproc >= mnproc) then
          if ( myproc < mnproc+mnwproc ) then   !st3
@@ -476,8 +635,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
         CALL TIMESTEP(ITIME,TimeLoc)
 
 #ifdef CSWAN
-Casey 090302: If it is time, then call the following subroutine
-C             to then call the SWAN time-stepping subroutine.
+        !Casey 090302: For coupled swan if it is time, call SWAN
         IF(MOD(ITIME,CouplingInterval).EQ.0)THEN
           CALL PADCSWAN_RUN(ITIME)
         ENDIF
@@ -491,32 +649,48 @@ C             to then call the SWAN time-stepping subroutine.
         !        the SWAN time step has been completed.
             CALL writeOutput2D(ITIME,TimeLoc) ! =>see write_output.F
         endif
+<<<<<<< HEAD
       END DO
+=======
+100   CONTINUE
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
 
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_BGN = ITIME_END+1
       ENDIF
+<<<<<<< HEAD
+
+=======
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
 
 
-!TCM v49.52.01 added the following ifdef to pause writer processors
-! before exiting adcirc_run phase.  This is to allow them to be
-! used again if adcirc_run is called more than once.
+      !TCM v49.52.01 added #ifdef to pause writer processors before
+      ! exiting adcirc_run phase.  This is to allow them to be used
+      ! again if adcirc_run is called more than once.
 #ifdef CMPI
       IF (MYPROC == 0 .and. MNWPROC > 0) CALL WRITER_PAUSE()
       IF (MYPROC == 0 .and. MNWPROH > 0) CALL HSWRITER_PAUSE()
 #endif
 
       RETURN
+!------------------------------------------------------------------------
       END SUBROUTINE ADCIRC_Run
+!------------------------------------------------------------------------
 
 
-C******************************************************************************
-C*    ADCIRC finalize routine
-C******************************************************************************
+!------------------------------------------------------------------------
+!> @brief ADCIRC finalize routine.
+!------------------------------------------------------------------------
       SUBROUTINE ADCIRC_Final(NO_MPI_FINALIZE)
+<<<<<<< HEAD
       USE GLOBAL, ONLY : iTime
       USE mod_logging, ONLY : allMessage,
      &   DEBUG, t_log_scope, init_log_scope
+=======
+!------------------------------------------------------------------------
+      USE GLOBAL, ONLY : iTime, DEBUG, setMessageSource, allMessage,
+     &   unsetMessageSource
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       USE HARM, ONLY : solveHarmonicAnalysis
       USE WRITE_OUTPUT, ONLY : writeHarmonicAnalysisOutput
 #ifdef CMPI
@@ -528,15 +702,28 @@ C******************************************************************************
       IMPLICIT NONE
 
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+<<<<<<< HEAD
 
+=======
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       INTEGER :: I
-
       REAL (8):: start_time, end_time
+<<<<<<< HEAD
 
       LOG_SCOPE_TRACED("ADCIRC_Final", ADCIRC_TRACING)
 C...
 C...*************** SOLVE THE HARMONIC ANALYSIS PROBLEM ****************
 C...
+=======
+
+      call setMessageSource("ADCIRC_Final")
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+
+      ! Solve and write output for harmonic analysis
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       CALL solveHarmonicAnalysis(ITIME)
       CALL writeHarmonicAnalysisOutput(ITIME)
 
@@ -549,12 +736,23 @@ C...
      &                 do_finalize_mpi=.true.,
      &                 message="ADCIRC terminating normally")
       ENDIF
+<<<<<<< HEAD
 
+=======
+#endif
+
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       RETURN
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
       END SUBROUTINE ADCIRC_Final
-C-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
+
+<<<<<<< HEAD
 C-----------------------------------------------------------------------
 C     SUBROUTINE PRINT_HELP
 C-----------------------------------------------------------------------
@@ -564,6 +762,29 @@ C-----------------------------------------------------------------------
       SUBROUTINE PRINT_HELP()
       USE VERSION, ONLY: adc_version
       IMPLICIT NONE
+=======
+!-----------------------------------------------------------------------
+!> @brief jgf50.44: Exit mpi cleanly when terminate unexpectedly.
+!-----------------------------------------------------------------------
+      SUBROUTINE ADCIRC_Terminate(NO_MPI_FINALIZE)
+!-----------------------------------------------------------------------
+      USE GLOBAL, ONLY : DEBUG, INFO, setMessageSource, allMessage, 
+     &   unsetMessageSource
+#ifdef CMPI
+      USE MESSENGER, ONLY : subdomainFatalError, msg_fini
+#endif
+
+      IMPLICIT NONE
+
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+
+      call setMessageSource("ADCIRC_Terminate")
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      call allMessage(INFO,"ADCIRC Terminating.")
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
 
 #ifdef CSWAN
 #ifdef CMPI
@@ -571,6 +792,7 @@ C-----------------------------------------------------------------------
 #else
       WRITE(*,'(A)') 'Usage: adcswan [OPTION]...'
 #endif
+<<<<<<< HEAD
       WRITE(*,'(A)') 'ADvanced CIRCulation model coupled with SWAN for shelves, coastal seas, and estuaries.'
 #else
 #ifdef CMPI
@@ -601,11 +823,81 @@ C-----------------------------------------------------------------------
       RETURN
       END SUBROUTINE PRINT_HELP
 C-----------------------------------------------------------------------
+=======
+      CALL EXIT(1) 
 
-C******************************************************************************
-C******************************************************************************
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+!-----------------------------------------------------------------------
+      END SUBROUTINE ADCIRC_Terminate
+!-----------------------------------------------------------------------
 
+
+!-----------------------------------------------------------------------
+!> @brief subroutines to check for errors on other processors.
+!>
+!> @details
+!>  ADCIRC Local Terminate Routine and corresponding collection routine
+!>  zc50.81 In the case where there is an error on a single processor,
+!>  allow everyone to check if we need to bomb out. For example, mesh
+!>  errors might only occur on a single processor and hang the code.
+!>  Care must be taken not to inadvertantly hang the code by allowing
+!>  for cases where not all compute processors pass through the same
+!>  call to this routine.
+!-----------------------------------------------------------------------
+#ifdef CMPI
+!-----------------------------------------------------------------------
+      SUBROUTINE ADCIRC_LocalTerminate()
+!-----------------------------------------------------------------------
+        USE GLOBAL,ONLY: terminate_localproc, screenUnit
+        IMPLICIT NONE
+        !...Set the local terminator and then go wait for the rest of
+        !   the compute processors to check in
+        TERMINATE_LOCALPROC = 1
+        CALL ADCIRC_CheckLocalTerminate()
+!-----------------------------------------------------------------------
+      END SUBROUTINE ADCIRC_LocalTerminate
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+      SUBROUTINE ADCIRC_CheckLocalTerminate()
+!-----------------------------------------------------------------------
+        USE MESSENGER
+        USE GLOBAL,ONLY: terminate_localproc, screenUnit, comm
+        USE SIZES,ONLY: MYPROC
+        USE MPI
+        IMPLICIT NONE
+
+        INTEGER :: TERM_LOCAL(2)
+        INTEGER :: TERM_GLOBAL(2)
+        INTEGER :: ierr
+
+        TERM_LOCAL(1) = TERMINATE_LOCALPROC
+        TERM_LOCAL(2) = MYPROC
+        CALL MPI_ALLREDUCE(TERM_LOCAL,TERM_GLOBAL,1,
+     &      MPI_2INTEGER,MPI_MAXLOC,COMM,IERR)
+        IF(TERM_GLOBAL(2).NE.0)THEN
+            IF(MYPROC.EQ.0)THEN
+                WRITE(ScreenUnit,'(A,I5)') "ERROR: ADCIRC Terminating "//
+     &          "from error originating from MYPROC = ",TERM_GLOBAL(2)
+                WRITE(ScreenUnit,'(A)')    "       Check the local PE "//
+     &          "fort.16 output file for details."
+            ENDIF
+            CALL ADCIRC_TERMINATE()
+        ENDIF
+!-----------------------------------------------------------------------
+      END SUBROUTINE ADCIRC_CheckLocalTerminate
+!-----------------------------------------------------------------------
+#endif
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
+
+
+<<<<<<< HEAD
+=======
+
+!-----------------------------------------------------------------------
+>>>>>>> Subject: Edit adcirc_init to move totalareacalc call to c/hstart
       END MODULE ADCIRC_Mod
-C******************************************************************************
-C******************************************************************************
-
+!-----------------------------------------------------------------------
