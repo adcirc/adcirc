@@ -33,8 +33,7 @@ module GL2LOC_MAPPING
    use MESH, only: NP ! local number of nodes
    use GLOBAL, only: nodes_lg, np_g, COMM
 
-   use MPI, only: MPI_INTEGER, MPI_STATUS_SIZE, MPI_Bcast, MPI_GATHER, &
-                  MPI_GATHERV, MPI_SCATTERV, MPI_Comm_rank, MPI_Comm_size
+   use MPI
 
    implicit none
 
@@ -56,7 +55,7 @@ contains
 
    !----------------------------------------------------------------------
    subroutine MAPTOLOCAL_REAL(GLOBALDATA, LOCALDATA)
-      use mpi, only: MPI_DOUBLE_PRECISION
+      use mpi
       implicit none
       real(8), intent(IN) :: GLOBALDATA(:)
       real(8), intent(OUT) :: LOCALDATA(:)
@@ -147,7 +146,7 @@ contains
 
    !----------------------------------------------------------------------
    subroutine BcastToLocal_2DRealArray(Val, NX, NY)
-      use mpi, only: MPI_REAL
+      use mpi
       implicit none
       real(4), intent(INOUT) :: Val(:, :)
       integer, intent(IN) :: NX, NY

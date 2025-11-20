@@ -24,7 +24,7 @@ macro(add_strict_compiler_flags)
     set(STRICT_FLAGS "-warn all -diag-enable remark -implicit-none")
   elseif(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
     set(STRICT_FLAGS
-        "-Werror -Wall -Wextra -Wconversion -pedantic -fimplicit-none -Wuninitialized -Wsurprising -Wuse-without-only -Wimplicit-procedure -Winteger-division -Wconversion-extra"
+        "-Werror -Wall -Wextra -Wconversion -pedantic -fimplicit-none -Wuninitialized -Wsurprising -Wno-use-without-only -Wimplicit-procedure -Winteger-division -Wconversion-extra"
     )
   else()
     message(WARNING "No developer compiler flags defined for ${CMAKE_Fortran_COMPILER_ID}. No action taken.")

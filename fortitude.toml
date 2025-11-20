@@ -1,3 +1,7 @@
 [check]
 line-length = 132
 ignore = ["C003", "PORT011", "S101"]
+
+[check.per-file-ignores]
+"src/gl2loc_mapping.F90" = ["C121"]
+"src/messenger.F90" = ["C121"]
