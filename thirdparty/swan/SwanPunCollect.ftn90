@@ -48,7 +48,7 @@ subroutine SwanPunCollect ( blkndc )
 !PUN!
 !PUN!   Modules used
 !PUN!
-!PUN    use mpi_f08, only: MPI_Gather, MPI_Gatherv, MPI_INTEGER, MPI_REAL, MPI_SUCCESS
+!PUN    use mpi_f08, only: MPI_Allgather, MPI_Gatherv, MPI_INTEGER, MPI_REAL, MPI_SUCCESS
 !PUN    use ocpcomm4
 !PUN    use swcomm2, only: XOFFS, YOFFS
 !PUN    use m_parall, only: IAMMASTER
@@ -110,32 +110,31 @@ subroutine SwanPunCollect ( blkndc )
 !PUN       endif
 !PUN    enddo
 !PUN    !
-!PUN    if ( IAMMASTER ) then
-!PUN       allocate(icount(0:MNPROC-1))
-!PUN       allocate(idsplc(0:MNPROC-1))
-!PUN    endif
+!PUN    ! allocate on all processes for allgather
 !PUN    !
-!PUN    ! gather the array sizes to the master
+!PUN    allocate(icount(0:MNPROC-1))
+!PUN    icount(:) = 0
 !PUN    !
-!PUN    call MPI_GATHER( nownv, 1, MPI_INTEGER, icount, 1, MPI_INTEGER, 0, COMM, ierr )
+!PUN    ! gather the array sizes to all processes
+!PUN    !
+!PUN    call MPI_ALLGATHER( nownv, 1, MPI_INTEGER, icount, 1, MPI_INTEGER, COMM, ierr )
 !PUN    if ( ierr /= MPI_SUCCESS ) then
 !PUN       write (msgstr, '(a,i6)') ' MPI produces some internal error - return code is ',ierr
 !PUN       call msgerr( 4, trim(msgstr) )
 !PUN       return
 !PUN    endif
 !PUN    !
-!PUN    ! check consistency with respect to size of gathered data
+!PUN    ! check consistency with respect to size of gathered data (all processes)
 !PUN    !
-!PUN    if ( IAMMASTER ) then
-!PUN       if ( sum(icount) /= nvertsg ) then
-!PUN          call msgerr(4, 'inconsistency found in SwanPunCollect: size of gathered data not correct ')
-!PUN          return
-!PUN       endif
+!PUN    if ( sum(icount) /= nvertsg ) then
+!PUN       call msgerr(4, 'inconsistency found in SwanPunCollect: size of gathered data not correct ')
+!PUN       return
 !PUN    endif
 !PUN    !
 !PUN    ! calculate starting address of each local array with respect to the global array
 !PUN    !
 !PUN    if ( IAMMASTER ) then
+!PUN       allocate(idsplc(0:MNPROC-1))
 !PUN       idsplc(0) = 0
 !PUN       do j = 1, MNPROC-1
 !PUN          idsplc(j) = icount(j-1) + idsplc(j-1)
@@ -193,6 +192,7 @@ subroutine SwanPunCollect ( blkndc )
 !PUN    !
 !PUN    deallocate(ivertp,blknd)
 !PUN    deallocate(xpl,ypl)
-!PUN    if ( IAMMASTER ) deallocate(icount,idsplc,iarr,arr)
+!PUN    deallocate(icount)
+!PUN    if ( IAMMASTER ) deallocate(idsplc,iarr,arr,xcugrdgl,ycugrdgl)
 !PUN    !
 end subroutine SwanPunCollect
