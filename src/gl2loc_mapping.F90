@@ -60,7 +60,6 @@ contains
       implicit none
       real(8), intent(IN) :: GLOBALDATA(:)
       real(8), intent(OUT) :: LOCALDATA(:)
-      integer :: ierr
       integer :: kk
 
       ! build the global mapping (GL2LOC) if this is the first call
@@ -77,7 +76,7 @@ contains
       end if
       call MPI_SCATTERV(SENDBUF_REAL, SENDCOUNTS, DISPLS, MPI_DOUBLE_PRECISION, &
                         RECVBUF_REAL, RECVCOUNT, MPI_DOUBLE_PRECISION, &
-                        0, COMM, ierr)
+                        0, COMM)
       LOCALDATA = RECVBUF_REAL
 
    end subroutine MAPTOLOCAL_REAL
@@ -87,7 +86,7 @@ contains
       implicit none
 
       logical, save :: first_call = .true.
-      integer :: kk, ierr
+      integer :: kk
       integer, allocatable :: local_gl2loc(:)
 
       ! Return if we have already built the table
@@ -113,7 +112,7 @@ contains
       ! gather all recvcount values on proc 0
       call MPI_GATHER(RECVCOUNT, 1, MPI_INTEGER, &
                       SENDCOUNTS, 1, MPI_INTEGER, &
-                      0, COMM, ierr)
+                      0, COMM)
       if (MYPROC == 0) then
          DISPLS(1) = 0
          do kk = 2, MNPROC
@@ -129,7 +128,7 @@ contains
       ! make total mapping
       call MPI_GATHERV(local_gl2loc, RECVCOUNT, MPI_INTEGER, &
                        GL2LOC, SENDCOUNTS, DISPLS, MPI_INTEGER, &
-                       0, COMM, ierr)
+                       0, COMM)
       deallocate (local_gl2loc)
    end subroutine BUILD_GL2LOC
    !----------------------------------------------------------------------
@@ -139,8 +138,7 @@ contains
       !----------------------------------------------------------------------
       implicit none
       integer, intent(INOUT) :: Val
-      integer :: ierr
-      call MPI_BCast(Val, 1, MPI_Integer, 0, COMM, ierr)
+      call MPI_BCast(Val, 1, MPI_Integer, 0, COMM)
       !----------------------------------------------------------------------
    end subroutine BcastToLocal_Int
    !----------------------------------------------------------------------
@@ -152,7 +150,7 @@ contains
       real(4), intent(INOUT) :: Val(:, :)
       integer, intent(IN) :: NX, NY
       real(4), allocatable :: TMP(:)
-      integer :: ii, jj, NumVals, kk, ierr
+      integer :: ii, jj, NumVals, kk
 
       NumVals = NX*NY
       allocate (TMP(NumVals))
@@ -165,7 +163,7 @@ contains
             end do
          end do
       end if
-      call MPI_BCAST(TMP, NumVals, MPI_REAL, 0, COMM, ierr)
+      call MPI_BCAST(TMP, NumVals, MPI_REAL, 0, COMM)
       kk = NumVals
       do ii = NX, 1, -1
          do jj = NY, 1, -1

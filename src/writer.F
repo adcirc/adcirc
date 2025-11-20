@@ -146,16 +146,16 @@ C-----------------------------------------------------------------------
           IF(myproc.EQ.0)THEN
               DO I = 0,MNWPROC-1
                  CALL mpi_send(sig_ini,1,mpi_integer,mnproc,tag,
-     &                         comm_writer(i+1),ierr)
+     &                         comm_writer(i+1))
                  CALL mpi_send(np_g,1,mpi_integer,mnproc+i,0,
-     &                         mpi_comm_adcirc,ierr)
+     &                         mpi_comm_adcirc)
                  CALL mpi_send(labels_g,np_g,mpi_integer,mnproc+i,0,
-     &                         mpi_comm_adcirc,ierr)
+     &                         mpi_comm_adcirc)
               ENDDO
           ELSEIF(myproc.GT.mnproc-1.and.myproc.LT.mnproc+mnwproc)THEN
-              CALL mpi_recv(n,1,mpi_integer,0,0,mpi_comm_adcirc,mpistat,ierr)
+              CALL mpi_recv(n,1,mpi_integer,0,0,mpi_comm_adcirc,mpistat)
               if (.not.allocated(labels_g)) allocate(labels_g(1:n))   !tcm 20240804 added test for allocated
-              CALL mpi_recv(labels_g,n,mpi_integer,0,0,mpi_comm_adcirc,mpistat,ierr)
+              CALL mpi_recv(labels_g,n,mpi_integer,0,0,mpi_comm_adcirc,mpistat)
           ENDIF
 
           RETURN
@@ -192,9 +192,9 @@ C
       !
       ! infinite loop
 
-      do 
+      do
          call mpi_recv(sig, 1, mpi_integer, 0, tag,
-     &       comm_writer(writer_id), mpistat, ierr)
+     &       comm_writer(writer_id), mpistat)
 
          select case(sig)
          case(sig_ini) 
@@ -289,7 +289,7 @@ C
          !
          ! Send SIG_VAL to a writer to get it ready to receive values.
          call mpi_send(SIG_VAL, 1, mpi_integer, mnproc, tag,
-     &      comm_writer(wcommID), ierr)
+     &      comm_writer(wcommID))
 
 C...     Send minimal set of metadata associated with this file
 C....    tcm v50.27 added for full/compact record
@@ -304,15 +304,15 @@ Cobell - Allow writer processors to output netcdf data
          INTBUF(6) = it
          INTBUF(7) = nabout%level()
          call mpi_send(intbuf, numIntMetaData, mpi_integer, mnproc, tag,
-     &      comm_writer(wcommID),ierr)
+     &      comm_writer(wcommID))
          REBUF(1) = descript % alternate_value
          REBUF(2) = timeLoc
          ! send dry value and time in seconds
-         call mpi_send(rebuf, numRealMetaData, MPI_DOUBLE_PRECISION, mnproc, tag, 
-     &      comm_writer(wcommID),ierr)
+         call mpi_send(rebuf, numRealMetaData, MPI_DOUBLE_PRECISION, mnproc, tag,
+     &      comm_writer(wcommID))
          ! send file name
-         call mpi_send(descript % file_name, 1024, mpi_character, 
-     &      mnproc, tag, comm_writer(wcommID), ierr)
+         call mpi_send(descript % file_name, 1024, mpi_character,
+     &      mnproc, tag, comm_writer(wcommID))
          write(scratchMessage,'(a,i0,a,a,a,i0,a)') 
      &     'Processor ',myproc,' is sending file name ',
      &     trim(descript%file_name),' to writer ',wcommID,'.'
@@ -341,7 +341,7 @@ C...     which is the writer proc in the group.
 C...     Note that ranks from 0 to (MNPROC-1) are compute procs, and
 C...     rank MNPROC of writer communicators is always the writer proc.
          call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM,
-     &      MNPROC, comm_writer(wcommID), ierr)
+     &      MNPROC, comm_writer(wcommID))
          istart = iend + 1
          iend   = min(istart + num - 1, descript % num_fd_records)
          num    = iend - istart + 1
@@ -351,10 +351,7 @@ C
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-      return
-C-----------------------------------------------------------------------
       end subroutine sendDataToWriter
-C-----------------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------
@@ -387,8 +384,8 @@ C-----------------------------------------------------------------------
 #endif
       !
       ! Receive minimal set of metadata required to write the file
-      call mpi_recv(intbuf, numIntMetaData, mpi_integer, 0, tag, 
-     &   comm_writer(writer_id), mpistat, ierr)
+      call mpi_recv(intbuf, numIntMetaData, mpi_integer, 0, tag,
+     &   comm_writer(writer_id), mpistat)
       !
       ! Select the writer buffer that will receive the values. 
       descriptFound = .false.
@@ -427,15 +424,15 @@ C-----------------------------------------------------------------------
       nabout = t_log_level(intbuf(7))
       !
       ! receive "dry" data value and current simulation time
-      call mpi_recv(rebuf, numRealMetaData, MPI_DOUBLE_PRECISION, 0, tag, 
-     &   comm_writer(writer_id), mpistat, ierr)
+      call mpi_recv(rebuf, numRealMetaData, MPI_DOUBLE_PRECISION, 0, tag,
+     &   comm_writer(writer_id), mpistat)
       writer_descripts(bufid) % alternate_value = rebuf(1)
       writer_descripts(bufid) % wMD % myTime = rebuf(2)
-      ! 
+      !
       ! receive file name
       writer_descripts(bufID) % file_name(:) = " "
-      call mpi_recv(writer_descripts(bufID)%file_name, 1024, 
-     & mpi_character, 0, tag, comm_writer(writer_id), mpistat, ierr)
+      call mpi_recv(writer_descripts(bufID)%file_name, 1024,
+     & mpi_character, 0, tag, comm_writer(writer_id), mpistat)
       write(scratchMessage,'(a,i0,a,i0,a,a,a)') 'Writer ',writer_id,
      &   ' buffer ', bufID,' received file name ',
      &   trim(writer_descripts(bufID)%file_name)
@@ -483,7 +480,7 @@ C...     which is a writer proc.
 C...     Note that ranks from 0 to (MNPROC-1) are compute procs, and
 C...     rank MNPROC of writer communicators is always a writer proc.
          call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM,
-     &     MNPROC, comm_writer(writer_id), ierr)
+     &     MNPROC, comm_writer(writer_id))
 
          j = 1
          do i = istart, iend
@@ -558,7 +555,7 @@ C-----------------------------------------------------------------------
      &           ' is sending sig_write to writer ',i,'.'
                call logMessage(DEBUG, scratchMessage)
                call mpi_send(sig_write,1,mpi_integer,mnproc,
-     &              tag,comm_writer(i),ierr)
+     &              tag,comm_writer(i))
                nwloaded(i) = .false.
             endif
          enddo
@@ -865,7 +862,7 @@ C
          !
          ! Send sig_mesh to a writer to get it ready to receive metadata.
          call mpi_send(sig_mesh, 1, mpi_integer, mnproc, tag,
-     &      comm_writer(wcommID), ierr)
+     &      comm_writer(wcommID))
          ! 
          ! read the fulldomain mesh file name and control file name
          ! so that the writer can load them up and use them (it only
@@ -891,28 +888,25 @@ C
          end do
 10       close(30)
          call mpi_send(meshFileName_g, 2048, mpi_character,
-     &      mnproc, tag, comm_writer(wcommID), ierr)
+     &      mnproc, tag, comm_writer(wcommID))
          call mpi_send(controlFileName_g, 2048, mpi_character,
-     &      mnproc, tag, comm_writer(wcommID), ierr)
+     &      mnproc, tag, comm_writer(wcommID))
          ! mesh file type
          call mpi_send(meshType, 1, mpi_integer, mnproc, tag,
-     &      comm_writer(wcommID), ierr)
+     &      comm_writer(wcommID))
          ! control file type
          call mpi_send(controlType, 1, mpi_integer, mnproc, tag,
-     &      comm_writer(wcommID), ierr)
+     &      comm_writer(wcommID))
          ! ending time step
          call mpi_send(nt, 1, mpi_integer, mnproc, tag,
-     &      comm_writer(wcommID), ierr)
+     &      comm_writer(wcommID))
       endif
 C
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-      return
-C-----------------------------------------------------------------------
       end subroutine sendInitWriterXDMF
-C-----------------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------
@@ -948,15 +942,15 @@ C-----------------------------------------------------------------------
       ! 
       ! receive file name of mesh file
       call mpi_recv(meshFileName, 2048, mpi_character, 0, tag, 
-     &   comm_writer(writer_id), mpistat, ierr)
-      call mpi_recv(controlFileName, 2048, mpi_character, 0, tag, 
-     &   comm_writer(writer_id), mpistat, ierr)
+     &   comm_writer(writer_id), mpistat)
+      call mpi_recv(controlFileName, 2048, mpi_character, 0, tag,
+     &   comm_writer(writer_id), mpistat)
       !
       ! Receive the file type of the mesh file
-      call mpi_recv(meshType, 1, mpi_integer, 0, tag, 
-     &   comm_writer(writer_id), mpistat, ierr)
-      call mpi_recv(controlType, 1, mpi_integer, 0, tag, 
-     &   comm_writer(writer_id), mpistat, ierr)
+      call mpi_recv(meshType, 1, mpi_integer, 0, tag,
+     &   comm_writer(writer_id), mpistat)
+      call mpi_recv(controlType, 1, mpi_integer, 0, tag,
+     &   comm_writer(writer_id), mpistat)
 
       write(scratchMessage,'(a,i0,a,a)') 'Writer ',writer_id,
      &   ' received mesh file name ',trim(meshFileName)
@@ -966,7 +960,7 @@ C-----------------------------------------------------------------------
       call logMessage(INFO,scratchMessage)
       ! ending time step
       call mpi_recv(nt, 1, mpi_integer, 0, tag,
-     &      comm_writer(writer_id), mpistat, ierr)
+     &      comm_writer(writer_id), mpistat)
       !
       ! now read the mesh so it can be used to create XDMF output files
       if (meshInitialized.eqv..false.) then
@@ -1020,7 +1014,7 @@ C-----------------------------------------------------------------------
       ! mpi communicator to signal them to pause
       do i=1,mnwproc
          call mpi_send( sig_pause, 1, mpi_integer, mnproc,
-     &                  tag, comm_writer(i), ierr)
+     &                  tag, comm_writer(i))
       enddo
 C
 C
@@ -1650,7 +1644,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
 
          call pack_cmd(descript, istart, iend)
          call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM,
-     &                   MNPROC, WCOMM, ierr)
+     &                   MNPROC, WCOMM)
 
          if (WRITER_ID /= 0) then
             call unpack_cmd(descript, istart, iend)
@@ -1708,7 +1702,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
 
          call pack_cmd(descript, istart, iend)
          call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
-     &                 MPI_INTEGER, MPI_SUM, MNPROC, WCOMM, ierr)
+     &                 MPI_INTEGER, MPI_SUM, MNPROC, WCOMM)
 
          if (WRITER_ID /= 0) then
             call unpack_cmd(descript, istart, iend)

@@ -102,7 +102,6 @@ C--------------------------------------------------------------------
       external unpack_cmd
 #ifdef CMPI
       ! the subroutine used to write the file
-      integer      :: ierr
       type(MPI_Status) :: status
       type(MPI_Request) :: request
       integer, save:: tagbase = 6000
@@ -161,10 +160,10 @@ C        now pack the buffer
 C        now send data to processor 0
          if ( descript % isInteger .eqv. .true. ) then
            call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
-     &                 MPI_INTEGER, MPI_SUM, 0, COMM, ierr)
+     &                 MPI_INTEGER, MPI_SUM, 0, COMM)
          else
            call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM,
-     &                     0, COMM, ierr)
+     &                     0, COMM)
          endif
          if (myproc == 0) then
             call unpack_cmd(descript, istart, iend)
@@ -640,7 +639,6 @@ C
       integer, intent(in) :: it
       external write_cmd
 #ifdef CMPI
-      integer      :: ierr
       type(MPI_Status) :: status
       type(MPI_Request) :: request
       integer      :: nGWetNodes
@@ -704,10 +702,10 @@ C
            call write_cmd(descript%lun, descript, istart, iend)
            if(descript%isInteger)then
                call mpi_reduce(integerbuffer, integerresultBuffer, bufsize, mpi_integer, MPI_SUM, 0,
-     &       COMM, ierr)
+     &       COMM)
            else
                call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM, 0,
-     &       COMM, ierr)
+     &       COMM)
            endif
            if (myproc == 0) then
              do i = istart, iend
@@ -761,7 +759,6 @@ C
       integer, intent(in) :: it
       external write_cmd
 #ifdef CMPI
-      integer      :: ierr
       type(MPI_Status) :: status
       type(MPI_Request) :: request
       integer      :: nGWetNodes
@@ -834,8 +831,8 @@ C
             nLWetNodes=nLWetNodes+1
          enddo
          call mpi_reduce(nLWetNodes, nGWetNodes, 1, MPI_INTEGER,
-     &        MPI_SUM, 0, comm, ierr)
-   
+     &        MPI_SUM, 0, comm)
+
          if (myproc == 0) then
            open(descript%lun, file=trim(descript%file_name), 
      &         access='SEQUENTIAL', position='APPEND')
@@ -866,7 +863,7 @@ C
    
            call write_cmd(descript%lun, descript, istart, iend)
            call mpi_reduce(buf, resultBuf, bufsize, MPI_DOUBLE_PRECISION, MPI_SUM, 0,
-     &       COMM, ierr)
+     &       COMM)
            if (myproc == 0) then
              do i = istart, iend
                j = 1 + (i-istart)*descript % num_items_per_record
