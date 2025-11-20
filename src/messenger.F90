@@ -89,10 +89,8 @@ contains
    !   (5)  initialize adcirc COMM communicator MPI_COMM_WORLD
    !  vjp  10/3/2006
    !----------------------------------------------------------------------
-   subroutine MSG_INIT(MPI_COMM)
-      use MPI, only: MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, MPI_COMM_DUP, &
-                     MPI_COMM_SIZE, MPI_COMM_RANK, MPI_GROUP_INCL, MPI_COMM_CREATE, &
-                     MPI_COMM_GROUP, MPI_INIT
+   subroutine MSG_INIT(COMM_IN)
+      use MPI
       use SIZES, only: MNALLPROC, MNPROC, MYPROC, MNWPROH, MNWPROC
       use GLOBAL, only: REALTYPE, DBLETYPE, FLOAT_TYPE, COMM_WRITER, &
                         COMM_WRITEH, COMM_HSLEEP, setMessageSource, &
@@ -101,7 +99,7 @@ contains
       use GLOBAL, only: DEBUG
 #endif
       implicit none
-      integer, optional, intent(in) :: MPI_COMM
+      integer, optional, intent(in) :: COMM_IN
       integer :: I
       integer, allocatable :: RANKS(:) ! array of mpi ranks for compute processors
       integer :: IRANK_SLEEP(2) !st3 100711  for hsfile
@@ -113,9 +111,9 @@ contains
       REALTYPE = MPI_DOUBLE_PRECISION
       DBLETYPE = MPI_DOUBLE_PRECISION
       float_type = REALTYPE ! used in globalio
-      if (present(MPI_COMM)) then
+      if (present(COMM_IN)) then
          !.......Duplicate communicator passed from outside
-         call MPI_COMM_DUP(MPI_COMM, MPI_COMM_ADCIRC, IERR)
+         call MPI_COMM_DUP(COMM_IN, MPI_COMM_ADCIRC, IERR)
       else
          !.......Initialize MPI
          call MPI_INIT(IERR)
@@ -213,8 +211,7 @@ contains
    !  vjp  8/29/1999
    !---------------------------------------------------------------------
    subroutine MSG_FINI(NO_MPI_FINALIZE)
-      use MPI, only: MPI_SEND, MPI_INTEGER, MPI_BARRIER, MPI_ABORT, MPI_FINALIZE, &
-                     MPI_COMM_WORLD
+      use MPI
       use SIZES, only: MNWPROC, MYPROC, MNPROC, MNWPROH
       use GLOBAL, only: SIG_TERM, COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, &
                         CPL2STWAVE, Flag_ElevError, Flag_VelError, setMessageSource, &
@@ -527,7 +524,7 @@ contains
    !  vjp  10/01/2006
    !---------------------------------------------------------------------
    subroutine MSG_START()
-      use MPI, only: MPI_STATUS_SIZE
+      use MPI
       use SIZES, only: MNP, MNFEN
       use GLOBAL, only: C3D, setMessageSource, allMessage, unsetMessageSource
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -579,7 +576,7 @@ contains
    !  vjp  8/06/1999
    !---------------------------------------------------------------------
    subroutine UPDATEI(IVEC1, IVEC2, NMSG)
-      use MPI, only: MPI_IRECV, MPI_ISEND, MPI_INTEGER, MPI_WAITSOME
+      use MPI
       use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -691,7 +688,7 @@ contains
    !  vjp  8/06/1999
    !---------------------------------------------------------------------
    subroutine UPDATER(VEC1, VEC2, VEC3, NMSG)
-      use MPI, only: MPI_IRECV, MPI_ISEND, MPI_WAITSOME
+      use MPI
       use GLOBAL, only: REALTYPE, setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -867,7 +864,7 @@ contains
    !  sb  10/13/2022
    !---------------------------------------------------------------------
    subroutine UPDATEM4R(M4R)
-      use MPI, only: MPI_IRECV, MPI_ISEND, MPI_WAITSOME
+      use MPI
       use SIZES, only: MNP
       use GLOBAL, only: REALTYPE, setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -1014,7 +1011,7 @@ contains
    !  tjc  6/24/2002
    !---------------------------------------------------------------------
    subroutine UPDATER3D(VEC)
-      use MPI, only: MPI_IRECV, MPI_ISEND, MPI_WAITSOME
+      use MPI
       use SIZES, only: MNP, MNFEN
       use GLOBAL, only: REALTYPE, setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -1088,7 +1085,7 @@ contains
    !  tjc  6/24/2002
    !---------------------------------------------------------------------
    subroutine UPDATEC3D(VEC)
-      use MPI, only: MPI_IRECV, MPI_ISEND, MPI_WAITSOME
+      use MPI
       use SIZES, only: MNP, MNFEN
       use GLOBAL, only: REALTYPE, setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -1170,7 +1167,7 @@ contains
    !  Find a maximum integer value
    !---------------------------------------------------------------------
    function msg_imax(v) result(vmax)
-      use MPI, only: MPI_ALLREDUCE, MPI_INTEGER, MPI_MAX
+      use MPI
       use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1204,7 +1201,7 @@ contains
    !  Parallel version of SDOT for ITPACKV module
    !---------------------------------------------------------------------
    real(8) function psdot(n, sx, sy) result(gsum)
-      use MPI, only: MPI_ALLREDUCE, MPI_SUM
+      use MPI
       use GLOBAL, only: DBLETYPE, setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1257,7 +1254,7 @@ contains
    !  zc   5/01/12 performance enhancements
    !---------------------------------------------------------------------
    subroutine ps2dots(n, sd, sdt, dot3rray)
-      use MPI, only: MPI_ALLREDUCE, MPI_SUM
+      use MPI
       use GLOBAL, only: DBLETYPE, setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1315,7 +1312,7 @@ contains
    !     zc   5/01/12 performance enhancements
    !---------------------------------------------------------------------
    subroutine ps3dots(n, sd, sdt, su, dot3rray)
-      use MPI, only: MPI_ALLREDUCE, MPI_SUM
+      use MPI
       use GLOBAL, only: DBLETYPE, setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1372,7 +1369,7 @@ contains
    !  Compute Number of nodes in entire domain.
    !---------------------------------------------------------------------
    subroutine ALLNODES(TOTNODES)
-      use MPI, only: MPI_ALLREDUCE, MPI_INTEGER, MPI_SUM
+      use MPI
       use SIZES, only: MNP
       use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -1413,7 +1410,7 @@ contains
       ! Mapping to a subdomain for parallel code to avoid all processors
       ! reading the same file at the same time
       !---------------------------------------------------------------------
-      use MPI, only: MPI_BCAST
+      use MPI
       use SIZES, only: MYPROC
       use GLOBAL, only: REALTYPE, setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -1456,7 +1453,7 @@ contains
       ! Mapping to a subdomain for parallel code to avoid all processors
       ! reading the same file at the same time
       !---------------------------------------------------------------------
-      use MPI, only: MPI_BCAST, MPI_INTEGER
+      use MPI
       use SIZES, only: MYPROC
       use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
@@ -1508,7 +1505,7 @@ contains
    !------------------------------------------------------------------------------
    !
    subroutine WetDrySum(NCCHANGE)
-      use MPI, only: MPI_ALLREDUCE, MPI_INTEGER, MPI_SUM
+      use MPI
       use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1546,7 +1543,7 @@ contains
    !     velocities can be dumped to a file for debugging.
    !------------------------------------------------------------------------------
    subroutine WarnElevSum(WarnElevExceeded)
-      use MPI, only: MPI_ALLREDUCE, MPI_INTEGER, MPI_SUM
+      use MPI
       use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1583,7 +1580,7 @@ contains
    !     solns can be output for debugging before exiting the model.
    !------------------------------------------------------------------------------
    subroutine EarlyTermSum(earlyterminate)
-      use MPI, only: MPI_ALLREDUCE, MPI_INTEGER, MPI_SUM
+      use MPI
       use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1619,7 +1616,7 @@ contains
    !  vjp  9/26/2006
    !---------------------------------------------------------------------
    subroutine MSG_IBCAST(array, n)
-      use MPI, only: MPI_BCAST, MPI_INTEGER
+      use MPI
       use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1649,7 +1646,7 @@ contains
    !---------------------------------------------------------------------
    !---------------------------------------------------------------------
    subroutine MSG_LBCAST(array, n)
-      use MPI, only: MPI_BCAST, MPI_LOGICAL
+      use MPI
       use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1681,7 +1678,7 @@ contains
    !  vjp  9/26/2006
    !---------------------------------------------------------------------
    subroutine MSG_CBCAST(msg, n)
-      use MPI, only: MPI_BCAST, MPI_CHARACTER
+      use MPI
       use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1713,7 +1710,7 @@ contains
    !  vjp  9/26/2006
    !---------------------------------------------------------------------
    subroutine MSG_RBCAST(array, n)
-      use MPI, only: MPI_BCAST
+      use MPI
       use GLOBAL, only: REALTYPE, setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1744,7 +1741,7 @@ contains
    !=====Seizo Dividing Messenger
    !---------------------------------------------------------------------
    subroutine MSG_RBCASTD(array, in, jn, kn)
-      use MPI, only: MPI_BCAST
+      use MPI
       use GLOBAL, only: REALTYPE, setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1814,7 +1811,7 @@ contains
    !---------------------------------------------------------------------
    !---------------------------------------------------------------------
    subroutine MSG_BARRIER()
-      use MPI, only: MPI_BARRIER
+      use MPI
       use GLOBAL, only: COMM
       implicit none
       integer :: myerr
@@ -1827,8 +1824,7 @@ contains
    !---------------------------------------------------------------------
    ! DW, 2024
    subroutine MSG_RScalar_Reduce(OP, vali, valo, loco)
-      use MPI, only: MPI_REDUCE, MPI_2DOUBLE_PRECISION, MPI_MAXLOC, &
-                     MPI_MAX, MPI_MINLOC, MPI_MIN, MPI_SUM
+      use MPI
       use GLOBAL, only: DBLETYPE, setMessageSource, allMessage, unsetMessageSource, COMM
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       use GLOBAL, only: DEBUG
@@ -1884,7 +1880,7 @@ contains
    !=============================================================================
 
    subroutine MSG_ABORT()
-      use mpi, only: mpi_abort
+      use mpi
       use global, only: comm
       implicit none
       integer :: myerr, myerrcode
