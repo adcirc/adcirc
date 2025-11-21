@@ -102,8 +102,7 @@ C******************************************************************************
       IMPLICIT NONE
       PUBLIC
 
-      INTEGER, SAVE :: ITIME_BGN, ITIME_END
-
+      INTEGER :: ITIME_BGN, ITIME_END
 
       CONTAINS
 
@@ -431,6 +430,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
      &                       PADCSWAN_RUN
 #endif
       USE WRITE_OUTPUT,ONLY: writeOutput2D
+      USE mod_timestep, ONLY: TIMESTEP
 #ifdef CMPI      
       USE MESSENGER, ONLY: writers_active, hs_writers_active
 #endif      
@@ -473,7 +473,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
 
       call allMessage(INFO,"Begin timestepping.")
       DO ITIME=ITIME_BGN,ITIME_END
-        CALL TIMESTEP(ITIME,TimeLoc)
+        CALL TIMESTEP(ITIME,TimeLoc,ITIME_BGN)
 
 #ifdef CSWAN
 Casey 090302: If it is time, then call the following subroutine
