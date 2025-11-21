@@ -36,11 +36,11 @@
 !>    C3DVS            - Velocity form of the 3D momentum equations
 !>
 !> -- Important Variable Notes --
-!>          NNODECODE is a working variable that can change more than once
+!>          nnodecode is a working variable that can change more than once
 !>                    during a time step
-!>          NNODECODE = 0 for a dry node
-!>          NNODECODE = 1 for a wet node
-!>          NODECODE  is a more static version of NNODECODE that is 
+!>          nnodecode = 0 for a dry node
+!>          nnodecode = 1 for a wet node
+!>          nodecode  is a more static version of nnodecode that is 
 !>                      reconciled once and for all at the end time step
 !>     
 !> -- Algorithm Description --
@@ -73,7 +73,7 @@
 !>          than the water level at the dry node and the steady-state
 !>          velocity that would result from a balance between the water
 !>          level gradient and bottom friction would yield a velocity
-!>          > VELMIN.
+!>          > velmin.
 !>          Note that the criteria outlined in DE3 must also be satified
 !>          before the node is allowed to wet
 !>     
@@ -99,12 +99,16 @@
 !>     equation solution section.
 !>
 !> @todo Need to add documentation above for new features:
-!>       weir boundary (ibtype=64)
+!>       weir boundary (ibtype=64) and add (un)setMessageSource sections
+!>       to all subroutines. Also, some subroutines within wetdry as
+!>       well as other modules are setting their own habsmin and velmin
+!>       values or hard-coding values instead of using the values here.
+!>       Do a search and fix all these.
 !------------------------------------------------------------------------
 
       module wetdry
       
-      real(8) :: habsmin
+      real(8) :: habsmin !local versions created in multiple modules??
       real(8) :: hoff
       real(8) :: velmin
       
@@ -112,49 +116,75 @@
       integer,allocatable ::    noffold(:)
       integer,allocatable ::    noff_sg(:)
 
-      ! jgf52.08.08: Enable analyst to remove NOFF from wetting and
+      ! jgf52.08.08: Enable analyst to remove noff from wetting and
       ! drying algorithm; .true. by default to conform with prior
       ! ADCIRC versions. 
-      LOGICAL :: noffActive = .true.
+      logical :: noffActive = .true.
+
+      ! cms 11/20/25: added public/private declaration
+      ! Variables
+      private :: habsmin, hoff, nibcnt, noffold, noff_sg
+      public :: noffActive, velmin !habsmin could be reused elsewhere
+
+      !Subroutines and functions
+      private :: computeAlpha, computeTotAreaAtNode, applySubgridBarrier
+      public :: initializeWettingAndDrying, computeWettingAndDrying
 
       contains
 
 !----------------------------------------------------------------------
-!                  S U B R O U T I N E
-!     I N I T I A L I Z E   W E T T I N G   A N D   D R Y I N G
 !----------------------------------------------------------------------
-!     Allocates arrays and initializes constants.
+!                             P U B L I C
+!----------------------------------------------------------------------
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!> @brief Allocates arrays and initializes wetdry states/constants.
+!>
+!> @details cms 11/20/25 updated to move all initializations here -mvd
+!>          noff=1 from setColdWetDryStateAndWaterSurfaceElevation()
+!>          in cstart to here so that all initialized at the same time.
+!>          Also changed to explicit array bounds.
 !----------------------------------------------------------------------
       subroutine initializeWettingAndDrying()
+!----------------------------------------------------------------------
       use sizes, only : mne, mnp
-      use global, only : h0, nodecode, nnodecode
+      use global, only : h0, nodecode, nnodecode, noff
       use nodalattributes,only: loadSubgridBarrier
       implicit none
 
       allocate ( nibcnt(mnp) )
       allocate ( noffold(mne))
       if(loadSubgridBarrier)allocate(noff_sg(mne))
-      nnodecode = 1
-      nodecode = 1
-      noffold(:) = 1
+
+      ! Initialize all wetdry states (noff mvd from cstart)
+      nnodecode(1:mnp) = 1
+      nodecode(1:mnp) = 1
+      noff(1:mne) = 1
+      noffold(1:mne) = 1
+
+      ! Compute wetdry threshold constants
       habsmin=0.8d0*h0
       hoff=1.2d0*h0
 
+      return
 !----------------------------------------------------------------------
       end subroutine initializeWettingAndDrying
 !----------------------------------------------------------------------
 
 
 !----------------------------------------------------------------------
-!                   S U B R O U T I N E
-!     C O M P U T E   W E T T I N G   A N D   D R Y I N G
-!----------------------------------------------------------------------
-!     Determines which nodes should be wet and which should be dry.
+!> @brief Determines which nodes should be wet or dry.
+!>
+!> @details cms 11/20/25 updated to use explicit array structure for
+!>          all array initializations and replaced code in WET/DRY Part4
+!>          with a call to updated totalAreaCalc() in mesh module.
 !----------------------------------------------------------------------
       subroutine computeWettingAndDrying(it)
+!----------------------------------------------------------------------
       use sizes, only : mne, mnp, mnei
       use nodalattributes,only: loadSubgridBarrier
-      USE ADC_CONSTANTS, only: g
+      use ADC_CONSTANTS, only: g
       use global, only : noff, nodecode, nnodecode, eta1, eta2, tk,
      &    nolifa, bsx1, bsy1, btime_end, C2DDI, C3D, h0, ifnlfa, nddt,
      &    dtdp, nibnodecode, ilump, ncchange, tkm, directvelWD, useHF,
@@ -172,8 +202,8 @@
      &   loadCondensedNodes, NCondensedNodes,
      &   ListCondensedNodes, NListCondensedNodes,
      &   NNodesListCondensedNodes
-      USE BOUNDARIES, ONLY : IBCONN, ISSUBMERGED64, NFLUXIB64_GBL,
-     &    BARINHT, LBCODEI
+      use boundaries, only : IBCONN, isSubmerged64, NFLUXIB64_GBL,
+     &    barinht, lbcodeI
       use global_3dvs, only : a, b, islip, kp, z0b, sigma, evtot, q
 !Casey 220207 from Rosemary
      &    , nfen, sal, temp
@@ -213,7 +243,6 @@
       integer :: nwetele
       integer :: ibtype64floodplaincnt = 0
       integer :: numGreater
-      ! integer :: nmn1, nmn2, nmn3, nwetnei, nwetadj, n
       integer :: cntwet, cntdry, fstwet, curwet
   
       if (nolifa.ne.2) then
@@ -223,52 +252,56 @@
          ! WET/DRY - INITIALIZATIONS FOR WET/DRY LOOP
          TK_TMP(:) = 0.D0
          TK_CNT(:) = 0
-         IF (directvelWD.AND.useHF) THEN
+         if (directvelWD.AND.useHF) then
             TKNF = 100.D0
-         ELSE
+         else
             TKNF = 1.D0
-         ENDIF
-          
-         DO I=1,NP
-            NIBCNT(I) = 0
-         ENDDO
-         DO I=1,NE
-            NOFFOLD(I)=NOFF(I)
-            NOFF(I)=1
-         ENDDO
+         endif
+ 
+         !cms: replaced loops with explicit array bounds
+         nibcnt(1:np) = 0
+         noffold(1:ne) = noff(1:ne)
+         noff((1:ne) = 1
+         !do I=1,NP
+         !   NIBCNT(I) = 0
+         !end do
+         !do I=1,NE
+         !   noffold(I)=noff(I)
+         !   noff(I)=1
+         !end do
 
-         IF(loadSubgridBarrier)call applySubgridBarrier()
+         if(loadSubgridBarrier)call applySubgridBarrier()
 
 
          !  WET/DRY - PART 1 - NODAL DRYING CRITERIA D1
-         !Drying Criteria D1: depends on NODECODE and updates NODECODE
-         DO I=1,NP
-            IF(NODECODE(I).EQ.1) THEN
-               IF(level0)THEN
+         !Drying Criteria D1: depends on nodecode and updates nodecode
+         do I=1,NP
+            if(nodecode(I).eq.1) then
+               if(level0)then
                   HTOT = gridDepthVertETA2(i)
-               ELSE
+               else
                   HTOT=DP(I)+ETA2(I)
-               ENDIF
-               IF(HTOT.LE.H0) THEN
-                  IF(level0)THEN
+               endif
+               if(HTOT.LE.H0) then
+                  if(level0)then
                      !JLW: need to interpolate here to set eta2
-                     IF(HTOT.LT.HABSMIN)THEN
-                        gridDepthVertETA2(i) = HABSMIN
-                        wetDepthVertETA2(i) = HABSMIN
-                        IF(subgridVertList(i).EQ.1)THEN
+                     if(HTOT.lt.habsmin)then
+                        gridDepthVertETA2(i) = habsmin
+                        wetDepthVertETA2(i) = habsmin
+                        if(subgridVertList(i).eq.1)then
                            numGreater = 0
-                           DO j=1,numPhi
-                              IF(gridDepthVertETA2(i).LT.
-     &                           gridDepthVertTab(i,j))THEN
+                           do j=1,numPhi
+                              if(gridDepthVertETA2(i).lt.
+     &                           gridDepthVertTab(i,j))then
                                  numGreater = numGreater + 1
-                              ENDIF
-                           ENDDO
-                           IF(numGreater.EQ.numPhi)THEN
+                              endif
+                           end do
+                           if(numGreater.eq.numPhi)then
                               eta2(i) = wetFracVertTab(i,1)
-                           ELSEIF(numGreater.EQ.0)THEN
+                           elseif(numGreater.eq.0)then
                               eta2(i) = wetFracVertTab(i,numPhi)
-     &                           + (HABSMIN-gridDepthVertTab(i,numPhi))
-                           ELSE
+     &                           + (habsmin-gridDepthVertTab(i,numPhi))
+                           else
                !JLW: now back calculate eta2 based on this change
                               eta2(i) = ((gridDepthVertETA2(i)
      &                        - gridDepthVertTab(i,numPhi-numGreater))
@@ -277,43 +310,43 @@
      &                        * (wetFracVertTab(i,numPhi-numGreater+1)
      &                        - wetFracVertTab(i,numPhi-numGreater))
      &                        + wetFracVertTab(i,numPhi-numGreater))
-                           ENDIF
-                        ELSE
-                           eta2(i) = HABSMIN - DP(I)
-                        ENDIF
-                     ENDIF
-                     NNODECODE(I) = 0
-                     NODECODE(I) = 0
-                     NCCHANGE = NCCHANGE + 1
-                  ELSE
-                     IF(HTOT.LT.HABSMIN) ETA2(I)=HABSMIN-DP(I)
-                        NNODECODE(I)=0
-                        NODECODE(I)=0
-                        NCCHANGE=NCCHANGE+1 ! set to 0 in gwce
-                  ENDIF
-               ENDIF
-            ENDIF
-         ENDDO
+                           endif
+                        else
+                           eta2(i) = habsmin - DP(I)
+                        endif
+                     endif
+                     nnodecode(I) = 0
+                     nodecode(I) = 0
+                     ncchange = ncchange + 1
+                  else
+                     if(HTOT.lt.habsmin) ETA2(I)=habsmin-DP(I)
+                        nnodecode(I)=0
+                        nodecode(I)=0
+                        ncchange=ncchange+1 ! set to 0 in gwce
+                  endif
+               endif
+            endif
+         end do
          ! END WET/DRY SECTION - PART 1
 
 
          ! Nodal Wetting Criteria for the ibtype=64 weir boundary
          ! Check if node is along the ibtype=64 weir boundary and
          ! if the weir is submerged. If true, set the nnodecode to 1. SB
-         IF (NFLUXIB64_GBL.GT.0) THEN
-            DO I=1,NP
+         if (NFLUXIB64_GBL.gt.0) then
+            do I=1,NP
                J = LBArray_Pointer(I)
-               IF(J.GT.0) THEN
-                  IF((LBCODEI(J)).EQ.64.AND.(NODECODE(I).EQ.0)) THEN
-                     IF((ISSUBMERGED64(J).GT.0)) THEN
+               if(J.gt.0) then
+                  if((LBCODEI(J)).eq.64.AND.(nodecode(I).eq.0)) then
+                     if((ISSUBMERGED64(J).gt.0)) then
                         NNBB2=IBCONN(J)
-                        IF(NNBB2.GT.0) THEN ! This check is needed 
+                        if(NNBB2.gt.0) then ! This check is needed 
                         !occasionally but not always when the barrier is
                         ! split for parallel computation
                            ! ETA2(I) = ETA2(NNBB2)
                            !HTOT=DP(I)+ETA2(I)
                            HTOT = DP(I) + MAX(ETA2(I), ETA2(NNBB2))
-                           IF(HTOT.GT.HOFF) THEN
+                           if(HTOT.gt.HOFF) then
                               !ETA2(I) = MAX(ETA2(I), ETA2(NNBB2))
                               TotArea1 = computeTotAreaAtNode(I)
                               TotArea2 = computeTotAreaAtNode(NNBB2)
@@ -321,25 +354,25 @@
      &                                  TotArea2)/(TotArea1 + TotArea2)
                               ETA2(I) = ETA2AVG
                               ETA2(NNBB2) = ETA2AVG
-                              NNODECODE(I)=1
-                              NODECODE(I)=1
-                              NCCHANGE=NCCHANGE+1 !set to 0 in gwce
-                           ENDIF
-                        ENDIF
-                     ENDIF
-                  ENDIF
-               ENDIF
-            ENDDO
-         ENDIF
+                              nnodecode(I)=1
+                              nodecode(I)=1
+                              ncchange=ncchange+1 !set to 0 in gwce
+                           endif
+                        endif
+                     endif
+                  endif
+               endif
+            end do
+         endif
 
         ! Use Message-Passing to update at ghost nodes
 cjjw#ifdef CMPI
-cjjw         CALL UPDATEI(NODECODE,NNODECODE,2)
+cjjw         CALL UPDATEI(nodecode,nnodecode,2)
 cjjw#endif
 
 
         ! WET/DRY SECTION PART 2 - NODAL WETTING LOOPS W1 AND W2
-         DO I=1,NE
+         do I=1,NE
             NM1=NM(I,1)
             NM2=NM(I,2)
             NM3=NM(I,3)
@@ -348,500 +381,500 @@ cjjw#endif
         ! This depends on changes that occurred in D1
        
             ! Count number of nodes along ibtype=64 boundary 10/16/2023 sb
-            IF(NFLUXIB64_GBL.gt.0) THEN
+            if(NFLUXIB64_GBL.gt.0) then
                IBTYPE64FLOODPLAINCNT = 0
-               IF(onIBTYP64Floodplain(NM1)) THEN
+               if(onIBTYP64Floodplain(NM1)) then
                   IBTYPE64FLOODPLAINCNT = IBTYPE64FLOODPLAINCNT + 1
-               ENDIF
-               IF(onIBTYP64Floodplain(NM2)) THEN
+               endif
+               if(onIBTYP64Floodplain(NM2)) then
                   IBTYPE64FLOODPLAINCNT = IBTYPE64FLOODPLAINCNT + 1
-               ENDIF
-               IF(onIBTYP64Floodplain(NM3)) THEN
+               endif
+               if(onIBTYP64Floodplain(NM3)) then
                   IBTYPE64FLOODPLAINCNT = IBTYPE64FLOODPLAINCNT + 1
-               ENDIF
-            ENDIF
+               endif
+            endif
 
-            NCTOT=NODECODE(NM1)+NODECODE(NM2)+NODECODE(NM3)
-            IF((NCTOT.EQ.2) .AND. (IBTYPE64FLOODPLAINCNT.NE.3)) THEN  
+            NCTOT=nodecode(NM1)+nodecode(NM2)+nodecode(NM3)
+            if((NCTOT.eq.2) .AND. (IBTYPE64FLOODPLAINCNT.NE.3)) then  
             ! (IBTYPE64FLOODPLAINCNT.NE.3) is added to avoid excessive
             !  wetting when all three nodes of an element on a floodplain
             !  are on a IBTYPE=64 boundary. 10/16/2023 sb
                ETAN1=ETA2(NM1)
                ETAN2=ETA2(NM2)
                ETAN3=ETA2(NM3)
-               IF(level0)THEN
+               if(level0)then
                   HTOTN1 = gridDepthVertETA2(NM1)
                   HTOTN2 = gridDepthVertETA2(NM2)
                   HTOTN3 = gridDepthVertETA2(NM3)
-               ELSE
+               else
                   HTOTN1=DP(NM1)+ETA2(NM1)
                   HTOTN2=DP(NM2)+ETA2(NM2)
                   HTOTN3=DP(NM3)+ETA2(NM3)
-               ENDIF
+               endif
                NMI = 0
-               IF((NODECODE(NM1).EQ.1).AND.(NODECODE(NM2).EQ.1)) THEN
-                  IF((HTOTN1.GE.HOFF).AND.(HTOTN2.GE.HOFF)) THEN
+               if((nodecode(NM1).eq.1).AND.(nodecode(NM2).eq.1)) then
+                  if((HTOTN1.GE.HOFF).AND.(HTOTN2.GE.HOFF)) then
                      NM123=NM1
-                     IF(ETA2(NM2).GT.ETA2(NM1)) NM123=NM2
+                     if(ETA2(NM2).gt.ETA2(NM1)) NM123=NM2
                      DELDIST=SQRT((y(NM3)-y(NM123))**2.D0
      &                    +(X(NM3)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM3)
                      ! jgf50.60.18: Prevent problems if DELETA is negative
-                     IF (DELETA.lt.0.d0) DELETA = 0.d0
-                     IF(level0)THEN
+                     if (DELETA.lt.0.d0) DELETA = 0.d0
+                     if(level0)then
                          H1 = wetDepthVertETA2(NM123)
-                      ELSE
+                      else
                          H1=ETA2(NM123)+DP(NM123)
-                      ENDIF
-c. RJW merged from Casey 071219: Added the following logic for 3D friction.
-c. RJW modified the following for 3D friction
-                     IF(C2DDI)THEN
-Csb46.28sb02
+                      endif
+c  RJW merged from Casey 071219: Added the following logic for 3D friction
+c  RJW modified the following for 3D friction
+                     if(C2DDI)then
+                        ! sb46.28sb02
                         !Convert Manning's N to Cd, if necessary.
-                        IF (LoadManningsN) THEN
-                           IF(level0)THEN
-                             IF(subgridVertList(NM123).EQ.1)THEN
-                                IF(level1)THEN
+                        if (LoadManningsN) then
+                           if(level0)then
+                             if(subgridVertList(NM123).eq.1)then
+                                if(level1)then
                                    FRIC(NM123) = cmfVertETA2(NM123)
-                                ELSE
+                                else
                                    FRIC(NM123) = cfVertETA2(NM123)
-                                ENDIF
-                             ELSE
+                                endif
+                             else
                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                            /( ( DP(NM123)+ifNLFA*ETA2(NM123) )
      &                                                   **(1.d0/3.d0) )
-                             ENDIF
-                          ELSE
+                             endif
+                          else
                              FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                         /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                         /( ( DP(NM123)+ifNLFA*ETA2(NM123) )
      &                                                  **(1.d0/3.d0) )
-                          ENDIF
-                          IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                          endif
+                          if(FRIC(NM123).lt.BFCdLLimit) then
                             FRIC(NM123) = BFCdLLimit
-                          ENDIF
-                        ENDIF
-!-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207
-                        IF (directvelWD.AND.useHF) THEN
+                          endif
+                        endif
+! DMW: 202207 Reformulate Velocity by taking sqrt of u instead of using velmin
+                        if (directvelWD.AND.useHF) then
                            VEL=sqrt(g*H1*DELETA/DELDIST)
-                        ELSEIF (directvelWD) THEN
+                        elseif (directvelWD) then
                            VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
-                        ELSE
-                           TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                                  (IFNLBF+IFHYBF*
+                        else
+                           TKWET = MAX(FRIC(NM123)*(ifLINBF+(velmin/H1)*
+     &                                  (ifNLBF+ifHYBF*
      &                                  (1.D0+(HBREAK/H1)**FTHETA)**
      &                                  (FGAMMA/FTHETA))),
      &                                  0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
-                        ENDIF   
-                     ELSEIF(C3D)THEN
+                        endif   
+                     elseif(C3D)then
 C solve for the depth averaged velocity,U, from the relation :
 C        tau=rho*g*(h+eta)*(deta/dx)=rho*Cd*|U|*U
 C          U=sqrt(g*(h+eta)*(deta/dx)/Cd )
-C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
-                       IF(LoadZ0B_var) THEN
+C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coeff
+                       if(LoadZ0B_var) then
                            Z0B1 = Z0B_var(NM123)
-                        ELSEIF (LoadManningsN) THEN
-                     Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )*
+                        elseif (LoadManningsN) then
+                     Z0B1 = ( DP(NM123)+ifNLFA*ETA2(NM123) )*
      &                      exp(-(1.0D0+
-     &               ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**
+     &               ( (0.41D0*( DP(NM123)+ifNLFA*ETA2(NM123))**
      &               (1.0D0/6.0D0) )/(ManningsN(NM123)*sqrt(g)) ) ))
-                        ELSE
+                        else
                            Z0B1 = Z0B
-                       ENDIF
+                       endif
                         VEL=sqrt(g*H1*(DELETA/DELDIST))
      &                 * ((H1+Z0B1)*LOG((H1+Z0B1)/Z0B1)-H1)/(H1*0.41D0)
-                    ENDIF
+                    endif
 
-                     IF(VEL.GT.VELMIN) THEN
+                     if(VEL.gt.velmin) then
                      ! third node met criteria and is also wet
-                        NNODECODE(NM3)=1
+                        nnodecode(NM3)=1
                         NMI = NM3
-c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the correct friction.
-                        IF(C2DDI)THEN
+c RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the correct friction.
+                        if(C2DDI)then
 
                            TK_TMP(NM123) = MIN(
-     &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
-     &                        (IFNLBF+IFHYBF*
+     &                     FRIC(NM123)*(ifLINBF+(TKNF*VEL/H1)*
+     &                        (ifNLBF+ifHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA))), 
      &                     2.0D0/DTDP)
                            TK(NM123) = MAX(TK_TMP(NM123),TK(NM123))
                            !WJP needed for internal_tide stuff
                            TKM(1:2,NM123) = TK(NM123)
-                           IF (NM123 .EQ. NM2) THEN
+                           if (NM123 .eq. NM2) then
                              TK_TMP(NM1) = TK(NM123)
                              TK(NM1) = MAX(TK_TMP(NM1),TK(NM1))
                              TKM(1:2,NM1) = TK(NM1)
-                             IF (TK_TMP(NM1).LT.TK(NM1))THEN
+                             if (TK_TMP(NM1).lt.TK(NM1))then
                                TK(NM123) = TK(NM1)
                                TKM(1:2,NM123) = TK(NM123)
-                             ENDIF
-                           ELSE
+                             endif
+                           else
                              TK_TMP(NM2) = TK(NM123)
                              TK(NM2) = MAX(TK_TMP(NM2),TK(NM2))
                              TKM(1:2,NM2) = TK(NM2)
-                             IF (TK_TMP(NM2).LT.TK(NM2))THEN
+                             if (TK_TMP(NM2).lt.TK(NM2))then
                                TK(NM123) = TK(NM2)
                                TKM(1:2,NM123) = TK(NM123)
-                             ENDIF
-                           ENDIF
-                        ELSEIF(C3D)THEN
-                           IF(ISLIP.EQ.0)THEN
+                             endif
+                           endif
+                        elseif(C3D)then
+                           if(ISLIP.eq.0)then
                               DUDS=(Q(NM123,2)-Q(NM123,1))
      &                           /(SIGMA(2)-SIGMA(1))
-                              BSX1(NM123)=EVTOT(1)*REAL(DUDS)
+                              BSX1(NM123)=EVTOT(1)*real(DUDS)
                               BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
-                              BSX1(NM3)=EVTOT(1)*REAL(DUDS)
+                              BSX1(NM3)=EVTOT(1)*real(DUDS)
                               BSY1(NM3)=EVTOT(1)*AIMAG(DUDS)
-                           ENDIF
-                           IF(ISLIP.NE.0)THEN
-                              IF(ISLIP.EQ.1)THEN
+                           endif
+                           if(ISLIP.NE.0)then
+                              if(ISLIP.eq.1)then
                                  KSLIP=KP
-                              ENDIF
-                              IF(ISLIP.EQ.2)THEN
+                              endif
+                              if(ISLIP.eq.2)then
                                      KSLIP = (1.D0 /
      &                                     ( (1.D0/0.41D0) *
      &                            LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
-     &                                  (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                  (DP(NM123)+ifNLFA*ETA2(NM123)))
      &                                       +Z0B1)
      &                                       / (Z0B1) ) ) )**2.D0
      &                                     * ABS(Q(NM123,1))
-        IF(KSLIP.GT.1.D0*ABS(Q(NM123,1)))
+        if(KSLIP.gt.1.D0*ABS(Q(NM123,1)))
      &                                  KSLIP=1.D0* ABS(Q(NM123,1))
-        IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
+        if(KSLIP.lt.0.0025D0*ABS(Q(NM123,1)))
      &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
-                              ENDIF
-                              BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
+                              endif
+                              BSX1(NM123)=KSLIP*real(Q(NM123,1))
                               BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
-                              BSX1(NM3)=KSLIP*REAL(Q(NM123,1))
+                              BSX1(NM3)=KSLIP*real(Q(NM123,1))
                               BSY1(NM3)=KSLIP*AIMAG(Q(NM123,1))
-                           ENDIF
+                           endif
 !Casey 220207 from Rosemary : Update sal/temp at newly wet node
-                           IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
-                              DO k = 1,NFEN
+                           if((CBAROCLINIC).and.(IDEN.eq.4))then
+                              do k = 1,NFEN
                                SAL(NM3,k) =0.5D0*(SAL(NM1,k)+SAL(NM2,k))
                                TEMP(NM3,k)=0.5D0*(TEMP(NM1,k)+TEMP(NM2,k))
-                              ENDDO
-                           ENDIF
-                        ENDIF
-                     ENDIF
-                  ENDIF
+                              end do
+                           endif
+                        endif
+                     endif
+                  endif
 
-               ELSEIF((NODECODE(NM2).EQ.1).AND.(NODECODE(NM3).EQ.1))
-     &          THEN
-                  IF((HTOTN2.GE.HOFF).AND.(HTOTN3.GE.HOFF)) THEN
+               elseif((nodecode(NM2).eq.1).AND.(nodecode(NM3).eq.1))
+     &          then
+                  if((HTOTN2.GE.HOFF).AND.(HTOTN3.GE.HOFF)) then
                      NM123=NM2
-                     IF(ETA2(NM3).GT.ETA2(NM2)) NM123=NM3
+                     if(ETA2(NM3).gt.ETA2(NM2)) NM123=NM3
                      DELDIST=SQRT((Y(NM1)-Y(NM123))**2.D0
      &                    +(X(NM1)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM1)
                      ! jgf50.60.18: Prevent problems if DELETA is neg
-                     IF (DELETA.lt.0.d0) DELETA = 0.d0
-                     IF(level0)THEN
+                     if (DELETA.lt.0.d0) DELETA = 0.d0
+                     if(level0)then
                         H1 = wetDepthVertETA2(NM123)
-                     ELSE
+                     else
                         H1=ETA2(NM123)+DP(NM123)
-                     ENDIF
+                     endif
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction.
-                     IF(C2DDI)THEN
+                     if(C2DDI)then
 Csb46.28sb02
                         !Convert Manning's N to Cd, if necessary.
-                        IF (LoadManningsN) THEN
-                          IF(level0)THEN
-                              IF(subgridVertList(NM123).EQ.1)THEN
-                                IF(level1)THEN
+                        if (LoadManningsN) then
+                          if(level0)then
+                              if(subgridVertList(NM123).eq.1)then
+                                if(level1)then
                                    FRIC(NM123) = cmfVertETA2(NM123)
-                                ELSE
+                                else
                                    FRIC(NM123) = cfVertETA2(NM123)
-                                ENDIF
-                             ELSE
+                                endif
+                             else
                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                            /( ( DP(NM123)+ifNLFA*ETA2(NM123) )
      &                                                   **(1.d0/3.d0) )
-                             ENDIF
-                          ELSE
+                             endif
+                          else
                              FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                         /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                         /( ( DP(NM123)+ifNLFA*ETA2(NM123) )
      &                                                  **(1.d0/3.d0) )
-                          ENDIF
-                          IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                          endif
+                          if(FRIC(NM123).lt.BFCdLLimit) then
                             FRIC(NM123) = BFCdLLimit
-                          ENDIF
-                        ENDIF
+                          endif
+                        endif
 
 !-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207                  
-                        IF (directvelWD.AND.useHF) THEN
+                        if (directvelWD.AND.useHF) then
                            VEL=sqrt(g*H1*DELETA/DELDIST)
-                        ELSEIF (directvelWD) THEN
+                        elseif (directvelWD) then
                            VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
-                        ELSE
-                           TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                                  (IFNLBF+IFHYBF*
+                        else
+                           TKWET = MAX(FRIC(NM123)*(ifLINBF+(velmin/H1)*
+     &                                  (ifNLBF+ifHYBF*
      &                                  (1.D0+(HBREAK/H1)**FTHETA)**
      &                                  (FGAMMA/FTHETA))),0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
-                        ENDIF
+                        endif
 
-                     ELSEIF(C3D)THEN
+                     elseif(C3D)then
 C solve for the depth averaged velocity,U, from the relation :
 C        tau=rho*g*(h+eta)*(deta/dx)=rho*Cd*|U|*U
 C          U=sqrt(g*(h+eta)*(deta/dx)/Cd )
 C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
-                        IF(LoadZ0B_var) THEN
+                        if(LoadZ0B_var) then
                            Z0B1=Z0B_var(NM123)
-                        ELSEIF (LoadManningsN) THEN
-                     Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )*
+                        elseif (LoadManningsN) then
+                     Z0B1 = ( DP(NM123)+ifNLFA*ETA2(NM123) )*
      &                      exp(-(1.0D0+
-     &                      ( (0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**
+     &                      ( (0.41D0*( DP(NM123)+ifNLFA*ETA2(NM123))**
      &                      (1.0D0/6.0D0))/(ManningsN(NM123)*sqrt(g)))))
-                        ELSE
+                        else
                            Z0B1=Z0B
-                        ENDIF
+                        endif
                         VEL=sqrt(g*H1*(DELETA/DELDIST))
      &                 * ((H1+Z0B1)*LOG((H1+Z0B1)/Z0B1)-H1)/(H1*0.41D0)
-                     ENDIF
+                     endif
 
-                     IF(VEL.GT.VELMIN) THEN
-                        NNODECODE(NM1)=1
+                     if(VEL.gt.velmin) then
+                        nnodecode(NM1)=1
                         NMI = NM1
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
-                        IF(C2DDI)THEN
+                        if(C2DDI)then
                            TK_TMP(NM123) = MIN(
-     &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
-     &                        (IFNLBF+IFHYBF*
+     &                     FRIC(NM123)*(ifLINBF+(TKNF*VEL/H1)*
+     &                        (ifNLBF+ifHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA))), 
      &                     2.0D0/DTDP)
                            TK(NM123) = MAX(TK_TMP(NM123),TK(NM123))
                            !WJP needed for internal_tide stuff
                            TKM(1:2,NM123) = TK(NM123) 
-                           IF (NM123 .EQ. NM2) THEN
+                           if (NM123 .eq. NM2) then
                              TK_TMP(NM3) = TK(NM123)
                              TK(NM3) = MAX(TK_TMP(NM3),TK(NM3))
                              TKM(1:2,NM3) = TK(NM3)
-                             IF (TK_TMP(NM3).LT.TK(NM3))THEN
+                             if (TK_TMP(NM3).lt.TK(NM3))then
                                TK(NM123) = TK(NM3)
                                TKM(1:2,NM123) = TK(NM123)
-                             ENDIF
-                           ELSE
+                             endif
+                           else
                              TK_TMP(NM2) = TK(NM123)
                              TK(NM2) = MAX(TK_TMP(NM2),TK(NM2))
                              TKM(1:2,NM2) = TK(NM2)
-                             IF (TK_TMP(NM2).LT.TK(NM2))THEN
+                             if (TK_TMP(NM2).lt.TK(NM2))then
                                TK(NM123) = TK(NM2)
                                TKM(1:2,NM123) = TK(NM123)
-                             ENDIF
-                           ENDIF
-                        ELSEIF(C3D)THEN
-                           IF(ISLIP.EQ.0)THEN
+                             endif
+                           endif
+                        elseif(C3D)then
+                           if(ISLIP.eq.0)then
                               DUDS=(Q(NM123,2)-Q(NM123,1))
      &                           /(SIGMA(2)-SIGMA(1))
-                              BSX1(NM123)=EVTOT(1)*REAL(DUDS)
+                              BSX1(NM123)=EVTOT(1)*real(DUDS)
                               BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
-                              BSX1(NM1)=EVTOT(1)*REAL(DUDS)
+                              BSX1(NM1)=EVTOT(1)*real(DUDS)
                               BSY1(NM1)=EVTOT(1)*AIMAG(DUDS)
-                           ENDIF
-                           IF(ISLIP.NE.0)THEN
-                              IF(ISLIP.EQ.1)THEN
+                           endif
+                           if(ISLIP.NE.0)then
+                              if(ISLIP.eq.1)then
                                  KSLIP=KP
-                              ENDIF
-                              IF(ISLIP.EQ.2)THEN
+                              endif
+                              if(ISLIP.eq.2)then
                                      KSLIP = (1.D0 /
      &                                     ( (1.D0/0.41D0) *
      &                            LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
-     &                                  (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                  (DP(NM123)+ifNLFA*ETA2(NM123)))
      &                                       +Z0B1)
      &                                       / (Z0B1) ) ) )**2.D0
      &                                     * ABS(Q(NM123,1))
-        IF(KSLIP.GT.1.D0*ABS(Q(NM123,1)))
+        if(KSLIP.gt.1.D0*ABS(Q(NM123,1)))
      &                                  KSLIP=1.D0* ABS(Q(NM123,1))
-        IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
+        if(KSLIP.lt.0.0025D0*ABS(Q(NM123,1)))
      &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
-                              ENDIF
-                              BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
+                              endif
+                              BSX1(NM123)=KSLIP*real(Q(NM123,1))
                               BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
-                              BSX1(NM1)=KSLIP*REAL(Q(NM123,1))
+                              BSX1(NM1)=KSLIP*real(Q(NM123,1))
                               BSY1(NM1)=KSLIP*AIMAG(Q(NM123,1))
-                           ENDIF
+                           endif
 !Casey 220207 from Rosemary : Again in the 3 wetting criteria
-                           IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
-                              DO k = 1,NFEN
+                           if((CBAROCLINIC).and.(IDEN.eq.4))then
+                              do k = 1,NFEN
                                SAL(NM1,k) =0.5D0*(SAL(NM2,k)+SAL(NM3,k))
                                TEMP(NM1,k)=0.5D0*(TEMP(NM2,k)+TEMP(NM3,k))
-                              ENDDO
-                        ENDIF
-                        ENDIF
+                              end do
+                        endif
+                        endif
 
-                     ENDIF
-                  ENDIF
+                     endif
+                  endif
 
-               ELSEIF((NODECODE(NM3).EQ.1).AND.(NODECODE(NM1).EQ.1))
-     &          THEN
-                  IF((HTOTN3.GE.HOFF).AND.(HTOTN1.GE.HOFF)) THEN
+               elseif((nodecode(NM3).eq.1).AND.(nodecode(NM1).eq.1))
+     &          then
+                  if((HTOTN3.GE.HOFF).AND.(HTOTN1.GE.HOFF)) then
                      NM123=NM3
-                     IF(ETA2(NM1).GT.ETA2(NM3)) NM123=NM1
+                     if(ETA2(NM1).gt.ETA2(NM3)) NM123=NM1
                      DELDIST=SQRT((Y(NM2)-Y(NM123))**2.D0
      &                     +(X(NM2)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM2)
                      ! jgf50.60.18: Prevent problems if DELETA is neg
-                     IF (DELETA.lt.0.d0) DELETA = 0.d0
-                     IF(level0)THEN
+                     if (DELETA.lt.0.d0) DELETA = 0.d0
+                     if(level0)then
                         H1 = wetDepthVertETA2(NM123)
-                     ELSE
+                     else
                         H1=ETA2(NM123)+DP(NM123)
-                     ENDIF
+                     endif
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction.
-                     IF(C2DDI)THEN
+                     if(C2DDI)then
 Csb46.28sb02
                         !Convert Manning's N to Cd, if necessary.
-                        IF (LoadManningsN) THEN
-                          IF(level0)THEN
-                             IF(subgridVertList(NM123).EQ.1)THEN
-                                IF(level1)THEN
+                        if (LoadManningsN) then
+                          if(level0)then
+                             if(subgridVertList(NM123).eq.1)then
+                                if(level1)then
                                    FRIC(NM123) = cmfVertETA2(NM123)
-                                ELSE
+                                else
                                    FRIC(NM123) = cfVertETA2(NM123)
-                                ENDIF
-                             ELSE
+                                endif
+                             else
                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                            /( ( DP(NM123)+ifNLFA*ETA2(NM123) )
      &                                                   **(1.d0/3.d0) )
-                             ENDIF
-                          ELSE
+                             endif
+                          else
                              FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                         /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                         /( ( DP(NM123)+ifNLFA*ETA2(NM123) )
      &                                                  **(1.d0/3.d0) )
-                          ENDIF
-                          IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                          endif
+                          if(FRIC(NM123).lt.BFCdLLimit) then
                             FRIC(NM123) = BFCdLLimit
-                          ENDIF
-                        ENDIF
+                          endif
+                        endif
 
 !-- DMW Reformulate Velocity by taking sqrt of u instead of using velmin 202207                  
-                        IF (directvelWD.AND.useHF) THEN
+                        if (directvelWD.AND.useHF) then
                            VEL=sqrt(g*H1*DELETA/DELDIST)
-                        ELSEIF (directvelWD) THEN
+                        elseif (directvelWD) then
                            VEL=sqrt((g*H1/FRIC(NM123))*(DELETA/DELDIST))
-                        ELSE
-                           TKWET = MAX(FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                                  (IFNLBF+IFHYBF*
+                        else
+                           TKWET = MAX(FRIC(NM123)*(ifLINBF+(velmin/H1)*
+     &                                  (ifNLBF+ifHYBF*
      &                                  (1.D0+(HBREAK/H1)**FTHETA)**
      &                                  (FGAMMA/FTHETA))),0.0001d0)
                            VEL=G*(DELETA/DELDIST)/TKWET
-                        ENDIF
-                     ELSEIF(C3D)THEN
+                        endif
+                     elseif(C3D)then
 C solve for the depth averaged velocity,U, from the relation :
 C        tau=rho*g*(h+eta)*(deta/dx)=rho*Cd*|U|*U
 C          U=sqrt(g*(h+eta)*(deta/dx)/Cd )
-C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
-                        IF(LoadZ0B_var) THEN
+C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coeff
+                        if(LoadZ0B_var) then
                            Z0B1 = Z0B_var(NM123)
-                        ELSEIF (LoadManningsN) THEN
-                     Z0B1 = ( DP(NM123)+IFNLFA*ETA2(NM123) )*
+                        elseif (LoadManningsN) then
+                     Z0B1 = ( DP(NM123)+ifNLFA*ETA2(NM123) )*
      &                       exp(-(1.0D0+
-     &                      ((0.41D0*( DP(NM123)+IFNLFA*ETA2(NM123))**
+     &                      ((0.41D0*( DP(NM123)+ifNLFA*ETA2(NM123))**
      &                      (1.0D0/6.0D0))/(ManningsN(NM123)*sqrt(g)))))
-                        ELSE
+                        else
                            Z0B1 = Z0B
-                        ENDIF
+                        endif
                       VEL=sqrt(g*H1*(DELETA/DELDIST))
      &                 * ((H1+Z0B1)*LOG((H1+Z0B1)/Z0B1)-H1)/(H1*0.41D0)
-                     ENDIF
+                     endif
 
-                     IF(VEL.GT.VELMIN) THEN
-                        NNODECODE(NM2)=1
+                     if(VEL.gt.velmin) then
+                        nnodecode(NM2)=1
                         NMI = NM2
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
-                        IF(C2DDI)THEN                   
+                        if(C2DDI)then                   
                         
                            TK_TMP(NM123) = MIN(
-     &                     FRIC(NM123)*(IFLINBF+(TKNF*VEL/H1)*
-     &                        (IFNLBF+IFHYBF*
+     &                     FRIC(NM123)*(ifLINBF+(TKNF*VEL/H1)*
+     &                        (ifNLBF+ifHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA))), 
      &                     2.0D0/DTDP)
                            TK(NM123) = MAX(TK_TMP(NM123),TK(NM123))
                            !WJP needed for internal_tide stuff
                            TKM(1:2,NM123) = TK(NM123)
-                           IF (NM123 .EQ. NM1) THEN
+                           if (NM123 .eq. NM1) then
                              TK_TMP(NM3) = TK(NM123)
                              TK(NM3) = MAX(TK_TMP(NM3),TK(NM3))
                              TKM(1:2,NM3) = TK(NM3)
-                             IF (TK_TMP(NM3).LT.TK(NM3))THEN
+                             if (TK_TMP(NM3).lt.TK(NM3))then
                                TK(NM123) = TK(NM3)
                                TKM(1:2,NM123) = TK(NM123)
-                             ENDIF
-                           ELSE
+                             endif
+                           else
                              TK_TMP(NM1) = TK(NM123)
                              TK(NM1) = MAX(TK_TMP(NM1),TK(NM1))
                              TKM(1:2,NM1) = TK(NM1)
-                             IF (TK_TMP(NM1).LT.TK(NM1))THEN
+                             if (TK_TMP(NM1).lt.TK(NM1))then
                                TK(NM123) = TK(NM1)
                                TKM(1:2,NM123) = TK(NM123)
-                             ENDIF
-                           ENDIF
-                        ELSEIF(C3D)THEN
-                           IF(ISLIP.EQ.0)THEN
+                             endif
+                           endif
+                        elseif(C3D)then
+                           if(ISLIP.eq.0)then
                               DUDS=(Q(NM123,2)-Q(NM123,1))
      &                           /(SIGMA(2)-SIGMA(1))
-                              BSX1(NM123)=EVTOT(1)*REAL(DUDS)
+                              BSX1(NM123)=EVTOT(1)*real(DUDS)
                               BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
-                              BSX1(NM2)=EVTOT(1)*REAL(DUDS)
+                              BSX1(NM2)=EVTOT(1)*real(DUDS)
                               BSY1(NM2)=EVTOT(1)*AIMAG(DUDS)
-                           ENDIF
-                           IF(ISLIP.NE.0)THEN
-                              IF(ISLIP.EQ.1)THEN
+                           endif
+                           if(ISLIP.NE.0)then
+                              if(ISLIP.eq.1)then
                                  KSLIP=KP
-                              ENDIF
-                              IF(ISLIP.EQ.2)THEN
+                              endif
+                              if(ISLIP.eq.2)then
                                      KSLIP = (1.D0 /
      &                                     ( (1.D0/0.41D0) *
      &                            LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
-     &                                  (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                  (DP(NM123)+ifNLFA*ETA2(NM123)))
      &                                       +Z0B1)
      &                                       / (Z0B1) ) ) )**2.D0
      &                                     * ABS(Q(NM123,1))
-        IF(KSLIP.GT.1.D0*ABS(Q(NM123,1)))
+        if(KSLIP.gt.1.D0*ABS(Q(NM123,1)))
      &                                  KSLIP=1.D0* ABS(Q(NM123,1))
-        IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
+        if(KSLIP.lt.0.0025D0*ABS(Q(NM123,1)))
      &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
-                              ENDIF
-                              BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
+                              endif
+                              BSX1(NM123)=KSLIP*real(Q(NM123,1))
                               BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
-                              BSX1(NM2)=KSLIP*REAL(Q(NM123,1))
+                              BSX1(NM2)=KSLIP*real(Q(NM123,1))
                               BSY1(NM2)=KSLIP*AIMAG(Q(NM123,1))
-                           ENDIF
+                           endif
 !Casey 220207 from Rosemary : Again in all wetting criteria
-                           IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
-                              DO k = 1,NFEN
+                           if((CBAROCLINIC).and.(IDEN.eq.4))then
+                              do k = 1,NFEN
                                SAL(NM2,k) =0.5D0*(SAL(NM1,k)+SAL(NM3,k))
                                TEMP(NM2,k)=0.5D0*(TEMP(NM1,k)+TEMP(NM3,k))
-                              ENDDO
-                           ENDIF
-                        ENDIF
+                              end do
+                           endif
+                        endif
 
-                     ENDIF
-                  ENDIF
-               ENDIF
-            ENDIF
+                     endif
+                  endif
+               endif
+            endif
        
        !---------------------------
        ! Nodal Wetting Criteria W2a
        !---------------------------
        
-            NBNCTOT=NIBNODECODE(NM1)+NIBNODECODE(NM2)+NIBNODECODE(NM3)
+            NBNCTOT=NIBnodecode(NM1)+NIBnodecode(NM2)+NIBnodecode(NM3)
             NIBCNT(NM1) = NIBCNT(NM1) + NBNCTOT
             NIBCNT(NM2) = NIBCNT(NM2) + NBNCTOT
             NIBCNT(NM3) = NIBCNT(NM3) + NBNCTOT
 
-         ENDDO
+         end do
     
          if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
          if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
 
 C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #ifdef CMPI
-         CALL UPDATEI(NNODECODE,NIBCNT,2)
+         CALL UPDATEI(nnodecode,NIBCNT,2)
 !-- DMW 202204 Update FRIC, TK, and ETA2 at ghost nodes as well 
          CALL UPDATER(FRIC,TK,ETA2,3)
          tmp1 = TKM(1,:)
@@ -858,14 +891,14 @@ C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
         ! tcm v50.66.01 -- This is an additional test for wetting only
         ! when time varying bathymetry is used and is only performed
         ! during the period of bathymetry evolution. 
-         IF ((NDDT.NE.0).AND.(IT.LE.BTIME_END+1) ) THEN
-            DO I=1,NE
+         if ((NDDT.NE.0).AND.(IT.LE.BTIME_END+1) ) then
+            do I=1,NE
                NM1=NM(I,1)
                NM2=NM(I,2)
                NM3=NM(I,3)
-               NCTOT=NODECODE(NM1)+NODECODE(NM2)+NODECODE(NM3)
-               IF(NCTOT.lt.3) THEN   !If not wet from previous time step
-                  NCTOT=NNODECODE(NM1)+NNODECODE(NM2)+NNODECODE(NM3)
+               NCTOT=nodecode(NM1)+nodecode(NM2)+nodecode(NM3)
+               if(NCTOT.lt.3) then   !If not wet from previous time step
+                  NCTOT=nnodecode(NM1)+nnodecode(NM2)+nnodecode(NM3)
                   if(NCTOT.lt.3) then !if not yet wetted this time step
                      ETAN1=ETA2(NM1)
                      ETAN2=ETA2(NM2)
@@ -876,224 +909,224 @@ C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 
                      ! if all nodes have a depth greater than or equal to 
                      ! hoff = 1.2*H0, then make the element wet
-                     IF( (HTOTN1.GE.HOFF).AND.(HTOTN2.GE.HOFF).AND.
-     &                   (HTOTN3.GE.HOFF) ) THEN
+                     if( (HTOTN1.GE.HOFF).AND.(HTOTN2.GE.HOFF).AND.
+     &                   (HTOTN3.GE.HOFF) ) then
                      !THE ELEMENT SHOULD BE WET, SO WET THE DRY NODES
                         !  Make Node 1 Wet and set parameters
-                        IF(NNODECODE(NM1).NE.1) THEN  !node 1
-                           NNODECODE(NM1)=1
+                        if(nnodecode(NM1).NE.1) then  !node 1
+                           nnodecode(NM1)=1
                            NM123 = NM1
-                           IF(C2DDI)THEN
+                           if(C2DDI)then
                               !onvert Manning's N to Cd, if necessary.
-                              IF (LoadManningsN) THEN
+                              if (LoadManningsN) then
                                  FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                              /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                              /( ( DP(NM123)+ifNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
-                                 IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                                 if(FRIC(NM123).lt.BFCdLLimit) then
                                     FRIC(NM123) = BFCdLLimit
-                                 ENDIF
-                              ENDIF
-                           ENDIF
-                           VEL=VELMIN
+                                 endif
+                              endif
+                           endif
+                           VEL=velmin
                            H1 = HTOTN1
-                           IF(C2DDI)THEN
-                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-     &                          (IFNLBF+IFHYBF*
+                           if(C2DDI)then
+                              TK(NM123)=FRIC(NM123)*(ifLINBF+(VEL/H1)*
+     &                          (ifNLBF+ifHYBF*
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
                               !WJP needed for internal_tide stuff
                               TKM(1:2,NM123) = TK(NM123) 
-                           ELSEIF(C3D)THEN
-                              IF(ISLIP.EQ.0)THEN
+                           elseif(C3D)then
+                              if(ISLIP.eq.0)then
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
      &                              /(SIGMA(2)-SIGMA(1))
-                                 BSX1(NM123)=EVTOT(1)*REAL(DUDS)
+                                 BSX1(NM123)=EVTOT(1)*real(DUDS)
                                  BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
-                                 BSX1(NM3)=EVTOT(1)*REAL(DUDS)
+                                 BSX1(NM3)=EVTOT(1)*real(DUDS)
                                  BSY1(NM3)=EVTOT(1)*AIMAG(DUDS)
-                              ENDIF
-                              IF(ISLIP.NE.0)THEN
-                                 IF(ISLIP.EQ.1)THEN
+                              endif
+                              if(ISLIP.NE.0)then
+                                 if(ISLIP.eq.1)then
                                     KSLIP=KP
-                                 ENDIF
-                                 IF(ISLIP.EQ.2)THEN
+                                 endif
+                                 if(ISLIP.eq.2)then
                                      KSLIP = (1.D0 /
      &                                     ( (1.D0/0.41D0) *
      &                               LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
-     &                                  (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                  (DP(NM123)+ifNLFA*ETA2(NM123)))
      &                                       +Z0B1)
      &                                       / (Z0B1) ) ) )**2.D0
      &                                     * ABS(Q(NM123,1))
-                                     IF(KSLIP.GT.1.D0*ABS(Q(NM123,1)))
+                                     if(KSLIP.gt.1.D0*ABS(Q(NM123,1)))
      &                                  KSLIP=1.D0* ABS(Q(NM123,1))
-                                     IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
+                                     if(KSLIP.lt.0.0025D0*ABS(Q(NM123,1)))
      &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
-                                 ENDIF
-                                 BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
+                                 endif
+                                 BSX1(NM123)=KSLIP*real(Q(NM123,1))
                                  BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
-                                 BSX1(NM3)=KSLIP*REAL(Q(NM123,1))
+                                 BSX1(NM3)=KSLIP*real(Q(NM123,1))
                                  BSY1(NM3)=KSLIP*AIMAG(Q(NM123,1))
-                              ENDIF
+                              endif
 !Casey 220207 from Rosemary : In ALL wetting criteria
-                              IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
-                                 DO k = 1,NFEN
+                              if((CBAROCLINIC).and.(IDEN.eq.4))then
+                                 do k = 1,NFEN
                                     SAL(NM3,k)=0.5D0*(SAL(NM1,k)+
      &                                         SAL(NM2,k))
                                     TEMP(NM3,k)=0.5D0*(TEMP(NM1,k)+
      &                                          TEMP(NM2,k))
-                                 ENDDO
-                           ENDIF
-                           ENDIF
-                        ENDIF  !end node 1
+                                 end do
+                           endif
+                           endif
+                        endif  !end node 1
 
                         !  Make Node 2 Wet and set parameters
-                        IF (NNODECODE(NM2).NE.1) THEN
-                           NNODECODE(NM2) = 1
+                        if (nnodecode(NM2).NE.1) then
+                           nnodecode(NM2) = 1
                            NM123=NM2
-                           IF(C2DDI)THEN
+                           if(C2DDI)then
                            !Convert Manning's N to Cd, if necessary.
-                              IF (LoadManningsN) THEN
+                              if (LoadManningsN) then
                                  FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                            /( ( DP(NM123)+ifNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
-                                 IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                                 if(FRIC(NM123).lt.BFCdLLimit) then
                                     FRIC(NM123) = BFCdLLimit
-                                 ENDIF
-                              ENDIF
-                           ENDIF
-                           VEL = VELMIN
+                                 endif
+                              endif
+                           endif
+                           VEL = velmin
                            H1 = HTOTN2
-                           IF(C2DDI)THEN
-                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-     &                          (IFNLBF+IFHYBF*
+                           if(C2DDI)then
+                              TK(NM123)=FRIC(NM123)*(ifLINBF+(VEL/H1)*
+     &                          (ifNLBF+ifHYBF*
      &                          (1.D0+(HBREAK/H1)**FTHETA)**
      &                          (FGAMMA/FTHETA)))
                               !WJP needed for internal_tide stuff
                               TKM(1:2,NM123) = TK(NM123) 
-                           ELSEIF(C3D)THEN
-                              IF(ISLIP.EQ.0)THEN
+                           elseif(C3D)then
+                              if(ISLIP.eq.0)then
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
      &                              /(SIGMA(2)-SIGMA(1))
-                                 BSX1(NM123)=EVTOT(1)*REAL(DUDS)
+                                 BSX1(NM123)=EVTOT(1)*real(DUDS)
                                  BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
-                                 BSX1(NM1)=EVTOT(1)*REAL(DUDS)
+                                 BSX1(NM1)=EVTOT(1)*real(DUDS)
                                  BSY1(NM1)=EVTOT(1)*AIMAG(DUDS)
-                              ENDIF
-                              IF(ISLIP.NE.0)THEN
-                                 IF(ISLIP.EQ.1)THEN
+                              endif
+                              if(ISLIP.NE.0)then
+                                 if(ISLIP.eq.1)then
                                     KSLIP=KP
-                                 ENDIF
-                                 IF(ISLIP.EQ.2)THEN
+                                 endif
+                                 if(ISLIP.eq.2)then
                                      KSLIP = (1.D0 /
      &                                     ( (1.D0/0.41D0) *
      &                               LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
-     &                                 (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                 (DP(NM123)+ifNLFA*ETA2(NM123)))
      &                                       +Z0B1)
      &                                       / (Z0B1) ) ) )**2.D0
      &                                     * ABS(Q(NM123,1))
-                                    IF(KSLIP.GT.1.D0*ABS(Q(NM123,1)))
+                                    if(KSLIP.gt.1.D0*ABS(Q(NM123,1)))
      &                                  KSLIP=1.D0* ABS(Q(NM123,1))
-                                    IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
+                                    if(KSLIP.lt.0.0025D0*ABS(Q(NM123,1)))
      &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
-                                 ENDIF
-                                 BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
+                                 endif
+                                 BSX1(NM123)=KSLIP*real(Q(NM123,1))
                                  BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
-                                 BSX1(NM1)=KSLIP*REAL(Q(NM123,1))
+                                 BSX1(NM1)=KSLIP*real(Q(NM123,1))
                                  BSY1(NM1)=KSLIP*AIMAG(Q(NM123,1))
-                              ENDIF
+                              endif
 !Casey 220207 from Rosemary : And again in the next two wetting criteria
-                              IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
-                                 DO k = 1,NFEN
+                              if((CBAROCLINIC).and.(IDEN.eq.4))then
+                                 do k = 1,NFEN
                                     SAL(NM1,k)=0.5D0*(SAL(NM2,k)+
      &                                         SAL(NM3,k))
                                     TEMP(NM1,k)=0.5D0*(TEMP(NM2,k)+
      &                                          TEMP(NM3,k))
-                                 ENDDO
-                           ENDIF
-                           ENDIF
-                        ENDIF  !node 2
+                                 end do
+                           endif
+                           endif
+                        endif  !node 2
 
                         !  Make Node 3 Wet and set parameters
-                        IF(NNODECODE(NM3).NE.1) THEN
-                           NNODECODE(NM3)=1
+                        if(nnodecode(NM3).NE.1) then
+                           nnodecode(NM3)=1
                            NM123 = NM3
-                           IF(C2DDI)THEN
+                           if(C2DDI)then
                             !Convert Manning's N to Cd, if necessary.
-                              IF (LoadManningsN) THEN
+                              if (LoadManningsN) then
                                  FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                           /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                           /( ( DP(NM123)+ifNLFA*ETA2(NM123) )
      &                                               **(1.d0/3.d0) )
-                                 IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                                 if(FRIC(NM123).lt.BFCdLLimit) then
                                     FRIC(NM123) = BFCdLLimit
-                                 ENDIF
-                              ENDIF
-                           ENDIF
-                           VEL=VELMIN
+                                 endif
+                              endif
+                           endif
+                           VEL=velmin
                            H1 = HTOTN3
-                           IF(C2DDI)THEN
-                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-     &                           (IFNLBF+IFHYBF*
+                           if(C2DDI)then
+                              TK(NM123)=FRIC(NM123)*(ifLINBF+(VEL/H1)*
+     &                           (ifNLBF+ifHYBF*
      &                           (1.D0+(HBREAK/H1)**FTHETA)**
      &                           (FGAMMA/FTHETA)))
                               !WJP needed for internal_tide stuff
                               TKM(1:2,NM123) = TK(NM123) 
-                           ELSEIF(C3D)THEN
-                              IF(ISLIP.EQ.0)THEN
+                           elseif(C3D)then
+                              if(ISLIP.eq.0)then
                                  DUDS=(Q(NM123,2)-Q(NM123,1))
      &                             /(SIGMA(2)-SIGMA(1))
-                                 BSX1(NM123)=EVTOT(1)*REAL(DUDS)
+                                 BSX1(NM123)=EVTOT(1)*real(DUDS)
                                  BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
-                                 BSX1(NM2)=EVTOT(1)*REAL(DUDS)
+                                 BSX1(NM2)=EVTOT(1)*real(DUDS)
                                  BSY1(NM2)=EVTOT(1)*AIMAG(DUDS)
-                              ENDIF
-                              IF(ISLIP.NE.0)THEN
-                                 IF(ISLIP.EQ.1)THEN
+                              endif
+                              if(ISLIP.NE.0)then
+                                 if(ISLIP.eq.1)then
                                     KSLIP=KP
-                                 ENDIF
-                                 IF(ISLIP.EQ.2)THEN
+                                 endif
+                                 if(ISLIP.eq.2)then
                                      KSLIP = (1.D0 /
      &                                     ( (1.D0/0.41D0) *
      &                               LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
-     &                                  (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                  (DP(NM123)+ifNLFA*ETA2(NM123)))
      &                                       +Z0B1)
      &                                       / (Z0B1) ) ) )**2.D0
      &                                     * ABS(Q(NM123,1))
-                                     IF(KSLIP.GT.1.D0*ABS(Q(NM123,1)))
+                                     if(KSLIP.gt.1.D0*ABS(Q(NM123,1)))
      &                                  KSLIP=1.D0* ABS(Q(NM123,1))
-                                     IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
+                                     if(KSLIP.lt.0.0025D0*ABS(Q(NM123,1)))
      &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
-                                 ENDIF
-                                 BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
+                                 endif
+                                 BSX1(NM123)=KSLIP*real(Q(NM123,1))
                                  BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
-                                 BSX1(NM2)=KSLIP*REAL(Q(NM123,1))
+                                 BSX1(NM2)=KSLIP*real(Q(NM123,1))
                                  BSY1(NM2)=KSLIP*AIMAG(Q(NM123,1))
-                              ENDIF
+                              endif
 !Casey 220207 from Rosemary : In ALL wetting criteria
-                              IF((CBAROCLINIC).and.(IDEN.EQ.4))THEN
-                                 DO k = 1,NFEN
+                              if((CBAROCLINIC).and.(IDEN.eq.4))then
+                                 do k = 1,NFEN
                                     SAL(NM2,k)=0.5D0*(SAL(NM1,k)+
      &                                          SAL(NM3,k))
                                     TEMP(NM2,k)=0.5D0*(TEMP(NM1,k)+
      &                                          TEMP(NM3,k))
-                                 ENDDO
-                              ENDIF
-                           ENDIF
-                        ENDIF !node3
+                                 end do
+                              endif
+                           endif
+                        endif !node3
 
-                     ENDIF  !ALL DEPTHS GREATER THAN HOFF
-                  ENDIF  !IF NNODECODE SUM LESS THAN 3
-               ENDIF   ! IF NODECODE SUM LESS THAN 3
-            ENDDO  !LOOP OVER ELEMENTS
+                     endif  !ALL DEPTHS GREATER THAN HOFF
+                  endif  !if nnodecode SUM LESS THAN 3
+               endif   ! if nodecode SUM LESS THAN 3
+            end do  !LOOP OVER ELEMENTS
 
             if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
             if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
 
 C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #ifdef CMPI
-            CALL UPDATEI(NNODECODE,NIBCNT,2)
+            CALL UPDATEI(nnodecode,NIBCNT,2)
 #endif
  
-         ENDIF !IF TIME VARYING BATHYMETRY AND WITHIN CHANGE TIME
+         endif !if TIME VARYING BATHYMETRY AND WITHIN CHANGE TIME
          !END OF ADDITIONAL WETTING FOR TIME VARYING BATHYMETRY
 
          !---------------------------
@@ -1101,15 +1134,15 @@ C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
          !---------------------------
          ! Check for adjacent nodes and force nodes wet when attached
          ! to receiving barrier nodes
-         DO I=1,NP
-            IF((NIBCNT(I).GT.0).AND.(NNODECODE(I).EQ.0)) THEN
-               NNODECODE(I)=1
-            ENDIF
-         ENDDO
+         do I=1,NP
+            if((NIBCNT(I).gt.0).AND.(nnodecode(I).eq.0)) then
+               nnodecode(I)=1
+            endif
+         end do
 
 cjjwC     Use Message-Passing to update nnodecode at ghost nodes
 cjjw#ifdef CMPI
-cjjw         CALL UPDATEI(NNODECODE,IDUMY,1)
+cjjw         CALL UPDATEI(nnodecode,IDUMY,1)
 cjjw#endif
 
        ! END WET/DRY SECTION - PART 2
@@ -1122,101 +1155,101 @@ cjjw#endif
          ! downhill flow originates from a barely wet node into wet nodes
          ! are forced inactive; the only exception is receiving overtopped
          ! barrier nodes
-         DO I=1,NE
+         do I=1,NE
             NM1=NM(I,1)
             NM2=NM(I,2)
             NM3=NM(I,3)
             NBNCTOT=NIBCNT(NM1)*NIBCNT(NM2)*NIBCNT(NM3)
-            IF(NBNCTOT.EQ.0) THEN   !No barrier/pipe receiving nodes in this elem
+            if(NBNCTOT.eq.0) then   !No barrier/pipe receiving nodes in this elem
                ETAN1=ETA2(NM1)
                ETAN2=ETA2(NM2)
                ETAN3=ETA2(NM3)
-               IF(level0)THEN
+               if(level0)then
                   HTOTN1 = gridDepthVertETA2(NM1)
                   HTOTN2 = gridDepthVertETA2(NM2)
                   HTOTN3 = gridDepthVertETA2(NM3)
-               ELSE
+               else
                   HTOTN1=DP(NM1)+ETA2(NM1)
                   HTOTN2=DP(NM2)+ETA2(NM2)
                   HTOTN3=DP(NM3)+ETA2(NM3)
-               ENDIF
+               endif
 #ifdef SB_WETDRY
 C...Find the heighest point on the bed in the element.  sb v46.28.sb05.06 11/01/2006
-               IF(DP(NM1).LE.DP(NM2).AND.DP(NM1).LE.DP(NM3)) THEN
+               if(DP(NM1).LE.DP(NM2).AND.DP(NM1).LE.DP(NM3)) then
                   DPMIN = DP(NM1)
-               ELSE IF(DP(NM2).LE.DP(NM3).AND.DP(NM2).LE.DP(NM1)) THEN
+               else if(DP(NM2).LE.DP(NM3).AND.DP(NM2).LE.DP(NM1)) then
                   DPMIN = DP(NM2)
-               ELSE IF(DP(NM3).LE.DP(NM1).AND.DP(NM3).LE.DP(NM2)) THEN
+               else if(DP(NM3).LE.DP(NM1).AND.DP(NM3).LE.DP(NM2)) then
                   DPMIN = DP(NM3)
-               ENDIF
+               endif
 #endif
 #ifndef SB_WETDRY
                ! jgf52.08.08: Analyst can eliminate noff from
                ! consideration in fort.15 file. 
                if (noffActive.eqv..true.) then
 C...ABC pattern
-                  IF((ETAN1.GE.ETAN2).AND.(ETAN2.GT.ETAN3)) THEN
-                    IF((HTOTN1.LT.HOFF).OR.(HTOTN2.LT.HOFF)) NOFF(I)=0
-                  ENDIF
-                  IF((ETAN2.GE.ETAN3).AND.(ETAN3.GT.ETAN1)) THEN
-                    IF((HTOTN2.LT.HOFF).OR.(HTOTN3.LT.HOFF)) NOFF(I)=0
-                  ENDIF
-                  IF((ETAN3.GE.ETAN1).AND.(ETAN1.GT.ETAN2)) THEN
-                     IF((HTOTN3.LT.HOFF).OR.(HTOTN1.LT.HOFF)) NOFF(I)=0
-                  ENDIF
+                  if((ETAN1.GE.ETAN2).AND.(ETAN2.gt.ETAN3)) then
+                    if((HTOTN1.lt.HOFF).OR.(HTOTN2.lt.HOFF)) noff(I)=0
+                  endif
+                  if((ETAN2.GE.ETAN3).AND.(ETAN3.gt.ETAN1)) then
+                    if((HTOTN2.lt.HOFF).OR.(HTOTN3.lt.HOFF)) noff(I)=0
+                  endif
+                  if((ETAN3.GE.ETAN1).AND.(ETAN1.gt.ETAN2)) then
+                     if((HTOTN3.lt.HOFF).OR.(HTOTN1.lt.HOFF)) noff(I)=0
+                  endif
 C...ACB pattern
-                  IF((ETAN1.GE.ETAN3).AND.(ETAN3.GT.ETAN2)) THEN
-                    IF((HTOTN1.LT.HOFF).OR.(HTOTN3.LT.HOFF)) NOFF(I)=0
-                  ENDIF
-                  IF((ETAN2.GE.ETAN1).AND.(ETAN1.GT.ETAN3)) THEN
-                    IF((HTOTN2.LT.HOFF).OR.(HTOTN1.LT.HOFF)) NOFF(I)=0
-                  ENDIF
-                  IF((ETAN3.GE.ETAN2).AND.(ETAN2.GT.ETAN1)) THEN
-                    IF((HTOTN3.LT.HOFF).OR.(HTOTN2.LT.HOFF)) NOFF(I)=0
-                  ENDIF
+                  if((ETAN1.GE.ETAN3).AND.(ETAN3.gt.ETAN2)) then
+                    if((HTOTN1.lt.HOFF).OR.(HTOTN3.lt.HOFF)) noff(I)=0
+                  endif
+                  if((ETAN2.GE.ETAN1).AND.(ETAN1.gt.ETAN3)) then
+                    if((HTOTN2.lt.HOFF).OR.(HTOTN1.lt.HOFF)) noff(I)=0
+                  endif
+                  if((ETAN3.GE.ETAN2).AND.(ETAN2.gt.ETAN1)) then
+                    if((HTOTN3.lt.HOFF).OR.(HTOTN2.lt.HOFF)) noff(I)=0
+                  endif
                endif
 #else
                ! jgf52.08.08: Analyst can eliminate noff from
                ! consideration in fort.15 file. 
                if (noffActive.eqv..true.) then
 C...ABC pattern
-                  IF((ETAN1.GE.ETAN2).AND.(ETAN2.GT.ETAN3)) THEN
-                     IF((HTOTN1.LT.HOFF)) NOFF(I)=0
-                     IF((ETAN1-ETAN2).LT.(ETAN2-ETAN3)) THEN
-                        IF(HTOTN2.LT.HOFF) NOFF(I)=0
-                     ENDIF
-                  ENDIF
-                  IF((ETAN2.GE.ETAN3).AND.(ETAN3.GT.ETAN1)) THEN
-                     IF((HTOTN2.LT.HOFF)) NOFF(I)=0
-                     IF((ETAN2-ETAN3).LT.(ETAN3-ETAN1)) THEN
-                        IF(HTOTN3.LT.HOFF) NOFF(I)=0
-                     ENDIF
-                  ENDIF
-                  IF((ETAN3.GE.ETAN1).AND.(ETAN1.GT.ETAN2)) THEN
-                     IF((HTOTN3.LT.HOFF)) NOFF(I)=0
-                     IF((ETAN3-ETAN1).LT.(ETAN1-ETAN2)) THEN
-                        IF(HTOTN1.LT.HOFF) NOFF(I)=0
-                     ENDIF
-                  ENDIF
+                  if((ETAN1.GE.ETAN2).AND.(ETAN2.gt.ETAN3)) then
+                     if((HTOTN1.lt.HOFF)) noff(I)=0
+                     if((ETAN1-ETAN2).lt.(ETAN2-ETAN3)) then
+                        if(HTOTN2.lt.HOFF) noff(I)=0
+                     endif
+                  endif
+                  if((ETAN2.GE.ETAN3).AND.(ETAN3.gt.ETAN1)) then
+                     if((HTOTN2.lt.HOFF)) noff(I)=0
+                     if((ETAN2-ETAN3).lt.(ETAN3-ETAN1)) then
+                        if(HTOTN3.lt.HOFF) noff(I)=0
+                     endif
+                  endif
+                  if((ETAN3.GE.ETAN1).AND.(ETAN1.gt.ETAN2)) then
+                     if((HTOTN3.lt.HOFF)) noff(I)=0
+                     if((ETAN3-ETAN1).lt.(ETAN1-ETAN2)) then
+                        if(HTOTN1.lt.HOFF) noff(I)=0
+                     endif
+                  endif
 C...ACB pattern
-                  IF((ETAN1.GE.ETAN3).AND.(ETAN3.GT.ETAN2)) THEN
-                     IF((HTOTN1.LT.HOFF)) NOFF(I)=0
-                     IF((ETAN1-ETAN3).LT.(ETAN3-ETAN2)) THEN
-                        IF(HTOTN3.LT.HOFF) NOFF(I)=0
-                     ENDIF
-                  ENDIF
-                  IF((ETAN2.GE.ETAN1).AND.(ETAN1.GT.ETAN3)) THEN
-                     IF((HTOTN2.LT.HOFF)) NOFF(I)=0
-                     IF((ETAN2-ETAN1).LT.(ETAN1-ETAN3)) THEN
-                        IF(HTOTN1.LT.HOFF) NOFF(I)=0
-                     ENDIF
-                  ENDIF
-                  IF((ETAN3.GE.ETAN2).AND.(ETAN2.GT.ETAN1)) THEN
-                     IF((HTOTN3.LT.HOFF)) NOFF(I)=0
-                     IF((ETAN3-ETAN2).LT.(ETAN2-ETAN1)) THEN
-                        IF(HTOTN2.LT.HOFF) NOFF(I)=0
-                     ENDIF
-                  ENDIF
+                  if((ETAN1.GE.ETAN3).AND.(ETAN3.gt.ETAN2)) then
+                     if((HTOTN1.lt.HOFF)) noff(I)=0
+                     if((ETAN1-ETAN3).lt.(ETAN3-ETAN2)) then
+                        if(HTOTN3.lt.HOFF) noff(I)=0
+                     endif
+                  endif
+                  if((ETAN2.GE.ETAN1).AND.(ETAN1.gt.ETAN3)) then
+                     if((HTOTN2.lt.HOFF)) noff(I)=0
+                     if((ETAN2-ETAN1).lt.(ETAN1-ETAN3)) then
+                        if(HTOTN1.lt.HOFF) noff(I)=0
+                     endif
+                  endif
+                  if((ETAN3.GE.ETAN2).AND.(ETAN2.gt.ETAN1)) then
+                     if((HTOTN3.lt.HOFF)) noff(I)=0
+                     if((ETAN3-ETAN2).lt.(ETAN2-ETAN1)) then
+                        if(HTOTN2.lt.HOFF) noff(I)=0
+                     endif
+                  endif
                endif !noffActive.eqv..true.
 #endif
 
@@ -1226,25 +1259,25 @@ C...ACB pattern
 !>the bed elevation at the node with the biggest water column height
 !>is lower than the heighest point on the bed in the element.
 !>sb v46.28.sb05.06 11/01/2006
-!>This is applied only when NOFF flag of the element at the previous time
+!>This is applied only when noff flag of the element at the previous time
 !>step is 0, which means that this logic works to prevent an element from
 !>re-wetting. sb v46.52.03
                if (noffActive.eqv..true.) then 
-                  IF(NOFFOLD(I).EQ.0) THEN
-                     IF(HTOTN1.GE.HTOTN2.AND.HTOTN1.GE.HTOTN3) THEN
-                        IF(ETAN1.LT.(-DPMIN+H0)) NOFF(I) = 0
-                     ENDIF
-                     IF(HTOTN2.GE.HTOTN3.AND.HTOTN2.GE.HTOTN1) THEN
-                        IF(ETAN2.LT.(-DPMIN+H0)) NOFF(I) = 0
-                     ENDIF
-                     IF(HTOTN3.GE.HTOTN1.AND.HTOTN3.GE.HTOTN2) THEN
-                        IF(ETAN3.LT.(-DPMIN+H0)) NOFF(I) = 0
-                     ENDIF
-                 ENDIF
+                  if(noffold(I).eq.0) then
+                     if(HTOTN1.GE.HTOTN2.AND.HTOTN1.GE.HTOTN3) then
+                        if(ETAN1.lt.(-DPMIN+H0)) noff(I) = 0
+                     endif
+                     if(HTOTN2.GE.HTOTN3.AND.HTOTN2.GE.HTOTN1) then
+                        if(ETAN2.lt.(-DPMIN+H0)) noff(I) = 0
+                     endif
+                     if(HTOTN3.GE.HTOTN1.AND.HTOTN3.GE.HTOTN2) then
+                        if(ETAN3.lt.(-DPMIN+H0)) noff(I) = 0
+                     endif
+                 endif
               endif
 #endif
-            ENDIF
-         ENDDO
+            endif
+         end do
 
 #ifdef SB_WETDRY
 !>     ...added by sb on 11/02/2006
@@ -1255,55 +1288,55 @@ C...ACB pattern
 !>     to share an edge to let the flow go through between the elements.
 !>     Therefore, in this section, a node is determined to be dry
 !>     if two elements are connected at one node, not sharing an edge.
-!>     As it seemed this procedure needed NOFF information,
-!>     although this section changes NNODECODE,
+!>     As it seemed this procedure needed noff information,
+!>     although this section changes nnodecode,
 !>     I put this section here, rather than the end of PART 2.
-!>     I tried setting NOFF(I) = 0, but it didn't shut down the flow.
+!>     I tried setting noff(I) = 0, but it didn't shut down the flow.
 !>     
-         DO I=1,NE
+         do I=1,NE
             NM1=NM(I,1)
             NM2=NM(I,2)
             NM3=NM(I,3)
-            IF(NOFF(I).EQ.1.AND.
-     &         NNODECODE(NM1).EQ.1.AND.
-     &         NNODECODE(NM2).EQ.1.AND.
-     &         NNODECODE(NM3).EQ.1) THEN
-               DO K=1,3
+            if(noff(I).eq.1.AND.
+     &         nnodecode(NM1).eq.1.AND.
+     &         nnodecode(NM2).eq.1.AND.
+     &         nnodecode(NM3).eq.1) then
+               do K=1,3
                   NM1=NM(I,K)
                   NM2=NM(I,MOD(K+0,3)+1)
                   NM3=NM(I,MOD(K+1,3)+1)
 
                   NWETNEI = 0
                   NWETADJ = 0
-                  DO J=1,MNEI
+                  do J=1,MNEI
                      N=NeiTabEle(NM1,J)
-                     IF(N.EQ.0) CYCLE
-                     IF(N.EQ.I) CYCLE
+                     if(N.eq.0) CYCLE
+                     if(N.eq.I) CYCLE
 
                      NMN1=NM(N,1)
                      NMN2=NM(N,2)
                      NMN3=NM(N,3)
-                     IF(NOFF(N).EQ.1.AND.
-     &                  NNODECODE(NMN1).EQ.1.AND.
-     &                  NNODECODE(NMN2).EQ.1.AND.
-     &                  NNODECODE(NMN3).EQ.1) THEN
+                     if(noff(N).eq.1.AND.
+     &                  nnodecode(NMN1).eq.1.AND.
+     &                  nnodecode(NMN2).eq.1.AND.
+     &                  nnodecode(NMN3).eq.1) then
                         NWETNEI = NWETNEI + 1
 
-                        IF((NMN1.EQ.NM2.OR.NMN1.EQ.NM3).OR.
-     &                     (NMN2.EQ.NM2.OR.NMN2.EQ.NM3).OR.
-     &                     (NMN3.EQ.NM2.OR.NMN3.EQ.NM3)) THEN
+                        if((NMN1.eq.NM2.OR.NMN1.eq.NM3).OR.
+     &                     (NMN2.eq.NM2.OR.NMN2.eq.NM3).OR.
+     &                     (NMN3.eq.NM2.OR.NMN3.eq.NM3)) then
                            NWETADJ = NWETADJ + 1
-                        ENDIF
-                     ENDIF
-                  ENDDO
+                        endif
+                     endif
+                  end do
 
-                  IF(NWETNEI.GT.0.AND.NWETADJ.EQ.0.AND.
-     &               NIBCNT(NM1).EQ.0) THEN
-                     NNODECODE(NM1) = 0
-                  ENDIF
-               ENDDO
-            ENDIF
-         ENDDO
+                  if(NWETNEI.gt.0.AND.NWETADJ.eq.0.AND.
+     &               NIBCNT(NM1).eq.0) then
+                     nnodecode(NM1) = 0
+                  endif
+               end do
+            endif
+         end do
 #endif
 
 
@@ -1313,60 +1346,60 @@ C...ACB pattern
        ! Check the node if it is along the ibtype=64 weir boundary and if 
        ! the weir is submerged. If true and the node does not belong to
        ! at least one wet element, set the nnodecode back to 0.  SB
-         IF (NFLUXIB64_GBL.GT.0) THEN
-            DO I=1,NP
-               IF(LBArray_Pointer(I).GT.0) THEN
+         if (NFLUXIB64_GBL.gt.0) then
+            do I=1,NP
+               if(LBArray_Pointer(I).gt.0) then
                   J = LBArray_Pointer(I)
-                  IF((ISSUBMERGED64(J).GT.0).AND.(NNODECODE(I).EQ.1)) THEN
+                  if((ISSUBMERGED64(J).gt.0).AND.(nnodecode(I).eq.1)) then
                      NNBB2=IBCONN(J)
                      NWetEle = 0
-                     DO K=1,NNeighEle(I)
+                     do K=1,NNeighEle(I)
                         IE = NeiTabEle(I,K)
-                        NCTOT = NNODECODE(NM(IE,1)) + 
-     &                          NNODECODE(NM(IE,2)) + NNODECODE(NM(IE,3))
-                        IF (NCTOT.EQ.3) THEN
+                        NCTOT = nnodecode(NM(IE,1)) + 
+     &                          nnodecode(NM(IE,2)) + nnodecode(NM(IE,3))
+                        if (NCTOT.eq.3) then
                            NWetEle = NWetEle + 1
-                        ENDIF
-                     ENDDO
-                     IF (NWetEle.EQ.0) THEN
-                        NNODECODE(I) = 0
-                     ENDIF
-                  ENDIF
-               ENDIF
-            ENDDO
-         ENDIF
+                        endif
+                     end do
+                     if (NWetEle.eq.0) then
+                        nnodecode(I) = 0
+                     endif
+                  endif
+               endif
+            end do
+         endif
 
       ! Section for condensed nodes
       ! Setting the same nodecode value at grouped condensed nodes   SB
-      IF(LoadCondensedNodes) THEN
-         DO K=1,NListCondensedNodes
+      if(LoadCondensedNodes) then
+         do K=1,NListCondensedNodes
             I = ListCondensedNodes(K,1)
-            IF(I==0) CYCLE
-            ! 0) DEFAULT VALUE
-            NNC = NNODECODE(I)
+            if(I==0) CYCLE
+            ! 0) DEFAUlt VALUE
+            NNC = nnodecode(I)
             ! 1) FIND UPDATED VALUE 
-            DO L=2,NNodesListCondensedNodes(K)
+            do L=2,NNodesListCondensedNodes(K)
                J = ListCondensedNodes(K,L)
-               IF(NNODECODE(J).NE.NODECODE(J)) THEN
-                  NNC = NNODECODE(J)
-                  EXIT ! EXiT THE LOOP IF AN UPDATED NODECODE IS FOUND
-               ENDIF
-            ENDDO
+               if(nnodecode(J).NE.nodecode(J)) then
+                  NNC = nnodecode(J)
+                  EXIT ! EXiT THE LOOP if AN UPDATED nodecode IS FOUND
+               endif
+            end do
             ! 2) DISTRIBUTE IT
-            NNODECODE(I) = NNC
-            DO L=2,NNodesListCondensedNodes(K)
+            nnodecode(I) = NNC
+            do L=2,NNodesListCondensedNodes(K)
                J = ListCondensedNodes(K,L)
-               NNODECODE(J) = NNC
-            ENDDO
-         ENDDO
-      ENDIF
+               nnodecode(J) = NNC
+            end do
+         end do
+      endif
 
 
 !>       START WET/DRY SECTION PART 4 - NODAL DRYING LOOP D2
 !>
 !>       Update number of active elements (MJU) and the total area
 !>       (TotalArea) connected to a node. If these are zero, the node is
-!>       landlocked and should be dried. These depend on NNODECODE which
+!>       landlocked and should be dried. These depend on nnodecode which
 !>       varies during the time step. Also add computation of total area
 !>       reciprocal used in various modules. This code was a repeat of
 !>       totalAreaCalc in the mesh module, so that subroutine was
@@ -1389,45 +1422,45 @@ C...ACB pattern
 
          ! Message-Passing to update nnodecode at ghost nodes
 #ifdef CMPI
-         CALL UPDATEI(NNODECODE,IDUMY,1)
+         CALL UPDATEI(nnodecode,IDUMY,1)
          CALL UPDATER(TotalArea,DUMY1,DUMY2,1)
 #endif
 
 
-!>     WET/DRY SECTION - PART 5 - RESET NODECODE USING NNODECODE
-!>     Check to see if any wetting occurred & update NODECODE
-!>     Note, NCCHANGE=0 set near the beginning of GWCE subroutine
-         DO I=1,NP
-            IF(NNODECODE(I).NE.NODECODE(I)) THEN
-               NODECODE(I)=NNODECODE(I)
-               NCCHANGE=NCCHANGE+1
-            ENDIF
-         ENDDO
+!>     WET/DRY SECTION - PART 5 - RESET nodecode USING nnodecode
+!>     Check to see if any wetting occurred & update nodecode
+!>     Note, ncchange=0 set near the beginning of GWCE subroutine
+         do I=1,NP
+            if(nnodecode(I).NE.nodecode(I)) then
+               nodecode(I)=nnodecode(I)
+               ncchange=ncchange+1
+            endif
+         end do
 
      
 !>     WET/DRY SECTION - PART 6
-!>     Check to see if any NOFF changed requiring the matrix to be reset
-!>     Note, NCCHANGE=0 set near the beginning of GWCE subroutine
+!>     Check to see if any noff changed requiring the matrix to be reset
+!>     Note, ncchange=0 set near the beginning of GWCE subroutine
      
-         DO I=1,NE
-            IF(NOFF(I).NE.NOFFOLD(I)) NCCHANGE=NCCHANGE+1
-         ENDDO
+         do I=1,NE
+            if(noff(I).NE.noffold(I)) ncchange=ncchange+1
+         end do
      
         ! jgf45.06 If there has been any wetting or drying in any
-        ! of the subdomains, the NCCHANGE flag will be activated on all
+        ! of the subdomains, the ncchange flag will be activated on all
         ! of the subdomains, to prevent them from getting out of sync
         ! with their MPI calls as some reset the GWCE and others do not.
 
-         IF(LoadSubgridBarrier)THEN
-             DO I=1,NE
-                 IF(NOFF_SG(I).EQ.0)THEN
-                     IF(NOFF(I).NE.0)THEN
-                         NOFF(I) = 0
-                         NCCHANGE=NCCHANGE+1
-                     ENDIF
-                 ENDIF
-             ENDDO
-         ENDIF
+         if(LoadSubgridBarrier)then
+             do I=1,NE
+                 if(noff_SG(I).eq.0)then
+                     if(noff(I).NE.0)then
+                         noff(I) = 0
+                         ncchange=ncchange+1
+                     endif
+                 endif
+             end do
+         endif
          
          ! DMW 202207 Compute a slope limiting factor if needed
          call computeAlpha()
@@ -1438,11 +1471,11 @@ C...ACB pattern
          ! recalculated on each individual subdomain that has wetted
          ! or dried, without recourse to MPI, eliminating the need
          ! for the call to the subroutine WetDrySum.
-         IF ( ILump.eq.0 ) THEN
-            call WetDrySum(NCCHANGE)
-         ELSE
-            NCCHANGE=NCCHANGE ! jgf48.4619 do nothing
-         ENDIF
+         if ( ILump.eq.0 ) then
+            call WetDrySum(ncchange)
+         else
+            ncchange=ncchange ! jgf48.4619 do nothing
+         endif
 #endif
      
         ! END WET/DRY SECTION - PART 6
@@ -1453,39 +1486,46 @@ C...ACB pattern
 !-----------------------------------------------------------------------
 
 
+
+!----------------------------------------------------------------------
+!----------------------------------------------------------------------
+!                          P R I V A T E
+!----------------------------------------------------------------------
+!----------------------------------------------------------------------
+
 !-----------------------------------------------------------------------
-!   Apply a subgrid barrier.
-!
-!   Assumptions: When the subgrid barrier is not being overtopped,
-!                the cross-barrier flow is disabled and the nodes 
-!                are placed at the elevation found in the mesh 
-!                geometry. When the barrier becomes overtopped, 
-!                the nodes are elevated temporarily during the 
-!                overtopping process. When the overtopping
-!                concludes, the nodes are returned to their mesh
-!                specified elevations and the cross-barrier flow 
-!                is turned off again
+!> @brief Apply a subgrid barrier.
+!>
+!> @details Assumptions:
+!>          * When the subgrid barrier is not being overtopped, the
+!>            cross-barrier flow is disabled and the nodes are placed at
+!>            the elevation found in the mesh geometry. 
+!>          * When the barrier becomes overtopped, the nodes are 
+!>            elevated temporarily during the overtopping process.
+!>          * When the overtopping concludes, the nodes are returned to
+!>            their mesh specified elevations and the cross-barrier flow
+!>            is turned off again.
 !-----------------------------------------------------------------------
       subroutine applySubgridBarrier()
 !-----------------------------------------------------------------------
-          USE MESH,ONLY: DP,DP_ORIG,NM,NE
-          USE GLOBAL,ONLY: ETA2,NOFF,H0,NODECODE,NCCHANGE,ILUMP
-          USE NODALATTRIBUTES,ONLY: SubgridBarrier,
+          use mesh, only : DP,DP_orig,nm,ne
+          USE global, only : ETA2,noff,H0,nodecode,ncChange,ilump
+          USE nodalattributes, only : SubgridBarrier,
      &                              SubgridBarrierOvertopping
 #ifdef CMPI
-          USE MESSENGER,ONLY:wetDrySum
+          use messenger, only : wetDrySum
 #endif          
-          IMPLICIT NONE
-          INTEGER  :: I,NM1,NM2,NM3,NCELE
-          REAL(8) :: SB1,SB2,SB3
-          REAL(8) :: ETABAR,BARHEIGHT
-          REAL(8) :: DOT,DOT1,DOT2,DOT3
-          REAL(8) :: E1,E2,E3,ETA
-          REAL(8),PARAMETER :: SBDT = 200D0
+          implicit none
+          integer  :: I,NM1,NM2,NM3,NCELE
+          real(8) :: SB1,SB2,SB3
+          real(8) :: ETABAR,BARHEIGHT
+          real(8) :: doT,doT1,doT2,doT3
+          real(8) :: E1,E2,E3,ETA
+          real(8),parameter :: SBDT = 200D0
 
-          NOFF_SG(:) = 1
+          noff_SG(:) = 1
 
-          DO I = 1,NE
+          do I = 1,NE
              NM1=NM(I,1)
              NM2=NM(I,2)
              NM3=NM(I,3)
@@ -1493,61 +1533,67 @@ C...ACB pattern
              SB2=subgridBarrier(NM2,1)
              SB3=subgridBarrier(NM3,1)
 
-             NCELE = NODECODE(NM1)*NODECODE(NM2)*NODECODE(NM3)*NOFF(I)
-             IF(NCELE.EQ.0)CYCLE
+             NCELE = nodecode(NM1)*nodecode(NM2)*nodecode(NM3)*noff(I)
+             if(NCELE.eq.0) cycle
 
-             IF(SB1.LT.DP_ORIG(NM1).AND.
-     &          SB2.LT.DP_ORIG(NM2).AND.
-     &          SB3.LT.DP_ORIG(NM3))THEN
+             if(SB1.lt.DP_ORIG(NM1).and.
+     &          SB2.lt.DP_ORIG(NM2).and.
+     &          SB3.lt.DP_ORIG(NM3))then
 
                 E1 = ETA2(NM1)
                 E2 = ETA2(NM2)
                 E3 = ETA2(NM3)
                 ETA = MAX(E1,E2,E3)
-                DOT1 = E1*NODECODE(NM1)+SB1
-                DOT2 = E2*NODECODE(NM2)+SB2
-                DOT3 = E3*NODECODE(NM3)+SB3
-                DOT  = MAX(DOT1,DOT2,DOT3)
+                doT1 = E1*nodecode(NM1)+SB1
+                doT2 = E2*nodecode(NM2)+SB2
+                doT3 = E3*nodecode(NM3)+SB3
+                doT  = MAX(doT1,doT2,doT3)
 
-                IF(DOT.GT.-1.2D0*H0)THEN
+                if(doT.gt.-1.2D0*H0)then
                     DP(NM1) = MAX(SB1,DP(NM1)+SB1/SBDT)
                     DP(NM2) = MAX(SB2,DP(NM2)+SB2/SBDT)
                     DP(NM3) = MAX(SB3,DP(NM3)+SB3/SBDT)
-                    SubgridBarrierOvertopping(NM1) = .TRUE.
-                    SubgridBarrierOvertopping(NM2) = .TRUE.
-                    SubgridBarrierOvertopping(NM3) = .TRUE.
-                ELSE
+                    SubgridBarrierOvertopping(NM1) = .true.
+                    SubgridBarrierOvertopping(NM2) = .true.
+                    SubgridBarrierOvertopping(NM3) = .true.
+                else
                     DP(NM1) = MIN(DP_ORIG(NM1),DP(NM1)-SB1/SBDT)
                     DP(NM2) = MIN(DP_ORIG(NM2),DP(NM2)-SB2/SBDT)
                     DP(NM3) = MIN(DP_ORIG(NM3),DP(NM3)-SB3/SBDT)
-                    NOFF_SG(I) = 0
-                    SubgridBarrierOvertopping(NM1) = .FALSE.
-                    SubgridBarrierOvertopping(NM2) = .FALSE.
-                    SubgridBarrierOvertopping(NM3) = .FALSE.
-                ENDIF
-             ELSE
-                SubgridBarrierOvertopping(NM1) = .FALSE.
-                SubgridBarrierOvertopping(NM2) = .FALSE.
-                SubgridBarrierOvertopping(NM3) = .FALSE.
-             ENDIF
-          ENDDO
+                    noff_SG(I) = 0
+                    SubgridBarrierOvertopping(NM1) = .false.
+                    SubgridBarrierOvertopping(NM2) = .false.
+                    SubgridBarrierOvertopping(NM3) = .false.
+                endif
+             else
+                SubgridBarrierOvertopping(NM1) = .false.
+                SubgridBarrierOvertopping(NM2) = .false.
+                SubgridBarrierOvertopping(NM3) = .false.
+             endif
+          enddo
 
 !-----------------------------------------------------------------------
       end subroutine applySubgridBarrier
 !-----------------------------------------------------------------------
 
-!..... DMW 202207 Compute a slope limiting factor for scaling down the 
-!..... elevation gradient if the slope of the water surface aligned with the 
-!..... bathy slope becomes too large, i.e., when it exceeds slim.
+
+!-----------------------------------------------------------------------
+!> @brief Compute slope limiting factor for elevation gradients.
+!>
+!> @author DWM 202207  need institution and email
+!>
+!> @details Compute a slope limiting factor for scaling down the 
+!>          elevation gradient if the slope of the water surface aligned
+!>          with the bathy slope becomes too large ( slope > slim).
 !-----------------------------------------------------------------------
       subroutine computeAlpha()
 !-----------------------------------------------------------------------
-         USE MESH,ONLY: DP,NM,NE,sfac,SFacEle,SFMYEle,SFMXEle,FDXE,FDYE,
+         use mesh, only : DP,NM,NE,sfac,SFacEle,SFMYEle,SFMXEle,FDXE,FDYE,
      &    areas         
-         use global, only : eta2, noff, nodecode, alphal, IFSFM, slim
+         use global, only : eta2, noff, nodecode, alphal, ifSFM, slim
          use subgrid, only : level0, gridDepthVertETA2
-         IMPLICIT NONE
-         INTEGER  :: I,NM1,NM2,NM3,NC1,NC2,NC3,NCELE
+         implicit none
+         integer  :: I,NM1,NM2,NM3,NC1,NC2,NC3,NCELE
          real(8) :: sfacavg, SFmxAvg, SFmyAvg, DPN1, DPN2, DPN3
          real(8) :: DETAM, DPM, sfdxfac, sfdyfac, hn1, hn2, hn3
          real(8) :: detadxa, detadya, dpdxa, dpdya
@@ -1557,32 +1603,31 @@ C...ACB pattern
          
          ALPHAL(:) = 1.D0
          
-         DO I=1,NE
+         do I=1,NE
             NM1=NM(I,1)
             NM2=NM(I,2)
             NM3=NM(I,3)
-            NC1=NODECODE(NM1)
-            NC2=NODECODE(NM2)
-            NC3=NODECODE(NM3)
-            NCEle=NC1*NC2*NC3*NOFF(I)
-            IF (NCEle.EQ.1) THEN               
-
-               IF(level0)THEN
+            NC1=nodecode(NM1)
+            NC2=nodecode(NM2)
+            NC3=nodecode(NM3)
+            NCEle=NC1*NC2*NC3*noff(I)
+            if (NCEle.eq.1) then
+               if(level0) then
                  HN1 = gridDepthVertETA2(NM1)
                  HN2 = gridDepthVertETA2(NM2)
                  HN3 = gridDepthVertETA2(NM3)
-               ELSE
+               else
                  HN1 = ETA2(NM1) + DP(NM1)
                  HN2 = ETA2(NM2) + DP(NM2)
                  HN3 = ETA2(NM3) + DP(NM3)
-               ENDIF
-               IF((HN1.LE.5.D-1).OR.(HN2.LE.5.D-1).OR.(HN3.LE.5.D-1) ) THEN
-               
+               end if
+
+               if((HN1.LE.5.D-1).OR.(HN2.LE.5.D-1).OR.(HN3.LE.5.D-1) ) then
                   SFacAvg = SFacEle(I)
                   SFmxAvg = SFMXEle(I)  
                   SFmyAvg = SFMYEle(I)  
-                  sfdxfac = (1 - IFSFM)*SFacAvg + IFSFM*SFmxAvg ;
-                  sfdyfac = (1 - IFSFM)*1.0D0 + IFSFM*SFmyAvg ;
+                  sfdxfac = (1 - ifSFM)*SFacAvg + ifSFM*SFmxAvg ;
+                  sfdyfac = (1 - ifSFM)*1.0D0 + ifSFM*SFmyAvg ;
                
                   FDX1 = FDXE(1,I)*sfdxfac  !b1
                   FDX2 = FDXE(2,I)*sfdxfac  !b2
@@ -1606,29 +1651,29 @@ C...ACB pattern
                   DETADYA = ETAN1*FDY1 + ETAN2*FDY2 + ETAN3*FDY3
                   DPM = SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/AREAS(I)
 
-                  IF (DPM .GT. 1D-5) THEN
+                  if (DPM .gt. 1D-5) then
                      DDTMP = DETADXA*(-DPDXA) + DETADYA*(-DPDYA)  !tcm 20250503
-                     IF (ABS(DDTMP) .GT. 1D-12) THEN   !tcm 20250503 added test and else condition
+                     if (ABS(DDTMP) .gt. 1D-12) then   !tcm 20250503 added test and else condition
                         ALPHAL(I) = SLIM*(SQRT(DPDXA*DPDXA + DPDYA*DPDYA)/
      &                     ((1.D0/AREAS(I))*( DDTMP )))  !tcm changed to DDTMP
-                      ELSE
+                      else
                          ALPHAL(I) = 1.D0
-                      ENDIF
-                  ELSE
+                      endif
+                  else
                      DETAM = SQRT(DETADXA*DETADXA + DETADYA*DETADYA)/AREAS(I)
-                     IF (ABS(DETAM) .GT. 1D-12) THEN   !tcm 20250503 added test and else condition
+                     if (ABS(DETAM) .gt. 1D-12) then   !tcm 20250503 added test and else condition
                         ALPHAL(I) = SLIM/DETAM
-                     ELSE
+                     else
                         ALPHAL(I) = 1.D0
-                     ENDIF
-                  ENDIF
+                     endif
+                  endif
                   
-                  IF (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
-                  IF (ALPHAL(I) .GE. 1.D0) ALPHAL(I) = 1.D0
-               ENDIF
+                  if (ALPHAL(I) .LE. 0.D0) ALPHAL(I) = 1.D0
+                  if (ALPHAL(I) .GE. 1.D0) ALPHAL(I) = 1.D0
+               endif
                   
-            ENDIF 
-         ENDDO
+            endif 
+         end do
 
 !-----------------------------------------------------------------------
       end subroutine computeAlpha
@@ -1637,14 +1682,14 @@ C...ACB pattern
 !-----------------------------------------------------------------------
       real(8) function computeTotAreaAtNode(INODE)
 !-----------------------------------------------------------------------
-      USE MESH,ONLY: NE,NNeighEle,NeiTabEle,Areas
-      IMPLICIT NONE
+      use mesh, only : NE,NNeighEle,NeiTabEle,Areas
+      implicit none
       integer, intent(in) :: INODE
       integer :: I,IE
       real(8) :: TotArea
 
       TotArea = 0.d0
-      DO I=1,NNeighEle(INODE)
+      do I=1,NNeighEle(INODE)
          IE = NeiTabEle(INODE,I)
          TotArea = TotArea + Areas(IE)
       enddo
