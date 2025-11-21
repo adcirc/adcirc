@@ -126,14 +126,13 @@
         real(8),target,allocatable :: totalRain(:)  !accumulated rain
         real(8),target,allocatable :: totalRainApplied(:) !applied rain
         real(8),target,allocatable :: rain00(:) ! station output array
-        integer, target :: irainstp ! position in rain station file
         
         ! Public/private variables
         private :: rainTime1, rainTime2, rain1, rain2
         public :: useRain, rainType, rainTimeInc, activeRainType
         public :: rainfallControl, activeRain
         public :: rainCurr, rainODT, totalRain, totalRainApplied
-        public :: rain00, irainstp
+        public :: rain00
 
         ! Public/private subroutines
         private :: checkActiveRain, rainTerminate
