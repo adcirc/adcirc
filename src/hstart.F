@@ -44,7 +44,14 @@ C  v40.02m001 - 12/21 - jjw - add cross barrier pipes cjjwm001                *
 C                                                                             *
 C******************************************************************************
 
+!------------------------------------------------------------------------
+!> @brief Setup routine for an ADCIRC hotstart.
+!>
+!> @todo There is no module structure to this file - just separate
+!> subroutines.
+!------------------------------------------------------------------------
       SUBROUTINE HOTSTART()
+<<<<<<< HEAD
 C
 C**************************************************************************
 C
@@ -52,6 +59,9 @@ C     HOT START PROGRAM SETUP ROUTINE
 C
 C**************************************************************************
 C
+=======
+!------------------------------------------------------------------------
+>>>>>>> Subject: Added capability for additional source terms.
       USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE ADC_CONSTANTS, ONLY: G, PI
       USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
@@ -73,21 +83,23 @@ C
       USE GLOBAL, ONLY: COMM
 #endif      
       USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
-     &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
-     &                 checkHAHotstart
+     &    NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
+     &    checkHAHotstart
       USE WETDRY, ONLY : initializeWettingAndDrying
       USE WIND, ONLY : hotstartMeteorologicalForcing, rsget
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
+      use rain, only : useRain, hotstartRainForcing  !cms 11/20/25
+      use hydrology, only : useInteriorHydrology,    !cms 11/20/25
+     &    hotstartInteriorHydrology
       USE mod_normal_flow_boundary, ONLY : rotate_normal_flux
       USE mesh, only: SFCX, SFCY, YCSFAC, SFMX
       USE boundaries, only: CSII, SIII
-      USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
+      USE RS2,ONLY : RS2INIT,RS2GET    ! sb46.28sb01 added 09/xx/2006
 C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #ifdef ADCNETCDF
-      USE NETCDFIO, ONLY : readNetCDFHotstart,
-     &                     readNetCDFHotstart3D,
-     &                     readNetCDFHotstartHarmonic,
-     &                     readNetCDFHotstartHarmonicMeansVariances
+      USE NETCDFIO, ONLY : readNetCDFHotstart, readNetCDFHotstart3D,
+     &    readNetCDFHotstartHarmonic,
+     &    readNetCDFHotstartHarmonicMeansVariances
 #endif
       USE NodalAttributes, ONLY :
      &     nolibf, nwp, tau0, cf, eslm, GeoidOffset, 
@@ -1433,18 +1445,38 @@ C
          end do
       endif
       
-C----------------------ICE FIELDS-------------------------------------
-C
-C
-C
+C---------------------------ICE FIELDS-----------------------------------
+
+
+C---------------------- ADDITIONAL SOURCE TERMS -------------------------
+C     v56 - cms: additional source terms added to adcirc
+C     Rain on grid and interior hydrology input (point source)
+C     Originally added in v51,v53, v55 but never merged into main code
+
+      IF (useRain) THEN
+         call hotstartRainForcing(timeloc)
+      END IF
+
+      !update the wetted elements and areas around each node
+      call totalAreaCalc()
+      !cms v5#: cannot start the hydrology forcing until divByArea is
+      !updated in totalAreaCalc. Moved from adcirc_init since call was
+      !after cold/hot start was initialized. Results used by many
+      !modules, so do not put inside useInteriorHydrology test
+      IF (useInteriorHydrology) THEN
+         call hotstartInteriorHydrology(timeloc)
+      END IF
+
+C------------------END ADDITIONAL SOURCE TERMS-----------------------
+
 C----------------------MET FORCING------------------------------------
 
       call hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
      &   wvnxout, wvnyout, timeloc, rampmete2)
 
 C----------------------MET FORCING------------------------------------
-C
-C
+
+
 C......RESTART THE WAVE RADIATION STRESS
         
         ! jgf51.46: Fixed initialization issue due to mishandling the 
@@ -1549,8 +1581,8 @@ C.... FOR USE LATER ON
       NSCOUB = NSCOUE
 
 C...
-C....IF RESTARTING THE ELEVATION STATION OUTPUT FILE, GO TO THE PROPER PLACE
-C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
+C....IF RESTARTING THE ELEVATION STATION OUTPUT FILE, GO TO THE PROPER
+C....PLACE IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
       IF(NTCYSE.LT.ITHS.AND.NOUTE.GT.0) NTCYSE = ITHS + NSPOOLE - 1
 
@@ -1565,13 +1597,23 @@ C...
         WRITE(16,1041)
  1041   FORMAT(//,' A NEW ELEVATION STATION FILE WILL BE STARTED')
       ENDIF
+      !cms 11/20/25 added rain station - controlled by elevation
       IF(NOUTE.EQ.-1) THEN
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
      &        NSTAE_G, NSTAE, HEADER61)
+            if (useRain) then
+               call OPEN_GBL_FILE(94, TRIM(GLOBALDIR)//'/'//'fort.94',
+     &         NSTAE_G, NSTAE, HEADER61)
+            end if
+
          else
             CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61',
      &        NSTAE_G, NSTAE, HEADER61)
+            if (useRain) then
+               call OPEN_GBL_FILE(94, TRIM(LOCALDIR)//'/'//'fort.94',
+     &         NSTAE_G, NSTAE, HEADER61)
+            end if
          endif
       ENDIF
 
