@@ -110,8 +110,10 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
       ! activated on elevation-specified boundaries so that low pressure
       ! systems crossing the boundary won't trigger numerical instabilities.
       ! This is normally .false. but can be set to .true. in the fort.15
-      ! in the metControl namelist. 
+      ! in the metControl namelist.
       logical :: invertedBarometerOnElevationBoundary = .false.
+
+      character(len=256) :: scratchMessage
 
       contains
 
@@ -3123,7 +3125,6 @@ C*************************************************************************
       REAL(8) :: AreaIE2
       integer nodeNumber ! fulldomain node number where wse slope is exceeded
       character(1024) :: scratchMessage
-
 
       LOG_SCOPE_TRACED("check_slopes", GWCE_TRACING)
       ! jgf51.47: Per Rick's specification, start off by deactivating

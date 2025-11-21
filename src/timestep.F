@@ -2,22 +2,40 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
 #include "logging_macros.h"
+
+      MODULE mod_timestep
+
+      IMPLICIT NONE
+
+      PRIVATE
+
+      PUBLIC :: TIMESTEP, CALC_SIGMAT_2D
+
+      LOGICAL :: EtaDisc_Fill = .TRUE.
+      REAL(8) :: StaTimHS = 0.0D0
+      REAL(8) :: RefTimHS = 0.0D0
+      LOGICAL :: FIRST_ADJ_ABS_LAYER = .TRUE.
+      LOGICAL :: FIRST_ENTER = .TRUE.
+      CHARACTER(256) :: scratchMessage
+
+      CONTAINS
+
 C#define SB_WETDRY
 C******************************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                            *
@@ -52,7 +70,7 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
 C
-      SUBROUTINE TIMESTEP(IT,TimeLoc)
+      SUBROUTINE TIMESTEP(IT,TimeLoc, ITIME_BGN)
 C
 #ifdef IEEE_DEBUG
       USE, INTRINSIC :: IEEE_ARITHMETIC
@@ -135,7 +153,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
      &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA, Z0B,NFEN
 ! arash 1/20/2016
      &     , BPG
-      USE ADCIRC_Mod, ONLY: ITIME_BGN
 
 #ifdef CMPI
       USE MESSENGER
@@ -164,6 +181,7 @@ Casey 090302: We need these values from other places.
 
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
+      INTEGER, intent(in) :: ITIME_BGN
 C
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
       INTEGER IE, I, J, K, II, JJ                  !local loop counters
@@ -180,7 +198,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       INTEGER :: errorElevExceeded
       INTEGER :: warnVelExceeded
       INTEGER :: warnElevExceeded
-      logical, save ::  EtaDisc_Fill = .TRUE.
 
       REAL(8) CCSFEA
       REAL(8) ElMax
@@ -204,9 +221,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) runperccomplete
 C   kmd48.33bc - added in the heat flux variables
       CHARACTER(80) :: CDUM80
-      CHARACTER(1024) :: scratchMessage
       INTEGER :: NumofBCNode
-      REAL(8), SAVE :: StaTimHS, RefTimHS
       INTEGER :: NOD
 
 C   TCM V49.64.01 -- ADDED FOR ICE CONCENTRATION FIELDS
@@ -1848,22 +1863,23 @@ C
       USE GLOBAL
       use mod_logging, only: t_log_scope, init_log_scope, DEBUG
 
+      implicit none
+
       INTEGER NH
 
       LOG_SCOPE_TRACED("calc_sigmat_2D", TIMESTEP_TRACING)
 
+!     IF(ABS(IDEN).EQ.2) THEN
+!       DO NH=1,NP
+!       ENDDO
+!     ELSEIF(ABS(IDEN).EQ.3) THEN
+!       DO NH=1,NP
+!       ENDDO
+!     ELSEIF(ABS(IDEN).EQ.4) THEN
+!       DO NH=1,NP
+!       ENDDO
+!     ENDIF
 
-      IF(ABS(IDEN).EQ.2) THEN
-        DO NH=1,NP
-        ENDDO
-      ELSEIF(ABS(IDEN).EQ.3) THEN
-        DO NH=1,NP
-        ENDDO
-      ELSEIF(ABS(IDEN).EQ.4) THEN
-        DO NH=1,NP
-        ENDDO
-      ENDIF
-      RETURN
 c*********************************************************************
       END SUBROUTINE CALC_SIGMAT_2D
 c*********************************************************************
@@ -3019,3 +3035,5 @@ C**********************************************************************
        quantity (:,:) = quantity_smooth (:,:)
 
        End Subroutine Gaussian_filter_complex_BPG
+
+       END MODULE mod_timestep
