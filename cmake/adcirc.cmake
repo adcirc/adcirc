@@ -41,7 +41,9 @@ set(ADCIRC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum2d.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vsmy.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum3d.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/control.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/write_output.F
@@ -53,7 +55,6 @@ set(ADCIRC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/timestep.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/vsmy.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/driver.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90

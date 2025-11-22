@@ -136,7 +136,7 @@ C******************************************************************************
      &   IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG 
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
       USE GWCE, ONLY : initGWCE
-      USE MOMENTUM, ONLY : initMomentumEq
+      USE MOMENTUM2D, ONLY : init2DMomentumEq
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
      &                 initHarmonicParameters
       USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
@@ -272,7 +272,7 @@ C     memory for internal use.
 
       !jgf53.dev: allocate memory for continuity and momentum eqns
       call initGWCE()
-      call initMomentumEq()
+      call init2DMomentumEq()
 
 C...Compute the reciprocal of the number of nodes in the entire domain
 

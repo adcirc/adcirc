@@ -1006,7 +1006,7 @@ C
       INTEGER NumNodesNotDefault ! number of individual nodes to specify
       LOGICAL SkipDataSet ! .true. if a data set in unit 13 is not needed
       CHARACTER(len=80) Skipped ! data in unit 13 we do not need
-      CHARACTER(len=1024) :: scratchMessage
+      CHARACTER(len=256) :: scratchMessage
       INTEGER L                 ! line counter
 C
       ! temp array; used to load a real from the file,
@@ -2193,7 +2193,7 @@ C     ----------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: ICN, I1, I2, IBND, NNBB1, NNBB2
       REAL(8) :: X1, Y1, X2, Y2, WIDTH, BE1, BE2
-      CHARACTER(1024) :: scratchMessage
+      CHARACTER(256) :: scratchMessage
 
       WetPerimWidth = 0.D0
       WetPerimBankElev = 0.D0
