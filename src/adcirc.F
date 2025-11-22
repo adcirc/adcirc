@@ -473,7 +473,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
 
       call allMessage(INFO,"Begin timestepping.")
       DO ITIME=ITIME_BGN,ITIME_END
-        CALL TIMESTEP(ITIME,TimeLoc,ITIME_BGN)
+        CALL TIMESTEP(ITIME,ITIME_BGN,TimeLoc)
 
 #ifdef CSWAN
 Casey 090302: If it is time, then call the following subroutine
