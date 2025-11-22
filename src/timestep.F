@@ -25,7 +25,7 @@
 
       PRIVATE
 
-      PUBLIC :: TIMESTEP, CALC_SIGMAT_2D
+      PUBLIC :: TIMESTEP
 
       LOGICAL :: EtaDisc_Fill = .TRUE.
       REAL(8) :: StaTimHS = 0.0D0
@@ -67,18 +67,14 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C     CPRECOR          - Use the predictor-corrector algorithm for GWCE       *
 C                        and momentum equations (package deal)                *
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
-C
+
       SUBROUTINE TIMESTEP(IT,TimeLoc, ITIME_BGN)
-C
-#ifdef IEEE_DEBUG
-      USE, INTRINSIC :: IEEE_ARITHMETIC
-#endif
+
       USE SIZES, ONLY : MNP, MNWPROH, MYPROC
       USE GLOBAL, ONLY : UU1, VV1, QX1, QY1, QX2, QY2, UU2, VV2, MOM_LV_X,
      &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0,
-     &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0,
+     &    TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0,
      &    EN0, EN1, EN2, CICE1, CICE2, CICEOUT, RSNX1, RSNX2, RSNY1, RSNY2,
      &    QX0, QN1, QN2, RSNXOUT, RSNYOUT, LNM_BC1, LNM_BC2, H1, H2,
      &    QNIN1, QNIN2, ENIN1, ENIN2, EtaDisc, NIBNODECODE,
@@ -108,11 +104,12 @@ C
      &    nscreen
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
      &                         WaveStressGrad_Cap, G
-     
+
       USE GWCE, ONLY : solveGWCE, numitr
-      USE MOMENTUM, ONLY : solveMomentumEq
+      USE MOMENTUM2D, ONLY : solve2DMomentumEq
+      USE MOMENTUM3D, ONLY : solve3DVSMomentumEq
       USE WETDRY, ONLY : computeWettingAndDrying
-      USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart, 
+      USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart,
      &    writeWarnElev, collectInundationData, collectMinMaxData
       USE MESH, ONLY : NE, NP, DP, SLAM, SFEA, ICS, TotalArea,
      &    MJU, Areas, SFAC, NNeigh, NeiTab, X, Y,
@@ -123,7 +120,6 @@ C
      &    BARLANHT, BARLANCFSP, NVELL, IBCONN, BARINHT, BARINCFSP,
      &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM, ISSUBMERGED64
       USE GLOBAL_IO, ONLY : nddt2get
-      USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND, ONLY : getMeteorologicalForcing, PRBCKGRND_MH2O, rsget,
      &    getdynamicWaterLevelCorrections,
      &    dynamicWaterLevelCorrectionMassAdjust,
@@ -137,17 +133,17 @@ C.... TCM V49.64.01 ADDITIONS FOR ICE
       use boundaries, only: SIII, CSII
 C.....sb46.28sb03 added 09/xx/2006
       USE RS2,ONLY : RS2INIT,RS2GET
-      USE NodalAttributes, ONLY : 
+      USE NodalAttributes, ONLY :
      &     Apply2DBottomFriction,
      &     Apply2DInternalWaveDrag,
      &     Apply3DBottomFriction,
      &     Apply2DMomentumDisp,
      &     GeoidOffset,
-     &     BFCdLLimit, fric, fgamma, ftheta, manningsn, 
+     &     BFCdLLimit, fric, fgamma, ftheta, manningsn,
      &     hbreak, loadManningsN, iflinbf, ifnlbf, ifhybf
-      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, 
-     &    writeFort066, writeFort067, writeFort065, 
-     &    readFort020, readFort021, readFort019 
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS,
+     &    writeFort066, writeFort067, writeFort065,
+     &    readFort020, readFort021, readFort019
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
       USE GLOBAL_3DVS, ONLY:
      &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA, Z0B,NFEN
@@ -158,7 +154,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       USE MESSENGER
       USE HSWRITER, ONLY: writeHotstart_through_HSwriter  !st3 100711 for hsfile
 #endif
-      
+
 #ifdef CSWAN
 Casey 090302: We need these values from other places.
       USE OWIWIND,     ONLY: WindMultiplier
@@ -173,1337 +169,59 @@ Casey 090302: We need these values from other places.
       USE WEIR, ONLY: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2
       USE SPONGELAYER, ONLY: LoadAbsLayerSigma, sponge_dis_mthd, sponge_opsplit0,
      &     adjust_sponge_sigma, getabslayerext, sponge_shift_soln
-
       USE subgrid, ONLY: level0, getVertLookup
-
-      ! full luni-solar tidal potential !
       USE mod_tidepotential, only: tidePotential
 
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
       INTEGER, intent(in) :: ITIME_BGN
-C
-c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
-      INTEGER IE, I, J, K, II, JJ                  !local loop counters
-      INTEGER NM1, NM2, NM3
-      INTEGER NC1, NC2, NC3, NCEle
-      INTEGER NCyc
-      INTEGER :: itest
-      INTEGER :: kemax
-      INTEGER :: kvmax
-      INTEGER :: nnbb
-      REAL(8) :: velabs
-      REAL(8) :: vel
-      REAL(8) :: velmax
-      INTEGER :: errorElevExceeded
-      INTEGER :: warnVelExceeded
-      INTEGER :: warnElevExceeded
-
-      REAL(8) CCSFEA
-      REAL(8) ElMax
-      REAL(8) PIPE_FLUX
-      REAL(8) H2N1, H2N2, H2N3
-      REAL(8) EtaN1,EtaN2,EtaN3
-      REAL(8) QTRatio
-      REAL(8) RStRatio, RSX, RSY
-      REAL(8) RSXLIM,RSYLIM,RSXYMAG,RSSCALE
-      REAL(8) SAltMul, S2SFEA
-      REAL(8) TPMul
-      REAL(8) UN1
-      REAL(8) QNIN_TMP
-
-      REAL(8) AreaIE2,AreaEle
-      REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
-      REAL(8) FDX1O2A, FDX2O2A, FDX3O2A, FDY1O2A, FDY2O2A, FDY3O2A
-      REAL(8),intent(out) :: TimeLoc
-      REAL(8) TimeLocFluxSettling
-      REAL(8) TimeH
-      REAL(8) runperccomplete
-C   kmd48.33bc - added in the heat flux variables
-      CHARACTER(80) :: CDUM80
-      INTEGER :: NumofBCNode
-      INTEGER :: NOD
-
-C   TCM V49.64.01 -- ADDED FOR ICE CONCENTRATION FIELDS
-      REAL(8) CICE_TRatio  !ICE VARIABLES
-
-C   TCM v50.66.02 -- Added for Time Varying Bathymetry
-      INTEGER :: IJK
-      REAL(8) ETA2TMP,DPTMP,DPTMP2,BTRATIO  !tcm v50.66.01 bathymetry changes
-
-      REAL(8) :: ARG, ARGJ, RFF
-C....... DW
-      REAL(8):: RAMPTMP
-      LOGICAL, SAVE:: FIRST_ADJ_ABS_LAYER = .TRUE. 
-      LOGICAL, SAVE:: FIRST_ENTER = .TRUE. 
-      INTEGER:: NBDI, istep
-C.......
-      LOGICAL ISFRONT
-      LOGICAL foundNaN
+      REAL(8), intent(out) :: TimeLoc
+      REAL(8) :: TimeH
 
       LOG_SCOPE_TRACED("timestep", TIMESTEP_TRACING)
 
-      IF (IT .EQ. 1) THEN
-!.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
-        DO I = 1,NP
-           H2(I) = DP(I)+IFNLFA*ETA2(I)
-           H1(I) = H2(I)
-        ENDDO
-      ENDIF
+      call computeTimeVariables(IT, TimeLoc, TimeH)
+      call computeRampFunctions(IT, TimeLoc)
+      call shiftTimeLevels(IT)
+      call updateIceFields(TimeLoc)
+      call getMeteorologicalForcing(nws, timeloc, wsx2, wsy2, pr2, wvnxout, wvnyout)
 
-
-C    kmd48.33bc - changed for timestep changes in the hot start files
-C     jgf46.21 Combined flux/radiation b.c. for rivers
-      IF (CHOTHS.eqv..true.) THEN
-        FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS)
-      ELSE
-        FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP)
-      END IF
-
-C...  COMPUTE MASTER TIME WHICH IS REFERENCED TO THE BEGINNING TIME OF
-C...  THE MODEL RUN
-C...
-C...  TIMEH: HARMONIC CALCULATIONS ARE MADE FOR TIME WHICH INCLUDES THE REFTIM
-C...  TO ALLOW FOR THE POSSIBILITY THAT THE EQUILIBRIUM ARGUMENTS MAY
-C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
-C...  
-C...  Computation of TimeLoc and TimeH are consolidated. SB,ZC,RL 2022-06-22
-C...
-      TimeLoc=IT*DTDP + StaTim*86400.D0
-      TimeH=IT*DTDP + (StaTim - RefTim)*86400.D0
-      IF (CHOTHS.eqv..true.) THEN
-         IF ((ITHS+1).EQ.IT) THEN
-           StaTimHS=((IT-1)*DTDPHS)/86400.D0
-           RefTimHS=((IT-1)*DTDP)/86400.D0
-         END IF
-         TimeLoc=IT*DTDP + (StaTimHS - RefTimHS)*86400.D0
-         TimeH=IT*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
-      END IF
-
-C...  HARMONIC CALCULATIONS ARE MADE FOR TIME WHICH INCLUDES THE REFTIM
-C...  TO ALLOW FOR THE POSSIBILITY THAT THE EQUILIBRIUM ARGUMENTS MAY
-C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
-C...
-      TimeH=IT*DTDP + (StaTim - RefTim)*86400.D0
-!kmd - added this for the cases where the timestep changes from hot start timestep
-      IF (CHOTHS.eqv..true.) THEN
-         IF ((ITHS+1).EQ.IT) THEN
-           StaTimHS=((IT-1)*DTDPHS)/86400.D0
-           StaTim=((IT-1)*DTDP)/86400.D0
-         END IF
-         TimeH=IT*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
-      END IF
-
-C-------------------TEMPORAL RAMP-------------------------------------
-C...  THIS SECTION IS REWRITTEN BY SB, ZC, and RL 2022-06-22
-C...
-C...  NOTE: MOVED HERE BY DW/WJP : May 3rd 2018
-C...  DEFINE Ramp FUNCTION FOR BOUNDARY ELEVATION FORCING, WIND AND PRESSURE
-C.... FORCING AND TIDAL POTENTIAL FORCING
-C...
-C
-C     jgf46.08 Calculate ramp functions.
-C     jgf46.21 Modify to match behavior of 46.02
-      IF(NRamp.EQ.0) THEN
-         Ramp=1.0D0
-         RampExtFlux=1.0D0
-         RampIntFlux=1.0D0
-         RampElev=1.0D0
-         RampTip=1.0D0
-         RampMete=1.0D0
-         RampWRad=1.0D0
-      ELSE
-         Ramp=TANH((2.D0*TimeLoc/86400.D0)/DRamp)
-         RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampExtFlux)
-         RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampIntFlux)
-         RampElev=TANH((2.D0*TimeLoc/86400.D0)/DRampElev)
-         RampTip=TANH((2.D0*TimeLoc/86400.D0)/DRampTip)
-         RampMete=TANH((2.D0*(TimeLoc/86400.D0-DUnRampMete))/DRampMete)
-         RampWRad=TANH((2.D0*TimeLoc/86400.D0)/DRampWRad)
-      ENDIF
-C
-C     jgf46.21 If there is an external flux (i.e. river) boundary, turn
-C     off all forcings except the river flux forcing for the duration of
-C     the FluxSettlingTime. When the FluxSettlingTime has ended, turn
-C     all forcings back on.
-      IF (NRamp.gt.1.AND.FluxSettlingIT.GT.0) THEN
-         IF(IT.LT.(FluxSettlingIT+10)) THEN
-            Ramp=0.0
-            RampIntFlux=0.0
-            RampElev=0.0
-            RampTip=0.0
-            RampMete=0.0
-            RampWRad=0.0
-         ELSE
-            TimeLocFluxSettling=(IT-FluxSettlingIT-10)*DTDP
-     &           + StaTim*86400.D0
-            IF (CHOTHS.eqv..true.) THEN
-               TimeLocFluxSettling=(IT-FluxSettlingIT-10)*DTDP
-     &           + (StaTimHS - RefTimHS)*86400.D0
-            END IF
-
-            Ramp=TANH((2.D0*TimeLocFluxSettling/86400.D0)/DRamp)
-            RampIntFlux=TANH((2.D0
-     &           *TimeLocFluxSettling/86400.D0)/DRampIntFlux)
-            RampElev=TANH((2.D0
-     &           *TimeLocFluxSettling/86400.D0)/DRampElev)
-            RampTip=TANH((2.D0
-     &           *TimeLocFluxSettling/86400.D0)/DRampTip)
-            IF(NRamp.ne.8) then
-               RampMete=TANH((2.D0
-     &           *TimeLocFluxSettling/86400.D0)/DRampMete)
-            ENDIF
-            RampWRad=TANH((2.D0
-     &           *TimeLocFluxSettling/86400.D0)/DRampWRad)
-         ENDIF
-      ENDIF
-
-      !jgf49.44: Cover the case where the ramp length is zero.
-      IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
-      IF (DRampExtFlux.lt.1.0e-6) RampExtFlux = 1.0d0
-      IF (DRampIntFlux.lt.1.0e-6) RampIntFlux = 1.0d0
-      IF (DRampElev.lt.1.0e-6) RampElev = 1.0d0
-      IF (DRampTip.lt.1.0e-6) RampTip = 1.0d0
-      IF (DRampMete.lt.1.0e-6) RampMete = 1.0d0
-      IF (DRampWRad.lt.1.0e-6) RampWRad = 1.0d0
-C     
-C------DW
-      IF ( LoadAbsLayerSigma ) THEN
-         IF (  FIRST_ADJ_ABS_LAYER ) THEN
-            CALL Adjust_Sponge_Sigma( abs(DTDP) ) ;
-
-            FIRST_ADJ_ABS_LAYER = .FALSE. ;
-         END IF
-      END IF   
-C-----END DW
-
-C-------------------TEMPORAL RAMP-------------------------------------
-
-
-C...  SHIFT THE FLUX PER UNIT WIDTH, DEPTH AVERAGED VELOCITIES, BOTTOM STRESS,
-C...  WIND STRESS, SURFACE PRESSURE AND TIDAL POTENTIALS TO PREVIOUS TIME STEP.
-C...  ZERO OUT THE NEW FORCING TERMS AND LOAD VECTORS
-C...  COMPUTE A NEW BOTTOM FRICTION COEFFICIENT
-C...
-ckmd  Shift values in time for predictor-corrector algorithm
-
-      DO I=1,NP
-         if(CPRECOR) THEN
-            UU0(I)=UU1(I)
-            VV0(I)=VV1(I)
-            QX0(I)=QX1(I)
-            QY0(I)=QY1(I)
-         end if
-         QX1(I)=QX2(I)
-         QY1(I)=QY2(I)
-         UU1(I)=UU2(I)
-         VV1(I)=VV2(I)
-         GWCE_LV(I) =0.D0
-         MOM_LV_X(I)=0.D0
-         MOM_LV_Y(I)=0.D0
-
-C...  Transport
-         IF(IM.EQ.10) THEN
-           TRANS_LV_B(I)=0.D0
-           TRANS_LV_A(I)=0.D0
-           ENDIF
-
-C...  Wind (& wave radiation stress if used)
-         IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
-            WSX1(I)=WSX2(I)
-            WSX2(I)=0.D0
-            WSY1(I)=WSY2(I)
-            WSY2(I)=0.D0
-            PR1(I)=PR2(I)
-            PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
-         ELSE
-C WJP 02.26.2018 inserted from Dam's code    
-!c dw ------------- otherwise, tide run could fail      
-            PR2(I) = PRBCKGRND_MH2O 
-         END IF
-
-C     TIP..Tidal potential forcing
-         if(CTIP) then
-            TIP1(I)=TIP2(I)
-            TIP2(I)=0.D0
-         endif
-
-      END DO
-      !
-      ! jgf: shift water level offset values
-      if (usingDynamicWaterLevelCorrection.eqv..true.) then
-         dynamicWaterLevelCorrection1(:) = dynamicWaterLevelCorrection2(:)
-         dynamicWaterLevelCorrection2(:) = 0.d0
-      endif
-C
-C.............................DW, sponge layer ..................
-      ! Get 
-      !   Eta2_AbsLayer, uu2_AbsLayer, vv2_AbsLayer
-      IF ( LoadAbsLayerSigma ) THEN
-         !
-         IF ( .NOT. FIRST_ENTER ) THEN
-            !c u_{ext}^{n + 1} -- > eta2, 
-            CALL GETABSLAYEREXT(TimeLoc, TimeH, RampElev, GeoidOffset )
-         ELSE
-
-            RampTMP = RampElev ;
-            DO istep = 2, 1, -1
-               IF ( NRamp > 0 ) THEN
-                  RampTMP=TANH((2.D0*(TimeLoc - istep*DTDP)/86400.D0)/DRampElev)
-               END IF
-               RampTMP = max(0.D0,RampTMP) ;                   
-               
-               !  u_{ext}^{n + 1 - istep} --> uu2
-               CALL GETABSLAYEREXT(TimeLoc - istep*DTDP, TimeH - istep*DTDP, RampTMP, GeoidOffset )
-
-               CALL SPONGE_SHIFT_SOLN( ) ; 
-               ! eta1 --> eta0, eta2 --> eta1, u2 --> u1          
-            END DO
-            !c u_{ext}^{n + 1} -- > eta2, 
-            CALL GETABSLAYEREXT(TimeLoc, TimeH, RampElev, GeoidOffset )
-            FIRST_ENTER = .FALSE. ;
-         END IF
-         !
-      END IF
-C.... END DW..........................................................
-      
-C...TCM V50.66.01 -- ADDING TIME DEPENDENT BATHYMETRY
-C... so that total water column height is unchanged
-C
-C  DP is linearly interpolated between DP1 and DP2
-C  during the time interval btime1 and btime_end.
-C  After btime_end, DP is equal to DP2
-C
-C      DP1                         DP2
-C    btime1                      btime2      btime2 = btime1 + btiminc
-C       |---------x-----------------|        btime_end = btime1 + btime_end < btime2
-C              btime_end
-C
-
-      IF(abs(NDDT).EQ.1) THEN
-!        Get a new bathymetry from file if time to do so
-         IF(TimeLoc.GT.BTIME2) THEN !determine if bathy file time incr. is exceeded
-            BTIME1=BTIME2  !new starting time for this record
-            BTIME2=BTIME2+BTIMINC  !new ending time for this record
-            BTIME_END = BTIME1 + BCHGTIMINC  !ending time for bathymetry changes during the btiminc interval
-
-            DO I=1,NP
-               dp1(I) = dp2(I)  ! move current data to old
-            END DO
-!!!        go get new record for all nodes
-            DO I=1,NP
-               READ(141,*) IJK,DP2(IJK)
-            ENDDO
-C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
-C...     DEPTHS ARE > OR = TO H0.
-            IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
-               DO I=1,NP
-                  IF (DP2(I).LT.H0) DP2(I) = H0
-               ENDDO
-            ENDIF
-            write(scratchMessage,'(A36,1X,E15.8,1X,A5)') 
-     &         'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'
-            call allMessage(INFO,scratchMessage)
-         ENDIF  !test for updating bathymetry records
-C.......If time is during the bathymetry change interval, then update bathymetry
-         IF(timeloc.LT.BTIME_END) THEN  !tcm 20150728 changed .LE. to .LT.
-            bTRatio=(TimeLoc-bTIME1)/BCHGTIMINC ! interpolate
-            DO I=1,NP
-               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry from DP1
-               DPTMP2 = DP1(I) + DPTMP  !this is what will be the new bathymetry to use
-               DPTMP = DP(I)-DPTMP2  !this is now the adjustment in bathymetry for this timestep (how much to adjust eta2 by)
-               DP(I) = DPTMP2           !updating bathymetry to new value
-               ETA2TMP = ETA2(I)-DPTMP   !subtracting elevation by incremental amount from one step step
-               ETA2(I) = ETA2TMP        !updating elevation
-            ENDDO !I
-         ENDIF
-         IF(timeloc.EQ.BTIME_END) THEN
-            write(scratchMessage,'(A42,1X,E15.8,1X,A5)')
-     &         'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
-            call allMessage(INFO,scratchMessage)
-            DO I=1,NP
-               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be to get to the final bathy value
-               DP(I) = DP2(I)         !updating bathymetry to final value
-               ETA2TMP = ETA2(I)-DPTMP !subtracting elevation by incremental amount
-               ETA2(I) = ETA2TMP       !updating elevation
-            ENDDO !I
-         ENDIF
-
-      ENDIF  !NDDT = 1
-
-      IF(abs(NDDT).EQ.2) THEN
-!        Get a new bathymetry from file if time to do so
-         IF(TimeLoc.GT.BTIME2) THEN !determine if bathy file time incr. is exceeded
-            BTIME1=BTIME2  !new starting time for this record
-            BTIME2=BTIME2+BTIMINC  !new ending time for this record
-            BTIME_END = BTIME1 + BCHGTIMINC  !ending time for bathymetry changes during the btiminc interval
-            DO I=1,NP
-               dp1(I) = dp2(I)  ! move current data to old
-            END DO
-
-!!!        go get new record for only some nodes, all
-!!!        other nodes keep their current value
-            CALL NDDT2GET( 141,DP2(:),-99999.d0 )
-C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
-C...     DEPTHS ARE > OR = TO H0.
-            IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
-               DO I=1,NP
-                  IF (DP2(I).LT.H0) DP2(I) = H0
-               ENDDO
-            ENDIF
-            write(scratchMessage,'(A36,1X,E15.8,1X,A5)')
-     &         'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'
-            call allMessage(INFO,scratchMessage)
-         ENDIF  !test for updating bathymetry records
-
-C.......If time is during the bathymetry change interval, then update bathymetry
-         IF(timeloc.LT.BTIME_END) THEN !tcm 20150728 changed .LE. to .LT.
-            bTRatio=(TimeLoc-bTIME1)/BCHGTIMINC ! interpolate
-            DO I=1,NP
-               DPTMP =  btratio*(DP2(I)-DP1(I)) !Determine incremental amount to adjust bathymetry from DP1
-               DPTMP2 = DP1(I) + DPTMP  !this is what will be the new bathymetry to use
-               DPTMP = DP(I)-DPTMP2  !this is now the adjustment in bathymetry for this timestep (how much to adjust eta2 by)
-               DP(I) = DPTMP2 !updating bathymetry to new value
-               ETA2TMP = ETA2(I)-DPTMP   !subtracting elevation by incremental amount from one step step
-               ETA2(I) = ETA2TMP        !updating elevation
-            ENDDO !I
-         ENDIF
-C         
-         IF (timeloc.EQ.BTIME_END) THEN
-            write(scratchMessage,'(A42,1X,E15.8,1X,A5)')
-     &         'Bathymetry values are now fixed at time =',timeloc,'(sec).'
-            call allMessage(INFO,scratchMessage)
-            DO I=1,NP
-               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be to get to the final bathy value
-               DP(I) = DP2(I)         !updating bathymetry to final value 
-               ETA2TMP = ETA2(I)-DPTMP !subtracting elevation by incremental amount
-               ETA2(I) = ETA2TMP       !updating elevation
-            ENDDO !I
-         ENDIF
-
-      ENDIF  !NDDT = 2
-
-
-
-C
-C
-C-------------------BOTTOM FRICTION-------------------------------------
-C
-C     2DDI.Set up the 2D friction coefficient
-      if (C2DDI) then
-         CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA, NP,
-     &                              TK)
-         ! WJP 02.24.2018 Get the wave drag coefficients
-         ! that are put into TKM (which include TK from bottom friction)
-         IF (CBaroclinic) THEN
-            CALL Apply2DInternalWaveDrag(NP, TK, TKM, UU1, VV1, DP, IT)
-            ! CPB 3/9/2023: vertically averaged momentum dispersion as a
-            ! power law function. If NOLIBF =/= 3 then this just returns
-            CALL Apply2DMomentumDisp(UU1, VV1, DP, ETA2, IFNLFA, NP,
-     &                               TKM)
-         ELSE
-            CALL Apply2DInternalWaveDrag(NP, TK, TKM)
-         ENDIF         
-      endif
-C..RJW Set up the 3D friction coefficient
-      if (C3D) then
-         CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP,
-     &                              TK, NFEN, Z0B)
-      endif
-      
-C-------------------BOTTOM FRICTION-------------------------------------
-C
-C
-C...  SHIFT THE SPECIFIED NORMAL FLOW BOUNDARY CONDITION TO PREVIOUS
-C...  TIME STEPS.  ZERO OUT THE NEW SPECIFIED NORMAL FLOW BOUNDARY
-C...  CONDITION
-C...
-      DO I=1,NVEL
-         QN0(I)=QN1(I)
-         QN1(I)=QN2(I)
-         QN2(I)=0.D0
-         EN0(I)=EN1(I)
-         EN1(I)=EN2(I)
-         EN2(I)=0.D0
-      END DO
-
-C
-C---------------------BEGIN ICE FIELDS----------------------------------------
-C...  UPDATE THE ICE CONCENTRATION FIELDS FROM UNIT 25,225,227
-c...  TCM V49.64.01 ADDED THE ICE FIELDS SECTION
-C
-      IF (NCICE.EQ.12) THEN
-         IF(TimeLoc.GT.CICE_TIME2) THEN
-            CICE_TIME1 = CICE_TIME2
-            CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
-            DO I=1,NP
-              CICE1(I) = CICE2(I)
-            END DO
-            CALL NCICE1_GET(CICE2,NP)
-          ENDIF
-      ENDIF
-
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-C++ GML added ncice .ne. 17
-      if (ncice.ne.0.and.(ncice.ne.14) .and. (ncice.ne.17)) then
-         CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-         do i=1,np
-            CICEOUT(I) = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-         end do
-      endif
-C--------------------END ICE FIELDS----------------------------------------
-C---------------------WATER LEVEL OFFSET-----------------------------------
-C     jgf: update water level correction fields
-      if (usingDynamicWaterLevelCorrection.eqv..true.) then
-         call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc)
-         if (dynamicWaterLevelCorrectionMassAdjust.eqv..true.) then
-            dynamicWaterLevelCorrectionDelta=dynamicWaterLevelCorrection2-dynamicWaterLevelCorrection1
-         endif
-      endif
-C
-C---------------------BEGIN MET FORCING----------------------------------------
-
-      call getMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
-     &   wvnxout, wvnyout, timeloc)
-C
-C----------------------END MET FORCING----------------------------------------
-
-
-C...  UPDATE THE WAVE RADIATION STRESS AND READ IN NEW VALUES FROM
-C.... UNIT 23.  APPLY Ramp FUNCTION.  ADD RADIATION STRESS TO WIND
-C...  STRESS
-C...
-C...  NRS=2 was added.  sb46.28sb03 09/xx/2006
-C...  TCM v49.48 Restructured the wave stress updates in order to
-c...             include NRS=4
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      if (coupwind) then
-         select case(abs(nws))
-         case(12,16)
-            do i=1,np
-               swan_wx2(i,2) = wvnxout(i) * waveWindMultiplier 
-     &                         / ( rampMete * windMultiplier ) 
-               swan_wy2(i,2) = wvnyout(i) * waveWindMultiplier 
-     &                         / ( rampMete * windMultiplier ) 
-            end do
-         case default
-            do i=1,np
-               swan_wx2(i,2) = wvnxout(i) * waveWindMultiplier / rampMete
-               swan_wy2(i,2) = wvnyout(i) * waveWindMultiplier / rampMete
-            end do
-         end select
-      endif
-#endif
-      IF(NRS/=0) THEN
-        if((NRS==1).or.(nrs==2).or.(nrs==3).or.(nrs==5)) then  !saeed added 5
-            IF(TimeLoc>RSTIME2) THEN
-               RSTIME1=RSTIME2
-               RSTIME2=RSTIME2+RSTIMINC
-               RSNX1=RSNX2
-               RSNY1=RSNY2
-               IF(NRS==1) THEN
-                 CALL RSGET(RSNX2,RSNY2)
-               ELSEIF(NRS==2) THEN
-                 CALL RS2GET(RSNX2,RSNY2,NP)
-#ifdef CSWAN
-Casey 090302: Added for coupling to SWAN.
-               ELSEIF(NRS==3) THEN
-                 InterpoWeight = 1.0
-                 CALL ComputeWaveDrivenForces()
-                 ! Extrapolate forward in time
-                 RSNX2 = 2.0d0*SWAN_RSNX2 - SWAN_RSNX1
-                 RSNY2 = 2.0d0*SWAN_RSNY2 - SWAN_RSNY1
-#endif
-C... v50.xx sm -- nrs=5 for NUOPC coupling wave data from coupler
-               ELSEIF (NRS == 5) THEN    ! saeed
-                 DO I=1,NP
-                   RSX = RSNX1(I)
-                   RSY = RSNY1(I)
-                   RSNX1(I) = RSNX2(I)
-                   RSNY1(I) = RSNY2(I)
-                   RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX) ! extrapolate: 2*Rc - Rp
-                   RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
-                 ENDDO
-               ENDIF
-            ENDIF  !timeloc gt rstime2
-
-            RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
-            
-! tcm v56 2024 -- added option for limiting wave stress gradient magnitude
-            IF (Limit_WaveStressGrad.eqv..false.) then            
-               DO I=1,NP
-                 RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
-                 RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
-                 WSX2(I) = WSX2(I) + RSX
-                 WSY2(I) = WSY2(I) + RSY
-
-Casey 090302: Added these lines for output to the rads.64 file.
-!TCM v56 2024: removed the test for NRS=3, to allow for outputting if any NRS>0
-!                IF(ABS(NRS).EQ.3) then
-                 RSNXOUT(I) = RSX
-                 RSNYOUT(I) = RSY
-!                ENDIF
-               ENDDO
-            ELSE !test and limit wave stress
-               DO I=1,NP
-                 RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
-                 RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
-                 RSXYMAG = SQRT(RSX*RSX + RSY*RSY)
-                 IF ((RSXYMAG .gt. WaveStressGrad_Cap ).and.
-     &               (RSXYMAG.gt.0.0d0)) then
-                    RSSCALE = WaveStressGrad_Cap/RSXYMAG
-                    RSXLIM = RSX*RSSCALE
-                    RSYLIM = RSY*RSSCALE
-                 ELSE
-                    RSXLIM = RSX
-                    RSYLIM = RSY
-                 ENDIF
-                 WSX2(I) = WSX2(I) + RSXLIM
-                 WSY2(I) = WSY2(I) + RSYLIM
-                 RSNXOUT(I) = RSX    !keep unlimited value for writing
-                 RSNYOUT(I) = RSY    !keep unlimited value for writing
-               ENDDO
-            ENDIF  ! test for limiting wave stress gradient magnitudes
-            
-         ENDIF  !nrs = 1,2,3, or 5
-
-         ! Tightly Coupled Code with STWAVE
-         ! Apply the ramping function and add wave stress to WSX2,WSY2
-         ! This cases uses a step function in time
-         IF(NRS == 4) THEN    ! vjp modified Jan 22 2010
-            IF(TimeLoc.GE.RSTIME2) THEN   !Get a new wave record
-               RSTIME1=RSTIME2
-               RSTIME2=RSTIME2+RSTIMINC
-            ENDIF
-            IF (TimeLoc > ENDWAVE+RSTIMINC) THEN
-              RSNX2(:) = 0.0d0;  RSNY2(:) = 0.0d0
-            ENDIF
-
-!tcm v56 2024: Added test for limiting wave stress gradient magnitudes
-            IF (Limit_WaveStressGrad.eqv..false.) then
-               DO I=1,NP
-                  RSX = RampWRad*RSNX2(I)
-                  RSY = RampWRad*RSNY2(I)
-                  WSX2(I) = WSX2(I) + RSX
-                  WSY2(I) = WSY2(I) + RSY
-                  !  tcm v50.75 added for use whenever nrs=3 or nrs=4
-                  RSNXOUT(I) = RSX
-                  RSNYOUT(I) = RSY
-               ENDDO
-               
-            ELSE !test and limit wave stress gradients
-             
-               DO I=1,NP
-                  RSX = RampWRad*RSNX2(I)
-                  RSY = RampWRad*RSNY2(I)
-
-                  RSXYMAG = SQRT(RSX*RSX + RSY*RSY)
-                  IF ((RSXYMAG .gt. WaveStressGrad_Cap ).and.
-     &                (RSXYMAG.gt.0.0d0)) then
-                     RSSCALE = WaveStressGrad_Cap/RSXYMAG
-                     RSXLIM = RSX*RSSCALE
-                     RSYLIM = RSY*RSSCALE
-                  ELSE
-                     RSXLIM = RSX
-                     RSYLIM = RSY
-                  ENDIF
-
-                  WSX2(I) = WSX2(I) + RSXLIM
-                  WSY2(I) = WSY2(I) + RSYLIM
-                  RSNXOUT(I) = RSX !keep unlimited value for writing
-                  RSNYOUT(I) = RSY !keep unlimited value for writing
-               ENDDO
-            ENDIF !test for limit wave stress gradients      
-         ENDIF !(NRS = 4)
-      ENDIF  !(End test for updating wave radiation stress)
-
-C     jgf48.4627 Skip past GWCE and momentum calculations if only
-C     meteorological output was requested.
       IF (.NOT.METONLY) THEN
 
-C   kmd48.33 - added in information for the elevation boundary conditions
-C              used in prognostic runs. The diagnostic information is read
-C              in once and used during the simulation. Note that there is
-C              no ramp utilized for this boundary condition.
-      IF((C3D).AND.(RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
-         IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
-Casey 140701: Added the following IF statement.
-           IF(BCFLAG_LNM.EQ.1)THEN
-            IF(TimeLoc.GT.RBCTIME2) THEN
-               RBCTIME1=RBCTIME2
-               RBCTIME2=RBCTIME2+RBCTIMEINC
-               READ(35,'(A)') CDUM80
-               DO I=1,NETA
-                 LNM_BC1(I)=LNM_BC2(I)
-                 READ(35,*) NOD,LNM_BC2(I)
-               END DO
-            END IF
-            RBCRATIO=(TimeLoc-RBCTIME1)/RBCTIMEINC
-            DO NumofBCNode=1,NETA
-                  LNM_BC(NumofBCNode)=LNM_BC1(NumofBCNode)+
-     &            RBCRATIO*(LNM_BC2(NumofBCNode)-
-     &            LNM_BC1(NumofBCNode))
-            END DO
-Casey 140701: Ending the IF statement.
-           ENDIF
-         END IF
-      END IF
+        call initializeAbsorbingLayer(TimeLoc, TimeH)
+        if (NDDT /= 0) call updateTimeDependentBathymetry(TimeLoc)
+        call computeBottomFriction(IT)
+        if (usingDynamicWaterLevelCorrection) call updateWaterLevelCorrections(TimeLoc)
+        if (NRS > 0) call updateWaveRadiationStress(TimeLoc)
+        call computeBaroclinicPressureGradient(IT, TimeLoc)
+        if (CTIP) call applyTidePotentialForcing(TimeLoc, TimeH)
 
+        call applyBoundaryConditions(IT, TimeLoc, TimeH)
 
-! Apply the tide potential forcing subroutine      
-      call applyTidePotentialForcing(TimeLoc, TimeH)
+        call solveGWCE(it, ITIME_BGN, timeloc, timeh)
 
-C...
-C...  Depth Averaged Baroclinic Forcing needed by GWCE and 2DDI Momentum
-C...  Compute this (divided by H, i.e., Bx/H, By/H) as a nodally averaged
-C...  quantity for smoothing
-C...
-      IF (CBaroclinic) THEN
+        call applyWettingAndDrying(IT)
 
-!     Kendra45.12 - Test placement of BPG
-         IF (C3DVS) CALL BPG3D(IT)
-! arash 01/20/2016
+        call updateFlowDepth()
 
-c     WJP 03.23.18 adding in the 2D baroclinic option
-         IF (C2DDI) CALL BPG2D(IT,TimeLoc)
+        if(C2DDI) then
+          call solve2DMomentumEq(IT, TimeLoc)
+        elseif(C3D) then
+          call solve3DVSMomentumEq(IT, TimeLoc)
+        end if
 
-      ENDIF
-C...
-C...  COMPUTE SPECIFIED NORMAL FLOW BOUNDARY CONDITION
-C...
-      IF(NFLUXF.EQ.1) THEN
-         IF (NFFR.GT.0) THEN
-          DO J=1,NFFR
-            IF(FPER(J).EQ.0.D0) THEN
-               NCYC=0
-            ELSE
-               NCYC=INT(timeh/FPER(J))
-            ENDIF
-            ARGJ=FAMIG(J)*(timeh-NCYC*FPER(J))+FFACE(J)
-            RFF=FFF(J)*RampExtFlux  
-            DO I=1,NVEL
-               SELECT CASE(LBCODEI(I))
-               CASE(2,12,22,52)
-                QN2(I)=QN2(I)+rotate_normal_flux(ICS, I, QNAM(J,I)*RFF*COS(ARGJ-QNPH(J,I)))
-               CASE(32) 
-                QN2(I)=QN2(I)+rotate_normal_flux(ICS, I, QNAM(J,I)*RFF*COS(ARGJ-QNPH(J,I)))
-                EN2(I)=EN2(I)+ENAM(J,I)*RFF*COS(ARGJ-ENPH(J,I))
-               END SELECT 
-            END DO
-          END DO
-         ELSEIF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
-            IF(TimeLoc.GT.QTIME2) THEN
-               QTIME1=QTIME2
-               QTIME2=QTIME2+FTIMINC
-               DO J=1,NVEL
-                  IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &                 .OR.(LBCODEI(J).EQ.22)) THEN
-                     QNIN1(J)=QNIN2(J)
-                     READ(20,*) QNIN_TMP
-                     QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-                  ELSEIF(LBCODEI(J).EQ.32) THEN
-                     QNIN1(J)=QNIN2(J)
-                     ENIN1(J)=ENIN2(J)
-                     READ(20,*) QNIN_TMP,ENIN2(J)
-                     QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
-                  ENDIF
-               END DO
-            ENDIF
+        call applyAbsorbingSpongeLayer()
 
-            QTRATIO=(TimeLoc-QTIME1)/FTIMINC
-            QN2=RampExtFlux*(QNIN1+QTRATIO*(QNIN2-QNIN1))
-            EN2=RampExtFlux*(ENIN1+QTRATIO*(ENIN2-ENIN1))
-         ENDIF
-
-CRAL_add_42.06f
-C     jgf46.21 Collect elevation information for river radiation b.c.
-         IF(IT.EQ.FluxSettlingIT) THEN
-            EtaDisc_Fill = .FALSE.    ! sb v46.48 11/06/2006
-            DO I=1, NP
-               EtaDisc(I) = Eta2(I)   ! EtaDisc written to hotstart file
-            ENDDO
-            DO I=1,NVEL
-               IF(LBCODEI(I).EQ.52) THEN
-                  NNBB=NBV(I)
-                  ElevDisc(I)=Eta2(NNBB)
-               ENDIF
-            END DO
-         ELSE IF(EtaDisc_Fill .and. IT > FluxSettlingIT) THEN
-            EtaDisc_Fill = .FALSE.
-            DO I=1,NVEL
-               IF(LBCODEI(I).EQ.52) THEN
-                  NNBB=NBV(I)
-                  ElevDisc(I)=EtaDisc(NNBB)   ! sb v46.48 11/06/2006
-               ENDIF
-            END DO
-         ENDIF
-
-      ENDIF
-C...
-C...  COMPUTE DISCHARGE CONTRIBUTION FROM RADIATION BOUNDARY CONDITION
-C...
-      IF(NFLUXRBC.EQ.1) THEN
-         DO J=1,NVEL
-            IF(LBCODEI(J).EQ.30) THEN
-               NNBB=NBV(J)
-               UN1=UU1(NNBB)*CSII(J)+VV1(NNBB)*SIII(J)
-               QN1(J)=H2(NNBB)*UN1
-            ENDIF
-         END DO
-      ENDIF
-
-C...  COMPUTE DISCHARGE CONTRIBUTION FROM ZERO NORMAL VELOCITY GRADIENT
-C...  BOUNDARY CONDITION
-C...
-        IF(NFLUXGBC.EQ.1) THEN
-          DO J=1,NVEL
-            IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) THEN
-              NNBB=NBV(J)
-              UN1=UU1(NNBB)*CSII(J)+VV1(NNBB)*SIII(J)
-              QN1(J)=H2(NNBB)*UN1
-              ENDIF
-            END DO
-          ENDIF
-C...
-C...  COMPUTE SUPERCRITICAL OUTWARD NORMAL FLOW OVER SPECIFIED
-C.... EXTERNAL BARRIER BOUNDARY NODES
-C...  COBELL - MOVED TO WEIR_BOUNDARY.F
-        IF(NFLUXB.EQ.1) THEN
-          DO I=1,NVEL
-            SELECT CASE(LBCODEI(I))
-            CASE(3,13,23)
-                CALL COMPUTE_EXTERNAL_BOUNDARY_FLUX(I,TIMELOC,QN2(I))
-            END SELECT 
-          END DO
-        ENDIF
-
-C...  SETTING ISSUBMERGED FLAG ALONG VERTICAL ELEMENT WALL BOUNDARIES
-C...
-      IF(NFLUXIB64.EQ.1) THEN
-         I = 0                         
-         DO K = 1, NBOU  
-            SELECT CASE(LBCODEI(I+1))
-               CASE(4,24,5,25)
-                  I = I + NVELL(K)*2
-               CASE(64)
-                  DO J = 1,NVELL(K)
-                     I = I + 1
-                     CALL SET_SUBMERGED64_AT(I,J,K,TIMELOC)
-                  ENDDO
-                  I = I + NVELL(K)
-               CASE DEFAULT
-                  I = I + NVELL(K)
-            END SELECT    
-         ENDDO
-      ENDIF
-
-C...  COMPUTE INWARD/OUTWARD NORMAL FLOW OVER SPECIFIED INTERNAL BARRIER
-C...  BOUNDARY (PERMEABLE OR NOT) NODES
-C...
-C     jgf46.03 Begin block of notes for internal barrier boundaries
-C
-C     NFLUXIB is set to 1 in read_input.F if there are internal barrier
-C     boundaries in the fort.14 (mesh) file.
-C
-C     IBSTART is a flag that indicates the first time through the time
-C     stepping loop; set to 0 in read_input.F and set to 1 here.
-C
-C     BARAVGWT was apparently intended for use in averaging internal
-C     barrier water levels. It is set to 0 in read_input.F, which seems
-C     to turn off any time averaging here.
-C
-C     NIBNODECODE seems to be set to 1 for nodes receiving water across
-C     the barrier
-C
-C     BARMIN is used in several places, mainly as the minimum elevation
-C     above the levee for flow to occur. It is a parameter and is set to
-C     0.04 in global.F.
-C
-C
-C...ZC - SIMPLIFIED THIS SECTION, MOVED FLUX COMPUTATION TO WEIR_BOUNDARY.F
-C   USE THE COMPILER FLAGS TO CHANGE IMPLEMENTATION:
-C        -DORIGWEIR - JOANNES WESTERINK ET AL IMPLEMENTATION (ORIGINAL)
-C                     THIS DOES NOT APPEAR TO HAVE BEEN USED IN QUITE 
-C                     SOME TIME
-C         DEFAULT   - SHINTARO BUNYA/SEIZO TANAKA IMPLEMENTATION FOR 
-C                     CHECKING FOR A WET EDGE BEFORE PASSING FLOW
-C                     ACROSS A WEIR
-      IF(NFLUXIB.EQ.1) THEN
-         NIBNODECODE(:) = 0
-         I = 0                         
-         DO K = 1, NBOU  
-            SELECT CASE(LBCODEI(I+1))
-                CASE(4,24,5,25)
-                    DO J = 1,NVELL(K)*2
-                        I = I + 1
-                        CALL COMPUTE_INTERNAL_BOUNDARY_FLUX(I,J,K,
-     &                      TIMELOC,QN2(I))
-                    ENDDO
-                CASE(64)
-                    DO J = 1,NVELL(K)*2
-                        I = I + 1
-                        IF(J.LE.NVELL(K)) THEN
-                           ISFRONT = .TRUE.
-                        ELSE
-                           ISFRONT = .FALSE.
-                        ENDIF
-                        CALL COMPUTE_INTERNAL_BOUNDARY64_FLUX(I,J,K,
-     &                      TIMELOC,QN2(I))
-                    ENDDO
-                CASE DEFAULT
-                    I = I + NVELL(K)
-            END SELECT    
-         ENDDO
-      ENDIF
-
-C...
-C...  COMPUTE INWARD/OUTWARD NORMAL FLOW FOR INTERNAL BARRIER
-C.... BOUNDARY NODES THROUGH CROSS BARRIER PIPES
-C.... NOTE THAT THIS ADDS AN ADDITIONAL FLOW COMPONENT INTO QN2
-C...
-      IF(NFLUXIBP.EQ.1) THEN
-         DO I=1,NVEL
-            IF((LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)) THEN
-                PIPE_FLUX = 0D0
-                CALL COMPUTE_CROSS_BARRIER_PIPE_FLUX(I,PIPE_FLUX)
-                QN2(I) = QN2(I) + PIPE_FLUX
-            ENDIF
-         ENDDO
-      ENDIF 
-
-      if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain
-      if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
-      if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
-
-
-!----------------------SOLVE GWCE---------------------------------------
-C...
-C...  Compute new water surface elevation 
-      call solveGWCE(it, ITIME_BGN, timeloc, timeh)
-
-!---------------------END SOLVE GWCE------------------------------------
-
-!JLW: adding subgrid
-      IF(level0)THEN
-#ifdef ADCNETCDF
-         !JLW: update vertex arrays
-         call getVertLookup()
-         !JLW: update nodecode, ncele, etc
-         call computeWettingAndDrying(it)
-#else
-         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &      message="Subgrid calculation requires building "
-     &             //"with netcdf enabled")
-#endif         
-      ELSE
-!--------------------WETTING AND DRYING--------------------------------
-
-         call computeWettingAndDrying(it)
-
-!--------------------WETTING AND DRYING--------------------------------
-      ENDIF
-
-
-
-!.....DMW202401 Add update for flow depth at current timestep
-!......We do this after wetting/drying since bathy could change with subgrid barriers.
-      DO I = 1,NP
-         H2(I) = DP(I)+IFNLFA*ETA2(I)
-      ENDDO
-C...   
-C---------------2DDI Momentum Equation Solution-------------------------
-C...
-      call solveMomentumEq()
-C...
-C-------------END OF 2DDI MOMENTUM EQUATION SOLUTION--------------------
-C...
-
-C.....DW - ABS SPONGE LAYER     
-      IF ( C2DDI .AND. LoadAbsLayerSigma .AND. (sponge_dis_mthd == 0) ) THEN
-         CALL SPONGE_OPSPLIT0(DTDP/2)
-      END IF
-
-      IF ( LoadAbsLayerSigma ) THEN
-         CALL SPONGE_SHIFT_SOLN( ) 
-      END IF
-C     
-C.....END DW
-C     
-
-C...
-C...  3DVS Momentum Equation Solution
-C...
-      IF (C3DVS) THEN
-
-C... Load the vector MOM_LV_X(I) with barotropic pressure terms
-C...     including atmospheric pressure, water level and tidal potential
-C...     averaged between time levels s and s+1, (time levels 1 and 2).  Note:
-C...     MOM_LV_X gets renamed as BTP in global_3dvs.f
-
-        DO I=1,NP
-           MOM_LV_X(I)=ETA1(I)+ETA2(I)
-           IF(NWS.NE.0) MOM_LV_X(I)=MOM_LV_X(I)+PR1(I)+PR2(I) !atmospheric pressure
-           IF (CTIP) MOM_LV_X(I)=MOM_LV_X(I)-TIP1(I)-TIP2(I) !tidal potential
-           MOM_LV_X(I)=G*MOM_LV_X(I)/2.d0
-        ENDDO
-
-C...  Solve for velocity at the new time level (K+1)
-
-        CALL VSSOL(IT,TimeLoc)
-
-      ENDIF
-C...
-C...  End of 3DVS Momentum Equation Solution
-C...
-
-C...
-C...  IF 2D TRANSPORT IS INCLUDED SOLVE FOR THE CONCENTRATION
-C...
-      IF(C2D_PTrans) THEN
-
-        CALL SCALAR_TRANS_2D (IT, TimeLoc)
-
-      ENDIF
-C...
-C...  End of 2D Scalar Transport Solution
-C...
-C     jgf48.4627 Jump to here if METONLY is .TRUE., i.e., if only
-C     meteorological output is requested.
-      ENDIF
-C...
-C...  Collect maximum values of variables   v46.50 sb 11/11/2006
-      call collectMinMaxData(timeloc)
-      !
-      ! jgf52.08.01: If detailed inundation output was requested, 
-      ! collect detailed inundation data. 
-      if (inundationOutput.eqv..true.) then
-         call collectInundationData(timeloc, it)
-      endif
-C
-C...
-C...  WRITE OUTPUT
-C...
-C
-      ! NCSU Subdomain Modeling   
-      if (subdomainOn.and.NOUTGS.eq.1) call writeFort065(it) 
-      if (subdomainOn.and.NOUTGS.eq.2) call writeFort066(it) 
-      if (subdomainOn.and.NOUTGS.eq.2) call writeFort067(it) 
-C
-C     jgf49.44: If harmonic analysis was requested and the current time
-C     is within the harmonic analysis period, update the left hand side
-C     of the harmonic analysis matrix. Also update the load vectors for
-C     each type of analysis. If timeseries reconstruction was specified,
-C     also update the timeseries.
-      CALL updateHarmonicAnalysis(IT, TIMEH)
-C...
-C...  WRITE OUT HOT START INFORMATION IF NHSTAR=1 AND AT CORRECT TIME
-C.... STEP
-C...  NOTE: THE HOT START FILES USE A RECORD LENGTH OF 8 ON BOTH 32 BIT
-C.... WORKSTATIONS AND THE 64 BIT CRAY.  THIS IS BECAUSE THE HARMONIC
-C.... ANALYSIS IS DONE IN DOUBLE PRECISION (64 BITS) ON WORKSTATIONS.
-C...
-      ITEST=(IT/NHSINC)*NHSINC
-
-!     IF(myproc.eq.0) PRINT *, " ITEST **********", ITEST
-
-      if ((ABS(NHSTAR) > 0 .and. ITEST == IT) .or. (-IHOT == IT)) then  !tcm v51.26 added abs(nhstar) to handle when nhstar = -1
-         if( (MNWPROH > 0) ) then   !Writer for HSfile
-            if( (.not.C3D) ) then                     !Writer for HSfile
-#ifdef CMPI
-               CALL writeHotstart_through_hswriter(TimeLoc,IT)  !st3 hsfile
-#endif
-            else
-               write(6,*) 'HS writer does not support C3D'
-            endif
-         else
-            if (NHOUTONCE) then
-               ! Make sure never enters again
-               NHSINC = huge(NHSINC)
-            endif
-!     IF(myproc.eq.0) PRINT *, " writeHotstart **********"
-            CALL writeHotstart(TimeLoc, IT)
-         endif
-
-#ifdef CSWAN
-Casey 100205: Enable writing of SWAN hot-start file.  We need to wait
-C             and do this after the next SWAN time step, so that
-C             everything is up-to-date.
-         WriteSwanHotStart = .TRUE.
-#endif
-      ENDIF
-
-C...  SAVE THE CURRENT TIME LEVEL OF BARRIER INTO THE PREVIOUS TIME LEVEL
-      IF(NFLUXIB.EQ.1)THEN
-        BARINHT1(:)=BARINHT2(:)
-      ENDIF
-      IF(NFLUXB.EQ.1)THEN
-        BARLANHT1(:)=BARLANHT2(:)
-      ENDIF  
-
-C...
-c...  find and print to unit 6, the maximum elevation, the maximum
-c...  velocity and the node numbers at which they occur on myproc=0 if
-c...  elmax exceeds threshold, print information on all processors where
-c...  this occurs
-C...
-C
-C     jgf46.00 Added option to output data to the screen every NSCREEN
-C     time steps, rather than on every time step, as long as there are
-C     no high elevations. In the case of high elevations, the warning
-C     messages are sent to the screen each time they are generated.
-C
-      IF(NSCREEN.NE.0) THEN
-         ELMAX=0.0d0
-         VELMAX=0.0d0
-         KEMAX = 0
-         KVMAX = 0
-         DO I=1,NP
-            IF((NODECODE(I).EQ.1).AND.(ABS(ETA2(I)).GT.ELMAX))THEN
-               ELMAX=ABS(ETA2(I))
-               KEMAX=I
-            ENDIF
-            VELABS=UU2(I)*UU2(I)+VV2(I)*VV2(I)
-            IF (VELABS.GT.VELMAX) THEN
-               VELMAX=VELABS
-               KVMAX=I
-            ENDIF
-         END DO
-         VELMAX=VELMAX**0.5d0
-         ITEST=(IT/NSCREEN)*NSCREEN
-
-C     jgf46.10 Added the ability to for the user to control the warning
-C     and error elevations. Also added the ability for the user to write
-C     a fort.69 (global elevation debug) file.
-
-C     jgf46.12 Removed the dependence on KEMAX for producing output to
-C     the screen.
-
-         runperccomplete=REAL(IT-ITHS)/REAL(NT-ITHS)*100d0    !percentage of time steps completed
-#ifdef CMPI
-         IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
-            IF (KEMAX.GT.0) THEN
-               WRITE(ScreenUnit,1991)
-     &            IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
-     &            VELMAX,KVMAX,MYPROC
-            ELSE
-               WRITE(ScreenUnit,1991)
-     &            IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
-     &            KVMAX,MYPROC
-
-            ENDIF
- 1991       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
-     &           5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
-     &           2X,'ON MYPROC = ',I4)
-         ENDIF
-         WarnElevExceeded = 0
-         IF(ELMAX.GT.WarnElev) THEN
-C     WJP 03.27.2018 with the addition of the hash table we now need to
-C     output the global node number to debug the local PE fort.14s
-            WRITE(ScreenUnit,1993)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
- 1993       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
-     &           2X,'ON MYPROC = ',I4,
-     &           3X,'** WARNING: Elevation.gt.WarnElev **')
-            IF (WarnElevDump) WarnElevExceeded=1
-         ENDIF
-
-         IF(WarnElevDump)THEN
-             call WarnElevSum(WarnElevExceeded)
-             IF (WarnElevExceeded.ne.0) THEN
-                CALL WriteWarnElev(TimeLoc, IT)
-             ENDIF
-         ENDIF
-         ErrorElevExceeded = 0                ! Clint's Zombie Slyaer
-         IF(ELMAX.GT.ErrorElev) THEN
-
-            WRITE(ScreenUnit,1995)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
- 1995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
-     &           2X,'ON MYPROC = ',I4,/,
-     &           2X,'** ERROR: Elevation.gt.ErrorElev,',
-     &           ' ADCIRC stopping. **')
-         ErrorElevExceeded = 1                ! Clint's Zombie Slayer
-         ENDIF
-         call WarnElevSum(ErrorElevExceeded)  ! Clint's Zombie Slayer 2010.08.07
-         IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
-           Flag_ElevError = .true.
-           call terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &        message='Elevation exceeded ErrorElev threshold')
-         ENDIF                                !st3
-
-#ifdef VELCHECK
-         WarnVelExceeded = 0                
-         IF(VELMAX.GT.WarnVel) THEN
-         
-            WRITE(ScreenUnit,3995)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,3995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
- 3995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
-     &           2X,'ON MYPROC = ',I4,/,
-     &           2X,'** WARNING: Velocity.gt.WarnVel **')
-            WarnVelExceeded = 1                
-         ENDIF   
-#endif
-		 
-#else
-         IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
-            IF (KEMAX.GT.0) THEN
-               WRITE(ScreenUnit,1992)
-     &              IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            ELSE
-               WRITE(ScreenUnit,1992)
-     &              IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
-            ENDIF
- 1992       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
-     &           5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9)
-         ENDIF
-         IF(ELMAX.GT.WarnElev) THEN
-            WRITE(ScreenUnit,1994)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
- 1994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
-     &           2X,'** WARNING: Elevation.gt.WarnElev **')
-            IF (WarnElevDump) CALL WriteWarnElev(TimeLoc, IT)
-         ENDIF
-         IF(ELMAX.GT.ErrorElev) THEN
-            write(6,*) 'elmax, errorelev',elmax, errorelev !jgf
-            Flag_ElevError = .true.
-            WRITE(ScreenUnit,1996)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
- 1996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
-     &           2X,'** ERROR: Elevation.gt.ErrorElev, ',
-     &           'ADCIRC stopping. **')
-            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &         message='Elevation exceeded ErrorElev threshold')
-         ENDIF
-#ifdef VELCHECK
-         IF(VELMAX.GT.WarnVel) THEN
-            WRITE(ScreenUnit,3996)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,3996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
- 3996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
-     &           2X,'** WARNING: Velocity.gt.WarnVel **')
-         ENDIF
-#endif
-
-#endif
+        if (C2D_PTrans) call SCALAR_TRANS_2D(IT, TimeLoc)
 
       ENDIF
 
-#ifdef VELCHECK
-!....DMW 20240109 - WARNING FOR NaNs IN VELOCITY SOLN
-      foundNaN = .false.
-      DO I = 1,NP
-         IF(ISNAN(UU2(I)).OR.ISNAN(VV2(I))) THEN
-            foundNaN = .true.
-            IF(NSCREEN.NE.0) THEN
-               WRITE(ScreenUnit,2993)
-     &              IT,NUMITR,TimeLoc,NODES_LG(I),
-     &              ETA2(I),DP(I),MYPROC
-               WRITE(16,2993) IT,NUMITR,TimeLoc,
-     &              NODES_LG(I),ETA2(I),DP(I),MYPROC
- 2993          FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &              5X,'TIME = ',E15.8,
-     &              2X,'SPEED IS NaN AT NODE I =',I9,
-     &              /,2X,'ETA2(I) = ', 1pE12.4E3,
-     &              2X,'DP(I) = ', 1pE12.4E3,
-     &              2X,'ON MYPROC = ',I4)
-               DO J = 2,NNeigh(I)
-                  JJ = NeiTab(I,J)
-                  WRITE(ScreenUnit,2995) NODES_LG(JJ),ETA2(JJ),DP(JJ),               
-     &                 UU2(JJ),VV2(JJ),MYPROC
-              
-                  WRITE(16,2995) NODES_LG(JJ),ETA2(JJ),DP(JJ),
-     &                 UU2(JJ),VV2(JJ),MYPROC
- 2995             FORMAT(1X,'AT NEIGHBOR NODE I =',I9,
-     &                 /,2X,'ETA2(I) = ', 1pE12.4E3,
-     &                 2X,'DP(I) = ', 1pE12.4E3,
-     &                 2X,'UU2(I) = ', 1pE12.4E3,
-     &                 2X,'VV2(I) = ', 1pE12.4E3,
-     &                 2X,'ON MYPROC = ',I4)
-               ENDDO
-            ENDIF
-         ENDIF
-      ENDDO
-      IF (foundNaN) THEN
-         IF(NSCREEN.NE.0) THEN
-            WRITE(ScreenUnit,2994)
-     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
-     &           VELMAX,NODES_LG(KVMAX),MYPROC
-            WRITE(16,2994) IT,NUMITR,TimeLoc,ETA2(KEMAX),
-     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
- 2994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
-     &           2X,'ON MYPROC = ',I4,
-     &           3X,'** WARNING: Velocity is NaN **')
-         ENDIF
-      ENDIF
-      IF ((foundNaN).AND.(IT_foundNaN.EQ.0)) THEN
-         IT_foundNaN = IT
-      ELSEIF ((IT.EQ.IT_foundNaN + 20).AND.(IT_foundNaN.NE.0)) THEN
-         earlyterminate = 1
-      ENDIF
-#ifdef CMPI
-      call EarlyTermSum( earlyterminate )
-#endif
+      call collectOutputStatistics(IT, TimeLoc, TimeH)
+      call writeHotstartIfNeeded(IT, TimeLoc)
 
-#endif
+      call progressScreen(IT, TimeLoc, ITIME_BGN)
 
-
-C...
-C...  ****************** TIME STEPPING LOOP ENDS HERE ********************
-C...
-
-c. RJW merged 08/26/2008 Casey 071219: Added the folowing call to the mass balance subroutine.
-C      IF(C3DVS)THEN
-C         CALL MASSBAL3D(IT)
-C      ENDIF
-
-      IF ( IT == NT ) THEN
-        ! close NWS14 NetCdf files !
-        CALL CLOSE_MET_FILES() ; 
-      END IF        
-
-      RETURN
-
-C******************************************************************************
+      IF ( IT == NT ) CALL CLOSE_MET_FILES()
 
       END SUBROUTINE TIMESTEP
 C******************************************************************************
@@ -1529,50 +247,47 @@ C******************************************************************************
          real(8) :: ArgT, ArgTP, ArgSAlt, SALTMUL, TPMUL
          integer :: i, j, na, ncyc
 
-         IF(CTIP) THEN
+         ! use the full formula
+         IF ( tidePotential%active() ) THEN
+            TIP2 = tidePotential%compute(TimeLoc, NP, SLAM) * RampTip
+         ENDIF
 
-            ! use the full formula 
-            IF ( tidePotential%active() ) THEN
-               TIP2 = tidePotential%compute(TimeLoc, NP, SLAM) * RampTip
-            ENDIF  
+         ! The traditional approach: a sum of different constituents
+         ! TIP & SAL - for tidePotential%active() = .TRUE.
+         ! SAL       - for tidePotential%active() = .FALSE.
+         IF(NTIP.EQ.2.or..not.tidePotential%active())THEN
+            DO J=1,NTIF
+               IF (PERT(J).EQ.0D0) THEN
+                  NCYC=0
+               ELSE
+                  NCYC=INT(timeh/PERT(J))
+               ENDIF
 
-            ! The traditional approach: a sum of different constituents
-            ! TIP & SAL - for tidePotential%active() = .TRUE.  
-            ! SAL       - for tidePotential%active() = .FALSE.
-            IF(NTIP.EQ.2.or..not.tidePotential%active())THEN 
-               DO J=1,NTIF
-                  IF (PERT(J).EQ.0D0) THEN
-                     NCYC=0
-                  ELSE
-                     NCYC=INT(timeh/PERT(J))
-                  ENDIF
+               ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
+               TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
+               SALTMUL=RampTip*FFT(J)
 
-                  ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
-                  TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
-                  SALTMUL=RampTip*FFT(J)
+ !             WJP: We actually want to compare against diurnal and get 0,1,2
+ !             or higher species (was opposite beforehand)
+               NA = MIN(NINT(AMIGT(J)/7d-5),2)
 
-   !              WJP: We actually want to compare against diurnal and get 0,1,2
-   !              or higher species (was opposite beforehand)
-                  NA = MIN(NINT(AMIGT(J)/7d-5),2)
+ !             WJP: Rewritten so that we have a general formula for all
+ !             species
+               IF(tidePotential%active())THEN
+                  DO I = 1, NP
+                     ARGSALT = ARGT - SALTPHA(J,I) ;
+                     TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+                  END DO
+               ELSE
+                  DO I = 1,NP
+                     ARGTP   = ARGT + NA*SLAM(I)
+                     ARGSALT = ARGT - SALTPHA(J,I)
+                     TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
+     &                         + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+                  ENDDO
+               ENDIF
 
-   !              WJP: Rewritten so that we have a general formula for all
-   !              species
-                  IF(tidePotential%active())THEN
-                     DO I = 1, NP
-                        ARGSALT = ARGT - SALTPHA(J,I) ; 
-                        TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
-                     END DO
-                  ELSE
-                     DO I = 1,NP
-                        ARGTP   = ARGT + NA*SLAM(I)
-                        ARGSALT = ARGT - SALTPHA(J,I)
-                        TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
-     &                            + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
-                     ENDDO
-                  ENDIF
-
-               ENDDO
-            ENDIF   
+            ENDDO
          ENDIF
       end subroutine applyTidePotentialForcing
 
@@ -3035,5 +1750,1487 @@ C**********************************************************************
        quantity (:,:) = quantity_smooth (:,:)
 
        End Subroutine Gaussian_filter_complex_BPG
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   S H I F T  T I M E  L E V E L S
+!----------------------------------------------------------------------
+!     Shifts flux per unit width, depth averaged velocities, bottom
+!     stress, wind stress, surface pressure and tidal potentials to
+!     previous time step. Zeros out new forcing terms and load vectors.
+!     On first timestep, initializes H1 and H2.
+!----------------------------------------------------------------------
+       subroutine shiftTimeLevels(IT)
+       use global, only : MOM_LV_X, MOM_LV_Y, QX1, QY1, QX2, QY2,
+     &    UU1, VV1, UU2, VV2, CPRECOR, UU0, VV0, QX0, QY0,
+     &    IM, TRANS_LV_B, TRANS_LV_A, NWS, NRS,
+     &    WSX1, WSY1, WSX2, WSY2, PR1, PR2, CTIP, TIP1, TIP2,
+     &    usingDynamicWaterLevelCorrection,
+     &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2,
+     &    H1, H2, ETA2, IFNLFA,
+     &    QN0, QN1, QN2, EN0, EN1, EN2
+       use gwce, only : gwce_lv_reset
+       use wind, only : PRBCKGRND_MH2O
+       use mesh, only : DP
+       use boundaries, only : NFLUXIB, NFLUXB
+       use weir, only : BARINHT1, BARINHT2, BARLANHT1, BARLANHT2
+       implicit none
+
+       integer, intent(in) :: IT
+
+       !...On first timestep of a cold start, initialize H1 and H2
+       if (IT == 1) then
+          H2(:) = DP(:) + IFNLFA*ETA2(:)
+          H1(:) = H2(:)
+       endif
+
+       MOM_LV_X(:) = 0d0
+       MOM_LV_Y(:) = 0d0
+       QX1(:)=QX2(:)
+       QY1(:)=QY2(:)
+       UU1(:)=UU2(:)
+       VV1(:)=VV2(:)
+       call gwce_lv_reset(0d0)
+
+       if(CPRECOR) then
+         UU0(:)=UU1(:)
+         VV0(:)=VV1(:)
+         QX0(:)=QX1(:)
+         QY0(:)=QY1(:)
+       end if
+
+       !...Transport
+       if(IM==10) then
+         TRANS_LV_B(:)=0.D0
+         TRANS_LV_A(:)=0.D0
+       endif
+
+       !...Wind (& wave radiation stress if used)
+       if((NWS/=0).or.(NRS/=0)) then
+         WSX1(:)=WSX2(:)
+         WSX2(:)=0.D0
+         WSY1(:)=WSY2(:)
+         WSY2(:)=0.D0
+         PR1(:)=PR2(:)
+         PR2(:) = PRBCKGRND_MH2O
+       else
+         PR2(:) = PRBCKGRND_MH2O
+       end if
+
+       !...Tidal potential forcing
+       if(CTIP) then
+         TIP1(:)=TIP2(:)
+         TIP2(:)=0.D0
+       endif
+
+       if (usingDynamicWaterLevelCorrection) then
+          dynamicWaterLevelCorrection1(:) = dynamicWaterLevelCorrection2(:)
+          dynamicWaterLevelCorrection2(:) = 0.d0
+       endif
+
+       !...Normal flow boundary conditions
+       QN0(:) = QN1(:)
+       QN1(:) = QN2(:)
+       QN2(:) = 0.D0
+       EN0(:) = EN1(:)
+       EN1(:) = EN2(:)
+       EN2(:) = 0.D0
+
+       !...Barrier heights
+       if (NFLUXIB == 1) BARINHT1(:) = BARINHT2(:)
+       if (NFLUXB == 1) BARLANHT1(:) = BARLANHT2(:)
+
+       end subroutine shiftTimeLevels
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   C O M P U T E  R A M P  F U N C T I O N S
+!----------------------------------------------------------------------
+!     Calculates temporal ramp functions for boundary elevation forcing,
+!     wind and pressure forcing, and tidal potential forcing.
+!     Also handles sponge layer sigma adjustment on first call.
+!----------------------------------------------------------------------
+       subroutine computeRampFunctions(IT, TimeLoc)
+       use global, only : NRamp, Ramp, RampExtFlux, RampIntFlux,
+     &    RampElev, RampTip, RampMete, RampWRad,
+     &    DRamp, DRampExtFlux, DRampIntFlux, DRampElev,
+     &    DRampTip, DRampMete, DRampWRad, DUnRampMete,
+     &    FluxSettlingIT, DTDP, STATIM, CHOTHS
+       use spongelayer, only : LoadAbsLayerSigma, Adjust_Sponge_Sigma
+       implicit none
+
+       integer, intent(in) :: IT
+       real(8), intent(in) :: TimeLoc
+       real(8) :: TimeLocFluxSettling
+
+C     jgf46.08 Calculate ramp functions.
+C     jgf46.21 Modify to match behavior of 46.02
+       if(NRamp==0) then
+          Ramp=1.0D0
+          RampExtFlux=1.0D0
+          RampIntFlux=1.0D0
+          RampElev=1.0D0
+          RampTip=1.0D0
+          RampMete=1.0D0
+          RampWRad=1.0D0
+       else
+          Ramp=TANH((2.D0*TimeLoc/86400.D0)/DRamp)
+          RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampExtFlux)
+          RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampIntFlux)
+          RampElev=TANH((2.D0*TimeLoc/86400.D0)/DRampElev)
+          RampTip=TANH((2.D0*TimeLoc/86400.D0)/DRampTip)
+          RampMete=TANH((2.D0*(TimeLoc/86400.D0-DUnRampMete))/DRampMete)
+          RampWRad=TANH((2.D0*TimeLoc/86400.D0)/DRampWRad)
+       endif
+
+C     jgf46.21 If there is an external flux (i.e. river) boundary, turn
+C     off all forcings except the river flux forcing for the duration of
+C     the FluxSettlingTime. When the FluxSettlingTime has ended, turn
+C     all forcings back on.
+       if (NRamp>1 .and. FluxSettlingIT>0) then
+          if(IT < (FluxSettlingIT+10)) then
+             Ramp=0.0d0
+             RampIntFlux=0.0d0
+             RampElev=0.0d0
+             RampTip=0.0d0
+             RampMete=0.0d0
+             RampWRad=0.0d0
+          else
+             TimeLocFluxSettling=(IT-FluxSettlingIT-10)*DTDP
+     &            + STATIM*86400.D0
+             if (CHOTHS) then
+                TimeLocFluxSettling=(IT-FluxSettlingIT-10)*DTDP
+     &            + (StaTimHS - RefTimHS)*86400.D0
+             end if
+
+             Ramp=TANH((2.D0*TimeLocFluxSettling/86400.D0)/DRamp)
+             RampIntFlux=TANH((2.D0
+     &            *TimeLocFluxSettling/86400.D0)/DRampIntFlux)
+             RampElev=TANH((2.D0
+     &            *TimeLocFluxSettling/86400.D0)/DRampElev)
+             RampTip=TANH((2.D0
+     &            *TimeLocFluxSettling/86400.D0)/DRampTip)
+             if(NRamp/=8) then
+                RampMete=TANH((2.D0
+     &            *TimeLocFluxSettling/86400.D0)/DRampMete)
+             endif
+             RampWRad=TANH((2.D0
+     &            *TimeLocFluxSettling/86400.D0)/DRampWRad)
+          endif
+       endif
+
+       !jgf49.44: Cover the case where the ramp length is zero.
+       if (DRamp < 1.0e-6) Ramp = 1.0d0
+       if (DRampExtFlux < 1.0e-6) RampExtFlux = 1.0d0
+       if (DRampIntFlux < 1.0e-6) RampIntFlux = 1.0d0
+       if (DRampElev < 1.0e-6) RampElev = 1.0d0
+       if (DRampTip < 1.0e-6) RampTip = 1.0d0
+       if (DRampMete < 1.0e-6) RampMete = 1.0d0
+       if (DRampWRad < 1.0e-6) RampWRad = 1.0d0
+
+C     Sponge layer sigma adjustment (DW)
+       if (LoadAbsLayerSigma) then
+          if (FIRST_ADJ_ABS_LAYER) then
+             call Adjust_Sponge_Sigma(abs(DTDP))
+             FIRST_ADJ_ABS_LAYER = .false.
+          end if
+       end if
+
+       end subroutine computeRampFunctions
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   C O M P U T E  T I M E  V A R I A B L E S
+!----------------------------------------------------------------------
+!     Computes master time (TimeLoc), harmonic time (TimeH), and
+!     flux settling iteration count (FluxSettlingIT).
+!     Handles hot start timestep changes.
+!----------------------------------------------------------------------
+       subroutine computeTimeVariables(IT, TimeLoc, TimeH)
+       use global, only : CHOTHS, FluxSettlingTime, FluxSettlingIT,
+     &    DTDPHS, DTDP, STATIM, REFTIM, ITHS
+       implicit none
+
+       integer, intent(in) :: IT
+       real(8), intent(out) :: TimeLoc, TimeH
+
+C     kmd48.33bc - changed for timestep changes in the hot start files
+C     jgf46.21 Combined flux/radiation b.c. for rivers
+       if (CHOTHS) then
+          FluxSettlingIT = INT(FluxSettlingTime*86400.d0/DTDPHS)
+       else
+          FluxSettlingIT = INT(FluxSettlingTime*86400.d0/DTDP)
+       end if
+
+C     Compute master time referenced to beginning of model run
+C     TimeLoc: master simulation time
+C     TimeH: time for harmonic calculations (includes REFTIM offset)
+       TimeLoc = IT*DTDP + STATIM*86400.D0
+       TimeH = IT*DTDP + (STATIM - REFTIM)*86400.D0
+
+       if (CHOTHS) then
+          if ((ITHS+1) == IT) then
+             StaTimHS = ((IT-1)*DTDPHS)/86400.D0
+             RefTimHS = ((IT-1)*DTDP)/86400.D0
+          end if
+          TimeLoc = IT*DTDP + (StaTimHS - RefTimHS)*86400.D0
+          TimeH = IT*DTDP + ((StaTimHS - STATIM) - REFTIM)*86400.D0
+       end if
+
+C     Harmonic time recalculation (includes hot start timestep changes)
+       TimeH = IT*DTDP + (STATIM - REFTIM)*86400.D0
+       if (CHOTHS) then
+          if ((ITHS+1) == IT) then
+             StaTimHS = ((IT-1)*DTDPHS)/86400.D0
+             STATIM = ((IT-1)*DTDP)/86400.D0
+          end if
+          TimeH = IT*DTDP + ((StaTimHS - STATIM) - REFTIM)*86400.D0
+       end if
+
+       end subroutine computeTimeVariables
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!   S U B R O U T I N E   I N I T I A L I Z E  A B S O R B I N G  L A Y E R
+!----------------------------------------------------------------------
+!     Initializes the absorbing/sponge layer boundary conditions.
+!     On first entry, steps back in time to initialize previous states.
+!----------------------------------------------------------------------
+       subroutine initializeAbsorbingLayer(TimeLoc, TimeH)
+       use global, only : NRamp, RampElev, DRampElev, DTDP
+       use spongelayer, only : LoadAbsLayerSigma, GETABSLAYEREXT,
+     &    SPONGE_SHIFT_SOLN
+       use NodalAttributes, only : GeoidOffset
+       implicit none
+
+       real(8), intent(in) :: TimeLoc, TimeH
+       real(8) :: RampTMP
+       integer :: istep
+
+       if (.not. LoadAbsLayerSigma) return
+
+       if (.not. FIRST_ENTER) then
+          ! Normal timestep: get external boundary values
+          call GETABSLAYEREXT(TimeLoc, TimeH, RampElev, GeoidOffset)
+       else
+          ! First entry: step back in time to initialize previous states
+          RampTMP = RampElev
+          do istep = 2, 1, -1
+             if (NRamp > 0) then
+                RampTMP = TANH((2.D0*(TimeLoc - istep*DTDP)/86400.D0)
+     &                        /DRampElev)
+             end if
+             RampTMP = max(0.D0, RampTMP)
+
+             ! Get external values at previous time
+             call GETABSLAYEREXT(TimeLoc - istep*DTDP,
+     &                          TimeH - istep*DTDP, RampTMP, GeoidOffset)
+             call SPONGE_SHIFT_SOLN()
+          end do
+          ! Get current external values
+          call GETABSLAYEREXT(TimeLoc, TimeH, RampElev, GeoidOffset)
+          FIRST_ENTER = .false.
+       end if
+
+       end subroutine initializeAbsorbingLayer
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!   S U B R O U T I N E   U P D A T E  T I M E  D E P E N D E N T  B A T H Y M E T R Y
+!----------------------------------------------------------------------
+!     Updates bathymetry from file for time-dependent bathymetry runs.
+!     Supports two modes: NDDT=1 (all nodes) and NDDT=2 (sparse nodes).
+!     Adjusts water surface elevation to maintain total water column.
+!
+!  DP is linearly interpolated between DP1 and DP2
+!  during the time interval btime1 and btime_end.
+!  After btime_end, DP is equal to DP2
+!
+!      DP1                         DP2
+!    btime1                      btime2      btime2 = btime1 + btiminc
+!       |---------x-----------------|        btime_end = btime1 + btime_end < btime2
+!              btime_end
+!
+!----------------------------------------------------------------------
+       subroutine updateTimeDependentBathymetry(TimeLoc)
+       use global, only : NDDT, BTIME1, BTIME2, BTIMINC, BCHGTIMINC,
+     &    BTIME_END, dp1, dp2, ETA2, NOLIFA, H0
+       use mesh, only : NP, DP
+       use mod_logging, only : logMessage, allMessage, INFO
+       use global_io, only : NDDT2GET
+       implicit none
+
+       real(8), intent(in) :: TimeLoc
+       real(8) :: bTRatio, DPTMP, DPTMP2, ETA2TMP
+       integer :: I, IJK
+       character(256) :: scratchMessage
+
+       if (abs(NDDT) == 1) then
+          ! Mode 1: Read bathymetry for all nodes
+          if (TimeLoc > BTIME2) then
+             BTIME1 = BTIME2
+             BTIME2 = BTIME2 + BTIMINC
+             BTIME_END = BTIME1 + BCHGTIMINC
+
+             dp1(:) = dp2(:)
+             ! Read new record for all nodes
+             do I = 1, NP
+                read(141,*) IJK, DP2(IJK)
+             end do
+             ! Ensure depths >= H0 if no wetting/drying
+             if (NOLIFA == 0 .or. NOLIFA == 1) then
+                where (DP2(1:NP) < H0) DP2(1:NP) = H0
+             end if
+             write(scratchMessage,'(A36,1X,E15.8,1X,A5)')
+     &          'BATHYMETRY RECORDS UPDATED AT TIME =', TimeLoc, '(SEC)'
+             call allMessage(INFO, scratchMessage)
+          end if
+
+          ! Interpolate during bathymetry change interval
+          if (TimeLoc < BTIME_END) then
+             bTRatio = (TimeLoc - BTIME1) / BCHGTIMINC
+             do I = 1, NP
+                DPTMP = bTRatio * (DP2(I) - DP1(I))
+                DPTMP2 = DP1(I) + DPTMP
+                DPTMP = DP(I) - DPTMP2
+                DP(I) = DPTMP2
+                ETA2(I) = ETA2(I) - DPTMP
+             end do
+          end if
+
+          ! Finalize bathymetry at end of change interval
+          if (TimeLoc == BTIME_END) then
+             write(scratchMessage,'(A42,1X,E15.8,1X,A5)')
+     &          'BATHYMETRY VALUES ARE NOW FIXED AT TIME =', TimeLoc, '(SEC)'
+             call allMessage(INFO, scratchMessage)
+             do I = 1, NP
+                DPTMP = DP2(I) - DP(I)
+                DP(I) = DP2(I)
+                ETA2(I) = ETA2(I) - DPTMP
+             end do
+          end if
+
+       else if (abs(NDDT) == 2) then
+          ! Mode 2: Read bathymetry for sparse nodes
+          if (TimeLoc > BTIME2) then
+             BTIME1 = BTIME2
+             BTIME2 = BTIME2 + BTIMINC
+             BTIME_END = BTIME1 + BCHGTIMINC
+             dp1(:) = dp2(:)
+             ! Read new record for selected nodes only
+             call NDDT2GET(141, DP2(:), -99999.d0)
+             ! Ensure depths >= H0 if no wetting/drying
+             if (NOLIFA == 0 .or. NOLIFA == 1) then
+                where (DP2(1:NP) < H0) DP2(1:NP) = H0
+             end if
+             write(scratchMessage,'(A36,1X,E15.8,1X,A5)')
+     &          'BATHYMETRY RECORDS UPDATED AT TIME =', TimeLoc, '(SEC)'
+             call allMessage(INFO, scratchMessage)
+          end if
+
+          ! Interpolate during bathymetry change interval
+          if (TimeLoc < BTIME_END) then
+             bTRatio = (TimeLoc - BTIME1) / BCHGTIMINC
+             do I = 1, NP
+                DPTMP = bTRatio * (DP2(I) - DP1(I))
+                DPTMP2 = DP1(I) + DPTMP
+                DPTMP = DP(I) - DPTMP2
+                DP(I) = DPTMP2
+                ETA2(I) = ETA2(I) - DPTMP
+             end do
+          end if
+
+          ! Finalize bathymetry at end of change interval
+          if (TimeLoc == BTIME_END) then
+             write(scratchMessage,'(A42,1X,E15.8,1X,A5)')
+     &          'Bathymetry values are now fixed at time =', TimeLoc, '(sec).'
+             call allMessage(INFO, scratchMessage)
+             do I = 1, NP
+                DPTMP = DP2(I) - DP(I)
+                DP(I) = DP2(I)
+                ETA2(I) = ETA2(I) - DPTMP
+             end do
+          end if
+       end if
+
+       end subroutine updateTimeDependentBathymetry
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   C O M P U T E  B O T T O M  F R I C T I O N
+!----------------------------------------------------------------------
+!     Computes 2D and 3D bottom friction coefficients.
+!     Includes internal wave drag and momentum dispersion for baroclinic.
+!----------------------------------------------------------------------
+       subroutine computeBottomFriction(IT)
+       use global, only : C2DDI, C3D, CBaroclinic, UU1, VV1, ETA2,
+     &    IFNLFA, TK, TKM
+       use global_3dvs, only : Q, SIGMA, NFEN, Z0B
+       use mesh, only : NP, DP
+       use ADC_CONSTANTS, only : G
+       use NodalAttributes, only : Apply2DBottomFriction,
+     &    Apply2DInternalWaveDrag, Apply3DBottomFriction,
+     &    Apply2DMomentumDisp
+       implicit none
+
+       integer, intent(in) :: IT
+
+       ! 2DDI: Set up the 2D friction coefficient
+       if (C2DDI) then
+          call Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA,
+     &                               NP, TK)
+          ! Get wave drag coefficients into TKM (includes TK)
+          if (CBaroclinic) then
+             call Apply2DInternalWaveDrag(NP, TK, TKM, UU1, VV1, DP, IT)
+             ! Vertically averaged momentum dispersion (power law)
+             call Apply2DMomentumDisp(UU1, VV1, DP, ETA2, IFNLFA,
+     &                                NP, TKM)
+          else
+             call Apply2DInternalWaveDrag(NP, TK, TKM)
+          end if
+       elseif (C3D) then
+           ! 3D: Set up the 3D friction coefficient
+          call Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA,
+     &                               NP, TK, NFEN, Z0B)
+       end if
+
+       end subroutine computeBottomFriction
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   U P D A T E  I C E  F I E L D S
+!----------------------------------------------------------------------
+!     Updates ice concentration fields from input file and interpolates
+!     ice values for the current timestep.
+!----------------------------------------------------------------------
+       subroutine updateIceFields(TimeLoc)
+       use global, only : NCICE, CICE_TIME1, CICE_TIME2, CICE_TIMINC,
+     &    CICE1, CICE2, CICEOUT
+       use mesh, only : NP
+       use owi_ice, only : NCICE1_GET
+       implicit none
+
+       real(8), intent(in) :: TimeLoc
+       real(8) :: CICE_TRatio
+       integer :: I
+
+       !...Read new ice data if needed
+       if (NCICE == 12) then
+          if (TimeLoc > CICE_TIME2) then
+             CICE_TIME1 = CICE_TIME2
+             CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
+             CICE1(:) = CICE2(:)
+             call NCICE1_GET(CICE2, NP)
+          endif
+       endif
+
+       !...Interpolate ice concentration for current time
+       if (NCICE /= 0 .and. NCICE /= 14 .and. NCICE /= 17) then
+          CICE_TRatio = (TimeLoc - CICE_TIME1) / CICE_TIMINC
+          do I = 1, NP
+             CICEOUT(I) = CICE1(I) + CICE_TRatio*(CICE2(I) - CICE1(I))
+          end do
+       endif
+
+       end subroutine updateIceFields
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   U P D A T E  W A T E R  L E V E L  C O R R E C T I O N S
+!----------------------------------------------------------------------
+!     Updates dynamic water level corrections for the current timestep.
+!----------------------------------------------------------------------
+       subroutine updateWaterLevelCorrections(TimeLoc)
+       use global, only : usingDynamicWaterLevelCorrection,
+     &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2,
+     &    dynamicWaterLevelCorrectionDelta
+       use wind, only : getDynamicWaterLevelCorrections,
+     &    dynamicWaterLevelCorrectionMassAdjust
+       implicit none
+
+       real(8), intent(in) :: TimeLoc
+
+       if (usingDynamicWaterLevelCorrection) then
+          call getDynamicWaterLevelCorrections(
+     &         dynamicWaterLevelCorrection2, TimeLoc)
+          if (dynamicWaterLevelCorrectionMassAdjust) then
+             dynamicWaterLevelCorrectionDelta =
+     &          dynamicWaterLevelCorrection2 -
+     &          dynamicWaterLevelCorrection1
+          endif
+       endif
+
+       end subroutine updateWaterLevelCorrections
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   U P D A T E  W A V E  R A D I A T I O N  S T R E S S
+!----------------------------------------------------------------------
+!     Updates wave radiation stress from file or coupled model and adds
+!     to wind stress. Handles NRS=1,2,3,4,5 cases.
+!----------------------------------------------------------------------
+       subroutine updateWaveRadiationStress(TimeLoc)
+       use global, only : NRS, NWS, RSTIME1, RSTIME2, RSTIMINC,
+     &    RSNX1, RSNY1, RSNX2, RSNY2, WSX2, WSY2,
+     &    RSNXOUT, RSNYOUT, ENDWAVE, Limit_WaveStressGrad,
+     &    RampWRad, wvnxout, wvnyout, RampMete,
+     &    SWAN_RSNX1, SWAN_RSNX2, SWAN_RSNY1, SWAN_RSNY2
+       use ADC_CONSTANTS, only : WaveStressGrad_Cap, waveWindMultiplier
+       use mesh, only : NP
+       use wind, only : RSGET
+       use rs2, only : RS2GET
+       use owiwind, only : windMultiplier
+#ifdef CSWAN
+       use couple2swan, only : coupwind, swan_wx2, swan_wy2,
+     &    InterpoWeight, ComputeWaveDrivenForces
+#endif
+       implicit none
+
+       real(8), intent(in) :: TimeLoc
+       real(8) :: RStRatio, RSX, RSY, RSXYMAG, RSSCALE, RSXLIM, RSYLIM
+       integer :: I
+
+#ifdef CSWAN
+       !...Coupling winds to SWAN
+       if (coupwind) then
+          select case(abs(nws))
+          case(12,16)
+             do i=1,np
+                swan_wx2(i,2) = wvnxout(i) * waveWindMultiplier
+     &                          / ( rampMete * windMultiplier )
+                swan_wy2(i,2) = wvnyout(i) * waveWindMultiplier
+     &                          / ( rampMete * windMultiplier )
+             end do
+          case default
+             do i=1,np
+                swan_wx2(i,2) = wvnxout(i) * waveWindMultiplier / rampMete
+                swan_wy2(i,2) = wvnyout(i) * waveWindMultiplier / rampMete
+             end do
+          end select
+       endif
+#endif
+
+       IF(NRS/=0) THEN
+         if((NRS==1).or.(nrs==2).or.(nrs==3).or.(nrs==5)) then
+             IF(TimeLoc>RSTIME2) THEN
+                RSTIME1=RSTIME2
+                RSTIME2=RSTIME2+RSTIMINC
+                RSNX1=RSNX2
+                RSNY1=RSNY2
+                IF(NRS==1) THEN
+                  CALL RSGET(RSNX2,RSNY2)
+                ELSEIF(NRS==2) THEN
+                  CALL RS2GET(RSNX2,RSNY2,NP)
+#ifdef CSWAN
+                ELSEIF(NRS==3) THEN
+                  InterpoWeight = 1.0
+                  CALL ComputeWaveDrivenForces()
+                  RSNX2 = 2.0d0*SWAN_RSNX2 - SWAN_RSNX1
+                  RSNY2 = 2.0d0*SWAN_RSNY2 - SWAN_RSNY1
+#endif
+                ELSEIF (NRS == 5) THEN
+                  DO I=1,NP
+                    RSX = RSNX1(I)
+                    RSY = RSNY1(I)
+                    RSNX1(I) = RSNX2(I)
+                    RSNY1(I) = RSNY2(I)
+                    RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX)
+                    RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
+                  ENDDO
+                ENDIF
+             ENDIF
+
+             RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
+
+             IF (.not.Limit_WaveStressGrad) then
+                DO I=1,NP
+                  RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
+                  RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
+                  WSX2(I) = WSX2(I) + RSX
+                  WSY2(I) = WSY2(I) + RSY
+                  RSNXOUT(I) = RSX
+                  RSNYOUT(I) = RSY
+                ENDDO
+             ELSE
+                DO I=1,NP
+                  RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
+                  RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
+                  RSXYMAG = SQRT(RSX*RSX + RSY*RSY)
+                  IF ((RSXYMAG > WaveStressGrad_Cap) .and.
+     &                (RSXYMAG > 0.0d0)) then
+                     RSSCALE = WaveStressGrad_Cap/RSXYMAG
+                     RSXLIM = RSX*RSSCALE
+                     RSYLIM = RSY*RSSCALE
+                  ELSE
+                     RSXLIM = RSX
+                     RSYLIM = RSY
+                  ENDIF
+                  WSX2(I) = WSX2(I) + RSXLIM
+                  WSY2(I) = WSY2(I) + RSYLIM
+                  RSNXOUT(I) = RSX
+                  RSNYOUT(I) = RSY
+                ENDDO
+             ENDIF
+
+          ENDIF
+
+          IF(NRS == 4) THEN
+             IF(TimeLoc.GE.RSTIME2) THEN
+                RSTIME1=RSTIME2
+                RSTIME2=RSTIME2+RSTIMINC
+             ENDIF
+             IF (TimeLoc > ENDWAVE+RSTIMINC) THEN
+               RSNX2(:) = 0.0d0;  RSNY2(:) = 0.0d0
+             ENDIF
+
+             IF (.not.Limit_WaveStressGrad) then
+                DO I=1,NP
+                   RSX = RampWRad*RSNX2(I)
+                   RSY = RampWRad*RSNY2(I)
+                   WSX2(I) = WSX2(I) + RSX
+                   WSY2(I) = WSY2(I) + RSY
+                   RSNXOUT(I) = RSX
+                   RSNYOUT(I) = RSY
+                ENDDO
+             ELSE
+                DO I=1,NP
+                   RSX = RampWRad*RSNX2(I)
+                   RSY = RampWRad*RSNY2(I)
+                   RSXYMAG = SQRT(RSX*RSX + RSY*RSY)
+                   IF ((RSXYMAG > WaveStressGrad_Cap) .and.
+     &                 (RSXYMAG > 0.0d0)) then
+                      RSSCALE = WaveStressGrad_Cap/RSXYMAG
+                      RSXLIM = RSX*RSSCALE
+                      RSYLIM = RSY*RSSCALE
+                   ELSE
+                      RSXLIM = RSX
+                      RSYLIM = RSY
+                   ENDIF
+                   WSX2(I) = WSX2(I) + RSXLIM
+                   WSY2(I) = WSY2(I) + RSYLIM
+                   RSNXOUT(I) = RSX
+                   RSNYOUT(I) = RSY
+                ENDDO
+             ENDIF
+          ENDIF
+       ENDIF
+
+       end subroutine updateWaveRadiationStress
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   U P D A T E  B A R O C L I N I C  B O U N D A R Y  C O N D I T I O N S
+!----------------------------------------------------------------------
+!     Updates elevation boundary conditions for 3D baroclinic runs.
+!     Reads LNM (large-scale mean) boundary conditions from file.
+!----------------------------------------------------------------------
+       subroutine updateBaroclinicBoundaryConditions(TimeLoc)
+       use global, only : C3D, RES_BC_FLAG, CBAROCLINIC,
+     &    BCFLAG_LNM, RBCTIME1, RBCTIME2, RBCTIMEINC,
+     &    LNM_BC, LNM_BC1, LNM_BC2
+       use boundaries, only : NOPE, NETA
+       implicit none
+
+       real(8), intent(in) :: TimeLoc
+       real(8) :: RBCRATIO
+       integer :: I, NOD, NumofBCNode
+       character(80) :: CDUM80
+
+       IF((C3D).AND.(RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
+          IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
+            IF(BCFLAG_LNM.EQ.1)THEN
+             IF(TimeLoc.GT.RBCTIME2) THEN
+                RBCTIME1=RBCTIME2
+                RBCTIME2=RBCTIME2+RBCTIMEINC
+                READ(35,'(A)') CDUM80
+                DO I=1,NETA
+                  LNM_BC1(I)=LNM_BC2(I)
+                  READ(35,*) NOD,LNM_BC2(I)
+                END DO
+             END IF
+             RBCRATIO=(TimeLoc-RBCTIME1)/RBCTIMEINC
+             DO NumofBCNode=1,NETA
+                   LNM_BC(NumofBCNode)=LNM_BC1(NumofBCNode)+
+     &             RBCRATIO*(LNM_BC2(NumofBCNode)-
+     &             LNM_BC1(NumofBCNode))
+             END DO
+            ENDIF
+          END IF
+       END IF
+
+       end subroutine updateBaroclinicBoundaryConditions
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   C O M P U T E  B A R O C L I N I C  P R E S S U R E  G R A D I E N T
+!----------------------------------------------------------------------
+!     Computes depth-averaged baroclinic forcing needed by GWCE and
+!     2DDI Momentum equations. Computed as Bx/H, By/H nodally averaged.
+!----------------------------------------------------------------------
+       subroutine computeBaroclinicPressureGradient(IT, TimeLoc)
+       use global, only : CBaroclinic, C3DVS, C2DDI
+       implicit none
+
+       integer, intent(in) :: IT
+       real(8), intent(in) :: TimeLoc
+
+       if (CBaroclinic) then
+          if (C3DVS) call BPG3D(IT)
+          if (C2DDI) call BPG2D(IT, TimeLoc)
+       endif
+
+       end subroutine computeBaroclinicPressureGradient
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   C O M P U T E  S P E C I F I E D  N O R M A L  F L O W  B C
+!----------------------------------------------------------------------
+!     Computes specified normal flow boundary conditions including
+!     periodic forcing and time-varying flux input.
+!----------------------------------------------------------------------
+       subroutine computeSpecifiedNormalFlowBC(IT, TimeLoc, TimeH)
+       use global, only : NFFR, FPER, FAMIG, FFACE, FFF, RampExtFlux,
+     &    QNAM, QNPH, ENAM, ENPH, QN2, EN2,
+     &    QTIME1, QTIME2, FTIMINC, QNIN1, QNIN2, ENIN1, ENIN2,
+     &    FluxSettlingIT, EtaDisc, ElevDisc, Eta2
+       use mesh, only : NP, ICS
+       use boundaries, only : NFLUXF, NVEL, LBCODEI, NBV
+       use mod_normal_flow_boundary, only : rotate_normal_flux
+       implicit none
+
+       integer, intent(in) :: IT
+       real(8), intent(in) :: TimeLoc, TimeH
+       integer :: I, J, NCYC, NNBB
+       real(8) :: ARGJ, RFF, QTRATIO, QNIN_TMP
+
+          IF (NFFR.GT.0) THEN
+           DO J=1,NFFR
+             IF(FPER(J).EQ.0.D0) THEN
+                NCYC=0
+             ELSE
+                NCYC=INT(TimeH/FPER(J))
+             ENDIF
+             ARGJ=FAMIG(J)*(TimeH-NCYC*FPER(J))+FFACE(J)
+             RFF=FFF(J)*RampExtFlux
+             DO I=1,NVEL
+                SELECT CASE(LBCODEI(I))
+                CASE(2,12,22,52)
+                 QN2(I)=QN2(I)+rotate_normal_flux(ICS, I,
+     &                   QNAM(J,I)*RFF*COS(ARGJ-QNPH(J,I)))
+                CASE(32)
+                 QN2(I)=QN2(I)+rotate_normal_flux(ICS, I,
+     &                   QNAM(J,I)*RFF*COS(ARGJ-QNPH(J,I)))
+                 EN2(I)=EN2(I)+ENAM(J,I)*RFF*COS(ARGJ-ENPH(J,I))
+                END SELECT
+             END DO
+           END DO
+          ELSEIF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
+             IF(TimeLoc.GT.QTIME2) THEN
+                QTIME1=QTIME2
+                QTIME2=QTIME2+FTIMINC
+                DO J=1,NVEL
+                   IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &                  .OR.(LBCODEI(J).EQ.22)) THEN
+                      QNIN1(J)=QNIN2(J)
+                      READ(20,*) QNIN_TMP
+                      QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
+                   ELSEIF(LBCODEI(J).EQ.32) THEN
+                      QNIN1(J)=QNIN2(J)
+                      ENIN1(J)=ENIN2(J)
+                      READ(20,*) QNIN_TMP,ENIN2(J)
+                      QNIN2(J) = rotate_normal_flux(ICS, J, QNIN_TMP)
+                   ENDIF
+                END DO
+             ENDIF
+
+             QTRATIO=(TimeLoc-QTIME1)/FTIMINC
+             QN2=RampExtFlux*(QNIN1+QTRATIO*(QNIN2-QNIN1))
+             EN2=RampExtFlux*(ENIN1+QTRATIO*(ENIN2-ENIN1))
+          ENDIF
+
+          !...Collect elevation information for river radiation b.c.
+          IF(IT.EQ.FluxSettlingIT) THEN
+             EtaDisc_Fill = .FALSE.
+             DO I=1, NP
+                EtaDisc(I) = Eta2(I)
+             ENDDO
+             DO I=1,NVEL
+                IF(LBCODEI(I).EQ.52) THEN
+                   NNBB=NBV(I)
+                   ElevDisc(I)=Eta2(NNBB)
+                ENDIF
+             END DO
+          ELSE IF(EtaDisc_Fill .and. IT > FluxSettlingIT) THEN
+             EtaDisc_Fill = .FALSE.
+             DO I=1,NVEL
+                IF(LBCODEI(I).EQ.52) THEN
+                   NNBB=NBV(I)
+                   ElevDisc(I)=EtaDisc(NNBB)
+                ENDIF
+             END DO
+          ENDIF
+
+       end subroutine computeSpecifiedNormalFlowBC
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   C O M P U T E  R A D I A T I O N  D I S C H A R G E  B C
+!----------------------------------------------------------------------
+!     Computes discharge contribution from radiation boundary condition.
+!----------------------------------------------------------------------
+       subroutine computeRadiationDischargeBC()
+       use global, only : UU1, VV1, H2, QN1
+       use boundaries, only : NFLUXRBC, NVEL, LBCODEI, NBV, CSII, SIII
+       implicit none
+
+       integer :: J, NNBB
+       real(8) :: UN1
+
+          DO J=1,NVEL
+             IF(LBCODEI(J).EQ.30) THEN
+                NNBB=NBV(J)
+                UN1=UU1(NNBB)*CSII(J)+VV1(NNBB)*SIII(J)
+                QN1(J)=H2(NNBB)*UN1
+             ENDIF
+          END DO
+
+       end subroutine computeRadiationDischargeBC
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   C O M P U T E  Z E R O  N O R M A L  V E L O C I T Y  B C  D I S C H A R G E
+!----------------------------------------------------------------------
+!     Computes discharge contribution from zero normal velocity gradient
+!     boundary condition.
+!----------------------------------------------------------------------
+       subroutine computeZeroNormalVelocityBCDischarge()
+       use global, only : UU1, VV1, H2, QN1
+       use boundaries, only : NFLUXGBC, NVEL, LBCODEI, NBV, CSII, SIII
+       implicit none
+
+       integer :: J, NNBB
+       real(8) :: UN1
+
+          DO J=1,NVEL
+             IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) THEN
+                NNBB=NBV(J)
+                UN1=UU1(NNBB)*CSII(J)+VV1(NNBB)*SIII(J)
+                QN1(J)=H2(NNBB)*UN1
+             ENDIF
+          END DO
+
+       end subroutine computeZeroNormalVelocityBCDischarge
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   C O M P U T E  E X T E R N A L  B A R R I E R  B C  D I S C H A R G E
+!----------------------------------------------------------------------
+!     Computes supercritical outward normal flow over specified
+!     external barrier boundary nodes.
+!----------------------------------------------------------------------
+       subroutine computeExternalBarrierBCDischarge(TimeLoc)
+       use global, only : QN2
+       use boundaries, only : NFLUXB, NVEL, LBCODEI
+       use weir_flux, only : COMPUTE_EXTERNAL_BOUNDARY_FLUX
+       implicit none
+
+       real(8), intent(in) :: TimeLoc
+       integer :: I
+
+          DO I=1,NVEL
+             SELECT CASE(LBCODEI(I))
+             CASE(3,13,23)
+                CALL COMPUTE_EXTERNAL_BOUNDARY_FLUX(I, TimeLoc, QN2(I))
+             END SELECT
+          END DO
+
+       end subroutine computeExternalBarrierBCDischarge
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   S E T  V E W  B C  S U B M E R G E D  F L A G
+!----------------------------------------------------------------------
+!     Sets ISSUBMERGED flag along vertical element wall boundaries.
+!----------------------------------------------------------------------
+       subroutine setVewBCSubmergedFlag(TimeLoc)
+       use boundaries, only : NFLUXIB64, NBOU, LBCODEI, NVELL
+       use WEIR_FLUX, only : SET_SUBMERGED64_AT
+       implicit none
+
+       real(8), intent(in) :: TimeLoc
+       integer :: I, J, K
+
+          I = 0
+          DO K = 1, NBOU
+             SELECT CASE(LBCODEI(I+1))
+                CASE(4,24,5,25)
+                   I = I + NVELL(K)*2
+                CASE(64)
+                   DO J = 1,NVELL(K)
+                      I = I + 1
+                      CALL SET_SUBMERGED64_AT(I, J, K, TimeLoc)
+                   ENDDO
+                   I = I + NVELL(K)
+                CASE DEFAULT
+                   I = I + NVELL(K)
+             END SELECT
+          ENDDO
+
+       end subroutine setVewBCSubmergedFlag
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   C O M P U T E  I N T E R N A L  B A R R I E R  B C  D I S C H A R G E
+!----------------------------------------------------------------------
+!     Computes inward/outward normal flow over specified internal barrier
+!     boundary (permeable or not) nodes.
+!----------------------------------------------------------------------
+       subroutine computeInternalBarrierBCDischarge(TimeLoc)
+       use global, only : QN2, NIBNODECODE
+       use boundaries, only : NFLUXIB, NBOU, LBCODEI, NVELL
+       use WEIR_FLUX, only : COMPUTE_INTERNAL_BOUNDARY_FLUX,
+     &    COMPUTE_INTERNAL_BOUNDARY64_FLUX
+       implicit none
+
+       real(8), intent(in) :: TimeLoc
+       integer :: I, J, K
+       logical :: ISFRONT
+
+          NIBNODECODE(:) = 0
+          I = 0
+          DO K = 1, NBOU
+             SELECT CASE(LBCODEI(I+1))
+                 CASE(4,24,5,25)
+                     DO J = 1,NVELL(K)*2
+                         I = I + 1
+                         CALL COMPUTE_INTERNAL_BOUNDARY_FLUX(I, J, K,
+     &                       TimeLoc, QN2(I))
+                     ENDDO
+                 CASE(64)
+                     DO J = 1,NVELL(K)*2
+                         I = I + 1
+                         IF(J.LE.NVELL(K)) THEN
+                            ISFRONT = .TRUE.
+                         ELSE
+                            ISFRONT = .FALSE.
+                         ENDIF
+                         CALL COMPUTE_INTERNAL_BOUNDARY64_FLUX(I, J, K,
+     &                       TimeLoc, QN2(I))
+                     ENDDO
+                 CASE DEFAULT
+                     I = I + NVELL(K)
+             END SELECT
+          ENDDO
+
+       end subroutine computeInternalBarrierBCDischarge
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   C O M P U T E  I N T E R N A L  B A R R I E R  P I P E  F L U X
+!----------------------------------------------------------------------
+!     Computes inward/outward normal flow for internal barrier boundary
+!     nodes through cross barrier pipes.
+!----------------------------------------------------------------------
+       subroutine computeInternalBarrierPipeFlux()
+       use global, only : QN2
+       use boundaries, only : NFLUXIBP, NVEL, LBCODEI
+       use WEIR_FLUX, only : COMPUTE_CROSS_BARRIER_PIPE_FLUX
+       implicit none
+
+       integer :: I
+       real(8) :: PIPE_FLUX
+
+          DO I=1,NVEL
+             IF((LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)) THEN
+                 PIPE_FLUX = 0D0
+                 CALL COMPUTE_CROSS_BARRIER_PIPE_FLUX(I, PIPE_FLUX)
+                 QN2(I) = QN2(I) + PIPE_FLUX
+             ENDIF
+          ENDDO
+
+       end subroutine computeInternalBarrierPipeFlux
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   A P P L Y  S U B D O M A I N  B C  D A T A
+!----------------------------------------------------------------------
+!     Applies subdomain boundary condition data from fort.019/020/021.
+!----------------------------------------------------------------------
+       subroutine applySubdomainBCData(IT)
+       use subdomain, only : subdomainOn, enforceBN,
+     &    readFort019, readFort020, readFort021
+       implicit none
+
+       integer, intent(in) :: IT
+
+       if (enforceBN == 1) call readFort019(IT)
+       if (enforceBN == 2) call readFort020(IT)
+       if (enforceBN == 2) call readFort021(IT)
+
+       end subroutine applySubdomainBCData
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   A P P L Y  B O U N D A R Y  C O N D I T I O N S
+!----------------------------------------------------------------------
+!     Applies all boundary conditions including normal flow, radiation,
+!     barrier, and subdomain boundaries.
+!----------------------------------------------------------------------
+       subroutine applyBoundaryConditions(IT, TimeLoc, TimeH)
+       use global, only : C3D, RES_BC_FLAG, CBAROCLINIC
+       use boundaries, only : NFLUXIB, NFLUXF, NFLUXIBP, NFLUXGBC,
+     &    NFLUXB, NFLUXIB64
+       use subdomain, only : subdomainOn
+       implicit none
+
+       integer, intent(in) :: IT
+       real(8), intent(in) :: TimeLoc, TimeH
+
+       IF(NFLUXF==1) call computeSpecifiedNormalFlowBC(IT, TimeLoc, TimeH)
+       IF(NFLUXIBP==1) call computeRadiationDischargeBC()
+       IF(NFLUXGBC==1) call computeZeroNormalVelocityBCDischarge()
+       IF(NFLUXB==1) call computeExternalBarrierBCDischarge(TimeLoc)
+       IF(NFLUXIB64==1) call setVewBCSubmergedFlag(TimeLoc)
+       if(NFLUXIB == 1) call computeInternalBarrierBCDischarge(TimeLoc)
+       IF(NFLUXIBP==1) call computeInternalBarrierPipeFlux()
+
+       if (C3D .and. RES_BC_FLAG > 0 .and. CBAROCLINIC)then
+          call updateBaroclinicBoundaryConditions(TimeLoc)
+       endif
+
+       if(subdomainOn) call applySubdomainBCData(IT)
+
+       end subroutine applyBoundaryConditions
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   A P P L Y  W E T T I N G  A N D  D R Y I N G
+!----------------------------------------------------------------------
+!     Applies wetting and drying algorithm, with subgrid support.
+!----------------------------------------------------------------------
+       subroutine applyWettingAndDrying(IT)
+       use subgrid, only : level0, getVertLookup
+       use wetdry, only : computeWettingAndDrying
+       use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
+       implicit none
+
+       integer, intent(in) :: IT
+
+       IF(level0)THEN
+#ifdef ADCNETCDF
+          call getVertLookup()
+          call computeWettingAndDrying(IT)
+#else
+          call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &       message="Subgrid calculation requires building "
+     &              //"with netcdf enabled")
+#endif
+       ELSE
+          call computeWettingAndDrying(IT)
+       ENDIF
+
+       end subroutine applyWettingAndDrying
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   U P D A T E  F L O W  D E P T H
+!----------------------------------------------------------------------
+!     Updates flow depth H2 at current timestep. Called after wetting/
+!     drying since bathymetry could change with subgrid barriers.
+!----------------------------------------------------------------------
+       subroutine updateFlowDepth()
+       use global, only : H2, ETA2, IFNLFA
+       use mesh, only : DP
+       implicit none
+
+       H2 = DP + IFNLFA*ETA2
+
+       end subroutine updateFlowDepth
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   A P P L Y  A B S O R B I N G  S P O N G E  L A Y E R
+!----------------------------------------------------------------------
+!     Applies absorbing sponge layer operations after momentum solve.
+!----------------------------------------------------------------------
+       subroutine applyAbsorbingSpongeLayer()
+       use global, only : C2DDI, DTDP
+       use spongelayer, only : LoadAbsLayerSigma, sponge_dis_mthd,
+     &    SPONGE_OPSPLIT0, SPONGE_SHIFT_SOLN
+       implicit none
+
+       if (C2DDI .and. LoadAbsLayerSigma .and. sponge_dis_mthd == 0)
+     &    call SPONGE_OPSPLIT0(DTDP/2)
+
+       if (LoadAbsLayerSigma) call SPONGE_SHIFT_SOLN()
+
+       end subroutine applyAbsorbingSpongeLayer
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   C O L L E C T  O U T P U T  S T A T I S T I C S
+!----------------------------------------------------------------------
+!> @brief Collects output statistics and writes subdomain output
+!>
+!> Collects min/max data, inundation data (if enabled), and writes
+!> subdomain output files (fort.065/066/067) if subdomain modeling is on.
+!>
+!> @param[in] IT      Current timestep number
+!> @param[in] TimeLoc Current simulation time
+!----------------------------------------------------------------------
+       subroutine collectOutputStatistics(IT, TimeLoc, TIMEH)
+       use global, only : inundationOutput
+       use write_output, only : collectMinMaxData, collectInundationData
+       use subdomain, only : subdomainOn, NOutGS,
+     &    writeFort065, writeFort066, writeFort067
+       USE HARM, ONLY : updateHarmonicAnalysis
+       implicit none
+
+       integer, intent(in) :: IT
+       real(8), intent(in) :: TimeLoc
+       real(8), intent(in) :: TIMEH
+
+       call collectMinMaxData(TimeLoc)
+
+       if (inundationOutput) call collectInundationData(TimeLoc, IT)
+
+       if (subdomainOn) then
+          if (NOutGS == 1) call writeFort065(IT)
+          if (NOutGS == 2) call writeFort066(IT)
+          if (NOutGS == 3) call writeFort067(IT)
+       endif
+
+!     If harmonic analysis was requested and the current time
+!     is within the harmonic analysis period, update the left hand side
+!     of the harmonic analysis matrix. Also update the load vectors for
+!     each type of analysis. If timeseries reconstruction was specified,
+!     also update the timeseries.
+      CALL updateHarmonicAnalysis(IT, TIMEH)
+
+       end subroutine collectOutputStatistics
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   W R I T E  H O T S T A R T  I F  N E E D E D
+!----------------------------------------------------------------------
+!     Writes hot start information if NHSTAR=1 and at correct timestep.
+!     The hot start files use a record length of 8 on both 32-bit
+!     workstations and the 64-bit Cray because harmonic analysis is
+!     done in double precision (64 bits) on workstations.
+!----------------------------------------------------------------------
+       subroutine writeHotstartIfNeeded(IT, TimeLoc)
+       use sizes, only : MNWPROH
+       use global, only : NHSINC, NHSTAR, IHOT, C3D, NHOUTONCE
+       use mod_logging, only : allMessage, WARNING
+       use write_output, only : writeHotstart
+#ifdef CMPI
+       use hswriter, only : writeHotstart_through_hswriter
+#endif
+#ifdef CSWAN
+       use couple2swan, only : WriteSwanHotStart
+#endif
+       implicit none
+
+       integer, intent(in) :: IT
+       real(8), intent(in) :: TimeLoc
+       integer :: ITEST
+
+       ITEST = (IT/NHSINC)*NHSINC
+
+       if ((ABS(NHSTAR) > 0 .and. ITEST == IT) .or. (-IHOT == IT)) then
+          if (MNWPROH > 0) then
+             if (.not.C3D) then
+#ifdef CMPI
+                call writeHotstart_through_hswriter(TimeLoc, IT)
+#endif
+             else
+                call allMessage(WARNING,'HS writer does not support C3D')
+             endif
+          else
+             if (NHOUTONCE) then
+                NHSINC = huge(NHSINC)
+             endif
+             call writeHotstart(TimeLoc, IT)
+          endif
+#ifdef CSWAN
+          WriteSwanHotStart = .TRUE.
+#endif
+       endif
+
+       end subroutine writeHotstartIfNeeded
+!----------------------------------------------------------------------
+
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   P R O G R E S S  S C R E E N
+!----------------------------------------------------------------------
+!     Monitors solution progress by finding and reporting maximum
+!     elevation and velocity. Checks for warning/error thresholds
+!     and NaN values. Terminates if error conditions are met.
+!----------------------------------------------------------------------
+       subroutine progressScreen(IT, TimeLoc, ITIME_BGN)
+       use sizes, only : MYPROC
+       use global, only : ETA2, NODECODE, UU2, VV2, nodes_lg, NT, ITHS,
+     &    WarnElev, ErrorElev, Flag_ElevError, WarnElevDump,
+     &    earlyterminate, IT_foundNaN, WarnVel
+       use mod_logging, only : screenUnit, nscreen
+       use mesh, only : NP, DP, NNeigh, NeiTab
+       use gwce, only : numitr
+       use write_output, only : WriteWarnElev
+       use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
+#ifdef CMPI
+       use messenger, only : WarnElevSum, EarlyTermSum
+#endif
+       implicit none
+
+       integer, intent(in) :: IT
+       real(8), intent(in) :: TimeLoc
+       integer, intent(in) :: ITIME_BGN
+
+       integer :: I, J, JJ
+       integer :: KEMAX, KVMAX
+       integer :: ITEST
+       integer :: WarnElevExceeded, ErrorElevExceeded
+#ifdef VELCHECK
+       integer :: WarnVelExceeded
+#endif
+       real(8) :: ELMAX, VELMAX, velabs
+       real(8) :: runperccomplete
+       logical :: foundNaN
+
+       IF(NSCREEN.NE.0) THEN
+         ELMAX=0.0d0
+         VELMAX=0.0d0
+         KEMAX = 0
+         KVMAX = 0
+         DO I=1,NP
+            IF((NODECODE(I).EQ.1).AND.(ABS(ETA2(I)).GT.ELMAX))THEN
+               ELMAX=ABS(ETA2(I))
+               KEMAX=I
+            ENDIF
+            VELABS=UU2(I)*UU2(I)+VV2(I)*VV2(I)
+            IF (VELABS.GT.VELMAX) THEN
+               VELMAX=VELABS
+               KVMAX=I
+            ENDIF
+         END DO
+         VELMAX=VELMAX**0.5d0
+         ITEST=(IT/NSCREEN)*NSCREEN
+
+         runperccomplete=REAL(IT-ITHS)/REAL(NT-ITHS)*100d0
+#ifdef CMPI
+         IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
+            IF (KEMAX.GT.0) THEN
+               WRITE(ScreenUnit,1991)
+     &            IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
+     &            VELMAX,KVMAX,MYPROC
+            ELSE
+               WRITE(ScreenUnit,1991)
+     &            IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,VELMAX,
+     &            KVMAX,MYPROC
+            ENDIF
+ 1991       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
+     &           5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
+     &           2X,'ON MYPROC = ',I4)
+         ENDIF
+         WarnElevExceeded = 0
+         IF(ELMAX.GT.WarnElev) THEN
+            WRITE(ScreenUnit,1993)
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &           VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+ 1993       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
+     &           2X,'ON MYPROC = ',I4,
+     &           3X,'** WARNING: Elevation.gt.WarnElev **')
+            IF (WarnElevDump) WarnElevExceeded=1
+         ENDIF
+
+         IF(WarnElevDump)THEN
+             call WarnElevSum(WarnElevExceeded)
+             IF (WarnElevExceeded.ne.0) THEN
+                CALL WriteWarnElev(TimeLoc, IT)
+             ENDIF
+         ENDIF
+         ErrorElevExceeded = 0
+         IF(ELMAX.GT.ErrorElev) THEN
+            WRITE(ScreenUnit,1995)
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &           VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+ 1995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
+     &           2X,'ON MYPROC = ',I4,/,
+     &           2X,'** ERROR: Elevation.gt.ErrorElev,',
+     &           ' ADCIRC stopping. **')
+            ErrorElevExceeded = 1
+         ENDIF
+         call WarnElevSum(ErrorElevExceeded)
+         IF( ErrorElevExceeded /= 0 ) THEN
+           Flag_ElevError = .true.
+           call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &        message='Elevation exceeded ErrorElev threshold')
+         ENDIF
+
+#ifdef VELCHECK
+         WarnVelExceeded = 0
+         IF (IT .EQ. ITIME_BGN) THEN
+            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ',
+     &         'ITS FIRST CHECK FOR WARNING VELS'
+         ENDIF
+         IF(VELMAX.GT.WarnVel) THEN
+            WRITE(ScreenUnit,3995)
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &           VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(16,3995) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+ 3995       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
+     &           2X,'ON MYPROC = ',I4,/,
+     &           2X,'** WARNING: Velocity.gt.WarnVel **')
+            WarnVelExceeded = 1
+         ENDIF
+#endif
+
+#else
+         IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
+            IF (KEMAX.GT.0) THEN
+               WRITE(ScreenUnit,1992)
+     &              IT,runperccomplete,NUMITR,TimeLoc,ETA2(KEMAX),
+     &              KEMAX,VELMAX,KVMAX
+            ELSE
+               WRITE(ScreenUnit,1992)
+     &              IT,runperccomplete,NUMITR,TimeLoc,0.,KEMAX,
+     &              VELMAX,KVMAX
+            ENDIF
+ 1992       FORMAT(1X,'TIME STEP =',I8,1x,F6.2,'% COMPLETE',
+     &           5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9)
+         ENDIF
+         IF(ELMAX.GT.WarnElev) THEN
+            WRITE(ScreenUnit,1994)
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
+     &           VELMAX,KVMAX
+ 1994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
+     &           2X,'** WARNING: Elevation.gt.WarnElev **')
+            IF (WarnElevDump) CALL WriteWarnElev(TimeLoc, IT)
+         ENDIF
+         IF(ELMAX.GT.ErrorElev) THEN
+            write(6,*) 'elmax, errorelev',elmax, errorelev
+            Flag_ElevError = .true.
+            WRITE(ScreenUnit,1996)
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
+     &           VELMAX,KVMAX
+ 1996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
+     &           2X,'** ERROR: Elevation.gt.ErrorElev, ',
+     &           'ADCIRC stopping. **')
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Elevation exceeded ErrorElev threshold')
+         ENDIF
+#ifdef VELCHECK
+         IF (IT .EQ. ITIME_BGN) THEN
+            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ',
+     &         'ITS FIRST CHECK FOR ERROR VELS'
+         ENDIF
+         IF(VELMAX.GT.WarnVel) THEN
+            WRITE(ScreenUnit,3996)
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(16,3996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,
+     &           VELMAX,KVMAX
+ 3996       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
+     &           2X,'** WARNING: Velocity.gt.WarnVel **')
+         ENDIF
+#endif
+
+#endif
+
+      ENDIF
+
+#ifdef VELCHECK
+      foundNaN = .false.
+      DO I = 1,NP
+         IF ((I.EQ.1).AND.(IT.EQ.ITIME_BGN)) THEN
+            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ',
+     &         'ITS FIRST CHECK FOR NAN VELS'
+         ENDIF
+         IF(ISNAN(UU2(I)).OR.ISNAN(VV2(I))) THEN
+            foundNaN = .true.
+            IF(NSCREEN.NE.0) THEN
+               WRITE(ScreenUnit,2993)
+     &              IT,NUMITR,TimeLoc,NODES_LG(I),
+     &              ETA2(I),DP(I),MYPROC
+               WRITE(16,2993) IT,NUMITR,TimeLoc,
+     &              NODES_LG(I),ETA2(I),DP(I),MYPROC
+ 2993          FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &              5X,'TIME = ',E15.8,
+     &              2X,'SPEED IS NaN AT NODE I =',I9,
+     &              /,2X,'ETA2(I) = ', 1pE12.4E3,
+     &              2X,'DP(I) = ', 1pE12.4E3,
+     &              2X,'ON MYPROC = ',I4)
+               DO J = 2,NNeigh(I)
+                  JJ = NeiTab(I,J)
+                  WRITE(ScreenUnit,2995) NODES_LG(JJ),ETA2(JJ),DP(JJ),
+     &                 UU2(JJ),VV2(JJ),MYPROC
+                  WRITE(16,2995) NODES_LG(JJ),ETA2(JJ),DP(JJ),
+     &                 UU2(JJ),VV2(JJ),MYPROC
+ 2995             FORMAT(1X,'AT NEIGHBOR NODE I =',I9,
+     &                 /,2X,'ETA2(I) = ', 1pE12.4E3,
+     &                 2X,'DP(I) = ', 1pE12.4E3,
+     &                 2X,'UU2(I) = ', 1pE12.4E3,
+     &                 2X,'VV2(I) = ', 1pE12.4E3,
+     &                 2X,'ON MYPROC = ',I4)
+               ENDDO
+            ENDIF
+         ENDIF
+      ENDDO
+      IF (foundNaN) THEN
+         IF(NSCREEN.NE.0) THEN
+            WRITE(ScreenUnit,2994)
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),NODES_LG(KEMAX),
+     &           VELMAX,NODES_LG(KVMAX),MYPROC
+            WRITE(16,2994) IT,NUMITR,TimeLoc,ETA2(KEMAX),
+     &           NODES_LG(KEMAX),VELMAX,NODES_LG(KVMAX),MYPROC
+ 2994       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I9,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,
+     &           2X,'ON MYPROC = ',I4,
+     &           3X,'** WARNING: Velocity is NaN **')
+         ENDIF
+      ENDIF
+      IF ((foundNaN).AND.(IT_foundNaN.EQ.0)) THEN
+         IT_foundNaN = IT
+      ELSEIF ((IT.EQ.IT_foundNaN + 20).AND.(IT_foundNaN.NE.0)) THEN
+         earlyterminate = 1
+      ENDIF
+#ifdef CMPI
+      call EarlyTermSum( earlyterminate )
+#endif
+#endif
+
+       end subroutine progressScreen
+!----------------------------------------------------------------------
 
        END MODULE mod_timestep

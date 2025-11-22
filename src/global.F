@@ -270,10 +270,8 @@ c.
       REAL(8),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
       REAL(8),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
       
-      real(8), allocatable, target :: wvnxout(:) ! output wind velocity in x-dir at each node 
-      real(8), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node 
-
-      real(8),allocatable :: gwce_lv(:)
+      real(8), allocatable, target :: wvnxout(:) ! output wind velocity in x-dir at each node
+      real(8), allocatable, target :: wvnyout(:) ! output wind velocity in y-dir at each node
 
 #if defined CSWAN
       !...Local SWAN Arrays
@@ -396,10 +394,6 @@ C- DMW
       REAL(8),ALLOCATABLE ::   TIP1(:),TIP2(:)
       REAL(8),ALLOCATABLE ::   L_N(:,:)    ! WJP The array for TIP multiplier
       REAL(8),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
-      REAL(8),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
-      REAL(8),ALLOCATABLE,TARGET ::   COEFD(:) !jgf48.4619 from Seizo (Lumped GWCE)
-      REAL(8),ALLOCATABLE,TARGET ::   COEFDTempMem(:) !Added for VEW1D  08-11-2022 SB
-      REAL(8),POINTER ::   COEFDTemp(:) !Added for VEW1D  08-11-2022 SB
       INTEGER :: NBFR, NCOR
 C    kmd48.33bc - added variables for the levels of no motion and top temperature boundary condition
       REAL(8),ALLOCATABLE ::   LNM_BC1(:), LNM_BC2(:), LNM_BC(:) ! level of no motion
@@ -427,10 +421,6 @@ C.....for scalar transport
       
 !     The vertically-integrated momentum dispersion terms     
       REAL(8),ALLOCATABLE ::   VIDISPDXOH(:), VIDISPDYOH(:)
-
-C.....for VEW1D sb
-      INTEGER,ALLOCATABLE  :: flgNodesMultipliedByTotalArea(:)
-
 
       REAL(8) DT
 C                                
@@ -858,8 +848,6 @@ C
       !jgfdebug TODO: rationalize initialization of these variables
       ALLOCATE ( ETAS(MNP))
       etas = -99999.d0
-      allocate ( gwce_lv(mnp))
-      gwce_lv = -99999.d0
       allocate ( mom_lv_x(mnp))
       mom_lv_x = -99999.d0
       allocate ( mom_lv_y(mnp))
@@ -937,10 +925,6 @@ C    loadEleSlopeLim.eqv..true
       ALLOCATE (ESLCOUNT(MNP))
       ESLCOUNT = 0.d0
 
-C     Allocate an array for VEW1D
-      ALLOCATE (flgNodesMultipliedByTotalArea(MNP))
-      flgNodesMultipliedByTotalArea = 0
-      
 #ifdef CMPI
       ALLOCATE ( IDUMY(1), DUMY1(1), DUMY2(1) )
 #endif
@@ -1132,37 +1116,6 @@ C
 C
       RETURN
       END SUBROUTINE ALLOC_MAIN10
-
-
-C...
-C...Allocate space for arrays needed by GWCE matrix and iterative solver
-C...
-
-      SUBROUTINE ALLOC_MAIN11_LUMPED()
-      USE SIZES, ONLY : MNP
-      IMPLICIT NONE
-C     jgf48.4619: Array used in lumped GWCE (from Seizo)
-      ALLOCATE( COEFD(MNP), COEFDTempMem(MNP) )  ! COEFDTemp is added for VEW1D  SB 08-11-2022
-      coefd = -99999.d0
-      coefdtempmem = -99999.d0
-      RETURN
-      END SUBROUTINE ALLOC_MAIN11_LUMPED
-
-
-
-
-      SUBROUTINE ALLOC_MAIN11()
-      USE SIZES, ONLY : MNETA,MNEI,MNP
-      IMPLICIT NONE
-
-C  Arrays used by JCG iterative solver
-
-      ALLOCATE( OBCCOEF(MNETA,MNEI-1),COEF(MNP,MNEI))
-      obccoef = -99999.d0
-      coef = -99999.d0
-C
-      RETURN
-      END SUBROUTINE ALLOC_MAIN11
 
 
 C...
@@ -1489,31 +1442,6 @@ C     character of a string.
       !=================================================================
       END FUNCTION front_trim
       !=================================================================
-
-!-----------------------------------------------------------------------
-!     @brief Internal norm2 function
-!     If the compiler supports Fortran 2008 then the intrinsic is used. 
-!     Otherwise, the implementation is provided here. Use the compiler 
-!     flag -DNOF2008 to enable the internal implementation. norm2
-!     calculates the Euclidean vector norm (L2 norm) of an array
-!     @param[in] x array to calculate the L2 norm of 
-!     @result euclidean vector norm of x
-!-----------------------------------------------------------------------
-      pure function adcirc_norm2(x)
-!-----------------------------------------------------------------------
-        implicit none
-        real(8), intent(in) :: x(:)
-        real(8)             :: adcirc_norm2
-#ifdef NOF2008
-        intrinsic            :: dot_product, sqrt
-        adcirc_norm2 = sqrt(dot_product(x,x))
-#else 
-        intrinsic            :: norm2
-        adcirc_norm2 = norm2(x)
-#endif
-!-----------------------------------------------------------------------
-      end function adcirc_norm2
-!-----------------------------------------------------------------------
 
 !     ------------------------------------------------------------------
 !     ------------------------------------------------------------------

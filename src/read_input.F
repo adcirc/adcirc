@@ -228,7 +228,7 @@ C
       logical :: UniformResMoonSunTimeData = .false.
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
-      CHARACTER(len=1024) :: scratchMessage ! message buffer
+      CHARACTER(len=256) :: scratchMessage ! message buffer
 #if defined CSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
       NAMELIST /SWANOutputControl/ SWAN_OutputHS, SWAN_OutputDIR,
@@ -6322,7 +6322,7 @@ C-----------------------------------------------------------------------
         CHARACTER(200) :: filename_netcdf
         CHARACTER(20)  :: const_name
         CHARACTER(20)  :: dmy_char
-        CHARACTER(1024) :: scratchMessage
+        CHARACTER(256) :: scratchMessage
         CHARACTER,ALLOCATABLE :: sal_const(:,:)
 
         IF(NTIP.EQ.2) THEN

@@ -81,6 +81,8 @@ C******************************************************************************
      &   t_log_scope, allMessage
       implicit none
 
+      private
+
       real(8),allocatable :: lsxx(:),lsxy(:),lsyx(:),lsyy(:)
       real(8),allocatable :: etas0(:)      
       real(8),allocatable :: eta0(:)
@@ -97,7 +99,15 @@ C     Arrays used by JCG iterative solver
       real(8), allocatable :: wksp(:)
       integer, allocatable :: iparm(:)
       real(8), allocatable :: rparm(:)
-      integer :: numitr ! number of iterations per timestep 
+      integer :: numitr ! number of iterations per timestep
+
+C     GWCE coefficient arrays
+      real(8), allocatable :: obccoef(:,:)
+      real(8), allocatable, target :: coefd(:)
+      real(8), allocatable, target :: coefDTempMem(:)
+      real(8), pointer :: coefDTemp(:) => null()
+      real(8), allocatable :: coef(:,:)
+      real(8), allocatable :: gwce_lv(:) 
 
 cjjw...added 2 lines
 C.....for matrix conditioning,global to allow for reading in from hotstart file
@@ -115,6 +125,10 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
 
       character(len=256) :: scratchMessage
 
+      public :: initGWCE, solveGWCE, a00, b00, c00, convcr, isldia,
+     &          itmax, invertedBarometerOnElevationBoundary, etiminc,
+     &          etime1, etime2, numitr, gwce_lv_reset
+
       contains
 
 !----------------------------------------------------------------------
@@ -123,8 +137,8 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
 !     Allocates arrays and initializes constants.
 !----------------------------------------------------------------------
       subroutine initGWCE()
-      use sizes, only : mnp
-      use global, only : dt, ilump, alloc_main11, alloc_main11_lumped
+      use sizes, only : mnp, mneta, mnei
+      use global, only : dt, ilump
       USE ADC_CONSTANTS, only: g
       use mesh, only : np
       use itpackv, only : dfault
@@ -139,10 +153,17 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
       dt2=dt*2.d0
       ga00=g*a00
 
+C     Allocate GWCE load vector (always needed)
+      allocate(gwce_lv(mnp))
+      gwce_lv = -99999.d0
+
 C     jgf48.4619: Accommodate Seizos changes for explicit solve
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
 C        allocate arrays needed by GWCE matrix and iterative solver
-         call alloc_main11()
+         allocate(coef(mnp,mnei))
+         coef = -99999.d0
+         allocate(obccoef(mneta,mnei-1))
+         obccoef = -99999.d0
 C        initialize parameter arrays needed by iterative solver
          CALL DFAULT(IPARM,RPARM)
          IPARM(1)=ITMAX
@@ -152,12 +173,21 @@ C        initialize parameter arrays needed by iterative solver
          RPARM(1)=CONVCR
          NW = 4*NP + 4*ITMAX
       ELSE ! lumped LHS
-         call alloc_main11_lumped()
+C        jgf48.4619: Array used in lumped GWCE (from Seizo)
+         allocate(coefd(mnp), coefDTempMem(mnp))
+         coefd = -99999.d0
+         coefDTempMem = -99999.d0
       ENDIF
 
 !----------------------------------------------------------------------
       end subroutine initGWCE
 !----------------------------------------------------------------------
+
+      subroutine gwce_lv_reset(val)
+          implicit none
+          real(8), intent(in) :: val
+          gwce_lv(:) = 0d0
+      end subroutine gwce_lv_reset
 
 !----------------------------------------------------------------------
 !     S U B R O U T I N E   S O L V E   G   W   C   E
@@ -169,10 +199,10 @@ C     the conventional GWCE or (2) the predictor-corrector GWCE.
       use sizes, only : mnp
       use global, only : CGWCE_New, CPRECOR, ETA2, QX2, QY2, UU2, VV2
 #ifdef CMPI
-     & , dumy1, dumy2
+      use global, only: dumy1, dumy2
       use messenger
 #endif
-      use momentum, only : mom_eqs_new_nc
+      use momentum2d, only : mom_eqs_new_nc
       use nodalattributes, only : loadEleSlopeLim
       implicit none
       integer, intent(in) :: it, ITIME_BGN ! time step 
@@ -242,7 +272,7 @@ C
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
       USE SIZES, ONLY : myproc
-      USE GLOBAL, ONLY : GWCE_LV, COEF, COEFD, OBCCOEF, ETAS, ETA1, ETA2,
+      USE GLOBAL, ONLY : ETAS, ETA1, ETA2,
      &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1, H1, H2,
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
@@ -256,8 +286,7 @@ C
      &   TKM, NPERSEG, NTIP, NNPERBC, IPERCONN, VIDispDXOH,
      &   VIDispDYOH, IFSFM, IFNL_HDP, CGWCE_HDP, CAliDisp, H0, ALPHAL, windlim,
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1,
-     &   dynamicWaterLevelCorrectionDelta, 
-     &   COEFDTemp, COEFDTempMem  ! Added for VED1D  08-11-2022 SB
+     &   dynamicWaterLevelCorrectionDelta
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -290,8 +319,8 @@ C... SB
 #ifdef CMPI
       USE MESSENGER
 #endif
-      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
-     &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB,
+     &  checkChange, enforceEOB, enforceEIB, nobn, obn
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
       use mod_logging, only: screenUnit, nscreen, t_log_scope, init_log_scope
 
@@ -2128,7 +2157,7 @@ C*******************************************************************************
       SUBROUTINE GWCE_new_pc(IT,TimeLoc,TimeH)
 C
       USE SIZES
-      USE GLOBAL, ONLY : GWCE_LV, COEF, COEFD, OBCCOEF, ETAS, ETA1, ETA2,
+      USE GLOBAL, ONLY : ETAS, ETA1, ETA2,
      &   ESBIN1, ESBIN2, C2DDI, C3D, CBaroclinic, CGWCE_Advec_C1, H1, H2,
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
@@ -2139,7 +2168,7 @@ C
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
-     &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2, 
+     &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2,
      &   QX2, QY2, UU2, VV2, windlim
 #ifdef CMPI
      &   , dumy1, dumy2
@@ -3321,6 +3350,39 @@ C... Will apply the updating outside the subroutine
 
 C***********************************************************************
 
+!----------------------------------------------------------------------
+!     S U B R O U T I N E   E N F O R C E  G  W  C  E  L  V  O  B
+!----------------------------------------------------------------------
+!     This subroutine changes the value of the GWCE_LV vector
+!     elements of the outer boundary nodes of subdomains so
+!     that jcg solver leads to the enforced values of ETA for
+!     the outer boundary nodes.
+!     (Moved from subdomain.F to gwce.F to allow GWCE_LV and COEF
+!     to be module-private to gwce)
+!----------------------------------------------------------------------
+      SUBROUTINE enforceGWCELVob()
+      use sizes, only : mnei
+      use global, only : etas
+      use mesh, only : neitab
+      use subdomain, only : nobn, obn
+      implicit none
+      integer :: i,j,n,neighbor
+      real(8) :: newGWCElv
+
+      do i=1,nobn
+          n = obn(i)
+          newGWCElv = 0.d0
+          do j=1,mnei
+              neighbor = neitab(n,j)
+              if (neighbor.ne.0) then
+                  newGWCElv = newGWCElv + COEF(n,j)*ETAS(neighbor)
+              endif
+          enddo
+          GWCE_LV(n) = newGWCElv
+      enddo
+
+      END SUBROUTINE enforceGWCELVob
+!----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------

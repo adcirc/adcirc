@@ -788,39 +788,6 @@ C     | using setEib array. Called within timestep.F
       END SUBROUTINE enforceEib
 
 
-
-
-      SUBROUTINE enforceGWCELVob()
-
-C     | This subroutine changes the value of the GWCE_LV vector
-C     | elements of the outer boundary nodes of subdomains so 
-C     | that jcg solver leads to the enforced values of ETA for 
-C     | the outer boundary nodes.
-
-         use sizes, only : mnei
-         use global, only : coef, etas, gwce_lv
-         use mesh, only : neitab
-         implicit none
-         integer :: i,j,n,neighbor
-         real(8) :: newGWCElv
-
-         do i=1,nobn
-             n = obn(i)
-             newGWCElv = 0.
-             do j=1,mnei
-                 neighbor = neitab(n,j)
-                 if (neighbor.ne.0) then
-                     newGWCElv = newGWCElv + COEF(n,j)*ETAS(neighbor)
-                 endif
-             enddo
-             GWCE_LV(n) = newGWCElv
-         enddo
-
-      END SUBROUTINE enforceGWCELVob
-
-
-
-
       SUBROUTINE checkChange()
 
 C     | This subroutine checks if w/d status of any o.b.n. has changed.
