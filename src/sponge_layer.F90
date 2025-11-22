@@ -81,6 +81,11 @@ module SPONGELAYER
    logical :: NO_MET_IN_SPONGE = .false.
    logical :: NO_BPG_IN_SPONGE = .false.
 
+   !> @brief Flag for first-time sigma adjustment (set to false after adjustment)
+   logical :: sponge_sigma_adjusted = .false.
+   !> @brief Flag for sponge layer initialization (set to true after first entry)
+   logical :: sponge_initialized = .false.
+
    public :: ALLOC_MAINSPG, ALLOC_MAINSPG_LUMPED, &
              SPONGE_OPSPLIT0, Adjust_Sponge_Sigma, &
              FLAGSPONGEELEM, ComputeSpongeMsElmMat, &
@@ -91,7 +96,8 @@ module SPONGELAYER
              uu1_AbsLayer, vv1_AbsLayer, uu2_AbsLayer, &
              vv2_AbsLayer, eta0_AbsLayer, &
              eta1_AbsLayer, eta2_AbsLayer, &
-             LoadAbsLayerSigma
+             LoadAbsLayerSigma, &
+             sponge_sigma_adjusted, sponge_initialized
 
 contains
 
