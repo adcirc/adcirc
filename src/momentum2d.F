@@ -76,16 +76,21 @@ C                        integrated lateral viscosity coefficient             *
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
-      module momentum
+      module momentum2d
       use mod_logging, only : allMessage, logMessage,
-     &   DEBUG, INFO, WARNING, ERROR, t_log_scope
+     &   DEBUG, INFO, WARNING, ERROR
       implicit none
+
+      private
 
       real(8),allocatable :: auv(:,:) ! WJP allowing for the case auv11 ~= auv22
       real(8),allocatable :: auv11(:), auv12(:)! For the pc subroutine
       real(8) :: dto2  ! time step divided by 2.0
       real(8) :: go2   ! gravitational acceleration divided by 2.0
-      
+      integer, allocatable :: flgNodesMultipliedByTotalArea(:)
+
+      public :: init2DMomentumEq, solve2DMomentumEq, mom_eqs_new_nc
+
       contains
 
 !----------------------------------------------------------------------
@@ -94,7 +99,7 @@ C******************************************************************************
 !----------------------------------------------------------------------
 !     Allocates arrays and initializes constants.
 !----------------------------------------------------------------------
-      subroutine initMomentumEq()
+      subroutine init2DMomentumEq()
       use sizes, only : mnp
       use global, only : dt
       USE ADC_CONSTANTS, only: g
@@ -105,8 +110,12 @@ C******************************************************************************
       dto2=dt/2.d0
       go2 = g/2.d0
 
+C     Allocate array for VEW1D (moved from global.F ALLOC_MAIN10)
+      allocate(flgNodesMultipliedByTotalArea(mnp))
+      flgNodesMultipliedByTotalArea = 0
+
 !----------------------------------------------------------------------
-      end subroutine initMomentumEq
+      end subroutine init2DMomentumEq
 !----------------------------------------------------------------------
 
 !----------------------------------------------------------------------
@@ -115,31 +124,32 @@ C******************************************************************************
 !----------------------------------------------------------------------
 !     Allocates arrays and initializes constants.
 !----------------------------------------------------------------------
-      subroutine solveMomentumEq()
+      subroutine solve2DMomentumEq(IT, TimeLoc)
       use global, only : C2DDI, CME_New_NC, CME_New_C1, CME_New_C2,
      &   CPRECOR, UU2, VV2, QX2, QY2
 #ifdef CMPI
-     & , DUMY1
+      use global, only: DUMY1
       use messenger, only: updater
 #endif
-      IF (C2DDI) THEN
-         IF (CME_New_NC) THEN
-            CALL Mom_Eqs_New_NC()
-         ENDIF
-         IF ((CME_New_C1).OR.(CME_New_C2)) THEN
-            CALL Mom_Eqs_New_Conserv()
-         ENDIF
-         IF (CPRECOR) THEN
-            CALL Mom_Eqs_Non_Conserv_pc()
-         ENDIF
+      implicit none
+
+      integer, intent(in) :: IT
+      real(8), intent(in) :: TimeLoc
+
+      IF (CME_New_NC) THEN
+        CALL Mom_Eqs_New_NC()
+      ELSEIF ((CME_New_C1).OR.(CME_New_C2)) THEN
+        CALL Mom_Eqs_New_Conserv()
+      ELSEIF(CPRECOR) THEN
+        CALL Mom_Eqs_Non_Conserv_pc()
+      ENDIF
 C...  If running in parallel, update velocities & fluxes on all processors
 #ifdef CMPI
-         CALL UPDATER(UU2,VV2,DUMY1,2)
-         CALL UPDATER(QX2,QY2,DUMY1,2)
+      CALL UPDATER(UU2,VV2,DUMY1,2)
+      CALL UPDATER(QX2,QY2,DUMY1,2)
 #endif
-      ENDIF
 !----------------------------------------------------------------------
-      end subroutine solveMomentumEq
+      end subroutine solve2DMomentumEq
 !----------------------------------------------------------------------
 
 
@@ -170,11 +180,11 @@ C*******************************************************************************
      &  IFNLCT, IFNLFA, IFWIND, NRS, NWS, SMAG_LOWER_LIM,SMAG_UPPER_LIM,
      &  NODECODE, NOFF, UU1, VV1, ETA2, ETA1, QX1, QX2, QY1, PR1, PR2,
      &  TiP1, TiP2, WSX2, WSY2, TK, CORIF, WSX1, WSY1, VIDBCPDXOH,
-     &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, TKM, NPERSEG, NNPERBC, 
-     &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, adcirc_norm2, CAliDisp,
+     &  VIDBCPDYOH, QN2, MOM_LV_X, MOM_LV_Y, TKM, NPERSEG, NNPERBC,
+     &  IPERCONN, VIDispDXOH, VIDispDYOH, IFSFM, CAliDisp,
      &  usingDynamicWaterLevelCorrection, windlim,
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0,
-     &  flgNodesMultipliedByTotalArea, ilump, H1, H2
+     &  ilump, H1, H2
 #ifdef CMPI
      &  , dumy1
 #endif
@@ -815,7 +825,7 @@ C...  AUV12=-AUV21)
 C      Specified essential normal flow and free tangential slip
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
             VelNorm=-QN2(I)/H2(NBDI)
-            IF (abs(adcirc_norm2(TKM(:,NBDI))-sqrt(2d0)*TK(NBDI))
+            IF (abs(norm2(TKM(:,NBDI))-sqrt(2d0)*TK(NBDI))
      &          .lt.epsilon(H2(NBDI))) THEN
             ! WJP 03.6.2018 In the case of the symmetric matrix..
             ! Should be equivalent to the non-symmetric formula below
@@ -2678,9 +2688,8 @@ C**********************************************************************
       END SUBROUTINE MOM_EQS_NON_CONSERV_PC
 C**********************************************************************
 
-
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
-      end module momentum
+      end module momentum2d
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
