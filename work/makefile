@@ -351,7 +351,8 @@ $(O_DIR):
 ################# Module Source, Object, & Mod Files ######################
 HASH_MSRC  =  hashtable.F90
 WD_MSRC    =  wetdry.F
-MOM_MSRC   =  momentum.F
+MOM_MSRC   =  momentum2d.F
+MOM3D_MSRC =  momentum3d.F90
 GWCE_MSRC  =  gwce.F
 SUBD_MSRC  =  subdomain.F
 SUBP_MSRC  =  subprep.F
@@ -402,6 +403,7 @@ ITTIDE_MSRC = internaltide.F90
 HASH_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(HASH_MSRC) )
 WD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WD_MSRC) )
 MOM_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(MOM_MSRC) )
+MOM3D_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(MOM3D_MSRC) )
 GWCE_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(GWCE_MSRC) )
 3D_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(3D_MSRC) )
 SUBD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBD_MSRC) )
@@ -448,7 +450,7 @@ NCE_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(NCE_MSRC) )
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F 
-ADC_SRC    =  adcirc.F weir_boundary.F90 wetdry.F read_input.F normal_flow_boundary.F90 cstart.F hstart.F gwce.F momentum.F vew1d.F timestep.F vsmy.F transport.F
+ADC_SRC    =  adcirc.F weir_boundary.F90 wetdry.F read_input.F normal_flow_boundary.F90 cstart.F hstart.F gwce.F momentum2d.F momentum3d.F90 vew1d.F timestep.F90 vsmy.F transport.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F 
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
@@ -805,8 +807,9 @@ endif
 $(O_DIR)logging.o     :  logging.F90
 $(O_DIR)io.o          :  io.F90 $(O_DIR)logging.o $(O_DIR)terminate.o
 
-$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o
-$(O_DIR)momentum.o    :  momentum.F $(O_DIR)vew1d.o $(O_DIR)subdomain.o
+$(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum2d.o
+$(O_DIR)momentum2d.o  :  momentum2d.F $(O_DIR)vew1d.o $(O_DIR)subdomain.o
+$(O_DIR)momentum3d.o  :  momentum3d.F90
 $(O_DIR)wetdry.o      :  wetdry.F $(O_DIR)subdomain.o
 $(O_DIR)messenger.o   :  messenger.F90 $(O_DIR)sizes.o $(O_DIR)global.o
 
@@ -872,11 +875,11 @@ $(O_DIR)couple2baroclinic3D.o : couple2baroclinic3D.F $(ADC_MOBJ) $(SPG_MOBJ)
 
 $(O_DIR)read_input.o  : read_input.F $(SUBD_MOBJ)
 $(O_DIR)transport.o   : transport.F
-$(O_DIR)timestep.o    : timestep.F
+$(O_DIR)timestep.o    : timestep.F90 $(ADC_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(MESH_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(O_DIR)momentum3d.o $(O_DIR)wetdry.o $(WRIT_MOBJ) $(WIND_MOBJ) $(SPG_MOBJ) $(SG_MOBJ) $(TIDE_MOBJ) $(NA_MOBJ) $(BC3D_MOBJ) $(O_DIR)global_3dvs.o $(BND_MOBJ) $(SUBD_MOBJ) $(O_DIR)weir_boundary.o $(COUP_MOBJ) $(O_DIR)normal_flow_boundary.o
 ifeq ($(NETCDF),enable)
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ) $(O_DIR)timestep.o
 else
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ) $(O_DIR)timestep.o
 endif
 $(O_DIR)driver.o      : driver.F $(O_DIR)adcirc.o
 

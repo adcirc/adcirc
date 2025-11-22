@@ -52,7 +52,7 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/timestep.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/timestep.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F90
