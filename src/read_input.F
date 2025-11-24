@@ -129,11 +129,11 @@ C-----------------------------------------------------------------------
       USE HARM
       USE WEIR, ONLY: BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,
      &   BARSLIM64_ELEM, BARSLIM64_EDGE
-
       USE WEIR, ONLY: FOUND_TVW_NML
       USE TIME_VARYING_WEIR_BOUNDARY
       USE OWIWIND,ONLY: nPowellSearchDomains
-      USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist, getVortexModelStringNws8 => getVortexModelString
+      USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist,
+     &    getVortexModelStringNws8 => getVortexModelString
       USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
      &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
      &   WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
@@ -186,6 +186,7 @@ Casey 180318: Added NWS=13
      &                          NWS13GroupForPowell,
      &                          NWS13WindMultiplier
 #endif
+<<<<<<< HEAD
 !JLW: add subgrid
       use iso_fortran_env, only: output_unit
       USE subgrid, only: subgridFilename, level0, level1, phi_time_derivative
@@ -195,6 +196,19 @@ Casey 180318: Added NWS=13
      &   operator(<=), operator(/=), operator(<), operator(>=),
      &   t_log_scope, init_log_scope
       use mod_io, only: openFileForRead
+=======
+!JLW: add subgrid 
+      use subgrid, only: subgridFilename, level0, level1, phi_time_derivative
+      use mod_tidepotential, only: tidePotential, t_tidePotential
+      ! cms 11/24/25: Added for rain on grid
+      use rain, only : rainfallControl, useRain, rainType, rainTimeInc,
+     &    activeRainType, allocRain, rainTypeCheck
+      ! cms 11/24/25: Added for interior hydrology (point sources)
+      use hydrology, only : interiorHydrologyControl,
+     &    useInteriorHydrology, interiorHydrologyType,
+     &    InteriorHydrologyTimeInc, useInteriorHydrologyRamp,
+     &    allocInteriorHydrology, interiorHydrologyCheck
+>>>>>>> Subject: Add rain and hydrology source term capability, cleanup a bit
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -610,7 +624,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ! outputFort48
 #ifndef ADCNETCDF
       outputFort48 = .FALSE.
-      call allMessage(WARNING, "outputFort48 parameter is not supported without NetCDF output enabled.")
+      call allMessage(WARNING, "outputFort48 parameter is not supported",
+     &     " without NetCDF output enabled.")
 #endif
       WRITE(scratchMessage,*) "outputFort48=",outputFort48
       CALL logMessage(ECHO,TRIM(scratchMessage))
@@ -757,8 +772,14 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
          case ('momentumpapforcing')
             dynamicWaterLevelCorrectionMassAdjust = .false.
          case default
+<<<<<<< HEAD
             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &                     message='Invalid dynamicWaterLevelCorrectionMethod in fort.15')
+=======
+            call allMessage(ERROR, "Invalid ",
+     &          "dynamicWaterLevelCorrectionMethod")
+            call adcirc_terminate()
+>>>>>>> Subject: Add rain and hydrology source term capability, cleanup a bit
          end select
       endif
       ! exit if there was an error reading the dynamicWaterLevelCorrectionControl namelist
@@ -941,6 +962,45 @@ C...  tidal potential control namelist
       write(scratchMessage,*) "UniformResMoonSunTimeData=",UniformResMoonSunTimeData
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
+
+C...  Precipitation Control Namelist (cms 11/24/25)
+C...  Defaults and namelist defined in rain module
+      namelistSpecifier = 'rainfallControl'
+      read(unit=15,nml=rainfallControl,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
+      write(scratchMessage,'(a,l)') "useRain=", useRain
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,i0)') "rainType=", rainType
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7,a)') "rainTimeInc=",rainTimeInc,
+     &   " seconds."
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,i0)') "activeRainType=", activeRainType
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
+C...  Interior Hydrology Control Namelist (cms: 11/24/25)
+C...  Defaults and namelist defined in hydrology module
+      namelistSpecifier = 'interiorHydrologyControl'
+      read(unit=15,nml=interiorHydrologyControl,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
+      write(scratchMessage,'(a,l)') "useInteriorHydrology=",
+     &      useInteriorHydrology
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,i0)') "interiorHydrologyType=",
+     &      interiorHydrologyType
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,f15.7,a)') "interiorHydrologyTimeInc=",
+     &    interiorHydrologyTimeInc, " seconds."
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "useInteriorHydrologyRamp=",
+     &    useInteriorHydrologyRamp
+      call logMessage(ECHO,trim(scratchMessage))
+      if (useInteriorHydrologyRamp) then
+         write(scratchMessage,'(a)') "  Ramp Time: 2hrs (0.0833 days)"
+         call logMessage(ECHO,trim(scratchMessage))
+      end if
+      rewind(15
 
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
@@ -4636,6 +4696,15 @@ C - allocate global arrays for time varying bathymetry
 C - allocate arrays dealing with wind forcing
       call alloc_main12()
 
+C...  Allocation for rain and interior hydrology source terms
+C     Interior hydrology sources must be allocated between the
+C     allocationa and deallocation of kdresults, which are used in
+C     allocInteriorHydrology() - cms 11/24/25
+      if (useRain) call allocRain()
+      if (useInteriorHydrology) call allocInteriorHydrology()
+
+
+
       if (mnproc == 1) then
          NP_G    = NP               !
          NE_G    = NE               !
@@ -4652,44 +4721,88 @@ C - allocate arrays dealing with wind forcing
 
 C     write table of ADCIRC parameter sizes
 C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
-      WRITE(16,4010)MNPROC,MNWPROC,MNWPROH,MNE,MNP,MNei,MNOPE,MNETA,
+      ! cms: 11/24/25 Added rain and hydrology source terms and reordered
+      ! format statements with gaps to allow more NWS and IM checks.
+      ! Allowable NWS: 0,1,2,3,4,5,6,7,8,10,11,12,14,15,16,19,20,29,30
+      ! Swapped from individual IF to CASE for multi-option variables
+      write(16,3999)MNPROC,MNWPROC,MNWPROH,MNE,MNP,MNei,MNOPE,MNETA,
      & MNBOU,MNVEL,MNTIF,MNBFR,MNSTAE,MNSTAV,MNSTAC,MNSTAM,NWLAT,NWLON,
      & MNHARF,MNFFR
-      IF(NWS.EQ.0) WRITE(16,4011)
-      IF(NWS.EQ.1) WRITE(16,4012)
-      IF(ABS(NWS).EQ.2) WRITE(16,4013)
-      IF(NWS.EQ.3) WRITE(16,4014)
-      IF(ABS(NWS).EQ.4) WRITE(16,4015)
-      IF(ABS(NWS).EQ.5) WRITE(16,4115)
-      IF(ABS(NWS).EQ.7) WRITE(16,4013) !46.00 Added NWS=7 (direct stress)
-      IF(NWS.EQ.9) WRITE(16,4018)      !cf & cm added nws = 9 (jgf46.16 merged)
-      IF(NWS.EQ.9) WRITE(16,4019)      !cf & cm added nws = 9 (jgf46.16 merged)
-      IF(NWS.EQ.10) WRITE(16,4016)
-      IF(NWS.EQ.11) WRITE(16,4017)
-      IF(ABS(NWS).EQ.12) WRITE(16,4033) ! sb46.28sb01 Added NWS=12 (OWI format), arc fixed to use 4033
-      IF(ABS(NWS).EQ.13) WRITE(16,4034) ! arc added for nws13 190110
-      IF(ABS(NWS).EQ.16) WRITE(16,4026) ! tcm v51.06.02  !gfdl met data
-      IF(NWS.EQ.19) WRITE(16,4018)      !rjw added nws = 19
-      IF(NWS.EQ.19) WRITE(16,4019)      !rjw added nws = 19
-      IF(NWS.EQ.20) WRITE(16,4020)      !jie added nws = 20
-      IF((NFREQ.EQ.0).OR.(FMV.EQ.0.)) WRITE(16,4021)
-      IF((NFREQ.GE.1).AND.(FMV.NE.0.)) WRITE(16,4022)
-      IF(ILUMP.EQ.0) WRITE(16,4031)
-      IF(ILUMP.EQ.1) WRITE(16,4032)
-      IF(IM.EQ.0) WRITE(16,4101)
-      IF(IM.EQ.10) WRITE(16,4109)
-      IF(IM.EQ.1) WRITE(16,4102)
-      IF(IM.EQ.2) WRITE(16,4103)
-      WRITE(16,4105)
-      IF(USE_ELEV_STAT_FILE) WRITE(16,3180)  !tcm v51.20.05
-      IF(USE_VEL_STAT_FILE) WRITE(16,3181)   !tcm v51.20.05
-      IF(USE_MET_STAT_FILE) WRITE(16,3182)   !tcm v51.20.05
-      IF(USE_CONC_STAT_FILE) WRITE(16,3183)  !tcm v51.20.05
-      IF(StatPartWetFix.EQV..TRUE.) WRITE(16,3184) !tcm v53.01.02
-      WRITE(16,4108)
+      select case (abs(nws))
+        case(0)
+           write(16,4000)
+        case(1)
+           write(16,4001)
+        case(2)  ! direct stress: all nodes
+           write(16,4002)
+        case(3)  ! Navy Fleet
+           write(16,4003)
+        case(4)  ! vel and press: PBL
+           write(16,4004)
+        case(5)  ! vel and press: all nodes
+           write(16,4005)
+        case(6)  ! vel and press: rect region
+           write(16,4006)
+        case(7)  ! direct stress (rect region)
+           write(16,4007)
+        case(8)  ! Holland model
+           write(16,4008)
+        case(10) ! NWS AVN model data
+           write(16,4010)
+        case(11) ! NWS ETA model data
+           write(16,4011)
+        case(12) ! sb46.28sb01 Added NWS=12 (OWI)
+           write(16,4012)
+        case(13) ! arc added for nws13 190110
+           write(16,4013)
+        case(14) ! grib2/CFS
+           write(16,4014)
+        case(15) ! HWIND
+           write(16,4015)
+        case(16) ! GFDL
+           write(16,4016)
+        case(17) ! NUOPC coupling
+           write(16,4017)
+        case(19) ! Asymmetric model
+           write(16,4019)
+        case(20) ! Generalized asymmetric model
+           write(16,4020)
+        case(29) ! embed asymmetric in OWI basin
+           write(16,4029)
+        case(30) ! embed general asymmetric in OWI basin
+           write(16,4030)
+      end select
+      ! Additional source terms (gap - leave 10 in case)
+      if(useRain) write(16,4040)
+      if(useInteriorHydrology) write(16,4041)
+      ! Harmonic Analysis (gap)
+      if((NFREQ.EQ.0).or.(FMV.EQ.0.)) write(16,4044)
+      if((NFREQ.GE.1).and.(FMV.NE.0.)) write(16,4045)
+      ! Form of GWCE equations
+      if (ilump .eq. 0) write(16,4046)
+      else if (ilump .eq. 1) write(16,4047)
+      end if
+      ! Simulation type (gap - jump to 4100)
+      select case (IM)
+      case (0)
+         write(16,4100)
+      case (1)
+         write(16,4101)
+      case (2)
+         write(16,4102)
+      case(10)
+         write(16,4110)
+      end select
+      WRITE(16,4050)  ! solver (jump back down to 4050)
+      IF(USE_ELEV_STAT_FILE) WRITE(16,4051)  !tcm v51.20.05
+      IF(USE_VEL_STAT_FILE) WRITE(16,4052)   !tcm v51.20.05
+      IF(USE_MET_STAT_FILE) WRITE(16,4053)   !tcm v51.20.05
+      IF(USE_CONC_STAT_FILE) WRITE(16,4054)  !tcm v51.20.05
+      IF(StatPartWetFix) WRITE(16,4055) !tcm v53.01.02
+      WRITE(16,4099)  ! footer
 C
 C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
- 4010 FORMAT(' *****************************************************',/,
+ 3999 FORMAT(' *****************************************************',/,
      &       ' *   Based on information extracted from the ADCIRC  *',/,
      &       ' *   UNIT 14 and 15 (grid and horiz run info) files  *',/,
      &       ' *   the following paramter values will be set:      *',/,
@@ -4706,36 +4819,43 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
      &       ' *       MNWLAT = ',I5,4X,'  MNWLON = ',I5,4X,'      *',/,
      &       ' *       MNHARF = ',I5,4X,'  MNFFR = ',I6,3X,'       *',/,
      &       ' *                                                   *')
- 4011 FORMAT(' *   Also, NO wind forcing will be used,             *')
- 4012 FORMAT(' *   Also, Standard wind stress and pres will be used,*')
- 4013 FORMAT(' *   Also, Semi-standard wind forcing will be used,  *')
- 4014 FORMAT(' *   Also, Fleet numeric wind forcing will be used,  *')
- 4015 FORMAT(' *   Also, PBL/JAG wind forcing will be used,        *')
- 4026 FORMAT(' *   Also, GFDL Met Data wind and pres will be used, *')
- 4115 FORMAT(' *   Also, Standard wind vel and pres will be used,  *')
- 1236 FORMAT(' *   Also, surface stress forcing will be used,      *')
- 4016 FORMAT(' *   Also, AVN wind & pressure forcing will be used, *')
- 4017 FORMAT(' *   Also, ETA wind & pressure forcing will be used, *')
- 4033 FORMAT(' *   Also, OWI format wind vel and pres will be used,*')
- 4034 FORMAT(' *   Also, OWI Netcdf (NWS13) format wind/pres used, *')
- 4018 FORMAT(' *   Asymmetric hurricane wind and pressure forcing  *')
- 4019 FORMAT(' *              will be used,                        *')
- 4020 FORMAT(' *   Generalized Asymmetric Vortex Model forcing     *')
- 4021 FORMAT(' *   means and variance calculation will NOT be made,*')
- 4022 FORMAT(' *   means and variance calculation will be made,    *')
- 4031 FORMAT(' *   the GWCE matrix will be left in consistent form *')
- 4032 FORMAT(' *   the GWCE matrix will be LUMPED                  *')
- 4101 FORMAT(' *   the model will be set up for a 2DDI run,        *')
- 4109 FORMAT(' *   the model will be set up for a 2DDI run + transp*')
- 4102 FORMAT(' *   the model will be set up for a 3D-VS run,       *')
- 4103 FORMAT(' *   the model will be set up for a 3D-DSS run,      *')
- 4105 FORMAT(' *   and an iterative solver will be used            *')
- 3180 FORMAT(' *   An external elevation station file is used      *')  !tcm v51.20.05
- 3181 FORMAT(' *   An external velocity station file is used       *')  !tcm v51.20.05
- 3182 FORMAT(' *   An external met. station file is used           *')  !tcm v51.20.05
- 3183 FORMAT(' *   An external concentration station file is used  *')  !tcm v51.20.05
- 3184 FORMAT(' *   Special Wet/Dry consideration used at stations  *')  !tcm v53.01.02
- 4108 FORMAT(' *****************************************************',/)
+ 4000 FORMAT(' *   NO wind forcing will be used,                   *')
+ 4001 FORMAT(' *   Standard wind stress and pres will be used,     *')
+ 4002 FORMAT(' *   Semi-standard wind forcing will be used,        *')
+ 4003 FORMAT(' *   Fleet numeric wind forcing will be used,        *')
+ 4004 FORMAT(' *   Wind stress and pressure (PBL/JAG format),      *')
+ 4005 FORMAT(' *   Wind stress and presaure (all nodes),           *')
+ 4007 FORMAT(' *   Surface stress and pressure (rect region),      *')
+ 4008 FORMAT(' *   Holland model winds will be used,               *')
+ 4010 FORMAT(' *   Wind stress and press (NWS AVN format),         *')
+ 4011 FORMAT(' *   Wind stress and press (NWS ETA format),         *')
+ 4012 FORMAT(' *   OWI format wind vel and pres will be used,      *')
+ 4013 FORMAT(' *   OWI Netcdf (NWS13) format wind/pres used,       *')
+ 4014 FORMAT(' *   grib2 (e.g. CFS) winds will be used,            *')
+ 4015 FORMAT(' *   HWIND Met Data wind and pres will be used,      *')
+ 4016 FORMAT(' *   GFDL Met Data wind and pres will be used,       *')
+ 4017 FORMAT(' *   NUOPC coupling used for wind/pressure,          *')
+ 4019 FORMAT(' *   Asymmetric Vortex Model Forcing,                *')
+ 4020 FORMAT(' *   Generalized Asymmetric Vortex Model forcing,    *')
+ 4029 FORMAT(' *   Asymetric Vortex embedded on OWI basin,         *')
+ 4030 FORMAT(' *   Generalized Asymmetric Vortex embedded on OWI   *')
+ 4040 FORMAT(' *   Precipitation forcing will be used,             *')
+ 4041 FORMAT(' *   Interior hydrology forcing will be used,        *')
+ 4044 FORMAT(' *   Harmonic analysis will NOT be calculated,       *')
+ 4045 FORMAT(' *   Harmonic analysis will be calculated,           *')
+ 4046 FORMAT(' *   the GWCE matrix will be in consistent form,     *')
+ 4047 FORMAT(' *   the GWCE matrix will be LUMPED,                 *')
+ 4100 FORMAT(' *   model will be set up for a 2DDI run,            *')
+ 4101 FORMAT(' *   model will be set up for a 3D-VS run,           *')
+ 4102 FORMAT(' *   model will be set up for a 3D-DSS run,          *')
+ 4110 FORMAT(' *   model set up for a 2DDI run with transport,     *')
+ 4050 FORMAT(' *   and an iterative solver will be used.           *')
+ 4051 FORMAT(' *   An external elevation station file is used      *')  !tcm v51.20.05
+ 4052 FORMAT(' *   An external velocity station file is used       *')  !tcm v51.20.05
+ 4053 FORMAT(' *   An external met. station file is used           *')  !tcm v51.20.05
+ 4054 FORMAT(' *   An external concentration station file is used  *')  !tcm v51.20.05
+ 4055 FORMAT(' *   Special Wet/Dry consideration used at stations  *')  !tcm v53.01.02
+ 4099 FORMAT(' *****************************************************',/)
 C
 
       IF ((useNetCDF.eqv..true.).and.(NETCDF_AVAIL.eqv..false.)) THEN
@@ -4809,9 +4929,17 @@ C
      &                                   " Using the base_date netCDF metadata value instead: ", TipStartDate
             call allMessage(WARNING,scratchMessage)
          else
+<<<<<<< HEAD
             scratchMessage = "The TipStartDate parameter must be set either in the netCDF metadata "//
      &                       "or the tide potential namelist."
             call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
+=======
+            scratchMessage = "The TipStartDate parameter must be set "//
+     &       "either in the netCDF metadata "//
+     &       "or the tide potential namelist."
+            call allMessage(ERROR,scratchMessage)
+            call adcirc_terminate()
+>>>>>>> Subject: Add rain and hydrology source term capability, cleanup a bit
          endif
       endif
 
