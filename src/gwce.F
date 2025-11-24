@@ -294,12 +294,13 @@ C... SB
       use mod_logging, only: screenUnit, nscreen, t_log_scope, init_log_scope
 
 !JLW: add subgrid additions
-      USE subgrid, ONLY: level0, level1
-     &   , subgridVertList
-     &   , gridDepthVertETA1, gridDepthVertETA2
-     &   , wetFracVertETA1, wetFracVertETA2
-     &   , cadvVertETA2
-     &   , dphidt
+      USE subgrid, ONLY: level0, level1, subgridVertList,
+     &    gridDepthVertETA1, gridDepthVertETA2, wetFracVertETA1,
+     &    wetFracVertETA1, wetFracVertETA2, cadvVertETA2, dphidt
+
+      !cms: 11/20/25 add source terms (rain on grid and hydrology)
+      use rain, only : useRain, rainCurr, rainODT, activeRain
+      use hydrology, only : useInteriorHydrology, hydroCurr, hydroODT
 
       IMPLICIT NONE
 
@@ -394,6 +395,9 @@ C...... DW
       REAL(8) :: PHIAVG1, PHIAVG2
       REAL(8) :: PHI1N1, PHI1N2, PHI1N3
       REAL(8) :: PHI2N1, PHI2N2, PHI2N3
+      ! cms: 11/20/25  adding source terms
+      REAL(8) ISN1,ISN2,ISN3,IN1,IN2,IN3  ! rain on grid
+      REAL(8) PSSN1,PSSN2,PSSN3,PSN1,PSN2,PSN3  ! interiorHydrology
 
       LOG_SCOPE_TRACED("gwce_new", GWCE_TRACING)
 
@@ -788,6 +792,25 @@ C...  Initialize variables to zero if these forcings are not used
         BCXAvg=0.d0
         BCYAvg=0.d0
       ENDIF
+
+      ! cms 11/20/25: Adding initialization for source terms (rain
+      ! and interior hydrology)
+      if (.not. useRain) then
+         IN1=0.d0
+         IN2=0.d0
+         IN3=0.d0
+         ISN1=0.d0
+         ISN2=0.d0
+         ISN3=0.d0
+      end if
+      if (.not. useInteriorHydrology) then
+         PSN1=0.d0
+         PSN2=0.d0
+         PSN3=0.d0
+         PSSN1=0.d0
+         PSSN2=0.d0
+         PSSN3=0.d0
+      end if
 
 C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsymmetric or symmetric)
 
@@ -1202,6 +1225,31 @@ C
             BSYN3=BSY1(NM3)
          ENDIF
 
+         ! cms: 11/20/25 Adding precipitation source terms
+         ! Active status computed in rain module, but must be
+         ! applied here to reduce memory usage
+         IF(useRain) THEN
+            IN1=rainCurr(NM1)*activeRain(NM1)
+            ISN1=rainODT(NM1)*activeRain(NM1)
+            IN2=rainCurr(NM2)*activeRain(NM2)
+            ISN2=rainODT(NM2)*activeRain(NM2)
+            IN3=rainCurr(NM3)*activeRain(NM3)
+            ISN3=rainODT(NM3)*activeRain(NM3)
+         END IF
+
+         ! cms 11/20/25 Adding interiorHydrology source term,
+         !    aka "point source". Inactive sources are handled
+         !    completely within hydrology module
+         IF(useInteriorHydrology) THEN
+            PSN1=hydroCurr(NM1)
+            PSSN1=hydroODT(NM1)
+            PSN2=hydroCurr(NM2)
+            PSSN2=hydroODT(NM2)
+            PSN3=hydroCurr(NM3)
+            PSSN3=hydroODT(NM3)
+         END IF
+
+
          AreaIE2=Areas(IE)               !2A
          AreaIE=AreaIE2/2.d0             ! A
          AreaIE4=2.d0*AreaIE2            !4A
@@ -1554,7 +1602,12 @@ C..... DW: begin
      &        +(onDiag*ABC00_EAN1*SPM1 + 
      &                OffDiag*(ABC00_EAN2*SPM2 + ABC00_EAN3*SPM3))*MsFacRS_ABC00
 C..... END DW
-C
+
+C...     kmd:  Precipitation (with spherical corrections)
+     &        +AREAIE3*SPM1*(ISN1 + Tau0Avg*IN1)
+
+C...     cms v56 2025: Interior Hydrology (with spherical corrections)
+     &        +AREAIE3*SPM1*(PSSN1 + Tau0Avg*PSN1)
 
 C...     Assemble forcing for node NM2 (local index j=2)
          Temp_LV_A2=
@@ -1580,7 +1633,12 @@ C..... DW: begin
      &        +(onDiag*ABC00_EAN2*SPM2 + 
      &                 OffDiag*(ABC00_EAN1*SPM1 + ABC00_EAN3*SPM3))*MsFacRS_ABC00
 C..... END DW
-C
+
+C...     kmd:  Precipitation (with spherical corrections)
+     &        +AREAIE3*SPM2*(ISN2 + Tau0Avg*IN2)
+
+C...     cms v56 2025: Interior Hydrology (with spherical corrections)
+     &        +AREAIE3*SPM2*(PSSN2 + Tau0Avg*PSN2)
 
 
 C...     Assemble forcing for node NM3 (local index j=3)
@@ -1608,6 +1666,16 @@ C..... DW: begin, absorbing layer
      &        +(OnDiag*ABC00_EAN3*SPM3 + 
      &               OffDiag*(ABC00_EAN1*SPM1 + ABC00_EAN2*SPM2))*MsFacRS_ABC00
 C..... END DW
+<<<<<<< HEAD
+=======
+
+C...     Precipitation (with spherical corrections): kmd
+     &        +AREAIE3*SPM3*(ISN3 + Tau0Avg*IN3)
+
+C...     Interior Hydrology (with spherical corrections): cms v56 2025
+     &        +AREAIE3*SPM3*(PSSN3 + Tau0Avg*PSN3)
+
+>>>>>>> Subject: Add rain and interior hydrology to gwce computations.
 
 C...     Put these partial products directly into nodal storage
          GWCE_LV(NM1)=GWCE_LV(NM1)+Temp_LV_A1*NCEle
