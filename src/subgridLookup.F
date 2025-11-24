@@ -40,9 +40,9 @@
       implicit none
       CHARACTER(200) :: subgridFilename = 'null'
       ! Flag for subgrid corrections to wetting and drying
-      LOGICAL :: level0
+      LOGICAL :: subgrid_level0
       ! Flag for subgrid corrections to bottom friction and advection
-      LOGICAL :: level1
+      LOGICAL :: subgrid_level1
 !JLW: adding logical for dphidt to be turned off - set default to off
       LOGICAL :: phi_time_derivative = .false.
       INTEGER :: dphidt ! used to 0 out the term
@@ -125,7 +125,7 @@
       gridDepthVertETA2(:) = 0.d0
       wetDepthVertETA2(:) = 0.d0
 
-      IF(level1)THEN
+      IF(subgrid_level1)THEN
          IF(ALLOCATED(cmfVertETA2))DEALLOCATE(cmfVertETA2)
          ALLOCATE(cmfVertETA2(NP))
          IF(ALLOCATED(cadvVertETA2))DEALLOCATE(cadvVertETA2)
@@ -206,7 +206,7 @@
 
 !JLW: go through and read in each of the vertex averaged variables
 !JLW: allocate arrays  
-      IF(level1)THEN
+      IF(subgrid_level1)THEN
          IF(ALLOCATED(cmfVertTab)) DEALLOCATE(cmfVertTab)
          ALLOCATE(cmfVertTab(NP,numPhi))
          IF(ALLOCATED(cadvVertTab)) DEALLOCATE(cadvVertTab)
@@ -228,7 +228,7 @@
       IF(ALLOCATED(globalVertLookup))DEALLOCATE(globalVertLookup)
       ALLOCATE(globalVertLookup(numPhi,numVerts))
 
-      IF(level1)THEN
+      IF(subgrid_level1)THEN
          CALL check_err(NF90_INQ_VARID(NC_ID,"cmfVertex",NC_VAR))
          CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
          DO I = 1,NP
@@ -254,7 +254,7 @@
 !!!!!!!!!!!!!!!!!! ADVECTION CORRECTION VETEX !!!!!!!!!!!!!!!!!!
       IF(ALLOCATED(globalVertLookup))DEALLOCATE(globalVertLookup)
       ALLOCATE(globalVertLookup(numPhi,numVerts))
-      IF(level1)THEN
+      IF(subgrid_level1)THEN
          CALL check_err(NF90_INQ_VARID(NC_ID,"cadvVertex",NC_VAR))
          CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,globalVertLookup))
          DO I = 1,NP
@@ -382,7 +382,7 @@
                wetFracVertETA2(i) = setPhi(1)
                gridDepthVertETA2(i) = gridDepthVertTab(i,1)
                wetDepthVertETA2(i) = wetDepthVertTab(i,1)
-               IF(level1)THEN
+               IF(subgrid_level1)THEN
                   cmfVertETA2(i) = cmfVertTab(i,1)
                   cadvVertETA2(i) = cadvVertTab(i,1)
                ELSE
@@ -396,7 +396,7 @@
      &            + (eta2(i) - wetFracVertTab(i,numPhi))
                wetDepthVertETA2(i) = wetDepthVertTab(i,numPhi)
      &            + (eta2(i) - wetFracVertTab(i,numPhi))
-               IF(level1)THEN
+               IF(subgrid_level1)THEN
                   cmfVertETA2(i) = cmfVertTab(i,numPhi)
                   cadvVertETA2(i) = cadvVertTab(i,numPhi)
                ELSE
@@ -428,7 +428,7 @@
      &            *(wetDepthVertTab(i,numPhi-numGreater+1)
      &            - wetDepthVertTab(i,numPhi-numGreater))
      &            + wetDepthVertTab(i,numPhi-numGreater))
-               IF(level1)THEN
+               IF(subgrid_level1)THEN
                   cmfVertETA2(i) = ((eta2(i)
      &               - wetFracVertTab(i,numPhi-numGreater))
      &               /(wetFracVertTab(i,numPhi-numGreater+1)
@@ -460,7 +460,7 @@
      &            gridDepthVertTab(i,numPhi-numGreater+1)
                wetDepthVertETA2(i) = 
      &            wetDepthVertTab(i,numPhi-numGreater+1)
-               IF(level1)THEN
+               IF(subgrid_level1)THEN
                   cmfVertETA2(i) = cmfVertTab(i,numPhi-numGreater+1)
                   cadvVertETA2(i) = cadvVertTab(i,numPhi-numGreater+1)
                ELSE
