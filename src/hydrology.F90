@@ -195,11 +195,15 @@
       public :: hotstartInteriorHydrology
 
 
-!>---------------------end of data declarations--------------------------
-
+!----------------------end of data declarations--------------------------
 
       CONTAINS
 
+!------------------------------------------------------------------------
+!------------------------------------------------------------------------
+!                            P U B L I C
+!------------------------------------------------------------------------
+!------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
 !> Called from read_input.F (when useInteriorHydrology is .true.) to 
@@ -404,11 +408,12 @@
 !>         N designates endpoint for this feature (point source) 
 !>     and T designates endpoint for the next downstream feature
 !>  429 -  NOT ACTIVATED YET - code removed
-!-----------------------------------------------------------------------     
+!-----------------------------------------------------------------------
       subroutine readInteriorHydrologyLocs(ps_lun) 
 !-----------------------------------------------------------------------
    
-      use global, only : deg2rad, rad2deg, ifsprots
+      use global, only : ifsprots
+      use adc_constants, only : deg2rad, rad2deg
       use mesh, only : ics, slam0, sfea0, drvspcoorsrots, cylindermap
 
       implicit none
@@ -852,9 +857,11 @@
 !> 
 !> Returns the nearest node instead of the found element. 
 !>
-!> @todo: currently uses the already allocated global search tree
-!> need to modify to create own search tree (or check to see if global
-!> variables are still allocated)
+!> @todo: currently uses the already allocated global search tree that
+!> is created in read_input. The search tree results and criteria (bcxy
+!> and rmax) are deallocated at the end of read_input. Since this
+!> subroutine is only used during initial I/O this should be okay, but
+!> will need changed if that ever changes.
 !> Also, for now calls hydrologyTerminate if a location is not found
 !> do we want to add capability to just set inactive for all time and
 !> set the found node to nearest node or is termination cleaner? 
