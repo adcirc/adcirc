@@ -176,11 +176,12 @@
         ! Check value of useRain before messages are logged
         ! otherwise errors may arise when not being used
         ! but namelist was found in read_input.
-        if (useRain == .false.) rainType=0
+        if (.not. useRain) rainType=0
         ! Echo input messages related to implementation
         select case (rainType)
         case(0)
            write(16,3298) rainType
+           activeRainType=0  ! to remove message below
         case(1) ! global rainfall (coldstart time)
            reftime='coldstart'
            write(16,3299) rainType, trim(reftime)
@@ -201,6 +202,9 @@
 
         ! Check value of activeRainType and log messages
         select case (activeRainType)
+        case (0)
+           !no message just reset to default value
+           activeRainType = 1
         case (1)
            write(16,3303) activeRainType
         case (2)
