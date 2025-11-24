@@ -2522,7 +2522,7 @@ contains
 !> @param[in] IT Current timestep number
 !-----------------------------------------------------------------------
    subroutine applyWettingAndDrying(IT)
-      use subgrid, only: level0, getVertLookup
+      use subgrid, only: subgrid_level0, getVertLookup
       use wetdry, only: computeWettingAndDrying
 #ifndef ADCNETCDF
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
@@ -2531,7 +2531,7 @@ contains
 
       integer, intent(in) :: IT
 
-      if (level0) then
+      if (subgrid_level0) then
 #ifdef ADCNETCDF
          call getVertLookup()
          call computeWettingAndDrying(IT)
