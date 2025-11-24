@@ -263,8 +263,21 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
       character(len=200) :: Wfile1, Pinv1, Winv1
       INTEGER :: PfileNCID, WfileNCID, CfileNCID, Wfile1NCID
-      character(len=200) :: Pvar, Uvar, Vvar, Cvar, Tvar, Lonvar, Latvar
-      character(len=200) :: Tdim, Londim, Latdim, Tformat
+      
+      ! namelist variables for nws14nc
+      character(len=200) :: tdim='time'
+      character(len=200) :: tvar='time'
+      character(len=200) :: tformat='none'
+      character(len=200) :: lonvar='longitude'
+      character(len=200) :: latvar='latitude'
+      character(len=200) :: londim='longitude'
+      character(len=200) :: latdim='latitude'
+      character(len=200) :: pvar='msl'
+      character(len=200) :: uvar='u10'
+      character(len=200) :: vvar='v10'
+      character(len=200) :: cvar='siconc'
+      real(8) :: nws14nc_windmultiplier=1.0      ! all nws14nc wind u,v multiplied by this
+      real(8) :: nws14nc_presmultiplier=1.0      ! all nws14nc msl pressure multiplied by this
 
       CHARACTER(LEN=80)  :: InsetLon, InsetLat, InsetLonDim, InsetLatDim
       CHARACTER(LEN=256) :: InsetPvar, InsetUVar, InsetVVar
@@ -8311,11 +8324,11 @@ C----------------------------------------------------------------------
          Pinv = 'dmy'
          Winv = 'dmy'
          Cinv = 'dmy'
-         ! create dummy names for the grib2 variables
-         Pvar = 'dmy'
-         Uvar = 'dmy'
-         Vvar = 'dmy'
-         Cvar = 'dmy'
+         ! set default names for the netCDF variables
+         Pvar = 'msl'
+         Uvar = 'u10'
+         Vvar = 'v10'
+         Cvar = 'siconc'
 
 #ifdef ADCNETCDF
          IF ( read_NWS14_NetCdf_using_core_0 ) THEN
@@ -8432,6 +8445,29 @@ C----------------------------------------------------------------------
       INTEGER,INTENT(IN) :: NWS
       logical :: Fexists
       integer :: ierr, PvarInd
+
+      INTEGER :: ios = 0                 ! i/o status of read operation
+
+      CHARACTER(len=20) :: Punits = 'Pa'
+
+      CHARACTER(len=1000) namelistSpecifier ! used in log messages
+ 
+      !NWS14NC_WindMultiplier & NWS14NC_PresMultiplier are defined in the module  above
+      NAMELIST /nws14control/ Tdim,    !  Time dimension name
+     &                        Tvar,    !  Time variable name
+     &                        Tformat, !  Format of time datestr
+     &                        Londim,  !  Lon dimension name
+     &                        Lonvar,  !  Lon var name
+     &                        Latdim,  !  Lat dimension name
+     &                        Latvar,  !  Lat var name
+     &                        Pvar,    !  Pressure var name
+     &                        Punits,  !  Pressure units
+     &                        Uvar,    !  U10 var name
+     &                        Vvar,    !  V10 Var name
+     &                        Cvar,    !  (maybe) Ice var name
+     &                        NWS14NC_WindMultiplier,      ! windMultiplier
+     &                        NWS14NC_PresMultiplier     ! presMultiplier
+
       ! return if we are using grib2
       IF (grb2flag) THEN
          RETURN
@@ -8452,25 +8488,42 @@ C----------------------------------------------------------------------
          call allMessage(ERROR,'Unable to open fort.22.')
          call windTerminate()
       ENDIF
-      read(22,*) Tdim    ! Time dimension name
-      read(22,*) Tvar    ! Time variable name
-      read(22,*) Tformat ! Format of time datestr
-      read(22,*) Londim  ! Lon dimension name
-      read(22,*) Lonvar  ! Lon var name
-      read(22,*) Latdim  ! Lat dimension name
-      read(22,*) Latvar  ! Lat var name
-      read(22,*) Pvar    ! Pressure var name
-      read(22,*) Uvar    ! U10 var name
-      read(22,*) Vvar    ! V10 Var name
-      if (NCICE.eq.14) then
-         read(22,*) Cvar ! Ice var name
-      endif
+
+      namelistSpecifier = 'nws14control'
+      rewind(22)
+      read(unit=22,nml=nws14control,iostat=ierr)
+      IF (ierr.NE.0) THEN
+         call allMessage(ERROR,'Failed to read fort.22.')
+         call windTerminate()
+      ENDIF
       close(22)
-      PvarInd = index(Pvar,'HPa')
-      if (PvarInd > 0) then
+      !call logNamelistReadStatus(namelistSpecifier, ios)
+      !write(scratchMessage,*) "Tdim=",trim(adjustl(Tdim)),
+      write(*,*) "Tdim=",trim(adjustl(Tdim)),
+     &                        " Tvar=",trim(adjustl(Tvar)),
+     &                        " Tformat=",trim(adjustl(Tformat)),
+     &                        " Londim=",trim(adjustl(Londim)),
+     &                        " Lonvar=",trim(adjustl(Lonvar)),
+     &                        " Latdim=",trim(adjustl(Latdim)),
+     &                        " Latvar=",trim(adjustl(Latvar)),
+     &                        " Pvar=",trim(adjustl(Pvar)),
+     &                        " Punits=",trim(adjustl(Punits)),
+     &                        " Uvar=",trim(adjustl(Uvar)),
+     &                        " Vvar=",trim(adjustl(Vvar)),
+     &                        " Cvar=",trim(adjustl(Cvar)),
+     &                        " NWS14NC_WindMultiplier=",
+     &                          NWS14NC_WindMultiplier,
+     &                        " NWS14NC_PresMultiplier=",
+     &                          NWS14NC_PresMultiplier
+      !call logMessage(ECHO,trim(scratchMessage))
+
+      ! process pvar name for units spec.  Check for HPa first, then Pa
+      if (trim(Punits).EQ.'HPa')then
          rhoWat0g = rhoWat0g/100d0
-         Pvar = Pvar(1:PvarInd-1)
-         write(16,*) 'Pressure is in Hpa, New Pvar = ',trim(Pvar)
+         write(16,*) 'Pressure is in HPa.'
+      elseif (trim(Punits).EQ.'Pa')then
+         rhoWat0g = rhoWat0g/1d0
+         write(16,*) 'Pressure is in Pa.'
       endif
       ! get starting time index for netcdf file
       CALL READNWS14_NC_StaTime(Pfile, PfileNCID)
@@ -8699,8 +8752,22 @@ C----------------------------------------------------------------------
       REAL,ALLOCATABLE,INTENT(OUT) :: data2(:,:)
       CHARACTER(LEN=200),INTENT(IN) :: invN, var
       INTEGER,INTENT(INOUT) :: ncid
+      real(8) :: fac
+
       IF (.NOT.grb2flag) THEN
+
          CALL READNWS14_netCDF(fileN, ncid, var, data2)
+         fac=1.d0
+         if (var.eq.Pvar)then
+            fac=NWS14NC_PresMultiplier
+         elseif (var.eq.Uvar .OR. var.eq.Vvar)then
+            fac=NWS14NC_WindMultiplier
+         else
+            call logMessage(ERROR,'netcdf var fall-through.')
+            CALL windterminate()
+         endif
+         data2=data2*fac
+
       ELSEIF (grb2flag) THEN
          CALL READNWS14_grib2(fileN, invN, var, data2)
       ELSE
@@ -8796,7 +8863,8 @@ C----------------------------------------------------------------------
       real,allocatable,intent(out) :: data2(:,:) 
       INTEGER,INTENT(INOUT) :: NC_ID
       integer :: i, Temp_ID, Lat_ID, Lon_ID, NX, NY
-
+      integer :: rcode
+      real :: scale_factor, add_offset
       CALL setMessageSource('READNWS14_netCDF')
 
 #ifdef ADCNETCDF
@@ -8814,11 +8882,26 @@ C----------------------------------------------------------------------
         CALL BcastToLocal_Int(NY)
 #endif
         allocate(data2(NX,NY))
+
+        scale_factor=1.
+        add_offset=0.
+
         IF (MYPROC.EQ.0) THEN
            call Check_err(NF90_INQ_VARID(NC_ID,var,Temp_ID))
+           rcode=nf90_inquire_attribute(nc_id, Temp_ID, "scale_factor")
+           if (rcode == nf90_noerr) then
+               rcode=NF90_GET_ATT(nc_id,Temp_ID,'scale_factor',scale_factor)
+           endif
+           rcode=nf90_inquire_attribute(nc_id, Temp_ID, "add_offset")
+           if (rcode == nf90_noerr) then
+               rcode=NF90_GET_ATT(nc_id,Temp_ID,'add_offset',add_offset)
+           endif
            call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,data2,
      &                  start=[1, 1, NT],count=[NX, NY, 1]))
         ENDIF
+
+        data2=(data2*scale_factor)+add_offset
+
 #ifdef CMPI
         CALL BCastToLocal_2DRealArray(Data2,NX,NY)
 #endif
