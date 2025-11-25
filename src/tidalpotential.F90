@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 !
 ! Fortran module for computing the full luna-solar equilibrium tides of
 ! different orders of approximation,
@@ -134,7 +135,7 @@ contains
    subroutine tidalPotentialConstructor(self, np, rnday, in_UseFullTIPFormula, in_TIPOrder, in_TIPStartDate, &
                                         in_MoonSunPositionComputeMethod, in_MoonSunCoordFile, &
                                         in_IncludeNutation, in_k2value, in_h2value)
-      use global, only: allMessage, WARNING
+      use mod_logging, only: allMessage, WARNING
       implicit none
 
       class(t_tidePotential), intent(INOUT) :: self
@@ -349,18 +350,11 @@ contains
 
    function compute_full_tip(self, TimeLoc, NP, SLAM) result(tip)
       use ADC_CONSTANTS, only: sec2day, DEG2RAD
-      use global, only: setMessageSource, unsetMessageSource, allMessage
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #ifdef ADCNETCDF
       use mod_ephemerides, only: HEAVENLY_OBJS_COORDS_FROM_TABLE
 #else
-      use global, only: ERROR
-#ifdef CMPI
-      use messenger, only: msg_fini
-#endif
-#endif
-
-#ifdef ALL_TRACE
-      use global, only: DEBUG
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #endif
 
       implicit none
@@ -376,10 +370,9 @@ contains
       real(8) :: MoonSunCoor(3, 2)
       integer :: IERR
 
-      call setMessageSource("comp_full_tip")
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("comp_full_tip", TIDALPOTENTIAL_TRACING)
+
+      ierr = 0
 
       ! Julian day
       JDELoc = self%m_JDE_BEG + TimeLoc*sec2day
@@ -393,11 +386,8 @@ contains
 #ifdef ADCNETCDF
          call self%m_ephemerides%HEAVENLY_OBJS_COORDS_FROM_TABLE(MoonSunCoor, JDELoc, IERR, self%m_UniformResMoonSunTimeData)
 #else
-         call allMessage(ERROR, "Must compile with netCDF to use TIP from table")
-#ifdef CMPI
-         call msg_fini()
-#endif
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="Must compile with netCDF to use TIP from table")
 #endif
       else
          IERR = 1
@@ -412,15 +402,10 @@ contains
 
       tip = self%COMP_FULL_TIP_SUB0(tocgmst, np, slam, MoonSunCoor)
 
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-
    end function compute_full_tip
 
    subroutine check_tip_err(IERR)
-      use global, only: screenMessage, ERROR
+      use mod_logging, only: screenMessage, ERROR
       implicit none
       integer, intent(IN) :: IERR
 

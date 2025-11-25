@@ -30,14 +30,14 @@
 
       real(8) :: x , y
 
-      if (iargc() < 2) then
+      if (COMMAND_ARGUMENT_COUNT() < 2) then
         print *, "Usage: radedit file num_steps"
         stop
       endif
 
 
-      call getarg(1, fnameIn)
-      call getarg(2, buf)
+      call GET_COMMAND_ARGUMENT(1, fnameIn)
+      call GET_COMMAND_ARGUMENT(2, buf)
 
       read(buf,'(i10)') nsteps
 

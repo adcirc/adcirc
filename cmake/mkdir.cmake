@@ -13,6 +13,7 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-add_library(mkdir OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/prep/mkdir.c)
-target_include_directories(mkdir PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-set_target_properties(mkdir PROPERTIES EXCLUDE_FROM_ALL TRUE)
+add_library(adcirc_mkdir OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/prep/mkdir.c)
+add_library(adcirc::mkdir ALIAS adcirc_mkdir)
+target_include_directories(adcirc_mkdir PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set_target_properties(adcirc_mkdir PROPERTIES EXCLUDE_FROM_ALL TRUE)

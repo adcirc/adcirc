@@ -19,14 +19,15 @@
 !-------------------------------------------------------------------------------!
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
+#include "logging_macros.h"
       MODULE Couple2BC3D
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
       USE SIZES,  ONLY: MNEI
-      USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
-     &          setMessageSource, unsetMessageSource, allMessage,
-     &          scratchMessage, logMessage, NB, NM, MLD, SigTS,
+      USE mod_logging, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
+     &          allMessage, logMessage, t_log_scope, init_log_scope
+      USE GLOBAL, ONLY : NB, NM, MLD, SigTS,
      &          VIDBCPDXOH, VIDBCPDYOH, VIDISPDXOH, VIDISPDYOH, IDEN
       USE ADC_CONSTANTS, ONLY: SigT0
 #ifdef DATETIME
@@ -110,16 +111,13 @@ C     S U B R O U T I N E  R E A D _ B C 3 D _ N E T C D F
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Read_BC3D_NetCDF()
-      use netcdf, only: nf90_open, nf90_close, nf90_nowrite 
+      use netcdf, only: nf90_open, nf90_close, nf90_nowrite
       use netcdf_error, only: check_err
       implicit none
       integer :: nc_id
- 
-      call setMessageSource("Read_BC3D_NetCDF")
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      ! Open NETCDF 
+
+      LOG_SCOPE_TRACED("Read_BC3D_NetCDF", COUPLE2BAROCLINIC3D_TRACING)
+      ! Open NETCDF
       call Check_err(nf90_open(densityFileName,nf90_nowrite,nc_id))
     
       ! On first call: 
@@ -131,10 +129,6 @@ C-----------------------------------------------------------------------
          CALL Read_BC3D_NetCDF_on_ADCIRC_Grid(nc_id)
          ! Close NETCDF
          call Check_err(nf90_close(nc_id))
-#ifdef ALL_TRACE
-         call allMessage(DEBUG,"Return.")
-#endif
-         call unsetMessageSource()
          return
       ENDIF
       if (abs(iden).ne.7) then     
@@ -173,17 +167,13 @@ C-----------------------------------------------------------------------
       ! Close NETCDF
       call Check_err(nf90_close(nc_id))
 
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-      
 C-----------------------------------------------------------------------
       END SUBROUTINE Read_BC3D_NetCDF
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE Get_LonLatDepthTime(NC_ID)
       use netcdf
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use netcdf_error, only: check_err
       use mesh, ONLY: slam, sfea, binarysearch, bl_interp, np, ne, nm,
      &                conserve_interp, neitabele, nodele !indmax
@@ -265,25 +255,25 @@ C-----------------------------------------------------------------------
          call Check_err(NF90_INQ_DIMID(NC_ID,'node',Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
          IF (NY.NE.NP_G) THEN
-            WRITE(16,*) 'ERROR: Baroclinic forcing input (fort.11.nc) '
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Baroclinic forcing input (fort.11.nc) '
      &                //'does not have the correct number of nodes for '
      &                //'IDEN = 8. Check your input files to make sure '
      &                //'you have BC3D forcing for each node in the '
      &                //'model or change which baroclinic forcing '
-     &                //'method you are using.'
-            call BC3DTerminate()
+     &                //'method you are using.')
          ENDIF
          ! check if the number of elements is correct
          call Check_err(NF90_INQ_DIMID(NC_ID,'nele',Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
          IF (NY.NE.NE_G) THEN
-            WRITE(16,*) 'ERROR: Baroclinic forcing input (fort.11.nc) '
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Baroclinic forcing input (fort.11.nc) '
      &                //'does not have the correct number of elements'
      &                //' for IDEN = 8. Check your input files to make '
      &                //'sure you have BC3D forcing for each node in '
      &                //'the model or change which baroclinic forcing '
-     &                //'method you are using.'
-            call BC3DTerminate()
+     &                //'method you are using.')
          ENDIF
          return
       ENDIF
@@ -346,17 +336,17 @@ C-----------------------------------------------------------------------
          endif
       endif
       
-      ! Test the bounds 
+      ! Test the bounds
       if (BC3D_Lon(1) > Lonn_s.or.BC3D_Lat(1) > Lat_s.or.
      &    Lonn_e > BC3D_Lon(NX).or.Lat_e > BC3D_Lat(NY)) then
-          call allMessage(Error,'Part of 3DBC domain is not '
-     &                   //'contained within this subdomain. '
-     &                   //'Try download again')
           write(16,*) BC3D_Lon(1), Lon_s
           write(16,*) BC3D_Lon(NX), Lon_e
           write(16,*) BC3D_Lat(1), Lat_s
           write(16,*) BC3D_Lat(NY), Lat_e
-          call BC3DTerminate()
+          call Terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &       message='Part of 3DBC domain is not '
+     &              //'contained within this subdomain. '
+     &              //'Try download again')
       else
           ! Now find only the portions of lat lon required for this
           ! sub-domain and update NX, NY
@@ -639,13 +629,9 @@ C-----------------------------------------------------------------------
       use global, only: basedatetime
 #endif
       implicit none
-      real*8,intent(in) :: TimeLoc
+      REAL(8),intent(in) :: TimeLoc
 C
-      call setMessageSource("Initial_BC3D_NetCDF")
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("Initial_BC3D_NetCDF", COUPLE2BAROCLINIC3D_TRACING)
 #ifndef DATETIME
       call allMessage(WARNING, 
      &    "DateTime library is not enabled. It is recommended "//
@@ -696,7 +682,6 @@ C
       endif
       ! Return if diagnostic
       if (IDEN.lt.0) then
-          call unsetMessageSource()
           return
       endif
       ! Read next value in time
@@ -715,13 +700,9 @@ C
      &                         //'timesnap'
 #ifdef DATETIME
      &                         //': '//CurDT%isoformat(' ')
-#endif               
-     &                         ) 
-C
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()
+     &                         )
+C
 C-----------------------------------------------------------------------
       END SUBROUTINE Initial_BC3D_NetCDF
 C
@@ -1181,53 +1162,7 @@ C
 C-----------------------------------------------------------------------
       END SUBROUTINE FBPG_Disp_from_BC3D
 C-----------------------------------------------------------------------
-!-----------------------------------------------------------------------
-!     S U B R O U T I N E   B C 3 D  T E R M I N A T E
-!-----------------------------------------------------------------------
-      SUBROUTINE BC3DTerminate(NO_MPI_FINALIZE)
-      USE SIZES, ONLY : myproc
-#ifdef CMPI 
-      USE MESSENGER
-#endif
-      IMPLICIT NONE 
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-#ifdef ALL_TRACE
-      REAL, ALLOCATABLE :: dummy(:)
-#endif
-C
-      !call setMessageSource("BC3DTerminate")
-#ifdef ALL_TRACE
-      call allMessage(DEBUG,"Enter.")
-#endif
 
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef ALL_TRACE
-         ! intentionally create a segmentation fault so that we can get
-         ! a stack trace to determine the line number of the netcdf call
-         ! that went bad ... this assumes that the code was compiled with
-         ! debugging symbols, bounds checking, and stack trace turned on.
-      write(6,*) 'myproc = ',myProc      
-      dummy(1) = 99.9d0
-#endif
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1)
-C
-#ifdef ALL_TRACE
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      !call unsetMessageSource()
-!-----------------------------------------------------------------------
-      END SUBROUTINE BC3DTerminate
-!-----------------------------------------------------------------------
       END MODULE Couple2BC3D
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------

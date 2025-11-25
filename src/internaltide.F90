@@ -18,6 +18,9 @@
 !
 !-------------------------------------------------------------------------------!
 !---------------------------------------------------------------------
+
+#include "logging_macros.h"
+
 module INTERNALTIDE
    !---------------------------------------------------------------------
    !     CPB 03/2023: This module was created to make the
@@ -27,9 +30,8 @@ module INTERNALTIDE
    !     module to hopefully make it a little clearer what is happening in
    !     that subroutine.
    !---------------------------------------------------------------------
-   use GLOBAL, only: DEBUG, ECHO, INFO, WARNING, ERROR, &
-                     setMessageSource, unsetMessageSource, allMessage, &
-                     scratchMessage, logMessage
+   use mod_logging, only: DEBUG, ECHO, INFO, WARNING, ERROR, &
+                          allMessage, logMessage, t_log_scope
    implicit none
 
    private

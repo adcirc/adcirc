@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 !-----------------------------------------------------------------------
 ! WEIR_BOUNDARY.F
 !   Written by Zachary Cobell, 2013/01/04
@@ -85,18 +86,11 @@ contains
    !  LEVELS
    !-----------------------------------------------------------------------
    subroutine ALLOCATE_WEIRS()
-      use GLOBAL, only: allMessage, setMessageSource, &
-                        unsetMessageSource
+      use mod_logging, only: allMessage, t_log_scope, init_log_scope
       use BOUNDARIES, only: NVEL, BARINHT, BARLANHT
-#if defined(WEIR_trACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
       implicit none
 
-      call setMessageSource("ALLOCATE_WEIRS")
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("ALLOCATE_WEIRS", WEIR_BOUNDARY_TRACING)
 
       allocate (BARINHT1(NVEL))
       allocate (BARINHT2(NVEL))
@@ -115,11 +109,6 @@ contains
       BARLANHT1(1:NVEL) = BARLANHT(1:NVEL)
       BARLANHT2(1:NVEL) = BARLANHT(1:NVEL)
 
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
-
       !-----------------------------------------------------------------------
    end subroutine ALLOCATE_WEIRS
    !-----------------------------------------------------------------------
@@ -137,10 +126,10 @@ end module WEIR
 !-----------------------------------------------------------------------
 module TIME_VARYING_WEIR_BOUNDARY
    use SIZES, only: MYPROC, LOCALDIR, GLOBALDIR
-   use ADCIRC_MOD, only: ADCIRC_TERMINATE
-   use GLOBAL, only: SCREENUNIT, logMessage, allMessage, &
-                     setMessageSource, unsetMessageSource, ERROR, INFO, ECHO, &
-                     DEBUG, WARNING, ScratchMessage, ScreenMessage
+   use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+   use mod_logging, only: logMessage, allMessage, ScreenMessage, &
+                          t_log_scope, init_log_scope, ERROR, INFO, ECHO, &
+                          DEBUG, WARNING, screenUnit
    use KDTREE2_MODULE, only: KDTREE2, KDTREE2_CREATE, KDTREE2_N_NEAREST, KDTREE2_RESULT, KDTREE2_DESTROY
    use WEIR, only: BARINHT1, BARINHT2, BARLANHT1, BARLANHT2, ALLOCATE_WEIRS, found_tvw_nml, &
                    BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, BARSLIM64_ELEM, BARSLIM64_EDGE, &
@@ -252,10 +241,8 @@ contains
       use BOUNDARIES, only: NFLUXIB, NFLUXIBP, NFLUXB
       implicit none
 
-      call setMessageSource("WEIR_SETUP")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("WEIR_SETUP", WEIR_BOUNDARY_TRACING)
+
       if ((NFLUXIB == 1) .or. (NFLUXIBP == 1) .or. (NFLUXB == 1)) then
 
          !                   !...Allocate the new weir arrays at both time levels
@@ -273,10 +260,6 @@ contains
       BARMIN64_NOSUBM = 1.2d0*H0
       BARMIN64_SUBM = 1.2d0*H0
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
 
       !-----------------------------------------------------------------------
@@ -309,10 +292,7 @@ contains
       integer :: NGHOST
 #endif
 
-      call setMessageSource("ALLOCATE_TIMEVARYINGWEIRS")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("ALLOCATE_TIMEVARYINGWEIRS", WEIR_BOUNDARY_TRACING)
 
       allocate (BARHT_FINAL(NVEL))
       allocate (BAR_DEG_START(NVEL))
@@ -380,10 +360,6 @@ contains
                           GHOST_LOCATIONS(1:2, :), REARRANGE=.true., SORT=.true.)
 #endif
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
 
       !-----------------------------------------------------------------------
@@ -416,11 +392,9 @@ contains
       integer, intent(OUT) :: IDX
       integer, parameter :: SEARCHDEPTH = 2
       type(KDTREE2_RESULT) :: KDRESULTS(SEARCHDEPTH)
+      character(1024) :: ScratchMessage
 
-      call setMessageSource("FIND_BOUNDARY_NODES")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("FIND_BOUNDARY_NODES", WEIR_BOUNDARY_TRACING)
 
       EPS = epsilon(1.0d0)
 
@@ -444,10 +418,9 @@ contains
       !...............THIS NEEDS SOME WORK, HOWEVER, IM NOT SURE HOW TO HANDLE THE POSSIBILITY
       !               THAT A NODE HAS TWO BOUNDARY CONDITIONS BESIDES MAKING IT A FATAL ERROR
       if (abs(KDRESULTS(1)%DIS - KDRESULTS(2)%DIS) <= EPS) then
-         call allMessage(ERROR, &
-                         "MULTIPLE LOCATIONS FOUND FOR TIME VARYING "// &
-                         "BOUNDARY NODES")
-         call ADCIRC_TERMINATE()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="MULTIPLE LOCATIONS FOUND FOR TIME VARYING "// &
+                        "BOUNDARY NODES")
       end if
 
       if (abs(KDRESULTS(1)%DIS) > EPS) then
@@ -463,14 +436,10 @@ contains
                "SPECIFIED NODE LOCATION X=", &
                LAT, " Y=", LON, &
                " NOT FOUND IN LIST OF BOUNDARY NODES."
-            call allMessage(ERROR, ScratchMessage)
-            call ADCIRC_TERMINATE()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                           message=trim(ScratchMessage))
          else
             IDX = -1
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG, "Return")
-#endif
-            call unsetMessageSource()
             return
          end if
 
@@ -479,18 +448,13 @@ contains
             "SPECIFIED NODE LOCATION X=", &
             LAT, " Y=", LON, &
             " NOT FOUND IN LIST OF BOUNDARY NODES."
-         call allMessage(ERROR, ScratchMessage)
-         call ADCIRC_TERMINATE()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=trim(ScratchMessage))
 
 #endif
       end if
 
       IDX = int(BAR_LOCATIONS(3, KDRESULTS(1)%IDX))
-
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
 
       return
 
@@ -520,11 +484,9 @@ contains
       real(8), intent(IN) :: BAR_HEIGHT_CURRENT
       real(8), intent(OUT) :: BAR_HEIGHT
       real(8), parameter :: eps = epsilon(1d0)
+      character(1024) :: ScratchMessage
 
-      call setMessageSource("COMPUTE_BARRIER_HEIGHT")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("COMPUTE_BARRIER_HEIGHT", WEIR_BOUNDARY_TRACING)
 
       !...............SET DEFAULT RETURN VALUE SO WE CAN DUCK OUT AT ANY TIME
       BAR_HEIGHT = BAR_HEIGHT_CURRENT
@@ -545,9 +507,8 @@ contains
          call COMPUTE_BARRIER_HEIGHT_SCHEDULE(MYIDX, &
                                               TIMELOC, BAR_HEIGHT_CURRENT, BAR_HEIGHT)
       case DEFAULT
-         call allMessage(ERROR, "Invalid Barrier " &
-                         //"Variation")
-         call ADCIRC_TERMINATE()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message="Invalid Barrier Variation")
       end select
 
       !...............WRITE SCREEN/UNIT 16 INFORMATION AT START/END
@@ -594,10 +555,6 @@ contains
              I7)
 #endif
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
 
       !-----------------------------------------------------------------------
@@ -632,11 +589,9 @@ contains
       real(8) :: BAR_START
       real(8) :: DEPTH
       real(8), parameter :: eps = epsilon(1d0)
+      character(1024) :: ScratchMessage
 
-      call setMessageSource("COMPUTE_BARRIER_HEIGHT_LINEAR")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("COMPUTE_BARRIER_HEIGHT_LINEAR", WEIR_BOUNDARY_TRACING)
 
       !...............SET DEFAULT RETURN VALUE
       BAR_HEIGHT = BAR_HEIGHT_CURRENT
@@ -645,10 +600,6 @@ contains
       if (BAR_VARYTYPE(MYIDX) == 1) then
          if ((BAR_DEG_START(MYIDX) > TIMELOC) .or. &
              (BAR_DEG_END(MYIDX) < TIMELOC)) then
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG, "Return")
-#endif
-            call unsetMessageSource()
             return
          end if
       end if
@@ -672,10 +623,6 @@ contains
          case DEFAULT
             call allMessage(WARNING, &
                             "INVALID BOUNDARY CONDITION SPECIFIED")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG, "Return")
-#endif
-            call unsetMessageSource()
             return
          end select
       end if
@@ -729,10 +676,6 @@ contains
              ' TIME = ', E15.8, ' NODE = ', I7)
 #endif
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
 
       !-----------------------------------------------------------------------
@@ -763,10 +706,7 @@ contains
       real(8), intent(OUT) :: BAR_HEIGHT
       real(8), parameter :: eps = epsilon(1d0)
 
-      call setMessageSource("COMPUTE_BARRIER_HEIGHT_ETAMAX")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("COMPUTE_BARRIER_HEIGHT_ETAMAX", WEIR_BOUNDARY_TRACING)
 
       !...............SET DEFAULT RETURN VALUE
       BAR_HEIGHT = BAR_HEIGHT_CURRENT
@@ -786,10 +726,6 @@ contains
                                  BAR_FAILURE_DURATION(MYIDX)
             BAR_FAILURE_START(MYIDX) = 1d0
          else
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG, "Return")
-#endif
-            call unsetMessageSource()
             return
          end if
       end if
@@ -798,10 +734,6 @@ contains
       !               IS DEGRADING AS PRESCRIBED
       call COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX, &
                                          TIMELOC, BAR_HEIGHT_CURRENT, BAR_HEIGHT)
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
 
       !-----------------------------------------------------------------------
@@ -833,11 +765,9 @@ contains
       integer :: MYSEC
       integer :: NNBB1, NNBB2
       real(8), parameter :: eps = epsilon(1d0)
+      character(1024) :: ScratchMessage
 
-      call setMessageSource("COMPUTE_BARRIER_HEIGHT_SCHEDULE")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("COMPUTE_BARRIER_HEIGHT_SCHEDULE", WEIR_BOUNDARY_TRACING)
 
       !...............SET DEFAULT RETURN VALUE
       BAR_HEIGHT = BAR_HEIGHT_CURRENT
@@ -845,10 +775,6 @@ contains
       !...............Check if we have reached the offset time yet
       !               (Time added to beginning of a schedule)
       if (TIMELOC < BAR_SCHEDULE(MYIDX)%OFFSET) then
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -1016,10 +942,6 @@ contains
                                             BAR_HEIGHT_CURRENT, BAR_HEIGHT, BARHT_START)
       end if
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
 
 #ifdef CMPI
@@ -1055,8 +977,8 @@ contains
    !-----------------------------------------------------------------------
    subroutine PARSE_TIME_VARYING_WEIR_INFO()
 
-      use GLOBAL, only: ITHS, DTDP, IHOT, &
-                        tvw_file, openFileForRead
+      use GLOBAL, only: ITHS, DTDP, IHOT, tvw_file
+      use mod_io, only: openFileForRead
       use SIZES, only: INPUTDIR
       use BOUNDARIES, only: LBCODEI, NBV, IBCONN
 
@@ -1069,14 +991,12 @@ contains
       integer :: I, IOS
       integer :: NTIMEVARYINGWEIRS
       integer :: NSCHEDULES_RAW
+      character(1024) :: ScratchMessage
 
-      call setMessageSource("PARSE_TIME_VARYING_WEIR_INFO")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("PARSE_TIME_VARYING_WEIR_INFO", WEIR_BOUNDARY_TRACING)
 
       call openFileForRead(99, trim(INPUTDIR)//'/'// &
-                           trim(tvw_file), IOS)
+                           trim(tvw_file), IOS, required=.false.)
       if (IOS /= 0) then
          NTIMEVARYINGWEIRS = 0
 #ifdef CMPI
@@ -1085,10 +1005,6 @@ contains
          write (ScratchMessage, 102)
 #endif
          call allMessage(INFO, ScratchMessage)
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return")
-#endif
-         call unsetMessageSource()
          return
       end if
       read (99, *) NTIMEVARYINGWEIRS
@@ -1107,10 +1023,6 @@ contains
          write (ScratchMessage, 106)
 #endif
          call allMessage(INFO, ScratchMessage)
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -1198,48 +1110,40 @@ contains
                HOTADD = DTDP*dble(ITHS)
                OFFSET = OFFSET + HOTADD
             else
-               call allMessage(ERROR, &
-                               "INCORRECT"// &
-                               " HOT START VALUE SPECIFIED. HOT=1 OR "// &
-                               "HOT=0 FOR HOT START RELATIVE TIME "// &
-                               "VARYING WEIRS.")
-               call ADCIRC_TERMINATE()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                              message="INCORRECT HOT START VALUE SPECIFIED. HOT=1 OR "// &
+                              "HOT=0 FOR HOT START RELATIVE TIME "// &
+                              "VARYING WEIRS.")
             end if
          case DEFAULT
             HOTADD = 0d0
          end select
          if (ISNULL(I=VARYTYPE)) then
-            call allMessage(ERROR, &
-                            "YOU MUST "// &
-                            "SPECIFY VARYTYPE= IN THE FORT.15 INPUT "// &
-                            "FILE.")
-            call ADCIRC_TERMINATE()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                           message="YOU MUST SPECIFY VARYTYPE= IN THE FORT.15 INPUT "// &
+                           "FILE.")
          end if
          select case (VARYTYPE)
          case (1, 2, 3)
             if (VARYTYPE == 1) then
                if (ISNULL(X1) .or. ISNULL(Y1) .or. &
                    ISNULL(ZF)) then
-                  call allMessage(ERROR, &
-                                  "YOU MUST SPECIFY X1=, Y1=, and "// &
-                                  "ZF= ")
-                  call ADCIRC_TERMINATE()
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                 message="YOU MUST SPECIFY X1=, Y1=, and ZF= ")
                end if
                if (ISNULL(TimeStartday) .and. &
                    ISNULL(TimeStartHour) .and. &
                    ISNULL(TimeStartSec)) then
-                  call allMessage(ERROR, &
-                                  "TIME VARYING BOUNDARY START TIME"// &
-                                  " MUST BE SPECIFIED.")
-                  call ADCIRC_TERMINATE()
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                 message="TIME VARYING BOUNDARY START TIME"// &
+                                 " MUST BE SPECIFIED.")
                end if
                if (ISNULL(TimeEndday) .and. &
                    ISNULL(TimeEndHour) .and. &
                    ISNULL(TimeEndSec)) then
-                  call allMessage(ERROR, &
-                                  "TIME VARYING BOUNDARY END TIME"// &
-                                  " MUST BE SPECIFIED.")
-                  call ADCIRC_TERMINATE()
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                 message="TIME VARYING BOUNDARY END TIME"// &
+                                 " MUST BE SPECIFIED.")
                end if
                if (ISNULL(TimeStartDay)) TimeStartDay = 0d0
                if (ISNULL(TimeStartHour)) TimeStartHour = 0d0
@@ -1252,22 +1156,17 @@ contains
             elseif (VARYTYPE == 2) then
                if (ISNULL(X1) .or. ISNULL(Y1) .or. &
                    ISNULL(ZF)) then
-                  call allMessage(ERROR, &
-                                  "YOU MUST SPECIFY X1=, Y1=, "// &
-                                  "and ZF= ")
-                  call ADCIRC_TERMINATE()
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                 message="YOU MUST SPECIFY X1=, Y1=, and ZF= ")
                end if
                if ((ISNULL(FAILUREDURATIONDAY) .and. &
                     ISNULL(FAILUREDURATIONHOUR) .and. &
                     ISNULL(FAILUREDURATIONMIN) .and. &
                     ISNULL(FAILUREDURATIONSEC)) .or. &
                    ISNULL(ETA_MAX)) then
-                  call allMessage(ERROR, &
-                                  " YOU MUST SPECIFY A FAILURE"// &
-                                  " DURATION AND MAXIMUM WATER"// &
-                                  " SURFACE BEFORE ELEVATION"// &
-                                  " CHANGE.")
-                  call ADCIRC_TERMINATE()
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                 message="YOU MUST SPECIFY A FAILURE DURATION AND "// &
+                                 "MAXIMUM WATER SURFACE BEFORE ELEVATION CHANGE.")
                end if
                if (ISNULL(FAILUREDURATIONDAY)) &
                   FAILUREDURATIONDAY = 0d0
@@ -1279,15 +1178,12 @@ contains
                   FAILUREDURATIONSEC = 0d0
             elseif (VARYTYPE == 3) then
                if (ISNULL(X1) .or. ISNULL(Y1)) then
-                  call allMessage(ERROR, &
-                                  "YOU MUST SPECIFY X1= and Y1=")
-                  call ADCIRC_TERMINATE()
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                 message="YOU MUST SPECIFY X1= and Y1=")
                end if
                if (ISNULL(S=SCHEDULEFILE)) then
-                  call allMessage(ERROR, &
-                                  "YOU MUST SPECIFY SCHEDULEFILE= "// &
-                                  "FOR VARYTYPE=3.")
-                  call ADCIRC_TERMINATE()
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                 message="YOU MUST SPECIFY SCHEDULEFILE= FOR VARYTYPE=3.")
                end if
                if (ISNULL(TimeStartDay)) TimeStartDay = 0d0
                if (ISNULL(TimeStartHour)) TimeStartHour = 0d0
@@ -1310,18 +1206,14 @@ contains
                EXT_TVW = .true.
                if (VARYTYPE == 1) then
                   if (BAR_DEG_END(IDX) <= 0d0) then
-                     call allMessage(ERROR, &
-                                     "TIME VARYING BOUNDARY END "// &
-                                     "TIME MUST BE GREATER THAN "// &
-                                     "ZERO.")
-                     call ADCIRC_TERMINATE()
+                     call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                    message="TIME VARYING BOUNDARY END TIME MUST BE "// &
+                                    "GREATER THAN ZERO.")
                   end if
                elseif (VARYTYPE == 2) then
                   if (BAR_FAILURE_DURATION(IDX) <= 0d0) then
-                     call allMessage(ERROR, &
-                                     "FAILURE_DURATION MUST BE "// &
-                                     "GREATER THAN ZERO")
-                     call ADCIRC_TERMINATE()
+                     call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                    message="FAILURE_DURATION MUST BE GREATER THAN ZERO")
                   end if
                elseif (VARYTYPE == 3) then
                   BAR_SCHEDULE(IDX)%OFFSET = OFFSET
@@ -1331,9 +1223,9 @@ contains
                !...........................A TWO SIDED STYLE WEIR, WE NEED X2 AND Y2
                call FIND_BOUNDARY_NODES(X2, Y2, IDX2)
                if (IDX2 == -1) then
-                  call allMessage(ERROR, "BOUNDARY CONDITION IMPROPERLY "// &
-                                  "SPLIT INTO GHOST NODE SPACE!")
-                  call ADCIRC_TERMINATE()
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                 message="BOUNDARY CONDITION IMPROPERLY SPLIT INTO "// &
+                                 "GHOST NODE SPACE!")
                end if
                INT_TVW = .true.
 
@@ -1341,39 +1233,26 @@ contains
                !                           MAKE SURE THIS PAIR IS VALID
                if (NBV(IDX) /= IBCONN(IDX2)) then
                   !...............................THIS IS NOT THE CONNECTIVITY WE EXPECTED, GOOD NIGHT
-                  write (ScratchMessage, '(A)') &
-                     "CONNECTIVITY ACROSS INTERNAL"// &
-                     " TIME VARYING BOUNDARY IS INVALID."
-                  call allMessage(ERROR, ScratchMessage)
-                  write (ScratchMessage, &
-                         '(A,F0.9,A,F0.6,A,I0)') &
-                     "  X1= ", X1, &
-                     " Y1=", Y1, " LOCAL NODE=", NBV(IDX)
-                  call allMessage(ERROR, ScratchMessage)
-                  write (ScratchMessage, &
-                         '(A,F0.9,A,F0.6,A,I0)') &
-                     " X2= ", X2, &
-                     " Y2=", Y2, " LOCAL NODE=", NBV(IDX2)
-                  call allMessage(ERROR, ScratchMessage)
-                  call ADCIRC_TERMINATE()
+                  write (ScratchMessage, '(A,F0.9,A,F0.6,A,I0,A,F0.9,A,F0.6,A,I0)') &
+                     "CONNECTIVITY ACROSS INTERNAL TIME VARYING BOUNDARY IS INVALID. "// &
+                     "X1=", X1, " Y1=", Y1, " LOCAL NODE=", NBV(IDX), &
+                     " X2=", X2, " Y2=", Y2, " LOCAL NODE=", NBV(IDX2)
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                 message=trim(ScratchMessage))
                end if
                call ASSIGN_TVW_TIMING(VARYTYPE, IDX, IDX2)
                if (VARYTYPE == 1) then
                   if (BAR_DEG_START(IDX) > &
                       BAR_DEG_END(IDX)) then
-                     call allMessage(ERROR, &
-                                     "INVALID BARRIER DEGREDATION"// &
-                                     "TIME.")
-                     call ADCIRC_TERMINATE()
+                     call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                    message="INVALID BARRIER DEGREDATION TIME.")
                   end if
                elseif (VARYTYPE == 2) then
                   if ((BAR_FAILURE_DURATION(IDX) <= 0d0) &
                       .or. (BAR_FAILURE_DURATION(IDX2) <= &
                             0d0)) then
-                     call allMessage(ERROR, &
-                                     "FAILURE_DURATION MUST BE "// &
-                                     "GREATER THAN ZERO.")
-                     call ADCIRC_TERMINATE()
+                     call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                    message="FAILURE_DURATION MUST BE GREATER THAN ZERO.")
                   end if
                elseif (VARYTYPE == 3) then
                   BAR_SCHEDULE(IDX)%OFFSET = OFFSET
@@ -1381,15 +1260,13 @@ contains
                end if
             case DEFAULT
                !...........................WE SHOULD NOT BE HERE?
-               call allMessage(ERROR, &
-                               "INVALID BOUNDARY CONDITION DETECTED.")
-               call ADCIRC_TERMINATE()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                              message="INVALID BOUNDARY CONDITION DETECTED.")
             end select
 
          case DEFAULT
-            call allMessage(ERROR, "INVALID WEIR VARIATION"// &
-                            "SPECIFIED.")
-            call ADCIRC_TERMINATE()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                           message="INVALID WEIR VARIATION SPECIFIED.")
          end select
 
       end do
@@ -1402,13 +1279,9 @@ contains
       deallocate (GHOST_LOCATIONS)
 #endif
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
-200   call allMessage(ERROR, "PROBLEM READING TIME VARYING WEIR FILE.")
-      call ADCIRC_TERMINATE()
+200   call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                     message="PROBLEM READING TIME VARYING WEIR FILE.")
 
       !...............GENERAL MESSAGES FOR TIME VARYING WEIRS
 #ifdef CMPI
@@ -1458,10 +1331,7 @@ contains
          TimeStartSec, TimeEndDay, TimeEndHour, &
          TimeEndMin, TimeEndSec, ZF, DELTA, HOT
 
-      call setMessageSource("PARSE_SCHEDULE")
-#if defined(TVW_TRACE)|| defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("PARSE_SCHEDULE", WEIR_BOUNDARY_TRACING)
 
       inquire (FILE=trim(GLOBALDIR)//"/"//trim(MYFILE), &
                EXIST=EXISTS)
@@ -1521,32 +1391,25 @@ contains
             MYSCHED%SECTION(I)%BARHT_DELTA = DELTA
             if ((BAR_DEG_START < 0d0) .or. &
                 (abs(BAR_DEG_END - 0d0) < eps)) then
-               call allMessage(ERROR, &
-                               "You must specify start and end for "// &
-                               "each point in barrier schedule.")
-               call ADCIRC_Terminate()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                              message="You must specify start and end for each point "// &
+                              "in barrier schedule.")
             end if
             if (ISNULL(ZF)) then
-               call allMessage(ERROR, "You must specicy"// &
-                               " a flag or final elevation for "// &
-                               "BARHT_FINAL")
-               call ADCIRC_Terminate()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                              message="You must specify a flag or final elevation for "// &
+                              "BARHT_FINAL")
             elseif ((abs(ZF - (-99991d0)) < eps) .or. &
                     (abs(ZF - (-99992d0)) < eps)) then
                if (ISNULL(DELTA)) then
-                  call allMessage(ERROR, "If specifying a " &
-                                  //"relative value for ZF, you must " &
-                                  //"specify DELTA = ")
-                  call ADCIRC_Terminate()
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                                 message="If specifying a relative value for ZF, "// &
+                                 "you must specify DELTA = ")
                end if
             end if
          end do
          close (97, STATUS="DELETE")
       end if
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
       !-----------------------------------------------------------------------
    end subroutine PARSE_SCHEDULE
@@ -1565,10 +1428,8 @@ contains
       integer, intent(IN), optional :: INDEX2
       integer :: I
 
-      call setMessageSource("ASSIGN_TVW_TIMING")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("ASSIGN_TVW_TIMING", WEIR_BOUNDARY_TRACING)
+
       if (VAR == 1) then
          BAR_DEG_START(INDEX1) = &
             TimeStartDay*86400d0 + &
@@ -1645,16 +1506,12 @@ contains
                exit
             end if
             if (I == NSCHEDULES) then
-               call allMessage(ERROR, "Schedule not found.")
-               call ADCIRC_Terminate()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                              message="Schedule not found.")
             end if
          end do
       end if
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
 
       !-----------------------------------------------------------------------
@@ -1704,10 +1561,7 @@ contains
    subroutine NULLIFY_TVW_NML()
       implicit none
 
-      call setMessageSource("NULLIFY_TVW_NML")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("NULLIFY_TVW_NML", WEIR_BOUNDARY_TRACING)
 
       X1 = -99999d0
       X2 = -99999d0
@@ -1733,10 +1587,6 @@ contains
       NLOOPS = -99999
       ScheduleFile = "NOFILE"
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
       !-----------------------------------------------------------------------
    end subroutine NULLIFY_TVW_NML
@@ -1843,8 +1693,8 @@ end module TIME_VARYING_WEIR_BOUNDARY
 !-----------------------------------------------------------------------
 module WEIR_FLUX
    use ADC_CONSTANTS, only: G
-   use GLOBAL, only: ETA2, RAMPINTFLUX, &
-                     setMessageSource, unsetMessageSource, DEBUG, allMessage
+   use GLOBAL, only: ETA2, RAMPINTFLUX
+   use mod_logging, only: t_log_scope, init_log_scope, DEBUG, allMessage
    use BOUNDARIES, only: LBCODEI, NBV
    use TIME_VARYING_WEIR_BOUNDARY, only: COMPUTE_BARRIER_HEIGHT, &
                                          BAR_DEG
@@ -1886,10 +1736,7 @@ contains
       real(8), intent(OUT) :: FLUX
       real(8) :: RBARWL
 
-      call setMessageSource("COMPUTE_EXTERNAL_BOUNDARY_FLUX")
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("COMPUTE_EXTERNAL_BOUNDARY_FLUX", WEIR_BOUNDARY_TRACING)
 
       NNBB = NBV(BARRIER_INDEX)
       if (EXT_TVW) then
@@ -1910,10 +1757,6 @@ contains
       else
          FLUX = 0.0d0
       end if
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
 
       !-----------------------------------------------------------------------
@@ -1949,10 +1792,7 @@ contains
       real(8) :: RBARWL1, RBARWL2
       real(8) :: RBARWL1F, RBARWL2F
 
-      call setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("COMPUTE_INTERNAL_BOUNDARY_FLUX", WEIR_BOUNDARY_TRACING)
 
       !...............SIMPLIFY VARIABLES
       I => BARRIER_INDEX
@@ -1965,10 +1805,6 @@ contains
 #ifdef ORIGWEIR
       call COMPUTE_INTERNAL_BOUNDARY_FLUX_ORIG(I, J, K, &
                                                TIMELOC, FLUX)
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
 #endif
 
@@ -2101,10 +1937,6 @@ contains
          FLUX = 0
       end if
 
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
       !-----------------------------------------------------------------------
    end subroutine COMPUTE_INTERNAL_BOUNDARY_FLUX
@@ -2148,10 +1980,7 @@ contains
       logical :: UNSUBMERGE
       real(8) :: X1, X2, Y1, Y2, ET1, ET2, LEN, SLP, HTOT
 
-      call setMessageSource("SET_SUBMERGED64_AT")
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("SET_SUBMERGED64_AT", WEIR_BOUNDARY_TRACING)
 
       !...............SIMPLIFY VARIABLES
       I => BARRIER_INDEX
@@ -2172,10 +2001,6 @@ contains
                ISSUBMERGED64(LBArray_Pointer(NNBB2)) = 0
             end if
          end if
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -2338,10 +2163,6 @@ contains
          end if
       end if
 
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
       !-----------------------------------------------------------------------
    end subroutine SET_SUBMERGED64_AT
@@ -2383,10 +2204,7 @@ contains
       real(8) :: RBARWL1F, RBARWL2F
       logical :: CHECK
 
-      call setMessageSource("COMPUTE_INTERNAL_BOUNDARY64_FLUX")
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("COMPUTE_INTERNAL_BOUNDARY64_FLUX", WEIR_BOUNDARY_TRACING)
 
       !...............SIMPLIFY VARIABLES
       I => BARRIER_INDEX
@@ -2408,10 +2226,6 @@ contains
       !               ! when the barrier is splitted for paralell computation
       if ((NNBB1 <= 0) .or. (NNBB2 <= 0) .or. (I2 <= 0)) then
          FLUX = 0.d0
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -2513,10 +2327,6 @@ contains
 
       if (.not. CHECK) then
          FLUX = 0.d0
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -2644,10 +2454,6 @@ contains
          FLUX = 0.d0
       end if
 
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
       return
       !-----------------------------------------------------------------------
    end subroutine COMPUTE_INTERNAL_BOUNDARY64_FLUX
@@ -2676,10 +2482,7 @@ contains
       real(8) :: RBARWL1
       real(8) :: RBARWL2
 
-      call setMessageSource("COMPUTE_CROSS_BARRIER_PIPE_FLUX")
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("COMPUTE_CROSS_BARRIER_PIPE_FLUX", WEIR_BOUNDARY_TRACING)
 
       NNBB1 = NBV(IDX) ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
       NNBB2 = IBCONN(IDX) ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
@@ -2704,19 +2507,11 @@ contains
       if ((RBARWL1 < 0.d0) .and. (RBARWL2 < 0.d0)) then
          !...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW PIPE -> CASE 1
          FLUX = 0.d0
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return")
-#endif
-         call unsetMessageSource()
          return
       end if
       if (abs(RBARWL1 - RBARWL2) < BARMIN) then
          !...............WATER LEVEL EQUAL ON BOTH SIDES OF PIPE -> CASE 2
          FLUX = 0.d0
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return")
-#endif
-         call unsetMessageSource()
          return
       end if
       if ((RBARWL1 > RBARWL2) .and. (RBARWL1 > BARMIN)) then
@@ -2745,10 +2540,6 @@ contains
                       *0.25d0*PI*(PIPEDIAM(IDX))**2 &
                       *(2.d0*G*(RBARWL1 - RBARWL2)/PIPECOEF(IDX))**0.5d0
             end if
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG, "Return")
-#endif
-            call unsetMessageSource()
             return
          end if
       end if
@@ -2782,17 +2573,8 @@ contains
                NIBNODECODE(NNBB1) = 1
             end if
          end if
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return")
-#endif
-         call unsetMessageSource()
          return
       end if
-
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
 
    end subroutine COMPUTE_CROSS_BARRIER_PIPE_FLUX
 
@@ -2823,10 +2605,7 @@ contains
       real(8)                    :: RBARWL1, RBARWL2
       real(8)                    :: RBARWL1F, RBARWL2F
 
-      call setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter")
-#endif
+      LOG_SCOPE_TRACED("COMPUTE_INTERNAL_BOUNDARY_FLUX", WEIR_BOUNDARY_TRACING)
 
 !...............SIMPLIFY VARIABLES
       I => BARRIER_INDEX
@@ -2859,20 +2638,12 @@ contains
       if ((RBARWL1 < 0.d0) .and. (RBARWL2 < 0.d0)) then
 !...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
          FLUX = 0.d0
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return")
-#endif
-         call unsetMessageSource()
          return
       end if
       if (abs(RBARWL1 - RBARWL2) < 0.01d0) then
 !...............WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
 !................TO WITHIN TOLERANCE BARMIN -> CASE 2
          FLUX = 0.d0
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return")
-#endif
-         call unsetMessageSource()
          return
       end if
       if ((RBARWL1 > RBARWL2) .and. (RBARWL1 > BARMIN)) then
@@ -2900,10 +2671,6 @@ contains
                       (RBARWL1F*G)**0.5d0
             end if
          end if
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return")
-#endif
-         call unsetMessageSource()
          return
       end if
       if ((RBARWL2 > RBARWL1) .and. (RBARWL2 > BARMIN)) then
@@ -2935,11 +2702,6 @@ contains
             end if
          end if
       end if
-
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return")
-#endif
-      call unsetMessageSource()
 
       return
 

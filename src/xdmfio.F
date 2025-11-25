@@ -17,7 +17,6 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
-#ifdef ADCXDMF
 C----------------------------------------------------------------------
 C                     M O D U L E     X D M F I O
 C----------------------------------------------------------------------
@@ -54,9 +53,8 @@ C-----------------------------------------------------------------------
          return
       endif
 #ifndef ADCXDMF
-      call allMessage(ERROR,'XDMF output was specified.')
-      call allMessage(ERROR,'This executable was not compiled with XDMF support.')
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &               message="XDMF output was specified but this executable is not compiled with XDMF support.")
 #else
       !jgfdebug
       write(6,'(a)') 'fn='//trim(descript % file_name)
@@ -64,7 +62,7 @@ C-----------------------------------------------------------------------
       !
       ! read ADCIRC control data from ascii file unless otherwise specified
       !call readControlFile(controlFileName)
-      !if (nabout.eq.-1) then
+      !if (nabout.eq.DEBUG) then
       !      write(6,'(a)') 'INFO: Echoing control file.'
       !      open(25,file='echo.15',status='replace')
       !      call echoControlFile(25)
@@ -105,10 +103,10 @@ C-----------------------------------------------------------------------
       ! Writes an array to an existing XDMF file. 
       !----------------------------------------------------------------
       subroutine writeOutArrayXDMF(timeLoc, it, descript)
-      use global, only: OutputDataDescript_t, scratchmessage, error, nt,
-     &            allMessage
-      use mesh, only: NM, NE, agrid, dp, ics, np, x, y, terminate
+      use global, only: OutputDataDescript_t, nt
+      use mesh, only: NM, NE, agrid, dp, ics, np, x, y
       use sizes,only: mnproc
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 #ifdef ADCXDMF
       include 'Xdmf.f'
@@ -131,15 +129,11 @@ C-----------------------------------------------------------------------
       integer :: openInformations ! 1 if Informations should be opened within another object
       integer :: openSets ! 1 if sets should be opened within another object     
       character(len=80) :: timeStepString
+      character(len=1024) :: scratchMessage
       logical :: lastOutput
       integer :: timeStepsRemaining
       integer :: i, j
-#ifndef ADCXDMF
-      call allMessage(ERROR,'XDMF output was specified.')
-      call allMessage(ERROR,
-     &    'This executable was not compiled with XDMF support.')
-      call terminate()
-#else
+
       !jgfdebug
       write(6,'(a)') 'call to write '//trim(descript % file_name)
       ! 
@@ -255,8 +249,7 @@ C-----------------------------------------------------------------------
          descript % xdmfMD % units = 'percent'
       case default
          write(scratchMessage,'("Cannot write unit ",i0," files.")') descript % lun 
-         call allMessage(ERROR, scratchMessage)
-         call terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end select
       !
       ! set the time of this dataset in the XDMF file
@@ -314,8 +307,7 @@ C-----------------------------------------------------------------------
          write(scratchMessage,
      &     '("Cannot write data with ",i0," components.")') 
      &      descript % num_items_per_record
-         call allMessage(ERROR,scratchMessage)
-         call terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end select
       !
       ! set the time step of this dataset in the XDMF file
@@ -347,7 +339,7 @@ C-----------------------------------------------------------------------
          write(6,'(a)') 'finalizing output'
          call finalizeOutputFileXDMF(descript)
       endif
-#endif
+
       !-----------------------------------------------------------------      
       end subroutine writeOutArrayXDMF
       !-----------------------------------------------------------------
@@ -361,7 +353,6 @@ C-----------------------------------------------------------------------
       subroutine finalizeOutputFileXDMF(descript)
       use global, only : OutputDataDescript_t
       implicit none
-#ifdef ADCXDMF      
       include 'Xdmf.f'
       type(OutputDataDescript_t) :: descript   
       !
@@ -382,7 +373,7 @@ C-----------------------------------------------------------------------
       ! call the close method (deletes the XdmfFortran object)
       write(6,'(A)') 'INFO: Cleaning up and deleting XDMF object.'
       call xdmfClose(descript % xdmfMD % xdmfFortranObj)
-#endif
+
       !----------------------------------------------------------------
       end subroutine finalizeOutputFileXDMF      
       !----------------------------------------------------------------
@@ -395,7 +386,6 @@ C-----------------------------------------------------------------------
       subroutine writeMetaData(descript)
       use global
       implicit none
-#ifdef ADCXDMF
       include 'Xdmf.f' 
       !
       type(OutputDataDescript_t) :: descript 
@@ -448,7 +438,7 @@ C-----------------------------------------------------------------------
 !         endif
          descript % xdmfMD % createdIDs = .true.
       endif
-#endif
+
       !----------------------------------------------------------------------
       end subroutine writeMetaData
       !----------------------------------------------------------------------
@@ -465,13 +455,12 @@ C-----------------------------------------------------------------------
       use boundaries
       use global, only : OutputDataDescript_t
       implicit none
-#ifdef ADCXDMF
       include 'Xdmf.f' 
-      !
+
       type(OutputDataDescript_t) :: descript
       character(1024) :: fluxBoundaryType ! character represenation of IBTYPE
       integer :: i, j  ! loop counter
-      !
+
       write(6,'(A)') 'INFO: Adding boundary data.'
       do i=1, nope 
          ! jgftodo: this is hardcoded to 0 since this is the only type that ADCIRC
@@ -605,7 +594,7 @@ C-----------------------------------------------------------------------
      &       '("ERROR: File contains IBTYPE=",i0," which is invalid.")') ibtype_orig(i)
          end select
       end do
-#endif
+
       !----------------------------------------------------------------------
       end subroutine addBoundaries
       !----------------------------------------------------------------------
@@ -620,13 +609,12 @@ C-----------------------------------------------------------------------
       use boundaries
       use global, only : OutputDataDescript_t
       implicit none
-#ifdef ADCXDMF      
       include 'Xdmf.f' 
-      !
+
       type(OutputDataDescript_t) :: descript
       character(len=256) :: fluxBoundaryType
       integer :: i, j  ! loop counter
-      !
+
       do i=1, nope 
          elevationBoundaries(i)%informationID = 
      &        XdmfAddInformation(descript % xdmfMD % xdmfFortranObj, 
@@ -699,7 +687,7 @@ C-----------------------------------------------------------------------
             write(6,'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")') ibtype_orig(i)
          end select
       end do
-#endif
+
       !----------------------------------------------------------------------
       end subroutine addBoundaryReferences
       !----------------------------------------------------------------------
@@ -711,9 +699,11 @@ C-----------------------------------------------------------------------
       use control
       use boundaries, only : neta, nvel, nfluxf, lbcodei
       use mesh, only : slam0, sfea0
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use mod_logging, only: nscreen, nabout
       implicit none
       include 'Xdmf.f'
-      integer*8, intent(in) :: xdmfFortranObj ! XDMF object to receive data
+      INTEGER(8), intent(in) :: xdmfFortranObj ! XDMF object to receive data
       character(len=80) :: wtimincLine
       character(len=80) :: rstimincLine
       character(len=80) :: cicetimincLine
@@ -726,7 +716,7 @@ C-----------------------------------------------------------------------
       integer :: controlnws ! nws as encoded with ncice and nrs parameters
       integer :: i 
       integer :: j
-      !
+
       write(6,'(a)') 'INFO: Writing control parameters to XDMF.'
       informationID = XdmfAddInformation(xdmfFortranObj, 'rundes'//char(0), 
      &    trim(adjustl(rundes))//char(0))
@@ -736,7 +726,7 @@ C-----------------------------------------------------------------------
       informationID = XdmfAddInformation(xdmfFortranObj, 'nfover'//char(0), 
      &    trim(adjustl(info))//char(0))
       
-      write(info,fmt='(i0)') nabout
+      write(info,fmt='(i0)') nabout%level()
       informationID = XdmfAddInformation(xdmfFortranObj, 'nabout'//char(0), 
      &    trim(adjustl(info))//char(0))
       write(info,fmt='(i0)') nscreen
@@ -845,7 +835,7 @@ C-----------------------------------------------------------------------
       case default
          write(info,'(a,i0,a)') 'ERROR: The value of nws is ',nws,
      &     ' but this is not a valid value.'
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=info)
       end select
       if (nrs.gt.0) then
           wtimincComment = trim(wtimincComment) // ',rstiminc'
@@ -906,7 +896,7 @@ C-----------------------------------------------------------------------
      &              'drampelev,dramptip,drampmete,drampwrad,dunrampmete'
       case default
          write(info,'("ERROR: The value of nramp is ",i2," but this is not a valid value.")') nramp
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=info)
       end select
       informationID = XdmfAddInformation(xdmfFortranObj,trim(drampComment)//char(0),  
      &    trim(adjustl(info))//char(0))
@@ -945,7 +935,7 @@ C-----------------------------------------------------------------------
       case default
          write(info,'(a,i0,a)') 'ERROR: The value of nolibf is ',nolibf,
      &     ' but this is not a valid value.'
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=info)
       end select
       if (im.eq.10) then
          write(info,fmt='(2f15.7)') eslm,eslc
@@ -1172,7 +1162,7 @@ C-----------------------------------------------------------------------
       real(8), intent(in) :: stax(:)
       real(8), intent(in) :: stay(:)
       character(len=80), intent(in) :: stationType
-      integer*8, intent(in) :: xdmfFortranObj ! XDMF object to receive data
+      INTEGER(8), intent(in) :: xdmfFortranObj ! XDMF object to receive data
       integer :: informationID ! information index, used as ID to insert array
       !
       ! add the station locations as an array related to the station information object
@@ -1194,4 +1184,3 @@ C-----------------------------------------------------------------------
       !-----------------------------------------------------------------
       end module xdmfio
       !-----------------------------------------------------------------
-#endif

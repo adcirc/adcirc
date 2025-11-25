@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C******************************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                            *
 C  last changes in this file VERSION 45.12                                    *
@@ -41,19 +42,22 @@ C
      &    cice_time2, cice_timinc, ctip, tip2, nscoue, nstae_g,
      &    nstae, rdes4, rid4, rdes8, rid8, aid8, esbin1, vv2, nolifa,
      &    uu2, inundationoutput, esbin2, nspoolv, nscouc, icstp, nstac,
-     &    nstac_g, ntrspc, nspoolc, nscoum, bchgtiminc, nscreen,
-     &    screenunit, h0, ntrspe, dt, nspoole, nscouv, np_g,
+     &    nstac_g, ntrspc, nspoolc, nscoum, bchgtiminc,
+     &    h0, ntrspe, dt, nspoole, nscouv, np_g,
      &    outputsponge, ne_g, usingDynamicWaterLevelCorrection, ndsetse,
      &    nspoolge,
      &    nscougv, ndsetsv, nspoolgv, use_tvw, nscou_tvw,
      &    nout_tvw, ndsets_tvw, nspool_tvw, nscougw, ndsetsw, nspoolgw,
      &    nscougc, c2ddi, iden,
-     &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge, 
+     &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge,
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
-     &    ntrspv, iicestp, nstam_g, nstam, openfileforread, cbaroclinic
+     &    ntrspv, iicestp, nstam_g, nstam, cbaroclinic
+      use mod_io, only: openFileForRead
       use boundaries, only: csii, siii, nbv
       use mesh, only: sfcx, sfcy, ycsfac, sfmx
       use mod_normal_flow_boundary, only: rotate_normal_flux
+      use mod_logging, only: t_log_scope, init_log_scope,
+     &    allMessage, DEBUG, screenUnit, nscreen
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
      &    agrid 
@@ -65,7 +69,7 @@ C
      &    header74, header93, header91, header61, header62, header71,
      &    header72, header81, writedomainheader, open_gbl_file, nddt2get
       USE SUBDOMAIN, ONLY : subdomainOn, readFort015
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
 
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
@@ -98,10 +102,7 @@ c.... tcm v50.66.02 additions for time varying bathymetry
       CHARACTER(80) :: CDUM80
 C
 
-      call setMessageSource("coldstart")
-#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("coldstart", CSTART_TRACING)
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
       !
@@ -132,7 +133,9 @@ C...    read in the second depth dp2 for btime2
          IOS = 0
          CALL openFileForRead(141,TRIM(INPUTDIR)//'/'//'fort.141',IOS)
          IF (IOS.GT.0) THEN
-            CALL ADCIRC_Terminate()
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Unable to open fort.141 for time '
+     &                //'varying bathymetry')
          ENDIF
 
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
@@ -705,11 +708,6 @@ c       CALL DSSSTUP(DT,NT)
 c     endif
 C...
 
-#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
       END SUBROUTINE COLDSTART
 
@@ -731,15 +729,15 @@ c******************************************************************************
      &                   SBCTIME2, SBCSTATIM, TTBCTIME1,
      &                   TTBCTIME2, TBCSTATIM, SBCTIMEINC,
      &                   TBCTIMEINC, TTBCTIMEINC, TTBCSTATIM,
-     &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2, 
+     &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2,
      &                   LNM_BC, LNM_BC1, LNM_BC2, RIVBCTIMINC,
-     &                   RIVBCTIME1, RIVBCTIME2, 
-     &                   RIVBCSTATIM, DEBUG, setMessageSource,
-     &                   unsetMessageSource, allMessage, NP_G
+     &                   RIVBCTIME1, RIVBCTIME2,
+     &                   RIVBCSTATIM, NP_G
+      USE mod_logging, ONLY : t_log_scope, init_log_scope, allMessage, DEBUG
       USE MESH, ONLY : NP, AGRID
       USE BOUNDARIES, ONLY : NETA, NOPE, NBD,
      &  totalbcrivernodes, bndbcriver
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
 
       INTEGER :: IRType
@@ -756,10 +754,7 @@ ckmd  additional variable for baroclinic boundary conditions
       INTEGER :: IINDX
       REAL(8), ALLOCATABLE :: TMP(:,:)
 C
-      call setMessageSource("coldstart_3D")
-#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("coldstart_3D", CSTART_TRACING)
 C...
 C...  Define format statements used to initialize 3D output files
 C...
@@ -768,14 +763,11 @@ C...
 C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
 
       IF (CBaroclinic.and..not.C3DVS) THEN
-         IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-            WRITE(16,*) "CBaroclinic is ",CBaroclinic
-            WRITE(16,*) "CB3DVS is ",C3DVS
-            WRITE(16,*)
-     &           "ERROR: 2DDI baroclinic runs not ", 
-     &           "currently supported."
-         ENDIF
-         CALL ADCIRC_Terminate()
+         WRITE(16,*) "CBaroclinic is ",CBaroclinic
+         WRITE(16,*) "CB3DVS is ",C3DVS
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='2DDI baroclinic runs not currently '
+     &             //'supported.')
       ENDIF
 C
       IF(CBaroclinic .and. C3DVS) THEN
@@ -793,9 +785,10 @@ C
  351        FORMAT(/,2X,'***** INVALID INPUT IN THE DENSITY INITIAL ',
      &           'CONDITION FILE (UNIT 11) *****',
      &           /,2X,'***** NVN = ',I4,' MUST MATCH NFEN = ',I4,
-     &           ' *****',
-     &           /,10X,'****** RUN TERMINATED ******')
-            CALL ADCIRC_Terminate()
+     &           ' *****')
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Invalid input in density initial '
+     &                //'condition file (unit 11). NVN must match NFEN.')
          ENDIF
          DO IHN=1,NP
             DO IVN=1,NFEN
@@ -1092,11 +1085,6 @@ C
 C.... Set up a few final odds and ends for a 3D run
       CALL VSSTUP ()
 
-#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE COLDSTART_3D
@@ -1116,13 +1104,13 @@ C     overwriting the values computed here.
 C----------------------------------------------------------------------
       subroutine setColdWetDryStateAndWaterSurfaceElevation()
       use sizes, only : inputdir
-      use ADCIRC_MOD, only : ADCIRC_Terminate
+      use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
       use mesh, only : dp, np, mju, ne, nm
       use boundaries, only : nvel, lbcodei, nbv
-      use global, only : eta2, nnodecode, noff, logMessage, allMessage,
-     &   scratchMessage, INFO, h0, setMessageSource, unsetMessageSource,
-     &   DEBUG, WARNING, INFO, ERROR, scratchMessage, eta1, nolifa,
-     &   EtaDisc, River_above_MSL
+      use global, only : eta2, nnodecode, noff, h0,
+     &   eta1, nolifa, EtaDisc, River_above_MSL
+      use mod_logging, only : logMessage, allMessage, t_log_scope, init_log_scope,
+     &   DEBUG, WARNING, INFO, ERROR
       use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE,
      &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,
@@ -1143,6 +1131,7 @@ C----------------------------------------------------------------------
       integer :: nc1, nc2, nc3  ! nodecodes around the element
       integer :: ncele          ! wet dry state of the element
       integer :: i
+      character(1024) :: scratchMessage
       real(8) :: H1
       real(8) :: HABSMIN
       integer :: numGreater
@@ -1154,11 +1143,7 @@ C----------------------------------------------------------------------
       logical :: found ! .true. if obsolete init river elevation file was found
       !
       
-      call setMessageSource(
-     &   "setColdWetDryStateAndWaterSurfaceElevation")
-#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("setColdWDSAndWSE", CSTART_TRACING)
 
       HABSMIN = h0*0.8d0
 
@@ -1338,11 +1323,11 @@ C----------------------------------------------------------------------
                   endif
                endif
             enddo
-         endif    
+         endif
 #else
-         call allMessage(ERROR, "Subgrid calculation requires building"
-     &                          //"with netcdf enabled")
-         call ADCIRC_Terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Subgrid calculation requires building '
+     &             //'with netcdf enabled')
 #endif
       ELSE
       !
@@ -1438,12 +1423,8 @@ C----------------------------------------------------------------------
       endif
 !JLW: end subgrid if statement
       ENDIF
-      eta1(:) = eta2(:) 
+      eta1(:) = eta2(:)
 
-#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C----------------------------------------------------------------------
       end subroutine setColdWetDryStateAndWaterSurfaceElevation
 C----------------------------------------------------------------------

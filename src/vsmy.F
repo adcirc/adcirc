@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 
 c PADCIRC VERSION 45.12 03/17/2006                                            *
 C  last changes in this file VERSION 45.12                                    *
@@ -31,16 +32,14 @@ C******************************************************************************
 
       SUBROUTINE VSSTUP()
       USE GLOBAL_3DVS
-      USE MESH, ONLY : NP      
+      USE MESH, ONLY : NP
+      use mod_logging, only: t_log_scope, init_log_scope
       IMPLICIT NONE
       INTEGER :: NH, N
 !Casey 230203 : Add variables for integration of densities.
       INTEGER :: GQI, IGQ
 C
-      call setMessageSource("vsstup")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("vsstup", VSMY_TRACING)
 
 C...  FOR BOTH COLD START AND HOT START, NEED TO INITIALIZE Sigma T FROM
 C...  TEMPERATURE AND SALINITY DEPENDING ON VALUE OF IDEN
@@ -98,11 +97,6 @@ C...  COMPUTE THE INTEGRALS Inm and LVn (INDEPENDENT OF HORIZONTAL NODE)
       CALL INMInt()
 
       CALL LVnInt()
-
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
       RETURN
 c******************************************************************************
@@ -171,7 +165,8 @@ Corbitt 120328: Local Advection
      &     Z0b_var, LoadZ0B_var
 #ifdef CMPI
       USE MESSENGER
-#endif      
+#endif
+      use mod_logging, only: t_log_scope, init_log_scope
       IMPLICIT NONE
 
 c.RJW merged 08282008 Casey 071219: Added the following local variable declarations.
@@ -305,10 +300,7 @@ C   kmd48.33bc added the following variables for boundary conditions
 !Casey 230203 : Add variables for integration the densities.
       INTEGER :: GQI,IGQ
 
-      call setMessageSource("vssol")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("vssol", VSMY_TRACING)
 
 C***************************************************************************
 C     Set up several variables that are needed for 3D run
@@ -1706,11 +1698,6 @@ C     WRITE 3D MODEL OUTPUT
 
 C     RETURN TO THE 2-D MODEL TO COMPUTE H AT NEXT TIME STEP
 
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
 C***************************************************************************
       END SUBROUTINE VSSOL
@@ -1800,7 +1787,8 @@ Cjgfdebug USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug  USE GLOBAL_3DVS, ONLY : LOCALDIR,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
 Cjgfdebug     &     NFEN,Z0B,Z0S,A,B,AMB,NSCREEN,NWS,DELT
       USE GLOBAL_3DVS, ONLY : IEVC,EVMIN,EVCON,EVTOT,SIGMA,
-     &     NFEN,Z0B,Z0S,A,B,AMB,setMessageSource, unsetMessageSource,
+     &     NFEN,Z0B,Z0S,A,B,AMB
+      use mod_logging, only: t_log_scope, init_log_scope,
      &     logMessage, allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
 Crjwdebug  USE NodalAttributes, ONLY : Z0B_var
       IMPLICIT NONE
@@ -1824,10 +1812,7 @@ C     jgf46.00 explicitly declared the following variables
       REAL(8) UAVMAG
       REAL(8) UAVMAGS
 
-      call setMessageSource("eddyvis")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("eddyvis", VSMY_TRACING)
 
 Cjgfdebug 350  FORMAT(//,2X,'***** INVALID INPUT IN THE PRIMARY VERTICAL INPUT',
 Cjgfdebug     &     ' FILE (UNIT 15) ****',/,'****** RUN TERMINATED ******')
@@ -2072,10 +2057,6 @@ C...
          ENDIF
       ENDDO
 C...
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C***********************************************************************
       END SUBROUTINE EDDYVIS
@@ -2114,26 +2095,20 @@ C***********************************************************************
 C
 C  kmd48.33bc changed to use Implicit None
       SUBROUTINE TRIDIAG(A,B,C,R,U,nfen)
-      USE GLOBAL, ONLY : ScreenUnit, setMessageSource,
-     &   unsetMessageSource, logMessage, allMessage, DEBUG, ECHO, INFO
+      use mod_logging, only: t_log_scope, init_log_scope, screenUnit,
+     &   logMessage, allMessage, DEBUG, ECHO, INFO
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       INTEGER :: J,nfen
 
       COMPLEX(8) :: A(nfen), B(nfen), C(nfen), R(nfen), U(nfen)
       COMPLEX(8) :: P1
 C
-      call setMessageSource("tridiag")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("tridiag", VSMY_TRACING)
 C
       DO J=nfen-1,1,-1
          IF(ABS(B(J+1)).EQ.0.) then
-            write(screenunit,*) 'Diagonal term in the VS matrix is zero'
-            write(screenunit,*) '*********** Fatal error *************'
-            write(1,*) 'Diagonal term in the VS matrix is zero'
-            write(1,*) '*********** Fatal error *************'
-            CALL EXIT(1)
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Diagonal term in the VS matrix is zero")
          endif
          P1=C(J)/B(J+1)
          B(J)=B(J)-A(J+1)*P1
@@ -2141,11 +2116,7 @@ C
       END DO
 
       IF(ABS(B(1)).EQ.0.) then
-         write(screenunit,*) 'B1 term in the VS matrix is zero'
-         write(screenunit,*) '*********** Fatal error *************'
-         write(1,*) 'B1 term in the VS matrix is zero'
-         write(1,*) '*********** Fatal error *************'
-         CALL EXIT(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="B1 term in the VS matrix is zero")
       endif
 
       U(1)=R(1)/B(1)
@@ -2153,11 +2124,6 @@ C
       DO J=2,nfen
          U(J)=(R(J)-A(J)*U(J-1))/B(J)
       END DO
-
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
       RETURN
 C***********************************************************************
@@ -2178,11 +2144,11 @@ C                          R.L. 06/22/05                               *
 C***********************************************************************
 
       Subroutine VSDISP(it,node,H,UU,VV,Duu,Duv,Dvv)
-      USE GLOBAL, ONLY : ScreenUnit, allMessage, DEBUG, scratchMessage
+      use mod_logging, only: allMessage, DEBUG, screenUnit
 Cjgfdebug      USE GLOBAL_3DVS, ONLY : Qkp1,NFEN,SIGMA,GAMMA,AMB,I,NSCREEN
-      USE GLOBAL_3DVS, ONLY : Qkp1,NFEN,SIGMA,GAMMA,AMB,IY,
-     &    setMessageSource,
-     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
+      USE GLOBAL_3DVS, ONLY : Qkp1,NFEN,SIGMA,GAMMA,AMB,IY
+      use mod_logging, only: t_log_scope, init_log_scope,
+     &    logMessage, ECHO, INFO
       IMPLICIT NONE
 
       REAL(8) :: UU,VV,Duu,Duv,Dvv
@@ -2215,10 +2181,7 @@ Cjgfdebug      ierr = 0
 c
 c     don't waste time if entire profile is zero
 c
-      call setMessageSource("vsdisp")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("vsdisp", VSMY_TRACING)
 
       do j=1,nfen
          gamma(j)=Qkp1(node,j)
@@ -2230,10 +2193,6 @@ c
       Duu = 0.d0
       Duv = 0.d0
       Dvv = 0.d0
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
       return
 
@@ -2309,11 +2268,6 @@ c
       if(Duu.lt.0.) Duu = 0.d0
       if(Dvv.lt.0.) Dvv = 0.d0
 
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       return
 c***********************************************************************
       end subroutine vsdisp
@@ -2333,15 +2287,13 @@ c***********************************************************************
 
       subroutine InmINT()
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, INM, setMessageSource,
-     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
+      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, INM
+      use mod_logging, only: t_log_scope, init_log_scope,
+     &    allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER k
 C
-      call setMessageSource("InmINT")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("InmINT", VSMY_TRACING)
 
 C     integral over lower element of psi(k-1)*psi(k)
       Inm(1,1) = 0.d0
@@ -2366,10 +2318,6 @@ C     integral over both elements of psi(k)*psi(k)
 C     integral over upper element of psi(k+1)*psi(k)
       Inm(NFEN,3) = 0.d0
 
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
 c***********************************************************************
       end subroutine InmINT
@@ -2384,16 +2332,13 @@ c***********************************************************************
 
       subroutine LVnInt()
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, LVN, setMessageSource,
-     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
+      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, LVN
+      use mod_logging, only: t_log_scope, init_log_scope,
+     &    allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER n
 C
-      call setMessageSource("LVnInt")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("LVnInt", VSMY_TRACING)
 
       LVn(1) = (sigma(2) - sigma(1))/2.d0
       DO n=2,nfen-1
@@ -2401,11 +2346,6 @@ C
       enddo
       LVn(nfen) = (sigma(nfen) - sigma(nfen-1))/2.d0
 
-
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 c***********************************************************************
       END subroutine LVnInt
@@ -2419,19 +2359,15 @@ c***********************************************************************
 
       subroutine KQnmInt(KQnm,Kq)
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : SIGMA,NFEN,MNFEN, setMessageSource,
-     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
+      USE GLOBAL_3DVS, ONLY : SIGMA,NFEN,MNFEN
+      use mod_logging, only: t_log_scope, init_log_scope,
+     &    allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       REAL(8) :: KQnm(MNFEN,3),Kq(MNFEN)
       REAL(8) :: EM,EP
       INTEGER n
 
-      call setMessageSource("KQnmInt")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-
+      LOG_SCOPE_TRACED("KQnmInt", VSMY_TRACING)
 
 c     do 1st element by hand
 
@@ -2459,10 +2395,6 @@ c     do last element by hand
       KQnm(nfen,2)=EM
       KQnm(nfen,3)=0.D0
 
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
 c************************************************************************
       end subroutine KQnmInt
@@ -2637,6 +2569,7 @@ Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug      USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
       USE GLOBAL_3DVS
       USE ADC_CONSTANTS, ONLY: G
+      use mod_logging, only: t_log_scope, init_log_scope
 Crjwdebug     USE NodalAttributes, ONLY : Z0B_var
       IMPLICIT NONE
 
@@ -2682,10 +2615,7 @@ C     jgf46.12 gave them SAVE and PARAMETER properties (from jgf45.18)
 !Casey 220207 from Rosemary
       REAL(8) :: NTVMIN
 
-      call setMessageSource("turb")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("turb", VSMY_TRACING)
 
       USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
 
@@ -3159,10 +3089,6 @@ C              viscosity
          if(NTVTOT(n).lt.NTVMIN) NTVTOT(n)=NTVMIN
       end do
 
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
 C***********************************************************************
       END subroutine turb
@@ -3193,27 +3119,25 @@ C    Adapted from Numerical Recipes chapter 2                          *
 C***********************************************************************
 c
       SUBROUTINE ADC_TRIDAG(A,B,C,R,U,N)
-      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : setMessageSource,
-     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use mod_logging, only: t_log_scope, init_log_scope, screenUnit,
+     &    allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER :: J, N
 
       REAL(8) :: A(N),B(N),C(N),R(N),U(N)
       REAL(8) :: BET,GAM(N)
+      CHARACTER(256) :: scratchMessage
 
-      call setMessageSource("ADC_tridag")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("ADC_tridag", VSMY_TRACING)
 c
 c     check for zero elements on diagonal
 c
       DO J=1,N
          if(B(j).EQ.0.) then
-            write(screenunit,*) 'Problem in Tridag Solver.  ',
+            write(scratchMessage,*) 'Problem in Tridag Solver.  ',
      +           'B array value in row ',j,' = 0'
-            CALL EXIT(1)
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          endif
       end do
       BET = B(1)
@@ -3222,9 +3146,9 @@ c
          GAM(J) = C(J-1)/BET
          BET=B(J)-A(J)*GAM(J)
          if (BET.EQ.0) then
-            write(screenunit,*) ' Problem in Tridag Solver.  ',
+            write(scratchMessage,*) ' Problem in Tridag Solver.  ',
      +           ' BET  = 0.  Solver failed.'
-            CALL EXIT(1)
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          endif
          U(J)=(R(J)-A(J)*U(J-1))/BET
       END DO
@@ -3232,10 +3156,6 @@ c
          U(J) = U(J) - GAM(J+1)*U(J+1)
       END DO
 
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C***********************************************************************
       END SUBROUTINE ADC_TRIDAG
@@ -3374,10 +3294,7 @@ C     jgf49.49.02: Added variables for 3D fields
       INTEGER :: nextLun
 
       LOGICAL, SAVE :: FirstCall3D = .true.
-      call setMessageSource("hstart3D_out")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("hstart3D_out", VSMY_TRACING)
 C
 C     kmd48.33bc write out results in global IO format
       IF (FirstCall3D.eqv..true.) THEN
@@ -3886,10 +3803,6 @@ C
             ENDIF
          ENDIF
       ENDIF
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE HSTART3D_OUT
@@ -3963,18 +3876,19 @@ C
 !        Fluid Dynamics". Later, we can update this to include more
 !        complex equations of state.
 C   kmd48.33bc need to add variables for new equation of state
-      USE GLOBAL_3DVS, ONLY : SAL, TEMP, SIGT, IDEN, NFEN, 
-     &                        SIGMA, EQNSTATE, A, B, setMessageSource,
-     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
+      USE GLOBAL_3DVS, ONLY : SAL, TEMP, SIGT, IDEN, NFEN,
+     &                        SIGMA, EQNSTATE, A, B,
 !Casey 230106 : Add to compute SigT at higher resolution.
-     &   ,NumIP,IIP
-     &   ,NumGQP,GQP
-     &   ,SIGTM
+     &   NumIP,IIP,
+     &   NumGQP,GQP,
+     &   SIGTM,
 !Casey 230110 : Add to allow user control.
-     &   ,iterateEqnState2
-     &   ,densityIntegrationID,
+     &   iterateEqnState2,
+     &   densityIntegrationID,
      &   DENSITY_INTEGRATION_TRAPEZOIDAL, DENSITY_INTEGRATION_SIMPSON,
      &   DENSITY_INTEGRATION_QUADRATURE
+      use mod_logging, only: t_log_scope, init_log_scope,
+     &    allMessage, logMessage, DEBUG, ECHO, INFO
 Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
       USE GLOBAL, ONLY : ETA2, IFNLFA
       USE ADC_CONSTANTS, ONLY: RHOWAT0, G
@@ -4060,10 +3974,7 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
 !Kendra: Variables for the 3rd equation of state
       REAL(8) :: Kappa
 
-      call setMessageSource("calc_sigmat_3D")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("calc_sigmat_3D", VSMY_TRACING)
 
 ! Determine depths of layers.
       DO NH=1,NP
@@ -4499,10 +4410,6 @@ C        with both salinity and temperature.
 !     SIGT = 0.D0
 !     SIGTM = 0.D0
 
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C*****************************************************************************
       END SUBROUTINE CALC_SIGMAT_3D
@@ -4518,6 +4425,7 @@ C*****************************************************************************
        Use Global,      Only : IFNLFA, ETA2, nodecode
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
+       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
        Implicit none
        Integer :: I, J, K
@@ -4678,8 +4586,8 @@ C*****************************************************************************
              sum_Weights = sum_Weights + Weights (J)
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
-             Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             call exit(1)
+             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                      message="Possible error in Gaussian filter - error code = 1")
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug
@@ -4723,6 +4631,7 @@ C*****************************************************************************
        Use Global,      Only : IFNLFA, ETA2
        USE Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
+       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
        Implicit none
        Integer :: I, J, K
@@ -4827,8 +4736,8 @@ C*****************************************************************************
                 sum_Weights(K) = sum_Weights(K) + Weights (J,K)
              End Do
              If ( sum_Weights(K) < 1.0d-6 ) Then
-                Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-                call exit(1)
+                call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &           message="Possible error in Gaussian filter - error code = 1")
              End If
             Weights (:,K) = Weights (:,K) / sum_Weights(K)
          End Do
@@ -4884,6 +4793,7 @@ C*************************************************************************
       Subroutine linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, interpolated_value, J )
 
       USE GLOBAL_3DVS
+      use mod_logging, only: t_log_scope, init_log_scope
       IMPLICIT NONE
       Complex(8) :: interpolated_value
       REAL(8) :: SigmaNN     !Sigma value of a neighbor node
@@ -4905,13 +4815,9 @@ C*************************************************************************
 !      REAL(8) :: top, bot
 !      Integer  :: loop_situation = 0
 
-      Complex(8) :: inarray_vertical
-      Dimension  inarray_vertical ( NFEN )
+      Complex(8) :: inarray_vertical(NFEN)
 
-      call setMessageSource("cubic_vertical_interpolation")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("cubic_vertical_interpolation", VSMY_TRACING)
       IDiag=0
 
       IF(SigmaNN.LE.b) THEN !at bottom or lower, then use bottom
@@ -5020,11 +4926,6 @@ C*************************************************************************
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
 C**********************************************************************
       END SUBROUTINE linear_vertical_interpolation_complex
@@ -5041,6 +4942,7 @@ C**********************************************************************
        Use Global,      Only : IFNLFA, ETA2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B, qkp1, Biharmonic_viscosity_modified_Leith
+       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
        Implicit none
        Integer :: I, J, K
@@ -5156,8 +5058,8 @@ C**********************************************************************
              sum_Weights = sum_Weights + Weights (J)
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
-             Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             call exit(1)
+             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                      message="Possible error in Gaussian filter - error code = 1")
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug
@@ -5210,6 +5112,7 @@ C*************************************************************************
       Subroutine linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, interpolated_value, J )
 
       USE GLOBAL_3DVS
+      use mod_logging, only: t_log_scope, init_log_scope
       IMPLICIT NONE
       real(8) :: interpolated_value
       REAL(8) :: SigmaNN     !Sigma value of a neighbor node
@@ -5231,13 +5134,9 @@ C*************************************************************************
 !      REAL(8) :: top, bot
 !      Integer  :: loop_situation = 0
 
-      real(8) :: inarray_vertical
-      Dimension  inarray_vertical ( NFEN )
+      real(8) :: inarray_vertical(NFEN)
 
-      call setMessageSource("linear_vertical_interpolation")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("linear_vertical_interpolation", VSMY_TRACING)
       IDiag=0
 
       IF(SigmaNN.LE.b) THEN !at bottom or lower, then use bottom
@@ -5346,11 +5245,6 @@ C*************************************************************************
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
 C**********************************************************************
       END SUBROUTINE linear_vertical_interpolation_real
@@ -5365,7 +5259,7 @@ C     input argument and returns the new value of the file counter
 C     at the end of the write.
 C--------------------------------------------------------------------
       SUBROUTINE binaryWrite2D(array, length, lun, counter)
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, DEBUG,
+      use mod_logging, only: t_log_scope, init_log_scope, DEBUG,
      &                    allMessage
       IMPLICIT NONE
       REAL(8), intent(in), dimension(length) :: array ! data to write
@@ -5375,19 +5269,12 @@ C--------------------------------------------------------------------
 C
       INTEGER i      ! array index
 C
-      call setMessageSource("binaryWrite2D")
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("binaryWrite2D", VSMY_TRACING)
        DO i=1, length
           WRITE(lun,REC=counter) array(i)
           counter = counter + 1
        END DO
 C
-#if defined(VSMY_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C--------------------------------------------------------------------
       END SUBROUTINE binaryWrite2D
 C--------------------------------------------------------------------

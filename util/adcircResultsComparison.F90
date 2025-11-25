@@ -369,30 +369,30 @@ contains
       foundFile1 = .false.
       foundFile2 = .false.
 
-      if (iargc() == 0) then
+      if (command_argument_count() == 0) then
          write (*, '(A)') "ERROR: No command line arguments specified."
          call showHelp()
          call exit(1)
       end if
 
       I = 0
-      do while (I < iargc())
+      do while (I < command_argument_count())
 
          I = I + 1
-         call GETARG(I, CMD)
+         call get_command_argument(I, CMD)
 
          select case (trim(CMD))
          case ("-f1", "--file1")
             I = I + 1
-            call GETARG(I, file1)
+            call get_command_argument(I, file1)
             foundFile1 = .true.
          case ("-f2", "--file2")
             I = I + 1
-            call GETARG(I, file2)
+            call get_command_argument(I, file2)
             foundFile2 = .true.
          case ("-t", "--tolerance")
             I = I + 1
-            call GETARG(I, CMD)
+            call get_command_argument(I, CMD)
             read (CMD, *) tolerance
          case ("-w", "--wetdry")
             wetdry = .true.

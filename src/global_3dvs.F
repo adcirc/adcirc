@@ -27,6 +27,8 @@ C The module also allocates the required arrays.                              *
 C                                                                             *
 C******************************************************************************
 C
+#include "logging_macros.h"
+
       MODULE GLOBAL_3DVS
 C...
 C...BRING IN NECESSARY VARIABLES FROM GLOBAL
@@ -54,8 +56,6 @@ C...
 Corbitt 120328: Apply Advection Locally
      &       IFNLCTE,        !Global nonlinear advection flag (1=yes, 0=no)
      &       IFNLFA,         !nonlinear finite amplitude flag (1=yes,0=no) (jgf45.11)
-     &       NScreen,        !flag to suppress or allow screen output
-     &       ScreenUnit,     !i/o for screen output
      &       IHOT,           !flag to specify if coldstart (=0) or hotstart file to read from (63 or 64)
      &       IHOTSTP,        !hotstart file record counter
      &       NWS,
@@ -65,8 +65,10 @@ Corbitt 120328: Apply Advection Locally
      &       CBaroclinic,
      &       C3DVS,
      &       DTDP,           !DTDP = timestep declared as real(8)
-     &       allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &       setMessageSource, unsetMessageSource, mom_lv_x
+     &       mom_lv_x
+
+      USE mod_logging, ONLY: allMessage, logMessage, DEBUG, ECHO, INFO, nscreen,
+     &       WARNING, ERROR, screenUnit, t_log_scope
 
       USE BOUNDARIES,ONLY:NETA,NVEL
       IMPLICIT NONE
@@ -547,16 +549,15 @@ c                           6/16/2005                                  *
 c***********************************************************************
 c
       SUBROUTINE FEGRIDS(IGC,H)
-      USE GLOBAL, ONLY : ScreenUnit
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use mod_logging, only: t_log_scope, init_log_scope
 
       IMPLICIT NONE
       INTEGER :: IGC,N,NFEN2,IANS,NUM,I,NH
       REAL(8) :: H,DETA,SSTAR,DENOM,SIG0,SS,SB,RP,AVAL,EPS
+      character(len=256) :: scratchMessage
 C
-      call setMessageSource("fegrids")
-#if defined(GLOBAL_3DVS_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("fegrids", GLOBAL_3DVS_TRACING)
 
       select case(igc)
 c
@@ -665,7 +666,7 @@ c
      &           '  0=Terminate/1=continue. ****'
             write(screenunit,*) '  '
             read(*,*) ians
-            if(ians.ne.1) CALL EXIT(1)
+            if(ians.ne.1) call terminate(exit_code=ADCIRC_EXIT_FAILURE)
             num = nfen/2
          else
             num=(nfen-1)/2
@@ -714,19 +715,15 @@ c
      &         + (2.d0/H)*(eps*H-aval*sin(2.d0*3.14159d0*eps))
          end do
       case default
-         write(screenunit,4321) igc
+         write(scratchMessage,4321) igc
 4321     format('The value of igc=',I2,' is not valid. There are seven',
      &   /,'choices for specifying the vertical grid spacing in 3D.',
      &   /,'Please specify a value for igc from 0 to 6.',
      &   /,'**ADCIRC run terminated due to bad value for igc.**')
-         CALL EXIT(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
 
       end select
 
-#if defined(GLOBAL_3DVS_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 
 c******************************************************************************
@@ -734,7 +731,9 @@ c******************************************************************************
 c******************************************************************************
 
       subroutine initialize_baroclinic3d_namelist_options()
-          use global, only: toLowercase, allMessage, INFO, ERROR
+          use global, only: toLowercase
+          use mod_logging, only: allMessage, INFO, ERROR, logMessage
+          use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
           implicit none
           character(len=len(viscosityOperator)) :: viscosityOperatorStringInternal
           character(len=len(densityIntegration)) :: densityIntegrationStringInternal
@@ -756,8 +755,8 @@ c******************************************************************************
                   viscosityOperatorID = VISCOSITY_OPERATOR_LAPLACIAN
                   call logMessage(INFO, "Using Laplacian viscosity operator.")
               case default
-                  call allMessage(ERROR, "Invalid viscosity operator option: " // trim(viscosityOperator))
-                  call exit(1)
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                           message="Invalid viscosity operator option: "//trim(viscosityOperator))
           end select
 
           ! Set the diffusion operator ID based on the string input
@@ -769,8 +768,8 @@ c******************************************************************************
                   diffusionOperatorID = DIFFUSION_OPERATOR_LAPLACIAN
                   call logMessage(INFO, "Using Laplacian diffusion operator.")
               case default
-                  call allMessage(ERROR, "Invalid diffusion operator option: " // trim(diffusionOperator))
-                  call exit(1)
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                           message="Invalid diffusion operator option: "//trim(diffusionOperator))
           end select
 
           ! Set the density integration method ID based on the string input
@@ -785,8 +784,8 @@ c******************************************************************************
                   densityIntegrationID = DENSITY_INTEGRATION_SIMPSON
                   call logMessage(INFO, "Using Simpson density integration.")
               case default
-                  call allMessage(ERROR, "Invalid density integration option: " // trim(densityIntegration))
-                  call exit(1)
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                           message="Invalid density integration option: "//trim(densityIntegration))
           end select
 
           ! Set the vertical interpolation scheme ID based on the string input
@@ -798,8 +797,8 @@ c******************************************************************************
                   verticalInterpolationSchemeID = VERTICAL_INTERPOLATION_LINEAR
                   call logMessage(INFO, "Using linear vertical interpolation scheme.")
               case default
-                  call allMessage(ERROR, "Invalid vertical interpolation scheme option: " // trim(verticalInterpolationScheme))
-                  call exit(1)
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                           message="Invalid vertical interpolation scheme option: "//trim(verticalInterpolationScheme))
           end select
 
       end subroutine initialize_baroclinic3d_namelist_options

@@ -17,46 +17,47 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
-C******************************************************************************
-C******************************************************************************
-C*    Non-ESMF ADCIRC DRIVER
-C******************************************************************************
-C******************************************************************************
+!******************************************************************************
+!******************************************************************************
+!*    Non-ESMF ADCIRC DRIVER
+!******************************************************************************
+!******************************************************************************
       PROGRAM ADCIRC
-C
+
       USE ADCIRC_Mod, ONLY : ADCIRC_Init, ADCIRC_Run, ADCIRC_Final
-C
+      use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
+
 #ifdef CSWAN
-Casey 090302: Include the following routines for coupling to unstructured SWAN.
+! Casey 090302: Include the following routines for coupling to unstructured SWAN.
       USE Couple2swan, ONLY: PADCSWAN_INIT, PADCSWAN_FINAL
       USE SIZES, ONLY: MNPROC,MYPROC
 #endif
-C
+
       IMPLICIT NONE
-C
-      CALL ADCIRC_Init
-C
+
+      CALL ADCIRC_Init()
+
 #ifdef CSWAN
-Casey 090302: Allow SWAN to initialize stuff before the start
-C             of the time step loop.  This subroutine is inside
-C             the 'couple2swan.F' src file.
-Casey 110518: Added this IF statement.
+! Casey 090302: Allow SWAN to initialize stuff before the start
+!             of the time step loop.  This subroutine is inside
+!             the 'couple2swan.F' src file.
+! Casey 110518: Added this IF statement.
       IF(MYPROC.LT.MNPROC)THEN
-         CALL PADCSWAN_INIT
+         CALL PADCSWAN_INIT()
       ENDIF
 #endif
-C
-      CALL ADCIRC_Run
-C
+
+      CALL ADCIRC_Run()
+
 #ifdef CSWAN
-Casey 090302: Let SWAN clean up stuff.
-Casey 110518: Added this IF statement.
+! Casey 090302: Let SWAN clean up stuff.
+! Casey 110518: Added this IF statement.
       IF(MYPROC.LT.MNPROC)THEN
-         CALL PADCSWAN_FINAL
+         CALL PADCSWAN_FINAL()
       ENDIF
 #endif
-C
-      CALL ADCIRC_Final
-C
-      CALL EXIT(0)
+
+      CALL ADCIRC_Final()
+
+      call terminate(exit_code=ADCIRC_EXIT_SUCCESS)
       END PROGRAM ADCIRC

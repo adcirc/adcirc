@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 !=================================================================
 !=================================================================
 !=================================================================
@@ -57,9 +58,9 @@
 !=================================================================
 module NETCDFIO
    use SIZES, only: OFF, ASCII, SPARSE_ASCII, NETCDF3, NETCDF4, XDMF
-   use NETCDF_ERROR, only: CHECK_ERR, NETCDFTERMINATE
-   use GLOBAL, only: DEBUG, ECHO, INFO, WARNING, ERROR, screenMessage, logMessage, allMessage, setMessageSource, &
-                     unsetMessageSource, scratchMessage
+   use NETCDF_ERROR, only: CHECK_ERR
+   use mod_logging, only: DEBUG, ECHO, INFO, WARNING, ERROR, &
+                          screenMessage, logMessage, allMessage, t_log_scope, init_log_scope
 
    use NETCDF, only: NF90_NOERR, NF90_NOWRITE, NF90_WRITE, NF90_CLOBBER, &
                      NF90_NOCLOBBER, NF90_CHAR, NF90_DOUBLE, NF90_INT, &
@@ -414,17 +415,12 @@ contains
    subroutine initNetCDFOutputFile(descript1, reterr)
       use GLOBAL, only: OutputDataDescript_t
       use GLOBAL_3DVS, only: outputFort48
-#ifdef CMPI
-      use MESSENGER, only: msg_fini
-#endif
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript1
       logical, intent(out) :: reterr
+      character(1024) :: scratchMessage
 
-      call setMessageSource("initNetCDFOutputFile")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("initNetCDFOutputFile", NETCDFIO_TRACING)
 
       reterr = .false.
       ! Don't allocate or initialize anything if this is a pure output file,
@@ -434,10 +430,6 @@ contains
            (abs(descript1%specifier) /= NETCDF4) .and. &
            (descript1%readMaxMin .eqv. .false.)) .or. &
           (descript1%specifier == 0)) then
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -558,10 +550,6 @@ contains
          call allMessage(ERROR, scratchMessage)
       end select
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine initNetCDFOutputFile
 !-----------------------------------------------------------------------
@@ -580,33 +568,24 @@ contains
                         STATNAMEM, IDEN
       use GLOBAL_3DVS, only: STATNAMED, STATNAMEV3D, STATNAMET
       use MESH, only: ICS
-#ifdef CMPI
-      use MESSENGER, only: msg_fini
-#endif
       implicit none
 
       type(stationData), intent(inout) :: sta
       type(OutputDataDescript_t), intent(inout) :: descript1
       logical, intent(out) :: reterr
       integer :: iret ! success or failure of the netcdf call
+      character(1024) :: scratchMessage
 
 !     date_string variables for time attribute
       integer, parameter :: stationLuns3D(3) = [41, 42, 43]
       integer, parameter :: stationLunsHA(2) = [51, 52]
 
-      call setMessageSource("initStationFile")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("initStationFile", NETCDFIO_TRACING)
       reterr = .false.
 
 !     jgf50.13: if netcdf output was requested, but there are no stations,
 !     don't initialize the file; just return.
       if (descript1%num_fd_records == 0) then
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -633,10 +612,6 @@ contains
          if ((reterr .eqv. .false.) .and. (mnproc == 1)) then
             call updateMetaData(sta%ncid, sta%myFile)
          end if
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -1476,10 +1451,6 @@ contains
 !     now close the initialized netcdf file
       iret = nf90_close(sta%ncid)
       call check_err(iret)
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine initStationFile
 !-----------------------------------------------------------------------
@@ -1505,11 +1476,9 @@ contains
       integer, parameter :: nodalLunsHA(2) = [53, 54]
       real(8), allocatable :: defaultValue(:)
       character(len=1024) :: att_text ! metadata
+      character(len=1024) :: scratchMessage
 
-      call setMessageSource("initNodalDataFile")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("initNodalDataFile", NETCDFIO_TRACING)
       reterr = .false.
       dat%myMesh => adcircMesh
       if (dat%myMesh%initialized .eqv. .false.) then
@@ -1556,10 +1525,6 @@ contains
                call updateMetaData(dat%ncid, dat%myFile)
             end if
          end if
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -3761,10 +3726,6 @@ contains
       call logMessage(INFO, 'Initialized "'//trim(dat%myFile%filename)// &
                       '" file.')
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine initNodalDataFile
 !-----------------------------------------------------------------------
@@ -3844,8 +3805,6 @@ contains
          call check_err(nf90_put_att(stationDat%ncid, dmy, 'units', 'deg'))
       end if
 
-      return
-
 !-----------------------------------------------------------------------
    end subroutine defineHarmonicAnalysisParametersInNetcdfFile
 !-----------------------------------------------------------------------
@@ -3884,11 +3843,10 @@ contains
    subroutine createNetCDFOutputFile(ncid, myFile, myTime, &
                                      descript, ret_error, static_time_length)
       use SIZES, only: globaldir
-      use GLOBAL, only: OutputDataDescript_t, IHOT, ERROR, &
-                        allMessage, scratchMessage
+      use GLOBAL, only: OutputDataDescript_t, IHOT
+      use mod_logging, only: allMessage
 #ifdef CMPI
-      use global, only: debug
-      use MESSENGER, only: MSG_FINI
+      use mod_logging, only: debug
 #endif
       implicit none
       integer, intent(out) :: ncid
@@ -3898,11 +3856,9 @@ contains
       logical, intent(out) :: ret_error
       integer, intent(in), optional :: static_time_length
       integer :: iret
+      character(1024) :: scratchMessage
 
-      call setMessageSource("createNetCDFOutputFile")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("createNetCDFOutputFile", NETCDFIO_TRACING)
       ret_error = .false.
       myFile%createFile = .false.
       myFile%fileFound = .false.
@@ -3980,10 +3936,6 @@ contains
 
 !     RETURN if we don't need to create a file.
       if (myFile%createFile .eqv. .false.) then
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -4038,10 +3990,6 @@ contains
          call check_err(iret)
       end if
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine createNetCDFOutputFile
 !-----------------------------------------------------------------------
@@ -4062,10 +4010,7 @@ contains
       type(meshStructure), intent(inout) :: myMesh
       integer :: i, j, k, kj ! array indices
 
-      call setMessageSource("initNetCDFCoord")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("initNetCDFCoord", NETCDFIO_TRACING)
 
       myMesh%nopenc = nope
       myMesh%nbounc = nbou
@@ -4176,10 +4121,6 @@ contains
       end do
 
       myMesh%initialized = .true.
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine initNetCDFCoord
 !-----------------------------------------------------------------------
@@ -4203,11 +4144,9 @@ contains
       type(OutputDataDescript_t), intent(in), optional :: descript2 !describes output data
       type(OutputDataDescript_t), intent(in), optional :: descript3 !describes output data
       type(OutputDataDescript_t), intent(in), optional :: descript4 !describes output data
+      character(1024) :: scratchMessage
 
-      call setMessageSource("writeOutArrayNetCDF")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeOutArrayNetCDF", NETCDFIO_TRACING)
 
       select case (lun)
       case (41)
@@ -4334,10 +4273,6 @@ contains
          call allMessage(ERROR, scratchMessage)
       end select
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine writeOutArrayNetCDF
 !-----------------------------------------------------------------------
@@ -4350,8 +4285,7 @@ contains
    subroutine writeStationData(sta, lun, descript1, timesec, &
                                descript2, descript3, descript4)
       use SIZES, only: MNPROC
-      use GLOBAL, only: OutputDataDescript_t, scratchMessage, &
-                        IDEN
+      use GLOBAL, only: OutputDataDescript_t, IDEN
       implicit none
 
       type(stationData), intent(inout) :: sta
@@ -4365,19 +4299,13 @@ contains
       integer :: kount(2), start(2)
       integer :: kount3D(4), start3D(3)
       integer :: iret ! success or failure of netcdf call
+      character(1024) :: scratchMessage
 
-      call setMessageSource("writeStationData")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeStationData", NETCDFIO_TRACING)
 
 !     jgf50.13: if netcdf output was requested, but there are no stations,
 !     don't write to the file (it doesn't exist); just return.
       if (descript1%num_fd_records == 0) then
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -4664,10 +4592,6 @@ contains
 !     Close netCDF file
       call check_err(nf90_close(sta%ncid))
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine writeStationData
 !-----------------------------------------------------------------------
@@ -4680,8 +4604,7 @@ contains
    subroutine writeNodalData(dat, lun, descript1, timesec, &
                              descript2, descript3, descript4)
       use SIZES, only: MNPROC, MYPROC
-      use GLOBAL, only: OutputDataDescript_t, NODECODE, &
-                        scratchMessage, IDEN
+      use GLOBAL, only: OutputDataDescript_t, NODECODE, IDEN
 
       implicit none
 
@@ -4698,11 +4621,9 @@ contains
       integer :: iret ! success or failure of the netcdf call
       integer, allocatable  :: tempIntArray(:)
       real(8), allocatable :: tempArray(:)
+      character(1024) :: scratchMessage
 
-      call setMessageSource("writeNodalData")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeNodalData", NETCDFIO_TRACING)
 
       write (scratchMessage, '("Rank ",i0," writing to ",a,".")') myproc, &
          trim(dat%myFile%filename)
@@ -5212,10 +5133,6 @@ contains
 !     Close netCDF file
       call check_err(nf90_close(dat%ncid))
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine writeNodalData
 !-----------------------------------------------------------------------
@@ -5232,7 +5149,6 @@ contains
 !     delete data from files.
 !-----------------------------------------------------------------------
    subroutine setRecordCounterAndStoreTime(ncid, f, t)
-      use GLOBAL, only: scratchMessage, scratchFormat
       implicit none
 
       integer, intent(in) :: ncid
@@ -5247,11 +5163,9 @@ contains
       integer :: counti(1), starti(1)
       integer :: iret ! success or failure of netcdf call
       integer :: i ! loop counter
+      character(1024) :: scratchMessage, scratchFormat
 
-      call setMessageSource("setRecordCounterAndStoreTime")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("setRecordCounterAndStoreTime", NETCDFIO_TRACING)
 
 !     Inquire time variable
       iret = nf90_inquire(ncid, ndim, nvar, natt, t%timenc_dim_id)
@@ -5314,10 +5228,6 @@ contains
       iret = nf90_put_var(ncid, t%timenc_id, t%timenc, starti, counti)
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine setRecordCounterAndStoreTime
 !-----------------------------------------------------------------------
@@ -5340,10 +5250,7 @@ contains
       integer :: iret ! success or failure of the netcdf call
       integer :: tempid
 
-      call setMessageSource("initNetCDFHotstart")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("initNetCDFHotstart", NETCDFIO_TRACING)
       ncerror = .false.
 
 !     Point to the hotstart file we want to work on.
@@ -5370,10 +5277,6 @@ contains
       ! return an error flag to the calling routine if something went
       ! wrong when we tried to create the netcdf file
       if (ncerror .eqv. .true.) then
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return
       end if
       if (hs%myMesh%initialized .eqv. .false.) then
@@ -5859,10 +5762,6 @@ contains
       iret = nf90_close(hs%ncid)
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine initNetCDFHotstart
 !-----------------------------------------------------------------------
@@ -5920,10 +5819,7 @@ contains
       integer :: iret ! success or failure of the netcdf call
       character(1024) :: att_text
 
-      call setMessageSource("initNetCDFHotstartHarmonic")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("initNetCDFHotstartHarmonic", NETCDFIO_TRACING)
       err = .false.
 
 !     Point to the hotstart file we want to work on.
@@ -6267,10 +6163,6 @@ contains
       iret = nf90_close(hs%ncid)
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine initNetCDFHotstartHarmonic
 !-----------------------------------------------------------------------
@@ -6295,10 +6187,7 @@ contains
       integer :: iret ! success or failure of the netcdf call
       character(1024) :: att_text
 
-      call setMessageSource("initNetCDFHotstartHarmonicMeansVariances")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("initNetCDFHotstartHarmonicMeansVariances", NETCDFIO_TRACING)
       reterror = .false.
 
 !     Point to the hotstart file we want to work on. Memory allocation
@@ -6509,10 +6398,6 @@ contains
       iret = nf90_close(hs%ncid)
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine initNetCDFHotstartHarmonicMeansVariances
 !-----------------------------------------------------------------------
@@ -6540,10 +6425,7 @@ contains
       character(1024) :: att_text
       integer :: tempid
 
-      call setMessageSource("initNetCDFHotstart3D")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("initNetCDFHotstart3D", NETCDFIO_TRACING)
       err = .false.
 
 !     Point to the hotstart file we want to work on.
@@ -6877,10 +6759,6 @@ contains
       iret = nf90_close(hs%ncid)
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine initNetCDFHotstart3D
 !-----------------------------------------------------------------------
@@ -6904,10 +6782,7 @@ contains
       integer :: tempid ! variable id for attaching to text
       integer :: iret ! netcdf err indicator
 
-      call setMessageSource("defineParameterWithText")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("defineParameterWithText", NETCDFIO_TRACING)
       iret = nf90_def_var(ncid, param, varType, varid=tempid)
       call check_err(iret)
       iret = nf90_put_att(ncid, tempid, 'long_name', trim(longName))
@@ -6916,10 +6791,6 @@ contains
                           trim(standardName))
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine defineParameterWithText
 !-----------------------------------------------------------------------
@@ -6965,10 +6836,7 @@ contains
       integer :: tempid
       character(len=10) :: fext
 
-      call setMessageSource("writeNetCDFHotstart")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeNetCDFHotstart", NETCDFIO_TRACING)
 
 !     Point to the hotstart file we want to work on
       if (lun == 67) then
@@ -7259,10 +7127,6 @@ contains
       ! instead of this one, so we need to update it.
       call updateMetaData(hs%ncid, hs%myFile)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine writeNetCDFHotstart
 !-----------------------------------------------------------------------
@@ -7298,10 +7162,7 @@ contains
       integer :: iret ! success or failure of the netcdf call
       integer :: tempid
 
-      call setMessageSource("writeNetCDFHotstartHarmonic")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeNetCDFHotstartHarmonic", NETCDFIO_TRACING)
 
 !     Point to the hotstart file we want to work on
       if (lun == 67) then
@@ -7539,10 +7400,6 @@ contains
       iret = nf90_close(hs%ncid)
       call check_err(iret)
 !
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine writeNetCDFHotstartHarmonic
 !-----------------------------------------------------------------------
@@ -7576,10 +7433,7 @@ contains
       integer :: iret ! success or failure of the netcdf call
       integer :: tempid
 
-      call setMessageSource("writeNetCDFHotstartHarmonicMeansVariances")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeNetCDFHotstartHarmonicMeansVariances", NETCDFIO_TRACING)
 
 !     Point to the hotstart file we want to work on
       if (lun == 67) then
@@ -7687,10 +7541,6 @@ contains
       iret = nf90_close(hs%ncid)
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine writeNetCDFHotstartHarmonicMeansVariances
 !-----------------------------------------------------------------------
@@ -7726,10 +7576,7 @@ contains
       integer :: iret ! success or failure of the netcdf call
       integer :: tempid
 
-      call setMessageSource("writeNetCDFHotstart3D")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeNetCDFHotstart3D", NETCDFIO_TRACING)
 
 !     Point to the hotstart file we want to work on
       if (lun == 67) then
@@ -7874,10 +7721,6 @@ contains
       iret = nf90_close(hs%ncid)
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine writeNetCDFHotstart3D
 !-----------------------------------------------------------------------
@@ -7900,10 +7743,7 @@ contains
       integer :: kount(3), start(3) ! for nodally based data
       integer :: iret ! success or failure of the netcdf call
 
-      call setMessageSource("writeNetCDFHotstart3DVar")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeNetCDFHotstart3DVar", NETCDFIO_TRACING)
 
 !     Point to the hotstart file we want to work on
       if (lun == 67) then
@@ -8051,10 +7891,7 @@ contains
       iret = nf90_close(hs%ncid)
       call check_err(iret)
 !
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
+
 !-----------------------------------------------------------------------
    end subroutine writeNetCDFHotstart3DVar
 !-----------------------------------------------------------------------
@@ -8076,10 +7913,7 @@ contains
 #ifdef CSWAN
       use GLOBAL, only: swan_rsnx1, swan_rsnx2, swan_rsny1, swan_rsny2
 #endif
-
-#ifdef CMPI
-      use MESSENGER, only: MSG_FINI
-#endif
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
       integer, intent(in) :: lun
@@ -8091,11 +7925,9 @@ contains
       integer :: tempid
 
       character(len=10) :: fext
+      character(len=1024) :: scratchMessage
 
-      call setMessageSource("readNetCDFHotstart")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("readNetCDFHotstart", NETCDFIO_TRACING)
 !
 !     Point to the hotstart file we want to work on
       if (lun == 67) then
@@ -8118,11 +7950,8 @@ contains
          write (scratchMessage, '(a,a,a)') 'The file ', &
             trim(adjustl(hs%myFile%FILENAME)), &
             ' was not found; ADCIRC terminating.'
-         call allMessage(ERROR, scratchMessage)
-#ifdef CMPI
-         call MSG_FINI()
-#endif
-         call exit(1)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=scratchMessage)
       else
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          call check_err(iret)
@@ -8383,10 +8212,6 @@ contains
       iret = nf90_close(hs%ncid)
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine readNetCDFHotstart
 !-----------------------------------------------------------------------
@@ -8403,7 +8228,9 @@ contains
 !-----------------------------------------------------------------------
    subroutine readAndMapToSubdomainMaxMinNetCDF(descript, timeloc)
       use sizes, only: mnproc, myproc
-      use global, only: OutputDataDescript_t, allMessage, logMessage, nfover
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use global, only: OutputDataDescript_t, nfover
+      use mod_logging, only: allMessage, logMessage
 #ifdef CMPI
       use mesh, only: np
       use global, only: np_g
@@ -8421,18 +8248,16 @@ contains
       logical :: no_early_return
       character(len=1024) :: vn ! min/max variable name in netcdf file
       character(len=1025) :: tvn ! time of min/max occurrence variable name in netcdf
+      character(len=1024) :: scratchMessage
 
 #ifdef CMPI
       real(8), allocatable :: tmp0(:), tmp1(:)
       logical :: ldmy(1)
 #endif
 
-      timestampsFound = .false.
+      LOG_SCOPE_TRACED("readAndMapToSubdomainMaxMinNetCDF", NETCDFIO_TRACING)
 
-      call setMessageSource("readAndMapToSubdomainMaxMinNetCDF")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      timestampsFound = .false.
 
       select case (descript%lun)
       case (311) ! maxele
@@ -8475,7 +8300,6 @@ contains
 #endif
          no_early_return = .false.
          call communicateMapToSubdomainMaxMinNetcdfStatus(no_early_return)
-         call unsetMessageSource()
          return
       end select
 
@@ -8489,12 +8313,8 @@ contains
          if (dat%myFile%fileFound .eqv. .false.) then
             call allMessage(INFO, 'The file "'//trim(dat%myFile%FILENAME)// &
                             '" was not found.')
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG, "Return.")
-#endif
             no_early_return = .false.
             call communicateMapToSubdomainMaxMinNetcdfStatus(no_early_return)
-            call unsetMessageSource()
             return ! RETURN RETURN
          else
             ! the file was found, let's open it
@@ -8514,10 +8334,6 @@ contains
             call allMessage(INFO, 'The file '//trim(dat%myFile%filename)// &
                             'contains no data, '// &
                             'so the min/max record will be started anew.')
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG, "Return.")
-#endif
-            call unsetMessageSource()
 
             ! now close the netcdf file
             iret = nf90_close(dat%ncid)
@@ -8562,18 +8378,13 @@ contains
                             'perhaps during a previously attempted hot start run. '// &
                             ' Its values will not be read.')
             if (nfover == 0) then
-               call allMessage(ERROR, &
-                               'Execution terminated due to invalid '// &
-                               trim(dat%myFile%filename)//' file.')
-               call netcdfTerminate()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                              message='Execution terminated due to invalid '// &
+                              trim(dat%myFile%filename)//' file.')
             else
                call allMessage(INFO, 'The record for '// &
                                trim(dat%myFile%filename)// &
                                ' will be started anew and exection will continue.')
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-               call allMessage(DEBUG, "Return.")
-#endif
-               call unsetMessageSource()
 
                ! now close the netcdf file
                iret = nf90_close(dat%ncid)
@@ -8704,10 +8515,6 @@ contains
          call check_err(iret)
       end if
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine readAndMapToSubdomainMaxMinNetCDF
 !-----------------------------------------------------------------------
@@ -8750,10 +8557,7 @@ contains
       implicit none
       integer :: sd_element_number
       integer :: sd_node_number
-      call setMessageSource("createFullDomainIndexLists")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("createFullDomainIndexLists", NETCDFIO_TRACING)
       ! make a list of full domain nodes that correspond to this
       ! subdomain's nodes
       allocate (fullDomainNodeList(np))
@@ -8776,10 +8580,6 @@ contains
       end forall
       fullDomainIndexListsInitialized = .true.
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine createFullDomainIndexLists
 !-----------------------------------------------------------------------
@@ -8803,10 +8603,7 @@ contains
       integer, allocatable :: work_ints(:) ! holds fulldomain data
       integer :: iret ! success or failure of the netcdf call
 
-      call setMessageSource("mapFullDomainToSubDomain")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("mapFullDomainToSubDomain", NETCDFIO_TRACING)
 
       ! grab array of full domain data from netcdf file and pull out the
       ! data that is needed for this subdomain
@@ -8824,10 +8621,6 @@ contains
          deallocate (work_ints)
       end if
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine mapFulldomainToSubdomain
 !-----------------------------------------------------------------------
@@ -8854,10 +8647,7 @@ contains
       integer :: iret ! success or failure of the netcdf call
       integer :: i ! loop counter
 
-      call setMessageSource("mapFullDomainToSubDomainMbyNP")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("mapFullDomainToSubDomainMbyNP", NETCDFIO_TRACING)
       ! grab array of full domain data from netcdf file and pull out the
       ! data that is needed for this subdomain
       allocate (work_reals(m, n))
@@ -8868,10 +8658,6 @@ contains
       end do
       deallocate (work_reals)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine mapFulldomainToSubdomainMByNP
 !-----------------------------------------------------------------------
@@ -8896,10 +8682,7 @@ contains
       real(8), allocatable :: work_reals(:, :) ! holds fulldomain data
       integer :: iret ! success or failure of the netcdf call
 
-      call setMessageSource("mapFullDomainToSubDomainNPbyM")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("mapFullDomainToSubDomainNPbyM", NETCDFIO_TRACING)
       ! grab array of full domain data from netcdf file and pull out the
       ! data that is needed for this subdomain
       allocate (work_reals(n, m))
@@ -8908,10 +8691,6 @@ contains
       subdomain_reals(:, :) = work_reals(fullDomainIndexList, :)
       deallocate (work_reals)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine mapFulldomainToSubdomainNPByM
 !-----------------------------------------------------------------------
@@ -8933,10 +8712,7 @@ contains
 
       integer :: iret ! success or failure of netcdf call
 
-      call setMessageSource("getDimensions")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("getDimensions", NETCDFIO_TRACING)
 
 !     Inquire variables
       time_struct%timenc_dim_id = 0
@@ -8958,10 +8734,6 @@ contains
                                     len=mesh_struct%num_elems)
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine getDimensions
 !-----------------------------------------------------------------------
@@ -8974,6 +8746,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine readNetCDFHotstartHarmonic(lun)
       use SIZES, only: mnproc
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use GLOBAL, only: OutputDataDescript_t, &
                         IMAP_STAE_LG, NSTAE, IMAP_STAV_LG, NSTAV
       use HARM, only: GLOELV, STAELV, GLOULV, GLOVLV, STAULV, STAVLV, &
@@ -8981,9 +8754,7 @@ contains
                       INZ, INF, IMM, INSTAE, INSTAV, INHASE, INHASV, &
                       INHASE, INHAGE, INHAGV, ICALL, INFREQ, TIMEUD, &
                       ITUD, HA, INAMEFR, INP, IFF, IFACE, IFREQ
-#ifdef CMPI
-      use MESSENGER, only: MSG_FINI
-#endif
+
       implicit none
 
       integer, intent(in) :: lun
@@ -8994,11 +8765,9 @@ contains
       integer :: iret ! success or failure of the netcdf call
       integer :: tempid
       integer :: i
+      character(1024) :: scratchMessage
 
-      call setMessageSource("readNetCDFHotstartHarmonic")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("readNetCDFHotstartHarmonic", NETCDFIO_TRACING)
 
 !     Point to the hotstart file we want to work on
       if (lun == 67) then
@@ -9013,12 +8782,10 @@ contains
 !     Open fulldomain file
       inquire (FILE=hs%myFile%FILENAME, EXIST=hs%myFile%fileFound)
       if (hs%myFile%fileFound .eqv. .false.) then
-         write (*, *) "ERROR: The file ", hs%myFile%FILENAME, &
-            " was not found; ADCIRC terminating."
-#ifdef CMPI
-         call MSG_FINI()
-#endif
-         call exit(1)
+         write (scratchMessage, '(a,a,a)') "The file ", &
+            trim(hs%myFile%FILENAME), " was not found; ADCIRC terminating."
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=scratchMessage)
       else
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          call check_err(iret)
@@ -9283,10 +9050,6 @@ contains
       iret = nf90_close(hs%ncid)
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine readNetCDFHotstartHarmonic
 !-----------------------------------------------------------------------
@@ -9300,12 +9063,11 @@ contains
 !-----------------------------------------------------------------------
    subroutine readNetCDFHotstartHarmonicMeansVariances(lun)
       use SIZES, only: MNPROC
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       use GLOBAL, only: OutputDataDescript_t
       use HARM, only: ELAV, ELVA, XVELAV, YVELAV, XVELVA, YVELVA, &
                       NTSTEPS, NHAGE, NHAGV
-#ifdef CMPI
-      use MESSENGER, only: MSG_FINI
-#endif
+
       implicit none
 
       integer, intent(in) :: lun
@@ -9313,11 +9075,9 @@ contains
       integer :: kount(2), start(2)
       integer :: iret ! success or failure of the netcdf call
       integer :: tempid
+      character(1024) :: scratchMessage
 
-      call setMessageSource("readNetCDFHotstartHarmonicMeansVariances")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("readNetCDFHotstartHarmonicMeansVariances", NETCDFIO_TRACING)
 
 !     Point to the hotstart file we want to work on
       if (lun == 67) then
@@ -9332,12 +9092,10 @@ contains
 !     Open fulldomain file
       inquire (FILE=hs%myFile%FILENAME, EXIST=hs%myFile%fileFound)
       if (hs%myFile%fileFound .eqv. .false.) then
-         write (*, *) "ERROR: The file ", hs%myFile%FILENAME, &
-            " was not found; ADCIRC terminating."
-#ifdef CMPI
-         call MSG_FINI()
-#endif
-         call exit(1)
+         write (scratchMessage, '(a,a,a)') "The file ", &
+            trim(hs%myFile%FILENAME), " was not found; ADCIRC terminating."
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=scratchMessage)
       else
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          call check_err(iret)
@@ -9417,10 +9175,6 @@ contains
       iret = nf90_close(hs%ncid)
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine readNetCDFHotstartHarmonicMeansVariances
 !-----------------------------------------------------------------------
@@ -9439,9 +9193,7 @@ contains
                              l, n3dsd, i3dsdrec, n3dsv, i3dsvrec, n3dst, i3dstrec, n3dgd, &
                              i3dgdrec, n3dgv, i3dgvrec, n3dgt, i3dgtrec
       use MESH, only: NP
-#ifdef CMPI
-      use MESSENGER, only: MSG_FINI
-#endif
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
       integer, intent(in) :: lun
@@ -9452,11 +9204,9 @@ contains
       real(8), allocatable :: ip(:, :) ! imag part of Q (subdomain), i.e. v-vel
       integer :: iret ! success or failure of the netcdf call
       integer :: tempid
-!
-      call setMessageSource("readNetCDFHotstart3D")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      character(1024) :: scratchMessage
+
+      LOG_SCOPE_TRACED("readNetCDFHotstart3D", NETCDFIO_TRACING)
 
 !     Point to the hotstart file we want to work on
       if (lun == 67) then
@@ -9471,12 +9221,10 @@ contains
 !     Open fulldomain file
       inquire (FILE=hs%myFile%FILENAME, EXIST=hs%myFile%fileFound)
       if (hs%myFile%fileFound .eqv. .false.) then
-         write (*, *) "ERROR: The file ", hs%myFile%FILENAME, &
-            " was not found; ADCIRC terminating."
-#ifdef CMPI
-         call MSG_FINI()
-#endif
-         call exit(1)
+         write (scratchMessage, '(a,a,a)') "The file ", &
+            trim(hs%myFile%FILENAME), " was not found; ADCIRC terminating."
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE, &
+                        message=scratchMessage)
       else
          iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
          call check_err(iret)
@@ -9717,10 +9465,6 @@ contains
       iret = nf90_close(hs%ncid)
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine readNetCDFHotstart3D
 !-----------------------------------------------------------------------
@@ -9744,10 +9488,7 @@ contains
 !     -----------------
       integer :: dmy
 
-      call setMessageSource("defineMeshVariables")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("defineMeshVariables", NETCDFIO_TRACING)
 
 !     Define dimensions
       iret = nf90_def_dim(ncid, 'node', myMesh%num_nodes, &
@@ -10147,10 +9888,6 @@ contains
                           'face_node_connectivity', 'element')
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine defineMeshVariables
 !-----------------------------------------------------------------------
@@ -10171,10 +9908,7 @@ contains
       integer, intent(in) :: yid
       integer :: iret
 
-      call setMessageSource("defineCoordinateAttributes")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("defineCoordinateAttributes", NETCDFIO_TRACING)
 
       if (ics /= 1) then ! this indicates spherical coordinates
 
@@ -10219,10 +9953,6 @@ contains
          call check_err(iret)
       end if
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine defineCoordinateAttributes
 !-----------------------------------------------------------------------
@@ -10244,10 +9974,7 @@ contains
 
       integer :: kount(2), start(2)
 
-      call setMessageSource("putMeshVariables")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("putMeshVariables", NETCDFIO_TRACING)
 
 !     Store nodal coordinates
       iret = nf90_put_var(ncid, myMesh%X_id, myMesh%xnc)
@@ -10311,10 +10038,6 @@ contains
          end if
       end if
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine putMeshVariables
 !-----------------------------------------------------------------------
@@ -10387,10 +10110,7 @@ contains
       character :: zone*5
       integer :: values(8)
 
-      call setMessageSource("defineMetaData")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("defineMetaData", NETCDFIO_TRACING)
 
 !     Convert back to degrees ... the original input is in degrees,
 !     but this gets converted to radians immediately and unfortunately
@@ -10575,10 +10295,6 @@ contains
          call check_err(iret)
       end if
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine defineMetaData
 !-----------------------------------------------------------------------
@@ -10629,10 +10345,7 @@ contains
       character :: zone*5
       integer :: values(8)
 
-      call setMessageSource("updateMetaData")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("updateMetaData", NETCDFIO_TRACING)
 !     Open existing NetCDF file
       iret = nf90_open(myFile%FILENAME, NF90_WRITE, ncid)
       call check_err(iret)
@@ -10678,10 +10391,7 @@ contains
 !     now close the updated netcdf file
       iret = nf90_close(ncid)
       call check_err(iret)
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
+
 !-----------------------------------------------------------------------
    end subroutine updateMetaData
 !-----------------------------------------------------------------------
@@ -10701,10 +10411,7 @@ contains
       integer :: NCID, dimid_node, dimid_nele
       type(fileData), intent(INOUT) :: myFile
 
-      call setMessageSource("readMetaData")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("readMetaData", NETCDFIO_TRACING)
       call CHECK_ERR(nf90_open(myFile%FILENAME, NF90_NOWRITE, NCID))
       call CHECK_ERR(nf90_get_att(NCID, NF90_GLOBAL, 'rundes', rundes))
       call CHECK_ERR(nf90_get_att(NCID, NF90_GLOBAL, 'runid', runid))
@@ -10724,11 +10431,6 @@ contains
       call CHECK_ERR(nf90_inquire_dimension(ncid, dimid_node, len=NP_G))
       call CHECK_ERR(nf90_inquire_dimension(ncid, dimid_nele, len=NE_G))
       call CHECK_ERR(nf90_close(NCID))
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
-      call unsetMessageSource()
-      return
 !-----------------------------------------------------------------------
    end subroutine ReadMetaData
 !-----------------------------------------------------------------------
@@ -10748,10 +10450,7 @@ contains
       character(*), intent(in) :: english
       integer :: iret ! success or failure of netcdf call
 
-      call setMessageSource("putUnitsAttribute")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("putUnitsAttribute", NETCDFIO_TRACING)
 
       if (G < 11.d0) then
          iret = nf90_put_att(ncid, var_id, 'units', metric)
@@ -10760,10 +10459,6 @@ contains
       end if
       call check_err(iret)
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine putUnitsAttribute
 !-----------------------------------------------------------------------
@@ -10798,7 +10493,7 @@ contains
       host_p, convention_p, contact_p, dtdp_p, ihot_p, ics_p, &
       nolifa_p, nolica_p, nolicat_p, ncor_p, ntip_p, nws_p, nramp_p, &
       statim_p, reftim_p, rnday_p, dramp_p, a00_p, b00_p, c00_p, &
-      h0_p, cori_p, ntif_p, nbfr_p, myProc_p, screenUnit_p, nolibf_p, &
+      h0_p, cori_p, ntif_p, nbfr_p, myProc_p, nolibf_p, &
       nwp_p, tau0_p, cf_p, eslm_p, neta_p, &
       nabout_p, nscreen_p, &
       nfen_p, iden_p, islip_p, kp_p, z0s_p, z0b_p, theta1_p, theta2_p, &
@@ -10818,13 +10513,14 @@ contains
                         references, comments, host, convention, contact, dtdp, ihot, &
                         nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim, &
                         reftim, rnday, dramp, h0, cori, ntif, nbfr, &
-                        screenUnit, nabout, nscreen, C3D, runid
+                        C3D, runid
       use GLOBAL_3DVS, only: &
          nfen, iden, islip, kp, z0s, z0b, theta1, theta2, &
          ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd, &
          nvtd, alp4
       use GWCE, only: a00, b00, c00
       use NodalAttributes, only: nolibf, nwp, tau0, cf, eslm
+      use mod_logging, only: nscreen, nabout, t_log_level
       implicit none
 
 !     Declare the argument variables coming in from adcprep.
@@ -10896,7 +10592,6 @@ contains
       integer, intent(in) :: ntif_p
       integer, intent(in) :: nbfr_p
       integer, intent(in) :: myProc_p
-      integer, intent(in) :: screenUnit_p
       integer, intent(in) :: nolibf_p
       integer, intent(in) :: nwp_p
       real(8), intent(in) :: tau0_p
@@ -10928,10 +10623,7 @@ contains
       real(8), intent(in) :: alp4_p
       logical, intent(in) :: C3D_p
 
-      call setMessageSource("setADCIRCParameters")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("setADCIRCParameters", NETCDFIO_TRACING)
 
       base_date = base_date_p
       NE_G = NE_G_p
@@ -11014,16 +10706,14 @@ contains
       ntif = ntif_p
       nbfr = nbfr_p
       myProc = myProc_p
-      screenUnit = screenUnit_p
       nolibf = nolibf_p
       nwp = nwp_p
       tau0 = tau0_p
       cf = cf_p
       eslm = eslm_p
       neta = neta_p
-      nabout = nabout_p
+      nabout = t_log_level(nabout_p)
       nscreen = nscreen_p
-
       nfen = nfen_p
       iden = iden_p
       islip = islip_p
@@ -11046,10 +10736,6 @@ contains
       alp4 = alp4_p
       C3D = C3D_p
 
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
    end subroutine setADCIRCParameters
 !-----------------------------------------------------------------------
@@ -11063,10 +10749,7 @@ contains
    subroutine freeNetCDFCoord()
       implicit none
 
-      call setMessageSource("freeNetCDFCoord.")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("freeNetCDFCoord.", NETCDFIO_TRACING)
 
       if (adcircMesh%initialized .eqv. .true.) then
          deallocate (adcircMesh%xnc)
@@ -11082,10 +10765,7 @@ contains
          deallocate (adcircMesh%nmnc)
          adcircMesh%initialized = .false.
       end if
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
+
 !-----------------------------------------------------------------------
    end subroutine freeNetCDFCoord
 !-----------------------------------------------------------------------

@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C----------------------------------------------------------------------------
 C
 C                        ADCPREP Version 2.2 (  09/20/2006 )
@@ -111,7 +112,7 @@ C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
-      USE GLOBAL, ONLY : screenUnit, initLogging
+      use mod_logging, only: screenUnit
       USE ADC_CONSTANTS, ONLY: Rearth, deg2rad, rad2deg
       USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType,
      &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
@@ -128,15 +129,11 @@ C
       INTEGER :: IARGC    ! function to return command line arguments
       INTEGER :: I        ! loop counter for command line arguments
       CHARACTER(2048) :: CMDLINEARG ! content of cmd line arg
-C
-      ! set the names of the log levels for use in log messages
-      call initLogging()
+      CHARACTER(LEN=256), PARAMETER :: localdir = '.'
+
       ! set the present working directory as the directory containing
       ! the fulldomain input files as the
       globaldir = '.'
-
-      !jgf51.42: NCSU Subdomain Modeling
-      call readFort015prep()
 
 C  Define File Format Version
 
@@ -175,21 +172,26 @@ C
       controlFileNameSpecified = .false.
       controlFileName = 'fort.15'
 C
-C--Init Memory Usage
-C
-      call memory_init()
-C
 C     jgf50.11: Parse command line arguments. This is needed initially
 C     so that fort.20 and fort.88 can be prepped individually (without
 C     having to do a prep all and without having to add menu items).
-      ARGCOUNT = IARGC() ! count up command line options
+      ARGCOUNT = COMMAND_ARGUMENT_COUNT() ! count up command line options
       IF (ARGCOUNT.gt.0) THEN
          I=0
          DO WHILE (I.lt.ARGCOUNT)
             I = I + 1
-            CALL GETARG(I, CMDLINEARG)
-            WRITE(*,*) "INFO: Processing ",TRIM(CMDLINEARG)
+            CALL GET_COMMAND_ARGUMENT(I, CMDLINEARG)
+
             SELECT CASE(TRIM(CMDLINEARG))
+            CASE("-h","--help")
+               CALL PRINT_HELP()
+               CALL exit(0)
+            CASE("-v","--version")
+               WRITE(*,'(A)') TRIM(ADC_VERSION)
+               CALL exit(0)
+            CASE("--hash")
+               WRITE(*,'(A)') TRIM(ADC_HASH)
+               CALL exit(0)
             CASE("--partmesh")
                PARTITION = .TRUE.
                PARTITION_APPROACH = 1 
@@ -210,30 +212,29 @@ C     having to do a prep all and without having to add menu items).
                strictBoundaries = .true.
             CASE("--np")
                I = I + 1
-               CALL GETARG(I,CMDLINEARG)
+               CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                READ(CMDLINEARG,*) MNPROC
-            ! jgf51.21.27: Added options related to the mesh file
             case("-MFT","-mft","--MFT","--mft") ! mesh file type
                   i = i + 1
-                  call getarg(i, CMDLINEARG)
+                  call GET_COMMAND_ARGUMENT(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
                   case("ASCII","Ascii","ascii")
                      meshType = ASCII ! this is the default anyway
                   case("XDMF","Xdmf","xdmf")
                      meshType = XDMF
                   case default
-                     write(*,*) "WARNING: The mesh file type '",
+                     write(*,*) "ERROR: The mesh file type '",
      &                   trim(cmdlinearg),
      &               "' is not valid. Valid types are ascii and xdmf."
+                     call exit(1)
                   end select
             case("-MFN","-mfn","--MFN","--mfn") ! mesh file name
                meshFileNameSpecified = .true.
                i = i + 1
-               call getarg(i,meshFileName)
-            ! jgf51.21.27: Added options related to the nodal attributes file
+               call GET_COMMAND_ARGUMENT(i,meshFileName)
             case("-NFT","-nft","--NFT","--nft") ! nodal attributes file type
                   i = i + 1
-                  call getarg(i, CMDLINEARG)
+                  call GET_COMMAND_ARGUMENT(i, CMDLINEARG)
                   select case(trim(cmdlinearg))
                   case("ASCII","Ascii","ascii")
                      naType = ASCII ! this is the default anyway
@@ -241,19 +242,25 @@ C     having to do a prep all and without having to add menu items).
                      naType = XDMF
                   case default
                      write(*,*)
-     &                   "WARNING: The nodal attributes file type '",
+     &                   "ERROR: The nodal attributes file type '",
      &                   trim(cmdlinearg),
      &               "' is not valid. Valid types are ascii and xdmf."
+                      call exit(1)
                   end select
-            case("--NFN","--nfn") ! nodal attributes file name
+            case("-NFN","--nfn") ! nodal attributes file name
                   naFileNameSpecified = .true.
                   i = i + 1
-                  call getarg(i,naFileName)
+                  call GET_COMMAND_ARGUMENT(i,naFileName)
             case default
-                  write(*,*) "WARNING: The command line option '",
-     &                  trim(cmdlinearg),"' is not valid and will be ignored."
+                  write(*,'(3A)') "ERROR: The command line option '",
+     &                  trim(cmdlinearg),"' is not valid."
+                  call exit(1)
             end select
          END DO
+
+         call readFort015prep()
+         call memory_init()
+
          ! Conk out if MNPROC was not specified
          IF (MNPROC.EQ.0) THEN
             WRITE(*,*) "ERROR: MNPROC was not specified."
@@ -391,8 +398,8 @@ C
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
-      use global, only : logMessage, INFO, setMessageSource,
-     &   unsetMessageSource, DEBUG, allMessage
+      use mod_logging, only : logMessage, t_log_scope,
+     &   init_log_scope, allMessage, INFO, DEBUG
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
      &   subPrep019
@@ -423,15 +430,7 @@ C     DW
       INTEGER:: JJ
       LOGICAL:: F5354R
 C
-      call setMessageSource("prepinput")
-#if defined (PREPINPUT_TRACE) || defined (ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      CALL setMessageSource("prepinput")
-#if defined(ALL_TRACE)
-      CALL allMessage(DEBUG,"Enter")
-#endif      
+      LOG_SCOPE_TRACED("prepinput", PREPINPUT_TRACING)
 
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -682,7 +681,7 @@ C-- Create MNPROC sub-directories of the working directory
 C
       DO PE=0, MNPROC-1
          PENUM  = 'PE0000'
-         CALL IWRITE(PENUM,3,6,PE)
+         WRITE(PENUM(3:6),'(I4.4)') PE
          !tcm 20110510 v50.05 adding support for windows
 #ifdef WINDOWS
          dir_result = makedirqq(PENUM) !tcm v50.85 added
@@ -950,10 +949,6 @@ CC -- Finish Addition by CF
 9999  CONTINUE
       print *, ""
       print *, "INFO: Finished pre-processing input files."
-#if defined(PREPINPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
       END SUBROUTINE
 C---------------------------------------------------------------------------
@@ -1115,3 +1110,62 @@ c
 c
       RETURN
       END
+
+
+C---------------------------------------------------------------------------
+C               S U B R O U T I N E   P R I N T _ H E L P
+C---------------------------------------------------------------------------
+C     Print detailed help information for adcprep command-line options
+C---------------------------------------------------------------------------
+      SUBROUTINE PRINT_HELP()
+      USE VERSION
+      IMPLICIT NONE
+
+      WRITE(*,'(A)') 'Usage: adcprep [OPTION]...'
+      WRITE(*,'(A)') 'Decompose ADCIRC input files for parallel execution.'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'Without command-line options, adcprep runs in interactive mode.'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'General options:'
+      WRITE(*,'(A)') '  -h, --help             display this help and exit'
+      WRITE(*,'(A)') '  -v, --version          output version information and exit'
+      WRITE(*,'(A)') '      --hash             output git commit hash and exit'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'Required option for all operations:'
+      WRITE(*,'(A)') '      --np NPROC         number of processors for parallel run'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'Operations (select one):'
+      WRITE(*,'(A)') '      --partmesh         partition mesh using METIS (nodal graph)'
+      WRITE(*,'(A)') '      --partmesh_npart_from_epart'
+      WRITE(*,'(A)') '                         partition nodes using element partition'
+      WRITE(*,'(A)') '      --prepall          decompose all input files'
+      WRITE(*,'(A)') '      --prep13           decompose nodal attributes file (fort.13) only'
+      WRITE(*,'(A)') '      --prep15           decompose run info file (fort.15) only'
+      WRITE(*,'(A)') '      --prep20           decompose time-varying flux file (fort.20) only'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'Mesh partitioning options:'
+      WRITE(*,'(A)') '      --strict-boundaries'
+      WRITE(*,'(A)') '                         enable strict boundary checking; retry partition'
+      WRITE(*,'(A)') '                         with modified weights if issues detected'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'File format options:'
+      WRITE(*,'(A)') '  -MFT, --mft TYPE       mesh file type: ascii or xdmf (default: ascii)'
+      WRITE(*,'(A)') '  -MFN, --mfn FILENAME   mesh filename (default: fort.14)'
+      WRITE(*,'(A)') '  -NFT, --nft TYPE       nodal attributes file type: ascii or xdmf'
+      WRITE(*,'(A)') '                         (default: ascii)'
+      WRITE(*,'(A)') '  -NFN, --nfn FILENAME'
+      WRITE(*,'(A)') '                         nodal attributes filename (default: fort.13)'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'Typical workflow:'
+      WRITE(*,'(A)') '  1. Partition the mesh:'
+      WRITE(*,'(A)') '       adcprep --np 256 --partmesh'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') '  2. Decompose all input files:'
+      WRITE(*,'(A)') '       adcprep --np 256 --prepall'
+      WRITE(*,'(A)') ''
+      WRITE(*,'(A)') 'Report bugs to <https://github.com/adcirc/adcirc/issues>.'
+      WRITE(*,'(A)') 'ADCIRC home page: <https://adcirc.org>.'
+      WRITE(*,'(A)') 'User documentation: <https://adcirc.github.io/adcirc/>.'
+
+      RETURN
+      END SUBROUTINE PRINT_HELP

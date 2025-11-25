@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C----------------------------------------------------------------------------
 C
 C                           MODULE READ_GLOBAL
@@ -501,11 +502,11 @@ C---------------------------------------------------------------------
       USE PRE_GLOBAL
       USE SIZES, ONLY : MNHARF
       USE MESH, ONLY : CYLINDERMAP
-      USE GLOBAL, ONLY : parse, hss, screenUnit, STATNAME,
-     &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
-     &                   allMessage, setMessageSource, deg2rad,
-     &                   unsetMessageSource, INFO, logMessage,
-     &                   scratchMessage, screenMessage
+      USE GLOBAL, ONLY : parse, hss, STATNAME,
+     &                   STATNAMEV, STATNAMEM, STATNAMEC, deg2rad
+      USE MOD_LOGGING, ONLY : allMessage, t_log_scope,
+     &                   init_log_scope, logMessage, screenMessage,
+     &                   ERROR, DEBUG, INFO, screenUnit
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
@@ -519,6 +520,7 @@ C      MCF ADDITION FOR READING AND WRITING STATION INFO IN NETCDF
 C
       CHARACTER(132) STATLINE
       CHARACTER(50) LVAR(3)
+      CHARACTER(1024) scratchMessage
 C
 C    ===================================================================
 
@@ -582,9 +584,10 @@ C.....tcm v52.30.01 added for Smag_Control
 
 C.....Control for VEW1D channels 11/06/2023 sb
       NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
-     &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, 
+     &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,
      &  BARSLIM64_ELEM, BARSLIM64_EDGE
-     
+
+      LOG_SCOPE_TRACED("read15", READ_GLOBAL_TRACING)
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15
 C..... file.
@@ -602,10 +605,6 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       foundVEW1DChannelControlNamelist = .false.
 #ifdef ADCNETCDF
       FOUND_OWINC_NML = .FALSE.
-#endif
-      call setMessageSource("read15")
-#ifdef READ_GLOBAL_TRACE
-      call screenMessage(DEBUG,"Enter.")
 #endif
 C
 C--The Run Info file was opened in SIZEUP, performed a rewind, and is ready here
@@ -2069,11 +2068,6 @@ C--Close Global Run Info file
 C
       CLOSE(15)
       call memory_status()
-C
-#ifdef READ_GLOBAL_TRACE
-      call screenMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C
       RETURN
  80   FORMAT(A80)

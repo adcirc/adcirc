@@ -14,10 +14,8 @@
 #define ONLY_COMP_FORCES
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-      USE WRITE_OUTPUT, ONLY : terminate
-      USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR, &
-                setMessageSource, unsetMessageSource, allMessage, &
-                scratchMessage
+      USE mod_logging, ONLY : setMessageSource, unsetMessageSource, &
+                allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
 
       IMPLICIT NONE
 

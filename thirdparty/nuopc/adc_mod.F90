@@ -962,8 +962,9 @@ module adc_mod
     !      (optional) nodeLael - node label
     !-----+---------+---------+---------+---------+---------+---------+
     subroutine read14femesh(meshfileName, nn, vx, etov, etog, bxy, nodeLabel)
-        use global, only : openFileForRead, nabout, scratchMessage, &
-                ERROR, setMessageSource, unsetMessageSource, allMessage
+        use mod_io, only: openFileForRead
+        use mod_logging, only : setMessageSource, &
+                unsetMessageSource, allMessage, nabout, ERROR
         use hashtable, only : ipair, dict, add_ipair, find, close_dict
         use mesh, only : terminate
 
@@ -985,6 +986,7 @@ module adc_mod
         integer :: ios     ! i/o status
         integer :: lineNum ! line number currently being read
         CHARACTER (LEN = 80) :: agridtmp
+        CHARACTER (LEN = 1024) :: scratchMessage
 
         INTEGER :: ne, np, nfluxftmp
         INTEGER, allocatable :: labelstmp(:)

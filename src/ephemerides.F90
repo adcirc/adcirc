@@ -87,9 +87,6 @@ contains
 #ifdef ADCNETCDF
    subroutine HEAVENLY_OBJS_COORDS_FROM_TABLE(self, MoonSunCoor, julian_date_loc, ierr, UniformDT)
       use mod_astronomic, only: km2AU
-#ifdef CMPI
-      use messenger, only: msg_fini
-#endif
       implicit none
       class(t_ephemerides), intent(inout) :: self
       real(8), intent(in) :: julian_date_loc

@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 !******************************************************************************
 ! PADCIRC VERSION 47.xx 10/13/2006                                             *
 !******************************************************************************
@@ -67,7 +68,7 @@ module MESSENGER
    real(8), allocatable :: SENDBUF(:, :), RECVBUF(:, :)
    complex(8), allocatable :: SENDBUF_COMPLEX(:, :), RECVBUF_COMPLEX(:, :)
    !jgf50.82: Create a flag for unrecoverable issue on a subdomain
-   logical :: subdomainFatalError ! true if mpi_abort should be called
+   logical :: subdomainFatalError = .false. ! true if mpi_abort should be called
    logical :: writers_active = .false.
    logical :: hs_writers_active = .false.
 
@@ -100,20 +101,19 @@ contains
                          MPI_Comm_size, MPI_Comm_rank, MPI_Group_incl, MPI_Comm_create, &
                          MPI_Comm_group, MPI_Init, MPI_Comm
       use SIZES, only: MNALLPROC, MNPROC, MYPROC, MNWPROH, MNWPROC
-      use GLOBAL, only: COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, setMessageSource, &
-                        screenMessage, allMessage, unsetMessageSource, WRITER_ID, COMM
+      use GLOBAL, only: COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, COMM
+      use mod_logging, only: t_log_scope, init_log_scope, screenMessage, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: DEBUG
 #endif
       implicit none
       type(MPI_Comm), optional, intent(in) :: MPI_COMM_IN
       integer :: I
       integer, allocatable :: RANKS(:) ! array of mpi ranks for compute processors
       integer :: IRANK_SLEEP(2) !st3 100711  for hsfile
-      call setMessageSource("msg_init")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call screenMessage(DEBUG, "Enter.") ! log to screen; don't have log dirname
-#endif
+
+      LOG_SCOPE_TRACED("msg_init", MESSENGER_TRACING)
+
       subdomainFatalError = .false.
       if (present(MPI_COMM_IN)) then
          !.......Duplicate communicator passed from outside
@@ -200,10 +200,6 @@ contains
       deallocate (RANKS)
       COMM = COMM_COMP
 
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
       !---------------------------------------------------------------------
    end subroutine MSG_INIT
    !---------------------------------------------------------------------
@@ -214,25 +210,19 @@ contains
    !  Delete MPI resources and Shutdown MPI library.
    !  vjp  8/29/1999
    !---------------------------------------------------------------------
-   subroutine MSG_FINI(NO_MPI_FINALIZE)
+   subroutine MSG_FINI(DO_MPI_FINALIZE)
       use mpi_f08, only: MPI_Send, MPI_INTEGER, MPI_Barrier, MPI_Abort, MPI_Finalize, &
                          MPI_COMM_WORLD
 
       use SIZES, only: MNWPROC, MYPROC, MNPROC, MNWPROH
       use GLOBAL, only: SIG_TERM, COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, &
-                        CPL2STWAVE, Flag_ElevError, Flag_VelError, setMessageSource, &
-                        allMessage, unsetMessageSource
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
+                        CPL2STWAVE, Flag_ElevError, Flag_VelError
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
-      logical, optional, intent(in) :: NO_MPI_FINALIZE
+      logical, optional, intent(in) :: DO_MPI_FINALIZE
       integer :: I
 
-      call setMessageSource("msg_fini")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("msg_fini", MESSENGER_TRACING)
 
       if (MNWPROC > 0 .and. writers_active) then
          if (MYPROC == 0) then
@@ -240,7 +230,7 @@ contains
                write (16, *) 'PROC ', MYPROC, ' IS SENDING SIG_TERM TO WRITER ', &
                   I
                call MPI_SEND(SIG_TERM, 1, MPI_INTEGER, MNPROC, &
-                             TAG, COMM_WRITER(I), IERR)
+                             TAG, COMM_WRITER(I))
             end do
          end if
       end if
@@ -250,17 +240,16 @@ contains
             do I = 1, MNWPROH
                write (16, *) 'PROC ', MYPROC, ' IS SENDING SIG_TERM TO HSWRITER', &
                   I
-               call MPI_BARRIER(COMM_HSLEEP(I), IERR)
+               call MPI_BARRIER(COMM_HSLEEP(I))
                call MPI_SEND(SIG_TERM, 1, MPI_INTEGER, MNPROC, &
-                             TAG, COMM_WRITEH(I), IERR)
+                             TAG, COMM_WRITEH(I))
             end do
          end if
       end if
 
       if (subdomainFatalError .eqv. .true.) then
-         ! jgf50.82: Return the rank of the offending processor
-         ! as the error code
-         call MPI_ABORT(MPI_COMM_ADCIRC, MYPROC, IERR)
+         write (*, *) 'PROC ', MYPROC, ' IS ABORTING MPI_COMM_ADCIRC DUE TO FATAL ERROR'
+         call MPI_ABORT(MPI_COMM_ADCIRC, MYPROC)
       end if
 
       ! tcm v51.32  added a "go nuclear" option for killing
@@ -270,31 +259,28 @@ contains
       ! Note: mpi_comm_world is defined in mpich.f
       if (CPL2STWAVE .eqv. .true.) then
          if (Flag_ElevError .eqv. .true.) then
-            call mpi_abort(mpi_comm_world, myproc, ierr)
+            write (*, *) 'PROC ', MYPROC, &
+               ' IS ABORTING MPI_COMM_WORLD DUE TO ELEVATION ERROR'
+            call mpi_abort(mpi_comm_world, myproc)
          end if
          ! DMW 202401 Check for velocity exceeding error level
          if (Flag_VelError .eqv. .true.) then
-            call mpi_abort(mpi_comm_world, myproc, ierr)
+            write (*, *) 'PROC ', MYPROC, &
+               ' IS ABORTING MPI_COMM_WORLD DUE TO VELOCITY ERROR'
+            call mpi_abort(mpi_comm_world, myproc)
          end if
       end if
 
-      if (present(NO_MPI_FINALIZE)) then
-         if (.not. NO_MPI_FINALIZE) then
+      if (present(DO_MPI_FINALIZE)) then
+         if (DO_MPI_FINALIZE) then
             call MPI_FINALIZE(IERR)
-            if (MYPROC == 0) &
-               print *, "MPI terminated with Status = ", IERR
+            if (MYPROC == 0) write (*, '(A,I0)') "INFO: MPI terminated with status = ", IERR
          end if
       else
          call MPI_FINALIZE(IERR)
-         if (MYPROC == 0) &
-            print *, "MPI terminated with Status = ", IERR
+         if (MYPROC == 0) write (*, '(A,I0)') "INFO: MPI terminated with status = ", IERR
       end if
 
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
       !---------------------------------------------------------------------
    end subroutine MSG_FINI
    !---------------------------------------------------------------------
@@ -316,29 +302,27 @@ contains
    !
    !  tcm v50.21 20110610 -- Changed I8 to I12 formats
    !---------------------------------------------------------------------
-   subroutine MSG_TABLE()
+   subroutine MSG_TABLE(NSTA3DD_IN, NSTA3DV_IN, NSTA3DT_IN, &
+                        NSTA3DD_G_OUT, NSTA3DV_G_OUT, NSTA3DT_G_OUT, &
+                        IMAP_STA3DD_LG_OUT, IMAP_STA3DV_LG_OUT, IMAP_STA3DT_LG_OUT)
       use SIZES, only: MNE, MNP, INPUTDIR, MYPROC
       use GLOBAL, only: IMAP_EL_LG, NODES_LG, FileFmtVersion, NP_G, NE_G, &
                         NSTAE, NSTAV, NSTAM, NSTAC, NSTAE_G, NSTAV_G, NSTAM_G, NSTAC_G, &
                         C3D, CMP_VERSION_NUMBERS, IMAP_STAE_LG, IMAP_STAV_LG, &
-                        IMAP_STAM_LG, IMAP_STAC_LG, ERROR, setMessageSource, &
-                        allMessage, unsetMessageSource
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
-      use GLOBAL_3DVS, only: NSTA3DD, NSTA3DV, NSTA3DT, &
-                             NSTA3DD_G, NSTA3DV_G, NSTA3DT_G, &
-                             IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG
+                        IMAP_STAM_LG, IMAP_STAC_LG
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage, ERROR
       implicit none
+      integer, optional, intent(in) :: NSTA3DD_IN, NSTA3DV_IN, NSTA3DT_IN
+      integer, optional, intent(out) :: NSTA3DD_G_OUT, NSTA3DV_G_OUT, NSTA3DT_G_OUT
+      integer, allocatable, optional, intent(out) :: IMAP_STA3DD_LG_OUT(:)
+      integer, allocatable, optional, intent(out) :: IMAP_STA3DV_LG_OUT(:)
+      integer, allocatable, optional, intent(out) :: IMAP_STA3DT_LG_OUT(:)
       integer :: IDPROC, NLOCAL, I, J, jdumy_loc
       integer :: jdumy, jdumy_G, jdumy_max, inputFileFmtVn
       character(10) :: BlkName
       logical :: FileFound
 
-      call setMessageSource("msg_table")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("msg_table", MESSENGER_TRACING)
 
       FileFound = .false.
       inquire (FILE=trim(INPUTDIR)//'/'//'fort.18', EXIST=FileFound)
@@ -482,46 +466,41 @@ contains
       end do
 
       !     jgf49.43.18: Add 3D station mappings if appropriate. Used by globalio.
-      if (C3D) then
-         read (18, 3015) NSTA3DD_G
-         if (NSTA3DD > 0) then
-            allocate (IMAP_STA3DD_LG(NSTA3DD))
-            do I = 1, NSTA3DD
-               read (18, '(I12)') IMAP_STA3DD_LG(I)
+      if (C3D .and. present(NSTA3DD_IN) .and. present(NSTA3DV_IN) .and. &
+          present(NSTA3DT_IN)) then
+         read (18, 3015) NSTA3DD_G_OUT
+         if (NSTA3DD_IN > 0) then
+            allocate (IMAP_STA3DD_LG_OUT(NSTA3DD_IN))
+            do I = 1, NSTA3DD_IN
+               read (18, '(I12)') IMAP_STA3DD_LG_OUT(I)
             end do
          end if
 
-         read (18, 3015) NSTA3DV_G
-         if (NSTA3DV > 0) then
-            allocate (IMAP_STA3DV_LG(NSTA3DV))
-            do I = 1, NSTA3DV
-               read (18, '(I12)') IMAP_STA3DV_LG(I)
+         read (18, 3015) NSTA3DV_G_OUT
+         if (NSTA3DV_IN > 0) then
+            allocate (IMAP_STA3DV_LG_OUT(NSTA3DV_IN))
+            do I = 1, NSTA3DV_IN
+               read (18, '(I12)') IMAP_STA3DV_LG_OUT(I)
             end do
          end if
 
-         read (18, 3015) NSTA3DT_G
-         if (NSTA3DT > 0) then
-            allocate (IMAP_STA3DT_LG(NSTA3DT))
-            do I = 1, NSTA3DT
-               read (18, '(I12)') IMAP_STA3DT_LG(I)
+         read (18, 3015) NSTA3DT_G_OUT
+         if (NSTA3DT_IN > 0) then
+            allocate (IMAP_STA3DT_LG_OUT(NSTA3DT_IN))
+            do I = 1, NSTA3DT_IN
+               read (18, '(I12)') IMAP_STA3DT_LG_OUT(I)
             end do
          end if
       end if
 
       close (18)
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
       return
 1130  format(8x, 6i12)
 3010  format(8x, 2i12)
 3015  format(8x, 3i12)
 3020  format(a8, I12)
 9973  format(/, 1x, '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!', //)
-      !---------------------------------------------------------------------
    end subroutine MSG_TABLE
-   !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
    !     S U B R O U T I N E   M S G _ S T A R T
@@ -531,15 +510,11 @@ contains
    !---------------------------------------------------------------------
    subroutine MSG_START()
       use SIZES, only: MNP, MNFEN
-      use GLOBAL, only: C3D, setMessageSource, allMessage, unsetMessageSource
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
+      use GLOBAL, only: C3D
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
-      call setMessageSource("msg_start")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("msg_start", MESSENGER_TRACING)
 
       allocate (ISENDBUF(MNP, NEIGHPROC), IRECVBUF(MNP, NEIGHPROC))
       allocate (REQ_I1(RDIM), REQ_I2(RDIM))
@@ -562,11 +537,6 @@ contains
          allocate (SENDBUF(MNP, NEIGHPROC))
          allocate (RECVBUF(MNP, NEIGHPROC))
       end if
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
       !---------------------------------------------------------------------
    end subroutine MSG_START
    !---------------------------------------------------------------------
@@ -581,19 +551,14 @@ contains
    !---------------------------------------------------------------------
    subroutine UPDATEI(IVEC1, IVEC2, NMSG)
       use mpi_f08, only: MPI_IRECV, MPI_ISEND, MPI_INTEGER, MPI_WAITSOME
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
       integer, intent(IN) :: NMSG
       integer, intent(INOUT) :: IVEC1(NMSG), IVEC2(NMSG)
       integer :: N, I, J, NCOUNT, NFINI, TOT
 
-      call setMessageSource("updatei")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("updatei", MESSENGER_TRACING)
 
       !..Pack 1 or 2 Messages
       do J = 1, NEIGHPROC
@@ -613,16 +578,16 @@ contains
       if (NMSG == 1) then
          do J = 1, NEIGHPROC
             call MPI_IRECV(IRECVBUF(1, J), NNODRECV(J), &
-                           MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I1(J), IERR)
+                           MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I1(J))
             call MPI_ISEND(ISENDBUF(1, J), NNODSEND(J), &
-                           MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I1(J + NEIGHPROC), IERR)
+                           MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I1(J + NEIGHPROC))
          end do
       else
          do J = 1, NEIGHPROC
             call MPI_IRECV(IRECVBUF(1, J), 2*NNODRECV(J), &
-                           MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I2(J), IERR)
+                           MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I2(J))
             call MPI_ISEND(ISENDBUF(1, J), 2*NNODSEND(J), &
-                           MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I2(J + NEIGHPROC), IERR)
+                           MPI_INTEGER, IPROC(J), TAG, COMM, REQ_I2(J + NEIGHPROC))
          end do
       end if
       !..Unpack Received messages as they arrive
@@ -632,7 +597,7 @@ contains
             do N = 1, RDIM
                INDX(N) = 0
             end do
-            call MPI_WAITSOME(RDIM, REQ_I1, NFINI, INDX, STAT_I1, IERR)
+            call MPI_WAITSOME(RDIM, REQ_I1, NFINI, INDX, STAT_I1)
             TOT = TOT + NFINI
             do N = 1, NFINI
                if (INDX(N) > 0 .and. INDX(N) <= RDIM) then
@@ -653,7 +618,7 @@ contains
             do N = 1, RDIM
                INDX(N) = 0
             end do
-            call MPI_WAITSOME(RDIM, REQ_I2, NFINI, INDX, STAT_I2, IERR)
+            call MPI_WAITSOME(RDIM, REQ_I2, NFINI, INDX, STAT_I2)
             TOT = TOT + NFINI
             do N = 1, NFINI
                if (INDX(N) > 0 .and. INDX(N) <= RDIM) then
@@ -673,15 +638,8 @@ contains
             end do
          end do
       end if
-
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
       !---------------------------------------------------------------------
    end subroutine UPDATEI
-   !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
    !     S U B R O U T I N E   U P D A T E R
@@ -693,9 +651,10 @@ contains
    !---------------------------------------------------------------------
    subroutine UPDATER(VEC1, VEC2, VEC3, NMSG)
       use mpi_f08, only: MPI_IRECV, MPI_ISEND, MPI_WAITSOME, MPI_DOUBLE_PRECISION
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: debug
 #endif
       implicit none
       integer, intent(IN) :: NMSG ! number of arrays to pass
@@ -707,10 +666,7 @@ contains
       integer :: tot ! total number of completed requests
       integer :: ncount ! num values passed to a particular subdomain neighbor
 
-      call setMessageSource("updater")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("updater", MESSENGER_TRACING)
 
       !
       ! loop over neighboring subdomains
@@ -741,23 +697,23 @@ contains
       if (NMSG == 1) then
          do J = 1, NEIGHPROC
             call MPI_IRECV(RECVBUF(1, J), NNODRECV(J), &
-                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R1(J), IERR)
+                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R1(J))
             call MPI_ISEND(SENDBUF(1, J), NNODSEND(J), &
-                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R1(J + NEIGHPROC), IERR)
+                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R1(J + NEIGHPROC))
          end do
       elseif (NMSG == 2) then
          do J = 1, NEIGHPROC
             call MPI_IRECV(RECVBUF(1, J), 2*NNODRECV(J), &
-                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R2(J), IERR)
+                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R2(J))
             call MPI_ISEND(SENDBUF(1, J), 2*NNODSEND(J), &
-                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R2(J + NEIGHPROC), IERR)
+                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R2(J + NEIGHPROC))
          end do
       else
          do J = 1, NEIGHPROC
             call MPI_IRECV(RECVBUF(1, J), 3*NNODRECV(J), &
-                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3(J), IERR)
+                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3(J))
             call MPI_ISEND(SENDBUF(1, J), 3*NNODSEND(J), &
-                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3(J + NEIGHPROC), IERR)
+                           MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3(J + NEIGHPROC))
          end do
       end if
 
@@ -770,7 +726,7 @@ contains
             do N = 1, RDIM
                INDX(N) = 0 ! zero out the array of just-completed requests
             end do
-            call MPI_WAITSOME(RDIM, REQ_R1, NFINI, INDX, STAT_R1, IERR)
+            call MPI_WAITSOME(RDIM, REQ_R1, NFINI, INDX, STAT_R1)
             ! add the number of just-completed requests to the total
             TOT = TOT + NFINI
             ! loop over the just-completed requests
@@ -799,7 +755,7 @@ contains
             do N = 1, RDIM
                INDX(N) = 0
             end do
-            call MPI_WAITSOME(RDIM, REQ_R2, NFINI, INDX, STAT_R2, IERR)
+            call MPI_WAITSOME(RDIM, REQ_R2, NFINI, INDX, STAT_R2)
             TOT = TOT + NFINI
             do N = 1, NFINI
                if (INDX(N) > 0 .and. INDX(N) <= RDIM) then
@@ -824,9 +780,8 @@ contains
             do N = 1, RDIM
                INDX(N) = 0
             end do
-            call MPI_WAITSOME(RDIM, REQ_R3, NFINI, INDX, STAT_R3, IERR)
+            call MPI_WAITSOME(RDIM, REQ_R3, NFINI, INDX, STAT_R3)
             TOT = TOT + NFINI
-            !debug     print *, myproc, tot,nfini,INDX(1),INDX(2)
             do N = 1, NFINI
                if (INDX(N) > 0 .and. INDX(N) <= RDIM) then
                   if (INDX(N) <= NEIGHPROC) then
@@ -849,15 +804,8 @@ contains
             end do
          end do
       end select
-
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
       !---------------------------------------------------------------------
    end subroutine UPDATER
-   !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
    !     S U B R O U T I N E   U P D A T E M A T 4 R
@@ -870,9 +818,10 @@ contains
    subroutine UPDATEM4R(M4R)
       use mpi_f08, only: MPI_Irecv, MPI_Isend, MPI_Waitsome, MPI_DOUBLE_PRECISION
       use SIZES, only: MNP
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: debug
 #endif
       implicit none
       real(8), intent(INOUT) :: M4R(:, :)
@@ -884,10 +833,7 @@ contains
       integer :: ncount ! num values passed to a particular subdomain neighbor
       integer :: ir ! loop counter for rows
       !
-      call setMessageSource("updater")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("updater", MESSENGER_TRACING)
 
       NCOUNT = 0
 
@@ -914,9 +860,9 @@ contains
       ! the request handler array
       do J = 1, NEIGHPROC
          call MPI_IRECV(RECVBUF(1, J), 4*NNODRECV(J), &
-                        MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_M4R(J), IERR)
+                        MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_M4R(J))
          call MPI_ISEND(SENDBUF(1, J), 4*NNODSEND(J), &
-                        MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_M4R(J + NEIGHPROC), IERR)
+                        MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_M4R(J + NEIGHPROC))
       end do
 
       TOT = 0
@@ -926,7 +872,7 @@ contains
          do N = 1, RDIM
             INDX(N) = 0 ! zero out the array of just-completed requests
          end do
-         call MPI_WAITSOME(RDIM, REQ_M4R, NFINI, INDX, STAT_M4R, IERR)
+         call MPI_WAITSOME(RDIM, REQ_M4R, NFINI, INDX, STAT_M4R)
          ! add the number of just-completed requests to the total
          TOT = TOT + NFINI
          ! loop over the just-completed requests
@@ -951,15 +897,8 @@ contains
             end if
          end do
       end do
-
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
       !---------------------------------------------------------------------
    end subroutine UPDATEM4R
-   !---------------------------------------------------------------------
 
    !..... DW:, for periodic bcs (this subroutine looks a bit ugly and probably does belongs here)
    !        - experiment periodic boundary conditions
@@ -1001,8 +940,6 @@ contains
             VEC3(IPERCONN(1:NNPERBC, 2)) = VECTMP(:, 3); 
          end if
       end if
-
-      return; 
    end subroutine UPDATER_W_PERBC
    !..... DW
    !
@@ -1017,18 +954,16 @@ contains
    subroutine UPDATER3D(VEC)
       use mpi_f08, only: MPI_Irecv, MPI_Isend, MPI_Waitsome, MPI_DOUBLE_PRECISION
       use SIZES, only: MNP, MNFEN
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: debug
 #endif
       implicit none
       real(8), intent(INOUT) :: VEC(MNP, MNFEN)
       integer :: N, I, J, K, NCOUNT, NFINI, TOT
 
-      call setMessageSource("updater3d")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("updater3d", MESSENGER_TRACING)
 
       !..Pack Messages
       do J = 1, NEIGHPROC
@@ -1044,9 +979,9 @@ contains
       ! Send/receive messages to/from all neighbors
       do J = 1, NEIGHPROC
          call MPI_IRECV(RECVBUF(1, J), MNFEN*NNODRECV(J), &
-                        MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3D(J), IERR)
+                        MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3D(J))
          call MPI_ISEND(SENDBUF(1, J), MNFEN*NNODSEND(J), &
-                        MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3D(J + NEIGHPROC), IERR)
+                        MPI_DOUBLE_PRECISION, IPROC(J), TAG, COMM, REQ_R3D(J + NEIGHPROC))
       end do
 
       !..Unpack Received messages as they arrive
@@ -1055,7 +990,7 @@ contains
          do N = 1, RDIM
             INDX(N) = 0
          end do
-         call MPI_WAITSOME(RDIM, REQ_R3D, NFINI, INDX, STAT_R3D, IERR)
+         call MPI_WAITSOME(RDIM, REQ_R3D, NFINI, INDX, STAT_R3D)
          TOT = TOT + NFINI
          do N = 1, NFINI
             if (INDX(N) > 0 .and. INDX(N) <= RDIM) then
@@ -1072,14 +1007,8 @@ contains
             end if
          end do
       end do
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
       !---------------------------------------------------------------------
    end subroutine UPDATER3D
-   !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
    !     S U B R O U T I N E   U P D A T E C  3 D
@@ -1091,18 +1020,16 @@ contains
    subroutine UPDATEC3D(VEC)
       use mpi_f08, only: MPI_Irecv, MPI_Isend, MPI_Waitsome, MPI_DOUBLE_COMPLEX
       use SIZES, only: MNP, MNFEN
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: debug
 #endif
       implicit none
       complex(8), intent(INOUT) :: VEC(MNP, MNFEN)
       integer :: N, I, J, K, NCOUNT, NFINI, TOT
 
-      call setMessageSource("updatec3d")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("updatec3d", MESSENGER_TRACING)
 
       !..Pack Messages
       do J = 1, NEIGHPROC
@@ -1118,9 +1045,9 @@ contains
       ! Send/receive messages to/from all neighbors
       do J = 1, NEIGHPROC
          call MPI_IRECV(RECVBUF_COMPLEX(1, J), MNFEN*NNODRECV(J), &
-                        MPI_DOUBLE_COMPLEX, IPROC(J), TAG, COMM, REQ_C3D(J), IERR)
+                        MPI_DOUBLE_COMPLEX, IPROC(J), TAG, COMM, REQ_C3D(J))
          call MPI_ISEND(SENDBUF_COMPLEX(1, J), MNFEN*NNODSEND(J), &
-                        MPI_DOUBLE_COMPLEX, IPROC(J), TAG, COMM, REQ_C3D(J + NEIGHPROC), IERR)
+                        MPI_DOUBLE_COMPLEX, IPROC(J), TAG, COMM, REQ_C3D(J + NEIGHPROC))
       end do
 
       !..Unpack Received messages as they arrive
@@ -1129,7 +1056,7 @@ contains
          do N = 1, RDIM
             INDX(N) = 0
          end do
-         call MPI_WAITSOME(RDIM, REQ_C3D, NFINI, INDX, STAT_C3D, IERR)
+         call MPI_WAITSOME(RDIM, REQ_C3D, NFINI, INDX, STAT_C3D)
          TOT = TOT + NFINI
          do N = 1, NFINI
             if (INDX(N) > 0 .and. INDX(N) <= RDIM) then
@@ -1146,11 +1073,7 @@ contains
             end if
          end do
       end do
-
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
+      !---------------------------------------------------------------------
    end subroutine UPDATEC3D
    !---------------------------------------------------------------------
 
@@ -1161,32 +1084,20 @@ contains
    !---------------------------------------------------------------------
    function msg_imax(v) result(vmax)
       use mpi_f08, only: MPI_ALLREDUCE, MPI_INTEGER, MPI_MAX
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
       integer, intent(in) :: v
       integer :: kount
       integer :: vmax
 
-      call setMessageSource("psdot")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("psdot", MESSENGER_TRACING)
 
       kount = 1
       call MPI_ALLREDUCE(v, vmax, kount, MPI_INTEGER, &
-                         MPI_MAX, COMM, ierr)
-
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
+                         MPI_MAX, COMM)
       !---------------------------------------------------------------------
    end function msg_imax
-   !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
    !     F U N C T I O N   P S D O T
@@ -1195,9 +1106,10 @@ contains
    !---------------------------------------------------------------------
    real(8) function psdot(n, sx, sy) result(gsum)
       use mpi_f08, only: MPI_ALLREDUCE, MPI_SUM, MPI_DOUBLE_PRECISION
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: debug
 #endif
       implicit none
       integer, intent(in) :: n
@@ -1206,17 +1118,10 @@ contains
       real(8) :: lsum
       integer :: kount !jgf46.00 added
 
-      call setMessageSource("psdot")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("psdot", MESSENGER_TRACING)
 
       gsum = 0.0d0
       if (n <= 0) then
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -1228,16 +1133,9 @@ contains
 
       kount = 1
       call MPI_ALLREDUCE(lsum, gsum, kount, MPI_DOUBLE_PRECISION, &
-                         MPI_SUM, COMM, ierr)
-
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
+                         MPI_SUM, COMM)
       !---------------------------------------------------------------------
    end function psdot
-   !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
    !     S U B R O U T I N E   P S 2 D O T S
@@ -1248,9 +1146,10 @@ contains
    !---------------------------------------------------------------------
    subroutine ps2dots(n, sd, sdt, dot3rray)
       use mpi_f08, only: MPI_ALLREDUCE, MPI_SUM, MPI_DOUBLE_PRECISION
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: debug
 #endif
       implicit none
       integer, intent(in) :: n
@@ -1260,17 +1159,10 @@ contains
       real(8) :: lsum(2), gsum(2)
       integer :: kount !jgf46.00 added
 
-      call setMessageSource("ps2dots")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("ps2dots", MESSENGER_TRACING)
 
       dot3rray(1:3) = 0.0d0
       if (n <= 0) then
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -1284,18 +1176,12 @@ contains
 
       kount = 2
       call MPI_ALLREDUCE(lsum, gsum, kount, MPI_DOUBLE_PRECISION, &
-                         MPI_SUM, COMM, ierr)
+                         MPI_SUM, COMM)
 
       dot3rray(1:2) = gsum(1:2)
       dot3rray(3) = 1.0d0
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
       !---------------------------------------------------------------------
    end subroutine ps2dots
-   !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
    !     S U B R O U T I N E   P S 3 D O T S
@@ -1306,9 +1192,10 @@ contains
    !---------------------------------------------------------------------
    subroutine ps3dots(n, sd, sdt, su, dot3rray)
       use mpi_f08, only: MPI_ALLREDUCE, MPI_SUM, MPI_DOUBLE_PRECISION
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: debug
 #endif
       implicit none
       integer, intent(in) :: n
@@ -1319,17 +1206,8 @@ contains
       real(8) :: lsum(3)
       integer :: kount ! jgf46.00 added
 
-      call setMessageSource("ps3dots")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
-
       dot3rray(1:3) = 0d0
       if (n <= 0) then
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG, "Return.")
-#endif
-         call unsetMessageSource()
          return
       end if
 
@@ -1344,14 +1222,9 @@ contains
 
       kount = 3
       call MPI_ALLREDUCE(lsum, gsum, kount, MPI_DOUBLE_PRECISION, &
-                         MPI_SUM, COMM, ierr)
+                         MPI_SUM, COMM)
       dot3rray(1:3) = gsum(1:3)
 
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
       !---------------------------------------------------------------------
    end subroutine ps3dots
    !---------------------------------------------------------------------
@@ -1364,20 +1237,15 @@ contains
    subroutine ALLNODES(TOTNODES)
       use mpi_f08, only: MPI_Allreduce, MPI_INTEGER, MPI_SUM
       use SIZES, only: MNP
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
       integer, intent(out) :: TOTNODES
       integer :: I
       integer :: LNODES
       integer :: kount !jgf46.00 added
 
-      call setMessageSource("allnodes")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("allnodes", MESSENGER_TRACING)
 
       LNODES = 0
       do I = 1, MNP
@@ -1386,12 +1254,8 @@ contains
 
       kount = 1
       call MPI_ALLREDUCE(LNODES, TOTNODES, kount, MPI_INTEGER, MPI_SUM, &
-                         COMM, IERR)
+                         COMM)
 
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
       !---------------------------------------------------------------------
    end subroutine ALLNODES
    !---------------------------------------------------------------------
@@ -1405,9 +1269,10 @@ contains
       !---------------------------------------------------------------------
       use mpi_f08, only: MPI_Bcast, MPI_DOUBLE_PRECISION
       use SIZES, only: MYPROC
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: debug
 #endif
       implicit none
       real(8), intent(in) :: global_array(:)
@@ -1417,24 +1282,17 @@ contains
       real(8) :: global_array_local(np_global)
       real(8), intent(out) :: local_array(:)
       integer :: sd_node_number
-      integer :: ierr
-      call setMessageSource("mapToSubdomainRealMPI")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("mapToSubdomainRealMPI", MESSENGER_TRACING)
       if (myproc == 0) then
          global_array_local(1:np_global) = global_array(1:np_global)
       end if
       call mpi_bcast(global_array_local, np_global, MPI_DOUBLE_PRECISION, 0, &
-                     COMM, ierr)
+                     COMM)
       do sd_node_number = 1, np_local
          local_array(sd_node_number) = &
             global_array_local(abs(mapping(sd_node_number)))
       end do
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
       !---------------------------------------------------------------------
    end subroutine mapToSubdomainRealMPI
    !---------------------------------------------------------------------
@@ -1448,10 +1306,8 @@ contains
       !---------------------------------------------------------------------
       use mpi_f08, only: MPI_Bcast, MPI_INTEGER
       use SIZES, only: MYPROC
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
       integer, intent(in) :: global_array(:)
       integer, intent(in) :: mapping(:)
@@ -1460,24 +1316,17 @@ contains
       integer :: global_array_local(np_global)
       integer, intent(out) :: local_array(:)
       integer :: sd_node_number
-      integer :: ierr
-      call setMessageSource("mapToSubdomainIntMPI")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("mapToSubdomainIntMPI", MESSENGER_TRACING)
       if (myproc == 0) then
          global_array_local(1:np_global) = global_array(1:np_global)
       end if
       call mpi_bcast(global_array_local, np_global, mpi_integer, 0, &
-                     COMM, ierr)
+                     COMM)
       do sd_node_number = 1, np_local
          local_array(sd_node_number) = &
             global_array_local(abs(mapping(sd_node_number)))
       end do
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
       !---------------------------------------------------------------------
    end subroutine mapToSubdomainIntMPI
    !---------------------------------------------------------------------
@@ -1499,34 +1348,22 @@ contains
    !
    subroutine WetDrySum(NCCHANGE)
       use mpi_f08, only: MPI_ALLREDUCE, MPI_INTEGER, MPI_SUM
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
       integer, intent(inout) :: NCCHANGE !input flag,=1 if this subdomain has wetted or dried
       integer :: SumNCChange !sum total of all flags from all subdomains
       integer :: kount !jgf46.00 to avoid compiler bug on certain platforms
 
-      call setMessageSource("wetdrysum")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("wetdrysum", MESSENGER_TRACING)
 
       SumNCChange = 0
       kount = 1
       call MPI_ALLREDUCE(NCCHANGE, SumNCChange, kount, MPI_INTEGER, &
-                         MPI_SUM, COMM, ierr)
+                         MPI_SUM, COMM)
       NCCHANGE = SumNCChange !resets GWCE for all subdomains if any s.d. resets
-
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
       !---------------------------------------------------------------------
    end subroutine WetDrySum
-   !---------------------------------------------------------------------
 
    !------------------------------------------------------------------------------
    !               S U B R O U T I N E   W A R N  E L E V  S U M
@@ -1537,30 +1374,21 @@ contains
    !------------------------------------------------------------------------------
    subroutine WarnElevSum(WarnElevExceeded)
       use mpi_f08, only: MPI_ALLREDUCE, MPI_INTEGER, MPI_SUM
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
       integer, intent(inout) :: WarnElevExceeded !=1 if this subdomain has exceeded warning elev
       integer :: SumWarnElevExceeded !sum total of all flags from all subdomains
       integer :: kount ! to avoid compiler bug on certain platforms
 
-      call setMessageSource("warnelevsum")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("warnelevsum", MESSENGER_TRACING)
 
       SumWarnElevExceeded = 0
       kount = 1
       call MPI_ALLREDUCE(WarnElevExceeded, SumWarnElevExceeded, kount, &
-                         MPI_INTEGER, MPI_SUM, COMM, ierr)
+                         MPI_INTEGER, MPI_SUM, COMM)
       WarnElevExceeded = SumWarnElevExceeded
 
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
       !------------------------------------------------------------------------------
    end subroutine WarnElevSum
    !------------------------------------------------------------------------------
@@ -1574,30 +1402,21 @@ contains
    !------------------------------------------------------------------------------
    subroutine EarlyTermSum(earlyterminate)
       use mpi_f08, only: MPI_ALLREDUCE, MPI_INTEGER, MPI_SUM
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
       integer, intent(inout) :: earlyterminate !=1 if this subdomain has detected a NaN in the velocity soln and 20 timesteps have passed since then
       integer :: SumEarlyterminate !sum total of all flags from all subdomains
       integer :: kount ! to avoid compiler bug on certain platforms
 
-      call setMessageSource("earlytermsum")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("earlytermsum", MESSENGER_TRACING)
 
       SumEarlyterminate = 0
       kount = 1
       call MPI_ALLREDUCE(earlyterminate, SumEarlyterminate, kount, &
-                         MPI_INTEGER, MPI_SUM, COMM, ierr)
+                         MPI_INTEGER, MPI_SUM, COMM)
       earlyterminate = SumEarlyterminate
 
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
       !------------------------------------------------------------------------------
    end subroutine EarlyTermSum
    !------------------------------------------------------------------------------
@@ -1610,29 +1429,17 @@ contains
    !---------------------------------------------------------------------
    subroutine MSG_IBCAST(array, n)
       use mpi_f08, only: MPI_BCAST, MPI_INTEGER
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
       integer, intent(in) :: n
       integer, intent(inout) :: array(n)
 
-      call setMessageSource("msg_ibcast")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("msg_ibcast", MESSENGER_TRACING)
 
-      call MPI_BCAST(array, n, mpi_integer, 0, comm, ierr)
-
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
+      call MPI_BCAST(array, n, mpi_integer, 0, comm)
       !---------------------------------------------------------------------
    end subroutine MSG_IBCAST
-   !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
    !     S U B R O U T I N E   M S G _ L B C A S T
@@ -1640,29 +1447,17 @@ contains
    !---------------------------------------------------------------------
    subroutine MSG_LBCAST(array, n)
       use mpi_f08, only: MPI_BCAST, MPI_LOGICAL
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
       integer, intent(in) :: n
       logical, intent(inout) :: array(n)
 
-      call setMessageSource("msg_lbcast")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("msg_lbcast", MESSENGER_TRACING)
 
-      call MPI_BCAST(array, n, mpi_logical, 0, comm, ierr)
-
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
+      call MPI_BCAST(array, n, mpi_logical, 0, comm)
       !---------------------------------------------------------------------
    end subroutine MSG_LBCAST
-   !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
    !     S U B R O U T I N E   M S G _ C B C A S T
@@ -1672,29 +1467,17 @@ contains
    !---------------------------------------------------------------------
    subroutine MSG_CBCAST(msg, n)
       use mpi_f08, only: MPI_BCAST, MPI_CHARACTER
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
-#endif
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
       integer, intent(in) :: n
       character(n), intent(inout) :: msg
 
-      call setMessageSource("msg_cbcast")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("msg_cbcast", MESSENGER_TRACING)
 
-      call MPI_BCAST(msg, n, mpi_character, 0, comm, ierr)
-
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
+      call MPI_BCAST(msg, n, mpi_character, 0, comm)
       !---------------------------------------------------------------------
    end subroutine MSG_CBCAST
-   !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
    !     S U B R O U T I N E   M S G _ R B C A S T
@@ -1704,40 +1487,33 @@ contains
    !---------------------------------------------------------------------
    subroutine MSG_RBCAST(array, n)
       use mpi_f08, only: MPI_BCAST, MPI_DOUBLE_PRECISION
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: debug
 #endif
       implicit none
       integer, intent(in) :: n
       real(8), intent(inout) :: array(:, :, :)
 
-      call setMessageSource("msg_rbcast")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("msg_rbcast", MESSENGER_TRACING)
 
-      call MPI_BCAST(array, n, MPI_DOUBLE_PRECISION, 0, comm, ierr)
-
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
+      call MPI_BCAST(array, n, MPI_DOUBLE_PRECISION, 0, comm)
       !---------------------------------------------------------------------
    end subroutine MSG_RBCAST
-   !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
    !     S U B R O U T I N E   M S G _ R B C A S T D
    !---------------------------------------------------------------------
-   !asey 090327: Implement Seizo's buffering of radiation stress broadcasts.
+   ! Casey 090327: Implement Seizo's buffering of radiation stress broadcasts.
    !=====Seizo Dividing Messenger
    !---------------------------------------------------------------------
    subroutine MSG_RBCASTD(array, in, jn, kn)
       use mpi_f08, only: MPI_BCAST, MPI_DOUBLE_PRECISION
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: debug
 #endif
       implicit none
       integer, intent(IN) :: in, jn, kn
@@ -1747,10 +1523,7 @@ contains
       integer, allocatable :: nbox(:)
       integer, parameter :: limit_buff = 1000000
 
-      call setMessageSource("msg_rbcastd")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("msg_rbcastd", MESSENGER_TRACING)
 
       allocate (buffer(in*jn*kn))
 
@@ -1777,7 +1550,7 @@ contains
 
       do i = 1, ntimes
          icount = limit_buff*(i - 1) + 1
-         call MPI_BCAST(buffer(icount), nbox(i), MPI_DOUBLE_PRECISION, 0, comm, ierr)
+         call MPI_BCAST(buffer(icount), nbox(i), MPI_DOUBLE_PRECISION, 0, comm)
       end do
 
       icount = 0
@@ -1790,15 +1563,8 @@ contains
          end do
       end do
       deallocate (buffer, nbox)
-
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-      return
       !---------------------------------------------------------------------
    end subroutine MSG_RBCASTD
-   !---------------------------------------------------------------------
 
    !---------------------------------------------------------------------
    !---------------------------------------------------------------------
@@ -1818,9 +1584,10 @@ contains
    subroutine MSG_RScalar_Reduce(OP, vali, valo, loco)
       use mpi_f08, only: MPI_REDUCE, MPI_2DOUBLE_PRECISION, MPI_MAXLOC, &
                          MPI_MAX, MPI_MINLOC, MPI_MIN, MPI_SUM, MPI_DOUBLE_PRECISION
-      use GLOBAL, only: setMessageSource, allMessage, unsetMessageSource, COMM
+      use GLOBAL, only: COMM
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      use GLOBAL, only: DEBUG
+      use mod_logging, only: debug
 #endif
       implicit none
 
@@ -1831,43 +1598,36 @@ contains
 
       real(8) :: tempi(2), tempo(2)
 
-      call setMessageSource("msg_rvecreduce")
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
+      LOG_SCOPE_TRACED("msg_rvecreduce", MESSENGER_TRACING)
 
       select case (OP)
       case ('max', 'MAX')
          if (present(loco)) then
             tempi = [vali, loco]
             call MPI_Reduce(tempi, tempo, 1, MPI_2DOUBLE_PRECISION, &
-                            MPI_MAXLOC, 0, comm, ierr)
+                            MPI_MAXLOC, 0, comm)
             valo = tempo(1)
             loco = tempo(2)
          else
             call MPI_Reduce(vali, valo, 1, MPI_DOUBLE_PRECISION, MPI_MAX, 0, &
-                            comm, ierr)
+                            comm)
          end if
       case ('min', 'MIN')
          if (present(loco)) then
             tempi = [vali, loco]
             call MPI_Reduce(tempi, tempo, 1, MPI_2DOUBLE_PRECISION, &
-                            MPI_MINLOC, 0, comm, ierr)
+                            MPI_MINLOC, 0, comm)
             valo = tempo(1)
             loco = tempo(2)
          else
             call MPI_Reduce(vali, valo, 1, MPI_DOUBLE_PRECISION, MPI_MIN, 0, &
-                            comm, ierr)
+                            comm)
          end if
       case ('sum', 'SUM')
          call MPI_Reduce(vali, valo, 1, MPI_DOUBLE_PRECISION, MPI_SUM, 0, &
-                         comm, ierr)
+                         comm)
       end select
 
-#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
    end subroutine MSG_RScalar_Reduce
    !---------------------------------------------------------------------
    !=============================================================================

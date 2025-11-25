@@ -66,41 +66,36 @@ set(METIS_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/metis/Lib/kwayvolrefine.c
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/metis/Lib/kwayvolfm.c
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/metis/Lib/subdomains.c)
-add_library(metis OBJECT ${METIS_SOURCES})
-target_include_directories(metis PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/metis/Lib)
-set_target_properties(metis PROPERTIES EXCLUDE_FROM_ALL TRUE)
+add_library(adcirc_metis OBJECT ${METIS_SOURCES})
+add_library(adcirc::metis ALIAS adcirc_metis)
+target_include_directories(adcirc_metis PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/metis/Lib)
+set_target_properties(adcirc_metis PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 if(${CMAKE_C_COMPILER_ID} MATCHES "GNU")
-  # For GCC >= 10, we need to add -Wno-implicit-function-declaration and -Wno-incompatible-pointer-types
-  if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 10 OR ${CMAKE_C_COMPILER_VERSION} VERSION_EQUAL 10)
-    set(ADDITIONAL_METIS_COMPILER_FLAGS
-        "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-implicit-function-declaration -Wno-incompatible-pointer-types -Wno-shift-op-parentheses -Wno-format-security"
-    )
-    message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
-    set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
+  # For GCC >= 10, we need to add warning suppressions
+  if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER_EQUAL 10)
+    target_compile_options(
+      adcirc_metis
+      PRIVATE -Wno-implicit-function-declaration
+              -Wno-incompatible-pointer-types
+              -Wno-shift-op-parentheses
+              -Wno-format-security)
   endif()
 elseif(${CMAKE_C_COMPILER_ID} MATCHES "AppleClang")
-  set(ADDITIONAL_METIS_COMPILER_FLAGS
-      "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-implicit-function-declaration -Wno-incompatible-pointer-types -Wno-shift-op-parentheses -Wno-format-security"
-  )
-  message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
-  set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
+  target_compile_options(
+    adcirc_metis
+    PRIVATE -Wno-implicit-function-declaration
+            -Wno-incompatible-pointer-types
+            -Wno-shift-op-parentheses
+            -Wno-format-security)
 elseif(${CMAKE_C_COMPILER_ID} MATCHES "IntelLLVM")
-  # For IntelLLVM, we need to add -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses
-  set(ADDITIONAL_METIS_COMPILER_FLAGS
-      "${ADDITIONAL_METIS_COMPILER_FLAGS} -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses"
-  )
-  message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
-  set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
+  # For IntelLLVM, suppress warnings
+  target_compile_options(adcirc_metis PRIVATE -Wno-incompatible-pointer-types -Wno-format-security
+                                              -Wno-shift-op-parentheses)
 elseif(${CMAKE_C_COMPILER_ID} MATCHES "Intel")
-  # For Intel (classic), we need to add -Wno-incompatible-pointer-types -Wno-format-security -Wno-shift-op-parentheses
-  set(ADDITIONAL_METIS_COMPILER_FLAGS "${ADDITIONAL_METIS_COMPILER_FLAGS} -diag-disable 167")
-  message(STATUS "Adding additional compiler flags to metis: ${ADDITIONAL_METIS_COMPILER_FLAGS}")
-  set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
-elseif(${CMAKE_C_COMPILER_ID} MATCHES "NVIDIA")
-  # For nvc, suppress diagnostic warnings that are not part of ADCIRC
-  set(ADDITIONAL_METIS_COMPILER_FLAGS
-      "${ADDITIONAL_METIS_COMPILER_FLAGS} --display_error_number --diag_suppress 550 --diag_suppress 177 --diag_suppress 167"
-  )
-  set_target_properties(metis PROPERTIES COMPILE_FLAGS ${ADDITIONAL_METIS_COMPILER_FLAGS})
+  # For Intel (classic), suppress warnings
+  target_compile_options(adcirc_metis PRIVATE -diag-disable 167)
+elseif(${CMAKE_C_COMPILER_ID} STREQUAL "PGI" OR ${CMAKE_C_COMPILER_ID} STREQUAL "NVHPC")
+  # For PGI/NVHPC, suppress diagnostic warnings that are not part of ADCIRC
+  target_compile_options(adcirc_metis PRIVATE --diag_suppress=167,177,550)
 endif()

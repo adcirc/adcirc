@@ -51,10 +51,10 @@ C
       fileFound = .false.
 C
       i=0
-      argCount = iArgC()
+      argCount = COMMAND_ARGUMENT_COUNT()
       DO WHILE (i < argCount) 
          i = i + 1
-         CALL getArg(i,cmdLineArg)
+         CALL GET_COMMAND_ARGUMENT(i,cmdLineArg)
          SELECT CASE(cmdLineArg(1:2))
          CASE("-n") 
             netCDFFormat = .true.
@@ -67,7 +67,7 @@ C
 #endif
          CASE("-f")
             i = i + 1
-            CALL getArg(i,fileName)
+            CALL GET_COMMAND_ARGUMENT(i,fileName)
          CASE DEFAULT
             write(0,*) "ERROR: hstime: command line option '",
      &         cmdLineArg(1:2),"' was not recognized."

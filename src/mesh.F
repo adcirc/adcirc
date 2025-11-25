@@ -32,15 +32,17 @@
 !     out of the other parts of the code, particularly from the global
 !     module.
 !     ------------------------------------------------------------------
+
+#include "logging_macros.h"
+
       module mesh
 !     ------------------------------------------------------------------
       use hashtable
       use sizes, only: meshFileName, mne, mnp, mnope, mneta, myproc,
      &   mnbou, mnvel, nprec, meshtype, ascii, xdmf, mnei, GBLINPUTDIR
-      use global, only: DEBUG, INFO, ECHO, WARNING, ERROR,
-     &   scratchMessage, logMessage, screenMessage, allMessage,
-     &   setMessageSource, openFileForRead, unsetMessageSource,
-     &   scratchFormat
+      use mod_logging, only: DEBUG, INFO, ECHO, WARNING, ERROR, operator(==),
+     &   logMessage, screenMessage, allMessage, t_log_scope, init_log_scope
+      use mod_io, only: openFileForRead
       USE ADC_CONSTANTS, only: deg2rad, rad2deg, pi, omega, rearth
 
       implicit none
@@ -126,9 +128,13 @@
         MODULE PROCEDURE DRVSPCOORSROTS0, DRVSPCOORSROTS1
       END INTERFACE
 
-      INTERFACE GET_ROTMAT 
+      INTERFACE GET_ROTMAT
          MODULE PROCEDURE DRV_ROTMAT_ZNVEC, DRV_ROTMAT_ZXZROT
       END INTERFACE
+
+      ! Utility variables for formatting log messages
+      character(len=1024) :: scratchMessage
+      character(len=1024) :: scratchFormat
 
 !     ----------
       contains
@@ -142,10 +148,7 @@
       subroutine readMesh()
       implicit none
 
-      call setMessageSource("readMesh")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("readMesh", MESH_TRACING)
 
       select case(meshType)
       case(ASCII)
@@ -153,11 +156,6 @@
       case(XDMF)
          call readMeshXDMF()
       end select
-
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
 !     ------------------------------------------------------------------
       end subroutine readMesh
@@ -169,8 +167,9 @@
 !     jgf51.21.11: Read the ADCIRC mesh in various formats
 !     ------------------------------------------------------------------
       subroutine read14_findDims ()
-      use global, only : nabout
+      use mod_logging, only : nabout
       use boundaries
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
       integer :: ios ! i/o status
       integer :: lineNum ! line number currently being read
@@ -178,11 +177,9 @@
       integer :: neta_count, nvel_count
       integer :: nvell_max, nvdll_max
       integer, parameter :: iunit = 14
+      character(len=1024) :: scratchMessage
 
-      call setMessageSource("read14FindDims")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("read14FindDims", MESH_TRACING)
       !
       ! initializations
       lineNum = 1
@@ -272,8 +269,7 @@
              write(scratchMessage, 1030) ibtype_orig(k)
 1030        format('The boundary type ',i0,
      &           ' was found in the file but is not valid.')
-             call allMessage(ERROR, scratchMessage)
-             call terminate()
+             call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          end select
       enddo
       if ( nvel_count.ne.nvel) then
@@ -287,7 +283,7 @@
 1050     format('NVEL (specified number of land boundary nodes) = ',
      &       i0,'. Counted number of land boundary nodes = ',i0,'.')
          call logMessage(DEBUG,scratchMessage)
-         if (nabout.eq.DEBUG) then
+         if (nabout==DEBUG) then
             do k=1,nbou
                write(scratchMessage,1060) k, ibtype_orig(k), k,
      &            nvell(k), sum(nvell(1:k))
@@ -301,24 +297,18 @@
       rewind(iunit)
       call logMessage(INFO,'Finished reading mesh file dimensions.')
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
          !
          ! jump to here on error and end conditions during read
  10   write(scratchMessage,1070) lineNum, ios
 1070  format('Reading line ',i0,' gave the following error code: ',
      &   i0,'.')
-      call allMessage(ERROR, scratchMessage)
       close(iunit)
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
  20   write(scratchMessage,1080) lineNum
 1080  format('Reached premature end of file on line ',i0,'.')
-      call allMessage(ERROR,scratchMessage)
       close(iunit)
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       !-----+---------+---------+---------+---------+---------+---------+
       end subroutine read14_findDims
       !-----+---------+---------+---------+---------+---------+---------+
@@ -328,19 +318,20 @@
       !-----+---------+---------+---------+---------+---------+---------+
       subroutine read14 ()
       use boundaries
-      use global, only : openFileForRead, nabout, nperseg, nnperbc,
-     &                   iperconn
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+      use global, only : nperseg, nnperbc, iperconn
+      use mod_io, only: openFileForRead
+      use mod_logging, only : nabout
 
       implicit none
       integer :: i, j, k, jn, je, nhy
       integer, parameter :: iunit = 14
       integer :: ios     ! i/o status
       integer :: lineNum ! line number currently being read
+      character(len=1024) :: scratchMessage
+      character(len=1024) :: scratchFormat
 
-      call setMessageSource("read14")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("read14", MESH_TRACING)
       !
       ! initialization
       nfluxf = 0
@@ -350,7 +341,7 @@
       !
       ! Write a summary of the different boundary types if the logging
       ! level is set to DEBUG.
-      if (nabout.eq.DEBUG) then
+      if (nabout==DEBUG) then
          !
          ! ocean boundaries
          scratchFormat = '("Number of elevation specified boundaries '
@@ -560,8 +551,7 @@
          case default
             scratchFormat = '("IBTYPE ",i0," is not allowed.")'
             write(scratchMessage, scratchFormat) ibtype_orig(k)
-            call allMessage(ERROR,scratchFormat)
-            call terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          end select
       end do
       close(14)
@@ -572,26 +562,20 @@
       call logMessage(INFO,'Finished reading mesh file coordinates, '
      & // 'connectivity, and boundary data.')
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       return
        !
       ! jump to here on error condition during read
 10    write(scratchMessage,140) lineNum, ios
 140   format('Reading line ',i0,' gave the following error code: ',i0,'.')
-      call allMessage(ERROR,scratchMessage)
       close(iunit)
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       !
       ! jump to here on end condition during read
 20    write(scratchMessage,150) lineNum
 150   format('Reached premature end of file on line ',i0,'.')
-      call allMessage(ERROR,scratchMessage)
       close(iunit)
       call close_dict( node_dict )
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
 
       !----------------------------------------------------------------
       end subroutine read14
@@ -611,7 +595,9 @@
       !      (optional) nodeLael - node label
       !-----+---------+---------+---------+---------+---------+---------+
       subroutine read14femesh( meshfileName, nn, vx, etov, bxy, nodeLabel )
-      use global, only : openFileForRead, nabout
+      use mod_logging, only : nabout
+      use mod_io, only: openFileForRead
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       implicit none
 
@@ -635,11 +621,9 @@
 
       ! hash table
       type(ipair), allocatable, target :: node_dict_tmp(:) ! map node labels to numbers
+      character(len=1024) :: scratchMessage
 
-      call setMessageSource( trim(meshfileName) )
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("read14femesh", MESH_TRACING)
 
       !
       ! initialization
@@ -721,31 +705,24 @@
 !      call logMessage(INFO,'Finished reading mesh file coordinates, '
 !     & // 'connectivity, and boundary data.')
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage( DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-
       return
       !
       ! jump to here on error condition during read
 110    write(scratchMessage,140) lineNum, ios
 140   format('Reading line ',i0,' gave the following error code: ', i0, '.')
-      call allMessage(ERROR,scratchMessage)
       close(iunit)
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       !
       ! jump to here on end condition during read
 120    write(scratchMessage,150) lineNum
 150   format('Reached premature end of file on line ',i0,'.')
-      call allMessage(ERROR,scratchMessage)
       close(iunit)
 
       ! free memory
       deallocate( labelstmp )
 
       call close_dict( node_dict_tmp )
-      call terminate()
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
 
       !----------------------------------------------------------------
       end subroutine read14femesh
@@ -760,18 +737,18 @@
 !     data structures.
 !----------------------------------------------------------------------
       subroutine readMeshXDMF()
-      use global, only : nabout
+      use mod_logging, only : nabout
       use boundaries
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       implicit none
 
 #ifndef ADCXDMF
       call allMessage(ERROR,'An XMDF mesh file was specified.')
-      call allMessage(ERROR,'This ADCIRC executable was not compiled '
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE, message='This ADCIRC executable was not compiled '
      & // 'with XDMF support.')
-      call terminate()
 #else
       include 'Xdmf.f'
-      integer*8 :: xdmfFortranObj
+      INTEGER(8) :: xdmfFortranObj
       integer, allocatable :: xdmf_nm(:,:)   ! 0-offset connectivity array
       integer, allocatable :: setSize(:)
       integer, parameter :: keyLength = 256
@@ -836,12 +813,11 @@
       integer i, j, k
       real(8), allocatable :: tempCoord(:,:)
       real(8),allocatable :: dmyrealarray(:)
+      character(len=1024) :: scratchMessage
+      character(len=1024) :: scratchFormat
       !
 
-      call setMessageSource("readMeshXDMF")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("readMeshXDMF", MESH_TRACING)
 
       startIndex = 0
       arrayStride = 1
@@ -854,8 +830,8 @@
       !
       inquire(file=trim(adjustl(meshFileName)),exist=fileFound)
       if (fileFound.eqv..false.) then
-         call allMessage(ERROR,"The file " // trim(adjustl(meshFileName)) // " was not found.")
-         call terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                  message="The file " // trim(adjustl(meshFileName)) // " was not found.")
       endif
       call logMessage(INFO,'Reading mesh data from the ' //
      &  trim(adjustl(meshFileName)) // ' XDMF file.')
@@ -1071,8 +1047,7 @@
                   scratchFormat = 'Mesh file contains IBTYPE=",i0," '
      &               // 'which is not a valid flux boundary type.")'
                   write(scratchMessage,scratchFormat) boundaryTypes(setIndex)
-                  call allMessage(ERROR,scratchMessage)
-                  call terminate()
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
                end select
             case("Node")
                ! do nothing, this property simply indicates that the boundaries
@@ -1329,8 +1304,7 @@
                 scratchFormat = '("The boundary type ",i0," '
      &                 // 'was found in the files but is not valid.")'
                 write(scratchMessage,scratchFormat) ibtype_orig(fluxCount)
-                call allMessage(ERROR,scratchMessage)
-                call terminate()
+                call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
             end select
             fluxCount = fluxCount + 1
          endif
@@ -1339,10 +1313,6 @@
       ! populate the adcirc arrays that are used during execution
       call populateADCIRCNativeArrays()
 #endif
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !----------------------------------------------------------------------
       end subroutine readMeshXDMF
       !----------------------------------------------------------------------
@@ -1362,10 +1332,7 @@
       integer :: fluxCount
       integer :: i, j, k, riverval
 
-      call setMessageSource("populateADCIRCNativeArrays")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("populateADCIRCNativeArrays", MESH_TRACING)
 
       ! populate adcirc-native arrays
       do elevCount=1,nope
@@ -1472,10 +1439,6 @@
          end select
       end do
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !-----------------------------------------------------------------
       end subroutine populateADCIRCNativeArrays
       !-----------------------------------------------------------------
@@ -1496,6 +1459,7 @@
       use global, only : h0, nolifa, nbfr, ncor, 
      &                   ntip, ifsprots
       use boundaries
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       implicit none
 
@@ -1512,10 +1476,7 @@
       integer :: SFLAG, NMM(3)
       REAL (8), dimension(3):: LONVE, LATVE
 
-      call setMessageSource("initializeMesh")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("initializeMesh", MESH_TRACING)
 
       ! jgf51.21.11: Initialize the comment line data for use in
       ! non portable binary output files.
@@ -1785,19 +1746,14 @@
       do i=1,ne
          if (areas(i).lt.0.0d0) then
             write(scratchMessage,9899) I
-            call allMessage(ERROR,scratchMessage)
  9899      format('!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
      &      'IN THE CONNECTIVITY TABLE, THE NODES AROUND',
      &      ' ELEMENT ',I0,' MUST BE SPECIFIED IN COUNTERCLOCKWISE ORDER',
      &      ' - CHECK INPUT ',
      &      '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
-            call terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          endif
       end do
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 !     ------------------------------------------------------------------
       end subroutine initializeMesh
 !     ------------------------------------------------------------------
@@ -1814,6 +1770,7 @@
       use global, only : nbfr, c2ddi, ifsprots
       USE ADC_CONSTANTS, only: pi
       use boundaries
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_imax  !sb msg_imax added 10/13/2022
 #endif
@@ -1841,10 +1798,7 @@
       real(8) :: delx,dely
       real(8) :: slamrI, slamrK, slamrJ, sfearI, sfearJ, sfearK
 
-      call setMessageSource("initializeBoundaries")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("initializeBoundaries", MESH_TRACING)
 
       !
       ! initialization
@@ -2664,8 +2618,7 @@
      &           'THE ASSOCIATED GLOBAL NODE = ',E12.5,
      &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
      &           ' AND DEPTHS')
-                     call allMessage(ERROR, trim(exeTerm9973))
-                     CALL terminate()
+                     CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=exeTerm9973)
                   ENDIF
                ENDIF
 !...........   CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
@@ -2684,8 +2637,7 @@
      &           'THE ASSOCIATED GLOBAL NODE = ',E12.5,
      &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
      &           ' AND DEPTHS')
-                     call allMessage(ERROR, trim(exeTerm9973))
-                     CALL terminate()
+                     CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=exeTerm9973)
                   ENDIF
                ENDIF
 
@@ -2704,8 +2656,7 @@
      &           'THE ASSOCIATED GLOBAL NODE = ',E12.5,
      &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
      &           ' AND DEPTHS')
-                     call allMessage(ERROR, trim(exeTerm9973))
-                     CALL terminate()
+                     CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=exeTerm9973)
                   ENDIF
                ENDIF
 !...           CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
@@ -2723,8 +2674,7 @@
      &           'THE ASSOCIATED GLOBAL NODE = ',E12.5,
      &           'USER MUST SPECIFY CONSISTENT PIPE HEIGHTS',
      &           ' AND DEPTHS')
-                     call allMessage(ERROR, trim(exeTerm9973))
-                     CALL terminate()
+                     CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=exeTerm9973)
                   ENDIF
                ENDIF
 
@@ -2754,8 +2704,7 @@
      &               'BARRIER BOUNDARIES CAN ONLY OVERLAP WITH ',
      &               'NO NORMAL FLOW EXTERNAL BOUNDARIES',
      &               '(I.E. IBTYPE=0,10,20)')
-                           call allMessage(ERROR, trim(exeTerm9973))
-                           call terminate()
+                           call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=exeTerm9973)
                         ENDIF
 !...  CHECK FOR OVERLAPS WHICH REQUIRE ADJUSTMENTS OF BOUNDARY
 !...  CODE ON THE EXTERNAL BOUNDARY
@@ -2830,8 +2779,7 @@ Csb...
      &       'THE DIMENSION PARAMETER MNVEL IS LESS THAN ',
      &       'THE TOTAL NUMBER OF FLOW BOUNDARY NODES',
      &       'FROM ALL THE SPECIFIED FLOW SEGMENTS COMBINED')
-         call allMessage(ERROR, exeTerm9973)
-         CALL terminate()
+         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message=exeTerm9973)
       ENDIF
 
       NVEL=JGW
@@ -2970,10 +2918,6 @@ Csb...
  1112 FORMAT(/,1X,79('_'))
  9973 FORMAT('!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 !     ------------------------------------------------------------------
       end subroutine initializeBoundaries
 !     ------------------------------------------------------------------
@@ -2989,10 +2933,7 @@ Csb...
       subroutine allocateNodalAndElementalArrays()
       implicit none
 
-      call setMessageSource("allocateNodalAndElementalArrays")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("allocateNodalAndElementalArrays", MESH_TRACING)
 
       allocate ( slam(mnp),sfea(mnp),x(mnp),y(mnp),labels(mnp))
       allocate ( x_old(mnp), y_old(mnp) )
@@ -3067,10 +3008,6 @@ Csb...
       bcxy = -99999.d0
       rmax = -99999.d0
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 !     ------------------------------------------------------------------
       end subroutine allocateNodalAndElementalArrays
 !     ------------------------------------------------------------------
@@ -3083,18 +3020,11 @@ Csb...
       subroutine allocateNeighborArrays()
       implicit none
 
-      call setMessageSource("allocateNeighborArrays")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("allocateNeighborArrays", MESH_TRACING)
 
       allocate (neitab(mnp,mnei))
       allocate (neitabele(mnp,mnei))
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 !     ------------------------------------------------------------------
       end subroutine allocateNeighborArrays
 !     ------------------------------------------------------------------
@@ -3108,18 +3038,11 @@ Csb...
       subroutine freeMesh()
       implicit none
 
-      call setMessageSource("freeMesh")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("freeMesh", MESH_TRACING)
 
       deallocate(rmax)
       deallocate(bcxy)
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 !     ------------------------------------------------------------------
       end subroutine freeMesh
 !     ------------------------------------------------------------------
@@ -3176,10 +3099,7 @@ Csb...
       INTEGER:: EJ, IJ, II
       INTEGER, ALLOCATABLE::  NeiTabETMP(:,:)
 
-      call setMessageSource("neighb")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("neighb", MESH_TRACING)
 
       ALLOCATE ( ANGLE(MNEI) )
       ALLOCATE ( NEITEM(MNP) )
@@ -3392,11 +3312,6 @@ Csb...
 !      DEALLOCATE ( NNEIGHELE )
       DEALLOCATE ( NeiTabETMP ) 
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
 
 !     ------------------------------------------------------------------
@@ -3404,26 +3319,26 @@ Csb...
 !     ------------------------------------------------------------------
 
       subroutine neighb_terminateDimensioning()
+          use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
           implicit none
         ! TERMINATE PROGRAM IF MAXIMUM NUMBER OF NEIGHBORS SET TOO SMALL
           write(scratchMessage,99311)
-          call allMessage(ERROR,scratchMessage)
 99311     FORMAT('!!!!!!!!!!  FATAL ERROR !!!!!!!!! ',
      &        'THE DIMENSIONING PARAMETER MNEI IS TOO SMALL. ',
      &        'THERE IS A PROBLEM WITH THE DYNAMIC MEMORY ALLOCATION. ',
      &        '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
-        call terminate()
+        call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end subroutine neighb_terminateDimensioning
  
       subroutine neighb_terminateDuplicateNode(i,j)
+        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
         implicit none
         integer,intent(in) :: i, j
         write(scratchMessage,99312) I,J
-        call allMessage(ERROR,scratchMessage)
 99312   FORMAT('!!!!!!!!!!  FATAL ERROR !!!!!!!!! ',
      &       'NODES ',i0,' AND ',i0,' HAVE THE SAME COORDINATES.',
      &       '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
-        call terminate()
+        call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end subroutine neighb_terminateDuplicateNode
 
 
@@ -3451,10 +3366,7 @@ Csb...
       integer :: i           ! node loop counter
       integer :: ie          ! element loop counter
 
-      call setMessageSource("totalAreaCalc")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("totalAreaCalc", MESH_TRACING)
       !
       ! initialize values
       mju(:)=0
@@ -3484,10 +3396,6 @@ Csb...
          if(mju(i).eq.0) mju(i)=1
       end do
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 !     ------------------------------------------------------------------
       end subroutine totalAreaCalc
 !     ------------------------------------------------------------------
@@ -3501,20 +3409,13 @@ Csb...
       SUBROUTINE INVCP(XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0)
       USE ADC_CONSTANTS, ONLY : Rearth
       IMPLICIT NONE
-      REAL*8 XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0
+      REAL(8) XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0
 
-      call setMessageSource("invcp")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("invcp", MESH_TRACING)
 
       RLAMBDA=RLAMBDA0+XXCP/(Rearth*COS(PHI0))
       PHI=YYCP/Rearth
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 !     ------------------------------------------------------------------
       END SUBROUTINE INVCP
 !     ------------------------------------------------------------------
@@ -3530,17 +3431,14 @@ Csb...
       implicit none
       include 'Xdmf.f'
 #endif
-      integer*8, intent(in) :: xdmfFortranObj
+      INTEGER(8), intent(in) :: xdmfFortranObj
       integer, intent(in) :: attributeIndex
 #ifdef ADCXDMF
       !
       integer :: typeHolder
       character(len=256) :: logString
       !
-      call setMessageSource("getAttributeCharacteristicsXDMF")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("getAttributeCharacteristicsXDMF", MESH_TRACING)
 
       call xdmfRetrieveAttributeType(xdmfFortranObj, attributeIndex, typeHolder)
       call createAttributeTypeString(typeHolder, logString)
@@ -3564,10 +3462,6 @@ Csb...
       write(scratchMessage,scratchFormat) typeHolder
       call logMessage(DEBUG,scratchMessage)
 #endif
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !----------------------------------------------------------------------
       end subroutine getAttributeCharacteristicsXDMF
       !----------------------------------------------------------------------
@@ -3590,10 +3484,7 @@ Csb...
       real(8), intent(out) :: prepY(:)
       real(8), intent(out) :: prepDP(:)
 
-      call setMessageSource("getMeshForPrep")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("getMeshForPrep", MESH_TRACING)
 
       prepAgrid = agrid
       prepX = X
@@ -3601,10 +3492,6 @@ Csb...
       prepDP = dp
 
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !-----------------------------------------------------------------
       end subroutine getMeshForPrep
       !-----------------------------------------------------------------
@@ -3622,18 +3509,11 @@ Csb...
       integer, intent(out) :: prepNP
       integer, intent(out) :: prepNE
 
-      call setMessageSource("getMeshSizesForPrep")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("getMeshSizesForPrep", MESH_TRACING)
 
       prepNP = np
       prepNE = ne
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !-----------------------------------------------------------------
       end subroutine getMeshSizesForPrep
       !-----------------------------------------------------------------
@@ -3658,10 +3538,7 @@ Csb...
       integer :: nullCharLocation
       character(len=*), intent(inout) :: myString
 
-      call setMessageSource("replaceNullsWithSpaces")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("replaceNullsWithSpaces", MESH_TRACING)
 
       do
          nullCharLocation = index(myString,char(0))
@@ -3672,10 +3549,6 @@ Csb...
          endif
       end do
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !----------------------------------------------------------------------
       end subroutine replaceNullsWithSpaces
       !----------------------------------------------------------------------
@@ -3692,10 +3565,7 @@ Csb...
       integer, intent(in) :: typeHolder
       character(len=256), intent(out) :: typeString
 
-      call setMessageSource("createAttributeTypeString")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("createAttributeTypeString", MESH_TRACING)
 
       !
       select case(typeHolder)
@@ -3719,10 +3589,6 @@ Csb...
          call allMessage(WARNING,scratchMessage)
       end select
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !----------------------------------------------------------------------
       end subroutine createAttributeTypeString
       !----------------------------------------------------------------------
@@ -3739,10 +3605,7 @@ Csb...
       integer, intent(in) :: typeHolder
       character(len=256), intent(out) :: typeString
       !
-      call setMessageSource("createSetTypeString")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("createSetTypeString", MESH_TRACING)
 
       select case(typeHolder)
       case(601)
@@ -3759,10 +3622,6 @@ Csb...
          call allMessage(WARNING,scratchMessage)
       end select
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !----------------------------------------------------------------------
       end subroutine createSetTypeString
       !----------------------------------------------------------------------
@@ -3779,11 +3638,8 @@ Csb...
       integer, intent(in) :: typeHolder
       character(len=256), intent(out) :: typeString
 
-      call setMessageSource("createAttributeCenterString")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      !
+      LOG_SCOPE_TRACED("createAttrCenterStr", MESH_TRACING)
+
       select case(typeHolder)
       case(100)
          typeString = 'XDMF_ATTRIBUTE_CENTER_GRID'
@@ -3801,10 +3657,6 @@ Csb...
          call allMessage(WARNING,scratchMessage)
       end select
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !----------------------------------------------------------------------
       end subroutine createAttributeCenterString
       !----------------------------------------------------------------------
@@ -3819,10 +3671,7 @@ Csb...
       integer, intent(in) :: typeHolder
       character(len=256), intent(out) :: typeString
 
-      call setMessageSource("createDataTypeString")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("createDataTypeString", MESH_TRACING)
       !
       select case(typeHolder)
       case(0)
@@ -3849,10 +3698,6 @@ Csb...
          call allMessage(WARNING,scratchMessage)
       end select
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !----------------------------------------------------------------------
       end subroutine createDataTypeString
       !----------------------------------------------------------------------
@@ -3869,10 +3714,7 @@ Csb...
       integer, intent(in) :: typeHolder
       character(len=256), intent(out) :: typeString
 
-      call setMessageSource("createTopologyTypeString")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("createTopoTypeStr", MESH_TRACING)
       !
       select case(typeHolder)
       case(500)
@@ -3904,10 +3746,6 @@ Csb...
          write(scratchMessage,scratchFormat) typeHolder
          call logMessage(WARNING,scratchMessage)
       end select
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !----------------------------------------------------------------------
       end subroutine createTopologyTypeString
       !----------------------------------------------------------------------
@@ -3929,8 +3767,11 @@ Csb...
       SUBROUTINE PERBCSETUP( ETAB )
 
       use global, only: nperseg, perbc_idn_map, iperconn, nnperbc
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
-      
+      character(len=1024) :: scratchMessage
+      character(len=1024) :: scratchFormat
+
 !      dummy variables
       INTEGER:: ETAB(:,:)
       
@@ -4045,9 +3886,10 @@ Csb...
                END IF
 
                IF ( ia1 == N1 ) THEN
-                  WRITE(16,*) "Fatal error in PREBCSETUP(): the primary 
+                  WRITE(scratchMessage,*) "Fatal error in PREBCSETUP(): the primary
      &            and slave node label are identical for the node ", ID1
-                  CALL EXIT(1)
+                  call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                  message=scratchMessage)
                END IF
             ELSE                              
                WRITE(16,*) "Error in PREBCSETUP(): No. neighbors = ", 
@@ -4477,36 +4319,6 @@ Csb...
 
       end function calcarea
 !-----------------------------------------------------------------------
-      SUBROUTINE terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      IMPLICIT NONE
-C
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("terminate")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1)
-C
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE terminate
 
 !*********************************************************************************C
 !                                                                                 C
@@ -4515,10 +4327,10 @@ C
 !   Use data declared in the module                                               C
 !                                                                                 C
 !*********************************************************************************C
-      SUBROUTINE READFORTROTS( ) 
+      SUBROUTINE READFORTROTS( )
+        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
         IMPLICIT NONE
 
-        !
         CHARACTER (LEN=1024):: FNAME           
         INTEGER:: FUNIT, errorIO
         CHARACTER (len=100) :: errorVar 
@@ -4531,11 +4343,8 @@ C
         ! Euler angle
         REAL(8):: AL, BE, GAM
 
-        call setMessageSource("ReadFortRots")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
-        
+        LOG_SCOPE_TRACED("ReadFortRots", MESH_TRACING)
+
         FUNIT = 1002 ;    
         FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.rotm' ;
         errorVar = ""
@@ -4596,22 +4405,10 @@ C
         CASE DEFAULT
            WRITE(scratchMessage,'(A)') 
      &     "Error in readfortrots(): defining"// 
-     &     " rotation matrix through "//adjustl(trim(inputtype))// 
-     &     " is either not valid or has not been implemented" 
-           CALL allMessage(ERROR,scratchMessage)
-           scratchMessage = "ADCIRC will stop"
-           CALL allMessage(ERROR,scratchMessage)
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-           call allMessage(DEBUG,"Return.") 
-#endif
-           call unsetMessageSource()
-           CALL EXIT(1)          
+     &     " rotation matrix through "//adjustl(trim(inputtype))//
+     &     " is either not valid or has not been implemented"
+           call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
         END SELECT
-
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") 
-#endif
-      call unsetMessageSource()
 
         CLOSE(FUNIT) 
 
@@ -4650,10 +4447,7 @@ C
         !c local c!
         INTEGER:: II, IERR
 
-        call setMessageSource("COMP_ROTSPCOORD_VARS")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
+        LOG_SCOPE_TRACED("COMP_ROTSPCOORD_VARS", MESH_TRACING)
 
         CALL CHECK_RTOTMAT( ROTMAT, IERR ) ; 
         
@@ -4667,12 +4461,7 @@ C
      &          SLAMR(II), SFEAR(II), SLAM0, SFEA0, ICS ) ;
         END DO
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
-        
-        RETURN 
+        RETURN
       END SUBROUTINE COMP_ROTSPCOORD_VARS
 
       SUBROUTINE GET_ROTSPCOORD_CORIFVAL( CORIF ) 
@@ -4680,17 +4469,9 @@ C
       
         REAL(8) :: CORIF(:)
 
-        call setMessageSource("GET_ROTSPCOORD_CORIFVAL")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
-        
-        CALL CORIFVAL_ROTSPCOORD(CORIF, ROTMAT, SLAMR, SFEAR, NP) ; 
+        LOG_SCOPE_TRACED("GET_ROTSPCOORD_CORIFVAL", MESH_TRACING)
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
+        CALL CORIFVAL_ROTSPCOORD(CORIF, ROTMAT, SLAMR, SFEAR, NP) ;
 
         RETURN ;
       END SUBROUTINE GET_ROTSPCOORD_CORIFVAL
@@ -4705,10 +4486,7 @@ C
         !c local c!
         REAL(8) :: RTT(3,3), TR, SOFFD
 
-        call setMessageSource("CHECK_RTOTMAT")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
+        LOG_SCOPE_TRACED("CHECK_RTOTMAT", MESH_TRACING)
 
         RTT = TRANSPOSE( RTOTS ) ; 
 
@@ -4731,11 +4509,6 @@ C
      &          " orthgonal and thus invalid" ;
         END IF
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
-
         RETURN ;
       END SUBROUTINE CHECK_RTOTMAT
 
@@ -4750,10 +4523,7 @@ C
         !c local c!
         REAL(8) :: RADPHI, RADTHETA, ROTMATOUT(3)
 
-        call setMessageSource("DRV_ROTMAT_ZNVEC")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
+        LOG_SCOPE_TRACED("DRV_ROTMAT_ZNVEC", MESH_TRACING)
 
         !c deg to rad
         RADPHI = VARPHI*DEG2RAD ;
@@ -4779,12 +4549,7 @@ C
      &       "****************************************" ;  
         call allMessage(INFO,scratchMessage)
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
-
-        RETURN 
+        RETURN
       END SUBROUTINE DRV_ROTMAT_ZNVEC
 
       SUBROUTINE DRV_ROTMAT_ZXZROT( ALPHA, BETA, GAMMA )
@@ -4795,10 +4560,7 @@ C
          ! local !
          REAL(8) :: RAL, RBE, RGAM
 
-         call setMessageSource("DRV_ROTMAT_ZXZROT")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Enter.")
-#endif
+         LOG_SCOPE_TRACED("DRV_ROTMAT_ZXZROT", MESH_TRACING)
 
          RAL = ALPHA*DEG2RAD ;
          RBE = BETA*DEG2RAD ;
@@ -4821,11 +4583,6 @@ C
      &       "****************************************" ;  
          call allMessage(INFO,scratchMessage)
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.") 
-#endif
-         call unsetMessageSource()
-         
          RETURN ;
       END SUBROUTINE DRV_ROTMAT_ZXZROT
 
@@ -4837,17 +4594,9 @@ C
         INTEGER:: NN
         REAL(8), dimension(:):: LONR, LATR, LONO, LATO
 
-        call setMessageSource("DRVSPCOORSROTS1")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
-        
-        CALL SPCOORSROTS1( ROTMAT, LONR, LATR, LONO, LATO, NN )
+        LOG_SCOPE_TRACED("DRVSPCOORSROTS1", MESH_TRACING)
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
+        CALL SPCOORSROTS1( ROTMAT, LONR, LATR, LONO, LATO, NN )
 
         RETURN ;
       END SUBROUTINE DRVSPCOORSROTS1
@@ -4856,18 +4605,10 @@ C
         IMPLICIT NONE
 
         REAL(8) :: LONR, LATR, LONO, LATO
-        
-        call setMessageSource("DRVSPCOORSROTS0")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
+
+        LOG_SCOPE_TRACED("DRVSPCOORSROTS0", MESH_TRACING)
 
         CALL SPCOORSROTS0( ROTMAT, LONR, LATR, LONO, LATO )
-
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
 
         RETURN ;
       END SUBROUTINE DRVSPCOORSROTS0
@@ -4893,11 +4634,8 @@ C
         INTEGER:: II
         REAL(8) :: EOMEGA2, ROT3(3)
 
-        call setMessageSource("CORIFVAL_ROTSPCOORD")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
-        
+        LOG_SCOPE_TRACED("CORIFVAL_ROTSPCOORD", MESH_TRACING)
+
         ROT3 = ROTM(:,3) ; 
 
         !c Angular speed of Earth  
@@ -4907,14 +4645,9 @@ C
      &          ROT3(2)*cos( THETAR(II) )*sin( VARPHIR(II) ) +
      &          ROT3(3)*sin( THETAR(II) ) ; 
              
-           CORIF(II) = EOMEGA2*CORIF(II) ;              
+           CORIF(II) = EOMEGA2*CORIF(II) ;
         END DO
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
-        
         RETURN ;
       END SUBROUTINE CORIFVAL_ROTSPCOORD
 
@@ -4931,23 +4664,15 @@ C
         LOGICAL:: FWD
         REAL(8), DIMENSION(:):: UUD, VVD, UUS, VVS
 
-        call setMessageSource("DRVMAP2DSPVEC")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
+        LOG_SCOPE_TRACED("DRVMAP2DSPVEC", MESH_TRACING)
 
         IF ( FWD ) THEN
            ! forward transform
            CALL MAP2DSPVECS( UUD, VVD, UUS, VVS, RVELF, NN )   
         ELSE
            ! inverse transform
-           CALL MAP2DSPVECS( UUD, VVD, UUS, VVS, RVELI, NN )   
+           CALL MAP2DSPVECS( UUD, VVD, UUS, VVS, RVELI, NN )
         END IF
-
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
 
         RETURN ;
       END SUBROUTINE DRVMAP2DSPVEC
@@ -4968,11 +4693,8 @@ C
         INTEGER:: II
         REAL(8) :: VO(2), VR(2)
 
-        call setMessageSource("MAP2DSPVECS")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
- 
+        LOG_SCOPE_TRACED("MAP2DSPVECS", MESH_TRACING)
+
         DO  II = 1, NN
            VO = (/ VPHIO(II), VTHETAO(II) /)  ;
            VR = MATMUL( SPRV(1:2,1:2,II), VO ) ; 
@@ -4980,12 +4702,7 @@ C
            VPHIR(II) = VR(1) ;
            VTHETAR(II) = VR(2) ;
         END DO
-        
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
 
-        call unsetMessageSource()
         RETURN ;
       END SUBROUTINE MAP2DSPVECS
       ! Given a radius vector (\varphi,\theta) (in rad)
@@ -4995,14 +4712,11 @@ C
       SUBROUTINE GET_ROTMAT_ZNVEC( RTOT, VARPHIN, THETAN )   
         IMPLICIT NONE
       
-        REAL(8) :: RTOT(:,:) 
+        REAL(8) :: RTOT(:,:)
         REAL(8) :: VARPHIN, THETAN
 
-        call setMessageSource("GET_ROTMAT_ZNVEC")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
-      
+        LOG_SCOPE_TRACED("GET_ROTMAT_ZNVEC", MESH_TRACING)
+
         RTOT = 0.0D0 ;
       
         RTOT(1,1) = sin( VARPHIN ) ; 
@@ -5014,14 +4728,9 @@ C
         RTOT(3,2) = cos( THETAN )*sin( VARPHIN ) ; 
         
         RTOT(1,3) = 0.0D0 ;
-        RTOT(2,3) = -cos( THETAN ) ; 
-        RTOT(3,3) =  sin( THETAN ) ; 
+        RTOT(2,3) = -cos( THETAN ) ;
+        RTOT(3,3) =  sin( THETAN ) ;
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
-        
         RETURN ;
       END SUBROUTINE GET_ROTMAT_ZNVEC
 
@@ -5035,11 +4744,8 @@ C
 
         ! local !
         REAL(8) :: RTMP(3,3), RM2D(2,2)
-        
-        call setMessageSource("GET_ROTMAT_ZXZROT")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
+
+        LOG_SCOPE_TRACED("GET_ROTMAT_ZXZROT", MESH_TRACING)
 
         ! A rotation around z-axis
         RM2D = RTOT2DMAT( AL ) ;
@@ -5066,38 +4772,25 @@ C
         RTMP(3,3) = 1.0D0 ;
         RTMP(1:2,1:2) = RM2D ; 
 
-        RTOT = MATMUL( RTOT, RTMP ) ; 
+        RTOT = MATMUL( RTOT, RTMP ) ;
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
-
-        RETURN ;        
+        RETURN ;
       END SUBROUTINE GET_ROTMAT_ZXZROT
 
       FUNCTION RTOT2DMAT( ALPHA ) RESULT( RM )
         IMPLICIT NONE
 
         REAL(8) :: ALPHA
-        REAL(8) :: RM(2,2) 
+        REAL(8) :: RM(2,2)
 
-        call setMessageSource("RTOT2DMAT")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
-           
+        LOG_SCOPE_TRACED("RTOT2DMAT", MESH_TRACING)
+
         RM(1,1) = cos(ALPHA) ;
         RM(2,1) = -sin(ALPHA) ;
         RM(1,2) = sin(ALPHA) ;
         RM(2,2) = cos(ALPHA) ;
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
-        
-        RETURN ; 
+        RETURN ;
       END FUNCTION RTOT2DMAT
 
 
@@ -5130,12 +4823,9 @@ C
 
          ! local !
          INTEGER:: IP
-         REAL(8), DIMENSION(3,3):: TP, TM, TRT 
+         REAL(8), DIMENSION(3,3):: TP, TM, TRT
 
-         call setMessageSource("SPVECROTSMAT")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Enter.")
-#endif
+         LOG_SCOPE_TRACED("SPVECROTSMAT", MESH_TRACING)
 
          DO IP = 1, NN
            TRT = 0.0D0 ; 
@@ -5155,12 +4845,7 @@ C
            RVELI(:,:,IP) = TRANSPOSE( RVELF(:,:,IP) ) ; ! inverse transform
          END DO
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-         call allMessage(DEBUG,"Return.") 
-#endif
-         call unsetMessageSource()
-
-         RETURN ; 
+         RETURN ;
       END SUBROUTINE SPVECROTSMAT
 
       !
@@ -5173,11 +4858,8 @@ C
         REAL(8) :: TM(3,3)
         REAL(8), intent(in):: VARPHI, THETA
 
-        call setMessageSource("CT2SP_VECTRANSMAT")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
-        
+        LOG_SCOPE_TRACED("CT2SP_VECTRANSMAT", MESH_TRACING)
+
         TM(1,1) = cos( THETA )*cos( VARPHI ) ;
         TM(2,1) = -sin( VARPHI ) ; 
         TM(3,1) = -sin( THETA )*cos( VARPHI ) ; 
@@ -5187,15 +4869,10 @@ C
         TM(3,2) = -sin( THETA )*sin( VARPHI ) ; 
         
         TM(1,3) = sin( THETA ) ; 
-        TM(2,3) = 0.0D0 ; 
-        TM(3,3) = cos( THETA ) ;    
+        TM(2,3) = 0.0D0 ;
+        TM(3,3) = cos( THETA ) ;
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
-        
-        RETURN ;   
+        RETURN ;
       END FUNCTION CT2SP_VECTRANSMAT 
       
       SUBROUTINE SPCOORSROTS1( RTOTS, LONR, LATR, LONO, LATO, NN )
@@ -5210,10 +4887,7 @@ C
         INTEGER :: IP
         REAL(8) :: XP(3), XPR(3), LLO, LTO
 
-        call setMessageSource("SPCOORSROTS1")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
+        LOG_SCOPE_TRACED("SPCOORSROTS1", MESH_TRACING)
 
         DO IP = 1, NN
            LLO = LONO( IP ) ; 
@@ -5227,15 +4901,10 @@ C
 
            LATR(IP) = atan2( XPR(3), SQRT(XPR(1)*XPR(1) 
      &                                  + XPR(2)*XPR(2)) )
-           LONR(IP) = atan2( XPR(2), XPR(1) ) ;   
+           LONR(IP) = atan2( XPR(2), XPR(1) ) ;
         END DO
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
-        
-        RETURN ; 
+        RETURN ;
       END SUBROUTINE SPCOORSROTS1
 
       SUBROUTINE SPCOORSROTS0( RTOTS, LONR, LATR, LONO, LATO )
@@ -5249,10 +4918,7 @@ C
         INTEGER:: IP
         REAL(8) :: XP(3), XPR(3), LLO, LTO
 
-        call setMessageSource("SPCOORSROTS0")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
+        LOG_SCOPE_TRACED("SPCOORSROTS0", MESH_TRACING)
 
         LLO = LONO  ; 
         LTO = LATO  ; 
@@ -5264,14 +4930,9 @@ C
         XPR = MATMUL( RTOTS, XP) ;
         
         LATR = atan2( XPR(3), SQRT(XPR(1)*XPR(1) + XPR(2)*XPR(2)) ) ;
-        LONR = atan2( XPR(2), XPR(1) ) ;   
+        LONR = atan2( XPR(2), XPR(1) ) ;
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
-
-        RETURN ; 
+        RETURN ;
       END SUBROUTINE SPCOORSROTS0
 !******************************************************************************
 !                                                                             *
@@ -5282,15 +4943,12 @@ C
 !******************************************************************************
       SUBROUTINE CYLINDERMAP(X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0,MTYPE)
       IMPLICIT NONE
-      
-      INTEGER, INTENT(IN):: MTYPE
-      REAL*8 X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0
 
-      call setMessageSource("CYLINDERMAP")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      
+      INTEGER, INTENT(IN):: MTYPE
+      REAL(8) X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0
+
+      LOG_SCOPE_TRACED("CYLINDERMAP", MESH_TRACING)
+
       SELECT CASE(MTYPE)
       CASE (2,21) !c CPP
          X= Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)
@@ -5313,11 +4971,6 @@ C
      &                      " has not been implemented" ;
          WRITE(6,'(A)') "  Valid MTYPE = 2, 20-24" ;
       END SELECT
-      
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") 
-#endif
-      call unsetMessageSource()
 
       RETURN ;
       END SUBROUTINE CYLINDERMAP 
@@ -5331,13 +4984,10 @@ C
       
       ! local
       INTEGER :: IE, NMI1, NMI2, NMI3
-      REAL(8) :: ONETRD 
+      REAL(8) :: ONETRD
 
-      call setMessageSource("SFAC_ELEAVG")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      
+      LOG_SCOPE_TRACED("SFAC_ELEAVG", MESH_TRACING)
+
       ONETRD = 1.0D0/3.0D0 ;
       DO IE = 1, NE
          NMI1 = NM(IE,1) ; 
@@ -5345,14 +4995,9 @@ C
          NMI3 = NM(IE,3) ;  
          
          SFAELES(IE) = (SFNODES(NMI1) + 
-     &        SFNODES(NMI2) + SFNODES(NMI3))*ONETRD ; 
+     &        SFNODES(NMI2) + SFNODES(NMI3))*ONETRD ;
       END DO
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") 
-#endif
-      call unsetMessageSource()
-      
       RETURN ;
       END SUBROUTINE SFAC_ELEAVG 
     
@@ -5377,11 +5022,8 @@ C
       REAL(8), dimension(3):: DLX, DL
       REAL(8):: DLED1, DLED2
 
-      call setMessageSource("CAL_ELXV_SPCOOR")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-  
+      LOG_SCOPE_TRACED("CAL_ELXV_SPCOOR", MESH_TRACING)
+
       !c Rad -> deg
       LATM(:) = LATVE(1:3)*RAD2DEG ;
 
@@ -5436,14 +5078,9 @@ C
       END DO
       
       IF ( PRESENT( SFLAG ) ) THEN
-         SFLAG = SPF ; 
+         SFLAG = SPF ;
       END IF
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") 
-#endif
-      call unsetMessageSource()
-      
       RETURN ;
 
       CONTAINS
@@ -5493,10 +5130,7 @@ C
         INTEGER:: I, MEXP
         REAL(8) :: RFAC1, RFAC2, RFAC3
 
-        call setMessageSource("COMPUTE_CYLINPROJ_SFAC")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
+        LOG_SCOPE_TRACED("COMPUTE_CYLINPROJ_SFAC", MESH_TRACING)
 
 !.... Set:
 !.... SFCT, SFCX, SFCY, SFMX, SFMY, YCSFAC
@@ -5573,18 +5207,13 @@ C
         CALL SFAC_ELEAVG( SFMXEle, SFMX, NM, NE ) ; 
         CALL SFAC_ELEAVG( SFMYEle, SFMY, NM, NE ) ; 
         CALL SFAC_ELEAVG( YCSFacEle, YCSFAC, NM, NE ) ;          
-        CALL SFAC_ELEAVG( TANPHIEle, TANPHI, NM, NE ) ;          
-        
-!      Only need the  averages of these... 
+        CALL SFAC_ELEAVG( TANPHIEle, TANPHI, NM, NE ) ;
+
+!      Only need the  averages of these...
 !        DEALLOCATE( SFMY, SFCX, SFCY, YCSFAC ) !Needed for read_river
 !        module AT2025
 
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.") 
-#endif
-        call unsetMessageSource()
-        
-        RETURN ; 
+        RETURN ;
       END SUBROUTINE COMPUTE_CYLINPROJ_SFAC
 
 !-----------------------------------------------------------------------

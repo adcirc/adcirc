@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C#define SB_WETDRY
 C******************************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                            *
@@ -58,33 +59,35 @@ C
 #endif
       USE SIZES, ONLY : MNP, MNWPROH, MYPROC
       USE GLOBAL, ONLY : UU1, VV1, QX1, QY1, QX2, QY2, UU2, VV2, MOM_LV_X,
-     &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0, 
-     &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0, 
+     &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0,
+     &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0,
      &    EN0, EN1, EN2, CICE1, CICE2, CICEOUT, RSNX1, RSNX2, RSNY1, RSNY2,
      &    QX0, QN1, QN2, RSNXOUT, RSNYOUT, LNM_BC1, LNM_BC2, H1, H2,
      &    QNIN1, QNIN2, ENIN1, ENIN2, EtaDisc, NIBNODECODE,
      &    BCHGTIMINC, ETA2,ElevDisc, BTIME1, BTIME2, BTIME_END, C2D_PTrans,
      &    C2DDI, C3D, C3DVS, CBAROCLINIC, CGWCE_New, CHOTHS, CICE_TIME1,
-     &    CICE_TIME2, CICE_TIMINC, BTIMINC, CME_New_C1, CME_New_C2, 
-     &    CME_New_NC, CPRECOR, CTiP, DRAMP, DRampElev, DRampExtFlux, 
+     &    CICE_TIME2, CICE_TIMINC, BTIMINC, CME_New_C1, CME_New_C2,
+     &    CME_New_NC, CPRECOR, CTiP, DRAMP, DRampElev, DRampExtFlux,
      &    DRampIntFlux, DRampMete, DRampTip, DRampWRad, DTDP, DTDPHS,
      &    DUnRampMete, ENDWAVE, ErrorElev, Flag_ElevError, FluxSettlingIT,
-     &    FluxSettlingTime, FTIMINC, IFNLFA, H0, IHOT, IM, INFO, WARNING,
-     &    ERROR, logMessage, allMessage, setMessageSource, unsetMessageSource,
+     &    FluxSettlingTime, FTIMINC, IFNLFA, H0, IHOT, IM,
      &    inundationOutput, ITHS, METONLY, NCICE, NDDT, NFFR, NHSINC,
-     &    NHSTAR, NOLIFA, NRamp, NRS, NSCREEN, NTIF, QTIME1, QTIME2, Ramp,
+     &    NHSTAR, NOLIFA, NRamp, NRS, NTIF, QTIME1, QTIME2, Ramp,
      &    RampElev, RampExtFlux, RampMete, RampTip, RampWRad, RBCRATIO,
-     &    RBCTIME1, RBCTIME2, RBCTIMEINC, REFTIM, RES_BC_FLAG, 
-     &    RSTIME1, RSTIME2, NWS, RSTIMINC, SCREENUNIT, STATIM, TK,
+     &    RBCTIME1, RBCTIME2, RBCTIMEINC, REFTIM, RES_BC_FLAG,
+     &    RSTIME1, RSTIME2, NWS, RSTIMINC, STATIM, TK,
      &    WVNXOUT, WVNYOUT, WarnElev, PERT, FACET, FFT, AMIGT, SALTPHA,
-     &    SALTAMP, NODECODE, scratchMessage, TPK, NOFF, DASigT, FFF, 
+     &    SALTAMP, NODECODE, TPK, NOFF, DASigT, FFF,
      &    QNPH, QNAM, ENPH, ENAM, ETRF, FPER, FFACE, ETA1, FAMIG, LNM_BC,
      &    BCFLAG_LNM, usingDynamicWaterLevelCorrection,
-     &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM, 
-     &    WarnElevDump, nodes_lg, NT, NM, NB, DEBUG, NHOUTONCE,
+     &    dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, L_N, TKM,
+     &    WarnElevDump, nodes_lg, NT, NM, NB, NHOUTONCE,
      &    Limit_WaveStressGrad, SWAN_RSNX1, SWAN_RSNY1, SWAN_RSNX2, SWAN_RSNY2,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
      &    dynamicWaterLevelCorrectionDelta, RampIntFlux
+      USE mod_logging, ONLY: logMessage, allMessage, t_log_scope,
+     &    init_log_scope, DEBUG, INFO, WARNING, ERROR, screenUnit,
+     &    nscreen
       USE ADC_CONSTANTS, ONLY: rhoWat0, sigT0, waveWindMultiplier,
      &                         WaveStressGrad_Cap, G
      
@@ -108,7 +111,7 @@ C
      &    dynamicWaterLevelCorrectionMassAdjust,
      &    CLOSE_MET_FILES
 
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+      USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
 C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
       USE mod_normal_flow_boundary, ONLY: rotate_normal_flux
@@ -201,6 +204,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) runperccomplete
 C   kmd48.33bc - added in the heat flux variables
       CHARACTER(80) :: CDUM80
+      CHARACTER(1024) :: scratchMessage
       INTEGER :: NumofBCNode
       REAL(8), SAVE :: StaTimHS, RefTimHS
       INTEGER :: NOD
@@ -221,7 +225,9 @@ C....... DW
 C.......
       LOGICAL ISFRONT
       LOGICAL foundNaN
-      
+
+      LOG_SCOPE_TRACED("timestep", TIMESTEP_TRACING)
+
       IF (IT .EQ. 1) THEN
 !.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
         DO I = 1,NP
@@ -230,27 +236,14 @@ C.......
         ENDDO
       ENDIF
 
-      call setMessageSource("timestep")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
 
 C    kmd48.33bc - changed for timestep changes in the hot start files
 C     jgf46.21 Combined flux/radiation b.c. for rivers
-#ifdef IBM
-      IF (CHOTHS.eqv..true.) THEN
-        FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS,KIND(0.0D0))
-      ELSE
-        FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP,KIND(0.0D0))
-      END IF
-#else
       IF (CHOTHS.eqv..true.) THEN
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS)
       ELSE
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP)
       END IF
-#endif
 
 C...  COMPUTE MASTER TIME WHICH IS REFERENCED TO THE BEGINNING TIME OF
 C...  THE MODEL RUN
@@ -1085,9 +1078,9 @@ C...  Compute new water surface elevation
          !JLW: update nodecode, ncele, etc
          call computeWettingAndDrying(it)
 #else
-         call allMessage(ERROR, "Subgrid calculation requires building"
-     &                          //"with netcdf enabled")
-         call ADCIRC_Terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message="Subgrid calculation requires building "
+     &             //"with netcdf enabled")
 #endif         
       ELSE
 !--------------------WETTING AND DRYING--------------------------------
@@ -1335,9 +1328,9 @@ C     output the global node number to debug the local PE fort.14s
          ENDIF
          call WarnElevSum(ErrorElevExceeded)  ! Clint's Zombie Slayer 2010.08.07
          IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
-           Flag_ElevError = .true. 
-           CALL MSG_FINI()                    !  if there are Error Elvation nodes.
-           CALL EXIT(1)                             !
+           Flag_ElevError = .true.
+           call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &        message='Elevation exceeded ErrorElev threshold')
          ENDIF                                !st3
 
 #ifdef VELCHECK
@@ -1400,7 +1393,8 @@ C     output the global node number to debug the local PE fort.14s
      &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I9,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev, ',
      &           'ADCIRC stopping. **')
-            CALL ADCIRC_Terminate()
+            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Elevation exceeded ErrorElev threshold')
          ENDIF
 #ifdef VELCHECK
          IF (IT .EQ. ITIME_BGN) THEN
@@ -1501,10 +1495,6 @@ C      ENDIF
         CALL CLOSE_MET_FILES() ; 
       END IF        
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 
 C******************************************************************************
@@ -1591,8 +1581,9 @@ C
 
       USE GLOBAL, only: ch1, trans_lv_b, nodecode, noff, lumpt, dtdp,
      &    trans_lv_a, soursin, uu1, vv1, ifnlfa, eta1, bedstr, tk,
-     &    setmessagesource, unsetmessagesource, DEBUG,
-     &    allMessage, H1
+     &    H1
+      USE mod_logging, ONLY: t_log_scope, init_log_scope,
+     &    allMessage, debug
 
       USE ADC_CONSTANTS, ONLY: rhowat0
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
@@ -1636,10 +1627,7 @@ C
       REAL(8) DYY11,DYY12,DYY13,DYY21,DYY22,DYY23,DYY31,DYY32,DYY33
       REAL(8) TimeLoc
 
-      call setMessageSource("scalar_trans_2D")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("scalar_trans_2D", TIMESTEP_TRACING)
 C...  NOTE: THE VARIABLE CH1(I) IS ACTUALLY C*H
 C.... COMPUTE SOURCE/SINK TERM AT THE NODES USING CLASSICAL COHESIVE
 C.... SEDIMENT TRANSPORT RELATIONS
@@ -1833,45 +1821,16 @@ C......SOURCE SINK TERMS (EITHER LUMPED OR CONSISTENT)
 C......TRANSIENT TERM (LUMPED)
      &           FDDDODT+2.*FDDODODT
 
-C     VEC...LINES TO RUN ON A VECTOR COMPUTER
-#ifdef CVEC
-         TEMP_LV_B(IE,1)=TEMP_LV_B1*NCELE !LOAD VECTOR
-         TEMP_LV_B(IE,2)=TEMP_LV_B2*NCELE !LOAD VECTOR
-         TEMP_LV_B(IE,3)=TEMP_LV_B3*NCELE !LOAD VECTOR
-         TEMP_LV_A(IE,1)=TEMP_LV_A1*NCELE !LUMPED LHS MATRIX
-         TEMP_LV_A(IE,2)=TEMP_LV_A2*NCELE !LUMPED LHS MATRIX
-         TEMP_LV_A(IE,3)=TEMP_LV_A3*NCELE !LUMPED LHS MATRIX
-#endif
-
-C     LINES TO RUN ON A SCALAR COMPUTER
-C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR QC AND TRANS_LV_A
-C     ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
-#ifdef CSCA
+C     FINALIZE THE ASSEMBLY PROCESS FOR QC AND TRANS_LV_A
+C     USING THE TEMPORARY VECTORS
          TRANS_LV_B(NM1)=TRANS_LV_B(NM1)+TEMP_LV_B1*NCELE !LOAD VECTOR
          TRANS_LV_B(NM2)=TRANS_LV_B(NM2)+TEMP_LV_B2*NCELE !LOAD VECTOR
          TRANS_LV_B(NM3)=TRANS_LV_B(NM3)+TEMP_LV_B3*NCELE !LOAD VECTOR
          TRANS_LV_A(NM1)=TRANS_LV_A(NM1)+TEMP_LV_A1*NCELE !LUMPED LHS MATRIX
          TRANS_LV_A(NM2)=TRANS_LV_A(NM2)+TEMP_LV_A2*NCELE !LUMPED LHS MATRIX
          TRANS_LV_A(NM3)=TRANS_LV_A(NM3)+TEMP_LV_A3*NCELE !LUMPED LHS MATRIX
-#endif
 
       ENDDO
-
-C     LINES TO RUN ON A VECTOR COMPUTER
-C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR QC, TRANS_LV_A
-#ifdef CVEC
-      DO IE=1,NE
-        NM1=NM(IE,1)
-        NM2=NM(IE,2)
-        NM3=NM(IE,3)
-        TRANS_LV_A(NM1)=TRANS_LV_A(NM1)+TEMP_LV_A(IE,1) !LUMPED LHS MATRIX
-        TRANS_LV_A(NM2)=TRANS_LV_A(NM2)+TEMP_LV_A(IE,2) !LUMPED LHS MATRIX
-        TRANS_LV_A(NM3)=TRANS_LV_A(NM3)+TEMP_LV_A(IE,3) !LUMPED LHS MATRIX
-        TRANS_LV_B(NM1)=TRANS_LV_B(NM1)+TEMP_LV_B(IE,1) !LOAD VECTOR
-        TRANS_LV_B(NM2)=TRANS_LV_B(NM2)+TEMP_LV_B(IE,2) !LOAD VECTOR
-        TRANS_LV_B(NM3)=TRANS_LV_B(NM3)+TEMP_LV_B(IE,3) !LOAD VECTOR
-      END DO
-#endif
 
 C.... SOLVE FOR C*H NODE BY NODE
 
@@ -1880,11 +1839,6 @@ C.... SOLVE FOR C*H NODE BY NODE
          IF(NCI.NE.0) CH1(I)=TRANS_LV_B(I)/TRANS_LV_A(I)
 C     IF(LBArray_Pointer(I).NE.0) CH1(I)=0.d0  !ESSENTIAL C=0 BOUNDARY CONDITION
       END DO
-
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
       RETURN
 C**********************************************************************
@@ -1901,13 +1855,11 @@ C
       SUBROUTINE CALC_SIGMAT_2D ()
 
       USE GLOBAL
+      use mod_logging, only: t_log_scope, init_log_scope, DEBUG
 
       INTEGER NH
 
-      call setMessageSource("calc_sigmat_2D")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("calc_sigmat_2D", TIMESTEP_TRACING)
 
 
       IF(ABS(IDEN).EQ.2) THEN
@@ -1920,10 +1872,6 @@ C
         DO NH=1,NP
         ENDDO
       ENDIF
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 c*********************************************************************
       END SUBROUTINE CALC_SIGMAT_2D
@@ -2104,9 +2052,9 @@ Casey: Added the following variable declarations from GLOBAL.
 C
       USE GLOBAL, ONLY: IFNLFA, IFNLCT,
      &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
-     &      setMessageSource, unsetMessageSource, allMessage,
-     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &      ETA2, H0, DTDP, H2
+      USE mod_logging, ONLY: t_log_scope, init_log_scope,
+     &      allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       USE ADC_CONSTANTS, ONLY: SigT0
       USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
      &      NEITABELE, NEITAB, NNEIGH, SFAC
@@ -2122,17 +2070,17 @@ C
      &      DENSITY_INTEGRATION_TRAPEZOIDAL, DENSITY_INTEGRATION_SIMPSON,
      &      VERTICAL_INTERPOLATION_LINEAR, VERTICAL_INTERPOLATION_CUBIC
 
-
 #ifdef CMPI
       USE MESSENGER
+#endif
+
       IMPLICIT NONE
+
+#ifdef CMPI
       REAL(8) :: DUMV1(1),DUMV2(1)
-#else
-      IMPLICIT NONE
 #endif
 
 Casey: Added the following local variable declarations.
-C
       INTEGER :: NCELE
       INTEGER :: TEMPNCELE
       INTEGER :: TEMPSTOP
@@ -2199,10 +2147,7 @@ Casey 140701: Debug.
       COMPLEX(8) :: BCPGM(NumGQP*(NFEN-1))
 
 C
-      call setMessageSource("bpg3D")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("bpg3D", TIMESTEP_TRACING)
 
 C     INCREMENT THE TIMESTEP SINCE START COUNTER
 C
@@ -2542,11 +2487,6 @@ C
       CALL UPDATER(VIDBCPDXOH,VIDBCPDYOH,DUMV1,2)
 #endif
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
 
 !----------------------------------------------------------------------------------------------------------------------------------------------------
 ! arash - print out a vertical slice of the BPG
@@ -2632,6 +2572,7 @@ C
       SUBROUTINE ZSURFBUOY(SigmaNN,BCPressNN,NN,J)
 
       USE GLOBAL_3DVS
+      use mod_logging, only: t_log_scope, init_log_scope
       IMPLICIT NONE
       REAL(8) :: BCPressNN
       REAL(8) :: SigmaNN     !Sigma value of a neighbor node
@@ -2646,10 +2587,7 @@ C     jgf46.00 Explicitly declared the following variables
       REAL(8) SigAbov
       REAL(8) SigTry
 
-      call setMessageSource("zsurfbuoy")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("zsurfbuoy", TIMESTEP_TRACING)
       IDiag=0
 
       IF(SigmaNN.LE.1.0001*b) THEN !if into ground then skip
@@ -2719,11 +2657,6 @@ C     jgf46.00 Explicitly declared the following variables
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
 C**********************************************************************
       END SUBROUTINE ZSURFBUOY
@@ -2748,12 +2681,10 @@ C
      &            A, B,
      &            BCP,
      &            NFEN,
-     &            SIGMA,
-     &            allMessage,
-     &            setMessageSource,
-     &            unsetMessageSource
-      USE GLOBAL, ONLY : DEBUG
-      USE SIZES, ONLY : 
+     &            SIGMA
+      USE mod_logging, ONLY: allMessage, t_log_scope, init_log_scope
+      USE mod_logging, ONLY : DEBUG
+      USE SIZES, ONLY :
       IMPLICIT NONE
       REAL(8) :: BCPressNN
       REAL(8) :: SigmaNN     !Sigma value of a neighbor node
@@ -2775,10 +2706,7 @@ C     jgf46.00 Explicitly declared the following variables
       REAL(8) :: top, bot
       Integer  :: loop_situation = 0
 
-      call setMessageSource("zsurfbuoy_p3")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("zsurfbuoy_p3", TIMESTEP_TRACING)
       IDiag=0
 
 !Casey 221122 : Let's be more restrictive here.
@@ -2990,12 +2918,6 @@ C     jgf46.00 Explicitly declared the following variables
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
-!Casey 220126 : These lines are surprisingly important.
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
       RETURN
 C**********************************************************************
       END SUBROUTINE ZSURFBUOY_p3
@@ -3012,6 +2934,7 @@ C**********************************************************************
        Use Global,      Only : H2
        Use Mesh,        Only : DP
        Use Global_3DVS, Only : SIGMA, AMB, B
+       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
        Implicit none
        Integer :: I, J, K
@@ -3073,8 +2996,8 @@ C**********************************************************************
              sum_Weights = sum_Weights + Weights (J)
           End Do
           If ( sum_Weights < 1.0d-6 ) Then
-             Write(*,*) 'Possible error in Gaussian filter - error code = 1'
-             CALL EXIT(1)
+             CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                      message="Possible error in Gaussian filter - error code = 1")
           End If
          Weights (:) = Weights (:) / sum_Weights
          ! 2.3 debug

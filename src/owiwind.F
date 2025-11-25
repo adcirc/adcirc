@@ -17,6 +17,9 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+
+#include "logging_macros.h"
+
 !-----------------------------------------------------------------------
 !  MODULE OWIWIND
 !-----------------------------------------------------------------------
@@ -87,13 +90,11 @@
 !-----------------------------------------------------------------------
 
         USE SIZES,ONLY : MYPROC
-        USE GLOBAL,ONLY : NSCREEN, ScreenUnit, DEBUG, ECHO, INFO,
-     &     WARNING, ERROR, screenMessage, logMessage, allMessage,
-     &     setMessageSource, unsetMessageSource, scratchMessage,
-     &     openFileForRead, Flag_ElevError
-#ifdef CMPI
-        USE MESSENGER,ONLY : MSG_FINI
-#endif  
+        USE mod_io, only: openFileForRead
+        use mod_logging, only: screenUnit, nscreen
+        USE GLOBAL,ONLY : Flag_ElevError
+        USE mod_logging,ONLY : screenMessage, logMessage, allMessage,
+     &     DEBUG, ECHO, INFO, WARNING, ERROR, t_log_scope, init_log_scope
         IMPLICIT NONE
 
         integer  :: nPowellSearchDomains = -1 !< Number of search domains for Powell wind drag
@@ -178,10 +179,7 @@
         integer               :: iounit
         integer               :: errorIO = 0
 
-        call setMessageSource("nws12init")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif  
+        LOG_SCOPE_TRACED("nws12init", WIND_TRACING)
 
         !...Begin reading fort.22
         fname = "fort.22"
@@ -245,13 +243,9 @@
         !...Set snap counter to zero
         cntSnaps = 0
        
-        !...Skip specified snaps 
+        !...Skip specified snaps
         call owi_skipSnaps(numSkipSnaps,np,WVNX,WVNY,PRN,PRdeflt)
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif  
-        call unsetMessageSource()
         RETURN
 
 99998   call allMessage(ERROR,"Unexpectedly reached end-of-file.") ! END jumps here
@@ -283,7 +277,7 @@
         REAL(8),intent(in)    :: PRdeflt
         REAL(8)               :: RHOWATG,EyePressure
         INTEGER                :: I,J,S,XI,YI
-        CHARACTER(1024)        :: filename,errorVar
+        CHARACTER(1024)        :: filename,errorVar,scratchMessage
         INTEGER                :: iounit
         REAL(8)               :: uu,vv,pp
         REAL(8)               :: w1,w2,w3,w4
@@ -291,10 +285,8 @@
         LOGICAL                :: uvpHasBeenSet
         LOGICAL,intent(out),optional :: HasData(:)
 
-        call setMessageSource("nws12get")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif  
+        LOG_SCOPE_TRACED("nws12get", WIND_TRACING)
+
         errorVar = ""
         RHOWATG=RHOWAT0*G
 
@@ -314,10 +306,6 @@
            write(scratchMessage,16) cntSnaps
  16        format('INSERTING A BLANK WIND SNAP, COUNT=',i4)
            call allMessage(INFO,trim(scratchMessage))
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-           call allMessage(DEBUG,"Return.")
-#endif  
-           call unsetMessageSource()
            RETURN
         endif
 
@@ -369,16 +357,12 @@
 
            endif
               
-           if (present(HasData)) then 
+           if (present(HasData)) then
               HasData(i) = uvpHasBeenSet
            endif
 
         enddo
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif  
-        call unsetMessageSource()
         RETURN
 
 !-----------------------------------------------------------------------
@@ -412,10 +396,7 @@
         integer                 :: s
         integer                 :: minidx(2)
 
-        call setMessageSource("findStormCenter")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
+        LOG_SCOPE_TRACED("findStormCenter", WIND_TRACING)
 
         EyeLatI = 0
         EyeLonI = 0
@@ -461,11 +442,6 @@
              FoundEye = .FALSE.
         ENDIF
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif  
-        call unsetMessageSource()
-
 !-----------------------------------------------------------------------
       end subroutine findStormCenter
 !-----------------------------------------------------------------------
@@ -493,6 +469,7 @@
         real(8),intent(in) :: prbk 
         character(1024)     :: filename
         character(1024)     :: errorVar
+        character(1024)     :: scratchMessage
         integer             :: i,j
         integer             :: iounit,errorIO
         integer             :: iLatw,iLongw,iLatp,iLongp
@@ -500,12 +477,9 @@
         integer             :: iMinw,iMinp
         real(8)            :: dxw,dyw,swlatw,swlongw
         real(8)            :: dxp,dyp,swlatp,swlongp
-        
-        call setMessageSource("owi_readNextSnap")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
-        
+
+        LOG_SCOPE_TRACED("owi_readNextSnap", WIND_TRACING)
+
         owi(idx)%hasData = .false.
 
         ! Read grid specifications/date in pressure file
@@ -599,11 +573,6 @@
         ! to use this domain or not
         owi(idx)%hasData = .true.
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif  
-        call unsetMessageSource()
-
         return
 
 ! Oceanweather read formats
@@ -613,31 +582,16 @@
 
 ! Error IO
 9999    call check_owi_err(errorIO,errorVar,filename,iounit) ! ERR during read jumps to here
-
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif  
-        call unsetMessageSource()
         return
 
 ! END during read of required data jumps to here
 9997    call allMessage(ERROR,"Unexpected end-of-file reached.")
         call check_owi_err(errorIO,errorVar,filename,iounit)
-
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif  
-        call unsetMessageSource()
         return
 
 ! END during read of grid, u, v, p data jumps to here
-10000   continue  
+10000   continue
         call owi_setEndOfFileBlankSnap(filename,prbk,owi(idx))
-
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif  
-        call unsetMessageSource()
         return
 
 !-----------------------------------------------------------------------
@@ -655,13 +609,11 @@
 !-----------------------------------------------------------------------
         implicit none
         CHARACTER(*),INTENT(IN)          :: filename
-        REAL(8),INTENT(IN)              :: prbk
+        REAL(8),INTENT(IN)               :: prbk
         TYPE(OCEANWEATHER),INTENT(INOUT) :: obj
+        CHARACTER(1024)                  :: scratchMessage
 
-        call setMessageSource("owi_setEndOfFileBlankSnap")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif        
+        LOG_SCOPE_TRACED("owi_setEndOfFileBlankSnap", WIND_TRACING)
 
         write(scratchMessage,61) trim(filename)
   61    format("End-of-file reached while reading '",A,
@@ -675,11 +627,6 @@
         obj%p(:,:)  = prbk
         obj%hasData = .false.
         obj%atEnd   = .true.
-
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif  
-        call unsetMessageSource()
 
         return
 !-----------------------------------------------------------------------
@@ -708,10 +655,7 @@
         real(8)             :: pi(4)
         real(8),parameter   :: flag = -999.0
 
-        call setMessageSource("owi_interpolateToMesh")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
+        LOG_SCOPE_TRACED("owi_interpolateToMesh", WIND_TRACING)
 
         isSet = .false.
 
@@ -743,18 +687,10 @@
               enddo
 
               isSet = .true.
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-              call allMessage(DEBUG,"Return.")
-#endif  
-              call unsetMessageSource()
               return
            endif
         enddo
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif  
-        call unsetMessageSource()
 !-----------------------------------------------------------------------
        end subroutine owi_interpolateToMesh
 !-----------------------------------------------------------------------
@@ -770,10 +706,9 @@
             IMPLICIT NONE
             TYPE(OCEANWEATHER),INTENT(INOUT) :: this
             LOGICAL :: do_allocate
-            call setMessageSource("owi_allocate")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Enter.")
-#endif
+
+            LOG_SCOPE_TRACED("owi_allocate", WIND_TRACING)
+
             do_allocate = .false. 
 
             IF(.not.allocated(this%p))then
@@ -789,10 +724,6 @@
                 ALLOCATE(this%v(this%ilon,this%ilat))
             ENDIF
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
-#endif
-            call unsetMessageSource()
 !-----------------------------------------------------------------------
       end subroutine owi_allocate
 !-----------------------------------------------------------------------
@@ -805,17 +736,12 @@
 !-----------------------------------------------------------------------
             IMPLICIT NONE
             TYPE(OCEANWEATHER),INTENT(INOUT) :: this
-            call setMessageSource("owi_deallocate")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Enter.")
-#endif
+
+            LOG_SCOPE_TRACED("owi_deallocate", WIND_TRACING)
+
             IF(ALLOCATED(this%p))DEALLOCATE(this%p)
             IF(ALLOCATED(this%u))DEALLOCATE(this%u)
             IF(ALLOCATED(this%v))DEALLOCATE(this%v)
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
-#endif
-            call unsetMessageSource()
             RETURN
 !-----------------------------------------------------------------------
       end subroutine owi_deallocate
@@ -834,11 +760,9 @@
             REAL(8),ALLOCATABLE,INTENT(OUT)   :: lat(:)
             REAL(8),ALLOCATABLE,INTENT(OUT)   :: lon(:)
             INTEGER                            :: I
-      
-            call setMessageSource("owi_generateCoordinates")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Enter.")
-#endif
+
+            LOG_SCOPE_TRACED("owi_generateCoordinates", WIND_TRACING)
+
             ALLOCATE(lat(1:this%ilat))
             ALLOCATE(lon(1:this%ilon))
 
@@ -848,11 +772,6 @@
             DO I = 1,this%ilon
                 lon(i) = this%swlon+(I-1)*this%dLon
             ENDDO
-
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
-#endif
-            call unsetMessageSource()
 
             RETURN
 !-----------------------------------------------------------------------
@@ -874,10 +793,7 @@
             integer,intent(in)               :: iounit
             type(oceanweather),intent(inout) :: this(*)
 
-            call setMessageSource("owi_setFilenames")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Enter.")
-#endif
+            LOG_SCOPE_TRACED("owi_setFilenames", WIND_TRACING)
 
             if(nWindFields.LT.0)then
                 nWindFields = abs(nWindFields)
@@ -889,10 +805,6 @@
                  endif
                  call owi_setDefaultFilenames(this)
             endif
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
-#endif
-            call unsetMessageSource()
 !-----------------------------------------------------------------------
       end subroutine owi_setFilenames
 !-----------------------------------------------------------------------
@@ -913,10 +825,8 @@
             character(1024)                  :: f1,f2
             integer                          :: i
 
-            call setMessageSource("owi_setDynamicFilenames")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Enter.")
-#endif
+            LOG_SCOPE_TRACED("owi_setDynamicFilenames", WIND_TRACING)
+
             do i = 1,nWindFields
               read(iounit,*) f1, f2
               owi(i)%pressure_file = TRIM(GBLINPUTDIR)//"/"//TRIM(f1)
@@ -925,10 +835,6 @@
               owi(i)%iounit_wind = 600+i
             enddo
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
-#endif
-            call unsetMessageSource()
 !-----------------------------------------------------------------------
       end subroutine owi_setDynamicFilenames
 !-----------------------------------------------------------------------
@@ -946,24 +852,20 @@
       subroutine owi_skipSnaps(numSnaps,np,wx,wy,pr,prbk)
 !-----------------------------------------------------------------------
              implicit none
-             integer,intent(in)     :: numSnaps,np
+             integer,intent(in)    :: numSnaps,np
              real(8),intent(inout) :: wx(:),wy(:),pr(:)
              real(8),intent(in)    :: prbk
-             integer                :: i
-            call setMessageSource("owi_skipSnaps")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Enter.")
-#endif
+             integer               :: i
+             character(1024)       :: scratchMessage
+
+            LOG_SCOPE_TRACED("owi_skipSnaps", WIND_TRACING)
+
              do i = 1,numSkipSnaps
                 write(scratchMessage,41) i
   41            format("Skipping snap '",I6,"' in OWI wind data.")
                 call logMessage(DEBUG,trim(scratchMessage))
                 CALL NWS12GET(wx,wy,pr,np,prbk)
              enddo
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
-#endif
-            call unsetMessageSource()
 !-----------------------------------------------------------------------
       end subroutine owi_skipSnaps
 !-----------------------------------------------------------------------
@@ -980,10 +882,9 @@
             use sizes,only:gblinputdir
             implicit none
             type(oceanweather),intent(inout) :: this(*)
-            call setMessageSource("owi_setDefaultFilenames")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Enter.")
-#endif
+
+            LOG_SCOPE_TRACED("owi_setDefaultFilenames", WIND_TRACING)
+
             this(1)%pressure_file = TRIM(GBLINPUTDIR)//"/fort.221"
             this(1)%wind_file = TRIM(GBLINPUTDIR)//"/fort.222"
             this(1)%iounit_pressure = 221
@@ -1000,10 +901,6 @@
               this(3)%iounit_pressure = 217
               this(3)%iounit_wind = 218
             ENDIF
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
-#endif
-            call unsetMessageSource()
 !-----------------------------------------------------------------------
       end subroutine owi_setDefaultFilenames
 !-----------------------------------------------------------------------
@@ -1023,10 +920,8 @@
             integer(8)                       :: date1wind,date2wind
             character(1024)                  :: errorVar
 
-            call setMessageSource("owi_initializeFileHeaders")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Enter.")
-#endif
+            LOG_SCOPE_TRACED("owi_initializeFileHeaders", WIND_TRACING)
+
             DO I = 1,numSets
               CALL readHeader(this(i)%pressure_file,this(i)%iounit_pressure,
      &                        date1pressure,date2pressure)
@@ -1052,10 +947,6 @@
               this(i)%iupdate = 1
             ENDDO
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
-#endif
-            call unsetMessageSource()
 !-----------------------------------------------------------------------
       end subroutine owi_initializefileHeaders
 !-----------------------------------------------------------------------
@@ -1072,20 +963,14 @@
            type(oceanweather),intent(inout) :: this(*)
            integer,intent(in)               :: numNodes
            integer                          :: i
-           
-           call setMessageSource("owi_initializeFileHeaders")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-           call allMessage(DEBUG,"Enter.")
-#endif
+
+           LOG_SCOPE_TRACED("owi_allocateInterpolationArrays", WIND_TRACING)
+
            do i=1,numSets
               ALLOCATE(this(i)%interpPoints(numNodes,2))
               ALLOCATE(this(i)%weight(numNodes,4))
            enddo
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-            call allMessage(DEBUG,"Return.")
-#endif
-            call unsetMessageSource()
 !-----------------------------------------------------------------------
       end subroutine owi_allocateInterpolationArrays
 !-----------------------------------------------------------------------
@@ -1111,10 +996,7 @@
       REAL(8)             :: w,w1,w2,w3,w4
       REAL(8),ALLOCATABLE :: lat(:), lon(:)
 
-      call setMessageSource("nws12interp")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("nws12interp", WIND_TRACING)
 
       WRITE(16,'(A)') ''
       WRITE(16,'(A,I0)') 'WIND MAPPING UPDATED FOR REGION ',IDX
@@ -1166,10 +1048,6 @@
         endif
       enddo
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 !-----------------------------------------------------------------------
       END SUBROUTINE NWS12INTERP
@@ -1192,12 +1070,11 @@
       INTEGER(8),INTENT(OUT)   :: date2
       CHARACTER(80)            :: owiheader
       CHARACTER(1024)          :: errorVar
+      character(1024)          :: scratchMessage
       INTEGER                  :: errorIO
 
-      call setMessageSource("readHeader")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("readHeader", WIND_TRACING)
+
       call openFileForRead(lun, filename, errorIO)
       errorVar = "opening Oceanweather file"
       call check_owi_err(errorIO,errorVar,filename,lun)
@@ -1224,10 +1101,6 @@
       write(scratchMessage,31) TRIM(errorVar), trim(filename), date2
       call allMessage(INFO,scratchMessage)
 
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 
 99998 call allMessage(ERROR,"Unexpectedly reached end-of-file.")    ! END jumps here
@@ -1248,19 +1121,15 @@
 !-----------------------------------------------------------------------
       subroutine check_owi_err(iret, errorVar, filename, unitnumber)
 !-----------------------------------------------------------------------
-#ifdef CMPI
-      USE MESSENGER, ONLY : MSG_FINI
-#endif
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       IMPLICIT NONE
       INTEGER,INTENT(IN)               :: iret
       CHARACTER(*),INTENT(IN)          :: errorVar
       CHARACTER(*),INTENT(IN)          :: filename
       INTEGER,INTENT(IN),OPTIONAL      :: unitnumber
+      CHARACTER(1024)                  :: scratchMessage
 
-      call setMessageSource("check_owi_err")
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("check_owi_err", WIND_TRACING)
 
       if (iret.ne.0) then
          if (errorVar.ne."") then
@@ -1268,20 +1137,20 @@
      &         trim(errorVar), trim(filename), unitnumber
  888        format("Failed to '",A,"' from '",A,
      &         "' (unit number ",I3,").")
-            call allMessage(ERROR,trim(scratchMessage))
             write(6,*) 'iostat =',iret
-         endif
-         call allMessage(ERROR,"ADCIRC execution terminated.")
 #ifdef CMPI
          Flag_ElevError = .true.  !overloading this flag to help kill all mpi proc
-         call msg_fini()
 #endif
-         stop
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message=trim(scratchMessage))
+         else
+#ifdef CMPI
+         Flag_ElevError = .true.  !overloading this flag to help kill all mpi proc
+#endif
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='ADCIRC execution terminated due to OWI error')
+         endif
       endif
-#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 !-----------------------------------------------------------------------
       end subroutine check_owi_err

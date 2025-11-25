@@ -101,11 +101,11 @@ formatKnown = .false.
 i=0
 !
 ! process command line options
-argcount = iargc() ! count up command line options
+argcount = COMMAND_ARGUMENT_COUNT() ! count up command line options
 write(6,'("INFO: There are ",i0," command line arguments.")') argcount
 do while (i.lt.argcount)
    i = i + 1
-   call getarg(i, cmdlineopt)
+   call GET_COMMAND_ARGUMENT(i, cmdlineopt)
    select case(trim(cmdlineopt))
    case("--verbose")
       write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // "."
@@ -115,35 +115,35 @@ do while (i.lt.argcount)
       convertOutputData = .false.
    case("--meshfile")
       i = i + 1
-      call getarg(i, cmdlinearg)
+      call GET_COMMAND_ARGUMENT(i, cmdlinearg)
       write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // & 
          " " // trim(cmdlinearg) // "."
       meshFileName = trim(cmdlinearg)
    case("--datafile")
       i = i + 1
-      call getarg(i, dataFileName)     
+      call GET_COMMAND_ARGUMENT(i, dataFileName)     
       write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // &
          trim(dataFileName) // "."
    case("--controlfile")
       i = i + 1
-      call getarg(i, controlFileName)
+      call GET_COMMAND_ARGUMENT(i, controlFileName)
       write(6,'(a)') "INFO: Processing " // trim(cmdlineopt)  // " " // &
          trim(controlFileName) // "."
    case("--lightdatalimit")
       i = i + 1
-      call getarg(i, cmdlinearg)
+      call GET_COMMAND_ARGUMENT(i, cmdlinearg)
       write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // & 
          trim(cmdlinearg) // "."
       read(cmdlinearg,*) lightdatalimit
    case("--starting-dataset")
       i = i + 1
-      call getarg(i, cmdlinearg)
+      call GET_COMMAND_ARGUMENT(i, cmdlinearg)
       write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // & 
          trim(cmdlinearg) // "."
       read(cmdlinearg,*) startingDataset
    case("--ending-dataset")
       i = i + 1
-      call getarg(i, cmdlinearg)
+      call GET_COMMAND_ARGUMENT(i, cmdlinearg)
       write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // " " // & 
          trim(cmdlinearg) // "."
       read(cmdlinearg,*) endingDataset

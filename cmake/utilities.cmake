@@ -13,48 +13,56 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-if(BUILD_UTILITIES)
+if(NOT BUILD_UTILITIES)
+  return()
+endif()
 
-  add_executable(adccmp util/adccmp.F)
-  add_executable(p15 wind/p15.F)
-  add_executable(owi22 wind/owi22.F)
-  add_executable(build13 util/build13.F)
-  add_executable(buildstwave23 util/buildstwave23.F)
-  add_executable(hot2asc util/hot2asc.F)
-  add_executable(inflate util/inflate.F)
-  add_executable(hstime util/hstime.F)
+add_executable(adccmp util/adccmp.F)
+add_executable(p15 wind/p15.F)
+add_executable(owi22 wind/owi22.F)
+add_executable(build13 util/build13.F)
+add_executable(buildstwave23 util/buildstwave23.F)
+add_executable(hot2asc util/hot2asc.F)
+add_executable(inflate util/inflate.F)
+add_executable(hstime util/hstime.F)
+add_executable(adcircResultsComparison util/adcircResultsComparison.F90)
 
-  add_executable(adcircResultsComparison util/adcircResultsComparison.F90)
-  adcirc_add_compiler_flags(adcircResultsComparison)
+# Configure all utilities with standard ADCIRC flags
+set(UTILITY_TARGETS
+    adccmp
+    p15
+    owi22
+    build13
+    buildstwave23
+    hot2asc
+    inflate
+    hstime
+    adcircResultsComparison)
+foreach(util IN LISTS UTILITY_TARGETS)
+  adcirc_set_module_directory(${util})
+  target_link_libraries(${util} PRIVATE adcirc::compiler_flags adcirc::option_flags)
+endforeach()
 
-  adcirc_add_compiler_flags(adccmp)
-  adcirc_add_compiler_flags(p15)
-  adcirc_add_compiler_flags(owi22)
-  adcirc_add_compiler_flags(build13)
-  adcirc_add_compiler_flags(buildstwave23)
-  adcirc_add_compiler_flags(hot2asc)
-  adcirc_add_compiler_flags(inflate)
-  adcirc_add_compiler_flags(hstime)
+# NetCDF-dependent utilities
+if(NETCDF_WORKING)
+  target_link_libraries(hstime PRIVATE NetCDF::NetCDF)
+  target_link_libraries(adcircResultsComparison PRIVATE NetCDF::NetCDF)
+endif()
 
-  adcirc_add_netcdf_libraries(hstime)
-  adcirc_add_netcdf_libraries(adcircResultsComparison)
+# Some of these utilities are very old and no longer updated. We will pass some compiler flags to suppress warnings. If
+# this happened in the main code, we would fix the code instead of suppressing the warning.
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+  # Disable warnings for deleted features
+  target_compile_options(p15 PRIVATE -std=legacy)
+endif()
 
-  # Some of these utilities are very old and no longer updated. We will pass some compiler flags to suppress warnings.
-  # If this happened in the main code, we would fix the code instead of suppressing the warning.
-  if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    # Disable warnings for deleted features
-    target_compile_options(p15 PRIVATE -std=legacy)
-  endif()
-
-  install(
-    TARGETS adccmp
-            p15
-            owi22
-            build13
-            buildstwave23
-            hot2asc
-            inflate
-            hstime
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-
-endif(BUILD_UTILITIES)
+install(
+  TARGETS adccmp
+          p15
+          owi22
+          build13
+          buildstwave23
+          hot2asc
+          inflate
+          hstime
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

@@ -17,8 +17,9 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C 
+C
 C                       M O D U L E   G W C E
 C
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
@@ -76,8 +77,8 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C******************************************************************************
 
       module gwce
-      use global, only : DEBUG, INFO, WARNING, ERROR, logMessage, 
-     &   setMessageSource, unsetMessageSource, allMessage
+      use mod_logging, only : DEBUG, INFO, WARNING, ERROR, logMessage,
+     &   t_log_scope, allMessage
       implicit none
 
       real(8),allocatable :: lsxx(:),lsxy(:),lsyx(:),lsyy(:)
@@ -125,6 +126,7 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
       USE ADC_CONSTANTS, only: g
       use mesh, only : np
       use itpackv, only : dfault
+      use mod_logging, only: log_unit
       implicit none
 
       allocate(lsxx(mnp),lsxy(mnp),lsyx(mnp),lsyy(mnp))
@@ -144,7 +146,7 @@ C        initialize parameter arrays needed by iterative solver
          IPARM(1)=ITMAX
          IPARM(2)=ISLDIA
          !cms51.06: moved opening of fort.33 to openLogFile sub in global.F
-         IPARM(4)=33
+         IPARM(4)=log_unit
          RPARM(1)=CONVCR
          NW = 4*NP + 4*ITMAX
       ELSE ! lumped LHS
@@ -243,8 +245,8 @@ C
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
      &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, IFNLCAT,
-     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NSCREEN, NCCHANGE, IDEN,
-     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG, screenUnit,
+     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NCCHANGE, IDEN,
+     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG,
      &   SMAG_LOWER_LIM, SMAG_UPPER_LIM, TK, NOFF, UU1, VV1, QX1, QY1,
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
@@ -259,6 +261,7 @@ C
 #endif
       USE ADC_CONSTANTS, ONLY: G, RHOWAT0, Bd, Ad, Cs2
       USE SIZES, ONLY: MNP, MNEI
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE MESH, ONLY : NE, NP, NM, DP, NNeigh, NeiTab, TotalArea, FDXE,
      &   Areas, NEIMAX, SFAC, nneighele, neitabele, FDYE,
      &   SWITCH_ELTAB_PERBC, SFacEle, SFMYEle, SFMXEle, SFCXEle,
@@ -288,6 +291,7 @@ C... SB
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
      &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
       USE WIND, ONLY: PRBCKGRND_MH2O, windLimiter
+      use mod_logging, only: screenUnit, nscreen, t_log_scope, init_log_scope
 
 !JLW: add subgrid additions
       USE subgrid, ONLY: level0, level1
@@ -391,16 +395,14 @@ C...... DW
       REAL(8) :: PHI1N1, PHI1N2, PHI1N3
       REAL(8) :: PHI2N1, PHI2N2, PHI2N3
 
+      LOG_SCOPE_TRACED("gwce_new", GWCE_TRACING)
+
       IF ( LoadAbsLayerSigma ) THEN
          IF (NumNodesAbsLayer(1) > 0 ) ETA_SPONGE = .true.
          IF (SUM(NumNodesAbsLayer) > 0 ) GWCE_SPONGE = .true.
       ENDIF
 C..... DW
 
-      call setMessageSource("gwce_new")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
 C
 C....... DW
 C     Switch to the element table to the primary node
@@ -691,7 +693,7 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                         do j=2,nneighele(i)
                            if (neitabele(i,j).ne.0) then
                               write(6,
-     & '("Node ",i0," element ",i0," area=",f15.7)') i, j, 
+     & '("Node ",i0," element ",i0," area=",f15.7)') i, j,
      &  areas(neitabele(i,j))
                            endif
                         enddo
@@ -699,7 +701,9 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                   enddo
                close(899)
                ! end jgfdebug
-               CALL gwceTerminate()
+               CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='Diagonal term in GWCE equation is '
+     &                   //'<= 0 for at least one node')
             ENDIF
 
          ELSE  ! jgf48.4619: include Seizo's changes for lumped LHS
@@ -732,7 +736,9 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
                   DIE = .TRUE.
                ENDIF
             ENDDO
-            IF (DIE) CALL gwceTerminate()
+            IF (DIE) CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Diagonal term in GWCE equation is '
+     &                //'<= 0 for at least one node')
          ENDIF
       ENDIF NCIFBLCK                    !End of GWCE matrix setup
 C...
@@ -991,7 +997,7 @@ C..... End DW
 
 C...  Assemble the GWCE RHS except for the boundary integral terms
 
-      DO 1037 IE=1,NE
+      DO IE=1,NE
 
 C...     Set nodal values for each element
 
@@ -1595,43 +1601,20 @@ C...     Terms from momentum eqs.
 
 C...     Spatially varying Tau0 terms
      &        +Tau0SpaVar
-C
+
 C..... DW: begin, absorbing layer
-     &        +(OnDiag*E0N3*SPM3 + OffDiag*(E0N1*SPM1+E0N2*SPM1))*MsFacR_S
+     &        +(OnDiag*E0N3*SPM3 + OffDiag*(E0N1*SPM1+E0N2*SPM2))*MsFacR_S
      &        +(OnDiag*ESAN3*SPM3 + OffDiag*(ESAN1*SPM1+ESAN2*SPM2))*MsFacRS_T
      &        +(OnDiag*ABC00_EAN3*SPM3 + 
      &               OffDiag*(ABC00_EAN1*SPM1 + ABC00_EAN2*SPM2))*MsFacRS_ABC00
 C..... END DW
-C
 
-C...     Put these partial products into further elemental storage for a vector computer
-C...     These will be put into nodal storage outside of the elemental loop
-#ifdef CVEC
-         Temp_LV_A(IE,1)=Temp_LV_A1*NCEle
-         Temp_LV_A(IE,2)=Temp_LV_A2*NCEle
-         Temp_LV_A(IE,3)=Temp_LV_A3*NCEle
-#endif
-
-C...     Put these partial products directly into nodal storage for a scalar (non-vector) computer
-#ifdef CSCA
+C...     Put these partial products directly into nodal storage
          GWCE_LV(NM1)=GWCE_LV(NM1)+Temp_LV_A1*NCEle
          GWCE_LV(NM2)=GWCE_LV(NM2)+Temp_LV_A2*NCEle
          GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A3*NCEle
-#endif
 
- 1037 CONTINUE                  !End of elemental loop
-
-C...  Put load vector elemental values into nodal storage for a vector computer
-#ifdef CVEC
-      DO IE=1,NE
-         NM1=NM(IE,1)
-         NM2=NM(IE,2)
-         NM3=NM(IE,3)
-         GWCE_LV(NM1)=GWCE_LV(NM1)+Temp_LV_A(IE,1)
-         GWCE_LV(NM2)=GWCE_LV(NM2)+Temp_LV_A(IE,2)
-         GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A(IE,3)
-      END DO
-#endif
+      END DO                  !End of elemental loop
 
 C...  Save the elevation at the past time step into Eta1 and zero out Eta2
 ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
@@ -1660,11 +1643,7 @@ C...  For periodic elevation boundary conditions
          IF(PER(J).EQ.0.) THEN
             NCYC=0
          ELSE
-#ifdef IBM
-            NCYC=INT(timeh/PER(J),KIND(0.0d0))
-#else
             NCYC=INT(timeh/PER(J))
-#endif
          ENDIF
          ARGJ=AMIG(J)*(timeh-NCYC*PER(J))+FACE(J)
          RFF=FF(J)*RampElev
@@ -2054,12 +2033,7 @@ C......
 
 #ifdef CMPI
       CALL UPDATER(ETA2,DUMY1,DUMY2,1)
-#endif      
-     
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
 #endif
-      call unsetMessageSource()
 
       RETURN
 
@@ -2161,8 +2135,8 @@ C
      &   CGWCE_Advec_C2, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
      &   CGWCE_LS_2PartV, CGWCE_LS_2PartSV, CGWCE_LS_KGQ, CPRECOR,
      &   CSmag_Eh, Smag_Comp_Flag, CTIP, DT, FluxSettlingIT, IFNLCAT,
-     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NSCREEN, NCCHANGE, IDEN,
-     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG, screenUnit,
+     &   IFNLCT, IFNLFA, NBFR, NODECODE, NRS, NCCHANGE, IDEN,
+     &   NWS, RAMPELEV, RAMPMETE, RES_BC_FLAG,
      &   SMAG_LOWER_LIM, SMAG_UPPER_LIM, TK, NOFF, UU1, VV1, QX1, QY1,
      &   PR1, TiP1, BSX1, BSY1, DUU1, DUV1, DVV1, WSX1, WSY1, VIDBCPDXOH,
      &   VIDBCPDYOH, CORIF, PER, FACE, FF, EFA, EMO, AMIG, PR2, LNM_BC,
@@ -2184,6 +2158,7 @@ C
       USE MESSENGER
 #endif
       USE WIND, ONLY: windLimiter
+      use mod_logging, only: nscreen, t_log_scope, init_log_scope
 
       IMPLICIT NONE
 
@@ -2261,10 +2236,7 @@ ckmd   Added in parameters for the pc algorithm
       REAL(8):: fwsx1, fwsx2, fwsx3
       REAL(8):: fwsy1, fwsy2, fwsy3
 
-      call setMessageSource("gwce_new_pc")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("gwce_new_pc", GWCE_TRACING)
 
 ckmd    Must reset the result vector to zero before recomputing
 ckmd  the next time level.
@@ -2525,7 +2497,7 @@ C...       the corrector step
 C...  Assemble the GWCE RHS except for the boundary integral terms
 ckmd  Renumber the GWCE loop for the corrector step
 
-      DO 1038 IE=1,NE
+      DO IE=1,NE
 
 C...     Set nodal values for each element
 ckmd
@@ -2930,20 +2902,10 @@ C...     Spatially varying Tau0 terms
      &                    +timewtgwce2*Tau0SpaVar2
 
 
-C...     Put these partial products into further elemental storage for a vector computer
-C...     These will be put into nodal storage outside of the elemental loop
-#ifdef CVEC
-         Temp_LV_A(IE,1)=Temp_LV_A1*NCEle
-         Temp_LV_A(IE,2)=Temp_LV_A2*NCEle
-         Temp_LV_A(IE,3)=Temp_LV_A3*NCEle
-#endif
-
-C...     Put these partial products directly into nodal storage for a scalar (non-vector) computer
-#ifdef CSCA
+C...     Put these partial products directly into nodal storage
          GWCE_LV(NM1)=GWCE_LV(NM1)+Temp_LV_A1*NCEle
          GWCE_LV(NM2)=GWCE_LV(NM2)+Temp_LV_A2*NCEle
          GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A3*NCEle
-#endif
 
 c        IF(IE.EQ.1) THEN
 c           WRITE(101,*) ' '
@@ -2954,20 +2916,7 @@ c        WRITE(101,*) IE, ESN1, ESN2, ESN3
 c        WRITE(101,*) IE, TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
 
 ckmd  Change the number of the loop
- 1038 CONTINUE      !End of elemental loop
-
-
-C...  Put load vector elemental values into nodal storage for a vector computer
-#ifdef CVEC
-      DO IE=1,NE
-         NM1=NM(IE,1)
-         NM2=NM(IE,2)
-         NM3=NM(IE,3)
-         GWCE_LV(NM1)=GWCE_LV(NM1)+Temp_LV_A(IE,1)
-         GWCE_LV(NM2)=GWCE_LV(NM2)+Temp_LV_A(IE,2)
-         GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A(IE,3)
-      END DO
-#endif
+      END DO      !End of elemental loop
 
 
 C...  Save the elevation at the past time step into Eta1 and zero out Eta2
@@ -2990,11 +2939,7 @@ C...  For periodic elevation boundary conditions
          IF(PER(J).EQ.0.) THEN
             NCYC=0
          ELSE
-#ifdef IBM
-            NCYC=INT(timeh/PER(J),KIND(0.0d0))
-#else
             NCYC=INT(timeh/PER(J))
-#endif
          ENDIF
          ARGJ=AMIG(J)*(timeh-NCYC*PER(J))+FACE(J)
          RFF=FF(J)*RampElev
@@ -3143,10 +3088,6 @@ C     UPDATE ELEVATIONS
 ckmd
 ckmd  Eta2 values are now corrected elevations at time level s+1.
 ckmd
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
       RETURN
 C**********************************************************************
@@ -3162,11 +3103,11 @@ C     jgf53.dev: Moved to GWCE module.
 C*************************************************************************
       subroutine check_slopes(it,TimeLoc)
       USE SIZES, ONLY : mnproc, myproc
-      use global, only : eta2,nodecode,NOFF,ESLCOUNT,screenUnit,
-     &      setMessageSource, unsetMessageSource, scratchMessage,
-     &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
+      use global, only : eta2,nodecode,NOFF,ESLCOUNT,
      &      nodes_lg, IFSFM
-      use mesh, only : nm, ne, areas, FDXE, FDYE, 
+      use mod_logging, only : t_log_scope, init_log_scope, screenUnit,
+     &      allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
+      use mesh, only : nm, ne, areas, FDXE, FDYE,
      &      SFacEle, SFMYEle, SFMXEle
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active,
@@ -3185,12 +3126,10 @@ C*************************************************************************
       REAL(8) FDX1,FDX2,FDX3,FDY1,FDY2,FDY3
       REAL(8) :: AreaIE2
       integer nodeNumber ! fulldomain node number where wse slope is exceeded
-      
+      character(1024) :: scratchMessage
 
-      call setMessageSource("check_slopes")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+
+      LOG_SCOPE_TRACED("check_slopes", GWCE_TRACING)
       ! jgf51.47: Per Rick's specification, start off by deactivating
       ! any slope limitation triggered in the previous time step;
       ! we have a fresh start each time step in determining whether
@@ -3295,13 +3234,9 @@ C.... end WP
      &  ' where the elemental slope is ',1pE12.4E3,
      &  ' and the maximum elemental slope is ',1pE12.4E3,
      &  ' on time step ',i0,' and time = ',e15.8,'.')
-     
+
 C...  END CHECKING ELEMENT GRADIENTS
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       !-----------------------------------------------------------------
       END SUBROUTINE CHECK_SLOPES
       !-----------------------------------------------------------------   
@@ -3316,9 +3251,9 @@ C     jgf53.dev: Moved to GWCE module.
 C***********************************************************************
 C
       SUBROUTINE APPLY_SLOPE_LIMITS(ETA2Lim,LocNP)
-      use global, only : nodecode,NOFF,IFNLFA,
-     &      setMessageSource, unsetMessageSource, allMessage,
-     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
+      use global, only : nodecode,NOFF,IFNLFA
+      use mod_logging, only : t_log_scope, init_log_scope,
+     &      allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
       use mesh, only : ne, nm, areas, totalArea
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active
@@ -3331,11 +3266,7 @@ C
       REAL(8), ALLOCATABLE, SAVE :: elevSum(:) ! used if elemental slope limiter is active
       LOGICAL, SAVE :: firstCall = .true.
 
-
-      call setMessageSource("check_slopes")
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("check_slopes", GWCE_TRACING)
 
       IF (LoadEleSlopeLim.eqv..true.) THEN
          IF (firstCall.eqv..true.) THEN
@@ -3387,57 +3318,11 @@ C... Will apply the updating outside the subroutine
 !#endif
 
 
-#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-
-
       RETURN
 
       END SUBROUTINE APPLY_SLOPE_LIMITS
 
 C***********************************************************************
-
-
-!-----------------------------------------------------------------------
-!      S U B R O U T I N E   G  W  C  E   T E R M I N A T E 
-!-----------------------------------------------------------------------
-!     jgf: Placed this subroutine here to eliminate dependency of this
-!     module on adcirc_mod module. Bombs out of mpi gracefully when
-!     there is an issue. 
-!-----------------------------------------------------------------------
-      subroutine gwceTerminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      use messenger
-#endif
-      implicit none
-      logical, optional :: no_mpi_finalize
-C
-      call setMessageSource("gwceTerminate")
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      if (present(no_mpi_finalize)) then
-        call msg_fini(no_mpi_finalize)
-      else
-        call msg_fini()
-      endif
-#endif
-      CALL EXIT(1)
-C
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-!-----------------------------------------------------------------------
-      end subroutine gwceTerminate
-!-----------------------------------------------------------------------
-
 
 
 C----------------------------------------------------------------------

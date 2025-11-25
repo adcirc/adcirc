@@ -109,11 +109,11 @@ openInformations = 1
 openSets = 1
 !
 ! process command line options
-argcount = iargc() ! count up command line options
+argcount = COMMAND_ARGUMENT_COUNT() ! count up command line options
 write(6,'("INFO: There are ",i0," command line arguments.")') argcount
 do while (i.lt.argcount)
    i = i + 1
-   call getarg(i, cmdlineopt)
+   call GET_COMMAND_ARGUMENT(i, cmdlineopt)
    select case(trim(cmdlineopt))
    case("--verbose")
       write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // "."
@@ -123,7 +123,7 @@ do while (i.lt.argcount)
       meshonly = .true.
    case("--datafile")
       i = i + 1
-      call getarg(i, datafilename)     
+      call GET_COMMAND_ARGUMENT(i, datafilename)     
       write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // &
          " " // trim(datafilename) // "."
    case default

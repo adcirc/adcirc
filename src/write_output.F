@@ -17,6 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+#include "logging_macros.h"
 C----------------------------------------------------------------------
 C      M O D U L E    W R I T E   O U T P U T
 C----------------------------------------------------------------------
@@ -31,10 +32,11 @@ C dry.
 C----------------------------------------------------------------------
       MODULE WRITE_OUTPUT
 C----------------------------------------------------------------------
-      USE GLOBAL, ONLY : OutputDataDescript_t, setMessageSource,
-     &  unsetMessageSource, DEBUG, allMessage, screenMessage, ERROR,
-     &  netcdf_avail
+      USE GLOBAL, ONLY : OutputDataDescript_t, netcdf_avail
+      use mod_logging, only: t_log_scope, init_log_scope,
+     &  allMessage, screenMessage, DEBUG, ERROR
       USE boundaries, only: freeFluxBoundaryArrayTemporaries
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
       !
       !    2 D   D A T A
@@ -349,6 +351,7 @@ C----------------------------------------------------------------------
      &                  GLOBALDIR, OFF, ASCII, NETCDF3, NETCDF4, XDMF,
      &                  numFormats, write_local_files, localdir,
      &                  controlFileName
+      use mod_logging, only: allMessage, INFO, logMessage
       USE GLOBAL, ONLY : imap_stae_lg, imap_stav_lg, et00, eta2,
      &   nscoue, nne, staie1, staie2, staie3, xel, yel,
      &   slel, sfel, uu00, vv00, uu2, vv2, nscouv, nnv,
@@ -371,14 +374,13 @@ C----------------------------------------------------------------------
      &   noutm, nstam, ntcyfgv, ntcysm, ntcyfm, nspoolm, nws,
      &   noutgw, ntcysgw, ntcyfgw, nspoolgw, nddt, ncice, nrs,
      &   noutc, nstac_g, nstac, im, noutgc, ntcyfgc, ntcysgc,
-     &   nspoolgc, INFO, scratchMessage, allMessage, nscougi, nscougp,
+     &   nspoolgc, nscougi, nscougp,
      &   nscours, nscoub, nscougb, nscoui, nscoup,
      &   use_tvw, nout_tvw, ntcys_tvw, ntcyf_tvw, tvw,
      &   nspool_tvw, nscou_tvw,
      &   nodeCodeOutSpoolCounter, noffOutSpoolCounter,
      &   NE_G, IMAP_EL_LG, nodecode, noff,
-     &   initiallyDrySpoolCounter,
-     &   inundationOutput, ihot, logMessage,
+     &   initiallyDrySpoolCounter,inundationOutput, ihot,
      &   windDragOut, windDragSpoolCounter, outputWindDrag,
      &   dynamicWaterLevelCorrectionSpoolCounter,
      &   dynamicWaterLevelCorrection2, usingDynamicWaterLevelCorrection,
@@ -410,11 +412,9 @@ C
       logical :: fileFound = .false. ! .true. if the file exists
       logical :: nerr
       integer :: i
+      character(1024) :: scratchMessage
 C
-      call setMessageSource("initOutput2D")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("initOutput2D", WRITE_OUTPUT_TRACING)
       !
       ! jgf52.21.24: Create an array of pointers to all the 2D output
       ! data structures, which enables us to iterate over them; this
@@ -1613,9 +1613,9 @@ C      IF (mnproc.gt.1) THEN
 #ifdef ADCNETCDF
                   call initNetCDFOutputFile(ptr(i) % descript2D, nerr)
                   if (nerr.eqv..true.) then
-                     call allMessage(ERROR,
-     &             'There was an issue with NetCDF file initialization.')
-                     call terminate()
+                     call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                  message='There was an issue with NetCDF file '//
+     &                          'initialization.')
                   endif
                   ptr(i) % descript2D % initialized = .true.
 #endif
@@ -1697,10 +1697,9 @@ C                      ! initialize it if it wasn't initialized above
                        if (ptr(i) % descript2D % initialized.eqv..false.) then
                            call initNetCDFOutputFile(ptr(i) % descript2D, nerr)
                            if (nerr.eqv..true.) then
-                              call allMessage(ERROR,
-     &                        "Failed to initialize "//
-     &                        trim(ptr(i)%descript2D%file_name)//".")
-                              call terminate()
+                              call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                           message="Failed to initialize "//
+     &                                   trim(ptr(i)%descript2D%file_name))
                            endif
                         endif
                      endif
@@ -1724,10 +1723,6 @@ C                      ! initialize it if it wasn't initialized above
       ! no longer needed
       call freeFluxBoundaryArrayTemporaries()
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C----------------------------------------------------------------------
  
       end subroutine initOutput2D
@@ -1796,10 +1791,7 @@ C----------------------------------------------------------------------
       REAL(8), intent(in) :: TimeLoc
       INTEGER :: i,j
 
-      call setMessageSource("writeOutput2D")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeOutput2D", WRITE_OUTPUT_TRACING)
 
       do i=1,numOutputDescript2D
          !
@@ -1954,10 +1946,6 @@ C        OUTPUT THE SWAN MAXIMUM FILES
 
       ENDIF
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
       RETURN
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
@@ -1976,14 +1964,13 @@ C     the interpolation on both components for output data that contains
 C     two components.
 C-----------------------------------------------------------------------
       subroutine stationDataInterp(descript)
-      use global
+      use global, only: OutputDataDescript_t
+      use mod_logging, only: t_log_scope, init_log_scope,
+     &  allMessage, DEBUG
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
 
-      call setMessageSource("stationDataInterp")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("stationDataInterp", WRITE_OUTPUT_TRACING)
 
       call stationArrayInterp(descript, descript % interped_array,
      &       descript % array)
@@ -1992,10 +1979,6 @@ C-----------------------------------------------------------------------
      &         descript % array2)
       endif
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
 C-----------------------------------------------------------------------
       end subroutine stationDataInterp
@@ -2009,8 +1992,9 @@ C     jgf51.21.24: Performs station interpolations on a single array.
 C-----------------------------------------------------------------------
       subroutine stationArrayInterp(descript, fromArray, toArray)
       use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2, NOFF,
-     &                   allMessage, DEBUG, setMessageSource, unsetMessageSource,
      &                   StatPartWetFix,How2FixStatPartWet, h0
+      use mod_logging, only: allMessage, t_log_scope, init_log_scope,
+     &  DEBUG
       use mesh, only : dp, nm
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
@@ -2025,10 +2009,7 @@ C-----------------------------------------------------------------------
       integer :: ncele,ncsum
       integer :: i, j
 
-      call setMessageSource("stationArrayInterp")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("stationArrayInterp", WRITE_OUTPUT_TRACING)
 
       do j=1, descript % num_records_this
          e = descript % elements(j)
@@ -2123,10 +2104,6 @@ C-----------------------------------------------------------------------
 
       end do
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
 C----------------------------------------------------------------------
       end subroutine stationArrayInterp
@@ -2151,9 +2128,9 @@ C removed from global  myProc, MNPROC,
      &                   NOUTE, NSTAE, IMAP_STAE_LG, SLEL,
      &                   XEL, SFEL, YEL, NSTAV_G, NSTAV,
      &                   IMAP_STAV_LG, SLEV, XEV, SFEV,
-     &                   YEV, screenMessage, DEBUG,
-     &                   setMessageSource, unsetMessageSource,
-     &                   NE_G, NP_G, NODES_LG
+     &                   YEV, NE_G, NP_G, NODES_LG
+      use mod_logging, only: screenMessage, t_log_scope, init_log_scope,
+     &  DEBUG
       USE MESH, ONLY : NP, NE, ICS
       USE GLOBAL_IO, ONLY:
      &    open_gbl_file, collectFullDomainArray,
@@ -2166,9 +2143,6 @@ C removed from global  myProc, MNPROC,
      &    charmv, fmv, eav, esq, eavdif, evadif, iharind, ITHAS,
      &    xvelva, usq, uvadif, yvelav, vav, vavdif, yvelva, vsq, vvadif
 
-#ifdef CMPI
-      USE MESSENGER, ONLY : msg_fini
-#endif
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : initNetCDFOutputFile
 #endif
@@ -2181,19 +2155,12 @@ C
       LOGICAL, SAVE :: FirstCall = .true.
       LOGICAL,DIMENSION(4) :: netcdf_error
 C
-      call setMessageSource("writeHarmonicAnalysisOutput")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-
-#endif
+      LOG_SCOPE_TRACED("writeHarmonicAnalysisOutput", WRITE_OUTPUT_TRACING)
       ! JUST RETURN if harmonic analysis was not specified
       ! tcm v49.64.02 -added itime le ithas to be
       ! consistent with what is in solveHarmonicAnalysis
       IF ((IHARIND.eq.0).or.(ITIME.LE.ITHAS)) THEN
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-         RETURN
+        RETURN
       ENDIF
 C
 C     This subroutine should only be called once, at the end of a run, so
@@ -2530,10 +2497,9 @@ C        ! as the full domain elevation harmonic analysis file (fort.53)
          ENDIF
          DO I=1,4
             IF (netcdf_error(I).eqv..true.) THEN
-#ifdef CMPI
-               CALL MSG_FINI()
-#endif
-               CALL EXIT(1)
+              call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &           message='NetCDF harmonic analysis file initialization '//
+     &                   'failed')
             ENDIF
          ENDDO
 #endif
@@ -2691,10 +2657,6 @@ C     Means and variance calculations, if specified (fort.55).
       ENDIF
 
  7637 format(2x,3(1pE16.8E3,1x),2x,3(1pE16.8E3,1x))
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE writeHarmonicAnalysisOutput
 C-----------------------------------------------------------------------
@@ -2713,9 +2675,9 @@ C-----------------------------------------------------------------------
      & MYPROC, HARMDIR, WRITE_LOCAL_HARM_FILES
       USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
       USE MESH, ONLY : labels
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenMessage, ERROR,
-     &                   DEBUG, setMessageSource, unsetMessageSource,
-     &                   allMessage, scratchMessage, labels_g
+      USE GLOBAL, ONLY : OutputDataDescript_t, labels_g
+      use mod_logging, only: screenMessage, t_log_scope, init_log_scope,
+     &  allMessage, ERROR, DEBUG
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY: writeOutArrayNetCDF
 #endif
@@ -2727,14 +2689,11 @@ C-----------------------------------------------------------------------
       ! jgf51.44: The following two arguments will be present if nsets=2
       type(OutputDataDescript_t), optional, intent(in) :: mag2
       type(OutputDataDescript_t), optional, intent(in) :: ph2
+      character(1024) :: scratchMessage
 C
       INTEGER :: i,j,n           ! loop counters
 C
-      call setMessageSource("writeOutHarmonicArrays")
-
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeOutHarmonicArrays", WRITE_OUTPUT_TRACING)
 C
 C     write data according to format specifier from fort.15 (e.g., NHASE)
       SELECT CASE (mag1%specifier)
@@ -2815,10 +2774,6 @@ C
  6636 format(2x,1pE16.8E3,1x,0pf11.4,2x,1pE16.8E3,1x,0pf11.4)
  3679 format(1x,e20.10,1x,f10.7,1x,f12.8,1x,a10)
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE writeOutHarmonicArrays
 C-----------------------------------------------------------------------
@@ -2836,8 +2791,9 @@ C----------------------------------------------------------------------
 C RJW added myproc
 C MYPROC,
       USE GLOBAL, ONLY : RUNDES, RUNID, RDES4, RID4,
-     &   RDES8, RID8, DTDP, IHOT, DEBUG, scratchMessage,
-     &   logMessage, ERROR, allMessage
+     &   RDES8, RID8, DTDP, IHOT
+      use mod_logging, only: logMessage, allMessage,
+     &  DEBUG, ERROR
       USE GLOBAL_3DVS, ONLY : NFEN
       USE MESH, ONLY : AGRID, AID4, AID8
 
@@ -2853,13 +2809,11 @@ C
       INTEGER, intent(inout) :: recNum ! number of lines written to output file
 C
       CHARACTER(len=7) :: fn ! file name of 3D output file
+      character(len=1024) :: scratchMessage
       INTEGER :: N ! loop counter
       INTEGER :: ios ! i/o status, 0 indicates success
 C
-      call setMessageSource("initOutput3D")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("initOutput3D", WRITE_OUTPUT_TRACING)
 C
 
       ios=0
@@ -2945,10 +2899,6 @@ C
          ENDIF
       ENDIF
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
  499  FORMAT(1X,A32,2X,A24,2X,A24)
 C..RJW bug fix in 498 (kendra found this)
  498  FORMAT(1X,I10,1X,I10,1X,1pE15.7E3,1X,I10,1X,I10,1X,I3)
@@ -2980,22 +2930,24 @@ C-----------------------------------------------------------------------
       USE SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC,
      &    WRITE_LOCAL_FILES, MNPROC, GLOBALDIR, MYPROC
 C RJW added MYPROC
-      USE GLOBAL, ONLY : ScreenUnit, BCFLAG_TEMP, scratchMessage,
-     &    DEBUG, INFO, WARNING, ERROR, screenMessage, setMessageSource,
-     &    unsetMessageSource, allMessage, OutputDataDescript_t, NP_G,
-     &    NODES_LG
+      USE GLOBAL, ONLY : BCFLAG_TEMP,
+     &    OutputDataDescript_t, NP_G, NODES_LG
+      use mod_logging, only: screenMessage, screenUnit,
+     &  t_log_scope, allMessage, DEBUG, INFO,
+     &  WARNING, ERROR
       USE MESH, ONLY : NP, ICS, NM
       USE GLOBAL_3DVS
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE GLOBAL_IO, ONLY: packNPbyM, unpackNPbyM,
      &    collectFullDomainArray, packOne, unpackOne
+#ifdef CMPI
+      use messenger, only: msg_lbcast
+#endif
 #ifdef ADCNETCDF
        USE NodalAttributes, ONLY :
      &     nolibf, nwp, tau0, cf, eslm
        USE NetCDFIO, ONLY : initNetCDFOutputFile,
      &     writeOutArrayNetCDF
-#endif
-#ifdef CMPI
-       USE MESSENGER, ONLY : msg_lbcast, msg_fini
 #endif
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
@@ -3011,12 +2963,10 @@ C RJW added MYPROC
       REAL(8) V11, V22, V33
       LOGICAL, SAVE :: FirstCall = .true.
       LOGICAL, dimension(14) :: netcdf_error
+      character(1024) :: scratchMessage
 C
 C
-      call setMessageSource("writeOutput3D")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeOutput3D", WRITE_OUTPUT_TRACING)
 C
 1099  FORMAT(2X,1pE20.10E3,5X,I10)
 1100  FORMAT(1X,E17.10,1X,I10,32000(2X,E13.6))
@@ -3428,8 +3378,8 @@ C
          CALL msg_lbcast(netcdf_error,8)
          DO i=1,8
             IF (netcdf_error(i).eqv..true.) THEN
-               CALL msg_fini()
-               CALL EXIT(1)
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='NetCDF file initialization failed')
             ENDIF
          ENDDO
 #endif
@@ -4223,10 +4173,6 @@ C
 !Casey 221115 : End of code additions.
 
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       end subroutine writeOutput3D
@@ -4245,7 +4191,9 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeOutArray(TimeLoc, it, descript, pack_cmd,
      &                         unpack_cmd)
       USE SIZES
-      USE GLOBAL
+      USE GLOBAL, ONLY: OutputDataDescript_t
+      use mod_logging, only: allMessage,
+     &  t_log_scope, DEBUG, INFO, ERROR
       USE GLOBAL_IO, ONLY : collectFullDomainArray, storeOne, storeTwo,
      &                      writeSparse,writeFullFormat
       USE MESH, ONLY: labels
@@ -4263,10 +4211,10 @@ C     args
       EXTERNAL :: pack_cmd   ! subroutine used to pack data on subdomain
       EXTERNAL :: unpack_cmd ! subroutine used to unpack data on proc 0
       INTEGER :: I           ! loop counter
+      character(1024) :: scratchMessage
 
-      call setMessageSource("writeOutArray")
+      LOG_SCOPE_TRACED("writeOutArray", WRITE_OUTPUT_TRACING)
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
       call allMessage(DEBUG,TRIM(descript%file_name))
 #endif
 
@@ -4301,10 +4249,9 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
                CALL writeOutArrayNetCDF(descript % lun, TimeLoc, descript)
             ENDIF
 #else
-            call allMessage(ERROR, 'NetCDF was specified.')
-            call allMessage(ERROR,
-     &      'This executable was not compiled with NetCDF support.')
-            call terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='NetCDF was specified but this executable was '//
+     &                 'not compiled with NetCDF support.')
 #endif
 
         CASE(XDMF)
@@ -4313,10 +4260,9 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
                CALL writeOutArrayXDMF(TimeLoc, it, descript)
             ENDIF
 #else            
-            call allMessage(ERROR, 'XDMF was specified.')
-            call allMessage(ERROR,
-     &      'This executable was not compiled with XDMF support.')
-            call terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='XDMF was specified but this executable was '//
+     &                 'not compiled with XDMF support.')
 #endif
         CASE DEFAULT
             write(scratchMessage,'(a,i0)') 'Invalid output specifier: ',
@@ -4324,10 +4270,6 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
             call allMessage(ERROR, scratchMessage)
       END SELECT
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
  2    FORMAT(I2)
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
@@ -4350,7 +4292,10 @@ C-----------------------------------------------------------------------
      &                                descript, pack_cmd, unpack_cmd)
 
       USE SIZES
-      USE GLOBAL
+      USE GLOBAL, ONLY: OutputDataDescript_t, NP_G, labels_g
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage,
+     &  logMessage, DEBUG, INFO,
+     &  ERROR
       USE MESH, ONLY : NP, labels
       USE GLOBAL_IO, ONLY : collectFullDomainArray, HEADER_MAX,
      &                      open_minmax_file
@@ -4370,11 +4315,9 @@ C     args
       CHARACTER(len=3) :: cmp ! comparison to make vs hotstart val ('min' or 'max')
       LOGICAL :: nerr       ! error code from netcdf initialization
       INTEGER :: I          ! loop counter
+      CHARACTER(1024) :: scratchMessage
 C
-      call setMessageSource("writeOutArrayMinMax")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeOutArrayMinMax", WRITE_OUTPUT_TRACING)
 C     collect up the data from subdomains if running in parallel
       IF ((MNPROC.gt.1).and.(.not.WRITE_LOCAL_FILES)) THEN
          CALL collectFullDomainArray(descript, pack_cmd, unpack_cmd)
@@ -4468,10 +4411,6 @@ Casey 120830: Reversed the next two lines.
          call allMessage(ERROR, scratchMessage)
       END SELECT
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
  2    FORMAT(I2)
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
  2452 FORMAT(2x, i8, 2x, i8, 2x, i8, 2x, i8)
@@ -4491,6 +4430,8 @@ C-----------------------------------------------------------------------
 
       USE SIZES
       USE GLOBAL
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage,
+     &  logMessage, DEBUG, INFO, screenUnit
       USE HARM
       USE GLOBAL_IO, ONLY: packOne, unpackOne,
      &    packTwo, unpackTwo, packMbyNP, unpackMbyNP, HEADER_MAX,
@@ -4517,7 +4458,8 @@ C-----------------------------------------------------------------------
       type(OutputDataDescript_t) :: descript
       LOGICAL TEST_HOTSTART     !jgf45.07 used for testing hot start capability
       INTEGER npx, nex
-      CHARACTER*9 :: itstr  !tcm v51.26 added for time-stamped hot start file name adjustments
+      CHARACTER(LEN=9) :: itstr  !tcm v51.26 added for time-stamped hot start file name adjustments
+      character(len=1024) :: scratchMessage
 C
       LOGICAL ncerror
       INTEGER numHotstartWrites ! number writes to hot start files
@@ -4530,10 +4472,7 @@ C     !jgf49.44: harmonic analysis vars
 C
       LOGICAL, SAVE :: FirstCall = .true.
 C
-      call setMessageSource("writeHotstart")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeHotstart", WRITE_OUTPUT_TRACING)
       ncerror = .false.
 C
       IF (FirstCall) THEN
@@ -4812,16 +4751,25 @@ C
             IF (MNPROC.eq.1) THEN  ! serial
 C              jgf49.35 TODO: Allocate arrays to write 3D data
                CALL initNetCDFHotstart(hss%lun, Elev1Descript, ncerror)
-               IF ( ncerror.eqv..true. ) CALL terminate()
+               IF ( ncerror.eqv..true. ) THEN
+                CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                    message='Error initializing NetCDF hotstart file.')
+               ENDIF
                IF (IHARIND.eq.1) THEN
                   CALL initNetCDFHotstartHarmonic(hss%lun,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
      &            HarmUVelSLVDescript, ncerror)
-                  IF ( ncerror.eqv..true. ) CALL terminate()
+                  IF ( ncerror.eqv..true. ) THEN
+                    CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                    message='Error initializing NetCDF hotstart harmonic file.')
+                  ENDIF
                   IF (CHARMV.eqv..true.) THEN
                      CALL initNetCDFHotstartHarmonicMeansVariances(
      &                  hss%lun, ELAVDescript, ncerror)
-                     IF ( ncerror.eqv..true. ) CALL terminate()
+                     IF ( ncerror.eqv..true. ) THEN
+                      CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                    message='Error initializing NetCDF hotstart harmonic means/variances file.')
+                     ENDIF
                   ENDIF
                ENDIF
                ! Determine if we need to init both hotstart files, i.e., if the
@@ -4835,16 +4783,25 @@ C              jgf49.35 TODO: Allocate arrays to write 3D data
                      nextLun = 67
                   ENDIF
                   CALL initNetCDFHotstart(nextLun, Elev1Descript, ncerror)
-                  IF ( ncerror.eqv..true. ) CALL terminate()
+                  IF ( ncerror.eqv..true. ) THEN
+                    CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                    message='Error initializing NetCDF hotstart file.')
+                  ENDIF
                   IF (IHARIND.eq.1) THEN
                      CALL initNetCDFHotstartHarmonic(nextLun,
      &               HarmElevFDLVDescript, HarmElevSLVDescript,
      &               HarmUVelSLVDescript, ncerror)
-                     IF ( ncerror.eqv..true. ) CALL terminate()
+                     IF ( ncerror.eqv..true. ) THEN
+                      CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                    message='Error initializing NetCDF hotstart harmonic file.')
+                     ENDIF
                      IF (CHARMV.eqv..true.) THEN
                         CALL initNetCDFHotstartHarmonicMeansVariances(
      &                     nextLun, ELAVDescript, ncerror)
-                        IF ( ncerror.eqv..true. ) CALL terminate()
+                        IF ( ncerror.eqv..true. ) THEN
+                          CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                      message='Error initializing NetCDF hotstart harmonic means/variances file.')
+                        ENDIF
                      ENDIF
                   ENDIF
                ENDIF
@@ -4887,9 +4844,8 @@ C     collect up the data from subdomains if running in parallel
 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             if (any(NOFF_G.gt.1)) then
-               call allMessage(ERROR,
-     &            'Some values of NOFF are greater than 1.')
-               call terminate()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='Some values of NOFF are greater than 1.')
             endif
          endif
 C
@@ -5618,16 +5574,10 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          ENDIF
       ENDIF
       IF (TEST_HOTSTART.eqv..true.) THEN
-#ifdef CMPI
-          CALL MSG_FINI()
-#endif
-         CALL EXIT(1)
+        call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &     message='Test hotstart completed')
       ENDIF
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE writeHotstart
 C-----------------------------------------------------------------------
@@ -5646,6 +5596,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE WriteWarnElev(TimeLoc, it)
       USE SIZES
       USE GLOBAL
+      use mod_logging, only: t_log_scope, init_log_scope, allMessage,
+     &  DEBUG
       USE GLOBAL_IO, ONLY: collectFullDomainArray, unpackOne
       USE MESH, ONLY : NP
       USE GLOBAL_IO, ONLY: packOne, unpackOne
@@ -5655,15 +5607,13 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       REAL(8), intent(in) :: TimeLoc
       INTEGER, intent(in) :: it
+      character(1024) :: scratchMessage
 C
       INTEGER I ! node loop counter
       type(OutputDataDescript_t), SAVE :: DebugElevDescript
       REAL(8), SAVE, ALLOCATABLE, TARGET :: ETA_DEBUG_g(:)
 
-      call setMessageSource("writeWarnElev")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("writeWarnElev", WRITE_OUTPUT_TRACING)
 C
 C     Open the file and write the header on the first warning. Format
 C     the actual header data to make it look more or less like a fort.63
@@ -5733,55 +5683,17 @@ C
 C     If we have exceeded the user's limit, terminate the run.
       IF (WarnElevDumpCounter.gt.WarnElevDumpLimit) THEN
          WRITE(16,*) 'ERROR: WarnElevDumpLimit Exceeded.'
-         WRITE(ScreenUnit,5000) MyProc
- 5000    FORMAT('ERROR: WarnElevDumpLimit Exceeded on MyPROC=',i4)
-#ifdef CMPI
-         CALL MSG_FINI()
-#endif
-         CALL EXIT(1)
+         write(scratchMessage,5000) MyProc
+ 5000    FORMAT('WarnElevDumpLimit Exceeded on MyPROC=',i4)
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message=scratchMessage)
       ENDIF
 C
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 C
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE WriteWarnElev
 C-----------------------------------------------------------------------
-
-      SUBROUTINE terminate(NO_MPI_FINALIZE)
-#ifdef CMPI
-      USE MESSENGER
-#endif
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
-     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
-      IMPLICIT NONE
-      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
-C
-      call setMessageSource("terminate")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-
-      call allMessage(INFO,"ADCIRC Terminating.")
-
-#ifdef CMPI
-      subdomainFatalError = .true.
-      IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        CALL MSG_FINI(NO_MPI_FINALIZE)
-      ELSE
-        CALL MSG_FINI()
-      ENDIF
-#endif
-      CALL EXIT(1)
-C
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
-      END SUBROUTINE terminate
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  i n i t S w a n O u t p u t
@@ -5797,10 +5709,7 @@ C-----------------------------------------------------------------------
           USE MESH
           IMPLICIT NONE
 
-      call setMessageSource("initSwanOutput")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("initSwanOutput", WRITE_OUTPUT_TRACING)
 
 C.....Allocate SWAN specific local/global arrays if that output is selected
       IF(SWAN_OutputHS)THEN
@@ -6191,10 +6100,6 @@ C.....Mean Wave Period (TMM10)
       SwanTMM10MaxDescript % writeFlag            = .false.
 
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE initSwanOutput
@@ -6226,10 +6131,7 @@ C-----------------------------------------------------------------------
 #endif
       implicit none
       logical :: nerr = .false. !.true. if there was an issue with netcdf init
-      call setMessageSource("initInundationOutput")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("initInundationOutput", WRITE_OUTPUT_TRACING)
 
       ! jgf52.08.01: Additions for detailed inundation output.
       allocate(initiallyDry(mnp))
@@ -6318,10 +6220,10 @@ C-----------------------------------------------------------------------
          if (myproc.eq.0) then
             call initNetCDFOutputFile(InitiallyDryDescript, nerr)
             if (nerr.eqv..true.) then
-               call allMessage(ERROR,
-     &      'There was an issue with NetCDF file initialization for "'//
-     &        trim(InitiallyDryDescript%file_name)//'".')
-               call terminate()
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &            message='There was an issue with NetCDF file '//
+     &                    'initialization for "'//
+     &                    trim(InitiallyDryDescript%file_name)//'".')
             endif
          endif
          InitiallyDryDescript % initialized = .true.
@@ -6336,10 +6238,6 @@ C-----------------------------------------------------------------------
       call writeOutArray(0.d0, 1, InitiallyDryDescript,
      &     packOne, unpackOne)
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine initInundationOutput
 C-----------------------------------------------------------------------
@@ -6359,10 +6257,7 @@ C-----------------------------------------------------------------------
       integer, intent(in) :: it     ! timesteps since cold start
       integer :: i  ! vertex loop counter
 
-      call setMessageSource("collectInundationData")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("collectInundationData", WRITE_OUTPUT_TRACING)
       !
       ! Accumulate total time inundated in initally dry areas
       ! that are currently wet and have a total water depth greater
@@ -6432,10 +6327,6 @@ C-----------------------------------------------------------------------
          endif
       end do
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine collectInundationData
 C-----------------------------------------------------------------------
@@ -6460,10 +6351,7 @@ C-----------------------------------------------------------------------
       integer :: i
       real(8) :: u_tmp
 
-      call setMessageSource("collectMinMaxData")
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("collectMinMaxData", WRITE_OUTPUT_TRACING)
 
 C...  jgf50.44: Collect time that min/max occurs as well.
       if (noutge.ne.0) then
@@ -6513,10 +6401,6 @@ C...  jgf50.44: Collect time that min/max occurs as well.
          end do
       endif
 
-#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.") ! should be unreachable
-#endif
-      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine collectMinMaxData
 C-----------------------------------------------------------------------

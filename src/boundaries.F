@@ -329,9 +329,11 @@ C     ---------
       !------------------------------------------------------------------
       subroutine allocateBoundaryArrays()
       use sizes, only : mnope
-      use global, only : nabout
+      use mod_logging, only : nabout
+      use mod_terminate, only: ADCIRC_EXIT_FAILURE, terminate
       implicit none
       integer :: i
+      character(256) :: scratchMessage
       !
       allocate(elevationBoundaries(mnope))
       do i=1,nope
@@ -347,9 +349,6 @@ C     ---------
       ifCount = 1
       ifwpCount = 1      
       do i=1,nbou
-         if (nabout.eq.-1) then
-            !write(6,'("i=",i0)') i !jgfdebug
-         endif
          select case(ibtype_orig(i))
          case(0,1,2,10,11,12,20,21,22,30,32,52,94,122)
             allocate(simpleFluxBoundaries(sfCount)%nodes(nvell(i)))
@@ -384,9 +383,9 @@ C     ---------
      &         internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(nvell(i)))            
             ifwpCount = ifwpCount + 1            
          case default
-             write(6,'(a,i0,a)') "ERROR: The boundary type ",ibtype_orig(i),
+             write(scratchMessage,'(a,i0,a)') "ERROR: The boundary type ",ibtype_orig(i),
      &        " was found in the file but is not valid."
-             CALL EXIT(1)
+             call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
          end select
       end do
       ! initialize to something troublesome to make it easy to spot issues
@@ -491,12 +490,13 @@ C     ------------------------------------------------------------------
       !-----------------------------------------------------------------
       subroutine getBoundarySizesForPrep(p_nbou, p_nvel, 
      &   p_neta, p_nope, nweir, exist_flux)
+      use mod_terminate, only: ADCIRC_EXIT_FAILURE, terminate
       implicit none
 
       integer, intent(out) :: p_nbou, p_nope, p_nvel, p_neta,  
      &    nweir
       integer, intent(out) :: exist_flux
-      integer :: i, j, k
+      integer :: j, k
       !
       p_nbou = nbou
       p_nvel = nvel
@@ -510,7 +510,7 @@ C     ------------------------------------------------------------------
       do k=1,nbou
          select case(ibtype(k))
          case(2,12,22,32,52)
-            exist_flux = exist_flux + size(simpleFluxBoundaries(i)%nodes)
+            exist_flux = exist_flux + size(simpleFluxBoundaries(k)%nodes)
          case default
             ! other boundary types don't count
          end select
@@ -523,8 +523,7 @@ C     ------------------------------------------------------------------
          case(4,24,64)
             nweir = nweir + nvell(k)
          case(5,25)
-            print *, 'error: ibtype 5 and 25 not supported by adcprep.'
-            CALL EXIT(1)
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="ibtype 5 and 25 not supported by adcprep.")
          case default
             ! no action required for other boundary types
          end select
@@ -549,6 +548,7 @@ C     ------------------------------------------------------------------
       subroutine getBoundariesForPrep(p_nvdll, p_nvell, p_ibtypee, p_nbdv, lbcode, 
      &   p_ibtype, p_nbvv, p_ibconnr, bar1, bar2, bar3, weir, 
      &   weird, iden, nfover, exist_flux, flux14_ary)
+      use mod_terminate, only: ADCIRC_EXIT_FAILURE, terminate
       implicit none
       integer, intent(out) :: p_nvdll(:)
       integer, intent(out) :: p_nvell(:)
@@ -614,8 +614,7 @@ C     ------------------------------------------------------------------
                weird(nweir) = ibconnr(k,i)
             enddo
          case(5,25)
-            print *, 'error: ibtype 5 and 25 not supported by adcprep.'
-            CALL EXIT(1)
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="ibtype 5 and 25 not supported by adcprep.")
          case default
             write(6,'(a,i0,a)') 'ERROR: ibtype ',ibtype(k),
      &          ' not supported by adcprep.'
