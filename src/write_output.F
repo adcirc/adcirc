@@ -42,9 +42,9 @@ C----------------------------------------------------------------------
       !    2 D   D A T A
       !
 #ifdef CSWAN
-      integer, parameter :: numOutputDescript2D = 48
+      integer, parameter :: numOutputDescript2D = 51
 #else
-      integer, parameter :: numOutputDescript2D = 34
+      integer, parameter :: numOutputDescript2D = 37
 #endif
 
       type descript2D_ptr_t
@@ -337,6 +337,23 @@ C
       logical :: outputNodeCode = .false.
       logical :: outputNOFF = .false.
 
+      !
+      !   P R E C I P I T A T I O N   O U T P U T  D A T A 
+      !
+      ! cms/kmd 11/25/25: Add support for precipitation output.
+      ! Station output controlled by elevation stations and global
+      ! output only used for maximum style files for total rain
+      ! accumulation.
+      type(OutputDataDescript_t), target :: RainStaDescript
+      type(OutputDataDescript_t), target :: RainAppDescript
+      type(OutputDataDescript_t), target :: RainTotDescript
+      ! for globalio
+      real(8), allocatable, target :: RainStaOut_g(:)
+      real(8), allocatable, target :: totalRain_g(:)
+      real(8), allocatable, target :: totalRainApp_g(:)
+      ! spool counter (station only)
+      integer, target :: rainSpool
+
 C     ---------
       CONTAINS
 C     ---------
@@ -391,12 +408,13 @@ C----------------------------------------------------------------------
 
       USE MESH, ONLY : NP, NE, DP, NM, ICS, labels
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim,
-     &  elemental_slope_limiter_grad_max,elemental_slope_limiter_active
+     &   elemental_slope_limiter_grad_max,elemental_slope_limiter_active
+      use rain, only : useRain, totalRain, totalRainApplied, rainStaOut
       USE GLOBAL_IO, ONLY : readAndMapToSubdomainMaxMin,packOne,
-     &                      collectFullDomainArray,unpackOne
+     &   collectFullDomainArray,unpackOne
 #ifdef ADCNETCDF
       USE NETCDFIO, ONLY : initNetCDFOutputFile,
-     &                      readAndMapToSubdomainMaxMinNetCDF
+     &   readAndMapToSubdomainMaxMinNetCDF
 #endif
 #ifdef ADCXDMF
       USE XDMFIO, ONLY : initOutputXDMF, writeControlXDMF
@@ -455,23 +473,27 @@ C
       ptr(32)%descript2D => windDragDescript
       ptr(33)%descript2D => dynamicWaterLevelCorrectionDescript
       ptr(34)%descript2D => dynamicWaterLevelCorrectionStaDescript
+      !cms 11/25/25 add precipitation
+      ptr(35)%descript2D => RainStaDescript
+      ptr(36)%descript2D => RainAppDescript
+      ptr(37)%descript2D => RainTotDescript
 
 !... For SWAN, there are additional output arrays
 #ifdef CSWAN
-      ptr(35)%descript2D => SwanHSDescript 
-      ptr(36)%descript2D => SwanHSMaxDescript
-      ptr(37)%descript2D => SwanDIRDescript
-      ptr(38)%descript2D => SwanDIRMaxDescript
-      ptr(39)%descript2D => SwanTM01Descript
-      ptr(40)%descript2D => SwanTM01MaxDescript
-      ptr(41)%descript2D => SwanTPSDescript
-      ptr(42)%descript2D => SwanTPSMaxDescript
-      ptr(43)%descript2D => SwanWindDescript
-      ptr(44)%descript2D => SwanWindMaxDescript
-      ptr(45)%descript2D => SwanTM02Descript
-      ptr(46)%descript2D => SwanTM02MaxDescript
-      ptr(47)%descript2D => SwanTMM10Descript
-      ptr(48)%descript2D => SwanTMM10MaxDescript
+      ptr(38)%descript2D => SwanHSDescript 
+      ptr(39)%descript2D => SwanHSMaxDescript
+      ptr(40)%descript2D => SwanDIRDescript
+      ptr(41)%descript2D => SwanDIRMaxDescript
+      ptr(42)%descript2D => SwanTM01Descript
+      ptr(43)%descript2D => SwanTM01MaxDescript
+      ptr(44)%descript2D => SwanTPSDescript
+      ptr(45)%descript2D => SwanTPSMaxDescript
+      ptr(46)%descript2D => SwanWindDescript
+      ptr(47)%descript2D => SwanWindMaxDescript
+      ptr(48)%descript2D => SwanTM02Descript
+      ptr(49)%descript2D => SwanTM02MaxDescript
+      ptr(50)%descript2D => SwanTMM10Descript
+      ptr(51)%descript2D => SwanTMM10MaxDescript
 #endif
 
       ! jgf51.21.24: Set some defaults
@@ -648,7 +670,7 @@ C
       SpongeDescript % array_g              => sponge_g
       SpongeDescript % writeFlag            = outputsponge
 
-      ! NodeCode output
+      ! NodeCode nodecode.63
       ! DW
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
      &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
@@ -673,7 +695,7 @@ C
       nodeCodeOutDescript % writeFlag            = outputNodeCode
       nodeCodeOutDescript % isInteger            = .true.
 
-      ! NOFF output
+      ! NOFF noff.100
       ! DW
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
      &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
@@ -701,7 +723,7 @@ C
       noffOutDescript % writeFlag            = outputNOFF
       noffOutDescript % isInteger            = .true.
 
-      ! fort.6
+      ! velocity fort.64
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
      &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
          CALL REAL_FIELD_ALLOCATE( NOUTGV, UU2_g, NP_G ) ; 
@@ -722,7 +744,7 @@ C
       VelDescript % ConsiderWetDry       = .TRUE.
       VelDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
 
-      ! fort.71
+      ! wind pressure fort.71
       ! DW
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
      &        .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
@@ -761,7 +783,7 @@ C
          PrStaDescript % writeFlag         = .false.
       endif
 
-      ! fort.72
+      ! wind velocity fort.72
       ! DW
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
      &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
@@ -805,7 +827,7 @@ C
          WindVelStaDescript % writeFlag         = .false.
       endif
 
-      ! fort.73
+      ! global wind pressure fort.73
       !  DW
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
      &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
@@ -852,6 +874,7 @@ C
       dynamicWaterLevelCorrectionDescript % file_basename        = 'dynamicWaterlevelCorrection'
       dynamicWaterLevelCorrectionDescript % file_extension       = 63
       dynamicWaterLevelCorrectionDescript % writeFlag            = usingDynamicWaterLevelCorrection
+
       ! dynamicWaterlevelCorrection.61
       ! DW
 !      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
@@ -892,7 +915,7 @@ C
       dynamicWaterLevelCorrectionStaDescript % file_extension       = 61
       dynamicWaterLevelCorrectionStaDescript % writeFlag            = usingDynamicWaterLevelCorrection
       !
-      ! fort.74
+      ! global wind velocity fort.74
       ! DW
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
@@ -1099,6 +1122,48 @@ C... v49.64.01 tcm -- added for ice stations
       if (ncice.eq.0) then
          IceStaDescript % writeFlag         = .false.
       endif
+
+      ! rain.61 Station Precipitation
+      ! cms and kmd 11/25/25
+      if ((MNPROC.GT.1) .and. (MYPROC.EQ.0)
+         .and. (.not. write_local_files) ) then
+         if (useRain) then
+            call real_field_allocate( NOUTE, RainStaOut_g, NSTAE_G ) ;
+         end if
+      end if 
+      rainSpool = NSCOUE  ! don't share spool counters
+      RainStaDescript % lun                     = 94
+      RainStaDescript % specifier               = NOUTE
+      RainStaDescript % num_fd_records          = NSTAE_G
+      RainStaDescript % num_records_this        = NSTAE
+      RainStaDescript % imap                    => IMAP_STAE_LG
+      RainStaDescript % array                   => rainStaOut
+      RainStaDescript % array_g                 => rainStaOut_g
+      RainStaDescript % interped_array          => totalRainApplied
+      RainStaDescript % ConsiderWetDry          = .true.
+      RainStaDescript % field_name              = 'Applied_rainfall'
+      RainStaDescript % file_basename           = 'rain'
+      RainStaDescript % file_extension          = 61
+      RainStaDescript % isStation               = .true. 
+      RainStaDescript % startTimeStep           = NTCYSE
+      RainStaDescript % endTimeStep             = NTCYFE
+      RainStaDescript % outputTimeStepIncrement = NSPOOLE
+      RainStaDescript % spoolCounter            => rainSpool
+      RainStaDescript % elements                => NNE
+      RainStaDescript % interp_fac1             => STAIE1
+      RainStaDescript % interp_fac2             => STAIE2
+      RainStaDescript % interp_fac3             => STAIE3
+      IF (ICS.eq.1) THEN 
+         RainStaDescript % x_coord              => XEL ! orig coords
+         RainStaDescript % y_coord              => YEL
+      ELSE 
+         RainStaDescript % x_coord              => SLEL ! radians
+         RainStaDescript % y_coord              => SFEL
+      END IF 
+      IF (.NOT. useRain) THEN 
+        RainStaDescript % writeFlag             =.false.
+      END IF 
+
 
       ! Casey 090302: Copied these lines for the rads.64 file.
       ! tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
@@ -1383,9 +1448,58 @@ C      IF (mnproc.gt.1) THEN
       RSNMAX(:) = -99999.d0
       RSNMAX_Time(:) = -99999.d0
 
+      ! totalRain.63
+      ! kmd: added for Total Rainfall Accumulation
+      if ( (MNProc.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.not. write_local_files)  ) then
+          if ( useRain ) then
+             call real_field_allocate( 1, 
+     &            totalRain_g, NP_G, 0.d0 ) ;
+          endif    
+      end if
+      RainTotDescript % lun                  = 325
+      RainTotDescript % specifier            = NOUTGE
+      RainTotDescript % array                => totalRain 
+      RainTotDescript % array_g              => totalRain_g
+      RainTotDescript % field_name           = 'Accumulated_rainfall'
+      RainTotDescript % file_basename        = 'totalrain'
+      RainTotDescript % file_extension       = 63
+      RainTotDescript % writeFlag            = .false.
+      if (useRain) then 
+         RainTotDescript % readMaxMin        = .true.
+      end if 
+      if (RainTotDescript % specifier.eq.XDMF) then 
+         RainTotDescript % specifier         = ASCII
+      end if
+
+      ! totalRainApplied.63
+      ! cms: added for Total Rainfall Applied on Grid
+      !      not same as accumulation since only applied when active
+      if ( (MNProc.gt.1) .and. (MyProc.eq.0) 
+     &      .and. (.not. write_local_files)  ) then
+          if ( useRain ) then
+             call real_field_allocate( 1, 
+     &            totalRainApp_g, NP_G, 0.d0 ) ;
+          endif    
+      end if
+      RainAppDescript % lun                  = 324
+      RainAppDescript % specifier            = NOUTGE
+      RainAppDescript % array                => totalRainApplied
+      RainAppDescript % array_g              => totalRainApp_g
+      RainAppDescript % field_name           = 'Applied_rainfall'
+      RainAppDescript % file_basename        = 'totalRainApplied'
+      RainAppDescript % file_extension       = 63
+      RainAppDescript % writeFlag            = .false.
+      if (useRain) then 
+         RainAppDescript % readMaxMin        = .true.
+      end if 
+      if (RainAppDescript % specifier.eq.XDMF) then 
+         RainAppDescript % specifier         = ASCII
+      end if
+
+
 !     ESLNodes.63
       ! DW
-!      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
           if ( LoadEleSlopeLim ) then
@@ -1989,6 +2103,8 @@ C-----------------------------------------------------------------------
 C      S U B R O U T I N E   S T A T I O N   A R R A Y   I N T E R P
 C-----------------------------------------------------------------------
 C     jgf51.21.24: Performs station interpolations on a single array.
+C     cms 11/25/25: Added option for IMEDS handling of partially wet
+C        elements (How2FixStatPartWet = 2)
 C-----------------------------------------------------------------------
       subroutine stationArrayInterp(descript, fromArray, toArray)
       use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2, NOFF,
@@ -2005,6 +2121,7 @@ C-----------------------------------------------------------------------
       real(8) :: H2N1, H2N2, H2N3
       real(8) :: tmpwts(3)
       real(8) :: wlstn,wdstn,dpstn
+      real(8) :: w1, w2, w3  ! cms added for imeds interpolation method
       integer :: ilocmaxwt(1)
       integer :: ncele,ncsum
       integer :: i, j
@@ -2064,14 +2181,13 @@ C-----------------------------------------------------------------------
                    tmpwts(1) = descript % interp_fac1(j)
                    tmpwts(2) = descript % interp_fac2(j)
                    tmpwts(3) = descript % interp_fac3(j)
-                   if ( How2FixStatPartWet .eq. 0 ) then !Use nearest neighbor value
-                                                         !if total H > 0.8H0
-                      ilocmaxwt = maxloc(tmpwts) !nearest neighbor location (maximum weight)
-
-                      !tcm v54.00 compute dp at the actual station location instead
-                      ! of the nearest node, dpstn is computed above.
-                      wlstn = eta2(nm(e,ilocmaxwt(1)))  !nearest nodes elevation
-                      wdstn = wlstn + dpstn             !total depth at station
+                   ! Use nearest neighbor if total H > 0.8*H0
+                   if ( How2FixStatPartWet .eq. 0 ) then
+                      ilocmaxwt = maxloc(tmpwts) !nearest neighbor
+                      !tcm v54.00 compute dp at the actual station instead
+                      !of the nearest node, dpstn is computed above.
+                      wlstn = eta2(nm(e,ilocmaxwt(1)))  !nearest node elev
+                      wdstn = wlstn + dpstn      !total depth at station
 
                       !if the nearest neighbor is wet, then use that value
                       if ( (nodecode(nm(e,ilocmaxwt(1))).gt.0) .and.
@@ -2080,17 +2196,42 @@ C-----------------------------------------------------------------------
                       else !nearest neighbor is dry or station  H < 0.8H0
                          toArray(j) = descript % alternate_value
                       endif
-                  elseif ( How2FixStatPartWet .eq. 1 ) then !Use nearest neighbor value
-                                                            !regardless of total H
-                      ilocmaxwt = maxloc(tmpwts) !nearest neighbor location (maximum weight)
+                   ! Use nearest neighbor regardless of total H
+                   elseif ( How2FixStatPartWet .eq. 1 ) then
+                      ilocmaxwt = maxloc(tmpwts) !nearest neighbor
                       !if the nearest neighbor is wet, then use that value
                       if (nodecode(nm(e,ilocmaxwt(1))).gt.0) then
                          toArray(j)=fromArray(nm(e,ilocmaxwt(1)))
                       else !nearest neighbor is dry
                          toArray(j) = descript % alternate_value
                       endif
-
-
+                   ! cms: mimic how IMEDS tool handles partially wet elem
+                   elseif ( How2FixStatPartWet .eq. 2 ) then
+                      w1=tmpwts(1)
+                      w2=tmpwts(2)
+                      w3=tmpwts(3)
+                      NC1 = nodecode(nm(e,1))
+                      NC2 = nodecode(nm(e,2))
+                      NC3 = nodecode(nm(e,3))
+                      if (NC1.eq.0) then  !node 1 dry
+                         if (NC2.eq.0) then  !node 2 dry
+                             toArray(j) = d3  ! node 3 is only wet
+                         elseif (NC3.eq.0) then  ! 2 wet / 3 dry
+                             toArray(j) = d2  ! node 2 is only wet
+                         else  ! both nodes 2 and 3 are wet
+                             toArray(j) = d2*w2/(w2+w3)+d3*w3/(w2+w3)
+                         endif
+                      elseif (NC2.eq.0) then  !node 2 dry
+                         if (NC3.eq.0) then ! node 3 dry
+                             toArray(j) = d1  ! node 1 is only wet
+                         else  ! both nodes 1 and 3 are wet
+                             toArray(j) = d1*w1/(w1+w3)+d3*w3/(w1+w3)
+                         endif
+                      elseif (NC3.eq.0) then  !nodes 1 and 2 are wet
+                         toArray(j) = d1*w1/(w1+w2)+d2*w2/(w1+w2)
+                      else  ! every node is wet - should not get here
+                         toArray(j) = d1*w1 + d2*w2 + d3*w3
+                      endif
                   else !left space for other options later
                      toArray(j) = descript % alternate_value
                   endif
@@ -2761,11 +2902,11 @@ C
          ENDIF
 #else
          call allMessage(ERROR,
-     &        'ERROR: You didn''t compile with NetCDF.')         
+     &        "ERROR: You didn't compile with NetCDF.")
 #endif
       CASE DEFAULT
-         write(scratchMessage,'(a,i0,a)')
-     &  'Invalid harmonic analysis format specifier: ',mag1%specifier,'.'
+         write(scratchMessage,'(a,i0)')
+     &  'Invalid harmonic analysis format specifier: ',mag1%specifier
          call allMessage(ERROR,scratchMessage)
       END SELECT
 

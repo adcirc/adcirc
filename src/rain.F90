@@ -125,14 +125,14 @@
         ! Rainfall used in write_output.F
         real(8),target,allocatable :: totalRain(:)  !accumulated rain
         real(8),target,allocatable :: totalRainApplied(:) !applied rain
-        real(8),target,allocatable :: rain00(:) ! station output array
+        real(8),target,allocatable :: rainStaOut(:) ! station output
         
         ! Public/private variables
         private :: rainTime1, rainTime2, rain1, rain2
         public :: useRain, rainType, rainTimeInc, activeRainType
         public :: rainfallControl, activeRain
         public :: rainCurr, rainODT, totalRain, totalRainApplied
-        public :: rain00
+        public :: rainStaOut
 
         ! Public/private subroutines
         private :: checkActiveRain, rainTerminate
@@ -294,8 +294,8 @@
         ! check if elevation station output requested - rain station
         ! output tied to elevation station output
         if (mnstae .ge. 1) then
-           allocate ( rain00(mnstae) )
-           rain00(1:mnstae) = 0.d0
+           allocate ( rainStaOut(mnstae) )
+           rainStaOut(1:mnstae) = 0.d0
         end if
 
 #if defined(ALL_TRACE)
@@ -656,7 +656,7 @@
       if(allocated(rainODT)) deallocate(rainODT)
       if(allocated(totalRain)) deallocate(totalRain)
       if(allocated(totalRainApplied)) deallocate(totalRainApplied)
-      if(allocated(rain00)) deallocate(rain00)
+      if(allocated(rainStaOut)) deallocate(rainStaOut)
       if(allocated(activeRain)) deallocate(activeRain)
       
 
