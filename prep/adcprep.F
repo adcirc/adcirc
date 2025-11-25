@@ -47,7 +47,7 @@ C   Wave stress routines revise  ( R. Luettich 3/2003)
 C   Time-varying Flux files      ( M. Brown 4/2004 )
 C   Added default filename capability  ( M. Brown 4/2004 )
 C   Islands kept as islands      ( R. Luettich 5/2004)
-C   Vic Parr's bug fix for NWS=+-4, Wave stress  ( R. Luettich 5/2004)
+C   Vic Parrs bug fix for NWS=+-4, Wave stress  ( R. Luettich 5/2004)
 C   Removed NWS +/- conversion   ( R. Luettich/jgf 11/2005 )
 C   Add PREP14_15 option         ( J. Fleming 11/2005 )
 C   3D Update: Recording Stations( J. Fleming 02/2006 )
@@ -59,8 +59,9 @@ C   Add prep13 ONLY command      ( V. Parr 09/2006 )
 C   Add prep15 ONLY command      ( V. Parr 10/2006 )
 C   Add prephot ONLY command     ( V. Parr 10/2006 )
 C   Added NWS=19 asymmetric holland v2.0 ( R. Weaver 07/2009)
-c   Removed NWS=3 and NWS=6      (T.C. Massey 11/2009)
+C   Removed NWS=3 and NWS=6      (T.C. Massey 11/2009)
 C   Add NWS=20 generalized asymmetric hurricane vortex (Jie 5/2013)
+C   Add rain and hydrology source terms (cms 11/25/25)
 C
 C----------------------------------------------------------------------------
 C
@@ -252,9 +253,15 @@ C     having to do a prep all and without having to add menu items).
                   i = i + 1
                   call GET_COMMAND_ARGUMENT(i,naFileName)
             case default
+<<<<<<< HEAD
                   write(*,'(3A)') "ERROR: The command line option '",
      &                  trim(cmdlinearg),"' is not valid."
                   call exit(1)
+=======
+                  write(*,'(3A)') "ERROR: The command line option '",
+     &                  trim(cmdlinearg),"' is not valid."
+                  call exit(1)
+>>>>>>> Subject: USE rainprep and hydroprep during PREP15 and PREPALL
             end select
          END DO
 
@@ -331,7 +338,8 @@ C
            PARTITION   = .TRUE.
            PARTITION_APPROACH = 1 
 
-        CASE("-1","partmesh_npart_from_epart","PARTMESH_NPART_FROM_EPART")
+        CASE("-1","partmesh_npart_from_epart",
+     &       "PARTMESH_NPART_FROM_EPART")
            PARTITION = .TRUE.  
            PARTITION_APPROACH = 2 
 
@@ -403,6 +411,8 @@ C
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
      &   subPrep019
+      use rainprep, only : useRain, checkRainUsage
+      use hydroprep, only : useInteriorHydrology, prepInteriorHydrology
 !tcm v50.85
 #ifdef WINDOWS
       USE IFPORT
@@ -518,6 +528,16 @@ C--   If ONLY localizing Run Info File ( fort.15 )
             ! call netCDF module
             CALL PREPNETCDF()
          ENDIF
+         ! Localize interior hydrology: cms 11/25/25
+         if (useInteriorHydrology) then
+            write(*,*) "INFO: Relocalizing interior hydrology."
+            call prepInteriorHydrology()
+         end if
+         ! Status check and warning for rainfall: cms 11/25/25
+         if (useRain) then
+            write(*,*) "INFO: Checking for global rainfall input."
+            call checkRainUsage()
+         end if
          GO TO 9999
       endif
 
@@ -875,7 +895,6 @@ C
       ENDIF
 
 C... tcm v50.66.03 Added for time varying bathymetry (fort.141)
-C
 C-- If required write a Local Time Bathymetry file for each PE
 C
       IF (PREP_ALL) THEN
@@ -883,6 +902,20 @@ C
             CALL PREP141()
          ENDIF
       ENDIF
+
+C...
+      ! Localization for Interior Hydrology: cms 11/25/25
+      if ((prep_all).and.(useInteriorHydrology)) then
+         write(*,*) "INFO: Localizing interior hydrology."
+         call prepInteriorHydrology()
+      end if
+
+C...
+      ! File Check and Warning for Rainfall: cms 11/25/25
+      if ((prep_all).and.(useRain)) then
+         write(*,*) "INFO: Checking for global rainfall input."
+         call checkRainUsage()
+      end if
 
 
 C  kmd48.33bc add information for 3D baroclinic simulations
