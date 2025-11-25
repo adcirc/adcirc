@@ -162,6 +162,10 @@ Casey 090302: We need these values from other places.
       ! full luni-solar tidal potential !
       USE mod_tidepotential, only: tidePotential
 
+      ! Rain and Interior Hydrology: cms 11/25/25
+      use rain, only : useRain, getRainForcing
+      use hydrology, only : useInteriorHydrology, getInteriorHydrology
+
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
 C
@@ -504,12 +508,12 @@ C.......If time is during the bathymetry change interval, then update bathymetry
          ENDIF
          IF(timeloc.EQ.BTIME_END) THEN
             write(scratchMessage,'(A42,1X,E15.8,1X,A5)')
-     &         'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
+     &       'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
             call allMessage(INFO,scratchMessage)
             DO I=1,NP
-               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be to get to the final bathy value
-               DP(I) = DP2(I)         !updating bathymetry to final value
-               ETA2TMP = ETA2(I)-DPTMP !subtracting elevation by incremental amount
+               DPTMP = DP2(I)-DP(I)   ! incremental change 
+               DP(I) = DP2(I)         ! update bathymetry to final value
+               ETA2TMP = ETA2(I)-DPTMP !reduce elevation by incremental amount
                ETA2(I) = ETA2TMP       !updating elevation
             ENDDO !I
          ENDIF
@@ -556,7 +560,7 @@ C.......If time is during the bathymetry change interval, then update bathymetry
 C         
          IF (timeloc.EQ.BTIME_END) THEN
             write(scratchMessage,'(A42,1X,E15.8,1X,A5)')
-     &         'Bathymetry values are now fixed at time =',timeloc,'(sec).'
+     &      'Bathymetry values are now fixed at time =',timeloc,'(sec).'
             call allMessage(INFO,scratchMessage)
             DO I=1,NP
                DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be to get to the final bathy value
@@ -645,13 +649,19 @@ C     jgf: update water level correction fields
             dynamicWaterLevelCorrectionDelta=dynamicWaterLevelCorrection2-dynamicWaterLevelCorrection1
          endif
       endif
-C
-C---------------------BEGIN MET FORCING----------------------------------------
+
+C---------------------BEGIN MET FORCING----------------------------------
 
       call getMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
      &   wvnxout, wvnyout, timeloc)
-C
-C----------------------END MET FORCING----------------------------------------
+
+C----------------------END MET FORCING----------------------------------
+
+
+C...  Read Input for Precipitation and Interior Hydrology
+C...  cms 11/25/25
+      if (useRain) call getRainForcing(timeloc)
+      if (useInteriorHydrology) call getInteriorHydrology(timeloc)
 
 
 C...  UPDATE THE WAVE RADIATION STRESS AND READ IN NEW VALUES FROM
