@@ -1792,6 +1792,9 @@ C---------------------------------------------------------------------------C
       USE PREP_WEIR
       USE HARM, ONLY : NAMEFR
       use subprep, only : subdomainOn, found_sm_nml ! NCSU Subdomain Modeling
+      use rainprep, only : found_rainControl_nml, rainfallcontrol
+      use hydroprep, only : found_hydroControl_nml,
+     &    interiorHydrologyControl
       use nodalattributes, only : outputTau0
       IMPLICIT NONE
       integer(8) :: nbytes = 0
@@ -2410,6 +2413,20 @@ C....    DMW
      &       '&inundationOutputControl inundationOutput=',
      &       inundationOutput,' inunThresh=',inunThresh," /"
          endif
+
+C..      kmd - additions for rainfall
+         IF (found_rainControl_nml) THEN 
+            write(15,*) '! -- Begin Rainfall Inputs --'
+            write(15,rainfallcontrol)
+            write(15,*) '! -- End Rainfall Inputs --'
+         END IF 
+
+C..      kmd - additions for interior hydrology
+         IF (found_hydroControl_nml) THEN 
+            write(15,*) '! -- Begin Interior Hydrology Inputs --'
+            write(15,interiorHydrologyControl)
+            write(15,*) '! -- End Interior Hydrology Inputs --'
+         END IF 
 
 c...     tcm v52.30.01 additions for Smag_Control Namelist
          IF (FOUND_SMAG_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
