@@ -15,8 +15,10 @@
 !>                        fort.271
 !>                        fort.272 (OPT regional)
 !>-----------------------------------------------------------------------
-!>  USAGE:
-!>
+!>  USAGE: No "prep" is required for precipitation files; currently they
+!>  are all global. However, file checks to issue potential warnings to
+!>  users before they try to run padcirc have been included in adcprep.
+!>  Also includes all variables related to the namelist.
 !>----------------------------------------------------------------------- 
       module rainPrep
 
