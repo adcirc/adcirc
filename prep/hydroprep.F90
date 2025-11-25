@@ -67,11 +67,7 @@
       use global, only : screenUnit, setMessageSource,                  &
      &    unsetMessageSource, openFileForRead, scratchMessage,          &
      &    logMessage, allMessage, screenMessage, DEBUG, ECHO, INFO,     &
-     &    WARNING, ERROR, deg2rad
-      use mesh, only : cylindermap
-      use pre_global, only : nproc, itotproc, imap_nod_gl2, nelp,  &
-     &    imap_el_LG, kdtAlreadySetup, kdtsearch, setup_kdt_search,  &
-     &    ics, sl0, sf0
+     &    WARNING, ERROR
       use memory_usage
 
       implicit none
@@ -361,9 +357,10 @@
 
       !CMS: add required variables for elements instead of nodes
       use mesh, only : cylindermap
-      use global, only : deg2rad
-      use pre_global, only : nproc, nelp, imap_el_LG, kdtsearch, &
-     &      setup_kdt_search, kdtAlreadySetup, ics, sl0, sf0
+      use adc_constants, only : deg2rad
+      use pre_global, only : nproc, nelp, imap_el_LG, ics, sl0, sf0
+      use read_global, only : kdtsearch, setup_kdt_search,
+     &    kdtAlreadySetup
       use memory_usage
 
       implicit none
@@ -396,7 +393,6 @@
  
       ! Read fixed number of sources and allocate
       read(428,*) numHydro
-      if(ics.EQ.1) then
          allocate ( xps(numHydro),yps(numHydro) )
          nbytes = 8*2*numHydro  ! 2 real array
       else
