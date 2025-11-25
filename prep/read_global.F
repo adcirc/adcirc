@@ -502,16 +502,31 @@ C---------------------------------------------------------------------
       USE PRE_GLOBAL
       USE SIZES, ONLY : MNHARF
       USE MESH, ONLY : CYLINDERMAP
+<<<<<<< HEAD
       USE GLOBAL, ONLY : parse, hss, STATNAME,
      &                   STATNAMEV, STATNAMEM, STATNAMEC, deg2rad
       USE MOD_LOGGING, ONLY : allMessage, t_log_scope,
      &                   init_log_scope, logMessage, screenMessage,
      &                   ERROR, DEBUG, INFO, screenUnit
+=======
+      use adc_constants, only : deg2rad
+      USE GLOBAL, ONLY : parse, hss, STATNAME, STATNAMEV, STATNAMEM,
+     &    STATNAMEC
+      USE MOD_LOGGING, ONLY : allMessage, t_log_scope, init_log_scope,
+     &    logMessage, screenMessage, screenUnit, ERROR, DEBUG, INFO
+>>>>>>> Subject: Add rain and interiorHydrology sources, update kdtsearch.
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
-     &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
-     &                 IHARIND, ALLOC_MAIN14, CHARMV
+     &    THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV, IHARIND, CHARMV,
+     &    ALLOC_MAIN14
       USE PREP_WEIR
       USE NODALATTRIBUTES, ONLY : outputTau0
+      ! cms 11/25/25: add rain and interior hydrology source terms
+      use rainPrep, only : found_rainControl_nml, rainfallControl,
+     &         useRain, rainType, rainTimeInc, activeRainType
+      use hydroPrep, only : found_hydroControl_nml,
+     &         useInteriorHydrology, interiorHydrologyType,
+     &         interiorHydrologyTimeInc, useInteriorHydrologyRamp,
+     &         interiorHydrologyControl
       use memory_usage
       IMPLICIT NONE
 
@@ -555,6 +570,11 @@ Casey 180318: Added NWS=13
       INTEGER :: IOS_NWS14Grib2NC
 
       INTEGER :: IOS_TIPNL 
+
+      ! cms 11/25/25 Added for check of KDtree status - still need to
+      ! think about adding IF statements around the calls to kdtsearch
+      ! will numStations = 0 cause trouble?
+      logical :: kdtAlreadySetup = .false.
 
 C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
@@ -898,6 +918,39 @@ C  DW
      &       'The baroclinic3D namelist was not found.')
       ENDIF
       REWIND(15)
+
+C...
+      ! Search for Precipitation Namelist : cms 11/25/25
+      READ(UNIT = 15, NML = rainfallcontrol, IOSTAT = IOS)
+      IF (IOS.LT.0) THEN 
+         call logMessage(INFO,
+     &     'The rainfallcontrol namelist was not found.')
+      ELSE 
+         found_rainControl_nml = .true.
+         call logMessage(INFO,
+     &     'The rainfallcontrol namelist was found:')
+         write(scratchMessage,*) "   useRain = ", useRain
+         call logMessage(INFO, trim(scratchMessage))
+      END IF 
+      REWIND(15)
+
+C...
+      ! Search for Interior Hydrology Namelist: cms 11/25/25
+      READ(UNIT = 15, NML = interiorHydrologyControl, IOSTAT = IOS)
+      IF (IOS.LT.0) THEN 
+         call logMessage(INFO,
+     &     'The interiorHydrologyControl namelist was not found.')
+      ELSE 
+         found_hydroControl_nml = .true.
+         call logMessage(INFO,
+     &     'The interiorHydrologyControl namelist was found:')
+         write(scratchMessage,*) "   useInteriorHydrology=",
+     &        useInteriorHydrology
+         call logMessage(INFO, trim(scratchMessage))
+      END IF 
+      REWIND(15)
+
+
 
       READ(15,80) RUNDES
 C
@@ -2560,6 +2613,8 @@ C----------------------------------------------------------------------
           bcxy(1,i) = sum(xelm)/3.d0
           bcxy(2,i) = sum(yelm)/3.d0
        enddo !i
+
+      kdtAlreadySetup = .true.
 
       return
 C----------------------------------------------------------------------
