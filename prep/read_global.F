@@ -922,25 +922,25 @@ C  DW
 C...
       ! Search for Precipitation Namelist : cms 11/25/25
       READ(UNIT = 15, NML = rainfallcontrol, IOSTAT = IOS)
-      IF (IOS.LT.0) THEN 
+      IF (IOS.LT.0) THEN
          call logMessage(INFO,
      &     'The rainfallcontrol namelist was not found.')
-      ELSE 
+      ELSE
          found_rainControl_nml = .true.
          call logMessage(INFO,
      &     'The rainfallcontrol namelist was found:')
          write(scratchMessage,*) "   useRain = ", useRain
          call logMessage(INFO, trim(scratchMessage))
-      END IF 
+      END IF
       REWIND(15)
 
 C...
       ! Search for Interior Hydrology Namelist: cms 11/25/25
       READ(UNIT = 15, NML = interiorHydrologyControl, IOSTAT = IOS)
-      IF (IOS.LT.0) THEN 
+      IF (IOS.LT.0) THEN
          call logMessage(INFO,
      &     'The interiorHydrologyControl namelist was not found.')
-      ELSE 
+      ELSE
          found_hydroControl_nml = .true.
          call logMessage(INFO,
      &     'The interiorHydrologyControl namelist was found:')
