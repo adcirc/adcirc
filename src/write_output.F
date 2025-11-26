@@ -1126,7 +1126,7 @@ C... v49.64.01 tcm -- added for ice stations
       ! rain.61 Station Precipitation
       ! cms and kmd 11/25/25
       if ((MNPROC.GT.1) .and. (MYPROC.EQ.0)
-         .and. (.not. write_local_files) ) then
+     &    .and. (.not. write_local_files) ) then
          if (useRain) then
             call real_field_allocate( NOUTE, RainStaOut_g, NSTAE_G ) ;
          end if
@@ -2121,10 +2121,12 @@ C-----------------------------------------------------------------------
       real(8) :: H2N1, H2N2, H2N3
       real(8) :: tmpwts(3)
       real(8) :: wlstn,wdstn,dpstn
-      real(8) :: w1, w2, w3  ! cms added for imeds interpolation method
       integer :: ilocmaxwt(1)
       integer :: ncele,ncsum
       integer :: i, j
+      ! cms added for imeds interpolation method (for brevity)
+      real(8) :: w1, w2, w3     ! cms
+      integer :: NC1, NC2, NC3  ! cms
 
       LOG_SCOPE_TRACED("stationArrayInterp", WRITE_OUTPUT_TRACING)
 

@@ -3482,6 +3482,7 @@ Csb...
          else
             divByTotalArea0(i)=1.d0/totalArea(i)
             !divByTotalArea1(i)=divByTotalArea0(i)
+         end if
       end do
 
 <<<<<<< HEAD

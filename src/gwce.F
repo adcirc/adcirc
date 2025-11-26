@@ -349,7 +349,7 @@ C... SB
       REAL(8) U1N1,U1N2,U1N3, U1Avg
       REAL(8) V1N1,V1N2,V1N3, V1Avg
       REAL(8) WSXAvg, WSYAvg
-      REAL(8) AreaIE, AreaIE2, AreaIE4
+      REAL(8) AreaIE, AreaIE2, AreaIE3, AreaIE4  !cms add AreaIE3
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) FDXX1, FDXX2, FDXX3, FDYY1, FDYY2, FDYY3
       REAL(8) TimeLoc, TimeH
@@ -501,6 +501,7 @@ C.... End WJP/DW
                AreaIE2=Areas(IE)
                AreaIE =AreaIE2*0.5d0
                AreaIE4=AreaIE2*2.0d0
+               AreaIE3=AreaIE/3.d0      !area/3 for precip and hydro
 !JLW: adding subgrid to water surface elevation gradiant term
                IF(level0)THEN
                   DPAvg = (H1N1+H1N2+H1N3)/3.d0

@@ -198,8 +198,14 @@ Casey 180318: Added NWS=13
       use mod_io, only: openFileForRead
 =======
 !JLW: add subgrid 
+      use iso_fortran_env, only: output_unit
       use subgrid, only: subgridFilename, level0, level1, phi_time_derivative
       use mod_tidepotential, only: tidePotential, t_tidePotential
+      use mod_logging, only: allMessage, logMessage, ERROR, WARNING,
+     &   INFO, ECHO, screenUnit, nscreen, nabout, t_log_level,
+     &   operator(<=), operator(/=), operator(<), operator(>=),
+     &   t_log_scope, init_log_scope
+      use mod_io, only: openFileForRead
       ! cms 11/24/25: Added for rain on grid
       use rain, only : rainfallControl, useRain, rainType, rainTimeInc,
      &    activeRainType, allocRain, rainTypeCheck
@@ -624,8 +630,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ! outputFort48
 #ifndef ADCNETCDF
       outputFort48 = .FALSE.
-      call allMessage(WARNING, "outputFort48 parameter is not supported",
-     &     " without NetCDF output enabled.")
+      call allMessage(WARNING, "outputFort48 parameter is not "//
+     &     "supported without NetCDF output enabled.")
 #endif
       WRITE(scratchMessage,*) "outputFort48=",outputFort48
       CALL logMessage(ECHO,TRIM(scratchMessage))
@@ -773,12 +779,14 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
             dynamicWaterLevelCorrectionMassAdjust = .false.
          case default
 <<<<<<< HEAD
+<<<<<<< HEAD
             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &                     message='Invalid dynamicWaterLevelCorrectionMethod in fort.15')
 =======
-            call allMessage(ERROR, "Invalid ",
-     &          "dynamicWaterLevelCorrectionMethod")
-            call adcirc_terminate()
+=======
+>>>>>>> Subject: minor edits in src/ to fix errors during compilation.
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                     message='Invalid dynamicWaterLevelCorrectionMethod in fort.15')
 >>>>>>> Subject: Add rain and hydrology source term capability, cleanup a bit
          end select
       endif
@@ -1000,7 +1008,7 @@ C...  Defaults and namelist defined in hydrology module
          write(scratchMessage,'(a)') "  Ramp Time: 2hrs (0.0833 days)"
          call logMessage(ECHO,trim(scratchMessage))
       end if
-      rewind(15
+      rewind(15)
 
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
@@ -4778,9 +4786,15 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
       ! Harmonic Analysis (gap)
       if((NFREQ.EQ.0).or.(FMV.EQ.0.)) write(16,4044)
       if((NFREQ.GE.1).and.(FMV.NE.0.)) write(16,4045)
+<<<<<<< HEAD
       ! Form of GWCE equations
       if (ilump .eq. 0) write(16,4046)
       else if (ilump .eq. 1) write(16,4047)
+=======
+      ! Form of GWCE equations    
+      if (ilump .eq. 0) write(16,4046)
+      else if (ilump .eq. 1) write(16,4047)
+>>>>>>> Subject: minor edits in src/ to fix errors during compilation.
       end if
       ! Simulation type (gap - jump to 4100)
       select case (IM)
@@ -4824,7 +4838,8 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
  4002 FORMAT(' *   Semi-standard wind forcing will be used,        *')
  4003 FORMAT(' *   Fleet numeric wind forcing will be used,        *')
  4004 FORMAT(' *   Wind stress and pressure (PBL/JAG format),      *')
- 4005 FORMAT(' *   Wind stress and presaure (all nodes),           *')
+ 4005 FORMAT(' *   Wind stress and pressure (all nodes),           *')
+ 4006 FORMAT(' *   Wind stress and pressure (rect region),         *')
  4007 FORMAT(' *   Surface stress and pressure (rect region),      *')
  4008 FORMAT(' *   Holland model winds will be used,               *')
  4010 FORMAT(' *   Wind stress and press (NWS AVN format),         *')
@@ -4937,8 +4952,7 @@ C
             scratchMessage = "The TipStartDate parameter must be set "//
      &       "either in the netCDF metadata "//
      &       "or the tide potential namelist."
-            call allMessage(ERROR,scratchMessage)
-            call adcirc_terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
 >>>>>>> Subject: Add rain and hydrology source term capability, cleanup a bit
          endif
       endif

@@ -261,7 +261,7 @@
          !cms: replaced loops with explicit array bounds
          nibcnt(1:np) = 0
          noffold(1:ne) = noff(1:ne)
-         noff((1:ne) = 1
+         noff(1:ne) = 1
          !do I=1,NP
          !   NIBCNT(I) = 0
          !end do

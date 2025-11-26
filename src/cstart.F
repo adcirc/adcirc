@@ -373,7 +373,7 @@ C...
       qn1=0.d0
       qn0=0.d0
 
-      if(nfluxf.eq.1.and.nffr.le.0)then
+      if(nfluxf.eq.1.and.nffr.le.0) then
          if(nscreen.ne.0.and.myproc.eq.0) write(screenunit,1112)
          write(16,1112)
          if(nscreen.ne.0.and.myproc.eq.0) write(screenunit,1979)
@@ -407,11 +407,11 @@ C...
       endif
 
 
-     ! Input meteorological INFOrmation from unit 22 or unit 200 series.
-     ! If fleet numeric wind data is used, find beginning time in file,
-     ! NOTE: can't deal with wind that starts after wreftim!!!!!!!!!!!!
-     ! Read in and interpolate in space onto the adcirc grid both the
-     ! time level 1 and level 2 wind fields.
+      ! Input meteorological Information from unit 22 or unit 200 series.
+      ! If fleet numeric wind data is used, find beginning time in file,
+      ! NOTE: can't deal with wind that starts after wreftim!!!!!!!!!!!!
+      ! Read in and interpolate in space onto the adcirc grid both the
+      ! time level 1 and level 2 wind fields.
 
       if(nws.ne.0) then
          ! jgf48.4627 If user only requests meteorological output, then
@@ -465,7 +465,7 @@ C...
            call rsget(rsnx2,rsny2)
          !endif  !cms see comment below
          ! nrs=2 was added. 09/xx/2006 sb
-         elseif(nrs.eq.2) thena !cms 11/20/25 changed to elseif
+         elseif(nrs.eq.2) then !cms 11/20/25 changed to elseif
            call rs2init(rsnx1,rsny1,np)
            call rs2get(rsnx1,rsny1,np)
            call rs2get(rsnx2,rsny2,np)
@@ -1690,7 +1690,7 @@ C----------------------------------------------------------------------
       use boundaries, only : nvel, lbcodei, nbv
       use global, only : nodecode, nnodecode, noff, logMessage,
      &   allMessage, scratchMessage, INFO, DEBUG, WARNING, ERROR,
-     &   setMessagesource, unsetMessagesource, river_above_msl
+     &   setMessagesource, unsetMessagesource, river_above_msl,
      &   eta1, eta2, etadisc, h0, nolifa
       use nodalattributes, only : loadstartdry, startdry, geoidoffset,
      &   loadgeoidoffset, outputtau0, LoadRiver_et_WSE, river_et_wse,

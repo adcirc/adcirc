@@ -64,11 +64,12 @@ C
 >>>>>>> Subject: Added capability for additional source terms.
       USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE ADC_CONSTANTS, ONLY: G, PI
-      USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
+      USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4, SFCX, SFCY,
+     &    YCSFAC, SFMX, totalAreaCalc
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
      &    NOPE, NVEL, BndBCRiver, LBCODEI, NBV, BARLANHT, BARLANCFSP,
      &    IBCONN, BARINHT, BARINCFSP, BARINCFSB, PIPEHT, PIPECOEF,
-     &    PIPEDIAM, NPEBC
+     &    PIPEDIAM, NPEBC, CSII, SIII
       USE GLOBAL_IO
       USE mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT,
@@ -92,8 +93,6 @@ C
       use hydrology, only : useInteriorHydrology,    !cms 11/20/25
      &    hotstartInteriorHydrology
       USE mod_normal_flow_boundary, ONLY : rotate_normal_flux
-      USE mesh, only: SFCX, SFCY, YCSFAC, SFMX
-      USE boundaries, only: CSII, SIII
       USE RS2,ONLY : RS2INIT,RS2GET    ! sb46.28sb01 added 09/xx/2006
 C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #ifdef ADCNETCDF
