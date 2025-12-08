@@ -188,7 +188,7 @@ Casey 180318: Added NWS=13
 #endif
 !JLW: add subgrid
       use iso_fortran_env, only: output_unit
-      USE subgrid, only: subgridFilename, level0, level1, phi_time_derivative
+      USE subgrid, only: subgridFilename, subgrid_level0, subgrid_level1, phi_time_derivative
       use mod_tidepotential, only: tidePotential, t_tidePotential
       use mod_logging, only: allMessage, logMessage, ERROR, WARNING,
      &   INFO, ECHO, screenUnit, nscreen, nabout, t_log_level,
@@ -226,9 +226,11 @@ C
       real(8) :: k2Value = 0.302D0
       real(8) :: h2Value = 0.609D0
       logical :: UniformResMoonSunTimeData = .false.
+      logical :: level0 = .false.
+      logical :: level1 = .false.
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
-      CHARACTER(len=1024) :: scratchMessage ! message buffer
+      CHARACTER(len=256) :: scratchMessage ! message buffer
 #if defined CSWAN
       ! jgf50.60.09: Namelist for turning SWAN output files on or off
       NAMELIST /SWANOutputControl/ SWAN_OutputHS, SWAN_OutputDIR,
@@ -672,6 +674,8 @@ C.... DMW
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "phi_time_derivative=",phi_time_derivative
       call logMessage(ECHO,trim(scratchMessage))
+      subgrid_level0 = level0
+      subgrid_level1 = level1
       rewind(15)
 
 c...  tcm v52.30.01 Addtions for Using Smagorinsky Namelist Options
@@ -6322,7 +6326,7 @@ C-----------------------------------------------------------------------
         CHARACTER(200) :: filename_netcdf
         CHARACTER(20)  :: const_name
         CHARACTER(20)  :: dmy_char
-        CHARACTER(1024) :: scratchMessage
+        CHARACTER(256) :: scratchMessage
         CHARACTER,ALLOCATABLE :: sal_const(:,:)
 
         IF(NTIP.EQ.2) THEN

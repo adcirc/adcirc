@@ -1006,7 +1006,7 @@ C
       INTEGER NumNodesNotDefault ! number of individual nodes to specify
       LOGICAL SkipDataSet ! .true. if a data set in unit 13 is not needed
       CHARACTER(len=80) Skipped ! data in unit 13 we do not need
-      CHARACTER(len=1024) :: scratchMessage
+      CHARACTER(len=256) :: scratchMessage
       INTEGER L                 ! line counter
 C
       ! temp array; used to load a real from the file,
@@ -2193,7 +2193,7 @@ C     ----------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: ICN, I1, I2, IBND, NNBB1, NNBB2
       REAL(8) :: X1, Y1, X2, Y2, WIDTH, BE1, BE2
-      CHARACTER(1024) :: scratchMessage
+      CHARACTER(256) :: scratchMessage
 
       WetPerimWidth = 0.D0
       WetPerimBankElev = 0.D0
@@ -2272,7 +2272,7 @@ C     ----------------------------------------------------------------
      &     IFNLFA, NP, TK)
       USE GLOBAL, ONLY: MLD, DTDP
 !JLW: incorporate subgrid
-      USE subgrid, ONLY: level0, level1
+      USE subgrid, ONLY: subgrid_level0, subgrid_level1
      &   , cmfVertETA2, cfVertETA2, subgridVertList
      &   , wetDepthVertETA2
 C      USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
@@ -2316,9 +2316,9 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
       IF (LoadManningsN) THEN
          DO I=1, NP
 !JLW: adding subgrid
-            IF(level0)THEN
+            IF(subgrid_level0)THEN
                IF(subgridVertList(I).EQ.1)THEN
-                  IF(level1)THEN
+                  IF(subgrid_level1)THEN
                      FRIC(I) = cmfVertETA2(I)
                   ELSE
                      FRIC(I) = cfVertETA2(I)
@@ -2400,7 +2400,7 @@ C     .. Step 1. Apply friction arising from turbulent viscous interaction
 C        with the sea floor.
          DO I=1, NP
             UV1 = SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
-            IF(level0)THEN
+            IF(subgrid_level0)THEN
                H1 = wetDepthVertETA2(I)
             ELSE
                H1  = DP(I) + IFNLFA*ETA2(I)

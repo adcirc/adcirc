@@ -277,7 +277,7 @@
         REAL(8),intent(in)    :: PRdeflt
         REAL(8)               :: RHOWATG,EyePressure
         INTEGER                :: I,J,S,XI,YI
-        CHARACTER(1024)        :: filename,errorVar,scratchMessage
+        CHARACTER(256)         :: filename,errorVar,scratchMessage
         INTEGER                :: iounit
         REAL(8)               :: uu,vv,pp
         REAL(8)               :: w1,w2,w3,w4
@@ -611,7 +611,7 @@
         CHARACTER(*),INTENT(IN)          :: filename
         REAL(8),INTENT(IN)               :: prbk
         TYPE(OCEANWEATHER),INTENT(INOUT) :: obj
-        CHARACTER(1024)                  :: scratchMessage
+        CHARACTER(256)                   :: scratchMessage
 
         LOG_SCOPE_TRACED("owi_setEndOfFileBlankSnap", WIND_TRACING)
 
@@ -1127,7 +1127,7 @@
       CHARACTER(*),INTENT(IN)          :: errorVar
       CHARACTER(*),INTENT(IN)          :: filename
       INTEGER,INTENT(IN),OPTIONAL      :: unitnumber
-      CHARACTER(1024)                  :: scratchMessage
+      CHARACTER(256)                   :: scratchMessage
 
       LOG_SCOPE_TRACED("check_owi_err", WIND_TRACING)
 
