@@ -180,10 +180,10 @@
       USE mod_logging,ONLY : allMessage, DEBUG, t_log_scope, init_log_scope
       USE NETCDF_ERROR, ONLY: CHECK_ERR
 
-      CHARACTER(LEN=15)  :: NWS13ColdStartString = "99999999.999999"
-      CHARACTER(LEN=1000)  :: NWS13File = "fort.22.nc"
-      CHARACTER(LEN=3)   :: NWS13GroupForPowell = "0"
-      CHARACTER(LEN=10)  :: NWS13WindMultiplier = "1.0"
+      CHARACTER(LEN=15)  :: NWS13ColdStartString
+      CHARACTER(LEN=1000)  :: NWS13File
+      CHARACTER(LEN=3)   :: NWS13GroupForPowell
+      CHARACTER(LEN=10)  :: NWS13WindMultiplier
       CHARACTER(LEN=100) :: GroupNames(30)
 
       INTEGER :: ColdStartInMinutesSinceWindRefDateTime

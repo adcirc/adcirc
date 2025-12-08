@@ -1335,9 +1335,6 @@ C     output the global node number to debug the local PE fort.14s
 
 #ifdef VELCHECK
          WarnVelExceeded = 0                
-         IF (IT .EQ. ITIME_BGN) THEN
-            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST CHECK FOR WARNING VELS'
-         ENDIF
          IF(VELMAX.GT.WarnVel) THEN
          
             WRITE(ScreenUnit,3995)
@@ -1397,9 +1394,6 @@ C     output the global node number to debug the local PE fort.14s
      &         message='Elevation exceeded ErrorElev threshold')
          ENDIF
 #ifdef VELCHECK
-         IF (IT .EQ. ITIME_BGN) THEN
-            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST CHECK FOR ERROR VELS'
-         ENDIF
          IF(VELMAX.GT.WarnVel) THEN
             WRITE(ScreenUnit,3996)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
@@ -1420,9 +1414,6 @@ C     output the global node number to debug the local PE fort.14s
 !....DMW 20240109 - WARNING FOR NaNs IN VELOCITY SOLN
       foundNaN = .false.
       DO I = 1,NP
-         IF ((I.EQ.1).AND.(IT.EQ.ITIME_BGN)) THEN
-            WRITE(16,*) 'dmw202401 THIS CODE IS NOW MAKING ITS FIRST CHECK FOR NAN VELS'
-         ENDIF
          IF(ISNAN(UU2(I)).OR.ISNAN(VV2(I))) THEN
             foundNaN = .true.
             IF(NSCREEN.NE.0) THEN

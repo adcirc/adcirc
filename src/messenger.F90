@@ -555,7 +555,7 @@ contains
       use mod_logging, only: t_log_scope, init_log_scope, allMessage
       implicit none
       integer, intent(IN) :: NMSG
-      integer, intent(INOUT) :: IVEC1(NMSG), IVEC2(NMSG)
+      integer, intent(INOUT) :: IVEC1(:), IVEC2(:)
       integer :: N, I, J, NCOUNT, NFINI, TOT
 
       LOG_SCOPE_TRACED("updatei", MESSENGER_TRACING)
@@ -658,7 +658,7 @@ contains
 #endif
       implicit none
       integer, intent(IN) :: NMSG ! number of arrays to pass
-      real(8), intent(INOUT) :: VEC1(NMSG), VEC2(NMSG), VEC3(NMSG)
+      real(8), intent(INOUT) :: VEC1(:), VEC2(:), VEC3(:)
       integer :: j ! loop counter for neighboring subdomains
       integer :: i ! loop counter for nodes shared with a neighboring subdomain
       integer :: nfini ! number of just-completed requests
@@ -913,7 +913,7 @@ contains
       implicit none
 
       integer, intent(IN) :: NMSG
-      real(8), intent(INOUT) :: VEC1(NMSG), VEC2(NMSG), VEC3(NMSG)
+      real(8), intent(INOUT) :: VEC1(:), VEC2(:), VEC3(:)
 
       real(8) :: VECTMP(NNPERBC, NMSG); 
       if (NPERSEG > 0) then
