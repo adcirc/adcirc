@@ -13,13 +13,13 @@
 # <http://www.gnu.org/licenses/>.
 #
 # ######################################################################################################################
-macro(enable_developer_mode)
+function(enable_developer_mode)
   if(ADCIRC_DEVELOPER_MODE)
     add_strict_compiler_flags(${ARGN})
   endif()
-endmacro()
+endfunction()
 
-macro(add_strict_compiler_flags)
+function(add_strict_compiler_flags)
   if(${CMAKE_Fortran_COMPILER_ID} MATCHES "IntelLLVM")
     set(STRICT_FLAGS "-warn all -diag-enable remark -implicit-none")
   elseif(${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU")
@@ -35,4 +35,4 @@ macro(add_strict_compiler_flags)
       set_source_files_properties(${SOURCE_FILE} PROPERTIES COMPILE_FLAGS "${STRICT_FLAGS}")
     endif()
   endforeach()
-endmacro()
+endfunction()
