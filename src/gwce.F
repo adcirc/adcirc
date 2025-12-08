@@ -1626,10 +1626,6 @@ ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
          END IF
          Eta1(I)=Eta2(I)
 C........DMW202401 Add update for flow depth at previous timestep, H1
-         IF ((I.EQ.1).AND.(IT.EQ.ITIME_BGN)) THEN
-            WRITE(16,*) 
-     &         'dmw202401 THIS CODE IS NOW MAKING ITS FIRST SAVE ON H1'
-         ENDIF
          H1(I) = H2(I)
          Eta2(I)=0.0d0
       END DO

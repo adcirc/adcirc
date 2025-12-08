@@ -504,23 +504,32 @@ c     a non-default value we can determine this was the case.
       ELSE
         CALL logMessage(INFO,"The InterpInset namelist was found.")
         found_InterpInset_namelist = .TRUE.
-      
-      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
-      write(scratchMessage,*) "UseInterpInset=",UseInterpInset
-      call logMessage(ECHO,trim(scratchMessage))
+        call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
+        write(scratchMessage,*) "UseInterpInset=",UseInterpInset
+        call logMessage(ECHO,trim(scratchMessage))
       ENDIF
       rewind(15)
 
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       namelistSpecifier = 'owiWindNetcdf'
+      NWS13ColdStartString = "99999999.999999"
+      NWS13File = "fort.22.nc"
+      NWS13GroupForPowell = "0"
+      NWS13WindMultiplier = "1.0"
       read(unit=15,nml=owiWindNetcdf,iostat=ios,iomsg=ios_nml_error_msg)
-      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
-      write(scratchMessage,*) "NWS13File=",trim(adjustl(NWS13File)),
-     & " NWS13ColdStartString=",trim(adjustl(NWS13ColdStartString)),
-     & " NWS13WindMultiplier=",trim(adjustl(NWS13WindMultiplier)),
-     & " NWS13GroupForPowell=",trim(adjustl(NWS13GroupForPowell))
-      call logMessage(ECHO,trim(scratchMessage))
+      if(ios.ne.0)then
+        CALL logMessage(INFO,"The owiWindNetcdf namelist was not found.")
+        call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
+      else  
+        CALL logMessage(INFO,"The owiWindNetcdf namelist was found.")
+        call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
+        write(scratchMessage,*) "NWS13File=",trim(adjustl(NWS13File)),
+     &   " NWS13ColdStartString=",trim(adjustl(NWS13ColdStartString)),
+     &   " NWS13WindMultiplier=",trim(adjustl(NWS13WindMultiplier)),
+     &   " NWS13GroupForPowell=",trim(adjustl(NWS13GroupForPowell))
+        call logMessage(ECHO,trim(scratchMessage))
+      endif  
       rewind(15)
 #endif
 

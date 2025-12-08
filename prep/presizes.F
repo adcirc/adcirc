@@ -775,6 +775,10 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
+      NWS13ColdStartString = "99999999.999999"
+      NWS13File = "fort.22.nc"
+      NWS13GroupForPowell = "0"
+      NWS13WindMultiplier = "1.0"
       READ(UNIT=15,NML=owiWindNetcdf,IOSTAT=IOS)
       IF(IOS.GT.0)THEN
          WRITE(*,*) "INFO: The owiWindNetcdf namelist was not found."
