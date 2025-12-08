@@ -72,15 +72,12 @@ target_include_directories(adcirc_metis PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/meti
 set_target_properties(adcirc_metis PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 if(${CMAKE_C_COMPILER_ID} MATCHES "GNU")
-  # For GCC >= 10, we need to add warning suppressions
-  if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER_EQUAL 10)
-    target_compile_options(
-      adcirc_metis
-      PRIVATE -Wno-implicit-function-declaration
-              -Wno-incompatible-pointer-types
-              -Wno-shift-op-parentheses
-              -Wno-format-security)
-  endif()
+  target_compile_options(
+    adcirc_metis
+    PRIVATE -Wno-implicit-function-declaration
+            -Wno-incompatible-pointer-types
+            -Wno-shift-op-parentheses
+            -Wno-format-security)
 elseif(${CMAKE_C_COMPILER_ID} MATCHES "AppleClang")
   target_compile_options(
     adcirc_metis
