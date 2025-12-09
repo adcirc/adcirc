@@ -501,7 +501,6 @@ C.... End WJP/DW
                AreaIE2=Areas(IE)
                AreaIE =AreaIE2*0.5d0
                AreaIE4=AreaIE2*2.0d0
-               AreaIE3=AreaIE/3.d0      !area/3 for precip and hydro
 !JLW: adding subgrid to water surface elevation gradiant term
                IF(level0)THEN
                   DPAvg = (H1N1+H1N2+H1N3)/3.d0
@@ -1254,6 +1253,7 @@ C
          AreaIE2=Areas(IE)               !2A
          AreaIE=AreaIE2/2.d0             ! A
          AreaIE4=2.d0*AreaIE2            !4A
+         AreaIE3=AreaIE/3.d0      !A/3 cms: precip and hydro
          SFacAvg= SFacEle(IE)
 C..... DW
          ! derivative: accomodate corrected spherical coordinate
@@ -1605,10 +1605,10 @@ C..... DW: begin
 C..... END DW
 
 C...     kmd:  Precipitation (with spherical corrections)
-     &        +AREAIE3*SPM1*(ISN1 + Tau0Avg*IN1)
+     &        +AreaIE3*SPM1*(ISN1 + Tau0Avg*IN1)
 
 C...     cms v56 2025: Interior Hydrology (with spherical corrections)
-     &        +AREAIE3*SPM1*(PSSN1 + Tau0Avg*PSN1)
+     &        +AreaIE3*SPM1*(PSSN1 + Tau0Avg*PSN1)
 
 C...     Assemble forcing for node NM2 (local index j=2)
          Temp_LV_A2=

@@ -36,6 +36,7 @@ C
       USE SIZES
       USE GLOBAL, only: DP1, DP2, eta1, qx2, qy2, tk, etas, eta2, ch1,
 =======
+#include "logging_macros.h"
 !-------------------------------------------------------------------------
 !> PADCIRC VERSION 45.12 03/17/2006
 !> last changes in this file VERSION 45.12
@@ -72,14 +73,12 @@ C
      &    outputsponge, ne_g, usingDynamicWaterLevelCorrection, ndsetse,
 =======
      &    uu2, inundationOutput, esbin2, nspoolv, nscouc, nstac,
-     &    nstac_g, ntrspc, nspoolc, nscoum, bchgtiminc, nscreen,
-     &    screenunit, h0, ntrspe, dt, nspoole, nscouv, np_g,
-     &    outputSponge, ne_g, usingDynamicWaterLevelCorrection, ndsetse,
+     &    nstac_g, ntrspc, nspoolc, nscoum, bchgtiminc, h0, ntrspe, dt, 
+     &    nspoole, nscouv, np_g, outputSponge, ne_g,  ndsetse, 
+     &    usingDynamicWaterLevelCorrection, nspoolge, nscougv, ndsetsv,
 >>>>>>> Subject: Add additional source terms and update style
-     &    nspoolge,
-     &    nscougv, ndsetsv, nspoolgv, use_tvw, nscou_tvw,
-     &    nout_tvw, ndsets_tvw, nspool_tvw, nscougw, ndsetsw, nspoolgw,
-     &    nscougc, c2ddi, iden,
+     &    nspoolgv, use_tvw, nscou_tvw, nout_tvw, ndsets_tvw, nspool_tvw,
+     &    nscougw, ndsetsw, nspoolgw, nscougc, c2ddi, iden, 
 <<<<<<< HEAD
      &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge,
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
@@ -96,14 +95,20 @@ C
      &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, nscouge,
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
      &    ntrspv, nstam_g, nstam, openfileforread, cbaroclinic
+      use mod_io, only: openFileForRead
       use boundaries, only: csii, siii, nbv, neta, nfluxf, nope, nvel,
      &    lbcodei, npebc
-      use mesh, only: sfcx, sfcy, ycsfac, sfmx, totalareacalc
       use mod_normal_flow_boundary, only: rotate_normal_flux
+      use mod_logging, only: t_log_scope, init_log_scope,
+     &    allMessage, DEBUG, screenUnit, nscreen
       use global_3Dvs, only: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       use mesh, only : ne, np, x, y, slam, sfea, ics, dp, nm, mju, aid4,
+<<<<<<< HEAD
 >>>>>>> Subject: Add additional source terms and update style
      &    agrid
+=======
+     &    agrid, sfcx, sfcy, ycsfac, sfmx, totalareacalc
+>>>>>>> Subject: changes necessary for compilation after merging source terms
       use harm
       use wetdry, only : initializeWettingAndDrying
       use wind, only : coldStartMeteorologicalForcing, rsget
@@ -120,7 +125,7 @@ C
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
 =======
       use subdomain, only : subdomainOn, readFort015
-      use adcirc_mod, only : adcirc_terminate
+      USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
       use owi_ice, only : ncice1_init, ncice1_get  !tcm v49.64.01
       use rain, only : useRain, coldstartRainForcing  !cms 11/20/25
       use hydrology, only : useInteriorHydrology,
@@ -180,10 +185,7 @@ C
       ! tcm v50.66.02 additions for time varying bathymetry
       character(80) :: cdum80
 
-      call setMessagesource("coldstart")
-#if defined(coldstart_trace) || defined(all_trace)
-      call allMessage(DEBUG,"enter.")
-#endif
+      LOG_SCOPE_TRACED("coldstart", CSTART_TRACING)
       metOutputOn = .false.
       nonMetOutputOff = .false.
 
@@ -282,7 +284,9 @@ C...
          ios = 0
          call openfileforread(141,trim(inputdir)//'/'//'fort.141',ios)
          if (ios.gt.0) then
-            call adcirc_terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Unable to open fort.141 for time '
+     &                //'varying bathymetry')
          endif
 
          if(nscreen.ne.0.and.myproc.eq.0) write(screenunit,1112)
@@ -556,7 +560,7 @@ C...
       ! Variables include:
       !   elevation (fort.61)
       !   bathymetry (fort.75) -- tcm v50.66.01
-      !   rainfall (fort.94) -- kmd v56 2025
+      !   rain.61 (lun=94) -- cms v56.02 
       !   dynamicWaterLevelCorrection.61  (lun=109) -- jgf
       !-----------------------------------------------------------------
 
@@ -572,7 +576,7 @@ C...
      &            nstae_g, nstae, header61)
             end if
             if (useRain) then
-               call open_gbl_file(94, trim(globaldir)//'/'//'fort.94',
+               call open_gbl_file(94, trim(globaldir)//'/'//'rain.61',
      &         nstae_g, nstae, header61)
             end if
             if (usingDynamicWaterLevelCorrection) then
@@ -704,13 +708,14 @@ C...
 
          ! Write Global Files
          if (.not. write_local_files) then
-         !if (write_local_files.eqv..false.) then
             call open_gbl_file(63, trim(globaldir)//'/'//'fort.63',
      &       np_g, np, header63)
 
             ! tcm v50.66.01 additions for time varying bathymetry
-            call open_gbl_file(76, trim(globaldir)//'/'//'fort.76',
-     &       np_g, np, header63)
+            if (nddt.ne.0) then
+               call open_gbl_file(76, trim(globaldir)//'/'//'fort.76',
+     &         np_g, np, header63)
+            endif
 
             ! jgf47.06 tau0
             !casey 090302: corrected the unit number from 10 to 90.
@@ -738,9 +743,11 @@ C...
             call open_gbl_file(63, trim(localdir)//'/'//'fort.63',
      &         np_g, np, header63)
 
-            !tcm variabel bathy
-            call open_gbl_file(76, trim(localdir)//'/'//'fort.76',
-     &       np_g, np, header63)
+            !tcm variable bathy
+            if (nddt .ne. 0) then
+               call open_gbl_file(76, trim(localdir)//'/'//'fort.76',
+     &         np_g, np, header63)
+            endif
 
             if (outputTau0) then
                call writedomainheader(90,
@@ -912,7 +919,7 @@ c       call dssstup(dt,nt)
 c     endif
 c...
       ! Formatting for screen unit Messages during file reads
- 1112 format(/,1x,79('_'))
+ 1112 format(/,1x,73('_'))
 
 <<<<<<< HEAD
       RETURN
@@ -1154,10 +1161,6 @@ C...  and baroclinic.
             END DO
           ELSE IF (BCFLAG_LNM.EQ.2) THEN
 =======
-#if defined(coldstart_trace) || defined(all_trace)
-      call allMessage(DEBUG,"return.")
-#endif
-      call unsetMessagesource()
 
       return
 !-------------------------------------------------------------------------
@@ -1185,12 +1188,13 @@ C...  and baroclinic.
      &                   tbctime1, tbctime2, q_heat1, q_heat2,
      &                   lnm_bc, lnm_bc1, lnm_bc2, rivbctiminc,
      &                   rivbctime1, rivbctime2,
-     &                   rivbcstatim, DEBUG, setMessageSource,
-     &                   unsetMessageSource, allMessage, np_g
+     &                   rivbcstatim, np_g
+      USE mod_logging, ONLY : t_log_scope, init_log_scope, allMessage, DEBUG
+      USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
       use mesh, only : np, agrid
       use boundaries, only : neta, nope, nbd,
      &  totalbcrivernodes, bndbcriver
-      use adcirc_mod, only : adcirc_terminate
+
       implicit none
 
       integer :: irtype
@@ -1207,25 +1211,17 @@ C...  and baroclinic.
       integer :: iindx
       real(8), allocatable :: tmp(:,:)
 
-      call setMessageSource("coldstart_3d")
-#if defined(coldstart_trace) || defined(all_trace)
-      call allMessage(DEBUG,"enter.")
-#endif
+      LOG_SCOPE_TRACED("coldstart_3D", CSTART_TRACING)
 
       ! Define format statements used to initialize 3D output files
  499  format(1x,a32,2x,a24,2x,a24)
 
-
       ! If a baroclinic run, read in initial density field
       if (cbaroclinic.and..not.c3dvs) then
-         if((nscreen.ne.0).and.(myproc.eq.0)) then
-            write(16,*) "CBaroclinic is ",CBaroclinic
-            write(16,*) "CB3DVS is ",c3dvs
-            write(16,*)
-     &           "ERROR: 2DDI baroclinic runs not ",
-     &           "currently supported."
-         endif
-         call adcirc_terminate()
+         write(16,*) "CBaroclinic is ",CBaroclinic
+         write(16,*) "CB3DVS is ",c3dvs
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='2DDI baroclinic runs not currently supported.')
       endif
 
       if(cbaroclinic .and. c3dvs) then
@@ -1245,7 +1241,9 @@ C...  and baroclinic.
      &           /,2x,'***** nvn = ',i4,' must match nfen = ',i4,
      &           ' *****',
      &           /,10x,'****** RUN TERMINATED ******')
-            call adcirc_terminate()
+            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &         message='Invalid input in density initial '
+     &                //'condition file (unit 11). NVN must match NFEN.')
          endif
          do ihn=1,np
             do ivn=1,nfen
@@ -1588,8 +1586,8 @@ C----------------------------------------------------------------------
       if((iden.eq.2).or.(iden.eq.3)) irtype=2
       if(iden.eq.4) irtype=3
       ! jgf46.27 replaced irtype with iden in header.
-      ! kmd48.33bc - add INFOrmation for file containing the
-      !    top temperature boundary condition INFOrmation
+      ! kmd48.33bc - add information for file containing the
+      !    top temperature boundary condition information
       ! arash
       call initOutput3D(44, i3dgd, ndset3dgd, np, np_g,
      &                  nspo3dgd, iden, i3dgdrec)
@@ -1631,11 +1629,6 @@ C----------------------------------------------------------------------
 
       ! Set up a few final odds and ends for a 3D run
       call vsstup ()
-
-#if defined(coldstart_trace) || defined(all_trace)
-      call allMessage(DEBUG,"return.")
-#endif
-      call unsetMessagesource()
 
       return
 !----------------------------------------------------------------------
@@ -1685,20 +1678,19 @@ C----------------------------------------------------------------------
       use subgrid, only: level0, readsubgridlookup
      &                   , getvertlookup
 =======
-      use adcirc_mod, only : adcirc_terminate
+      use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
       use mesh, only : dp, np, mju, ne, nm
       use boundaries, only : nvel, lbcodei, nbv
-      use global, only : nodecode, nnodecode, noff, logMessage,
-     &   allMessage, scratchMessage, INFO, DEBUG, WARNING, ERROR,
-     &   setMessagesource, unsetMessagesource, river_above_msl,
-     &   eta1, eta2, etadisc, h0, nolifa
-      use nodalattributes, only : loadstartdry, startdry, geoidoffset,
-     &   loadgeoidoffset, outputtau0, LoadRiver_et_WSE, river_et_wse,
-     &   bfcdllimit, fric, fgamma, ftheta, manningsn, hbreak,
-     &   loadmanningsn, iflinbf, ifnlbf, ifhybf
+      use global, only : nodecode, nnodecode, noff, h0, nolifa,
+     &   eta1, eta2, EtaDisc, River_above_MSL
+      use mod_logging, only : logMessage, allMessage, t_log_scope,
+     &   init_log_scope, DEBUG, WARNING, INFO, ERROR
+      use nodalattributes, only : loadstartdry, startdry, GeoidOffset,
+     &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE,
+     &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,
+     &   loadManningsN, iflinbf, ifnlbf, ifhybf
       ! jlw: adding subgrid
-      use subgrid, only: level0, readSubgridLookup
-     &                   , getVertLookup
+      use subgrid, only: level0, readSubgridLookup, getVertLookup
 >>>>>>> Subject: Add additional source terms and update style
      &                   , initVar
      &                   , gridDepthVertETA2
@@ -1719,9 +1711,10 @@ C----------------------------------------------------------------------
       real(8) :: HABSMIN
       integer :: numGreater
 =======
+      character(1024) :: scratchMessage
       real(8) :: h1
       real(8) :: habsmin
-      integer :: numgreater
+      integer :: numGreater
 >>>>>>> Subject: Add additional source terms and update style
       integer :: j
       ! jgf52.08.24: investigate reasons why a node was dried by the
@@ -1734,11 +1727,7 @@ C----------------------------------------------------------------------
 <<<<<<< HEAD
       LOG_SCOPE_TRACED("setColdWDSAndWSE", CSTART_TRACING)
 =======
-      call setMessagesource(
-     &   "setcoldwetdrystateandwatersurfaceelevation")
-#if defined(coldstart_trace) || defined(all_trace)
-      call allMessage(DEBUG,"enter.")
-#endif
+      LOG_SCOPE_TRACED("setColdWDSAndWSE", CSTART_TRACING)
 >>>>>>> Subject: Add additional source terms and update style
 
       habsmin = h0*0.8d0
@@ -1876,7 +1865,7 @@ C----------------------------------------------------------------------
                if (nnodecode(i).eq.0) then
                   if (dryReasonInitialized(i).eqv..false.) then
                      write(dryReason(i),
-     &            '("node=",i0," this node is dry for no good reason.")') i
+     &            '("node=",i0," this node is dry for no good reason.")') 
                   dryReasonInitialized(i) = .true.
                   endif
                   call logMessage(DEBUG,trim(dryReason(i)))
@@ -1928,9 +1917,9 @@ C----------------------------------------------------------------------
      &      message='Subgrid calculation requires building '
      &             //'with netcdf enabled')
 =======
-         call allMessage(ERROR, "subgrid calculation requires building"
-     &                          //"with netcdf enabled")
-         call adcirc_terminate()
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Subgrid calculation requires building '
+     &             //'with netcdf enabled')
 >>>>>>> Subject: Add additional source terms and update style
 #endif
       else
@@ -2040,10 +2029,6 @@ C----------------------------------------------------------------------
       nodecode(1:np) = nnodecode(1:np)
       eta1(:) = eta2(:)
 
-#if defined(coldstart_trace) || defined(all_trace)
-      call allMessage(DEBUG,"return.")
-#endif
-      call unsetMessagesource()
 !----------------------------------------------------------------------
 >>>>>>> Subject: Add additional source terms and update style
       end subroutine setColdWetDryStateAndWaterSurfaceElevation

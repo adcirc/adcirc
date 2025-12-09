@@ -630,12 +630,13 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       ! outputFort48
 #ifndef ADCNETCDF
       outputFort48 = .FALSE.
-      call allMessage(WARNING, "outputFort48 parameter is not "//
-     &     "supported without NetCDF output enabled.")
+      call allMessage(WARNING, 'outputFort48 parameter is not'//
+     &    ' supported without NetCDF output enabled.')
 #endif
       WRITE(scratchMessage,*) "outputFort48=",outputFort48
       CALL logMessage(ECHO,TRIM(scratchMessage))
       REWIND(15)
+
       !
       ! jgf52.05: Add a namelist for the user to control
       ! output of NODECODE and NOFF.

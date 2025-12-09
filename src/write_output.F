@@ -1130,7 +1130,7 @@ C... v49.64.01 tcm -- added for ice stations
          if (useRain) then
             call real_field_allocate( NOUTE, RainStaOut_g, NSTAE_G ) ;
          end if
-      end if 
+      end if
       rainSpool = NSCOUE  ! don't share spool counters
       RainStaDescript % lun                     = 94
       RainStaDescript % specifier               = NOUTE
@@ -1144,7 +1144,7 @@ C... v49.64.01 tcm -- added for ice stations
       RainStaDescript % field_name              = 'Applied_rainfall'
       RainStaDescript % file_basename           = 'rain'
       RainStaDescript % file_extension          = 61
-      RainStaDescript % isStation               = .true. 
+      RainStaDescript % isStation               = .true.
       RainStaDescript % startTimeStep           = NTCYSE
       RainStaDescript % endTimeStep             = NTCYFE
       RainStaDescript % outputTimeStepIncrement = NSPOOLE
@@ -1153,16 +1153,16 @@ C... v49.64.01 tcm -- added for ice stations
       RainStaDescript % interp_fac1             => STAIE1
       RainStaDescript % interp_fac2             => STAIE2
       RainStaDescript % interp_fac3             => STAIE3
-      IF (ICS.eq.1) THEN 
+      IF (ICS.eq.1) THEN
          RainStaDescript % x_coord              => XEL ! orig coords
          RainStaDescript % y_coord              => YEL
-      ELSE 
+      ELSE
          RainStaDescript % x_coord              => SLEL ! radians
          RainStaDescript % y_coord              => SFEL
-      END IF 
-      IF (.NOT. useRain) THEN 
+      END IF
+      IF (.NOT. useRain) THEN
         RainStaDescript % writeFlag             =.false.
-      END IF 
+      END IF
 
 
       ! Casey 090302: Copied these lines for the rads.64 file.
@@ -1897,6 +1897,7 @@ C----------------------------------------------------------------------
       USE GLOBAL_IO, ONLY: storeOne, storeTwo,
      &    packOne, unpackOne, packTwo, unpackTwo
       USE NodalAttributes, ONLY : LoadEleSlopeLim
+      use rain, only : useRain
 #ifdef CMPI
       USE WRITER, ONLY : sendDataToWriter, flush_writers, writer_init
 #endif
@@ -2025,8 +2026,15 @@ C       for all processors, not just myproc=0.
          ! TURNED ON DURING THE RUN
          IF (LoadEleSlopeLim) THEN
             CALL writeOutArrayMinMax(323, TimeLoc, IT, 1, ESLDescript,
-     &               packOne, unpackOne)  !no time stamps so only one pack/unpack
+     &               packOne, unpackOne)  !no time: only one (un)pack
          ENDIF
+         ! kmd v55 add for total precipitation arrays (no time)
+         IF (useRain) THEN 
+            CALL writeOutArrayMinMax(324, TimeLoc, IT, 1,
+     &         RainAppDescript, packOne, unpackOne)
+            CALL writeOutArrayMinMax(325, TimeLoc, IT, 1,
+     &         RainTotDescript, packOne, unpackOne)
+         END IF 
 
 C        OUTPUT THE SWAN MAXIMUM FILES
 #ifdef CSWAN

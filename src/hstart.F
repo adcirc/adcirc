@@ -1602,7 +1602,7 @@ C...
             CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
      &        NSTAE_G, NSTAE, HEADER61)
             if (useRain) then
-               call OPEN_GBL_FILE(94, TRIM(GLOBALDIR)//'/'//'fort.94',
+               call OPEN_GBL_FILE(94, TRIM(GLOBALDIR)//'/'//'rain.61',
      &         NSTAE_G, NSTAE, HEADER61)
             end if
 
@@ -1610,7 +1610,7 @@ C...
             CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61',
      &        NSTAE_G, NSTAE, HEADER61)
             if (useRain) then
-               call OPEN_GBL_FILE(94, TRIM(LOCALDIR)//'/'//'fort.94',
+               call OPEN_GBL_FILE(94, TRIM(LOCALDIR)//'/'//'rain.61',
      &         NSTAE_G, NSTAE, HEADER61)
             end if
          endif
