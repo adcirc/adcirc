@@ -55,7 +55,10 @@ Casey 090820: Be explicit about the size of these REAL variables.
       REAL(4) ,ALLOCATABLE :: ADCIRC_SXX(:,:)
       REAL(4) ,ALLOCATABLE :: ADCIRC_SXY(:,:)
       REAL(4) ,ALLOCATABLE :: ADCIRC_SYY(:,:)
-
+!Angelos
+      REAL(4) ,ALLOCATABLE :: ADCIRC_PX(:,:)
+      REAL(4) ,ALLOCATABLE :: ADCIRC_PY(:,:)
+      REAL(4) ,ALLOCATABLE :: ADCIRC_P(:,:)
 Casey 090302: The interpolation weight controls which value
 C             is taken when information is passed between ADCIRC
 C             and SWAN.  If InterpoWeight = 0, then the value
@@ -102,6 +105,31 @@ C             0 wherever ice reaches/exceeds a threshold value
 
 C-----------------------------------------------------------------------
       CONTAINS
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C       C O M P U T E  W A V E  D R I V E N  S T R E S S E S
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
+      SUBROUTINE ComputeWaveDrivenStresses(AC2,SPCDIR,SPCSIG)
+      USE SwanGridData, ONLY  : nverts
+      USE SWCOMM3, ONLY : MDC, MSC
+
+      IMPLICIT NONE
+
+      REAL(4), INTENT(IN) :: AC2(MDC,MSC,nverts)
+      REAL(4), INTENT(IN) :: SPCDIR(MDC,6)
+      REAL(4), INTENT(IN) :: SPCSIG(MSC)
+
+      LOG_SCOPE_TRACED("ComputeStresses", COUPLE2SWAN_TRACING)
+
+      CALL ComputeRadiationStresses(AC2,SPCDIR,SPCSIG)
+      CALL ComputePxPyP(AC2,SPCDIR,SPCSIG)
+
+      RETURN
+C-----------------------------------------------------------------------
+      END SUBROUTINE ComputeWAVEDrivenStresses
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
@@ -204,15 +232,102 @@ C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E
+C       C O M P U T E  PX PY P
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
+      SUBROUTINE ComputePxPyP(AC2,SPCDIR,SPCSIG)
+
+!Casey 090616: On Jade, there was a problem with getting water depths
+!              from the COMPDA array.  Use ETA2 and DEPTH instead.
+      USE GLOBAL, ONLY        : ETA2, UU2, VV2
+      USE M_GENARR, ONLY      : DEPTH
+      USE SwanGridData, ONLY  : nverts
+      USE SWCOMM3, ONLY       : DDIR, DEPMIN, FRINTF, GRAV, MDC, MSC
+
+      IMPLICIT NONE
+
+!Casey 090616: These REAL variables must be size(4) to match SWAN.
+      REAL(4) :: AC2(MDC,MSC,nverts)
+      INTEGER :: IT
+      REAL    :: JunkR
+      REAL(4) :: SPCDIR(MDC,6)
+      REAL(4) :: SPCSIG(MSC)
+
+      INTEGER :: I, ID, IERR, IS
+      REAL(4) :: DEPLOC
+      REAL(4) :: WK(MSC), CG(MSC), NE(MSC), NED(MSC)
+
+      LOG_SCOPE_TRACED("ComputePxPyP", COUPLE2SWAN_TRACING)
+
+!... (Re)allocate the arrays.
+           IF(.NOT.ALLOCATED(ADCIRC_PX))THEN
+         ALLOCATE(ADCIRC_PX(1:nverts,1:2),STAT=IERR)
+         DO I=1,nverts
+            ADCIRC_PX(I,1) = 0.0
+            ADCIRC_PX(I,2) = 0.0
+         ENDDO
+      ENDIF
+      IF(.NOT.ALLOCATED(ADCIRC_PY))THEN
+         ALLOCATE(ADCIRC_PY(1:nverts,1:2))
+         DO I=1,nverts
+            ADCIRC_PY(I,1) = 0.0
+            ADCIRC_PY(I,2) = 0.0
+         ENDDO
+      ENDIF
+      IF(.NOT.ALLOCATED(ADCIRC_P))THEN
+         ALLOCATE(ADCIRC_P(1:nverts,1:2))
+         DO I=1,nverts
+            ADCIRC_P(I,1) = 0.0
+            ADCIRC_P(I,2) = 0.0
+         ENDDO
+      ENDIF
+!... Loop over the nodes and compute Px,Py,P.
+      DO I=1,nverts
+!... Transfer Px,Py,P from the new time level to the old time level.
+!... Initialize Px,Py,P as zero at all of the nodes.
+         ADCIRC_PX(I,1) = ADCIRC_PX(I,2)
+         ADCIRC_PY(I,1) = ADCIRC_PY(I,2)
+         ADCIRC_P(I,1) = ADCIRC_P(I,2)
+         ADCIRC_PX(I,2) = 0.0
+         ADCIRC_PY(I,2) = 0.0
+         ADCIRC_P(I,2) = 0.0
+!... Compute ratio of group and phase velocity.
+         DEPLOC = DEPTH(I) + ETA2(I)
+         IF(DEPLOC.LE.DEPMIN)THEN
+            CYCLE
+         ENDIF
+         CALL KSCIP1(MSC, SPCSIG, DEPLOC, WK, CG, NE, NED)
+!... Loop over all sigma and theta.
+         DO ID=1,MDC
+            DO IS=1,MSC
+               ADCIRC_PX(I,2) = ADCIRC_PX(I,2)
+     &                   + 2 * SPCDIR(ID,2) * SPCSIG(IS) * WK(IS) 
+     &                   * SPCSIG(IS) * SPCSIG(IS) * AC2(ID,IS,I)
+               ADCIRC_PY(I,2) = ADCIRC_PY(I,2)
+     &                   + 2 * SPCDIR(ID,3) * SPCSIG(IS) * WK(IS)
+     &                   * SPCSIG(IS) * SPCSIG(IS) * AC2(ID,IS,I)
+            ENDDO
+         ENDDO
+         ADCIRC_PX(I,2) = ADCIRC_PX(I,2) * DDIR * FRINTF
+         ADCIRC_PY(I,2) = ADCIRC_PY(I,2) * DDIR * FRINTF
+         ADCIRC_P(I,2) = -UU2(I) * ADCIRC_PX(I,2)
+     &                   -VV2(I) * ADCIRC_PY(I,2)
+      ENDDO
+C-----------------------------------------------------------------------
+      END SUBROUTINE ComputePxPyP
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
 C       C O M P U T E  W A V E  D R I V E N  F O R C E S
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE ComputeWaveDrivenForces
 
-      USE GLOBAL, ONLY: NODECODE, NOFF, RSNX2, RSNY2, IFSFM,
-     &  SWAN_RSNX1, SWAN_RSNY1, SWAN_RSNX2, SWAN_RSNY2
+      USE GLOBAL, ONLY: IFNLFA, NODECODE, NOFF, RSNX2, RSNY2, IFSFM,
+     &  SWAN_RSNX1, SWAN_RSNY1, SWAN_RSNX2, SWAN_RSNY2, ETA2
       USE MESH, ONLY : NE, NM, NP, AREAS, NODELE, NEITABELE,
-     &    FDXE, FDYE, SFacEle, SFMYEle, SFMXEle
+     &    FDXE, FDYE, SFacEle, SFMYEle, SFMXEle, DP
       USE BOUNDARIES, ONLY : NBDV, NBOU, NBVV, NOPE, NVDLL, NVELL
 #ifdef CMPI
       USE SIZES,ONLY:MYPROC
@@ -238,13 +353,17 @@ C-----------------------------------------------------------------------
       REAL(8),ALLOCATABLE :: DSXYDY(:)
       REAL(8),ALLOCATABLE :: DSXYDX(:)
       REAL(8),ALLOCATABLE :: DSYYDY(:)
+      REAL(8),ALLOCATABLE :: DPDX(:)
+      REAL(8),ALLOCATABLE :: DPDY(:)
 
       REAL(8)             :: NCELE
 
       REAL(8),ALLOCATABLE :: TEMP_SXX(:)
       REAL(8),ALLOCATABLE :: TEMP_SXY(:)
       REAL(8),ALLOCATABLE :: TEMP_SYY(:)
-
+!Angelos
+      REAL(8),ALLOCATABLE :: TEMP_P(:)
+      REAL(8) :: HI
       REAL(8) :: TOTALAREA
       REAL(8) :: FDX1, FDX2, FDX3
       REAL(8) :: FDY1, FDY2, FDY3
@@ -276,7 +395,8 @@ C-----------------------------------------------------------------------
          IF(.NOT.ALLOCATED(TEMP_SXX)) ALLOCATE(TEMP_SXX(1:NP))
          IF(.NOT.ALLOCATED(TEMP_SXY)) ALLOCATE(TEMP_SXY(1:NP))
          IF(.NOT.ALLOCATED(TEMP_SYY)) ALLOCATE(TEMP_SYY(1:NP))
-
+!Angelos
+         IF(.NOT.ALLOCATED(TEMP_P)) ALLOCATE(TEMP_P(1:NP))
 !... Loop over all nodes and interpolate the radiation stress for this time step.
          DO IP=1,NP
            TEMP_SXX(IP) = (1.0 - InterpoWeight) * DBLE(ADCIRC_SXX(IP,1))
@@ -285,14 +405,18 @@ C-----------------------------------------------------------------------
      &                 + InterpoWeight * DBLE(ADCIRC_SXY(IP,2))
            TEMP_SYY(IP) = (1.0 - InterpoWeight) * DBLE(ADCIRC_SYY(IP,1))
      &                 + InterpoWeight * DBLE(ADCIRC_SYY(IP,2))
-         ENDDO
-
+           TEMP_P(IP) = (1.0 - InterpoWeight) * DBLE(ADCIRC_P(IP,1))
+     &                 + InterpoWeight * DBLE(ADCIRC_P(IP,2))   !Angelos
+         END DO
 !... Allocate arrays for radiation stress gradients.
          IF(.NOT.ALLOCATED(DSXXDX)) ALLOCATE(DSXXDX(1:NE))
          IF(.NOT.ALLOCATED(DSXYDY)) ALLOCATE(DSXYDY(1:NE))
          IF(.NOT.ALLOCATED(DSXYDX)) ALLOCATE(DSXYDX(1:NE))
          IF(.NOT.ALLOCATED(DSYYDY)) ALLOCATE(DSYYDY(1:NE))
-
+!Angelos
+         IF(.NOT.ALLOCATED(DPDX)) ALLOCATE(DPDX(1:NE))
+         IF(.NOT.ALLOCATED(DPDY)) ALLOCATE(DPDY(1:NE))
+         
 !... Loop over all elements and compute the derivatives of Sxx, Sxy and Syy.
 !... These derivatives are constant on an element.  Note that the AREAS array
 !... actually contains twice the area of each element.
@@ -339,7 +463,16 @@ C..... END DW/WJP
      &                ( TEMP_SYY(Node1) * FDY1   !(X(Node3) - X(Node2))
      &                + TEMP_SYY(Node2) * FDY2   !(X(Node1) - X(Node3))
      &                + TEMP_SYY(Node3) * FDY3 ) !(X(Node2) - X(Node1)) )
+!Angelos
+           DPDX(IE) = (1.D0/AREAS(IE)) *
+     &                ( TEMP_P(Node1) * FDX1   !(Y(Node2) - Y(Node3))
+     &                + TEMP_P(Node2) * FDX2   !(Y(Node3) - Y(Node1))
+     &                + TEMP_P(Node3) * FDX3 ) !(Y(Node1) - Y(Node2)) )
 
+           DPDY(IE) = (1.D0/AREAS(IE)) *
+     &                ( TEMP_P(Node1) * FDY1   !(X(Node3) - X(Node2))
+     &                + TEMP_P(Node2) * FDY2   !(X(Node1) - X(Node3))
+     &                + TEMP_P(Node3) * FDY3 ) !(X(Node2) - X(Node1)) )
          ENDDO
 
 !... Allocate arrays for wave-driven forces.
@@ -395,14 +528,18 @@ C..... END DW/WJP
                ELSE
 
                  NUMFOUND = NUMFOUND + 1
-
-                 SWAN_RSNX2(IP) = SWAN_RSNX2(IP) + 0.5d0*AREAS(NEITABELE(IP,IE))
+                 HI = IFNLFA * ETA2(IP) + DP(IP)
+                 
+                 SWAN_RSNX2(IP) = SWAN_RSNX2(IP) + 
+     &                     0.5d0*AREAS(NEITABELE(IP,IE))
      &                     * ( - DSXXDX(NEITABELE(IP,IE))
-     &                         - DSXYDY(NEITABELE(IP,IE)) )
-                 SWAN_RSNY2(IP) = SWAN_RSNY2(IP) + 0.5d0*AREAS(NEITABELE(IP,IE))
+     &                         - DSXYDY(NEITABELE(IP,IE)) 
+     &                         + HI * DPDX(NEITABELE(IP,IE) )) !Angelos
+                 SWAN_RSNY2(IP) = SWAN_RSNY2(IP) + 
+     &                     0.5d0*AREAS(NEITABELE(IP,IE))
      &                     * ( - DSXYDX(NEITABELE(IP,IE))
-     &                         - DSYYDY(NEITABELE(IP,IE)) )
-
+     &                         - DSYYDY(NEITABELE(IP,IE)) 
+     &                         + HI * DPDY(NEITABELE(IP,IE))) !Angelos
                  TOTALAREA = TOTALAREA + 0.5d0*AREAS(NEITABELE(IP,IE))
 
                ENDIF
@@ -452,7 +589,10 @@ C    can change UL to be a strict value if they please
          IF(ALLOCATED(TEMP_SXX)) DEALLOCATE(TEMP_SXX)
          IF(ALLOCATED(TEMP_SXY)) DEALLOCATE(TEMP_SXY)
          IF(ALLOCATED(TEMP_SYY)) DEALLOCATE(TEMP_SYY)
-
+!Angelos
+         IF(ALLOCATED(DPDX)) DEALLOCATE(DPDX)
+         IF(ALLOCATED(DPDY)) DEALLOCATE(DPDY)
+         IF(ALLOCATED(TEMP_P)) DEALLOCATE(TEMP_P)
       ENDIF
 
       RETURN

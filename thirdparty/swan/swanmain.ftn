@@ -167,7 +167,7 @@
 !PUN      USE SIZES, ONLY: MNPROC      
 !PUN      USE MESSENGER                                                       40.95
 !ADC      USE Couple2Adcirc                                                   41.20
-!ADC      USE Couple2Swan, ONLY: ComputeRadiationStresses,                    41.20
+!ADC      USE Couple2Swan, ONLY: ComputeWaveDrivenStresses,                   41.20
 !ADC     &                       CouplingInterval,
 !ADC     &                       SwanOutput
 !ADC     &                      ,WriteSwanHotStart
@@ -940,7 +940,7 @@
 !ADC!
 !ADC!     --- make sure that radiation stresses are up-to-date                41.20
 !ADC      IF ( IT.NE.MTC ) THEN
-!ADC         CALL ComputeRadiationStresses ( AC2, SPCDIR, SPCSIG )
+!ADC         CALL ComputeWaveDrivenStresses ( AC2, SPCDIR, SPCSIG )
 !ADC      ENDIF
 !
 !TIMG      CALL SWTSTO(1)                                                      40.23
