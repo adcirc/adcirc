@@ -2957,6 +2957,7 @@ Csb...
       allocate ( dp_orig(mnp) )
       allocate ( nm(mne,3))
       allocate ( areas(mne), totalarea(mnp))
+      allocate ( divByTotalArea0(mnp))  !cms v56.02 added for hydrology
       allocate ( nneigh(mnp),mju(mnp),nodele(mnp))
       allocate ( lbarray_pointer(mnp))
 
@@ -3014,6 +3015,7 @@ Csb...
       nm = -99999
       areas = -99999.d0
       totalarea = -99999.d0
+      divByTotalArea0 = -99999.d0
       nneigh = -99999
       mju = -99999
       nodele = -99999

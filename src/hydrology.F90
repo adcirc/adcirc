@@ -470,6 +470,7 @@
               end if
            end do
       end select
+      write(16,*)"  "
 
 3013  format(/,"TYPE   FEATURE      NODE",/)
 3014  format(/,"TYPE   FEATURE      NODE         X             Y",/)
