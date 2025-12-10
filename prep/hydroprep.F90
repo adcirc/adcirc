@@ -12,6 +12,9 @@
 !> more details about these source terms in general, as well as
 !> input requirements and expected files.
 !>
+!> @dependencies
+!> Uses global, memory_usage, mesh, adc_constants, pre_global,
+!>      KDTreeTools
 !>-----------------------------------------------------------------------
 !>  UPDATES:
 !>  Fall 2025: changed from original implementation for type=1 since you
@@ -237,7 +240,7 @@
 
       implicit none
 
-      integer :: nbytes = 0
+      integer(8) :: nbytes = 0
       integer :: I,J,Iproc,Iproc2
       integer :: sdu(nproc) ! subdomain unit numbers
       integer :: indX   ! temp global node ID
@@ -359,8 +362,7 @@
       use mesh, only : cylindermap
       use adc_constants, only : deg2rad
       use pre_global, only : nproc, nelp, imap_el_LG, ics, sl0, sf0
-      use read_global, only : kdtsearch, setup_kdt_search,
-     &    kdtAlreadySetup
+      use KDTreeTools, only : kdtsearch, setup_kdt_search, kdtSetup
       use memory_usage
 
       implicit none
@@ -393,6 +395,7 @@
  
       ! Read fixed number of sources and allocate
       read(428,*) numHydro
+      if(ics.eq.1) then
          allocate ( xps(numHydro),yps(numHydro) )
          nbytes = 8*2*numHydro  ! 2 real array
       else
@@ -424,14 +427,9 @@
       close(428) 
 
       ! Determine which element each source is in
-      if (kdtAlreadySetup) then
-         call kdtsearch(xps,yps,globID,numHydro, & 
-     &        'Interior hydrology Locations ')
-      else
-         call setup_kdt_search()
-         call kdtsearch(xps,yps,globID,numHydro, & 
-     &        'Interior hydrology Locations ')
-      end if
+      if (.not. kdtSetup) call setup_kdt_search()
+      call kdtsearch(xps,yps,globID,numHydro,                           &
+     &          'Interior hydrology Locations ')
             
       ! Determine which PROC each source is on
       print *, " "

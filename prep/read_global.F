@@ -2,21 +2,22 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
+<<<<<<< HEAD
 #include "logging_macros.h"
 C----------------------------------------------------------------------------
 C
@@ -32,37 +33,80 @@ C                 jgf Updated for ADCIRC v45.09  01/09/2006
 C                 jgf Updated for ADCIRC v45.11  01/09/2006
 C                 jgf Updated for ADCIRC v45.12  03/17/2006
 C----------------------------------------------------------------------------
+=======
+#include "logging_macros.h"
+>>>>>>> Subject: Modifications to prep/ for interior hydrology sources.
 
-C
-C  version 1.2 vjp 12/7/99
-c  version 1.3 ral 10/10/01 revisions
-C  version 1.6 meb 3/03 & ral 5/21/03
-C  version 1.7 meb 4/04 added by jgf
-C
-C
-C----------------------------------------------------------------------
-C         S U B R O U T I N E     P R E P   R E A D   1 4
-C----------------------------------------------------------------------
-C     Reads the global ADCIRC grid data file for data decomposition
-C     program ADCPP.  This version compatible with ADCIRC_v34.03
-C     vjp  2/28/98
-C---------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!  MODULE READ_GLOBAL
+!-----------------------------------------------------------------------
+!> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
+!>
+!> @brief Module to handle reading of the global mesh and control files.
+!>
+!> @history
+!>                version 1.2 vjp 12/7/99
+!>                version 1.3 ral 10/10/01 revisions
+!>                version 1.6 meb 3/03 & ral 5/21/03
+!>                version 1.7 meb 4/04 added by jgf
+!>
+!>                 For use with ADCPREP Version 2.1 ( 03/17/2006 )
+!>
+!>                    current for ADCIRC v43.03   5/20/2003
+!>                jgf Updated for ADCIRC v45.07  11/08/2005
+!>                jgf Updated for ADCIRC v45.09  01/09/2006
+!>                jgf Updated for ADCIRC v45.11  01/09/2006
+!>                jgf Updated for ADCIRC v45.12  03/17/2006
+!>                cms Updated for module usage and moved
+!>                    kdtree to separate module  11/25/2025
+!>
+!> @notes
+!>        No module structure existed for this file, so compiler is not
+!>        guaranteed to find subroutines for USE in other modules.
+!>        Encased within a module framework in v56.02
+!>
+!> @deprecated coordToEle() no longer used, could delete
+!-----------------------------------------------------------------------
+      MODULE read_global
+!-----------------------------------------------------------------------
+
+      implicit none
+
+      public :: prepRead14, getMeshParametersXDMF, Read15
+      private :: Read15_3Dvs, coordToEle
+
+
+      CONTAINS
+
+!----------------------------------------------------------------------
+!----------------------------------------------------------------------
+!                             P U B L I C
+!----------------------------------------------------------------------
+!----------------------------------------------------------------------
+
+
+!----------------------------------------------------------------------
+!> @brief Reads global ADCIRC grid file for domain decomposition.
+!>
+!> @author vjp  2/28/98
+!----------------------------------------------------------------------
       subroutine prepRead14()
+!----------------------------------------------------------------------
       use pre_global, only : x, y, dp, nneg, ibtypee, nvdllmsg, nvdll,
-     &   nbdv, nvellmsg, nvell, lbcode, ibtype, nbvv, ibconnr,
-     &   bar1, bar2, bar3, bar4, bar5, bar6, weir, weird, flux14_ary, 
-     &   bcts14_ary, agrid, aperiodic_bc_ts, bndbcriver, exist_bc_ts, 
-     &   exist_flux, iden, mnbou, mnvel, nbou, nboumsg, nelg, neta, 
-     &   netamsg, nfover, nnodg, nope, nopemsg, nvel, nvelmsg, nweir, 
-     &   river_above_msl, numLBCodeValues, nfluxf, node_dict, labels,
-     &   NPERBC, IPERCONN, IPERPTR
+     &    nbdv, nvellmsg, nvell, lbcode, ibtype, nbvv, ibconnr,
+     &    bar1, bar2, bar3, bar4, bar5, bar6, weir, weird, flux14_ary,
+     &    bcts14_ary, agrid, aperiodic_bc_ts, bndbcriver, exist_bc_ts, 
+     &    exist_flux, iden, mnbou, mnvel, nbou, nboumsg, nelg, neta, 
+     &    netamsg, nfover, nnodg, nope, nopemsg, nvel, nvelmsg, nweir, 
+     &    river_above_msl, numLBCodeValues, nfluxf, node_dict, labels,
+     &    NPERBC, IPERCONN, IPERPTR
       use presizes, only: meshHasWeirWithPipes, meshHasExternalWeir, 
-     &   meshHasInternalWeir
+     &    meshHasInternalWeir
       use hashtable
       use memory_usage
       use boundaries, only: ibconnr_bc => ibconnr, barinhtr, barlanhtr,
-     &                      barlancfspr, barincfsbr, barincfspr, pipehtr, 
-     &                      pipediamr, pipecoefr
+     &    barlancfspr, barincfsbr, barincfspr, pipehtr, pipediamr,
+     &    pipecoefr
       implicit none
 
       integer(8) :: nbytes = 0
@@ -510,24 +554,34 @@ C---------------------------------------------------------------------
      &                   ERROR, DEBUG, INFO, screenUnit
 =======
       use adc_constants, only : deg2rad
+<<<<<<< HEAD
       USE GLOBAL, ONLY : parse, hss, STATNAME, STATNAMEV, STATNAMEM,
      &    STATNAMEC
       USE MOD_LOGGING, ONLY : allMessage, t_log_scope, init_log_scope,
      &    logMessage, screenMessage, screenUnit, ERROR, DEBUG, INFO
 >>>>>>> Subject: Add rain and interiorHydrology sources, update kdtsearch.
+=======
+      USE GLOBAL, ONLY : parse, hss, STATNAME, STATNAMEV, STATNAMEM
+     &    STATNAMEC
+      USE MOD_LOGGING, ONLY : allMessage, t_log_scope, init_log_scope,
+     &    logMessage, screenMessage, screenUnit, ERROR, DEBUG, INFO
+>>>>>>> Subject: Modifications to prep/ for interior hydrology sources.
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &    THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV, IHARIND, CHARMV,
      &    ALLOC_MAIN14
       USE PREP_WEIR
       USE NODALATTRIBUTES, ONLY : outputTau0
-      ! cms 11/25/25: add rain and interior hydrology source terms
+      ! cms 56.02 : add rain and interior hydrology source terms
       use rainPrep, only : found_rainControl_nml, rainfallControl,
      &         useRain, rainType, rainTimeInc, activeRainType
       use hydroPrep, only : found_hydroControl_nml,
      &         useInteriorHydrology, interiorHydrologyType,
      &         interiorHydrologyTimeInc, useInteriorHydrologyRamp,
      &         interiorHydrologyControl
+      ! cms 56.02: moved kdtree subs to KDTreeTools module
+      use KDTreeTools, only : setup_kdt_search, kdtsearch, kdtSetup
       use memory_usage
+
       IMPLICIT NONE
 
 C    ===================================================================
@@ -570,11 +624,6 @@ Casey 180318: Added NWS=13
       INTEGER :: IOS_NWS14Grib2NC
 
       INTEGER :: IOS_TIPNL 
-
-      ! cms 11/25/25 Added for check of KDtree status - still need to
-      ! think about adding IF statements around the calls to kdtsearch
-      ! will numStations = 0 cause trouble?
-      logical :: kdtAlreadySetup = .false.
 
 C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
@@ -1558,7 +1607,8 @@ C
             NSTAE = ABS(NSTAE2)  !RESET THE VALUE TO WHAT'S IN THE FILE
          ENDIF
 7690     IF (IOS_STATIONS .NE. 0) THEN
-            WRITE(*,*) "Error in Reading Elevation Station File: elev_stat.151"
+            WRITE(*,*) "Error in Reading Elevation Station File: ",
+     &                 "elev_stat.151"
             CALL EXIT(1)  ! there is a stop here
          ENDIF
       ELSE
@@ -1636,11 +1686,14 @@ C--For Each Elevation Station:
 C  Find the Global Index of the element it lies in.
 C
 c...tcm v49.48.01 replace with new call to kdtsearch
+C   cms 56.02 add check for NSTAE (ABS already taken above)
 !      CALL CoordToEle(XEL,YEL,NNSEG,NSTAE,
 !     &     'Elevation recording station   ')
-      call setup_kdt_search()
-      call kdtsearch(XEL,YEL,NNSEG,abs(NSTAE),
+      if (NSTAE > 0) then
+         call setup_kdt_search()   ! first call
+         call kdtsearch(XEL,YEL,NNSEG,abs(NSTAE),
      &     'Elevation recording station   ')
+      end if
 C
 C--Read Velocity Recording Stations
 C
@@ -1666,7 +1719,8 @@ C
             NSTAV = ABS(NSTAV2)  !RESET THE VALUE TO WHAT'S IN THE FILE
          ENDIF
 7691     IF (IOS_STATIONS .NE. 0) THEN
-            WRITE(*,*) "Error in Reading Velocity Station File: vel_stat.151"
+            WRITE(*,*) "Error in Reading Velocity Station File: ",
+     &                 "vel_stat.151"
             CALL EXIT(1)  ! there is a stop here
          ENDIF
       ELSE
@@ -1744,12 +1798,15 @@ C
 C--For Each Velocity Station:
 C  Find the Global Index of the element it lies in.
 C
-c...tcm v49.48.01 replace with new call to kdtsearch
+c...tcm v49.48.01 replacsetupe with new call to kdtsearch
+C   cms 56.02 added check for NSTAV and kdtSetup
 !      CALL CoordToEle(XEV,YEV,NNSVG,NSTAV,
 !     &     'Velocity recording station    ')
-      call kdtsearch(XEV,YEV,NNSVG,abs(NSTAV),
+      if (NSTAV > 0) then
+         if (.not. kdtSetup) call setup_kdt_search()
+         call kdtsearch(XEV,YEV,NNSVG,abs(NSTAV),
      &     'Velocity recording station    ')
-
+      end if
 C
 C     If Passive Transport is indicated, then read Concentration Station Info
 C
@@ -1766,7 +1823,7 @@ C
         READ(NSTACMSG,*) NSTAC
        !tcm v51.20.03 -- addition for external Concentration station file
         if (NSTAC < 0 ) then
-           WRITE(*,*) "External File Used for Concentration Station Locations"
+           WRITE(*,*) "External File Used for Concentration Stations"
            USE_CONC_STAT_FILE = .TRUE.
            IOS_STATIONS = 0
            NSTAC = ABS(NSTAC) !RESET TO POSITIVE
@@ -1777,11 +1834,12 @@ C
               NSTAC = ABS(NSTAC2)  !RESET THE VALUE TO WHAT'S IN THE FILE
            ENDIF
 7692       IF (IOS_STATIONS .NE. 0) THEN
-              WRITE(*,*) "Error in Reading Concentration Station File: conc_stat.151"
+              WRITE(*,*) "Error in Reading Concentration Station File: ",
+     &                   "conc_stat.151"
               CALL EXIT(1)  ! THERE IS A STOP HERE
            ENDIF
         ELSE
-           WRITE(*,*) "Concentration Station Locations Contained in fort.15"
+           WRITE(*,*) "Concentration Station Locs Contained in fort.15"
         ENDIF
 
         IF (ABS(NSTAC).GT.MNSTAC) THEN
@@ -1811,10 +1869,14 @@ C--For Each Concentration Recording Station:
 C  Find the Global Index of the element it lies in.
 C
 c...tcm v49.48.01 replace with new call to kdtsearch
+C   cms 56.02 added test for NSTAC
 !         CALL CoordToEle(XEC,YEC,NNSCG,NSTAC,
 !     &        'Concentration station         ')
-         call kdtsearch(XEC,YEC,NNSCG,abs(NSTAC),
-     &        'Concentration station         ')
+        if (NSTAC > 0) then
+           if (.not. kdtSetup) call setup_kdt_search() 
+           call kdtsearch(XEC,YEC,NNSCG,abs(NSTAC),
+     &          'Concentration station         ')
+        endif
 C
       ENDIF
 C
@@ -1846,7 +1908,8 @@ C
                NSTAM = ABS(NSTAM2)  !RESET THE VALUE TO WHAT'S IN THE FILE
             ENDIF
 7693        IF (IOS_STATIONS .NE. 0) THEN
-               WRITE(*,*) "Error in Reading MET Station File: met_stat.151"
+               WRITE(*,*) "Error in Reading MET Station File: ",
+     &                    "met_stat.151"
                CALL EXIT(1)  ! THERE IS A STOP HERE
             ENDIF
          ELSE
@@ -1854,7 +1917,7 @@ C
          ENDIF
 
          IF (ABS(NSTAM).GT.MNSTAM) THEN
-            print *, "NSTAM = ",abs(NSTAM), " exceeds parameter MNSTAM = ",
+            print *, "NSTAM = ",abs(NSTAM), " exceeds MNSTAM = ",
      &           MNSTAM
             CALL EXIT(1)
          ENDIF
@@ -1926,11 +1989,15 @@ C--For Each Meterological Recording Station:
 C  Find the Global Index of the element it lies in.
 C
 c...tcm v49.48.01 replace with new call to kdtsearch
+C   cms 56.02 added test for NSTAM
 !         CALL CoordToEle(XEM,YEM,NNSMG,NSTAM,
 !     &        'Meteorological station        ')
-         call kdtsearch(XEM,YEM,NNSMG,abs(NSTAM),
-     &         'Meteorological station        ')
-C
+         if (NSTAM > 0) then
+            if (.not. kdtSetup) call setup_kdt_search()
+            call kdtsearch(XEM,YEM,NNSMG,abs(NSTAM),
+     &           'Meteorological station        ')
+         endif
+
       ENDIF
 C
 C
@@ -2126,6 +2193,11 @@ C
  80   FORMAT(A80)
       END SUBROUTINE READ15
 
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!                             P R I V A T E
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
 C     Reads the 3DVS portion of the global ADCIRC Input Data File for
@@ -2140,6 +2212,8 @@ C---------------------------------------------------------------------
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET, SIGMA,
      &    FEGRIDS, I3DGB
       USE MESH, only : CYLINDERMAP
+      ! cms 56.02 moved kdt subs to separate module
+      use KDTreeTools, only : setup_kdt_search, kdtsearch, kdtSetup
       use memory_usage
       IMPLICIT NONE
       integer(8) :: nbytes = 0
@@ -2329,6 +2403,7 @@ C     the corresponding element.
 c...tcm v49.48.01 replace with new call to kdtsearch
 !         CALL CoordToEle(X3DD,Y3DD,NNS3DDG,NSTA3DD,
 !     &        '3D density recording station  ')
+          if (.not. kdtSetup) call setup_kdt_search()  !cms 56.02
           call kdtsearch(X3DD,Y3DD,NNS3DDG,NSTA3DD,
      &           '3D density recording station  ')
 
@@ -2390,7 +2465,8 @@ C     the corresponding element.
 c...tcm v49.48.01 replace with new call to kdtsearch
 !         CALL CoordToEle(X3DV,Y3DV,NNS3DVG,NSTA3DV,
 !     &        '3D velocity recording station ')
-          call kdtsearch(X3DV,Y3DV,NNS3DVG,NSTA3DV,
+         if (.not. kdtSetup) call setup_kdt_search()  !cms 56.02
+         call kdtsearch(X3DV,Y3DV,NNS3DVG,NSTA3DV,
      &           '3D velocity recording station ')
       ENDIF
 C     -----------------------------------------------------
@@ -2450,7 +2526,8 @@ C     the corresponding element.
 c...tcm v49.48.01 replace with new call to kdtsearch
 !         CALL CoordToEle(X3DT,Y3DT,NNS3DTG,NSTA3DT,
 !     &        '3D turbulence rec. station    ')
-          CALL KDTSEARCH(X3DT,Y3DT,NNS3DTG,NSTA3DT,
+         if (.not. kdtSetup) call setup_kdt_search()
+         CALL KDTSEARCH(X3DT,Y3DT,NNS3DTG,NSTA3DT,
      &        '3D turbulence rec. station    ')
 
       ENDIF
@@ -2568,183 +2645,10 @@ C----------------------------------------------------------------------
       END SUBROUTINE READ15_3DVS
 C----------------------------------------------------------------------
 
-C----------------------------------------------------------------------
-C         S U B R O U T I N E    S E T U P K D T S E A R C H
-C----------------------------------------------------------------------
-C
-C  tcm v49.48.01 Subroutine that creates a global list of element
-C             center's and a global list of the size of an
-C             element's radius
-C  Written by:  Chris Massey, USACE-ERDC-CHL, Vicksburg, MS 39056
-C
-C----------------------------------------------------------------------
-      subroutine setup_kdt_search
-      use pre_global, only : SLAM,SFEA,NNEG,RMAX,BCXY,NELG
-
-      implicit none
-      integer :: i
-      integer :: ielm(3)
-      real(8) :: xelm(3),yelm(3),shplocal(7)
-
-      do i=1,NELG
-         ielm(:) = NNEG((/1,2,3/),i)  !element's node numbers
-         xelm(:) = slam(ielm(:))      !element's vertex x-values
-         yelm(:) = sfea(ielm(:))      !element's vertex y-values
-         shplocal(1)= yelm(2)-yelm(3)
-         shplocal(2)= yelm(3)-yelm(1)
-         shplocal(3)= yelm(1)-yelm(2)
-         shplocal(4)= xelm(3)-xelm(2)
-         shplocal(5)= xelm(1)-xelm(3)
-         shplocal(6)= xelm(2)-xelm(1)
-         shplocal(7)= shplocal(1)*shplocal(5)
-     &                   - shplocal(2)*shplocal(4)
-
-!        compute the radius of the circle that circumscribes
-!        the triangle then scale it by 50% larger to allow for
-!        a buffer later on
-         rmax(i)=1.50D0*( sqrt(shplocal(6)*shplocal(6)+
-     &                         shplocal(3)*shplocal(3))*
-     &                    sqrt(shplocal(4)*shplocal(4)+
-     &                         shplocal(1)*shplocal(1))*
-     &                    sqrt(shplocal(5)*shplocal(5)+
-     &                         shplocal(2)*shplocal(2))/
-     &                     (2.d0*shplocal(7)) )
-!        Compute the barycenter of the element
-          bcxy(1,i) = sum(xelm)/3.d0
-          bcxy(2,i) = sum(yelm)/3.d0
-       enddo !i
-
-      kdtAlreadySetup = .true.
-
-      return
-C----------------------------------------------------------------------
-      end subroutine setup_kdt_search
-C----------------------------------------------------------------------
-
-C----------------------------------------------------------------------
-C         S U B R O U T I N E    K D T S E A R C H
-C----------------------------------------------------------------------
-C
-C  tcm v49.48.01 Subroutine that uses the KDTREE2 algorithm for
-C             finding what element a point lies in.
-C  Written by:  Chris Massey, USACE-ERDC-CHL, Vicksburg, MS 39056
-C
-C----------------------------------------------------------------------
-      subroutine kdtsearch(XCoords,YCoords,FDEle,NumofStations,Desc)
-      use PRE_Global
-      use kdtree2_module
-
-      implicit NONE
-      INTEGER, intent(in) :: NumOfStations                     ! total
-      REAL(8), intent(in), dimension(NumOfStations) :: XCoords ! cartesian
-      REAL(8), intent(in), dimension(NumOfStations) :: YCoords ! cartesian
-      INTEGER, intent(out), dimension(NumOfStations):: FDEle   ! FullDomain
-      CHARACTER(len=30), intent(in) :: Desc                    ! description
-
-      INTEGER :: I,itc,iek
-      INTEGER :: ielm(3)
-      real(8) :: Xsta,Ysta,dist
-      real(8) :: x1,x2,x3,y1,y2,y3,A1,A2,A3,AA,AREASK,AE
-      real(8) :: elmmin(2),xelm(3),yelm(3)
-      TYPE(KDTREE2), POINTER :: TREE
-      TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
-      LOGICAL ElementFound  ! .true. when a corresponding element is found
-      INTEGER ClosestElement  ! element with closest match
-      REAL(8), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match
-
-      ElementFound = .false.
-
-!    Be sure the maximum search depth is not larger than
-!    the number of elements being kept
-      if (nelg.lt.srchdp) srchdp = nelg
-
-!     Create the search tree
-      tree => kdtree2_create(bcxy,rearrange=.true.,sort=.true.)
-
-!     allocate space for the search results from the tree
-      allocate(KDRESULTS(srchdp))
-
-
-      do I = 1, NumOfStations
-         Xsta = XCoords(I)
-         Ysta = YCoords(I)
-         ElementFound = .false.
-
-        ! Find the srchdp nearest elements to this point
-         call kdtree2_n_nearest(tp=tree,qv=(/Xsta,Ysta/),
-     &                  nn=srchdp,results=KDRESULTS)
-         itc = 1
-         ClosestElement = KDRESULTS(itc)%idx
-!       Check to see if the point lies with rmax of any of these elements
-         elmmin = minval(sqrt(KDRESULTS(1:srchdp)%dis)
-     &                              - rmax(KDRESULTS(1:srchdp)%idx) )
-         if(elmmin(1).le.0.0D0) then  ! Point lies within search radius of an element
-!           loop through the elements in the search list
-            do while ((ElementFound.eqv..false.).and.(itc.le.srchdp))
-               iek = KDRESULTS(itc)%idx  !Current search element number
-!              Get the distance from this point to the barycenter of the
-!              current element
-               dist = sqrt(KDRESULTS(itc)%dis)
-!              If the distance is less than or equal to rmax (rmax=1.5*element radius)
-!              Then the point is near the element and might be in it
-!              Proceed with the weights test
-               if(dist-rmax(iek).le.0.0d0) then
-                  !get the shape function for this element
-                  ielm(:) = NNEG((/1,2,3/),iek)  !element's node numbers
-                  xelm(:) = slam(ielm(:))      !element's vertex x-values
-                  yelm(:) = sfea(ielm(:))      !element's vertex y-values
-                  X1=xelm(1)
-                  X2=xelm(2)
-                  X3=xelm(3)
-                  Y1=yelm(1)
-                  Y2=yelm(2)
-                  Y3=yelm(3)
-                  A1=(Xsta-X3)*(Y2-Y3)+(X2-X3)*(Y3-Ysta)
-                  A2=(Xsta-X1)*(Y3-Y1)-(Ysta-Y1)*(X3-X1)
-                  A3=(Ysta-Y1)*(X2-X1)-(Xsta-X1)*(Y2-Y1)
-                  AA=ABS(A1)+ABS(A2)+ABS(A3)
-                  AREASK=X2*Y3+X1*Y2+X3*Y1-Y1*X2-Y2*X3-Y3*X1
-                  AE=ABS(AA-AREASK)/AREASK
-               IF (AE.LT.Tolerance) THEN
-                  ElementFound = .true.
-                  ClosestElement = iek
-                  FDEle(I) = ClosestElement
-                  else !not in this element keep looking
-                    itc = itc + 1
-                  endif !End area ratio test
-               else !
-!                point is too far away from the barycenter of the
-!                element to possibly be in the element, so move to
-!                the next element
-                 itc = itc + 1
-               endif !end Radius test
-            enddo !end the while loop
-         endif
-         if(.not.ElementFound) then !We did not find the element
-            write(*,1234) Desc, I
-            print *, "Please check the coordinates."
-            IF (NFOVER.EQ.1) THEN
-               print *, "The program will estimate nearest element."
-               print *, "WARNING. Distance to nearest element is ",
-     &                   sqrt(KDRESULTS(1)%dis)
-               print *, " "
-               FDEle(I) = ClosestElement
-            ELSE
-               print *, "ERROR. Distance to nearest element is ",
-     &                   sqrt(KDRESULTS(1)%dis)
-               CALL EXIT(1)
-            ENDIF
-         ENDIF
-      enddo !loop over station points
-
-!     Deallocate the tree
-      call kdtree2_destroy(tp=tree)
-
- 1234 format(A30,1x,I4,1x,'does not lie in the grid.')
-
-      return
-
-      end subroutine kdtsearch
+!----------------------------------------------------------------------
+!> setup_kdt_search() and kdtsearch() moved to KDTreeTools.F90
+!> cms v56.02
+!----------------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------
@@ -2822,3 +2726,6 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       END SUBROUTINE CoordToEle
 C-----------------------------------------------------------------------
+
+
+      END MODULE read_global
