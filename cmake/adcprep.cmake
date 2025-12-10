@@ -80,6 +80,7 @@ set(ADCPREP_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/presizes.F
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/pre_global.F
+      ${CMAKE_CURRENT_SOURCE_DIR}/prep/kdtreetools.F90
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/metis.F
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/subprep.F
       ${CMAKE_CURRENT_SOURCE_DIR}/prep/rainprep.F90

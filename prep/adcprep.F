@@ -61,7 +61,7 @@ C   Add prephot ONLY command     ( V. Parr 10/2006 )
 C   Added NWS=19 asymmetric holland v2.0 ( R. Weaver 07/2009)
 C   Removed NWS=3 and NWS=6      (T.C. Massey 11/2009)
 C   Add NWS=20 generalized asymmetric hurricane vortex (Jie 5/2013)
-C   Add rain and hydrology source terms (cms 11/25/25)
+C   Add rain and hydrology       ( C. Szpilka 11/2025 )
 C
 C----------------------------------------------------------------------------
 C
@@ -405,14 +405,22 @@ C
       SUBROUTINE PREPINPUT()
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
+<<<<<<< HEAD
      &   naFileName, meshFileName, controlFileName, formatString
       use mod_logging, only : logMessage, t_log_scope,
      &   init_log_scope, allMessage, INFO, DEBUG
+=======
+     &    naFileName, meshFileName, controlFileName, formatString
+      use mod_logging, only : logMessage, t_log_scope,
+     &   init_log_scope, allMessage, INFO, DEBUG
+>>>>>>> Subject: Modifications to prep/ for interior hydrology sources.
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
-     &   subPrep019
+     &    subPrep019
       use rainprep, only : useRain, checkRainUsage
       use hydroprep, only : useInteriorHydrology, prepInteriorHydrology
+      use read_global, only : prepRead14, getMeshParametersXDMF,
+     &    Read15
 !tcm v50.85
 #ifdef WINDOWS
       USE IFPORT
