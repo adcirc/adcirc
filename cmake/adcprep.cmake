@@ -17,7 +17,6 @@ if(NOT BUILD_ADCPREP)
   return()
 endif()
 
-<<<<<<< HEAD
 set(ADCPREP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
@@ -35,6 +34,9 @@ set(ADCPREP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_rain.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/rain.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/hydrology.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90
@@ -45,6 +47,9 @@ set(ADCPREP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/prep/adcprep.F
     ${CMAKE_CURRENT_SOURCE_DIR}/prep/decomp.F
     ${CMAKE_CURRENT_SOURCE_DIR}/prep/prep_weir.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/kdtreetools.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/rainprep.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/prep/hydroprep.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
@@ -60,52 +65,6 @@ set(ADCPREP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
-=======
-  set(ADCPREP_SOURCES
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/presizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/pre_global.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/kdtreetools.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/metis.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/subprep.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/rainprep.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/hydroprep.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/kdtreetools.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/adcprep.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/decomp.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/prep_weir.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/read_global.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/prep.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/interp.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/prep/machdep.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F)
->>>>>>> Subject: Add new source term modules (rain/hydrology) to cmake.
 
 if(NETCDF_WORKING)
   set(ADCPREP_SOURCES

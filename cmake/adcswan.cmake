@@ -118,6 +118,9 @@ set(ADCSWAN1_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_rain.F
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/rain.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/hydrology.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/globalio.F
@@ -154,7 +157,6 @@ set(ADCSWAN_SOURCES
 
 if(NETCDF_WORKING)
   set(ADCSWAN1_SOURCES
-<<<<<<< HEAD
       ${ADCSWAN1_SOURCES}
       ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
       ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
@@ -231,134 +233,3 @@ install(TARGETS adcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Conditionally enable strict compiler flags for developers
 enable_developer_mode(${ADCSWAN1_SOURCES})
-=======
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sizes.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/constants.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/KDTREE2/kdtree2.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/global.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/boundaries.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/vew1d.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/hashtable.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/global_3dvs.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/rain.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/hydrology.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_rain.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/itpackv.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/nodalattr.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/globalio.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subdomain.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/gwce.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/wetdry.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/momentum.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/control.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/write_output.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2swan.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sponge_layer.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/quadrature.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/internaltide.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/astronomic.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/ephemerides.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/tidalpotential.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sun.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/moon.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/sun_moon_system.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/normal_flow_boundary.F90)
-
-  set(ADCSWAN_SOURCES
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/adcirc.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/weir_boundary.F90
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/read_input.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/cstart.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/hstart.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/timestep.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/vsmy.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/driver.F)
-
-  if(NETCDF_WORKING)
-    set(ADCSWAN1_SOURCES
-        ${ADCSWAN1_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdfio.F90
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/netcdf_error.F90)
-  endif()
-
-  if(XDMF_WORKING)
-    set(ADCSWAN1_SOURCES ${ADCSWAN1_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/xdmfio.F)
-  endif()
-
-  # ...SWAN Configuration
-  adcirc_swan_configure_adcswan()
-
-  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
-                                      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/swan_serial_source)
-
-  add_library(templib_swan1serial OBJECT ${SWAN1SERIAL_SOURCES})
-  add_library(templib_swan2serial OBJECT ${SWAN2SERIAL_SOURCES})
-  add_library(templib_adcswan1 OBJECT ${ADCSWAN1_SOURCES})
-  add_executable(adcswan ${ADCSWAN_SOURCES})
-
-  adcirc_add_compiler_flags_swan(templib_swan1serial ${ADDITIONAL_FLAGS_SWAN})
-  adcirc_add_compiler_flags_swan(templib_swan2serial ${ADDITIONAL_FLAGS_SWAN})
-  adcirc_add_compiler_flags(templib_adcswan1 ${ADDITIONAL_FLAGS_ADCIRC})
-  adcirc_add_compiler_flags(adcswan ${ADDITIONAL_FLAGS_ADCIRC})
-  adcirc_add_datetime_definitions(templib_swan2serial)
-
-  adcirc_add_libraries(adcswan)
-
-  add_dependencies(templib_adcswan1 version)
-  target_include_directories(templib_adcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/version_mod)
-
-  target_compile_definitions(templib_adcswan1 PRIVATE CSWAN)
-  target_compile_definitions(adcswan PRIVATE CSWAN)
-
-  target_include_directories(templib_adcswan1 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
-  target_include_directories(templib_swan2serial PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
-  target_include_directories(templib_swan2serial PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
-  target_include_directories(adcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_adcswan1)
-  target_include_directories(adcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan1serial)
-  target_include_directories(adcswan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/mod/templib_swan2serial)
-
-  target_link_libraries(
-    adcswan
-    templib_adcswan1
-    templib_swan2serial
-    templib_swan1serial)
-
-  add_dependencies(
-    adcswan
-    templib_adcswan1
-    templib_swan2serial
-    templib_swan1serial)
-  add_dependencies(templib_swan2serial templib_adcswan1 templib_swan1serial)
-  add_dependencies(templib_adcswan1 templib_swan1serial)
-
-  # Create a false target for the Ninja build system. The generated sources don't give it a full picture of where it can
-  # parallelize and this helps it make the correct determinations
-  if(${CMAKE_GENERATOR} STREQUAL "Ninja")
-    add_custom_target(
-      templib_adcswan1-stub
-      BYPRODUCTS templib_adcswan1-stublib
-      COMMAND ""
-      DEPENDS templib_adcswan1)
-    add_dependencies(templib_swan2serial templib_adcswan1-stub)
-  endif()
-
-  install(TARGETS adcswan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-
-  # Conditionally enable strict compiler flags for developers
-  enable_developer_mode(${ADCSWAN1_SOURCES})
-  enable_developer_mode(${ADCSWAN_SOURCES})
-
-endif(BUILD_ADCSWAN AND PERL_FOUND)
->>>>>>> Subject: Add new source term modules (rain/hydrology) to cmake.

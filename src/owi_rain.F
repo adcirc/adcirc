@@ -1,3 +1,5 @@
+#include "logging_macros.h"
+
 !-----------------------------------------------------------------------
 !  MODULE owi_rain
 !-----------------------------------------------------------------------
@@ -54,12 +56,17 @@
 !-----------------------------------------------------------------------
 
       use sizes, only : myproc
-      use global, only : nscreen, ScreenUnit
-#ifdef CMPI
-      use messenger, only : msg_fini
-#endif         
+      use mod_logging, only : t_log_scope, init_log_scope,
+     &    nscreen, screenUnit, allMessage, INFO, ERROR
+!      use mod_io, only : openFileForRead
+      use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
+!#ifdef CMPI
+!      use messenger, only : msg_fini
+!#endif         
 
       implicit none
+
+      character(1024) :: scratchMessage
 
       integer(8):: date1R, date2R  ! used in init/get
 
@@ -94,7 +101,7 @@
       PRIVATE interpRainBasin, interpRainRegion
       !all variables are private
       PRIVATE numSets,numBlankSnaps,cntSnaps,isnapR,isnapB
-      PRIVATE swpointsR,swpointsB,wR,wB
+      PRIVATE swpointsR,swpointsB,wR,wB, scratchMessage
       PRIVATE iLatc,iLongc,iCYMDHc,iMinc,dxc,dyc,swlatc,swlongc
       PRIVATE iLatR,iLongR,iCYMDHR,iMinR,dxR,dyR,swlatR,swlongR 
       PRIVATE iLatB,iLongB,iCYMDHB,iMinB,dxB,dyB,swlatB,swlongB 
@@ -135,6 +142,8 @@
       integer :: numSkipSnaps
       character(80) :: owiheader
 
+      LOG_SCOPE_TRACED("rain12init", RAIN_TRACING)
+
       allocate(swpointsB(NP,2),wB(NP,4))
       allocate(swpointsR(NP,2),wR(NP,4))
       
@@ -148,12 +157,15 @@
       read(27,*,err=99999) numSets
 
       if(numSets.NE.1.and.numSets.NE.2) then
-        if (myproc == 0) write(screenunit,1004)
-        write(16,1004)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        stop
+!        if (myproc == 0) write(screenunit,1004)
+!        write(16,1004)
+!#ifdef CMPI
+!        call msg_fini()
+!#endif
+!        stop
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Number of sets in rain control (fort.27) must '
+     &       //'be either 1 or 2.')
       endif
 
       ! Read the number of blank snaps to be inserted before start
@@ -230,11 +242,12 @@
      &       ' EXECUTION WILL BE TERMINATED.'//)
 
 99999 continue
-
-#ifdef CMPI
-      call msg_fini()
-#endif
-      stop 'OWI_RAIN read ERROR (1)'
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='OWI_rain read error during initialization.')
+!#ifdef CMPI
+!      call msg_fini()
+!#endif
+!      stop 'OWI_RAIN read ERROR (1)'
 
 !-----------------------------------------------------------------------
       end subroutine rain12init
@@ -262,7 +275,9 @@
       real(8), dimension(:,:), allocatable :: rainR, rainB
       logical :: regionExists
  
-      ! Read basin data 
+      LOG_SCOPE_TRACED("rain12get", RAIN_TRACING)
+
+      ! BEGIN BASIN-SCALE DATA
 
       ! Increment counter (cntSnaps initialized to zero in rain12init)
       cntSnaps = cntSnaps+1
@@ -272,12 +287,14 @@
         do i=1,NP
           rainval(I)=0.d0
         enddo
-        IF(NSCREEN.GE.1) THEN
-          if(MYPROC.EQ.0) then
-            WRITE(screenunit,16) cntSnaps
-          endif
-          WRITE(16,16) cntSnaps
-        endIF
+        write(scratchMessage,12) cntSnaps
+        call allMessage(INFO,trim(scratchMessage))
+!        IF(NSCREEN.GE.1) THEN
+!          if(MYPROC.EQ.0) then
+!            WRITE(screenunit,16) cntSnaps
+!          endif
+!          WRITE(16,12) cntSnaps
+!        endIF
         return
       endif
 
@@ -302,10 +319,10 @@
       iCYMDHB = iCYMDHc
       iMinB = iMinc
 
-      IF (myproc == 0 ) THEN 
-        write(screenunit,'("Processing rain data for time ",I10," ",I2)')
-     &              iCYMDHc,iMinc
-      end IF 
+!      IF (myproc == 0 ) THEN 
+!        write(screenunit,'("Processing rain data for time ",I10," ",I2)')
+!     &              iCYMDHc,iMinc
+!      end IF 
       
       ! Update coordinate mapping coefficients and reallocate
       ! arrays with new dimensions
@@ -316,10 +333,10 @@
         allocate(rainB(iLongB,iLatB))
       endif
       
-      ! Read rain concentrations
+      ! Read rainfall intensity
       read(271,22,end=9999,err=99999) ((rainB(i,j),i=1,iLongB),j=1,iLatB)
 
-      ! Read region data
+      ! BEGIN REGIONAL DATA
       regionExists = .FALSE.
 
       IF(numSets.EQ.1) GOTO 100
@@ -350,27 +367,30 @@
       iCYMDHR = iCYMDHc
       iMinR = iMinc
 
-      IF (myproc == 0 ) THEN 
-        write(screenunit,'("Processing 2nd rain set at",I10," ",I2)') 
-     &              iCYMDHc,iMinc
-      end IF 
-
       if(iCYMDHB.ne.iCYMDHR.or.iMinB.ne.iMinR) then
-        if (myproc == 0) then
-          WRITE(screenunit,*) 'SNAPSHOTS NOT SYNCRONIZED'
-          WRITE(screenunit,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-          WRITE(screenunit,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-          WRITE(screenunit,*) 'EXECUTION WILL BE TERMINATED'
-        endif
-        WRITE(16,*) 'SNAPSHOTS NOT SYNCRONIZED'
-        WRITE(16,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-        WRITE(16,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-        WRITE(16,*) 'EXECUTION WILL BE TERMINATED'
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &     message='Rainfall snapshots in fort.271 and fort.272 '
+     &       //'are not syncronized.')
+!        if (myproc == 0) then
+!          WRITE(screenunit,*) 'SNAPSHOTS NOT SYNCRONIZED'
+!          WRITE(screenunit,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
+!          WRITE(screenunit,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
+!          WRITE(screenunit,*) 'EXECUTION WILL BE TERMINATED'
+!        endif
+!        WRITE(16,*) 'SNAPSHOTS NOT SYNCRONIZED'
+!        WRITE(16,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
+!        WRITE(16,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
+!        WRITE(16,*) 'EXECUTION WILL BE TERMINATED'
+!#ifdef CMPI
+!        call msg_fini()
+!#endif
+!        STOP
       endif
+
+!      IF (myproc == 0 ) THEN 
+!        write(screenunit,'("Processing 2nd rain set at",I10," ",I2)') 
+!     &              iCYMDHc,iMinc
+!      end IF 
 
       ! Update coordinate mapping coefficients and reallocate
       ! arrays with new dimensions
@@ -388,19 +408,26 @@
 
 ! Interpolate onto ADCIRC grid and write to file 
       
-      IF(NSCREEN.GE.1) THEN
-        if(regionExists.EQV..TRUE.) then
-          if(MYPROC.EQ.0) then
-            WRITE(screenunit,15) iCYMDHB,iMinB
-          endif
-          WRITE(16,15) iCYMDHB,iMinB
-        else
-          if(MYPROC.EQ.0) then
-            WRITE(screenunit,14) iCYMDHB,iMinB
-          endif
-          WRITE(16,14) iCYMDHB,iMinB
-        endif
-      endIF
+      !IF(NSCREEN.GE.1) THEN
+      !  if(regionExists.EQV..TRUE.) then
+      !    if(MYPROC.EQ.0) then
+      !      WRITE(screenunit,15) iCYMDHB,iMinB
+      !    endif
+      !    WRITE(16,15) iCYMDHB,iMinB
+      !  else
+      !    if(MYPROC.EQ.0) then
+      !      WRITE(screenunit,14) iCYMDHB,iMinB
+      !    endif
+      !    WRITE(16,14) iCYMDHB,iMinB
+      !  endif
+      !endIF
+      if(regionExists) then
+         write(scratchMessage,13) iCYMDHB, iMinB
+         call allMessage(INFO, trim(scratchMessage))
+      else
+         write(scratchMessage,14) iCYMDHB, iMinB
+         call allMessage(INFO, trim(scratchMessage))
+      endif
 
       do i=1,NP
 
@@ -491,66 +518,76 @@
 
 9999  continue
 
-      if (myproc == 0) then
-      WRITE(screenunit,*)''
-      WRITE(screenunit,*)' !!!!!FATAL ERROR!!!!!'
-      WRITE(screenunit,*)'EITHER UNIT 271 or 272',
-     & ' COULD NOT BE read'
-      WRITE(screenunit,*)' EXECUTION WILL BE TERMINATED'
-      WRITE(screenunit,*)''
-      endif
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='Either unit 271 or 272 could not be read.') 
 
-      WRITE(16,*) ''
-      WRITE(16,*) ' !!!!!FATAL ERROR!!!!!'
-      WRITE(16,*) ' EITHER UNIT 271 or 272 COULD NOT BE read'
-      WRITE(16,*) ' EXECUTION WILL BE TERMINATED'
-      WRITE(16,*) ''
-#ifdef CMPI
-      call msg_fini()
-#endif
-      STOP
+!      if (myproc == 0) then
+!      WRITE(screenunit,*)''
+!      WRITE(screenunit,*)' !!!!!FATAL ERROR!!!!!'
+!      WRITE(screenunit,*)'EITHER UNIT 271 or 272',
+!     & ' COULD NOT BE read'
+!      WRITE(screenunit,*)' EXECUTION WILL BE TERMINATED'
+!      WRITE(screenunit,*)''
+!      endif
+!
+!      WRITE(16,*) ''
+!      WRITE(16,*) ' !!!!!FATAL ERROR!!!!!'
+!      WRITE(16,*) ' EITHER UNIT 271 or 272 COULD NOT BE read'
+!      WRITE(16,*) ' EXECUTION WILL BE TERMINATED'
+!      WRITE(16,*) ''
+!#ifdef CMPI
+!      call msg_fini()
+!#endif
+!      STOP
 
 10000 continue
 
-      IF(MYPROC.EQ.0) THEN
-        WRITE(screenunit,*) ''
-        WRITE(screenunit,*) ' !!! WARNING !!!'
-        WRITE(screenunit,*) ' EITHER UNIT 271 or 272 RAN OUT'
-        WRITE(screenunit,*) ' EXECUTION WILL CONTINUE'
-        WRITE(screenunit,*) ''
-      endIF
-
-      WRITE(16,*) ''
-      WRITE(16,*) ' !!! WARNING !!!'
-      WRITE(16,*) ' EITHER UNIT 271 or 272 RAN OUT'
-      WRITE(16,*) ' EXECUTION WILL CONTINUE'
-      WRITE(16,*) ''
+      write(scratchMessage,'("Either unit 271 or 272 ran out of data.",
+     &    /,"Execution will continue with rainfall set to zero.")')
+      call allMessage(INFO,trim(scratchMessage))
 
       do i=1,NP
         rainval(I)=0.d0
       enddo
 
-      RETURN
+      return
+
+!      IF(MYPROC.EQ.0) THEN
+!        WRITE(screenunit,*) ''
+!        WRITE(screenunit,*) ' !!! WARNING !!!'
+!        WRITE(screenunit,*) ' EITHER UNIT 271 or 272 RAN OUT'
+!        WRITE(screenunit,*) ' EXECUTION WILL CONTINUE'
+!        WRITE(screenunit,*) ''
+!      endIF
+!
+!      WRITE(16,*) ''
+!      WRITE(16,*) ' !!! WARNING !!!'
+!      WRITE(16,*) ' EITHER UNIT 271 or 272 RAN OUT'
+!      WRITE(16,*) ' EXECUTION WILL CONTINUE'
+!      WRITE(16,*) ''
 
 
  11   format(t6,i4,t16,i4,t23,f6.0,t32,f6.0,
      &     t44,f8.0,t58,f8.0,t69,i10,i2)
- 12   format(1X,'SNAPSHOT HEADER IN RAINFALL FILES DO NOT MATCH')
- 13   format(1X,'EXECUTION WILL BE TERMINATED')
- 14   format(/,1X,'PROCESSING BASIN-SCALE RAINFALL DATA',i12,' ',i2)
- 15   format(/,1X,'PROCESSING BASIN&REGION-SCALE DATA',i12,' ',i2)
- 16   format(/,1X,'INSERTING A BLANK RAINFALL SNAP, COUNT=',i4)
- 
+ 12   format(/,' Inserting a blank rainfall snap, count=',i4)
+ 13   format(/,' Processing basin and regional scale rainfall data for ',
+     & 'time stamp ',i12,' ',i2)
+ 14   format(/,' Processing region-scale rainfall data for time stamp ',
+     &       i12,' ',i2)
  22   format(8f10.0)
       
 99999 CONTINUE
 
-#ifdef CMPI
-      call msg_fini()
-#endif
-      STOP 'OWI_RAIN read ERROR (2)'
+      call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &   message='OWI_rain read error during timestepping.')
+!#ifdef CMPI
+!      call msg_fini()
+!#endif
+!      STOP 'OWI_RAIN read ERROR (2)'
 
+!-----------------------------------------------------------------------
       end SUBROUTINE rain12get
+!-----------------------------------------------------------------------
 
 
 !-----------------------------------------------------------------------
@@ -580,9 +617,10 @@
 
       real(8) :: w,w1,w2,w3,w4  !local weights
 
-      WRITE(16,*) ''
-      WRITE(16,*) 'BASIN-SCALE RAINFALL MAPPING UPDATED'
-      WRITE(16,*) ''
+      LOG_SCOPE_TRACED("interpRainBasin", RAIN_TRACING)
+      write(scratchMessage,'(/,"Basin-scale rainfall mapping updated",
+     &      /)')
+      call allMessage(INFO,trim(scratchMessage))
 
       ! Update to current values 
       iLatB = iLatc
@@ -673,9 +711,11 @@
 
       real(8) :: w,w1,w2,w3,w4  !local weights - put in each subroutine
 
-      WRITE(16,*) ''
-      WRITE(16,*) 'REGION-SCALE RAINFALL MAPPING UPDATED'
-      WRITE(16,*) ''
+      LOG_SCOPE_TRACED("interpRainRegion", RAIN_TRACING)
+
+      write(scratchMessage,'(/,"Region-scale rainfall mapping updated",
+     &      /)')
+      call allMessage(INFO,trim(scratchMessage))
         
       ! Update to current values
       iLatR = iLatc

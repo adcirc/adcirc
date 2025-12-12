@@ -432,7 +432,7 @@ C----------------------------------------------------------------------
 !     ----------------------------------------------------------------
       SUBROUTINE mapWindDragFunctionPointer()
 !     ----------------------------------------------------------------
-          use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE, ADCIRC_EXIT_FAILURE
+          use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
           IMPLICIT NONE
 #ifdef POWELL
           f_computeWindDrag => PowellWindDrag

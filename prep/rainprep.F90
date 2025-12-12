@@ -37,10 +37,8 @@
       ! --              Public variables
       public :: useRain, rainType, rainTimeInc, activeRainType
       public :: found_rainControl_nml, rainfallControl
-
       ! --              Public subroutines
       public :: checkRainUsage
-      ! --              Private variables
       ! --              Private subroutines
       private :: checkRainFile
 
@@ -57,6 +55,8 @@
 
       subroutine checkRainUsage()
 
+      use mod_logging, only : screenUnit
+
       implicit none
   
       !-------------------------------------------------
@@ -65,19 +65,19 @@
       !-------------------------------------------------
       select case (abs(rainType))
       case(1)
-         write(*,3260) rainType
+         write(screenUnit,3260) rainType
          write(16,3260) rainType
          call checkRainFile(270)
       case(12)
-         write(*,3260) rainType
+         write(screenUnit,3260) rainType
          write(16,3260) rainType
          call checkRainFile(27)
          call checkRainFile(271)
          call checkRainFile(272)
       case default
-         write(*,3261) rainType
+         write(screenUnit,3261) rainType
          write(16,3261) rainType
-         stop   !terminate 
+         stop   !terminate adcprep
       end select
 
  3260   format(/,2X, 'rainType = ',I3,  &
@@ -105,6 +105,9 @@
 !-----------------------------------------------------------------------
       subroutine checkRainFile(UnitNumber)
 !-----------------------------------------------------------------------
+
+      use mod_logging, only : screenUnit
+
       implicit none
 
       integer, intent(in) :: UnitNumber     ! i/o unit number to open
@@ -134,14 +137,14 @@
 
       ! Log messages to user based on file existence
       if ( found ) then
-         write(*,1010) FileName
+         write(screenUnit,1010) FileName
          write(16,1010) FileName
       else
          if (UnitNumber .eq. 272) then
-            write(*,1011) FileName
+            write(screenUnit,1011) FileName
             write(16,1011) FileName
          else
-            write(*,1012) FileName
+            write(screenUnit,1012) FileName
             write(16,1012) FileName
          endif
       end if

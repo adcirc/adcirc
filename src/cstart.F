@@ -17,25 +17,6 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
-<<<<<<< HEAD
-#include "logging_macros.h"
-C******************************************************************************
-C PADCIRC VERSION 45.12 03/17/2006                                            *
-C  last changes in this file VERSION 45.12                                    *
-C                                                                             *
-C                                                                             *
-C This module handles the model initialization for a cold start.  The primary *
-C 2D coldstart initialization is handled in SUBROUTINE COLDSTART.  The primary*
-C 3D initialization is handled in SUBROUTINE COLDSTART_3D.                    *
-C                                                                             *
-C******************************************************************************
-
-C
-      SUBROUTINE COLDSTART()
-C
-      USE SIZES
-      USE GLOBAL, only: DP1, DP2, eta1, qx2, qy2, tk, etas, eta2, ch1,
-=======
 #include "logging_macros.h"
 !-------------------------------------------------------------------------
 !> PADCIRC VERSION 45.12 03/17/2006
@@ -57,8 +38,7 @@ C
 !-------------------------------------------------------------------------
 
       use sizes
-      use global, only: DP1, DP2, eta1, qx2, qy2, tk, etas, eta2, ch1,
->>>>>>> Subject: Add additional source terms and update style
+      use global, only: DP1, DP2, eta1, qx2, qy2, tk, etas, eta2, cH1,
      &    en2, nddt, btime1, statim, btime2, btiminc, btime_end, qn1,
      &    qn0, nffr, ftiminc, qnin1, enin1, qnin2, enin2, qtime1, nws,
      &    qtime2, noute, noutv, noutc, noutge, noutgv, noutgc, nrs, qn2,
@@ -66,64 +46,30 @@ C
      &    rsnx1, rsny1, rsnx2, rsny2, ncice, cice1, cice2, cice_time1,
      &    cice_time2, cice_timinc, ctip, tip2, nscoue, nstae_g,
      &    nstae, rdes4, rid4, rdes8, rid8, aid8, esbin1, vv2, nolifa,
-<<<<<<< HEAD
-     &    uu2, inundationoutput, esbin2, nspoolv, nscouc, icstp, nstac,
-     &    nstac_g, ntrspc, nspoolc, nscoum, bchgtiminc,
-     &    h0, ntrspe, dt, nspoole, nscouv, np_g,
-     &    outputsponge, ne_g, usingDynamicWaterLevelCorrection, ndsetse,
-=======
      &    uu2, inundationOutput, esbin2, nspoolv, nscouc, nstac,
      &    nstac_g, ntrspc, nspoolc, nscoum, bchgtiminc, h0, ntrspe, dt, 
      &    nspoole, nscouv, np_g, outputSponge, ne_g,  ndsetse, 
      &    usingDynamicWaterLevelCorrection, nspoolge, nscougv, ndsetsv,
->>>>>>> Subject: Add additional source terms and update style
      &    nspoolgv, use_tvw, nscou_tvw, nout_tvw, ndsets_tvw, nspool_tvw,
      &    nscougw, ndsetsw, nspoolgw, nscougc, c2ddi, iden, 
-<<<<<<< HEAD
      &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge,
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
      &    ntrspv, iicestp, nstam_g, nstam, cbaroclinic
       use mod_io, only: openFileForRead
-      use boundaries, only: csii, siii, nbv
-      use mesh, only: sfcx, sfcy, ycsfac, sfmx
-      use mod_normal_flow_boundary, only: rotate_normal_flux
-      use mod_logging, only: t_log_scope, init_log_scope,
-     &    allMessage, DEBUG, screenUnit, nscreen
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
-      USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
-=======
-     &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, nscouge,
-     &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
-     &    ntrspv, nstam_g, nstam, openfileforread, cbaroclinic
-      use mod_io, only: openFileForRead
       use boundaries, only: csii, siii, nbv, neta, nfluxf, nope, nvel,
      &    lbcodei, npebc
       use mod_normal_flow_boundary, only: rotate_normal_flux
       use mod_logging, only: t_log_scope, init_log_scope,
      &    allMessage, DEBUG, screenUnit, nscreen
-      use global_3Dvs, only: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       use mesh, only : ne, np, x, y, slam, sfea, ics, dp, nm, mju, aid4,
-<<<<<<< HEAD
->>>>>>> Subject: Add additional source terms and update style
-     &    agrid
-=======
      &    agrid, sfcx, sfcy, ycsfac, sfmx, totalareacalc
->>>>>>> Subject: changes necessary for compilation after merging source terms
       use harm
       use wetdry, only : initializeWettingAndDrying
       use wind, only : coldStartMeteorologicalForcing, rsget
       use global_io, only: header63, header64, header77, header73,
      &    header74, header93, header91, header61, header62, header71,
      &    header72, header81, writedomainheader, open_gbl_file, nddt2get
-<<<<<<< HEAD
-      USE SUBDOMAIN, ONLY : subdomainOn, readFort015
-      USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
-      USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
-
-      USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
-      USE NODALATTRIBUTES, ONLY : outputTau0
-      USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
-=======
       use subdomain, only : subdomainOn, readFort015
       USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
       use owi_ice, only : ncice1_init, ncice1_get  !tcm v49.64.01
@@ -133,40 +79,12 @@ C
       use rs2,only : rs2init,rs2get            ! sb added 09/xx/2006
       use nodalattributes, only : outputTau0
       use write_output, only : outputNodeCode, outputNoff,
->>>>>>> Subject: Add additional source terms and update style
      &    initInundationOutput
       use time_varying_weir_boundary,only : weir_setup
       use gwce, only : etime1, etime2, etiminc
 #ifdef adcnetcdf
       use couple2bc3d, only: initial_bc3d_netcdf
 #endif
-<<<<<<< HEAD
-      IMPLICIT NONE
-
-      INTEGER I, J,IOS, IJK
-      INTEGER NM1, NM2, NM3
-      INTEGER NC1, NC2, NC3, NCELE
-
-      REAL(8) :: HTOT
-      REAL(8) :: QNIN_TMP
-!kmd - Evan's updates for rivers above MSL
-!      REAL(8),ALLOCATABLE :: et_WSE(:)
-      LOGICAL FOUND
-
-C     jgf48.4628 Add capability to turn off solution if only met output
-C     was requested.
-      LOGICAL metOutputOn     ! .true. if met output was requested
-      LOGICAL nonMetOutputOff ! .true. no other output was requested
-
-c.... tcm v50.66.02 additions for time varying bathymetry
-      CHARACTER(80) :: CDUM80
-C
-
-      LOG_SCOPE_TRACED("coldstart", CSTART_TRACING)
-      metOutputOn = .FALSE.
-      nonMetOutputOff = .FALSE.
-      !
-=======
       implicit none
 
       integer i, j,ios, ijk
@@ -189,7 +107,6 @@ C
       metOutputOn = .false.
       nonMetOutputOff = .false.
 
->>>>>>> Subject: Add additional source terms and update style
       call initializeWettingAndDrying()
 
       ! set up time varying weirs if necessary
@@ -199,76 +116,6 @@ C
          call readFort015() ! ncsu subdomain modeling
       endif
 
-<<<<<<< HEAD
-C------------------------------------------------------------------------------
-C... tcm v50.66.01 Time Varying Bathymetry
-C------------------------------------------------------------------------------
-C
-      IF (NDDT.NE.0) then
-C...    Set the first two bathymetry values, these arrays are
-C...    allocated in alloc_main13 called during read_input
-         DP1(:) = DP(:)  !set dp1 to initial depth from fort.14 grid
-         DP2(:) = DP(:)  !set dp2 to the same values
-
-         BTIME1 = STATIM*86400.D0
-         BTIME2=BTIME2+BTIMINC  !new ending time for this record
-         BTIME_END = BTIME1 + BCHGTIMINC
-
-C...    read in the second depth dp2 for btime2
-         IOS = 0
-         CALL openFileForRead(141,TRIM(INPUTDIR)//'/'//'fort.141',IOS)
-         IF (IOS.GT.0) THEN
-            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &         message='Unable to open fort.141 for time '
-     &                //'varying bathymetry')
-         ENDIF
-
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1976)
-         WRITE(16,1976)
- 1976    FORMAT(/,1X,'TIME VARYING BATHYMETRY INFORMATION ',
-     &        'READ FROM UNIT 141',/)
-
-         IF (ABS(NDDT).EQ.1) THEN
-            DO I=1,NP
-               READ(141,*) IJK,DP2(IJK)
-            ENDDO
-         ENDIF
-         IF (ABS(NDDT).EQ.2) THEN
-!!!        go get new record for only some nodes, all
-!!!        other nodes keep their current value
-            CALL NDDT2GET(141,DP2(:),-99999.d0)
-         ENDIF
-
-C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
-C...     DEPTHS ARE > OR = TO H0.
-         IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
-            DO I=1,NP
-               IF (DP2(I).LT.H0) DP2(I) = H0
-            ENDDO
-         ENDIF
-      ENDIF  !end test for time varying bathymetry
-C
-C------------------------------------------------------------------------------
-C
-C...  SET AT REST INITIAL CONDITION OVER WHOLE DOMAIN
-C...  IF BOTTOM IS ABOVE THE GEIOD -> DRY NODE
-C...  IF BOTTOM IS INITIALLY BELOW THE GEOID AND STARTDRY=1 -> DRY NODE
-C...
-      UU2(:) = 0.D0
-      VV2(:) = 0.D0
-      QX2(:) = 0.D0
-      QY2(:) = 0.D0
-      TK(:) = 0.D0
-      ETA1(:) = 0.D0
-      ETA2(:) = 0.D0
-      ETAS(:) = 0.D0
-      CH1(:) = 0.d0
-      EN2(:) = 0.d0
-      !
-      ! Set the initial wet/dry state and water surface elevation
-=======
       ! tcm v50.66.01 additions for time varying bathymetry
       if (nddt.ne.0) then
          ! set the first two bathymetry values, these arrays are
@@ -316,10 +163,9 @@ C...
          endif
       endif  !end test for time varying bathymetry
 
-
       ! set at rest initial condition over whole domain
       ! if bottom is above the geoid -> dry node
-      ! if bottom is initially below the geoid and startdry=1 -> dry node
+      ! if bottom is initially below the geoid and startDry=1 -> dry node
       uu2(:) = 0.d0
       vv2(:) = 0.d0
       qx2(:) = 0.d0
@@ -328,13 +174,12 @@ C...
       eta1(:) = 0.d0
       eta2(:) = 0.d0
       etas(:) = 0.d0
-      ch1(:) = 0.d0
+      cH1(:) = 0.d0
       en2(:) = 0.d0
  
       ! Compute initial wet/dry state and water surface elevation:
       ! Checks for nodes that should be dry and updates nnodecode
       !cms: mvd nodecode = nnodecode here from totalAreaCalc
->>>>>>> Subject: Add additional source terms and update style
       call setColdWetDryStateAndWaterSurfaceElevation()
 
       ! cms 11/20/25: Compute active elements and total area for each
@@ -921,247 +766,6 @@ c...
       ! Formatting for screen unit Messages during file reads
  1112 format(/,1x,73('_'))
 
-<<<<<<< HEAD
-      RETURN
-      END SUBROUTINE COLDSTART
-
-
-C******************************************************************************
-C   Subroutine to initialize the 3D routines for a cold start including       *
-C   reading in an initial density field.                                      *
-C                                                                             *
-C                                                                             *
-c******************************************************************************
-
-      SUBROUTINE COLDSTART_3D()
-      USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
-      USE WRITE_OUTPUT, ONLY : initOutput3D
-      USE GLOBAL_3DVS
-      USE GLOBAL, ONLY : BCFLAG_TEMP, RES_BC_FLAG, BCFLAG_LNM,
-     &                   RBCTIME1, BCSTATIM, RBCTIME2,
-     &                   RBCTIMEINC, SBCTIME1,
-     &                   SBCTIME2, SBCSTATIM, TTBCTIME1,
-     &                   TTBCTIME2, TBCSTATIM, SBCTIMEINC,
-     &                   TBCTIMEINC, TTBCTIMEINC, TTBCSTATIM,
-     &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2,
-     &                   LNM_BC, LNM_BC1, LNM_BC2, RIVBCTIMINC,
-     &                   RIVBCTIME1, RIVBCTIME2,
-     &                   RIVBCSTATIM, NP_G
-      USE mod_logging, ONLY : t_log_scope, init_log_scope, allMessage, DEBUG
-      USE MESH, ONLY : NP, AGRID
-      USE BOUNDARIES, ONLY : NETA, NOPE, NBD,
-     &  totalbcrivernodes, bndbcriver
-      USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
-      IMPLICIT NONE
-
-      INTEGER :: IRType
-      INTEGER :: N                       !loop counter
-      INTEGER :: NH, IHN, IVN            !horizontal & vertical loop counters
-      INTEGER :: NHNN, NVNN              !horizontal and vertical node numbers
-      INTEGER :: NVN
-      INTEGER NVP                        ! number of horizontal nodes
-
-ckmd  additional variable for baroclinic boundary conditions
-      CHARACTER(80) :: CDUM80
-      INTEGER :: NumofBCNodes
-      INTEGER :: NOD, J, NumofNodes, K
-      INTEGER :: IINDX
-      REAL(8), ALLOCATABLE :: TMP(:,:)
-C
-      LOG_SCOPE_TRACED("coldstart_3D", CSTART_TRACING)
-C...
-C...  Define format statements used to initialize 3D output files
-C...
- 499  FORMAT(1X,A32,2X,A24,2X,A24)
-
-C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
-
-      IF (CBaroclinic.and..not.C3DVS) THEN
-         WRITE(16,*) "CBaroclinic is ",CBaroclinic
-         WRITE(16,*) "CB3DVS is ",C3DVS
-         CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &      message='2DDI baroclinic runs not currently '
-     &             //'supported.')
-      ENDIF
-C
-      IF(CBaroclinic .and. C3DVS) THEN
-         WRITE(16,424)
- 424     FORMAT(/,5X,'INITIAL DENSITY FIELD READ IN FROM UNIT 11',/)
-         OPEN(11,FILE=TRIM(INPUTDIR)//'/'//'fort.11')
-         READ(11,*)             !skip over header line
-         READ(11,*)             !skip over header line
-         READ(11,*) NVN, NVP
-         IF(NVN.NE.NFEN) THEN
-            IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-               WRITE(ScreenUnit,351) NVN,NFEN
-            ENDIF
-            WRITE(16,351) NVN,NFEN
- 351        FORMAT(/,2X,'***** INVALID INPUT IN THE DENSITY INITIAL ',
-     &           'CONDITION FILE (UNIT 11) *****',
-     &           /,2X,'***** NVN = ',I4,' MUST MATCH NFEN = ',I4,
-     &           ' *****')
-            CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &         message='Invalid input in density initial '
-     &                //'condition file (unit 11). NVN must match NFEN.')
-         ENDIF
-         DO IHN=1,NP
-            DO IVN=1,NFEN
-               IF(ABS(IDen).EQ.1)
-     &              READ(11,*) NHNN,NVNN,SigT(NHNN,NVNN)
-               IF(ABS(IDen).EQ.2)
-     &              READ(11,*) NHNN,NVNN,Sal(NHNN,NVNN)
-               IF(ABS(IDen).EQ.3)
-     &              READ(11,*) NHNN,NVNN,Temp(NHNN,NVNN)
-               IF(ABS(IDen).EQ.4)
-     &              READ(11,*) NHNN,NVNN,Temp(NHNN,NVNN),Sal(NHNN,NVNN)
-            ENDDO
-         ENDDO
-         CLOSE(11)
-      ENDIF
-
-      IF (CBaroclinic) THEN
-!     Kendra45.12: Read in the temperature boundary condition for the
-!     temperature field. Note, we will add the salinity condition
-!     later. Currently, we are adopting the sign convention that the
-!     flux into the domain is consider positive and the flux out of the
-!     domain is negative. However, remember the constitutive law changes
-!     the direction of the flux.
-         IF ((IDEN.EQ.3).OR.(IDEN.EQ.-3)) THEN
-            IF (NTF.EQ.0) THEN
-               DO IHN=1,NP
-                  qsurfkp1(IHN)=0.d0
-                  qsurf(IHN)=0.d0
-               END DO
-            ELSE IF (NTF.EQ.1) THEN
-               OPEN(111,FILE=TRIM(INPUTDIR)//'/'//'fort.111')
-               DO IHN=1,NP
-                  READ(111,*) NHNN,qsurfkp1(IHN),qsurf(IHN)
-               END DO
-               CLOSE(111)
-            END IF
-         END IF
-      END IF
-
-ckmd  Read in boundary condition information from files if
-C...  we are using the transport portion of the code (IDEN.GE.1)
-C...  and baroclinic.
-
-      IF ((CBAROCLINIC).AND.(IDEN.GE.1)) THEN
-         IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
-           IF (BCFLAG_LNM.EQ.1) THEN
-             OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
-             RBCTIME1=BCSTATIM*86400.d0
-             RBCTIME2=RBCTIME1+RBCTIMEINC
-             READ(35,'(A)') CDUM80
-             DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC1(NumofBCNodes)
-             END DO
-             READ(35,'(A)') CDUM80
-             DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC2(NumofBCNodes)
-             END DO
-           ELSE IF (BCFLAG_LNM.EQ.2) THEN
-             ! to be added later but currently information
-             ! is taken in two ways from the HYCOM results
-           ELSE IF (BCFLAG_LNM.EQ.3) THEN
-             DO NumofBCNodes=1,NETA
-                IINDX=NBD(NumofBCNodes)
-                LNM_BC1(NumofBCNodes)=ETA2(IINDX)
-                LNM_BC2(NumofBCNodes)=LNM_BC1(NumofBCNodes)
-             END DO
-           END IF
-         END IF
-         IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
-           IF (NOPE.GT.0) THEN
-             OPEN(36,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
-             SBCTIME1=SBCSTATIM*86400.D0
-             SBCTIME2=SBCTIME1+SBCTIMEINC
-             READ(36,'(A)') CDUM80
-             DO NumofBCNodes=1,NETA
-                READ(36,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
-             END DO
-             READ(36,'(A)') CDUM80
-             DO NumofBCNodes=1,NETA
-                READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
-             END DO
-           END IF
-         END IF
-         IF ((ABS(RES_BC_FLAG).EQ.3).OR.
-     &            (ABS(RES_BC_FLAG).EQ.4)) THEN
-           IF (NOPE.GT.0) THEN
-             OPEN(37,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
-             TBCTIME1=TBCSTATIM*86400.D0
-             TBCTIME2=TBCTIME1+TBCTIMEINC
-             READ(37,'(A)') CDUM80
-             DO NumofBCNodes=1,NETA
-                READ(37,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
-             END DO
-             READ(37,'(A)') CDUM80
-             DO NumofBCNodes=1,NETA
-                READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
-             END DO
-           END IF
-           IF (BCFLAG_TEMP.EQ.1) THEN ! read in file with multiple values but no calcs
-              OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
-              TTBCTIME1=TTBCSTATIM*86400.D0
-              TTBCTIME2=TTBCTIME1+TTBCTIMEINC
-              DO NumofNodes=1,NP
-                 READ(38,*) NOD, q_heat1(Numofnodes)
-              END DO
-              DO NumofNodes=1,NP
-                 READ(38,*) NOD, q_heat2(NumofNodes)
-              END DO
-           ELSE IF (BCFLAG_TEMP.EQ.2) THEN ! read in from file with 6 components
-              ALLOCATE (TMP(NP,6))
-              OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
-              TTBCTIME1=TTBCSTATIM*86400.D0
-              TTBCTIME2=TTBCTIME1+TTBCTIMEINC
-              READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
-              DO NumofNodes=1,NP
-                 q_heat1(NumofNodes)=-TMP(NumofNodes,1)-
-     &              TMP(NumofNodes,2)+TMP(NumofNodes,3)-
-     &              TMP(NumofNodes,5)+TMP(NumofNodes,4)-
-     &              TMP(NumofNodes,6)
-              END DO
-              READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
-              DO NumofNodes=1,NP
-                 q_heat2(NumofNodes)=-TMP(NumofNodes,1)-
-     &              TMP(NumofNodes,2)+TMP(NumofNodes,3)-
-     &              TMP(NumofNodes,5)+TMP(NumofNodes,4)-
-     &              TMP(NumofNodes,6)
-              END DO
-              DEALLOCATE(TMP)
-           ELSE IF (BCFLAG_TEMP.EQ.3) THEN ! read in from file with 4 components
-              ALLOCATE (TMP(NP,4))
-              OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
-              TTBCTIME1=TTBCSTATIM*86400.D0
-              TTBCTIME2=TTBCTIME1+TTBCTIMEINC
-              READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
-              DO NumofNodes=1,NP
-                 q_heat1(NumofNodes)=TMP(NumofNodes,4)+
-     &              TMP(NumofNodes,3)-TMP(NumofNodes,1)+
-     &              TMP(NumofNodes,2)
-              END DO
-              READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
-              DO NumofNodes=1,NP
-                 q_heat2(NumofNodes)=TMP(NumofNodes,4)+
-     &              TMP(NumofNodes,3)-TMP(NumofNodes,1)+
-     &              TMP(NumofNodes,2)
-              END DO
-              DEALLOCATE(TMP)
-           END IF ! end if for heat flux file
-         END IF ! end if for temperature boundary and heat flux
-      ELSE IF ((CBAROCLINIC).AND.(IDEN.LE.-1)) THEN
-         IF ((RES_BC_FLAG.LT.0).AND.(NOPE.GT.0)) THEN
-          IF (BCFLAG_LNM.EQ.1) THEN
-            OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
-            READ(35,'(A)') CDUM80
-            DO NumofBCNodes=1,NETA
-                READ(35,*) NOD,LNM_BC(NumofBCNodes)
-            END DO
-          ELSE IF (BCFLAG_LNM.EQ.2) THEN
-=======
-
       return
 !-------------------------------------------------------------------------
       end subroutine coldstart
@@ -1179,21 +783,18 @@ C...  and baroclinic.
       use sizes, only : write_local_files, mnproc, globaldir
       use write_output, only : initOutput3D
       use global_3dvs
-      use global, only : bcflag_temp, res_bc_flag, bcflag_lnm,
-     &                   rbctime1, bcstatim, rbctime2,
-     &                   rbctimeinc, sbctime1,
-     &                   sbctime2, sbcstatim, ttbctime1,
-     &                   ttbctime2, tbcstatim, sbctimeinc,
-     &                   tbctimeinc, ttbctimeinc, ttbcstatim,
-     &                   tbctime1, tbctime2, q_heat1, q_heat2,
-     &                   lnm_bc, lnm_bc1, lnm_bc2, rivbctiminc,
-     &                   rivbctime1, rivbctime2,
-     &                   rivbcstatim, np_g
+      use global, only : bcflag_Temp, res_bc_flag, bcflag_lnm,
+     &    rbctime1, rbctime2, bcstatim, rbctimeinc,
+     &    sbctime1, sbctime2, sbcstatim, sbctimeinc,
+     &    ttbctime1, ttbctime2, ttbcstatim, ttbctimeinc,
+     &    tbctime1, tbctime2, tbcstatim, tbctimeinc,
+     &    rivbctime1, rivbctime2, rivbcstatim, rivbctiminc,
+     &    q_heat1, q_heat2, lnm_bc, lnm_bc1, lnm_bc2, np_g
       USE mod_logging, ONLY : t_log_scope, init_log_scope, allMessage, DEBUG
       USE mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
       use mesh, only : np, agrid
       use boundaries, only : neta, nope, nbd,
-     &  totalbcrivernodes, bndbcriver
+     &  totalBCRiverNodes, bndBCRiver
 
       implicit none
 
@@ -1206,8 +807,8 @@ C...  and baroclinic.
 
       !kmd: additional variable for baroclinic boundary conditions
       character(80) :: cdum80
-      integer :: numOfBCNodes
-      integer :: nod, j, numofnodes, k
+      integer :: NumOfBCNodes
+      integer :: nod, j, NumofNodes, k
       integer :: iindx
       real(8), allocatable :: tmp(:,:)
 
@@ -1238,9 +839,8 @@ C...  and baroclinic.
             write(16,351) nvn,nfen
  351        format(/,2x,'***** Invalid input in the density initial ',
      &           'condition file (unit 11) *****',
-     &           /,2x,'***** nvn = ',i4,' must match nfen = ',i4,
-     &           ' *****',
-     &           /,10x,'****** RUN TERMINATED ******')
+     &           /,2x,'***** NVN = ',i4,' must match NFEN = ',i4,
+     &           ' *****')
             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &         message='Invalid input in density initial '
      &                //'condition file (unit 11). NVN must match NFEN.')
@@ -1248,21 +848,21 @@ C...  and baroclinic.
          do ihn=1,np
             do ivn=1,nfen
                if(abs(iden).eq.1)
-     &              read(11,*) nhnn,nvnn,sigt(nhnn,nvnn)
+     &              read(11,*) nhnn,nvnn,SigT(nhnn,nvnn)
                if(abs(iden).eq.2)
-     &              read(11,*) nhnn,nvnn,sal(nhnn,nvnn)
+     &              read(11,*) nhnn,nvnn,Sal(nhnn,nvnn)
                if(abs(iden).eq.3)
-     &              read(11,*) nhnn,nvnn,temp(nhnn,nvnn)
+     &              read(11,*) nhnn,nvnn,Temp(nhnn,nvnn)
                if(abs(iden).eq.4)
-     &              read(11,*) nhnn,nvnn,temp(nhnn,nvnn),sal(nhnn,nvnn)
+     &              read(11,*) nhnn,nvnn,Temp(nhnn,nvnn),Sal(nhnn,nvnn)
             enddo
          enddo
          close(11)
       endif
 
       if (CBaroclinic) then
-      ! kmd 45.12: Read in the temperature boundary condition for the
-      ! temperature field. Note, we will add the salinity condition
+      ! kmd 45.12: Read in the Temperature boundary condition for the
+      ! Temperature field. Note, we will add the Salinity condition
       ! later. Currently, we are adopting the sign convention that the
       ! flux into the domain is consider positive and the flux out of the
       ! domain is negative. However, remember the constitutive law changes
@@ -1318,11 +918,11 @@ C...  and baroclinic.
              sbctime2=sbctime1+sbctimeinc
              read(36,'(a)') cdum80
              do numOfBCNodes=1,neta
-                read(36,*) nod,(ressal1(numOfBCNodes,j),j=1,nfen)
+                read(36,*) nod,(resSal1(numOfBCNodes,j),j=1,nfen)
              end do
              read(36,'(a)') cdum80
              do numOfBCNodes=1,neta
-                read(36,*) nod,(ressal2(numOfBCNodes,j),j=1,nfen)
+                read(36,*) nod,(resSal2(numOfBCNodes,j),j=1,nfen)
              end do
            end if
          end if
@@ -1334,14 +934,14 @@ C...  and baroclinic.
              tbctime2=tbctime1+tbctimeinc
              read(37,'(a)') cdum80
              do numOfBCNodes=1,neta
-                read(37,*) nod,(restemp1(numOfBCNodes,j),j=1,nfen)
+                read(37,*) nod,(resTemp1(numOfBCNodes,j),j=1,nfen)
              end do
              read(37,'(a)') cdum80
              do numOfBCNodes=1,neta
-                read(37,*) nod,(restemp2(numOfBCNodes,j),j=1,nfen)
+                read(37,*) nod,(resTemp2(numOfBCNodes,j),j=1,nfen)
              end do
            end if
-           if (bcflag_temp.eq.1) then ! read in file with multiple values but no calcs
+           if (bcflag_Temp.eq.1) then ! read in file with multiple values but no calcs
               open(38,file=trim(inputdir)//'/'//'fort.38')
               ttbctime1=ttbcstatim*86400.d0
               ttbctime2=ttbctime1+ttbctimeinc
@@ -1351,7 +951,7 @@ C...  and baroclinic.
               do numofnodes=1,np
                  read(38,*) nod, q_heat2(numofnodes)
               end do
-           else if (bcflag_temp.eq.2) then ! read in from file with 6 components
+           else if (bcflag_Temp.eq.2) then ! read in from file with 6 components
               allocate (tmp(np,6))
               open(38,file=trim(inputdir)//'/'//'fort.38')
               ttbctime1=ttbcstatim*86400.d0
@@ -1371,7 +971,7 @@ C...  and baroclinic.
      &              tmp(numofnodes,6)
               end do
               deallocate(tmp)
-           else if (bcflag_temp.eq.3) then ! read in from file with 4 components
+           else if (bcflag_Temp.eq.3) then ! read in from file with 4 components
               allocate (tmp(np,4))
               open(38,file=trim(inputdir)//'/'//'fort.38')
               ttbctime1=ttbcstatim*86400.d0
@@ -1390,7 +990,7 @@ C...  and baroclinic.
               end do
               deallocate(tmp)
            end if ! end if for heat flux file
-         end if ! end if for temperature boundary and heat flux
+         end if ! end if for Temperature boundary and heat flux
       else if ((cbaroclinic).and.(iden.le.-1)) then
          if ((res_bc_flag.lt.0).and.(nope.gt.0)) then
           if (bcflag_lnm.eq.1) then
@@ -1400,7 +1000,6 @@ C...  and baroclinic.
                 read(35,*) nod,lnm_bc(numOfBCNodes)
             end do
           else if (bcflag_lnm.eq.2) then
->>>>>>> Subject: Add additional source terms and update style
             ! add later
           else if (bcflag_lnm.eq.3) then
             do numOfBCNodes=1,neta
@@ -1419,20 +1018,20 @@ C...  and baroclinic.
         rivbctime2=rivbctime1+rivbctiminc
         do j=1,totalbcrivernodes
          if (iden.eq.2) then
-           read(39,*) (bcrivsaln1(j,k),k=1,nfen)
+           read(39,*) (bcrivSaln1(j,k),k=1,nfen)
          else if (iden.eq.3) then
-           read(39,*) (bcrivtempn1(j,k),k=1,nfen)
+           read(39,*) (bcrivTempn1(j,k),k=1,nfen)
          else if (iden.eq.4) then
-           read(39,*) (bcrivsaln1(j,k), bcrivtempn1(j,k),k=1,nfen)
+           read(39,*) (bcrivSaln1(j,k), bcrivTempn1(j,k),k=1,nfen)
          end if
         end do
         do j=1,totalbcrivernodes
          if (iden.eq.2) then
-           read(39,*) (bcrivsaln2(j,k),k=1,nfen)
+           read(39,*) (bcrivSaln2(j,k),k=1,nfen)
          else if (iden.eq.3) then
-           read(39,*) (bcrivtempn2(j,k),k=1,nfen)
+           read(39,*) (bcrivTempn2(j,k),k=1,nfen)
          else if (iden.eq.4) then
-           read(39,*) (bcrivsaln2(j,k), bcrivtempn2(j,k),k=1,nfen)
+           read(39,*) (bcrivSaln2(j,k), bcrivTempn2(j,k),k=1,nfen)
          end if
         end do
       end if
@@ -1471,95 +1070,6 @@ C...  and baroclinic.
       enddo
       bpg(:,:)=(0.d0,0.d0) ! jgf50.44: was not initialized anywhere else
 
-<<<<<<< HEAD
-C...  INITIALIZE 3D OUTPUT FILES
-C
-C.... Initialize the 3D density station output file (Unit 41)
-      IF((IDen.EQ.1).OR.(IDen.EQ.0)) IRType=1
-      IF((IDen.EQ.2).OR.(IDen.EQ.3)) IRType=2
-      IF(IDen.EQ.4) IRType=3
-      CALL initOutput3D(41, I3DSD, NDSET3DSD, NSTA3DD, NSTA3DD_G,
-     &                  NSPO3DSD, IRType, I3DSDRec)
-C
-C.... Initialize the 3D velocity station output file (Unit 42)
-      IRType=3
-      CALL initOutput3D(42, I3DSV, NDSET3DSV, NSTA3DV, NSTA3DV_G,
-     &                  NSPO3DSV, IRType, I3DSVRec)
-C
-C.... Initialize the 3D turbulence station output file (Unit 43)
-      IRType=3
-      CALL initOutput3D(43, I3DST, NDSET3DST, NSTA3DT, NSTA3DT_G,
-     &                  NSPO3DST, IRType, I3DSTRec)
-C.... Initialize the global 3D density output file (Unit 44)
-
-      IF((IDen.EQ.1).OR.(IDen.EQ.0)) IRType=1
-      IF((IDen.EQ.2).OR.(IDen.EQ.3)) IRType=2
-      IF(IDen.EQ.4) IRType=3
-C     jgf46.27 Replaced IRType with IDen in header.
-!kmd48.33bc - add in infomration for file containing the
-!            top temperature boundary condition information
-!      CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_G,
-!     &                  NSPO3DGD, IRType, I3DGDRec)
-! arash
-      CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_G,
-     &                  NSPO3DGD, IDen, I3DGDRec)
-
-      IF (ABS(I3DGD).EQ.1) THEN
-         IF ((MNPROC.EQ.1.).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-            IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
-               IF (BCFLAG_TEMP.NE.0) THEN
-                  OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
-                  WRITE(47,499) RUNDES,RUNID,AGRID
-                  WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
-                  CLOSE(47)
-               END IF
-            END IF
-         ENDIF
-         IF ((MNPROC.GT.1.).AND.(WRITE_LOCAL_FILES.eqv..false.).and.
-     &       (myProc.eq.0)) THEN
-            IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
-               IF (BCFLAG_TEMP.NE.0) THEN
-                  OPEN(47,FILE=TRIM(GLOBALDIR)//'/'//'fort.47')
-                  WRITE(47,499) RUNDES,RUNID,AGRID
-                  WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
-                  CLOSE(47)
-               END IF
-            END IF
-         ENDIF
-      ENDIF
-C..RJW bug fix in 498 (kendra found this)
- 498  FORMAT(1X,I10,1X,I10,1X,E15.7,I10,1X,I10,1X,I3)
-
-C
-c.... Initialize the global 3D velocity output file (Unit 45)
-      CALL initOutput3D(45, I3DGV, NDSET3DGV, NP, NP_G,
-     &                  NSPO3DGV, IRType, I3DGVRec)
-C
-c.... Initialize the global 3D turbulence output file (Unit 46)
-      CALL initOutput3D(46, I3DGT, NDSET3DGT, NP, NP_G,
-     &                  NSPO3DGT, IRType, I3DGTRec)
-C
-C.... Set up a few final odds and ends for a 3D run
-      CALL VSSTUP ()
-
-      RETURN
-C----------------------------------------------------------------------
-      END SUBROUTINE COLDSTART_3D
-C----------------------------------------------------------------------
-
-C----------------------------------------------------------------------
-C                      S U B R O U T I N E
-C           S E T   C O L D   W E T   D R Y   S T A T E
-C       A N D   W A T E R   S U R F A C E   E L E V A T I O N
-C----------------------------------------------------------------------
-C     jgf52.08.01: Sets value of nnodecode at cold start. The values
-C     of nnodecode are copied to the nodecode array in totalAreaCalc().
-C     This is called from subroutine hotstart() for use in producing
-C     detailed inundation output only. When called from hotstart(),
-C     the hotstart wet/dry state and water surface elevation ends up
-C     overwriting the values computed here.
-C----------------------------------------------------------------------
-=======
       !---------------------------
       ! Initialize 3D Output Files
       !---------------------------
@@ -1587,7 +1097,7 @@ C----------------------------------------------------------------------
       if(iden.eq.4) irtype=3
       ! jgf46.27 replaced irtype with iden in header.
       ! kmd48.33bc - add information for file containing the
-      !    top temperature boundary condition information
+      !    top Temperature boundary condition information
       ! arash
       call initOutput3D(44, i3dgd, ndset3dgd, np, np_g,
      &                  nspo3dgd, iden, i3dgdrec)
@@ -1595,7 +1105,7 @@ C----------------------------------------------------------------------
       if (abs(i3dgd).eq.1) then
          if ((mnproc.eq.1.).or.(write_local_files.eqv..true.)) then
             if((iden.eq.3).or.(iden.eq.4)) then
-               if (bcflag_temp.ne.0) then
+               if (bcflag_Temp.ne.0) then
                   open(47,file=trim(localdir)//'/'//'fort.47')
                   write(47,499) rundes,runid,agrid
                   write(47,498) ndset3dgd,np,dtdp*nspo3dgd,nspo3dgd,1
@@ -1606,7 +1116,7 @@ C----------------------------------------------------------------------
          if ((mnproc.gt.1.).and.(write_local_files.eqv..false.).and.
      &       (myproc.eq.0)) then
             if((iden.eq.3).or.(iden.eq.4)) then
-               if (bcflag_temp.ne.0) then
+               if (bcflag_Temp.ne.0) then
                   open(47,file=trim(globaldir)//'/'//'fort.47')
                   write(47,499) rundes,runid,agrid
                   write(47,498) ndset3dgd,np,dtdp*nspo3dgd,nspo3dgd,1
@@ -1658,26 +1168,9 @@ C----------------------------------------------------------------------
 !>          When called from hotstart(), the hotstart wet/dry state and
 !>          water surface elevation overwrites the values computed here.
 !-------------------------------------------------------------------------
->>>>>>> Subject: Add additional source terms and update style
       subroutine setColdWetDryStateAndWaterSurfaceElevation()
 !-------------------------------------------------------------------------
       use sizes, only : inputdir
-<<<<<<< HEAD
-      use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
-      use mesh, only : dp, np, mju, ne, nm
-      use boundaries, only : nvel, lbcodei, nbv
-      use global, only : eta2, nnodecode, noff, h0,
-     &   eta1, nolifa, EtaDisc, River_above_MSL
-      use mod_logging, only : logMessage, allMessage, t_log_scope, init_log_scope,
-     &   DEBUG, WARNING, INFO, ERROR
-      use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset,
-     &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE,
-     &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,
-     &   loadManningsN, iflinbf, ifnlbf, ifhybf
-!JLW: adding subgrid
-      use subgrid, only: level0, readsubgridlookup
-     &                   , getvertlookup
-=======
       use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
       use mesh, only : dp, np, mju, ne, nm
       use boundaries, only : nvel, lbcodei, nbv
@@ -1685,37 +1178,24 @@ C----------------------------------------------------------------------
      &   eta1, eta2, EtaDisc, River_above_MSL
       use mod_logging, only : logMessage, allMessage, t_log_scope,
      &   init_log_scope, DEBUG, WARNING, INFO, ERROR
-      use nodalattributes, only : loadstartdry, startdry, GeoidOffset,
+      use nodalattributes, only : loadStartDry, startDry, GeoidOffset,
      &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE,
      &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,
      &   loadManningsN, iflinbf, ifnlbf, ifhybf
       ! jlw: adding subgrid
-      use subgrid, only: level0, readSubgridLookup, getVertLookup
->>>>>>> Subject: Add additional source terms and update style
-     &                   , initVar
-     &                   , gridDepthVertETA2
-     &                   , subgridVertList
-     &                   , wetFracVertTab
-     &                   , numPhi
-     &                   , wetDepthVertETA2
-     &                   , gridDepthVertTab
-     &                   , phi_time_derivative, dphidt
+      use subgrid, only: level0, readSubgridLookup, getVertLookup,
+     &   initVar, gridDepthVertETA2, subgridVertList, wetFracVertTab,
+     &   numPhi, wetDepthVertETA2, gridDepthVertTab,
+     &   phi_time_derivative, dphidt
       implicit none
       integer :: nm1, nm2, nm3  ! node numbers around the element
       integer :: nc1, nc2, nc3  ! nodecodes around the element
       integer :: ncele          ! wet dry state of the element
       integer :: i
-<<<<<<< HEAD
       character(1024) :: scratchMessage
       real(8) :: H1
-      real(8) :: HABSMIN
-      integer :: numGreater
-=======
-      character(1024) :: scratchMessage
-      real(8) :: h1
       real(8) :: habsmin
       integer :: numGreater
->>>>>>> Subject: Add additional source terms and update style
       integer :: j
       ! jgf52.08.24: investigate reasons why a node was dried by the
       ! setcoldwetdrystate() subroutine.
@@ -1724,11 +1204,7 @@ C----------------------------------------------------------------------
       logical :: found ! .true. if find obsolete init river elevation file
 
  
-<<<<<<< HEAD
       LOG_SCOPE_TRACED("setColdWDSAndWSE", CSTART_TRACING)
-=======
-      LOG_SCOPE_TRACED("setColdWDSAndWSE", CSTART_TRACING)
->>>>>>> Subject: Add additional source terms and update style
 
       habsmin = h0*0.8d0
 
@@ -1804,8 +1280,8 @@ C----------------------------------------------------------------------
             allocate(dryReasonInitialized(np))
             dryReasonInitialized = .false.
             do i=1,np
-               h1 = gridDepthVertETA2(i)
-               if (h1.le.h0) then
+               H1 = gridDepthVertETA2(i)
+               if (H1.le.h0) then
                   nnodecode(i) = 0
                   write(dryReason(i),'("node=",i0)') i
                   write(scratchMessage,
@@ -1814,7 +1290,7 @@ C----------------------------------------------------------------------
                   dryReason(i) = trim(dryReason(i)) // trim(scratchMessage)
                   dryReasonInitialized(i) = .true.
                endif
-               if ((loadstartdry.eqv..true.).and.(startdry(i).eq.1)) then
+               if ((loadStartDry.eqv..true.).and.(startDry(i).eq.1)) then
                   nnodecode(i) = 0
                   if (dryReasonInitialized(i).eqv..false.) then
                      write(dryReason(i),'("node=",i0)') i
@@ -1822,7 +1298,7 @@ C----------------------------------------------------------------------
                   else
                      dryReason(i) = trim(dryReason(i)) // ", "
                   endif
-                  dryReason(i) = trim(dryReason(i)) // "startdry=1"
+                  dryReason(i) = trim(dryReason(i)) // "startDry=1"
                endif
             end do
 
@@ -1912,15 +1388,9 @@ C----------------------------------------------------------------------
             enddo
          endif
 #else
-<<<<<<< HEAD
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &      message='Subgrid calculation requires building '
      &             //'with netcdf enabled')
-=======
-         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &      message='Subgrid calculation requires building '
-     &             //'with netcdf enabled')
->>>>>>> Subject: Add additional source terms and update style
 #endif
       else
 
@@ -1949,7 +1419,7 @@ C----------------------------------------------------------------------
                dryReason(i) = trim(dryReason(i)) // trim(scratchMessage)
                dryReasonInitialized(i) = .true.
             endif
-            if ((loadstartdry.eqv..true.).and.(startdry(i).eq.1)) then
+            if ((loadStartDry.eqv..true.).and.(startDry(i).eq.1)) then
                nnodecode(i) = 0
                if (dryReasonInitialized(i).eqv..false.) then
                   write(dryReason(i),'("node=",i0)') i
@@ -1957,7 +1427,7 @@ C----------------------------------------------------------------------
                else
                   dryReason(i) = trim(dryReason(i)) // ", "
                endif
-               dryReason(i) = trim(dryReason(i)) // "startdry=1"
+               dryReason(i) = trim(dryReason(i)) // "startDry=1"
             endif
          end do
 
@@ -2015,22 +1485,15 @@ C----------------------------------------------------------------------
             eta2=h0-dp
          end where
       endif
-<<<<<<< HEAD
-!JLW: end subgrid if statement
-      ENDIF
-      eta1(:) = eta2(:)
-
-C----------------------------------------------------------------------
-=======
-!jlw: end subgrid if statement
+      !jlw: end subgrid if statement
       endif
 
       !cms v56 moved update from totalAreaCalc here
       nodecode(1:np) = nnodecode(1:np)
       eta1(:) = eta2(:)
 
+      return
 !----------------------------------------------------------------------
->>>>>>> Subject: Add additional source terms and update style
       end subroutine setColdWetDryStateAndWaterSurfaceElevation
 !----------------------------------------------------------------------
 

@@ -186,17 +186,6 @@ Casey 180318: Added NWS=13
      &                          NWS13GroupForPowell,
      &                          NWS13WindMultiplier
 #endif
-<<<<<<< HEAD
-!JLW: add subgrid
-      use iso_fortran_env, only: output_unit
-      USE subgrid, only: subgridFilename, level0, level1, phi_time_derivative
-      use mod_tidepotential, only: tidePotential, t_tidePotential
-      use mod_logging, only: allMessage, logMessage, ERROR, WARNING,
-     &   INFO, ECHO, screenUnit, nscreen, nabout, t_log_level,
-     &   operator(<=), operator(/=), operator(<), operator(>=),
-     &   t_log_scope, init_log_scope
-      use mod_io, only: openFileForRead
-=======
 !JLW: add subgrid 
       use iso_fortran_env, only: output_unit
       use subgrid, only: subgridFilename, level0, level1, phi_time_derivative
@@ -214,7 +203,6 @@ Casey 180318: Added NWS=13
      &    useInteriorHydrology, interiorHydrologyType,
      &    InteriorHydrologyTimeInc, useInteriorHydrologyRamp,
      &    allocInteriorHydrology, interiorHydrologyCheck
->>>>>>> Subject: Add rain and hydrology source term capability, cleanup a bit
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -779,16 +767,8 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
          case ('momentumpapforcing')
             dynamicWaterLevelCorrectionMassAdjust = .false.
          case default
-<<<<<<< HEAD
-<<<<<<< HEAD
             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &                     message='Invalid dynamicWaterLevelCorrectionMethod in fort.15')
-=======
-=======
->>>>>>> Subject: minor edits in src/ to fix errors during compilation.
-            call terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &                     message='Invalid dynamicWaterLevelCorrectionMethod in fort.15')
->>>>>>> Subject: Add rain and hydrology source term capability, cleanup a bit
+     &         message='Invalid dynamicWaterLevelCorrectionMethod in fort.15')
          end select
       endif
       ! exit if there was an error reading the dynamicWaterLevelCorrectionControl namelist
@@ -4787,15 +4767,11 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
       ! Harmonic Analysis (gap)
       if((NFREQ.EQ.0).or.(FMV.EQ.0.)) write(16,4044)
       if((NFREQ.GE.1).and.(FMV.NE.0.)) write(16,4045)
-<<<<<<< HEAD
-      ! Form of GWCE equations
-      if (ilump .eq. 0) write(16,4046)
-      else if (ilump .eq. 1) write(16,4047)
-=======
       ! Form of GWCE equations    
-      if (ilump .eq. 0) write(16,4046)
-      else if (ilump .eq. 1) write(16,4047)
->>>>>>> Subject: minor edits in src/ to fix errors during compilation.
+      if (ilump .eq. 0) then
+         write(16,4046)
+      else if (ilump .eq. 1) then
+         write(16,4047)
       end if
       ! Simulation type (gap - jump to 4100)
       select case (IM)
@@ -4945,16 +4921,10 @@ C
      &                                   " Using the base_date netCDF metadata value instead: ", TipStartDate
             call allMessage(WARNING,scratchMessage)
          else
-<<<<<<< HEAD
-            scratchMessage = "The TipStartDate parameter must be set either in the netCDF metadata "//
-     &                       "or the tide potential namelist."
-            call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
-=======
             scratchMessage = "The TipStartDate parameter must be set "//
      &       "either in the netCDF metadata "//
      &       "or the tide potential namelist."
             call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
->>>>>>> Subject: Add rain and hydrology source term capability, cleanup a bit
          endif
       endif
 

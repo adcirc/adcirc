@@ -39,19 +39,11 @@
 !     ------------------------------------------------------------------
       use hashtable
       use sizes, only: meshFileName, mne, mnp, mnope, mneta, myproc,
-<<<<<<< HEAD
      &   mnbou, mnvel, nprec, meshtype, ascii, xdmf, mnei, GBLINPUTDIR
       use mod_logging, only: DEBUG, INFO, ECHO, WARNING, ERROR, operator(==),
      &   logMessage, screenMessage, allMessage, t_log_scope, init_log_scope
       use mod_io, only: openFileForRead
-=======
-     &   mnbou, mnvel, nprec, meshtype, ascii, xdmf, mnei, gblinputdir
-      use global, only: DEBUG, INFO, ECHO, WARNING, ERROR,
-     &   scratchMessage, logMessage, screenMessage, allMessage,
-     &   setMessageSource, openFileForRead, unsetMessageSource,
-     &   scratchFormat
->>>>>>> Subject: updates to totalAreaCalc in mesh.F
-      USE ADC_CONSTANTS, only: deg2rad, rad2deg, pi, omega, rearth
+      use adc_constants, only: deg2rad, rad2deg, pi, omega, rearth
 
       implicit none
        
@@ -3413,20 +3405,7 @@ Csb...
       integer :: ie          ! element loop counter
       logical :: firstcall=.true.
 
-<<<<<<< HEAD
       LOG_SCOPE_TRACED("totalAreaCalc", MESH_TRACING)
-      !
-      ! initialize values
-      mju(:)=0
-      nodele(:)=0
-      totalarea(:)=0.d0
-      nodecode(:)=nnodecode(:)
-      !
-=======
-      call setMessageSource("totalAreaCalc")
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
 
       ! cms: for the first call only, compute number of elements
       ! attached to each adcirc mesh node - does not change in time
@@ -3450,7 +3429,6 @@ Csb...
       !divByTotalArea1(1:np)=0.d0  ! NOT USED YET
       !nodecode(1:np)=nnodecode(1:np) !cms 11/20/25: mvd to c(h)start
 
->>>>>>> Subject: updates to totalAreaCalc in mesh.F
       ! assemble by elements
       !cms 11/20/25: changed to used nnodecode instead of nodecode
       do ie=1,ne
@@ -3487,15 +3465,7 @@ Csb...
          end if
       end do
 
-<<<<<<< HEAD
-!     ------------------------------------------------------------------
-=======
-#if defined(MESH_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 !-----------------------------------------------------------------------
->>>>>>> Subject: updates to totalAreaCalc in mesh.F
       end subroutine totalAreaCalc
 !-----------------------------------------------------------------------
 
