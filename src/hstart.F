@@ -51,17 +51,7 @@ C******************************************************************************
 !> subroutines.
 !------------------------------------------------------------------------
       SUBROUTINE HOTSTART()
-<<<<<<< HEAD
-C
-C**************************************************************************
-C
-C     HOT START PROGRAM SETUP ROUTINE
-C
-C**************************************************************************
-C
-=======
 !------------------------------------------------------------------------
->>>>>>> Subject: Added capability for additional source terms.
       USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE ADC_CONSTANTS, ONLY: G, PI
       USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4, SFCX, SFCY,

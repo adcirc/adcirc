@@ -253,15 +253,9 @@ C     having to do a prep all and without having to add menu items).
                   i = i + 1
                   call GET_COMMAND_ARGUMENT(i,naFileName)
             case default
-<<<<<<< HEAD
                   write(*,'(3A)') "ERROR: The command line option '",
      &                  trim(cmdlinearg),"' is not valid."
                   call exit(1)
-=======
-                  write(*,'(3A)') "ERROR: The command line option '",
-     &                  trim(cmdlinearg),"' is not valid."
-                  call exit(1)
->>>>>>> Subject: USE rainprep and hydroprep during PREP15 and PREPALL
             end select
          END DO
 
@@ -405,15 +399,9 @@ C
       SUBROUTINE PREPINPUT()
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
-<<<<<<< HEAD
      &   naFileName, meshFileName, controlFileName, formatString
       use mod_logging, only : logMessage, t_log_scope,
      &   init_log_scope, allMessage, INFO, DEBUG
-=======
-     &    naFileName, meshFileName, controlFileName, formatString
-      use mod_logging, only : logMessage, t_log_scope,
-     &   init_log_scope, allMessage, INFO, DEBUG
->>>>>>> Subject: Modifications to prep/ for interior hydrology sources.
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
      &    subPrep019

@@ -1667,16 +1667,12 @@ C..... DW: begin, absorbing layer
      &        +(OnDiag*ABC00_EAN3*SPM3 + 
      &               OffDiag*(ABC00_EAN1*SPM1 + ABC00_EAN2*SPM2))*MsFacRS_ABC00
 C..... END DW
-<<<<<<< HEAD
-=======
 
 C...     Precipitation (with spherical corrections): kmd
      &        +AREAIE3*SPM3*(ISN3 + Tau0Avg*IN3)
 
 C...     Interior Hydrology (with spherical corrections): cms v56 2025
      &        +AREAIE3*SPM3*(PSSN3 + Tau0Avg*PSN3)
-
->>>>>>> Subject: Add rain and interior hydrology to gwce computations.
 
 C...     Put these partial products directly into nodal storage
          GWCE_LV(NM1)=GWCE_LV(NM1)+Temp_LV_A1*NCEle

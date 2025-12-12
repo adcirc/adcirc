@@ -67,10 +67,8 @@
 !>----------------------------------------------------------------------- 
       MODULE hydroPrep
 
-      use global, only : screenUnit, setMessageSource,                  &
-     &    unsetMessageSource, openFileForRead, scratchMessage,          &
-     &    logMessage, allMessage, screenMessage, DEBUG, ECHO, INFO,     &
-     &    WARNING, ERROR
+      use mod_logging, only : screenUnit
+      use mod_io, only : openFileForRead
       use memory_usage
 
       implicit none
@@ -86,8 +84,8 @@
       integer :: interiorHydrologyType = 0 ! default none
       real(8) :: interiorHydrologyTimeInc = 3600 ! input time (sec)
       logical :: useInteriorHydrologyRamp = .false. ! default none
-      namelist /interiorHydrologyControl/ useInteriorHydrology,         &
-     &          interiorHydrologyType, InteriorHydrologyTimeInc,        &
+      namelist /interiorHydrologyControl/ useInteriorHydrology,&
+     &          interiorHydrologyType, InteriorHydrologyTimeInc,&
      &          useInteriorHydrologyRamp
 
       ! --              Public variables
@@ -96,7 +94,6 @@
       public :: found_hydroControl_nml, interiorHydrologyControl
       ! --              Public subroutines
       public :: prepInteriorHydrology
-
       ! --              Private variables
       private :: numHydro, numHydroProc, imap_hyd_LG
       ! --              Private subroutines
@@ -104,16 +101,13 @@
 
 !>---------------------end of data declarations--------------------------
 
-
       CONTAINS
-
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 !                             P U B L I C  
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-
 
 
 !-----------------------------------------------------------------------
@@ -123,7 +117,7 @@
 !> created by the routine DECOMP.
 !> Calls other subroutines for the processing.
 !>
-!> CMS: edit when change for dynamic unit numbers and filenames
+!> @todo: edit when change for dynamic unit numbers and filenames
 !-----------------------------------------------------------------------
       subroutine prepInteriorHydrology()
 !-----------------------------------------------------------------------
@@ -136,11 +130,6 @@
       integer :: sdu(nproc) ! subdomain unit numbers
       real(8), allocatable :: QVal(:)
       logical :: success
-  
-      call setMessageSource("prepInteriorHydrology")
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter")
-#endif
   
       !-------------------------------------------------
       ! Read in and localize the intHydro location files
@@ -163,11 +152,11 @@
       ! Open and localize the global interiorHydrology discharges
       !   valid for all interiorHydrologyTypes (fort.430)
       !----------------------------------------------------------
-      call OpenPrepHydro(430, 'point source locations  ',               &
+      call OpenPrepHydro(430, 'point source locations  ',&
      &     1, nproc, sdu, success)
       if (.not.success) then
-         write(*,*) 'ERROR: Unit 430 file not preprocessed.'
-         write(*,*) 'Terminating adcprep.'
+         write(screenUnit,*) 'ERROR: Unit 430 file not preprocessed. '&
+     &         //'Terminating adcprep.'
          stop  !cms: stop since run will fail w/o files
       endif
 
@@ -196,17 +185,12 @@
       if(allocated(QVal)) deallocate (QVal)
 
  3271   format(/,2X, 'useInteriorHydrology = T',  & 
-     &    /,2X, 'interiorHydrologyType = ',I3,   &
+     &    /,2X, 'interiorHydrologyType = ',I0,   &
      &    /,2X,'Your selection (a unit 15 parameter) is not valid.',  &
      &    /,2X,'No interior hydrology input was processed.',  &
      &    /,2X,'ERROR: adcprep terminated.')
 
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return")
-#endif
-      call unsetMessageSource()
       return
-
 !-----------------------------------------------------------------------
       end subroutine prepInteriorHydrology
 !-----------------------------------------------------------------------
@@ -236,7 +220,6 @@
 !-----------------------------------------------------------------------
 
       use pre_global, only : nproc, itotproc, imap_nod_gl2
-      use memory_usage
 
       implicit none
 
@@ -251,18 +234,12 @@
 
       integer, allocatable :: locID(:,:)  ! local node IDs
 
-
-      call setMessageSource("prep420")
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter")
-#endif
-
-      call OpenPrepHydro(420, 'point source information  ',             &
+      call OpenPrepHydro(420, 'point source information  ',&
      &     1, nproc, sdu, success)
       if (.not.Success) then
          !cms: change to stop since run will fail w/o files
-         write(*,*) 'ERROR: Unit 420 file not preprocessed.'
-         write(*,*) 'Terminating adcprep.'
+         write(screenUnit,*) 'ERROR: Unit 420 file not preprocessed. '&
+     &        //'Terminating adcprep.'            
          !return
          stop
       endif
@@ -300,8 +277,8 @@
                   local=imap_nod_gl2(2*(j-1)+2,indX) !local node
                   imap_hyd_LG(numHydroProc(iproc),iproc) = I
                   locID(I,iproc)=local
-                  call Iwrite(PE,3,6,iproc-1)
-                  write(*,94) PE, I, indX, local
+                  write(PE(3:6), '(I4.4)') iproc-1
+                  write(screenUnit,94) PE, I, indX, local
                end if 
             end do
          end do
@@ -363,7 +340,6 @@
       use adc_constants, only : deg2rad
       use pre_global, only : nproc, nelp, imap_el_LG, ics, sl0, sf0
       use KDTreeTools, only : kdtsearch, setup_kdt_search, kdtSetup
-      use memory_usage
 
       implicit none
 
@@ -383,12 +359,12 @@
       !----------------------------------------------------------
       !Open and read the global interiorHydrology input locations
       !----------------------------------------------------------
-      call OpenPrepHydro(428, 'point source locations  ',               &
+      call OpenPrepHydro(428, 'point source locations  ',&
      &     1, nproc, sdu, success)
       if (.not.Success) then
          !cms: change to stop since run will fail w/o files
-         write(*,*) 'ERROR: Unit 428 file not preprocessed.'
-         write(*,*) 'Terminating adcprep.'
+         write(screenUnit,*) 'ERROR: Unit 428 file not preprocessed. '&
+     &                     //'Terminating adcprep.'
          !return
          stop
       endif
@@ -428,31 +404,31 @@
 
       ! Determine which element each source is in
       if (.not. kdtSetup) call setup_kdt_search()
-      call kdtsearch(xps,yps,globID,numHydro,                           &
+      call kdtsearch(xps,yps,globID,numHydro,&
      &          'Interior hydrology Locations ')
             
       ! Determine which PROC each source is on
-      print *, " "
-      print *, "Interior Hydrology Locations (element index)"
-      print *, "DOMAIN    numHydro    Global      Local"
-      write(*,93) "Global",numHydro
+      write(screenUnit,*) ' '
+      write(screenUnit,*) 'Interior Hydrology Locations (element index)'
+      write(screenUnit,*) 'DOMAIN    numHydro    Global      Local'
+      write(screenUnit,93) 'Global', numHydro
       do iproc=1,nproc
         ! Write out to log while processing
         PE(1:6) = 'PE0000'
-        call Iwrite(PE,3,6,iproc-1)
+        write(PE(3:6), '(I4.4)') iproc-1
         do K = 1,numHydro
            do J=1,NELP(iproc)
               indX = abs(imap_el_LG(J,iproc)) ! global elem indx
               if (indX.EQ.globID(K)) then ! found
                  numHydroProc(iproc) = numHydroProc(iproc) + 1
                  imap_hyd_LG(numHydroProc(iproc),iproc) = K
-                 write(*,94) PE, K, globID(K), J
+                 write(screenUnit,94) PE, K, globID(K), J
                  exit                  
               endif
            enddo  !end loop thru num elements on PROC
         enddo  ! end loop thru numHydro locations
       end do ! end loop thru nproc
-      print *, " "
+      write(screenUnit,*) '  '
  93   format(1X,A6,3X,I8)
  94   format(1X,A6,3(3X,I8))
 
@@ -548,17 +524,17 @@
 
       ! If it does exist, open it
       if ( found ) then
-         write(*,1011) FileName ! found
+         write(screenUnit,1011) FileName ! found
          open(unit=UnitNumber, file=FileName, iostat=ErrorIO)
          Success = .true.
          if ( ErrorIO .GT. 0 ) then
-            write(*,'(2A)') "ERROR: Full domain file exists but",  &
-     &       "  cannot be opened."
+            write(screenUnit,*) "ERROR: Full domain file exists ",&
+     &       "but cannot be opened."
             Success = .false.
          end if
       else
       ! Provide message to user if does not exist
-         write(*,1010) FileName !not found
+         write(screenUnit,1010) FileName !not found
          Success = .false.
       end if
       ! return if cannot open global file
@@ -573,11 +549,11 @@
 #ifdef ADCSWAN
          sdFileName = 'PE0000/'//FileName
 #endif
-         CALL IWRITE(sdFileName, 3, 6, iproc-1)
+         write(sdFileName(3:6), '(I4.4)') iproc-1
          open (unit=sdu(iproc), file=trim(sdFileName), iostat=ErrorIO)
          Success = .true.
          if ( ErrorIO .GT. 0 ) then
-            write(*,*) "ERROR: Subdomain file cannot be opened."
+            write(screenUnit,*) "ERROR: Subdomain file(s) not opened."
             Success = .false.
             return ! failed to open at least one subdomain file
          end if

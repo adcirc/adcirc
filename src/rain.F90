@@ -1,3 +1,6 @@
+
+#include "logging_macros.h"
+
 !-----------------------------------------------------------------------
 !  MODULE RAIN
 !-----------------------------------------------------------------------
@@ -93,51 +96,51 @@
       MODULE RAIN
 !-----------------------------------------------------------------------
 
-        use global, only : ScreenUnit, setMessageSource, allMessage,&
-     &    screenMessage, logMessage, unsetMessageSource,screenunit,& 
-     &    ECHO, INFO, DEBUG, openFileForRead, nodecode
-        use sizes, only : localdir, inputdir, mnp
+      use mod_logging, only : screenUnit, t_log_scope, init_log_scope,&
+     &    INFO
+      use mod_io, only : openFileForRead
+      use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
-        implicit none
+      implicit none
 
-        ! Local precipitation timing variables
-        real(8) :: rainTime1 ! time associated with previous rain data
-        real(8) :: rainTime2 ! time associated with new rain data
+      ! Local precipitation timing variables
+      real(8) :: rainTime1 ! time associated with previous rain data
+      real(8) :: rainTime2 ! time associated with new rain data
 
-        ! Precipitation arrays for input datasets
-        real(8), allocatable :: rain1(:) ! previous rainfall dataset
-        real(8), allocatable :: rain2(:) ! new rainfall dataset
+      ! Precipitation arrays for input datasets
+      real(8), allocatable :: rain1(:) ! previous rainfall dataset
+      real(8), allocatable :: rain2(:) ! new rainfall dataset
 
-        ! Precipitation array for tracking active status
-        real(8), allocatable :: activeRain(:)
+      ! Precipitation array for tracking active status
+      real(8), allocatable :: activeRain(:)
 
-        ! namelist input from read_input.f
-        logical :: useRain=.false.  ! default - do not use
-        integer :: rainType=0  ! default none
-        real(8) :: rainTimeInc=3600.d0 ! rain input interval (sec)
-        integer :: activeRainType=1  ! default current wet/dry state
-        namelist /rainfallControl/ useRain, rainType, rainTimeInc,      &
-     &            activeRainType
+      ! namelist input from read_input.f
+      logical :: useRain=.false.  ! default - do not use
+      integer :: rainType=0  ! default none
+      real(8) :: rainTimeInc=3600.d0 ! rain input interval (sec)
+      integer :: activeRainType=1  ! default current wet/dry state
+      namelist /rainfallControl/ useRain, rainType, rainTimeInc,      &
+     &          activeRainType
   
-        ! Source terms used in gwce.F
-        real(8),allocatable :: rainCurr(:) ! rainfall at current ts
-        real(8),allocatable :: rainODT(:) ! rainfall time derivative
-        ! Rainfall used in write_output.F
-        real(8),target,allocatable :: totalRain(:)  !accumulated rain
-        real(8),target,allocatable :: totalRainApplied(:) !applied rain
-        real(8),target,allocatable :: rainStaOut(:) ! station output
+      ! Source terms used in gwce.F
+      real(8),allocatable :: rainCurr(:) ! rainfall at current ts
+      real(8),allocatable :: rainODT(:) ! rainfall time derivative
+      ! Rainfall used in write_output.F
+      real(8),target,allocatable :: totalRain(:)  !accumulated rain
+      real(8),target,allocatable :: totalRainApplied(:) !applied rain
+      real(8),target,allocatable :: rainStaOut(:) ! station output
         
-        ! Public/private variables
-        private :: rainTime1, rainTime2, rain1, rain2
-        public :: useRain, rainType, rainTimeInc, activeRainType
-        public :: rainfallControl, activeRain
-        public :: rainCurr, rainODT, totalRain, totalRainApplied
-        public :: rainStaOut
+      ! Public/private variables
+      private :: rainTime1, rainTime2, rain1, rain2
+      public :: useRain, rainType, rainTimeInc, activeRainType
+      public :: rainfallControl, activeRain
+      public :: rainCurr, rainODT, totalRain, totalRainApplied
+      public :: rainStaOut
 
-        ! Public/private subroutines
-        private :: checkActiveRain, rainTerminate
-        public :: rainTypeCheck, allocRain, getRainForcing
-        public :: coldstartRainForcing, hotstartRainForcing
+      ! Public/private subroutines
+      private :: checkActiveRain
+      public :: rainTypeCheck, allocRain, getRainForcing
+      public :: coldstartRainForcing, hotstartRainForcing
 !---------------------end of data declarations--------------------------
 
       CONTAINS
@@ -164,55 +167,54 @@
       subroutine rainTypeCheck()
 !-----------------------------------------------------------------------
 
-        implicit none
+      implicit none
   
-        character(10) :: reftime
+      character(10) :: reftime
 
-        call setMessageSource("rainTypeCheck")
-#if defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
+      LOG_SCOPE_TRACED("rainTypeCheck", RAIN_TRACING)
 
-        ! Check value of useRain before messages are logged
-        ! otherwise errors may arise when not being used
-        ! but namelist was found in read_input.
-        if (.not. useRain) rainType=0
-        ! Echo input messages related to implementation
-        select case (rainType)
-        case(0)
-           write(16,3298) rainType
-           activeRainType=0  ! to remove message below
-        case(1) ! global rainfall (coldstart time)
-           reftime='coldstart'
-           write(16,3299) rainType, trim(reftime)
-        case(-1) ! global rainfall (hotstart time)
-           reftime='hotstart'
-           write(16,3299) rainType, trim(reftime)
-        case(12) ! OWI format (coldstart time)
-           reftime='coldstart'
-           write(16,3302) rainType, trim(reftime)
-        case(-12) ! OWI format (hotstart time)
-           reftime='hotstart'
-           write(16,3302) rainType, trim(reftime)
-        case default
-           write(screenunit,9816) rainType
-           write(16,9816) rainType
-           call rainTerminate()
-        end select
+      ! Check value of useRain before messages are logged
+      ! otherwise errors may arise when not being used
+      ! but namelist was found in read_input.
+      if (.not. useRain) rainType=0
+      ! Echo input messages related to implementation
+      select case (rainType)
+      case(0)
+         write(16,3298) rainType
+         activeRainType=0  ! to remove message below
+      case(1) ! global rainfall (coldstart time)
+         reftime='coldstart'
+         write(16,3299) rainType, trim(reftime)
+      case(-1) ! global rainfall (hotstart time)
+         reftime='hotstart'
+         write(16,3299) rainType, trim(reftime)
+      case(12) ! OWI format (coldstart time)
+         reftime='coldstart'
+         write(16,3302) rainType, trim(reftime)
+      case(-12) ! OWI format (hotstart time)
+         reftime='hotstart'
+         write(16,3302) rainType, trim(reftime)
+      case default
+         write(16,3303) rainType
+         write(screenUnit,3303) rainType
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,&
+     &      message='Unknown rainType in fort.15 rainfallControl '&
+     &             //'namelist.')
+      end select
 
-        ! Check value of activeRainType and log messages
-        select case (activeRainType)
-        case (0)
-           !no message just reset to default value
-           activeRainType = 1
-        case (1)
-           write(16,3303) activeRainType
-        case (2)
-           write(16,3304) activeRainType
-        case default
-           write(16,9817) activeRainType
-           activeRainType = 1
-        end select
+      ! Check value of activeRainType and log messages
+      select case (activeRainType)
+      case (0)
+         !no message just reset to default value
+         activeRainType = 1
+      case (1)
+         write(16,3304) activeRainType
+      case (2)
+         write(16,3305) activeRainType
+      case default
+         write(16,3306) activeRainType
+         activeRainType = 1
+      end select
 
 
  3298   format(/,5X, 'rainType = ',I3,&
@@ -235,29 +237,22 @@
      &    /,9X,'the model time step. The global and/or regional',&
      &    /,9X,'files begin at the time of the ',A,'.')
 
- 9816   format(/,5X,'rainType = ',I3,&
-     &   /,9X,'Your selection (a UNIT 15 input parameter) is not an',&
-     &   /,9X,'allowable value. Execution will be terminated.')
+ 3303   format(/,5X, 'activeRainType = ',I3)
 
- 3303   format(/,5X, 'activeRainType = ',I3,&
+ 3304   format(/,5X, 'activeRainType = ',I3,&
      &   /,9X,'Precipitation forcing will be added to all wet nodes',&
      &   /,9X,'at each time step.')
 
- 3304   format(/,5X, 'activeRainType = ',I3,&
+ 3305   format(/,5X, 'activeRainType = ',I3,&
      &   /,9X,'Precipitation forcing will be added to wet nodes that',&
      &   /,9X,'have positive bathymetry (water) at each time step.')
 
- 9817   format(/,5X,'activeRainType = ',I,&
+ 3306   format(/,5X,'activeRainType = ',I,&
      &   /,9X,'Your selection (a UNIT 15 input parameter) is not an',&
      &   /,9X,'allowable value. Reverting to the default value [1]: ',&
      &   /,9X,'precipitation will be added to all wet nodes.')
  
-#if defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif
-        call unsetMessageSource()
-        return
-  
+      return
 !-----------------------------------------------------------------------
       end subroutine rainTypeCheck
 !-----------------------------------------------------------------------
@@ -269,40 +264,33 @@
 !-----------------------------------------------------------------------
       subroutine allocRain()
 !-----------------------------------------------------------------------
-        use sizes, only : mnp, mnstae
+      use sizes, only : mnp, mnstae
 
-        implicit none
+      implicit none
   
-        call setMessageSource("allocRain")
-#if defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter")
-#endif
+      LOG_SCOPE_TRACED("allocRain", RAIN_TRACING)
 
-        allocate ( rain1(mnp), rain2(mnp) )
-        allocate ( rainODT(mnp), rainCurr(mnp) )
-        allocate ( totalRain(mnp) )
-        allocate ( totalRainApplied(mnp) )
-        allocate ( activeRain(mnp) )
-        rain1(1:mnp) = 0.d0
-        rain2(1:mnp) = 0.d0
-        rainCurr(1:mnp) = 0.d0
-        rainODT(1:mnp) = 0.d0
-        totalRain(1:mnp) = 0.d0
-        totalRainApplied(1:mnp) = 0.d0
-        activeRain(1:mnp) = 0.d0
+      allocate ( rain1(mnp), rain2(mnp) )
+      allocate ( rainODT(mnp), rainCurr(mnp) )
+      allocate ( totalRain(mnp) )
+      allocate ( totalRainApplied(mnp) )
+      allocate ( activeRain(mnp) )
+      rain1(1:mnp) = 0.d0
+      rain2(1:mnp) = 0.d0
+      rainCurr(1:mnp) = 0.d0
+      rainODT(1:mnp) = 0.d0
+      totalRain(1:mnp) = 0.d0
+      totalRainApplied(1:mnp) = 0.d0
+      activeRain(1:mnp) = 0.d0
 
-        ! check if elevation station output requested - rain station
-        ! output tied to elevation station output
-        if (mnstae .ge. 1) then
-           allocate ( rainStaOut(mnstae) )
-           rainStaOut(1:mnstae) = 0.d0
-        end if
+      ! check if elevation station output requested - rain station
+      ! output tied to elevation station output
+      if (mnstae .ge. 1) then
+         allocate ( rainStaOut(mnstae) )
+         rainStaOut(1:mnstae) = 0.d0
+      end if
 
-#if defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return")
-#endif
-        call unsetMessageSource()
-        return
+      return
 !-----------------------------------------------------------------------
       end subroutine allocRain
 !-----------------------------------------------------------------------
@@ -322,63 +310,54 @@
       subroutine getRainForcing(timeloc)
 !-----------------------------------------------------------------------
 
-        use global, only : dt, nodecode
-        use mesh, only : np
-        use owi_rain, only : rain12get
+      use global, only : dt, nodecode
+      use mesh, only : np
+      use owi_rain, only : rain12get
 
-        implicit none
+      implicit none
 
-        real(8), intent(in) :: timeloc
+      real(8), intent(in) :: timeloc
 
-        ! Temporary scalar variables for computations within loops
-        integer :: nhg ! node number temp
-        integer :: i ! node loop counter
-        real(8) :: rainRatio ! linear interpolation for current time
-        real(8) :: rainOld !rainfall at previous ts for rainODT comp
-        real(8) :: rainX ! current value of rainfall after interpolation
-        real(8) :: rainAcc ! rain accumulated during timestep
+      ! Temporary scalar variables for computations within loops
+      integer :: nhg ! node number temp
+      integer :: i ! node loop counter
+      real(8) :: rainRatio ! linear interpolation for current time
+      real(8) :: rainOld !rainfall at previous ts for rainODT comp
+      real(8) :: rainX ! current value of rainfall after interpolation
+      real(8) :: rainAcc ! rain accumulated during timestep
 
-        call setMessageSource("getRainForcing")
-#if defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter")
-#endif
+      LOG_SCOPE_TRACED("getRainForcing", RAIN_TRACING)
  
-        ! Check the active status of all nodes
-        call checkActiveRain()
+      ! Check the active status of all nodes
+      call checkActiveRain()
 
-        ! Check if need to read more data
-        if(timeloc.GT.rainTime2) then
-            rainTime1 = rainTime2
-            rainTime2 = rainTime2 + rainTimeInc
-            rain1(1:np) = rain2(1:np)
-            select case (abs(rainType))
-                case(1)   !global domain coverage for ideal test cases
-                    read(270,*) (nhg,rain2(i),i=1,np)
+      ! Check if need to read more data
+      if(timeloc.GT.rainTime2) then
+          rainTime1 = rainTime2
+          rainTime2 = rainTime2 + rainTimeInc
+          rain1(1:np) = rain2(1:np)
+          select case (abs(rainType))
+              case(1)   !global domain coverage for ideal test cases
+                  read(270,*) (nhg,rain2(i),i=1,np)
+              case(12)  !OWI format precip forcing
+                  call rain12get(rain2,np)
+          end select
+      endif !end check if need more rain
 
-                case(12)  !OWI format precip forcing
-                    call rain12get(rain2,np)
-            end select
-        endif !end check if need more rain
+      ! Compute terms used in GWCE and accumulate rainfall
+      rainRatio = (timeloc-rainTime1)/rainTimeInc
+      do i=1,np
+          rainX = rain1(i) + rainRatio*(rain2(i)-rain1(i))
+          rainOld = rainCurr(i)
+          rainCurr(i) = rainX
+          rainODT(i) = (rainX-rainOld)/dt
+          rainAcc = rainX*dt
+          totalRain(i) = totalrain(i) + rainAcc
+          totalRainApplied(i)=totalRainApplied(i)+                    &
+                              rainAcc*activeRain(i)
+      end do
 
-        ! Compute terms used in GWCE and accumulate rainfall
-        rainRatio = (timeloc-rainTime1)/rainTimeInc
-        do i=1,np
-            rainX = rain1(i) + rainRatio*(rain2(i)-rain1(i))
-            rainOld = rainCurr(i)
-            rainCurr(i) = rainX
-            rainODT(i) = (rainX-rainOld)/dt
-            rainAcc = rainX*dt
-            totalRain(i) = totalrain(i) + rainAcc
-            totalRainApplied(i)=totalRainApplied(i)+                    &
-                rainAcc*activeRain(i)
-        end do
-
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return")
-#endif
-      call unsetMessageSource()
       return
-
 !-----------------------------------------------------------------------
       end subroutine getRainForcing
 !-----------------------------------------------------------------------
@@ -390,61 +369,56 @@
       subroutine coldstartRainForcing()
 !-----------------------------------------------------------------------
 
-        use global, only : statim, dt, nodecode
-        use sizes, only : inputdir
-        use mesh, only : np
-        use owi_rain, only : rain12init, rain12get
+      use global, only : statim, dt, nodecode
+      use sizes, only : inputdir
+      use mesh, only : np
+      use owi_rain, only : rain12init, rain12get
 
-        implicit none
+      implicit none
   
-        integer :: nhg    ! temporary node number
-        integer :: i      ! node loop counter
-        integer :: ioerr  ! I/O error flag
+      integer :: nhg    ! temporary node number
+      integer :: i      ! node loop counter
+      integer :: ioerr  ! I/O error flag
 
-        real(8) :: rainAcc ! rain accumulated during timestep
+      real(8) :: rainAcc ! rain accumulated during timestep
 
-        call setMessageSource("coldStartRainForcing")
-#if defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter")
-#endif
+      LOG_SCOPE_TRACED("coldstartRainForcing", RAIN_TRACING)
 
-        ! Check active status of grid points
-        call checkActiveRain()
+      ! Check active status of grid points
+      call checkActiveRain()
 
-        ! Read first two fields of values
-        select case (ABS(rainType))
-            case(1)   !global domain coverage for ideal test cases
-               call openFileForRead(270,trim(inputdir)//'/'//&
-     &              'fort.270',ioerr)
-               if (ioerr.GT.0) call rainTerminate()
-               read(270,*) (nhg,rain1(I),i=1,np)
-               read(270,*) (nhg,rain2(I),i=1,np)
-               rainTime1 = statim*86400.D0
-               rainTime2 = rainTime1 + rainTimeInc
-            case(12)  !OWI format precip
-               call rain12init(rain1,np)
-               call rain12get(rain1,np)
-               call rain12get(rain2,np)
-               rainTime1 = statim*86400.D0
-               rainTime2 = rainTime1 + rainTimeInc
-        end select
+      ! Read first two fields of values
+      select case (ABS(rainType))
+          case(1)   !global domain coverage for ideal test cases
+             call openFileForRead(270,trim(inputdir)//'/'//&
+     &            'fort.270',ioerr)
+             if (ioerr.GT.0) then
+                call terminate(exit_code=ADCIRC_EXIT_FAILURE,&
+     &           message='Unable to open fort.270 for rainfall.')
+             endif
+             read(270,*) (nhg,rain1(I),i=1,np)
+             read(270,*) (nhg,rain2(I),i=1,np)
+             rainTime1 = statim*86400.D0
+             rainTime2 = rainTime1 + rainTimeInc
+          case(12)  !OWI format precip
+             call rain12init(rain1,np)
+             call rain12get(rain1,np)
+             call rain12get(rain2,np)
+             rainTime1 = statim*86400.D0
+             rainTime2 = rainTime1 + rainTimeInc
+      end select
 
-        ! Assign temporal values
-        !   active status applied in gwce to reduce memory allocation
-        !   rainODT assumed to be zero at coldstart
-        do i=1,np
-           rainCurr(i) = rain1(i)
-           rainAcc = rain1(i)*dt
-           totalRain(i) = totalRain(i) + rainAcc
-           totalRainApplied(i)=totalRainApplied(i)+rainAcc*activeRain(i)
-        end do
+      ! Assign temporal values
+      !   active status applied in gwce to reduce memory allocation
+      !   rainODT assumed to be zero at coldstart
+      do i=1,np
+         rainCurr(i) = rain1(i)
+         rainAcc = rain1(i)*dt
+         totalRain(i) = totalRain(i) + rainAcc
+         totalRainApplied(i)=totalRainApplied(i)+rainAcc*activeRain(i)
+      end do
 
-#if defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return")
-#endif
-        call unsetMessageSource()
-        return
-
+      return
 !-----------------------------------------------------------------------
       end subroutine coldStartRainForcing
 !-----------------------------------------------------------------------
@@ -479,10 +453,7 @@
       real(8) :: timeit ! hstart time check
       real(8) :: rainAcc ! rain accumulated during timestep
 
-      call setMessageSource("hotStartRainForcing")
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter")
-#endif
+      LOG_SCOPE_TRACED("hotstartRainForcing", RAIN_TRACING)
 
       ! Check active status of grid points
       call checkActiveRain()
@@ -494,7 +465,10 @@
             rainTime2 = rainTime1 + rainTimeInc
             call openFileForRead(270,trim(inputdir)//'/'//&
      &           'fort.270',ioerr)
-            if (ioerr.GT.0) call rainTerminate()
+            if (ioerr.GT.0) then
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE,&
+     &         message='Unable to open fort.270 for rainfall.')
+            endif
             ! Read first two precipitation fields
             read(270,*) (nhg,rain1(i),i=1,np)
             read(270,*) (nhg,rain2(i),i=1,np)
@@ -515,7 +489,10 @@
             rainTime2 = rainTime1 + rainTimeInc
             call openFileForRead(270,trim(inputdir)//'/'//&
      &           'fort.270',ioerr)
-            if (ioerr.GT.0) call rainTerminate()
+            if (ioerr.GT.0) then
+               call terminate(exit_code=ADCIRC_EXIT_FAILURE,&
+     &         message='Unable to open fort.270 for rainfall.')
+            endif
             ! Read first two precipitation fields
             read(270,*) (nhg,rain1(i),i=1,np)
             read(270,*) (nhg,rain2(i),i=1,np)
@@ -557,12 +534,7 @@
          totalRainApplied(i)=totalRainApplied(i)+rainAcc*activeRain(i)
       end do
   
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return")
-#endif
-      call unsetMessageSource()
       return
-
 !----------------------------------------------------------------------
       end subroutine hotstartRainForcing
 !----------------------------------------------------------------------
@@ -604,11 +576,7 @@
 
       integer :: i
 
-        call setMessageSource("checkActiveRain")
-#if defined(ALL_TRACE)
-        call allMessage(DEBUG,"Enter.")
-#endif
-
+      LOG_SCOPE_TRACED("checkActiveRain", RAIN_TRACING)
 
       select case(activeRainType)
         case (1) ! Currently wet - just use nodecode
@@ -623,57 +591,10 @@
           end do
       end select  
 
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return")
-#endif
-      call unsetMessageSource()
       return
-
 !------------------------------------------------------------------------
       end subroutine checkActiveRain
 !------------------------------------------------------------------------
-
-
-!> cms: Added this subroutine to eliminate dependence on 
-!  adcirc_mod, which should be built last.
-!------------------------------------------------------------------------
-      subroutine rainTerminate(NO_MPI_FINALIZE)
-!------------------------------------------------------------------------
-
-#ifdef cmpi
-      use messenger, only : subdomainFatalError, msg_fini
-#endif
-      implicit none
-
-      logical, optional :: no_mpi_finalize
-
-      call setMessageSource("rainTerminate")
-      call allMessage(INFO,"ADCIRC Terminating")
-
-      if(allocated(rain1)) deallocate(rain1)
-      if(allocated(rain2)) deallocate(rain2)
-      if(allocated(rainCurr)) deallocate(rainCurr)
-      if(allocated(rainODT)) deallocate(rainODT)
-      if(allocated(totalRain)) deallocate(totalRain)
-      if(allocated(totalRainApplied)) deallocate(totalRainApplied)
-      if(allocated(rainStaOut)) deallocate(rainStaOut)
-      if(allocated(activeRain)) deallocate(activeRain)
-      
-
-#ifdef cmpi
-      subdomainFatalError = .true.
-      if (present(NO_MPI_FINALIZE)) then
-        call msg_fini(NO_MPI_FINALIZE)
-      else
-        call msg_fini()
-      endif
-#endif
-      stop 1 
-
-      call unsetMessageSource()
-      return
-
-      end subroutine rainTerminate
 
 
       end module rain

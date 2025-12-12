@@ -108,7 +108,7 @@ call init_log_scope(ls__, fname, trace_flag .or. ALL_TRACING)
 #endif
 
 #ifdef GLOBALIO_TRACE
-#define GLOBALIO_TRACING .true.
+OLOGY
 #else
 #define GLOBALIO_TRACING .false.
 #endif
@@ -135,6 +135,12 @@ call init_log_scope(ls__, fname, trace_flag .or. ALL_TRACING)
 #define HOTSTART_TRACING .true.
 #else
 #define HOTSTART_TRACING .false.
+#endif
+
+#ifdef HYDROLOGY_TRACE
+#define HYDROLOGY_TRACING .true.
+#else
+#define HYDROLOGY_TRACING .false.
 #endif
 
 #ifdef MESH_TRACE
@@ -167,16 +173,22 @@ call init_log_scope(ls__, fname, trace_flag .or. ALL_TRACING)
 #define OWIWIND_TRACING .false.
 #endif
 
-#ifdef READ_INPUT_TRACE
-#define READ_INPUT_TRACING .true.
-#else
-#define READ_INPUT_TRACING .false.
-#endif
-
 #ifdef PREPINPUT_TRACE
 #define PREPINPUT_TRACING .true.
 #else
 #define PREPINPUT_TRACING .false.
+#endif
+
+#ifdef RAIN_TRACE
+#define RAIN_TRACING .true.
+#else
+#define RAIN_TRACING .false.
+#endif
+
+#ifdef READ_INPUT_TRACE
+#define READ_INPUT_TRACING .true.
+#else
+#define READ_INPUT_TRACING .false.
 #endif
 
 #ifdef READ_GLOBAL_TRACE

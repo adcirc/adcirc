@@ -17,25 +17,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
 !-------------------------------------------------------------------------------!
-<<<<<<< HEAD
 #include "logging_macros.h"
-C----------------------------------------------------------------------------
-C
-C                           MODULE READ_GLOBAL
-C
-C----------------------------------------------------------------------------
-C
-C                  For use with ADCPREP Version 2.1 ( 03/17/2006 )
-C
-C                     current for ADCIRC v43.03   5/20/2003
-C                 jgf Updated for ADCIRC v45.07  11/08/2005
-C                 jgf Updated for ADCIRC v45.09  01/09/2006
-C                 jgf Updated for ADCIRC v45.11  01/09/2006
-C                 jgf Updated for ADCIRC v45.12  03/17/2006
-C----------------------------------------------------------------------------
-=======
-#include "logging_macros.h"
->>>>>>> Subject: Modifications to prep/ for interior hydrology sources.
 
 !-----------------------------------------------------------------------
 !  MODULE READ_GLOBAL
@@ -546,26 +528,11 @@ C---------------------------------------------------------------------
       USE PRE_GLOBAL
       USE SIZES, ONLY : MNHARF
       USE MESH, ONLY : CYLINDERMAP
-<<<<<<< HEAD
-      USE GLOBAL, ONLY : parse, hss, STATNAME,
-     &                   STATNAMEV, STATNAMEM, STATNAMEC, deg2rad
-      USE MOD_LOGGING, ONLY : allMessage, t_log_scope,
-     &                   init_log_scope, logMessage, screenMessage,
-     &                   ERROR, DEBUG, INFO, screenUnit
-=======
-      use adc_constants, only : deg2rad
-<<<<<<< HEAD
+      USE ADC_CONSTANTS, only : deg2rad
       USE GLOBAL, ONLY : parse, hss, STATNAME, STATNAMEV, STATNAMEM,
      &    STATNAMEC
       USE MOD_LOGGING, ONLY : allMessage, t_log_scope, init_log_scope,
      &    logMessage, screenMessage, screenUnit, ERROR, DEBUG, INFO
->>>>>>> Subject: Add rain and interiorHydrology sources, update kdtsearch.
-=======
-      USE GLOBAL, ONLY : parse, hss, STATNAME, STATNAMEV, STATNAMEM
-     &    STATNAMEC
-      USE MOD_LOGGING, ONLY : allMessage, t_log_scope, init_log_scope,
-     &    logMessage, screenMessage, screenUnit, ERROR, DEBUG, INFO
->>>>>>> Subject: Modifications to prep/ for interior hydrology sources.
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &    THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV, IHARIND, CHARMV,
      &    ALLOC_MAIN14
