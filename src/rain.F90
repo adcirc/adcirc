@@ -8,11 +8,11 @@
 !>
 !> @author Chris Szpilka <cmszpilka@ou.edu>
 !> @author Kendra Dresback
-!> 
+!>
 !> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
 !>
 !> @brief This module handles the I/O and computations related to
-!> adding precipitation source terms to ADCIRC. 
+!> adding precipitation source terms to ADCIRC.
 !>
 !>  Originally added in v51 but not merged into the main trunk until v56.
 !>  Precipitation source terms are only added to "wet" nodes since
@@ -76,7 +76,7 @@
 !>       numBlankSnaps  <-- Number of snaps to add/skip at beginning
 !>       rainMultiplier <-- Rain intensity multiplier (if need to
 !>                          convert units)
-!>                          NOT used yet 
+!>                          NOT used yet
 !>            Default assumes that files are in [mm/hr] which are
 !>            converted to [m/s] in owi_rain.F
 !>
@@ -120,7 +120,7 @@
       integer :: activeRainType=1  ! default current wet/dry state
       namelist /rainfallControl/ useRain, rainType, rainTimeInc,      &
      &          activeRainType
-  
+
       ! Source terms used in gwce.F
       real(8),allocatable :: rainCurr(:) ! rainfall at current ts
       real(8),allocatable :: rainODT(:) ! rainfall time derivative
@@ -128,7 +128,7 @@
       real(8),target,allocatable :: totalRain(:)  !accumulated rain
       real(8),target,allocatable :: totalRainApplied(:) !applied rain
       real(8),target,allocatable :: rainStaOut(:) ! station output
-        
+
       ! Public/private variables
       private :: rainTime1, rainTime2, rain1, rain2
       public :: useRain, rainType, rainTimeInc, activeRainType
@@ -160,14 +160,14 @@
 !> validity of precipitation source type and log messages.
 !> Moved all message logging for rainfall from read_input.
 !>
-!> The value of rainType is set during readinput when the 
+!> The value of rainType is set during readinput when the
 !> rainfallControl namelist if present, default value is 0
 !-----------------------------------------------------------------------
       subroutine rainTypeCheck()
 !-----------------------------------------------------------------------
 
       implicit none
-  
+
       character(10) :: reftime
 
       LOG_SCOPE_TRACED("rainTypeCheck", RAIN_TRACING)
@@ -218,7 +218,7 @@
 
  3298   format(/,5X, 'rainType = ',I3,&
      &   /,9X,'Precipitation forcing will not be used in',&
-     &   ' the GWC equation') 
+     &   ' the GWC equation')
 
  3299   format(/5X,'rainType = ',I3,&
      &    /,9X,'Precipitation forcing will be used in the GWCE.',&
@@ -227,7 +227,7 @@
      &    /,9X,'to sync the rainfall datasets with the model time',&
      &    /,9X,'step. The input file begins at the time of the',&
      &    /,9X,A,'.')
- 
+
  3302   format(/5X,'rainType = ',I3,&
      &    /,9X,'Precipitation forcing will be used in the GWCE.',&
      &    /,9X,'Rainfall values are read from global and/or regional',&
@@ -250,7 +250,7 @@
      &   /,9X,'Your selection (a UNIT 15 input parameter) is not an',&
      &   /,9X,'allowable value. Reverting to the default value [1]: ',&
      &   /,9X,'precipitation will be added to all wet nodes.')
- 
+
       return
 !-----------------------------------------------------------------------
       end subroutine rainTypeCheck
@@ -266,7 +266,7 @@
       use sizes, only : mnp, mnstae
 
       implicit none
-  
+
       LOG_SCOPE_TRACED("allocRain", RAIN_TRACING)
 
       allocate ( rain1(mnp), rain2(mnp) )
@@ -326,7 +326,7 @@
       real(8) :: rainAcc ! rain accumulated during timestep
 
       LOG_SCOPE_TRACED("getRainForcing", RAIN_TRACING)
- 
+
       ! Check the active status of all nodes
       call checkActiveRain()
 
@@ -374,7 +374,7 @@
       use owi_rain, only : rain12init, rain12get
 
       implicit none
-  
+
       integer :: nhg    ! temporary node number
       integer :: i      ! node loop counter
       integer :: ioerr  ! I/O error flag
@@ -474,13 +474,13 @@
             ! Read until get to current time
             do it=1,iths
                timeit=it*dt + statim*86400.d0
-               if (timeit.GT.rainTime2) then 
+               if (timeit.GT.rainTime2) then
                   rainTime1 = rainTime2
                   rainTime2 = rainTime2 + rainTimeInc
                   rain1(1:np) = rain2(1:np)
-                  read(270,*) (nhg,rain2(i),i=1,np) 
-               end if 
-            end do 
+                  read(270,*) (nhg,rain2(i),i=1,np)
+               end if
+            end do
 
          case(-1)   !global domain coverage (filestart=hot)
             ! use for ideal test cases
@@ -506,13 +506,13 @@
             ! Read until get to current time
             do it=1,iths
                timeit=it*dt + statim*86400.d0
-               if (timeit.GT.rainTime2) then 
+               if (timeit.GT.rainTime2) then
                   rainTime1 = rainTime2
                   rainTime2 = rainTime2 + rainTimeInc
                   rain1(1:np) = rain2(1:np)
                   call rain12get(rain2,np)
-               end if 
-            end do 
+               end if
+            end do
 
          case(-12)  !OWI format precipitation (filestart=hot)
             rainTime1 = timeloc
@@ -532,7 +532,7 @@
          totalRain(i) = totalRain(i) + rainAcc
          totalRainApplied(i)=totalRainApplied(i)+rainAcc*activeRain(i)
       end do
-  
+
       return
 !----------------------------------------------------------------------
       end subroutine hotstartRainForcing
@@ -546,7 +546,7 @@
 
 !------------------------------------------------------------------------
 !> Check for active rainfall locations: called near beginning of
-!> cold/hotstartRainForcing() and getRain() 
+!> cold/hotstartRainForcing() and getRain()
 !> Unlike interior hydrology, the active status is applied directly in
 !> the gwce module to reduce the number of mnp arrays that are
 !> allocated. NOTE: rainfall that falls on grid in adcirc is only
@@ -555,11 +555,11 @@
 !>
 !> Currently two options:
 !> activeRainType=1 (default)
-!>    Original implementation: multiply each nodal rainCurr and rainODT 
+!>    Original implementation: multiply each nodal rainCurr and rainODT
 !>    value by the nodecode to handle dry nodes.
 !> activeRainType=2  rain on "water" defined by bathymetry
 !>    Additional implementation from ND group to add test for
-!>    bathymetric value and only add rainfall for nodes that are 
+!>    bathymetric value and only add rainfall for nodes that are
 !>    active and defined as water: BP > 0.d0
 !>
 !> @todo: monitor accumulation vs H0 and add rain when there is enough
@@ -588,7 +588,7 @@
              activeRain(i) = nodecode(i)*                               &
      &            merge( 1.0d0, 0.d0, dp(i) > 0.d0 ) ;
           end do
-      end select  
+      end select
 
       return
 !------------------------------------------------------------------------

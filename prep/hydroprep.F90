@@ -2,7 +2,7 @@
 !  MODULE HYDROPREP
 !-----------------------------------------------------------------------
 !> @author Chris Szpilka, University of Oklahoma, cmszpilka@ou.edu
-!> 
+!>
 !> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
 !>
 !> @brief This module handles the I/O for adcprep related to adding
@@ -64,7 +64,7 @@
 !>  I/O unit numbers are set as described above until these are automated
 !>  in the larger ADCIRC scheme.
 !>
-!>----------------------------------------------------------------------- 
+!>-----------------------------------------------------------------------
       MODULE hydroPrep
 
       use mod_logging, only : screenUnit
@@ -105,13 +105,13 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-!                             P U B L I C  
+!                             P U B L I C
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 
 
 !-----------------------------------------------------------------------
-!> Called from adcprep.F (when useInteriorHydrology is .true.) to 
+!> Called from adcprep.F (when useInteriorHydrology is .true.) to
 !> do basic error checking and then create local (PE) interior hydrology
 !> input files using the domain decomposition of the ADCIRC grid
 !> created by the routine DECOMP.
@@ -130,7 +130,7 @@
       integer :: sdu(nproc) ! subdomain unit numbers
       real(8), allocatable :: QVal(:)
       logical :: success
-  
+
       !-------------------------------------------------
       ! Read in and localize the intHydro location files
       !     varies by interiorHydrologyType
@@ -145,9 +145,9 @@
       case default
          write(screenUnit,3271) interiorHydrologyType
          write(16,3271) interiorHydrologyType
-         stop   !terminate 
+         stop   !terminate
       end select
- 
+
       !----------------------------------------------------------
       ! Open and localize the global interiorHydrology discharges
       !   valid for all interiorHydrologyTypes (fort.430)
@@ -167,7 +167,7 @@
         ! Read in values for each snap
         do I=1,numHydro
           read(430,*,end=9999) QVal(I)
-        end do 
+        end do
        ! Write to correct processors
         do iproc=1,nproc
           do K=1,numHydroProc(iproc)
@@ -175,7 +175,7 @@
              write(sdu(iproc),*) QVal(indX)
           enddo
         end do
-      end do 
+      end do
       !Close all local and global discharge files
  9999 close(430)
       do iproc=1, nproc
@@ -184,7 +184,7 @@
 
       if(allocated(QVal)) deallocate (QVal)
 
- 3271   format(/,2X, 'useInteriorHydrology = T',  & 
+ 3271   format(/,2X, 'useInteriorHydrology = T',  &
      &    /,2X, 'interiorHydrologyType = ',I0,   &
      &    /,2X,'Your selection (a unit 15 parameter) is not valid.',  &
      &    /,2X,'No interior hydrology input was processed.',  &
@@ -239,7 +239,7 @@
       if (.not.Success) then
          !cms: change to stop since run will fail w/o files
          write(screenUnit,*) 'ERROR: Unit 420 file not preprocessed. '&
-     &        //'Terminating adcprep.'            
+     &        //'Terminating adcprep.'
          !return
          stop
       endif
@@ -267,7 +267,7 @@
 
       PE(1:6) = 'PE0000'
       numHydroProc(1:nproc) = 0 ! reset counter
-      do I=1, numHydro 
+      do I=1, numHydro
          read(420,*) indX  ! full domain node number
          do J=1, itotproc(indX)    ! loop subdomains to find node
             iproc2 = imap_nod_gl2(2*(J-1)+1,indX) ! find next subdomain
@@ -279,7 +279,7 @@
                   locID(I,iproc)=local
                   write(PE(3:6), '(I4.4)') iproc-1
                   write(screenUnit,94) PE, I, indX, local
-               end if 
+               end if
             end do
          end do
       enddo ! loop through numHydro
@@ -293,7 +293,7 @@
       ! --------------------------------
       do iproc=1,nproc
          ! number of hydroLocs
-         write(sdu(iproc),*) numHydroProc(iproc) 
+         write(sdu(iproc),*) numHydroProc(iproc)
          ! local node number
          do I=1,numHydroProc(iproc)
             indX = imap_hyd_LG(I,iproc)
@@ -319,12 +319,12 @@
 
 
 !-----------------------------------------------------------------------
-!> Called from prepInteriorHydrology within adcprep.F 
+!> Called from prepInteriorHydrology within adcprep.F
 !> Creates local (PE) interior hydrology input files that have
 !> locations specified by position instead of node number. It
 !> uses the domain decomposition of the ADCIRC grid created by
 !> the routine DECOMP.
-!> 
+!>
 !> Current options include interiorHydrologyType (2 or 3) with files
 !> fort.428/429/430. Choice set by passing the iounit (428/429).
 !>
@@ -368,7 +368,7 @@
          !return
          stop
       endif
- 
+
       ! Read fixed number of sources and allocate
       read(428,*) numHydro
       if(ics.eq.1) then
@@ -379,10 +379,10 @@
          allocate ( slps(numHydro),sfps(numHydro) )
          nbytes = 8*4*numHydro  ! 4 real arrays
       end if
-      allocate ( globID(numHydro) ) 
+      allocate ( globID(numHydro) )
       allocate ( numHydroProc(nproc) )
-      numHydroProc(1:nproc) = 0 ! set initial counter value 
-      allocate ( imap_hyd_LG(numHydro,nproc) ) 
+      numHydroProc(1:nproc) = 0 ! set initial counter value
+      allocate ( imap_hyd_LG(numHydro,nproc) )
 
       !Now update memory usage
       nbytes = nbytes + 4*(numHydro+nproc+nproc*numHydro) ! integers
@@ -399,14 +399,14 @@
             ! no rotation considered in adcprep
             call cylindermap(xps(I),yps(I),lonN,latN,sl0,sf0,ics)
          end if
-      end do 
-      close(428) 
+      end do
+      close(428)
 
       ! Determine which element each source is in
       if (.not. kdtSetup) call setup_kdt_search()
       call kdtsearch(xps,yps,globID,numHydro,&
      &          'Interior hydrology Locations ')
-            
+
       ! Determine which PROC each source is on
       write(screenUnit,*) ' '
       write(screenUnit,*) 'Interior Hydrology Locations (element index)'
@@ -423,7 +423,7 @@
                  numHydroProc(iproc) = numHydroProc(iproc) + 1
                  imap_hyd_LG(numHydroProc(iproc),iproc) = K
                  write(screenUnit,94) PE, K, globID(K), J
-                 exit                  
+                 exit
               endif
            enddo  !end loop thru num elements on PROC
         enddo  ! end loop thru numHydro locations
@@ -435,7 +435,7 @@
       ! Write each PROC fort.428 file and then close
       do iproc=1,nproc
          ! number of hydroLocs
-         write(sdu(iproc),*) numHydroProc(iproc) 
+         write(sdu(iproc),*) numHydroProc(iproc)
          ! XY or lon/lat coordinates
          do K=1,numHydroProc(iproc)
             indX = imap_hyd_LG(K,iproc)
@@ -447,7 +447,7 @@
             end if
          enddo
          close (sdu(iproc))
-      end do 
+      end do
 
       !----------------------------------------------------------
       ! Cleanup local arrays before exit - NOT module arrays
@@ -476,7 +476,7 @@
 
 !> Called from multiple prep files within hydroprep to open global
 !> and local files. Copied from prep.F OpenPrepFiles to remove circular
-!> dependency when compiling. Modified somewhat to suit needs of 
+!> dependency when compiling. Modified somewhat to suit needs of
 !> hydrology and add more descriptive messages.
 !-----------------------------------------------------------------------
       subroutine OpenPrepHydro(UnitNumber, Description,  &
@@ -507,9 +507,9 @@
       DefaultName(:) = ' '  !initialize to all blanks
       DefaultName(1:5) = 'fort.'
 
-      unitwidth = ceiling(log(dble(UnitNumber))/log(10.0)) ;        
-      dnlen = 5 + unitwidth ;   
-      write(unitnumberstr,'(I0)') UnitNumber ;
+      unitwidth = ceiling(log(dble(UnitNumber))/log(10.0))
+      dnlen = 5 + unitwidth
+      write(unitnumberstr,'(I0)') UnitNumber
       DefaultName = trim(adjustl(DefaultName))// &
      &              trim(adjustl(unitNumberStr))
 
@@ -545,7 +545,7 @@
          sdFileName(:) = ' '
          sdu(iproc) = 505 + (iproc-1)
          sdFileName(1:7) = 'PE0000/'
-         sdFileName(8:) = trim(DefaultName)     
+         sdFileName(8:) = trim(DefaultName)
 #ifdef ADCSWAN
          sdFileName = 'PE0000/'//FileName
 #endif

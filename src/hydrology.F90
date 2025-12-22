@@ -4,7 +4,7 @@
 !  MODULE HYDROLOGY
 !-----------------------------------------------------------------------
 !> @author Chris Szpilka, University of Oklahoma, cmszpilka@ou.edu
-!> 
+!>
 !> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
 !>
 !> @brief This module handles the I/O and computations related to
@@ -20,7 +20,7 @@
 !>  ADCIRC will only apply the source discharge at nodes that are wet and
 !>  will "ignore" the source terms on nodes that are dry at the current
 !>  time step.
-!>  
+!>
 !>  Interior hydrology is modeled by adding point sources at specified
 !>  locations within the ADCIRC domain and can be used to add hydrologic
 !>  input at any interior point, however they are only applied when
@@ -136,7 +136,7 @@
 !>  I/O unit numbers are set as described above until these are automated
 !>  in the larger ADCIRC scheme.
 !>
-!>----------------------------------------------------------------------- 
+!>-----------------------------------------------------------------------
       MODULE Hydrology
 
       use mod_logging, only : screenUnit, logMessage, allMessage,&
@@ -165,7 +165,7 @@
       integer, allocatable :: isActive(:)   ! flag for active sources
       integer, allocatable :: hydroNearNode(:)   ! nearest adcirc node
 
-      ! Namelist input from within read_input.F 
+      ! Namelist input from within read_input.F
       logical :: useInteriorHydrology = .false. ! default none
       integer :: interiorHydrologyType = 0 ! default none
       real(8) :: interiorHydrologyTimeInc = 3600 ! input time (sec)
@@ -173,7 +173,7 @@
       namelist /interiorHydrologyControl/ useInteriorHydrology,         &
      &          interiorHydrologyType, InteriorHydrologyTimeInc,        &
      &          useInteriorHydrologyRamp
- 
+
       ! Source terms used in gwce.F (sized by np)
       real(8),allocatable :: hydroCurr(:) ! hydro sources at current ts
       real(8),allocatable :: hydroODT(:) ! hydro sources time derivative
@@ -208,7 +208,7 @@
 !------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-!> Called from read_input.F (when useInteriorHydrology is .true.) to 
+!> Called from read_input.F (when useInteriorHydrology is .true.) to
 !> check validity of hydrology point source type and log messages.
 !>
 !> The value of interiorHydrologyType is set during readinput for
@@ -222,7 +222,7 @@
       use mod_terminate, ONLY : terminate, ADCIRC_EXIT_FAILURE
 
       implicit none
-  
+
       integer :: lun1, lun2
       character(10) :: reftime
 
@@ -267,7 +267,7 @@
      &       message='Unknown interiorHydrologyType in fort.15 '&
                    //'interiorHydrologyControl namelist.')
       end select
-  
+ 
       if (useInteriorHydrology) then
          if(useInteriorHydrologyRamp) then
             write(16,3272)
@@ -305,7 +305,7 @@
  3273   format(//5X,'useInteriorHydrologyRamp = .false.',&
      &    /,9X,'Interior hydrology forcing will be at full strength',&
      &    /,9X,'from the start of the simulation.')
- 
+
       return
 !-----------------------------------------------------------------------
       end subroutine interiorHydrologyCheck
@@ -313,7 +313,7 @@
 
 
 !-----------------------------------------------------------------------
-!> Called from read_input.F (when useInteriorHydrology is .true.) to 
+!> Called from read_input.F (when useInteriorHydrology is .true.) to
 !> allocate all arrays necessary for hydrology point source terms.
 !> Also calls readInteriorHydrologyLocs() to read location files for
 !> interior hydrology options, since this only needs to be done once.
@@ -325,14 +325,14 @@
 !-----------------------------------------------------------------------
 
       implicit none
-  
+ 
       integer :: ioerr   !IO error for interior hydrology
       integer :: psLun   !unit number for input file
-     
+
       character(8) :: hFile  !default filename for input
 
       LOG_SCOPE_TRACED("allocInteriorHydrology", HYDROLOGY_TRACING)
-  
+
       write(16,3010)
 
       ! First set of allocate statements are utilized by
@@ -341,7 +341,7 @@
       allocate ( hydroCurr(mnp), hydroODT(mnp) )
       hydroCurr(1:mnp) = 0.D0
       hydroODT(1:mnp) = 0.D0
-  
+
       ! Set file name for reading input based on Type
       select case (abs(interiorHydrologyType))
        case(1)
@@ -376,7 +376,7 @@
 
  3010 format(/,"INTERIOR HYDROLOGY SOURCES",/)
  3011 format(" Checking locations ...")
- 
+
       return
 !-----------------------------------------------------------------------
       end subroutine allocInteriorHydrology
@@ -388,18 +388,18 @@
 !> interior hydrology sources will be applied. Opens and reads the
 !> location file. Geographic locations require additional processing
 !> using kdtsearchHydrology()
-!> 
-!> What is read in depends upon the value of ps_lun:   
+!>
+!> What is read in depends upon the value of ps_lun:
 !>  420 -  adcirc node# to apply source at
-!>  428 -  standard lon, lat input (two columns) 
-!>  429 -  National Water Model (NWM) input (five columns) 
-!>         N designates endpoint for this feature (point source) 
+!>  428 -  standard lon, lat input (two columns)
+!>  429 -  National Water Model (NWM) input (five columns)
+!>         N designates endpoint for this feature (point source)
 !>     and T designates endpoint for the next downstream feature
 !>  429 -  NOT ACTIVATED YET - code removed
 !-----------------------------------------------------------------------
-      subroutine readInteriorHydrologyLocs(ps_lun) 
+      subroutine readInteriorHydrologyLocs(ps_lun)
 !-----------------------------------------------------------------------
-   
+
       use global, only : ifsprots
       use adc_constants, only : deg2rad, rad2deg
       use mesh, only : ics, slam0, sfea0, drvspcoorsrots, cylindermap
@@ -407,7 +407,7 @@
       implicit none
 
       integer, intent(in) :: ps_lun  !file specifier
-  
+
       integer :: I
       real(8) :: xcoordN, ycoordN, xcoordT, ycoordT
       real(8) :: lonN, latN
@@ -426,17 +426,17 @@
         case(428) ! simple lon/lat format - find nearest node
            if(ICS.EQ.1) then
              write(16,3014)
-           else if(ICS.EQ.2) then 
+           else if(ICS.EQ.2) then
              write(16,3015)
            end if
            do I=1,numHydro
-              if (ICS.EQ.1) then       
+              if (ICS.EQ.1) then
                  read(ps_lun,*) xcoordN, ycoordN
               else
                  read(ps_lun,*) lonN, latN
                  lonN = lonN*deg2rad
                  latN = latN*deg2rad
-                 if ( ifsprots .EQ. 1 ) then            
+                 if ( ifsprots .EQ. 1 ) then
                     call drvspcoorsrots(lonrN, latrN, lonN, latN)
                  else
                     latrN = latN
@@ -444,7 +444,7 @@
                  end if
                  call cylindermap(xcoordN, ycoordN,                     &
      &                lonrN, latrN, slam0, sfea0, ics)
-              end if 
+              end if
               call kdtSearchHydrology(xcoordN,ycoordN,hydroNearNode(I))
               if (ICS.EQ.1) then
                  write(16,1881) I,hydroNearNode(I),                     &
@@ -464,7 +464,7 @@
 1881  format("Near",2X,I9,4X,I9,2(4X,F14.2))
 1882  format("Near",2X,I9,4X,I9,2(4X,F9.4))
 
-      return 
+      return
 !-----------------------------------------------------------------------
       end subroutine readInteriorHydrologyLocs
 !-----------------------------------------------------------------------
@@ -475,16 +475,16 @@
 !> other procedures necessary to prepare interior hydrology data at a
 !> particular point in time. Add other options by expanding the
 !> interiorHydrologyType case options. All discharge values should be
-!> provided in units of (m^3/s) unless otherwise stated in each case. 
+!> provided in units of (m^3/s) unless otherwise stated in each case.
 !-----------------------------------------------------------------------
       subroutine getInteriorHydrology(timeloc)
 !-----------------------------------------------------------------------
 
       use global, only : dt
       use mesh, only : np, divbyTotalArea0
- 
+
       implicit none
- 
+
       real(8), intent(in) :: timeloc ! current simulation time
 
       integer :: i ! iterator for loop
@@ -499,7 +499,7 @@
          rampPS = tanh((2.d0*timeloc/86400.d0)/hydroRamp)
       else
          rampPS = 1.d0
-      endif 
+      endif
 
       ! Update active array for interior hydrology
       call checkActiveHydrology()
@@ -536,7 +536,7 @@
      &                    (hydroX(I)-hydroOld(I))/dt
       end do
 
-      return 
+      return
 !-----------------------------------------------------------------------
       end subroutine getInteriorHydrology
 !-----------------------------------------------------------------------
@@ -552,7 +552,7 @@
       use mesh, only : divByTotalArea0
 
       implicit none
-      
+
       integer :: i ! node loop counter
       integer :: indXH ! local nearNode index
       integer :: ioerr ! IO error code
@@ -600,8 +600,8 @@
          ! hydroCurr is initialized to zero during allocation
          hydroCurr(indXH) = hydroCurr(indXH) + rampPS*hydro1(I)*&
      &       3.d0*divbyTotalArea0(indXH)*isActive(I)
-      end do 
- 
+      end do
+
       return
 !------------------------------------------------------------------------
       end subroutine coldstartInteriorHydrology
@@ -622,7 +622,7 @@
       use mesh, only : np, divByTotalArea0
 
       implicit none
-  
+
       real(8), intent(in) :: timeloc
       integer :: i ! node loop counter
       integer :: indXH ! temp global node ID for hydro
@@ -640,7 +640,7 @@
          rampPS = tanh((2.d0*timeloc/86400.d0)/hydroRamp)
       else
          rampPS = 1.d0
-      endif 
+      endif
       call checkActiveHydrology()
 
       ! Read initial two sets into memory (same for all intHydroTypes)
@@ -651,7 +651,7 @@
       do I=1,numHydro
           read(430,*) hydro1(I)
       end do
-      !Read second set of values			
+      !Read second set of values
       do I=1,numHydro
           read(430,*) hydro2(I)
       end do
@@ -667,14 +667,14 @@
          hydroTime2 = hydroTime1 + interiorHydrologyTimeInc
          do IT=1,iths
              timeit=it*dt + statim*86400.d0
-             if (timeit.GT.hydroTime2) then 
+             if (timeit.GT.hydroTime2) then
                  hydroTime1=hydroTime2
                  hydroTime2=hydroTime2+interiorHydrologyTimeInc
                  hydro1(1:numHydro)=hydro2(1:numHydro)
                  hydro2(1:numHydro)=0.D0  ! intialize for each new read
                  do I=1,numHydro
                     read(430,*) hydro2(I)
-                 end do 
+                 end do
              end if
          end do
       else  !hotstart: no skip, but set time
@@ -694,7 +694,7 @@
          indXH = hydroNearNode(I)
          hydroCurr(indXH) = hydroCurr(indXH) + rampPS*hydro1(I)*&
      &       3.d0*divbyTotalArea0(indXH)*isActive(I)
-      end do 
+      end do
 
       return
 !------------------------------------------------------------------------
@@ -705,7 +705,7 @@
 !------------------------------------------------------------------------
 !> Check for active hydrology locations:
 !> Called before assigning hydroCurr and hydroODT within three hydrology
-!> subroutines: getInteriorHydrologyForcing, and 
+!> subroutines: getInteriorHydrologyForcing, and
 !> cold(hot)startInteriorHydrologyForcing - must be called after
 !> nodecode has been updated in wetdry.F
 !> Original implementation was to multiply each nodal hydroCurr value by
@@ -713,7 +713,7 @@
 !> that terminate at the same nearNode. The use of isActive during the
 !> accumulation in getInteriorHydrology() removes this and lets each
 !> source be handled separately. This is only strictly necessary for
-!> dynamic locations, but is more flexible for all Types. 
+!> dynamic locations, but is more flexible for all Types.
 !> Note: totalArea and divByTotalArea are updated at wet/dry step4 each
 !> time step and initialized in c/hstart modules - both with calls to
 !> totalAreaCalc() in mesh.F
@@ -741,14 +741,14 @@
         ! as is
         ! isActive(:)=1 ! resets all values to on or active
         ! DO I=1,numPS
-        !    IF (DivByTotalArea(nearNode(I)).NE.0.d0) THEN 
+        !    IF (DivByTotalArea(nearNode(I)).NE.0.d0) THEN
              ! node is active and will contribute, turn
              ! off "to" node if exists
-        !       IF (toNode(I).NE.0) THEN 
+        !       IF (toNode(I).NE.0) THEN
         !          isActive(toNode(I))=0
-        !       END IF 
-        !    END IF 
-        ! END DO 
+        !       END IF
+        !    END IF
+        ! END DO
         ! May need an update similar to below for all "active" arrays
         !#ifdef CMPI
         !         CALL UPDATEI(NNODECODE,IDUMY,1)
@@ -802,7 +802,7 @@
         call msg_fini()
       endif
 #endif
-      stop 1 
+      stop 1
 
       return
 !------------------------------------------------------------------------
@@ -815,14 +815,14 @@
 !> for a given interior hydrology source. It was necessary to modify
 !> the main kdtsearch() routine since if the hydrology source is not
 !> within an element, it cannot be added - unlike a recording station
-!> a source term must be located within the domain. 
-!> 
-!> Hydrology sources that were not found during preprocessing are 
+!> a source term must be located within the domain.
+!>
+!> Hydrology sources that were not found during preprocessing are
 !> indicated by lon=lat=-999.0 which should return a "not found" result
 !> from kdtree. However, these locations should be removed from the
-!> input file (fort.428/429) to avoid termination of ADCIRC. 
-!> 
-!> Returns the nearest node instead of the found element. 
+!> input file (fort.428/429) to avoid termination of ADCIRC.
+!>
+!> Returns the nearest node instead of the found element.
 !>
 !> @todo: currently uses the already allocated global search tree that
 !> is created in read_input. The search tree results and criteria (bcxy
@@ -831,7 +831,7 @@
 !> will need changed if that ever changes.
 !> Also, for now calls hydrologyTerminate if a location is not found
 !> do we want to add capability to just set inactive for all time and
-!> set the found node to nearest node or is termination cleaner? 
+!> set the found node to nearest node or is termination cleaner?
 !------------------------------------------------------------------------
        subroutine kdtSearchHydrology(InputXCoordinate,InputYCoordinate, &
      &         OutputNode)
@@ -840,7 +840,7 @@
       use global, only : srchdp, tree, kdresults
       use mesh, only : nm, x, y, rmax, dp
       use kdtree2_module
- 
+
       implicit none
 
       real(8), intent(in) :: InputXCoordinate    ! cartesian/proj
@@ -859,7 +859,7 @@
       logical :: KeepSearch ! .true. = minimum distance not found yet
 
       real(8), parameter :: Tolerance = 1.0d-5 ! area diff for match
- 
+
       LOG_SCOPE_TRACED("kdtSearchHydrology", HYDROLOGY_TRACING)
 
       ElementFound = .false.
@@ -871,25 +871,25 @@
       call kdtree2_n_nearest(tp=tree,qv=(/Xsta,Ysta/),                 &
      &   nn=srchdp,results=kdresults)
 
-      ! Check to see if the points lies within rmax of any of these 
+      ! Check to see if the points lies within rmax of any of these
       ! elements.
-      itc = 1 
+      itc = 1
       elmmin = minval(sqrt(kdresults(1:srchdp)%dis)                    &
      &       - rmax(kdresults(1:srchdp)%idx) )
 
-      if (elmmin(1).LE.0.0d0) then 
-       ! Point lies within search radius of an element - loop 
+      if (elmmin(1).LE.0.0d0) then
+       ! Point lies within search radius of an element - loop
        ! through the elements in the search list
         do while ((ElementFound.EQV..false.).AND.(itc.LE.srchdp))
           iek = kdresults(itc)%idx ! Current search element number
-          ! Get the distance from this point to the center of the 
+          ! Get the distance from this point to the center of the
           ! current element
           dist = sqrt(kdresults(itc)%dis)
           ! If the distance is less than or equal to rmax
-          ! (rmax = 1.5*element radius) then the point is near 
+          ! (rmax = 1.5*element radius) then the point is near
           ! the element and might be in the element
           ! Proceed with the weights test
-          if (dist-rmax(iek).LE.0.0d0) then 
+          if (dist-rmax(iek).LE.0.0d0) then
             ! Get the shape function for this element
             ielm(:) = NM(iek,(/1,2,3/)) ! element's node number
             xelm(:) = X(ielm(:))  ! element's vertex x-values
@@ -904,12 +904,12 @@
             A2 = (Xsta-X1)*(Y3-Y1) - (YSta-Y1)*(X3-X1)
             A3 = (Ysta-Y1)*(X2-X1) - (XSta-X1)*(Y2-Y1)
             AA = ABS(A1) + ABS(A2) + ABS(A3)
-            AREASK=X2*Y3+X1*Y2+X3*Y1-Y1*X2-Y2*X3-Y3*X1 
+            AREASK=X2*Y3+X1*Y2+X3*Y1-Y1*X2-Y2*X3-Y3*X1
             AE = ABS(AA-AREASK)/AREASK
-            if (AE.LT.Tolerance) then 
-              ! Do not calculate distances and find nearest 
-              ! node until you've found the point within the 
-              ! domain. 
+            if (AE.LT.Tolerance) then
+              ! Do not calculate distances and find nearest
+              ! node until you've found the point within the
+              ! domain.
               ElementFound = .true.
               dpelm(:) = dp(ielm(:))
               dp1 = dpelm(1)
@@ -920,11 +920,11 @@
               SD3 = (X3-Xsta)**2 + (Y3-Ysta)**2
               ! First check for any zero lengths - point is ADCIRC node
               if (SD1 .EQ. 0.d0) then
-                 OutputNode = ielm(1) 
+                 OutputNode = ielm(1)
               else if (SD2 .EQ. 0.d0) then
-                 OutputNode = ielm(2) 
+                 OutputNode = ielm(2)
               else if (SD3 .EQ. 0.d0) then
-                 OutputNode = ielm(3) 
+                 OutputNode = ielm(3)
               else
                  KeepSearch = .true.
                  SD12 = ABS(SD1-SD2)/SD1
@@ -933,65 +933,65 @@
               end if
               if (KeepSearch) then
                  ! Check each tolerance to see if any lengths are equal
-                 if (SD12.LT.Tolerance) then 
-                    if (SD13.LT.Tolerance) then 
+                 if (SD12.LT.Tolerance) then
+                    if (SD13.LT.Tolerance) then
                     ! PS is equidistant from all nodes, check
-                    ! bathymetry - Bathymetry is positive and 
-                    ! topography is negative 
-                      if ((dp1.GE.dp2).AND.(dp1.GE.dp3)) then 
-                        OutputNode = ielm(1) 
-                      else if ((dp2.GE.dp1).AND.(dp2.GE.dp3)) then 
+                    ! bathymetry - Bathymetry is positive and
+                    ! topography is negative
+                      if ((dp1.GE.dp2).AND.(dp1.GE.dp3)) then
+                        OutputNode = ielm(1)
+                      else if ((dp2.GE.dp1).AND.(dp2.GE.dp3)) then
                         OutputNode = ielm(2)
                       else
                         OutputNode = ielm(3)
-                      end if 
+                      end if
                     else
                     ! PS is equidistant from nodes 1 and 2
-                      if (dp1.GE.dp2) then 
+                      if (dp1.GE.dp2) then
                         OutputNode = ielm(1)
                       else
                         OutputNode = ielm(2)
-                      end if 
-                    end if 
-                 else if (SD13.LT.Tolerance) then 
+                      end if
+                    end if
+                 else if (SD13.LT.Tolerance) then
                  ! PS is equidistant from nodes 1 and 3
-                    if (dp1.GE.dp3) then 
+                    if (dp1.GE.dp3) then
                       OutputNode = ielm(1)
                     else
                       OutputNode = ielm(3)
-                    end if 
-                 else if (SD23.LT.Tolerance) then 
+                    end if
+                 else if (SD23.LT.Tolerance) then
                  ! PS is equidistant from nodes 2 and 3
-                    if (dp2.GE.dp3) then 
-                      OutputNode = ielm(2) 
-                    else 
-                      OutputNode = ielm(3) 
-                    end if 
+                    if (dp2.GE.dp3) then
+                      OutputNode = ielm(2)
+                    else
+                      OutputNode = ielm(3)
+                    end if
                  ! There are no equal distances, find the shortest
-                 else if ((SD1.LT.SD2).AND.(SD1.LT.SD3)) then 
-                    OutputNode = ielm(1) 
-                 else if ((SD2.LT.SD1).AND.(SD2.LT.SD3)) then 
-                    OutputNode = ielm(2) 
-                 else 
+                 else if ((SD1.LT.SD2).AND.(SD1.LT.SD3)) then
+                    OutputNode = ielm(1)
+                 else if ((SD2.LT.SD1).AND.(SD2.LT.SD3)) then
+                    OutputNode = ielm(2)
+                 else
                     OutputNode = ielm(3)
                  end if ! End of search for the nearest node
               end if
-            else ! not in this element - keep looking     
+            else ! not in this element - keep looking
               itc = itc + 1
             end if ! End area ratio test
-          else 
-            ! Point is too far away from the barycenter of the 
-            ! element to possibly be in the element, so move to 
-            ! the next element. 
+          else
+            ! Point is too far away from the barycenter of the
+            ! element to possibly be in the element, so move to
+            ! the next element.
             itc = itc + 1
           end if !end rmax test
         end DO ! end the while loop
       end if ! end within search radius test
 
-      if (.not. ElementFound) then 
+      if (.not. ElementFound) then
          write(16,9893) Xsta, Ysta
          call hydrologyTerminate()
-      end if 
+      end if
 
  9893 format(/,1X,'!!!!!  WARNING - FATAL INPUT ERROR  !!!!!',/,       &
      &     1X,'Point Source does NOT lie within any element.',/,       &

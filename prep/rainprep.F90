@@ -2,7 +2,7 @@
 !  MODULE RAINPREP
 !-----------------------------------------------------------------------
 !> @author Chris Szpilka, University of Oklahoma, cmszpilka@ou.edu
-!> 
+!>
 !> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
 !>
 !> @brief This module handles the I/O for adcprep related to adding
@@ -19,7 +19,7 @@
 !>  are all global. However, file checks to issue potential warnings to
 !>  users before they try to run padcirc have been included in adcprep.
 !>  Also includes all variables related to the namelist.
-!>----------------------------------------------------------------------- 
+!>-----------------------------------------------------------------------
       module rainPrep
 
       implicit none
@@ -49,7 +49,7 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-!                             P U B L I C  
+!                             P U B L I C
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 
@@ -58,7 +58,7 @@
       use mod_logging, only : screenUnit
 
       implicit none
-  
+
       !-------------------------------------------------
       ! Verify that requested rainType is valid and that
       !     files are in the main directory
@@ -81,9 +81,9 @@
       end select
 
  3260   format(/,2X, 'rainType = ',I3,  &
-     &    /,2X,'Checking for global rain input:',/) 
+     &    /,2X,'Checking for global rain input:',/)
 
- 3261   format(/,2X,'useRain = T',  & 
+ 3261   format(/,2X,'useRain = T',  &
      &    /,2X, 'rainType = ',I3,   &
      &    /,2X,'Your selection (a unit 15 parameter) is not valid.', &
      &    /,2X,'ERROR: adcprep terminated.')
@@ -96,7 +96,7 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-!                             P R I V A T E  
+!                             P R I V A T E
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 
@@ -123,9 +123,9 @@
       defaultName(:) = ' '  !initialize to all blanks
       defaultName(1:5) = 'fort.'
 
-      unitwidth = ceiling(log(dble(UnitNumber))/log(10.0)) ;        
-      dnlen = 5 + unitwidth ;   
-      write(unitnumberstr,'(I0)') UnitNumber ;
+      unitwidth = ceiling(log(dble(UnitNumber))/log(10.0))
+      dnlen = 5 + unitwidth
+      write(unitnumberstr,'(I0)') UnitNumber
       defaultName = trim(adjustl(defaultName))// &
      &              trim(adjustl(unitNumberStr))
 
