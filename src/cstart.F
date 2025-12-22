@@ -181,7 +181,7 @@
       etas(:) = 0.d0
       cH1(:) = 0.d0
       en2(:) = 0.d0
- 
+
       ! Compute initial wet/dry state and water surface elevation:
       ! Checks for nodes that should be dry and updates nnodecode
       !cms: mvd nodecode = nnodecode here from totalAreaCalc
@@ -410,7 +410,7 @@
       ! Variables include:
       !   elevation (fort.61)
       !   bathymetry (fort.75) -- tcm v50.66.01
-      !   rain.61 (lun=94) -- cms v56.02 
+      !   rain.61 (lun=94) -- cms v56.02
       !   dynamicWaterLevelCorrection.61  (lun=109) -- jgf
       !-----------------------------------------------------------------
 
@@ -1351,7 +1351,7 @@ c...
                if (nnodecode(i).eq.0) then
                   if (dryReasonInitialized(i).eqv..false.) then
                      write(dryReason(i),
-     &            '("node=",i0," this node is dry for no good reason.")') 
+     &            '("node=",i0," this node is dry for no good reason.")')
                   dryReasonInitialized(i) = .true.
                   endif
                   call logMessage(DEBUG,trim(dryReason(i)))

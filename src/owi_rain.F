@@ -111,7 +111,7 @@
       PRIVATE swpointsR,swpointsB,wR,wB
       PRIVATE updateB,updateR,date1R,date2R
       PRIVATE iLatc,iLongc,iCYMDHc,iMinc,dxc,dyc,swlatc,swlongc
-      PRIVATE iLatR,iLongR,iCYMDHR,iMinR,dxR,dyR,swlatR,swlongR 
+      PRIVATE iLatR,iLongR,iCYMDHR,iMinR,dxR,dyR,swlatR,swlongR
       PRIVATE iLatB,iLongB,iCYMDHB,iMinB,dxB,dyB,swlatB,swlongB
       PRIVATE latR,longR,latB,longB,rainB,rainR
 
@@ -142,7 +142,7 @@
 
       integer, intent(in) :: np
       real(8), intent(out) :: rainval(:)
-   
+
       integer :: i
       integer :: date1rain,date2rain
       integer :: numSkipSnaps
@@ -152,7 +152,7 @@
 
       allocate(swpointsB(NP,2),wB(NP,4))
       allocate(swpointsR(NP,2),wR(NP,4))
-      
+
       ! Read meta info -- todo: edit to use openFileForRead
       open(27,file=TRIM(GBLINPUTDIR)//'/'//'fort.27',status='old',
      & action='read')
@@ -175,7 +175,7 @@
         numSkipSnaps = ABS(numBlankSnaps)
         numBlankSnaps = 0
       else
-        numSkipSnaps = 0 
+        numSkipSnaps = 0
       endif
 
       ! If want to add USER controlled unit multiplier - add read here
@@ -263,7 +263,7 @@
       real(8) :: w,w1,w2,w3,w4  !local weights
       logical :: regionExists
       character(1024) :: scratchMessage=" "  ! wont work with formatting
- 
+
       LOG_SCOPE_TRACED("rain12get", RAIN_TRACING)
 
 
@@ -291,7 +291,7 @@
       isnapB = isnapB+1
 
       ! Read grid specifications/date in rain file
-      read (271,11,end=10000,err=99999) 
+      read (271,11,end=10000,err=99999)
      &      iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
 
       ! Check if header info has changed from the previous snapshot
@@ -304,7 +304,7 @@
           updateB = 0
         endif
       endif
-      
+
       iCYMDHB = iCYMDHc
       iMinB = iMinc
 
@@ -312,7 +312,7 @@
       if(updateB.eq.1) then
         call interpRainBasin(np)
       endif
-      
+
       ! Read rain intensities
       read(271,22,end=9999,err=99999) ((rainB(i,j),i=1,iLongB),j=1,iLatB)
 
@@ -331,12 +331,12 @@
       isnapR = isnapR+1
 
       ! Read grid specifications/date in rain file
-      read (272,11,end=10000,err=99999) 
+      read (272,11,end=10000,err=99999)
      &     iLatc,iLongc,dxc,dyc,swlatc,swlongc,iCYMDHc,iMinc
 
       ! Check if header info has changed from the previous snapshot
       if(isnapR.gt.1) then
-        if(iLatc.ne.iLatR.or.iLongc.ne.iLongR.or.dxc.ne.dxR.or. 
+        if(iLatc.ne.iLatR.or.iLongc.ne.iLongR.or.dxc.ne.dxR.or.
      &       dyc.ne.dyR.or.swlatc.ne.swlatR.or.
      &       swlongc.ne.swlongR) then
           updateR = 1
@@ -366,7 +366,7 @@
  100  CONTINUE
 
       ! Interpolate onto ADCIRC grid and write to logfile
-      ! cms: removed ramp      
+      ! cms: removed ramp
       if(regionExists) then
          if (myproc == 0 ) write(screenUnit,13) iCYMDHB, iMinB
       else
@@ -478,7 +478,7 @@
 
       return
 
-      
+
 99999 continue
 
       call terminate(exit_code=ADCIRC_EXIT_FAILURE,
@@ -538,14 +538,14 @@
       dyB = dyc
       swlatB = swlatc
       swlongB = swlongc
-        
+
       ! Allocate and create matrices
       if(allocated(longB)) deallocate(longB)
       if(allocated(latB))  deallocate(latB)
       allocate(longB(iLongB),latB(iLatB))
       if(allocated(rainB))  deallocate(rainB)
       allocate(rainB(iLongB,iLatB))
-        
+
       ! Generate long&lat on each grid point
       do i=1,iLatB
         latB(i) = swlatB+(i-1)*dyB
@@ -553,41 +553,41 @@
       do i=1,iLongB
         longB(i) = swlongB+(i-1)*dxB
       enddo
-        
+
       ! Generate interpolation coefficients (south west point and weights)
       do i=1,NP
         adcLat  = rad2deg*SFEA(i)
         adcLong = rad2deg*SLAM(i)
 
-        if (adcLong>=longB(1).and.adcLong<longB(iLongB) .and. 
+        if (adcLong>=longB(1).and.adcLong<longB(iLongB) .and.
      &       adcLat>=latB(1).and.adcLat<latB(iLatB)) then
           do j=1,iLongB-1
-            if (adcLong>=longB(j) .and.  
+            if (adcLong>=longB(j) .and.
      &           adcLong<longB(j+1)) then
               xi=j
               goto 200
             endif
           enddo
  200      continue
-            
+
           do k=1,iLatB-1
-            if (adcLat>=latB(k) .and. 
+            if (adcLat>=latB(k) .and.
      &           adcLat<latB(k+1)) then
               yi=k
               goto 300
             endif
           enddo
  300      continue
-            
+
           swpointsB(i,1) = xi
           swpointsB(i,2) = yi
-            
+
           w=(longB(xi+1)-longB(xi))*(latB(yi+1)-latB(yi))
           w1=(longB(xi+1)-adcLong)*(latB(yi+1)-adcLat)
           w2=(adcLong-longB(xi))*(latB(yi+1)-adcLat)
           w3=(adcLong-longB(xi))*(adcLat-latB(yi))
           w4=(longB(xi+1)-adcLong)*(adcLat-latB(yi))
-            
+
           wB(i,1)=w1/w
           wB(i,2)=w2/w
           wB(i,3)=w3/w
@@ -596,7 +596,7 @@
         else
           swpointsB(i,1) = 0
           swpointsB(i,2) = 0
-            
+
         endif
       enddo
 
@@ -636,7 +636,7 @@
       dyR = dyc
       swlatR = swlatc
       swlongR = swlongc
- 
+
       ! Allocate and create matrices
       if(allocated(longR)) deallocate(longR)
       if(allocated(latR))  deallocate(latR)
@@ -657,7 +657,7 @@
         adcLat  = rad2deg*SFEA(i)
         adcLong = rad2deg*SLAM(i)
 
-        if (adcLong>=longR(1).and.adcLong<longR(iLongR) .and. 
+        if (adcLong>=longR(1).and.adcLong<longR(iLongR) .and.
      &       adcLat>=latR(1).and.adcLat<latR(iLatR)) then
           do j=1,iLongR-1
             if (adcLong>=longR(j).and.adcLong<longR(j+1)) then

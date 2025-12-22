@@ -338,7 +338,7 @@ C
       logical :: outputNOFF = .false.
 
       !
-      !   P R E C I P I T A T I O N   O U T P U T  D A T A 
+      !   P R E C I P I T A T I O N   O U T P U T  D A T A
       !
       ! cms/kmd 11/25/25: Add support for precipitation output.
       ! Station output controlled by elevation stations and global
