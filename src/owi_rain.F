@@ -48,8 +48,10 @@
 !> extensively and the owi_rain and owi_ice files work but are out of
 !> date. Will have to decide if separate modules for 1 vs 2 variables
 !> or just call a single-variable module twice more than once with the
-!> correct file unit and variable information. Note that rain requires
-!> an additional averaging to account for negative values over land.
+!> correct file unit and variable information. Note that rain and ice
+!> require an additional averaging to account for negative values over
+!> land. Getting errors when use formatted write to scratchMessage, so
+!> kept the screenUnit for formatted messages with variables.
 !>
 !-----------------------------------------------------------------------
       module owi_rain
@@ -57,18 +59,11 @@
 
       use sizes, only : myproc
       use mod_logging, only : t_log_scope, init_log_scope,
-     &    nscreen, screenUnit, allMessage, INFO, ERROR
+     &    screenUnit, INFO, allMessage, logMessage
 !      use mod_io, only : openFileForRead
       use mod_terminate, only : terminate, ADCIRC_EXIT_FAILURE
-!#ifdef CMPI
-!      use messenger, only : msg_fini
-!#endif         
 
       implicit none
-
-      character(1024) :: scratchMessage
-
-      integer(8):: date1R, date2R  ! used in init/get
 
       ! Values read from control file: used in init and get
       integer :: numSets, numBlankSnaps
@@ -77,10 +72,17 @@
       ! and incremented in get
       integer :: cntSnaps, isnapR, isnapB
 
+      ! Flags for when to update grid interpolation factors
+      ! initialized in init and updated in get
+      integer :: updateB, updateR
+
+      ! Partial datetime from header for regional data only: to track
+      ! when need to process regional data (do not read minutes)
+      integer :: date1R, date2R
+
       ! Basin/Regional header values: used to determine when
       ! an interpolation update is required
-      ! compare to current in get, update in interp -- these can
-      ! be localized to interp if change how update happens
+      ! compare to current in get, update in interp
       integer :: iLatR,iLongR,iCYMDHR,iMinR
       real(8)  :: dxR,dyR,swlatR,swlongR
       integer :: iLatB,iLongB,iCYMDHB,iMinB
@@ -91,26 +93,30 @@
       integer,save :: iLatc,iLongc,iCYMDHc,iMinc
       real(8)  :: dxc,dyc,swlatc,swlongc
 
-      ! allocated in init, updated in interp, used in get
+      ! Interpolation: allocated in init, updated in interp, used in get
       integer,allocatable :: swpointsR(:,:)
       integer,allocatable :: swpointsB(:,:)
       real(8),allocatable :: wR(:,:)
       real(8),allocatable :: wB(:,:)
 
+      ! Arrays for OWI data fields and coordinates (may not need to be
+      ! in main module??) used in interpRain and getRain
+      real(8), dimension(:,:), allocatable :: rainB,rainR
+      real(8), dimension(:), allocatable :: latR,longR,latB,longB
+
       PUBLIC rain12init, rain12get
       PRIVATE interpRainBasin, interpRainRegion
       !all variables are private
       PRIVATE numSets,numBlankSnaps,cntSnaps,isnapR,isnapB
-      PRIVATE swpointsR,swpointsB,wR,wB, scratchMessage
+      PRIVATE swpointsR,swpointsB,wR,wB
+      PRIVATE updateB,updateR,date1R,date2R
       PRIVATE iLatc,iLongc,iCYMDHc,iMinc,dxc,dyc,swlatc,swlongc
       PRIVATE iLatR,iLongR,iCYMDHR,iMinR,dxR,dyR,swlatR,swlongR 
-      PRIVATE iLatB,iLongB,iCYMDHB,iMinB,dxB,dyB,swlatB,swlongB 
-
-!-----------------------------------------------------------------------
+      PRIVATE iLatB,iLongB,iCYMDHB,iMinB,dxB,dyB,swlatB,swlongB
+      PRIVATE latR,longR,latB,longB,rainB,rainR
 
 
       CONTAINS
-
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
@@ -122,7 +128,8 @@
 
 
 !-----------------------------------------------------------------------
-!> @brief Initializes reading data from Oceanweather format precip fields
+!> @brief Initializes reading data from Oceanweather format precip
+!fields
 !> @param[out] rainval  precipitation rate
 !> @param[in]  np       number of nodes in adcirc mesh for processor
 !-----------------------------------------------------------------------
@@ -137,7 +144,6 @@
       real(8), intent(out) :: rainval(:)
    
       integer :: i
-      integer(8):: date1B,date2B
       integer :: date1rain,date2rain
       integer :: numSkipSnaps
       character(80) :: owiheader
@@ -157,12 +163,6 @@
       read(27,*,err=99999) numSets
 
       if(numSets.NE.1.and.numSets.NE.2) then
-!        if (myproc == 0) write(screenunit,1004)
-!        write(16,1004)
-!#ifdef CMPI
-!        call msg_fini()
-!#endif
-!        stop
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &      message='Number of sets in rain control (fort.27) must '
      &       //'be either 1 or 2.')
@@ -178,7 +178,7 @@
         numSkipSnaps = 0 
       endif
 
-      ! If want to add unit multiplier - add read here
+      ! If want to add USER controlled unit multiplier - add read here
       ! before closing the control file
       close(27)
 
@@ -188,36 +188,34 @@
       ! Read begining/ending dates of rain file
       owiheader(:) = ' '  !set owiheader to blanks before read
       read(271,fmt='(a80)',err=99999) owiheader
-      read(owiheader(56:65),'(I10)') date1rain
-      read(owiheader(71:80),'(I10)') date2rain
+      read(owiheader(52:61),'(I10)') date1rain
+      read(owiheader(69:78),'(I10)') date2rain
 
       if (myproc == 0)then
-         write(screenunit,*)'date1 in basin rainfall file = ',date1rain
-         write(screenunit,*)'date2 in basin rainfall file = ',date2rain
+         write(screenunit,*)'Basin rainfall: startDate = ',date1rain
+         write(screenunit,*)'Basin rainfall: endDate = ',date2rain
       endif
-
-      date1B = date1rain
-      date2B = date2rain
 
       ! Check if region scale data exist
       IF(numSets.eq.1) GOTO 100
 
-      ! Read region rain file header -- todo: edit to use openFileForRead
+      ! Read region rain file header -- todo: edit to use
+      ! openFileForRead
       open(272,file=TRIM(GBLINPUTDIR)//'/'//'fort.272',status='old')
 
       ! Read begining/ending dates of rain file
       owiheader(:) = ' '  !set owiheader to blanks before read
       read(272,fmt='(a80)',err=99999) owiheader
-      read(owiheader(56:65),'(I10)') date1rain
-      read(owiheader(71:80),'(I10)') date2rain
-
-      if (myproc == 0)then
-         write(screenunit,*)'date1 in region rainfall file = ',date1rain
-         write(screenunit,*)'date2 in region rainfall file = ',date2rain
-      endif
+      read(owiheader(52:61),'(I10)') date1rain
+      read(owiheader(69:78),'(I10)') date2rain
 
       date1R = date1rain
       date2R = date2rain
+
+      if (myproc == 0)then
+         write(screenunit,*)'Region rainfall: startDate = ',date1rain
+         write(screenunit,*)'Region rainfall: endDate = ',date2rain
+      endif
 
  100  continue
 
@@ -225,6 +223,8 @@
       ! Initialize flags
       isnapB = 0
       isnapR = 0
+      updateB = 1
+      updateR = 1
       cntSnaps = 0
 
       ! Skip snaps if necessary
@@ -234,24 +234,14 @@
 
       return
 
-
- 10   format(a51,i12,a5,i12)
- 1004 format(//,1X,' NUMBER OF SETS WAS SPECIFIED'//
-     &       'INCORRECTLY IN UNIT27.'/
-     &       ' IT MUST BE EITHER 1 or 2'/
-     &       ' EXECUTION WILL BE TERMINATED.'//)
-
 99999 continue
       call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &   message='OWI_rain read error during initialization.')
-!#ifdef CMPI
-!      call msg_fini()
-!#endif
-!      stop 'OWI_RAIN read ERROR (1)'
 
 !-----------------------------------------------------------------------
-      end subroutine rain12init
+      END SUBROUTINE rain12init
 !-----------------------------------------------------------------------
+
 
 !-----------------------------------------------------------------------
 !> @brief Reads rainfall intensity from Oceanweather format file and
@@ -268,14 +258,21 @@
       real(8), intent(out) :: rainval(:)
 
       integer :: I,J,XI,YI,K,ibar
-      integer :: updateR, updateB !track if need to update interpolation
       real(8) :: CV(4),CVbar
       real(8) :: rain1  ! scalar placeholder during interpolation
       real(8) :: w,w1,w2,w3,w4  !local weights
-      real(8), dimension(:,:), allocatable :: rainR, rainB
       logical :: regionExists
+      character(1024) :: scratchMessage=" "  ! wont work with formatting
  
       LOG_SCOPE_TRACED("rain12get", RAIN_TRACING)
+
+
+      ! Formats for OWI reading
+ 11   format(t6,i4,t16,i4,t23,f6.0,t32,f6.0,
+     &     t44,f8.0,t58,f8.0,t69,i10,i2)
+ 22   format(8f10.0)
+
+
 
       ! BEGIN BASIN-SCALE DATA
 
@@ -287,15 +284,7 @@
         do i=1,NP
           rainval(I)=0.d0
         enddo
-        write(scratchMessage,12) cntSnaps
-        call allMessage(INFO,trim(scratchMessage))
-!        IF(NSCREEN.GE.1) THEN
-!          if(MYPROC.EQ.0) then
-!            WRITE(screenunit,16) cntSnaps
-!          endif
-!          WRITE(16,12) cntSnaps
-!        endIF
-        return
+        if(myproc.eq.0) write(screenUnit,12) cntSnaps
       endif
 
       ! Increment counter
@@ -319,24 +308,16 @@
       iCYMDHB = iCYMDHc
       iMinB = iMinc
 
-!      IF (myproc == 0 ) THEN 
-!        write(screenunit,'("Processing rain data for time ",I10," ",I2)')
-!     &              iCYMDHc,iMinc
-!      end IF 
-      
-      ! Update coordinate mapping coefficients and reallocate
-      ! arrays with new dimensions
+      ! Update coordinate mapping coefficients and reallocate arrays
       if(updateB.eq.1) then
         call interpRainBasin(np)
-        ! moved outside of interp_basin
-        if(allocated(rainB))  deallocate(rainB)
-        allocate(rainB(iLongB,iLatB))
       endif
       
-      ! Read rainfall intensity
+      ! Read rain intensities
       read(271,22,end=9999,err=99999) ((rainB(i,j),i=1,iLongB),j=1,iLatB)
 
-      ! BEGIN REGIONAL DATA
+
+      ! BEGIN REGION-SCALE DATA
       regionExists = .FALSE.
 
       IF(numSets.EQ.1) GOTO 100
@@ -371,69 +352,32 @@
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &     message='Rainfall snapshots in fort.271 and fort.272 '
      &       //'are not syncronized.')
-!        if (myproc == 0) then
-!          WRITE(screenunit,*) 'SNAPSHOTS NOT SYNCRONIZED'
-!          WRITE(screenunit,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-!          WRITE(screenunit,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-!          WRITE(screenunit,*) 'EXECUTION WILL BE TERMINATED'
-!        endif
-!        WRITE(16,*) 'SNAPSHOTS NOT SYNCRONIZED'
-!        WRITE(16,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-!        WRITE(16,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-!        WRITE(16,*) 'EXECUTION WILL BE TERMINATED'
-!#ifdef CMPI
-!        call msg_fini()
-!#endif
-!        STOP
       endif
 
-!      IF (myproc == 0 ) THEN 
-!        write(screenunit,'("Processing 2nd rain set at",I10," ",I2)') 
-!     &              iCYMDHc,iMinc
-!      end IF 
-
-      ! Update coordinate mapping coefficients and reallocate
-      ! arrays with new dimensions
+      ! Update coordinate mapping coefficients and reallocate arrays
       if(updateR.eq.1) then
         call interpRainRegion(np)
-        if(allocated(rainR))  deallocate(rainR)
-        allocate(rainR(iLongR,iLatR))
       endif
 
-      ! Read rainfall intensity concentrations
+      ! Read rainfall intensities
       read(272,22,end=9999,err=99999) ((rainR(i,j),i=1,iLongR),j=1,iLatR)
 
 
  100  CONTINUE
 
-! Interpolate onto ADCIRC grid and write to file 
-      
-      !IF(NSCREEN.GE.1) THEN
-      !  if(regionExists.EQV..TRUE.) then
-      !    if(MYPROC.EQ.0) then
-      !      WRITE(screenunit,15) iCYMDHB,iMinB
-      !    endif
-      !    WRITE(16,15) iCYMDHB,iMinB
-      !  else
-      !    if(MYPROC.EQ.0) then
-      !      WRITE(screenunit,14) iCYMDHB,iMinB
-      !    endif
-      !    WRITE(16,14) iCYMDHB,iMinB
-      !  endif
-      !endIF
+      ! Interpolate onto ADCIRC grid and write to logfile
+      ! cms: removed ramp      
       if(regionExists) then
-         write(scratchMessage,13) iCYMDHB, iMinB
-         call allMessage(INFO, trim(scratchMessage))
+         if (myproc == 0 ) write(screenUnit,13) iCYMDHB, iMinB
       else
-         write(scratchMessage,14) iCYMDHB, iMinB
-         call allMessage(INFO, trim(scratchMessage))
+         if (myproc == 0 ) write(screenUnit,14) iCYMDHB, iMinB
       endif
 
       do i=1,NP
 
-        rain1=-9999.9D0
+        rain1=-9999.9d0
 
-        ! BASIN 
+        ! BASIN
         if (swpointsB(i,1).gt.0) then
           xi = swpointsB(i,1)
           yi = swpointsB(i,2)
@@ -442,9 +386,8 @@
           w2=wB(i,2)
           w3=wB(i,3)
           w4=wB(i,4)
-
-         !If a rainfall value is less than zero (land flag) then set
-         !to the average non-zero value before interpolating
+          ! If a rainfall intensity is less than zero (land flag), then
+          ! set to the average non-zero value before interpolating
           CV(1) = rainB(xi,yi)
           CV(2) = rainB(xi+1,yi)
           CV(3) = rainB(xi+1,yi+1)
@@ -457,7 +400,7 @@
                 ibar = ibar + 1
              endif
           enddo
-          if (ibar.gt.0) CVbar = CVbar/ibar
+          if (ibar.gt.0) CVbar = CVbar/real(ibar,8)  ! is real needed?
           do k=1,4
              if (CV(k).lt.0.d0) CV(k) = CVbar
           enddo
@@ -466,7 +409,7 @@
           rain1=w1*CV(1)+w2*CV(2)+w3*CV(3)+w4*CV(4)
         endif
 
-        ! REGION 
+        ! REGION ---------------------------------------------------------
         ! rain1 will be overwritten if region data exist.
         if ((regionExists).and.(swpointsR(i,1).gt.0)) then
           xi = swpointsR(i,1)
@@ -492,7 +435,7 @@
                 ibar = ibar + 1
              endif
           enddo
-          if (ibar.gt.0) CVbar = CVbar/ibar
+          if (ibar.gt.0) CVbar = CVbar/real(ibar,8)   !is real necessary
           do k=1,4
              if (CV(k).lt.0.d0) CV(k) = CVbar
           enddo
@@ -501,50 +444,33 @@
           rain1=w1*CV(1)+w2*CV(2)+w3*CV(3)+w4*CV(4)
         endif
 
-        ! COPY TO ARRAYS 
-        if(rain1.eq.-9999.9D0) then
+        ! COPY TO ARRAYS (with unit conversion)
+
+        if(rain1.eq.-9999.9d0) then
           rainval(I)=0.d0
         else
-          rainval(i) = rain1
+          ! Convert the rainfall from mm/hr to m/s
+          ! More flexibility if add rainMultiplier in fort.27
+          rainval(i) = rain1*0.00000027778d0
         end if
 
-! Convert the rainfall from mm/hr to m/s
-! Can provide more flexibility by adding rainMultiplier in fort.27
-        rainval(i)=rainval(i)*0.00000027778d0
+      enddo   ! loop through NP
 
-      enddo
+      return
 
-      RETURN
 
+      ! First I/O error type: fatal
 9999  continue
 
       call terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &   message='Either unit 271 or 272 could not be read.') 
+     &   message='Unexpected EOF in unit 271 or 272.')
 
-!      if (myproc == 0) then
-!      WRITE(screenunit,*)''
-!      WRITE(screenunit,*)' !!!!!FATAL ERROR!!!!!'
-!      WRITE(screenunit,*)'EITHER UNIT 271 or 272',
-!     & ' COULD NOT BE read'
-!      WRITE(screenunit,*)' EXECUTION WILL BE TERMINATED'
-!      WRITE(screenunit,*)''
-!      endif
-!
-!      WRITE(16,*) ''
-!      WRITE(16,*) ' !!!!!FATAL ERROR!!!!!'
-!      WRITE(16,*) ' EITHER UNIT 271 or 272 COULD NOT BE read'
-!      WRITE(16,*) ' EXECUTION WILL BE TERMINATED'
-!      WRITE(16,*) ''
-!#ifdef CMPI
-!      call msg_fini()
-!#endif
-!      STOP
-
+      ! Second I/O error type: non-fatal
 10000 continue
 
-      write(scratchMessage,'("Either unit 271 or 272 ran out of data.",
-     &    /,"Execution will continue with rainfall set to zero.")')
-      call allMessage(INFO,trim(scratchMessage))
+      write(scratchMessage,'(" Either unit 271 or 272 ran out of data.",
+     &    /," Execution will continue with rainfall set to zero.")')
+      call allMessage(INFO,scratchMessage)
 
       do i=1,NP
         rainval(I)=0.d0
@@ -552,41 +478,21 @@
 
       return
 
-!      IF(MYPROC.EQ.0) THEN
-!        WRITE(screenunit,*) ''
-!        WRITE(screenunit,*) ' !!! WARNING !!!'
-!        WRITE(screenunit,*) ' EITHER UNIT 271 or 272 RAN OUT'
-!        WRITE(screenunit,*) ' EXECUTION WILL CONTINUE'
-!        WRITE(screenunit,*) ''
-!      endIF
-!
-!      WRITE(16,*) ''
-!      WRITE(16,*) ' !!! WARNING !!!'
-!      WRITE(16,*) ' EITHER UNIT 271 or 272 RAN OUT'
-!      WRITE(16,*) ' EXECUTION WILL CONTINUE'
-!      WRITE(16,*) ''
-
-
- 11   format(t6,i4,t16,i4,t23,f6.0,t32,f6.0,
-     &     t44,f8.0,t58,f8.0,t69,i10,i2)
- 12   format(/,' Inserting a blank rainfall snap, count=',i4)
- 13   format(/,' Processing basin and regional scale rainfall data for ',
-     & 'time stamp ',i12,' ',i2)
- 14   format(/,' Processing region-scale rainfall data for time stamp ',
-     &       i12,' ',i2)
- 22   format(8f10.0)
       
-99999 CONTINUE
+99999 continue
 
       call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &   message='OWI_rain read error during timestepping.')
-!#ifdef CMPI
-!      call msg_fini()
-!#endif
-!      STOP 'OWI_RAIN read ERROR (2)'
+
+
+ 12   format(' Inserting a blank rainfall snap, count=',i4)
+ 13   format(' Processing basin and regional scale rainfall data ',
+     & 'for time stamp ',i12,' ',i2)
+ 14   format(' Processing basin-scale rainfall data for time stamp ',
+     &       i12,' ',i2)
 
 !-----------------------------------------------------------------------
-      end SUBROUTINE rain12get
+      END SUBROUTINE rain12get
 !-----------------------------------------------------------------------
 
 
@@ -606,23 +512,26 @@
 !-----------------------------------------------------------------------
       SUBROUTINE interpRainBasin(np)
 !-----------------------------------------------------------------------
-      use ADC_CONSTANTS,only : RAD2DEG
+
+      use ADC_CONSTANTS,only : rad2deg
       use MESH, only : SLAM, SFEA
 
       implicit none
 
-      integer   NP,I,J,K,XI,YI
-      real(8)  adcLat,adcLong
-      real(8), dimension(:), allocatable :: latB, longB
+      integer, intent(in) :: np
+
+      integer :: I,J,K,XI,YI
+      real(8) :: adcLat,adcLong
+      character(1024) :: scratchMessage = ""
 
       real(8) :: w,w1,w2,w3,w4  !local weights
 
       LOG_SCOPE_TRACED("interpRainBasin", RAIN_TRACING)
-      write(scratchMessage,'(/,"Basin-scale rainfall mapping updated",
-     &      /)')
-      call allMessage(INFO,trim(scratchMessage))
 
-      ! Update to current values 
+      write(scratchMessage,'("Updating basin-scale rainfall mapping.")')
+      call logMessage(INFO,scratchMessage)
+
+      ! update to current values
       iLatB = iLatc
       iLongB = iLongc
       dxB = dxc
@@ -630,10 +539,12 @@
       swlatB = swlatc
       swlongB = swlongc
         
-      ! Allocate and create matrices -- moved rainB to rainget
+      ! Allocate and create matrices
       if(allocated(longB)) deallocate(longB)
       if(allocated(latB))  deallocate(latB)
       allocate(longB(iLongB),latB(iLatB))
+      if(allocated(rainB))  deallocate(rainB)
+      allocate(rainB(iLongB,iLatB))
         
       ! Generate long&lat on each grid point
       do i=1,iLatB
@@ -645,8 +556,8 @@
         
       ! Generate interpolation coefficients (south west point and weights)
       do i=1,NP
-        adcLat  = RAD2DEG*SFEA(i)
-        adcLong = RAD2DEG*SLAM(i)
+        adcLat  = rad2deg*SFEA(i)
+        adcLong = rad2deg*SLAM(i)
 
         if (adcLong>=longB(1).and.adcLong<longB(iLongB) .and. 
      &       adcLat>=latB(1).and.adcLat<latB(iLatB)) then
@@ -689,8 +600,9 @@
         endif
       enddo
 
+      return
 !-----------------------------------------------------------------------
-      end SUBROUTINE interpRainBasin
+      END SUBROUTINE interpRainBasin
 !-----------------------------------------------------------------------
 
 
@@ -701,22 +613,22 @@
 !-----------------------------------------------------------------------
       SUBROUTINE interpRainRegion(np)
 !-----------------------------------------------------------------------
-      use ADC_CONSTANTS,only : RAD2DEG
+      use ADC_CONSTANTS,only : rad2deg
       use MESH, only : SLAM, SFEA
       implicit none
 
-      integer   NP,I,J,K,XI,YI
-      real(8)  adcLat,adcLong
-      real(8), dimension(:), allocatable :: latR, longR
+      integer, intent(in) :: np
+      integer :: I,J,K,XI,YI
+      real(8) :: adcLat,adcLong
+      character(1024) :: scratchMessage = ""
 
       real(8) :: w,w1,w2,w3,w4  !local weights - put in each subroutine
 
       LOG_SCOPE_TRACED("interpRainRegion", RAIN_TRACING)
 
-      write(scratchMessage,'(/,"Region-scale rainfall mapping updated",
-     &      /)')
-      call allMessage(INFO,trim(scratchMessage))
-        
+      write(scratchMessage,'("Updating region rainfall mapping.")')
+      call logMessage(INFO,scratchMessage)
+
       ! Update to current values
       iLatR = iLatc
       iLongR = iLongc
@@ -725,10 +637,12 @@
       swlatR = swlatc
       swlongR = swlongc
  
-      ! Allocate and create matrices (mvd rainR to rainget)
+      ! Allocate and create matrices
       if(allocated(longR)) deallocate(longR)
       if(allocated(latR))  deallocate(latR)
       allocate(longR(iLongR),latR(iLatR))
+      if(allocated(rainR))  deallocate(rainR)
+      allocate(rainR(iLongR,iLatR))
 
       ! Generate long&lat on each grid point
       do i=1,iLatR
@@ -740,8 +654,8 @@
 
       ! Generate interpolation info (south west point and weights)
       do i=1,NP
-        adcLat  = RAD2DEG*SFEA(i)
-        adcLong = RAD2DEG*SLAM(i)
+        adcLat  = rad2deg*SFEA(i)
+        adcLong = rad2deg*SLAM(i)
 
         if (adcLong>=longR(1).and.adcLong<longR(iLongR) .and. 
      &       adcLat>=latR(1).and.adcLat<latR(iLatR)) then
@@ -779,10 +693,12 @@
           swpointsR(i,2) = 0
         endif
       enddo
+
+      return
 !-----------------------------------------------------------------------
-      end SUBROUTINE interpRainRegion
+      END SUBROUTINE interpRainRegion
 !-----------------------------------------------------------------------
 
 
-      end MODULE OWI_RAIN
+      END MODULE OWI_RAIN
 

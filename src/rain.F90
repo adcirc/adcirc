@@ -96,8 +96,7 @@
       MODULE RAIN
 !-----------------------------------------------------------------------
 
-      use mod_logging, only : screenUnit, t_log_scope, init_log_scope,&
-     &    INFO
+      use mod_logging, only : screenUnit, t_log_scope, init_log_scope
       use mod_io, only : openFileForRead
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
 
@@ -237,7 +236,7 @@
      &    /,9X,'the model time step. The global and/or regional',&
      &    /,9X,'files begin at the time of the ',A,'.')
 
- 3303   format(/,5X, 'activeRainType = ',I3)
+ 3303   format(/,5X, 'RainType = ',I3)
 
  3304   format(/,5X, 'activeRainType = ',I3,&
      &   /,9X,'Precipitation forcing will be added to all wet nodes',&
