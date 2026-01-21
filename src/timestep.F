@@ -1671,8 +1671,8 @@ C******************************************************************************
 
 C****************************************************************************************
 C   Inline self attraction 
-C   - Compute SAL at every saltiminc step
-C   - Quadratic extrapolation at other steps (i.e. at mod( TimeLoc, saltimeinc ) /= 0 )
+C   - Compute SAL at every saltiminc step (i.e. at mod( TimeLoc, saltimeinc ) /= 0 )
+C   - Quadratic eenar, or constant extrapolation at other steps
 C****************************************************************************************
       SUBROUTINE applyInlineSelfAttractionLoading( TimeLoc )
         USE global, only: SAL2, ETA2, RampTip

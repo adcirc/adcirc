@@ -21,15 +21,15 @@ MODULE MOD_INLINE_SAL
  
     IMPLICIT NONE
 
-!#ifdef NONADC
-!    REAL(8), PARAMETER :: rhoW = 1035.0D0 ! kg/m^3
-!    REAL(8), PARAMETER :: rhoE = 5517.0D0 ! Average Earth density
-!    REAL(8), PARAMETER :: Rearth = 6378206.4d0 
-!#endif
+#ifdef NONADC
+    REAL(8), PARAMETER :: rhoW = 1035.0D0 ! kg/m^3
+    REAL(8), PARAMETER :: rhoE = 5517.0D0 ! Average Earth density
+    REAL(8), PARAMETER :: Rearth = 6378206.4d0 
+#endif
 
     type salmethod
         LOGICAL:: use_inline_sal = .false.
-        character (len=24):: inlineSALMethod = 'SH'  ! SH or AP
+        character (len=24):: inlineSALMethod = 'SH'  ! SH = spherocal harmonic or AP = constant 
         LOGICAL:: use_direct_shtns_self_attraction_loading = .true.
         LOGICAL:: use_blocking_scheme = .true.
         LOGICAL:: use_direct_shtns_self_attraction_loading_bfb = .false. 
@@ -64,8 +64,8 @@ MODULE MOD_INLINE_SAL
     LOGICAL, private::  use_blocking_scheme = .TRUE.
     LOGICAL, private::  use_direct_shtns_self_attraction_loading_bfb = .FALSE. 
 
-    LOGICAL, private::  use_AP_approximation = .FALSE. 
-    LOGICAL, private::  use_SH_approximation = .TRUE. 
+    LOGICAL, private::  use_AP_approximation = .FALSE. ! - a constant 0.9 \eta as a SAL approximation 
+    LOGICAL, private::  use_SH_approximation = .TRUE.  ! - spherical harmionic 
 
     real(kind=RKIND), private, dimension(:,:), allocatable :: aRecurrenceCoeff, bRecurrenceCoeff 
     real(kind=RKIND), private, dimension(:), allocatable :: pmnm2, pmnm1, pmn                 
@@ -73,7 +73,7 @@ MODULE MOD_INLINE_SAL
 
     real(kind=RKIND), private, dimension(:), allocatable :: lonCell
     real(kind=RKIND), private, dimension(:), allocatable :: sinLatCell, cosLatCell, dASc ! dASc - intended for dA = dlon dlat 
-    real(kind=RKIND), private, dimension(:), allocatable :: sphtRe, sphtIm ! for temporarily holding the inegrad at the quadrature points
+    real(kind=RKIND), private, dimension(:), allocatable :: sphtRe, sphtIm   ! for temporarily holding the inegrad at the quadrature points
 
     real(kind=RKIND), private, dimension(:,:), allocatable :: complexExpRe, complexExpIm
     real(kind=RKIND), private, dimension(:,:), allocatable :: complexFactorRe, complexFactorIm
@@ -129,7 +129,7 @@ CONTAINS
 
       if ( this%use_inline_sal ) then
         select case( this%inlineSALMethod )
-        case ('SH','sh')
+        case ('SH','sh'i,'sH','Sh')
           if ( this%use_direct_shtns_self_attraction_loading == .FALSE. ) then
              this%use_inline_sal = .FALSE. ; ! other methods are not implemetned yet 
           endif
@@ -138,7 +138,7 @@ CONTAINS
 
           use_SH_approximation = .true. 
           use_AP_approximation = .false.
-        case  ('AP','ap') 
+        case  ('AP','ap','Ap','aP') 
           use_SH_approximation = .false. 
           use_AP_approximation = .true. 
         end select  
@@ -149,9 +149,10 @@ CONTAINS
 
 #ifdef CMPI        
       if ( myproc ==  0 ) then
-        write(*,*) "use_inline_sal = ", this%use_inline_sal
-        write(*,*) "saldtinc = ", this%saldtinc ; 
-        write(*,*) "use_SH_approximation = ", use_SH_approximation ;
+        write(*,*) " Self attraction and loading: "    
+        write(*,*) "  use_inline_sal = ", this%use_inline_sal
+        write(*,*) "  saldtinc = ", this%saldtinc ; 
+        write(*,*) "  use_SH_approximation = ", use_SH_approximation ;
       endif
 #endif      
 
@@ -245,7 +246,6 @@ CONTAINS
       sshsal(:,2) = etasal1 ;
       sshsal(:,3) = etasal0 ;  
       
-
       return ; 
     end subroutine hotstartSAL
     !
@@ -263,12 +263,12 @@ CONTAINS
 
 
       call setMessageSource("getSelfAttractionLoading")
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
+#if defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 
       if ( .not. use_SH_approximation ) then
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
+#if defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
 #endif
         call unsetMessageSource()
@@ -351,9 +351,9 @@ CONTAINS
         ! adjust value of nodes on land !
         do ii = 1, nnode
           !
-          if ( depth(ii) < 0.0D0 ) then
+          if ( depth(ii) < 0.0D0 ) then 
              ! sshSmoothed(ii) = 0.D0 ;
-             !  might need to add node code:     
+             !  - might need to add node code:     
              if (  sshSmoothed(ii) + depth(ii) > H0 ) then
                 sshSmoothed(ii) = sshSmoothed(ii) + DEPTH(ii) - H0 ;       
              else
@@ -366,8 +366,12 @@ CONTAINS
         end do
         !
 
-        CALL self_attraction_loading_parallel_fem( ssh_sal, ssh, &
-                                 etov, nele, resident_elemask ) ;  
+!        CALL self_attraction_loading_parallel_fem( ssh_sal, ssh, &
+!                                 etov, nele, resident_elemask ) ; 
+
+        CALL self_attraction_loading_parallel_fem( ssh_sal, & 
+                      sshSmoothed, etov, nele, resident_elemask ) ;  
+
        endif                   
         
       return ;
@@ -449,7 +453,7 @@ CONTAINS
  
       INITSALPRIVATE: if ( this%use_inline_sal ) then
          use_direct_shtns_self_attraction_loading = this%use_direct_shtns_self_attraction_loading ;       
-         nCellBlock = this%nCellBlock 
+         nCellBlock = this%nCellBlock ;
          use_blocking_scheme = this%use_blocking_scheme ;
          use_direct_shtns_self_attraction_loading_bfb = .FALSE. 
 
@@ -483,16 +487,21 @@ CONTAINS
          
            ! - Use an area of the shperical trangle
            !     See K. Hesse, Numerical integration on the sphere
-           dA(ii) = getSphericaldA( xs, ys ) 
- 
+           !! dA(ii) = getSphericaldA( xs, ys ) 
+         
+           dA(ii) = getSphericaldA1( x = xs, y = ys, mthd = 1  ) ; 
+
+
            ! more elegant than what implemented in mesh.F !
            if ( count(yc >= 0.0D0) >= 1  .and. &
                 count(yc >= 0.0D0)  < 3  .and. &      
                 count( (xc - eps) < 0.D0  ) == 3 ) then
        
                if ( maxval(xs) - minval(xs) > pii ) then
-                  ! dA(ii) = 0.5D0*getarea( modulo(xs,2.D0*pii), ys* ) ;
-                  dA(ii) = getSphericaldA( xs, ys )
+                  !! dA(ii) = 0.5D0*getarea( modulo(xs,2.D0*pii), ys* ) ;
+                  !! dA(ii) = getSphericaldA( xs, ys )
+
+                  dA(ii) = getSphericaldA1( x = xs, y = ys, mthd = 1) ;  
                endif
                
                ! if ( dA(ii) <= 0.D0 ) dA(ii) = 0.D0 ;  ! just in case   
@@ -534,6 +543,86 @@ CONTAINS
         
       end function getarea
  
+      ! Area of spherical trangle.
+      ! 
+      ! x - lon in rad
+      ! y - lat in rad
+      function getSphericaldA1( x, y, mthd  ) result( dA )
+        implicit none 
+  
+        REAL (8):: x(:), y(:), dA
+        INTEGER, optional:: mthd
+
+        ! local !
+        REAL(8):: xv(3), yv(3), zv(3)
+        INTEGER:: method = 1 
+
+        REAL(8):: avec(3), bvec(3), cvec(3), axb(3) 
+        REAL(8):: ap, bp, cp, s, args 
+        REAL(8):: A, B, C
+  
+        xv = cos( y )*cos( x ) ; 
+        yv = cos( y )*sin( x ) ; 
+        zv = sin( y ) ; 
+  
+        if ( present(mthd) ) method = mthd ;
+        if ( method > 3 .and. method < 0 ) then
+                method = 1 ; 
+        end if
+
+        ! vector 
+        avec = (/ xv(1), yv(1), zv(1) /) ; ! ov1
+        bvec = (/ xv(2), yv(2), zv(2) /) ; ! ov2
+        cvec = (/ xv(3), yv(3), zv(3) /) ; ! ov3
+  
+        ! 1, Find arclength of the great circle
+        !%  use arccosine of the dot product
+        !%  
+        ! cp = acos( sum(avec*bvec) ) ;
+        ! bp = acos( sum(avec*cvec) ) ;
+        ! ap = acos( sum(bvec*cvec) ) ;
+  
+        !% Suposed to be well conditioned for all angles
+        axb = cross_product( avec, bvec ) ; 
+        cp = atan( sqrt(sum(axb*axb))/sum(avec*bvec) ) ;
+  
+        axb = cross_product( avec, cvec ) ; 
+        bp = atan( sqrt(sum(axb*axb))/sum(avec*cvec) ) ; 
+  
+        axb = cross_product( bvec, cvec ) ; 
+        ap = atan( sqrt(sum(axb*axb))/sum(bvec*cvec) ) ; 
+  
+        !! 2. Find internal angle 
+        A = (cos(ap) - cos(bp)*cos(cp))/( sin(bp)*sin(cp) ) ; 
+        B = (cos(bp) - cos(cp)*cos(ap))/( sin(cp)*sin(ap) ) ; 
+        C = (cos(cp) - cos(ap)*cos(bp))/( sin(ap)*sin(bp) ) ;  
+        
+        A = acos( A ) ; 
+        B = acos( B ) ;
+        C = acos( C ) ; 
+  
+        ! 3. Return area
+        SELECT CASE( method )
+        CASE (0)
+          !  - Excess angle formula. simple but not very accurate for a smal triangle on a unit sphere 
+          dA = A + B + C - pii ;   
+
+        CASE (3)
+           s = tan( 0.5D0*ap )*tan( 0.5D0*bp ) ; 
+           args = s*sin(C)/(1.D0 + s*cos(C)) ;
+
+           dA = 4.D0*atan( args ) ; 
+        CASE DEFAULT
+           ! L'Huilier   
+           s = (ap + bp + cp)*0.5D0 ; 
+           args = sqrt( tan(s*0.5D0)*tan((s - ap)*0.5D0)*tan((s - bp)*0.5D0)*tan((s - cp)*0.5D0) ) ;
+
+           dA = 4.D0*atan( args ) ;  
+        END SELECT
+
+      end function getSphericaldA1
+  
+
       ! x - lon in rad
       ! y - lat in rad
       function getSphericaldA( x, y ) result( dA )
@@ -584,7 +673,7 @@ CONTAINS
         ! 3. Return area
         dA = A + B + C - pii ;     
       end function
-  
+
       function cross_product( avec, bvec ) result( axb )
          implicit none
   
@@ -922,6 +1011,7 @@ CONTAINS
        endif
 
     end subroutine ApplyLoveScaling
+
     !
     ! Given 
     !    - sshSmoothed(:) - ssh after smoothening at the integration points
@@ -2924,7 +3014,7 @@ CONTAINS
           !
           do i=1,nlm
             j = lvec(i)
-            LoveScaling(i) = (1.0_RKIND + K(j+1) - H(j+1)) / ((2*j)+1)
+            LoveScaling(i) = (1.0_RKIND + K(j+1) - H(j+1)) /real(((2*j)+1), RKIND) 
           enddo
           !
        else

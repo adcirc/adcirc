@@ -802,6 +802,11 @@ C......  DW : BEGIN !c absorbing layer
          END IF
 C......  END DW
 
+
+         ! DW -- experiment, preventing velocity  from reversing a sign !
+         IF ( 1.D0 - DTO2*TKM(1,I) < 0.D0 ) TKM(1,I) = 1.D0/DTO2 ; 
+         IF(  1.D0 - DTO2*TKM(2,I) < 0.D0 ) TKM(2,I) = 1.D0/DTO2 ; 
+
 C        WJP 02.24.2018: Get the cofficients of the matrix
          VCOEFXX = DTO2*(TKM(1,I) + SPNGCOEF_X) 
          VCOEFYY = DTO2*(TKM(2,I) + SPNGCOEF_Y)
@@ -1880,8 +1885,8 @@ C        WJP 02.24.2018 Get the righthand side momentum
      &               - VCOEFYX*QX1(I)) !-VIDBCPDY) !-DispY)
          
 C        WJP 02.24.2018 Get the lefthand side momentum 
-         AUV(1,I) = 1d0 + VCOEFXX*NCI
-         AUV(2,I) = 1d0 + VCOEFYY*NCI
+         AUV(1,I) = 1.0d0 + VCOEFXX*NCI
+         AUV(2,I) = 1.0d0 + VCOEFYY*NCI
          AUV(3,I) = VCOEFXY*NCI
          AUV(4,I) = VCOEFYX*NCI
       ENDDO
