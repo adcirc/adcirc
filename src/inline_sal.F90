@@ -129,7 +129,7 @@ CONTAINS
 
       if ( this%use_inline_sal ) then
         select case( this%inlineSALMethod )
-        case ('SH','sh'i,'sH','Sh')
+        case ('SH','sh','sH','Sh')
           if ( this%use_direct_shtns_self_attraction_loading == .FALSE. ) then
              this%use_inline_sal = .FALSE. ; ! other methods are not implemetned yet 
           endif
@@ -608,16 +608,16 @@ CONTAINS
           dA = A + B + C - pii ;   
 
         CASE (3)
-           s = tan( 0.5D0*ap )*tan( 0.5D0*bp ) ; 
-           args = s*sin(C)/(1.D0 + s*cos(C)) ;
+          s = tan( 0.5D0*ap )*tan( 0.5D0*bp ) ; 
+          args = s*sin(C)/(1.D0 + s*cos(C)) ;
 
-           dA = 4.D0*atan( args ) ; 
+          dA = 4.D0*atan( args ) ; 
         CASE DEFAULT
-           ! L'Huilier   
-           s = (ap + bp + cp)*0.5D0 ; 
-           args = sqrt( tan(s*0.5D0)*tan((s - ap)*0.5D0)*tan((s - bp)*0.5D0)*tan((s - cp)*0.5D0) ) ;
+          ! L'Huilier   
+          s = (ap + bp + cp)*0.5D0 ; 
+          args = sqrt( tan(s*0.5D0)*tan((s - ap)*0.5D0)*tan((s - bp)*0.5D0)*tan((s - cp)*0.5D0) ) ;
 
-           dA = 4.D0*atan( args ) ;  
+          dA = 4.D0*atan( args ) ;  
         END SELECT
 
       end function getSphericaldA1
@@ -702,6 +702,10 @@ CONTAINS
        !  apply forward transform
        CALL spherical_harmonics_transform_direct_fem( ssh, elements, nCells, .true., elemask ) ;
 
+       !
+       ! Apply filters
+       CALL ApplySHFilters( filtermtd = 2 ) ; 
+  
        !  apply Love number scaling
        CALL ApplyLoveScaling( LoveSalScaling, .false. ) ; 
 
@@ -1011,6 +1015,87 @@ CONTAINS
        endif
 
     end subroutine ApplyLoveScaling
+
+    subroutine ApplySHFilters( filtermtd )
+      implicit none
+
+      INTEGER, optional:: filtermtd
+
+
+      INTEGER:: mtd = 0 
+      INTEGER:: m, n, l
+      REAL (8):: sigma, lambda, alp, dummy
+
+      REAL (8), parameter:: alpha = 36.D0, kp = 36.D0 ; ! for Hesthaven's filter
+      REAL (8), parameter:: cu = 0.1D0  ! cutoff value of the last mode in the spherical spline
+      REAL (8), parameter:: pp = 2.0D0  ! filter order 
+
+      if ( present(filtermtd) ) then
+        mtd = filtermtd ;
+      endif
+
+      SELECT CASE( mtd )
+      CASE (1) 
+        ! From Warbuton & Hesthaven's book
+        do m = 0, nOrder
+          do n = m, nOrder
+            !
+            lambda = dble(n)/dble(nOrder) ;
+            lambda = alpha*(lambda**kp) ;
+          
+            l = SHOrderDegreeToIndex(n,m) ;
+
+            sigma = exp( -lambda ) ; 
+
+            SnmRe(l) = sigma*SnmRe(l) ;
+            SnmIm(l) = sigma*SnmIm(l) ;
+            ! 
+          enddo
+        enddo 
+        !
+      CASE (2)
+        ! Shperical splines
+        alp = ((1.D0/cu) - 1.D0)/( (DBLE(nOrder)*DBLE(nOrder+1))**2.D0 ) ;
+         
+        !  
+        do m = 0, nOrder
+         do n = m, nOrder
+             l = SHOrderDegreeToIndex(n,m) ;               
+
+             sigma = 1.D0 + alp*(dble(n)*dble(n+1))**2.D0 ;
+             sigma = 1.D0/sigma ; 
+
+             SnmRe(l) = sigma*SnmRe(l) ; 
+             SnmIm(l) = sigma*SnmIm(l) ; 
+         enddo
+        enddo
+        !
+      CASE (3)
+        ! Boyd's book
+        do m = 0, nOrder
+          do n = 0, nOrder
+             l = SHOrderDegreeToIndex(n,m) ;
+
+             alp = DBLE(n)/DBLE(nOrder + 1) - 0.5D0 
+
+             
+             dummy = -log( (1.D0 - 4.D0*alp*alp)/(4.D0*alp*alp) ) ;
+             dummy = sqrt( dummy ) ; 
+
+             dummy = 2.D0*sqrt(pp)*alp*dummy ;
+
+             sigma = 0.5D0*erfc( dummy ) ; 
+
+             SnmRe(l) = sigma*SnmRe(l) ; 
+             SnmIm(l) = sigma*SnmIm(l) ;  
+          enddo
+        enddo
+        !      
+      END SELECT 
+
+
+      return ;
+    end subroutine ApplySHFilters        
 
     !
     ! Given 
