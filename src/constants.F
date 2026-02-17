@@ -149,6 +149,12 @@
           REAL(8), PARAMETER :: TwoB = 2D0 * 0.4779D0
           REAL(8), PARAMETER :: GM2 = 3.486D0**2.0D0
 
+
+          !----------------!
+          ! bulk modulus
+          ! REAL (8), parameter:: kappamod = 2.041845e+09 
+          REAL (8), parameter:: kappamod = 2.20D+09 
+
 !-----------------------------------------------------------------------
       END MODULE ADC_CONSTANTS
 !-----------------------------------------------------------------------

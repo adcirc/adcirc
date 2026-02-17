@@ -216,6 +216,8 @@ C
       INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
       INTEGER:: salExtrapVal = 0 
       REAL (8):: salAPBeta = 0.01D0
+      logical:: sal_use_sh_filter = .false. 
+      integer:: sh_filter_scheme = 1
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
 #if defined CSWAN || defined ADCSWAN
@@ -284,7 +286,8 @@ C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data
      &     sal_use_direct_sh,
      &     sal_use_cache_blocking,
      &     nSHOrder, nCellBlock, salinc, salExtrapVal,
-     &     inlineSalMethod, salAPBeta
+     &     inlineSalMethod, salAPBeta,
+     &     sal_use_sh_filter, sh_filter_scheme
 
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -5165,7 +5168,12 @@ C
      &                     ncellblock = nCellBlock, 
      &                     salinc = salinc, 
      &                     extrapval = salExtrapVal,
-     &                     salAPBeta = salAPBeta  )
+     &                     salAPBeta = salAPBeta, 
+     &                     useshtfilter = sal_use_sh_filter, 
+     &                     filterscheme = sh_filter_scheme  ) ;
+
+
+
       call alloc_Main4c() ; 
 !!      endif
 

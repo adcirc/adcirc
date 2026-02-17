@@ -33,7 +33,7 @@ MODULE MOD_INLINE_SAL
         LOGICAL:: use_direct_shtns_self_attraction_loading = .true.
         LOGICAL:: use_blocking_scheme = .true.
         LOGICAL:: use_direct_shtns_self_attraction_loading_bfb = .false. 
-      
+        
         INTEGER:: nOrder = 64 
         INTEGER:: nCellBlock = 500  
         INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
@@ -41,7 +41,12 @@ MODULE MOD_INLINE_SAL
         REAL (8):: saldtinc = -9999.D0  ! currently not used
 
         LOGICAL:: sal_init = .false. 
-        REAL (8):: salAPBeta = 0.00D0 ;
+        REAL (8):: salAPBeta = 0.00D0 ; ! for Accad & Parkadis's scalar approximation
+
+
+        LOGICAL:: ApplyFilter = .false. ! .true. - filter is applied
+        INTEGER:: filtermthd = 2        ! method = 1,2,3 - filter scheme
+
     contains 
         procedure, pass(this), public:: sal_param_init
 #ifndef NONADC        
@@ -106,7 +111,8 @@ MODULE MOD_INLINE_SAL
 CONTAINS
   
     subroutine sal_param_init( this, useinlinesal, inlineSalMethod, usedirectsh, &
-                               & usecacheblocking, shorder, ncellblock, salinc, salAPBeta )
+                               & usecacheblocking, shorder, ncellblock, salinc, salAPBeta, &
+                               & useshtfilter, filterscheme  )
       implicit none
 
       class (salmethod), intent(inout):: this
@@ -115,6 +121,9 @@ CONTAINS
       integer:: salinc
       character (len=*):: inlineSalMethod
       REAL (8):: salAPBeta
+     
+      logical:: useshtfilter
+      integer:: filterscheme
 
       this%use_inline_sal = useinlinesal   
       this%use_direct_shtns_self_attraction_loading = usedirectsh
@@ -147,12 +156,24 @@ CONTAINS
       this%saldtinc = salinc*dtdp ;  
       this%sal_init = .true. ;
 
+      this%ApplyFilter = useshtfilter ;
+      this%filtermthd = filterscheme ;  
+
 #ifdef CMPI        
       if ( myproc ==  0 ) then
         write(*,*) " Self attraction and loading: "    
-        write(*,*) "  use_inline_sal = ", this%use_inline_sal
-        write(*,*) "  saldtinc = ", this%saldtinc ; 
-        write(*,*) "  use_SH_approximation = ", use_SH_approximation ;
+        write(*,*) "   use_inline_sal = ", this%use_inline_sal
+        write(*,*) "   saldtinc = ", this%saldtinc ; 
+        if ( this%use_inline_sal ) then
+            write(*,*) "   use_SH_approximation = ", use_SH_approximation ;
+            write(*,*) "   use_AP_approximation = ", use_AP_approximation ;
+        endif
+
+        write(*,*) "   use filter = ", this%ApplyFilter ;
+        if ( this%ApplyFilter ) then
+           write(*,*) "   filter scheme  = ", this%filtermthd ;
+        endif 
+               
       endif
 #endif      
 
@@ -163,7 +184,8 @@ CONTAINS
     
     !
     subroutine initSALModule( useinlinesal, inlineSALMethod, usedirectsh, usecacheblocking, &
-                                 &  shorder, ncellblock, salinc, extrapval, salAPBeta, saltime0, sshsal0 )
+                                 &  shorder, ncellblock, salinc, extrapval, salAPBeta, &
+                                 &  useshtfilter, filterscheme, saltime0, sshsal0 )
       implicit none
       
       logical:: useinlinesal, usedirectsh, usecacheblocking
@@ -171,11 +193,15 @@ CONTAINS
       character (len=*):: inlineSALMethod
       real (8):: salAPBeta 
 
+      logical:: useshtfilter
+      integer:: filterscheme 
+
       REAL(8), optional:: saltime0
       REAL(8), optional, dimension(:,:):: sshsal0
 
       call ssh_inline_sal%sal_param_init( useinlinesal, inlineSALMethod, &
-                & usedirectsh, usecacheblocking, shorder, ncellblock, salinc, salAPBeta ) ;
+                & usedirectsh, usecacheblocking, shorder, ncellblock, salinc, salAPBeta, & 
+                & useshtfilter, filterscheme ) ;
   
       !
       if ( ssh_inline_sal%use_inline_sal ) then
@@ -212,7 +238,6 @@ CONTAINS
       return       
     end subroutine initSALModule
     !    
-
 
     !
     subroutine coldstartSAL( eta )
@@ -369,7 +394,7 @@ CONTAINS
 !        CALL self_attraction_loading_parallel_fem( ssh_sal, ssh, &
 !                                 etov, nele, resident_elemask ) ; 
 
-        CALL self_attraction_loading_parallel_fem( ssh_sal, & 
+        CALL self_attraction_loading_parallel_fem( this, ssh_sal, & 
                       sshSmoothed, etov, nele, resident_elemask ) ;  
 
        endif                   
@@ -412,7 +437,7 @@ CONTAINS
         end do
         !
  
-        CALL self_attraction_loading_parallel_fem( ssh_sal, sshSmoothed, &
+        CALL self_attraction_loading_parallel_fem( this, ssh_sal, sshSmoothed, &
                                    etov, nele, resident_elemask ) ;
       endif 
 
@@ -501,7 +526,7 @@ CONTAINS
                   !! dA(ii) = 0.5D0*getarea( modulo(xs,2.D0*pii), ys* ) ;
                   !! dA(ii) = getSphericaldA( xs, ys )
 
-                  dA(ii) = getSphericaldA1( x = xs, y = ys, mthd = 1) ;  
+                  dA(ii) = getSphericaldA1( x = xs, y = ys, mthd = 1 ) ;  
                endif
                
                ! if ( dA(ii) <= 0.D0 ) dA(ii) = 0.D0 ;  ! just in case   
@@ -693,8 +718,10 @@ CONTAINS
 
 
     !  
-    subroutine self_attraction_loading_parallel_fem( ssh_sal, ssh, elements, nCells, elemask  )
+    subroutine self_attraction_loading_parallel_fem( this, ssh_sal, ssh, elements, nCells, elemask  )
        implicit none 
+
+       class (salmethod), intent(inout):: this
 
        real(kind=RKIND), dimension(:):: ssh_sal, ssh
        integer:: nCells, elements(:,:), elemask(:)
@@ -704,8 +731,10 @@ CONTAINS
 
        !
        ! Apply filters
-       CALL ApplySHFilters( filtermtd = 2 ) ; 
-  
+       if ( this%ApplyFilter ) then
+          CALL ApplySHFilters( filtermtd = this%filtermthd ) ; 
+       endif 
+
        !  apply Love number scaling
        CALL ApplyLoveScaling( LoveSalScaling, .false. ) ; 
 

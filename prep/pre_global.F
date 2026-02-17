@@ -363,13 +363,17 @@ C    inline Self Attraction and Loading
       INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
       INTEGER:: salExtrapVal = 0  
       character(len=80):: inlineSalMethod = "SH"  ! SH - spherical harmonics, or AP - Accad & Perkeris's scalar approximation    
-      REAL (8):: salAPBeta = 0.01D0
+      REAL (8):: salAPBeta = 0.09D0
+      LOGICAL:: sal_use_sh_filter
+      INTEGER:: sh_filter_scheme
 
       NAMELIST /InlineSALControl/ use_inline_sal,
      &     sal_use_direct_sh,
      &     sal_use_cache_blocking,
      &     nSHOrder, nCellBlock, salinc, salExtrapVal,
-     &     inlineSalMethod, salAPBeta
+     &     inlineSalMethod, salAPBeta, 
+     &     sal_use_sh_filter, sh_filter_scheme
+
 C    
 
 C     SOLVER  section

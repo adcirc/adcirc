@@ -151,9 +151,39 @@ C        initialize parameter arrays needed by iterative solver
          call alloc_main11_lumped()
       ENDIF
 
+      CALL initDensityRatio()
+
 !----------------------------------------------------------------------
       end subroutine initGWCE
 !----------------------------------------------------------------------
+
+!
+      subroutine initDensityRatio()
+        use mesh, only: np, dp
+        use ADC_CONSTANTS, ONLY: G, RHOWAT0, kappamod
+        use global, only: rhravg
+               
+
+        integer:: i 
+        REAL (8):: RH, RAVG 
+
+        do i = 1, np
+          !
+          if ( DP(i) > 100.D0 ) then
+             RH = RHOWAT0*G*DP(i)/kappamod ;
+             RH = RHOWAT0*(1.D0 + RH) ;
+
+             RAVG = RHOWAT0*G*DP(i)/(2.D0*kappamod) ;
+             RAVG = RHOWAT0*(1.D0 + RAVG) ; 
+
+             RHRAVG(i) = RH/RAVG ; 
+          endif
+          !       
+        enddo
+
+        return ;                
+      end subroutine initDensityRatio
+!
 
 !----------------------------------------------------------------------
 !     S U B R O U T I N E   S O L V E   G   W   C   E
@@ -254,7 +284,7 @@ C
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1,
      &   dynamicWaterLevelCorrectionDelta, 
      &   COEFDTemp, COEFDTempMem,  ! Added for VED1D  08-11-2022 SB
-     &   SAL1, CSAL
+     &   SAL1, CSAL, RHRAVG
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -567,11 +597,11 @@ C.......... DW
                   IF(NeiTab(NMI3,JN).EQ.NMJ2) J32=JN
                END DO
 C.........     WJP multiplying by cosine(lat) if doing the 
-C              spherical correction 
+C              spherical correction + water density variation
 C              Node-by-Node
-               SPM1 = SFCT(NMI1) 
-               SPM2 = SFCT(NMI2)
-               SPM3 = SFCT(NMI3)
+               SPM1 = SFCT(NMI1)*RHRAVG(NMI1) 
+               SPM2 = SFCT(NMI2)*RHRAVG(NMI2) 
+               SPM3 = SFCT(NMI3)*RHRAVG(NMI3)
 C              Assemble the LHS matrix
                Coef(NMI1,1)  = Coef(NMI1,1)   + (MsFacLOnDiag*SPM1
      &                  + GA00DPAvgOAreaIE4*( SFCXADJ*FDX1*FDX1 +
@@ -637,9 +667,9 @@ C.............DW
 C.........     WJP multiplying by cosine(lat) if doing the 
 C              spherical correction 
 C              Node-by-Node
-               SPM1 = SFCT(NMI1) 
-               SPM2 = SFCT(NMI2)
-               SPM3 = SFCT(NMI3)
+               SPM1 = SFCT(NMI1)*RHRAVG(NMI1) 
+               SPM2 = SFCT(NMI2)*RHRAVG(NMI2) 
+               SPM3 = SFCT(NMI3)*RHRAVG(NMI3) 
 
                Coefd(NMI1) = Coefd(NMI1) + MsFacLOnDiag*SPM1*NCELE
                Coefd(NMI2) = Coefd(NMI2) + MsFacLOnDiag*SPM2*NCELE
@@ -1539,9 +1569,9 @@ C...     Complete the JX, JY terms depending on the advection formulation
 C...... BEG: DW, DEC 2019         
 C...     Needs multiplying by cos(lat) in case of the correction 
 C        Node by node
-         SPM1 = SFCT(NM1) ; 
-         SPM2 = SFCT(NM2) ; 
-         SPM3 = SFCT(NM3) ;
+         SPM1 = SFCT(NM1)*RHRAVG(NM1) ; 
+         SPM2 = SFCT(NM2)*RHRAVG(NM2) ; 
+         SPM3 = SFCT(NM3)*RHRAVG(NM3) ;
 C...... END DW         
 
 C...     Assemble forcing for node NM1 (local index j=1)
@@ -1618,7 +1648,7 @@ C...     Spatially varying Tau0 terms
      &        +Tau0SpaVar
 C
 C..... DW: begin, absorbing layer
-     &        +(OnDiag*E0N3*SPM3 + OffDiag*(E0N1*SPM1+E0N2*SPM1))*MsFacR_S
+     &        +(OnDiag*E0N3*SPM3 + OffDiag*(E0N1*SPM1+E0N2*SPM2))*MsFacR_S
      &        +(OnDiag*ESAN3*SPM3 + OffDiag*(ESAN1*SPM1+ESAN2*SPM2))*MsFacRS_T
      &        +(OnDiag*ABC00_EAN3*SPM3 + 
      &               OffDiag*(ABC00_EAN1*SPM1 + ABC00_EAN2*SPM2))*MsFacRS_ABC00

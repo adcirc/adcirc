@@ -850,6 +850,11 @@ C----- DW --- periodic bc
       INTEGER, ALLOCATABLE:: IPERCONN(:,:), PERBC_IDN_MAP(:)
 C-------------------end of data declarations----------------------------------C
 
+
+C---- DW
+      REAL (8), ALLOCATABLE:: RHRAVG(:)
+C----
+
       CONTAINS
 
 C--------------------------------------------------------------------
@@ -1249,6 +1254,12 @@ C     Allocate an array for VEW1D
       EtaMax_Time(:) = 0.d0
       UMAX(:) = 0.d0 ! v46.50 sb 11/11/2006
       UMax_Time(:) = 0.d0
+
+
+
+      ALLOCATE( RHRAVG(MNP) ) ; 
+      RHRAVG = 1.D0 ; 
+
 !-----------------------------------------------------------------------
       END SUBROUTINE ALLOC_MAIN1a
 !-----------------------------------------------------------------------

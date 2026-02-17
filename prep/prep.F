@@ -2351,9 +2351,10 @@ Casey 180318: Added NWS=13
              write(15,'(a,I10,a)') " nCellBlock = ", nCellBlock, ","
              write(15,'(a,I10,a)') " salinc = ", salinc, ","
              write(15,'(a,I10,a)') " salExtrapVal = ", salExtrapVal, ","
-             write(15,'(a,F15.9,a)') " salAPBeta = ", salAPBeta, " /" 
+             write(15,'(a,F15.9,a)') " salAPBeta = ", salAPBeta, ","
+             write(15,'(a,L4,a)') " sal_use_sh_filter = ", sal_use_sh_filter, "," 
+             write(15,'(a,I3,a)') " sh_filter_scheme = ", sh_filter_scheme, " /" 
          END IF
-
 
          ! NCSU Subdomain Modeling
          if (FOUND_SM_NML) then
