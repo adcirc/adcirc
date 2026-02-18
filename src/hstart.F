@@ -55,7 +55,7 @@ C******************************************************************************
       USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE ADC_CONSTANTS, ONLY: G, PI
       USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4, SFCX, SFCY,
-     &    YCSFAC, SFMX, totalAreaCalc
+     &    YCSFAC, SFMX, totalAreaInit
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
      &    NOPE, NVEL, BndBCRiver, LBCODEI, NBV, BARLANHT, BARLANCFSP,
      &    IBCONN, BARINHT, BARINCFSP, BARINCFSB, PIPEHT, PIPECOEF,
@@ -1446,10 +1446,10 @@ C     Originally added in v51,v53, v55 but never merged into main code
          call hotstartRainForcing(timeloc)
       END IF
 
-      !update the wetted elements and areas around each node
-      call totalAreaCalc()
+      !compute the wetted elements and areas around each node
+      call totalAreaInit()
       !cms v5#: cannot start the hydrology forcing until divByArea is
-      !updated in totalAreaCalc. Moved from adcirc_init since call was
+      !updated in totalAreaInit. Moved from adcirc_init since call was
       !after cold/hot start was initialized. Results used by many
       !modules, so do not put inside useInteriorHydrology test
       IF (useInteriorHydrology) THEN

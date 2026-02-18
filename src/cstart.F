@@ -63,7 +63,7 @@
       use mod_logging, only: t_log_scope, init_log_scope,
      &    allMessage, DEBUG, screenUnit, nscreen
       use mesh, only : ne, np, x, y, slam, sfea, ics, dp, nm, mju, aid4,
-     &    agrid, sfcx, sfcy, ycsfac, sfmx, totalareacalc
+     &    agrid, sfcx, sfcy, ycsfac, sfmx, totalAreaInit
       use harm
       use wetdry, only : initializeWettingAndDrying
       use wind, only : coldStartMeteorologicalForcing, rsget
@@ -179,13 +179,12 @@
 
       ! Compute initial wet/dry state and water surface elevation:
       ! Checks for nodes that should be dry and updates nnodecode
-      !cms: mvd nodecode = nnodecode here from totalAreaCalc
       call setColdWetDryStateAndWaterSurfaceElevation()
 
       ! cms 11/20/25: Compute active elements and total area for each
       ! node, mvd call from adcirc_init since needed within c/hstart for
-      ! hydrology. nodecode reset mvd from totalAreaCalc to setColdWet...
-      call totalareacalc()
+      ! hydrology and changed name from totalAreaCalc().
+      call totalAreaInit()
 
       ! jgf52.08.01: initialize inundation arrays if necessary. this
       ! can only be called after nnodecode has been set.
@@ -1487,8 +1486,6 @@ c...
       !jlw: end subgrid if statement
       endif
 
-      !cms v56 moved update from totalAreaCalc here
-      nodecode(1:np) = nnodecode(1:np)
       eta1(:) = eta2(:)
 
       return

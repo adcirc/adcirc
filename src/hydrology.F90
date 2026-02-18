@@ -634,8 +634,8 @@
       LOG_SCOPE_TRACED("hotstartInteriorHydrology", HYDROLOGY_TRACING)
 
       ! Initialize the interior hydrology ramp and update isActive()
-      ! before reading in and processing input. Note that initial call
-      ! to totalAreaCalc() is done within the main hstart module.
+      ! before reading in and processing input. Note that call to
+      ! totalAreaInit() is done within the main hstart module.
       if (useInteriorHydrologyRamp) then
          rampPS = tanh((2.d0*timeloc/86400.d0)/hydroRamp)
       else
@@ -715,8 +715,8 @@
 !> source be handled separately. This is only strictly necessary for
 !> dynamic locations, but is more flexible for all Types.
 !> Note: totalArea and divByTotalArea are updated at wet/dry step4 each
-!> time step and initialized in c/hstart modules - both with calls to
-!> totalAreaCalc() in mesh.F
+!> time step with a call to totalAreaUpdate() and initialized in c/hstart
+!> modules by calling totalAreaInit() from the mesh module.
 !------------------------------------------------------------------------
       subroutine checkActiveHydrology()
 !------------------------------------------------------------------------

@@ -178,7 +178,7 @@
 !>
 !> @details cms 11/20/25 updated to use explicit array structure for
 !>          all array initializations and replaced code in WET/DRY Part4
-!>          with a call to updated totalAreaCalc() in mesh module.
+!>          with a call to updated totalAreaUpdate() in mesh module.
 !----------------------------------------------------------------------
       subroutine computeWettingAndDrying(it)
 !----------------------------------------------------------------------
@@ -195,7 +195,7 @@
 #endif
       use mesh, only : ne, np, nm, dp, totalArea, nm, x, y,
      &   LBArray_Pointer, nneighele, neitabele, onIBTYP64Floodplain,
-     &   neitab, nneigh, totalAreaCalc
+     &   neitab, nneigh, totalAreaUpdate
       use nodalattributes, only : BFCdLLimit, fgamma, ftheta, fric,
      &   manningsn, hbreak, ifhybf, ifnlbf, iflinbf, loadManningsN,
      &   loadZ0B_var, z0b_var, loadSubgridBarrier,
@@ -1401,17 +1401,17 @@ C...ACB pattern
 !>       (TotalArea) connected to a node. If these are zero, the node is
 !>       landlocked and should be dried. These depend on nnodecode which
 !>       varies during the time step. Also add computation of total area
-!>       reciprocal used in various modules. This code was a repeat of
-!>       totalAreaCalc in the mesh module, so that subroutine was
-!>       modified to use nnodecode instead of nodecode and reused here.
-!>       See additional nodes in mesh module. 
+!>       reciprocal used in various modules. This code was basically a
+!>       repeat of the original totalAreaCalc() in the mesh module,
+!>       so that sub was copied and modified to not update nodecode
+!>       and reused here: totalAreaUpdate(); see notes in mesh module.
+!>
 !>       Of special note, the necessity of having non-zero mju values is
 !>       only required when trying to match incorrect verions of adcirc
 !>       where mju was used in place of the totalarea in the momentum
 !>       equations; at some point this could be removed. CMS 11/18/25
 
-         call totalAreaCalc()
-
+         call totalAreaUpdate()
 
 !>       Start update variables
 !>          jjwnote - may have to pass TotalArea and mju as well

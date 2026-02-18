@@ -3352,31 +3352,107 @@ Csb...
 
 
 !-----------------------------------------------------------------------
-!> @brief Computes the active elements and totalArea attached to nodes.
+!> @brief Ititializes active elements and totalArea attached to nodes.
 !>
-!> @details Refactored and modularized out of the ADCIRC_Init subroutine
-!>          in the ADCIRC module. jgf51.21.10
+!> @details Refactored and modularized out of ADCIRC_Init subroutine in
+!>          the ADCIRC module. jgf51.21.10
 !>
 !>          Determine the number of active elements (MJU) and the total
 !>          area of active elements (totalArea) attached to each node
-!>          for each time step. Also determines the total number of
-!>          elements (NODELE) attached to each node at the first call.
+!>          at simulation start. Also determines the total number of
+!>          elements (NODELE) attached to each node (only need to do
+!>          once).
 !>
 !>          Calculation of the number of active elements must wait until
 !>          the model has initialized to the point that nnodecode is
-!>          already initialized. Originally was called from adcirc_init
-!>          after cstart/hstart had been called. Use of interior
-!>          hydrology requires that it be set within ctstart/hstart, so
-!>          first call was moved from adcirc_init into the *start files
-!>          starting in v56.
+!>          already initialized. Originally this subroutines was called
+!>          from adcirc_init after cstart/hstart had been called. But
+!>          use of interior hydrology requires that it be set within
+!>          cstart/hstart, so the initialization was moved from
+!>          adcirc_init into the *start files starting in v56.
+!>
+!>          A similar subroutine totalAreaUpdate() was also added in
+!>          v56 to use when updating active elements and area during
+!>          WetDry Part 4. See next subroutine.
+!-----------------------------------------------------------------------
+      subroutine totalAreaInit()
+      use global, only : nodecode, nnodecode, noff
+      implicit none
+      real(8) :: areaEle
+      integer nm1, nm2, nm3  ! node numbers around an element
+      integer ncele          ! wet/dry indicator (zero if dry)
+      integer :: i           ! node loop counter
+      integer :: ie          ! element loop counter
+
+      LOG_SCOPE_TRACED("totalAreaInit", MESH_TRACING)
+
+      ! initialize values (cms 11/20/25: added explicit array bounds)
+      mju(1:np)=0
+      nodele(1:np)=0
+      totalarea(1:np)=0.d0
+      nodecode(1:np)=nnodecode(1:np)
+      divByTotalArea0(1:np)=0.d0
+      !divByTotalArea1(1:np)=0.d0  ! NOT USED YET
+
+      ! assemble by elements (initialization uses nodecode)
+      do ie=1,ne
+         nm1=nm(ie,1)
+         nm2=nm(ie,2)
+         nm3=nm(ie,3)
+         ncele=nodecode(nm1)*nodecode(nm2)*nodecode(nm3)*noff(ie)
+         mju(nm1)=mju(nm1)+ncele
+         mju(nm2)=mju(nm2)+ncele
+         mju(nm3)=mju(nm3)+ncele
+         nodele(nm1)=nodele(nm1)+1
+         nodele(nm2)=nodele(nm2)+1
+         nodele(nm3)=nodele(nm3)+1
+         areaele=ncele*areas(ie)/2.d0
+         totalarea(nm1)=totalarea(nm1)+areaele
+         totalarea(nm2)=totalarea(nm2)+areaele
+         totalarea(nm3)=totalarea(nm3)+areaele
+      end do
+
+      ! cms 11/20/25 updated this section:
+      ! Added computation for the area reciprocal
+      ! Note: legacy code incorrectly divided by mju in momentum
+      ! (instead of totalarea), therefore must make sure mju is non-zero
+      ! after the areas are computed. Does this impact any other logic
+      ! that uses mju values in newer code?? - if not can remove when
+      ! the legacy code option is removed.
+      do i=1,np
+         if(mju(i).eq.0) then
+            mju(i)=1  ! may be used in momentum
+            ! if mju =0, then it is also true that totalArea=0
+            divByTotalArea0(i)=0.d0
+            !divByTotalArea1(i)=1.d0
+         else
+            divByTotalArea0(i)=1.d0/totalArea(i)
+            !divByTotalArea1(i)=divByTotalArea0(i)
+         end if
+      end do
+
+!     ------------------------------------------------------------------
+      end subroutine totalAreaInit
+!     ------------------------------------------------------------------
+
+
+!> @brief Updates the active elements and totalArea attached to nodes.
+!>
+!> @details Copied from the original totalAreaCalc() subroutine to
+!>          create separate routines for initialization and
+!>          timestepping. cms Feb 2026 (v56 merge)
+!>
+!>          Determine the number of active elements (MJU) and the total
+!>          area of active elements (totalArea) attached to each node
+!>          for each time step.
+!>
+!>          Updating the number of active elements occurs during
+!>          wetdry Part4 using the temporary nnodecode. To avoid
+!>          resetting the more stable nodecode value, a separate
+!>          subroutine was created for use in the wetdry module.
 !>
 !>          Additional updates added in v56 (cmszpilka@ou.edu):
-!>          1) Moved update of nodecode=nnodecode into c(h)start so that
-!>             totalAreaCalc can be called from computeWettingAndDrying
-!>             in Part 4 for area updates.
-!>          2) pulled nodele computations out to a firstcall subsection
-!>             since they do not need recomputed every time step
-!>          3) Added total area reciprocal calculation (divByTotalArea#)
+!>          1) Added total area reciprocal calculation (divByTotalArea#)
 !>             to allow for direct multiplication instead of IF testing.
 !>             Two new variables are defined:
 !>             divByTotalArea0: set to 0 when totalarea==0
@@ -3394,7 +3470,7 @@ Csb...
 !>       mju=1 instead of 0 affect any of the logical tests that use mju
 !>       in other modules?
 !-----------------------------------------------------------------------
-      subroutine totalAreaCalc()
+      subroutine totalAreaUpdate()
 !-----------------------------------------------------------------------
       use global, only : nnodecode, noff
       implicit none
@@ -3403,34 +3479,17 @@ Csb...
       integer ncele          ! wet/dry indicator (zero if dry)
       integer :: i           ! node loop counter
       integer :: ie          ! element loop counter
-      logical :: firstcall=.true.
 
-      LOG_SCOPE_TRACED("totalAreaCalc", MESH_TRACING)
-
-      ! cms: for the first call only, compute number of elements
-      ! attached to each adcirc mesh node - does not change in time
-      if(firstcall) then
-         nodele(1:np)=0
-         do ie=1,ne
-            nm1=nm(ie,1)
-            nm2=nm(ie,2)
-            nm3=nm(ie,3)
-            nodele(nm1)=nodele(nm1)+1
-            nodele(nm2)=nodele(nm2)+1
-            nodele(nm3)=nodele(nm3)+1
-         end do
-         firstcall=.false.
-      end if
+      LOG_SCOPE_TRACED("totalAreaUpdate", MESH_TRACING)
 
       ! initialize values (cms 11/20/25: added explicit array bounds)
       mju(1:np)=0
+      nodele(1:np)=0
       totalarea(1:np)=0.d0
       divByTotalArea0(1:np)=0.d0
       !divByTotalArea1(1:np)=0.d0  ! NOT USED YET
-      !nodecode(1:np)=nnodecode(1:np) !cms 11/20/25: mvd to c(h)start
 
-      ! assemble by elements
-      !cms 11/20/25: changed to used nnodecode instead of nodecode
+      ! assemble by elements (wetdry uses temporary nnodecode)
       do ie=1,ne
          nm1=nm(ie,1)
          nm2=nm(ie,2)
@@ -3455,7 +3514,7 @@ Csb...
       do i=1,np
          if(mju(i).eq.0) then
             mju(i)=1  ! may be used in momentum
-            nnodecode(i)=0  !dry landlocked node
+            nnodecode(i)=0  !dry landlocked node (for wetdry part4)
             ! if mju =0, then it is also true that totalArea=0
             divByTotalArea0(i)=0.d0
             !divByTotalArea1(i)=1.d0
@@ -3466,8 +3525,9 @@ Csb...
       end do
 
 !-----------------------------------------------------------------------
-      end subroutine totalAreaCalc
+      end subroutine totalAreaUpdate
 !-----------------------------------------------------------------------
+
 
 !     ------------------------------------------------------------------
 !                  S U B R O U T I N E   I N V C P
