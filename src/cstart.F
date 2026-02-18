@@ -184,7 +184,6 @@
 
       ! Compute initial wet/dry state and water surface elevation:
       ! Checks for nodes that should be dry and updates nnodecode
-      !cms: mvd nodecode = nnodecode here from totalAreaCalc
       call setColdWetDryStateAndWaterSurfaceElevation()
 
       ! cms 11/20/25: Compute active elements and total area for each
@@ -1497,8 +1496,6 @@ c...
       endif  !cms: end wet/dry if statement
       endif  !jlw: end subgrid if statement
 
-      !cms v56 moved update from totalAreaCalc here
-      nodecode(1:np) = nnodecode(1:np)
       eta1(:) = eta2(:)
 
       return

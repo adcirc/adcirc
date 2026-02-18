@@ -134,7 +134,7 @@
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB,
      &   NSTA3DD, NSTA3DV, NSTA3DT, NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
      &   IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG 
-      USE MESH, ONLY : totalAreaCalc, ne, np, SFEA
+      USE MESH, ONLY : ne, np, SFEA
       USE GWCE, ONLY : initGWCE
       USE MOMENTUM, ONLY : initMomentumEq
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
