@@ -2474,6 +2474,26 @@ C
 C------------------ END TIME VARYING BATHY ------------------------------C
 C
 
+
+!------------------ BEGIN ADDITIONAL FORCING ---------------------------
+!
+!     cms: Two new source terms added to gwce equation: rainfall and
+!     interior hydrology in v57. Traditional parameter checking and
+!     message logging to fort.16 was put in the new module files for
+!     brevity in this module.
+!
+!     The value of rainType is set in the rainfallControl Namelist
+!     (default=0 - no rain forcing)
+!
+!     The value of interiorHydrologyType is set in the Namelist
+!     interiorHydrologyControl
+!     (default=0 - no interior hydrology forcing)
+
+            call rainTypeCheck()
+            call interiorHydrologyCheck()
+
+!----------------------- END ADDITIONAL FORCING -----------------------
+
 C...
 C...  READ AND PROCESS NRAMP - WHETHER A RAMP FUNCTION WILL BE USED
 C...
