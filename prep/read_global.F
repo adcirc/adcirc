@@ -867,7 +867,18 @@ C DW
       ENDIF
       REWIND(15)
 
-
+C DW
+      read(unit=15,nml=TsunamiSimOption,iostat=ios) 
+      IF ( ios .ge. 0 ) THEN
+          foundTsunamiSimOption = .true.
+          call logMessage(INFO,
+     &         'The TsunamiSimOption namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The TsunamiSimOption namelist was not found.')
+      ENDIF
+      REWIND(15)
+         
 
       READ(15,80) RUNDES
 C

@@ -153,7 +153,7 @@
           !----------------!
           ! bulk modulus
           ! REAL (8), parameter:: kappamod = 2.041845e+09 
-          REAL (8), parameter:: kappamod = 2.20D+09 
+          REAL (8):: kappamodulus = 2.20D+09 
 
 !-----------------------------------------------------------------------
       END MODULE ADC_CONSTANTS

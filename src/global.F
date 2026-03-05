@@ -491,7 +491,8 @@ C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: CME_AreaInt_Corr    = .FALSE.
       LOGICAL :: CTIP                = .FALSE.
       LOGICAL :: CAliDisp            = .FALSE.
-      LOGICAL :: CSAL                = .FALSE. 
+      LOGICAL :: CSAL                = .FALSE.
+      LOGICAL :: CVariableDensityVCT = .FALSE.  
 C    kmd48.33bc  - logical statement for hot start using different time step
       ! This is .true. if the time step size of the current run is
       ! different from the time step size in the hotstart file; also

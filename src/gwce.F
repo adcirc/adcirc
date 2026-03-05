@@ -160,26 +160,32 @@ C        initialize parameter arrays needed by iterative solver
 !
       subroutine initDensityRatio()
         use mesh, only: np, dp
-        use ADC_CONSTANTS, ONLY: G, RHOWAT0, kappamod
-        use global, only: rhravg
+        use ADC_CONSTANTS, ONLY: G, RHOWAT0, kappamodulus
+        use global, only: rhravg, CVariableDensityVCT
                
 
         integer:: i 
         REAL (8):: RH, RAVG 
 
-        do i = 1, np
+        RHRAVG = 1.D0 ;
+
+        if ( CVariableDensityVCT ) then
           !
-          if ( DP(i) > 100.D0 ) then
-             RH = RHOWAT0*G*DP(i)/kappamod ;
-             RH = RHOWAT0*(1.D0 + RH) ;
+          do i = 1, np
+            !
+            if ( DP(i) > 100.D0 ) then
+               RH = RHOWAT0*G*DP(i)/kappamodulus ;
+               RH = RHOWAT0*(1.D0 + RH) ;
 
-             RAVG = RHOWAT0*G*DP(i)/(2.D0*kappamod) ;
-             RAVG = RHOWAT0*(1.D0 + RAVG) ; 
+               RAVG = RHOWAT0*G*DP(i)/(2.D0*kappamodulus) ;
+               RAVG = RHOWAT0*(1.D0 + RAVG) ; 
 
-             RHRAVG(i) = RH/RAVG ; 
-          endif
-          !       
-        enddo
+               RHRAVG(i) = RH/RAVG ; 
+            endif
+            !       
+          enddo
+          !
+         endif
 
         return ;                
       end subroutine initDensityRatio

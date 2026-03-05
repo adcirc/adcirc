@@ -84,7 +84,8 @@ C-----------------------------------------------------------------------
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
-     &   WarnVel, toLowercase
+     &   WarnVel, toLowercase,
+     &   use_variable_water_density_VCT => CVariableDensityVCT
 
 #if defined CSWAN || defined ADCSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
@@ -97,7 +98,8 @@ C-----------------------------------------------------------------------
      &   ,NUOPC4WAV, NUOPC4MET
       USE ADC_CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
      &                     waveWindMultiplier,deg2rad,rhoAir,
-     &                     rad2deg,omega,WaveStressGrad_Cap
+     &                     rad2deg,omega,WaveStressGrad_Cap,
+     &                     kappamodulus
 
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
@@ -217,7 +219,7 @@ C
       INTEGER:: salExtrapVal = 0 
       REAL (8):: salAPBeta = 0.01D0
       logical:: sal_use_sh_filter = .false. 
-      integer:: sh_filter_scheme = 1
+      integer:: sh_filter_scheme = 2
 
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
 #if defined CSWAN || defined ADCSWAN
@@ -281,7 +283,7 @@ C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data
      &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
      &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData
 
-
+C---- DW, Inline Self Attraction & Loading
       NAMELIST /InlineSALControl/ use_inline_sal,
      &     sal_use_direct_sh,
      &     sal_use_cache_blocking,
@@ -289,6 +291,11 @@ C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data
      &     inlineSalMethod, salAPBeta,
      &     sal_use_sh_filter, sh_filter_scheme
 
+C---- DW, variable water density for Tsunami
+      NAMELIST /TsunamiSimOption/  use_variable_water_density_VCT,
+     &     kappamodulus  
+       
+     
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       CHARACTER(len=2000) :: origLineTVW
@@ -903,9 +910,20 @@ C...
       write(scratchMessage,*) "salExtrapVal=", salExtrapVal
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "salAPBeta=", salAPBeta 
-      call logMessage(ECHO,trim(scratchMessage)) 
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "sal_use_sh_filter=", sal_use_sh_filter 
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "sh_filter_scheme=", sh_filter_scheme 
+      call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
+      namelistSpecifier =  'TsunamiSimOption'
+      read(unit=15,nml=TsunamiSimOption,iostat=ios,iomsg=ios_nml_error_msg)
+      write(scratchMessage,*) "use_variable_water_density=", use_variable_water_density_VCT
+      call logMessage(ECHO,trim(scratchMessage)) 
+      write(scratchMessage,*) "kappamodulus=", kappamodulus
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION

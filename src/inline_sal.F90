@@ -163,10 +163,15 @@ CONTAINS
       if ( myproc ==  0 ) then
         write(*,*) " Self attraction and loading: "    
         write(*,*) "   use_inline_sal = ", this%use_inline_sal
-        write(*,*) "   saldtinc = ", this%saldtinc ; 
+        write(*,*) "   saldtinc = ", this%saldtinc 
         if ( this%use_inline_sal ) then
-            write(*,*) "   use_SH_approximation = ", use_SH_approximation ;
-            write(*,*) "   use_AP_approximation = ", use_AP_approximation ;
+           if ( use_SH_approximation ) then
+              write(*,*) "   use_SH_approximation = ", use_SH_approximation 
+              write(*,*) "   SHT Order = ", shorder   
+           else   
+              write(*,*) "   use_AP_approximation = ", use_AP_approximation 
+              write(*,*) "   APBeta = ", salAPBeta 
+           endif   
         endif
 
         write(*,*) "   use filter = ", this%ApplyFilter ;

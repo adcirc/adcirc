@@ -29,7 +29,7 @@ C                     current for ADCIRC v46.34   09/20/2006
 C----------------------------------------------------------------------------
 
       MODULE PRE_GLOBAL
-      USE ADC_CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG
+      USE ADC_CONSTANTS,ONLY: REarth,DEG2RAD,RAD2DEG,kappamodulus
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
       USE VERSION
@@ -374,7 +374,11 @@ C    inline Self Attraction and Loading
      &     inlineSalMethod, salAPBeta, 
      &     sal_use_sh_filter, sh_filter_scheme
 
-C    
+C    Inteneded for Tsunami
+      LOGICAL:: foundTsunamiSimOption = .false. 
+      LOGICAL:: use_variable_water_density_VCT = .false. 
+      NAMELIST /TsunamiSimOption/ use_variable_water_density_VCT,
+     &     kappamodulus  
 
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX

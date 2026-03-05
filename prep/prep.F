@@ -2340,7 +2340,7 @@ Casey 180318: Added NWS=13
          END IF
 
 
-         ! Namelist of input variable for SAL
+         ! Namelist of input variables for SAL
          IF ( foundInlineSALControlNamelist ) THEN
              write(15,'(a,L4,a)') "&InlineSALControl"//
      &          " use_inline_sal = ", use_inline_sal, ","
@@ -2354,6 +2354,13 @@ Casey 180318: Added NWS=13
              write(15,'(a,F15.9,a)') " salAPBeta = ", salAPBeta, ","
              write(15,'(a,L4,a)') " sal_use_sh_filter = ", sal_use_sh_filter, "," 
              write(15,'(a,I3,a)') " sh_filter_scheme = ", sh_filter_scheme, " /" 
+         END IF
+
+         ! Namelist of input varibles for Tsunami 
+         IF ( foundTsunamiSimOption ) THEN
+             write(15,'(a,L4,a)') "&TsunamiSimOption/ "//
+     &          " use_variable_water_density_VCT = ", use_variable_water_density_VCT, ","
+             write(15,'(a,E15.8,a)') " kappamodulus = ", kappamodulus,  " /" 
          END IF
 
          ! NCSU Subdomain Modeling
