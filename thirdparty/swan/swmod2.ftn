@@ -202,7 +202,7 @@
 !
 !  7. Local variables
 
-      INTEGER, PARAMETER :: MAX_OUTP_REQ = 250 ! max. number of output requests
+      INTEGER, PARAMETER :: MAX_OUTP_REQ = 5000 ! max. number of output requests
 
       CHARACTER (LEN=1)  :: OUT_COMMENT = '%' ! comment sign for heading lines
 
@@ -254,7 +254,7 @@
 
       TYPE OPSDAT
          CHARACTER (LEN=1)     :: PSTYPE                     ! type (F, C, P, ...)
-         CHARACTER (LEN=8)     :: PSNAME                     ! name of point set
+         CHARACTER (LEN=16)    :: PSNAME                     ! name of point set
          INTEGER               :: OPI(2)                     ! integer coefficients
          REAL                  :: OPR(5)                     ! real coefficients
          INTEGER               :: MIP                        ! number of points
@@ -268,7 +268,7 @@
 
       TYPE ORQDAT
          CHARACTER (LEN=4)      :: RQTYPE   ! type (BLK, TAB, SPC ...)
-         CHARACTER (LEN=8)      :: PSNAME   ! name of point set
+         CHARACTER (LEN=16)     :: PSNAME   ! name of point set
          INTEGER                :: OQI(4)   ! integer coefficients
          REAL*8                 :: OQR(2)   ! real coefficients
          INTEGER, POINTER       :: IVTYP(:) ! type of output variable

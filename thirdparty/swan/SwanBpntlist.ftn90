@@ -63,10 +63,16 @@ subroutine SwanBpntlist
     use SwanGridobjects
     use SwanCompdata
     use OUTP_DATA                  ! 41.14
+!Nicole 250327: Allow for use of SwanLocalControl
+!ADC    use NodalAttributes, ONLY: SwanLocalControl
 !
     implicit none
 !
 !   Local variables
+!
+! Nicole 250317
+    integer                            :: kvert 
+    integer                            :: kk
 !
     integer                            :: icell      ! cell index
     integer, parameter                 :: idebug=0   ! level of debug output:
@@ -109,7 +115,7 @@ subroutine SwanBpntlist
     real                               :: xp, yp     ! coordinates of a boundary point                  41.14
     !
     character(80)                      :: msgstr     ! string to pass message
-    character (len=8)                  :: PSNAME     ! name of output curve                             41.14
+    character (len=16)                 :: PSNAME     ! name of output curve                             41.14
     !
     logical                            :: firstvert  ! indicate whether considered vertex is first vertex of boundary polygon
     logical                            :: found      ! indicates whether a new boundary part was found  41.14
@@ -323,8 +329,9 @@ subroutine SwanBpntlist
              !
           endif
           !
-          if ( k == nbptot ) exit faceloop
-          !
+!NADC     if ( k == nbptot ) exit faceloop
+!Nicole 241206: Change criteria to exit faceloop accounting for internal sources
+!ADC      if ( k == nbptot - num_int_src ) exit faceloop          !
        endif
        !
  10    continue
@@ -347,11 +354,22 @@ subroutine SwanBpntlist
              write(PRTEST,*) 'error in SwanBpntlist: nbptot =  ', nbptot
              write(PRTEST,*) 'error in SwanBpntlist: blistot = ', blistot
           endif
-          return
+ !Nicole 241009:  Changed return to exit
+          exit
           !
        endif
        !
     enddo faceloop
+    !
+! Nicole 250317: Add number of internal sources to variable count
+!ADC nbpol = nbpol + num_int_src
+! Nicole 250317: Add internal sources  
+!ADC nbpt(nbpol) = num_int_src
+!ADC do kk = 1,nbpt(nbpol)
+!ADC    vn = int_src_nd(kk)
+!ADC    blistot(k+kk) = vn
+!ADC    vert(vn)%atti(BPOL) = nbpol
+!ADC enddo
     !
     ! store number of boundary vertices for last polygon
     !

@@ -69,6 +69,9 @@ module SwanGriddata
     integer, dimension(:,:), save, allocatable :: kvertf         !
     !
     integer, dimension(:), save, allocatable   :: ivertg         ! vertex index in global grid
+! Nicole 250327: Variables for Swan Local Control 
+    integer, dimension(:), save, allocatable   :: int_src_nd     ! internal source node
+    integer                                    :: num_int_src    ! number of internal sources 
     integer, dimension(:), save, allocatable   :: vmark          ! boundary marker for vertices
     !
     integer                                    :: nsweep         ! fixed number of sweeps through grid

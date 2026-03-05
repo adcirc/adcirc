@@ -2278,6 +2278,10 @@ C
            write(15,*) '! -- Begin SWAN Output Control Namelist --'
            write(15,SWANOutputControl)
            write(15,*) '! -- End SWAN Output Control Namelist --'
+Casey 251212: Adding time control.
+           write(15,*) '! -- Begin SWAN Time Control Namelist --'
+           write(15,SWANTimeControl)
+           write(15,*) '! -- End SWAN Time Control Namelist --'
          endif
 
 ! tcm v50.79 Changed so that metControl namelist is only written if it was found in the

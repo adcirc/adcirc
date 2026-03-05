@@ -66,7 +66,7 @@ subroutine SwanVTKPDataSets ( upvt, pstype, nvar, ivtyp, mxk, myk, vtkfile, upvd
     integer, dimension(4,0:NPROC-1), intent(in) :: iarr    ! array with collecting grid indices
     integer, dimension(nvar), intent(in)        :: ivtyp   ! types of output variable
     !
-    character(len=8), intent(in)                :: psname  ! name of output frame
+    character(len=16), intent(in)               :: psname  ! name of output frame
     character(len=1), intent(in)                :: pstype  ! type of output point set
     character(len=lenfnm), intent(in)           :: vtkfile ! a VTK file
 !

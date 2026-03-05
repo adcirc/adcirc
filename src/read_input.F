@@ -91,6 +91,8 @@ C-----------------------------------------------------------------------
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
+Casey 251212: Adding time control.
+     &   , RunStartDateTime
 #endif
 #ifdef DATETIME
      &   ,basedatetime
@@ -234,6 +236,8 @@ C
       NAMELIST /SWANOutputControl/ SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
+Casey 251212: Adding time control.
+      NAMELIST /SWANTimeControl/ RunStartDateTime
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,
      &  rhoAir, invertedBarometerOnElevationBoundary,
@@ -466,6 +470,16 @@ c     a non-default value we can determine this was the case.
      &    " SWAN_OutputWIND=",SWAN_OutputWIND,
      &    " SWAN_OutputTM02=",SWAN_OutputTM02,
      &    " SWAN_OutputTMM10=",SWAN_OutputTMM10
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+Casey 251212: Adding time control.
+      namelistSpecifier = 'SWANTImeControl'
+      RunStartDateTime = "-99999"
+      read(unit=15,nml=SWANTimeControl,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
+      call logMessage(ECHO,
+     &    "The values of SWANTImeControl are as follows:")
+      write(scratchMessage,*) "RunStartDateTime = ",RunStartDateTime
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 #endif

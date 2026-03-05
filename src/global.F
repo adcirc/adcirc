@@ -316,6 +316,8 @@ Cobell 20120510: Added logicals for turning on/off swan output files
       LOGICAL                      :: SWAN_OutputTM02 = .FALSE.
       LOGICAL                      :: SWAN_OutputTMM10 = .FALSE.
       LOGICAL                      :: SWAN_OutputAgg(7)
+Casey 251212: Adding time control.
+      CHARACTER(LEN=15)            :: RunStartDateTime
 
 Cobell - Added for Time Varying Weirs, Set to default values
       LOGICAL                      :: USE_TVW = .FALSE.     !..From namelist, used time varying weirs

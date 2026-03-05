@@ -5129,7 +5129,7 @@
       REAL      BLKND(MXCGL,MYCGL), XC(MXK*MYK), YC(MXK*MYK)              40.51
       REAL*8    OQR(2)                                                    41.40
       REAL      FAC(OQI(3))                                               41.40
-      CHARACTER RTYPE*4, PSNAME*8
+      CHARACTER RTYPE*4, PSNAME*16
 !
 !  6. Local variables
 !
