@@ -56,6 +56,8 @@ subroutine SwanReadADCGrid
     use ocpcomm4
     use m_genarr
     use SwanGriddata
+!Nicole 250517: Allow for use of SwanLocalControl
+!ADC    use NodalAttributes, ONLY: SwanLocalControl 
 !PUN    use SIZES
 !PUN    use MESSENGER
 !Casey 231217: Carrying forward changes from earlier version.
@@ -78,6 +80,9 @@ subroutine SwanReadADCGrid
     integer                 :: k        ! loop counter
     integer                 :: n1       ! auxiliary integer
     integer                 :: n2       ! another auxiliary integer
+! Nicole 250318: Adding variable counters 
+    integer                 :: kk, vn
+    integer                 :: kvert    ! vert
 !Casey 231217: Carrying forward changes from earlier version.
 !ADC    integer                 :: n3       ! yet another auxiliary integer
     integer                 :: ndsd     ! unit reference number of file
@@ -181,6 +186,32 @@ subroutine SwanReadADCGrid
        enddo
     enddo
     !
+! Nicole 250314: Count internal sources  
+!ADC num_int_src = 0
+! Nicole 250410 initial counting of internal sources 
+!ADC do kvert = 1, nverts
+!ADC     if ( NINT(SwanLocalControl(kvert, 2)) > 0) then
+!ADC         num_int_src = num_int_src + 1
+!ADC     endif
+!ADC end do    
+! Nicole 250410: allocate the array for internal source nodes based on the number of internal sources 
+!ADC if (allocated(int_src_nd)) then
+!ADC     deallocate(int_src_nd)
+!ADC endif
+!ADC allocate(int_src_nd(num_int_src))
+! Nicole 250410: Store the node indices for internal source nodes
+!ADC kk = 0
+!ADC do kvert = 1, nverts
+!ADC     if ( NINT(SwanLocalControl(kvert, 2)) > 0) then
+!ADC         kk = kk + 1
+!ADC         int_src_nd(kk) = kvert
+!ADC     endif
+!ADC enddo
+! Nicole 250410: Setting internal sources as unique sides based on SLC value 
+!ADC do kk = 1, num_int_src 
+!ADC    vn = int_src_nd(kk)
+!ADC    vmark(vn) = NINT(SwanLocalControl(vn, 2))
+!ADC enddo
     read(ndsd, *, end=950, err=910) n1
     read(ndsd, *, end=950, err=910) idum
     do j = 1, n1

@@ -330,7 +330,7 @@
 !         ver 30.20: names of input variables changed, order of data changed
           ALLOCATE(OPSTMP)                                                40.31
           CALL INCSTR ('SNAME',PSNAME,'REQ',' ')
-          IF (LENCST.GT.8) CALL MSGERR (2, 'SNAME is too long')
+          IF (LENCST.GT.16) CALL MSGERR (2, 'SNAME is too long')
           OPSTMP%PSNAME = PSNAME                                          40.31
           CALL READXY ('XPFR', 'YPFR', XPFR, YPFR, 'REQ', 0., 0.)         40.31 30.20
           OPSTMP%OPR(1) = XPFR                                            40.31
@@ -384,7 +384,7 @@
 !         an option SUBG within the Frame command
           ALLOCATE(OPSTMP)                                                40.31
           CALL INCSTR ('SNAME',PSNAME,'REQ',' ')
-          IF (LENCST.GT.8) CALL MSGERR (2, 'SNAME is too long')
+          IF (LENCST.GT.16) CALL MSGERR (2, 'SNAME is too long')
           OPSTMP%PSNAME = PSNAME                                          40.31
           CALL INKEYW ('STA', ' ')
           CALL IGNORE ('SUBG')                                            970221
@@ -462,7 +462,7 @@
       IF (KEYWIS ('CURV')) THEN
         ALLOCATE(OPSTMP)                                                  40.31
         CALL INCSTR('SNAME',PSNAME,'REQ',' ')
-        IF (LENCST.GT.8) CALL MSGERR (2, 'SNAME is too long')
+        IF (LENCST.GT.16) CALL MSGERR (2, 'SNAME is too long')
         OPSTMP%PSNAME = PSNAME                                            40.31
         OPSTMP%PSTYPE = 'C'                                               40.31
         MIP  = 0
@@ -536,7 +536,7 @@
       IF (KEYWIS ('POIN')) THEN
         ALLOCATE(OPSTMP)                                                  40.31
         CALL INCSTR('SNAME',PSNAME,'REQ',' ')
-        IF (LENCST.GT.8) CALL MSGERR (2, 'SNAME is too long')
+        IF (LENCST.GT.16) CALL MSGERR (2, 'SNAME is too long')
         OPSTMP%PSNAME = PSNAME                                            40.31
         OPSTMP%PSTYPE = 'P'                                               40.31
         MIP  = 0
@@ -700,7 +700,7 @@
         ELSE                                                              32.02
           ALLOCATE(OPSTMP)                                                40.31
           CALL INCSTR ('SNAME',PSNAME,'REQ',' ')
-          IF (LENCST.GT.8) CALL MSGERR (2, 'SNAME is too long')
+          IF (LENCST.GT.16) CALL MSGERR (2, 'SNAME is too long')
           OPSTMP%PSNAME = PSNAME                                          40.31
           CALL INCSTR ('RNAME', PRNAME, 'REQ', ' ')
           IF (LENCST.GT.8) CALL MSGERR (2, 'RNAME is too long')
@@ -801,7 +801,7 @@
 !         ver 30.20: names changed, order changed
           ALLOCATE(OPSTMP)                                                40.31
           CALL INCSTR('SNAME',PSNAME,'REQ',' ')
-          IF (LENCST.GT.8) CALL MSGERR (2, 'SNAME is too long')
+          IF (LENCST.GT.16) CALL MSGERR (2, 'SNAME is too long')
           OPSTMP%PSNAME = PSNAME                                          40.31
           OPSTMP%PSTYPE = 'N'                                             40.31
           CALL INKEYW ('STA', ' ')
@@ -2323,7 +2323,7 @@
 !
       IERR = 0
       CALL INCSTR ('SNAME', PSNAME, 'STA', 'BOTTGRID')
-      IF (LENCST.GT.8) CALL MSGERR (2, 'SNAME is too long')
+      IF (LENCST.GT.16) CALL MSGERR (2, 'SNAME is too long')
       CUOPS => FOPS                                                       40.31
       DO                                                                  40.31
         IF (CUOPS%PSNAME.EQ.PSNAME) EXIT                                  40.31

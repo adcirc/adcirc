@@ -954,6 +954,8 @@ CTGA 110912:  Full SWAN ice implementation.  Use global variables
      &                    NCICE,
      &                    CICE1,
      &                    CICE2
+Casey 251212: Adding time control.
+     &                   ,RunStartDateTime
       USE WIND, ONLY :   WVNX1,
      &                    WVNX2,
      &                    WVNY1,
@@ -963,12 +965,16 @@ CTGA 111003:  Adding ability to read in ice info from fort.26 file
       USE SWCOMM3,  ONLY: SWAN_WBICETH => WBICETH,
      &                    SWAN_IICE => IICE
       USE TIMECOMM, ONLY: SWAN_DT => DT
+Casey 251212: Adding time control.
+     &                   ,SWAN_TINIC => TINIC
 
       IMPLICIT NONE
 
       INTRINSIC :: ALLOCATED
 
       INTEGER   :: IN  ! Node counter.
+Casey 251212: Adding time control.
+      REAL(8) :: AdcircStartTime
 
       LOG_SCOPE_TRACED("PADCSWAN_INIT", COUPLE2SWAN_TRACING)
 Casey 090302: Allocate memory for the ADCIRC values that may be
@@ -1079,6 +1085,18 @@ C      ENDDO
 Casey 090302: Compute the coupling interval as equivalent
 C             to the SWAN time step.
       CouplingInterval = SWAN_DT / DT
+Casey 251212: Adding time control. Determine how many SWAN time steps
+C             to skip before the start of its calculations.
+      IF( INDEX( RunStartDateTime, "-") .GT. 0 ) THEN
+         SwanTimeStep = 0
+      ELSE
+         ! I will mimic code from thirdparty/swan/swanpre1.ftn
+         ! Convert datetime to real time since reference.
+!Nicole 251218: fixed hardcoded date to datetime from namelist
+         CALL DTRETI( RunStartDateTime, 1, AdcircStartTime )
+         ! Initialize the starting time step.
+         SwanTimeStep = NINT( ( AdcircStartTime - SWAN_TINIC ) / SWAN_DT )
+      ENDIF
 
 C-----------------------------------------------------------------------
       END SUBROUTINE PADCSWAN_INIT
@@ -1104,10 +1122,21 @@ CTGA 110912:  Full SWAN ice implementation.  Use global variables
      &                    CICE2,
      &                    CICE_TIME1,
      &                    CICE_TIMINC
+Casey 251212: Adding time controls.
+     &                   ,Swan_HSOut,
+     &                    Swan_DIROut,
+     &                    Swan_TM01Out,
+     &                    Swan_TPSOut,
+     &                    Swan_WindXOut,
+     &                    Swan_WindYOut,
+     &                    Swan_TM02Out,
+     &                    Swan_TMM10Out
 CTGA 111003:  Adding ability to read in ice info from fort.26 file
       USE MESH, ONLY : NP, DP
       USE SWCOMM3,  ONLY: SWAN_IICE => IICE,
      &                    SWAN_WBICETH => WBICETH
+Casey 251212: Adding time controls.
+     &                   ,SWAN_MTC => MTC
       USE TIMECOMM, ONLY: SWAN_DT => DT
 
       IMPLICIT NONE
@@ -1212,7 +1241,55 @@ Csb   251003: Remove IF(COUPFRIC) so that SWAN_Z0 is always initialized. COUPFRI
 Casey 090729: Average values over the time step.
       InterpoWeight = 0.5D0
       SwanTimeStep = SwanTimeStep + 1
-      CALL SWMAIN(ITIME,SwanTimeStep)
+Casey 251212: Adding time control.
+      IF((SwanTimeStep.GE.1).AND.(SwanTimeStep.LE.SWAN_MTC))THEN
+        CALL SWMAIN(ITIME,SwanTimeStep)
+      ENDIF
+
+Casey 251212: Adding time control. The call to 'SwanOutput' is made from
+C             the SWAN side. If we did not call SWAN, then we need to
+C             'compute' or at least initialize the output quantities.
+      IF((SwanTimeStep.LT.1).OR.(SwanTimeStep.GT.SWAN_MTC))THEN
+         Swan_HSOut(:) = -99999.D0
+         Swan_DIROut(:) = -99999.D0
+         Swan_TM01Out(:) = -99999.D0
+         Swan_TPSOut(:) = -99999.D0
+         Swan_WindXOut(:) = 0.D0
+         Swan_WindYOut(:) = 0.D0
+         Swan_TM02Out(:) = 0.D0
+         Swan_TMM10Out(:) = -99999.D0
+      ENDIF
+Casey 251212: End changes for output.
+
+Casey 251212: Adding time control. The call to 'ComputeRadiationStresses'
+C             is made from the SWAN side. If we did not call SWAN,
+C             then we need to 'compute' the radiation stresses here.
+      IF((SwanTimeStep.LT.1).OR.(SwanTimeStep.GT.SWAN_MTC))THEN
+!... (Re)allocate the arrays.
+         IF(.NOT.ALLOCATED(ADCIRC_SXX))THEN
+            ALLOCATE(ADCIRC_SXX(1:NP,1:2))
+            ADCIRC_SXX(:,:) = 0.D0
+         ENDIF
+         IF(.NOT.ALLOCATED(ADCIRC_SXY))THEN
+            ALLOCATE(ADCIRC_SXY(1:NP,1:2))
+            ADCIRC_SXY(:,:) = 0.D0
+         ENDIF
+         IF(.NOT.ALLOCATED(ADCIRC_SYY))THEN
+            ALLOCATE(ADCIRC_SYY(1:NP,1:2))
+            ADCIRC_SYY(:,:) = 0.D0
+         ENDIF
+         DO IN=1,NP
+!... Transfer the stresses from the new time level to the old time level.
+            ADCIRC_SXX(IN,1) = ADCIRC_SXX(IN,2)
+            ADCIRC_SXY(IN,1) = ADCIRC_SXY(IN,2)
+            ADCIRC_SYY(IN,1) = ADCIRC_SYY(IN,2)
+!... Initialize the radiation stresses as zero at all of the nodes.
+            ADCIRC_SXX(IN,2) = 0.0
+            ADCIRC_SXY(IN,2) = 0.0
+            ADCIRC_SYY(IN,2) = 0.0
+         ENDDO
+      ENDIF
+Casey 251212: End changes for radiation stresses.
 
 Casey 090302: Move the 'old' values into the first columns.
 C             We do this for the winds after the SWAN time steps

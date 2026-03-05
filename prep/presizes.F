@@ -146,6 +146,8 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &    SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &    SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
      &    SWAN_OutputTMM10
+Casey 251212: Adding time control.
+     &   ,RunStartDateTime
 
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
      &                  initWindModule, 
@@ -270,6 +272,8 @@ C Logicals added for adcprep paths
       NAMELIST /SWANOutputControl/ SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
+Casey 251212: Adding time control.
+      NAMELIST /SWANTimeControl/ RunStartDateTime
 
       NAMELIST /metControl/ WindDragLimit,DragLawString,outputWindDrag,rhoAir,
      &                       invertedBarometerOnElevationBoundary,nPowellSearchDomains
@@ -730,6 +734,15 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          SWAN_OutputHS=.TRUE.
          SWAN_OutputTPS=.TRUE.
          SWAN_OutputDIR=.TRUE.
+      ENDIF
+      REWIND(15)
+
+Casey 251212: Adding time control.
+      IOS = 0
+      READ(UNIT=15,NML=SWANTimeControl,IOSTAT=IOS)
+      IF (IOS.ne.0) THEN
+         write(*,*)"INFO: The SWANTimeControl namelist was not found."
+         RunStartDateTime = "-99999"
       ENDIF
       REWIND(15)
 

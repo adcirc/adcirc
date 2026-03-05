@@ -948,7 +948,7 @@
       CHARACTER*40 OVLNAM(NMOVAR)
       CHARACTER*6  OVSNAM(NMOVAR)
       CHARACTER*16 OVUNIT(NMOVAR)
-      CHARACTER*8  SNAME
+      CHARACTER*16 SNAME
       CHARACTER*6  UAP,           UD,          UDI,         UDL
       CHARACTER*6  UET,           UF,          UH,          UL
       CHARACTER*6  UP,            UST,         UT,          UV

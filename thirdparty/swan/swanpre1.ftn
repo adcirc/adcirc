@@ -445,7 +445,7 @@
 !
       LOGICAL, SAVE :: LOGCOM(1:6) = .FALSE.                              40.03
       INTEGER   TIMARR(6)                                                 40.31 30.00
-      CHARACTER PSNAME *8, PNAME *8, COMPUT *(*), PTYPE *1, DTTIWR *18    40.00
+      CHARACTER PSNAME *16, PNAME *16, COMPUT *(*), PTYPE *1, DTTIWR *18  40.00
       INTEGER, SAVE :: IENT = 0       ! number of entries to this subr
       INTEGER, SAVE :: LWINDR = 0     ! if non-zero, there is wind
       INTEGER, SAVE :: LWINDM = 5     ! type of wind growth formulation   42.00

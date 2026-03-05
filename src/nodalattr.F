@@ -82,6 +82,12 @@ C      StartDry              "surface_submergence_state"
 C      Fric                  "quadratic_friction_coefficient_at_sea_floor"
 C      z0Land                "surface_directional_effective_roughness_length"
 C                            (z0Land has ValuesPerNode = 12)
+!Nicole 260220: Allow SWAN to be activated for selective regions of the 
+! ADCIRC mesh and identified using a nodal attribute. The nodal attribute 
+! controls which nodes are active vs inactive and which nodes should be 
+! used as internal source nodes to apply spectral 'boundary' conditions at. 
+C      SwanLocalControl      "swan_local_control"
+C                            (SwanLocalControl has ValuesPerNode = 2)
 C      VCanopy               "surface_canopy_coefficient"
 C      BK,BAlpha,BDelX,POAN  "bridge_pilings_friction_parameters"
 C                            (bridge_pilings... has ValuesPerNode=4)
@@ -144,6 +150,8 @@ C     required for the run, according to the unit 15 control file
       LOGICAL LoadTau0
       LOGICAL LoadStartDry
       LOGICAL LoadDirEffRLen
+! Nicole 250327: Allow SWAN to use a different spatial domain and inputs
+      LOGICAL LoadSwanLocalControl
       LOGICAL LoadCanopyCoef
       LOGICAL LoadQuadraticFric
       LOGICAL LoadBridgePilings
@@ -164,7 +172,8 @@ C     The following flags are .true. if there are data with the
 C     corresponding label in the unit 13 file.
       LOGICAL FoundTau0
       LOGICAL FoundStartDry
-      LOGICAL FoundDirEffRLen
+      LOGICAL FoundDirEffRLen 
+      LOGICAL FoundSwanLocalControl
       LOGICAL FoundCanopyCoef
       LOGICAL FoundQuadraticFric
       LOGICAL FoundBridgePilings
@@ -187,6 +196,7 @@ C     v46.00.
       CHARACTER(len=80) Tau0Units
       CHARACTER(len=80) StartDryUnits
       CHARACTER(len=80) DirEffRLenUnits
+      CHARACTER(len=80) SwanLocalControlUnits
       CHARACTER(len=80) CanopyCoefUnits
       CHARACTER(len=80) QuadraticFricUnits
       CHARACTER(len=80) BridgePilingsUnits
@@ -208,6 +218,7 @@ C     attribute.
       INTEGER Tau0NoOfVals
       INTEGER StartDryNoOfVals
       INTEGER DirEffRLenNoOfVals
+      INTEGER SwanLocalControlNoOfVals
       INTEGER CanopyCoefNoOfVals
       INTEGER QuadraticFricNoOfVals
       INTEGER BridgePilingsNoOfVals
@@ -228,6 +239,7 @@ C     These variables hold the default values for each attribute.
       REAL(8) Tau0DefVal
       REAL(8) StartDryDefVal
       REAL(8) DirEffRLenDefVal(12)
+      REAL(8) SwanLocalControlDefVal(2)
       REAL(8) CanopyCoefDefVal
       REAL(8) QuadraticFricDefVal
       REAL(8) BridgePilingsDefVal(4)
@@ -294,6 +306,7 @@ C     jgf48.42: Added backloaded time averaged tau0
                                                                    ! exceeded, used for gradient warnings
 
       REAL(8), ALLOCATABLE :: z0land(:,:) ! directional wind speed red. fac.
+      REAL(8), ALLOCATABLE :: SwanLocalControl(:,:) !swan local control
       REAL(8), ALLOCATABLE :: vcanopy(:)  ! canopy coefficient
 C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(8), ALLOCATABLE :: BridgePilings(:,:)
@@ -421,6 +434,7 @@ C
       LoadTau0           = .False.
       LoadStartDry       = .False.
       LoadDirEffRLen     = .False.
+      LoadSwanLocalControl = .False.
       LoadManningsN      = .False.
       LoadQuadraticFric  = .False.
       LoadChezy          = .False.
@@ -440,6 +454,7 @@ C
       FoundTau0           = .False.
       FoundStartDry       = .False.
       FoundDirEffRLen     = .False.
+      FoundSwanLocalControl = .False.
       FoundManningsN      = .False.
       FoundQuadraticFric  = .False.
       FoundChezy          = .False.
@@ -460,6 +475,7 @@ C
       Tau0NoOfVals          = 1
       StartDryNoOfVals      = 1
       DirEffRLenNoOfVals    = 12
+      SwanLocalControlNoOfVals = 2
       QuadraticFricNoOfVals = 1
       ChezyNoOfVals         = 1
       ManningsNNoOfVals     = 1
@@ -481,6 +497,9 @@ C
       DO j=1, DirEffRLenNoOfVals
          DirEffRLenDefVal(j) = 0.0
       END DO
+! Nicole 250327 set SwanOn default to 1 (on) and IntSource default to 0 
+      SwanLocalControlDefVal(1) = 1.0
+      SwanLocalControlDefVal(2) = 0.0
       CanopyCoefDefVal       = 1.0 ! jgf49.1001 default is now full wind stress
       QuadraticFricDefVal    = 0.0
       DO j=1, BridgePilingsNoOfVals
@@ -645,6 +664,8 @@ C
             FoundQuadraticFric = .True.
          CASE("surface_directional_effective_roughness_length")
             FoundDirEffRLen = .True.
+         CASE("swan_local_control")
+            FoundSwanLocalControl = .True.
          CASE("surface_canopy_coefficient")
             FoundCanopyCoef = .True.
          CASE("bridge_pilings_friction_parameters")
@@ -788,6 +809,10 @@ C     numOfNodes value
             IF (LoadDirEffRLen) THEN
                z0land  = na(i)%xdmfMatrix
             ENDIF
+         CASE("swan_local_control")
+            IF (LoadSwanLocalControl) THEN
+               SwanLocalControl = na(i)%xdmfMatrix
+            ENDIF
          CASE("surface_canopy_coefficient")
             IF (LoadCanopyCoef) THEN
                vcanopy = na(i)%xdmfArray
@@ -892,6 +917,8 @@ C     that are not in the nodal attributes file.
      &    (.not.FoundQuadraticFric)).or.
      &   ((LoadDirEffRLen).and.
      &    (.not.FoundDirEffRLen)).or.
+     &   ((LoadSwanLocalControl) .and.
+     &    (.not.FoundSwanLocalControl)).or. 
      &   ((LoadCanopyCoef).and.
      &    (.not.FoundCanopyCoef)).or.
      &   ((LoadBridgePilings).and.
@@ -942,6 +969,7 @@ C     Allocate memory to hold our data.
       ALLOCATE(STARTDRY(NumOfNodes))
       ALLOCATE(FRIC(NumOfNodes))
       ALLOCATE(z0land(NumOfNodes,DirEffRLenNoOfVals))
+      ALLOCATE(SwanLocalControl(NumOfNodes,SwanLocalControlNoOfVals))
       ALLOCATE(vcanopy(NumOfNodes))
       ALLOCATE(BridgePilings(NumOfNodes,BridgePilingsNoOfVals))
       ALLOCATE(GeoidOffset(NumOfNodes))
@@ -1062,6 +1090,8 @@ C     loaded from nodal attributes file.
             LoadQuadraticFric = .True.
          CASE("surface_directional_effective_roughness_length")
             LoadDirEffRLen = .True.
+         CASE("swan_local_control")
+            LoadSwanLocalControl = .True.
          CASE("surface_canopy_coefficient")
             LoadCanopyCoef = .True.
          CASE("bridge_pilings_friction_parameters")
@@ -1201,6 +1231,12 @@ C
             READ(13,*) DirEffRLenNoOfVals
             READ(13,*)
      &      (DirEffRLenDefVal(j),j=1,DirEffRLenNoOfVals)
+         CASE("swan_local_control")
+            FoundSwanLocalControl = .True.
+            READ(13,'(A80)') SwanLocalControlUnits
+            READ(13,*) SwanLocalControlNoOfVals
+            READ(13,*) 
+     &      (SwanLocalControlDefVal(j),j=1,SwanLocalControlNoOfVals)
          CASE("surface_canopy_coefficient")
             FoundCanopyCoef = .True.
             READ(13,'(A80)') CanopyCoefUnits
@@ -1360,6 +1396,15 @@ C     (unit 15) file and skip past the others.
                CALL LoadAttrMat(z0land, DirEffRLenNoOfVals,
      &              DirEffRLenDefVal, NumNodesNotDefault,
      &              NScreen, MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .True.
+            ENDIF
+         CASE("swan_local_control")
+            IF (LoadSwanLocalControl) THEN
+               CALL LoadAttrMat(SwanLocalControl,
+     &             SwanLocalControlNoOfVals,
+     &             SwanLocalControlDefVal, NumNodesNotDefault,
+     &             NScreen, MyProc, NAbOut)   
             ELSE
                SkipDataSet = .True.
             ENDIF
@@ -1992,6 +2037,17 @@ C     I N I T   B O T T O M   F R I C T I O N
          IFHYBF=1
       ENDIF
 C
+! Nicole 20260211 Initialize SwanLocalControl if not loaded 13
+      IF(.not.LoadSwanLocalControl) THEN
+         IF(.not.ALLOCATED(SwanLocalControl)) THEN
+           ALLOCATE(SwanLocalControl(NP,SwanLocalControlNoOfVals))
+         ENDIF
+         DO I=1,NP
+            DO J=1, SwanLocalControlNoOfVals
+               SwanLocalControl(I,J)=SwanLocalControlDefVal(J)
+            ENDDO
+         ENDDO
+      ENDIF
 C     Initialize bottom friction if it was not loaded from unit 13.
       IF(C2DDI) THEN
          IF((.not.LoadQuadraticFric).and.(.not.LoadManningsN).and.

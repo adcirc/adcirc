@@ -97,7 +97,7 @@
 !       RTYPE   ch*4   input    type of output request:
 !                               'BLKP' for output on paper,
 !                               'BLKD' and 'BLKV' for output to datafile
-!       PSNAME  ch*8   input    name of output frame
+!       PSNAME  ch*16  input    name of output frame
 !       MXK     int    input    number of grid points in x-direction
 !       MYK     int    input    number of grid points in y-direction
 !       VOQR
@@ -483,7 +483,7 @@
       CHARACTER (LEN=21) :: WFORM2 = '(1X,I4,1X, 151(F6.0))'              41.41 40.13
       CHARACTER (LEN=20) :: WFORM3 = '(5X, 151(F6.0))'                    40.13
 
-      CHARACTER PSNAME*8, STRING*(*), QUNIT*(*)                           40.00
+      CHARACTER PSNAME*16, STRING*(*), QUNIT*(*)                          40.00
       REAL      DFAC, OQVALS(*)
       INTEGER   NREF, MXK, MYK, IPD
       LOGICAL   BPRN
@@ -798,7 +798,7 @@
                                               ! time step)
       REAL   , DIMENSION(MXK*MYK,*) :: VOQ    ! output variables
 
-      CHARACTER (LEN=8)             :: PSNAME ! name of output frame
+      CHARACTER (LEN=16)            :: PSNAME ! name of output frame
       CHARACTER (LEN=1)             :: PSTYPE ! type of output point set
 !
 !  6. Local variables
@@ -1292,7 +1292,7 @@
 !             ='TABT';
 !NCF!             ='TABC'; NETCDF output
 !
-      CHARACTER RTYPE*4, PSNAME*8
+      CHARACTER RTYPE*4, PSNAME*16
 !
 !     MIP
 !     VOQR
