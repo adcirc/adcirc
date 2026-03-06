@@ -2358,7 +2358,7 @@ Casey 180318: Added NWS=13
 
          ! Namelist of input varibles for Tsunami 
          IF ( foundTsunamiSimOption ) THEN
-             write(15,'(a,L4,a)') "&TsunamiSimOption/ "//
+             write(15,'(a,L4,a)') "&TsunamiSimOption"//
      &          " use_variable_water_density_VCT = ", use_variable_water_density_VCT, ","
              write(15,'(a,E15.8,a)') " kappamodulus = ", kappamodulus,  " /" 
          END IF

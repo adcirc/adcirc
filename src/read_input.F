@@ -919,7 +919,8 @@ C...
 
       namelistSpecifier =  'TsunamiSimOption'
       read(unit=15,nml=TsunamiSimOption,iostat=ios,iomsg=ios_nml_error_msg)
-      write(scratchMessage,*) "use_variable_water_density=", use_variable_water_density_VCT
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
+      write(scratchMessage,*) "use_variable_water_density_VCT=", use_variable_water_density_VCT
       call logMessage(ECHO,trim(scratchMessage)) 
       write(scratchMessage,*) "kappamodulus=", kappamodulus
       call logMessage(ECHO,trim(scratchMessage))
