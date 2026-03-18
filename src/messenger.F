@@ -1526,7 +1526,7 @@ C
 #endif
 C 
         kount = n
-        call MPI_ALLREDUCE( v, vall, kount, MPI_DOUBLE,
+        call MPI_ALLREDUCE( v, vall, kount, MPI_DOUBLE_PRECISION,
      &      MPI_SUM, COMM, ierr)
 
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
