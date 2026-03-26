@@ -1,5 +1,4 @@
-! DW - Jan 2025.
-!
+! DW - Jan 2025!
 !  -  Adapted from SAL implemention of MPAS-O; subroutines taken from MPAS-O include 
 !     their original descriptions and writers.  
 !
@@ -18,7 +17,11 @@ MODULE MOD_INLINE_SAL
     USE MESSENGER, only: msg_rvec_allreduce_sum
     USE sizes, only: myproc
 #endif
- 
+
+#ifdef NONADCMPI
+    USE MPI
+#endif
+
     IMPLICIT NONE
 
 #ifdef NONADC
@@ -41,7 +44,7 @@ MODULE MOD_INLINE_SAL
         REAL (8):: saldtinc = -9999.D0  ! currently not used
 
         LOGICAL:: sal_init = .false. 
-        REAL (8):: salAPBeta = 0.00D0 ; ! for Accad & Parkadis's scalar approximation
+        REAL (8):: salAPBeta = 0.00D0 ; ! foadis's scalar approximation
 
 
         LOGICAL:: ApplyFilter = .false. ! .true. - filter is applied
@@ -49,8 +52,8 @@ MODULE MOD_INLINE_SAL
 
     contains 
         procedure, pass(this), public:: sal_param_init
-#ifndef NONADC        
         procedure, pass(this), public:: sal_privatedata_init
+#ifndef NONADC        
         procedure, pass(this), public:: sal_compute => direct_spht_self_attraction_loading_fn
         procedure, pass(this), public:: sal_compute_sub => direct_spht_self_attraction_loading_sub
         procedure, pass(this), public:: salAP_reduce_factor
@@ -136,6 +139,7 @@ CONTAINS
       this%inlineSALMethod = trim(inlineSALMethod) 
       this%salAPBeta = salAPBeta ; 
 
+      
       if ( this%use_inline_sal ) then
         select case( this%inlineSALMethod )
         case ('SH','sh','sH','Sh')
@@ -153,7 +157,9 @@ CONTAINS
         end select  
       endif 
 
+#ifndef NONADC
       this%saldtinc = salinc*dtdp ;  
+#endif     
       this%sal_init = .true. ;
 
       this%ApplyFilter = useshtfilter ;
@@ -215,8 +221,22 @@ CONTAINS
 
          !
          select case ( trim(inlineSALMethod) )
-         case ('SH','sh','Sh','sH') 
-           call ssh_inline_sal%sal_privatedata_init() ;
+         case ('SH','sh','Sh','sH')
+
+           !      
+           if ( gridICS == 0 ) then     
+             write(*,*) "Error : SAL is not applicable in the Cartesian coordinates" ;         
+           endif        
+   
+           !! allocate( dA(ne), lon(np), lat(np) ) ; 
+           !! dA = -9999.D0 ; lon = -9999.D0 ; lat = -9999.D0 ; 
+           ! 
+           if ( ifsprots .EQ. 1 ) then
+              call ssh_inline_sal%sal_privatedata_init( slamr, sfear, etov, nnode, nele ) ;
+           else
+              call ssh_inline_sal%sal_privatedata_init( slam, sfea, etov, nnode, nele ) ;
+           endif
+           !
 
            sshsaltiminc = ssh_inline_sal%saldtinc ;
 
@@ -461,54 +481,61 @@ CONTAINS
 
     end function salAP_reduce_factor        
 
+
+#endif  ! NONADC
+
     !
     ! initalize private data in this module !
-    subroutine sal_privatedata_init( this )
+    subroutine sal_privatedata_init( this, lonv, latv, element, np, ne )
+            !    subroutine sal_privatedata_init( this )
+      
+#ifndef NONADC            
       use global, only: setMessageSource, unsetMessageSource, allMessage, DEBUG
-
+#endif
       implicit none 
 
       class (salmethod), intent(inout):: this
+      integer:: np, ne, element(:,:)
+      real (8), dimension(:):: lonv, latv 
 
+      ! local 
       integer:: ii 
-      real (8), dimension(3):: xs, ys,xc,yc
+      real (RKIND), dimension(3):: xs, ys,xc,yc
       real (8), allocatable:: dA(:), lon(:), lat(:)
 
       real (8), parameter:: eps = 1.0D-10, pii = acos(-1.D0) 
 
+#ifndef NONADC
       call setMessageSource("sal_privatedata_init")
 #if defined(ALL_TRACE)
       call allMessage(DEBUG, "Enter.")
 #endif
- 
+#endif
+
       INITSALPRIVATE: if ( this%use_inline_sal ) then
          use_direct_shtns_self_attraction_loading = this%use_direct_shtns_self_attraction_loading ;       
          nCellBlock = this%nCellBlock ;
          use_blocking_scheme = this%use_blocking_scheme ;
          use_direct_shtns_self_attraction_loading_bfb = .FALSE. 
 
-         !      
-         if ( gridICS == 0 ) then     
-           write(*,*) "Error : SAL is not applicable in the Cartesian coordinates" ;         
-         endif        
    
-         allocate( dA(nele), lon(nnode), lat(nnode) ) ; 
+         allocate( dA(ne), lon(np), lat(np) ) ; 
          dA = -9999.D0 ; lon = -9999.D0 ; lat = -9999.D0 ;
    
          ! lon = slam*deg2rad ; ! in DEG
          ! lat = sfea*deg2rad ; 
-         lon = slam ;
-         lat = sfea ;
-         if ( ifsprots .EQ. 1 ) then
-            lon = slamr ;
-            lat = sfear ;
-         endif   
+         lon = lonv(1:np) ;
+         lat = latv(1:np) ;
+         !if ( ifsprots .EQ. 1 ) then
+         !   lon = slamr ;
+         !   lat = sfear ;
+         !endif   
 
          ! find dA in lat and lon,      !
          ! will move it to mesh.F later !
-         DO ii = 1, nele
-           xs(1:3) = lon( etov(ii,:) ) ; 
-           ys(1:3) = lat( etov(ii,:) ) ; 
+         DO ii = 1, ne
+           xs(1:3) = lon( element(ii,:) ) ; 
+           ys(1:3) = lat( element(ii,:) ) ; 
            
            yc = cos( ys )*sin( xs )  ; 
            xc = cos( ys )*cos( xs )  ;
@@ -540,16 +567,18 @@ CONTAINS
          
          ! lon = lon*deg2rad ; ! in Rad
          ! lat = lat*deg2rad ;
-         CALL InlineSALDirectMthdtInit( this%nOrder, nnode, lon, lat, dA  ) ; 
+         CALL InlineSALDirectMthdtInit( this%nOrder, np, lon, lat, dA  ) ; 
    
          deallocate( dA, lon, lat ) ; 
 
        endif INITSALPRIVATE
-  
+
+#ifndef NONADC
 #if defined(ALL_TRACE)
       call allMessage(DEBUG, "Return.")
 #endif
       call unsetMessageSource()
+#endif
 
       return ; 
     contains 
@@ -643,7 +672,7 @@ CONTAINS
 
           dA = 4.D0*atan( args ) ; 
         CASE DEFAULT
-          ! L'Huilier   
+          ! L'Huilier - Best for small triangles   
           s = (ap + bp + cp)*0.5D0 ; 
           args = sqrt( tan(s*0.5D0)*tan((s - ap)*0.5D0)*tan((s - bp)*0.5D0)*tan((s - cp)*0.5D0) ) ;
 
@@ -718,10 +747,6 @@ CONTAINS
   
     end subroutine sal_privatedata_init
 
-
-#endif  ! NONADC
-
-
     !  
     subroutine self_attraction_loading_parallel_fem( this, ssh_sal, ssh, elements, nCells, elemask  )
        implicit none 
@@ -794,6 +819,8 @@ CONTAINS
         integer :: n, m, l, blk
         integer :: startIdx, endIdx, ii
         real (kind=RKIND) :: mFac
+
+        integer :: impierr, myproc
 
         FORWARDSPHT: IF ( forward ) THEN
           !!!!!!!!!!!!!!!!!!!!!
@@ -894,9 +921,12 @@ CONTAINS
           enddo
           
 
-#ifdef CMPI 
+#if defined(CMPI) 
           ! all reduce
           CALL msg_rvec_allreduce_sum( Snm_local, Snm, 2*lmax )
+#elif defined(NONADCMPI) 
+          CALL MPI_ALLREDUCE( Snm_local, Snm, 2*lmax, &
+              & MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, impierr )
 #else
           Snm = Snm_local ; 
 #endif
@@ -1062,7 +1092,7 @@ CONTAINS
 
       REAL (8), parameter:: alpha = 36.D0, kp = 36.D0 ; ! for Hesthaven's filter
       REAL (8), parameter:: cu = 0.1D0  ! cutoff value of the last mode in the spherical spline
-      REAL (8), parameter:: pp = 2.0D0  ! filter order 
+      REAL (8), parameter:: pp = 4.0D0  ! filter order 
 
       if ( present(filtermtd) ) then
         mtd = filtermtd ;
@@ -1070,11 +1100,11 @@ CONTAINS
 
       SELECT CASE( mtd )
       CASE (1) 
-        ! From Warbuton & Hesthaven's book
+        ! isotropic in n with a filer from Warbuton & Hesthaven's book
         do m = 0, nOrder
           do n = m, nOrder
             !
-            lambda = dble(n)/dble(nOrder) ;
+            lambda = dble(n)/dble(nOrder+1) ;
             lambda = alpha*(lambda**kp) ;
           
             l = SHOrderDegreeToIndex(n,m) ;
@@ -1088,7 +1118,7 @@ CONTAINS
         enddo 
         !
       CASE (2)
-        ! Shperical splines
+        ! Shperical splines with k = 1 (from Boyd's book)
         alp = ((1.D0/cu) - 1.D0)/( (DBLE(nOrder)*DBLE(nOrder+1))**2.D0 ) ;
          
         !  
@@ -1105,7 +1135,25 @@ CONTAINS
         enddo
         !
       CASE (3)
-        ! Boyd's book
+        ! Hoskins filter with k = 1 (fronm Boyd's book)
+        alp = -log(cu)/( DBLE(nOrder)*DBLE(nOrder + 1) ) ;
+        
+        do m = 0, nOrder
+          do n = 0, nOrder
+             l = SHOrderDegreeToIndex(n,m) ;
+
+             dummy = dble(n)/dble(nOrder+1) ;
+
+             sigma = -alp*( dble(n)*dble(n+1)*dummy ) ;
+             sigma = exp( sigma ) ; 
+
+             SnmRe(l) = sigma*SnmRe(l) ; 
+             SnmIm(l) = sigma*SnmIm(l) ; 
+          end do
+        end do 
+
+      CASE (4)
+        ! Erfc-Log filter (from Boyd's book)
         do m = 0, nOrder
           do n = 0, nOrder
              l = SHOrderDegreeToIndex(n,m) ;
@@ -1113,7 +1161,7 @@ CONTAINS
              alp = DBLE(n)/DBLE(nOrder + 1) - 0.5D0 
 
              
-             dummy = -log( (1.D0 - 4.D0*alp*alp)/(4.D0*alp*alp) ) ;
+             dummy = -log((1.D0 - 4.D0*alp*alp))/(4.D0*alp*alp) ;
              dummy = sqrt( dummy ) ; 
 
              dummy = 2.D0*sqrt(pp)*alp*dummy ;
@@ -1127,10 +1175,10 @@ CONTAINS
         !      
       END SELECT 
 
-
       return ;
     end subroutine ApplySHFilters        
 
+    ! Original implmeentation in MPAS
     !
     ! Given 
     !    - sshSmoothed(:) - ssh after smoothening at the integration points
