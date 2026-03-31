@@ -142,6 +142,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &    USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,
      &    outputWindDrag,slim,windlim,directvelWD,useHF,
      &    Limit_WaveStressGrad,  !tcm v56 2024: added
+     &    usePForcing, ! SB 20260331: added
      &    PFile_inset, Wfile_inset, InsetControlFile, !aman added
      &    SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &    SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
@@ -280,7 +281,8 @@ C Logicals added for adcprep paths
       LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier,
-     &          Limit_WaveStressGrad, WaveStressGrad_Cap  !tcm v56 2024: added 
+     &          Limit_WaveStressGrad, WaveStressGrad_Cap,  !tcm v56 2024: added 
+     &          usePForcing ! SB 20260331: added
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,

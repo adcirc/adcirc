@@ -69,8 +69,10 @@ C... v50.xx sm -- added for coupling with NOUPC Cap
 C... TCM v56 2024 --- added variable for using a limiter or cap
 C           on wave stress gradients
       LOGICAL   ::  Limit_WaveStressGrad = .FALSE. ! set in fort.15 file 
-      
 
+C... SB 20260331 -- added variable for using the P forcing in wave driven forces proposed by URI
+      LOGICAL   ::  usePForcing = .FALSE.
+      
 C      real(8) rampriver,drampriver,rampriver1,rampriver2
 C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(8) RampExtFlux,DRampExtFlux ! Ramp for external flux b.c.s

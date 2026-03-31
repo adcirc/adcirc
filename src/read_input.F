@@ -84,7 +84,8 @@ C-----------------------------------------------------------------------
      &   alloc_main6, nhoutonce, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
-     &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
+     &   directvelWD,useHF,Limit_WaveStressGrad,
+     &   usePForcing,
      &   WarnVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
      &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus
 #if defined CSWAN
@@ -327,7 +328,8 @@ C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
 !tcm 2024: added wave stress gradient limiting
       NAMELIST /waveCoupling/ WaveWindMultiplier,
-     &         Limit_WaveStressGrad, WaveStressGrad_Cap
+     &         Limit_WaveStressGrad, WaveStressGrad_Cap,
+     &         usePForcing  ! SB 20260331: added
 
       LOG_SCOPE_TRACED("read_input", READ_INPUT_TRACING)
 C...
@@ -587,7 +589,9 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       write(scratchMessage,*) "WaveStressGrad_Cap=",
      &                         WaveStressGrad_Cap
       call logMessage(ECHO,trim(scratchMessage))
-      
+      write(scratchMessage,*) "usePForcing=",
+     &                         usePForcing
+      call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
       !
 !Casey 221103 : Read the baroclinic3D namelist.

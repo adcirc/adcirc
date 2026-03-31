@@ -5,12 +5,24 @@
 !/                  | WAVEWATCH III      NOAA/NCEP/NOPP |
 !/                  |           B. G. Reichl            |
 !/                  |                        FORTRAN 90 |
-!/                  | Last update :         18-Mar-2015 |
+!/                  | Last update :         22-Mar-2021 |
 !/                  +-----------------------------------+
 !/
 !/    01-Jul-2013 : Origination.                        ( version 4.xx )
-!/    18-Mar-2015 : Clean-up/prepare for distribution   ( version 5.xx )
+!/    18-Mar-2015 : Clean-up/prepare for distribution   ( version 5.12 )
+!/    15-Jan-2016 : Updates                             ( version 5.12 )
 !/                                                      ( B. G. Reichl )
+!/    27-Jul-2016 : Added Charnock output  (J.Meixner)  ( version 5.12 )
+!/    22-Jun-2018 : updated SIG2WN subroutine (X.Chen)  ( version 6.06 )
+!/                  modified the range of wind profile computation;
+!/                  corrected direction of the shortest waves
+!/    22-Mar-2021 : Consider DAIR a variable            ( version 7.xx )
+!/    xx-xxx-2025 : Edited by A.Papandreou for computing variables 
+!/                  necessary for applying the URI tail to the pi term, 
+!/                  instead of wind stress. Part of the code was taken
+!/                  from Jie's code.
+!/                  (Clean-up by S.Bunya, 02-Mar-2026)
+!/
 !/
 !/    Copyright 2009 National Weather Service (NWS),
 !/       National Oceanic and Atmospheric Administration.  All rights
@@ -19,14 +31,16 @@
 !/
 !  1. Purpose :
 !
-!     This Module computes the wind stress vector from the wave
-!     spectrum, the wind vector, and the lower atmospheric
-!     stability.  The stress calculated via this subroutine is
+!     This Module contains routines to compute the wind stress vector
+!     from the wave spectrum, the wind vector, and the lower atmospheric
+!     stability (the form included here is for neutral conditions, but
+!     the structure needed to include stability is included in comments).
+!     The stress calculated via this subroutine is
 !     intended for coupling to serve as the boundary condition
 !     between the ocean and atmosphere, and (for now)
 !     and has no impact on the wave spectrum calculated.
 !     The calculation in w3fld1 is based on the method
-!     presented in Reichl et al. (2014), "Sea State Dependence
+!     presented in Reichl, Hara, and Ginis (2014), "Sea State Dependence
 !     of the Wind Stress under Hurricane Winds."
 !
 !  2. Variables and types :
@@ -39,10 +53,10 @@
 !     ----------------------------------------------------------------
 !      W3FLD1     Subr. Public   Reichl et al. 2014 stress calculation
 !      INFLD1     Subr. Public   Corresponding initialization routine.
-!      APPENDTAIL Subr. Public  Modification of tail for calculation
+!      APPENDTAIL Subr. Public   Modification of tail for calculation
 !      SIG2WN     Subr. Public   Depth-dependent dispersion relation
 !      WND2Z0M    Subr. Public   Wind to roughness length
-!      MFLUX      Subr. Public   MO stability correction
+!      W3FLD1MD_INIT Subr. Public   Initialization of tail parameters
 !     ----------------------------------------------------------------
 !
 !  4. Subroutines and functions used :
@@ -65,28 +79,102 @@
 !/
 !
       PUBLIC
+
+      INTEGER :: Tail_Choice ! Tail_Choice: Chose the method to 
+                             ! determine the level of the tail
+      REAL    :: Tail_Level  !if Tail_Choice=0, tail is constant
+      REAL    :: Tail_transition_ratio1 ! freq/fpi where tail
+                                        ! adjustment begins
+      REAL    :: Tail_transition_ratio2 ! freq/fpi where tail
+                                        ! adjustment ends
+!/
+      PRIVATE :: Tail_Choice, Tail_Level, &
+                 Tail_transition_ratio1, Tail_transition_ratio2
 !/
       CONTAINS
 !/ ------------------------------------------------------------------- /
-      SUBROUTINE W3FLD1( ASPC, FPI, WNDX,WNDY, ZWND, &
-                         DEPTH, RIB, UST, USTD, Z0,TAUX,TAUY)
+      SUBROUTINE W3FLD1MD_INIT(CHOICE, LEVEL, TRANS1, TRANS2)
+!/
+!/    02-Mar-2026 : Added initialization of parameters (S.Bunya)
+!/
+!   1. Purpose :
+!     Initialize the parameters for the tail calculation
+!   2. Method :
+!     See source code.
+!   3. Parameters :
+!     ----------------------------------------------------------------
+!       CHOICE  Integer, optional  I   Choice of method to determine 
+!         the level of the tail. Default is 10 m wind level.
+!         For the URI tail you need to set this parameter to 1. 
+!         This will make the tail dependent on the wind speed magnitude, 
+!         according to the lines at the end of the file. 
+!         If you set it to 0, the tail will be constant for any wind speed.
+!         Choices are:
+!         0: Constant tail level
+!         1: Wind speed magnitude dependent tail level
+!       LEVEL   Real, optional     I   Level of the tail if Tail_Choice=0.
+!         Default is 0.1. This value is tentative. This value should be 
+!         set properly when CHOICE=0. Not used when CHOICE=1.
+!       TRANS1  Real, optional     I   Frequency/fpi where tail adjustment
+!         begins. Default is 1.25, adopted from Jie's code.
+!       TRANS2  Real, optional     I   Frequency/fpi where tail adjustment
+!         ends. Default is 3.0, adopted from Jie's code.
+!     ----------------------------------------------------------------
+!/ ------------------------------------------------------------------- /
+      IMPLICIT NONE
+      INTEGER, INTENT(IN), OPTIONAL :: CHOICE
+      REAL, INTENT(IN), OPTIONAL :: LEVEL
+      REAL, INTENT(IN), OPTIONAL :: TRANS1
+      REAL, INTENT(IN), OPTIONAL :: TRANS2
+
+      ! Initialize the parameters for the tail calculation
+      if (present(CHOICE)) then
+        Tail_Choice = CHOICE
+      else
+        Tail_Choice = 1
+      endif
+      if (present(LEVEL)) then
+        Tail_Level = LEVEL
+      else
+        Tail_Level = 0.1
+      endif
+      if (present(TRANS1)) then
+        Tail_transition_ratio1 = TRANS1
+      else
+        Tail_transition_ratio1 = 1.25
+      endif
+      if (present(TRANS2)) then
+        Tail_transition_ratio2 = TRANS2
+      else
+        Tail_transition_ratio2 = 3.0
+      endif
+
+      RETURN
+      
+      END SUBROUTINE W3FLD1MD_INIT
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE W3FLD1( ASPC, FPI, WNDX, WNDY,               &
+                    DEPTH, UST, USTD, TAUX, TAUY)
 !/
 !/                  +-----------------------------------+
 !/                  | WAVEWATCH III      NOAA/NCEP/NOPP |
 !/                  |           B. G. Reichl            |
 !/                  |                        FORTRAN 90 |
-!/                  | Last update :         18-Mar-2015 |
+!/                  | Last update :         22-Mar-2021 |
 !/                  +-----------------------------------+
 !/
 !/    01-Jul-2013 : Origination.                        ( version 4.xx )
-!/    18-Mar-2015 : Prepare for submission              ( version 5.xx )
+!/    18-Mar-2015 : Prepare for submission              ( version 5.12 )
+!/    22-Mar-2021 : Consider DAIR a variable            ( version 7.xx )
 !/
 !  1. Purpose :
 !
 !     Diagnostic stress vector calculation from wave spectrum, lower
 !     atmosphere stability, and wind vector (at some given height).
 !     The height of wind vector is assumed to be within the constant
-!     stress layer.
+!     stress layer.  These parameterizations are meant to be performed
+!     at wind speeds > 10 m/s, and may not converge for extremely young
+!     seas (i.e. starting from flat sea conditions).
 !
 !  2. Method :
 !     See Reichl et al. (2014).
@@ -104,11 +192,13 @@
 !       RIB     REAL   I   Bulk Richardson in lower atmosphere
 !                          (for determining stability in ABL to get
 !                          10 m neutral wind)
-!       TAUX    Real   0   X-dir total stress (guessed from prev.)
-!       TAUY    Real   0   Y-dir total stress (guessed from prev.)
+!       DAIR    REAL   I   Air density
+!       TAUNUX  Real   0   X-dir viscous stress (guessed from prev.)
+!       TAUNUY  Real   0   Y-dir viscous stress (guessed from prev.)
 !       UST     Real   O   Friction velocity.
 !       USTD    Real   O   Direction of friction velocity.
 !       Z0      Real   O   Surface roughness length
+!       CHARN   Real   O,optional    Charnock parameter
 !     ----------------------------------------------------------------
 !
 !  4. Subroutines used :
@@ -144,34 +234,32 @@
 ! 10. Source code :
 !
 !/ ------------------------------------------------------------------- /
-!     jie 08/2015 modify USE dependencies
-!      USE CONSTANTS, ONLY: GRAV, DWAT, DAIR, TPI, PI, KAPPA
+!      USE CONSTANTS, ONLY: GRAV, DWAT, TPI, PI, KAPPA
 !      USE W3GDATMD, ONLY: NK, NTH, NSPEC, SIG, DTH, XFR, TH
-      
-!      USE GLOBAL, ONLY        : KAPPA !rhoAir,RHOWAT0
+!      USE W3ODATMD, ONLY: NDSE
+!      USE W3SERVMD, ONLY: EXTCDE
       USE SWCOMM3, ONLY       : GRAV, RHO, PWIND, PI2, PI, &
                                 MSC, MDC, DDIR !, MMCGR
       USE M_GENARR, ONLY      : SPCDIR, SPCSIG !relative frequency in sigma-space!!!
-      
-!/      USE W3ODATMD, ONLY: NDSE
-!/      USE W3SERVMD, ONLY: EXTCDE
+
+
 !/
       IMPLICIT NONE
 !/
 !/ ------------------------------------------------------------------- /
 !/ Parameter list
 !/
-!/    jie modified dependencies
-      REAL, INTENT(IN)        :: ASPC(MDC*MSC), FPI, WNDX, WNDY,  &
-                                 ZWND, DEPTH, RIB
-      REAL, INTENT(OUT)       :: UST, USTD, Z0
+      REAL, INTENT(IN)        :: ASPC(MDC*MSC), WNDX, WNDY,   &
+                                  DEPTH, FPI
+      REAL, INTENT(OUT)       :: UST, USTD
+!      REAL, INTENT(OUT), OPTIONAL :: CHARN
       REAL, INTENT(INOUT)     :: TAUX, TAUY
 !/
 !/ ------------------------------------------------------------------- /
 !/ Local parameters
 !/
       ! jie 08/2015 For coupling with SWAN
-      REAL                    :: KAPPA 
+      REAL                    :: KAPPA
       REAL                    :: DWAT
       REAL                    :: DAIR
       REAL                    :: TPI
@@ -179,10 +267,9 @@
       INTEGER                 :: NTH
       INTEGER                 :: NSPEC
       REAL                    :: DTH
-      REAL                    :: XFR 
+      REAL                    :: XFR
       REAL, ALLOCATABLE, DIMENSION(:) :: SIG
-      REAL, ALLOCATABLE, DIMENSION(:) :: TH
-      !parameters
+      REAL, ALLOCATABLE, DIMENSION(:) :: TH      
       REAL, PARAMETER         ::  NU=0.105/10000.0
       REAL, PARAMETER         ::  DELTA=0.03
       ! Commonly used parameters
@@ -198,7 +285,8 @@
       !For stress calculation
       REAL                    ::  WAGE, CBETA, BP, CD,       &
                                   USTRB, ANGDIF, USTAR, ZNU, &
-                                  TAUT, TAUNUX, TAUNUY, BETAG
+                                  TAUT, BETAG, TAUDIR, &
+                                  TAUDIRB
       !For wind profile calculation
       REAL                    ::  UPROFV, VPROFV
       !For wind profile iteration
@@ -225,7 +313,7 @@
                                            TLTED, ZOFK, UPROF, VPROF, &
                                            FTILDE, UP1, VP1, UP, VP, &
                                            TLTNA, TLTEA
-      LOGICAL                 :: FSFL1,FSFL2
+      LOGICAL                 :: FSFL1,FSFL2, CRIT1, CRIT2
       LOGICAL                 :: IT_FLAG1, IT_FLAG2
       LOGICAL, SAVE           :: FIRST = .TRUE.
 !/
@@ -239,10 +327,6 @@
 !     *** initialization, including reading data from files. ***
 !     **********************************************************
 !
-!/      IF ( FIRST ) THEN
-!/          CALL INFLD1
-!/          FIRST  = .FALSE.
-!/       END IF
 ! jie initialize necessary varialbes and arrays
        KAPPA = PWIND(15)
        DWAT = PWIND(17) !RHO
@@ -256,39 +340,37 @@
 ! jie  allocate necessary arrays
        allocate(SIG(NK))
        SIG = SPCSIG !relative frequency in sigma-space(radian)!!!
-       XFR = SIG(NK)/SIG(NK-1) !should be constant     
+       XFR = SIG(NK)/SIG(NK-1) !should be constant
        allocate(TH(NTH))
-       DO T = 1, NTH 
+       DO T = 1, NTH
         TH(T) = SPCDIR(T,1)
-       ENDDO 
-       !debug only 
-       !write(16,*) 'KAPPA=',KAPPA,'DWAT=',DWAT,'DAIR=',DAIR,'NSPEC=',NSPEC,'DTH=',DTH,'XFR=',XFR   
-       !write(16,*) 'sig(1)=',SIG(1),'sig(NK)=',SIG(NK)!,'TH(1)=',TH(1),'TH(NTH)=',TH(NTH)
-       !write(16,*) 'FPI = ',FPI, "FPI*2pi = ", FPI*TPI
-                
+       ENDDO
+!      IF ( FIRST ) THEN
+!          CALL INFLD
+!          FIRST  = .FALSE.
+!       END IF
        wnd_in_mag = sqrt( wndx**2 + wndy**2 )
        wnd_in_dir = atan2(wndy, wndx)
-       !Get guess for 10m (use bulk neutral)
-       IF (abs(zwnd-10.).gt.1.) THEN
-          IterFLAG=.true.
-          COUNT = 1 !COUNT is now counting iteration over z0
-          do while(IterFLAG)
-             u10=wnd_in_mag*log(10./z01)/log(zwnd/z01)
-             CALL wnd2z0m(u10,z02)
-             if ( (abs(z01/z02-1.).GT.0.001) .AND. &
-                  (COUNT.LT.10))THEN
-                z01 = z02
-             else
-                IterFLAG = .false.
-             endif
-             COUNT = COUNT + 1
-          enddo
-       ELSE
-          u10 = wnd_in_mag
-       ENDIF
-       CALL WND2SAT(U10,SAT)
+       !----------------------------------------------------------+
+       ! Assume wind input is neutral 10 m wind.  If wind input   +
+       ! is not 10 m, tail level will need to be calculated based +
+       ! on esimation of 10 m wind.                               +
+       !----------------------------------------------------------+
+       u10 = wnd_in_mag
+       ! - Get tail level
+       if (Tail_Choice.eq.0) then
+          SAT=Tail_Level
+       elseif (Tail_Choice.eq.1) then
+          CALL WND2SAT(U10,SAT)
+       endif
 !
 ! 1.  Attach Tail ---------------------------------------------------- *
+!
+! If the depth remains constant, the allocation could be limited to the
+!   first time step.  Since this code is designed for coupled
+!   implementation where the water level can change, I keep it the
+!   allocation on every time step.  When computational efficiency is
+!   important, this process may be rethought.
 !
       ! i. Find maximum wavenumber of input spectrum
       call sig2wn(sig(nk),depth,kmax)
@@ -297,7 +379,7 @@
       DO WHILE ( KMAX .LT. 366.0 )
         NKT = NKT + 1
         KMAX = ( KMAX * XFR**2 )
-      ENDDO !K<366
+      ENDDO!K<366
       ! iii. Allocate new "extended" spectrum
       ALLOCATE( WN(NKT), DWN(NKT), CP(NKT), SIG2(NKT),SPC2(NKT,NTH), &
                 TLTN(NKT), TLTE(NKT), TAUD(NKT), &
@@ -328,27 +410,28 @@
 ! 1b. Attach initial tail--------------------------------------------- *
 !
       !i. Convert action spectrum to variance spectrum
-      !   SPC(k,theta) = A(k,theta) * sig(k)      
+      !   SPC(k,theta) = A(k,theta) * sig(k)
+      ! This could be redone for computational efficiency
       I=0
       DO K=1, NK
         DO T=1, NTH
           I = I + 1
-          SPC2(K,T) = ASPC(I) * SIG(K)
-        ENDDO !T
-      ENDDO !K
+          SPC2(K,T) = ASPC(I)  * SIG(K)
+        ENDDO!T
+      ENDDO!K
       !ii. Extend k^-3 tail to extended spectrum
       DO K=NK+1, NKT
         DO T=1, NTH
           SPC2(K,T)=SPC2(NK,T)*WN(NK)**3.0/WN(K)**(3.0)
-        ENDDO !T
-      ENDDO !K
+        ENDDO!T
+      ENDDO!K
 !
 ! 1c. Calculate transitions for new (constant saturation ) tail ------ *
 !
       !i. Find wavenumber for beginning spc level transition to tail
-      call sig2wn (FPI*TPI*1.25,depth,ktaila )
+      call sig2wn (FPI*TPI*tail_transition_ratio1,depth,ktaila )
       !ii. Find wavenumber for ending spc level transition to tail
-      call sig2wn ( FPI*TPI*3.0,depth,ktailb )
+      call sig2wn (FPI*TPI*tail_transition_ratio2,depth,ktailb )
       !iii. Find wavenumber for ending spc direction transition to tail
       KTAILC= KTAILB * 2.0
       !iv. Find corresponding indices of wavenumber transitions
@@ -365,405 +448,80 @@
         KA3 = KA3 + 1
       ENDDO
       !v. Call subroutine to perform actually tail truncation
+      ! only if there is some energy in spectrum
       CALL APPENDTAIL(SPC2, WN, NKT, KA1, KA2, KA3,&
-                      wnd_in_dir, SAT)
+           wnd_in_dir, SAT)
       ! Spectrum is now set for stress integration
-      ! Jie DEBUG only to be continued
-      !write(16,*) "U10=",U10, "SAT=", SAT, "depth=", depth 
-      !write(16,*) "NK=", NK, "NKT=", NKT
-      !write(16,*) "KA1=", KA1,"KA2=", KA2,"KA3=", KA3
-      !write(16,*) "KTAILA=",KTAILA,"KTAILB=",KTAILB
-      !write(16,*) "SPC2(KA1,1:NTH):", SPC2(KA1,1:NTH)
-      !write(16,*) "SPC2(KA2-1,1:NTH):", SPC2(KA2-1,1:NTH)
-
+      !
 !
 ! 2.  Prepare for iterative calculation of wave-form stress----------- *
+!   Edited by A.Papandreou in 2025 for computing variables necessary for
+!   applying the URI tail to the pi term, instead of wind stress.  
 !
-      DTX = 0.00005
-      DTY = 0.00005
-      iter_thresh = 0.001
-!
-! 2a. Calculate initial guess for viscous stress from smooth-law------ *
-! (Would be preferable to use prev. step)
-!
-      Z0SM = 0.001  !Guess
-      IT_FLAG1 = .true.
-      ITERATION = 0
-      DO WHILE( IT_FLAG1 )
-        ITERATION = ITERATION + 1
-        Z1 = Z0SM
-        USTSM = KAPPA * wnd_in_mag / ( LOG( ZWND / Z1 ) )
-        Z0SM = 0.132 * NU / USTSM
-        IF ( (ABS( Z0SM - Z1 ) .LT. 10.0**(-6)) .OR.&
-             ( ITERATION .GT. 5 )) THEN
-          IT_FLAG1 = .false.
+      Z2 = NKT+1
+      DO ZI=1, NKT
+        Z2 = Z2 - 1
+        TLTED(zi)=0.0
+        TLTND(zi)=0.0
+        DO T=1, NTH
+          TLTND(zi) = tltnd(zi) + SIN(TH(T)) * SIG2(Z2) * WN(Z2) &
+                      * 2 * SPC2(Z2,T) * dth
+          TLTED(zi) = tlted(zi) + COS(TH(T)) * SIG2(Z2) * WN(Z2) &
+                      * 2 * SPC2(Z2,T) * dth              
+        IF (isnan(TLTND(zi))) THEN
+        TLTND(zi) = 0.0
         ENDIF
-      ENDDO
-      ITERATION = 1
-      ! Guessed values of viscous stress
-      TAUNUX = USTSM**2 * DAIR * wndx / wnd_in_mag
-      TAUNUY = USTSM**2 * DAIR * wndy / wnd_in_mag
-!
-! 3.  Enter iterative calculation of wave form/skin stress----------  *
-!
-      IT_FLAG1 = .true.
-      DO WHILE (IT_FLAG1)
-        DO ITER=1, 3 !3 loops for TAUNU iteration
-          Z2 = NKT
-          ! First : TAUNUX + DX
-          IF (ITER .EQ. 1) THEN
-            TAUNUX = TAUNUX + DTX
-          ! Second : TAUNUY + DY
-          ELSEIF (ITER .EQ. 2) THEN
-            TAUNUX = TAUNUX - DTX
-            TAUNUY = TAUNUY + DTY
-          ! Third : unmodified
-          ELSEIF (ITER .EQ. 3) THEN
-            TAUNUY = TAUNUY - DTY
-          ENDIF
-          ! Near surface turbulent stress = taunu
-          TLTN(1) = TAUNUY
-          TLTE(1) = TAUNUX
-!|---------------------------------------------------------------------|
-!|-----Calculate first guess at growth rate and local turbulent stress-|
-!|-----for integration as a function of wavedirection------------------|
-!|---------------------------------------------------------------------|
-          DO ZI = 2, NKT
-            USTL=0.0
-            TLTND(zi)=0.0
-            TLTED(zi)=0.0
-            Z2 = Z2 - 1
-            ! Use value of prev. wavenumber/height
-            TAUD(ZI) = ATAN2( TLTN(ZI-1), TLTE(ZI-1))
-            USTL = SQRT( SQRT( TLTN(ZI-1)**2 + TLTE(ZI-1)**2 )/ DAIR )
-            DO T = 1, NTH
-              ANGDIF=TAUD(ZI)-TH(T) !stress/wave angle
-              IF ( COS( ANGDIF ) .GE. 0.0 ) THEN !Waves aligned
-                WAGE = CP(Z2) / (USTL)
-                ! First, waves much slower than wind.
-                IF ( WAGE .LT. 10 ) THEN
-                  CBETA = 25.0
-                ! Transition from waves slower than wind to faster
-                ELSEIF ( ( WAGE .GE. 10.0 ) .AND. &
-                          ( WAGE .LE. 25.0 ) ) THEN
-                  CBETA = 10.0 + 15.0 * COS( PI * ( WAGE - 10.0 ) &
-                          / 15.0 )
-                ! Waves faster than wind
-                ELSEIF ( WAGE .GT. 25.0 ) THEN
-                  CBETA = -5.0
-                ENDIF
-              ! Waves opposing wind
-              ELSE
-                CBETA = -25.0
-              ENDIF
-              !Integrate turbulent stress !jie/backward wn^2??
-              TLTND(ZI) =TLTND(ZI)+( SIN( TH(T) ) * COS( ANGDIF )**2)&
-                          * CBETA * SPC2(Z2,T) * &
-                          SQRT( TLTE(ZI-1)**2 + TLTN(ZI-1)**2.0 ) &
-                          * ( WN(Z2)**2.0 )*DTH
-              TLTED(ZI) = TLTED(ZI)+(COS( TH(T) ) * COS( ANGDIF )**2)&
-                          * CBETA * SPC2(Z2,T) * &
-                          SQRT( TLTE(ZI-1)**2 + TLTN(ZI-1)**2.0 ) &
-                          * ( WN(Z2)**2.0 )*DTH
-            ENDDO !T
-!|---------------------------------------------------------------------|
-!|-----Complete the integrations---------------------------------------|
-!|---------------------------------------------------------------------|
-            IF (ZI .EQ. 2) THEN
-              !First turbulent stress bin above taunu
-              TLTNA(ZI) = TLTND(ZI) * DWN(Z2) * 0.5
-              TLTEA(ZI) = TLTED(ZI) * DWN(Z2) * 0.5
-            ELSE
-              TLTNA(ZI)=(TLTND(ZI)+TLTND(ZI-1))*0.5*DWN(Z2)
-              TLTEA(ZI)=(TLTED(ZI)+TLTED(ZI-1))*0.5*DWN(Z2)
-            ENDIF
+        IF (isnan(TLTED(zi))) THEN
+        TLTED(zi) = 0.0
+        ENDIF
+        ENDDO
+        IF (ZI .EQ. 1) THEN
+          TLTNA(ZI)=TLTND(ZI)*DWN(Z2)*0.5
+          TLTEA(ZI)=TLTED(ZI)*DWN(Z2)*0.5
+        ELSE
+          TLTNA(ZI)=(TLTND(ZI)+TLTND(ZI-1))*0.5*DWN(Z2)
+          TLTEA(ZI)=(TLTED(ZI)+TLTED(ZI-1))*0.5*DWN(Z2)
+        ENDIF
+        IF (ZI.GT.1) then
             TLTN(ZI)=TLTN(ZI-1)+TLTNA(ZI)
             TLTE(ZI)=TLTE(ZI-1)+TLTEA(ZI)
-          ENDDO !ZI
-          TAUY=TLTN(NKT)
-          TAUX=TLTE(NKT)
-          ! This is the first guess at the stress.
-!|---------------------------------------------------------------------|
-!|----Iterate til convergence------------------------------------------|
-!|---------------------------------------------------------------------|
-          USTRB=SQRT(SQRT(TAUY**2.0+TAUX**2.0)/DAIR)
-          IT_FLAG2 = .TRUE.
-          CTR=1
-          DO WHILE ( (IT_FLAG2) .AND. ( CTR .LT. 10 ) )
-           Z2=NKT+1
-            DO ZI=1, NKT
-              Z2=Z2-1
-              USTL=0.0
-              TLTED(zi)=0.0
-              TLTND(zi)=0.0
-              FTILDE(z2)=0.0
-              TAUD(ZI) = ATAN2(TLTN(ZI),TLTE(ZI))
-              USTL = SQRT(SQRT(TLTN(ZI)**2+TLTE(ZI)**2)/DAIR)
-              DO T=1, NTH
-                BETAG=0.0
-                ANGDIF = TAUD(ZI)-TH(T)
-                IF ( COS( ANGDIF ) .GE. 0.0 ) THEN
-                  WAGE = CP(Z2)  / (USTL)
-                 IF ( WAGE .LT. 10 ) THEN
-                    CBETA = 25.0
-                 ELSEIF ( ( WAGE .GE. 10.0 ) .AND. &
-                          ( WAGE .LE. 25.0 ) ) THEN
-                   CBETA = 10.0 + 15.0 * COS( PI * ( WAGE - 10.0 ) &
-                          / 15.0 )
-                 ELSEIF ( WAGE .GT. 25.0 ) THEN
-                   CBETA = -5.0
-                  ENDIF
-                ELSE
-                  CBETA = -25.0
-                ENDIF
-                BP = SQRT( (COS( TH(T) ) * COS( ANGDIF )**2.0)**2.0 &
-                     + (SIN( TH(T) ) * COS( ANGDIF )**2.0)**2.0 )
-                BETAG=BP*CBETA*SQRT(TLTE(ZI)**2.0+TLTN(ZI)**2.0) &
-                           /(DWAT)*SIG2(Z2)/CP(Z2)**2
-                FTILDE(Z2) = FTILDE(Z2) + BETAG * DWAT * GRAV &
-                           * SPC2(Z2,T) * DTH
-                TLTND(zi) =tltnd(zi)+ (SIN( TH(T) ) * COS( ANGDIF )**2.0)&
-                            * CBETA * SPC2(Z2,T) * SQRT( &
-                            TLTE(ZI)**2.0 + TLTN(ZI)**2.0 ) * &
-                            ( WN(Z2)**2.0 )*dth
-                TLTED(zi) = tlted(zi)+(COS( TH(T) ) * COS( ANGDIF )**2.0)&
-                            * CBETA * SPC2(Z2,T) * SQRT( &
-                            TLTE(ZI)**2.0 + TLTN(ZI)**2.0 ) * &
-                            ( WN(Z2)**2.0 )*dth
-              ENDDO !T
-              IF (ZI .EQ. 1) THEN
-                TLTNA(ZI)=TLTND(ZI)*DWN(Z2)*0.5
-                TLTEA(ZI)=TLTED(ZI)*DWN(Z2)*0.5
-              ELSE
-                TLTNA(ZI)=(TLTND(ZI)+TLTND(ZI-1))*0.5*DWN(Z2)
-                TLTEA(ZI)=(TLTED(ZI)+TLTED(ZI-1))*0.5*DWN(Z2)
-              ENDIF
-              IF (ZI.GT.1) then
-                 TLTN(ZI)=TLTN(ZI-1)+TLTNA(ZI)
-                 TLTE(ZI)=TLTE(ZI-1)+TLTEA(ZI)
-              else
-                 TLTN(ZI)=TAUNUY+TLTNA(ZI)
-                 TLTE(ZI)=TAUNUX+TLTEA(ZI)
-              endif
-            ENDDO !ZI
-            TAUY=TLTN(NKT) !by NKT full stress is entirely
-            TAUX=TLTE(NKT) !from turbulent stress
-            TAUT=SQRT(TAUY**2.0+TAUX**2.0)
-            USTAR=SQRT(SQRT(TAUY**2.0+TAUX**2.0)/DAIR)
-            IF ((ABS(USTAR-USTRB)*100.0)/((USTAR+USTRB)*0.5) .GT. 0.1) THEN
-               USTRB=USTAR
-              CTR=CTR+1
-            ELSE
-              IT_FLAG2 = .FALSE.
-            ENDIF
-          ENDDO
-          KB=1
-          DO WHILE(((TLTN(KB)**2+TLTE(KB)**2)/(TAUX**2+TAUY**2)).LE. &
-             .99)
-             KB=KB+1
-          ENDDO
-!|---------------------------------------------------------------------|
-!|----Now begin work on wind profile-----------------------------------|
-!|---------------------------------------------------------------------|
-          DO I=1,NKT
-            ZOFK(I)=DELTA/WN(I)
-          ENDDO
-          ZNU=0.1 * 1.45E-5 / SQRT(SQRT(TAUNUX**2.0+TAUNUY**2.0)/DAIR)
-          UPROF(1:NKT)=0.0
-          VPROF(1:NKT)=0.0
-          UPROFV=0.0
-          VPROFV=0.0
-          ZI=1
-          Z2=NKT
-          UP1(ZI) = ( ( ( WN(Z2)**2 / DELTA ) * FTILDE(z2) ) + &
-                    ( DAIR / ( ZOFK(Z2) * KAPPA ) ) * ( SQRT( &
-                    TLTN(ZI)**2 + TLTE(ZI)**2 ) / DAIR )**(3/2) ) &
-                    * ( TLTE(ZI) ) / ( TLTE(ZI) * TAUX &
-                    + TLTN(ZI) * TAUY )
-          VP1(ZI) = ( ( ( WN(Z2)**2 / DELTA ) * FTILDE(z2) ) + &
-                    ( DAIR / ( ZOFK(Z2) * KAPPA ) ) * ( SQRT ( &
-                    TLTN(ZI)**2 + TLTE(ZI)**2 ) / DAIR )**(3/2) ) &
-                    * ( TLTN(ZI) ) / ( TLTE(ZI) * TAUX &
-                    + TLTN(ZI) * TAUY )
-          UP(ZI) = UP1(ZI)
-          VP(ZI) = VP1(ZI)
-          UPROF(ZI) = DAIR / KAPPA * ( SQRT( TAUNUX**2.0 + TAUNUY**2.0 ) &
-                      / DAIR )**(1.5) * ( TAUNUX / ( TAUX * &
-                      TAUNUX + TAUY * TAUNUY ) ) * LOG( &
-                      ZOFK(Z2) / ZNU )
-          VPROF(ZI) = DAIR / KAPPA * ( SQRT( TAUNUX**2.0 + TAUNUY**2.0 ) &
-                      / DAIR )**(1.5) * ( TAUNUY / ( TAUX * &
-                      TAUNUX + TAUY * TAUNUY ) ) * LOG( &
-                      ZOFK(Z2) / ZNU )
-          DO ZI=2, KB
-            Z2 = Z2 - 1
-            UP1(ZI) = ( ( ( WN(Z2)**2.0 / DELTA ) * FTILDE(Z2) ) + &
-                      ( DAIR / ( ZOFK(Z2) * KAPPA ) ) * ( SQRT( &
-                      TLTN(ZI)**2.0 + TLTE(ZI)**2.0 ) / DAIR )**(1.5) ) &
-                      * ( TLTE(ZI) ) / ( TLTE(ZI) * TAUX + &
-                      TLTN(ZI) * TAUY )
-            VP1(ZI) = ( ( ( WN(Z2)**2.0 / DELTA ) * FTILDE(Z2) ) + &
-                      ( DAIR / ( ZOFK(Z2) * KAPPA ) ) * ( SQRT( &
-                      TLTN(ZI)**2.0 + TLTE(ZI)**2.0 ) / DAIR )**(1.5) ) &
-                      * ( TLTN(ZI) ) / ( TLTE(ZI) * TAUX + &
-                      TLTN(ZI) * TAUY )
-            UP(ZI) = UP1(ZI) * 0.5 + UP1(ZI-1) * 0.5
-            VP(ZI) = VP1(ZI) * 0.5 + VP1(ZI-1) * 0.5
-            UPROF(ZI) = UPROF(ZI-1) + UP(ZI) * ( ZOFK(Z2) - ZOFK(Z2+1) )
-            VPROF(ZI) = VPROF(ZI-1) + VP(ZI) * ( ZOFK(Z2) - ZOFK(Z2+1) )
-          ENDDO
-!|---------------------------------------------------------------------|
-!|----Iteration completion/checks--------------------------------------|
-!|---------------------------------------------------------------------|
-          !ZI = ( KB + 1 )
- 
-          UPROF(KB+1) = UPROF(KB) + ( SQRT( SQRT( TAUY**2.0 + &
-                      TAUX**2.0 ) / DAIR ) ) / KAPPA * TAUX &
-                      / SQRT( TAUY**2.0 +TAUX**2.0 ) * LOG( ZWND &
-                      / ZOFK(Z2) )
-          VPROF(KB+1) = VPROF(KB) + ( SQRT( SQRT( TAUY**2.0 + &
-                      TAUX**2.0 ) / DAIR ) ) / KAPPA * TAUY &
-                      / SQRT( TAUY**2.0 +TAUX**2.0 ) * LOG( ZWND &
-                      / ZOFK(Z2) )
-          !---------------------------
-          !  Adding stability effects
-          !----------------------------
-          !Get Wind at top of wave boundary layer
-          WND_TOP=SQRT(UPROF(KB)**2+VPROF(KB)**2)
-          ! Get Wind Angle at top of wave boundary layer
-          ANG_TOP=ATAN2(VPROF(KB),UPROF(KB))
-          ! Stress and direction
-          USTD = ATAN2(TAUY,TAUX)
-          UST = SQRT( SQRT( TAUX**2 + TAUY**2 ) / DAIR)
-          ! Calclate along (PA) and across (PE) wind components
-          WND_PA=WND_TOP*COS(ANG_TOP-USTD)
-          WND_PE=WND_TOP*SIN(ANG_TOP-USTD)
-          !Calculate cartesion across wind
-          WND_PEx=WND_PE*cos(ustd+pi/2.)
-          WND_PEy=WND_PE*sin(ustd+pi/2.)
-          ! Assume neutral inside WBL calculate Z0
-          Z0=ZOFK(Z2)*EXP(-WND_PA*kappa/UST)
-          ! Using that Z0 calculate
-          CALL MFLUX(WND_IN_MAG*COS(WND_IN_DIR-USTD),ZWND,Z0,RIB,CDM)
-          WND_PA=UST/SQRT(CDM)
-          WND_PAx=WND_PA*cos(ustd)
-          WND_PAy=WND_PA*sin(USTd)
-          IF (ITER .EQ. 3) THEN
-            WND_1X = WND_PAx+WND_PEx
-            WND_1Y = WND_PAy+WND_PEy
-          ELSEIF (ITER .EQ. 2) THEN
-            WND_2X = WND_PAx+WND_PEx
-            WND_2Y = WND_PAy+WND_PEy
-          ELSEIF (ITER .EQ. 1) THEN
-            WND_3X = WND_PAx+WND_PEx
-            WND_3Y = WND_PAy+WND_PEy
-          ENDIF
-        ENDDO !ITER=1,3
-        ITERATION = ITERATION + 1
-        CALL APPENDTAIL(SPC2, WN, NKT, KA1, KA2, KA3,&
-                      atan2(VPROF(KB),UPROF(KB)), SAT)
-        DIFU10XX = WND_3X - WND_1X
-        DIFU10YX = WND_3Y - WND_1Y
-        DIFU10XY = WND_2X - WND_1X
-        DIFU10YY = WND_2Y - WND_1Y
-        FD_A = DIFU10XX / DTX
-        FD_B = DIFU10XY / DTY
-        FD_C = DIFU10YX / DTX
-        FD_D = DIFU10YY / DTY
-        DWNDX = - WNDX + WND_1X
-        DWNDY = - WNDY + WND_1Y
-        UITV = ABS( DWNDX )
-        VITV = ABS( DWNDY )
-        CH = SQRT( UITV**2.0 + VITV**2.0 )
-        IF (CH .GT. 15.) THEN
-          APAR = 0.5 / ( FD_A * FD_D - FD_B * FD_C )
-        ELSE
-          APAR = 1.0 / ( FD_A * FD_D - FD_B * FD_C )
-        ENDIF
-        CK=4.
-        IF (((VITV/MAX(ABS(WNDY),CK) .GT. iter_thresh) .OR. &
-             (UITV/MAX(ABS(WNDX),CK) .GT. iter_thresh)) .AND. &
-             (ITERATION .LT. 2)) THEN
-          TAUNUX = TAUNUX - APAR * ( FD_D * DWNDX - FD_B * DWNDY )
-          TAUNUY = TAUNUY - APAR * ( -FD_C * DWNDX +FD_A * DWNDY )
-        ELSEIF (((VITV/MAX(ABS(WNDY),CK) .GT. iter_thresh) .OR. &
-             (UITV/MAX(ABS(WNDX),CK) .GT. iter_thresh)) .AND. &
-             (ITERATION .LT. 24)) THEN
-           iter_thresh = 0.001
-           TAUNUX = TAUNUX - APAR * ( FD_D * DWNDX - FD_B * DWNDY )
-           TAUNUY = TAUNUY - APAR * ( -FD_C * DWNDX +FD_A * DWNDY )
-        ELSEIF (((VITV/MAX(ABS(WNDY),CK) .GT. iter_thresh) .OR. &
-             (UITV/MAX(ABS(WNDX),CK) .GT. iter_thresh)) .AND. &
-             (ITERATION .LT. 26)) THEN
-           iter_thresh = 0.01
-           TAUNUX = TAUNUX - APAR * ( FD_D * DWNDX - FD_B * DWNDY )
-           TAUNUY = TAUNUY - APAR * ( -FD_C * DWNDX +FD_A * DWNDY )
-        ELSEIF (((VITV/MAX(ABS(WNDY),CK) .GT. iter_thresh) .OR. &
-             (UITV/MAX(ABS(WNDX),CK) .GT. iter_thresh)) .AND. &
-             (ITERATION .LT. 30)) THEN
-           iter_thresh = 0.05
-           TAUNUX = TAUNUX - APAR * ( FD_D * DWNDX - FD_B * DWNDY )
-           TAUNUY = TAUNUY - APAR * ( -FD_C * DWNDX +FD_A * DWNDY )
-        ELSEIF (ITERATION .GE. 30) THEN
-           write(16,*)'Attn: W3FLD1 not converged.'
-           write(16,*)'      Wind (X/Y): ',WNDX,WNDY, 'At water depth=',DEPTH 
-           IT_FLAG1 = .FALSE.
-           UST=-999
-           TAUNUX=0.
-           TAUNUY=0.
-           !jie 12/2015 in this case return zero stress
-           !TAUX = 0.
-           !TAUY = 0.
-        ELSEIF (((VITV/MAX(ABS(WNDY),CK) .LT. iter_thresh) .AND.&
-             (UITV/MAX(ABS(WNDX),CK) .LT. iter_thresh)) .AND. &
-             (ITERATION .GE. 2)) THEN
-           IT_FLAG1 = .FALSE.
-        ENDIF
-     ENDDO !IT_FLAG1
-!|---------------------------------------------------------------------|
-!|----Finish-----------------------------------------------------------|
+        else
+            TLTN(ZI)=TLTNA(ZI)
+            TLTE(ZI)=TLTEA(ZI)
+        endif
+      ENDDO
+      TAUY=TLTN(NKT) !by NKT full stress is entirely
+      TAUX=TLTE(NKT) !from turbulent stress
+      USTAR=SQRT(TAUY**2.0+TAUX**2.0)
+      TAUDIR=atan2(TAUY, TAUX)
 !|---------------------------------------------------------------------|
       USTD = ATAN2(TAUY,TAUX)
-      UST = SQRT( SQRT( TAUX**2 + TAUY**2 ) / DAIR)
-      CD = UST**2 / wnd_in_mag**2
-      !Jie modified range from [0.0005 0.01] to [0.0005 0.005]
-      !FSFL1=.not.((CD .LT. 0.01).AND.(CD .GT. 0.0005))
-      FSFL1=.not.((CD .LT. 0.005).AND.(CD .GT. 0.0005))
-      FSFL2=.not.(cos(wnd_in_dir-ustd).GT.0.9)
-      IF (FSFL1 .or. FSFL2) THEN
-         !Fail safe to bulk
-         write(16,*)'Attn: W3FLD1 failed (cd out of range or dir-ustd > 0.9), need to use bulk...'
-         write(16,*)'      Wind/Cd that failed: ',wnd_in_mag,CD
-         UST = wnd_in_mag*SQRT(0.0015)
-         USTD = wnd_in_dir
-         !jie 12/2015 in this case return zero stress
-         TAUX = 0.
-         TAUY = 0.
-      ENDIF
+      UST = SQRT( TAUX**2 + TAUY**2 )
+      !Z0 = 0
+      !CHARN = TAUX
       DEALLOCATE(WN, DWN, CP,SIG2, SPC2, TLTN, TLTE, TAUD, &
                  TLTND, TLTED, ZOFK, UPROF, &
-                 VPROF, FTILDE, UP1, VP1, UP, VP, TLTNA, TLTEA, &
-                 SIG, TH) !jie 08/2015
+                 VPROF, FTILDE, UP1, VP1, UP, VP, TLTNA, TLTEA)
 !/ End of W3FLD1 ----------------------------------------------------- /
 !/
       RETURN
 !
       END SUBROUTINE W3FLD1
 !/ ------------------------------------------------------------------- /
-!/      SUBROUTINE INFLD1
+!      SUBROUTINE INFLD
 !/
 !/                  +-----------------------------------+
 !/                  | WAVEWATCH III           NOAA/NCEP |
-!/                  |           H. L. Tolman            |
+!/                  |           B. G. Reichl            |
 !/                  |                        FORTRAN 90 |
-!/                  | Last update :         01-Jul-2006 |
+!/                  | Last update :         15-Jan-2016 |
 !/                  +-----------------------------------+
 !/
-!/    01-Jul-2006 : Origination.                        ( version 3.09 )
+!/    15-Jan-2016 : Origination.                        ( version 5.12 )
 !/
 !  1. Purpose :
 !
-!     Initialization for source term routine.
+!     Initialization for w3fld1 (also used by w3fld2)
 !
 !  2. Method :
 !
@@ -804,10 +562,11 @@
 ! 10. Source code :
 !
 !/ ------------------------------------------------------------------- /
-!/      USE W3ODATMD, ONLY: NDSE
-!/      USE W3SERVMD, ONLY: EXTCDE
+!      USE W3ODATMD, ONLY: NDSE
+!      USE W3GDATMD, ONLY: TAIL_ID, TAIL_LEV, TAIL_TRAN1, TAIL_TRAN2
+!      USE W3SERVMD, ONLY: EXTCDE
 !/
-!/      IMPLICIT NONE
+!      IMPLICIT NONE
 !/
 !/ ------------------------------------------------------------------- /
 !/ Parameter list
@@ -822,7 +581,13 @@
 !
 ! 1.  .... ----------------------------------------------------------- *
 !
-!/      RETURN
+!      Tail_Choice=Tail_ID
+!      Tail_Level=TAIL_Lev
+!      Tail_transition_ratio1 = TAIL_TRAN1
+!      Tail_transition_ratio2 = TAIL_TRAN2
+ 
+!
+!      RETURN
 !
 ! Formats
 !
@@ -830,23 +595,23 @@
 !/
 !/ End of INFLD1 ----------------------------------------------------- /
 !/
-!/      END SUBROUTINE INFLD1
+!      END SUBROUTINE INFLD
 !/
 !/ ------------------------------------------------------------------- /
       SUBROUTINE APPENDTAIL(INSPC, WN2, NKT, KA1, KA2, KA3, WNDDIR,SAT)
 !/
 !/                  +-----------------------------------+
 !/                  | WAVEWATCH III           NOAA/NCEP |
-!/                  |           H. L. Tolman            |
+!/                  |           B. G. Reichl            |
 !/                  |                        FORTRAN 90 |
-!/                  | Last update :         01-Jul-2006 |
+!/                  | Last update :         15-Jan-2016 |
 !/                  +-----------------------------------+
 !/
-!/    01-Jul-2006 : Origination.                        ( version 3.09 )
+!/    15-Jan-2016 : Origination.                        ( version 5.12 )
 !/
 !  1. Purpose :
 !
-!     Initialization for source term routine.
+!     Set tail for stress calculation.
 !
 !  2. Method :
 !
@@ -887,21 +652,19 @@
 ! 10. Source code :
 !
 !/ ------------------------------------------------------------------- /
-!jie 08/2015 modified module dependencies
 !      USE CONSTANTS, ONLY: TPI, PI
 !      USE W3GDATMD, ONLY: NTH, TH, DTH
+!      USE W3ODATMD, ONLY: NDSE
+!      USE W3SERVMD, ONLY: EXTCDE
       USE SWCOMM3, ONLY       : PI2, PI, &
                                 MDC, DDIR
-      USE M_GENARR, ONLY      : SPCDIR    
-            
-!/      USE W3ODATMD, ONLY: NDSE
-!/      USE W3SERVMD, ONLY: EXTCDE
+      USE M_GENARR, ONLY      : SPCDIR
 !/
       IMPLICIT NONE
 !/
 !/ ------------------------------------------------------------------- /
 !/ Parameter list
-!/    jie modified dependencies
+!/
       INTEGER, INTENT(IN) :: NKT, KA1, KA2, KA3
       REAL, INTENT(IN)    :: WN2(NKT), WNDDIR,SAT
       REAL, INTENT(INOUT)   :: INSPC(NKT,MDC)
@@ -909,7 +672,7 @@
 !/ ------------------------------------------------------------------- /
 !/ Local parameters
 !/
-      ! jie 08/2015 For coupling with SWAN 
+      ! jie 08/2015 For coupling with SWAN
       REAL                    :: TPI
       INTEGER                 :: NTH
       REAL                    :: DTH
@@ -933,16 +696,16 @@
       !-------------------------------------------
       ! 1a, get saturation level at KA1 (1.25xFPI)
       !-------------------------------------------
-! jie initialize necessary varialbes and arrays      
+! jie initialize necessary varialbes and arrays
        TPI = PI2
        NTH = MDC
        DTH = DDIR
 ! jie  allocate necessary arrays
        allocate(TH(NTH))
-       DO T = 1, NTH 
+       DO T = 1, NTH
         TH(T) = SPCDIR(T,1)
-       ENDDO 
-      
+       ENDDO
+
       BT(KA1) = 0
       ANG = 0.0
       DO T=1, NTH
@@ -1112,18 +875,13 @@
           NORMSPC(T) = 0.0
         ENDIF
       ENDDO
-      AVG=1./4.!SUM(NORMSPC)/MAX(REAL(NTH),1.)!1./4.
+      AVG=SUM(NORMSPC)/MAX(REAL(NTH),1.)!1./4.
       DO K=KA3+1, NKT
         DO T=1, NTH
          INSPC(K,T)=NORMSPC(T)*(SAT)/TPI/(WN2(K)**3.0)/AVG
         ENDDO
       ENDDO
-      DEALLOCATE(TH)
       DEALLOCATE(ANGLE1)
-      !jie DEBUG only
-      !write(16,*), 'BT(KA1)=',BT(KA1),'BT(KA2-1)=',BT(KA2-1)
-      !write(16,*), 'BT(KA2)=',BT(KA2),'BT(KA3)=',BT(KA3)
-      !write(16,*), 'BT(KA3+1)=',BT(KA3+1),'BT(NKT)=',BT(NKT)
 !
 ! Formats
 !
@@ -1141,14 +899,19 @@
 !Author: Brandon Reichl (GSO/URI)
 !Origination  : 2013
 !Update       : March - 18 - 2015
+!             : June -22 -2018  (XYC)
+!             : February -27 -2026 (sb) Hardened the Newton's method 
+!                 iteration by introducing a few parameters and 
+!                 checking for NaN values
 !Puropse      : Convert from angular frequency to wavenumber
 !               using full gravity wave dispersion relation
 !               if tanh(kh)<0.99, otherwise uses deep-water
 !               approximation.
+!NOTE: May be a better version internal to WW3 that can replace this.
+!      Improved by using newton's method for iteration.(2018)
 !/ ------------------------------------------------------------------- /
 !/
-!       jie change dependencies
-!       use constants, only: GRAV
+!        use constants, only: GRAV
         USE SWCOMM3, ONLY       : GRAV
 !/
         implicit none
@@ -1156,322 +919,291 @@
         REAL,INTENT(IN)    :: SIG,DEPTH
         REAL,INTENT(OUT)   :: WN
 !/
-        real    :: wn1,wn2,sig1,sig2,dsigdk
-        integer :: i
-        logical :: SWITCH
+        real    :: wn1,wn2 !,sig1,sig2,dsigdk
+        real    :: fk, fk_slp, denom
+        integer :: iter
+        real, parameter :: rel_tol = 1.0e-4
+        real, parameter :: abs_tol = 1.0e-10
+        real, parameter :: slope_eps = 1.0e-12
+        integer, parameter :: max_iter = 100
 !/ ------------------------------------------------------------------- /
         wn1=sig**2/GRAV
-        wn2=wn1+0.00001
-        SWITCH=.true.
-!/ ------------------------------------------------------------------- /
-        if (tanh(wn1*depth).LT.0.99) then
-           do i=1,5
-              if (SWITCH) then
-                 sig1=sqrt(GRAV*wn1*tanh(wn1*depth))
-                 sig2=sqrt(GRAV*wn2*tanh(wn2*depth))
-                 if (sig1.lt.sig*.99999.or.sig1.gt.sig*1.00001) then
-                    dsigdk=(sig2-sig1)/(wn2-wn1)
-                    WN1=WN1+(SIG-SIG1)/dsigdk
-                    wn2=wn1+wn1*0.00001
-                 else
-                    SWITCH = .FALSE.
-                 endif
-              endif
-           enddo
-        endif
+        wn2=wn1
+!/ Updated code with Newton's method by XYC:
+      if (wn1 .gt. 0.0 .and. depth .gt. 0.0 .and. tanh(wn1*depth) .LT. 0.99) then
+         do iter=1,max_iter
+           fk=GRAV*wn1*tanh(wn1*depth) - sig**2
+           fk_slp = GRAV*tanh(wn1*depth) + GRAV*wn1*depth/(cosh(wn1*depth))**2
+
+           if (abs(fk_slp) .lt. slope_eps .or. fk_slp .ne. fk_slp) exit
+
+           wn2=wn1 - fk/fk_slp
+           if (wn2 .ne. wn2 .or. wn2 .le. 0.0) exit
+
+           denom = max(abs(wn1), abs_tol)
+           if (abs(wn2-wn1)/denom .LT. rel_tol ) then
+              wn1 = wn2
+              exit
+           endif
+
+           wn1=wn2
+         enddo
+      endif
+      WN=max(wn1,0.0)
+!/ END of update
 !/
-        WN=WN1
+!/ Previous code by BR:
+!/ ------------------------------------------------------------------- /
+!        wn1=sig**2/GRAV
+!        wn2=wn1+0.00001
+!        SWITCH=.true.
+!/ ------------------------------------------------------------------- /
+!        if (tanh(wn1*depth).LT.0.99) then
+!           do i=1,5
+!              if (SWITCH) then
+!                 sig1=sqrt(GRAV*wn1*tanh(wn1*depth))
+!                 sig2=sqrt(GRAV*wn2*tanh(wn2*depth))
+!                 if (sig1.lt.sig*.99999.or.sig1.gt.sig*1.00001) then
+!                    dsigdk=(sig2-sig1)/(wn2-wn1)
+!                    WN1=WN1+(SIG2-SIG1)/dsigdk
+!                    wn2=wn1+wn1*0.00001
+!                 else
+!                    SWITCH = .FALSE.
+!                 endif
+!              endif
+!           enddo
+!        endif
+!/
+!        WN=WN1
 !/
         RETURN
       END SUBROUTINE SIG2WN
 !/ ------------------------------------------------------------------- /
 !/
 !/ ------------------------------------------------------------------- /
-      SUBROUTINE WND2Z0M( U10 , ZNOTM )
-!/ ------------------------------------------------------------------- /
-!/ Date: Feb - 04 - 2014
-!/ Author: Biju Thomas URI-GSO
-!/ Updated: Apr - 09 - 2014
-!/ Author: Brandon Reichl URI-GSO
-!/ Title: WND2Z0M
-!/ Purpose: Get bulk momentum z0 from 10-m wind.
-!/ Input:  U10   - 10-m wind (magnitude) in m/s
-!/ Output: ZNOTM - momentum z0 in m
+      SUBROUTINE WND2Z0M( W10M , ZNOTM )
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           B. G. Reichl            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         04-Aug-2016 |
+!/                  +-----------------------------------+
+!/
+!/    09-Apr-2014 : Last Update.                        ( version 5.12 )
+!/    15-Aug-2016 : Updated for 2016 HWRF z0            ( J. Meixner   )
+!/
+!  1. Purpose :
+!
+!     Get bulk momentum z0 from 10-m wind.
+!          Bulk stress corresponds to 2015 GFDL Hurricane model
+!          Not published yet, but contact Brandon Reichl or
+!          Isaac Ginis (Univ. of Rhode Island) for further info
+!
+!  2. Method :
+!          This has now been updated for 2016 HWRF z0 using routines
+!          from HWRF  znot_m_v1, Biju Thomas, 02/07/2014
+!           and       znot_wind10m Weiguo Wang, 02/24/2016
+!
+!  3. Parameters :
+!       Name  Unit  Type      Description
+!     ----------------------------------------------------------------
+!       W10M   m/s  input    10 m neutral wind [m/s]
+!       ZNOTM  m    output   Roughness scale for momentum
+!     ----------------------------------------------------------------
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3FLD1    Subr. W3FLD1MD Corresponding source term.
+!      W3FLD2    Subr. W3FLD2MD Corresponding source term.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!       None.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!     !/S  Enable subroutine tracing.
+!
+! 10. Source code :
+!
 !/ ------------------------------------------------------------------- /
 !/
+      IMPLICIT NONE
+      REAL, INTENT(IN) :: W10M
+      REAL, INTENT(OUT):: ZNOTM
+ 
+      !Parameters from znot_m_v1
+      REAL, PARAMETER :: bs0 = -8.367276172397277e-12
+      REAL, PARAMETER :: bs1 = 1.7398510865876079e-09
+      REAL, PARAMETER :: bs2 = -1.331896578363359e-07
+      REAL, PARAMETER :: bs3 = 4.507055294438727e-06
+      REAL, PARAMETER :: bs4 = -6.508676881906914e-05
+      REAL, PARAMETER :: bs5 = 0.00044745137674732834
+      REAL, PARAMETER :: bs6 = -0.0010745704660847233
+ 
+      REAL, PARAMETER :: cf0 = 2.1151080765239772e-13
+      REAL, PARAMETER :: cf1 = -3.2260663894433345e-11
+      REAL, PARAMETER :: cf2 = -3.329705958751961e-10
+      REAL, PARAMETER :: cf3 = 1.7648562021709124e-07
+      REAL, PARAMETER :: cf4 = 7.107636825694182e-06
+      REAL, PARAMETER :: cf5 = -0.0013914681964973246
+      REAL, PARAMETER :: cf6 = 0.0406766967657759
+ 
+      !Variables from znot_wind10m
+      REAL            :: Z10, U10,AAA,TMP
+ 
+ 
+      !Values as set in znot_wind10m
+      Z10=10.0
+      U10=W10M
+      if (U10 > 85.0) U10=85.0
+ 
+      !Calculation of z0 as in znot_m_v1
+      IF ( U10 .LE. 5.0 ) THEN
+        ZNOTM = (0.0185 / 9.8*(7.59e-4*U10**2+2.46e-2*U10)**2)
+      ELSEIF (U10 .GT. 5.0 .AND. U10 .LT. 10.0) THEN
+        ZNOTM =.00000235*(U10**2 - 25 ) + 3.805129199617346e-05
+      ELSEIF ( U10 .GE. 10.0  .AND. U10 .LT. 60.0) THEN
+        ZNOTM = bs6 + bs5*U10 + bs4*U10**2 + bs3*U10**3 + bs2*U10**4 +&
+              bs1*U10**5 + bs0*U10**6
+      ELSE
+        ZNOTM = cf6 + cf5*U10 + cf4*U10**2 + cf3*U10**3 + cf2*U10**4 +&
+              cf1*U10**5 + cf0*U10**6
+      END IF
+ 
+      !Modifications as in znot_wind10m for icoef_sf=4
+ 
+      !for wind<20, cd similar to icoef=2 at 10m, then reduced
+      TMP=0.4*0.4/(ALOG(10.0/ZNOTM))**2   ! cd at zlev
+      AAA=0.75
+      IF (U10 < 20) THEN
+        AAA=0.99
+      ELSEIF(U10 < 45.0) THEN
+        AAA=0.99+(U10-20)*(0.75-0.99)/(45.0-20.0)
+      END IF
+      ZNOTM=Z10/EXP( SQRT(0.4*0.4/(TMP*AAA)) )
+ 
+      END SUBROUTINE WND2Z0M
+!/ ------------------------------------------------------------------- /
+      SUBROUTINE WND2SAT(WND10,SAT)
+!/                  +-----------------------------------+
+!/                  | WAVEWATCH III           NOAA/NCEP |
+!/                  |           B. G. Reichl            |
+!/                  |                        FORTRAN 90 |
+!/                  | Last update :         04-Aug-2016 |
+!/                  +-----------------------------------+
+!/
+!/    15-Jan-2016 : Origination.                        ( version 5.12 )
+!/    04-Aug-2016 : Updated for 2016 HWRF CD/U10 curve  ( J. Meixner   )
+!/
+!  1. Purpose :
+!
+!     Gives level of saturation spectrum to produce
+!         equivalent Cd as in wnd2z0m (for neutral 10m wind)
+!         tuned for method of Reichl et al. 2014
+!
+!  2. Method :
+!
+!  3. Parameters :
+!
+!     Parameter list
+!     ----------------------------------------------------------------
+      !Input: WND10 - 10 m neutral wind [m/s]
+      !Output: SAT  - Level 1-d saturation spectrum in tail [non-dim]
+!     ----------------------------------------------------------------
+!  4. Subroutines used :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      STRACE    Subr. W3SERVMD Subroutine tracing.
+!     ----------------------------------------------------------------
+!
+!  5. Called by :
+!
+!      Name      Type  Module   Description
+!     ----------------------------------------------------------------
+!      W3FLD1    Subr. W3FLD1MD Corresponding source term.
+!     ----------------------------------------------------------------
+!
+!  6. Error messages :
+!
+!       None.
+!
+!  7. Remarks :
+!
+!  8. Structure :
+!
+!     See source code.
+!
+!  9. Switches :
+!
+!     !/S  Enable subroutine tracing.
+!
+! 10. Source code :
+!
+!/ ------------------------------------------------------------------- /
 !/
         IMPLICIT NONE
-!/ ------------------------------------------------------------------- /
-      REAL, INTENT(IN)   :: U10
-      REAL, INTENT(OUT)  :: ZNOTM
-!/ ------------------------------------------------------------------- /
-      REAL, PARAMETER :: a1=1.044183210405817e-12
-      REAL, PARAMETER :: a2=-5.707116220939218e-11
-      REAL, PARAMETER :: a3=8.005722172810571e-10
-      REAL, PARAMETER :: a4=6.322045801589353e-09
-      REAL, PARAMETER :: a5=-2.422002988137712e-07
-      REAL, PARAMETER :: a6=2.269200594753249e-06
-      REAL, PARAMETER :: a7=-6.029592778169796e-06
-      REAL, PARAMETER :: a8=8.882284703541603e-06
-      REAL, PARAMETER :: a9=-2.371341185499601e-06
 !/
-      REAL, PARAMETER :: b1=1.814407011197660e-15
-      REAL, PARAMETER :: b2=-1.602907562918788e-13
-      REAL, PARAMETER :: b3=-3.351205313520358e-11
-      REAL, PARAMETER :: b4= 6.036179295940524e-09
-      REAL, PARAMETER :: b5=-3.725481686822030e-07
-      REAL, PARAMETER :: b6= 1.059761705898929e-05
-      REAL, PARAMETER :: b7=-1.375241830530252e-04
-      REAL, PARAMETER :: b8= 8.538858261732818e-04
-      REAL, PARAMETER :: b9=-1.936638976963742e-03
-!/ ------------------------------------------------------------------- /
-      IF ( U10 .LE. 0.4) THEN
-         ZNOTM = 4E-7
-      ELSEIF( U10 .LE. 9.3 ) THEN
-         ZNOTM = A9 + A8*U10 + A7*U10**2 + A6*U10**3 + A5*U10**4 + &
-              A4*U10**5 + A3*U10**6 + A2*U10**7 + A1*U10**8
-      ELSEIF (U10 .LT. 60.0) THEN
-         ZNOTM = B9 + B8*U10 + B7*U10**2 + B6*U10**3 + B5*U10**4 + &
-              B4*U10**5 + B3*U10**6 +B2*U10**7 + B1*U10**8
-      ELSE
-        ZNOTM = 1.3025e-3
-      END IF
-!/
-      RETURN
-    END SUBROUTINE WND2Z0M
-!/ ------------------------------------------------------------------- /
-    SUBROUTINE WND2Z0T(U_IN,Z_IN,ZNOTT)
-!/ ------------------------------------------------------------------- /
-!/ Date: Apr - 09 - 2014
-!/ Author: Biju Thomas
-!/ Adapted into WW3 by: Brandon Reichl URI-GSO
-!/ Title: WWwnd2z0t
-!/ Purpose: Get bulk thermal z0 from Za-meter wind speed.
-!/ Input: uu - wind in m/s
-!         za - height of wind in m
-!/ Output: znott - thermal z0 in m
-      IMPLICIT NONE
-!/
-      REAL, INTENT(IN) :: U_IN,Z_IN
-      REAL, INTENT(OUT):: ZNOTT
-!/
-      REAL :: U10, U35
-      REAL :: Z10 = 10.0
-      REAL :: Z35 = 35.0
-      REAL :: Z0I,Z0F
-!/ TR
-      REAL, PARAMETER  :: tr0 = 6.451939325286488e-08
-      REAL, PARAMETER  :: tr1 = -7.306388137342143e-07
-      REAL, PARAMETER  :: tr2 = -1.3709065148333262e-05
-      REAL, PARAMETER  :: tr3 = 0.00019109962089098182
-!/ TO
-      REAL, PARAMETER  :: to0 = 1.4379320027061375e-08
-      REAL, PARAMETER  :: to1 = -2.0674525898850674e-07
-      REAL, PARAMETER  :: to2 = -6.8950970846611e-06
-      REAL, PARAMETER  :: to3 = 0.00012199648268521026
-!/ TN
-      REAL, PARAMETER  :: tn0 = 1.4023940955902878e-10
-      REAL, PARAMETER  :: tn1 = -1.4752557214976321e-08
-      REAL, PARAMETER  :: tn2 = 5.90998487691812e-07
-      REAL, PARAMETER  :: tn3 = -1.0920804077770066e-05
-      REAL, PARAMETER  :: tn4 = 8.898205876940546e-05
-      REAL, PARAMETER  :: tn5 = -0.00021123340439418298
-!/ TT
-      REAL, PARAMETER  :: tt0 = 1.92409564131838e-12
-      REAL, PARAMETER  :: tt1 = -5.765467086754962e-10
-      REAL, PARAMETER  :: tt2 = 7.276979099726975e-08
-      REAL, PARAMETER  :: tt3 = -5.002261599293387e-06
-      REAL, PARAMETER  :: tt4 = 0.00020220445539973736
-      REAL, PARAMETER  :: tt5 = -0.0048088230565883
-      REAL, PARAMETER  :: tt6 = 0.0623468551971189
-      REAL, PARAMETER  :: tt7 = -0.34019193746967424
-!/ TA
-      REAL, PARAMETER  :: ta0 = -1.7787470700719361e-10
-      REAL, PARAMETER  :: ta1 = 4.4691736529848764e-08
-      REAL, PARAMETER  :: ta2 = -3.0261975348463414e-06
-      REAL, PARAMETER  :: ta3 = -0.00011680322286017206
-      REAL, PARAMETER  :: ta4 = 0.024449377821884846
-      REAL, PARAMETER  :: ta5 = -1.1228628619105638
-      REAL, PARAMETER  :: ta6 = 17.358026773905973
-!/
-      INTEGER :: LOOP
-!/ ------------------------------------------------------------------- /
-      !covert from uref to u35
-      ! Get guess at z0
-      CALL WND2Z0M(U_IN,Z0F)
-      Z0I=100.0
-      !/ Quick and dirty iteration to get approx. u35
-      DO LOOP=1,5
-         IF(ABS(Z0F-Z0I)/Z0F .GT. 0.01 ) THEN
-            U10 = LOG(Z10/Z0F) / log(Z_IN/Z0I) * U_IN
-            Z0I=Z0F
-            CALL WND2Z0M(U10,Z0F)
-         ENDIF
-      ENDDO
-      U35 = LOG(Z35/Z0F) / log(Z_IN/Z0I) * U_IN
-      IF ( U35 .LE. 7.0 ) THEN
-         !Not replacing constants (so znott remains smooth)
-         ZNOTT = (0.0185 / 9.8*(7.59E-4*U35**2+2.46E-2*U35)**2)
-      ELSEIF ( U35  .GE. 7.0 .AND. U35 .LT. 12.5 ) THEN
-         ZNOTT =  TR3 + TR2*U35 + TR1*U35**2 + TR0*U35**3
-      ELSEIF ( U35  .GE. 12.5 .AND. U35 .LT. 15.0 ) THEN
-         ZNOTT =  TO3 + TO2*U35 + TO1*U35**2 + TO0*U35**3
-      ELSEIF ( U35 .GE. 15.0  .AND. U35 .LT. 30.0) THEN
-         ZNOTT =  TN5 + TN4*U35 + TN3*U35**2 + TN2*U35**3 + TN1*U35**4 + &
-              TN0*U35**5
-      ELSEIF ( U35 .GE. 30.0  .AND. U35 .LT. 60.0) THEN
-         ZNOTT = TT7 + TT6*U35 + TT5*U35**2  + TT4*U35**3 + TT3*U35**4 + &
-              TT2*U35**5 + TT1*U35**6 + TT0*U35**7
-      ELSE
-         ZNOTT =  TA6 + TA5*U35 + TA4*U35**2  + TA3*U35**3 + TA2*U35**4 + &
-              TA1*U35**5 + TA0*U35**6
-      END IF
-      return
-    end subroutine wnd2z0t
-!/ ------------------------------------------------------------------- /
-    SUBROUTINE MFLUX(WND,ZH,Z0,RIB,CD)
-!/
-!/ DATE: 03/17/2015
-!/ Imported by: Brandon Reichl (GSO)
-!/ Purpose:
-!/   Calculate stability dependent fluxes
-!/   Needed when coupled to atmosphere.
-!/ Inputs:
-!/   WND - Wind speed (m/s)
-!/   ZH  - Atm. height of WND (m)
-!/   Z0  - Surface roughness length (m)
-!/   RIB - Lower atm. bulk Richardson (non-dimensional)
-!/ Outputs:
-!/   CD  - Drag coefficient for ZH (Tau/(rho_a U_ZH^2))
-!/ ------------------------------------------------------------------- /
-!/
-!     jie change dependencies 
-!     USE CONSTANTS, only: GRAV, TPI, KAPPA
-      !USE GLOBAL, ONLY        : KAPPA 
-      USE SWCOMM3, ONLY       : GRAV, PI2, PWIND
-!}
-      IMPLICIT NONE
-      REAL, INTENT(IN) :: WND,ZH,Z0,RIB
-      REAL, INTENT(OUT):: CD
-      real, parameter :: c=0.76
-      real, parameter :: a=5.0
-      REAL :: ZETA2, zetat, zeta0,ZETA
-      REAL :: FS,FMZ, FM0, FHZ, FH0,FM,FH
-      REAL :: ZETAo, ZETA2o, DZD, DZ,ZT,DT,CDN
-      INTEGER :: I, IT
-      REAL :: TPI, KAPPA
-!/
-      TPI = PI2
-      KAPPA = PWIND(15)
-      ! Use Rb to calculate zeta
-      ZETA=kappa*Rib/0.03
-      !Estimate stability functions
-      ZETA0=ZETA/ZH*Z0
-      call wnd2z0t(WND,ZH,ZT)
-      ZETAT=ZETA/ZH*ZT/100.
-      ZETAo=1.0e+10
-      ZETA2o=0.0e+00
-      IT=1
-      IF (ABS(ZETA).LT.0.001) THEN
-         IT=0
-         FMZ = 1./kappa * log(ZH)
-         FM0 = 1./kappa * log(Z0)
-         FHZ = FMZ
-         FH0 = 1./kappa * log(Z0)
-         FM=FMZ-FM0
-         FH=FHZ-FH0
-      ENDIF
-      DO I=1,30
-         ZETA0=ZETA/ZH*Z0
-         ZETAT=ZETA/ZH*Z0
-         IF (IT.EQ.1) THEN
-            IF (ZETA.GT.10.) THEN
-               FMZ = 1./kappa*(c*ZETA+17.193+0.5*a-10.0*c)
-               FHZ = FMZ
-            ELSEIF((ZETA.GT..5).AND.(ZETA.LE.10.)) THEN
-               FMZ = 1./kappa*(8.*log(zeta)+4.25*ZETA**(-1) &
-                    - 0.5*ZETA**(-2) + a*.5- 1.648 )
-               FHZ = FMZ
-            ELSEIF((ZETA.GT.0).AND.(ZETA.LE..5))THEN
-               FMZ = 1./kappa*( log(zeta) + a*zeta)
-               FHZ = FMZ
-            ELSEIF(ZETA.LT.0)THEN
-               FMZ = 1./kappa* ( log(zh)-log(((1.-16.*zeta)**(1./2.)+1.)&
-                    *((1-16*zeta)**(1./4.)+1.)**2)+2.*atan((1.-16.*zeta)**(1./4.)))
-               FM0 =1./kappa* ( log(abs(z0))-log(((1.-16.*zeta0)**(1./2.)+1.)&
-                    *((1-16*zeta0)**(1./4.)+1.)**2)+2.*atan((1.-16.*zeta0)**(1./4.)))
-               FHZ = 1./kappa* (log(abs(zh))-2.*log(1.+(1.-16.*zeta)**(1./2.)) )
-               FH0 = 1./kappa* (log(abs(zetat))-2.*log(1.+(1.-16.*zetat)**(1./2.)) )
-               FS = (1.-16.*zeta0)**(-1./2.)
-            ENDIF
-            IF (ZETA0.GT.10.) THEN
-               FM0 = 1./kappa*(c*ZETA0+17.193+0.5*a-10.0*c)
-               FH0 = 1./kappa*(c*ZETAT+17.193+0.5*a-10.0*c)
-               FS = c*ZETA0
-            ELSEIF((ZETA0.GT..5).AND.(ZETA0.LE.10.)) THEN
-               FM0 = 1./kappa*(8.*log(zeta0)+4.25*ZETA0**(-1) &
-                    - 0.5*ZETA0**(-2) + a*.5- 1.648 )
-               FH0 = 1./kappa*(8.*log(zetaT)+4.25*ZETAT**(-1.) &
-                    - 0.5*ZETAT**(-2.) +a*.5 - 1.648 )
-               FS = 8. - 4.25* zeta0**(-1.) +.5*zeta0**(-2)
-            ELSEIF((ZETA0.GT.0).AND.(ZETA0.LE..5))THEN
-               FM0 = 1./kappa*( log(zeta0) + a*zeta0)
-               FH0 =1./kappa*( log(zetat) + a*zetat)
-               FS = 1. + a*zeta0
-            ENDIF
-            FM=FMz-FM0
-            FH=FHZ-FH0
-            ZETA2=kappa*Rib*FM**2/(FH+2/kappa*FS)
-            DZ=(ZETA-ZETA2)/ZETA
-            if (.NOT.((abs(DZ).LT.1.0e-4).AND.(I.LT.30))) then
-               DZD=(ZETA2-ZETA2o)/(ZETA-ZETAo)
-               ZETAo=ZETA
-               ZETA=(ZETA2-ZETAo*DZD)/(1.-DZD)
-               ZETA2o=ZETA2
-            elseif (abs(DZ).LE.1.0e-3) THEN
-               it=0
-            elseif (abs(DZ).GT.1.0e-3.AND.(I.EQ.30)) THEN
-               ! If MFLUX fails use neutral value.
-               print*,'MFLUX FAIL, use neutral '
-               !print*,'Wind: ',WND,'RIB: ',rib
-               FMZ = 1./kappa * log(ZH)
-               FM0 = 1./kappa * log(Z0)
-               FHZ = FMZ
-               FH0 = 1./kappa * log(Z0)
-               FM=FMZ-FM0
-               FH=FHZ-FH0
-            endif
-         endif
-         CD=1/FM**2
-      ENDDO
-      FMZ = 1./kappa * log(ZH)
-      FM0 = 1./kappa * log(Z0)
-      FM=FMZ-FM0
-      CDN=1/FM**2
-      IF (abs(CD/CDN-1.).gt.0.5) THEN
-         CD=CDN
-      ENDIF
-      RETURN
-    END SUBROUTINE MFLUX
-    
-    
-    !jie to be continued / test different SAT values
-    SUBROUTINE WND2SAT(WND10,SAT)
-        IMPLICIT NONE
         REAL, INTENT(IN) :: WND10
         REAL, INTENT(OUT) :: SAT
- 
-        SAT =0.000000000001237 * WND10**6 +&
-             -0.000000000364155 * WND10**5 +&
-             0.000000037435015 * WND10**4 +&
-             -0.000001424719473 * WND10**3 +&
-             0.000000471570975 * WND10**2 +&
-             0.000778467452178 * WND10**1 +&
-             0.002962335390055
-        SAT = min(max(SAT,0.002),0.014)
+!
+!/ Old HWRF 2015 and ST2
+!        SAT =0.000000000001237 * WND10**6 +&
+!             -0.000000000364155 * WND10**5 +&
+!             0.000000037435015 * WND10**4 +&
+!             -0.000001424719473 * WND10**3 +&
+!             0.000000471570975 * WND10**2 +&
+!             0.000778467452178 * WND10**1 +&
+!             0.002962335390055
+!
+!     SAT values based on
+!     HWRF 2016 CD curve, created with  fetch limited cases ST4 physics
+!        IF (WND10<20.0) THEN
+!          SAT = -0.000018541921682*WND10**2  &
+!                +0.000751515452434*WND10     &
+!                +0.002466529381004
+!        ELSEIF (WND10<45) THEN
+!          SAT = -0.000000009060349*WND10**4  &
+!                +0.000001276678367*WND10**3  &
+!                -0.000068274393789*WND10**2  &
+!                +0.001418180888868*WND10     &
+!                +0.000262277682984
+!        ELSE
+!          SAT = -0.000155976275073*WND10     &
+!                +0.012027763023184
+!        ENDIF
+!
+!        SAT = min(max(SAT,0.002),0.014)
+      IF (WND10<54.0) THEN
+         SAT = -0.0000000000933045564 * WND10**4  &
+               +0.000000368296046  * WND10**3  &
+               -0.0000418658707 * WND10**2  &
+               +0.00130595281  * WND10     &
+               -0.000527661260
+      ELSE
+        SAT = 0.0000000742701634 * WND10**3  &
+              -0.0000100486405 * WND10**2  &
+              +0.000393347926 * WND10     &
+              +0.00143171024
+      ENDIF
       END SUBROUTINE WND2SAT
- 
- 
+!
 !/ End of module W3FLD1MD -------------------------------------------- /
 !/
       END MODULE W3FLD1MD
