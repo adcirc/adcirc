@@ -8224,7 +8224,7 @@ C----------------------------------------------------------------------
       implicit none
       INTEGER,INTENT(IN) :: NWS
       logical :: Fexists
-      integer :: ierr, PvarInd
+      integer :: ierr, PvarInd, NT_wind
       LOG_SCOPE_TRACED("NWS14NC_READ_F22", WIND_TRACING)
 
       ! return if we are using grib2
@@ -8266,8 +8266,18 @@ C----------------------------------------------------------------------
          Pvar = Pvar(1:PvarInd-1)
          write(16,*) 'Pressure is in Hpa, New Pvar = ',trim(Pvar)
       endif
-      ! get starting time index for netcdf file
-      CALL READNWS14_NC_StaTime(Pfile, PfileNCID)
+      ! get starting time index for each forcing file
+      CALL READNWS14_NC_StaTime(Pfile, PfileNCID, NT)
+      CALL READNWS14_NC_StaTime(Wfile, WfileNCID, NT_wind)
+      if (NT_wind .NE. NT) then
+         call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &      message='Wind and pressure netCDF files have different '
+     &      //'starting time indices. Check that fort.221.nc and '
+     &      //'fort.222.nc cover the same time period.')
+      endif
+      if (NCICE.eq.14) then
+         CALL READNWS14_NC_StaTime(Cfile, CfileNCID, NTC)
+      endif
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE NWS14NC_READ_F22
@@ -9191,11 +9201,13 @@ C----------------------------------------------------------------------
       END SUBROUTINE READNWS14LatLon_netCDF
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
-      SUBROUTINE READNWS14_NC_StaTime(FileN, NC_ID)
+      SUBROUTINE READNWS14_NC_StaTime(FileN, NC_ID, NT_OUT)
 C----------------------------------------------------------------------
 C       CPB 10/2023: Sets the time index from which we start reading in
 C       netCDF meteorological forcing. NOTE: reads in on proc 0 and
 C       broadcasts.
+C       CPB 04/2026: Added NT_OUT parameter so each forcing file can
+C       compute its own starting index independently.
 C----------------------------------------------------------------------
 #ifdef ADCNETCDF
       use netcdf
@@ -9209,8 +9221,9 @@ C----------------------------------------------------------------------
       implicit none
       integer :: iret, iter
       INTEGER,INTENT(INOUT) :: NC_ID
+      INTEGER,INTENT(OUT) :: NT_OUT
       character(len=200),intent(in) :: fileN
-      character(len=19),allocatable :: TimeStr(:) 
+      character(len=19),allocatable :: TimeStr(:)
       character(len=200) :: str_date
       integer :: i, Temp_ID, TL
       ! CPB 4/20/2023
@@ -9241,10 +9254,10 @@ C----------------------------------------------------------------------
             call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
             ! Determine the first timestep index
             str_date = CurDT%strftime(trim(Tformat)) 
-            do NT = 1,TL
-               if (trim(str_date).eq.TimeStr(NT)) exit
+            do NT_OUT = 1,TL
+               if (trim(str_date).eq.TimeStr(NT_OUT)) exit
             enddo
-            call logMessage(ECHO,'Starting from '//TimeStr(NT))
+            call logMessage(ECHO,'Starting from '//TimeStr(NT_OUT))
             DEALLOCATE( TIMESTR )
          ELSEIF (Tvar.eq.'refdate') THEN
             ! in this case the reference date for the netCDF file is
@@ -9258,9 +9271,9 @@ C----------------------------------------------------------------------
      &                         "%Y-%m-%dT%H:%M:%S")
             CALL CHECK_ERR(NF90_INQ_VARID(NC_ID,TDIM,TEMP_ID))
             call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,NCTIMES))
-            DO NT = 1,TL
+            DO NT_OUT = 1,TL
                stepdate = refdate +
-     &                    timedelta(seconds=INT(NCTIMES(NT)))
+     &                    timedelta(seconds=INT(NCTIMES(NT_OUT)))
                IF (stepdate.EQ.curDT) THEN
                   EXIT
                ENDIF
@@ -9273,19 +9286,17 @@ C----------------------------------------------------------------------
      &                      'Neither a datetime variable nor a '
      &          //'reference date were provided. Assume met forcing '
      &          //'starts at the beginning of the netCDF file.')
-            NT = 1 
+            NT_OUT = 1
          endif
-         NTC = NT
 
          IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN
-            call Check_err(NF90_CLOSE(NC_ID))  
+            call Check_err(NF90_CLOSE(NC_ID))
          END IF
 
 #ifdef CMPI
       endif
 
-      CALL BcastToLocal_Int(NT)
-      CALL BcastToLocal_Int(NTC)
+      CALL BcastToLocal_Int(NT_OUT)
 #endif
 
 #endif
