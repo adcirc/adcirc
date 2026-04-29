@@ -15,8 +15,6 @@ module dg_integration
 
    private
    integer, parameter :: sz = 8
-   real(sz) :: etime1_dg = 0
-   real(sz) :: etime2_dg = 0
    real(sz) :: etratio, rampdg
 
    public :: DG_HYDRO_TIMESTEP
@@ -31,13 +29,13 @@ contains
       use GLOBAL, only: dumy1, dumy2, &
                         DTDP, STATIM, RampExtFlux, NRAMP, DRampExtFlux, &
                         DRAMP, NFFR, NBFR, FTIMINC, QNIN1, QNIN2, &
-                        ESBIN1, ESBIN2, ETA2, ETA1, noff, uu2, vv2, ifnlfa, ifnlct, nolica, nolicat
+                        ESBIN1, ESBIN2, ETA2, ETA1, noff
 #else
       use GLOBAL, only: DTDP, STATIM, RampExtFlux, NRAMP, DRampExtFlux, &
                         DRAMP, NFFR, NBFR, FTIMINC, QNIN1, QNIN2, &
-                        ESBIN1, ESBIN2, ETA2, ETA1, noff, uu2, vv2, ifnlfa, ifnlct, nolica, nolicat
+                        ESBIN1, ESBIN2, ETA2, ETA1, noff
 #endif
-      use SIZES, only: MNE, myproc
+      use SIZES, only: MNE
       use BOUNDARIES, only: NVEL, LBCODEI, NFLUXF, NOPE, NETA, NBD
       use GWCE, only: ETIME1, ETIME2, ETIMINC
 #ifdef CMPI
@@ -45,7 +43,6 @@ contains
       use messenger, only: updateR, updatei
 #endif
 
-      use mesh, only: DP
 
       implicit none
       integer, intent(in) :: IT
@@ -54,14 +51,14 @@ contains
       !! Current time in seconds (including reference time)
 
       integer :: timestepper, NQEDS
-      integer :: I, J, K, KK, NBDI, IRK, ind
+      integer :: I, J, K, KK, NBDI, IRK
       real(SZ) :: ARK, BRK, time_a, timedg, qtratio
 
       if (it == 1) then
          call prep_DG()
       end if
 
-      TIME_A = IT*DTDP + STATIM*86400.d0
+      TIME_A = real(IT,8)*DTDP + STATIM*86400.d0
 
       eta1 = eta2
 
@@ -93,12 +90,12 @@ contains
          RAMPExtFlux = 1.0d0
          if (NRAMP >= 1) then
             if (NRAMP == 1) then
-               RAMPDG = tanh((2.d0*((IT - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMP)
-               RAMPExtFlux = tanh((2.d0*((IT - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMPExtFlux)
+               RAMPDG = tanh((2.d0*((real(IT,8) - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMP)
+               RAMPExtFlux = tanh((2.d0*((real(IT,8) - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMPExtFlux)
             end if
             if (NRAMP == 2) then
-               RAMPDG = tanh((2.d0*((IT - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMP)
-               RAMPExtFlux = tanh((2.d0*((IT - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMPExtFlux)
+               RAMPDG = tanh((2.d0*((real(IT,8) - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMP)
+               RAMPExtFlux = tanh((2.d0*((real(IT,8) - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMPExtFlux)
             end if
             if (NRAMP == 3) then
                write (*, *) 'NRAMP = 3 not supported '
@@ -152,11 +149,11 @@ contains
 
          if (NFEDS > 0) call FLOW_EDGE_HYDRO(irk, timedg)
 
-         if (NEEDS > 0) call OCEAN_EDGE_HYDRO(IT, IRK, timedg, rampdg)
+         if (NEEDS > 0) call OCEAN_EDGE_HYDRO(IRK, timedg, rampdg)
 
-         call INTERNAL_EDGE_HYDRO(IT, IRK)
+         call INTERNAL_EDGE_HYDRO(IRK)
 
-         call RHS_DG_HYDRO(IT, IRK, time_a)
+         call RHS_DG_HYDRO(IRK)
 
 !.......SSP Runge-Kutta Time Scheme
 
@@ -199,7 +196,7 @@ contains
          end do
       end do
 
-      call write_results(it, .false.)
+      call write_results()
 
 #ifdef CMPI
       call UPDATER(ETA2, DUMY1, DUMY2, 1)
@@ -220,14 +217,13 @@ contains
       integer, intent(in) :: irk
       real(sz), intent(in) :: timedg
 
-      integer :: L, LED, GED, i, k, jj, II, ll, IT, w, el_in
-      real(sz) :: q_n_ext, q_t_ext, argj, rff, ncyc, qnam_gp, qnph_gp, arg
-      real(SZ) :: DEN2, U_AVG, V_AVG, VEL_NORMAL, q_RoeX, q_RoeY, q_Roe
-      real(SZ) :: TX, TY, HZ_X_IN, HZ_Y_IN, TZ_X_IN, TZ_Y_IN
-      real(SZ) :: LZ_XX_IN, LZ_XY_IN, LZ_YX_IN, LZ_YY_IN, W_IN
+      integer :: L, LED, GED, i, k, jj,   el_in, ncyc
+      real(sz) :: q_n_ext, q_t_ext, argj, rff, qnam_gp, qnph_gp, arg
+      real(SZ) :: TX, TY
+      real(SZ) :: W_IN
       real(sz) :: ze_in, ze_ex, qx_in, qx_ex, qy_in, qy_ex, &
                   hb_in, hb_ex, sfac_in, sfac_ex, nx, ny
-      real(sz) :: f_hat, g_hat, h_hat
+      real(sz) :: f_hat
 
       do 1000 L = 1, NFEDS
 
@@ -258,31 +254,31 @@ contains
 
          do I = 1, 3
 
-            ZE_IN = 0.0
-            QX_IN = 0.0
-            QY_IN = 0.0
+            ZE_IN = 0.D0
+            QX_IN = 0.D0
+            QY_IN = 0.D0
 
-            ZE_EX = 0.0
-            QX_EX = 0.0
-            QY_EX = 0.0
+            ZE_EX = 0.D0
+            QX_EX = 0.D0
+            QY_EX = 0.D0
 
-            HB_IN = 0.0
+            HB_IN = 0.D0
             SFAC_IN = SFACED(I, LED, EL_IN, pa)
 
 !.....Compute the specified flow boundaries for the exterior state
 
-            Q_N_EXT = 0.0
+            Q_N_EXT = 0.D0
             do JJ = 1, MNFFR
                if (NFFR == 0) then
-                  ARGJ = 0.0
+                  ARGJ = 0.d0
                   RFF = RAMPDG
-               elseif (FPER(JJ) == 0.0) then
-                  NCYC = 0.0
-                  ARGJ = FAMIG(JJ)*(TIMEDG - NCYC*FPER(JJ)) + FFACE(JJ)
+               elseif (abs(FPER(JJ)) <= 1d-15) then
+                  NCYC = 0
+                  ARGJ = FAMIG(JJ)*(TIMEDG - real(NCYC,8)*FPER(JJ)) + FFACE(JJ)
                   RFF = FFF(JJ)*RAMPDG
                else
                   NCYC = int(TIMEDG/FPER(JJ))
-                  ARGJ = FAMIG(JJ)*(TIMEDG - NCYC*FPER(JJ)) + FFACE(JJ)
+                  ARGJ = FAMIG(JJ)*(TIMEDG - real(NCYC,8)*FPER(JJ)) + FFACE(JJ)
                   RFF = FFF(JJ)*RAMPDG
                end if
 
@@ -294,7 +290,7 @@ contains
                ARG = ARGJ - QNPH_GP
 
                Q_N_EXT = Q_N_EXT + QNAM_GP*RFF*cos(ARG)
-               Q_T_EXT = 0.0
+               Q_T_EXT = 0.d0
 
                QX_EX = -(TY*Q_N_EXT - NY*Q_T_EXT)/(NX*TY - NY*TX)
                QY_EX = -(-TX*Q_N_EXT + NX*Q_T_EXT)/(NX*TY - NY*TX)
@@ -324,7 +320,7 @@ contains
 
             do K = 1, 3
 
-               W_IN = 2.0*M_INV(K, pa)/AREAS(EL_IN)*XLEN(GED)* &
+               W_IN = 2.d0*M_INV(K, pa)/AREAS(EL_IN)*XLEN(GED)* &
                       PHI_EDGE(K, I, LED, pa)*WEGP(I, pa)
 
                RHS_ZE(K, EL_IN, IRK) = RHS_ZE(K, EL_IN, IRK) - W_IN*F_HAT
@@ -358,49 +354,28 @@ contains
 !     01-02-2007, sb, Modified for LDG
 !     C***********************************************************************
 
-         subroutine INTERNAL_EDGE_HYDRO(IT, IRK)
+         subroutine INTERNAL_EDGE_HYDRO(IRK)
 
 !.....Use appropriate modules
-
-            use GLOBAL, only: uu1, vv1, uu2, vv2
-            use NodalAttributes, only: ESLM
-            use sizes, only: myproc
 
             use mesh, only: AREAS
             implicit none
 
-            integer, intent(in) :: IT
-      !! Current time step
             integer, intent(in) :: IRK
       !! Current RK stage
 
-            real(sz) :: gravity
-            real(sz) :: ze_ex, hb_ex, sfac_ex, ze_in, qx_ex, qy_ex
-            real(sz) :: sfac_in, hb_in, qy_in, qx_in, nx, ny
+            real(sz) :: ze_ex, hb_ex, sfac_ex, ze_in
+            real(sz) :: sfac_in, hb_in,  nx, ny
             integer :: el_in, el_ex, el
             integer :: n1, n2
             real(sz) :: U_EDGE, V_EDGE, f_hat
-            integer :: L, LED_IN, LED_EX, GED, GP_IN, GP_EX, k, i, ll
+            integer :: L, LED_IN, LED_EX, GED, GP_IN, GP_EX, k, i
             !REAL(SZ), PARAMETER :: ZERO = 1.D-12
             real(SZ) :: TX, TY, W_IN, W_EX
-            real(SZ) :: LZ_XX_IN, LZ_XY_IN, LZ_YX_IN, LZ_YY_IN
-            real(SZ) :: LZ_XX_EX, LZ_XY_EX, LZ_YX_EX, LZ_YY_EX
-            real(SZ) :: HZ_X_EX, HZ_Y_EX, HZ_X_IN, HZ_Y_IN
-            real(SZ) :: TZ_X_EX, TZ_Y_EX, TZ_X_IN, TZ_Y_IN
-            real(SZ) :: EDFAC_IN, EDFAC_EX, DEN
+            real(SZ) :: EDFAC_IN, EDFAC_EX
             real(SZ) :: XLEN_EL_IN, XLEN_EL_EX
             real(SZ) :: MASS_EL_IN, MASS_EL_EX
-            real(SZ), save, allocatable :: &
-               RHS_ZE_IN(:), RHS_QX_IN(:), RHS_QY_IN(:), &
-               RHS_ZE_EX(:), RHS_QX_EX(:), RHS_QY_EX(:)
 
-            real(SZ) :: ARK, BRK
-            real(SZ) :: MAX_BOA ! Maximum of beta_il/alpha_il for all l
-            real(SZ) :: NLEQG_TMP, G_TMP
-            real(SZ) :: F_HAT_O, G_HAT_O, H_HAT_O, i_hat_o, j_hat_o
-            real(SZ) :: G_HAT_IN, H_HAT_IN
-            real(SZ) :: G_HAT_EX, H_HAT_EX
-            real(SZ) :: K_HAT_O
 
             do L = 1, NIEDS
 
@@ -467,11 +442,11 @@ contains
                      HB_EX = HB_IN
                      SFAC_EX = SFACED(GP_EX, LED_EX, EL_EX, pa)
 
-                     ZE_IN = 0.
-                     ZE_EX = 0.
+                     ZE_IN = 0D0
+                     ZE_EX = 0D0
 
-                     U_EDGE = 0.
-                     V_EDGE = 0.
+                     U_EDGE = 0D0
+                     V_EDGE = 0D0
                      do K = 1, 3
                         U_EDGE = U_EDGE + U_modal(K, EL_IN)*PHI_EDGE(K, GP_IN, LED_IN, pa)
                         V_EDGE = V_EDGE + V_modal(K, EL_IN)*PHI_EDGE(K, GP_IN, LED_IN, pa)
@@ -528,42 +503,27 @@ contains
 
          end subroutine INTERNAL_EDGE_HYDRO
 
-         subroutine RHS_DG_HYDRO(IT, IRK, time_a)
+         subroutine RHS_DG_HYDRO(IRK)
 !! This subroutine computes the area integrals for the DG hydro and
 !! adds them into the RHS. For each element E, these terms appear as
 !! $$(\nabla v, F)_{E} - \langle \hat{F}_n, v \rangle_{\partial E}$$
 
-            use GLOBAL, only: dtdp, uu2, vv2
-            use NodalAttributes, only: IFLINBF, IFHYBF, HBREAK, FTHETA, &
-                                       FGAMMA, LoadManningsN, ManningsN, CF
-
-            use sizes, only: myproc, MNE
-            use mesh, only: NM, X, Y
+            use GLOBAL, only: dtdp
+            use sizes, only: MNE
             use precipitation, only: elem_rain
 
             implicit none
 
-            integer, intent(in) :: IT
             integer, intent(in) :: IRK
-            real(sz), intent(in) :: time_a
 
-            integer :: L, k, i, ll
-            real(SZ) :: DPSIDX(3), DPSIDY(3), source_r
-            real(SZ) :: AREA, IMASS, TKX, TKY, Xpart, Ypart, H_0, C_1
-            real(SZ) :: PHI_AREA_KI, MN_IN, MassAction1st, MassAction2nd, fx, fy
-            real(SZ) :: LZ_XX, LZ_XY, LZ_YX, LZ_YY, rate, s_mass, s_sed, b_0
-            real(SZ) :: DEPTH, F1_NL, FU_NL, FV_NL, FG_NL, FH_NL, FW_NL
-            real(SZ) :: HUU, HVV, HUV, GH2, fgauss, sig
-            real(SZ) :: DEPTH_C, FH_NL_C, UX_C, UY_C, UMAG_C, DTDPH, SFACQUAD
-            real(SZ) :: discharge_modelX_IN, discharge_modelY_IN
-            real(SZ) :: DH_X, DH_Y, phi_tot, C_0, HZ_X, HZ_Y, TZ_X, TZ_Y
+            integer :: L, k, i
+            real(SZ) :: source_r
+            real(SZ) :: DEPTH, F1_NL
+            real(SZ) :: DTDPH, SFACQUAD
 
-            integer :: N1, N2, N3
-            real(sz) :: tau, ze_in, qx_in, qy_in, hb_in, dhb_x, dhb_y
-            real(sz) :: fx_in, fy_in, u_in, v_in, gx_in, gy_in, hx_in, hy_in
-            real(sz) :: source_x, source_y, umag, u_quad, v_quad
-            real(sz) :: x1, x2, x3, y1, y2, y3
-            real(sz) :: auu, buu, cuu, duu, avv, bvv, cvv, dvv
+            real(sz) :: ze_in, hb_in, dhb_x, dhb_y
+            real(sz) :: fx_in, fy_in
+            real(sz) :: u_quad, v_quad
 
             DTDPH = 1.d0/DTDP
 
@@ -587,10 +547,10 @@ contains
 
                   do I = 1, 3
 
-                     U_QUAD = 0.
-                     V_QUAD = 0.
+                     U_QUAD = 0D0
+                     V_QUAD = 0D0
 
-                     ZE_IN = 0.
+                     ZE_IN = 0D0
                      HB_IN = BATH(I, L, pa)
                      DHB_X = DBATHDX(I, L, pa)
                      DHB_Y = DBATHDY(I, L, pa)
@@ -627,33 +587,26 @@ contains
             return
          end subroutine RHS_DG_HYDRO
 
-         subroutine ocean_edge_hydro(it, irk, timedg, rampdg)
+         subroutine ocean_edge_hydro( irk, timedg, rampdg)
 
-            use NodalAttributes, only: GeoidOffset, LoadGeoidOffset
 ! adcirc new stuff
             use boundaries, only: nope
             use mesh, only: areas
-            use GLOBAL, only: NBFR, PER, AMIG, FF, H0, IFNLFA, FACE, ETA2, UU2, VV2
-            use adc_constants, only: G
+            use GLOBAL, only: NBFR, PER, AMIG, FF, H0, IFNLFA, FACE, ETA2
 
             implicit none
-            integer, intent(in) :: it
-      !! Current time step
+
+      !! Current RK stage
             integer, intent(in) :: irk
             real(sz), intent(in) :: timedg, rampdg
-      !! Current RK stage
 
 !.....Declare local variables
 
-! namo
-            !real(sz) llf_flux_coupling
             real(sz) :: u_edge, v_edge, nx, ny, ze_in, ze_ex, hb_in, hb_ex
-            real(sz) :: f_hat, g_hat, h_hat, sfac_ex, sfac_in, w_in
-            integer :: test_el, el_in, n1, n2
+            real(sz) :: f_hat, sfac_ex, sfac_in, w_in
+            integer ::  el_in, n1, n2
 
-            integer :: L, LED, GED, i, k, jj, II, ll, w
-            real(SZ) :: DEN2, U_AVG, V_AVG, VEL_NORMAL, q_RoeX, q_RoeY, q_Roe
-            real(SZ) :: TX, TY, HUU, HUV, GH2, FH_NL_IN, F1_NL, FX1_IN, FY1_IN
+            integer :: L, LED, GED, i, k, jj
             integer:: IPT
             real(SZ):: ZEFREQ
             real(SZ), dimension(2):: EFA_GPT, EMO_GPT, ARG_GPT, ZE_GPT
@@ -697,15 +650,15 @@ contains
 
                      do JJ = 1, NBFR
 
-                        if (PER(JJ) == 0.d0) then
-                           NCYC = 0.d0
+                        if (abs(PER(JJ)) <= 1d-15) then
+                           NCYC = 0
                         else
                            NCYC = int(TIMEDG/PER(JJ))
                         end if
 
 !...........Surface Elevation
 
-                        ARGJ = AMIG(JJ)*(TIMEDG - NCYC*PER(JJ)) + FACE(JJ)
+                        ARGJ = AMIG(JJ)*(TIMEDG - real(NCYC,8)*PER(JJ)) + FACE(JJ)
                         RFF = FF(JJ)*RAMPDG
 
 !..............linearly interpolate from the time-series of the harmonic forcing
@@ -730,9 +683,9 @@ contains
 
 !.....Compute the solution at the interior state
 
-                     ZE_IN = 0.
-                     U_EDGE = 0.
-                     V_EDGE = 0.
+                     ZE_IN = 0D0
+                     U_EDGE = 0D0
+                     V_EDGE = 0D0
                      do K = 1, 3
 
                         U_EDGE = U_EDGE + U_modal(K, EL_IN)*PHI_EDGE(K, I, LED, pa)
@@ -751,7 +704,7 @@ contains
 !$$$            endif
 
                      ! Eirik's fix
-                     if ((ZE_EX*IFNLFA + HB_EX) <= 0) then
+                     if ((ZE_EX*real(IFNLFA,8) + HB_EX) <= 0.d0) then
                         ZE_EX = abs(HB_EX) + H0
                      end if
 !DIR$ FORCEINLINE
@@ -786,22 +739,17 @@ contains
 !
 !***********************************************************************
 
-         subroutine WRITE_RESULTS(IT, FORCE_WRITE)
+         subroutine WRITE_RESULTS()
 
 !.....Use appropriate modules
 
-            use GLOBAL, only: etamax, eta2, nodecode, h0, noff
-            use MESH, only: NM, DP, AREAS
-            use sizes, only: MNEI, MNP
+            use GLOBAL, only: etamax, eta2
+            use MESH, only: NM, AREAS
+            use sizes, only: MNP
 
-            integer, intent(in) :: it
-            logical, intent(in) :: FORCE_WRITE
 
-            integer ::  Minp(0:8), no_nbors, nbor_el, k, kk, j, i, n1, n2, n3
-            real(SZ) :: AREA, DEPTH, ANGLE_SUM, FH_NL, ZE00, area_sum, cen_sum
-            real(sz) :: qmaxe, elmaxe, ze1, ze2, ze3
-            real(sz) :: ze_dg(mnei)
-            integer :: imaxze, imaxq, ErrorElevExceeded
+            integer ::   kk,  i, n1, n2, n3
+            real(sz) ::  ze1, ze2, ze3
             real(sz) :: node_area(MNP), node_ze(MNP)
 
 !.....Transform from modal coordinates to nodal coordinates and average
@@ -814,9 +762,9 @@ contains
                   N2 = NM(I, 2)
                   N3 = NM(I, 3)
 
-                  node_area(n1) = node_area(n1) + 0.5*areas(I)
-                  node_area(n2) = node_area(n2) + 0.5*areas(I)
-                  node_area(n3) = node_area(n3) + 0.5*areas(I)
+                  node_area(n1) = node_area(n1) + 0.5d0*areas(I)
+                  node_area(n2) = node_area(n2) + 0.5d0*areas(I)
+                  node_area(n3) = node_area(n3) + 0.5d0*areas(I)
 
                   ze1 = 0
                   ze2 = 0
@@ -827,9 +775,9 @@ contains
                      ZE3 = ZE3 + PHI_CORNER(KK, 3, 1)*ZE(KK, I, 1)
                   end do
 
-                  node_ze(N1) = node_ze(n1) + ze1*0.5*areas(i)
-                  node_ze(N2) = node_ze(n2) + ze2*0.5*areas(i)
-                  node_ze(N3) = node_ze(n3) + ze3*0.5*areas(i)
+                  node_ze(N1) = node_ze(n1) + ze1*0.5d0*areas(i)
+                  node_ze(N2) = node_ze(n2) + ze2*0.5d0*areas(i)
+                  node_ze(N3) = node_ze(n3) + ze3*0.5d0*areas(i)
                end if
             end do
 
@@ -838,7 +786,7 @@ contains
                if (node_area(i) > 0) then
                   eta2(i) = node_ze(i)/node_area(i)
                else
-                  eta2(i) = 0
+                  eta2(i) = 0.d0
                end if
                etamax(i) = max(etamax(i), eta2(i))
             end do
@@ -849,12 +797,12 @@ contains
 !! Convert nodal `UU2`,`VV2` into DG modal representation
 !!`U_modal`, `V_modal`
 
-            use global, only: UU2, VV2, ETA2, ETA1, UU1, VV1
-            use mesh, only: NM, DP
+            use global, only: UU2, VV2
+            use mesh, only: NM
             use sizes, only: MNE
             implicit none
 
-            integer :: N1, N2, N3, J, I, L
+            integer :: N1, N2, N3, J
             real(8) :: u1, u2, u3, v1, v2, v3
 
             do J = 1, MNE
@@ -904,7 +852,7 @@ contains
             logical, intent(in) :: forceFlag
 
             ! Local vars
-            integer(sz) :: NCYC, NBDI, J, I, n1, n2, n3, L, LED, GED
+            integer :: NCYC, NBDI, J, I, n1, n2, n3, L, LED, GED
             real(sz) :: ARG, ARGJ, RFF
 
 !.....If we have fort.19
@@ -932,12 +880,12 @@ contains
 
                !Compute the elevation-specified values at timeh
                do J = 1, NBFR
-                  if (PER(J) == 0.) then
+                  if (abs(PER(J)) <= 1d-15) then
                      NCYC = 0
                   else
                      NCYC = int(timeh/PER(J))
                   end if
-                  ARGJ = AMIG(J)*(timeh - NCYC*PER(J)) + FACE(J)
+                  ARGJ = AMIG(J)*(timeh - real(NCYC,8)*PER(J)) + FACE(J)
                   RFF = FF(J)*RampElev
                   do I = 1, NETA
                      ARG = ARGJ - EFA(J, I)
@@ -986,7 +934,6 @@ contains
 !! quadrature point is negative, in which case stop the program.
 
             use sizes, only: MNE
-            use global, only: NOFF
             implicit none
 
             integer, intent(in) :: it
@@ -1024,33 +971,19 @@ contains
 !! Loop through internal edges and check if the depth at any EDGE
 !! quadrature point is negative, in which case stop the program.
 
-            use GLOBAL, only: uu1, vv1, uu2, vv2
-            use NodalAttributes, only: ESLM
-            use sizes, only: myproc
-
             implicit none
 
             integer, intent(in), value :: it
-            real(sz) :: gravity, depth_in, depth_ex
-            real(sz) :: ze_ex, hb_ex, sfac_ex, ze_in, qx_ex, qy_ex
-            real(sz) :: sfac_in, hb_in, qy_in, qx_in, nx, ny
+            real(sz) :: depth_in, depth_ex
+            real(sz) :: ze_ex, hb_ex, sfac_ex, ze_in
+            real(sz) :: sfac_in, hb_in
             !real(sz) q_n_ext,q_t_ext,q_n_int,q_t_int
-            integer :: el_in, el_ex, el
-            integer :: n1, n2
-            real(sz) :: U_EDGE, V_EDGE, f_hat
+            integer :: el_in, el_ex
 ! function
             !real(sz) llf_flux_coupling
 
-            integer :: L, LED_IN, LED_EX, GED, GP_IN, GP_EX, k, i, ll
+            integer :: L, LED_IN, LED_EX, GED, GP_IN, GP_EX, k, i
             !REAL(SZ), PARAMETER :: ZERO = 1.D-12
-            real(SZ) :: TX, TY, W_IN, W_EX
-            real(SZ) :: LZ_XX_IN, LZ_XY_IN, LZ_YX_IN, LZ_YY_IN
-            real(SZ) :: LZ_XX_EX, LZ_XY_EX, LZ_YX_EX, LZ_YY_EX
-            real(SZ) :: HZ_X_EX, HZ_Y_EX, HZ_X_IN, HZ_Y_IN
-            real(SZ) :: TZ_X_EX, TZ_Y_EX, TZ_X_IN, TZ_Y_IN
-            real(SZ) :: EDFAC_IN, EDFAC_EX, DEN
-            real(SZ) :: XLEN_EL_IN, XLEN_EL_EX
-            real(SZ) :: MASS_EL_IN, MASS_EL_EX
 
             do L = 1, NIEDS
 
@@ -1076,8 +1009,8 @@ contains
                   HB_EX = BATHED(GP_EX, LED_EX, EL_EX, pa)
                   SFAC_EX = SFACED(GP_EX, LED_EX, EL_EX, pa)
 
-                  ZE_IN = 0.
-                  ZE_EX = 0.
+                  ZE_IN = 0D0
+                  ZE_EX = 0D0
 
                   do K = 1, 3
                      ZE_IN = ZE_IN + ZE(K, EL_IN, 1)*PHI_EDGE(K, GP_IN, LED_IN, pa)
@@ -1103,7 +1036,7 @@ contains
 !! Enforce ZE to have positive depth using the algorithm in
 !! Shintaro's 2008 paper. There, it is referred to as the operator \(M\Pi_h\).
 
-            use global, only: NOFF, nodecode, uu1, vv1, uu2, vv2
+            use global, only: NOFF, nodecode, uu1, vv1
             use global, only: H0
             use mesh, only: NM, DP
             use sizes, only: MNE
@@ -1139,8 +1072,8 @@ contains
                   ze_hat(:) = H0 - DP(nm(j, :))
                   NOFF(j) = 0
                   nodecode(NM(j, :)) = 0
-                  UU1(NM(j, :)) = 0
-                  VV1(NM(j, :)) = 0
+                  UU1(NM(j, :)) = 0.d0
+                  VV1(NM(j, :)) = 0.d0
                elseif (depth_avg <= H1) then
 ! If mean value is less than H1, then set the whole element to that depth
                   ze_hat(:) = depth_avg - DP(nm(j, :))
@@ -1148,8 +1081,8 @@ contains
                   !ze_hat(:) = H0*1.1 - DP(nm(j,:))
                   NOFF(j) = 0
                   nodecode(NM(j, :)) = 0
-                  UU1(NM(j, :)) = 0
-                  VV1(NM(j, :)) = 0
+                  UU1(NM(j, :)) = 0.d0
+                  VV1(NM(j, :)) = 0.d0
                else
                   call sort(3, depth, inds)
                   m1 = inds(1)
@@ -1157,12 +1090,12 @@ contains
                   m3 = inds(3)
                   ze_hat(m1) = H1 - DP(nm(j, m1))
 
-                  ze_hat(m2) = max(H1, depth(2) - 0.5*(H1 - depth(1))) - DP(nm(j, m2))
+                  ze_hat(m2) = max(H1, depth(2) - 0.5d0*(H1 - depth(1))) - DP(nm(j, m2))
                   depth2 = ze_hat(m2) + dp(nm(j, m2))
 
                   ze_hat(m3) = depth(3) - (H1 - depth(1)) - (depth2 - depth(2)) - DP(nm(j, m3))
-                  UU1(NM(j, :)) = 0
-                  VV1(NM(j, :)) = 0
+                  UU1(NM(j, :)) = 0.d0
+                  VV1(NM(j, :)) = 0.d0
                end if
 
 ! Reproject vertex values into DG modes
@@ -1196,7 +1129,7 @@ contains
                end do
 
                do i = 1, 3
-                  if (abs(vertex(i) - dps(i)) > 1e-8) then
+                  if (abs(vertex(i) - dps(i)) > 1d-8) then
                      print *, 'Bathymetry not matching at element, vertex ', J, i
                      print *, 'hb, dp = ', vertex(i), dps(i)
                      print *, 'at time step ', it
@@ -1258,9 +1191,8 @@ contains
             real(sz), intent(in), value :: U_IN, V_IN, U_EX, V_EX, NX, NY, SFAC_IN, SFAC_EX
 
 !.....Declare local variables
-            integer :: II, l
             real(SZ) :: EIGVALS(6), EIGMAX, JUMP, HT_IN, HT_EX, QX_IN, QY_IN, QX_EX, QY_EX
-            real(SZ) :: C_EX, C_IN, F1_NL, FY1_IN, FY1_EX, FX1_IN, FX1_EX, F1_AVG, UN
+            real(SZ) :: C_EX, C_IN, F1_NL, FY1_IN, FY1_EX, FX1_IN, FX1_EX, F1_AVG
             real(sz) :: Un_in, Un_ex
 
 !.....Compute the jump in the variables.
@@ -1317,7 +1249,6 @@ contains
 
             llf_flux = F1_AVG - 0.5d0*EIGMAX*(JUMP)
 
-            if (llf_flux /= llf_flux) llf_flux = 0.0
 
          end function llf_flux
 

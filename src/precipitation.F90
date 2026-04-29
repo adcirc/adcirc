@@ -47,16 +47,16 @@ contains
          SOURCE_R1 = 0.d0
       elseif (model_type == 1) then
          ! 1 inch rain / hour in m/s
-         SOURCE_R1 = 7.0556e-6
+         SOURCE_R1 = 7.0556d-6
       else
          N1 = NM(I, 1)
          N2 = NM(I, 2)
          N3 = NM(I, 3)
-         SOURCE_R1 = 1.0/3.0*(PREC2(N1) + PREC2(N2) + PREC2(N3))
+         SOURCE_R1 = 1.d0/3.d0*(PREC2(N1) + PREC2(N2) + PREC2(N3))
       end if
 
-      if (SOURCE_R1 < 0.0) then
-         SOURCE_R1 = 0.0
+      if (SOURCE_R1 < 0.d0) then
+         SOURCE_R1 = 0.d0
       end if
    end function elem_rain
 
@@ -66,18 +66,19 @@ contains
       real(sz), intent(in) :: dist, Pn, Pc
       real(sz), intent(in) :: LatestRmax
 
+      TRR = 0.d0
       if (dist <= LatestRmax) then
-         TRR = ((1.14) + (0.12*(Pn - Pc)))
+         TRR = ((1.14d0) + (0.12d0*(Pn - Pc)))
       elseif (dist > LatestRmax) then
-         if (dist < 500) then
-            TRR = 1.14 + 0.12*(Pn - Pc)*(exp(-0.3*((dist - LatestRmax)/LatestRmax)))
-         elseif (dist > 500) then
-            TRR = 0
+         if (dist < 500.d0) then
+            TRR = 1.14d0 + 0.12d0*(Pn - Pc)*(exp(-0.3d0*((dist - LatestRmax)/LatestRmax)))
+         elseif (dist > 500d0) then
+            TRR = 0d0
          end if
       end if
 
       ! Convert mm/hr to m/s
-      TRR = TRR*1e-3/3600.0
+      TRR = TRR*1.d-3/3600.d0
    end function computeTRR_IPET
 
    pure function computeTRR_RCLIPER(dist, Vmax) result(TRR)
@@ -96,25 +97,24 @@ contains
       real(sz) :: rm
       real(sz) :: re
 
-      a1 = -1.10 !inches/day
+      a1 = -1.1d0 !inches/day
       a2 = -1.6d0 !inches/day
       a3 = 64.5d0 !kilometers
-      a4 = 150.0 !kilometers
+      a4 = 150.d0 !kilometers
       b1 = 3.96d0 !inches/day
-      b2 = 4.80 !inches/day
-      b3 = -13.0 !kilometers
-      b4 = -16.0 !kilometers
+      b2 = 4.8d0 !inches/day
+      b3 = -13.d0 !kilometers
+      b4 = -16.d0 !kilometers
 
       ! Equations
-      NMW = (1.0 + ((Vmax - 35.0)/33.0)) !normalized maximum wind
+      NMW = (1.d0 + ((Vmax - 35.d0)/33.d0)) !normalized maximum wind
       T0 = a1 + (b1*NMW) ! rain rate at TC center r=0
       Tm = a2 + (b2*NMW) !maximum rain rate
       rm = a3 + (b3*NMW) !radius from the center at which maximum rain rate occurs
       re = a4 + (b4*NMW) ! curve fit parameter; specifies end behavior of rainfall rate curves
       ! Compute TRR
-      if (dist >= 500) then
-         TRR = 0.0
-      elseif (dist < 500) then
+      TRR = 0.d0
+      if (dist < 500.d0) then
          if (dist < rm) then
             TRR = T0 + (Tm - T0)*(dist/rm) ! TRR is rain rate in inches/day
          elseif (dist >= rm) then
@@ -123,7 +123,7 @@ contains
       end if
 
       !convert inches/day-> m/sec
-      TRR = TRR/3401568.0
+      TRR = TRR/3401568.d0
 
    end function computeTRR_RCLIPER
 
@@ -141,9 +141,9 @@ contains
       dy = deg2rad*Rearth*(lat - cLat)
       dist = sqrt(dx*dx + dy*dy)
 
-      dist = dist/1000.0 ! convert to km
+      dist = dist/1000.d0 ! convert to km
 
-      LatestRmax = rmx*1.852 ! Assign the latest value of rmx to LatestRmax
+      LatestRmax = rmx*1.852d0 ! Assign the latest value of rmx to LatestRmax
 
       select case (model_type)
       case (3) ! Use RCLIPER

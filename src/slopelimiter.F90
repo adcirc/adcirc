@@ -38,23 +38,18 @@ contains
 !.....Declare local variables
 
       integer, parameter :: blocksize = 8
-      integer :: numblocks, offset, block_start, block_end
-      integer :: L, LL, INC1, INC2, INC3, NN, IVAR, I, J, jj, kk, k, varnum, bb, varnum_prev
+      integer ::  block_start, block_end
+      integer ::  LL, INC1, INC2, INC3,  I, J, jj, kk, k, bb
 
       real(SZ), dimension(blocksize, 3) :: ZEC, ZEVERTEX, DIF
       real(SZ), dimension(blocksize) :: SUMLOC, SUMDIF, SIGNDIF
       integer, dimension(blocksize) :: KDP
-      real(SZ), dimension(blocksize, 3) :: zemin1, zemax1, qxmin1, qxmax1, qymin1, qymax1
+      real(SZ), dimension(blocksize, 3) :: zemin1, zemax1
 
       real(sz) :: REDFAC(blocksize), REDMAX(blocksize), bound, div(blocksize)
-      real(sz) :: ze_dg(MNEI), qx_dg(MNEI), qy_dg(MNEI)
+      real(sz) :: ze_dg(MNEI)
       real(SZ), allocatable :: ZE_MIN1(:), ZE_MAX1(:), QX_MIN1(:), QX_MAX1(:)
       real(SZ), allocatable :: QY_MIN1(:), QY_MAX1(:)
-      real(SZ), allocatable :: iota_MIN1(:), iota_MAX1(:)
-      real(SZ), allocatable :: iota2_MIN1(:), iota2_MAX1(:)
-      real(SZ), allocatable, target :: bed_min1(:, :), bed_max1(:, :)
-      real(SZ), pointer:: arraymin(:), arraymax(:)
-      real(sz) :: ZE_NBOR
       integer :: N1, N2, N3, NO_NBORS, NBOR_EL
 
       allocate (ZE_MIN1(NP), ZE_MAX1(NP), QX_MIN1(NP))
@@ -62,15 +57,15 @@ contains
 !     FIND THE MAXIMUM AND MINIMUM OF EACH VARIABLE OVER ALL ELEMENTS
 !     SHARING A NODE
 
-      bound = 1.0e-5
+      bound = 1.0d-5
 
       do I = 1, NP
-         ZE_MIN1(I) = 99999.
-         ZE_MAX1(I) = -99999.
-         QX_MIN1(I) = 99999.
-         QX_MAX1(I) = -99999.
-         QY_MIN1(I) = 99999.
-         QY_MAX1(I) = -99999.
+         ZE_MIN1(I) = 99999.d0
+         ZE_MAX1(I) = -99999.d0
+         QX_MIN1(I) = 99999.d0
+         QX_MAX1(I) = -99999.d0
+         QY_MIN1(I) = 99999.d0
+         QY_MAX1(I) = -99999.d0
 
          NO_NBORS = EL_COUNT(I)
 

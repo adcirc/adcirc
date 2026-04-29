@@ -56,54 +56,30 @@ MODULE DG
    integer :: NEGP(8)
   !! `NEGP(i)` = number of edge quadrature points for dofh = i
 
-   INTEGER, TARGET :: DGFLAG, DGHOT, DGHOTSPOOL
    INTEGER :: DOF, dofl, dofx
    INTEGER :: EL
-   INTEGER, TARGET :: MNES, artdif, tune_by_hand
-   INTEGER :: J1, J2, J3, negp_fixed, nagp_fixed
+   INTEGER :: J1, J2, J3 
    INTEGER :: NCHECK(8), NEDGES, NRK !42 hardwires for ph=7
    INTEGER :: NIEDS, NLEDS, NEEDS, NFEDS, NREDS, NEBEDS, NIBEDS
    INTEGER :: NIBSEG, NEBSEG
-   INTEGER :: MNED, MNLED, MNSED, MNRAED, MNRIED
+   INTEGER :: MNED
    INTEGER, TARGET :: MODAL_IC
-   INTEGER :: P_READ, P_READ2
    INTEGER, TARGET :: SLOPEFLAG
-   INTEGER :: test_el
    INTEGER, TARGET :: FLUXTYPE
    INTEGER, TARGET :: RK_STAGE, RK_ORDER
-   Integer, TARGET :: padapt, pflag, pl, ph, px, lebesgueP, gflag
+   Integer, TARGET :: padapt, pl, ph, px
    INTEGER :: pa
-   logical :: init_parser, stblzr
    !
-   integer :: iwrite
    integer :: layers
 
    !.....Declare real variables
 
    REAL(SZ) :: C13, C16
-   REAL(SZ), TARGET :: diorism, porosity, SEVDM
-   REAL(SZ) :: DOT, DHB_X, DHB_Y, DPHIDX, DPHIDY
-   Real(SZ), TARGET :: slimit, plimit, pflag2con1, pflag2con2
-   REAL(SZ) :: EFA_GP, EMO_GP, slimit1, slimit2, slimit3
-   REAL(SZ) :: EL_ANG, slimit4, bg_dif, trc_dif, slimit5
-   REAL(SZ) :: FG_L, l2er_global, temperg
-   REAL(SZ), TARGET :: slope_weight
-   REAL(SZ) :: HB_IN, HB_EX, H_TRI
+   REAL(SZ) :: DOT, DPHIDX, DPHIDY
+   REAL(SZ) :: EL_ANG
+   REAL(SZ) :: FG_L
    REAL(SZ) :: MAG1, MAG2
-   REAL(SZ) :: NX, NY
-   REAL(SZ), TARGET :: kappa, s0, uniform_dif
-   REAL(SZ) :: SFAC_IN, SFAC_EX
-   REAL(SZ) :: S1, S2, SAV, SOURCE_X, SOURCE_Y
-   REAL(SZ) :: TIMEH_DG, TK
-   REAL(SZ) :: QX_EX, QX_IN, QY_EX, QY_IN
-   REAL(SZ) :: QNAM_GP, QNPH_GP
-   REAL(SZ) :: SL2_M, SL2_NYU
-   REAL(SZ) :: SL3_MD, EVMAvg, SEVDMAvg
-   REAL(SZ) :: UMAG
-   REAL(SZ) :: WSX_GP, WSY_GP
-   REAL(SZ) :: ZE_EX, ZE_IN, QMag_IN, QMag_EX
-   Real(SZ) :: subphi_IN, subphi_EX
-   Real(SZ) :: iota_EX, iota_IN, iota2_EX, iota2_IN
+   REAL(SZ) :: S1, S2, SAV
 
    REAL(SZ), ALLOCATABLE :: ATVD(:, :), BTVD(:, :), CTVD(:, :)
    REAL(SZ), ALLOCATABLE :: DTVD(:), MAX_BOA_DT(:)
@@ -119,12 +95,6 @@ MODULE DG
 
    !Declare some stuff for function parsing for bed load
 
-   CHARACTER(LEN=*), DIMENSION(4), PARAMETER :: varx = ['ZE_ROE ', &
-                                                        'QX_ROE ', 'QY_ROE ', 'bed_ROE']
-   CHARACTER(LEN=*), DIMENSION(4), PARAMETER :: vary = ['ZE_ROE ', &
-                                                        'QX_ROE ', 'QY_ROE ', 'bed_ROE']
-   CHARACTER(LEN=200) :: funcx(4), funcy(4)
-   Real(sz)  :: valx(4), valy(4)
 
    !.....Declare real variable arrays
 
@@ -146,10 +116,6 @@ MODULE DG
 
    !.....Declare allocatable real arrays
 
-   Real(SZ), Allocatable :: RKC_T(:), RKC_U(:), RKC_Tprime(:)
-   Real(SZ), Allocatable :: RKC_Tdprime(:), RKC_a(:), RKC_b(:), RKC_c(:)
-   Real(SZ), Allocatable :: RKC_mu(:), RKC_tildemu(:), RKC_nu(:), &
-                            RKC_gamma(:)
    REAL(SZ), ALLOCATABLE :: BATH(:, :, :), DBATHDX(:, :, :), DBATHDY(:, :, :)
    REAL(SZ), ALLOCATABLE :: SFAC_ELEM(:, :, :)
    REAL(SZ), ALLOCATABLE :: BATHED(:, :, :, :), SFACED(:, :, :, :)
@@ -158,36 +124,22 @@ MODULE DG
    REAL(SZ), ALLOCATABLE :: DP_VOL(:, :)
    REAL(SZ), ALLOCATABLE :: DRPHI(:, :, :), DSPHI(:, :, :)
    REAL(SZ), ALLOCATABLE :: DRDX(:), DSDX(:), DRDY(:), DSDY(:)
-   REAL(SZ), ALLOCATABLE :: DXPHI2(:, :, :), DYPHI2(:, :, :), PHI2(:, :, :)
    REAL(SZ), ALLOCATABLE :: EFA_DG(:, :, :), EMO_DG(:, :, :)
    REAL(SZ), ALLOCATABLE :: UFA_DG(:, :, :), UMO_DG(:, :, :)
    REAL(SZ), ALLOCATABLE :: VFA_DG(:, :, :), VMO_DG(:, :, :)
    REAL(SZ), ALLOCATABLE :: XLEN(:)
    REAL(SZ), ALLOCATABLE :: HB(:, :, :)
    REAL(SZ), ALLOCATABLE :: MANN(:, :)
-   REAL(SZ), ALLOCATABLE :: IBHT(:), EBHT(:)
-   REAL(SZ), ALLOCATABLE :: EBCFSP(:), IBCFSP(:), IBCFSB(:)
-   REAL(SZ), ALLOCATABLE :: JACOBI(:, :, :, :)
-   REAL(SZ), ALLOCATABLE :: M_INV(:, :), phi_edge_fixed(:, :, :)
+   REAL(SZ), ALLOCATABLE :: M_INV(:, :)
    REAL(SZ), ALLOCATABLE :: PHI_AREA(:, :, :), PHI_EDGE(:, :, :, :)
    REAL(SZ), ALLOCATABLE :: PHI_CENTER(:, :), PHI_CORNER(:, :, :)
    REAL(SZ), ALLOCATABLE :: PHI_CHECK(:, :, :)
-   REAL(SZ), ALLOCATABLE :: PHI_CORNER1(:, :, :, :)
    REAL(SZ), ALLOCATABLE :: PHI_MID(:, :, :)
    REAL(SZ), ALLOCATABLE :: PHI_INTEGRATED(:, :)
    REAL(SZ), ALLOCATABLE :: PSI_CHECK(:, :)
    REAL(SZ), ALLOCATABLE :: PSI1(:, :), PSI2(:, :), PSI3(:, :)
    REAL(SZ), ALLOCATABLE :: Q_HAT(:)
    REAL(SZ), ALLOCATABLE :: QIB(:)
-   REAL(SZ), ALLOCATABLE, TARGET :: ZE0(:, :)
-  !! DG elevation at previous timestep
-   Real(SZ), ALLOCATABLE, target:: bed(:, :, :, :)
-   Real(SZ), Allocatable :: dynP(:, :, :), dynP_MAX(:), dynP_MIN(:)
-   Real(SZ), Allocatable :: iota(:, :, :), iotaa(:, :, :), iota2(:, :, :)
-   Real(SZ), Allocatable :: iota_MAX(:), iota_MIN(:), iotaa2(:, :, :), &
-                            iotaa3(:, :, :)
-   Real(SZ), Allocatable :: iota2_MAX(:), iota2_MIN(:)
-   Real(SZ), pointer :: arrayfix(:, :, :)
    REAL(SZ), ALLOCATABLE :: CORI_EL(:), FRIC_EL(:)
    REAL(SZ), ALLOCATABLE :: ZE_MAX(:), ZE_MIN(:), DPE_MIN(:)
    REAL(SZ), ALLOCATABLE :: WATER_DEPTH_OLD(:, :), WATER_DEPTH(:, :)
@@ -197,12 +149,8 @@ MODULE DG
    Real(SZ), Allocatable :: HZ(:, :, :, :), TZ(:, :, :, :)
    REAL(SZ), ALLOCATABLE :: QNAM_DG(:, :, :), QNPH_DG(:, :, :)
    REAL(SZ), ALLOCATABLE :: RHS_ZE(:, :, :), RHS_bed(:, :, :, :)
-   Real(SZ), Allocatable :: RHS_iota(:, :, :), RHS_iota2(:, :, :), &
-                            RHS_dynP(:, :, :)
-   Real(SZ), Allocatable :: RHS_bed_IN(:, :), RHS_bed_EX(:, :), &
-                            bed_HAT_O(:)
    REAL(SZ), ALLOCATABLE :: XAGP(:, :), YAGP(:, :), WAGP(:, :)
-   REAL(SZ), ALLOCATABLE :: XEGP(:, :), YEGP(:, :), WEGP(:, :)
+   REAL(SZ), ALLOCATABLE :: XEGP(:, :),  WEGP(:, :)
    REAL(SZ), ALLOCATABLE :: SL3(:, :)
    REAL(SZ), ALLOCATABLE :: XBC(:), YBC(:)
    REAL(SZ), ALLOCATABLE :: XFAC(:, :, :, :), YFAC(:, :, :, :), &
@@ -210,11 +158,9 @@ MODULE DG
    REAL(SZ), ALLOCATABLE :: EDGEQ(:, :, :, :)
    REAL(SZ), ALLOCATABLE :: PHI(:), DPHIDZ1(:), DPHIDZ2(:)
    REAL(SZ), ALLOCATABLE :: PHI_STAE(:, :), PHI_STAV(:, :)
-   Real(SZ), Allocatable :: bed_IN(:), bed_EX(:), bed_HAT(:)
 
    !.....These (below) are defined in prep_slopelim.F
 
-   Integer :: lim_count, lim_count_roll
    Integer, Allocatable :: fact(:), focal_neigh(:, :), focal_up(:), bi(:), &
                            bj(:)
    Real(SZ), Allocatable :: XBCb(:), YBCb(:), xi1(:, :), xi2(:, :)
@@ -238,23 +184,17 @@ MODULE DG
    Real(SZ), Allocatable :: iota2min(:, :), iota2max(:, :)
 
    ! namo - for ADCIRC -----------------------------------------------
-   logical, allocatable :: landElements(:)
 
    real(sz), allocatable :: slopeCG(:), slopeDG(:)
-   LOGICAL :: use_P0
 
    real(sz) :: G2ROOT
 
    REAL(SZ) :: etiminc_dg
 
-   ! time step counter for normal flux
-   REAL(SZ) :: QTIME1_DG, QTIME2_DG
 
    ! constant velocity in DG RK stages
    LOGICAL :: CONSTVEL
 
-   ! counter for output
-   INTEGER :: COUNTER = 0
 
    ! sediment flag
    INTEGER :: SEDFLAG
@@ -268,14 +208,12 @@ MODULE DG
    ! initialized in prep_DG.F
    INTEGER, ALLOCATABLE :: EL_COUNT(:)
 
-   ! initialized in prep_DG.F
-   integer :: maxel ! - this is the same as mnei in mesh.F
 
    ! initialized in hstart.F
    REAL(SZ), ALLOCATABLE ::   DP0(:)
 
    ! initialized in write_results.F (temp variable?)
-   real(sz), allocatable :: DPe(:) !,STARTDRY(:)
+   real(sz), allocatable :: DPe(:)
 
    ! init in prep_DG.F
    real(sz) :: qtratio
@@ -288,7 +226,8 @@ MODULE DG
    !INTEGER,ALLOCATABLE ::    SEGTYPE(:)
 
    ! initialized in prep_DG.F
-   REAL(SZ), ALLOCATABLE :: ANGTAB(:, :), CENTAB(:, :), ELETAB(:, :)
+   REAL(SZ), ALLOCATABLE :: ANGTAB(:, :), CENTAB(:, :)
+   integer, allocatable :: ELETAB(:, :)
    !INTEGER,ALLOCATABLE ::    NEITAB(:,:), neigh_elem(:,:)
 
    ! initialized in read_input.F
@@ -331,27 +270,24 @@ MODULE DG
 
    real(sz), allocatable :: dg_ang(:), dp_dg(:)
 
-   INTEGER, TARGET :: DGSWE
-   INTEGER :: EL_IN, EL_EX, SD_IN, SD_EX, EDGE(3)
-   INTEGER :: SIDE(2), TESTPROBLEM
-   REAL(SZ) :: FX_IN, FY_IN, GX_IN, GY_IN, HX_IN, HY_IN
-   REAL(SZ) :: FX_EX, FY_EX, GX_EX, GY_EX, HX_EX, HY_EX
-   REAL(SZ) :: F_AVG, G_AVG, H_AVG, JUMP(4), HT_IN, HT_EX
-   REAL(SZ) :: C_ROE, U_ROE, V_ROE, EIGVAL(4), RI(4, 4), LE(4, 4), A_ROE(4, 4)
-   Real(SZ) :: UMag_IN, UMag_EX, ZE_ROE, QX_ROE, QY_ROE, bed_ROE
-   REAL(SZ) :: Q_N, Q_T, U_N, U_T, U_IN, U_EX, V_IN, V_EX
-   REAL(SZ) :: ZE_SUM, QX_SUM, QY_SUM, DG_MAX, DG_MIN, U_N_EXT, U_T_EXT
-   REAL(SZ) :: Q_N_INT, Q_T_INT, U_N_INT, U_T_INT, Q_N_EXT, Q_T_EXT
+   ! REAL(SZ) :: FX_IN, FY_IN, GX_IN, GY_IN, HX_IN, HY_IN
+   ! REAL(SZ) :: FX_EX, FY_EX, GX_EX, GY_EX, HX_EX, HY_EX
+   ! REAL(SZ) :: F_AVG, G_AVG, H_AVG, JUMP(4), HT_IN, HT_EX
+   !REAL(SZ) :: C_ROE, U_ROE,  EIGVAL(4), RI(4, 4), LE(4, 4), A_ROE(4, 4)
+   ! Real(SZ) :: UMag_IN, UMag_EX, QX_ROE, QY_ROE, bed_ROE
+   ! REAL(SZ) :: Q_N, Q_T, U_N, U_T, U_IN, U_EX, V_IN, V_EX
+   ! REAL(SZ) ::  QX_SUM, QY_SUM, DG_MAX, DG_MIN, U_N_EXT, U_T_EXT
+   ! REAL(SZ) :: Q_N_INT, Q_T_INT, U_N_INT, U_T_INT, Q_N_EXT, Q_T_EXT
 
-   REAL(SZ) :: BX_INT, BY_INT, SOURCE_1, SOURCE_2, SOURCE_SUM, k_hat
-   REAL(SZ) :: FRIC_AVG, DP_MID, F_HAT, G_HAT, H_HAT, i_hat, j_hat
-   REAL(SZ) :: INFLOW_ZE, INFLOW_QX, INFLOW_QY, H_LEN, INFLOW_LEN
-   REAL(SZ) :: ZE_NORM, QX_NORM, QY_NORM, ZE_DECT, QX_DECT, QY_DECT
-   REAL(SZ), ALLOCATABLE :: FX_MID(:, :), GX_MID(:, :), HX_MID(:, :)
-   REAL(SZ), ALLOCATABLE :: FY_MID(:, :), GY_MID(:, :), HY_MID(:, :)
-   REAL(SZ), ALLOCATABLE :: ZE_C(:), QX_C(:), QY_C(:), dynP_DG(:)
-   REAL(SZ), Allocatable :: iota2_DG(:), iota_DG(:), iotaa_DG(:)
-   REAL(SZ), Allocatable :: bed_DG(:, :), bed_N_int(:), bed_N_ext(:)
+   ! REAL(SZ) :: BX_INT, BY_INT, SOURCE_1, SOURCE_2, SOURCE_SUM, k_hat
+   ! REAL(SZ) :: FRIC_AVG, DP_MID, F_HAT, G_HAT, H_HAT, i_hat, j_hat
+   ! REAL(SZ) :: INFLOW_ZE, INFLOW_QX, INFLOW_QY, H_LEN, INFLOW_LEN
+   ! REAL(SZ) :: QX_NORM, QY_NORM, QX_DECT, QY_DECT
+   ! REAL(SZ), ALLOCATABLE :: FX_MID(:, :), GX_MID(:, :), HX_MID(:, :)
+   ! REAL(SZ), ALLOCATABLE :: FY_MID(:, :), GY_MID(:, :), HY_MID(:, :)
+   ! REAL(SZ), ALLOCATABLE :: QX_C(:), QY_C(:), dynP_DG(:)
+   ! REAL(SZ), Allocatable :: iota2_DG(:), iota_DG(:), iotaa_DG(:)
+   ! REAL(SZ), Allocatable :: bed_DG(:, :), bed_N_int(:), bed_N_ext(:)
 
    ! init in read_input.F
 
@@ -365,7 +301,7 @@ CONTAINS
       ALLOCATE (UMO(MNBFR, MNETA), UFA(MNBFR, MNETA))
       ALLOCATE (VMO(MNBFR, MNETA), VFA(MNBFR, MNETA))
       !ALLOCATE ( EL_COUNT(MNP) )
-      ALLOCATE (DP0(MNP), DPe(MNE)) !,STARTDRY(MNP))
+      ALLOCATE (DP0(MNP), DPe(MNE))
       !ALLOCATE ( NNOEL(MNP,mnei),CENTAB(MNP,mnei+1) )
       !ALLOCATE (ELETAB(MNP,mnei+1),ANGTAB(MNP,mnei+1))
       ALLOCATE (YDUB(36, MNE, 8))
@@ -386,21 +322,11 @@ CONTAINS
      integer, intent(in) :: maxel
       ALLOCATE (DP_DG(MAXEL), DG_ANG(MAXEL))
       ALLOCATE (NNOEL(MNP, MAXEL), CENTAB(MNP, MAXEL + 1))
-      ALLOCATE (ELETAB(MNP, MAXEL + 1), ANGTAB(MNP, MAXEL + 1), dynP_DG(MAXEL))
-      Allocate (iota2_DG(MAXEL), iota_DG(MAXEL), iotaa_DG(MAXEL))
-      Allocate (bed_DG(MAXEL, layers), bed_N_int(layers), bed_N_ext(layers))
+      ALLOCATE (ELETAB(MNP, MAXEL + 1), ANGTAB(MNP, MAXEL + 1))
    end subroutine ALLOC_NNOEL2
 
    !.....Set edge array sizes
 
-   ! namo - this is called in read_input.F; the rest of alloc functions
-   ! are done in prep_DG.F, so no problem there
-   SUBROUTINE ALLOC_EDGES0()
-      ALLOCATE (IBHT(3*MNE), EBHT(3*MNE))
-      ALLOCATE (EBCFSP(3*MNE), IBCFSP(3*MNE), IBCFSB(3*MNE))
-      ALLOCATE (BACKNODES(2, 3*MNE))
-      RETURN
-   end subroutine ALLOC_EDGES0
 
    SUBROUTINE ALLOC_EDGES1()
       ALLOCATE (NEDNO(2, MNED), NEDEL(2, MNED), NEDSD(2, MNED))
@@ -440,21 +366,13 @@ CONTAINS
       ALLOCATE (U_modal(DOFH, MNE), V_modal(DOFH, MNE))
       ALLOCATE (ZE(DOFH, MNE, NRK + 2))
       allocate (slopeDG(MNE), slopeCG(MNE))
-      Allocate (iota(DOFH, MNE, NRK + 2), iota2(DOFH, MNE, NRK + 2))
-      Allocate (dynP(DOFH, MNE, NRK + 2))
-      Allocate (iotaa(DOFH, MNE, NRK + 2), iotaa2(DOFH, MNE, NRK + 2))
-      Allocate (iotaa3(DOFH, MNE, NRK + 2))
       !sb-20060711 For wet/dry
       ALLOCATE (ZE_MAX(MNE), ZE_MIN(MNE), DPE_MIN(MNE))
-      Allocate (iota_MAX(MNE), iota_MIN(MNE), iota2_MAX(MNE), &
-                iota2_MIN(MNE))
-      Allocate (dynP_MAX(MNE), dynP_MIN(MNE))
       ALLOCATE (WATER_DEPTH(MNE, 3), WATER_DEPTH_OLD(MNE, 3))
       ALLOCATE (ADVECTQX(MNE), ADVECTQY(MNE), &
                 SOURCEQX(MNE), SOURCEQY(MNE))
       ALLOCATE (MARK(MNE))
       !em-2012 for sediment
-      Allocate (bed_IN(layers), bed_EX(layers), bed_HAT(layers))
 
       !--
       !sb-20070101
@@ -472,14 +390,6 @@ CONTAINS
 
    !.....Set sizes for arrays used in orthobasis
 
-   SUBROUTINE ALLOC_JACOBI()
-      ALLOCATE (JACOBI(ph + 1, 2*ph + 3, 2, NAGP(ph) + 1))
-      ALLOCATE (DXPHI2(ph + 1, ph + 1, NAGP(ph) + 1), DYPHI2(ph + 1, ph + 1, &
-                                                             NAGP(ph) + 1))
-      ALLOCATE (PHI2(ph + 1, ph + 1, NAGP(ph) + 1))
-      ALLOCATE (PHI_CORNER1(ph + 1, ph + 1, 3, ph))
-      RETURN
-   end subroutine ALLOC_JACOBI
 
    !.....Set sizes for arrays for area integrals
 
@@ -577,10 +487,10 @@ CONTAINS
 
       use adc_constants, only: G, rad2deg
       use sizes, only: myproc, mnffr
-      USE GLOBAL, only: ftiminc, eta2, uu2, vv2, efa, emo, noff, &
-                        qnin1, qnam, qnph, qnin2, qtime1, h0, ifwind, ifnlcat, ifnlct, nbfr, nffr, &
-                        nstae, nstav, corif, xel, xev, yel, yev, nne, nnv, eta1, uu1, vv1, peta1, peta2, &
-                        IM, nolica, nolicat, nolifa, ihot
+      USE GLOBAL, only: ftiminc, eta2, efa, emo, noff, &
+                        qnin1, qnam, qnph, qnin2, qtime1, h0, ifwind, nbfr, nffr, &
+                        nstae, nstav, corif, xel, xev, yel, yev, nne, nnv,  peta1, peta2, &
+                        IM, nolica, nolicat, nolifa, ihot, statim
       USE wetdry, only: computeWettingAndDrying
       USE NodalAttributes, ONLY: STARTDRY, FRIC, GeoidOffset, &
                                  LoadGeoidOffset, LoadManningsN, ManningsN
@@ -588,8 +498,8 @@ CONTAINS
       use MESSENGER_ELEM, only: msg_table_elem, message_start_elem
 #endif
       use BOUNDARIES, only: NOPE, NVDLL, nvell, nbou, nvel, ibtype_orig, lbcodei
-      use mesh, only: NE, NM, neitab, neitabele, nneigh, ics, sfea, sfea0, slam, &
-                      slam0, X, Y, areas, DP, SFAC
+      use mesh, only: NE, NM, neitab, nneigh, ics,  sfea0,  &
+                     X, Y, areas, DP, SFAC
 
       IMPLICIT NONE
 
@@ -598,23 +508,20 @@ CONTAINS
 
       !.....Declare local variables
       logical :: wetflag
-      real(sz) :: col, fac
-      real(sz) :: mincol
+      real(sz) :: col
       real(sz) :: qtratio_dg
 
       integer :: n1, n2, n3
-      INTEGER :: II, l, P_0, DOF_0, j, k, kk, jj, i, chi, ll, mm, Q, M, P, SZ2, w, III
+      INTEGER :: II, l, P_0, DOF_0, j, k, kk, jj, i, chi,  Q, M, P, SZ2, w, III
+      real(sz) :: ireal, jreal, kreal, jjreal
       CHARACTER(LEN=8) :: REGION
-      REAL(SZ) :: AREA, ANGLE_SUM, HBB(3), CASUM, DP_MIN, temp_lay, XP, YP, timedg
-      REAL(SZ) :: XI, YI, ZE1, ZE2, ZE3, l2er, l2erh2, xcen, ycen, epsl, pi_n
-      REAL(SZ) :: ZP(3), DHBX, ell_1, ell_2, ell_3, int_hb, int_ze, int_yd
+      REAL(SZ) :: AREA,  DP_MIN, XP, YP, timedg
+      REAL(SZ) :: XI, YI, ZE1, ZE2, ZE3
       REAL(SZ), Allocatable :: BARY(:), VERT(:, :), BASIS(:), DBASIS(:, :)
       REAL(SZ), Allocatable :: PTS(:, :), WTS(:), PT(:)
-      real(sz) :: checkarea, arint(2, 2), rhsint(2), edgeint, dpsdx, psimid, &
-                  determ, sfacdub2max, sfacdub3max, R
-      integer :: i1, i2, sfac_flag, led, ELEM, ADDGP, NEDGS
-      integer :: ifac2max, ifac3max, phh, DIM, NQEDS
-      real(sz) :: xmid, ymid, Ox, Oy, rev, C_0, sig, C_1
+      real(sz) :: R
+      integer :: ELEM, ADDGP, NEDGS
+      integer :: phh, DIM, NQEDS
       Real(SZ), allocatable :: XBCbt(:), YBCbt(:), radial(:), XB(:), YB(:), &
                                l2e(:)
       Real(SZ), allocatable :: iota_check(:), iota_check2(:), hbo(:, :, :), &
@@ -627,6 +534,7 @@ CONTAINS
       call alloc_adcirc()
 
       !.....Define variables from read fort.dg routine (will be added later)
+      TIMEDG = statim
       DIM = 2
       RK_STAGE = 1
       RK_ORDER = 1
@@ -637,7 +545,7 @@ CONTAINS
       FLUXTYPE = 2
       SEDFLAG = 0
       SLOPEFLAG = 6
-      G2ROOT = SQRT(G/2.0)
+      G2ROOT = SQRT(G/2.d0)
       CONSTVEL = .false.
       layers = 1
 
@@ -1015,7 +923,7 @@ CONTAINS
       !.....3. Set the DOF at dry elements = 1
       do j = 1, ph
          jj = 2*j
-         NEGP(j) = CEILING((jj + 3)/2.0d0)
+         NEGP(j) = CEILING(real((jj + 3),8)/2.0d0)
       end do
 
       NCHECK(1) = 3
@@ -1173,12 +1081,12 @@ CONTAINS
 
          if (j == 1) then
 
-            NEGP(ph) = CEILING((phh + 3)/2.0d0)
+            NEGP(ph) = CEILING(real((phh + 3),8)/2.0d0)
             CALL ALLOC_EDGE_GAUSS()
 
          end if
          jj = 2*j
-         SZ2 = CEILING((jj + 3)/2.0d0)
+         SZ2 = CEILING(real((jj + 3),8)/2.0d0)
          NEGP(j) = SZ2
 
          Allocate (PTS(SZ2, 1), WTS(SZ2))
@@ -1281,8 +1189,10 @@ CONTAINS
             M = 1
             do J = 0, P
                do I = 0, J
+                  ireal = real(i,8)
                   JJ = J - I
-                  M_INV(M, P) = ((2.D0*I + 1.D0)*(2.D0*JJ + 2.D0*I + 2.D0)/4.D0)
+                  jjreal = real(jj,8)
+                  M_INV(M, P) = ((2.D0*Ireal + 1.D0)*(2.D0*JJreal + 2.D0*Ireal + 2.D0)/4.D0)
                   M = M + 1
                end do
             end do
@@ -1291,8 +1201,10 @@ CONTAINS
             M = 1
             do J = 0, P
                do I = 0, J
+                  ireal = real(i,8)
                   JJ = J - I
-                  M_INV(M, P) = ((2.D0*I + 1.D0)*(2.D0*JJ + 1.D0)/4.D0)
+                  jjreal = real(jj, 8)
+                  M_INV(M, P) = ((2.D0*Ireal + 1.D0)*(2.D0*jjreal + 1.D0)/4.D0)
                   M = M + 1
                end do
             end do
@@ -1300,11 +1212,15 @@ CONTAINS
             !........For triangular prism elements
             M = 1
             do k = 0, P
+               kreal = real(k,8)
                do J = 0, P
+                  jreal = real(j,8)
                   do I = 0, J
+                     ireal = real(i,8)
                      JJ = J - I
-                     M_INV(M, P) = ((2.D0*I + 1.D0)*(2.D0*JJ + 2.D0*I + 2.D0)* &
-                                    (2.D0*k + 1.D0)/8.D0)
+                     jjreal = real(jj, 8)
+                     M_INV(M, P) = ((2.D0*Ireal + 1.D0)*(2.D0*JJreal + 2.D0*Ireal + 2.D0)* &
+                                    (2.D0*kreal + 1.D0)/8.D0)
                      M = M + 1
                   end do
                end do
@@ -1313,11 +1229,15 @@ CONTAINS
             !........For rectangular hexahedron elements
             M = 1
             do k = 0, P
+               kreal = real(k,8)
                do J = 0, P
+                  jreal = real(j,8)
                   do I = 0, J
+                     ireal = real(i,8)
                      JJ = J - I
-                     M_INV(M, P) = ((2.D0*I + 1.D0)*(2.D0*JJ + 1.D0)* &
-                                    (2.D0*k + 1.D0)/8.D0)
+                     jjreal = real(jj,8)
+                     M_INV(M, P) = ((2.D0*Ireal + 1.D0)*(2.D0*JJreal + 1.D0)* &
+                                    (2.D0*kreal + 1.D0)/8.D0)
                      M = M + 1
                   end do
                end do
@@ -1733,7 +1653,7 @@ CONTAINS
 
                !.........If so set initial surface elevation values
 
-               IF ((ZE1 + ZE2 + ZE3)/3.D0 /= ze(1, J, 1)) THEN
+               IF (abs((ZE1 + ZE2 + ZE3)/3.D0 - ze(1, J, 1)) >= 1d-12) THEN
                   IF (p_0 == 0) THEN
                      DP_MIN = MIN(DP(NM(J, 1)), DP(NM(J, 2)), DP(NM(J, 3)))
                      ze(1, J, 1) = max(ze(1, j, 1), H0 - DP_MIN)
@@ -1786,25 +1706,25 @@ CONTAINS
                ZE1 = 0.d0
                ZE2 = 0.d0
                ZE3 = 0.d0
-               IF (STARTDRY(N1) == 1) ZE1 = H0 - DP(N1)
+               IF (int(STARTDRY(N1)) == 1) ZE1 = H0 - DP(N1)
                IF (DP(N1) < H0) ZE1 = H0 - DP(N1)
-               IF (STARTDRY(N2) == 1) ZE2 = H0 - DP(N2)
+               IF (int(STARTDRY(N2)) == 1) ZE2 = H0 - DP(N2)
                IF (DP(N2) < H0) ZE2 = H0 - DP(N2)
-               IF (STARTDRY(N3) == 1) ZE3 = H0 - DP(N3)
+               IF (int(STARTDRY(N3)) == 1) ZE3 = H0 - DP(N3)
                IF (DP(N3) < H0) ZE3 = H0 - DP(N3)
 
                IF (MODAL_IC == 3) THEN
-                  IF (STARTDRY(N1) == -88888) then
+                  IF (int(STARTDRY(N1)) == -88888) then
                      ZE1 = H0 - DP(N1)
                   else
                      ZE1 = STARTDRY(N1)
                   end if
-                  IF (STARTDRY(N2) == -88888) then
+                  IF (int(STARTDRY(N2)) == -88888) then
                      ZE2 = H0 - DP(N2)
                   else
                      ZE2 = STARTDRY(N2)
                   end if
-                  IF (STARTDRY(N3) == -88888) then
+                  IF (int(STARTDRY(N3)) == -88888) then
                      ZE3 = H0 - DP(N3)
                   else
                      ZE3 = STARTDRY(N3)
@@ -1813,7 +1733,7 @@ CONTAINS
 
                !.........If so set initial surface elevation values
 
-               IF ((ZE1 + ZE2 + ZE3) /= 0) THEN
+               IF (abs(ZE1 + ZE2 + ZE3) >= 0.d0) THEN
                   IF (P_0 == 0) THEN
                      DP_MIN = MIN(DP(NM(J, 1)), DP(NM(J, 2)), DP(NM(J, 3)))
                      ze(1, J, 1) = max(ze(1, j, 1), H0 - DP_MIN)
@@ -1854,8 +1774,6 @@ CONTAINS
 
       end if
 
-3220  FORMAT(1X, A32, 2X, A24, 2X, A24)
-3645  FORMAT(1X, I10, 1X, I10, 1X, E15.7, 1X, I5, 1X, I5)
 
       !.....Set p back to original value if p = 0
 
@@ -1949,7 +1867,7 @@ CONTAINS
 
       !.....Declare local variables
 
-      INTEGER :: IEL, IED, i, n1, n2
+      INTEGER :: i, n1, n2
 
       !.....Loop over the edges
 
@@ -1962,7 +1880,7 @@ CONTAINS
 
          !.....Compute an average SFAC to adjust normal for CPP coordinates
 
-         SAV = (SFAC(N1) + SFAC(N2))/2.0
+         SAV = (SFAC(N1) + SFAC(N2))/2.d0
 
          !.....Compute the length of the given egde
 
@@ -2023,12 +1941,10 @@ CONTAINS
 
       INTEGER :: IED, JED, JJED, IEL, IEL1, IEL2, JJ1, JJ2
       !sb--
-      INTEGER :: JEL, JJEL, ED_ID, L, GED, I, J, K
+      INTEGER :: JEL, JJEL, ED_ID,   I, J, K
       !--
-      INTEGER :: I1, I2, I3, II, LED(2, 3), n1, n2, n3
-      INTEGER :: NED1, NED2, NED3, NED4, NED5, NED6
+      INTEGER :: I1, I2,  II, LED(2, 3), n1, n2, n3
       INTEGER :: NERR, NN1, NN2
-      INTEGER :: IC1, IC2, IC3
       INTEGER :: IERROR
 
       ! namo - for adcirc
@@ -2478,7 +2394,7 @@ CONTAINS
 
       !.....Construct global edge to local edge (1,2, or 3) table
 
-      NEDSD(:, :) = 0.D0
+      NEDSD(:, :) = 0
       DO I = 1, MNED
          DO K = 1, 2
             IF (NEDEL(K, I) /= 0) THEN
@@ -2543,10 +2459,11 @@ CONTAINS
       REAL(SZ), intent(inout) :: PTS(SZ2, SZ3)
       REAL(SZ), intent(inout) :: WTS(SZ2)
 
-      INTEGER :: I, J, K, L
+      INTEGER :: I, J, L
       REAL(SZ) :: AREA
       REAL(SZ) :: V1(2), V2(2), V3(2)
-      REAL(SZ), ALLOCATABLE :: A(:), B(:), C(:), M(:), W(:)
+      REAL(SZ), ALLOCATABLE :: A(:), B(:), C(:),  W(:)
+      integer, allocatable :: M(:)
 
       !-----------------------------------------------------------------------
       !                        EDGE QUADRATURE RULES
@@ -2559,13 +2476,13 @@ CONTAINS
       !-----------------------------------------------------------------------
 
       IF (REGION == 'EDGE    ') THEN
-         N = CEILING((D + 1)/2.)
-         L = CEILING(N/2.)
+         N = CEILING(real((D + 1),8)/2d0)
+         L = CEILING(real(N,8)/2d0)
          !-----------------------------------------------------------------------
          IF (D <= 1) THEN
             !-----------------------------------------------------------------------
             PTS(1, 1) = 0.000000000000000D0 ! Point
-            WTS(1) = 1.000000000000000D0 ! Weight
+            WTS(1) = 1.00000000000000D0 ! Weight
             !-----------------------------------------------------------------------
          ELSEIF (D <= 3) THEN
             !-----------------------------------------------------------------------
@@ -2746,16 +2663,16 @@ CONTAINS
             L = 1
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0] ! Points
-            W(1:L) = [1.0000000000000000000000000000000000D0] ! Weights
+            A(1:L) = [0.333333333333333D0] ! Points
+            W(1:L) = [1.00000000000000D0] ! Weights
             !-----------------------------------------------------------------------
          ELSEIF (D <= 2) THEN ! Ref [1]*
             !-----------------------------------------------------------------------
             L = 1
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [3] ! Multip.
-            A(1:L) = [0.1666666666666666666666666666666666D0] ! Points
-            W(1:L) = [0.3333333333333333333333333333333333D0] ! Weights
+            A(1:L) = [0.166666666666666D0] ! Points
+            W(1:L) = [0.333333333333333D0] ! Weights
             !-----------------------------------------------------------------------
             !        ELSEIF (D.LE.3) THEN                                  ! Ref [3]*
             !-----------------------------------------------------------------------
@@ -2765,35 +2682,35 @@ CONTAINS
             L = 2
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [3, 3] ! Multip.
-            A(1:L) = [0.4459484909159648863183292538830519D0, &
-                      0.0915762135097707434595714634022015D0]
-            W(1:L) = [0.2233815896780114656950070084331228D0, &
-                      0.1099517436553218676383263249002105D0]
+            A(1:L) = [0.445948490915964D0, &
+                      0.0915762135097707D0]
+            W(1:L) = [0.223381589678011D0, &
+                      0.109951743655321D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 5) THEN ! Ref [1]*
             !-----------------------------------------------------------------------
             L = 3
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1, 3, 3] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0, &
-                      0.4701420641051150897704412095134476D0, &
-                      0.1012865073234563388009873619151238D0]
-            W(1:L) = [0.2250000000000000000000000000000000D0, &
-                      0.1323941527885061807376493878331519D0, &
-                      0.1259391805448271525956839455001813D0]
+            A(1:L) = [0.333333333333333D0, &
+                      0.470142064105115D0, &
+                      0.101286507323456D0]
+            W(1:L) = [0.225000000000000D0, &
+                      0.132394152788506D0, &
+                      0.125939180544827D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 6) THEN ! Ref [1]
             !-----------------------------------------------------------------------
             L = 3
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [3, 3, 6] ! Multip.
-            A(1:L) = [0.0630890144915022283403316028708192D0, &
-                      0.2492867451709104212916385531070191D0, &
-                      0.0531450498448169473532496716313981D0]
-            B(3:3) = [0.3103524510337844054166077339565522D0]
-            W(1:L) = [0.0508449063702068169209368091068690D0, &
-                      0.1167862757263793660252896113855794D0, &
-                      0.0828510756183735751935534564204425D0]
+            A(1:L) = [0.0630890144915022D0, &
+                      0.249286745170910D0, &
+                      0.0531450498448169D0]
+            B(3:3) = [0.310352451033784D0]
+            W(1:L) = [0.0508449063702068D0, &
+                      0.116786275726379D0, &
+                      0.0828510756183735D0]
             !-----------------------------------------------------------------------
             !        ELSEIF (D.LE.7) THEN                                  ! Ref [4]*
             !-----------------------------------------------------------------------
@@ -2809,483 +2726,483 @@ CONTAINS
             L = 5
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1, 3, 3, 3, 6] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0, &
-                      0.1705693077517602066222935014914645D0, &
-                      0.0505472283170309754584235505965989D0, &
-                      0.4592925882927231560288155144941693D0, &
-                      0.2631128296346381134217857862846436D0]
-            B(5:5) = [0.0083947774099576053372138345392944D0]
-            W(1:L) = [0.1443156076777871682510911104890646D0, &
-                      0.1032173705347182502817915502921290D0, &
-                      0.0324584976231980803109259283417806D0, &
-                      0.0950916342672846247938961043885843D0, &
-                      0.0272303141744349942648446900739089D0]
+            A(1:L) = [0.333333333333333D0, &
+                      0.170569307751760D0, &
+                      0.0505472283170309D0, &
+                      0.459292588292723D0, &
+                      0.263112829634638D0]
+            B(5:5) = [0.00839477740995760D0]
+            W(1:L) = [0.144315607677787D0, &
+                      0.103217370534718D0, &
+                      0.0324584976231980D0, &
+                      0.0950916342672846D0, &
+                      0.0272303141744349D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 9) THEN ! Ref [1]
             !-----------------------------------------------------------------------
             L = 6
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1, 3, 3, 3, 3, 6] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0, &
-                      0.4896825191987376277837069248361928D0, &
-                      0.0447295133944527098651065899662764D0, &
-                      0.4370895914929366372699303644353550D0, &
-                      0.1882035356190327302409612804673356D0, &
-                      0.7411985987844980206900798735234238D0]
-            B(6:6) = [0.2219629891607656956751025276931911D0]
-            W(1:L) = [0.0971357962827988338192419825072886D0, &
-                      0.0313347002271390705368548312872093D0, &
-                      0.0255776756586980312616787985589998D0, &
-                      0.0778275410047742793167393562994040D0, &
-                      0.0796477389272102530328917742640453D0, &
-                      0.0432835393772893772893772893772894D0]
+            A(1:L) = [0.333333333333333D0, &
+                      0.489682519198737D0, &
+                      0.0447295133944527D0, &
+                      0.437089591492936D0, &
+                      0.188203535619032D0, &
+                      0.741198598784498D0]
+            B(6:6) = [0.221962989160765D0]
+            W(1:L) = [0.0971357962827988D0, &
+                      0.0313347002271390D0, &
+                      0.0255776756586980D0, &
+                      0.0778275410047742D0, &
+                      0.0796477389272102D0, &
+                      0.0432835393772893D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 10) THEN ! Ref [2]
             !-----------------------------------------------------------------------
             L = 7
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1, 3, 3, 3, 3, 6, 6] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0, &
-                      0.4272731788467755380904427175154472D0, &
-                      0.1830992224486750205215743848502200D0, &
-                      0.4904340197011305874539712223768484D0, &
-                      0.0125724455515805327313290850210413D0, &
-                      0.6542686679200661406665700955876279D0, &
-                      0.1228045770685592734301298174812812D0]
-            B(6:7) = [0.3080460016852477000000000000000000D0, &
-                      0.0333718337393047862408164417747804D0]
-            W(1:L) = [0.0809374287976228802571131238165019D0, &
-                      0.0772985880029631216825069823803434D0, &
-                      0.0784576386123717313680939208343967D0, &
-                      0.0174691679959294869176071632906781D0, &
-                      0.0042923741848328280304804020901319D0, &
-                      0.0374688582104676429790207654850445D0, &
-                      0.0269493525918799596454494795810967D0]
+            A(1:L) = [0.333333333333333D0, &
+                      0.427273178846775D0, &
+                      0.183099222448675D0, &
+                      0.490434019701130D0, &
+                      0.0125724455515805D0, &
+                      0.654268667920066D0, &
+                      0.122804577068559D0]
+            B(6:7) = [0.308046001685247D0, &
+                      0.0333718337393047D0]
+            W(1:L) = [0.0809374287976228D0, &
+                      0.0772985880029631D0, &
+                      0.0784576386123717D0, &
+                      0.0174691679959294D0, &
+                      0.00429237418483282D0, &
+                      0.0374688582104676D0, &
+                      0.0269493525918799D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 11) THEN ! Ref [2]
             !-----------------------------------------------------------------------
             L = 8
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1, 3, 3, 3, 3, 3, 6, 6] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0, &
-                      0.0309383552454307848951950149913047D0, &
-                      0.4364981811341288419176152765599732D0, &
-                      0.4989847637025932662879869838313909D0, &
-                      0.2146881979585943366068758138782509D0, &
-                      0.1136831040421133902052931562283618D0, &
-                      0.8256187661648629043588062003083580D0, &
-                      0.6404723101348652676770365908189668D0]
-            B(7:8) = [0.1597423045918501898008607882250075D0, &
-                      0.3117837157095990000000000000000000D0]
-            W(1:L) = [0.0811779602968671595154759687498236D0, &
-                      0.0123240435069094941184739010162328D0, &
-                      0.0628280097444101072833394281602940D0, &
-                      0.0122203790493645297552122150039379D0, &
-                      0.0677013489528115099209888618232256D0, &
-                      0.0402196936288516904235668896075687D0, &
-                      0.0147622727177161013362930655877821D0, &
-                      0.0407279964582990396603369584816179D0]
+            A(1:L) = [0.333333333333333D0, &
+                      0.0309383552454307D0, &
+                      0.436498181134128D0, &
+                      0.498984763702593D0, &
+                      0.214688197958594D0, &
+                      0.113683104042113D0, &
+                      0.825618766164862D0, &
+                      0.640472310134865D0]
+            B(7:8) = [0.159742304591850D0, &
+                      0.311783715709599D0]
+            W(1:L) = [0.0811779602968671D0, &
+                      0.0123240435069094D0, &
+                      0.0628280097444101D0, &
+                      0.0122203790493645D0, &
+                      0.0677013489528115D0, &
+                      0.0402196936288516D0, &
+                      0.0147622727177161D0, &
+                      0.0407279964582990D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 12) THEN ! Ref [2]
             !-----------------------------------------------------------------------
             L = 8
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [3, 3, 3, 3, 3, 6, 6, 6] ! Multip.
-            A(1:L) = [0.0213173504532103702468569755157282D0, &
-                      0.2712103850121159223459513403968947D0, &
-                      0.1275761455415859246738963251542836D0, &
-                      0.4397243922944602729797366234843611D0, &
-                      0.4882173897738048825646620652588110D0, &
-                      0.6958360867878034221416355232360725D0, &
-                      0.8580140335440726305905366166261782D0, &
-                      0.6089432357797878068561924377637101D0]
-            B(6:8) = [0.2813255809899395482481306929745527D0, &
-                      0.1162519159075971412413541478426018D0, &
-                      0.2757132696855141939747963460797640D0]
-            W(1:L) = [0.0061662610515590172338664837852304D0, &
-                      0.0628582242178851003542705130928825D0, &
-                      0.0347961129307089429893283972949994D0, &
-                      0.0436925445380384021354572625574750D0, &
-                      0.0257310664404553354177909230715644D0, &
-                      0.0223567732023034457118390767023200D0, &
-                      0.0173162311086588923716421008110341D0, &
-                      0.0403715577663809295178286992522368D0]
+            A(1:L) = [0.0213173504532103D0, &
+                      0.271210385012115D0, &
+                      0.127576145541585D0, &
+                      0.439724392294460D0, &
+                      0.488217389773804D0, &
+                      0.695836086787803D0, &
+                      0.858014033544072D0, &
+                      0.608943235779787D0]
+            B(6:8) = [0.281325580989939D0, &
+                      0.116251915907597D0, &
+                      0.275713269685514D0]
+            W(1:L) = [0.00616626105155901D0, &
+                      0.0628582242178851D0, &
+                      0.0347961129307089D0, &
+                      0.0436925445380384D0, &
+                      0.0257310664404553D0, &
+                      0.0223567732023034D0, &
+                      0.0173162311086588D0, &
+                      0.0403715577663809D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 13) THEN ! Ref [2]
             !-----------------------------------------------------------------------
             L = 9
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1, 3, 3, 3, 3, 6, 6, 6, 6] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0, &
-                      0.4269414142598004060208125350313742D0, &
-                      0.2213722862918329006548125547050791D0, &
-                      0.0215096811088431838692913135340521D0, &
-                      0.4890769464525393499006897190902044D0, &
-                      0.6235459955536755708158543531862366D0, &
-                      0.8647077702954427753025459508956932D0, &
-                      0.7485071158999521951730185957887097D0, &
-                      0.7223577931241879652606201323047840D0]
-            B(6:9) = [0.3084417608921177746584718525412453D0, &
-                      0.1109220428034633954128695452216745D0, &
-                      0.1635974010678504802338879017109572D0, &
-                      0.2725158177734296661800504643540868D0]
-            W(1:L) = [0.0679600365868316442817744246808849D0, &
-                      0.0556019675304533287072574660104615D0, &
-                      0.0582784851191999814047670835133398D0, &
-                      0.0060523371035391718417928000322908D0, &
-                      0.0239944019288947307737107994509597D0, &
-                      0.0346412761408483704659868285109182D0, &
-                      0.0149654011051656672632458571329034D0, &
-                      0.0241790398115938191374457455730608D0, &
-                      0.0095906810035432627225950901661109D0]
+            A(1:L) = [0.333333333333333D0, &
+                      0.426941414259800D0, &
+                      0.221372286291832D0, &
+                      0.0215096811088431D0, &
+                      0.489076946452539D0, &
+                      0.623545995553675D0, &
+                      0.864707770295442D0, &
+                      0.748507115899952D0, &
+                      0.722357793124187D0]
+            B(6:9) = [0.308441760892117D0, &
+                      0.110922042803463D0, &
+                      0.163597401067850D0, &
+                      0.272515817773429D0]
+            W(1:L) = [0.0679600365868316D0, &
+                      0.0556019675304533D0, &
+                      0.0582784851191999D0, &
+                      0.00605233710353917D0, &
+                      0.0239944019288947D0, &
+                      0.0346412761408483D0, &
+                      0.0149654011051656D0, &
+                      0.0241790398115938D0, &
+                      0.00959068100354326D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 14) THEN ! Ref [1]
             !-----------------------------------------------------------------------
             L = 10
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [3, 3, 3, 3, 3, 3, 6, 6, 6, 6] ! Multipl.
-            A(1:L) = [0.48896391036217900000000000000000D0, &
-                      0.41764471934045400000000000000000D0, &
-                      0.27347752830883900000000000000000D0, &
-                      0.17720553241254300000000000000000D0, &
-                      0.06179988309087300000000000000000D0, &
-                      0.01939096124870100000000000000000D0, &
-                      0.17226668782135600000000000000000D0, &
-                      0.33686145979634500000000000000000D0, &
-                      0.29837288213625800000000000000000D0, &
-                      0.11897449769695700000000000000000D0]
-            B(7:L) = [0.77060855477499600000000000000000D0, &
-                      0.57022229084668300000000000000000D0, &
-                      0.68698016780808800000000000000000D0, &
-                      0.87975717137017100000000000000000D0]
-            W(1:L) = [0.02188358136942900000000000000000D0, &
-                      0.03278835354412500000000000000000D0, &
-                      0.05177410450729200000000000000000D0, &
-                      0.04216258873699300000000000000000D0, &
-                      0.01443369966977700000000000000000D0, &
-                      0.00492340360240000000000000000000D0, &
-                      0.02466575321256400000000000000000D0, &
-                      0.03857151078706100000000000000000D0, &
-                      0.01443630811353400000000000000000D0, &
-                      0.00501022883850100000000000000000D0]
+            A(1:L) = [0.488963910362179D0, &
+                      0.417644719340454D0, &
+                      0.273477528308839D0, &
+                      0.177205532412543D0, &
+                      0.0617998830908730D0, &
+                      0.0193909612487010D0, &
+                      0.172266687821356D0, &
+                      0.336861459796345D0, &
+                      0.298372882136258D0, &
+                      0.118974497696957D0]
+            B(7:L) = [0.770608554774996D0, &
+                      0.570222290846683D0, &
+                      0.686980167808088D0, &
+                      0.879757171370171D0]
+            W(1:L) = [0.0218835813694290D0, &
+                      0.0327883535441250D0, &
+                      0.0517741045072920D0, &
+                      0.0421625887369930D0, &
+                      0.0144336996697770D0, &
+                      0.00492340360240000D0, &
+                      0.0246657532125640D0, &
+                      0.0385715107870610D0, &
+                      0.0144363081135340D0, &
+                      0.00501022883850100D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 15) THEN ! Ref [2]
             !-----------------------------------------------------------------------
             L = 13
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1, 3, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0, &
-                      0.2273322188191428742025043684922941D0, &
-                      0.4971625774318874298738098000160233D0, &
-                      0.4788497353489545833392292001438526D0, &
-                      0.4049860390982719916972446423426920D0, &
-                      0.0159312166717444321134277329412690D0, &
-                      0.1655832624260814000000000000000000D0, &
-                      0.0731336047192287277268738121073244D0, &
-                      0.6652607330722139390623644133856912D0, &
-                      0.7125219872425455330488490116233878D0, &
-                      0.5596483622353932184122484540192300D0, &
-                      0.8104765976190768630468327302905713D0, &
-                      0.9160756440317311885646088387783200D0]
-            B(9:L) = [0.3163528393449472300863381309502453D0, &
-                      0.0934607511499175300000000000000005D0, &
-                      0.3442290175821932000000000000000016D0, &
-                      0.1710472483142579515476503319255848D0, &
-                      0.0730559964791864896129490819274250D0]
-            W(1:L) = [0.0440387108784342798530173272149339D0, &
-                      0.0461847871820269799487156676019167D0, &
-                      0.0064989066173327165268828034928102D0, &
-                      0.0179936142526584032446699241671566D0, &
-                      0.0417731050391413541196860605641460D0, &
-                      0.0030595476091164665484301699283448D0, &
-                      0.0020124350525586473440903187565405D0, &
-                      0.0167756109305091223261114568879588D0, &
-                      0.0154607491897142748660880304092474D0, &
-                      0.0284998903395474233927395587533020D0, &
-                      0.0320943504834895956420992357370957D0, &
-                      0.0115085816368707112840232437732419D0, &
-                      0.0046143065289671031435871760918541D0]
+            A(1:L) = [0.333333333333333D0, &
+                      0.227332218819142D0, &
+                      0.497162577431887D0, &
+                      0.478849735348954D0, &
+                      0.404986039098271D0, &
+                      0.0159312166717444D0, &
+                      0.165583262426081D0, &
+                      0.0731336047192287D0, &
+                      0.665260733072213D0, &
+                      0.712521987242545D0, &
+                      0.559648362235393D0, &
+                      0.810476597619076D0, &
+                      0.916075644031731D0]
+            B(9:L) = [0.316352839344947D0, &
+                      0.0934607511499175D0, &
+                      0.344229017582193D0, &
+                      0.171047248314257D0, &
+                      0.0730559964791864D0]
+            W(1:L) = [0.0440387108784342D0, &
+                      0.0461847871820269D0, &
+                      0.00649890661733271D0, &
+                      0.0179936142526584D0, &
+                      0.0417731050391413D0, &
+                      0.00305954760911646D0, &
+                      0.00201243505255864D0, &
+                      0.0167756109305091D0, &
+                      0.0154607491897142D0, &
+                      0.0284998903395474D0, &
+                      0.0320943504834895D0, &
+                      0.0115085816368707D0, &
+                      0.00461430652896710D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 16) THEN ! Ref [2]
             !-----------------------------------------------------------------------
             L = 13
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0, &
-                      0.0817949831313738726414655931188610D0, &
-                      0.1653006019697796506267619329335566D0, &
-                      0.4685921053494613866946028972966056D0, &
-                      0.0144388134454166826141089566956602D0, &
-                      0.2417842853917833534068944592932077D0, &
-                      0.4953103429877699640654950868774055D0, &
-                      0.6505134026613522994311446848416867D0, &
-                      0.6040112814959970398494041030359670D0, &
-                      0.8021682575747416636168619478116671D0, &
-                      0.7565056064428283965511540757580608D0, &
-                      0.4659384387141181848838107335915464D0, &
-                      0.9063948439920415013624996618653400D0]
-            B(8:L) = [0.3313997445370895565813231681825939D0, &
-                      0.3032471627499421850415521780783469D0, &
-                      0.1880280595212371734441821142939888D0, &
-                      0.1835046685222968636823802774370004D0, &
-                      0.3596459487975046000000000000000100D0, &
-                      0.0771943712957554322825152250527139D0]
-            W(1:L) = [0.0480221886803770905518394045805199D0, &
-                      0.0147091003068019271034036428618692D0, &
-                      0.0295445865493192559953097267964641D0, &
-                      0.0261250173510883774985975654917156D0, &
-                      0.0027803873523900069750030161386621D0, &
-                      0.0318217730005366495034272900559496D0, &
-                      0.0086458343495096599011737341698489D0, &
-                      0.0143003329044953651466164253682521D0, &
-                      0.0278497772036008299522298734239535D0, &
-                      0.0070416734066360975623701880892807D0, &
-                      0.0178998382599337286017702090758108D0, &
-                      0.0274582003843497630724700381009172D0, &
-                      0.0072997969394317620841125440877777D0]
+            A(1:L) = [0.333333333333333D0, &
+                      0.0817949831313738D0, &
+                      0.165300601969779D0, &
+                      0.468592105349461D0, &
+                      0.0144388134454166D0, &
+                      0.241784285391783D0, &
+                      0.495310342987769D0, &
+                      0.650513402661352D0, &
+                      0.604011281495997D0, &
+                      0.802168257574741D0, &
+                      0.756505606442828D0, &
+                      0.465938438714118D0, &
+                      0.906394843992041D0]
+            B(8:L) = [0.331399744537089D0, &
+                      0.303247162749942D0, &
+                      0.188028059521237D0, &
+                      0.183504668522296D0, &
+                      0.359645948797504D0, &
+                      0.0771943712957554D0]
+            W(1:L) = [0.0480221886803770D0, &
+                      0.0147091003068019D0, &
+                      0.0295445865493192D0, &
+                      0.0261250173510883D0, &
+                      0.00278038735239000D0, &
+                      0.0318217730005366D0, &
+                      0.00864583434950965D0, &
+                      0.0143003329044953D0, &
+                      0.0278497772036008D0, &
+                      0.00704167340663609D0, &
+                      0.0178998382599337D0, &
+                      0.0274582003843497D0, &
+                      0.00729979693943176D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 17) THEN ! Ref [2]
             !-----------------------------------------------------------------------
             L = 14
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0, &
-                      0.0956985088627109399431625786023763D0, &
-                      0.1701386396787754467232472307956844D0, &
-                      0.4180206858679549762226346423934278D0, &
-                      0.4965814805066249549705403530622792D0, &
-                      0.0416621148288076427920788515983419D0, &
-                      0.4679329057294235782681900853617119D0, &
-                      0.9695311989037220561945405830595324D0, &
-                      0.7597243875386241295553271953226612D0, &
-                      0.2954993169683015000000000000000100D0, &
-                      0.6256063821576970270701920926669370D0, &
-                      0.8721744472331847929031830014156074D0, &
-                      0.7475123194400060400624067817608753D0, &
-                      0.5988687908832380598061676972635110D0]
-            B(8:L) = [0.0289250916202182460715280477140682D0, &
-                      0.2344417552635687745426605309129788D0, &
-                      0.4959112466607535754230345000437552D0, &
-                      0.3534176945414970676263249907709938D0, &
-                      0.1127286418142197686188888676807420D0, &
-                      0.1990702787978578813133914398155831D0, &
-                      0.3035851830713260765320205120458494D0]
-            W(1:L) = [0.0447568714443446293718364767042551D0, &
-                      0.0173668850267477964504911176477604D0, &
-                      0.0305993480761035327226656472689570D0, &
-                      0.0285877085785997802070400912176892D0, &
-                      0.0066474319297536932323184955454668D0, &
-                      0.0074761894020185118222455734708010D0, &
-                      0.0250499865038387453145589519055078D0, &
-                      0.0014798108921196449448095368275048D0, &
-                      0.0051211362467481060658943504057326D0, &
-                      0.0273173593695928059185316898423957D0, &
-                      0.0140057286759092815978663321140118D0, &
-                      0.0078092756974583600981098732328800D0, &
-                      0.0181657284597916721760720775172237D0, &
-                      0.0274443739924583277620834554147845D0]
+            A(1:L) = [0.333333333333333D0, &
+                      0.0956985088627109D0, &
+                      0.170138639678775D0, &
+                      0.418020685867954D0, &
+                      0.496581480506624D0, &
+                      0.0416621148288076D0, &
+                      0.467932905729423D0, &
+                      0.969531198903722D0, &
+                      0.759724387538624D0, &
+                      0.295499316968301D0, &
+                      0.625606382157697D0, &
+                      0.872174447233184D0, &
+                      0.747512319440006D0, &
+                      0.598868790883238D0]
+            B(8:L) = [0.0289250916202182D0, &
+                      0.234441755263568D0, &
+                      0.495911246660753D0, &
+                      0.353417694541497D0, &
+                      0.112728641814219D0, &
+                      0.199070278797857D0, &
+                      0.303585183071326D0]
+            W(1:L) = [0.0447568714443446D0, &
+                      0.0173668850267477D0, &
+                      0.0305993480761035D0, &
+                      0.0285877085785997D0, &
+                      0.00664743192975369D0, &
+                      0.00747618940201851D0, &
+                      0.0250499865038387D0, &
+                      0.00147981089211964D0, &
+                      0.00512113624674810D0, &
+                      0.0273173593695928D0, &
+                      0.0140057286759092D0, &
+                      0.00780927569745836D0, &
+                      0.0181657284597916D0, &
+                      0.0274443739924583D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 18) THEN ! Ref [2]
             !-----------------------------------------------------------------------
             L = 14
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6] ! Multipl.
-            A(1:L) = [0.0732708864643828315786196714876895D0, &
-                      0.0039177489832282316427840744195806D0, &
-                      0.4675973189887110616515129966229624D0, &
-                      0.4179162109674113120121268105139935D0, &
-                      0.1653816933602894800544902692391766D0, &
-                      0.2875008944057839899961939131396606D0, &
-                      0.1258893143198247960170648399490380D0, &
-                      0.0632219159465026144935750801169980D0, &
-                      0.0789102274540205177520722103754889D0, &
-                      0.0380580535067857143261189915962621D0, &
-                      0.0142903521304540256499241103130749D0, &
-                      0.0129672723432531723123416343300903D0, &
-                      0.0076485948208408993307926288182273D0, &
-                      0.0127104605722554679311424918135822D0]
-            B(5:L) = [0.5636967056608707538051458939380737D0, &
-                      0.2860423261392047491209581074803029D0, &
-                      0.6960432186424611957925748602819539D0, &
-                      0.7605455518876824326145947637978687D0, &
-                      0.5920196312717585633226205754022254D0, &
-                      0.6836812596359998524801240874538131D0, &
-                      0.8517040371370558150285216534427664D0, &
-                      0.5747324928881490288994509386896897D0, &
-                      0.7355104408307292987031352244816406D0, &
-                      0.9393450876437317887074042026828225D0]
-            W(1:L) = [0.0139778616452860209795840079905549D0, &
-                      0.0005549069792132137850684555152509D0, &
-                      0.0210268138197046690284298685162450D0, &
-                      0.0340182121799276997472265274182211D0, &
-                      0.0279101658047749951418434740078169D0, &
-                      0.0182146861271508661267339566206858D0, &
-                      0.0142670236581097930775198241095567D0, &
-                      0.0142371230906750507043127637741560D0, &
-                      0.0192575838546747877991373836820213D0, &
-                      0.0097051322843806411487822763323902D0, &
-                      0.0076297881343321289957824556338534D0, &
-                      0.0106187391363503447944635436705283D0, &
-                      0.0057106698032758388134142143826895D0, &
-                      0.0043268574608764182945223447328327D0]
+            A(1:L) = [0.0732708864643828D0, &
+                      0.00391774898322823D0, &
+                      0.467597318988711D0, &
+                      0.417916210967411D0, &
+                      0.165381693360289D0, &
+                      0.287500894405783D0, &
+                      0.125889314319824D0, &
+                      0.0632219159465026D0, &
+                      0.0789102274540205D0, &
+                      0.0380580535067857D0, &
+                      0.0142903521304540D0, &
+                      0.0129672723432531D0, &
+                      0.00764859482084089D0, &
+                      0.0127104605722554D0]
+            B(5:L) = [0.563696705660870D0, &
+                      0.286042326139204D0, &
+                      0.696043218642461D0, &
+                      0.760545551887682D0, &
+                      0.592019631271758D0, &
+                      0.683681259635999D0, &
+                      0.851704037137055D0, &
+                      0.574732492888149D0, &
+                      0.735510440830729D0, &
+                      0.939345087643731D0]
+            W(1:L) = [0.0139778616452860D0, &
+                      0.000554906979213213D0, &
+                      0.0210268138197046D0, &
+                      0.0340182121799276D0, &
+                      0.0279101658047749D0, &
+                      0.0182146861271508D0, &
+                      0.0142670236581097D0, &
+                      0.0142371230906750D0, &
+                      0.0192575838546747D0, &
+                      0.00970513228438064D0, &
+                      0.00762978813433212D0, &
+                      0.0106187391363503D0, &
+                      0.00571066980327583D0, &
+                      0.00432685746087641D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 19) THEN ! Ref [2]
             !-----------------------------------------------------------------------
             L = 17
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1, 3, 3, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0, &
-                      0.4896099870730063319661310657482982D0, &
-                      0.4545368926978926620467593905357283D0, &
-                      0.4014166806494311873939956238106886D0, &
-                      0.2555516544030976113221817681092679D0, &
-                      0.1770779421521295516426752065159011D0, &
-                      0.1100610532279518613000849516773740D0, &
-                      0.0555286242518396712486784124713557D0, &
-                      0.0126218637772286684902347667787060D0, &
-                      0.6006337947946450000000000000000000D0, &
-                      0.1344667545307797856120431989326469D0, &
-                      0.7209870258173650552166529023382789D0, &
-                      0.5945270689558709246138892880265067D0, &
-                      0.8393314736808385786174900771484052D0, &
-                      0.2238614240979156913033693895065364D0, &
-                      0.8229313240698566316274715591605332D0, &
-                      0.9243442526207840294558591379015631D0]
-            B(10:L) = [0.3957547873569428623047946940658279D0, &
-                       0.5576032615887839683639532425011810D0, &
-                       0.2645669484065202080403017349012149D0, &
-                       0.3585393522059505884249269906459009D0, &
-                       0.1578074059685947447376736033595065D0, &
-                       0.7010879789261733673232883365595116D0, &
-                       0.1424216011133834373155747568772374D0, &
-                       0.0654946280829377033923265249859256D0]
-            W(1:L) = [0.0329063313889186520836143448464750D0, &
-                      0.0103307318912720533670399635717483D0, &
-                      0.0223872472630163925291845560351627D0, &
-                      0.0302661258694680708652801909825912D0, &
-                      0.0304909678021977810000315865785204D0, &
-                      0.0241592127416409049118480309866400D0, &
-                      0.0160508035868008752916227702764295D0, &
-                      0.0080845802617840604818056732421944D0, &
-                      0.0020793620274847807513475016743984D0, &
-                      0.0038848769049813897567049919927727D0, &
-                      0.0255741606120219038929297019526003D0, &
-                      0.0088809035733380577455259247035175D0, &
-                      0.0161245467617313912197852693278377D0, &
-                      0.0024919418174906754405846475759496D0, &
-                      0.0182428401189505783776657132097361D0, &
-                      0.0102585637361985213080480700423581D0, &
-                      0.0037999288553019139790731537136397D0]
+            A(1:L) = [0.333333333333333D0, &
+                      0.489609987073006D0, &
+                      0.454536892697892D0, &
+                      0.401416680649431D0, &
+                      0.255551654403097D0, &
+                      0.177077942152129D0, &
+                      0.110061053227951D0, &
+                      0.0555286242518396D0, &
+                      0.0126218637772286D0, &
+                      0.600633794794645D0, &
+                      0.134466754530779D0, &
+                      0.720987025817365D0, &
+                      0.594527068955870D0, &
+                      0.839331473680838D0, &
+                      0.223861424097915D0, &
+                      0.822931324069856D0, &
+                      0.924344252620784D0]
+            B(10:L) = [0.395754787356942D0, &
+                       0.557603261588783D0, &
+                       0.264566948406520D0, &
+                       0.358539352205950D0, &
+                       0.157807405968594D0, &
+                       0.701087978926173D0, &
+                       0.142421601113383D0, &
+                       0.0654946280829377D0]
+            W(1:L) = [0.0329063313889186D0, &
+                      0.0103307318912720D0, &
+                      0.0223872472630163D0, &
+                      0.0302661258694680D0, &
+                      0.0304909678021977D0, &
+                      0.0241592127416409D0, &
+                      0.0160508035868008D0, &
+                      0.00808458026178406D0, &
+                      0.00207936202748478D0, &
+                      0.00388487690498138D0, &
+                      0.0255741606120219D0, &
+                      0.00888090357333805D0, &
+                      0.0161245467617313D0, &
+                      0.00249194181749067D0, &
+                      0.0182428401189505D0, &
+                      0.0102585637361985D0, &
+                      0.00379992885530191D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 20) THEN ! Ref [2]
             !-----------------------------------------------------------------------
             L = 18
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0, &
-                      0.2158743059329919731902545438401828D0, &
-                      0.0753767665297472780972854309459163D0, &
-                      0.0103008281372217921136862160096969D0, &
-                      0.4936022112987001655119208321450536D0, &
-                      0.4615509381069252967410487102915180D0, &
-                      0.3286214064242369933034974609509133D0, &
-                      0.2604803617865687564195930170811535D0, &
-                      0.1370742358464553000000000000000000D0, &
-                      0.1467269458722997843041609884874530D0, &
-                      0.0269989777425532900000000000000000D0, &
-                      0.0618717859336170268417124700122339D0, &
-                      0.0477243674276219962083526801042934D0, &
-                      0.1206005151863643799672337870400794D0, &
-                      0.0026971477967097876716489145012827D0, &
-                      0.0030156332779423626572762598234710D0, &
-                      0.0299053757884570188069287738643386D0, &
-                      0.0067566542224609885399458175192278D0]
-            B(7:L) = [0.4293405702582103752139588004663984D0, &
-                      0.1015775342809694461687550061961797D0, &
-                      0.7100659730011301599879040745464079D0, &
-                      0.4985454776784148493896226967076119D0, &
-                      0.0491867226725820016197037125775872D0, &
-                      0.7796601465405693953603506190768108D0, &
-                      0.3704915391495476369201496202567388D0, &
-                      0.8633469487547526484979879960925217D0, &
-                      0.0561949381877455029878923019865887D0, &
-                      0.2086750067484213509575944630613577D0, &
-                      0.7211512409120340910281041502050941D0, &
-                      0.6400554419405418899040536682721647D0]
-            W(1:L) = [0.0125376079944966565735856367723948D0, &
-                      0.0274718698764242137484535496073598D0, &
-                      0.0097652722770514230413646914294237D0, &
-                      0.0013984195353918235239233631597867D0, &
-                      0.0092921026251851826304282034030330D0, &
-                      0.0165778760323669253260236250351840D0, &
-                      0.0206677623486650769614219700129729D0, &
-                      0.0208222355211545073068785561993297D0, &
-                      0.0095686384198490606888758450458320D0, &
-                      0.0244527709689724638856439207024089D0, &
-                      0.0031557306306305340038264003207296D0, &
-                      0.0121367963653212969370133090807574D0, &
-                      0.0149664801438864490365249118515707D0, &
-                      0.0063275933217777395693240327504398D0, &
-                      0.0013425603120636958849798512981433D0, &
-                      0.0027760769163475540677293561558015D0, &
-                      0.0107398444741849415551734474479517D0, &
-                      0.0053678057381874532052474100212697D0]
+            A(1:L) = [0.333333333333333D0, &
+                      0.215874305932991D0, &
+                      0.0753767665297472D0, &
+                      0.0103008281372217D0, &
+                      0.493602211298700D0, &
+                      0.461550938106925D0, &
+                      0.328621406424236D0, &
+                      0.260480361786568D0, &
+                      0.137074235846455D0, &
+                      0.146726945872299D0, &
+                      0.0269989777425532D0, &
+                      0.0618717859336170D0, &
+                      0.0477243674276219D0, &
+                      0.120600515186364D0, &
+                      0.00269714779670978D0, &
+                      0.00301563327794236D0, &
+                      0.0299053757884570D0, &
+                      0.00675665422246098D0]
+            B(7:L) = [0.429340570258210D0, &
+                      0.101577534280969D0, &
+                      0.710065973001130D0, &
+                      0.498545477678414D0, &
+                      0.0491867226725820D0, &
+                      0.779660146540569D0, &
+                      0.370491539149547D0, &
+                      0.863346948754752D0, &
+                      0.0561949381877455D0, &
+                      0.208675006748421D0, &
+                      0.721151240912034D0, &
+                      0.640055441940541D0]
+            W(1:L) = [0.0125376079944966D0, &
+                      0.0274718698764242D0, &
+                      0.00976527227705142D0, &
+                      0.00139841953539182D0, &
+                      0.00929210262518518D0, &
+                      0.0165778760323669D0, &
+                      0.0206677623486650D0, &
+                      0.0208222355211545D0, &
+                      0.00956863841984906D0, &
+                      0.0244527709689724D0, &
+                      0.00315573063063053D0, &
+                      0.0121367963653212D0, &
+                      0.0149664801438864D0, &
+                      0.00632759332177773D0, &
+                      0.00134256031206369D0, &
+                      0.00277607691634755D0, &
+                      0.0107398444741849D0, &
+                      0.00536780573818745D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 21) THEN ! Ref [2]
             !-----------------------------------------------------------------------
             L = 19
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1, 3, 3, 3, 3, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6] ! Multip.
-            A(1:L) = [0.3333333333333333333333333333333333D0, &
-                      0.2009352770650852798729618515641637D0, &
-                      0.4376591659619271797318338441880541D0, &
-                      0.0034339564905961768509599122096049D0, &
-                      0.0466434847753067534951762404321419D0, &
-                      0.3864222517630714909403520241677264D0, &
-                      0.0954354711085309101085716810414760D0, &
-                      0.9555138033504563605013147251467712D0, &
-                      0.8866388134288682261249005746914376D0, &
-                      0.7842628458804341542966439903981954D0, &
-                      0.8829239550502000327113489873168897D0, &
-                      0.6689919644410772404913224832098946D0, &
-                      0.5520721210355609641571609652527788D0, &
-                      0.7975929655965685676293142232957258D0, &
-                      0.6775147151197714846349911663441326D0, &
-                      0.5429974155890916053311361168391934D0, &
-                      0.7054599055699685616588563415406017D0, &
-                      0.5748005730665084622159824505498500D0, &
-                      0.4717788085046148166039770401349242D0]
-            B(8:L) = [0.0357186278731633582380416089754387D0, &
-                      0.1081432249156462115273886110463127D0, &
-                      0.2074644495998764568243804295157274D0, &
-                      0.0856847087203169400000000000000100D0, &
-                      0.3214940030142888168816832126834860D0, &
-                      0.4379422187933413835523680769629170D0, &
-                      0.1619164530635778567510067702038591D0, &
-                      0.2745047674019949038590029729073332D0, &
-                      0.4053359980750069279498908953763256D0, &
-                      0.1877376806564353427728167439451200D0, &
-                      0.3056968347660551665127925566498432D0, &
-                      0.3121444668708908816708046058155764D0]
-            W(1:L) = [0.0275622569528764809669070448245143D0, &
-                      0.0220602154134885011913507340331164D0, &
-                      0.0234600159386714884930134449523000D0, &
-                      0.0003268895950471905462145575015465D0, &
-                      0.0032653194629399682343353040958667D0, &
-                      0.0117564629154127977043079692133821D0, &
-                      0.0117807684199115168455575790986761D0, &
-                      0.0022688108188011408053357043343043D0, &
-                      0.0025960109644363200606737836654882D0, &
-                      0.0046345297858718602123478905615969D0, &
-                      0.0047943360545488579348574487199119D0, &
-                      0.0057124788367236115672506383429634D0, &
-                      0.0058658276043221216369557987000023D0, &
-                      0.0094137630590915875898182685203471D0, &
-                      0.0134149437966564249100220266108931D0, &
-                      0.0157169180920832459435000011378462D0, &
-                      0.0168636830144369045916509638861999D0, &
-                      0.0213900270853200983778322980803590D0, &
-                      0.0230767921894926813678808755218915D0]
+            A(1:L) = [0.333333333333333D0, &
+                      0.200935277065085D0, &
+                      0.437659165961927D0, &
+                      0.00343395649059617D0, &
+                      0.0466434847753067D0, &
+                      0.386422251763071D0, &
+                      0.0954354711085309D0, &
+                      0.955513803350456D0, &
+                      0.886638813428868D0, &
+                      0.784262845880434D0, &
+                      0.882923955050200D0, &
+                      0.668991964441077D0, &
+                      0.552072121035560D0, &
+                      0.797592965596568D0, &
+                      0.677514715119771D0, &
+                      0.542997415589091D0, &
+                      0.705459905569968D0, &
+                      0.574800573066508D0, &
+                      0.471778808504614D0]
+            B(8:L) = [0.0357186278731633D0, &
+                      0.108143224915646D0, &
+                      0.207464449599876D0, &
+                      0.0856847087203169D0, &
+                      0.321494003014288D0, &
+                      0.437942218793341D0, &
+                      0.161916453063577D0, &
+                      0.274504767401994D0, &
+                      0.405335998075006D0, &
+                      0.187737680656435D0, &
+                      0.305696834766055D0, &
+                      0.312144466870890D0]
+            W(1:L) = [0.0275622569528764D0, &
+                      0.0220602154134885D0, &
+                      0.0234600159386714D0, &
+                      0.000326889595047190D0, &
+                      0.00326531946293996D0, &
+                      0.0117564629154127D0, &
+                      0.0117807684199115D0, &
+                      0.00226881081880114D0, &
+                      0.00259601096443632D0, &
+                      0.00463452978587186D0, &
+                      0.00479433605454885D0, &
+                      0.00571247883672361D0, &
+                      0.00586582760432212D0, &
+                      0.00941376305909158D0, &
+                      0.0134149437966564D0, &
+                      0.0157169180920832D0, &
+                      0.0168636830144369D0, &
+                      0.0213900270853200D0, &
+                      0.0230767921894926D0]
             !-----------------------------------------------------------------------
          ELSE
             !-----------------------------------------------------------------------
@@ -3398,7 +3315,7 @@ CONTAINS
             M(1:L) = [1] ! Multiplicity
             A(1:L) = [0.000000000000000D0] ! Point
             B(1:L) = [0.000000000000000D0]
-            W(1:L) = [4.000000000000000D0] ! Weight
+            W(1:L) = [4.00000000000000D0] ! Weight
             !-----------------------------------------------------------------------
          ELSEIF (D <= 2) THEN ! Ref [1]
             !-----------------------------------------------------------------------
@@ -3422,7 +3339,7 @@ CONTAINS
             M(1:L) = [4] ! Multiplicity
             A(1:L) = [0.577350269189626D0] ! Points
             B(1:L) = [0.577350269189626D0]
-            W(1:L) = [1.000000000000000D0] ! Weights
+            W(1:L) = [1.00000000000000D0] ! Weights
             !-----------------------------------------------------------------------
          ELSEIF (D <= 4) THEN ! Ref [2]*
             !-----------------------------------------------------------------------
@@ -3441,7 +3358,7 @@ CONTAINS
                       -0.731629951573135D0, &
                       0.455603727836193D0, &
                       -0.731629951573135D0]
-            W(1:L) = [1.142857142857143D0, &
+            W(1:L) = [1.14285714285714D0, &
                       0.439560439560440D0, &
                       0.566072207007532D0, &
                       0.642719001783677D0, &
@@ -3516,18 +3433,18 @@ CONTAINS
             L = 4
             ALLOCATE (A(L), B(L), M(L), W(L))
             M(1:L) = [2, 2, 2, 2] ! Multiplicity
-            A(1:L) = [0.91711782231277058626D0, &
-                      0.61126876646532841440D0, &
-                      0.52942280204265532589D0, &
+            A(1:L) = [0.917117822312770D0, &
+                      0.611268766465328D0, &
+                      0.529422802042655D0, &
                       0.00000000000000000000D0]
-            B(1:L) = [0.54793120682809232377D0, &
-                      0.93884325665885830459D0, &
+            B(1:L) = [0.547931206828092D0, &
+                      0.938843256658858D0, &
                       0.00000000000000000000D0, &
-                      0.62704137378039531763D0]
-            W(1:L) = [0.21305721162094912651D0, &
-                      0.17400948894689560610D0, &
-                      0.63585388344327977182D0, &
-                      0.59001271542103076297D0]
+                      0.627041373780395D0]
+            W(1:L) = [0.213057211620949D0, &
+                      0.174009488946895D0, &
+                      0.635853883443279D0, &
+                      0.590012715421030D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 8) THEN ! Ref [2]
             !-----------------------------------------------------------------------
@@ -3588,543 +3505,543 @@ CONTAINS
             L = 5
             ALLOCATE (A(L), B(L), M(L), W(L))
             M(1:L) = [1, 4, 4, 4, 4]
-            A(1:L) = [0.00000000000000000000, &
-                      0.96884996636197772072, &
-                      0.75027709997890053354, &
-                      0.52373582021442933604, &
-                      0.07620832819261717318]
-            B(1:L) = [0.00000000000000000000, &
-                      0.63068011973166885417, &
-                      0.92796164595956966740, &
-                      0.45333982113564719076, &
-                      0.85261572933366230775]
-            W(1:L) = [0.52674897119341563786, &
-                      0.08887937817019870697, &
-                      0.11209960212959648528, &
-                      0.39828243926207009528, &
-                      0.26905133763978080301]
+            A(1:L) = [0.00000000000000000000d0, &
+                      0.968849966361977D0, &
+                      0.750277099978900D0, &
+                      0.523735820214429D0, &
+                      0.0762083281926171D0]
+            B(1:L) = [0.00000000000000000000d0, &
+                      0.630680119731668D0, &
+                      0.927961645959569D0, &
+                      0.453339821135647D0, &
+                      0.852615729333662D0]
+            W(1:L) = [0.526748971193415D0, &
+                      0.0888793781701987D0, &
+                      0.112099602129596D0, &
+                      0.398282439262070D0, &
+                      0.269051337639780D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 10) THEN ! Ref []
             !-----------------------------------------------------------------------
             L = 22
             ALLOCATE (A(L), B(L), M(L), W(L))
             M(1:L) = 1
-            A(1:L) = [4.7324898849276598e-01, &
-                      -3.5072672608918981e-01, &
-                      -4.7113921490701688e-01, &
-                      3.2110023120386515e-02, &
-                      1.0733227865108741e-01, &
-                      8.1037492260191812e-01, &
-                      -7.7882541598318511e-01, &
-                      -6.4763548426267536e-01, &
-                      3.9247487539609610e-01, &
-                      7.6050655071397388e-01, &
-                      -8.1171510601648733e-01, &
-                      -1.1429517364223797e-01, &
-                      7.5296563247996007e-01, &
-                      -6.2402437958984702e-01, &
-                      -2.0650134619887220e-01, &
-                      5.0891319042960681e-01, &
-                      -9.8171192640479688e-01, &
-                      -9.4061855719921172e-01, &
-                      -9.2254816825741193e-01, &
-                      9.5380192234255112e-01, &
-                      9.6634208368735852e-01, &
-                      9.5774959160007522e-01]
-            B(1:L) = [1.6557852510038315e-01, &
-                      1.8447172062121983e-01, &
-                      -6.6664733059821124e-01, &
-                      -3.1879357593640706e-01, &
-                      6.1886619139299248e-01, &
-                      6.1159678303492504e-01, &
-                      -2.1052738914821550e-01, &
-                      6.4749469817525440e-01, &
-                      -7.6311149392438349e-01, &
-                      -3.6631391678067937e-01, &
-                      -9.2466842429053542e-01, &
-                      -9.4921913140887015e-01, &
-                      -9.7071837396777472e-01, &
-                      9.8538331193146012e-01, &
-                      9.1195887103573425e-01, &
-                      9.2152907557898267e-01, &
-                      -6.2586619353239670e-01, &
-                      3.1884535968392919e-01, &
-                      8.7923480439903223e-01, &
-                      -7.5512692061435549e-01, &
-                      1.0431232556636386e-01, &
-                      9.2621050012583894e-01]
-            W(1:L) = [3.7171764930896173e-01, &
-                      3.8811447402440874e-01, &
-                      2.8395842218278933e-01, &
-                      4.0824197726154576e-01, &
-                      3.1498878221231136e-01, &
-                      2.0018320620277513e-01, &
-                      2.6587113477126029e-01, &
-                      2.3057004553370086e-01, &
-                      2.5827939410342804e-01, &
-                      2.6042397681916851e-01, &
-                      8.8686202216975499e-02, &
-                      1.1861767207465973e-01, &
-                      5.9110195150351146e-02, &
-                      3.3387129247073037e-02, &
-                      1.3460977386198075e-01, &
-                      1.3337731192240113e-01, &
-                      6.3269272761110995e-02, &
-                      1.1984158532391266e-01, &
-                      6.2537941187552140e-02, &
-                      7.1805898760516657e-02, &
-                      9.7940429484131938e-02, &
-                      3.4467525588983812e-02]
+            A(1:L) = [4.73248988492765D-01, &
+                      -3.50726726089189D-01, &
+                      -4.71139214907016D-01, &
+                      3.21100231203865D-02, &
+                      1.07332278651087D-01, &
+                      8.10374922601918D-01, &
+                      -7.78825415983185D-01, &
+                      -6.47635484262675D-01, &
+                      3.92474875396096D-01, &
+                      7.60506550713973D-01, &
+                      -8.11715106016487D-01, &
+                      -1.14295173642237D-01, &
+                      7.52965632479960D-01, &
+                      -6.24024379589847D-01, &
+                      -2.06501346198872D-01, &
+                      5.08913190429606D-01, &
+                      -9.81711926404796D-01, &
+                      -9.40618557199211D-01, &
+                      -9.22548168257411D-01, &
+                      9.53801922342551D-01, &
+                      9.66342083687358D-01, &
+                      9.57749591600075D-01]
+            B(1:L) = [1.65578525100383D-01, &
+                      1.84471720621219D-01, &
+                      -6.66647330598211D-01, &
+                      -3.18793575936407D-01, &
+                      6.18866191392992D-01, &
+                      6.11596783034925D-01, &
+                      -2.10527389148215D-01, &
+                      6.47494698175254D-01, &
+                      -7.63111493924383D-01, &
+                      -3.66313916780679D-01, &
+                      -9.24668424290535D-01, &
+                      -9.49219131408870D-01, &
+                      -9.70718373967774D-01, &
+                      9.85383311931460D-01, &
+                      9.11958871035734D-01, &
+                      9.21529075578982D-01, &
+                      -6.25866193532396D-01, &
+                      3.18845359683929D-01, &
+                      8.79234804399032D-01, &
+                      -7.55126920614355D-01, &
+                      1.04312325566363D-01, &
+                      9.26210500125838D-01]
+            W(1:L) = [3.71717649308961D-01, &
+                      3.88114474024408D-01, &
+                      2.83958422182789D-01, &
+                      4.08241977261545D-01, &
+                      3.14988782212311D-01, &
+                      2.00183206202775D-01, &
+                      2.65871134771260D-01, &
+                      2.30570045533700D-01, &
+                      2.58279394103428D-01, &
+                      2.60423976819168D-01, &
+                      8.86862022169754D-02, &
+                      1.18617672074659D-01, &
+                      5.91101951503511D-02, &
+                      3.33871292470730D-02, &
+                      1.34609773861980D-01, &
+                      1.33377311922401D-01, &
+                      6.32692727611109D-02, &
+                      1.19841585323912D-01, &
+                      6.25379411875521D-02, &
+                      7.18058987605166D-02, &
+                      9.79404294841319D-02, &
+                      3.44675255889838D-02]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 11) THEN ! Ref [5]*
             !-----------------------------------------------------------------------
             L = 6
             ALLOCATE (A(L), B(L), M(L), W(L))
             M(1:L) = [4, 4, 4, 4, 4, 4]
-            A(1:L) = [0.98263922354085547295e+00, &
-                      0.82577583590296393730e+00, &
-                      0.18858613871864195460e+00, &
-                      0.81252054830481310049e+00, &
-                      0.52532025036454776234e+00, &
-                      0.41658071912022368274e-01]
-            B(1:L) = [0.69807610454956756478e+00, &
-                      0.93948638281673690721e+00, &
-                      0.95353952820153201585e+00, &
-                      0.31562343291525419599e+00, &
-                      0.71200191307533630655e+00, &
-                      0.42484724884866925062e+00]
-            W(1:L) = [0.48020763350723814563e-01, &
-                      0.66071329164550595674e-01, &
-                      0.97386777358668164196e-01, &
-                      0.21173634999894860050e+00, &
-                      0.22562606172886338740e+00, &
-                      0.35115871839824543766e+00]
+            A(1:L) = [0.982639223540855D+00, &
+                      0.825775835902963D+00, &
+                      0.188586138718641D+00, &
+                      0.812520548304813D+00, &
+                      0.525320250364547D+00, &
+                      0.416580719120223D-01]
+            B(1:L) = [0.698076104549567D+00, &
+                      0.939486382816736D+00, &
+                      0.953539528201532D+00, &
+                      0.315623432915254D+00, &
+                      0.712001913075336D+00, &
+                      0.424847248848669D+00]
+            W(1:L) = [0.480207633507238D-01, &
+                      0.660713291645505D-01, &
+                      0.973867773586681D-01, &
+                      0.211736349998948D+00, &
+                      0.225626061728863D+00, &
+                      0.351158718398245D+00]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 12) THEN ! Ref [ ]
             !-----------------------------------------------------------------------
             L = 31
             ALLOCATE (A(L), B(L), M(L), W(L))
             M(1:L) = 1
-            A(1:L) = [-3.8131119459148788e-01, &
-                      6.4573191109453948e-02, &
-                      -1.0834321329194775e-02, &
-                      -3.1882703020851938e-01, &
-                      4.9124051440092803e-01, &
-                      -2.0906799447670715e-01, &
-                      1.8948337189272124e-01, &
-                      -6.9740094114568829e-01, &
-                      -5.8402513589553640e-01, &
-                      4.4701377237977313e-01, &
-                      3.4867912208378016e-01, &
-                      -8.2562697914640848e-01, &
-                      8.2839794669248942e-02, &
-                      -4.0351974647584699e-01, &
-                      6.5401042056406233e-01, &
-                      -9.0264377285460362e-01, &
-                      -8.5295397551927077e-01, &
-                      8.2216786295901656e-01, &
-                      7.4510555770497011e-01, &
-                      -9.4133986362315170e-01, &
-                      -5.4461187387612175e-01, &
-                      7.4407322966908984e-01, &
-                      -7.2254885481492603e-01, &
-                      6.7524406569352735e-01, &
-                      9.3807676975195520e-01, &
-                      -9.9171408764710778e-01, &
-                      -9.7391149358748841e-01, &
-                      -9.2231295237113653e-01, &
-                      9.5557708019583965e-01, &
-                      9.8216591295043421e-01, &
-                      9.2557212335129857e-01]
-            B(1:L) = [-1.5398000784199919e-01, &
-                      -4.9794871568657245e-01, &
-                      1.2224478971657705e-01, &
-                      -7.3294898893865745e-01, &
-                      -7.8409257688727241e-01, &
-                      6.5611051497298534e-01, &
-                      8.9911805536738287e-01, &
-                      -4.2248127033807525e-01, &
-                      3.3100645378716304e-01, &
-                      -2.2659664973677845e-01, &
-                      4.3860404955163790e-01, &
-                      -7.8339223275580994e-01, &
-                      -9.4230798695085749e-01, &
-                      9.6482881096343187e-01, &
-                      7.3857098028675039e-01, &
-                      -1.5881852211379360e-02, &
-                      4.0163251602231481e-01, &
-                      -5.2660748692256265e-01, &
-                      1.0988549815212308e-01, &
-                      -9.5414148142964417e-01, &
-                      -9.5530036379122441e-01, &
-                      -9.7744835460673618e-01, &
-                      7.9662230649630528e-01, &
-                      9.9626110485909680e-01, &
-                      8.8729244026658205e-01, &
-                      -5.2853945477454323e-01, &
-                      5.9955340548238656e-01, &
-                      9.5082592343728289e-01, &
-                      -8.4903353418547223e-01, &
-                      -1.6369711363774472e-01, &
-                      4.7425880434330858e-01]
-            W(1:L) = [2.3598701292933691e-01, &
-                      2.4110813600847844e-01, &
-                      2.7048224227639595e-01, &
-                      1.8648166880884143e-01, &
-                      1.7241958393889878e-01, &
-                      2.4109442092821515e-01, &
-                      1.4125391453247216e-01, &
-                      1.8292025454973745e-01, &
-                      2.2222997581864359e-01, &
-                      2.4904537785770031e-01, &
-                      2.5112362229462498e-01, &
-                      9.2811359998802967e-02, &
-                      9.8238337173087234e-02, &
-                      6.8583817743889233e-02, &
-                      1.5506938444449642e-01, &
-                      1.3182320881366066e-01, &
-                      6.0068518355283269e-02, &
-                      1.5766018519773284e-01, &
-                      1.9930860602643424e-01, &
-                      2.1719109379092324e-02, &
-                      6.4596098758824216e-02, &
-                      4.0584519909105145e-02, &
-                      1.2603341007939087e-01, &
-                      3.0006912476756006e-02, &
-                      4.4974753329261395e-02, &
-                      3.8721244577288268e-02, &
-                      4.7718056922379071e-02, &
-                      3.0056189691189335e-02, &
-                      4.4499282846528827e-02, &
-                      5.6566093223890265e-02, &
-                      9.6814701109561335e-02]
+            A(1:L) = [-3.81311194591487D-01, &
+                      6.45731911094539D-02, &
+                      -1.08343213291947D-02, &
+                      -3.18827030208519D-01, &
+                      4.91240514400928D-01, &
+                      -2.09067994476707D-01, &
+                      1.89483371892721D-01, &
+                      -6.97400941145688D-01, &
+                      -5.84025135895536D-01, &
+                      4.47013772379773D-01, &
+                      3.48679122083780D-01, &
+                      -8.25626979146408D-01, &
+                      8.28397946692489D-02, &
+                      -4.03519746475846D-01, &
+                      6.54010420564062D-01, &
+                      -9.02643772854603D-01, &
+                      -8.52953975519270D-01, &
+                      8.22167862959016D-01, &
+                      7.45105557704970D-01, &
+                      -9.41339863623151D-01, &
+                      -5.44611873876121D-01, &
+                      7.44073229669089D-01, &
+                      -7.22548854814926D-01, &
+                      6.75244065693527D-01, &
+                      9.38076769751955D-01, &
+                      -9.91714087647107D-01, &
+                      -9.73911493587488D-01, &
+                      -9.22312952371136D-01, &
+                      9.55577080195839D-01, &
+                      9.82165912950434D-01, &
+                      9.25572123351298D-01]
+            B(1:L) = [-1.53980007841999D-01, &
+                      -4.97948715686572D-01, &
+                      1.22244789716577D-01, &
+                      -7.32948988938657D-01, &
+                      -7.84092576887272D-01, &
+                      6.56110514972985D-01, &
+                      8.99118055367382D-01, &
+                      -4.22481270338075D-01, &
+                      3.31006453787163D-01, &
+                      -2.26596649736778D-01, &
+                      4.38604049551637D-01, &
+                      -7.83392232755809D-01, &
+                      -9.42307986950857D-01, &
+                      9.64828810963431D-01, &
+                      7.38570980286750D-01, &
+                      -1.58818522113793D-02, &
+                      4.01632516022314D-01, &
+                      -5.26607486922562D-01, &
+                      1.09885498152123D-01, &
+                      -9.54141481429644D-01, &
+                      -9.55300363791224D-01, &
+                      -9.77448354606736D-01, &
+                      7.96622306496305D-01, &
+                      9.96261104859096D-01, &
+                      8.87292440266582D-01, &
+                      -5.28539454774543D-01, &
+                      5.99553405482386D-01, &
+                      9.50825923437282D-01, &
+                      -8.49033534185472D-01, &
+                      -1.63697113637744D-01, &
+                      4.74258804343308D-01]
+            W(1:L) = [2.35987012929336D-01, &
+                      2.41108136008478D-01, &
+                      2.70482242276395D-01, &
+                      1.86481668808841D-01, &
+                      1.72419583938898D-01, &
+                      2.41094420928215D-01, &
+                      1.41253914532472D-01, &
+                      1.82920254549737D-01, &
+                      2.22229975818643D-01, &
+                      2.49045377857700D-01, &
+                      2.51123622294624D-01, &
+                      9.28113599988029D-02, &
+                      9.82383371730872D-02, &
+                      6.85838177438892D-02, &
+                      1.55069384444496D-01, &
+                      1.31823208813660D-01, &
+                      6.00685183552832D-02, &
+                      1.57660185197732D-01, &
+                      1.99308606026434D-01, &
+                      2.17191093790923D-02, &
+                      6.45960987588242D-02, &
+                      4.05845199091051D-02, &
+                      1.26033410079390D-01, &
+                      3.00069124767560D-02, &
+                      4.49747533292613D-02, &
+                      3.87212445772882D-02, &
+                      4.77180569223790D-02, &
+                      3.00561896911893D-02, &
+                      4.44992828465288D-02, &
+                      5.65660932238902D-02, &
+                      9.68147011095613D-02]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 13) THEN ! Ref [5]
             !-----------------------------------------------------------------------
             L = 9
             ALLOCATE (A(L), B(L), M(L), W(L))
             M(1:L) = [1, 4, 4, 4, 4, 4, 4, 4, 4]
-            A(1:L) = [0.00000000000000000000e+00, &
-                      0.77880971155441942252e+00, &
-                      0.95729769978630736566e+00, &
-                      0.13818345986246535375e+00, &
-                      0.94132722587292523695e+00, &
-                      0.47580862521827590507e+00, &
-                      0.75580535657208143627e+00, &
-                      0.69625007849174941396e+00, &
-                      0.34271655604040678941e+00]
-            B(1:L) = [0.00000000000000000000e+00, &
-                      0.98348668243987226379e+00, &
-                      0.85955600564163892859e+00, &
-                      0.95892517028753485754e+00, &
-                      0.39073621612946100068e+00, &
-                      0.85007667369974857597e+00, &
-                      0.64782163718701073204e+00, &
-                      0.70741508996444936217e-01, &
-                      0.40930456169403884330e+00]
-            W(1:L) = [0.30038211543122536139e+00, &
-                      0.29991838864499131666e-01, &
-                      0.38174421317083669640e-01, &
-                      0.60424923817749980681e-01, &
-                      0.77492738533105339358e-01, &
-                      0.11884466730059560108e+00, &
-                      0.12976355037000271129e+00, &
-                      0.21334158145718938943e+00, &
-                      0.25687074948196783651e+00]
+            A(1:L) = [0.00000000000000000000d+00, &
+                      0.778809711554419D+00, &
+                      0.957297699786307D+00, &
+                      0.138183459862465D+00, &
+                      0.941327225872925D+00, &
+                      0.475808625218275D+00, &
+                      0.755805356572081D+00, &
+                      0.696250078491749D+00, &
+                      0.342716556040406D+00]
+            B(1:L) = [0.00000000000000000000d+00, &
+                      0.983486682439872D+00, &
+                      0.859556005641638D+00, &
+                      0.958925170287534D+00, &
+                      0.390736216129461D+00, &
+                      0.850076673699748D+00, &
+                      0.647821637187010D+00, &
+                      0.707415089964449D-01, &
+                      0.409304561694038D+00]
+            W(1:L) = [0.300382115431225D+00, &
+                      0.299918388644991D-01, &
+                      0.381744213170836D-01, &
+                      0.604249238177499D-01, &
+                      0.774927385331053D-01, &
+                      0.118844667300595D+00, &
+                      0.129763550370002D+00, &
+                      0.213341581457189D+00, &
+                      0.256870749481967D+00]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 15) THEN ! Ref [4]
             !-----------------------------------------------------------------------
             L = 11
             ALLOCATE (A(L), B(L), M(L), W(L))
             M(1:L) = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4] ! Multipl.
-            A(1:L) = [0.98798456650771809034922121236542D0, &
-                      0.90815949600657000212015099547736D0, &
-                      0.67928365833453304991325391003325D0, &
-                      0.50911373411758353514778637359508D0, &
-                      0.97675332466910190352385200798077D0, &
-                      0.75619936719149244012005066365912D0, &
-                      0.89778569328633877480008574782677D0, &
-                      0.20599307074252141729418963873618D0, &
-                      0.45144312511299139017533875886564D0, &
-                      0.66683824538360873834071399129626D0, &
-                      0.74295704755765822553432311307323D-1]
-            B(1:L) = [0.77126821223875533899886933446485D0, &
-                      0.95703183434690690872237176442598D0, &
-                      0.88260197593087253601344445274335D0, &
-                      0.97120312974183699854692313856226D0, &
-                      0.83559862608781647288448365846813D-1, &
-                      0.75619936719149244012005066365912D0, &
-                      0.46676265923796434848237353795400D0, &
-                      0.84079448454078540426562160968883D0, &
-                      0.56245686233219940637540066298377D0, &
-                      0.19046630243571720761679616635243D0, &
-                      0.32397702249753019818251854432752D0]
-            W(1:L) = [0.20881470204497523521771058289754D-1, &
-                      0.25545901574497276542640153395248D-1, &
-                      0.31203866624933300871149690867662D-1, &
-                      0.38010761595074827467645518285610D-1, &
-                      0.41449061852426148002787373214871D-1, &
-                      0.79320407004083334044710201039891D-1, &
-                      0.88901265758751523303980720079987D-1, &
-                      0.12016982158206027507823569713056D0, &
-                      0.16882043410639799754153511014621D0, &
-                      0.16987162497336185160489786440053D0, &
-                      0.21582538472391594202064661314968D0]
+            A(1:L) = [0.987984566507718D0, &
+                      0.908159496006570D0, &
+                      0.679283658334533D0, &
+                      0.509113734117583D0, &
+                      0.976753324669101D0, &
+                      0.756199367191492D0, &
+                      0.897785693286338D0, &
+                      0.205993070742521D0, &
+                      0.451443125112991D0, &
+                      0.666838245383608D0, &
+                      0.742957047557658D-1]
+            B(1:L) = [0.771268212238755D0, &
+                      0.957031834346906D0, &
+                      0.882601975930872D0, &
+                      0.971203129741836D0, &
+                      0.835598626087816D-1, &
+                      0.756199367191492D0, &
+                      0.466762659237964D0, &
+                      0.840794484540785D0, &
+                      0.562456862332199D0, &
+                      0.190466302435717D0, &
+                      0.323977022497530D0]
+            W(1:L) = [0.208814702044975D-1, &
+                      0.255459015744972D-1, &
+                      0.312038666249333D-1, &
+                      0.380107615950748D-1, &
+                      0.414490618524261D-1, &
+                      0.793204070040833D-1, &
+                      0.889012657587515D-1, &
+                      0.120169821582060D0, &
+                      0.168820434106397D0, &
+                      0.169871624973361D0, &
+                      0.215825384723915D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 17) THEN ! Ref [4]
             !-----------------------------------------------------------------------
             L = 14
             ALLOCATE (A(L), B(L), M(L), W(L))
             M(1:L) = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4] ! Multipl.
-            A(1:L) = [0.83395914422050762595707520328329D0, &
-                      0.96701240760377864958940778776159D0, &
-                      0.98651441086033068583570701960810D0, &
-                      0.17035060808995408160378979789427D-1, &
-                      0.42523896522453030941022314252505D0, &
-                      0.88194109089215356624316729768736D0, &
-                      0.69978907719058600912388980227382D0, &
-                      0.90858412958838344797723547617253D0, &
-                      0.73933759205292015806620475085721D0, &
-                      0.21246155837885419289305793553062D0, &
-                      0.15644172095846342514322716437912D0, &
-                      0.50398563819427997044830482422504D0, &
-                      0.58243895074467257078462336257058D0, &
-                      0.28970323065541272212557470108155D0]
-            B(1:L) = [0.99690134998258294114169765276688D0, &
-                      0.92101565015369642619085740576658D0, &
-                      0.56251780244667252352153081833715D0, &
-                      0.98204914256843033449712481990261D0, &
-                      0.95796453236865195741899809390262D0, &
-                      0.74117688569732509081061208741447D0, &
-                      0.88728024293255774907349992409998D0, &
-                      0.25843122151820770173022364732347D0, &
-                      0.47295583257297618882242532468520D0, &
+            A(1:L) = [0.833959144220507D0, &
+                      0.967012407603778D0, &
+                      0.986514410860330D0, &
+                      0.170350608089954D-1, &
+                      0.425238965224530D0, &
+                      0.881941090892153D0, &
+                      0.699789077190586D0, &
+                      0.908584129588383D0, &
+                      0.739337592052920D0, &
+                      0.212461558378854D0, &
+                      0.156441720958463D0, &
+                      0.503985638194279D0, &
+                      0.582438950744672D0, &
+                      0.289703230655412D0]
+            B(1:L) = [0.996901349982582D0, &
+                      0.921015650153696D0, &
+                      0.562517802446672D0, &
+                      0.982049142568430D0, &
+                      0.957964532368651D0, &
+                      0.741176885697325D0, &
+                      0.887280242932557D0, &
+                      0.258431221518207D0, &
+                      0.472955832572976D0, &
                       0.00000000000000000000000000000000D0, &
-                      0.81259212523912311994061744159953D0, &
-                      0.68201093297792530795370853308359D0, &
-                      0.11846544560647891209927499369579D0, &
-                      0.40876985953794338411643329876836D0]
-            W(1:L) = [0.10693483986974526468925667171638D-1, &
-                      0.16771622989325482379964908559201D-1, &
-                      0.21520834803173017585623196363995D-1, &
-                      0.24893201532665059892584476318209D-1, &
-                      0.42463258472030940473501779894230D-1, &
-                      0.53711265037645010830029221647514D-1, &
-                      0.54579479693382460849318673206721D-1, &
-                      0.67375653622461385504403959336007D-1, &
-                      0.98025282885102299426881768287454D-1, &
-                      0.98325651584666601742691443856667D-1, &
-                      0.10576898319665727200249259468733D0, &
-                      0.10593453574575401283483020818374D0, &
-                      0.14990405484916921950315250394890D0, &
-                      0.15003269160099271050559959853839D0]
+                      0.812592125239123D0, &
+                      0.682010932977925D0, &
+                      0.118465445606478D0, &
+                      0.408769859537943D0]
+            W(1:L) = [0.106934839869745D-1, &
+                      0.167716229893254D-1, &
+                      0.215208348031730D-1, &
+                      0.248932015326650D-1, &
+                      0.424632584720309D-1, &
+                      0.537112650376450D-1, &
+                      0.545794796933824D-1, &
+                      0.673756536224613D-1, &
+                      0.980252828851022D-1, &
+                      0.983256515846666D-1, &
+                      0.105768983196657D0, &
+                      0.105934535745754D0, &
+                      0.149904054849169D0, &
+                      0.150032691600992D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 19) THEN ! Ref [4]
             !-----------------------------------------------------------------------
             L = 17
             ALLOCATE (A(L), B(L), M(L), W(L))
             M(1:L) = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4] ! Multipl.
-            A(1:L) = [0.93790944060174636724164305692148D0, &
-                      0.59787966519157168521483636741590D0, &
-                      0.96865781747798834472115427804246D0, &
-                      0.98871713276447330663578670732177D0, &
-                      0.98398534132338386681313796251589D0, &
-                      0.36585775934555586089438861852973D0, &
-                      0.78392149176096602345110934186655D0, &
-                      0.86937144898957875204792277623522D0, &
-                      0.91889377777573801032232199904313D0, &
-                      0.14078396804456848628363687508206D0, &
-                      0.56379666815446526573028097449771D0, &
-                      0.76200274293070327698230061865243D0, &
-                      0.69745388342191267884442122044750D0, &
-                      0.52310392339404494392757182766006D0, &
-                      0.30566836903929191370033838487568D0, &
-                      0.44898642628288082765338494532756D0, &
-                      0.98253418759835132805054567507033D-1]
-            B(1:L) = [0.99998546072852907260205380652647D0, &
-                      0.98732847941781540087026300838966D0, &
-                      0.89837495163532572964949889543009D0, &
-                      0.62259634389530287767136776393609D0, &
-                      0.81109463487824943619725131193050D-1, &
-                      0.96462400422891970516096923553526D0, &
-                      0.93756444544378175318295617860873D0, &
-                      0.74380866034597101765279618918913D0, &
-                      0.38410875822737883260638757649426D0, &
-                      0.87987957307981017658529064786666D0, &
-                      0.81879210607636015929368719928237D0, &
-                      0.15749920122732269808023356410127D0, &
-                      0.54657527460177776847334916572487D0, &
+            A(1:L) = [0.937909440601746D0, &
+                      0.597879665191571D0, &
+                      0.968657817477988D0, &
+                      0.988717132764473D0, &
+                      0.983985341323383D0, &
+                      0.365857759345555D0, &
+                      0.783921491760966D0, &
+                      0.869371448989578D0, &
+                      0.918893777775738D0, &
+                      0.140783968044568D0, &
+                      0.563796668154465D0, &
+                      0.762002742930703D0, &
+                      0.697453883421912D0, &
+                      0.523103923394044D0, &
+                      0.305668369039291D0, &
+                      0.448986426282880D0, &
+                      0.982534187598351D-1]
+            B(1:L) = [0.999985460728529D0, &
+                      0.987328479417815D0, &
+                      0.898374951635325D0, &
+                      0.622596343895302D0, &
+                      0.811094634878249D-1, &
+                      0.964624004228919D0, &
+                      0.937564445443781D0, &
+                      0.743808660345971D0, &
+                      0.384108758227378D0, &
+                      0.879879573079810D0, &
+                      0.818792106076360D0, &
+                      0.157499201227322D0, &
+                      0.546575274601777D0, &
                       0.00000000000000000000000000000000D0, &
-                      0.65017670270687960549278395428873D0, &
-                      0.34240465380680230945939322837053D0, &
-                      0.23509621629115532325303789785547D0]
-            W(1:L) = [0.42157189312457273371400997162954D-2, &
-                      0.99237601014741223600089798896376D-2, &
-                      0.15078678879581549295330034135223D-1, &
-                      0.15121496864822956266676863866018D-1, &
-                      0.23821621047339582724750103846036D-1, &
-                      0.28746437252189671047629194361029D-1, &
-                      0.31348715503861464721826917341708D-1, &
-                      0.49762852666717116332578404045926D-1, &
-                      0.55534775159604041101829554407116D-1, &
-                      0.65013710432173970207381031565964D-1, &
-                      0.73819068900731731823980126564345D-1, &
-                      0.90385825968150641564727715959435D-1, &
-                      0.91881833336425013923433485117405D-1, &
-                      0.94967142638856099564605740671378D-1, &
-                      0.10498174724102843457467466433826D0, &
-                      0.11871336850928058424347422704556D0, &
-                      0.12668324656651729290995285712867D0]
+                      0.650176702706879D0, &
+                      0.342404653806802D0, &
+                      0.235096216291155D0]
+            W(1:L) = [0.421571893124572D-2, &
+                      0.992376010147412D-2, &
+                      0.150786788795815D-1, &
+                      0.151214968648229D-1, &
+                      0.238216210473395D-1, &
+                      0.287464372521896D-1, &
+                      0.313487155038614D-1, &
+                      0.497628526667171D-1, &
+                      0.555347751596040D-1, &
+                      0.650137104321739D-1, &
+                      0.738190689007317D-1, &
+                      0.903858259681506D-1, &
+                      0.918818333364250D-1, &
+                      0.949671426388560D-1, &
+                      0.104981747241028D0, &
+                      0.118713368509280D0, &
+                      0.126683246566517D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 21) THEN ! Ref [4]
             !-----------------------------------------------------------------------
             L = 21
             ALLOCATE (A(L), B(L), M(L), W(L))
             M(1:L) = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1]
-            A(1:L) = [0.99742844318071465788852153329446D0, &
-                      0.90092205722857715090631770295789D0, &
-                      0.98137581661152322617866583081353D0, &
-                      0.47562398846061921636952360049609D0, &
-                      0.68396217875524370909034162562144D-1, &
-                      0.96445171170290974019893928634261D0, &
-                      0.96789534067760540982739074113386D0, &
-                      0.71204626183902144323409345553631D0, &
-                      0.86686503563504933746419509606443D0, &
-                      0.29388895765490255861532312924984D0, &
-                      0.88245289720509646533706783064117D0, &
-                      0.88356465549777630296872390851348D0, &
-                      0.53714330328796591598235477256257D0, &
-                      0.73297737278688849035966507531475D0, &
-                      0.74340815897994389367005251095709D0, &
-                      0.14352379867257862891820869134808D0, &
-                      0.57716374806487034338151001622839D0, &
-                      0.38010653105519745774291045326124D0, &
-                      0.49380304750704567296572150088764D0, &
-                      0.23300694276964919884562248755586D0, &
+            A(1:L) = [0.997428443180714D0, &
+                      0.900922057228577D0, &
+                      0.981375816611523D0, &
+                      0.475623988460619D0, &
+                      0.683962178755243D-1, &
+                      0.964451711702909D0, &
+                      0.967895340677605D0, &
+                      0.712046261839021D0, &
+                      0.866865035635049D0, &
+                      0.293888957654902D0, &
+                      0.882452897205096D0, &
+                      0.883564655497776D0, &
+                      0.537143303287965D0, &
+                      0.732977372786888D0, &
+                      0.743408158979943D0, &
+                      0.143523798672578D0, &
+                      0.577163748064870D0, &
+                      0.380106531055197D0, &
+                      0.493803047507045D0, &
+                      0.233006942769649D0, &
                       0.00000000000000000000000000000000D0]
-            B(1:L) = [0.52349333540342268677302187698119D0, &
-                      0.99213624611198765984022577926158D0, &
-                      0.93577766500519228442627576803182D0, &
-                      0.98806503981406364167006543205075D0, &
-                      0.98289142121346795894575007552095D0, &
-                      0.73079564192792033198229729840349D0, &
-                      0.28416943704022564251542547384397D0, &
-                      0.95001737577395264422880843244573D0, &
-                      0.85754514904426211818642071770359D0, &
-                      0.91478375374420147743639913929870D0, &
-                      0.78310571319347967606817150072422D-1, &
-                      0.50650027819745540446699219481203D0, &
-                      0.82111662321535962574448188332070D0, &
-                      0.67811474157990352881988795983159D0, &
-                      0.25891212405917942502949658613377D0, &
-                      0.73714284444878233387764988974016D0, &
-                      0.42605137832252378501649531823938D0, &
-                      0.59190980196005469388929534014808D0, &
-                      0.46968438389915362845722235027390D-1, &
-                      0.27854054992870057594151995625227D0, &
+            B(1:L) = [0.523493335403422D0, &
+                      0.992136246111987D0, &
+                      0.935777665005192D0, &
+                      0.988065039814063D0, &
+                      0.982891421213467D0, &
+                      0.730795641927920D0, &
+                      0.284169437040225D0, &
+                      0.950017375773952D0, &
+                      0.857545149044262D0, &
+                      0.914783753744201D0, &
+                      0.783105713193479D-1, &
+                      0.506500278197455D0, &
+                      0.821116623215359D0, &
+                      0.678114741579903D0, &
+                      0.258912124059179D0, &
+                      0.737142844448782D0, &
+                      0.426051378322523D0, &
+                      0.591909801960054D0, &
+                      0.469684383899153D-1, &
+                      0.278540549928700D0, &
                       0.00000000000000000000000000000000D0]
-            W(1:L) = [0.59245289910274777823163684444026D-2, &
-                      0.63181879993530976749052313712955D-2, &
-                      0.77654356771885822575525989789117D-2, &
-                      0.13313236524649387539261801099149D-1, &
-                      0.18028023632000303112294832251383D-1, &
-                      0.20759211084811453614957408545828D-1, &
-                      0.24345594686962939048122829629801D-1, &
-                      0.27291829813157459363923440908365D-1, &
-                      0.31313724489320677669626239379042D-1, &
-                      0.43028684463625497581941353350492D-1, &
-                      0.47435107497760585342967184111271D-1, &
-                      0.49535232791099913534195616930148D-1, &
-                      0.59086609737522776429493659734483D-1, &
-                      0.61598898755573131953283218720393D-1, &
-                      0.68662882737105569078247834904061D-1, &
-                      0.77511025760449779132628565445376D-1, &
-                      0.77655900861398148704502327066780D-1, &
-                      0.84165159143253389201574044182295D-1, &
-                      0.11664395742356559711226466539621D0, &
-                      0.12587077966701428595400393561138D0, &
-                      0.13498395305263979164774737575571D0]
+            W(1:L) = [0.592452899102747D-2, &
+                      0.631818799935309D-2, &
+                      0.776543567718858D-2, &
+                      0.133132365246493D-1, &
+                      0.180280236320003D-1, &
+                      0.207592110848114D-1, &
+                      0.243455946869629D-1, &
+                      0.272918298131574D-1, &
+                      0.313137244893206D-1, &
+                      0.430286844636254D-1, &
+                      0.474351074977605D-1, &
+                      0.495352327910999D-1, &
+                      0.590866097375227D-1, &
+                      0.615988987555731D-1, &
+                      0.686628827371055D-1, &
+                      0.775110257604497D-1, &
+                      0.776559008613981D-1, &
+                      0.841651591432533D-1, &
+                      0.116643957423565D0, &
+                      0.125870779667014D0, &
+                      0.134983953052639D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 23) THEN ! Ref [4]
             !-----------------------------------------------------------------------
             L = 25
             ALLOCATE (A(L), B(L), M(L), W(L))
             M(1:L) = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
-            A(1:L) = [0.22475776435269587875683347524503D0, &
-                      0.87420793087689680287386901266229D0, &
-                      0.97602267261364022197431910391898D0, &
-                      0.98901025758028347071424940975698D0, &
-                      0.99326920924031633712313940841625D0, &
-                      0.56499592316621278816917834165965D0, &
-                      0.12479933234667809522764885071235D0, &
-                      0.90240439932034384398117518141661D0, &
-                      0.96603416099961004557874518675109D0, &
-                      0.74327403381257379390317209035852D0, &
-                      0.94397158234337348119479988763974D0, &
-                      0.36473593323821554671165638117641D0, &
-                      0.90025309287443275420616285586643D0, &
-                      0.48034665839500246850252725186282D-1, &
-                      0.54919116214309328871373834754894D0, &
-                      0.86487537690899969927500100353866D0, &
-                      0.78769621309348012773202186731599D0, &
-                      0.57671028420945643394316234476328D0, &
-                      0.20013408262762044788586320030931D0, &
-                      0.74602728783032388650354427676695D0, &
-                      0.64177280458672645848207064078009D0, &
-                      0.40236411309752397363192555539035D0, &
-                      0.46993983120051570507268178090848D0, &
-                      0.22491749438123049571812018957130D0, &
-                      0.22831753386455276245209947736815D0]
-            B(1:L) = [0.29562926123440075779470457695520D0, &
-                      0.99164484170232374329954582252223D0, &
-                      0.96038644389988149213812916422733D0, &
-                      0.79476170695439095037125111357424D0, &
-                      0.45269906826670511998507618989211D0, &
-                      0.98963443963546680882582623594845D0, &
-                      0.98891634511573107523317221688555D0, &
-                      0.86681747165850322502643568236158D0, &
-                      0.22128837983587450545659391256077D0, &
-                      0.93739279789140167477396439558006D0, &
-                      0.62734373811214363563025812471848D0, &
-                      0.93654053553190687038241524198386D0, &
-                      0.25070990341427951813078348104539D-1, &
-                      0.65304687691990057591624038872149D0, &
+            A(1:L) = [0.224757764352695D0, &
+                      0.874207930876896D0, &
+                      0.976022672613640D0, &
+                      0.989010257580283D0, &
+                      0.993269209240316D0, &
+                      0.564995923166212D0, &
+                      0.124799332346678D0, &
+                      0.902404399320343D0, &
+                      0.966034160999610D0, &
+                      0.743274033812573D0, &
+                      0.943971582343373D0, &
+                      0.364735933238215D0, &
+                      0.900253092874432D0, &
+                      0.480346658395002D-1, &
+                      0.549191162143093D0, &
+                      0.864875376908999D0, &
+                      0.787696213093480D0, &
+                      0.576710284209456D0, &
+                      0.200134082627620D0, &
+                      0.746027287830323D0, &
+                      0.641772804586726D0, &
+                      0.402364113097523D0, &
+                      0.469939831200515D0, &
+                      0.224917494381230D0, &
+                      0.228317533864552D0]
+            B(1:L) = [0.295629261234400D0, &
+                      0.991644841702323D0, &
+                      0.960386443899881D0, &
+                      0.794761706954390D0, &
+                      0.452699068266705D0, &
+                      0.989634439635466D0, &
+                      0.988916345115731D0, &
+                      0.866817471658503D0, &
+                      0.221288379835874D0, &
+                      0.937392797891401D0, &
+                      0.627343738112143D0, &
+                      0.936540535531906D0, &
+                      0.250709903414279D-1, &
+                      0.653046876919900D0, &
                       0.00000000000000000000000000000000D0, &
-                      0.42021700731140387645536924573814D0, &
-                      0.71486137179637184939863361570348D0, &
-                      0.82649643106250383189783444260321D0, &
-                      0.80824267349292209367541999626505D0, &
-                      0.20581981165646397971556679713472D0, &
-                      0.51516637687706181290564290685967D0, &
-                      0.64890781819854093908140818020446D0, &
-                      0.27714799151429808758023024246803D0, &
-                      0.40375503517268762210602535023913D0, &
-                      0.56116790982355323182358196190726D-1]
-            W(1:L) = [-0.22499144590180737573666435988313D-1, &
-                      0.56757797279709720956600059513997D-2, &
-                      0.61294541632385752564605990154598D-2, &
-                      0.77307399716921584473393426863691D-2, &
-                      0.79851030689059360294239183531451D-2, &
-                      0.10747724909071103372536638574027D-1, &
-                      0.14073722901914630236333688287280D-1, &
-                      0.22950166656215871772211451659864D-1, &
-                      0.23104503668552704581666880144042D-1, &
-                      0.24886583460620943481070103801115D-1, &
-                      0.25495608710781325077549951029551D-1, &
-                      0.35148791457392415926700843453924D-1, &
-                      0.39967612471275640012053163262252D-1, &
-                      0.42210906199290840139296408236284D-1, &
-                      0.45629308917602135087674549832202D-1, &
-                      0.47184931543983842485535616621711D-1, &
-                      0.48004360511784007777329600464972D-1, &
-                      0.51407132281965816724265717022986D-1, &
-                      0.54210495031621259406088939636629D-1, &
-                      0.63980226470850872129000560206633D-1, &
-                      0.71999854713967554049756153858067D-1, &
-                      0.74130368424485001536304396403399D-1, &
-                      0.87075597857073455631778823034765D-1, &
-                      0.10080008323810791275764368651352D0, &
-                      0.11197008823181576355998539793872D0]
+                      0.420217007311403D0, &
+                      0.714861371796371D0, &
+                      0.826496431062503D0, &
+                      0.808242673492922D0, &
+                      0.205819811656463D0, &
+                      0.515166376877061D0, &
+                      0.648907818198540D0, &
+                      0.277147991514298D0, &
+                      0.403755035172687D0, &
+                      0.561167909823553D-1]
+            W(1:L) = [-0.224991445901807D-1, &
+                      0.567577972797097D-2, &
+                      0.612945416323857D-2, &
+                      0.773073997169215D-2, &
+                      0.798510306890593D-2, &
+                      0.107477249090711D-1, &
+                      0.140737229019146D-1, &
+                      0.229501666562158D-1, &
+                      0.231045036685527D-1, &
+                      0.248865834606209D-1, &
+                      0.254956087107813D-1, &
+                      0.351487914573924D-1, &
+                      0.399676124712756D-1, &
+                      0.422109061992908D-1, &
+                      0.456293089176021D-1, &
+                      0.471849315439838D-1, &
+                      0.480043605117840D-1, &
+                      0.514071322819658D-1, &
+                      0.542104950316212D-1, &
+                      0.639802264708508D-1, &
+                      0.719998547139675D-1, &
+                      0.741303684244850D-1, &
+                      0.870755978570734D-1, &
+                      0.100800083238107D0, &
+                      0.111970088231815D0]
             !-----------------------------------------------------------------------
          ELSE
             !-----------------------------------------------------------------------
@@ -4197,10 +4114,10 @@ CONTAINS
             L = 1
             ALLOCATE (A(L), B(L), C(L), M(L), W(L))
             M(1:L) = [1]
-            A(1:L) = [-0.3333333333333333333D0]
-            B(1:L) = [-0.3333333333333333333D0]
+            A(1:L) = [-0.333333333333333D0]
+            B(1:L) = [-0.333333333333333D0]
             C(1:L) = [0.0000000000000000000D0]
-            W(1:L) = [4.0000000000000000000D0]
+            W(1:L) = [4.00000000000000D0]
             !-----------------------------------------------------------------------
          ELSEIF (D <= 2) THEN ! Ref [1]*
             !-----------------------------------------------------------------------
@@ -4323,7 +4240,7 @@ CONTAINS
       real(8) :: Jac(n, n), augJ(n + 1, n), eig(n), v(n)
       real(8), dimension(0:n + 1) :: polyo
       real(8) :: eps, jrl, dum, ajp1, bjp1, x, prl, nv, lambda
-      real(8) :: summ, dpolyon, al, be, nrl, B0
+      real(8) :: summ, al, be, nrl, B0
 
       !.....Determine whether Lobatto rules are needed. If so,
       !.....prepare elements for modified Jacobi matrix, and
@@ -4331,7 +4248,7 @@ CONTAINS
       if (lobatyn) then
          al = alph
          be = bet
-         if (.not. (alph == 0.0d0 .and. bet == 0.0d0)) then
+         if (.not. (abs(alph) <= 1d-15 .and. abs(bet) <= 1d-15)) then
             PRINT *, ' ERROR ENCOUNTERED IN quad_rules_general.f! '
             PRINT *, ' INVALID CHOICE(S) FOR ALPHA/BETA FOR QUADRATURE! '
             PRINT *, ' IF LOBATTO RULES ARE NEEDED, CURRENTLY ONLY '
@@ -4367,7 +4284,7 @@ CONTAINS
 
       !.....Determine whether Legendre or Jacobi weights are desired and
       !.....calculate entries of Jacobi matrix accordingly.
-      if (al == 0.0d0 .and. be == 0.0d0) then
+      if (abs(al) <= 1d-15 .and. abs(be) <= 1d-15) then
          quadtype = 1
          aj(1:n) = 0.0d0
          do j = 1, n - 1
@@ -4415,7 +4332,7 @@ CONTAINS
       call QRdecomp(Jac, nn, eps, eig)
 
       !.....If rule is symmetric, duplicate values across the symmetry.
-      if (al == be) then
+      if (abs(al - be) > 1d-14) then
          if (mod(nn, 2) == 1) then
             m = ceiling(real(nn, kind=8)/2.d0)
             pts(1:m) = eig(1:m)
@@ -4771,11 +4688,11 @@ CONTAINS
       !.....Explicitly declare remaining variables
 
       INTEGER :: P, Q, R
-      REAL(8) :: AQ, BQ, CQ, X, Y, Z
+      REAL(8) :: AQ, BQ, CQ, X, Y, Z, preal, qreal
       REAL(8), DIMENSION(0:D) :: LEGENDRE
-      REAL(8), DIMENSION(0:D) :: LEGENDRE_X, LEGENDRE_Y, LEGENDRE_Z
+      REAL(8), DIMENSION(0:D) :: LEGENDRE_X, LEGENDRE_Y
       REAL(8), DIMENSION(0:D) :: DLEGENDRE
-      REAL(8), DIMENSION(0:D) :: DLEGENDRE_X, DLEGENDRE_Y, DLEGENDRE_Z
+      REAL(8), DIMENSION(0:D) :: DLEGENDRE_X, DLEGENDRE_Y
       REAL(8), DIMENSION(0:D, 0:D) :: PHI
       REAL(8), DIMENSION(0:D, 0:D, 2) :: DPHI
       REAL(8), DIMENSION((D + 2)*(D + 1)/2) :: PHI_2D
@@ -4850,32 +4767,36 @@ CONTAINS
          !.......Recurrence relations
 
          DO P = 1, D - 1
-            PHI(P + 1, 0) = (2.D0*P + 1.D0)/(P + 1.D0)*PHI(1, 0)*PHI(P, 0) &
-                            - P/(P + 1.D0)*((1.D0 - Y)/2.D0)**2.D0*PHI(P - 1, 0)
-            DPHI(P + 1, 0, 1) = (2.D0*P + 1.D0)/(P + 1.D0)*(DPHI(1, 0, 1)*PHI(P, 0) &
+            preal = real(P,8)
+            PHI(P + 1, 0) = (2.D0*Preal + 1.D0)/(Preal + 1.D0)*PHI(1, 0)*PHI(P, 0) &
+                            - Preal/(Preal + 1.D0)*((1.D0 - Y)/2.D0)**2.D0*PHI(P - 1, 0)
+            DPHI(P + 1, 0, 1) = (2.D0*Preal + 1.D0)/(Preal + 1.D0)*(DPHI(1, 0, 1)*PHI(P, 0) &
                                                             + PHI(1, 0)*DPHI(P, 0, 1)) &
-                                - P/(P + 1.D0)*((1.D0 - Y)/2.D0)**2.D0*DPHI(P - 1, 0, 1)
-            DPHI(P + 1, 0, 2) = (2.D0*P + 1.D0)/(P + 1.D0)*(DPHI(1, 0, 2)*PHI(P, 0) &
+                                - Preal/(Preal + 1.D0)*((1.D0 - Y)/2.D0)**2.D0*DPHI(P - 1, 0, 1)
+            DPHI(P + 1, 0, 2) = (2.D0*Preal + 1.D0)/(Preal + 1.D0)*(DPHI(1, 0, 2)*PHI(P, 0) &
                                                             + PHI(1, 0)*DPHI(P, 0, 2)) &
-                                - P/(P + 1.D0)*((Y - 1)/2 &
+                                - Preal/(Preal + 1.D0)*((Y - 1)/2 &
                                                 *PHI(P - 1, 0) &
                                                 + ((1.D0 - Y)/2.D0)**2.D0*DPHI(P - 1, 0, 2))
          END DO
          DO P = 0, D - 1
-            PHI(P, 1) = PHI(P, 0)*(1.D0 + 2.D0*P + (3.D0 + 2.D0*P)*Y)/2.D0
-            DPHI(P, 1, 1) = DPHI(P, 0, 1)*(1.D0 + 2.D0*P + (3.D0 + 2.D0*P)*Y)/2.D0
-            DPHI(P, 1, 2) = DPHI(P, 0, 2)*(1.D0 + 2.D0*P + (3.D0 + 2.D0*P)*Y)/2.D0 &
-                            + PHI(P, 0)*(3.D0 + 2.D0*P)/2.D0
+            preal = real(P,8)
+            PHI(P, 1) = PHI(P, 0)*(1.D0 + 2.D0*Preal + (3.D0 + 2.D0*Preal)*Y)/2.D0
+            DPHI(P, 1, 1) = DPHI(P, 0, 1)*(1.D0 + 2.D0*Preal + (3.D0 + 2.D0*Preal)*Y)/2.D0
+            DPHI(P, 1, 2) = DPHI(P, 0, 2)*(1.D0 + 2.D0*Preal + (3.D0 + 2.D0*Preal)*Y)/2.D0 &
+                            + PHI(P, 0)*(3.D0 + 2.D0*Preal)/2.D0
          END DO
 
          DO Q = 1, D - 1
+            qreal = real(q,8)
             DO P = 0, D - Q - 1
-               AQ = (2.D0*Q + 2.D0 + 2.D0*P)*(2.D0*Q + 3.D0 + 2.D0*P)/(2.D0*Q + 2.D0) &
-                    /(Q + 2.D0 + 2.D0*P)
-               BQ = (2.D0*P + 1.D0)**2.D0*(2.D0*Q + 2.D0 + 2.D0*P)/ &
-                    (2.D0*Q + 2.D0)/(2.D0*Q + 2.D0*P + 1.D0)/(Q + 2.D0 + 2.D0*P)
-               CQ = (Q + 2.D0*P + 1.D0)*Q*(2.D0*Q + 3.D0 + 2.D0*P)/ &
-                    (Q + 1.D0)/(Q + 2.D0 + 2.D0*P)/(2.D0*Q + 2.D0*P + 1.D0)
+               preal = real(p,8)
+               AQ = (2.D0*Qreal + 2.D0 + 2.D0*Preal)*(2.D0*Qreal + 3.D0 + 2.D0*Preal)/(2.D0*Qreal + 2.D0) &
+                    /(Qreal + 2.D0 + 2.D0*Preal)
+               BQ = (2.D0*Preal + 1.D0)**2.D0*(2.D0*Qreal + 2.D0 + 2.D0*Preal)/ &
+                    (2.D0*Qreal + 2.D0)/(2.D0*Qreal + 2.D0*Preal + 1.D0)/(Qreal + 2.D0 + 2.D0*Preal)
+               CQ = (Qreal + 2.D0*Preal + 1.D0)*Qreal*(2.D0*Qreal + 3.D0 + 2.D0*Preal)/ &
+                    (Qreal + 1.D0)/(Qreal + 2.D0 + 2.D0*Preal)/(2.D0*Qreal + 2.D0*Preal + 1.D0)
                PHI(P, Q + 1) = (AQ*Y + BQ)*PHI(P, Q) - CQ*PHI(P, Q - 1)
                DPHI(P, Q + 1, 1) = (AQ*Y + BQ)*DPHI(P, Q, 1) - CQ*DPHI(P, Q - 1, 1)
                DPHI(P, Q + 1, 2) = (AQ*Y + BQ)*DPHI(P, Q, 2) + AQ*PHI(P, Q) &
@@ -4910,10 +4831,11 @@ CONTAINS
          LEGENDRE_X(1) = X
          DLEGENDRE_X(1) = 1.D0
          DO P = 1, D - 1
-            LEGENDRE_X(P + 1) = ((2.D0*P + 1.D0)*X*LEGENDRE_X(P) - P* &
-                                 LEGENDRE_X(P - 1))/(P + 1.D0)
-            DLEGENDRE_X(P + 1) = ((2.D0*P + 1.D0)*(X*DLEGENDRE_X(P) + &
-                                                   LEGENDRE_X(P)) - P*DLEGENDRE_X(P - 1))/(P + 1.D0)
+            preal = real(P, 8)
+            LEGENDRE_X(P + 1) = ((2.D0*Preal + 1.D0)*X*LEGENDRE_X(P) - Preal* &
+                                 LEGENDRE_X(P - 1))/(Preal + 1.D0)
+            DLEGENDRE_X(P + 1) = ((2.D0*Preal + 1.D0)*(X*DLEGENDRE_X(P) + &
+                                                   LEGENDRE_X(P)) - Preal*DLEGENDRE_X(P - 1))/(Preal + 1.D0)
          END DO
 
          !.......Legendre Polynomials in Y
@@ -4923,10 +4845,11 @@ CONTAINS
          LEGENDRE_Y(1) = Y
          DLEGENDRE_Y(1) = 1.D0
          DO P = 1, D - 1
-            LEGENDRE_Y(P + 1) = ((2.D0*P + 1.D0)*Y*LEGENDRE_Y(P) - P* &
-                                 LEGENDRE_Y(P - 1))/(P + 1.D0)
-            DLEGENDRE_Y(P + 1) = ((2.D0*P + 1.D0)*(Y*DLEGENDRE_Y(P) + &
-                                                   LEGENDRE_Y(P)) - P*DLEGENDRE_Y(P - 1))/(P + 1.D0)
+            preal = real(p, 8)
+            LEGENDRE_Y(P + 1) = ((2.D0*Preal + 1.D0)*Y*LEGENDRE_Y(P) - Preal* &
+                                 LEGENDRE_Y(P - 1))/(Preal + 1.D0)
+            DLEGENDRE_Y(P + 1) = ((2.D0*Preal + 1.D0)*(Y*DLEGENDRE_Y(P) + &
+                                                   LEGENDRE_Y(P)) - Preal*DLEGENDRE_Y(P - 1))/(Preal + 1.D0)
          END DO
 
          !.......Forming the basis functions
@@ -4949,9 +4872,9 @@ CONTAINS
             PHI_2D(R) = PHI(P, Q - P)
             DPHI_2D(R, 1) = DPHI(P, Q - P, 1)
             DPHI_2D(R, 2) = DPHI(P, Q - P, 2)
-            IF (ABS(PHI_2D(R)) < 1.0E-15) PHI_2D(R) = 0.D0
-            IF (ABS(DPHI_2D(R, 1)) < 1.0E-15) DPHI_2D(R, 1) = 0.D0
-            IF (ABS(DPHI_2D(R, 2)) < 1.0E-15) DPHI_2D(R, 2) = 0.D0
+            IF (ABS(PHI_2D(R)) < 1.0d-15) PHI_2D(R) = 0.D0
+            IF (ABS(DPHI_2D(R, 1)) < 1.0d-15) DPHI_2D(R, 1) = 0.D0
+            IF (ABS(DPHI_2D(R, 2)) < 1.0d-15) DPHI_2D(R, 2) = 0.D0
             R = R + 1
          END DO
       END DO
@@ -4972,10 +4895,11 @@ CONTAINS
          LEGENDRE(1) = Z
          DLEGENDRE(1) = 1.D0
          DO P = 1, D - 1
-            LEGENDRE(P + 1) = ((2.D0*P + 1.D0)*Z*LEGENDRE(P) - P*LEGENDRE(P - 1)) &
-                              /(P + 1.D0)
-            DLEGENDRE(P + 1) = ((2.D0*P + 1.D0)* &
-                                (Z*DLEGENDRE(P) + LEGENDRE(P)) - P*DLEGENDRE(P - 1))/(P + 1.D0)
+            preal = real(p, 8)
+            LEGENDRE(p+ 1) = ((2.D0*preal + 1.D0)*Z*LEGENDRE(p) - preal*LEGENDRE(p-1)) &
+                              /(preal + 1.D0)
+            DLEGENDRE(p+ 1) = ((2.D0*preal + 1.D0)* &
+                                (Z*DLEGENDRE(p) + LEGENDRE(p)) - preal*DLEGENDRE(p-1))/(preal + 1.D0)
          END DO
          R = 1
          DO Q = 0, D
@@ -4984,10 +4908,10 @@ CONTAINS
                DBASIS(R, 1) = DPHI_2D(P, 1)*LEGENDRE(Q)
                DBASIS(R, 2) = DPHI_2D(P, 2)*LEGENDRE(Q)
                DBASIS(R, 3) = PHI_2D(P)*DLEGENDRE(Q)
-               IF (ABS(BASIS(R)) < 1.0E-15) BASIS(R) = 0.D0
-               IF (ABS(DBASIS(R, 1)) < 1.0E-15) DBASIS(R, 1) = 0.D0
-               IF (ABS(DBASIS(R, 2)) < 1.0E-15) DBASIS(R, 2) = 0.D0
-               IF (ABS(DBASIS(R, 3)) < 1.0E-15) DBASIS(R, 3) = 0.D0
+               IF (ABS(BASIS(R)) < 1.0d-15) BASIS(R) = 0.D0
+               IF (ABS(DBASIS(R, 1)) < 1.0d-15) DBASIS(R, 1) = 0.D0
+               IF (ABS(DBASIS(R, 2)) < 1.0d-15) DBASIS(R, 2) = 0.D0
+               IF (ABS(DBASIS(R, 3)) < 1.0d-15) DBASIS(R, 3) = 0.D0
                R = R + 1
             END DO
          END DO
@@ -5013,17 +4937,13 @@ CONTAINS
       !.....Use appropriate modules
 
       !namo - change neigh_elem to neightabele for now, not sure
-      use mesh, only: NM, X, Y, neitabele, nneighele, AREAS
+      use mesh, only: NM, X, Y
 
       IMPLICIT NONE
 
       !.....Declare local variables
 
-      INTEGER :: GED, i, j, ll, k, lll, mm, ell, nin, bbb, bmm, n1, n2, n3
-      Real(SZ) :: areau, xmax, xmin, ymax, ymin
-      Real(SZ) :: dxdxi1, dydxi1, dxdxi2, dydxi2, dxi1dx, dxi2dx
-      Real(SZ) :: dxi1dy, dxi2dy, ell_1, ell_2, ell_3
-      Real(SZ) :: ZEVERTEX2(3), ZEVERTEX(3)
+      INTEGER :: GED, i, j, n1, n2, n3
 
       Real(SZ), Allocatable :: tempmat(:, :), tempInv(:, :), tempag(:, :)
       Real(SZ), Allocatable :: AreaV_integral(:, :, :, :), A(:, :)
@@ -5149,7 +5069,7 @@ CONTAINS
       INTEGER, intent(in) :: DIM
       REAL(SZ), intent(out) :: PHI_STA(DOF)
       REAL(SZ) ::  AREA
-      REAL(SZ) :: Z1, Z2, TOL
+      REAL(SZ) :: Z1, Z2
       REAL(8) :: PT(DIM)
       REAL(8), Allocatable  :: BASIS(:), DBASIS(:, :)
       INTEGER :: i
@@ -5185,7 +5105,7 @@ CONTAINS
       Allocate (BASIS(SZ2), DBASIS(SZ2, DIM))
 
       do i = 1, DIM
-         if (abs(NINT(PT(i)) - PT(i)) <= 1.0d-12) then
+         if (abs(real(NINT(PT(i)), 8)) - PT(i) <= 1.0d-12) then
             PT(i) = REAL(NINT(PT(i)), 8)
          end if
       end do
@@ -5212,7 +5132,6 @@ CONTAINS
 
       INTEGER :: L, i, j, k, IRK
       REAL(SZ) :: ARK, BRK, CASUM, MAX_BOA
-      Real(SZ) :: eps_const, RKC_omega0, RKC_omega1
 
       !print *, 'Running RK_TIME()'
       !.....Allocate the time stepping arrays
@@ -5245,7 +5164,7 @@ CONTAINS
          DTVD(:) = 0.D0
          IF (RK_STAGE == 3) THEN
 
-            ATVD(1, 1) = 1.000000000000000D0
+            ATVD(1, 1) = 1.00000000000000D0
             ATVD(2, 1) = 0.087353119859156D0
             ATVD(3, 1) = 0.344956917166841D0
             ATVD(2, 2) = 0.912646880140844D0
@@ -5258,7 +5177,7 @@ CONTAINS
 
          ELSEIF (RK_STAGE == 4) THEN
 
-            ATVD(1, 1) = 1.000000000000000D0
+            ATVD(1, 1) = 1.00000000000000D0
             ATVD(2, 1) = 0.394806441339829D0
             ATVD(3, 1) = 0.002797307087390D0
             ATVD(4, 1) = 0.252860909354373D0
@@ -5275,7 +5194,7 @@ CONTAINS
 
          ELSEIF (RK_STAGE == 5) THEN
 
-            ATVD(1, 1) = 1.000000000000000D0
+            ATVD(1, 1) = 1.00000000000000D0
             ATVD(2, 1) = 0.235593265061659D0
             ATVD(3, 1) = 0.174017972351526D0
             ATVD(4, 1) = 0.235264368870758D0
@@ -5311,12 +5230,12 @@ CONTAINS
 
                   IF ((J == (I - 1)) .AND. (I < NRK)) THEN
                      ATVD(I, J + 1) = 1.D0
-                     BTVD(I, J + 1) = 1.D0/(NRK - 1)
+                     BTVD(I, J + 1) = 1.D0/(real(NRK,8) - 1)
                   ELSEIF ((J == 0) .AND. (I == NRK)) THEN
-                     ATVD(I, J + 1) = 1.D0/NRK
+                     ATVD(I, J + 1) = 1.D0/real(NRK,8)
                   ELSEIF ((J == (NRK - 1)) .AND. (I == NRK)) THEN
-                     ATVD(I, J + 1) = (NRK - 1.D0)/NRK
-                     BTVD(I, J + 1) = 1.D0/NRK
+                     ATVD(I, J + 1) = (real(NRK,8) - 1.D0)/real(NRK,8)
+                     BTVD(I, J + 1) = 1.D0/real(NRK, 8)
                   END IF
 
                END DO
@@ -5633,7 +5552,7 @@ CONTAINS
          DO I = 1, IRK
             ARK = ATVD(IRK, I)
             BRK = BTVD(IRK, I)
-            IF (ARK /= 0.D0) THEN
+            IF (abs(ARK) >= 1d-15) THEN
                IF (MAX_BOA < BRK/ARK) MAX_BOA = BRK/ARK
             END IF
          END DO
