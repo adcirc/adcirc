@@ -367,6 +367,7 @@ HARM_MSRC  =  harm.F
 VORT_MSRC  =  vortex.F
 VW1D_MSRC  =  vew1d.F90
 TERM_MSRC  =  terminate.F90
+RAMP_MSRC  =  ramp.F90
 LOG_MSRC   =  logging.F90
 IO_MSRC    =  io.F90
 
@@ -411,6 +412,7 @@ XDMF_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(XDMF_MSRC) )
 WRIT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WRIT_MSRC) )
 MESH_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(MESH_MSRC) )
 TERM_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(TERM_MSRC) )
+RAMP_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(RAMP_MSRC) )
 LOG_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(LOG_MSRC) )
 IO_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(IO_MSRC) )
 BND_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(BND_MSRC) )
@@ -617,8 +619,8 @@ endif
    adcpost ::  $(POST_OBJ) $(HARM_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-ADCIRC_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
-ADCSWAN_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+ADCIRC_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(RAMP_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+ADCSWAN_DEP := $(ADC_MOBJ) $(HAS_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(TERM_MOBJ) $(RAMP_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 ifeq ($(NETCDF),enable)
    ADCIRC_DEP := $(ADCIRC_DEP) $(NC_MOBJ)
    ADCSWAN_DEP := $(ADCSWAN_DEP) $(NC_MOBJ)
@@ -631,21 +633,21 @@ endif
    adcirc ::  $(ADCIRC_DEP)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-   $(PARALLEL_ADCIRC) :: $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(TERM_MOBJ) $(BND_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+   $(PARALLEL_ADCIRC) :: $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(TERM_MOBJ) $(RAMP_MOBJ) $(BND_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
 ifeq ($(NETCDF),enable)
-   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) \
+   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(RAMP_MOBJ) $(MSG_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) \
 	        $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
-	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(TIDE_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) \
+	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(RAMP_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(TIDE_MOBJ) $(MESH_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) \
 	         $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
                  $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
                  $(WRITER_MOBJ) $(SUBD_MOBJ) $(NC_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ)
 	ar -ts $@
 else
-   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(MSG_MOBJ) \
+   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(RAMP_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(NA_MOBJ) $(MSG_MOBJ) \
 	        $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(ADC_OBJ)
-	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) \
+	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(3D_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(RAMP_MOBJ) $(MSG_MOBJ) $(HASH_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) \
 	         $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) \
                  $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(BND_MOBJ) $(HARM_MOBJ) $(WRIT_MOBJ) \
                  $(WRITER_MOBJ) $(SUBD_MOBJ) $(VORT_MOBJ) $(SOLV_MOBJ) $(ADC_OBJ)
@@ -659,7 +661,7 @@ endif
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
    padcswan :: $(O_DIR)
-   padcswan :: $(NA_MOBJ) $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+   padcswan :: $(NA_MOBJ) $(ADC_MOBJ) $(HASH_MOBJ) $(LOG_MOBJ) $(IO_MOBJ) $(RAMP_MOBJ) $(NCE_MOBJ) $(MESH_MOBJ) $(TIDE_MOBJ) $(GL2LOC_MOBJ) $(ITTIDE_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(SPG_MOBJ) $(BC3D_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS) $(LDFLAGS)
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
@@ -803,6 +805,7 @@ $(O_DIR)netcdf_error.o : netcdf_error.F90 $(O_DIR)terminate.o
 endif
 
 $(O_DIR)logging.o     :  logging.F90
+$(O_DIR)ramp.o        :  ramp.F90
 $(O_DIR)io.o          :  io.F90 $(O_DIR)logging.o $(O_DIR)terminate.o
 
 $(O_DIR)gwce.o        :  gwce.F $(O_DIR)itpackv.o $(O_DIR)nodalattr.o $(O_DIR)vew1d.o $(O_DIR)sponge_layer.o $(O_DIR)subdomain.o $(O_DIR)momentum.o
@@ -870,9 +873,10 @@ $(O_DIR)couple2baroclinic3D.o : couple2baroclinic3D.F $(ADC_MOBJ) $(SPG_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC)
 
-$(O_DIR)read_input.o  : read_input.F $(SUBD_MOBJ)
+$(O_DIR)read_input.o  : read_input.F $(SUBD_MOBJ) $(RAMP_MOBJ)
 $(O_DIR)transport.o   : transport.F
-$(O_DIR)timestep.o    : timestep.F
+$(O_DIR)timestep.o    : timestep.F $(RAMP_MOBJ)
+$(O_DIR)hstart.o      : hstart.F $(RAMP_MOBJ)
 ifeq ($(NETCDF),enable)
 $(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(GWCE_MOBJ) $(MOM_MOBJ) $(WIND_MOBJ) $(NWS08_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
 else

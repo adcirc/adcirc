@@ -53,6 +53,7 @@ C
 C**************************************************************************
 C
       USE SIZES, ONLY : inputDir, globalDir, mnproc
+      USE MOD_RAMP, ONLY : RAMP_FUNCTION
       USE ADC_CONSTANTS, ONLY: G, PI
       USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
@@ -786,14 +787,17 @@ C           times for output if time step size has changed
          RampMete2=1.0d0
          RampWRad2=1.0d0
       ELSE
-         RampExtFlux1=TANH((2.D0*(ITHS-1)*DTDPHS/86400.D0)/DRampExtFlux)
-         RampExtFlux2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampExtFlux)
-         RampIntFlux1=TANH((2.D0*(ITHS-1)*DTDPHS/86400.D0)/DRampIntFlux)
-         RampIntFlux2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampIntFlux)
-         RampTip2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampTip)
+         RampExtFlux1=ramp_function(DRampExtFlux,(ITHS-1)*DTDPHS)
+         RampExtFlux2=ramp_function(DRampExtFlux,ITHS*DTDPHS)
+         RampIntFlux1=ramp_function(DRampIntFlux,(ITHS-1)*DTDPHS)
+         RampIntFlux2=ramp_function(DRampIntFlux,ITHS*DTDPHS)
+         RampTip2=ramp_function(DRampTip,ITHS*DTDPHS)
 Corbitt 1203022: Added Zach''s Fix for Assigning a Start Time to Mete Ramping
-         RampMete2=TANH((2.D0*((ITHS)*DTDPHS/86400.D0-DUnRampMete))/DRampMete)
-         RampWRad2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampWRad)
+C...     DUnRampMete delays the onset of the met ramp ("unramp" period);
+C...     fold that delay into the ramp's local time coordinate.
+         RampMete2=ramp_function(DRampMete,
+     &                           ITHS*DTDPHS-DUnRampMete*86400.D0)
+         RampWRad2=ramp_function(DRampWRad,ITHS*DTDPHS)
          write(16,*) 'Initial RampMete2 is =',RampMete2
       ENDIF
       FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS)

@@ -108,6 +108,7 @@ C-----------------------------------------------------------------------
      &   NFLUXF, NBD, ME2GW, LBCODEI, NBV, simpleFluxBoundaries, ibtype,
      &   numSimpleFluxBoundaries
       USE GLOBAL_IO, only: RUNDES, RUNID, RDES4, RID4, RDES8, RID8
+      USE MOD_RAMP, ONLY : RAMP_FUNCTION
       USE KDTREE2_MODULE     ! V49.48.02 tcm -- added for fast searching
       USE GLOBAL_3DVS, ONLY: C3D_PTrans, NSTA3DD, NSTA3DV, NSTA3DT,
      &   I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT, NSTA3DD_G, NSTA3DV_G,
@@ -2960,7 +2961,7 @@ C
          WRITE(16,8763) DRAMP
  8763    FORMAT(/,5X,'VALUE FOR DRAMP USED IN RAMP EVALUATION =',F12.4,
      &        5X,'DAYS',/)
-         IF (DRAMP.lt.1.0d-6) THEN !jgf49.44: cover the case where DRAMP is zero
+         IF (abs(DRAMP).lt.1.0d-6) THEN !jgf49.44: cover the case where DRAMP is zero
             WRITE(16,*)
      &         "WARNING: DRAMP=",DRAMP,". It will be rounded to zero."
             WRITE(16,*)
@@ -2972,11 +2973,11 @@ C
      &         '  RAMP VALUE',/)
             Day=0.0d0
             DO WHILE(.TRUE.)
- 999           RampVal=TANH(Day*2.d0/DRAMP)
+ 999           RampVal=ramp_function(DRAMP,Day*86400.d0)
                WRITE(16,5845) Day,Day+StaTim,RampVal
  5845          FORMAT(15X,F8.2,6X,F8.2,2X,F15.7)
                DAY=DAY+0.5d0
-               IF(Day.GE.DRAMP*1.25) EXIT
+               IF(Day.GE.abs(DRAMP)*1.25) EXIT
             ENDDO
          ENDIF
       ENDIF

@@ -58,6 +58,7 @@ C
       USE, INTRINSIC :: IEEE_ARITHMETIC
 #endif
       USE SIZES, ONLY : MNP, MNWPROH, MYPROC
+      USE MOD_RAMP, ONLY : RAMP_FUNCTION
       USE GLOBAL, ONLY : UU1, VV1, QX1, QY1, QX2, QY2, UU2, VV2, MOM_LV_X,
      &    MOM_LV_Y, WSX2, WSY2, PR1, PR2, TiP1, TiP2, UU0, VV0, QY0,
      &    GWCE_LV, TRANS_LV_B, TRANS_LV_A, WSX1, WSY1, dp1, dp2, QN0,
@@ -298,13 +299,15 @@ C     jgf46.21 Modify to match behavior of 46.02
          RampMete=1.0D0
          RampWRad=1.0D0
       ELSE
-         Ramp=TANH((2.D0*TimeLoc/86400.D0)/DRamp)
-         RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampExtFlux)
-         RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampIntFlux)
-         RampElev=TANH((2.D0*TimeLoc/86400.D0)/DRampElev)
-         RampTip=TANH((2.D0*TimeLoc/86400.D0)/DRampTip)
-         RampMete=TANH((2.D0*(TimeLoc/86400.D0-DUnRampMete))/DRampMete)
-         RampWRad=TANH((2.D0*TimeLoc/86400.D0)/DRampWRad)
+         Ramp=ramp_function(DRamp,TimeLoc)
+         RampExtFlux=ramp_function(DRampExtFlux,TimeLoc)
+         RampIntFlux=ramp_function(DRampIntFlux,TimeLoc)
+         RampElev=ramp_function(DRampElev,TimeLoc)
+         RampTip=ramp_function(DRampTip,TimeLoc)
+C...     DUnRampMete delays the onset of the met ramp ("unramp" period);
+C...     fold that delay into the ramp's local time coordinate.
+         RampMete=ramp_function(DRampMete,TimeLoc-DUnRampMete*86400.D0)
+         RampWRad=ramp_function(DRampWRad,TimeLoc)
       ENDIF
 C
 C     jgf46.21 If there is an external flux (i.e. river) boundary, turn
@@ -327,30 +330,27 @@ C     all forcings back on.
      &           + (StaTimHS - RefTimHS)*86400.D0
             END IF
 
-            Ramp=TANH((2.D0*TimeLocFluxSettling/86400.D0)/DRamp)
-            RampIntFlux=TANH((2.D0
-     &           *TimeLocFluxSettling/86400.D0)/DRampIntFlux)
-            RampElev=TANH((2.D0
-     &           *TimeLocFluxSettling/86400.D0)/DRampElev)
-            RampTip=TANH((2.D0
-     &           *TimeLocFluxSettling/86400.D0)/DRampTip)
+            Ramp=ramp_function(DRamp,TimeLocFluxSettling)
+            RampIntFlux=ramp_function(DRampIntFlux,TimeLocFluxSettling)
+            RampElev=ramp_function(DRampElev,TimeLocFluxSettling)
+            RampTip=ramp_function(DRampTip,TimeLocFluxSettling)
             IF(NRamp.ne.8) then
-               RampMete=TANH((2.D0
-     &           *TimeLocFluxSettling/86400.D0)/DRampMete)
+               RampMete=ramp_function(DRampMete,TimeLocFluxSettling)
             ENDIF
-            RampWRad=TANH((2.D0
-     &           *TimeLocFluxSettling/86400.D0)/DRampWRad)
+            RampWRad=ramp_function(DRampWRad,TimeLocFluxSettling)
          ENDIF
       ENDIF
 
-      !jgf49.44: Cover the case where the ramp length is zero.
-      IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
-      IF (DRampExtFlux.lt.1.0e-6) RampExtFlux = 1.0d0
-      IF (DRampIntFlux.lt.1.0e-6) RampIntFlux = 1.0d0
-      IF (DRampElev.lt.1.0e-6) RampElev = 1.0d0
-      IF (DRampTip.lt.1.0e-6) RampTip = 1.0d0
-      IF (DRampMete.lt.1.0e-6) RampMete = 1.0d0
-      IF (DRampWRad.lt.1.0e-6) RampWRad = 1.0d0
+      !jgf49.44: Cover the case where the ramp length is zero. Test the
+      !magnitude so a negative duration (legacy un-normalized ramp) is
+      !not mistaken for a zero-length ramp.
+      IF (abs(DRamp).lt.1.0e-6) Ramp = 1.0d0
+      IF (abs(DRampExtFlux).lt.1.0e-6) RampExtFlux = 1.0d0
+      IF (abs(DRampIntFlux).lt.1.0e-6) RampIntFlux = 1.0d0
+      IF (abs(DRampElev).lt.1.0e-6) RampElev = 1.0d0
+      IF (abs(DRampTip).lt.1.0e-6) RampTip = 1.0d0
+      IF (abs(DRampMete).lt.1.0e-6) RampMete = 1.0d0
+      IF (abs(DRampWRad).lt.1.0e-6) RampWRad = 1.0d0
 C     
 C------DW
       IF ( LoadAbsLayerSigma ) THEN
@@ -434,7 +434,7 @@ C.............................DW, sponge layer ..................
             RampTMP = RampElev ;
             DO istep = 2, 1, -1
                IF ( NRamp > 0 ) THEN
-                  RampTMP=TANH((2.D0*(TimeLoc - istep*DTDP)/86400.D0)/DRampElev)
+                  RampTMP=ramp_function(DRampElev,TimeLoc - istep*DTDP)
                END IF
                RampTMP = max(0.D0,RampTMP) ;                   
                
