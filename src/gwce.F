@@ -1064,7 +1064,7 @@ Corbitt 120322: Localized Advection
 
 C...........DMW202401 Use saved H2, H1
             H0N1=H1(NM1)
-            H0N2=H2(NM1)
+            H0N2=H1(NM2)
             H0N3=H1(NM3) 
 
 C...........DMW202401 Use saved H2
