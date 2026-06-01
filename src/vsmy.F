@@ -1479,8 +1479,10 @@ C              boundary conditions
       END IF
 
 !kmd - adding information for rivers - baroclinic
-
-      IF ((CBaroclinic).AND.(BndBCRiver)) THEN
+!Seun 251227: Read fort.39 only for IDEN=2/3/4 (prognostic river T/S BCs)
+C     IF ((CBaroclinic).AND.(BndBCRiver)) THEN
+      IF ((CBaroclinic).AND.(BndBCRiver) .AND.
+     &    (IDEN.EQ.2 .OR. IDEN.EQ.3 .OR. IDEN.EQ.4)) THEN
          IF (TIMELOC.GT.RIVBCTIME2) THEN
             RIVBCTIME1=RIVBCTIME2
             RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
@@ -4053,6 +4055,19 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
      &                          + w(IIP1) * TEMP(NH,IIP(IIP1))
                 ENDIF
               ENDDO
+
+!Seun 260518:  Limit interpolated salinity and temperature to the valid
+!              range of the equation of state.
+              IF(ABS(IDEN).EQ.2.OR.ABS(IDEN).EQ.4)THEN
+                 IF(SALM(NH,GQI).LT.S_min) SALM(NH,GQI)=S_min
+                 IF(SALM(NH,GQI).GT.S_max) SALM(NH,GQI)=S_max
+              ENDIF
+
+              IF(ABS(IDEN).EQ.3.OR.ABS(IDEN).EQ.4)THEN
+                 IF(TEMPM(NH,GQI).LT.T_min) TEMPM(NH,GQI)=T_min
+                 IF(TEMPM(NH,GQI).GT.T_max) TEMPM(NH,GQI)=T_max
+              ENDIF
+
             ENDDO
           ENDDO
         ENDDO

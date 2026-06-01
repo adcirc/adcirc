@@ -716,7 +716,12 @@ C     ---------------------------------------------
       ! run (i.e, in the fort.15 file) ... if so, this affects any 
       ! calculation of time in seconds since cold start, and any 
       ! feature that counts time steps since cold start
-      DTDPHS=TimeLoc/ITHS  ! Set up time step information for hotstart file.
+Casey 140701: Protect for case when ITHS=0
+      IF(ITHS.NE.0)THEN
+         DTDPHS=TimeLoc/ITHS  ! Set up time step information for hotstart file.
+      ELSE
+         DTDPHS=DTDP
+      ENDIF
       dtChange = DTDPHS - DTDP
       ! we don't use .ne. for dtChange b/c of the limitations in machine precision
       IF ( (abs(dtChange).gt.1.0e-10).OR.
@@ -2060,6 +2065,8 @@ c******************************************************************************
 
       SUBROUTINE HOTSTART_3D(TimeLoc,ITHS)
       USE GLOBAL_3DVS
+Casey 140701: Added the following line.
+      USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
       USE MESH, ONLY : NP, AGRID
       USE WRITE_OUTPUT, ONLY : initOutput3D
       USE BOUNDARIES, ONLY : NOPE, NETA, NBD, totalbcrivernodes, 
@@ -2255,7 +2262,8 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
                   IF(TIMEIT.GT.TTBCTIME2) THEN
                      TTBCTIME1=TTBCTIME2
                      TTBCTIME2=TTBCTIME1+TTBCTIMEINC
-                     DO NumofNodes=1,NH
+               !170109 Rosemary Changed NH to NP
+                     DO NumofNodes=1,NP
                        q_heat1(NumofNodes)=q_heat2(NumofNodes)
                        READ(38,*) NOD, q_heat2(NumofNodes)
                      END DO
@@ -2373,8 +2381,13 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
       END IF
 
 C kmd - River information for boundary conditions
-      IF (BndBCRiver) THEN
-        OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+!Seun 251227: Read fort.39 only for IDEN=2/3/4 (prognostic river T/S BCs)
+C     IF (BndBCRiver) THEN
+C       OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+      IF (BndBCRiver .AND. (IDEN.EQ.2 .OR. IDEN.EQ.3 .OR.
+     &    IDEN.EQ.4)) THEN
+        OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39',
+     &       STATUS='OLD',ACTION='READ')
         READ(39,*) RIVBCTIMINC, RIVBCSTATIM
         RIVBCTIME1=RIVBCSTATIM*86400.d0
         RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
@@ -2512,17 +2525,46 @@ C     jgf46.27 Replaced IRType with IDen
 !kmd48.33bc - added in the information to make a file with all the
 !             top temperature boundary condition information in
 
-      CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_g,
-     &                        NSPO3DGD, IRType, I3DGDRec)
-      IF(I3DGD.EQ.-1) THEN         !start a new ASCII file
-        IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
-          IF (BCFLAG_TEMP.NE.0) THEN
-            OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
-            WRITE(47,499) RUNDES,RUNID,AGRID
-            WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
-            CLOSE(47)
-          END IF
-        END IF
+!      CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_g,
+!     &                        NSPO3DGD, IRType, I3DGDRec)
+
+! arash June 23 2016
+      CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_G,
+     &                        NSPO3DGD, IDen, I3DGDRec)
+
+Casey 140701: Replaced the following section with the lines below.
+C     IF(I3DGD.EQ.-1) THEN         !start a new ASCII file
+C       IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
+C         IF (BCFLAG_TEMP.NE.0) THEN
+C           OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
+C           WRITE(47,499) RUNDES,RUNID,AGRID
+C           WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+C           CLOSE(47)
+C         END IF
+C       END IF
+C     ENDIF
+      IF (ABS(I3DGD).EQ.1) THEN
+         IF ((MNPROC.EQ.1.).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
+            IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
+               IF (BCFLAG_TEMP.NE.0) THEN
+                  OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
+                  WRITE(47,499) RUNDES,RUNID,AGRID
+                  WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+                  CLOSE(47)
+               END IF
+            END IF
+         ENDIF
+         IF ((MNPROC.GT.1.).AND.(WRITE_LOCAL_FILES.eqv..false.).and.
+     &       (myProc.eq.0)) THEN
+            IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
+               IF (BCFLAG_TEMP.NE.0) THEN
+                  OPEN(47,FILE=TRIM(GLOBALDIR)//'/'//'fort.47')
+                  WRITE(47,499) RUNDES,RUNID,AGRID
+                  WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+                  CLOSE(47)
+               END IF
+            END IF
+         ENDIF
       ENDIF
 
 c.... Initialize the global 3D velocity output file (Unit 45)

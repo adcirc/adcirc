@@ -2970,7 +2970,8 @@ C
 C
 1099  FORMAT(2X,1pE20.10E3,5X,I10)
 1100  FORMAT(1X,E17.10,1X,I10,32000(2X,E13.6))
-1104  FORMAT(9X,I6,4X,32000(E13.6,2X))
+Casey 140701: Allow for meshes with more than 1M vertices.
+1104  FORMAT(9X,I12,4X,32000(E13.6,2X))
 1105  FORMAT(2X,I8,2X,1pE20.10E3)
 C
       IF (FirstCall.eqv..true.) THEN
@@ -3874,17 +3875,22 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                      IF(BCFLAG_TEMP.NE.0) THEN
                         IF (myProc.eq.0) THEN
                            ALLOCATE(qsurfkp1_g(NP_G))
+Casey 140701: Added the following line?
+                           QSurfkp1Descript % array_g => qsurfkp1_g
                         ENDIF
                         CALL collectFullDomainArray(QSurfKp1Descript,
      &                     packOne, unpackOne)
-                        OPEN(47,FILE=TRIM(GLOBALDIR)//'/'//'fort.47',
-     &                     ACCESS='SEQUENTIAL',POSITION='APPEND')
-                        WRITE(47,1099) TimeLoc,IT
-                        DO NH=1,NP_G
-                           WRITE(47,1105) NH, qsurfkp1_g(NH)
-                        END DO
-                        DEALLOCATE(qsurfkp1_g)
-                        CLOSE(47)
+Casey 140701: Added the check for MYPROC.eq.0.
+                        IF (myProc.eq.0) THEN
+                           OPEN(47,FILE=TRIM(GLOBALDIR)//'/'//'fort.47',
+     &                         ACCESS='SEQUENTIAL',POSITION='APPEND')
+                           WRITE(47,1099) TimeLoc,IT
+                           DO NH=1,NP_G
+                              WRITE(47,1105) NH, qsurfkp1_g(NH)
+                           END DO
+                           DEALLOCATE(qsurfkp1_g)
+                           CLOSE(47)
+                        END IF
                      END IF
                   END IF
                   OPEN(44,FILE=TRIM(GLOBALDIR)//'/'//'fort.44',
@@ -3938,18 +3944,42 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                   I3DGDRec=I3DGDRec+1 ! for the header line
                   CLOSE(44)
                ENDIF
+
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
                   CALL writeOutArrayNetCDF(44, TimeLoc,
      &               SigTDescript,SalDescript,TempDescript)
-                  IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
-                     IF(BCFLAG_TEMP.NE.0) THEN
-                       call writeOutArrayNetCDF(47, TimeLoc,
-     &                    QSurfKp1Descript)
-                     ENDIF
-                  ENDIF   
                ENDIF
+
+               IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
+                  IF(BCFLAG_TEMP.NE.0) THEN
+
+! Seun 030426: In parallel netcdf, gather qsurfkp1 to rank 0 so
+!              QSurfKp1Descript%array_g is valid for writeNodalData.
+                     IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+                        IF (myProc.eq.0) THEN
+                           ALLOCATE(qsurfkp1_g(NP_G))
+                           QSurfKp1Descript % array_g => qsurfkp1_g
+                        ENDIF
+                        CALL collectFullDomainArray(QSurfKp1Descript,
+     &                     packOne, unpackOne)
+                     ENDIF
+
+                     IF (myProc.eq.0) THEN
+                        call writeOutArrayNetCDF(47, TimeLoc,
+     &                     QSurfKp1Descript)
+                     ENDIF
+
+                     IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+                        IF (myProc.eq.0) THEN
+                           DEALLOCATE(qsurfkp1_g)
+                        ENDIF
+                     ENDIF
+
+                  ENDIF
+               ENDIF
+
 #endif
             CASE DEFAULT
                CALL allMessage(ERROR,

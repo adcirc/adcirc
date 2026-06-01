@@ -957,8 +957,13 @@ C...  and baroclinic.
       END IF
 
 C kmd - River information for boundary conditions in baroclinic simulation
-      IF (BndBCRiver) THEN
-        OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+!Seun 251227: Read fort.39 only for IDEN=2/3/4 (prognostic river T/S BCs)
+C     IF (BndBCRiver) THEN
+C       OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+      IF (BndBCRiver .AND. (IDEN.EQ.2 .OR. IDEN.EQ.3 .OR.
+     &    IDEN.EQ.4)) THEN
+        OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39',
+     &       STATUS='OLD',ACTION='READ')
         READ(39,*) RIVBCTIMINC, RIVBCSTATIM
         RIVBCTIME1=RIVBCSTATIM*86400.d0
         RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC

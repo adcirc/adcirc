@@ -5520,7 +5520,8 @@ C                 salinity and temperature forcings.
          !jgf51.52.35: Make sure the RES_BC_FLAG value matches the IDEN value.
          if (RES_BC_FLAG.ne.IDEN) then
             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
-     &                     message="The value of RES_BC_FLAG must be the same as the value of IDEN.")
+     &                     message="The value of RES_BC_FLAG "//
+     &                     "must be the same as the value of IDEN.")
          endif
          !
          IF ((RES_BC_FLAG.LT.0)) THEN  ! Diagnostic
@@ -5550,47 +5551,70 @@ C                 salinity and temperature forcings.
      &                boundary conditions every', E9.2,
      &                'seconds')
                END IF
-            ELSE IF ((ABS(RES_BC_FLAG).EQ.3)) THEN
-               IF (NOPE.GT.0) THEN
-                  READ(15,*) RBCTIMEINC, TBCTIMEINC
-                  READ(15,*) BCSTATIM, TBCSTATIM
-                  WRITE(16,432) RBCTIMEINC, TBCTIMEINC
- 432              FORMAT(/,5X,'Read in elevation boundary conditions
+
+!Seun 260217: Rewrote RES_BC_FLAG=3/4 section to share parsing logic.
+            ELSE IF ((ABS(RES_BC_FLAG).EQ.3).OR.
+     &               (ABS(RES_BC_FLAG).EQ.4)) THEN
+
+               IF ((ABS(RES_BC_FLAG).EQ.3)) THEN
+                  IF (NOPE.GT.0) THEN
+                     READ(15,*) RBCTIMEINC, TBCTIMEINC
+                     READ(15,*) BCSTATIM, TBCSTATIM
+                     WRITE(16,432) RBCTIMEINC, TBCTIMEINC
+ 432                 FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds and temperature
      &                boundary conditions every', E9.2,
      &                'seconds')
-                  IF (BCFLAG_TEMP.NE.0) THEN
-                     READ(15,*) TTBCTIMEINC, TTBCSTATIM
-                     WRITE(16,434) TTBCTIMEINC
- 434                 FORMAT(/,5X,'Read in the top temperature
-     &                   boundary condition every', E9.2 ,'
-     &                   seconds.')
                   END IF
-               END IF
-            ELSE IF ((ABS(RES_BC_FLAG).EQ.4)) THEN
-               IF (NOPE.GT.0) THEN
-                  READ(15,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
-                  READ(15,*) BCSTATIM, SBCSTATIM, TBCSTATIM
-                  WRITE(16,433) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
- 433              FORMAT(/,5X,'Read in elevation boundary conditions
+               ELSE
+                  IF (NOPE.GT.0) THEN
+                     READ(15,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
+                     READ(15,*) BCSTATIM, SBCSTATIM, TBCSTATIM
+                     WRITE(16,433) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
+ 433                 FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds and salinity
      &                boundary conditions every', E9.2,
      &                'seconds and temperature boundary conditions
      &                every', E9.2, 'seconds')
-                  IF (BCFLAG_TEMP.NE.0) THEN
-                     READ(15,*) TTBCTIMEINC, TTBCSTATIM
-                     WRITE(16,434) TTBCTIMEINC
-                 END IF
+                  END IF
                END IF
+
+Casey 140701: Possible to use surface heat fluxes even without
+C             an open ocean boundary.
+!              IF (BCFLAG_TEMP.NE.0) THEN
+!                  READ(15,*) TTBCTIMEINC, TTBCSTATIM
+!                  WRITE(16,434) TTBCTIMEINC
+!434               FORMAT(/,5X,'Read in the top temperature
+!    &                    boundary condition every', E9.2 ,'
+!    &                    seconds.')
+!              END IF
+C              END IF
+
             ELSE
                WRITE(16,350)
                WRITE(16,*) 'RES_BC_FLAG = ',RES_BC_FLAG
                WRITE(16,9722)
- 9722         FORMAT(/,1X,'Your selection of RES_BC_FLAG (a UNIT 15 input ',
-     &        'parameter) is not an allowable value')
-               CALL terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Invalid RES_BC_FLAG value read from fort.15 file.")
+ 9722         FORMAT(/,1X,'Your selection of RES_BC_FLAG (a UNIT 15 ',
+     &        'input parameter) is not an allowable value')
+               CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &               message="Invalid RES_BC_FLAG value read from "//
+     &                       "fort.15 file.")
             END IF
          END IF
+
+Casey 140701: Possible to use surface heat fluxes even without
+C             an open ocean boundary.
+         IF ((ABS(RES_BC_FLAG).EQ.3).OR.
+     &       (ABS(RES_BC_FLAG).EQ.4)) THEN
+            IF (BCFLAG_TEMP.NE.0) THEN
+               READ(15,*) TTBCTIMEINC, TTBCSTATIM
+               WRITE(16,434) TTBCTIMEINC
+ 434           FORMAT(/,5X,'Read in the top temperature
+     &               boundary condition every', E9.2 ,'
+     &               seconds.')
+            END IF
+         END IF
+
       END IF
 
 C    kmd48.33bc - added distance information for the sponge layer.
