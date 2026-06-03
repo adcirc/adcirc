@@ -29,9 +29,9 @@ module MESSENGER_ELEM
 !sb-PDG1
 
    integer, parameter, private :: sz = 8, dofh = 3
-   integer,  private ::  NEIGHPROC_R, NEIGHPROC_S, RDIM, IERR
-   integer,  private ::  TAG = 101
-   logical,  allocatable :: RESELEM(:)
+   integer, private ::  NEIGHPROC_R, NEIGHPROC_S, RDIM, IERR
+   integer, private ::  TAG = 101
+   logical, allocatable :: RESELEM(:)
 !
    integer, private, allocatable ::IPROC_R(:), IPROC_S(:), NELEMLOC(:), &
                                     NELEMSEND(:), NELEMRECV(:), ISENDLOC(:, :), IBELONGTO(:), &
@@ -52,8 +52,6 @@ module MESSENGER_ELEM
 !---------------------end of data declarations--------------------------------C
 
 contains
-
-
 
    subroutine MSG_TABLE_ELEM()
 !
@@ -248,10 +246,6 @@ contains
 
    end subroutine MESSAGE_START_ELEM
 
-
-
-
-
    subroutine UPDATER_ELEM_MOD(VEC1, VEC2, VEC3, IRK, NMSG)
 !
 !--------------------------------------------------------------------------
@@ -413,6 +407,5 @@ contains
 999   continue
       return
    end subroutine UPDATER_ELEM_MOD
-
 
 end module MESSENGER_ELEM

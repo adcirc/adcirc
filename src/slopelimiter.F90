@@ -39,7 +39,7 @@ contains
 
       integer, parameter :: blocksize = 8
       integer ::  block_start, block_end
-      integer ::  LL, INC1, INC2, INC3,  I, J, jj, kk, k, bb
+      integer ::  LL, INC1, INC2, INC3, I, J, jj, kk, k, bb
 
       real(SZ), dimension(blocksize, 3) :: ZEC, ZEVERTEX, DIF
       real(SZ), dimension(blocksize) :: SUMLOC, SUMDIF, SIGNDIF

@@ -43,7 +43,6 @@ contains
       use messenger, only: updateR, updatei
 #endif
 
-
       implicit none
       integer, intent(in) :: IT
       !! Current time step number
@@ -58,7 +57,7 @@ contains
          call prep_DG()
       end if
 
-      TIME_A = real(IT,8)*DTDP + STATIM*86400.d0
+      TIME_A = real(IT, 8)*DTDP + STATIM*86400.d0
 
       eta1 = eta2
 
@@ -90,12 +89,12 @@ contains
          RAMPExtFlux = 1.0d0
          if (NRAMP >= 1) then
             if (NRAMP == 1) then
-               RAMPDG = tanh((2.d0*((real(IT,8) - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMP)
-               RAMPExtFlux = tanh((2.d0*((real(IT,8) - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMPExtFlux)
+               RAMPDG = tanh((2.d0*((real(IT, 8) - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMP)
+               RAMPExtFlux = tanh((2.d0*((real(IT, 8) - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMPExtFlux)
             end if
             if (NRAMP == 2) then
-               RAMPDG = tanh((2.d0*((real(IT,8) - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMP)
-               RAMPExtFlux = tanh((2.d0*((real(IT,8) - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMPExtFlux)
+               RAMPDG = tanh((2.d0*((real(IT, 8) - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMP)
+               RAMPExtFlux = tanh((2.d0*((real(IT, 8) - 1) + DTVD(IRK))*DTDP/86400.d0)/DRAMPExtFlux)
             end if
             if (NRAMP == 3) then
                write (*, *) 'NRAMP = 3 not supported '
@@ -217,7 +216,7 @@ contains
       integer, intent(in) :: irk
       real(sz), intent(in) :: timedg
 
-      integer :: L, LED, GED, i, k, jj,   el_in, ncyc
+      integer :: L, LED, GED, i, k, jj, el_in, ncyc
       real(sz) :: q_n_ext, q_t_ext, argj, rff, qnam_gp, qnph_gp, arg
       real(SZ) :: TX, TY
       real(SZ) :: W_IN
@@ -254,31 +253,31 @@ contains
 
          do I = 1, 3
 
-            ZE_IN = 0.D0
-            QX_IN = 0.D0
-            QY_IN = 0.D0
+            ZE_IN = 0.d0
+            QX_IN = 0.d0
+            QY_IN = 0.d0
 
-            ZE_EX = 0.D0
-            QX_EX = 0.D0
-            QY_EX = 0.D0
+            ZE_EX = 0.d0
+            QX_EX = 0.d0
+            QY_EX = 0.d0
 
-            HB_IN = 0.D0
+            HB_IN = 0.d0
             SFAC_IN = SFACED(I, LED, EL_IN, pa)
 
 !.....Compute the specified flow boundaries for the exterior state
 
-            Q_N_EXT = 0.D0
+            Q_N_EXT = 0.d0
             do JJ = 1, MNFFR
                if (NFFR == 0) then
                   ARGJ = 0.d0
                   RFF = RAMPDG
                elseif (abs(FPER(JJ)) <= 1d-15) then
                   NCYC = 0
-                  ARGJ = FAMIG(JJ)*(TIMEDG - real(NCYC,8)*FPER(JJ)) + FFACE(JJ)
+                  ARGJ = FAMIG(JJ)*(TIMEDG - real(NCYC, 8)*FPER(JJ)) + FFACE(JJ)
                   RFF = FFF(JJ)*RAMPDG
                else
                   NCYC = int(TIMEDG/FPER(JJ))
-                  ARGJ = FAMIG(JJ)*(TIMEDG - real(NCYC,8)*FPER(JJ)) + FFACE(JJ)
+                  ARGJ = FAMIG(JJ)*(TIMEDG - real(NCYC, 8)*FPER(JJ)) + FFACE(JJ)
                   RFF = FFF(JJ)*RAMPDG
                end if
 
@@ -365,7 +364,7 @@ contains
       !! Current RK stage
 
             real(sz) :: ze_ex, hb_ex, sfac_ex, ze_in
-            real(sz) :: sfac_in, hb_in,  nx, ny
+            real(sz) :: sfac_in, hb_in, nx, ny
             integer :: el_in, el_ex, el
             integer :: n1, n2
             real(sz) :: U_EDGE, V_EDGE, f_hat
@@ -375,7 +374,6 @@ contains
             real(SZ) :: EDFAC_IN, EDFAC_EX
             real(SZ) :: XLEN_EL_IN, XLEN_EL_EX
             real(SZ) :: MASS_EL_IN, MASS_EL_EX
-
 
             do L = 1, NIEDS
 
@@ -442,11 +440,11 @@ contains
                      HB_EX = HB_IN
                      SFAC_EX = SFACED(GP_EX, LED_EX, EL_EX, pa)
 
-                     ZE_IN = 0D0
-                     ZE_EX = 0D0
+                     ZE_IN = 0d0
+                     ZE_EX = 0d0
 
-                     U_EDGE = 0D0
-                     V_EDGE = 0D0
+                     U_EDGE = 0d0
+                     V_EDGE = 0d0
                      do K = 1, 3
                         U_EDGE = U_EDGE + U_modal(K, EL_IN)*PHI_EDGE(K, GP_IN, LED_IN, pa)
                         V_EDGE = V_EDGE + V_modal(K, EL_IN)*PHI_EDGE(K, GP_IN, LED_IN, pa)
@@ -547,10 +545,10 @@ contains
 
                   do I = 1, 3
 
-                     U_QUAD = 0D0
-                     V_QUAD = 0D0
+                     U_QUAD = 0d0
+                     V_QUAD = 0d0
 
-                     ZE_IN = 0D0
+                     ZE_IN = 0d0
                      HB_IN = BATH(I, L, pa)
                      DHB_X = DBATHDX(I, L, pa)
                      DHB_Y = DBATHDY(I, L, pa)
@@ -587,7 +585,7 @@ contains
             return
          end subroutine RHS_DG_HYDRO
 
-         subroutine ocean_edge_hydro( irk, timedg, rampdg)
+         subroutine ocean_edge_hydro(irk, timedg, rampdg)
 
 ! adcirc new stuff
             use boundaries, only: nope
@@ -658,7 +656,7 @@ contains
 
 !...........Surface Elevation
 
-                        ARGJ = AMIG(JJ)*(TIMEDG - real(NCYC,8)*PER(JJ)) + FACE(JJ)
+                        ARGJ = AMIG(JJ)*(TIMEDG - real(NCYC, 8)*PER(JJ)) + FACE(JJ)
                         RFF = FF(JJ)*RAMPDG
 
 !..............linearly interpolate from the time-series of the harmonic forcing
@@ -683,9 +681,9 @@ contains
 
 !.....Compute the solution at the interior state
 
-                     ZE_IN = 0D0
-                     U_EDGE = 0D0
-                     V_EDGE = 0D0
+                     ZE_IN = 0d0
+                     U_EDGE = 0d0
+                     V_EDGE = 0d0
                      do K = 1, 3
 
                         U_EDGE = U_EDGE + U_modal(K, EL_IN)*PHI_EDGE(K, I, LED, pa)
@@ -704,7 +702,7 @@ contains
 !$$$            endif
 
                      ! Eirik's fix
-                     if ((ZE_EX*real(IFNLFA,8) + HB_EX) <= 0.d0) then
+                     if ((ZE_EX*real(IFNLFA, 8) + HB_EX) <= 0.d0) then
                         ZE_EX = abs(HB_EX) + H0
                      end if
 !DIR$ FORCEINLINE
@@ -747,8 +745,7 @@ contains
             use MESH, only: NM, AREAS
             use sizes, only: MNP
 
-
-            integer ::   kk,  i, n1, n2, n3
+            integer ::   kk, i, n1, n2, n3
             real(sz) ::  ze1, ze2, ze3
             real(sz) :: node_area(MNP), node_ze(MNP)
 
@@ -885,7 +882,7 @@ contains
                   else
                      NCYC = int(timeh/PER(J))
                   end if
-                  ARGJ = AMIG(J)*(timeh - real(NCYC,8)*PER(J)) + FACE(J)
+                  ARGJ = AMIG(J)*(timeh - real(NCYC, 8)*PER(J)) + FACE(J)
                   RFF = FF(J)*RampElev
                   do I = 1, NETA
                      ARG = ARGJ - EFA(J, I)
@@ -1009,8 +1006,8 @@ contains
                   HB_EX = BATHED(GP_EX, LED_EX, EL_EX, pa)
                   SFAC_EX = SFACED(GP_EX, LED_EX, EL_EX, pa)
 
-                  ZE_IN = 0D0
-                  ZE_EX = 0D0
+                  ZE_IN = 0d0
+                  ZE_EX = 0d0
 
                   do K = 1, 3
                      ZE_IN = ZE_IN + ZE(K, EL_IN, 1)*PHI_EDGE(K, GP_IN, LED_IN, pa)
@@ -1248,7 +1245,6 @@ contains
 !.....Compute the Local Lax Friedrichs Fluxes
 
             llf_flux = F1_AVG - 0.5d0*EIGMAX*(JUMP)
-
 
          end function llf_flux
 
