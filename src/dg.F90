@@ -951,6 +951,7 @@ CONTAINS
 
       !.....Retrieve the area integral gauss quadrature points
 
+      phh = -1 ! dummy initial value
       do j = 1, ph
          if (j == 1) then
             phh = 2*ph
@@ -1014,6 +1015,7 @@ CONTAINS
             call ALLOC_AREA_GAUSS()
          end if
          jj = 2*j
+         sz2 = -1 ! dummy initial value
          if (ELEM == 1 .and. DIM == 2) then
             if (jj == 0) then
                SZ2 = 1
