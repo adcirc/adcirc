@@ -926,6 +926,82 @@ contains
 
          end subroutine computeOceanPressure
 
+         subroutine positive_depth()
+!! Enforce ZE to have positive depth using the algorithm in
+!! Shintaro's 2008 paper. There, it is referred to as the operator \(M\Pi_h\).
+
+            use global, only: NOFF, nodecode, uu1, vv1
+            use global, only: H0
+            use mesh, only: NM, DP
+            use sizes, only: MNE
+
+            implicit none
+
+            integer :: j, kk, k, m1, m2, m3, inds(3)
+            real(sz) :: zevertex(3), depth(3), ze_hat(3), depth_avg, depth2
+            real(sz) :: H1
+
+            H1 = 2.d0*H0
+
+            do j = 1, MNE
+               zevertex = 0.d0
+
+               do KK = 1, 3
+                  ZEVERTEX(1) = ZEVERTEX(1) + PHI_CORNER(KK, 1, 1)*ZE(kk, j, 1)
+                  ZEVERTEX(2) = ZEVERTEX(2) + PHI_CORNER(KK, 2, 1)*ZE(kk, j, 1)
+                  ZEVERTEX(3) = ZEVERTEX(3) + PHI_CORNER(KK, 3, 1)*ZE(kk, j, 1)
+               end do
+
+               do k = 1, 3
+                  depth(k) = zevertex(k) + DP(NM(j, k))
+               end do
+
+               depth_avg = sum(depth)/3.d0
+
+               if (all(depth > H1)) then
+                  NOFF(j) = 1
+                  nodecode(NM(j, :)) = 1
+                  cycle ! move on to the next element
+               elseif (depth_avg < 0) then
+                  ze_hat(:) = H0 - DP(nm(j, :))
+                  NOFF(j) = 0
+                  nodecode(NM(j, :)) = 0
+                  UU1(NM(j, :)) = 0.d0
+                  VV1(NM(j, :)) = 0.d0
+               elseif (depth_avg <= H1) then
+! If mean value is less than H1, then set the whole element to that depth
+                  ze_hat(:) = depth_avg - DP(nm(j, :))
+                  !if (LoadGeoidOffset) ze_hat = ze_hat + GeoidOffset(NM(j,1))
+                  !ze_hat(:) = H0*1.1 - DP(nm(j,:))
+                  NOFF(j) = 0
+                  nodecode(NM(j, :)) = 0
+                  UU1(NM(j, :)) = 0.d0
+                  VV1(NM(j, :)) = 0.d0
+               else
+                  call sort(3, depth, inds)
+                  m1 = inds(1)
+                  m2 = inds(2)
+                  m3 = inds(3)
+                  ze_hat(m1) = H1 - DP(nm(j, m1))
+
+                  ze_hat(m2) = max(H1, depth(2) - 0.5d0*(H1 - depth(1))) - DP(nm(j, m2))
+                  depth2 = ze_hat(m2) + dp(nm(j, m2))
+
+                  ze_hat(m3) = depth(3) - (H1 - depth(1)) - (depth2 - depth(2)) - DP(nm(j, m3))
+                  UU1(NM(j, :)) = 0.d0
+                  VV1(NM(j, :)) = 0.d0
+               end if
+
+! Reproject vertex values into DG modes
+               ZE(1, J, 1) = 1.d0/3.d0*(ze_hat(1) + ze_hat(2) + ze_hat(3))
+               ZE(2, J, 1) = -1.d0/6.d0*(ze_hat(1) + ze_hat(2)) + 1.d0/3.d0*ze_hat(3)
+               ZE(3, J, 1) = -0.5d0*ze_hat(1) + 0.5d0*ze_hat(2)
+
+            end do
+
+         end subroutine positive_depth
+
+#ifndef NDEBUG
          subroutine check_element_depth(it)
 !! Loop through elements and check if the depth at any AREA
 !! quadrature point is negative, in which case stop the program.
@@ -1029,81 +1105,6 @@ contains
 
          end subroutine check_edge_depth
 
-         subroutine positive_depth()
-!! Enforce ZE to have positive depth using the algorithm in
-!! Shintaro's 2008 paper. There, it is referred to as the operator \(M\Pi_h\).
-
-            use global, only: NOFF, nodecode, uu1, vv1
-            use global, only: H0
-            use mesh, only: NM, DP
-            use sizes, only: MNE
-
-            implicit none
-
-            integer :: j, kk, k, m1, m2, m3, inds(3)
-            real(sz) :: zevertex(3), depth(3), ze_hat(3), depth_avg, depth2
-            real(sz) :: H1
-
-            H1 = 2.d0*H0
-
-            do j = 1, MNE
-               zevertex = 0.d0
-
-               do KK = 1, 3
-                  ZEVERTEX(1) = ZEVERTEX(1) + PHI_CORNER(KK, 1, 1)*ZE(kk, j, 1)
-                  ZEVERTEX(2) = ZEVERTEX(2) + PHI_CORNER(KK, 2, 1)*ZE(kk, j, 1)
-                  ZEVERTEX(3) = ZEVERTEX(3) + PHI_CORNER(KK, 3, 1)*ZE(kk, j, 1)
-               end do
-
-               do k = 1, 3
-                  depth(k) = zevertex(k) + DP(NM(j, k))
-               end do
-
-               depth_avg = sum(depth)/3.d0
-
-               if (all(depth > H1)) then
-                  NOFF(j) = 1
-                  nodecode(NM(j, :)) = 1
-                  cycle ! move on to the next element
-               elseif (depth_avg < 0) then
-                  ze_hat(:) = H0 - DP(nm(j, :))
-                  NOFF(j) = 0
-                  nodecode(NM(j, :)) = 0
-                  UU1(NM(j, :)) = 0.d0
-                  VV1(NM(j, :)) = 0.d0
-               elseif (depth_avg <= H1) then
-! If mean value is less than H1, then set the whole element to that depth
-                  ze_hat(:) = depth_avg - DP(nm(j, :))
-                  !if (LoadGeoidOffset) ze_hat = ze_hat + GeoidOffset(NM(j,1))
-                  !ze_hat(:) = H0*1.1 - DP(nm(j,:))
-                  NOFF(j) = 0
-                  nodecode(NM(j, :)) = 0
-                  UU1(NM(j, :)) = 0.d0
-                  VV1(NM(j, :)) = 0.d0
-               else
-                  call sort(3, depth, inds)
-                  m1 = inds(1)
-                  m2 = inds(2)
-                  m3 = inds(3)
-                  ze_hat(m1) = H1 - DP(nm(j, m1))
-
-                  ze_hat(m2) = max(H1, depth(2) - 0.5d0*(H1 - depth(1))) - DP(nm(j, m2))
-                  depth2 = ze_hat(m2) + dp(nm(j, m2))
-
-                  ze_hat(m3) = depth(3) - (H1 - depth(1)) - (depth2 - depth(2)) - DP(nm(j, m3))
-                  UU1(NM(j, :)) = 0.d0
-                  VV1(NM(j, :)) = 0.d0
-               end if
-
-! Reproject vertex values into DG modes
-               ZE(1, J, 1) = 1.d0/3.d0*(ze_hat(1) + ze_hat(2) + ze_hat(3))
-               ZE(2, J, 1) = -1.d0/6.d0*(ze_hat(1) + ze_hat(2)) + 1.d0/3.d0*ze_hat(3)
-               ZE(3, J, 1) = -0.5d0*ze_hat(1) + 0.5d0*ze_hat(2)
-
-            end do
-
-         end subroutine positive_depth
-
          subroutine check_bathy(IT)
       !! Check if the bathymetry in the DG basis matches the nodal DP
             use mesh, only: DP, NM
@@ -1136,7 +1137,7 @@ contains
             end do
 
          end subroutine check_bathy
-
+#endif
          subroutine sort(n, a, is)
 !! Sort the input array `a` and write the corresponding indices into `is`.
             implicit none
