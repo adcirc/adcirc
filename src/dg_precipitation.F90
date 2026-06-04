@@ -1,4 +1,4 @@
-module PRECIPITATION
+module DG_PRECIPITATION
   !! This module provides routines to compute and update parametric rain
   !! in several possible ways. This module is already called when the DG solver
   !! is used for continuity, but it does not depend on the DG module. To use:
@@ -156,4 +156,4 @@ contains
       PREC3(i) = PREC3(i) + DTDP*PREC2(i)
    end subroutine UPDATE_PREC
 
-end module PRECIPITATION
+end module DG_PRECIPITATION

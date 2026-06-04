@@ -5615,7 +5615,7 @@ C***********************************************************************
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       USE GLOBAL, ONLY: rnday
       USE MESH, ONLY : slam, sfea, np, ics
-      use PRECIPITATION, only : UPDATE_PREC
+      use dg_precipitation, only : UPDATE_PREC
       IMPLICIT NONE
 
       INTEGER  :: ient

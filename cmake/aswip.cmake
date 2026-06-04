@@ -38,7 +38,7 @@ set(ASWIP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owi_ice.F
     ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
     ${CMAKE_CURRENT_SOURCE_DIR}/wind/aswip.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/precipitation.F90)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/dg_precipitation.F90)
 
 if(NETCDF_WORKING)
   set(ASWIP_SOURCES ${ASWIP_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind_netcdf.F

@@ -13,9 +13,9 @@ MODULE DG
    public :: sinnx, cosnx, hb, xlen, nedsd, niedn, nagp, xfac, yfac
    public :: dbathdx, bath, srfac, sfac_elem, phi_area, negp, phi_edge
    public :: wegp, bathed, sfaced, xegp, emo_dg, efa_dg
-   public :: M_inv, dbathdy, needs, nieds, dofh, pa, constvel
+   public :: M_inv, dbathdy, needs, nieds, dofh, pa
    public :: psi2, psi3, psi1, etiminc_dg
-   public :: edgeq, fluxtype, nfeds, qtratio
+   public :: edgeq, nfeds, qtratio
    public :: nfedn
 
    protected :: nedel, neled
@@ -26,9 +26,9 @@ MODULE DG
    protected :: sinnx, cosnx, hb, xlen, nedsd, niedn, nagp, xfac, yfac
    protected :: dbathdx, bath, srfac, sfac_elem, phi_area, negp, phi_edge
    protected :: wegp, bathed, sfaced, xegp, emo_dg, efa_dg
-   protected :: M_inv, dbathdy, needs, nieds, dofh, pa, constvel
+   protected :: M_inv, dbathdy, needs, nieds, dofh, pa
    protected :: psi2, psi3, psi1, etiminc_dg
-   protected :: edgeq, fluxtype, nfeds, qtratio
+   protected :: edgeq, nfeds, qtratio
    protected :: nfedn
 
    public :: prep_DG, nodal_to_modal, nodal_to_quad_points
@@ -65,12 +65,10 @@ MODULE DG
    INTEGER :: MNED
    INTEGER, TARGET :: MODAL_IC
    INTEGER, TARGET :: SLOPEFLAG
-   INTEGER, TARGET :: FLUXTYPE
    INTEGER, TARGET :: RK_STAGE, RK_ORDER
    Integer, TARGET :: padapt, pl, ph, px
    INTEGER :: pa
    !
-   integer :: layers
 
    !.....Declare real variables
 
@@ -145,10 +143,8 @@ MODULE DG
    REAL(SZ), ALLOCATABLE :: WATER_DEPTH_OLD(:, :), WATER_DEPTH(:, :)
    REAL(SZ), ALLOCATABLE :: ADVECTQX(:), ADVECTQY(:)
    REAL(SZ), ALLOCATABLE :: SOURCEQX(:), SOURCEQY(:)
-   REAL(SZ), ALLOCATABLE :: LZ(:, :, :, :), MZ(:, :, :, :)
-   Real(SZ), Allocatable :: HZ(:, :, :, :), TZ(:, :, :, :)
    REAL(SZ), ALLOCATABLE :: QNAM_DG(:, :, :), QNPH_DG(:, :, :)
-   REAL(SZ), ALLOCATABLE :: RHS_ZE(:, :, :), RHS_bed(:, :, :, :)
+   REAL(SZ), ALLOCATABLE :: RHS_ZE(:, :, :)
    REAL(SZ), ALLOCATABLE :: XAGP(:, :), YAGP(:, :), WAGP(:, :)
    REAL(SZ), ALLOCATABLE :: XEGP(:, :),  WEGP(:, :)
    REAL(SZ), ALLOCATABLE :: SL3(:, :)
@@ -180,24 +176,14 @@ MODULE DG
 
    Real(SZ), Allocatable :: ZEmin(:, :), ZEmax(:, :), QXmin(:, :)
    Real(SZ), Allocatable :: QXmax(:, :), QYmin(:, :), QYmax(:, :)
-   Real(SZ), Allocatable :: iotamin(:, :), iotamax(:, :)
-   Real(SZ), Allocatable :: iota2min(:, :), iota2max(:, :)
 
    ! namo - for ADCIRC -----------------------------------------------
 
-   real(sz), allocatable :: slopeCG(:), slopeDG(:)
 
    real(sz) :: G2ROOT
 
    REAL(SZ) :: etiminc_dg
 
-
-   ! constant velocity in DG RK stages
-   LOGICAL :: CONSTVEL
-
-
-   ! sediment flag
-   INTEGER :: SEDFLAG
 
    ! init in prep_DG
    INTEGER, ALLOCATABLE ::   pdg_el(:)
@@ -269,27 +255,6 @@ MODULE DG
    REAL(SZ) :: NLEQ, LEQ, NLEQG
 
    real(sz), allocatable :: dg_ang(:), dp_dg(:)
-
-   ! REAL(SZ) :: FX_IN, FY_IN, GX_IN, GY_IN, HX_IN, HY_IN
-   ! REAL(SZ) :: FX_EX, FY_EX, GX_EX, GY_EX, HX_EX, HY_EX
-   ! REAL(SZ) :: F_AVG, G_AVG, H_AVG, JUMP(4), HT_IN, HT_EX
-   !REAL(SZ) :: C_ROE, U_ROE,  EIGVAL(4), RI(4, 4), LE(4, 4), A_ROE(4, 4)
-   ! Real(SZ) :: UMag_IN, UMag_EX, QX_ROE, QY_ROE, bed_ROE
-   ! REAL(SZ) :: Q_N, Q_T, U_N, U_T, U_IN, U_EX, V_IN, V_EX
-   ! REAL(SZ) ::  QX_SUM, QY_SUM, DG_MAX, DG_MIN, U_N_EXT, U_T_EXT
-   ! REAL(SZ) :: Q_N_INT, Q_T_INT, U_N_INT, U_T_INT, Q_N_EXT, Q_T_EXT
-
-   ! REAL(SZ) :: BX_INT, BY_INT, SOURCE_1, SOURCE_2, SOURCE_SUM, k_hat
-   ! REAL(SZ) :: FRIC_AVG, DP_MID, F_HAT, G_HAT, H_HAT, i_hat, j_hat
-   ! REAL(SZ) :: INFLOW_ZE, INFLOW_QX, INFLOW_QY, H_LEN, INFLOW_LEN
-   ! REAL(SZ) :: QX_NORM, QY_NORM, QX_DECT, QY_DECT
-   ! REAL(SZ), ALLOCATABLE :: FX_MID(:, :), GX_MID(:, :), HX_MID(:, :)
-   ! REAL(SZ), ALLOCATABLE :: FY_MID(:, :), GY_MID(:, :), HY_MID(:, :)
-   ! REAL(SZ), ALLOCATABLE :: QX_C(:), QY_C(:), dynP_DG(:)
-   ! REAL(SZ), Allocatable :: iota2_DG(:), iota_DG(:), iotaa_DG(:)
-   ! REAL(SZ), Allocatable :: bed_DG(:, :), bed_N_int(:), bed_N_ext(:)
-
-   ! init in read_input.F
 
    !**********************END OF DATA DECLARATIONS ***********************
 
@@ -365,7 +330,6 @@ CONTAINS
       ALLOCATE (MANN(DOFH, MNE)) !,arrayfix(DOFH,MNE,NRK+2) )
       ALLOCATE (U_modal(DOFH, MNE), V_modal(DOFH, MNE))
       ALLOCATE (ZE(DOFH, MNE, NRK + 2))
-      allocate (slopeDG(MNE), slopeCG(MNE))
       !sb-20060711 For wet/dry
       ALLOCATE (ZE_MAX(MNE), ZE_MIN(MNE), DPE_MIN(MNE))
       ALLOCATE (WATER_DEPTH(MNE, 3), WATER_DEPTH_OLD(MNE, 3))
@@ -376,10 +340,8 @@ CONTAINS
 
       !--
       !sb-20070101
-      ALLOCATE (LZ(DOFH, 2, 2, MNE), MZ(DOFH, 2, layers, MNE))
-      Allocate (HZ(DOFH, 2, 2, MNE), TZ(DOFH, 2, 2, MNE))
       !--
-      ALLOCATE (RHS_ZE(DOFH, MNE, NRK), RHS_bed(DOFH, MNE, NRK, layers))
+      ALLOCATE (RHS_ZE(DOFH, MNE, NRK))
       ALLOCATE (DRDX(MNE), DSDX(MNE), DRDY(MNE), DSDY(MNE))
       ALLOCATE (CORI_EL(MNE), FRIC_EL(MNE))
       ALLOCATE (PHI(DOFH), DPHIDZ1(DOFH), DPHIDZ2(DOFH))
@@ -450,8 +412,6 @@ CONTAINS
 
       Allocate (ZEmin(MNP, dofh), ZEmax(MNP, dofh), QXmin(MNP, dofh))
       Allocate (QXmax(MNP, dofh), QYmin(MNP, dofh), QYmax(MNP, dofh))
-      Allocate (iotamin(MNP, dofh), iotamax(MNP, dofh))
-      Allocate (iota2min(MNP, dofh), iota2max(MNP, dofh))
 
    end subroutine ALLOC_SLOPELIM
 
@@ -524,7 +484,7 @@ CONTAINS
       integer :: phh, DIM, NQEDS
       Real(SZ), allocatable :: XBCbt(:), YBCbt(:), radial(:), XB(:), YB(:), &
                                l2e(:)
-      Real(SZ), allocatable :: iota_check(:), iota_check2(:), hbo(:, :, :), &
+      Real(SZ), allocatable :: hbo(:, :, :), &
                                ydubo(:, :)
       Real(SZ), allocatable :: YELEM(:), YED(:), HB1(:, :, :, :), zeo(:, :, :)
 
@@ -542,12 +502,8 @@ CONTAINS
       PADAPT = 0
       PL = 1
       PH = 1
-      FLUXTYPE = 2
-      SEDFLAG = 0
       SLOPEFLAG = 6
       G2ROOT = SQRT(G/2.d0)
-      CONSTVEL = .false.
-      layers = 1
 
       !.....Set nonlinear flags
       if (nolica == 0 .or. nolicat == 0) then
@@ -573,7 +529,7 @@ CONTAINS
       end if
       Allocate (XBCbt(MNE), YBCbt(MNE), radial(MNE), XB(MNE), YB(MNE), &
                 l2e(MNE))
-      Allocate (iota_check(MNE), iota_check2(MNE), hbo(36, MNE, 1), &
+      Allocate ( hbo(36, MNE, 1), &
                 ydubo(36, mne))
       Allocate (YELEM(ph), YED(ph), hb1(36, mne, 1, ph), zeo(36, mne, 1), &
                 BARY(DIM))
@@ -583,7 +539,6 @@ CONTAINS
       C16 = 1.D0/6.D0
       R = 6378206.4d0
 
-      !     sb-PDG1 moved from other places
 
       !.....Obtain RK time scheme parameters
 
@@ -640,12 +595,6 @@ CONTAINS
 
       END IF
 
-      !     cnd
-      !     iwrite=0
-
-      !.....Initilization for parallel DG run
-
-      ! MPI should be initialized in ADCIRC already; skip for now
 #ifdef CMPI
       CALL MSG_TABLE_ELEM() ! Read Message-Passing Tables
 #endif
@@ -831,16 +780,8 @@ CONTAINS
       zeo = 0.D0
       hbo = 0.D0
       hb = 0.D0
-      LZ = 0.d0
-      HZ = 0.D0
-      TZ = 0.D0
-      MZ = 0.D0
-      !MassMax = 0.D0
       MARK = 0
-      !bed = 0.D0
       RHS_ZE = 0.D0
-      !$$$      WSX2(:) = 0.d0
-      !$$$      WSY2(:) = 0.d0
       !.....If using modal initial conditions transform the bathymetry from
       !.....nodal coordinates to modal dof
 

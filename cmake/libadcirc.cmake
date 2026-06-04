@@ -68,9 +68,8 @@ set(LIBADC_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subgridLookup.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/couple2baroclinic3D.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dg.F90
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/slopelimiter.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dg_integration.F90
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/precipitation.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/dg_precipitation.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/messenger_elem.F90)
 
 if(NETCDF_WORKING)

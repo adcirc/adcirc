@@ -114,7 +114,7 @@ set(ADCSWAN1_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/harm.F
     ${CMAKE_CURRENT_SOURCE_DIR}/wind/vortex.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/wind.F
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/precipitation.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/dg_precipitation.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/nws08.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/owiwind.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rs2.F
@@ -151,7 +151,6 @@ set(ADCSWAN_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/timestep.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dg_integration.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dg.F90
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/slopelimiter.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vsmy.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/transport.F
     ${CMAKE_CURRENT_SOURCE_DIR}/src/driver.F)

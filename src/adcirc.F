@@ -145,7 +145,7 @@ C******************************************************************************
       USE WRITE_OUTPUT, ONLY : initOutput2D
       USE WIND, ONLY : initWindModule, initDynamicWaterLevelCorrection,
      &                 getDynamicWaterLevelCorrections
-      use PRECIPITATION, only : init_precipitation
+      use dg_precipitation, only : init_precipitation
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_init, msg_table, msg_start,
      &   allnodes
