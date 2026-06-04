@@ -1250,7 +1250,7 @@ C
      & CME_AREAINT_ORIG, CME_AREAINT_CORR, ETA1, ETA2, QX1, QY1, UU1,
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, VIDISPDXOH, VIDISPDYOH, IFSFM, 
-     & CBaroclinic, CAliDisp, windlim, H1, H2, peta1, peta2
+     & CBaroclinic, CAliDisp, windlim, H1, H2
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
      &   SFacEle, SFMYEle, SFMXEle, TANPHI   
@@ -1419,12 +1419,12 @@ C...  Compute element averaged quantities
 
 C...  Compute terms associated with the barotropic pressure
 
-         BTP1N1=PETA1(NM1)
-         BTP2N1=PETA2(NM1)
-         BTP1N2=PETA1(NM2)
-         BTP2N2=PETA2(NM2)
-         BTP1N3=PETA1(NM3)
-         BTP2N3=PETA2(NM3)
+         BTP1N1=ETA1(NM1)
+         BTP2N1=ETA2(NM1)
+         BTP1N2=ETA1(NM2)
+         BTP2N2=ETA2(NM2)
+         BTP1N3=ETA1(NM3)
+         BTP2N3=ETA2(NM3)
 
 C.......If using atm pressure add it into the barotropic pressure
 
