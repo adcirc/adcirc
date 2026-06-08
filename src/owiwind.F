@@ -126,6 +126,7 @@
             REAL(8)             :: windTimeElapsed !< time that has elapsed in the wind fields
             LOGICAL              :: hasData !< set to false when fields are no longer have data
             LOGICAL              :: atEnd !< set to false when the fields are at the end of file
+            LOGICAL              :: wrap !< true when the longitude grid is global and should wrap periodically
             REAL(8),ALLOCATABLE :: p(:,:) !< pressure field
             REAL(8),ALLOCATABLE :: u(:,:) !< u-velocity field
             REAL(8),ALLOCATABLE :: v(:,:) !< v-velocity field
@@ -225,6 +226,7 @@
         do i = 1,abs(numSets)
             owi(i)%atEnd = .false.
             owi(i)%hasData = .false.
+            owi(i)%wrap = .false.
         enddo
 
         ! Check the number of powell search domains
@@ -407,7 +409,7 @@
         
         do S = 1,nPowellSearchDomains
             if(owi(s)%hasData)then
-                minidx = minloc(owi(s)%p)
+                minidx = minloc(owi(s)%p(1:owi(s)%iLon,1:owi(s)%iLat))
                 minp = owi(s)%p(minidx(1),minidx(2))
                 if(minp.lt.1000D0.and.minp.lt.eyePressure)then
                     EyeLonI = minidx(1)
@@ -542,6 +544,17 @@
            owi(idx)%dlat = dyp
            owi(idx)%swlat = swlatp
            owi(idx)%swlon = swlongp
+
+           !...Detect a globally-wrapping (periodic) longitude grid
+           if(owi(idx)%iLon*owi(idx)%dLon.gt.360.0d0-0.5d0*owi(idx)%dLon)then
+              owi(idx)%wrap = .true.
+              write(scratchMessage,'(A,I0,A)') "Oceanweather domain ",
+     &           idx," uses globally-wrapping longitude coordinates."
+              call logMessage(INFO,TRIM(scratchMessage))
+           else
+              owi(idx)%wrap = .false.
+           endif
+
            WRITE(errorVar,'(A,I0)') "Updating grid coordinate mapping coefficients, domain ",idx
            call logMessage(INFO,errorVar)
            call nws12interp(idx,np)
@@ -568,6 +581,16 @@
         read(owi(idx)%iounit_wind,22,end=10000,err=9999,iostat=errorIO)
      &     ((owi(idx)%v(i,j),i=1,owi(idx)%iLon),j=1,owi(idx)%iLat)
         call check_owi_err(errorIO,errorVar,filename,iounit)
+
+        !...Populate periodic halo columns (0 and iLon+1) for wrapping grids
+        if(owi(idx)%wrap)then
+           owi(idx)%p(0,:) = owi(idx)%p(owi(idx)%iLon,:)
+           owi(idx)%u(0,:) = owi(idx)%u(owi(idx)%iLon,:)
+           owi(idx)%v(0,:) = owi(idx)%v(owi(idx)%iLon,:)
+           owi(idx)%p(owi(idx)%iLon+1,:) = owi(idx)%p(1,:)
+           owi(idx)%u(owi(idx)%iLon+1,:) = owi(idx)%u(1,:)
+           owi(idx)%v(owi(idx)%iLon+1,:) = owi(idx)%v(1,:)
+        endif
 
         ! Set this flag so interpolation routine knows
         ! to use this domain or not
@@ -661,7 +684,7 @@
 
         do j = numSets,1,-1
            if(.not.owi(j)%hasData)cycle
-           if (owi(j)%interppoints(node,1).gt.0) then
+           if (owi(j)%interppoints(node,1).ge.0) then
               xi = owi(j)%interpPoints(node,1)
               yi = owi(j)%interpPoints(node,2)
               
@@ -713,15 +736,15 @@
 
             IF(.not.allocated(this%p))then
                 do_allocate = .true.
-            ELSEIF((SIZE(this%p,1).NE.this%iLon).OR.(SIZE(this%p,2).NE.this%iLat))THEN
+            ELSEIF((SIZE(this%p,1).NE.this%iLon+2).OR.(SIZE(this%p,2).NE.this%iLat))THEN
                 do_allocate = .true.
             ENDIF
 
             IF(do_allocate)THEN
                 CALL owi_deallocate(this)
-                ALLOCATE(this%p(this%ilon,this%ilat))
-                ALLOCATE(this%u(this%ilon,this%ilat))
-                ALLOCATE(this%v(this%ilon,this%ilat))
+                ALLOCATE(this%p(0:this%ilon+1,this%ilat))
+                ALLOCATE(this%u(0:this%ilon+1,this%ilat))
+                ALLOCATE(this%v(0:this%ilon+1,this%ilat))
             ENDIF
 
 !-----------------------------------------------------------------------
@@ -764,7 +787,7 @@
             LOG_SCOPE_TRACED("owi_generateCoordinates", WIND_TRACING)
 
             ALLOCATE(lat(1:this%ilat))
-            ALLOCATE(lon(1:this%ilon))
+            ALLOCATE(lon(0:this%ilon+1))
 
             DO I = 1,this%ilat
                 lat(I) = this%swlat+(I-1)*this%dLat
@@ -772,6 +795,14 @@
             DO I = 1,this%ilon
                 lon(i) = this%swlon+(I-1)*this%dLon
             ENDDO
+
+            if(this%wrap)then
+                lon(0)           = lon(this%ilon) - 360.0d0
+                lon(this%ilon+1) = lon(1)         + 360.0d0
+            else
+                lon(0)           = lon(1)         - this%dLon
+                lon(this%ilon+1) = lon(this%ilon) + this%dLon
+            endif
 
             RETURN
 !-----------------------------------------------------------------------
@@ -992,7 +1023,9 @@
       INTEGER,INTENT(IN)   :: idx
       INTEGER,INTENT(IN)   :: NP
       INTEGER              :: I,J,K,XI,YI
+      INTEGER              :: lon_istart,lon_iend
       REAL(8)             :: adcLat,adcLong
+      REAL(8)             :: lon_start,lon_end
       REAL(8)             :: w,w1,w2,w3,w4
       REAL(8),ALLOCATABLE :: lat(:), lon(:)
 
@@ -1005,14 +1038,30 @@
       CALL owi_allocate(owi(idx))
       CALL owi_generateCoordinates(owi(idx),lat,lon)
 
+      if(owi(idx)%wrap)then
+         lon_start  = lon(0)
+         lon_end    = lon(owi(idx)%iLon+1)
+         lon_istart = 0
+         lon_iend   = owi(idx)%iLon
+      else
+         lon_start  = lon(1)
+         lon_end    = lon(owi(idx)%iLon)
+         lon_istart = 1
+         lon_iend   = owi(idx)%iLon-1
+      endif
+
       ! Generate interpolation coefficients (south west point and weights)
       do i=1,NP
         adcLat  = RAD2DEG*SFEA(i)
         adcLong = RAD2DEG*SLAM(i)
 
-        if (adcLong>=lon(1).and.adcLong<lon(owi(idx)%iLon) .and.
+        if(owi(idx)%wrap)then
+           adcLong = lon(0) + modulo(adcLong-lon(0),360.0d0)
+        endif
+
+        if (adcLong>=lon_start.and.adcLong<lon_end .and.
      &       adcLat>=lat(1).and.adcLat<lat(owi(idx)%iLat)) then
-          do j=1,owi(idx)%iLon-1
+          do j=lon_istart,lon_iend
             if (adcLong>=lon(j) .and.
      &           adcLong<lon(j+1)) then
               xi=j
@@ -1043,8 +1092,8 @@
           owi(idx)%weight(i,4)=w4/w
 
         else
-          owi(idx)%interpPoints(i,1) = 0
-          owi(idx)%interpPoints(i,2) = 0
+          owi(idx)%interpPoints(i,1) = -1
+          owi(idx)%interpPoints(i,2) = -1
         endif
       enddo
 
