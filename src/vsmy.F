@@ -3074,16 +3074,21 @@ C              viscosity
       do n = 1,nfen
          EVTOT(n) = Sm(n)*sqrt(q2(n))*l(nh,n)
          NTVTOT(n) = Sh(n)*sqrt(q2(n))*l(nh,n)
+
 !Casey 220207 from Rosemary : But this could be moved outside the loops
-          NTVMIN = EVMIN
-!Casey 220302 : Let's comment this for now.
-!        if(H.LE.15.d0) THEN
-!          NTVMIN = 0.0
-!        else if ((H.GE.15.d0) .and. (H.LE.30.d0)) THEN
-!          NTVMIN = 0.0 + (0.001/15.d0)*(H-15.d0)
-!        else if (H.GE.30.d0) THEN
-!          NTVMIN = 0.001
-!        endif
+!         NTVMIN = EVMIN
+
+
+!Seun 260608: Restore the depth-dependent minimum vertical scalar
+!             diffusivity from the previous 3D temperature workflow.
+         if(H.LE.15.d0) THEN
+           NTVMIN = 0.0d0
+         else if ((H.GE.15.d0) .and. (H.LE.30.d0)) THEN
+           NTVMIN = 0.0d0 + (0.001d0/15.d0)*(H-15.d0)
+         else if (H.GE.30.d0) THEN
+           NTVMIN = 0.001d0
+         endif
+
          if(EVTOT(n).lt.EVMIN) EVTOT(n)=EVMIN
          if(EVTOT(n).gt.100.0d0) EVTOT(n)=100.0d0
 !Casey 220207 from Rosemary
