@@ -3098,6 +3098,10 @@ C---------------------------------------------------------------------------
       INTEGER PROC_NO ! proc number is 20 unless specified 
       INTEGER K, IPROCR, INDXR
       LOGICAL REMOVED
+      INTEGER, PARAMETER :: maxOpenFiles = 256
+      INTEGER startProc
+      INTEGER endProc
+      INTEGER deltaProc
 
       proc_no = 20;
       FLUX_NUM = EXIST_FLUX
@@ -3108,64 +3112,76 @@ C     Open full domain and subdomain fort.20 files
          write(*,*) 'FLUX_NUM = ',FLUX_NUM 
       endif  
 
-      CALL OpenPrepFiles(proc_no, 'aperiodic flux boundary       ',
-     &     1, nproc, SDU, Success)
-      IF (.not.Success) THEN
-         WRITE(*,*) 'WARNING: Unit 20 files not preprocessed.'
-         RETURN ! note early return
-      ENDIF
-c
-c     Write Increment into all flux files
-c
-      READ(proc_no,*) FLUX_INC
-      DO IPROC=1,NPROC
-         WRITE(SDU(IPROC),*) FLUX_INC
-      ENDDO
 C
-C     jgf45.12 Write each full domain nodal flux value into each of the
-C     subdomains that that full domain node maps to. The full domain
-C     node may map to more than one subdomain node if it falls on a
-C     boundary between subdomains (ghost nodes).
+C     Perform decomposition over a range of subdomains, a batch at a time,
+C     so that we never hold more than maxOpenFiles subdomain files open.
+C     The full domain file is re-read once per batch.
+      startProc = 1
+      DO WHILE ( startProc .le. nproc )
+         deltaProc = nproc - startProc
+         IF ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
+         endProc = startProc + deltaProc
 C
-      DO WHILE(.TRUE.)
-         DO I = 1, FLUX_NUM             ! loop through full domain flow nodes
-!            READ(20,*,END=40) FLUX_VAL ! get a flo val for this f.d. flow node
-            READ(proc_no,'(A80)',END=40) FLUX_MSG ! get a flo val for this f.d. flow node
-            if (sponge) then
-               INDX = nodeNumSP(I) 
-            else
-               INDX = FLUX14_ARY(I)      ! get full domain flow node number
-            endif
-            DO J=1, ITOTPROC(INDX)    ! loop over subdomains for 1 f.d. node
-               IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX) ! find next subdomain
-               DO IPROC=1, NPROC
-                  IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d.
-                     ! Checking if the node has been removed as a hanging land
-                     ! boundary node.
+C        Open full domain and this batch of subdomain fort.20 files.
+         CALL OpenPrepFiles(proc_no, 'aperiodic flux boundary       ',
+     &        startProc, endProc, SDU, Success)
+         IF (.not.Success) THEN
+            WRITE(*,*) 'WARNING: Unit 20 files not preprocessed.'
+            RETURN ! note early return
+         ENDIF
+c
+c        Write Increment into this batch of flux files
+c
+         READ(proc_no,*) FLUX_INC
+         DO IPROC=startProc,endProc
+            WRITE(SDU(IPROC),*) FLUX_INC
+         ENDDO
+C
+C        jgf45.12 Write each full domain nodal flux value into each of the
+C        subdomains that that full domain node maps to. The full domain
+C        node may map to more than one subdomain node if it falls on a
+C        boundary between subdomains (ghost nodes). Only subdomains in the
+C        current batch [startProc,endProc] are written here.
+C
+         DO WHILE(.TRUE.)
+            DO I = 1, FLUX_NUM          ! loop through full domain flow nodes
+               READ(proc_no,'(A80)',END=40) FLUX_MSG ! flo val for this node
+               if (sponge) then
+                  INDX = nodeNumSP(I)
+               else
+                  INDX = FLUX14_ARY(I)   ! get full domain flow node number
+               endif
+               DO J=1, ITOTPROC(INDX)  ! loop over subdomains for 1 f.d. node
+                  IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX) ! find next subdomain
+                  IF (IPROC2.GE.startProc .AND. IPROC2.LE.endProc) THEN
+                     ! Checking if the node has been removed as a hanging
+                     ! land boundary node.
                      REMOVED = .FALSE.
                      DO K=1, NNBVVGRP
                         IPROCR = NBVVGRP(1,K)
                         INDXR  = NBVVGRP(2,K)
-                        IF (IPROC.EQ.IPROCR.AND.INDX.EQ.INDXR) THEN
+                        IF (IPROC2.EQ.IPROCR.AND.INDX.EQ.INDXR) THEN
                            REMOVED = .TRUE.
                            EXIT
                         ENDIF
                      END DO
-                     ! Write the flux value to the subdomain file
-                     ! if this node is not removed as a hanging land boundary node
-                     IF (.NOT.REMOVED) THEN 
-                        !WRITE(SDU(IPROC),50) FLUX_VAL
-                        WRITE(SDU(IPROC),'(A)') TRIM(FLUX_MSG)
+                     ! Write the flux value to the subdomain file if this
+                     ! node is not removed as a hanging land boundary node
+                     IF (.NOT.REMOVED) THEN
+                        WRITE(SDU(IPROC2),'(A)') TRIM(FLUX_MSG)
                      ENDIF
                   ENDIF
                END DO
             END DO
-         END DO
-      ENDDO
- 40   CLOSE (proc_no)
-      DO IPROC=1, NPROC
-         CLOSE (SDU(IPROC))
-      ENDDO
+         ENDDO
+C
+C        Close full domain and this batch of subdomain files.
+ 40      CLOSE (proc_no)
+         DO IPROC=startProc, endProc
+            CLOSE (SDU(IPROC))
+         ENDDO
+         startProc = endProc + 1
+      END DO
 
       IF (allocated(FLUX14_ARY)) then
         DEALLOCATE (FLUX14_ARY)
@@ -7168,6 +7184,7 @@ C---------------------------------------------------------------------------
       CHARACTER(len=4) skipstring ! indicates user wants to skip this file
       INTEGER:: unitwidth
       CHARACTER (len=20):: unitnumberstr
+      CHARACTER (len=256):: ErrMsg ! system error text from a failed OPEN
 
       Found = .false.
       Success = .false.
@@ -7207,11 +7224,17 @@ C
 C     If it does exist, open it
       IF ( FOUND ) THEN
          WRITE(*,1011) FileName !found
-         OPEN(UNIT=UnitNumber, FILE=FileName, IOSTAT=ErrorIO)
+         ErrMsg = ' '
+         OPEN(UNIT=UnitNumber, FILE=FileName, IOSTAT=ErrorIO,
+     &        IOMSG=ErrMsg)
          Success = .true.
-         IF ( ErrorIO .GT. 0 ) THEN
+         IF ( ErrorIO .NE. 0 ) THEN
             WRITE(*,*) "ERROR: Full domain file exists but"
             WRITE(*,*) "cannot be opened."
+            WRITE(*,'(A,A)')  "        file   = ", trim(FileName)
+            WRITE(*,'(A,I0)') "        unit   = ", UnitNumber
+            WRITE(*,'(A,I0)') "        iostat = ", ErrorIO
+            WRITE(*,'(A,A)')  "        iomsg  = ", trim(ErrMsg)
             Success = .false.
          ENDIF
       ELSE
@@ -7232,10 +7255,16 @@ C     Open each of the subdomain files
          sdu(iproc) = 505 + (iproc-1)  !tcm v51.31 changed 105 to 505 to avoid conflicts with fort.141 file
          sdFileName = 'PE0000/'//FileName
          WRITE(sdFileName(3:6), '(I4.4)') iproc-1
-         OPEN (UNIT=SDU(iproc), FILE=trim(sdFileName), IOSTAT=ErrorIO)
+         ErrMsg = ' '
+         OPEN (UNIT=SDU(iproc), FILE=trim(sdFileName), IOSTAT=ErrorIO,
+     &         IOMSG=ErrMsg)
          Success = .true.
-         IF ( ErrorIO .GT. 0 ) THEN
+         IF ( ErrorIO .NE. 0 ) THEN
             WRITE(*,*) "ERROR: Subdomain file cannot be opened."
+            WRITE(*,'(A,A)')  "        file   = ", trim(sdFileName)
+            WRITE(*,'(A,I0)') "        unit   = ", SDU(iproc)
+            WRITE(*,'(A,I0)') "        iostat = ", ErrorIO
+            WRITE(*,'(A,A)')  "        iomsg  = ", trim(ErrMsg)
             Success = .false.
             RETURN ! failed to open at least one subdomain file
          ENDIF
