@@ -3091,7 +3091,7 @@ Csb...
       INTEGER :: N,NN,I,J,JJ,K,JLOW
       INTEGER :: NN1,NN2,NN3,NE1,NE2,NE3
       REAL(8) :: DELX,DELY,DIST
-      REAL(8) :: ANGLELOW,ANGLEMORE
+      REAL(8) :: ANGLELOW
       REAL(8), ALLOCATABLE :: ANGLE(:)
       INTEGER, ALLOCATABLE :: NEITEM(:)
       LOGICAL :: FOUND
@@ -3225,18 +3225,26 @@ Csb...
                IF(DELX.LT.0.d0) ANGLE(J)=180.0d0
             ENDIF
          END DO
-         ANGLEMORE=-1.d0
+
+!        Selection sort the neighbors by increasing angle.  Two
+!        neighbors can legitimately share the same angle: the
+!        coincident front/back node pair of an internal barrier/weir
+!        (IBTYPE 2x) projects to the same direction from a shared
+!        neighbor.  
          DO JJ=1,NNeigh(I)
             ANGLELOW=400.d0
+            JLOW=0
             DO J=1,NNeigh(I)
-               IF((ANGLE(J).LT.ANGLELOW).AND.
-     &              (ANGLE(J).GT.ANGLEMORE)) THEN
+               IF(ANGLE(J).LT.ANGLELOW) THEN
                   ANGLELOW=ANGLE(J)
                   JLOW=J
+               ELSE IF(ANGLE(J).EQ.ANGLELOW.AND.JLOW.GT.0) THEN
+                  IF(NEITEM(J).LT.NEITEM(JLOW)) JLOW=J
                ENDIF
             END DO
+            IF(JLOW.EQ.0) call neighb_terminateNeighborSort(I)
             NeiTab(I,JJ+1)=NEITEM(JLOW)
-            ANGLEMORE=ANGLELOW
+            ANGLE(JLOW)=400.d0
          END DO
          NeiTab(I,1)=I
          NNeigh(I)=NNeigh(I)+1
@@ -3340,6 +3348,18 @@ Csb...
      &       '!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
         call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
       end subroutine neighb_terminateDuplicateNode
+
+      subroutine neighb_terminateNeighborSort(i)
+        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
+        implicit none
+        integer,intent(in) :: i
+        write(scratchMessage,99313) I
+99313   FORMAT('!!!!!!!!!!  FATAL ERROR !!!!!!!!! ',
+     &       'THE NEIGHBOR ANGULAR SORT FAILED TO PLACE ALL NEIGHBORS ',
+     &       'FOR NODE ',i0,'. !!!!!! EXECUTION WILL NOW BE ',
+     &       'TERMINATED !!!!!!')
+        call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
+      end subroutine neighb_terminateNeighborSort
 
 
 !     ------------------------------------------------------------------
@@ -5259,11 +5279,13 @@ Csb...
       ! the diagonal position.
       !-----------------------------------------------------------------------
       subroutine compute_csr_positions()
+        use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
         implicit none
 
         integer :: i,jn,nn1,nn2,nn3
 
         allocate (csr_position(mne,3,2))
+        csr_position = 0
         do I=1,NE
            NN1=NM(I,1)
            NN2=NM(I,2)
@@ -5276,6 +5298,14 @@ Csb...
               if(NeiTab(NN3,JN)==NN1) CSR_POSITION(I,3,1) = JN
               if(NeiTab(NN3,JN)==NN2) CSR_POSITION(I,3,2) = JN
            enddo
+           if(any(csr_position(I,:,:) == 0)) then
+              write(scratchMessage,1099) I, NN1, NN2, NN3
+1099          format('compute_csr_positions: element ',i0,' nodes ',
+     &               i0,' ',i0,' ',i0,
+     &               ' has an incomplete neighbor table')
+              call terminate(exit_code=ADCIRC_EXIT_FAILURE,
+     &                       message=scratchMessage)
+           endif
         enddo
 
       !-----------------------------------------------------------------------
