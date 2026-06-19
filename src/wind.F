@@ -857,8 +857,8 @@ C     computation of stress from velocity, units conversion, and
 C     any other procedures necessary for producing met data at a
 C     particular point in time.
 C----------------------------------------------------------------------
-      subroutine getMeteorologicalForcing(nws, wsx2, wsy2, pr2,
-     &   wvnxout, wvnyout, timeloc)
+      subroutine getMeteorologicalForcing(nws, timeloc, wsx2, wsy2, pr2,
+     &   wvnxout, wvnyout)
       use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006     
       use global, only : ciceout, h0, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, IDEN, SigTS, cice1, cice2, IFSPROTS

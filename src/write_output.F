@@ -4315,7 +4315,7 @@ C     args
       CHARACTER(len=3) :: cmp ! comparison to make vs hotstart val ('min' or 'max')
       LOGICAL :: nerr       ! error code from netcdf initialization
       INTEGER :: I          ! loop counter
-      CHARACTER(1024) :: scratchMessage
+      CHARACTER(256) :: scratchMessage
 C
       LOG_SCOPE_TRACED("writeOutArrayMinMax", WRITE_OUTPUT_TRACING)
 C     collect up the data from subdomains if running in parallel

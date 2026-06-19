@@ -1116,7 +1116,7 @@ C----------------------------------------------------------------------
      &   BFCdlLimit, fric, fgamma, ftheta, manningsn, hbreak,
      &   loadManningsN, iflinbf, ifnlbf, ifhybf
 !JLW: adding subgrid
-      use subgrid, only: level0, readsubgridlookup
+      use subgrid, only: subgrid_level0, readsubgridlookup
      &                   , getvertlookup
      &                   , initVar
      &                   , gridDepthVertETA2
@@ -1192,7 +1192,7 @@ C----------------------------------------------------------------------
       END DO
 
 !JLW: adding subgrid lookup table read in
-      IF(level0.EQV..true.)THEN
+      IF(subgrid_level0.EQV..true.)THEN
 #ifdef ADCNETCDF
          ! Set all nodes to wet by default.
          nnodecode(:)=1
