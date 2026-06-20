@@ -2445,12 +2445,14 @@ C     time stepping loop.
 C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
       SUBROUTINE Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G,
-     &     IFNLFA, NP, TK, NFEN, Z0B)
+     &     IFNLFA, NP, TK, NFEN, Z0B, KP)
 Casey 140701: Prevent the depths from becoming negative in the bottom roughness calculations.
       USE GLOBAL, ONLY: H0
       USE SIZES
 ! arash May 31 2016
-      USE GLOBAL_3DVS, ONLY : KP
+CSeun 260619: KP is passed from timestep.F to avoid requiring
+C             global_3dvs.mod when compiling nodalattr.F in legacy builds.
+C     USE GLOBAL_3DVS, ONLY : KP
       IMPLICIT NONE
       INTEGER, intent(in) :: NP, NFEN             ! number of nodes in grid Horizontal and Vertical
       COMPLEX(8), intent(in), dimension(NP,NFEN) :: Q  ! x-dir velocities
@@ -2461,6 +2463,7 @@ Casey 140701: Prevent the depths from becoming negative in the bottom roughness 
       INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag
       REAL(8), intent(inout), dimension(NP) :: TK! depth avg. fric.
       REAL(8), intent(in) :: Z0B
+      REAL(8), intent(in) :: KP                  ! 3D bottom friction coefficient
 C
       INTEGER NH
       REAL(8) Z0B1  ! velocity magnitude (speed)

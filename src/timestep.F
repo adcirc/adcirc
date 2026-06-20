@@ -592,10 +592,14 @@ C     2DDI.Set up the 2D friction coefficient
       endif
 C..RJW Set up the 3D friction coefficient
       if (C3D) then
+CSeun 260619: Pass KP into Apply3DBottomFriction to avoid adding a
+C             direct GLOBAL_3DVS dependency inside nodalattr.F.
+C         CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP,
+C     &                              TK, NFEN, Z0B)
          CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA, NP,
-     &                              TK, NFEN, Z0B)
+     &                              TK, NFEN, Z0B, KP)
       endif
-      
+
 C-------------------BOTTOM FRICTION-------------------------------------
 C
 C
