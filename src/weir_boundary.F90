@@ -2533,40 +2533,16 @@ contains
       HDN = ETA2(NNBB2) - PIPEINV !... Height above pipe invert (bottom) on the IBCONN side (downstream)
       HEAD = ETA2(NNBB1) - ETA2(NNBB2) !... Head difference across the pipe
 
-      if (LBCODEI(IDX) == 26) then
-         write(*,'(A,I0,A,I0,A,I0,A,3E14.6)') &
-            'DEBUG IBTYPE26 pipe: IDX=', IDX, &
-            ' NBV=', NNBB1, &
-            ' IBCONN=', NNBB2, &
-            ' ETA1 ETA2 HEAD=', ETA2(NNBB1), ETA2(NNBB2), HEAD
-      endif
-
       ! No water above pipe invert on either side
-      if ((HUP <= 0.0D0) .and. (HDN <= 0.0D0)) then
-         if (LBCODEI(IDX) == 26) then
-            write(*,'(A,I0)') 'DEBUG IBTYPE26 dry pipe IDX=', IDX
-         endif
-         return
-      endif
+      if ((HUP <= 0.0D0) .and. (HDN <= 0.0D0)) return
 
       ! Tide gate / flap: block reverse flow from IBCONN side to NBV side
-      if ((LBCODEI(IDX) == 26) .and. (HEAD < -BARMIN)) then
-         write(*,'(A,I0,A,E14.6)') 'DEBUG IBTYPE26 blocked reverse flow IDX=', IDX, ' HEAD=', HEAD
-         return
-      endif
+      if ((LBCODEI(IDX) == 26) .and. (HEAD < -BARMIN)) return
 
       ! NBV -> IBCONN flow
       if (HEAD > BARMIN) then
 
-         if (NODECODE(NNBB1) == 0) then
-
-            if (LBCODEI(IDX) == 26) then
-               write(*,'(A,I0,A,I0)') &
-                  'DEBUG IBTYPE26 upstream dry IDX=', IDX, &
-                  ' NODE=', NNBB1
-            endif
-            return
-         endif
+         if (NODECODE(NNBB1) == 0) return
 
          HUP = max(0.0d0, min(HUP, D)) !... Water depth above invert cannot exceed a full pipe
 
@@ -2581,12 +2557,6 @@ contains
 
          if (PIPEAREA > 0.0D0) then
             FLUX = -RampIntFlux * PIPEAREA * sqrt(2.0D0 * G * HEAD / PIPECOEF(IDX))
-         endif
-
-         if (LBCODEI(IDX) == 26) then
-            write(*,'(A,I0,A,4E14.6)') &
-               'DEBUG IBTYPE26 forward flow IDX=', IDX, &
-               ' HUP HDN AREA FLUX=', HUP, HDN, PIPEAREA, FLUX
          endif
 
          return
