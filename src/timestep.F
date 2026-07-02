@@ -1020,7 +1020,7 @@ C                     ACROSS A WEIR
          I = 0                         
          DO K = 1, NBOU  
             SELECT CASE(LBCODEI(I+1))
-                CASE(4,24,5,25)
+                CASE(4,24,5,25,26)
                     DO J = 1,NVELL(K)*2
                         I = I + 1
                         CALL COMPUTE_INTERNAL_BOUNDARY_FLUX(I,J,K,
@@ -1050,7 +1050,7 @@ C.... NOTE THAT THIS ADDS AN ADDITIONAL FLOW COMPONENT INTO QN2
 C...
       IF(NFLUXIBP.EQ.1) THEN
          DO I=1,NVEL
-            IF((LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)) THEN
+            IF((LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25).OR.(LBCODEI(I).EQ.26)) THEN
                 PIPE_FLUX = 0D0
                 CALL COMPUTE_CROSS_BARRIER_PIPE_FLUX(I,PIPE_FLUX)
                 QN2(I) = QN2(I) + PIPE_FLUX

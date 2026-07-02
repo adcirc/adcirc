@@ -1084,7 +1084,8 @@ cjj   wm001 - modified following line
          DO I=1,NVEL
 cjj   wm001 - modified following 2 lines
             IF((LBCODEI(I).EQ.4).OR.(LBCODEI(I).EQ.24)
-     &           .OR.(LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)) THEN
+     &           .OR.(LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)
+     &           .OR.(LBCODEI(I).EQ.26)) THEN
                NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
 C.............RESET INFORMATION FOR K-1 TIME LEVEL
@@ -1157,7 +1158,8 @@ C.... THAT WAS PREVIOUSLY SET
 C...
       IF(NFLUXIBP.EQ.1) THEN
          DO I=1,NVEL
-            IF((LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)) THEN
+            IF((LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)
+     &         .OR.(LBCODEI(I).EQ.26)) THEN
                NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
 C.............RESET INFORMATION FOR K-1 TIME LEVEL
@@ -1179,15 +1181,17 @@ C.............RESET INFORMATION FOR K-1 TIME LEVEL
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(I))**0.5D0
                   ENDIF
-               ELSE IF(RBARWL2.GT.RBARWL1) THEN ! WATER LEVEL LOWER ON THIS SIDE OF PIPE
-                  IF(RBARWL1.LE.0) THEN ! INWARD FREE DISCHARGE
-                     QN1(I)=QN1(I)+RampIntFlux1
-     &                    *0.25D0*PI*(PIPEDIAM(I))**2
-     &                    *(2.D0*G*RBARWL2/(1+PIPECOEF(I)))**0.5D0
-                  ELSE          ! INWARD SUBMERGED DISCHARGE
-                     QN1(I)=QN1(I)+RampIntFlux1
-     &                    *0.25D0*PI*(PIPEDIAM(I))**2
-     &                    *(2.D0*G*(RBARWL2-RBARWL1)/PIPECOEF(I))**0.5D0
+               ELSE IF(RBARWL2.GT.RBARWL1) THEN ! FLOW WOULD BE FROM IBCONN TO NBV
+                  IF(LBCODEI(I).NE.26) THEN
+                     IF(RBARWL1.LE.0) THEN ! INWARD FREE DISCHARGE
+                        QN1(I)=QN1(I)+RampIntFlux1
+     &                     *0.25D0*PI*(PIPEDIAM(I))**2
+     &                     *(2.D0*G*RBARWL2/(1+PIPECOEF(I)))**0.5D0
+                     ELSE                  ! INWARD SUBMERGED DISCHARGE
+                        QN1(I)=QN1(I)+RampIntFlux1
+     &                     *0.25D0*PI*(PIPEDIAM(I))**2
+     &                     *(2.D0*G*(RBARWL2-RBARWL1)/PIPECOEF(I))**0.5D0
+                     ENDIF
                   ENDIF
                ENDIF
 C.............RESET INFORMATION FOR K TIME LEVEL
@@ -1209,15 +1213,17 @@ C.............RESET INFORMATION FOR K TIME LEVEL
      &                    *0.25D0*PI*(PIPEDIAM(I))**2
      &                    *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(I))**0.5D0
                   ENDIF
-               ELSE IF(RBARWL2.GT.RBARWL1) THEN !WATER LEVEL LOWER ON THIS SIDE OF PIPE
-                  IF(RBARWL1.LE.0) THEN ! INWARD FREE DISCHARGE
-                     QN2(I)=QN2(I)+RampIntFlux2
-     &                    *0.25D0*PI*(PIPEDIAM(I))**2
-     &                    *(2.D0*G*RBARWL2/(1+PIPECOEF(I)))**0.5D0
-                  ELSE          ! INWARD SUBMERGED DISCHARGE
-                     QN2(I)=QN2(I)+RampIntFlux2
-     &                    *0.25D0*PI*(PIPEDIAM(I))**2
-     &                    *(2.D0*G*(RBARWL2-RBARWL1)/PIPECOEF(I))**0.5D0
+               ELSE IF(RBARWL2.GT.RBARWL1) THEN ! FLOW WOULD BE FROM IBCONN TO NBV
+                  IF(LBCODEI(I).NE.26) THEN
+                     IF(RBARWL1.LE.0) THEN ! INWARD FREE DISCHARGE
+                        QN2(I)=QN2(I)+RampIntFlux2
+     &                     *0.25D0*PI*(PIPEDIAM(I))**2
+     &                     *(2.D0*G*RBARWL2/(1+PIPECOEF(I)))**0.5D0
+                     ELSE          ! INWARD SUBMERGED DISCHARGE
+                        QN2(I)=QN2(I)+RampIntFlux2
+     &                     *0.25D0*PI*(PIPEDIAM(I))**2
+     &                     *(2.D0*G*(RBARWL2-RBARWL1)/PIPECOEF(I))**0.5D0
+                     ENDIF
                   ENDIF
                ENDIF
             ENDIF

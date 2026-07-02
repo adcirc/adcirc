@@ -153,7 +153,7 @@ C.....for internal barrier boundaries with flowthrough pipes
       integer :: numInternalFluxBoundaries    
       integer :: ifCount   ! index into the internalFluxBoundaries array
       
-      ! flux boundaries where ibtype = 5, 25
+      ! flux boundaries where ibtype = 5, 25, 26
       type internalFluxBoundaryWithPipes_t
          integer :: indexNum               ! order within the fort.14 file
          integer :: informationID              ! xdmf ID for IBTYPE info
@@ -369,7 +369,7 @@ C     ---------
             allocate(internalFluxBoundaries(ifCount)%xdmf_nodes(nvell(i)))
             allocate(internalFluxBoundaries(ifCount)%xdmf_ibconn(nvell(i)))
             ifCount = ifCount + 1
-         case(5,25)
+         case(5,25,26)
             allocate(internalFluxBoundariesWithPipes(ifwpCount)%nodes(nvell(i)))
             allocate(internalFluxBoundariesWithPipes(ifwpCount)%ibconn(nvell(i)))
             allocate(internalFluxBoundariesWithPipes(ifwpCount)%barinht(nvell(i)))
@@ -522,7 +522,7 @@ C     ------------------------------------------------------------------
          select case(ibtype(k))
          case(4,24,64)
             nweir = nweir + nvell(k)
-         case(5,25)
+         case(5,25,26)
             call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="ibtype 5 and 25 not supported by adcprep.")
          case default
             ! no action required for other boundary types
@@ -613,7 +613,7 @@ C     ------------------------------------------------------------------
                weir(nweir) = nbvv(k,i)
                weird(nweir) = ibconnr(k,i)
             enddo
-         case(5,25)
+         case(5,25,26)
             call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="ibtype 5 and 25 not supported by adcprep.")
          case default
             write(6,'(a,i0,a)') 'ERROR: ibtype ',ibtype(k),

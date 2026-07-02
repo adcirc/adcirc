@@ -262,7 +262,7 @@
              ! jgf51.52.24: added nvell(k) for boundaries with backside
              ! nodes, since these are to be included in nvel.
              nvel_count = nvel_count + nvell(k)
-         case(5,25)
+         case(5,25,26)
              numInternalFluxBoundariesWithPipes = numInternalFluxBoundariesWithPipes + 1
              nvel_count = nvel_count + nvell(k)
          case default
@@ -503,7 +503,7 @@
          ! subcritical flow, the cross barrier pipe height, the cross barrier
          ! pipe coefficient and the cross barrier pipe diameter for the nodes
          ! in the Kth boundary segment.
-         case(5,25)
+         case(5,25,26)
             internalFluxBoundariesWithPipes(ifwpCount)%indexNum = k
             do j = 1, nvell(k)
                read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)
@@ -1041,7 +1041,7 @@
                   numExternalFluxBoundaries = numExternalFluxBoundaries + 1
                case(4,24,64)
                   numInternalFluxBoundaries = numInternalFluxBoundaries + 1
-               case(5,25)
+               case(5,25,26)
                   numInternalFluxBoundariesWithPipes = numInternalFluxBoundariesWithPipes + 1
                case default
                   scratchFormat = 'Mesh file contains IBTYPE=",i0," '
@@ -1237,7 +1237,7 @@
                internalFluxBoundaries(ifCount)%ibconn =
      &             internalFluxBoundaries(ifCount)%xdmf_ibconn + 1
                ifCount = ifCount + 1
-            case(5,25)  ! internal barrier boundary with cross barrier pipes
+            case(5,25,26)  ! internal barrier boundary with cross barrier pipes
                internalFluxBoundariesWithPipes(ifwpCount)%indexNum = fluxCount
                ! get the node numbers on the boundary
                call xdmfRetrieveSetValues(xdmfFortranObj, setIndex,
@@ -1247,7 +1247,7 @@
                ! convert node numbers from 0 starting index (xdmf-style) to
                ! 1 starting index (fortran-style)
                internalFluxBoundariesWithPipes(ifwpCount)%nodes =
-     &             internalFluxBoundaries(ifwpCount)%xdmf_nodes + 1
+     &             internalFluxBoundariesWithPipes(ifwpCount)%xdmf_nodes + 1
                do i=attStart,attStart+6
                   call xdmfRetrieveAttributeName(xdmfFortranObj, i, itemName, nameLength)
                   call replaceNullsWithSpaces(itemName)
@@ -1369,7 +1369,7 @@
             barincfspr(fluxCount,1:nvell(fluxCount)) =
      &             internalFluxBoundaries(ifCount)%barincfsp
             ifCount = ifCount + 1
-         case(5,25)  ! internal barrier boundary (e.g., subgrid scale levee)
+         case(5,25,26)  ! internal barrier boundary (e.g., subgrid scale levee)
             ! populate adcirc-native arrays
             nbvv(fluxCount,1:nvell(fluxCount))
      &             = internalFluxBoundariesWithPipes(ifwpCount)%nodes
@@ -2041,6 +2041,25 @@
      &               'ARRIER, PIPE FRICTION COEFFICIENT, PIPE DIAMETER',
      &          /,7X,'AND THE APPROPRIATE PIPE FLOW FORMULA',/,
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
+         CASE(26)
+           NFLUXIB=1
+           NFLUXIBP=1
+           WRITE(16,2369)
+ 2369  FORMAT(5X,'THIS SEGMENT IS A TIDE-FLAP '                   
+     &       ,'INTERNAL BARRIER BOUNDARY:',/,
+     &       7X,'WITH ADDITIONAL CROSS-BARRIER PIPE(S) LOCATED ',
+     &          'UNDER THE CROWN',/,
+     &       7X,'CROSS-BARRIER FLOW IS TREATED AS A NATURAL NORMAL ',
+     &          'FLOW BOUNDARY CONDITION',/,
+     &       7X,'PIPE FLOW IS ALLOWED ONLY FROM THE INLAND SIDE ',
+     &          '(NBVV) TO THE OCEAN SIDE (IBCONN)',/,
+     &       7X,'REVERSE FLOW THROUGH THE PIPE IS BLOCKED TO ',
+     &          'SIMULATE A TIDE FLAP/GATE',/,
+     &       7X,'PIPE FLOW RATE IS BASED ON PIPE CROWN HEIGHT, ',
+     &          'SURFACE WATER ELEVATION,',/,
+     &       7X,'PIPE FRICTION COEFFICIENT, PIPE DIAMETER, ',
+     &          'AND THE APPROPRIATE PIPE FLOW FORMULA',/,
+     &       7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
          CASE(30)
            NFluxRBC=1
            WRITE(16,2360)
@@ -2143,7 +2162,7 @@
          case(4,24,64)
             nprbi = 2
             npipe = 0
-         case(5,25)
+         case(5,25,26)
             nprbi = 2
             npipe = 1
          case default
@@ -2205,7 +2224,7 @@
 
 !...        WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES WITH
 !...        CROSS BARRIER PIPES
-            IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
+            IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25).OR.(IBTYPE(K).EQ.26)) THEN
                IF(IPRBI.EQ.1) THEN
                   WRITE(16,1844)
  1844             FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',
@@ -2585,7 +2604,7 @@
 
 !...........   LOAD INTERNAL BARRIER WITH PIPES BOUNDARY INFORMATION INTO
 !...........   THE CORRECT VECTORS
-               IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
+               IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25).OR.(IBTYPE(K).EQ.26)) THEN
                   IBCONN(JGW)=IBCONNR(K,I)
                   BARINHT(JGW)=BARINHTR(K,I)
                   BARINCFSB(JGW)=BARINCFSBR(K,I)
@@ -2642,7 +2661,7 @@
                ENDIF
 
 !...........   CHECK INTERNAL BARRIER WITH PIPES BARRIER HEIGHTS AGAINST DEPTHS
-               IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
+               IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25).OR.(IBTYPE(K).EQ.26)) THEN
                   IF(BARINHT(JGW).LT.-DP(NBV(JGW))) THEN
                      write(scratchMessage,8370)
      &                    JGW,NBV(JGW),BARINHT(JGW),DP(NBV(JGW))
@@ -2660,7 +2679,7 @@
                   ENDIF
                ENDIF
 !...           CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
-               IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
+               IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25).OR.(IBTYPE(K).EQ.26)) THEN
                   IF(PIPEHT(JGW).LT.-DP(NBV(JGW))) THEN
                      write(scratchMessage,8372)
      &                    JGW,NBV(JGW),BARINHT(JGW),DP(NBV(JGW))
@@ -2683,7 +2702,7 @@
 !...  APPROPRIATE ACTION
                IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
      &              (IBTYPE(K).EQ.64).OR.(IBTYPE(K).EQ.5)
-     &              .OR.(IBTYPE(K).EQ.25)) THEN
+     &              .OR.(IBTYPE(K).EQ.25).OR.(IBTYPE(K).EQ.26)) THEN
                   DO ICK=1,NVELEXT
 !...  CHECK IF OVERLAP EXISTS
                      IF(NBV(ICK).EQ.NBV(JGW)) THEN
@@ -2895,7 +2914,8 @@ Csb...
      &                4X,'PIPECOEF',
      &                4X,'PIPEDIAM',/)
          DO J=1,NVEL
-            IF((LBCODEI(J).EQ.5).OR.(LBCODEI(J).EQ.25)) THEN
+            IF((LBCODEI(J).EQ.5).OR.(LBCODEI(J).EQ.25).OR.
+     &         (LBCODEI(J).EQ.26)) THEN
                WRITE(16,2328) NBV(J),IBCONN(J),BARINHT(J),
      &                     BARINCFSB(J),BARINCFSP(J),
      &                     PIPEHT(J),PIPECOEF(J),PIPEDIAM(J)

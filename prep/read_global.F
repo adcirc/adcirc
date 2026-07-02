@@ -244,7 +244,7 @@ C
                WEIR(NWEIR) = NBVV(K,I)
                WEIRD(NWEIR) = IBCONNR(K,I)
             ENDDO
-         case(5,25)
+         case(5,25,26)
             DO I =1,NVELL(K)
                READ(14,*) n1,n2,
      &                   BAR1(K,I),BAR2(K,I),BAR3(K,I),

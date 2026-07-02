@@ -316,7 +316,7 @@ contains
       NWEIR = 0
       do I = 1, NVEL
          select case (LBCODEI(I))
-         case (3, 13, 23, 4, 24, 64, 5, 25)
+         case (3, 13, 23, 4, 24, 64, 5, 25, 26)
             NWEIR = NWEIR + 1
          end select
       end do
@@ -326,7 +326,7 @@ contains
       IDX = 0
       do I = 1, NVEL
          select case (LBCODEI(I))
-         case (3, 13, 23, 4, 24, 64, 5, 25)
+         case (3, 13, 23, 4, 24, 64, 5, 25, 26)
             IDX = IDX + 1
             BAR_LOCATIONS(1, IDX) = X(NBV(I))
             BAR_LOCATIONS(2, IDX) = Y(NBV(I))
@@ -617,7 +617,7 @@ contains
             BAR_DZ = BARLANHT(MYIDX) - &
                      BARHT_FINAL(MYIDX)
             BAR_START = BARLANHT(MYIDX)
-         case (4, 24, 64, 5, 25)
+         case (4, 24, 64, 5, 25, 26)
             BAR_DZ = BARINHT(MYIDX) - BARHT_FINAL(MYIDX)
             BAR_START = BARINHT(MYIDX)
          case DEFAULT
@@ -824,7 +824,7 @@ contains
             select case (LBCODEI(MYIDX))
             case (3, 13, 23)
                BARHT_FINAL(MYIDX) = -DP(NNBB1)
-            case (4, 14, 24, 64, 5, 25)
+            case (4, 14, 24, 64, 5, 25, 26)
                NNBB2 = IBCONN(MYIDX)
                BARHT_FINAL(MYIDX) = &
                   min(-DP(NNBB1), -DP(NNBB2))
@@ -837,7 +837,7 @@ contains
                   BARLANHT2(MYIDX) + &
                   BAR_SCHEDULE(MYIDX)% &
                   SECTION(MYSEC)%BARHT_DELTA
-            case (4, 14, 24, 64, 5, 25)
+            case (4, 14, 24, 64, 5, 25, 26)
                BARHT_FINAL(MYIDX) = &
                   BARINHT2(MYIDX) + &
                   BAR_SCHEDULE(MYIDX)% &
@@ -852,7 +852,7 @@ contains
                   BARLANHT2(MYIDX) - &
                   BAR_SCHEDULE(MYIDX)% &
                   SECTION(MYSEC)%BARHT_DELTA
-            case (4, 14, 24, 64, 5, 25)
+            case (4, 14, 24, 64, 5, 25, 26)
                BARHT_FINAL(MYIDX) = &
                   BARINHT2(MYIDX) - &
                   BAR_SCHEDULE(MYIDX)% &
@@ -864,7 +864,7 @@ contains
             select case (LBCODEI(MYIDX))
             case (3, 13, 23)
                BARHT_FINAL(MYIDX) = BARLANHT(MYIDX)
-            case (4, 14, 24, 64, 5, 25)
+            case (4, 14, 24, 64, 5, 25, 26)
                BARHT_FINAL(MYIDX) = BARINHT(MYIDX)
             end select
          case DEFAULT
@@ -1219,7 +1219,7 @@ contains
                   BAR_SCHEDULE(IDX)%OFFSET = OFFSET
                end if
 
-            case (4, 24, 64, 5, 25)
+            case (4, 24, 64, 5, 25, 26)
                !...........................A TWO SIDED STYLE WEIR, WE NEED X2 AND Y2
                call FIND_BOUNDARY_NODES(X2, Y2, IDX2)
                if (IDX2 == -1) then
@@ -2463,11 +2463,24 @@ contains
    !     S U B R O U T I N E
    !       C O M P U T E _ C R O S S _ B A R R I E R _ P I P E _ F L U X
    !-----------------------------------------------------------------------
-   !  THIS ROUTINE COMPUTE THE DISCHARGE ACROSS TYPE 5,25 BOUNDARY
+   !  THIS ROUTINE COMPUTE THE DISCHARGE ACROSS TYPE 5,25,26 BOUNDARY
    !  CONDITIONS (CROSS BARRIER PIPES)
+   !
+   !  PIPE FLOW IS BASED ON:
+   !     - WATER SURFACE ELEVATION RELATIVE TO THE PIPE INVERT
+   !     - PARTIAL OR FULL CIRCULAR PIPE CROSS-SECTIONAL AREA
+   !     - HYDRAULIC HEAD DIFFERENCE ACROSS THE PIP
+   !     - PIPE FRICTION COEFFICIENT
+   !
+   !  FOR IBTYPE=26 (TIDE GATE / FLAP VALVE), FLOW IS PERMITTED ONLY FROM
+   !  THE NBV SIDE TO THE IBCONN SIDE. REVERSE FLOW IS BLOCKED.
+   !
+   !  THE EFFECTIVE FLOW AREA VARIES CONTINUOUSLY FROM ZERO AT THE PIPE
+   !  INVERT TO THE FULL CROSS-SECTIONAL AREA ONCE THE WATER LEVEL
+   !  REACHES THE PIPE CROWN.
    !-----------------------------------------------------------------------
    subroutine COMPUTE_CROSS_BARRIER_PIPE_FLUX(IDX, FLUX)
-      use BOUNDARIES, only: NBV, IBCONN, PIPEHT, PIPEDIAM, PIPECOEF
+      use BOUNDARIES, only: NBV, IBCONN, LBCODEI, PIPEHT, PIPEDIAM, PIPECOEF
       use ADC_CONSTANTS, only: G, PI
       use GLOBAL, only: NODECODE, NIBNODECODE, ETA2, &
                         RampIntFlux
@@ -2482,10 +2495,17 @@ contains
       real(8) :: RBARWL1
       real(8) :: RBARWL2
 
+      real(8) :: PIPEINV
+      real(8) :: HUP, HDN, HEAD
+      real(8) :: PIPEAREA, D, R, THETA
+
       LOG_SCOPE_TRACED("COMPUTE_CROSS_BARRIER_PIPE_FLUX", WEIR_BOUNDARY_TRACING)
 
       NNBB1 = NBV(IDX) ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
       NNBB2 = IBCONN(IDX) ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+
+      FLUX = 0.0D0
+      PIPEAREA = 0.0D0
 
 #ifdef AVERAGEWEIRFLOW
       if (IBSTART == 0) then
@@ -2501,80 +2521,97 @@ contains
       RBARWL1 = RPIPEWL1AVG(IDX)
       RBARWL2 = RPIPEWL2AVG(IDX)
 #else
-      RBARWL1 = ETA2(NNBB1) - PIPEHT(IDX)
-      RBARWL2 = ETA2(NNBB2) - PIPEHT(IDX)
+      RBARWL1 = ETA2(NNBB1) - PIPEHT(IDX) !... Water surface elevation above the pipe crown on the NBV side (legacy variable name)
+      RBARWL2 = ETA2(NNBB2) - PIPEHT(IDX) !... Water surface elevation above the pipe crown on the IBCONN side (legacy variable name)
 #endif
-      if ((RBARWL1 < 0.d0) .and. (RBARWL2 < 0.d0)) then
-         !...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW PIPE -> CASE 1
-         FLUX = 0.d0
+
+      D = PIPEDIAM(IDX)
+      R = 0.50d0 * D    !... Pipe radius
+      PIPEINV = PIPEHT(IDX) - PIPEDIAM(IDX) !... Pipe invert elevation
+
+      HUP = ETA2(NNBB1) - PIPEINV !... Height above pipe invert (bottom) on the NBV side (upstream)
+      HDN = ETA2(NNBB2) - PIPEINV !... Height above pipe invert (bottom) on the IBCONN side (downstream)
+      HEAD = ETA2(NNBB1) - ETA2(NNBB2) !... Head difference across the pipe
+
+      if (LBCODEI(IDX) == 26) then
+         write(*,'(A,I0,A,I0,A,I0,A,3E14.6)') &
+            'DEBUG IBTYPE26 pipe: IDX=', IDX, &
+            ' NBV=', NNBB1, &
+            ' IBCONN=', NNBB2, &
+            ' ETA1 ETA2 HEAD=', ETA2(NNBB1), ETA2(NNBB2), HEAD
+      endif
+
+      ! No water above pipe invert on either side
+      if ((HUP <= 0.0D0) .and. (HDN <= 0.0D0)) then
+         if (LBCODEI(IDX) == 26) then
+            write(*,'(A,I0)') 'DEBUG IBTYPE26 dry pipe IDX=', IDX
+         endif
          return
-      end if
-      if (abs(RBARWL1 - RBARWL2) < BARMIN) then
-         !...............WATER LEVEL EQUAL ON BOTH SIDES OF PIPE -> CASE 2
-         FLUX = 0.d0
+      endif
+
+      ! Tide gate / flap: block reverse flow from IBCONN side to NBV side
+      if ((LBCODEI(IDX) == 26) .and. (HEAD < -BARMIN)) then
+         write(*,'(A,I0,A,E14.6)') 'DEBUG IBTYPE26 blocked reverse flow IDX=', IDX, ' HEAD=', HEAD
          return
-      end if
-      if ((RBARWL1 > RBARWL2) .and. (RBARWL1 > BARMIN)) then
-         !...............WATER LEVEL GREATER ON THIS SIDE OF THE PIPE AND IS SUCH
-         !................THAT OUTWARD DISCHARGE IS OCCURING
-         !................THUS THIS SIDE IS THE SOURCE SIDE OF THE FLOW THROUGH THE PIPE
-         !................NOTE THAT WE DO NOT FORCE THE SOURCE SIDE OF THE PIPE TO
-         !................REMAIN WET. ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
-         !................PIPE HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW ACROSS
-         !................THE PIPE
-         if (RBARWL2 <= 0.d0) then
-            !..................OUTWARD FREE DISCHARGE -> CASE 3
-            if (NODECODE(NNBB1) == 0) then
-               FLUX = 0.0d0
-            else
-               FLUX = -RampIntFlux &
-                      *0.25d0*PI*(PIPEDIAM(IDX))**2 &
-                      *(2.d0*G*RBARWL1/(1.d0 + PIPECOEF(IDX)))**0.5d0
-            end if
-         else
-            !..................OUTWARD SUBMERGED DISCHARGE -> CASE 4
-            if (NODECODE(NNBB1) == 0) then
-               FLUX = 0.0d0
-            else
-               FLUX = -RampIntFlux &
-                      *0.25d0*PI*(PIPEDIAM(IDX))**2 &
-                      *(2.d0*G*(RBARWL1 - RBARWL2)/PIPECOEF(IDX))**0.5d0
-            end if
+      endif
+
+      ! NBV -> IBCONN flow
+      if (HEAD > BARMIN) then
+
+         if (NODECODE(NNBB1) == 0) then
+
+            if (LBCODEI(IDX) == 26) then
+               write(*,'(A,I0,A,I0)') &
+                  'DEBUG IBTYPE26 upstream dry IDX=', IDX, &
+                  ' NODE=', NNBB1
+            endif
             return
-         end if
-      end if
-      if ((RBARWL2 > RBARWL1) .and. (RBARWL2 > BARMIN)) then
-         !...............WATER LEVEL LOWER ON THIS SIDE OF PIPE AND IS SUCH
-         !................THAT INWARD DISCHARGE IS OCCURING
-         !................THUS THIS IS THE RECEIVING SIDE OF THE FLOW THROUGH THE  PIPE
-         !................NOTE THAT WE DO FORCE THE RECEIVING SIDE OF THE PIPE TO
-         !................REMAIN WET WHEN THERE IS FLOW ACROSS THE PIPE.
-         !................ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
-         !................PIPE HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW THROUGH
-         !................THE PIPE
-         if (RBARWL1 <= 0) then
-            !..................INWARD FREE DISCHARGE -> CASE 5
-            if (NODECODE(NNBB2) == 0) then
-               FLUX = 0.0d0
-            else
-               FLUX = RampIntFlux &
-                      *0.25d0*PI*(PIPEDIAM(IDX))**2 &
-                      *(2.d0*G*RBARWL2/(1.d0 + PIPECOEF(IDX)))**0.5d0
-               NIBNODECODE(NNBB1) = 1
-            end if
+         endif
+
+         HUP = max(0.0d0, min(HUP, D)) !... Water depth above invert cannot exceed a full pipe
+
+         if (HUP >= D) then
+            ! Fully filled (pressurized) pipe area calculation
+            PIPEAREA = PI * R**2
          else
-            !..................INWARD SUBMERGED DISCHARGE -> CASE 6
-            if (NODECODE(NNBB2) == 0) then
-               FLUX = 0.0d0
-            else
-               FLUX = RampIntFlux &
-                      *0.25d0*PI*(PIPEDIAM(IDX))**2 &
-                      *(2.d0*G*(RBARWL2 - RBARWL1)/PIPECOEF(IDX))**0.5d0
-               NIBNODECODE(NNBB1) = 1
-            end if
+            ! Partially filled pipe area calculation
+            THETA = 2.0D0 * acos((R - HUP) / R)
+            PIPEAREA = 0.5D0 * R**2 * (THETA - sin(THETA))
          end if
+
+         if (PIPEAREA > 0.0D0) then
+            FLUX = -RampIntFlux * PIPEAREA * sqrt(2.0D0 * G * HEAD / PIPECOEF(IDX))
+         endif
+
+         if (LBCODEI(IDX) == 26) then
+            write(*,'(A,I0,A,4E14.6)') &
+               'DEBUG IBTYPE26 forward flow IDX=', IDX, &
+               ' HUP HDN AREA FLUX=', HUP, HDN, PIPEAREA, FLUX
+         endif
+
          return
-      end if
+      endif
+
+      ! IBCONN -> NBV flow, for non IBTYPE 26 pipe boundaires
+      if (HEAD < -BARMIN) then
+         if (NODECODE(NNBB2) == 0) return
+
+         HDN = max(0.0d0, min(HDN, D)) !... Limit HDN to pipe diameter
+
+         if (HDN >= D) then
+            PIPEAREA = PI * R**2
+         else
+            THETA = 2.0D0 * acos((R - HDN) / R)
+            PIPEAREA = 0.5D0 * R**2 * (THETA - sin(THETA))
+         end if
+
+         if (PIPEAREA > 0.0D0) then
+            FLUX = RampIntFlux * PIPEAREA * sqrt(2.0D0 * G * abs(HEAD) / PIPECOEF(IDX))
+            NIBNODECODE(NNBB1) = 1
+         endif
+
+         return
+      endif
 
    end subroutine COMPUTE_CROSS_BARRIER_PIPE_FLUX
 
