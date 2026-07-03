@@ -2466,6 +2466,10 @@ contains
    !  THIS ROUTINE COMPUTE THE DISCHARGE ACROSS TYPE 5,25,26 BOUNDARY
    !  CONDITIONS (CROSS BARRIER PIPES)
    !
+   !  IBTYPE=5,25 : BIDIRECTIONAL PIPE FLOW
+   !  IBTYPE=26   : ONE-WAY FLAP GATE. FLOW IS ALLOWED ONLY FROM THE
+   !                NBV SIDE TOWARD THE IBCONN SIDE
+   !
    !  PIPE FLOW IS BASED ON:
    !     - WATER SURFACE ELEVATION RELATIVE TO THE PIPE INVERT
    !     - PARTIAL OR FULL CIRCULAR PIPE CROSS-SECTIONAL AREA
@@ -2521,6 +2525,7 @@ contains
       RBARWL1 = RPIPEWL1AVG(IDX)
       RBARWL2 = RPIPEWL2AVG(IDX)
 #else
+      ! Legacy variables retained for AVERAGEWEIRFLOW compatibility 
       RBARWL1 = ETA2(NNBB1) - PIPEHT(IDX) !... Water surface elevation above the pipe crown on the NBV side (legacy variable name)
       RBARWL2 = ETA2(NNBB2) - PIPEHT(IDX) !... Water surface elevation above the pipe crown on the IBCONN side (legacy variable name)
 #endif
@@ -2536,10 +2541,10 @@ contains
       ! No water above pipe invert on either side
       if ((HUP <= 0.0D0) .and. (HDN <= 0.0D0)) return
 
-      ! Tide gate / flap: block reverse flow from IBCONN side to NBV side
+      ! IBTYPE=26  Tide gate / flap: block reverse flow from IBCONN to NBV
       if ((LBCODEI(IDX) == 26) .and. (HEAD < -BARMIN)) return
 
-      ! NBV -> IBCONN flow
+      ! NBV -> IBCONN flow (allowed for IBTYPE=5,25,26)
       if (HEAD > BARMIN) then
 
          if (NODECODE(NNBB1) == 0) return
@@ -2562,7 +2567,7 @@ contains
          return
       endif
 
-      ! IBCONN -> NBV flow, for non IBTYPE 26 pipe boundaires
+      ! IBCONN -> NBV flow (IBTYPE=5 and 25 only; blocked for IBTYPE=26)
       if (HEAD < -BARMIN) then
          if (NODECODE(NNBB2) == 0) return
 
