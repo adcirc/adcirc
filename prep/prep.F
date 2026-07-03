@@ -697,7 +697,7 @@ C  This section for prep15
         ISWEIR(:) = .FALSE.
         DO K=1,NBOU
             SELECT CASE(IBTYPE(K))
-                CASE(4,24,64,5,25)
+                CASE(4,24,64,5,25,26)
                     DO J=1,NVELL(K)
                         ISWEIR(NBVV(K,J))=.TRUE.
                         ISWEIR(IBCONNR(K,J))=.TRUE.
@@ -1341,7 +1341,7 @@ C
             select case(IBTYPE(K))
             !
             ! weir boundaries
-            case(4,24,64,5,25)
+            case(4,24,64,5,25,26)
                DO I = 1,NVELL(K)
                   INDX = NBVV(K,I)
                   INDEX2 = IBCONNR(K,I)
@@ -1555,7 +1555,7 @@ C     jgf46.21 Added support for IBTYPE=52.
                BBN = BBN + NVELLP(K)
             case(4,24,64)
                IBP = IBP + NVELLP(K)
-            case(5,25)
+            case(5,25,26)
                IBPPipe = IBPPipe + NVELLP(K)
             case(94)
 !           DW/WP periodic boundary
@@ -1729,7 +1729,7 @@ C
      &                        LABELS(IMAP_NOD_LG(IBCONNRP(K,I),IPROC)),
      &                        BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX)
                   ENDDO
-               case(5,25)
+               case(5,25,26)
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
                      WRITE(14,83) LABELS(IMAP_NOD_LG(NBVVP(K,I),IPROC)),

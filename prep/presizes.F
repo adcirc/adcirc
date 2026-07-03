@@ -506,7 +506,7 @@ C     jgf46.21 Added support for IBTYPE=52.
             NIBP=NIBP+NBN
             meshHasWeir = .true.
             meshHasInternalWeir = .true.
-         case(5,25)
+         case(5,25,26)
             meshHasWeir = .true.
             meshHasInternalWeir = .true.
             meshHasWeirWithPipes = .true.
