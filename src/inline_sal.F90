@@ -211,8 +211,8 @@ CONTAINS
       REAL(8), optional, dimension(:,:):: sshsal0
 
       call ssh_inline_sal%sal_param_init( useinlinesal, inlineSALMethod, &
-                & usedirectsh, usecacheblocking, shorder, ncellblock, salinc, salAPBeta, & 
-                & useshtfilter, filterscheme ) ;
+                & usedirectsh, usecacheblocking, shorder, ncellblock, salinc, & 
+                & salAPBeta, useshtfilter, filterscheme ) ;
   
       !
       if ( ssh_inline_sal%use_inline_sal ) then
@@ -270,7 +270,8 @@ CONTAINS
 
        real (8), intent(in):: eta(:) 
 
-       if ( .NOT. use_SH_approximation ) return ; 
+       ! if ( .NOT. use_SH_approximation ) return ; 
+       if ( .NOT. ssh_inline_sal%use_inline_sal ) then
 
        call direct_spht_self_attraction_loading_sub( ssh_inline_sal, sshsal(:,1), eta ) ;
        
@@ -289,7 +290,8 @@ CONTAINS
       real (8):: saltimeloc
       real (8), intent(in), dimension(:):: etasal2, etasal1, etasal0
 
-      if ( .NOT. use_SH_approximation ) return ;
+      if ( .NOT. ssh_inline_sal%use_inline_sal )
+      ! if ( .NOT. use_SH_approximation ) return ;
 
       sshsaltime = saltimeloc ;
       sshsal(:,1) = etasal2 ;

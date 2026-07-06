@@ -385,8 +385,11 @@ C...
 
       if ( CSAL ) then
         SAL2 = 0.0D0 ;
-        SAL1 = 0.0D0 ; 
-      endif        
+        SAL1 = 0.0D0 ;
+
+        CALL coldstartSAL( eta2 ) ;
+      endif
+
 C....INITIALIZE ELEVATION STATION SPOOL COUNTER
 C....OPEN ELEVATION STATION OUTPUT FILE
 C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPE (NO. OF DATA PTS. AT EACH
