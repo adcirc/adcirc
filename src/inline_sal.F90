@@ -1173,6 +1173,19 @@ CONTAINS
           enddo
         enddo
         !      
+      CASE (5)
+        ! Cesaro's sum
+        do m = 0, nOrder
+           do n = 0, nOrder
+             l = SHOrderDegreeToIndex(n,m) ; 
+
+             sigma = (1.D0 - (dble(n)/dble(nOrder + 1))) ;
+
+             SnmRe(l) = sigma*SnmRe(l) ; 
+             SnmIm(l) = Sigma*SnmIm(l) ; 
+           end do
+        end do   
+        !
       END SELECT 
 
       return ;
