@@ -81,6 +81,8 @@ C
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
+      USE mod_inline_sal, only: coldstartsal
+
       IMPLICIT NONE
 
       INTEGER I, J,IOS, IJK

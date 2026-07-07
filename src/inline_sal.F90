@@ -105,8 +105,9 @@ MODULE MOD_INLINE_SAL
 #ifndef NONADC
     real(8), private, dimension(:), allocatable:: sshsal(:,:) 
     ! sshsal @ saltime, saltime - saltiminc, saltime - 2*saltime
-    real(8), private :: sshsaltime ! time associated with previous met dataset
+    real(8), private :: sshsaltime(3) ! time associated with previous SAL dataset
     real(8), private :: sshsaltiminc
+    
 
     integer, private :: extrapolationOrder  = 0 
 #endif
@@ -207,7 +208,7 @@ CONTAINS
       logical:: useshtfilter
       integer:: filterscheme 
 
-      REAL(8), optional:: saltime0
+      REAL(8), optional:: saltime0(3)
       REAL(8), optional, dimension(:,:):: sshsal0
 
       call ssh_inline_sal%sal_param_init( useinlinesal, inlineSALMethod, &
@@ -271,13 +272,17 @@ CONTAINS
        real (8), intent(in):: eta(:) 
 
        ! if ( .NOT. use_SH_approximation ) return ; 
-       if ( .NOT. ssh_inline_sal%use_inline_sal ) then
+       if ( .NOT. ssh_inline_sal%use_inline_sal ) return
 
        call direct_spht_self_attraction_loading_sub( ssh_inline_sal, sshsal(:,1), eta ) ;
        
        sshsal(:,2) = sshsal(:,1) ; 
        sshsal(:,3) = sshsal(:,2) ;
      
+       sshsaltime(1) = 0.D0 ; 
+       sshsaltime(2) = sshsaltime(1) - sshsaltiminc ;
+       sshsaltime(3) = sshsaltime(1) - 2.D0*sshsaltiminc ;
+
        return ;     
     end subroutine coldstartSAL        
     !      
@@ -287,10 +292,10 @@ CONTAINS
     subroutine hotstartSAL( etasal2, etasal1, etasal0, saltimeloc ) 
       implicit none
 
-      real (8):: saltimeloc
+      real (8):: saltimeloc(3)
       real (8), intent(in), dimension(:):: etasal2, etasal1, etasal0
 
-      if ( .NOT. ssh_inline_sal%use_inline_sal )
+      if ( .NOT. ssh_inline_sal%use_inline_sal ) return ;
       ! if ( .NOT. use_SH_approximation ) return ;
 
       sshsaltime = saltimeloc ;
@@ -328,23 +333,28 @@ CONTAINS
       endif
 
       tn = timeloc - dtdp ; 
-      saltimeloc = sshsaltime + sshsaltiminc ;
-      if ( abs(tn - saltimeloc) < 1.0D-6*dtdp ) then
+      saltimeloc = sshsaltime(1) + sshsaltiminc ;
+      if ( abs(tn - saltimeloc) < 1.0D-7*dtdp ) then
          ! compute sal at every sshsaltiminc step !
          sshsal(:,3) = sshsal(:,2) ; 
          sshsal(:,2) = sshsal(:,1) ; 
          !     
          call direct_spht_self_attraction_loading_sub( ssh_inline_sal, sshsal(:,1), eta ) ;
         
-         sshsaltime = tn ;       
+         sshsaltime(3) = sshsaltime(2) ;
+         sshsaltime(2) = sshsaltime(1) ; 
+         sshsaltime(1) = tn ;       
+         
       endif   
             
 
       !c extrapolation c!
-      ts(1) = sshsaltime ; 
-      ts(2) = sshsaltime - sshsaltiminc ;
-      ts(3) = sshsaltime - 2.D0*sshsaltiminc ; 
+      ! ts(1) = sshsaltime ; 
+      ! ts(2) = sshsaltime - sshsaltiminc ;
+      ! ts(3) = sshsaltime - 2.D0*sshsaltiminc ; 
+      ts = sshsaltime ; 
 
+      ! extrapolate SAL from ( sshsal(:,t^{m-i}_{SAL}), m = 0, 1, 2 ) 
       select case( extrapolationOrder )
       case (2)
          ! quadratic extrapolation     
