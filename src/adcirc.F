@@ -169,7 +169,11 @@ C******************************************************************************
       INTEGER :: i        ! command line argument counter
       REAL (8) :: start_time = 0.D0, end_time = 0.D0
 
+
       LOG_SCOPE_TRACED("ADCIRC_Init", ADCIRC_TRACING)
+      !
+      ! REAL (8):: start_time = 0.D0, end_time = 0.D0
+
 
       ! jgf51.52.07: Added command line option to just write out
       ! the ADCIRC version number and exit. This is to allow 
@@ -467,6 +471,12 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
       endif
 #endif
 
+#ifdef CMPI
+      IF ( myproc == 0 ) then
+         start_time = MPI_Wtime() ;
+      ENDIF   
+#endif
+
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_END = ITIME_BGN+NTIME_STP-1
       ENDIF
@@ -506,6 +516,21 @@ C             to then call the SWAN time-stepping subroutine.
       IF (MYPROC == 0 .and. MNWPROH > 0) CALL HSWRITER_PAUSE()
 #endif
 
+
+#ifdef CMPI
+      IF ( myproc == 0 ) then
+         end_time = MPI_Wtime() ;
+
+         write(ScreenUnit,*) "Runtime = ", end_time - start_time ; 
+      ENDIF   
+#endif
+
+
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      
       RETURN
       END SUBROUTINE ADCIRC_Run
 

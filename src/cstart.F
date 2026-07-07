@@ -52,12 +52,15 @@ C
      &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge,
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
      &    ntrspv, iicestp, nstam_g, nstam, cbaroclinic
+     &    csal, sal1, sal2,
+     &    ifnlfa, qx1, qy1, uu1, vv1
       use mod_io, only: openFileForRead
       use boundaries, only: csii, siii, nbv
       use mesh, only: sfcx, sfcy, ycsfac, sfmx
       use mod_normal_flow_boundary, only: rotate_normal_flux
       use mod_logging, only: t_log_scope, init_log_scope,
      &    allMessage, DEBUG, screenUnit, nscreen
+
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4,
      &    agrid 
@@ -73,7 +76,12 @@ C
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
 
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
-      USE NODALATTRIBUTES, ONLY : outputTau0
+      USE NODALATTRIBUTES, ONLY : outputTau0,
+     &     LoadInitialEta,  eta0_usr,
+     &     LoadInitialUU, uu0_usr,
+     &     LoadInitialVV, vv0_usr
+
+
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
      &    initInundationOutput
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
@@ -81,6 +89,8 @@ C
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
+      USE mod_inline_sal, only: coldstartsal
+
       IMPLICIT NONE
 
       INTEGER I, J,IOS, IJK
@@ -181,6 +191,28 @@ C...
       ETAS(:) = 0.D0
       CH1(:) = 0.d0
       EN2(:) = 0.d0
+
+C----------------- DW
+      IF ( LoadInitialEta) THEN
+         eta2 = eta0_usr ;
+         eta1 = eta0_usr ;
+      ENDIF
+      IF ( LoadInitialUU) THEN
+         UU2 = uu0_usr(I) ;
+         QX2 = (DP + IFNLFA*eta2)*uu2 ;
+
+         UU1 = UU2 ;
+         QX1 = QX2 ;
+      ENDIF
+      IF ( LoadInitialVV ) THEN
+         VV2 = vv0_usr ;
+         QY2 = (DP + IFNLFA*eta2)*vv2 ;
+
+         VV1 = VV2 ;
+         QY1 = QY2 ;
+      ENDIF
+C----------------   
+
       !
       ! Set the initial wet/dry state and water surface elevation
       call setColdWetDryStateAndWaterSurfaceElevation()  
@@ -357,8 +389,15 @@ C...LINES TO USE TIDAL POTENTIAL FORCING
 C...
       if (CTIP) then
          DO I=1,NP
-            TIP2(I)=0.0
+            TIP2(I)=0.0D0
          END DO
+      endif
+
+      if ( CSAL ) then
+        SAL2 = 0.0D0 ;
+        SAL1 = 0.0D0 ;
+
+        CALL coldstartSAL( eta2 ) ;
       endif
 
 C....INITIALIZE ELEVATION STATION SPOOL COUNTER

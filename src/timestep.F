@@ -84,7 +84,9 @@ C
      &    WarnElevDump, nodes_lg, NT, NM, NB, NHOUTONCE,
      &    Limit_WaveStressGrad, SWAN_RSNX1, SWAN_RSNY1, SWAN_RSNX2, SWAN_RSNY2,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
-     &    dynamicWaterLevelCorrectionDelta, RampIntFlux
+     &    dynamicWaterLevelCorrectionDelta, RampIntFlux,
+     &    SAL1, SAL2, CSAL
+
       USE mod_logging, ONLY: logMessage, allMessage, t_log_scope,
      &    init_log_scope, DEBUG, INFO, WARNING, ERROR, screenUnit,
      &    nscreen
@@ -161,6 +163,9 @@ Casey 090302: We need these values from other places.
 
       ! full luni-solar tidal potential !
       USE mod_tidepotential, only: tidePotential
+
+      ! inline sal
+      USE MOD_INLINE_SAL, only: ssh_inline_sal, getSelfAttractionLoading
 
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
@@ -413,6 +418,10 @@ C     TIP..Tidal potential forcing
             TIP2(I)=0.D0
          endif
 
+         if ( ssh_inline_sal%use_inline_sal ) then
+            SAL1(I)=SAL2(I) ;
+            SAL2(I)=0.D0 ;
+         endif
       END DO
       !
       ! jgf: shift water level offset values
@@ -840,6 +849,11 @@ Casey 140701: Ending the IF statement.
 ! Apply the tide potential forcing subroutine      
       call applyTidePotentialForcing(TimeLoc, TimeH)
 
+! If use, apply insline SAL
+      ! TimeLoc = t^{n+1}        
+      CALL applyInlineSelfAttractionLoading( TimeLoc  )
+
+
 C...
 C...  Depth Averaged Baroclinic Forcing needed by GWCE and 2DDI Momentum
 C...  Compute this (divided by H, i.e., Bx/H, By/H) as a nodally averaged
@@ -1131,6 +1145,7 @@ C...     MOM_LV_X gets renamed as BTP in global_3dvs.f
            MOM_LV_X(I)=ETA1(I)+ETA2(I)
            IF(NWS.NE.0) MOM_LV_X(I)=MOM_LV_X(I)+PR1(I)+PR2(I) !atmospheric pressure
            IF (CTIP) MOM_LV_X(I)=MOM_LV_X(I)-TIP1(I)-TIP2(I) !tidal potential
+           IF (CSAL) MOM_LV_X(I)=MOM_LV_X(I)-SAL2(I)-SAL2(I) 
            MOM_LV_X(I)=G*MOM_LV_X(I)/2.d0
         ENDDO
 
@@ -1494,6 +1509,7 @@ C******************************************************************************
 C******************************************************************************
 
 
+
 !****************************************************************************************
 ! Subroutine to compute tide potential at the nodes                                     
 !                                                                                       
@@ -1506,9 +1522,13 @@ C******************************************************************************
 !****************************************************************************************
       subroutine applyTidePotentialForcing(TimeLoc, TimeH)
          use mod_tidepotential, only: tidePotential
+         use MOD_INLINE_SAL, only: ssh_inline_sal
+
          use global, only: NTIP, TIP1, TIP2, CTIP, NTIF, RampTip, PERT, FACET,
-     &                     AMIGT, FFT, TPK, ETRF, SALTPHA, SALTAMP, L_N
+     &                     AMIGT, FFT, TPK, ETRF, SALTPHA, SALTAMP, L_N, ETA2
          use mesh , only: np, SLAM
+         use sizes, only: myproc
+
          implicit none
          real(8), intent(IN) :: TimeLoc, TimeH
          real(8) :: ArgT, ArgTP, ArgSAlt, SALTMUL, TPMUL
@@ -1518,14 +1538,21 @@ C******************************************************************************
 
             ! use the full formula 
             IF ( tidePotential%active() ) THEN
-               TIP2 = tidePotential%compute(TimeLoc, NP, SLAM) * RampTip
+               TIP2 = tidePotential%compute(TimeLoc, NP, SLAM)*RampTip
             ENDIF  
 
-            ! The traditional approach: a sum of different constituents
-            ! TIP & SAL - for tidePotential%active() = .TRUE.  
-            ! SAL       - for tidePotential%active() = .FALSE.
-            IF(NTIP.EQ.2.or..not.tidePotential%active())THEN 
+            !! use inline sal
+            ! IF ( ssh_inline_sal%use_inline_sal ) THEN
+            !   TIP2 = TIP2 + ssh_inline_sal%sal_compute( ETA2 )*RampTip
+            !   ! ssh_sal( eta^{n} )
+            ! END IF
+            
+            !
+            NOTEXACTSALTIP: IF ( .not. tidepotential%active() .or. 
+     &                           .not. ssh_inline_sal%use_inline_sal ) THEN
+               !
                DO J=1,NTIF
+
                   IF (PERT(J).EQ.0D0) THEN
                      NCYC=0
                   ELSE
@@ -1536,30 +1563,115 @@ C******************************************************************************
                   TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
                   SALTMUL=RampTip*FFT(J)
 
-   !              WJP: We actually want to compare against diurnal and get 0,1,2
-   !              or higher species (was opposite beforehand)
+            !     WJP: We actually want to compare against diurnal and get 0,1,2
+            !     or higher species (was opposite beforehand)
                   NA = MIN(NINT(AMIGT(J)/7d-5),2)
 
-   !              WJP: Rewritten so that we have a general formula for all
-   !              species
-                  IF(tidePotential%active())THEN
-                     DO I = 1, NP
-                        ARGSALT = ARGT - SALTPHA(J,I) ; 
-                        TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
-                     END DO
-                  ELSE
+            !     WJP: Rewritten so that we have a general formula for all
+            !     species 
+                  IF ( .not. tidepotential%active() .and.
+     &                   .not. ssh_inline_sal%use_inline_sal ) THEN
+                     ! harmonic TIP & Harmonic SAL (default) !         
+                     ! SAL + TIP
                      DO I = 1,NP
                         ARGTP   = ARGT + NA*SLAM(I)
                         ARGSALT = ARGT - SALTPHA(J,I)
                         TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
      &                            + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
                      ENDDO
+                  ELSEIF (  tidePotential%active() .and. 
+     &                  .not. ssh_inline_sal%use_inline_sal ) THEN
+                     ! exact tip & harmonic SAL
+                     ! SAL
+                     DO I = 1, NP
+                        ARGSALT = ARGT - SALTPHA(J,I) ; 
+                        TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+                     END DO
+                  ELSE 
+                     ! harmonic tip 
+                     ! TIP
+                     DO I = 1,NP
+                        ARGTP   = ARGT + NA*SLAM(I)
+                        ARGSALT = ARGT - SALTPHA(J,I)
+                        TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) *COS(ARGTP) 
+                     ENDDO                          
                   ENDIF
-
+                  !
                ENDDO
-            ENDIF   
+               !               
+            ENDIF NOTEXACTSALTIP 
+            !
+
+!            
+!            ! The traditional approach: a sum of different constituents
+!            ! TIP & SAL - for tidePotential%active() = .TRUE.  
+!            ! SAL       - for tidePotential%active() = .FALSE.     
+!            IF( NTIP.EQ.2 .or. .not.tidePotential%active )THEN 
+!           
+!               IF ( .not. ssh_inline_sal%use_inline_sal ) THEN
+!                 DO J=1,NTIF
+!                    IF (PERT(J).EQ.0D0) THEN
+!                       NCYC=0
+!                    ELSE
+!                       NCYC=INT(timeh/PERT(J))
+!                    ENDIF
+!  
+!                    ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
+!                    TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
+!                    SALTMUL=RampTip*FFT(J)
+!  
+!     !              WJP: We actually want to compare against diurnal and get 0,1,2
+!     !              or higher species (was opposite beforehand)
+!                    NA = MIN(NINT(AMIGT(J)/7d-5),2)
+!  
+!     !              WJP: Rewritten so that we have a general formula for all
+!     !              species
+!                    IF(tidePotential%active())THEN
+!                       ! 
+!                       DO I = 1, NP
+!                          ARGSALT = ARGT - SALTPHA(J,I) ; 
+!                          TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+!                       END DO
+!                    ELSE
+!                       ! SAL + TIP
+!                       DO I = 1,NP
+!                          ARGTP   = ARGT + NA*SLAM(I)
+!                          ARGSALT = ARGT - SALTPHA(J,I)
+!                          TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
+!     &                            + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+!                       ENDDO
+!                    ENDIF
+!  
+!                 ENDDO
+!               ENDIF
+!
+!            ENDIF
+!
+
+
          ENDIF
       end subroutine applyTidePotentialForcing
+
+
+C****************************************************************************************
+C   Inline self attraction 
+C   - Compute SAL at every saltiminc step (i.e. at mod( TimeLoc, saltimeinc ) /= 0 )
+C   - Quadratic eenar, or constant extrapolation at other steps
+C****************************************************************************************
+      SUBROUTINE applyInlineSelfAttractionLoading( TimeLoc )
+        USE global, only: SAL2, ETA2, RampTip
+        use MOD_INLINE_SAL, only: getSelfAttractionLoading
+
+        IMPLICIT NONE
+
+        REAL (8):: TimeLoc
+
+        ! TimeLoc = t^{n + 1}
+        CALL getSelfAttractionLoading( sal2, eta2, timeloc )
+        sal2 = RampTip*sal2 ;
+
+        RETURN ;
+      END subroutine applyInLineSelfAttractionLoading        
 
 
 C****************************************************************************************

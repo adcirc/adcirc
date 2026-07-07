@@ -2374,6 +2374,30 @@ Casey 180318: Added NWS=13
              write(15,'(a,F15.9,a)') " h2Value = ", h2Value," /"
          END IF
 
+
+         ! Namelist of input variables for SAL
+         IF ( foundInlineSALControlNamelist ) THEN
+             write(15,'(a,L4,a)') "&InlineSALControl"//
+     &          " use_inline_sal = ", use_inline_sal, ","
+             write(15,'(a,L4,a)') " sal_use_direct_sh = ", sal_use_direct_sh, ","
+             write(15,'(a)') " inlineSalMethod = '"//trim(inlineSalMethod)//"',"
+             write(15,'(a,I10,a)') " nSHOrder = ", nSHORder, ","
+             write(15,'(a,L4,a)') " sal_use_cache_blocking = ", sal_use_cache_blocking, ","
+             write(15,'(a,I10,a)') " nCellBlock = ", nCellBlock, ","
+             write(15,'(a,I10,a)') " salinc = ", salinc, ","
+             write(15,'(a,I10,a)') " salExtrapVal = ", salExtrapVal, ","
+             write(15,'(a,F15.9,a)') " salAPBeta = ", salAPBeta, ","
+             write(15,'(a,L4,a)') " sal_use_sh_filter = ", sal_use_sh_filter, "," 
+             write(15,'(a,I3,a)') " sh_filter_scheme = ", sh_filter_scheme, " /" 
+         END IF
+
+         ! Namelist of input varibles for Tsunami 
+         IF ( foundTsunamiSimOption ) THEN
+             write(15,'(a,L4,a)') "&TsunamiSimOption"//
+     &          " use_variable_water_density_VCT = ", use_variable_water_density_VCT, ","
+             write(15,'(a,E15.8,a)') " kappamodulus = ", kappamodulus,  " /" 
+         END IF
+
          ! NCSU Subdomain Modeling
          if (FOUND_SM_NML) then
            WRITE(15,*) "&subdomainModeling subdomainOn=",subdomainOn," /"
