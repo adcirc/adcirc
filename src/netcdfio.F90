@@ -675,15 +675,11 @@ contains
          iret = nf90_def_var(sta%ncid, 'sigmat', NF90_DOUBLE, &
                              sta%station_data_dims_3D, sta%u_station_data_id)
          call check_err(iret)
-!Casey 140701
-!        if ((IDEN == 2) .or. (IDEN == 4)) then
          if ((abs(IDEN) == 2) .or. (abs(IDEN) == 4)) then
             iret = nf90_def_var(sta%ncid, 'salinity', NF90_DOUBLE, &
                                 sta%station_data_dims_3D, sta%v_station_data_id)
             call check_err(iret)
          end if
-!Casey 140701
-!        if ((IDEN == 3) .or. (IDEN == 4)) then
          if ((abs(IDEN) == 3) .or. (abs(IDEN) == 4)) then
             iret = nf90_def_var(sta%ncid, 'temperature', NF90_DOUBLE, &
                                 sta%station_data_dims_3D, sta%w_station_data_id)
@@ -703,8 +699,6 @@ contains
          call putUnitsAttribute(sta%ncid, sta%u_station_data_id, &
                                 "kg/m^3", "n/a")
          ! salinity
-!Casey 140701
-!        if ((IDEN == 2) .or. (IDEN == 4)) then
          if ((abs(IDEN) == 2) .or. (abs(IDEN) == 4)) then
             att_text = &
                'station water column vertically varying salinity'
@@ -721,8 +715,6 @@ contains
                                    "PSU", "n/a")
          end if
          ! temperature
-!Casey 140701
-!        if ((IDEN == 3) .or. (IDEN == 4)) then
          if ((abs(IDEN) == 3) .or. (abs(IDEN) == 4)) then
             att_text = &
                'station water column vertically varying temperature'
@@ -1373,15 +1365,11 @@ contains
             iret = nf90_def_var_deflate(sta%ncid, sta%u_station_data_id, &
                                         1, 1, 2)
             call check_err(iret)
-!Casey 140701
-!           if ((IDEN == 2) .or. (IDEN == 4)) then
             if ((abs(IDEN) == 2) .or. (abs(IDEN) == 4)) then
                iret = nf90_def_var_deflate(sta%ncid, &
                                            sta%v_station_data_id, 1, 1, 2)
                call check_err(iret)
             end if
-!Casey 140701
-!           if ((IDEN == 3) .or. (IDEN == 4)) then
             if ((abs(IDEN) == 3) .or. (abs(IDEN) == 4)) then
                iret = nf90_def_var_deflate(sta%ncid, &
                                            sta%w_station_data_id, 1, 1, 2)
@@ -1559,15 +1547,11 @@ contains
          iret = nf90_def_var(dat%ncid, 'sigmat', NF90_DOUBLE, &
                              dat%nodal_data_dims_3D, dat%u_nodal_data_id)
          call check_err(iret)
-!Casey 140701
-!        if ((IDEN == 2) .or. (IDEN == 4)) then
          if ((abs(IDEN) == 2) .or. (abs(IDEN) == 4)) then
             iret = nf90_def_var(dat%ncid, 'salinity', NF90_DOUBLE, &
                                 dat%nodal_data_dims_3D, dat%v_nodal_data_id)
             call check_err(iret)
          end if
-!Casey 140701
-!        if ((IDEN == 3) .or. (IDEN == 4)) then
          if ((abs(IDEN) == 3) .or. (abs(IDEN) == 4)) then
             iret = nf90_def_var(dat%ncid, 'temperature', NF90_DOUBLE, &
                                 dat%nodal_data_dims_3D, dat%w_nodal_data_id)
@@ -1585,8 +1569,6 @@ contains
          call putUnitsAttribute(dat%ncid, dat%u_nodal_data_id, &
                                 "kg/m^3", "n/a")
          ! salinity
-!Casey 140701
-!        if ((IDEN == 2) .or. (IDEN == 4)) then
          if ((abs(IDEN) == 2) .or. (abs(IDEN) == 4)) then
             att_text = "water column vertically varying salinity"
             iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id, &
@@ -1600,8 +1582,6 @@ contains
                                    "PSU", "PSU")
          end if
          ! temperature
-!Casey 140701
-!        if ((IDEN == 3) .or. (IDEN == 4)) then
          if ((abs(IDEN) == 3) .or. (abs(IDEN) == 4)) then
             att_text = "water column vertically varying temperature"
             iret = nf90_put_att(dat%ncid, dat%w_nodal_data_id, &
@@ -3630,15 +3610,11 @@ contains
             iret = nf90_def_var_deflate(dat%ncid, dat%u_nodal_data_id, &
                                         1, 1, 2)
             call check_err(iret)
-!Casey 140701
-!           if ((IDEN == 2) .or. (IDEN == 4)) then
             if ((abs(IDEN) == 2) .or. (abs(IDEN) == 4)) then
                iret = nf90_def_var_deflate(dat%ncid, dat%v_nodal_data_id, &
                                            1, 1, 2)
                call check_err(iret)
             end if
-!Casey 140701
-!           if ((IDEN == 3) .or. (IDEN == 4)) then
             if ((abs(IDEN) == 3) .or. (abs(IDEN) == 4)) then
                iret = nf90_def_var_deflate(dat%ncid, dat%w_nodal_data_id, &
                                            1, 1, 2)
@@ -4377,8 +4353,6 @@ contains
          end if
          call check_err(iret)
 
-!Casey 140701
-!        if ((iden == 2) .or. (iden == 4)) then
          if ((abs(iden) == 2) .or. (abs(iden) == 4)) then
             iret = nf90_inq_varid(sta%ncid, "salinity", &
                                   sta%v_station_data_id)
@@ -4393,8 +4367,6 @@ contains
 
             call check_err(iret)
          end if
-!Casey 140701
-!        if ((iden == 3) .or. (iden == 4)) then
          if ((abs(iden) == 3) .or. (abs(iden) == 4)) then
             iret = nf90_inq_varid(sta%ncid, "temperature", &
                                   sta%w_station_data_id)
@@ -4684,15 +4656,11 @@ contains
       case (44)
          iret = nf90_inq_varid(dat%ncid, "sigmat", dat%u_nodal_data_id)
          call check_err(iret)
-!Casey 140701
-!        if ((iden == 2) .or. (iden == 4)) then
          if ((abs(iden) == 2) .or. (abs(iden) == 4)) then
             iret = nf90_inq_varid(dat%ncid, "salinity", &
                                   dat%v_nodal_data_id)
             call check_err(iret)
          end if
-!Casey 140701
-!        if ((iden == 3) .or. (iden == 4)) then
          if ((abs(iden) == 3) .or. (abs(iden) == 4)) then
             iret = nf90_inq_varid(dat%ncid, "temperature", &
                                   dat%w_nodal_data_id)
@@ -4902,7 +4870,6 @@ contains
 
 !     Write the array values
       select case (lun)
-!Casey 140701: Added this section for lun=44.
       case (44)
          if (MNPROC == 1) then
             iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id, &
@@ -6592,8 +6559,6 @@ contains
          hs%density3D%nodal_data_dims_3D(2) = hs%myMesh%num_v_nodes_dim_id
          hs%density3D%nodal_data_dims_3D(3) = hs%myTime%timenc_dim_id
       end if
-!Casey 140701
-!     if (IDEN == 1) then
       if (abs(IDEN) == 1) then
          iret = nf90_def_var(hs%ncid, 'sigt', NF90_DOUBLE, &
                              hs%density3D%nodal_data_dims_3D, hs%density3D%u_nodal_data_id)
@@ -6606,8 +6571,6 @@ contains
                              '_FillValue', doubleval)
          call check_err(iret)
       end if
-!Casey 140701
-!     if ((IDEN == 2) .or. (IDEN == 4)) then
       if ((abs(IDEN) == 2) .or. (abs(IDEN) == 4)) then
          iret = nf90_def_var(hs%ncid, 'salinity', NF90_DOUBLE, &
                              hs%density3D%nodal_data_dims_3D, &
@@ -6621,15 +6584,11 @@ contains
                              '_FillValue', doubleval)
          call check_err(iret)
       end if
-!Casey 140701
-!     if ((IDEN == 3) .or. (IDEN == 4)) then
       if ((abs(IDEN) == 3) .or. (abs(IDEN) == 4)) then
          iret = nf90_def_var(hs%ncid, 'temperature', NF90_DOUBLE, &
                              hs%density3D%nodal_data_dims_3D, &
                              hs%density3D%w_nodal_data_id)
          call check_err(iret)
-!Casey 140701
-!        att_text = "salinity"
          att_text = "temperature"
          iret = nf90_put_att(hs%ncid, hs%density3D%w_nodal_data_id, &
                              'long_name', trim(att_text))
@@ -6733,22 +6692,16 @@ contains
          iret = nf90_def_var_deflate(hs%ncid, hs%bsy%nodal_data_id, &
                                      1, 1, 2)
          call check_err(iret)
-!Casey 140701
-!        if (IDEN == 1) then
          if (abs(IDEN) == 1) then
             iret = nf90_def_var_deflate(hs%ncid, &
                                         hs%density3D%u_nodal_data_id, 1, 1, 2)
             call check_err(iret)
          end if
-!Casey 140701
-!        if ((IDEN == 2) .or. (IDEN == 4)) then
          if ((abs(IDEN) == 2) .or. (abs(IDEN) == 4)) then
             iret = nf90_def_var_deflate(hs%ncid, &
                                         hs%density3D%v_nodal_data_id, 1, 1, 2)
             call check_err(iret)
          end if
-!Casey 140701
-!        if ((IDEN == 3) .or. (IDEN == 4)) then
          if ((abs(IDEN) == 3) .or. (abs(IDEN) == 4)) then
             iret = nf90_def_var_deflate(hs%ncid, &
                                         hs%density3D%w_nodal_data_id, 1, 1, 2)
@@ -7853,8 +7806,6 @@ contains
          call check_err(iret)
       case ("Temperature")
          iret = nf90_inq_varid(hs%ncid, "temperature", &
-!Casey 140702
-!                              hs%density3D%nodal_data_id)
                                hs%density3D%w_nodal_data_id)
          call check_err(iret)
          if (MNPROC == 1) then
@@ -9456,8 +9407,6 @@ contains
                                             nfen, hs%myMesh%num_nodes, hs%turbulence3D%u_nodal_data_id, &
                                             subdomain_reals=q20)
          call mapFullDomainToSubdomainNPByM(hs%ncid, &
-!Casey 140704
-!                                           nfen, hs%myMesh%num_nodes, hs%velocity3D%v_nodal_data_id, &
                                             nfen, hs%myMesh%num_nodes, hs%turbulence3D%v_nodal_data_id, &
                                             subdomain_reals=l)
       end if

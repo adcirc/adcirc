@@ -2065,7 +2065,6 @@ c******************************************************************************
 
       SUBROUTINE HOTSTART_3D(TimeLoc,ITHS)
       USE GLOBAL_3DVS
-Casey 140701: Added the following line.
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
       USE MESH, ONLY : NP, AGRID
       USE WRITE_OUTPUT, ONLY : initOutput3D
@@ -2382,8 +2381,6 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
 
 C kmd - River information for boundary conditions
 !Seun 251227: Read fort.39 only for IDEN=2/3/4 (prognostic river T/S BCs)
-C     IF (BndBCRiver) THEN
-C       OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
       IF (BndBCRiver .AND. (IDEN.EQ.2 .OR. IDEN.EQ.3 .OR.
      &    IDEN.EQ.4)) THEN
         OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39',
@@ -2532,17 +2529,6 @@ C     jgf46.27 Replaced IRType with IDen
       CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_G,
      &                        NSPO3DGD, IDen, I3DGDRec)
 
-Casey 140701: Replaced the following section with the lines below.
-C     IF(I3DGD.EQ.-1) THEN         !start a new ASCII file
-C       IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
-C         IF (BCFLAG_TEMP.NE.0) THEN
-C           OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
-C           WRITE(47,499) RUNDES,RUNID,AGRID
-C           WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
-C           CLOSE(47)
-C         END IF
-C       END IF
-C     ENDIF
       IF (ABS(I3DGD).EQ.1) THEN
          IF ((MNPROC.EQ.1.).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
             IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
