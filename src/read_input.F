@@ -78,32 +78,24 @@ C-----------------------------------------------------------------------
      &   nout_tvw, touts_tvw, toutf_tvw, nspool_tvw, btiminc,vidispdyoh,
      &   bchgtiminc, base_date, contact, convention, host, comments,
      &   nhstar, nhsinc, ndsetsw, ntcysgw, ntcyfgw, cpl2stwave, c3d,
-<<<<<<< HEAD
-     &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a,
-     &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8,
-=======
      &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a, 
      &   alloc_main4b, alloc_main4c, alloc_main5, alloc_main7, alloc_main8, 
->>>>>>> dev_inline_SAL_TsaiVarRho
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
      &   alloc_main6, nhoutonce, IFSPROTS,
      &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
      &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
-<<<<<<< HEAD
      &   WarnVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
-     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus
-#if defined CSWAN
-=======
+     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus, 
      &   WarnVel, toLowercase,
      &   use_variable_water_density_VCT => CVariableDensityVCT
-
-#if defined CSWAN || defined ADCSWAN
->>>>>>> dev_inline_SAL_TsaiVarRho
+#if defined CSWAN 
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
+
+
 #ifdef DATETIME
      &   ,basedatetime
 #endif
@@ -203,18 +195,13 @@ Casey 180318: Added NWS=13
       use iso_fortran_env, only: output_unit
       USE subgrid, only: subgridFilename, level0, level1, phi_time_derivative
       use mod_tidepotential, only: tidePotential, t_tidePotential
-<<<<<<< HEAD
       use mod_logging, only: allMessage, logMessage, ERROR, WARNING,
      &   INFO, ECHO, screenUnit, nscreen, nabout, t_log_level,
      &   operator(<=), operator(/=), operator(<), operator(>=),
      &   t_log_scope, init_log_scope
       use mod_io, only: openFileForRead
-=======
       ! use MOD_INLINE_SAL, only: salmethod, ssh_inline_sal
       use MOD_INLINE_SAL, only: initSALModule
-
-
->>>>>>> dev_inline_SAL_TsaiVarRho
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -6526,16 +6513,17 @@ C-----------------------------------------------------------------------
                          call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
                      ENDIF
                  ENDDO
-              ENDDO
-              CALL check_err(nf90_close(ncid))
+               ENDDO
+               CALL check_err(nf90_close(ncid))
+              ELSE
+
 #ifdef CMPI            
                   DO I=1, NTIF
                       call mapToSubdomainRealMPI(np_global_sal, NP, amp, nodes_lg, amp_g)
                       call mapToSubdomainRealMPI(np_global_sal, NP, pha, nodes_lg, pha_g)
                       SALTAMP(I,:) = amp
                       SALTPHA(I,:) = pha
-                  ENDDO
-  
+                  ENDDO 
 #endif                
               ENDIF 
   

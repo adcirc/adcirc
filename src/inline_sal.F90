@@ -2,12 +2,16 @@
 !  -  Adapted from SAL implemention of MPAS-O; subroutines taken from MPAS-O include 
 !     their original descriptions and writers.  
 !
+#include "logging_macros.h"
+
 MODULE MOD_INLINE_SAL
     !
 #ifndef NONADC    
     USE ADC_CONSTANTS, only: rhoW => RhoSeaWat0, RhoE => RhoEarth, Rearth, deg2rad, rad2deg
-    USE global, only: resident_elemask => imap_el_lg, H0, dtdp, wdnodecode => nodecode, ifsprots, &
-       setmessagesource, unsetmessagesource, salcontrol => CSAL 
+!    USE global, only: resident_elemask => imap_el_lg, H0, dtdp, wdnodecode => nodecode, ifsprots, &
+!       setmessagesource, unsetmessagesource, salcontrol => CSAL 
+    USE global, only: resident_elemask => imap_el_lg, H0, dtdp, wdnodecode => nodecode, &
+            &   ifsprots, salcontrol => CSAL 
 
     USE mesh, only: etov => nm, nele => ne, nnode => np, depth => dp, gridics => ICS, &
             slam, sfea, slamr, sfear   
@@ -319,18 +323,23 @@ CONTAINS
       real (8):: saltimeloc, ts(3), num, den, tn
 
 
-      call setMessageSource("getSelfAttractionLoading")
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
+!      call setMessageSource("getSelfAttractionLoading")
+!#if defined(ALL_TRACE)
+!      call allMessage(DEBUG,"Enter.")
+!#endif
+!
 
-      if ( .not. use_SH_approximation ) then
-#if defined(ALL_TRACE)
-        call allMessage(DEBUG,"Return.")
-#endif
-        call unsetMessageSource()
-        return ; 
-      endif
+!if ( .not. use_SH_approximation ) then
+!#if defined(ALL_TRACE)
+!        call allMessage(DEBUG,"Return.")
+!#endif
+!        call unsetMessageSource()
+!        return ; 
+!      endif
+
+      if ( .not. ssh_inline_sal%use_inline_sal ) then
+         return ;
+      endif 
 
       tn = timeloc - dtdp ; 
       saltimeloc = sshsaltime(1) + sshsaltiminc ;
@@ -386,10 +395,10 @@ CONTAINS
          etasal = sshsal(:,1) ;      
       end select
 
-#if defined(WIND_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
+!#if defined(WIND_TRACE) || defined(ALL_TRACE)
+!      call allMessage(DEBUG,"Return.")
+!#endif
+!      call unsetMessageSource()
 
       return 
     end subroutine getSelfAttractionLoading 
@@ -501,9 +510,9 @@ CONTAINS
     subroutine sal_privatedata_init( this, lonv, latv, element, np, ne )
             !    subroutine sal_privatedata_init( this )
       
-#ifndef NONADC            
-      use global, only: setMessageSource, unsetMessageSource, allMessage, DEBUG
-#endif
+!#ifndef NONADC            
+!      use global, only: setMessageSource, unsetMessageSource, allMessage, DEBUG
+!#endif
       implicit none 
 
       class (salmethod), intent(inout):: this
@@ -517,12 +526,12 @@ CONTAINS
 
       real (8), parameter:: eps = 1.0D-10, pii = acos(-1.D0) 
 
-#ifndef NONADC
-      call setMessageSource("sal_privatedata_init")
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG, "Enter.")
-#endif
-#endif
+!#ifndef NONADC
+!      call setMessageSource("sal_privatedata_init")
+!#if defined(ALL_TRACE)
+!      call allMessage(DEBUG, "Enter.")
+!#endif
+!#endif
 
       INITSALPRIVATE: if ( this%use_inline_sal ) then
          use_direct_shtns_self_attraction_loading = this%use_direct_shtns_self_attraction_loading ;       
@@ -585,12 +594,12 @@ CONTAINS
 
        endif INITSALPRIVATE
 
-#ifndef NONADC
-#if defined(ALL_TRACE)
-      call allMessage(DEBUG, "Return.")
-#endif
-      call unsetMessageSource()
-#endif
+!#ifndef NONADC
+!#if defined(ALL_TRACE)
+!      call allMessage(DEBUG, "Return.")
+!#endif
+!      call unsetMessageSource()
+!#endif
 
       return ; 
     contains 

@@ -51,7 +51,7 @@ C
      &    nscougc, c2ddi, iden,
      &    rundes, runid, dtdp, ntrspm, nspoolm, nscoub, ibstp, nscouge,
      &    ndsetsc, nspoolgc, nscougb, igbp, c3d, nstav_g, nstav,
-     &    ntrspv, iicestp, nstam_g, nstam, cbaroclinic
+     &    ntrspv, iicestp, nstam_g, nstam, cbaroclinic,
      &    csal, sal1, sal2,
      &    ifnlfa, qx1, qy1, uu1, vv1
       use mod_io, only: openFileForRead

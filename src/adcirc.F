@@ -423,8 +423,10 @@ C******************************************************************************
       USE GLOBAL, ONLY : iTime, statim, dtdp,
      &   earlyterminate
       USE mod_logging, ONLY : allMessage,
-     &   logMessage, DEBUG, INFO, t_log_scope, init_log_scope
+     &   logMessage, DEBUG, INFO, t_log_scope, init_log_scope, ScreenUnit
 #ifdef CMPI
+      use mpi_f08, only: MPI_Wtime
+
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
 #endif
@@ -525,11 +527,11 @@ C             to then call the SWAN time-stepping subroutine.
       ENDIF   
 #endif
 
+!#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+!      call allMessage(DEBUG,"Return.")
+!#endif
+!      call unsetMessageSource()
 
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
       
       RETURN
       END SUBROUTINE ADCIRC_Run
