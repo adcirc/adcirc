@@ -124,10 +124,11 @@ C******************************************************************************
      &   ifnlcate, ifnlct, ifnlcte, ifnlfa, ifwind, ihot, im, iths,
      &   nolica, nolicat, nolifa, nstae, nt,
      &   version_number, np_global, rnp_global,
-     &   CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta
+     &   CTIP, L_N, writer_id, dynamicWaterLevelCorrectionDelta,
+     &   rainflag
       USE mod_logging, ONLY : allMessage, screenMessage,
      &   openLogFile, DEBUG, INFO, screenUnit,
-     &   nabout, nscreen, ECHO, t_log_level, t_log_scope, init_log_scope
+     &     nabout, nscreen, ECHO, t_log_level, t_log_scope, init_log_scope
       USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
      &   initVEW1DChannelWetPerimeter
       use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
@@ -144,6 +145,7 @@ C******************************************************************************
       USE WRITE_OUTPUT, ONLY : initOutput2D
       USE WIND, ONLY : initWindModule, initDynamicWaterLevelCorrection,
      &                 getDynamicWaterLevelCorrections
+      use dg_precipitation, only : init_precipitation
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_init, msg_table, msg_start,
      &   allnodes
@@ -274,6 +276,7 @@ C     memory for internal use.
       !jgf53.dev: allocate memory for continuity and momentum eqns
       call initGWCE()
       call initMomentumEq()
+      call init_precipitation(model_type_=rainflag)
 
 C...Compute the reciprocal of the number of nodes in the entire domain
 

@@ -36,6 +36,7 @@ C----------------------------------------------------------------------------
       USE HASHTABLE
       IMPLICIT NONE
 
+
 C     Land Boundary Nodes and Segment Definitions:
 
 C     PARM14 section
@@ -396,7 +397,17 @@ C                                                                          C
 C--------------------------------------------------------------------------C
 C
 C--Local Map Variable Declarations
-C
+
+      ! namo 5/22 - add DG vars
+Csb-DG1
+      INTEGER,ALLOCATABLE  ::  NIEL_SEND(:),NIEL_RECV(:)
+      INTEGER,ALLOCATABLE  ::  IEL_SEND(:,:,:),IEL_RECV(:,:,:)
+      INTEGER,ALLOCATABLE  ::  NUM_COMM_PE_SEND(:),NUM_COMM_PE_RECV(:)
+      INTEGER,ALLOCATABLE  ::  IMAP_NEIGHEDG(:,:,:) ! Maps (IEDG,IEL) --> (IEDG,IEL) of the neighbor edge
+Csb-02/26/06
+      INTEGEr              ::  MNNDEL
+      INTEGER,ALLOCATABLE  ::  NNDEL(:),NDEL(:,:)
+
 C     LOCALI section
       INTEGER NPROC,MSHAR,NWEIR
       INTEGER,ALLOCATABLE::NELP(:), NNODP(:), NNEP(:,:,:)
@@ -659,6 +670,56 @@ C---------------------------------------------------------------------
       END SUBROUTINE ALLOC_MAIN2
 C---------------------------------------------------------------------
 C
+
+C.....namo 5/22 add DG part
+Csb-DG1
+      SUBROUTINE ALLOC_DG1()
+
+      ALLOCATE ( NIEL_SEND(MNPROC) )
+      ALLOCATE ( NIEL_RECV(MNPROC) )
+      ALLOCATE ( NUM_COMM_PE_SEND(MNPROC) )
+      ALLOCATE ( NUM_COMM_PE_RECV(MNPROC) )
+      ALLOCATE ( IMAP_NEIGHEDG(2,3,NELG) )
+Csb-02/26/06
+      ALLOCATE ( NNDEL(NNODG) )
+C--
+      RETURN
+      END SUBROUTINE
+C--
+
+
+Csb-02/26/06
+      SUBROUTINE ALLOC_DG1B()
+
+      ALLOCATE ( NDEL(MNP,MNNDEL) )
+
+      RETURN
+      END SUBROUTINE
+C--
+
+
+Csb-DG1
+      SUBROUTINE ALLOC_DG2()
+
+      INTEGER IPROC, MNIEL_SEND, MNIEL_RECV
+
+      MNIEL_SEND = 0
+      MNIEL_RECV = 0
+
+      DO IPROC = 1,MNPROC
+        IF(NIEL_SEND(IPROC).GT.MNIEL_SEND) THEN
+          MNIEL_SEND = NIEL_SEND(IPROC)
+        ENDIF
+        IF(NIEL_RECV(IPROC).GT.MNIEL_RECV) THEN
+          MNIEL_RECV = NIEL_RECV(IPROC)
+        ENDIF
+      ENDDO
+
+      ALLOCATE ( IEL_SEND(2,MNIEL_SEND,MNPROC) )
+      ALLOCATE ( IEL_RECV(2,MNIEL_RECV,MNPROC) )
+
+      RETURN
+      END SUBROUTINE
 C
 C---------------------------------------------------------------------
 C---------------------------------------------------------------------

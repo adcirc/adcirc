@@ -2981,6 +2981,199 @@ Casey 100209: Changed I8 to I12 through this section.
 3062  FORMAT('NSTA3DT ',3I12)
       END SUBROUTINE PREP18
 
+      SUBROUTINE PREPDG18()
+      USE PRE_GLOBAL
+C
+C---------------------------------------------------------------------------C
+C                     (  Serial Version  8/30/05  )                         C
+C  This Routine writes a message-passing file "DG.18" for each subdomain    C
+C  of the domain decomposition created by DECOMP.                           C
+C                                                                           C
+C  This version is compatible with hp_DG_ADCIRC v10_sb3                     C
+C  (S. Bunya)                                                               C
+C  namo - put this in adcirc                                                C
+C---------------------------------------------------------------------------C
+C
+cjjw - added 1 line
+      IMPLICIT NONE
+      INTEGER N1,N2,N3,PE1,PE2,PE3
+      INTEGER I,J,K,ITEMP,IPR,IPR1
+      INTEGER INDEX,ITOT,IEL,IELG,ILNODE,IPROC,ITYPE
+      INTEGER NEL,MNEL,NRES_ELEM,IRES
+      INTEGER,ALLOCATABLE :: COMM_EL(:),RES_ELEM(:)
+      CHARACTER LOCFN*14,PE*6
+      integer res_tot
+C
+C  Allocate local arrays
+C
+      ALLOCATE ( RES_ELEM(MNEP) )
+
+C
+C--Set the array size to be the maximum number of communicating elements
+C
+      MNEL = 0
+      DO I = 1,NPROC
+        IF(NIEL_RECV(I).GT.MNEL) MNEL = NIEL_RECV(I)
+        IF(NIEL_SEND(I).GT.MNEL) MNEL = NIEL_SEND(I)
+      ENDDO
+      ALLOCATE( COMM_EL(MNEL) )
+
+C
+C--Write Message-Passing File for each PE
+C
+      res_tot = 0
+      DO 1000 I = 1,NPROC
+C
+        LOCFN(1:14) = 'PE0000/DG.18'
+        WRITE(LOCFN(3:6),'(I4.4)') I-1
+        OPEN (181,FILE=LOCFN)
+C
+C--Write the Resident Node List
+C
+        NRES_ELEM = 0
+        DO J = 1,NELP(I)
+          IELG = abs(IMAP_EL_LG(J,I))
+
+          N1 = NNEG(1,IELG)
+          N2 = NNEG(2,IELG)
+          N3 = NNEG(3,IELG)
+
+          PE1 = IMAP_NOD_GL(1,N1)
+          PE2 = IMAP_NOD_GL(1,N2)
+          PE3 = IMAP_NOD_GL(1,N3)
+
+          ! namo
+c$$$          IF (EL_SHARE(IELG).eq.I) THEN
+c$$$             NRES_ELEM = NRES_ELEM + 1
+c$$$          END IF
+
+          IF(PE1.NE.I.AND.PE2.NE.I.AND.PE3.NE.I) THEN
+            ! DO NOTHING
+          ELSE IF(PE1.EQ.I.AND.PE2.EQ.I.AND.PE3.EQ.I) THEN
+            NRES_ELEM = NRES_ELEM + 1
+          ELSE IF(PE1.EQ.I.AND.PE2.NE.I.AND.PE3.NE.I.AND.PE2.NE.PE3)THEN
+            NRES_ELEM = NRES_ELEM + 1
+          ELSE IF(PE2.EQ.I.AND.PE3.NE.I.AND.PE1.NE.I.AND.PE3.NE.PE1)THEN
+            NRES_ELEM = NRES_ELEM + 1
+          ELSE IF(PE3.EQ.I.AND.PE1.NE.I.AND.PE2.NE.I.AND.PE1.NE.PE2)THEN
+            NRES_ELEM = NRES_ELEM + 1
+          ENDIF
+        ENDDO
+        res_tot = res_tot + nres_elem
+
+        WRITE(181,3015) (I-1),NRES_ELEM
+
+        ITOT = 0
+        DO J = 1,NELP(I)
+          IELG = abs(IMAP_EL_LG(J,I))
+
+          N1 = NNEG(1,IELG)
+          N2 = NNEG(2,IELG)
+          N3 = NNEG(3,IELG)
+
+          PE1 = IMAP_NOD_GL(1,N1)
+          PE2 = IMAP_NOD_GL(1,N2)
+          PE3 = IMAP_NOD_GL(1,N3)
+
+          IRES = 0
+
+c$$$          IF (EL_SHARE(IELG).eq.I) THEN
+c$$$             ITOT = ITOT + 1
+c$$$             RES_ELEM(ITOT) = J
+c$$$          ENDIF
+          IF(PE1.NE.I.AND.PE2.NE.I.AND.PE3.NE.I) THEN
+            ! DO NOTHING
+          ELSE IF(PE1.EQ.I.AND.PE2.EQ.I.AND.PE3.EQ.I) THEN
+            IRES = 1
+          ELSE IF(PE1.EQ.I.AND.PE2.NE.I.AND.PE3.NE.I.AND.PE2.NE.PE3)THEN
+            IRES = 1
+          ELSE IF(PE2.EQ.I.AND.PE3.NE.I.AND.PE1.NE.I.AND.PE3.NE.PE1)THEN
+            IRES = 1
+          ELSE IF(PE3.EQ.I.AND.PE1.NE.I.AND.PE2.NE.I.AND.PE1.NE.PE2)THEN
+            IRES = 1
+          ENDIF
+
+          IF(IRES.EQ.1)THEN
+            ITOT = ITOT + 1
+            RES_ELEM(ITOT) = J
+          ENDIF
+        ENDDO
+        WRITE(181,1130) (RES_ELEM(J),J=1,ITOT)
+C
+C--Write the Number of Communicating PEs and the maximum number of send/receive elements
+C
+C         IF(NIEL_RECV(I).GT.NIEL_SEND(I)) THEN
+C           MNEL = NIEL_RECV(I)
+C         ELSE
+C          MNEL = NIEL_SEND(I)
+C         ENDIF
+
+        WRITE(181,3020) NUM_COMM_PE_RECV(I),NUM_COMM_PE_SEND(I)
+C
+C--Write the Receive List
+C
+        DO J = 1,NPROC
+          NEL = 0
+          DO K = 1,NIEL_RECV(I)
+            IF(IEL_RECV(1,K,I).EQ.J) THEN
+              NEL = NEL + 1
+              COMM_EL(NEL) = IEL_RECV(2,K,I)
+            ENDIF
+          ENDDO
+          IF(NEL.GT.0) THEN
+            WRITE(181,3030) (J-1), NEL
+            WRITE(181,1130) (COMM_EL(K),K=1,NEL)
+          ENDIF
+        ENDDO
+C
+C--   write the send list
+C
+        DO J = 1,NPROC
+          NEL = 0
+          DO K = 1,NIEL_SEND(I)
+            IF(IEL_SEND(1,K,I).EQ.J) THEN
+              NEL = NEL + 1
+              COMM_EL(NEL) = IEL_SEND(2,K,I)
+            ENDIF
+          ENDDO
+          IF(NEL.GT.0) THEN
+            WRITE(181,3040) (J-1), NEL
+            WRITE(181,1130) (COMM_EL(K),K=1,NEL)
+          ENDIF
+        ENDDO
+
+        CLOSE(181)
+C
+ 1000 CONTINUE
+
+      DEALLOCATE( COMM_EL )
+
+C
+C--Compute the share edge to all edge ratio (in %)
+C
+      print *, " "
+      print *, "Communication Data (DG)"
+      print *, "DOMAIN  COMM_PE  %(SHARD_EL/ALL)"
+      print *, "------  -------  ---------------"
+      DO I=1, NPROC
+         PE(1:6) = 'PE0000'
+         WRITE(PE(3:6),'(I4.4)') I-1
+         WRITE(6,92) PE, NUM_COMM_PE(I),
+     &               (NIEL_RECV(I)+NIEL_SEND(I))/REAL(NELP(I))*100.0
+      ENDDO
+
+      print *, 'TOTAL resident elements: ', res_tot
+C
+  92  FORMAT(1X,A6,2X,I7,2X,F9.2)
+1130  FORMAT(8X,9I8)
+3010  FORMAT('LPE ID  ',I8)
+3015  FORMAT('RES ELEM',2I8)
+3020  FORMAT('COMM PE ',3I8)
+3030  FORMAT('RECV PE ',2I8)
+3040  FORMAT('SEND PE ',2I8)
+C
+      RETURN
+      END
 
       SUBROUTINE PREP19()
       USE PRE_GLOBAL

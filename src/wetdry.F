@@ -145,7 +145,7 @@ CWET...
      &    nolifa,
      &    bsx1, bsy1, btime_end, C2DDI, C3D, h0, ifnlfa, nddt, dtdp,
      &    nibnodecode, ilump, ncchange, tkm, directvelWD, useHF,
-     &    cbaroclinic, iden 
+     &    cbaroclinic, iden , dg_cont
 #ifdef CMPI
      &    ,idumy,dumy1,dumy2
       use messenger
@@ -224,7 +224,7 @@ CWET...
             NOFF(I)=1
          ENDDO
 
-         IF(loadSubgridBarrier)call applySubgridBarrier()
+         IF(loadSubgridBarrier .and. (.not. DG_CONT))call applySubgridBarrier()
 
 CWET...
 CWET...WET/DRY - PART 1 - NODAL DRYING CRITERIA D1
@@ -1296,6 +1296,10 @@ CWET...
 CWET...END WET/DRY SECTION  - PART 3
 CWET...
 
+         ! Wetting in the DG-CG scheme
+         IF (DG_CONT) THEN
+            where (eta2 + dp > 1*h0) nnodecode = 1
+         ENDIF
 C.....
 C.....Nodal Drying Criteria for the ibtype=64 weir boundary
 C.....Check the node if it is along the ibtype=64 weir boundary and if the weir is

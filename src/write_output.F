@@ -4872,6 +4872,10 @@ C     collect up the data from subdomains if running in parallel
          CALL collectFullDomainArray(NOFFDescript,
      &             packOne, unpackOne)
 
+         ! N.W. Current DG mass eq wet/dry scheme can cause NOFF_g > 1
+         IF (DG_CONT) THEN
+            WHERE (NOFF_G.gt.1) NOFF_g = 1
+         ENDIF   
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             if (any(NOFF_G.gt.1)) then
                call terminate(exit_code=ADCIRC_EXIT_FAILURE,
