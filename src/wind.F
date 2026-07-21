@@ -7812,11 +7812,18 @@ C----------------------------------------------------------------------
             end do
          endif
          ! perform time interpolation
-         dynamicWaterLevelCorrectionsArray(:) =
-     &       (timesec - dynamicWaterLevelCorrectionTimeOld) /
-     &              (dynamicWaterLevelCorrectionTimeNew - dynamicWaterLevelCorrectionTimeOld )
-     &       * ( dynamicWaterLevelCorrectionsNew_m(:) - dynamicWaterLevelCorrectionsOld_m(:) )
-     &          + dynamicWaterLevelCorrectionsOld_m(:)
+         do i=1,np
+            ! Assign values if not masked. sb
+            if (dynamicWaterLevelCorrectionsOld_m(i) > -99998.0 .and. dynamicWaterLevelCorrectionsNew_m(i) > -99998.0) then
+               dynamicWaterLevelCorrectionsArray(i) =
+     &             (timesec - dynamicWaterLevelCorrectionTimeOld) /
+     &                 (dynamicWaterLevelCorrectionTimeNew - dynamicWaterLevelCorrectionTimeOld )
+     &                 * ( dynamicWaterLevelCorrectionsNew_m(i) - dynamicWaterLevelCorrectionsOld_m(i) )
+     &                 + dynamicWaterLevelCorrectionsOld_m(i)
+            else
+               dynamicWaterLevelCorrectionsArray(i) = -99999.0
+            endif
+         enddo
       endif
       !
       ! set to zero everywhere prior to the start of the ramping period
@@ -7829,14 +7836,28 @@ C----------------------------------------------------------------------
          ! compute linear ramp value
          dynamicWaterLevelCorrectionRamp = ( timesec - dynamicWaterLevelCorrectionRampStart)
      &               / ( dynamicWaterLevelCorrectionRampEnd - dynamicWaterLevelCorrectionRampStart )
-         dynamicWaterLevelCorrectionsArray(:) = dynamicWaterLevelCorrectionsArray(:) *
-     &      dynamicWaterLevelCorrectionRamp
+         do i=1,np
+            ! Assign values if not masked. sb
+            if (dynamicWaterLevelCorrectionsArray(i) > -99998.0) then
+               dynamicWaterLevelCorrectionsArray(i) = dynamicWaterLevelCorrectionsArray(i) *
+     &             dynamicWaterLevelCorrectionRamp
+            else
+               dynamicWaterLevelCorrectionsArray(i) = -99999.0
+            endif
+         enddo
       endif
       ! just leave the raw values alone after the end of ramp period
       !
       ! apply correction multiplier if any
-      dynamicWaterLevelCorrectionsArray(:) = dynamicWaterLevelCorrectionMultiplier *
-     &  dynamicWaterLevelCorrectionsArray(:)
+      do i=1,np
+         ! Assign values if not masked. sb
+         if (dynamicWaterLevelCorrectionsArray(i) > -99998.0) then
+            dynamicWaterLevelCorrectionsArray(i) = dynamicWaterLevelCorrectionMultiplier *
+     &         dynamicWaterLevelCorrectionsArray(i)
+         else
+            dynamicWaterLevelCorrectionsArray(i) = -99999.0
+         endif
+      enddo
 
       return
 

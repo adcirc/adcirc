@@ -246,7 +246,7 @@ C... SB
       REAL(8) WSX, WSY, fwind
       REAL(8) ZNGLHS,ZNGRHS1,ZNGRHS2
       REAL(8) DispX, DispY, CorifA
-
+      REAL(8) Off1N1, Off1N2, Off1N3, Off2N1, Off2N2, Off2N3 ! For dynamic water level correction sb
       REAL(8) AreaIE, AreaIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       INTEGER :: nele
@@ -430,12 +430,24 @@ C....    DW
  
          !jgf: Subtract dynamic water level offset from barotropic pressure 
          IF (usingDynamicWaterLevelCorrection.eqv..true.) THEN
-            BTP1N1=BTP1N1-dynamicWaterLevelCorrection1(NM1)
-            BTP2N1=BTP2N1-dynamicWaterLevelCorrection2(NM1)
-            BTP1N2=BTP1N2-dynamicWaterLevelCorrection1(NM2)
-            BTP2N2=BTP2N2-dynamicWaterLevelCorrection2(NM2)
-            BTP1N3=BTP1N3-dynamicWaterLevelCorrection1(NM3)
-            BTP2N3=BTP2N3-dynamicWaterLevelCorrection2(NM3)
+            Off1N1 = dynamicWaterLevelCorrection1(NM1)
+            Off2N1 = dynamicWaterLevelCorrection2(NM1)
+            Off1N2 = dynamicWaterLevelCorrection1(NM2)
+            Off2N2 = dynamicWaterLevelCorrection2(NM2)
+            Off1N3 = dynamicWaterLevelCorrection1(NM3)
+            Off2N3 = dynamicWaterLevelCorrection2(NM3)
+
+            ! Set the dynamic water level offset only if all nodes of the element is not masked. sb
+            IF (Off1N1 > -99998.0 .and. Off2N1 > -99998.0 .and.
+     &          Off1N2 > -99998.0 .and. Off2N2 > -99998.0 .and.
+     &          Off1N3 > -99998.0 .and. Off2N3 > -99998.0) THEN
+               BTP1N1=BTP1N1-Off1N1
+               BTP2N1=BTP2N1-Off2N1
+               BTP1N2=BTP1N2-Off1N2
+               BTP2N2=BTP2N2-Off2N2
+               BTP1N3=BTP1N3-Off1N3
+               BTP2N3=BTP2N3-Off2N3
+            ENDIF
          ENDIF
 
 C.......If using tidal potential terms, add these into the barotropic pressure

@@ -646,7 +646,14 @@ C     jgf: update water level correction fields
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc)
          if (dynamicWaterLevelCorrectionMassAdjust.eqv..true.) then
-            dynamicWaterLevelCorrectionDelta=dynamicWaterLevelCorrection2-dynamicWaterLevelCorrection1
+            ! Assign values to dynamicWaterLevelCorrectionDelta if the offset is not masked. sb
+            do i=1,np
+               if (dynamicWaterLevelCorrection1(i) > -99998.0 .and. dynamicWaterLevelCorrection2(i) > -99998.0) then
+                  dynamicWaterLevelCorrectionDelta(i)=dynamicWaterLevelCorrection2(i)-dynamicWaterLevelCorrection1(i)
+               else
+                  dynamicWaterLevelCorrectionDelta(i)=0.0
+               endif
+            enddo
          endif
       endif
 C

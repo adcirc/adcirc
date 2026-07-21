@@ -336,7 +336,7 @@ C... SB
       REAL(8) MX, MY, MXAvg, MYAvg
       REAL(8) JXAvg, JYAvg
       REAL(8) Pr1N1, Pr1N2, Pr1N3
-      REAL(8) Off1N1, Off1N2, Off1N3 ! water level offsets
+      REAL(8) Off1N1, Off1N2, Off1N3, Off1 ! water level offsets
       REAL(8) QX1N1, QX1N2, QX1N3, QY1N1, QY1N2, QY1N3, QX1Avg, QY1Avg
       REAL(8) SFacAvg, SFmxAvg, SFmyAvg, sfdxfac, sfdyfac 
       REAL(8) SFCXAvg, SFCYAvg, YCFACAvg, SFCXADJ, SFCYADJ, TANPHIAvg
@@ -1177,6 +1177,12 @@ C
             Off1N1 = dynamicWaterLevelCorrection1(NM1)
             Off1N2 = dynamicWaterLevelCorrection1(NM2)
             Off1N3 = dynamicWaterLevelCorrection1(NM3)
+            ! Check if the dynamic water level offset is masked. sb
+            IF (Off1N1 < -99998.0 .or. Off1N2 < -99998.0 .or. Off1N3 < -99998.0) then
+               Off1N1 = 0.0
+               Off1N2 = 0.0
+               Off1N3 = 0.0
+            endif
          endif
          IF (CTIP) THEN                        !tidal potential
             TiPN1=TiP1(NM1)
@@ -1706,7 +1712,12 @@ C     on and off according to analyst preference.
       !jgf: Added water level offset to elevation specified boundary
       if (usingDynamicWaterLevelCorrection.eqv..true.) then
          DO I=1,NETA
-            ETA2(NBD(I))=ETA2(NBD(I)) + dynamicWaterLevelCorrection1(nbd(i)) 
+            OFF1 = dynamicWaterLevelCorrection1(nbd(i))
+            ! Check if the dynamic water level offset is masked. sb
+            IF (Off1 < -99998.0) then
+               CYCLE
+            endif
+            ETA2(NBD(I))=ETA2(NBD(I)) + Off1 
          END DO
       endif
 
