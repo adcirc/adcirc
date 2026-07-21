@@ -85,7 +85,7 @@ C
      &    Limit_WaveStressGrad, SWAN_RSNX1, SWAN_RSNY1, SWAN_RSNX2, SWAN_RSNY2,
      &    earlyterminate, IT_foundNaN, WarnVel, Flag_VelError,
      &    dynamicWaterLevelCorrectionDelta, RampIntFlux,
-     &    SAL1, SAL2, CSAL
+     &    SAL1, SAL2, CInlineSAL
 
       USE mod_logging, ONLY: logMessage, allMessage, t_log_scope,
      &    init_log_scope, DEBUG, INFO, WARNING, ERROR, screenUnit,
@@ -1145,7 +1145,7 @@ C...     MOM_LV_X gets renamed as BTP in global_3dvs.f
            MOM_LV_X(I)=ETA1(I)+ETA2(I)
            IF(NWS.NE.0) MOM_LV_X(I)=MOM_LV_X(I)+PR1(I)+PR2(I) !atmospheric pressure
            IF (CTIP) MOM_LV_X(I)=MOM_LV_X(I)-TIP1(I)-TIP2(I) !tidal potential
-           IF (CSAL) MOM_LV_X(I)=MOM_LV_X(I)-SAL2(I)-SAL2(I) 
+           IF (CInlineSAL) MOM_LV_X(I)=MOM_LV_X(I)-SAL2(I)-SAL2(I) ! Inline SAL 
            MOM_LV_X(I)=G*MOM_LV_X(I)/2.d0
         ENDDO
 

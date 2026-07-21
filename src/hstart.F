@@ -107,6 +107,9 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
+
+      use MOD_INLINE_SAL, only: hotstartSAL
+
       IMPLICIT NONE
       interface
          SUBROUTINE binaryRead2D(array, length, lun, counter)
@@ -200,6 +203,8 @@ C     kmd -- Added variables for initial conditions
       INTEGER :: moderbin ! determines whether in binary or real
       INTEGER :: ncHundreds ! hundreds place of IHOT, used for netcdf hs file
       INTEGER :: IDMY
+
+     
 
 #ifdef ADCNETCDF
       LOGICAL :: have_htot(2)
@@ -1534,6 +1539,10 @@ C           species
           ENDDO TIPLOOP
       endif     !   CTIP
 
+      ! inlineSAL
+      if ( CinlineSAL ) then
+         CALL hotstartSAL( zetasaltm2, zetasaltm1, zetasaltm0, zetasaltime ) 
+      endif
 C...
 C....SET UP TO RESTART TIMESERIES OUTPUT FILES
 C....

@@ -9,9 +9,9 @@ MODULE MOD_INLINE_SAL
 #ifndef NONADC    
     USE ADC_CONSTANTS, only: rhoW => RhoSeaWat0, RhoE => RhoEarth, Rearth, deg2rad, rad2deg
 !    USE global, only: resident_elemask => imap_el_lg, H0, dtdp, wdnodecode => nodecode, ifsprots, &
-!       setmessagesource, unsetmessagesource, salcontrol => CSAL 
+!       setmessagesource, unsetmessagesource, salcontrol => CInlineSAL 
     USE global, only: resident_elemask => imap_el_lg, H0, dtdp, wdnodecode => nodecode, &
-            &   ifsprots, salcontrol => CSAL 
+            &   ifsprots, salcontrol => CInlineSAL 
 
     USE mesh, only: etov => nm, nele => ne, nnode => np, depth => dp, gridics => ICS, &
             slam, sfea, slamr, sfear   
@@ -107,17 +107,40 @@ MODULE MOD_INLINE_SAL
     real(kind=RKIND), private, parameter:: SqrtInv4Pi = sqrt(1.0_RKIND/(4.0_RKIND*pii))
 
 #ifndef NONADC
-    real(8), private, dimension(:), allocatable:: sshsal(:,:) 
+    real(8), private, target, allocatable:: sshsal(:,:) 
     ! sshsal @ saltime, saltime - saltiminc, saltime - 2*saltime
     real(8), private :: sshsaltime(3) ! time associated with previous SAL dataset
     real(8), private :: sshsaltiminc
     
-
     integer, private :: extrapolationOrder  = 0 
 #endif
 
 CONTAINS
-  
+
+
+#ifndef NONADC
+    function export_zetasal( id ) RESULT( zetasal )
+       implicit none
+
+       integer:: id
+       REAL (8), allocatable:: zetasal(:)
+
+       allocate( zetasal(nnode) ) ;
+
+       zetasal = sshsal(:,id) ; 
+       
+       return ;
+    end function export_zetasal        
+
+    function export_zetasaltime() RESULT( zetasaltime )
+       implicit none
+
+        REAL(8):: zetasaltime(3)   
+
+        zetasaltime = sshsaltime ;   
+    end function export_zetasaltime
+#endif
+
     subroutine sal_param_init( this, useinlinesal, inlineSalMethod, usedirectsh, &
                                & usecacheblocking, shorder, ncellblock, salinc, salAPBeta, &
                                & useshtfilter, filterscheme  )
@@ -291,21 +314,20 @@ CONTAINS
     end subroutine coldstartSAL        
     !      
 
-
     !
-    subroutine hotstartSAL( etasal2, etasal1, etasal0, saltimeloc ) 
+    subroutine hotstartSAL( etasaltm0, etasaltm1, etasaltm2, saltimeloc ) 
       implicit none
 
       real (8):: saltimeloc(3)
-      real (8), intent(in), dimension(:):: etasal2, etasal1, etasal0
+      real (8), intent(in), dimension(:):: etasaltm2, etasaltm1, etasaltm0
 
       if ( .NOT. ssh_inline_sal%use_inline_sal ) return ;
       ! if ( .NOT. use_SH_approximation ) return ;
 
       sshsaltime = saltimeloc ;
-      sshsal(:,1) = etasal2 ;
-      sshsal(:,2) = etasal1 ;
-      sshsal(:,3) = etasal0 ;  
+      sshsal(:,1) = etasaltm0 ;
+      sshsal(:,2) = etasaltm1 ;
+      sshsal(:,3) = etasaltm2 ;  
       
       return ; 
     end subroutine hotstartSAL
@@ -439,11 +461,10 @@ CONTAINS
 
 !        CALL self_attraction_loading_parallel_fem( ssh_sal, ssh, &
 !                                 etov, nele, resident_elemask ) ; 
-
+  
         CALL self_attraction_loading_parallel_fem( this, ssh_sal, & 
                       sshSmoothed, etov, nele, resident_elemask ) ;  
-
-       endif                   
+      endif                   
         
       return ;
     end subroutine direct_spht_self_attraction_loading_sub
@@ -1046,12 +1067,17 @@ CONTAINS
             integer:: ii, ie, ipoint
             real(8):: efactor
 
+            !! print*, nCells, l 
+
+            efactor = 1.D0 ;
             DO ii = 1, 3
                DO ie = 1, nCells
                   ipoint = elements(ie,ii) ;
 
+#ifdef CMPI
                   efactor = merge(  1.0D0, 0.0D0, elemask(ie) > 0 ) ;  ! exclude elements with elemask(ie) < 0  
-
+#endif
+      
                   SnmRe_local(l) = SnmRe_local(l) + onethird*sphtRe(ipoint)*dASc(ie)*efactor ;
                   SnmIm_local(l) = SnmIm_local(l) + onethird*sphtIm(ipoint)*dASc(ie)*efactor ;   
                ENDDO

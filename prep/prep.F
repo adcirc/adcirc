@@ -7825,7 +7825,9 @@ C---------------------------------------------------------------------------
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D,
      &    foundCorrectionControlNamelist, NCICE, !GML added NCICE 20210727
      &    foundVEW1DChannelControlNamelist, meshHasWeir, meshHasInternalWeir,
-     &    meshHasWeirWithPipes
+     &    meshHasWeirWithPipes,
+     &    use_inline_sal
+
       USE GLOBAL_3DVS, ONLY: I3DGB
       USE NODALATTRIBUTES, ONLY : outputTau0
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
@@ -9191,16 +9193,24 @@ C     Create NetCDF hotstart files if NetCDF was specified.
      & (abs(NHSTAR).EQ.5).OR.(NHSTAR.EQ.567).OR.(NHSTAR.EQ.568)) THEN
          ! must init both hotstart files ... there is not enough information
          ! available to determine if they will both be needed
+
+         PRINT*, "**** use_inline_sal = ", use_inline_sal ;
          IF ((IHOT.ne.367).and.(IHOT.ne.567)) THEN
             Elev1Descript % file_name = 'fort.67'
-            CALL initNetCDFHotstart(67, Elev1Descript, reterr)
+            CALL initNetCDFHotstart(lun=67, Elev1Descript =
+     &           Elev1Descript, ncerror = reterr,
+     &           includeinlinesal=use_inline_sal )
+
             IF (C3D.eqv..true.) THEN
                CALL initNetCDFHotstart3D(67,NHSTAR)
             ENDIF
          ENDIF
          IF ((IHOT.ne.368).and.(IHOT.ne.568)) THEN
             Elev1Descript % file_name = 'fort.68'
-            CALL initNetCDFHotstart(68, Elev1Descript, reterr)
+            CALL initNetCDFHotstart(lun=68, Elev1Descript =
+     &           Elev1Descript, ncerror = reterr,
+     &           includeinlinesal=use_inline_sal )
+           
             IF (C3D.eqv..true.) THEN
                CALL initNetCDFHotstart3D(68,NHSTAR)
             ENDIF

@@ -292,7 +292,7 @@ C
      &   usingDynamicWaterLevelCorrection, dynamicWaterLevelCorrection1,
      &   dynamicWaterLevelCorrectionDelta, 
      &   COEFDTemp, COEFDTempMem,  ! Added for VED1D  08-11-2022 SB
-     &   SAL1, CSAL, RHRAVG
+     &   SAL1, CInlineSAL, RHRAVG
 #ifdef CMPI
      &    , dumy1, dumy2, rnp_global
 #endif
@@ -1234,7 +1234,7 @@ C
 
          ! DW -- if use inline SAL, picky back it on tidal potential c!
          ! IF ( ssh_inline_sal%use_inline_sal ) THEN
-         IF ( CSAL ) THEN
+         IF ( CInlineSAL ) THEN
             TiPN1 = TipN1 + SAL1(NM1) ;
             TiPN2 = TipN2 + SAL1(NM2) ; 
             TipN3 = TipN3 + SAL1(NM3) ;
@@ -2196,7 +2196,7 @@ C
      &   QN1, EN1, QN0, ElevDisc, QN2, EN0, iLump, BCFLAG_LNM, EN2,
      &   TKM, NPERSEG, NNPERBC, IPERCONN, UU0, VV0, QX0, QY0, TK0, TK2, 
      &   QX2, QY2, UU2, VV2, windlim,
-     &   SAL1, CSAL
+     &   SAL1, CInlineSAL
 #ifdef CMPI
      &   , dumy1, dumy2
 #endif
@@ -2658,7 +2658,7 @@ C........DMW202401 Use saved H1 and H2
          ENDIF
          ! DW -- if use inline SAL, picky back it on tidal potential c!
          ! IF ( ssh_inline_sal%use_inline_sal ) THEN
-         IF ( CSAL ) THEN
+         IF ( CInlineSAL ) THEN
             TiPN1 = TipN1 + SAL1(NM1) ;
             TiPN2 = TipN2 + SAL1(NM2) ; 
             TipN3 = TipN3 + SAL1(NM3) ;

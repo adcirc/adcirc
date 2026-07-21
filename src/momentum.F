@@ -175,7 +175,7 @@ C*******************************************************************************
      &  usingDynamicWaterLevelCorrection, windlim,
      &  dynamicWaterLevelCorrection1, dynamicWaterLevelCorrection2, H0,
      &  flgNodesMultipliedByTotalArea, ilump, H1, H2, 
-     &  SAL2, SAL1, CSAL
+     &  SAL2, SAL1, CInlineSAL
 #ifdef CMPI
      &  , dumy1
 #endif
@@ -464,7 +464,7 @@ C.......If using tidal potential terms, add these into the barotropic pressure
 
 C...... if use inline SAL, add these into the barotrpoic pressure 
          ! IF ( ssh_inline_sal%use_inline_sal ) THEN        
-         IF ( CSAL ) THEN
+         IF ( CInlineSAL ) THEN
             BTP1N1=BTP1N1-SAL1(NM1)
             BTP2N1=BTP2N1-SAL2(NM1)
             BTP1N2=BTP1N2-SAL1(NM2)
@@ -1266,7 +1266,7 @@ C
      & VV1, IFNLFA, CSMAG_EH, SMAG_COMP_FLAG, SMAG_UPPER_LIM, NOFF, 
      & SMAG_LOWER_LIM, NODECODE, VIDISPDXOH, VIDISPDYOH, IFSFM, 
      & CBaroclinic, CAliDisp, windlim, H1, H2,
-     & SAL2, SAL1, CSAL
+     & SAL2, SAL1, CInlineSAL
 
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
      &   NEITAB, NEITABELE, NNEIGH, FDXE, FDYE,
@@ -1472,7 +1472,7 @@ C.......If using tidal potential terms, add these into the barotropic pressure
 
 C...... if use inline SAL, add these into the barotrpoic pressure         
         ! IF ( ssh_inline_sal%use_inline_sal ) THEN
-        IF ( CSAL ) THEN
+        IF ( CInlineSAL ) THEN
             BTP1N1=BTP1N1-SAL1(NM1)
             BTP2N1=BTP2N1-SAL2(NM1)
             BTP1N2=BTP1N2-SAL1(NM2)
