@@ -132,7 +132,7 @@ Csb   Specify node groups for 1D condensation.
       LOGICAL              :: FoundCondensedNodes
       CHARACTER(LEN=80)    :: CondensedNodesUnits
       INTEGER              :: CondensedNodesNoOfVals
-      INTEGER              :: CondensedNodesDefVal(4)
+      INTEGER,ALLOCATABLE  :: CondensedNodesDefVal(:)
       INTEGER,ALLOCATABLE  :: CondensedNodes(:,:)
       INTEGER,ALLOCATABLE  :: NCondensedNodes(:)
       INTEGER,ALLOCATABLE  :: ListCondensedNodes(:,:)
@@ -958,6 +958,9 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
       ALLOCATE(SwanWaveRefrac(NumOfNodes))
 Corbitt 120321: Allow advection to be turned on locally instead of globally
       ALLOCATE(AdvectionState(NumOfNodes))
+      IF ( .not.ALLOCATED(CondensedNodesDefVal) ) THEN
+         ALLOCATE(CondensedNodesDefVal(CondensedNodesNoOfVals))
+      ENDIF
       ALLOCATE(CondensedNodes(NumOfNodes,CondensedNodesNoOfVals))
       ALLOCATE(River_et_WSE(NumOfNodes))  ! tcm 20140502 v51.27
       ALLOCATE(OverlandReductionFactor(NumOfNodes))
@@ -1262,6 +1265,8 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
             FoundCondensedNodes = .TRUE.
             READ(13,'(A80)') CondensedNodesUnits
             READ(13,*) CondensedNodesNoOfVals
+            IF(ALLOCATED(CondensedNodesDefVal)) DEALLOCATE(CondensedNodesDefVal)
+            ALLOCATE(CondensedNodesDefVal(CondensedNodesNoOfVals))
             READ(13,*) (CondensedNodesDefVal(j),
      &                  j=1,CondensedNodesNoOfVals)
          CASE("elemental_slope_limiter")
