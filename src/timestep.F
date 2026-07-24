@@ -236,7 +236,7 @@ C.......
       IF (IT .EQ. 1) THEN
 !.......DMW202401 On first timestep of a cold start, find H2 at start of timestepper since ETA2 = ETA1
         DO I = 1,NP
-           H2(I) = DP(I)+IFNLFA*ETA2(I)
+           H2(I) = DP(I)+DBLE(IFNLFA)*ETA2(I)
            H1(I) = H2(I)
         ENDDO
       ENDIF
@@ -259,30 +259,17 @@ C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
 C...  
 C...  Computation of TimeLoc and TimeH are consolidated. SB,ZC,RL 2022-06-22
 C...
-      TimeLoc=IT*DTDP + StaTim*86400.D0
-      TimeH=IT*DTDP + (StaTim - RefTim)*86400.D0
+      TimeLoc=DBLE(IT)*DTDP + StaTim*86400.D0
+      TimeH=DBLE(IT)*DTDP + (StaTim - RefTim)*86400.D0
       IF (CHOTHS.eqv..true.) THEN
          IF ((ITHS+1).EQ.IT) THEN
-           StaTimHS=((IT-1)*DTDPHS)/86400.D0
-           RefTimHS=((IT-1)*DTDP)/86400.D0
+           StaTimHS=(DBLE((IT-1))*DTDPHS)/86400.D0
+           RefTimHS=(DBLE((IT-1))*DTDP)/86400.D0
          END IF
-         TimeLoc=IT*DTDP + (StaTimHS - RefTimHS)*86400.D0
-         TimeH=IT*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
+         TimeLoc=DBLE(IT)*DTDP + (StaTimHS - RefTimHS)*86400.D0
+         TimeH=DBLE(IT)*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
       END IF
 
-C...  HARMONIC CALCULATIONS ARE MADE FOR TIME WHICH INCLUDES THE REFTIM
-C...  TO ALLOW FOR THE POSSIBILITY THAT THE EQUILIBRIUM ARGUMENTS MAY
-C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
-C...
-      TimeH=IT*DTDP + (StaTim - RefTim)*86400.D0
-!kmd - added this for the cases where the timestep changes from hot start timestep
-      IF (CHOTHS.eqv..true.) THEN
-         IF ((ITHS+1).EQ.IT) THEN
-           StaTimHS=((IT-1)*DTDPHS)/86400.D0
-           StaTim=((IT-1)*DTDP)/86400.D0
-         END IF
-         TimeH=IT*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
-      END IF
 
 C-------------------TEMPORAL RAMP-------------------------------------
 C...  THIS SECTION IS REWRITTEN BY SB, ZC, and RL 2022-06-22
@@ -847,11 +834,11 @@ Casey 140701: Ending the IF statement.
 
 
 ! Apply the tide potential forcing subroutine      
-      call applyTidePotentialForcing(TimeLoc, TimeH)
+      call applyTidePotentialForcing(TimeLoc, TimeH, RampTip )
 
 ! If use, apply insline SAL
       ! TimeLoc = t^{n+1}        
-      CALL applyInlineSelfAttractionLoading( TimeLoc  )
+      CALL applyInlineSelfAttractionLoading( TimeLoc )
 
 
 C...
@@ -1520,17 +1507,22 @@ C******************************************************************************
 ! WJP 02.21.2018 Rewriting for general formula for all species,
 ! cleaner code, and correct identification of 0,1,2 or higher species
 !****************************************************************************************
-      subroutine applyTidePotentialForcing(TimeLoc, TimeH)
+      subroutine applyTidePotentialForcing(TimeLoc, TimeH, RampTip)
          use mod_tidepotential, only: tidePotential
          use MOD_INLINE_SAL, only: ssh_inline_sal
 
-         use global, only: NTIP, TIP1, TIP2, CTIP, NTIF, RampTip, PERT, FACET,
+!         use global, only: NTIP, TIP1, TIP2, CTIP, NTIF, RampTip, PERT, FACET,
+!     &                     AMIGT, FFT, TPK, ETRF, SALTPHA, SALTAMP, L_N, ETA2
+
+         use global, only: NTIP, TIP1, TIP2, CTIP, NTIF, PERT, FACET,
      &                     AMIGT, FFT, TPK, ETRF, SALTPHA, SALTAMP, L_N, ETA2
+
          use mesh , only: np, SLAM
          use sizes, only: myproc
 
          implicit none
-         real(8), intent(IN) :: TimeLoc, TimeH
+         real(8), intent(IN) :: TimeLoc, TimeH, RampTip 
+
          real(8) :: ArgT, ArgTP, ArgSAlt, SALTMUL, TPMUL
          integer :: i, j, na, ncyc
 
@@ -1602,54 +1594,9 @@ C******************************************************************************
             ENDIF NOTEXACTSALTIP 
             !
 
-!            
-!            ! The traditional approach: a sum of different constituents
-!            ! TIP & SAL - for tidePotential%active() = .TRUE.  
-!            ! SAL       - for tidePotential%active() = .FALSE.     
-!            IF( NTIP.EQ.2 .or. .not.tidePotential%active )THEN 
-!           
-!               IF ( .not. ssh_inline_sal%use_inline_sal ) THEN
-!                 DO J=1,NTIF
-!                    IF (PERT(J).EQ.0D0) THEN
-!                       NCYC=0
-!                    ELSE
-!                       NCYC=INT(timeh/PERT(J))
-!                    ENDIF
-!  
-!                    ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
-!                    TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
-!                    SALTMUL=RampTip*FFT(J)
-!  
-!     !              WJP: We actually want to compare against diurnal and get 0,1,2
-!     !              or higher species (was opposite beforehand)
-!                    NA = MIN(NINT(AMIGT(J)/7d-5),2)
-!  
-!     !              WJP: Rewritten so that we have a general formula for all
-!     !              species
-!                    IF(tidePotential%active())THEN
-!                       ! 
-!                       DO I = 1, NP
-!                          ARGSALT = ARGT - SALTPHA(J,I) ; 
-!                          TIP2(I) = TIP2(I) + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
-!                       END DO
-!                    ELSE
-!                       ! SAL + TIP
-!                       DO I = 1,NP
-!                          ARGTP   = ARGT + NA*SLAM(I)
-!                          ARGSALT = ARGT - SALTPHA(J,I)
-!                          TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
-!     &                            + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
-!                       ENDDO
-!                    ENDIF
-!  
-!                 ENDDO
-!               ENDIF
-!
-!            ENDIF
-!
-
-
          ENDIF
+
+         return 
       end subroutine applyTidePotentialForcing
 
 
@@ -1659,16 +1606,19 @@ C   - Compute SAL at every saltiminc step (i.e. at mod( TimeLoc, saltimeinc ) /=
 C   - Quadratic eenar, or constant extrapolation at other steps
 C****************************************************************************************
       SUBROUTINE applyInlineSelfAttractionLoading( TimeLoc )
-        USE global, only: SAL2, ETA2, RampTip
+        USE global, only: SAL2, ETA2
         use MOD_INLINE_SAL, only: getSelfAttractionLoading
 
         IMPLICIT NONE
 
-        REAL (8):: TimeLoc
+        REAL (8):: TimeLoc !, RampValue
 
         ! TimeLoc = t^{n + 1}
         CALL getSelfAttractionLoading( sal2, eta2, timeloc )
-        sal2 = RampTip*sal2 ;
+
+        ! sal2 = RampValue*sal2 ; 
+        ! No need to apply Ramp as it aleaday depends of eta2,
+        ! a result of ramped forcing 
 
         RETURN ;
       END subroutine applyInLineSelfAttractionLoading        

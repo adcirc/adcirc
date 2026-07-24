@@ -7056,6 +7056,7 @@ contains
       end if
 !     Write the nodal data to the netcdf file
       if (MNPROC == 1) then
+         ! serial code 
          iret = nf90_put_var(hs%ncid, hs%zeta1%nodal_data_id, &
                              Elev1Descript%array, start, kount)
          call check_err(iret)
@@ -7149,6 +7150,7 @@ contains
             iret = nf90_put_var(hs%ncid, tempid, zetasalhstime(3) )
          endif        
       else  
+         ! parallel 
          iret = nf90_put_var(hs%ncid, hs%zeta1%nodal_data_id, &
                              Elev1Descript%array_g, start, kount)
          call check_err(iret)

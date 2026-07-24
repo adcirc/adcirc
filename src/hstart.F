@@ -108,7 +108,8 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
 
-      use MOD_INLINE_SAL, only: hotstartSAL
+      use MOD_INLINE_SAL, only: hotstartSAL, extrapolate_sal_field
+
 
       IMPLICIT NONE
       interface
@@ -1511,37 +1512,41 @@ C......RESTART THE WAVE RADIATION STRESS
 #endif       
 
        if (CTIP) then
-Cjromo 11-01-00  Initialize TIP2 for HOTSTART
-          DO I = 1,NP
-             TIP2(I) = 0.0
-          END DO
-          TIPLOOP: DO J = 1,NTIF
-            IF (PERT(J).EQ.0.) THEN
-               NCYC = 0
-            ELSE
-               NCYC = INT(TimeLoc/PERT(J))
-            ENDIF
-
-            ARGT    = AMIGT(J)*(TimeLoc-NCYC*PERT(J))+FACET(J)
-            TPMUL   = RampTip2*ETRF(J)*TPK(J)*FFT(J)
-            SALTMUL = RampTip2*FFT(J)
-C           WJP: We actually want to compare against diurnal and get 0,1,2
-C           or higher species (was opposite beforehand)
-            NA = MIN(NINT(AMIGT(J)/7d-5),2)
-C           WJP: Rewritten so that we have a general formula for all
-C           species
-            DO I = 1,NP
-                ARGTP   = ARGT + NA*SLAM(I)
-                ARGSALT = ARGT - SALTPHA(J,I)
-                TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
-     &                  + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
-            ENDDO
-          ENDDO TIPLOOP
+           CALL applyTidePotentialForcing( TimeLoc, TimeLoc, RampTip2 )
+           
+CCCjromo 11-01-00  Initialize TIP2 for HOTSTART
+C          DO I = 1,NP
+C             TIP2(I) = 0.0
+C          END DO
+C          TIPLOOP: DO J = 1,NTIF
+C            IF (PERT(J).EQ.0.) THEN
+C               NCYC = 0
+C            ELSE
+C               NCYC = INT(TimeLoc/PERT(J))
+C            ENDIF
+C
+C            ARGT    = AMIGT(J)*(TimeLoc-NCYC*PERT(J))+FACET(J)
+C            TPMUL   = RampTip2*ETRF(J)*TPK(J)*FFT(J)
+C            SALTMUL = RampTip2*FFT(J)
+CC           WJP: We actually want to compare against diurnal and get 0,1,2
+CC           or higher species (was opposite beforehand)
+C            NA = MIN(NINT(AMIGT(J)/7d-5),2)
+CC           WJP: Rewritten so that we have a general formula for all
+CC           species
+C            DO I = 1,NP
+C                ARGTP   = ARGT + NA*SLAM(I)
+C                ARGSALT = ARGT - SALTPHA(J,I)
+C                TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
+C     &                  + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
+C            ENDDO
+C          ENDDO TIPLOOP
       endif     !   CTIP
 
       ! inlineSAL
-      if ( CinlineSAL ) then
-         CALL hotstartSAL( zetasaltm2, zetasaltm1, zetasaltm0, zetasaltime ) 
+      if ( CinlineSAL ) then     
+         CALL hotstartSAL( zetasaltm2, zetasaltm1, zetasaltm0,
+     &        zetasaltime ) ;
+         CALL extrapolate_sal_field( sal2, timeloc )
       endif
 C...
 C....SET UP TO RESTART TIMESERIES OUTPUT FILES

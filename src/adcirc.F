@@ -349,11 +349,11 @@ C...  attached to each node
       ! If the time in the min/max file is later than the current time
       ! in ADCIRC, we don't load the min/max files. TODO: This is computed
       ! again in subroutine timestep().
-      TimeLoc=ITIME_BGN*DTDP + StaTim*86400.D0
+      TimeLoc=DBLE(ITIME_BGN)*DTDP + StaTim*86400.D0
       IF (CHOTHS.eqv..true.) THEN
-         StaTimHS=((ITIME_BGN-1)*DTDPHS)/86400.D0
-         RefTimHS=((ITIME_BGN-1)*DTDP)/86400.D0
-         TimeLoc=ITIME_BGN*DTDP + (StaTimHS - RefTimHS)*86400.D0
+         StaTimHS=(DBLE((ITIME_BGN-1))*DTDPHS)/86400.D0
+         RefTimHS=(DBLE((ITIME_BGN-1))*DTDP)/86400.D0
+         TimeLoc=DBLE(ITIME_BGN*DTDP) + (StaTimHS - RefTimHS)*86400.D0
       END IF
 
       !jgf: Initialize water level offset if needed
@@ -526,12 +526,6 @@ C             to then call the SWAN time-stepping subroutine.
          write(ScreenUnit,*) "Runtime = ", end_time - start_time ; 
       ENDIF   
 #endif
-
-!#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-!      call allMessage(DEBUG,"Return.")
-!#endif
-!      call unsetMessageSource()
-
       
       RETURN
       END SUBROUTINE ADCIRC_Run

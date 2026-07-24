@@ -345,20 +345,6 @@ CONTAINS
       real (8):: saltimeloc, ts(3), num, den, tn
 
 
-!      call setMessageSource("getSelfAttractionLoading")
-!#if defined(ALL_TRACE)
-!      call allMessage(DEBUG,"Enter.")
-!#endif
-!
-
-!if ( .not. use_SH_approximation ) then
-!#if defined(ALL_TRACE)
-!        call allMessage(DEBUG,"Return.")
-!#endif
-!        call unsetMessageSource()
-!        return ; 
-!      endif
-
       if ( .not. ssh_inline_sal%use_inline_sal ) then
          return ;
       endif 
@@ -374,21 +360,34 @@ CONTAINS
         
          sshsaltime(3) = sshsaltime(2) ;
          sshsaltime(2) = sshsaltime(1) ; 
-         sshsaltime(1) = tn ;       
-         
+         sshsaltime(1) = tn ;                
       endif   
             
-
       !c extrapolation c!
       ! ts(1) = sshsaltime ; 
       ! ts(2) = sshsaltime - sshsaltiminc ;
       ! ts(3) = sshsaltime - 2.D0*sshsaltiminc ; 
-      ts = sshsaltime ; 
+      ! ts = sshsaltime ; 
 
+      CALL extrapolate_sal_field( etasal, timeloc  )
+
+      return 
+    end subroutine getSelfAttractionLoading 
+    !
+
+    !
+    subroutine extrapolate_sal_field( etasal,  timeloc )
+      implicit none
+
+      REAL (8):: etasal(:), timeloc
+
+      REAL (8):: ts(3), num, den
+
+      ts = sshsaltime ; 
       ! extrapolate SAL from ( sshsal(:,t^{m-i}_{SAL}), m = 0, 1, 2 ) 
       select case( extrapolationOrder )
       case (2)
-         ! quadratic extrapolation     
+         ! quadratic extrapolation/interpolation     
          etasal = 0.D0 ;
    
          num = (timeloc - ts(2))*(timeloc - ts(3)) ;
@@ -403,7 +402,7 @@ CONTAINS
          den = (  ts(3) - ts(1))*(  ts(3) - ts(2)) ;
          etasal = etasal + (num/den)*sshsal(:,3) ;
       case (1)
-         ! linear extrapolation
+         ! linear extrapolation/interpolation
          etasal = 0.D0 ;
          num = (timeloc - ts(2))  ;
          den = (  ts(1) - ts(2))  ;
@@ -413,18 +412,19 @@ CONTAINS
          den = ( ts(2) - ts(1)) ; 
          etasal = etasal + (num/den)*sshsal(:,2) ; 
       case (0)
-         ! constant extrapolation
-         etasal = sshsal(:,1) ;      
+         ! constant extrapolation/interpolation
+         if ( timeloc >= ts(1) ) then
+            etasal = sshsal(:,1) ; 
+         else if ( timeloc >= ts(2) .and. timeloc < ts(1) ) then
+            etasal = sshsal(:,2) ;
+         else if ( timeloc >= ts(3) .and. timeloc < ts(2) ) then    
+            etasal = sshsal(:,3) ;
+         endif        
       end select
 
-!#if defined(WIND_TRACE) || defined(ALL_TRACE)
-!      call allMessage(DEBUG,"Return.")
-!#endif
-!      call unsetMessageSource()
-
-      return 
-    end subroutine getSelfAttractionLoading 
-    !
+      return ;
+    end subroutine extrapolate_sal_field        
+    ! 
 
     ! 
     subroutine direct_spht_self_attraction_loading_sub( this, ssh_sal, ssh )
@@ -531,9 +531,6 @@ CONTAINS
     subroutine sal_privatedata_init( this, lonv, latv, element, np, ne )
             !    subroutine sal_privatedata_init( this )
       
-!#ifndef NONADC            
-!      use global, only: setMessageSource, unsetMessageSource, allMessage, DEBUG
-!#endif
       implicit none 
 
       class (salmethod), intent(inout):: this
@@ -547,12 +544,6 @@ CONTAINS
 
       real (8), parameter:: eps = 1.0D-10, pii = acos(-1.D0) 
 
-!#ifndef NONADC
-!      call setMessageSource("sal_privatedata_init")
-!#if defined(ALL_TRACE)
-!      call allMessage(DEBUG, "Enter.")
-!#endif
-!#endif
 
       INITSALPRIVATE: if ( this%use_inline_sal ) then
          use_direct_shtns_self_attraction_loading = this%use_direct_shtns_self_attraction_loading ;       
@@ -615,14 +606,7 @@ CONTAINS
 
        endif INITSALPRIVATE
 
-!#ifndef NONADC
-!#if defined(ALL_TRACE)
-!      call allMessage(DEBUG, "Return.")
-!#endif
-!      call unsetMessageSource()
-!#endif
-
-      return ; 
+       return ; 
     contains 
 
       ! will move this to mesh.F
