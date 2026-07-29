@@ -2591,7 +2591,14 @@ C     time stepping loop.
 C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
       SUBROUTINE Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G,
-     &     IFNLFA, NP, TK, NFEN, Z0B)
+     &     IFNLFA, NP, TK, NFEN, Z0B, KP)
+Casey 140701: Prevent the depths from becoming negative in the bottom roughness calculations.
+      USE GLOBAL, ONLY: H0
+      USE SIZES
+! arash May 31 2016
+CSeun 260619: KP is passed from timestep.F to avoid requiring
+C             global_3dvs.mod when compiling nodalattr.F in legacy builds.
+C     USE GLOBAL_3DVS, ONLY : KP
       IMPLICIT NONE
       INTEGER, intent(in) :: NP, NFEN             ! number of nodes in grid Horizontal and Vertical
       COMPLEX(8), intent(in), dimension(NP,NFEN) :: Q  ! x-dir velocities
@@ -2602,6 +2609,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag
       REAL(8), intent(inout), dimension(NP) :: TK! depth avg. fric.
       REAL(8), intent(in) :: Z0B
+      REAL(8), intent(in) :: KP                  ! 3D bottom friction coefficient
 C
       INTEGER NH
       REAL(8) Z0B1  ! velocity magnitude (speed)
@@ -2620,6 +2628,9 @@ C or as read in from nodal attributes
          IF (LoadZ0B_var) THEN
             Z0B1 = Z0B_var(NH)
          ELSEIF (LoadManningsN) THEN
+Casey 140701: Prevent the depths from becoming negative.  Cannot raise
+C             a negative number to the 1/6 power.
+            IF(H1.LT.H0) H1=H0
             Z0B1 = ( H1 )* exp(-(1.0D0+
      &             ( (0.41D0*( H1 )**(1.0D0/6.0D0) )/
      &                            (ManningsN(NH)*sqrt(g)) ) ))
@@ -2642,6 +2653,9 @@ C or as read in from nodal attributes
      &           *(BALPHA+15.d0*BALPHA**4)
             TK(I)=TK(I)+FricBP*ABS(Q(NH,1))/H1
          ENDIF
+! arash May 31 2016 added this based on Rosemary's work
+         If ( TK(NH) > abs( Q(NH,1) ) ) TK(NH) = abs( Q(NH,1) )
+         If ( TK(NH) < KP * abs( Q(NH,1) ) ) TK(NH) = KP * abs( Q(NH,1) )
       ENDDO
 C
       RETURN
