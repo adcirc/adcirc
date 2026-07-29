@@ -4907,13 +4907,6 @@ C
      &                                MoonSunCoordFile, IncludeNutation, 
      &                                k2Value, h2Value)
 
-!!      if ( ntip .EQ. 2  ) then
-!!         call ssh_inline_sal%sal_param_init( useinlinesal = use_inline_sal,
-!!     &         usedirectsh =  sal_use_direct_sh,
-!!     &         usecacheblocking = sal_use_cache_blocking,
-!!     &         shorder = nSHOrder, 
-!!     &         ncellblock = nCellBlock,
-!!     &         salinc = salinc ) ;  
       call  initSALModule( useinlinesal = use_inline_sal,
      &                     inlinesalmethod = inlineSALMethod, 
      &                     usedirectsh = sal_use_direct_sh, 
@@ -4927,9 +4920,7 @@ C
      &                     filterscheme = sh_filter_scheme  ) ;
 
 
-
       call alloc_Main4c() ; 
-!!      endif
 
 C...
 C...  CLOSE FORT.15

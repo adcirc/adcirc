@@ -5818,6 +5818,7 @@ contains
                             '_FillValue', doubleval)
         call check_err(iret)
 
+        !
         iret = nf90_def_var( hs%ncid, 'saltimem0', NF90_DOUBLE, varid=tempid ) 
         call check_err( iret ) ;
 
@@ -5828,20 +5829,25 @@ contains
                             'time_stamp_of_SAL_at_tm0')
         call check_err(iret)
 
+        !
         iret = nf90_def_var( hs%ncid, 'saltimem1', NF90_DOUBLE, varid=tempid ) 
         call check_err( iret ) ; 
+
         iret = nf90_put_att(hs%ncid, tempid, 'long_name', &
                             'time of inline SAL variable etasaltm1' )
         call check_err(iret)
+
         iret = nf90_put_att(hs%ncid, tempid, 'standard_name', &
                             'time_stamp_of_SAL_at_tm1')
         call check_err(iret)
 
+        !
         iret = nf90_def_var( hs%ncid, 'saltimem2', NF90_DOUBLE, varid=tempid ) ; 
         call check_err( iret ) ; 
         iret = nf90_put_att(hs%ncid, tempid, 'long_name', &
                             'time of inline SAL variable etasaltm2' )
         call check_err(iret)
+
         iret = nf90_put_att(hs%ncid, tempid, 'standard_name', &
                             'time_stamp_of_SAL_at_tm2')
         call check_err(iret)
@@ -8080,7 +8086,7 @@ contains
 !     jgf49.17.02 Reads data from the hotstart file.
 !-----------------------------------------------------------------------
    subroutine readNetCDFHotstart(lun, timeLoc)
-      use SIZES, only: globaldir, mnproc
+      use SIZES, only: globaldir, mnproc, myproc
       use GLOBAL, only: OutputDataDescript_t, imhs, iths, nscoue, &
                         nscouv, nscouc, nscoum, nscouge, nscougv, nscougc, &
                         nscougw, ETA1, ETA2, EtaDisc, &
@@ -8291,7 +8297,6 @@ contains
          call check_err(nf90_get_var(hs%ncid, hs%htot1%nodal_data_id, &
                                      htot1, start, kount))
 
-
          if ( CInlineSAL ) then
            ! hot start file containing inline SAL at computed time level
            call check_err(nf90_get_var(hs%ncid, hs%zetasaltm0%nodal_data_id, &
@@ -8313,7 +8318,6 @@ contains
            call check_err( nf90_get_var(hs%ncid, tempid, zetasaltime(3)) ) ; 
          endif
 
-
 !        NOFF
          start(1) = 1
          kount(1) = hs%myMesh%num_elems
@@ -8328,6 +8332,7 @@ contains
          call createFullDomainIndexLists()
 
          ! get fulldomain data and map the data to this subdomain
+         !  map node
          fullDomainIndexList => fullDomainNodeList
          call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes, &
                                        hs%zeta1%nodal_data_id, subdomain_reals=eta1)
@@ -8371,13 +8376,12 @@ contains
          call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_nodes, &
                                        hs%htot1%nodal_data_id, subdomain_reals=htot1)
 
-         fullDomainIndexList => fullDomainElementList
-         call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_elems, &
-                                       hs%noffnc%nodal_data_id, subdomain_ints=noff)
 
          ! Inline SAL 
          if ( CInlineSAL ) then      
            ! zetasaltm0
+           ! print*, MyProc, hs%myMesh%num_nodes ; 
+
            call mapFullDomainToSubdomain( hs%ncid, hs%myMesh%num_nodes, &
                                        hs%zetasaltm0%nodal_data_id, subdomain_reals=zetasaltm0 )
 
@@ -8399,6 +8403,13 @@ contains
            call check_err( nf90_inq_varid(hs%ncid, "saltimem2", tempid) ) ; 
            call check_err( nf90_get_var(hs%ncid, tempid, zetasaltime(3)) ) ; 
          endif
+
+
+         ! map element
+         fullDomainIndexList => fullDomainElementList
+         call mapFullDomainToSubdomain(hs%ncid, hs%myMesh%num_elems, &
+                                       hs%noffnc%nodal_data_id, subdomain_ints=noff)
+
       end if
 
 !     Read in model parameters to ADCIRC variables
@@ -8833,7 +8844,9 @@ contains
 !     jgf50.60.03 Maps full domain data to subdomain.
 !-----------------------------------------------------------------------
    subroutine mapFullDomainToSubdomain(ncid, fd_array_size, &
-                                       data_id, subdomain_reals, subdomain_ints)
+                                       data_id, subdomain_reals, subdomain_ints )
+      USE SIZES, ONLY : inputDir, globalDir, myproc
+                         
       implicit none
       integer, intent(in) :: ncid ! file id to pull data from
       integer, intent(in) :: fd_array_size ! highest index in fulldomain array
@@ -8845,10 +8858,12 @@ contains
       integer, allocatable :: work_ints(:) ! holds fulldomain data
       integer :: iret ! success or failure of the netcdf call
 
+
       LOG_SCOPE_TRACED("mapFullDomainToSubDomain", NETCDFIO_TRACING)
 
       ! grab array of full domain data from netcdf file and pull out the
       ! data that is needed for this subdomain
+
       if (present(subdomain_reals)) then
          allocate (work_reals(fd_array_size))
          iret = nf90_get_var(ncid, data_id, work_reals)
