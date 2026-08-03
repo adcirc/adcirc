@@ -16,4 +16,3 @@ Usage Notes
 
 The other :ref:`fort.15 file <fort15>` parameter, :ref:`NTIP <ntip_parameter>`, must
 be set to 1 or 2.
-

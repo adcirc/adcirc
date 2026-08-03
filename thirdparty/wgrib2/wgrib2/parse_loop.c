@@ -13,7 +13,7 @@
  *   if_n, if_rec, for and for_n
  *
  * this routine parse the start,end and step
- *  
+ *
  * 8/2010 in public domain Wesley Ebisuzaki
  */
 
@@ -36,7 +36,7 @@ int parse_loop(const char *string, int *start, int *end, int *step) {
 	    *step = 1;
 	    *end = INT_MAX;
         }
-    } 
+    }
     else if (i != 3) fatal_error("parse_loop: expected start:end:step found %s", string);
 
     if (*start <= 0) fatal_error("parse_loop: start <= 0 %s", string);

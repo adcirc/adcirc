@@ -66,7 +66,7 @@ FILE *ffopen(const char *filename, const char *mode)
 	if (*p == 'w') is_write_file = 1;
 	if (*p++ == 'a') is_append_file = 1;
     }
-    if (is_read_file + is_write_file + is_append_file != 1) 
+    if (is_read_file + is_write_file + is_append_file != 1)
         fatal_error("ffopen: mode is bad %s", mode);
 
     if (strcmp(filename,"-") == 0) {
@@ -80,11 +80,11 @@ FILE *ffopen(const char *filename, const char *mode)
     }
 
     /* see if file has already been opened */
-	
+
     ptr = opened_file_start;
     while (ptr != NULL) {
 	if (strcmp(filename,ptr->name) == 0) {
-	    
+
             /* ptr->usage_count   should be zero at start of wgrib2 call
                ptr->is_read_flag, file was opened in read mode
                have to check if the open was for previous wgrib2 call
@@ -333,7 +333,7 @@ void status_ffopen(void) {
     struct opened_file *ptr;
     ptr = opened_file_start;
     while (ptr != NULL) {
-        fprintf(stderr, "file: %s %c:%s file_offset=%ld usage=%d\n", ptr->name, ptr->is_read_file ? 'r' : 'w', 
+        fprintf(stderr, "file: %s %c:%s file_offset=%ld usage=%d\n", ptr->name, ptr->is_read_file ? 'r' : 'w',
 		ptr->do_not_close_flag ? "perm":"tran", ftell(ptr->handle), ptr->usage_count);
 	ptr = ptr->next;
     }

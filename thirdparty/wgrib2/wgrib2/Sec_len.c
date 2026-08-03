@@ -37,12 +37,12 @@ int f_Sec_len(ARG0) {
         sprintf(inv_out," id(1)=%u", uint4(sec[1]));
         inv_out += strlen(inv_out);
 
-	if (sec[2] != NULL) 
+	if (sec[2] != NULL)
            sprintf(inv_out," local(2)=%u%s", uint4(sec[2]),new_sec2);
 	else
            sprintf(inv_out," local(2)=0");
         inv_out += strlen(inv_out);
-	
+
         sprintf(inv_out," grid(3)=%u%s", uint4(sec[3]),new_sec3);
         inv_out += strlen(inv_out);
 
@@ -52,7 +52,7 @@ int f_Sec_len(ARG0) {
         sprintf(inv_out," data-rep(5)=%u", uint4(sec[5]));
         inv_out += strlen(inv_out);
 
-	if (sec[5] != NULL) 
+	if (sec[5] != NULL)
            sprintf(inv_out," bitmap(6)=%u", uint4(sec[6]));
 	else
            sprintf(inv_out," bitmap(6)=0");

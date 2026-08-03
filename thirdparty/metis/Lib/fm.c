@@ -48,7 +48,7 @@ void FM_2WayEdgeRefine(CtrlType *ctrl, GraphType *graph, int *tpwgts, int npasse
   PQueueInit(ctrl, &parts[0], nvtxs, tmp);
   PQueueInit(ctrl, &parts[1], nvtxs, tmp);
 
-  IFSET(ctrl->dbglvl, DBG_REFINE, 
+  IFSET(ctrl->dbglvl, DBG_REFINE,
      printf("Partitions: [%6d %6d] T[%6d %6d], Nv-Nb[%6d %6d]. ICut: %6d\n",
              pwgts[0], pwgts[1], tpwgts[0], tpwgts[1], graph->nvtxs, graph->nbnd, graph->mincut));
 
@@ -86,7 +86,7 @@ void FM_2WayEdgeRefine(CtrlType *ctrl, GraphType *graph, int *tpwgts, int npasse
       newcut -= (ed[higain]-id[higain]);
       INC_DEC(pwgts[to], pwgts[from], vwgt[higain]);
 
-      if ((newcut < mincut && abs(tpwgts[0]-pwgts[0]) <= origdiff+avgvwgt) || 
+      if ((newcut < mincut && abs(tpwgts[0]-pwgts[0]) <= origdiff+avgvwgt) ||
           (newcut == mincut && abs(tpwgts[0]-pwgts[0]) < mindiff)) {
         mincut = newcut;
         mindiff = abs(tpwgts[0]-pwgts[0]);
@@ -102,14 +102,14 @@ void FM_2WayEdgeRefine(CtrlType *ctrl, GraphType *graph, int *tpwgts, int npasse
       moved[higain] = nswaps;
       swaps[nswaps] = higain;
 
-      IFSET(ctrl->dbglvl, DBG_MOVEINFO, 
+      IFSET(ctrl->dbglvl, DBG_MOVEINFO,
         printf("Moved %6d from %d. [%3d %3d] %5d [%4d %4d]\n", higain, from, ed[higain]-id[higain], vwgt[higain], newcut, pwgts[0], pwgts[1]));
 
       /**************************************************************
       * Update the id[i]/ed[i] values of the affected nodes
       ***************************************************************/
       SWAP(id[higain], ed[higain], tmp);
-      if (ed[higain] == 0 && xadj[higain] < xadj[higain+1]) 
+      if (ed[higain] == 0 && xadj[higain] < xadj[higain+1])
         BNDDelete(nbnd, bndind,  bndptr, higain);
 
       for (j=xadj[higain]; j<xadj[higain+1]; j++) {
@@ -134,7 +134,7 @@ void FM_2WayEdgeRefine(CtrlType *ctrl, GraphType *graph, int *tpwgts, int npasse
         else {
           if (ed[k] > 0) {  /* It will now become a boundary vertex */
             BNDInsert(nbnd, bndind, bndptr, k);
-            if (moved[k] == -1) 
+            if (moved[k] == -1)
               PQueueInsert(&parts[where[k]], k, ed[k]-id[k]);
           }
         }
@@ -172,7 +172,7 @@ void FM_2WayEdgeRefine(CtrlType *ctrl, GraphType *graph, int *tpwgts, int npasse
       }
     }
 
-    IFSET(ctrl->dbglvl, DBG_REFINE, 
+    IFSET(ctrl->dbglvl, DBG_REFINE,
       printf("\tMinimum cut: %6d at %5d, PWGTS: [%6d %6d], NBND: %6d\n", mincut, mincutorder, pwgts[0], pwgts[1], nbnd));
 
     graph->mincut = mincut;
@@ -190,5 +190,3 @@ void FM_2WayEdgeRefine(CtrlType *ctrl, GraphType *graph, int *tpwgts, int npasse
   idxwspacefree(ctrl, nvtxs);
 
 }
-
-

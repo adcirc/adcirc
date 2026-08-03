@@ -7,8 +7,8 @@ PURPOSE:	The first method to Transform input Easting and Northing to
 		and latitude values will be returned in radians.
 
 PROGRAM HISTORY
-PROGRAMMER              DATE            
-----------              ----           
+PROGRAMMER              DATE
+----------              ----
 D. Steinwand            July, 1992
 T. Mittan		Mar,  1993
 
@@ -155,7 +155,7 @@ return(OK);
 
 long sominv(double x, double y, double *lon, double *lat) {
 //long sominv(y, x, lon, lat)
-// 
+//
 //double x;               /* (I) X projection coordinate */
 //double y;               /* (I) Y projection coordinate */
 //double *lon;            /* (O) Longitude */
@@ -164,8 +164,8 @@ long sominv(double x, double y, double *lon, double *lat) {
 double tlon,conv,sav,sd,sdsq,blon,dif,st,defac,actan,tlat,dd,bigk,bigk2,xlamt;
 double sl,scl,dlat,dlon,temp;
 long inumb;
- 
-/* Inverse equations. Begin inverse computation with approximation for tlon. 
+
+/* Inverse equations. Begin inverse computation with approximation for tlon.
    Solve for transformed long.
   ---------------------------*/
 temp=y; y=x - false_easting; x= temp - false_northing;
@@ -178,12 +178,12 @@ for(inumb=0;inumb<50;inumb++)
    sdsq=sd*sd;
    s=p21*sa*cos(tlon)*sqrt((1.0+t*sdsq)/((1.0+w*sdsq)*(1.0+q*sdsq)));
    blon=(x/a)+(y/a)*s/xj-a2*sin(2.0*tlon)-a4*sin(4.0*tlon)-(s/xj)*(c1*
-          sin(tlon)+c3*sin(3.0*tlon)); 
+          sin(tlon)+c3*sin(3.0*tlon));
    tlon=blon/b;
    dif=tlon-sav;
-   if(fabs(dif)<conv)break; 
+   if(fabs(dif)<conv)break;
    }
-if(inumb>=50)  
+if(inumb>=50)
    {
    p_error("50 iterations without convergence","som-inverse");
    return(214);
@@ -200,7 +200,7 @@ tlat=2.0*(actan-(PI/4.0));
   --------------------------*/
 dd=st*st;
 if(fabs(cos(tlon))<1.e-7) tlon=tlon-1.e-7;
-bigk=sin(tlat); 
+bigk=sin(tlat);
 bigk2=bigk*bigk;
 xlamt=atan(((1.0-bigk2/(1.0-es))*tan(tlon)*ca-bigk*sa*sqrt((1.0+q*dd)
             *(1.0-bigk2)-bigk2*u)/cos(tlon))/(1.0-bigk2*(1.0+u)));
@@ -224,11 +224,11 @@ else
 *lat = dlat;
 return(OK);
 }
- 
 
 
 
-/* Series to calculate a,b,c coefficients to convert from transform 
+
+/* Series to calculate a,b,c coefficients to convert from transform
    latitude,longitude to Space Oblique Mercator (SOM) rectangular coordinates
 
    Mathematical analysis by John Snyder 6/82
@@ -241,7 +241,7 @@ static void som_series(double *fb, double *fa2, double *fa4, double *fc1,
 double sd,sdsq,h,sq,fc;
 
 *dlam= *dlam*0.0174532925;		/* Convert dlam to radians */
-sd=sin(*dlam); 
+sd=sin(*dlam);
 sdsq=sd*sd;
 s=p21*sa*cos(*dlam)*sqrt((1.0+t*sdsq)/((1.0+w*sdsq)*(1.0+q*sdsq)));
 h=sqrt((1.0+q*sdsq)/(1.0+w*sdsq))*(((1.0+w*sdsq)/((1.0+q*sdsq)*(1.0+

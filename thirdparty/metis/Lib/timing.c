@@ -85,5 +85,3 @@ double seconds(void)
   t1 = tv.tv_sec + tv.tv_usec * 1.0e-6;
   return t1;
 }
-
-

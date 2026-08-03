@@ -20,5 +20,3 @@ MetGet is an application which allows users to query, format, and blend meteorol
 * GitHub Repository: https://github.com/waterinstitute/MetGet
 
 MetGet is available under the MIT license and is developed by The Water Institute. It works in tandem with the Floodwater forecasting system.
-
- 

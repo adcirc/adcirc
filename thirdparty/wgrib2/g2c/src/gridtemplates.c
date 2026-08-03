@@ -416,7 +416,7 @@ g2c_get_grid_template(int grid_template_num, int *maplen, int *map, int *needext
 }
 
 /**
- * Get initial length (number of entries) in static part of 
+ * Get initial length (number of entries) in static part of
  * Grid Definition Template.
  *
  * @param grid_template_num The Grid template number.

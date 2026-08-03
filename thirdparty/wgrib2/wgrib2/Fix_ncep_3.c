@@ -50,7 +50,7 @@ int fix_ncep_3(unsigned char **sec) {
             sec[5][17] = sec[5][18] = 0;
         }
     }
-    else if (j == 50 || j == 51) {		// spectral 
+    else if (j == 50 || j == 51) {		// spectral
 	if (sec[5][19] == 0) {
 	    sec[5][17] = sec[5][18] = 0;
 	}

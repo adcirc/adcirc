@@ -26,4 +26,4 @@ Notes
 - The temperature values should be specified for all ocean boundary nodes
 - Each dataset should include a comment line with the date
 - TEMPBC(k,m) represents the temperature value at node k and vertical level m
-- NFEN is the number of vertical levels in the model 
+- NFEN is the number of vertical levels in the model

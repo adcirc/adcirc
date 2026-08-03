@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -251,7 +251,7 @@ C
       REAL(8), ALLOCATABLE,TARGET :: YELAV(:)
       REAL(8), ALLOCATABLE,TARGET :: XELVA(:)
       REAL(8), ALLOCATABLE,TARGET :: YELVA(:)
-     
+
 
 C-----------------END OF DECLARATIONS---------------------------------------
 
@@ -352,13 +352,13 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E   W R I T E   H A 
+C     S U B R O U T I N E   W R I T E   H A
 C--------------------------------------------------------------------
 C     jgf50.97: Writes LHS matrix to a file for use in debugging.
 C--------------------------------------------------------------------
       SUBROUTINE writeHA(timesec, it)
       USE SIZES, ONLY : globaldir, myproc
-      IMPLICIT NONE     
+      IMPLICIT NONE
       REAL(8) :: timesec ! time in seconds since cold start
       INTEGER :: it      ! current adcirc time step number
       INTEGER :: i, j    ! loop counters
@@ -368,7 +368,7 @@ C
          OPEN(56,FILE=TRIM(GLOBALDIR)//'/'//'fort.56',
      &      STATUS='UNKNOWN',ACCESS='SEQUENTIAL',ACTION='WRITE',
      &      POSITION='APPEND')
-         WRITE(56,2120) timesec, it 
+         WRITE(56,2120) timesec, it
          DO i=1,2*MNHARF
             DO j=1,2*MNHARF
                write(56,2130) i, j, ha(i,j)
@@ -414,7 +414,7 @@ C
          CALL logMessage(INFO,
      &        'STATION ELEVATION HARMONIC ANALYSIS'
      &        //' WILL BE WRITTEN TO UNIT 51 IN NETCDF FORMAT.')
-         useNetCDF = .true. 
+         useNetCDF = .true.
          useNetCDFOutput = .true.
       ENDIF
 
@@ -434,7 +434,7 @@ C
          CALL logMessage(INFO,
      &        'STATION VELOCITY HARMONIC ANALYSIS'
      &        //' WILL BE WRITTEN TO UNIT 52 IN NETCDF FORMAT.')
-         useNetCDF = .true. 
+         useNetCDF = .true.
          useNetCDFOutput = .true.
       ENDIF
 
@@ -454,7 +454,7 @@ C
          CALL logMessage(INFO,
      &        'FULL DOMAIN ELEVATION HARMONIC ANALYSIS'
      &        //' WILL BE WRITTEN TO UNIT 53 IN NETCDF FORMAT.')
-         useNetCDF = .true. 
+         useNetCDF = .true.
          useNetCDFOutput = .true.
       ENDIF
 
@@ -474,7 +474,7 @@ C
          CALL logMessage(INFO,
      &        'FULL DOMAIN VELOCITY HARMONIC ANALYSIS'
      &        //' WILL BE WRITTEN TO UNIT 54 NETCDF FORMAT.')
-         useNetCDF = .true. 
+         useNetCDF = .true.
          useNetCDFOutput = .true.
       ENDIF
 
@@ -492,7 +492,7 @@ C     WJP 02.20.2018: Allowing for > 1 options for netcdf output
 C--------------------------------------------------------------------
       SUBROUTINE initHarmonicParameters()
       USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MNPROC, myProc,
-     &                   WRITE_LOCAL_HARM_FILES, 
+     &                   WRITE_LOCAL_HARM_FILES,
      &                   WRITE_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, NHSTAR
       USE MESH, ONLY : NP
@@ -505,7 +505,7 @@ C--------------------------------------------------------------------
 
          RETURN ! EARLY RETURN if harmonic analysis is not part of this run
       ENDIF
-      ! 
+      !
       ! jgf51.44: If subdomain harmonic analysis files will be written
       ! in parallel, subdomain hotstart files are also required for
       ! saving the load vectors and rhs of the harmonic analysis problem.
@@ -525,13 +525,13 @@ C--------------------------------------------------------------------
      &                 //'command line to specify that hotstart files '
      &                 //'should be written for each subdomain.')
          endif
-         if ( (NHSTAR.ne.0).and. 
+         if ( (NHSTAR.ne.0).and.
      &        (write_local_hot_start_files.eqv..true.) ) then
             call logMessage(INFO,'Subdomain hotstart files will '
      &       // 'contain subdomain harmonic analysis data.')
          endif
       endif
-      
+
       IHABEG = ITHAS + NHAINC
       ICHA=0
       icall=0
@@ -637,14 +637,14 @@ C...
 C...
 C.....UPDATE THE LHS MATRIX
 C...
-C.... BEG: DW 2019       
-               IF ( (NHASV .EQ. 1) .OR. (NHAGV .EQ. 1) ) THEN 
+C.... BEG: DW 2019
+               IF ( (NHASV .EQ. 1) .OR. (NHAGV .EQ. 1) ) THEN
                   IF ( IFSPROTS .EQ. 1 ) THEN
                      UVECTMP = UU2 ;
                      VVECTMP = VV2 ;
-                     
+
                      CALL DRVMAP2DSPVEC( UU2, VV2,
-     &                    UVECTMP, VVECTMP, NP, FWD = .FALSE. )   
+     &                    UVECTMP, VVECTMP, NP, FWD = .FALSE. )
                   END IF
                END IF
 C.... DW
@@ -688,8 +688,8 @@ C.....IF DESIRED UPDATE GLOBAL VELOCITY LOAD VECTOR
 C...
                IF(NHAGV.ne.0) CALL LSQUPDVG(UU2,VV2,NP)
 
-C.... BEG: DW 2019       
-               IF ( (NHASV .EQ. 1) .OR. (NHAGV .EQ. 1) ) THEN 
+C.... BEG: DW 2019
+               IF ( (NHASV .EQ. 1) .OR. (NHAGV .EQ. 1) ) THEN
                   IF ( IFSPROTS .EQ. 1 ) THEN
                      UU2 = UVECTMP ;
                      VV2 = VVECTMP ;
@@ -1716,7 +1716,7 @@ c
 c
 c     Read in LHS Matrix
       counter = counter + 1
-      
+
       ! jgf50.96: do not use binaryRead3D(HA, mm, mm, lun, counter)
       ! b/c HA is written with an inner j loop while binaryRead3D is
       ! written with an inner i loop
@@ -1823,7 +1823,7 @@ C     Map data from fulldomain to subdomain in parallel
                ENDDO
             ENDDO
          ENDIF
-         
+
 C..      Map Means and Squares
          IF (CHARMV.eqv..true.) THEN
             IF ((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN

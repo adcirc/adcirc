@@ -1,7 +1,7 @@
 /*
  * coarsen.c
  *
- * This file contains the driving routines for the coarsening process 
+ * This file contains the driving routines for the coarsening process
  *
  * Started 7/23/97
  * George
@@ -36,7 +36,7 @@ GraphType *Coarsen2Way(CtrlType *ctrl, GraphType *graph)
 
   do {
     IFSET(ctrl->dbglvl, DBG_COARSEN, printf("%6d %7d [%d] [%d %d]\n",
-          cgraph->nvtxs, cgraph->nedges, ctrl->CoarsenTo, ctrl->maxvwgt, 
+          cgraph->nvtxs, cgraph->nedges, ctrl->CoarsenTo, ctrl->maxvwgt,
           (cgraph->vwgt ? idxsum(cgraph->nvtxs, cgraph->vwgt) : cgraph->nvtxs)));
 
     if (cgraph->adjwgt) {
@@ -70,14 +70,13 @@ GraphType *Coarsen2Way(CtrlType *ctrl, GraphType *graph)
     cgraph = cgraph->coarser;
     clevel++;
 
-  } while (cgraph->nvtxs > ctrl->CoarsenTo && cgraph->nvtxs < COARSEN_FRACTION2*cgraph->finer->nvtxs && cgraph->nedges > cgraph->nvtxs/2); 
+  } while (cgraph->nvtxs > ctrl->CoarsenTo && cgraph->nvtxs < COARSEN_FRACTION2*cgraph->finer->nvtxs && cgraph->nedges > cgraph->nvtxs/2);
 
   IFSET(ctrl->dbglvl, DBG_COARSEN, printf("%6d %7d [%d] [%d %d]\n",
-        cgraph->nvtxs, cgraph->nedges, ctrl->CoarsenTo, ctrl->maxvwgt, 
+        cgraph->nvtxs, cgraph->nedges, ctrl->CoarsenTo, ctrl->maxvwgt,
         (cgraph->vwgt ? idxsum(cgraph->nvtxs, cgraph->vwgt) : cgraph->nvtxs)));
 
   IFSET(ctrl->dbglvl, DBG_TIME, stoptimer(ctrl->CoarsenTmr));
 
   return cgraph;
 }
-

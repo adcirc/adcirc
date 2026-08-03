@@ -10,7 +10,7 @@ data in a variety of formats.  One such format supported by JasPer
 is the JPEG-2000 format defined in ISO/IEC 15444-1.
 This software was developed by
 <a href="http://www.ece.uvic.ca/~mdadams">Michael Adams</a>
-from the Department of Electrical and Computer Engineering at the 
+from the Department of Electrical and Computer Engineering at the
 University of Victoria, Victoria, BC, Canada.
 
 @section license License
@@ -30,5 +30,3 @@ issue-tracking system on GitHub are easy to be lost.
 */
 
 //@mainpage notitle
-
-

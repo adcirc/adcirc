@@ -101,7 +101,7 @@ int f_new_grid_vectors(ARG1) {
 
 	from = arg1;
 	to = save->buff;
-	
+
 	for (i = 0; i <= n; i++) {
 	    save->uv_vectors[i] = to;
 	    while (*from != '\0' && *from != ':') {
@@ -174,7 +174,7 @@ static int ipopt[20] = {-1,-1,0, 0,0,0, 0,0,0, 0};
  */
 
 int f_new_grid_interpolation(ARG1) {
-   
+
 // #ifdef USE_SPECTRAL
    char type;
    int max_wave;
@@ -508,7 +508,7 @@ int f_new_grid(ARG4) {
 	    save->defined_lat_lon = 1;
 
 	    /* setup sec3 */
-	    
+
 	    int_char(35, unstruct_grid_sec3 + 0);	/* size of sec 3 */
 	    unstruct_grid_sec3[4] = 3;			/* this is sec 3 */
 	    unstruct_grid_sec3[5] = 0;
@@ -579,8 +579,8 @@ int f_new_grid(ARG4) {
         save->data_out = (double *) malloc(2 * sizeof(double) * (size_t) n_out);
         save->data_wrt = (float *) malloc(sizeof(double) * (size_t) n_out);
         save->bitmap_out = (unsigned char *) malloc(sizeof(char) * (size_t) n_out);
-	if (save->rlat == NULL || save->rlon == NULL || save->crot == NULL || save->srot == NULL || 
-		save->data_out == NULL || save->data_wrt == NULL || save->bitmap_out == NULL) 
+	if (save->rlat == NULL || save->rlon == NULL || save->crot == NULL || save->srot == NULL ||
+		save->data_out == NULL || save->data_wrt == NULL || save->bitmap_out == NULL)
                 fatal_error("new_grid memory allocation","");
         return 0;
     }
@@ -714,7 +714,7 @@ int f_new_grid(ARG4) {
         p = code_table_3_2_location(sec);
 	/* new_grid will only interpolate to grid with shape of earth in 16 bytes*/
         if (p) for (i = 0; i < 16; i++)  save->sec3[14+i] = p[i];
- 
+
         i = getName(sec, mode, NULL, name, NULL, NULL);
 
         is_u = is_v = 0;
@@ -737,7 +737,7 @@ int f_new_grid(ARG4) {
             return 0;
         }
 
-        // if U field - to sec 
+        // if U field - to sec
 
         if (is_u) {
             if (save->has_u > 0) {
@@ -756,7 +756,7 @@ int f_new_grid(ARG4) {
 
 
 	/* if grib output and output_latlon == 1, write out grib lat/lon */
-	
+
 	if (save->output_latlon == 1 && new_grid_format == grib ) {
             n_out = save->npnts_out;
             nnx = save->nx;
@@ -822,9 +822,9 @@ int f_new_grid(ARG4) {
 
 	/* data format for ipolates, calling double precision ip2lib
            double precision data_in[0..npts-1] for scalar
-           double precision data_in[0..2*npts-1] for vector 
+           double precision data_in[0..2*npts-1] for vector
            ibi = 0 if bitmap[] is not used (all defined)
-                 1 if bitmap[] is used 
+                 1 if bitmap[] is used
          */
 
 	ibi = 0;
@@ -875,16 +875,16 @@ int f_new_grid(ARG4) {
         ftn_nout = (int) n_out;
 
         if (is_v) {
-            ipolatev_grib2_single_field(&tmp_interpol_type, ipopt, &gdtnum_in, &(gdt_in[0]), 
-		&gdt_in_size, &(save->gdtnum_out), 
+            ipolatev_grib2_single_field(&tmp_interpol_type, ipopt, &gdtnum_in, &(gdt_in[0]),
+		&gdt_in_size, &(save->gdtnum_out),
 		&(save->gdt_out[0]), &(save->gdt_out_size),
                 &ftn_npnts, &ftn_nout, &km, &ibi, bitmap, data_in, data_in+ndata, &n_out,
-                save->rlat,save->rlon,save->crot,save->srot, &ibo, save->bitmap_out, save->data_out, 
+                save->rlat,save->rlon,save->crot,save->srot, &ibo, save->bitmap_out, save->data_out,
                 save->data_out + n_out, &iret);
         }
         else {
-            ipolates_grib2_single_field(&tmp_interpol_type, ipopt, &gdtnum_in, &(gdt_in[0]), 
-		&gdt_in_size, &(save->gdtnum_out), 
+            ipolates_grib2_single_field(&tmp_interpol_type, ipopt, &gdtnum_in, &(gdt_in[0]),
+		&gdt_in_size, &(save->gdtnum_out),
 		&(save->gdt_out[0]), &(save->gdt_out_size),
                 &ftn_npnts, &ftn_nout, &km, &ibi, bitmap, data_in, &n_out,
                 save->rlat,save->rlon, &ibo, save->bitmap_out, save->data_out, &iret);
@@ -1016,7 +1016,7 @@ int f_new_grid(ARG4) {
         }
 
 	if (flush_mode) fflush_file(&(save->out));
-	/* cleanup for u/v case */    
+	/* cleanup for u/v case */
         if (is_v != 0) {
             save->has_u = 0;
             free(save->u_val);

@@ -63,4 +63,3 @@ vv
 Once ECMWF_gribtable is finalized, make ECMWF_gribtable.dat
 
 ../../make_gribtable.sh ECMWF_gribtable
-

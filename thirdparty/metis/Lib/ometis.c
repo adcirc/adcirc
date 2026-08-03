@@ -19,8 +19,8 @@
 /*************************************************************************
 * This function is the entry point for OEMETIS
 **************************************************************************/
-void METIS_EdgeND(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *options, 
-                  idxtype *perm, idxtype *iperm) 
+void METIS_EdgeND(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *options,
+                  idxtype *perm, idxtype *iperm)
 {
   int i, j;
   GraphType graph;
@@ -76,8 +76,8 @@ void METIS_EdgeND(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int 
 /*************************************************************************
 * This function is the entry point for ONCMETIS
 **************************************************************************/
-void METIS_NodeND(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *options, 
-                  idxtype *perm, idxtype *iperm) 
+void METIS_NodeND(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int *options,
+                  idxtype *perm, idxtype *iperm)
 {
   int i, ii, j, l, wflag, nflag;
   GraphType graph;
@@ -116,7 +116,7 @@ void METIS_NodeND(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int 
 
   InitRandom(-1);
 
-  if (ctrl.pfactor > 0) { 
+  if (ctrl.pfactor > 0) {
     /*============================================================
     * Prune the dense columns
     ==============================================================*/
@@ -126,7 +126,7 @@ void METIS_NodeND(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int 
   }
   else if (ctrl.oflags&OFLAG_COMPRESS) {
     /*============================================================
-    * Compress the graph 
+    * Compress the graph
     ==============================================================*/
     cptr = idxmalloc(*nvtxs+1, "ONMETIS: cptr");
     cind = idxmalloc(*nvtxs, "ONMETIS: cind");
@@ -146,12 +146,12 @@ void METIS_NodeND(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int 
 
 
   /*=============================================================
-  * Do the nested dissection ordering 
+  * Do the nested dissection ordering
   --=============================================================*/
   ctrl.maxvwgt = 1.5*(idxsum(graph.nvtxs, graph.vwgt)/ctrl.CoarsenTo);
   AllocateWorkSpace(&ctrl, &graph, 2);
 
-  if (ctrl.oflags&OFLAG_CCMP) 
+  if (ctrl.oflags&OFLAG_CCMP)
     MlevelNestedDissectionCC(&ctrl, &graph, iperm, ORDER_UNBALANCE_FRACTION, graph.nvtxs);
   else
     MlevelNestedDissection(&ctrl, &graph, iperm, ORDER_UNBALANCE_FRACTION, graph.nvtxs);
@@ -159,7 +159,7 @@ void METIS_NodeND(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int 
   FreeWorkSpace(&ctrl, &graph);
 
   if (ctrl.pfactor > 0) { /* Order any prunned vertices */
-    if (graph.nvtxs < *nvtxs) { 
+    if (graph.nvtxs < *nvtxs) {
       idxcopy(graph.nvtxs, iperm, perm);  /* Use perm as an auxiliary array */
       for (i=0; i<graph.nvtxs; i++)
         iperm[piperm[i]] = perm[i];
@@ -170,10 +170,10 @@ void METIS_NodeND(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int 
     GKfree(&piperm, LTERM);
   }
   else if (ctrl.oflags&OFLAG_COMPRESS) { /* Uncompress the ordering */
-    if (graph.nvtxs < COMPRESSION_FRACTION*(*nvtxs)) { 
+    if (graph.nvtxs < COMPRESSION_FRACTION*(*nvtxs)) {
       /* construct perm from iperm */
       for (i=0; i<graph.nvtxs; i++)
-        perm[iperm[i]] = i; 
+        perm[iperm[i]] = i;
       for (l=ii=0; ii<graph.nvtxs; ii++) {
         i = perm[ii];
         for (j=cptr[i]; j<cptr[i+1]; j++)
@@ -201,8 +201,8 @@ void METIS_NodeND(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numflag, int 
 * This function is the entry point for ONWMETIS. It requires weights on the
 * vertices. It is for the case that the matrix has been pre-compressed.
 **************************************************************************/
-void METIS_NodeWND(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, int *numflag, 
-                   int *options, idxtype *perm, idxtype *iperm) 
+void METIS_NodeWND(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, int *numflag,
+                   int *options, idxtype *perm, idxtype *iperm)
 {
   int i, j, tvwgt;
   GraphType graph;
@@ -294,7 +294,7 @@ void MlevelNestedDissection(CtrlType *ctrl, GraphType *graph, idxtype *order, fl
   nbnd = graph->nbnd;
   bndind = graph->bndind;
   label = graph->label;
-  for (i=0; i<nbnd; i++) 
+  for (i=0; i<nbnd; i++)
     order[label[bndind[i]]] = --lastvtx;
 
   SplitGraphOrder(ctrl, graph, &lgraph, &rgraph);
@@ -302,16 +302,16 @@ void MlevelNestedDissection(CtrlType *ctrl, GraphType *graph, idxtype *order, fl
   /* Free the memory of the top level graph */
   GKfree(&graph->gdata, &graph->rdata, &graph->label, LTERM);
 
-  if (rgraph.nvtxs > MMDSWITCH) 
+  if (rgraph.nvtxs > MMDSWITCH)
     MlevelNestedDissection(ctrl, &rgraph, order, ubfactor, lastvtx);
   else {
-    MMDOrder(ctrl, &rgraph, order, lastvtx); 
+    MMDOrder(ctrl, &rgraph, order, lastvtx);
     GKfree(&rgraph.gdata, &rgraph.rdata, &rgraph.label, LTERM);
   }
-  if (lgraph.nvtxs > MMDSWITCH) 
+  if (lgraph.nvtxs > MMDSWITCH)
     MlevelNestedDissection(ctrl, &lgraph, order, ubfactor, lastvtx-rgraph.nvtxs);
   else {
-    MMDOrder(ctrl, &lgraph, order, lastvtx-rgraph.nvtxs); 
+    MMDOrder(ctrl, &lgraph, order, lastvtx-rgraph.nvtxs);
     GKfree(&lgraph.gdata, &lgraph.rdata, &lgraph.label, LTERM);
   }
 }
@@ -341,7 +341,7 @@ void MlevelNestedDissectionCC(CtrlType *ctrl, GraphType *graph, idxtype *order, 
   nbnd = graph->nbnd;
   bndind = graph->bndind;
   label = graph->label;
-  for (i=0; i<nbnd; i++) 
+  for (i=0; i<nbnd; i++)
     order[label[bndind[i]]] = --lastvtx;
 
   cptr = idxmalloc(nvtxs, "MlevelNestedDissectionCC: cptr");
@@ -380,13 +380,13 @@ void MlevelNestedDissectionCC(CtrlType *ctrl, GraphType *graph, idxtype *order, 
 
 
 /*************************************************************************
-* This function performs multilevel bisection. It performs multiple 
+* This function performs multilevel bisection. It performs multiple
 * bisections and selects the best.
 **************************************************************************/
 void MlevelNodeBisectionMultiple(CtrlType *ctrl, GraphType *graph, int *tpwgts, float ubfactor)
 {
   int i, nvtxs, cnvtxs, mincut, tmp;
-  GraphType *cgraph; 
+  GraphType *cgraph;
   idxtype *bestwhere;
 
   if (ctrl->nseps == 1 || graph->nvtxs < (ctrl->oflags&OFLAG_COMPRESS ? 1000 : 2000)) {
@@ -411,7 +411,7 @@ void MlevelNodeBisectionMultiple(CtrlType *ctrl, GraphType *graph, int *tpwgts, 
       }
 
       GKfree(&graph->rdata, LTERM);
-    
+
       if (mincut == 0)
         break;
     }
@@ -445,7 +445,7 @@ void MlevelNodeBisectionMultiple(CtrlType *ctrl, GraphType *graph, int *tpwgts, 
       }
 
       GKfree(&cgraph->rdata, LTERM);
-    
+
       if (mincut == 0)
         break;
     }
@@ -528,7 +528,7 @@ void SplitGraphOrder(CtrlType *ctrl, GraphType *graph, GraphType *lgraph, GraphT
   ASSERT(bndptr != NULL);
 
   rename = idxwspacemalloc(ctrl, nvtxs);
-  
+
   snvtxs[0] = snvtxs[1] = snvtxs[2] = snedges[0] = snedges[1] = snedges[2] = 0;
   for (i=0; i<nvtxs; i++) {
     k = where[i];
@@ -540,16 +540,16 @@ void SplitGraphOrder(CtrlType *ctrl, GraphType *graph, GraphType *lgraph, GraphT
   sxadj[0] = lgraph->xadj;
   svwgt[0] = lgraph->vwgt;
   sadjwgtsum[0] = lgraph->adjwgtsum;
-  sadjncy[0] = lgraph->adjncy; 
-  sadjwgt[0] = lgraph->adjwgt; 
+  sadjncy[0] = lgraph->adjncy;
+  sadjwgt[0] = lgraph->adjwgt;
   slabel[0] = lgraph->label;
 
   SetUpSplitGraph(graph, rgraph, snvtxs[1], snedges[1]);
   sxadj[1] = rgraph->xadj;
   svwgt[1] = rgraph->vwgt;
   sadjwgtsum[1] = rgraph->adjwgtsum;
-  sadjncy[1] = rgraph->adjncy; 
-  sadjwgt[1] = rgraph->adjwgt; 
+  sadjncy[1] = rgraph->adjncy;
+  sadjwgt[1] = rgraph->adjwgt;
   slabel[1] = rgraph->label;
 
   /* Go and use bndptr to also mark the boundary nodes in the two partitions */
@@ -569,7 +569,7 @@ void SplitGraphOrder(CtrlType *ctrl, GraphType *graph, GraphType *lgraph, GraphT
     iend = xadj[i+1];
     if (bndptr[i] == -1) { /* This is an interior vertex */
       auxadjncy = sadjncy[mypart] + snedges[mypart] - istart;
-      for(j=istart; j<iend; j++) 
+      for(j=istart; j<iend; j++)
         auxadjncy[j] = adjncy[j];
       snedges[mypart] += iend-istart;
     }
@@ -578,7 +578,7 @@ void SplitGraphOrder(CtrlType *ctrl, GraphType *graph, GraphType *lgraph, GraphT
       l = snedges[mypart];
       for (j=istart; j<iend; j++) {
         k = adjncy[j];
-        if (where[k] == mypart) 
+        if (where[k] == mypart)
           auxadjncy[l++] = k;
       }
       snedges[mypart] = l;
@@ -595,7 +595,7 @@ void SplitGraphOrder(CtrlType *ctrl, GraphType *graph, GraphType *lgraph, GraphT
     idxset(iend, 1, sadjwgt[mypart]);
 
     auxadjncy = sadjncy[mypart];
-    for (i=0; i<iend; i++) 
+    for (i=0; i<iend; i++)
       auxadjncy[i] = rename[auxadjncy[i]];
   }
 
@@ -690,7 +690,7 @@ int SplitGraphOrderCC(CtrlType *ctrl, GraphType *graph, GraphType *sgraphs, int 
   }
 
   rename = idxwspacemalloc(ctrl, nvtxs);
-  
+
   /* Go and split the graph a component at a time */
   for (iii=0; iii<ncmps; iii++) {
     RandomPermute(cptr[iii+1]-cptr[iii], cind+cptr[iii], 0);
@@ -718,7 +718,7 @@ int SplitGraphOrderCC(CtrlType *ctrl, GraphType *graph, GraphType *sgraphs, int 
       if (bndptr[i] == -1) { /* This is an interior vertex */
         auxadjncy = sadjncy + snedges - istart;
         auxadjwgt = sadjwgt + snedges - istart;
-        for(j=istart; j<iend; j++) 
+        for(j=istart; j<iend; j++)
           auxadjncy[j] = adjncy[j];
         snedges += iend-istart;
       }
@@ -726,7 +726,7 @@ int SplitGraphOrderCC(CtrlType *ctrl, GraphType *graph, GraphType *sgraphs, int 
         l = snedges;
         for (j=istart; j<iend; j++) {
           k = adjncy[j];
-          if (where[k] != 2) 
+          if (where[k] != 2)
             sadjncy[l++] = k;
         }
         snedges = l;
@@ -739,7 +739,7 @@ int SplitGraphOrderCC(CtrlType *ctrl, GraphType *graph, GraphType *sgraphs, int 
     }
 
     idxset(snedges, 1, sadjwgt);
-    for (i=0; i<snedges; i++) 
+    for (i=0; i<snedges; i++)
       sadjncy[i] = rename[sadjncy[i]];
 
     sgraphs[iii].nvtxs = snvtxs;
@@ -757,8 +757,3 @@ int SplitGraphOrderCC(CtrlType *ctrl, GraphType *graph, GraphType *sgraphs, int 
   return ncmps;
 
 }
-
-
-
-
-

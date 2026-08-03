@@ -26,9 +26,8 @@
 
 # problem local table is undefined, set to 1
 
-# test version 
+# test version
 awk '{ if ($5 == 98 && ($1 > 191 || $7 > 191 || $8 > 191) ) { print $0 ; print $1":1:"$3":"$4":98:1:"$7":"$8":"$9":"$10":"$11 } }' FS=: <local_gribtable
 
 # good version
 awk '{ if ($5 == 98 && ($1 > 191 || $7 > 191 || $8 > 191) ) { print $1":1:"$3":"$4":98:1:"$7":"$8":"$9":"$10":"$11 } }' FS=: <local_gribtable >local_gribtable_ecmwf
-

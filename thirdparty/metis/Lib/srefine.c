@@ -26,30 +26,30 @@ void Refine2WayNode(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, float
   for (;;) {
     IFSET(ctrl->dbglvl, DBG_TIME, starttimer(ctrl->RefTmr));
     if (ctrl->RType != 15)
-      FM_2WayNodeBalance(ctrl, graph, ubfactor); 
+      FM_2WayNodeBalance(ctrl, graph, ubfactor);
 
     switch (ctrl->RType) {
       case 1:
-        FM_2WayNodeRefine(ctrl, graph, ubfactor, 8); 
+        FM_2WayNodeRefine(ctrl, graph, ubfactor, 8);
         break;
       case 2:
-        FM_2WayNodeRefine_OneSided(ctrl, graph, ubfactor, 8); 
+        FM_2WayNodeRefine_OneSided(ctrl, graph, ubfactor, 8);
         break;
       case 3:
-        FM_2WayNodeRefine(ctrl, graph, ubfactor, 8); 
-        FM_2WayNodeRefine_OneSided(ctrl, graph, ubfactor, 8); 
+        FM_2WayNodeRefine(ctrl, graph, ubfactor, 8);
+        FM_2WayNodeRefine_OneSided(ctrl, graph, ubfactor, 8);
         break;
       case 4:
-        FM_2WayNodeRefine_OneSided(ctrl, graph, ubfactor, 8); 
-        FM_2WayNodeRefine(ctrl, graph, ubfactor, 8); 
+        FM_2WayNodeRefine_OneSided(ctrl, graph, ubfactor, 8);
+        FM_2WayNodeRefine(ctrl, graph, ubfactor, 8);
         break;
       case 5:
-        FM_2WayNodeRefineEqWgt(ctrl, graph, 8); 
+        FM_2WayNodeRefineEqWgt(ctrl, graph, 8);
         break;
     }
     IFSET(ctrl->dbglvl, DBG_TIME, stoptimer(ctrl->RefTmr));
 
-    if (graph == orggraph) 
+    if (graph == orggraph)
       break;
 
     graph = graph->finer;
@@ -84,7 +84,7 @@ void Allocate2WayNodePartitionMemory(CtrlType *ctrl, GraphType *graph)
 
 
 /*************************************************************************
-* This function computes the initial id/ed 
+* This function computes the initial id/ed
 **************************************************************************/
 void Compute2WayNodePartitionParams(CtrlType *ctrl, GraphType *graph)
 {
@@ -139,7 +139,7 @@ void Compute2WayNodePartitionParams(CtrlType *ctrl, GraphType *graph)
 
 
 /*************************************************************************
-* This function computes the initial id/ed 
+* This function computes the initial id/ed
 **************************************************************************/
 void Project2WayNodePartition(CtrlType *ctrl, GraphType *graph)
 {
@@ -155,7 +155,7 @@ void Project2WayNodePartition(CtrlType *ctrl, GraphType *graph)
 
   Allocate2WayNodePartitionMemory(ctrl, graph);
   where = graph->where;
-  
+
   /* Project the partition */
   for (i=0; i<nvtxs; i++) {
     where[i] = cwhere[cmap[i]];

@@ -203,7 +203,7 @@ void Match_SHEM(CtrlType *ctrl, GraphType *graph)
 
   RandomPermute(nvtxs, tperm, 1);
   avgdegree = 0.7*(xadj[nvtxs]/nvtxs);
-  for (i=0; i<nvtxs; i++) 
+  for (i=0; i<nvtxs; i++)
     degrees[i] = (xadj[i+1]-xadj[i] > avgdegree ? avgdegree : xadj[i+1]-xadj[i]);
   BucketSortKeysInc(nvtxs, avgdegree, degrees, tperm, perm);
 
@@ -264,4 +264,3 @@ void Match_SHEM(CtrlType *ctrl, GraphType *graph)
   idxwspacefree(ctrl, nvtxs);
   idxwspacefree(ctrl, nvtxs);
 }
-

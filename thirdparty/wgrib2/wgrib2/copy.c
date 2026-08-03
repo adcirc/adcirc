@@ -34,14 +34,14 @@ int copy_sec(unsigned char **sec, unsigned char **clone_sec) {
 
     for (i = 0; i < 9; i++) {
 	if (size[i] > 0) {
-	    if ((clone_sec[i] = (unsigned char *) malloc(size[i])) == NULL) 
+	    if ((clone_sec[i] = (unsigned char *) malloc(size[i])) == NULL)
 	        fatal_error_i("memory allocation failed copy_sec %d",i);
 	    memcpy(clone_sec[i], sec[i], size[i]);
 	}
 	else {
 	    clone_sec[i] = NULL;
 	}
-    }	
+    }
 
     return 0;
 }

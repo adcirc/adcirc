@@ -916,29 +916,29 @@ contains
       integer, intent(IN) :: NMSG
       real(8), intent(INOUT) :: VEC1(:), VEC2(:), VEC3(:)
 
-      real(8) :: VECTMP(NNPERBC, NMSG); 
+      real(8) :: VECTMP(NNPERBC, NMSG);
       if (NPERSEG > 0) then
-         VECTMP(:, 1) = VEC1(IPERCONN(1:NNPERBC, 2)); 
-         VEC1(IPERCONN(1:NNPERBC, 2)) = VEC1(IPERCONN(1:NNPERBC, 1)); 
+         VECTMP(:, 1) = VEC1(IPERCONN(1:NNPERBC, 2));
+         VEC1(IPERCONN(1:NNPERBC, 2)) = VEC1(IPERCONN(1:NNPERBC, 1));
          if (NMSG == 2) then
-            VECTMP(:, 2) = VEC2(IPERCONN(1:NNPERBC, 2)); 
-            VEC2(IPERCONN(1:NNPERBC, 2)) = VEC2(IPERCONN(1:NNPERBC, 1)); 
+            VECTMP(:, 2) = VEC2(IPERCONN(1:NNPERBC, 2));
+            VEC2(IPERCONN(1:NNPERBC, 2)) = VEC2(IPERCONN(1:NNPERBC, 1));
          elseif (NMSG == 3) then
-            VECTMP(:, 2) = VEC2(IPERCONN(1:NNPERBC, 2)); 
-            VEC2(IPERCONN(1:NNPERBC, 2)) = VEC2(IPERCONN(1:NNPERBC, 1)); 
-            VECTMP(:, 3) = VEC3(IPERCONN(1:NNPERBC, 2)); 
-            VEC3(IPERCONN(1:NNPERBC, 2)) = VEC3(IPERCONN(1:NNPERBC, 1)); 
+            VECTMP(:, 2) = VEC2(IPERCONN(1:NNPERBC, 2));
+            VEC2(IPERCONN(1:NNPERBC, 2)) = VEC2(IPERCONN(1:NNPERBC, 1));
+            VECTMP(:, 3) = VEC3(IPERCONN(1:NNPERBC, 2));
+            VEC3(IPERCONN(1:NNPERBC, 2)) = VEC3(IPERCONN(1:NNPERBC, 1));
          end if
       end if
 
-      call UPDATER(VEC1, VEC2, VEC3, NMSG); 
+      call UPDATER(VEC1, VEC2, VEC3, NMSG);
       if (NPERSEG > 0) then
          VEC1(IPERCONN(1:NNPERBC, 2)) = VECTMP(:, 1)
          if (NMSG == 2) then
-            VEC2(IPERCONN(1:NNPERBC, 2)) = VECTMP(:, 2); 
+            VEC2(IPERCONN(1:NNPERBC, 2)) = VECTMP(:, 2);
          elseif (NMSG == 3) then
-            VEC2(IPERCONN(1:NNPERBC, 2)) = VECTMP(:, 2); 
-            VEC3(IPERCONN(1:NNPERBC, 2)) = VECTMP(:, 3); 
+            VEC2(IPERCONN(1:NNPERBC, 2)) = VECTMP(:, 2);
+            VEC3(IPERCONN(1:NNPERBC, 2)) = VECTMP(:, 3);
          end if
       end if
    end subroutine UPDATER_W_PERBC
@@ -1435,21 +1435,21 @@ contains
         use GLOBAL, only: COMM
         use mod_logging, only: t_log_scope, init_log_scope, allMessage
 
-        implicit none 
+        implicit none
 
         integer:: n
         real(8), dimension(:)::  v, vall
 
         integer:: kount
 
-        LOG_SCOPE_TRACED("msg_rvec_allreduce", MESSENGER_TRACING ) ; 
+        LOG_SCOPE_TRACED("msg_rvec_allreduce", MESSENGER_TRACING ) ;
 
         kount = n
         call MPI_ALLREDUCE( v, vall, kount, MPI_DOUBLE_PRECISION, &
      &      MPI_SUM, COMM, ierr)
 
         return
-!---------------------------------------------------------------------      
+!---------------------------------------------------------------------
       end subroutine msg_rvec_allreduce_sum
 !---------------------------------------------------------------------
 

@@ -41,7 +41,7 @@ int proj4_initialize(unsigned char **sec, struct proj4_struct *projection) {
     projection->proj_is_nop = 0;
 
     sprintf(proj4_def,"+proj=latlong +a=%lf +b=%lf",r_maj, r_min);
-    if ( (projection->pj_latlon = pj_init_plus(proj4_def)) == NULL) 
+    if ( (projection->pj_latlon = pj_init_plus(proj4_def)) == NULL)
          fatal_error("proj4_initialize: pj_init_plus %s failed", proj4_def);
 
     if (gdt == 10 && (GDS_Mercator_ori_angle(gds) == 0.0) ) {            // mercator no rotation
@@ -52,7 +52,7 @@ int proj4_initialize(unsigned char **sec, struct proj4_struct *projection) {
 
         sprintf(proj4_def,"+proj=merc +lat_ts=%lf +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +a=%lf +b=%lf",
             c_lat, r_maj, r_min);
-        if ((projection->pj_grid = pj_init_plus(proj4_def)) == NULL) 
+        if ((projection->pj_grid = pj_init_plus(proj4_def)) == NULL)
 		fatal_error("proj4_initialize: pj_init_plus %s failed", proj4_def);
 
         /* longitude, latitude of first grid point */
@@ -62,7 +62,7 @@ int proj4_initialize(unsigned char **sec, struct proj4_struct *projection) {
         x_0 = lon1 * DEG_TO_RAD;
         y_0 = lat1 * DEG_TO_RAD;
 
-        if ( pj_transform(projection->pj_latlon, projection->pj_grid, 1, 1, &x_0, &y_0, NULL) != 0 ) 
+        if ( pj_transform(projection->pj_latlon, projection->pj_grid, 1, 1, &x_0, &y_0, NULL) != 0 )
 		fatal_error("proj4_initialize: Proj4 transform to lat-lon","");
 
 	projection->x_0 = x_0;
@@ -88,7 +88,7 @@ int proj4_initialize(unsigned char **sec, struct proj4_struct *projection) {
         x_0 = lon1 * DEG_TO_RAD;
         y_0 = lat1 * DEG_TO_RAD;
 
-        if ( pj_transform(projection->pj_latlon, projection->pj_grid, 1, 1, &x_0, &y_0, NULL) != 0 ) 
+        if ( pj_transform(projection->pj_latlon, projection->pj_grid, 1, 1, &x_0, &y_0, NULL) != 0 )
 		fatal_error("proj4_init: Proj4 transform to lat-lon","");
 
         projection->x_0 = x_0;
@@ -115,7 +115,7 @@ int proj4_initialize(unsigned char **sec, struct proj4_struct *projection) {
         x_0 = lon1 * DEG_TO_RAD;
         y_0 = lat1 * DEG_TO_RAD;
 
-        if ( pj_transform(projection->pj_latlon, projection->pj_grid, 1, 1, &x_0, &y_0, NULL) != 0 ) 
+        if ( pj_transform(projection->pj_latlon, projection->pj_grid, 1, 1, &x_0, &y_0, NULL) != 0 )
 		fatal_error("proj4_init: Proj4 transform to lat-lon","");
         projection->x_0 = x_0;
         projection->y_0 = y_0;

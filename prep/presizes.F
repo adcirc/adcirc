@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -39,9 +39,9 @@
 
       subroutine memory_status( )
         write(*,'(A)') ""
-        write(*,'(A, A)') "memory currently allocated = ", 
+        write(*,'(A, A)') "memory currently allocated = ",
      &      trim(memory_usage_string(mem_descript%currmem))
-        write(*,'(A, A)') "memory high water mark     = ", 
+        write(*,'(A, A)') "memory high water mark     = ",
      &      trim(memory_usage_string(mem_descript%highmem))
         write(*,'(A)') ""
       end subroutine memory_status
@@ -52,7 +52,7 @@
         integer(8), parameter  :: gigabytes = 1e9
         integer(8), parameter  :: megabytes = 1e6
         integer(8), parameter  :: kilobytes = 1e3
-        integer(8), intent(in) :: bytes 
+        integer(8), intent(in) :: bytes
 
         if(bytes>=gigabytes)then
             write(out_str, '(F0.3,X,A)') dble(bytes)/dble(gigabytes),
@@ -67,7 +67,7 @@
             write(out_str, '(I0,X,A)') bytes, "bytes"
         endif
 
-      end function memory_usage_string  
+      end function memory_usage_string
 
       subroutine memory_alloc(nbytes)
       integer(8),intent(in) :: nbytes
@@ -148,7 +148,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
      &    SWAN_OutputTMM10
 
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
-     &                  initWindModule, 
+     &                  initWindModule,
      &                  read_NWS14_NetCdf_using_core_0
       USE OWIWIND, ONLY: nPowellSearchDomains
 #ifdef ADCNETCDF
@@ -280,7 +280,7 @@ C Logicals added for adcprep paths
       LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier,
-     &          Limit_WaveStressGrad, WaveStressGrad_Cap  !tcm v56 2024: added 
+     &          Limit_WaveStressGrad, WaveStressGrad_Cap  !tcm v56 2024: added
 #ifdef ADCNETCDF
 Casey 180318: Added NWS=13
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
@@ -297,9 +297,9 @@ Casey 180318: Added NWS=13
 c.... !wjp added for warnElev namelist
       REAL(8) :: WarnElev = 20.0  !
       REAL(8) :: ErrorElev = 1000.0  !
-      LOGICAL :: WarnElevDump = .FALSE.  
+      LOGICAL :: WarnElevDump = .FALSE.
       INTEGER :: WarnElevDumpLimit = 50  !
-      LOGICAL :: WARN_ELEV_FLAG = .FALSE.   
+      LOGICAL :: WARN_ELEV_FLAG = .FALSE.
       LOGICAL :: FOUND_WARNELEV_NML = .false.  !
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
@@ -313,7 +313,7 @@ c.... !wjp added for warnElev namelist
       character(len=100) :: densityForcingType = 'SigmaT' ! sigmaT, salinity, etc
       character(len=100) :: densityFileName = 'fort.11.nc' ! filename
       integer :: densityTimeIterator = 1 ! BC3D time step iteration skipper
-      NAMELIST /densityControl/ densityRunType, densityFileName, 
+      NAMELIST /densityControl/ densityRunType, densityFileName,
      &  densityTimeIterator, densityForcingType
       ! itfric control namelist
       LOGICAL :: FOUND_ITFRIC_NML = .FALSE. !
@@ -405,7 +405,7 @@ C
          ENDIF
       ELSE
          DO WHILE(.NOT.FOUND)
-            WRITE(*,*) 
+            WRITE(*,*)
      &        'Enter the name of the ADCIRC UNIT 14 (Grid) file:'
             READ(*,'(a60)') GRID
             INQUIRE(FILE=trim(GRID),EXIST=FOUND)
@@ -637,7 +637,7 @@ C.... tcm v52.30.01 additions for Smagorinski Eddy Viscosity Namelist
       LOGICAL :: UseInterpInset = .FALSE.
       NAMELIST /InterpInset/UseInterpInset,Pfile_inset,Wfile_inset,InsetControlFile
 
-     
+
 #ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
 #else
@@ -676,7 +676,7 @@ C
          ENDIF
       ELSE
          DO WHILE(.NOT.FOUND)
-            WRITE(*,*) 
+            WRITE(*,*)
      &        'Enter the name of ADCIRC UNIT 15 (Run Info) file:'
             READ(*,'(A)') RUNINFO
             INQUIRE(FILE=trim(RUNINFO),EXIST=FOUND)
@@ -831,7 +831,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The WarnElevControl namelist was not found."
       ELSE
-         found_WarnElev_nml = .true.  
+         found_WarnElev_nml = .true.
       ENDIF
       REWIND(15)
 
@@ -839,7 +839,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The WarnElevControl namelist was not found."
       ELSE
-         found_InterpInset_namelist = .true.  
+         found_InterpInset_namelist = .true.
       ENDIF
       REWIND(15)
 
@@ -847,15 +847,15 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The AliDisp Control namelist was not found."
       ELSE
-         found_AliDisp_nml = .true.  
+         found_AliDisp_nml = .true.
       ENDIF
       REWIND(15)
-      
+
       READ(UNIT=15,NML=densityControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The density Control namelist was not found."
       ELSE
-         found_density_nml = .true.  
+         found_density_nml = .true.
       ENDIF
       REWIND(15)
       ! nws08Control
@@ -863,7 +863,7 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The nws08 Control namelist was not found."
       ELSE
-         found_nws8_nml = .true.  
+         found_nws8_nml = .true.
       ENDIF
       REWIND(15)
 !Casey 221103 : Try to read the baroclinic3D namelist from fort.15
@@ -954,7 +954,7 @@ c        C3DDSS = .TRUE.
          IF ((IM.GE.111111).AND.(IM.LE.534328)) THEN
             C2DDI = .TRUE.
             IF (IM-int(IM*0.1)*10 > 4) THEN
-                ! Setting Baroclinic true 
+                ! Setting Baroclinic true
                 CBaroclinic = .TRUE.
             ENDIF
          ELSEIF ((IM.GE.611111).AND.(IM.LE.634322)) THEN
@@ -1087,7 +1087,7 @@ C.... tcm v48.4641 additions for ice
      &     .OR.(NWS.EQ.19))THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
 C++! GML added 5
-        IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4))) 
+        IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
      &         READ(15,*) WTIMINC,RSTIMINC
         IF((NCICE.EQ.0).AND.((NRS.EQ.3).OR.(NRS.EQ.5))) THEN  !Casey 090825: Fix for NRS = 3.
           IF(ABS(NWS).EQ.8) THEN
@@ -1547,7 +1547,7 @@ C
       IF(NRS.GE.1) WRITE(*,3018) ! sb46.28sb03
       IF(NWS.EQ.10) WRITE(*,3019)
       IF(NWS.EQ.11) WRITE(*,3020)
-C     sb46.28sb01 added NWS=12: OWI format 
+C     sb46.28sb01 added NWS=12: OWI format
       IF(ABS(NWS).EQ.12) WRITE(*,3023)
       IF(ABS(NWS).EQ.19) WRITE(*,3219)
       IF(ABS(NWS).EQ.20) WRITE(*,3220)

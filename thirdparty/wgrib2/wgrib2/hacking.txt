@@ -7,6 +7,3 @@ directory.)
 
  Ex.  instead of modifying -text option, add -my_text option
       copy f_text() as f_my_text() and modify the latter
-
-
-

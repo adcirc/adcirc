@@ -121,7 +121,7 @@ subroutine SwanReadADCGrid
        if(.not.allocated(DEPTH)) allocate (DEPTH(nverts), stat = istat)
     endif
 !Casey 231217: Carrying forward changes from earlier version.
-!ADC    call dict(node_dict,nverts)    
+!ADC    call dict(node_dict,nverts)
     if ( istat /= 0 ) then
        call msgerr ( 4, 'Allocation problem in SwanReadADCGrid: array xcugrd, ycugrd or depth ' )
        goto 900
@@ -217,7 +217,7 @@ subroutine SwanReadADCGrid
     !
     close(ndsd)
 !Casey 231217: Carrying forward changes from earlier version.
-!ADC    call close_dict(node_dict)    
+!ADC    call close_dict(node_dict)
     !
 !PUN       ! ghost vertices are marked with +999
 !PUN       !

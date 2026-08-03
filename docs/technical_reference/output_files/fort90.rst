@@ -29,4 +29,4 @@ Notes
 * For binary/NetCDF output, the node number (k) is not included in the output
 * Time series data is recorded for every node in the model grid
 * The output frequency is controlled by :ref:`NSPOOLGE <NSPOOLGE>` parameter, matching fort.63 settings
-* The variable tau0var represents the primitive weighting value in the continuity equation at each node 
+* The variable tau0var represents the primitive weighting value in the continuity equation at each node

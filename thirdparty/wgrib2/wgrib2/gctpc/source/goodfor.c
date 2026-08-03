@@ -22,8 +22,8 @@ ALGORITHM REFERENCES
     Survey Professional Paper 1395 (Supersedes USGS Bulletin 1532), United
     State Government Printing Office, Washington D.C., 1987.
 
-3.  Goode, J.P., 1925,  The Homolosine projection:  a new device for 
-    portraying the Earth's surface entire:  Assoc. Am. Geographers, Annals, 
+3.  Goode, J.P., 1925,  The Homolosine projection:  a new device for
+    portraying the Earth's surface entire:  Assoc. Am. Geographers, Annals,
     v. 15, p. 119-125
 *******************************************************************************/
 #include "cproj.h"
@@ -37,7 +37,7 @@ static double feast[12];	/* False easting, one for each region */
 /* Initialize the Goode`s Homolosine projection
   --------------------------------------------*/
 long goodforint(double r) {
-//long goodforint(r) 
+//long goodforint(r)
 //double r; 			/* (I) Radius of the earth (sphere) */
 //{
 /* Place parameters in static storage for common use
@@ -76,11 +76,11 @@ feast[11] = R * 2.44346095279;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("GOODE'S HOMOLOSINE EQUAL-AREA"); 
+ptitle("GOODE'S HOMOLOSINE EQUAL-AREA");
 radius(r);
 return(OK);
 }
-
+
 /* Goode`s Homolosine forward equations--mapping lat,long to x,y
   -------------------------------------------------------------*/
 long goodfor(double lon, double lat, double *x, double *y) {
@@ -143,7 +143,7 @@ else
       delta_theta = -(theta + sin(theta) - constant) / (1.0 + cos(theta));
       theta += delta_theta;
       if (fabs(delta_theta) < EPSLN) break;
-      if (i >= 50) 
+      if (i >= 50)
          {
          p_error("Iteration failed to converge","goode-forward");
 	 return(251);

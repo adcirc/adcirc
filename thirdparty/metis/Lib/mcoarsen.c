@@ -1,7 +1,7 @@
 /*
  * mcoarsen.c
  *
- * This file contains the driving routines for the coarsening process 
+ * This file contains the driving routines for the coarsening process
  *
  * Started 7/23/97
  * George
@@ -28,7 +28,7 @@ GraphType *MCCoarsen2Way(CtrlType *ctrl, GraphType *graph)
   clevel = 0;
   do {
     if (ctrl->dbglvl&DBG_COARSEN) {
-      printf("%6d %7d %10d [%d] [%6.4f", cgraph->nvtxs, cgraph->nedges, 
+      printf("%6d %7d %10d [%d] [%6.4f", cgraph->nvtxs, cgraph->nedges,
               idxsum(cgraph->nvtxs, cgraph->adjwgtsum), ctrl->CoarsenTo, ctrl->nmaxvwgt);
       for (i=0; i<graph->ncon; i++)
         printf(" %5.3f", ssum_strd(cgraph->nvtxs, cgraph->nvwgt+i, cgraph->ncon));
@@ -73,10 +73,10 @@ GraphType *MCCoarsen2Way(CtrlType *ctrl, GraphType *graph)
     cgraph = cgraph->coarser;
     clevel++;
 
-  } while (cgraph->nvtxs > ctrl->CoarsenTo && cgraph->nvtxs < COARSEN_FRACTION2*cgraph->finer->nvtxs && cgraph->nedges > cgraph->nvtxs/2); 
+  } while (cgraph->nvtxs > ctrl->CoarsenTo && cgraph->nvtxs < COARSEN_FRACTION2*cgraph->finer->nvtxs && cgraph->nedges > cgraph->nvtxs/2);
 
   if (ctrl->dbglvl&DBG_COARSEN) {
-    printf("%6d %7d %10d [%d] [%6.4f", cgraph->nvtxs, cgraph->nedges, 
+    printf("%6d %7d %10d [%d] [%6.4f", cgraph->nvtxs, cgraph->nedges,
             idxsum(cgraph->nvtxs, cgraph->adjwgtsum), ctrl->CoarsenTo, ctrl->nmaxvwgt);
     for (i=0; i<graph->ncon; i++)
       printf(" %5.3f", ssum_strd(cgraph->nvtxs, cgraph->nvwgt+i, cgraph->ncon));
@@ -88,4 +88,3 @@ GraphType *MCCoarsen2Way(CtrlType *ctrl, GraphType *graph)
 
   return cgraph;
 }
-

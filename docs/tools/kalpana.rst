@@ -20,4 +20,4 @@ Links
 -----
 
 * `GitHub Repository <https://github.com/ccht-ncsu/Kalpana>`_
-* `Research Paper <https://link.springer.com/article/10.1007/s11069-021-04634-8>`_ 
+* `Research Paper <https://link.springer.com/article/10.1007/s11069-021-04634-8>`_

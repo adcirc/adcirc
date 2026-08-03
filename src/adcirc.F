@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -112,7 +112,7 @@ C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
-      USE VERSION, ONLY : adc_version, adc_hash, fileFmtMajor, fileFmtMinor, 
+      USE VERSION, ONLY : adc_version, adc_hash, fileFmtMajor, fileFmtMinor,
      &   FileFmtRev
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, myproc,
      &   read_local_hot_start_files, make_dirname, write_local_harm_files,
@@ -128,13 +128,13 @@ C******************************************************************************
       USE mod_logging, ONLY : allMessage, screenMessage,
      &   openLogFile, DEBUG, INFO, screenUnit,
      &   nabout, nscreen, ECHO, t_log_level, t_log_scope, init_log_scope
-      USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter, 
+      USE NodalAttributes, ONLY: activateVEW1DChannelWetPerimeter,
      &   initVEW1DChannelWetPerimeter
       use mod_terminate, only: terminate, ADCIRC_EXIT_SUCCESS
       USE ADC_CONSTANTS, ONLY: g, rhowat0
       USE GLOBAL_3DVS, ONLY : AMB, goRho, goRhoOAMB,
      &   NSTA3DD, NSTA3DV, NSTA3DT, NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
-     &   IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG 
+     &   IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc, ne, np, SFEA
       USE GWCE, ONLY : initGWCE
       USE MOMENTUM, ONLY : initMomentumEq
@@ -176,9 +176,9 @@ C******************************************************************************
 
 
       ! jgf51.52.07: Added command line option to just write out
-      ! the ADCIRC version number and exit. This is to allow 
+      ! the ADCIRC version number and exit. This is to allow
       ! external applications to query the version number so that
-      ! they can behave in version-appropriate ways. 
+      ! they can behave in version-appropriate ways.
       argcount  = COMMAND_ARGUMENT_COUNT()  ! get number of command line arguments
       if ((argcount.gt.0).and.(myproc.eq.0)) then
          i = 0
@@ -251,7 +251,7 @@ C******************************************************************************
          WRITE(ScreenUnit,'(a)')"ADCIRC Commit hash is "//ADC_HASH
       ENDIF
 
-      
+
       !jgf49.44: Allocate memory for reading and writing full domain arrays
       IF ( (MNPROC.gt.1).and.
      &        ( (myProc.eq.0)
@@ -292,13 +292,13 @@ C     jgf45.08 put this here so it can be used in hot start
       ELSE
          IFNLFA=1
       ENDIF
-      
+
       !...Read the self attraction and loading file (fort.24)
       call readSelfAttractionAndLoadingFile()
 
 C...************* Make the L_N Tidal potential multiple function *************
 C... WJP: Feb 21 2018; moved here before hstart Feb 27 2019
-C..  Corrected long term species (unfortunately there is a mistake in old ADCIRC 
+C..  Corrected long term species (unfortunately there is a mistake in old ADCIRC
 C..  theory report that also propagated into some subsequent publications)
       IF (CTIP) THEN
 
@@ -338,13 +338,13 @@ C...Default beginning and ending time steps
       ITIME_END = NT  !NT is set in read_input.F
 
 C...  Determine the number of active elements (MJU), the total number of
-C...  elements (NODELE) and the total area of elements (TotalArea) 
+C...  elements (NODELE) and the total area of elements (TotalArea)
 C...  attached to each node
       call totalAreaCalc()
       !
       !
-      ! jgf52.08.20: Compute master time which is referenced to the beginning 
-      ! time of the model run. This is needed here only because we need to 
+      ! jgf52.08.20: Compute master time which is referenced to the beginning
+      ! time of the model run. This is needed here only because we need to
       ! determine whether to load min/max files in subroutine initOutput2D().
       ! If the time in the min/max file is later than the current time
       ! in ADCIRC, we don't load the min/max files. TODO: This is computed
@@ -363,8 +363,8 @@ C...  attached to each node
          allocate(dynamicWaterLevelCorrection1(np))
          allocate(dynamicWaterLevelCorrection2(np)) ! used in timestepping
          allocate(dynamicWaterLevelCorrectionSta(mnstae))
-         call initDynamicWaterLevelCorrection(timeloc) ! initializes the i/o 
-         call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc) ! populate 
+         call initDynamicWaterLevelCorrection(timeloc) ! initializes the i/o
+         call getDynamicWaterLevelCorrections(dynamicWaterLevelCorrection2, timeloc) ! populate
       endif
 
 
@@ -437,9 +437,9 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
      &                       PADCSWAN_RUN
 #endif
       USE WRITE_OUTPUT,ONLY: writeOutput2D
-#ifdef CMPI      
+#ifdef CMPI
       USE MESSENGER, ONLY: writers_active, hs_writers_active
-#endif      
+#endif
       IMPLICIT NONE
 
       INTEGER, OPTIONAL :: NTIME_STP
@@ -476,7 +476,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
 #ifdef CMPI
       IF ( myproc == 0 ) then
          start_time = MPI_Wtime() ;
-      ENDIF   
+      ENDIF
 #endif
 
       IF (PRESENT(NTIME_STP)) THEN
@@ -523,10 +523,10 @@ C             to then call the SWAN time-stepping subroutine.
       IF ( myproc == 0 ) then
          end_time = MPI_Wtime() ;
 
-         write(ScreenUnit,*) "Runtime = ", end_time - start_time ; 
-      ENDIF   
+         write(ScreenUnit,*) "Runtime = ", end_time - start_time ;
+      ENDIF
 #endif
-      
+
       RETURN
       END SUBROUTINE ADCIRC_Run
 
@@ -629,4 +629,3 @@ C******************************************************************************
       END MODULE ADCIRC_Mod
 C******************************************************************************
 C******************************************************************************
-

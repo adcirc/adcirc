@@ -22,7 +22,7 @@ int f_spectral_bands_extname(ARG0) {
     const char *instype=NULL, *shortname=NULL;
     const char *agency, *longname;    /* unused, but set in include files */
     const char *satellite=NULL, *pol=NULL;
-    
+
     const char *shortname1=NULL, *satellite1=NULL, *pol1=NULL;
     double c=299792458.;
     double minwave=9e19, maxwave=-9e19, sumwave=0, wl, fq;
@@ -106,7 +106,7 @@ int f_spectral_bands_extname(ARG0) {
             sprintf(inv_out,"Ins %d ",instrument);
         inv_out+=strlen(inv_out);
     }
-        
+
     if(minwave*1.01<maxwave)
         sprintf(inv_out,"%d bands: %.3g to %.3g m-1 ",nb,minwave,maxwave);
     else {
@@ -119,7 +119,7 @@ int f_spectral_bands_extname(ARG0) {
     }
     inv_out+=strlen(inv_out);
 
-    if(multipol) 
+    if(multipol)
         strcat(inv_out,"mult.pol.");
     else if(pol1 && strcmp(pol1,"unpolarized"))
         strcat(inv_out,pol);

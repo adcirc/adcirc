@@ -1,4 +1,4 @@
-/* UDF.c    
+/* UDF.c
  *  public domian 2010 Wesley Ebisuzaki
  *
  *  user defined functions

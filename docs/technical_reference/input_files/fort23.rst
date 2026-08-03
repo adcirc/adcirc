@@ -39,7 +39,7 @@ The following is a simple example of the beginning of a fort.23 file:
    1    0.12345E+00  0.23456E+00
    2    0.34567E+00  0.45678E+00
    3    0.56789E+00  0.67890E+00
-   # 
+   #
    1    0.12345E+01  0.23456E+01
    2    0.34567E+01  0.45678E+01
    3    0.56789E+01  0.67890E+01

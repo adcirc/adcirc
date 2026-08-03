@@ -225,4 +225,3 @@ tcf_gettestids()
 	#eecho "BUFFER $buffer"
 	eval declare -g -a "$name"=\("$buffer"\)
 }
-

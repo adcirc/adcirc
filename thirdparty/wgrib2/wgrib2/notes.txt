@@ -11,4 +11,3 @@ Getting data from internet
       (sorry) with the old table.  Reason: want to use abreviations and
       shorter description than used by the table.  Note: old entries
       should not change so not to break user code.
- 

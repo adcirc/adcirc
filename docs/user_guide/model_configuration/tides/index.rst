@@ -25,7 +25,7 @@ Open boundary conditions allow you to specify water surface elevations at the mo
 
 1. **Periodic (Harmonic) Conditions**:
    Specified in the :ref:`fort.15 <fort15>` file using:
-   
+
    * ``NBFR``: Number of forcing frequencies on open boundaries
    * ``BOUNTAG``: Name/tag for each boundary forcing constituent
    * ``AMIG``, ``FF``, ``FACE``: Parameters for amplitude, nodal factor, and equilibrium argument
@@ -51,7 +51,7 @@ See :ref:`internal_tide_energy_conversion` for more details.
    :maxdepth: 1
    :caption: Contents:
    :hidden:
-   
+
    internal_tide_energy_conversion
 
 Best Practices

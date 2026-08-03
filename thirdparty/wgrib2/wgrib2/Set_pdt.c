@@ -200,9 +200,9 @@ int new_pdt(unsigned char **sec, unsigned char *new_sec4, int pdt, int len, int 
     if (n > 1 && stat_proc_n_time_ranges_index(new_sec) >= 0 ) n_new = n;
     else n_new = 1;
 
-// fprintf(stderr, "adjusted new n=%d nb=%d ncat=%d np=%d np_dp=%d vert_coor=%d\n", 
+// fprintf(stderr, "adjusted new n=%d nb=%d ncat=%d np=%d np_dp=%d vert_coor=%d\n",
 // n_new, nb_new, ncat_new, np_new, np_dp_new, vert_coor_new);
-   
+
     /* if len is not specified then determine the len of the new pdt */
 
     if (len <= 0) {
@@ -238,7 +238,7 @@ int new_pdt(unsigned char **sec, unsigned char *new_sec4, int pdt, int len, int 
     new_sec4[4] = 4;				// section number
     uint2_char(vert_coor_new, new_sec4 + 5);	// number of vert coordinate parameters
     uint2_char(pdt, new_sec4+7);		// pdt
-   
+
     p_new = number_of_contributing_spectral_bands_location(new_sec);
     if (p_new) *p_new = (unsigned char) nb_new;
 
@@ -275,8 +275,8 @@ int new_pdt(unsigned char **sec, unsigned char *new_sec4, int pdt, int len, int 
 
     /* copy vertical coordinates */
     if (vert_coor_new == vert_coor_old && vert_coor_new > 0 ) {
-	// copy 4*vert_coor bytes from end of 
-	for (i = 0; i < 4*vert_coor; i++) 
+	// copy 4*vert_coor bytes from end of
+	for (i = 0; i < 4*vert_coor; i++)
 	    new_sec4[i + len-4*vert_coor] = sec[4][i + len_old-4*vert_coor];
     }
 

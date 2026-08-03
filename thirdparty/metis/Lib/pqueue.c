@@ -56,7 +56,7 @@ void PQueueInit(CtrlType *ctrl, PQueueType *queue, int maxnodes, int maxgain)
       queue->mustfree = 1;
     }
 
-    for (i=0; i<maxnodes; i++) 
+    for (i=0; i<maxnodes; i++)
       queue->nodes[i].id = i;
 
     for (i=0; i<j; i++)
@@ -86,10 +86,10 @@ void PQueueReset(PQueueType *queue)
     queue->maxgain = -queue->ngainspan;
 
     j = queue->ngainspan+queue->pgainspan+1;
-    queue->buckets -= queue->ngainspan;  
+    queue->buckets -= queue->ngainspan;
     for (i=0; i<j; i++)
       queue->buckets[i] = NULL;
-    queue->buckets += queue->ngainspan;  
+    queue->buckets += queue->ngainspan;
   }
   else {
     idxset(queue->maxnodes, -1, queue->locator);
@@ -106,9 +106,9 @@ void PQueueFree(CtrlType *ctrl, PQueueType *queue)
 
   if (queue->type == 1) {
     if (queue->mustfree) {
-      queue->buckets -= queue->ngainspan;  
+      queue->buckets -= queue->ngainspan;
       GKfree(&queue->nodes, &queue->buckets, LTERM);
-    } 
+    }
     else {
       idxwspacefree(ctrl, sizeof(ListNodeType *)*(queue->ngainspan+queue->pgainspan+1)/sizeof(idxtype));
       idxwspacefree(ctrl, sizeof(ListNodeType)*queue->maxnodes/sizeof(idxtype));
@@ -175,7 +175,7 @@ int PQueueInsert(PQueueType *queue, int node, int gain)
         locator[heap[i].val] = i;
         i = j;
       }
-      else 
+      else
         break;
     }
     ASSERT(i >= 0);
@@ -218,9 +218,9 @@ int PQueueDelete(PQueueType *queue, int node, int gain)
       newnode->next->prev = newnode->prev;
 
     if (buckets[gain] == NULL && gain == queue->maxgain) {
-      if (queue->nnodes == 0) 
+      if (queue->nnodes == 0)
         queue->maxgain = -queue->ngainspan;
-      else 
+      else
         for (; buckets[queue->maxgain]==NULL; queue->maxgain--);
     }
   }
@@ -249,7 +249,7 @@ int PQueueDelete(PQueueType *queue, int node, int gain)
             locator[heap[i].val] = i;
             i = j;
           }
-          else 
+          else
             break;
         }
       }
@@ -297,7 +297,7 @@ int PQueueUpdate(PQueueType *queue, int node, int oldgain, int newgain)
   ListNodeType *newnode;
   KeyValueType *heap;
 
-  if (oldgain == newgain) 
+  if (oldgain == newgain)
     return 0;
 
   if (queue->type == 1) {
@@ -324,7 +324,7 @@ int PQueueUpdate(PQueueType *queue, int node, int oldgain, int newgain)
           locator[heap[i].val] = i;
           i = j;
         }
-        else 
+        else
           break;
       }
     }
@@ -371,7 +371,7 @@ void PQueueUpdateUp(PQueueType *queue, int node, int oldgain, int newgain)
   ListNodeType *newnode, **buckets;
   KeyValueType *heap;
 
-  if (oldgain == newgain) 
+  if (oldgain == newgain)
     return;
 
   if (queue->type == 1) {
@@ -419,7 +419,7 @@ void PQueueUpdateUp(PQueueType *queue, int node, int oldgain, int newgain)
         locator[heap[i].val] = i;
         i = j;
       }
-      else 
+      else
         break;
     }
 
@@ -459,7 +459,7 @@ int PQueueGetMax(PQueueType *queue)
       if (queue->nnodes == 0) {
         queue->maxgain = -queue->ngainspan;
       }
-      else 
+      else
         for (; queue->buckets[queue->maxgain]==NULL; queue->maxgain--);
     }
 
@@ -503,7 +503,7 @@ int PQueueGetMax(PQueueType *queue)
     return vtx;
   }
 }
-      
+
 
 /*************************************************************************
 * This function returns the vertex with the largest gain from a partition
@@ -515,14 +515,14 @@ int PQueueSeeMax(PQueueType *queue)
   if (queue->nnodes == 0)
     return -1;
 
-  if (queue->type == 1) 
+  if (queue->type == 1)
     vtx = queue->buckets[queue->maxgain]->id;
   else
     vtx = queue->heap[0].val;
 
   return vtx;
 }
-      
+
 
 /*************************************************************************
 * This function returns the vertex with the largest gain from a partition
@@ -534,14 +534,14 @@ int PQueueGetKey(PQueueType *queue)
   if (queue->nnodes == 0)
     return -1;
 
-  if (queue->type == 1) 
+  if (queue->type == 1)
     key = queue->maxgain;
   else
     key = queue->heap[0].key;
 
   return key;
 }
-      
+
 
 
 
@@ -563,7 +563,7 @@ int CheckHeap(PQueueType *queue)
 
   ASSERT(locator[heap[0].val] == 0);
   for (i=1; i<nnodes; i++) {
-    ASSERTP(locator[heap[i].val] == i, ("%d %d %d %d\n", nnodes, i, heap[i].val, locator[heap[i].val])); 
+    ASSERTP(locator[heap[i].val] == i, ("%d %d %d %d\n", nnodes, i, heap[i].val, locator[heap[i].val]));
     ASSERTP(heap[i].key <= heap[(i-1)/2].key, ("%d %d %d %d %d\n", i, (i-1)/2, nnodes, heap[i].key, heap[(i-1)/2].key));
   }
   for (i=1; i<nnodes; i++)

@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -31,9 +31,9 @@
      &   , eta2, tk, tkm, nolifa, tkm
      &   , H0, ifnlfa, uu1, vv1, ncchange
       use mesh, only: ne, np, nm, totalArea, mju, areas, dp
-#ifdef ADCNETCDF      
+#ifdef ADCNETCDF
       use netcdf_error, only: check_err
-#endif      
+#endif
 
 ! JLW: initialize the arrays for use in the subgrid
 ! code
@@ -87,9 +87,9 @@
       ! Array to hold vertex corrected advection for
       ! zeta at k+1
       REAL(8), DIMENSION(:), ALLOCATABLE :: cadvVertETA2
-      ! Minimum depth in depth array used to preprocess lookup table 
+      ! Minimum depth in depth array used to preprocess lookup table
       REAL(8) :: minDepth
-      ! Maximum depth in depth array used to preprocess lookup table 
+      ! Maximum depth in depth array used to preprocess lookup table
       REAL(8) :: maxDepth
 
       contains
@@ -102,7 +102,7 @@
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
 ! THIS SECTION OF CODE INITIALIZES THE ARRAYS NEEDED FOR THE LOOKUP
-! TABLES 
+! TABLES
 
       subroutine initVar
 
@@ -159,17 +159,17 @@
 ! AT THE BOTTOM OF THIS FILE.
 
       subroutine readSubgridLookup
-#ifdef ADCNETCDF          
+#ifdef ADCNETCDF
       use netcdf
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
       ! use global, only: imap_el_lg, nodes_lg, allMessage, ERROR
       use global, only: nodes_lg
       use mod_logging, only: allMessage, ERROR
-      
+
       implicit none
 
       ! Total number of elements and vertices in mesh (can most
-      ! definitely be replaced by variables already in ADCIRC) 
+      ! definitely be replaced by variables already in ADCIRC)
       !integer :: numElems, numVerts, numVertsPerEle
       integer :: numVerts
       ! Used for transfering from global to local
@@ -179,7 +179,7 @@
       REAL(8), DIMENSION(:,:), ALLOCATABLE :: globalVertLookup
       INTEGER, DIMENSION(:), ALLOCATABLE :: globalSubVertList
       ! variables needed to read in main NETCDF lookup table
-      INTEGER :: NC_ERR, IS, NC_ID, NC_VAR 
+      INTEGER :: NC_ERR, IS, NC_ID, NC_VAR
       INTEGER :: I
       LOGICAL :: file_exists
 
@@ -191,10 +191,10 @@
 !JLW: adding subgrid lookup table read in
 !JLW: first open subgrid lookup table and read in dimensions
       CALL CHECK_ERR(NF90_OPEN(TRIM(subgridFilename),NF90_NOWRITE,NC_ID))
-      
+
       CALL CHECK_ERR(NF90_INQ_DIMID(NC_ID,"numNode",NC_VAR))
       CALL CHECK_ERR(NF90_INQUIRE_DIMENSION(NC_ID,NC_VAR,len=numVerts))
-      
+
       CALL CHECK_ERR(NF90_INQ_DIMID(NC_ID,"numPhi",NC_VAR))
       CALL CHECK_ERR(NF90_INQUIRE_DIMENSION(NC_ID,NC_VAR,len=numPhi))
 
@@ -205,7 +205,7 @@
       CALL check_err(NF90_GET_VAR(NC_ID,NC_VAR,setPhi))
 
 !JLW: go through and read in each of the vertex averaged variables
-!JLW: allocate arrays  
+!JLW: allocate arrays
       IF(level1)THEN
          IF(ALLOCATED(cmfVertTab)) DEALLOCATE(cmfVertTab)
          ALLOCATE(cmfVertTab(NP,numPhi))
@@ -347,7 +347,7 @@
 !---------------------------------------------------------------------
 ! THIS CODE IS VERY SIMILAR TO THE ELEMENTAL SUBROUTINE BUT FOR SUBRID
 ! VARIABLES RELATED TO THE VERTEX AREAS. FOR EACH NEW WATER SURFACE
-! ELEVATION SUBGRID VERTEX QUANTITIES ARE LOOKED UP. 
+! ELEVATION SUBGRID VERTEX QUANTITIES ARE LOOKED UP.
 
       subroutine getVertLookup
 
@@ -370,7 +370,7 @@
          IF(subgridVertList(I).EQ.1)THEN
 !JLW: find how many of the depths are greater than the current wet area
 !fraction
-            numGreater = 0 !initialize counter 
+            numGreater = 0 !initialize counter
             DO j = 1,numPhi
                IF(eta2(i).LT.wetFracVertTab(i,j))THEN
                   numGreater = numGreater + 1
@@ -456,9 +456,9 @@
 !JLW: if the current water level is equal to the first depth of the
 !array wet set our averaged variables to fully wet
                wetFracVertETA2(i) = setPhi(numPhi-numGreater+1)
-               gridDepthVertETA2(i) = 
+               gridDepthVertETA2(i) =
      &            gridDepthVertTab(i,numPhi-numGreater+1)
-               wetDepthVertETA2(i) = 
+               wetDepthVertETA2(i) =
      &            wetDepthVertTab(i,numPhi-numGreater+1)
                IF(level1)THEN
                   cmfVertETA2(i) = cmfVertTab(i,numPhi-numGreater+1)

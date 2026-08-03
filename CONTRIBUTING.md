@@ -70,7 +70,7 @@ All new files should be named using a ".F90" extension where historically we hav
 There are multiple reasons for this. First, the code style in the older portions of the code are a mix of fixed and free form Fortran and don't adhere to
 any specific standard. To move toward a more modern Fortran style and clearly communicate the
 expectations, contributors should use the ".F90" extension. Second, this allows us to use the extension
-as a marker for new code which can be subject to additional linting and compiler checks. 
+as a marker for new code which can be subject to additional linting and compiler checks.
 
 #### Fortran Standards
 The ADCIRC code base has historically been written in a mix of Fortran 77 and Fortran 90, requiring
@@ -80,12 +80,12 @@ portions of the code are large, and it will take time to move toward this goal. 
 this guideline only for new code.
 
 #### Documentation
-All new code should be documented using Doxygen style comments. The benefits to this are the inline 
-documentation can be converted to a manual for developers in time and there is a defined style for 
-documentation that is easy to follow. 
+All new code should be documented using Doxygen style comments. The benefits to this are the inline
+documentation can be converted to a manual for developers in time and there is a defined style for
+documentation that is easy to follow.
 
 #### Pre-Commit
-A series of linting and formatting tools are run using the `pre-commit` package. 
+A series of linting and formatting tools are run using the `pre-commit` package.
 The rules are defined in the `.pre-commit-config.yaml` file in the root of the repository.
 
 You can configure `pre-commit` to run the linter on every commit automatically before every commit by installing
@@ -99,7 +99,7 @@ Alternatively, you can run the linter manually using:
 pre-commit run --all
 ```
 When a pull request is submitted, all pre-commit hooks will run and the pull request will be blocked
-until all hooks pass. 
+until all hooks pass.
 
 ##### Fortitude
 We have developed a set of Fortran linting rules using the `fortitude` package. Fortitude is a Fortran linter
@@ -121,7 +121,7 @@ We also run additional hook on the code base such as:
 * `ruff-format` - formats Python files in a consistent style
 
 #### Compiler Warnings and Developer Mode
-Compilers can be configured to provide warnings about code that is not standard compliant, 
+Compilers can be configured to provide warnings about code that is not standard compliant,
 does not follow best practices, may not do what you expect, or does not follow certain good
 programming practices. The CMake build system has been configured to use have a "developer mode"
 where the GNU compiler suite will compile with maximum warnings, all of which are treated as
@@ -133,18 +133,18 @@ system and will block the pull request until all warnings are resolved.
 The warnings that are enabled in developer mode are:
 
 ```
--Werror 
--Wall 
--Wextra 
--pedantic 
--fimplicit-none 
--Wconversion 
+-Werror
+-Wall
+-Wextra
+-pedantic
+-fimplicit-none
+-Wconversion
 -Wconversion-extra
--Wuninitialized 
--Wsurprising 
--Wuse-without-only 
--Wimplicit-procedure 
--Winteger-division 
+-Wuninitialized
+-Wsurprising
+-Wuse-without-only
+-Wimplicit-procedure
+-Winteger-division
 ```
 You can enable developer mode when working with the GNU compilers and the CMake build system by
 adding the following to your CMake command line:
@@ -157,31 +157,31 @@ new "*.F90" files. The goal is that over time, we will slowly have more of the c
 strict warning checks.
 #### Maintainability
 
-It is very attractive to simply add new code either within a subroutine or function or 
+It is very attractive to simply add new code either within a subroutine or function or
 at the end or middle of an existing module. It is important to think about why you are
 adding the code you are adding, and we encourage you to think about the modularity of any
 change. In the general case, if you are adding a new behavior to the code for an existing
 feature, this is likely a good candidate for a new subroutine or function. In the case that
-you are adding a new feature, this is likely a good candidate for a new module. 
+you are adding a new feature, this is likely a good candidate for a new module.
 
 In all cases, adding additional variables to the `GLOBAL` module is highly discouraged. By
 adding variables to the `GLOBAL` module, you are more likely to create spooky action at a
-distance, i.e., the values held in those variables can change due to things you can not 
-reason about in your local view of the code, and thus will be more challenging to understand. 
-Instead, you should  consider passing variables to subroutines and  functions as arguments. 
-Compilers are quite good at optimizing this and the performance impact is negligible. 
+distance, i.e., the values held in those variables can change due to things you can not
+reason about in your local view of the code, and thus will be more challenging to understand.
+Instead, you should  consider passing variables to subroutines and  functions as arguments.
+Compilers are quite good at optimizing this and the performance impact is negligible.
 Additionally, just because  the variables are not within the `GLOBAL` module, but in some other
-module instead, does not mean that they are not global in their scope. We recommend that 
-when you need to maintain a state variable, you should consider using a data structure or 
+module instead, does not mean that they are not global in their scope. We recommend that
+when you need to maintain a state variable, you should consider using a data structure or
 derived type rather than pointing at a variable in some global scope or other module.
 
 Lastly, we ask developers to adhere to the DRY principle, i.e., Don't Repeat Yourself. If
 you find yourself feeling the urge to copy and paste code, or copy and paste code even if
-it requires a small to medium-sized change, that's typically a sign that you should be 
+it requires a small to medium-sized change, that's typically a sign that you should be
 creating a new subroutine or function. This will help to keep the code base
-clean and maintainable. If you find yourself needing similar functionality in multiple modules, 
+clean and maintainable. If you find yourself needing similar functionality in multiple modules,
 consider that this is a good candidate for the start of a new module which might encompass
-other pieces of functionality as well. 
+other pieces of functionality as well.
 
 Please follow the good boy scouts rule and leave the code cleaner than you found it.
 

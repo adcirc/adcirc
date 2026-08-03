@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -20,7 +20,7 @@
 #include "logging_macros.h"
 C
 C                ADCIRC - SUBDOMAIN MODELING PREPROCESSING MODULE
-C       
+C
 C    ========================================================================
 C    |                                                                      |
 C    |   This file contains the subroutines required by Subdomain Modeling, |
@@ -46,9 +46,9 @@ C   NCSU Subdomain Modeling variables:
        integer :: enforceBN
        integer :: psbtiminc, pncbn, pnobn, pnibn
        real(8) :: pebn,pubn,pvbn
-       integer,allocatable :: pcbn(:),pncbnp(:) 
-       integer,allocatable :: pobn(:),pnobnp(:) 
-       integer,allocatable :: pibn(:),pnibnp(:) 
+       integer,allocatable :: pcbn(:),pncbnp(:)
+       integer,allocatable :: pobn(:),pnobnp(:)
+       integer,allocatable :: pibn(:),pnibnp(:)
        integer :: pwdbn
        logical :: found_sm_nml
 
@@ -70,7 +70,7 @@ C   NCSU Subdomain Modeling variables:
          ioerror = 0
          !
          ! Look for the subdomainModeling namelist in the fort.15 file
-         ! and if it is found, read the value of subdomainOn. 
+         ! and if it is found, read the value of subdomainOn.
          call openFileForRead(15,'fort.15',ioerror)
          if (ioerror.ne.0) then
             call allMessage(ERROR,'Failed to open fort.15 file.')
@@ -78,7 +78,7 @@ C   NCSU Subdomain Modeling variables:
          endif
          !
          ! jgf51.42: Add a namelist for the user to control subdomain
-         ! modeling. 
+         ! modeling.
          READ(UNIT=15,NML=subdomainModeling,IOSTAT=ioerror)
          IF (ioerror.gt.0) THEN
             call logMessage(INFO,
@@ -88,12 +88,12 @@ C   NCSU Subdomain Modeling variables:
          endif
          if ((ioerror.gt.0).or.(subdomainOn.eqv..false.)) then
             call logMessage(INFO,
-     &         'The subdomainModeling capability is not active.')     
+     &         'The subdomainModeling capability is not active.')
          endif
          write(scratchMessage,*) "subdomainOn=",subdomainOn
          call logMessage(ECHO,trim(scratchMessage))
          close(15)
-                
+
          if (subdomainOn) then
             call openFileForRead(1015,'fort.015',ioerror)
             if (ioerror.eq.0) then
@@ -121,7 +121,7 @@ C   NCSU Subdomain Modeling variables:
          implicit none
          integer :: i,j,n,node,iproc
          integer :: gn,p,totalProc,itemp,procTemp
- 
+
          open(1019, file='fort.019')
          read(1019,*)
          read(1019,*) psbtiminc, pncbn
@@ -141,15 +141,15 @@ C   NCSU Subdomain Modeling variables:
              do p=1,totalProc
                  itemp = (p-1)*2+1
                  procTemp = IMAP_NOD_GL2(itemp,gn)
-                 pncbnp(procTemp) = pncbnp(procTemp) + 1 
+                 pncbnp(procTemp) = pncbnp(procTemp) + 1
              enddo
          enddo
 
       END SUBROUTINE openFort019prep
-     
 
 
- 
+
+
 
       SUBROUTINE subPrep019()
 
@@ -180,7 +180,7 @@ C   NCSU Subdomain Modeling variables:
                  lnTemp = IMAP_NOD_GL2(itemp+1,gnode)
                  write(sdu(procTemp),*) lnTemp
             enddo
-        enddo                
+        enddo
 
         do while(.true.)
 
@@ -188,7 +188,7 @@ C   NCSU Subdomain Modeling variables:
             do iproc=1,nproc
                 write(sdu(iproc),*) tstep
             enddo
-    
+
 
             do i=1,pncbn
                 read(1019,*) gnode,pebn,pubn
@@ -202,7 +202,7 @@ C   NCSU Subdomain Modeling variables:
                     write(sdu(procTemp),*) pvbn,pwdbn
                 enddo
             enddo
-            
+
         enddo
 
 1905   close(1019)
@@ -250,11 +250,11 @@ C   NCSU Subdomain Modeling variables:
              enddo
          enddo
 
-             
+
          do i=1,nproc
              print *, i, pnobnp(i)
          enddo
-     
+
       END SUBROUTINE openFort020prep
 
 
@@ -278,7 +278,7 @@ C   NCSU Subdomain Modeling variables:
             write(sdu(iproc),*) 'subdomain boundary conditions '
             write(sdu(iproc),*) psbtiminc,pnobnp(iproc)
         enddo
- 
+
         do i=1,pnobn
             gnode = pobn(i)
             totalProc = itotproc(gnode)
@@ -459,13 +459,13 @@ C---------------------------------------------------------------------------
       ErrorIO = 1
       UnitNumberIn = UnitNumber
 
-      ! NCSU Subdomain: 
+      ! NCSU Subdomain:
       if (UnitNumberIn.eq.1019) then
-          DefaultName= 'fort.019'    
-          FileName = 'fort.019'      
+          DefaultName= 'fort.019'
+          FileName = 'fort.019'
       else if (UnitNumberIn.eq.1020) then
-          DefaultName= 'fort.020'    
-          FileName = 'fort.020' 
+          DefaultName= 'fort.020'
+          FileName = 'fort.020'
       else if (UnitNumberIn.eq.1021) then
           DefaultName= 'fort.021'
           FileName = 'fort.021'
@@ -512,43 +512,3 @@ C---------------------------------------------------------------------------
 C---------------------------------------------------------------------------
 
       end module subprep
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -63,7 +63,7 @@ int f_set_metadata_str(ARG1) {
 }
 
 int set_metadata_string(ARG1) {
-    
+
     int i, n, j, i0, i1;
     char *p;
 
@@ -75,21 +75,21 @@ int set_metadata_string(ARG1) {
 
     char field[8][STRING_SIZE], str1[STRING_SIZE], str2[STRING_SIZE], str3[STRING_SIZE+6];
     double value1, value2;
-  
+
     /* clear fields */
- 
+
     i = sizeof(field[0]);
     n = sizeof(field) / i;
     for (j = 0; j < n; j++) field[j][i-1] = 0;
 
     if (*arg1 == 'd' || *arg1 == 'D') {
-        i = sscanf(arg1+1, 
-         "=%99[^:]:%[^:]:%[^:]:%[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]", 
+        i = sscanf(arg1+1,
+         "=%99[^:]:%[^:]:%[^:]:%[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]",
 	  date, var, lev, ftime,field[0],field[1],field[2],field[3],field[4],field[5],field[6],field[7]);
     }
     else {
-        i = sscanf(arg1, 
-         "%*[^:]:%*[^:]:%*[dD]=%99[^:]:%[^:]:%[^:]:%[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]", 
+        i = sscanf(arg1,
+         "%*[^:]:%*[^:]:%*[dD]=%99[^:]:%[^:]:%[^:]:%[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]:%99[^:]",
 	  date, var, lev, ftime,field[0],field[1],field[2],field[3],field[4],field[5],field[6],field[7]);
     }
 
@@ -121,7 +121,7 @@ int set_metadata_string(ARG1) {
 	    // if "anl" or "(number) %s %s" call set_ftime
 	    // else call set_ave
 	    if (strcmp(ftime,"anl") == 0) f_set_ftime1(call_ARG1(inv_out,NULL,ftime));
-	    else if ( ((i = sscanf(ftime,"%*d %*s %s%n", string, &len)) == 1) && len == len_arg1) 
+	    else if ( ((i = sscanf(ftime,"%*d %*s %s%n", string, &len)) == 1) && len == len_arg1)
                 f_set_ftime1(call_ARG1(inv_out,NULL,ftime));
             else f_set_ave(call_ARG1(inv_out,NULL,ftime));
 	}
@@ -307,7 +307,7 @@ int set_metadata_string(ARG1) {
 	    continue;
 	}
 
-//	
+//
 //	j = sscanf(p,"chemical=%s", str1);
 //	if (j == 1) {
 //	    f_set(call_ARG2(inv_out,NULL,"code_table_4.230",str1));

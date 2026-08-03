@@ -85,8 +85,8 @@ module ADC_CONSTANTS
 
    !----------------!
    ! bulk modulus
-   ! REAL (8), parameter:: kappamod = 2.041845e+09 
-   REAL (8):: kappamodulus = 2.20D+09 
+   ! REAL (8), parameter:: kappamod = 2.041845e+09
+   REAL (8):: kappamodulus = 2.20D+09
 
    !---Time based factors---!
    real(8), parameter :: hour2sec = 3600.0d0
@@ -98,7 +98,7 @@ module ADC_CONSTANTS
 
    real(8), parameter :: hour2min = 60.d0
    real(8), parameter :: min2hour = 1.d0/hour2min
-   real(8), parameter :: min2day = 1.d0*min2hour*hour2day; 
+   real(8), parameter :: min2day = 1.d0*min2hour*hour2day;
    !---Conversion Factors---!
 
    !...Wind Reduction Factor

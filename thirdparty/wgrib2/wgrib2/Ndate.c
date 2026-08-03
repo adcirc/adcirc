@@ -36,16 +36,16 @@ int f_ndate(ARG2) {
         strlen_arg1 = strlen(arg1);
 	day = month = 1;
         hour = minute = second = 0;
-	
+
 	/* format =	1 YYYY
 			2 YYYYMM
 			3 YYYYMMDD
 			4 YYYYMMDDHH
 			5 YYYYMMDDHHmm
-			6 YYYYMMDDHHmmss 
+			6 YYYYMMDDHHmmss
 	 */
 	format = (strlen_arg1-2)/2;
-        if (strlen_arg1 % 2 == 1 || strlen_arg1 < 4 || strlen_arg1 > 14) 
+        if (strlen_arg1 % 2 == 1 || strlen_arg1 < 4 || strlen_arg1 > 14)
 	   fatal_error("ndates: (YYYY|YYYYMM|YYYYMMDD|YYYYMMDDHH|YYYYMMDDHHmm|YYYYMMDDHHmmss)","");
 	sscanf(arg1, "%4d%2d%2d%2d%2d%2d", &year, &month, &day, &hour, &minute, &second);
 
@@ -79,8 +79,8 @@ int f_ndate(ARG2) {
 	}
 
         if (dt_unit == -1) fatal_error("ndates: unsupported time unit %s", string);
-        
-	if (dtime >= 0) 
+
+	if (dtime >= 0)
 	add_dt(&year, &month, &day, &hour, &minute, &second, dtime, dt_unit);
 	else sub_dt(&year, &month, &day, &hour, &minute, &second, -dtime, dt_unit);
 
@@ -103,7 +103,7 @@ int f_ndate(ARG2) {
 	    else {
 		sprintf(inv_out, "%.4d%.2d%.2d%.2d%.2d%.2d\n",  year, month, day, hour, minute, second);
 	    }
-        
+
     }
     return 0;
 }

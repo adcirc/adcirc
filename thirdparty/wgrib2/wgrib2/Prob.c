@@ -38,7 +38,7 @@ int f_prob(ARG0) {
 
 	case 0: sprintf(inv_out,"prob <%g", LOWER_LIMIT); break;
 	case 1: sprintf(inv_out,"prob >%g", UPPER_LIMIT); break;
-	
+
 	case 2: if (LOWER_LIMIT == UPPER_LIMIT) {
 		sprintf(inv_out,"prob =%g", LOWER_LIMIT); break;
 		}
@@ -68,4 +68,3 @@ int f_prob(ARG0) {
     }
     return 0;
 }
-

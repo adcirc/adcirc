@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                       OBLIQUE MERCATOR (HOTINE) 
+NAME                       OBLIQUE MERCATOR (HOTINE)
 
 PURPOSE:	Transforms input longitude and latitude to Easting and
 		Northing for the Oblique Mercator projection.  The
@@ -48,7 +48,7 @@ long omerforint(double r_maj, double r_min, double scale_fact,
         double false_north, double lon1, double lat1, double lon2, double lat2,
         long mode) {
 //long omerforint(r_maj,r_min,scale_fact,azimuth,lon_orig,lat_orig,false_east,
-//	    false_north,lon1,lat1,lon2,lat2,mode) 
+//	    false_north,lon1,lat1,lon2,lat2,mode)
 //
 //double r_maj;			/* major axis			*/
 //double r_min;			/* minor axis			*/
@@ -115,7 +115,7 @@ else
 
 /* Report parameters to the user that are the same for both formats
   ---------------------------------------------------------------*/
-ptitle("OBLIQUE MERCATOR (HOTINE)"); 
+ptitle("OBLIQUE MERCATOR (HOTINE)");
 radius2(r_major, r_minor);
 genrpt(scale_factor,"Scale Factor at C. Meridian:    ");
 offsetp(false_easting,false_northing);
@@ -131,7 +131,7 @@ if (mode != 0)
    genrpt(azimuth * R2D,"Azimuth of Central Line:    ");
    cenlon(lon_origin);
    cenlat(lat_origin);
-   
+
    con = fabs(lat_origin);
    if ((con > EPSLN) && (fabs(con - HALF_PI) > EPSLN))
       {
@@ -170,14 +170,14 @@ else
    dlon  = adjust_lon(lon1 - lon_origin);
    gama = atan(sin(bl * dlon)/g);
    azimuth = asinz(d * sin(gama));
-   
+
    /* Report parameters common to format A
    -------------------------------------*/
    genrpt(lon1 * R2D,"Longitude of First Point:    ");
    genrpt(lat1 * R2D,"Latitude of First Point:    ");
    genrpt(lon2 * R2D,"Longitude of Second Point:    ");
    genrpt(lat2 * R2D,"Latitude of Second Point:    ");
-   
+
    if (fabs(lat1 - lat2) <= EPSLN)
       {
       p_error("Input data error","omer-init");
@@ -190,13 +190,13 @@ else
       p_error("Input data error","omer-init");
       return(202);
       }
-   else 
+   else
    if (fabs(fabs(lat_origin) - HALF_PI) <= EPSLN)
       {
       p_error("Input data error","omer-init");
       return(202);
       }
-      
+
    sincos(gama,&singam,&cosgam);
    sincos(azimuth,&sinaz,&cosaz);
    if (lat_origin >= 0)
@@ -206,7 +206,7 @@ else
    }
 return(OK);
 }
-
+
 
 /* Oblique Mercator forward equations--mapping lat,long to x,y
   ----------------------------------------------------------*/

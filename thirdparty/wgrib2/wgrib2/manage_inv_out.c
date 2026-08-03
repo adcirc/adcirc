@@ -5,8 +5,8 @@
 
 char *inv_out;
 char *last_inv_out;
-static char inv_buf1[INV_BUFFER];  
-static char inv_buf2[INV_BUFFER];  
+static char inv_buf1[INV_BUFFER];
+static char inv_buf2[INV_BUFFER];
 
 /* initialize once */
 

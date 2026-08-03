@@ -25,11 +25,11 @@ int rdieee_file(float *array, unsigned int n, int header, struct seq_file *input
     if (header) {
 	if (nbytes >> 32) fatal_error("rdieee: grid too large for 4 byte header","");
 	if (fread_file(h4,1,4,input) != 4) fatal_error("rdieee: header read","");
-	if (ieee_little_endian) 
+	if (ieee_little_endian)
 	    l = (h4[3] << 24) | (h4[2] << 16) | (h4[1] << 8) | h4[0];
 	else
 	    l = (h4[0] << 24) | (h4[1] << 16) | (h4[2] << 8) | h4[3];
-	
+
 	if (l != nbytes) fatal_error("rdieee: bad header","");
     }
 

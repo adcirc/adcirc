@@ -8,7 +8,7 @@
 
 /* Reduce text size inside table cells */
 .wy-table-responsive table.small-table td p,
-.wy-table-responsive table.small-table th p { 
+.wy-table-responsive table.small-table th p {
     font-size: 0.9em !important;
     margin: 2px; /* Remove extra spacing */
 }
@@ -58,16 +58,16 @@
     width: 500px; /* Or any desired width */
     height: 200px; /* Or any desired height */
   }
-  
+
   .sticky-table table {
     border-collapse: collapse;
     width: 100%; /* Take full width of the container */
   }
-  
+
   .sticky-table th, .sticky-table td {
     padding: 8px;
   }
-  
+
   /* Make the first column sticky */
   .sticky-table td:first-child {
     position: sticky;
@@ -75,7 +75,7 @@
     background-color: #ffffff; /* Solid white background */
     z-index: 1; /* Ensure it stays on top */
   }
-  
+
   /* Ensure sticky cell doesn't overlap */
   .sticky-table th:first-child {
     position: sticky;

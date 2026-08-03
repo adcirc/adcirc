@@ -971,7 +971,7 @@ XEC(k),YEC(k) k=1,NSTAC
    The coordinates must be consistent (i.e. cartesian or spherical) with the Grid and Boundary Information File and the coordinate designation parameter, ICS, in the Model Parameter and Periodic Boundary Condition File.
 
    If a concentration recording station is input which does not lie within the computational domain, a non-fatal error message will appear. If NFOVER has been set equal to 1, the code will estimate the nearest element and use that as the basis of interpolation. A proximity index is printed out in the fort.16 file that indicates how close or far the station coordinates are from the nearest element. This index may be interpreted as the number of elements that the station lies from the nearest element.
- 
+
 .. _NOUTM:
 .. _TOUTSM:
 .. _TOUTFM:
@@ -1160,7 +1160,7 @@ HAFREQ(k), HAFF(k), HAFACE(k) k=1,NFREQ
 
    HAFACE(k) = equilibrium argument (degrees)
 
-   If a steady component will be included in the harmonic analysis, this must be the first constituent listed (i.e., the constituent corresponding to k=1) 
+   If a steady component will be included in the harmonic analysis, this must be the first constituent listed (i.e., the constituent corresponding to k=1)
 
 .. _THAS:
 .. _THAF:
@@ -1259,7 +1259,7 @@ ITITER, ISLDIA, CONVCR, ITMAX
    ITMAX = Maximum number of iterations each time step
 
       Note: all of the parameters must be input regardless of whether a diagonal or iterative solver is selected. However, ISLDIA, CONVCR and ITMAX are only used with the iterative solvers
-      
+
       CONVCR and ITMAX are only used with the iterative solvers
 
       Note: we typically use CONVCR=1E-10. After the first few time steps, the solutions usually converge within 5-10 iterations.
@@ -1432,7 +1432,7 @@ IEVC, EVMIN, EVCON
       .. image:: ../../_static/ievc_51_note.avif
 
       .. image:: ../../_static/ievc_51_eqns.avif
-         
+
 .. _EVTOT:
 
 EVTOT(K)
@@ -1708,7 +1708,7 @@ EQNSTATE
    EQNSTATE = 2 Use the equation of state given in McDougall, T. J., D.G. Wright, D. R. Jackett and R. Feistel, "Accurate and computationally efficient algorithms for potential temperature and density of seawater", Journal of Atmospheric and Oceanic Technology, 20 (5), 2003, pp. 730-741. This uses the temperature, salinity and pressure in determining the density field. This option can be used when IDEN = 4 or -4. The equation used with this option can be found in the theory manual.
 
    EQNSTATE = 3 Use the equation of state is the UNESCO equation and is given in Gill, A.E., Atmosphere-Ocean Dynamics, Academic Press, 1982, 662 pp. and Mellor, G.L., Introduction to Physical Oceanography, American Institute of Physics, 1996, 284 pp. It uses the temperature, salinity and pressure in determining the density field.
-   
+
    This option can be used when IDEN = 4 or -4. The equation used with this option can be found in the theory manual.
 
 .. _NLSD:
@@ -1924,7 +1924,7 @@ ESBIN(k)
 .. _ETIMINC:
 
 ETIMINC
-   Time increment (secs) between consecutive sets of elevation specified boundary condition values contained in this file. 
+   Time increment (secs) between consecutive sets of elevation specified boundary condition values contained in this file.
 
 fort.20
 ~~~~~~~
@@ -1948,7 +1948,7 @@ QNIN(k)
 
 FRIC(k)
    Nodal bottom friction coefficient.
- 
+
 
 fort.22
 ~~~~~~~

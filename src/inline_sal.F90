@@ -1,23 +1,23 @@
 ! DW - Jan 2025!
-!  -  Adapted from SAL implemention of MPAS-O; subroutines taken from MPAS-O include 
-!     their original descriptions and writers.  
+!  -  Adapted from SAL implemention of MPAS-O; subroutines taken from MPAS-O include
+!     their original descriptions and writers.
 !
 #include "logging_macros.h"
 
 MODULE MOD_INLINE_SAL
     !
-#ifndef NONADC    
+#ifndef NONADC
     USE ADC_CONSTANTS, only: rhoW => RhoSeaWat0, RhoE => RhoEarth, Rearth, deg2rad, rad2deg
 !    USE global, only: resident_elemask => imap_el_lg, H0, dtdp, wdnodecode => nodecode, ifsprots, &
-!       setmessagesource, unsetmessagesource, salcontrol => CInlineSAL 
+!       setmessagesource, unsetmessagesource, salcontrol => CInlineSAL
     USE global, only: resident_elemask => imap_el_lg, H0, dtdp, wdnodecode => nodecode, &
-            &   ifsprots, salcontrol => CInlineSAL 
+            &   ifsprots, salcontrol => CInlineSAL
 
     USE mesh, only: etov => nm, nele => ne, nnode => np, depth => dp, gridics => ICS, &
-            slam, sfea, slamr, sfear   
+            slam, sfea, slamr, sfear
 #endif
 
-#ifdef CMPI    
+#ifdef CMPI
     USE MESSENGER, only: msg_rvec_allreduce_sum
     USE sizes, only: myproc
 #endif
@@ -31,60 +31,60 @@ MODULE MOD_INLINE_SAL
 #ifdef NONADC
     REAL(8), PARAMETER :: rhoW = 1035.0D0 ! kg/m^3
     REAL(8), PARAMETER :: rhoE = 5517.0D0 ! Average Earth density
-    REAL(8), PARAMETER :: Rearth = 6378206.4d0 
+    REAL(8), PARAMETER :: Rearth = 6378206.4d0
 #endif
 
     type salmethod
         LOGICAL:: use_inline_sal = .false.
-        character (len=24):: inlineSALMethod = 'SH'  ! SH = spherocal harmonic or AP = constant 
+        character (len=24):: inlineSALMethod = 'SH'  ! SH = spherocal harmonic or AP = constant
         LOGICAL:: use_direct_shtns_self_attraction_loading = .true.
         LOGICAL:: use_blocking_scheme = .true.
-        LOGICAL:: use_direct_shtns_self_attraction_loading_bfb = .false. 
-        
-        INTEGER:: nOrder = 64 
-        INTEGER:: nCellBlock = 500  
-        INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp 
-                                 ! dtdp = time step size, current not used  
+        LOGICAL:: use_direct_shtns_self_attraction_loading_bfb = .false.
+
+        INTEGER:: nOrder = 64
+        INTEGER:: nCellBlock = 500
+        INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp
+                                 ! dtdp = time step size, current not used
         REAL (8):: saldtinc = -9999.D0  ! currently not used
 
-        LOGICAL:: sal_init = .false. 
+        LOGICAL:: sal_init = .false.
         REAL (8):: salAPBeta = 0.00D0 ; ! foadis's scalar approximation
 
 
         LOGICAL:: ApplyFilter = .false. ! .true. - filter is applied
         INTEGER:: filtermthd = 2        ! method = 1,2,3 - filter scheme
 
-    contains 
+    contains
         procedure, pass(this), public:: sal_param_init
         procedure, pass(this), public:: sal_privatedata_init
-#ifndef NONADC        
+#ifndef NONADC
         procedure, pass(this), public:: sal_compute => direct_spht_self_attraction_loading_fn
         procedure, pass(this), public:: sal_compute_sub => direct_spht_self_attraction_loading_sub
         procedure, pass(this), public:: salAP_reduce_factor
-#endif    
-    end type salmethod        
+#endif
+    end type salmethod
 
     type(salmethod), public :: ssh_inline_sal
-    
+
     INTEGER, parameter, private:: RKIND=8
 
     ! global varibles: private
-    INTEGER, private::  nOrder = 64 
-    INTEGER, private::  nCellBlock = 500 
+    INTEGER, private::  nOrder = 64
+    INTEGER, private::  nCellBlock = 500
     LOGICAL, private::  use_direct_shtns_self_attraction_loading = .TRUE.
 
     LOGICAL, private::  use_blocking_scheme = .TRUE.
-    LOGICAL, private::  use_direct_shtns_self_attraction_loading_bfb = .FALSE. 
+    LOGICAL, private::  use_direct_shtns_self_attraction_loading_bfb = .FALSE.
 
-    LOGICAL, private::  use_AP_approximation = .FALSE. ! - a constant 0.9 \eta as a SAL approximation 
-    LOGICAL, private::  use_SH_approximation = .TRUE.  ! - spherical harmionic 
+    LOGICAL, private::  use_AP_approximation = .FALSE. ! - a constant 0.9 \eta as a SAL approximation
+    LOGICAL, private::  use_SH_approximation = .TRUE.  ! - spherical harmionic
 
-    real(kind=RKIND), private, dimension(:,:), allocatable :: aRecurrenceCoeff, bRecurrenceCoeff 
-    real(kind=RKIND), private, dimension(:), allocatable :: pmnm2, pmnm1, pmn                 
+    real(kind=RKIND), private, dimension(:,:), allocatable :: aRecurrenceCoeff, bRecurrenceCoeff
+    real(kind=RKIND), private, dimension(:), allocatable :: pmnm2, pmnm1, pmn
     real(kind=RKIND), private, dimension(:), allocatable :: LoveSalScaling, LovLoadScaling
 
     real(kind=RKIND), private, dimension(:), allocatable :: lonCell
-    real(kind=RKIND), private, dimension(:), allocatable :: sinLatCell, cosLatCell, dASc ! dASc - intended for dA = dlon dlat 
+    real(kind=RKIND), private, dimension(:), allocatable :: sinLatCell, cosLatCell, dASc ! dASc - intended for dA = dlon dlat
     real(kind=RKIND), private, dimension(:), allocatable :: sphtRe, sphtIm   ! for temporarily holding the inegrad at the quadrature points
 
     real(kind=RKIND), private, dimension(:,:), allocatable :: complexExpRe, complexExpIm
@@ -102,17 +102,17 @@ MODULE MOD_INLINE_SAL
     integer, private, dimension(:,:), allocatable :: blockIdxForward
     integer, private, dimension(:,:), allocatable :: blockIdxInverse
 
-    real(kind=RKIND), private, parameter:: onethird = 1.0_RKIND/3.0_RKIND 
-    real(kind=RKIND), private, parameter:: pii = acos(-1.0_RKIND) 
+    real(kind=RKIND), private, parameter:: onethird = 1.0_RKIND/3.0_RKIND
+    real(kind=RKIND), private, parameter:: pii = acos(-1.0_RKIND)
     real(kind=RKIND), private, parameter:: SqrtInv4Pi = sqrt(1.0_RKIND/(4.0_RKIND*pii))
 
 #ifndef NONADC
-    real(8), private, target, allocatable:: sshsal(:,:) 
+    real(8), private, target, allocatable:: sshsal(:,:)
     ! sshsal @ saltime, saltime - saltiminc, saltime - 2*saltime
     real(8), private :: sshsaltime(3) ! time associated with previous SAL dataset
     real(8), private :: sshsaltiminc
-    
-    integer, private :: extrapolationOrder  = 0 
+
+    integer, private :: extrapolationOrder  = 0
 #endif
 
 CONTAINS
@@ -127,17 +127,17 @@ CONTAINS
 
        allocate( zetasal(nnode) ) ;
 
-       zetasal = sshsal(:,id) ; 
-       
+       zetasal = sshsal(:,id) ;
+
        return ;
-    end function export_zetasal        
+    end function export_zetasal
 
     function export_zetasaltime() RESULT( zetasaltime )
        implicit none
 
-        REAL(8):: zetasaltime(3)   
+        REAL(8):: zetasaltime(3)
 
-        zetasaltime = sshsaltime ;   
+        zetasaltime = sshsaltime ;
     end function export_zetasaltime
 #endif
 
@@ -152,96 +152,96 @@ CONTAINS
       integer:: salinc
       character (len=*):: inlineSalMethod
       REAL (8):: salAPBeta
-     
+
       logical:: useshtfilter
       integer:: filterscheme
 
-      this%use_inline_sal = useinlinesal   
+      this%use_inline_sal = useinlinesal
       this%use_direct_shtns_self_attraction_loading = usedirectsh
-      this%use_blocking_scheme = usecacheblocking 
-  
-      this%nOrder = shorder 
-      this%nCellBlock = ncellblock 
-      this%salinc = salinc 
+      this%use_blocking_scheme = usecacheblocking
 
-      this%inlineSALMethod = trim(inlineSALMethod) 
-      this%salAPBeta = salAPBeta ; 
+      this%nOrder = shorder
+      this%nCellBlock = ncellblock
+      this%salinc = salinc
 
-      
+      this%inlineSALMethod = trim(inlineSALMethod)
+      this%salAPBeta = salAPBeta ;
+
+
       if ( this%use_inline_sal ) then
         select case( this%inlineSALMethod )
         case ('SH','sh','sH','Sh')
           if ( this%use_direct_shtns_self_attraction_loading == .FALSE. ) then
-             this%use_inline_sal = .FALSE. ; ! other methods are not implemetned yet 
+             this%use_inline_sal = .FALSE. ; ! other methods are not implemetned yet
           endif
 
           this%salAPBeta = 0.D0 ; !
 
-          use_SH_approximation = .true. 
+          use_SH_approximation = .true.
           use_AP_approximation = .false.
-        case  ('AP','ap','Ap','aP') 
-          use_SH_approximation = .false. 
-          use_AP_approximation = .true. 
-        end select  
-      endif 
+        case  ('AP','ap','Ap','aP')
+          use_SH_approximation = .false.
+          use_AP_approximation = .true.
+        end select
+      endif
 
 #ifndef NONADC
-      this%saldtinc = salinc*dtdp ;  
-#endif     
+      this%saldtinc = salinc*dtdp ;
+#endif
       this%sal_init = .true. ;
 
       this%ApplyFilter = useshtfilter ;
-      this%filtermthd = filterscheme ;  
+      this%filtermthd = filterscheme ;
 
-#ifdef CMPI        
+#ifdef CMPI
       if ( myproc ==  0 ) then
-        write(*,*) " Self attraction and loading: "    
+        write(*,*) " Self attraction and loading: "
         write(*,*) "   use_inline_sal = ", this%use_inline_sal
-        write(*,*) "   saldtinc = ", this%saldtinc 
+        write(*,*) "   saldtinc = ", this%saldtinc
         if ( this%use_inline_sal ) then
            if ( use_SH_approximation ) then
-              write(*,*) "   use_SH_approximation = ", use_SH_approximation 
-              write(*,*) "   SHT Order = ", shorder   
-           else   
-              write(*,*) "   use_AP_approximation = ", use_AP_approximation 
-              write(*,*) "   APBeta = ", salAPBeta 
-           endif   
+              write(*,*) "   use_SH_approximation = ", use_SH_approximation
+              write(*,*) "   SHT Order = ", shorder
+           else
+              write(*,*) "   use_AP_approximation = ", use_AP_approximation
+              write(*,*) "   APBeta = ", salAPBeta
+           endif
         endif
 
         write(*,*) "   use filter = ", this%ApplyFilter ;
         if ( this%ApplyFilter ) then
            write(*,*) "   filter scheme  = ", this%filtermthd ;
-        endif 
-               
-      endif
-#endif      
+        endif
 
-      return      
+      endif
+#endif
+
+      return
     end subroutine sal_param_init
 
 #ifndef NONADC
-    
+
     !
     subroutine initSALModule( useinlinesal, inlineSALMethod, usedirectsh, usecacheblocking, &
                                  &  shorder, ncellblock, salinc, extrapval, salAPBeta, &
                                  &  useshtfilter, filterscheme, saltime0, sshsal0 )
       implicit none
-      
+
       logical:: useinlinesal, usedirectsh, usecacheblocking
       integer:: shorder, ncellblock, salinc, extrapval
       character (len=*):: inlineSALMethod
-      real (8):: salAPBeta 
+      real (8):: salAPBeta
 
       logical:: useshtfilter
-      integer:: filterscheme 
+      integer:: filterscheme
 
       REAL(8), optional:: saltime0(3)
       REAL(8), optional, dimension(:,:):: sshsal0
 
       call ssh_inline_sal%sal_param_init( useinlinesal, inlineSALMethod, &
-                & usedirectsh, usecacheblocking, shorder, ncellblock, salinc, & 
+                & usedirectsh, usecacheblocking, shorder, ncellblock, salinc, &
                 & salAPBeta, useshtfilter, filterscheme ) ;
-  
+
       !
       if ( ssh_inline_sal%use_inline_sal ) then
          !
@@ -251,14 +251,14 @@ CONTAINS
          select case ( trim(inlineSALMethod) )
          case ('SH','sh','Sh','sH')
 
-           !      
-           if ( gridICS == 0 ) then     
-             write(*,*) "Error : SAL is not applicable in the Cartesian coordinates" ;         
-           endif        
-   
-           !! allocate( dA(ne), lon(np), lat(np) ) ; 
-           !! dA = -9999.D0 ; lon = -9999.D0 ; lat = -9999.D0 ; 
-           ! 
+           !
+           if ( gridICS == 0 ) then
+             write(*,*) "Error : SAL is not applicable in the Cartesian coordinates" ;
+           endif
+
+           !! allocate( dA(ne), lon(np), lat(np) ) ;
+           !! dA = -9999.D0 ; lon = -9999.D0 ; lat = -9999.D0 ;
+           !
            if ( ifsprots .EQ. 1 ) then
               call ssh_inline_sal%sal_privatedata_init( slamr, sfear, etov, nnode, nele ) ;
            else
@@ -268,54 +268,54 @@ CONTAINS
 
            sshsaltiminc = ssh_inline_sal%saldtinc ;
 
-           sshsaltime = 0.D0 ; 
-           allocate( sshsal(nnode,3) ) ; sshsal = 0.D0 ; 
+           sshsaltime = 0.D0 ;
+           allocate( sshsal(nnode,3) ) ; sshsal = 0.D0 ;
 
            extrapolationOrder = extrapval ;
            extrapolationOrder = merge( 2, extrapolationOrder, extrapolationOrder > 2 ) ;
            extrapolationOrder = merge( 0, extrapolationOrder, extrapolationOrder < 0 ) ;
-       
+
            ! Intended for hot start !
            if ( present(saltime0) ) then
               sshsaltime = saltime0 ;
-           endif     
-           if ( present(sshsal0) ) then
-              sshsal = sshsal0 ; 
            endif
-           !        
+           if ( present(sshsal0) ) then
+              sshsal = sshsal0 ;
+           endif
+           !
          end select
          !
       endif
       !
 
-      return       
+      return
     end subroutine initSALModule
-    !    
+    !
 
     !
     subroutine coldstartSAL( eta )
        implicit none
 
-       real (8), intent(in):: eta(:) 
+       real (8), intent(in):: eta(:)
 
-       ! if ( .NOT. use_SH_approximation ) return ; 
+       ! if ( .NOT. use_SH_approximation ) return ;
        if ( .NOT. ssh_inline_sal%use_inline_sal ) return
 
        call direct_spht_self_attraction_loading_sub( ssh_inline_sal, sshsal(:,1), eta ) ;
-       
-       sshsal(:,2) = sshsal(:,1) ; 
+
+       sshsal(:,2) = sshsal(:,1) ;
        sshsal(:,3) = sshsal(:,2) ;
-     
-       sshsaltime(1) = 0.D0 ; 
+
+       sshsaltime(1) = 0.D0 ;
        sshsaltime(2) = sshsaltime(1) - sshsaltiminc ;
        sshsaltime(3) = sshsaltime(1) - 2.D0*sshsaltiminc ;
 
-       return ;     
-    end subroutine coldstartSAL        
-    !      
+       return ;
+    end subroutine coldstartSAL
+    !
 
     !
-    subroutine hotstartSAL( etasaltm0, etasaltm1, etasaltm2, saltimeloc ) 
+    subroutine hotstartSAL( etasaltm0, etasaltm1, etasaltm2, saltimeloc )
       implicit none
 
       real (8):: saltimeloc(3)
@@ -327,52 +327,52 @@ CONTAINS
       sshsaltime = saltimeloc ;
       sshsal(:,1) = etasaltm0 ;
       sshsal(:,2) = etasaltm1 ;
-      sshsal(:,3) = etasaltm2 ;  
-      
-      return ; 
+      sshsal(:,3) = etasaltm2 ;
+
+      return ;
     end subroutine hotstartSAL
     !
 
-    ! 
+    !
     subroutine getSelfAttractionLoading( etasal, eta, timeloc )
       implicit none
 
       real(8), intent(out) :: etasal(:)
       real(8), intent(inout) :: eta(:)
       real(8), intent(in) :: timeloc ! ADCICR pass timeloc = t^{n+1}
-      
+
       !
       real (8):: saltimeloc, ts(3), num, den, tn
 
 
       if ( .not. ssh_inline_sal%use_inline_sal ) then
          return ;
-      endif 
+      endif
 
-      tn = timeloc - dtdp ; 
+      tn = timeloc - dtdp ;
       saltimeloc = sshsaltime(1) + sshsaltiminc ;
       if ( abs(tn - saltimeloc) < 1.0D-7*dtdp ) then
          ! compute sal at every sshsaltiminc step !
-         sshsal(:,3) = sshsal(:,2) ; 
-         sshsal(:,2) = sshsal(:,1) ; 
-         !     
+         sshsal(:,3) = sshsal(:,2) ;
+         sshsal(:,2) = sshsal(:,1) ;
+         !
          call direct_spht_self_attraction_loading_sub( ssh_inline_sal, sshsal(:,1), eta ) ;
-        
+
          sshsaltime(3) = sshsaltime(2) ;
-         sshsaltime(2) = sshsaltime(1) ; 
-         sshsaltime(1) = tn ;                
-      endif   
-            
+         sshsaltime(2) = sshsaltime(1) ;
+         sshsaltime(1) = tn ;
+      endif
+
       !c extrapolation c!
-      ! ts(1) = sshsaltime ; 
+      ! ts(1) = sshsaltime ;
       ! ts(2) = sshsaltime - sshsaltiminc ;
-      ! ts(3) = sshsaltime - 2.D0*sshsaltiminc ; 
-      ! ts = sshsaltime ; 
+      ! ts(3) = sshsaltime - 2.D0*sshsaltiminc ;
+      ! ts = sshsaltime ;
 
       CALL extrapolate_sal_field( etasal, timeloc  )
 
-      return 
-    end subroutine getSelfAttractionLoading 
+      return
+    end subroutine getSelfAttractionLoading
     !
 
     !
@@ -383,21 +383,21 @@ CONTAINS
 
       REAL (8):: ts(3), num, den
 
-      ts = sshsaltime ; 
-      ! extrapolate SAL from ( sshsal(:,t^{m-i}_{SAL}), m = 0, 1, 2 ) 
+      ts = sshsaltime ;
+      ! extrapolate SAL from ( sshsal(:,t^{m-i}_{SAL}), m = 0, 1, 2 )
       select case( extrapolationOrder )
       case (2)
-         ! quadratic extrapolation/interpolation     
+         ! quadratic extrapolation/interpolation
          etasal = 0.D0 ;
-   
+
          num = (timeloc - ts(2))*(timeloc - ts(3)) ;
          den = (  ts(1) - ts(2))*(ts(1)   - ts(3)) ;
          etasal = (num/den)*sshsal(:,1) ;
-   
+
          num = (timeloc - ts(1))*(timeloc - ts(3)) ;
          den = (  ts(2) - ts(1))*(  ts(2) - ts(3)) ;
          etasal = etasal + (num/den)*sshsal(:,2) ;
-   
+
          num = (timeloc - ts(1))*(timeloc - ts(2)) ;
          den = (  ts(3) - ts(1))*(  ts(3) - ts(2)) ;
          etasal = etasal + (num/den)*sshsal(:,3) ;
@@ -408,108 +408,108 @@ CONTAINS
          den = (  ts(1) - ts(2))  ;
          etasal = (num/den)*sshsal(:,1) ;
 
-         num = (timeloc - ts(1)) ; 
-         den = ( ts(2) - ts(1)) ; 
-         etasal = etasal + (num/den)*sshsal(:,2) ; 
+         num = (timeloc - ts(1)) ;
+         den = ( ts(2) - ts(1)) ;
+         etasal = etasal + (num/den)*sshsal(:,2) ;
       case (0)
          ! constant extrapolation/interpolation
          if ( timeloc >= ts(1) ) then
-            etasal = sshsal(:,1) ; 
+            etasal = sshsal(:,1) ;
          else if ( timeloc >= ts(2) .and. timeloc < ts(1) ) then
             etasal = sshsal(:,2) ;
-         else if ( timeloc >= ts(3) .and. timeloc < ts(2) ) then    
+         else if ( timeloc >= ts(3) .and. timeloc < ts(2) ) then
             etasal = sshsal(:,3) ;
-         endif        
+         endif
       end select
 
       return ;
-    end subroutine extrapolate_sal_field        
-    ! 
+    end subroutine extrapolate_sal_field
+    !
 
-    ! 
+    !
     subroutine direct_spht_self_attraction_loading_sub( this, ssh_sal, ssh )
-      implicit none 
+      implicit none
 
       class (salmethod), intent(inout):: this
       real (kind=RKIND), dimension(:):: ssh_sal, ssh
-    
+
       ! local !
       INTEGER:: ii, jj
 
       ssh_sal = 0.D0 ;
-      if ( this%use_inline_sal ) then 
-        ! 
-        sshSmoothed = ssh ; 
+      if ( this%use_inline_sal ) then
+        !
+        sshSmoothed = ssh ;
 
         ! adjust value of nodes on land !
         do ii = 1, nnode
           !
-          if ( depth(ii) < 0.0D0 ) then 
+          if ( depth(ii) < 0.0D0 ) then
              ! sshSmoothed(ii) = 0.D0 ;
-             !  - might need to add node code:     
+             !  - might need to add node code:
              if (  sshSmoothed(ii) + depth(ii) > H0 ) then
-                sshSmoothed(ii) = sshSmoothed(ii) + DEPTH(ii) - H0 ;       
+                sshSmoothed(ii) = sshSmoothed(ii) + DEPTH(ii) - H0 ;
              else
-                sshSmoothed(ii) = 0.D0 
+                sshSmoothed(ii) = 0.D0
              endif
 
-             sshSmoothed(ii) = wdnodecode(ii)*sshSmoothed(ii) ;        
+             sshSmoothed(ii) = wdnodecode(ii)*sshSmoothed(ii) ;
           end if
           !
         end do
         !
 
 !        CALL self_attraction_loading_parallel_fem( ssh_sal, ssh, &
-!                                 etov, nele, resident_elemask ) ; 
-  
-        CALL self_attraction_loading_parallel_fem( this, ssh_sal, & 
-                      sshSmoothed, etov, nele, resident_elemask ) ;  
-      endif                   
-        
+!                                 etov, nele, resident_elemask ) ;
+
+        CALL self_attraction_loading_parallel_fem( this, ssh_sal, &
+                      sshSmoothed, etov, nele, resident_elemask ) ;
+      endif
+
       return ;
     end subroutine direct_spht_self_attraction_loading_sub
-    
+
     !
-    ! 
-    function direct_spht_self_attraction_loading_fn( this, ssh ) result( ssh_sal ) 
-      implicit none 
+    !
+    function direct_spht_self_attraction_loading_fn( this, ssh ) result( ssh_sal )
+      implicit none
 
       class (salmethod), intent(inout):: this
       real (kind=RKIND), dimension(:):: ssh
 
-      real (kind=RKIND):: ssh_sal( nnode ) ; 
-     
+      real (kind=RKIND):: ssh_sal( nnode ) ;
+
       ! local !
       INTEGER:: ii, jj
-      
+
       ssh_sal = 0.D0 ;
-      if ( this%use_inline_sal ) then 
-        ! 
-        sshSmoothed = ssh ; 
+      if ( this%use_inline_sal ) then
+        !
+        sshSmoothed = ssh ;
 
         ! adjust value of nodes on land !
         do ii = 1, nnode
           !
           if ( depth(ii) < 0.0D0 ) then
-             !  might need to add node code:     
+             !  might need to add node code:
              if (  sshSmoothed(ii) + depth(ii) > H0 ) then
-                sshSmoothed(ii) = sshSmoothed(ii) + DEPTH(ii) - H0 ;       
+                sshSmoothed(ii) = sshSmoothed(ii) + DEPTH(ii) - H0 ;
              else
-                sshSmoothed(ii) = 0.D0 
+                sshSmoothed(ii) = 0.D0
              endif
              !
-             sshSmoothed(ii) = wdnodecode(ii)*sshSmoothed(ii) ;        
+             sshSmoothed(ii) = wdnodecode(ii)*sshSmoothed(ii) ;
           end if
           !
         end do
         !
- 
+
         CALL self_attraction_loading_parallel_fem( this, ssh_sal, sshSmoothed, &
                                    etov, nele, resident_elemask ) ;
-      endif 
+      endif
 
       !
-    end function direct_spht_self_attraction_loading_fn 
+    end function direct_spht_self_attraction_loading_fn
     !
 
     ! for scalar approximation SAL
@@ -521,7 +521,7 @@ CONTAINS
 
         salfac =  1.D0 - this%salAPBeta ;
 
-    end function salAP_reduce_factor        
+    end function salAP_reduce_factor
 
 
 #endif  ! NONADC
@@ -530,252 +530,252 @@ CONTAINS
     ! initalize private data in this module !
     subroutine sal_privatedata_init( this, lonv, latv, element, np, ne )
             !    subroutine sal_privatedata_init( this )
-      
-      implicit none 
+
+      implicit none
 
       class (salmethod), intent(inout):: this
       integer:: np, ne, element(:,:)
-      real (8), dimension(:):: lonv, latv 
+      real (8), dimension(:):: lonv, latv
 
-      ! local 
-      integer:: ii 
+      ! local
+      integer:: ii
       real (RKIND), dimension(3):: xs, ys,xc,yc
       real (8), allocatable:: dA(:), lon(:), lat(:)
 
-      real (8), parameter:: eps = 1.0D-10, pii = acos(-1.D0) 
+      real (8), parameter:: eps = 1.0D-10, pii = acos(-1.D0)
 
 
       INITSALPRIVATE: if ( this%use_inline_sal ) then
-         use_direct_shtns_self_attraction_loading = this%use_direct_shtns_self_attraction_loading ;       
+         use_direct_shtns_self_attraction_loading = this%use_direct_shtns_self_attraction_loading ;
          nCellBlock = this%nCellBlock ;
          use_blocking_scheme = this%use_blocking_scheme ;
-         use_direct_shtns_self_attraction_loading_bfb = .FALSE. 
+         use_direct_shtns_self_attraction_loading_bfb = .FALSE.
 
-   
-         allocate( dA(ne), lon(np), lat(np) ) ; 
+
+         allocate( dA(ne), lon(np), lat(np) ) ;
          dA = -9999.D0 ; lon = -9999.D0 ; lat = -9999.D0 ;
-   
+
          ! lon = slam*deg2rad ; ! in DEG
-         ! lat = sfea*deg2rad ; 
+         ! lat = sfea*deg2rad ;
          lon = lonv(1:np) ;
          lat = latv(1:np) ;
          !if ( ifsprots .EQ. 1 ) then
          !   lon = slamr ;
          !   lat = sfear ;
-         !endif   
+         !endif
 
          ! find dA in lat and lon,      !
          ! will move it to mesh.F later !
          DO ii = 1, ne
-           xs(1:3) = lon( element(ii,:) ) ; 
-           ys(1:3) = lat( element(ii,:) ) ; 
-           
-           yc = cos( ys )*sin( xs )  ; 
+           xs(1:3) = lon( element(ii,:) ) ;
+           ys(1:3) = lat( element(ii,:) ) ;
+
+           yc = cos( ys )*sin( xs )  ;
            xc = cos( ys )*cos( xs )  ;
-           ! - Use area based on the chord 
+           ! - Use area based on the chord
            ! dA(ii) = 0.5D0*getarea( xs, ys ) ;
-         
+
            ! - Use an area of the shperical trangle
            !     See K. Hesse, Numerical integration on the sphere
-           !! dA(ii) = getSphericaldA( xs, ys ) 
-         
-           dA(ii) = getSphericaldA1( x = xs, y = ys, mthd = 1  ) ; 
+           !! dA(ii) = getSphericaldA( xs, ys )
+
+           dA(ii) = getSphericaldA1( x = xs, y = ys, mthd = 1  ) ;
 
 
            ! more elegant than what implemented in mesh.F !
            if ( count(yc >= 0.0D0) >= 1  .and. &
-                count(yc >= 0.0D0)  < 3  .and. &      
+                count(yc >= 0.0D0)  < 3  .and. &
                 count( (xc - eps) < 0.D0  ) == 3 ) then
-       
+
                if ( maxval(xs) - minval(xs) > pii ) then
                   !! dA(ii) = 0.5D0*getarea( modulo(xs,2.D0*pii), ys* ) ;
                   !! dA(ii) = getSphericaldA( xs, ys )
 
-                  dA(ii) = getSphericaldA1( x = xs, y = ys, mthd = 1 ) ;  
+                  dA(ii) = getSphericaldA1( x = xs, y = ys, mthd = 1 ) ;
                endif
-               
-               ! if ( dA(ii) <= 0.D0 ) dA(ii) = 0.D0 ;  ! just in case   
+
+               ! if ( dA(ii) <= 0.D0 ) dA(ii) = 0.D0 ;  ! just in case
            endif
          END DO
-         
+
          ! lon = lon*deg2rad ; ! in Rad
          ! lat = lat*deg2rad ;
-         CALL InlineSALDirectMthdtInit( this%nOrder, np, lon, lat, dA  ) ; 
-   
-         deallocate( dA, lon, lat ) ; 
+         CALL InlineSALDirectMthdtInit( this%nOrder, np, lon, lat, dA  ) ;
+
+         deallocate( dA, lon, lat ) ;
 
        endif INITSALPRIVATE
 
-       return ; 
-    contains 
+       return ;
+    contains
 
       ! will move this to mesh.F
       function getarea( x, y ) result( dA )
-        implicit none 
-  
+        implicit none
+
         REAL (8):: x(:), y(:), dA
-  
-        REAL (8):: x2mx1, x3mx2, x1mx3, y2my1, y3my2, y1my3  
-  
+
+        REAL (8):: x2mx1, x3mx2, x1mx3, y2my1, y3my2, y1my3
+
         X2mX1 = (X(2) - X(1));
         X3mX2 = (X(3) - X(2));
         X1mX3 = (X(1) - X(3));
         Y2mY1 = (Y(2) - Y(1));
         Y3mY2 = (Y(3) - Y(2));
         Y1mY3 = (Y(1) - Y(3));
-  
+
         dA=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
-        
+
       end function getarea
- 
+
       ! Area of spherical trangle.
-      ! 
+      !
       ! x - lon in rad
       ! y - lat in rad
       function getSphericaldA1( x, y, mthd  ) result( dA )
-        implicit none 
-  
+        implicit none
+
         REAL (8):: x(:), y(:), dA
         INTEGER, optional:: mthd
 
         ! local !
         REAL(8):: xv(3), yv(3), zv(3)
-        INTEGER:: method = 1 
+        INTEGER:: method = 1
 
-        REAL(8):: avec(3), bvec(3), cvec(3), axb(3) 
-        REAL(8):: ap, bp, cp, s, args 
+        REAL(8):: avec(3), bvec(3), cvec(3), axb(3)
+        REAL(8):: ap, bp, cp, s, args
         REAL(8):: A, B, C
-  
-        xv = cos( y )*cos( x ) ; 
-        yv = cos( y )*sin( x ) ; 
-        zv = sin( y ) ; 
-  
+
+        xv = cos( y )*cos( x ) ;
+        yv = cos( y )*sin( x ) ;
+        zv = sin( y ) ;
+
         if ( present(mthd) ) method = mthd ;
         if ( method > 3 .and. method < 0 ) then
-                method = 1 ; 
+                method = 1 ;
         end if
 
-        ! vector 
+        ! vector
         avec = (/ xv(1), yv(1), zv(1) /) ; ! ov1
         bvec = (/ xv(2), yv(2), zv(2) /) ; ! ov2
         cvec = (/ xv(3), yv(3), zv(3) /) ; ! ov3
-  
+
         ! 1, Find arclength of the great circle
         !%  use arccosine of the dot product
-        !%  
+        !%
         ! cp = acos( sum(avec*bvec) ) ;
         ! bp = acos( sum(avec*cvec) ) ;
         ! ap = acos( sum(bvec*cvec) ) ;
-  
+
         !% Suposed to be well conditioned for all angles
-        axb = cross_product( avec, bvec ) ; 
+        axb = cross_product( avec, bvec ) ;
         cp = atan( sqrt(sum(axb*axb))/sum(avec*bvec) ) ;
-  
-        axb = cross_product( avec, cvec ) ; 
-        bp = atan( sqrt(sum(axb*axb))/sum(avec*cvec) ) ; 
-  
-        axb = cross_product( bvec, cvec ) ; 
-        ap = atan( sqrt(sum(axb*axb))/sum(bvec*cvec) ) ; 
-  
-        !! 2. Find internal angle 
-        A = (cos(ap) - cos(bp)*cos(cp))/( sin(bp)*sin(cp) ) ; 
-        B = (cos(bp) - cos(cp)*cos(ap))/( sin(cp)*sin(ap) ) ; 
-        C = (cos(cp) - cos(ap)*cos(bp))/( sin(ap)*sin(bp) ) ;  
-        
-        A = acos( A ) ; 
+
+        axb = cross_product( avec, cvec ) ;
+        bp = atan( sqrt(sum(axb*axb))/sum(avec*cvec) ) ;
+
+        axb = cross_product( bvec, cvec ) ;
+        ap = atan( sqrt(sum(axb*axb))/sum(bvec*cvec) ) ;
+
+        !! 2. Find internal angle
+        A = (cos(ap) - cos(bp)*cos(cp))/( sin(bp)*sin(cp) ) ;
+        B = (cos(bp) - cos(cp)*cos(ap))/( sin(cp)*sin(ap) ) ;
+        C = (cos(cp) - cos(ap)*cos(bp))/( sin(ap)*sin(bp) ) ;
+
+        A = acos( A ) ;
         B = acos( B ) ;
-        C = acos( C ) ; 
-  
+        C = acos( C ) ;
+
         ! 3. Return area
         SELECT CASE( method )
         CASE (0)
-          !  - Excess angle formula. simple but not very accurate for a smal triangle on a unit sphere 
-          dA = A + B + C - pii ;   
+          !  - Excess angle formula. simple but not very accurate for a smal triangle on a unit sphere
+          dA = A + B + C - pii ;
 
         CASE (3)
-          s = tan( 0.5D0*ap )*tan( 0.5D0*bp ) ; 
+          s = tan( 0.5D0*ap )*tan( 0.5D0*bp ) ;
           args = s*sin(C)/(1.D0 + s*cos(C)) ;
 
-          dA = 4.D0*atan( args ) ; 
+          dA = 4.D0*atan( args ) ;
         CASE DEFAULT
-          ! L'Huilier - Best for small triangles   
-          s = (ap + bp + cp)*0.5D0 ; 
+          ! L'Huilier - Best for small triangles
+          s = (ap + bp + cp)*0.5D0 ;
           args = sqrt( tan(s*0.5D0)*tan((s - ap)*0.5D0)*tan((s - bp)*0.5D0)*tan((s - cp)*0.5D0) ) ;
 
-          dA = 4.D0*atan( args ) ;  
+          dA = 4.D0*atan( args ) ;
         END SELECT
 
       end function getSphericaldA1
-  
+
 
       ! x - lon in rad
       ! y - lat in rad
       function getSphericaldA( x, y ) result( dA )
-        implicit none 
-  
+        implicit none
+
         REAL (8):: x(:), y(:), dA
-  
+
         REAL(8):: xv(3), yv(3), zv(3)
-        REAL(8):: avec(3), bvec(3), cvec(3), axb(3) 
-        REAL(8):: ap, bp, cp 
+        REAL(8):: avec(3), bvec(3), cvec(3), axb(3)
+        REAL(8):: ap, bp, cp
         REAL(8):: A, B, C
-  
-        xv = cos( y )*cos( x ) ; 
-        yv = cos( y )*sin( x ) ; 
-        zv = sin( y ) ; 
-  
-        ! vector 
+
+        xv = cos( y )*cos( x ) ;
+        yv = cos( y )*sin( x ) ;
+        zv = sin( y ) ;
+
+        ! vector
         avec = (/ xv(1), yv(1), zv(1) /) ; ! ov1
         bvec = (/ xv(2), yv(2), zv(2) /) ; ! ov2
         cvec = (/ xv(3), yv(3), zv(3) /) ; ! ov3
-  
+
         ! 1, Find arclength of the great circle
         !%  use arccosine of the dot product
-        !%  
+        !%
         ! cp = acos( sum(avec*bvec) ) ;
         ! bp = acos( sum(avec*cvec) ) ;
         ! ap = acos( sum(bvec*cvec) ) ;
-  
+
         !% Suposed to be well conditioned for all angles
-        axb = cross_product( avec, bvec ) ; 
+        axb = cross_product( avec, bvec ) ;
         cp = atan( sqrt(sum(axb*axb))/sum(avec*bvec) ) ;
-  
-        axb = cross_product( avec, cvec ) ; 
-        bp = atan( sqrt(sum(axb*axb))/sum(avec*cvec) ) ; 
-  
-        axb = cross_product( bvec, cvec ) ; 
-        ap = atan( sqrt(sum(axb*axb))/sum(bvec*cvec) ) ; 
-  
-        ! 2. Find internal angle 
-        A = (cos(ap) - cos(bp)*cos(cp))/( sin(bp)*sin(cp) ) ; 
-        B = (cos(bp) - cos(cp)*cos(ap))/( sin(cp)*sin(ap) ) ; 
-        C = (cos(cp) - cos(ap)*cos(bp))/( sin(ap)*sin(bp) ) ;  
-  
-        A = acos( A ) ; 
+
+        axb = cross_product( avec, cvec ) ;
+        bp = atan( sqrt(sum(axb*axb))/sum(avec*cvec) ) ;
+
+        axb = cross_product( bvec, cvec ) ;
+        ap = atan( sqrt(sum(axb*axb))/sum(bvec*cvec) ) ;
+
+        ! 2. Find internal angle
+        A = (cos(ap) - cos(bp)*cos(cp))/( sin(bp)*sin(cp) ) ;
+        B = (cos(bp) - cos(cp)*cos(ap))/( sin(cp)*sin(ap) ) ;
+        C = (cos(cp) - cos(ap)*cos(bp))/( sin(ap)*sin(bp) ) ;
+
+        A = acos( A ) ;
         B = acos( B ) ;
-        C = acos( C ) ; 
-  
+        C = acos( C ) ;
+
         ! 3. Return area
-        dA = A + B + C - pii ;     
+        dA = A + B + C - pii ;
       end function
 
       function cross_product( avec, bvec ) result( axb )
          implicit none
-  
+
          real (8):: avec(3), bvec(3)
          real (8):: axb(3)
-  
+
          axb(1) = avec(2)*bvec(3) - bvec(2)*avec(3) ;
          axb(2) = avec(3)*bvec(1) - bvec(3)*avec(1) ;
          axb(3) = avec(1)*bvec(2) - bvec(1)*avec(2) ;
-       
-      end function        
-  
+
+      end function
+
     end subroutine sal_privatedata_init
 
-    !  
+    !
     subroutine self_attraction_loading_parallel_fem( this, ssh_sal, ssh, elements, nCells, elemask  )
-       implicit none 
+       implicit none
 
        class (salmethod), intent(inout):: this
 
@@ -788,57 +788,57 @@ CONTAINS
        !
        ! Apply filters
        if ( this%ApplyFilter ) then
-          CALL ApplySHFilters( filtermtd = this%filtermthd ) ; 
-       endif 
+          CALL ApplySHFilters( filtermtd = this%filtermthd ) ;
+       endif
 
        !  apply Love number scaling
-       CALL ApplyLoveScaling( LoveSalScaling, .false. ) ; 
+       CALL ApplyLoveScaling( LoveSalScaling, .false. ) ;
 
        !  apply inverse transform
-       CALL spherical_harmonics_transform_direct_fem( ssh_sal, elements, nCells, .false., elemask ) ;      
-      
-       return ; 
+       CALL spherical_harmonics_transform_direct_fem( ssh_sal, elements, nCells, .false., elemask ) ;
+
+       return ;
     end subroutine self_attraction_loading_parallel_fem
 
-    ! 
+    !
     ! DW:
-    ! Spherical harminic transformation of linear C^{0} FEM data using a direct approach. 
-    !    
+    ! Spherical harminic transformation of linear C^{0} FEM data using a direct approach.
+    !
     !
     ! 1. Forward transform
     !      f^{m}_{n} = \int_{0}^{2pi} \int_{0}^{pi} f(phi,theta) Y^{m}_{n} sin( \theta) d \phi \d \theta
     !
-    !      SPHT(ssh) -> (SnmRe,SnmIm) 
-    !   
-    !     - input: ssh(:)      - Values of a given function at FEM nodes 
-    !              elements(:) - node conectivity table 
+    !      SPHT(ssh) -> (SnmRe,SnmIm)
+    !
+    !     - input: ssh(:)      - Values of a given function at FEM nodes
+    !              elements(:) - node conectivity table
     !              nCells      - number of elements
-    !              forward = .true. 
+    !              forward = .true.
     !     - output: spherial harmonic coefficeints are stored in the private arrays SnmRe, SnmIm
     !              SnmRe = Re( f^{m}_{n} )
-    !              SnmIm = Im( f^{m}_{n} ) 
-    ! 
+    !              SnmIm = Im( f^{m}_{n} )
+    !
     ! 2. Inverse tramsform
     !      f(phi,theta) = \sum_{n=0}^{N} \sum
-    !    
+    !
     !      ISHT(SnmRe,SnmIm) -> ssh
-    !  
+    !
     !     * resynthesize ssh from the spherical harmonic coefficeints stored in the SnmRe, SnmIm
     !     - input: elements
     !              nCells
-    !              forward = .fasle. 
+    !              forward = .fasle.
     !     - outout: ssh(:)  - Resynthesized function at FEM nodes
     !
     !
-    subroutine spherical_harmonics_transform_direct_fem(  ssh, elements, nCells, forward, elemask ) 
+    subroutine spherical_harmonics_transform_direct_fem(  ssh, elements, nCells, forward, elemask )
         implicit none
 
         real (kind=RKIND), dimension(:), intent(inout):: ssh
         integer, dimension(:,:), intent(in):: elements
         integer, intent(in):: nCells
-        logical, intent(in):: forward 
+        logical, intent(in):: forward
         integer, intent(in), dimension(:):: elemask ! mask for element
-                                      ! excldue elemask(i) < 0 from spherical harmonic   
+                                      ! excldue elemask(i) < 0 from spherical harmonic
 
         ! local varibles
         integer :: iCell
@@ -855,25 +855,25 @@ CONTAINS
           do m = 0,nOrder
              do n = m,nOrder
                   l = SHOrderDegreeToIndex(n,m)
-  
+
                   SnmRe_local(l) = 0.0_RKIND
                   SnmIm_local(l) = 0.0_RKIND
               enddo
           enddo
-  
-          do m = 0,nOrder  
+
+          do m = 0,nOrder
              !! do blk = 1,nBlocks
              !!     startIdx = blockIdxForward(1,blk)
              !!     endIdx = blockIdxForward(2,blk)
-  
+
              !------------
              ! n = m
              !------------
              n = m
-  
+
              ! Calculate associated Legendre polynomial for n=m (output pmnm2)
              call associatedLegendrePolynomials(n, m, 1, nPoints, sinLatCell, cosLatCell, l, pmnm2, pmnm1, pmn)
-  
+
              ! Compute local integral contribution
              do iCell = 1, nPoints
                sphtRe(iCell) = ssh(iCell)*pmnm2(iCell)*complexExpRe(iCell,m+1)  ;
@@ -883,20 +883,20 @@ CONTAINS
                ! sphtIm(iCell) = ssh(iCell)*pmnm2(iCell)*complexExpIm(iCell,m+1)*sinLatCell(iCell) ;
 
                ! sphtRe(iCell) = ssh(iCell)*pmnm2(iCell)*cos( m*lonCell(iCell) )*sinLatCell(iCell) ;
-               ! sphtIm(iCell) = ssh(iCell)*pmnm2(iCell)*sin( m*lonCell(iCell) )*sinLatCell(iCell) ; 
+               ! sphtIm(iCell) = ssh(iCell)*pmnm2(iCell)*sin( m*lonCell(iCell) )*sinLatCell(iCell) ;
              end do
-             CALL NewtonCoteLinearFEM( l ) ; 
-             
+             CALL NewtonCoteLinearFEM( l ) ;
+
 
              !------------
              ! n = m+1
              !------------
              n = m+1
              if (n <= nOrder) then
-  
+
                  ! Calculate associated Legendre polynomial for n = m+1 using recurrence relationship
                  call associatedLegendrePolynomials(n, m, 1, nPoints, sinLatCell, cosLatCell, l, pmnm2, pmnm1, pmn)
-  
+
                  do iCell = 1, nPoints
                     sphtRe(iCell) = ssh(iCell)*pmnm1(iCell)*complexExpRe(iCell,m+1) ;
                     sphtIm(iCell) = ssh(iCell)*pmnm1(iCell)*complexExpIm(iCell,m+1) ;
@@ -907,37 +907,37 @@ CONTAINS
                     ! sphtRe(iCell) = ssh(iCell)*pmnm1(iCell)*cos( m*lonCell(iCell) )*sinLatCell(iCell)
                     ! sphtIm(iCell) = ssh(iCell)*pmnm1(iCell)*sin( m*lonCell(iCell) )*sinLatCell(iCell)
                  enddo
-                 CALL NewtonCoteLinearFEM( l ) ; 
+                 CALL NewtonCoteLinearFEM( l ) ;
 
              endif
-  
+
              !------------
              ! n > m+1
              !------------
              do n = m+2,nOrder
-  
+
                  ! Calculate associated Legendre polynomial using recurrence relationship
                  call associatedLegendrePolynomials(n, m, 1, nPoints, sinLatCell, cosLatCell, l, pmnm2, pmnm1, pmn)
-  
+
                  ! Update associated Ledgendre polynomial values for next recurre
                  pmnm2 = pmnm1
                  pmnm1 = pmn
-               
+
                  ! Compute local integral contribution
                  do iCell = 1, nPoints
                     sphtRe(iCell) = ssh(iCell)*pmn(iCell)*complexExpRe(iCell,m+1) ;
                     sphtIm(iCell) = ssh(iCell)*pmn(iCell)*complexExpIm(iCell,m+1) ;
 
-                    ! sphtRe(iCell) = ssh(iCell)*pmn(iCell)*complexExpRe(iCell,m+1)*sinLatCell(iCell) 
+                    ! sphtRe(iCell) = ssh(iCell)*pmn(iCell)*complexExpRe(iCell,m+1)*sinLatCell(iCell)
                     ! sphtIm(iCell) = ssh(iCell)*pmn(iCell)*complexExpIm(iCell,m+1)*sinLatCell(iCell)
 
-                    ! sphtRe(iCell) = ssh(iCell)*pmn(iCell)*cos( m*lonCell(iCell) )*sinLatCell(iCell) 
+                    ! sphtRe(iCell) = ssh(iCell)*pmn(iCell)*cos( m*lonCell(iCell) )*sinLatCell(iCell)
                     ! sphtIm(iCell) = ssh(iCell)*pmn(iCell)*sin( m*lonCell(iCell) )*sinLatCell(iCell)
                  end do
                  CALL NewtonCoteLinearFEM(  l ) ;
 
              enddo ! n loop
-    
+
              !
           enddo ! m loop
 
@@ -945,16 +945,16 @@ CONTAINS
              Snm_local(m) = SnmRe_local(m)      ! real part of f^{m}_{n}
              Snm_local(lmax+m) = SnmIm_local(m) ! imaginary part of f^{m}_{n}
           enddo
-          
 
-#if defined(CMPI) 
+
+#if defined(CMPI)
           ! all reduce
           CALL msg_rvec_allreduce_sum( Snm_local, Snm, 2*lmax )
-#elif defined(NONADCMPI) 
+#elif defined(NONADCMPI)
           CALL MPI_ALLREDUCE( Snm_local, Snm, 2*lmax, &
               & MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, impierr )
 #else
-          Snm = Snm_local ; 
+          Snm = Snm_local ;
 #endif
           ! output: spherical harmonic coefficeints !
           ! PRINT*, "my proc r", myproc ;
@@ -962,7 +962,7 @@ CONTAINS
              SnmRe(m) = Snm(m)       ! real part
              SnmIm(m) = Snm(lmax+m)  ! imaginary part
           enddo
-         
+
         ENDIF FORWARDSPHT
 
 
@@ -1040,7 +1040,7 @@ CONTAINS
         ENDIF INVERSESPHT
 
 
-        return ; 
+        return ;
     contains
 
          subroutine NewtonCoteLinearFEM( l )
@@ -1051,7 +1051,7 @@ CONTAINS
             integer:: ii, ie, ipoint
             real(8):: efactor
 
-            !! print*, nCells, l 
+            !! print*, nCells, l
 
             efactor = 1.D0 ;
             DO ii = 1, 3
@@ -1059,34 +1059,34 @@ CONTAINS
                   ipoint = elements(ie,ii) ;
 
 #ifdef CMPI
-                  efactor = merge(  1.0D0, 0.0D0, elemask(ie) > 0 ) ;  ! exclude elements with elemask(ie) < 0  
+                  efactor = merge(  1.0D0, 0.0D0, elemask(ie) > 0 ) ;  ! exclude elements with elemask(ie) < 0
 #endif
-      
+
                   SnmRe_local(l) = SnmRe_local(l) + onethird*sphtRe(ipoint)*dASc(ie)*efactor ;
-                  SnmIm_local(l) = SnmIm_local(l) + onethird*sphtIm(ipoint)*dASc(ie)*efactor ;   
+                  SnmIm_local(l) = SnmIm_local(l) + onethird*sphtIm(ipoint)*dASc(ie)*efactor ;
                ENDDO
             ENDDO
 
             return ;
          end subroutine NewtonCoteLinearFEM
 
-    end subroutine spherical_harmonics_transform_direct_fem        
+    end subroutine spherical_harmonics_transform_direct_fem
 
     !
-    ! Apply/reset scaling of Love numbers to the spherical harmonic coefficients 
+    ! Apply/reset scaling of Love numbers to the spherical harmonic coefficients
     !
-    subroutine ApplyLoveScaling(  LoveScaling, reset ) 
-       implicit none   
+    subroutine ApplyLoveScaling(  LoveScaling, reset )
+       implicit none
 
 
        REAL (kind=RKIND), dimension(:):: LoveScaling
-       LOGICAL, optional:: reset  
-       
-       INTEGER:: m, n, l
-       LOGICAL:: ApplyReset = .false. 
+       LOGICAL, optional:: reset
 
-       if ( present(reset) ) ApplyReset = reset ; 
-       
+       INTEGER:: m, n, l
+       LOGICAL:: ApplyReset = .false.
+
+       if ( present(reset) ) ApplyReset = reset ;
+
        if ( .NOT. ApplyReset ) then
          !
          do m = 0,nOrder
@@ -1117,58 +1117,58 @@ CONTAINS
       INTEGER, optional:: filtermtd
 
 
-      INTEGER:: mtd = 0 
+      INTEGER:: mtd = 0
       INTEGER:: m, n, l
       REAL (8):: sigma, lambda, alp, dummy
 
       REAL (8), parameter:: alpha = 36.D0, kp = 36.D0 ; ! for Hesthaven's filter
       REAL (8), parameter:: cu = 0.1D0  ! cutoff value of the last mode in the spherical spline
-      REAL (8), parameter:: pp = 4.0D0  ! filter order 
+      REAL (8), parameter:: pp = 4.0D0  ! filter order
 
       if ( present(filtermtd) ) then
         mtd = filtermtd ;
       endif
 
       SELECT CASE( mtd )
-      CASE (1) 
+      CASE (1)
         ! isotropic in n with a filer from Warbuton & Hesthaven's book
         do m = 0, nOrder
           do n = m, nOrder
             !
             lambda = dble(n)/dble(nOrder+1) ;
             lambda = alpha*(lambda**kp) ;
-          
+
             l = SHOrderDegreeToIndex(n,m) ;
 
-            sigma = exp( -lambda ) ; 
+            sigma = exp( -lambda ) ;
 
             SnmRe(l) = sigma*SnmRe(l) ;
             SnmIm(l) = sigma*SnmIm(l) ;
-            ! 
+            !
           enddo
-        enddo 
+        enddo
         !
       CASE (2)
         ! Shperical splines with k = 1 (from Boyd's book)
         alp = ((1.D0/cu) - 1.D0)/( (DBLE(nOrder)*DBLE(nOrder+1))**2.D0 ) ;
-         
-        !  
+
+        !
         do m = 0, nOrder
          do n = m, nOrder
-             l = SHOrderDegreeToIndex(n,m) ;               
+             l = SHOrderDegreeToIndex(n,m) ;
 
              sigma = 1.D0 + alp*(dble(n)*dble(n+1))**2.D0 ;
-             sigma = 1.D0/sigma ; 
+             sigma = 1.D0/sigma ;
 
-             SnmRe(l) = sigma*SnmRe(l) ; 
-             SnmIm(l) = sigma*SnmIm(l) ; 
+             SnmRe(l) = sigma*SnmRe(l) ;
+             SnmIm(l) = sigma*SnmIm(l) ;
          enddo
         enddo
         !
       CASE (3)
         ! Hoskins filter with k = 1 (fronm Boyd's book)
         alp = -log(cu)/( DBLE(nOrder)*DBLE(nOrder + 1) ) ;
-        
+
         do m = 0, nOrder
           do n = 0, nOrder
              l = SHOrderDegreeToIndex(n,m) ;
@@ -1176,12 +1176,12 @@ CONTAINS
              dummy = dble(n)/dble(nOrder+1) ;
 
              sigma = -alp*( dble(n)*dble(n+1)*dummy ) ;
-             sigma = exp( sigma ) ; 
+             sigma = exp( sigma ) ;
 
-             SnmRe(l) = sigma*SnmRe(l) ; 
-             SnmIm(l) = sigma*SnmIm(l) ; 
+             SnmRe(l) = sigma*SnmRe(l) ;
+             SnmIm(l) = sigma*SnmIm(l) ;
           end do
-        end do 
+        end do
 
       CASE (4)
         ! Erfc-Log filter (from Boyd's book)
@@ -1189,73 +1189,73 @@ CONTAINS
           do n = 0, nOrder
              l = SHOrderDegreeToIndex(n,m) ;
 
-             alp = DBLE(n)/DBLE(nOrder + 1) - 0.5D0 
+             alp = DBLE(n)/DBLE(nOrder + 1) - 0.5D0
 
-             
+
              dummy = -log((1.D0 - 4.D0*alp*alp))/(4.D0*alp*alp) ;
-             dummy = sqrt( dummy ) ; 
+             dummy = sqrt( dummy ) ;
 
              dummy = 2.D0*sqrt(pp)*alp*dummy ;
 
-             sigma = 0.5D0*erfc( dummy ) ; 
+             sigma = 0.5D0*erfc( dummy ) ;
 
-             SnmRe(l) = sigma*SnmRe(l) ; 
-             SnmIm(l) = sigma*SnmIm(l) ;  
+             SnmRe(l) = sigma*SnmRe(l) ;
+             SnmIm(l) = sigma*SnmIm(l) ;
           enddo
         enddo
-        !      
+        !
       CASE (5)
         ! Cesaro's sum
         do m = 0, nOrder
            do n = 0, nOrder
-             l = SHOrderDegreeToIndex(n,m) ; 
+             l = SHOrderDegreeToIndex(n,m) ;
 
              sigma = (1.D0 - (dble(n)/dble(nOrder + 1))) ;
 
-             SnmRe(l) = sigma*SnmRe(l) ; 
-             SnmIm(l) = Sigma*SnmIm(l) ; 
+             SnmRe(l) = sigma*SnmRe(l) ;
+             SnmIm(l) = Sigma*SnmIm(l) ;
            end do
-        end do   
+        end do
         !
-      END SELECT 
+      END SELECT
 
       return ;
-    end subroutine ApplySHFilters        
+    end subroutine ApplySHFilters
 
     ! Original implmeentation in MPAS
     !
-    ! Given 
+    ! Given
     !    - sshSmoothed(:) - ssh after smoothening at the integration points
     !    - Lon(:) - array of longitude coordiantes
-    !    - Lat(:) - array of co-latitude coordinates 
+    !    - Lat(:) - array of co-latitude coordinates
     ! return =>
     !    - etaSAL - values of sal displacement at Lon(:), coLat(:) coordinates
-    ! 
+    !
     !
     !***********************************************************************
     !
     !  routine self_attraction_loading_parallel
     !
     !> \brief   Computes self-attraction and loading
-    !> \author  Steven Brus 
+    !> \author  Steven Brus
     !> \date    August 2020
     !> \details
     !> This routine computes the sea surface height perturbation due to
     !> self-attraction and loading. The mid point rule is used in the forward integration
     !
-    ! 
+    !
     !-----------------------------------------------------------------------
     subroutine self_attraction_loading_parallel( ssh_sal, sshSmoothed, nCells  )!{{{
-        implicit none 
- 
+        implicit none
+
         !-----------------------------------------------------------------
         !
         ! dummy variables
         !
         !-----------------------------------------------------------------
         integer:: nCells
-        real (kind=RKIND), dimension(:), intent(inout):: ssh_sal 
-        real (kind=RKIND), dimension(:), intent(in):: sshSmoothed 
+        real (kind=RKIND), dimension(:), intent(inout):: ssh_sal
+        real (kind=RKIND), dimension(:), intent(in):: sshSmoothed
 
         !
         ! local varibles
@@ -1264,7 +1264,7 @@ CONTAINS
         integer :: startIdx, endIdx
         real (kind=RKIND) :: mFac, tbeg, tend
 
-      
+
         !!!!!!!!!!!!!!!!!!!!!
         ! Forward Transform
         !!!!!!!!!!!!!!!!!!!!!
@@ -1273,7 +1273,7 @@ CONTAINS
                 l = SHOrderDegreeToIndex(n,m)
                 if ( use_direct_shtns_self_attraction_loading_bfb  ) then
                    do iCell = 1,nCells
-                      SnmRe_local_reproSum(iCell,l) = 0.0_RKIND 
+                      SnmRe_local_reproSum(iCell,l) = 0.0_RKIND
                       SnmIm_local_reproSum(iCell,l) = 0.0_RKIND
                    enddo
                 else
@@ -1369,9 +1369,9 @@ CONTAINS
 
         enddo ! m loop
         ! CALL CPU_TIME( tend ) ;
-        ! print*, "forward transform time = ", tend - tbeg ;   
-        
-        if (  use_direct_shtns_self_attraction_loading_bfb ) then   
+        ! print*, "forward transform time = ", tend - tbeg ;
+
+        if (  use_direct_shtns_self_attraction_loading_bfb ) then
           do m = 1,lmax
             do iCell = 1,nCells
               Snm_local_reproSum(iCell,m) = SnmRe_local_reproSum(iCell,m)
@@ -1390,9 +1390,9 @@ CONTAINS
           ! all reduce sum
           ! Snm = mpas_global_sum_nfld(Snm_local_reproSum,dminfo%comm)
         else
-          ! All-reduce sum      
+          ! All-reduce sum
           ! CALL mpas_dmpar_sum_real_array(dminfo, 2*lmax, Snm_local, Snm)
-          Snm = Snm_local ; 
+          Snm = Snm_local ;
         endif
 
 
@@ -1403,7 +1403,7 @@ CONTAINS
 
            ! print*, SnmRe(m), Snm(lmax+m) ;
         enddo
-        
+
         !!!!!!!!!!!!!!!!!!!!!
         ! Apply SAL scaling
         !!!!!!!!!!!!!!!!!!!!!
@@ -1492,50 +1492,50 @@ CONTAINS
         enddo ! m loop
         !!
         CALL CPU_TIME( tend ) ;
-        print*, "inverse transform time = ", tend - tbeg ;   
-      
-        return 
+        print*, "inverse transform time = ", tend - tbeg ;
+
+        return
     end subroutine self_attraction_loading_parallel!}}}
 
 
 
     !
-    !  nSHTOrder    - Order of Spherical harmonics 
+    !  nSHTOrder    - Order of Spherical harmonics
     !  nCells       - number of cells
     !  (lonc, latc) - coordinates in lontitude and latitude at the center of cells
     !  areas        - cell areas in a unit sphere, dA = sin( pi/2 - latc )*d \lambda*d \theta
-    !    
-    subroutine InlineSALDirectMthdtInit( nSHTOrder, nCells, lonc, latc, areae  ) 
-      implicit none 
+    !
+    subroutine InlineSALDirectMthdtInit( nSHTOrder, nCells, lonc, latc, areae  )
+      implicit none
 
       integer, intent(in):: nSHTOrder, nCells
       real (kind=RKIND), dimension(:):: lonc, latc, areae
 
-      integer:: m, n, iCell, ii, ndA 
+      integer:: m, n, iCell, ii, ndA
       integer, allocatable:: lvec(:)
 
-      nOrder = nSHTOrder ; 
-      nPoints = nCells ; 
+      nOrder = nSHTOrder ;
+      nPoints = nCells ;
 
 
       ndA = size(areae) ;
-      allocate( dASc(ndA) ) ; 
-      dASc = areae ; 
+      allocate( dASc(ndA) ) ;
+      dASc = areae ;
 
       ! Set up coastal ssh smoothing
       allocate(sshSmoothed(nCells))
-      sshSmoothed = 0.0_RKIND ; 
+      sshSmoothed = 0.0_RKIND ;
 
       !
-      allocate(pmn(nCells),pmnm1(nCells),pmnm2(nCells)) 
+      allocate(pmn(nCells),pmnm1(nCells),pmnm2(nCells))
 
       !
-      lmax = (nOrder+1)*(nOrder+2)/2 
+      lmax = (nOrder+1)*(nOrder+2)/2
       allocate(Snm_local(2*lmax),Snm(2*lmax))
       allocate(SnmRe_local(lmax),SnmRe(lmax))
       allocate(SnmIm_local(lmax),SnmIm(lmax))
 
-      allocate(  sphtRe(nCells), sphtIm(nCells) ) 
+      allocate(  sphtRe(nCells), sphtIm(nCells) )
       ! allocate(SnmIm_local_reproSum(nCellsOwned,lmax))
       ! allocate(SnmRe_local_reproSum(nCellsOwned,lmax))
       ! allocate(Snm_local_reproSum(nCellsOwned,2*lmax))
@@ -1557,7 +1557,7 @@ CONTAINS
                bRecurrenceCoeff(n+1,m+1) = sqrt(real((2*n+1)*(n+m-1)*(n-m-1),RKIND) &
                                          /      real((n-m)*(n+m)*(2*n-3),RKIND))
             elseif ( m == n ) then
-               ! appear to be faster to also precompute a^{m}_{m}      
+               ! appear to be faster to also precompute a^{m}_{m}
                aRecurrenceCoeff(n+1,m+1) = SqrtInv4Pi ;
                do ii = 1,m
                    aRecurrenceCoeff(n+1,m+1) = aRecurrenceCoeff(n+1,m+1)*sqrt(real(2*ii+1,RKIND)/real(2*ii,RKIND))
@@ -1566,7 +1566,7 @@ CONTAINS
             !
          enddo
       enddo
-             
+
       ! Get SAL scaling factors
       allocate(lvec(lmax))
       allocate(LoveSalScaling(lmax))
@@ -1589,16 +1589,16 @@ CONTAINS
 
       ! Pre-compute sin and cos of latCell (co-latitude) values
       allocate(sinLatCell(nCells), cosLatCell(nCells))
-      allocate(lonCell(nCells)) ; 
+      allocate(lonCell(nCells)) ;
       do iCell = 1, nCells
-          lonCell(iCell) = lonc(iCell) ;  
+          lonCell(iCell) = lonc(iCell) ;
           sinLatCell(iCell) = sin(0.5_RKIND*pii-latc(iCell))
           cosLatCell(iCell) = cos(0.5_RKIND*pii-latc(iCell))
       enddo
 
       ! Calculate blocking indices
       IF ( .not. use_blocking_scheme ) nCellBlock = nCells ;
-          
+
       nBlocks = ceiling(real(nCells,RKIND)/real(nCellBlock,RKIND))
       allocate(blockIdxForward(2,nBlocks),blockIdxInverse(2,nBlocks))
       blockIdxForward(1,1) = 1
@@ -1608,7 +1608,7 @@ CONTAINS
       enddo
       blockIdxForward(2,nBlocks) = nCells
 
-       
+
       blockIdxInverse(1,1) = 1
       do ii = 1,nBlocks-1
          blockIdxInverse(2,ii) = ii*nCellBlock
@@ -1617,8 +1617,8 @@ CONTAINS
       blockIdxInverse(2,nBlocks) = nCells
 
 
-      return   
-    end subroutine InlineSALDirectMthdtInit 
+      return
+    end subroutine InlineSALDirectMthdtInit
 
 
 !***********************************************************************
@@ -1639,7 +1639,7 @@ CONTAINS
 !>  are precomputed in ocn_vel_self_attraction_loading_init
 !
 !-----------------------------------------------------------------------
-! Compute the associated Legendre P^{m}_{n} at the co-latitude \theta_{iCell} 
+! Compute the associated Legendre P^{m}_{n} at the co-latitude \theta_{iCell}
     subroutine associatedLegendrePolynomials( n, m, startIdx, endIdx, sinLatCell, cosLatCell, l, pmnm2, pmnm1, pmn ) !{{{
        implicit none
 
@@ -1664,7 +1664,7 @@ CONTAINS
            ! p^{m}_{m}
            do iCell = startIdx, endIdx
                ! -- original implementation
-               !pmnm2(iCell) = SqrtInv4Pi*sinLatCell(iCell)**m 
+               !pmnm2(iCell) = SqrtInv4Pi*sinLatCell(iCell)**m
                !do i = 1,m
                !    pmnm2(iCell) = pmnm2(iCell)*sqrt(real(2*i+1,RKIND)/real(2*i,RKIND))
                !enddo
@@ -1672,9 +1672,9 @@ CONTAINS
                ! -- With a precomputed a^{m}_{m}
                ! -- it is faster than the original implemetation (from small test
                !    cases.)
-               pmnm2(icell) = aRecurrenceCoeff(n+1,m+1)*sinLatCell(iCell)**m ; 
+               pmnm2(icell) = aRecurrenceCoeff(n+1,m+1)*sinLatCell(iCell)**m ;
            enddo
-  
+
        else if (n == m+1) then
            ! p^{m}_{m+1}
            do iCell = startIdx, endIdx
@@ -1706,7 +1706,7 @@ CONTAINS
 !
 !-----------------------------------------------------------------------
     function SHOrderDegreeToIndex(n,m) result(l)!{{{
-      implicit none 
+      implicit none
 
       integer :: l
       integer :: n
@@ -1717,9 +1717,9 @@ CONTAINS
       ! PRINT*, " l = ", l ;
     end function SHOrderDegreeToIndex
 
-  
+
 !***********************************************************************
-! 
+!
 !
 !  routine getloadLoveNums
 !
@@ -1746,7 +1746,7 @@ CONTAINS
 !-----------------------------------------------------------------------
 
     subroutine getloadLoveNums(nlm, lvec, LoveScaling) !{{{
-       implicit none 
+       implicit none
 
        integer, intent(in) :: nlm
        integer, dimension(:), intent(in) :: lvec
@@ -1757,7 +1757,7 @@ CONTAINS
        real(kind=RKIND) :: H1, L1, K1
        integer :: i, j, n, m
        integer, parameter :: lmax=1440
-      
+
        allocate(LoveDat(4,lmax+1))
 
        LoveDat(1:4,1) = (/ 0.0_RKIND, 0.0000000000_RKIND, 0.0000000000_RKIND, -1.0000000000_RKIND /) !{{{
@@ -3203,8 +3203,8 @@ CONTAINS
        LoveDat(1:4,1441) = (/ 1440.0_RKIND, -6.1366054000_RKIND, 1.2745781000e-3_RKIND, -1.8322792000e-3_RKIND /)
 
 
-       ! 
-       LoveScaling(:) = 1.0_RKIND ; 
+       !
+       LoveScaling(:) = 1.0_RKIND ;
 
        allocate(H(lmax+1),L(lmax+1),K(lmax+1))
 
@@ -3225,15 +3225,15 @@ CONTAINS
           !
           do i=1,nlm
             j = lvec(i)
-            LoveScaling(i) = (1.0_RKIND + K(j+1) - H(j+1)) /real(((2*j)+1), RKIND) 
+            LoveScaling(i) = (1.0_RKIND + K(j+1) - H(j+1)) /real(((2*j)+1), RKIND)
           enddo
           !
        else
-         !    
+         !
          do m = 0,nlm
             do n = m,nlm
                i = SHOrderDegreeToIndex(n,m)
-               
+
                LoveScaling(i) = (1.0_RKIND + K(n+1) - H(n+1))/real(2*n+1,RKIND)
             enddo
          enddo
@@ -3243,8 +3243,8 @@ CONTAINS
        LoveScaling = LoveScaling * 3.0_RKIND * rhoW / rhoE
        !
 
-       DEALLOCATE( H, L, K, LoveDat ) ; 
-    end subroutine getloadLoveNums 
+       DEALLOCATE( H, L, K, LoveDat ) ;
+    end subroutine getloadLoveNums
 
 
 END MODULE MOD_INLINE_SAL

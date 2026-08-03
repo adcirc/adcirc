@@ -11,7 +11,7 @@ PROGRAMMER              DATE		REASON
 D. Steinwand, EROS      Nov, 1991
 T. Mittan		Mar, 1993
 S. Nelson		Feb, 1995	Divided tmfor.c into two files, one
-					for UTM (utmfor.c) and one for 
+					for UTM (utmfor.c) and one for
 					TM (tmfor.c).  This was a
 					necessary change to run forward
 					projection conversions for both
@@ -84,7 +84,7 @@ if (es < .00001)
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("UNIVERSAL TRANSVERSE MERCATOR (UTM)"); 
+ptitle("UNIVERSAL TRANSVERSE MERCATOR (UTM)");
 genrpt_long(zone,   "Zone:     ");
 radius2(r_major, r_minor);
 genrpt(scale_factor,"Scale Factor at C. Meridian:     ");
@@ -116,7 +116,7 @@ double con, n, ml;	/* cone constant, small m			*/
 delta_lon = adjust_lon(lon - lon_center);
 sincos(lat, &sin_phi, &cos_phi);
 
-/* This part was in the fortran code and is for the spherical form 
+/* This part was in the fortran code and is for the spherical form
 ----------------------------------------------------------------*/
 if (ind != 0)
   {
@@ -132,7 +132,7 @@ if (ind != 0)
      con = acos(cos_phi * cos(delta_lon)/sqrt(1.0 - b*b));
      if (lat < 0)
         con = - con;
-     *y = r_major * scale_factor * (con - lat_origin); 
+     *y = r_major * scale_factor * (con - lat_origin);
      return(OK);
      }
   }

@@ -402,5 +402,5 @@ struct function functions[] = {
    {"mysql_speed",f_mysql_speed, output, 7, "H=[host] U=[user] P=[password] D=[db] T=[table] W=[western_lons:0|1] PV=[remove unlikely:0|1]", 100},
    #endif
 };
- 
+
 int nfunctions = sizeof functions / sizeof functions[0];

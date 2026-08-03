@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -50,18 +50,18 @@ C---------------------------------------------------------------------
       subroutine prepRead14()
       use pre_global, only : x, y, dp, nneg, ibtypee, nvdllmsg, nvdll,
      &   nbdv, nvellmsg, nvell, lbcode, ibtype, nbvv, ibconnr,
-     &   bar1, bar2, bar3, bar4, bar5, bar6, weir, weird, flux14_ary, 
-     &   bcts14_ary, agrid, aperiodic_bc_ts, bndbcriver, exist_bc_ts, 
-     &   exist_flux, iden, mnbou, mnvel, nbou, nboumsg, nelg, neta, 
-     &   netamsg, nfover, nnodg, nope, nopemsg, nvel, nvelmsg, nweir, 
+     &   bar1, bar2, bar3, bar4, bar5, bar6, weir, weird, flux14_ary,
+     &   bcts14_ary, agrid, aperiodic_bc_ts, bndbcriver, exist_bc_ts,
+     &   exist_flux, iden, mnbou, mnvel, nbou, nboumsg, nelg, neta,
+     &   netamsg, nfover, nnodg, nope, nopemsg, nvel, nvelmsg, nweir,
      &   river_above_msl, numLBCodeValues, nfluxf, node_dict, labels,
      &   NPERBC, IPERCONN, IPERPTR
-      use presizes, only: meshHasWeirWithPipes, meshHasExternalWeir, 
+      use presizes, only: meshHasWeirWithPipes, meshHasExternalWeir,
      &   meshHasInternalWeir
       use hashtable
       use memory_usage
       use boundaries, only: ibconnr_bc => ibconnr, barinhtr, barlanhtr,
-     &                      barlancfspr, barincfsbr, barincfspr, pipehtr, 
+     &                      barlancfspr, barincfsbr, barincfspr, pipehtr,
      &                      pipediamr, pipecoefr
       implicit none
 
@@ -115,7 +115,7 @@ C
          IF (labels(I).NE.I) THEN
             print *, I,J
             WRITE(*,'(A)') 'Error: Node Numbering not in Sequential Order'
-            CALL EXIT(1) 
+            CALL EXIT(1)
          ENDIF
          call add_ipair(node_dict,labels(I),I)
       ENDDO
@@ -127,7 +127,7 @@ C
           IF (J.NE.I) THEN
             print *, I,J
             WRITE(*,'(A)') 'Error: Element Numbering not in Sequential Order'
-            CALL EXIT(1) 
+            CALL EXIT(1)
           ENDIF
           NNEG(1,I) = find(node_dict,n1)
           NNEG(2,I) = find(node_dict,n2)
@@ -191,9 +191,9 @@ C
       J=0
       NWEIR = 0
 C.... DW
-      NPERBC = 0 ;      
+      NPERBC = 0 ;
 C.... DW
-      ! jgf51.52.23: The LBCODE array is dimensioned by MNVEL which is 
+      ! jgf51.52.23: The LBCODE array is dimensioned by MNVEL which is
       ! larger than the number of values in the LBCODE array. So we
       ! need to initialize to a value that will hopefully cause obvious
       ! isses if an initialized value is accidentally used.
@@ -279,7 +279,7 @@ C..... DW, periodic bc
                  IPERCONN = 0 ;
 
                  ALLOCATE( IPERPTR(NBOU+1) ) ;
-                 IPERPTR = 1 ; 
+                 IPERPTR = 1 ;
               END IF
               NPERBC = NPERBC+1 ;
 C
@@ -288,7 +288,7 @@ C
               READ(14,*) IPERCONN(NPERBC,1), IPERCONN(NPERBC,2) ;
               NBVV(K,I) = IPERCONN(NPERBC,1) ;
 C
-              IPERPTR(K+1:NBOU+1) = (IPERPTR(K)) + NVELL(K) ;      
+              IPERPTR(K+1:NBOU+1) = (IPERPTR(K)) + NVELL(K) ;
            ENDDO
 C..... DW
 
@@ -301,7 +301,7 @@ C..... DW
       !LBCODE array.
       numLBCodeValues = J
 
-      ! Save off the boundary data into the arrays used for 
+      ! Save off the boundary data into the arrays used for
       ! writing into the netCDF files
       if(meshHasExternalWeir)then
         barlanhtr   = bar1
@@ -554,7 +554,7 @@ Casey 180318: Added NWS=13
       ! DW
       INTEGER :: IOS_NWS14Grib2NC
 
-      INTEGER :: IOS_TIPNL 
+      INTEGER :: IOS_TIPNL
 
 C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
@@ -563,7 +563,7 @@ C...tcm v51.20.03 Local variables for external station location files
       namelist /wetDryControl/ outputNodeCode, outputNOFF,
      &          noffActive, StatPartWetFix, How2FixStatPartWet,
 C.... DMW 202207 Add options for controlling slope/wind limiting and
-C.... "new" formula for computing vel in wetting/drying routine 
+C.... "new" formula for computing vel in wetting/drying routine
      &          slim, windlim, directvelWD, useHF
 C.... DMW
 !JLW: adding subgrid control namelist
@@ -841,7 +841,7 @@ c..
      &         'The WarnElev namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
-      
+
       read(unit=15,nml=AliDispersionControl,iostat=ios)
       if ( ios.ge.0) then
          FOUND_ALIDISP_NML = .true.
@@ -852,7 +852,7 @@ c..
      &         'The AliDispersion namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
-      
+
       read(unit=15,nml=densityControl,iostat=ios)
       if ( ios.ge.0) then
          FOUND_DENSITY_NML = .true.
@@ -878,7 +878,7 @@ c..
 C  DW
       read(unit=15,nml=TidalPotentialControl,iostat=IOS_TIPNL)
       IF( IOS_TIPNL .ge. 0 )THEN
-         foundTidalPotentialControlNamelist = .true. 
+         foundTidalPotentialControlNamelist = .true.
          call logMessage(INFO,
      &         'The Tidalpotentialcontrol namelist was found.')
       else
@@ -886,7 +886,7 @@ C  DW
      &         'The Tidalpotentialcontrol namelist was not found.')
       ENDIF
       REWIND(15)
-    
+
 !Casey 221103 : Try to read the baroclinic3D namelist from fort.15
       READ(UNIT=15,NML=baroclinic3D,IOSTAT=IOS)
       IF( IOS.GE.0 )THEN
@@ -899,10 +899,10 @@ C  DW
       ENDIF
       REWIND(15)
 
-C DW 
+C DW
       read(unit=15,nml=InlineSALControl,iostat=ios)
       IF( ios .ge. 0 )THEN
-         foundInlineSALControlNamelist = .true. 
+         foundInlineSALControlNamelist = .true.
          call logMessage(INFO,
      &         'The InlineSALcontrol namelist was found.')
       else
@@ -912,7 +912,7 @@ C DW
       REWIND(15)
 
 C DW
-      read(unit=15,nml=TsunamiSimOption,iostat=ios) 
+      read(unit=15,nml=TsunamiSimOption,iostat=ios)
       IF ( ios .ge. 0 ) THEN
           foundTsunamiSimOption = .true.
           call logMessage(INFO,
@@ -922,7 +922,7 @@ C DW
      &         'The TsunamiSimOption namelist was not found.')
       ENDIF
       REWIND(15)
-         
+
       READ(15,80) RUNDES
 C
       READ(15,80) RUNID
@@ -1104,7 +1104,7 @@ Casey 180318: Added NWS=13
 C
 C... TCM v49.64.02 -- added
 C...  BE SURE NWS AND NCICE ARE COMPATABLE
-C...  xyc v52.30: note:Not sure if NWS.EQ.7 here should be removed 
+C...  xyc v52.30: note:Not sure if NWS.EQ.7 here should be removed
       IF((NCICE.GT.0).AND.
      &       ((NWS.EQ.1).OR.(NWS.EQ.2).OR.(NWS.EQ.7))) THEN
          PRINT*,'NCICE = ',NCICE
@@ -1552,7 +1552,7 @@ C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 #endif
 
-      
+
       DO I=1,ABS(NSTAE)
          IF (USE_ELEV_STAT_FILE ) then  !read from external file
             READ(151,'(A132)') STAELOC(I)
@@ -1601,7 +1601,7 @@ C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
             SLEL(I)=DEG2RAD*SLEL(I)
             SFEL(I)=DEG2RAD*SFEL(I)
             CALL CYLINDERMAP(XEL(I),YEL(I),SLEL(i),SFEL(i),SL0,SF0,ICS)
-          ENDIF 
+          ENDIF
 
          ENDDO !loop over elevation stations
          if (USE_ELEV_STAT_FILE) CLOSE(151) !close external file if one was used
@@ -2019,7 +2019,7 @@ C     hot start file. This is used to test hot starting capabilities.
       READ(HSTARMSG,*) NHSTAR,NHSINC
 C     jgf49.41: Added new options for hotstart file format indicator: 2, 3,
 C     367, 368. Not sure we need to check the validity of NHSTAR values in
-C     adcprep though.      !wjp allows for single output hotstart (negative value that is not -1) 
+C     adcprep though.      !wjp allows for single output hotstart (negative value that is not -1)
       SELECT CASE(abs(NHSTAR))  !tcm v51.26 mods for binary time-stamped hotstart file generation NHSTAR=-1
       CASE(0,1,2,3,5,67,68,367,368,567,568)
          ! do nothing, these are allowable values

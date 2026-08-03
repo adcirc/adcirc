@@ -13,7 +13,7 @@
  * usually x[0] = y[0] = 0.0
  *
  *  usually x[] and y[] are integers (except when grids are shiffed +/- 1/2)
- *  
+ *
  *  normally:
  *    x = x[]*dx + x_0,   note: for gctpc x_0 is not needed
  *    y = y[]*dy + y_0,   note: for gctpc y_0 is not needed
@@ -31,7 +31,7 @@ extern int scan;
  *
  * assumed_npnts is number if grid points that the calling program thinks is right
  *  this is for error checking.  use -1 if don't know
- * 
+ *
  * to a grid transform:
  *   setup grid transform (proj4 library for example(
  *   call stagger() to get the x() and y() values of the grid
@@ -65,7 +65,7 @@ int stagger(unsigned char **sec, unsigned int assumed_npnts, double *x, double *
     dy =  (scan & 64) ? 1 : -1;
 
     if (reduced_grid && dy_off) ny--;
- 
+
     if (dy < 0 && ((ny % 2) == 0)) { // swap even and odd rows if ns to sn and even number of rows
         i = dx_off_odd;
 	dx_off_odd = dx_off_even;
@@ -80,7 +80,7 @@ int stagger(unsigned char **sec, unsigned int assumed_npnts, double *x, double *
     nx_even = nx - (dx_off_even & reduced_grid);
     nx2 = nx_odd + nx_even;
 
-//fprintf(stderr, "stagger: dx_off_odd %lf dx_off_even %lf dy_off %lf  reduced_grid %d nx=%d %d\n", 
+//fprintf(stderr, "stagger: dx_off_odd %lf dx_off_even %lf dy_off %lf  reduced_grid %d nx=%d %d\n",
 //    dx_offset_odd, dx_offset_even, dy_offset, reduced_grid, nx_odd,nx_even);
 //fprintf(stderr,"dx_off_odd %d reduced_grid %d, and %d\n", dx_off_odd , reduced_grid, dx_off_odd & reduced_grid);
 //fprintf(stderr,"dx_off_even %d reduced_grid %d, and %d\n", dx_off_even , reduced_grid, dx_off_even & reduced_grid);
@@ -98,9 +98,9 @@ int stagger(unsigned char **sec, unsigned int assumed_npnts, double *x, double *
 #endif
 
     // check to number of points
-    if (assumed_npnts != n) 
+    if (assumed_npnts != n)
 	fatal_error_ii("stagger: program error think npnts=%d assumed npnts=%d",n, (int) assumed_npnts);
-    if (n != GB2_Sec3_npts(sec)) 
+    if (n != GB2_Sec3_npts(sec))
 	fatal_error_ii("stagger: program error think npnts=%d, Sec3 gives %d",n, GB2_Sec3_npts(sec));
 
     if (x == NULL || y == NULL) return 1;

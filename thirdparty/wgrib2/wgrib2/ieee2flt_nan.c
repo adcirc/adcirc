@@ -23,7 +23,7 @@ float ieee2flt_nan(unsigned char *ieee) {
 
 	if (exp == 255) return (float) UNDEFINED;
 
-	fmant = (double) ((int) ieee[3] + (int) (ieee[2] << 8) + 
+	fmant = (double) ((int) ieee[3] + (int) (ieee[2] << 8) +
               (int) ((ieee[1] | 128) << 16));
 	if (ieee[0] & 128) fmant = -fmant;
 

@@ -6,7 +6,7 @@ This section provides information about configuring meteorological forcing in AD
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
-   
+
    wind_stress
    nws_parameters
    wtiminc

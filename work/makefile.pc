@@ -1,6 +1,6 @@
 SHELL:=/bin/sh
 #
-#  Makefile to Build PADCIRC and its pre/post-processor 
+#  Makefile to Build PADCIRC and its pre/post-processor
 #  University of Texas's parallel version of the Hydrodynamics
 #  Modeling program ADCIRC by J.J. Westerink and R.A. Luettich
 #  vjp 3/29/2001
@@ -21,43 +21,43 @@ include cmplrflags.mk
 
 ######################## Target Specific Rules ###################################
 
-#                                      adcprep   
+#                                      adcprep
 ifeq ($(BUILDTYPE),adcprep)
   CF:= $(FC)
   O_DIR:=odir1/
-  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  ../prep 
+  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR)
+  VPATH :=  ../prep
   PMSG_OBJ:=
 endif
 #                                      adcprep2
 ifeq ($(BUILDTYPE),adcprep2)
   CF:= $(PFC)
   O_DIR:=odir2/
-  FFLAGS:= $(FFLAGS2) $(DPRE2) $(IMODS) $(O_DIR) 
-  VPATH :=  ../prep 
+  FFLAGS:= $(FFLAGS2) $(DPRE2) $(IMODS) $(O_DIR)
+  VPATH :=  ../prep
   PMSG_OBJ:= $(O_DIR)picomsg.o
 endif
-#                                      adcpost  
+#                                      adcpost
 ifeq ($(BUILDTYPE),adcpost)
   CF:= $(FC)
   O_DIR:=odir3/
-  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
+  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR)
   VPATH :=  ../prep
 endif
-#                                      adcirc   
+#                                      adcirc
 ifeq ($(BUILDTYPE),adcirc)
   CF:= $(FC)
   O_DIR:=odir4/
   FFLAGS:= $(FFLAGS3) $(DA) $(IMODS) $(O_DIR)
-  VPATH:=  ../src 
+  VPATH:=  ../src
   MSG_MOBJ:=
 endif
-#                                      padcirc   
+#                                      padcirc
 ifeq ($(BUILDTYPE),padcirc)
   CF:= $(PFC)
   O_DIR:=odir5/
   FFLAGS:= $(FFLAGS4) $(DP) $(IMODS) $(O_DIR)
-  VPATH :=  ../src 
+  VPATH :=  ../src
   MSG_MOBJ:= $(O_DIR)messenger.o
 endif
 
@@ -66,12 +66,12 @@ $(O_DIR):
 
 ######################### Module Source, Object, & Mod Files ######################
 
-PREP_MSRC  =  presizes.F 
-PGLO_MSRC  =  pre_global.F  
+PREP_MSRC  =  presizes.F
+PGLO_MSRC  =  pre_global.F
 POST_MSRC  =  post_global.F
 ADC_MSRC   =  sizes.F global.F global_3dvs.F
-HARM_MSRC  =  harm.F  
-WIND_MSRC  =  wind.F  
+HARM_MSRC  =  harm.F
+WIND_MSRC  =  wind.F
 SOLV_MSRC  =  itpackv.F
 NA_MSRC    =  nodalattr.F
 
@@ -117,18 +117,18 @@ ifeq ($(MAKELEVEL),0)
    metis:
 	$(MAKE) -C ../metis/Lib/ CC="$(CC)"  CFLAGS="$(CFLAGS)"
    graphchk:
-	$(MAKE) -C ../metis/Programs/ CC="$(CC)"  CFLAGS="$(CFLAGS)" 
+	$(MAKE) -C ../metis/Programs/ CC="$(CC)"  CFLAGS="$(CFLAGS)"
 	mv ../metis/graphchk ../work
    adcprep:
-	$(MAKE) BUILDTYPE=adcprep  $@            
+	$(MAKE) BUILDTYPE=adcprep  $@
    adcprep2:
-	$(MAKE) BUILDTYPE=adcprep2 $@ 
+	$(MAKE) BUILDTYPE=adcprep2 $@
    adcpost:
-	$(MAKE) BUILDTYPE=adcpost $@            
+	$(MAKE) BUILDTYPE=adcpost $@
    adcirc:
 	$(MAKE) BUILDTYPE=adcirc  $@
    padcirc:
-	$(MAKE) BUILDTYPE=padcirc $@ 
+	$(MAKE) BUILDTYPE=padcirc $@
 else
    adcprep::  $(O_DIR)
    adcprep2:: $(O_DIR)
@@ -136,19 +136,19 @@ else
    adcirc::   $(O_DIR)
    padcirc::  $(O_DIR)
 
-   adcprep ::  $(METIS1_OBJ) $(PREP_OBJ) 
+   adcprep ::  $(METIS1_OBJ) $(PREP_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(LIBS) $(LDFLAGS)
 
-   adcprep2 :: $(PMSG_OBJ) $(METIS2_OBJ) $(PREP_OBJ) 
+   adcprep2 :: $(PMSG_OBJ) $(METIS2_OBJ) $(PREP_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(LIBS) $(MSGLIBS) $(LDFLAGS)
 
-   adcpost ::  $(POST_OBJ) 
+   adcpost ::  $(POST_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
 
-   adcirc ::  $(ADC_OBJ) 
+   adcirc ::  $(ADC_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
 
-   padcirc ::  $(MSG_MOBJ) $(ADC_OBJ) 
+   padcirc ::  $(MSG_MOBJ) $(ADC_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(MSGLIBS)
 endif
 
@@ -176,13 +176,13 @@ help:
 $(O_DIR)presize.o     :  presize.F
 $(O_DIR)pre_global.o  :  pre_global.F  $(PREP_MOBJ)
 
-#  adcprep & adcprep2 
+#  adcprep & adcprep2
 
 $(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ)
 $(O_DIR)decomp.o      :  decomp.F   $(PGLO_MOBJ)
 $(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ)
 $(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ)
-$(O_DIR)interp.o      :  interp.F  
+$(O_DIR)interp.o      :  interp.F
 $(O_DIR)machdep.o     :  machdep.F
 $(O_DIR)metis.o       :  metis.F $(PGLO_MOBJ)
 $(O_DIR)metis2.o      :  metis2.F $(PGLO_MOBJ)
@@ -190,13 +190,13 @@ $(O_DIR)picomsg.o     :  picomsg.F
 
 #  adcpost modules
 
-$(O_DIR)post_global.o :  post_global.F 
+$(O_DIR)post_global.o :  post_global.F
 
-#  adcpost                
+#  adcpost
 
 $(O_DIR)adcpost.o     :  adcpost.F $(POST_MOBJ)
 $(O_DIR)post.o        :  post.F  $(POST_MOBJ)
-$(O_DIR)compare.o     :  compare.F  
+$(O_DIR)compare.o     :  compare.F
 $(O_DIR)diffmerge.o   :  diffmerge.F
 
 #  adcirc & padcirc modules

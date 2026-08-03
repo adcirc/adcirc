@@ -761,7 +761,7 @@ while [ $# -gt 0 ]; do
 	eph)
 		EPH=1;;
 	roirect)
-		ROIRECT=$VAL;;	
+		ROIRECT=$VAL;;
 	verbose)
 		VERBOSE=1;;
 	fmt)

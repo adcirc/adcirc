@@ -86,7 +86,7 @@ int f_set_ival(ARG2) {
     err1 = sscanf(arg1,"%u%n", &i, &icnt);
     err2 = sscanf(arg2,"%f%n", &val, &vcnt);
     while (err1 == 1 && err2 == 1) {
-// fprintf(stderr,"set_ival i=%u v=%f\n",i,val);        
+// fprintf(stderr,"set_ival i=%u v=%f\n",i,val);
 	if (i != 0 && i <= ndata) data[i-1] = val;
 	else fatal_error_uu("set_ival: i=%u ndata=%u", i, ndata);
 	arg1 += icnt;

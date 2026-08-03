@@ -29,6 +29,6 @@ datetime_module.mod : datetime.o
 datetime.o :      datetime.f90 mod_clock.o mod_datetime.o mod_strftime.o mod_timedelta.o
 mod_clock.o:     mod_clock.f90 mod_datetime.o mod_timedelta.o
 mod_datetime.o:  mod_datetime.f90 mod_constants.o mod_strftime.o mod_timedelta.o
-mod_timedelta.o: mod_timedelta.f90 
-mod_strftime.o:  mod_strftime.f90 
-mod_constants.o: mod_constants.f90 
+mod_timedelta.o: mod_timedelta.f90
+mod_strftime.o:  mod_strftime.f90
+mod_constants.o: mod_constants.f90

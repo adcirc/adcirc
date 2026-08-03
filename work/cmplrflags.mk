@@ -37,7 +37,7 @@ ifeq ($(compiler),gnu)
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DLINUX
-  DP		:=  -DLINUX -DCMPI 
+  DP		:=  -DLINUX -DCMPI
   DPRE		:=  -DLINUX
   IMODS 	:=  -I
   CC		:= gcc
@@ -225,14 +225,14 @@ ifeq ($(compiler),intel)
         FLIBS   := $(INCDIRS) -xCORE-AVX2 -axCORE-AVX512,MIC-AVX512
      endif
   endif
-  ifeq ($(MACHINENAME),frontera) 
+  ifeq ($(MACHINENAME),frontera)
      FFLAGS1 := $(INCDIRS) -O3 -assume byterecl -132 -xCORE-AVX512 -assume buffered_io
-     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xCORE-AVX512 
-     FLIBS   := $(INCDIRS) -xCORE-AVX512 
+     CFLAGS  := $(INCDIRS) -O3 -DLINUX -xCORE-AVX512
+     FLIBS   := $(INCDIRS) -xCORE-AVX512
      ifeq ($(DEBUG),trace)
         FFLAGS1 := $(INCDIRS) -g -O0 -traceback -assume byterecl -132 -xCORE-AVX512 -assume buffered_io
         CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX -xCORE-AVX512
-        FLIBS   := $(INCDIRS) -xCORE-AVX512 
+        FLIBS   := $(INCDIRS) -xCORE-AVX512
      endif
   endif
   ifeq ($(MACHINENAME),queenbee)
@@ -245,13 +245,13 @@ ifeq ($(compiler),intel)
         FLIBS   := $(INCDIRS) -xSSE4.2
      endif
   endif
-  ifeq ($(MACHINENAME),supermic) 
+  ifeq ($(MACHINENAME),supermic)
      FFLAGS1 := $(INCDIRS) -O3 -assume byterecl -132 -xAVX -assume buffered_io
      CFLAGS  := $(INCDIRS) -O3 -DLINUX -xAVX
      FLIBS   := $(INCDIRS) -xAVX
      ifeq ($(DEBUG),trace)
         FFLAGS1 := $(INCDIRS) -g -O0 -traceback -assume byterecl -132 -xAVX -assume buffered_io
-        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX  -xAVX 
+        CFLAGS  := $(INCDIRS) -g -O0 -traceback -DLINUX  -xAVX
         FLIBS   := $(INCDIRS) -xAVX
      endif
   endif
@@ -340,7 +340,7 @@ ifeq ($(compiler),intel)
 # ------------
   ifeq ($(NETCDF),enable)
     ifeq ($(WDALTVAL),enable)
-       DP  := $(DP) -DWDVAL_NETCDF 
+       DP  := $(DP) -DWDVAL_NETCDF
     endif
   endif
 # -----------
@@ -385,7 +385,7 @@ ifeq ($(compiler),intel-ND)
   CC            := icc
   CCBE          := $(CC)
   CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
-  FLIBS         := 
+  FLIBS         :=
   ifeq ($(DATETIME),enable)
      DATETIMEHOME  := /asclepius/cblakely/libs/OC-GTSM_utility/libs/datetime-fortran/build/
      FLIBS         := -ldatetime -L$(DATETIMEHOME)lib/
@@ -399,13 +399,13 @@ ifeq ($(compiler),intel-ND)
   endif
   ifeq ($(NETCDF),enable)
      #HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
-     HDF5HOME=/opt/crc/n/netcdf/4.7.0/intel/18.0      
-     FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) 
+     HDF5HOME=/opt/crc/n/netcdf/4.7.0/intel/18.0
+     FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME)
   endif
 # ------------
   ifeq ($(NETCDF),enable)
     ifeq ($(WDALTVAL),enable)
-       DP  := $(DP) -DWDVAL_NETCDF 
+       DP  := $(DP) -DWDVAL_NETCDF
     endif
   endif
 # -----------
@@ -724,7 +724,7 @@ ifeq ($(compiler),diamond)
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DLINUX
-  DP            :=  -DLINUX -DCMPI 
+  DP            :=  -DLINUX -DCMPI
   DPRE          :=  -DLINUX
   ifeq ($(SWAN),enable)
      DPRE          :=  -DLINUX
@@ -840,7 +840,7 @@ ifeq ($(compiler),circleci)
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DLINUX
-  DP		:=  -DLINUX -DCMPI 
+  DP		:=  -DLINUX -DCMPI
   DPRE		:=  -DLINUX
   IMODS 	:=  -I
   CC		:= icx
@@ -919,7 +919,7 @@ ifeq ($(compiler),intel)
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA  	        :=  -DLINUX
-  DP  	        :=  -DLINUX -DCMPI 
+  DP  	        :=  -DLINUX -DCMPI
   DPRE	        :=  -DLINUX
   IMODS 	:=  -I
   CC            := icc

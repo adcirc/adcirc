@@ -10,7 +10,7 @@
  *
  * strings are a problem because the size chaanges
  * this package allows you to save a string in memory
- * 
+ *
  * 3/2012: W. Ebisuzaki
  */
 

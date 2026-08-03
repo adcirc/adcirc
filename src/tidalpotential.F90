@@ -432,7 +432,7 @@ contains
 
       integer :: I, asciinum
 
-      outString = string; 
+      outString = string;
       do I = 1, len(string)
          asciinum = iachar(string(I:I))
          select case (asciinum)
@@ -549,7 +549,7 @@ contains
          integer :: ii, cpos(3), ivec(3)
 
          earlystop = .false.
-         arg = [a1, a2, a3]; 
+         arg = [a1, a2, a3];
          ivec = 0
          cpos(1) = 1
          do ii = 1, 3
@@ -577,9 +577,9 @@ contains
             if (earlystop) exit
          end do
 
-         a1 = arg(1); 
-         a2 = arg(2); 
-         a3 = arg(3); 
+         a1 = arg(1);
+         a2 = arg(2);
+         a3 = arg(3);
       end subroutine extractvalues
 
    end subroutine INIT_FULL_TIP

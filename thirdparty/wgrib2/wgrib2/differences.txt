@@ -7,4 +7,4 @@
    wgrib2:  -bin outputfile
      applies to bin, ieee and text
 
-3) -nh is now -no_header  
+3) -nh is now -no_header

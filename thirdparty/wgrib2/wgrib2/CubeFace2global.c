@@ -111,9 +111,9 @@ int f_cubeface2global(ARG2) {
 	if (save->has_data) {
 	    // see if data needs to be written out
 	    GDS_Gnom_tile(gds) = tile;
-	    if (same_sec0(save->clone_sec, sec) == 1 && 
+	    if (same_sec0(save->clone_sec, sec) == 1 &&
 		    same_sec1(save->clone_sec, sec) == 1 &&
-		    same_sec3(save->clone_sec, sec) == 1 && 
+		    same_sec3(save->clone_sec, sec) == 1 &&
 		    same_sec4(save->clone_sec, sec) == 1) {
 		write_global = 0;
 	    }
@@ -129,8 +129,8 @@ int f_cubeface2global(ARG2) {
 	if (write_global) {			// write out old data in global
             GDS_Gnom_tile(gds) = 0;
 	    uint_char(save->size_global,gds+6);
-            grib_wrt(save->clone_sec, save->global, save->size_global, save->nx_, 6*save->ny_, 
-		save->use_scale, save->dec_scale, save->bin_scale, save->wanted_bits, 
+            grib_wrt(save->clone_sec, save->global, save->size_global, save->nx_, 6*save->ny_,
+		save->use_scale, save->dec_scale, save->bin_scale, save->wanted_bits,
 		save->max_bits, save->grib_type, &(save->out));
 	    if (flush_mode) fflush_file(&(save->out));
 	    save->has_data = 0;
@@ -142,7 +142,7 @@ int f_cubeface2global(ARG2) {
 	        if (save->size_global) free(save->global);
 	        save->global = (float *) malloc(sizeof (float) * (size_t) global_size) ;
 		if (save->global == NULL) fatal_error("cubeface2global: memory allocation","");
-	  	save->size_global = global_size; 
+	  	save->size_global = global_size;
 	    }
 	    for (i = 0; i < global_size; i++) {
 		save->global[i] = UNDEFINED;
@@ -163,10 +163,10 @@ int f_cubeface2global(ARG2) {
 	undo_output_order(data, save->global + (tile-1)*ndata, ndata);
     }
     return 0;
-}	
+}
 #else
 int f_cubeface2global(ARG2) {
     fatal_error("cubeface2global: not installed","");
-    return 0;	
+    return 0;
 }
 #endif

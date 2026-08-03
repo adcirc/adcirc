@@ -36,8 +36,8 @@ int grb2_wrtVA(const char *grb, const char *template, int msgno, float *data, un
 #define LONLAT     4
 #define WENS       8
 #define RAW_ORDER 16
-#define META      32 
-#define GRIDMETA  64 
+#define META      32
+#define GRIDMETA  64
 #define REGEX    128
 
 int grb2_get_data(float *data, int ndata);
@@ -54,4 +54,3 @@ int wgrib2_list_cmd(void);
 
 
 void fatal_error(const char *fmt, const char *string);
-

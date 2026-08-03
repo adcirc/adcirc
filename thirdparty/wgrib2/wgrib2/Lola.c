@@ -64,8 +64,8 @@ int f_lola(ARG4) {
             fatal_error("lola parsing latitudes lat0:nx:dlat  %s", arg2);
         }
 
-        if (strcmp(arg4,"spread") != 0 
-                && strcmp(arg4,"text") != 0 
+        if (strcmp(arg4,"spread") != 0
+                && strcmp(arg4,"text") != 0
                 && strcmp(arg4,"grib") != 0
                 && strcmp(arg4,"bin") != 0) fatal_error("lola bad write mode %s", arg4);
 
@@ -201,10 +201,10 @@ int f_lola(ARG4) {
 	/* get grid values */
 	tmp = (float *) malloc(((size_t) nxny) * sizeof (float));
 	if (tmp == NULL) fatal_error("-lola: memory allocation","");
-        for (i = 0; i < nxny; i++) 
+        for (i = 0; i < nxny; i++)
             tmp[i] = save->iptr[i] >= 0 ? data[save->iptr[i]] : UNDEFINED;
 
-        grib_wrt(new_sec, tmp, nx*ny, nx, ny, use_scale, dec_scale, bin_scale, 
+        grib_wrt(new_sec, tmp, nx*ny, nx, ny, use_scale, dec_scale, bin_scale,
 		wanted_bits, max_bits, grib_type, &(save->out));
 
 	free(tmp);

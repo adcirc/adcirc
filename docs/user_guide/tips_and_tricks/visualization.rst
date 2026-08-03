@@ -220,5 +220,3 @@ External Links
 -  `Paraview <https://www.paraview.org/>`__
 -  `Generic Mapping Tools (GMT) <https://github.com/GenericMappingTools/gmt>`__
 -  `Matplotlib <https://matplotlib.org/>`__
-
-

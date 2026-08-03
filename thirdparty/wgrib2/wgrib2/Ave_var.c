@@ -116,7 +116,7 @@ static int update_ave_var_struct(struct ave_var_struct *save, unsigned char **se
 
     if (save->ndata != ndata) fatal_error("ave_var: dimension mismatch","");
 
-    /* the data needs to be translated from we:sn to raw, need to 
+    /* the data needs to be translated from we:sn to raw, need to
        do it now, translation[] may be different if called from finalized phase */
 
     save->n_fields += 1;
@@ -154,7 +154,7 @@ static int update_ave_var_struct(struct ave_var_struct *save, unsigned char **se
 	    }
 	}
     }
-    
+
     if (save->n_fields == 1) {
 	save->nx = nx;
 	save->ny = ny;
@@ -184,7 +184,7 @@ static int write_ave_var(struct ave_var_struct *save) {
     unsigned char *p, *sec4;
 
     sec4 = NULL;
-    if (save->has_val == 0) return 0; 
+    if (save->has_val == 0) return 0;
 
     ndata = save->ndata;
     if ((data = (float *) malloc(sizeof(float) * ((size_t) ndata))) == NULL) fatal_error("ave_var: memory allocation","");
@@ -282,14 +282,14 @@ static int write_ave_var(struct ave_var_struct *save) {
 	for (i = 4; i < 34; i++) {			// keep base of pdt
 	    sec4[i] = save->first_sec[4][i];
 	}
-	
+
 	// new verification time
 	Save_time(&(save->time2), sec4+34);
 
 	// number of stat-proc loops is increased by 1
 	sec4[41] = n + 1;
 
-	// copy old stat-proc loops 
+	// copy old stat-proc loops
 	// for (j = n*12-1;  j >= 0; j--) sec4[58+j] = save->first_sec[4][46+j];
 	for (j = 0; j < n*12; j++) sec4[46+12+j] = save->first_sec[4][46+j];
 
@@ -347,8 +347,8 @@ static int write_ave_var(struct ave_var_struct *save) {
     p = save->first_sec[4];
     save->first_sec[4] = sec4;
 
-    grib_wrt(save->first_sec, data, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(save->first_sec, data, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     if (flush_mode) fflush_file(&(save->out));
@@ -371,23 +371,23 @@ static int write_ave_var(struct ave_var_struct *save) {
     sec4[i_ave] = 6;			// (sample) standard deviation
 
     /* note standard devation can be writen out in same scaling as mean */
-    grib_wrt(save->first_sec, data, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(save->first_sec, data, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     if (flush_mode) fflush_file(&(save->out));
 
     sec4[i_ave] = 3;			// min
     /* note standard devation can be writen out in same scaling as mean */
-    grib_wrt(save->first_sec, save->min, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(save->first_sec, save->min, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
     if (flush_mode) fflush_file(&(save->out));
 
     sec4[i_ave] = 2;			// max
     /* note standard devation can be writen out in same scaling as mean */
-    grib_wrt(save->first_sec, save->max, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(save->first_sec, save->max, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
     if (flush_mode) fflush_file(&(save->out));
 
@@ -508,7 +508,7 @@ int f_ave_var(ARG2) {
 	if (same_sec0(sec,save->first_sec) == 0 ||
             same_sec1_not_time(mode, sec,save->first_sec) == 0 ||
             same_sec3(sec,save->first_sec) == 0 ||
-            same_sec4_not_time(mode, sec,save->first_sec) == 0) 
+            same_sec4_not_time(mode, sec,save->first_sec) == 0)
 	    new_type = 1;
         if (mode == 98) fprintf(stderr, "ave: testsec %d %d %d %d\n", same_sec0(sec,save->first_sec),
             same_sec1_not_time(0, sec,save->first_sec),

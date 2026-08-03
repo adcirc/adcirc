@@ -24,13 +24,13 @@
 struct stat_proc {
 	int code_4_10;				/* ave, min, max, etc */
 	int code_4_11;				/* fcst_ave, analysis_ave, LAF+, LAF- */
-	int code_4_4a;				/* time units such as hour, day, etc */ 	
+	int code_4_4a;				/* time units such as hour, day, etc */
 	int d_timea;				/* length of time for statistical processing */
 	int code_4_4b;				/* time units for sucessive fields */
 	int d_timeb;				/* length of time for sucessive fields */
 };
 
-// n ― number of time ranges specifications describing the time intervals used to calculate 
+// n ― number of time ranges specifications describing the time intervals used to calculate
 // the statistically-processed field
 // N_MAX is tn maximum number supported by code
 
@@ -46,7 +46,7 @@ struct stat_time {
    unsigned int missing;		/* 4 byte value */
    struct stat_proc stat_procs[N_MAX];
 };
-    
+
 static int parse_time_range(const char *tr, struct stat_time *new_stat_time, int n);
 static int parse_time_range2(const char *tr, struct stat_time *new_stat_time, int n);
 
@@ -80,7 +80,7 @@ int f_set_ftime2(ARG1) {
 	new_ftime_units = 1;
     }
     else {
-        if (sscanf(arg1,"%d %s %s%n", &new_ftime , string, string2, &len) == 3 && 
+        if (sscanf(arg1,"%d %s %s%n", &new_ftime , string, string2, &len) == 3 &&
 		len == len_arg1) {
     	    if (strcmp(string2,"forecast") == 0 || strcmp(string2,"fcst") == 0) {
 		new_ftime_units = a2time_range(string);
@@ -142,7 +142,7 @@ int f_set_ftime2(ARG1) {
 
 	/* f_set_pdt will change pdt and code_4.4 location */
         code_4_4 = code_table_4_4_location(sec);
-        if (code_4_4 == NULL) fatal_error("set_ftime2: Code Table 4.4 not present or defined","");	
+        if (code_4_4 == NULL) fatal_error("set_ftime2: Code Table 4.4 not present or defined","");
 
         verf_time = stat_proc_verf_time_location(sec);
         if (verf_time != NULL) fatal_error_i("set_ftime2: could not convert to point in time pdt %d", pdt);
@@ -158,7 +158,7 @@ int f_set_ftime2(ARG1) {
 	    if (code_1_4 != NULL && (int) *code_1_4 == 1) *code_1_4 = 0;		// fcst product -> analysis product
 	}
 	else {
-	    if (code_1_2 != NULL) *code_1_2 = 1;					// start of forecast 
+	    if (code_1_2 != NULL) *code_1_2 = 1;					// start of forecast
 	    if (code_1_4 != NULL && (int) *code_1_4 == 0) *code_1_4 = 1;		// analysis product -> fcst product
 	}
 	return 0;
@@ -178,7 +178,7 @@ int f_set_ftime2(ARG1) {
     verf_time = stat_proc_verf_time_location(sec);
     if (verf_time == NULL) old_n=-1;
     else old_n = (int) verf_time[7];
-    
+
 // fprintf(stderr,">>> test if new pdt n=%d old_n=%d\n", n,old_n);
     if (old_n != n) {
 	sprintf(pdt_string, "n=%d", n);
@@ -233,7 +233,7 @@ int f_set_ftime2(ARG1) {
 /*
  * int parse_time_range(const char *arg, int n)
  *  removes ",missing=N"  n should be zero
- */ 
+ */
 
 static int parse_time_range(const char *arg, struct stat_time *new_stat_time, int n) {
     int i, len;
@@ -317,7 +317,7 @@ static int parse_time_range2(const char *arg, struct stat_time *new_stat_time, i
     if (i == 6 && ((tr = a2time_range(string1)) >= 0) && ((code_4_10 = a2code_4_10(string2)) >= 0) &&
 		((tr2 = a2time_range(string3)) >= 0) ) {
 
-//         fprintf(stderr,"::2: %d %d %s(%d) %s(%d) ( %d %s(%d) )\n", 
+//         fprintf(stderr,"::2: %d %d %s(%d) %s(%d) ( %d %s(%d) )\n",
 //		j,k,string1,tr, string2, code_4_10, m, string3, tr2);
 
 	new_stat_time->n = n;
@@ -406,7 +406,7 @@ static int parse_time_range2(const char *arg, struct stat_time *new_stat_time, i
 	Add_time(&(new_stat_time->verf_time), (j-1)*k, tr);
 
 	/* update verf time = ref time + k */
-	return i;        
+	return i;
     }
 
 // fprintf(stderr,"::4 arg=%s\n", arg);
@@ -415,7 +415,7 @@ static int parse_time_range2(const char *arg, struct stat_time *new_stat_time, i
     i = sscanf(arg,"%d-%d %s %[^@]@(fcst,dt=%d %[^)])", &j,&k, string1, string2, &m, string3);
 // fprintf(stderr,"::5 nargs = i=%d %d-%d %s %s (%d unit=%s)\n",i,j,k,string1,string2 ,m, string3);
 // fprintf(stderr,"::string1 (%s) string2(%s) m=%d string3(%s)\n",string1,string2, m, string3);
-    if (i == 6 && ((tr = a2time_range(string1)) >= 0) && ((code_4_10 = a2code_4_10(string2)) >= 0) 
+    if (i == 6 && ((tr = a2time_range(string1)) >= 0) && ((code_4_10 = a2code_4_10(string2)) >= 0)
 		&& ((tr2 = a2time_range(string3)) >= 0)) {
 
 //fprintf(stderr,"forecast = %d %s tr=%d", j, string1, tr);

@@ -40,4 +40,3 @@ void BucketSortKeysInc(int n, int max, idxtype *keys, idxtype *tperm, idxtype *p
 
   free(counts);
 }
-

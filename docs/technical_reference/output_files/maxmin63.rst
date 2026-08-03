@@ -59,4 +59,4 @@ Notes
 * These files help avoid issues with:
     * Large file sizes from full time series output
     * Limited spatial coverage from station-based output
-    * Missing peak values due to output frequency limitations 
+    * Missing peak values due to output frequency limitations

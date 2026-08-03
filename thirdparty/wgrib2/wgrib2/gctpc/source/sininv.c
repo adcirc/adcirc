@@ -6,14 +6,14 @@ PURPOSE:	Transforms input Easting and Northing to longitude and
 		Easting and Northing must be in meters.  The longitude
 		and latitude values will be returned in radians.
 
-PROGRAMMER              DATE            
-----------              ----           
-D. Steinwand, EROS      May, 1991     
+PROGRAMMER              DATE
+----------              ----
+D. Steinwand, EROS      May, 1991
 
-This function was adapted from the Sinusoidal projection code (FORTRAN) in the 
-General Cartographic Transformation Package software which is available from 
+This function was adapted from the Sinusoidal projection code (FORTRAN) in the
+General Cartographic Transformation Package software which is available from
 the U.S. Geological Survey National Mapping Division.
- 
+
 ALGORITHM REFERENCES
 
 1.  Snyder, John P., "Map Projections--A Working Manual", U.S. Geological
@@ -36,7 +36,7 @@ static double false_northing;	/* y offset in meters			*/
   ------------------------------------*/
 long sininvint(double r, double center_long, double false_east,
         double false_north) {
-//long sininvint(r, center_long,false_east,false_north) 
+//long sininvint(r, center_long,false_east,false_north)
 //double r; 			/* (I) Radius of the earth (sphere) 	*/
 //double center_long;		/* (I) Center longitude 		*/
 //double false_east;		/* x offset in meters			*/
@@ -51,14 +51,14 @@ false_northing = false_north;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("SINUSOIDAL"); 
+ptitle("SINUSOIDAL");
 radius(r);
 cenlon(center_long);
 offsetp(false_easting,false_northing);
 return(OK);
 }
 
-/* Sinusoidal inverse equations--mapping x,y to lat,long 
+/* Sinusoidal inverse equations--mapping x,y to lat,long
   -----------------------------------------------------*/
 long sininv(double x, double y, double *lon, double *lat) {
 //long sininv(x, y, lon, lat)
@@ -74,7 +74,7 @@ double temp;		/* Re-used temporary variable */
 x -= false_easting;
 y -= false_northing;
 *lat = y / R;
-if (fabs(*lat) > HALF_PI) 
+if (fabs(*lat) > HALF_PI)
    {
    p_error("Input data error","sinusoidal-inverse");
    return(164);
@@ -88,4 +88,3 @@ if (fabs(temp) > EPSLN)
 else *lon = lon_center;
 return(OK);
 }
-

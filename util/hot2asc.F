@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -35,34 +35,34 @@
       integer nhasv ! station harmonic analysis on velocity (on/off)
       CHARACTER(8) FNAM8(2)
       integer,parameter :: IN = 10, OUT=11, NVARS=18, NHSVARS=12
-      character(80) :: arg ! holds command line arguments for processing 
+      character(80) :: arg ! holds command line arguments for processing
       character(80) :: title
-      character(7) :: binfname      
-      character(11) :: ascfname      
+      character(7) :: binfname
+      character(11) :: ascfname
       character(2) :: output3D
-      logical :: get3D 
+      logical :: get3D
       logical :: getHarmonic
       logical :: getReSynth  ! true if time series resynthesis data requested
       real(8) :: time
       integer :: itud
       real(8) :: realvar ! assume that reals are 8 bytes (very likely)
       logical :: fileFound  ! true if the requested file was found
-      integer :: errorIO ! io status variable 
-      
+      integer :: errorIO ! io status variable
+
       character(8) :: vars(NVARS) =
-     &  (/ "IESTP   ", "NSCOUE  ", "IVSTP   ", "NSCOUV  ", "ICSTP   ", 
+     &  (/ "IESTP   ", "NSCOUE  ", "IVSTP   ", "NSCOUV  ", "ICSTP   ",
      &     "NSCOUC  ",
-     &     "IPSTP   ", "IWSTP   ", "NSCOUM  ", "IGEP    ", "NSCOUGE ", 
+     &     "IPSTP   ", "IWSTP   ", "NSCOUM  ", "IGEP    ", "NSCOUGE ",
      &     "IGVP    ",
-     &     "NSCOUGV ", "IGCP    ", "NSCOUGC ", "IGPP    ", "IGWP    ", 
+     &     "NSCOUGV ", "IGCP    ", "NSCOUGC ", "IGPP    ", "IGWP    ",
      &     "NSCOUGW " /)
 
       character(8) :: hsvars(NHSVARS) =
-     &  (/ "NZ      ", "NF      ", "MM      ", "NP      ", 
+     &  (/ "NZ      ", "NF      ", "MM      ", "NP      ",
      &     "NSTAE   ",
-     &     "NSTAV   ", "NHASE   ", "NHASV   ", "NHAGE   ", "NHAGV   ", 
+     &     "NSTAV   ", "NHASE   ", "NHASV   ", "NHAGE   ", "NHAGV   ",
      &     "ICALL   ",
-     &     "NFREQ   " /) 
+     &     "NFREQ   " /)
 
       print *, "Version: v48.xx"
 
@@ -85,7 +85,7 @@
          print *,'ERROR: A file named ',binfname,' was not found.'
          print *,'Please check the file name and try again. Stopping.'
          stop
-      else 
+      else
          print *,'File named ',binfname,' was found. Opening file.'
       endif
 
@@ -102,32 +102,32 @@
          print *,'Stopping.'
       endif
 
-      !jgf48.38 Make it possible to extract harmonic and time series 
-      ! resynthesis data but user must decide whether they are present 
+      !jgf48.38 Make it possible to extract harmonic and time series
+      ! resynthesis data but user must decide whether they are present
       ! or not ... hot start files are not self describing
       get3D = .false.
       getHarmonic = .false.
       getReSynth = .false.
- 
+
       i = i + 1
       do j = i, COMMAND_ARGUMENT_COUNT()
          call GET_COMMAND_ARGUMENT(j,arg)
          select case (arg)
-         case("harmonic","Harmonic","HARMONIC") 
+         case("harmonic","Harmonic","HARMONIC")
             getHarmonic = .true.
             print *,'Harmonic data were requested.'
             print *,'They will be retrieved, if present.'
          case("resynth","ReSynth","RESYNTH")
             getReSynth = .true.
             print *,'Time series resynthesis data were requested.'
-            print *,'They will be retrieved, if present.' 
+            print *,'They will be retrieved, if present.'
          case default
             print *,'Command line argument not understood:'
             print *,arg
-         end select 
-      end do 
+         end select
+      end do
 
-      irec = 1 
+      irec = 1
       read(in,rec=irec) fileVersion    ; irec = irec + 1
       write(out, '(1x,''Major: '',i3,'' Minor: '', i3, '' Rev: '',i3)')
      $  ishft(fileVersion,-20), iand(1023,ishft(fileVersion,-10)),
@@ -148,10 +148,10 @@
          case default
             print *,'File does not contain 3D data.'
       end select
-      
+
       read(in,rec=irec) time    ; irec = irec + 1
       write(out,'(A,e25.16)') "time = ", time
- 
+
       read(in,rec=irec) iths   ; irec = irec + 1
       write(out,'(A,i10)') "iths = ", iths
 
@@ -169,7 +169,7 @@
 
       np = np_g
       ne = ne_g
-      
+
       call dsply(in,out,irec,"ETA1",np)
       call dsply(in,out,irec,"ETA2",np)
       call dsply(in,out,irec,"EtaDisc",np)
@@ -180,7 +180,7 @@
 
       call idsply(in,out,irec,"NODECODE",np)
       call idsply(in,out,irec,"NOFF",ne)
-      
+
       do i = 1, NVARS
         read(in, rec = irec) kk
         irec = irec + 1
@@ -208,39 +208,39 @@
                case("NHASV") ; nhasv = kk
                case default
                   ! do nothing; not a variable we need to record for later
-            end select            
+            end select
          end do
          irec = irec + NHSVARS
          do i=1,nfreq+nf
-            read(in, rec=irec+1) fnam8(1) 
-            write(out,'(A,a)') "fnam8(1) = ", fnam8(1)  
-            read(in, rec=irec+2) fnam8(2) 
-            write(out,'(A,a)') "fnam8(2) = ", fnam8(2) 
+            read(in, rec=irec+1) fnam8(1)
+            write(out,'(A,a)') "fnam8(1) = ", fnam8(1)
+            read(in, rec=irec+2) fnam8(2)
+            write(out,'(A,a)') "fnam8(2) = ", fnam8(2)
             irec = irec + 2
-            read(in,rec=irec+1) realvar    
+            read(in,rec=irec+1) realvar
             write(out,'(A,i2,A,e25.16)') "hafreq(",i,") = ", realvar
-            read(in,rec=irec+2) realvar    
+            read(in,rec=irec+2) realvar
             write(out,'(A,i2,A,e25.16)') "haff(",i,")   = ", realvar
-            read(in,rec=irec+3) realvar   
+            read(in,rec=irec+3) realvar
             write(out,'(A,i2,A,e25.16)') "haface(",i,") = ", realvar
             irec = irec + 3
          end do
 
-         read(in,rec=irec+1) realvar      
+         read(in,rec=irec+1) realvar
          write(out,'(A,e25.16)') "timeud = ", realvar
-         read(in,rec=irec+2) itud         
+         read(in,rec=irec+2) itud
          write(out,'(A,i10)') "itud = ", itud
          !jgf48.38 this must increment 3 rather than 2 as you might
-         ! expect, because itud is a 4 byte integer, and when the 
+         ! expect, because itud is a 4 byte integer, and when the
          ! read statement steps forward by "1" record, it is really
-         ! only stepping forward by 4 bytes, so we need to step 
+         ! only stepping forward by 4 bytes, so we need to step
          ! forward another record before reading again
          irec = irec + 3
 
          do i=1,mm
             do j=1,mm
                read(in,rec=irec) realvar    ; irec = irec + 1
-               write(out,'(A,i2,A,i2,A,e25.16)') 
+               write(out,'(A,i2,A,i2,A,e25.16)')
      &                "ha(",i,",",j,") = ", realvar
             end do
          end do
@@ -248,8 +248,8 @@
          if ( nhase.eq.1 ) then
             do n=1,nstae
                do i=1,mm
-                  read(in, rec=irec) realvar 
-                  write(out,'(A,i2,A,i2,A,e25.16)') 
+                  read(in, rec=irec) realvar
+                  write(out,'(A,i2,A,i2,A,e25.16)')
      &                    "staelv(",i,",",n,") = ", realvar
                   irec = irec + 1
                end do
@@ -259,23 +259,23 @@
          if ( nhasv.eq.1) then
             do n=1,nstav
                do i=1,mm
-                  read(in, rec=irec) realvar 
-                  write(out,'(A,i2,A,i2,A,e25.16)') 
+                  read(in, rec=irec) realvar
+                  write(out,'(A,i2,A,i2,A,e25.16)')
      &                 "staulv(",i,",",n,") = ", realvar
                   irec = irec + 1
-                  read(in, rec=irec) realvar 
-                  write(out,'(A,i2,A,i2,A,e25.16)') 
+                  read(in, rec=irec) realvar
+                  write(out,'(A,i2,A,i2,A,e25.16)')
      &                 "stavlv(",i,",",n,") = ", realvar
                   irec = irec + 1
                end do
             end do
-         endif        
+         endif
 
          if ( nhage.eq.1 ) then
             do n=1,npha
                do i=1,mm
-                  read(in, rec=irec) realvar 
-                  write(out,'(A,i2,A,i2,A,e25.16)') 
+                  read(in, rec=irec) realvar
+                  write(out,'(A,i2,A,i2,A,e25.16)')
      &                    "gloelv(",i,",",n,") = ", realvar
                   irec = irec + 1
                end do
@@ -285,17 +285,17 @@
          if ( nhagv.eq.1) then
             do n=1,npha
                do i=1,mm
-                  read(in, rec=irec) realvar 
-                  write(out,'(A,i2,A,i2,A,e25.16)') 
+                  read(in, rec=irec) realvar
+                  write(out,'(A,i2,A,i2,A,e25.16)')
      &                 "gloulv(",i,",",n,") = ", realvar
                   irec = irec + 1
-                  read(in, rec=irec) realvar 
-                  write(out,'(A,i2,A,i2,A,e25.16)') 
+                  read(in, rec=irec) realvar
+                  write(out,'(A,i2,A,i2,A,e25.16)')
      &                 "glovlv(",i,",",n,") = ", realvar
                   irec = irec + 1
                end do
             end do
-         endif        
+         endif
 
       endif
 
@@ -305,30 +305,30 @@
          if (nhage.eq.1) then
             do i = 1, npha
                read(in, rec=irec) realvar ; irec = irec + 1
-               write(out,'(A,i10,A,e25.16)') 
+               write(out,'(A,i10,A,e25.16)')
      &            "ELAV(",i,") = ", realvar
                read(in, rec=irec) realvar ; irec = irec + 1
-               write(out,'(A,i10,A,e25.16)') 
+               write(out,'(A,i10,A,e25.16)')
      &            "ELVA(",i,") = ", realvar
             end do
-         endif   
+         endif
          if ( nhagv.eq.1 ) then
             do i = 1, np
                read(in, rec=irec) realvar ; irec = irec + 1
-               write(out,'(A,i10,A,e25.16)') 
+               write(out,'(A,i10,A,e25.16)')
      &            "XVELAV(",i,") = ", realvar
                read(in, rec=irec) realvar ; irec = irec + 1
-               write(out,'(A,i10,A,e25.16)') 
+               write(out,'(A,i10,A,e25.16)')
      &            "YVELAV(",i,") = ", realvar
                read(in, rec=irec) realvar ; irec = irec + 1
-               write(out,'(A,i10,A,e25.16)') 
+               write(out,'(A,i10,A,e25.16)')
      &            "XVELVA(",i,") = ", realvar
                read(in, rec=irec) realvar ; irec = irec + 1
-               write(out,'(A,i10,A,e25.16)') 
+               write(out,'(A,i10,A,e25.16)')
      &            "YVELVA(",i,") = ", realvar
             end do
          endif
-      endif 
+      endif
 
       print *, "final irec = ", irec
 
@@ -376,4 +376,3 @@
  1000 format("#---- ",a," ----")
  1010 format(a10, i8, ":", I10)
       end subroutine
-            

@@ -19,7 +19,7 @@
 * This function partitions a finite element mesh by partitioning its nodal
 * graph using KMETIS and then assigning elements in a load balanced fashion.
 **************************************************************************/
-void METIS_PartMeshNodal(int *ne, int *nn, idxtype *elmnts, int *etype, int *numflag, 
+void METIS_PartMeshNodal(int *ne, int *nn, idxtype *elmnts, int *etype, int *numflag,
                          int *nparts, int *edgecut, idxtype *epart, idxtype *npart)
 {
   int i, j, k, me;
@@ -88,7 +88,7 @@ void METIS_PartMeshNodal(int *ne, int *nn, idxtype *elmnts, int *etype, int *num
             break;
           }
         }
-        if (j == nnbrs) 
+        if (j == nnbrs)
           epart[i] = nbrind[iamax(nnbrs, nbrwgt)];
       }
       pwgts[epart[i]]++;
@@ -107,7 +107,7 @@ void METIS_PartMeshNodal(int *ne, int *nn, idxtype *elmnts, int *etype, int *num
 * This function partitions a finite element mesh by partitioning its dual
 * graph using KMETIS and then assigning nodes in a load balanced fashion.
 **************************************************************************/
-void METIS_PartMeshDual(int *ne, int *nn, idxtype *elmnts, int *etype, int *numflag, 
+void METIS_PartMeshDual(int *ne, int *nn, idxtype *elmnts, int *etype, int *numflag,
                         int *nparts, int *edgecut, idxtype *epart, idxtype *npart)
 {
   int i, j, k, me;
@@ -131,13 +131,13 @@ void METIS_PartMeshDual(int *ne, int *nn, idxtype *elmnts, int *etype, int *numf
 
   /* Construct the node-element list */
   nptr = idxsmalloc(*nn+1, 0, "METIS_MESHPARTDUAL: nptr");
-  for (j=esize*(*ne), i=0; i<j; i++) 
+  for (j=esize*(*ne), i=0; i<j; i++)
     nptr[elmnts[i]]++;
   MAKECSR(i, *nn, nptr);
 
   nind = idxmalloc(nptr[*nn], "METIS_MESHPARTDUAL: nind");
   for (k=i=0; i<(*ne); i++) {
-    for (j=0; j<esize; j++, k++) 
+    for (j=0; j<esize; j++, k++)
       nind[nptr[elmnts[k]]++] = i;
   }
   for (i=(*nn); i>0; i--)

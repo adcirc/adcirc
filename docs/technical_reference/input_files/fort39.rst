@@ -32,4 +32,4 @@ Notes
   - If IDEN=2: bc(j,k) represents salinity boundary condition values
   - If IDEN=3: bc(j,k) represents temperature boundary condition values
   - If IDEN=4: bc(j,k) should be replaced with salbc(j,k),tempbc(j,k)
-- NFEN is the number of vertical levels in the model 
+- NFEN is the number of vertical levels in the model

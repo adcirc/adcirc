@@ -33,7 +33,7 @@ static double false_northing;	/* y offset				*/
   ------------------------------------*/
 long wivinvint(double r, double center_long, double false_east,
         double false_north) {
-//long wivinvint(r, center_long,false_east,false_north) 
+//long wivinvint(r, center_long,false_east,false_north)
 //double r; 			/* (I) Radius of the earth (sphere) */
 //double center_long;		/* (I) Center longitude */
 //double false_east;		/* x offset				*/
@@ -48,14 +48,14 @@ false_northing = false_north;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("WAGNER IV"); 
+ptitle("WAGNER IV");
 radius(r);
 cenlon(center_long);
 offsetp(false_east,false_north);
 return(OK);
 }
 
-/* Wagner IV inverse equations--mapping x,y to lat,long 
+/* Wagner IV inverse equations--mapping x,y to lat,long
   ----------------------------------------------------*/
 long wivinv(double x, double y, double *lon, double *lat) {
 //long wivinv(x, y, lon, lat)
@@ -75,4 +75,3 @@ theta = asin(y /  (1.56548 * R));
 *lat = asin((2.0 * theta + sin(2.0 * theta)) / 2.9604205062);
 return(OK);
 }
-

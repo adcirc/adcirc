@@ -21,8 +21,8 @@ ALGORITHM REFERENCES
     Survey Professional Paper 1395 (Supersedes USGS Bulletin 1532), United
     State Government Printing Office, Washington D.C., 1987.
 
-3.  Goode, J.P., 1925,  The Homolosine projection:  a new device for 
-    portraying the Earth's surface entire:  Assoc. Am. Geographers, Annals, 
+3.  Goode, J.P., 1925,  The Homolosine projection:  a new device for
+    portraying the Earth's surface entire:  Assoc. Am. Geographers, Annals,
     v. 15, p. 119-125
 *******************************************************************************/
 #include "cproj.h"
@@ -36,7 +36,7 @@ static double feast[12];	/* False easting, one for each region */
 /* Initialize the Goode`s Homolosine projection
   --------------------------------------------*/
 long goodinvint(double r) {
-//long goodinvint(r) 
+//long goodinvint(r)
 //double r; 			/* (I) Radius of the earth (sphere) */
 //{
 /* Place parameters in static storage for common use
@@ -75,12 +75,12 @@ feast[11] = R * 2.44346095279;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("GOODE'S HOMOLOSINE EQUAL-AREA"); 
+ptitle("GOODE'S HOMOLOSINE EQUAL-AREA");
 radius(r);
 return(OK);
 }
-
-/* Goode`s Homolosine inverse equations--mapping x,y to lat,long 
+
+/* Goode`s Homolosine inverse equations--mapping x,y to lat,long
   -------------------------------------------------------------*/
 long goodinv(double x, double y, double *lon, double *lat) {
 //long goodinv(x, y, lon, lat)
@@ -125,7 +125,7 @@ x = x - feast[region];
 if (region==1||region==3||region==4||region==5||region==8||region==9)
    {
    *lat = y / R;
-   if (fabs(*lat) > HALF_PI) 
+   if (fabs(*lat) > HALF_PI)
       {
       p_error("Input data error","goode-inverse");
       return(252);
@@ -183,4 +183,3 @@ if (region ==11 && (*lon < 1.3962634016 || *lon > PI + EPSLN))
 							return(IN_BREAK);
 return(OK);
 }
-

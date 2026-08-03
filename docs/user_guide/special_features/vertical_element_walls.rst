@@ -8,7 +8,7 @@ What are Vertical Element Walls?
 
 Vertical Element Walls (VEWs) are a special boundary condition in ADCIRC that allow for the representation of steep-sided channels or other vertical features within the mesh. Unlike traditional mesh elements that assume a gradually sloping bathymetry, VEWs provide a way to model abrupt vertical changes in the terrain, which is particularly useful for:
 
-1. Modeling narrow channels with vertical walls where traditional mesh elements would require excessive refinement, 
+1. Modeling narrow channels with vertical walls where traditional mesh elements would require excessive refinement,
 2. Representing steep slopes or embankments without the need for complex mesh transitions, and thus,
 3. Simulating compound flooding scenarios involving river channels and floodplains
 
@@ -21,7 +21,7 @@ VEWs effectively create internal boundaries that allow water to flow between adj
    :width: 600
    :alt: Comparison between conventional trapezoidal approach and vertical element walls
 
-   Schematic comparison of traditional trapezoidal channel representation (left) and vertical element wall approach (right). 
+   Schematic comparison of traditional trapezoidal channel representation (left) and vertical element wall approach (right).
 
 .. figure:: ../../_static/images/user_guide/special_features/vertical_element_walls/vertical_element_walls_schematic_3.png
    :width: 600
@@ -74,7 +74,7 @@ Wet Perimeter Consideration
 .. _1d_channel:
 
 Quasi 1D Solution with Rotated Flow Along Flowline
-   For channels modeled with both vertical element walls and :ref:`condensed_nodes` nodal attribute, ADCIRC includes special handling of velocity components to ensure proper flow direction along the walls when they are not submerged. This prevents unrealistic cross-wall flow and maintains appropriate momentum balance in the system. This treatment gives 
+   For channels modeled with both vertical element walls and :ref:`condensed_nodes` nodal attribute, ADCIRC includes special handling of velocity components to ensure proper flow direction along the walls when they are not submerged. This prevents unrealistic cross-wall flow and maintains appropriate momentum balance in the system. This treatment gives
 
 
 Defining VEWs in ADCIRC Input Files
@@ -110,7 +110,7 @@ Below is an example of :ref:`fort.14 <fort14>` file for a domain with a channel 
    2   -525.0  0.0  2.56
    3   -485.0  0.0  2.59
    ...
-   4343  -5.0  2280.0  -1.007  ! Nodes on the floodplain with depth less than zero 
+   4343  -5.0  2280.0  -1.007  ! Nodes on the floodplain with depth less than zero
    4344   5.0  2280.0  -1.007  ! Note: These nodes with negative :ref:`DP` values are initially dry as :ref:`DP` values are positive downward
    4345  -5.0  2320.0  -1.087
    ...
@@ -129,7 +129,7 @@ Below is an example of :ref:`fort.14 <fort14>` file for a domain with a channel 
    8699 3 195 168 196
    8700 3 167 140 168
    3                           ! :ref:`NOPE` (open boundary nodes)
-   32                          ! :ref:`NETA` 
+   32                          ! :ref:`NETA`
    15                          ! :ref:`NVDLL`, :ref:`IBTYPEE`
    1                           ! Boundary nodes
    2
@@ -160,8 +160,8 @@ In this example:
 This configuration allows water to flow between the floodplain and the channel when the water level on the floodplain exceeds :ref:`BARINHT`.
 
 .. note::
-   * The nodal elevation at node :ref:`NBVV` must be greater than the one at node :ref:`IBCONN`. This is becuase ADCIRC assumes that the side of :ref:`NBVV` is always the higher ground side (i.e., floodplain side) and the side of :ref:`IBCONN` is the lower ground side (i.e., channel side). 
-   * :ref:`BARINHT` should be set to the same as the elevation of the floodplain node or a slightly greater value, e.g., by 0.001 m. The slightly greater value can be needed due to an issue in the domain decomposition process. ADCPREP may write out the depths in decomposed fort.14 files and the :ref:`BARINHT` values in decomposed fort.13 files with different significant digits, which may trigger an error by a parallel ADCIRC run when the barrier crest height (:ref:`BARINHT`) errorneously becomes lower than the nodal elevation due to the inconsistent truncation. 
+   * The nodal elevation at node :ref:`NBVV` must be greater than the one at node :ref:`IBCONN`. This is becuase ADCIRC assumes that the side of :ref:`NBVV` is always the higher ground side (i.e., floodplain side) and the side of :ref:`IBCONN` is the lower ground side (i.e., channel side).
+   * :ref:`BARINHT` should be set to the same as the elevation of the floodplain node or a slightly greater value, e.g., by 0.001 m. The slightly greater value can be needed due to an issue in the domain decomposition process. ADCPREP may write out the depths in decomposed fort.14 files and the :ref:`BARINHT` values in decomposed fort.13 files with different significant digits, which may trigger an error by a parallel ADCIRC run when the barrier crest height (:ref:`BARINHT`) errorneously becomes lower than the nodal elevation due to the inconsistent truncation.
    * :ref:`BARINCFSB` and :ref:`BARINCFSP` should be 1.0 for most of the cases.
 
 .. _example_fort13_condensed_nodes:
@@ -209,7 +209,7 @@ The :ref:`condensed_nodes` attribute is a critical component when using Vertical
    :width: 600
    :alt: VEW channel with condensed nodes for relaxed CFL condition
 
-   The CFL condition can be relaxed by pairing nodes on the sides of a channel in the :ref:`condensed_nodes` nodal attributes. 
+   The CFL condition can be relaxed by pairing nodes on the sides of a channel in the :ref:`condensed_nodes` nodal attributes.
 
 Available Tools
 ---------------
@@ -220,7 +220,7 @@ The `VEW Utils package <https://github.com/shinbunya/vewutils>`_ provides severa
 * **VEW Processing**: Utilities for setting up and validating VEW boundary conditions
 * **Mesh Merging**: Functions to merge channel meshes with existing terrain meshes while preserving VEW features
 
-These tools simplify the process of incorporating VEWs into ADCIRC models and ensure correct implementation of the necessary boundary conditions. 
+These tools simplify the process of incorporating VEWs into ADCIRC models and ensure correct implementation of the necessary boundary conditions.
 
 References
 ----------

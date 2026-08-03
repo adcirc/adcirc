@@ -26,7 +26,7 @@
 #if defined USE_NETCDF
 #include <netcdf.h>
 
-// change by Sander Hulst 5/2011, for netcdf-4 library compiled without netcdf-4/hdf format 
+// change by Sander Hulst 5/2011, for netcdf-4 library compiled without netcdf-4/hdf format
 
 /* defined in Netcdf_sup.c */
 extern g2nc_4Dlt nc_4Dlt[G2NC_NUM_4DLT];
@@ -625,70 +625,70 @@ fprintf(stderr,"netcdf: skip this field as not at one of user-defined levels: le
 
       i = j = 0;
       while (tmpname[i]) {
-	
+
 	if (tmpname[i] == ' ') { i++; continue; }
 
         if (match_str(tmpname+i, ">=")) {
-	    varname_buf[j++] = '_'; 
-	    varname_buf[j++] = 'G'; 
-	    varname_buf[j++] = 'E'; 
-	    varname_buf[j++] = '_'; 
-	    i+=2; 
+	    varname_buf[j++] = '_';
+	    varname_buf[j++] = 'G';
+	    varname_buf[j++] = 'E';
+	    varname_buf[j++] = '_';
+	    i+=2;
 	}
         else if (match_str(tmpname+i, ">")) {
-	    varname_buf[j++] = '_'; 
-	    varname_buf[j++] = 'G'; 
-	    varname_buf[j++] = 'T'; 
-	    varname_buf[j++] = '_'; 
-	    i+=1; 
+	    varname_buf[j++] = '_';
+	    varname_buf[j++] = 'G';
+	    varname_buf[j++] = 'T';
+	    varname_buf[j++] = '_';
+	    i+=1;
 	}
         else if (match_str(tmpname+i, "<=")) {
-	    varname_buf[j++] = '_'; 
-	    varname_buf[j++] = 'L'; 
-	    varname_buf[j++] = 'E'; 
-	    varname_buf[j++] = '_'; 
-	    i+=2; 
+	    varname_buf[j++] = '_';
+	    varname_buf[j++] = 'L';
+	    varname_buf[j++] = 'E';
+	    varname_buf[j++] = '_';
+	    i+=2;
 	}
         else if (match_str(tmpname+i, "<")) {
-	    varname_buf[j++] = '_'; 
-	    varname_buf[j++] = 'L'; 
-	    varname_buf[j++] = 'T'; 
-	    varname_buf[j++] = '_'; 
-	    i+=1; 
+	    varname_buf[j++] = '_';
+	    varname_buf[j++] = 'L';
+	    varname_buf[j++] = 'T';
+	    varname_buf[j++] = '_';
+	    i+=1;
 	}
         else if (match_str(tmpname+i, "=")) {
-	    varname_buf[j++] = '_'; 
-	    varname_buf[j++] = 'E'; 
-	    varname_buf[j++] = 'Q'; 
-	    varname_buf[j++] = '_'; 
-	    i+=1; 
+	    varname_buf[j++] = '_';
+	    varname_buf[j++] = 'E';
+	    varname_buf[j++] = 'Q';
+	    varname_buf[j++] = '_';
+	    i+=1;
 	}
 
 	/* -ve sign */
         else if (match_str(tmpname+i, "-")) {
-	    varname_buf[j++] = 'M'; 
-	    i+=1; 
+	    varname_buf[j++] = 'M';
+	    i+=1;
 	}
 
 	/* +ve sign */
         else if (match_str(tmpname+i, "+")) {
-	    varname_buf[j++] = 'P'; 
-	    i+=1; 
+	    varname_buf[j++] = 'P';
+	    i+=1;
 	}
 
 	/* period */
         else if (match_str(tmpname+i, ".")) {
 	    /* if period number, then replace with a D */
 	    if (isdigit((unsigned char) tmpname[i+1]))  varname_buf[j++] = 'D';
-	    else varname_buf[j++] = '_'; 
-	    i+=1; 
+	    else varname_buf[j++] = '_';
+	    i+=1;
 	}
 
-	else if (isalnum((unsigned char) tmpname[i])) { 
+	else if (isalnum((unsigned char) tmpname[i])) {
 	    varname_buf[j++] = tmpname[i++];
 	}
-	else { 
-	    varname_buf[j++] = '_'; 
+	else {
+	    varname_buf[j++] = '_';
 	    i++;
 	}
       }
@@ -2156,4 +2156,3 @@ int f_netcdf(ARG1)
   return 0;
 }
 #endif
-

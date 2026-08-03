@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2023 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -21,12 +21,12 @@
 !  MODULE ADC_CONSTANTS
 !-----------------------------------------------------------------------
 !> @author Zachary Cobell, The Water Institute, zcobell@thewaterinstitute.org
-!> 
+!>
 !> @copyright Dr. R.A. Luettich and Dr. J.J. Westerink
 !>
 !> @brief This module contains physical constants and conversion factors used
 !> throughout the ADCIRC code
-!> 
+!>
 !> In general, all variables within this file should be constants (i.e. they
 !> should be declared as a parameter) with exceptions for physical constants
 !> that the user can change in the input files
@@ -39,7 +39,7 @@
           IMPLICIT NONE
 
           !---Physical Constants---!
-        
+
           !...Default gravitational acceleration
           ! Note that the user can update this in the
           ! control file so this isn't made constant
@@ -65,7 +65,7 @@
           !...Note this is the default value but may be modified
           ! by the user at runtime
           REAL(8) :: RhoAir = 1.293D0
-          !...There are other options which may be used but 
+          !...There are other options which may be used but
           ! the default is above
           ! REAL(8), PARAMETER :: RhoAir = 1.15D0 !...Holland
           ! REAL(8), PARAMETER :: RhoAir = 1.1774D0 !... T=79.79, P=1013D0
@@ -91,13 +91,13 @@
           REAL(8), PARAMETER :: day2hour = 24.0D0
           REAL(8), PARAMETER :: hour2day = 1.0D0 / day2hour
           REAL(8), PARAMETER :: day2sec = day2hour * hour2sec
-          REAL(8), PARAMETER :: sec2day = 1.0D0/day2sec 
+          REAL(8), PARAMETER :: sec2day = 1.0D0/day2sec
 
-          REAL (8), parameter:: hour2min = 60.D0 
+          REAL (8), parameter:: hour2min = 60.D0
           REAL (8), parameter:: min2hour = 1.D0/hour2min
-          REAL (8), parameter:: min2day = 1.D0*min2hour*hour2day ; 
+          REAL (8), parameter:: min2day = 1.D0*min2hour*hour2day ;
           !---Conversion Factors---!
-          
+
           !...Wind Reduction Factor
           !  Factor for reducing wind speed from top of planetary
           !  boundary layer to surface
@@ -106,7 +106,7 @@
           ! REAL(8), PARAMETER :: windReduction = 1.0D0
           ! REAL(8), PARAMETER :: windReduction = 0.78D0 !...Powell et all 2003
 
-          !...Conversion between 10 minute and 1 minute wind 
+          !...Conversion between 10 minute and 1 minute wind
           REAL(8), PARAMETER :: one2ten = 0.8928D0 !... Powell et al 1996
           ! REAL(8), PARAMETER :: 1.00D0 !... HWind
           ! REAL(8), PARAMETER :: 0.8787D0 !.. OceanWeather
@@ -122,7 +122,7 @@
 
           !...Wave Wind Multiplier. Applied to winds sent to wave models
           REAL(8) :: waveWindMultiplier = 1.0D0
-          
+
           !... Wave Stress Gradient Magnitude CAP
           REAL(8) :: WaveStressGrad_Cap = 1000.0D0
 
@@ -152,8 +152,8 @@
 
           !----------------!
           ! bulk modulus
-          ! REAL (8), parameter:: kappamod = 2.041845e+09 
-          REAL (8):: kappamodulus = 2.20D+09 
+          ! REAL (8), parameter:: kappamod = 2.041845e+09
+          REAL (8):: kappamodulus = 2.20D+09
 
 !-----------------------------------------------------------------------
       END MODULE ADC_CONSTANTS

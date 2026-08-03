@@ -52,7 +52,7 @@ int f_set_ftime1(ARG1) {
 	new_ftime_units = 1;
     }
     else {
-        if (sscanf(arg1,"%d %s %s%n", &new_ftime , string, string2, &len) == 3 && 
+        if (sscanf(arg1,"%d %s %s%n", &new_ftime , string, string2, &len) == 3 &&
 		len == strlen(arg1)) {
     	    if (strcmp(string2,"forecast") == 0 || strcmp(string2,"fcst") == 0) {
 		new_ftime_units = a2time_range(string);
@@ -75,7 +75,7 @@ int f_set_ftime1(ARG1) {
 	if (code_1_4 != NULL && (int) *code_1_4 == 1) *code_1_4 = 0;		// fcst product -> analysis product
     }
     else {
-	if (code_1_2 != NULL) *code_1_2 = 1;					// start of forecast 
+	if (code_1_2 != NULL) *code_1_2 = 1;					// start of forecast
 	if (code_1_4 != NULL && (int) *code_1_4 == 0) *code_1_4 = 1;		// analysis product -> fcst product
     }
 
@@ -84,7 +84,7 @@ int f_set_ftime1(ARG1) {
 
     // old_verf_time = ref_time + old_ftime + stat_proc_dt
     // new_verf_time = ref_time + new_ftime + stat_proc_dt
-    
+
     // stat_proc_dt = old_verf_time - (ref_time + old_ftime);
 
     reftime(sec, &year0, &month0, &day0, &hour0, &minute0, &second0);
@@ -92,7 +92,7 @@ int f_set_ftime1(ARG1) {
 
     get_time(verf_time, &year, &month, &day, &hour, &minute, &second);
 
-    sub_time(year, month, day, hour, minute, second, year0, month0, day0, hour0, 
+    sub_time(year, month, day, hour, minute, second, year0, month0, day0, hour0,
          minute0, second0, &dt, &units);
 
     reftime(sec, &year0, &month0, &day0, &hour0, &minute0, &second0);
@@ -102,4 +102,3 @@ int f_set_ftime1(ARG1) {
 
     return 0;
 }
-

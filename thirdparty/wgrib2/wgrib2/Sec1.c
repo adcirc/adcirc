@@ -59,7 +59,7 @@ int f_T(ARG0) {
 /*
  * HEADER:103:YY:inv:0:reference time YYYY
  */
- 
+
 int f_YY(ARG0) {
     int year, month, day, hour, minute, second;
     if (mode >= 0) {
@@ -72,7 +72,7 @@ int f_YY(ARG0) {
 /*
  * HEADER:105:MM:inv:0:reference time MM
  */
- 
+
 int f_MM(ARG0) {
     int year, month, day, hour, minute, second;
     if (mode >= 0) {
@@ -80,12 +80,12 @@ int f_MM(ARG0) {
         sprintf(inv_out,"MM=%2.2d",month);
     }
     return 0;
-} 
+}
 
 /*
  * HEADER:110:RT:inv:0:type of reference Time
  */
- 
+
 int f_RT(ARG0) {
     if (mode >= 0) {
 	switch (sec[1][11]) {
@@ -105,14 +105,14 @@ int f_RT(ARG0) {
 }
 
 /*
- * HEADER:110:center:inv:0:center 
+ * HEADER:110:center:inv:0:center
  */
 
 int f_center(ARG0) {
     int ctr;
     char tmp[20];
     const char *string;
- 
+
     if (mode >= 0) {
         ctr = GB2_Center(sec);
         switch (ctr) {
@@ -129,14 +129,14 @@ int f_center(ARG0) {
 }
 
 /*
- * HEADER:110:subcenter:inv:0:subcenter 
+ * HEADER:110:subcenter:inv:0:subcenter
  */
 
 int f_subcenter(ARG0) {
     int ctr, subctr;
     char tmp[20];
     const char *string;
-    
+
     if (mode >= 0) {
         ctr = GB2_Center(sec);
         subctr = GB2_Subcenter(sec);

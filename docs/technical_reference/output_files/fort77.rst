@@ -27,4 +27,4 @@ Notes
 * When using sparse format, only weir nodes are included in the output
 * Node numbers (k) reference the global node numbering system
 * The output frequency is controlled by :ref:`NSPOOL_TVW <NSPOOL_TVW>` parameter
-* TVW(k) represents the change in elevation at node k from the original fort.14 elevation 
+* TVW(k) represents the change in elevation at node k from the original fort.14 elevation

@@ -1,10 +1,10 @@
 /*******************************************************************************
-NAME                           GCTP 
+NAME                           GCTP
 
 VERSION	PROGRAMMER      DATE
 -------	----------      ----
 	T. Mittan	2-26-93		Conversion from FORTRAN to C
-	S. Nelson	12-14-93	Added assignments to inunit and 
+	S. Nelson	12-14-93	Added assignments to inunit and
 					outunit for State Plane purposes.
 c.1.0	S. Nelson	9-15-94		Added outdatum parameter call.
 c.1.1	S. Nelson	11-94		Modified code so that UTM can accept
@@ -32,7 +32,7 @@ c.1.5	S. Nelson	 1-98		Changed the name datum to spheroid.
 					projections for inverse transformations.
 					For forward transformations the
 					temporary array still exists.
-  
+
 ALGORITHM REFERENCES
 
 1.  Snyder, John P., "Map Projections--A Working Manual", U.S. Geological
@@ -87,7 +87,7 @@ void gctp(double *incoor, long *insys, long *inzone, double *inparm,
 //long *ipr;		/* printout flag for error messages. 0=screen, 1=file,
 //			   2=both*/
 //char *efile;		/* error file name				*/
-//long *jpr;		/* printout flag for projection parameters 0=screen, 
+//long *jpr;		/* printout flag for projection parameters 0=screen,
 //			   1=file, 2 = both*/
 //char *pfile;		/* error file name				*/
 // double *outcoor;	/* output coordinates				*/
@@ -150,7 +150,7 @@ else
    {
    if (*insys != GEO)
      {
-     if ((inzn[*insys] != *inzone) || (indat[*insys] != *inspheroid) || 
+     if ((inzn[*insys] != *inzone) || (indat[*insys] != *inspheroid) ||
          (inpj[*insys] != *insys))
         {
         ininit_flag = TRUE;
@@ -165,7 +165,7 @@ else
      }
    if (*outsys != GEO)
      {
-     if ((outzn[*outsys] != *outzone) || (outdat[*outsys] != *outspheroid) || 
+     if ((outzn[*outsys] != *outzone) || (outdat[*outsys] != *outspheroid) ||
          (outpj[*outsys] != *outsys))
         {
         outinit_flag = TRUE;
@@ -201,7 +201,7 @@ unit = *inunit;
 
 /* use legislated unit table for State Plane
 -------------------------------------------*/
-if ((*inspheroid == 0) && (*insys == SPCS) && (*inunit == STPLN_TABLE)) 
+if ((*inspheroid == 0) && (*insys == SPCS) && (*inunit == STPLN_TABLE))
 		unit = FEET;
 if ((*inspheroid == 8) && (*insys == SPCS) && (*inunit == STPLN_TABLE))
 		unit = NADUT[(*inzone)/100];
@@ -210,9 +210,9 @@ if ((*inspheroid == 8) && (*insys == SPCS) && (*inunit == STPLN_TABLE))
    or meters
   --------------------------------*/
 if (*insys == GEO)
-   *iflg = untfz(unit,RADIAN,&factor); 
+   *iflg = untfz(unit,RADIAN,&factor);
 else
-   *iflg = untfz(unit,METER,&factor); 
+   *iflg = untfz(unit,METER,&factor);
 if (*insys == SPCS)
    *inunit = unit;
 if (*iflg != 0)
@@ -220,7 +220,7 @@ if (*iflg != 0)
    close_file();
    return;
    }
- 
+
 x = incoor[0] * factor;
 y = incoor[1] * factor;
 
@@ -264,8 +264,8 @@ if ((*iflg = inv_trans[*insys](x, y, &lon, &lat)) != 0)
 /* DATUM conversion should go here
 --------------------------------*/
 
-/* 
-   The datum conversion facilities should go here 
+/*
+   The datum conversion facilities should go here
 */
 
 /* Initialize forward transformation
@@ -281,7 +281,7 @@ if (outinit_flag)
    /* If the projection is UTM, copy to a temporary array.  This way, the
       user does not have to enter the zone nor a lat/long within the zone.
       The program will calculate the zone from the input lat/long.
-    ---------------------------------------------------------------------*/ 
+    ---------------------------------------------------------------------*/
    if (*outsys == UTM)
       {
       for (i = 2; i < COEFCT; i++)
@@ -328,15 +328,15 @@ if ((*iflg = for_trans[*outsys](lon, lat, &outcoor[0], &outcoor[1])) != 0)
 unit = *outunit;
 /* use legislated unit table
 ----------------------------*/
-     if ((*outspheroid == 0) && (*outsys == SPCS) && (*outunit == STPLN_TABLE)) 
+     if ((*outspheroid == 0) && (*outsys == SPCS) && (*outunit == STPLN_TABLE))
 		unit = 1;
      if ((*outspheroid == 8) && (*outsys == SPCS) && (*outunit == STPLN_TABLE))
 		unit = NADUT[(*outzone)/100];
 
 if (*outsys == GEO)
-   *iflg = untfz(RADIAN,unit,&factor); 
+   *iflg = untfz(RADIAN,unit,&factor);
 else
-   *iflg = untfz(METER,unit,&factor); 
+   *iflg = untfz(METER,unit,&factor);
 
 if (*outsys == SPCS)
    *outunit = unit;

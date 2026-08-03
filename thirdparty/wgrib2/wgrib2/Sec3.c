@@ -173,7 +173,7 @@ int get_nxny_(unsigned char **sec, unsigned int *nx, unsigned int *ny, unsigned 
             variable_dim = (int *) malloc(n_var_dim * sizeof(int));
             raw_variable_dim = (int *) malloc(n_var_dim * sizeof(int));
 
-            if (variable_dim == NULL || raw_variable_dim == NULL) 
+            if (variable_dim == NULL || raw_variable_dim == NULL)
 		fatal_error("ran out of memory","");
             n_variable_dim = n_var_dim;
         }
@@ -257,7 +257,7 @@ int f_scan(ARG0) {
 }
 
 const char *jma_scan_order[] = {	// JMA 3.1 bits 1-3
-	"Rmin-Rmax:clockwise", 
+	"Rmin-Rmax:clockwise",
 	"clockwise:Rmin-Rmax",
 	"Rmin-Rmax:counterclockwise",
 	"counterclockwise:Rmin-Rmax",
@@ -411,7 +411,7 @@ int f_grid(ARG0) {
                     sprintf(inv_out, "%ssouth pole lat=%lf lon=%lf angle of rot=%lf",
                         nl,units*int4(gds+72), units*int4(gds+76),units*int4(gds+80));
 //vsm +1 line:
-                    inv_out += strlen(inv_out);                        
+                    inv_out += strlen(inv_out);
                     sprintf(inv_out, ", stretch lat=%lf lon=%lf factor=%lf",
                         units*int4(gds+84), units*int4(gds+88), int4(gds+92)*1e-6);
                 }
@@ -561,7 +561,7 @@ int f_grid(ARG0) {
                 inv_out += strlen(inv_out);
                 print_stagger(scan, inv_out);
                 break;
-            case 40: 
+            case 40:
             case 41:
             case 42:
             case 43:
@@ -700,7 +700,7 @@ int f_grid(ARG0) {
 			inv_out += strlen(inv_out);
 		  break;
 #endif
-            case 90: 
+            case 90:
 		sprintf(inv_out,"%sSpace view perspective or orthographic grid (%d x %d)",nl,nx,ny);
                 inv_out += strlen(inv_out);
 \
@@ -708,23 +708,23 @@ int f_grid(ARG0) {
                 sub_ang = GDS_LatLon_sub_ang(gds);
                 units = basic_ang == 0 ?  0.000001 : (float) basic_ang / (float) sub_ang;
 
-                sprintf(inv_out," units %g input %s output %s res %d%s", units, 
+                sprintf(inv_out," units %g input %s output %s res %d%s", units,
 			scan_order[scan>>4],output_order_name(), res,nl);
                 inv_out += strlen(inv_out);
 
-		sprintf(inv_out,"sub-sat point: lat %lf lon %lf ix=%lf iy=%lf%s", 
+		sprintf(inv_out,"sub-sat point: lat %lf lon %lf ix=%lf iy=%lf%s",
 		GDS_Space_lap(gds), GDS_Space_lop(gds), GDS_Space_xp(gds), GDS_Space_yp(gds), nl);
                 inv_out += strlen(inv_out);
 
-		sprintf(inv_out,"diameter of earth dx=%d dy=%d grid cells ori_angle %lf%s", 
+		sprintf(inv_out,"diameter of earth dx=%d dy=%d grid cells ori_angle %lf%s",
 		GDS_Space_dx(gds),GDS_Space_dy(gds),GDS_Space_ori(gds),nl);
                 inv_out += strlen(inv_out);
 		tmp = GDS_Space_altitude(gds);
-		if (tmp > 0) 
-		   sprintf(inv_out,"sat. altitude=%lf (equatorial radii) grid_origin Xo=%d Yo=%d", 
+		if (tmp > 0)
+		   sprintf(inv_out,"sat. altitude=%lf (equatorial radii) grid_origin Xo=%d Yo=%d",
 			tmp,GDS_Space_x0(gds), GDS_Space_y0(gds));
 		else
-		    sprintf(inv_out,"sat. altitude=infinity (equatorial radii) grid_origin Xo=%d Yo=%d", 
+		    sprintf(inv_out,"sat. altitude=infinity (equatorial radii) grid_origin Xo=%d Yo=%d",
 			GDS_Space_x0(gds), GDS_Space_y0(gds));
 
                   break;
@@ -742,7 +742,7 @@ int f_grid(ARG0) {
 			sprintf(inv_out,"%.2x%.2x%.2x%.2x-%.2x%.2x-%.2x%.2x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x #points=%u\n",
 				sec[3][19+0], sec[3][19+1], sec[3][19+2], sec[3][19+3],
 				sec[3][19+4], sec[3][19+5], sec[3][19+6], sec[3][19+7],
-				sec[3][19+8], sec[3][19+9], sec[3][19+10], sec[3][19+11], 
+				sec[3][19+8], sec[3][19+9], sec[3][19+10], sec[3][19+11],
 				sec[3][19+12], sec[3][19+13], sec[3][19+14], sec[3][19+15], npnts );
                   break;
 
@@ -750,13 +750,13 @@ int f_grid(ARG0) {
 		 if ((center != JMA1) && (center != JMA2)) break;
 		 /* JMA 40110 is like azimuthal equidistant except for 2 more parameters */
 		 /* fall through */
-            case 110: 
+            case 110:
 		 sprintf(inv_out,"%sEquatorial azimuthal equidistant projection (%d x %d)",nl,nx,ny);
                  inv_out += strlen(inv_out);
                  sprintf(inv_out," input %s output %s", scan_order[scan>>4],output_order_name());
                  inv_out += strlen(inv_out);
 
-                 sprintf(inv_out,"%stangent longitude %lf latitude %lf dx=%lgm dy=%lgm", nl, 
+                 sprintf(inv_out,"%stangent longitude %lf latitude %lf dx=%lgm dy=%lgm", nl,
                      int4(gds+42)*1e-6, int4(gds+38)*1e-6, int4(gds+47)*0.001, int4(gds+51)*0.001);
                  inv_out += strlen(inv_out);
 		 if (grid_template == 40110) {
@@ -768,7 +768,7 @@ int f_grid(ARG0) {
  		  sprintf(inv_out,"%sAzimuth-range projection: (%u bins x %u radials)%scenter Lat1 %lf Lon1 %lf ",
                         nl, nx, ny, nl, GDS_AzRan_lat1(gds), GDS_AzRan_lon1(gds));
                   inv_out += strlen(inv_out);
-                  sprintf(inv_out,"%sDx %.3lf m (bin spacing along radial)  Dstart %.3lf m", 
+                  sprintf(inv_out,"%sDx %.3lf m (bin spacing along radial)  Dstart %.3lf m",
 			nl, GDS_AzRan_dx(gds), GDS_AzRan_dstart(gds));
                   inv_out += strlen(inv_out);
 		  for (i = 0; i < ny; i++) {
@@ -816,7 +816,7 @@ int f_grid(ARG0) {
                   if (no_dy) dlat = 0.0;
 
                   sprintf(inv_out,"Lat1 %lf Lon1 %lf Cen Lon %lf Std Par %lf%s",
-		     GDS_Lambert_Az_La1(gds), GDS_Lambert_Az_Lo1(gds), 
+		     GDS_Lambert_Az_La1(gds), GDS_Lambert_Az_Lo1(gds),
                     GDS_Lambert_Az_Cen_Lon(gds), GDS_Lambert_Az_Std_Par(gds),nl);
                   inv_out += strlen(inv_out);
 		  sprintf(inv_out,"Dx %lf m Dy %lf m mode %d", dlon, dlat, res);
@@ -1020,13 +1020,13 @@ int f_grid(ARG0) {
 		      sprintf(inv_out,"%sdistance %.3lfm to %.3lfm by %.3lfm", nl,lat1,lat2,dlat);
 		      inv_out += strlen(inv_out);
 		      lon1 = int2(gds+39)*0.01;
-		      sprintf(inv_out,"%sangle %.2f degrees clockwise from North by %s360/%d degrees", nl,lon1, 
+		      sprintf(inv_out,"%sangle %.2f degrees clockwise from North by %s360/%d degrees", nl,lon1,
 				(jma_scan &  64) ? "-" : "", ny);
 		  }
                   break;
             default: sprintf(inv_out,"no other grid info");
                   break;
-        
+
         }
     }
     return 0;
@@ -1034,11 +1034,11 @@ int f_grid(ARG0) {
 const char *stagger_size[] = { "nx*ny", "nx*(ny-1)", "trim-x*ny", "trim-x*(ny-1)" };
 
 static void print_stagger(int scan, char *inv_out) {
-    if (GDS_Scan_staggered(scan)) 
+    if (GDS_Scan_staggered(scan))
      sprintf(inv_out,"%sstagger %d offset(even_x:%s odd_x:%s y:%s) storage %s",
                    nl, scan & 15,
                    scan & 8 ? "dx/2" : "0" , scan & 4 ? "dx/2" : "0",
-                   scan & 2 ? "dy/2" : "0" , 
+                   scan & 2 ? "dy/2" : "0" ,
                    scan & 1 ? stagger_size[(scan >> 1) & 3] : "nx*ny" );
     return;
 }

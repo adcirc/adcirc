@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                            LAMBERT CONFORMAL CONIC 
+NAME                            LAMBERT CONFORMAL CONIC
 
 PURPOSE:	Transforms input Easting and Northing to longitude and
 		latitude for the Lambert Conformal Conic projection.  The
@@ -102,7 +102,7 @@ rh = r_major * f0 * pow(ts0,ns);
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("LAMBERT CONFORMAL CONIC"); 
+ptitle("LAMBERT CONFORMAL CONIC");
 radius2(r_major, r_minor);
 stanparl(lat1,lat2);
 cenlonmer(center_lon);
@@ -111,7 +111,7 @@ offsetp(false_easting,false_northing);
 
 return(OK);
 }
-
+
 /* Lambert Conformal Conic inverse equations--mapping x,y to lat/long
   -----------------------------------------------------------------*/
 long lamccinv(double x, double y, double *lon, double *lat) {

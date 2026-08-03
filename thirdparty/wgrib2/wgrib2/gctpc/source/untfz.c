@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                            UNTFZ 
+NAME                            UNTFZ
 
 PURPOSE:	This function determines the convergence factor between the
 		input unit type and the output unit type.  Valid types include:
@@ -28,11 +28,11 @@ static double factors[6][6] = {
 	{1.0, 0.0, 0.0, 206264.8062470963, 57.29577951308231, 0.0},
 	{0.0, 1.0, .3048006096012192, 0.0, 0.0, 1.000002000004},
 	{0.0, 3.280833333333333, 1.0, 0.0, 0.0, 3.280839895013124},
-	{.484813681109536e-5, 0.0, 0.0, 1.0, .27777777777778e-3, 0.0}, 
+	{.484813681109536e-5, 0.0, 0.0, 1.0, .27777777777778e-3, 0.0},
 	{.0174532925199433, 0.0, 0.0, 3600, 1.0, 0.0},
 	{0.0, .999998, .3048, 0.0, 0.0, 1.0}};
 
-/* Convert DMS packed angle into deg 
+/* Convert DMS packed angle into deg
 ----------------------------------*/
 long untfz(long inunit, long outunit, double *factor) {
 //long untfz(inunit,outunit,factor)

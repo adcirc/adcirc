@@ -32,7 +32,7 @@ extern enum output_grib_type grib_type;
 struct ave_struct {
         double *sum;
         int *n;
-	unsigned int n_sum;      
+	unsigned int n_sum;
         int has_val, n_fields, n_missing;
 	int dt, dt_unit, nx, ny;
         unsigned char *first_sec[9];
@@ -93,7 +93,7 @@ static int add_to_ave_struct(struct ave_struct *save, unsigned char **sec, float
 
     if (save->n_sum != ndata) fatal_error("add_to_ave: dimension mismatch","");
 
-    /* the data needs to be translated from we:sn to raw, need to 
+    /* the data needs to be translated from we:sn to raw, need to
        do it now, translation[] may be different if called from finalized phase */
 
     if (translation == NULL) {
@@ -145,7 +145,7 @@ static int do_ave(struct ave_struct *save) {
     double factor;
 
     sec4 = NULL;
-    if (save->has_val == 0) return 0; 
+    if (save->has_val == 0) return 0;
 
     ndata = save->n_sum;
     if ((data = (float *) malloc(sizeof(float) * ((size_t) ndata))) == NULL) fatal_error("ave: memory allocation","");
@@ -239,14 +239,14 @@ static int do_ave(struct ave_struct *save) {
 	for (i = 4; i < 34; i++) {			// keep base of pdt
 	    sec4[i] = save->first_sec[4][i];
 	}
-	
+
 	// new verification time
         save_time(save->year2,save->month2,save->day2,save->hour2,save->minute2,save->second2, sec4+34);
 
 	// number of stat-proc loops is increased by 1
 	sec4[41] = n + 1;
 
-	// copy old stat-proc loops 
+	// copy old stat-proc loops
 	// for (j = n*12-1;  j >= 0; j--) sec4[58+j] = save->first_sec[4][46+j];
 	for (j = 0; j < n*12; j++) sec4[46+12+j] = save->first_sec[4][46+j];
 
@@ -304,8 +304,8 @@ static int do_ave(struct ave_struct *save) {
     p = save->first_sec[4];
     save->first_sec[4] = sec4;
 
-    grib_wrt(save->first_sec, data, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(save->first_sec, data, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     if (flush_mode) fflush_file(&(save->out));
@@ -445,9 +445,9 @@ if (mode == 98) fprintf(stderr, "ave: compare ref time new_type = %d missing=%d\
 	    if (same_sec0(sec,save->first_sec) == 0 ||
                 same_sec1_not_time(mode,sec,save->first_sec) == 0 ||
                 same_sec3(sec,save->first_sec) == 0 ||
-                same_sec4_not_time(mode, sec,save->first_sec) == 0) 
+                same_sec4_not_time(mode, sec,save->first_sec) == 0)
 	        new_type = 1;
-if (mode == 98) fprintf(stderr, "ave: testsec save_sec0=%d same_sec1_not_time=%d same_sec3=%d same_sec4_not_time=%d\n", 
+if (mode == 98) fprintf(stderr, "ave: testsec save_sec0=%d same_sec1_not_time=%d same_sec3=%d same_sec4_not_time=%d\n",
                 same_sec0(sec,save->first_sec),
                 same_sec1_not_time(0,sec,save->first_sec),
                 same_sec3(sec,save->first_sec),

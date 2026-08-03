@@ -23,4 +23,4 @@ Notes
 * Output format (ASCII/binary) is determined by :ref:`NOUTGE <NOUTGE>` in the fort.15 file
 * For binary output, the node number (k) is not included in the output
 * Time series data is recorded for every node in the model grid
-* The output frequency is controlled by :ref:`NSPOOLGE <NSPOOLGE>` parameter 
+* The output frequency is controlled by :ref:`NSPOOLGE <NSPOOLGE>` parameter

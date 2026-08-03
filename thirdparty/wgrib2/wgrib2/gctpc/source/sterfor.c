@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                             STEREOGRAPHIC 
+NAME                             STEREOGRAPHIC
 
 PURPOSE:	Transforms input longitude and latitude to Easting and
 		Northing for the Stereographic projection.  The
@@ -36,7 +36,7 @@ static double cos_p10;		/* cos of center latitude		*/
   --------------------------------------*/
 long sterforint(double r_maj, double center_lon, double center_lat,
         double false_east, double false_north) {
-//long sterforint(r_maj,center_lon,center_lat,false_east,false_north) 
+//long sterforint(r_maj,center_lon,center_lat,false_east,false_north)
 //
 //double r_maj;			/* major axis			*/
 //double center_lon;		/* center longitude		*/
@@ -57,14 +57,14 @@ sincos(center_lat,&sin_p10,&cos_p10);
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("STEREOGRAPHIC"); 
+ptitle("STEREOGRAPHIC");
 radius(r_major);
 cenlonmer(lon_center);
 origin(lat_origin);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 
 /* Stereographic forward equations--mapping lat,long to x,y
   ---------------------------------------------------*/
@@ -79,7 +79,7 @@ double sinphi, cosphi;	/* sin and cos value				*/
 double dlon;		/* delta longitude value			*/
 double coslon;		/* cos of longitude				*/
 double ksp;		/* scale factor					*/
-double g;		
+double g;
 
 /* Forward equations
   -----------------*/
@@ -96,7 +96,7 @@ else
    {
    ksp = 2.0 / (1.0 + g);
    *x = false_easting + r_major * ksp * cosphi * sin(dlon);
-   *y = false_northing + r_major * ksp * (cos_p10 * sinphi - sin_p10 * 
+   *y = false_northing + r_major * ksp * (cos_p10 * sinphi - sin_p10 *
 			cosphi * coslon);
    }
 return(OK);

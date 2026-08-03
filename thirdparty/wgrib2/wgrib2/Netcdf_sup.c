@@ -53,7 +53,7 @@ int match_str(const char *s, const char *match) {
    }
    return 1;
 }
- 
+
 
 /*
 * makes units COARDS compliant: C -> Celsius, g -> gram, prob -> 1, gpm -> m
@@ -91,7 +91,7 @@ void fix_units(char *s, int n)
       *s++ = 'm';
       p++;
     }
-    else if (toupper((unsigned char) *p) == '%') 
+    else if (toupper((unsigned char) *p) == '%')
     {
       *s++ = 'p';
       *s++ = 'e';
@@ -951,8 +951,8 @@ printf("nc_time: date0_type=%d date0=%d.%d.%d %d:%d:%d\n",nc_date0_type,year,mon
       }
       p++; /*pass separator symbol ':' or other*/
     }
- 
-    /* now for the time step */ 
+
+    /* now for the time step */
     if (sscanf(p,"%d%s",&dt_val,dt_type) != 2)
       fatal_error("nc_time: bad time step in nc_time: %s", p);
 
@@ -1073,6 +1073,3 @@ int f_nc3(ARG0)
 }
 
 #endif
-
-
-

@@ -98,4 +98,3 @@ void fix_units(char *s, int n);
 int get_nc_conv_table(const char * name, const char * level,
                       const g2nc_table * nc_table);
 int free_nc_table( g2nc_table * nc_table );
-

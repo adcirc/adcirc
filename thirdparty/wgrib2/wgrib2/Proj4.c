@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include <string.h>
 #include "grb2.h"
 #include "wgrib2.h"
@@ -91,7 +91,7 @@ int proj4_init(unsigned char **sec, double *grid_lon, double *grid_lat) {
         c_lon = 0.0;
         c_lat = GDS_Mercator_latD(gds);
 
-        sprintf(proj4_def,"+proj=merc +lat_ts=%lf +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +a=%lf +b=%lf", 
+        sprintf(proj4_def,"+proj=merc +lat_ts=%lf +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +a=%lf +b=%lf",
 	    c_lat, r_maj, r_min);
 
         if ((pj_grid = pj_init_plus(proj4_def)) == NULL) fatal_error("Proj4 GDT=10 a: pj_init_plus %s failed", proj4_def);
@@ -106,7 +106,7 @@ int proj4_init(unsigned char **sec, double *grid_lon, double *grid_lat) {
         x_0 = lon1 * DEG_TO_RAD;
         y_0 = lat1 * DEG_TO_RAD;
 
-        if ( pj_transform(pj_latlon, pj_grid, 1, 1, &x_0, &y_0, NULL) != 0 ) 
+        if ( pj_transform(pj_latlon, pj_grid, 1, 1, &x_0, &y_0, NULL) != 0 )
                   fatal_error("Proj4 GDT=10 c","");
     }
     else if (gdt == 20) {            // polar stereographic
@@ -123,7 +123,7 @@ int proj4_init(unsigned char **sec, double *grid_lon, double *grid_lat) {
 	/* strange but np/sp flag is used by proj4 but not gctpc */
 	has_np = ((flag_table_3_5(sec) & 128) == 0);
 
-        sprintf(proj4_def,"+proj=stere +lat_ts=%lf +lat_0=%s +lon_0=%lf +k_0=1 +x_0=0 +y_0=0 +a=%lf +b=%lf", 
+        sprintf(proj4_def,"+proj=stere +lat_ts=%lf +lat_0=%s +lon_0=%lf +k_0=1 +x_0=0 +y_0=0 +a=%lf +b=%lf",
 		c_lat, has_np ? "90" : "-90", c_lon, r_maj,r_min);
 
         if ((pj_grid = pj_init_plus(proj4_def)) == NULL) fatal_error("Proj4 GDT=20 a: pj_init_plus %s failed", proj4_def);
@@ -138,7 +138,7 @@ int proj4_init(unsigned char **sec, double *grid_lon, double *grid_lat) {
         x_0 = lon1 * DEG_TO_RAD;
         y_0 = lat1 * DEG_TO_RAD;
 
-        if ( pj_transform(pj_latlon, pj_grid, 1, 1, &x_0, &y_0, NULL) != 0 ) 
+        if ( pj_transform(pj_latlon, pj_grid, 1, 1, &x_0, &y_0, NULL) != 0 )
                      fatal_error("Proj4 GDT=20 c","");
     }
     else if (gdt == 30) {            // lambert conformal conic
@@ -161,7 +161,7 @@ int proj4_init(unsigned char **sec, double *grid_lon, double *grid_lat) {
 
         if ((pj_grid = pj_init_plus(proj4_def)) == NULL) fatal_error("Proj4 GDT=30 a: pj_init_plus %s failed", proj4_def);
 
- 
+
         sprintf(proj4_def,"+proj=latlong +a=%lf +b=%lf",r_maj, r_min);
         if ((pj_latlon = pj_init_plus(proj4_def)) == NULL) fatal_error("Proj4 GDT=30 b: pj_init_plus %s failed", proj4_def);
 
@@ -197,9 +197,9 @@ int proj4_init(unsigned char **sec, double *grid_lon, double *grid_lat) {
         y_0 = lat1 * DEG_TO_RAD;
         if ( pj_transform(pj_latlon, pj_grid, 1, 1, &x_0, &y_0, NULL) != 0 ) fatal_error("Proj4 GDT=140 c","");
     }
-    else if (center == NCEP && gdt == 32769) {         // ncep rotated latlon Non-E 
+    else if (center == NCEP && gdt == 32769) {         // ncep rotated latlon Non-E
 
-        /* get earth axis */ 
+        /* get earth axis */
         axes_earth(sec, &r_maj, &r_min, NULL);
 
         /* dx, dy */
@@ -224,7 +224,7 @@ int proj4_init(unsigned char **sec, double *grid_lon, double *grid_lat) {
         x_0 = lon1 * DEG_TO_RAD;
         y_0 = lat1 * DEG_TO_RAD;
         if ( pj_transform(pj_latlon, pj_grid, 1, 1, &x_0, &y_0, NULL) != 0 ) fatal_error("Proj4 GDT=32689 c","");
- 
+
     }
     else {
        return 1;
@@ -261,7 +261,7 @@ int Proj4_ll2xy(int n, double *lon, double *lat, double *x, double *y) {
 int Proj4_ll2i(int n, double *lon, double *lat, unsigned int *ipnt) {
     int error;
     unsigned int i;
-    double rlon, rlat, inv_dx, inv_dy, x, y; 
+    double rlon, rlat, inv_dx, inv_dy, x, y;
 
     inv_dx = 1.0 / dx;
     inv_dy = 1.0 / dy;
@@ -329,7 +329,7 @@ int Proj4_ij2ll(unsigned char **sec, int n, double *x, double *y, double *lon, d
 	}
         return error;
     }
-    
+
 
 #ifdef USE_OPENMP
 #pragma omp parallel for schedule(static) private(i,xx,yy)
@@ -493,7 +493,7 @@ int proj4_get_latlon(unsigned char **sec, double **lon, double **lat) {
         llon[i] = llon[i] * RAD_TO_DEG;
         llat[i] = llat[i] * RAD_TO_DEG;
 	if (llon[i] < 0.0) llon[i] += 360.0;
-    }        
+    }
     return error;
 }
 

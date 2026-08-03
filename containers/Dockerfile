@@ -15,7 +15,7 @@ COPY util /home/adcirc/adcirc-build/util
 COPY wind /home/adcirc/adcirc-build/wind
 COPY cmake /home/adcirc/adcirc-build/cmake
 COPY thirdparty /home/adcirc/adcirc-build/thirdparty
-COPY CMakeLists.txt /home/adcirc/adcirc-build/CMakeLists.txt 
+COPY CMakeLists.txt /home/adcirc/adcirc-build/CMakeLists.txt
 COPY .git /home/adcirc/adcirc-build/.git
 
 RUN cd /home/adcirc/adcirc-build/build && \
@@ -43,7 +43,7 @@ RUN cd /home/adcirc/adcirc-build/build && \
           -DNETCDF_F90_ROOT=$NETCDF_FORTRAN_HOME \
           -DNETCDFHOME=$NETCDFHOME \
           -DXDMFHOME=$XDMFHOME \
-          -G Ninja; \ 
+          -G Ninja; \
     elif [[ "x${TARGETARCH}" == "xarm64" ]]; then \
       cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
@@ -70,12 +70,12 @@ RUN cd /home/adcirc/adcirc-build/build && \
           -G Ninja; \
     fi; \
     ninja && \
-    ninja install 
+    ninja install
 
 FROM adcircorg/adcirc-base:2025.0.1 AS adcirc
 
-USER root 
-COPY --from=builder /opt/adcirc /opt/adcirc 
+USER root
+COPY --from=builder /opt/adcirc /opt/adcirc
 RUN echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/views/view/lib64" >> /opt/spack-environment/activate.sh
 RUN echo "export PATH=\$PATH:/opt/adcirc/bin" >> /opt/spack-environment/activate.sh
 
@@ -88,4 +88,3 @@ LABEL "io.openshift.expose-services"="None"
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 CMD [ "/bin/bash" ]
-

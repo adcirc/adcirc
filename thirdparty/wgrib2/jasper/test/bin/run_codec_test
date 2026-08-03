@@ -397,7 +397,7 @@ for test in "${tests[@]}"; do
 		if [ $PAE -gt $max_pae ]; then
 			echo "ERROR: PAE CONSTRAINT NOT SATISFIED ($PAE > $max_pae)"
 			if [ $distortion_violation_fatal -ne 0 ]; then
-				$image_viewer $dec_file 
+				$image_viewer $dec_file
 				exit 1
 			fi
 			distortion_violations+=("$test")
@@ -409,7 +409,7 @@ for test in "${tests[@]}"; do
 		if [ $CONSTRAINT -eq 0 ]; then
 			echo "ERROR: PSNR CONSTRAINT NOT SATISFIED ($psnr < $min_psnr)"
 			if [ $distortion_violation_fatal -ne 0 ]; then
-				$image_viewer $dec_file 
+				$image_viewer $dec_file
 				exit 1
 			fi
 			distortion_violations+=("$test")
@@ -419,7 +419,7 @@ for test in "${tests[@]}"; do
 
 	if [ $show_image -ne 0 ]; then
 		echo "Type Ctrl-Q to exit ImageMagick"
-		$image_viewer $dec_file 
+		$image_viewer $dec_file
 		#PID=$!
 		#sleep 5
 		#kill $PID

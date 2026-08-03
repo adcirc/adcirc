@@ -187,4 +187,3 @@ unsigned int cksum(unsigned char const *buf, size_t length)
 
   return crc;
 }
-

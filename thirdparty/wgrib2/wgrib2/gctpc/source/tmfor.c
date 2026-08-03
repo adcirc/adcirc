@@ -11,7 +11,7 @@ PROGRAMMER              DATE		REASON
 D. Steinwand, EROS      Nov, 1991
 T. Mittan		Mar, 1993
 S. Nelson		Feb, 1995	Divided tmfor.c into two files, one
-                                        for UTM (utmfor.c) and one for 
+                                        for UTM (utmfor.c) and one for
 					TM (tmfor.c).  This was a
                                         necessary change to run forward
                                         projection conversions for both UTM
@@ -50,7 +50,7 @@ long tmforint(double r_maj, double r_min, double scale_fact,
         double center_lon, double center_lat, double false_east,
         double false_north) {
 //long tmforint(r_maj,r_min,scale_fact,center_lon,center_lat,false_east,
-//	false_north) 
+//	false_north)
 //
 //double r_maj;			/* major axis			*/
 //double r_min;			/* minor axis			*/
@@ -84,12 +84,12 @@ esp = es / (1.0 - es);
 
 if (es < .00001)
    ind = 1;
-else 
+else
    ind = 0;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("TRANSVERSE MERCATOR (TM)"); 
+ptitle("TRANSVERSE MERCATOR (TM)");
 radius2(r_major, r_minor);
 genrpt(scale_factor,"Scale Factor at C. Meridian:    ");
 cenlonmer(lon_center);
@@ -121,7 +121,7 @@ double con, n, ml;	/* cone constant, small m			*/
 delta_lon = adjust_lon(lon - lon_center);
 sincos(lat, &sin_phi, &cos_phi);
 
-/* This part was in the fortran code and is for the spherical form 
+/* This part was in the fortran code and is for the spherical form
 ----------------------------------------------------------------*/
 if (ind != 0)
   {
@@ -137,7 +137,7 @@ if (ind != 0)
      con = acos(cos_phi * cos(delta_lon)/sqrt(1.0 - b*b));
      if (lat < 0)
         con = - con;
-     *y = r_major * scale_factor * (con - lat_origin); 
+     *y = r_major * scale_factor * (con - lat_origin);
      return(OK);
      }
   }

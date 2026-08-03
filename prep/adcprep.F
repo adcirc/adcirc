@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -194,10 +194,10 @@ C     having to do a prep all and without having to add menu items).
                CALL exit(0)
             CASE("--partmesh")
                PARTITION = .TRUE.
-               PARTITION_APPROACH = 1 
+               PARTITION_APPROACH = 1
             CASE("--partmesh_npart_from_epart")
-               PARTITION = .TRUE. 
-               PARTITION_APPROACH = 2 
+               PARTITION = .TRUE.
+               PARTITION_APPROACH = 2
             CASE("--prepall")
                PREP_ALL = .TRUE.
             CASE("--prep13")
@@ -329,11 +329,11 @@ C
 
         CASE("1","partmesh","PARTMESH")
            PARTITION   = .TRUE.
-           PARTITION_APPROACH = 1 
+           PARTITION_APPROACH = 1
 
         CASE("-1","partmesh_npart_from_epart","PARTMESH_NPART_FROM_EPART")
-           PARTITION = .TRUE.  
-           PARTITION_APPROACH = 2 
+           PARTITION = .TRUE.
+           PARTITION_APPROACH = 2
 
         CASE("2","prepall","PREPALL")
            USE_DEFAULT = .TRUE.
@@ -409,7 +409,7 @@ C
 #endif
 
       ! DW
-      USE METIS_PARTITION  
+      USE METIS_PARTITION
 
       IMPLICIT NONE
 
@@ -441,11 +441,11 @@ C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
         CALL PREP13()
 C================= DW, for sponge layer
         IF ( prep5354flag ) THEN
-           CALL PREP5354( 53001 ) 
-           CALL PREP5354( 54001 ) 
+           CALL PREP5354( 53001 )
+           CALL PREP5354( 54001 )
         END IF
         IF ( prep2001flag ) THEN
-           CALL PREP20( .true. ) 
+           CALL PREP20( .true. )
         END IF
 C=================
         GO TO 9999
@@ -550,9 +550,9 @@ C... - DW
          CASE (1)
             call metis()
          CASE (2)
-            call metis_npart_from_epart() 
+            call metis_npart_from_epart()
          END SELECT
-C... 
+C...
 
          if (strictBoundaries.eqv..true.) then
             ! check for issues with subdomain boundaries
@@ -591,14 +591,14 @@ C...
      &               repartitionLimit,' attempts.'
                   CALL EXIT(1)
                endif
-  
-C... DW               
+
+C... DW
                SELECT CASE(partition_approach)
                CASE (1)
-                  call metis() 
+                  call metis()
                CASE (2)
-                  call metis_npart_from_epart() 
-               END SELECT 
+                  call metis_npart_from_epart()
+               END SELECT
 C...
             end do
          endif
@@ -720,7 +720,7 @@ C
       ! Prep the SWAN fort.26 file
        if(nrs.eq.3)then
         CALL PREPUNSWAN()
-      endif  
+      endif
 C
 C-- Write Message-Passing File for each PE
 C
@@ -771,37 +771,37 @@ C================= DW, for sponge layer
         IF ( prep5354flag ) THEN
            F5354R = .FALSE.
            DO JJ = 1, NWP
-              IF ( (TRIM(useNodalAttrNames(JJ)) .eq. 
+              IF ( (TRIM(useNodalAttrNames(JJ)) .eq.
      &             "sponge_generator_layer" ) ) THEN
                  F5354R = .TRUE.
-                 PRINT*, "Prepping 5354" 
-                 EXIT 
+                 PRINT*, "Prepping 5354"
+                 EXIT
               END IF
-           END DO       
+           END DO
            IF ( F5354R ) THEN
-              CALL PREP5354( 53001 ) 
-              CALL PREP5354( 54001 ) 
+              CALL PREP5354( 53001 )
+              CALL PREP5354( 54001 )
            END IF
         END IF
         IF ( prep2001flag ) THEN
            F5354R = .FALSE.
            DO JJ = 1, NWP
-              IF ( (TRIM(useNodalAttrNames(JJ)) .eq. 
+              IF ( (TRIM(useNodalAttrNames(JJ)) .eq.
      &             "sponge_generator_layer" ) ) THEN
                  F5354R = .TRUE.
-                 PRINT*, "Prepping 2001" 
-                 EXIT 
+                 PRINT*, "Prepping 2001"
+                 EXIT
               END IF
-           END DO       
+           END DO
            IF ( F5354R ) THEN
-              CALL PREP20( .true. ) 
+              CALL PREP20( .true. )
            END IF
         END IF
         IF ( prep5354flag .or. prep2001flag ) THEN
            if (allocated(useNodalAttrNames)) then
               DEALLOCATE(useNodalAttrNames)
            endif
-        ENDIF 
+        ENDIF
 C=================
       endif
 C

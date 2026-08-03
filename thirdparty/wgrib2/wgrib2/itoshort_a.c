@@ -29,4 +29,3 @@ void itoshort_a(char *string, int i) {
     else sprintf(string, "%d", itmp);
     return;
 }
-

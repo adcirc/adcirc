@@ -6,16 +6,16 @@ PURPOSE:	Transforms input Easting and Northing to longitude and
 		Easting and Northing must be in meters.  The longitude
 		and latitude values will be returned in radians.
 
-PROGRAMMER              DATE            
-----------              ----           
-D. Steinwand, EROS      March, 1991   
+PROGRAMMER              DATE
+----------              ----
+D. Steinwand, EROS      March, 1991
 S. Nelson,EROS		Dec, 1993	changed asin() to asinz() because
 					NaN resulted expecting poles.
 
 This function was adapted from the Lambert Azimuthal Equal Area projection
 code (FORTRAN) in the General Cartographic Transformation Package software
 which is available from the U.S. Geological Survey National Mapping Division.
- 
+
 ALGORITHM REFERENCES
 
 1.  "New Equal-Area Map Projections for Noncircular Regions", John P. Snyder,
@@ -44,7 +44,7 @@ static double false_northing;	/* y offset in meters			*/
   ------------------------------------------------------*/
 long lamazinvint(double r, double center_long, double center_lat,
         double false_east, double false_north) {
-//long lamazinvint(r, center_long, center_lat,false_east,false_north) 
+//long lamazinvint(r, center_long, center_lat,false_east,false_north)
 //double r; 			/* (I) Radius of the earth (sphere) 	*/
 //double center_long;		/* (I) Center longitude 		*/
 //double center_lat;		/* (I) Center latitude 			*/
@@ -62,15 +62,15 @@ sincos(center_lat, &sin_lat_o, &cos_lat_o);
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("LAMBERT AZIMUTHAL EQUAL-AREA"); 
+ptitle("LAMBERT AZIMUTHAL EQUAL-AREA");
 radius(r);
 cenlon(center_long);
 cenlat(center_lat);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
-/* Lambert Azimuthal Equal Area inverse equations--mapping x,y to lat,long 
+
+/* Lambert Azimuthal Equal Area inverse equations--mapping x,y to lat,long
   -----------------------------------------------------------------------*/
 long lamazinv(double x, double y, double *lon, double *lat) {
 //long lamazinv(x, y, lon, lat)
@@ -92,7 +92,7 @@ x -= false_easting;
 y -= false_northing;
 Rh = sqrt(x * x + y * y);
 temp = Rh / (2.0 * R);
-if (temp > 1) 
+if (temp > 1)
    {
    p_error("Input data error", "lamaz-inverse");
    return(115);

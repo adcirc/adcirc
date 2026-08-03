@@ -13,10 +13,10 @@
  *        which wgrib2 defines as max((max-mean), abs(min-mean)) / spread
  *        other people can define it differently.
  *
- *        If you want mean and spread, this is rooutine is faster than 
+ *        If you want mean and spread, this is rooutine is faster than
  *        -ens_processing because that routine sorts the data.
  *
- *        This routine was written because an ensemble data assimilation had one member 
+ *        This routine was written because an ensemble data assimilation had one member
  *        that had ozone many orders of magnitude larger than expected.  The reqults
  *        were not reproducable, and not seen in sixty years of data assimilation.
  *        So it must have been a glitch in one of the nodes.  So this routine was
@@ -29,7 +29,7 @@
  *       arg3: text file with the maximum value on the grid of the scaled extremee value
  *
  * Note: arg2 is stored in grib2 with EXTREME_FORECAST_INDEX
- *       EXTREME_FORECAST_INDEX is a local NCEP definition, so the scaled extremes will 
+ *       EXTREME_FORECAST_INDEX is a local NCEP definition, so the scaled extremes will
  *       only bw written in grib format if the center is NCEP.
  *
  * Input:
@@ -91,7 +91,7 @@ static int free_ens_qc_struct(struct ens_qc_struct *save) {
     return 0;
 }
 
-static int init_ens_qc_struct(struct ens_qc_struct *save, 
+static int init_ens_qc_struct(struct ens_qc_struct *save,
     unsigned char **sec, float *data, unsigned int ndata) {
     unsigned int i;
 
@@ -149,7 +149,7 @@ static int init_ens_qc_struct(struct ens_qc_struct *save,
 
 /* update_ens_qc_struct: save grid in memory */
 
-static int update_ens_qc_struct(struct ens_qc_struct *save, 
+static int update_ens_qc_struct(struct ens_qc_struct *save,
     unsigned char **sec, float *data, unsigned int ndata) {
 
     unsigned int i;
@@ -167,7 +167,7 @@ static int update_ens_qc_struct(struct ens_qc_struct *save,
 	}
     }
 
-    /* the data needs to be translated from we:sn to raw, need to 
+    /* the data needs to be translated from we:sn to raw, need to
        do it now because translation[] may be different in finalized phase */
 
     if (translation == NULL) {
@@ -227,7 +227,7 @@ static int wrt_ens_qc(unsigned char **sec, struct ens_qc_struct *save) {
 
     /* create new_pdt (sec4) */
 
-    if (new_pdt(save->first_sec, sec4, pdt_ens, -1, 1, NULL)) 
+    if (new_pdt(save->first_sec, sec4, pdt_ens, -1, 1, NULL))
         fatal_error("ens_qc: new_pdt failed","");
 
     /* make a new sec[][] */
@@ -249,7 +249,7 @@ static int wrt_ens_qc(unsigned char **sec, struct ens_qc_struct *save) {
     f_lev(call_ARG0(level,NULL));
 
     ndata = save->npnts;
-    n_grids = save->n_ens; 
+    n_grids = save->n_ens;
     maxextreme = 0.0;
 
     datamean = (float *) malloc(sizeof(float) * ((size_t) ndata));
@@ -313,32 +313,32 @@ static int wrt_ens_qc(unsigned char **sec, struct ens_qc_struct *save) {
 		dataextreme[i] = UNDEFINED;
 	    }
 	}
-    } 
+    }
 
     *table_4_7 = MIN;
-    grib_wrt(new_sec, datamin, ndata, save->nx, save->ny, 
-	    save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec, datamin, ndata, save->nx, save->ny,
+	    save->use_scale, save->dec_scale, save->bin_scale,
 	    save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     *table_4_7 = MAX;
-    grib_wrt(new_sec, datamax, ndata, save->nx, save->ny, 
-	    save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec, datamax, ndata, save->nx, save->ny,
+	    save->use_scale, save->dec_scale, save->bin_scale,
 	    save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     *table_4_7 = AVE;
-    grib_wrt(new_sec, datamean, ndata, save->nx, save->ny, 
-	    save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec, datamean, ndata, save->nx, save->ny,
+	    save->use_scale, save->dec_scale, save->bin_scale,
 	    save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     *table_4_7 = SPREAD;
-    grib_wrt(new_sec, datavar, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec, datavar, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     if (GB2_Center(new_sec) == NCEP) {
 	/* EXTREME_FORECAST_INDEX has no WMO equivalent */
         *table_4_7 = EXTREME_FORECAST_INDEX;
-        grib_wrt(new_sec, dataextreme, ndata, save->nx, save->ny, 
+        grib_wrt(new_sec, dataextreme, ndata, save->nx, save->ny,
 	    0, 0, 0,
 	    8, 8, save->grib_type, &(save->extreme_grb));
     }
@@ -366,7 +366,7 @@ int f_ens_qc(ARG4) {
         save_translation = decode = 1;
 
 	if (atoi(arg4) != 1) fatal_error("ens_qc: this version wgrib2 does not supported qc_version=%s",arg4);
-	
+
         // allocate static structure
 
         *local = save = (struct ens_qc_struct *) malloc( sizeof(struct ens_qc_struct));
@@ -392,7 +392,7 @@ int f_ens_qc(ARG4) {
         save->grids = NULL;
         save->ngrids = 0;
 	init_sec(save->first_sec);
-    
+
 	return 0;
     }
     save = (struct ens_qc_struct *) *local;

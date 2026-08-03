@@ -10,7 +10,7 @@
 /*
  * unmerge_fcst
  *
- *  takes fcst averages/accumulations and unmerges them 
+ *  takes fcst averages/accumulations and unmerges them
  *  for.  0-9 hour fcst ave, 0-12 hour fcst ave -> 0-9 hour fcst ave, 9-12 hour fcst ave
  *
  * 11/2019: v0.9 Public Domain: Wesley Ebisuzaki

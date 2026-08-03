@@ -109,7 +109,7 @@ int f_set_int(ARG3) {
     j = atoi(arg2);
     if (i < 0 || i > 8) fatal_error("set_int: bad section number %s", arg1);
     if (j <= 0) fatal_error("set_hex: octet number must >= 1","");
-    
+
     if (i == 0) seclen = GB2_Sec0_size;
     else if (i == 8)  seclen = GB2_Sec8_size;
     else seclen = sec[i] ? uint4(sec[i]) : 0;

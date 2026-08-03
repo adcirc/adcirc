@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                            EQUIDISTANT CONIC 
+NAME                            EQUIDISTANT CONIC
 
 PURPOSE:	Transforms input Easting and Northing to longitude and
 		latitude for the Equidistant Conic projection.  The
@@ -104,22 +104,22 @@ else
 g = ml1 + ms1/ns;
 ml0 = mlfn(e0, e1, e2, e3, center_lat);
 rh = r_major * (g - ml0);
-   
+
 
 /* Report parameters to the user
   -----------------------------*/
 if (mode != 0)
    {
-   ptitle("EQUIDISTANT CONIC"); 
+   ptitle("EQUIDISTANT CONIC");
    radius2(r_major, r_minor);
    stanparl(lat1,lat2);
    cenlonmer(lon_center);
    origin(center_lat);
    offsetp(false_easting,false_northing);
    }
-else 
+else
    {
-   ptitle("EQUIDISTANT CONIC"); 
+   ptitle("EQUIDISTANT CONIC");
    radius2(r_major, r_minor);
    stparl1(lat1);
    cenlonmer(lon_center);
@@ -129,7 +129,7 @@ else
 
 return(OK);
 }
-
+
 
 /* Equidistant Conic inverse equations--mapping x,y to lat/long
   -----------------------------------------------------------*/
@@ -154,12 +154,12 @@ x -= false_easting;
 y  = rh - y + false_northing;
 if (ns >= 0)
    {
-   rh1 = sqrt(x * x + y * y); 
+   rh1 = sqrt(x * x + y * y);
    con = 1.0;
    }
 else
    {
-   rh1 = -sqrt(x * x + y * y); 
+   rh1 = -sqrt(x * x + y * y);
    con = -1.0;
    }
 theta = 0.0;

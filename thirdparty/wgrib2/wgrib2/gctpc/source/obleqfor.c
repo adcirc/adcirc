@@ -7,9 +7,9 @@ PURPOSE:	Transforms input longitude and latitude to Easting and
 		and Northing values will be returned in meters.
 
 PROGRAM HISTORY
-PROGRAMMER              DATE            
-----------              ----           
-D. Steinwand            May, 1991     
+PROGRAMMER              DATE
+----------              ----
+D. Steinwand            May, 1991
 
 ALGORITHM REFERENCES
 
@@ -108,7 +108,7 @@ delta_lon = lon - lon_center;
 sincos(lat, &sin_lat, &cos_lat);
 sincos(delta_lon, &sin_delta_lon, &cos_delta_lon);
 z = acos(sin_lat_o * sin_lat + cos_lat_o * cos_lat * cos_delta_lon);
-Az = atan2(cos_lat * sin_delta_lon , cos_lat_o * sin_lat - sin_lat_o * 
+Az = atan2(cos_lat * sin_delta_lon , cos_lat_o * sin_lat - sin_lat_o *
 	cos_lat * cos_delta_lon) + theta;
 sincos(Az, &sin_Az, &cos_Az);
 temp = 2.0 * sin(z / 2.0);

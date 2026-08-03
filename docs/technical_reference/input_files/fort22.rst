@@ -380,9 +380,9 @@ File Structure
 .. code-block:: none
 
    for k=1, LONB*LATB
-   
+
    PG(k), UG(k), VG(k)
-   
+
    end j loop
 
 .. _nws-11:
@@ -398,9 +398,9 @@ File Structure
 .. code-block:: none
 
    for k=1, LONB*LATB
-   
+
    PG(k), UG(k), VG(k)
-   
+
    end j loop
 
 .. _nws-12:

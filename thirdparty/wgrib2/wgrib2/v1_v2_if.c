@@ -36,7 +36,7 @@ int init_check_v1_v2(void) {
  * complication: can be old if structure where ifs are not
  * terminated by output rather than if.
  *
- * 
+ *
  * State:
  *  0  = start . no ifs
  * -1 = else
@@ -60,7 +60,7 @@ int init_check_v1_v2(void) {
  * has else/elseif/endif and no fi -> version 1
  * otherwise version 0
  *
- * 
+ *
  * execution:   this assumes a correct syntax
  * init: run_flag = 0;
  *       empty stack;
@@ -106,7 +106,7 @@ int init_check_v1_v2(void) {
 int check_v1_v2(enum fntype type, const char *name) {
 
     switch(type) {
-	case If: 
+	case If:
 		/* push IF */
 		if (check_state[check_state_top] > 0) {
 		     check_state[check_state_top]++;

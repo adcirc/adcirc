@@ -17,20 +17,20 @@
 
 /*************************************************************************
 * This function is the entry point for KMETIS with seed specification
-* in options[7] 
+* in options[7]
 **************************************************************************/
-void METIS_PartGraphKway2(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, 
-                         idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts, 
+void METIS_PartGraphKway2(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt,
+                         idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts,
                          int *options, int *edgecut, idxtype *part)
 {
   int i;
   float *tpwgts;
 
   tpwgts = fmalloc(*nparts, "KMETIS: tpwgts");
-  for (i=0; i<*nparts; i++) 
+  for (i=0; i<*nparts; i++)
     tpwgts[i] = 1.0/(1.0*(*nparts));
 
-  METIS_WPartGraphKway2(nvtxs, xadj, adjncy, vwgt, adjwgt, wgtflag, numflag, nparts, 
+  METIS_WPartGraphKway2(nvtxs, xadj, adjncy, vwgt, adjwgt, wgtflag, numflag, nparts,
                        tpwgts, options, edgecut, part);
 
   free(tpwgts);
@@ -39,10 +39,10 @@ void METIS_PartGraphKway2(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *v
 
 /*************************************************************************
 * This function is the entry point for KWMETIS with seed specification
-* in options[7] 
+* in options[7]
 **************************************************************************/
-void METIS_WPartGraphKway2(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, 
-                          idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts, 
+void METIS_WPartGraphKway2(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt,
+                          idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts,
                           float *tpwgts, int *options, int *edgecut, idxtype *part)
 {
   int i, j;
@@ -92,8 +92,8 @@ void METIS_WPartGraphKway2(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *
 /*************************************************************************
 * This function is the entry point for the node ND code for ParMETIS
 **************************************************************************/
-void METIS_NodeNDP(int nvtxs, idxtype *xadj, idxtype *adjncy, int npes, 
-                   int *options, idxtype *perm, idxtype *iperm, idxtype *sizes) 
+void METIS_NodeNDP(int nvtxs, idxtype *xadj, idxtype *adjncy, int npes,
+                   int *options, idxtype *perm, idxtype *iperm, idxtype *sizes)
 {
   int i, ii, j, l, wflag, nflag;
   GraphType graph;
@@ -131,7 +131,7 @@ void METIS_NodeNDP(int nvtxs, idxtype *xadj, idxtype *adjncy, int npes,
 
   if (ctrl.oflags&OFLAG_COMPRESS) {
     /*============================================================
-    * Compress the graph 
+    * Compress the graph
     ==============================================================*/
     cptr = idxmalloc(nvtxs+1, "ONMETIS: cptr");
     cind = idxmalloc(nvtxs, "ONMETIS: cind");
@@ -151,7 +151,7 @@ void METIS_NodeNDP(int nvtxs, idxtype *xadj, idxtype *adjncy, int npes,
 
 
   /*=============================================================
-  * Do the nested dissection ordering 
+  * Do the nested dissection ordering
   --=============================================================*/
   ctrl.maxvwgt = 1.5*(idxsum(graph.nvtxs, graph.vwgt)/ctrl.CoarsenTo);
   AllocateWorkSpace(&ctrl, &graph, 2);
@@ -162,10 +162,10 @@ void METIS_NodeNDP(int nvtxs, idxtype *xadj, idxtype *adjncy, int npes,
   FreeWorkSpace(&ctrl, &graph);
 
   if (ctrl.oflags&OFLAG_COMPRESS) { /* Uncompress the ordering */
-    if (graph.nvtxs < COMPRESSION_FRACTION*(nvtxs)) { 
+    if (graph.nvtxs < COMPRESSION_FRACTION*(nvtxs)) {
       /* construct perm from iperm */
       for (i=0; i<graph.nvtxs; i++)
-        perm[iperm[i]] = i; 
+        perm[iperm[i]] = i;
       for (l=ii=0; ii<graph.nvtxs; ii++) {
         i = perm[ii];
         for (j=cptr[i]; j<cptr[i+1]; j++)
@@ -190,7 +190,7 @@ void METIS_NodeNDP(int nvtxs, idxtype *xadj, idxtype *adjncy, int npes,
 /*************************************************************************
 * This function takes a graph and produces a bisection of it
 **************************************************************************/
-void MlevelNestedDissectionP(CtrlType *ctrl, GraphType *graph, idxtype *order, int lastvtx, 
+void MlevelNestedDissectionP(CtrlType *ctrl, GraphType *graph, idxtype *order, int lastvtx,
                              int npes, int cpos, idxtype *sizes)
 {
   int i, j, nvtxs, nbnd, tvwgt, tpwgts2[2];
@@ -210,9 +210,9 @@ void MlevelNestedDissectionP(CtrlType *ctrl, GraphType *graph, idxtype *order, i
   tpwgts2[0] = tvwgt/2;
   tpwgts2[1] = tvwgt-tpwgts2[0];
 
-  if (cpos >= npes-1) 
+  if (cpos >= npes-1)
     ubfactor = ORDER_UNBALANCE_FRACTION;
-  else 
+  else
     ubfactor = 1.05;
 
 
@@ -230,7 +230,7 @@ void MlevelNestedDissectionP(CtrlType *ctrl, GraphType *graph, idxtype *order, i
   nbnd = graph->nbnd;
   bndind = graph->bndind;
   label = graph->label;
-  for (i=0; i<nbnd; i++) 
+  for (i=0; i<nbnd; i++)
     order[label[bndind[i]]] = --lastvtx;
 
   SplitGraphOrder(ctrl, graph, &lgraph, &rgraph);
@@ -238,16 +238,16 @@ void MlevelNestedDissectionP(CtrlType *ctrl, GraphType *graph, idxtype *order, i
   /* Free the memory of the top level graph */
   GKfree(&graph->gdata, &graph->rdata, &graph->label, LTERM);
 
-  if (rgraph.nvtxs > MMDSWITCH || 2*cpos+1 < npes-1) 
+  if (rgraph.nvtxs > MMDSWITCH || 2*cpos+1 < npes-1)
     MlevelNestedDissectionP(ctrl, &rgraph, order, lastvtx, npes, 2*cpos+1, sizes);
   else {
-    MMDOrder(ctrl, &rgraph, order, lastvtx); 
+    MMDOrder(ctrl, &rgraph, order, lastvtx);
     GKfree(&rgraph.gdata, &rgraph.rdata, &rgraph.label, LTERM);
   }
-  if (lgraph.nvtxs > MMDSWITCH || 2*cpos+2 < npes-1) 
+  if (lgraph.nvtxs > MMDSWITCH || 2*cpos+2 < npes-1)
     MlevelNestedDissectionP(ctrl, &lgraph, order, lastvtx-rgraph.nvtxs, npes, 2*cpos+2, sizes);
   else {
-    MMDOrder(ctrl, &lgraph, order, lastvtx-rgraph.nvtxs); 
+    MMDOrder(ctrl, &lgraph, order, lastvtx-rgraph.nvtxs);
     GKfree(&lgraph.gdata, &lgraph.rdata, &lgraph.label, LTERM);
   }
 }
@@ -259,8 +259,8 @@ void MlevelNestedDissectionP(CtrlType *ctrl, GraphType *graph, idxtype *order, i
 * This function is the entry point for ONWMETIS. It requires weights on the
 * vertices. It is for the case that the matrix has been pre-compressed.
 **************************************************************************/
-void METIS_NodeComputeSeparator(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, 
-           idxtype *adjwgt, int *options, int *sepsize, idxtype *part) 
+void METIS_NodeComputeSeparator(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt,
+           idxtype *adjwgt, int *options, int *sepsize, idxtype *part)
 {
   int i, j, tvwgt, tpwgts[2];
   GraphType graph;
@@ -295,7 +295,7 @@ void METIS_NodeComputeSeparator(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxt
 
   /*============================================================
    * Perform the bisection
-   *============================================================*/ 
+   *============================================================*/
   tpwgts[0] = tvwgt/2;
   tpwgts[1] = tvwgt-tpwgts[0];
 
@@ -317,8 +317,8 @@ void METIS_NodeComputeSeparator(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxt
 * This function is the entry point for ONWMETIS. It requires weights on the
 * vertices. It is for the case that the matrix has been pre-compressed.
 **************************************************************************/
-void METIS_EdgeComputeSeparator(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, 
-           idxtype *adjwgt, int *options, int *sepsize, idxtype *part) 
+void METIS_EdgeComputeSeparator(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt,
+           idxtype *adjwgt, int *options, int *sepsize, idxtype *part)
 {
   int i, j, tvwgt, tpwgts[2];
   GraphType graph;
@@ -353,7 +353,7 @@ void METIS_EdgeComputeSeparator(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxt
 
   /*============================================================
    * Perform the bisection
-   *============================================================*/ 
+   *============================================================*/
   tpwgts[0] = tvwgt/2;
   tpwgts[1] = tvwgt-tpwgts[0];
 

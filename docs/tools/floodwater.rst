@@ -18,4 +18,4 @@ Floodwater is a modern and extensible forecasting system for use with hydrodynam
 * GitHub Repository: https://github.com/waterinstitute/floodwater/
 * Documentation: https://waterinstitute.github.io/floodwater/
 
-Floodwater is developed under the terms of the Apache License 2.0. 
+Floodwater is developed under the terms of the Apache License 2.0.

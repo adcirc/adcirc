@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                           FOR_INIT 
+NAME                           FOR_INIT
 
 PURPOSE:	Initializes forward projection transformation parameters
 
@@ -25,7 +25,7 @@ void for_init(long outsys, long outzone, double *outparm, long outspheroid,
         char *fn27, char *fn83, long *iflg, long (*for_trans[])(double, double, double *, double *)) {
 
 //  void for_init(outsys,outzone,outparm,outspheroid,fn27,fn83,iflg,for_trans)
-//  
+//
 //  long outsys;		/* output system code				*/
 //  long outzone;		/* output zone number				*/
 //  double *outparm;	/* output array of projection parameters	*/
@@ -79,7 +79,7 @@ long mode;		/* which initialization method  to use A or B	*/
     {
     /* this is the call to initialize U T M
     -------------------------------------*/
-     /* set Clarke 1866 spheroid if negative spheroid code  
+     /* set Clarke 1866 spheroid if negative spheroid code
         -----------------------------------------------*/
      if (outspheroid < 0)
         {
@@ -106,7 +106,7 @@ long mode;		/* which initialization method  to use A or B	*/
   else
   if (outsys == SPCS)
     {
-    /* this is the call to initialize STATE PLANE 
+    /* this is the call to initialize STATE PLANE
     -------------------------------------------*/
     *iflg = stplnforint(outzone,outspheroid,fn27,fn83);
     if (*iflg != 0)
@@ -116,7 +116,7 @@ long mode;		/* which initialization method  to use A or B	*/
   else
   if (outsys == ALBERS)
     {
-    /* this is the call to initialize ALBERS CONICAL EQUAL AREA 
+    /* this is the call to initialize ALBERS CONICAL EQUAL AREA
     ----------------------------------------------------------*/
     lat1 = paksz(outparm[2],iflg)* 3600 * S2R;
     if (*iflg != 0)
@@ -137,7 +137,7 @@ long mode;		/* which initialization method  to use A or B	*/
   else
   if (outsys == LAMCC)
     {
-    /* this is the call to initialize LAMBERT CONFORMAL CONIC 
+    /* this is the call to initialize LAMBERT CONFORMAL CONIC
     --------------------------------------------------------*/
     lat1 = paksz(outparm[2],iflg)* 3600 * S2R;
     if (*iflg != 0)
@@ -173,7 +173,7 @@ long mode;		/* which initialization method  to use A or B	*/
   else
   if (outsys == PS)
     {
-    /* this is the call to initialize POLAR STEREOGRAPHIC 
+    /* this is the call to initialize POLAR STEREOGRAPHIC
     ----------------------------------------------------*/
     center_long = paksz(outparm[4],iflg)* 3600 * S2R;
     if (*iflg != 0)
@@ -197,13 +197,13 @@ long mode;		/* which initialization method  to use A or B	*/
     if (*iflg != 0)
        return;
     *iflg = polyforint(r_major,r_minor,center_long,lat_origin,false_easting,
-		      false_northing); 
+		      false_northing);
     for_trans[outsys] = polyfor;
     }
   else
   if (outsys == EQUIDC)
     {
-    /* this is the call to initialize EQUIDISTANT CONIC 
+    /* this is the call to initialize EQUIDISTANT CONIC
     -------------------------------------------------*/
     lat1 = paksz(outparm[2],iflg)* 3600 * S2R;
     if (*iflg != 0)
@@ -219,7 +219,7 @@ long mode;		/* which initialization method  to use A or B	*/
        return;
     if (outparm[8] == 0)
        mode = 0;
-    else 
+    else
        mode = 1;
     *iflg = eqconforint(r_major,r_minor,lat1,lat2,center_long,lat_origin,
 		false_easting,false_northing,mode);
@@ -253,7 +253,7 @@ long mode;		/* which initialization method  to use A or B	*/
     if (*iflg != 0)
        return;
     *iflg = sterforint(radius,center_long,center_lat,false_easting,
-		      false_northing); 
+		      false_northing);
     for_trans[outsys] = sterfor;
     }
   else
@@ -283,13 +283,13 @@ long mode;		/* which initialization method  to use A or B	*/
     if (*iflg != 0)
        return;
     *iflg = azimforint(radius,center_long,center_lat,false_easting,
-		      false_northing); 
+		      false_northing);
     for_trans[outsys] = azimfor;
     }
   else
   if (outsys == GNOMON)
     {
-    /* this is the call to initialize GNOMONIC 
+    /* this is the call to initialize GNOMONIC
     ----------------------------------------*/
     center_long  = paksz(outparm[4],iflg)* 3600 * S2R;
     if (*iflg != 0)
@@ -313,7 +313,7 @@ long mode;		/* which initialization method  to use A or B	*/
     if (*iflg != 0)
        return;
     *iflg = orthforint(radius,center_long,center_lat,false_easting,
-		      false_northing); 
+		      false_northing);
     for_trans[outsys] = orthfor;
     }
   else
@@ -335,7 +335,7 @@ long mode;		/* which initialization method  to use A or B	*/
   else
   if (outsys == SNSOID)
     {
-    /* this is the call to initialize SINUSOIDAL 
+    /* this is the call to initialize SINUSOIDAL
     -------------------------------------------*/
     center_long = paksz(outparm[4],iflg)* 3600 * S2R;
     if (*iflg != 0)
@@ -354,29 +354,29 @@ long mode;		/* which initialization method  to use A or B	*/
     lat1   = paksz(outparm[5],iflg)* 3600 * S2R;
     if (*iflg != 0)
        return;
-    *iflg = equiforint(radius,center_long,lat1,false_easting,false_northing); 
+    *iflg = equiforint(radius,center_long,lat1,false_easting,false_northing);
     for_trans[outsys] = equifor;
     }
   else
   if (outsys == MILLER)
     {
-    /* this is the call to initialize MILLER CYLINDRICAL 
+    /* this is the call to initialize MILLER CYLINDRICAL
     --------------------------------------------------*/
     center_long  = paksz(outparm[4],iflg) * 3600 * S2R;
     if (*iflg != 0)
        return;
-    *iflg = millforint(radius, center_long,false_easting,false_northing); 
+    *iflg = millforint(radius, center_long,false_easting,false_northing);
     for_trans[outsys] = millfor;
     }
   else
   if (outsys == VGRINT)
     {
-    /* this is the call to initialize VAN DER GRINTEN 
+    /* this is the call to initialize VAN DER GRINTEN
     -----------------------------------------------*/
     center_long  = paksz(outparm[4],iflg)* 3600 * S2R;
     if (*iflg != 0)
        return;
-    *iflg = vandgforint(radius, center_long,false_easting,false_northing); 
+    *iflg = vandgforint(radius, center_long,false_easting,false_northing);
     for_trans[outsys] = vandgfor;
     }
   else
@@ -422,7 +422,7 @@ long mode;		/* which initialization method  to use A or B	*/
   else
   if (outsys == SOM)
     {
-    /* this is the call to initialize SOM 
+    /* this is the call to initialize SOM
     -----------------------------------*/
     path = outparm[3];
     satnum = outparm[2];
@@ -450,23 +450,23 @@ long mode;		/* which initialization method  to use A or B	*/
   else
   if (outsys == HAMMER)
     {
-    /* this is the call to initialize HAMMER 
+    /* this is the call to initialize HAMMER
     --------------------------------------*/
     center_long  = paksz(outparm[4],iflg)* 3600 * S2R;
     if (*iflg != 0)
        return;
-    *iflg = hamforint(radius,center_long,false_easting,false_northing); 
+    *iflg = hamforint(radius,center_long,false_easting,false_northing);
     for_trans[outsys] = hamfor;
     }
   else
   if (outsys == ROBIN)
     {
-    /* this is the call to initialize ROBINSON 
+    /* this is the call to initialize ROBINSON
     ----------------------------------------*/
     center_long  = paksz(outparm[4],iflg)* 3600 * S2R;
     if (*iflg != 0)
        return;
-    *iflg = robforint(radius,center_long,false_easting,false_northing); 
+    *iflg = robforint(radius,center_long,false_easting,false_northing);
     for_trans[outsys] = robfor;
     }
   else
@@ -499,7 +499,7 @@ long mode;		/* which initialization method  to use A or B	*/
   else
   if (outsys == ALASKA)
     {
-    /* this is the call to initialize ALASKA CONFORMAL 
+    /* this is the call to initialize ALASKA CONFORMAL
     ------------------------------------------------*/
     *iflg = alconforint(r_major,r_minor,false_easting,false_northing);
     for_trans[outsys] = alconfor;
@@ -507,7 +507,7 @@ long mode;		/* which initialization method  to use A or B	*/
   else
   if (outsys == WAGIV)
     {
-    /* this is the call to initialize WAGNER IV 
+    /* this is the call to initialize WAGNER IV
     -----------------------------------------*/
     center_long = paksz(outparm[4],iflg)* 3600 * S2R;
     if (*iflg != 0)
@@ -518,7 +518,7 @@ long mode;		/* which initialization method  to use A or B	*/
   else
   if (outsys == WAGVII)
     {
-    /* this is the call to initialize WAGNER VII 
+    /* this is the call to initialize WAGNER VII
     ------------------------------------------*/
     center_long = paksz(outparm[4],iflg)* 3600 * S2R;
     if (*iflg != 0)
@@ -529,7 +529,7 @@ long mode;		/* which initialization method  to use A or B	*/
   else
   if (outsys == OBEQA)
     {
-    /* this is the call to initialize OBLATED EQUAL AREA 
+    /* this is the call to initialize OBLATED EQUAL AREA
     ---------------------------------------------------*/
     center_long = paksz(outparm[4],iflg)* 3600 * S2R;
     if (*iflg != 0)
@@ -542,10 +542,10 @@ long mode;		/* which initialization method  to use A or B	*/
     angle = paksz(outparm[8],iflg)* 3600 * S2R;
     if (*iflg != 0)
        return;
-    *iflg = obleqforint(radius,center_long,center_lat,shape_m, shape_n, 
+    *iflg = obleqforint(radius,center_long,center_lat,shape_m, shape_n,
 		angle,false_easting,false_northing);
     for_trans[outsys] = obleqfor;
     }
-   
+
 return;
 }

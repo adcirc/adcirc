@@ -87,7 +87,7 @@ endif()
 
 # make this an object lib so we can re-use most of object files
 add_library(obj_lib OBJECT ${lib_src})
-target_compile_definitions(obj_lib PUBLIC ${definitions_list}) 
+target_compile_definitions(obj_lib PUBLIC ${definitions_list})
 
 # Write wgrib2_meta.h. This is installed and contains pre-processor
 # defines for other packages using wgrib2.
@@ -172,7 +172,7 @@ if(BUILD_LIB)
   target_link_libraries(wgrib2_lib PUBLIC gctpc -lm)
   set_target_properties(wgrib2_lib PROPERTIES PUBLIC_HEADER "${headers}")
   target_compile_definitions(wgrib2_lib PUBLIC ${definitions_list})
-  
+
   install(
     TARGETS wgrib2_lib
     EXPORT wgrib2_exports
@@ -180,7 +180,7 @@ if(BUILD_LIB)
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
-  
+
 endif()
 
 install(
@@ -190,5 +190,3 @@ install(
   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
-

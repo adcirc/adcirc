@@ -20,9 +20,9 @@
 /*************************************************************************
 * This function is the entry point for KWMETIS
 **************************************************************************/
-void METIS_mCPartGraphKway(int *nvtxs, int *ncon, idxtype *xadj, idxtype *adjncy, 
-                          idxtype *vwgt, idxtype *adjwgt, int *wgtflag, int *numflag, 
-                          int *nparts, float *rubvec, int *options, int *edgecut, 
+void METIS_mCPartGraphKway(int *nvtxs, int *ncon, idxtype *xadj, idxtype *adjncy,
+                          idxtype *vwgt, idxtype *adjwgt, int *wgtflag, int *numflag,
+                          int *nparts, float *rubvec, int *options, int *edgecut,
                           idxtype *part)
 {
   int i, j;
@@ -73,7 +73,7 @@ void METIS_mCPartGraphKway(int *nvtxs, int *ncon, idxtype *xadj, idxtype *adjncy
 /*************************************************************************
 * This function takes a graph and produces a bisection of it
 **************************************************************************/
-int MCMlevelKWayPartitioning(CtrlType *ctrl, GraphType *graph, int nparts, idxtype *part, 
+int MCMlevelKWayPartitioning(CtrlType *ctrl, GraphType *graph, int nparts, idxtype *part,
       float *rubvec)
 {
   int i, j, nvtxs;
@@ -85,7 +85,7 @@ int MCMlevelKWayPartitioning(CtrlType *ctrl, GraphType *graph, int nparts, idxty
   IFSET(ctrl->dbglvl, DBG_TIME, starttimer(ctrl->InitPartTmr));
   MocAllocateKWayPartitionMemory(ctrl, cgraph, nparts);
 
-  options[0] = 1; 
+  options[0] = 1;
   options[OPTION_CTYPE] = MATCH_SBHEM_INFNORM;
   options[OPTION_ITYPE] = IPART_RANDOM;
   options[OPTION_RTYPE] = RTYPE_FM;
@@ -97,12 +97,12 @@ int MCMlevelKWayPartitioning(CtrlType *ctrl, GraphType *graph, int nparts, idxty
       break;
   }
   if (i == graph->ncon)
-    METIS_mCPartGraphRecursiveInternal(&cgraph->nvtxs, &cgraph->ncon, 
-          cgraph->xadj, cgraph->adjncy, cgraph->nvwgt, cgraph->adjwgt, &nparts, 
+    METIS_mCPartGraphRecursiveInternal(&cgraph->nvtxs, &cgraph->ncon,
+          cgraph->xadj, cgraph->adjncy, cgraph->nvwgt, cgraph->adjwgt, &nparts,
           options, &edgecut, cgraph->where);
   else
-    METIS_mCHPartGraphRecursiveInternal(&cgraph->nvtxs, &cgraph->ncon, 
-          cgraph->xadj, cgraph->adjncy, cgraph->nvwgt, cgraph->adjwgt, &nparts, 
+    METIS_mCHPartGraphRecursiveInternal(&cgraph->nvtxs, &cgraph->ncon,
+          cgraph->xadj, cgraph->adjncy, cgraph->nvwgt, cgraph->adjwgt, &nparts,
           rubvec, options, &edgecut, cgraph->where);
 
 
@@ -120,4 +120,3 @@ int MCMlevelKWayPartitioning(CtrlType *ctrl, GraphType *graph, int nparts, idxty
   return graph->mincut;
 
 }
-

@@ -89,10 +89,10 @@ int f_AAIG(ARG0) {
         fprintf(stderr,"f_AAIG no verf time\n");
 	date_verf = date_ref;
     }
-    if (date_verf.year == date_ref.year && date_verf.month == date_ref.month && 
+    if (date_verf.year == date_ref.year && date_verf.month == date_ref.month &&
         date_verf.day == date_ref.day && date_verf.hour == date_ref.hour) {
         sprintf(file,"%s.%s.%4.4d%2.2d%2.2d%2.2d.asc",name,level,date_ref.year,date_ref.month,date_ref.day,date_ref.hour);
-    } 
+    }
     else {
         sprintf(file,"%s.%s.%4.4d%2.2d%2.2d%2.2d_%4.4d%2.2d%2.2d%2.2d.asc",
 		name,level, date_ref.year,date_ref.month,date_ref.day,date_ref.hour,
