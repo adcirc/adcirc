@@ -11,13 +11,13 @@
  *
  * 2011-4-11 Public Domain Wesley Ebisuzaki
  *
- * this routine assigns lat/lon to the grid points of a space view 
+ * this routine assigns lat/lon to the grid points of a space view
  * perspective grid
  *
  * based on algorithms from
  *
  * LRIT/HRIT Global Specification, Coordination Group for Meteorological Satellites
- * Doc No CGMS 03 isssue 2.6 
+ * Doc No CGMS 03 isssue 2.6
  * date 12 August 1999
  *
  * This document assumed certain constants: satellite height
@@ -111,7 +111,7 @@ int space_view2ll(unsigned char **sec, double **lat, double **lon) {
     rx = angular_size / dx;
     ry = (r_pol/r_eq) * angular_size / dy;
 
-//fprintf(stderr,">> factor %.17lg %.18lg, q: %.18lg %.18lg\n", 256*256.0/(-781648343.0), 
+//fprintf(stderr,">> factor %.17lg %.18lg, q: %.18lg %.18lg\n", 256*256.0/(-781648343.0),
 //	256*256.0/(-781648343.0), rx, ry);
 
     if (nnx < 1 || nny  < 1 || nnx*nny != nnpnts) {
@@ -158,7 +158,7 @@ int space_view2ll(unsigned char **sec, double **lat, double **lon) {
 	s_x[ix] = sin(x);
 	c_x[ix] = sqrt(1.0 - s_x[ix]*s_x[ix]);
     }
-    
+
     for (iy = 0; iy < nny; iy++) {
 	y = (iy - yp) * ry;
 	sin_y = sin(y);

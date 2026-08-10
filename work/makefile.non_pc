@@ -1,6 +1,6 @@
 SHELL:=/bin/sh
 #
-#  Makefile to Build PADCIRC and its pre-processor 
+#  Makefile to Build PADCIRC and its pre-processor
 #  University of Texas's parallel version of the Hydrodynamics
 #  Modeling program ADCIRC by J.J. Westerink and R.A. Luettich
 #  vjp 3/29/2001
@@ -27,12 +27,12 @@ include cmplrflags.mk
 
 ######################## Target Specific Rules ###################################
 
-#                                      adcprep   
+#                                      adcprep
 ifeq ($(BUILDTYPE),adcprep)
   CF:= $(PPFC)
   O_DIR:=odir1/
-  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  ../prep 
+  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR)
+  VPATH :=  ../prep
   LIBS  :=  -L odir_metis -lmetis
   PMSG_OBJ:=
 endif
@@ -40,12 +40,12 @@ endif
 ifeq ($(BUILDTYPE),adcprep_be)
   CF:= $(FC)
   O_DIR:=odir2/
-  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  ../prep 
+  FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR)
+  VPATH :=  ../prep
   LIBS  := -L odir_metis_be -lmetis_be
   PMSG_OBJ:=
 endif
-#                                      adcirc   
+#                                      adcirc
 ifeq ($(BUILDTYPE),adcirc)
   CF:= $(FC)
   O_DIR:=odir3/
@@ -53,12 +53,12 @@ ifeq ($(BUILDTYPE),adcirc)
   VPATH:=  ../src:../wind:..:../prep
   MSG_MOBJ:= $(O_DIR)globalio.o
 endif
-#                                      $(PARALLEL_ADCIRC)   
+#                                      $(PARALLEL_ADCIRC)
 ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   CF:= $(PFC)
   O_DIR:=odir4/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
-  VPATH :=  ../src:../wind:..:../prep 
+  VPATH :=  ../src:../wind:..:../prep
   MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
 endif
 #                                      p15
@@ -101,7 +101,7 @@ ifeq ($(BUILDTYPE),buildstwave23)
   VPATH :=  ../util
   MSG_MOBJ:=
 endif
-#                                      hot2asc      
+#                                      hot2asc
 ifeq ($(BUILDTYPE),hot2asc)
   CF:= $(PPFC)
   O_DIR:=odir10/
@@ -131,10 +131,10 @@ $(O_DIR):
 
 ######################### Module Source, Object, & Mod Files ######################
 
-PREP_MSRC  =  presizes.F 
-PGLO_MSRC  =  pre_global.F  
-ADC_MSRC   =  version.F sizes.F global.F global_3dvs.F 
-HARM_MSRC  =  harm.F  
+PREP_MSRC  =  presizes.F
+PGLO_MSRC  =  pre_global.F
+ADC_MSRC   =  version.F sizes.F global.F global_3dvs.F
+HARM_MSRC  =  harm.F
 PREC_MSRC  =  precision.F
 CONS_MSRC  =  constants.F
 FITP_MSRC  =  fitpack.F
@@ -162,7 +162,7 @@ NA_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NA_MSRC)  )
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F read_global.F prep.F interp.F machdep.F
-ADC_SRC    =  adcirc.F globalio.F read_input.F cstart.F hstart.F timestep.F vsmy.F transport.F 
+ADC_SRC    =  adcirc.F globalio.F read_input.F cstart.F hstart.F timestep.F vsmy.F transport.F
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
 B13_SRC    =  build13.F
@@ -208,27 +208,27 @@ ifeq ($(MAKELEVEL),0)
    metis_be: odir_metis_be
 	$(MAKE) -C ../metis/Lib/ CC="$(CCBE)" CFLAGS="$(CFLAGS)" O_DIR="../../work/odir_metis_be/" LIBMETIS="../../work/odir_metis_be/libmetis_be.a" ARFLAGS="$(ARFLAGS)"
    adcprep: metis
-	$(MAKE) BUILDTYPE=adcprep  $@            
+	$(MAKE) BUILDTYPE=adcprep  $@
    adcprep_be: metis_be
-	$(MAKE) BUILDTYPE=adcprep_be CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@            
+	$(MAKE) BUILDTYPE=adcprep_be CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    adcirc:
 	$(MAKE) BUILDTYPE=adcirc CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    $(PARALLEL_ADCIRC):
-	$(MAKE) BUILDTYPE=$(PARALLEL_ADCIRC) CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@ 
+	$(MAKE) BUILDTYPE=$(PARALLEL_ADCIRC) CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    p15:
-	$(MAKE) BUILDTYPE=p15 $@ 
+	$(MAKE) BUILDTYPE=p15 $@
    owi22:
-	$(MAKE) BUILDTYPE=owi22 $@ 
+	$(MAKE) BUILDTYPE=owi22 $@
    build13:
-	$(MAKE) BUILDTYPE=build13 $@ 
+	$(MAKE) BUILDTYPE=build13 $@
    build12:
-	$(MAKE) BUILDTYPE=build12 $@ 
+	$(MAKE) BUILDTYPE=build12 $@
    buildstwave23:
-	$(MAKE) BUILDTYPE=buildstwave23 $@ 
+	$(MAKE) BUILDTYPE=buildstwave23 $@
    hot2asc:
-	$(MAKE) BUILDTYPE=hot2asc $@ 
+	$(MAKE) BUILDTYPE=hot2asc $@
    inflate:
-	$(MAKE) BUILDTYPE=inflate $@ 
+	$(MAKE) BUILDTYPE=inflate $@
    hstime:
 	$(MAKE) BUILDTYPE=hstime $@
 else
@@ -245,37 +245,37 @@ else
    inflate:: $(O_DIR)
    hstime::   $(O_DIR)
 
-   adcprep ::  $(METIS_OBJ) $(PREP_OBJ) 
+   adcprep ::  $(METIS_OBJ) $(PREP_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(LIBS) $(LDFLAGS)
 
-   adcprep_be ::  $(METIS_OBJ) $(PREP_OBJ) 
+   adcprep_be ::  $(METIS_OBJ) $(PREP_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(LIBS) $(LDFLAGS)
 
-   adcirc ::  $(ADC_OBJ) 
+   adcirc ::  $(ADC_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(LIBS)
 
-   $(PARALLEL_ADCIRC) ::  $(MSG_MOBJ) $(ADC_OBJ) 
+   $(PARALLEL_ADCIRC) ::  $(MSG_MOBJ) $(ADC_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(LIBS) $(MSGLIBS)
 
-   p15     ::  $(P15_OBJ) 
+   p15     ::  $(P15_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
 
-   owi22   ::  $(OWI_OBJ) 
+   owi22   ::  $(OWI_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
 
-   build13 ::  $(B13_OBJ) 
+   build13 ::  $(B13_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
 
-   build12 ::  $(B12_OBJ) 
+   build12 ::  $(B12_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
 
-   buildstwave23 ::  $(B23_OBJ) 
+   buildstwave23 ::  $(B23_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
 
-   hot2asc ::  $(H2A_OBJ) 
+   hot2asc ::  $(H2A_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
 
-   inflate ::  $(INF_OBJ) 
+   inflate ::  $(INF_OBJ)
 	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
 
    hstime ::  $(HST_OBJ)
@@ -287,9 +287,9 @@ endif
 clean:
 	 rm -f odir*/*.o  odir*/*.mod sizes.o
 clobber:
-	rm -r -f odir* 
+	rm -r -f odir*
 	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) p15 owi22 build13 \
-           build12 buildstwave23 hot2asc inflate sizes.o 
+           build12 buildstwave23 hot2asc inflate sizes.o
 help:
 	@echo "This makefile supports the following:"
 	@echo "make all        - makes all seven targets"
@@ -337,7 +337,7 @@ $(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ)
 $(O_DIR)decomp.o      :  decomp.F   $(PGLO_MOBJ)
 $(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ)
 $(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ)
-$(O_DIR)interp.o      :  interp.F  
+$(O_DIR)interp.o      :  interp.F
 $(O_DIR)machdep.o     :  machdep.F
 $(O_DIR)metis.o       :  metis.F $(PGLO_MOBJ)
 $(O_DIR)mkdir.o       :  mkdir.c cfi.h
@@ -366,11 +366,11 @@ $(O_DIR)nodalattr.o   :  nodalattr.F  $(ADC_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC)
 
-$(O_DIR)read_input.o  : read_input.F 
-$(O_DIR)transport.o   : transport.F  
-$(O_DIR)cstart.o      : cstart.F    
-$(O_DIR)hstart.o      : hstart.F    
-$(O_DIR)timestep.o    : timestep.F  
+$(O_DIR)read_input.o  : read_input.F
+$(O_DIR)transport.o   : transport.F
+$(O_DIR)cstart.o      : cstart.F
+$(O_DIR)hstart.o      : hstart.F
+$(O_DIR)timestep.o    : timestep.F
 $(O_DIR)adcirc.o      : adcirc.F     $(ADC_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ)
 
 # wind file generation
@@ -401,5 +401,3 @@ $(O_DIR)inflate.o     : inflate.F
 # hot start time examiner
 
 $(O_DIR)hstime.o     : hstime.F
-
-

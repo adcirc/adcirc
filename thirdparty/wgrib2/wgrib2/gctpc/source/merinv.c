@@ -39,7 +39,7 @@ static double false_easting;	/* x offset in meters			*/
   -----------------------------------*/
 long merinvint(double r_maj, double r_min, double center_lon, double center_lat,
         double false_east, double false_north) {
-//long merinvint(r_maj,r_min,center_lon,center_lat,false_east,false_north) 
+//long merinvint(r_maj,r_min,center_lon,center_lat,false_east,false_north)
 //
 //double r_maj;			/* major axis			*/
 //double r_min;			/* minor axis			*/
@@ -66,14 +66,14 @@ m1 = cos(center_lat)/(sqrt(1.0 - es * sin(center_lat) * sin(center_lat)));
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("MERCATOR"); 
+ptitle("MERCATOR");
 radius2(r_major, r_minor);
 cenlonmer(lon_center);
 origin(lat_origin);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 
 /* Mercator inverse equations--mapping x,y to lat/long
   --------------------------------------------------*/

@@ -1,19 +1,19 @@
 /*******************************************************************************
-NAME                    MILLER CYLINDRICAL 
+NAME                    MILLER CYLINDRICAL
 
 PURPOSE:	Transforms input longitude and latitude to Easting and
 		Northing for the Miller Cylindrical projection.  The
 		longitude and latitude must be in radians.  The Easting
 		and Northing values will be returned in meters.
 
-PROGRAMMER              DATE            
-----------              ----           
+PROGRAMMER              DATE
+----------              ----
 T. Mittan		March, 1993
 
 This function was adapted from the Lambert Azimuthal Equal Area projection
 code (FORTRAN) in the General Cartographic Transformation Package software
 which is available from the U.S. Geological Survey National Mapping Division.
- 
+
 ALGORITHM REFERENCES
 
 1.  "New Equal-Area Map Projections for Noncircular Regions", John P. Snyder,
@@ -39,7 +39,7 @@ static double false_northing;	/* y offset in meters			*/
   -------------------------------------------*/
 long millforint(double r, double center_long, double false_east,
         double false_north) {
-//long millforint(r, center_long,false_east,false_north) 
+//long millforint(r, center_long,false_east,false_north)
 //
 //double r; 			/* (I) Radius of the earth (sphere) 	*/
 //double center_long;		/* (I) Center longitude 		*/
@@ -55,13 +55,13 @@ false_northing = false_north;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("MILLER CYLINDRICAL"); 
+ptitle("MILLER CYLINDRICAL");
 radius(r);
 cenlon(center_long);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 /* Miller Cylindrical forward equations--mapping lat,long to x,y
   ------------------------------------------------------------*/
 long millfor(double lon, double lat, double *x, double *y) {

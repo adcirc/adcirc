@@ -17,7 +17,7 @@
 /*************************************************************************
 * This function is the entry point of refinement
 **************************************************************************/
-void RefineVolKWay(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, int nparts, 
+void RefineVolKWay(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, int nparts,
                    float *tpwgts, float ubfactor)
 {
   int i, nlevels;
@@ -37,7 +37,7 @@ void RefineVolKWay(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, int np
 
 
   /* Determine how many levels are there */
-  for (ptr=graph, nlevels=0; ptr!=orggraph; ptr=ptr->finer, nlevels++); 
+  for (ptr=graph, nlevels=0; ptr!=orggraph; ptr=ptr->finer, nlevels++);
 
   /* Compute the parameters of the coarsest graph */
   ComputeVolKWayPartitionParams(ctrl, graph, nparts);
@@ -51,10 +51,10 @@ void RefineVolKWay(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, int np
       ComputeVolKWayBalanceBoundary(ctrl, graph, nparts);
       switch (ctrl->RType) {
         case RTYPE_KWAYRANDOM:
-          Greedy_KWayVolBalance(ctrl, graph, nparts, tpwgts, ubfactor, 1); 
+          Greedy_KWayVolBalance(ctrl, graph, nparts, tpwgts, ubfactor, 1);
           break;
         case RTYPE_KWAYRANDOM_MCONN:
-          Greedy_KWayVolBalanceMConn(ctrl, graph, nparts, tpwgts, ubfactor, 1); 
+          Greedy_KWayVolBalanceMConn(ctrl, graph, nparts, tpwgts, ubfactor, 1);
           break;
       }
       ComputeVolKWayBoundary(ctrl, graph, nparts);
@@ -62,10 +62,10 @@ void RefineVolKWay(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, int np
 
     switch (ctrl->RType) {
       case RTYPE_KWAYRANDOM:
-        Random_KWayVolRefine(ctrl, graph, nparts, tpwgts, ubfactor, 10, 0); 
+        Random_KWayVolRefine(ctrl, graph, nparts, tpwgts, ubfactor, 10, 0);
         break;
       case RTYPE_KWAYRANDOM_MCONN:
-        Random_KWayVolRefineMConn(ctrl, graph, nparts, tpwgts, ubfactor, 10, 0); 
+        Random_KWayVolRefineMConn(ctrl, graph, nparts, tpwgts, ubfactor, 10, 0);
         break;
     }
     IFSET(ctrl->dbglvl, DBG_TIME, stoptimer(ctrl->RefTmr));
@@ -86,17 +86,17 @@ void RefineVolKWay(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, int np
     ComputeVolKWayBalanceBoundary(ctrl, graph, nparts);
     switch (ctrl->RType) {
       case RTYPE_KWAYRANDOM:
-        Greedy_KWayVolBalance(ctrl, graph, nparts, tpwgts, ubfactor, 8); 
-        Random_KWayVolRefine(ctrl, graph, nparts, tpwgts, ubfactor, 10, 0); 
+        Greedy_KWayVolBalance(ctrl, graph, nparts, tpwgts, ubfactor, 8);
+        Random_KWayVolRefine(ctrl, graph, nparts, tpwgts, ubfactor, 10, 0);
         break;
       case RTYPE_KWAYRANDOM_MCONN:
-        Greedy_KWayVolBalanceMConn(ctrl, graph, nparts, tpwgts, ubfactor, 8); 
-        Random_KWayVolRefineMConn(ctrl, graph, nparts, tpwgts, ubfactor, 10, 0); 
+        Greedy_KWayVolBalanceMConn(ctrl, graph, nparts, tpwgts, ubfactor, 8);
+        Random_KWayVolRefineMConn(ctrl, graph, nparts, tpwgts, ubfactor, 10, 0);
         break;
     }
   }
 
-  EliminateVolComponents(ctrl, graph, nparts, tpwgts, ubfactor); 
+  EliminateVolComponents(ctrl, graph, nparts, tpwgts, ubfactor);
 
   IFSET(ctrl->dbglvl, DBG_TIME, stoptimer(ctrl->UncoarsenTmr));
 }
@@ -126,11 +126,11 @@ void AllocateVolKWayPartitionMemory(CtrlType *ctrl, GraphType *graph, int nparts
 
 
 /*************************************************************************
-* This function computes the initial id/ed 
+* This function computes the initial id/ed
 **************************************************************************/
 void ComputeVolKWayPartitionParams(CtrlType *ctrl, GraphType *graph, int nparts)
 {
-  int i, ii, j, k, kk, l, nvtxs, nbnd, mincut, minvol, me, other, pid; 
+  int i, ii, j, k, kk, l, nvtxs, nbnd, mincut, minvol, me, other, pid;
   idxtype *xadj, *vwgt, *adjncy, *adjwgt, *pwgts, *where;
   VRInfoType *rinfo, *myrinfo, *orinfo;
   VEDegreeType *myedegrees, *oedegrees;
@@ -171,7 +171,7 @@ starttimer(ctrl->AuxTmr1);
     mincut += myrinfo->ed;
 
     /* Time to compute the particular external degrees */
-    if (myrinfo->ed > 0) { 
+    if (myrinfo->ed > 0) {
       myedegrees = myrinfo->edegrees = ctrl->wspace.vedegrees+ctrl->wspace.cdegree;
       ctrl->wspace.cdegree += xadj[i+1]-xadj[i];
 
@@ -208,11 +208,11 @@ stoptimer(ctrl->AuxTmr1);
 
 
 /*************************************************************************
-* This function computes the initial id/ed 
+* This function computes the initial id/ed
 **************************************************************************/
 void ComputeKWayVolGains(CtrlType *ctrl, GraphType *graph, int nparts)
 {
-  int i, ii, j, k, kk, l, nvtxs, me, other, pid, myndegrees; 
+  int i, ii, j, k, kk, l, nvtxs, me, other, pid, myndegrees;
   idxtype *xadj, *vsize, *adjncy, *adjwgt, *where, *bndind, *bndptr, *ophtable;
   VRInfoType *rinfo, *myrinfo, *orinfo;
   VEDegreeType *myedegrees, *oedegrees;
@@ -251,7 +251,7 @@ void ComputeKWayVolGains(CtrlType *ctrl, GraphType *graph, int nparts)
         orinfo = rinfo+ii;
         oedegrees = orinfo->edegrees;
 
-        for (k=0; k<orinfo->ndegrees; k++) 
+        for (k=0; k<orinfo->ndegrees; k++)
           ophtable[oedegrees[k].pid] = k;
         ophtable[other] = 1;  /* this is to simplify coding */
 
@@ -268,20 +268,20 @@ void ComputeKWayVolGains(CtrlType *ctrl, GraphType *graph, int nparts)
           if (oedegrees[ophtable[me]].ned == 1) { /* I'm the only connection of 'ii' in 'me' */
             /* Increase the gains for all the common domains between 'i' and 'ii' */
             for (k=0; k<myndegrees; k++) {
-              if (ophtable[myedegrees[k].pid] != -1) 
+              if (ophtable[myedegrees[k].pid] != -1)
                 myedegrees[k].gv += vsize[ii];
             }
           }
           else {
             /* Find which domains 'i' is connected and 'ii' is not and update their gain */
             for (k=0; k<myndegrees; k++) {
-              if (ophtable[myedegrees[k].pid] == -1) 
+              if (ophtable[myedegrees[k].pid] == -1)
                 myedegrees[k].gv -= vsize[ii];
             }
           }
         }
 
-        for (kk=0; kk<orinfo->ndegrees; kk++) 
+        for (kk=0; kk<orinfo->ndegrees; kk++)
           ophtable[oedegrees[kk].pid] = -1;
         ophtable[other] = -1;
       }
@@ -293,7 +293,7 @@ void ComputeKWayVolGains(CtrlType *ctrl, GraphType *graph, int nparts)
       }
     }
 
-    if (myrinfo->ed > 0 && myrinfo->id == 0) 
+    if (myrinfo->ed > 0 && myrinfo->id == 0)
       myrinfo->gv += vsize[i];
 
     if (myrinfo->gv >= 0 || myrinfo->ed-myrinfo->id >= 0)
@@ -385,7 +385,7 @@ void ProjectVolKWayPartition(CtrlType *ctrl, GraphType *graph, int nparts)
       myrinfo->id -= myrinfo->ed;
 
       /* Remove space for edegrees if it was interior */
-      if (myrinfo->ed == 0) { 
+      if (myrinfo->ed == 0) {
         myrinfo->edegrees = NULL;
         ctrl->wspace.cdegree -= iend-istart;
       }
@@ -430,7 +430,7 @@ void ComputeVolKWayBoundary(CtrlType *ctrl, GraphType *graph, int nparts)
   /------------------------------------------------------------*/
   nbnd = 0;
   for (i=0; i<nvtxs; i++) {
-    if (graph->vrinfo[i].gv >=0 || graph->vrinfo[i].ed-graph->vrinfo[i].id >= 0) 
+    if (graph->vrinfo[i].gv >=0 || graph->vrinfo[i].ed-graph->vrinfo[i].id >= 0)
       BNDInsert(nbnd, bndind, bndptr, i);
   }
 
@@ -455,10 +455,9 @@ void ComputeVolKWayBalanceBoundary(CtrlType *ctrl, GraphType *graph, int nparts)
   /------------------------------------------------------------*/
   nbnd = 0;
   for (i=0; i<nvtxs; i++) {
-    if (graph->vrinfo[i].ed > 0) 
+    if (graph->vrinfo[i].ed > 0)
       BNDInsert(nbnd, bndind, bndptr, i);
   }
 
   graph->nbnd = nbnd;
 }
-

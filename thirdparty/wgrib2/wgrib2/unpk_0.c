@@ -26,8 +26,8 @@
  * 7/98        Public Domain  Wesley Ebisuzaki
  * 7/98 v1.2.1 fix bug for bitmaps and nbit >= 25 found by Larry Brasfield
  * 2/01 v1.2.2 changed jj from long int to double
- * 3/02 v1.2.3 added unpacking extensions for spectral data 
- *             Luis Kornblueh, MPIfM 
+ * 3/02 v1.2.3 added unpacking extensions for spectral data
+ *             Luis Kornblueh, MPIfM
  * 7/06 v.1.2.4 fixed some bug complex packed data was not set to undefined
  * 10/15 v.1.2.5 changed n and i to unsigned
  * 3/16 v.1.2.6 OpenMP

@@ -129,7 +129,7 @@ int f_text(ARG1) {
     unsigned int i;
 
     if (mode == -1) {
-	if ((*local = (void *) ffopen(arg1,file_append ? "a" : "w")) == NULL) 
+	if ((*local = (void *) ffopen(arg1,file_append ? "a" : "w")) == NULL)
 	        fatal_error("Could not open %s", arg1);
         decode = 1;
     }
@@ -181,13 +181,13 @@ int f_spread(ARG1) {
 
 	if (WxNum > 0) {
 	    for (i = 0; i < ndata; i++) {
-	        if(!UNDEFINED_VAL(data[i])) 
+	        if(!UNDEFINED_VAL(data[i]))
 	            fprintf((FILE *) *local,"%lf,%lf,\"%s\"\n",lon[i],lat[i],WxLabel(data[i]));
 	    }
 	}
 	else {
 	    for (i = 0; i < ndata; i++) {
-	        if(!UNDEFINED_VAL(data[i])) 
+	        if(!UNDEFINED_VAL(data[i]))
 	            fprintf((FILE *) *local,"%lf,%lf,%g\n",lon[i],lat[i],data[i]);
 	    }
 	}

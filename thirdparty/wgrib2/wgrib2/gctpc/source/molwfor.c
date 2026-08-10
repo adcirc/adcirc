@@ -50,13 +50,13 @@ lon_center = center_long;
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("MOLLWEIDE"); 
+ptitle("MOLLWEIDE");
 radius(r);
 cenlon(center_long);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 /* Mollweide forward equations--mapping lat,long to x,y
   ----------------------------------------------------*/
 long molwfor(double lon, double lat, double *x, double *y) {
@@ -85,7 +85,7 @@ for (i=0;;i++)
    delta_theta = -(theta + sin(theta) - con)/ (1.0 + cos(theta));
    theta += delta_theta;
    if (fabs(delta_theta) < EPSLN) break;
-   if (i >= 50) 
+   if (i >= 50)
      {
      p_error("Iteration failed to converge","Mollweide-forward");
      return(241);

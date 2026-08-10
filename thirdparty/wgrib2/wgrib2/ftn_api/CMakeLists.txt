@@ -1,5 +1,5 @@
 # This is the CMake file for the ftn_api directory in the wgrib2
-# project. This will only build if MAKE_FTN_API=ON and 
+# project. This will only build if MAKE_FTN_API=ON and
 # BUILD_LIB=ON
 #
 # Kyle Gerheiser
@@ -27,7 +27,7 @@ target_include_directories(wgrib2_ftn_api
     PUBLIC $<BUILD_INTERFACE:${module_dir}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}>)
 
-target_link_libraries(wgrib2_ftn_api PUBLIC wgrib2_lib)  
+target_link_libraries(wgrib2_ftn_api PUBLIC wgrib2_lib)
 
 if(NOT DEFINED CMAKE_INSTALL_Fortran_MODULES)
     set(CMAKE_INSTALL_Fortran_MODULES ${CMAKE_INSTALL_INCLUDEDIR})
@@ -41,4 +41,3 @@ install(
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-

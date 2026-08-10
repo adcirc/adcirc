@@ -11,7 +11,7 @@
  * HEADER:200:process=f_code_table_4_3:inv:0:Process type (code table 4.3)
  * HEADER:200:-version=f_version:misc:0:print version
  * HEADER:200:elseif=f_if:Elseif:1:elseif X (POSIX regular expression) conditional on match, -if ... -elseif ... -endif
- * HEADER:200:elseif_fs=f_if_fs:Elseif:1:elseif X (fixed string) conditional execution 
+ * HEADER:200:elseif_fs=f_if_fs:Elseif:1:elseif X (fixed string) conditional execution
  * HEADER:200:elseif_n=f_if_n:Elseif:1:elseif (inv numbers in range), X=(start:end:step)
  * HEADER:200:elseif_rec=f_if_rec:Elseif:1:elseif (record numbers in range), X=(start:end:step)
  * HEADER:200:elseif_reg=f_if_reg:Elseif:1:elseif rpn registers defined, X = A, A:B, A:B:C, etc A = register number

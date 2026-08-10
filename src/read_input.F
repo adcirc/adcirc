@@ -37,8 +37,8 @@ C     READS INPUT FILES
 C
 C-----------------------------------------------------------------------
       SUBROUTINE READ_INPUT()
-      USE SIZES          
-      USE GLOBAL, only: toutsge, toutfge, nspoolge, im, ff, bountag, 
+      USE SIZES
+      USE GLOBAL, only: toutsge, toutfge, nspoolge, im, ff, bountag,
      &   noutge, use_tvw, nfover, warnelev, ihot, hss,
      &   smag_lower_lim, iwarnelevdump, warnelevdump, errorelev, c2ddi,
      &   usenetcdf, cgwce_new, cme_new_nc, cme_ls_ibpv, cgwce_ls_kgq,
@@ -54,7 +54,7 @@ C-----------------------------------------------------------------------
      &   dramptip, drampmete, drampwrad, nddt, nodedrymin, tree,
      &   nodewetmin, srchdp, kdresults, vidbcpdxoh, vidbcpdyoh, tpk,
      &   dasigt, dasalt, datemp, daconc, corif, ntif, amigt, vidispdxoh,
-     &   tipotag, cori, etrf, fft, facet, pert, saltamp, nbfr, 
+     &   tipotag, cori, etrf, fft, facet, pert, saltamp, nbfr,
      &   saltamp, saltpha, amig, face, per, csmag_eh, fbountag,
      &   elevalpha, emo, efa, qnam, qnph, nffr, fff, famig, fface, fper,
      &   alpha, enam, enph, usenetcdfoutput, inundationoutput, ntcyfe,
@@ -79,26 +79,31 @@ C-----------------------------------------------------------------------
      &   bchgtiminc, base_date, contact, convention, host, comments,
      &   nhstar, nhsinc, ndsetsw, ntcysgw, ntcyfgw, cpl2stwave, c3d,
      &   alloc_main1a, alloc_main2, alloc_main3, alloc_main4a,
-     &   alloc_main4b, alloc_main5, alloc_main7, alloc_main8,
+     &   alloc_main4b, alloc_main4c, alloc_main5, alloc_main7, alloc_main8,
      &   alloc_main10, alloc_main12, alloc_main13, alloc_main9,
      &   alloc_main6, nhoutonce, IFSPROTS,
-     &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp, 
+     &   StatPartWetFix, How2FixStatPartWet, cgwce_hdp, ifnl_hdp,
      &   CAliDisp, IFSFM, usingDynamicWaterLevelCorrection,slim,windlim,
-     &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF, 
+     &   directvelWD,useHF,Limit_WaveStressGrad, directvelWD,useHF,
      &   WarnVel, toLowercase,UseInterpInset,found_InterpInset_Namelist,
-     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus
+     &   Pfile_inset, Wfile_inset, InsetControlFile, TimeConv, logNamelistReadStatus,
+     &   WarnVel, toLowercase,
+     &   use_variable_water_density_VCT => CVariableDensityVCT
 #if defined CSWAN
      &   , SWAN_OutputHS, SWAN_OutputDIR,
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
+
+
 #ifdef DATETIME
      &   ,basedatetime
 #endif
      &   ,NUOPC4WAV, NUOPC4MET
       USE ADC_CONSTANTS, ONLY: G, Ad, Bd, Cs, Cs2,
      &                     waveWindMultiplier,deg2rad,rhoAir,
-     &                     rad2deg,omega,WaveStressGrad_Cap
+     &                     rad2deg,omega,WaveStressGrad_Cap,
+     &                     kappamodulus
 
       USE MESH, ONLY : NE, SLAM0, SFEA0, BCXY, RMAX, ICS, X, Y, DP, NP,
      &   SLAM, SFEA, NM, readMesh, initializeMesh, initializeBoundaries,
@@ -135,7 +140,7 @@ C-----------------------------------------------------------------------
       USE OWIWIND,ONLY: nPowellSearchDomains
       USE mod_nws08, only: setNws08f15Parameters, readNws08Namelist, getVortexModelStringNws8 => getVortexModelString
       USE WIND, only: WTIMINC, NWLAT, NWLON, IREFYR, IREFMO, IREFDAY,
-     &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit, 
+     &   IREFHR, IREFMIN, WREFTIM, WLATMAX, WLONMIN, WindDragLimit,
      &   WLATINC, WLONINC, GEOFACTOR, PUREVORTEX,
      &   NWSok, Allowable_NWS, PUREBACKGROUND,
      &   DragLawString, dynamicWaterLevelCorrectionFileName, WTIMINC_12,
@@ -163,10 +168,10 @@ C-----------------------------------------------------------------------
 C.....SB
      &     activateVEW1DChannelWetPerimeter,
 C ....DW
-     &     LoadAbsLayerSigma, FoundAbsLayerSigma 
+     &     LoadAbsLayerSigma, FoundAbsLayerSigma
       USE SPONGELAYER, ONLY: SpongeLayerRelatedPrep, FLAGSPONGEELEM
 C ... END DW
-      USE Couple2BC3D, ONLY: BC3D_DT, DTIME1, DTIME2, ALLOC_BC3D_to_2D, 
+      USE Couple2BC3D, ONLY: BC3D_DT, DTIME1, DTIME2, ALLOC_BC3D_to_2D,
      &    NP11, densityTimeIterator, densityFileName
 #ifdef ADCNETCDF
      &     ,Read_BC3D_Netcdf
@@ -195,6 +200,8 @@ Casey 180318: Added NWS=13
      &   operator(<=), operator(/=), operator(<), operator(>=),
      &   t_log_scope, init_log_scope
       use mod_io, only: openFileForRead
+      ! use MOD_INLINE_SAL, only: salmethod, ssh_inline_sal
+      use MOD_INLINE_SAL, only: initSALModule
 
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -227,6 +234,20 @@ C
       real(8) :: h2Value = 0.609D0
       logical :: UniformResMoonSunTimeData = .false.
 
+
+      ! I/O Self-attraction-loading
+      LOGICAL:: use_inline_sal = .FALSE.
+      character(len=80):: inlineSalMethod = "SH"  ! SH - spherical harmonics, or AP - Accad & Perkeris's scalar approximation
+      LOGICAL:: sal_use_direct_sh = .TRUE.
+      LOGICAL:: sal_use_cache_blocking = .TRUE.
+      INTEGER:: nSHOrder = 64
+      INTEGER:: nCellBlock = 500
+      INTEGER:: salinc = 1     ! interval to which sal is computed = salinc*dtdp
+      INTEGER:: salExtrapVal = 0
+      REAL (8):: salAPBeta = 0.01D0
+      logical:: sal_use_sh_filter = .false.
+      integer:: sh_filter_scheme = 2
+
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
       CHARACTER(len=1024) :: scratchMessage ! message buffer
 #if defined CSWAN
@@ -247,7 +268,7 @@ C.... "new" formula for computing vel in wetting/drying routine
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
 C.... SB
       NAMELIST /VEW1DChannelControl/ activateVEW1DChannelWetPerimeter,
-     &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM, 
+     &  BARMIN64_SUBM, BARMIN64_NOSUBM, BARMIN64_SLIM,
      &  BARSLIM64_ELEM, BARSLIM64_EDGE
 C.... DMW
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
@@ -263,7 +284,7 @@ C.... DMW
       NAMELIST /WarnElevControl/ WarnElev, WarnElevDump,
      &  WarnElevDumpLimit, ErrorElev
       NAMELIST /AliDispersionControl/ CAliDisp, Cs, Ad, Bd
-      NAMELIST /densityControl/ densityRunType, densityFileName, 
+      NAMELIST /densityControl/ densityRunType, densityFileName,
      &  densityTimeIterator, densityForcingType
 #ifdef ADCNETCDF
       NAMELIST /owiWindNetcdf/ NWS13File,NWS13ColdStartString,
@@ -277,25 +298,38 @@ C.... DMW
 !Aman Tejaswi
 
       NAMELIST /InterpInset/ UseInterpInset, PFile_inset,Wfile_inset,
-     &         InsetControlFile 
+     &         InsetControlFile
 C---- DW/AC, for full tidal pontential formula
 C     UseFullTIPFormula = T/F (default F)
 C     TIPOrder = 2 (P2), 3(p3), >= 4(exact)  (default 2)
 C     TIPStartDate = 'BaseDate'/'YYYY-MM-DD HH:SS'
-C     MoonSunPostionMethod = 'JM'/'External' (defaul 'JM') 
-C           'JM' = Jean Meeus's approach 
+C     MoonSunPostionMethod = 'JM'/'External' (defaul 'JM')
+C           'JM' = Jean Meeus's approach
 C           'External' = User supplied Moon's, Sun's RA, DEC and
-C                        distances 
+C                        distances
 C     MoonSunCoordFile = filename of an external file storting the
-C                        coordinates of the Moon and the Sun         
+C                        coordinates of the Moon and the Sun
 C     IncludeNutation = T/F , Include/exclude the nutation in JM formula
 C     k2value = Love number
-C     h2value = Love number     
-C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data 
+C     h2value = Love number
+C     UniformResMoonSunTimeData = T/F, Use uniform resolution time data
       NAMELIST /TidalPotentialControl/ UseFullTIPFormula, TIPOrder,
      &    TIPStartDate, MoonSunPositionComputeMethod, MoonSunCoordFile,
      &    IncludeNutation, k2Value, h2Value, UniformResMoonSunTimeData
-         
+
+C---- DW, Inline Self Attraction & Loading
+      NAMELIST /InlineSALControl/ use_inline_sal,
+     &     sal_use_direct_sh,
+     &     sal_use_cache_blocking,
+     &     nSHOrder, nCellBlock, salinc, salExtrapVal,
+     &     inlineSalMethod, salAPBeta,
+     &     sal_use_sh_filter, sh_filter_scheme
+
+C---- DW, variable water density for Tsunami
+      NAMELIST /TsunamiSimOption/  use_variable_water_density_VCT,
+     &     kappamodulus
+
+
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       CHARACTER(len=2000) :: origLineTVW
@@ -416,9 +450,9 @@ c...  for further processing the traditional non-namelist components.
 C...
       namelistSpecifier = 'TimeBathyControl'
       READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT, IOMSG=ios_nml_error_msg)
-      call logNamelistReadStatus(namelistSpecifier, ios_nddt, ios_nml_error_msg)     
-c     it is possible for the namelist to be present in the file and 
-C     occuring at the end of the file with no line breaks after the 
+      call logNamelistReadStatus(namelistSpecifier, ios_nddt, ios_nml_error_msg)
+c     it is possible for the namelist to be present in the file and
+C     occuring at the end of the file with no line breaks after the
 C     ending "\" which causes the iostat to return a negative value.
 C     By checking to be sure a namelist variable was set to
 c     a non-default value we can determine this was the case.
@@ -521,7 +555,7 @@ Casey 180318: Added NWS=13
       if(ios.ne.0)then
         CALL logMessage(INFO,"The owiWindNetcdf namelist was not found.")
         call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
-      else  
+      else
         CALL logMessage(INFO,"The owiWindNetcdf namelist was found.")
         call logNamelistReadStatus(namelistSpecifier, ios, ios_nml_error_msg)
         write(scratchMessage,*) "NWS13File=",trim(adjustl(NWS13File)),
@@ -529,18 +563,18 @@ Casey 180318: Added NWS=13
      &   " NWS13WindMultiplier=",trim(adjustl(NWS13WindMultiplier)),
      &   " NWS13GroupForPowell=",trim(adjustl(NWS13GroupForPowell))
         call logMessage(ECHO,trim(scratchMessage))
-      endif  
+      endif
       rewind(15)
 #endif
 
 
 #ifdef DATETIME
-      namelistSpecifier = 'WindGrib2NetCdf' 
+      namelistSpecifier = 'WindGrib2NetCdf'
       read( unit = 15, nml=WindGrib2NetCdf,iostat=ios,iomsg=ios_nml_error_msg)
       call logNamelistReadStatus(namelistSpecifier, ios,ios_nml_error_msg)
       write(scratchMessage,*) "NWS 14: use core 0"//
      &   "to read grib2/netcdf data = ",
-     &   read_NWS14_NetCdf_using_core_0 
+     &   read_NWS14_NetCdf_using_core_0
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 #endif
@@ -580,14 +614,14 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
       call logMessage(ECHO,trim(scratchMessage))
-!TCM 2024 -- added wave stress gradient limiter      
+!TCM 2024 -- added wave stress gradient limiter
       write(scratchMessage,*)"Limit_WaveStressGrad=",
      &                        Limit_WaveStressGrad
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "WaveStressGrad_Cap=",
      &                         WaveStressGrad_Cap
       call logMessage(ECHO,trim(scratchMessage))
-      
+
       rewind(15)
       !
 !Casey 221103 : Read the baroclinic3D namelist.
@@ -634,7 +668,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       write(scratchMessage,'(a,i1)') "How2FixStatPartWet=",
      &   How2FixStatPartWet
 C.... DMW 202207 Add options for controlling slope/wind limiting and
-C.... "new" formula for computing vel in wetting/drying routine  
+C.... "new" formula for computing vel in wetting/drying routine
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,'(a,e15.8)') "slim=",slim
       call logMessage(ECHO,trim(scratchMessage))
@@ -818,28 +852,28 @@ C     WJP add namelist
      &                     'if elevation exceeds WarnElev = ',WarnElev
       call logMessage(INFO,scratchMessage)
       if(WarnElevDump)then
-          write(scratchMessage,'(A,e16.8,A)') 
+          write(scratchMessage,'(A,e16.8,A)')
      &     'A global elevation file (fort.69)'//
      &     ' will be written if WarnElev (',WarnElev,') is exceeded'
           call logMessage(INFO,scratchMessage)
-          write(scratchMessage,'(A,I0,A)') 
+          write(scratchMessage,'(A,I0,A)')
      &     'Execution will be terminated '//
      &     'if ',WarnElevDumpLimit,' global elevation snaps have been '//
      &     'written as warning.'
           call logMessage(INFO,scratchMessage)
       else
-          write(scratchMessage,'(A,e16.8,A)') 
+          write(scratchMessage,'(A,e16.8,A)')
      &     'A global elevation file (fort.69)'//
      &     ' will NOT be written if WarnElev (',WarnElev,') is exceeded'
           call logMessage(INFO,scratchMessage)
-      endif    
-      write(scratchMessage,'(A,e16.8)') 
+      endif
+      write(scratchMessage,'(A,e16.8)')
      &     'Execution will be terminated if elevation exceeds ',
-     &     ErrorElev 
+     &     ErrorElev
       call logMessage(INFO,scratchMessage)
 
 !     WJP add namelist for Ali's dispersion
-!     Defaults are already in global 
+!     Defaults are already in global
       namelistSpecifier = 'AliDispersionControl'
       read(unit=15,nml=AliDispersionControl,iostat=IOS,iomsg=ios_nml_error_msg)
       call logNameListReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
@@ -884,7 +918,7 @@ C     WJP add namelist
      &      densityTimeIterator
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
-      ! Convert to IDEN 
+      ! Convert to IDEN
       IDEN = 0; IDENsign = 0
       if (trim(densityRunType).eq.'diagnostic') then
          IDENsign = -1
@@ -910,7 +944,7 @@ C     WJP add namelist
       elseif (trim(densityForcingType).eq.'BCForcingOnADCIRCGrid') then
          IDEN = 8
       elseif (trim(densityForcingType).eq.'BuoyancyFrequenciesonGrid') then
-         IDEN = 9         
+         IDEN = 9
       endif
 
 !     Make sure to include the sign
@@ -922,8 +956,8 @@ C...  tidal potential control namelist
       read(unit=15,nml=TidalPotentialControl,iostat=ios,iomsg=ios_nml_error_msg)
       call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
       write(scratchMessage,*) "USeFullTIPFormula=", UseFullTIPFormula
-      call logMessage(ECHO,trim(scratchMessage)) 
-      write(scratchMessage,*)"TIPOrder=", TIPOrder 
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*)"TIPOrder=", TIPOrder
       call logMessage(ECHO,trim(scratchMessage))
       write(scratchMessage,*) "TIPStartDate=", trim(TIPStartDate)
       call logMessage(ECHO,trim(scratchMessage))
@@ -942,6 +976,41 @@ C...  tidal potential control namelist
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 
+      namelistSpecifier =  'InlineSALControl'
+      read(unit=15,nml=InlineSALControl,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
+      write(scratchMessage,*) "use_inline_sal=", use_inline_sal
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "inlineSALmethod=", inlineSALMethod ;
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "sal_use_direct_sh=", sal_use_direct_sh
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*),"sal_use_cache_blocking=", sal_use_cache_blocking
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "nSHOrder=", nSHOrder
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "nCellBlock=", nCellBlock
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "salinc=", salinc
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "salExtrapVal=", salExtrapVal
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "salAPBeta=", salAPBeta
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "sal_use_sh_filter=", sal_use_sh_filter
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "sh_filter_scheme=", sh_filter_scheme
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
+      namelistSpecifier =  'TsunamiSimOption'
+      read(unit=15,nml=TsunamiSimOption,iostat=ios,iomsg=ios_nml_error_msg)
+      call logNamelistReadStatus(namelistSpecifier,ios,ios_nml_error_msg)
+      write(scratchMessage,*) "use_variable_water_density_VCT=", use_variable_water_density_VCT
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,*) "kappamodulus=", kappamodulus
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION
@@ -972,8 +1041,8 @@ C
       READ(15,*) NFOVER
 #else
 C     jgf46.10 Add user-controllable warning, output, and stop criteria
-C     for elevations. 
-#warning The -DDEBUG_WARN_ELEV flag will be removed in a future release. Please begin using the &warnElevControl namelist to avoid future issues 
+C     for elevations.
+#warning The -DDEBUG_WARN_ELEV flag will be removed in a future release. Please begin using the &warnElevControl namelist to avoid future issues
       READ(15,*) NFOVER, WarnElev, iWarnElevDump, WarnElevDumpLimit,
      &  ErrorElev
 #endif
@@ -1098,7 +1167,7 @@ C     WJP if negative then use rotated coordinates
          IFSPROTS = 1
          ICS = abs(ICS)
       ENDIF
-      ! Change ICS here for the true sphere option with 
+      ! Change ICS here for the true sphere option with
       ! arbitrary projection
       SELECT CASE( ICS )
       CASE(1)
@@ -1113,7 +1182,7 @@ C     WJP if negative then use rotated coordinates
          WRITE(16,*) '    NOTE: Curvature of Earth IS NOT accounted for'
       CASE(20:24)
          ! Set logical to true
-         IFSFM = 1   
+         IFSFM = 1
          WRITE(16,9738) ICS
  9738    FORMAT(/,5X,'ICS = ',I2,
      &        /,9X,'Governing equations are in Spherical coordinates',
@@ -1124,7 +1193,7 @@ C     WJP if negative then use rotated coordinates
          CALL terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &                  message="Your selection of ICS (a UNIT 15 input parameter) is not an allowable value.")
       END SELECT
-      
+
       IF ( IFSPROTS .eq. 1) THEN
          WRITE(16,*) '     Will perform a rotation of the coordinate ',
      &               '     system according to the fort.rotm file'
@@ -1150,8 +1219,8 @@ c     CME_Orig         = .TRUE. !uncomment for original momentum eqs
          CME_LS_IBPV      = .TRUE. !comment out for original momentum eqs
          CME_AreaInt_Corr = .TRUE.
 C     WJP: setting IMDig to default values for IM = 0 here
-C       refer: https://wiki.adcirc.org/wiki/IM 
-         IMDig1 = 1; IMDig2 = 1; IMDig3 = 1; 
+C       refer: https://wiki.adcirc.org/wiki/IM
+         IMDig1 = 1; IMDig2 = 1; IMDig3 = 1;
          IMDig4 = 1; IMDig5 = 1; IMDig6 = 1;
       ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1376,26 +1445,26 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          write(scratchMessage,'("IDEN is set to ",i0,".")') IDEN
          call logMessage(ECHO,scratchMessage)
          !
-         ! WJP: 3/8/2018 I think these were round the wrong way 
-         ! (was opposite to the adcirc.org page) 
+         ! WJP: 3/8/2018 I think these were round the wrong way
+         ! (was opposite to the adcirc.org page)
          if (iden.lt.0) then
             densityRunType = ' diagnostic'
          else
             densityRunType = ' prognostic'
          endif
-         !        
+         !
          densityDimensions = ' 2DDI'
          if (C3D) densityDimensions = ' 3D'
          !
          select case(abs(iden))
          case(1)
-            densityForcingType = ' sigmaT'       
+            densityForcingType = ' sigmaT'
          case(2)
             densityForcingType = ' salinity'
          case(3)
             densityForcingType = ' temperature'
          case(4)
-            densityForcingType = ' salinity and temperature'         
+            densityForcingType = ' salinity and temperature'
          case(5)
             densityForcingType = ' depth-integrated baroclinic '
      &                        //'gradients with buoyancy frequency'
@@ -1411,7 +1480,7 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
      &                        //' pre-computed on ADCIRC grid'
          case(9)
             densityForcingType = ' buoyancy frequency pre-computed on '
-     &                         //'ADCIRC grid only'            
+     &                         //'ADCIRC grid only'
          case default
             call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="The absolute value of IDEN must be <= 9.")
          end select
@@ -1667,10 +1736,10 @@ C     startdry, etc. The full initialization and error checking of these
 C     data must wait until the grid has been read in from unit 14.
       READ(15,*) NWP
       CALL ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
-C................ DW ......... 
+C................ DW .........
 C     For sponge layer
       IF ( LoadAbsLayerSigma .AND. FoundAbsLayerSigma ) THEN
-        CALL SpongeLayerRelatedPrep( ) 
+        CALL SpongeLayerRelatedPrep( )
       END IF
 C................END DW.......
 C...
@@ -2752,11 +2821,11 @@ C     tga20211130: Added ability to use this with ice.
      &          GEOFACTOR, WTIMINC, RSTIMINC, pureVortex, pureBackground
          ELSEIF((NCICE.GE.1).AND.(NRS.EQ.0)) THEN
              READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
-     &          GEOFACTOR, WTIMINC, CICE_TIMINC, 
+     &          GEOFACTOR, WTIMINC, CICE_TIMINC,
      &          pureVortex, pureBackground
          ELSEIF((NCICE.GE.1).AND.(NRS.GE.1)) THEN
              READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
-     &          GEOFACTOR, WTIMINC, RSTIMINC, CICE_TIMINC, 
+     &          GEOFACTOR, WTIMINC, RSTIMINC, CICE_TIMINC,
      &          pureVortex, pureBackground
          ELSE
          ENDIF
@@ -3073,10 +3142,10 @@ C...
 
          ! Allocate arrays for the baroclinic coupling from 3D model to 2D model
          if (abs(IDEN).ge.5) call ALLOC_BC3D_to_2D()
-               
+
          IF (abs(IDEN).lt.5) THEN
             OPEN(11,FILE=TRIM(INPUTDIR)//'/'//'fort.11')
-            READ(11,*) 
+            READ(11,*)
             READ(11,*) BC3D_DT
             READ(11,*) NP11
             IF (NP11.NE.NP) THEN
@@ -3304,8 +3373,8 @@ C...
             CORIF(I)=CORI
          END DO
       ELSEIF (NCOR.EQ.1) THEN
-C......DW, Dec 2019   
-         IF ( IFSPROTS .EQ. 1 ) THEN        
+C......DW, Dec 2019
+         IF ( IFSPROTS .EQ. 1 ) THEN
             CALL GET_ROTSPCOORD_CORIFVAL( CORIF ) ;
          ELSE
             DO I=1,NP
@@ -3441,7 +3510,7 @@ C     Allocate arrays dimensioned by MNBFR
          ENDIF
       END DO
       IF (NPEBC) WRITE(16,*) ' NON-PERIODIC ELEVATION BOUNDARY ',
-     &                       'CONDITION WILL BE READ FROM FORT.19' 
+     &                       'CONDITION WILL BE READ FROM FORT.19'
 
 C...  INPUT FORCING CONDITIONS ON PERIODIC ELEVATION SPECIFIED
 C...  BOUNDARIES FOR EACH OF THE ELEVATION FORCING FREQUENCIES FROM UNIT
@@ -3691,8 +3760,8 @@ C       elevation station locations
 7690     IF (IOS_STATIONS .NE. 0) THEN
             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &                     message="Problem Reading Elevation Station File.")
-         ENDIF                  
-      ELSE         
+         ENDIF
+      ELSE
          WRITE(16,3007) NSTAE
          IF (NSTAE.NE.0) THEN
             WRITE(16,*) "ELEVATION STATION LOCATIONS WILL BE READ FROM FORT.15"
@@ -3815,8 +3884,8 @@ C....RECORDING STATIONS
 7691     IF (IOS_STATIONS .NE. 0) THEN
             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &                     message="Problem Reading Velocity Station File.")
-         ENDIF                  
-      ELSE         
+         ENDIF
+      ELSE
          WRITE(16,3107) NSTAV
          IF (NSTAV.NE.0) THEN
             WRITE(16,*) "VELOCITY STATION LOCATIONS WILL BE READ FROM FORT.15"
@@ -3942,11 +4011,11 @@ C...  RECORDING STATIONS
             WRITE(16,3207) NSTAC
 7692        IF (IOS_STATIONS .NE. 0) THEN
                call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Problem Reading Concentration Station File.")
-            ENDIF                  
-         ELSE         
+            ENDIF
+         ELSE
             WRITE(16,3207) NSTAC
             IF (NSTAC.NE.0) THEN
-               WRITE(16,*) 
+               WRITE(16,*)
      &            "CONC. STATION LOCATIONS WILL BE READ FROM FORT.15"
             ENDIF
          ENDIF
@@ -4074,8 +4143,8 @@ C...  RECORDING STATIONS
             WRITE(16,3217) NSTAM
 7693        IF (IOS_STATIONS .NE. 0) THEN
                call terminate(exit_code=ADCIRC_EXIT_FAILURE, message="Problem Reading Met Station File.")
-            ENDIF                  
-         ELSE         
+            ENDIF
+         ELSE
             WRITE(16,3217) NSTAM
             IF (NSTAM.NE.0) THEN
                WRITE(16,*) "MET STATION LOCATIONS WILL BE READ FROM FORT.15"
@@ -4512,7 +4581,7 @@ C     This option will be used in testing ADCIRC's hot start capabilities.
      &      NHSTAR, NHSINC
       CALL logMessage(ECHO,scratchMessage)
 C
-C     ! Only output hotstart once at first NHSINC 
+C     ! Only output hotstart once at first NHSINC
       IF (NHSTAR.lt.-1) then
          NHOUTONCE = .true.
          NHSTAR = -NHSTAR
@@ -4619,10 +4688,10 @@ CS
 C...  SB
 C     Preparation of condensed nodes  SB
       call PrepCondensedNodes()
-      
+
 C     Recompute a & b coefficients
       CALL RecomputeFDXEFDYEAtCondensedNodes()
-      
+
 C...  SB END
 
 C...  INITIALIZE NIBNODECODE(I)
@@ -4833,13 +4902,30 @@ C
       endif
       ! Initialize the tidal potential calculation
       tidePotential = t_tidePotential(np, rnday, UseFullTIPFormula,
-     &                                TIPOrder, TIPStartDate,  
-     &                                MoonSunPositionComputeMethod, 
-     &                                MoonSunCoordFile, IncludeNutation, 
+     &                                TIPOrder, TIPStartDate,
+     &                                MoonSunPositionComputeMethod,
+     &                                MoonSunCoordFile, IncludeNutation,
      &                                k2Value, h2Value)
+
+      call  initSALModule( useinlinesal = use_inline_sal,
+     &                     inlinesalmethod = inlineSALMethod,
+     &                     usedirectsh = sal_use_direct_sh,
+     &                     usecacheblocking = sal_use_cache_blocking,
+     &                     shorder = nSHOrder,
+     &                     ncellblock = nCellBlock,
+     &                     salinc = salinc,
+     &                     extrapval = salExtrapVal,
+     &                     salAPBeta = salAPBeta,
+     &                     useshtfilter = sal_use_sh_filter,
+     &                     filterscheme = sh_filter_scheme  ) ;
+
+
+      call alloc_Main4c() ;
+
 C...
 C...  CLOSE FORT.15
 C...
+
       CLOSE(15)
 
 !...  When using the consistent matrix, we need to pre-compute the CSR positions
@@ -4897,7 +4983,7 @@ c******************************************************************************
       REAL(8) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
 
       if (.not.LoadCondensedNodes) RETURN
-      
+
       do ie=1,NE
          nm1 = nm(ie,1)
          nm2 = nm(ie,2)
@@ -4916,7 +5002,7 @@ c******************************************************************************
          Y3mY2 = (Y3 - Y2);
          Y1mY3 = (Y1 - Y3);
 
-!.....   For later use for FDX1, FDY1 in gwce, momentum 
+!.....   For later use for FDX1, FDY1 in gwce, momentum
          FDXE(1,IE) = -Y3mY2 ; !b1
          FDXE(2,IE) = -Y1mY3 ; !b2
          FDXE(3,IE) = -Y2mY1 ; !b3
@@ -5984,13 +6070,13 @@ C
             lon(i) = lon(i)*DEG2RAD
             lat(i) = lat(i)*DEG2RAD
 
-            IF ( IFSPROTS .EQ. 1 ) THEN            
+            IF ( IFSPROTS .EQ. 1 ) THEN
                CALL DRVSPCOORSROTS( lonr, latr,  lon(I), lat(I) )
             ELSE
-               latr = lat(I) ;  lonr = lon(I) ; 
+               latr = lat(I) ;  lonr = lon(I) ;
             END IF
             CALL CYLINDERMAP( xcoord(I), ycoord(I),
-     &           lonr, latr, SLAM0, SFEA0, ICS) ; 
+     &           lonr, latr, SLAM0, SFEA0, ICS) ;
          ENDIF
 C
 C... v49.48.02 -- tcm replaced with call to kdtsearch
@@ -6320,10 +6406,12 @@ C-----------------------------------------------------------------------
 #ifdef CMPI
         USE MESSENGER, only: mapToSubdomainRealMPI, allnodes
 #endif
-#ifdef ADCNETCDF        
+#ifdef ADCNETCDF
         USE NETCDF_ERROR, ONLY: check_err
         USE NETCDF
-#endif        
+#endif
+        use MOD_INLINE_SAL, only: salmethod, ssh_inline_sal
+
         IMPLICIT NONE
         INTEGER :: ios
         INTEGER :: ncid
@@ -6351,100 +6439,111 @@ C-----------------------------------------------------------------------
         CHARACTER,ALLOCATABLE :: sal_const(:,:)
 
         IF(NTIP.EQ.2) THEN
-           filename_netcdf = TRIM(GBLINPUTDIR)//'/'//"fort.24.nc"
+           ! initialze
+           SALTAMP = 0.0D0
+           SALTPHA = 0.0D0
+
+           !
+           ! IFINLINESAL: IF ( ssh_inline_sal%use_inline_sal ) THEN
+           !   !
+           !   ! CALL ssh_inline_sal%sal_privatedata_init() ;
+           !
+           IFINLINESAL: IF ( .NOT. ssh_inline_sal%use_inline_sal ) THEN
+              filename_netcdf = TRIM(GBLINPUTDIR)//'/'//"fort.24.nc"
 
 #ifdef CMPI
-            np_global_sal = np_global
+              np_global_sal = np_global
 #else
-            np_global_sal = np
-#endif            
+              np_global_sal = np
+#endif
 
 #ifdef ADCNETCDF
-           INQUIRE(FILE=TRIM(filename_netcdf), EXIST=netcdf_file_found)
+             INQUIRE(FILE=TRIM(filename_netcdf), EXIST=netcdf_file_found)
 #else
-           netcdf_file_found = .false.
-#endif           
-           IF(netcdf_file_found)THEN
-#ifdef ADCNETCDF               
+             netcdf_file_found = .false.
+#endif
+             IFNETCDF: IF(netcdf_file_found)THEN
+#ifdef ADCNETCDF
 
-            allocate(amp(1:np),pha(1:np))
-            allocate(amp_g(1:np_global_sal),pha_g(1:np_global_sal))
+              allocate(amp(1:np),pha(1:np))
+              allocate(amp_g(1:np_global_sal),pha_g(1:np_global_sal))
 
-            IF(MYPROC.EQ.0)THEN
+              IF(MYPROC.EQ.0)THEN
 
-              CALL check_err(nf90_open(TRIM(filename_netcdf),
+                CALL check_err(nf90_open(TRIM(filename_netcdf),
      &                   NF90_NOWRITE,ncid))
-              CALL check_err(nf90_inq_dimid(ncid, "node", dimid_node))
-              CALL check_err(nf90_inq_dimid(ncid, "num_constituents",
+                CALL check_err(nf90_inq_dimid(ncid, "node", dimid_node))
+                CALL check_err(nf90_inq_dimid(ncid, "num_constituents",
      &                   dimid_nconst))
-              CALL check_err(nf90_inq_dimid(ncid, "char_len", dimid_charlen))
+                CALL check_err(nf90_inq_dimid(ncid, "char_len", dimid_charlen))
 
-              CALL check_err(nf90_inquire_dimension(ncid, dimid_node, len=n_node_sal))
-              CALL check_err(nf90_inquire_dimension(ncid, dimid_nconst, len=n_const_sal))
-              CALL check_err(nf90_inquire_dimension(ncid, dimid_charlen, len=char_len))
+                CALL check_err(nf90_inquire_dimension(ncid, dimid_node, len=n_node_sal))
+                CALL check_err(nf90_inquire_dimension(ncid, dimid_nconst, len=n_const_sal))
+                CALL check_err(nf90_inquire_dimension(ncid, dimid_charlen, len=char_len))
 
-              CALL check_err(nf90_inq_varid(ncid, "constituents", varid_const))
-              CALL check_err(nf90_inq_varid(ncid, "frequency", varid_freq))
-              CALL check_err(nf90_inq_varid(ncid, "sal_amplitude", varid_amp))
-              CALL check_err(nf90_inq_varid(ncid, "sal_phase", varid_pha))
+                CALL check_err(nf90_inq_varid(ncid, "constituents", varid_const))
+                CALL check_err(nf90_inq_varid(ncid, "frequency", varid_freq))
+                CALL check_err(nf90_inq_varid(ncid, "sal_amplitude", varid_amp))
+                CALL check_err(nf90_inq_varid(ncid, "sal_phase", varid_pha))
 
-              IF(n_const_sal.NE.ntif)THEN
-                 WRITE(scratchMessage, "(A)") 
+                IF(n_const_sal.NE.ntif)THEN
+                   WRITE(scratchMessage, "(A)")
      &               "Invalid number of harmonic "//
      &               "constituents in SAL file"
                  call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
-              ENDIF
-              
-              allocate(sal_const(1:n_const_sal, 1:char_len))
-              CALL check_err(nf90_get_var(ncid, varid_const, sal_const, 
+                ENDIF
+
+                allocate(sal_const(1:n_const_sal, 1:char_len))
+                CALL check_err(nf90_get_var(ncid, varid_const, sal_const,
      &           start=(/1,1/), count=(/n_const_sal,char_len/)))
 
-              DO I = 1, ntif
-                 DO J = 1, n_const_sal
-                     const_name = ""
-                     DO K=1, char_len
-                         const_name(K:K) = sal_const(J,K)
-                     ENDDO
-                     IF(TRIM(TIPOTAG(I)).EQ.TRIM(const_name))THEN
-                         CALL check_err(nf90_get_var(ncid, varid_amp, 
+                DO I = 1, ntif
+                   DO J = 1, n_const_sal
+                       const_name = ""
+                       DO K=1, char_len
+                           const_name(K:K) = sal_const(J,K)
+                       ENDDO
+                       IF(TRIM(TIPOTAG(I)).EQ.TRIM(const_name))THEN
+                           CALL check_err(nf90_get_var(ncid, varid_amp,
      &                       amp_g, start=(/J,1/),count=(/1,np_global_sal/)))
-                         CALL check_err(nf90_get_var(ncid, varid_pha,
+                           CALL check_err(nf90_get_var(ncid, varid_pha,
      &                       pha_g, start=(/J,1/),count=(/1,np_global_sal/)))
-                         pha_g = pha_g * DEG2RAD
-#ifdef CMPI                         
-                         call mapToSubdomainRealMPI(np_global_sal, NP, amp, nodes_lg, amp_g)
-                         call mapToSubdomainRealMPI(np_global_sal, NP, pha, nodes_lg, pha_g)
+                           pha_g = pha_g * DEG2RAD
+#ifdef CMPI
+                           call mapToSubdomainRealMPI(np_global_sal, NP, amp, nodes_lg, amp_g)
+                           call mapToSubdomainRealMPI(np_global_sal, NP, pha, nodes_lg, pha_g)
 #else
-                         pha = pha_g
-                         amp = amp_g
-#endif                         
-                         SALTAMP(I,:) = amp
-                         SALTPHA(I,:) = pha
+                           pha = pha_g
+                           amp = amp_g
+#endif
+                           SALTAMP(I,:) = amp
+                           SALTPHA(I,:) = pha
 
-                         EXIT
-                     ENDIF
-                     IF(J.EQ.n_const_sal)THEN
-                         write(scratchmessage, '(2A)') 
-     &                       "Error loading SAL: Could not find ", 
+                           EXIT
+                       ENDIF
+                       IF(J.EQ.n_const_sal)THEN
+                           write(scratchmessage, '(2A)')
+     &                       "Error loading SAL: Could not find ",
      &                       TRIM(const_name)
                          call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
                      ENDIF
                  ENDDO
-              ENDDO
-              CALL check_err(nf90_close(ncid))
-            ELSE
-#ifdef CMPI            
-                DO I=1, NTIF
-                    call mapToSubdomainRealMPI(np_global_sal, NP, amp, nodes_lg, amp_g)
-                    call mapToSubdomainRealMPI(np_global_sal, NP, pha, nodes_lg, pha_g)
-                    SALTAMP(I,:) = amp
-                    SALTPHA(I,:) = pha
-                ENDDO
+               ENDDO
+               CALL check_err(nf90_close(ncid))
+              ELSE
 
-#endif                
-            ENDIF
+#ifdef CMPI
+                  DO I=1, NTIF
+                      call mapToSubdomainRealMPI(np_global_sal, NP, amp, nodes_lg, amp_g)
+                      call mapToSubdomainRealMPI(np_global_sal, NP, pha, nodes_lg, pha_g)
+                      SALTAMP(I,:) = amp
+                      SALTPHA(I,:) = pha
+                  ENDDO
+#endif
+              ENDIF
 
-#endif               
+#endif
+
            ELSE
              CALL openFileForRead(24,TRIM(INPUTDIR)//'/'//'fort.24',ios)
              IF (ios.gt.0) THEN
@@ -6466,8 +6565,8 @@ C-----------------------------------------------------------------------
                     ENDIF
                 ENDDO
                 IF(IDX.EQ.-1)THEN
-                    write(scratchmessage, '(2A)') 
-     &                  "Error loading SAL: Could not find ", 
+                    write(scratchmessage, '(2A)')
+     &                  "Error loading SAL: Could not find ",
      &                  TRIM(const_name)
                     call terminate(exit_code=ADCIRC_EXIT_FAILURE, message=scratchMessage)
                 ENDIF
@@ -6476,11 +6575,15 @@ C-----------------------------------------------------------------------
                    ! WJP: mapping to local node numbers
                    READ(24,*) JJ,SALTAMP(IDX,find(node_dict,JJ)),
      &                        SALTPHA(IDX,find(node_dict,JJ))
-                END DO
-             END DO
-             CLOSE(24)
-             SALTPHA = SALTPHA*DEG2RAD
-           ENDIF
+                  END DO
+               END DO
+               CLOSE(24)
+               SALTPHA = SALTPHA*DEG2RAD
+
+             ENDIF IFNETCDF
+
+           ENDIF IFINLINESAL
+           !
         ELSE
            SALTAMP = 0D0
            SALTPHA = 0D0

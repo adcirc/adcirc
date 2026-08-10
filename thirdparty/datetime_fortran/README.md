@@ -90,7 +90,7 @@ use datetime_module, only: datetime, timedelta, clock
 ## Derived Types<a id="derived-types"></a>
 
 *datetime-fortran* library provides the following derived types:
-[*datetime*](#datetime), [*timedelta*](#timedelta),  
+[*datetime*](#datetime), [*timedelta*](#timedelta),
 [*clock*](#clock) and [*tm_struct*](#tm_struct).
 
 ### datetime <a id="datetime"></a>
@@ -1088,10 +1088,10 @@ adjusted to UTC time before making the comparison.
 
 ```fortran
 function c_strftime(str,slen,format,tm) bind(c,name='strftime') result(rc)
-  character(kind=c_char),dimension(*),intent(out) :: str   
-  integer(kind=c_int),value,          intent(in)  :: slen   
+  character(kind=c_char),dimension(*),intent(out) :: str
+  integer(kind=c_int),value,          intent(in)  :: slen
   character(kind=c_char),dimension(*),intent(in)  :: format
-  type(tm_struct),                    intent(in)  :: tm     
+  type(tm_struct),                    intent(in)  :: tm
   integer(kind=c_int)                             :: rc
 ```
 
@@ -1339,7 +1339,7 @@ td = timedelta(days=1)
 dtRange = datetimeRange(a,b,td)
 
 ! Returns:
-!     
+!
 ! dtRange = [datetime(2014,5,1),
 !            datetime(2014,5,2),
 !            datetime(2014,5,3)]
@@ -1351,7 +1351,7 @@ td = timedelta(hours=7)
 dtRange = datetimeRange(a,b,td)
 
 ! Returns:
-!     
+!
 ! dtRange = [datetime(2014,5,1,0),
 !            datetime(2014,5,1,7),
 !            datetime(2014,5,1,14),

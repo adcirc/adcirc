@@ -19,18 +19,18 @@
 /*************************************************************************
 * This function is the entry point for KMETIS
 **************************************************************************/
-void METIS_PartGraphVKway(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, 
-                         idxtype *vsize, int *wgtflag, int *numflag, int *nparts, 
+void METIS_PartGraphVKway(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt,
+                         idxtype *vsize, int *wgtflag, int *numflag, int *nparts,
                          int *options, int *volume, idxtype *part)
 {
   int i;
   float *tpwgts;
 
   tpwgts = fmalloc(*nparts, "KMETIS: tpwgts");
-  for (i=0; i<*nparts; i++) 
+  for (i=0; i<*nparts; i++)
     tpwgts[i] = 1.0/(1.0*(*nparts));
 
-  METIS_WPartGraphVKway(nvtxs, xadj, adjncy, vwgt, vsize, wgtflag, numflag, nparts, 
+  METIS_WPartGraphVKway(nvtxs, xadj, adjncy, vwgt, vsize, wgtflag, numflag, nparts,
                        tpwgts, options, volume, part);
 
   free(tpwgts);
@@ -40,8 +40,8 @@ void METIS_PartGraphVKway(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *v
 /*************************************************************************
 * This function is the entry point for KWMETIS
 **************************************************************************/
-void METIS_WPartGraphVKway(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, 
-                          idxtype *vsize, int *wgtflag, int *numflag, int *nparts, 
+void METIS_WPartGraphVKway(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt,
+                          idxtype *vsize, int *wgtflag, int *numflag, int *nparts,
                           float *tpwgts, int *options, int *volume, idxtype *part)
 {
   int i, j;
@@ -91,7 +91,7 @@ void METIS_WPartGraphVKway(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *
 /*************************************************************************
 * This function takes a graph and produces a bisection of it
 **************************************************************************/
-int MlevelVolKWayPartitioning(CtrlType *ctrl, GraphType *graph, int nparts, idxtype *part, 
+int MlevelVolKWayPartitioning(CtrlType *ctrl, GraphType *graph, int nparts, idxtype *part,
                               float *tpwgts, float ubfactor)
 {
   int i, j, nvtxs, tvwgt, tpwgts2[2];
@@ -103,14 +103,14 @@ int MlevelVolKWayPartitioning(CtrlType *ctrl, GraphType *graph, int nparts, idxt
   IFSET(ctrl->dbglvl, DBG_TIME, starttimer(ctrl->InitPartTmr));
   AllocateVolKWayPartitionMemory(ctrl, cgraph, nparts);
 
-  options[0] = 1; 
+  options[0] = 1;
   options[OPTION_CTYPE] = MATCH_SHEMKWAY;
   options[OPTION_ITYPE] = IPART_GGPKL;
   options[OPTION_RTYPE] = RTYPE_FM;
   options[OPTION_DBGLVL] = 0;
 
-  METIS_WPartGraphRecursive(&cgraph->nvtxs, cgraph->xadj, cgraph->adjncy, cgraph->vwgt, 
-                            cgraph->adjwgt, &wgtflag, &numflag, &nparts, tpwgts, options, 
+  METIS_WPartGraphRecursive(&cgraph->nvtxs, cgraph->xadj, cgraph->adjncy, cgraph->vwgt,
+                            cgraph->adjwgt, &wgtflag, &numflag, &nparts, tpwgts, options,
                             &edgecut, cgraph->where);
 
   IFSET(ctrl->dbglvl, DBG_TIME, stoptimer(ctrl->InitPartTmr));
@@ -127,4 +127,3 @@ int MlevelVolKWayPartitioning(CtrlType *ctrl, GraphType *graph, int nparts, idxt
   return graph->minvol;
 
 }
-

@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -44,7 +44,7 @@ C--Determine which hotstart files to process
       READ(*,*) FNAME
       OPEN (99,FILE=FNAME,ACCESS='DIRECT',RECL=8)
 
-C--Read stuff from each local file  
+C--Read stuff from each local file
 
       WRITE(*,*) 'Enter the number of nodes in the file'
       READ(*,*) MNP
@@ -54,7 +54,7 @@ C--Read stuff from each local file
 C--Allocate local work arrays
 
       ALLOCATE ( ETA1(MNP),ETA2(MNP),UU2(MNP),
-     &     VV2(MNP),NODECODE(MNP),CH1(MNP),NOFF(MNE) )           
+     &     VV2(MNP),NODECODE(MNP),CH1(MNP),NOFF(MNE) )
 
       IHOTSTP=1
       READ(99,REC=IHOTSTP) IMHSF
@@ -77,8 +77,8 @@ c         ENDIF
         IHOTSTP=IHOTSTP+1
         ENDDO
       DO I=1,MNE
-         READ(99,REC=IHOTSTP+1) NOFF(I)                     
-         IHOTSTP=IHOTSTP+1                                    
+         READ(99,REC=IHOTSTP+1) NOFF(I)
+         IHOTSTP=IHOTSTP+1
       END DO
 
 
@@ -104,7 +104,7 @@ C--Read in more common info from higest processor hotstart file
       READ(99,REC=IHOTSTP+18) NSCOUGW
       CLOSE(99)
 
-C--Open ASCII Hot Start File output 
+C--Open ASCII Hot Start File output
 
       OPEN(99,FILE='hs_2_ascii.out')
 
@@ -137,11 +137,7 @@ C--Write out info to global file
       WRITE(99,*) IGPP
       WRITE(99,*) IGWP
       WRITE(99,*) NSCOUGW
- 
-      CLOSE(99)           
+
+      CLOSE(99)
 
       END
-
-
-
-

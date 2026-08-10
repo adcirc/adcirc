@@ -20,4 +20,4 @@ Links
 -----
 
 * `GitHub Repository <https://github.com/ccht-ncsu/FigureGen>`_
-* `CCHT Software Page <https://ccht.ccee.ncsu.edu/category/software/figuregen/>`_ 
+* `CCHT Software Page <https://ccht.ccee.ncsu.edu/category/software/figuregen/>`_

@@ -47,16 +47,16 @@ int f_ndates(ARG3) {
 	if (i != strlen_arg1) fatal_error("ndates: illegal character, starting date %s", arg1);
 	day = month = 1;
         hour = minute = second = 0;
-	
+
 	/* format =	1 YYYY
 			2 YYYYMM
 			3 YYYYMMDD
 			4 YYYYMMDDHH
 			5 YYYYMMDDHHmm
-			6 YYYYMMDDHHmmss 
+			6 YYYYMMDDHHmmss
 	 */
 	format = (strlen_arg1-2)/2;
-        if (strlen_arg1 % 2 == 1 || strlen_arg1 < 4 || strlen_arg1 > 14) 
+        if (strlen_arg1 % 2 == 1 || strlen_arg1 < 4 || strlen_arg1 > 14)
 	   fatal_error("ndates: arg1 (YYYY|YYYYMM|YYYYMMDD|YYYYMMDDHH|YYYYMMDDHHmm|YYYYMMDDHHmmss)","");
 	sscanf(arg1, "%4d%2d%2d%2d%2d%2d", &year, &month, &day, &hour, &minute, &second);
 	if (check_time(year,month,day,hour,minute,second))
@@ -67,7 +67,7 @@ int f_ndates(ARG3) {
 	/* if first char is =, then change loop to upto and equal */
 	if (arg2[0] == '=' ) {
 	    upto=0;	/* set to upto and including */
-    	    arg2++;	    
+    	    arg2++;
 	}
 
         strlen_arg2 = strlen(arg2);
@@ -81,7 +81,7 @@ int f_ndates(ARG3) {
 	if (i == strlen_arg2) {
 	    day_end = month_end = 1;
             hour_end = minute_end = second_end = 0;
-            if (strlen_arg2 % 2 == 1 || strlen_arg2 < 4 || strlen_arg2 > 14) 
+            if (strlen_arg2 % 2 == 1 || strlen_arg2 < 4 || strlen_arg2 > 14)
 	        fatal_error("ndates: arg2 (YYYY|YYYYMM|YYYYMMDD|YYYYMMDDHH|YYYYMMDDHHmm|YYYYMMDDHHmmss)","");
 	    sscanf(arg2, "%4d%2d%2d%2d%2d%2d", &year_end, &month_end, &day_end, &hour_end, &minute_end, &second_end);
 	}
@@ -158,7 +158,7 @@ int f_ndates(ARG3) {
 	    snprintf(fmt_out, STRING_SIZE-1, ndates_fmt, out);
 	    if (fwrite_file(fmt_out, strlen(fmt_out), 1, &inv_file) != 1)
 		fatal_error("ndates: write to inventory file");
-	    
+
 	    add_dt(&year, &month, &day, &hour, &minute, &second, dtime, dt_unit);
         }
     }
@@ -174,7 +174,7 @@ int f_ndates_fmt(ARG1) {
     char *out;
 
     if (mode == -2) return 0;
-    if (mode == -1 && strlen(arg1) > NAMELEN-1) 
+    if (mode == -1 && strlen(arg1) > NAMELEN-1)
             fatal_error("ndates_fmt: format too long: %s", arg1);
 
     in = arg1;

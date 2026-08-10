@@ -46,7 +46,7 @@ typedef struct ListNodeType ListNodeType;
 
 
 /*************************************************************************
-* The following data structure is used to store the buckets for the 
+* The following data structure is used to store the buckets for the
 * refinment algorithms
 **************************************************************************/
 struct PQueueType {
@@ -103,7 +103,7 @@ struct workspacedef {
 
   idxtype *auxcore;			/* This points to the memory of the edegrees */
 
-  idxtype *pmat;			/* An array of k^2 used for eliminating domain 
+  idxtype *pmat;			/* An array of k^2 used for eliminating domain
                                            connectivity in k-way refinement */
 };
 
@@ -142,7 +142,7 @@ typedef struct vrinfodef VRInfoType;
 * partition
 **************************************************************************/
 struct nrinfodef {
- idxtype edegrees[2];  
+ idxtype edegrees[2];
 };
 
 typedef struct nrinfodef NRInfoType;
@@ -189,7 +189,7 @@ struct graphdef {
 
 
   /* Additional info needed by the MOC routines */
-  int ncon;			/* The # of constrains */ 
+  int ncon;			/* The # of constrains */
   float *nvwgt;			/* Normalized vertex weights */
   float *npwgts;		/* The normalized partition weights */
 
@@ -225,7 +225,7 @@ struct controldef {
   WorkSpaceType wspace;		/* Work Space Informations */
 
   /* Various Timers */
-  timer TotalTmr, InitPartTmr, MatchTmr, ContractTmr, CoarsenTmr, UncoarsenTmr, 
+  timer TotalTmr, InitPartTmr, MatchTmr, ContractTmr, CoarsenTmr, UncoarsenTmr,
         SepTmr, RefTmr, ProjectTmr, SplitTmr, AuxTmr1, AuxTmr2, AuxTmr3, AuxTmr4, AuxTmr5, AuxTmr6;
 
 };
@@ -234,7 +234,7 @@ typedef struct controldef CtrlType;
 
 
 /*************************************************************************
-* The following data structure stores max-partition weight info for 
+* The following data structure stores max-partition weight info for
 * Vertical MOC k-way refinement
 **************************************************************************/
 struct vpwgtdef {
@@ -243,7 +243,3 @@ struct vpwgtdef {
 };
 
 typedef struct vpwgtdef VPInfoType;
-
-
-
-

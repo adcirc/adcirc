@@ -81,13 +81,13 @@ module adc_mod
 
         !> \details The number of the PE's which own each of the nodes present this PE.
         !! This number is zero-based.
-        integer(ESMF_KIND_I4), allocatable :: NdOwners(:)  !  
+        integer(ESMF_KIND_I4), allocatable :: NdOwners(:)  !
 
         !> \details An array containing the element types, which are all triangles in our
         !! application.
         integer(ESMF_KIND_I4), allocatable :: ElTypes(:)
 
-        !> \details This array contains the element coordinates of the mesh. 
+        !> \details This array contains the element coordinates of the mesh.
         real(ESMF_KIND_R8), allocatable    :: ElCoords(:)
 
         !> \details This is an array, which maps the indices of the owned nodes to the indices of the present
@@ -143,7 +143,7 @@ module adc_mod
         type(ESMF_Distgrid)            :: nodeDistgrid, elementDistgrid
         integer                        :: rc
 
-        if (meshloc /= ESMF_MESHLOC_ELEMENT) then 
+        if (meshloc /= ESMF_MESHLOC_ELEMENT) then
            out_esmf_mesh=ESMF_MeshCreate(parametricDim=dim1, spatialDim=spacedim, &
             nodeIDs=the_data%NdIDs, nodeCoords=the_data%NdCoords, &
             nodeOwners=the_data%NdOwners, elementIDs=the_data%ElIDs, &
@@ -269,7 +269,7 @@ module adc_mod
 
         !print *, 'ADC SLAM > ',size(slam),'>>>>>>',slam
         !print *, 'ADC SFEA > ',size(sfea),'>>>>>>',sfea
-        
+
         do i1 = 1, the_data%NumNd, 1
                 the_data%NdCoords((i1-1)*dim1 + 1) = slam(i1)
                 the_data%NdCoords((i1-1)*dim1 + 2) = sfea(i1)
@@ -300,7 +300,7 @@ module adc_mod
 
     !
     ! DW:
-    !   - extract message data from PExxxx/fort.18  
+    !   - extract message data from PExxxx/fort.18
     !   - extract mesh from   PExxxx/fort.14
     subroutine extract_parallel_data_from_mesh_orig(global_fort14_dir, the_data, localPet, meshloc)
         implicit none
@@ -308,9 +308,9 @@ module adc_mod
         type(meshdata), intent(inout)         :: the_data
         character(len=*), intent(in)          :: global_fort14_dir
         integer, intent(in)                   :: localPet
-        type(ESMF_MeshLoc), intent(in)        :: meshloc          
+        type(ESMF_MeshLoc), intent(in)        :: meshloc
         character(len=6)                      :: PE_ID, garbage1
-        
+
         character(len=200)                    :: fort14_filename, fort18_filename, partmesh_filename
         integer                               :: i1, j1, i_num, petCount, num_global_nodes, garbage2, garbage3
         integer, allocatable                  :: local_node_numbers(:), local_elem_numbers(:), node_owner(:)
@@ -321,7 +321,7 @@ module adc_mod
         INTEGER, ALLOCATABLE:: etov(:,:)  ! element table
         INTEGER, ALLOCATABLE:: etog(:,:)  ! element table, global
         REAL(8), ALLOCATABLE:: vx(:,:), bxy(:) ! node coordinates, bathymetry
-        REAL(8), ALLOCATABLE:: xc(:,:)  ! element coordinates 
+        REAL(8), ALLOCATABLE:: xc(:,:)  ! element coordinates
         character(len=1024)   :: msgString
 
 
@@ -335,7 +335,7 @@ module adc_mod
 !       open(unit=235100, file=partmesh_filename, form='FORMATTED', status='OLD', action='READ')
 
         read(unit=23514, fmt=*)
-        read(unit=23514, fmt=*) the_data%NumEl, the_data%NumNd 
+        read(unit=23514, fmt=*) the_data%NumEl, the_data%NumNd
 
         allocate(the_data%NdIDs(the_data%NumNd))
         allocate(local_node_numbers(the_data%NumNd))
@@ -374,13 +374,13 @@ module adc_mod
 !        !print *, 'ADC SFEA > ',size(sfea),'>>>>>>',minval(sfea),maxval(sfea)
 !
 
-        close( 23514 ) ; 
+        close( 23514 ) ;
         CALL Read14MeshOnly( meshfileName=fort14_filename, nn=nn, vx=vx, etov=etov, etog=etog, bxy=bxy  ) ;
-        
+
         the_data%NdCoords = reshape( vx, (/ 2*the_data%NumNd /) ) ;
-        the_data%ElConnect = reshape( etov, (/ NumND_per_El*the_data%NumEl /) ) ;  
+        the_data%ElConnect = reshape( etov, (/ NumND_per_El*the_data%NumEl /) ) ;
         the_data%ElConnectG = reshape( etog, (/ NumND_per_El*the_data%NumEl /) ) ;
-        the_data%bathymetry = bxy ;    
+        the_data%bathymetry = bxy ;
 
         ! construct element coordinates
         if (.not. allocated(xc)) allocate(xc(2,ne))
@@ -403,7 +403,7 @@ module adc_mod
 !        !print *,'ADC > lon,lat >>', the_data%NdCoords((i1-1)*dim1 + 1),  the_data%NdCoords((i1-1)*dim1 + 2)
 !        !i1=400
 !        !print *,'ADC > lon,lat >>', the_data%NdCoords((i1-1)*dim1 + 1),  the_data%NdCoords((i1-1)*dim1 + 2)
-!        
+!
 !        do i1 = 1, the_data%NumEl, 1
 !            read(unit=23514, fmt=*) local_elem_numbers(i1), i_num, &
 !                the_data%ElConnect((i1-1)*NumND_per_El+1), &
@@ -430,7 +430,7 @@ module adc_mod
 !        close(23518)
 !        close(235100)
 
-        ! free memeory 
+        ! free memeory
         DEALLOCATE( vx, etov, bxy, xc ) ;
 
         RETURN
@@ -503,13 +503,13 @@ module adc_mod
 
         ! allocate temporary arrays for element
         if (.not. allocated(ElIDs)) allocate(ElIDs(NumEl_nog))
-        if (.not. allocated(ElConnect)) allocate(ElConnect(NumND_per_El*NumEl_nog)) 
-        if (.not. allocated(ElConnectG)) allocate(ElConnectG(NumND_per_El*NumEl_nog)) 
+        if (.not. allocated(ElConnect)) allocate(ElConnect(NumND_per_El*NumEl_nog))
+        if (.not. allocated(ElConnectG)) allocate(ElConnectG(NumND_per_El*NumEl_nog))
         if (.not. allocated(ElCoords)) allocate(ElCoords(dim1*NumEl_nog))
 
         ! fill temporary element arrays with non-ghost data
         j = 1
-        do i = 1, the_data%NumEl   
+        do i = 1, the_data%NumEl
            if (ElMask(i) > 0) then
               ElIDs(j) = the_data%ElIDs(i)
               ElConnect((j-1)*NumND_per_El+1) = the_data%ElConnect((i-1)*NumND_per_El+1)
@@ -564,7 +564,7 @@ module adc_mod
         write(msgString,'(A,2I8)') 'NdMask min/max = ', minval(NdMask, dim=1, mask=NdMask .gt. 0), maxval(NdMask, dim=1, mask=NdMask .gt. 0)
         if (dbug) call ESMF_LogWrite(subname//' '//trim(msgString), ESMF_LOGMSG_INFO)
 
-        ! allocate temporary arrays for node 
+        ! allocate temporary arrays for node
         if (.not. allocated(NdIDs)) allocate(NdIDs(NumNd_nog))
         if (.not. allocated(NdCoords)) allocate(NdCoords(dim1*NumNd_nog))
         if (.not. allocated(NdOwners)) allocate(NdOwners(NumNd_nog))
@@ -574,7 +574,7 @@ module adc_mod
         ! node ids in the node list are global ids
         j = 1
         do i = 1, the_data%NumNd
-           if (NdMask(i) .ne. 0) then 
+           if (NdMask(i) .ne. 0) then
               NdIDs(j) = the_data%NdIDs(i)
               NdCoords((j-1)*dim1+1) = the_data%NdCoords((i-1)*dim1+1)
               NdCoords((j-1)*dim1+2) = the_data%NdCoords((i-1)*dim1+2)
@@ -688,11 +688,11 @@ module adc_mod
     end subroutine eliminate_ghosts
 
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-!CC   DW --- Taken from MSG_TABLE() in messenger.F 
+!CC   DW --- Taken from MSG_TABLE() in messenger.F
       SUBROUTINE EXTRACT_MSG_TABLE_FORT18( fort18_filename, the_data, meshloc )
         IMPLICIT NONE
 
-        CHARACTER (LEN=*):: fort18_filename 
+        CHARACTER (LEN=*):: fort18_filename
         type (meshdata), intent(inout):: the_data
         type (ESMF_MeshLoc) :: meshloc
 
@@ -702,13 +702,13 @@ module adc_mod
         CHARACTER(10) :: BlkName
         LOGICAL FileFound
 
-        
+
         INTEGER:: funit
         INTEGER:: NE_G_TMP, NP_G_TMP, NEIGHPROC_TMP, idrecvnode
-        INTEGER, ALLOCATABLE:: IPROC_TMP(:), NNODRECV_TMP(:), IRECVLOC_TMP(:, :) 
+        INTEGER, ALLOCATABLE:: IPROC_TMP(:), NNODRECV_TMP(:), IRECVLOC_TMP(:, :)
 
 !C
-        funit = 23518 ; 
+        funit = 23518 ;
         open(unit=funit, file=fort18_filename, form='FORMATTED', status='OLD', action='READ')
         READ(funit,3020) BlkName, inputFileFmtVn
         if ( Trim(BlkName) /= 'FileFmt' .and. &
@@ -720,22 +720,22 @@ module adc_mod
 !C Read Global number of elements and Local-to_Global element map ( used by module global_io )
 !c Casey 100209: Changed from FMT=3015.
         READ(funit,'(8X,3I12)') NE_G_TMP
-        DO I=1, the_data%NumEl  ! MNE   
-          READ(funit,*) the_data%ElIDs(I) ; 
+        DO I=1, the_data%NumEl  ! MNE
+          READ(funit,*) the_data%ElIDs(I) ;
         ENDDO
         if (meshloc /= ESMF_MESHLOC_ELEMENT) the_data%ElIDs = abs(the_data%ElIDs)
 
 !C Read Global number of nodes and Local-to_Global node map ( used by module global_io )
         READ(funit,3015) NP_G_TMP
         DO I=1, the_data%NumNd ! MNP
-            READ(funit,*) the_data%NdIds(I) ; 
+            READ(funit,*) the_data%NdIds(I) ;
         ENDDO
-        if (meshloc /= ESMF_MESHLOC_ELEMENT) the_data%NdIds = abs(the_data%NdIds) ; 
+        if (meshloc /= ESMF_MESHLOC_ELEMENT) the_data%NdIds = abs(the_data%NdIds) ;
 
 !C  This information is provided for relocalizing fort.15
 !C  Just read past it.
         READ(funit,'(8X,I12)') jdumy   ! nfluxf for subdomain
- 
+
         CALL SKIP_STATION_READING( funit, 'skip reading neta') ; ! Skip neta for subdomain
         CALL SKIP_STATION_READING( funit, 'skip reading stae') ; ! Skip global index of elevation stations for subdomain
         CALL SKIP_STATION_READING( funit, 'skip reading stav') ; ! Skip global index of veclocity stations
@@ -750,14 +750,14 @@ module adc_mod
         ! --  Resident nodes
         !
         READ(funit,3010) IDPROC, NLOCAL ! PE, No. of Res node
-        the_data%NumOwnedND = NLOCAL ; 
+        the_data%NumOwnedND = NLOCAL ;
 
-        ALLOCATE( the_data%owned_to_present_nodes(the_data%NumOwnedND) ) 
+        ALLOCATE( the_data%owned_to_present_nodes(the_data%NumOwnedND) )
         READ(funit,1130) (the_data%owned_to_present_nodes(I), I=1,  NLOCAL)
 
         the_data%NdOwners = -9999
         DO I=1, NLOCAL
-           the_data%NdOwners( the_data%owned_to_present_nodes(I) ) = IDPROC ; 
+           the_data%NdOwners( the_data%owned_to_present_nodes(I) ) = IDPROC ;
         ENDDO
 
         !
@@ -777,19 +777,19 @@ module adc_mod
            !
            DO I = 1, NNODRECV_TMP(J)
               !
-              idrecvnode = IRECVLOC_TMP(I,J) ;  
+              idrecvnode = IRECVLOC_TMP(I,J) ;
               IF ( the_data%NdOwners(idrecvnode)  == -9999 ) THEN
                  the_data%NdOwners(idrecvnode) = IPROC_TMP(J) ;
               ELSE
-                 !c the node is owned by two or more PEs(!) ! 
+                 !c the node is owned by two or more PEs(!) !
                  WRITE(*,'(A,I0.4,A,I6,A,I0.4,A,I0.4,A)') 'Warning: PE', &
                    IDPROC, " Recv Node = ",  idrecvnode, " is owned by PE = ", &
-                   IPROC_TMP(J), " and ", the_data%NdOwners(idrecvnode), ". Use the latter PE"   ;     
-              ENDIF  
+                   IPROC_TMP(J), " and ", the_data%NdOwners(idrecvnode), ". Use the latter PE"   ;
+              ENDIF
            END DO
            !
-        END DO 
-        ! We are done here the rest does not seem to be required        
+        END DO
+        ! We are done here the rest does not seem to be required
 
 !c     ! Sending node (a resident node that is a ghost node of the neighbor PE)
 !      ALLOCATE( NNODSEND(NEIGHPROC_TMP) )
@@ -843,10 +843,10 @@ module adc_mod
 
       CONTAINS
 
-!----------------------- Sub function ------------------ 
-        SUBROUTINE SKIP_STATION_READING( funit, msg ) !c make this a private function  
+!----------------------- Sub function ------------------
+        SUBROUTINE SKIP_STATION_READING( funit, msg ) !c make this a private function
           IMPLICIT NONE
-    
+
           INTEGER:: funit
           CHARACTER (LEN=*):: msg
 
@@ -857,8 +857,8 @@ module adc_mod
              READ(funit,'(I12)') jdumy                          ! obnode_lg table
           ENDDO
 
-!C  Global indexes of Elevation Station nodes 
-!C  Just read past it 
+!C  Global indexes of Elevation Station nodes
+!C  Just read past it
 !        READ(funit,3015) jdummy, jdumy_max, jdumy_loc    !tcm v51.20.05
 !        IF ( jdummy_loc > 0) THEN
 !           DO I=1, jdummy_loc
@@ -867,7 +867,7 @@ module adc_mod
 !           ENDDO
 !        ENDIF
 !
-!C  Global indexes of Velocity  Station nodes 
+!C  Global indexes of Velocity  Station nodes
 !c  Just read past it
 !        READ(funit,3015) jdummy, jdumy_max, jdumy_loc    !tcm v51.20.05
 !        IF ( jdummy_loc > 0) THEN
@@ -877,7 +877,7 @@ module adc_mod
 !          ENDDO
 !        ENDIF
 !
-!C Global indexes of Meteorlogical Station nodes 
+!C Global indexes of Meteorlogical Station nodes
 !C Just read past it
 !      READ(funit,3015) jdummy, jdumy_max, jdumy_loc    !tcm v51.20.05
 !      IF ( jdummy_loc > 0) THEN
@@ -899,27 +899,27 @@ module adc_mod
 !           READ(funit,'(I12)') IMAP_STAC_LG(I)
 !        ENDDO
 !      ENDIF
-       
+
           RETURN ;
         END SUBROUTINE SKIP_STATION_READING
 
- 
+
       END SUBROUTINE EXTRACT_MSG_TABLE_FORT18
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
     subroutine read_config()
-     implicit none 
-    ! This subroutine is not used with NEMS system. Because the 
-    ! time interval information is passed via nems.configure file 
+     implicit none
+    ! This subroutine is not used with NEMS system. Because the
+    ! time interval information is passed via nems.configure file
     ! with time slot definitation.
 
-    
+
     character(ESMF_MAXPATHLEN)    :: fname ! config file name
     type(ESMF_Config)             :: cf     ! the Config itself
     integer                       :: rc
 
     rc = ESMF_SUCCESS
-    
+
    !Initiate reading resource file
     cf = ESMF_ConfigCreate(rc=rc)  ! Create the empty Config
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -935,7 +935,7 @@ module adc_mod
       return  ! bail out
 
    ! read time coupling interval info
-   
+
     call ESMF_ConfigGetAttribute(cf, adc_cpl_int, label="cpl_int:",default=300, rc=rc)
     call ESMF_ConfigGetAttribute(cf, adc_cpl_num, label="cpl_num:",default=0  , rc=rc)
     call ESMF_ConfigGetAttribute(cf, adc_cpl_den, label="cpl_den:",default=1  , rc=rc)
@@ -943,9 +943,9 @@ module adc_mod
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-        
+
     call ESMF_ConfigDestroy(cf, rc=rc) ! Destroy the Config
-        
+
     end subroutine read_config
 
     ! P.Velissariou: Copied this subroutine from

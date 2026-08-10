@@ -225,7 +225,7 @@ int code_table_1_6(unsigned char **sec) {
     return (int) *p;
 }
 unsigned char *code_table_1_6_location(unsigned char **sec) {
-    return  (GB2_Sec1_size(sec) >= 24 && sec[1][21] == 0 && sec[1][22] == 0) 
+    return  (GB2_Sec1_size(sec) >= 24 && sec[1][21] == 0 && sec[1][22] == 0)
 	?  sec[1] + 23 : NULL;
 }
 
@@ -461,7 +461,7 @@ unsigned char *code_table_3_15_location(unsigned char **sec) {
 		return sec[3] + 62;
 	case 1200:
 		return sec[3] + 38;
-    } 
+    }
     return NULL;
 }
 
@@ -571,13 +571,13 @@ unsigned char *code_table_4_1_location(unsigned char **sec) {
     int p, center;
 
     p = GB2_ProdDefTemplateNo(sec);
-    if (p <= 15 || p == 20 || (p >= 30 && p <= 35) || (p >= 40 && p <= 49) || p == 51 || 
-	   (p >= 53 && p <= 63) || p == 67 || p == 68 || (p >= 70 && p <= 74) || p == 91 || 
+    if (p <= 15 || p == 20 || (p >= 30 && p <= 35) || (p >= 40 && p <= 49) || p == 51 ||
+	   (p >= 53 && p <= 63) || p == 67 || p == 68 || (p >= 70 && p <= 74) || p == 91 ||
            p == 254 || (p >= 1000 && p <= 1002) || p == 1100 || p == 1101) return sec[4]+ 9;
     center = GB2_Center(sec);
     if ((center == JMA1) || (center == JMA2)) {
-        if (p == 50000 || p == 50002 || p == 50008 || p == 50009 || p == 50010 || 
-	p == 50011 || p == 50012 || p == 50020 || p == 51020 || p == 51021 
+        if (p == 50000 || p == 50002 || p == 50008 || p == 50009 || p == 50010 ||
+	p == 50011 || p == 50012 || p == 50020 || p == 51020 || p == 51021
 	|| p == 51022 || p == 52020 || p == 51122 || p == 51123)
 		return sec[4] + 9;
     }
@@ -606,14 +606,14 @@ unsigned char *code_table_4_2_location(unsigned char **sec) {
     int p, center;
 
     p = GB2_ProdDefTemplateNo(sec);
-    if (p <= 15 || p == 20 || (p >= 30 && p <= 35) || (p >= 40 && p <= 49) || p == 51 || 
-	   (p >= 53 && p <= 63) || p == 67 || p == 68 || (p >= 70 && p <= 74) || p == 91 || 
+    if (p <= 15 || p == 20 || (p >= 30 && p <= 35) || (p >= 40 && p <= 49) || p == 51 ||
+	   (p >= 53 && p <= 63) || p == 67 || p == 68 || (p >= 70 && p <= 74) || p == 91 ||
            p == 254 || (p >= 1000 && p <= 1002) || p == 1100 || p == 1101) return sec[4] + 10;
 
     center = GB2_Center(sec);
     if ((center == JMA1) || (center == JMA2)) {
-        if (p == 50000 || p == 50002 || p == 50008 || p == 50009 || p == 50010 || 
-	p == 50011 || p == 50012 || p == 50020 || p == 51020 || p == 51021 
+        if (p == 50000 || p == 50002 || p == 50008 || p == 50009 || p == 50010 ||
+	p == 50011 || p == 50012 || p == 50020 || p == 51020 || p == 51021
 	|| p == 51022 || p == 52020 || p == 51122 || p == 51123)
 		return sec[4] + 10;
     }
@@ -854,9 +854,9 @@ unsigned char *code_table_4_4_location(unsigned char **sec) {
 	    case 51021:
 	    case 51022:
 	    case 51122:
-			return sec[4]+13;			
+			return sec[4]+13;
 	    case 51123:
-			return sec[4]+12;			
+			return sec[4]+12;
 	    case 52020:
 			return sec[4]+14;
 	*/
@@ -872,7 +872,7 @@ unsigned char *code_table_4_4_location(unsigned char **sec) {
  *   3. not used (example radar or satellite images)
  *
  *   returns 1 if code table 4.4 is not used
- */ 
+ */
 
 int code_table_4_4_not_used(unsigned char **sec) {
     int pdt;
@@ -988,13 +988,13 @@ unsigned char *code_table_4_5a_location(unsigned char **sec) {
     	case 50011:
 	case 50012:
 		    return sec[4] + 22;
-    	case 50020: 
-    	case 51020: 
-    	case 51021: 
-    	case 51022: 
-    	case 51122: 
-    	case 51123: 
-    	case 52020: 
+    	case 50020:
+    	case 51020:
+    	case 51021:
+    	case 51022:
+    	case 51122:
+    	case 51123:
+    	case 52020:
 		return NULL;
 	}
     }
@@ -1062,10 +1062,10 @@ unsigned char *code_table_4_5b_location(unsigned char **sec) {
     case 48:
     case 49:
         return sec[4]+52;
-    case 33:	
-    case 34:	
-    case 35:	
-    case 52: 
+    case 33:
+    case 34:
+    case 35:
+    case 52:
 	return NULL;
     case 53:
     case 54:
@@ -1110,13 +1110,13 @@ unsigned char *code_table_4_5b_location(unsigned char **sec) {
     	case 50011:
 	case 50012:
 		    return sec[4] + 28;
-    	case 50020: 
-    	case 51020: 
-    	case 51021: 
-    	case 51022: 
-    	case 51122: 
-    	case 51123: 
-    	case 52020: 
+    	case 50020:
+    	case 51020:
+    	case 51021:
+    	case 51022:
+    	case 51122:
+    	case 51123:
+    	case 52020:
 		return NULL;
 	}
     }
@@ -1338,8 +1338,8 @@ unsigned char *code_table_4_10_location(unsigned char **sec) {
 		i = 38 + 11*nb; break;
         case 42: i = 48; break;
         case 43: i = 51; break;
-	case 67: 
-	case 68: 
+	case 67:
+	case 68:
 		np = sec[4][19];
 		i = 55 + 5*np; break;
         case 1001: i = 26; break;
@@ -1518,7 +1518,7 @@ unsigned char *code_table_4_16_location(unsigned char **sec) {
 int f_code_table_4_91(ARG0) {
     int val;
     const char *string;
-    
+
     if (mode >= 0) {
         val = code_table_4_91(sec);
 	if (val >= 0) {
@@ -1548,7 +1548,7 @@ unsigned char *code_table_4_91_location(unsigned char **sec) {
         case 44:
         case 45:
         case 46:
-        case 48: 
+        case 48:
 	case 49: p = sec[4] + 13; break;
         case 47: p = sec[4] + 14; break;
 
@@ -1563,7 +1563,7 @@ unsigned char *code_table_4_91_location(unsigned char **sec) {
 int f_code_table_4_91b(ARG0) {
     int val;
     const char *string;
-   
+
     if (mode >= 0) {
         val = code_table_4_91b(sec);
         if (val >= 0) {
@@ -1715,7 +1715,7 @@ unsigned char *code_table_4_230_location(unsigned char **sec) {
     pdt = GB2_ProdDefTemplateNo(sec);
     unsigned char *p;
     switch(pdt) {
-        case 40: 
+        case 40:
 	case 41:
 	case 42:
 	case 43:
@@ -1772,11 +1772,11 @@ unsigned char *code_table_4_233_location(unsigned char **sec) {
     switch(pdt) {
 	case 44:
 	case 45:
-	case 46: 
+	case 46:
 	case 48:
 	case 49:
 		return sec[4]+11; break;
-	case 47: 
+	case 47:
 		return sec[4]+12; break;
     }
     return  NULL;
@@ -1840,10 +1840,10 @@ unsigned char *code_table_4_240_location(unsigned char **sec) {
 
     pdt = GB2_ProdDefTemplateNo(sec);
     switch(pdt) {
-	case 57: 
-	case 58: 
-	case 67: 
-	case 68: 
+	case 57:
+	case 58:
+	case 67:
+	case 68:
 	    p = sec[4]+17; break;
 	default:
 	    p = NULL; break;

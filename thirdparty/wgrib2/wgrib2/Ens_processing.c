@@ -15,8 +15,8 @@
  * 1/2018: Public Domain: Wesley Ebisuzaki
  */
 
-/* 
- * code table 4.3 used by percentile and prob fcsts, 
+/*
+ * code table 4.3 used by percentile and prob fcsts,
  *   WMO: ensemble forecast
  *  NCEP: ensemble forecast based on counting
  */
@@ -73,7 +73,7 @@ static int free_ens_proc_struct(struct ens_proc_struct *save) {
     return 0;
 }
 
-static int init_ens_proc_struct(struct ens_proc_struct *save, 
+static int init_ens_proc_struct(struct ens_proc_struct *save,
     unsigned char **sec, float *data, unsigned int ndata) {
     unsigned int i;
 
@@ -131,7 +131,7 @@ static int init_ens_proc_struct(struct ens_proc_struct *save,
 
 /* update_ens_proc_struct: save grid in memory */
 
-static int update_ens_proc_struct(struct ens_proc_struct *save, 
+static int update_ens_proc_struct(struct ens_proc_struct *save,
     unsigned char **sec, float *data, unsigned int ndata) {
 
     unsigned int i;
@@ -149,7 +149,7 @@ static int update_ens_proc_struct(struct ens_proc_struct *save,
 	}
     }
 
-    /* the data needs to be translated from we:sn to raw, need to 
+    /* the data needs to be translated from we:sn to raw, need to
        do it now because translation[] may be different in finalized phase */
 
     if (translation == NULL) {
@@ -192,7 +192,7 @@ static int wrt_ens_proc(unsigned char **sec, struct ens_proc_struct *save) {
     int mode, extra, isNCEP;
     int scale_factor, scale_value;
 
-    if (save->has_val == 0 || save->n_ens == 0) return 0; 
+    if (save->has_val == 0 || save->n_ens == 0) return 0;
 
     pdt = GB2_ProdDefTemplateNo(save->first_sec);
     switch(pdt) {
@@ -230,7 +230,7 @@ static int wrt_ens_proc(unsigned char **sec, struct ens_proc_struct *save) {
 
     /* create new_pdt (sec4) */
 
-    if (new_pdt(save->first_sec, sec4, pdt_ens, -1, 1, NULL)) 
+    if (new_pdt(save->first_sec, sec4, pdt_ens, -1, 1, NULL))
         fatal_error("ens_processing: new_pdt failed","");
     /* make a new sec[][] */
     for (i = 0; i < 9; i++) new_sec[i] = save->first_sec[i];
@@ -248,7 +248,7 @@ static int wrt_ens_proc(unsigned char **sec, struct ens_proc_struct *save) {
     table_4_9_probability = NULL;
     if (extra) {		/* extra .. use probability template for extras */
         /* create new_pdt for probability sec4_probability */
-        if (new_pdt(save->first_sec, sec4_probability, pdt_probability, -1, 1, NULL)) 
+        if (new_pdt(save->first_sec, sec4_probability, pdt_probability, -1, 1, NULL))
             fatal_error("ens_processing: new_pdt probability failed","");
         for (i = 0; i < 9; i++) new_sec_probability[i] = save->first_sec[i];
         new_sec_probability[4] = sec4_probability;
@@ -260,7 +260,7 @@ static int wrt_ens_proc(unsigned char **sec, struct ens_proc_struct *save) {
     }
 
     /* creaate new_pdt_percentile */
-    if (new_pdt(save->first_sec, sec4_percentile, pdt_percentile, -1, 1, NULL)) 
+    if (new_pdt(save->first_sec, sec4_percentile, pdt_percentile, -1, 1, NULL))
             fatal_error("ens_processing: new_pdt percentile failed","");
     for (i = 0; i < 9; i++) new_sec_percentile[i] = save->first_sec[i];
     new_sec_percentile[4] = sec4_percentile;
@@ -288,10 +288,10 @@ static int wrt_ens_proc(unsigned char **sec, struct ens_proc_struct *save) {
 
     dataextra = dataextra2 = NULL;
     if (extra) {
-	if ((dataextra = (float *) malloc(sizeof(float) * ((size_t) ndata))) == NULL) 
+	if ((dataextra = (float *) malloc(sizeof(float) * ((size_t) ndata))) == NULL)
             fatal_error("ens_processing: wrt_ens_proc memory allocation","");
 	if (extra == 2) {
-	    if ((dataextra2 = (float *) malloc(sizeof(float) * ((size_t) ndata))) == NULL) 
+	    if ((dataextra2 = (float *) malloc(sizeof(float) * ((size_t) ndata))) == NULL)
                 fatal_error("ens_processing: wrt_ens_proc memory allocation","");
 	}
     }
@@ -327,7 +327,7 @@ static int wrt_ens_proc(unsigned char **sec, struct ens_proc_struct *save) {
 #endif
     for (i = 0; i < ndata; i++) {
 	float ens[save->n_ens];
-        
+
 	/* make vector of ensemble member grid points */
 	k = 0;
 #ifdef IS_OPENMP_4_0
@@ -342,7 +342,7 @@ static int wrt_ens_proc(unsigned char **sec, struct ens_proc_struct *save) {
 	    /* sort */
 	    qsort(&(ens[0]), save->n_ens, sizeof(float), &testfloat);
 
-	    /* find the various percentiles */	    
+	    /* find the various percentiles */
 	    data10[i] = i10 != save->n_ens - 1 ? ens[i10]*(1.0-d10) + ens[i10+1]*d10 : ens[i10];
             data25[i] = i25 != save->n_ens - 1 ? ens[i25]*(1.0-d25) + ens[i25+1]*d25 : ens[i25];
             data50[i] = i50 != save->n_ens - 1 ? ens[i50]*(1.0-d50) + ens[i50+1]*d50 : ens[i50];
@@ -410,51 +410,51 @@ static int wrt_ens_proc(unsigned char **sec, struct ens_proc_struct *save) {
 
     /* min */
     *table_4_7 = MIN;
-    grib_wrt(new_sec, datamin, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec, datamin, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     /* max */
     *table_4_7 = MAX;
-    grib_wrt(new_sec, datamax, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec, datamax, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     /* ave */
     *table_4_7 = AVE;
-    grib_wrt(new_sec, datamean, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec, datamean, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     /* spread */
     *table_4_7 = SPREAD;
-    grib_wrt(new_sec, datavar, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec, datavar, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     *value_percentile = 10;
-    grib_wrt(new_sec_percentile, data10, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec_percentile, data10, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     *value_percentile = 25;
-    grib_wrt(new_sec_percentile, data25, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec_percentile, data25, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     *value_percentile = 50;
-    grib_wrt(new_sec_percentile, data50, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec_percentile, data50, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     *value_percentile = 75;
-    grib_wrt(new_sec_percentile, data75, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec_percentile, data75, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     *value_percentile = 90;
-    grib_wrt(new_sec_percentile, data90, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(new_sec_percentile, data90, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     /* extra */
@@ -466,8 +466,8 @@ static int wrt_ens_proc(unsigned char **sec, struct ens_proc_struct *save) {
 	table_4_9_probability[1] = scale_factor;
         int_char(scale_value, table_4_9_probability + 2);
 
-        grib_wrt(new_sec_probability, dataextra, ndata, save->nx, save->ny, 
-	    save->use_scale, save->dec_scale, save->bin_scale, 
+        grib_wrt(new_sec_probability, dataextra, ndata, save->nx, save->ny,
+	    save->use_scale, save->dec_scale, save->bin_scale,
 	    save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
     }
     else if (extra == 2) {
@@ -478,8 +478,8 @@ static int wrt_ens_proc(unsigned char **sec, struct ens_proc_struct *save) {
 	table_4_9_probability[1] = scale_factor;
         int_char(scale_value, table_4_9_probability + 2);
 
-        grib_wrt(new_sec_probability, dataextra, ndata, save->nx, save->ny, 
-	    save->use_scale, save->dec_scale, save->bin_scale, 
+        grib_wrt(new_sec_probability, dataextra, ndata, save->nx, save->ny,
+	    save->use_scale, save->dec_scale, save->bin_scale,
 	    save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
 	table_4_9_probability[-2] = 2;
@@ -488,14 +488,14 @@ static int wrt_ens_proc(unsigned char **sec, struct ens_proc_struct *save) {
 	best_scaled_value(TRACE, &scale_factor, &scale_value);
 	table_4_9_probability[1] = scale_factor;
         int_char(scale_value, table_4_9_probability + 2);
-        grib_wrt(new_sec_probability, dataextra, ndata, save->nx, save->ny, 
-	    save->use_scale, save->dec_scale, save->bin_scale, 
+        grib_wrt(new_sec_probability, dataextra, ndata, save->nx, save->ny,
+	    save->use_scale, save->dec_scale, save->bin_scale,
 	    save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
     }
     else if (extra == 3) {
         *value_percentile = 95;
-        grib_wrt(new_sec_percentile, dataextra, ndata, save->nx, save->ny, 
-	    save->use_scale, save->dec_scale, save->bin_scale, 
+        grib_wrt(new_sec_percentile, dataextra, ndata, save->nx, save->ny,
+	    save->use_scale, save->dec_scale, save->bin_scale,
 	    save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
     }
     if (flush_mode) fflush_file(&(save->out));
@@ -542,7 +542,7 @@ int f_ens_processing(ARG2) {
         save->ngrids = 0;
 	init_sec(save->first_sec);
         save->option = atoi(arg2);
-    
+
 	return 0;
     }
     save = (struct ens_proc_struct *) *local;
@@ -591,8 +591,8 @@ if (mode == 98) fprintf(stderr,"ens_processing: >> update\n");
 
 
 /*
- * To find a percentile, you sort the values, get an index (floating) 
- * and find the value with interpolation. the Wiki for percentile lists 
+ * To find a percentile, you sort the values, get an index (floating)
+ * and find the value with interpolation. the Wiki for percentile lists
  * 3 ways to get the index.  This routine find the index.
  * returns: -1 (not valid)
  *           x 1..N (float)

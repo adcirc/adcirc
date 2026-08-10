@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -23,15 +23,15 @@ C    Written by s.b. 09/xx/2006
 C------------------------------------------------------------------------------
 C This module reads in UNIT 23 file and external files specified in UNIT 23.
 C This module was made to have ADCIRC read in a single global UNIT 23 file
-C and sets of global STWAVE output files (.sim and .rad files) from each 
+C and sets of global STWAVE output files (.sim and .rad files) from each
 C processor.
 C------------------------------------------------------------------------------
 C sb  12/11/2006  RS2GET now takes maximum values if stwave domains overlap.
-C                 (It used to take the value of the domain of the first 
+C                 (It used to take the value of the domain of the first
 C                 appearance in a fort.23 file.)
 C vjp 10/21/2006  modified logic for type2
-C****************************************************************************** 
-C 
+C******************************************************************************
+C
       MODULE RS2
       USE SIZES
       use mod_logging, only: screenUnit, nscreen
@@ -171,8 +171,8 @@ c$$$          read(23,*,err=99999) nis(s), njs(s), dxincs(s), dyincs(s)
 c$$$        else
 c$$$          read(23,*,err=99999) nis(s), njs(s), dxincs(s)
 c$$$          dyincs(s) = dxincs(s)
-c$$$        endif       
-c$$$        
+c$$$        endif
+c$$$
 c$$$        ni = nis(s)
 c$$$        nj = njs(s)
 c$$$
@@ -180,7 +180,7 @@ c$$$        allocate(stwlonlat(2,ni,nj))
 c$$$        do j=1,nj
 c$$$          read(23,*) ((stwlonlat(k,i,j), k=1,2), i=1,ni)
 c$$$        enddo
-c$$$        
+c$$$
 c$$$        stwlonmin =  1d10
 c$$$        stwlonmax = -1d10
 c$$$        stwlatmin =  1d10
@@ -205,7 +205,7 @@ c$$$          write(screenunit,*) 'PREPARING SEARCH BINS FOR GRID ',s,'...'
 c$$$        endif
 c$$$        tol = abs(stwlonmax-stwlonmin)/real(nSearchBins)*0.01d0
 c$$$        do p=1,nSearchBins
-c$$$          searchBinPartitions(p+1) = 
+c$$$          searchBinPartitions(p+1) =
 c$$$     &         stwlonmin + (stwlonmax-stwlonmin)*
 c$$$     &         real(p)/real(nSearchBins)
 c$$$
@@ -255,12 +255,12 @@ c$$$          lon = RAD2DEG*SLAM(n)
 c$$$
 c$$$          if(lon.lt.stwlonmin.or.lon.gt.stwlonmax.or.
 c$$$     &       lat.lt.stwlatmin.or.lat.gt.stwlatmax) cycle
-c$$$            
+c$$$
 c$$$
 c$$$          do p=1,nSearchBins
 c$$$            p1 = searchBinPartitions(p)
 c$$$            p2 = searchBinPartitions(p+1)
-c$$$            
+c$$$
 c$$$            if(lon.ge.p1.and.lon.le.p2) exit
 c$$$          enddo
 c$$$
@@ -291,7 +291,7 @@ c$$$            y2 = stwlat2
 c$$$            x3 = stwlon3
 c$$$            y3 = stwlat3
 c$$$            subarea1 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-c$$$            
+c$$$
 c$$$            x1 = lon
 c$$$            y1 = lat
 c$$$            x2 = stwlon3
@@ -299,7 +299,7 @@ c$$$            y2 = stwlat3
 c$$$            x3 = stwlon1
 c$$$            y3 = stwlat1
 c$$$            subarea2 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-c$$$            
+c$$$
 c$$$            x1 = lon
 c$$$            y1 = lat
 c$$$            x2 = stwlon1
@@ -307,7 +307,7 @@ c$$$            y2 = stwlat1
 c$$$            x3 = stwlon2
 c$$$            y3 = stwlat2
 c$$$            subarea3 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-c$$$            
+c$$$
 c$$$            x1 = stwlon1
 c$$$            y1 = stwlat1
 c$$$            x2 = stwlon2
@@ -315,7 +315,7 @@ c$$$            y2 = stwlat2
 c$$$            x3 = stwlon3
 c$$$            y3 = stwlat3
 c$$$            totalarea = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-c$$$            
+c$$$
 c$$$            if((subarea1+subarea2+subarea3).le.
 c$$$     &           (totalarea*1.00001d0)) then
 c$$$              rsij(1,n) = s
@@ -336,7 +336,7 @@ c$$$            y2 = stwlat4
 c$$$            x3 = stwlon1
 c$$$            y3 = stwlat1
 c$$$            subarea1 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-c$$$            
+c$$$
 c$$$            x1 = lon
 c$$$            y1 = lat
 c$$$            x2 = stwlon1
@@ -344,7 +344,7 @@ c$$$            y2 = stwlat1
 c$$$            x3 = stwlon3
 c$$$            y3 = stwlat3
 c$$$            subarea2 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-c$$$            
+c$$$
 c$$$            x1 = lon
 c$$$            y1 = lat
 c$$$            x2 = stwlon3
@@ -352,7 +352,7 @@ c$$$            y2 = stwlat3
 c$$$            x3 = stwlon4
 c$$$            y3 = stwlat4
 c$$$            subarea3 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-c$$$            
+c$$$
 c$$$            x1 = stwlon3
 c$$$            y1 = stwlat3
 c$$$            x2 = stwlon4
@@ -360,7 +360,7 @@ c$$$            y2 = stwlat4
 c$$$            x3 = stwlon1
 c$$$            y3 = stwlat1
 c$$$            totalarea = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-c$$$            
+c$$$
 c$$$            if((subarea1+subarea2+subarea3).le.
 c$$$     &           (totalarea*1.00001d0)) then
 c$$$              rsij(1,n) = s
@@ -451,7 +451,7 @@ C***********************************************************************
       allocate(rsij(3,np,ns),rscnf(3,np,ns))
 
       rsij(1,:,:) = 0
-         
+
 
       !compute mapping coefficients
       do s=1,ns
@@ -475,8 +475,8 @@ C***********************************************************************
         else
           read(23,*,err=99999) nis(s), njs(s), dxincs(s)
           dyincs(s) = dxincs(s)
-        endif       
-        
+        endif
+
         ni = nis(s)
         nj = njs(s)
 
@@ -484,7 +484,7 @@ C***********************************************************************
         do j=1,nj
           read(23,*) ((stwlonlat(k,i,j), k=1,2), i=1,ni)
         enddo
-        
+
         stwlonmin =  1d10
         stwlonmax = -1d10
         stwlatmin =  1d10
@@ -509,7 +509,7 @@ C***********************************************************************
         endif
         tol = abs(stwlonmax-stwlonmin)/real(nSearchBins)*0.01d0
         do p=1,nSearchBins
-          searchBinPartitions(p+1) = 
+          searchBinPartitions(p+1) =
      &         stwlonmin + (stwlonmax-stwlonmin)*
      &         real(p)/real(nSearchBins)
 
@@ -557,12 +557,12 @@ C***********************************************************************
 
           if(lon.lt.stwlonmin.or.lon.gt.stwlonmax.or.
      &       lat.lt.stwlatmin.or.lat.gt.stwlatmax) cycle
-            
+
 
           do p=1,nSearchBins
             p1 = searchBinPartitions(p)
             p2 = searchBinPartitions(p+1)
-            
+
             if(lon.ge.p1.and.lon.le.p2) exit
           enddo
 
@@ -593,7 +593,7 @@ C***********************************************************************
             x3 = stwlon3
             y3 = stwlat3
             subarea1 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-            
+
             x1 = lon
             y1 = lat
             x2 = stwlon3
@@ -601,7 +601,7 @@ C***********************************************************************
             x3 = stwlon1
             y3 = stwlat1
             subarea2 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-            
+
             x1 = lon
             y1 = lat
             x2 = stwlon1
@@ -609,7 +609,7 @@ C***********************************************************************
             x3 = stwlon2
             y3 = stwlat2
             subarea3 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-            
+
             x1 = stwlon1
             y1 = stwlat1
             x2 = stwlon2
@@ -617,7 +617,7 @@ C***********************************************************************
             x3 = stwlon3
             y3 = stwlat3
             totalarea = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-            
+
             if((subarea1+subarea2+subarea3).le.
      &           (totalarea*1.00001d0)) then
               rsij(1,n,s) = 1
@@ -637,7 +637,7 @@ C***********************************************************************
             x3 = stwlon1
             y3 = stwlat1
             subarea1 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-            
+
             x1 = lon
             y1 = lat
             x2 = stwlon1
@@ -645,7 +645,7 @@ C***********************************************************************
             x3 = stwlon3
             y3 = stwlat3
             subarea2 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-            
+
             x1 = lon
             y1 = lat
             x2 = stwlon3
@@ -653,7 +653,7 @@ C***********************************************************************
             x3 = stwlon4
             y3 = stwlat4
             subarea3 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-            
+
             x1 = stwlon3
             y1 = stwlat3
             x2 = stwlon4
@@ -661,7 +661,7 @@ C***********************************************************************
             x3 = stwlon1
             y3 = stwlat1
             totalarea = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
-            
+
             if((subarea1+subarea2+subarea3).le.
      &           (totalarea*1.00001d0)) then
               rsij(1,n,s) = 2
@@ -758,9 +758,9 @@ c$$$C***********************************************************************
 c$$$
 c$$$      subroutine rs2get_type1(rsnx,rsny,np)
 c$$$      use sizes
-c$$$#ifdef CMPI     
+c$$$#ifdef CMPI
 c$$$      use messenger, only: msg_ibcast, msg_cbcast, msg_rbcast
-c$$$#endif 
+c$$$#endif
 c$$$      implicit none
 c$$$      integer,intent(in) :: np
 c$$$      real(8),intent(out) :: rsnx(:),rsny(:)
@@ -834,7 +834,7 @@ c$$$            endif
 c$$$            write(16,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
 c$$$     &                  ', COUNT = ',cntsnaps
 c$$$          endif
-c$$$          cycle    
+c$$$          cycle
 c$$$        endif
 c$$$
 c$$$        ni = nis(s)
@@ -844,14 +844,14 @@ c$$$        allocate(rsxy(2,nis(s),njs(s)))
 c$$$
 c$$$        fid = 23
 c$$$        if (myproc.eq.0) read(fid,*,iostat=ios(1)) ! skip a line
-c$$$#ifdef CMPI     
+c$$$#ifdef CMPI
 c$$$        call msg_ibcast(ios,1)
 c$$$#endif
 c$$$        if (ios(1) > 0) g.oto 9999
 c$$$
 c$$$        if(myproc.eq.0) read(fid,*,iostat=ios(1)) isActive(1) ! active flag
 c$$$
-c$$$#ifdef CMPI        
+c$$$#ifdef CMPI
 c$$$        call msg_ibcast(ios,1)
 c$$$        call msg_ibcast(isActive,1)
 c$$$#endif
@@ -866,7 +866,7 @@ c$$$     &           ((rsxy(k,i,j),k=1,2),i=1,ni)
 c$$$          enddo
 c$$$        endif
 c$$$
-c$$$#ifdef CMPI      
+c$$$#ifdef CMPI
 c$$$        call msg_ibcast(ios,1)
 c$$$        call msg_rbcast(rsxy,2*ni*nj)
 c$$$#endif
@@ -878,7 +878,7 @@ c$$$C--------------------------------------------------------------------------
 c$$$
 c$$$        do n=1,np
 c$$$          if(rsij(1,n).ne.s) cycle !node n does not reside in STWAVE grid s
-c$$$            
+c$$$
 c$$$          i = rsij(3,n)
 c$$$          j = rsij(4,n)
 c$$$
@@ -913,7 +913,7 @@ c$$$        deallocate(rsxy)
 c$$$
 c$$$      enddo       ! end s-loop
 c$$$
-c$$$      
+c$$$
 c$$$      if(myproc.eq.0) then
 c$$$        write(screenunit,*) 'RADIATION STRESS IS LOADED'
 c$$$        write(screenunit,*)
@@ -943,9 +943,9 @@ C***********************************************************************
       subroutine rs2get_type2(rsnx,rsny,np)
       use sizes
 #ifdef CMPI
-Casey 090327: Implement Seizo's changes for buffering the radiation stress gradients.     
+Casey 090327: Implement Seizo's changes for buffering the radiation stress gradients.
       use messenger, only: msg_ibcast, msg_cbcast, msg_rbcastd
-#endif 
+#endif
       implicit none
 
       integer,intent(in) :: np
@@ -990,7 +990,7 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
             write(16,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
      &                  ', COUNT = ',cntsnaps
           endif
-          cycle    
+          cycle
         endif
 
         ! if previous EOF write blank RS SNAP
@@ -998,11 +998,11 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
           if (myproc.eq.0) then
              write(screenunit,*) trim(radfiles(s)),
      &                          ' PREVIOUSLY REACHED EOF.'
-             write(screenunit,'(A25,I6,A9,I6)') 
+             write(screenunit,'(A25,I6,A9,I6)')
      &         " BLANK RS SNAP, REGION = ",s, " COUNT = ", cntsnaps
           endif
           cycle
-        endif          
+        endif
 
         ni = nis(s)
         nj = njs(s)
@@ -1013,7 +1013,7 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
           if (myproc.eq.0) then
             read (fid,'(A)',iostat=ios(1)) spectrum_id(1) ! spectrum identifier
           endif
-#ifdef CMPI    
+#ifdef CMPI
           call msg_ibcast(ios,1)
 #endif
 
@@ -1021,27 +1021,27 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
             endoffile(s) = 1
             if (myproc.eq.0) then
               write(screenunit,*) trim(radfiles(s)),' REACHED EOF.'
-              write(screenunit,'(A25,I6,A9,I6)') 
+              write(screenunit,'(A25,I6,A9,I6)')
      &           " BLANK RS SNAP, REGION = ",s, " COUNT = ", cntsnaps
             endif
             cycle
           else
             if (myproc.eq.0) then
         write(screenunit,'(A)') " spectrum_id = "//trim(spectrum_id(1))
-              write(screenunit,'(A19,I6,A9,I6)') 
+              write(screenunit,'(A19,I6,A9,I6)')
      &         " RS SNAP, REGION = ",s, " COUNT = ", cntsnaps
             endif
           endif
         endif
-         
+
         allocate(rsxy(2,nis(s),njs(s)))
 
-#ifdef CMPI     
+#ifdef CMPI
         if(myproc.eq.0) then
           ios(1) = 0
           do while(.true.)
             do j = nj, 1, -1
-              read (fid,*,err=511) 
+              read (fid,*,err=511)
      &           ((rsxy(k,i,j),k=1,2),i=1,ni)
             enddo
             exit
@@ -1050,7 +1050,7 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
           enddo
         endif
         call msg_ibcast(ios,1)
-        if(ios(1) == 0) then        
+        if(ios(1) == 0) then
 Casey 090327: Implement Seizo's changes for buffering the radiation stress gradients.
           call msg_rbcastd(rsxy,2,ni,nj)
         else
@@ -1058,7 +1058,7 @@ Casey 090327: Implement Seizo's changes for buffering the radiation stress gradi
         endif
 #else
         do j = nj, 1, -1
-          read (fid,*,err=9999) 
+          read (fid,*,err=9999)
      &         ((rsxy(k,i,j),k=1,2),i=1,ni)
         enddo
 #endif
@@ -1069,7 +1069,7 @@ C--------------------------------------------------------------------------
 
         do n=1,np
           if(rsij(1,n,s).eq.0) cycle !node n does not reside in STWAVE grid s
-            
+
           i = rsij(2,n,s)
           j = rsij(3,n,s)
 
@@ -1126,7 +1126,5 @@ C--------------------------------------------------------------------------
      &                 message=trim(filename)//' IS NOT COMPLETE. PROGRAM WILL BE TERMINATED.')
       end subroutine rs2get_type2_terminate
 
-    
+
       END MODULE RS2
-      
-      

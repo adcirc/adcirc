@@ -15,7 +15,7 @@
  *      3) return minimum size of pdt for generating a new PDT
  *
  * new  1) return expected size of pdt (including vertical coordinates)
- *      2) return minimum size of pdt for generating a new PDT 
+ *      2) return minimum size of pdt for generating a new PDT
  *
  * input: char **sec, if not NULL, return expected size of PDT
  *                    if NULL, return minimum size of PDT

@@ -1,19 +1,19 @@
 /*******************************************************************************
-NAME                            GNOMONIC 
+NAME                            GNOMONIC
 
 PURPOSE:	Transforms input longitude and latitude to Easting and
 		Northing for the Gnomonic projection.  The longitude
 		and latitude must be in radians.  The Easting and
 		Northing values will be returned in meters.
 
-PROGRAMMER              DATE            
-----------              ----           
+PROGRAMMER              DATE
+----------              ----
 T. Mittan		Mar, 1993
 
 This function was adapted from the Gnomonic projection code (FORTRAN)
 in the General Cartographic Transformation Package software which is
 available from the U.S. Geological Survey National Mapping Division.
- 
+
 ALGORITHM REFERENCES
 
 1.  "New Equal-Area Map Projections for Noncircular Regions", John P. Snyder,
@@ -42,7 +42,7 @@ static double false_northing;	/* y offset in meters			*/
   ---------------------------------*/
 long gnomforint(double r, double center_long, double center_lat,
         double false_east, double false_north) {
-//long gnomforint(r, center_long, center_lat,false_east,false_north) 
+//long gnomforint(r, center_long, center_lat,false_east,false_north)
 //
 //double r; 			/* (I) Radius of the earth (sphere) 	*/
 //double center_long;		/* (I) Center longitude 		*/
@@ -61,14 +61,14 @@ sincos(center_lat, &sin_p13, &cos_p13);
 
 /* Report parameters to the user
   -----------------------------*/
-ptitle("GNOMONIC"); 
+ptitle("GNOMONIC");
 radius(r);
 cenlon(center_long);
 cenlat(center_lat);
 offsetp(false_easting,false_northing);
 return(OK);
 }
-
+
 /* Gnomonic forward equations--mapping lat,long to x,y
   --------------------------------------------------*/
 long gnomfor(double lon, double lat, double *x, double *y) {
@@ -99,7 +99,7 @@ if (g <= 0.0)
    }
 ksp = 1.0 / g;
 *x = false_easting + R * ksp * cosphi * sin(dlon);
-*y = false_northing + R * ksp * (cos_p13 * sinphi - sin_p13 * cosphi * 
+*y = false_northing + R * ksp * (cos_p13 * sinphi - sin_p13 * cosphi *
 		coslon);
 
 return(OK);

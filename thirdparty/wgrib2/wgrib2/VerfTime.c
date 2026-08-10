@@ -117,7 +117,7 @@ int verftime(unsigned char **sec, int *year, int *month, int *day, int *hour, in
 	return 0;
     }
     if (i == 3) {
-	// rt = observing time 
+	// rt = observing time
 	return 0;
     }
 
@@ -131,7 +131,7 @@ int verftime(unsigned char **sec, int *year, int *month, int *day, int *hour, in
 
     units = code_table_4_4(sec);
     dtime = forecast_time_in_units(sec);
-    if (dtime >= 0) 
+    if (dtime >= 0)
         return add_time(year, month, day, hour, minute, second, (unsigned int) dtime, units);
     return sub_dt(year, month, day, hour, minute, second, (unsigned int) (unsigned int) -dtime, units);
 }
@@ -299,4 +299,3 @@ int Ref_time(unsigned char **sec, struct full_date *date) {
 int Verf_time(unsigned char **sec, struct full_date *date) {
     return verftime(sec, &date->year, &date->month, &date->day, &date->hour, &date->minute, &date->second);
 }
-

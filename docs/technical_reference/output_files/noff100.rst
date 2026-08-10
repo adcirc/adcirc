@@ -30,4 +30,4 @@ Notes
 * Values are integers: 1 for wet elements, 0 for dry elements
 * Output timing matches fort.63 file using :ref:`NSPOOLGE <NSPOOLGE>` parameter
 * File generation is controlled by `outputNOFF` in the `wetDryControl` namelist
-* Data is primarily intended for wet/dry algorithm development and testing 
+* Data is primarily intended for wet/dry algorithm development and testing

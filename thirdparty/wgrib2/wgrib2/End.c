@@ -16,4 +16,3 @@ int f_end(ARG0) {
     if (mode >= 0 && last_message == 0) last_message = 1;
     return 0;
 }
-

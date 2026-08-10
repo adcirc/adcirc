@@ -20,7 +20,7 @@
 * mesh. At this point the supported elements are triangles, tetrahedrons, and
 * bricks.
 ******************************************************************************/
-void METIS_MeshToDual(int *ne, int *nn, idxtype *elmnts, int *etype, int *numflag, 
+void METIS_MeshToDual(int *ne, int *nn, idxtype *elmnts, int *etype, int *numflag,
                       idxtype *dxadj, idxtype *dadjncy)
 {
   int esizes[] = {-1, 3, 4, 8, 4};
@@ -36,10 +36,10 @@ void METIS_MeshToDual(int *ne, int *nn, idxtype *elmnts, int *etype, int *numfla
 
 
 /*****************************************************************************
-* This function creates a graph corresponding to the finite element mesh. 
+* This function creates a graph corresponding to the finite element mesh.
 * At this point the supported elements are triangles, tetrahedrons.
 ******************************************************************************/
-void METIS_MeshToNodal(int *ne, int *nn, idxtype *elmnts, int *etype, int *numflag, 
+void METIS_MeshToNodal(int *ne, int *nn, idxtype *elmnts, int *etype, int *numflag,
                        idxtype *dxadj, idxtype *dadjncy)
 {
   int esizes[] = {-1, 3, 4, 8, 4};
@@ -88,20 +88,20 @@ void GENDUALMETIS(int nelmnts, int nvtxs, int etype, idxtype *elmnts, idxtype *d
 
    /* Construct the node-element list first */
    nptr = idxsmalloc(nvtxs+1, 0, "GENDUALMETIS: nptr");
-   for (j=esize*nelmnts, i=0; i<j; i++) 
+   for (j=esize*nelmnts, i=0; i<j; i++)
      nptr[elmnts[i]]++;
    MAKECSR(i, nvtxs, nptr);
 
    nind = idxmalloc(nptr[nvtxs], "GENDUALMETIS: nind");
    for (k=i=0; i<nelmnts; i++) {
-     for (j=0; j<esize; j++, k++) 
+     for (j=0; j<esize; j++, k++)
        nind[nptr[elmnts[k]]++] = i;
    }
    for (i=nvtxs; i>0; i--)
      nptr[i] = nptr[i-1];
    nptr[0] = 0;
 
-   for (i=0; i<nelmnts; i++) 
+   for (i=0; i<nelmnts; i++)
      dxadj[i] = esize*i;
 
    for (i=0; i<nelmnts; i++) {
@@ -174,13 +174,13 @@ void TRINODALMETIS(int nelmnts, int nvtxs, idxtype *elmnts, idxtype *dxadj, idxt
 
    /* Construct the node-element list first */
    nptr = idxsmalloc(nvtxs+1, 0, "TRINODALMETIS: nptr");
-   for (j=3*nelmnts, i=0; i<j; i++) 
+   for (j=3*nelmnts, i=0; i<j; i++)
      nptr[elmnts[i]]++;
    MAKECSR(i, nvtxs, nptr);
 
    nind = idxmalloc(nptr[nvtxs], "TRINODALMETIS: nind");
    for (k=i=0; i<nelmnts; i++) {
-     for (j=0; j<3; j++, k++) 
+     for (j=0; j<3; j++, k++)
        nind[nptr[elmnts[k]]++] = i;
    }
    for (i=nvtxs; i>0; i--)
@@ -223,13 +223,13 @@ void TETNODALMETIS(int nelmnts, int nvtxs, idxtype *elmnts, idxtype *dxadj, idxt
 
    /* Construct the node-element list first */
    nptr = idxsmalloc(nvtxs+1, 0, "TETNODALMETIS: nptr");
-   for (j=4*nelmnts, i=0; i<j; i++) 
+   for (j=4*nelmnts, i=0; i<j; i++)
      nptr[elmnts[i]]++;
    MAKECSR(i, nvtxs, nptr);
 
    nind = idxmalloc(nptr[nvtxs], "TETNODALMETIS: nind");
    for (k=i=0; i<nelmnts; i++) {
-     for (j=0; j<4; j++, k++) 
+     for (j=0; j<4; j++, k++)
        nind[nptr[elmnts[k]]++] = i;
    }
    for (i=nvtxs; i>0; i--)
@@ -280,13 +280,13 @@ void HEXNODALMETIS(int nelmnts, int nvtxs, idxtype *elmnts, idxtype *dxadj, idxt
 
    /* Construct the node-element list first */
    nptr = idxsmalloc(nvtxs+1, 0, "HEXNODALMETIS: nptr");
-   for (j=8*nelmnts, i=0; i<j; i++) 
+   for (j=8*nelmnts, i=0; i<j; i++)
      nptr[elmnts[i]]++;
    MAKECSR(i, nvtxs, nptr);
 
    nind = idxmalloc(nptr[nvtxs], "HEXNODALMETIS: nind");
    for (k=i=0; i<nelmnts; i++) {
-     for (j=0; j<8; j++, k++) 
+     for (j=0; j<8; j++, k++)
        nind[nptr[elmnts[k]]++] = i;
    }
    for (i=nvtxs; i>0; i--)
@@ -342,20 +342,20 @@ void QUADNODALMETIS(int nelmnts, int nvtxs, idxtype *elmnts, idxtype *dxadj, idx
    int i, j, jj, k, kk, kkk, l, m, n, nedges;
    idxtype *nptr, *nind;
    idxtype *mark;
-   int table[4][2] = {1, 3, 
+   int table[4][2] = {1, 3,
                       0, 2,
-                      1, 3, 
-                      0, 2}; 
+                      1, 3,
+                      0, 2};
 
    /* Construct the node-element list first */
    nptr = idxsmalloc(nvtxs+1, 0, "QUADNODALMETIS: nptr");
-   for (j=4*nelmnts, i=0; i<j; i++) 
+   for (j=4*nelmnts, i=0; i<j; i++)
      nptr[elmnts[i]]++;
    MAKECSR(i, nvtxs, nptr);
 
    nind = idxmalloc(nptr[nvtxs], "QUADNODALMETIS: nind");
    for (k=i=0; i<nelmnts; i++) {
-     for (j=0; j<4; j++, k++) 
+     for (j=0; j<4; j++, k++)
        nind[nptr[elmnts[k]]++] = i;
    }
    for (i=nvtxs; i>0; i--)

@@ -17,8 +17,8 @@ option on the command line is now a call to a function and each
 option-function gets called N+2 times.  First in an initialization phase,
 once for each GRIB record (N times) and finally in a cleanup phase.  Now we
 can have functions that can compute things like averages or manipulate files.
-The only exception to this rule are "init" functions that only get called in 
-the initialzation phase; for example, open an output file.  
+The only exception to this rule are "init" functions that only get called in
+the initialzation phase; for example, open an output file.
 
 		Order of calling option functions.
 
@@ -30,4 +30,3 @@ Execution phase:
 
 Cleanup phase:
 	each non-init function is called in order, mode=-2
-

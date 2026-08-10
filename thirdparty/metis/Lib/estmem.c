@@ -34,7 +34,7 @@ void METIS_EstimateMemory(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numfl
   EstimateCFraction(*nvtxs, xadj, adjncy, &vfraction, &efraction);
 
   /* Estimate the amount of memory for coresize */
-  if (*optype == 2) 
+  if (*optype == 2)
     coresize = nedges;
   else
     coresize = 0;
@@ -58,7 +58,7 @@ void METIS_EstimateMemory(int *nvtxs, idxtype *xadj, idxtype *adjncy, int *numfl
   if (*numflag == 1)
     Change2FNumbering2(*nvtxs, xadj, adjncy);
 }
-  
+
 
 /*************************************************************************
 * This function finds a matching using the HEM heuristic
@@ -118,7 +118,7 @@ int ComputeCoarseGraphSize(int nvtxs, idxtype *xadj, idxtype *adjncy, int cnvtxs
   cnvtxs = cnedges = 0;
   for (i=0; i<nvtxs; i++) {
     v = perm[i];
-    if (cmap[v] != cnvtxs) 
+    if (cmap[v] != cnvtxs)
       continue;
 
     htable[cnvtxs] = cnvtxs;
@@ -135,7 +135,7 @@ int ComputeCoarseGraphSize(int nvtxs, idxtype *xadj, idxtype *adjncy, int cnvtxs
       }
     }
 
-    if (v != u) { 
+    if (v != u) {
       istart = xadj[u];
       iend = xadj[u+1];
       for (j=istart; j<iend; j++) {
@@ -153,5 +153,3 @@ int ComputeCoarseGraphSize(int nvtxs, idxtype *xadj, idxtype *adjncy, int cnvtxs
 
   return cnedges;
 }
-
-

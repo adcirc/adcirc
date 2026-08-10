@@ -14,4 +14,4 @@ Notes
 * Temperature boundary conditions can come from
     * Atmospheric model output
     * Surface Temperature Boundary Values File
-* Output timing matches fort.63 parameters (NSPOOLGE) 
+* Output timing matches fort.63 parameters (NSPOOLGE)

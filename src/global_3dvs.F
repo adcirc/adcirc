@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -43,7 +43,7 @@ C...
      &     MYProc,
      &     INPUTDIR,
      &     LOCALDIR
-     
+
       USE ADC_CONSTANTS, ONLY: RhoWat0, G, SigT0
       USE GLOBAL,
      &     ONLY :
@@ -95,7 +95,7 @@ C...DECLARE 3D GLOBAL ARRAYS
       REAL(8), POINTER :: BTP(:)       ! => MOM_LV_X
       ! QNORMSP1(MNVel) = specified normal flux boundary condition at time level s+1
       REAL(8), POINTER :: QNORMSP1(:)  ! => QN2
-      REAL(8), POINTER :: DelT    !DelT = altername for timestep real(8)                
+      REAL(8), POINTER :: DelT    !DelT = altername for timestep real(8)
 
 c.RJW merged 9/02/2008 Casey 071219: Added the following variable for cumulative mass balance.
       REAL(8) :: MASSCUM
@@ -185,7 +185,7 @@ C...  DECLARE 3D GLOBAL SCALARS
       INTEGER  :: IGC                  !vertical grid code
       REAL(8) :: KP                   !3D bottom friction coefficient
       REAL(8) :: EVMin, EVCon         !minimum vertical eddy viscosity and vertical eddy viscosity constant
-      REAL(8) :: Z0S, Z0B             !surface and bottom roughnesses 
+      REAL(8) :: Z0S, Z0B             !surface and bottom roughnesses
       REAL(8) :: Alp1,Alp2,Alp3       !time stepping coefficients
       REAL(8) :: DTALP2, DT1MALP2     !DelT*alpha2, DelT*(1-alpha2)
       REAL(8) :: DTALP3, DT1MALP3     !DelT*alpha3, DelT*(1-alpha3)
@@ -412,7 +412,7 @@ C
      &   QX2, QY2, QN2
       USE BOUNDARIES, ONLY : NETA, NVEL
       IMPLICIT NONE
-      ! jgf: Moved the following line from alloc_main1a since it only 
+      ! jgf: Moved the following line from alloc_main1a since it only
       ! applies to 3D.
       ALLOCATE(DUU1(MNP),DUV1(MNP),DVV1(MNP),
      &        BSX1(MNP),BSY1(MNP))
@@ -458,7 +458,7 @@ C
       ALLOCATE( Biharmonic_auxiliary_var(MNP,NFEN) )
       ALLOCATE( d_dx_q_nodes(MNP,NFEN), d_dy_q_nodes(MNP,NFEN) )
 ! arash 01/04/2016
-      Allocate( Biharmonic_viscosity_modified_Leith (MNP,NFEN) ) 
+      Allocate( Biharmonic_viscosity_modified_Leith (MNP,NFEN) )
       ALLOCATE( Biharmonic_auxiliary_var_SalOrTemp (MNP,NFEN) )
 !      ALLOCATE( d_dx_SalOrTemp_nodes (MNP,NFEN), d_dy_SalOrTemp_nodes (MNP,NFEN) )
 
@@ -476,9 +476,9 @@ C   kmd - add arrays for river boundary condition in baroclinic simulation
       ALLOCATE( BCRivSalN2(NVEL,NFEN), BCRivTemp(NVEL,NFEN) )
       ALLOCATE( BCRivTempN1(NVEL,NFEN), BCRivTempN2(NVEL,NFEN) )
       !
-      ! jgf: Assign pointers explicitly here after memory allocation 
-      ! for targets in 2DDI code instead of assigning them in the 
-      ! USE GLOBAL, ONLY statement above.  
+      ! jgf: Assign pointers explicitly here after memory allocation
+      ! for targets in 2DDI code instead of assigning them in the
+      ! USE GLOBAL, ONLY statement above.
       BSX => BSX1
       BSY => BSY1
       UU => UU2
@@ -488,8 +488,8 @@ C   kmd - add arrays for river boundary condition in baroclinic simulation
       DUU => DUU1
       DUV => DUV1
       DVV => DVV1
-      BTP => MOM_LV_X  
-      QNORMSP1 => QN2   
+      BTP => MOM_LV_X
+      QNORMSP1 => QN2
 
       RETURN
       END SUBROUTINE ALLOC_3DVS

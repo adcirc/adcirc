@@ -12,7 +12,7 @@
  *   1/2007: Caser Tejeda Hernandez found error in meter underground
  *   2/2007: level 11
  *   2/2007: spelling error fixed
- *   9/2008: type 241 added Nick Lott 
+ *   9/2008: type 241 added Nick Lott
  */
 
 
@@ -354,7 +354,7 @@ const char *kma_level_table[64] = {
 };
 
 int level1(int mode, int type, int undef_val, float value, int center, int subcenter, char *inv_out);
-int level2(int mode, int type1, int undef_val1, float value1, int type2, int undef_val2, 
+int level2(int mode, int type1, int undef_val1, float value1, int type2, int undef_val2,
    float value2, int center, int subcenter, char *inv_out);
 
 int f_lev(ARG0) {

@@ -27,4 +27,4 @@ Notes
 
 * Output is only available in ASCII format
 * Time series data is recorded at specified recording stations
-* The output includes turbulence parameters at multiple vertical levels defined by SIGMA values 
+* The output includes turbulence parameters at multiple vertical levels defined by SIGMA values

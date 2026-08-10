@@ -34,7 +34,7 @@ extern enum output_order_type output_order;
  * as of 7/2021, this routine is not used by wgrib2
  *
  * However, want code that goes from (i,j) -> (lon, lat) and (lon, lat) -> (i,j)
- * for all the projections. This is good for 
+ * for all the projections. This is good for
  *
  * 1) speedup closest()   - find nearest neighbor
  * 2) future interpolation that doesn't depend on ipolates

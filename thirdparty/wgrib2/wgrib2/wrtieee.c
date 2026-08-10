@@ -18,7 +18,7 @@
  * v1.4 3/2008 w. ebisuzaki added little-endian output
  * v1.5 11/2013 w. ebisuzaki remove h4[] to cleanup not ititialized warning
  * v1.6 7/2015 w. ebisuzaki OpenMP support, write to fwrite_file, bigger buffer
- * v1.7 12/2017 w. ebisuzaki: size(float) -> 4  
+ * v1.7 12/2017 w. ebisuzaki: size(float) -> 4
  */
 
 /* BSIZ has to be a multiple of 4 */

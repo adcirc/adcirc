@@ -14,7 +14,7 @@ static struct tr_table_struct {
 	const char *name; const int val;
 } tr_table [] = {
 	{ "min", 0 },
-	{ "hour", 1 }, 
+	{ "hour", 1 },
 	{ "day", 2 },
 	{ "month", 3 },
 	{ "year", 4 },
@@ -120,7 +120,7 @@ int a2code_4_10(const char *string) {
 
 const char *code_4_10_name(int code_4_10) {
     const char *string;
-    
+
     string = "???";
     switch(code_4_10) {
 #include           "CodeTable_4.10.dat"

@@ -82,7 +82,7 @@ static void print_ftime (int unit1, int value1, int unit2, int value2, int forma
 	   return 1;
 	}
 
-	/* 
+	/*
 	  print_ftime
 	     format == 1   only print out 1st time
 	     format == 2   print out 1st - (1st + 2nd) times
@@ -106,7 +106,7 @@ static void print_ftime (int unit1, int value1, int unit2, int value2, int forma
 		}
 		else if (value1 == 0) {
 		    sprintf(inv_out,"%d %s-%d %s",value1,time_range2a(unit1),value2,time_range2a(unit2));
-		} 
+		}
 
 		/* if HOURS is a common unit */
 	/*
@@ -192,7 +192,7 @@ static void print_ftime (int unit1, int value1, int unit2, int value2, int forma
 
 		    if (mode == 99) fprintf(stderr,"loc:1234 p[1]=0 p[0]=%d, p[1]=%d\n", p[0],p[1]);
 
-		    
+
 
 		    /* average or accumulation or */
 		    string = "";
@@ -382,7 +382,7 @@ if (mode == 99) fprintf(stderr,"ftime: more code");
     sprintf(inv_out," %s",string);
     inv_out += strlen(inv_out);
 
-    if (value3 != 0 && p[0] != 51) {	// not if climo or value == 0 
+    if (value3 != 0 && p[0] != 51) {	// not if climo or value == 0
         sprintf(inv_out,"@");
         inv_out += strlen(inv_out);
 	wrt_time(unit3,value3,inv_out);
@@ -461,7 +461,7 @@ int f_ftime1(ARG0) {
 		    case 3: // ref time--
 		    case 4: // ref time++
 		        sprintf(inv_out," LAF["); break;
-		    default: 
+		    default:
 		        sprintf(inv_out," ?["); break;
 		}
 	        inv_out += strlen(inv_out);

@@ -1,5 +1,5 @@
 /*******************************************************************************
-NAME                           INV_INIT 
+NAME                           INV_INIT
 
 PURPOSE:	Initializes inverse projection transformation parameters
 
@@ -104,7 +104,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == SPCS)
      {
-     /* this is the call to initialize STATE PLANE 
+     /* this is the call to initialize STATE PLANE
      --------------------------------------------*/
      *iflg = stplninvint( inzone,inspheroid,fn27,fn83);
         if (*iflg != 0)
@@ -114,7 +114,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == ALBERS)
      {
-     /* this is the call to initialize ALBERS 
+     /* this is the call to initialize ALBERS
      ---------------------------------------*/
      lat1 = paksz(inparm[2],iflg) * 3600 * S2R;
      if (*iflg != 0)
@@ -135,7 +135,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == LAMCC)
      {
-     /* this is the call to initialize LAMBERT CONFORMAL CONIC 
+     /* this is the call to initialize LAMBERT CONFORMAL CONIC
      --------------------------------------------------------*/
      lat1 = paksz(inparm[2],iflg) * 3600 * S2R;
      if (*iflg != 0)
@@ -171,7 +171,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == PS)
      {
-     /* this is the call to initialize POLAR STEREOGRAPHIC 
+     /* this is the call to initialize POLAR STEREOGRAPHIC
      ----------------------------------------------------*/
      center_long = paksz(inparm[4],iflg) * 3600 * S2R;
      if (*iflg != 0)
@@ -195,7 +195,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
      if (*iflg != 0)
         return;
      *iflg = polyinvint(r_major,r_minor,center_long,lat_origin,false_easting,
-		       false_northing); 
+		       false_northing);
      inv_trans[insys] = polyinv;
      }
   else
@@ -250,14 +250,14 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
      center_lat   = paksz(inparm[5],iflg) * 3600 * S2R;
      if (*iflg != 0)
         return;
-     *iflg = sterinvint(radius,center_long,center_lat,false_easting, 
-		       false_northing); 
+     *iflg = sterinvint(radius,center_long,center_lat,false_easting,
+		       false_northing);
      inv_trans[insys] = sterinv;
      }
   else
   if (insys == LAMAZ)
      {
-     /* this is the call to initialize LAMBERT AZIMUTHAL EQUAL-AREA 
+     /* this is the call to initialize LAMBERT AZIMUTHAL EQUAL-AREA
      -------------------------------------------------------------*/
      center_long = paksz(inparm[4],iflg) * 3600 * S2R;
      if (*iflg != 0)
@@ -281,13 +281,13 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
      if (*iflg != 0)
         return;
      *iflg = aziminvint(radius,center_long,center_lat,false_easting,
-		       false_northing); 
+		       false_northing);
      inv_trans[insys] = aziminv;
      }
   else
   if (insys == GNOMON)
      {
-     /* this is the call to initialize GNOMONIC 
+     /* this is the call to initialize GNOMONIC
      ----------------------------------------*/
      center_long  = paksz(inparm[4],iflg) * 3600 * S2R;
      if (*iflg != 0)
@@ -311,13 +311,13 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
      if (*iflg != 0)
         return;
      *iflg = orthinvint(radius,center_long,center_lat,false_easting,
-		       false_northing); 
+		       false_northing);
      inv_trans[insys] = orthinv;
      }
   else
   if (insys == GVNSP)
      {
-     /* this is the call to initialize GENERAL VERTICAL NEAR SIDED PERSPECTIVE 
+     /* this is the call to initialize GENERAL VERTICAL NEAR SIDED PERSPECTIVE
      -----------------------------------------------------------------------*/
      center_long  = paksz(inparm[4],iflg) * 3600 * S2R;
      if (*iflg != 0)
@@ -333,7 +333,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == SNSOID)
      {
-     /* this is the call to initialize SINUSOIDAL 
+     /* this is the call to initialize SINUSOIDAL
      --------------------------------------------*/
      center_long    = paksz(inparm[4],iflg) * 3600 * S2R;
      if (*iflg != 0)
@@ -353,7 +353,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
      if (*iflg != 0)
         return;
      *iflg = equiinvint(radius,center_long,lat1,false_easting,
-		       false_northing); 
+		       false_northing);
      inv_trans[insys] = equiinv;
      }
   else
@@ -370,7 +370,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == VGRINT)
     {
-    /* this is the call to initialize VAN DER GRINTEN 
+    /* this is the call to initialize VAN DER GRINTEN
     -----------------------------------------------*/
     center_long  = paksz(inparm[4],iflg) * 3600 * S2R;
     if (*iflg != 0)
@@ -381,7 +381,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == HOM)
      {
-     /* this is the call to initialize HOTLINE OBLIQUE MERCATOR 
+     /* this is the call to initialize HOTLINE OBLIQUE MERCATOR
      ---------------------------------------------------------*/
      scale_factor = inparm[2];
      lat_origin = paksz(inparm[5],iflg) * 3600 * S2R;
@@ -412,7 +412,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
         lat2 = paksz(inparm[11],iflg) * 3600 * S2R;
         if (*iflg != 0)
            return;
-        
+
         }
      *iflg = omerinvint(r_major,r_minor,scale_factor,azimuth,lon_origin,
 			lat_origin,false_easting, false_northing,lon1,lat1,
@@ -422,7 +422,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == SOM)
      {
-     /* this is the call to initialize SOM 
+     /* this is the call to initialize SOM
      -----------------------------------*/
      path = inparm[3];
      satnum = inparm[2];
@@ -451,7 +451,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == HAMMER)
     {
-    /* this is the call to initialize HAMMER 
+    /* this is the call to initialize HAMMER
     --------------------------------------*/
     center_long  = paksz(inparm[4],iflg) * 3600 * S2R;
     if (*iflg != 0)
@@ -462,7 +462,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == ROBIN)
     {
-    /* this is the call to initialize ROBINSON 
+    /* this is the call to initialize ROBINSON
     ----------------------------------------*/
     center_long  = paksz(inparm[4],iflg) * 3600 * S2R;
     if (*iflg != 0)
@@ -492,7 +492,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == IMOLL)
      {
-     /* this is the call to initialize INTERRUPTED MOLLWEIDE 
+     /* this is the call to initialize INTERRUPTED MOLLWEIDE
      -----------------------------------------------------*/
      *iflg = imolwinvint(radius);
      inv_trans[insys] = imolwinv;
@@ -500,7 +500,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == ALASKA)
      {
-     /* this is the call to initialize ALASKA CONFORMAL 
+     /* this is the call to initialize ALASKA CONFORMAL
      ------------------------------------------------*/
      *iflg = alconinvint(r_major,r_minor,false_easting,false_northing);
      inv_trans[insys] = alconinv;
@@ -508,7 +508,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == WAGIV)
      {
-     /* this is the call to initialize WAGNER IV 
+     /* this is the call to initialize WAGNER IV
      -----------------------------------------*/
      center_long = paksz(inparm[4],iflg) * 3600 * S2R;
      if (*iflg != 0)
@@ -519,7 +519,7 @@ long tmpspheroid;	/* temporary spheroid for UTM			*/
   else
   if (insys == WAGVII)
      {
-     /* this is the call to initialize WAGNER VII 
+     /* this is the call to initialize WAGNER VII
      ------------------------------------------*/
      center_long = paksz(inparm[4],iflg) * 3600 * S2R;
      if (*iflg != 0)

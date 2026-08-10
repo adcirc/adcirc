@@ -37,11 +37,11 @@ void MocRefine2Way(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, float 
     switch (ctrl->RType) {
       case RTYPE_FM:
         MocBalance2Way(ctrl, graph, tpwgts, 1.03);
-        MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 8); 
+        MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 8);
         break;
       case 2:
         MocBalance2Way(ctrl, graph, tpwgts, 1.03);
-        MocFM_2WayEdgeRefine2(ctrl, graph, tpwgts, tubvec, 8); 
+        MocFM_2WayEdgeRefine2(ctrl, graph, tpwgts, tubvec, 8);
         break;
       default:
         errexit("Unknown refinement type: %d\n", ctrl->RType);
@@ -58,7 +58,7 @@ void MocRefine2Way(CtrlType *ctrl, GraphType *orggraph, GraphType *graph, float 
   }
 
   MocBalance2Way(ctrl, graph, tpwgts, 1.01);
-  MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 8); 
+  MocFM_2WayEdgeRefine(ctrl, graph, tpwgts, 8);
 
   IFSET(ctrl->dbglvl, DBG_TIME, stoptimer(ctrl->UncoarsenTmr));
 }
@@ -86,7 +86,7 @@ void MocAllocate2WayPartitionMemory(CtrlType *ctrl, GraphType *graph)
 
 
 /*************************************************************************
-* This function computes the initial id/ed 
+* This function computes the initial id/ed
 **************************************************************************/
 void MocCompute2WayPartitionParams(CtrlType *ctrl, GraphType *graph)
 {
@@ -216,4 +216,3 @@ void MocProject2WayPartition(CtrlType *ctrl, GraphType *graph)
   graph->coarser = NULL;
 
 }
-

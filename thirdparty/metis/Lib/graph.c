@@ -39,7 +39,7 @@ void SetUpGraph(GraphType *graph, int OpType, int nvtxs, int ncon,
   graph->adjncy = adjncy;
 
   if (ncon == 1) { /* We are in the non mC mode */
-    gsize = 0; 
+    gsize = 0;
     if ((wgtflag&2) == 0)
       gsize += nvtxs;
     if ((wgtflag&1) == 0)
@@ -82,7 +82,7 @@ void SetUpGraph(GraphType *graph, int OpType, int nvtxs, int ncon,
 
   }
   else {  /* Set up the graph in MOC mode */
-    gsize = 0; 
+    gsize = 0;
     if ((wgtflag&1) == 0)
       gsize += graph->nedges;
 
@@ -91,13 +91,13 @@ void SetUpGraph(GraphType *graph, int OpType, int nvtxs, int ncon,
     graph->gdata = idxmalloc(gsize, "SetUpGraph: gdata");
     gsize = 0;
 
-    for (i=0; i<ncon; i++) 
+    for (i=0; i<ncon; i++)
       tvwgt[i] = idxsum_strd(nvtxs, vwgt+i, ncon);
-    
+
     nvwgt = graph->nvwgt = fmalloc(ncon*nvtxs, "SetUpGraph: nvwgt");
 
     for (i=0; i<nvtxs; i++) {
-      for (j=0; j<ncon; j++) 
+      for (j=0; j<ncon; j++)
         nvwgt[i*ncon+j] = (1.0*vwgt[i*ncon+j])/(1.0*tvwgt[j]);
     }
 
@@ -158,7 +158,7 @@ void SetUpGraphKway(GraphType *graph, int nvtxs, idxtype *xadj, idxtype *adjncy)
   graph->cmap = graph->gdata + nvtxs;
 
   /* Compute the initial values of the adjwgtsum */
-  for (i=0; i<nvtxs; i++) 
+  for (i=0; i<nvtxs; i++)
     graph->adjwgtsum[i] = xadj[i+1]-xadj[i];
 
 }
@@ -168,7 +168,7 @@ void SetUpGraphKway(GraphType *graph, int nvtxs, idxtype *xadj, idxtype *adjncy)
 /*************************************************************************
 * This function sets up the graph from the user input
 **************************************************************************/
-void SetUpGraph2(GraphType *graph, int nvtxs, int ncon, idxtype *xadj, 
+void SetUpGraph2(GraphType *graph, int nvtxs, int ncon, idxtype *xadj,
        idxtype *adjncy, float *nvwgt, idxtype *adjwgt)
 {
   int i, j, sum;
@@ -208,7 +208,7 @@ void SetUpGraph2(GraphType *graph, int nvtxs, int ncon, idxtype *xadj,
 /*************************************************************************
 * This function sets up the graph from the user input
 **************************************************************************/
-void VolSetUpGraph(GraphType *graph, int OpType, int nvtxs, int ncon, idxtype *xadj, 
+void VolSetUpGraph(GraphType *graph, int OpType, int nvtxs, int ncon, idxtype *xadj,
                    idxtype *adjncy, idxtype *vwgt, idxtype *vsize, int wgtflag)
 {
   int i, j, k, sum, gsize;
@@ -277,7 +277,7 @@ void VolSetUpGraph(GraphType *graph, int OpType, int nvtxs, int ncon, idxtype *x
 
   }
   else {  /* Set up the graph in MOC mode */
-    gsize = graph->nedges; 
+    gsize = graph->nedges;
     if ((wgtflag&1) == 0)
       gsize += nvtxs;
 
@@ -287,19 +287,19 @@ void VolSetUpGraph(GraphType *graph, int OpType, int nvtxs, int ncon, idxtype *x
     gsize = 0;
 
     /* Create the normalized vertex weights along each constrain */
-    if ((wgtflag&2) == 0) 
+    if ((wgtflag&2) == 0)
       vwgt = idxsmalloc(nvtxs, 1, "SetUpGraph: vwgt");
 
-    for (i=0; i<ncon; i++) 
+    for (i=0; i<ncon; i++)
       tvwgt[i] = idxsum_strd(nvtxs, vwgt+i, ncon);
-    
+
     nvwgt = graph->nvwgt = fmalloc(ncon*nvtxs, "SetUpGraph: nvwgt");
 
     for (i=0; i<nvtxs; i++) {
-      for (j=0; j<ncon; j++) 
+      for (j=0; j<ncon; j++)
         nvwgt[i*ncon+j] = (1.0*vwgt[i*ncon+j])/(1.0*tvwgt[j]);
     }
-    if ((wgtflag&2) == 0) 
+    if ((wgtflag&2) == 0)
       free(vwgt);
 
 
@@ -390,12 +390,12 @@ int IsConnectedSubdomain(CtrlType *ctrl, GraphType *graph, int pid, int report)
 
   nleft = 0;
   for (i=0; i<nvtxs; i++) {
-    if (where[i] == pid) 
+    if (where[i] == pid)
       nleft++;
   }
 
   for (i=0; i<nvtxs; i++) {
-    if (where[i] == pid) 
+    if (where[i] == pid)
       break;
   }
 
@@ -570,7 +570,7 @@ int FindComponents(CtrlType *ctrl, GraphType *graph, idxtype *cptr, idxtype *cin
 
   nleft = 0;
   for (i=0; i<nvtxs; i++) {
-    if (where[i] != 2) 
+    if (where[i] != 2)
       nleft++;
   }
 
@@ -611,6 +611,3 @@ int FindComponents(CtrlType *ctrl, GraphType *graph, idxtype *cptr, idxtype *cin
 
   return ncmps;
 }
-
-
-

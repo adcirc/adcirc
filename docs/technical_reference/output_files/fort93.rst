@@ -26,4 +26,4 @@ Notes
 * The output frequency is controlled by :ref:`NSPOOLGW <NSPOOLGW>` parameter
 * Output timing can be further controlled using :ref:`TOUTSGW <TOUTSGW>` (start time) and :ref:`TOUTFGW <TOUTFGW>` (end time)
 * The variable iceCoveragePercent represents the percentage of ice coverage at each node
-* File structure matches the format used in fort.73 (pressure) and fort.63 (elevation) files 
+* File structure matches the format used in fort.73 (pressure) and fort.63 (elevation) files

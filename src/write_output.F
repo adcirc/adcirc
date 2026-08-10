@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -88,9 +88,9 @@ Cobell Added a descript for time varying weir tracking
       type(OutputDataDescript_t), target :: weirElevDescript
       ! @jasonfleming: adding output for wind drag
       type(OutputDataDescript_t), target :: windDragDescript
-      ! jgf: added support for dynamic water level offset 
-      type(OutputDataDescript_t), target :: dynamicWaterLevelCorrectionDescript      
-      type(OutputDataDescript_t), target :: dynamicWaterLevelCorrectionStaDescript      
+      ! jgf: added support for dynamic water level offset
+      type(OutputDataDescript_t), target :: dynamicWaterLevelCorrectionDescript
+      type(OutputDataDescript_t), target :: dynamicWaterLevelCorrectionStaDescript
       type(OutputDataDescript_t), target :: labelsDescript
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
@@ -250,6 +250,11 @@ C
       type(OutputDataDescript_t) :: H1_HS_Descript
       type(OutputDataDescript_t) :: H2_HS_Descript
 
+
+      ! InlineSAL ZetaSAL
+      type(outputdatadescript_t):: zetasaltm0_hs_descript,
+     &           zetasaltm1_hs_descript, zetasaltm2_hs_descript
+
       !
       !  S W A N  O U T P U T  D A T A
       !
@@ -385,8 +390,8 @@ C----------------------------------------------------------------------
      &   windDragOut, windDragSpoolCounter, outputWindDrag,
      &   dynamicWaterLevelCorrectionSpoolCounter,
      &   dynamicWaterLevelCorrection2, usingDynamicWaterLevelCorrection,
-     &   dynamicWaterLevelCorrectionSpoolCounter, dynamicWaterLevelCorrection2, 
-     &   usingdynamicWaterLevelCorrection, dynamicWaterLevelCorrectionStaSpoolCounter, 
+     &   dynamicWaterLevelCorrectionSpoolCounter, dynamicWaterLevelCorrection2,
+     &   usingdynamicWaterLevelCorrection, dynamicWaterLevelCorrectionStaSpoolCounter,
      &   dynamicWaterLevelCorrectionSta
       USE ADC_CONSTANTS, ONLY: PRBCKGRND
 
@@ -459,7 +464,7 @@ C
 
 !... For SWAN, there are additional output arrays
 #ifdef CSWAN
-      ptr(35)%descript2D => SwanHSDescript 
+      ptr(35)%descript2D => SwanHSDescript
       ptr(36)%descript2D => SwanHSMaxDescript
       ptr(37)%descript2D => SwanDIRDescript
       ptr(38)%descript2D => SwanDIRMaxDescript
@@ -503,9 +508,9 @@ C
       end do
 
       ! fort.61
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTE, ET00_g, NSTAE_G ) ; 
+         CALL REAL_FIELD_ALLOCATE( NOUTE, ET00_g, NSTAE_G ) ;
          ! ALLOCATE(ET00_g(NSTAE_G))
       ENDIF
       ElevStaDescript % lun                  = 61
@@ -537,10 +542,10 @@ C
       !
       ! fort.62
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTV, UU00_g, NSTAV_G ) ; 
-         CALL REAL_FIELD_ALLOCATE( NOUTV, VV00_g, NSTAV_G ) ; 
+         CALL REAL_FIELD_ALLOCATE( NOUTV, UU00_g, NSTAV_G ) ;
+         CALL REAL_FIELD_ALLOCATE( NOUTV, VV00_g, NSTAV_G ) ;
          ! ALLOCATE(UU00_g(NSTAV_G))
          ! ALLOCATE(VV00_g(NSTAV_G))
       ENDIF
@@ -607,9 +612,9 @@ C        in use; allocate them before the first pointer association
       ENDIF
 
       ! fort.63
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, ETA2_g, NP_G ) ; 
+         CALL REAL_FIELD_ALLOCATE( NOUTGE, ETA2_g, NP_G ) ;
       ENDIF
       ElevDescript % lun                  = 63
       ElevDescript % specifier            = NOUTGE
@@ -625,12 +630,12 @@ C        in use; allocate them before the first pointer association
 
       ! tau0 fort.90
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if ( OutputTau0 ) then
             CALL REAL_FIELD_ALLOCATE( NOUTGE, TAU0VAR_g, NP_G ) ;
-         endif 
-        ! ALLOCATE(TAU0VAR_g(NP_G)) ;
+         endif
+         ! ALLOCATE(TAU0VAR_g(NP_G)) ;
       ENDIF
       Tau0Descript % lun                  = 90
       Tau0Descript % specifier            = NOUTGE
@@ -647,7 +652,7 @@ C        in use; allocate them before the first pointer association
 
       ! sponge layer fort.92
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if ( outputsponge ) then
             CALL REAL_FIELD_ALLOCATE( ASCII, sponge_g, NP_G ) ;
@@ -666,7 +671,7 @@ C        in use; allocate them before the first pointer association
 
       ! NodeCode output
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if ( outputNodeCode ) then
             CALL INT_FIELD_ALLOCATE( ASCII, nodecode_out_g, NP_G ) ;
@@ -691,7 +696,7 @@ C        in use; allocate them before the first pointer association
 
       ! NOFF output
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if ( outputNOFF ) then
             CALL INT_FIELD_ALLOCATE( ASCII, NOFF_out_g, NP_G ) ;
@@ -718,10 +723,10 @@ C        in use; allocate them before the first pointer association
       noffOutDescript % isInteger            = .true.
 
       ! fort.6
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTGV, UU2_g, NP_G ) ; 
-         CALL REAL_FIELD_ALLOCATE( NOUTGV, VV2_g, NP_G ) ; 
+         CALL REAL_FIELD_ALLOCATE( NOUTGV, UU2_g, NP_G ) ;
+         CALL REAL_FIELD_ALLOCATE( NOUTGV, VV2_g, NP_G ) ;
       ENDIF
       VelDescript % lun                  = 64
       VelDescript % specifier            = NOUTGV
@@ -746,11 +751,11 @@ C     Rotated-frame: see note on VelStaDescript above
 
       ! fort.71
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &        .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if ( nws .ne. 0 ) then
            CALL REAL_FIELD_ALLOCATE( NOUTM, RMP00_g, NSTAM_G ) ;
-         endif 
+         endif
          ! ALLOCATE(RMP00_g(NSTAM_G))
       ENDIF
       NSCOUP = NSCOUM ! jgf51.51: So we don't share a spool counter.
@@ -785,7 +790,7 @@ C     Rotated-frame: see note on VelStaDescript above
 
       ! fort.72
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if ( nws .ne. 0 ) then
            CALL REAL_FIELD_ALLOCATE( NOUTM, RMU00_g, NSTAM_G ) ;
@@ -829,7 +834,7 @@ C     Rotated-frame: see note on VelStaDescript above
 
       ! fort.73
       !  DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if ( nws .ne. 0 ) then
             CALL REAL_FIELD_ALLOCATE( NOUTGW, Pr2_g, NP_G ) ;
@@ -853,13 +858,13 @@ C     Rotated-frame: see note on VelStaDescript above
 
       ! jgf: water level dynamicWaterlevelCorrection.63
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &        .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
 
          if ( usingDynamicWaterLevelCorrection ) then
-           CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+           CALL REAL_FIELD_ALLOCATE( NOUTGE,
      &            dynamicWaterLevelCorrection2_g, NP_G ) ;
-         endif 
+         endif
         ! ALLOCATE(dynamicWaterLevelCorrection2_g(NP_G))
       ENDIF
       dynamicWaterLevelCorrectionDescript % lun                  = 108
@@ -877,10 +882,10 @@ C     Rotated-frame: see note on VelStaDescript above
       ! dynamicWaterlevelCorrection.61
       ! DW
 !      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &        .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if (  usingDynamicWaterLevelCorrection ) then
-            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+            CALL REAL_FIELD_ALLOCATE( NOUTGE,
      &           dynamicWaterLevelCorrectionSta_g, NSTAE_G ) ;
          endif
          ! ALLOCATE(dynamicWaterLevelCorrectionSta_g(NSTAE_G))
@@ -901,7 +906,7 @@ C     Rotated-frame: see note on VelStaDescript above
       dynamicWaterLevelCorrectionStaDescript % outputTimeStepIncrement = NSPOOLE
       dynamicWaterLevelCorrectionStaDescript % spoolCounter => dynamicWaterLevelCorrectionStaSpoolCounter
       dynamicWaterLevelCorrectionStaDescript % elements                => NNE
-      dynamicWaterLevelCorrectionStaDescript % interp_fac1             => STAIE1 
+      dynamicWaterLevelCorrectionStaDescript % interp_fac1             => STAIE1
       dynamicWaterLevelCorrectionStaDescript % interp_fac2             => STAIE2
       dynamicWaterLevelCorrectionStaDescript % interp_fac3             => STAIE3
       IF (ICS.eq.1) THEN
@@ -916,12 +921,12 @@ C     Rotated-frame: see note on VelStaDescript above
       !
       ! fort.74
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
           if ( nws .ne. 0 ) then
             CALL REAL_FIELD_ALLOCATE( NOUTGW, WVNXOut_g, NP_G ) ;
             CALL REAL_FIELD_ALLOCATE( NOUTGW, WVNYOut_g, NP_G ) ;
-          endif      
+          endif
 !         ALLOCATE(WVNXOut_g(NP_G))
 !         ALLOCATE(WVNYOut_g(NP_G))
       ENDIF
@@ -945,11 +950,11 @@ C     Rotated-frame: see note on VelStaDescript above
       !
       ! wind Drag
       ! DW
-      if ( (mnproc.gt.1) .and. (myproc.eq.0) 
+      if ( (mnproc.gt.1) .and. (myproc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
-          if ( nws .ne. 0 ) then 
+          if ( nws .ne. 0 ) then
              CALL REAL_FIELD_ALLOCATE( NOUTGW, windDragOut_g, NP_G ) ;
-          endif      
+          endif
       !  allocate(windDragOut_g(np_g))
       endif
       windDragDescript % lun                  = 173
@@ -967,7 +972,7 @@ C     Rotated-frame: see note on VelStaDescript above
       !
       ! fort.75  !tcm v50.66.01 Added for Time Varying Bathymetry
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if ( nddt .ne. 0 ) then
             CALL REAL_FIELD_ALLOCATE( NOUTE, DP00_g, NSTAE_G ) ;
@@ -1004,10 +1009,10 @@ C     Rotated-frame: see note on VelStaDescript above
          BathyStaDescript % writeFlag         = .false.
       endif
 
-      ! fort.76  
+      ! fort.76
       ! tcm v50.66.01  Added for Time Varying Bathymetry
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and.  (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if ( nddt .ne. 0 ) then
            CALL REAL_FIELD_ALLOCATE( NOUTGE, DPOUT_g, NSTAE_G ) ;
@@ -1061,9 +1066,9 @@ C     Rotated-frame: see note on VelStaDescript above
       ! fort.93
 C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
-     &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN 
-         if (ncice .ne. 0)  then 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
+     &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+         if (ncice .ne. 0)  then
            CALL REAL_FIELD_ALLOCATE( NOUTGW, CICEOUT_g, NP_G ) ;
          endif
          ! ALLOCATE(CICEOUT_g(NP_G))
@@ -1087,9 +1092,9 @@ C... v49.64.01 tcm -- added for ice stations
       ! DW
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
-         if (ncice .ne. 0) then 
+         if (ncice .ne. 0) then
             CALL REAL_FIELD_ALLOCATE( NOUTM, RMICE00_g, NSTAM_G ) ;
-         endif 
+         endif
         ! ALLOCATE(RMICE00_g(NSTAM_G))
       ENDIF
       NSCOUI = NSCOUM !jgf51.51: So we don't share a spool counter.
@@ -1127,11 +1132,11 @@ C... v49.64.01 tcm -- added for ice stations
       ! rads.64
       ! Radiation Stress
       ! DW
-      IF ( (MNPROC.gt.1).and.(MyProc.eq.0).and.(nrs.ne.0) 
+      IF ( (MNPROC.gt.1).and.(MyProc.eq.0).and.(nrs.ne.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
          ! ALLOCATE(RSNXOUT_g(NP_G))
          ! ALLOCATE(RSNYOUT_g(NP_G))
-          
+
          CALL REAL_FIELD_ALLOCATE( NOUTGW, RSNXOUT_g, NP_G ) ;
          CALL REAL_FIELD_ALLOCATE( NOUTGW, RSNYOUT_g, NP_G ) ;
       ENDIF
@@ -1172,7 +1177,7 @@ C... v49.64.01 tcm -- added for ice stations
 
       ! fort.81
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
           if ( im .eq. 10 ) then
              CALL REAL_FIELD_ALLOCATE( NOUTC, CC00_g, NP_G ) ;
@@ -1203,13 +1208,13 @@ C... v49.64.01 tcm -- added for ice stations
 
       ! fort.83
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
-         if ( im .eq. 10 ) then 
+         if ( im .eq. 10 ) then
             CALL REAL_FIELD_ALLOCATE( NOUTGC, CH1_g, NP_G ) ;
          endif
         ! ALLOCATE(CH1_g(NP_G)) ;
-      ENDIF  
+      ENDIF
       ConcDescript % lun                  = 83
       ConcDescript % specifier            = NOUTGC
       ConcDescript % startTimeStep           = NTCYSGC
@@ -1227,11 +1232,11 @@ C... v49.64.01 tcm -- added for ice stations
 C     maxele.63
       ! DW
 C      IF ( mnproc.gt.1 ) THEN
-       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+         CALL REAL_FIELD_ALLOCATE( NOUTGE,
      &             ETAMAX_g, NP_G, -99999.d0 ) ;
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+         CALL REAL_FIELD_ALLOCATE( NOUTGE,
      &             ETAMAX_Time_G, NP_G, -99999.d0 ) ;
 
          ! ALLOCATE(ETAMAX_g(NP_G))
@@ -1261,8 +1266,8 @@ C      IF ( mnproc.gt.1 ) THEN
 C     maxvel.63
       ! DW
 !      IF (mnproc.gt.1)  THEN
-       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
-     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN 
+       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
          CALL REAL_FIELD_ALLOCATE( NOUTGV, UMAX_g, NP_G, 0.d0 ) ;
          CALL REAL_FIELD_ALLOCATE( NOUTGV, UMAX_Time_G, NP_G, -99999.d0) ;
          ! ALLOCATE(UMAX_g(NP_G))
@@ -1292,13 +1297,13 @@ C     maxvel.63
 C     prmin.63
       ! DW
 !      IF (mnproc.gt.1) THEN
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if ( nws .ne. 0 ) then
-            CALL REAL_FIELD_ALLOCATE( NOUTGW, 
+            CALL REAL_FIELD_ALLOCATE( NOUTGW,
      &         PRMIN_g, NP_G, 99999.d0 ) ;
-            CALL REAL_FIELD_ALLOCATE( NOUTGW, 
-     &         PRMIN_Time_g, NP_G, -99999.d0 )  
+            CALL REAL_FIELD_ALLOCATE( NOUTGW,
+     &         PRMIN_Time_g, NP_G, -99999.d0 )
          endif
          ! ALLOCATE(PRMIN_g(NP_G))
          ! ALLOCATE (PRMIN_Time_G(NP_G))
@@ -1329,13 +1334,13 @@ C     prmin.63
 C     maxwvel.63
       ! DW
 C      IF (mnproc.gt.1) THEN
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if ( nws .ne. 0 ) then
-            CALL REAL_FIELD_ALLOCATE( NOUTGW, 
+            CALL REAL_FIELD_ALLOCATE( NOUTGW,
      &         WVNOUTMAX_g, NP_G, 0.d0 ) ;
-            CALL REAL_FIELD_ALLOCATE( NOUTGW, 
-     &         WVNOUTMAX_Time_G, NP_G, -99999.d0 )  
+            CALL REAL_FIELD_ALLOCATE( NOUTGW,
+     &         WVNOUTMAX_Time_G, NP_G, -99999.d0 )
          endif
          ! ALLOCATE(WVNOUTMAX_g(NP_G))
          ! ALLOCATE (WVNOUTMAX_Time_G(NP_G))
@@ -1366,13 +1371,13 @@ C
 C     maxrs.63
       ! DW
 C      IF (mnproc.gt.1) THEN
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
-     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
+     &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
          if ( nrs .ne. 0 ) then
-            CALL REAL_FIELD_ALLOCATE( NOUTGW, 
+            CALL REAL_FIELD_ALLOCATE( NOUTGW,
      &         RSNMAX_g, NP_G, 0.d0 ) ;
-            CALL REAL_FIELD_ALLOCATE( NOUTGW, 
-     &         RSNMAX_Time_G, NP_G, -99999.d0 )  
+            CALL REAL_FIELD_ALLOCATE( NOUTGW,
+     &         RSNMAX_Time_G, NP_G, -99999.d0 )
          endif
 
          ! ALLOCATE(RSNMAX_g(NP_G))
@@ -1408,12 +1413,12 @@ C      IF (mnproc.gt.1) THEN
 !     ESLNodes.63
       ! DW
 !      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
           if ( LoadEleSlopeLim ) then
-             CALL REAL_FIELD_ALLOCATE( 1, 
+             CALL REAL_FIELD_ALLOCATE( 1,
      &            ESLCOUNT_G, NP_G, 0.d0 ) ;
-          endif    
+          endif
          ! ALLOCATE(ESLONOFF_g(NP_G))
          ! ESLONOFF_g(:) = 0.d0
       ENDIF
@@ -1432,13 +1437,13 @@ C      IF (mnproc.gt.1) THEN
       ! inundationtime.63 (works like a min/max file)
 !      if (mnproc.gt.1) then
       ! DW
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
 
           IF ( inundationOutput ) then
-            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+            CALL REAL_FIELD_ALLOCATE( NOUTGE,
      &         inundationTime_g, NP_G, 0.d0 ) ;
-            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+            CALL REAL_FIELD_ALLOCATE( NOUTGE,
      &         inundationTime_onset_g, NP_G, -99999.d0 ) ;
           ENDIF
 
@@ -1467,16 +1472,16 @@ C      IF (mnproc.gt.1) THEN
       ! maxinundepth.63 (works like a min/max file)
       ! DW
 !      if (mnproc.gt.1) then
-       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
- 
+
            IF ( inundationOutput ) then
-            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+            CALL REAL_FIELD_ALLOCATE( NOUTGE,
      &         MaxInunDepth_g, NP_G, -99999.d0 ) ;
-            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+            CALL REAL_FIELD_ALLOCATE( NOUTGE,
      &         MaxInunDepth_time_g, NP_G, -99999.d0 ) ;
           ENDIF
-    
+
          ! allocate(MaxInunDepth_g(NP_G))
          ! allocate(MaxInunDepth_time_g(NP_G))
          ! MaxInunDepth_g(:) = -99999.d0
@@ -1502,13 +1507,13 @@ C      IF (mnproc.gt.1) THEN
       ! endrisinginun.63 (1 if water is rising at end of simulation)
       ! DW
 !     IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
           IF ( inundationOutput ) then
-            CALL INT_FIELD_ALLOCATE( NOUTGE, 
+            CALL INT_FIELD_ALLOCATE( NOUTGE,
      &         endRisingInun_g, NP_G, 0 ) ;
          ENDIF
-           
+
 !         ALLOCATE(endRisingInun_g(NP_G))
 !         endRisingInun_g(:) = 0
       ENDIF
@@ -1535,15 +1540,15 @@ C      IF (mnproc.gt.1) THEN
       ! everdried.63 (works like a min/max file)
       ! DW
 !      if (mnproc.gt.1) then
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) 
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &      .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
           IF ( inundationOutput ) then
-            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+            CALL REAL_FIELD_ALLOCATE( NOUTGE,
      &        EverDried_g, NP_G, 1.d0 ) ;
-            CALL REAL_FIELD_ALLOCATE( NOUTGE, 
+            CALL REAL_FIELD_ALLOCATE( NOUTGE,
      &        EverDried_time_g, NP_G, -99999.d0 ) ;
           ENDIF
-            
+
 !         allocate(EverDried_g(NP_G))
 !         allocate(EverDried_time_g(NP_G))
 !         EverDried_g(:) = 1.d0
@@ -1746,7 +1751,7 @@ C                      ! initialize it if it wasn't initialized above
       call freeFluxBoundaryArrayTemporaries()
 
 C----------------------------------------------------------------------
- 
+
       end subroutine initOutput2D
 C----------------------------------------------------------------------
 
@@ -1954,7 +1959,7 @@ C       for all processors, not just myproc=0.
          if (noutgv.ne.0) then
             CALL writeOutArrayMinMax(312, TimeLoc, IT, 2, UMaxDescript,
      &        packTwo, unpackTwo)
-         endif  
+         endif
          if ((nws.ne.0).and.(noutgw.ne.0)) then
             CALL writeOutArrayMinMax(313, TimeLoc, IT, 2, PrMinDescript,
      &           packTwo, unpackTwo)
@@ -2726,7 +2731,7 @@ C     S U B R O U T I N E
 C            W R I T E   O U T   H A R M O N I C  A R R A Y S
 C-----------------------------------------------------------------------
 C     jgf49.44 Writes the harmonic arrays in output files of the desired
-C     format. 
+C     format.
 C     WJP 02.20.2018 Updated to support netcdf
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutHarmonicArrays(lun, sets, mag1, ph1, mag2, ph2)
@@ -2808,7 +2813,7 @@ C
             ENDDO
             CLOSE(lun)
          ENDIF
-      CASE(3,5) ! netcdf 
+      CASE(3,5) ! netcdf
 #ifdef ADCNETCDF
          IF (MyProc.eq.0) THEN
              IF (sets == 1) THEN
@@ -2820,7 +2825,7 @@ C
          ENDIF
 #else
          call allMessage(ERROR,
-     &        'ERROR: You didn''t compile with NetCDF.')         
+     &        'ERROR: You didn''t compile with NetCDF.')
 #endif
       CASE DEFAULT
          write(scratchMessage,'(a,i0,a)')
@@ -3238,8 +3243,8 @@ C
          IF(((IDEN.EQ.3).OR.(IDEN.EQ.4)).AND.(BCFLAG_TEMP.NE.0)) THEN
             QSurfKp1Descript % specifier         =  I3DGD
          ELSE
-            QSurfKp1Descript % specifier         =  0 
-         ENDIF   
+            QSurfKp1Descript % specifier         =  0
+         ENDIF
          QSurfKp1Descript % lun                  =  47
          QSurfKp1Descript % initial_value        =  0.0
          QSurfKp1Descript % num_items_per_record =  1
@@ -4315,7 +4320,7 @@ C     collect up the data from subdomains if running in parallel
 C     write data according to format specifier from fort.15 (e.g., NOUTE)
       SELECT CASE (ABS(descript % specifier))
         CASE(OFF)
-          write(scratchMessage,'(a,a,a)') 
+          write(scratchMessage,'(a,a,a)')
      &      'writeOutArray() called for ',trim(descript%file_name),
      &      ' but output for this file is turned off.'
           call allMessage(INFO, scratchMessage)
@@ -4348,7 +4353,7 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
             IF (MYPROC.EQ.0) THEN
                CALL writeOutArrayXDMF(TimeLoc, it, descript)
             ENDIF
-#else            
+#else
             call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &         message='XDMF was specified but this executable was '//
      &                 'not compiled with XDMF support.')
@@ -4416,7 +4421,7 @@ C     write data in ascii text only (other output formats are not supported)
       SELECT CASE (ABS(descript % specifier))
 
       CASE(OFF)
-         write(scratchMessage,'(a,a,a)') 
+         write(scratchMessage,'(a,a,a)')
      &   'writeOutArrayMinMax() called for ',trim(descript%file_name),
      &   ' but output for this file is turned off.'
          call allMessage(INFO, scratchMessage)
@@ -4540,6 +4545,9 @@ C-----------------------------------------------------------------------
      &     nolibf, nwp, tau0, cf, eslm
 #endif
 
+      USE MOD_INLINE_SAL, only: import_zetasal => export_zetasal,
+     &            import_zetasaltime => export_zetasaltime
+
       IMPLICIT NONE
       REAL(8), intent(in) :: TimeLoc
       INTEGER, intent(in) :: IT
@@ -4558,6 +4566,8 @@ C     !jgf49.44: harmonic analysis vars
       INTEGER N ! number of stations
       INTEGER NSTAEX  ! num of elev stations in either fulldomain or subdomain
       INTEGER NSTAVX  ! num of vel stations in either fulldomain or subdomain
+
+      REAL (8):: zetasalhstime(3)
 C
       LOGICAL, SAVE :: FirstCall = .true.
 C
@@ -4597,8 +4607,8 @@ C
 
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.ne.0 ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, RSNX1_g, NP_G )
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, RSNY1_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, RSNX1_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, RSNY1_g, NP_G )
       ENDIF
          HotstartRS1Descript % specifier            = NHSTAR
          HotstartRS1Descript % initial_value        = 0.0
@@ -4613,8 +4623,8 @@ C
 
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.ne.0 ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, RSNX2_g, NP_G )
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, RSNY2_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, RSNX2_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, RSNY2_g, NP_G )
       ENDIF
          HotstartRS2Descript % specifier            = NHSTAR
          HotstartRS2Descript % initial_value        = 0.0
@@ -4630,8 +4640,8 @@ C
 #ifdef CSWAN
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.eq.3 ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, SWAN_RSNX1_g, NP_G )
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, SWAN_RSNY1_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, SWAN_RSNX1_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, SWAN_RSNY1_g, NP_G )
       ENDIF
          HotstartSwanRS1Descript % specifier            = NHSTAR
          HotstartSwanRS1Descript % initial_value        = 0.0
@@ -4646,8 +4656,8 @@ C
 
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
      &       .and. (.NOT. WRITE_LOCAL_FILES).and.NRS.eq.3 ) THEN
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, SWAN_RSNX2_g, NP_G )
-         CALL REAL_FIELD_ALLOCATE( NOUTGE, SWAN_RSNY2_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, SWAN_RSNX2_g, NP_G )
+         CALL REAL_FIELD_ALLOCATE( NHSTAR, SWAN_RSNY2_g, NP_G )
       ENDIF
          HotstartSwanRS2Descript % specifier            = NHSTAR
          HotstartSwanRS2Descript % initial_value        = 0.0
@@ -4660,6 +4670,12 @@ C
          HotstartSwanRS2Descript % array_g              => SWAN_RSNX2_g
          HotstartSwanRS2Descript % array2_g             => SWAN_RSNY2_g
 #endif
+
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
+     &                   .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+            CALL REAL_FIELD_ALLOCATE( NHSTAR, HTOT1_g, NP_G )
+            CALL REAL_FIELD_ALLOCATE( NHSTAR, HTOT2_g, NP_G )
+         ENDIF
 
          H1_HS_Descript % specifier            = NHSTAR
          H1_HS_Descript % initial_value        = 0.0
@@ -4679,6 +4695,41 @@ C
          H2_HS_Descript % array                => H2
          H2_HS_Descript % array_g              => HTOT2_g
 
+         ! Inline SAL hotstart
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0)
+     &                   .and. (.NOT. WRITE_LOCAL_FILES)  ) THEN
+            CALL REAL_FIELD_ALLOCATE( NHSTAR, zetasaltm0_g, NP_G )
+            CALL REAL_FIELD_ALLOCATE( NHSTAR, zetasaltm1_g, NP_G )
+            CALL REAL_FIELD_ALLOCATE( NHSTAR, zetasaltm2_g, NP_G )
+         ENDIF
+
+         zetasaltm0_hs_Descript % specifier            = NHSTAR
+         zetasaltm0_hs_Descript % initial_value        = 0.0
+         zetasaltm0_hs_Descript % num_items_per_record = 1
+         zetasaltm0_hs_Descript % num_fd_records       = NP_G
+         zetasaltm0_hs_Descript % num_records_this     = NP
+         zetasaltm0_hs_Descript % imap                 => NODES_LG
+         zetasaltm0_hs_Descript % array                => zetasaltm0
+         zetasaltm0_hs_Descript % array_g              => zetasaltm0_g
+
+         zetasaltm1_hs_Descript % specifier            = NHSTAR
+         zetasaltm1_hs_Descript % initial_value        = 0.0
+         zetasaltm1_hs_Descript % num_items_per_record = 1
+         zetasaltm1_hs_Descript % num_fd_records       = NP_G
+         zetasaltm1_hs_Descript % num_records_this     = NP
+         zetasaltm1_hs_Descript % imap                 => NODES_LG
+         zetasaltm1_hs_Descript % array                => zetasaltm1
+         zetasaltm1_hs_Descript % array_g              => zetasaltm1_g
+
+         zetasaltm2_hs_Descript % specifier            = NHSTAR
+         zetasaltm2_hs_Descript % initial_value        = 0.0
+         zetasaltm2_hs_Descript % num_items_per_record = 1
+         zetasaltm2_hs_Descript % num_fd_records       = NP_G
+         zetasaltm2_hs_Descript % num_records_this     = NP
+         zetasaltm2_hs_Descript % imap                 => NODES_LG
+         zetasaltm2_hs_Descript % array                => zetasaltm2
+         zetasaltm2_hs_Descript % array_g              => zetasaltm2_g
+         ! Inline hotstart
 
          IF (IM.eq.10) THEN
             CH1Descript % specifier            = NHSTAR
@@ -4902,6 +4953,16 @@ C
       ENDIF
 
 C     collect up the data from subdomains if running in parallel
+
+      ! Inline SAL data !
+      if ( CInlineSAL ) then
+           zetasaltm0_hs_Descript%array(:) = import_zetasal( id = 1 ) ;
+           zetasaltm1_hs_Descript%array(:) = import_zetasal( id = 2 ) ;
+           zetasaltm2_hs_Descript%array(:) = import_zetasal( id = 3 ) ;
+
+           zetasalhstime = import_zetasaltime( ) ;
+      endif
+
 #ifdef CMPI
       IF (WRITE_LOCAL_HOT_START_FILES.eqv..FALSE.) THEN
          CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
@@ -4914,11 +4975,23 @@ C     collect up the data from subdomains if running in parallel
            call collectFullDomainArray(HotstartSWANRS1Descript, packTwo, unpackTwo)
            call collectFullDomainArray(HotstartSWANRS2Descript, packTwo, unpackTwo)
 #endif
-         endif  
+         endif
 
          ! H1, H2
          CALL collectFullDomainArray(H1_HS_Descript, packOne, unpackOne)
          CALL collectFullDomainArray(H2_HS_Descript, packOne, unpackOne)
+
+
+         ! Inline SAL, hotstart data
+         if ( CInlineSAL ) then
+
+             CALL collectFullDomainArray( zetasaltm0_hs_Descript, packOne, unpackOne )
+
+             CALL collectFullDomainArray( zetasaltm1_hs_Descript, packOne, unpackOne )
+
+             CALL collectFullDomainArray( zetasaltm2_hs_Descript, packOne, unpackOne )
+
+         endif
 
          CALL collectFullDomainArray(HotstartVelDescript, packTwo, unpackTwo)
          IF (IM.eq.10) THEN
@@ -5588,11 +5661,24 @@ C
 
 #ifdef ADCNETCDF
          IF (myProc.eq.0) THEN
-            CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
-     &         Elev2Descript, HotstartVelDescript, CH1Descript, EtaDiscDescript,
-     &         NodeCodeDescript, NOFFDescript, H1_HS_Descript,
-     &         H2_HS_Descript, HotstartRS1Descript, HotstartRS2Descript, HotstartSwanRS1Descript,
-     &         HotstartSWANRS2Descript, TimeLoc, it)
+
+            IF ( .NOT. CInlineSAL ) THEN
+              CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
+     &           Elev2Descript, HotstartVelDescript, CH1Descript, EtaDiscDescript,
+     &           NodeCodeDescript, NOFFDescript, H1_HS_Descript,
+     &           H2_HS_Descript, HotstartRS1Descript, HotstartRS2Descript, HotstartSwanRS1Descript,
+     &           HotstartSWANRS2Descript, TimeLoc, it)
+            ENDIF
+            IF ( CInlineSAL ) THEN
+              CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
+     &           Elev2Descript, HotstartVelDescript, CH1Descript, EtaDiscDescript,
+     &           NodeCodeDescript, NOFFDescript, H1_HS_Descript,
+     &           H2_HS_Descript, HotstartRS1Descript, HotstartRS2Descript, HotstartSwanRS1Descript,
+     &           HotstartSWANRS2Descript, TimeLoc, it,
+     &           zetasaltm0_hs_descript, zetasaltm1_hs_descript,
+     &           zetasaltm2_hs_descript, zetasalhstime ) ;
+            ENDIF
+
             IF ((IHARIND.eq.1).and.(IT.gt.ITHAS)) THEN
                CALL writeNetCDFHotstartHarmonic(hss%lun,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
@@ -6372,7 +6458,7 @@ C-----------------------------------------------------------------------
                if ((eta2(i)+dp(i)).gt.maxInunDepth(i)) then
                   maxInunDepth(i) = eta2(i) + dp(i)
                   ! record time of occurrence for the maximum inundation
-                  maxInunDepth_time(i) = timeloc                       
+                  maxInunDepth_time(i) = timeloc
                endif
             endif
          else
@@ -6383,7 +6469,7 @@ C-----------------------------------------------------------------------
             inundationTime(i) = inundationTime(i) + dtdp
             inundationTime_onset(i) = 0.d0
          endif
-      end do                   
+      end do
       !
       !
       ! On the next to last time step, record the wet/dry state
@@ -6457,12 +6543,12 @@ C...  jgf50.44: Collect time that min/max occurs as well.
          do i=1,np
             if(nodecode(i).eq.1)then
                 u_tmp = sqrt(uu2(i)**2d0+vv2(i)**2d0)
-                if ( u_tmp.gt.umax(i) ) then 
-                   umax(i) = u_tmp 
+                if ( u_tmp.gt.umax(i) ) then
+                   umax(i) = u_tmp
                    umax_time(i) = timeLoc   !tcm v51.20.01
                 endif
             endif
-         end do 
+         end do
       endif
       if ((nws.ne.0).and.(noutgw.ne.0)) then
          do i=1,np
@@ -6472,7 +6558,7 @@ C...  jgf50.44: Collect time that min/max occurs as well.
             endif
          end do
          do i=1,np
-            if ((wvnxout(i)**2+wvnyout(i)**2).gt.wvnoutmax(i)**2) then 
+            if ((wvnxout(i)**2+wvnyout(i)**2).gt.wvnoutmax(i)**2) then
                wvnoutmax(i) = sqrt(wvnxout(i)**2+wvnyout(i)**2)
                wvnoutmax_time(i) = timeLoc
             endif
@@ -6483,7 +6569,7 @@ C...  jgf50.44: Collect time that min/max occurs as well.
             if(nodecode(i).eq.1)then
                 u_tmp = sqrt(rsnx2(i)**2+rsny2(i)**2)
                 if (u_tmp.gt.rsnmax(i)) then
-                   rsnmax(i) = u_tmp 
+                   rsnmax(i) = u_tmp
                    rsnmax_time(i) = timeLoc
                 endif
             endif

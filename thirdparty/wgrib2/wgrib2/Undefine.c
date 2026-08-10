@@ -56,7 +56,7 @@ int f_undefine(ARG3) {
         if (x > y) y += 360.0;
         if (x > y) fatal_error("undef: bad longitudes lon0:lon1  %s", arg2);
         if (y-360 > x ) fatal_error("undef: bad longitudes lon1 too big %s", arg2);
-        
+
         if (x < 0.0) { x += 360.0; y += 360.0; }
 
         save->lon0 = x;
@@ -185,7 +185,7 @@ int f_ijundefine(ARG3) {
 
 /*
  * HEADER:100:undefine_val:misc:1:grid point set to undefined if X=val or X=low:high
- */ 
+ */
 
 int f_undefine_val(ARG1) {
 
@@ -195,7 +195,7 @@ int f_undefine_val(ARG1) {
         double val_low, val_high;
     };
     struct local_struct *save;
-    
+
     double val;
     unsigned int i;
     int j;
@@ -204,7 +204,7 @@ int f_undefine_val(ARG1) {
         decode = 1;
         *local = save = (struct local_struct *) malloc(sizeof(struct local_struct));
         if (save == NULL) fatal_error("memory allocation f_undefine_val","");
-   
+
         j = sscanf(arg1,"%lf:%lf", &(save->val_low), &(save->val_high));
         if (j != 2) {
             val = atof(arg1);

@@ -34,7 +34,7 @@ int f_grib_ieee(ARG1) {
 
     struct local_struct {
         FILE *grib, *head, *tail, *c;
-    }; 
+    };
     struct local_struct *save;
     char filename[STRING_SIZE];
 
@@ -121,7 +121,7 @@ int grib_ieee(unsigned char **sec, float *data, unsigned int ndata, FILE *out, F
     sec6[4] = 6;			// section 6
     sec6[5] = 255;			// no bitmap
 
-    
+
     /* data representation section */
 
     sec5 = (unsigned char *) malloc(12 * sizeof(unsigned char));
@@ -311,7 +311,7 @@ int grib_ieee(unsigned char **sec, float *data, unsigned int ndata, FILE *out, F
 
 //    /* set scan mode to original order */
 //    set_flag_table_3_4(sec, flag);
-    
+
     return 0;
 }
 
@@ -323,6 +323,3 @@ static int output_c(FILE *c, unsigned char *s, unsigned int n) {
     }
     return 0;
 }
-
-
-

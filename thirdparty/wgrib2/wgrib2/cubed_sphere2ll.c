@@ -10,7 +10,7 @@
 
 /*
  *2/2019: public domain W. Ebisuzaki
- * 
+ *
  *
  */
 
@@ -45,7 +45,7 @@ int cubed_sphere2ll(unsigned char **sec, double **llat, double **llon) {
 
     if (code_table_3_1(sec) != 60) fatal_error("cubed_sphere2ll: not cubed sphere","");
     if (output_order != wesn) fatal_error("cubed_sphere2ll grid must in we:sn order","");
-    
+
     get_nxny_(sec, &nnx_, &nny_, &nnpnts, &nres, &nscan);
 
     if (nnx_ == 0 || nny_ == 0) {
@@ -59,13 +59,13 @@ int cubed_sphere2ll(unsigned char **sec, double **llat, double **llon) {
     ncell = GDS_Gnom_face_size(gds);
 
     i_offset = GDS_Gnom_i_offset(gds);
-    if (i_offset+nnx_ > ncell+1) 
+    if (i_offset+nnx_ > ncell+1)
 	fatal_error_i("cubed_sphere2ll: bad value of i_offset %d", i_offset);
 
     j_offset = GDS_Gnom_j_offset(gds);
     if (j_offset+nny_ > ncell+1)
         fatal_error_i("cubed_sphere2ll: bad value of j_offset %d", j_offset);
-     
+
     b = GDS_Gnom_B(gds);
     if (b <= -1.0) fatal_error("cubed_sphere2ll: bad value of b","");
 
@@ -81,7 +81,7 @@ int cubed_sphere2ll(unsigned char **sec, double **llat, double **llon) {
         fatal_error("cubed_sphere2ll memory allocation failed","");
     }
     x = *llon;
-    y = *llat; 
+    y = *llat;
 
     if (b >= 0.0) {
 	sb = sqrt(b);
@@ -108,7 +108,7 @@ int cubed_sphere2ll(unsigned char **sec, double **llat, double **llon) {
     else {
 	tile_start = gds_tile; tile_end=gds_tile;
         npnts_tile = nnpnts;
-        /* x[] ranges from 0..nnx_-1,    y[] ranges from 0..nny_-1 for non staggered */ 
+        /* x[] ranges from 0..nnx_-1,    y[] ranges from 0..nny_-1 for non staggered */
     }
     if (stagger(sec, nnpnts, x, y)) fatal_error("cubed_sphere2ll: stagger problem","");
 
@@ -133,12 +133,12 @@ int cubed_sphere2ll(unsigned char **sec, double **llat, double **llon) {
     // if gds_tile == 0, global, copy x[], y[] to other tiles
     if (gds_tile == 0) {
         for (i = 0; i < npnts_tile; i++) {
-	    x[i+npnts_tile] = x[i+2*npnts_tile] = x[i+3*npnts_tile] = 
+	    x[i+npnts_tile] = x[i+2*npnts_tile] = x[i+3*npnts_tile] =
 		x[i+4*npnts_tile] = x[i+5*npnts_tile] = x[i];
-	    y[i+npnts_tile] = y[i+2*npnts_tile] = y[i+3*npnts_tile] = 
+	    y[i+npnts_tile] = y[i+2*npnts_tile] = y[i+3*npnts_tile] =
 		y[i+4*npnts_tile] = y[i+5*npnts_tile] = y[i];
 	}
-    } 
+    }
 
 
 #ifdef USE_OPENMP
@@ -213,7 +213,7 @@ int cubed_spherell2xy(unsigned char **sec, int n, double *lon, double *lat, doub
     double sp_lat, sp_lon, angle_rot, a, c, r, sin_a, cos_a;
     unsigned char *gds;
     double x, y, z, xprime, yprime, zprime;
-  
+
     gds = sec[3];
     // parameters for rotation
     sp_lat = GDS_Gnom_SP_Lat(gds);

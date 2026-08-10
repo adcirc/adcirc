@@ -75,7 +75,7 @@ int f_grib_out_irr2(ARG5) {
     g += 2;
 
     table_3_2 = code_table_3_2(sec);
-    if (table_3_2 == 1 || table_3_2 == 3 || table_3_2 == 7) 
+    if (table_3_2 == 1 || table_3_2 == 3 || table_3_2 == 7)
 	fatal_error("grib_out_irr2: user-defined earth shape is not supported by GDT 101","");
     *g++ = (unsigned char) table_3_2;
 
@@ -111,7 +111,7 @@ int f_grib_out_irr2(ARG5) {
 
     old_gds = sec[3];
     sec[3] = &(gdt101[0]);
-    grib_wrt(sec, data_tmp, n, n, 1, use_scale, dec_scale, 
+    grib_wrt(sec, data_tmp, n, n, 1, use_scale, dec_scale,
 		bin_scale, wanted_bits, max_bits, grib_type, save);
     sec[3] = old_gds;
     if (flush_mode) fflush_file(save);

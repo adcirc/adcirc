@@ -40,7 +40,7 @@ void AllocateWorkSpace(CtrlType *ctrl, GraphType *graph, int nparts)
                 Greedy Refinement/Balance: 5*nparts + 2*nvtxs + 2*nedges + 1*PQueue(==Nvtxs)
             Total = 5*nparts + 3*nvtxs + 2*nedges
 
-         Total = 5*nparts + 3*nvtxs + 2*nedges 
+         Total = 5*nparts + 3*nvtxs + 2*nedges
     */
     ctrl->wspace.maxcore = 3*(graph->nvtxs+1) +                 /* Match/Refinement vectors */
                            5*(nparts+1) +                       /* Partition weights etc */
@@ -99,7 +99,7 @@ int WspaceAvail(CtrlType *ctrl)
 
 
 /*************************************************************************
-* This function allocate space from the core 
+* This function allocate space from the core
 **************************************************************************/
 idxtype *idxwspacemalloc(CtrlType *ctrl, int n)
 {
@@ -111,7 +111,7 @@ idxtype *idxwspacemalloc(CtrlType *ctrl, int n)
 }
 
 /*************************************************************************
-* This function frees space from the core 
+* This function frees space from the core
 **************************************************************************/
 void idxwspacefree(CtrlType *ctrl, int n)
 {
@@ -123,7 +123,7 @@ void idxwspacefree(CtrlType *ctrl, int n)
 
 
 /*************************************************************************
-* This function allocate space from the core 
+* This function allocate space from the core
 **************************************************************************/
 float *fwspacemalloc(CtrlType *ctrl, int n)
 {
@@ -135,7 +135,7 @@ float *fwspacemalloc(CtrlType *ctrl, int n)
 }
 
 /*************************************************************************
-* This function frees space from the core 
+* This function frees space from the core
 **************************************************************************/
 void fwspacefree(CtrlType *ctrl, int n)
 {
@@ -167,7 +167,7 @@ GraphType *CreateGraph(void)
 * This function creates a CoarseGraphType data structure and initializes
 * the various fields
 **************************************************************************/
-void InitGraph(GraphType *graph) 
+void InitGraph(GraphType *graph)
 {
   graph->gdata = graph->rdata = NULL;
 
@@ -199,10 +199,9 @@ void InitGraph(GraphType *graph)
 /*************************************************************************
 * This function deallocates any memory stored in a graph
 **************************************************************************/
-void FreeGraph(GraphType *graph) 
+void FreeGraph(GraphType *graph)
 {
 
   GKfree(&graph->gdata, &graph->nvwgt, &graph->rdata, &graph->npwgts, LTERM);
   free(graph);
 }
-

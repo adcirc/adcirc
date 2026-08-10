@@ -29,4 +29,3 @@ int update_sec4(unsigned char **sec, unsigned char *sec4) {
     sec[4] = &(new_sec4[0]);
     return 0;
 }
-

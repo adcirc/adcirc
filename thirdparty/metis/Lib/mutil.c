@@ -1,5 +1,5 @@
 /*
- * mutil.c 
+ * mutil.c
  *
  * This file contains various utility functions for the MOC portion of the
  * code
@@ -15,7 +15,7 @@
 
 
 /*************************************************************************
-* This function checks if the vertex weights of two vertices are below 
+* This function checks if the vertex weights of two vertices are below
 * a given set of values
 **************************************************************************/
 int AreAllVwgtsBelow(int ncon, float alpha, float *vwgt1, float beta, float *vwgt2, float limit)
@@ -31,7 +31,7 @@ int AreAllVwgtsBelow(int ncon, float alpha, float *vwgt1, float beta, float *vwg
 
 
 /*************************************************************************
-* This function checks if the vertex weights of two vertices are below 
+* This function checks if the vertex weights of two vertices are below
 * a given set of values
 **************************************************************************/
 int AreAnyVwgtsBelow(int ncon, float alpha, float *vwgt1, float beta, float *vwgt2, float limit)
@@ -48,7 +48,7 @@ int AreAnyVwgtsBelow(int ncon, float alpha, float *vwgt1, float beta, float *vwg
 
 
 /*************************************************************************
-* This function checks if the vertex weights of two vertices are above 
+* This function checks if the vertex weights of two vertices are above
 * a given set of values
 **************************************************************************/
 int AreAllVwgtsAbove(int ncon, float alpha, float *vwgt1, float beta, float *vwgt2, float limit)
@@ -66,7 +66,7 @@ int AreAllVwgtsAbove(int ncon, float alpha, float *vwgt1, float beta, float *vwg
 /*************************************************************************
 * This function computes the load imbalance over all the constrains
 * For now assume that we just want balanced partitionings
-**************************************************************************/ 
+**************************************************************************/
 float ComputeLoadImbalance(int ncon, int nparts, float *npwgts, float *tpwgts)
 {
   int i, j;
@@ -86,7 +86,7 @@ float ComputeLoadImbalance(int ncon, int nparts, float *npwgts, float *tpwgts)
 }
 
 /*************************************************************************
-* This function checks if the vertex weights of two vertices are below 
+* This function checks if the vertex weights of two vertices are below
 * a given set of values
 **************************************************************************/
 int AreAllBelow(int ncon, float *v1, float *v2)

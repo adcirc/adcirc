@@ -141,46 +141,46 @@ add_library(geo STATIC
 ###########################################################################
 
 ###########################################################################
-# G2C 
+# G2C
 ###########################################################################
-ADD_LIBRARY(g2c STATIC 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/grib2_int.h 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/cmplxpack.c 
+ADD_LIBRARY(g2c STATIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/grib2_int.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/cmplxpack.c
             ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/compack.c
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/comunpack.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/drstemplates.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_addfield.c 
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/comunpack.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/drstemplates.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_addfield.c
             ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_addgrid.c
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_addlocal.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_create.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_free.c 
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_addlocal.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_create.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_free.c
             ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_getfld.c
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_gribend.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_info.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_miss.c 
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_gribend.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_info.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_miss.c
             ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_unpack1.c
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_unpack2.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_unpack3.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_unpack4.c 
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_unpack2.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_unpack3.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_unpack4.c
             ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_unpack5.c
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_unpack6.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_unpack7.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/gbits.c 
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_unpack6.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/g2_unpack7.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/gbits.c
             ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/getdim.c
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/getpoly.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/gridtemplates.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/int_power.c 
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/getpoly.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/gridtemplates.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/int_power.c
             ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/misspack.c
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/mkieee.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/pack_gp.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/pdstemplates.c 
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/mkieee.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/pack_gp.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/pdstemplates.c
             ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/rdieee.c
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/reduce.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/seekgb.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/simpack.c 
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/simunpack.c 
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/reduce.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/seekgb.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/simpack.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/simunpack.c
             ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/specpack.c
-            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/specunpack.c 
+            ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/specunpack.c
             ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/util.c
             ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/decenc_jpeg2000.c
             ${CMAKE_CURRENT_SOURCE_DIR}/g2c/src/jpcpack.c
@@ -196,9 +196,9 @@ add_dependencies(g2c libjasper)
 ###########################################################################
 
 ###########################################################################
-# libgrib2 
+# libgrib2
 ###########################################################################
-ADD_LIBRARY( grib2 STATIC 
+ADD_LIBRARY( grib2 STATIC
              ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/AAIG.c
              ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/AAIGlong.c
              ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/addtime.c
@@ -421,8 +421,8 @@ ADD_LIBRARY( grib2 STATIC
              ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/Wrt_grib.c
              ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/wrtieee.c
              ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/wxtext.c
-             ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/ftn_api/fort_wgrib2.c 
-             ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/ftn_api/wgrib2api.f90  
+             ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/ftn_api/fort_wgrib2.c
+             ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/ftn_api/wgrib2api.f90
              ${CMAKE_CURRENT_SOURCE_DIR}/wgrib2/ftn_api/wgrib2lowapi.f90)
 
 ADD_DEPENDENCIES( grib2 geo libjasper g2c )

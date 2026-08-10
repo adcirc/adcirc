@@ -29,12 +29,12 @@ int f_set_ensm_derived_fcst(ARG2) {
     if (mode < 0) return 0;
 
     code_table_4_7 = atoi(arg1);
-    if (code_table_4_7 < 0 || code_table_4_7 > 255) 
+    if (code_table_4_7 < 0 || code_table_4_7 > 255)
 	fatal_error("set_ensm_derived_fcst: code table 4.7 0..255 found %s", arg1);
 
     num_ens = atoi(arg2);
     if (num_ens == -1) num_ens = 255;		/* undefined == -1 or 255 */
-    if (num_ens < 0 || num_ens > 255) 
+    if (num_ens < 0 || num_ens > 255)
 	fatal_error("set_ensm_derived_fcst: num ens emembers 0..255 found %s", arg2);
 
     pdt = code_table_4_0(sec);
@@ -90,6 +90,6 @@ int f_set_ensm_derived_fcst(ARG2) {
 
     update_sec4(sec, sec4);
     free(sec4);
-    
+
     return 0;
 }

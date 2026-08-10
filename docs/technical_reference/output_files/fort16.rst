@@ -58,4 +58,4 @@ To illustrate the definitions and descriptions provided, a concrete example of a
    6.0 0.5 "/home/jason/isaac/gfdl/isaac_gfdl_file2"
    12.0 1.0 "/home/jason/isaac/gfdl/isaac_gfdl_file3"
 
-Note: When including the path to the data files, if the full path includes forward slashes (as it would if ADCIRC is executing on Unix or Linux), be sure to surround the full path file name with double quotes as shown in the example above. This is required because Fortran treats a bare forward slash in an input file as an end-of-record character. 
+Note: When including the path to the data files, if the full path includes forward slashes (as it would if ADCIRC is executing on Unix or Linux), be sure to surround the full path file name with double quotes as shown in the example above. This is required because Fortran treats a bare forward slash in an input file as an end-of-record character.

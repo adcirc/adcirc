@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -52,7 +52,7 @@ C     HOT START PROGRAM SETUP ROUTINE
 C
 C**************************************************************************
 C
-      USE SIZES, ONLY : inputDir, globalDir, mnproc
+      USE SIZES, ONLY : inputDir, globalDir, mnproc, myProc
       USE ADC_CONSTANTS, ONLY: G, PI
       USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
@@ -67,11 +67,11 @@ C
      &    I3DSTRec, N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec,
      &    DUU_g, DUV_g, DVV_g, UU_g, VV_g, BSX_g, BSY_g, Q_g, WZ_g,
      &    q20_g, l_g, SigT_g, Sal_g, Temp_g, iy
-      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, 
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015,
      &                       openFort019h
 #ifdef CMPI
       USE GLOBAL, ONLY: COMM
-#endif      
+#endif
       USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
      &                 checkHAHotstart
@@ -90,14 +90,14 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &                     readNetCDFHotstartHarmonicMeansVariances
 #endif
       USE NodalAttributes, ONLY :
-     &     nolibf, nwp, tau0, cf, eslm, GeoidOffset, 
+     &     nolibf, nwp, tau0, cf, eslm, GeoidOffset,
      &     LoadDirEffRLen, LoadCanopyCoef, LoadGeoidOffset,
      &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
-     &     OutputTau0, 
+     &     OutputTau0,
      &     LoadRiver_et_WSE, River_et_WSE
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
       USE WRITE_OUTPUT, ONLY : initInundationOutput,
-     &   inundationTime, inundationTime_onset, maxInunDepth, 
+     &   inundationTime, inundationTime_onset, maxInunDepth,
      &   maxInunDepth_time, outputNodeCode, outputNOFF
       USE GWCE, ONLY : etime1, etime2, etiminc
       use mod_logging, only: screenUnit, nscreen, t_log_scope, init_log_scope, allMessage
@@ -107,6 +107,10 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #ifdef ADCNETCDF
       use Couple2BC3D, only: Initial_BC3D_NetCDF
 #endif
+
+      use MOD_INLINE_SAL, only: hotstartSAL, extrapolate_sal_field
+
+
       IMPLICIT NONE
       interface
          SUBROUTINE binaryRead2D(array, length, lun, counter)
@@ -142,7 +146,7 @@ C     jgf46.08 Fine grained ramp functions
       REAL(8) RampIntFlux1   ! Ramp for internal flux b.c.s @ITHS-1
       REAL(8) RampIntFlux2   ! Ramp for internal flux b.c.s @ITHS
       REAL(8) RampTip2    ! Ramp for tidal potential @ITHS
-      real(8) rampMete2   ! Ramp for wind and atmospheric pressure @ITHS     
+      real(8) rampMete2   ! Ramp for wind and atmospheric pressure @ITHS
       REAL(8) RampWRad2   ! Ramp for wave radiation stress @ITHS
 C     jgf46.14 Check for file existence before attempting to open.
       LOGICAL fileFound    ! .True. if the the file exists
@@ -173,7 +177,7 @@ C     kmd48.33bc - add variables for heat flux
       REAL(8),ALLOCATABLE :: RealQ_Tmp(:,:)
       REAL(8),ALLOCATABLE :: ImQ_Tmp(:,:)
       INTEGER :: IDenHS
-      REAL(8) :: dtChange ! difference in time step size (sec) between 
+      REAL(8) :: dtChange ! difference in time step size (sec) between
                           ! current run and the one we're hotstarting from
 C
 C     jgf49.44: Add variables for reading fulldomain binary hotstart file
@@ -201,6 +205,8 @@ C     kmd -- Added variables for initial conditions
       INTEGER :: ncHundreds ! hundreds place of IHOT, used for netcdf hs file
       INTEGER :: IDMY
 
+
+
 #ifdef ADCNETCDF
       LOGICAL :: have_htot(2)
 #endif
@@ -215,7 +221,7 @@ C     kmd -- Added variables for initial conditions
       call initializeWettingAndDrying()
       !
       ! In order to produce inundation output, we need to compute the
-      ! areas that were initially dry at cold start. 
+      ! areas that were initially dry at cold start.
       if (inundationOutput.eqv..true.) then
          call setColdWetDryStateAndWaterSurfaceElevation()
          !
@@ -227,7 +233,7 @@ C     kmd -- Added variables for initial conditions
       !
       ! NCSU Subdomain Modeling
       if (subdomainOn) then
-         call readFort015() 
+         call readFort015()
       endif
 C
 C     -----------------------------------
@@ -526,11 +532,11 @@ C        file in parallel.
          CALL readAndMapToSubdomain2D(ETA1, IHOT, IHOTSTP, moderbin)
          CALL readAndMapToSubdomain2D(ETA2, IHOT, IHOTSTP, moderbin)
 
-         ! Todo : add reading H1, H2. Will need to 
+         ! Todo : add reading H1, H2. Will need to
          !       think about backward compatibily
          ! For now simply compute H = dp + IFNLFA*eta
-         H1 = DP + IFNLFA*ETA1 
-         H2 = DP + IFNLFA*ETA2 
+         H1 = DP + IFNLFA*ETA1
+         H2 = DP + IFNLFA*ETA2
 
 C        jgf46.34 Added support for IBTYPE=52.
          CALL readAndMapToSubdomain2D(ETADisc, IHOT, IHOTSTP, moderbin)
@@ -711,10 +717,10 @@ C
 C     I N I T I A L I Z E   H O T S T A R T   R U N
 C
 C     ---------------------------------------------
-      !jgf51.01: Determine if there is a difference between the time 
+      !jgf51.01: Determine if there is a difference between the time
       ! step size in the hotstart file, and the time step size for this
-      ! run (i.e, in the fort.15 file) ... if so, this affects any 
-      ! calculation of time in seconds since cold start, and any 
+      ! run (i.e, in the fort.15 file) ... if so, this affects any
+      ! calculation of time in seconds since cold start, and any
       ! feature that counts time steps since cold start
 Casey 140701: Protect for case when ITHS=0
       IF(ITHS.NE.0)THEN
@@ -744,7 +750,7 @@ Casey 140701: Protect for case when ITHS=0
 C           jgf51.14: Need to recalculate the starting and ending
 C           times for output if time step size has changed
             call recalculateStartingAndEndingTimestepsForOutput(
-     &         TOUTSE,TOUTFE,NTCYSE,NTCYFE) 
+     &         TOUTSE,TOUTFE,NTCYSE,NTCYFE)
             call recalculateStartingAndEndingTimestepsForOutput(
      &         TOUTSV,TOUTFV,NTCYSV,NTCYFV)
             call recalculateStartingAndEndingTimestepsForOutput(
@@ -765,7 +771,7 @@ C           times for output if time step size has changed
       IF(C3D) THEN
         CALL HOTSTART_3D(TimeLoc,ITHS)
       ENDIF
- 
+
       DO I=1, NP
          ETAS(I)=ETA2(I)-ETA1(I)
          QX2(I)=UU2(I)*H2(I)
@@ -821,7 +827,7 @@ C     momentum equations
          IF ( (NOUTM.NE.0) .OR. (NOUTGW.NE.0) ) THEN
             metOutputOn = .TRUE.
          ENDIF
-         IF ( (metOutputOn.eqv..true.) .AND. 
+         IF ( (metOutputOn.eqv..true.) .AND.
      &        (nonMetOutputOff.eqv..true.) ) THEN
             call allMessage(INFO,'Only meteorological output was '//
      &       'requested. ADCIRC will not solve the GWCE or '//
@@ -1237,7 +1243,7 @@ C
 
 C     time varying bathymetry values are read in at all grid nodes
 C     at a time interval that does not equal the model time
-C     step. Interpolation in time is used to synchronize the 
+C     step. Interpolation in time is used to synchronize the
 C     bathymetry information with the model time step.
       IF(Nddt.EQ.1) THEN
          OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
@@ -1304,7 +1310,7 @@ C...     DEPTHS ARE > OR = TO H0.
                IF (DP2(I).LT.H0) DP2(I) = H0
             ENDDO
          ENDIF
-C.......If time is during the bathymetry change interval, then update bathymetry 
+C.......If time is during the bathymetry change interval, then update bathymetry
          IF(TIMEloc.LE.BTIME_END) THEN
             bTRatio=(Timeloc-bTIME1)/BCHGTIMINC ! interpolate
             DO I=1,NP
@@ -1430,41 +1436,41 @@ C
                 CALL NCICE1_GET(CICE2,NP)
              ENDIF
           END DO
-      ENDIF     
+      ENDIF
       if (ncice.ne.0.and.ncice.ne.14) then
          CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
          do i=1,np
             CICEOUT(I) = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
          end do
       endif
-      
+
 C----------------------ICE FIELDS-------------------------------------
 C
 C
 C
 C----------------------MET FORCING------------------------------------
 
-      call hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2, 
+      call hotstartMeteorologicalForcing(nws, wsx2, wsy2, pr2,
      &   wvnxout, wvnyout, timeloc, rampmete2)
 
 C----------------------MET FORCING------------------------------------
 C
 C
 C......RESTART THE WAVE RADIATION STRESS
-        
-        ! jgf51.46: Fixed initialization issue due to mishandling the 
+
+        ! jgf51.46: Fixed initialization issue due to mishandling the
         ! cases where NRS.eq.3 (SWAN coupling) or NRS.eq.4 (STWAVE
         ! coupling). The code was adding the wave radiation stresses
-        ! to wind stresses whenever NRS.gt.0, but in the case of 
-        ! NRS.eq.3 or NRS.eq.4, the wave radiation stresses were 
+        ! to wind stresses whenever NRS.gt.0, but in the case of
+        ! NRS.eq.3 or NRS.eq.4, the wave radiation stresses were
         ! uninitialized. This resulted in NaNs getting into the solution
         ! upon hotstarting. I fixed this by initializing RSNX1 and
-        ! RSNY1 to 0.0 immediately after the arrays are allocated. 
+        ! RSNY1 to 0.0 immediately after the arrays are allocated.
         IF(NRS.GE.1) THEN ! sb46.28sb03
            RSTIME1 = TimeLoc
            RSTIME2 = RSTIME1 + RSTIMINC
            SELECT CASE(NRS)
-           CASE(1)           
+           CASE(1)
               OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
               CALL RSGET(RSNX1,RSNY1)
               CALL RSGET(RSNX2,RSNY2)
@@ -1476,11 +1482,11 @@ C......RESTART THE WAVE RADIATION STRESS
            CASE(3,4,5)
               ! do nothing, initialization takes place in timestep.F
            CASE DEFAULT
-              write(scratchMessage,'(a,i0,a)') 
-     &        'The NRS parameter cannot have the value ',NRS,'.' 
-              call allMessage(ERROR,scratchMessage)           
+              write(scratchMessage,'(a,i0,a)')
+     &        'The NRS parameter cannot have the value ',NRS,'.'
+              call allMessage(ERROR,scratchMessage)
            END SELECT
-           ! 
+           !
            ! Add wave radiation stress to the wind stress. RSNX1 and
            ! RSNY1 were initialized to 0.0 for NRS.eq.3 and NRS.eq.4.
            WSX2(:) = WSX2(:) + RampWRad2 * RSNX1(:)
@@ -1503,42 +1509,25 @@ C......RESTART THE WAVE RADIATION STRESS
 !            WSY2(I) = WSY2(I)+RampWRad2*RSNY1(I)
 !          END DO
 
-#ifdef ADCNETCDF     
-      ! For the Coupling to 3D Baroclinic mode 
+#ifdef ADCNETCDF
+      ! For the Coupling to 3D Baroclinic mode
       IF (C2DDI.and.CBaroclinic.and.abs(IDEN).ge.5) THEN
          call Initial_BC3D_NetCDF(TimeLoc)
       endif
-#endif       
+#endif
 
-       if (CTIP) then
-Cjromo 11-01-00  Initialize TIP2 for HOTSTART
-          DO I = 1,NP
-             TIP2(I) = 0.0
-          END DO
-          TIPLOOP: DO J = 1,NTIF
-            IF (PERT(J).EQ.0.) THEN
-               NCYC = 0
-            ELSE
-               NCYC = INT(TimeLoc/PERT(J))
-            ENDIF
+      if (CTIP) then
+CCCjromo 11-01-00  Initialize TIP2 for HOTSTART
+C  DW: consolidate various implemations of TIP and SAL
+         CALL applyTidePotentialForcing( TimeLoc, TimeLoc, RampTip2 )
+      endif !   CTIP
 
-            ARGT    = AMIGT(J)*(TimeLoc-NCYC*PERT(J))+FACET(J)
-            TPMUL   = RampTip2*ETRF(J)*TPK(J)*FFT(J)
-            SALTMUL = RampTip2*FFT(J)
-C           WJP: We actually want to compare against diurnal and get 0,1,2
-C           or higher species (was opposite beforehand)
-            NA = MIN(NINT(AMIGT(J)/7d-5),2)
-C           WJP: Rewritten so that we have a general formula for all
-C           species
-            DO I = 1,NP
-                ARGTP   = ARGT + NA*SLAM(I)
-                ARGSALT = ARGT - SALTPHA(J,I)
-                TIP2(I) = TIP2(I) + TPMUL * L_N(NA,I) * COS(ARGTP)
-     &                  + SALTMUL * SALTAMP(J,I) * COS(ARGSALT)
-            ENDDO
-          ENDDO TIPLOOP
-      endif     !   CTIP
-
+      ! inlineSAL
+      if ( CinlineSAL ) then
+         CALL hotstartSAL( zetasaltm0, zetasaltm1, zetasaltm2,
+     &        zetasaltime ) ;
+         CALL extrapolate_sal_field( sal2, TimeLoc )
+      endif
 C...
 C....SET UP TO RESTART TIMESERIES OUTPUT FILES
 C....
@@ -1583,7 +1572,7 @@ C...
 C...
 C....GO TO THE PROPER PLACE IN THE VELOCITY STATION OUTPUT FILE
 C...
-      IF(NTCYSV.LT.ITHS.AND.NOUTV.GT.0) NTCYSV = ITHS + NSPOOLV - 1 
+      IF(NTCYSV.LT.ITHS.AND.NOUTV.GT.0) NTCYSV = ITHS + NSPOOLV - 1
       IF(NOUTV.LT.0) THEN
         NSCOUV=0
         IF((NTCYSV.LT.ITHS).AND.(NSPOOLV.GT.0)) THEN
@@ -1626,7 +1615,7 @@ C...
          if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
      $       NSTAC_G, NSTAC, HEADER81)
-         else 
+         else
             CALL OPEN_GBL_FILE(81, TRIM(LOCALDIR)//'/'//'fort.81',
      $       NSTAC_G, NSTAC, HEADER81)
          endif
@@ -1664,7 +1653,7 @@ C
             ENDIF
 
          else
-         
+
             CALL OPEN_GBL_FILE(71, TRIM(LOCALDIR)//'/'//'fort.71',
      $         NSTAM_G, NSTAM, HEADER71)
             CALL OPEN_GBL_FILE(72, TRIM(LOCALDIR)//'/'//'fort.72',
@@ -1674,7 +1663,7 @@ C
                CALL OPEN_GBL_FILE(91, TRIM(LOCALDIR)//'/'//'fort.91',
      $            NSTAM_G, NSTAM, HEADER91)
             ENDIF
-         
+
          endif
       ENDIF
 
@@ -1685,7 +1674,7 @@ C....IF RESTARTING THE BATHYMETRY STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
 
-      IF(NTCYSB.LT.ITHS.AND.NOUTE.GT.0) NTCYSB = ITHS + NSPOOLE - 1 
+      IF(NTCYSB.LT.ITHS.AND.NOUTE.GT.0) NTCYSB = ITHS + NSPOOLE - 1
       IF (NDDT.NE.0) WRITE(16,1035) IBSTP,NSCOUB
  1035 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN BATHYMETRY ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
@@ -1709,14 +1698,14 @@ C...
      $         NSTAE_G, NSTAE, HEADER61)
          else
             CALL OPEN_GBL_FILE(75, TRIM(LOCALDIR)//'/'//'fort.75',
-     $         NSTAE_G, NSTAE, HEADER61)         
+     $         NSTAE_G, NSTAE, HEADER61)
          endif
       ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
 C...
-        IF(NTCYSGE.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGE = ITHS + NSPOOLGE - 1 
+        IF(NTCYSGE.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGE = ITHS + NSPOOLGE - 1
 
 C....   TCM V50.66.01 ADDITIONS FOR TIME VARYING BATYMETRY
 C....   SET THESE VARIABLES FOR USE LATER
@@ -1728,7 +1717,7 @@ C....   SET THESE VARIABLES FOR USE LATER
           NSCOUGE=0
           IF((NTCYSGE.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
             NTCYSGE=NTCYSGE+((REAL(ITHS)-REAL(NTCYSGE))/
-     &              REAL(NSPOOLGE))*REAL(NSPOOLGE) 
+     &              REAL(NSPOOLGE))*REAL(NSPOOLGE)
             IF(NTCYSGE.LT.ITHS) NTCYSGE=NTCYSGE+NSPOOLGE
 C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
             IF(DTDP.NE.DTDPHS) THEN
@@ -1744,7 +1733,7 @@ C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
 
 Casey 090310: Added the possibility for NOUTGE = -4.
       IF((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
-         if (write_local_files.eqv..false.) then      
+         if (write_local_files.eqv..false.) then
            CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
      $         NP_G, NP, HEADER63)
 C
@@ -1763,9 +1752,9 @@ C kmd48.33bc - information for writing out the sponge layer
      &                TRIM(GLOBALDIR)//'/'//'fort.92',
      $                NP_G, NP, 'sponge      ')
             END IF
-          
+
          else
-          
+
             CALL OPEN_GBL_FILE(63, TRIM(LOCALDIR)//'/'//'fort.63',
      $            NP_G, NP, HEADER63)
 C             jgf47.06 Tau0 output is produced on the same schedule as
@@ -1809,7 +1798,7 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
           ENDIF
 
       IF((NOUTGV.EQ.-1).OR.(NOUTGV.EQ.-4)) THEN
-         if (write_local_files.eqv..false.) then 
+         if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
      &         NP_G, NP, HEADER64)
          else
@@ -1819,7 +1808,7 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
       ENDIF
 
 Cobell - Open the fort.77 (weir elevation change) if necessary
-        IF(NTCYS_TVW.LT.ITHS.AND.NOUT_TVW.GT.0) NTCYS_TVW = ITHS + NSPOOL_TVW - 1 
+        IF(NTCYS_TVW.LT.ITHS.AND.NOUT_TVW.GT.0) NTCYS_TVW = ITHS + NSPOOL_TVW - 1
         IF(NOUT_TVW.LT.0.AND.USE_TVW) THEN
           NSCOU_TVW=0
           IF((NTCYS_TVW.LT.ITHS).AND.(NSPOOL_TVW.GT.0)) THEN
@@ -1910,7 +1899,7 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
 
 Casey 090310: Added the possibility for NOUTGW = -4.
       IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
-         if (write_local_files.eqv..false.) then  
+         if (write_local_files.eqv..false.) then
             CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
      &         NP_G, NP, HEADER73)
             CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
@@ -1920,7 +1909,7 @@ Casey 090310: Added the possibility for NOUTGW = -4.
                CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
      &           NP_G, NP, HEADER93)
             ENDIF
-            
+
          else
             CALL OPEN_GBL_FILE(73, TRIM(LOCALDIR)//'/'//'fort.73',
      &         NP_G, NP, HEADER73)
@@ -1932,7 +1921,7 @@ Casey 090310: Added the possibility for NOUTGW = -4.
      &           NP_G, NP, HEADER93)
             ENDIF
          endif
-            
+
       ENDIF
 
 ! tcm v50.75 removed ifdef cswan and added test for nrs=3 or 4
@@ -1963,7 +1952,7 @@ C...
 
         IF ((NDDT.NE.0).AND.(NOUTGE.LT.0)) THEN
            NSCOUGB=0
-           IF(NTCYSGB.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGB = ITHS + NSPOOLGE - 1 
+           IF(NTCYSGB.LT.ITHS.AND.NOUTGE.GT.0) NTCYSGB = ITHS + NSPOOLGE - 1
            IF((NTCYSGB.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
               NTCYSGB=NTCYSGB+((REAL(ITHS)-REAL(NTCYSGB))/
      &               REAL(NSPOOLGE))*REAL(NSPOOLGE)
@@ -1990,8 +1979,8 @@ C...
            endif
         ENDIF
 
-      ! jgf52.08.08: Create files for nodecode and noff output 
-      ! (wet/dry state of nodes and wet/dry state of elements)      
+      ! jgf52.08.08: Create files for nodecode and noff output
+      ! (wet/dry state of nodes and wet/dry state of elements)
       IF (ABS(NOUTGE).NE.0) then
          if (outputNodeCode.eqv..true.) then
             if (write_local_files.eqv..true.) then
@@ -2014,9 +2003,9 @@ C...
       endif
 
       ! jgf52.08.03: Reading of min/max data moved to initOutput2D()
-      ! subroutine in write_output module. 
-         
-      ! jgf: Added init for water level offset output file 
+      ! subroutine in write_output module.
+
+      ! jgf: Added init for water level offset output file
       if ( (NOUTGE.eq.-1.or.NOUTGE.eq.-4).and.(usingDynamicWaterLevelCorrection.eqv..true.) ) then
          if (write_local_files.eqv..true.) then
             call writeDomainHeader(108,trim(localdir)//'/'//
@@ -2026,7 +2015,7 @@ C...
      &           'dynamicWaterlevelCorrection.63',NP_G, NP, 'dynamicWaterlevelCorrection')
          endif
       endif
-      ! jgf: Added init for water level offset output file 
+      ! jgf: Added init for water level offset output file
       if ( (NOUTE.eq.-1).and.(usingDynamicWaterLevelCorrection.eqv..true.) ) then
          if (write_local_files.eqv..true.) then
             call writeStationHeader(109,trim(localdir)//'/'//
@@ -2068,8 +2057,8 @@ c******************************************************************************
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
       USE MESH, ONLY : NP, AGRID
       USE WRITE_OUTPUT, ONLY : initOutput3D
-      USE BOUNDARIES, ONLY : NOPE, NETA, NBD, totalbcrivernodes, 
-     &   BndBCRiver 
+      USE BOUNDARIES, ONLY : NOPE, NETA, NBD, totalbcrivernodes,
+     &   BndBCRiver
 C   kmd48.33bc - variable information needed from the global.F file
 ! kmd - added variables for river information
       USE GLOBAL, ONLY : RES_BC_FLAG, RBCTIME1, RBCTIME2,
@@ -2628,12 +2617,12 @@ C----------------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------
-C                  S U B R O U T I N E   
-C       R E C A L C U L A T E   S T A R T I N G   A N D   E N D I N G 
+C                  S U B R O U T I N E
+C       R E C A L C U L A T E   S T A R T I N G   A N D   E N D I N G
 C                T I M E S T E P S   F O R   O U T P U T
 C-----------------------------------------------------------------------
-C     jgf51.14 For runs where the hotstarted run has a different 
-C     time step than the hotstarted run, we need to recalculate the 
+C     jgf51.14 For runs where the hotstarted run has a different
+C     time step than the hotstarted run, we need to recalculate the
 C     starting and ending timesteps for output that were originally
 C     calculated in read_input.F, taking into account the different time
 C     step sizes.
@@ -2657,7 +2646,7 @@ C
 C
       LOG_SCOPE_TRACED("recalcOutputTimesteps", HSTART_TRACING)
       secElapsed = DTDPHS * ITHS - STATIM * 86400.0d0
-      outputStartSec = (outputStartDay - STATIM) * 86400.0d0     
+      outputStartSec = (outputStartDay - STATIM) * 86400.0d0
       if (outputStartSec.gt.secElapsed) then
          call calcTS(secElapsed, outputStartSec, outputStartTimeStep)
       endif
@@ -2670,11 +2659,11 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 
 C     ----------------------------------------------------------------
-C      S U B R O U T I N E   C A L C   T S 
+C      S U B R O U T I N E   C A L C   T S
 C     ----------------------------------------------------------------
 C
 C     jgf51.14 Function to calculate the time step on which input
-C     or output should occur. 
+C     or output should occur.
 C
 C     ----------------------------------------------------------------
       SUBROUTINE calcTS(elapsed, outputtime, ts)

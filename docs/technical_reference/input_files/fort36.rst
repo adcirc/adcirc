@@ -26,4 +26,4 @@ Notes
 - The salinity values should be specified for all ocean boundary nodes
 - Each dataset should include a comment line with the date
 - SALBC(k,m) represents the salinity value at node k and vertical level m
-- NFEN is the number of vertical levels in the model 
+- NFEN is the number of vertical levels in the model

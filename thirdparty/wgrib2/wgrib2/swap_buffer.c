@@ -27,5 +27,3 @@ int swap_buffer(unsigned char *buffer, unsigned int n) {
     }
     return 0;
 }
-
-

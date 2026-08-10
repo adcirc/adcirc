@@ -14,7 +14,7 @@ File Structure
 The file format is as follows:
 
 .. parsed-literal::
-   
+
    numIceFields
    numBlankIceSnaps
 

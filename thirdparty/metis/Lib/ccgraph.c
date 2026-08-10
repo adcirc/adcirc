@@ -31,7 +31,7 @@ void CreateCoarseGraph(CtrlType *ctrl, GraphType *graph, int cnvtxs, idxtype *ma
   dovsize = (ctrl->optype == OP_KVMETIS ? 1 : 0);
 
   mask = HTLENGTH;
-  if (cnvtxs < 8*mask || graph->nedges/graph->nvtxs > 15) { 
+  if (cnvtxs < 8*mask || graph->nedges/graph->nvtxs > 15) {
     CreateCoarseGraphNoMask(ctrl, graph, cnvtxs, match, perm);
     return;
   }
@@ -61,17 +61,17 @@ void CreateCoarseGraph(CtrlType *ctrl, GraphType *graph, int cnvtxs, idxtype *ma
 
 
   iend = xadj[nvtxs];
-  auxadj = ctrl->wspace.auxcore; 
-  memcpy(auxadj, adjncy, iend*sizeof(idxtype)); 
+  auxadj = ctrl->wspace.auxcore;
+  memcpy(auxadj, adjncy, iend*sizeof(idxtype));
   for (i=0; i<iend; i++)
     auxadj[i] = cmap[auxadj[i]];
 
-  htable = idxset(mask+1, -1, idxwspacemalloc(ctrl, mask+1)); 
+  htable = idxset(mask+1, -1, idxwspacemalloc(ctrl, mask+1));
 
   cxadj[0] = cnvtxs = cnedges = 0;
   for (i=0; i<nvtxs; i++) {
     v = perm[i];
-    if (cmap[v] != cnvtxs) 
+    if (cmap[v] != cnvtxs)
       continue;
 
     u = match[v];
@@ -113,7 +113,7 @@ void CreateCoarseGraph(CtrlType *ctrl, GraphType *graph, int cnvtxs, idxtype *ma
       }
     }
 
-    if (v != u) { 
+    if (v != u) {
       if (ncon == 1)
         cvwgt[cnvtxs] += vwgt[u];
       else
@@ -155,7 +155,7 @@ void CreateCoarseGraph(CtrlType *ctrl, GraphType *graph, int cnvtxs, idxtype *ma
       jj = htable[cnvtxs&mask];
       if (jj >= 0 && cadjncy[jj] != cnvtxs) {
         for (jj=0; jj<nedges; jj++) {
-          if (cadjncy[jj] == cnvtxs) 
+          if (cadjncy[jj] == cnvtxs)
             break;
         }
       }
@@ -231,15 +231,15 @@ void CreateCoarseGraphNoMask(CtrlType *ctrl, GraphType *graph, int cnvtxs, idxty
   htable = idxset(cnvtxs, -1, idxwspacemalloc(ctrl, cnvtxs));
 
   iend = xadj[nvtxs];
-  auxadj = ctrl->wspace.auxcore; 
-  memcpy(auxadj, adjncy, iend*sizeof(idxtype)); 
+  auxadj = ctrl->wspace.auxcore;
+  memcpy(auxadj, adjncy, iend*sizeof(idxtype));
   for (i=0; i<iend; i++)
     auxadj[i] = cmap[auxadj[i]];
 
   cxadj[0] = cnvtxs = cnedges = 0;
   for (i=0; i<nvtxs; i++) {
     v = perm[i];
-    if (cmap[v] != cnvtxs) 
+    if (cmap[v] != cnvtxs)
       continue;
 
     u = match[v];
@@ -268,7 +268,7 @@ void CreateCoarseGraphNoMask(CtrlType *ctrl, GraphType *graph, int cnvtxs, idxty
       }
     }
 
-    if (v != u) { 
+    if (v != u) {
       if (ncon == 1)
         cvwgt[cnvtxs] += vwgt[u];
       else
@@ -358,18 +358,18 @@ void CreateCoarseGraph_NVW(CtrlType *ctrl, GraphType *graph, int cnvtxs, idxtype
 
 
   iend = xadj[nvtxs];
-  auxadj = ctrl->wspace.auxcore; 
-  memcpy(auxadj, adjncy, iend*sizeof(idxtype)); 
+  auxadj = ctrl->wspace.auxcore;
+  memcpy(auxadj, adjncy, iend*sizeof(idxtype));
   for (i=0; i<iend; i++)
     auxadj[i] = cmap[auxadj[i]];
 
   mask = HTLENGTH;
-  htable = idxset(mask+1, -1, idxwspacemalloc(ctrl, mask+1)); 
+  htable = idxset(mask+1, -1, idxwspacemalloc(ctrl, mask+1));
 
   cxadj[0] = cnvtxs = cnedges = 0;
   for (i=0; i<nvtxs; i++) {
     v = perm[i];
-    if (cmap[v] != cnvtxs) 
+    if (cmap[v] != cnvtxs)
       continue;
 
     u = match[v];
@@ -404,7 +404,7 @@ void CreateCoarseGraph_NVW(CtrlType *ctrl, GraphType *graph, int cnvtxs, idxtype
       }
     }
 
-    if (v != u) { 
+    if (v != u) {
       cvwgt[cnvtxs]++;
       cadjwgtsum[cnvtxs] += adjwgtsum[u];
 
@@ -439,7 +439,7 @@ void CreateCoarseGraph_NVW(CtrlType *ctrl, GraphType *graph, int cnvtxs, idxtype
       jj = htable[cnvtxs&mask];
       if (jj >= 0 && cadjncy[jj] != cnvtxs) {
         for (jj=0; jj<nedges; jj++) {
-          if (cadjncy[jj] == cnvtxs) 
+          if (cadjncy[jj] == cnvtxs)
             break;
         }
       }
@@ -540,7 +540,7 @@ GraphType *SetUpCoarseGraph(GraphType *graph, int cnvtxs, int dovsize)
 * This function re-adjusts the amount of memory that was allocated if
 * it will lead to significant savings
 **************************************************************************/
-void ReAdjustMemory(GraphType *graph, GraphType *cgraph, int dovsize) 
+void ReAdjustMemory(GraphType *graph, GraphType *cgraph, int dovsize)
 {
 
   if (cgraph->nedges > 100000 && graph->nedges < 0.7*graph->nedges) {

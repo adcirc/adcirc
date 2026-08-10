@@ -86,4 +86,4 @@ Notes
 - For internal weirs with two nodes, the weir height will not decrease below the topographic elevation of either node
 - A hot start simulation will not have any knowledge of previous weir elevation changes
 - The time varying weir input file should not assume anything happens prior to the first ADCIRC time step
-- Weir elevation changes prescribed before the start of the current simulation will not be considered 
+- Weir elevation changes prescribed before the start of the current simulation will not be considered

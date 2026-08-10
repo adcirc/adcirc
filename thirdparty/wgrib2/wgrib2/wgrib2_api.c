@@ -4,7 +4,7 @@
 #include "wgrib2.h"
 
 
-/* 
+/*
    sort of like the command line version of wgrib2
 
    int wgrib2a(string1, string2. .. stringN, NULL);
@@ -41,4 +41,3 @@ int wgrib2a(char *arg1, ...) {
     free(argv);
     return i;
 }
-

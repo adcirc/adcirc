@@ -54,7 +54,7 @@ int check_time(int year, int month, int day, int hour, int minute, int second) {
     4/2015: dtime is now integer
  */
 
-int add_time(int *year, int *month, int *day, int *hour, int *minute, int *second, 
+int add_time(int *year, int *month, int *day, int *hour, int *minute, int *second,
    int dtime, int unit) {
      if (dtime == 0) return 0;
      if (dtime > 0) return add_dt(year, month, day, hour, minute, second, dtime, unit);
@@ -63,12 +63,12 @@ int add_time(int *year, int *month, int *day, int *hour, int *minute, int *secon
 
 int Add_time(struct full_date *date, int dtime, int unit) {
      if (dtime == 0) return 0;
-     if (dtime > 0) 
+     if (dtime > 0)
        return add_dt(&(date->year), &(date->month), &(date->day), &(date->hour), &(date->minute), &(date->second), dtime, unit);
      return sub_dt(&(date->year), &(date->month), &(date->day), &(date->hour), &(date->minute), &(date->second), -dtime, unit);
 }
 
-int add_dt(int *year, int *month, int *day, int *hour, int *minute, int *second, 
+int add_dt(int *year, int *month, int *day, int *hour, int *minute, int *second,
    int dtime, int unit) {
 
     int y, m, d, h, mm, s, jday, i, days_in_month;
@@ -201,7 +201,7 @@ int add_dt(int *year, int *month, int *day, int *hour, int *minute, int *second,
  * figures out (date) - dt
  */
 
-int sub_dt(int *year, int *month, int *day, int *hour, int *minute, int *second, 
+int sub_dt(int *year, int *month, int *day, int *hour, int *minute, int *second,
 	int dtime, int unit) {
 
     int y, m, d, h, mm, s, jday, i, days_in_month;
@@ -272,7 +272,7 @@ int sub_dt(int *year, int *month, int *day, int *hour, int *minute, int *second,
     if (unit == HOUR) {
 	dtime += (23-h);
 	*hour = h = 23 - dtime%24;
-       	dtime = dtime / 24; 
+       	dtime = dtime / 24;
 	if (dtime == 0) return 0;
 	unit = DAY;
     }
@@ -386,7 +386,7 @@ int Save_time(struct full_date *date, unsigned char *p) {
  */
 
 int cmp_time(
-int year0, int month0, int day0, int hour0, int minute0, int second0, 
+int year0, int month0, int day0, int hour0, int minute0, int second0,
 int year1, int month1, int day1, int hour1, int minute1, int second1) {
 
 	if (year0 < year1) return -1;

@@ -150,4 +150,4 @@ Notes
 * Files are written alternately to provide crash protection
 * Use the most current file for hot start unless write buffer issues are suspected
 * Parameter changes during hot start are limited (no time step or output parameter changes)
-* When changing the ending time of an output time series during hot start, manual editing of the file header may be required to correct the number of output data sets 
+* When changing the ending time of an output time series during hot start, manual editing of the file header may be required to correct the number of output data sets

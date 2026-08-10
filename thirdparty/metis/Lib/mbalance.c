@@ -77,8 +77,8 @@ void MocGeneral2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts, floa
 
 /*
   printf("Weight Distribution:    \t");
-  for (i=0; i<ncon; i++) 
-    printf(" [%d %d]", qsizes[i][0], qsizes[i][1]); 
+  for (i=0; i<ncon; i++)
+    printf(" [%d %d]", qsizes[i][0], qsizes[i][1]);
   printf("\n");
 */
 
@@ -102,14 +102,14 @@ void MocGeneral2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts, floa
 
 /*
   printf("Weight Distribution (after):\t ");
-  for (i=0; i<ncon; i++) 
-    printf(" [%d %d]", qsizes[i][0], qsizes[i][1]); 
+  for (i=0; i<ncon; i++)
+    printf(" [%d %d]", qsizes[i][0], qsizes[i][1]);
   printf("\n");
 */
 
 
 
-  for (i=0; i<ncon; i++) 
+  for (i=0; i<ncon; i++)
     mindiff[i] = fabs(tpwgts[0]-npwgts[i]);
   minbal = origbal = Compute2WayHLoadImbalance(ncon, npwgts, tpwgts);
   newcut = mincut = graph->mincut;
@@ -150,7 +150,7 @@ void MocGeneral2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts, floa
     newcut -= (ed[higain]-id[higain]);
     newbal = Compute2WayHLoadImbalance(ncon, npwgts, tpwgts);
 
-    if (newbal < minbal || (newbal == minbal && 
+    if (newbal < minbal || (newbal == minbal &&
         (newcut < mincut || (newcut == mincut && BetterBalance(ncon, npwgts, tpwgts, mindiff))))) {
       mincut = newcut;
       minbal = newbal;
@@ -171,7 +171,7 @@ void MocGeneral2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts, floa
 
     if (ctrl->dbglvl&DBG_MOVEINFO) {
       printf("Moved %6d from %d(%d). Gain: %5d, Cut: %5d, NPwgts: ", higain, from, cnum, ed[higain]-id[higain], newcut);
-      for (l=0; l<ncon; l++) 
+      for (l=0; l<ncon; l++)
         printf("(%.3f, %.3f) ", npwgts[l], npwgts[ncon+l]);
       printf(", %.3f LB: %.3f\n", minbal, newbal);
     }
@@ -181,7 +181,7 @@ void MocGeneral2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts, floa
     * Update the id[i]/ed[i] values of the affected nodes
     ***************************************************************/
     SWAP(id[higain], ed[higain], tmp);
-    if (ed[higain] == 0 && bndptr[higain] != -1 && xadj[higain] < xadj[higain+1]) 
+    if (ed[higain] == 0 && bndptr[higain] != -1 && xadj[higain] < xadj[higain+1])
       BNDDelete(nbnd, bndind,  bndptr, higain);
     if (ed[higain] > 0 && bndptr[higain] == -1)
       BNDInsert(nbnd, bndind,  bndptr, higain);
@@ -198,9 +198,9 @@ void MocGeneral2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts, floa
         PQueueUpdate(&parts[qnum[k]][where[k]], k, oldgain, ed[k]-id[k]);
 
       /* Update its boundary information */
-      if (ed[k] == 0 && bndptr[k] != -1) 
+      if (ed[k] == 0 && bndptr[k] != -1)
         BNDDelete(nbnd, bndind, bndptr, k);
-      else if (ed[k] > 0 && bndptr[k] == -1)  
+      else if (ed[k] > 0 && bndptr[k] == -1)
         BNDInsert(nbnd, bndind, bndptr, k);
     }
   }
@@ -257,4 +257,3 @@ void MocGeneral2WayBalance(CtrlType *ctrl, GraphType *graph, float *tpwgts, floa
   idxwspacefree(ctrl, nvtxs);
 
 }
-

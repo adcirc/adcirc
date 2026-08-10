@@ -19,7 +19,7 @@ public :: c_strptime
 type,bind(c) :: tm_struct
 
   !! A derived type provided for compatibility with C/C++ time struct.
-  !! Allows for calling strftime and strptime procedures through the 
+  !! Allows for calling strftime and strptime procedures through the
   !! iso_c_binding.
 
   integer(kind=c_int) :: tm_sec   !! Seconds      [0-60] (1 leap second)
@@ -39,15 +39,15 @@ endtype tm_struct
 
 interface
 
-  !! Interface to C procedures strftime and strptime through 
+  !! Interface to C procedures strftime and strptime through
   !! iso_c_binding.
 
   function c_strftime(str,slen,format,tm)&
     bind(c,name='strftime') result(rc)
 
-    !! Returns a formatted time string, given input time struct and 
-    !! format. Refer to C standard library documentation for more 
-    !! information. 
+    !! Returns a formatted time string, given input time struct and
+    !! format. Refer to C standard library documentation for more
+    !! information.
 
     import :: c_char,c_int
     import :: tm_struct
@@ -57,7 +57,7 @@ interface
     ! Arguments
     character(kind=c_char),dimension(*),intent(out) :: str    !! result string
     integer(kind=c_int),value,          intent(in)  :: slen   !! string length
-    character(kind=c_char),dimension(*),intent(in)  :: format !! time format 
+    character(kind=c_char),dimension(*),intent(in)  :: format !! time format
     type(tm_struct),                    intent(in)  :: tm     !! tm_struct instance
     integer(kind=c_int)                             :: rc     !! return code
 
@@ -68,7 +68,7 @@ interface
   function c_strptime(str,format,tm) bind(c,name='strptime') result(rc)
 
     !! Returns a time struct object based on the input time string str,
-    !! formatted using format. Refer to C standard library documentation 
+    !! formatted using format. Refer to C standard library documentation
     !! for more information.
 
     import :: c_char,c_int

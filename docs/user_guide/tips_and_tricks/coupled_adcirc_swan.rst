@@ -219,4 +219,3 @@ of 7 (click to enlarge) method2_3.png|Change area 3 of 7 (click to enlarge)
 method2_4.png|Change area 4 of 7 (click to enlarge) method2_5.png|Change area 5
 of 7 (click to enlarge) method2_6.png|Change area 6 of 7 (click to enlarge)
 method2_7.png|Change area 7 of 7 (click to enlarge)
-

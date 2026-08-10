@@ -66,4 +66,4 @@ If :ref:`IDEN <iden>` = 4 or -4
       for j = 1 to :ref:`NP <np>`
          J, (:ref:`SIGT <sigt>` (M), :ref:`TEMP <temp>` (M), :ref:`SAL <sal>` (M), M=1, :ref:`NFEN <nfen>`)
       end j loop
-   end k loop 
+   end k loop

@@ -38,7 +38,7 @@ int rd_inventory(int *rec_num, int *submsg, long int *pos, struct seq_file *in) 
 		if (errmsg++ == 0)
 		    fprintf(stderr,"rd_inventory: stdin truncated, longer than INV_STRING_SIZE (%d)\n", INV_STRING_SIZE);
 	    }
-	    else { 
+	    else {
 	        buffer[buff_cnt++] = c;
 	    }
 	    c = fgetc_file(in);

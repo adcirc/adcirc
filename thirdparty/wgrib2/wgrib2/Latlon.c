@@ -8,10 +8,10 @@
 /*
  * 12/2006 Public Domain Wesley Ebisuzaki
  * 1/2007 Cleanup M. Schwarb
- * 1/2008 lat and lon changed from float to double 
+ * 1/2008 lat and lon changed from float to double
  * 1/2011 replace new_GDS by GDS_change_no, WNE
  */
-   
+
 extern int decode;
 extern int need_output_file;
 extern enum output_order_type output_order;
@@ -55,7 +55,7 @@ int f_ij(ARG2) {
         save->last_GDS_change_no = GDS_change_no;
         if (output_order != wesn) fatal_error("ij only works in we:sn order","");
 	if (GDS_Scan_staggered(scan)) fatal_error("ij does not support staggered grids","");
-    
+
         if (save->ix <= 0 || save->ix > nx || save->iy <= 0 || save->iy > ny) {
             fatal_error("invalid i, j values","");
         }
@@ -117,10 +117,10 @@ int f_ijlat(ARG2) {
         save->iptr = (save->ix-1) + (save->iy-1) * nx;
     }
 //vsm_fmt    sprintf(inv_out,"(%d,%d),lon=%g,lat=%g,val=%lg",save->ix,save->iy,
-    if (WxNum > 0) 
+    if (WxNum > 0)
 	sprintf(inv_out,"(%d,%d),lon=%lf,lat=%lf,val=\"%s\"",save->ix,save->iy,
             lon[save->iptr],lat[save->iptr],WxLabel(data[save->iptr]));
-    else 
+    else
 	sprintf(inv_out,"(%d,%d),lon=%lf,lat=%lf,val=%lg",save->ix,save->iy,
             lon[save->iptr],lat[save->iptr],data[save->iptr]);
     return 0;
@@ -169,9 +169,9 @@ int f_ilat(ARG1) {
         }
     }
 //vsm_fmt    sprintf(inv_out,"grid pt %d,lon=%g,lat=%g,val=%lg",i,
-    if (WxNum > 0) 
+    if (WxNum > 0)
         sprintf(inv_out,"grid pt %d,lon=%lf,lat=%lf,val=\"%s\"",i,lon[i-1],lat[i-1],WxLabel(data[i-1]));
-    else 
+    else
         sprintf(inv_out,"grid pt %d,lon=%lf,lat=%lf,val=%lg",i,lon[i-1],lat[i-1],data[i-1]);
     return 0;
 }
@@ -211,7 +211,7 @@ int f_lon(ARG2) {
 //            fatal_error("lon only works in we:sn order","");
 //        }
         if (data == NULL) fatal_error("gridded data not decoded","");
-        if (lat == NULL || lon == NULL) 
+        if (lat == NULL || lon == NULL)
                   fatal_error("lat-lon information not available","");
         closest_init(sec);
         save->iptr = closest(sec, save->plat, save->plon);
@@ -256,7 +256,7 @@ int get_latlon(unsigned char **sec, double **lon, double **lat) {
     if (grid_template == 0) {
         err = regular2ll(sec, lat, lon);
     }
-    else if (grid_template == 1) {		// rotated lat-lon 
+    else if (grid_template == 1) {		// rotated lat-lon
         err = rot_regular2ll(sec, lat, lon);
     }
     else if (grid_template == 10) {
@@ -285,6 +285,5 @@ int get_latlon(unsigned char **sec, double **lon, double **lat) {
     else {
 	err= 1;
     }
-    return err; 
+    return err;
 }
-

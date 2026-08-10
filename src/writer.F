@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -55,10 +55,10 @@ C
       integer, parameter :: num_buf_max = 25  !st3 100708: increase for swan output
       !
       ! data structure on the writer processor that mirrors the corresponding
-      ! metadata on the compute processor; this is dimensioned by the 
+      ! metadata on the compute processor; this is dimensioned by the
       ! num_buf_max parameter
       type(OutputDataDescript_t), allocatable :: writer_descripts(:)
-      ! 
+      !
       ! .true. if a writer processor has received data into one or more
       ! of its local buffers but has not written it yet; the nwloaded
       ! array is dimensioned equal to the number of writer processors;
@@ -66,10 +66,10 @@ C
       ! not writer processors
       logical, allocatable :: nwloaded(:)   !st3 100708: round robin chamber
       !
-      ! buffer number on a particular writer processor; each writer 
+      ! buffer number on a particular writer processor; each writer
       ! processor manages its own bufID so it knows where to store the
       ! next dataset it receives
-      integer :: bufID    
+      integer :: bufID
       !
       ! wcommID is incremented by and used only by compute processors to
       ! determine which writer processor to send data to each time
@@ -77,7 +77,7 @@ C
 
 C---------------------end of data declarations--------------------------------C
 
-      !--------    
+      !--------
       CONTAINS
       !--------
 
@@ -85,7 +85,7 @@ C-----------------------------------------------------------------------
 C     S U B R O U T I N E   W R I T E R  _  I N I T
 C-----------------------------------------------------------------------
 C     jgf51.21.27: This subroutine is executed by each writer processor.
-C 
+C
 C     Initializes round robin chamber; clears mpi communicator id for
 C     this processor; clears flush flag.
 C-----------------------------------------------------------------------
@@ -112,12 +112,12 @@ C-----------------------------------------------------------------------
          writer_descripts(i) % wMD % myTimeStep = 0
          writer_descripts(i) % wMD % myTime = 0.d0
       end do
-      
+
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE WRITER_INIT
 C-----------------------------------------------------------------------
-      
+
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   S E N D L A B E L I N F O T O W R I T E R S
@@ -188,12 +188,12 @@ C
      &       comm_writer(writer_id), mpistat)
 
          select case(sig)
-         case(sig_ini) 
+         case(sig_ini)
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_ini.")') writer_id
             call logMessage(INFO,scratchMessage)
             call sendLabelInfoToWriters()
-         case(sig_val) 
+         case(sig_val)
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_val.")') writer_id
             call logMessage(INFO,scratchMessage)
@@ -207,20 +207,20 @@ C
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_mesh.")') writer_id
             call logMessage(INFO,scratchMessage)
-            call writerReadMesh()   
+            call writerReadMesh()
          case(sig_pause)   ! tcm addeded v49.52.01 SIG_PAUSE
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_pause.")') writer_id
             call logMessage(INFO,scratchMessage)
             exit
-         case(sig_term) 
+         case(sig_term)
             write(scratchMessage,
      &       '("Writer processor ",i0," received sig_term.")') writer_id
             call logMessage(INFO,scratchMessage)
             exit
          case default
             write(scratchMessage,
-     &     '("Writer processor ",i0," received invalid signal ",i0,".")') 
+     &     '("Writer processor ",i0," received invalid signal ",i0,".")')
      &       writer_id, sig
             exit
          end select
@@ -234,7 +234,7 @@ C-----------------------------------------------------------------------
 C     S U B R O U T I N E   S E N D   D A T A   T O   W R I T E R
 C-----------------------------------------------------------------------
 C     jgf51.21.27: This subroutine is executed by all compute processors
-C     to send metadata and then output data to a writer processor. 
+C     to send metadata and then output data to a writer processor.
 C-----------------------------------------------------------------------
       subroutine sendDataToWriter(descript, TimeLoc, it, store_cmd)
       use sizes, only : myproc
@@ -260,14 +260,14 @@ C
       ! jgf51.21.27: Figure out which mpi communicator to use with this
       ! writer processor.
       if (wcommID.ge.mnwproc) wcommID = 0
-      wcommID = wcommID + 1  
+      wcommID = wcommID + 1
       ! st3 100708: load the bullet to round robin chamber
-      nwloaded(wcommID) = .true.  
+      nwloaded(wcommID) = .true.
       !
-      ! jgf51.21.27: proc 0 signals the writer processor to let it know 
+      ! jgf51.21.27: proc 0 signals the writer processor to let it know
       ! that it is time to write and then sends it some metadata
       if (myproc.eq.0) then
-         write(scratchMessage,'(a,i0,a)') 
+         write(scratchMessage,'(a,i0,a)')
      &    'Processor 0 is sending sig_val to writer ',wcommID,'.'
          call logMessage(DEBUG,scratchMessage)
          !
@@ -297,7 +297,7 @@ Cobell - Allow writer processors to output netcdf data
          ! send file name
          call mpi_send(descript % file_name, 1024, mpi_character,
      &      mnproc, tag, comm_writer(wcommID))
-         write(scratchMessage,'(a,i0,a,a,a,i0,a)') 
+         write(scratchMessage,'(a,i0,a,a,a,i0,a)')
      &     'Processor ',myproc,' is sending file name ',
      &     trim(descript%file_name),' to writer ',wcommID,'.'
          call logMessage(DEBUG,scratchMessage)
@@ -309,7 +309,7 @@ C...  Compute the buffer size
       num     = bufsize / descript % num_items_per_record
       iend    = num
       istart  = 1
-      ! 
+      !
       ! now all compute processors send this data to the dedicated writer processor
       do while (istart.le.iend)
 
@@ -365,7 +365,7 @@ C-----------------------------------------------------------------------
       call mpi_recv(intbuf, numIntMetaData, mpi_integer, 0, tag,
      &   comm_writer(writer_id), mpistat)
       !
-      ! Select the writer buffer that will receive the values. 
+      ! Select the writer buffer that will receive the values.
       descriptFound = .false.
       do i=1,num_buf_max
          ! look for the descript that is already set up to write this data
@@ -377,10 +377,10 @@ C-----------------------------------------------------------------------
       end do
       ! If this writer has not written this type of output file
       ! yet, then find a buffer that has not been used yet.
-      ! NetCDF and XDMF data files get initialized only once on each writer, 
-      ! so on each writer, we'll reuse the same buffer each time we 
+      ! NetCDF and XDMF data files get initialized only once on each writer,
+      ! so on each writer, we'll reuse the same buffer each time we
       ! write to these files. For ascii files it doesn't actually matter
-      ! whether we use the same or different buffers each time, but 
+      ! whether we use the same or different buffers each time, but
       ! treating all the output types the same keeps things simple.
       if (descriptFound.eqv..false.) then
          do i=1,num_buf_max
@@ -391,8 +391,8 @@ C-----------------------------------------------------------------------
             endif
           end do
       endif
-      ! 
-      ! place the metadata into the selected buffer           
+      !
+      ! place the metadata into the selected buffer
       writer_descripts(bufid) % num_fd_records = intbuf(1)
       writer_descripts(bufid) % num_items_per_record = intbuf(2)
       writer_descripts(bufid) % specifier = intbuf(3) !jgf51.21.27 added
@@ -417,31 +417,31 @@ C-----------------------------------------------------------------------
       call logMessage(DEBUG,scratchMessage)
       !
       !st3 100708: split file
-      if (isplit.eqv..true.) then                             
+      if (isplit.eqv..true.) then
          !st3 split files are named by integer part of simulation time
-         write(cdigit,'(i8.8)') 
-     &      nint(writer_descripts(bufid) % wMD % myTime)        
-         writer_descripts(bufid) % file_name = 
+         write(cdigit,'(i8.8)')
+     &      nint(writer_descripts(bufid) % wMD % myTime)
+         writer_descripts(bufid) % file_name =
      &      trim(adjustl(writer_descripts(bufid) % file_name))
-     &      //'.'//cdigit 
-      endif                                                     
+     &      //'.'//cdigit
+      endif
       !
       ! Prepare buffer to store received values if this is the first time
       ! for this buffer on this writer
       if ( writer_descripts(bufid) % wMD % bufferInitialized.eqv..false.) then
-         allocate(writer_descripts(bufid) 
+         allocate(writer_descripts(bufid)
      &      % array_g(writer_descripts(bufID) % num_fd_records) )
-         ! also allocate the 2nd component, even though we may not 
+         ! also allocate the 2nd component, even though we may not
          ! need it for storing this particular data set
-         allocate(writer_descripts(bufID) 
+         allocate(writer_descripts(bufID)
      &      % array2_g(writer_descripts(bufID) % num_fd_records) )
          ! don't need to allocate memory for this buffer on this
          ! writer again
          writer_descripts(bufid) % wMD % bufferInitialized = .true.
       endif
 
-C...  Compute the writer mpi buffer size 
-      bufsize = min(BUFSIZE_MAX, 
+C...  Compute the writer mpi buffer size
+      bufsize = min(BUFSIZE_MAX,
      &    writer_descripts(bufid) % num_items_per_record
      &   * writer_descripts(bufid) % num_fd_records)
       num     = bufsize / writer_descripts(bufid) % num_items_per_record
@@ -472,7 +472,7 @@ C...     rank MNPROC of writer communicators is always a writer proc.
          end do
 
          istart = iend + 1
-         iend   = min(istart + num - 1, 
+         iend   = min(istart + num - 1,
      &                writer_descripts(bufid) % num_fd_records )
          num    = iend - istart + 1
       end do
@@ -487,11 +487,11 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E     F L U S H _ W R I T E R S
 C-----------------------------------------------------------------------
-C     jgf51.21.27: Processor 0 will now check to see which writer 
-C     processors have received data but have not written it; 
+C     jgf51.21.27: Processor 0 will now check to see which writer
+C     processors have received data but have not written it;
 C     send signals to these writer processors and make each one
 C     actually write the data for all the buffers it may be
-C     holding. 
+C     holding.
 C-----------------------------------------------------------------------
       SUBROUTINE FLUSH_WRITERS()
       use sizes, only : myproc
@@ -505,7 +505,7 @@ C-----------------------------------------------------------------------
 
       LOG_SCOPE_TRACED("flush_writers", WRITER_TRACING)
       !
-      ! return immediately if no writer processor has received data 
+      ! return immediately if no writer processor has received data
       ! since the last flush
       if ( .not.any(nwloaded).eqv..true. ) then
          return
@@ -538,10 +538,10 @@ C-----------------------------------------------------------------------
 C     S U B R O U T I N E     W R I T E R _ W R I T E
 C-----------------------------------------------------------------------
 C     Called when a dedicated writer processor receives a call to write
-C     out the data in its buffers. 
+C     out the data in its buffers.
 C
-C     jgf51.21.27: Modified this to use the original 
-C     descript % specifier integer instead of FULL_REC and W_NETCDF 
+C     jgf51.21.27: Modified this to use the original
+C     descript % specifier integer instead of FULL_REC and W_NETCDF
 C-----------------------------------------------------------------------
       subroutine writer_write()
       use global
@@ -568,12 +568,12 @@ C-----------------------------------------------------------------------
       logical :: nerr             ! netcdf error status indicator
 
       LOG_SCOPE_TRACED("writer_write", WRITER_TRACING)
-      write(scratchMessage,'(a,i0,a)') 
+      write(scratchMessage,'(a,i0,a)')
      &    'Writer ',writer_id,' is writing...'
-      call logMessage(INFO, scratchMessage)      
+      call logMessage(INFO, scratchMessage)
       !
       ! Loop over the buffers on this writer processor and write out
-      ! the data that are stored in them 
+      ! the data that are stored in them
       do ibuf=1, num_buf_max
          if (writer_descripts(ibuf) % wMD % bufferLoaded .eqv. .false.) then
             !write(6,'(a,i0,a,i0,a)') 'DEBUG: Writer ',writer_id,' buffer ',ibuf,' is empty.'
@@ -587,7 +587,7 @@ C-----------------------------------------------------------------------
          !
          ! for ascii and sparse ascii, open the file appropriately
          if ( (abs(writer_descripts(ibuf) % specifier).eq.ASCII).or.
-     &        (abs(writer_descripts(ibuf) % specifier).eq.SPARSE_ASCII) 
+     &        (abs(writer_descripts(ibuf) % specifier).eq.SPARSE_ASCII)
      &      ) then
             fstat = 'old'
             fpos = 'append'
@@ -595,10 +595,10 @@ C-----------------------------------------------------------------------
                fstat = 'replace'
                fpos = 'asis'
             endif
-            open(fid, file=writer_descripts(ibuf) % file_name, 
+            open(fid, file=writer_descripts(ibuf) % file_name,
      &             status=fstat, position=fpos, action='write')
          endif
-         ! 
+         !
          select case(abs(writer_descripts(ibuf) % specifier))
          !
          !    A S C I I
@@ -607,7 +607,7 @@ C-----------------------------------------------------------------------
          case(ASCII)
             ! write dataset header
             write(fid, 100) writer_descripts(ibuf) % wMD % myTime,
-     &            writer_descripts(ibuf) % wMD % myTimeStep 
+     &            writer_descripts(ibuf) % wMD % myTimeStep
             ! write dataset
             select case(writer_descripts(ibuf)%num_items_per_record)
             case(1)
@@ -627,33 +627,33 @@ C-----------------------------------------------------------------------
             end select
             close(fid)
          !
-         !  S P A R S E   A S C I I 
+         !  S P A R S E   A S C I I
          !
          case(SPARSE_ASCII)
             ! Count non-default values
-            allocate(areDefault1(writer_descripts(ibuf) 
+            allocate(areDefault1(writer_descripts(ibuf)
      &                                             % num_fd_records))
             areDefault1 = .true.
             where ( writer_descripts(ibuf) % array_g .ne.
-     &                  writer_descripts(ibuf) % alternate_value ) 
+     &                  writer_descripts(ibuf) % alternate_value )
                areDefault1 = .false.
-            end where          
+            end where
             !
             ! write data
             select case(writer_descripts(ibuf)%num_items_per_record)
             !
             !.... Sparse ASCII Scalar data
-            case(1) 
+            case(1)
                nNonDefVal = count(areDefault1.eqv..false.)
                ! write dataset header
                write(fid, 100) writer_descripts(ibuf) % wMD % myTime,
-     &               writer_descripts(ibuf) % wMD % myTimeStep, 
-     &               nNonDefVal, 
+     &               writer_descripts(ibuf) % wMD % myTimeStep,
+     &               nNonDefVal,
      &               writer_descripts(ibuf) % alternate_value
                ! write sparse scalar dataset
                do i=1, writer_descripts(ibuf) % num_fd_records
                   if (areDefault1(i).eqv..false.) then
-                     write(fid,1000) labels_g(i), 
+                     write(fid,1000) labels_g(i),
      &                     writer_descripts(ibuf) % array_g(i)
                   endif
                end do
@@ -661,28 +661,28 @@ C-----------------------------------------------------------------------
                deallocate(areDefault1)
             !
             !.... Sparse ASCII Vector data
-            case(2) 
+            case(2)
                ! now we have to count the non default values on
                ! the second component as well
-               allocate(areDefault2(writer_descripts(ibuf) 
+               allocate(areDefault2(writer_descripts(ibuf)
      &                                             % num_fd_records))
                areDefault2 = .true.
                where ( writer_descripts(ibuf) % array2_g .ne.
-     &                  writer_descripts(ibuf) % alternate_value ) 
-                  areDefault2 = .false. 
+     &                  writer_descripts(ibuf) % alternate_value )
+                  areDefault2 = .false.
                end where
                nNonDefVal = count((areDefault1.eqv..false.)
      &                          .and.(areDefault2.eqv..false.))
                ! write dataset header
                write(fid, 100) writer_descripts(ibuf) % wMD % myTime,
-     &               writer_descripts(ibuf) % wMD % myTimeStep, 
-     &               nNonDefVal, 
+     &               writer_descripts(ibuf) % wMD % myTimeStep,
+     &               nNonDefVal,
      &               writer_descripts(ibuf) % alternate_value
                ! write sparse vector dataset
                do i=1, writer_descripts(ibuf) % num_fd_records
                   if ((areDefault1(i).eqv..false.).or.
      &                   (areDefault2(i).eqv..false.)) then
-                     write(fid,2000) labels_g(i), 
+                     write(fid,2000) labels_g(i),
      &                     writer_descripts(ibuf) % array_g(i),
      &                     writer_descripts(ibuf) % array2_g(i)
                   endif
@@ -698,27 +698,27 @@ C-----------------------------------------------------------------------
             close(fid)
          !
          !     N E T C D F
-         ! 
+         !
          case(NETCDF3, NETCDF4)
 Cobell ... Added to allow writer core to write NetCDF output without
 C          needing access to the entire descript array which would have
 C          required extra message passing steps.
-#ifdef ADCNETCDF         
+#ifdef ADCNETCDF
             if (writer_descripts(ibuf)%initialized.eqv..false.) then
                call initNetCDFOutputFile(writer_descripts(ibuf), nerr)
                writer_descripts(ibuf)%initialized = .true.
-            endif   
+            endif
             call writeOutArrayNetCDF(writer_descripts(ibuf) % lun,
      &         writer_descripts(ibuf) % wMD % myTime,
-     &         writer_descripts(ibuf) ) 
+     &         writer_descripts(ibuf) )
 #else
-            write(scratchMessage,'(a)') 
+            write(scratchMessage,'(a)')
      &          'NetCDF is not available. No output has been written.'
             call allMessage(ERROR, scratchMessage)
-#endif         
+#endif
          !
          !    X D M F
-         ! 
+         !
          case(XDMF)
 #ifdef ADCXDMF
             if (writer_descripts(ibuf)%initialized.eqv..false.) then
@@ -730,7 +730,7 @@ C          required extra message passing steps.
                call writeControlXDMF(
      &             writer_descripts(ibuf) % xdmfMD % xdmfFortranObj)
                writer_descripts(ibuf)%initialized = .true.
-            endif   
+            endif
             write(scratchMessage,'(a,i0,a,a)') 'Writer ',writer_id,
      &          ' is calling writeOutArrayXDMF for file ',
      &          trim(writer_descripts(ibuf) % file_name)
@@ -747,10 +747,10 @@ C          required extra message passing steps.
 
 
          case default
-            write(scratchMessage,'(a,i0,a)') 
+            write(scratchMessage,'(a,i0,a)')
      &         'Output specifier ',
      &         writer_descripts(ibuf) % specifier,
-     &         ' is not supported by dedicated writer processors.'   
+     &         ' is not supported by dedicated writer processors.'
             call allMessage(ERROR,scratchMessage)
          end select
          writer_descripts(ibuf) % wMD % bufferLoaded = .false.
@@ -759,12 +759,12 @@ C          required extra message passing steps.
       bufid = 0
 
       ! changed formats to match those in globalio.F
- 100  FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)  
+ 100  FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
       ! tcm v50.27 added for full record
- 110  FORMAT(2x,1pE20.10E3,5X,I10)             
+ 110  FORMAT(2x,1pE20.10E3,5X,I10)
 
       write(scratchMessage,'(a,i0,a)') 'Writer ',writer_id,
-     &    ' finished writing.' 
+     &    ' finished writing.'
       call allMessage(INFO, scratchMessage)
 
       RETURN
@@ -778,11 +778,11 @@ C-----------------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   S E N D   I N I T   W R I T E R   X D M F  
+C     S U B R O U T I N E   S E N D   I N I T   W R I T E R   X D M F
 C-----------------------------------------------------------------------
 C     jgf51.21.27: This subroutine is executed by processor 0 to send
 C     mesh file info to the writer processor so it can read the mesh
-C     and use it during the writing of XDMF output.  
+C     and use it during the writing of XDMF output.
 C-----------------------------------------------------------------------
       subroutine sendInitWriterXDMF(descript)
       use sizes, only : myproc
@@ -804,26 +804,26 @@ C
       if (wcommID.ge.mnwproc) then
          wcommID = 0
       endif
-      wcommID = wcommID + 1  
+      wcommID = wcommID + 1
       !
       ! jgf51.21.27: proc 0 signals the writer processor to tell it that
       ! the mesh info is coming, and then sends the data
       if (myproc.eq.0) then
-         write(scratchMessage,'(a,i0,a,i0,a)') 
+         write(scratchMessage,'(a,i0,a,i0,a)')
      &  'Processor ',myproc,' is sending sig_mesh to writer ',wcommID,'.'
          call logMessage(INFO, scratchMessage)
          !
          ! Send sig_mesh to a writer to get it ready to receive metadata.
          call mpi_send(sig_mesh, 1, mpi_integer, mnproc, tag,
      &      comm_writer(wcommID))
-         ! 
+         !
          ! read the fulldomain mesh file name and control file name
          ! so that the writer can load them up and use them (it only
-         ! uses the control file for generating metadata) ... the 
+         ! uses the control file for generating metadata) ... the
          ! 'fulldomainInputFiles' file is created by adcprep
          call openFileForRead(30,trim(globaldir)//'/fulldomainInputFiles',
      &      ierr, required=.FALSE.)
-         do 
+         do
             read(30,fmt='(a80)',end=10) fileKeyword
             read(30,fmt='(a80)',end=10) fileValue
             select case(trim(fileKeyword))
@@ -833,7 +833,7 @@ C
                call getFormatInteger(fileValue, controlType)
             case('meshFileName')
                meshFileName_g = trim(globaldir) // '/' // fileValue
-            case('controlFileName') 
+            case('controlFileName')
                controlFileName_g = trim(globaldir) // '/' // fileValue
             case default
                ! ignore the keywords and values we are not interested in
@@ -860,11 +860,11 @@ C-----------------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E     W R I T E R   R E A D   M E S H 
+C     S U B R O U T I N E     W R I T E R   R E A D   M E S H
 C-----------------------------------------------------------------------
 C     jgf51.21.27: This subroutine causes a dedicated writer processor
 C     to read the fulldomain mesh file so that it can later be written
-C     into XDMF output files. 
+C     into XDMF output files.
 C-----------------------------------------------------------------------
       subroutine writerReadMesh()
       use global
@@ -886,9 +886,9 @@ C-----------------------------------------------------------------------
       LOG_SCOPE_TRACED("writerReadMesh", WRITER_TRACING)
 
 #ifdef ADCXDMF
-      ! 
+      !
       ! receive file name of mesh file
-      call mpi_recv(meshFileName, 2048, mpi_character, 0, tag, 
+      call mpi_recv(meshFileName, 2048, mpi_character, 0, tag,
      &   comm_writer(writer_id), mpistat)
       call mpi_recv(controlFileName, 2048, mpi_character, 0, tag,
      &   comm_writer(writer_id), mpistat)
@@ -918,7 +918,7 @@ C-----------------------------------------------------------------------
          y = sfea
          meshInitialized = .true.
       endif
-      ! read the fort.15 file for metadata     
+      ! read the fort.15 file for metadata
       call readControlFile(controlFileName_g,.false.)
 #endif
 
@@ -932,7 +932,7 @@ C-----------------------------------------------------------------------
 C     S U B R O U T I N E   W R I T E R  _  P A U S E
 C-----------------------------------------------------------------------
 C     Sends a signal to all writer processors to pause, which just
-C     means that they exit their infinite loop and return. This 
+C     means that they exit their infinite loop and return. This
 C     subroutine is only called by processor 0.
 C-----------------------------------------------------------------------
       subroutine writer_pause()
@@ -1104,7 +1104,7 @@ C-----------------------------------------------------------------------
 
       type(OutputDataDescript_t), SAVE :: H1_HS_Descript
       type(OutputDataDescript_t), SAVE :: H2_HS_Descript
-     
+
       LOGICAL,  SAVE :: FirstCall = .true.
 !
 
@@ -1182,7 +1182,7 @@ C-----------------------------------------------------------------------
         NSCOUGC        = ipack(22)
         NSCOUGW        = ipack(25)
         iNHSINC        = ipack(26) !tcm v51.26
-        
+
         ttime  = dpack(1)
         GLOBALDIR=trim(adjustl(cjunk1))
         hss%filename=trim(adjustl(cjunk2))
@@ -1490,8 +1490,8 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
             itstr(:) = ' '
             WRITE(itstr,'(I9.9)') IIT+iNHSINC  !setting the name for the next hot start file
             hss % filename(9:17) = itstr
-         ENDIF         
-         
+         ENDIF
+
       ELSE
          IF (NHSTAR.EQ.68) THEN
             WRITE(ScreenUnit,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
@@ -1509,8 +1509,8 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
             itstr(:) = ' '
             WRITE(itstr,'(I9.9)') IIT+iNHSINC  !setting the name for the next hot start file
             hss % filename(9:17) = itstr
-         ENDIF         
-         
+         ENDIF
+
       ENDIF
 
       END SUBROUTINE writeHotstart_through_HSwriter

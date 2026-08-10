@@ -16,7 +16,7 @@ extern char *nl;
 int f_JMA(ARG0) {
     int pdt, i, nr;
 
-    int center; 
+    int center;
     if (mode < 0) return 0;
     center = GB2_Center(sec);
     if (center != JMA1 && center != JMA2) return 0;

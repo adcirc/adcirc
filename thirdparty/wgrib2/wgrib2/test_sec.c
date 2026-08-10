@@ -149,11 +149,11 @@ int same_sec4(unsigned char **sec_a, unsigned char **sec_b) {
  */
 
 int same_sec4_not_time(int mode, unsigned char **sec_a, unsigned char **sec_b) {
- 
+
     unsigned char *a, *b, *p;
     unsigned int i, j;
     int pdt;
-    static int warning = 0; 
+    static int warning = 0;
     int code_4_4, stat_time;
 
     /* check size of sec4 */
@@ -450,4 +450,3 @@ int same_sec4_unmerge_fcst(int mode, unsigned char **sec_a, unsigned char **sec_
     }
     return 1;
 }
-

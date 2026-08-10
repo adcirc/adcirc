@@ -126,4 +126,3 @@ done
 
 tar -C "$tmp_dir" -czf - "$name" > "$name.tar.gz" || \
   panic "cannot make archive"
-

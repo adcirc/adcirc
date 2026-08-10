@@ -32,7 +32,7 @@ int f_gridout(ARG1) {
 
         get_nxny(sec, &nx, &ny, &npnts, &res, &scan);
 	if (nx*ny != npnts) return 0;
-	
+
 	n = 0;
 	for (j=0; j<ny; j++) {
 	    for ( i=0; i<nx; i++) {

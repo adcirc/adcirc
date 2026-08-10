@@ -9,7 +9,7 @@
 
 /* openmp compatible routines, OpenMP 3.1+
  *
- * Public Domain 8/2015 Wesley Ebisuzaki  
+ * Public Domain 8/2015 Wesley Ebisuzaki
  *               6/2016 Wesley Ebisuzaki
  *
  * 4/2022: now requires OpenMP 3.1 like rest of wgrib2.
@@ -85,7 +85,7 @@ int min_max_array_all_defined(float *data, unsigned int n, float *min, float *ma
     *min = mn;
     *max = mx;
     return 0;
-} 
+}
 
 /*
  * find min/max of an integer array

@@ -16,7 +16,7 @@
  * v 0.2 4/2013 added PDT=4.1
  * v 0.3 12/2014 set use_scale = 0, optimize
  * v 0.4 1/2015 remove set use_scale = 0
- * 
+ *
  */
 
 // #define DEBUG
@@ -146,7 +146,7 @@ static int do_ave(struct ave_struct *save) {
     double factor;
 
     sec4 = NULL;
-    if (save->has_val == 0) return 0; 
+    if (save->has_val == 0) return 0;
 #ifdef DEBUG
 printf(" ave nfields=%d missing=%d\n",save->n_fields,save->n_missing);
 #endif
@@ -225,14 +225,14 @@ printf(" ave nfields=%d missing=%d\n",save->n_fields,save->n_missing);
 	for (i = 4; i < 34; i++) {			// keep base of pdt
 	    sec4[i] = save->first_sec[4][i];
 	}
-	
+
 	// new verification time
         save_time(save->year2,save->month2,save->day2,save->hour2,save->minute2,save->second2, sec4+34);
 
 	// number of stat-proc loops is increased by 1
 	sec4[41] = n + 1;
 
-	// copy old stat-proc loops 
+	// copy old stat-proc loops
 	// for (j = n*12-1;  j >= 0; j--) sec4[58+j] = save->first_sec[4][46+j];
 	for (j = 0; j < n*12; j++) sec4[46+12+j] = save->first_sec[4][46+j];
 
@@ -257,8 +257,8 @@ printf("save->n_missing =%d save->n_fields=%d\n",save->n_missing,save->n_fields)
     p = save->first_sec[4];
     save->first_sec[4] = sec4;
 
-    grib_wrt(save->first_sec, data, ndata, save->nx, save->ny, 
-	save->use_scale, save->dec_scale, save->bin_scale, 
+    grib_wrt(save->first_sec, data, ndata, save->nx, save->ny,
+	save->use_scale, save->dec_scale, save->bin_scale,
 	save->wanted_bits, save->max_bits, save->grib_type, &(save->out));
 
     if (flush_mode) fflush_file(&(save->out));
@@ -349,7 +349,7 @@ if (mode == 98) fprintf(stderr,"fcst_ave: pdt=%d\n",pdt);
 	    // get reference time and save it
             get_time(sec[1]+12,&save->ref_year, &save->ref_month, &save->ref_day, &save->ref_hour, &save->ref_minute, &save->ref_second);
 
-	    if (start_ft(sec, &save->fcst_year, &save->fcst_month, &save->fcst_day, &save->fcst_hour, 
+	    if (start_ft(sec, &save->fcst_year, &save->fcst_month, &save->fcst_day, &save->fcst_hour,
 			&save->fcst_minute, &save->fcst_second) != 0) {
 		fatal_error("fcst_ave: could not determine the start FT time","");
 	    }
@@ -382,7 +382,7 @@ if (mode == 98) fprintf(stderr,"fcst_ave: pdt=%d\n",pdt);
 	    if (same_sec0(sec,save->first_sec) == 0 ||
                 same_sec1_not_time(mode,sec,save->first_sec) == 0 ||
                 same_sec3(sec,save->first_sec) == 0 ||
-                same_sec4_not_time(mode,sec,save->first_sec) == 0) 
+                same_sec4_not_time(mode,sec,save->first_sec) == 0)
 	        new_type = 1;
 if (mode == 98) fprintf(stderr, "fcst_ave: testsec %d %d %d %d\n", same_sec0(sec,save->first_sec),
                 same_sec1_not_time(0,sec,save->first_sec),
@@ -402,7 +402,7 @@ if (mode == 98) fprintf(stderr, "fcst_ave: new_type %d\n", new_type);
 	    tminute = save->fcst_minute;
 	    tsecond = save->fcst_second;
             add_time(&tyear, &tmonth, &tday, &thour, &tminute, &tsecond, save->dt, save->dt_unit);
-	    if (start_ft(sec, &year, &month, &day, &hour, &minute, &second) != 0) 
+	    if (start_ft(sec, &year, &month, &day, &hour, &minute, &second) != 0)
 		fatal_error("fcst_ave: could not determine the start_ft time","");
             if (cmp_time(year,month,day,hour,minute,second,tyear,tmonth,tday,thour,tminute,tsecond)) {
 		new_type = 1;
@@ -422,7 +422,7 @@ if (mode == 98) fprintf(stderr, "fcst_ave: unexpected verf time, new_type=1\n");
 
         missing = 0;
 	if (new_type == 0) {
-	    if (verftime(sec, &year, &month, &day, &hour, &minute, &second) != 0) 
+	    if (verftime(sec, &year, &month, &day, &hour, &minute, &second) != 0)
 		fatal_error("fcst_ave: could not determine the verification time","");
 	    tyear = save->year2;
 	    tmonth = save->month2;

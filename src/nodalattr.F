@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -157,7 +157,7 @@ C     required for the run, according to the unit 15 control file
       LOGICAL LoadEleSlopeLim ! zc: elemental slope limiter
       LOGICAL LoadRiver_et_WSE  ! tcm 20140502 v51.27
       LOGICAL LoadIT_Fric       ! wjp: Internal tides
-      LOGICAL LoadOverlandReductionFactor 
+      LOGICAL LoadOverlandReductionFactor
       LOGICAL LoadSubgridBarrier
 C
 C     The following flags are .true. if there are data with the
@@ -176,7 +176,7 @@ C     corresponding label in the unit 13 file.
       LOGICAL FoundTau0MinMax
       LOGICAL FoundZ0b_var
       LOGICAL FoundEleSlopeLim
-      LOGICAL FoundRiver_et_WSE ! tcm 20140502 v51.27      
+      LOGICAL FoundRiver_et_WSE ! tcm 20140502 v51.27
       LOGICAL FoundIT_Fric  ! wjp internal tides
       LOGICAL FoundOverlandReductionFactor
       LOGICAL FoundSubgridBarrier
@@ -219,7 +219,7 @@ C     attribute.
       INTEGER Tau0MinMaxNoOfVals
       INTEGER Z0b_varNoOfVals
       INTEGER EleSlopeLimNoofVals
-      INTEGER River_et_WSENoOfVals  ! tcm 20140502 v51.27      
+      INTEGER River_et_WSENoOfVals  ! tcm 20140502 v51.27
       INTEGER IT_FricNoOfVals ! wjp internal tides
       INTEGER OverlandReductionFactorNoOfVals
       INTEGER subgridBarrierNoOfVals
@@ -317,6 +317,34 @@ C     Variables for bottom friction evaluation along VEW1D channels considering 
       REAL(8), ALLOCATABLE :: subgridBarrier(:,:)
       REAL(8), ALLOCATABLE :: subgridBarrierFriction(:)
       LOGICAL,ALLOCATABLE   :: subgridBarrierOvertopping(:)
+
+
+C BEG DW
+C--------- DW ------ for toy problem: manually setting initiaial condition
+      REAL(8), ALLOCATABLE:: eta0_usr(:)
+      REAL(8), ALLOCATABLE:: uu0_usr(:)
+      REAL(8), ALLOCATABLE:: vv0_usr(:)
+
+      LOGICAL LoadInitialEta
+      LOGICAL LoadInitialUU
+      LOGICAL LoadInitialVV
+
+      INTEGER InitialEtaNoOfVals
+      INTEGER InitialUUNoOfVals
+      INTEGER InitialVVNoOfVals
+
+      LOGICAL FoundInitialEta
+      LOGICAL FoundInitialUU
+      LOGICAL FoundInitialVV
+
+      REAL(8) InitialEtaDefVal
+      REAL(8) InitialUUDefVal
+      REAL(8) InitialVVDefVal
+
+      CHARACTER(LEN=80):: InitialEtaUnits
+      CHARACTER(LEN=80):: InitialUUUnits
+      CHARACTER(LEN=80):: InitialVVUnits
+
 C
 C------------------ For absorbing layer, DW
       REAL(8), pointer:: absorblayer_sigma(:,:), absorblayer_zero(:,:)
@@ -329,9 +357,9 @@ C------------------ For absorbing layer, DW
       LOGICAL LoadAbsLayerSigma
       LOGICAL FoundAbsLayerSigma
 
-      INTEGER AbsLayerSigmaNoOfVals  
+      INTEGER AbsLayerSigmaNoOfVals
       REAL(8) AbsLayerSigmaDefVal(2)
-      
+
       CHARACTER (LEN=80):: AbsLayerSigmaUnits
 
       INTEGER:: NumNodesAbsLayer(3)
@@ -348,12 +376,12 @@ C------------------ For absorbing layer, DW
       INTEGER:: AbsLayerNBF
 
       ! Water elevation
-      REAL(8), ALLOCATABLE:: AbsLayerEtaAMIG(:), 
+      REAL(8), ALLOCATABLE:: AbsLayerEtaAMIG(:),
      &                AbsLayerEtaFF(:), AbsLayerEtaFACE(:)
       REAL(8), ALLOCATABLE:: AbsLayerEtaEMO(:,:), AbsLayerEtaEFA(:,:)
 
       ! Tentatively for Velocity or Dischage
-      REAL(8), ALLOCATABLE:: AbsLayerQAMIG(:), 
+      REAL(8), ALLOCATABLE:: AbsLayerQAMIG(:),
      &                AbsLayerQFF(:), AbsLayerQFACE(:)
       REAL(8), ALLOCATABLE:: AbsLayerQxEMO(:,:), AbsLayerQxEFA(:,:)
       REAL(8), ALLOCATABLE:: AbsLayerQyEMO(:,:), AbsLayerQyEFA(:,:)
@@ -373,12 +401,12 @@ C END DW
       !  X D M F
       !
       type nodalAttr_t
-         character(len=1024) :: attrName ! name of the nodal attr 
+         character(len=1024) :: attrName ! name of the nodal attr
          character(len=1024) :: units    ! physical units of the nodal attr
          integer :: numVals  ! number of values at each node for this nodal attr
          integer :: numNodesNotDefault ! number of nodes with values different from the default
-         real(8), allocatable :: defaultVals(:) ! default value(s) for real valued attributes 
-         real(8), allocatable :: nonDefaultVals(:,:) ! nondefault value(s) for real valued attributes 
+         real(8), allocatable :: defaultVals(:) ! default value(s) for real valued attributes
+         real(8), allocatable :: nonDefaultVals(:,:) ! nondefault value(s) for real valued attributes
          integer, allocatable :: nonDefaultNodes(:) ! node numbers where nondefault vals occur
          real(8), allocatable :: xdmfArray(:)
          real(8), allocatable :: xdmfMatrix(:,:)
@@ -451,7 +479,7 @@ C
       FoundTau0MinMax     = .False.
       FoundZ0b_var        = .False.
       FoundEleSlopeLim    = .False.
-      FoundRiver_et_WSE   = .False.      
+      FoundRiver_et_WSE   = .False.
       FoundIT_Fric        = .False. ! WJP
       FoundOverlandReductionFactor = .False.
       FoundSubgridBarrier = .False.
@@ -474,7 +502,7 @@ C
       River_et_WSENoOfVals  = 1
       IT_FricNoOfVals       = 1  ! WJP, could be 3 also, so may change
       OverlandReductionFactorNoOfVals = 1
-      SubgridBarrierNoOfVals = 1 ! 1 or 2 
+      SubgridBarrierNoOfVals = 1 ! 1 or 2
 C
       Tau0DefVal             = 0.0
       StartDryDefVal         = 0.0
@@ -496,7 +524,7 @@ C
       END DO
       Z0b_varDefVal          = 0.001
       EleSlopeLimDefVal      = 0D0
-      River_et_WSEDefVal     = 0.d0      
+      River_et_WSEDefVal     = 0.d0
       IT_FricDefVal          = 0.0 ! WP
       SubgridBarrierDefaultValue = 999999D0
 C
@@ -518,6 +546,28 @@ C              call.
 !      ESLM=0.0
       ESLC=0.0
 
+
+C
+C----------------- DW ------------------
+      LoadInitialEta = .FALSE. ;
+      LoadInitialUU = .FALSE. ;
+      LoadInitialVV = .FALSE. ;
+
+      InitialEtaNoOfVals = 1 ;
+      InitialUUNoOfVals = 1  ;
+      InitialVVNoOfVals = 1  ;
+
+      FoundInitialEta = .FALSE. ;
+      FoundInitialUU = .FALSE.  ;
+      FoundInitialVV = .FALSE.  ;
+
+      InitialEtaDefVal = 0.D0 ;
+      InitialUUDefVal = 0.D0 ;
+      InitialVVDefVal = 0.D0 ;
+C--------------------------------------
+
+
+
 C---------------- DW ------------------
       LoadAbsLayerSigma = .FALSE. ;
       FoundAbsLayerSigma = .FALSE. ;
@@ -529,11 +579,11 @@ C---------------- DW ------------------
       AbsLayerType = 0 ;
       AbsLayerNBF = 0 ;
 
-      NULLIFY(absorblayer_sigma) ; 
-      NULLIFY(absorblayer_sigma_eta) ; 
-      NULLIFY(absorblayer_sigma_mnx) ; 
+      NULLIFY(absorblayer_sigma) ;
+      NULLIFY(absorblayer_sigma_eta) ;
+      NULLIFY(absorblayer_sigma_mnx) ;
       NULLIFY(absorblayer_sigma_mny) ;
- 
+
       NULLIFY(AbsLayer_Eta_NodesID) ;
       NULLIFY(AbsLayer_MnX_NodesID) ;
       NULLIFY(AbsLayer_MnY_NodesID) ;
@@ -545,7 +595,7 @@ C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
 
 C     ----------------------------------------------------------------
-C     S U B R O U T I N E    R E A D   N O D A L   A T T R   X D M F 
+C     S U B R O U T I N E    R E A D   N O D A L   A T T R   X D M F
 C     ----------------------------------------------------------------
 C     jgf51.21.24: Read the nodal attributes in XDMF format.
 C     ----------------------------------------------------------------
@@ -575,7 +625,7 @@ C     ----------------------------------------------------------------
       integer :: numInformation
       integer :: numValues
       integer :: openMaps ! 1 if Maps should be opened within another object
-      integer :: openAttributes ! 1 if Attributes should be opened within another object 
+      integer :: openAttributes ! 1 if Attributes should be opened within another object
       integer :: openInformations ! 1 if Informations should be opened within another object
       integer :: openSets ! 1 if sets should be opened within another object
       integer, parameter :: keyLength = 1024
@@ -587,7 +637,7 @@ C     ----------------------------------------------------------------
       character(len=1024) :: defaultValuesString
       real(8), allocatable :: diff(:)
       logical, allocatable :: areDefaultValues(:)
-      logical :: naFound 
+      logical :: naFound
       integer :: i, j, nattrCount, nonDefaultCount
       !
       startIndex = 0
@@ -610,23 +660,23 @@ C
      &      message=scratchMessage)
       ENDIF
 
-      write(6,'(a)') 'INFO: Reading data from the "' 
+      write(6,'(a)') 'INFO: Reading data from the "'
      &    // trim(adjustl(naFileName)) // '" XDMF file.'
       call xdmfinit(xdmfFortranObj)
       call xdmfRead(xdmfFortranObj, trim(adjustl(naFileName))//char(0))
-      call xdmfOpenDomainGrid(xdmfFortranObj, XDMF_GRID_TYPE_UNSTRUCTURED, 
+      call xdmfOpenDomainGrid(xdmfFortranObj, XDMF_GRID_TYPE_UNSTRUCTURED,
      &   gridIndex, openMaps, openAttributes, openInformations, openSets)
       !
       call xdmfRetrieveNumAttributes(xdmfFortranObj, numAttributes)
       nAttr = numAttributes - 1 ! the depth is included so don't count it
-      
+
       allocate(na(nAttr))
       write(6,'("INFO: Grid ",i0," contains ",i0," nodal attributes.")') gridIndex, nAttr
       !
       ! populate the names of the nodal attributes
       nattrCount = 1
       do attributeIndex=0, numAttributes - 1
-         call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,   
+         call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,
      &       itemName, nameLength)
          call replaceNullsWithSpaces(itemName)
          if (trim(itemName).eq.'depth') then
@@ -677,7 +727,7 @@ Csb
             FoundCondensedNodes = .TRUE.
          CASE("elemental_slope_limiter")
             FoundEleSlopeLim = .TRUE.
-         CASE("initial_river_elevation")            
+         CASE("initial_river_elevation")
             FoundRiver_et_WSE     = .TRUE.
          CASE("overland_reduction_factor")
             FoundOverlandReductionFactor = .TRUE.
@@ -686,7 +736,7 @@ Csb
      &         trim(na(nattrCount) % attrName)
             call allMessage(WARNING, scratchMessage)
          END SELECT
-         nattrCount = nattrCount + 1  
+         nattrCount = nattrCount + 1
       END DO
 C
 C     Determine if there are any attributes required by the fort.15 file
@@ -729,7 +779,7 @@ C     numOfNodes value
          do i=1,nAttr
             if (trim(itemKey).eq. trim(na(i)%attrName)// ' units') then
                na(i) % units = trim(itemValue)
-            endif  
+            endif
             if (trim(itemKey).eq. trim(na(i)%attrName) // ' default_values') then
                write(6,*) 'default_values'//trim(itemValue)
                read(itemValue,*) (na(i)%defaultVals(j),j=1,na(i)%numVals)
@@ -739,7 +789,7 @@ C     numOfNodes value
       !
       ! populate the data
       do attributeIndex=0, numAttributes - 1
-         call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  
+         call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,
      &      itemName, nameLength)
          call replaceNullsWithSpaces(itemName)
          if (trim(itemName).eq.'depth') then
@@ -752,15 +802,15 @@ C     numOfNodes value
                   allocate(na(i)%xdmfArray(numOfNodes))
                   attributeType = XDMF_ATTRIBUTE_TYPE_SCALAR
                   numValues = numOfNodes * na(i) % numVals
-                  call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, 
-     &                na(i)%xdmfArray, XDMF_ARRAY_TYPE_FLOAT64, numValues, 
+                  call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex,
+     &                na(i)%xdmfArray, XDMF_ARRAY_TYPE_FLOAT64, numValues,
      &                   startIndex, arrayStride, valueStride)
                else
                   attributeType = XDMF_ATTRIBUTE_TYPE_MATRIX
                   numValues = numOfNodes * na(i) % numVals
                   allocate(na(i)%xdmfMatrix(na(i)%numVals,numOfNodes))
-                  call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, 
-     &                na(i)%xdmfMatrix, XDMF_ARRAY_TYPE_FLOAT64, numValues, 
+                  call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex,
+     &                na(i)%xdmfMatrix, XDMF_ARRAY_TYPE_FLOAT64, numValues,
      &                   startIndex, arrayStride, valueStride)
                endif
                exit
@@ -854,8 +904,15 @@ C 02.24.2018 WJP: Add spatially varying linear internal tide friction coefficien
              IF(LoadSubgridBarrier)THEN
                 SubgridBarrier = na(i)%xdmfMatrix
              ENDIF
+! DW---- for toy problem -----
+         CASE ("initial_eta")
+            LoadInitialEta = .TRUE. ;
+         CASE ("initial_uu")
+            LoadInitialUU = .TRUE. ;
+         CASE ("initial_vv")
+            LoadInitialVV = .TRUE. ;
 ! DW---- for sponge layers ---
-         CASE ("sponge_generator_layer") 
+         CASE ("sponge_generator_layer")
             IF (LoadAbsLayerSigma) THEN
                !WJP: need to add
             ENDIF
@@ -872,7 +929,7 @@ C 02.24.2018 WJP: Add spatially varying linear internal tide friction coefficien
       !-----------------------------------------------------------------------
 
 C     ----------------------------------------------------------------
-C                       S U B R O U T I N E 
+C                       S U B R O U T I N E
 C    C H E C K   F O R   M I S S I N G   N O D A L   A T T R I B U T E S
 C     ----------------------------------------------------------------
 C     jgf51.21.24: If a nodal attribute was specified in the control
@@ -911,13 +968,16 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
      &   ((LoadAdvectionState).and.(.not.FoundAdvectionState)).or.
      &   ((LoadCondensedNodes).and.(.not.FoundCondensedNodes)).or.
      &   ((LoadEleSlopeLim).and.(.not.FoundEleSlopeLim)).or.
-     &   ((LoadRiver_et_WSE).and.(.not.FoundRiver_et_WSE)).or.     
-     &   ((LoadIT_Fric).and.(.not.FoundIT_Fric)).or. 
+     &   ((LoadRiver_et_WSE).and.(.not.FoundRiver_et_WSE)).or.
+     &   ((LoadIT_Fric).and.(.not.FoundIT_Fric)).or.
      &   ((LoadOverlandReductionFactor).and.
      &    (.not.FoundOverlandReductionFactor)).or.
 !-- DW for sponge
-     &   ((LoadAbsLayerSigma).and.(.not.FoundAbsLayerSigma)).or. 
-     &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
+     &   ((LoadAbsLayerSigma).and.(.not.FoundAbsLayerSigma)).or.
+     &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax)) .or.
+     &   ((LoadInitialEta).and.(.not.FoundInitialEta)) .or.
+     &   ((LoadInitialUU).and.(.not.FoundInitialUU)) .or.
+     &   ((LoadInitialVV).and.(.not.FoundInitialVV))   ) THEN
          WRITE(scratchMessage,1111)
  1111   FORMAT('Nodal Attributes file (unit 13) does ',
      &        'not contain all the attributes listed in the ',
@@ -930,7 +990,7 @@ C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
 
 C     ----------------------------------------------------------------
-C                     S U B R O U T I N E  
+C                     S U B R O U T I N E
 C          A L L O C A T E   N O D A L   A T T R I B U T E S
 C     ----------------------------------------------------------------
 C     Allocate memory to hold our data.
@@ -972,15 +1032,27 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
       elemental_slope_limiter_max_exceeded(:) = .FALSE.
       IF ( LoadIT_Fric ) THEN
          ALLOCATE(IT_Fric(NumOfNodes,IT_FricNoOfVals))
-      END IF   
+      END IF
       OverlandReductionFactor(:) = 1D0/30D0
       IF ( LoadAbsLayerSigma ) THEN
          ALLOCATE( absorblayer_sigma(NumOfNodes,AbsLayerSigmaNoOfVals) )
       ENDIF
-      IF( LoadSubgridBarrier )THEN 
+      IF( LoadSubgridBarrier )THEN
           ALLOCATE(subgridBarrier(NumOfNodes,SubgridBarrierNoOfVals))
           ALLOCATE(subgridBarrierOvertopping(NumOfNodes))
       ENDIF
+      !c---- DW
+      IF ( LoadInitialEta ) THEN
+         ALLOCATE(eta0_usr(NumOfNodes))
+      END IF
+      IF ( LoadInitialUU ) THEN
+         ALLOCATE(uu0_usr(NumOfNodes))
+      END IF
+      IF ( LoadInitialVV ) THEN
+         ALLOCATE(vv0_usr(NumOfNodes))
+      END IF
+
+
 C     ----------------------------------------------------------------
       end subroutine allocateNodalAttributes
 C     ----------------------------------------------------------------
@@ -1102,8 +1174,37 @@ C 09232016 WP: Add spatially varying linear internal tide friction coefficient
             LoadSubgridBarrier = .True.
          CASE("overland_reduction_factor")
             LoadOverlandReductionFactor = .True.
+!--- beg: DW -- for toy problem ------------
+         CASE("initial_eta")
+            LoadInitialEta = .true.
+!            IF ( LoadInitialEta ) THEN
+!               CALL LoadAttrVec(eta0_usr,
+!     &              InitialEtaDefVal, NumNodesNotDefault, NScreen,
+!     &              MyProc, NAbOut)
+!            ELSE
+!               SkipDataSet = .TRUE. ;
+!           END IF
+         CASE("initial_uu")
+            LoadInitialUU = .true.
+!            IF ( LoadInitialUU ) THEN
+!               CALL LoadAttrVec(uu0_usr,
+!     &              InitialUUDefVal, NumNodesNotDefault, NScreen,
+!     &              MyProc, NAbOut)
+!            ELSE
+!               SkipDataSet = .TRUE. ;
+!            END IF
+         CASE("initial_vv")
+            LoadInitialVV = .true.
+!            IF ( LoadInitialVV ) THEN
+!               CALL LoadAttrVec(vv0_usr,
+!     &              InitialVVDefVal, NumNodesNotDefault, NScreen,
+!     &              MyProc, NAbOut)
+!            ELSE
+!               SkipDataSet = .TRUE. ;
+!            END IF
+!--- end: DW -- for toy problem -----------
 ! DW---- for sponge layers ---
-         CASE ("sponge_generator_layer") 
+         CASE ("sponge_generator_layer")
             LoadAbsLayerSigma = .TRUE.
          CASE DEFAULT
             WRITE(16,1000)          ! unit 15 Model Parameter file
@@ -1119,7 +1220,7 @@ C
  232  FORMAT(/,5X,'NWP = ',I2,
      &     /,9X,'Must read Nodal Attributes File (unit 13).')
       !
-      !  R E A D   N O D A L   A T T R I B U T E S   X D M F  
+      !  R E A D   N O D A L   A T T R I B U T E S   X D M F
       !
       if (naType.eq.XDMF) then
          call readNodalAttrXDMF()
@@ -1154,12 +1255,12 @@ C     Read each attribute name, units, number of values, and default value
       WRITE(16,250)
  250  FORMAT(/,9X,'User comment line from unit 13:')
       WRITE(16,'(14X,A80,/)') header
-      READ(13,*) NumOfNodes     ! number of nodes according to unit 13     
-C      
+      READ(13,*) NumOfNodes     ! number of nodes according to unit 13
+C
 C     ERROR CHECK: If a nodal attributes file is being used, check to
 C     see that the number of nodes in the nodal attribute file is the
 C     same as the number of nodes in the grid file.
-C     jgf52.18: Make this check immediately so execution can 
+C     jgf52.18: Make this check immediately so execution can
 C     be stopped immediately if this is not the right nodal attributes
 C     file for this mesh.
       if ( (nwp.ne.0).and.(numOfNodes.ne.np) ) then
@@ -1172,7 +1273,7 @@ C     file for this mesh.
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &      message=scratchMessage)
       endif
-C      
+C
       READ(13,*) NAttr          ! number of attributes in the unit 13 file
       DO k=1, NAttr
          READ(13,*) AttrName
@@ -1278,10 +1379,10 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
             FoundRiver_et_WSE = .TRUE.
             READ(13,'(A80)') River_et_WSEUnits
             READ(13,*) River_et_WSENoOfVals
-            READ(13,*) River_et_WSEDefVal            
+            READ(13,*) River_et_WSEDefVal
 C 09232016 WP: Add spatially varying linear internal tide friction
          CASE("internal_tide_friction")
-            FoundIT_Fric = .True.              
+            FoundIT_Fric = .True.
             READ(13,'(A80)') IT_FricUnits
             READ(13,*) IT_FricNoOfVals
             READ(13,*) (IT_FricDefVal(j),j=1,IT_FricNoOfVals)
@@ -1295,12 +1396,29 @@ C 09232016 WP: Add spatially varying linear internal tide friction
             READ(13,'(A80)') SubgridBarrierUnits
             READ(13,*) SubgridBarrierNoOfVals
             READ(13,*) (SubgridBarrierDefaultValue(j),j=1,SubgridBarrierNoOfVals)
+C---- DW ---- for toy problem ------------
+         CASE("initial_eta")
+            FoundInitialEta = .TRUE. ;
+            READ(13,'(A80)') InitialEtaUnits
+            READ(13,*) InitialEtaNoOfVals
+            READ(13,*) InitialEtaDefVal
+         CASE("initial_uu")
+            FoundInitialUU = .TRUE. ;
+            READ(13,'(A80)') InitialUUUnits
+            READ(13,*) InitialUUNoOfVals
+            READ(13,*) InitialUUDefVal
+         CASE("initial_vv")
+            FoundInitialVV = .TRUE. ;
+            READ(13,'(A80)') InitialVVUnits
+            READ(13,*) InitialVVNoOfVals
+            READ(13,*) InitialVVDefVal
+C-----------------------------------------
 C---- DW ----- for sponge layer ----------
-         CASE ("sponge_generator_layer")  
+         CASE ("sponge_generator_layer")
             FoundAbsLayerSigma = .TRUE.
-            READ(13,'(A80)') AbsLayerSigmaUnits 
+            READ(13,'(A80)') AbsLayerSigmaUnits
             READ(13,*) AbsLayerSigmaNoOfVals
-            READ(13,*) 
+            READ(13,*)
      &           (AbsLayerSigmaDefVal(j),j=1,AbsLayerSigmaNoOfVals)
          CASE DEFAULT
             WRITE(16,1001)          ! Nodal Attributes file
@@ -1498,9 +1616,37 @@ C 09232016 WP : Spatially varying linear internal tide friction
              ELSE
                SkipDataSet = .True.
              ENDIF
+         CASE("initial_eta")
+            IF ( LoadInitialEta ) THEN
+               CALL LoadAttrVec(eta0_usr,
+     &              InitialEtaDefVal, NumNodesNotDefault, NScreen,
+     &              MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .TRUE. ;
+           END IF
+        CASE("initial_uu")
+            IF ( LoadInitialUU ) THEN
+               CALL LoadAttrVec(uu0_usr,
+     &              InitialUUDefVal, NumNodesNotDefault, NScreen,
+     &              MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .TRUE. ;
+            END IF
+        CASE("initial_vv")
+            IF ( LoadInitialVV ) THEN
+               CALL LoadAttrVec(vv0_usr,
+     &              InitialVVDefVal, NumNodesNotDefault, NScreen,
+     &              MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .TRUE. ;
+            END IF
+!--- end: DW -- for toy problem -----------
+! DW---- for sponge layers ---
+
+
 C          WP
 !------- DW ---- Absorbing layer -----------
-         CASE ("sponge_generator_layer") 
+         CASE ("sponge_generator_layer")
             IF (  LoadAbsLayerSigma ) THEN
                !
                NumNodesAbsLayer(:) = NumNodesNotDefault ;
@@ -1508,32 +1654,32 @@ C          WP
                   ALLOCATE( AbsLayerNodesID(NumNodesAbsLayer(1)) ) ;
                END IF
 
-               CALL LoadAttrMat(absorblayer_sigma, 
+               CALL LoadAttrMat(absorblayer_sigma,
      &              AbsLayerSigmaNoOfVals, AbsLayerSigmaDefVal,
-     &              NumNodesNotDefault, NScreen, MyProc, NAbOut, 
+     &              NumNodesNotDefault, NScreen, MyProc, NAbOut,
      &              NodesNotDef = AbsLayerNodesID ) ;
                !
                absorblayer_sigma_eta => absorblayer_sigma ;
                absorblayer_sigma_mnx => absorblayer_sigma ;
                absorblayer_sigma_mny => absorblayer_sigma ;
-               
-               ! WJP: for only eta sponge shit 
+
+               ! WJP: for only eta sponge shit
                !ALLOCATE( absorblayer_zero(NumOfNodes,AbsLayerSigmaNoOfVals))
-               !absorblayer_zero = absorblayer_sigma; 
+               !absorblayer_zero = absorblayer_sigma;
                !absorblayer_zero(:,1) = 0d0
                !absorblayer_sigma_mnx => absorblayer_zero;
                !absorblayer_sigma_mny => absorblayer_zero;
                !if (NumNodesNotDefault > 0) then
                !   write(16,*) 'Set absorblayer sigma flux to zero:'
                !   write(16,*) absorblayer_sigma_eta(1,1),
-     &         !               absorblayer_sigma_mnx(1,1), 
-     &         !               absorblayer_sigma_mny(1,1) 
+     &         !               absorblayer_sigma_mnx(1,1),
+     &         !               absorblayer_sigma_mny(1,1)
                !endif
                AbsLayer_Eta_NodesID => AbsLayerNodesID ;
                AbsLayer_MnX_NodesID => AbsLayerNodesID ;
                AbsLayer_MnY_NodesID => AbsLayerNodesID ;
             ELSE
-                SkipDataSet = .TRUE. 
+                SkipDataSet = .TRUE.
             END IF
 !--------DW -----------------------------------
          CASE DEFAULT
@@ -1595,7 +1741,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       type(t_log_level), intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
-      REAL(8)            :: TempData 
+      REAL(8)            :: TempData
       INTEGER             :: NodeNum ! node label listed in the file
       INTEGER             :: DictNode ! node position in array
 C
@@ -1647,7 +1793,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       type(t_log_level), intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
-      REAL(8)            :: TempAttData(NumCol) 
+      REAL(8)            :: TempAttData(NumCol)
       INTEGER             :: NodeNum ! node label listed in the file
       INTEGER             :: DictNode ! node position in array
 C------ DW
@@ -1668,7 +1814,7 @@ C
          READ(13,*) NodeNum, (TempAttData(j),j=1,NumCol)
          DictNode = find(node_dict,NodeNum)
          IF ( present(NodesNotDef) ) THEN
-            NodesNotDef(i) = DictNode 
+            NodesNotDef(i) = DictNode
          END IF
          AttributeData(DictNode,:) = TempAttData(:)
          IF (NABOUT.LE.ECHO) WRITE(16,1010) NodeNum,
@@ -1712,7 +1858,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NScreen ! 1 for debug info to screen (unit 6)
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       type(t_log_level), intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
-      INTEGER             :: TempAttData(NumCol) 
+      INTEGER             :: TempAttData(NumCol)
       INTEGER             :: NodeNum ! node label listed in the file
       INTEGER             :: DictNode ! node position in array
 C------ DW
@@ -1736,7 +1882,7 @@ C
             TempAttData(j) = find(node_dict,TempAttData(j))
          END DO
          IF ( present(NodesNotDef) ) THEN
-            NodesNotDef(i) = DictNode 
+            NodesNotDef(i) = DictNode
          END IF
          AttributeData(DictNode,:) = TempAttData(:)
          IF (NABOUT.LE.ECHO) WRITE(16,1010) NodeNum,
@@ -1838,14 +1984,14 @@ C     log a warning message if any other values were read.
                exit
             endif
          end do
-         if ( invalidCanopyCoefficient.eqv..true. ) then 
+         if ( invalidCanopyCoefficient.eqv..true. ) then
             call allMessage(WARNING,'Some surface canopy coefficient '//
-     &        'nodal attribute data are neither 0 nor 1.')        
+     &        'nodal attribute data are neither 0 nor 1.')
          endif
       endif
 C
 C     I N I T    S T A R T D R Y
- 
+
       IF (NWP.eq.0) THEN
          ALLOCATE(STARTDRY(NP))
       ENDIF
@@ -2067,7 +2213,7 @@ C     I N I T   E D D Y   V I S C O S I T Y  &  D I F F U S I V I T Y
             EVC(I)=ESLC
          END DO
       ENDIF
-C...  DW 
+C...  DW
       IF ( NWP .eq. 0 ) THEN
          NumNodesAbsLayer = 0
       END IF
@@ -2187,12 +2333,12 @@ C     I N I T  V E W 1 D  C H A N N E L  W E T  P E R I M E T E R
 C     ----------------------------------------------------------------
 C
 C     Subroutine to initialize variable values for bottom friction
-C     evaluation along VEW1D channels considering wet perimeter  
+C     evaluation along VEW1D channels considering wet perimeter
 C     11/06/2023 sb
 C
 C     ----------------------------------------------------------------
       SUBROUTINE initVEW1DChannelWetPerimeter()
-      USE SIZES          
+      USE SIZES
       USE MESH, ONLY: NP, X, Y, DP, LBArray_Pointer
       USE BOUNDARIES,ONLY : LBCODEI,NBV,IBCONN
       IMPLICIT NONE
@@ -2203,7 +2349,7 @@ C     ----------------------------------------------------------------
       WetPerimWidth = 0.D0
       WetPerimBankElev = 0.D0
 
-      write(scratchMessage,'(a)') 
+      write(scratchMessage,'(a)')
      &   'Initializing channel wet perimeter variables:'
       call logMessage(ECHO,trim(scratchMessage))
 
@@ -2211,14 +2357,14 @@ C     ----------------------------------------------------------------
          IF (NNodesListCondensedNodes(ICN).NE.2) CYCLE
          I1 = ListCondensedNodes(ICN,1)
          I2 = ListCondensedNodes(ICN,2)
-         
+
          ! Width
          X1 = X(I1)
          Y1 = Y(I1)
          X2 = X(I2)
          Y2 = Y(I2)
          WIDTH = SQRT((X1-X2)*(X1-X2) + (Y1-Y2)*(Y1-Y2))
-         
+
          ! Bank elevation
          !- I1
          BE1 = 99999.D0
@@ -2248,10 +2394,10 @@ C     ----------------------------------------------------------------
          WetPerimBankElev(I2) = BE2
 
          write(scratchMessage,'(a,I10,a,I10,a,F10.3,a,F10.3,a,F10.3)')
-     &      'I1=',I1,', I2=',I2,', WIDTH=',WIDTH,', 
+     &      'I1=',I1,', I2=',I2,', WIDTH=',WIDTH,',
      &      BankElev1=',BE1,', BankElev2=',BE2
          call logMessage(ECHO,trim(scratchMessage))
-            
+
       ENDDO
 
       END SUBROUTINE InitVEW1DChannelWetPerimeter
@@ -2352,7 +2498,7 @@ C     Step 0. Convert Manning's N to Cd, if necessary.
                   IF(subgridBarrierOvertopping(I).AND.
      &               SubgridBarrierNoOfVals.EQ.2)THEN
                       FRIC(I)=g*subgridBarrier(I,2)**2.d0
-     &                     /( ( HT )**(1.d0/3.d0) ) 
+     &                     /( ( HT )**(1.d0/3.d0) )
                       IF(FRIC(I).LT.BFCdLLimit) THEN
                          FRIC(I) = BFCdLLimit
                       ENDIF
@@ -2413,7 +2559,7 @@ C        with the sea floor.
             TK(I) = MIN(FRIC(I)*
      &                     (IFLINBF +                                          ! linear
      &                     (UV1/H1) * (IFNLBF +                               ! nonlinear
-     &                     IFHYBF*(1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)) ), ! hybrid 
+     &                     IFHYBF*(1+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)) ), ! hybrid
      &                  2.0/DTDP)
          END DO
 C
@@ -2421,7 +2567,7 @@ C
 C
 C     Step 2. Apply friction arising from flow interaction with bridge
 C     pilings, if required.
-      IF (LoadBridgePilings) THEN 
+      IF (LoadBridgePilings) THEN
          DO I=1, NP
             UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             H1=DP(I)+IFNLFA*ETA2(I)
@@ -2530,10 +2676,10 @@ C
 C     WJP March 30 2016: Adjusted for TKM input matrix and inserting
 C     the scalar version in here too
 C     WJP 02.24.2018 put into v53.dev
-C     WJP 07.24.2018 updated for baroclinic coupling type 
+C     WJP 07.24.2018 updated for baroclinic coupling type
 C     ----------------------------------------------------------------
       SUBROUTINE Apply2DInternalWaveDrag(NP, TK, TKM, U, V, DP,
-     & IT)      
+     & IT)
       USE GLOBAL, ONLY: CBaroclinic, CORIF, DTDP, NB, NM, IDEN,
      &                  IFSPROTS, RAMP
       USE MESH, ONLY: DRVMAP2DSPVEC, UVECTMP, VVECTMP, RVELF
@@ -2547,7 +2693,7 @@ C     ----------------------------------------------------------------
       REAL(8), intent(in), dimension(NP),optional :: V    ! y-dir velocities
       REAL(8), intent(in), dimension(NP),optional :: DP   ! depth
       REAL(8), allocatable :: Hx(:), Hy(:)
-      INTEGER  :: I, J 
+      INTEGER  :: I, J
       REAL(8) :: omega = 1.4052d-4 ![rad/s] M2 tidal frequency
       REAL(8) :: hr = 3600.0D0 ! means one hour in seconds
       REAL(8) :: SmallV = 1d-10 ! A small value
@@ -2558,8 +2704,8 @@ C     ----------------------------------------------------------------
       REAL(8) :: DTidal, DTotal,
      &            Cxx, Cyy, Cxy
       INTEGER :: NCYC
-      REAL(8),DIMENSION(:),ALLOCATABLE :: Udmy, Vdmy      
-C     Compute TKM by adding wave drag contribution to 
+      REAL(8),DIMENSION(:),ALLOCATABLE :: Udmy, Vdmy
+C     Compute TKM by adding wave drag contribution to
 C     current value of the bottom friction, TK
       LoadITFric: IF (LoadIT_Fric) THEN
          IF ( FIRST_ENTRY ) THEN
@@ -2577,7 +2723,7 @@ C              (unnecessary for IT_FricNoOfVals == 1)
                         Hx(I) = sqrt(IT_Fric(I,1))
                         Hy(I) = sign(sqrt(IT_Fric(I,2)),IT_Fric(I,3))
                      endif
-                     UVECTMP(I) = Hx(I); 
+                     UVECTMP(I) = Hx(I);
                      VVECTMP(I) = Hy(I);
                   ENDDO
                   CALL DRVMAP2DSPVEC( Hx, Hy,
@@ -2591,7 +2737,7 @@ C              (unnecessary for IT_FricNoOfVals == 1)
                         IT_Fric(I,2) = Hy(I)*Hy(I)
                         IT_Fric(I,3) = Hx(I)*Hy(I)
                      endif
-                  ENDDO           
+                  ENDDO
                   deallocate(Hx,Hy)
                ELSEIF ( IT_FricNoOfVals.eq.5 ) THEN
                   ! need do something else
@@ -2612,22 +2758,22 @@ C           4th and 5th columns are the Jx and Jy slopes
                      ! No freely propagating internal tides
                      TKM(1:2,I) = TK(I)
                      TKM(3,I)   = 0.0d0
-                  ELSE 
+                  ELSE
                      ! Have freely propagating internal tides
                      ! Get coefficient
                      Fit = IT_Fric(I,1)*NB(I)/DP(I)*
      &                     sqrt(1d0 - CORIF(I)**2/omega**2)
                      ! Check criticality of slope
-                     alpha2 = (omega**2 - CORIF(I)**2) / 
+                     alpha2 = (omega**2 - CORIF(I)**2) /
      &                        (NB(I)**2 - omega**2)
                      gamma2 = (IT_Fric(I,2)**2 + IT_Fric(I,3)**2)/alpha2
-                     ! Divide by criticality if > 1 
-                     Fit = Fit/max(1d0,gamma2)                   
+                     ! Divide by criticality if > 1
+                     Fit = Fit/max(1d0,gamma2)
                      TKM(1,I) = TK(I) + 2*Fit*IT_Fric(I,2)*IT_Fric(I,4)
                      TKM(2,I) = TK(I) + 2*Fit*IT_Fric(I,3)*IT_Fric(I,5)
-                     TKM(3,I) = Fit*(IT_Fric(I,2)*IT_Fric(I,5) +  
+                     TKM(3,I) = Fit*(IT_Fric(I,2)*IT_Fric(I,5) +
      &                               IT_Fric(I,3)*IT_Fric(I,4))
-                  ENDIF 
+                  ENDIF
                ENDDO
             ELSEIF (IT_FricNoOfVals == 3.or.IT_FricNoOfVals == 1) THEN
 C           For the "Local" Lyard et al. (2004) type tensor wave drag
@@ -2644,7 +2790,7 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      ! No freely propagating internal tides
                      TKM(1:2,I) = TK(I)
                      TKM(3,I)   = 0.0d0
-                  ELSE 
+                  ELSE
                      ! Have freely propagating internal tides
                      ! Get the full coefficient
                      IF (NBdiff*NMdiff.LT.0d0) THEN
@@ -2662,8 +2808,8 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                      endif
                      gamma2 = slope2 / alpha2
                      ! Divide coefficient by criticality if > 1
-                     ! (saturates out at high criticalities) 
-                     Fit = Fit / max(1d0,gamma2)                   
+                     ! (saturates out at high criticalities)
+                     Fit = Fit / max(1d0,gamma2)
                      Fit = max(0d0,Fit)
                      ! Calculate adjustment based on tidal residual
                      ! Calculate adjustment based on tidal residual
@@ -2672,10 +2818,10 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                         Cxx = Fit*IT_Fric(I,2)**2d0
                         Cyy = Fit*IT_Fric(I,3)**2d0
                         Cxy = Fit*IT_Fric(I,2)*IT_Fric(I,3)
-                        Dtotal = Cxx*U(I)**2d0 + 
+                        Dtotal = Cxx*U(I)**2d0 +
      &                           2*Cxy*U(I)*V(I) +
      &                           Cyy*V(I)**2d0
-                        Dtidal = Cxx*(U(I)-UBar(I))**2d0 + 
+                        Dtidal = Cxx*(U(I)-UBar(I))**2d0 +
      &                           2*Cxy*(U(I)-UBar(I))*(V(I)-VBar(I)) +
      &                           Cyy*(V(I)-VBar(I))**2d0
                         IF (Dtotal.lt.1d-10) THEN
@@ -2694,30 +2840,30 @@ C           1st column is coefficient, 2nd column is the squared hypotenuse slop
                         TKM(1:2,I) = TK(I) + adju*Fit*IT_Fric(I,2)
                         TKM(3,I)   = 0.0d0
                      endif
-                  ENDIF 
+                  ENDIF
                ENDDO
             endif
          ELSE
 C           Normal 2DDI ADCIRC without baroclinic coupling
             IF (IT_FricNoOfVals == 3) THEN
-C              Use the "Nonlocal" Nycander (2005) or "Local" Lyard et al. (2004) 
+C              Use the "Nonlocal" Nycander (2005) or "Local" Lyard et al. (2004)
 C              type tensor wave drag
 C              Using three columns of data for the different segments of the matrix
-               DO I=1,NP 
+               DO I=1,NP
                   TKM(1,I) = TK(I) + IT_Fric(I,1)
                   TKM(2,I) = TK(I) + IT_Fric(I,2)
-                  TKM(3,I) = IT_Fric(I,3) 
+                  TKM(3,I) = IT_Fric(I,3)
                END DO
             ELSEIF (IT_FricNoOfVals == 1) THEN
 C              For the scalar type Zaron & Egbert (2006) type
-               DO I=1,NP 
-                  TKM(1,I) = TK(I) + IT_Fric(I,1) 
+               DO I=1,NP
+                  TKM(1,I) = TK(I) + IT_Fric(I,1)
                   TKM(2,I) = TKM(1,I)
                   TKM(3,I) = 0.0d0
                ENDDO
             ENDIF
          ENDIF Baroc
-      ELSE 
+      ELSE
 C       In case we did not load ITFric
         TKM(1,:) = TK
         TKM(2,:) = TK
@@ -2758,7 +2904,7 @@ C
       REAL(8) :: Cd    ! Cd estimated as a power function
       REAL(8) :: adju, adjv ! adjustment to apply only to nontidal vel
       REAL(8) :: a, b, c ! for ensuring positive semidefinite
-      
+
       ! if nolibf =/=3 then simply return
       IF (NOLIBF.NE.3.OR.HBREAK.LE.0d0) RETURN
 C
@@ -2803,14 +2949,14 @@ C     ----------------------------------------------------------------
 !>    written into the hstart.F file by jjw in jjw-42.06j. This is used
 !>    in hstart.F and timestep.F.
 !>
-!>    The methology comes from: 
+!>    The methology comes from:
 !>    Simiu, E. and R. Scanlan, 1986: Wind Effects on Structures. Wiley Interscience, 604 pp.
 !>
 !>    Additionally, the z0 coefficient supplied by the user is modified
 !>    by subtracting a factor of depth/30 to account for inundation
-!>    
-!>    Values are linearly interpolated between heading bins to the actual 
-!>    wind direction.  
+!>
+!>    Values are linearly interpolated between heading bins to the actual
+!>    wind direction.
 !>
 !>    @param[in] NodeNumber index of node under consideration
 !>    @param[in] WindDragCo current wind drag coefficient being applied
@@ -2826,17 +2972,17 @@ C     ----------------------------------------------------------------
         USE ADC_CONSTANTS,ONLY:RAD2DEG,G
         implicit none
         intrinsic               :: atan2
-        integer,  intent(in)    :: NodeNumber 
-        real(8), intent(in)    :: WindDragCo 
-        real(8), intent(in)    :: WindMag    
-        real(8), intent(in)    :: BathymetricDepth 
-        real(8), intent(in)    :: Elevation  
-        real(8), intent(inout) :: WindX   
-        real(8), intent(inout) :: WindY  
-        
+        integer,  intent(in)    :: NodeNumber
+        real(8), intent(in)    :: WindDragCo
+        real(8), intent(in)    :: WindMag
+        real(8), intent(in)    :: BathymetricDepth
+        real(8), intent(in)    :: Elevation
+        real(8), intent(inout) :: WindX
+        real(8), intent(inout) :: WindY
+
         real(8),parameter      :: CutoffDepth = 999999.d0          !< Depth above which reduction is not applied
         real(8),parameter,dimension(12) :: z0Angles=(/(i*30,i=0,5),(i*30-180,i=0,5)/)  !< centers of directional bins
-        
+
         integer                 :: idir        !< code for wind direction bins to interpolate between
         integer                 :: idir2       !< code for wind direction bins to interpolate between
         real(8)                :: z0m         !< marine roughness coefficient based on Garratt's formula
@@ -2894,12 +3040,12 @@ C     ----------------------------------------------------------------
 !       compute marine roughness coefficient based on Garratt's formula
         z0m=(0.018d0/G)*WindDragCo*WindMag**2.d0
 
-        !tga 2020-04 updated code to linearly interpolate z0 values, 
-        !code previously did nearest neighbor (i.e. binned) z0 values.  
+        !tga 2020-04 updated code to linearly interpolate z0 values,
+        !code previously did nearest neighbor (i.e. binned) z0 values.
         !Define roughness by linearly (in angle-z0 space) interpolating
-        !between binned values.  
-        !The 30d0 here comes from assuming the directional bins are 30 
-        !degrees apiece. 
+        !between binned values.
+        !The 30d0 here comes from assuming the directional bins are 30
+        !degrees apiece.
         z0l=(z0land(NodeNumber,idir2)-z0land(NodeNumber,idir))/30d0
      &      *(angle-z0Angles(idir))+z0land(NodeNumber,idir)
 
@@ -2911,8 +3057,8 @@ C     ----------------------------------------------------------------
         endif
 
 !       compute land wind reduction factor
-!       Reduction factor is bounded to not exceed 1, i.e. assumes the 
-!       land roughness is never less than the water.  
+!       Reduction factor is bounded to not exceed 1, i.e. assumes the
+!       land roughness is never less than the water.
         if(z0l.gt.z0m) then
            fr=min(1.0D0,(z0l/z0m)**0.0706d0 * log(10.d0/z0l) / log(10.d0/z0m))
         else
@@ -2922,7 +3068,7 @@ C     ----------------------------------------------------------------
 !       adjust time interpolated wind field
         WindX = fr*WindX
         WindY = fr*WindY
-        
+
         RETURN
 !     ----------------------------------------------------------------
       END SUBROUTINE ApplyDirectionalWindReduction
@@ -3147,7 +3293,7 @@ C     ----------------------------------------------------------------
       NCondensedNodes(:) = 0
       ListCondensedNodes(:,:) = 0
       NNodesListCondensedNodes(:) = 0
-      
+
       K = 0
       DO I=1,NP
          IF(CondensedNodes(I,1).GT.0) THEN
@@ -3208,5 +3354,3 @@ C-----------------------------------------------------------------------
       END MODULE NodalAttributes
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
-
-

@@ -151,11 +151,11 @@ int f_wind_dir(ARG1) {
             undo_output_order(save->val, data_tmp, ndata);
 
 /*  changed WNE 4/2019
-            grib_wrt(save->clone_sec, data_tmp, ndata, nx_, ny_, use_scale, dec_scale, 
+            grib_wrt(save->clone_sec, data_tmp, ndata, nx_, ny_, use_scale, dec_scale,
 		bin_scale, wanted_bits, max_bits, grib_type, &(save->out));
  */
  /* direction to nearest degree */
-            grib_wrt(save->clone_sec, data_tmp, ndata, nx_, ny_, 1, 0, 
+            grib_wrt(save->clone_sec, data_tmp, ndata, nx_, ny_, 1, 0,
 		0, 9, 9, grib_type, &(save->out));
 
             if (flush_mode) fflush_file(&(save->out));
@@ -168,7 +168,7 @@ int f_wind_dir(ARG1) {
 	}
 	else {
 	    if (mode) {
-	        fprintf(stderr,"wind_dir: match failed sec0 %d sec1 %d sec3 %d sec4 %d\n", 
+	        fprintf(stderr,"wind_dir: match failed sec0 %d sec1 %d sec3 %d sec4 %d\n",
 		test_s0, test_s1, test_s3, test_s4);
 	    }
 	    fprintf(stderr,"WARNING: -wind_dir, unused VGRD, not corresponding -v to see more\n");

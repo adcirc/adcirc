@@ -47,8 +47,8 @@
  *        **grid_lon = longitues of grid
  *        **grid_lat = latitudes of grid
  *        n = number of point to convert
- *        *lon = longitudes of points to convert to (i,j) 
- *        *lat = longitudes of points to convert to (i,j) 
+ *        *lon = longitudes of points to convert to (i,j)
+ *        *lat = longitudes of points to convert to (i,j)
  *
  * output:
  *        x[n]    coordinates on grid

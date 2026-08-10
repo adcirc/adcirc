@@ -18,4 +18,4 @@ File Structure
 Notes
 -----
 
-If the value of NSTAM2 differs from the value of NSTAM (as read from the fort.15 file) the value of NSTAM2 will be used. If there are fewer than NSTAM2 stations listed in the met_stat.151 file, ADCIRC will stop with an error. If there are more than NSTAM2 stations listed in the met_stat.151 file, only the first NSTAM2 of them will be used. 
+If the value of NSTAM2 differs from the value of NSTAM (as read from the fort.15 file) the value of NSTAM2 will be used. If there are fewer than NSTAM2 stations listed in the met_stat.151 file, ADCIRC will stop with an error. If there are more than NSTAM2 stations listed in the met_stat.151 file, only the first NSTAM2 of them will be used.

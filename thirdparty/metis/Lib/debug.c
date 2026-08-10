@@ -43,7 +43,7 @@ int ComputeCut(GraphType *graph, idxtype *where)
 /*************************************************************************
 * This function checks whether or not the boundary information is correct
 **************************************************************************/
-int CheckBnd(GraphType *graph) 
+int CheckBnd(GraphType *graph)
 {
   int i, j, nvtxs, nbnd;
   idxtype *xadj, *adjncy, *where, *bndptr, *bndind;
@@ -79,7 +79,7 @@ int CheckBnd(GraphType *graph)
 /*************************************************************************
 * This function checks whether or not the boundary information is correct
 **************************************************************************/
-int CheckBnd2(GraphType *graph) 
+int CheckBnd2(GraphType *graph)
 {
   int i, j, nvtxs, nbnd, id, ed;
   idxtype *xadj, *adjncy, *where, *bndptr, *bndind;
@@ -94,7 +94,7 @@ int CheckBnd2(GraphType *graph)
   for (nbnd=0, i=0; i<nvtxs; i++) {
     id = ed = 0;
     for (j=xadj[i]; j<xadj[i+1]; j++) {
-      if (where[i] != where[adjncy[j]]) 
+      if (where[i] != where[adjncy[j]])
         ed += graph->adjwgt[j];
       else
         id += graph->adjwgt[j];
@@ -114,7 +114,7 @@ int CheckBnd2(GraphType *graph)
 /*************************************************************************
 * This function checks whether or not the boundary information is correct
 **************************************************************************/
-int CheckNodeBnd(GraphType *graph, int onbnd) 
+int CheckNodeBnd(GraphType *graph, int onbnd)
 {
   int i, j, nvtxs, nbnd;
   idxtype *xadj, *adjncy, *where, *bndptr, *bndind;
@@ -127,8 +127,8 @@ int CheckNodeBnd(GraphType *graph, int onbnd)
   bndind = graph->bndind;
 
   for (nbnd=0, i=0; i<nvtxs; i++) {
-    if (where[i] == 2) 
-      nbnd++;   
+    if (where[i] == 2)
+      nbnd++;
   }
 
   ASSERTP(nbnd == onbnd, ("%d %d\n", nbnd, onbnd));
@@ -235,5 +235,3 @@ int IsSeparable(GraphType *graph)
 
   return 1;
 }
-
-

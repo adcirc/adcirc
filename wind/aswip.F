@@ -123,7 +123,7 @@ C-----------------------------------------------------------------------
          REAL(8) :: stormMotionV ! V portion of Vmax attributable to storm motion
          REAL(8) :: U_Vr
          REAL(8) :: V_Vr
-         REAL(8) :: temp  
+         REAL(8) :: temp
 
       !-------------------------------------------------------------
       contains
@@ -255,11 +255,11 @@ C
             endif
          endif
          !
-         ! @jasonfleming: in rare cases where the central pressure is 
+         ! @jasonfleming: in rare cases where the central pressure is
          ! higher than 1012mb (e.g., charley 2004), set the background
          ! pressure so that it is 1mb higher than the central pressure
-         ! to avoid producing negative Holland B values. 
-         if (icpress(ient).gt.1012) then 
+         ! to avoid producing negative Holland B values.
+         if (icpress(ient).gt.1012) then
                write(scratchMessage,'(a,i0,a)')
      &         'The central pressure '
      &       //'is higher than the ADCIRC default background barometric '
@@ -445,7 +445,7 @@ C
          call setIsotachWindSpeeds(quadrantVr)
          call setIsotachRadii(r)
          call calcRmaxes()
-         call getRmaxes(rmaxw_temp) 
+         call getRmaxes(rmaxw_temp)
          rmaxw(ient,:)=rmaxw_temp(:)
          HollB(ient) = getShapeParameter()
 
@@ -562,41 +562,41 @@ C        if ivr was zero.
          stormMotionU = sin(h_dir(ient)*deg2rad)*stormMotion
          stormMotionV = cos(h_dir(ient)*deg2rad)*stormMotion
          VmaxBL = ( Vmax - stormMotion ) / windReduction
-         
+
          select case(approach)
-         case(1) !Normal approach: assume Vr and quadrantVr vectors 
-                 !are both tangential to azimuth 
-                 
+         case(1) !Normal approach: assume Vr and quadrantVr vectors
+                 !are both tangential to azimuth
+
           do i = 1, 4
             ! quadrant angles are in the radial direction, we need
             ! the tangential direction, b/c that is the direction of Vr
 
             U_Vr = Vr * cos(quadrantAngles(i) + (deg2rad*90.0d0))
-            V_Vr = Vr * sin(quadrantAngles(i) + (deg2rad*90.0d0))  
-                      
-            ! Jie 2013.01 
+            V_Vr = Vr * sin(quadrantAngles(i) + (deg2rad*90.0d0))
+
+            ! Jie 2013.01
             ! eliminate the translational speed based on vortex wind speed
-            ! gamma = |quadrantVr| / |VmaxBL|  
+            ! gamma = |quadrantVr| / |VmaxBL|
             gamma(i) = ((2.0d0*U_Vr*stormMotionU+2.0d0*V_Vr*stormMotionV)
      &          -sqrt((2.0d0*U_Vr*stormMotionU+2.0d0*V_Vr*stormMotionV
      &          )**2.0d0-4.0d0*(stormMotion**2.0d0-VmaxBL**2.0d0
      &          *windReduction**2.0d0)*Vr**2.0d0))/(2.0d0*
      &         (stormMotion**2.0d0-VmaxBL**2.0d0*windReduction**2.0d0))
             gamma(i) = max(min(gamma(i),1.0d0),0.0d0)
-            
+
             quadrantVr(i) = sqrt(
      &                   (U_Vr - gamma(i)*stormMotionU)**2.0d0
      &                  +(V_Vr - gamma(i)*stormMotionV)**2.0d0
      &                  )/windReduction
           end do
-         
+
          ! If violation occurs at any quadrant (quadrantVr(i)>VmaxBL),
          ! re-calculate quadrantVr at those violated quadrants
 
           do i = 1, 4
           if ( quadrantVr(i).gt.VmaxBL ) then
-         ! Jie: replace Vmax with Vr when violation occurs (including 
-         ! situations when isotach is not reported at thta quadrant: 
+         ! Jie: replace Vmax with Vr when violation occurs (including
+         ! situations when isotach is not reported at thta quadrant:
          ! especially at the investment stage or for the highest isotachs
          ! that is not always available.
            U_Vr = Vr * cos(quadrantAngles(i) + (deg2rad*90.0d0))
@@ -609,38 +609,38 @@ C        if ivr was zero.
      &             (Vmax_pseudo*sin(quadrantAngles(i)+(deg2rad*90.0d0))-
      &             stormMotionV)**2.0d0
      &             ) / windReduction
-            
+
             gamma(i) = ((2.0d0*U_Vr*stormMotionU+2.0d0*V_Vr*stormMotionV)
      &          -sqrt((2.0d0*U_Vr*stormMotionU+2.0d0*V_Vr*stormMotionV
      &          )**2.0d0-4.0d0*(stormMotion**2.0d0-VmwBL(i)**2.0d0
      &          *windReduction**2.0d0)*Vr**2.0d0))/(2.0d0*
      &         (stormMotion**2.0d0-VmwBL(i)**2.0d0*windReduction**2.0d0))
             !gamma(i) = max(min(gamma(i),1.0d0),0.0d0)
-            
+
             quadrantVr(i) = sqrt(
      &                   (U_Vr - gamma(i)*stormMotionU)**2.0d0
      &                  +(V_Vr - gamma(i)*stormMotionV)**2.0d0
      &                  )/windReduction
             else
-              VmwBL(i) = VmaxBL  
-            ! gamma = |quadrantVr| / |VmaxBL|  
+              VmwBL(i) = VmaxBL
+            ! gamma = |quadrantVr| / |VmaxBL|
             gamma(i) = ((2.0d0*U_Vr*stormMotionU+2.0d0*V_Vr*stormMotionV)
      &          -sqrt((2.0d0*U_Vr*stormMotionU+2.0d0*V_Vr*stormMotionV
      &          )**2.0d0-4.0d0*(stormMotion**2.0d0-VmaxBL**2.0d0
      &          *windReduction**2.0d0)*Vr**2.0d0))/(2.0d0*
      &         (stormMotion**2.0d0-VmaxBL**2.0d0*windReduction**2.0d0))
             gamma(i) = max(min(gamma(i),1.0d0),0.0d0)
-            
+
             quadrantVr(i) = (Vr - gamma(i)*stormMotion)/windReduction !scalar cal.
-            endif 
-     
+            endif
+
            else
               VmwBL(i) = VmaxBL
            endif
-           end do 
-             
-         !VmaxesBL(ient,1:4)=VmwBL(1:4)  
-         
+           end do
+
+         !VmaxesBL(ient,1:4)=VmwBL(1:4)
+
          call setUseQuadrantVr(.true.)
          call newVortexFull(Pn,Pc,cLat,cLon,VmaxBL)
          HollB(ient) = getShapeParameter()
@@ -651,17 +651,17 @@ C        if ivr was zero.
              call calcRmaxesFull()
          else
              call calcRmaxes()
-         endif    
-         call getRmaxes(rmaxw_temp) 
+         endif
+         call getRmaxes(rmaxw_temp)
          rmaxw(ient,:)=rmaxw_temp(:)
-     
-        case(2) !An updated approach: assume quadrantVr has an 
+
+        case(2) !An updated approach: assume quadrantVr has an
               ! additional inward angnel quadRotateAngle, and Vr angle is not known
-              ! calculate quadRotateAngle for the highest isotach, and then 
+              ! calculate quadRotateAngle for the highest isotach, and then
               ! use it for other lower isotachs of the same cycle_num
         VmwBLflag = 0
-        
-        if (k == 1) then   
+
+        if (k == 1) then
                  nquadrot = 300
                  quadRotateAngle(:) = 25.0d0 ! initial guess of inward rotation angle (degree)
         else
@@ -675,89 +675,89 @@ C        if ivr was zero.
         vioflag = .false.
           do i = 1, 4
            quadrantvecangles(i) = quadrantAngles(i)+
-     &             (90.0d0+quadrotateAngle(i))*deg2rad 
-          enddo   
-            ! radial direction -> tangential direction -> 
+     &             (90.0d0+quadrotateAngle(i))*deg2rad
+          enddo
+            ! radial direction -> tangential direction ->
             ! add inward direction -> the direction of quadrantVr
-            
+
           do i = 1, 4
             if ((iquadrot == 1).or.(VmwBLflag(i) == 0)) then
-               epsilonAngle(i)= 360.0d0 + rad2deg * 
+               epsilonAngle(i)= 360.0d0 + rad2deg *
      &         ATAN2(VmaxBL*sin(quadrantvecangles(i))+ stormMotionV,
      &         VmaxBL*cos(quadrantvecangles(i))+ stormMotionU)
-     
-               if (epsilonAngle(i) > 360.d0) then 
+
+               if (epsilonAngle(i) > 360.d0) then
                   epsilonAngle(i) = epsilonAngle(i) - 360.d0
                endif
-                 
+
                U_Vr = Vr * cos(epsilonAngle(i)/rad2deg)
-               V_Vr = Vr * sin(epsilonAngle(i)/rad2deg)  
-                      
-              ! Jie 2013.01 
+               V_Vr = Vr * sin(epsilonAngle(i)/rad2deg)
+
+              ! Jie 2013.01
               ! eliminate the translational speed based on vortex wind speed
-              ! gamma = |quadrantVr| / |VmaxBL|  
+              ! gamma = |quadrantVr| / |VmaxBL|
               gamma(i) = ((2.0d0*U_Vr*stormMotionU+2.0d0*V_Vr*stormMotionV)
      &          -sqrt((2.0d0*U_Vr*stormMotionU+2.0d0*V_Vr*stormMotionV
      &          )**2.0d0-4.0d0*(stormMotion**2.0d0-VmaxBL**2.0d0
      &          *windReduction**2.0d0)*Vr**2.0d0))/(2.0d0*
      &         (stormMotion**2.0d0-VmaxBL**2.0d0*windReduction**2.0d0))
               gamma(i) = max(min(gamma(i),1.0d0),0.0d0)
-            
+
               quadrantVr(i) = sqrt(
      &                   (U_Vr - gamma(i)*stormMotionU)**2.0d0
      &                  +(V_Vr - gamma(i)*stormMotionV)**2.0d0
      &                  )/windReduction
             endif
           end do
- 
-         ! write(2222,112) VmaxBL, quadrantVr  
+
+         ! write(2222,112) VmaxBL, quadrantVr
          ! If violation occurs at any quadrant (quadrantVr(i)>VmaxBL),
          ! re-calculate quadrantVr at those violated quadrants
-           
+
           do i = 1, 4
           if (( quadrantVr(i).gt.VmaxBL ).or.(VmwBLflag(i) == 1)) then
-         ! Jie: replace Vmax with Vr when violation occurs (including 
+         ! Jie: replace Vmax with Vr when violation occurs (including
          ! situations when isotach is not reported at that quadrant)
             if (iquadrot == 1) VmwBLflag(i) = 1 ! assign violation flags
             if (ir(ient,i).gt.0) then
                      quadrantVr(i) = (-2.d0*(
      &                        stormMotionU*cos(quadrantvecangles(i))  +
-     &                        stormMotionV*sin(quadrantvecangles(i))) + 
-     &               sqrt(4.d0*(stormMotionU*cos(quadrantvecangles(i))+ 
+     &                        stormMotionV*sin(quadrantvecangles(i))) +
+     &               sqrt(4.d0*(stormMotionU*cos(quadrantvecangles(i))+
      &                    stormMotionV*sin(quadrantvecangles(i)))**2.d0
      &                       - 4.d0*(stormMotion**2.d0-Vr**2.d0)))
      &                      /2.d0
-     
-               epsilonAngle(i)= 360.0d0 + rad2deg * 
+
+               epsilonAngle(i)= 360.0d0 + rad2deg *
      &         ATAN2(quadrantVr(i)*sin(quadrantvecangles(i))+ stormMotionV,
-     &         quadrantVr(i)*cos(quadrantvecangles(i))+ stormMotionU)    
-     
-               if (epsilonAngle(i) > 360.d0) then 
+     &         quadrantVr(i)*cos(quadrantvecangles(i))+ stormMotionU)
+
+               if (epsilonAngle(i) > 360.d0) then
                    epsilonAngle(i) = epsilonAngle(i) - 360.d0
-               endif 
+               endif
                quadrantVr(i)= quadrantVr(i)/windReduction
                VmwBL(i) = quadrantVr(i)
              else
-               VmwBL(i) = VmaxBL 
+               VmwBL(i) = VmaxBL
                U_Vr = Vr * sin(h_dir(ient)*deg2rad)
-               V_Vr = Vr * sin(h_dir(ient)*deg2rad) 
-               ! gamma = |quadrantVr| / |VmaxBL|  
+               V_Vr = Vr * sin(h_dir(ient)*deg2rad)
+               ! gamma = |quadrantVr| / |VmaxBL|
                gamma(i) = ((2.0d0*U_Vr*stormMotionU+2.0d0*V_Vr*stormMotionV)
      &            -sqrt((2.0d0*U_Vr*stormMotionU+2.0d0*V_Vr*stormMotionV
      &            )**2.0d0-4.0d0*(stormMotion**2.0d0-VmaxBL**2.0d0
      &            *windReduction**2.0d0)*Vr**2.0d0))/(2.0d0*
      &           (stormMotion**2.0d0-VmaxBL**2.0d0*windReduction**2.0d0))
                gamma(i) = max(min(gamma(i),1.0d0),0.0d0)
-            
+
                quadrantVr(i) = (Vr - gamma(i)*stormMotion)/windReduction !scalar cal.
-             endif 
-     
+             endif
+
            else
               VmwBL(i) = VmaxBL
            endif
-           end do       
+           end do
 
-         
+
            call setUseQuadrantVr(.true.)
            call newVortexFull(Pn,Pc,cLat,cLon,VmaxBL)
            HollB(ient) = getShapeParameter()
@@ -771,7 +771,7 @@ C        if ivr was zero.
            endif
            call getRmaxes(rmaxw_temp)
            rmaxw(ient,:)=rmaxw_temp(:)
-           
+
            ! add deterministic statement to exit the loop when conditions met
           if (k==1) rmaxwHighIso(:) = rmaxw(ient,:)
           do i = 1, 4
@@ -784,19 +784,19 @@ C        if ivr was zero.
           if ((count(vioflag) >= 1)
      &     .and.(iquadrot<nquadrot)) then
              quadRotateAngle(:) = quadRotateAngle_new(:)
-          else              
+          else
              exit
-          endif   
-          
+          endif
+
           where (.not.vioflag) irr = 0
           if ((sum(irr(:))== 0).and.(iquadrot==2)) exit
-            
-        ENDDO  ! iquadrot = 1,nquadrot 
-                        
+
+        ENDDO  ! iquadrot = 1,nquadrot
+
           if ((iquadrot.ge.nquadrot).and.(k==1)
      &       .and.(sum(irr(:))/=0)) then
 !          write(*,*) "quadRotateAngle not fully converge, ient=", ient
-           write(*,*) "Converge issue at ient = ", ient, " iquadrot = ", iquadrot 
+           write(*,*) "Converge issue at ient = ", ient, " iquadrot = ", iquadrot
            write(*,*) vioflag, irr
            write(*,117) quadRotateAngle(:) ,quadRotateAngle_new(:)
           else
@@ -805,8 +805,8 @@ C        if ivr was zero.
 
        case default
           write(*,*) "Wrong approach #, must be 1 or 2"
-       end select  
-       
+       end select
+
          call getVmaxesBL(vmaxesbl_temp)
          VmaxesBL(ient,:) = vmaxesbl_temp(:)
          HollBs(ient,1:4) = getShapeParameters()
@@ -827,14 +827,14 @@ C        if ivr was zero.
                rmaxw(ient,i) = 0.0
             endif
          END DO
-         
+
       ENDDO ! isotachs_per_cycle
       ENDDO ! num_entry (main do loop)
       case default
         write(*,*) "ERROR: nws=", nws
         write(*,*) "Processing only available for nws=19,20"
       end select
-                  
+
 C     !-------------------------------------
       ! Now indicate which isotach quadrant radius
       ! that the user desires ADCIRC to read in
@@ -865,14 +865,14 @@ C     !-------------------------------------
       !  isotach Rmax that exists
       !
       !  method 3
-      !  use preferably the 50kt isotach Rmax in each quadrant, 
+      !  use preferably the 50kt isotach Rmax in each quadrant,
       !  if not available, use the 34kt one
-      ! 
+      !
       !  method 4
-      !  use all available isothch for each cycle, 
-      !  linearly weighted-combination will be performed in 
+      !  use all available isothch for each cycle,
+      !  linearly weighted-combination will be performed in
       !  nws20get module
-      !  
+      !
       !------------------------------------
       select case(method)
       case(1) ! just use the Rmaxes from the 34kt isotach
@@ -943,7 +943,7 @@ C     !-------------------------------------
             ! since quadflag is previously assigned 1 where (ir(ient,:)>0)
             ! here we only have to deal with situations when only 0 or 34
             ! isotach is reported and with missing ir values
-            if (isotachs_per_cycle(icyc).eq.1) then 
+            if (isotachs_per_cycle(icyc).eq.1) then
                 quadflag(last_entry,:)=1
             else
                ! loop over quadrants
@@ -954,15 +954,15 @@ C     !-------------------------------------
                      case(0,1) ! none, or only 34kt isotach has a radius value
                         quadflag(first_entry,i) = 1
                      case(2,3) ! the 34kt, 50kt, and/or 64kt isotachs have values
-                     
+
                      case default
                         write(*,*)
      &                  "ERROR: aswip: ",num_nonzero," isotachs were ",
-     &                      "nonzero." 
-                     end select     
-                 enddo       
-            endif                
-         enddo   
+     &                      "nonzero."
+                     end select
+                 enddo
+            endif
+         enddo
       case default
          write(*,*) "ERROR: method=",method,
      &      " is not valid for setting rmax in quadrants."
@@ -1006,10 +1006,10 @@ C     !-------------------------------------
          else
              OPEN(222,file="NWS_20_cyclostr_fort.22",status="replace")
          endif
-!         OPEN(6666,file="PhiFactors.6666",status="replace")    
+!         OPEN(6666,file="PhiFactors.6666",status="replace")
 !116      FORMAT(4(f5.2,x))
       end if
-      
+
       DO ient=1,num_entry
          !-----------------------------------
          ! NHC advisory best-track i/o format
@@ -1026,7 +1026,7 @@ C     !-------------------------------------
      &       " NEQ,",5(i5,","),5x,",",i4,", ",5(4x,","),i3,", ",i3,",",
      &         a10," ",1x,",",i4,",",i5,",",1x, 4(i1,",",1x),2x,
      &         4(f6.1,",",1x), 2x, f8.4)!,2(2x,f10.4))
-     
+
          !-----------------------------------
          ! NHC advisory best-track i/o format
          ! WITH nws=20 ADDED DATA
@@ -1035,7 +1035,7 @@ C     !-------------------------------------
      &         i4,",",i4,a1,",",i5,a1,",",i4,",",i5,",",3x,",",i4,",",
      &       " NEQ,",5(i5,","),5x,",",i4,", ",5(4x,","),i3,", ",i3,",",
      &         a10," ",1x,",",i4,",",i5,",",1x, 4(i1,",",1x),2x,
-     &         4(f6.1,",",1x),1x, 8(f8.4,",",1x), f8.4)     
+     &         4(f6.1,",",1x),1x, 8(f8.4,",",1x), f8.4)
 
          ! jgf49.30: Modify the Rmax as specified on the command line.
          IF (constantRmax.eqv..true.) THEN
@@ -1055,7 +1055,7 @@ C     !-------------------------------------
          endif
 C
          select case(abs(nws))
-         case(19)     
+         case(19)
            WRITE(222,26) advr(ient), iyear(ient),imth(ient),iday(ient),
      &         ihr(ient), castType(ient),iFcstInc(ient), ilat(ient),ns,
      &         ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
@@ -1098,7 +1098,7 @@ C-----------------------------------------------------------------------
       module diagnosticOutput
 
       use sizes, only : globaldir, mnp
-      USE ADC_CONSTANTS, only: deg2rad, rad2deg, ten2one, g, rhowat0, 
+      USE ADC_CONSTANTS, only: deg2rad, rad2deg, ten2one, g, rhowat0,
      &  prbckgrnd, m2nm
       use mod_io, only: openFileForRead
       use global, only : nws, ihot,  sphericaldistance  ! Jie 09/2013
@@ -1116,7 +1116,7 @@ C-----------------------------------------------------------------------
       use owiwind, only : nws12init, nws12get, moving_grid ! Jie 09/2013 added OWI
       CHARACTER(2048) :: meshFileName ! name of file containing node locations
       LOGICAL :: nodesFromMesh ! .true. if we are supposed to load a fort.14
-      LOGICAL :: nodesFromFile ! .true. if we are supposed to load a list of nodes     
+      LOGICAL :: nodesFromFile ! .true. if we are supposed to load a list of nodes
 C
 C     Variables for recording domain extents
       REAL(8) :: xmin ! smallest x coordinate in mesh
@@ -1203,19 +1203,19 @@ C
          if (errorIO.ne.0) stop
       case(12) ! Jie 2013/09
          ! For ASWIP program, read fort.22* for additional info
-         ! Obtain storm center location beforehand, so we can 
+         ! Obtain storm center location beforehand, so we can
          ! form a mesh around it each time
          call openFileForRead(22,'fort.22',errorIO)
          if (errorIO.ne.0) stop
          READ(22,*) !# of files
-         READ(22,*) owi_skip ! skip or insert snaps 
+         READ(22,*) owi_skip ! skip or insert snaps
          READ(22,*) ! wind multiplier
          ! The above 3 parameters will be treated by nws12init
          READ(22,*) num_entry
          READ(22,*) wtiminc ! in seconds
          READ(22,*) owi_output_factor ! frequency to output owi snaps (default=1)
          close(22)
-         num_cycles = num_entry + owi_skip     
+         num_cycles = num_entry + owi_skip
          allocate(cycleTime(num_cycles))
          DO i = 1, num_cycles
              cycleTime(i) = wtiminc*(i-1)
@@ -1250,17 +1250,17 @@ C
       ! along with the storm position for each cycle, in new arrays
       ! so that we can conveniently loop through them
       if ((abs(nws).eq.12).and.(owi_output_factor.gt.1)) then
-         defaultOutputIncrement = .false. 
-      end if  
+         defaultOutputIncrement = .false.
+      end if
       if ( defaultOutputIncrement.eqv..true. ) then
          num_outputs = num_cycles
       else
 !         num_outputs =
 !     &      int((cycleTime(num_entry)-timeOffset)/output_increment)
         if (abs(nws).eq.12) then
-          num_outputs = 
-     &     int(num_cycles/owi_output_factor)+1  
-        else    
+          num_outputs =
+     &     int(num_cycles/owi_output_factor)+1
+        else
           ! add +1 to total number of outputs, so we won't miss the last frame Jie 09/2013
           num_outputs =
      &    int((cycleTime(num_entry)-timeOffset)/output_increment)+1
@@ -1288,7 +1288,7 @@ C
             end if
          end do
       endif
-      
+
       ! Jie: for NWS12, need to assign output time according to OWI increments and
       ! owi_output_factor
       if (abs(nws).eq.12) then
@@ -1301,22 +1301,22 @@ C
              cycleDirs(icyc) = 0 ! not activated yet
          ENDDO
          ! write storm center locations to a file
-400      FORMAT(f10.2,x,2(f8.4,x)) 
+400      FORMAT(f10.2,x,2(f8.4,x))
          OPEN(399,FILE='OWI_snap_storm_centers.txt',STATUS='REPLACE')
          do icyc = 1,num_cycles
-            write(399,400) cycleSecs(icyc), cycleLats(icyc), 
+            write(399,400) cycleSecs(icyc), cycleLats(icyc),
      &         cycleLons(icyc)
          end do
          close(399)
-      endif 
-      
+      endif
+
       ! Jie: for NWS15, need to assign cycleSecs according to cycleTime;
       ! outputLons and outputLats will be assigned after calling
-      ! nws15get to update the position of the storm's center 
+      ! nws15get to update the position of the storm's center
       if (abs(nws).eq.15) then
          cycleSecs(:) = cycleTime(:) ! in seconds calcu. by nws15init
       endif
-      
+
       !
       ! if we are analyzing just the cycle times
       if ( defaultOutputIncrement.eqv..true. ) then
@@ -1331,19 +1331,19 @@ C
          ! we are analyzing at a constant time increment (e.g., hourly)
          ! that does not necessarily correspond with the cycle times
 !         outputSecs(1) = CycleTime(1) + timeOffset ! hotstarttime was double-accounted for nws15
-!         output_increment not activated for nws12, since a moving grid is used 
+!         output_increment not activated for nws12, since a moving grid is used
          if ((abs(nws).eq.19).or.(abs(nws).eq.20)) then
             outputSecs(1) = cycleSecs(1) + timeOffset
-         elseif  ((abs(nws).eq.15).or.(abs(nws).eq.12)) then 
+         elseif  ((abs(nws).eq.15).or.(abs(nws).eq.12)) then
             outputSecs(1) = cycleSecs(1)
          endif
          outputLons(1) = cycleLons(1)
          outputLats(1) = cycleLats(1)
          outputDirs(1) = cycleDirs(1)
- 
+
          if (abs(nws).eq.12) then
             do iout=2,num_outputs
-             icyc = int((iout - 1) * owi_output_factor) + 1 
+             icyc = int((iout - 1) * owi_output_factor) + 1
              outputSecs(iout) = cycleSecs(icyc)
              outputLons(iout) = cycleLons(icyc)
              outputLats(iout) = cycleLats(icyc)
@@ -1391,7 +1391,7 @@ C
       real(8) :: rhowatg
       real(8) :: PWeight(3,np)
       logical  :: foundSector(np)
-      
+
       RhoWatG = RhoWat0 * g
       moving_grid=.true.
       if (abs(nws).eq.12) then
@@ -1399,9 +1399,9 @@ C
         npp=360
       else
         np = 360
-      endif  
+      endif
       call allocPseudoMeshArrays()
-      
+
       if (abs(nws).eq.12) then  ! Jie 2013/09
          DragLawString='Powell' ! Activate Powell Drag Law to obtain storm centers
          GBLINPUTDIR="." ! nws12init will open GBLINPUTDIR/fort.22
@@ -1409,15 +1409,15 @@ C
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
 !         wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps
       endif
       if (abs(nws).eq.15) then
          mnp = np
-         globaldir="." ! nws15init will open globaldir/fort.22 
+         globaldir="." ! nws15init will open globaldir/fort.22
          call nws15init(timeOffset)
       endif
       call initializeDiagnosticOutput()
-      
+
       write(*,*) ' Initialization Finished Successfully'
       ! for nws12, need to rewind wind file and start over again
       if (abs(nws).eq.12) then  ! Jie 2013/09
@@ -1425,19 +1425,19 @@ C
          close(222)
          close(223)
          close(224)
-         
+
          slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
          ! wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps
       endif
       write(*,*) ' Begin to process diagnostic outputs for NWS = ', nws
       ! write storm center locations to a file
-402   FORMAT(f10.2,x,2(f8.4,x)) 
+402   FORMAT(f10.2,x,2(f8.4,x))
       OPEN(401,FILE='Output_storm_centers.txt',STATUS='REPLACE')
       open(1044, file='TC_centerloc.txt',status='replace')
-            
+
       do iout=1,num_outputs
          write(*,*) 'iout = ', iout
          ! if we only want one output frame, and this is not it,
@@ -1453,7 +1453,7 @@ C
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
             outputLats(iout) = EyeLat(3)
             outputLons(iout) = EyeLon(3)
-            write(401,402) OutputSecs(iout), outputLats(iout), 
+            write(401,402) OutputSecs(iout), outputLats(iout),
      &         outputLons(iout)
          endif
 
@@ -1482,7 +1482,7 @@ C
          end do
          close(333)
          !
-443      FORMAT(5(f10.4,x)) 
+443      FORMAT(5(f10.4,x))
          select case(abs(nws))
          case(12)
          ! Calculate and write the Rmax data to the file here Jie 11/2013
@@ -1493,20 +1493,20 @@ C
                   dr = real(j) * 1852.0d0 ! convert nmiles to meters
                   call xy2latlon(dr*cos(azimuth),
      &                 dr*sin(azimuth), outputLats(iout),
-     &                 outputLons(iout), 
+     &                 outputLons(iout),
      &                 sfea(j+(i-1)*npp), slam(j+(i-1)*npp))
-               end do               
-            end do  
-               
+               end do
+            end do
+
                slam(:) = slam(:) * deg2rad
                sfea(:) = sfea(:) * deg2rad + outputLats(iout) * deg2rad
 
                if (iout.eq.1) then
-                  call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+                  call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd)
                   call findStormCenter(eyeLat, eyeLon, foundEye)
-               else  
+               else
                   do j=1, int(owi_output_factor)
-                     call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+                     call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd)
                      call findStormCenter(eyeLat, eyeLon, foundEye)
                   end do
                endif
@@ -1514,7 +1514,7 @@ C
                ! write out Rmax (nautical miles) and azimuthal angle (degrees),
                ! adapted from nws15get   Jie 11/2013
                if (writeFullCircleRmaxes.eqv..true.) then
-                  
+
                   do i=1,npp
                      azimuth = real(i-1) * deg2rad ! 1 deg resolution 0->359 deg
                      j=1+(i-1)*npp
@@ -1523,21 +1523,21 @@ C
                      maxSpeed = maxval(tempspd)
                      maxNode = maxloc(tempspd,1)
                      maxNode = maxNode + j-1
-                     
+
                      dist = m2nm * sphericalDistance(slam(maxNode)-
      &                      deg2rad*outputLons(iout),
      &                      sfea(maxNode)-deg2rad*outputLats(iout),
      &                      outputLats(iout), rad2deg*sfea(maxNode))
-                  
+
                      angle = 360.0d0 + rad2deg *
      &               ATAN2((slam(maxNode)-deg2rad*outputLons(iout)),
      &              (sfea(maxNode)-deg2rad*outputLats(iout)))
-         
+
                     if ( angle > 360.d0) angle = angle - 360.d0
                        write(444,443) dist, angle , real(maxNode-j+1),
      &                 azimuth*rad2deg, (ten2one * maxSpeed /0.514444d0)
                   enddo
-               endif         
+               endif
          case(15)
            ! nws15get actually writes the Rmax data to the file
             do i=1,np
@@ -1554,7 +1554,7 @@ C
             end do
          case(19)
             ! nws19get actually writes the Rmax data to the file
-            call nws19get(wvnx2,wvny2,prn2,outputsecs(iout))    
+            call nws19get(wvnx2,wvny2,prn2,outputsecs(iout))
          case(20)
             ! nws20get actually writes the Rmax data to the file
             call nws20get(wvnx2,wvny2,prn2,outputsecs(iout))
@@ -1607,7 +1607,7 @@ C
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
 !         wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps
       endif
       if (abs(nws).eq.15) then
          mnp = np
@@ -1622,17 +1622,17 @@ C
          close(222)
          close(223)
          close(224)
-         
+
          slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
          ! wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps
       endif
-      
+
       write(*,*) ' Begin to process diagnostic outputs for NWS = ', nws
       ! write storm center locations to a file
-402      FORMAT(f10.2,x,2(f8.4,x)) 
+402      FORMAT(f10.2,x,2(f8.4,x))
          OPEN(401,FILE='Output_storm_centers.txt',STATUS='REPLACE')
       do iout=1,num_outputs
          write(*,*) 'iout = ', iout
@@ -1641,7 +1641,7 @@ C
          if ( (frame.ne.0).and.(iout.ne.frame) ) then
             cycle
          endif
-         
+
          if ( abs(nws).eq.15 ) then
             ! call this just to get the updated position of the
             ! storm's center so we can form a mesh at that location
@@ -1651,7 +1651,7 @@ C
             outputLats(iout) = EyeLat(3)
             outputLons(iout) = EyeLon(3)
          endif
-            write(401,402) OutputSecs(iout), outputLats(iout), 
+            write(401,402) OutputSecs(iout), outputLats(iout),
      &         outputLons(iout)
          ! create four strings of nodes in straight lines out from
          ! the center of the storm, one in the center of each quadrant
@@ -1717,14 +1717,14 @@ C
          case(12)
             ! output each frame only, no jumping, no time-interpolation
             if (iout.eq.1) then
-              call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+              call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd)
               call findStormCenter(eyeLat, eyeLon, foundEye)
-            else  
+            else
               do j=1, int(owi_output_factor)
-                 call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
-                 call findStormCenter(eyeLat, eyeLon, foundEye)                 
+                 call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd)
+                 call findStormCenter(eyeLat, eyeLon, foundEye)
               end do
-            endif  
+            endif
          case(15)
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
          case(19)
@@ -1745,15 +1745,15 @@ C
          ! from 10minute averaged winds (needed by ADCIRC) back
          ! to 1minute averaged winds (which match the data from NHC)
          !
-         ! Columns are: 
+         ! Columns are:
          ! r, wNE, wSE, wSW, wNW, wfwd, pNE, pSE, pSW, pNW, pwfd
-         ! where r is the radial coordinate, w is wind speed, p is 
-         ! pressure, NE, SE, SW, and NW are the 4 cardinal quadrants, 
-         ! The "fwd" value, I think, is the radial profile in the 
-         ! direction of maximum winds, which should be normal to storm 
-         ! translation direction.  The ordering of the 4 cardinal 
-         ! directions technically depends on the input file supplied.  
-         ! Units are nautical miles, knots, and millibars.  
+         ! where r is the radial coordinate, w is wind speed, p is
+         ! pressure, NE, SE, SW, and NW are the 4 cardinal quadrants,
+         ! The "fwd" value, I think, is the radial profile in the
+         ! direction of maximum winds, which should be normal to storm
+         ! translation direction.  The ordering of the 4 cardinal
+         ! directions technically depends on the input file supplied.
+         ! Units are nautical miles, knots, and millibars.
          do i=1,np
             radial_speed(i)
      &               = ten2one * sqrt(wvnx2(i)**2 + wvny2(i)**2)
@@ -2070,8 +2070,8 @@ C
 
       !-------------------------------------------------------------
       ! S U B R O U T I N E   S P A T I A L   V   A N D   P
-      ! 
-      ! A simple version of spatialVandP to output 
+      !
+      ! A simple version of spatialVandP to output
       ! (id, dx, dy, u, v, p) to plot in MATLAB
       ! Added NWS=12 option       Jie 10/2013
       !-------------------------------------------------------------
@@ -2111,7 +2111,7 @@ C
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
 !         wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps
       endif
       if (abs(nws).eq.15) then
          mnp = np
@@ -2126,17 +2126,17 @@ C
          close(222)
          close(223)
          close(224)
-         
+
          slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
          ! wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps
       endif
-      
+
       write(*,*) ' Begin to process diagnostic outputs for NWS = ', nws
       ! write storm center locations to a file
-402   FORMAT(f10.2,x,2(f8.4,x)) 
+402   FORMAT(f10.2,x,2(f8.4,x))
       OPEN(401,FILE='Output_storm_centers.txt',STATUS='REPLACE')
       open(1044, file='TC_centerloc.txt',status='replace')
       do iout=1,num_outputs
@@ -2155,7 +2155,7 @@ C
             outputLats(iout) = EyeLat(3)
             outputLons(iout) = EyeLon(3)
          endif
-         write(401,402) OutputSecs(iout), outputLats(iout), 
+         write(401,402) OutputSecs(iout), outputLats(iout),
      &         outputLons(iout)
          if (nodesFromMesh.eqv..false.) then
             ! create a set of nodes in circles around the center of the
@@ -2337,7 +2337,7 @@ C
             if ( dx.lt.xmin ) xmin=dx
             if ( dy.gt.ymax ) ymax=dy
             if ( dy.lt.ymin ) ymin=dy
-         enddo       
+         enddo
          !write(*,*) "DEBUG: ymin=",ymin," ymax=",ymax
          if ((nodesFromMesh.eqv..false.).and.
      &             (elementTableProvided.eqv..false.)) then
@@ -2370,14 +2370,14 @@ C
          case(12)
             ! output each frame only, no jumping, no time-interpolation
             if (iout.eq.1) then
-              call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+              call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd)
               call findStormCenter(eyeLat, eyeLon, foundEye)
-            else  
+            else
               do j=1, int(owi_output_factor)
-                 call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+                 call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd)
                  call findStormCenter(eyeLat, eyeLon, foundEye)
               end do
-            endif           
+            endif
          case(15)
             call nws15get(wvnx2,wvny2,prn2,outputSecs(iout))
          case(19)
@@ -2409,25 +2409,25 @@ C
 !     &              (ten2one*wvny2(i)/0.514444d0), 0.0d0
 !         enddo
             ! Jie: output hurricane center locations for use in MATLAB script
-104         FORMAT(f6.2,x,2(f6.2,x))            
-            write(1044,104) outputsecs(iout)/3600.d0, 
+104         FORMAT(f6.2,x,2(f6.2,x))
+            write(1044,104) outputsecs(iout)/3600.d0,
      &       outputLons(iout), outputLats(iout)
-!445         FORMAT(a7, x, 2(f6.2,x),a14,x,f6.2)            
-!            write(*,445) "TC at [",  slam0, sfea0, 
+!445         FORMAT(a7, x, 2(f6.2,x),a14,x,f6.2)
+!            write(*,445) "TC at [",  slam0, sfea0,
 !     &                   "] at fcsthour=", outputsecs(iout)/3600.d0
 
-!446         FORMAT(a13,x,4(f6.2,x),a1)            
+!446         FORMAT(a13,x,4(f6.2,x),a1)
 !            write(*,446) "Grid Range: [",minval(slam(:))*rad2deg,
 !     &                                   maxval(slam(:))*rad2deg,
 !     &                                   minval(sfea(:))*rad2deg,
 !     &                                   maxval(sfea(:))*rad2deg, "]"
          do i=1,np
             call latlon2xy(sfea(i)*rad2deg-sfea0,
-     &              slam(i)*rad2deg, sfea0, slam0, dx, dy)    
+     &              slam(i)*rad2deg, sfea0, slam0, dx, dy)
             write(555,'(E15.6,2X,E15.6,2X,E15.6,2X,E15.6,2X,E15.6)')
      &              dx, dy, ! output slam & sfea will make the image distorted
      &              (ten2one*wvnx2(i)/0.514444d0),
-     &              (ten2one*wvny2(i)/0.514444d0), 
+     &              (ten2one*wvny2(i)/0.514444d0),
      &               prn2(i) * RhoWatG / 100.d0
          enddo
          close(555)
@@ -2436,11 +2436,11 @@ C
       close(1044)
       !-------------------------------------------------------------
       end subroutine spatialuvp
-      
-      
+
+
 !-------------------------------------------------------------
       ! S U B R O U T I N E   N O D A L   V   A N D   P
-      ! 
+      !
       ! A simple routine to read in nodal locations and output
       ! timeseries uvp for data comparison at meteo stations
       ! Added NWS=12 option       Jie 10/2013
@@ -2464,7 +2464,7 @@ C
       if (nodesFromFile.eqv..true.) then
          call openFileForRead(14,trim(meshFileName),errorIO)
          if (errorIO.ne.0) stop
-         read(14,*) np  
+         read(14,*) np
          write(*,*) "Total station# = ", np
          call allocPseudoMeshArrays()
 C      elseif (nodesFromMesh.eqv..true.) then
@@ -2472,7 +2472,7 @@ C         call openFileForRead(14,trim(meshFileName),errorIO)
 C         if (errorIO.ne.0) stop
 C         read(14,*) scratch  ! throw away AGRID
 C         read(14,*) ne, np
-              do i=1,np 
+              do i=1,np
                   read(14,*) j, dx, dy
                   slam(i) = dx
                   sfea(i) = dy
@@ -2483,15 +2483,15 @@ C         read(14,*) ne, np
          ! will be written
          station_output_name = "station_timeseries.d"
          open(555,FILE=trim(station_output_name),STATUS='REPLACE')
-         
+
       elseif (nodesFromMesh.eqv..true.) then
          call openFileForRead(14,trim(meshFileName),errorIO)
          if (errorIO.ne.0) stop
          read(14,*) scratch  ! throw away AGRID
-         read(14,*) ne, np  
+         read(14,*) ne, np
          write(*,*) "Total number of nodes = ", np
          call allocPseudoMeshArrays()
-              do i=1,np 
+              do i=1,np
                   read(14,*) j, dx, dy
                   slam(i) = dx
                   sfea(i) = dy
@@ -2508,7 +2508,7 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
 !         wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps
       endif
       if (abs(nws).eq.15) then
          mnp = np
@@ -2524,17 +2524,17 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
          close(222)
          close(223)
          close(224)
-         
+
          slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
          sfea(:) = 34.0d0*deg2rad
          ! initialize arrays
          ! wvnx2 = 0.d0, wvny2 = 0.d0, prn2 = 0.d0
-         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps        
+         call nws12init(wvnx2, wvny2, prn2, np, prbckgrnd) !call this to skip unwanted snaps
       endif
-      
+
       write(*,*) ' Begin to process diagnostic outputs for NWS = ', nws
       open(1044, file='TC_centerloc.txt',status='replace')
-      
+
       write(*,*) "num_outputs = ", num_outputs
       do iout=1,num_outputs
          write(*,*) "iout = ", iout
@@ -2552,10 +2552,10 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
             outputLats(iout) = EyeLat(3)
             outputLons(iout) = EyeLon(3)
          endif
-         
+
             ! we are reading the station locations from a text file
          if (meshFileReadComplete.eqv..true.) then
-            
+
 !               ! read the element table, just so we can write it out in
 !               ! vtk format to create streamlines
 !               allocate(nm(ne,3)) ! TODO: this effectively hardcodes nhy=3
@@ -2569,7 +2569,7 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
                slam(:) = slam(:) * deg2rad
                sfea(:) = sfea(:) * deg2rad
           endif
-            
+
          xmin=huge(1.d0)
          ymin=huge(1.d0)
          xmax=tiny(1.d0)
@@ -2583,21 +2583,21 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
             if ( dx.lt.xmin ) xmin=dx
             if ( dy.gt.ymax ) ymax=dy
             if ( dy.lt.ymin ) ymin=dy
-         enddo    
+         enddo
          write(*,*) slam0,sfea0
 !         write(*,*) "DEBUG: ymin=",ymin," ymax=",ymax
          select case(abs(nws))
           case(12)
             ! output each frame only, no jumping, no time-interpolation
             if (iout.eq.1) then
-              call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
+              call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd)
               call findStormCenter(eyeLat, eyeLon, foundEye)
-            else  
+            else
               do j=1, int(owi_output_factor)
-                 call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd) 
-                 call findStormCenter(eyeLat, eyeLon, foundEye)                 
+                 call nws12get(wvnx2, wvny2, prn2, np, prbckgrnd)
+                 call findStormCenter(eyeLat, eyeLon, foundEye)
               end do
-            endif 
+            endif
          case(15)
             call nws15get(wvnx2,wvny2,prn2,outputSecs(iout))
          case(19)
@@ -2605,11 +2605,11 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
          case(20)
             write(*,*) "outputsecs=", outputsecs(iout)
             ! nws20get actually writes the Rmax data to the file
-            call nws20get(wvnx2,wvny2,prn2,outputsecs(iout)) 
+            call nws20get(wvnx2,wvny2,prn2,outputsecs(iout))
 !            write(*,*) "Debug: process only 1000 nodes"
 !            call nws20get(slam(1:1000),sfea(1:1000),wvnx2(1:1000),
 !     &       wvny2(1:1000),prn2(1:1000),1000,
-!     &             outputsecs(iout), ics)    
+!     &             outputsecs(iout), ics)
             write(*,*) "nws=", nws
 
          case default
@@ -2618,26 +2618,26 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
          end select
 
             ! Jie: output hurricane center locations for use in MATLAB script
-105         FORMAT(f6.2,x,2(f6.2,x)) 
-!            write(*,105) outputsecs(iout)/3600.d0, 
-!     &       outputLons(iout), outputLats(iout)           
-!            write(1044,105) outputsecs(iout)/3600.d0, 
+105         FORMAT(f6.2,x,2(f6.2,x))
+!            write(*,105) outputsecs(iout)/3600.d0,
 !     &       outputLons(iout), outputLats(iout)
-!445         FORMAT(a7, x, 2(f6.2,x),a14,x,f6.2)            
-!            write(*,445) "TC at [",  slam0, sfea0, 
+!            write(1044,105) outputsecs(iout)/3600.d0,
+!     &       outputLons(iout), outputLats(iout)
+!445         FORMAT(a7, x, 2(f6.2,x),a14,x,f6.2)
+!            write(*,445) "TC at [",  slam0, sfea0,
 !     &                   "] at fcsthour=", outputsecs(iout)/3600.d0
 
-!446         FORMAT(a13,x,4(f6.2,x),a1)            
+!446         FORMAT(a13,x,4(f6.2,x),a1)
 !            write(*,446) "Grid Range: [",minval(slam(:))*rad2deg,
 !     &                                   maxval(slam(:))*rad2deg,
 !     &                                   minval(sfea(:))*rad2deg,
 !     &                                   maxval(sfea(:))*rad2deg, "]"
          if (nodesFromFile.eqv..true.) then
-         
+
                      write(555,'(f12.2,2X,150(E15.6,2X))')
      &               (outputSecs(iout)/3600.d0),
      &              ((ten2one*wvnx2(i)/0.514444d0),i=1,np),
-     &              ((ten2one*wvny2(i)/0.514444d0),i=1,np), 
+     &              ((ten2one*wvny2(i)/0.514444d0),i=1,np),
      &              ((prn2(i) * RhoWatG / 100.d0),i=1,np)
 
           elseif (nodesFromMesh.eqv..true.) then
@@ -2647,32 +2647,32 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
              ! write lat/lon values to a file for plotting
              OPEN(555,FILE=trim(node_file_name),STATUS='REPLACE')
              do i=1,np
-                write(555,'(3(E15.6,2X))') 
+                write(555,'(3(E15.6,2X))')
      &                       ten2one*wvnx2(i)/0.514444d0,
-     &                       ten2one*wvny2(i)/0.514444d0,    
-     &                       prn2(i) * RhoWatG / 100.d0       
+     &                       ten2one*wvny2(i)/0.514444d0,
+     &                       prn2(i) * RhoWatG / 100.d0
              end do
-             close(555)  
+             close(555)
              write(*,*) "Finish writing output for iout = ", iout
           else
            do i=1,np
              call latlon2xy(sfea(i)*rad2deg-sfea0,
-     &              slam(i)*rad2deg, sfea0, slam0, dx, dy)    
+     &              slam(i)*rad2deg, sfea0, slam0, dx, dy)
              write(555,'(E15.6,2X,E15.6,2X,E15.6,2X,E15.6,2X,E15.6)')
      &              dx, dy, ! output slam & sfea will make the image distorted
      &              (ten2one*wvnx2(i)/0.514444d0),
-     &              (ten2one*wvny2(i)/0.514444d0), 
+     &              (ten2one*wvny2(i)/0.514444d0),
      &               prn2(i) * RhoWatG / 100.d0
            enddo
 
           endif
-     
+
       end do
       if (nodesFromFile.eqv..true.) close(555)
       if (nodesFromFile.eqv..true.) close(1044)
       !-------------------------------------------------------------
       end subroutine nodaluvp
-      
+
 
       !-------------------------------------------------------------
       ! S U B R O U T I N E
@@ -2867,9 +2867,9 @@ C     jgf49.30 Initialize to reasonable defaults.
             CASE("-S","-s") ! spatial V and P unstructured mesh vals requested
                writeSpatialVandP=.true.
             CASE("-B","-b") ! uvp at given node location xy
-               writeNodaluvp=.true.     
+               writeNodaluvp=.true.
             CASE("-C","-c") ! spatial xy&uvp,unstructured mesh vals requested
-               writeSpatialuvp=.true.               
+               writeSpatialuvp=.true.
             CASE("-D","-d") ! don't write NWS19 fort.22
                writeNWS19=.false.
             CASE("-E","-e")  ! providing an element table for spatial output
@@ -2898,7 +2898,7 @@ C     jgf49.30 Initialize to reasonable defaults.
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
                meshFileName = trim(CMDLINEARG)
-               nodesFromFile = .true.               
+               nodesFromFile = .true.
             CASE("-M","-m")  ! method of selecting quadrant Rmax values
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
@@ -2906,7 +2906,7 @@ C     jgf49.30 Initialize to reasonable defaults.
             CASE("-Z","-z")  ! approach of calculating quadrantVr
                I=I+1
                CALL GET_COMMAND_ARGUMENT(I,CMDLINEARG)
-               READ(CMDLINEARG,*) approach   
+               READ(CMDLINEARG,*) approach
             CASE("-O","-o")  ! time increment for writing output (seconds)
                defaultOutputIncrement = .false.
                I=I+1
@@ -2990,7 +2990,7 @@ C
       if (writeNodaluvp.eqv..true.) then
          call nodaluvp()
       endif
-      
+
 C----------------------------------------------------------------------
       end program aswip
 C----------------------------------------------------------------------

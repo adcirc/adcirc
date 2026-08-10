@@ -28,7 +28,7 @@ unsigned int read_latlon(const char *arg, double **lon, double **lat) {
         }
 	if (n_out % 2 == 0) return 0;
         n_out = (n_out+1)/2;
-        
+
         *lat = llat = (double *) malloc(sizeof(double) * (size_t) n_out);
         *lon = llon = (double *) malloc(sizeof(double) * (size_t) n_out);
 

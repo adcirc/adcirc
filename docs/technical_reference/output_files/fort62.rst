@@ -24,4 +24,4 @@ Notes
 
 * Output may be in ascii or binary format depending on how :ref:`NOUTV <NOUTV>` is set in the :doc:`Model Parameter and Periodic Boundary Condition File <../input_files/fort15>`
 * If binary output is specified, the station number (k) is not included in the output
-* The velocity recording station locations can be specified either directly in the fort.15 file or through a separate vel_stat.151 file when :ref:`NSTAV <NSTAV>` is set to a negative value 
+* The velocity recording station locations can be specified either directly in the fort.15 file or through a separate vel_stat.151 file when :ref:`NSTAV <NSTAV>` is set to a negative value

@@ -32,4 +32,4 @@ Notes
     * AIMAG(Q): y-component of velocity
     * WZ: vertical velocity component
 * Data is recorded at multiple vertical levels defined by SIGMA values
-* Similar to fort.42 but provides data for the entire model domain instead of specific stations 
+* Similar to fort.42 but provides data for the entire model domain instead of specific stations

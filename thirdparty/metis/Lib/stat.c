@@ -46,19 +46,19 @@ void ComputePartitionInfo(GraphType *graph, int nparts, idxtype *where)
   kpwgts = idxsmalloc(ncon*nparts, 0, "ComputePartitionInfo: kpwgts");
 
   for (i=0; i<nvtxs; i++) {
-    for (j=0; j<ncon; j++) 
+    for (j=0; j<ncon; j++)
       kpwgts[where[i]*ncon+j] += vwgt[i*ncon+j];
   }
 
   if (ncon == 1) {
-    printf("\tBalance: %5.3f out of %5.3f\n", 
+    printf("\tBalance: %5.3f out of %5.3f\n",
             1.0*nparts*kpwgts[idxamax(nparts, kpwgts)]/(1.0*idxsum(nparts, kpwgts)),
             1.0*nparts*vwgt[idxamax(nvtxs, vwgt)]/(1.0*idxsum(nparts, kpwgts)));
   }
   else {
     printf("\tBalance:");
-    for (j=0; j<ncon; j++) 
-      printf(" (%5.3f out of %5.3f)", 
+    for (j=0; j<ncon; j++)
+      printf(" (%5.3f out of %5.3f)",
             1.0*nparts*kpwgts[ncon*idxamax_strd(nparts, kpwgts+j, ncon)+j]/(1.0*idxsum_strd(nparts, kpwgts+j, ncon)),
             1.0*nparts*vwgt[ncon*idxamax_strd(nvtxs, vwgt+j, ncon)+j]/(1.0*idxsum_strd(nparts, kpwgts+j, ncon)));
     printf("\n");
@@ -82,27 +82,27 @@ void ComputePartitionInfo(GraphType *graph, int nparts, idxtype *where)
         }
       }
     }
-    for (j=xadj[i]; j<xadj[i+1]; j++) 
+    for (j=xadj[i]; j<xadj[i+1]; j++)
       kpwgts[where[adjncy[j]]] = 0;
   }
 
   for (i=0; i<nparts; i++)
     kpwgts[i] = idxsum(nparts, padjncy+i*nparts);
   printf("Min/Max/Avg/Bal # of adjacent     subdomains: %5d %5d %5.2f %7.3f\n",
-    kpwgts[idxamin(nparts, kpwgts)], kpwgts[idxamax(nparts, kpwgts)], 
-    1.0*idxsum(nparts, kpwgts)/(1.0*nparts), 
+    kpwgts[idxamin(nparts, kpwgts)], kpwgts[idxamax(nparts, kpwgts)],
+    1.0*idxsum(nparts, kpwgts)/(1.0*nparts),
     1.0*nparts*kpwgts[idxamax(nparts, kpwgts)]/(1.0*idxsum(nparts, kpwgts)));
 
   for (i=0; i<nparts; i++)
     kpwgts[i] = idxsum(nparts, padjcut+i*nparts);
   printf("Min/Max/Avg/Bal # of adjacent subdomain cuts: %5d %5d %5d %7.3f\n",
-    kpwgts[idxamin(nparts, kpwgts)], kpwgts[idxamax(nparts, kpwgts)], idxsum(nparts, kpwgts)/nparts, 
+    kpwgts[idxamin(nparts, kpwgts)], kpwgts[idxamax(nparts, kpwgts)], idxsum(nparts, kpwgts)/nparts,
     1.0*nparts*kpwgts[idxamax(nparts, kpwgts)]/(1.0*idxsum(nparts, kpwgts)));
 
   for (i=0; i<nparts; i++)
     kpwgts[i] = idxsum(nparts, padjwgt+i*nparts);
   printf("Min/Max/Avg/Bal/Frac # of interface    nodes: %5d %5d %5d %7.3f %7.3f\n",
-    kpwgts[idxamin(nparts, kpwgts)], kpwgts[idxamax(nparts, kpwgts)], idxsum(nparts, kpwgts)/nparts, 
+    kpwgts[idxamin(nparts, kpwgts)], kpwgts[idxamax(nparts, kpwgts)], idxsum(nparts, kpwgts)/nparts,
     1.0*nparts*kpwgts[idxamax(nparts, kpwgts)]/(1.0*idxsum(nparts, kpwgts)), 1.0*idxsum(nparts, kpwgts)/(1.0*nvtxs));
 
   tmpptr = graph->where;
@@ -156,19 +156,19 @@ void ComputePartitionInfoBipartite(GraphType *graph, int nparts, idxtype *where)
   kpwgts = idxsmalloc(ncon*nparts, 0, "ComputePartitionInfo: kpwgts");
 
   for (i=0; i<nvtxs; i++) {
-    for (j=0; j<ncon; j++) 
+    for (j=0; j<ncon; j++)
       kpwgts[where[i]*ncon+j] += vwgt[i*ncon+j];
   }
 
   if (ncon == 1) {
-    printf("\tBalance: %5.3f out of %5.3f\n", 
+    printf("\tBalance: %5.3f out of %5.3f\n",
             1.0*nparts*kpwgts[idxamax(nparts, kpwgts)]/(1.0*idxsum(nparts, kpwgts)),
             1.0*nparts*vwgt[idxamax(nvtxs, vwgt)]/(1.0*idxsum(nparts, kpwgts)));
   }
   else {
     printf("\tBalance:");
-    for (j=0; j<ncon; j++) 
-      printf(" (%5.3f out of %5.3f)", 
+    for (j=0; j<ncon; j++)
+      printf(" (%5.3f out of %5.3f)",
             1.0*nparts*kpwgts[ncon*idxamax_strd(nparts, kpwgts+j, ncon)+j]/(1.0*idxsum_strd(nparts, kpwgts+j, ncon)),
             1.0*nparts*vwgt[ncon*idxamax_strd(nvtxs, vwgt+j, ncon)+j]/(1.0*idxsum_strd(nparts, kpwgts+j, ncon)));
     printf("\n");
@@ -192,26 +192,26 @@ void ComputePartitionInfoBipartite(GraphType *graph, int nparts, idxtype *where)
         }
       }
     }
-    for (j=xadj[i]; j<xadj[i+1]; j++) 
+    for (j=xadj[i]; j<xadj[i+1]; j++)
       kpwgts[where[adjncy[j]]] = 0;
   }
 
   for (i=0; i<nparts; i++)
     kpwgts[i] = idxsum(nparts, padjncy+i*nparts);
   printf("Min/Max/Avg/Bal # of adjacent     subdomains: %5d %5d %5d %7.3f\n",
-    kpwgts[idxamin(nparts, kpwgts)], kpwgts[idxamax(nparts, kpwgts)], idxsum(nparts, kpwgts)/nparts, 
+    kpwgts[idxamin(nparts, kpwgts)], kpwgts[idxamax(nparts, kpwgts)], idxsum(nparts, kpwgts)/nparts,
     1.0*nparts*kpwgts[idxamax(nparts, kpwgts)]/(1.0*idxsum(nparts, kpwgts)));
 
   for (i=0; i<nparts; i++)
     kpwgts[i] = idxsum(nparts, padjcut+i*nparts);
   printf("Min/Max/Avg/Bal # of adjacent subdomain cuts: %5d %5d %5d %7.3f\n",
-    kpwgts[idxamin(nparts, kpwgts)], kpwgts[idxamax(nparts, kpwgts)], idxsum(nparts, kpwgts)/nparts, 
+    kpwgts[idxamin(nparts, kpwgts)], kpwgts[idxamax(nparts, kpwgts)], idxsum(nparts, kpwgts)/nparts,
     1.0*nparts*kpwgts[idxamax(nparts, kpwgts)]/(1.0*idxsum(nparts, kpwgts)));
 
   for (i=0; i<nparts; i++)
     kpwgts[i] = idxsum(nparts, padjwgt+i*nparts);
   printf("Min/Max/Avg/Bal/Frac # of interface    nodes: %5d %5d %5d %7.3f %7.3f\n",
-    kpwgts[idxamin(nparts, kpwgts)], kpwgts[idxamax(nparts, kpwgts)], idxsum(nparts, kpwgts)/nparts, 
+    kpwgts[idxamin(nparts, kpwgts)], kpwgts[idxamax(nparts, kpwgts)], idxsum(nparts, kpwgts)/nparts,
     1.0*nparts*kpwgts[idxamax(nparts, kpwgts)]/(1.0*idxsum(nparts, kpwgts)), 1.0*idxsum(nparts, kpwgts)/(1.0*nvtxs));
 
 

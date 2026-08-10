@@ -10,7 +10,7 @@
 #include "fnlist.h"
 
 
-/* 
+/*
  *  Dump.c
  *     2004        Public Domain Wesley Ebisuzaki
  *     3/2020      George Trojan: add optional dump offset

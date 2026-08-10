@@ -33,4 +33,4 @@ Detailed documentation on the implementation and usage of ice modifications can 
 References
 ----------
 
-For complete details on the theoretical foundation, implementation, and usage of ice modifications in ADCIRC, please refer to the official documentation at the ADCIRC website: https://adcirc.org/wp-content/uploads/sites/2255/2016/01/adcirc_modifications_for_ice.pdf 
+For complete details on the theoretical foundation, implementation, and usage of ice modifications in ADCIRC, please refer to the official documentation at the ADCIRC website: https://adcirc.org/wp-content/uploads/sites/2255/2016/01/adcirc_modifications_for_ice.pdf

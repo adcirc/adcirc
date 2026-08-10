@@ -20,7 +20,7 @@
  * To handle the current and future extentions
  *
  *  Part A:  -f_misc
- *           inventory to print out the extensions  
+ *           inventory to print out the extensions
  *           format :A=value:B=value:C=value:
  *  Part B   getExtName
  *           like getName but returns extended name
@@ -46,7 +46,7 @@ int f_misc(ARG0) {
     const char *string;
     int pdt, val, j;
     char *inv_out_init;
- 
+
     if (mode < 0) return 0;
 
     pdt = GB2_ProdDefTemplateNo(sec);
@@ -69,7 +69,7 @@ int f_misc(ARG0) {
 	strcat(inv_out,":");
         inv_out += strlen(inv_out);
     }
-    
+
     f_spatial_proc(call_ARG0(inv_out,NULL));
     if (strlen(inv_out)) {
 	strcat(inv_out,":");
@@ -240,11 +240,11 @@ int f_ext_name(ARG0) {
 }
 
 
-/* 
+/*
 
   getExtName : if (type_ext_name == 0) return old name
                else return extended name
-   
+
   get extend name - need to change some characters   ... version 2 for the format
   space -> ext_name_space
   colon -> ext_name_field

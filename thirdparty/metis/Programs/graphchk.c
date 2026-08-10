@@ -29,7 +29,7 @@ main(int argc, char *argv[])
     printf("Usage: %s <GraphFile>\n", argv[0]);
     exit(0);
   }
-    
+
   strcpy(filename, argv[1]);
 
   ReadGraph(&graph, filename, &wgtflag);
@@ -53,6 +53,4 @@ main(int argc, char *argv[])
 
 
   GKfree(&graph.xadj, &graph.adjncy, &graph.vwgt, &graph.adjwgt, LTERM);
-}  
-
-
+}

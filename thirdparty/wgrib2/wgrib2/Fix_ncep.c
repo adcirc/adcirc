@@ -39,7 +39,7 @@ int f_fix_ncep(ARG0) {
 
     p = sec[4];
     n = (int) p[41];					// number of loops
-  
+
     if (n != 2) return 0;				// always have n == 2
 
     stat_proc1 = p[46];
@@ -296,7 +296,7 @@ int f_fix_ncep(ARG0) {
         save_time(year,month,day,hour,minute,second, sec[4]+34);
     }
 
-    
+
     if (type == 192 && n == 2) {		// climo
 
         // get reference time
@@ -391,4 +391,3 @@ int f_fix_ncep(ARG0) {
 
     return 0;
 }
-

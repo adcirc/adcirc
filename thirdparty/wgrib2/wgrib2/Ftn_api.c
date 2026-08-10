@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include <string.h>
 #include "grb2.h"
 #include "wgrib2.h"
@@ -21,6 +21,5 @@ extern int submsg, msg_no, inv_no;
 int f_ftn_api_fn0(ARG0) {
     /* ndata data may be undefined when data is not decoded */
     if (mode >= 0) sprintf(inv_out, "%11d %11u %11u %11u %11d %11d",inv_no,npnts,nx_,ny_,msg_no, submsg);
-    return 0;   
+    return 0;
 }
-

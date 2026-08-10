@@ -2075,8 +2075,8 @@ contains
             SFacAvg = SFacEle(JNEI)
             SFmxAvg = SFMXEle(JNEI)
             SFmyAvg = SFMYEle(JNEI)
-            sfdxfac = dble(1 - IFSFM)*SFacAvg + dble(IFSFM)*SFmxAvg; 
-            sfdyfac = dble(1 - IFSFM)*1.0d0 + dble(IFSFM)*SFmyAvg; 
+            sfdxfac = dble(1 - IFSFM)*SFacAvg + dble(IFSFM)*SFmxAvg;
+            sfdyfac = dble(1 - IFSFM)*1.0d0 + dble(IFSFM)*SFmyAvg;
             FDX1 = FDXE(1, JNEI)*sfdxfac !b1
             FDX2 = FDXE(2, JNEI)*sfdxfac !b2
             FDX3 = FDXE(3, JNEI)*sfdxfac !b3

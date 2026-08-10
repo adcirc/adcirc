@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -39,7 +39,7 @@ C
 #ifdef DATETIME
      &   ,basedatetime
 #endif
-       USE ADC_CONSTANTS, ONLY: pi, deg2rad, rad2deg, e, PRBCKGRND, g, 
+       USE ADC_CONSTANTS, ONLY: pi, deg2rad, rad2deg, e, PRBCKGRND, g,
      &                      rhoWat0, Rearth, rhoAir, one2ten,
      &                      windReduction,omega
 #ifdef CMPI
@@ -135,7 +135,7 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       ! jgf50.32 Provide backward compatibility with hardcoded POWELL
       ! support.
 #warning The flag -DPOWELL is deprecated and will be removed in a future release. Please use the &metcontrol name list functionality to avoid issues
-      
+
       CHARACTER(len=10) :: DragLawString = 'Powell'
       INTEGER :: dragLawType = DRAGLAW_POWELL
 #endif
@@ -263,8 +263,8 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
 #ifdef DATETIME
       integer :: ub, ubc ! size of weightsp and indp interpolant weights
       real(8),allocatable :: weightsp(:,:,:)
-      real(8),allocatable :: inset_weight(:,:,:) 
-      integer,allocatable  :: indp(:,:,:) 
+      real(8),allocatable :: inset_weight(:,:,:)
+      integer,allocatable  :: indp(:,:,:)
       integer,allocatable :: inset_indp(:,:,:)
       character(len=200) :: Pfile, Wfile, Pinv, Winv, Cinv, Cfile
       character(len=200) :: Wfile1, Pinv1, Winv1
@@ -280,12 +280,12 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
 #endif
 
       logical:: read_NWS14_NetCdf_using_core_0 = .true. ! read NWS14 (grib2,netcdf) from a computed core 0
- 
+
       real(8) :: wtime1_12 ! time associated with previous met dataset
       real(8) :: wtime2_12 ! time associated with new met dataset
       real(8) :: wtiminc_12 ! time increment between met datasets (seconds)
       logical  :: change_14 ! true when the NWS = 14 data has been updated
-      logical,allocatable :: hasdata(:) ! if OWI data exists at this vertex       
+      logical,allocatable :: hasdata(:) ! if OWI data exists at this vertex
       !...Function interface for wind drag
       !   Used so that the selection of wind drag
       !   is only performed once. Each wind drag
@@ -300,7 +300,7 @@ Casey 110518: Added for Mark Powell's sectorial wind drag.
       PROCEDURE(p_computeWindDrag),POINTER :: f_computeWindDrag => null()
 
 
-      ! for record time  
+      ! for record time
       REAL(8), private:: io_elapsed_time = 0.0D0, nws_elapsed_time = 0.0D0
 
 C------------------------end of data declarations-----------------------
@@ -344,7 +344,7 @@ C     ----------------------------------------------------------------
       allocate ( prn2(np) )
 
       if (NWS.eq.-14) allocate ( HasData(np) )
-C     WJP: this is the value used in the surface stress computation  
+C     WJP: this is the value used in the surface stress computation
 C     (can contol through the rhoAir parameter in namelist)
       airwaterdensityrat = rhoAir / rhoWat0
 
@@ -366,16 +366,16 @@ C.... convert background pressure from millibars to meters of water
 
       if (NWS.eq.0) return
 
-      ! Make logicals here if NWS is not 0 
+      ! Make logicals here if NWS is not 0
       garatt = .false.; swell = .false.; powell = .false.
       SELECT CASE(TRIM(DragLawString))
          CASE("Garratt","GARRATT","garratt","default")
              garatt = .true.
-             write(16,*) 'Garratt drag law used' 
+             write(16,*) 'Garratt drag law used'
 #ifdef CSWAN
          CASE("Swell","SWELL","swell")
              swell   = .true.
-             write(16,*) 'Swell drag law used' 
+             write(16,*) 'Swell drag law used'
 #endif
          CASE("Powell","POWELL","powell")
              if (NWS.eq.12.or.NWS.eq.29.or.NWS.eq.30) then
@@ -385,7 +385,7 @@ C.... convert background pressure from millibars to meters of water
                 write(16,*) 'Powell drag law used'
              else
                 garatt = .true.
-                write(16,*) 'Garratt drag law used because NWS ', 
+                write(16,*) 'Garratt drag law used because NWS ',
      &                      'incompatible with Powell'
              endif
          CASE DEFAULT
@@ -763,11 +763,11 @@ C....... and Ray's Ice for low ice values and low winds
      &              + 0.2d0*pic*pic*pic)*0.01d0
             WindIceDrag = max(IceDrag,WindDrag)
          ENDIF
-      
+
       CASE("Lupkes","default","Powell")
 C........This formula is a function that explicitly
 C....... combines air-sea drag (Garratt) with sea-ice skin drag and
-C....... sea-ice form drag components with area fraction weights 
+C....... sea-ice form drag components with area fraction weights
 C....... see: Lüpkes, et al. (2012), JGR: doi:10.1029/2012JD017630. &
 C....... Joyce et al. (2019), OM: doi:10.1016/j.ocemod.2019.101421
          IF (PercentIce.lt.0.d0) then
@@ -798,8 +798,8 @@ C     ----------------------------------------------------------------
 C     jgf49.1001 Subroutine to get the blending factor for combining
 C     NWS19 and NWS12 (from NAM) met data.
 C     ----------------------------------------------------------------
-      pure real(8) function getBlendFactor(i, vortex_rmw, 
-     &                                     vortex_distance, 
+      pure real(8) function getBlendFactor(i, vortex_rmw,
+     &                                     vortex_distance,
      &                                     background_distance) result(bf)
       USE MESH, ONLY : SLAM, SFEA
       IMPLICIT NONE
@@ -834,7 +834,7 @@ C     compute the radial distances to the various regions, in meters
 C     determine which interpolation region this mesh node falls in
       IF ( rad.le.vortexOnly ) THEN
         bf = 1.0d0
-      ELSEIF ( rad.ge.backgroundOnly )THEN 
+      ELSEIF ( rad.ge.backgroundOnly )THEN
         bf = 0.0d0
       ELSE
 C        interpolate linearly based on radial distance in the blended region
@@ -859,7 +859,7 @@ C     particular point in time.
 C----------------------------------------------------------------------
       subroutine getMeteorologicalForcing(nws, wsx2, wsy2, pr2,
      &   wvnxout, wvnyout, timeloc)
-      use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006     
+      use owiwind,only : nws12get, findStormCenter    ! sb added 09/xx/2006
       use global, only : ciceout, h0, eta2, ncice, rampmete,
      &   sponge, res_bc_flag, IDEN, SigTS, cice1, cice2, IFSPROTS
       USE ADC_CONSTANTS, only: g
@@ -886,7 +886,7 @@ C----------------------------------------------------------------------
       real(8) :: wDragCo
       real(8) :: windMag
       real(8) :: wtratio ! used to time interpolated between met datasets
-      real(8) :: cicenow, icedragco, ctratio, icemag, icex, icey 
+      real(8) :: cicenow, icedragco, ctratio, icemag, icex, icey
       integer :: nhg ! node number temp
       real(8) :: bf ! blend factor for multiple sets of wind data
       integer :: i ! node loop counter
@@ -1214,11 +1214,11 @@ C     formula is used to compute wind stress from the wind velocity.
                WVNY1(I)=WVNY2(I)
                PRN1(I)=PRN2(I)
             END DO
-            IF (NCICE.eq.10) THEN 
+            IF (NCICE.eq.10) THEN
                cice1 = cice2
-               call nws10get(wvnx2,wvny2,prn2,cice2) 
+               call nws10get(wvnx2,wvny2,prn2,cice2)
             ELSE
-               call nws10get(wvnx2,wvny2,prn2) 
+               call nws10get(wvnx2,wvny2,prn2)
             ENDIF
          ENDIF
          WTRatio=(TimeLoc-WTIME1)/WTIMINC
@@ -1238,7 +1238,7 @@ C     jgf46.00 Add directional wind reduction.
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF (NCICE.eq.10) then
-               Cicenow = 100d0*( CICE1(I) + 
+               Cicenow = 100d0*( CICE1(I) +
      &                           WTRatio*( CICE2(I)-CICE1(I) ) )
                WDragCo = WindIceDrag(WDragCo,Cicenow)
             ELSEIF (NCICE.NE.0) THEN
@@ -1332,7 +1332,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
                   CICE1 = CICE2
                   CALL NWS14GET(WVNX2,WVNY2,PRN2,CICE2)
                ELSE
-                  CALL NWS14GET(WVNX2,WVNY2,PRN2) 
+                  CALL NWS14GET(WVNX2,WVNY2,PRN2)
                ENDIF
 #endif
 #endif
@@ -1393,7 +1393,7 @@ C     WJP: Added for NWS = 14 (GRIB2 e.g. CFS)
             ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF (NCICE.eq.14) then
-               Cicenow = 100d0*(CICE1(I) + 
+               Cicenow = 100d0*(CICE1(I) +
      &                          CTRATIO*(CICE2(I)-CICE1(I)))
                WDragCo = WindIceDrag(WDragCo,Cicenow)
                ciceout(i) = Cicenow ! GML added 20210727
@@ -1676,7 +1676,7 @@ C    kmd48.33bc - added in information for the sponge layer
             WSY2(I)=sponge(I)*WSY2(I)
          END DO
        END IF
-         
+
 !PV BEG:: NWS=17
 !... v50.xx sm, v55.xx PV, -- NWS=17 for NUOPC coupling
       IF(ABS(NWS).EQ.17) THEN
@@ -1751,7 +1751,7 @@ C      DW/WJP: rotate wind stresses if coordinate transform
        ENDIF
 
 C--------------------END MET FORCING---------------------------------------
- 
+
 
 C----------------------------------------------------------------------
       end subroutine getMeteorologicalForcing
@@ -1888,7 +1888,7 @@ C....                           to correspond with having only a global wind fil
 C     jgf46.00 Added option to directly apply surface stress without any
 C     other correction factors.
 C     xyc52.30 corrected NWS=7 (wind stress input provided on a
-C     rectangular grid, same as NWS=6) 
+C     rectangular grid, same as NWS=6)
       IF(ABS(NWS).EQ.7) THEN
 C         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
 C         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
@@ -1969,9 +1969,9 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          ! interpolate onto adcirc mesh
          IF (NCICE.eq.10) THEN
             cice1 = 0.d0
-            call nws10get(wvnx2,wvny2,prn2,cice2) 
-         ELSE 
-            call nws10get(wvnx2,wvny2,prn2) 
+            call nws10get(wvnx2,wvny2,prn2,cice2)
+         ELSE
+            call nws10get(wvnx2,wvny2,prn2)
          ENDIF
       ENDIF
 
@@ -1992,7 +1992,7 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          CALL NWS11GET()        !NOW INTERPOLATE 1st WIND FIELD
       ENDIF
       !
-      ! 
+      !
 #ifdef DATETIME
 #if defined(GRIB2API) || defined(ADCNETCDF)
       IF (ABS(NWS).eq.14) THEN
@@ -2004,13 +2004,13 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          ! Get the first wind snap
          if (NCICE.eq.14) then
             CICE_TIME1 = WTIME1
-            CICE_TIME2 = CICE_TIME1 + CICE_TIMINC 
+            CICE_TIME2 = CICE_TIME1 + CICE_TIMINC
             CALL NWS14GET(WVNX1,WVNY1,PRN1,CICE1)
          else
             CALL NWS14GET(WVNX1,WVNY1,PRN1)
 
          endif
-         ! Get owi winds (should only overwrite where they exist) 
+         ! Get owi winds (should only overwrite where they exist)
          if (NWS.eq.-14) then
             CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
             CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND,HasData)
@@ -2024,16 +2024,16 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
             CALL NWS14GET(WVNX2,WVNY2,PRN2)
 ! Insert insets in netcdf format  (Aman Tejaswi)
          endif
-         ! Get owi winds (should only overwrite where they exist) 
+         ! Get owi winds (should only overwrite where they exist)
          if (NWS.eq.-14) then
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND,HasData)
          endif
 
-        
+
         ENDIF
 #endif
 #endif
-   
+
 
 #ifdef ADCNETCDF
 Casey 180318: Added for NWS=13, ARC modified 190108
@@ -2115,7 +2115,7 @@ C----------------------------------------------------------------------
       real(8) :: wDragCo
       real(8) :: windMag
       real(8) :: wtratio ! used to time interpolated between met datasets
-      real(8) :: cicenow, ctratio 
+      real(8) :: cicenow, ctratio
       integer :: nhg ! node number temp
       real(8) :: bf ! blend factor for multiple sets of wind data
       real(8) :: vortexPRDIFF
@@ -2699,12 +2699,12 @@ C     formula is used to compute wind stress from the wind velocity.
          ! read from fort.200 and spatially interpolate onto adcirc mesh
          IF (NCICE.eq.10) THEN
             ! read from fort.200 and spatially interpolate onto adcirc mesh
-            call nws10get(wvnx1,wvny1,prn1,cice1)          
+            call nws10get(wvnx1,wvny1,prn1,cice1)
             ! read from first file after fort.200 and spatially interpolate onto adcirc mesh
             call nws10get(wvnx2,wvny2,prn2,cice2)
          else
             ! read from fort.200 and spatially interpolate onto adcirc mesh
-            call nws10get(wvnx1,wvny1,prn1)          
+            call nws10get(wvnx1,wvny1,prn1)
             ! read from first file after fort.200 and spatially interpolate onto adcirc mesh
             call nws10get(wvnx2,wvny2,prn2)
          endif
@@ -2726,7 +2726,7 @@ C     jgf46.00 Add directional wind reduction.
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF (NCICE.eq.10) then
-               Cicenow = 100d0*( CICE1(I) + 
+               Cicenow = 100d0*( CICE1(I) +
      &                           WTRatio*( CICE2(I)-CICE1(I) ) )
                WDragCo = WindIceDrag(WDragCo,Cicenow)
             ELSEIF (NCICE.NE.0) THEN
@@ -2954,7 +2954,7 @@ C     from NAM data
          else
             CALL NWS14GET(WVNX1,WVNY1,PRN1)
          endif
-         ! Get owi winds (should only overwrite where they exist) 
+         ! Get owi winds (should only overwrite where they exist)
          if (NWS.eq.-14) then
             CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,PRBCKGRND)
             CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,PRBCKGRND,HasData)
@@ -2969,7 +2969,7 @@ C     from NAM data
          else
             CALL NWS14GET(WVNX2,WVNY2,PRN2)
          endif
-         ! Get owi winds (should only overwrite where they exist) 
+         ! Get owi winds (should only overwrite where they exist)
          if (NWS.eq.-14) then
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,PRBCKGRND,HasData)
          endif
@@ -2996,7 +2996,7 @@ C     from NAM data
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                if (NCICE.eq.14) then
-                  Cicenow = 100d0*(CICE1(I) + 
+                  Cicenow = 100d0*(CICE1(I) +
      &                             CTRATIO*(CICE2(I)-CICE1(I)))
                   WDragCo = WindIceDrag(WDragCo,Cicenow)
                else
@@ -3231,9 +3231,9 @@ C  tcm v49.16 20100617
        ! jgf52.14: Implementing Casey's fix for uninitialized
        ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
        ! by the parametric vortex meteorological models but are used in
-       ! the padcswan_init() subroutine to initialize the SWAN wind 
-       ! velocities. Failure to initialize them causes NaNs in the 
-       ! solution. 
+       ! the padcswan_init() subroutine to initialize the SWAN wind
+       ! velocities. Failure to initialize them causes NaNs in the
+       ! solution.
        if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then
           WVNX1 = WVNX2
           WVNY1 = WVNY2
@@ -3241,7 +3241,7 @@ C  tcm v49.16 20100617
 
 C      DW/WJP: rotate wind stresses if coordinate transform
        IF ( IFSPROTS .eq. 1 ) THEN
-          UVECTMP(1:NP) = WSX2(1:NP); 
+          UVECTMP(1:NP) = WSX2(1:NP);
           VVECTMP(1:NP) = WSY2(1:NP);
           CALL DRVMAP2DSPVEC( WSX2, WSY2,
      &              UVECTMP, VVECTMP, NP, FWD = .TRUE. ) ;
@@ -3717,7 +3717,7 @@ C     ----------------------------------------------------------------
       ! gaussian met values
       allocate ( ug(latb*lonb),vg(latb*lonb),pg(latb*lonb) )
       if (ncice.eq.10) allocate ( ig(latb*lonb) )
-      ! four corner met values in grid cell associated with each adcirc mesh vertex 
+      ! four corner met values in grid cell associated with each adcirc mesh vertex
       allocate ( n00(np),n10(np),n11(np),n01(np) )
       ! four interpolating factors associated with each adcirc mesh vertex
       allocate ( d00(np),d10(np),d11(np),d01(np) )
@@ -3979,10 +3979,10 @@ C.....Convert pressure from N/M^2 to M of H20
          pll(n)=pll(n)/rhowatg
       end do
 
-!     WJP: Interpolate ice concentration if present 
+!     WJP: Interpolate ice concentration if present
       if (present(ill)) then
          do n=1,np
-            ! grab the numerical values at the 4 corners of the grid 
+            ! grab the numerical values at the 4 corners of the grid
             ! cell containing this mesh node
             i1=ig(n00(n))
             i2=ig(n10(n))
@@ -5730,7 +5730,7 @@ C***********************************************************************
             xcoor(i) = slam(i) * rad2deg
             ycoor(i) = sfea(i) * rad2deg
          END DO
-         
+
          timeOffset = nint(TIMELOC/60d0)*60d0 ! round initial time to nearest minute
          rndaySeconds = RNDAY * 86400.d0
 
@@ -7273,10 +7273,10 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
           IF ( IFSPROTS.eq. 1) THEN
              CALL DRVSPCOORSROTS( lonr, latr, LON_GFDL, LAT_GFDL )
           ELSE
-             latr = LAT_GFDL ;  lonr = LON_GFDL; 
+             latr = LAT_GFDL ;  lonr = LON_GFDL;
           END IF
           CALL CYLINDERMAP( XY_GFDL(1,I),XY_GFDL(2,I),
-     &           lonr, latr, SLAM0, SFEA0, ICS) ; 
+     &           lonr, latr, SLAM0, SFEA0, ICS) ;
        ENDDO !I
 
        CLOSE(LUN)  !CLOSE THIS GFDL DATA FILE
@@ -7969,7 +7969,7 @@ C.... as well as to improve input for TACC
 C----------------------------------------------------------------------
       implicit none
       INTEGER,INTENT(IN) :: NWS
-      
+
       ! Initialise the datetime
       CurDT = basedatetime + timedelta(minutes=floor(WTIME1/60d0))
       NT = 0; NTC = 0;
@@ -7989,12 +7989,12 @@ C----------------------------------------------------------------------
 
       ! Calculate the interpolant weights
       CALL NWS14_CALC_INTERP_WTS()
-      
+
       call allMessage(ECHO,'Finished init of NWS14')
       IF(Found_InterpInset_Namelist) THEN
       CALL allMessage(ECHO,'Requesting to use insets. If files found,
      &                      insets will be interpolated!')
-      
+
       CALL INIT_INSET_NC()
 
       CALL CALC_INSET_WTS()
@@ -8306,7 +8306,7 @@ C----------------------------------------------------------------------
       integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi, cc
       real,allocatable,dimension(:,:) :: Pmsl, U10, V10, Cice, lat, lon
       real(8), allocatable ::  lonv(:), latv(:), XY(:,:)
-      real(8) :: xx, yy, wt(4) 
+      real(8) :: xx, yy, wt(4)
       logical :: regular_grid
       type(kdtree2), pointer :: tree
       ! determine if wind/pressure/ice grids match or not.
@@ -8338,7 +8338,7 @@ C----------------------------------------------------------------------
       ENDIF
       ! Allocate the indices and weights
       allocate(indp(ub,4,np),weightsp(ub,4,np))
-      ! Make the interpolant weights. If w 
+      ! Make the interpolant weights. If w
       do ii = 1,ub
          if (ii.eq.1) then
             CALL READNWS14LatLon(Pfile,lat,lon,Pinv,Pvar,PfileNCID)
@@ -8348,12 +8348,12 @@ C----------------------------------------------------------------------
          nxp = ubound(lon,1); nyp = ubound(lat,2)
          ! Check if structured regular..
          if (abs(lon(1,1) - lon(1,nyp)) < 1d-6) then
-            regular_grid = .true. 
+            regular_grid = .true.
             allocate(lonv(nxp),latv(nyp))
             lonv = lon(:,1)
             latv = lat(1,:)
-         else       
-            regular_grid = .false. 
+         else
+            regular_grid = .false.
             ! Convert point matrices to 2 X (NXP*NYP) point vector
             allocate(XY(2,nxp*nyp))
             cc = 0
@@ -8365,7 +8365,7 @@ C----------------------------------------------------------------------
                enddo
             enddo
             ! Create the search tree
-            tree => kdtree2_create(XY) 
+            tree => kdtree2_create(XY)
          endif
          ! Loop over each node and interpolate
          do i = 1,np
@@ -8413,13 +8413,13 @@ C----------------------------------------------------------------------
       !':PRMSL:mean sea level:'
       call READNWS14(Pfile,Pmsl,Pinv,Pvar,PfileNCID)
 
-      ! Get the U-winds 
+      ! Get the U-winds
       call READNWS14(Wfile,U10,Winv,Uvar,WfileNCID)
-      
-      ! Get the V-winds 
+
+      ! Get the V-winds
       call READNWS14(Wfile1,V10,Winv,Vvar,Wfile1NCID)
 
-      ! Get the ice concentration if required 
+      ! Get the ice concentration if required
       if (present(CICE2)) then
          NTkeep = NT; NT = NTC
          call READNWS14(Cfile,Cice,Cinv,Cvar,CfileNCID)
@@ -8431,11 +8431,11 @@ C----------------------------------------------------------------------
       do i = 1,np
          if (indp(1,1,i) < 0) then
             PRN2(i) = PRBCKGRND_MH2O
-         else           
-            PRN2(i) = ( Pmsl(indp(1,1,i),indp(1,2,i))*weightsp(1,1,i) + 
+         else
+            PRN2(i) = ( Pmsl(indp(1,1,i),indp(1,2,i))*weightsp(1,1,i) +
      &             Pmsl(indp(1,3,i),indp(1,2,i))*weightsp(1,2,i)      +
      &             Pmsl(indp(1,1,i),indp(1,4,i))*weightsp(1,3,i)      +
-     &             Pmsl(indp(1,3,i),indp(1,4,i))*weightsp(1,4,i) )  
+     &             Pmsl(indp(1,3,i),indp(1,4,i))*weightsp(1,4,i) )
      &              / rhoWat0g
          endif
          if (indp(ub,1,i) < 0) then
@@ -8450,31 +8450,31 @@ C----------------------------------------------------------------------
      &              V10(indp(ub,1,i),indp(ub,4,i))*weightsp(ub,3,i)    +
      &              V10(indp(ub,3,i),indp(ub,4,i))*weightsp(ub,4,i)
          endif
-      enddo 
+      enddo
       deallocate(Pmsl,U10,V10)
-       
+
        IF(found_InterpInset_Namelist.AND.UseInterpInset) THEN
 
       ! Insert insets in netcdf format  (Aman Tejaswi)
             CALL INSET_NC_INPUT()
-        
+
        ELSE IF(found_InterpInset_Namelist.AND.(.NOT.UseInterpInset)) THEN
 
             CALL logMessage(ECHO,'UseInterpInset set to F, Please Check
      &                          Namelist if you want to use inset files')
-       ENDIF     
-!      ! Add WTIMINC on CurDT for next WTIME  
+       ENDIF
+!      ! Add WTIMINC on CurDT for next WTIME
       CurDT = CurDT + timedelta(minutes=nint(WTIMINC/60d0))
       ! Next time index for the netcdf reading
       NT = NT + 1
-      
+
       ! If ice concentration is present
       if (present(CICE2)) then
          do i = 1,np
             if (indp(ubc,1,i) < 0) then
                CICE2(i) = 0d0;
             else
-               CICE2(i) = 
+               CICE2(i) =
      &             Cice(indp(ubc,1,i),indp(ubc,2,i))*weightsp(ubc,1,i) +
      &             Cice(indp(ubc,3,i),indp(ubc,2,i))*weightsp(ubc,2,i) +
      &             Cice(indp(ubc,1,i),indp(ubc,4,i))*weightsp(ubc,3,i) +
@@ -8492,8 +8492,8 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       SUBROUTINE READNWS14(fileN,data2,invN,var,ncid)
 C----------------------------------------------------------------------
-C     CPB 10/2023: Added to make NWS = 14 more more readable. Simply 
-C     calls the appropriate subroutine based on the filetype we are 
+C     CPB 10/2023: Added to make NWS = 14 more more readable. Simply
+C     calls the appropriate subroutine based on the filetype we are
 C     using.
 C----------------------------------------------------------------------
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
@@ -8524,7 +8524,7 @@ C----------------------------------------------------------------------
       use wgrib2api
 #endif
 #ifdef CMPI
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
 #endif
       USE SIZES, ONLY : MYPROC
@@ -8539,7 +8539,7 @@ C----------------------------------------------------------------------
          ! Getting the date in str_date format
          str_date = ':start_FT='//CurDT%strftime("%Y%m%d%H")//'0000:'
          iret = -1; iter = 0
-         do while (iret.le.0.and.iter < 10) 
+         do while (iret.le.0.and.iter < 10)
             if (iter > 0) then
                call logMessage(WARNING,'Trying to read again '//var)
                call sleep(5)
@@ -8588,7 +8588,7 @@ C----------------------------------------------------------------------
       use netcdf_error, only: check_err
 #endif
 #ifdef CMPI
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
 #endif
       USE SIZES, ONLY : MYPROC
@@ -8605,7 +8605,7 @@ C----------------------------------------------------------------------
 #ifdef ADCNETCDF
       IF ( read_NWS14_NetCdf_using_core_0 ) THEN
         ! Use core zero to read data
-        ! and then broadcast them 
+        ! and then broadcast them
         IF (MYPROC.EQ.0) THEN
            call Check_err(NF90_INQ_DIMID(NC_ID,Latdim,Temp_ID))
            call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
@@ -8625,9 +8625,9 @@ C----------------------------------------------------------------------
 #ifdef CMPI
         CALL BCastToLocal_2DRealArray(Data2,NX,NY)
 #endif
-      ELSE 
+      ELSE
         ! Each core read data
-        call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID)) 
+        call Check_err(NF90_OPEN(fileN,nf90_nowrite,NC_ID))
         call Check_err(NF90_INQ_DIMID(NC_ID,Latdim,Temp_ID))
         call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,len=NY))
         call Check_err(NF90_INQ_DIMID(NC_ID,Londim,Temp_ID))
@@ -8657,33 +8657,33 @@ C     The way it is implemented that first the global background wind (ex. GFS,
 C     ERA5) and pressure are interpolated on the ADCIRC mesh and then
 C     wherever highres wind is available, it interpolates the inset data on the
 C     Finite Element grid. The file 'inset_netcdf.in' is used to get the
-C     lat lon variable names as well as variable names.                 
+C     lat lon variable names as well as variable names.
 C     Expected Structure of The File Is Like This: (example)
-C              
-C------------------------------------- 
+C
+C-------------------------------------
 C              lonDimName
-C              latDimName              
-C              lonVarName 
-C              latVarName  
+C              latDimName
+C              lonVarName
+C              latVarName
 C              InsetPresureVarName
 C              InsetUWindVarName
 C              InsetVWindVarName
-C-------------------------------------              
+C-------------------------------------
 C     For now the code assumes that your background wind and your high res
 C     inset has same temporal coverage.
 C     The code only works with NWS=14 (netcdf). The implementation is controlled
-C     by Namelist -- &InterpInset, UseInterpInset=T. The              
+C     by Namelist -- &InterpInset, UseInterpInset=T. The
 C     subroutine can be used in the sameway as OWI_NETCDF with and
 C     advantage that one doesn't need to write global and regional
 C     wind/pressure data in a particular (OWI) format as sometimes it
 C     becomes tedious if running decadal simulations.
 C----------------------------------------------------------------------
-       USE GLOBAL, ONLY : PFile_inset, Wfile_inset, InsetControlFile 
-  
+       USE GLOBAL, ONLY : PFile_inset, Wfile_inset, InsetControlFile
+
        IMPLICIT NONE
-       
+
        INTEGER :: TempNCID_P, TempNCID_W
-       
+
 
        REAL(8), ALLOCATABLE, DIMENSION(:,:) :: InsetPData
        REAL(8), ALLOCATABLE, DIMENSION(:,:) :: InsetUData, InsetVData
@@ -8691,17 +8691,17 @@ C----------------------------------------------------------------------
        LOG_SCOPE_TRACED("INSET_NC_INPUT", WIND_TRACING)
        Pfile_inset= TRIM(ADJUSTL(Pfile_inset))
        Wfile_inset= TRIM(ADJUSTL(Wfile_inset))
-        
+
          CALL READINSET_NC(Pfile_inset
      &       ,TempNCID_P,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetPvar,InsetPData)
-        
+
 
          CALL READINSET_NC(Wfile_inset
      &       ,TempNCID_W,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetUVar,InsetUData)
-         
+
          CALL READINSET_NC(Wfile_inset
      &       ,TempNCID_W,InsetLatDim,InsetLat,InsetLonDim,InsetLon,InsetVvar,InsetVData)
-        
+
 
          CALL INTERP_INSET_GRID(InsetPData,InsetUData,InsetVData)
 
@@ -8738,7 +8738,7 @@ C----------------------------------------------------------------------
           call terminate(exit_code=ADCIRC_EXIT_FAILURE,
      &       message=scratchMessage)
        ENDIF
-     
+
        READ(2200, '(A)', IOSTAT=IERR) InsetLonDim
        READ(2200, '(A)', IOSTAT=IERR) InsetLatDim
        READ(2200, '(A)', IOSTAT=IERR) InsetLon
@@ -8747,8 +8747,8 @@ C----------------------------------------------------------------------
        READ(2200, '(A)', IOSTAT=IERR) InsetUVar
        READ(2200, '(A)', IOSTAT=IERR) InsetVVar
 
-       CLOSE(2200) !closing the file here.. 
- 
+       CLOSE(2200) !closing the file here..
+
       END SUBROUTINE INIT_INSET_NC
 C----------------------------------------------------------------------
 
@@ -8756,11 +8756,11 @@ C----------------------------------------------------------------------
 
 
 C----------------------------------------------------------------------
-C     Aman Tejaswi (11 Feb 2025) 
-C     Read High Res-Inset Winds in NETCDF format and Interpolate onto 
+C     Aman Tejaswi (11 Feb 2025)
+C     Read High Res-Inset Winds in NETCDF format and Interpolate onto
 C     ADCIRC grid. These insets can be used particularly with a
 C     background global wind (e.g GFS) which is read also in NETCDF. The
-C     advantage of using this is specific to GLOBAL MODEL (GSTOFS).      
+C     advantage of using this is specific to GLOBAL MODEL (GSTOFS).
 
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
@@ -8782,14 +8782,14 @@ C----------------------------------------------------------------------
       character(1024) :: scratchMessage
 
       CHARACTER(LEN=*), INTENT(IN)      :: InsetFileN
-      CHARACTER(LEN=*), INTENT(IN)      :: InsetVar, InsetLat, InsetLon,InsetLatDim, InsetLonDim  
+      CHARACTER(LEN=*), INTENT(IN)      :: InsetVar, InsetLat, InsetLon,InsetLatDim, InsetLonDim
       INTEGER                           :: InsetID
       REAL(8), ALLOCATABLE, INTENT(OUT) :: InsetOUT(:,:)
       INTEGER                           :: InsetLoc, INSET_NX, INSET_NY, VarLoc,alloc_err
 
          LOG_SCOPE_TRACED("READINSET_NC", WIND_TRACING)
 #ifdef ADCNETCDF
-      
+
          CALL Check_err(NF90_OPEN(InsetFileN,nf90_nowrite,InsetID))
 
          CALL Check_err(NF90_INQ_DIMID(InsetID,InsetLonDim,InsetLoc))
@@ -8797,7 +8797,7 @@ C----------------------------------------------------------------------
 
          CALL Check_err(NF90_INQ_DIMID(InsetID,InsetLatDim,InsetLoc))
          CALL Check_err(NF90_INQUIRE_DIMENSION(InsetID,InsetLoc,len=INSET_NY))
-              
+
          ALLOCATE(InsetOUT(INSET_NX,INSET_NY),STAT=alloc_err)
 
          IF (alloc_err /= 0) THEN
@@ -8813,32 +8813,32 @@ C----------------------------------------------------------------------
 
 #endif
 
-       END SUBROUTINE READINSET_NC  
+       END SUBROUTINE READINSET_NC
 
 !--------------------------------------------------------------------------
        SUBROUTINE CALC_INSET_WTS()
 
 
         use mesh, only: NP, SLAM, SFEA, bl_interp, bl_interp2
-        use kdtree2_module, only: kdtree2, kdtree2_create,kdtree2_destroy 
+        use kdtree2_module, only: kdtree2, kdtree2_create,kdtree2_destroy
         USE GLOBAL, ONLY : Pfile_inset
-        IMPLICIT NONE 
-          
+        IMPLICIT NONE
+
         integer :: i, ii, nxp, nyp, indt(4), NTkeep, xi, yi,cc,ncid_p
         real,allocatable,dimension(:,:) :: lat, lon
         real(8), allocatable ::  lonv(:), latv(:), XY(:,:)
-        real(8) :: xx, yy, wt(4) 
+        real(8) :: xx, yy, wt(4)
         logical :: regular_grid
         type(kdtree2), pointer :: tree
         !
         ! assume grids are the same to start
         ub = 1
-              
+
         CALL READ_INSET_LatLon(Pfile_inset,NCID_p,lat,InsetLatDim,InsetLat,lon,InsetLonDim,InsetLon,nxp,nyp)
         nxp = ubound(lon,1); nyp = ubound(lat,2)
-        
-        
-          
+
+
+
         if (nxp.NE.ubound(lon,1).OR.nyp.NE.ubound(lat,2)) then
            ! if we don't match both lat and lon then we need to store two
            ! sets of interpolation indices/weights
@@ -8846,25 +8846,25 @@ C----------------------------------------------------------------------
            nxp = ubound(lon,1)
            nyp = ubound(lat,2)
         endif
-        
-        IF ( .NOT.allocated(inset_indp) .and. .not.allocated(inset_weight)) then 
+
+        IF ( .NOT.allocated(inset_indp) .and. .not.allocated(inset_weight)) then
         ! Allocate the indices and weights
         allocate(inset_indp(ub,4,np),inset_weight(ub,4,np))
         endif
-        ! Make the interpolant weights. If w 
+        ! Make the interpolant weights. If w
         do ii = 1,ub
-          
+
            ! Check if structured regular..
            if (abs(lon(1,1) - lon(1,nyp)) < 1d-6) then
               regular_grid = .true.
-              if(.not.allocated(lonv).and..not.allocated(latv)) then 
+              if(.not.allocated(lonv).and..not.allocated(latv)) then
               allocate(lonv(nxp),latv(nyp))
                endif
               lonv = lon(:,1)
               latv = lat(1,:)
-            
-           else       
-              regular_grid = .false. 
+
+           else
+              regular_grid = .false.
               ! Convert point matrices to 2 X (NXP*NYP) point vector
               if(.not.allocated(xy)) then
               allocate(XY(2,nxp*nyp))
@@ -8878,7 +8878,7 @@ C----------------------------------------------------------------------
                  enddo
               enddo
               ! Create the search tree
-              tree => kdtree2_create(XY) 
+              tree => kdtree2_create(XY)
            endif
            ! Loop over each node and interpolate
            do i = 1,np
@@ -8906,7 +8906,7 @@ C----------------------------------------------------------------------
             endif
 
         enddo
-      
+
        END SUBROUTINE CALC_inset_wts
 
 C------------------------------------------------------------------------
@@ -8914,29 +8914,29 @@ C------------------------------------------------------------------------
 
 C---------------------------------------------------------------------------------------
         USE MESH, ONLY : NP
-        IMPLICIT NONE 
-        
-         
-        INTEGER :: i 
+        IMPLICIT NONE
+
+
+        INTEGER :: i
         REAL(8), INTENT(IN) :: InsetPData(:,:), InsetUData(:,:), InsetVData(:,:)
-        
+
 
         ! Doing the interpolation from inset grid to finite ele grid
         do i = 1,np
          if (inset_indp(1,1,i) < 0) then
             PRN2(i) = PRN2(i)     !Keeping the background global pressure
          else
-                  
-            PRN2(i) = (InsetPData(inset_indp(1,1,i),inset_indp(1,2,i))*inset_weight(1,1,i) + 
+
+            PRN2(i) = (InsetPData(inset_indp(1,1,i),inset_indp(1,2,i))*inset_weight(1,1,i) +
      &            InsetPData(inset_indp(1,3,i),inset_indp(1,2,i))*inset_weight(1,2,i)      +
      &            InsetPData(inset_indp(1,1,i),inset_indp(1,4,i))*inset_weight(1,3,i)      +
-     &            InsetPData(inset_indp(1,3,i),inset_indp(1,4,i))*inset_weight(1,4,i) )  
+     &            InsetPData(inset_indp(1,3,i),inset_indp(1,4,i))*inset_weight(1,4,i) )
      &              / rhoWat0g
          endif
          if (inset_indp(ub,1,i) < 0) then
             WVNX2(i) = WVNX2(i); WVNY2(i) = WVNY2(i)  !Keeping the background global wind
          else
-            
+
             WVNX2(i) =InsetUData(inset_indp(1,1,i),inset_indp(1,2,i))*inset_weight(1,1,i) +
      &             InsetUData(inset_indp(1,3,i),inset_indp(1,2,i))*inset_weight(1,2,i)    +
      &             InsetUData(inset_indp(1,1,i),inset_indp(1,4,i))*inset_weight(1,3,i) +
@@ -8948,36 +8948,36 @@ C-------------------------------------------------------------------------------
      &             InsetVData(inset_indp(1,1,i),inset_indp(1,4,i))*inset_weight(1,3,i)    +
      &             InsetVData(inset_indp(1,3,i),inset_indp(1,4,i))*inset_weight(1,4,i)
          endif
-        enddo 
-      
-      
-        RETURN 
- 
+        enddo
+
+
+        RETURN
+
 C-----------------------------------------------------------------------------------------
 
-       END SUBROUTINE INTERP_INSET_GRID 
+       END SUBROUTINE INTERP_INSET_GRID
 C-----------------------------------------------------------------------------------
 
 
       SUBROUTINE READ_INSET_LATLON(ncfile,NCIDf,lat_ins,
      &                  InsetLatDim,InsetLat,lon_ins,InsetLonDim,InsetLon,nxp,nyp)
-            
+
 #ifdef ADCNETCDF
       use netcdf
       use netcdf_error, only: check_err
 #endif
 #ifdef CMPI
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
 #endif
       USE SIZES, ONLY : MYPROC, GBLINPUTDIR
 
-     
-      IMPLICIT NONE 
+
+      IMPLICIT NONE
 
       CHARACTER(len=*), INTENT(IN) :: ncfile  ! NetCDF file name
       REAL, ALLOCATABLE, DIMENSION(:,:), INTENT(OUT) :: lat_ins,lon_ins
-    
+
       CHARACTER(LEN=80), INTENT(IN)  :: InsetLat, InsetLon, InsetLatDim,InsetLonDim
       INTEGER, INTENT(OUT) :: NXP, NYP
       INTEGER              :: NCIDf
@@ -8986,24 +8986,24 @@ C-------------------------------------------------------------------------------
 
          LOG_SCOPE_TRACED("READ_INSET_LATLON", WIND_TRACING)
 #ifdef ADCNETCDF
-        
-      
+
+
         CALL Check_err(NF90_OPEN(ncfile,nf90_nowrite,NCIDf))
-        
+
          call Check_err(NF90_INQ_DIMID(ncidf,InsetLatDim,Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(ncidf,Temp_ID,
      &                                         len=NYP))
          call Check_err(NF90_INQ_DIMID(ncidf,InsetLonDim,Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(ncidf,Temp_ID,
      &                                         len=NXP))
-         
+
          allocate(lon_ins(NXP,NYP),lat_ins(NXP,NYP))
 
-        
+
          call Check_err(NF90_INQ_VARID(ncidf,InsetLat,Lat_ID))
          call Check_err(nf90_inquire_variable(ncidf,Lat_ID,ndims=ndims))
          call Check_err(NF90_INQ_VARID(ncidf,InsetLon,Lon_ID))
-         
+
          if (ndims.eq.2) then
             call Check_err(NF90_GET_VAR(ncidf,Lat_ID,lat_ins))
             call Check_err(NF90_GET_VAR(ncidf,Lon_ID,lon_ins))
@@ -9017,8 +9017,8 @@ C-------------------------------------------------------------------------------
                lon_ins(:,i) = lon_ins(:,1)
             enddo
          endif
-          
-    
+
+
         CALL Check_err(NF90_CLOSE(NCIDf))
 
 
@@ -9031,8 +9031,8 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       SUBROUTINE READNWS14LatLon(fileN,lat,lon,invN,var,ncid)
 C----------------------------------------------------------------------
-C     CPB 10/2023: Added to make NWS = 14 more more readable. Simply 
-C     calls the appropriate subroutine based on the filetype we are 
+C     CPB 10/2023: Added to make NWS = 14 more more readable. Simply
+C     calls the appropriate subroutine based on the filetype we are
 C     using.
 C----------------------------------------------------------------------
       use mod_terminate, only: terminate, ADCIRC_EXIT_FAILURE
@@ -9063,7 +9063,7 @@ C----------------------------------------------------------------------
       use wgrib2api
 #endif
 #ifdef CMPI
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
 #endif
       USE SIZES, ONLY : MYPROC
@@ -9079,7 +9079,7 @@ C----------------------------------------------------------------------
       ! read in on core 0
       IF (MYPROC.EQ.0) THEN
          iret = -1; iter = 0
-         do while (iret.le.0.and.iter < 10) 
+         do while (iret.le.0.and.iter < 10)
             if (iter > 0) then
                call logMessage(WARNING,'Trying to read again '//var)
                call sleep(5)
@@ -9130,7 +9130,7 @@ C----------------------------------------------------------------------
       use netcdf_error, only: check_err
 #endif
 #ifdef CMPI
-      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray, 
+      USE GL2LOC_MAPPING ,ONLY : BcastToLocal_2DRealArray,
      &                           BcastToLocal_Int
 #endif
       USE SIZES, ONLY : MYPROC
@@ -9144,11 +9144,11 @@ C----------------------------------------------------------------------
 
 #ifdef ADCNETCDF
       IF (MYPROC.EQ.0) THEN
-              
+
          IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN
-           call Check_err(NF90_OPEN(FileN,nf90_nowrite,ncid))  
-         END IF      
-                
+           call Check_err(NF90_OPEN(FileN,nf90_nowrite,ncid))
+         END IF
+
          call Check_err(NF90_INQ_DIMID(ncid,Latdim,Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(ncid,Temp_ID,
      &                                         len=NY))
@@ -9179,8 +9179,8 @@ C----------------------------------------------------------------------
             enddo
          endif
 
-         IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN 
-           call Check_err(NF90_CLOSE(ncid))  
+         IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN
+           call Check_err(NF90_CLOSE(ncid))
          END IF
 
       ENDIF
@@ -9237,8 +9237,8 @@ C----------------------------------------------------------------------
 #endif
 
          IF ( .NOT. read_NWS14_NetCdf_using_core_0 ) THEN
-            call Check_err(NF90_OPEN(FileN,nf90_nowrite,NC_ID))  
-         END IF     
+            call Check_err(NF90_OPEN(FileN,nf90_nowrite,NC_ID))
+         END IF
 
          call Check_err(NF90_INQ_DIMID(NC_ID,Tdim,Temp_ID))
          call Check_err(NF90_INQUIRE_DIMENSION(NC_ID,Temp_ID,
@@ -9253,7 +9253,7 @@ C----------------------------------------------------------------------
             call Check_err(NF90_INQ_VARID(NC_ID,Tvar,Temp_ID))
             call Check_err(NF90_GET_VAR(NC_ID,Temp_ID,TimeStr))
             ! Determine the first timestep index
-            str_date = CurDT%strftime(trim(Tformat)) 
+            str_date = CurDT%strftime(trim(Tformat))
             do NT_OUT = 1,TL
                if (trim(str_date).eq.TimeStr(NT_OUT)) exit
             enddo
@@ -9322,7 +9322,7 @@ C----------------------------------------------------------------------
       if (iret.eq.0) then
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,message='Cound not find message when reading '
      &                         //trim(var)//' in '//trim(fileN)//'.')
-      elseif (iret.lt.0) then 
+      elseif (iret.lt.0) then
          call terminate(exit_code=ADCIRC_EXIT_FAILURE,message='Fatal error when reading '
      &                         //trim(var)//' in '//trim(fileN)//'.')
       elseif (iret.gt.1) then
@@ -9336,11 +9336,11 @@ C-----------------------------------------------------------------------
 C.....END WJP (NWS = 14) ..............................................
 #endif
 
-C--------------------------------------------------------------------- 
+C---------------------------------------------------------------------
       SUBROUTINE CLOSE_MET_FILES()
         use global, only: NWS, NCICE
         USE SIZES, ONLY : MYPROC
-    
+
 #ifdef ADCNETCDF
         use netcdf
         use netcdf_error, only: check_err
@@ -9348,11 +9348,11 @@ C---------------------------------------------------------------------
 
         IMPLICIT NONE
 
-#ifdef DATETIME        
+#ifdef DATETIME
 #ifdef ADCNETCDF
         IF ( NWS == 14 ) THEN
-          IF ( (.not. grb2flag) .AND. read_NWS14_NetCdf_using_core_0 )  THEN   
-             IF ( MYPROC == 0 ) THEN     
+          IF ( (.not. grb2flag) .AND. read_NWS14_NetCdf_using_core_0 )  THEN
+             IF ( MYPROC == 0 ) THEN
                call Check_err(NF90_CLOSE(PfileNCID))
                call Check_err(NF90_CLOSE(WfileNCID))
                call Check_err(NF90_CLOSE(Wfile1NCID))
@@ -9361,19 +9361,19 @@ C---------------------------------------------------------------------
                   call Check_err(NF90_CLOSE(CfileNCID))
                ENDIF
              ENDIF
-          END IF 
+          END IF
         END IF
 #endif
-#endif        
+#endif
 
         RETURN ;
-      END SUBROUTINE CLOSE_MET_FILES        
+      END SUBROUTINE CLOSE_MET_FILES
 C---------------------------------------------------------------------
 
- 
+
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   W I N D L I M I T E R 
+C     S U B R O U T I N E   W I N D L I M I T E R
 C-----------------------------------------------------------------------
 
 C.... DMW 202207 tail off wind forcing in very shallow water using a tanh,
@@ -9381,12 +9381,12 @@ C.... as a function of water column height.
 
       subroutine windLimiter(H,fwind)
       use global, only : h0
-      
+
       IMPLICIT NONE
-      
+
       REAL(8), intent(in) :: H
       REAL(8), intent(out) :: fwind
-      
+
       LOG_SCOPE_TRACED("windLimiter", WIND_TRACING)
       fwind = 1.d0
       IF ((H .LE. 4.d0*H0) .AND. (H .GT. H0)) THEN

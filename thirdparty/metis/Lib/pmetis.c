@@ -19,18 +19,18 @@
 /*************************************************************************
 * This function is the entry point for PMETIS
 **************************************************************************/
-void METIS_PartGraphRecursive(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, 
-                              idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts, 
+void METIS_PartGraphRecursive(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt,
+                              idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts,
                               int *options, int *edgecut, idxtype *part)
 {
   int i;
   float *tpwgts;
 
   tpwgts = fmalloc(*nparts, "KMETIS: tpwgts");
-  for (i=0; i<*nparts; i++) 
+  for (i=0; i<*nparts; i++)
     tpwgts[i] = 1.0/(1.0*(*nparts));
 
-  METIS_WPartGraphRecursive(nvtxs, xadj, adjncy, vwgt, adjwgt, wgtflag, numflag, nparts, 
+  METIS_WPartGraphRecursive(nvtxs, xadj, adjncy, vwgt, adjwgt, wgtflag, numflag, nparts,
                             tpwgts, options, edgecut, part);
 
   free(tpwgts);
@@ -42,8 +42,8 @@ void METIS_PartGraphRecursive(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtyp
 * This function is the entry point for PWMETIS that accepts exact weights
 * for the target partitions
 **************************************************************************/
-void METIS_WPartGraphRecursive(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt, 
-                               idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts, 
+void METIS_WPartGraphRecursive(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxtype *vwgt,
+                               idxtype *adjwgt, int *wgtflag, int *numflag, int *nparts,
                                float *tpwgts, int *options, int *edgecut, idxtype *part)
 {
   int i, j;
@@ -73,7 +73,7 @@ void METIS_WPartGraphRecursive(int *nvtxs, idxtype *xadj, idxtype *adjncy, idxty
   ctrl.maxvwgt = 1.5*(idxsum(*nvtxs, graph.vwgt)/ctrl.CoarsenTo);
 
   mytpwgts = fmalloc(*nparts, "PWMETIS: mytpwgts");
-  for (i=0; i<*nparts; i++) 
+  for (i=0; i<*nparts; i++)
     mytpwgts[i] = tpwgts[i];
 
   InitRandom(-1);
@@ -215,7 +215,7 @@ void SplitGraphPart(CtrlType *ctrl, GraphType *graph, GraphType *lgraph, GraphTy
   ASSERT(bndptr != NULL);
 
   rename = idxwspacemalloc(ctrl, nvtxs);
-  
+
   snvtxs[0] = snvtxs[1] = snedges[0] = snedges[1] = 0;
   for (i=0; i<nvtxs; i++) {
     k = where[i];
@@ -228,8 +228,8 @@ void SplitGraphPart(CtrlType *ctrl, GraphType *graph, GraphType *lgraph, GraphTy
   svwgt[0] = lgraph->vwgt;
   snvwgt[0] = lgraph->nvwgt;
   sadjwgtsum[0] = lgraph->adjwgtsum;
-  sadjncy[0] = lgraph->adjncy; 	
-  sadjwgt[0] = lgraph->adjwgt; 
+  sadjncy[0] = lgraph->adjncy;
+  sadjwgt[0] = lgraph->adjwgt;
   slabel[0] = lgraph->label;
 
   SetUpSplitGraph(graph, rgraph, snvtxs[1], snedges[1]);
@@ -237,8 +237,8 @@ void SplitGraphPart(CtrlType *ctrl, GraphType *graph, GraphType *lgraph, GraphTy
   svwgt[1] = rgraph->vwgt;
   snvwgt[1] = rgraph->nvwgt;
   sadjwgtsum[1] = rgraph->adjwgtsum;
-  sadjncy[1] = rgraph->adjncy; 	
-  sadjwgt[1] = rgraph->adjwgt; 
+  sadjncy[1] = rgraph->adjncy;
+  sadjwgt[1] = rgraph->adjwgt;
   slabel[1] = rgraph->label;
 
   snvtxs[0] = snvtxs[1] = snedges[0] = snedges[1] = 0;
@@ -254,7 +254,7 @@ void SplitGraphPart(CtrlType *ctrl, GraphType *graph, GraphType *lgraph, GraphTy
       auxadjwgt = sadjwgt[mypart] + snedges[mypart] - istart;
       for(j=istart; j<iend; j++) {
         auxadjncy[j] = adjncy[j];
-        auxadjwgt[j] = adjwgt[j]; 
+        auxadjwgt[j] = adjwgt[j];
       }
       snedges[mypart] += iend-istart;
     }
@@ -266,7 +266,7 @@ void SplitGraphPart(CtrlType *ctrl, GraphType *graph, GraphType *lgraph, GraphTy
         k = adjncy[j];
         if (where[k] == mypart) {
           auxadjncy[l] = k;
-          auxadjwgt[l++] = adjwgt[j]; 
+          auxadjwgt[l++] = adjwgt[j];
         }
         else {
           sum -= adjwgt[j];
@@ -290,7 +290,7 @@ void SplitGraphPart(CtrlType *ctrl, GraphType *graph, GraphType *lgraph, GraphTy
   for (mypart=0; mypart<2; mypart++) {
     iend = sxadj[mypart][snvtxs[mypart]];
     auxadjncy = sadjncy[mypart];
-    for (i=0; i<iend; i++) 
+    for (i=0; i<iend; i++)
       auxadjncy[i] = rename[auxadjncy[i]];
   }
 
@@ -338,4 +338,3 @@ void SetUpSplitGraph(GraphType *graph, GraphType *sgraph, int snvtxs, int snedge
 
   sgraph->label	= idxmalloc(snvtxs, "SetUpSplitGraph: sgraph->label");
 }
-

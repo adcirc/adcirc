@@ -2,17 +2,17 @@
 !
 ! ADCIRC - The ADvanced CIRCulation model
 ! Copyright (C) 1994-2025 R.A. Luettich, Jr., J.J. Westerink
-! 
+!
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU Lesser General Public License as published by
 ! the Free Software Foundation, either version 3 of the License, or
 ! (at your option) any later version.
-! 
+!
 ! This program is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU Lesser General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
@@ -52,10 +52,10 @@
          contains
 
          subroutine initialize_soln(x)
-         type (Soln_t) :: x 
+         type (Soln_t) :: x
          x % maxsize = 0
 
-         end subroutine 
+         end subroutine
 
          subroutine build_solnfile_entry(sf, filename,varname,
      &     rectype, etaType, lun)
@@ -246,7 +246,7 @@
               print 1010, (nclist(k),k= 1,icount)
             endif
           endif
-          
+
 
 
         enddo  ! timesteps
@@ -297,7 +297,7 @@
         call report("failed", "Array size is zero in: "//fname,
      $      .TRUE.)
       endif
-        
+
       call resize(nsize, rectype, x)
 
       end subroutine
@@ -349,7 +349,7 @@
       return
   100 continue
       backspace lun
-  150 continue 
+  150 continue
       return
   200 continue
       eof = .TRUE.
@@ -358,7 +358,7 @@
  1200 format(9x,i8,12x, i8)
  1300 format(2x, i8, 2x, E20.10)
       end function
-      
+
 !-------------------------------------------------------------------------------
 !  Read array 2
 !-------------------------------------------------------------------------------
@@ -379,7 +379,7 @@
         read(lun, 1100, end = 200) x % time, x % it, nitems
         x % a(1: x % nsize) = 0.0
         x % b(1: x % nsize) = 0.0
-        do i = 1, nitems    
+        do i = 1, nitems
           read(lun, *, end = 150, err = 100) iglobal, x1, x2
           x % a(iglobal)  = x1
           x % b(iglobal)  = x2
@@ -401,7 +401,7 @@
   100 continue
       backspace lun
   150 continue
-      return 
+      return
   200 continue
       eof = .TRUE.
 
@@ -423,15 +423,15 @@
         x % maxsize = max(1,nsize)
         allocate( x % a(nsize))
         allocate( x % b(nsize))
-        allocate( x % nc(nsize))   
+        allocate( x % nc(nsize))
         print *, 'allocating nsize:', nsize
       else if (x % maxsize < nsize) then
         deallocate (x % a)
         deallocate (x % b)
-        deallocate (x % nc) 
+        deallocate (x % nc)
         allocate( x % a(nsize))
         allocate( x % b(nsize))
-        allocate( x % nc(nsize))   
+        allocate( x % nc(nsize))
         x % maxsize = max(1,nsize)
         print *, 'reallocating nsize:', nsize
       end if
@@ -720,5 +720,3 @@
       enddo
       return
       end function icount
-
-

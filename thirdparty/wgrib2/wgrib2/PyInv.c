@@ -26,11 +26,11 @@ int f_pyinv(ARG0)
     f_lev(call_ARG0(inv_out, NULL));
     strcat(inv_out, item_deliminator);
     inv_out += strlen(inv_out);
-    
+
     f_ftime(call_ARG0(inv_out, NULL));
     strcat(inv_out, item_deliminator);
     inv_out += strlen(inv_out);
-    
+
     inv_out += sprintf(inv_out, "pyinv={");
     /* Section 0 */
     {
@@ -62,7 +62,7 @@ int f_pyinv(ARG0)
         inv_out += sprintf(inv_out, ",'localtab':%d", GB2_LocalTable(sec));
         reftime(sec, &year, &month, &day, &hour, &minute, &second);
         inv_out += sprintf(inv_out, ",'reftime':'%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2d'",
-                           year, month, day, hour, minute, second); 
+                           year, month, day, hour, minute, second);
     }
     /* Section 3 */
     {
@@ -86,7 +86,7 @@ int f_pyinv(ARG0)
         float val1, val2;
         int undef_val1, undef_val2;
         char desc[STRING_SIZE], units[STRING_SIZE];
-        getName(sec, 2, NULL, NULL, desc, units); 
+        getName(sec, 2, NULL, NULL, desc, units);
         inv_out += sprintf(inv_out, ",'long_name':'%s'", desc);
         inv_out += sprintf(inv_out, ",'units':'%s'", units);
         inv_out += sprintf(inv_out, ",'pdt':%d", code_table_4_0(sec));

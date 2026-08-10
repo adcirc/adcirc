@@ -41,7 +41,7 @@
  *    msg = rd_grib_msg(input, position, &len)
  *
  *    input is the file
- *    position is the byte location (should be set to zero for first record 
+ *    position is the byte location (should be set to zero for first record
  *    msg = location of message
  *
  *    to get next record: *  position = position + len;
@@ -211,7 +211,7 @@ int fseek_file(struct seq_file *file, long position, int whence) {
 	    iret = fread_file(&(buffer[0]), (size_t) i, (size_t) 1, file);
 	    if (iret != 1) fatal_error("fseek_file: pipe read failed","");
 	    position -= i;
-	}    
+	}
     }
     else {
 	fatal_error("fseek_file: %s cannot seek",file->filename);
@@ -291,7 +291,7 @@ void fflush_file(struct seq_file *file) {
    return;
 }
 
-unsigned char *rd_grib2_msg_seq_file(unsigned char **sec, struct seq_file *input, long int *pos, 
+unsigned char *rd_grib2_msg_seq_file(unsigned char **sec, struct seq_file *input, long int *pos,
         unsigned long int *len, int *num_submsgs) {
     int i, c, c1, c2, c3, c4;
     size_t j, len_grib;
@@ -340,7 +340,7 @@ unsigned char *rd_grib2_msg_seq_file(unsigned char **sec, struct seq_file *input
 
 	/* fill in the size 8-15, unget buffer is empty */
 
-	for (i = 0; i < 8; i++) { 
+	for (i = 0; i < 8; i++) {
 	    input->buffer[8+i] = c = getchar_seq_file(input);
 	    if (c == EOF) {
 	    	*len = 0;
@@ -357,13 +357,13 @@ unsigned char *rd_grib2_msg_seq_file(unsigned char **sec, struct seq_file *input
     if (input->buffer_size < len_grib) {
         input->buffer_size = (len_grib*5)/4;
         input->buffer = (unsigned char *) realloc((void *) input->buffer, input->buffer_size);
-	if (input->buffer == NULL) fatal_error("rd_grib2_msg_seq_file for %s: grib message size %lu too large", 
+	if (input->buffer == NULL) fatal_error("rd_grib2_msg_seq_file for %s: grib message size %lu too large",
 	    input->filename,input->buffer_size);
     }
 
     j=fread_file(input->buffer+16, sizeof (unsigned char), len_grib-16, input);
     input->pos += j;
-    
+
     if (j != len_grib-16) fatal_error("rd_grib2_msg_seq_file for %s, read outside of file, bad grib file",input->filename);
 
     sec[0] = input->buffer;

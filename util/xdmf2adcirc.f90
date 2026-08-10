@@ -1,9 +1,9 @@
 !-------------------------------------------------------------------------
 ! xdmf2adcirc.f90
 !-------------------------------------------------------------------------
-! Author: Jason Fleming (jason.fleming@seahorsecoastal.com) 
+! Author: Jason Fleming (jason.fleming@seahorsecoastal.com)
 !
-! Convert XDMF data to ascii adcirc data. 
+! Convert XDMF data to ascii adcirc data.
 !---------------------------------------------------------------------
 !---------------------------------------------------------------------
 program xdmf2adcirc
@@ -14,10 +14,10 @@ use adcmesh
 use nodalattr
 use control
 implicit none
-include 'Xdmf.f' 
-! 
+include 'Xdmf.f'
+!
 character(1024) :: datafilename ! full path name of the xmf file to be converted
-character(1024) :: controlFileName  ! full path name of the adcirc fort.15 for metadata  
+character(1024) :: controlFileName  ! full path name of the adcirc fort.15 for metadata
 integer*8 :: xdmfFortranObj  ! represents pointer to the XdmfFortran object
 integer :: attributeType     ! attribute type
 integer :: startIndex
@@ -28,7 +28,7 @@ integer :: attributeDataType
 integer :: attributePropertyIndex
 integer :: numAttributes
 integer :: numAttributeProperties
-integer :: unitNumber        ! fortran i/o unit number for ascii data file 
+integer :: unitNumber        ! fortran i/o unit number for ascii data file
 integer :: tsinterval          ! spooling interval in time steps
 real(8) :: tinterval          ! spooling interval in seconds
 integer :: numSnaps          ! unreliable number of datasets in ascii file
@@ -43,15 +43,15 @@ real(8), allocatable :: data_array2(:,:)
 integer :: gridCollectionIndex ! the grid collections are numbered starting from zero
 integer :: informationPropertyIndex !
 !
-! the following four integers act like logicals (1=true, 2=false), and 
-! they control whether the associated data should be opened when a grid 
-! collection is opened  
+! the following four integers act like logicals (1=true, 2=false), and
+! they control whether the associated data should be opened when a grid
+! collection is opened
 integer :: openMaps ! 1 if Maps should be opened within another object
-integer :: openAttributes ! 1 if Attributes should be opened within another object 
+integer :: openAttributes ! 1 if Attributes should be opened within another object
 integer :: openInformations ! 1 if Informations should be opened within another object
 integer :: openSets ! 1 if sets should be opened within another object
 !
-integer :: informationIndex              ! index of the information   
+integer :: informationIndex              ! index of the information
 integer, parameter :: keyLength = 256
 integer, parameter :: valueLength = 256
 integer, parameter :: tagLength = 256
@@ -70,7 +70,7 @@ integer :: infoIndex
 logical :: meshonly
 integer :: typeHolder
 integer :: arrayIndex
-integer :: valueIndex 
+integer :: valueIndex
 integer :: startingIndex
 integer :: gridIndex
 integer :: propertyIndex
@@ -123,7 +123,7 @@ do while (i.lt.argcount)
       meshonly = .true.
    case("--datafile")
       i = i + 1
-      call GET_COMMAND_ARGUMENT(i, datafilename)     
+      call GET_COMMAND_ARGUMENT(i, datafilename)
       write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // &
          " " // trim(datafilename) // "."
    case default
@@ -137,7 +137,7 @@ call xdmfinit(xdmfFortranObj)
 call xdmfRead(xdmfFortranObj, trim(adjustl(datafilename))//char(0))
 !
 !   N O D A L   A T T R I B U T E   D A T A
-! 
+!
 if (trim(datafilename).eq.'fort.13.xmf') then
    call readNodalAttributesXDMF(xdmfFortranObj)
    datafilename = 'xdmf_fort.13'
@@ -157,7 +157,7 @@ if (numGridCollections.gt.0) then
    openAttributes = 1
    openInformations = 1
    openSets = 1
-   call xdmfOpenDomainGridCollection(xdmfFortranObj, gridCollectionIndex, & 
+   call xdmfOpenDomainGridCollection(xdmfFortranObj, gridCollectionIndex, &
       openMaps, openAttributes, openInformations, openSets)
    !
    ! determine the type of grid collection we are working with
@@ -171,13 +171,13 @@ if (numGridCollections.gt.0) then
        write(6,'("WARNING: The grid collection type code ",i0," is not supported by xdmf2adcirc.")') gridCollectionType
    end select
    write(6,'(a)') 'INFO: The grid collection type is ' // &
-      trim(gridCollectionTypeString) // '.' 
+      trim(gridCollectionTypeString) // '.'
    call xdmfRetrieveGridCollectionNumGrids(xdmfFortranObj, XDMF_GRID_TYPE_UNSTRUCTURED,  numGrids)
    write(6,'("INFO: Number of Grids contained in the GridCollection: ",i0)'), numGrids
 endif
 !
 !    C O N T R O L   ( F O R T . 1 5 )   D A T A
-!  
+!
 !call xdmfRetrieveNumInformation(xdmfFortranObj, numInformations)
 !write(6,'("DEBUG: Number of Information items for this GridCollection : ",i0,".")') numInformations
 !
@@ -194,12 +194,12 @@ endif
 !      write(6,'("INFO: Information ",i0," Property ",i0," Key: ",a,".")') &
 !         i, p, trim(itemKey)
 !      write(6,'("INFO: Information ",i0," Property ",i0," Value: ",a,".")') &
-!         i, p, trim(itemValue)   
+!         i, p, trim(itemValue)
 !   end do
-!end do 
+!end do
 
 !
-!   M E S H   D A T A 
+!   M E S H   D A T A
 !
 call readMeshXDMF(xdmfFortranObj)
 meshFileName = 'xdmf_fort.14'
@@ -207,10 +207,10 @@ call writeMesh()
 if (meshonly.eqv..true.) then
    call xdmfClose(xdmfFortranObj)
    stop
-endif 
+endif
 
 !
-!  A D C I R C   O U T P U T   D A T A 
+!  A D C I R C   O U T P U T   D A T A
 !
 call xdmfClearAttributes(xdmfFortranObj)
 gridIndex = 0
@@ -228,7 +228,7 @@ write(6,'("DEBUG: Grid ",i0," of GridCollection ",i0," is named ",a,".")') &
 call xdmfRetrieveNumAttributes(xdmfFortranObj, numAttributes)
 write(6,'("INFO: Grid ",i0," contains ",i0," attributes.")') gridIndex, numAttributes
 do attributeIndex=0, numAttributes - 1
-   call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  & 
+   call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  &
       myAttributeName, nameLength)
    call replaceNullsWithSpaces(myAttributeName)
    write(6,'("INFO: Grid ",i0," Attribute ",i0," is named ",a)') gridIndex, attributeIndex, trim(myAttributeName)
@@ -266,7 +266,7 @@ do attributeIndex=0, numAttributes - 1
    case("wind_max")
       write(6,'(a)') 'INFO: Preparing to write an ADCIRC maximum wind speed file.'
       ascii_datafile_name = "maxwvel.63"
-      num_components =  1     
+      num_components =  1
       exit
    case("dir")
       write(6,'(a)') 'INFO: Preparing to write a mean wave direction file.'
@@ -296,7 +296,7 @@ do attributeIndex=0, numAttributes - 1
    case("swan_TPS_max")
       write(6,'(a)') 'INFO: Preparing to write an maximum relative peak wave period file.'
       ascii_datafile_name = "swan_TPS_max.63"
-      num_components = 1                              
+      num_components = 1
       exit
    case("depth")
       ! do nothing, this will be written with the mesh
@@ -345,15 +345,15 @@ do gridIndex=0,numGrids-1
    call xdmfRetrieveNumAttributes(xdmfFortranObj, numAttributes)
    ! looking for the attribute of interest
    do attributeIndex=0, numAttributes - 1
-      call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  & 
+      call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  &
          attributeName, nameLength)
       call replaceNullsWithSpaces(attributeName)
       ! is this the attribute we are looking for?
       if (trim(attributeName).eq.trim(myAttributeName)) then
          ! read the xdmf dataset
-         call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, & 
+         call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, &
             adcirc_data, XDMF_ARRAY_TYPE_FLOAT64, numValues, &
-            startIndex, arrayStride, valueStride) 
+            startIndex, arrayStride, valueStride)
          ! write the dataset to ascii adcirc format
          write(11,2120) timeSec, timeStep
          if (num_components.eq.1) then ! scalar
@@ -363,7 +363,7 @@ do gridIndex=0,numGrids-1
          endif
          if (num_components.eq.2) then ! faux 3-component vector
             do k=1,numValues,3
-               write(11,2453) k, adcirc_data(k), adcirc_data(k+1) 
+               write(11,2453) k, adcirc_data(k), adcirc_data(k+1)
             end do
          endif
       endif
@@ -387,7 +387,7 @@ end program xdmf2adcirc
 !----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-!                     S U B R O U T I N E    
+!                     S U B R O U T I N E
 !        R E A D   N O D A L   A T T R I B U T E S   X D M F
 !-----------------------------------------------------------------------
 ! jgf: Reads all nodal attributes from an XDMF file.
@@ -413,7 +413,7 @@ integer :: numAttributes
 integer :: numInformation
 integer :: numValues
 integer :: openMaps ! 1 if Maps should be opened within another object
-integer :: openAttributes ! 1 if Attributes should be opened within another object 
+integer :: openAttributes ! 1 if Attributes should be opened within another object
 integer :: openInformations ! 1 if Informations should be opened within another object
 integer :: openSets ! 1 if sets should be opened within another object
 integer, parameter :: keyLength = 1024
@@ -446,7 +446,7 @@ write(6,'("INFO: Grid ",i0," contains ",i0," nodal attributes.")') gridIndex, nu
 ! populate the names of the nodal attributes
 nattrCount = 1
 do attributeIndex=0, numAttributes - 1
-   call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  & 
+   call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  &
       itemName, nameLength)
    call replaceNullsWithSpaces(itemName)
    if (trim(itemName).eq.'depth') then
@@ -491,7 +491,7 @@ do informationIndex=0,numInformation-1
    do i=1,numNodalAttributes
       if (trim(itemKey).eq. trim(na(i)%attrName)// ' units') then
          na(i) % units = trim(itemValue)
-      endif  
+      endif
       if (trim(itemKey).eq. trim(na(i)%attrName) // ' default_values') then
          write(6,*) 'default_values'//trim(itemValue)
          read(itemValue,*) (na(i)%defaultVals(j),j=1,na(i)%numVals)
@@ -501,7 +501,7 @@ end do
 !
 ! populate the data
 do attributeIndex=0, numAttributes - 1
-   call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  & 
+   call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  &
       itemName, nameLength)
    call replaceNullsWithSpaces(itemName)
    if (trim(itemName).eq.'depth') then
@@ -514,15 +514,15 @@ do attributeIndex=0, numAttributes - 1
             allocate(na(i)%xdmfArray(numMeshNodes))
             attributeType = XDMF_ATTRIBUTE_TYPE_SCALAR
             numValues = numMeshNodes * na(i) % numVals
-            call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, & 
+            call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, &
                na(i)%xdmfArray, XDMF_ARRAY_TYPE_FLOAT64, numValues, &
                   startIndex, arrayStride, valueStride)
             ! determine the number of nondefault values
             !
-            ! machine precision prevents us from simply checking whether the 
+            ! machine precision prevents us from simply checking whether the
             ! value .ne. the default value
             diff = abs(na(i)%xdmfArray - na(i)%defaultVals(1))
-            na(i)%numNodesNotDefault = count(diff.gt.1.e-6)        
+            na(i)%numNodesNotDefault = count(diff.gt.1.e-6)
             ! now allocate space for the non default values and populate them
             allocate(na(i)%nonDefaultVals(1,na(i)%numNodesNotDefault))
             allocate(na(i)%nonDefaultNodes(na(i)%numNodesNotDefault))
@@ -540,7 +540,7 @@ do attributeIndex=0, numAttributes - 1
             attributeType = XDMF_ATTRIBUTE_TYPE_MATRIX
             numValues = numMeshNodes * na(i) % numVals
             allocate(na(i)%xdmfMatrix(na(i)%numVals,numMeshNodes))
-            call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, & 
+            call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, &
                na(i)%xdmfMatrix, XDMF_ARRAY_TYPE_FLOAT64, numValues, &
                   startIndex, arrayStride, valueStride)
             ! determine the number of nondefault values
@@ -553,7 +553,7 @@ do attributeIndex=0, numAttributes - 1
                enddo
             enddo
             ! now allocate space for the non default values and populate them
-            na(i)%numNodesNotDefault = count(areDefaultValues.eqv..false.) 
+            na(i)%numNodesNotDefault = count(areDefaultValues.eqv..false.)
             allocate(na(i)%nonDefaultVals(na(i)%numVals,na(i)%numNodesNotDefault))
             allocate(na(i)%nonDefaultNodes(na(i)%numNodesNotDefault))
             nonDefaultCount = 1
@@ -566,7 +566,7 @@ do attributeIndex=0, numAttributes - 1
                   end do
                   nonDefaultCount = nonDefaultCount + 1
                endif
-            end do 
+            end do
          endif
          exit
       endif
@@ -577,9 +577,9 @@ end subroutine readNodalAttributesXDMF
 !-----------------------------------------------------------------------
 
 !----------------------------------------------------------------------
-!     S U B R O U T I N E   R E A D   M E S H   X D M F 
+!     S U B R O U T I N E   R E A D   M E S H   X D M F
 !----------------------------------------------------------------------
-! Reads the mesh node table, element table, and boundaries from an 
+! Reads the mesh node table, element table, and boundaries from an
 ! XDMF file, allocating memory along the way and populating adcirc-style
 ! data structures.
 !----------------------------------------------------------------------
@@ -587,7 +587,7 @@ subroutine readMeshXDMF(xdmfFortranObj)
 use adcmesh
 implicit none
 include 'Xdmf.f'
-integer*8, intent(in) :: xdmfFortranObj 
+integer*8, intent(in) :: xdmfFortranObj
 integer, allocatable :: xdmf_nm(:,:)   ! 0-offset connectivity array
 integer, allocatable :: setSize(:)
 integer, parameter :: keyLength = 256
@@ -641,7 +641,7 @@ character(len=256) :: setTypeString
 character(len=256) :: gridName
 integer :: numContained
 integer :: numInformations
-integer :: openAttributes 
+integer :: openAttributes
 integer :: openInformations
 integer :: openMaps
 integer :: openSets
@@ -663,7 +663,7 @@ openSets = 1
 !
 call xdmfRetrieveNumDomainGridCollections(xdmfFortranObj, numGridCollections)
 if (numGridCollections.gt.0) then
-   write(6,'(a)') 'INFO: Opening the first Grid in the GridCollection.' 
+   write(6,'(a)') 'INFO: Opening the first Grid in the GridCollection.'
    call xdmfOpenGridCollectionGrid(xdmfFortranObj, XDMF_GRID_TYPE_UNSTRUCTURED,  &
       gridIndex, openMaps, openAttributes, openInformations, openSets)
    write(6,'(a)') 'INFO: Reading the Grid name.'
@@ -674,13 +674,13 @@ else
    call xdmfOpenDomainGrid(xdmfFortranObj, XDMF_GRID_TYPE_UNSTRUCTURED, &
       gridIndex, openMaps, openAttributes, openInformations, openSets)
    call xdmfRetrieveDomainGridName(xdmfFortranObj, XDMF_GRID_TYPE_UNSTRUCTURED, &
-      gridIndex, gridName, nameLength)    
+      gridIndex, gridName, nameLength)
 endif
 call replaceNullsWithSpaces(gridName)
 agrid(1:80) = gridName(1:80)
 
 !
-!  S I Z E S 
+!  S I Z E S
 !
 call xdmfRetrieveGeometryNumPoints(xdmfFortranObj, np)
 write(6,'("INFO: The Geometry contains ",i0," points (nodes).")') np
@@ -690,13 +690,13 @@ write(6,'("INFO: The Topology contains ",i0," elements.")') ne
 call allocateNodalAndElementalArrays()
 !
 !  N O D E   T A B L E
-! 
+!
 call xdmfRetrieveGeometryType(xdmfFortranObj, geometryType)
 select case(geometryType)
-case(301) 
+case(301)
    geometryTypeString = 'XDMF_GEOMETRY_TYPE_XYZ'
 case(302)
-   geometryTypeString = 'XDMF_GEOMETRY_TYPE_XY'   
+   geometryTypeString = 'XDMF_GEOMETRY_TYPE_XY'
 case default
    write(6,'("WARNING: Unrecognized geometry type ",i0,".")') geometryType
 end select
@@ -711,7 +711,7 @@ call xdmfRetrieveGeometrySize(xdmfFortranObj, numContained)
 allocate(tempCoord(2,np))
 tempCoord = -99999.d0
 write(6,'(a)') 'INFO: Reading nodal table.'
-call xdmfRetrieveGeometryValues(xdmfFortranObj, tempCoord, & 
+call xdmfRetrieveGeometryValues(xdmfFortranObj, tempCoord, &
    geometryDataType, 2*np, startIndex, arrayStride, valueStride)
 !
 xyd(1:2,:) = tempCoord(1:2,:)
@@ -721,13 +721,13 @@ deallocate(tempCoord)
 call xdmfRetrieveNumAttributes(xdmfFortranObj, numAttributes)
 write(6,'("INFO: Grid ",i0," contains ",i0," attributes.")') gridIndex, numAttributes
 do attributeIndex=0, numAttributes - 1
-   call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  & 
+   call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,  &
       itemName, nameLength)
    call replaceNullsWithSpaces(itemName)
    write(6,'("INFO: Grid ",i0," Attribute ",i0," is named ",a)') gridIndex, attributeIndex, trim(itemName)
    select case(trim(itemName))
    case("depth")
-      call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, & 
+      call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, &
       xyd(3,:), XDMF_ARRAY_TYPE_FLOAT64, np, startIndex, arrayStride, valueStride)
    case default
       ! this is not the attribute we're looking for, at least not yet
@@ -740,12 +740,12 @@ if (verbose.eqv..true.) then
          i, (xyd(j,i), j=1,3)
    end do
 end if
-! 
+!
 !  E L E M E N T   T A B L E
 !
 !call xdmfRetrieveTopologyNumProperties(xdmfFortranObj, numContained)
 !print *, "Number of  Topology Properties: ", numTopologyProperties
-!do topologyPropertyIndex=0, numTopologyProperties-1 
+!do topologyPropertyIndex=0, numTopologyProperties-1
 !   call xdmfRetrieveTopologyProperty(xdmfFortranObj, topologyPropertyIndex, itemKey,   keyLength, itemValue, valueLength)
 !    print *, "Key: ", itemKey
 !    print *, "Value: ", itemValue
@@ -765,7 +765,7 @@ call createDataTypeString(topologyDataType, topologyDataTypeString)
 call xdmfRetrieveTopologySize(xdmfFortranObj, numElementValues)
 allocate(xdmf_nm(3,ne))
 call xdmfRetrieveTopologyValues(xdmfFortranObj, xdmf_nm, &
-   XDMF_ARRAY_TYPE_INT32, numElementValues, startIndex, arrayStride, valueStride) 
+   XDMF_ARRAY_TYPE_INT32, numElementValues, startIndex, arrayStride, valueStride)
 !
 ! need to add 1 since XDMF stores arrays as 0 offset but ADCIRC reads
 ! them as 1 offset
@@ -798,7 +798,7 @@ allocate(boundaryTypes(0:numSets-1))
 !
 ! count the different types of boundaries for use in memory allocation
 !
-!write(6,'("DEBUG: Counting the various boundary types.")') 
+!write(6,'("DEBUG: Counting the various boundary types.")')
 numSimpleFluxBoundaries = 0
 numExternalFluxBoundaries = 0
 numInternalFluxBoundaries = 0
@@ -812,11 +812,11 @@ do setIndex=0, numSets-1
    call xdmfRetrieveNumAttributes(xdmfFortranObj, numAttributes)
    firstSetAttributeIndex(setIndex) = numAttributes
    !write(6,'("INFO: Opening set ",i0,".")') setIndex
-   call xdmfOpenSet(xdmfFortranObj, setIndex, openAttributes, openInformations) 
+   call xdmfOpenSet(xdmfFortranObj, setIndex, openAttributes, openInformations)
    !
    ! get the boundary type
    call xdmfRetrieveNumInformation(xdmfFortranObj, numInformations)
-   call xdmfRetrieveInformation(xdmfFortranObj, numInformations-1, itemKey, & 
+   call xdmfRetrieveInformation(xdmfFortranObj, numInformations-1, itemKey, &
       keyLength, itemValue, valueLength)
    call replaceNullsWithSpaces(itemValue)
    read(itemValue,*) boundaryTypes(setIndex) ! value of either ibtype_orig or ibtypee
@@ -824,7 +824,7 @@ do setIndex=0, numSets-1
    ! determine the number of nodes on this boundary
    call xdmfRetrieveSetSize(xdmfFortranObj, setSize(setIndex), setIndex)
    !write(6,'("INFO: Set ",i0," contains ",i0," values.")') setIndex, setSize(setIndex)
-   !            
+   !
    call xdmfRetrieveSetNumProperties(xdmfFortranObj, setIndex, numSetProperties)
    do setPropertyIndex=0, numSetProperties-1
       call xdmfRetrieveSetProperty(xdmfFortranObj, setIndex, setPropertyIndex, itemKey, keyLength, itemValue, valueLength)
@@ -852,7 +852,7 @@ do setIndex=0, numSets-1
             numInternalFluxBoundariesWithPipes = numInternalFluxBoundariesWithPipes + 1
          case default
             write(6,'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")'), boundaryTypes(setIndex)
-         end select         
+         end select
       case("Node")
          ! do nothing, this property simply indicates that the boundaries
          ! are defined by lists of nodes
@@ -860,30 +860,30 @@ do setIndex=0, numSets-1
          write(6,'("WARNING: Unrecognized set property ",a,".")') trim(itemValue)
       end select
    end do
-end do     
-! 
-! Now that we know how many of each boundary type we have, we can 
-! allocate memory to hold the data/parameters for each boundary of 
+end do
+!
+! Now that we know how many of each boundary type we have, we can
+! allocate memory to hold the data/parameters for each boundary of
 ! each type
 write(6,'("INFO: Number of elevation boundaries : ",i0)') nope
 write(6,'("INFO: Number of elevation boundary nodes : ",i0)') neta
 write(6,'("INFO: Total number of flux boundaries : ",i0)') nbou
 write(6,'("INFO: Total number of flux boundary nodes : ",i0)') nvel
 
-write(6,'("INFO: Number of simple flux boundaries : ",i0)') numSimpleFluxBoundaries   
-write(6,'("INFO: Number of external flux boundaries : ",i0)') numExternalFluxBoundaries   
+write(6,'("INFO: Number of simple flux boundaries : ",i0)') numSimpleFluxBoundaries
+write(6,'("INFO: Number of external flux boundaries : ",i0)') numExternalFluxBoundaries
 write(6,'("INFO: Number of internal flux boundaries : ",i0)') numInternalFluxBoundaries
-write(6,'("INFO: Number of internal flux boundaries with cross barrier pipes : ",i0)') numInternalFluxBoundariesWithPipes  
+write(6,'("INFO: Number of internal flux boundaries with cross barrier pipes : ",i0)') numInternalFluxBoundariesWithPipes
 !
-! populate nvdll (adcirc array representing number of nodes on each 
+! populate nvdll (adcirc array representing number of nodes on each
 ! elevation boundary segment) and nvell (adcirc array representing
-! number of nodes on each flux boundary segment) as these variables 
+! number of nodes on each flux boundary segment) as these variables
 ! are used in the allocateBoundaryArrays() subroutine
 call allocateElevationBoundaryLengths()
 call allocateFluxBoundaryLengths()
-elevCount = 1 
+elevCount = 1
 fluxCount = 1
-do setIndex=0, numSets-1 
+do setIndex=0, numSets-1
    if (elevationBoundary(setIndex).eqv..true.) then
       nvdll(elevCount) = setSize(setIndex)
       ibtypee(elevCount) = boundaryTypes(setIndex)
@@ -903,14 +903,14 @@ call allocateBoundaryArrays()
 call allocateAdcircElevationBoundaryArrays()
 call allocateAdcircFluxBoundaryArrays()
 !
-! iterate over all boundaries, read data relevant to each boundary, 
+! iterate over all boundaries, read data relevant to each boundary,
 ! and populate data structures
 elevCount = 1
 fluxCount = 1
 sfCount = 1
 efCount = 1
 ifCount = 1
-ifwpCount = 1      
+ifwpCount = 1
 do setIndex=0,numSets-1
    attStart = firstSetAttributeIndex(setIndex)
    call xdmfRetrieveSetValueType(xdmfFortranObj, setIndex, setDataType)
@@ -921,10 +921,10 @@ do setIndex=0,numSets-1
    if (elevationBoundary(setIndex).eqv..true.) then
       ! get the node numbers on the boundary
       elevationBoundaries(elevCount)%indexNum = elevCount
-      call xdmfRetrieveSetValues(xdmfFortranObj, setIndex, & 
+      call xdmfRetrieveSetValues(xdmfFortranObj, setIndex, &
          elevationBoundaries(elevCount)%nodes, setDataType, setSize(setIndex), &
          startIndex, arrayStride, valueStride)
-      ! convert node numbers from 0 starting index (xdmf-style) to 
+      ! convert node numbers from 0 starting index (xdmf-style) to
       ! 1 starting index (fortran-style)
       elevationBoundaries(elevCount)%nodes = elevationBoundaries(elevCount)%nodes + 1
       ! populate adcirc-native array
@@ -939,35 +939,35 @@ do setIndex=0,numSets-1
          !write(6,'("DEBUG: No attributes for this type of boundary.")')
          simpleFluxBoundaries(sfCount)%indexNum = fluxCount
          ! get node numbers on the boundary
-         call xdmfRetrieveSetValues(xdmfFortranObj, setIndex, & 
+         call xdmfRetrieveSetValues(xdmfFortranObj, setIndex, &
             simpleFluxBoundaries(sfCount)%nodes, setDataType, setSize(setIndex), &
             startIndex, arrayStride, valueStride)
-         ! convert node numbers from 0 starting index (xdmf-style) to 
+         ! convert node numbers from 0 starting index (xdmf-style) to
          ! 1 starting index (fortran-style)
          simpleFluxBoundaries(sfCount)%nodes = simpleFluxBoundaries(sfCount)%nodes + 1
          ! populate adcirc-native array
-         nbvv(fluxCount,1:nvell(fluxCount)) = simpleFluxBoundaries(sfCount)%nodes  
-         sfCount = sfCount + 1           
+         nbvv(fluxCount,1:nvell(fluxCount)) = simpleFluxBoundaries(sfCount)%nodes
+         sfCount = sfCount + 1
       case(3,13,23)
          externalFluxBoundaries(efCount)%indexNum = fluxCount
          ! get the node numbers on the boundary
-         call xdmfRetrieveSetValues(xdmfFortranObj, setIndex, & 
+         call xdmfRetrieveSetValues(xdmfFortranObj, setIndex, &
             externalFluxBoundaries(efCount)%nodes, setDataType, setSize(setIndex), &
             startIndex, arrayStride, valueStride)
-         ! convert node numbers from 0 starting index (xdmf-style) to 
+         ! convert node numbers from 0 starting index (xdmf-style) to
          ! 1 starting index (fortran-style)
          externalFluxBoundaries(efCount)%nodes = externalFluxBoundaries(efCount)%nodes + 1
          !write(6,'("DEBUG: Attributes of this boundary:")')
-         do i=attStart,attStart+1 
+         do i=attStart,attStart+1
             call xdmfRetrieveAttributeName(xdmfFortranObj, i, itemName, nameLength)
             call replaceNullsWithSpaces(itemName)
             select case(trim(itemName))
             case("BARLANHT")                ! barrier height at each node
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   externalFluxBoundaries(efCount)%barlanht, XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case("BARLANCFSP")              ! coefficient of free surface super critical flow
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   externalFluxBoundaries(efCount)%barlancfsp, XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case default
@@ -982,10 +982,10 @@ do setIndex=0,numSets-1
       case(4,24)  ! internal barrier boundary (e.g., subgrid scale levee)
          internalFluxBoundaries(ifCount)%indexNum = fluxCount
          ! get the node numbers on the boundary
-         call xdmfRetrieveSetValues(xdmfFortranObj, setIndex, & 
+         call xdmfRetrieveSetValues(xdmfFortranObj, setIndex, &
             internalFluxBoundaries(ifCount)%nodes, setDataType, setSize(setIndex), &
             startIndex, arrayStride, valueStride)
-         ! convert node numbers from 0 starting index (xdmf-style) to 
+         ! convert node numbers from 0 starting index (xdmf-style) to
          ! 1 starting index (fortran-style)
          internalFluxBoundaries(ifCount)%nodes = internalFluxBoundaries(ifCount)%nodes + 1
          !write(6,'("DEBUG: Attributes of this boundary:")')
@@ -994,19 +994,19 @@ do setIndex=0,numSets-1
             call replaceNullsWithSpaces(itemName)
             select case(trim(itemName))
             case("IBCONN")      ! paired (back face) nodes
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   internalFluxBoundaries(ifCount)%ibconn, XDMF_ARRAY_TYPE_INT32, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case("BARINHT")     ! barrier height at each node and its paired node
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   internalFluxBoundaries(ifCount)%barinht, XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case("BARINCFSB")   ! coefficient of free surface sub critical flow
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   internalFluxBoundaries(ifCount)%barincfsb, XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case("BARINCFSP")   ! coefficient of free surface super critical flow
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   internalFluxBoundaries(ifCount)%barincfsp, XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case default
@@ -1015,8 +1015,8 @@ do setIndex=0,numSets-1
          end do
          internalFluxBoundaries(ifCount)%ibconn = internalFluxBoundaries(ifCount)%ibconn + 1
          ! populate adcirc-native arrays
-         nbvv(fluxCount,1:nvell(fluxCount)) = internalFluxBoundaries(ifCount)%nodes  
-         ibconn(fluxCount,1:nvell(fluxCount)) = internalFluxBoundaries(ifCount)%ibconn         
+         nbvv(fluxCount,1:nvell(fluxCount)) = internalFluxBoundaries(ifCount)%nodes
+         ibconn(fluxCount,1:nvell(fluxCount)) = internalFluxBoundaries(ifCount)%ibconn
          barinht(fluxCount,1:nvell(fluxCount)) = internalFluxBoundaries(ifCount)%barinht
          barincfsb(fluxCount,1:nvell(fluxCount)) = internalFluxBoundaries(ifCount)%barincfsb
          barincfsp(fluxCount,1:nvell(fluxCount)) = internalFluxBoundaries(ifCount)%barincfsp
@@ -1024,10 +1024,10 @@ do setIndex=0,numSets-1
       case(5,25)  ! internal barrier boundary with cross barrier pipes
          internalFluxBoundariesWithPipes(ifwpCount)%indexNum = fluxCount
          ! get the node numbers on the boundary
-         call xdmfRetrieveSetValues(xdmfFortranObj, setIndex, & 
+         call xdmfRetrieveSetValues(xdmfFortranObj, setIndex, &
             internalFluxBoundariesWithPipes(ifwpCount)%nodes, setDataType, setSize(setIndex), &
             startIndex, arrayStride, valueStride)
-         ! convert node numbers from 0 starting index (xdmf-style) to 
+         ! convert node numbers from 0 starting index (xdmf-style) to
          ! 1 starting index (fortran-style)
          internalFluxBoundariesWithPipes(ifwpCount)%nodes = internalFluxBoundaries(ifwpCount)%nodes + 1
          !write(6,'("DEBUG: Attributes of this boundary:")')
@@ -1036,34 +1036,34 @@ do setIndex=0,numSets-1
             call replaceNullsWithSpaces(itemName)
             select case(trim(itemName))
             case("IBCONN")  ! paired (i.e., back face) nodes
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   internalFluxBoundariesWithPipes(ifwpCount)%ibconn, XDMF_ARRAY_TYPE_INT32, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case("BARINHT") ! barrier height at each node and its paired node
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   internalFluxBoundariesWithPipes(ifwpCount)%barinht, XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case("BARINCFSB") ! coefficient of free surface sub critical flow
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   internalFluxBoundariesWithPipes(ifwpCount)%barincfsb, &
-                  XDMF_ARRAY_TYPE_FLOAT64, & 
+                  XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case("BARINCFSP") ! coefficient of free surface super critical flow
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   internalFluxBoundariesWithPipes(ifwpCount)%barincfsp, &
                   XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case("PIPEHT")    ! barrier height at each node and its paired node
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   internalFluxBoundariesWithPipes(ifwpCount)%pipeht, XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case("PIPECOEF")   ! coefficient of free surface sub critical flow
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   internalFluxBoundariesWithPipes(ifwpCount)%pipecoef, &
-                  XDMF_ARRAY_TYPE_FLOAT64, & 
+                  XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
             case("PIPEDIAM")   ! coefficient of free surface super critical flow
-               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, & 
+               call xdmfRetrieveAttributeValues(xdmfFortranObj, i, &
                   internalFluxBoundariesWithPipes(ifwpCount)%pipediam, &
                   XDMF_ARRAY_TYPE_FLOAT64, &
                   nvell(fluxCount), startIndex, arrayStride, valueStride)
@@ -1072,7 +1072,7 @@ do setIndex=0,numSets-1
             end select
          end do
          internalFluxBoundariesWithPipes(ifwpCount)%ibconn = internalFluxBoundariesWithPipes(ifwpCount)%ibconn + 1
-         ! populate adcirc-native arrays       
+         ! populate adcirc-native arrays
          nbvv(fluxCount,1:nvell(fluxCount)) &
             = internalFluxBoundariesWithPipes(ifwpCount)%nodes
          ibconn(fluxCount,1:nvell(fluxCount)) &
@@ -1089,7 +1089,7 @@ do setIndex=0,numSets-1
             = internalFluxBoundariesWithPipes(ifwpCount)%pipecoef
          pipediam(fluxCount,1:nvell(fluxCount)) &
             = internalFluxBoundariesWithPipes(ifwpCount)%pipediam
-         ifwpCount = ifwpCount + 1            
+         ifwpCount = ifwpCount + 1
       case default
           write(6,'("ERROR: The boundary type ",I3," was found in the files but is not valid.")')
           stop
@@ -1103,7 +1103,7 @@ end subroutine readMeshXDMF
 
 
 !----------------------------------------------------------------------
-!                   S U B R O U T I N E   
+!                   S U B R O U T I N E
 ! G E T   A T T R I B U T E   C H A R A C T E R I S T I C S   X D M F
 !----------------------------------------------------------------------
 ! Get info about an attribute.
@@ -1118,7 +1118,7 @@ integer :: typeHolder
 character(len=256) :: logString
 !
 call xdmfRetrieveAttributeType(xdmfFortranObj, attributeIndex, typeHolder)
-call createAttributeTypeString(typeHolder, logString) 
+call createAttributeTypeString(typeHolder, logString)
 write(6,'("DEBUG: The Attribute type is ",a,".")') trim(logString)
 !
 call xdmfRetrieveAttributeCenter(xdmfFortranObj, attributeIndex, typeHolder)
@@ -1142,22 +1142,22 @@ end subroutine getAttributeCharacteristicsXDMF
 ! The XDMF library is written in C++, which conventionally uses null
 ! characters to terminate strings. As a result, when strings come back
 ! through the XDMF library to Fortran, the strings are padded out to
-! their full length with null characters. 
+! their full length with null characters.
 !
-! However, Fortran generally expects the unused portion of the string to 
-! contain spaces, which allows functions like  trim(), len_trim(), and 
-! adjustl() to work properly. As a result, this subroutine is provided 
-! to convert the null characters in a string (from XDMF) to spaces for 
+! However, Fortran generally expects the unused portion of the string to
+! contain spaces, which allows functions like  trim(), len_trim(), and
+! adjustl() to work properly. As a result, this subroutine is provided
+! to convert the null characters in a string (from XDMF) to spaces for
 ! conventional use in Fortran.
 !----------------------------------------------------------------------
 subroutine replaceNullsWithSpaces(myString)
 implicit none
 integer :: nullCharLocation
 character(len=*), intent(inout) :: myString
-do 
-   nullCharLocation = index(myString,char(0)) 
+do
+   nullCharLocation = index(myString,char(0))
    if (nullCharLocation.ne.0) then
-      myString(nullCharLocation:nullCharLocation) = ' ' 
+      myString(nullCharLocation:nullCharLocation) = ' '
    else
       exit ! there are no more null characters
    endif
@@ -1168,7 +1168,7 @@ end subroutine replaceNullsWithSpaces
 
 
 !----------------------------------------------------------------------
-!                      S U B R O U T I N E   
+!                      S U B R O U T I N E
 !     C R E A T E   A T T R I B U T E   T Y P E   S T R I N G
 !----------------------------------------------------------------------
 ! Sets the string that corresponds to the attribute type parameter from Xdmf.f
@@ -1202,7 +1202,7 @@ end subroutine createAttributeTypeString
 
 
 !----------------------------------------------------------------------
-!                      S U B R O U T I N E   
+!                      S U B R O U T I N E
 !          C R E A T E   S E T   T Y P E   S T R I N G
 !----------------------------------------------------------------------
 ! Sets the string that corresponds to the set type parameter from Xdmf.f
@@ -1220,7 +1220,7 @@ case(602)
 case(603)
    typeString = 'XDMF_SET_TYPE_FACE'
 case(604)
-   typeString = 'XDMF_SET_TYPE_EDGE'      
+   typeString = 'XDMF_SET_TYPE_EDGE'
 case default
    write(6,'("WARNING: Unrecognized set type ",i0,".")') typeHolder
 end select
@@ -1230,7 +1230,7 @@ end subroutine createSetTypeString
 
 
 !----------------------------------------------------------------------
-!                      S U B R O U T I N E   
+!                      S U B R O U T I N E
 !     C R E A T E   A T T R I B U T E   C E N T E R  S T R I N G
 !----------------------------------------------------------------------
 ! Sets the string that corresponds to the attribute center parameter from Xdmf.f
@@ -1296,7 +1296,7 @@ end subroutine createDataTypeString
 
 
 !----------------------------------------------------------------------
-!                   S U B R O U T I N E   
+!                   S U B R O U T I N E
 !      C R E A T E   T O P O L O G Y   T Y P E   S T R I N G
 !----------------------------------------------------------------------
 ! Sets the string that corresponds to the data type parameter from Xdmf.f

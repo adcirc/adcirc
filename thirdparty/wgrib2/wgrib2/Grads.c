@@ -119,7 +119,7 @@ int f_ctl_inv(ARG0) {
     sprintf(inv_out," %d", code_table_4_5a(sec));
     inv_out += strlen(inv_out);
 
-    /* i is number of fields to print */    
+    /* i is number of fields to print */
     i = 3;
     if (level_type2 == 255) i = 1;
     if (level_type1 == level_type2) i = 2;
@@ -160,7 +160,7 @@ int f_ctl_inv(ARG0) {
     if (pdt == 6 || pdt == 10) {		/* percentiles */
         sprintf(inv_out," a%d", percentile_value(sec));
         inv_out += strlen(inv_out);
-    } 
+    }
 
     if (pdt == 48) {			/* dust */
         sprintf(inv_out,",a%d", code_table_4_233(sec));
@@ -347,7 +347,7 @@ int f_lev0(ARG0) {
                  break;
        case 118: sprintf(inv_out,"hyh%d",RINT(val1)); break;
        case 119: sprintf(inv_out,"hyp%d",RINT(val1)); break;
-       case 151: sprintf(inv_out,"soil%d",RINT(val1)); break;     
+       case 151: sprintf(inv_out,"soil%d",RINT(val1)); break;
        case 160: sprintf(inv_out,"bsl%dm",RINT(val1)); break;
        case 161: sprintf(inv_out,"bwl%dm",RINT(val1)); break;
        case 166: strcpy(inv_out,"mixl"); break;

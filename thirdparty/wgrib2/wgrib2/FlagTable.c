@@ -87,7 +87,7 @@ unsigned char *flag_table_3_3_location(unsigned char **sec) {
 		if (center == NCEP) return gds+54;
 		return NULL;
 	case 40110:
-		if ((center == JMA1) || (center == JMA2)) return gds+46; 
+		if ((center == JMA1) || (center == JMA2)) return gds+46;
 		return NULL;
         default: break;
     }
@@ -162,8 +162,8 @@ unsigned char *flag_table_3_4_location(unsigned char **sec) {
 	case 4:
 	case 5:
                  return gds+47; break;
-        case 10: 
-        case 12: 
+        case 10:
+        case 12:
                  return gds+59; break;
         case 20: return gds+64; break;
         case 30:
@@ -174,11 +174,11 @@ unsigned char *flag_table_3_4_location(unsigned char **sec) {
         case 53:
                  /* spectral modes don't have scan order */
                  return NULL; break;
-        case 90: 
-        case 140: 
+        case 90:
+        case 140:
 		  return gds+63; break;
         case 110: return gds+56; break;
-        case 190: 
+        case 190:
 	case 120: return gds+38; break;
 	case 204: return gds+71; break;
         case 1000: return gds+50; break;
@@ -195,7 +195,7 @@ unsigned char *flag_table_3_4_location(unsigned char **sec) {
 		return NULL;
 		break;
 	case 40110:
-		if ((center == JMA1) || (center == JMA2)) return gds+56; 
+		if ((center == JMA1) || (center == JMA2)) return gds+56;
 		return NULL;
 		break;
         default: break;
@@ -291,4 +291,3 @@ int flag_table_3_10(unsigned char **sec) {
     }
     return -1;
 }
-

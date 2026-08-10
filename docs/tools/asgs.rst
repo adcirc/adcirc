@@ -18,4 +18,4 @@ ASGS provides software infrastructure for automating coastal ocean modeling for 
 * Discord Server: https://discord.gg/jFbacxrUf9
 * Website: https://tools.adcirc.live
 
-ASGS is open-source software available under the GPL-3.0 license. 
+ASGS is open-source software available under the GPL-3.0 license.

@@ -19,14 +19,14 @@ software.  This new version, GCTPC, is being made available informally
 on a 'user-beware' basis.  EDC assumes no responsibility for the accuracy
 of the routines in this package.
 
-Because of decreasing budgets and impacts on software development staff, 
-EDC will not be responsible for supporting this software package.  The 
+Because of decreasing budgets and impacts on software development staff,
+EDC will not be responsible for supporting this software package.  The
 user is responsible for using the package correctly.  A set of validation
 data is provided so that each user/facility may perform its' own testing
 of the programs.  A description of this data set and instructions for its
-use are in the test/README file.  EDC will welcome any questions, comments, 
-or suggestions, and will respond on a time-available basis based on our 
-interests and requirements.  Communications concerning the GCTPC package 
+use are in the test/README file.  EDC will welcome any questions, comments,
+or suggestions, and will respond on a time-available basis based on our
+interests and requirements.  Communications concerning the GCTPC package
 may be directed to this email address:
 
 		gctpc@edcmail.cr.usgs.gov
@@ -65,7 +65,7 @@ Change Log:
 
 Version	Date	Comments
 -------	----- 	----------------------------------------------------------
- c.1.0  11/93 	Initial C version.  Includes all previous GCTP projections 
+ c.1.0  11/93 	Initial C version.  Includes all previous GCTP projections
               	and Space Oblique Mercator (SOM), Robinson, and Alaska
 	      	Conformal.  The projections Hammer, Interrupted Goode
 	      	Homolosine, Mollweide, Interrupted Mollweide, Wagner IV,
@@ -92,7 +92,7 @@ Version	Date	Comments
 		taken out of tmfor.c and tminv.c.  This change was due
 		to errors that occurred when the utm and tm projection
 		were run in the same direction (forward or inverse) in
-		the same application. 
+		the same application.
 
 		Both changes to this version are internal and have no
 		impact on the method of application.  No changes have
@@ -178,4 +178,3 @@ c.2.0   3/98	Version 2.0 of GCTPC will be named gctpc20.tar on the
 		An error occured on the SUN systems with the sincos subroutine.
 		I took out the "ifndef" statement in the cproj.c file to allow
 		SUN systems to compile and run the sincos subroutine.
-

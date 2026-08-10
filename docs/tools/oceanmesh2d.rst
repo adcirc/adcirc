@@ -25,4 +25,4 @@ Links
 -----
 
 * `GitHub Repository <https://github.com/CHLNDDEV/OceanMesh2D>`_
-* `User Guide <https://github.com/CHLNDDEV/OceanMesh2D/tree/master/UserGuide>`_ 
+* `User Guide <https://github.com/CHLNDDEV/OceanMesh2D/tree/master/UserGuide>`_

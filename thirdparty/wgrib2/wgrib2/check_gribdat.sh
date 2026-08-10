@@ -15,6 +15,6 @@ t=/tmp/junk.$$.2
 cat $1 |  sed 's/",.*/"/' >$s
 cat $2 |  sed 's/",.*/"/' >$t
 
-diff $s $t 
+diff $s $t
 
 rm $s $t

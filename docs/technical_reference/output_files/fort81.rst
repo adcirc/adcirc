@@ -1,7 +1,7 @@
 Fort.81: Scalar Concentration Time Series at Recording Stations
 ===============================================================
 
-This file contains scalar concentration time series data at specified recording stations as defined in the :doc:`Model Parameter and Periodic Boundary Condition File <../input_files/fort15>`. 
+This file contains scalar concentration time series data at specified recording stations as defined in the :doc:`Model Parameter and Periodic Boundary Condition File <../input_files/fort15>`.
 
 .. note::
    This feature is currently not supported in ADCIRC.
@@ -30,4 +30,4 @@ Notes
 * For binary output, the station number (k) is not included in the output
 * Time series data is recorded at stations specified for concentration recording
 * The output frequency is controlled by :ref:`NSPOOLC <NSPOOLC>` parameter
-* This feature is currently under development and not yet supported in ADCIRC 
+* This feature is currently under development and not yet supported in ADCIRC

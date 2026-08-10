@@ -98,7 +98,7 @@ int f_config(ARG0) {
 strcat(inv_out, "Geolocation library status (by search order)\n");
 
 #if (DEFAULT_GCTPC == 1)
-    strcat(inv_out, "  gctpc geolocation (-lambert azimuthal equal area non-spherical) is enabled by default\n"); 
+    strcat(inv_out, "  gctpc geolocation (-lambert azimuthal equal area non-spherical) is enabled by default\n");
 #else
     strcat(inv_out, "  gctpc geolocation (-lambert azimuthal equal area non-spherical) is disabled by default\n");
 #endif
@@ -111,7 +111,7 @@ strcat(inv_out, "Geolocation library status (by search order)\n");
   #endif
 #endif
 
-strcat(inv_out, "  spherical geolocation is enabled\n"); 
+strcat(inv_out, "  spherical geolocation is enabled\n");
 
 
 #ifdef USE_UDF

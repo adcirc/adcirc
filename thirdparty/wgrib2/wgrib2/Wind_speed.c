@@ -137,7 +137,7 @@ int f_wind_speed(ARG1) {
             if ((data_tmp = (float *) malloc(sizeof(float) * (size_t) ndata)) == NULL)
                 fatal_error("wind_speed: memory allocation","");
             undo_output_order(save->val, data_tmp, ndata);
-            grib_wrt(save->clone_sec, data_tmp, ndata, nx_, ny_, use_scale, dec_scale, 
+            grib_wrt(save->clone_sec, data_tmp, ndata, nx_, ny_, use_scale, dec_scale,
 		bin_scale, wanted_bits, max_bits, grib_type, &(save->out));
 
             if (flush_mode) fflush_file(&(save->out));

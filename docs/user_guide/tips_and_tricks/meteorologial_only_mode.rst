@@ -13,7 +13,7 @@ For typical 2D ADCIRC runs, set the following parameters in the fort.15 file:
 .. code-block:: none
 
    NOUTE = 0    ! No elevation station output
-   NOUTV = 0    ! No velocity station output  
+   NOUTV = 0    ! No velocity station output
    NOUTGE = 0   ! No global elevation output
    NOUTGV = 0   ! No global velocity output
    NHSTAR = 0   ! No hotstart output
@@ -49,4 +49,4 @@ Usage Notes
 1. This mode is useful when you only need to process meteorological forcing data without running the full hydrodynamic model.
 2. The simulation speed can be increased by setting ``DT`` equal to your desired meteorological output interval.
 3. Set ``NSPOOLM`` and/or ``NSPOOLGW`` to ``1`` to output meteorological data at every time step.
-4. All hydrodynamic calculations are skipped, significantly reducing computational time. 
+4. All hydrodynamic calculations are skipped, significantly reducing computational time.

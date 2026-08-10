@@ -10,7 +10,7 @@ Theory
 
 The two-dimensional, vertically integrated momentum equations used in ADCIRC contain bottom friction (drag) terms. To represent the extra drag caused by subgrid scale obstructions such as bridge piers, a second contribution has been added to the bottom friction terms:
 
-* Bottom friction x + obstruction drag x 
+* Bottom friction x + obstruction drag x
 * Bottom friction y + obstruction drag y
 
 Options in ADCIRC exist to express the bottom friction terms as linear, quadratic or hybrid quadratic/Manning's n functions of flow velocity. The obstruction drag is assumed to be due primarily to form drag and therefore is represented as quadratic in velocity:
@@ -81,4 +81,4 @@ Luettich, R.A., Jr. and J.J. Westerink, 1999, Implementation of Bridge Pilings i
 
 Yarnell, D.L., 1934a, Pile trestles as channel obstructions, U.S. Dept of Agriculture, Tech. Bull. 429.
 
-Yarnell, D.L., 1934b, Bridge piers as channel obstructions, U.S. Dept of Agriculture, Tech. Bull. 442. 
+Yarnell, D.L., 1934b, Bridge piers as channel obstructions, U.S. Dept of Agriculture, Tech. Bull. 442.

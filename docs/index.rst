@@ -35,14 +35,14 @@ Quick Links
    :maxdepth: 2
    :caption: Getting Started:
    :hidden:
-   
+
    getting_started/index
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contributing:   
+   :caption: Contributing:
    :hidden:
-   
+
    contributing/index
 
 .. toctree::
@@ -56,7 +56,7 @@ Quick Links
    :maxdepth: 1
    :caption: User Guide:
    :hidden:
-   
+
    user_guide/compiling
    user_guide/running_adcirc/index
    user_guide/model_configuration/index
@@ -68,7 +68,7 @@ Quick Links
    :maxdepth: 1
    :caption: Technical Reference:
    :hidden:
-   
+
    technical_reference/all_files
    technical_reference/input_files/index
    technical_reference/output_files/index
@@ -80,13 +80,13 @@ Quick Links
    :maxdepth: 1
    :caption: Support:
    :hidden:
-   
-   questions_and_support/index   
+
+   questions_and_support/index
    tools/index
 
 .. toctree::
    :maxdepth: 2
    :caption: About:
    :hidden:
-   
+
    about/index
