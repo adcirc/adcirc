@@ -355,11 +355,12 @@ C----------------------------------------------------------------------
       USE SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
      &                  GLOBALDIR, OFF, ASCII, NETCDF3, NETCDF4, XDMF,
      &                  numFormats, write_local_files, localdir,
-     &                  controlFileName
+     &                  controlFileName, MNP
       use mod_logging, only: allMessage, INFO, logMessage
       USE GLOBAL, ONLY : imap_stae_lg, imap_stav_lg, et00, eta2,
      &   nscoue, nne, staie1, staie2, staie3, xel, yel,
      &   slel, sfel, uu00, vv00, uu2, vv2, nscouv, nnv,
+     &   uu2_geo, vv2_geo, ifsprots,
      &   staiv1, staiv2, staiv3, xev, yev, slev, sfev, nscouge,
      &   nodes_lg, labels_g, eta2_g, nscougt, nscougs,
      &   sponge, nscougv, uu2_g, vv2_g, imap_stam_lg, rmp00,
@@ -558,8 +559,23 @@ C
       VelStaDescript % array2               => VV00
       VelStaDescript % array_g              => UU00_g
       VelStaDescript % array2_g             => VV00_g
-      VelStaDescript % interped_array       => UU2
-      VelStaDescript % interped_array2      => VV2
+C     Rotated-frame: velocities are computed in the rotated spherical
+C     frame; analysis-facing output is written in geographic east/north
+C     (filled by updateGeographicOutputVelocity in writeOutput2D)
+      IF ( IFSPROTS.EQ.1 ) THEN
+C        ...The re-expressed arrays exist only when the rotated frame is
+C        in use; allocate them before the first pointer association
+         IF ( .NOT.ALLOCATED(UU2_GEO) ) THEN
+            ALLOCATE ( UU2_GEO(MNP),VV2_GEO(MNP) )
+            UU2_GEO(:) = -99999.d0
+            VV2_GEO(:) = -99999.d0
+         ENDIF
+         VelStaDescript % interped_array       => UU2_GEO
+         VelStaDescript % interped_array2      => VV2_GEO
+      ELSE
+         VelStaDescript % interped_array       => UU2
+         VelStaDescript % interped_array2      => VV2
+      ENDIF
       VelStaDescript % ConsiderWetDry       = .TRUE.
       VelStaDescript % field_name           = 'VelSta'
       VelStaDescript % isStation            = .true.
@@ -719,8 +735,14 @@ C
       VelDescript % outputTimeStepIncrement = NSPOOLGV
       VelDescript % spoolCounter            => NSCOUGV
       VelDescript % num_items_per_record = 2
-      VelDescript % array                => UU2
-      VelDescript % array2               => VV2
+C     Rotated-frame: see note on VelStaDescript above
+      IF ( IFSPROTS.EQ.1 ) THEN
+         VelDescript % array                => UU2_GEO
+         VelDescript % array2               => VV2_GEO
+      ELSE
+         VelDescript % array                => UU2
+         VelDescript % array2               => VV2
+      ENDIF
       VelDescript % array_g              => UU2_g
       VelDescript % array2_g             => VV2_g
       VelDescript % field_name           = 'Vel'
@@ -1775,6 +1797,30 @@ C     R.L. 8/22/05 Subroutine to write primary 2D model output not
 C     including hotstart and harmonic analysis.
 C
 C----------------------------------------------------------------------
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C     U P D A T E  G E O G R A P H I C  O U T P U T  V E L O C I T Y
+C-----------------------------------------------------------------------
+C     When the momentum equations are solved in a rotated spherical
+C     frame (IFSPROTS = 1), the state velocities UU2/VV2 hold components
+C     along the rotated coordinate axes. Analysis-facing output
+C     (fort.62/fort.64 and their max files) is written in geographic
+C     east/north for consistency with the meteorological output and the
+C     harmonic analysis (see updateHarmonicAnalysis), so the components
+C     are re-expressed here before each output pass. Hotstart output is
+C     intentionally left in the rotated frame: it is internal state that
+C     must round-trip through a restart unchanged.
+C-----------------------------------------------------------------------
+      SUBROUTINE updateGeographicOutputVelocity()
+      USE GLOBAL, ONLY : UU2, VV2, UU2_GEO, VV2_GEO, IFSPROTS
+      USE MESH, ONLY : NP, DRVMAP2DSPVEC
+      IMPLICIT NONE
+      IF ( IFSPROTS.NE.1 ) RETURN
+      CALL DRVMAP2DSPVEC( UU2_GEO, VV2_GEO, UU2, VV2, NP,
+     &                    FWD = .FALSE. )
+      END SUBROUTINE updateGeographicOutputVelocity
+C-----------------------------------------------------------------------
+
       SUBROUTINE writeOutput2D(IT,TimeLoc)
       USE SIZES, ONLY : INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
      &                  GLOBALDIR, OFF
@@ -1795,8 +1841,11 @@ C----------------------------------------------------------------------
       INTEGER, intent(in) :: IT
       REAL(8), intent(in) :: TimeLoc
       INTEGER :: i,j
+      LOGICAL :: geoVelUpdated ! geographic output velocities refreshed
 
       LOG_SCOPE_TRACED("writeOutput2D", WRITE_OUTPUT_TRACING)
+
+      geoVelUpdated = .false.
 
       do i=1,numOutputDescript2D
          !
@@ -1826,6 +1875,16 @@ C----------------------------------------------------------------------
          if (ptr(i) % descript2D % spoolCounter.ne.
      &       ptr(i) % descript2D % outputTimeStepIncrement) then
             cycle
+         endif
+         !
+         ! Rotated-frame: a velocity output is due this time step, so
+         ! refresh the geographic east/north output velocities (at most
+         ! once per step); a no-op unless IFSPROTS = 1
+         if ( (.not.geoVelUpdated) .and.
+     &        ( (ptr(i) % descript2D % field_name.eq.'Vel') .or.
+     &          (ptr(i) % descript2D % field_name.eq.'VelSta') ) ) then
+            call updateGeographicOutputVelocity()
+            geoVelUpdated = .true.
          endif
          !
          ! if this is station data, compute the solution at the station
