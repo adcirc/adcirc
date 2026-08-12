@@ -260,6 +260,12 @@ c.
       !jgf50.44: Added variable to record the time that the min or max
       ! has occurred
       REAL(8),ALLOCATABLE, TARGET ::  ETA1(:), ETA2(:), UU2(:), VV2(:), H1(:), H2(:) ! DMW202401 Added variables for tracking flow depths
+!     Rotated-frame support: velocities re-expressed in geographic
+!     east/north for analysis-facing output when the momentum equations
+!     are solved in a rotated spherical frame; allocated in initOutput2D
+!     only when IFSPROTS = 1 and filled by
+!     updateGeographicOutputVelocity() in write_output.F
+      REAL(8),ALLOCATABLE, TARGET ::  UU2_GEO(:), VV2_GEO(:)
       REAL(8),ALLOCATABLE, TARGET ::  ETAMAX(:) ! v46.50 sb 11/11/2006
       REAL(8),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
       REAL(8),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
