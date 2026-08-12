@@ -169,7 +169,11 @@ C******************************************************************************
       INTEGER :: i        ! command line argument counter
       REAL (8) :: start_time = 0.D0, end_time = 0.D0
 
+
       LOG_SCOPE_TRACED("ADCIRC_Init", ADCIRC_TRACING)
+      !
+      ! REAL (8):: start_time = 0.D0, end_time = 0.D0
+
 
       ! jgf51.52.07: Added command line option to just write out
       ! the ADCIRC version number and exit. This is to allow 
@@ -345,11 +349,11 @@ C...  attached to each node
       ! If the time in the min/max file is later than the current time
       ! in ADCIRC, we don't load the min/max files. TODO: This is computed
       ! again in subroutine timestep().
-      TimeLoc=ITIME_BGN*DTDP + StaTim*86400.D0
+      TimeLoc=DBLE(ITIME_BGN)*DTDP + StaTim*86400.D0
       IF (CHOTHS.eqv..true.) THEN
-         StaTimHS=((ITIME_BGN-1)*DTDPHS)/86400.D0
-         RefTimHS=((ITIME_BGN-1)*DTDP)/86400.D0
-         TimeLoc=ITIME_BGN*DTDP + (StaTimHS - RefTimHS)*86400.D0
+         StaTimHS=(DBLE((ITIME_BGN-1))*DTDPHS)/86400.D0
+         RefTimHS=(DBLE((ITIME_BGN-1))*DTDP)/86400.D0
+         TimeLoc=DBLE(ITIME_BGN*DTDP) + (StaTimHS - RefTimHS)*86400.D0
       END IF
 
       !jgf: Initialize water level offset if needed
@@ -419,8 +423,10 @@ C******************************************************************************
       USE GLOBAL, ONLY : iTime, statim, dtdp,
      &   earlyterminate
       USE mod_logging, ONLY : allMessage,
-     &   logMessage, DEBUG, INFO, t_log_scope, init_log_scope
+     &   logMessage, DEBUG, INFO, t_log_scope, init_log_scope, ScreenUnit
 #ifdef CMPI
+      use mpi_f08, only: MPI_Wtime
+
       USE WRITER, ONLY : writer_main, writer_pause, sendLabelInfoToWriters
       USE HSWRITER, ONLY : hswriter_main, hswriter_pause
 #endif
@@ -467,6 +473,12 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
       endif
 #endif
 
+#ifdef CMPI
+      IF ( myproc == 0 ) then
+         start_time = MPI_Wtime() ;
+      ENDIF   
+#endif
+
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_END = ITIME_BGN+NTIME_STP-1
       ENDIF
@@ -506,6 +518,15 @@ C             to then call the SWAN time-stepping subroutine.
       IF (MYPROC == 0 .and. MNWPROH > 0) CALL HSWRITER_PAUSE()
 #endif
 
+
+#ifdef CMPI
+      IF ( myproc == 0 ) then
+         end_time = MPI_Wtime() ;
+
+         write(ScreenUnit,*) "Runtime = ", end_time - start_time ; 
+      ENDIF   
+#endif
+      
       RETURN
       END SUBROUTINE ADCIRC_Run
 
